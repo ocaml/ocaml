@@ -697,6 +697,9 @@ module Map : sig
 
   module type S =
     sig
+
+      (** {1:maps Maps} *)
+
       type key
       (** The type of the map keys. *)
 
@@ -706,21 +709,20 @@ module Map : sig
       val empty: 'a t
       (** The empty map. *)
 
-      val is_empty: 'a t -> bool
-      (** Test whether a map is empty or not. *)
-
-      val mem: key -> 'a t -> bool
-      (** [mem x m] returns [true] if [m] contains a binding for [x],
-         and [false] otherwise. *)
-
       val add: key:key -> data:'a -> 'a t -> 'a t
       (** [add ~key ~data m] returns a map containing the same bindings as
-         [m], plus a binding of [key] to [data]. If [key] was already bound
-         in [m] to a value that is physically equal to [data],
-         [m] is returned unchanged (the result of the function is
-         then physically equal to [m]). Otherwise, the previous binding
-         of [key] in [m] disappears.
-         @before 4.03 Physical equality was not ensured. *)
+          [m], plus a binding of [key] to [data]. If [key] was already bound
+          in [m] to a value that is physically equal to [data],
+          [m] is returned unchanged (the result of the function is
+          then physically equal to [m]). Otherwise, the previous binding
+          of [key] in [m] disappears.
+          @before 4.03 Physical equality was not ensured. *)
+
+      val add_to_list: key:key -> data:'a -> 'a list t -> 'a list t
+      (** [add_to_list ~key ~data m] is [m] with [key] mapped to [l] such
+          that [l] is [data :: Map.find key m] if [key] was bound in
+          [m] and [[v]] otherwise.
+          @since 5.1.0 *)
 
       val update: key:key -> f:('a option -> 'a option) -> 'a t -> 'a t
       (** [update ~key ~f m] returns a map containing the same bindings as
@@ -732,33 +734,30 @@ module Map : sig
           bound in [m] to a value that is physically equal to [z], [m]
           is returned unchanged (the result of the function is then
           physically equal to [m]).
-          @since 4.06.0
-      *)
+          @since 4.06.0 *)
 
       val singleton: key -> 'a -> 'a t
       (** [singleton x y] returns the one-element map that contains a binding
           [y] for [x].
-          @since 3.12.0
-       *)
+          @since 3.12.0 *)
 
       val remove: key -> 'a t -> 'a t
       (** [remove x m] returns a map containing the same bindings as
-         [m], except for [x] which is unbound in the returned map.
-         If [x] was not in [m], [m] is returned unchanged
-         (the result of the function is then physically equal to [m]).
-         @before 4.03 Physical equality was not ensured. *)
+          [m], except for [x] which is unbound in the returned map.
+          If [x] was not in [m], [m] is returned unchanged
+          (the result of the function is then physically equal to [m]).
+          @before 4.03 Physical equality was not ensured. *)
 
       val merge:
-           f:(key -> 'a option -> 'b option -> 'c option) ->
-           'a t -> 'b t -> 'c t
+        f:(key -> 'a option -> 'b option -> 'c option) ->
+        'a t -> 'b t -> 'c t
       (** [merge ~f m1 m2] computes a map whose keys are a subset of the keys of
           [m1] and of [m2]. The presence of each such binding, and the
           corresponding value, is determined with the function [f].
           In terms of the [find_opt] operation, we have
           [find_opt x (merge f m1 m2) = f x (find_opt x m1) (find_opt x m2)]
           for any key [x], provided that [f x None None = None].
-          @since 3.12.0
-       *)
+          @since 3.12.0 *)
 
       val union: f:(key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
       (** [union ~f m1 m2] computes a map whose keys are a subset of the keys
@@ -771,41 +770,122 @@ module Map : sig
           - [f' _key None (Some v) = Some v]
           - [f' key (Some v1) (Some v2) = f key v1 v2]
 
-          @since 4.03.0
-      *)
+          @since 4.03.0 *)
 
-      val compare: cmp:('a -> 'a -> int) -> 'a t -> 'a t -> int
-      (** Total ordering between maps.  The first argument is a total ordering
-          used to compare data associated with equal keys in the two maps. *)
+      val cardinal: 'a t -> int
+      (** Return the number of bindings of a map.
+          @since 3.12.0 *)
 
-      val equal: cmp:('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-      (** [equal ~cmp m1 m2] tests whether the maps [m1] and [m2] are
-         equal, that is, contain equal keys and associate them with
-         equal data.  [cmp] is the equality predicate used to compare
-         the data associated with the keys. *)
+      (** {1:bindings Bindings} *)
+
+      val bindings: 'a t -> (key * 'a) list
+      (** Return the list of all bindings of the given map.
+          The returned list is sorted in increasing order of keys with respect
+          to the ordering [Ord.compare], where [Ord] is the argument
+          given to {!Map.Make}.
+          @since 3.12.0 *)
+
+      val min_binding: 'a t -> (key * 'a)
+      (** Return the binding with the smallest key in a given map
+          (with respect to the [Ord.compare] ordering), or raise
+          [Not_found] if the map is empty.
+          @since 3.12.0 *)
+
+      val min_binding_opt: 'a t -> (key * 'a) option
+      (** Return the binding with the smallest key in the given map
+          (with respect to the [Ord.compare] ordering), or [None]
+          if the map is empty.
+          @since 4.05 *)
+
+      val max_binding: 'a t -> (key * 'a)
+      (** Same as {!min_binding}, but returns the binding with
+          the largest key in the given map.
+          @since 3.12.0 *)
+
+      val max_binding_opt: 'a t -> (key * 'a) option
+      (** Same as {!min_binding_opt}, but returns the binding with
+          the largest key in the given map.
+          @since 4.05 *)
+
+      val choose: 'a t -> (key * 'a)
+      (** Return one binding of the given map, or raise [Not_found] if
+          the map is empty. Which binding is chosen is unspecified,
+          but equal bindings will be chosen for equal maps.
+          @since 3.12.0 *)
+
+      val choose_opt: 'a t -> (key * 'a) option
+      (** Return one binding of the given map, or [None] if
+          the map is empty. Which binding is chosen is unspecified,
+          but equal bindings will be chosen for equal maps.
+          @since 4.05 *)
+
+      (** {1:searching Searching} *)
+
+      val find: key -> 'a t -> 'a
+      (** [find x m] returns the current value of [x] in [m],
+          or raises [Not_found] if no binding for [x] exists. *)
+
+      val find_opt: key -> 'a t -> 'a option
+      (** [find_opt x m] returns [Some v] if the current value of [x]
+          in [m] is [v], or [None] if no binding for [x] exists.
+          @since 4.05 *)
+
+      val find_first: f:(key -> bool) -> 'a t -> key * 'a
+      (** [find_first ~f m], where [f] is a monotonically increasing function,
+          returns the binding of [m] with the lowest key [k] such that [f k],
+          or raises [Not_found] if no such key exists.
+
+          For example, [find_first (fun k -> Ord.compare k x >= 0) m] will
+          return the first binding [k, v] of [m] where [Ord.compare k x >= 0]
+          (intuitively: [k >= x]), or raise [Not_found] if [x] is greater than
+          any element of [m].
+
+          @since 4.05 *)
+
+      val find_first_opt: f:(key -> bool) -> 'a t -> (key * 'a) option
+      (** [find_first_opt ~f m], where [f] is a monotonically increasing
+          function, returns an option containing the binding of [m] with the
+          lowest key [k] such that [f k], or [None] if no such key exists.
+          @since 4.05 *)
+
+      val find_last: f:(key -> bool) -> 'a t -> key * 'a
+      (** [find_last ~f m], where [f] is a monotonically decreasing function,
+          returns the binding of [m] with the highest key [k] such that [f k],
+          or raises [Not_found] if no such key exists.
+          @since 4.05 *)
+
+      val find_last_opt: f:(key -> bool) -> 'a t -> (key * 'a) option
+      (** [find_last_opt ~f m], where [f] is a monotonically decreasing
+          function, returns an option containing the binding of [m] with
+          the highest key [k] such that [f k], or [None] if no such key
+          exists.
+          @since 4.05 *)
+
+      (** {1:traversing Traversing} *)
 
       val iter: f:(key:key -> data:'a -> unit) -> 'a t -> unit
       (** [iter ~f m] applies [f] to all bindings in map [m].
-         [f] receives the key as first argument, and the associated value
-         as second argument.  The bindings are passed to [f] in increasing
-         order with respect to the ordering over the type of the keys. *)
+          [f] receives the key as first argument, and the associated value
+          as second argument.  The bindings are passed to [f] in increasing
+          order with respect to the ordering over the type of the keys. *)
 
       val fold: f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
       (** [fold ~f m ~init] computes [(f kN dN ... (f k1 d1 init)...)],
-         where [k1 ... kN] are the keys of all bindings in [m]
-         (in increasing order), and [d1 ... dN] are the associated data. *)
+          where [k1 ... kN] are the keys of all bindings in [m]
+          (in increasing order), and [d1 ... dN] are the associated data. *)
 
-      val for_all: f:(key -> 'a -> bool) -> 'a t -> bool
-      (** [for_all ~f m] checks if all the bindings of the map
-          satisfy the predicate [f].
-          @since 3.12.0
-       *)
+      (** {1:transforming Transforming} *)
 
-      val exists: f:(key -> 'a -> bool) -> 'a t -> bool
-      (** [exists ~f m] checks if at least one binding of the map
-          satisfies the predicate [f].
-          @since 3.12.0
-       *)
+      val map: f:('a -> 'b) -> 'a t -> 'b t
+      (** [map ~f m] returns a map with same domain as [m], where the
+          associated value [a] of all bindings of [m] has been
+          replaced by the result of the application of [f] to [a].
+          The bindings are passed to [f] in increasing order
+          with respect to the ordering over the type of the keys. *)
+
+      val mapi: f:(key -> 'a -> 'b) -> 'a t -> 'b t
+      (** Same as {!map}, but the function receives as arguments both the
+          key and the associated value for each binding of the map. *)
 
       val filter: f:(key -> 'a -> bool) -> 'a t -> 'a t
       (** [filter ~f m] returns the map with all the bindings in [m]
@@ -813,8 +893,7 @@ module Map : sig
           [m] is returned unchanged (the result of the function is then
           physically equal to [m])
           @since 3.12.0
-         @before 4.03 Physical equality was not ensured.
-       *)
+          @before 4.03 Physical equality was not ensured. *)
 
       val filter_map: f:(key -> 'a -> 'b option) -> 'a t -> 'b t
       (** [filter_map ~f m] applies the function [f] to every binding of
@@ -833,69 +912,14 @@ module Map : sig
           drops all bindings of [m] whose value is an empty list, and pops
           the first element of each value that is non-empty.
 
-          @since 4.11.0
-       *)
+          @since 4.11.0 *)
 
       val partition: f:(key -> 'a -> bool) -> 'a t -> 'a t * 'a t
       (** [partition ~f m] returns a pair of maps [(m1, m2)], where
           [m1] contains all the bindings of [m] that satisfy the
           predicate [f], and [m2] is the map with all the bindings of
           [m] that do not satisfy [f].
-          @since 3.12.0
-       *)
-
-      val cardinal: 'a t -> int
-      (** Return the number of bindings of a map.
-          @since 3.12.0
-       *)
-
-      val bindings: 'a t -> (key * 'a) list
-      (** Return the list of all bindings of the given map.
-         The returned list is sorted in increasing order of keys with respect
-         to the ordering [Ord.compare], where [Ord] is the argument
-         given to {!Map.Make}.
-          @since 3.12.0
-       *)
-
-      val min_binding: 'a t -> (key * 'a)
-      (** Return the binding with the smallest key in a given map
-         (with respect to the [Ord.compare] ordering), or raise
-         [Not_found] if the map is empty.
-          @since 3.12.0
-       *)
-
-      val min_binding_opt: 'a t -> (key * 'a) option
-      (** Return the binding with the smallest key in the given map
-         (with respect to the [Ord.compare] ordering), or [None]
-         if the map is empty.
-          @since 4.05
-       *)
-
-      val max_binding: 'a t -> (key * 'a)
-      (** Same as {!min_binding}, but returns the binding with
-          the largest key in the given map.
-          @since 3.12.0
-       *)
-
-      val max_binding_opt: 'a t -> (key * 'a) option
-      (** Same as {!min_binding_opt}, but returns the binding with
-          the largest key in the given map.
-          @since 4.05
-       *)
-
-      val choose: 'a t -> (key * 'a)
-      (** Return one binding of the given map, or raise [Not_found] if
-         the map is empty. Which binding is chosen is unspecified,
-         but equal bindings will be chosen for equal maps.
-          @since 3.12.0
-       *)
-
-      val choose_opt: 'a t -> (key * 'a) option
-      (** Return one binding of the given map, or [None] if
-         the map is empty. Which binding is chosen is unspecified,
-         but equal bindings will be chosen for equal maps.
-          @since 4.05
-       *)
+          @since 3.12.0 *)
 
       val split: key -> 'a t -> 'a t * 'a option * 'a t
       (** [split x m] returns a triple [(l, data, r)], where
@@ -905,66 +929,48 @@ module Map : sig
           is strictly greater than [x];
             [data] is [None] if [m] contains no binding for [x],
             or [Some v] if [m] binds [v] to [x].
-          @since 3.12.0
-       *)
+          @since 3.12.0 *)
 
-      val find: key -> 'a t -> 'a
-      (** [find x m] returns the current value of [x] in [m],
-         or raises [Not_found] if no binding for [x] exists. *)
+      (** {1:predicates Predicates and comparisons} *)
 
-      val find_opt: key -> 'a t -> 'a option
-      (** [find_opt x m] returns [Some v] if the current value of [x]
-          in [m] is [v], or [None] if no binding for [x] exists.
-          @since 4.05
-      *)
+      val is_empty: 'a t -> bool
+      (** Test whether a map is empty or not. *)
 
-      val find_first: f:(key -> bool) -> 'a t -> key * 'a
-      (** [find_first ~f m], where [f] is a monotonically increasing function,
-         returns the binding of [m] with the lowest key [k] such that [f k],
-         or raises [Not_found] if no such key exists.
+      val mem: key -> 'a t -> bool
+      (** [mem x m] returns [true] if [m] contains a binding for [x],
+          and [false] otherwise. *)
 
-         For example, [find_first (fun k -> Ord.compare k x >= 0) m] will return
-         the first binding [k, v] of [m] where [Ord.compare k x >= 0]
-         (intuitively: [k >= x]), or raise [Not_found] if [x] is greater than
-         any element of [m].
+      val equal: cmp:('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+      (** [equal ~cmp m1 m2] tests whether the maps [m1] and [m2] are
+          equal, that is, contain equal keys and associate them with
+          equal data.  [cmp] is the equality predicate used to compare
+          the data associated with the keys. *)
 
-          @since 4.05
-         *)
+      val compare: cmp:('a -> 'a -> int) -> 'a t -> 'a t -> int
+      (** Total ordering between maps.  The first argument is a total ordering
+          used to compare data associated with equal keys in the two maps. *)
 
-      val find_first_opt: f:(key -> bool) -> 'a t -> (key * 'a) option
-      (** [find_first_opt ~f m], where [f] is a monotonically increasing
-         function, returns an option containing the binding of [m] with the
-         lowest key [k] such that [f k], or [None] if no such key exists.
-          @since 4.05
-         *)
+      val for_all: f:(key -> 'a -> bool) -> 'a t -> bool
+      (** [for_all ~f m] checks if all the bindings of the map
+          satisfy the predicate [f].
+          @since 3.12.0 *)
 
-      val find_last: f:(key -> bool) -> 'a t -> key * 'a
-      (** [find_last ~f m], where [f] is a monotonically decreasing function,
-         returns the binding of [m] with the highest key [k] such that [f k],
-         or raises [Not_found] if no such key exists.
-          @since 4.05
-         *)
+      val exists: f:(key -> 'a -> bool) -> 'a t -> bool
+      (** [exists ~f m] checks if at least one binding of the map
+          satisfies the predicate [f].
+          @since 3.12.0 *)
 
-      val find_last_opt: f:(key -> bool) -> 'a t -> (key * 'a) option
-      (** [find_last_opt ~f m], where [f] is a monotonically decreasing
-         function, returns an option containing the binding of [m] with
-         the highest key [k] such that [f k], or [None] if no such key
-         exists.
-          @since 4.05
-         *)
+      (** {1:converting Converting} *)
 
-      val map: f:('a -> 'b) -> 'a t -> 'b t
-      (** [map ~f m] returns a map with same domain as [m], where the
-         associated value [a] of all bindings of [m] has been
-         replaced by the result of the application of [f] to [a].
-         The bindings are passed to [f] in increasing order
-         with respect to the ordering over the type of the keys. *)
+      val to_list : 'a t -> (key * 'a) list
+      (** [to_list m] is {!bindings}[ m].
+          @since 5.1.0 *)
 
-      val mapi: f:(key -> 'a -> 'b) -> 'a t -> 'b t
-      (** Same as {!map}, but the function receives as arguments both the
-         key and the associated value for each binding of the map. *)
-
-      (** {1 Maps and Sequences} *)
+      val of_list : (key * 'a) list -> 'a t
+      (** [of_list bs] adds the bindings of [bs] to the empty map,
+          in list order (if a key is bound twice in [bs] the last one
+          takes over).
+          @since 5.1.0 *)
 
       val to_seq : 'a t -> (key * 'a) Seq.t
       (** Iterate on the whole map, in ascending order of keys
@@ -1047,6 +1053,9 @@ module Set : sig
 
   module type S =
     sig
+
+      (** {1:sets Sets} *)
+
       type elt
       (** The type of the set elements. *)
 
@@ -1056,26 +1065,20 @@ module Set : sig
       val empty: t
       (** The empty set. *)
 
-      val is_empty: t -> bool
-      (** Test whether a set is empty or not. *)
-
-      val mem: elt -> t -> bool
-      (** [mem x s] tests whether [x] belongs to the set [s]. *)
-
       val add: elt -> t -> t
       (** [add x s] returns a set containing all elements of [s],
-         plus [x]. If [x] was already in [s], [s] is returned unchanged
-         (the result of the function is then physically equal to [s]).
-         @before 4.03 Physical equality was not ensured. *)
+          plus [x]. If [x] was already in [s], [s] is returned unchanged
+          (the result of the function is then physically equal to [s]).
+          @before 4.03 Physical equality was not ensured. *)
 
       val singleton: elt -> t
       (** [singleton x] returns the one-element set containing only [x]. *)
 
       val remove: elt -> t -> t
       (** [remove x s] returns a set containing all elements of [s],
-         except [x]. If [x] was not in [s], [s] is returned unchanged
-         (the result of the function is then physically equal to [s]).
-         @before 4.03 Physical equality was not ensured. *)
+          except [x]. If [x] was not in [s], [s] is returned unchanged
+          (the result of the function is then physically equal to [s]).
+          @before 4.03 Physical equality was not ensured. *)
 
       val union: t -> t -> t
       (** Set union. *)
@@ -1089,131 +1092,53 @@ module Set : sig
 
       val diff: t -> t -> t
       (** Set difference: [diff s1 s2] contains the elements of [s1]
-         that are not in [s2]. *)
-
-      val compare: t -> t -> int
-      (** Total ordering between sets. Can be used as the ordering function
-         for doing sets of sets. *)
-
-      val equal: t -> t -> bool
-      (** [equal s1 s2] tests whether the sets [s1] and [s2] are
-         equal, that is, contain equal elements. *)
-
-      val subset: t -> t -> bool
-      (** [subset s1 s2] tests whether the set [s1] is a subset of
-         the set [s2]. *)
-
-      val iter: f:(elt -> unit) -> t -> unit
-      (** [iter ~f s] applies [f] in turn to all elements of [s].
-         The elements of [s] are presented to [f] in increasing order
-         with respect to the ordering over the type of the elements. *)
-
-      val map: f:(elt -> elt) -> t -> t
-      (** [map ~f s] is the set whose elements are [f a0],[f a1]... [f
-          aN], where [a0],[a1]...[aN] are the elements of [s].
-
-         The elements are passed to [f] in increasing order
-         with respect to the ordering over the type of the elements.
-
-         If no element of [s] is changed by [f], [s] is returned
-         unchanged. (If each output of [f] is physically equal to its
-         input, the returned set is physically equal to [s].)
-         @since 4.04.0 *)
-
-      val fold: f:(elt -> 'a -> 'a) -> t -> init:'a -> 'a
-      (** [fold ~f s init] computes [(f xN ... (f x2 (f x1 init))...)],
-         where [x1 ... xN] are the elements of [s], in increasing order. *)
-
-      val for_all: f:(elt -> bool) -> t -> bool
-      (** [for_all ~f s] checks if all elements of the set
-         satisfy the predicate [f]. *)
-
-      val exists: f:(elt -> bool) -> t -> bool
-      (** [exists ~f s] checks if at least one element of
-         the set satisfies the predicate [f]. *)
-
-      val filter: f:(elt -> bool) -> t -> t
-      (** [filter ~f s] returns the set of all elements in [s]
-         that satisfy predicate [f]. If [f] satisfies every element in [s],
-         [s] is returned unchanged (the result of the function is then
-         physically equal to [s]).
-         @before 4.03 Physical equality was not ensured.*)
-
-      val filter_map: f:(elt -> elt option) -> t -> t
-      (** [filter_map ~f s] returns the set of all [v] such that
-          [f x = Some v] for some element [x] of [s].
-
-         For example,
-         {[filter_map (fun n -> if n mod 2 = 0 then Some (n / 2) else None) s]}
-         is the set of halves of the even elements of [s].
-
-         If no element of [s] is changed or dropped by [f] (if
-         [f x = Some x] for each element [x]), then
-         [s] is returned unchanged: the result of the function
-         is then physically equal to [s].
-
-         @since 4.11.0
-       *)
-
-      val partition: f:(elt -> bool) -> t -> t * t
-      (** [partition ~f s] returns a pair of sets [(s1, s2)], where
-         [s1] is the set of all the elements of [s] that satisfy the
-         predicate [f], and [s2] is the set of all the elements of
-         [s] that do not satisfy [f]. *)
+          that are not in [s2]. *)
 
       val cardinal: t -> int
       (** Return the number of elements of a set. *)
 
+      (** {1:elements Elements} *)
+
       val elements: t -> elt list
       (** Return the list of all elements of the given set.
-         The returned list is sorted in increasing order with respect
-         to the ordering [Ord.compare], where [Ord] is the argument
-         given to {!Set.Make}. *)
+          The returned list is sorted in increasing order with respect
+          to the ordering [Ord.compare], where [Ord] is the argument
+          given to {!Set.Make}. *)
 
       val min_elt: t -> elt
       (** Return the smallest element of the given set
-         (with respect to the [Ord.compare] ordering), or raise
-         [Not_found] if the set is empty. *)
+          (with respect to the [Ord.compare] ordering), or raise
+          [Not_found] if the set is empty. *)
 
       val min_elt_opt: t -> elt option
       (** Return the smallest element of the given set
-         (with respect to the [Ord.compare] ordering), or [None]
-         if the set is empty.
-          @since 4.05
-      *)
+          (with respect to the [Ord.compare] ordering), or [None]
+          if the set is empty.
+          @since 4.05 *)
 
       val max_elt: t -> elt
       (** Same as {!min_elt}, but returns the largest element of the
-         given set. *)
+          given set. *)
 
       val max_elt_opt: t -> elt option
       (** Same as {!min_elt_opt}, but returns the largest element of the
           given set.
-          @since 4.05
-      *)
+          @since 4.05 *)
 
       val choose: t -> elt
       (** Return one element of the given set, or raise [Not_found] if
-         the set is empty. Which element is chosen is unspecified,
-         but equal elements will be chosen for equal sets. *)
+          the set is empty. Which element is chosen is unspecified,
+          but equal elements will be chosen for equal sets. *)
 
       val choose_opt: t -> elt option
       (** Return one element of the given set, or [None] if
           the set is empty. Which element is chosen is unspecified,
           but equal elements will be chosen for equal sets.
-          @since 4.05
-      *)
+          @since 4.05 *)
 
-      val split: elt -> t -> t * bool * t
-      (** [split x s] returns a triple [(l, present, r)], where
-            [l] is the set of elements of [s] that are
-            strictly less than [x];
-            [r] is the set of elements of [s] that are
-            strictly greater than [x];
-            [present] is [false] if [s] contains no element equal to [x],
-            or [true] if [s] contains an element equal to [x]. *)
+      (** {1:searching Searching} *)
 
-      val find: elt -> t -> elt
+          val find: elt -> t -> elt
       (** [find x s] returns the element of [s] equal to [x] (according
           to [Ord.compare]), or raise [Not_found] if no such element
           exists.
@@ -1227,45 +1152,136 @@ module Set : sig
 
       val find_first: f:(elt -> bool) -> t -> elt
       (** [find_first ~f s], where [f] is a monotonically increasing function,
-         returns the lowest element [e] of [s] such that [f e],
-         or raises [Not_found] if no such element exists.
+          returns the lowest element [e] of [s] such that [f e],
+          or raises [Not_found] if no such element exists.
 
-         For example, [find_first (fun e -> Ord.compare e x >= 0) s] will return
-         the first element [e] of [s] where [Ord.compare e x >= 0] (intuitively:
-         [e >= x]), or raise [Not_found] if [x] is greater than any element of
-         [s].
+          For example, [find_first (fun e -> Ord.compare e x >= 0) s] will
+          return the first element [e] of [s] where [Ord.compare e x >= 0]
+          (intuitively: [e >= x]), or raise [Not_found] if [x] is greater than
+          any element of [s].
 
-          @since 4.05
-         *)
+          @since 4.05 *)
 
       val find_first_opt: f:(elt -> bool) -> t -> elt option
       (** [find_first_opt ~f s], where [f] is a monotonically increasing
-         function, returns an option containing the lowest element [e] of [s]
-         such that [f e], or [None] if no such element exists.
+          function, returns an option containing the lowest element [e] of [s]
+          such that [f e], or [None] if no such element exists.
           @since 4.05
          *)
 
       val find_last: f:(elt -> bool) -> t -> elt
       (** [find_last ~f s], where [f] is a monotonically decreasing function,
-         returns the highest element [e] of [s] such that [f e],
-         or raises [Not_found] if no such element exists.
-          @since 4.05
-         *)
+          returns the highest element [e] of [s] such that [f e],
+          or raises [Not_found] if no such element exists.
+          @since 4.05 *)
 
       val find_last_opt: f:(elt -> bool) -> t -> elt option
       (** [find_last_opt ~f s], where [f] is a monotonically decreasing
-         function, returns an option containing the highest element [e] of [s]
-         such that [f e], or [None] if no such element exists.
-          @since 4.05
-         *)
+          function, returns an option containing the highest element [e] of [s]
+          such that [f e], or [None] if no such element exists.
+          @since 4.05 *)
+
+      (** {1:traversing Traversing} *)
+
+      val iter: f:(elt -> unit) -> t -> unit
+      (** [iter ~f s] applies [f] in turn to all elements of [s].
+          The elements of [s] are presented to [f] in increasing order
+          with respect to the ordering over the type of the elements. *)
+
+      val fold: f:(elt -> 'a -> 'a) -> t -> init:'a -> 'a
+      (** [fold ~f s init] computes [(f xN ... (f x2 (f x1 init))...)],
+          where [x1 ... xN] are the elements of [s], in increasing order. *)
+
+      (** {1:transforming Transforming} *)
+
+      val map: f:(elt -> elt) -> t -> t
+      (** [map ~f s] is the set whose elements are [f a0],[f a1]... [f
+          aN], where [a0],[a1]...[aN] are the elements of [s].
+
+          The elements are passed to [f] in increasing order
+          with respect to the ordering over the type of the elements.
+
+          If no element of [s] is changed by [f], [s] is returned
+          unchanged. (If each output of [f] is physically equal to its
+          input, the returned set is physically equal to [s].)
+          @since 4.04.0 *)
+
+      val filter: f:(elt -> bool) -> t -> t
+      (** [filter ~f s] returns the set of all elements in [s]
+          that satisfy predicate [f]. If [f] satisfies every element in [s],
+          [s] is returned unchanged (the result of the function is then
+          physically equal to [s]).
+          @before 4.03 Physical equality was not ensured.*)
+
+      val filter_map: f:(elt -> elt option) -> t -> t
+      (** [filter_map ~f s] returns the set of all [v] such that
+          [f x = Some v] for some element [x] of [s].
+
+          For example,
+          {[filter_map (fun n -> if n mod 2 = 0 then Some (n / 2) else None) s]}
+          is the set of halves of the even elements of [s].
+
+          If no element of [s] is changed or dropped by [f] (if
+          [f x = Some x] for each element [x]), then
+          [s] is returned unchanged: the result of the function
+          is then physically equal to [s].
+
+          @since 4.11.0 *)
+
+      val partition: f:(elt -> bool) -> t -> t * t
+      (** [partition ~f s] returns a pair of sets [(s1, s2)], where
+          [s1] is the set of all the elements of [s] that satisfy the
+          predicate [f], and [s2] is the set of all the elements of
+          [s] that do not satisfy [f]. *)
+
+      val split: elt -> t -> t * bool * t
+      (** [split x s] returns a triple [(l, present, r)], where
+          [l] is the set of elements of [s] that are
+          strictly less than [x];
+          [r] is the set of elements of [s] that are
+          strictly greater than [x];
+          [present] is [false] if [s] contains no element equal to [x],
+          or [true] if [s] contains an element equal to [x]. *)
+
+      (** {1:predicates Predicates and comparisons} *)
+
+      val is_empty: t -> bool
+      (** Test whether a set is empty or not. *)
+
+      val mem: elt -> t -> bool
+      (** [mem x s] tests whether [x] belongs to the set [s]. *)
+
+      val equal: t -> t -> bool
+      (** [equal s1 s2] tests whether the sets [s1] and [s2] are
+          equal, that is, contain equal elements. *)
+
+      val compare: t -> t -> int
+      (** Total ordering between sets. Can be used as the ordering function
+          for doing sets of sets. *)
+
+      val subset: t -> t -> bool
+      (** [subset s1 s2] tests whether the set [s1] is a subset of
+          the set [s2]. *)
+
+      val for_all: f:(elt -> bool) -> t -> bool
+      (** [for_all ~f s] checks if all elements of the set
+          satisfy the predicate [f]. *)
+
+      val exists: f:(elt -> bool) -> t -> bool
+      (** [exists ~f s] checks if at least one element of
+          the set satisfies the predicate [f]. *)
+
+      (** {1:converting Converting} *)
+
+      val to_list : t -> elt list
+      (** [to_list s] is {!elements}[ s].
+          @since 5.1.0 *)
 
       val of_list: elt list -> t
       (** [of_list l] creates a set from a list of elements.
           This is usually more efficient than folding [add] over the list,
           except perhaps for lists with many duplicated elements.
           @since 4.02.0 *)
-
-      (** {1 Iterators} *)
 
       val to_seq_from : elt -> t -> elt Seq.t
       (** [to_seq_from x s] iterates on a subset of the elements of [s]

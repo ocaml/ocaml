@@ -38,6 +38,9 @@ Working version
 
 ### Standard library:
 
+- #11410: Add Set.to_list, Map.to_list, Map.of_list, Map.add_to_list,
+  (Daniel Bünzli, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
 - #11128: Add In_channel.isatty, Out_channel.isatty.
   (Nicolás Ojeda Bär, review by Gabriel Scherer and Florian Angeletti)
 

@@ -454,12 +454,10 @@ stdlib__Lexing.cmx : lexing.ml \
     stdlib__Lexing.cmi
 stdlib__Lexing.cmi : lexing.mli
 stdlib__List.cmo : list.ml \
-    stdlib__Sys.cmi \
     stdlib__Seq.cmi \
     stdlib__Either.cmi \
     stdlib__List.cmi
 stdlib__List.cmx : list.ml \
-    stdlib__Sys.cmx \
     stdlib__Seq.cmx \
     stdlib__Either.cmx \
     stdlib__List.cmi
@@ -477,9 +475,11 @@ stdlib__ListLabels.cmi : listLabels.mli \
     stdlib__Either.cmi
 stdlib__Map.cmo : map.ml \
     stdlib__Seq.cmi \
+    stdlib__List.cmi \
     stdlib__Map.cmi
 stdlib__Map.cmx : map.ml \
     stdlib__Seq.cmx \
+    stdlib__List.cmx \
     stdlib__Map.cmi
 stdlib__Map.cmi : map.mli \
     stdlib__Seq.cmi
