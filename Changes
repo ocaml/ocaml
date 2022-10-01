@@ -142,8 +142,8 @@ Working version
   by leaf functions.
   (Tom Kelly and Xavier Leroy, review by Mark Shinwell)
 
-- #?????: Prevent integer comparison from being used on pointers
-  (Vincent Laviron)
+- #11587: Prevent integer comparison from being used on pointers
+  (Vincent Laviron, review by Gabriel Scherer)
 
 OCaml 5.0
 ---------
