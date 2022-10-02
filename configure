@@ -14113,7 +14113,8 @@ case $cc_basename,$host in #(
     printf "%s\n" "#define HAS_ARCH_CODE32 1" >>confdefs.h
  ;; #(
   *,*-*-haiku*) :
-    mathlib="" ;; #(
+    ostype="BeOS"
+     mathlib="" ;; #(
   *,*-*-cygwin*) :
     common_cppflags="$common_cppflags -U_WIN32"
     if $supports_shared_libraries
@@ -15180,6 +15181,8 @@ then :
   i386-*-gnu0.3) :
     natdynlink=true ;; #(
   i[3456]86-*-haiku*) :
+    natdynlink=true ;; #(
+  x86_64-*-haiku*) :
     natdynlink=true ;; #(
   arm*-*-linux*) :
     natdynlink=true ;; #(
