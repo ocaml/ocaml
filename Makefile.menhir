@@ -76,7 +76,7 @@ MENHIRBASICFLAGS := \
 MENHIRFLAGS := \
   $(MENHIRBASICFLAGS) \
   --infer \
-  --ocamlc "$(CAMLC) $(COMPFLAGS)" \
+  --ocamlc "$(CAMLC) $(OC_COMMON_CFLAGS) $(INCLUDES)" \
   --fixed-exception \
   --table \
   --strategy simplified \
