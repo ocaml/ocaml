@@ -207,8 +207,7 @@ influenced by actions on other domains. There are several inter-domain actions:
   \item Operations on mutexes.
 \end{itemize}
 
-\emph{(TODO: Include semaphores and condition variables in the inter-domain
-actions.)}
+% TODO: Include semaphores and condition variables in the inter-domain actions.
 
 On the other hand, intra-domain actions can neither be observed nor influence
 the execution of other domains. Examples include evaluating an arithmetic
