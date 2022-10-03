@@ -10,14 +10,27 @@ regex_trim_fun='^\(caml.*\)_[[:digit:]]*$'
 
 # - Ignore backtrace not coming from the program binary
 # - Discard the number suffix from OCaml function name
-# - Remove strange '[0x.....]' entries inserted by some implementation
-#   of backtrace_symbols_fd
 # - Keep the other lines
-sed -e \
-  "/${regex_backtrace}/ {
-    /^${program_escaped}/ ! d
-    s/${regex_backtrace}/\1/
-    s/${regex_trim_fun}/\1/
-    s;caml_\(main\|startup\);caml_main/caml_startup;
-  }" \
-  -e '/^\[0x/d'
+sed_script="/${regex_backtrace}/ {
+  /^${program_escaped}/ ! d
+  s/${regex_backtrace}/\1/
+  s/${regex_trim_fun}/\1/
+}"
+
+# Remove potential functions beyond 'caml_program' up  to 'main' if they are
+# expected and appear in the correct order
+awk_script='/caml_program/ {
+  print
+  getline
+  if (match($0, "^caml_start_program$")) { getline; }
+  if (match($0, "^caml_startup_common$")) { getline }
+  if (match($0, "^caml_startup_exn$")) { getline }
+  if (match($0, "^caml_startup$")) { getline }
+  if (match($0, "^caml_main$")) { getline }
+  if (match($0, "^main$")) { if (getline == 0) { exit } }
+}
+{ print }'
+
+# Also remove strange '[0x.....]' entries inserted by some implementation
+#   of backtrace_symbols_fd
+sed -e "${sed_script}" -e '/^\[0x/d' | awk "${awk_script}"
