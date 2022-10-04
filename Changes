@@ -442,6 +442,11 @@ OCaml 5.0
 - #11192: Better documentation for condition variables.
   (François Pottier, review by Luc Maranget, Xavier Leroy, and Wiktor Kuchta)
 
+- #11093: Add tutorials on parallelism features and the relaxed memory model
+  (KC Sivaramakrishnan, review by Damien Doligez, Anil Madhavapeddy, Gabriel
+  Scherer, Thomas Leonard, Tom Ridge, Xavier Leroy, Luc Maranget, Fabrice
+  Buoro, Olivier Nicole, Guillaume Munch-Maccagnoni, Jacques-Henri Jourdan)
+
 ### Compiler user-interface and warnings:
 
 - #9140, #11131: New command-line flag -nocwd to not include implicit

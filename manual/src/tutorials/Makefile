@@ -11,7 +11,8 @@ TRANSF = $(OCAMLRUN) $(TOOLS)/transf
 
 
 FILES = coreexamples.tex lablexamples.tex polyvariant.tex objectexamples.tex \
-  gadtexamples.tex moduleexamples.tex advexamples.tex polymorphism.tex
+        gadtexamples.tex moduleexamples.tex advexamples.tex polymorphism.tex \
+        parallelism.tex memorymodel.tex
 
 
 etex-files: $(FILES)

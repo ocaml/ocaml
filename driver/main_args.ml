@@ -576,7 +576,7 @@ let mk_nopervasives f =
 
 let mk_match_context_rows f =
   "-match-context-rows", Arg.Int f,
-  let[@manual.ref "s:comp-options"] chapter, section = 11, 2 in
+  let[@manual.ref "s:comp-options"] chapter, section = 13, 2 in
   Printf.sprintf
   "<n>  (advanced, see manual section %d.%d.)" chapter section
 
