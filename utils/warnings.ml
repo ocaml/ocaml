@@ -863,7 +863,7 @@ let () = ignore @@ parse_options true defaults_warn_error
 let ref_manual_explanation () =
   (* manual references are checked a posteriori by the manual
      cross-reference consistency check in manual/tests*)
-  let[@manual.ref "s:comp-warnings"] chapter, section = 11, 5 in
+  let[@manual.ref "s:comp-warnings"] chapter, section = 13, 5 in
   Printf.sprintf "(See manual section %d.%d)" chapter section
 
 let message = function
