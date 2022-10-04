@@ -48,7 +48,7 @@ CAML_STATIC_ASSERT(
     offsetof(caml_domain_state, LAST_DOMAIN_STATE_MEMBER) ==
     (Domain_state_num_fields - 1) * 8);
 
-#if defined(HAS_FULL_THREAD_VARIABLES)
+#if defined(HAS_FULL_THREAD_VARIABLES) || defined(IN_CAML_RUNTIME)
   CAMLextern __thread caml_domain_state* caml_state;
   #define Caml_state_opt caml_state
 #else
