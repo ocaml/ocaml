@@ -1263,7 +1263,7 @@ checkstack: tools/checkstack$(EXE)
 
 .INTERMEDIATE: tools/checkstack$(EXE) tools/checkstack.$(O)
 tools/checkstack$(EXE): tools/checkstack.$(O)
-	$(MAKE) -C tools checkstack$(EXE)
+	$(MKEXE) $(OUTPUTEXE)$@ $<
 else
 checkstack:
 	@

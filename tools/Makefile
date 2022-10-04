@@ -287,11 +287,6 @@ ocamltex_files := \
   $(ROOTDIR)/otherlibs/unix/unix.cma \
   ocamltex.ml
 
-# checkstack tool
-
-checkstack$(EXE): checkstack.$(O)
-	$(MKEXE) $(OUTPUTEXE)$@ $<
-
 #Scan latex files, and run ocaml code examples
 
 ocamltex := ocamltex$(EXE)
