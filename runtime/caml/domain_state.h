@@ -17,9 +17,6 @@
 #ifndef CAML_STATE_H
 #define CAML_STATE_H
 
-#ifdef __APPLE__
-#include <pthread.h>
-#endif
 #include <stddef.h>
 #include <stdio.h>
 
@@ -51,19 +48,15 @@ CAML_STATIC_ASSERT(
     offsetof(caml_domain_state, LAST_DOMAIN_STATE_MEMBER) ==
     (Domain_state_num_fields - 1) * 8);
 
-#ifdef __APPLE__
-  CAMLextern pthread_key_t caml_domain_state_key;
-  CAMLextern void caml_init_domain_state_key(void);
-  #define CAML_INIT_DOMAIN_STATE caml_init_domain_state_key()
-  #define Caml_state_opt \
-      ((caml_domain_state*) pthread_getspecific(caml_domain_state_key))
-  #define SET_Caml_state(x) \
-      (pthread_setspecific(caml_domain_state_key, x))
-#else
+#if defined(HAS_FULL_THREAD_VARIABLES)
   CAMLextern __thread caml_domain_state* caml_state;
   #define Caml_state_opt caml_state
-  #define CAML_INIT_DOMAIN_STATE
-  #define SET_Caml_state(x) (caml_state = (x))
+#else
+#ifdef __GNUC__
+  __attribute__((pure))
+#endif
+  CAMLextern caml_domain_state* caml_get_domain_state(void);
+  #define Caml_state_opt (caml_get_domain_state())
 #endif
 
 #define Caml_state (CAMLassert(Caml_state_opt != NULL), Caml_state_opt)

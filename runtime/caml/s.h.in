@@ -42,6 +42,12 @@
 /* Define SUPPORT_DYNAMIC_LINKING if dynamic loading of C stub code
    via dlopen() is available. */
 
+#undef HAS_FULL_THREAD_VARIABLES
+
+/* Define HAS_FULL_THREAD_VARIABLES if C11 __thread variables are fully
+   supported, including across DLLs.  This is not the case with
+   macOS and with Windows + MinGW-64. */
+
 #undef HAS_C99_FLOAT_OPS
 
 /* Define HAS_C99_FLOAT_OPS if <math.h> conforms to ISO C99.
