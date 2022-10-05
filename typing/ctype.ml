@@ -1315,6 +1315,7 @@ let delayed_copy = ref []
 (* Copy without sharing until there are no free univars left *)
 (* all free univars must be included in [visited]            *)
 let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
+    ~(shared : type_expr TypeHash.t)
     (visited : (int * (type_expr * type_expr list)) list) (ty : type_expr) =
   let univars = free ty in
   if is_Tvar ty || may_share && TypeSet.is_empty univars then
@@ -1325,6 +1326,8 @@ let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
       :: !delayed_copy;
     t
   else try
+    TypeHash.find shared ty
+  with Not_found -> try
     let t, bound_t = List.assq (get_id ty) visited in
     let dl = if is_Tunivar ty then [] else diff_list bound bound_t in
     if dl <> [] && conflicts univars dl then raise Not_found;
@@ -1341,10 +1344,11 @@ let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
       | Tlink _ | Tsubst _ ->
           assert false
     in
-    let copy_rec = copy_sep ~copy_scope ~fixed ~free ~bound visited in
+    let copy_rec = copy_sep ~copy_scope ~fixed ~free ~bound ~shared visited in
     let desc' =
       match desc with
       | Tvariant row ->
+          if not (static_row row) then TypeHash.add shared ty t;
           let more = row_more row in
           (* We shall really check the level on the row variable *)
           let keep = is_Tvar more && get_level more <> generic_level in
@@ -1360,7 +1364,7 @@ let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
             List.map2 (fun ty t -> get_id ty, (t, bound)) tl tl' @ visited in
           let body =
             copy_sep ~copy_scope ~fixed ~free ~bound ~may_share:true
-              visited t1 in
+              ~shared visited t1 in
           Tpoly (body, tl')
       | Tfield (p, k, ty1, ty2) ->
           (* the kind is kept shared, see Btype.copy_type_desc *)
@@ -1384,7 +1388,7 @@ let instance_poly' copy_scope ~keep_names fixed univars sch =
   delayed_copy := [];
   let ty =
     copy_sep ~copy_scope ~fixed ~free:(compute_univars sch) ~bound:[]
-      ~may_share:true pairs sch in
+      ~may_share:true ~shared:(TypeHash.create 7) pairs sch in
   List.iter Lazy.force !delayed_copy;
   delayed_copy := [];
   vars, ty
