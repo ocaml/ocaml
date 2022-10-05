@@ -2451,8 +2451,8 @@ of the calling thread.
 \item
 "caml_acquire_runtime_system()"
 The calling thread re-acquires the domain lock and other OCaml
-resources.  It may block until no other thread uses the OCaml run-time
-system.
+resources.  It may block until no other thread in the same domain uses
+the OCaml run-time system.
 \end{itemize}
 
 These functions poll for pending signals by calling asynchronous
