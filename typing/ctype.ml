@@ -1098,12 +1098,6 @@ let rec copy ?partial ?keep_names copy_scope ty =
               let more', row =
                 match partial with
                   Some (free_univars, false) ->
-                    let more' =
-                      if not (eq_type more more') then
-                        more' (* we've already made a copy *)
-                      else
-                        newvar ()
-                    in
                     let not_reither (_, f) =
                       match row_field_repr f with
                         Reither _ -> false
@@ -1113,6 +1107,7 @@ let rec copy ?partial ?keep_names copy_scope ty =
                     if row_closed row && not (is_fixed row)
                     && TypeSet.is_empty (free_univars ty)
                     && not (List.for_all not_reither fields) then
+                      let more' = newvar () in
                       (more',
                        create_row ~fields:(List.filter not_reither fields)
                          ~more:more' ~closed:false ~fixed:None ~name:None)

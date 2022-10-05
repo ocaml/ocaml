@@ -171,6 +171,10 @@ Working version
 
 ### Bug fixes:
 
+- #10664: Unsoundness in the optimization of pattern-matching for
+  polymorphic variants.
+  (Jacques Garrigue, report by Mike Shulman, review by Leo White)
+
 - #11302, #11412: `ocamlc` and `ocamlopt` should not remove generated files
   when they are not regular files.
   (Xavier Leroy, report by Thierry Martinez, review by
