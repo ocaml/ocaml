@@ -34,7 +34,7 @@
 
 /* Error reporting */
 
-void caml_plat_fatal_error(char * action, int err)
+void caml_plat_fatal_error(const char * action, int err)
 {
   char buf[1024];
   caml_fatal_error("Fatal error during %s: %s\n",
