@@ -832,7 +832,7 @@ static void verify_large(large_alloc* a, struct mem_stats* s) {
 
 static void verify_swept (struct caml_heap_state* local) {
   int i;
-  struct mem_stats pool_stats = {}, large_stats = {};
+  struct mem_stats pool_stats = {0,}, large_stats = {0,};
 
   /* sweeping should be done by this point */
   CAMLassert(local->next_to_sweep == NUM_SIZECLASSES);
