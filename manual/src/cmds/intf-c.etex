@@ -2361,7 +2361,7 @@ code around C calls.  Technically it wraps every C call with the C function
 For small functions that are called repeatedly, this indirection can have
 a big impact on performances.  However this is not needed if we know that
 the C function doesn't allocate, doesn't raise exceptions, and doesn't release
-the master lock (see section~\ref{ss:parallel-execution-long-running-c-code}).
+the domain lock (see section~\ref{ss:parallel-execution-long-running-c-code}).
 We can instruct the OCaml native-code compiler of this fact by annotating the
 external declaration with the attribute "[\@\@noalloc]":
 
@@ -2420,36 +2420,39 @@ Returns 1 on success, 0 on error.  If the calling thread was not
 previously registered, does nothing and returns 0.
 \end{itemize}
 
-\subsection{ss:parallel-execution-long-running-c-code}{Parallel execution of long-running C code}
+\subsection{ss:parallel-execution-long-running-c-code}{Parallel execution of long-running C code with systhreads}
 
-The OCaml run-time system is not reentrant: at any time, at most one
-thread can be executing OCaml code or C code that uses the OCaml
-run-time system.  Technically, this is enforced by a ``master lock''
-that any thread must hold while executing such code.
+Domains are the unit of parallelism for OCaml programs. When using
+the systhreads library, multiple threads might be attached to the same
+domain. However, at any time, at most one of those thread can be executing
+OCaml code or C code that uses the OCaml run-time system by domain.
+Technically, this is enforced by a ``domain lock''
+that any thread must hold while executing such code within a domain.
 
-When OCaml calls the C code implementing a primitive, the master lock
+When OCaml calls the C code implementing a primitive, the domain lock
 is held, therefore the C code has full access to the facilities of the
-run-time system.  However, no other thread can execute OCaml code
-concurrently with the C code of the primitive.
+run-time system.  However, no other thread in the same domain can execute
+OCaml code concurrently with the C code of the primitive.
 
 If a C primitive runs for a long time or performs potentially blocking
-input-output operations, it can explicitly release the master lock,
-enabling other OCaml threads to run concurrently with its operations.
-The C code must re-acquire the master lock before returning to OCaml.
+input-output operations, it can explicitly release the domain lock,
+enabling other OCaml threads in the same domain to run concurrently with
+its operations.
+The C code must re-acquire the domain lock before returning to OCaml.
 This is achieved with the following functions, declared in
 the include file "<caml/threads.h>".
 
 \begin{itemize}
 \item
 "caml_release_runtime_system()"
-The calling thread releases the master lock and other OCaml resources,
+The calling thread releases the domain lock and other OCaml resources,
 enabling other threads to run OCaml code in parallel with the execution
 of the calling thread.
 \item
 "caml_acquire_runtime_system()"
-The calling thread re-acquires the master lock and other OCaml
-resources.  It may block until no other thread uses the OCaml run-time
-system.
+The calling thread re-acquires the domain lock and other OCaml
+resources.  It may block until no other thread in the same domain uses
+the OCaml run-time system.
 \end{itemize}
 
 These functions poll for pending signals by calling asynchronous
@@ -2507,7 +2510,7 @@ evaluates to "NULL" when the domain lock is not held. This lets you
 determine whether a thread belonging to a domain currently holds its
 domain lock, for various purposes.
 
-Callbacks from C to OCaml must be performed while holding the master
+Callbacks from C to OCaml must be performed while holding the domain
 lock to the OCaml run-time system.  This is naturally the case if the
 callback is performed by a C primitive that did not release the
 run-time system.  If the C primitive released the run-time system
