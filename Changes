@@ -145,9 +145,6 @@ Working version
   by leaf functions.
   (Tom Kelly and Xavier Leroy, review by Mark Shinwell)
 
-- #11587: Prevent integer comparison from being used on pointers
-  (Vincent Laviron, review by Gabriel Scherer)
-
 OCaml 5.0
 ---------
 
@@ -658,6 +655,9 @@ OCaml 5.0
   arrays.
   (Nicolás Ojeda Bär, Jeremy Yallop, report by Masayuki Takeda, review by Jeremy
   Yallop and Florian Angeletti)
+
+- #11587: Prevent integer comparison from being used on pointers
+  (Vincent Laviron, review by Gabriel Scherer)
 
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
