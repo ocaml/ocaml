@@ -322,6 +322,7 @@ stdlib__Format.cmo : format.ml \
     camlinternalFormat.cmi \
     stdlib__Bytes.cmi \
     stdlib__Buffer.cmi \
+    stdlib__Array.cmi \
     stdlib__Format.cmi
 stdlib__Format.cmx : format.ml \
     stdlib__String.cmx \
@@ -337,6 +338,7 @@ stdlib__Format.cmx : format.ml \
     camlinternalFormat.cmx \
     stdlib__Bytes.cmx \
     stdlib__Buffer.cmx \
+    stdlib__Array.cmx \
     stdlib__Format.cmi
 stdlib__Format.cmi : format.mli \
     stdlib.cmi \

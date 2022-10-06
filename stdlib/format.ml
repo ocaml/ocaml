@@ -1250,30 +1250,25 @@ and set_tags v =
 
 (* Convenience functions *)
 
+let pp_print_iter ?(pp_sep = pp_print_cut) iter pp_v ppf v =
+  let is_first = ref true in
+  let pp_v v =
+    if !is_first then is_first := false else pp_sep ppf ();
+    pp_v ppf v
+  in
+  iter pp_v v
+
 (* To format a list *)
-let rec pp_print_list ?(pp_sep = pp_print_cut) pp_v ppf = function
-  | [] -> ()
-  | [v] -> pp_v ppf v
-  | v :: vs ->
-    pp_v ppf v;
-    pp_sep ppf ();
-    pp_print_list ~pp_sep pp_v ppf vs
+let pp_print_list ?(pp_sep = pp_print_cut) pp_v ppf v =
+  pp_print_iter ~pp_sep List.iter pp_v ppf v
+
+(* To format an array *)
+let pp_print_array ?(pp_sep = pp_print_cut) pp_v ppf v =
+  pp_print_iter ~pp_sep Array.iter pp_v ppf v
 
 (* To format a sequence *)
-let rec pp_print_seq_in ~pp_sep pp_v ppf seq =
-  match seq () with
-  | Seq.Nil -> ()
-  | Seq.Cons (v, seq) ->
-    pp_sep ppf ();
-    pp_v ppf v;
-    pp_print_seq_in ~pp_sep pp_v ppf seq
-
 let pp_print_seq ?(pp_sep = pp_print_cut) pp_v ppf seq =
-  match seq () with
-  | Seq.Nil -> ()
-  | Seq.Cons (v, seq) ->
-    pp_v ppf v;
-    pp_print_seq_in ~pp_sep pp_v ppf seq
+  pp_print_iter ~pp_sep Seq.iter pp_v ppf seq
 
 (* To format free-flowing text *)
 let pp_print_text ppf s =

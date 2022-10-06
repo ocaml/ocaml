@@ -1152,15 +1152,41 @@ val formatter_of_symbolic_output_buffer : symbolic_output_buffer -> formatter
 
 (** {1 Convenience formatting functions.} *)
 
+val pp_print_iter :
+  ?pp_sep:(formatter -> unit -> unit) ->
+  (('a -> unit) -> 'b -> unit) ->
+  (formatter -> 'a -> unit) -> formatter -> 'b -> unit
+(** [pp_print_iter ~pp_sep iter pp_v ppf v] formats on [ppf] the iterations of
+  [iter] over a collection [v] of values using [pp_v]. Iterations are
+  separated by [pp_sep] (defaults to {!pp_print_cut}).
+
+  @since 5.1.0
+*)
+
 val pp_print_list:
   ?pp_sep:(formatter -> unit -> unit) ->
   (formatter -> 'a -> unit) -> (formatter -> 'a list -> unit)
 (** [pp_print_list ?pp_sep pp_v ppf l] prints items of list [l],
   using [pp_v] to print each item, and calling [pp_sep]
-  between items ([pp_sep] defaults to {!pp_print_cut}.
+  between items ([pp_sep] defaults to {!pp_print_cut}).
   Does nothing on empty lists.
 
   @since 4.02.0
+*)
+
+val pp_print_array:
+  ?pp_sep:(formatter -> unit -> unit) ->
+  (formatter -> 'a -> unit) -> (formatter -> 'a array -> unit)
+(** [pp_print_array ?pp_sep pp_v ppf a] prints items of array [a],
+  using [pp_v] to print each item, and calling [pp_sep]
+  between items ([pp_sep] defaults to {!pp_print_cut}).
+  Does nothing on empty arrays.
+
+  If [a] is mutated after [pp_print_array] is called, the printed values
+  may not be what is expected because [Format] can delay the printing.
+  This can be avoided by flushing [ppf].
+
+  @since 5.1.0
 *)
 
 val pp_print_seq:
