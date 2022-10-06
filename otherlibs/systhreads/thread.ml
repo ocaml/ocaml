@@ -18,8 +18,6 @@
 type t
 
 external thread_initialize : unit -> unit = "caml_thread_initialize"
-external thread_initialize_domain : unit -> unit =
-            "caml_thread_initialize_domain"
 external thread_cleanup : unit -> unit = "caml_thread_cleanup"
 external thread_new : (unit -> unit) -> t = "caml_thread_new"
 external thread_uncaught_exception : exn -> unit =
@@ -86,7 +84,6 @@ let preempt_signal =
 
 let () =
   thread_initialize ();
-  Domain.at_each_spawn thread_initialize_domain;
   Sys.set_signal preempt_signal (Sys.Signal_handle preempt);
   (* Callback in [caml_shutdown], when the last domain exits. *)
   Callback.register "Thread.at_shutdown" (fun () ->
