@@ -55,23 +55,12 @@ allopt: stdlib.cmxa std_exit.cmx
 opt.opt: allopt
 
 .PHONY: check-stale
-check-stale:
-# On cygwin globasciiranges is unset so this glob also match A-Z. We disable
-# it only on this shell command.
-	2>/dev/null shopt -s globasciiranges || true; \
-  for files in '$(INSTALL_LIBDIR)'/stdlib__[a-z]*.cm*; do \
-    case $$files in \
-    '$(INSTALL_LIBDIR)/stdlib__[a-z]*.cm*') \
-    ;; \
-    *) \
-      echo "'"'$(INSTALL_LIBDIR)'"'"' contains stale stdlib artefacts \
-please execute:'; \
-      echo '    rm '"'"'$(INSTALL_LIBDIR)'"'"'/stdlib__[a-z]*.cm*'; \
-      echo 'and re-run make install'; \
-      exit 1; \
-    ;; \
-    esac \
-  done
+check-stale::
+# We need recursive makefile to handle space in installation path
+	@$(MAKE) -C '$(INSTALL_LIBDIR)' -f '$(realpath Makefile.check-stale)' \
+	         'ARTEFACTS=$(wildcard stdlib__*.cmi)' \
+           'INSTALL_LIBDIR=$(INSTALL_LIBDIR)' \
+           check-stale
 
 .PHONY: install
 # Ensure any pre-4.13 lowercased artefacts are removed on macOS and Windows
