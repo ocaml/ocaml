@@ -12,4 +12,4 @@ Raised by primitive operation at Callstack.f0 in file "callstack.ml", line 11, c
 Called from Callstack.f1 in file "callstack.ml", line 12, characters 27-32
 Called from Callstack.f2 in file "callstack.ml", line 13, characters 27-32
 Called from Callstack.f3 in file "callstack.ml", line 14, characters 27-32
-Called from Thread.create.(fun) in file "thread.ml", line 50, characters 8-14
+Called from Thread.create.(fun) in file "thread.ml", line 48, characters 8-14
