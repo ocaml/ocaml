@@ -50,8 +50,8 @@ let () =
     )
 
 (* Buffering of bytecode *)
-
-let out_buffer = ref(LongString.create 1024)
+let out_buffer_size = 1024
+let out_buffer = ref(LongString.create out_buffer_size)
 and out_position = ref 0
 
 let out_word b1 b2 b3 b4 =
@@ -178,12 +178,14 @@ let record_event ev =
 
 (* Initialization *)
 
-let init () =
+let reset () =
   out_position := 0;
   label_table := Array.make 16 (Label_undefined []);
   reloc_info := [];
   debug_dirs := String.Set.empty;
-  events := []
+  events := [];
+  if LongString.length !out_buffer > out_buffer_size
+  then out_buffer := LongString.create out_buffer_size
 
 (* Emission of one instruction *)
 
@@ -393,7 +395,7 @@ let rec emit = function
 (* Emission to a file *)
 
 let to_file outchan unit_name objfile ~required_globals code =
-  init();
+  reset();
   output_string outchan cmo_magic_number;
   let pos_depl = pos_out outchan in
   output_binary_int outchan 0;
@@ -423,7 +425,7 @@ let to_file outchan unit_name objfile ~required_globals code =
       cu_force_link = !Clflags.link_everything;
       cu_debug = pos_debug;
       cu_debugsize = size_debug } in
-  init();                               (* Free out_buffer and reloc_info *)
+  reset();                              (* Free out_buffer and reloc_info *)
   Btype.cleanup_abbrev ();              (* Remove any cached abbreviation
                                            expansion before saving *)
   let pos_compunit = pos_out outchan in
@@ -436,28 +438,22 @@ let to_file outchan unit_name objfile ~required_globals code =
 (* Emission to a memory block *)
 
 let to_memory init_code fun_code =
-  init();
+  reset();
   emit init_code;
   emit fun_code;
   let code = LongString.create !out_position in
   LongString.blit !out_buffer 0 code 0 !out_position;
   let reloc = List.rev !reloc_info in
   let events = !events in
-  init();
+  reset();
   (code, reloc, events)
 
 (* Emission to a file for a packed library *)
 
 let to_packed_file outchan code =
-  init();
+  reset ();
   emit code;
   LongString.output outchan !out_buffer 0 !out_position;
   let reloc = !reloc_info in
-  init();
+  reset ();
   reloc
-
-let reset () =
-  out_buffer := LongString.create 1024;
-  out_position := 0;
-  label_table := [| |];
-  reloc_info := []
