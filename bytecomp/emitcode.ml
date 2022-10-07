@@ -54,14 +54,17 @@ let out_buffer_size = 1024
 let out_buffer = ref(LongString.create out_buffer_size)
 and out_position = ref 0
 
+let extend_buffer needed =
+  let size = LongString.length !out_buffer in
+  let new_size = ref(max size 16) (* we need new_size > 0 *) in
+  while needed >= !new_size do new_size := 2 * !new_size done;
+  let new_buffer = LongString.create !new_size in
+  LongString.blit !out_buffer 0 new_buffer 0 (LongString.length !out_buffer);
+  out_buffer := new_buffer
+
 let out_word b1 b2 b3 b4 =
   let p = !out_position in
-  if p >= LongString.length !out_buffer then begin
-    let len = LongString.length !out_buffer in
-    let new_buffer = LongString.create (2 * len) in
-    LongString.blit !out_buffer 0 new_buffer 0 len;
-    out_buffer := new_buffer
-  end;
+  if p+3 >= LongString.length !out_buffer then extend_buffer (p+3);
   LongString.set !out_buffer p (Char.unsafe_chr b1);
   LongString.set !out_buffer (p+1) (Char.unsafe_chr b2);
   LongString.set !out_buffer (p+2) (Char.unsafe_chr b3);
