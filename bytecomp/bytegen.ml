@@ -1121,10 +1121,16 @@ let comp_remainder cont =
 
 (**** Compilation of a lambda phrase ****)
 
-let compile_implementation modulename expr =
-  Stack.clear functions_to_compile;
+let reset () =
   label_counter := 0;
-  sz_static_raises := [] ;
+  sz_static_raises := [];
+  try_blocks := [];
+  compunit_name := "";
+  Stack.clear functions_to_compile;
+  max_stack_used := 0
+
+let compile_implementation modulename expr =
+  reset ();
   compunit_name := modulename;
   let init_code = comp_block empty_env expr 0 [] in
   if Stack.length functions_to_compile > 0 then begin
@@ -1134,16 +1140,8 @@ let compile_implementation modulename expr =
     init_code
 
 let compile_phrase expr =
-  Stack.clear functions_to_compile;
-  label_counter := 0;
-  sz_static_raises := [] ;
+  reset ();
   let init_code = comp_block empty_env expr 1 [Kreturn 1] in
   let fun_code = comp_remainder [] in
   (init_code, fun_code)
 
-let reset () =
-  label_counter := 0;
-  sz_static_raises := [];
-  compunit_name := "";
-  Stack.clear functions_to_compile;
-  max_stack_used := 0
