@@ -106,7 +106,8 @@ type label_definition =
 let label_table  = ref ([| |] : label_definition array)
 
 let extend_label_table needed =
-  let new_size = ref(Array.length !label_table) in
+  let size = Array.length !label_table in
+  let new_size = ref(max size 16) (* we need new_size > 0 *) in
   while needed >= !new_size do new_size := 2 * !new_size done;
   let new_table = Array.make !new_size (Label_undefined []) in
   Array.blit !label_table 0 new_table 0 (Array.length !label_table);
