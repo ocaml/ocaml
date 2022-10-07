@@ -1563,7 +1563,8 @@ but clock_gettime is missing.])
 but no proper monotonic clock source was found.])
           ]
       )]
-    )]
+    )],
+    [instrumented_runtime=false]
 )
 
 ## Sockets

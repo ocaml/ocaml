@@ -16312,6 +16312,8 @@ but no proper monotonic clock source was found." "$LINENO" 5
 esac
      ;;
 esac
+else $as_nop
+  instrumented_runtime=false
 
 fi
 
