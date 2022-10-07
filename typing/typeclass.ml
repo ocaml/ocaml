@@ -1973,7 +1973,6 @@ let report_error env ppf = function
         (function ppf ->
            fprintf ppf "but is expected to have type")
   | Unexpected_field (ty, lab) ->
-      Printtyp.prepare_for_printing [ty];
       fprintf ppf
         "@[@[<2>This object is expected to have type :@ %a@]\
          @ This type does not have a method %s."
