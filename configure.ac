@@ -1273,8 +1273,8 @@ AS_CASE([$host],
 
 AS_CASE([$ccomptype],
   [msvc],
-    [runtime_asm_objects=${arch}nt.${OBJEXT}],
-  [runtime_asm_objects=${arch}.${OBJEXT}])
+    [runtime_asm_objects="\$(ARCH)nt.${OBJEXT}"],
+  [runtime_asm_objects="\$(ARCH).${OBJEXT}"])
 
 AS_CASE([$enable_native_compiler,$has_native_backend],
   [no,*],
