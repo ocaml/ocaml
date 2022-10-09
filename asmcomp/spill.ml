@@ -55,7 +55,7 @@ type spill_data = {
   spill_at_exit : (int, Reg.Set.t) Hashtbl.t;
 }
 
-let create () = {
+let create_reload () = {
   spill_env = ref Reg.Map.empty;
   use_date = Reg.Map.empty;
   current_date = 0;
@@ -309,7 +309,7 @@ let add_spills t regset i =
     (fun r i -> instr_cons (Iop Ispill) [|r|] [|spill_reg t r|] i)
     regset i
 
-let rec spill t i finally =
+let rec spill (t : spill_data) i finally =
   match i.desc with
     Iend ->
       (i, finally)
@@ -413,7 +413,7 @@ let rec spill t i finally =
 (* Entry point *)
 
 let fundecl f =
-  let reload_data = create () in
+  let reload_data = create_reload () in
   let (body1, _) = reload reload_data f.fun_body Reg.Set.empty in
   let spill_data = create_spill reload_data in
   let (body2, tospill_at_entry) = spill spill_data body1 Reg.Set.empty in
