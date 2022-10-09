@@ -35,31 +35,31 @@ open Mach
 
 (* Association of spill registers to registers *)
 
-type t =
-  { mutable spill_env : Reg.t Reg.Map.t
-  ; mutable use_date : int Reg.Map.t
-(* Record the position of last use of registers *)
-  ; mutable current_date : int
-  ; mutable destroyed_at_fork : (instruction * Reg.Set.t) list
-(* A-list recording what is destroyed at if-then-else points. *)
-  ; mutable spill_at_raise : Reg.Set.t
-  ; mutable inside_arm : bool
-  ; mutable inside_catch : bool
-  ; spill_at_exit : (int, Reg.Set.t) Hashtbl.t
-  ; reload_at_exit : (int, Reg.Set.t) Hashtbl.t
-  }
+type t = {
+  mutable spill_env : Reg.t Reg.Map.t;
+  mutable use_date : int Reg.Map.t;
+  (* Record the position of last use of registers *)
+  mutable current_date : int;
+  mutable destroyed_at_fork : (instruction * Reg.Set.t) list;
+  (* A-list recording what is destroyed at if-then-else points. *)
+  mutable spill_at_raise : Reg.Set.t;
+  mutable inside_arm : bool;
+  mutable inside_catch : bool;
+  spill_at_exit : (int, Reg.Set.t) Hashtbl.t;
+  reload_at_exit : (int, Reg.Set.t) Hashtbl.t;
+}
 
-let create () =
-  { spill_env = Reg.Map.empty
-  ; use_date = Reg.Map.empty
-  ; current_date = 0
-  ; destroyed_at_fork = []
-  ; spill_at_raise = Reg.Set.empty
-  ; inside_arm = false
-  ; inside_catch = false
-  ; spill_at_exit = Hashtbl.create 20
-  ; reload_at_exit = Hashtbl.create 20
-  }
+let create () = {
+  spill_env = Reg.Map.empty;
+  use_date = Reg.Map.empty;
+  current_date = 0;
+  destroyed_at_fork = [];
+  spill_at_raise = Reg.Set.empty;
+  inside_arm = false;
+  inside_catch = false;
+  spill_at_exit = Hashtbl.create 20;
+  reload_at_exit = Hashtbl.create 20;
+}
 
 let spill_reg t r =
   try
