@@ -35,40 +35,51 @@ open Mach
 
 (* Association of spill registers to registers *)
 
-type t = {
-  mutable spill_env : Reg.t Reg.Map.t;
+type reload_data = {
+  spill_env : Reg.t Reg.Map.t ref;
   mutable use_date : int Reg.Map.t;
-  (* Record the position of last use of registers *)
+    (* Record the position of last use of registers *)
   mutable current_date : int;
   mutable destroyed_at_fork : (instruction * Reg.Set.t) list;
-  (* A-list recording what is destroyed at if-then-else points. *)
+    (* A-list recording what is destroyed at if-then-else points. *)
+  reload_at_exit : (int, Reg.Set.t) Hashtbl.t;
+}
+
+type spill_data = {
+  spill_env : Reg.t Reg.Map.t ref;
+  destroyed_at_fork : (instruction * Reg.Set.t) list;
+   (* A-list recording what is destroyed at if-then-else points. *)
   mutable spill_at_raise : Reg.Set.t;
   mutable inside_arm : bool;
   mutable inside_catch : bool;
   spill_at_exit : (int, Reg.Set.t) Hashtbl.t;
-  reload_at_exit : (int, Reg.Set.t) Hashtbl.t;
 }
 
 let create () = {
-  spill_env = Reg.Map.empty;
+  spill_env = ref Reg.Map.empty;
   use_date = Reg.Map.empty;
   current_date = 0;
   destroyed_at_fork = [];
+  reload_at_exit = Hashtbl.create 20;
+}
+
+let create_spill (reload : reload_data) = {
+  spill_env = reload.spill_env;
+  destroyed_at_fork = reload.destroyed_at_fork;
   spill_at_raise = Reg.Set.empty;
   inside_arm = false;
   inside_catch = false;
   spill_at_exit = Hashtbl.create 20;
-  reload_at_exit = Hashtbl.create 20;
 }
 
-let spill_reg t r =
+let spill_reg spill_env r =
   try
-    Reg.Map.find r t.spill_env
+    Reg.Map.find r !spill_env
   with Not_found ->
     let spill_r = Reg.create r.typ in
     spill_r.spill <- true;
     if not (Reg.anonymous r) then spill_r.raw_name <- r.raw_name;
-    t.spill_env <- Reg.Map.add r spill_r t.spill_env;
+    spill_env := Reg.Map.add r spill_r !spill_env;
     spill_r
 
 let record_use t regv =
@@ -134,9 +145,9 @@ let add_superpressure_regs t op live_regs res_regs spilled =
 (* First pass: insert reload instructions based on an approximation of
    what is destroyed at pressure points. *)
 
-let add_reloads t regset i =
+let add_reloads spill_env regset i =
   Reg.Set.fold
-    (fun r i -> instr_cons (Iop Ireload) [|spill_reg t r|] [|r|] i)
+    (fun r i -> instr_cons (Iop Ireload) [|spill_reg spill_env r|] [|r|] i)
     regset i
 
 let get_reload_at_exit t k =
@@ -147,7 +158,7 @@ let get_reload_at_exit t k =
 let set_reload_at_exit t k s =
   Hashtbl.replace t.reload_at_exit k s
 
-let rec reload t i before =
+let rec reload (t : reload_data) i before =
   t.current_date <- succ t.current_date;
   record_use t i.arg;
   record_use t i.res;
@@ -155,12 +166,12 @@ let rec reload t i before =
     Iend ->
       (i, before)
   | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
-      (add_reloads t (Reg.inter_set_array before i.arg) i,
+      (add_reloads t.spill_env (Reg.inter_set_array before i.arg) i,
        Reg.Set.empty)
   | Iop(Icall_ind | Icall_imm _ | Iextcall { alloc = true; }) ->
       (* All regs live across must be spilled *)
       let (new_next, finally) = reload t i.next i.live in
-      (add_reloads t (Reg.inter_set_array before i.arg)
+      (add_reloads t.spill_env (Reg.inter_set_array before i.arg)
                    (instr_cons_debug i.desc i.arg i.res i.dbg new_next),
        finally)
   | Iop op ->
@@ -174,7 +185,7 @@ let rec reload t i before =
       let after =
         Reg.diff_set_array (Reg.diff_set_array new_before i.arg) i.res in
       let (new_next, finally) = reload t i.next after in
-      (add_reloads t (Reg.inter_set_array new_before i.arg)
+      (add_reloads t.spill_env (Reg.inter_set_array new_before i.arg)
                    (instr_cons_debug i.desc i.arg i.res i.dbg new_next),
        finally)
   | Iifthenelse(test, ifso, ifnot) ->
@@ -191,7 +202,7 @@ let rec reload t i before =
         instr_cons (Iifthenelse(test, new_ifso, new_ifnot))
         i.arg i.res new_next in
       t.destroyed_at_fork <- (new_i, at_fork) :: t.destroyed_at_fork;
-      (add_reloads t (Reg.inter_set_array before i.arg) new_i,
+      (add_reloads t.spill_env (Reg.inter_set_array before i.arg) new_i,
        finally)
   | Iswitch(index, cases) ->
       let at_fork = Reg.diff_set_array before i.arg in
@@ -209,7 +220,7 @@ let rec reload t i before =
           cases in
       t.current_date <- !date_join;
       let (new_next, finally) = reload t i.next !after_cases in
-      (add_reloads t (Reg.inter_set_array before i.arg)
+      (add_reloads t.spill_env (Reg.inter_set_array before i.arg)
                    (instr_cons (Iswitch(index, new_cases))
                                i.arg i.res new_next),
        finally)
@@ -267,7 +278,8 @@ let rec reload t i before =
       (instr_cons (Itrywith(new_body, new_handler)) i.arg i.res new_next,
        finally)
   | Iraise _ ->
-      (add_reloads t (Reg.inter_set_array before i.arg) i, Reg.Set.empty)
+      (add_reloads
+         t.spill_env (Reg.inter_set_array before i.arg) i, Reg.Set.empty)
 
 (* Second pass: add spill instructions based on what we've decided to reload.
    That is, any register that may be reloaded in the future must be spilled
@@ -316,7 +328,7 @@ let rec spill t i finally =
         then Reg.Set.union before1 t.spill_at_raise
         else before1 in
       (instr_cons_debug i.desc i.arg i.res i.dbg
-                  (add_spills t (Reg.inter_set_array after i.res) new_next),
+         (add_spills t.spill_env (Reg.inter_set_array after i.res) new_next),
        before)
   | Iifthenelse(test, ifso, ifnot) ->
       let (new_next, at_join) = spill t i.next finally in
@@ -335,8 +347,9 @@ let rec spill t i finally =
         and spill_ifnot_branch =
           Reg.Set.diff (Reg.Set.diff before_ifnot before_ifso) destroyed in
         (instr_cons
-            (Iifthenelse(test, add_spills t spill_ifso_branch new_ifso,
-                               add_spills t spill_ifnot_branch new_ifnot))
+           (Iifthenelse(test,
+                        add_spills t.spill_env spill_ifso_branch new_ifso,
+                        add_spills t.spill_env spill_ifnot_branch new_ifnot))
             i.arg i.res new_next,
          Reg.Set.diff (Reg.Set.diff (Reg.Set.union before_ifso before_ifnot)
                                     spill_ifso_branch)
@@ -400,11 +413,16 @@ let rec spill t i finally =
 (* Entry point *)
 
 let fundecl f =
-  let t = create () in
-  let (body1, _) = reload t f.fun_body Reg.Set.empty in
-  let (body2, tospill_at_entry) = spill t body1 Reg.Set.empty in
+  let reload_data = create () in
+  let (body1, _) = reload reload_data f.fun_body Reg.Set.empty in
+  let spill_data = create_spill reload_data in
+  let (body2, tospill_at_entry) = spill spill_data body1 Reg.Set.empty in
   let new_body =
-    add_spills t (Reg.inter_set_array tospill_at_entry f.fun_args) body2 in
+    add_spills
+      spill_data.spill_env
+      (Reg.inter_set_array tospill_at_entry f.fun_args)
+      body2
+  in
   { fun_name = f.fun_name;
     fun_args = f.fun_args;
     fun_body = new_body;
