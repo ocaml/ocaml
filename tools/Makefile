@@ -40,9 +40,6 @@ DIRS = $(addprefix $(ROOTDIR)/,utils parsing typing bytecomp \
                    middle_end/flambda/base_types driver toplevel \
                    file_formats lambda)
 INCLUDES = $(addprefix -I ,$(DIRS))
-COMPFLAGS = -g -strict-sequence -principal -absname \
-  -w +a-4-9-40-41-42-44-45-48 -warn-error +a -bin-annot \
-  -strict-formats $(INCLUDES)
 LINKFLAGS = -g $(INCLUDES)
 VPATH = $(DIRS)
 
@@ -312,13 +309,13 @@ clean::
 # Common stuff
 
 %.cmo: %.ml
-	$(CAMLC) $(COMPFLAGS) -c $<
+	$(CAMLC) $(OC_COMMON_CFLAGS) $(INCLUDES) -c $<
 
 %.cmi: %.mli
-	$(CAMLC) $(COMPFLAGS) -c $<
+	$(CAMLC) $(OC_COMMON_CFLAGS) $(INCLUDES) -c $<
 
 %.cmx: %.ml
-	$(CAMLOPT) $(COMPFLAGS) -c $<
+	$(CAMLOPT) $(OC_COMMON_CFLAGS) $(INCLUDES) $(OC_NATIVE_CFLAGS) -c $<
 
 clean::
 	rm -f *.cmo *.cmi *.cma *.dll *.so *.lib *.a
