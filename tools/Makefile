@@ -44,7 +44,7 @@ COMPFLAGS = -g -strict-sequence -principal -absname \
   -w +a-4-9-40-41-42-44-45-48 -warn-error +a -bin-annot \
   -strict-formats $(INCLUDES)
 LINKFLAGS = -g $(INCLUDES)
-VPATH := $(filter-out -I,$(INCLUDES))
+VPATH = $(DIRS)
 
 programs_byte := \
   ocamldep ocamlprof ocamlcp ocamloptp ocamlmklib  \
