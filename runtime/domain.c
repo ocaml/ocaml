@@ -282,24 +282,14 @@ static dom_internal* next_free_domain() {
   return stw_domains.domains[stw_domains.participating_domains];
 }
 
-#ifdef __APPLE__
-/* OSX has issues with dynamic loading + exported TLS.
-   This is slower but works */
-CAMLexport pthread_key_t caml_domain_state_key;
-static pthread_once_t key_once = PTHREAD_ONCE_INIT;
-
-static void caml_make_domain_state_key (void)
-{
-  (void) pthread_key_create (&caml_domain_state_key, NULL);
-}
-
-void caml_init_domain_state_key (void)
-{
-  pthread_once(&key_once, caml_make_domain_state_key);
-}
-
-#else
 CAMLexport __thread caml_domain_state* caml_state;
+
+#ifndef HAS_FULL_THREAD_VARIABLES
+/* Export a getter for caml_state, to be used in DLLs */
+CAMLexport caml_domain_state* caml_get_domain_state(void)
+{
+  return caml_state;
+}
 #endif
 
 Caml_inline void interrupt_domain(struct interruptor* s)
@@ -588,7 +578,7 @@ static void domain_create(uintnat initial_minor_heap_wsize) {
     domain_state = d->state;
   }
 
-  SET_Caml_state((void*)domain_state);
+  caml_state = domain_state;
 
   s->unique_id = fresh_domain_unique_id();
   s->interrupt_word = &domain_state->young_limit;
@@ -889,7 +879,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
 void caml_init_domain_self(int domain_id) {
   CAMLassert (domain_id >= 0 && domain_id < Max_domains);
   domain_self = &all_domains[domain_id];
-  SET_Caml_state(domain_self->state);
+  caml_state = domain_self->state;
 }
 
 enum domain_status { Dom_starting, Dom_started, Dom_failed };
@@ -939,7 +929,7 @@ static void* backup_thread_func(void* v)
   struct interruptor* s = &di->interruptor;
 
   domain_self = di;
-  SET_Caml_state((void*)(di->state));
+  caml_state = di->state;
 
   msg = atomic_load_acq (&di->backup_thread_msg);
   while (msg != BT_TERMINATE) {
@@ -1576,7 +1566,7 @@ CAMLexport void caml_acquire_domain_lock(void)
 {
   dom_internal* self = domain_self;
   caml_plat_lock(&self->domain_lock);
-  SET_Caml_state(self->state);
+  caml_state = self->state;
 }
 
 CAMLexport void caml_bt_enter_ocaml(void)
@@ -1593,7 +1583,7 @@ CAMLexport void caml_bt_enter_ocaml(void)
 CAMLexport void caml_release_domain_lock(void)
 {
   dom_internal* self = domain_self;
-  SET_Caml_state(NULL);
+  caml_state = NULL;
   caml_plat_unlock(&self->domain_lock);
 }
 

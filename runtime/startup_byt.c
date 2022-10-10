@@ -460,9 +460,6 @@ CAMLexport void caml_main(char_os **argv)
   char_os * shared_lib_path, * shared_libs;
   char_os * exe_name, * proc_self_exe;
 
-  /* Initialize the domain */
-  CAML_INIT_DOMAIN_STATE;
-
   /* Determine options */
   caml_parse_ocamlrunparam();
 
@@ -603,9 +600,6 @@ CAMLexport value caml_startup_code_exn(
 {
   char_os * exe_name;
   value res;
-
-  /* Initialize the domain */
-  CAML_INIT_DOMAIN_STATE;
 
   /* Determine options */
   caml_parse_ocamlrunparam();
