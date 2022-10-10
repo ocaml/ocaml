@@ -15100,6 +15100,18 @@ as_fn_error $? "C11 atomic support is required, use another C compiler
 See \`config.log' for more details" "$LINENO" 5; }
 fi
 
+# Full support for C11 __thread variables
+# macOS and MinGW-64 have problems with __thread variables accessed from DLLs
+
+case $host in #(
+  *-apple-darwin*|*-mingw32) :
+     ;; #(
+  *) :
+    printf "%s\n" "#define HAS_FULL_THREAD_VARIABLES 1" >>confdefs.h
+
+ ;;
+esac
+
 # Shared library support
 
 sharedlib_cflags=''

@@ -717,7 +717,7 @@ libasmrunpic_OBJECTS = $(runtime_NATIVE_C_SOURCES:.c=.npic.$(O)) \
 
 ## General (non target-specific) assembler and compiler flags
 
-runtime_CPPFLAGS = -DCAMLDLLIMPORT=
+runtime_CPPFLAGS = -DCAMLDLLIMPORT= -DIN_CAML_RUNTIME
 ocamlrund_CPPFLAGS = -DDEBUG
 ocamlruni_CPPFLAGS = -DCAML_INSTR
 
