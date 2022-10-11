@@ -109,11 +109,11 @@ let add_branch lbl n =
     discard_dead_code n
 
 
-type exit_info =
-  { try_depth : int
-  ; exit_label : (int * (int * int)) list
+type exit_info = {
+  try_depth : int;
+  exit_label : (int * (int * int)) list ;
   (* Association list: exit handler -> (handler label, try-nesting factor) *)
-  }
+}
 
 let find_exit_label_try_depth exit_info k =
   try
