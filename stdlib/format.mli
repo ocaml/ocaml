@@ -1285,7 +1285,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a
     optionally specified with the following syntax:
     the [<] character, followed by an integer [nspaces] value,
     then an integer [offset], and a closing [>] character.
-    If no parameters are provided, the good break defaults to a
+    If no parameters are provided, the full break defaults to a
     'space' break hint.
   - [@.]: flush the pretty-printer and split the line, as with
     [print_newline ()].
