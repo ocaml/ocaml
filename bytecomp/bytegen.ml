@@ -962,9 +962,7 @@ let rec comp_expr env exp sz cont =
         fatal_error "Bytegen.comp_expr: assign"
       end
   | Levent(lam, lev) ->
-      let ev_defname = match lev.lev_loc with
-        | Loc_unknown -> "??"
-        | Loc_known { loc = _; scopes } -> string_of_scopes scopes in
+      let ev_defname = string_of_scoped_location lev.lev_loc in
       let event kind info =
         { ev_pos = 0;                   (* patched in emitcode *)
           ev_module = !compunit_name;
