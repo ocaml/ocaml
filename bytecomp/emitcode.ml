@@ -446,21 +446,21 @@ let to_file outchan unit_name objfile ~required_globals code =
 
 let to_memory init_code fun_code =
   init();
+  Fun.protect ~finally:clear (fun () ->
   emit init_code;
   emit fun_code;
   let code = LongString.create !out_position in
   LongString.blit !out_buffer 0 code 0 !out_position;
   let reloc = List.rev !reloc_info in
   let events = !events in
-  clear();
-  (code, reloc, events)
+  (code, reloc, events))
 
 (* Emission to a file for a packed library *)
 
 let to_packed_file outchan code =
   init ();
+  Fun.protect ~finally:clear (fun () ->
   emit code;
   LongString.output outchan !out_buffer 0 !out_position;
   let reloc = !reloc_info in
-  clear ();
-  reloc
+  reloc)
