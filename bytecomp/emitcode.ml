@@ -50,8 +50,7 @@ let () =
     )
 
 (* Buffering of bytecode *)
-let out_buffer_size = 1024
-let out_buffer = ref(LongString.create out_buffer_size)
+let out_buffer = ref(LongString.create 0)
 and out_position = ref 0
 
 let extend_buffer needed =
@@ -182,14 +181,18 @@ let record_event ev =
 
 (* Initialization *)
 
-let reset () =
+let clear() =
   out_position := 0;
-  label_table := Array.make 16 (Label_undefined []);
+  label_table := [||];
   reloc_info := [];
   debug_dirs := String.Set.empty;
   events := [];
-  if LongString.length !out_buffer > out_buffer_size
-  then out_buffer := LongString.create out_buffer_size
+  out_buffer := LongString.create 0
+
+let init () =
+  clear ();
+  label_table := Array.make 16 (Label_undefined []);
+  out_buffer := LongString.create 1024
 
 (* Emission of one instruction *)
 
@@ -399,7 +402,7 @@ let rec emit = function
 (* Emission to a file *)
 
 let to_file outchan unit_name objfile ~required_globals code =
-  reset();
+  init();
   output_string outchan cmo_magic_number;
   let pos_depl = pos_out outchan in
   output_binary_int outchan 0;
@@ -429,7 +432,7 @@ let to_file outchan unit_name objfile ~required_globals code =
       cu_force_link = !Clflags.link_everything;
       cu_debug = pos_debug;
       cu_debugsize = size_debug } in
-  reset();                              (* Free out_buffer and reloc_info *)
+  clear();                              (* Free out_buffer and reloc_info *)
   Btype.cleanup_abbrev ();              (* Remove any cached abbreviation
                                            expansion before saving *)
   let pos_compunit = pos_out outchan in
@@ -442,22 +445,22 @@ let to_file outchan unit_name objfile ~required_globals code =
 (* Emission to a memory block *)
 
 let to_memory init_code fun_code =
-  reset();
+  init();
   emit init_code;
   emit fun_code;
   let code = LongString.create !out_position in
   LongString.blit !out_buffer 0 code 0 !out_position;
   let reloc = List.rev !reloc_info in
   let events = !events in
-  reset();
+  clear();
   (code, reloc, events)
 
 (* Emission to a file for a packed library *)
 
 let to_packed_file outchan code =
-  reset ();
+  init ();
   emit code;
   LongString.output outchan !out_buffer 0 !out_position;
   let reloc = !reloc_info in
-  reset ();
+  clear ();
   reloc
