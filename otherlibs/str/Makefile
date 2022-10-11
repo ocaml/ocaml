@@ -24,8 +24,6 @@ include ../Makefile.otherlibs.common
 str.cmo: str.cmi
 str.cmx: str.cmi
 
-LDOPTS = $(PTHREAD_LINK)
-
 .PHONY: depend
 depend:
 	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml > .depend
