@@ -213,7 +213,6 @@ META
 /tools/opnames.ml
 /tools/dumpobj
 /tools/dumpobj.opt
-/tools/dumpapprox
 /tools/ocamlobjinfo
 /tools/ocamlobjinfo.opt
 /tools/cvt_emit
@@ -228,7 +227,6 @@ META
 /tools/primreq
 /tools/primreq.opt
 /tools/ocamldumpobj
-/tools/keywords
 /tools/ocamlmklib
 /tools/ocamlmklib.opt
 /tools/ocamlcmt
