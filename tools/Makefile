@@ -59,10 +59,10 @@ $(foreach program, $(programs_byte) $(programs_opt),\
   $(eval $(call PROGRAM_SYNONYM,$(program))))
 
 $(programs_byte:%=%$(EXE)):
-	$(CAMLC) $(LINKFLAGS) -I $(ROOTDIR) -o $@ $(filter-out %.cmi,$^)
+	$(CAMLC) $(LINKFLAGS) -I $(ROOTDIR) -o $@ $^
 
 $(programs_opt:%=%$(EXE)):
-	$(CAMLOPT_CMD) $(LINKFLAGS) -I $(ROOTDIR) -o $@ $(filter-out %.cmi,$^)
+	$(CAMLOPT_CMD) $(LINKFLAGS) -I $(ROOTDIR) -o $@ $^
 
 clean::
 	rm -f $(programs_byte) $(programs_byte:%=%.exe)
@@ -73,7 +73,7 @@ clean::
 ocamldep_objects = \
   $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
   $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
-  ocamldep.cmo depend.cmi
+  ocamldep.cmo
 
 ocamldep$(EXE): LINKFLAGS += -compat-32
 ocamldep$(EXE): $(ocamldep_objects)
