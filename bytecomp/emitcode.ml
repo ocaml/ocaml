@@ -403,6 +403,7 @@ let rec emit = function
 
 let to_file outchan unit_name objfile ~required_globals code =
   init();
+  Fun.protect ~finally:clear (fun () ->
   output_string outchan cmo_magic_number;
   let pos_depl = pos_out outchan in
   output_binary_int outchan 0;
@@ -432,15 +433,17 @@ let to_file outchan unit_name objfile ~required_globals code =
       cu_force_link = !Clflags.link_everything;
       cu_debug = pos_debug;
       cu_debugsize = size_debug } in
-  clear();                              (* Free out_buffer and reloc_info *)
-  Btype.cleanup_abbrev ();              (* Remove any cached abbreviation
-                                           expansion before saving *)
   let pos_compunit = pos_out outchan in
-  marshal_to_channel_with_possibly_32bit_compat
-    ~filename:objfile ~kind:"bytecode unit"
-    outchan compunit;
+  let () =
+    (* Remove any cached abbreviation expansion before marshaling.
+       See doc-comment for [Types.abbrev_memo] *)
+    Btype.cleanup_abbrev ();
+    marshal_to_channel_with_possibly_32bit_compat
+      ~filename:objfile ~kind:"bytecode unit"
+      outchan compunit
+  in
   seek_out outchan pos_depl;
-  output_binary_int outchan pos_compunit
+  output_binary_int outchan pos_compunit)
 
 (* Emission to a memory block *)
 
