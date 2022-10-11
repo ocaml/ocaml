@@ -172,12 +172,6 @@ INSTALL_BYTECODE_PROGRAMS=@install_bytecode_programs@
 #       systhreads        Same as threads, requires POSIX threads
 OTHERLIBRARIES=@otherlibraries@
 
-### Link-time options to ocamlc or ocamlopt for linking with POSIX threads
-# Needed for the "systhreads" package
-PTHREAD_LIBS=@PTHREAD_LIBS@
-PTHREAD_CAML_LIBS=$(addprefix -cclib ,$(PTHREAD_LIBS))
-PTHREAD_CFLAGS=@PTHREAD_CFLAGS@
-
 UNIX_OR_WIN32=@unix_or_win32@
 INSTALL_SOURCE_ARTIFACTS=@install_source_artifacts@
 
@@ -262,13 +256,3 @@ UNIXLIB=unix
 ## Variables renamed in OCaml 4.13
 
 RUNTIMEI=$(INSTRUMENTED_RUNTIME)
-
-### pthread-related variables
-
-PTHREAD_LINK=$(PTHREAD_LIBS)
-PTHREAD_CAML_LINK=$(PTHREAD_CAML_LIBS)
-
-### It is expected that the value of PTHREAD_LINK changes between OCaml
-### 4.12 and 4.13. Indeed, for OCaml 4.12 most of the time the variable
-### contained -lpthread. From 4.13 onward it will most of the time be
-### empty since we have -pthread in CFLAGS which implies -lpthread.
