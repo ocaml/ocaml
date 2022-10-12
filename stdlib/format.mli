@@ -488,7 +488,7 @@ val get_max_indent : unit -> int
 (** {1 Geometry }
 
 Geometric functions can be used to manipulate simultaneously the
-coupled variables, margin and maxixum indentation limit.
+coupled variables, margin and maximum indentation limit.
 
 *)
 
