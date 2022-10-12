@@ -76,6 +76,11 @@ Working version
   (Simon Cruanes, review by Yotam Barnoy, Gabriel Scherer, Daniel Bünzli,
    Ulugbek Abdullaev, and Nicolás Ojeda Bär)
 
+- #11488: Add Mutex.protect for resource-safe critical sections protected by
+  a mutex.
+  (Simon Cruanes, review by Gabriel Scherer, Xavier Leroy,
+   Guillaume Munch-Maccagnoni)
+
 ### Other libraries:
 
 - #11475: Make Unix terminal interface bindings domain-safe
