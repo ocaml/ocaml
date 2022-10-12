@@ -173,10 +173,6 @@ META
 /manual/tools/transf.ml
 /manual/tools/texquote2
 /manual/tools/transf
-/manual/tools/htmlgen
-/manual/tools/htmlquote
-/manual/tools/latexscan.ml
-/manual/tools/dvi2txt
 
 /api_docgen/build
 /api_docgen/odoc/build
