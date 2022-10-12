@@ -141,7 +141,6 @@ META
 /manual/src/infoman/ocaml.hocaml.kwd
 /manual/src/library/*.tex
 /manual/src/library/*.htex
-/manual/src/library/arithstatus.mli
 /manual/src/library/ocamldoc.out
 /manual/src/library/ocamldoc.sty
 /manual/src/library/compiler_libs.txt
