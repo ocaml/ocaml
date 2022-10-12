@@ -295,7 +295,6 @@ META
 /tools/ocamlmktop.opt
 /tools/primreq
 /tools/primreq.opt
-/tools/ocamldumpobj
 /tools/ocamlmklib
 /tools/ocamlmklib.opt
 /tools/ocamlcmt
