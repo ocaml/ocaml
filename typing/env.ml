@@ -1421,14 +1421,15 @@ let find_modtype_expansion_lazy path env =
 let find_modtype_expansion path env =
   Subst.Lazy.force_modtype (find_modtype_expansion_lazy path env)
 
-let rec is_functor_arg path env =
+let rec is_aliasable path env =
   match path with
     Pident id ->
-      begin try Ident.find_same id env.functor_args; true
-      with Not_found -> false
+      begin match Ident.find_same id env.functor_args with
+      | exception Not_found -> true
+      | () -> false
       end
-  | Pdot (p, _s) -> is_functor_arg p env
-  | Papply _ -> true
+  | Pdot (p, _s) -> is_aliasable p env
+  | Papply _ -> false
 
 (* Copying types associated with values *)
 

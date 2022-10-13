@@ -429,7 +429,7 @@ let rec modtypes ~in_eq ~loc env ~mark subst mty1 mty2 shape =
 and try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2 orig_shape =
   match mty1, mty2 with
   | (Mty_alias p1, Mty_alias p2) ->
-      if Env.is_functor_arg p2 env then
+      if not (Env.is_aliasable p2 env) then
         Error (Error.Invalid_module_alias p2)
       else if not (equal_module_paths env p1 subst p2) then
           Error Error.(Mt_core Incompatible_aliases)
@@ -901,17 +901,6 @@ and check_modtype_equiv ~in_eq ~loc env ~mark mty1 mty2 =
 
 
 (* Simplified inclusion check between module types (for Env) *)
-
-let can_alias env path =
-  let rec no_apply = function
-    | Path.Pident _ -> true
-    | Path.Pdot(p, _) -> no_apply p
-    | Path.Papply _ -> false
-  in
-  no_apply path && not (Env.is_functor_arg path env)
-
-
-
 type explanation = Env.t * Error.all
 exception Error of explanation
 
@@ -924,7 +913,7 @@ exception Apply_error of {
   }
 
 let check_modtype_inclusion_raw ~loc env mty1 path1 mty2 =
-  let aliasable = can_alias env path1 in
+  let aliasable = Env.is_aliasable path1 env in
   strengthened_modtypes ~in_eq:false ~loc ~aliasable env ~mark:Mark_both
     Subst.identity mty1 path1 mty2 Shape.dummy_mod
   |> Result.map fst
@@ -942,7 +931,7 @@ let check_functor_application_in_path
   | Error _errs ->
       if errors then
         let prepare_arg (arg_path, arg_mty) =
-          let aliasable = can_alias env arg_path in
+          let aliasable = Env.is_aliasable arg_path env in
           let smd = Mtype.strengthen ~aliasable env arg_mty arg_path in
           (Error.Named arg_path, smd)
         in
