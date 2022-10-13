@@ -15,31 +15,42 @@
 
 (* Handling of sections in bytecode executable files *)
 
-(* List of all sections, in reverse order *)
+type section_entry = {
+  name : string;
+  pos  : int;
+  len  : int;
+}
 
-let section_table = ref ([] : (string * int) list)
+type section_table = section_entry list
 
 (* Recording sections *)
+type toc_writer = {
+  (* List of all sections, in reverse order *)
+  mutable section_table_rev : section_table;
+  mutable section_prev : int;
+  outchan : out_channel;
+}
 
-let section_beginning = ref 0
-
-let init_record outchan =
-  section_beginning := pos_out outchan;
-  section_table := []
-
-let record outchan name =
+let init_record outchan : toc_writer =
   let pos = pos_out outchan in
-  section_table := (name, pos - !section_beginning) :: !section_table;
-  section_beginning := pos
+  { section_prev = pos;
+    section_table_rev = [];
+    outchan }
 
-let write_toc_and_trailer outchan =
+let record t name =
+  let pos = pos_out t.outchan in
+  let entry = {name; pos = t.section_prev; len = pos - t.section_prev} in
+  t.section_table_rev <- entry :: t.section_table_rev;
+  t.section_prev <- pos
+
+let write_toc_and_trailer t =
+  let section_table = List.rev t.section_table_rev in
   List.iter
-    (fun (name, len) ->
-      output_string outchan name; output_binary_int outchan len)
-    (List.rev !section_table);
-  output_binary_int outchan (List.length !section_table);
-  output_string outchan Config.exec_magic_number;
-  section_table := [];
+    (fun {name; pos = _; len} ->
+      output_string t.outchan name; output_binary_int t.outchan len)
+    section_table;
+  output_binary_int t.outchan (List.length section_table);
+  output_string t.outchan Config.exec_magic_number
 
 (* Read the table of sections from a bytecode executable *)
 
@@ -53,49 +64,45 @@ let read_toc ic =
     really_input_string ic (String.length Config.exec_magic_number)
   in
   if header <> Config.exec_magic_number then raise Bad_magic_number;
-  seek_in ic (pos_trailer - 8 * num_sections);
-  section_table := [];
+  let toc_pos = (pos_trailer - 8 * num_sections) in
+  seek_in ic toc_pos;
+  let section_table_rev = ref [] in
   for _i = 1 to num_sections do
     let name = really_input_string ic 4 in
     let len = input_binary_int ic in
-    section_table := (name, len) :: !section_table
-  done
+    section_table_rev := (name, len) :: !section_table_rev
+  done;
+  let _first_section, sections =
+    List.fold_left (fun (pos, l) (name,len) ->
+        let section = {name; pos = pos - len; len} in
+        (pos - len, section :: l)) (toc_pos, []) !section_table_rev
+  in
+  sections
 
-(* Return the current table of contents *)
-
-let toc () = List.rev !section_table
+let find_section t name =
+  let rec find = function
+    | [] -> raise Not_found
+    | {name = n; pos; len} :: rest ->
+        if n = name
+        then pos, len
+        else find rest
+  in find t
 
 (* Position ic at the beginning of the section named "name",
    and return the length of that section.  Raise Not_found if no
    such section exists. *)
 
-let seek_section ic name =
-  let rec seek_sec curr_ofs = function
-    [] -> raise Not_found
-  | (n, len) :: rem ->
-      if n = name
-      then begin seek_in ic (curr_ofs - len); len end
-      else seek_sec (curr_ofs - len) rem in
-  seek_sec (in_channel_length ic - 16 - 8 * List.length !section_table)
-           !section_table
+let seek_section t ic name =
+  let pos, len = find_section t name in
+  seek_in ic pos; len
 
 (* Return the contents of a section, as a string *)
 
-let read_section_string ic name =
-  really_input_string ic (seek_section ic name)
+let read_section_string t ic name =
+  really_input_string ic (seek_section t ic name)
 
 (* Return the contents of a section, as marshalled data *)
 
-let read_section_struct ic name =
-  ignore (seek_section ic name);
+let read_section_struct t ic name =
+  ignore (seek_section t ic name);
   input_value ic
-
-(* Return the position of the beginning of the first section *)
-
-let pos_first_section ic =
-  in_channel_length ic - 16 - 8 * List.length !section_table -
-  List.fold_left (fun total (_name, len) -> total + len) 0 !section_table
-
-let reset () =
-  section_table := [];
-  section_beginning := 0

@@ -294,9 +294,9 @@ let read_sections () =
         (fun () -> ()) }
   with Not_found ->
     let ic = open_in_bin Sys.executable_name in
-    Bytesections.read_toc ic;
-    { read_string = Bytesections.read_section_string ic;
-      read_struct = Bytesections.read_section_struct ic;
+    let section_table = Bytesections.read_toc ic in
+    { read_string = Bytesections.read_section_string section_table ic;
+      read_struct = Bytesections.read_section_struct section_table ic;
       close_reader = fun () -> close_in ic }
 
 (* Initialize the linker for toplevel use *)

@@ -23,27 +23,24 @@ open Misc
 
 let stripdebug infile outfile =
   let ic = open_in_bin infile in
-  Bytesections.read_toc ic;
-  let toc = Bytesections.toc() in
-  let pos_first_section = Bytesections.pos_first_section ic in
+  let toc = Bytesections.read_toc ic in
   let oc =
     open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o777
                  outfile in
   (* Skip the #! header, going straight to the first section. *)
-  seek_in ic pos_first_section;
   (* Copy each section except DBUG and CRCS *)
-  Bytesections.init_record oc;
+  let toc_writer = Bytesections.init_record oc in
   List.iter
-    (fun (name, len) ->
-      if name = "DBUG" || name = "CRCS" then begin
-        seek_in ic (in_channel_length ic + len)
-      end else begin
+    (fun {Bytesections.name; pos; len} ->
+       if name = "DBUG" || name = "CRCS" then ()
+       else begin
+        seek_in ic pos;
         copy_file_chunk ic oc len;
-        Bytesections.record oc name
+        Bytesections.record toc_writer name
       end)
     toc;
   (* Rewrite the toc and trailer *)
-  Bytesections.write_toc_and_trailer oc;
+  Bytesections.write_toc_and_trailer toc_writer;
   (* Done *)
   close_in ic;
   close_out oc

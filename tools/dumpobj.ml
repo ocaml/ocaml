@@ -513,38 +513,36 @@ let dump_obj ic =
 
 (* Read the primitive table from an executable *)
 
-let read_primitive_table ic len =
-  let p = really_input_string ic len in
+let split_primitive_table p =
   String.split_on_char '\000' p |> List.filter ((<>) "") |> Array.of_list
 
 (* Print an executable file *)
 
 let dump_exe ic =
-  Bytesections.read_toc ic;
-  let prim_size = Bytesections.seek_section ic "PRIM" in
-  primitives := read_primitive_table ic prim_size;
-  ignore(Bytesections.seek_section ic "DATA");
-  let init_data = (input_value ic : Obj.t array) in
-  globals := Array.make (Array.length init_data) Empty;
-  for i = 0 to Array.length init_data - 1 do
-    !globals.(i) <- Constant (init_data.(i))
-  done;
-  ignore(Bytesections.seek_section ic "SYMB");
-  let sym_table = (input_value ic : Symtable.global_map) in
+  let toc = Bytesections.read_toc ic in
+  let prims = Bytesections.read_section_string toc ic "PRIM" in
+  primitives := split_primitive_table prims;
+  let init_data : Obj.t array =
+    Bytesections.read_section_struct toc ic "DATA" in
+  globals := Array.map (fun x -> Constant x) init_data;
+  let sym_table : Symtable.global_map =
+    Bytesections.read_section_struct toc ic "SYMB" in
   Symtable.iter_global_map
     (fun id pos -> !globals.(pos) <- Global id) sym_table;
-  begin try
-    ignore (Bytesections.seek_section ic "DBUG");
-    let num_eventlists = input_binary_int ic in
-    for _i = 1 to num_eventlists do
-      let orig = input_binary_int ic in
-      let evl = (input_value ic : debug_event list) in
-      ignore (input_value ic); (* Skip the list of absolute directory names *)
-      record_events orig evl
-    done
-  with Not_found -> ()
+  begin
+    match Bytesections.seek_section toc ic "DBUG" with
+    | exception Not_found -> ()
+    | (_ : int) ->
+        let num_eventlists = input_binary_int ic in
+        for _i = 1 to num_eventlists do
+          let orig = input_binary_int ic in
+          let evl = (input_value ic : debug_event list) in
+          (* Skip the list of absolute directory names *)
+          ignore (input_value ic);
+          record_events orig evl
+        done
   end;
-  let code_size = Bytesections.seek_section ic "CODE" in
+  let code_size = Bytesections.seek_section toc ic "CODE" in
   print_code ic code_size
 
 let arg_list = [

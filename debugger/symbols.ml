@@ -56,16 +56,16 @@ let relocate_event orig ev =
 
 let read_symbols' bytecode_file =
   let ic = open_in_bin bytecode_file in
+  let toc = Bytesections.read_toc ic in
   begin try
-    Bytesections.read_toc ic;
-    ignore(Bytesections.seek_section ic "SYMB");
+    ignore(Bytesections.seek_section toc ic "SYMB");
   with Bytesections.Bad_magic_number | Not_found ->
     prerr_string bytecode_file; prerr_endline " is not a bytecode file.";
     raise Toplevel
   end;
   Symtable.restore_state (input_value ic);
   begin try
-    ignore (Bytesections.seek_section ic "DBUG")
+    ignore (Bytesections.seek_section toc ic "DBUG")
   with Not_found ->
     prerr_string bytecode_file; prerr_endline " has no debugging info.";
     raise Toplevel
@@ -84,7 +84,7 @@ let read_symbols' bytecode_file =
       List.fold_left (fun s e -> String.Set.add e s) !dirs (input_value ic)
   done;
   begin try
-    ignore (Bytesections.seek_section ic "CODE")
+    ignore (Bytesections.seek_section toc ic "CODE")
   with Not_found ->
     (* The file contains only debugging info,
        loading mode is forced to "manual" *)

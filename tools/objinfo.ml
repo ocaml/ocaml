@@ -32,7 +32,7 @@ let shape = ref false
 
 module Magic_number = Misc.Magic_number
 
-let input_stringlist ic len =
+let to_stringlist sect =
   let get_string_list sect len =
     let rec fold s e acc =
       if e != len then
@@ -42,8 +42,7 @@ let input_stringlist ic len =
       else acc
     in fold 0 0 []
   in
-  let sect = really_input_string ic len in
-  get_string_list sect len
+  get_string_list sect (String.length sect)
 
 let dummy_crc = String.make 32 '-'
 let null_crc = String.make 32 '0'
@@ -220,35 +219,34 @@ let p_list title print = function
       List.iter print l
 
 let dump_byte ic =
-  Bytesections.read_toc ic;
-  let toc = Bytesections.toc () in
+  let toc = Bytesections.read_toc ic in
   let toc = List.sort Stdlib.compare toc in
   List.iter
-    (fun (section, _) ->
+    (fun {Bytesections.name = section; len; _} ->
        try
-         let len = Bytesections.seek_section ic section in
          if len > 0 then match section with
            | "CRCS" ->
-               p_section
-                 "Imported units"
-                 (input_value ic : (string * Digest.t option) list)
+               let imported_units : (string * Digest.t option) list =
+                 Bytesections.read_section_struct toc ic section in
+               p_section "Imported units" imported_units
            | "DLLS" ->
-               p_list
-                 "Used DLLs"
-                 print_line
-                 (input_stringlist ic len)
+               let dlls =
+                 Bytesections.read_section_string toc ic section
+                 |> to_stringlist in
+               p_list "Used DLLs" print_line dlls
            | "DLPT" ->
-               p_list
-                 "Additional DLL paths"
-                 print_line
-                 (input_stringlist ic len)
+               let dll_paths =
+                 Bytesections.read_section_string toc ic section
+                 |> to_stringlist in
+               p_list "Additional DLL paths" print_line dll_paths
            | "PRIM" ->
-               p_list
-                 "Primitives used"
-                 print_line
-                 (input_stringlist ic len)
+               let prims =
+                 Bytesections.read_section_string toc ic section
+                 |> to_stringlist in
+               p_list "Primitives used" print_line prims
            | "SYMB" ->
-               print_global_table (input_value ic)
+               let symb = Bytesections.read_section_struct toc ic section in
+               print_global_table symb
            | _ -> ()
        with _ -> ()
     )

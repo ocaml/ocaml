@@ -17,41 +17,41 @@
 
 (** Recording sections written to a bytecode executable file *)
 
-val init_record: out_channel -> unit
-    (* Start recording sections from the current position in out_channel *)
+type toc_writer
 
-val record: out_channel -> string -> unit
-    (* Record the current position in the out_channel as the end of
-       the section with the given name *)
+val init_record: out_channel -> toc_writer
+(** Start recording sections from the current position in out_channel *)
 
-val write_toc_and_trailer: out_channel -> unit
-    (* Write the table of contents and the standard trailer for bytecode
-       executable files *)
+val record: toc_writer -> string -> unit
+(** Record the current position in the out_channel as the end of
+    the section with the given name *)
+
+val write_toc_and_trailer: toc_writer -> unit
+(** Write the table of contents and the standard trailer for bytecode
+    executable files *)
 
 (** Reading sections from a bytecode executable file *)
 
-val read_toc: in_channel -> unit
-    (* Read the table of sections from a bytecode executable *)
+type section_entry = {
+  name : string;
+  pos  : int;
+  len  : int;
+}
+type section_table = section_entry list
 
 exception Bad_magic_number
-    (* Raised by [read_toc] if magic number doesn't match *)
 
-val toc: unit -> (string * int) list
-    (* Return the current table of contents as a list of
-       (section name, section length) pairs. *)
+val read_toc: in_channel -> section_table
+(** Read the table of sections from a bytecode executable.
+    Raise [Bad_magic_number] if magic number doesn't match *)
 
-val seek_section: in_channel -> string -> int
-    (* Position the input channel at the beginning of the section named "name",
-       and return the length of that section.  Raise Not_found if no
-       such section exists. *)
+val seek_section: section_table -> in_channel -> string -> int
+(** Position the input channel at the beginning of the section named "name",
+    and return the length of that section.  Raise Not_found if no
+    such section exists. *)
 
-val read_section_string: in_channel -> string -> string
-    (* Return the contents of a section, as a string *)
+val read_section_string: section_table -> in_channel -> string -> string
+(** Return the contents of a section, as a string *)
 
-val read_section_struct: in_channel -> string -> 'a
-    (* Return the contents of a section, as marshalled data *)
-
-val pos_first_section: in_channel -> int
-   (* Return the position of the beginning of the first section *)
-
-val reset: unit -> unit
+val read_section_struct: section_table -> in_channel -> string -> 'a
+(** Return the contents of a section, as marshalled data *)
