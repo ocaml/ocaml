@@ -19,7 +19,6 @@
    and on bytecode executables. *)
 
 open Printf
-open Misc
 open Cmo_format
 
 (* Command line options to prevent printing approximation,
@@ -31,10 +30,6 @@ let no_crc = ref false
 let shape = ref false
 
 module Magic_number = Misc.Magic_number
-
-let input_stringlist ic len =
-  let sect = really_input_string ic len in
-  split_null_terminated sect
 
 let dummy_crc = String.make 32 '-'
 let null_crc = String.make 32 '0'
@@ -211,39 +206,38 @@ let p_list title print = function
       List.iter print l
 
 let dump_byte ic =
-  Bytesections.read_toc ic;
-  let toc = Bytesections.toc () in
-  let toc = List.sort Stdlib.compare toc in
+  let toc = Bytesections.read_toc ic in
+  let all = Bytesections.all toc in
   List.iter
-    (fun (section, _) ->
+    (fun {Bytesections.name = section; len; _} ->
        try
-         let len = Bytesections.seek_section ic section in
          if len > 0 then match section with
-           | "CRCS" ->
-               p_section
-                 "Imported units"
-                 (input_value ic : (string * Digest.t option) list)
-           | "DLLS" ->
-               p_list
-                 "Used DLLs"
-                 print_line
-                 (input_stringlist ic len)
-           | "DLPT" ->
-               p_list
-                 "Additional DLL paths"
-                 print_line
-                 (input_stringlist ic len)
-           | "PRIM" ->
-               p_list
-                 "Primitives used"
-                 print_line
-                 (input_stringlist ic len)
-           | "SYMB" ->
-               print_global_table (input_value ic)
+           | CRCS ->
+               let imported_units : (string * Digest.t option) list =
+                 Bytesections.read_section_struct toc ic section in
+               p_section "Imported units" imported_units
+           | DLLS ->
+               let dlls =
+                 Bytesections.read_section_string toc ic section
+                 |> Misc.split_null_terminated in
+               p_list "Used DLLs" print_line dlls
+           | DLPT ->
+               let dll_paths =
+                 Bytesections.read_section_string toc ic section
+                 |> Misc.split_null_terminated in
+               p_list "Additional DLL paths" print_line dll_paths
+           | PRIM ->
+               let prims =
+                 Bytesections.read_section_string toc ic section
+                 |> Misc.split_null_terminated in
+               p_list "Primitives used" print_line prims
+           | SYMB ->
+               let symb = Bytesections.read_section_struct toc ic section in
+               print_global_table symb
            | _ -> ()
        with _ -> ()
     )
-    toc
+    all
 
 let find_dyn_offset filename =
   match Binutils.read filename with

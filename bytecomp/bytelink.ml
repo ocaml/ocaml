@@ -339,7 +339,7 @@ let link_bytecode ?final_name tolink exec_name standalone =
          | Not_found -> raise (Error (File_not_found header))
          | Sys_error msg -> raise (Error (Camlheader (header, msg)))
        end;
-       Bytesections.init_record outchan;
+       let toc_writer = Bytesections.init_record outchan in
        (* The path to the bytecode interpreter (in use_runtime mode) *)
        if String.length !Clflags.use_runtime > 0 && !Clflags.with_runtime then
        begin
@@ -354,7 +354,7 @@ let link_bytecode ?final_name tolink exec_name standalone =
          in
          output_string outchan runtime;
          output_char outchan '\n';
-         Bytesections.record outchan "RNTM"
+         Bytesections.record toc_writer Bytesections.Name.RNTM
        end;
        (* The bytecode *)
        let start_code = pos_out outchan in
@@ -376,37 +376,37 @@ let link_bytecode ?final_name tolink exec_name standalone =
        (* The final STOP instruction *)
        output_byte outchan Opcodes.opSTOP;
        output_byte outchan 0; output_byte outchan 0; output_byte outchan 0;
-       Bytesections.record outchan "CODE";
+       Bytesections.record toc_writer CODE;
        (* DLL stuff *)
        if standalone then begin
          (* The extra search path for DLLs *)
          output_string outchan (concat_null_terminated !Clflags.dllpaths);
-         Bytesections.record outchan "DLPT";
+         Bytesections.record toc_writer DLPT;
          (* The names of the DLLs *)
          output_string outchan (concat_null_terminated sharedobjs);
-         Bytesections.record outchan "DLLS"
+         Bytesections.record toc_writer DLLS
        end;
        (* The names of all primitives *)
        Symtable.output_primitive_names outchan;
-       Bytesections.record outchan "PRIM";
+       Bytesections.record toc_writer PRIM;
        (* The table of global data *)
        Emitcode.marshal_to_channel_with_possibly_32bit_compat
          ~filename:final_name ~kind:"bytecode executable"
          outchan (Symtable.initial_global_table());
-       Bytesections.record outchan "DATA";
+       Bytesections.record toc_writer DATA;
        (* The map of global identifiers *)
        Symtable.output_global_map outchan;
-       Bytesections.record outchan "SYMB";
+       Bytesections.record toc_writer SYMB;
        (* CRCs for modules *)
        output_value outchan (extract_crc_interfaces());
-       Bytesections.record outchan "CRCS";
+       Bytesections.record toc_writer CRCS;
        (* Debug info *)
        if !Clflags.debug then begin
          output_debug_info outchan;
-         Bytesections.record outchan "DBUG"
+         Bytesections.record toc_writer DBUG
        end;
        (* The table of contents and the trailer *)
-       Bytesections.write_toc_and_trailer outchan;
+       Bytesections.write_toc_and_trailer toc_writer;
     )
 
 (* Output a string as a C array of unsigned ints *)
@@ -454,15 +454,15 @@ let output_cds_file outfile =
     ~always:(fun () -> close_out outchan)
     ~exceptionally:(fun () -> remove_file outfile)
     (fun () ->
-       Bytesections.init_record outchan;
+       let toc_writer = Bytesections.init_record outchan in
        (* The map of global identifiers *)
        Symtable.output_global_map outchan;
-       Bytesections.record outchan "SYMB";
+       Bytesections.record toc_writer SYMB;
        (* Debug info *)
        output_debug_info outchan;
-       Bytesections.record outchan "DBUG";
+       Bytesections.record toc_writer DBUG;
        (* The table of contents and the trailer *)
-       Bytesections.write_toc_and_trailer outchan;
+       Bytesections.write_toc_and_trailer toc_writer;
     )
 
 (* Output a bytecode executable as a C file *)
@@ -503,9 +503,9 @@ let link_bytecode_as_c tolink outfile with_main =
        output_string outchan "\n};\n\n";
        (* The sections *)
        let sections =
-         [ "SYMB", Symtable.data_global_map();
-           "PRIM", Obj.repr(Symtable.data_primitive_names());
-           "CRCS", Obj.repr(extract_crc_interfaces()) ] in
+         [ Bytesections.Name.SYMB, Symtable.data_global_map();
+           Bytesections.Name.PRIM, Obj.repr(Symtable.data_primitive_names());
+           Bytesections.Name.CRCS, Obj.repr(extract_crc_interfaces()) ] in
        output_string outchan "static char caml_sections[] = {\n";
        output_data_string outchan
          (Marshal.to_string sections []);

@@ -23,40 +23,37 @@ let remove_header = ref false
 let remove_DBUG = ref true
 let remove_CRCS = ref false
 
-let remove_section = function
-  | "DBUG" -> !remove_DBUG
-  | "CRCS" -> !remove_CRCS
+let remove_section (s : Bytesections.Name.t) =
+  match s with
+  | DBUG -> !remove_DBUG
+  | CRCS -> !remove_CRCS
   | _ -> false
 
 let stripdebug infile outfile =
   let ic = open_in_bin infile in
-  Bytesections.read_toc ic;
-  let toc = Bytesections.toc() in
-  let pos_first_section = Bytesections.pos_first_section ic in
+  let toc = Bytesections.read_toc ic in
   let oc =
     open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o777
                  outfile in
-  if !remove_header then begin
-    (* Skip the #! header, going straight to the first section. *)
-    seek_in ic pos_first_section
-  end else begin
+  if not !remove_header then begin
     (* Copy header up to first section *)
     seek_in ic 0;
-    copy_file_chunk ic oc pos_first_section
+    let header_length = Bytesections.pos_first_section toc in
+    copy_file_chunk ic oc header_length
   end;
-  (* Copy each section except those to be removed *)
-  Bytesections.init_record oc;
+  (* Copy each section except DBUG and CRCS *)
+  let toc_writer = Bytesections.init_record oc in
   List.iter
-    (fun (name, len) ->
-      if remove_section name then begin
-        seek_in ic (pos_in ic + len)
-      end else begin
-        copy_file_chunk ic oc len;
-        Bytesections.record oc name
-      end)
-    toc;
+    (fun {Bytesections.name; pos; len} ->
+       if not (remove_section name) then begin
+         seek_in ic pos;
+         copy_file_chunk ic oc len;
+         Bytesections.record toc_writer name
+       end
+    )
+    (Bytesections.all toc);
   (* Rewrite the toc and trailer *)
-  Bytesections.write_toc_and_trailer oc;
+  Bytesections.write_toc_and_trailer toc_writer;
   (* Done *)
   close_in ic;
   close_out oc
