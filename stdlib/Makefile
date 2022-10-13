@@ -54,20 +54,9 @@ endif
 allopt: stdlib.cmxa std_exit.cmx
 opt.opt: allopt
 
-.PHONY: check-stale
-check-stale::
-# We need recursive makefile to handle space in installation path
-	@$(MAKE) -C '$(INSTALL_LIBDIR)' -f '$(realpath Makefile.check-stale)' \
-	         'ARTEFACTS=$(wildcard stdlib__*.cmi)' \
-           'INSTALL_LIBDIR=$(INSTALL_LIBDIR)' \
-           check-stale
-
-.PHONY: install
-# Ensure any pre-4.13 lowercased artefacts are removed on macOS and Windows
-install:: check-stale
-
 INSTALL_STDLIB_META_DIR=$(DESTDIR)$(LIBDIR)/stdlib
 
+.PHONY: install
 install::
 	$(INSTALL_DATA) \
 	  stdlib.cma std_exit.cmo *.cmi camlheader_ur \
@@ -95,10 +84,7 @@ endif
 installopt: installopt-default
 
 .PHONY: installopt-default
-# Ensure any pre-4.13 lowercased artefacts are removed on macOS and Windows
-installopt-default:: check-stale
-
-installopt-default::
+installopt-default:
 	$(INSTALL_DATA) \
 	  stdlib.cmxa stdlib.$(A) std_exit.$(O) *.cmx \
 	  "$(INSTALL_LIBDIR)"

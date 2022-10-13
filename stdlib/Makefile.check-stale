@@ -1,8 +1,0 @@
-INSTALLED_ARTEFACTS = $(notdir $(wildcard stdlib__*.cmi))
-STALE_ARTEFACTS = $(filter-out $(ARTEFACTS), $(INSTALLED_ARTEFACTS))
-
-STALE_MSG = "$(INSTALL_LIBDIR)" contains stale stdlib artefacts. \
-Please execute `rm "$(INSTALL_LIBDIR)"/stdlib__*.cm*` and re-run make install
-
-.PHONY: check-stale
-check-stale: $(if $(STALE_ARTEFACTS), $(error $(STALE_MSG)));
