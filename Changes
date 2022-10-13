@@ -675,6 +675,10 @@ OCaml 5.0
 - #11587: Prevent integer comparison from being used on pointers
   (Vincent Laviron, review by Gabriel Scherer)
 
+- #11622: Prevent stack overflow when printing a constructor or record
+  mismatch error involving recursive types.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
 
