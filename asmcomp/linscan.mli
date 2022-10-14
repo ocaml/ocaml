@@ -16,4 +16,4 @@
 
 (* Linear scan register allocation. *)
 
-val allocate_registers: Interval.interval_result -> int array
+val allocate_registers: Interval.result -> int array

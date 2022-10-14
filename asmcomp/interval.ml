@@ -38,7 +38,7 @@ type kind =
   | Argument
   | Live
 
-type interval_result =
+type result =
   {
     intervals : t list;
     fixed_intervals : t list;

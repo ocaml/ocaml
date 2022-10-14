@@ -251,7 +251,7 @@ let interval ppf i =
       i.ranges in
   fprintf ppf "@[<2>%a:%t@]@." reg i.reg interv
 
-let intervals ppf (intervals : Interval.interval_result) =
+let intervals ppf (intervals : Interval.result) =
   fprintf ppf "*** Intervals@.";
   List.iter (interval ppf) intervals.fixed_intervals;
   List.iter (interval ppf) intervals.intervals
