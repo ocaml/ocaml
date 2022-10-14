@@ -29,6 +29,8 @@ let modules =
 let program_source_dirs =
   ref ([] : string list)
 
+let symtable = ref (Symtable.create_empty ())
+
 let events_by_pc =
   (Hashtbl.create 257 : (pc, debug_event) Hashtbl.t)
 let events_by_module =
@@ -62,7 +64,7 @@ let read_symbols' bytecode_file =
     with Bytesections.Bad_magic_number | Not_found ->
       prerr_string bytecode_file; prerr_endline " is not a bytecode file.";
       raise Toplevel in
-  Symtable.restore_state symb;
+  Symtable.restore_state !symtable symb;
   begin try
     ignore (Bytesections.seek_section toc ic Bytesections.Name.dbug)
   with Not_found ->
@@ -91,12 +93,6 @@ let read_symbols' bytecode_file =
   end;
   close_in_noerr ic;
   !eventlists, !dirs
-
-let clear_symbols () =
-  modules := [];
-  program_source_dirs := [];
-  Hashtbl.clear events_by_pc; Hashtbl.clear events_by_module;
-  Hashtbl.clear all_events_by_module
 
 let add_symbols frag all_events =
   List.iter
@@ -128,7 +124,13 @@ let add_symbols frag all_events =
           Hashtbl.add events_by_module md (frag, Array.of_list real_evl))
     all_events
 
-let read_symbols frag bytecode_file =
+let init_read_symbols frag bytecode_file =
+  modules := [];
+  program_source_dirs := [];
+  Hashtbl.clear events_by_pc;
+  Hashtbl.clear events_by_module;
+  Hashtbl.clear all_events_by_module;
+  symtable := Symtable.create_empty ();
   let all_events, all_dirs = read_symbols' bytecode_file in
   program_source_dirs := !program_source_dirs @ (String.Set.elements all_dirs);
   add_symbols frag all_events

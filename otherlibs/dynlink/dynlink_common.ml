@@ -120,10 +120,10 @@ module Make (P : Dynlink_platform_intf.S) = struct
       failwith msg
     end
 
-  let default_available_units global =
+  let default_available_units state global =
     let exe = Sys.executable_name in
     let ifaces, implems, defined_symbols =
-      P.fold_initial_units
+      P.fold_initial_units state
         ~init:(String.Map.empty, String.Map.empty, String.Set.empty)
         ~f:(fun (ifaces, implems, defined_symbols)
                 ~comp_unit ~interface ~implementation
@@ -164,8 +164,8 @@ module Make (P : Dynlink_platform_intf.S) = struct
   let init () =
     with_lock (fun global ->
     if not global.inited then begin
-      P.init ();
-      default_available_units global;
+      let state = P.init () in
+      default_available_units state global;
       global.inited <- true
     end)
 

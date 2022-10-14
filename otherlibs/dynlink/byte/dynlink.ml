@@ -58,16 +58,16 @@ module Bytecode = struct
 
   type handle = Stdlib.in_channel * filename * Digest.t
 
-  let default_crcs = ref []
-  let default_global_map = ref Symtable.empty_global_map
+  type initial_state = Symtable.GlobalMap.t * (string * Digest.t option) list
 
   let init () =
     if !Sys.interactive then begin (* PR#6802 *)
       invalid_arg "The dynlink.cma library cannot be used \
         inside the OCaml toplevel"
     end;
-    default_crcs := Symtable.init_toplevel ();
-    default_global_map := Symtable.current_state ()
+    let crcs = Symtable.Toplevel.init () in
+    let globalmap = Symtable.Toplevel.get_globalmap () in
+    globalmap, crcs
 
   let is_native = false
   let adapt_filename f = f
@@ -75,11 +75,11 @@ module Bytecode = struct
   let num_globals_inited () =
     Misc.fatal_error "Should never be called for bytecode dynlink"
 
-  let fold_initial_units ~init ~f =
+  let fold_initial_units (globalmap, default_crcs) ~init ~f =
     List.fold_left (fun acc (comp_unit, interface) ->
         let id = Ident.create_persistent comp_unit in
         let defined =
-          Symtable.is_defined_in_global_map !default_global_map id
+          Symtable.GlobalMap.mem globalmap id
         in
         let implementation =
           if defined then Some (None, DT.Loaded)
@@ -91,7 +91,7 @@ module Bytecode = struct
         in
         f acc ~comp_unit ~interface ~implementation ~defined_symbols)
       init
-      !default_crcs
+      default_crcs
 
   let run_shared_startup _ = ()
 
@@ -103,7 +103,7 @@ module Bytecode = struct
   let run lock (ic, file_name, file_digest) ~unit_header ~priv =
     let open Misc in
     let clos = with_lock lock (fun () ->
-        let old_state = Symtable.current_state () in
+        let old_globalmap = Symtable.Toplevel.get_globalmap () in
         let compunit : Cmo_format.compilation_unit = unit_header in
         seek_in ic compunit.cu_pos;
         let code_size = compunit.cu_codesize + 8 in
@@ -113,9 +113,7 @@ module Bytecode = struct
         LongString.blit_string "\000\000\000\001\000\000\000" 0
           code (compunit.cu_codesize + 1) 7;
         begin try
-          Symtable.patch_object code compunit.cu_reloc;
-          Symtable.check_global_initialized compunit.cu_reloc;
-          Symtable.update_global_table ()
+          Symtable.Toplevel.patch_code_and_update_global_table code compunit.cu_reloc;
         with Symtable.Error error ->
           let new_error : DT.linking_error =
             match error with
@@ -137,7 +135,7 @@ module Bytecode = struct
             seek_in ic compunit.cu_debug;
             [| input_value ic |]
           end in
-        if priv then Symtable.hide_additions old_state;
+        if priv then Symtable.Toplevel.hide_additions old_globalmap;
         let _, clos = Meta.reify_bytecode code events (Some digest) in
         clos
       )
@@ -187,7 +185,7 @@ module Bytecode = struct
 
   let unsafe_get_global_value ~bytecode_or_asm_symbol =
     let id = Ident.create_persistent bytecode_or_asm_symbol in
-    match Symtable.get_global_value id with
+    match Symtable.Toplevel.get_global_value id with
     | exception _ -> None
     | obj -> Some obj
 

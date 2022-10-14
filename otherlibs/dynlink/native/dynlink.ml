@@ -55,6 +55,8 @@ module Native = struct
     let unsafe_module _t = false
   end
 
+  type initial_state = unit
+
   let init () = ()
 
   let is_native = true
@@ -62,7 +64,7 @@ module Native = struct
 
   let num_globals_inited () = ndl_globals_inited ()
 
-  let fold_initial_units ~init ~f =
+  let fold_initial_units () ~init ~f =
     let rank = ref 0 in
     List.fold_left (fun acc { name; crc_intf; crc_impl; syms; } ->
         rank := !rank + List.length syms;

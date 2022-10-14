@@ -17,40 +17,53 @@
 
 open Cmo_format
 
-(* Functions for batch linking *)
+module GlobalMap : sig
+  type t
+  val iter : (Ident.t -> int -> unit) -> t -> unit
+  val filter : (Ident.t -> bool) -> t -> t
+  val mem : t -> Ident.t -> bool
+end
 
-val init: unit -> unit
-val patch_object: Misc.LongString.t -> (reloc_info * int) list -> unit
-val require_primitive: string -> unit
-val initial_global_table: unit -> Obj.t array
-val output_global_map: out_channel -> unit
-val output_primitive_names: out_channel -> unit
-val all_primitives : unit -> string array
-val data_global_map: unit -> Obj.t
-val data_primitive_names: unit -> string
+type state
+
+val create_empty : unit -> state
+
+val get_globalmap : state -> GlobalMap.t
+val set_globalmap : state -> GlobalMap.t -> unit
+
+val patch_object: state -> Misc.LongString.t -> (reloc_info * int) list -> unit
+val require_primitive: state -> string -> unit
+
+val initial_global_table: state -> Obj.t array
+val all_primitives: state -> string list
+
 val transl_const: Lambda.structured_constant -> Obj.t
 
-(* Functions for the toplevel *)
+val is_global_defined: state -> Ident.t -> bool
+val get_global_position: state -> Ident.t -> int
 
-val init_toplevel: unit -> (string * Digest.t option) list
-val update_global_table: unit -> unit
-val get_global_value: Ident.t -> Obj.t
-val is_global_defined: Ident.t -> bool
-val assign_global_value: Ident.t -> Obj.t -> unit
-val get_global_position: Ident.t -> int
-val check_global_initialized: (reloc_info * int) list -> unit
+(** Functions for batch linking *)
+val create_for_linker: unit -> state
+
+module Toplevel : sig
+  (** Functions for the toplevel *)
+
+  val init : unit -> (string * Digest.t option) list
+
+  val get_global_value: Ident.t -> Obj.t
+  val is_global_defined: Ident.t -> bool
+  val assign_global_value: Ident.t -> Obj.t -> unit
+
+  val get_globalmap : unit -> GlobalMap.t
+  val restore_globalmap : GlobalMap.t -> unit
+  val hide_additions : GlobalMap.t -> unit
+
+  val patch_code_and_update_global_table :
+    Misc.LongString.t -> (reloc_info * int) list -> unit
+end
+
 val defined_globals: (reloc_info * int) list -> Ident.t list
 val required_globals: (reloc_info * int) list -> Ident.t list
-
-type global_map
-
-val empty_global_map: global_map
-val current_state: unit -> global_map
-val restore_state: global_map -> unit
-val hide_additions: global_map -> unit
-val filter_global_map: (Ident.t -> bool) -> global_map -> global_map
-val iter_global_map : (Ident.t -> int -> unit) -> global_map -> unit
-val is_defined_in_global_map: global_map -> Ident.t -> bool
 
 (* Error report *)
 
@@ -65,5 +78,3 @@ exception Error of error
 open Format
 
 val report_error: formatter -> error -> unit
-
-val reset: unit -> unit

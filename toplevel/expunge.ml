@@ -33,7 +33,7 @@ let keep =
   else fun name -> is_exn name || (String.Set.mem name !to_keep)
 
 let expunge_map tbl =
-  Symtable.filter_global_map (fun id -> keep (Ident.name id)) tbl
+  Symtable.GlobalMap.filter (fun id -> keep (Ident.name id)) tbl
 
 let expunge_crcs tbl =
   List.filter (fun (unit, _crc) -> keep unit) tbl
@@ -68,7 +68,7 @@ let main () =
              seek_in ic pos;
              begin match (name :> string) with
                "SYMB" ->
-                 let global_map : Symtable.global_map = input_value ic in
+                 let global_map : Symtable.GlobalMap.t = input_value ic in
                  output_value oc (expunge_map global_map)
              | "CRCS" ->
                  let crcs : (string * Digest.t option) list = input_value ic in

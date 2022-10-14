@@ -46,7 +46,7 @@ module EvalBase = struct
   let eval_ident id =
     if Ident.persistent id || Ident.global id then begin
       try
-        Symtable.get_global_value id
+        Symtable.Toplevel.get_global_value id
       with Symtable.Error (Undefined_global name) ->
         raise (Undefined_global name)
     end else begin
@@ -78,10 +78,8 @@ let load_lambda ppf lam =
     Emitcode.to_memory init_code fun_code
   in
   let can_free = (fun_code = []) in
-  let initial_symtable = Symtable.current_state() in
-  Symtable.patch_object code reloc;
-  Symtable.check_global_initialized reloc;
-  Symtable.update_global_table();
+  let initial_symtable = Symtable.Toplevel.get_globalmap () in
+  Symtable.Toplevel.patch_code_and_update_global_table code reloc;
   let initial_bindings = !toplevel_value_bindings in
   let bytecode, closure = Meta.reify_bytecode code [| events |] None in
   match
@@ -99,7 +97,7 @@ let load_lambda ppf lam =
     if can_free then Meta.release_bytecode bytecode;
 
     toplevel_value_bindings := initial_bindings; (* PR#6211 *)
-    Symtable.restore_state initial_symtable;
+    Symtable.Toplevel.restore_globalmap initial_symtable;
     Exception x
 
 (* Print the outcome of an evaluation *)
@@ -214,9 +212,8 @@ let load_compunit ic filename ppf compunit =
   LongString.set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
   LongString.blit_string "\000\000\000\001\000\000\000" 0
                      code (compunit.cu_codesize + 1) 7;
-  let initial_symtable = Symtable.current_state() in
-  Symtable.patch_object code compunit.cu_reloc;
-  Symtable.update_global_table();
+  let initial_symtable = Symtable.Toplevel.get_globalmap () in
+  Symtable.Toplevel.patch_code_and_update_global_table code compunit.cu_reloc;
   let events =
     if compunit.cu_debug = 0 then [| |]
     else begin
@@ -231,7 +228,7 @@ let load_compunit ic filename ppf compunit =
   with exn ->
     record_backtrace ();
     may_trace := false;
-    Symtable.restore_state initial_symtable;
+    Symtable.Toplevel.restore_globalmap initial_symtable;
     print_exception_outcome ppf exn;
     raise Load_failed
   end
@@ -257,18 +254,16 @@ and really_load_file recursive ppf name filename ic =
       let cu : compilation_unit = input_value ic in
       if recursive then
         List.iter
-          (function
-            | (Reloc_getglobal id, _)
-              when not (Symtable.is_global_defined id) ->
-                let file = Ident.name id ^ ".cmo" in
-                begin match Load_path.find_uncap file with
-                | exception Not_found -> ()
-                | file ->
-                    if not (load_file recursive ppf file) then raise Load_failed
-                end
-            | _ -> ()
-          )
-          cu.cu_reloc;
+          (fun id ->
+             if not (Symtable.Toplevel.is_global_defined id)
+             then
+               let file = Ident.name id ^ ".cmo" in
+               begin match Load_path.find_uncap file with
+               | exception Not_found -> ()
+               | file ->
+                   if not (load_file recursive ppf file) then raise Load_failed
+               end)
+          (Symtable.required_globals cu.cu_reloc);
       load_compunit ic filename ppf cu;
       true
     end else
@@ -295,7 +290,7 @@ and really_load_file recursive ppf name filename ic =
   with Load_failed -> false
 
 let init () =
-  let crc_intfs = Symtable.init_toplevel() in
+  let crc_intfs = Symtable.Toplevel.init () in
   Compmisc.init_path ();
   Env.import_crcs ~source:Sys.executable_name crc_intfs;
   ()

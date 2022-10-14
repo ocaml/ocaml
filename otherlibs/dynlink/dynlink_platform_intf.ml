@@ -37,7 +37,9 @@ module type S = sig
     val unsafe_module : t -> bool
   end
 
-  val init : unit -> unit
+  type initial_state
+
+  val init : unit -> initial_state
 
   val is_native : bool
 
@@ -46,7 +48,8 @@ module type S = sig
   val num_globals_inited : unit -> int
 
   val fold_initial_units
-     : init:'a
+    : initial_state
+    -> init:'a
     -> f:('a
       -> comp_unit:string
       -> interface:Digest.t option

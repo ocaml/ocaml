@@ -515,6 +515,7 @@ let dump_obj ic =
 
 let dump_exe ic =
   let toc = Bytesections.read_toc ic in
+  (* Read the primitive table from an executable *)
   let prims = Bytesections.read_section_string toc ic Bytesections.Name.prim in
   primitives := Array.of_list (Misc.split_null_separated prims);
   let init_data = (Bytesections.read_section_struct toc ic Bytesections.Name.data : Obj.t array) in
@@ -523,7 +524,7 @@ let dump_exe ic =
     !globals.(i) <- Constant (init_data.(i))
   done;
   let sym_table = (Bytesections.read_section_struct toc ic Bytesections.Name.symb : Symtable.global_map) in
-  Symtable.iter_global_map
+  Symtable.GlobalMap.iter
     (fun id pos -> !globals.(pos) <- Global id) sym_table;
   begin
     match Bytesections.seek_section toc ic Bytesections.Name.dbug with

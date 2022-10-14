@@ -126,8 +126,7 @@ let initialize_loading () =
     prerr_endline "Program not found.";
     raise Toplevel;
   end;
-  Symbols.clear_symbols ();
-  Symbols.read_symbols Debugcom.main_frag !program_name;
+  Symbols.init_read_symbols Debugcom.main_frag !program_name;
   let dirs = Load_path.get_paths () @ !Symbols.program_source_dirs in
   Load_path.init ~auto_include:Compmisc.auto_include dirs;
   Envaux.reset_cache ();

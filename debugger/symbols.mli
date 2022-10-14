@@ -16,6 +16,8 @@
 
 open Events
 
+val symtable : Symtable.state ref
+
 (* Modules used by the program. *)
 val modules : string list ref
 
@@ -23,12 +25,9 @@ val modules : string list ref
  * compiled *)
 val program_source_dirs : string list ref
 
-(* Clear loaded symbols *)
-val clear_symbols : unit -> unit
-
 (* Read debugging info from executable or dynlinkable file
    and associate with given code fragment *)
-val read_symbols : int -> string -> unit
+val init_read_symbols : int -> string -> unit
 
 (* Add debugging info from memory and associate with given
    code fragment *)

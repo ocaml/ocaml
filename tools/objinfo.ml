@@ -122,7 +122,7 @@ let print_general_infos name crc defines cmi cmx =
 
 let print_global_table table =
   printf "Globals defined:\n";
-  Symtable.iter_global_map
+  Symtable.GlobalMap.iter
     (fun id _ -> print_line (Ident.name id))
     table
 
