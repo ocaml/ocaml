@@ -113,9 +113,9 @@ let rec regalloc ~ppf_dump round fd =
   let num_stack_slots =
     if !use_linscan then begin
       (* Linear Scan *)
-      Interval.build_intervals fd;
-      if !dump_interval then Printmach.intervals ppf_dump ();
-      Linscan.allocate_registers()
+      let intervals = Interval.build_intervals fd in
+      if !dump_interval then Printmach.intervals ppf_dump intervals;
+      Linscan.allocate_registers intervals
     end else begin
       (* Graph Coloring *)
       Interf.build_graph fd;

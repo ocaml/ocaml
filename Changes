@@ -137,6 +137,9 @@ Working version
 - #11446: document switch compilation (lambda/switch.ml)
   (Gabriel Scherer, review by Luc Maranget and Vincent Laviron)
 
+- #11627: use return values instead of globals for linear scan intervals
+  (Stefan Muenzel, review by Nicolás Ojeda Bär)
+
 ### Build system:
 
 ### Bug fixes:
