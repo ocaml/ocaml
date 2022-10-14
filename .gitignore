@@ -50,6 +50,7 @@ META
 /ocaml-*.cache
 /config.log
 /config.status
+/configure~
 /flexlink.opt
 /libtool
 /ocamlc.opt
