@@ -2,6 +2,9 @@
  modules = "alloc_async_stubs.c";
 *)
 
+(* Ensure that finalisers (asynchronous callbacks) do not execute inside C code.
+   The C stub itself contains more details on the mechanism. *)
+
 external test : int ref -> unit = "stub"
 
 let f () =
