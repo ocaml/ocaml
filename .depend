@@ -2820,7 +2820,8 @@ asmcomp/linscan.cmx : \
     asmcomp/proc.cmx \
     asmcomp/interval.cmx \
     asmcomp/linscan.cmi
-asmcomp/linscan.cmi :
+asmcomp/linscan.cmi : \
+    asmcomp/interval.cmi
 asmcomp/liveness.cmo : \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
@@ -2948,7 +2949,8 @@ asmcomp/printmach.cmx : \
     asmcomp/printmach.cmi
 asmcomp/printmach.cmi : \
     asmcomp/reg.cmi \
-    asmcomp/mach.cmi
+    asmcomp/mach.cmi \
+    asmcomp/interval.cmi
 asmcomp/proc.cmo : \
     asmcomp/x86_proc.cmi \
     asmcomp/reg.cmi \
