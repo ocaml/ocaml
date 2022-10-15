@@ -57,13 +57,12 @@ let relocate_event orig ev =
 let read_symbols' bytecode_file =
   let ic = open_in_bin bytecode_file in
   let toc = Bytesections.read_toc ic in
-  begin try
-    ignore(Bytesections.seek_section toc ic Bytesections.Name.symb);
-  with Bytesections.Bad_magic_number | Not_found ->
-    prerr_string bytecode_file; prerr_endline " is not a bytecode file.";
-    raise Toplevel
-  end;
-  Symtable.restore_state (input_value ic);
+  let symb = try
+      (Bytesections.read_section_struct toc ic Bytesections.Name.symb : Symtable.global_map);
+    with Bytesections.Bad_magic_number | Not_found ->
+      prerr_string bytecode_file; prerr_endline " is not a bytecode file.";
+      raise Toplevel in
+  Symtable.restore_state symb;
   begin try
     ignore (Bytesections.seek_section toc ic Bytesections.Name.dbug)
   with Not_found ->
