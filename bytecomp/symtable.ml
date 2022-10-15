@@ -127,25 +127,6 @@ let data_primitive_names () =
 let output_primitive_names outchan =
   output_string outchan (data_primitive_names())
 
-open Printf
-
-let output_primitive_table outchan =
-  let prim = all_primitives() in
-  for i = 0 to Array.length prim - 1 do
-    fprintf outchan "extern value %s();\n" prim.(i)
-  done;
-  fprintf outchan "typedef value (*primitive)();\n";
-  fprintf outchan "primitive caml_builtin_cprim[] = {\n";
-  for i = 0 to Array.length prim - 1 do
-    fprintf outchan "  %s,\n" prim.(i)
-  done;
-  fprintf outchan "  (primitive) 0 };\n";
-  fprintf outchan "const char * caml_names_of_builtin_cprim[] = {\n";
-  for i = 0 to Array.length prim - 1 do
-    fprintf outchan "  \"%s\",\n" prim.(i)
-  done;
-  fprintf outchan "  (char *) 0 };\n"
-
 (* Initialization for batch linking *)
 
 let init () =

@@ -465,6 +465,23 @@ let output_cds_file outfile =
        Bytesections.write_toc_and_trailer toc_writer;
     )
 
+let output_primitive_table outchan =
+  let prim = Symtable.all_primitives() in
+  for i = 0 to Array.length prim - 1 do
+    Printf.fprintf outchan "extern value %s();\n" prim.(i)
+  done;
+  Printf.fprintf outchan "typedef value (*primitive)();\n";
+  Printf.fprintf outchan "primitive caml_builtin_cprim[] = {\n";
+  for i = 0 to Array.length prim - 1 do
+    Printf.fprintf outchan "  %s,\n" prim.(i)
+  done;
+  Printf.fprintf outchan "  (primitive) 0 };\n";
+  Printf.fprintf outchan "const char * caml_names_of_builtin_cprim[] = {\n";
+  for i = 0 to Array.length prim - 1 do
+    Printf.fprintf outchan "  \"%s\",\n" prim.(i)
+  done;
+  Printf.fprintf outchan "  (char *) 0 };\n"
+
 (* Output a bytecode executable as a C file *)
 
 let link_bytecode_as_c tolink outfile with_main =
@@ -511,7 +528,7 @@ let link_bytecode_as_c tolink outfile with_main =
          (Marshal.to_string sections []);
        output_string outchan "\n};\n\n";
        (* The table of primitives *)
-       Symtable.output_primitive_table outchan;
+       output_primitive_table outchan;
        (* The entry point *)
        if with_main then begin
          output_string outchan "\
@@ -675,7 +692,7 @@ let link objfiles output_name =
          #else\n\
          typedef long value;\n\
          #endif\n";
-         Symtable.output_primitive_table poc;
+         output_primitive_table poc;
          output_string poc "\
          #ifdef __cplusplus\n\
          }\n\
