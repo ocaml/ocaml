@@ -15100,6 +15100,18 @@ as_fn_error $? "C11 atomic support is required, use another C compiler
 See \`config.log' for more details" "$LINENO" 5; }
 fi
 
+# Full support for C11 __thread variables
+# macOS and MinGW-64 have problems with __thread variables accessed from DLLs
+
+case $host in #(
+  *-apple-darwin*|*-mingw32) :
+     ;; #(
+  *) :
+    printf "%s\n" "#define HAS_FULL_THREAD_VARIABLES 1" >>confdefs.h
+
+ ;;
+esac
+
 # Shared library support
 
 sharedlib_cflags=''
@@ -17973,7 +17985,7 @@ esac
 
 case $host in #(
   *-*-mingw32|*-pc-windows) :
-    PTHREAD_LIBS="-lpthread" ;; #(
+    PTHREAD_LIBS="-l:libpthread.a" ;; #(
   *) :
 
 
@@ -19405,8 +19417,8 @@ fi
 
 case $host in #(
   *-*-mingw32) :
-    bytecclibs="-lws2_32 -lversion -lpthread -lgcc_eh -lDbgHelp"
-    nativecclibs="-lws2_32 -lversion -lpthread -lgcc_eh -lDbgHelp" ;; #(
+    bytecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh -lDbgHelp"
+    nativecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh -lDbgHelp" ;; #(
   *-pc-windows) :
     bytecclibs="advapi32.lib ws2_32.lib version.lib"
     nativecclibs="advapi32.lib ws2_32.lib version.lib" ;; #(

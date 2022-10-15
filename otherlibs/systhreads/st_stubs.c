@@ -15,6 +15,12 @@
 
 #define CAML_INTERNALS
 
+#if defined(_WIN32) && !defined(NATIVE_CODE)
+/* Ensure that pthread.h marks symbols __declspec(dllimport) so that they can be
+   picked up from the runtime (which will have linked winpthreads statically) */
+#define DLL_EXPORT
+#endif
+
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
 #include "caml/backtrace_prim.h"

@@ -1,7 +1,9 @@
 ROOTDIR = ../..
--include $(ROOTDIR)/Makefile.build_config
+include $(ROOTDIR)/Makefile.common
 
 TEXQUOTE = $(ROOTDIR)/runtime/ocamlrun ../tools/texquote2
+
+DIRS = infoman texstuff textman
 
 FILES = allfiles.tex biblio.tex foreword.tex version.tex cmds/warnings-help.etex ifocamldoc.tex
 
@@ -49,11 +51,14 @@ ifocamldoc.tex: $(ROOTDIR)/Makefile.build_config
 	cp $(APIDOC)/ocamldoc/build/latex/ifocamldoc.tex $@
 endif
 
-manual: files latex_files
+$(DIRS):
+	$(MKDIR) $@
+
+manual: files latex_files | texstuff
 	cd texstuff \
 	  && TEXINPUTS=$(TEXINPUTS) pdflatex manual.tex
 
-index:
+index: | texstuff
 	cd texstuff \
 	  && sh ../../tools/fix_index.sh manual.idx \
 	  && makeindex manual.idx \
@@ -70,7 +75,7 @@ html: etex-files html_files
 	    manual.hva -e macros.tex ../manual.tex \
 	  && $(HACHA) -tocter manual.html
 
-info: files latex_files
+info: files latex_files | infoman
 	cd infoman \
 	  && rm -f ocaml.info* \
 	  && $(HEVEA) $(INFO_FLAGS) -o ocaml.info.body \
@@ -83,7 +88,7 @@ info: files latex_files
 	  && rm -f ocaml.info.tmp ocaml.info.body \
 	  && gzip -9 ocaml.info*
 
-text: files latex_files
+text: files latex_files | textman
 	cd textman \
 	  && $(HEVEA) $(TEXT_FLAGS) \
 	    -I .. -I ../cmds -I ../library -I ../refman \
@@ -91,7 +96,7 @@ text: files latex_files
 	    -I ../../styles -I ../texstuff \
 	    ../manual.inf -e macros.tex ../manual.tex
 
-
+.PHONY: all
 all:
 	$(MAKE) html
 	$(MAKE) text
@@ -160,11 +165,9 @@ clean:
 	$(MAKE) -C library clean
 	$(MAKE) -C refman clean
 	$(MAKE) -C tutorials clean
-	rm -f texstuff/*
 	cd htmlman; rm -rf libref compilerlibref *.htoc *.html *.haux *.hind *.svg \
 	                   manual.hmanual manual.hmanual.kwd manual.css
-	cd textman; rm -f manual.txt *.haux *.hind *.htoc
-	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind *.info*.gz
+	rm -rf $(DIRS)
 
 .PHONY: distclean
 distclean: clean

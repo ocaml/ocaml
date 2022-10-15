@@ -90,9 +90,6 @@ value caml_startup_common(char_os **argv, int pooling)
   char_os * exe_name, * proc_self_exe;
   value res;
 
-  /* Initialize the domain */
-  CAML_INIT_DOMAIN_STATE;
-
   /* Determine options */
   caml_parse_ocamlrunparam();
 
