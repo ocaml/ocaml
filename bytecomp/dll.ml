@@ -164,9 +164,6 @@ let ld_library_path_contents () =
   | s ->
       Misc.split_path_contents s
 
-let split_dll_path path =
-  Misc.split_path_contents ~sep:'\000' path
-
 (* Initialization for separate compilation *)
 
 let init_compile nostdlib =
@@ -176,10 +173,10 @@ let init_compile nostdlib =
 
 (* Initialization for linking in core (dynlink or toplevel) *)
 
-let init_toplevel dllpath =
+let init_toplevel dllpaths =
   search_path :=
     ld_library_path_contents() @
-    split_dll_path dllpath @
+    dllpaths @
     ld_conf_contents();
   opened_dlls :=
     List.map (fun dll -> "", Execution dll)
