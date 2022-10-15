@@ -38,7 +38,11 @@ let init_record outchan : toc_writer =
     outchan }
 
 let record t name =
+  if String.length name <> 4 then
+    invalid_arg "Bytesections.record: section name must be of size 4";
   let pos = pos_out t.outchan in
+  if pos < t.section_prev then
+    invalid_arg "Bytesections.record: out_channel offset moved backward";
   let entry = {name; pos = t.section_prev; len = pos - t.section_prev} in
   t.section_table_rev <- entry :: t.section_table_rev;
   t.section_prev <- pos
@@ -47,6 +51,7 @@ let write_toc_and_trailer t =
   let section_table = List.rev t.section_table_rev in
   List.iter
     (fun {name; pos = _; len} ->
+       assert (String.length name = 4);
       output_string t.outchan name; output_binary_int t.outchan len)
     section_table;
   output_binary_int t.outchan (List.length section_table);
@@ -93,6 +98,8 @@ let find_section t name =
    such section exists. *)
 
 let seek_section t ic name =
+  if String.length name <> 4 then
+    invalid_arg "Bytesections.seek_section: section name must be of size 4";
   let pos, len = find_section t name in
   seek_in ic pos; len
 

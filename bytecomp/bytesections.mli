@@ -24,7 +24,9 @@ val init_record: out_channel -> toc_writer
 
 val record: toc_writer -> string -> unit
 (** Record the current position in the out_channel as the end of
-    the section with the given name *)
+    the section with the given name.
+
+   @raise Invalid_argument if the name is not of size 4. *)
 
 val write_toc_and_trailer: toc_writer -> unit
 (** Write the table of contents and the standard trailer for bytecode
@@ -32,11 +34,12 @@ val write_toc_and_trailer: toc_writer -> unit
 
 (** Reading sections from a bytecode executable file *)
 
-type section_entry = {
-  name : string;
-  pos  : int;
-  len  : int;
+type section_entry = private {
+  name : string; (** name of the section. *)
+  pos  : int;    (** byte offset at which the section starts. *)
+  len  : int;    (** length of the section. *)
 }
+
 type section_table = section_entry list
 
 exception Bad_magic_number
@@ -48,10 +51,16 @@ val read_toc: in_channel -> section_table
 val seek_section: section_table -> in_channel -> string -> int
 (** Position the input channel at the beginning of the section named "name",
     and return the length of that section.  Raise Not_found if no
-    such section exists. *)
+    such section exists.
+
+   @raise Invalid_argument if the name is not of size 4. *)
 
 val read_section_string: section_table -> in_channel -> string -> string
-(** Return the contents of a section, as a string *)
+(** Return the contents of a section, as a string.
+
+    @raise Invalid_argument if the name is not of size 4. *)
 
 val read_section_struct: section_table -> in_channel -> string -> 'a
-(** Return the contents of a section, as marshalled data *)
+(** Return the contents of a section, as marshalled data
+
+    @raise Invalid_argument if the name is not of size 4. *)
