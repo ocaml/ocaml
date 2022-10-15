@@ -331,7 +331,11 @@ type stack_info = {
   (* Maximal stack size reached during the current function body *)
 }
 
-let create_stack_info () = { try_blocks = []; sz_static_raises = []; max_stack_used = ref 0}
+let create_stack_info () = {
+  try_blocks = [];
+  sz_static_raises = [];
+  max_stack_used = ref 0
+}
 
 (* association staticraise numbers -> (lbl,size of stack, try_blocks *)
 
@@ -363,13 +367,13 @@ let code_as_jump stack_info l sz = match l with
 (* Function bodies that remain to be compiled *)
 
 type function_to_compile =
-  { params: Ident.t list;               (* function parameters *)
-    body: lambda;                       (* the function body *)
-    label: label;                       (* the label of the function entry *)
-    free_vars: Ident.t list;            (* free variables of the function *)
+  { params: Ident.t list;     (* function parameters *)
+    body: lambda;             (* the function body *)
+    label: label;             (* the label of the function entry *)
+    free_vars: Ident.t list;  (* free variables of the function *)
     num_defs: int;            (* number of mutually recursive definitions *)
-    rec_vars: Ident.t list;             (* mutually recursive fn names *)
-    rec_pos: int }                      (* rank in recursive definition *)
+    rec_vars: Ident.t list;   (* mutually recursive fn names *)
+    rec_pos: int }            (* rank in recursive definition *)
 
 let functions_to_compile  = (Stack.create () : function_to_compile Stack.t)
 
@@ -587,7 +591,8 @@ let rec comp_expr stack_info env exp sz cont =
       end else begin
         if nargs < 4 then
           comp_args stack_info env args sz
-            (Kpush :: comp_expr stack_info env func (sz + nargs) (Kapply nargs :: cont))
+            (Kpush ::
+             comp_expr stack_info env func (sz + nargs) (Kapply nargs :: cont))
         else begin
           let (lbl, cont1) = label_code cont in
           Kpush_retaddr lbl ::
@@ -766,9 +771,11 @@ let rec comp_expr stack_info env exp sz cont =
       let cont = add_pseudo_event loc !compunit_name cont in
       begin match kind with
         Pintarray | Paddrarray ->
-          comp_args stack_info env args sz (Kmakeblock(List.length args, 0) :: cont)
+          comp_args stack_info env args sz
+            (Kmakeblock(List.length args, 0) :: cont)
       | Pfloatarray ->
-          comp_args stack_info env args sz (Kmakefloatblock(List.length args) :: cont)
+          comp_args stack_info env args sz
+            (Kmakefloatblock(List.length args) :: cont)
       | Pgenarray ->
           if args = []
           then Kmakeblock(0, 0) :: cont
@@ -798,7 +805,8 @@ let rec comp_expr stack_info env exp sz cont =
   | Lprim (Pduparray (kind, mutability),
            [Lprim (Pmakearray (kind',_),args,_)], loc) ->
       assert (kind = kind');
-      comp_expr stack_info env (Lprim (Pmakearray (kind, mutability), args, loc)) sz cont
+      comp_expr stack_info env
+        (Lprim (Pmakearray (kind, mutability), args, loc)) sz cont
   | Lprim (Pduparray _, [arg], loc) ->
       let prim_obj_dup =
         Primitive.simple ~name:"caml_obj_dup" ~arity:1 ~alloc:true
@@ -811,7 +819,8 @@ let rec comp_expr stack_info env exp sz cont =
       let p = Pintcomp (swap_integer_comparison c)
       and args = [k ; arg] in
       let nargs = List.length args - 1 in
-      comp_args stack_info env args sz (comp_primitive stack_info p (sz + nargs - 1) args :: cont)
+      comp_args stack_info env args sz
+        (comp_primitive stack_info p (sz + nargs - 1) args :: cont)
   | Lprim (Pfloatcomp cmp, args, _) ->
       let cont =
         match cmp with
@@ -829,13 +838,15 @@ let rec comp_expr stack_info env exp sz cont =
       comp_args stack_info env args sz cont
   | Lprim(Pmakeblock(tag, _mut, _), args, loc) ->
       let cont = add_pseudo_event loc !compunit_name cont in
-      comp_args stack_info env args sz (Kmakeblock(List.length args, tag) :: cont)
+      comp_args stack_info env args sz
+        (Kmakeblock(List.length args, tag) :: cont)
   | Lprim(Pfloatfield n, args, loc) ->
       let cont = add_pseudo_event loc !compunit_name cont in
       comp_args stack_info env args sz (Kgetfloatfield n :: cont)
   | Lprim(p, args, _) ->
       let nargs = List.length args - 1 in
-      comp_args stack_info env args sz (comp_primitive stack_info p (sz + nargs - 1) args :: cont)
+      comp_args stack_info env args sz
+        (comp_primitive stack_info p (sz + nargs - 1) args :: cont)
   | Lstaticcatch (body, (i, vars) , handler) ->
       let vars = List.map fst vars in
       let nvars = List.length vars in
@@ -848,7 +859,7 @@ let rec comp_expr stack_info env exp sz cont =
                 stack_info
                 (add_vars vars (sz+1) env)
                 handler (sz+nvars) (add_pop nvars cont1)) in
-          let stack_info = 
+          let stack_info =
             push_static_raise stack_info i lbl_handler (sz+nvars) in
           push_dummies nvars
             (comp_expr stack_info env body (sz+nvars)
@@ -904,7 +915,8 @@ let rec comp_expr stack_info env exp sz cont =
       Kbranch lbl_test :: Klabel lbl_loop :: Kcheck_signals ::
         comp_expr stack_info env body sz
           (Klabel lbl_test ::
-            comp_expr stack_info env cond sz (Kbranchif lbl_loop :: add_const_unit cont))
+           comp_expr stack_info env cond sz
+             (Kbranchif lbl_loop :: add_const_unit cont))
   | Lfor(param, start, stop, dir, body) ->
       let lbl_loop = new_label() in
       let lbl_exit = new_label() in
@@ -949,7 +961,8 @@ let rec comp_expr stack_info env exp sz cont =
 *)
       let lbls = Array.make (Array.length acts) 0 in
       for i = Array.length acts-1 downto 0 do
-        let lbl,c1 = label_code (comp_expr stack_info env acts.(i) sz (branch :: !c)) in
+        let lbl,c1 =
+          label_code (comp_expr stack_info env acts.(i) sz (branch :: !c)) in
         lbls.(i) <- lbl ;
         c := discard_dead_code c1
       done ;
@@ -965,7 +978,8 @@ let rec comp_expr stack_info env exp sz cont =
       done;
       comp_expr stack_info env arg sz (Kswitch(lbl_consts, lbl_blocks) :: !c)
   | Lstringswitch (arg,sw,d,loc) ->
-      comp_expr stack_info env (Matching.expand_stringswitch loc arg sw d) sz cont
+      comp_expr stack_info env
+        (Matching.expand_stringswitch loc arg sw d) sz cont
   | Lassign(id, expr) ->
       begin try
         let pos = Ident.find_same id env.ce_stack in
@@ -1061,7 +1075,8 @@ and comp_expr_list_assign stack_info env exprl sz pos cont = match exprl with
   | [] -> cont
   | exp :: rem ->
       comp_expr stack_info env exp sz
-        (Kassign (sz-pos)::comp_expr_list_assign stack_info env rem sz (pos-1) cont)
+        (Kassign (sz-pos)
+         ::comp_expr_list_assign stack_info env rem sz (pos-1) cont)
 
 (* Compile an if-then-else test. *)
 
@@ -1082,7 +1097,8 @@ and comp_binary_test stack_info env cond ifso ifnot sz cont =
             Kbranchifnot label :: cont
         | None ->
             let (branch_end, cont1) = make_branch cont in
-            let (lbl_not, cont2) = label_code(comp_expr stack_info env ifnot sz cont1) in
+            let (lbl_not, cont2) =
+              label_code(comp_expr stack_info env ifnot sz cont1) in
             Kbranchifnot lbl_not ::
             comp_expr stack_info env ifso sz (branch_end :: cont2) in
 
@@ -1154,4 +1170,3 @@ let compile_phrase expr =
   let init_code = comp_block empty_env expr 1 [Kreturn 1] in
   let fun_code = comp_remainder [] in
   (init_code, fun_code))
-
