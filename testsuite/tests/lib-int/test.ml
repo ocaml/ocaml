@@ -61,6 +61,15 @@ let test_min_max () =
   assert (Int.max 2 3 = 3);
   assert (Int.min 2 3 = 2)
 
+let test_clz () =
+  assert (Int.clz 0 = Sys.int_size);
+  assert (Int.clz (-1) = 0);
+  assert (Int.clz Int.min_int = 0);
+  assert (Int.clz Int.max_int = 1);
+  assert (Int.clz (Int.max_int / 2) = 2);
+  assert (Int.clz 1 = Sys.int_size - 1);
+  assert (Int.clz 2 = Sys.int_size - 2);
+  assert (Int.clz 3 = Sys.int_size - 2)
 
 let tests () =
   test_consts ();
@@ -71,6 +80,7 @@ let tests () =
   test_float_conv ();
   test_string_conv ();
   test_min_max ();
+  test_clz ();
   ()
 
 let () =

@@ -100,6 +100,13 @@ external shift_right_logical : int -> int -> int = "%lsrint"
     of the sign of [x]. The result is unspecified if [n < 0] or
     [n > ]{!Sys.int_size}. *)
 
+external clz : int -> (int[@untagged]) =
+  "caml_int_clz_bytecode" "caml_int_clz" [@@noalloc]
+(** [clz n] counts the number of leading zero bit in [n].  If [n]
+    is negative, the result is [0]. [clz 0] is equal to {!Sys.int_size}.
+    @since 5.0.0
+*)
+
 (** {1:preds Predicates and comparisons} *)
 
 val equal : int -> int -> bool
