@@ -520,17 +520,17 @@ let split_primitive_table p =
 
 let dump_exe ic =
   let toc = Bytesections.read_toc ic in
-  let prims = Bytesections.read_section_string toc ic "PRIM" in
+  let prims = Bytesections.read_section_string toc ic Bytesections.Name.prim in
   primitives := split_primitive_table prims;
   let init_data : Obj.t array =
-    Bytesections.read_section_struct toc ic "DATA" in
+    Bytesections.read_section_struct toc ic Bytesections.Name.data in
   globals := Array.map (fun x -> Constant x) init_data;
   let sym_table : Symtable.global_map =
-    Bytesections.read_section_struct toc ic "SYMB" in
+    Bytesections.read_section_struct toc ic Bytesections.Name.symb in
   Symtable.iter_global_map
     (fun id pos -> !globals.(pos) <- Global id) sym_table;
   begin
-    match Bytesections.seek_section toc ic "DBUG" with
+    match Bytesections.seek_section toc ic Bytesections.Name.dbug with
     | exception Not_found -> ()
     | (_ : int) ->
         let num_eventlists = input_binary_int ic in
@@ -542,7 +542,7 @@ let dump_exe ic =
           record_events orig evl
         done
   end;
-  let code_size = Bytesections.seek_section toc ic "CODE" in
+  let code_size = Bytesections.seek_section toc ic Bytesections.Name.code in
   print_code ic code_size
 
 let arg_list = [

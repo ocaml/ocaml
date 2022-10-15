@@ -15,6 +15,34 @@
 
 (* Handling of sections in bytecode executable files *)
 
+
+module Name : sig
+
+  type t = private string
+
+  val of_string : string -> t
+  (** @raise Invalid_argument if the input is not of size 4 *)
+
+  val code : t (** bytecode *)
+
+  val crcs : t (** crcs for modules *)
+
+  val data : t (** global data (constant) *)
+
+  val dbug : t (** debug info *)
+
+  val dlls : t (** dll names *)
+
+  val dlpt : t (** dll paths *)
+
+  val prim : t (** primitives names *)
+
+  val rntm : t (** The path to the bytecode interpreter (use_runtime mode) *)
+
+  val symb : t (** global identifiers *)
+
+end
+
 (** Recording sections written to a bytecode executable file *)
 
 type toc_writer
@@ -22,11 +50,9 @@ type toc_writer
 val init_record: out_channel -> toc_writer
 (** Start recording sections from the current position in out_channel *)
 
-val record: toc_writer -> string -> unit
+val record: toc_writer -> Name.t -> unit
 (** Record the current position in the out_channel as the end of
-    the section with the given name.
-
-   @raise Invalid_argument if the name is not of size 4. *)
+    the section with the given name. *)
 
 val write_toc_and_trailer: toc_writer -> unit
 (** Write the table of contents and the standard trailer for bytecode
@@ -35,7 +61,7 @@ val write_toc_and_trailer: toc_writer -> unit
 (** Reading sections from a bytecode executable file *)
 
 type section_entry = private {
-  name : string; (** name of the section. *)
+  name : Name.t; (** name of the section. *)
   pos  : int;    (** byte offset at which the section starts. *)
   len  : int;    (** length of the section. *)
 }
@@ -48,19 +74,13 @@ val read_toc: in_channel -> section_table
 (** Read the table of sections from a bytecode executable.
     Raise [Bad_magic_number] if magic number doesn't match *)
 
-val seek_section: section_table -> in_channel -> string -> int
+val seek_section: section_table -> in_channel -> Name.t -> int
 (** Position the input channel at the beginning of the section named "name",
     and return the length of that section.  Raise Not_found if no
-    such section exists.
+    such section exists. *)
 
-   @raise Invalid_argument if the name is not of size 4. *)
+val read_section_string: section_table -> in_channel -> Name.t -> string
+(** Return the contents of a section, as a string. *)
 
-val read_section_string: section_table -> in_channel -> string -> string
-(** Return the contents of a section, as a string.
-
-    @raise Invalid_argument if the name is not of size 4. *)
-
-val read_section_struct: section_table -> in_channel -> string -> 'a
-(** Return the contents of a section, as marshalled data
-
-    @raise Invalid_argument if the name is not of size 4. *)
+val read_section_struct: section_table -> in_channel -> Name.t -> 'a
+(** Return the contents of a section, as marshalled data. *)

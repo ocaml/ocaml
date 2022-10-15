@@ -354,7 +354,7 @@ let link_bytecode ?final_name tolink exec_name standalone =
          in
          output_string outchan runtime;
          output_char outchan '\n';
-         Bytesections.record toc_writer "RNTM"
+         Bytesections.record toc_writer Bytesections.Name.rntm
        end;
        (* The bytecode *)
        let start_code = pos_out outchan in
@@ -376,34 +376,34 @@ let link_bytecode ?final_name tolink exec_name standalone =
        (* The final STOP instruction *)
        output_byte outchan Opcodes.opSTOP;
        output_byte outchan 0; output_byte outchan 0; output_byte outchan 0;
-       Bytesections.record toc_writer "CODE";
+       Bytesections.record toc_writer Bytesections.Name.code;
        (* DLL stuff *)
        if standalone then begin
          (* The extra search path for DLLs *)
          output_stringlist outchan !Clflags.dllpaths;
-         Bytesections.record toc_writer "DLPT";
+         Bytesections.record toc_writer Bytesections.Name.dlpt;
          (* The names of the DLLs *)
          output_stringlist outchan sharedobjs;
-         Bytesections.record toc_writer "DLLS"
+         Bytesections.record toc_writer Bytesections.Name.dlls
        end;
        (* The names of all primitives *)
        Symtable.output_primitive_names outchan;
-       Bytesections.record toc_writer "PRIM";
+       Bytesections.record toc_writer Bytesections.Name.prim;
        (* The table of global data *)
        Emitcode.marshal_to_channel_with_possibly_32bit_compat
          ~filename:final_name ~kind:"bytecode executable"
          outchan (Symtable.initial_global_table());
-       Bytesections.record toc_writer "DATA";
+       Bytesections.record toc_writer Bytesections.Name.data;
        (* The map of global identifiers *)
        Symtable.output_global_map outchan;
-       Bytesections.record toc_writer "SYMB";
+       Bytesections.record toc_writer Bytesections.Name.symb;
        (* CRCs for modules *)
        output_value outchan (extract_crc_interfaces());
-       Bytesections.record toc_writer "CRCS";
+       Bytesections.record toc_writer Bytesections.Name.crcs;
        (* Debug info *)
        if !Clflags.debug then begin
          output_debug_info outchan;
-         Bytesections.record toc_writer "DBUG"
+         Bytesections.record toc_writer Bytesections.Name.dbug
        end;
        (* The table of contents and the trailer *)
        Bytesections.write_toc_and_trailer toc_writer;
@@ -457,10 +457,10 @@ let output_cds_file outfile =
        let toc_writer = Bytesections.init_record outchan in
        (* The map of global identifiers *)
        Symtable.output_global_map outchan;
-       Bytesections.record toc_writer "SYMB";
+       Bytesections.record toc_writer Bytesections.Name.symb;
        (* Debug info *)
        output_debug_info outchan;
-       Bytesections.record toc_writer "DBUG";
+       Bytesections.record toc_writer Bytesections.Name.dbug;
        (* The table of contents and the trailer *)
        Bytesections.write_toc_and_trailer toc_writer;
     )

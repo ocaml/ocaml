@@ -278,8 +278,8 @@ let update_global_table () =
    executable file (normal case) or from linked-in data (-output-obj). *)
 
 type section_reader = {
-  read_string: string -> string;
-  read_struct: string -> Obj.t;
+  read_string: Bytesections.Name.t -> string;
+  read_struct: Bytesections.Name.t -> Obj.t;
   close_reader: unit -> unit
 }
 
@@ -287,9 +287,10 @@ let read_sections () =
   try
     let sections = Meta.get_section_table () in
     { read_string =
-        (fun name -> (Obj.magic(List.assoc name sections) : string));
+        (fun name ->
+           (Obj.magic(List.assoc (name :> string) sections) : string));
       read_struct =
-        (fun name -> List.assoc name sections);
+        (fun name -> List.assoc (name :> string) sections);
       close_reader =
         (fun () -> ()) }
   with Not_found ->
@@ -305,9 +306,10 @@ let init_toplevel () =
   try
     let sect = read_sections () in
     (* Locations of globals *)
-    global_table := (Obj.magic (sect.read_struct "SYMB") : GlobalMap.t);
+    global_table :=
+      (Obj.magic (sect.read_struct Bytesections.Name.symb) : GlobalMap.t);
     (* Primitives *)
-    let prims = sect.read_string "PRIM" in
+    let prims = sect.read_string Bytesections.Name.prim in
     c_prim_table := PrimMap.empty;
     let pos = ref 0 in
     while !pos < String.length prims do
@@ -316,12 +318,15 @@ let init_toplevel () =
       pos := i + 1
     done;
     (* DLL initialization *)
-    let dllpath = try sect.read_string "DLPT" with Not_found -> "" in
+    let dllpath =
+      try sect.read_string Bytesections.Name.dlpt
+      with Not_found -> "" in
     Dll.init_toplevel dllpath;
     (* Recover CRC infos for interfaces *)
     let crcintfs =
       try
-        (Obj.magic (sect.read_struct "CRCS") : (string * Digest.t option) list)
+        (Obj.magic (sect.read_struct Bytesections.Name.crcs)
+         : (string * Digest.t option) list)
       with Not_found -> [] in
     (* Done *)
     sect.close_reader();

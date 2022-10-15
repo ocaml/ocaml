@@ -224,7 +224,7 @@ let dump_byte ic =
   List.iter
     (fun {Bytesections.name = section; len; _} ->
        try
-         if len > 0 then match section with
+         if len > 0 then match (section :> string) with
            | "CRCS" ->
                let imported_units : (string * Digest.t option) list =
                  Bytesections.read_section_struct toc ic section in

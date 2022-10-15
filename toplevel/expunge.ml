@@ -66,7 +66,7 @@ let main () =
         List.iter
           (fun {Bytesections.name; pos; len} ->
              seek_in ic pos;
-             begin match name with
+             begin match (name :> string) with
                "SYMB" ->
                  let global_map : Symtable.global_map = input_value ic in
                  output_value oc (expunge_map global_map)

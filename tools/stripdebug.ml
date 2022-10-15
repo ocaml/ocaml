@@ -32,12 +32,13 @@ let stripdebug infile outfile =
   let toc_writer = Bytesections.init_record oc in
   List.iter
     (fun {Bytesections.name; pos; len} ->
-       if name = "DBUG" || name = "CRCS" then ()
-       else begin
-        seek_in ic pos;
-        copy_file_chunk ic oc len;
-        Bytesections.record toc_writer name
-      end)
+       match (name :> string) with
+       | "DBUG" | "CRCS" -> ()
+       | _ ->
+           seek_in ic pos;
+           copy_file_chunk ic oc len;
+           Bytesections.record toc_writer name
+    )
     toc;
   (* Rewrite the toc and trailer *)
   Bytesections.write_toc_and_trailer toc_writer;

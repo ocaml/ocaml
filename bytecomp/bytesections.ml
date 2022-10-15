@@ -15,6 +15,23 @@
 
 (* Handling of sections in bytecode executable files *)
 
+module Name = struct
+  type t = string
+  let of_string name =
+    if String.length name <> 4 then
+      invalid_arg "Bytesections.Name.of_string: must be of size 4";
+    name
+  let code = of_string "CODE"
+  let dlpt = of_string "DLPT"
+  let dlls = of_string "DLLS"
+  let data = of_string "DATA"
+  let prim = of_string "PRIM"
+  let symb = of_string "SYMB"
+  let dbug = of_string "DBUG"
+  let crcs = of_string "CRCS"
+  let rntm = of_string "RNTM"
+end
+
 type section_entry = {
   name : string;
   pos  : int;
@@ -38,8 +55,6 @@ let init_record outchan : toc_writer =
     outchan }
 
 let record t name =
-  if String.length name <> 4 then
-    invalid_arg "Bytesections.record: section name must be of size 4";
   let pos = pos_out t.outchan in
   if pos < t.section_prev then
     invalid_arg "Bytesections.record: out_channel offset moved backward";
@@ -98,8 +113,7 @@ let find_section t name =
    such section exists. *)
 
 let seek_section t ic name =
-  if String.length name <> 4 then
-    invalid_arg "Bytesections.seek_section: section name must be of size 4";
+  assert (String.length name = 4);
   let pos, len = find_section t name in
   seek_in ic pos; len
 

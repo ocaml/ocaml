@@ -26,8 +26,10 @@ let rec cmpbytes ic1 ic2 len ofs =
     if c1 = c2 then cmpbytes ic1 ic2 (len - 1) (ofs + 1) else Differ ofs
   end
 
-let skip_section name =
-  name = "DBUG"
+let skip_section (name : Bytesections.Name.t) =
+  match (name :> string) with
+  | "DBUG" -> true
+  | _ -> false
 
 let cmpbyt file1 file2 =
   let open Bytesections in
@@ -50,13 +52,15 @@ let cmpbyt file1 file2 =
         eprintf "%s has more sections than %s\n" file1 file2;
         false
     | s1 :: t1, s2 :: t2 ->
-        if s1.name <> s2.name then begin
+        let name1 = (s1.name :> string)
+        and name2 = (s2.name :> string) in
+        if name1 <> name2 then begin
           eprintf "Section mismatch: %s (in %s) / %s (in %s)\n"
-                  s1.name file1 s2.name file2;
+                   name1 file1 name2 file2;
           false
         end else if s1.len <> s2.len then begin
           eprintf "Length of section %s differ: %d (in %s) / %d (in %s)\n"
-                  s1.name s1.len file1 s2.len file2;
+                  name1 s1.len file1 s2.len file2;
           false
         end else begin
           seek_in ic1 s1.pos;
@@ -64,7 +68,7 @@ let cmpbyt file1 file2 =
           match cmpbytes ic1 ic2 s1.len 0 with
           | Differ ofs ->
               eprintf "Files %s and %s differ: section %s, offset %d\n"
-                      file1 file2 s1.name ofs;
+                      file1 file2 name1 ofs;
               false
           | Same ->
               cmpsections t1 t2
