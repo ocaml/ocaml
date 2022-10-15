@@ -256,6 +256,9 @@ module Int_literal_converter : sig
   val nativeint : string -> nativeint
 end
 
+val concat_null_separated : string list -> string
+val split_null_separated : string -> string list
+
 val chop_extensions: string -> string
         (* Return the given file name without its extensions. The extensions
            is the longest suffix starting with a period and not including

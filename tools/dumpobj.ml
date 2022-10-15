@@ -511,17 +511,13 @@ let dump_obj ic =
   seek_in ic cu.cu_pos;
   print_code ic cu.cu_codesize
 
-(* Read the primitive table from an executable *)
-
-let split_primitive_table p =
-  String.split_on_char '\000' p |> List.filter ((<>) "") |> Array.of_list
-
 (* Print an executable file *)
 
 let dump_exe ic =
   let toc = Bytesections.read_toc ic in
+  (* Read the primitive table from an executable *)
   let prims = Bytesections.read_section_string toc ic Bytesections.Name.prim in
-  primitives := split_primitive_table prims;
+  primitives := Misc.split_null_separated prims |> Array.of_list;
   let init_data : Obj.t array =
     Bytesections.read_section_struct toc ic Bytesections.Name.data in
   globals := Array.map (fun x -> Constant x) init_data;

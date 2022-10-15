@@ -397,6 +397,25 @@ end
 
 (* String operations *)
 
+let split_null_separated str =
+  let len = String.length str in
+  let rec fold s e acc =
+    if e != len then
+      if str.[e] = '\000' then
+        fold (e+1) (e+1) (String.sub str s (e-s) :: acc)
+      else fold s (e+1) acc
+    else
+      let acc = if s <> e
+        then (String.sub str s (e-s) :: acc)
+        else acc
+      in List.rev acc
+  in fold 0 0 []
+
+let concat_null_separated l =
+  match l with
+  | [] -> ""
+  | l -> String.concat "\000" l ^ "\000"
+
 let chop_extensions file =
   let dirname = Filename.dirname file and basename = Filename.basename file in
   try

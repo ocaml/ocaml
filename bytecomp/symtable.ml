@@ -117,12 +117,9 @@ let all_primitives () =
   prim
 
 let data_primitive_names () =
-  let prim = all_primitives() in
-  let b = Buffer.create 512 in
-  for i = 0 to Array.length prim - 1 do
-    Buffer.add_string b prim.(i); Buffer.add_char b '\000'
-  done;
-  Buffer.contents b
+  all_primitives()
+  |> Array.to_list
+  |> concat_null_separated
 
 let output_primitive_names outchan =
   output_string outchan (data_primitive_names())

@@ -32,18 +32,6 @@ let shape = ref false
 
 module Magic_number = Misc.Magic_number
 
-let to_stringlist sect =
-  let get_string_list sect len =
-    let rec fold s e acc =
-      if e != len then
-        if sect.[e] = '\000' then
-          fold (e+1) (e+1) (String.sub sect s (e-s) :: acc)
-        else fold s (e+1) acc
-      else acc
-    in fold 0 0 []
-  in
-  get_string_list sect (String.length sect)
-
 let dummy_crc = String.make 32 '-'
 let null_crc = String.make 32 '0'
 
@@ -232,17 +220,17 @@ let dump_byte ic =
            | "DLLS" ->
                let dlls =
                  Bytesections.read_section_string toc ic section
-                 |> to_stringlist in
+                 |> split_null_separated in
                p_list "Used DLLs" print_line dlls
            | "DLPT" ->
                let dll_paths =
                  Bytesections.read_section_string toc ic section
-                 |> to_stringlist in
+                 |> split_null_separated in
                p_list "Additional DLL paths" print_line dll_paths
            | "PRIM" ->
                let prims =
                  Bytesections.read_section_string toc ic section
-                 |> to_stringlist in
+                 |> split_null_separated in
                p_list "Primitives used" print_line prims
            | "SYMB" ->
                let symb = Bytesections.read_section_struct toc ic section in
