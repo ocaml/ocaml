@@ -277,9 +277,9 @@ let f () = { f1 = 0
 
 [%%expect{|
 type t = { f1 : int; f2 : int; }
-Line 3, characters 13-15:
-3 | let f () = { f1 = 0
-                 ^^
+Line 4, characters 10-20:
+4 |         ; Coq__10.f2 = 0 }
+              ^^^^^^^^^^
 Error: Unbound module Coq__10
 |}]
 
@@ -293,9 +293,9 @@ let f () = { f1 = 0
 
 [%%expect{|
 module Coq__11 : sig type t = { f1 : int; f2 : int; f3 : int; } end
-Line 5, characters 13-15:
-5 | let f () = { f1 = 0
-                 ^^
+Line 6, characters 13-23:
+6 |            ; Coq__10.f2 = 0
+                 ^^^^^^^^^^
 Error: Unbound module Coq__10
 Hint: Did you mean Coq__11?
 |}]
