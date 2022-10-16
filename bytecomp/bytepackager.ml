@@ -200,9 +200,11 @@ let build_global_target ~ppf_dump oc target_name pos components coercion =
     Format.fprintf ppf_dump "%a@." Printlambda.lambda lam;
   let instrs =
     Bytegen.compile_implementation target_name lam in
-  let rel =
+  let pack_relocs, pack_events, pack_debug_dirs =
     Emitcode.to_packed_file oc instrs in
-  relocs := List.map (fun (r, ofs) -> (r, pos + ofs)) rel @ !relocs
+  events := List.rev_append pack_events !events;
+  debug_dirs := String.Set.union pack_debug_dirs !debug_dirs;
+  relocs := List.rev_map (fun (r, ofs) -> (r, pos + ofs)) pack_relocs @ !relocs
 
 (* Build the .cmo file obtained by packaging the given .cmo files. *)
 

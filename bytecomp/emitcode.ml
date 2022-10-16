@@ -465,5 +465,7 @@ let to_packed_file outchan code =
   Fun.protect ~finally:clear (fun () ->
   emit code;
   LongString.output outchan !out_buffer 0 !out_position;
-  let reloc = !reloc_info in
-  reloc)
+  let reloc = List.rev !reloc_info in
+  let events = !events in
+  let debug_dirs = !debug_dirs in
+  (reloc, events, debug_dirs))
