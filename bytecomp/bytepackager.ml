@@ -46,13 +46,13 @@ let primitives = ref ([] : string list)
    SETGLOBAL relocations that correspond to one of the units being
    consolidated. *)
 
-let rename_relocation packagename objfile mapping defined base (rel, ofs) =
+let rename_relocation packagename objfile mapping base (rel, ofs) =
   let rel' =
     match rel with
       Reloc_getglobal id ->
         begin try
-          let id' = List.assoc id mapping in
-          if List.mem id defined
+          let id', defined = Ident.Map.find id mapping in
+          if defined
           then Reloc_getglobal id'
           else raise(Error(Forward_reference(objfile, id)))
         with Not_found ->
@@ -67,8 +67,8 @@ let rename_relocation packagename objfile mapping defined base (rel, ofs) =
         end
     | Reloc_setglobal id ->
         begin try
-          let id' = List.assoc id mapping in
-          if List.mem id defined
+          let id', defined = Ident.Map.find id mapping in
+          if defined
           then raise(Error(Multiple_definition(objfile, id)))
           else Reloc_setglobal id'
         with Not_found ->
@@ -139,13 +139,13 @@ let read_member_info targetname file = (
    Accumulate relocs, debug info, etc.
    Return size of bytecode. *)
 
-let rename_append_bytecode packagename oc mapping defined ofs subst
+let rename_append_bytecode packagename oc mapping ofs subst
                            objfile compunit =
   let ic = open_in_bin objfile in
   try
     Bytelink.check_consistency objfile compunit;
     relocs := rev_append_map
-      (rename_relocation packagename objfile mapping defined ofs)
+      (rename_relocation packagename objfile mapping ofs)
       compunit.cu_reloc
       !relocs;
     primitives := List.rev_append compunit.cu_primitives !primitives;
@@ -173,7 +173,7 @@ let rename_append_bytecode packagename oc mapping defined ofs subst
 (* Same, for a list of .cmo and .cmi files.
    Return total size of bytecode. *)
 
-let rec rename_append_bytecode_list packagename oc mapping defined ofs
+let rec rename_append_bytecode_list packagename oc mapping ofs
                                     subst =
   function
     [] ->
@@ -181,15 +181,18 @@ let rec rename_append_bytecode_list packagename oc mapping defined ofs
   | m :: rem ->
       match m.pm_kind with
       | PM_intf ->
-          rename_append_bytecode_list packagename oc mapping defined ofs
+          rename_append_bytecode_list packagename oc mapping ofs
                                       subst rem
       | PM_impl compunit ->
           let size =
-            rename_append_bytecode packagename oc mapping defined ofs
+            rename_append_bytecode packagename oc mapping ofs
                                    subst m.pm_file compunit in
-          let id = Ident.create_persistent m.pm_name in
+          let id = m.pm_ident in
           let root = Path.Pident (Ident.create_persistent packagename) in
-          rename_append_bytecode_list packagename oc mapping (id :: defined)
+          let mapping = Ident.Map.update id (function
+              | Some (p,false) -> Some (p,true)
+              | Some (_, true) | None -> assert false) mapping in
+          rename_append_bytecode_list packagename oc mapping
             (ofs + size)
             (Subst.add_module id (Path.Pdot (root, Ident.name id))
                               subst)
@@ -237,15 +240,16 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
   in
   let mapping =
     List.map
-      (fun m -> m.pm_ident, m.pm_packed_ident)
-      members in
+      (fun m -> m.pm_ident, (m.pm_packed_ident, false))
+      members
+    |> Ident.Map.of_list in
   let oc = open_out_bin targetfile in
   try
     output_string oc Config.cmo_magic_number;
     let pos_depl = pos_out oc in
     output_binary_int oc 0;
     let pos_code = pos_out oc in
-    let ofs = rename_append_bytecode_list targetname oc mapping [] 0
+    let ofs = rename_append_bytecode_list targetname oc mapping 0
                                           Subst.identity members in
     let components =
       List.map
