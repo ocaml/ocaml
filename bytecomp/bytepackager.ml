@@ -93,9 +93,11 @@ type pack_member_kind = PM_intf | PM_impl of compilation_unit
 type pack_member =
   { pm_file: string;
     pm_name: string;
+    pm_ident: Ident.t;
+    pm_packed_ident: Ident.t;
     pm_kind: pack_member_kind }
 
-let read_member_info file = (
+let read_member_info targetname file = (
   let name =
     String.capitalize_ascii(Filename.basename(chop_extensions file)) in
   let kind =
@@ -121,7 +123,10 @@ let read_member_info file = (
         close_in ic;
         raise x
     end in
-  { pm_file = file; pm_name = name; pm_kind = kind }
+  let pm_ident = Ident.create_persistent name in
+  let pm_packed_ident = Ident.create_persistent(targetname ^ "." ^ name) in
+  { pm_file = file; pm_name = name; pm_kind = kind;
+    pm_ident; pm_packed_ident }
 )
 
 (* Read the bytecode from a .cmo file.
@@ -188,14 +193,7 @@ let rec rename_append_bytecode_list packagename oc mapping defined ofs
 
 (* Generate the code that builds the tuple representing the package module *)
 
-let build_global_target ~ppf_dump oc target_name members mapping pos coercion =
-  let components =
-    List.map2
-      (fun m (_id1, id2) ->
-        match m.pm_kind with
-        | PM_intf -> None
-        | PM_impl _ -> Some id2)
-      members mapping in
+let build_global_target ~ppf_dump oc target_name pos components coercion =
   let lam =
     Translmod.transl_package
       components (Ident.create_persistent target_name) coercion in
@@ -212,7 +210,7 @@ let build_global_target ~ppf_dump oc target_name members mapping pos coercion =
 
 let package_object_files ~ppf_dump files targetfile targetname coercion =
   let members =
-    map_left_right read_member_info files in
+    map_left_right (read_member_info targetname) files in
   let required_globals =
     List.fold_right (fun compunit required_globals -> match compunit with
         | { pm_kind = PM_intf } ->
@@ -235,10 +233,8 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
     List.map (fun m -> m.pm_name) members in
   let mapping =
     List.map
-      (fun name ->
-          (Ident.create_persistent name,
-           Ident.create_persistent(targetname ^ "." ^ name)))
-      unit_names in
+      (fun m -> m.pm_ident, m.pm_packed_ident)
+      members in
   let oc = open_out_bin targetfile in
   try
     output_string oc Config.cmo_magic_number;
@@ -247,7 +243,14 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
     let pos_code = pos_out oc in
     let ofs = rename_append_bytecode_list targetname oc mapping [] 0
                                           Subst.identity members in
-    build_global_target ~ppf_dump oc targetname members mapping ofs coercion;
+    let components =
+      List.map
+        (fun m ->
+          match m.pm_kind with
+          | PM_intf -> None
+          | PM_impl _ -> Some m.pm_packed_ident)
+        members in
+    build_global_target ~ppf_dump oc targetname ofs components coercion;
     let pos_debug = pos_out oc in
     if !Clflags.debug && !events <> [] then begin
       output_value oc (List.rev !events);
