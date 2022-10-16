@@ -161,7 +161,7 @@ void caml_ephe_clean (value v) {
     if (release_data) {
       Field(v, CAML_EPHE_DATA_OFFSET) = caml_ephe_none;
     } else {
-      CAMLassert (!Is_block(child) || !is_unmarked(child));
+      CAMLassert (!Is_block(child) || !is_unmarked(child) || Is_young(child));
     }
   }
 }
