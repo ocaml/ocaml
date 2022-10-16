@@ -229,8 +229,6 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
             List.fold_right Ident.Set.add cu_required_globals required_globals)
       members Ident.Set.empty
   in
-  let unit_names =
-    List.map (fun m -> m.pm_name) members in
   let mapping =
     List.map
       (fun m -> m.pm_ident, m.pm_packed_ident)
@@ -261,6 +259,8 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
         | _ -> false) members in
     let pos_final = pos_out oc in
     let imports =
+      let unit_names =
+        List.map (fun m -> m.pm_name) members in
       List.filter
         (fun (name, _crc) -> not (List.mem name unit_names))
         (Bytelink.extract_crc_interfaces()) in
