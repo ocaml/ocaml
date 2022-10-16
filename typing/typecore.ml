@@ -1218,10 +1218,21 @@ let disambiguate_lid_a_list loc closed env usage expected_type lid_a_list =
       (Warnings.Name_out_of_scope (!w_scope_ty, List.rev !w_scope, true));
   lbl_a_list
 
-let rec find_record_qual = function
-  | [] -> None
-  | ({ txt = Longident.Ldot (modname, _) }, _) :: _ -> Some modname
-  | _ :: rest -> find_record_qual rest
+let find_record_qual lid_a_list =
+  let rec loop accu = function
+    | [] -> lid_a_list
+    | ({txt = Longident.Ldot (modname, _); _}, _ as lid_a) :: rest ->
+        lid_a ::
+        List.map (fun (lid, a as lid_a) ->
+            match lid.txt with
+            | Longident.Lident s ->
+                {lid with txt = Longident.Ldot (modname, s)}, a
+            | _ -> lid_a
+          ) (List.rev_append accu rest)
+    | lid_a :: rest ->
+        loop (lid_a :: accu) rest
+  in
+  loop [] lid_a_list
 
 let map_fold_cont f xs k =
   List.fold_right (fun x k ys -> f x (fun y -> k (y :: ys)))
@@ -1229,17 +1240,7 @@ let map_fold_cont f xs k =
 
 let type_label_a_list loc closed env usage type_lbl_a expected_type lid_a_list =
   let lbl_a_list =
-    let lid_a_list =
-      match find_record_qual lid_a_list with
-        None -> lid_a_list
-      | Some modname ->
-          List.map
-            (fun (lid, a as lid_a) ->
-              match lid.txt with Longident.Lident s ->
-                {lid with txt=Longident.Ldot (modname, s)}, a
-              | _ -> lid_a)
-            lid_a_list
-    in
+    let lid_a_list = find_record_qual lid_a_list in
     disambiguate_lid_a_list loc closed env usage expected_type lid_a_list
   in
   (* Invariant: records are sorted in the typed tree *)
