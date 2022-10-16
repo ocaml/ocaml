@@ -131,7 +131,7 @@ let read_member_info file = (
    Accumulate relocs, debug info, etc.
    Return size of bytecode. *)
 
-let rename_append_bytecode packagename oc mapping defined ofs prefix subst
+let rename_append_bytecode packagename oc mapping defined ofs subst
                            objfile compunit =
   let ic = open_in_bin objfile in
   try
@@ -145,7 +145,7 @@ let rename_append_bytecode packagename oc mapping defined ofs prefix subst
     Misc.copy_file_chunk ic oc compunit.cu_codesize;
     if !Clflags.debug && compunit.cu_debug > 0 then begin
       seek_in ic compunit.cu_debug;
-      List.iter (relocate_debug ofs prefix subst) (input_value ic);
+      List.iter (relocate_debug ofs packagename subst) (input_value ic);
       debug_dirs := List.fold_left
         (fun s e -> String.Set.add e s)
         !debug_dirs
@@ -161,7 +161,7 @@ let rename_append_bytecode packagename oc mapping defined ofs prefix subst
    Return total size of bytecode. *)
 
 let rec rename_append_bytecode_list packagename oc mapping defined ofs
-                                    prefix subst =
+                                    subst =
   function
     [] ->
       ofs
@@ -169,15 +169,15 @@ let rec rename_append_bytecode_list packagename oc mapping defined ofs
       match m.pm_kind with
       | PM_intf ->
           rename_append_bytecode_list packagename oc mapping defined ofs
-                                      prefix subst rem
+                                      subst rem
       | PM_impl compunit ->
           let size =
             rename_append_bytecode packagename oc mapping defined ofs
-                                   prefix subst m.pm_file compunit in
+                                   subst m.pm_file compunit in
           let id = Ident.create_persistent m.pm_name in
-          let root = Path.Pident (Ident.create_persistent prefix) in
+          let root = Path.Pident (Ident.create_persistent packagename) in
           rename_append_bytecode_list packagename oc mapping (id :: defined)
-            (ofs + size) prefix
+            (ofs + size)
             (Subst.add_module id (Path.Pdot (root, Ident.name id))
                               subst)
             rem
@@ -242,7 +242,7 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
     output_binary_int oc 0;
     let pos_code = pos_out oc in
     let ofs = rename_append_bytecode_list targetname oc mapping [] 0
-                                          targetname Subst.identity members in
+                                          Subst.identity members in
     build_global_target ~ppf_dump oc targetname members mapping ofs coercion;
     let pos_debug = pos_out oc in
     if !Clflags.debug && !events <> [] then begin
