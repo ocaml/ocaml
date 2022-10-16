@@ -21,6 +21,11 @@ open Instruct
 open Cmo_format
 module String = Misc.Stdlib.String
 
+let rec rev_append_map f l rest =
+  match l with
+  | [] -> rest
+  | x :: xs -> rev_append_map f xs (f x :: rest)
+
 type error =
     Forward_reference of string * Ident.t
   | Multiple_definition of string * Ident.t
@@ -139,24 +144,25 @@ let rename_append_bytecode packagename oc mapping defined ofs subst
   let ic = open_in_bin objfile in
   try
     Bytelink.check_consistency objfile compunit;
-    List.iter
-      (fun reloc ->
-         let reloc =
-           rename_relocation packagename objfile mapping defined ofs reloc in
-         relocs := reloc :: !relocs)
-      compunit.cu_reloc;
-    primitives := compunit.cu_primitives @ !primitives;
+    relocs := rev_append_map
+      (rename_relocation packagename objfile mapping defined ofs)
+      compunit.cu_reloc
+      !relocs;
+    primitives := List.rev_append compunit.cu_primitives !primitives;
     seek_in ic compunit.cu_pos;
     Misc.copy_file_chunk ic oc compunit.cu_codesize;
     if !Clflags.debug && compunit.cu_debug > 0 then begin
       seek_in ic compunit.cu_debug;
-      List.iter (fun ev ->
-          let ev = relocate_debug ofs packagename subst ev in
-          events := ev :: !events) (input_value ic);
+      let unit_events = (input_value ic : debug_event list) in
+      events := rev_append_map
+        (relocate_debug ofs packagename subst)
+        unit_events
+        !events;
+      let unit_debug_dirs = (input_value ic : string list) in
       debug_dirs := List.fold_left
         (fun s e -> String.Set.add e s)
         !debug_dirs
-        (input_value ic);
+        unit_debug_dirs;
     end;
     close_in ic;
     compunit.cu_codesize
@@ -204,7 +210,7 @@ let build_global_target ~ppf_dump oc target_name pos components coercion =
     Emitcode.to_packed_file oc instrs in
   events := List.rev_append pack_events !events;
   debug_dirs := String.Set.union pack_debug_dirs !debug_dirs;
-  relocs := List.rev_map (fun (r, ofs) -> (r, pos + ofs)) pack_relocs @ !relocs
+  relocs := rev_append_map (fun (r, ofs) -> (r, pos + ofs)) pack_relocs !relocs
 
 (* Build the .cmo file obtained by packaging the given .cmo files. *)
 
