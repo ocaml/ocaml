@@ -19,7 +19,7 @@ type dll_handle
 type dll_address
 type dll_mode = For_checking | For_execution
 
-external dll_open: dll_mode -> string -> dll_handle = "caml_dynlink_open_lib"
+external dll_open: string -> dll_handle = "caml_dynlink_open_lib"
 external dll_close: dll_handle -> unit = "caml_dynlink_close_lib"
 external dll_sym: dll_handle -> string -> dll_address
                 = "caml_dynlink_lookup_symbol"
@@ -84,7 +84,7 @@ let open_dll mode name =
               failwith (fullname ^ ": " ^ Binutils.error_to_string err)
           end
       | For_execution ->
-          begin match dll_open mode fullname with
+          begin match dll_open fullname with
           | dll ->
               Execution dll
           | exception Failure msg ->
