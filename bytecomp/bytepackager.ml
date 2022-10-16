@@ -38,7 +38,7 @@ let debug_dirs = ref String.Set.empty
 let primitives = ref ([] : string list)
 let force_link = ref false
 
-(* Record a relocation.  Update its offset, and rename GETGLOBAL and
+(* Update a relocation.  adjust its offset, and rename GETGLOBAL and
    SETGLOBAL relocations that correspond to one of the units being
    consolidated. *)
 
@@ -77,15 +77,14 @@ let rename_relocation packagename objfile mapping defined base (rel, ofs) =
         end
     | _ ->
         rel in
-  relocs := (rel', base + ofs) :: !relocs
+  (rel', base + ofs)
 
-(* Record and relocate a debugging event *)
+(* relocate a debugging event *)
 
 let relocate_debug base prefix subst ev =
-  let ev' = { ev with ev_pos = base + ev.ev_pos;
-                      ev_module = prefix ^ "." ^ ev.ev_module;
-                      ev_typsubst = Subst.compose ev.ev_typsubst subst } in
-  events := ev' :: !events
+  { ev with ev_pos = base + ev.ev_pos;
+            ev_module = prefix ^ "." ^ ev.ev_module;
+            ev_typsubst = Subst.compose ev.ev_typsubst subst }
 
 (* Read the unit information from a .cmo file. *)
 
@@ -137,7 +136,10 @@ let rename_append_bytecode packagename oc mapping defined ofs subst
   try
     Bytelink.check_consistency objfile compunit;
     List.iter
-      (rename_relocation packagename objfile mapping defined ofs)
+      (fun reloc ->
+         let reloc =
+           rename_relocation packagename objfile mapping defined ofs reloc in
+         relocs := reloc :: !relocs)
       compunit.cu_reloc;
     primitives := compunit.cu_primitives @ !primitives;
     if compunit.cu_force_link then force_link := true;
@@ -145,7 +147,9 @@ let rename_append_bytecode packagename oc mapping defined ofs subst
     Misc.copy_file_chunk ic oc compunit.cu_codesize;
     if !Clflags.debug && compunit.cu_debug > 0 then begin
       seek_in ic compunit.cu_debug;
-      List.iter (relocate_debug ofs packagename subst) (input_value ic);
+      List.iter (fun ev ->
+          let ev = relocate_debug ofs packagename subst ev in
+          events := ev :: !events) (input_value ic);
       debug_dirs := List.fold_left
         (fun s e -> String.Set.add e s)
         !debug_dirs
