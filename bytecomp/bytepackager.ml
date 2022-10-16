@@ -116,16 +116,15 @@ type pack_member =
     pm_packed_ident: Ident.t;
     pm_kind: pack_member_kind }
 
-let read_member_info targetname file = (
-  let name =
-    String.capitalize_ascii(Filename.basename(chop_extensions file)) in
+let read_member_info targetname file =
+  let name = String.capitalize_ascii(Filename.basename(chop_extensions file)) in
   let kind =
     (* PR#7479: make sure it is either a .cmi or a .cmo *)
     if Filename.check_suffix file ".cmi" then
       PM_intf
     else begin
       let ic = open_in_bin file in
-      try
+      Fun.protect ~finally:(fun () -> close_in ic) (fun () ->
         let buffer =
           really_input_string ic (String.length Config.cmo_magic_number)
         in
@@ -136,32 +135,27 @@ let read_member_info targetname file = (
         let compunit = (input_value ic : compilation_unit) in
         if compunit.cu_name <> name
         then raise(Error(Illegal_renaming(name, file, compunit.cu_name)));
-        close_in ic;
-        PM_impl compunit
-      with x ->
-        close_in ic;
-        raise x
+        PM_impl compunit)
     end in
   let pm_ident = Ident.create_persistent name in
   let pm_packed_ident = Ident.create_persistent(targetname ^ "." ^ name) in
-  { pm_file = file; pm_name = name; pm_kind = kind;
-    pm_ident; pm_packed_ident }
-)
+  { pm_file = file; pm_name = name; pm_kind = kind; pm_ident; pm_packed_ident }
 
 (* Read the bytecode from a .cmo file.
    Write bytecode to channel [oc].
    Rename globals as indicated by [mapping] in reloc info.
    Accumulate relocs, debug info, etc.
-   Return size of bytecode. *)
+   Return the accumulated state. *)
 
 let rename_append_bytecode packagename oc state objfile compunit =
   let ic = open_in_bin objfile in
   try
     Bytelink.check_consistency objfile compunit;
-    let relocs = rev_append_map
-      (rename_relocation packagename objfile state.mapping state.offset)
-      compunit.cu_reloc
-      state.relocs in
+    let relocs =
+      rev_append_map
+        (rename_relocation packagename objfile state.mapping state.offset)
+        compunit.cu_reloc
+        state.relocs in
     let primitives = List.rev_append compunit.cu_primitives state.primitives in
     seek_in ic compunit.cu_pos;
     Misc.copy_file_chunk ic oc compunit.cu_codesize;
@@ -169,15 +163,16 @@ let rename_append_bytecode packagename oc state objfile compunit =
       if !Clflags.debug && compunit.cu_debug > 0 then begin
         seek_in ic compunit.cu_debug;
         let unit_events = (input_value ic : debug_event list) in
-        let events = rev_append_map
+        let events =
+          rev_append_map
             (relocate_debug state.offset packagename state.subst)
             unit_events
             state.events in
         let unit_debug_dirs = (input_value ic : string list) in
-        let debug_dirs = List.fold_left
-            (fun s e -> String.Set.add e s)
+        let debug_dirs =
+          String.Set.union
             state.debug_dirs
-            unit_debug_dirs in
+            (String.Set.of_list unit_debug_dirs) in
         events, debug_dirs
       end
       else state.events, state.debug_dirs
@@ -223,7 +218,8 @@ let build_global_target ~ppf_dump oc target_name state components coercion =
     Emitcode.to_packed_file oc instrs in
   let events = List.rev_append pack_events state.events in
   let debug_dirs = String.Set.union pack_debug_dirs state.debug_dirs in
-  let relocs = rev_append_map
+  let relocs =
+    rev_append_map
       (fun (r, ofs) -> (r, state.offset + ofs))
       pack_relocs state.relocs in
   { state with events; debug_dirs; relocs; offset = state.offset + size}
@@ -231,8 +227,7 @@ let build_global_target ~ppf_dump oc target_name state components coercion =
 (* Build the .cmo file obtained by packaging the given .cmo files. *)
 
 let package_object_files ~ppf_dump files targetfile targetname coercion =
-  let members =
-    map_left_right (read_member_info targetname) files in
+  let members = map_left_right (read_member_info targetname) files in
   let required_globals =
     List.fold_right (fun compunit required_globals -> match compunit with
         | { pm_kind = PM_intf } ->
@@ -252,7 +247,7 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
       members Ident.Set.empty
   in
   let oc = open_out_bin targetfile in
-  try
+  Fun.protect ~finally:(fun () -> close_out oc) (fun () ->
     output_string oc Config.cmo_magic_number;
     let pos_depl = pos_out oc in
     output_binary_int oc 0;
@@ -265,8 +260,7 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
         |> Ident.Map.of_list in
       { empty_state with mapping } in
     let state =
-      List.fold_left (rename_append_pack_member targetname oc)
-        state members in
+      List.fold_left (rename_append_pack_member targetname oc) state members in
     let components =
       List.map
         (fun m ->
@@ -281,9 +275,10 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
       output_value oc (List.rev state.events);
       output_value oc (String.Set.elements state.debug_dirs);
     end;
-    let force_link = List.exists (function
-        | {pm_kind = PM_impl {cu_force_link}} -> cu_force_link
-        | _ -> false) members in
+    let force_link =
+      List.exists (function
+          | {pm_kind = PM_impl {cu_force_link}} -> cu_force_link
+          | _ -> false) members in
     let pos_final = pos_out oc in
     let imports =
       let unit_names =
@@ -307,30 +302,26 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
       ~filename:targetfile ~kind:"bytecode unit"
       oc compunit;
     seek_out oc pos_depl;
-    output_binary_int oc pos_final;
-    close_out oc
-  with x ->
-    close_out oc;
-    raise x
+    output_binary_int oc pos_final)
 
 (* The entry point *)
 
 let package_files ~ppf_dump initial_env files targetfile =
-    let files =
+  let files =
     List.map
-        (fun f ->
-        try Load_path.find f
-        with Not_found -> raise(Error(File_not_found f)))
-        files in
-    let prefix = chop_extensions targetfile in
-    let targetcmi = prefix ^ ".cmi" in
-    let targetname = String.capitalize_ascii(Filename.basename prefix) in
-    Misc.try_finally (fun () ->
-        let coercion =
-          Typemod.package_units initial_env files targetcmi targetname in
-        package_object_files ~ppf_dump files targetfile targetname coercion
-      )
-      ~exceptionally:(fun () -> remove_file targetfile)
+      (fun f ->
+         try Load_path.find f
+         with Not_found -> raise(Error(File_not_found f)))
+      files in
+  let prefix = chop_extensions targetfile in
+  let targetcmi = prefix ^ ".cmi" in
+  let targetname = String.capitalize_ascii(Filename.basename prefix) in
+  Misc.try_finally (fun () ->
+      let coercion =
+        Typemod.package_units initial_env files targetcmi targetname in
+      package_object_files ~ppf_dump files targetfile targetname coercion
+    )
+    ~exceptionally:(fun () -> remove_file targetfile)
 
 (* Error report *)
 
