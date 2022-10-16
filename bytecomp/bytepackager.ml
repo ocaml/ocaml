@@ -36,7 +36,6 @@ let relocs = ref ([] : (reloc_info * int) list)
 let events = ref ([] : debug_event list)
 let debug_dirs = ref String.Set.empty
 let primitives = ref ([] : string list)
-let force_link = ref false
 
 (* Update a relocation.  adjust its offset, and rename GETGLOBAL and
    SETGLOBAL relocations that correspond to one of the units being
@@ -147,7 +146,6 @@ let rename_append_bytecode packagename oc mapping defined ofs subst
          relocs := reloc :: !relocs)
       compunit.cu_reloc;
     primitives := compunit.cu_primitives @ !primitives;
-    if compunit.cu_force_link then force_link := true;
     seek_in ic compunit.cu_pos;
     Misc.copy_file_chunk ic oc compunit.cu_codesize;
     if !Clflags.debug && compunit.cu_debug > 0 then begin
@@ -256,6 +254,9 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
       output_value oc (List.rev !events);
       output_value oc (String.Set.elements !debug_dirs);
     end;
+    let force_link = List.exists (function
+        | {pm_kind = PM_impl {cu_force_link}} -> cu_force_link
+        | _ -> false) members in
     let pos_final = pos_out oc in
     let imports =
       List.filter
@@ -270,7 +271,7 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
           (targetname, Some (Env.crc_of_unit targetname)) :: imports;
         cu_primitives = !primitives;
         cu_required_globals = Ident.Set.elements required_globals;
-        cu_force_link = !force_link;
+        cu_force_link = force_link;
         cu_debug = if pos_final > pos_debug then pos_debug else 0;
         cu_debugsize = pos_final - pos_debug } in
     Emitcode.marshal_to_channel_with_possibly_32bit_compat
@@ -334,5 +335,4 @@ let () =
 let reset () =
   relocs := [];
   events := [];
-  primitives := [];
-  force_link := false
+  primitives := []
