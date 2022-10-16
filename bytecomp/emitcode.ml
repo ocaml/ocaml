@@ -468,4 +468,5 @@ let to_packed_file outchan code =
   let reloc = List.rev !reloc_info in
   let events = !events in
   let debug_dirs = !debug_dirs in
-  (reloc, events, debug_dirs))
+  let size = !out_position in
+  (size, reloc, events, debug_dirs))

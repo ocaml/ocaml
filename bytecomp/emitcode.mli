@@ -39,11 +39,12 @@ val to_memory:
              debug events *)
 val to_packed_file:
   out_channel -> instruction list ->
-    (reloc_info * int) list * debug_event list * Misc.Stdlib.String.Set.t
+    int * (reloc_info * int) list * debug_event list * Misc.Stdlib.String.Set.t
         (* Arguments:
              channel on output file
              list of instructions to emit
            Result:
+             size of the emitted code
              relocation information
              debug events
              debug directory

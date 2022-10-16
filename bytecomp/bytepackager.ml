@@ -35,12 +35,27 @@ type error =
 
 exception Error of error
 
-(* References accumulating information on the .cmo files *)
+type state = {
+  relocs : (reloc_info * int) list; (** accumulated reloc info *)
+  events : debug_event list;        (** accumulated debug events *)
+  debug_dirs : String.Set.t;        (** accumulated debug_dirs *)
+  primitives : string list;         (** accumulated primitives *)
+  offset : int;                     (** offset of the current unit *)
+  subst : Subst.t;                  (** Substitution for debug event *)
+  mapping : (Ident.t * bool) Ident.Map.t;
+  (** Mapping from module to packed-module idents.
+      The boolean tells whether we've processed the compilation unit already. *)
+}
 
-let relocs = ref ([] : (reloc_info * int) list)
-let events = ref ([] : debug_event list)
-let debug_dirs = ref String.Set.empty
-let primitives = ref ([] : string list)
+let empty_state = {
+  relocs = [];
+  events = [];
+  debug_dirs = String.Set.empty;
+  primitives = [];
+  offset = 0;
+  mapping = Ident.Map.empty;
+  subst = Subst.identity;
+}
 
 (* Update a relocation.  adjust its offset, and rename GETGLOBAL and
    SETGLOBAL relocations that correspond to one of the units being
@@ -139,68 +154,63 @@ let read_member_info targetname file = (
    Accumulate relocs, debug info, etc.
    Return size of bytecode. *)
 
-let rename_append_bytecode packagename oc mapping ofs subst
-                           objfile compunit =
+let rename_append_bytecode packagename oc state objfile compunit =
   let ic = open_in_bin objfile in
   try
     Bytelink.check_consistency objfile compunit;
-    relocs := rev_append_map
-      (rename_relocation packagename objfile mapping ofs)
+    let relocs = rev_append_map
+      (rename_relocation packagename objfile state.mapping state.offset)
       compunit.cu_reloc
-      !relocs;
-    primitives := List.rev_append compunit.cu_primitives !primitives;
+      state.relocs in
+    let primitives = List.rev_append compunit.cu_primitives state.primitives in
     seek_in ic compunit.cu_pos;
     Misc.copy_file_chunk ic oc compunit.cu_codesize;
-    if !Clflags.debug && compunit.cu_debug > 0 then begin
-      seek_in ic compunit.cu_debug;
-      let unit_events = (input_value ic : debug_event list) in
-      events := rev_append_map
-        (relocate_debug ofs packagename subst)
-        unit_events
-        !events;
-      let unit_debug_dirs = (input_value ic : string list) in
-      debug_dirs := List.fold_left
-        (fun s e -> String.Set.add e s)
-        !debug_dirs
-        unit_debug_dirs;
-    end;
+    let events, debug_dirs =
+      if !Clflags.debug && compunit.cu_debug > 0 then begin
+        seek_in ic compunit.cu_debug;
+        let unit_events = (input_value ic : debug_event list) in
+        let events = rev_append_map
+            (relocate_debug state.offset packagename state.subst)
+            unit_events
+            state.events in
+        let unit_debug_dirs = (input_value ic : string list) in
+        let debug_dirs = List.fold_left
+            (fun s e -> String.Set.add e s)
+            state.debug_dirs
+            unit_debug_dirs in
+        events, debug_dirs
+      end
+      else state.events, state.debug_dirs
+    in
     close_in ic;
-    compunit.cu_codesize
+    { state with
+      relocs; primitives; events; debug_dirs;
+      offset = state.offset + compunit.cu_codesize;
+    }
   with x ->
     close_in ic;
     raise x
 
 (* Same, for a list of .cmo and .cmi files.
-   Return total size of bytecode. *)
-
-let rec rename_append_bytecode_list packagename oc mapping ofs
-                                    subst =
-  function
-    [] ->
-      ofs
-  | m :: rem ->
-      match m.pm_kind with
-      | PM_intf ->
-          rename_append_bytecode_list packagename oc mapping ofs
-                                      subst rem
-      | PM_impl compunit ->
-          let size =
-            rename_append_bytecode packagename oc mapping ofs
-                                   subst m.pm_file compunit in
-          let id = m.pm_ident in
-          let root = Path.Pident (Ident.create_persistent packagename) in
-          let mapping = Ident.Map.update id (function
-              | Some (p,false) -> Some (p,true)
-              | Some (_, true) | None -> assert false) mapping in
-          rename_append_bytecode_list packagename oc mapping
-            (ofs + size)
-            (Subst.add_module id (Path.Pdot (root, Ident.name id))
-                              subst)
-            rem
+   Return the accumulated state. *)
+let rename_append_pack_member packagename oc state m =
+  match m.pm_kind with
+  | PM_intf -> state
+  | PM_impl compunit ->
+      let state =
+        rename_append_bytecode packagename oc state m.pm_file compunit in
+      let id = m.pm_ident in
+      let root = Path.Pident (Ident.create_persistent packagename) in
+      let mapping = Ident.Map.update id (function
+          | Some (p,false) -> Some (p,true)
+          | Some (_, true) | None -> assert false) state.mapping in
+      let subst =
+        Subst.add_module id (Path.Pdot (root, Ident.name id)) state.subst in
+      { state with subst; mapping }
 
 (* Generate the code that builds the tuple representing the package module *)
 
-let build_global_target ~ppf_dump oc target_name pos components coercion =
+let build_global_target ~ppf_dump oc target_name state components coercion =
   let lam =
     Translmod.transl_package
       components (Ident.create_persistent target_name) coercion in
@@ -209,11 +219,14 @@ let build_global_target ~ppf_dump oc target_name pos components coercion =
     Format.fprintf ppf_dump "%a@." Printlambda.lambda lam;
   let instrs =
     Bytegen.compile_implementation target_name lam in
-  let pack_relocs, pack_events, pack_debug_dirs =
+  let size, pack_relocs, pack_events, pack_debug_dirs =
     Emitcode.to_packed_file oc instrs in
-  events := List.rev_append pack_events !events;
-  debug_dirs := String.Set.union pack_debug_dirs !debug_dirs;
-  relocs := rev_append_map (fun (r, ofs) -> (r, pos + ofs)) pack_relocs !relocs
+  let events = List.rev_append pack_events state.events in
+  let debug_dirs = String.Set.union pack_debug_dirs state.debug_dirs in
+  let relocs = rev_append_map
+      (fun (r, ofs) -> (r, state.offset + ofs))
+      pack_relocs state.relocs in
+  { state with events; debug_dirs; relocs; offset = state.offset + size}
 
 (* Build the .cmo file obtained by packaging the given .cmo files. *)
 
@@ -238,19 +251,22 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
             List.fold_right Ident.Set.add cu_required_globals required_globals)
       members Ident.Set.empty
   in
-  let mapping =
-    List.map
-      (fun m -> m.pm_ident, (m.pm_packed_ident, false))
-      members
-    |> Ident.Map.of_list in
   let oc = open_out_bin targetfile in
   try
     output_string oc Config.cmo_magic_number;
     let pos_depl = pos_out oc in
     output_binary_int oc 0;
     let pos_code = pos_out oc in
-    let ofs = rename_append_bytecode_list targetname oc mapping 0
-                                          Subst.identity members in
+    let state =
+      let mapping =
+        List.map
+          (fun m -> m.pm_ident, (m.pm_packed_ident, false))
+          members
+        |> Ident.Map.of_list in
+      { empty_state with mapping } in
+    let state =
+      List.fold_left (rename_append_pack_member targetname oc)
+        state members in
     let components =
       List.map
         (fun m ->
@@ -258,11 +274,12 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
           | PM_intf -> None
           | PM_impl _ -> Some m.pm_packed_ident)
         members in
-    build_global_target ~ppf_dump oc targetname ofs components coercion;
+    let state =
+      build_global_target ~ppf_dump oc targetname state components coercion in
     let pos_debug = pos_out oc in
-    if !Clflags.debug && !events <> [] then begin
-      output_value oc (List.rev !events);
-      output_value oc (String.Set.elements !debug_dirs);
+    if !Clflags.debug && state.events <> [] then begin
+      output_value oc (List.rev state.events);
+      output_value oc (String.Set.elements state.debug_dirs);
     end;
     let force_link = List.exists (function
         | {pm_kind = PM_impl {cu_force_link}} -> cu_force_link
@@ -278,10 +295,10 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
       { cu_name = targetname;
         cu_pos = pos_code;
         cu_codesize = pos_debug - pos_code;
-        cu_reloc = List.rev !relocs;
+        cu_reloc = List.rev state.relocs;
         cu_imports =
           (targetname, Some (Env.crc_of_unit targetname)) :: imports;
-        cu_primitives = !primitives;
+        cu_primitives = List.rev state.primitives;
         cu_required_globals = Ident.Set.elements required_globals;
         cu_force_link = force_link;
         cu_debug = if pos_final > pos_debug then pos_debug else 0;
@@ -343,8 +360,3 @@ let () =
       | Error err -> Some (Location.error_of_printer_file report_error err)
       | _ -> None
     )
-
-let reset () =
-  relocs := [];
-  events := [];
-  primitives := []
