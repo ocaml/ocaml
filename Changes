@@ -55,6 +55,10 @@ OCaml 4.14 maintenance branch
   (Ulysse Gérard and Florian Angeletti, review Florian Angeletti and
    Gabriel Scherer)
 
+- #11622: Prevent stack overflow when printing a constructor or record
+  mismatch error involving recursive types.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
 
