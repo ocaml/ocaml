@@ -26,6 +26,9 @@ OCaml 4.14 maintenance version
   that causes very slow compaction.
   (Damien Doligez, report by Arseniy Alekseyev, review by Sadiq Jaffer)
 
+- #11633, #11636: bugfix in caml_unregister_frametable
+  (Frédéric Recoules, review by Gabriel Scherer)
+
 OCaml 4.14.1 (20 December 2022)
 ------------------------------
 
