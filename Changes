@@ -143,6 +143,10 @@ Working version
 - #11627: use return values instead of globals for linear scan intervals
   (Stefan Muenzel, review by Nicolás Ojeda Bär)
 
+- #11634: Dll.open_dll now properly handle opening for execution while already
+  opened for checking
+  (Hugo Heuzard, review by Nicolás Ojeda Bär)
+
 ### Build system:
 
 ### Bug fixes:
