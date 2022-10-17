@@ -63,7 +63,7 @@ SO="so"
 toolchain="cc"
 profinfo=false
 profinfo_width=0
-instrumented_runtime=true
+instrumented_runtime=false
 force_instrumented_runtime=false
 instrumented_runtime_libs=""
 bootstrapping_flexdll=false
@@ -1563,8 +1563,7 @@ but clock_gettime is missing.])
 but no proper monotonic clock source was found.])
           ]
       )]
-    )],
-    [instrumented_runtime=false]
+    )]
 )
 
 ## Sockets
