@@ -56,7 +56,6 @@ module Toplevel : sig
   (* Remove the given directories from the search path for DLLs *)
   val remove_path: string list -> unit
 
-
   (* Open a DLL.
      Raise [Failure msg] in case of error. *)
   val open_dll: string -> unit
@@ -67,4 +66,6 @@ module Toplevel : sig
   (* Find a primitive in the currently opened DLLs
      and return its address and offset in the primitive table. *)
   val find_primitive: string -> (dll_address * int) option
+
+  val reset : unit -> unit
 end

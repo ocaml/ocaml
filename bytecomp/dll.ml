@@ -55,6 +55,16 @@ let extract_dll_name file =
   else
     file (* will cause error later *)
 
+let lookup_in_path name search_path =
+  let name = name ^ Config.ext_dll in
+  try
+    let fullname = Misc.find_in_path search_path name in
+    if Filename.is_implicit fullname then
+      Filename.concat Filename.current_dir_name fullname
+    else fullname
+  with Not_found -> name
+
+
 (* Initialization for separate compilation *)
 
 let init nostdlib = {
@@ -75,14 +85,7 @@ let remove_path t dirs =
 (* Open a list of DLLs, adding them to opened_dlls.
    Raise [Failure msg] in case of error. *)
 let open_dll t name =
-  let name = name ^ Config.ext_dll in
-  let fullname =
-    try
-      let fullname = Misc.find_in_path t.search_path name in
-      if Filename.is_implicit fullname then
-        Filename.concat Filename.current_dir_name fullname
-      else fullname
-    with Not_found -> name in
+  let fullname = lookup_in_path name t.search_path in
   if not (List.mem_assoc fullname t.opened_dlls)
   then
     begin match Binutils.read fullname with
@@ -130,10 +133,12 @@ module Toplevel = struct
 
   (* FIXME: close_all_dlls is never called.
      If it's not needed, we should get rid of the deadcode *)
+  (* Close all DLLs *)
   let _close_all_dlls () =
     List.iter (fun (_, dll) -> dll_close dll) state.opened_dlls;
     state.opened_dlls <- []
 
+  (* FIXME: what should do if init was called already *)
   let init dllpath =
     state.search_path <-
       ld_library_path_contents() @
@@ -151,14 +156,7 @@ module Toplevel = struct
     state.search_path <- List.filter (fun d -> not (List.mem d dirs)) state.search_path
 
   let open_dll name =
-    let name = name ^ Config.ext_dll in
-    let fullname =
-      try
-        let fullname = Misc.find_in_path state.search_path name in
-        if Filename.is_implicit fullname then
-          Filename.concat Filename.current_dir_name fullname
-        else fullname
-      with Not_found -> name in
+    let fullname = lookup_in_path name state.search_path in
     match List.assoc_opt fullname state.opened_dlls with
     | None ->
         begin match dll_open fullname with
@@ -170,9 +168,6 @@ module Toplevel = struct
     | Some dll ->
         let l = List.remove_assoc fullname state.opened_dlls in
         state.opened_dlls <- ((fullname, dll) :: l)
-
-  (* Close all DLLs *)
-
 
   let find_primitive prim_name =
     match List.find_map (fun (fname,dll) ->
@@ -186,5 +181,8 @@ module Toplevel = struct
         state.opened_dlls <- (fname, dll) :: l;
         let num = add_primitive addr in
         Some (addr, num)
-          
+
+  let reset () =
+    state.search_path <- [];
+    state.opened_dlls <- []
 end
