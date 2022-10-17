@@ -213,7 +213,7 @@ make_opcodes := make_opcodes$(EXE)
 $(eval $(call PROGRAM_SYNONYM,make_opcodes))
 
 $(make_opcodes): make_opcodes.cmo
-	$(CAMLC) $(LINKFLAGS) $< -o $@
+	$(CAMLC) $(LINKFLAGS) -o $@ $^
 
 opnames.ml: $(ROOTDIR)/runtime/caml/instruct.h $(make_opcodes)
 	$(NEW_OCAMLRUN) $(make_opcodes) -opnames < $< > $@
@@ -249,7 +249,7 @@ LINTAPIDIFF=$(ROOTDIR)/compilerlibs/ocamlcommon.cmxa \
 
 lintapidiff.opt$(EXE): INCLUDES+= -I $(ROOTDIR)/otherlibs/str
 lintapidiff.opt$(EXE): $(LINTAPIDIFF)
-	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $(LINTAPIDIFF)
+	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^
 clean::
 	rm -f -- lintapidiff.opt lintapidiff.opt.exe
 	rm -f lintapidiff.cm? lintapidiff.o lintapidiff.obj
