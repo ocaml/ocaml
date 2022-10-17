@@ -60,11 +60,12 @@ let read_symbols' bytecode_file =
   let ic = open_in_bin bytecode_file in
   let toc = Bytesections.read_toc ic in
   let symb = try
-      (Bytesections.read_section_struct toc ic Bytesections.Name.symb : Symtable.global_map);
+      (Bytesections.read_section_struct toc ic Bytesections.Name.symb
+       : Symtable.GlobalMap.t);
     with Bytesections.Bad_magic_number | Not_found ->
       prerr_string bytecode_file; prerr_endline " is not a bytecode file.";
       raise Toplevel in
-  Symtable.restore_state !symtable symb;
+  Symtable.set_globalmap !symtable symb;
   begin try
     ignore (Bytesections.seek_section toc ic Bytesections.Name.dbug)
   with Not_found ->

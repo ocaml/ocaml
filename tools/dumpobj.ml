@@ -518,12 +518,16 @@ let dump_exe ic =
   (* Read the primitive table from an executable *)
   let prims = Bytesections.read_section_string toc ic Bytesections.Name.prim in
   primitives := Array.of_list (Misc.split_null_separated prims);
-  let init_data = (Bytesections.read_section_struct toc ic Bytesections.Name.data : Obj.t array) in
+  let init_data =
+    (Bytesections.read_section_struct toc ic Bytesections.Name.data
+     : Obj.t array) in
   globals := Array.make (Array.length init_data) Empty;
   for i = 0 to Array.length init_data - 1 do
     !globals.(i) <- Constant (init_data.(i))
   done;
-  let sym_table = (Bytesections.read_section_struct toc ic Bytesections.Name.symb : Symtable.global_map) in
+  let sym_table =
+    (Bytesections.read_section_struct toc ic Bytesections.Name.symb
+     : Symtable.GlobalMap.t) in
   Symtable.GlobalMap.iter
     (fun id pos -> !globals.(pos) <- Global id) sym_table;
   begin
