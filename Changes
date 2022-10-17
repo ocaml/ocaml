@@ -50,6 +50,11 @@ OCaml 4.14 maintenance branch
 - #11516, #11524: Fix the `deprecated_mutable` attribute.
   (Chris Casinghino, review by Nicolás Ojeda Bär and Florian Angeletti)
 
+- #11194, #11609: Fix inconsistent type variable names in "unbound type var"
+  messages
+  (Ulysse Gérard and Florian Angeletti, review Florian Angeletti and
+   Gabriel Scherer)
+
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
 
