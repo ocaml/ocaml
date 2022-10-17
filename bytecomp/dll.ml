@@ -128,7 +128,9 @@ module Toplevel = struct
   let split_dll_path path =
     Misc.split_path_contents ~sep:'\000' path
 
-  let close_all_dlls () =
+  (* FIXME: close_all_dlls is never called.
+     If it's not needed, we should get rid of the deadcode *)
+  let _close_all_dlls () =
     List.iter (fun (_, dll) -> dll_close dll) state.opened_dlls;
     state.opened_dlls <- []
 

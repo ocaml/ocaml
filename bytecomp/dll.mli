@@ -37,6 +37,7 @@ val remove_path: state -> string list -> unit
    Raise [Failure msg] in case of error. *)
 val open_dll: state -> string -> unit
 
+(* Check if primitive exists *)
 val primitive_exists : state -> string -> bool
 
 
@@ -56,17 +57,14 @@ module Toplevel : sig
   val remove_path: string list -> unit
 
 
-  (* Open a list of DLLs.
+  (* Open a DLL.
      Raise [Failure msg] in case of error. *)
   val open_dll: string -> unit
-
-  (* Close all DLLs *)
-  val close_all_dlls: unit -> unit
 
   (* The abstract type representing C function pointers *)
   type dll_address
 
   (* Find a primitive in the currently opened DLLs
-     and return its address and offset. *)
+     and return its address and offset in the primitive table. *)
   val find_primitive: string -> (dll_address * int) option
 end
