@@ -445,6 +445,11 @@ OCaml 5.0
   socket and deadlock the parent.
   (Antonin Décimo, review by Xavier Leroy)
 
+- #11194, #11609: Fix inconsistent type variable names in "unbound type var"
+  messages
+  (Ulysse Gérard and Florian Angeletti, review Florian Angeletti and
+   Gabriel Scherer)
+
 - #11204: Fix regression introduced in 4.14.0 that would trigger Warning 17 when
   calling virtual methods introduced by constraining the self type from within
   the class definition.
