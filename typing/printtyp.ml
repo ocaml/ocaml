@@ -1466,10 +1466,13 @@ and tree_of_label l =
 
 let constructor ppf c =
   reset_except_context ();
+  prepare_type_constructor_arguments c.cd_args;
+  Option.iter prepare_type c.cd_res;
   !Oprint.out_constr ppf (tree_of_constructor c)
 
 let label ppf l =
   reset_except_context ();
+  prepare_type l.ld_type;
   !Oprint.out_label ppf (tree_of_label l)
 
 let tree_of_type_declaration id decl rs =
@@ -1537,6 +1540,8 @@ let extension_constructor id ppf ext =
 
 let extension_only_constructor id ppf ext =
   reset_except_context ();
+  prepare_type_constructor_arguments ext.ext_args;
+  Option.iter prepare_type ext.ext_ret_type;
   let name = Ident.name id in
   let args, ret =
     extension_constructor_args_and_ret_type_subtree
