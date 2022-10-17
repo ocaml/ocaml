@@ -160,9 +160,15 @@ void caml_ephe_clean (value v) {
   if (child != caml_ephe_none) {
     if (release_data) {
       Field(v, CAML_EPHE_DATA_OFFSET) = caml_ephe_none;
-    } else {
-      CAMLassert (!Is_block(child) || !is_unmarked(child) || Is_young(child));
     }
+#ifdef DEBUG
+    else if (Is_block (child) && !Is_young (child)) {
+      if (Tag_val (child) == Infix_tag) child -= Infix_offset_val (child);
+      /* If we scanned all the keys and the data field remains filled,
+         then the mark phase must have marked it */
+      CAMLassert( is_marked (child) );
+    }
+#endif
   }
 }
 
