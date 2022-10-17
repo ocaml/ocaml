@@ -94,13 +94,17 @@ type state = {
   global_table : GlobalMap.t ref;
   mutable literal_table : (int * structured_constant) list;
   c_prim_table : PrimMap.t ref;
+  dll : Dll.state option;
 }
 
-let create_empty () = {
+let create dll = {
   global_table = ref GlobalMap.empty;
   literal_table = [];
   c_prim_table = ref PrimMap.empty;
+  dll;
 }
+
+let create_empty () = create None
 
 let get_globalmap t = !(t.global_table)
 
@@ -132,28 +136,6 @@ let get_global_position state id =
 let set_prim_table t name =
   ignore(PrimMap.enter t.c_prim_table name)
 
-let of_prim t name =
-  try
-    PrimMap.find !(t.c_prim_table) name
-  with Not_found ->
-    if !Clflags.custom_runtime || Config.host <> Config.target
-       || !Clflags.no_check_prims
-    then
-      PrimMap.enter t.c_prim_table name
-    else begin
-      match Dll.find_primitive name with
-      | Prim_not_found -> raise(Error(Unavailable_primitive name))
-      | Prim_exists ->
-          PrimMap.enter t.c_prim_table name
-      | Prim_loaded (_symb, num) ->
-          let num' = PrimMap.enter t.c_prim_table name in
-          assert(num' = num);
-          num
-    end
-
-let require_primitive t name =
-  if name.[0] <> '%' then ignore(of_prim t name)
-
 let all_primitives t =
   let a = Array.make (PrimMap.length !(t.c_prim_table)) "" in
   PrimMap.iter (fun key number -> a.(number) <- key) !(t.c_prim_table);
@@ -161,8 +143,8 @@ let all_primitives t =
 
 (* Initialization for batch linking *)
 
-let create_for_linker () =
-  let t = create_empty () in
+let create_for_linker dll =
+  let t = create dll in
   (* Enter the predefined values *)
   Array.iteri
     (fun i name ->
@@ -221,7 +203,7 @@ let patch_int buff pos n =
   LongString.set buff (pos + 2) (Char.unsafe_chr (n asr 16));
   LongString.set buff (pos + 3) (Char.unsafe_chr (n asr 24))
 
-let patch_object t buff patchlist =
+let patch_object' t of_prim buff patchlist =
   List.iter
     (function
         (Reloc_literal sc, pos) ->
@@ -231,8 +213,32 @@ let patch_object t buff patchlist =
       | (Reloc_setglobal id, pos) ->
           patch_int buff pos (slot_for_setglobal t id)
       | (Reloc_primitive name, pos) ->
-          patch_int buff pos (of_prim t name))
+          patch_int buff pos (
+            try PrimMap.find !(t.c_prim_table) name
+            with Not_found -> of_prim t name))
     patchlist
+
+let of_new_prim t name =
+  match t.dll with
+  | Some dll ->
+      if Dll.primitive_exists dll name
+      then PrimMap.enter t.c_prim_table name
+      else raise(Error(Unavailable_primitive name))
+  | None ->
+      PrimMap.enter t.c_prim_table name
+
+let patch_object t buff patchlist =
+  patch_object' t of_new_prim buff patchlist
+
+let require_primitive t name =
+  if name.[0] <> '%' then
+    let n =
+      try PrimMap.find !(t.c_prim_table) name
+      with Not_found -> of_new_prim t name
+    in
+    ignore (n : int)
+
+
 
 (* Translate structured constants *)
 
@@ -350,7 +356,7 @@ module Toplevel = struct
           List.iter (set_prim_table state) prims;
           (* DLL initialization *)
           let dllpath = try sect.read_string Bytesections.Name.dlpt with Not_found -> "" in
-          Dll.init_toplevel dllpath;
+          Dll.Toplevel.init dllpath;
           (* Recover CRC infos for interfaces *)
           let crcintfs =
             try
@@ -400,6 +406,15 @@ module Toplevel = struct
       | _ -> () in
     List.iter check_reference patchlist
 
+
+  let of_new_prim t name =
+    match Dll.Toplevel.find_primitive name with
+    | None -> raise(Error(Unavailable_primitive name))
+    | Some (_symb, num) ->
+        let num' = PrimMap.enter t.c_prim_table name in
+        assert(num' = num);
+        num
+
   (* Update the in-core table of globals *)
 
   let update_global_table state =
@@ -417,7 +432,7 @@ module Toplevel = struct
 
   let patch_code_and_update_global_table buff patchlist =
     let state = get_state () in
-    patch_object state buff patchlist;
+    patch_object' state of_new_prim buff patchlist;
     check_global_initialized patchlist;
     update_global_table state
 

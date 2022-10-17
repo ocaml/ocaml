@@ -301,7 +301,7 @@ let make_absolute file =
 
 (* Create a bytecode executable file *)
 
-let link_bytecode sym ?final_name tolink exec_name standalone =
+let link_bytecode sym dll ?final_name tolink exec_name standalone =
   let final_name = Option.value final_name ~default:exec_name in
   (* Avoid the case where the specified exec output file is the same as
      one of the objects to be linked *)
@@ -355,18 +355,18 @@ let link_bytecode sym ?final_name tolink exec_name standalone =
        let start_code = pos_out outchan in
        clear_crc_interfaces ();
        let sharedobjs = List.map Dll.extract_dll_name !Clflags.dllibs in
-       let check_dlls = standalone && Config.target = Config.host in
-       if check_dlls then begin
-         (* Initialize the DLL machinery *)
-         Dll.init_compile !Clflags.no_std_include;
-         Dll.add_path (Load_path.get_paths ());
-         try Dll.open_dlls Dll.For_checking sharedobjs
-         with Failure reason -> raise(Error(Cannot_open_dll reason))
+       begin
+         match dll with
+         | None -> ()
+         | Some dll ->
+             (* Initialize the DLL machinery *)
+             Dll.add_path dll (Load_path.get_paths ());
+             try List.iter (Dll.open_dll dll) sharedobjs
+             with Failure reason -> raise(Error(Cannot_open_dll reason))
        end;
        let output_fun = output_bytes outchan
        and currpos_fun () = pos_out outchan - start_code in
        List.iter (link_file sym output_fun currpos_fun) tolink;
-       if check_dlls then Dll.close_all_dlls();
        (* The final STOP instruction *)
        output_byte outchan Opcodes.opSTOP;
        output_byte outchan 0; output_byte outchan 0; output_byte outchan 0;
@@ -625,7 +625,12 @@ let fix_exec_name name =
 (* Main entry point (build a custom runtime if needed) *)
 
 let link objfiles output_name =
-  let sym = Symtable.create_for_linker() in
+  let dll =
+    if !Clflags.custom_runtime
+    || !Clflags.no_check_prims
+    then None
+    else Some (Dll.init !Clflags.no_std_include) in
+  let sym = Symtable.create_for_linker dll in
   let objfiles =
     match
       !Clflags.nopervasives,
@@ -655,7 +660,7 @@ let link objfiles output_name =
                                                    (* put user's opts first *)
   Clflags.dllibs := !lib_dllibs @ !Clflags.dllibs; (* put user's DLLs first *)
   if not !Clflags.custom_runtime then
-    link_bytecode sym tolink output_name true
+    link_bytecode sym dll tolink output_name true
   else if not !Clflags.output_c_object then begin
     let bytecode_name = Filename.temp_file "camlcode" "" in
     let prim_name =
@@ -668,7 +673,7 @@ let link objfiles output_name =
           remove_file bytecode_name;
           if not !Clflags.keep_camlprimc_file then remove_file prim_name)
       (fun () ->
-         link_bytecode sym ~final_name:output_name tolink bytecode_name false;
+         link_bytecode sym dll ~final_name:output_name tolink bytecode_name false;
          let poc = open_out prim_name in
          (* note: builds will not be reproducible if the C code contains macros
             such as __FILE__. *)

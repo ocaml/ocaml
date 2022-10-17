@@ -274,7 +274,7 @@ and really_load_file recursive ppf name filename ic =
         List.iter
           (fun dllib ->
             let name = Dll.extract_dll_name dllib in
-            try Dll.open_dlls Dll.For_execution [name]
+            try Dll.Toplevel.open_dll name
             with Failure reason ->
               fprintf ppf
                 "Cannot load required shared library %s.@.Reason: %s.@."

@@ -43,7 +43,7 @@ val is_global_defined: state -> Ident.t -> bool
 val get_global_position: state -> Ident.t -> int
 
 (** Functions for batch linking *)
-val create_for_linker: unit -> state
+val create_for_linker: Dll.state option -> state
 
 module Toplevel : sig
   (** Functions for the toplevel *)

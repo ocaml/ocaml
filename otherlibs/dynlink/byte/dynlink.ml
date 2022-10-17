@@ -170,8 +170,8 @@ module Bytecode = struct
         seek_in ic toc_pos;
         let lib = (input_value ic : Cmo_format.library) in
         begin try
-          Dll.open_dlls Dll.For_execution
-            (List.map Dll.extract_dll_name lib.lib_dllibs)
+          List.iter (fun n -> Dll.Toplevel.open_dll (Dll.extract_dll_name n))
+            lib.lib_dllibs
         with exn ->
           raise (DT.Error (Cannot_open_dynamic_library exn))
         end;
