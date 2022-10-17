@@ -144,12 +144,6 @@ OCAMLMKTOP=config.cmo build_path_prefix_map.cmo misc.cmo \
 ocamlmktop$(EXE): $(OCAMLMKTOP)
 ocamlmktop.opt$(EXE): $(call byte2native, $(OCAMLMKTOP))
 
-ifeq ($(UNIX_OR_WIN32),unix)
-LN := ln -sf
-else
-LN := cp -pf
-endif
-
 install::
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	for i in $(install_files); \

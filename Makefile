@@ -27,12 +27,6 @@ include Makefile.common
 .PHONY: defaultentry
 defaultentry: $(DEFAULT_BUILD_TARGET)
 
-ifeq "$(UNIX_OR_WIN32)" "win32"
-LN = cp
-else
-LN = ln -sf
-endif
-
 include stdlib/StdlibModules
 
 CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) -use-prims runtime/primitives
