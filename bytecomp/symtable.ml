@@ -142,12 +142,12 @@ let of_prim t name =
       PrimMap.enter t.c_prim_table name
     else begin
       match Dll.find_primitive name with
-      | None -> raise(Error(Unavailable_primitive name))
-      | Some Prim_exists ->
+      | Prim_not_found -> raise(Error(Unavailable_primitive name))
+      | Prim_exists ->
           PrimMap.enter t.c_prim_table name
-      | Some (Prim_loaded symb) ->
-          let num = PrimMap.enter t.c_prim_table name in
-          Dll.synchronize_primitive num symb;
+      | Prim_loaded (_symb, num) ->
+          let num' = PrimMap.enter t.c_prim_table name in
+          assert(num' = num);
           num
     end
 

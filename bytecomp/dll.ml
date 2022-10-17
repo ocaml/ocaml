@@ -104,39 +104,28 @@ let close_all_dlls () =
 (* Find a primitive in the currently opened DLLs. *)
 
 type primitive_address =
-  | Prim_loaded of dll_address
+  | Prim_loaded of dll_address * int
   | Prim_exists
+  | Prim_not_found
 
 let find_primitive prim_name =
   let rec find seen = function
     [] ->
-      None
+      Prim_not_found
   | (_,Execution dll) as curr :: rem ->
       let addr = dll_sym dll prim_name in
       if addr == Obj.magic () then find (curr :: seen) rem else begin
         if seen <> [] then opened_dlls := curr :: List.rev_append seen rem;
-        Some (Prim_loaded addr)
+        let num = add_primitive addr in
+        Prim_loaded (addr, num)
       end
   | (_,Checking t) as curr :: rem ->
       if Binutils.defines_symbol t prim_name then
-        Some Prim_exists
+        Prim_exists
       else
         find (curr :: seen) rem
   in
   find [] !opened_dlls
-
-(* If linking in core (dynlink or toplevel), synchronize the VM
-   table of primitive with the linker's table of primitive
-   by storing the given primitive function at the given position
-   in the VM table of primitives.  *)
-
-let linking_in_core = ref false
-
-let synchronize_primitive num symb =
-  if !linking_in_core then begin
-    let actual_num = add_primitive symb in
-    assert (actual_num = num)
-  end
 
 (* Read the [ld.conf] file and return the corresponding list of directories *)
 
@@ -183,10 +172,8 @@ let init_toplevel dllpath =
     ld_conf_contents();
   opened_dlls :=
     List.map (fun dll -> "", Execution dll)
-      (Array.to_list (get_current_dlls()));
-  linking_in_core := true
+      (Array.to_list (get_current_dlls()))
 
 let reset () =
   search_path := [];
-  opened_dlls :=[];
-  linking_in_core := false
+  opened_dlls :=[]

@@ -35,19 +35,14 @@ val close_all_dlls: unit -> unit
 type dll_address
 
 type primitive_address =
-  | Prim_loaded of dll_address (* Primitive found in a DLL opened
-                                  "for execution" *)
+  | Prim_loaded of dll_address * int
+  (* Primitive found in a DLL opened "for execution" *)
   | Prim_exists (* Primitive found in a DLL opened "for checking" *)
+  | Prim_not_found
 
-(* Find a primitive in the currently opened DLLs and return its address.
-   Return [None] if the primitive is not found. *)
-val find_primitive: string -> primitive_address option
-
-(* If linking in core (dynlink or toplevel), synchronize the VM
-   table of primitive with the linker's table of primitive
-   by storing the given primitive function at the given position
-   in the VM table of primitives.  *)
-val synchronize_primitive: int -> dll_address -> unit
+(* Find a primitive in the currently opened DLLs
+   and return its address and offset. *)
+val find_primitive: string -> primitive_address
 
 (* Add the given directories at the head of the search path for DLLs *)
 val add_path: string list -> unit
