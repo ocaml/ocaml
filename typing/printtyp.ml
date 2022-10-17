@@ -1058,7 +1058,10 @@ let reset () =
   reset_except_context ()
 
 let prepare_for_printing tyl =
-  reset_except_context (); List.iter prepare_type tyl
+  reset_except_context ();
+  List.iter prepare_type tyl
+
+let add_type_to_preparation = prepare_type
 
 (* Disabled in classic mode when printing an unification error *)
 let print_labels = ref true
