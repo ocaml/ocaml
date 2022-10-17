@@ -1956,7 +1956,6 @@ bytecomp/bytelibrarian.cmx : \
     bytecomp/bytelibrarian.cmi
 bytecomp/bytelibrarian.cmi :
 bytecomp/bytelink.cmo : \
-    utils/warnings.cmi \
     bytecomp/symtable.cmi \
     bytecomp/opcodes.cmi \
     utils/misc.cmi \
@@ -1974,7 +1973,6 @@ bytecomp/bytelink.cmo : \
     bytecomp/bytesections.cmi \
     bytecomp/bytelink.cmi
 bytecomp/bytelink.cmx : \
-    utils/warnings.cmx \
     bytecomp/symtable.cmx \
     bytecomp/opcodes.cmx \
     utils/misc.cmx \

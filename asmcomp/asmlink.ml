@@ -49,15 +49,17 @@ let cmx_required = ref ([] : string list)
 
 let check_consistency file_name unit crc =
   begin try
+    let source = List.assoc unit.ui_name !implementations_defined in
+    raise (Error(Multiple_definition(unit.ui_name, file_name, source)))
+  with Not_found -> ()
+  end;
+  begin try
     List.iter
       (fun (name, crco) ->
         interfaces := name :: !interfaces;
         match crco with
           None -> ()
-        | Some crc ->
-            if name = unit.ui_name
-            then Cmi_consistbl.set crc_interfaces name crc file_name
-            else Cmi_consistbl.check crc_interfaces name crc file_name)
+        | Some crc -> Cmi_consistbl.check crc_interfaces name crc file_name)
       unit.ui_imports_cmi
   with Cmi_consistbl.Inconsistency {
       unit_name = name;
@@ -84,13 +86,8 @@ let check_consistency file_name unit crc =
     } ->
     raise(Error(Inconsistent_implementation(name, user, auth)))
   end;
-  begin try
-    let source = List.assoc unit.ui_name !implementations_defined in
-    raise (Error(Multiple_definition(unit.ui_name, file_name, source)))
-  with Not_found -> ()
-  end;
   implementations := unit.ui_name :: !implementations;
-  Cmx_consistbl.set crc_implementations unit.ui_name crc file_name;
+  Cmx_consistbl.check crc_implementations unit.ui_name crc file_name;
   implementations_defined :=
     (unit.ui_name, file_name) :: !implementations_defined;
   if unit.ui_symbol <> unit.ui_name then

@@ -65,7 +65,8 @@ type t =
   | Wildcard_arg_to_constant_constr         (* 28 *)
   | Eol_in_string                           (* 29 *)
   | Duplicate_definitions of string * string * string * string (*30 *)
-  | Module_linked_twice of string * string * string (* 31 *)
+  (* [Module_linked_twice of string * string * string] (* 31 *)
+     was turned into a hard error *)
   | Unused_value_declaration of string      (* 32 *)
   | Unused_open of string                   (* 33 *)
   | Unused_type_declaration of string       (* 34 *)
@@ -146,7 +147,6 @@ let number = function
   | Wildcard_arg_to_constant_constr -> 28
   | Eol_in_string -> 29
   | Duplicate_definitions _ -> 30
-  | Module_linked_twice _ -> 31
   | Unused_value_declaration _ -> 32
   | Unused_open _ -> 33
   | Unused_type_declaration _ -> 34
@@ -351,8 +351,10 @@ let descriptions = [
     since = None };
   { number = 31;
     names = ["module-linked-twice"];
-    description = "A module is linked twice in the same executable.";
-    since = since 4 0 };
+    description =
+      "A module is linked twice in the same executable.\n\
+      \    Ignored: now a hard error (since 5.1).";
+    since = None };
   { number = 32;
     names = ["unused-value-declaration"];
     description = "Unused value declaration.";
@@ -855,7 +857,7 @@ let parse_options errflag s =
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
 let defaults_w = "+a-4-7-9-27-29-30-32..42-44-45-48-50-60-66..70"
-let defaults_warn_error = "-a+31"
+let defaults_warn_error = "-a"
 let default_disabled_alerts = [ "unstable"; "unsynchronized_access" ]
 
 let () = ignore @@ parse_options false defaults_w
@@ -941,10 +943,6 @@ let message = function
   | Duplicate_definitions (kind, cname, tc1, tc2) ->
       Printf.sprintf "the %s %s is defined in both types %s and %s."
         kind cname tc1 tc2
-  | Module_linked_twice(modname, file1, file2) ->
-      Printf.sprintf
-        "files %s and %s both define a module named %s"
-        file1 file2 modname
   | Unused_value_declaration v -> "unused value " ^ v ^ "."
   | Unused_open s -> "unused open " ^ s ^ "."
   | Unused_open_bang s -> "unused open! " ^ s ^ "."
