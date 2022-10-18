@@ -733,11 +733,7 @@ Makes inlining decisions at the point of definition of a function rather
 than at the call site(s). This mirrors the behaviour of OCaml compilers
 not using Flambda. Compared to compilation using the new Flambda inlining
 heuristics (for example at -O2) it produces smaller .cmx files, shorter
-compilation times and code that probably runs rather slower. When using
--Oclassic, only the following options described in this section are
-relevant: -inlining-report and -inline. If any other of the options
-described in this section are used, the behaviour is undefined and may
-cause an error in future versions of the compiler.
+compilation times and code that probably runs rather slower.
 .TP
 .B \-inlining-report
 Emit .inlining files (one per round of optimisation) showing all of the
