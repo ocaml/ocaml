@@ -151,10 +151,6 @@ Working version
 - #11590: Allow installing to a destination path containing spaces.
    (Élie Brami, review by Sébastien Hinderer and David Allsopp)
 
-- #11643: Add missing test declaration to float_compare test, so that it will
-  run.
-  (Stefan Muenzel, review by ????)
-
 ### Bug fixes:
 
 - #11302, #11412: `ocamlc` and `ocamlopt` should not remove generated files
@@ -168,6 +164,10 @@ Working version
 - #11436: Fix wrong stack backtrace for out-of-bound exceptions raised
   by leaf functions.
   (Tom Kelly and Xavier Leroy, review by Mark Shinwell)
+
+- #11643: Add missing test declaration to float_compare test, so that it will
+  run.
+  (Stefan Muenzel, review by David Allsopp)
 
 OCaml 5.0
 ---------
