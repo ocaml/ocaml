@@ -165,6 +165,10 @@ Working version
   by leaf functions.
   (Tom Kelly and Xavier Leroy, review by Mark Shinwell)
 
+- #11643: Add missing test declaration to float_compare test, so that it will
+  run.
+  (Stefan Muenzel, review by David Allsopp)
+
 OCaml 5.0
 ---------
 
