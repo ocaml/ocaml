@@ -151,7 +151,7 @@ Working version
 - #11590: Allow installing to a destination path containing spaces.
    (Élie Brami, review by Sébastien Hinderer and David Allsopp)
 
-- #?????: Add missing test declaration to float_compare test, so that it will
+- #11643: Add missing test declaration to float_compare test, so that it will
   run.
   (Stefan Muenzel, review by ????)
 
