@@ -14,8 +14,8 @@
 #**************************************************************************
 
 # Ensure that the Microsoft Linker isn't being messed up by /usr/bin/link
-if [ "`link --version | head -1 | \
-     fgrep "Microsoft (R) Incremental Linker"`" != "" ] ; then
+if [ "$(link --version 2>/dev/null | \
+     sed -ne "1s/Microsoft (R) Incremental Linker//p")" != "" ] ; then
   echo "link already refers to the Microsoft Linker">&2
   exit 0
 fi
@@ -30,8 +30,9 @@ do
     T="$i"
     FIRST=0
   else
-    if [ $FOUND -eq 0 -a -x $i/link ] && [ "`$i/link --version | head -1 | \
-                       fgrep "Microsoft (R) Incremental Linker"`" != "" ] ; then
+    if [ $FOUND -eq 0 ] && [ -x "$i/link" ] \
+       && [ "$("$i/link" --version 2>/dev/null | \
+              sed -ne "1s/Microsoft (R) Incremental Linker//p")" != "" ] ; then
       FOUND=1
       T="$i:$T"
       PROM=$i
@@ -43,9 +44,9 @@ done
 unset IFS
 
 if [ $FOUND -eq 0 ] ; then
-  echo The Microsoft Linker was not found in any of the PATH entries!>&2
+  echo "The Microsoft Linker was not found in any of the PATH entries!">&2
   exit 1
 else
   echo "$PROM moved to the front of \$PATH">&2
-  echo export PATH=\"$T\"
+  echo "export PATH='$(echo "$T" | sed -e "s/'/'\"'\"'/g")'"
 fi
