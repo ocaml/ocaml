@@ -216,7 +216,7 @@ again:
   munmap((void*)aligned_end, (base + alloc_sz) - aligned_end);
 #endif
 #ifdef DEBUG
-  caml_lf_skiplist_insert(&mmap_blocks, aligned_start, size);
+  caml_lf_skiplist_insert(&mmap_blocks, aligned_start, alloc_sz);
 #endif
   return (void*)aligned_start;
 }
