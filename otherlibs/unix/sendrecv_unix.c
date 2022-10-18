@@ -20,8 +20,6 @@
 #include <caml/memory.h>
 #include <caml/signals.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SOCKETS
 #include "socketaddr.h"
 
 static int msg_flag_table[] = {
@@ -121,26 +119,3 @@ CAMLprim value caml_unix_sendto(value *argv, int argc)
   return caml_unix_sendto_native
            (argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }
-
-#else
-
-CAMLprim value caml_unix_recv(value sock, value buff, value ofs, value len,
-                         value flags)
-{ caml_invalid_argument("recv not implemented"); }
-
-CAMLprim value caml_unix_recvfrom(value sock, value buff, value ofs, value len,
-                             value flags)
-{ caml_invalid_argument("recvfrom not implemented"); }
-
-CAMLprim value caml_unix_send(value sock, value buff, value ofs, value len,
-                         value flags)
-{ caml_invalid_argument("send not implemented"); }
-
-CAMLprim value caml_unix_sendto_native(value sock, value buff, value ofs,
-                                       value len, value flags, value dest)
-{ caml_invalid_argument("sendto not implemented"); }
-
-CAMLprim value caml_unix_sendto(value *argv, int argc)
-{ caml_invalid_argument("sendto not implemented"); }
-
-#endif

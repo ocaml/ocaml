@@ -20,9 +20,6 @@
 #include <caml/memory.h>
 #include <caml/signals.h>
 #include "unixsupport.h"
-
-#if defined(HAS_SOCKETS) && defined(HAS_IPV6)
-
 #include "socketaddr.h"
 #ifndef _WIN32
 #include <sys/types.h>
@@ -59,10 +56,3 @@ CAMLprim value caml_unix_getnameinfo(value vaddr, value vopts)
   Field(vres, 1) = vserv;
   CAMLreturn(vres);
 }
-
-#else
-
-CAMLprim value caml_unix_getnameinfo(value vaddr, value vopts)
-{ caml_invalid_argument("getnameinfo not implemented"); }
-
-#endif

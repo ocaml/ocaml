@@ -17,15 +17,11 @@
 #include <caml/memory.h>
 #include <caml/fail.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SOCKETS
-
 #include "socketaddr.h"
 
 CAMLprim value caml_unix_inet_addr_of_string(value s)
 {
   if (! caml_string_is_c_safe(s)) caml_failwith("inet_addr_of_string");
-#if defined(HAS_IPV6)
 #ifdef _WIN32
  {
   CAMLparam1(s);
@@ -74,26 +70,4 @@ CAMLprim value caml_unix_inet_addr_of_string(value s)
     caml_failwith("inet_addr_of_string");
  }
 #endif
-#elif defined(HAS_INET_ATON)
- {
-  struct in_addr address;
-  if (inet_aton(String_val(s), &address) == 0)
-    caml_failwith("inet_addr_of_string");
-  return caml_unix_alloc_inet_addr(&address);
- }
-#else
- {
-  struct in_addr address;
-  address.s_addr = inet_addr(String_val(s));
-  if (address.s_addr == (uint32_t) -1) caml_failwith("inet_addr_of_string");
-  return caml_unix_alloc_inet_addr(&address);
- }
-#endif
 }
-
-#else
-
-CAMLprim value caml_unix_inet_addr_of_string(value s)
-{ caml_invalid_argument("inet_addr_of_string not implemented"); }
-
-#endif

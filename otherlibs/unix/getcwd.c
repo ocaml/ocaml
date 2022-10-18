@@ -20,20 +20,11 @@
 #include <caml/fail.h>
 #include <caml/osdeps.h>
 #include "unixsupport.h"
+#include <limits.h>
 
-#if !defined (_WIN32) && !macintosh
-#include <sys/param.h>
+#if defined(_WIN32) && !defined(PATH_MAX)
+#define PATH_MAX MAX_PATH
 #endif
-
-#ifndef PATH_MAX
-#ifdef MAXPATHLEN
-#define PATH_MAX MAXPATHLEN
-#else
-#define PATH_MAX 512
-#endif
-#endif
-
-#ifdef HAS_GETCWD
 
 CAMLprim value caml_unix_getcwd(value unit)
 {
@@ -43,10 +34,3 @@ CAMLprim value caml_unix_getcwd(value unit)
   if (ret == 0) caml_uerror("getcwd", Nothing);
   return caml_copy_string_of_os(buff);
 }
-
-#else
-
-CAMLprim value caml_unix_getcwd(value unit)
-{ caml_invalid_argument("getcwd not implemented"); }
-
-#endif

@@ -49,16 +49,10 @@ union sock_addr_union {
   struct sockaddr s_gen;
   struct sockaddr_un s_unix;
   struct sockaddr_in s_inet;
-#ifdef HAS_IPV6
   struct sockaddr_in6 s_inet6;
-#endif
 };
 
-#ifdef HAS_SOCKLEN_T
 typedef socklen_t socklen_param_type;
-#else
-typedef int socklen_param_type;
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,7 +74,6 @@ extern value caml_unix_alloc_sockaddr (union sock_addr_union * addr /*in*/,
 extern value caml_unix_alloc_inet_addr (struct in_addr * inaddr);
 #define GET_INET_ADDR(v) (*((struct in_addr *) (v)))
 
-#ifdef HAS_IPV6
 extern value caml_unix_alloc_inet6_addr (struct in6_addr * inaddr);
 #define GET_INET6_ADDR(v) (*((struct in6_addr *) (v)))
 
@@ -88,7 +81,6 @@ extern value caml_unix_alloc_inet6_addr (struct in6_addr * inaddr);
 #ifndef CAML_BUILDING_UNIX
 #define alloc_inet6_addr caml_unix_alloc_inet6_addr
 #endif /* CAML_BUILDING_UNIX */
-#endif /* HAS_IPV6 */
 
 #ifdef __cplusplus
 }

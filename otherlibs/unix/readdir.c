@@ -20,13 +20,8 @@
 #include "unixsupport.h"
 #include <errno.h>
 #include <sys/types.h>
-#ifdef HAS_DIRENT
 #include <dirent.h>
 typedef struct dirent directory_entry;
-#else
-#include <sys/dir.h>
-typedef struct direct directory_entry;
-#endif
 
 CAMLprim value caml_unix_readdir(value vd)
 {

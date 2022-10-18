@@ -22,8 +22,6 @@
 #include <caml/osdeps.h>
 #include "unixsupport.h"
 
-#if defined(HAS_UTIMES)
-
 #include <sys/types.h>
 #include <sys/time.h>
 
@@ -54,41 +52,3 @@ CAMLprim value caml_unix_utimes(value path, value atime, value mtime)
   if (ret == -1) caml_uerror("utimes", path);
   CAMLreturn(Val_unit);
 }
-
-#elif defined(HAS_UTIME)
-
-#include <sys/types.h>
-#include <utime.h>
-
-CAMLprim value caml_unix_utimes(value path, value atime, value mtime)
-{
-  CAMLparam3(path, atime, mtime);
-  struct utimbuf times, * t;
-  char * p;
-  int ret;
-  double at, mt;
-  caml_unix_check_path(path, "utimes");
-  at = Double_val(atime);
-  mt = Double_val(mtime);
-  if (at == 0.0 && mt == 0.0) {
-    t = NULL;
-  } else {
-    times.actime = at;
-    times.modtime = mt;
-    t = &times;
-  }
-  p = caml_stat_strdup(String_val(path));
-  caml_enter_blocking_section();
-  ret = utime(p, t);
-  caml_leave_blocking_section();
-  caml_stat_free(p);
-  if (ret == -1) caml_uerror("utimes", path);
-  CAMLreturn(Val_unit);
-}
-
-#else
-
-CAMLprim value caml_unix_utimes(value path, value atime, value mtime)
-{ caml_invalid_argument("utimes not implemented"); }
-
-#endif

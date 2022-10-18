@@ -20,13 +20,6 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-#ifndef EAGAIN
-#define EAGAIN (-1)
-#endif
-#ifndef EWOULDBLOCK
-#define EWOULDBLOCK (-1)
-#endif
-
 CAMLprim value caml_unix_write(value fd, value buf, value vofs, value vlen)
 {
   CAMLparam1(buf);

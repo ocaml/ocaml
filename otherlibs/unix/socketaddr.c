@@ -19,9 +19,6 @@
 #include <caml/memory.h>
 #include <errno.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SOCKETS
-
 #include "socketaddr.h"
 
 #ifdef _WIN32
@@ -39,16 +36,12 @@ CAMLexport value caml_unix_alloc_inet_addr(struct in_addr * a)
   return res;
 }
 
-#ifdef HAS_IPV6
-
 CAMLexport value caml_unix_alloc_inet6_addr(struct in6_addr * a)
 {
   value res;
   res = caml_alloc_initialized_string(16, (char *)a);
   return res;
 }
-
-#endif
 
 void caml_unix_get_sockaddr(value mladr,
                        union sock_addr_union * adr /*out*/,
@@ -75,7 +68,6 @@ void caml_unix_get_sockaddr(value mladr,
       break;
     }
   case 1:                       /* ADDR_INET */
-#ifdef HAS_IPV6
     if (caml_string_length(Field(mladr, 0)) == 16) {
       memset(&adr->s_inet6, 0, sizeof(struct sockaddr_in6));
       adr->s_inet6.sin6_family = AF_INET6;
@@ -87,7 +79,6 @@ void caml_unix_get_sockaddr(value mladr,
       *adr_len = sizeof(struct sockaddr_in6);
       break;
     }
-#endif
     memset(&adr->s_inet, 0, sizeof(struct sockaddr_in));
     adr->s_inet.sin_family = AF_INET;
     adr->s_inet.sin_addr = GET_INET_ADDR(Field(mladr, 0));
@@ -151,7 +142,6 @@ value caml_unix_alloc_sockaddr(union sock_addr_union * adr /*in*/,
       Field(res,1) = Val_int(ntohs(adr->s_inet.sin_port));
       break;
     }
-#ifdef HAS_IPV6
   case AF_INET6:
     { a = caml_unix_alloc_inet6_addr(&adr->s_inet6.sin6_addr);
       res = caml_alloc_small(2, 1);
@@ -159,12 +149,9 @@ value caml_unix_alloc_sockaddr(union sock_addr_union * adr /*in*/,
       Field(res,1) = Val_int(ntohs(adr->s_inet6.sin6_port));
       break;
     }
-#endif
   default:
     if (close_on_error != -1) close (close_on_error);
     caml_unix_error(EAFNOSUPPORT, "", Nothing);
   }
   CAMLreturn(res);
 }
-
-#endif

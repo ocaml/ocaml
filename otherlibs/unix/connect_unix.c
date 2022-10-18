@@ -17,9 +17,6 @@
 #include <caml/mlvalues.h>
 #include <caml/signals.h>
 #include "unixsupport.h"
-
-#ifdef HAS_SOCKETS
-
 #include "socketaddr.h"
 
 CAMLprim value caml_unix_connect(value socket, value address)
@@ -35,10 +32,3 @@ CAMLprim value caml_unix_connect(value socket, value address)
   if (retcode == -1) caml_uerror("connect", Nothing);
   return Val_unit;
 }
-
-#else
-
-CAMLprim value caml_unix_connect(value socket, value address)
-{ caml_invalid_argument("connect not implemented"); }
-
-#endif

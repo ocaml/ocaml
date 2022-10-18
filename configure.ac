@@ -618,20 +618,27 @@ AS_CASE([$host],
     [exeext=".exe"],
   [exeext=''])
 
+OCAML_POSIX_SUPPORT
+AS_IF([test "$posix_2008_supported" = "no"], [OCAML_POSIX_SUPPORT2])
+
 otherlibraries="dynlink runtime_events"
 lib_dynlink=true
 lib_runtime_events=true
-AS_IF([test x"$enable_unix_lib" != "xno"],
-  [enable_unix_lib=yes
-  AC_CONFIG_FILES([otherlibs/unix/META])
-  otherlibraries="$otherlibraries unix"
-  lib_unix=true
-  ocamltest_unix_impl="real"
-  ocamltest_unix_name="unix"
-  ocamltest_unix_path='$(ROOTDIR)/otherlibs/unix'
-  ocamltest_unix_include='-I $(ROOTDIR)/otherlibs/unix '],
-  [ocamltest_libunix="None"])
-
+AS_CASE([$host,$enable_unix_lib,$posix_2008_supported],
+  [*,no,*], [ocamltest_libunix="None"],
+  [*-*-mingw32,*,*|*-pc-windows,*,*|*,*,*],
+    [AS_IF([test x"$posix_2008_support" = "xno"],
+      [AC_MSG_WARN([POSIX 1003.1-2008 compliance not detected; risking it])])
+    enable_unix_lib=yes
+    AC_CONFIG_FILES([otherlibs/unix/META])
+    lib_unix=true
+    ocamltest_unix_impl="real"
+    ocamltest_unix_name="unix"
+    ocamltest_unix_path='$(ROOTDIR)/otherlibs/unix'
+    ocamltest_unix_include='-I $(ROOTDIR)/otherlibs/unix '
+    otherlibraries="$otherlibraries unix"],
+  [*,yes,no],
+    [AC_MSG_ERROR([libunix requires a POSIX 1003.1-2008 compliant host])])
 AS_IF([test x"$enable_str_lib" != "xno"],
   [otherlibraries="$otherlibraries str"
   lib_str=true
@@ -965,9 +972,6 @@ AC_CHECK_HEADERS([unistd.h],[AC_DEFINE([HAS_UNISTD])])
 AC_CHECK_HEADER([stdint.h],[AC_DEFINE([HAS_STDINT_H])])
 AC_CHECK_HEADER([pthread_np.h],[AC_DEFINE([HAS_PTHREAD_NP_H])])
 AC_CHECK_HEADER([dirent.h], [AC_DEFINE([HAS_DIRENT])], [],
-  [#include <sys/types.h>])
-
-AC_CHECK_HEADER([sys/select.h], [AC_DEFINE([HAS_SYS_SELECT_H])], [],
   [#include <sys/types.h>])
 
 AC_CHECK_HEADER([stdatomic.h], [AC_DEFINE([HAS_STDATOMIC_H])])
@@ -1602,17 +1606,6 @@ AS_CASE([$host],
 
 AS_IF([$sockets], [AC_DEFINE([HAS_SOCKETS])])
 
-## socklen_t
-
-AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows],
-    [AC_CHECK_TYPE([socklen_t], [AC_DEFINE([HAS_SOCKLEN_T])], [],
-      [#include <ws2tcpip.h>])],
-  [AC_CHECK_TYPE([socklen_t], [AC_DEFINE([HAS_SOCKLEN_T])], [],
-    [#include <sys/socket.h>])])
-
-AC_CHECK_FUNC([inet_aton], [AC_DEFINE([HAS_INET_ATON])])
-
 ## Unix domain sockets support on Windows
 
 AS_CASE([$host],
@@ -1647,108 +1640,15 @@ AS_IF([$ipv6],
 AS_IF([$ipv6],
   [AC_CHECK_FUNC([inet_pton], [], [ipv6=false])])
 
-AS_IF([$ipv6],
-  [AC_CHECK_FUNC([inet_ntop], [AC_DEFINE([HAS_IPV6])])])
-
-AC_CHECK_FUNC([rewinddir], [AC_DEFINE([HAS_REWINDDIR])])
-
-AC_CHECK_FUNC([lockf], [AC_DEFINE([HAS_LOCKF])])
-
-AC_CHECK_FUNC([mkfifo], [AC_DEFINE([HAS_MKFIFO])])
-
 AC_CHECK_FUNC([getcwd], [AC_DEFINE([HAS_GETCWD])])
 
 AC_CHECK_DECL([system], [AC_DEFINE([HAS_SYSTEM])], [], [[#include <stdlib.h>]])
-
-## utime
-## Note: this was defined in config/s-nt.h but the autoconf macros do not
-# seem to detect it properly on Windows so we hardcode the definition
-# of HAS_UTIME on Windows but this will probably need to be clarified
-AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows], [AC_DEFINE([HAS_UTIME])],
-  [AC_CHECK_HEADER([sys/types.h],
-    [AC_CHECK_HEADER([utime.h],
-      [AC_CHECK_FUNC([utime], [AC_DEFINE([HAS_UTIME])])])])])
-
-AC_CHECK_FUNC([utimes], [AC_DEFINE([HAS_UTIMES])])
-
-AC_CHECK_FUNC([fchmod],
-  [AC_CHECK_FUNC([fchown], [AC_DEFINE([HAS_FCHMOD])])])
-
-AC_CHECK_FUNC([truncate],
-  [AC_CHECK_FUNC([ftruncate], [AC_DEFINE([HAS_TRUNCATE])])])
-
-## select
-AC_CHECK_FUNC([select],
-  [AC_CHECK_TYPE([fd_set],
-    [AC_DEFINE([HAS_SELECT])
-    select=true], [select=false], [
-#include <sys/types.h>
-#include <sys/select.h>
-  ])])
-
-AC_CHECK_FUNC([nanosleep], [AC_DEFINE([HAS_NANOSLEEP])])
-
-AC_CHECK_FUNC([symlink],
-  [AC_CHECK_FUNC([readlink],
-    [AC_CHECK_FUNC([lstat], [AC_DEFINE([HAS_SYMLINK])])])])
-
-AC_CHECK_FUNC([realpath], [AC_DEFINE([HAS_REALPATH])])
-
-# wait
-AC_CHECK_FUNC(
-  [waitpid],
-  [
-    wait=true
-    AC_DEFINE([HAS_WAITPID])
-  ],
-  [wait=false])
-
-AC_CHECK_FUNC(
-  [wait4],
-  [
-    has_wait=true
-    AC_DEFINE([HAS_WAIT4])
-  ])
-
-## getgroups
-AC_CHECK_FUNC([getgroups], [AC_DEFINE([HAS_GETGROUPS])])
 
 ## setgroups
 AC_CHECK_FUNC([setgroups], [AC_DEFINE([HAS_SETGROUPS])])
 
 ## initgroups
 AC_CHECK_FUNC([initgroups], [AC_DEFINE([HAS_INITGROUPS])])
-
-## termios
-
-AC_CHECK_HEADER([termios.h],
-  [AC_CHECK_FUNC([tcgetattr],
-    [AC_CHECK_FUNC([tcsetattr],
-      [AC_CHECK_FUNC([tcsendbreak],
-        [AC_CHECK_FUNC([tcflush],
-          [AC_CHECK_FUNC([tcflow], [AC_DEFINE([HAS_TERMIOS])])])])])])])
-
-## setitimer
-
-AC_CHECK_FUNC([setitimer],
-  [
-    setitimer=true
-    AC_DEFINE([HAS_SETITIMER])
-  ],
-  [setitimer=false])
-
-## gethostname
-# Note: detection fails on Windows so hardcoding the result
-# (should be debugged later)
-AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows], [AC_DEFINE([HAS_GETHOSTNAME])],
-  [AC_CHECK_FUNC([gethostname], [AC_DEFINE([HAS_GETHOSTNAME])])])
-
-## uname
-
-AC_CHECK_HEADER([sys/utsname.h],
-  [AC_CHECK_FUNC([uname], [AC_DEFINE([HAS_UNAME])])])
 
 ## gettimeofday
 
@@ -1758,20 +1658,6 @@ AC_CHECK_FUNC([gettimeofday],
     AC_DEFINE([HAS_GETTIMEOFDAY])
   ],
   [gettimeofday=false])
-
-## mktime
-
-AC_CHECK_FUNC([mktime], [AC_DEFINE([HAS_MKTIME])])
-
-## setsid
-
-AS_CASE([$host],
-  [*-cygwin|*-*-mingw32|*-pc-windows], [],
-  [AC_CHECK_FUNC([setsid], [AC_DEFINE([HAS_SETSID])])])
-
-## putenv
-
-AC_CHECK_FUNC([putenv], [AC_DEFINE([HAS_PUTENV])])
 
 ## setenv and unsetenv
 
@@ -1816,16 +1702,6 @@ AS_IF([$supports_shared_libraries],
   [AC_MSG_NOTICE([Dynamic loading of shared libraries is supported.])
   AC_DEFINE([SUPPORT_DYNAMIC_LINKING])],
   [AC_MSG_NOTICE([Dynamic loading of shared libraries is not supported.])])
-
-## mmap
-
-AC_CHECK_HEADER([sys/mman.h],
-  [AC_CHECK_FUNC([mmap],
-    [AC_CHECK_FUNC([munmap], [AC_DEFINE([HAS_MMAP])])])])
-
-## pwrite
-
-AC_CHECK_FUNC([pwrite], [AC_DEFINE([HAS_PWRITE])])
 
 ## -fdebug-prefix-map support by the C compiler
 AS_CASE([$ocaml_cv_cc_vendor,$host],
@@ -1894,10 +1770,6 @@ AS_CASE([$ac_cv_func_which_gethostbyaddr_r],
 
 AC_CHECK_FUNC([mkstemp], [AC_DEFINE([HAS_MKSTEMP])])
 
-## nice
-
-AC_CHECK_FUNC([nice], [AC_DEFINE([HAS_NICE])])
-
 ## dup3
 
 AC_CHECK_FUNC([dup3], [AC_DEFINE([HAS_DUP3])])
@@ -1924,12 +1796,6 @@ AC_CHECK_HEADER([sys/shm.h],
 ## execvpe
 
 AC_CHECK_FUNC([execvpe], [AC_DEFINE([HAS_EXECVPE])])
-
-## posix_spawn
-
-AC_CHECK_HEADER([spawn.h],
-  [AC_CHECK_FUNC([posix_spawn],
-    [AC_CHECK_FUNC([posix_spawnp], [AC_DEFINE([HAS_POSIX_SPAWN])])])])
 
 ## ffs or _BitScanForward
 
@@ -2224,14 +2090,10 @@ AS_IF([test x"$prefix" = "xNONE"],
 AS_CASE([$host],
   [*-*-mingw32],
     [AC_DEFINE([HAS_BROKEN_PRINTF])
-    AC_DEFINE([HAS_STRERROR])
-    AC_DEFINE([HAS_IPV6])
-    AC_DEFINE([HAS_NICE])],
+    AC_DEFINE([HAS_STRERROR])],
   [*-pc-windows],
     [AC_DEFINE([HAS_BROKEN_PRINTF])
-    AC_DEFINE([HAS_STRERROR])
-    AC_DEFINE([HAS_IPV6])
-    AC_DEFINE([HAS_NICE])],
+    AC_DEFINE([HAS_STRERROR])],
   [*-*-solaris*],
     # This is required as otherwise floats are printed
     # as "Infinity" and "Inf" instead of the expected "inf"

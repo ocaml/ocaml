@@ -22,9 +22,6 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 #include "cst2constr.h"
-
-#if defined(HAS_SOCKETS) && defined(HAS_IPV6)
-
 #include "socketaddr.h"
 #ifndef _WIN32
 #include <sys/types.h>
@@ -128,10 +125,3 @@ CAMLprim value caml_unix_getaddrinfo(value vnode, value vserv, value vopts)
   }
   CAMLreturn(vres);
 }
-
-#else
-
-CAMLprim value caml_unix_getaddrinfo(value vnode, value vserv, value vopts)
-{ caml_invalid_argument("getaddrinfo not implemented"); }
-
-#endif

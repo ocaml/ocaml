@@ -27,23 +27,6 @@
 #include "unixsupport.h"
 #include "cst2constr.h"
 
-#ifndef S_IFLNK
-#define S_IFLNK 0
-#endif
-#ifndef S_IFIFO
-#define S_IFIFO 0
-#endif
-#ifndef S_IFSOCK
-#define S_IFSOCK 0
-#endif
-#ifndef S_IFBLK
-#define S_IFBLK 0
-#endif
-
-#ifndef EOVERFLOW
-#define EOVERFLOW ERANGE
-#endif
-
 static int file_kind_table[] = {
   S_IFREG, S_IFDIR, S_IFCHR, S_IFBLK, S_IFLNK, S_IFIFO, S_IFSOCK
 };
@@ -124,11 +107,7 @@ CAMLprim value caml_unix_lstat(value path)
   caml_unix_check_path(path, "lstat");
   p = caml_stat_strdup(String_val(path));
   caml_enter_blocking_section();
-#ifdef HAS_SYMLINK
   ret = lstat(p, &buf);
-#else
-  ret = stat(p, &buf);
-#endif
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1) caml_uerror("lstat", path);
@@ -175,11 +154,7 @@ CAMLprim value caml_unix_lstat_64(value path)
   caml_unix_check_path(path, "lstat");
   p = caml_stat_strdup(String_val(path));
   caml_enter_blocking_section();
-#ifdef HAS_SYMLINK
   ret = lstat(p, &buf);
-#else
-  ret = stat(p, &buf);
-#endif
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1) caml_uerror("lstat", path);

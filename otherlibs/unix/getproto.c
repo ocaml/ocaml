@@ -19,8 +19,6 @@
 #include <caml/memory.h>
 #include "unixsupport.h"
 
-#ifdef HAS_SOCKETS
-
 #ifndef _WIN32
 #include <netdb.h>
 #endif
@@ -56,13 +54,3 @@ CAMLprim value caml_unix_getprotobynumber(value proto)
   if (entry == (struct protoent *) NULL) caml_raise_not_found();
   return alloc_proto_entry(entry);
 }
-
-#else
-
-CAMLprim value caml_unix_getprotobynumber(value proto)
-{ caml_invalid_argument("getprotobynumber not implemented"); }
-
-CAMLprim value caml_unix_getprotobyname(value name)
-{ caml_invalid_argument("getprotobyname not implemented"); }
-
-#endif

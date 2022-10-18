@@ -29,23 +29,13 @@
 #include "unixsupport.h"
 
 #include <errno.h>
-#ifdef HAS_UNISTD
 #include <unistd.h>
-#endif
-#ifdef HAS_MMAP
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#endif
 
 /* Defined in [mmap_ba.c] */
 extern value caml_unix_mapped_alloc(int, int, void *, intnat *);
-
-#if defined(HAS_MMAP)
-
-#ifndef MAP_FAILED
-#define MAP_FAILED ((void *) -1)
-#endif
 
 /* [caml_grow_file] function contributed by Gerd Stolpmann (PR#5543). */
 
@@ -57,28 +47,8 @@ static int caml_grow_file(int fd, file_offset size)
   /* First use pwrite for growing - it is a conservative method, as it
      can never happen that we shrink by accident
    */
-#ifdef HAS_PWRITE
   c = 0;
   p = pwrite(fd, &c, 1, size - 1);
-#else
-
-  /* Emulate pwrite with lseek. This should only be necessary on ancient
-     systems nowadays
-   */
-  file_offset currpos;
-  currpos = lseek(fd, 0, SEEK_CUR);
-  if (currpos != -1) {
-    p = lseek(fd, size - 1, SEEK_SET);
-    if (p != -1) {
-      c = 0;
-      p = write(fd, &c, 1);
-      if (p != -1)
-        p = lseek(fd, currpos, SEEK_SET);
-    }
-  }
-  else p=-1;
-#endif
-#ifdef HAS_TRUNCATE
   if (p == -1 && errno == ESPIPE) {
     /* Plan B. Check if at least ftruncate is possible. There are
        some non-seekable descriptor types that do not support pwrite
@@ -88,7 +58,6 @@ static int caml_grow_file(int fd, file_offset size)
      */
     p = ftruncate(fd, size);
   }
-#endif
   return p;
 }
 
@@ -173,17 +142,6 @@ CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
   return caml_unix_mapped_alloc(flags, num_dims, addr, dim);
 }
 
-#else
-
-CAMLprim value caml_unix_map_file(value vfd, value vkind, value vlayout,
-                                  value vshared, value vdim, value vpos)
-{
-  caml_invalid_argument("Unix.map_file: not supported");
-  return Val_unit;
-}
-
-#endif
-
 CAMLprim value caml_unix_map_file_bytecode(value * argv, int argn)
 {
   return caml_unix_map_file(argv[0], argv[1], argv[2],
@@ -192,15 +150,11 @@ CAMLprim value caml_unix_map_file_bytecode(value * argv, int argn)
 
 void caml_ba_unmap_file(void * addr, uintnat len)
 {
-#if defined(HAS_MMAP)
   uintnat page = sysconf(_SC_PAGESIZE);
   uintnat delta = (uintnat) addr % page;
   if (len == 0) return;         /* PR#5463 */
   addr = (void *)((uintnat)addr - delta);
   len  = len + delta;
-#if defined(_POSIX_SYNCHRONIZED_IO)
   msync(addr, len, MS_ASYNC);   /* PR#3571 */
-#endif
   munmap(addr, len);
-#endif
 }

@@ -19,9 +19,6 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 #include <errno.h>
-
-#ifdef HAS_SOCKETS
-
 #include "socketaddr.h"
 #include <ws2tcpip.h>
 
@@ -196,5 +193,3 @@ CAMLprim value caml_unix_socketpair(value cloexec, value domain, value type,
 }
 
 #endif  /* HAS_SOCKETPAIR */
-
-#endif  /* HAS_SOCKETS */
