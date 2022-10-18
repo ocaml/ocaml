@@ -777,7 +777,7 @@ static void unreserve_minor_heaps() {
 
   size = caml_minor_heaps_end - caml_minor_heaps_start;
   CAMLassert (Bsize_wsize(caml_minor_heap_max_wsz) * Max_domains == size);
-  caml_mem_unmap((void *) caml_minor_heaps_start, size);
+  caml_mem_unmap((void *) caml_minor_heaps_start, size + caml_sys_pagesize);
 }
 
 static void stw_resize_minor_heap_reservation(caml_domain_state* domain,
