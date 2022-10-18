@@ -803,6 +803,7 @@ install_ocamlnat
 install_source_artifacts
 install_bytecode_programs
 mksharedlibrpath
+mkmaindll_exp
 mkmaindll
 mkdll_exp
 mkdll
@@ -3355,6 +3356,7 @@ OCAML_VERSION_SHORT=5.1
 
 
  # TODO: rename this variable
+
 
 
 
@@ -13799,12 +13801,8 @@ else $as_nop
   supports_shared_libraries=true
 fi
 
-# The flexlink command
-
-flexlink_cmd=flexlink
-flexlink_flags=''
-
 # Define flexlink chain and flags correctly for the different Windows ports
+flexlink_flags=''
 case $host in #(
   i686-*-cygwin) :
     flexdll_chain='cygwin'
@@ -14157,8 +14155,13 @@ esac
 
 mkexe_cmd_exp="$CC"
 
-boot_flexlink_cmd=\
+if $bootstrapping_flexdll
+then :
+  flexlink_cmd=\
 '$(ROOTDIR)/boot/ocamlruns.exe $(ROOTDIR)/boot/flexlink.byte.exe'
+else $as_nop
+  flexlink_cmd=flexlink
+fi
 
 case $cc_basename,$host in #(
   *,x86_64-*-darwin*) :
@@ -14175,13 +14178,7 @@ case $cc_basename,$host in #(
     if $supports_shared_libraries
 then :
   mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-      if $bootstrapping_flexdll
-then :
-  mkexe_cmd=\
-"$boot_flexlink_cmd -exe -chain ${flexdll_chain} ${flexlink_flags}"
-else $as_nop
-  mkexe_cmd="$mkexe_cmd_exp"
-fi
+      mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
       mkexe_cflags=''
       mkexe_ldflags_prefix='-link '
 else $as_nop
@@ -14200,13 +14197,7 @@ esac
     ostype="Win32"
     toolchain="mingw"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-    if $bootstrapping_flexdll
-then :
-  mkexe_cmd=\
-"${boot_flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
-else $as_nop
-  mkexe_cmd="$mkexe_cmd_exp"
-fi
+    mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     oc_exe_ldflags='-municode'
@@ -14216,13 +14207,7 @@ fi
     toolchain=msvc
     ostype="Win32"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-    if $bootstrapping_flexdll
-then :
-  mkexe_cmd=\
-"${boot_flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
-else $as_nop
-  mkexe_cmd="$mkexe_cmd_exp"
-fi
+    mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     mkexe_via_cc_ldflags_prefix='/link '
@@ -15121,9 +15106,9 @@ rpath=''
 mksharedlibrpath=''
 natdynlinkopts=""
 
-mkdll_ld=''
 if test x"$enable_shared" != "xno"
 then :
+  mkdll=''
   case $host in #(
   x86_64-apple-darwin*) :
     mkdll_flags=\
@@ -15132,20 +15117,12 @@ then :
   aarch64-apple-darwin*|arm64-apple-darwin*) :
     mkdll_flags='-shared -undefined dynamic_lookup -Wl,-w'
       supports_shared_libraries=true ;; #(
-  *-*-mingw32) :
-    mkdll_ld="${flexlink_cmd} -chain ${flexdll_chain} ${flexlink_flags}"
-      mkmaindll=\
-"${flexlink_cmd} -maindll -chain ${flexdll_chain} ${flexlink_flags}" ;; #(
-  *-pc-windows) :
-    mkdll_ld="${flexlink_cmd} -chain ${flexdll_chain} ${flexlink_flags}"
-      mkdll_flags=''
-      mkmaindll=\
-"${flexlink_cmd} -maindll -chain ${flexdll_chain} ${flexlink_flags}" ;; #(
-  *-*-cygwin*) :
-    mkdll_ld="${flexlink_cmd} -chain ${flexdll_chain} ${flexlink_flags}"
-      mkdll_flags=''
-      mkmaindll=\
-"${flexlink_cmd} -maindll -chain ${flexdll_chain} ${flexlink_flags}" ;; #(
+  *-*-mingw32|*-pc-windows|*-*-cygwin*) :
+    mkdll_flags="-chain ${flexdll_chain} ${flexlink_flags}"
+      mkdll_exp="flexlink ${mkdll_flags}"
+      mkdll="${flexlink_cmd} ${mkdll_flags}"
+      mkmaindll_exp="flexlink -maindll ${mkdll_flags}"
+      mkmaindll="${flexlink_cmd} -maindll ${mkdll_flags}" ;; #(
   powerpc-ibm-aix*) :
     case $ocaml_cv_cc_vendor in #(
   xlc*) :
@@ -15179,13 +15156,10 @@ esac
       natdynlinkopts="-Wl,-E"
       supports_shared_libraries=true ;; #(
   *) :
-     ;;
+    mkdll='shared-libs-not-available' ;;
 esac
-  if $supports_shared_libraries && test -n "$mkdll_ld"
+  if test -z "$mkdll"
 then :
-  mkdll="$mkdll_ld $mkdll_flags"
-    mkdll_exp="$mkdll"
-else $as_nop
   mkdll="\$(CC) $mkdll_flags"
     mkdll_exp="$CC $mkdll_flags"
 fi
@@ -15193,7 +15167,8 @@ fi
 
 if test -z "$mkmaindll"
 then :
-  mkmaindll=$mkdll_exp
+  mkmaindll_exp="$mkdll_exp"
+  mkmaindll="$mkdll"
 fi
 
 # Configure native dynlink
