@@ -189,6 +189,7 @@ AC_SUBST([rpath])
 AC_SUBST([mkdll])
 AC_SUBST([mkdll_exp])
 AC_SUBST([mkmaindll])
+AC_SUBST([mkmaindll_exp])
 AC_SUBST([mksharedlibrpath])
 AC_SUBST([install_bytecode_programs])
 AC_SUBST([install_source_artifacts])
@@ -782,12 +783,8 @@ AS_IF([test x"$enable_shared" = "xno"],
     [AC_MSG_ERROR([Cannot build native Win32 with --disable-shared])])],
   [supports_shared_libraries=true])
 
-# The flexlink command
-
-flexlink_cmd=flexlink
-flexlink_flags=''
-
 # Define flexlink chain and flags correctly for the different Windows ports
+flexlink_flags=''
 AS_CASE([$host],
   [i686-*-cygwin],
     [flexdll_chain='cygwin'
@@ -887,8 +884,10 @@ AS_CASE([$flexdir,$supports_shared_libraries,$flexlink,$host],
 
 mkexe_cmd_exp="$CC"
 
-boot_flexlink_cmd=\
-'$(ROOTDIR)/boot/ocamlruns.exe $(ROOTDIR)/boot/flexlink.byte.exe'
+AS_IF([$bootstrapping_flexdll],
+  [flexlink_cmd=\
+'$(ROOTDIR)/boot/ocamlruns.exe $(ROOTDIR)/boot/flexlink.byte.exe'],
+  [flexlink_cmd=flexlink])
 
 AS_CASE([$cc_basename,$host],
   [*,x86_64-*-darwin*],
@@ -901,10 +900,7 @@ AS_CASE([$cc_basename,$host],
     [common_cppflags="$common_cppflags -U_WIN32"
     AS_IF([$supports_shared_libraries],
       [mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-      AS_IF([$bootstrapping_flexdll],
-        [mkexe_cmd=\
-"$boot_flexlink_cmd -exe -chain ${flexdll_chain} ${flexlink_flags}"],
-        [mkexe_cmd="$mkexe_cmd_exp"])
+      mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
       mkexe_cflags=''
       mkexe_ldflags_prefix='-link '],
       [mkexe_extra_flags=''
@@ -917,10 +913,7 @@ AS_CASE([$cc_basename,$host],
     ostype="Win32"
     toolchain="mingw"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-    AS_IF([$bootstrapping_flexdll],
-      [mkexe_cmd=\
-"${boot_flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"],
-      [mkexe_cmd="$mkexe_cmd_exp"])
+    mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     oc_exe_ldflags='-municode'
@@ -930,10 +923,7 @@ AS_CASE([$cc_basename,$host],
     [toolchain=msvc
     ostype="Win32"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-    AS_IF([$bootstrapping_flexdll],
-      [mkexe_cmd=\
-"${boot_flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"],
-      [mkexe_cmd="$mkexe_cmd_exp"])
+    mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     mkexe_via_cc_ldflags_prefix='/link '
@@ -1070,9 +1060,9 @@ rpath=''
 mksharedlibrpath=''
 natdynlinkopts=""
 
-mkdll_ld=''
 AS_IF([test x"$enable_shared" != "xno"],
-  [AS_CASE([$host],
+  [mkdll=''
+  AS_CASE([$host],
     [x86_64-apple-darwin*],
       [mkdll_flags=\
 '-shared -undefined dynamic_lookup -Wl,-no_compact_unwind -Wl,-w'
@@ -1080,20 +1070,12 @@ AS_IF([test x"$enable_shared" != "xno"],
     [aarch64-apple-darwin*|arm64-apple-darwin*],
       [mkdll_flags='-shared -undefined dynamic_lookup -Wl,-w'
       supports_shared_libraries=true],
-    [*-*-mingw32],
-      [mkdll_ld="${flexlink_cmd} -chain ${flexdll_chain} ${flexlink_flags}"
-      mkmaindll=\
-"${flexlink_cmd} -maindll -chain ${flexdll_chain} ${flexlink_flags}"],
-    [*-pc-windows],
-      [mkdll_ld="${flexlink_cmd} -chain ${flexdll_chain} ${flexlink_flags}"
-      mkdll_flags=''
-      mkmaindll=\
-"${flexlink_cmd} -maindll -chain ${flexdll_chain} ${flexlink_flags}"],
-    [*-*-cygwin*],
-      [mkdll_ld="${flexlink_cmd} -chain ${flexdll_chain} ${flexlink_flags}"
-      mkdll_flags=''
-      mkmaindll=\
-"${flexlink_cmd} -maindll -chain ${flexdll_chain} ${flexlink_flags}"],
+    [*-*-mingw32|*-pc-windows|*-*-cygwin*],
+      [mkdll_flags="-chain ${flexdll_chain} ${flexlink_flags}"
+      mkdll_exp="flexlink ${mkdll_flags}"
+      mkdll="${flexlink_cmd} ${mkdll_flags}"
+      mkmaindll_exp="flexlink -maindll ${mkdll_flags}"
+      mkmaindll="${flexlink_cmd} -maindll ${mkdll_flags}"],
     [powerpc-ibm-aix*],
       [AS_CASE([$ocaml_cv_cc_vendor],
                [xlc*],
@@ -1120,14 +1102,15 @@ AS_IF([test x"$enable_shared" != "xno"],
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
       natdynlinkopts="-Wl,-E"
-      supports_shared_libraries=true])
-  AS_IF([$supports_shared_libraries && test -n "$mkdll_ld"],
-    [mkdll="$mkdll_ld $mkdll_flags"
-    mkdll_exp="$mkdll"],
+      supports_shared_libraries=true],
+      [mkdll='shared-libs-not-available'])
+  AS_IF([test -z "$mkdll"],
     [mkdll="\$(CC) $mkdll_flags"
     mkdll_exp="$CC $mkdll_flags"])])
 
-AS_IF([test -z "$mkmaindll"], [mkmaindll=$mkdll_exp])
+AS_IF([test -z "$mkmaindll"],
+  [mkmaindll_exp="$mkdll_exp"
+  mkmaindll="$mkdll"])
 
 # Configure native dynlink
 
