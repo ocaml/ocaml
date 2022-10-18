@@ -1714,3 +1714,96 @@ Error: Signature mismatch:
          type t = < m : int >
        A private row type would be revealed.
 |}];;
+
+
+(** Unexpected recursive types *)
+module M: sig
+  type _ t = A : (<x:'a> as 'a) -> (<y:'b> as 'b) t
+end = struct
+  type _ t = A : (<x:'a * 'a> as 'a) -> (<y:'b> as 'b) t
+end
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type _ t = A : (<x:'a * 'a> as 'a) -> (<y:'b> as 'b) t
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           type _ t = A : (< x : 'b * 'b > as 'b) -> (< y : 'a > as 'a) t
+         end
+       is not included in
+         sig type _ t = A : (< x : 'b > as 'b) -> (< y : 'a > as 'a) t end
+       Type declarations do not match:
+         type _ t = A : (< x : 'b * 'b > as 'b) -> (< y : 'a > as 'a) t
+       is not included in
+         type _ t = A : (< x : 'b > as 'b) -> (< y : 'a > as 'a) t
+       Constructors do not match:
+         A : (< x : 'b * 'b > as 'b) -> (< y : 'a > as 'a) t
+       is not the same as:
+         A : (< x : 'b > as 'b) -> (< y : 'a > as 'a) t
+       The type < x : 'a * 'a > as 'a is not equal to the type
+         < x : 'b > as 'b
+       Types for method x are incompatible
+|}]
+module R: sig
+  type t = { a: (<x:'a> as 'a) }
+end = struct
+  type t = { a: (<x:'a * 'a> as 'a) }
+end
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   type t = { a: (<x:'a * 'a> as 'a) }
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = { a : < x : 'a * 'a > as 'a; } end
+       is not included in
+         sig type t = { a : < x : 'a > as 'a; } end
+       Type declarations do not match:
+         type t = { a : < x : 'a * 'a > as 'a; }
+       is not included in
+         type t = { a : < x : 'a > as 'a; }
+       Fields do not match:
+         a : < x : 'a * 'a > as 'a;
+       is not the same as:
+         a : < x : 'a > as 'a;
+       The type < x : 'a * 'a > as 'a is not equal to the type
+         < x : 'b > as 'b
+       Types for method x are incompatible
+|}]
+type _ ext = ..
+module Ext: sig
+  type _ ext += A : (<x:'a> as 'a) -> (<y:'b> as 'b) ext
+end = struct
+  type _ ext  += A : (<x:'a * 'a> as 'a) -> (<y:'b> as 'b) ext
+end
+[%%expect {|
+type _ ext = ..
+Lines 4-6, characters 6-3:
+4 | ......struct
+5 |   type _ ext  += A : (<x:'a * 'a> as 'a) -> (<y:'b> as 'b) ext
+6 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           type _ ext +=
+               A : (< x : 'b * 'b > as 'b) -> (< y : 'a > as 'a) ext
+         end
+       is not included in
+         sig
+           type _ ext += A : (< x : 'b > as 'b) -> (< y : 'a > as 'a) ext
+         end
+       Extension declarations do not match:
+         type _ ext += A : (< x : 'b * 'b > as 'b) -> (< y : 'a > as 'a) ext
+       is not included in
+         type _ ext += A : (< x : 'b > as 'b) -> (< y : 'a > as 'a) ext
+       Constructors do not match:
+         A : (< x : 'b * 'b > as 'b) -> (< y : 'a > as 'a) ext
+       is not the same as:
+         A : (< x : 'b > as 'b) -> (< y : 'a > as 'a) ext
+       The type < x : 'a * 'a > as 'a is not equal to the type
+         < x : 'b > as 'b
+       Types for method x are incompatible
+|}]

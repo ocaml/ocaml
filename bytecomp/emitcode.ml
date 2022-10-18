@@ -50,18 +50,20 @@ let () =
     )
 
 (* Buffering of bytecode *)
-
-let out_buffer = ref(LongString.create 1024)
+let out_buffer = ref(LongString.create 0)
 and out_position = ref 0
+
+let extend_buffer needed =
+  let size = LongString.length !out_buffer in
+  let new_size = ref(max size 16) (* we need new_size > 0 *) in
+  while needed >= !new_size do new_size := 2 * !new_size done;
+  let new_buffer = LongString.create !new_size in
+  LongString.blit !out_buffer 0 new_buffer 0 (LongString.length !out_buffer);
+  out_buffer := new_buffer
 
 let out_word b1 b2 b3 b4 =
   let p = !out_position in
-  if p >= LongString.length !out_buffer then begin
-    let len = LongString.length !out_buffer in
-    let new_buffer = LongString.create (2 * len) in
-    LongString.blit !out_buffer 0 new_buffer 0 len;
-    out_buffer := new_buffer
-  end;
+  if p+3 >= LongString.length !out_buffer then extend_buffer (p+3);
   LongString.set !out_buffer p (Char.unsafe_chr b1);
   LongString.set !out_buffer (p+1) (Char.unsafe_chr b2);
   LongString.set !out_buffer (p+2) (Char.unsafe_chr b3);
@@ -106,7 +108,8 @@ type label_definition =
 let label_table  = ref ([| |] : label_definition array)
 
 let extend_label_table needed =
-  let new_size = ref(Array.length !label_table) in
+  let size = Array.length !label_table in
+  let new_size = ref(max size 16) (* we need new_size > 0 *) in
   while needed >= !new_size do new_size := 2 * !new_size done;
   let new_table = Array.make !new_size (Label_undefined []) in
   Array.blit !label_table 0 new_table 0 (Array.length !label_table);
@@ -178,12 +181,18 @@ let record_event ev =
 
 (* Initialization *)
 
-let init () =
+let clear() =
   out_position := 0;
-  label_table := Array.make 16 (Label_undefined []);
+  label_table := [||];
   reloc_info := [];
   debug_dirs := String.Set.empty;
-  events := []
+  events := [];
+  out_buffer := LongString.create 0
+
+let init () =
+  clear ();
+  label_table := Array.make 16 (Label_undefined []);
+  out_buffer := LongString.create 1024
 
 (* Emission of one instruction *)
 
@@ -394,6 +403,7 @@ let rec emit = function
 
 let to_file outchan unit_name objfile ~required_globals code =
   init();
+  Fun.protect ~finally:clear (fun () ->
   output_string outchan cmo_magic_number;
   let pos_depl = pos_out outchan in
   output_binary_int outchan 0;
@@ -423,41 +433,37 @@ let to_file outchan unit_name objfile ~required_globals code =
       cu_force_link = !Clflags.link_everything;
       cu_debug = pos_debug;
       cu_debugsize = size_debug } in
-  init();                               (* Free out_buffer and reloc_info *)
-  Btype.cleanup_abbrev ();              (* Remove any cached abbreviation
-                                           expansion before saving *)
   let pos_compunit = pos_out outchan in
-  marshal_to_channel_with_possibly_32bit_compat
-    ~filename:objfile ~kind:"bytecode unit"
-    outchan compunit;
+  let () =
+    (* Remove any cached abbreviation expansion before marshaling.
+       See doc-comment for [Types.abbrev_memo] *)
+    Btype.cleanup_abbrev ();
+    marshal_to_channel_with_possibly_32bit_compat
+      ~filename:objfile ~kind:"bytecode unit"
+      outchan compunit
+  in
   seek_out outchan pos_depl;
-  output_binary_int outchan pos_compunit
+  output_binary_int outchan pos_compunit)
 
 (* Emission to a memory block *)
 
 let to_memory init_code fun_code =
   init();
+  Fun.protect ~finally:clear (fun () ->
   emit init_code;
   emit fun_code;
   let code = LongString.create !out_position in
   LongString.blit !out_buffer 0 code 0 !out_position;
   let reloc = List.rev !reloc_info in
   let events = !events in
-  init();
-  (code, reloc, events)
+  (code, reloc, events))
 
 (* Emission to a file for a packed library *)
 
 let to_packed_file outchan code =
-  init();
+  init ();
+  Fun.protect ~finally:clear (fun () ->
   emit code;
   LongString.output outchan !out_buffer 0 !out_position;
   let reloc = !reloc_info in
-  init();
-  reloc
-
-let reset () =
-  out_buffer := LongString.create 1024;
-  out_position := 0;
-  label_table := [| |];
-  reloc_info := []
+  reloc)
