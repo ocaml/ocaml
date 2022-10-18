@@ -3602,8 +3602,6 @@ esac
 # Systems that are known not to work, even in bytecode only.
 
 case $host in #(
-  *-pc-windows) :
-    as_fn_error 69 "the MSVC compiler is not supported currently" "$LINENO" 5 ;; #(
   i386-*-solaris*) :
     as_fn_error $? "Building for 32 bits target is not supported. \
 If your host is 64 bits, you can try with './configure CC=\"gcc -m64\"' \
@@ -13825,6 +13823,8 @@ esac ;; #(
     common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
       internal_cppflags='-DUNICODE -D_UNICODE'
+      internal_cflags='-experimental:c11atomics -std:c11'
+      CFLAGS="$CFLAGS -experimental:c11atomics -std:c11"
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports -d2VolatileMetadata-" >&5
 printf %s "checking whether the C compiler supports -d2VolatileMetadata-... " >&6; }
@@ -13849,7 +13849,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
       if test "x$cl_has_volatile_metadata" = "xtrue"
 then :
-  internal_cflags='-d2VolatileMetadata-'
+  internal_cflags="$internal_cflags -d2VolatileMetadata-"
 fi
       internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
       internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
@@ -15155,8 +15155,20 @@ fi
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports _Atomic types" >&5
 printf %s "checking whether the C compiler supports _Atomic types... " >&6; }
+
+  saved_CC="$CC"
+  saved_CFLAGS="$CFLAGS"
+  saved_CPPFLAGS="$CPPFLAGS"
   saved_LIBS="$LIBS"
+  saved_ac_ext="$ac_ext"
+  saved_ac_compile="$ac_compile"
+  # Move the content of confdefs.h to another file so it does not
+  # get included
+  mv confdefs.h confdefs.h.bak
+  touch confdefs.h
+
   LIBS="$LIBS $cclibs"
+  CFLAGS="$internal_cflags $CFLAGS"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -15185,7 +15197,16 @@ printf "%s\n" "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
+
+  # Restore the content of confdefs.h
+  mv confdefs.h.bak confdefs.h
+  ac_compile="$saved_ac_compile"
+  ac_ext="$saved_ac_ext"
+  CPPFLAGS="$saved_CPPFLAGS"
+  CFLAGS="$saved_CFLAGS"
+  CC="$saved_CC"
   LIBS="$saved_LIBS"
+
 
 if ! $cc_supports_atomic
 then :
@@ -15199,7 +15220,7 @@ fi
 # macOS and MinGW-64 have problems with __thread variables accessed from DLLs
 
 case $host in #(
-  *-apple-darwin*|*-mingw32*) :
+  *-apple-darwin*|*-mingw32*|*-pc-windows) :
      ;; #(
   *) :
     printf "%s\n" "#define HAS_FULL_THREAD_VARIABLES 1" >>confdefs.h
