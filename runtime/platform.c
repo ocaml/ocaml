@@ -137,7 +137,7 @@ static uintnat round_up(uintnat size, uintnat align) {
   return (size + align - 1) & ~(align - 1);
 }
 
-long caml_sys_pagesize = 0;
+intnat caml_sys_pagesize = 0;
 
 uintnat caml_mem_round_up_pages(uintnat size)
 {
@@ -157,8 +157,12 @@ static struct lf_skiplist mmap_blocks = {NULL};
 #ifndef _WIN32
 Caml_inline void safe_munmap(uintnat addr, uintnat size)
 {
-  if (size > 0)
+  if (size > 0) {
+    caml_gc_message(0x1000, "munmap %" ARCH_INTNAT_PRINTF_FORMAT "d"
+                            " bytes at %" ARCH_INTNAT_PRINTF_FORMAT "x"
+                            " for heaps\n", size, addr);
     munmap((void*)addr, size);
+  }
 }
 #endif
 
@@ -192,8 +196,12 @@ again:
              MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 #endif
   if (mem == MAP_FAILED) {
+    caml_gc_message(0x1000, "mmap %" ARCH_INTNAT_PRINTF_FORMAT "d bytes failed",
+                            alloc_sz);
     return 0;
   }
+  caml_gc_message(0x1000, "mmap %" ARCH_INTNAT_PRINTF_FORMAT "d"
+                          " bytes at %p for heaps\n", alloc_sz, mem);
 
   /* trim to an aligned region */
   base = (uintnat)mem;
@@ -204,6 +212,7 @@ again:
      release the entire block of memory. For Windows, repeat the call but this
      time specify the address. */
   VirtualFree(mem, 0, MEM_RELEASE);
+  caml_gc_message(0x1000, "munmap %lld bytes at %p for heaps\n", alloc_sz, mem);
   mem = VirtualAlloc((void*)aligned_start,
                      aligned_end - aligned_start,
                      MEM_RESERVE | (reserve_only ? 0 : MEM_COMMIT),
@@ -221,6 +230,7 @@ again:
       return 0;
     }
   }
+  caml_gc_message(0x1000, "mmap %lld bytes at %p for heaps\n", alloc_sz, mem);
   CAMLassert(mem == (void*)aligned_start);
 #else
   safe_munmap(base, aligned_start - base);
@@ -249,6 +259,8 @@ static void* map_fixed(void* mem, uintnat size, int prot)
 void* caml_mem_commit(void* mem, uintnat size)
 {
   CAMLassert(Is_page_aligned(size));
+  caml_gc_message(0x1000, "commit %" ARCH_INTNAT_PRINTF_FORMAT "d"
+                          " bytes at %p for heaps\n", size, mem);
 #ifdef _WIN32
   return VirtualAlloc(mem, size, MEM_COMMIT, PAGE_READWRITE);
 #else
@@ -265,6 +277,8 @@ void* caml_mem_commit(void* mem, uintnat size)
 void caml_mem_decommit(void* mem, uintnat size)
 {
   if (size) {
+    caml_gc_message(0x1000, "decommit %" ARCH_INTNAT_PRINTF_FORMAT "d"
+                            " bytes at %p for heaps\n", size, mem);
 #ifdef _WIN32
     VirtualFree(mem, size, MEM_DECOMMIT);
 #else
@@ -280,6 +294,8 @@ void caml_mem_unmap(void* mem, uintnat size)
   CAMLassert(caml_lf_skiplist_find(&mmap_blocks, (uintnat)mem, &data) != 0);
   CAMLassert(data == size);
 #endif
+  caml_gc_message(0x1000, "munmap %" ARCH_INTNAT_PRINTF_FORMAT "d"
+                          " bytes at %p for heaps\n", size, mem);
 #ifdef _WIN32
   if (!VirtualFree(mem, 0, MEM_RELEASE))
     CAMLassert(0);

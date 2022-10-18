@@ -183,7 +183,7 @@ Caml_inline void caml_plat_unlock(caml_plat_mutex* m)
 
 /* On Windows, the SYSTEM_INFO.dwPageSize is a DWORD (32-bit), but conveniently
    long is also 32-bit */
-extern long caml_sys_pagesize;
+extern intnat caml_sys_pagesize;
 
 #endif /* CAML_INTERNALS */
 

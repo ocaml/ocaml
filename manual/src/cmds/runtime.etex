@@ -191,6 +191,7 @@ The following environment variables are also consulted:
         \item[512 (= 0x200)] Computation of compaction-triggering condition.
         \item[1024 (= 0x400)] Output GC statistics at program exit.
         \item[2048 (= 0x800)] GC debugging messages.
+        \item[4096 (= 0x1000)] Address space reservation changes.
   \end{options}
   \item[V] ("verify_heap") runs an integrity check on the heap just after
     the completion of a major GC cycle

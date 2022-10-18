@@ -18,6 +18,11 @@ Working version
 
 ### Runtime system:
 
+- #11641: Add GC messages for address space reservations when OCAMLRUNPARAM
+  option v includes 0x1000.
+  (David Allsopp, review by Xavier Leroy, Guillaume Munch-Maccagnoni
+  and Gabriel Scherer)
+
 - #11743: Speed up weak array operations
   (KC Sivaramakrishnan, review by François Bobot and Sadiq Jaffer)
 
