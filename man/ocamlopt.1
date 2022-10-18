@@ -716,6 +716,33 @@ as a file name, even if it starts with a dash (-) character.
 .BR \-help \ or \ \-\-help
 Display a short usage summary and exit.
 
+.SH OPTIONS FOR THE FLAMBDA MIDDLE-END
+
+When the Flambda code generator has been enabled at configuration time,
+the following additional options are available:
+.TP
+.B \-02
+Perform more optimisation than usual. Compilation times may be lengthened.
+.TP
+.B \-03
+Perform even more optimisation than usual, possibly including unrolling
+of recursive functions. Compilation times may be significantly lengthened.
+.TP
+.B \-Oclassic
+Makes inlining decisions at the point of definition of a function rather
+than at the call site(s). This mirrors the behaviour of OCaml compilers
+not using Flambda. Compared to compilation using the new Flambda inlining
+heuristics (for example at -O2) it produces smaller .cmx files, shorter
+compilation times and code that probably runs rather slower. When using
+-Oclassic, only the following options described in this section are
+relevant: -inlining-report and -inline. If any other of the options
+described in this section are used, the behaviour is undefined and may
+cause an error in future versions of the compiler.
+.TP
+.B \-inlining-report
+Emit .inlining files (one per round of optimisation) showing all of the
+inliner's decisions.
+
 .SH OPTIONS FOR THE IA32 ARCHITECTURE
 
 The IA32 code generator (Intel Pentium, AMD Athlon) supports the
@@ -752,31 +779,6 @@ Generate position-independent machine code.  This is the default.
 .TP
 .B \-fno\-PIC
 Generate position-dependent machine code.
-
-.SH OPTIONS FOR FLAMBDA
-
-The Flambda code generator supports the following additional options:
-.TP
-.B \-02
-Perform more optimisation than usual. Compilation times may be lengthened.
-.TP
-.B \-03
-Perform even more optimisation than usual, possibly including unrolling
-of recursive functions. Compilation times may be significantly lengthened.
-.TP
-.B \-Oclassic
-Makes inlining decisions at the point of definition of a function rather
-than at the call site(s). This mirrors the behaviour of OCaml compilers
-not using Flambda. Compared to compilation using the new Flambda inlining
-heuristics (for example at -O2) it produces smaller .cmx files, shorter
-compilation times and code that probably runs rather slower. When using
--Oclassic, only the following options described in this section are
-relevant: -inlining-report and -inline. If any other of the options
-described in this section are used, the behaviour is undefined and may
-cause an error in future versions of the compiler.
-.TP
-.B \-inlining-report
-Emit .inlining files (one per round of optimisation) showing all of the inliner’s decisions.
 
 .SH OPTIONS FOR THE POWER ARCHITECTURE
 
