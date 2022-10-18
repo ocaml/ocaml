@@ -148,6 +148,8 @@ Working version
   (Hugo Heuzard, review by Nicolás Ojeda Bär)
 
 ### Build system:
+- #11590: Allow installing to a destination path containing spaces.
+   (Élie Brami, review by Sébastien Hinderer and David Allsopp)
 
 ### Bug fixes:
 
