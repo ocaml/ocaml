@@ -180,6 +180,7 @@ again:
   mem = mmap(0, alloc_sz, reserve_only ? PROT_NONE : (PROT_READ | PROT_WRITE),
              MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 #endif
+  caml_gc_message(0x1000, "mmap %ld bytes at %p for heaps\n", alloc_sz, mem);
   if (mem == MAP_FAILED) {
     return 0;
   }
@@ -193,6 +194,7 @@ again:
      release the entire block of memory. For Windows, repeat the call but this
      time specify the address. */
   VirtualFree(mem, 0, MEM_RELEASE);
+  caml_gc_message(0x1000, "munmap %ld bytes at %p for heaps\n", alloc_sz, mem);
   mem = VirtualAlloc((void*)aligned_start,
                      aligned_end - aligned_start + 1,
                      MEM_RESERVE | (reserve_only ? 0 : MEM_COMMIT),
@@ -210,9 +212,15 @@ again:
       return 0;
     }
   }
+  caml_gc_message(0x1000, "mmap %ld bytes at %p for heaps\n", alloc_sz, mem);
   CAMLassert(mem == (void*)aligned_start);
 #else
+  aligned_end = aligned_start + caml_mem_round_up_pages(size);
+  caml_gc_message(0x1000, "munmap %ld bytes at %p for heaps\n",
+                          aligned_start - base, (void*)base);
   munmap((void*)base, aligned_start - base);
+  caml_gc_message(0x1000, "munmap %ld bytes at %p for heaps\n",
+                          (base + alloc_sz) - aligned_end, (void*)aligned_end);
   munmap((void*)aligned_end, (base + alloc_sz) - aligned_end);
 #endif
 #ifdef DEBUG
@@ -236,6 +244,8 @@ static void* map_fixed(void* mem, uintnat size, int prot)
 
 void* caml_mem_commit(void* mem, uintnat size)
 {
+  caml_gc_message(0x1000, "commit %ld bytes at %p for heaps\n",
+                          size, mem);
 #ifdef _WIN32
   return VirtualAlloc(mem, size, MEM_COMMIT, PAGE_READWRITE);
 #else
@@ -254,6 +264,8 @@ void* caml_mem_commit(void* mem, uintnat size)
 
 void caml_mem_decommit(void* mem, uintnat size)
 {
+  caml_gc_message(0x1000, "decommit %ld bytes at %p for heaps\n",
+                          size, mem);
 #ifdef _WIN32
   /* VirtualFree can't decommit zero bytes */
   if (size)
@@ -270,6 +282,7 @@ void caml_mem_unmap(void* mem, uintnat size)
   CAMLassert(caml_lf_skiplist_find(&mmap_blocks, (uintnat)mem, &data) != 0);
   CAMLassert(data == size);
 #endif
+  caml_gc_message(0x1000, "munmap %ld bytes at %p for heaps\n", size, mem);
 #ifdef _WIN32
   if (!VirtualFree(mem, 0, MEM_RELEASE))
     CAMLassert(0);

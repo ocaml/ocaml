@@ -18,6 +18,10 @@ Working version
 
 ### Runtime system:
 
+- #11645: Add GC messages for address space reservations when OCAMLRUNPARAM
+  option v includes 0x1000.
+  (David Allsopp, review by ???)
+
 ### Code generation and optimizations:
 
 - #8998, #11321, #11430: change mangling of OCaml long identifiers
