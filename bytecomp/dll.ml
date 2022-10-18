@@ -19,7 +19,7 @@ type dll_handle
 type dll_address
 type dll_mode = For_checking | For_execution
 
-external dll_open: dll_mode -> string -> dll_handle = "caml_dynlink_open_lib"
+external dll_open: string -> dll_handle = "caml_dynlink_open_lib"
 external dll_close: dll_handle -> unit = "caml_dynlink_close_lib"
 external dll_sym: dll_handle -> string -> dll_address
                 = "caml_dynlink_lookup_symbol"
@@ -40,10 +40,7 @@ let dll_close = function
   | Execution dll -> dll_close dll
 
 (* DLLs currently opened *)
-let opened_dlls = ref ([] : opened_dll list)
-
-(* File names for those DLLs *)
-let names_of_opened_dlls = ref ([] : string list)
+let opened_dlls = ref ([] : (string * opened_dll) list)
 
 (* Add the given directories to the search path for DLLs. *)
 let add_path dirs =
@@ -74,26 +71,26 @@ let open_dll mode name =
         Filename.concat Filename.current_dir_name fullname
       else fullname
     with Not_found -> name in
-  if not (List.mem fullname !names_of_opened_dlls) then begin
-    let dll =
-      match mode with
-      | For_checking ->
-          begin match Binutils.read fullname with
-          | Ok t -> Checking t
-          | Error err ->
-              failwith (fullname ^ ": " ^ Binutils.error_to_string err)
-          end
-      | For_execution ->
-          begin match dll_open mode fullname with
-          | dll ->
-              Execution dll
-          | exception Failure msg ->
-              failwith (fullname ^ ": " ^ msg)
-          end
-    in
-    names_of_opened_dlls := fullname :: !names_of_opened_dlls;
-    opened_dlls := dll :: !opened_dlls
-  end
+  match List.assoc_opt fullname !opened_dlls, mode with
+  | Some (Execution _), (For_execution | For_checking) -> ()
+  | Some (Checking _), For_checking -> ()
+  | None, For_checking ->
+      begin match Binutils.read fullname with
+      | Ok t -> opened_dlls := (fullname, Checking t) :: !opened_dlls
+      | Error err ->
+          failwith (fullname ^ ": " ^ Binutils.error_to_string err)
+      end
+  | (None | Some (Checking _) as current), For_execution ->
+      begin match dll_open fullname with
+      | dll ->
+          let opened = match current with
+            | None -> List.remove_assoc fullname !opened_dlls
+            | Some _ -> !opened_dlls
+          in
+          opened_dlls := (fullname, Execution dll) :: opened
+      | exception Failure msg ->
+          failwith (fullname ^ ": " ^ msg)
+      end
 
 let open_dlls mode names =
   List.iter (open_dll mode) names
@@ -101,9 +98,8 @@ let open_dlls mode names =
 (* Close all DLLs *)
 
 let close_all_dlls () =
-  List.iter dll_close !opened_dlls;
+  List.iter (fun (_, dll) -> dll_close dll) !opened_dlls;
   opened_dlls := [];
-  names_of_opened_dlls := []
 
 (* Find a primitive in the currently opened DLLs. *)
 
@@ -115,13 +111,13 @@ let find_primitive prim_name =
   let rec find seen = function
     [] ->
       None
-  | Execution dll as curr :: rem ->
+  | (_,Execution dll) as curr :: rem ->
       let addr = dll_sym dll prim_name in
       if addr == Obj.magic () then find (curr :: seen) rem else begin
         if seen <> [] then opened_dlls := curr :: List.rev_append seen rem;
         Some (Prim_loaded addr)
       end
-  | Checking t as curr :: rem ->
+  | (_,Checking t) as curr :: rem ->
       if Binutils.defines_symbol t prim_name then
         Some Prim_exists
       else
@@ -186,13 +182,11 @@ let init_toplevel dllpath =
     split_dll_path dllpath @
     ld_conf_contents();
   opened_dlls :=
-    List.map (fun dll -> Execution dll)
+    List.map (fun dll -> "", Execution dll)
       (Array.to_list (get_current_dlls()));
-  names_of_opened_dlls := [];
   linking_in_core := true
 
 let reset () =
   search_path := [];
   opened_dlls :=[];
-  names_of_opened_dlls := [];
   linking_in_core := false

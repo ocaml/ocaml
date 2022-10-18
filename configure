@@ -15364,33 +15364,105 @@ arch=none
 model=default
 system=unknown
 
+has_native_backend=no
 case $host in #(
-    x86_64-*-linux*) :
-    arch=amd64; system=linux ;; #(
-    x86_64-*-solaris*) :
-    arch=amd64; system=solaris ;; #(
+  i[3456]86-*-linux*) :
+    arch=i386; system=linux_elf ;; #(
+  i[3456]86-*-*bsd*) :
+    arch=i386; system=bsd_elf ;; #(
+  i[3456]86-*-haiku*) :
+    arch=i386; system=beos ;; #(
+  i[3456]86-*-cygwin) :
+    arch=i386; system=cygwin ;; #(
+  i[3456]86-*-gnu*) :
+    arch=i386; system=gnu ;; #(
+  i[3456]86-*-mingw32) :
+    arch=i386; system=mingw ;; #(
+  i686-pc-windows) :
+    arch=i386; system=win32 ;; #(
+  x86_64-pc-windows) :
+    arch=amd64; system=win64 ;; #(
+  powerpc64le*-*-linux*) :
+    arch=power; model=ppc64le; system=elf ;; #(
+  powerpc*-*-linux*) :
+    arch=power; if $arch64
+then :
+  model=ppc64
+else $as_nop
+  model=ppc
+fi; system=elf ;; #(
+  s390x*-*-linux*) :
+    arch=s390x; model=z10; system=elf ;; #(
+  # expected to match "gnueabihf" as well as "musleabihf"
+  armv6*-*-linux-*eabihf) :
+    arch=arm; model=armv6; system=linux_eabihf ;; #(
+  armv7*-*-linux-*eabihf) :
+    arch=arm; model=armv7; system=linux_eabihf ;; #(
+  armv8*-*-linux-*eabihf) :
+    arch=arm; model=armv8; system=linux_eabihf ;; #(
+  armv8*-*-linux-*eabi) :
+    arch=arm; model=armv8; system=linux_eabi ;; #(
+  armv7*-*-linux-*eabi) :
+    arch=arm; model=armv7; system=linux_eabi ;; #(
+  armv6t2*-*-linux-*eabi) :
+    arch=arm; model=armv6t2; system=linux_eabi ;; #(
+  armv6*-*-linux-*eabi) :
+    arch=arm; model=armv6; system=linux_eabi ;; #(
+  armv6*-*-freebsd*) :
+    arch=arm; model=armv6; system=freebsd ;; #(
+  earmv6*-*-netbsd*) :
+    arch=arm; model=armv6; system=netbsd ;; #(
+  earmv7*-*-netbsd*) :
+    arch=arm; model=armv7; system=netbsd ;; #(
+  armv5te*-*-linux-*eabi) :
+    arch=arm; model=armv5te; system=linux_eabi ;; #(
+  armv5*-*-linux-*eabi) :
+    arch=arm; model=armv5; system=linux_eabi ;; #(
+  arm*-*-linux-*eabihf) :
+    arch=arm; system=linux_eabihf ;; #(
+  arm*-*-linux-*eabi) :
+    arch=arm; system=linux_eabi ;; #(
+  arm*-*-openbsd*) :
+    arch=arm; system=bsd ;; #(
+  zaurus*-*-openbsd*) :
+    arch=arm; system=bsd ;; #(
+  x86_64-*-linux*) :
+    has_native_backend=yes; arch=amd64; system=linux ;; #(
+  x86_64-*-gnu*) :
+    arch=amd64; system=gnu ;; #(
+  x86_64-*-dragonfly*) :
+    arch=amd64; system=dragonfly ;; #(
+  x86_64-*-solaris*) :
+    has_native_backend=yes; arch=amd64; system=solaris ;; #(
   x86_64-*-freebsd*) :
-    arch=amd64; system=freebsd ;; #(
+    has_native_backend=yes; arch=amd64; system=freebsd ;; #(
   x86_64-*-netbsd*) :
-    arch=amd64; system=netbsd ;; #(
+    has_native_backend=yes; arch=amd64; system=netbsd ;; #(
   x86_64-*-openbsd*) :
-    arch=amd64; system=openbsd ;; #(
-    arm64-*-darwin*) :
-    arch=arm64; system=macosx ;; #(
+    has_native_backend=yes; arch=amd64; system=openbsd ;; #(
+  x86_64-*-haiku*) :
+    arch=amd64; system=beos ;; #(
+  arm64-*-darwin*) :
+    has_native_backend=yes; arch=arm64; system=macosx ;; #(
   aarch64-*-darwin*) :
-    arch=arm64; system=macosx ;; #(
+    has_native_backend=yes; arch=arm64; system=macosx ;; #(
   x86_64-*-darwin*) :
-    arch=amd64; system=macosx ;; #(
+    has_native_backend=yes; arch=amd64; system=macosx ;; #(
   x86_64-*-mingw32) :
-    arch=amd64; system=mingw64 ;; #(
+    has_native_backend=yes; arch=amd64; system=mingw64 ;; #(
   aarch64-*-linux*) :
-    arch=arm64; system=linux ;; #(
+    has_native_backend=yes; arch=arm64; system=linux ;; #(
   aarch64-*-freebsd*) :
-    arch=arm64; system=freebsd ;; #(
+    has_native_backend=yes; arch=arm64; system=freebsd ;; #(
   aarch64-*-openbsd*) :
-    arch=arm64; system=openbsd ;; #(
+    has_native_backend=yes; arch=arm64; system=openbsd ;; #(
   aarch64-*-netbsd*) :
-    arch=arm64; system=netbsd ;; #(
+    has_native_backend=yes; arch=arm64; system=netbsd ;; #(
+  x86_64-*-cygwin*) :
+    arch=amd64; system=cygwin ;; #(
+  riscv64-*-linux*) :
+    arch=riscv; model=riscv64; system=linux
+ ;; #(
   *) :
      ;;
 esac
@@ -15402,14 +15474,14 @@ case $ccomptype in #(
     runtime_asm_objects=${arch}.${OBJEXT} ;;
 esac
 
-case $enable_native_compiler,$arch in #(
+case $enable_native_compiler,$has_native_backend in #(
   no,*) :
     native_compiler=false
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: the native compiler is disabled" >&5
 printf "%s\n" "$as_me: the native compiler is disabled" >&6;} ;; #(
-  yes,none) :
+  yes,no) :
     as_fn_error 69 "the native compiler is not supported on this platform" "$LINENO" 5 ;; #(
-  *,none) :
+  *,no) :
     native_compiler=false
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: the native compiler is not supported on this platform" >&5
 printf "%s\n" "$as_me: the native compiler is not supported on this platform" >&6;} ;; #(
