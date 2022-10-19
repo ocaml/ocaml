@@ -1090,10 +1090,10 @@ ocamllex.opt: ocamlopt
 	$(MAKE) lex-allopt
 
 lex/ocamllex$(EXE): $(ocamllex_MODULES:=.cmo)
-	$(CAMLC) $(LINKFLAGS) -compat-32 -o $@ $^
+	$(CAMLC) $(OC_COMMON_LDFLAGS) -compat-32 -o $@ $^
 
 lex/ocamllex.opt$(EXE): $(ocamllex_MODULES:=.cmx)
-	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^
+	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) -o $@ $^
 
 partialclean::
 	rm -f lex/*.cm* lex/*.o lex/*.obj
