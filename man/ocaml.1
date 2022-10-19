@@ -165,7 +165,12 @@ use it once before publishing source code.
 .B \-rectypes
 Allow arbitrary recursive types during type-checking.  By default,
 only recursive types where the recursion goes through an object type
-are supported.
+are supported. Note that once you have created an interface using this
+flag, you must use it again for all dependencies.
+.TP
+.B \-no-rectypes
+Do no allow arbitrary recursive types during type-checking.
+This is the default.
 .TP
 .B \-safe\-string
 Enforce the separation between types
@@ -189,6 +194,21 @@ interactive session.
 .TP
 .B \-strict\-sequence
 Force the left-hand part of each sequence to have type unit.
+.TP
+.B \-no-strict\-sequence
+Left-hand part of a sequence need not have type unit.
+This is the default.
+.TP
+.B \-strict\-formats
+Reject invalid formats that were accepted in legacy format
+implementations. You should use this flag to detect and fix
+such invalid formats, as they will be rejected by future
+OCaml versions.
+.TP
+.B \-no-strict\-formats
+Do no reject invalid formats that were accepted in legacy format
+implementations.
+This is the default.
 .TP
 .B \-unboxed\-types
 When a type is unboxable (i.e. a record with a single argument or a
