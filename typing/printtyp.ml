@@ -243,6 +243,18 @@ let with_hidden ids f =
   let updated = List.fold_left update !bound_in_recursion ids in
   protect_refs [ R(bound_in_recursion, updated )] f
 
+let human_id id index =
+  if index = 0 then
+    Ident.name id
+  else
+  (* We print the most k-time overshadowed identifier as `name/(k+1)`.
+     This naming scheme has the advantage of creating a non-ambiguous gap
+     between the identifier in scope, which is printed as `name`, and the
+     most recent shadowed identifier, printed as `name/2`.
+  *)
+    let ordinal = index + 1 in
+    String.concat "/" [Ident.name id; string_of_int ordinal]
+
 let indexed_name namespace id =
   let find namespace id env = match namespace with
     | Type -> Env.find_type_index id env
@@ -268,9 +280,8 @@ let indexed_name namespace id =
       if Ident.same p id then
         Ident.name id
       else
-        String.concat "/" [Ident.name id; string_of_int (2 + n)]
-  | Some n, None ->
-      String.concat "/" [Ident.name id; string_of_int (1 + n)]
+        human_id id (1 + n)
+  | Some n, None -> human_id id n
 
 let ident_name namespace id =
   if not !enabled || fuzzy_id namespace id then
