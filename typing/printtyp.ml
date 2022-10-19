@@ -144,7 +144,7 @@ module Conflicts = struct
 
   let collect_explanation namespace id ~name =
     let root_name = Ident.name id in
-    if root_name != name && not (M.mem name !explanations) then
+    if root_name <> name && not (M.mem name !explanations) then
       begin
         add namespace name id;
         if not (M.mem root_name !explanations) then
