@@ -148,6 +148,8 @@ Working version
   (Hugo Heuzard, review by Nicolás Ojeda Bär)
 
 ### Build system:
+- #11590: Allow installing to a destination path containing spaces.
+   (Élie Brami, review by Sébastien Hinderer and David Allsopp)
 
 ### Bug fixes:
 
@@ -162,6 +164,10 @@ Working version
 - #11436: Fix wrong stack backtrace for out-of-bound exceptions raised
   by leaf functions.
   (Tom Kelly and Xavier Leroy, review by Mark Shinwell)
+
+- #11643: Add missing test declaration to float_compare test, so that it will
+  run.
+  (Stefan Muenzel, review by David Allsopp)
 
 OCaml 5.0
 ---------
@@ -464,6 +470,10 @@ OCaml 5.0
   (KC Sivaramakrishnan, review by Damien Doligez, Anil Madhavapeddy, Gabriel
   Scherer, Thomas Leonard, Tom Ridge, Xavier Leroy, Luc Maranget, Fabrice
   Buoro, Olivier Nicole, Guillaume Munch-Maccagnoni, Jacques-Henri Jourdan)
+
+- #11640: Add Flambda commonly-used options to the ocamlopt manpage
+  (Amandine Nangah, review by David Allsopp, Florian Angeletti,
+  Sébastien Hinderer, and Vincent Laviron)
 
 ### Compiler user-interface and warnings:
 
