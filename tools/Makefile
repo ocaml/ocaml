@@ -246,7 +246,7 @@ LINTAPIDIFF=$(ROOTDIR)/compilerlibs/ocamlcommon.cmxa \
         $(ROOTDIR)/otherlibs/str/str.cmxa \
         lintapidiff.cmx
 
-lintapidiff.opt$(EXE): INCLUDES+= -I $(ROOTDIR)/otherlibs/str
+lintapidiff.opt$(EXE): VPATH += $(ROOTDIR)/otherlibs/str
 lintapidiff.opt$(EXE): $(LINTAPIDIFF)
 	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^
 clean::
@@ -289,7 +289,7 @@ ocamltex := ocamltex$(EXE)
 # configuration.
 $(ocamltex): CAMLC = $(OCAMLRUN) $(ROOTDIR)/ocamlc$(EXE) $(STDLIBFLAGS)
 $(ocamltex): OC_COMMON_LDFLAGS += -linkall
-$(ocamltex): INCLUDES += $(addprefix -I $(ROOTDIR)/otherlibs/,str unix)
+$(ocamltex): VPATH += $(addprefix $(ROOTDIR)/otherlibs/,str unix)
 $(ocamltex): $(ocamltex_files)
 	$(CAMLC) $(OC_COMMON_LDFLAGS) $(OC_BYTECODE_LDFLAGS) -o $@ $^
 
