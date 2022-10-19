@@ -40,8 +40,6 @@ VPATH = $(addprefix $(ROOTDIR)/,utils parsing typing bytecomp \
                    middle_end/flambda/base_types driver toplevel \
                    file_formats lambda)
 INCLUDES = $(addprefix -I ,$(VPATH))
-LINKFLAGS = -g $(INCLUDES)
-OC_COMMON_LDFLAGS = -g $(INCLUDES)
 
 programs_byte := \
   ocamldep ocamlprof ocamlcp ocamloptp ocamlmklib  \
@@ -59,10 +57,10 @@ $(foreach program, $(programs_byte) $(programs_opt),\
   $(eval $(call PROGRAM_SYNONYM,$(program))))
 
 $(programs_byte:%=%$(EXE)):
-	$(CAMLC) $(LINKFLAGS) -o $@ $^
+	$(CAMLC) $(OC_COMMON_LDFLAGS) $(OC_BYTECODE_LDFLAGS) -o $@ $^
 
 $(programs_opt:%=%$(EXE)):
-	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^
+	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) $(OC_NATIVE_LDFLAGS) -o $@ $^
 
 clean::
 	rm -f $(programs_byte) $(programs_byte:%=%.exe)
@@ -75,7 +73,7 @@ ocamldep_objects = \
   $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
   ocamldep.cmo
 
-ocamldep$(EXE): LINKFLAGS += -compat-32
+ocamldep$(EXE): OC_BYTECODE_LDFLAGS += -compat-32
 ocamldep$(EXE): $(ocamldep_objects)
 ocamldep.opt$(EXE): $(call byte2native, $(ocamldep_objects))
 
@@ -172,7 +170,7 @@ cvt_emit := cvt_emit$(EXE)
 $(eval $(call PROGRAM_SYNONYM,cvt_emit))
 
 $(cvt_emit): cvt_emit.cmo
-	$(CAMLC) $(LINKFLAGS) -o $@ $^
+	$(CAMLC) $(OC_COMMON_LDFLAGS) $(OC_BYTECODE_LDFLAGS) -o $@ $^
 
 clean::
 	rm -f cvt_emit.ml cvt_emit cvt_emit.exe
@@ -212,7 +210,7 @@ make_opcodes := make_opcodes$(EXE)
 $(eval $(call PROGRAM_SYNONYM,make_opcodes))
 
 $(make_opcodes): make_opcodes.cmo
-	$(CAMLC) $(LINKFLAGS) -o $@ $^
+	$(CAMLC) $(OC_COMMON_LDFLAGS) $(OC_BYTECODE_LDFLAGS) -o $@ $^
 
 opnames.ml: $(ROOTDIR)/runtime/caml/instruct.h $(make_opcodes)
 	$(NEW_OCAMLRUN) $(make_opcodes) -opnames < $< > $@
@@ -248,7 +246,7 @@ LINTAPIDIFF=$(ROOTDIR)/compilerlibs/ocamlcommon.cmxa \
 
 lintapidiff.opt$(EXE): VPATH += $(ROOTDIR)/otherlibs/str
 lintapidiff.opt$(EXE): $(LINTAPIDIFF)
-	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^
+	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) $(OC_NATIVE_LDFLAGS) -o $@ $^
 clean::
 	rm -f -- lintapidiff.opt lintapidiff.opt.exe
 	rm -f lintapidiff.cm? lintapidiff.o lintapidiff.obj
