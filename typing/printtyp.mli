@@ -107,6 +107,12 @@ val type_expr: formatter -> type_expr -> unit
     Any type variables that are shared between multiple types in the input list
     will be given the same name when printed with [prepared_type_expr]. *)
 val prepare_for_printing: type_expr list -> unit
+
+(** [add_type_to_preparation ty] extend a previous type expression preparation
+    to the type expression [ty]
+*)
+val add_type_to_preparation: type_expr -> unit
+
 val prepared_type_expr: formatter -> type_expr -> unit
 (** The function [prepared_type_expr] is a less-safe but more-flexible version
     of [type_expr] that should only be called on [type_expr]s that have been

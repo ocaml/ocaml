@@ -229,11 +229,10 @@ wchar_t * caml_search_dll_in_path(struct ext_table * path, const wchar_t * name)
 
 #ifdef WITH_DYNAMIC_LINKING
 
-void * caml_dlopen(wchar_t * libname, int for_execution, int global)
+void * caml_dlopen(wchar_t * libname, int global)
 {
   void *handle;
   int flags = (global ? FLEXDLL_RTLD_GLOBAL : 0);
-  if (!for_execution) flags |= FLEXDLL_RTLD_NOEXEC;
   handle = flexdll_wdlopen(libname, flags);
   if ((handle != NULL) && ((caml_params->verb_gc & 0x100) != 0)) {
     flexdll_dump_exports(handle);
@@ -264,7 +263,7 @@ char * caml_dlerror(void)
 
 #else
 
-void * caml_dlopen(wchar_t * libname, int for_execution, int global)
+void * caml_dlopen(wchar_t * libname, int global)
 {
   return NULL;
 }

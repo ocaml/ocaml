@@ -421,7 +421,7 @@ clean::
 
 # The clean target
 clean:: partialclean
-	rm -f $(PROGRAMS) $(PROGRAMS:=.exe)
+	rm -f configure~ $(PROGRAMS) $(PROGRAMS:=.exe)
 
 # The bytecode compiler
 

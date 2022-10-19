@@ -79,7 +79,7 @@ CAMLprim value caml_natdynlink_open(value filename, value global)
 
   p = caml_stat_strdup_to_os(String_val(filename));
   caml_enter_blocking_section();
-  dlhandle = caml_dlopen(p, 1, Int_val(global));
+  dlhandle = caml_dlopen(p, Int_val(global));
   caml_leave_blocking_section();
   caml_stat_free(p);
 
@@ -147,7 +147,7 @@ CAMLprim value caml_natdynlink_run_toplevel(value filename, value symbol)
 
   p = caml_stat_strdup_to_os(String_val(filename));
   caml_enter_blocking_section();
-  handle = caml_dlopen(p, 1, 1);
+  handle = caml_dlopen(p, 1);
   caml_leave_blocking_section();
   caml_stat_free(p);
 

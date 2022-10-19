@@ -178,7 +178,7 @@ let walk_interval num_stack_slots i =
       (* No free register, need to decide which interval to spill *)
       allocate_blocked_register num_stack_slots i
 
-let allocate_registers() =
+let allocate_registers (intervals : Interval.result) =
   (* Initialize the stack slots and interval lists *)
   for cl = 0 to Proc.num_register_classes - 1 do
     (* Start with empty interval lists *)
@@ -195,7 +195,7 @@ let allocate_registers() =
     (fun i ->
       let ci = active.(Proc.register_class i.reg) in
       ci.ci_fixed <- insert_interval_sorted i ci.ci_fixed)
-    (Interval.all_fixed_intervals());
+    intervals.fixed_intervals;
   (* Walk all the intervals within the list *)
-  List.iter (walk_interval num_stack_slots) (Interval.all_intervals());
+  List.iter (walk_interval num_stack_slots) intervals.intervals;
   num_stack_slots

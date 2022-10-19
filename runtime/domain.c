@@ -447,7 +447,7 @@ static void free_minor_heap() {
      no race whereby other code could attempt to reuse the memory. */
   caml_mem_decommit(
       (void*)domain_self->minor_heap_area_start,
-      domain_state->minor_heap_wsz);
+      Bsize_wsize(domain_state->minor_heap_wsz));
 
   domain_state->young_start =
     domain_state->young_end =
