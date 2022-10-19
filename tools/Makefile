@@ -35,14 +35,13 @@ endef
 CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) \
         -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
 CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) $(STDLIBFLAGS)
-DIRS = $(addprefix $(ROOTDIR)/,utils parsing typing bytecomp \
+VPATH = $(addprefix $(ROOTDIR)/,utils parsing typing bytecomp \
                    middle_end middle_end/closure middle_end/flambda \
                    middle_end/flambda/base_types driver toplevel \
                    file_formats lambda)
-INCLUDES = $(addprefix -I ,$(DIRS))
+INCLUDES = $(addprefix -I ,$(VPATH))
 LINKFLAGS = -g $(INCLUDES)
 OC_COMMON_LDFLAGS = -g $(INCLUDES)
-VPATH = $(DIRS)
 
 programs_byte := \
   ocamldep ocamlprof ocamlcp ocamloptp ocamlmklib  \
@@ -318,7 +317,7 @@ clean::
 clean::
 	rm -f *.cmo *.cmi *.cma *.dll *.so *.lib *.a
 
-OC_OCAMLDEPDIRS = $(DIRS)
+OC_OCAMLDEPDIRS = $(VPATH)
 depend: beforedepend
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 

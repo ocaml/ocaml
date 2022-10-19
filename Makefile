@@ -32,10 +32,10 @@ include stdlib/StdlibModules
 CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) -use-prims runtime/primitives
 CAMLOPT=$(OCAMLRUN) ./ocamlopt$(EXE) $(STDLIBFLAGS) -I otherlibs/dynlink
 ARCHES=amd64 i386 arm arm64 power s390x riscv
-DIRS = utils parsing typing bytecomp file_formats lambda middle_end \
+VPATH = utils parsing typing bytecomp file_formats lambda middle_end \
   middle_end/closure middle_end/flambda middle_end/flambda/base_types \
   asmcomp driver toplevel
-INCLUDES = $(addprefix -I ,$(DIRS))
+INCLUDES = $(addprefix -I ,$(VPATH))
 
 ifeq "$(strip $(NATDYNLINKOPTS))" ""
 OCAML_NATDYNLINKOPTS=
@@ -43,7 +43,7 @@ else
 OCAML_NATDYNLINKOPTS = -ccopt "$(NATDYNLINKOPTS)"
 endif
 
-OC_OCAMLDEPDIRS = $(DIRS)
+OC_OCAMLDEPDIRS = $(VPATH)
 
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 OCAMLTEST_OPT=$(WITH_OCAMLTEST:=.opt)
