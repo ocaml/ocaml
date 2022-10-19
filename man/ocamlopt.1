@@ -625,6 +625,17 @@ The left-hand part of a sequence must have type unit.
 Left-hand part of a sequence need not have type unit.
 This is the default.
 .TP
+.B \-strict\-formats
+Reject invalid formats that were accepted in legacy format
+implementations. You should use this flag to detect and fix
+such invalid formats, as they will be rejected by future
+OCaml versions.
+.TP
+.B \-no-strict\-formats
+Do no reject invalid formats that were accepted in legacy format
+implementations.
+This is the default.
+.TP
 .B \-unboxed\-types
 When a type is unboxable (i.e. a record with a single argument or a
 concrete datatype with a single constructor of one argument) it will
