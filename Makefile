@@ -425,9 +425,10 @@ clean:: partialclean
 
 # The bytecode compiler
 
+ocamlc$(EXE): OC_BYTECODE_LDFLAGS += -compat-32
 ocamlc$(EXE): compilerlibs/ocamlcommon.cma \
               compilerlibs/ocamlbytecomp.cma $(BYTESTART)
-	$(CAMLC) $(OC_COMMON_LDFLAGS) -compat-32 -o $@ $^
+	$(CAMLC) $(OC_COMMON_LDFLAGS) $(OC_BYTECODE_LDFLAGS) -o $@ $^
 
 partialclean::
 	rm -rf ocamlc$(EXE)
@@ -436,7 +437,7 @@ partialclean::
 
 ocamlopt$(EXE): compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma \
           $(OPTSTART)
-	$(CAMLC) $(OC_COMMON_LDFLAGS) -o $@ $^
+	$(CAMLC) $(OC_COMMON_LDFLAGS) $(OC_BYTECODE_LDFLAGS) -o $@ $^
 
 partialclean::
 	rm -f ocamlopt$(EXE)
@@ -449,8 +450,9 @@ ocaml_dependencies := \
   compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART)
 
 .INTERMEDIATE: ocaml.tmp
+ocaml.tmp: OC_BYTECODE_LDFLAGS += -I toplevel/byte -linkall
 ocaml.tmp: $(ocaml_dependencies)
-	$(CAMLC) $(OC_COMMON_LDFLAGS) -I toplevel/byte -linkall -o $@ $^
+	$(CAMLC) $(OC_COMMON_LDFLAGS) $(OC_BYTECODE_LDFLAGS) -o $@ $^
 
 ocaml$(EXE): $(expunge) ocaml.tmp
 	- $(OCAMLRUN) $^ $@ $(PERVASIVES)
@@ -495,9 +497,10 @@ beforedepend:: parsing/lexer.ml
 
 # The bytecode compiler compiled with the native-code compiler
 
+ocamlc.opt$(EXE): OC_NATIVE_LDFLAGS += $(addprefix -cclib ,$(BYTECCLIBS))
 ocamlc.opt$(EXE): compilerlibs/ocamlcommon.cmxa \
                   compilerlibs/ocamlbytecomp.cmxa $(BYTESTART:.cmo=.cmx)
-	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) -o $@ $^ -cclib "$(BYTECCLIBS)"
+	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) $(OC_NATIVE_LDFLAGS) -o $@ $^
 
 partialclean::
 	rm -f ocamlc.opt$(EXE)
@@ -508,7 +511,7 @@ ocamlopt.opt$(EXE): \
                     compilerlibs/ocamlcommon.cmxa \
                     compilerlibs/ocamloptcomp.cmxa \
                     $(OPTSTART:.cmo=.cmx)
-	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) -o $@ $^
+	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) $(OC_NATIVE_LDFLAGS) -o $@ $^
 
 partialclean::
 	rm -f ocamlopt.opt$(EXE)
@@ -568,7 +571,7 @@ $(cvt_emit): tools/cvt_emit.mll
 
 $(expunge): compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
          toplevel/expunge.cmo
-	$(CAMLC) $(OC_COMMON_LDFLAGS) -o $@ $^
+	$(CAMLC) $(OC_COMMON_LDFLAGS) $(OC_BYTECODE_LDFLAGS) -o $@ $^
 
 partialclean::
 	rm -f $(expunge)
@@ -1089,11 +1092,12 @@ ocamllex: ocamlyacc
 ocamllex.opt: ocamlopt
 	$(MAKE) lex-allopt
 
+lex/ocamllex$(EXE): OC_BYTECODE_LDFLAGS += -compat-32
 lex/ocamllex$(EXE): $(ocamllex_MODULES:=.cmo)
-	$(CAMLC) $(OC_COMMON_LDFLAGS) -compat-32 -o $@ $^
+	$(CAMLC) $(OC_COMMON_LDFLAGS) $(OC_BYTECODE_LDFLAGS) -o $@ $^
 
 lex/ocamllex.opt$(EXE): $(ocamllex_MODULES:=.cmx)
-	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) -o $@ $^
+	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) $(OC_NATIVE_LDFLAGS) -o $@ $^
 
 partialclean::
 	rm -f lex/*.cm* lex/*.o lex/*.obj
@@ -1345,8 +1349,9 @@ ocamlnat_dependencies := \
   compilerlibs/ocamltoplevel.cmxa \
   $(TOPLEVELSTART:.cmo=.cmx)
 
+ocamlnat$(EXE): OC_NATIVE_LDFLAGS += -linkall -I toplevel/native
 ocamlnat$(EXE): $(ocamlnat_dependencies)
-	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) -linkall -I toplevel/native -o $@ $^
+	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) $(OC_NATIVE_LDFLAGS) -o $@ $^
 
 COMPILE_NATIVE_MODULE = \
   $(CAMLOPT_CMD) $(OC_COMMON_CFLAGS) -I $(@D) $(INCLUDES) $(OC_NATIVE_CFLAGS)

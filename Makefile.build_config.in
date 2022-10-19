@@ -110,7 +110,11 @@ OC_COMMON_CFLAGS = -g -strict-sequence -principal -absname \
   -strict-formats
 OC_COMMON_LDFLAGS = -g
 
+OC_BYTECODE_LDFLAGS =
+
 OC_NATIVE_CFLAGS = @oc_native_cflags@
+
+OC_NATIVE_LDFLAGS =
 
 # Platform-dependent assembler files to use to build the runtime
 runtime_ASM_OBJECTS = $(addprefix runtime/,@runtime_asm_objects@)
