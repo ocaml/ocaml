@@ -471,6 +471,10 @@ OCaml 5.0
   Scherer, Thomas Leonard, Tom Ridge, Xavier Leroy, Luc Maranget, Fabrice
   Buoro, Olivier Nicole, Guillaume Munch-Maccagnoni, Jacques-Henri Jourdan)
 
+- #11640: Add Flambda commonly-used options to the ocamlopt manpage
+  (Amandine Nangah, review by David Allsopp, Florian Angeletti,
+  Sébastien Hinderer, and Vincent Laviron)
+
 ### Compiler user-interface and warnings:
 
 - #9140, #11131: New command-line flag -nocwd to not include implicit
