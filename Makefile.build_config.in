@@ -108,7 +108,7 @@ DEFAULT_BUILD_TARGET = @default_build_target@
 OC_COMMON_CFLAGS = -g -strict-sequence -principal -absname \
   -w +a-4-9-40-41-42-44-45-48 -warn-error +a -bin-annot \
   -strict-formats
-OC_COMMON_LDFLAGS = -g
+OC_COMMON_LDFLAGS = -g $(INCLUDES)
 
 OC_BYTECODE_LDFLAGS =
 
