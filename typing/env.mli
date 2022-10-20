@@ -271,6 +271,9 @@ val find_label_by_name:
     of an identifier in a given environment. In other words, it returns how many
     times an identifier has been shadowed by a more recent identifiers with the
     same name in a given environment.
+    Those functions return [None] when the identifier is not bound in the
+    environment. This behavior is there to facilitate the detection of
+    inconsistent printing environment, but should disappear in the long term.
 *)
 val find_value_index:   Ident.t -> t -> int option
 val find_type_index:    Ident.t -> t -> int option
