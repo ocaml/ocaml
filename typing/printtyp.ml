@@ -405,10 +405,6 @@ let tree_of_path ?disambiguation namespace p =
   tree_of_path ?disambiguation namespace
     (rewrite_double_underscore_paths !printing_env p)
 
-let best_tree_of_type_path p p' =
-  if p == p' then tree_of_path Type p'
-  else tree_of_path ~disambiguation:false Other p'
-
 let path ppf p =
   !Oprint.out_ident ppf (tree_of_path Other p)
 
@@ -745,6 +741,13 @@ let best_type_path p =
     let p'' = try get_path () with Not_found -> p' in
     (* Format.eprintf "%a = %a -> %a@." path p path p' path p''; *)
     (p'', s)
+
+(* When building a tree for a best type path, we should not disambiguate
+   identifiers whenever the short-path algorithm detected a better path than
+   the original one.*)
+let tree_of_best_type_path p p' =
+  if Path.same p p' then tree_of_path Type p'
+  else tree_of_path ~disambiguation:false Other p'
 
 (* Print a type expression *)
 
@@ -1086,7 +1089,7 @@ let rec tree_of_typexp mode ty =
         if is_nth s && not (tyl'=[])
         then tree_of_typexp mode (List.hd tyl')
         else
-          let tpath = best_tree_of_type_path p p' in
+          let tpath = tree_of_best_type_path p p' in
           Otyp_constr (tpath, tree_of_typlist mode tyl')
     | Tvariant row ->
         let Row {fields; name; closed} = row_repr row in
@@ -1106,7 +1109,7 @@ let rec tree_of_typexp mode ty =
         begin match name with
         | Some(p, tyl) when nameable_row row ->
             let (p', s) = best_type_path p in
-            let id = best_tree_of_type_path p p' in
+            let id = tree_of_best_type_path p p' in
             let args = tree_of_typlist mode (apply_subst s tyl) in
             let out_variant =
               if is_nth s then List.hd args else Otyp_constr (id, args) in
@@ -1206,7 +1209,7 @@ and tree_of_typobject mode fi nm =
       let args = tree_of_typlist mode tyl in
       let (p', s) = best_type_path p in
       assert (s = Id);
-      Otyp_class (non_gen, best_tree_of_type_path p p', args)
+      Otyp_class (non_gen, tree_of_best_type_path p p', args)
   | _ ->
       fatal_error "Printtyp.tree_of_typobject"
   end
@@ -1255,7 +1258,7 @@ let type_scheme ppf ty =
 let type_path ppf p =
   let (p', s) = best_type_path p in
   let p'' = if (s = Id) then p' else p in
-  let t = best_tree_of_type_path p p'' in
+  let t = tree_of_best_type_path p p'' in
   !Oprint.out_ident ppf t
 
 let tree_of_type_scheme ty =
