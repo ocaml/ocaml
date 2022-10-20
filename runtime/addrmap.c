@@ -23,6 +23,8 @@
 Caml_inline uintnat pos_initial(struct addrmap* t, value key)
 {
   uintnat pos = (uintnat)key;
+  /* Fast hash (but not especially good). Ensures each output bit depends on at
+     least 17 bits of input. */
   pos *= 0xcc9e2d51;
   pos ^= (pos >> 17);
 
