@@ -144,10 +144,16 @@ module Conflicts = struct
 
   let collect_explanation namespace id ~name =
     let root_name = Ident.name id in
+    (* if [name] is of the form "root_name/%d", we register both
+      [id] and the identifier in scope for [root_name].
+     *)
     if root_name <> name && not (M.mem name !explanations) then
       begin
         add namespace name id;
         if not (M.mem root_name !explanations) then
+          (* lookup the identifier in scope with name [root_name] and
+             add it too
+           *)
           match Namespace.lookup namespace root_name with
           | Pident root_id -> add namespace root_name root_id
           | exception Not_found | _ -> ()
