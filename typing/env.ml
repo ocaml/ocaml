@@ -3182,7 +3182,7 @@ let find_label_by_name lid env =
 let find_index_tbl ident tbl  =
   let lbs = IdTbl.find_all_idents (Ident.name ident) tbl in
   let find_ident (n,p) = match p with
-    | Some i -> if Ident.same ident i then Some n else None
+    | Some id -> if Ident.same ident id then Some n else None
     | _ -> None
   in
   Seq.find_map find_ident @@ Seq.mapi (fun i x -> i,x) lbs
