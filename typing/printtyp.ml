@@ -232,7 +232,28 @@ let enabled = ref true
 let enable b = enabled := b
 
 (* Names bound in recursive definitions should be considered as bound
-   in the environment when printing identifiers *)
+   in the environment when printing identifiers but not when trying
+   to find shortest path.
+   For instance, if we define
+   [{
+   module Avoid__me = struct
+     type t = A
+   end
+   type t = X
+   type u = t * t
+   module M = struct
+     type t = A of u
+     type r = Avoid__me.t
+   end
+  }]
+  It is is important that in the definition of [t] that the outer type [t] is
+  printed as [t/2] reserving the name [t] to the type being defined in the
+  current recursive definition.
+     Contrarily, in the definition of [r], one should not shorten the
+  path [Avoid__me.t] to [r] until the end of the definition of [r].
+  The [bound_in_recursion] bridges the gap between those two slightly different
+  notions of printing environment.
+*)
 let bound_in_recursion = ref M.empty
 
 (* When dealing with functor arguments, identity becomes fuzzy because the same
