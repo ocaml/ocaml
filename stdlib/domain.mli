@@ -78,7 +78,10 @@ val is_main_domain : unit -> bool
 (** [is_main_domain ()] returns true if called from the initial domain. *)
 
 val recommended_domain_count : unit -> int
-(** The recommended maximum number of domains to be spawned. *)
+(** The recommended maximum number of domains which should be running
+    simultaneously (including domains already running).
+
+    The value returned is at least [1]. *)
 
 module DLS : sig
 (** Domain-local Storage *)
