@@ -264,24 +264,32 @@ let indexed_name namespace id =
     | Class_type-> Env.find_cltype_index id env
     | Other -> None
   in
-  let rec_bound = M.find_opt (Ident.name id) !bound_in_recursion in
-  match in_printing_env (find namespace id), rec_bound with
-  | None, None
-    (* This case is potentially problematic, it might indicate that
+  let index =
+    match M.find_opt (Ident.name id) !bound_in_recursion with
+    | Some rec_bound_id ->
+        (* the identifier name appears in the current group of recursive
+           definition *)
+        if Ident.same rec_bound_id id then
+          Some 0
+        else
+          (* the current recursive definition shadows one more time the
+            previously existing identifier with the same name *)
+          Option.map succ (in_printing_env (find namespace id))
+    | None ->
+        in_printing_env (find namespace id)
+  in
+  let index =
+    (* The  [None] case is potentially problematic, it might indicate that
        the identifier id is not defined in the environment, while there
        are other identifiers in scope that share the same name.
        Currently, this kind of partially incoherent environment happens
        within functor error messages where the left and right hand side
        have a different views of the environment at the source level.
-       Printing the source-level name seems like a reasonable compromise
-       in this situation however.*)
-  | None, Some _ | Some 0, None -> Ident.name id
-  | Some n, Some p ->
-      if Ident.same p id then
-        Ident.name id
-      else
-        human_id id (1 + n)
-  | Some n, None -> human_id id n
+       Printing the source-level by using a default index of `0`
+       seems like a reasonable compromise in this situation however.*)
+    Option.value index ~default:0
+  in
+  human_id id index
 
 let ident_name namespace id =
   if not !enabled || fuzzy_id namespace id then
