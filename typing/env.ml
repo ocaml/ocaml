@@ -435,18 +435,22 @@ module IdTbl =
           List.map (fun (p, desc) -> (p, f desc))
             (find_all wrap name next)
 
-    let rec find_all_idents name tbl =
-      List.map
-        (fun (id, _) -> Some id)
-        (Ident.find_all name tbl.current) @
-      match tbl.layer with
-      | Nothing -> []
-      | Open { next; components; _ } ->
-          if NameMap.mem name components then
-            None :: find_all_idents name next
-          else
-            find_all_idents name next
-      | Map {next; _ } -> find_all_idents name next
+    let rec find_all_idents name tbl () =
+      let current =
+        Ident.find_all_seq name tbl.current
+        |> Seq.map (fun (id, _) -> Some id)
+      in
+      let next () =
+        match tbl.layer with
+        | Nothing -> Seq.Nil
+        | Open { next; components; _ } ->
+            if NameMap.mem name components then
+              Seq.Cons(None, find_all_idents name next)
+            else
+              find_all_idents name next ()
+        | Map {next; _ } -> find_all_idents name next ()
+      in
+      Seq.append current next ()
 
     let rec fold_name wrap f tbl acc =
       let acc =
@@ -3181,7 +3185,7 @@ let find_index_tbl ident tbl  =
     | Some i -> if Ident.same ident i then Some n else None
     | _ -> None
   in
-  Seq.find_map find_ident @@ Seq.mapi (fun i x -> i,x) @@ List.to_seq lbs
+  Seq.find_map find_ident @@ Seq.mapi (fun i x -> i,x) lbs
 
 let find_value_index id env = find_index_tbl id env.values
 let find_type_index id env = find_index_tbl id env.types
