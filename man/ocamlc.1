@@ -627,7 +627,8 @@ This is the default.
 .B \-rectypes
 Allow arbitrary recursive types during type-checking.  By default,
 only recursive types where the recursion goes through an object type
-are supported.
+are supported. Note that once you have created an interface using this
+flag, you must use it again for all dependencies.
 .TP
 .B \-no-rectypes
 Do no allow arbitrary recursive types during type-checking.
