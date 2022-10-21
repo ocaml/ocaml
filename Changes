@@ -158,7 +158,8 @@ Working version
   (Xavier Leroy, report by Thierry Martinez, review by
    Anil Madhavapeddy, Nicolás Ojeda Bär, David Allsopp)
 
-- #10348: Expand GADT equations lazily during unification to avoid ambiguity
+- #10348, #10560, #11561: Expand GADT equations lazily during unification to
+  avoid ambiguity
   (Jacques Garrigue, review by Leo White)
 
 - #11436: Fix wrong stack backtrace for out-of-bound exceptions raised
