@@ -271,14 +271,13 @@ let with_hidden ids f =
   protect_refs [ R(bound_in_recursion, updated )] f
 
 let human_id id index =
+  (* The identifier with index [k] is the (k+1)-th most recent identifier in
+     the printing environment. We print them as [name/(k+1)] except for [k=0]
+     which is printed as [name] rather than [name/1].
+  *)
   if index = 0 then
     Ident.name id
   else
-  (* We print the most k-time overshadowed identifier as `name/(k+1)`.
-     This naming scheme has the advantage of creating a non-ambiguous gap
-     between the identifier in scope, which is printed as `name`, and the
-     most recent shadowed identifier, printed as `name/2`.
-  *)
     let ordinal = index + 1 in
     String.concat "/" [Ident.name id; string_of_int ordinal]
 
