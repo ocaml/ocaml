@@ -305,7 +305,7 @@ let indexed_name namespace id =
         in_printing_env (find namespace id)
   in
   let index =
-    (* The  [None] case is potentially problematic, it might indicate that
+    (* If [index] is [None] at this point, it might indicate that
        the identifier id is not defined in the environment, while there
        are other identifiers in scope that share the same name.
        Currently, this kind of partially incoherent environment happens
