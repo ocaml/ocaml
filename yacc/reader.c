@@ -1210,7 +1210,7 @@ void insert_empty_rule(void)
     register bucket *bp, **bpp;
 
     assert(cache);
-    sprintf(cache, "$$%d", ++gensym);
+    snprintf(cache, cache_size, "$$%d", ++gensym);
     bp = make_bucket(cache);
     last_symbol->next = bp;
     last_symbol = bp;
