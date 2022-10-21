@@ -144,6 +144,8 @@ uintnat caml_mem_round_up_pages(uintnat size)
   return round_up(size, caml_sys_pagesize);
 }
 
+#define Is_page_aligned(size) ((size & (caml_sys_pagesize - 1)) == 0)
+
 #ifdef _WIN32
 #define MAP_FAILED 0
 #endif
@@ -162,7 +164,11 @@ Caml_inline void safe_munmap(uintnat addr, uintnat size)
 
 void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
 {
-  uintnat alloc_sz = caml_mem_round_up_pages(size + alignment);
+  CAMLassert(Is_power_of_2(alignment));
+  CAMLassert(Is_page_aligned(size));
+  alignment = caml_mem_round_up_pages(alignment);
+
+  uintnat alloc_sz = size + alignment;
   void* mem;
   uintnat base, aligned_start, aligned_end;
 
@@ -174,9 +180,6 @@ void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
     caml_lf_skiplist_init(&mmap_blocks);
   }
 #endif
-
-  CAMLassert(Is_power_of_2(alignment));
-  alignment = caml_mem_round_up_pages(alignment);
 
   CAMLassert (alloc_sz > size);
 #ifdef _WIN32
@@ -195,7 +198,7 @@ again:
   /* trim to an aligned region */
   base = (uintnat)mem;
   aligned_start = round_up(base, alignment);
-  aligned_end = aligned_start + caml_mem_round_up_pages(size);
+  aligned_end = aligned_start + size;
 #ifdef _WIN32
   /* VirtualFree can be used to decommit portions of memory, but it can only
      release the entire block of memory. For Windows, repeat the call but this
@@ -245,6 +248,7 @@ static void* map_fixed(void* mem, uintnat size, int prot)
 
 void* caml_mem_commit(void* mem, uintnat size)
 {
+  CAMLassert(Is_page_aligned(size));
 #ifdef _WIN32
   return VirtualAlloc(mem, size, MEM_COMMIT, PAGE_READWRITE);
 #else
