@@ -39,9 +39,6 @@
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
-#if defined(DEBUG) || defined(NATIVE_CODE)
-#include <dbghelp.h>
-#endif
 #include "caml/alloc.h"
 #include "caml/codefrag.h"
 #include "caml/fail.h"
@@ -1092,17 +1089,12 @@ CAMLexport clock_t caml_win32_clock(void)
   return (clock_t)(total / clocks_per_sec);
 }
 
-static LARGE_INTEGER frequency;
-static LARGE_INTEGER clock_offset;
-typedef void (WINAPI *LPFN_GETSYSTEMTIME) (LPFILETIME);
+static double clock_period = 0;
 
 void caml_init_os_params(void)
 {
   SYSTEM_INFO si;
-  LPFN_GETSYSTEMTIME pGetSystemTime;
-  FILETIME stamp;
-  ULARGE_INTEGER now;
-  LARGE_INTEGER counter;
+  LARGE_INTEGER frequency;
 
   /* Get the system page size */
   GetSystemInfo(&si);
@@ -1110,56 +1102,13 @@ void caml_init_os_params(void)
 
   /* Get the number of nanoseconds for each tick in QueryPerformanceCounter */
   QueryPerformanceFrequency(&frequency);
-  /* Convert the frequency to the duration of 1 tick in ns */
-  frequency.QuadPart = 1000000000LL / frequency.QuadPart;
-
-  /* Get the current time as accurately as we can.
-     GetSystemTimePreciseAsFileTime is available on Windows 8 / Server 2012+ and
-     gives <1us precision. For Windows 7 and earlier, which is only accurate to
-     10-100ms. */
-  pGetSystemTime =
-    (LPFN_GETSYSTEMTIME)GetProcAddress(GetModuleHandle(L"kernel32"),
-                                       "GetSystemTimePreciseAsFileTime");
-  if (!pGetSystemTime)
-    pGetSystemTime = GetSystemTimeAsFileTime;
-
-  /* Get the time and the performance counter. Get the performance counter first
-     to ensure no quantum effects */
-  QueryPerformanceCounter(&counter);
-  pGetSystemTime(&stamp);
-
-  now.LowPart = stamp.dwLowDateTime;
-  now.HighPart = stamp.dwHighDateTime;
-
-  /* Convert a FILETIME in 100ns ticks since 1 January 1601 to
-     ns since 1 Jan 1970. */
-  clock_offset.QuadPart =
-    ((now.QuadPart - 0x19DB1DED53E8000ULL) * 100);
-
-  /* Get the offset between QueryPerformanceCounter and
-     GetSystemTimePreciseAsFileTime in order to return a true timestamp, rather
-     than just a monotonic time source */
-  clock_offset.QuadPart -= (counter.QuadPart * frequency.QuadPart);
-
-  GetSystemTimePreciseAsFileTime(&stamp);
-  now.LowPart = stamp.dwLowDateTime;
-  now.HighPart = stamp.dwHighDateTime;
-  now.QuadPart *= 100;
+  clock_period = (1000000000.0 / frequency.QuadPart);
 }
 
 int64_t caml_time_counter(void)
 {
-  static double clock_freq = 0;
-  static LARGE_INTEGER now;
+  LARGE_INTEGER now;
 
-  if (clock_freq == 0) {
-    LARGE_INTEGER f;
-    if (!QueryPerformanceFrequency(&f))
-      return 0;
-    clock_freq = (1000000000.0 / f.QuadPart);
-  };
-
-  if (!QueryPerformanceCounter(&now))
-    return 0;
-  return (int64_t)(now.QuadPart * clock_freq);
+  QueryPerformanceCounter(&now);
+  return (int64_t)(now.QuadPart * clock_period);
 }
