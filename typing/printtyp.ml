@@ -240,9 +240,9 @@ let enable b = enabled := b
      type t = A
    end
    type t = X
-   type u = t * t
+   type u = [` A of t * t ]
    module M = struct
-     type t = A of u
+     type t = A of [ u | `B ]
      type r = Avoid__me.t
    end
   }]
