@@ -60,6 +60,9 @@ command line, unless the "-noautolink" option is given.
 \item["-absname"]
 Force error messages to show absolute paths for file names.
 
+\item["-no-absname"]
+Do not try to show absolute filenames in error messages.
+
 \notop{\item["-annot"]
 Deprecated since OCaml 4.11. Please use "-bin-annot" instead.
 }%notop
