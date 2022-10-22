@@ -26,16 +26,16 @@ type line_tracker = {
   oc : out_channel;
   ic : in_channel;
   mutable cur_line : int;
-};;
+}
 
 let open_tracker file oc = {
   file = file;
   oc = oc;
   ic = open_in_bin file;
   cur_line = 1;
-};;
+}
 
-let close_tracker tr = close_in_noerr tr.ic;;
+let close_tracker tr = close_in_noerr tr.ic
 
 let update_tracker tr =
   fprintf tr.oc "\n";
@@ -47,8 +47,7 @@ let update_tracker tr =
     | '\013' -> cr_seen := true; tr.cur_line <- tr.cur_line + 1;
     | _ -> cr_seen := false;
   done with End_of_file ->
-  fprintf tr.oc "# %d \"%s\"\n" (tr.cur_line+1) tr.file;
-;;
+  fprintf tr.oc "# %d \"%s\"\n" (tr.cur_line+1) tr.file
 
 let copy_buffer = Bytes.create 1024
 
@@ -171,4 +170,4 @@ let output_refill_handler ic oc oci = function
     true
 
 (* quiet flag *)
-let quiet_mode = ref false;;
+let quiet_mode = ref false

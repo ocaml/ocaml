@@ -26,15 +26,13 @@
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
 #include "caml/shared_heap.h"
+#include "caml/signals.h"
 #include "caml/weak.h"
 
 value caml_dummy[] =
   {(value)Make_header(0,Abstract_tag, NOT_MARKABLE),
    Val_unit};
 value caml_ephe_none = (value)&caml_dummy[1];
-
-#define None_val (Val_int(0))
-#define Some_tag 0
 
 struct caml_ephe_info* caml_alloc_ephe_info (void)
 {
@@ -63,7 +61,8 @@ CAMLprim value caml_ephe_create (value len)
   domain_state->ephe_info->live = res;
   for (i = CAML_EPHE_DATA_OFFSET; i < size; i++)
     Field(res, i) = caml_ephe_none;
-  return res;
+  /* run memprof callbacks */
+  return caml_process_pending_actions_with_root(res);
 }
 
 CAMLprim value caml_weak_create (value len)
@@ -161,9 +160,15 @@ void caml_ephe_clean (value v) {
   if (child != caml_ephe_none) {
     if (release_data) {
       Field(v, CAML_EPHE_DATA_OFFSET) = caml_ephe_none;
-    } else {
-      CAMLassert (!Is_block(child) || !is_unmarked(child));
     }
+#ifdef DEBUG
+    else if (Is_block (child) && !Is_young (child)) {
+      if (Tag_val (child) == Infix_tag) child -= Infix_offset_val (child);
+      /* If we scanned all the keys and the data field remains filled,
+         then the mark phase must have marked it */
+      CAMLassert( is_marked (child) );
+    }
+#endif
   }
 }
 
@@ -214,8 +219,8 @@ CAMLprim value caml_ephe_unset_key (value e, value n)
 
 value caml_ephe_set_key_option (value e, value n, value el)
 {
-  if (el != None_val && Is_block (el)) {
-    return caml_ephe_set_key (e, n, Field(el, 0));
+  if (Is_some (el)) {
+    return caml_ephe_set_key (e, n, Some_val(el));
   } else {
     return caml_ephe_unset_key (e, n);
   }
@@ -245,13 +250,15 @@ static value ephe_get_field (value e, mlsize_t offset)
   elt = Field(e, offset);
 
   if (elt == caml_ephe_none) {
-    res = None_val;
+    res = Val_none;
   } else {
     elt = Field(e, offset);
-    caml_darken (0, elt, 0);
-    res = caml_alloc_shr (1, Some_tag);
+    caml_darken (Caml_state, elt, 0);
+    res = caml_alloc_shr (1, Tag_some);
     caml_initialize(&Field(res, 0), elt);
   }
+  /* run GC and memprof callbacks */
+  caml_process_pending_actions();
   CAMLreturn (res);
 }
 
@@ -279,7 +286,10 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
 
   clean_field(e, offset);
   v = Field(e, offset);
-  if (v == caml_ephe_none) CAMLreturn (None_val);
+  if (v == caml_ephe_none) {
+    res = Val_none;
+    goto out;
+  }
 
   /** Don't copy custom_block #7279 */
   if (Is_block(v) && Tag_val(v) != Custom_tag) {
@@ -291,7 +301,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
 
     clean_field(e, offset);
     v = Field(e, offset);
-    if (v == caml_ephe_none) CAMLreturn (None_val);
+    if (v == caml_ephe_none) CAMLreturn (Val_none);
 
     if (Tag_val(v) == Infix_tag) {
       infix_offs = Infix_offset_val(v);
@@ -299,6 +309,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
     }
 
     if (Tag_val(v) < No_scan_tag) {
+      caml_domain_state* domain_state = Caml_state;
       i = 0;
       if (Tag_val (v) == Closure_tag) {
         /* Direct copy of the code pointers and closure info fields */
@@ -308,7 +319,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
       /* Field-by-field copy and darkening of the remaining fields */
       for (/*nothing*/; i < Wosize_val(v); i++) {
         f = Field(v, i);
-        caml_darken (0, f, 0);
+        caml_darken (domain_state, f, 0);
         Store_field(elt, i, f);
       }
     } else {
@@ -317,8 +328,11 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
   } else {
     Field(e, offset) = elt = v;
   }
-  res = caml_alloc_shr (1, Some_tag);
+  res = caml_alloc_shr (1, Tag_some);
   caml_initialize(&Field(res, 0), elt + infix_offs);
+ out:
+  /* run GC and memprof callbacks */
+  caml_process_pending_actions();
   CAMLreturn(res);
 }
 
@@ -380,20 +394,23 @@ static value ephe_blit_field (value es, mlsize_t offset_s,
   CAMLparam2(es,ed);
   CAMLlocal1(ar);
   long i;
+  caml_domain_state *domain_state;
+
 
   if (length == 0) CAMLreturn(Val_unit);
 
   caml_ephe_clean(es);
   caml_ephe_clean(ed);
 
+  domain_state = Caml_state;
   if (offset_d < offset_s) {
     for (i = 0; i < length; i++) {
-      caml_darken(0, Field(es, (offset_s + i)), 0);
+      caml_darken(domain_state, Field(es, (offset_s + i)), 0);
       do_set(ed, offset_d + i, Field(es, (offset_s + i)));
     }
   } else {
     for (i = length - 1; i >= 0; i--) {
-      caml_darken(0, Field(es, (offset_s + i)), 0);
+      caml_darken(domain_state, Field(es, (offset_s + i)), 0);
       do_set(ed, offset_d + i, Field(es, (offset_s + i)));
     }
   }

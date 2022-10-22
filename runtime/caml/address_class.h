@@ -43,7 +43,19 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-/* These definitions are retained for backwards compatibility */
+CAMLextern uintnat caml_minor_heaps_start;
+CAMLextern uintnat caml_minor_heaps_end;
+
+/* Is_young(val) is true iff val is in the reserved area for minor heaps */
+
+#define Is_young(val) \
+  (CAMLassert (Is_block (val)), \
+   (char *)(val) < (char *)caml_minor_heaps_end && \
+   (char *)(val) > (char *)caml_minor_heaps_start)
+
+#define Is_block_and_young(val) (Is_block(val) && Is_young(val))
+
+/* These definitions are retained for backwards compatibility with OCaml 4 */
 #define Is_in_heap_or_young(a) 1
 #define Is_in_value_area(a) 1
 

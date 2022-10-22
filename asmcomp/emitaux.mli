@@ -20,7 +20,7 @@ val emit_string: string -> unit
 val emit_int: int -> unit
 val emit_nativeint: nativeint -> unit
 val emit_int32: int32 -> unit
-val emit_symbol: char -> string -> unit
+val emit_symbol: string -> unit
 val emit_printf: ('a, out_channel, unit) format -> 'a
 val emit_char: char -> unit
 val emit_string_literal: string -> unit
@@ -73,6 +73,7 @@ val cfi_offset : reg:int -> offset:int -> unit
 val cfi_def_cfa_offset : int -> unit
 val cfi_remember_state : unit -> unit
 val cfi_restore_state : unit -> unit
+val cfi_def_cfa_register: reg:int -> unit
 
 val binary_backend_available: bool ref
     (** Is a binary backend available.  If yes, we don't need
@@ -89,3 +90,13 @@ exception Error of error
 val report_error: Format.formatter -> error -> unit
 
 val mk_env : Linear.fundecl -> Emitenv.per_function_env
+
+type preproc_stack_check_result =
+  { max_frame_size : int;
+    contains_nontail_calls : bool }
+
+val preproc_stack_check:
+  fun_body:Linear.instruction ->
+  frame_size:int ->
+  trap_size:int ->
+  preproc_stack_check_result

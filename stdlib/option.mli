@@ -34,7 +34,9 @@ val value : 'a option -> default:'a -> 'a
 (** [value o ~default] is [v] if [o] is [Some v] and [default] otherwise. *)
 
 val get : 'a option -> 'a
-(** [get o] is [v] if [o] is [Some v] and @raise Invalid_argument otherwise. *)
+(** [get o] is [v] if [o] is [Some v] and raise otherwise.
+
+    @raise Invalid_argument if [o] is [None]. *)
 
 val bind : 'a option -> ('a -> 'b option) -> 'b option
 (** [bind o f] is [f v] if [o] is [Some v] and [None] if [o] is [None]. *)
@@ -43,7 +45,7 @@ val join : 'a option option -> 'a option
 (** [join oo] is [Some v] if [oo] is [Some (Some v)] and [None] otherwise. *)
 
 val map : ('a -> 'b) -> 'a option -> 'b option
-(** [map f o] is [None] if [o] is [None] and [Some (f v)] is [o] is [Some v]. *)
+(** [map f o] is [None] if [o] is [None] and [Some (f v)] if [o] is [Some v]. *)
 
 val fold : none:'a -> some:('b -> 'a) -> 'b option -> 'a
 (** [fold ~none ~some o] is [none] if [o] is [None] and [some v] if [o] is

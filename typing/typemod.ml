@@ -113,14 +113,9 @@ let type_open_ ?used_slot ?toplevel ovf env loc lid =
       ignore (extract_sig_open env lid.loc md.md_type);
       assert false
 
-let initial_env ~loc ~safe_string ~initially_opened_module
+let initial_env ~loc ~initially_opened_module
     ~open_implicit_modules =
-  let env =
-    if safe_string then
-      Env.initial_safe_string
-    else
-      Env.initial_unsafe_string
-  in
+  let env = Env.initial in
   let open_module env m =
     let open Asttypes in
     let lexbuf = Lexing.from_string m in
@@ -236,7 +231,7 @@ let check_type_decl env sg loc id row_id newdecl decl =
 
 let make_variance p n i =
   let open Variance in
-  set May_pos p (set May_neg n (set May_weak n (set Inj i null)))
+  set_if p May_pos (set_if n May_neg (set_if i Inj null))
 
 let rec iter_path_apply p ~f =
   match p with
@@ -443,7 +438,6 @@ let type_decl_is_alias sdecl = (* assuming no explicit constraint *)
        | () -> Some lid
      end
   | _ -> None
-;;
 
 let params_are_constrained =
   let rec loop = function
@@ -454,7 +448,6 @@ let params_are_constrained =
        | _ -> true
   in
   loop
-;;
 
 type with_info =
   | With_type of Parsetree.type_declaration
@@ -2048,8 +2041,11 @@ and package_constraints env loc mty constrs =
   end
 
 let modtype_of_package env loc p fl =
-  package_constraints env loc (Mty_ident p)
-    (List.map (fun (n, t) -> (Longident.flatten n, t)) fl)
+  let mty =
+    package_constraints env loc (Mty_ident p)
+      (List.map (fun (n, t) -> (Longident.flatten n, t)) fl)
+  in
+  Subst.modtype Keep Subst.identity mty
 
 let package_subtype env p1 fl1 p2 fl2 =
   let mkmty p fl =
@@ -2067,11 +2063,13 @@ let package_subtype env p1 fl1 p2 fl2 =
 
 let () = Ctype.package_subtype := package_subtype
 
-let wrap_constraint env mark arg mty explicit =
+let wrap_constraint_package env mark arg mty explicit =
   let mark = if mark then Includemod.Mark_both else Includemod.Mark_neither in
+  let mty1 = Subst.modtype Keep Subst.identity arg.mod_type in
+  let mty2 = Subst.modtype Keep Subst.identity mty in
   let coercion =
     try
-      Includemod.modtypes ~loc:arg.mod_loc env ~mark arg.mod_type mty
+      Includemod.modtypes ~loc:arg.mod_loc env ~mark mty1 mty2
     with Includemod.Error msg ->
       raise(Error(arg.mod_loc, env, Not_included msg)) in
   { mod_desc = Tmod_constraint(arg, mty, explicit, coercion);
@@ -2953,7 +2951,7 @@ let type_package env m p fl =
       with Ctype.Unify _ ->
         raise (Error(modl.mod_loc, env, Scoping_pack (n,ty))))
     fl';
-  let modl = wrap_constraint env true modl mty Tmodtype_implicit in
+  let modl = wrap_constraint_package env true modl mty Tmodtype_implicit in
   modl, fl'
 
 (* Fill in the forward declarations *)
@@ -3012,13 +3010,17 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
       end else begin
         let sourceintf =
           Filename.remove_extension sourcefile ^ !Config.interface_suffix in
-        if Sys.file_exists sourceintf then begin
+        if !Clflags.cmi_file <> None || Sys.file_exists sourceintf then begin
           let intf_file =
-            try
-              Load_path.find_uncap (modulename ^ ".cmi")
-            with Not_found ->
-              raise(Error(Location.in_file sourcefile, Env.empty,
-                          Interface_not_compiled sourceintf)) in
+            match !Clflags.cmi_file with
+            | None ->
+              (try
+                Load_path.find_uncap (modulename ^ ".cmi")
+              with Not_found ->
+                raise(Error(Location.in_file sourcefile, Env.empty,
+                      Interface_not_compiled sourceintf)))
+            | Some cmi_file -> cmi_file
+          in
           let dclsig = Env.read_signature modulename intf_file in
           let coercion, shape =
             Includemod.compunit initial_env ~mark:Mark_positive
@@ -3049,7 +3051,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           normalize_signature simple_sg;
           Typecore.force_delayed_checks ();
           (* See comment above. Here the target signature contains all
-             the value being exported. We can still capture unused
+             the values being exported. We can still capture unused
              declarations like "let x = true;; let x = 1;;", because in this
              case, the inferred signature contains only the last declaration. *)
           let shape = Shape.local_reduce shape in
@@ -3131,7 +3133,7 @@ let package_units initial_env objfiles cmifile modulename =
          let modname = String.capitalize_ascii(Filename.basename pref) in
          let sg = Env.read_signature modname (pref ^ ".cmi") in
          if Filename.check_suffix f ".cmi" &&
-            not(Mtype.no_code_needed_sig Env.initial_safe_string sg)
+            not(Mtype.no_code_needed_sig Env.initial sg)
          then raise(Error(Location.none, Env.empty,
                           Implementation_is_required f));
          (modname, Env.read_signature modname (pref ^ ".cmi")))

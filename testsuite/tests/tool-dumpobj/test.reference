@@ -1,0 +1,6 @@
+       0  GETGLOBAL 42L
+       2  PUSHACC0
+       3  MAKEBLOCK1 0
+       5  POP 1
+       7  SETGLOBAL Test
+       9  STOP

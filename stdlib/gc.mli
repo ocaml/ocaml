@@ -85,11 +85,13 @@ type stat =
     (** Maximum size reached by the major heap, in words. *)
 
     stack_size: int;
-    (** Current size of the stack, in words. @since 3.12.0 *)
+    (** Current size of the stack, in words.
+        @since 3.12.0 *)
 
     forced_major_collections: int;
     (** Number of forced full major collections completed since the program
-        was started. @since 4.12.0 *)
+        was started.
+        @since 4.12.0 *)
 }
 (** The memory management counters are returned in a [stat] record. These
    counters give values for the whole program.
@@ -104,8 +106,8 @@ type control =
   { minor_heap_size : int;
     (** The size (in words) of the minor heap.  Changing
        this parameter will trigger a minor collection. The total size of the
-       minor heap used by this program will be this number multiplied by the
-       number of active domains. Default: 256k. *)
+       minor heap used by this program is the sum of the heap sizes of the
+       active domains. Default: 256k. *)
 
     major_heap_increment : int;
     (** How much to add to the major heap when increasing it. If this
@@ -195,7 +197,8 @@ type control =
     (** The size of the window used by the major GC for smoothing
         out variations in its workload. This is an integer between
         1 and 50.
-        Default: 1. @since 4.03.0 *)
+        Default: 1.
+        @since 4.03.0 *)
 
     custom_major_ratio : int;
     (** Target ratio of floating garbage to major heap size for
@@ -371,7 +374,7 @@ val finalise : ('a -> unit) -> 'a -> unit
 
 
    The results of calling {!String.make}, {!Bytes.make}, {!Bytes.create},
-   {!Array.make}, and {!Stdlib.ref} are guaranteed to be
+   {!Array.make}, and {!val:Stdlib.ref} are guaranteed to be
    heap-allocated and non-constant except when the length argument is [0].
 *)
 
@@ -410,23 +413,11 @@ val delete_alarm : alarm -> unit
 (** [delete_alarm a] will stop the calls to the function associated
    to [a]. Calling [delete_alarm a] again has no effect. *)
 
-external eventlog_pause : unit -> unit = "caml_eventlog_pause"
-(** [eventlog_pause ()] will pause the collection of traces in the
-   runtime.
-   Traces are collected if the program is linked to the instrumented runtime
-   and started with the environment variable OCAML_EVENTLOG_ENABLED.
-   Events are flushed to disk after pausing, and no new events will be
-   recorded until [eventlog_resume] is called. *)
+val eventlog_pause : unit -> unit
+[@@ocaml.deprecated "Use Runtime_events.pause instead."]
 
-external eventlog_resume : unit -> unit = "caml_eventlog_resume"
-(** [eventlog_resume ()] will resume the collection of traces in the
-   runtime.
-   Traces are collected if the program is linked to the instrumented runtime
-   and started with the environment variable OCAML_EVENTLOG_ENABLED.
-   This call can be used after calling [eventlog_pause], or if the program
-   was started with OCAML_EVENTLOG_ENABLED=p. (which pauses the collection of
-   traces before the first event.) *)
-
+val eventlog_resume : unit -> unit
+[@@ocaml.deprecated "Use Runtime_events.resume instead."]
 
 (** [Memprof] is a sampling engine for allocated memory words. Every
    allocated word has a probability of being sampled equal to a

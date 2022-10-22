@@ -18,43 +18,63 @@
 #define CAML_PLAT_THREADS_H
 /* Platform-specific concurrency and memory primitives */
 
+#ifdef CAML_INTERNALS
+
 #include <pthread.h>
 #include <errno.h>
 #include <string.h>
 #include "config.h"
 #include "mlvalues.h"
+#include "sys.h"
 
 #if defined(MAP_ANON) && !defined(MAP_ANONYMOUS)
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
-/* Loads and stores with acquire and release semantics respectively */
+/* Hint for busy-waiting loops */
 
 Caml_inline void cpu_relax() {
+#ifdef __GNUC__
 #if defined(__x86_64__) || defined(__i386__)
   asm volatile("pause" ::: "memory");
 #elif defined(__aarch64__)
   asm volatile ("yield" ::: "memory");
 #else
-  #warning "cpu_relax() undefined for this architecture!"
+  /* Just a compiler barrier */
+  asm volatile ("" ::: "memory");
+#endif
 #endif
 }
 
-Caml_inline uintnat atomic_load_acq(atomic_uintnat* p) {
+/* Loads and stores with acquire and release semantics respectively */
+
+Caml_inline uintnat atomic_load_acq(atomic_uintnat* p)
+{
   return atomic_load_explicit(p, memory_order_acquire);
 }
 
-Caml_inline void atomic_store_rel(atomic_uintnat* p, uintnat v) {
+Caml_inline uintnat atomic_load_relaxed(atomic_uintnat* p)
+{
+  return atomic_load_explicit(p, memory_order_relaxed);
+}
+
+Caml_inline void atomic_store_rel(atomic_uintnat* p, uintnat v)
+{
   atomic_store_explicit(p, v, memory_order_release);
+}
+
+Caml_inline void atomic_store_relaxed(atomic_uintnat* p, uintnat v)
+{
+  atomic_store_explicit(p, v, memory_order_relaxed);
 }
 
 /* Spin-wait loops */
 
 #define Max_spins 1000
 
-unsigned caml_plat_spin_wait(unsigned spins,
-                             const char* file, int line,
-                             const char* function);
+CAMLextern unsigned caml_plat_spin_wait(unsigned spins,
+                                        const char* file, int line,
+                                        const char* function);
 
 #define GENSYM_3(name, l) name##l
 #define GENSYM_2(name, l) GENSYM_3(name, l)
@@ -104,11 +124,6 @@ void caml_plat_broadcast(caml_plat_cond*);
 void caml_plat_signal(caml_plat_cond*);
 void caml_plat_cond_free(caml_plat_cond*);
 
-struct caml__mutex_unwind {
-  caml_plat_mutex* mutex;
-  struct caml__mutex_unwind* next;
-};
-
 /* Memory management primitives (mmap) */
 
 uintnat caml_mem_round_up_pages(uintnat size);
@@ -118,12 +133,13 @@ void caml_mem_decommit(void* mem, uintnat size);
 void caml_mem_unmap(void* mem, uintnat size);
 
 
-Caml_inline void check_err(char* action, int err)
+CAMLnoreturn_start
+void caml_plat_fatal_error(const char * action, int err)
+CAMLnoreturn_end;
+
+Caml_inline void check_err(const char* action, int err)
 {
-  if (err) {
-    caml_fatal_error_arg2(
-      "Fatal error during %s", action, ": %s\n", strerror(err));
-  }
+  if (err) caml_plat_fatal_error(action, err);
 }
 
 #ifdef DEBUG
@@ -162,5 +178,7 @@ Caml_inline void caml_plat_unlock(caml_plat_mutex* m)
 /* On Windows, the SYSTEM_INFO.dwPageSize is a DWORD (32-bit), but conveniently
    long is also 32-bit */
 extern long caml_sys_pagesize;
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_PLATFORM_H */

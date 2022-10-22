@@ -140,12 +140,8 @@ let create_archive archive file_list =
                                quoted_archive (quote_files file_list))
     | _ ->
         assert(String.length Config.ar > 0);
-        let r1 =
-          command(Printf.sprintf "%s rc %s %s"
-                  Config.ar quoted_archive (quote_files file_list)) in
-        if r1 <> 0 || String.length Config.ranlib = 0
-        then r1
-        else command(Config.ranlib ^ " " ^ quoted_archive)
+        command(Printf.sprintf "%s rc %s %s"
+                Config.ar quoted_archive (quote_files file_list))
 
 let expand_libname cclibs =
   cclibs |> List.map (fun cclib ->

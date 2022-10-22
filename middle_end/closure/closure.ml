@@ -897,9 +897,9 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
      close_approx_var env id
   | Lmutvar id -> (Uvar id, Value_unknown)
   | Lconst cst ->
-      let str ?(shared = true) cst =
+      let str cst =
         let name =
-          Compilenv.new_structured_constant cst ~shared
+          Compilenv.new_structured_constant cst ~shared:true
         in
         Uconst_ref (name, Some cst)
       in
@@ -914,13 +914,7 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         | Const_immstring s ->
             str (Uconst_string s)
         | Const_base (Const_string (s, _, _)) ->
-              (* Strings (even literal ones) must be assumed to be mutable...
-                 except when OCaml has been configured with
-                 -safe-string.  Passing -safe-string at compilation
-                 time is not enough, since the unit could be linked
-                 with another one compiled without -safe-string, and
-                 that one could modify our string literal.  *)
-            str ~shared:Config.safe_string (Uconst_string s)
+            str (Uconst_string s)
         | Const_base(Const_float x) -> str (Uconst_float (float_of_string x))
         | Const_base(Const_int32 x) -> str (Uconst_int32 x)
         | Const_base(Const_int64 x) -> str (Uconst_int64 x)
@@ -969,20 +963,20 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         let funct_var = V.create_local "funct" in
         let fenv = V.Map.add funct_var fapprox fenv in
         let (new_fun, approx) = close { backend; fenv; cenv; mutable_vars }
-          (Lfunction{
-               kind = Curried;
-               return = Pgenval;
-               params = List.map (fun v -> v, Pgenval) final_args;
-               body = Lapply{
-                 ap_loc=loc;
-                 ap_func=(Lvar funct_var);
-                 ap_args=internal_args;
-                 ap_tailcall=Default_tailcall;
-                 ap_inlined=Default_inline;
-                 ap_specialised=Default_specialise;
-               };
-               loc;
-               attr = default_function_attribute})
+          (lfunction
+             ~kind:Curried
+             ~return:Pgenval
+             ~params:(List.map (fun v -> v, Pgenval) final_args)
+             ~body:(Lapply{
+                ap_loc=loc;
+                ap_func=(Lvar funct_var);
+                ap_args=internal_args;
+                ap_tailcall=Default_tailcall;
+                ap_inlined=Default_inline;
+                ap_specialised=Default_specialise;
+              })
+             ~loc
+             ~attr:default_function_attribute)
         in
         let new_fun =
           iter first_args

@@ -38,14 +38,15 @@ value* caml_addrmap_insert_pos(struct addrmap* t, value k);
 /* must not already be present */
 void caml_addrmap_insert(struct addrmap* t, value k, value v);
 
+void caml_addrmap_init(struct addrmap* t);
+
 void caml_addrmap_clear(struct addrmap* t);
 
 void caml_addrmap_iter(struct addrmap* t, void (*f)(value, value));
 
 /* iteration */
 typedef uintnat addrmap_iterator;
-Caml_inline addrmap_iterator caml_addrmap_iter_ok(struct addrmap* t,
-                                                  addrmap_iterator i)
+Caml_inline int caml_addrmap_iter_ok(struct addrmap* t, addrmap_iterator i)
 {
   if (i < t->size) {
     CAMLassert(t->entries[i].key != ADDRMAP_INVALID_KEY);

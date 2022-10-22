@@ -1863,7 +1863,7 @@ let get_mod_field modname field =
   lazy
     (let mod_ident = Ident.create_persistent modname in
      let env =
-       Env.add_persistent_structure mod_ident Env.initial_safe_string
+       Env.add_persistent_structure mod_ident Env.initial
      in
      match Env.open_pers_signature modname env with
      | Error `Not_found ->
@@ -2946,9 +2946,14 @@ let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)
         match (consts, nonconsts) with
         | [ (_, act1) ], [ (_, act2) ] when fail = None ->
             test_int_or_block arg act1 act2
-        | _, [] ->
-            (* One can compare integers and pointers *)
-            make_test_sequence_variant_constant fail arg consts
+        | _, [] -> (
+            let lam = make_test_sequence_variant_constant fail arg consts in
+            (* PR#11587: Switcher.test_sequence expects integer inputs, so
+               if the type allows pointers we must filter them away. *)
+            match fail with
+            | None -> lam
+            | Some fail -> test_int_or_block arg lam fail
+          )
         | [], _ -> (
             let lam = call_switcher_variant_constr loc fail arg nonconsts in
             (* One must not dereference integers *)
@@ -3442,7 +3447,7 @@ let failure_handler ~scopes loc ~failer () =
     let sloc = Scoped_location.of_location ~scopes loc in
     let slot =
       transl_extension_path sloc
-        Env.initial_safe_string Predef.path_match_failure
+        Env.initial Predef.path_match_failure
     in
     let fname, line, char =
       Location.get_pos_info loc.Location.loc_start in
@@ -3472,13 +3477,13 @@ let check_total ~scopes loc ~failer total lambda i =
 
 let toplevel_handler ~scopes loc ~failer partial args cases compile_fun =
   match partial with
-  | Total ->
+  | Total when not !Clflags.safer_matching ->
       let default = Default_environment.empty in
       let pm = { args; cases; default } in
       let (lam, total) = compile_fun Total pm in
       assert (Jumps.is_empty total);
       lam
-  | Partial ->
+  | Partial | Total (* when !Clflags.safer_matching *) ->
       let raise_num = next_raise_count () in
       let default =
         Default_environment.cons [ Patterns.omega_list args ] raise_num

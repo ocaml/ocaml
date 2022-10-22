@@ -50,13 +50,7 @@ let compute_variance env visited vari ty =
     let compute_same = compute_variance_rec vari in
     match get_desc ty with
       Tarrow (_, ty1, ty2, _) ->
-        let open Variance in
-        let v = conjugate vari in
-        let v1 =
-          if mem May_pos v || mem May_neg v
-          then set May_weak true v else v
-        in
-        compute_variance_rec v1 ty1;
+        compute_variance_rec (Variance.conjugate vari) ty1;
         compute_same ty2
     | Ttuple tl ->
         List.iter compute_same tl
@@ -65,25 +59,8 @@ let compute_variance env visited vari ty =
         if tl = [] then () else begin
           try
             let decl = Env.find_type path env in
-            let cvari f = mem f vari in
             List.iter2
-              (fun ty v ->
-                let cv f = mem f v in
-                let strict =
-                  cvari Inv && cv Inj || (cvari Pos || cvari Neg) && cv Inv
-                in
-                if strict then compute_variance_rec full ty else
-                let p1 = inter v vari
-                and n1 = inter v (conjugate vari) in
-                let v1 =
-                  union (inter covariant (union p1 (conjugate p1)))
-                    (inter (conjugate covariant) (union n1 (conjugate n1)))
-                and weak =
-                  cvari May_weak && (cv May_pos || cv May_neg) ||
-                  (cvari May_pos || cvari May_neg) && cv May_weak
-                in
-                let v2 = set May_weak weak v1 in
-                compute_variance_rec v2 ty)
+              (fun ty v -> compute_variance_rec (compose vari v) ty)
               tl decl.type_variance
           with Not_found ->
             List.iter (compute_variance_rec unknown) tl
@@ -102,14 +79,7 @@ let compute_variance env visited vari ty =
               Rpresent (Some ty) ->
                 compute_same ty
             | Reither (_, tyl, _) ->
-                let open Variance in
-                let upper =
-                  List.fold_left (fun s f -> set f true s)
-                    null [May_pos; May_neg; May_weak]
-                in
-                let v = inter vari upper in
-                (* cf PR#7269:
-                   if List.length tyl > 1 then upper else inter vari upper *)
+                let v = Variance.(inter vari unknown) in (* cf PR#7269 *)
                 List.iter (compute_variance_rec v) tyl
             | _ -> ())
           (row_fields row);
@@ -119,7 +89,7 @@ let compute_variance env visited vari ty =
     | Tvar _ | Tnil | Tlink _ | Tunivar _ -> ()
     | Tpackage (_, fl) ->
         let v =
-          Variance.(if mem Pos vari || mem Neg vari then full else unknown)
+          Variance.(if mem Inv vari then full else unknown)
         in
         List.iter (fun (_, ty) -> compute_variance_rec v ty) fl
   in
@@ -127,9 +97,9 @@ let compute_variance env visited vari ty =
 
 let make p n i =
   let open Variance in
-  set May_pos p (set May_neg n (set May_weak n (set Inj i null)))
+  set_if p May_pos (set_if n May_neg (set_if i Inj null))
 
-let injective = Variance.(set Inj true null)
+let injective = Variance.(set Inj null)
 
 let compute_variance_type env ~check (required, loc) decl tyl =
   (* Requirements *)
@@ -219,7 +189,7 @@ let compute_variance_type env ~check (required, loc) decl tyl =
              if Ctype.is_equal env false [ty] [t] then union vt v else v)
           !tvl2 null in
       Btype.backtrack snap;
-      let (c1,n1) = get_upper v1 and (c2,n2,_,i2) = get_lower v2 in
+      let (c1,n1) = get_upper v1 and (c2,n2,i2) = get_lower v2 in
       if c1 && not c2 || n1 && not n2 then
         if List.exists (eq_type ty) fvl then
           let code = if not i2 then No_variable
@@ -242,15 +212,9 @@ let compute_variance_type env ~check (required, loc) decl tyl =
         else (false, false) (* only check *)
       and i = concr  || i && tr = Private in
       let v = union v (make p n i) in
-      let v =
-        if not concr then v else
-        if mem Pos v && mem Neg v then full else
-        if Btype.is_Tvar ty then v else
-        union v
-          (if p then if n then full else covariant else conjugate covariant)
-      in
-      if decl.type_kind = Type_abstract && tr = Public then v else
-      set May_weak (mem May_neg v) v)
+      if not concr || Btype.is_Tvar ty then v else
+      union v
+        (if p then if n then full else covariant else conjugate covariant))
     params required
 
 let add_false = List.map (fun ty -> false, ty)
@@ -314,7 +278,7 @@ let compute_variance_decl env ~check decl (required, _ as rloc) =
       None -> []
     | Some ty -> [false, ty]
   in
-  match decl.type_kind with
+  let vari = match decl.type_kind with
     Type_abstract | Type_open ->
       compute_variance_type env ~check rloc decl mn
   | Type_variant (tll,_rep) ->
@@ -329,16 +293,17 @@ let compute_variance_decl env ~check decl (required, _ as rloc) =
           mn @ List.map (fun c -> c.Types.cd_args, c.Types.cd_res) tll in
         match List.map (compute_variance_gadt env ~check rloc decl) tll with
         | vari :: rem ->
-            let varl = List.fold_left (List.map2 Variance.union) vari rem in
-            List.map
-              Variance.(fun v -> if mem Pos v && mem Neg v then full else v)
-              varl
+            List.fold_left (List.map2 Variance.union) vari rem
         | _ -> assert false
       end
   | Type_record (ftl, _) ->
       compute_variance_type env ~check rloc decl
         (mn @ List.map (fun {Types.ld_mutable; ld_type} ->
              (ld_mutable = Mutable, ld_type)) ftl)
+  in
+  if mn = [] || decl.type_kind <> Type_abstract then
+    List.map Variance.strengthen vari
+  else vari
 
 let is_hash id =
   let s = Ident.name id in

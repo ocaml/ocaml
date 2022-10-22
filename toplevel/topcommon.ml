@@ -259,7 +259,7 @@ let refill_lexbuf buffer len =
       len
   end
 
-let set_paths () =
+let set_paths ?(auto_include=Compmisc.auto_include) () =
   (* Add whatever -I options have been specified on the command line,
      but keep the directories that user code linked in with ocamlmktop
      may have added to load_path. *)
@@ -274,8 +274,22 @@ let set_paths () =
       [expand "+camlp4"];
     ]
   in
-  Load_path.init load_path;
+  Load_path.init ~auto_include load_path;
   Dll.add_path load_path
+
+let update_search_path_from_env () =
+  let extra_paths =
+    let env = Sys.getenv_opt "OCAMLTOP_INCLUDE_PATH" in
+    Option.fold ~none:[] ~some:Misc.split_path_contents env
+  in
+  Clflags.include_dirs := List.rev_append extra_paths !Clflags.include_dirs
+
+let load_topdirs_signature () =
+  let compiler_libs =
+    Filename.concat Config.standard_library "compiler-libs" in
+  let topdirs_cmi = Filename.concat compiler_libs "topdirs.cmi" in
+  if Sys.file_exists topdirs_cmi then
+    ignore (Env.read_signature "Topdirs" topdirs_cmi)
 
 let initialize_toplevel_env () =
   toplevel_env := Compmisc.initial_env()
@@ -287,6 +301,11 @@ let override_sys_argv new_argv =
   caml_sys_modify_argv new_argv;
   Arg.current := 0
 
+let is_command_like_name s =
+  not (String.length s = 0
+       || s.[0] = '-'
+       || Filename.basename s <> s
+       || Filename.extension s <> "")
 
 (* The table of toplevel directives.
    Filled by functions from module topdirs. *)

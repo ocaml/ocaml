@@ -40,7 +40,7 @@
 
 /* Item on the stack with defined operation */
 struct intern_item {
-  value * dest;
+  volatile value * dest;
   intnat arg;
   enum {
     OReadItems, /* read arg items and store them in dest[0], dest[1], ... */
@@ -88,6 +88,7 @@ struct caml_intern_state {
 /* Allocates the domain local intern state if needed */
 static struct caml_intern_state* get_intern_state (void)
 {
+  Caml_check_caml_state();
   struct caml_intern_state* s;
 
   if (Caml_state->intern_state != NULL)
@@ -390,7 +391,7 @@ static value intern_alloc_obj(struct caml_intern_state* s, caml_domain_state* d,
 }
 
 static void intern_rec(struct caml_intern_state* s,
-                       value *dest)
+                       volatile value *dest)
 {
   unsigned int code;
   tag_t tag;
@@ -596,6 +597,11 @@ static void intern_rec(struct caml_intern_state* s,
         sp->arg = ofs;
         ReadItems(s, dest, 1);
         continue;  /* with next iteration of main loop, skipping *dest = v */
+      case OLD_CODE_CUSTOM:
+        intern_cleanup(s);
+        caml_failwith("input_value: custom blocks serialized with "
+                      "OCaml 4.08.0 (or prior) are no longer supported");
+        break;
       case CODE_CUSTOM_LEN:
       case CODE_CUSTOM_FIXED: {
         uintnat expected_size, temp_size;
@@ -676,7 +682,7 @@ static value intern_end(struct caml_intern_state* s, value res)
   intern_cleanup(s);
 
   /* Give gc a chance to run, and run memprof callbacks */
-  res = caml_check_urgent_gc(res);
+  caml_process_pending_actions();
 
   CAMLreturn(res);
 }
@@ -794,7 +800,7 @@ CAMLprim value caml_input_value(value vchan)
 
 /* Reading from memory-resident blocks */
 
-/* XXX KC: Unused primitive. Remove with boostrap. */
+/* XXX KC: Unused primitive. Remove with bootstrap. */
 CAMLprim value caml_input_value_to_outside_heap(value vchan)
 {
   return caml_input_value(vchan);

@@ -23,8 +23,18 @@
 
 # It was only tested with GNU sed. Sorry!
 
+# Note: we turn #1234 into #[1234](.../issues/1234), with the '#'
+# outside the link. This gives the property that the script is
+# idempotent, it can be run on its own output and keeps it
+# unchanged. This makes it possible, for example, to run the script,
+# then add yet more non-linkified content, and run the script again on
+# the whole file.
+
 GITHUB=https://github.com/ocaml/ocaml
 
-sed "s,(Changes#\(.*\)),[Changes file for \\1]($GITHUB/blob/\\1/Changes),g" $1 \
-| sed "s,#\([0-9]\+\),[#\\1]($GITHUB/issues/\\1),g" \
+# Note: "cat $1 | sed ..." could be "sed ... $1", but this form makes
+# it easier to remove or reorder some of the sed passes.
+cat $1 \
+| sed "s,(Changes#\(.*\)),[Changes file for \\1]($GITHUB/blob/\\1/Changes),g" \
+| sed "s,#\([0-9]\+\),#[\\1]($GITHUB/issues/\\1),g" \
 | sed "s/^*/* [*breaking change*]/g"

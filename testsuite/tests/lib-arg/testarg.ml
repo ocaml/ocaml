@@ -5,7 +5,7 @@ let current = ref 0;;
 let accum = ref [];;
 
 let record fmt (* args *) =
-  Printf.kprintf (fun s -> accum := s :: !accum) fmt
+  Printf.ksprintf (fun s -> accum := s :: !accum) fmt
 ;;
 
 let f_unit () = record "unit()";;

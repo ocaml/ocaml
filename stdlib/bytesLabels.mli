@@ -316,14 +316,14 @@ val equal: t -> t -> bool
 
 val starts_with :
   prefix (* comment thwarts tools/sync_stdlib_docs *) :bytes -> bytes -> bool
-(** [starts_with ][~][prefix s] is [true] if and only if [s] starts with
+(** [starts_with ][~prefix s] is [true] if and only if [s] starts with
     [prefix].
 
     @since 4.13.0 *)
 
 val ends_with :
   suffix (* comment thwarts tools/sync_stdlib_docs *) :bytes -> bytes -> bool
-(** [ends_with suffix s] is [true] if and only if [s] ends with [suffix].
+(** [ends_with ][~suffix s] is [true] if and only if [s] ends with [suffix].
 
     @since 4.13.0 *)
 
@@ -562,13 +562,14 @@ val is_valid_utf_16le : t -> bool
 
     8-bit and 16-bit integers are represented by the [int] type,
     which has more bits than the binary encoding.  These extra bits
-    are handled as follows: {ul
+    are handled as follows:
+    {ul
     {- Functions that decode signed (resp. unsigned) 8-bit or 16-bit
-    integers represented by [int] values sign-extend
-    (resp. zero-extend) their result.}
+       integers represented by [int] values sign-extend
+       (resp. zero-extend) their result.}
     {- Functions that encode 8-bit or 16-bit integers represented by
-    [int] values truncate their input to their least significant
-    bytes.}}
+       [int] values truncate their input to their least significant
+       bytes.}}
 *)
 
 val get_uint8 : bytes -> int -> int
@@ -752,3 +753,5 @@ external unsafe_blit_string :
   = "caml_blit_string" [@@noalloc]
 external unsafe_fill :
   bytes -> pos:int -> len:int -> char -> unit = "caml_fill_bytes" [@@noalloc]
+
+val unsafe_escape : bytes -> bytes

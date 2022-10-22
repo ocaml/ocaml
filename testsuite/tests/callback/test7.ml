@@ -13,7 +13,7 @@
 open Effect
 open Effect.Deep
 
-type _ eff += E : unit eff
+type _ t += E : unit t
 
 let printf = Printf.printf
 
@@ -31,12 +31,12 @@ let _ =
     printf "[Caml] Call caml_to_c\n%!";
     begin try
       caml_to_c ()
-    with Unhandled ->
-      (printf "[Caml] Caught Unhandled, perform effect\n%!";
+    with Effect.Unhandled E ->
+      (printf "[Caml] Caught Effect.Unhandled, perform effect\n%!";
        perform E)
     end;
     printf "[Caml] Return from caml_to_c\n%!") ()
-  { effc = fun (type a) (e : a eff) ->
+  { effc = fun (type a) (e : a t) ->
       match e with
       | E -> Some (fun k -> printf "[Caml] Caught effect\n%!")
       | _ -> None }

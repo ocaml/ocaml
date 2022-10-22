@@ -370,7 +370,10 @@ module Propagation :
 Line 13, characters 19-20:
 13 |     | BoolLit b -> b
                         ^
-Error: This expression has type bool but an expression was expected of type s
+Error: This expression has type bool but an expression was expected of type
+         s = bool
+       This instance of bool is ambiguous:
+       it would escape the scope of its equation
 |}];;
 
 module Normal_constrs = struct
@@ -456,8 +459,7 @@ let test : type a. a t -> a = fun x ->
 Line 2, characters 30-42:
 2 |   let r = match x with Int -> ky 1 (1 : a)  (* fails *)
                                   ^^^^^^^^^^^^
-Error: This expression has type a = int
-       but an expression was expected of type 'a
+Error: This expression has type int but an expression was expected of type 'a
        This instance of int is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -570,8 +572,7 @@ val either : 'a -> 'a -> 'a = <fun>
 Line 3, characters 44-45:
 3 |   match v with Int -> let y = either 1 x in y
                                                 ^
-Error: This expression has type a = int
-       but an expression was expected of type 'a
+Error: This expression has type int but an expression was expected of type 'a
        This instance of int is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -626,15 +627,9 @@ let f (type a) (x : a t) y =
   match x with Int ->
     let module M = struct type b = a let z = (y : b) end
     in M.z
-;; (* fails because of aliasing... *)
+;;
 [%%expect{|
-Line 3, characters 46-47:
-3 |     let module M = struct type b = a let z = (y : b) end
-                                                  ^
-Error: This expression has type a = int
-       but an expression was expected of type b = int
-       This instance of int is ambiguous:
-       it would escape the scope of its equation
+val f : 'a t -> 'a -> 'a = <fun>
 |}];;
 
 let f (type a) (x : a t) y =
@@ -782,13 +777,6 @@ Error: This expression has type [> `A of a ]
        Type a is not compatible with type b = a
        This instance of a is ambiguous:
        it would escape the scope of its equation
-|}, Principal{|
-Line 2, characters 9-15:
-2 |   fun Eq o -> o ;; (* fail *)
-             ^^^^^^
-Error: This expression has type ([> `A of b ] as 'a) -> 'a
-       but an expression was expected of type [> `A of a ] -> [> `A of b ]
-       Types for tag `A are incompatible
 |}];;
 
 let f (type a b) (eq : (a,b) eq) (v : [> `A of a]) : [> `A of b] =
@@ -1187,7 +1175,6 @@ Line 5, characters 24-25:
                             ^
 Error: This expression has type b = int
        but an expression was expected of type a = int
-       Type b = int is not compatible with type int
        This instance of int is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -1205,7 +1192,6 @@ Line 5, characters 24-25:
                             ^
 Error: This expression has type b = int
        but an expression was expected of type a = int
-       Type int is not compatible with type a = int
        This instance of int is ambiguous:
        it would escape the scope of its equation
 |}];;
@@ -1221,7 +1207,6 @@ Line 4, characters 19-20:
                        ^
 Error: This expression has type b = int
        but an expression was expected of type a = int
-       Type a = int is not compatible with type a = int
        This instance of int is ambiguous:
        it would escape the scope of its equation
 |}];;

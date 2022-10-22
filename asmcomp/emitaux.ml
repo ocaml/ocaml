@@ -35,14 +35,14 @@ let emit_printf fmt =
 
 let emit_int32 n = emit_printf "0x%lx" n
 
-let emit_symbol esc s =
+let emit_symbol s =
   for i = 0 to String.length s - 1 do
     let c = s.[i] in
     match c with
-      'A'..'Z' | 'a'..'z' | '0'..'9' | '_' ->
+      'A'..'Z' | 'a'..'z' | '0'..'9' | '_' | '.' ->
         output_char !output_channel c
     | _ ->
-        Printf.fprintf !output_channel "%c%02x" esc (Char.code c)
+        Printf.fprintf !output_channel "$%02x" (Char.code c)
   done
 
 let emit_string_literal s =
@@ -340,6 +340,13 @@ let cfi_offset ~reg ~offset =
     emit_string "\n"
   end
 
+let cfi_def_cfa_register ~reg =
+  if is_cfi_enabled () then begin
+    emit_string "\t.cfi_def_cfa_register ";
+    emit_int reg;
+    emit_string "\n"
+  end
+
 (* Emit debug information *)
 
 (* This assoc list is expected to be very short *)
@@ -416,3 +423,32 @@ let mk_env f : Emitenv.per_function_env =
     symbol_literals = [];
     size_literals = 0;
   }
+
+type preproc_stack_check_result =
+  { max_frame_size : int;
+    contains_nontail_calls : bool }
+
+let preproc_stack_check ~fun_body ~frame_size ~trap_size =
+  let rec loop (i:Linear.instruction) fs max_fs nontail_flag =
+    match i.desc with
+      | Lend -> { max_frame_size = max_fs;
+                  contains_nontail_calls = nontail_flag}
+      | Ladjust_trap_depth { delta_traps } ->
+        let s = fs + (trap_size * delta_traps) in
+        loop i.next s (max s max_fs) nontail_flag
+      | Lpushtrap _ ->
+        let s = fs + trap_size in
+        loop i.next s (max s max_fs) nontail_flag
+      | Lpoptrap ->
+        loop i.next (fs - trap_size) max_fs nontail_flag
+      | Lop (Istackoffset n) ->
+        let s = fs + n in
+        loop i.next s (max s max_fs) nontail_flag
+      | Lop (Icall_ind | Icall_imm _ ) ->
+        loop i.next fs max_fs true
+      | Lprologue | Lop _ | Lreloadretaddr | Lreturn | Llabel _
+      | Lbranch _ | Lcondbranch _ | Lcondbranch3 _ | Lswitch _
+      | Lentertrap | Lraise _ ->
+        loop i.next fs max_fs nontail_flag
+  in
+  loop fun_body frame_size frame_size false

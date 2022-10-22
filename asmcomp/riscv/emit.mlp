@@ -1,4 +1,3 @@
-# 2 "asmcomp/riscv/emit.mlp"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -54,7 +53,7 @@ let slot_offset env loc cls =
 (* Output a symbol *)
 
 let emit_symbol s =
-  emit_symbol '$' s
+  emit_symbol s
 
 let emit_jump op s =
   if !Clflags.dlcode || !Clflags.pic_code
@@ -313,12 +312,12 @@ let emit_instr env i =
       assert (n mod 16 = 0);
       emit_stack_adjustment (-n);
       adjust_stack_offset env n
-  | Lop(Iload(Single, Iindexed ofs, _mut)) ->
+  | Lop(Iload { memory_chunk = Single; addressing_mode = Iindexed ofs; _ } ) ->
       `	flw	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg i.arg.(0)})\n`;
       `	fcvt.d.s	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
-  | Lop(Iload(chunk, Iindexed ofs, _mut)) ->
+  | Lop(Iload { memory_chunk; addressing_mode = Iindexed ofs } ) ->
       let instr =
-        match chunk with
+        match memory_chunk with
         | Byte_unsigned -> "lbu"
         | Byte_signed -> "lb"
         | Sixteen_unsigned -> "lhu"
@@ -438,6 +437,9 @@ let emit_instr env i =
   | Lop(Ispecific sop) ->
       let instr = name_for_specific sop in
       `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`
+  | Lop (Idls_get) ->
+      (* Here to maintain build *)
+      assert false
   | Lreloadretaddr ->
       let n = frame_size env in
       reload_ra n
@@ -542,8 +544,8 @@ let emit_instr env i =
           record_frame env Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_notrace ->
           `	mv	sp, {emit_reg reg_trap}\n`;
-	  emit_load reg_tmp size_addr;
-	  emit_load reg_trap 0;
+          emit_load reg_tmp size_addr;
+          emit_load reg_trap 0;
           `	addi	sp, sp, 16\n`;
           `	jr	{emit_reg reg_tmp}\n`
       end
@@ -645,7 +647,7 @@ let end_assembly() =
   `{emit_symbol lbl_end}:\n`;
   `	.quad	0\n`;
   (* Emit the frame descriptors *)
-  `	{emit_string rodata_space}\n`;
+  `	{emit_string data_space}\n`; (* not rodata because relocations inside *)
   let lbl = Compilenv.make_symbol (Some "frametable") in
   declare_global_data lbl;
   `{emit_symbol lbl}:\n`;

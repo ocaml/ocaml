@@ -115,16 +115,15 @@ and apply_coercion_result loc strict funct params args cc_res =
   | _ ->
       name_lambda strict funct
         (fun id ->
-           Lfunction
-             {
-               kind = Curried;
-               params = List.rev params;
-               return = Pgenval;
-               attr = { default_function_attribute with
+           lfunction
+             ~kind:Curried
+             ~params:(List.rev params)
+             ~return:Pgenval
+             ~attr:{ default_function_attribute with
                         is_a_functor = true;
-                        stub = true; };
-               loc = loc;
-               body = apply_coercion
+                        stub = true; }
+             ~loc
+             ~body:(apply_coercion
                    loc Strict cc_res
                    (Lapply{
                       ap_loc=loc;
@@ -133,22 +132,24 @@ and apply_coercion_result loc strict funct params args cc_res =
                       ap_tailcall=Default_tailcall;
                       ap_inlined=Default_inline;
                       ap_specialised=Default_specialise;
-                    })})
+                    })))
 
 and wrap_id_pos_list loc id_pos_list get_field lam =
   let fv = free_variables lam in
   (*Format.eprintf "%a@." Printlambda.lambda lam;
   Ident.Set.iter (fun id -> Format.eprintf "%a " Ident.print id) fv;
   Format.eprintf "@.";*)
-  let (lam,s) =
-    List.fold_left (fun (lam, s) (id',pos,c) ->
+  let (lam, _fv, s) =
+    List.fold_left (fun (lam, fv, s) (id',pos,c) ->
       if Ident.Set.mem id' fv then
         let id'' = Ident.create_local (Ident.name id') in
-        (Llet(Alias, Pgenval, id'',
-             apply_coercion loc Alias c (get_field pos),lam),
+        let rhs = apply_coercion loc Alias c (get_field pos) in
+        let fv_rhs = free_variables rhs in
+        (Llet(Alias, Pgenval, id'', rhs, lam),
+         Ident.Set.union fv fv_rhs,
          Ident.Map.add id' id'' s)
-      else (lam, s))
-      (lam, Ident.Map.empty) id_pos_list
+      else (lam, fv, s))
+      (lam, fv, Ident.Map.empty) id_pos_list
   in
   if s == Ident.Map.empty then lam else Lambda.rename s lam
 
@@ -165,7 +166,10 @@ let rec compose_coercions c1 c2 =
       let v2 = Array.of_list pc2 in
       let ids1 =
         List.map (fun (id,pos1,c1) ->
-          let (pos2,c2) = v2.(pos1) in (id, pos2, compose_coercions c1 c2))
+            if pos1 < 0 then (id, pos1, c1)
+            else
+              let (pos2,c2) = v2.(pos1) in
+              (id, pos2, compose_coercions c1 c2))
           ids1
       in
       Tcoerce_structure
@@ -483,11 +487,11 @@ let rec compile_functor ~scopes mexp coercion root_path loc =
       ([], transl_module ~scopes res_coercion body_path body)
       functor_params_rev
   in
-  Lfunction {
-    kind = Curried;
-    params;
-    return = Pgenval;
-    attr = {
+  lfunction
+    ~kind:Curried
+    ~params
+    ~return:Pgenval
+    ~attr:{
       inline = inline_attribute;
       specialise = Default_specialise;
       local = Default_local;
@@ -495,10 +499,9 @@ let rec compile_functor ~scopes mexp coercion root_path loc =
       is_a_functor = true;
       stub = false;
       tmc_candidate = false;
-    };
-    loc;
-    body;
-  }
+    }
+    ~loc
+    ~body
 
 (* Compile a module expression *)
 
@@ -1700,7 +1703,7 @@ let explanation_submsg (id, unsafe_info) =
 
 let report_error loc = function
   | Circular_dependency cycle ->
-      let[@manual.ref "s:recursive-modules"] chapter, section = 10, 2 in
+      let[@manual.ref "s:recursive-modules"] chapter, section = 12, 2 in
       Location.errorf ~loc ~sub:(List.map explanation_submsg cycle)
         "Cannot safely evaluate the definition of the following cycle@ \
          of recursively-defined modules:@ %a.@ \

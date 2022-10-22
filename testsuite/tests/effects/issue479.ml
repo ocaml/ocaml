@@ -19,7 +19,7 @@ type ('a,'container) iter2gen =
   -> 'container
   -> 'a generator;;
 
-type _ eff += Hold: unit eff
+type _ t += Hold: unit t
 
 let iter2gen : _ iter2gen = fun iter c ->
   let r = ref None in
@@ -31,7 +31,7 @@ let iter2gen : _ iter2gen = fun iter c ->
     match_with (iter suspending_f) c
     { retc = (fun _ -> fun () -> None);
       exnc = (fun e -> raise e);
-      effc = fun (type a) (e : a eff) ->
+      effc = fun (type a) (e : a t) ->
         match e with
         | Hold -> Some (fun (k : (a,_) continuation) ->
             fun () ->

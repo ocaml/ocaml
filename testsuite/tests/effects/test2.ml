@@ -5,7 +5,7 @@ open Printf
 open Effect
 open Effect.Deep
 
-type _ eff += E : int -> int eff
+type _ t += E : int -> int t
 
 let f () =
   printf "perform effect (E 0)\n%!";
@@ -13,9 +13,9 @@ let f () =
   printf "perform returns %d\n%!" v;
   v + 1
 
-let h : type a. a eff -> ((a, 'b) continuation -> 'b) option = function
+let h : type a. a t -> ((a, 'b) continuation -> 'b) option = function
   | E v -> Some (fun k ->
-      printf "caught effect (E %d). continuting..\n%!" v;
+      printf "caught effect (E %d). continuing..\n%!" v;
       let v = continue k (v + 1) in
       printf "continue returns %d\n%!" v;
       v + 1)

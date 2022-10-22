@@ -1,0 +1,4 @@
+if [ ${os_type} = 'Win32' ]; then
+  ocamlrun=$(cygpath "${ocamlrun}")
+fi
+"${ocamlrun}" "${ocamlsrcdir}/tools/dumpobj" -nobanners "${program}" > "${output}"

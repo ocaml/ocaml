@@ -2,19 +2,21 @@
 #include <stdlib.h>
 #include "caml/alloc.h"
 #include "caml/memory.h"
+#define CAML_INTERNALS
+#include "caml/gc_ctrl.h"
 
 const char* strs[] = { "foo", "bar", 0 };
 value stub(value ref)
 {
   CAMLparam1(ref);
   CAMLlocal2(x, y);
-  int i; char* s; intnat coll_before;
+  char* s; intnat coll_before;
 
   printf("C, before: %d\n", Int_val(Field(ref, 0)));
 
   /* First, do enough major allocations to do a full major collection cycle */
-  coll_before = Caml_state_field(stat_major_collections);
-  while (Caml_state_field(stat_major_collections) <= coll_before+1) {
+  coll_before = caml_stat_major_collections;
+  while (caml_stat_major_collections <= coll_before+1) {
     caml_alloc(10000, 0);
   }
 

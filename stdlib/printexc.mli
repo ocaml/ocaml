@@ -37,6 +37,7 @@ val print: ('a -> 'b) -> 'a -> 'b
    escape a function application. *)
 
 val catch: ('a -> 'b) -> 'a -> 'b
+[@@ocaml.deprecated "This function is no longer needed."]
 (** [Printexc.catch fn x] is similar to {!Printexc.print}, but
    aborts the program with exit code 2 after printing the
    uncaught exception.  This function is deprecated: the runtime
@@ -409,3 +410,12 @@ val exn_slot_name: exn -> string
 
     @since 4.02.0
 *)
+
+(**/**)
+
+(**  {1 Obj printer}
+  Unsafe printer used in this module and exposed to the other standard library
+   module
+*)
+
+val string_of_extension_constructor: Obj.t -> string

@@ -1555,3 +1555,13 @@ let test61 () =
 
 test (test61 ())
 ;;
+
+(* Tests for the option-returning variants *)
+let test62 () =
+  sscanf_opt "Hello" "%s" id = Some "Hello" &&
+  sscanf_opt "Hello" "%d" id = None &&
+  sscanf_opt "" "%d" id = None &&
+  sscanf_opt "Hello 123" "%s %d" (fun s n -> s, n) = Some ("Hello", 123) &&
+  sscanf_opt "Hello 123" "%s %r" (fun ib -> Scanf.bscanf_opt ib "%d" Fun.id) (fun s n -> s, n) = Some ("Hello", Some 123) &&
+  sscanf_opt "Hello world" "%s %r" (fun ib -> Scanf.bscanf_opt ib "%d" Fun.id) (fun s n -> s, n) = None
+;;

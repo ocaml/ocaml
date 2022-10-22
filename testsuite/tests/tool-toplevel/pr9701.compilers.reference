@@ -1,0 +1,4 @@
+Exception: Failure "test".
+Raised at Stdlib.failwith in file "stdlib.ml", line 29, characters 17-33
+Called from <unknown> in file "pr9701.ml", line 5, characters 9-16
+Called from Topeval.load_lambda in file "toplevel/byte/topeval.ml", line 89, characters 4-14

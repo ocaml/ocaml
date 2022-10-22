@@ -64,8 +64,6 @@ let p = Format.fprintf
 let ps f s = Format.fprintf f "%s" s
 
 
-let bp = Printf.bprintf
-let bs = Buffer.add_string
 
 let rec merge_codepre = function
     [] -> []

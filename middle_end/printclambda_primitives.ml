@@ -28,7 +28,7 @@ let boxed_integer_mark name = function
   | Lambda.Pint64 -> Printf.sprintf "Int64.%s" name
 
 let print_boxed_integer name ppf bi =
-  fprintf ppf "%s" (boxed_integer_mark name bi);;
+  fprintf ppf "%s" (boxed_integer_mark name bi)
 
 let array_kind array_kind =
   let open Lambda in

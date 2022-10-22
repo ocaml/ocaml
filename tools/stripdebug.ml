@@ -31,11 +31,11 @@ let stripdebug infile outfile =
                  outfile in
   (* Skip the #! header, going straight to the first section. *)
   seek_in ic pos_first_section;
-  (* Copy each section except DBUG *)
+  (* Copy each section except DBUG and CRCS *)
   Bytesections.init_record oc;
   List.iter
     (fun (name, len) ->
-      if name = "DBUG" then begin
+      if name = "DBUG" || name = "CRCS" then begin
         seek_in ic (in_channel_length ic + len)
       end else begin
         copy_file_chunk ic oc len;

@@ -164,7 +164,7 @@ void closure(short int *nucleus, int n)
     {
         word = *rsp;
         if (word == 0)
-            ruleno += BITS_PER_WORD;
+            ruleno += BITS_PER_INT;
         else
         {
             mask = 1;

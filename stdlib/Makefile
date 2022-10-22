@@ -14,6 +14,10 @@
 #**************************************************************************
 
 ROOTDIR = ..
+# NOTE: it is important that the OCAMLDEP variable is defined *before*
+# Makefile.common gets included, so that its local definition here
+# take precedence over its general shared definitions in Makefile.common.
+OCAMLDEP ?= $(BOOT_OCAMLDEP)
 
 include $(ROOTDIR)/Makefile.common
 
@@ -21,23 +25,18 @@ TARGET_BINDIR ?= $(BINDIR)
 
 COMPILER=$(ROOTDIR)/ocamlc$(EXE)
 CAMLC=$(OCAMLRUN) $(COMPILER)
-COMPFLAGS=-strict-sequence -absname -w +a-4-9-41-42-44-45-48-70 \
-          -g -warn-error +A -bin-annot -nostdlib -principal \
-          -safe-string -strict-formats
+COMPFLAGS=-strict-sequence -absname -w +a-4-9-41-42-44-45-48 \
+          -g -warn-error +A -bin-annot -nostdlib -principal
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS += -O3
 endif
 OPTCOMPILER=$(ROOTDIR)/ocamlopt
 CAMLOPT=$(OCAMLRUN) $(OPTCOMPILER)
-CAMLDEP=$(BOOT_OCAMLC) -depend
-DEPFLAGS=-slash
-
-OC_CPPFLAGS += -I$(ROOTDIR)/runtime
 
 include StdlibModules
 
 OBJS=$(addsuffix .cmo,$(STDLIB_MODULES))
-NOSTDLIB= camlinternalFormatBasics.cmo camlinternalAtomic.cmo stdlib.cmo
+NOSTDLIB= camlinternalFormatBasics.cmo stdlib.cmo
 OTHERS=$(filter-out $(NOSTDLIB),$(OBJS))
 
 .PHONY: all
@@ -55,24 +54,18 @@ endif
 allopt: stdlib.cmxa std_exit.cmx
 opt.opt: allopt
 
-.PHONY: install
-# Ensure any pre-4.13 lowercased artefacts are removed on macOS and Windows
-install::
-	stale="$(filter-out $(notdir $(wildcard stdlib__*.cmi)), \
-         $(notdir $(wildcard $(INSTALL_LIBDIR)/stdlib__*.cmi)))"; \
-  if test -n "$$stale" ; then \
-    echo "$(INSTALL_LIBDIR) contains stale stdlib artefacts"; \
-    echo "Please rm $(INSTALL_LIBDIR)/stdlib__*.cm* and re-run make install"; \
-    exit 1; \
-  fi
+INSTALL_STDLIB_META_DIR=$(DESTDIR)$(LIBDIR)/stdlib
 
+.PHONY: install
 install::
 	$(INSTALL_DATA) \
 	  stdlib.cma std_exit.cmo *.cmi camlheader_ur \
 	  "$(INSTALL_LIBDIR)"
+	$(MKDIR) "$(INSTALL_STDLIB_META_DIR)"
+	$(INSTALL_DATA) META "$(INSTALL_STDLIB_META_DIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	  *.cmt *.cmti *.mli *.ml \
+	  *.cmt *.cmti *.mli *.ml *.ml.in \
 	  "$(INSTALL_LIBDIR)"
 endif
 	$(INSTALL_DATA) target_camlheader "$(INSTALL_LIBDIR)/camlheader"
@@ -91,21 +84,10 @@ endif
 installopt: installopt-default
 
 .PHONY: installopt-default
-# Ensure any pre-4.13 lowercased artefacts are removed on macOS and Windows
-installopt-default::
-	stale="$(filter-out $(notdir $(wildcard stdlib__*.cmx)), \
-         $(notdir $(wildcard $(INSTALL_LIBDIR)/stdlib__*.cmx)))"; \
-  if test -n "$$stale" ; then \
-    echo "$(INSTALL_LIBDIR) contains stale stdlib artefacts"; \
-    echo "Please rm $(INSTALL_LIBDIR)/stdlib__*.cmx and re-run make install"; \
-    exit 1; \
-  fi
-
-installopt-default::
+installopt-default:
 	$(INSTALL_DATA) \
 	  stdlib.cmxa stdlib.$(A) std_exit.$(O) *.cmx \
 	  "$(INSTALL_LIBDIR)"
-	cd "$(INSTALL_LIBDIR)"; $(RANLIB) stdlib.$(A)
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
 HEADERPROGRAM = header
@@ -158,7 +140,7 @@ camlhead%: tmphead%.exe
 # Again, pattern weirdness here means that the dot is always present so that
 # tmpheader.exe matches.
 tmpheader%exe: $(HEADERPROGRAM)%$(O)
-	$(call MKEXE_USING_COMPILER,$@,$^ $(EXTRALIBS))
+	$(call MKEXE_VIA_CC,$@,$^)
 # FIXME This is wrong - mingw could invoke strip; MSVC equivalent?
 ifneq "$(UNIX_OR_WIN32)" "win32"
 	strip $@
@@ -176,7 +158,7 @@ camlheader_ur: camlheader
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
 tmptargetcamlheader%exe: $(TARGETHEADERPROGRAM)%$(O)
-	$(call MKEXE_USING_COMPILER,$@,$^ $(EXTRALIBS))
+	$(call MKEXE_VIA_CC,$@,$^)
 	strip $@
 
 $(TARGETHEADERPROGRAM)%$(O): $(HEADERPROGRAM).c
@@ -202,7 +184,7 @@ stdlib.cmxa: $(OBJS:.cmo=.cmx)
 
 .PHONY: distclean
 distclean: clean
-	rm -f sys.ml
+	rm -f sys.ml META
 
 .PHONY: clean
 clean::
@@ -258,14 +240,22 @@ include .depend
 
 STDLIB_NAMESPACE_MODULES = $(subst $(SPACE),|,$(STDLIB_PREFIXED_MODULES))
 
+GNUISH_SED = \
+  $(if $(filter X,$(shell echo x | $(SED) -E -e 's/./\u&/' 2>/dev/null)),\
+       $(SED),$(error GNU sed is needed for make depend))
+
+.INTERMEDIATE: .depend.tmp
+
+.depend.tmp:
+	$(OCAMLDEP_CMD) $(filter-out stdlib.%,$(wildcard *.mli *.ml)) > $@
+	$(OCAMLDEP_CMD) -pp "$(AWK) -f ./remove_module_aliases.awk" \
+	  stdlib.ml stdlib.mli >> $@
+
 .PHONY: depend
-depend:
-	$(CAMLDEP) $(DEPFLAGS) $(filter-out stdlib.%,$(wildcard *.mli *.ml)) \
-	  > .depend.tmp
-	$(CAMLDEP) $(DEPFLAGS) -pp "$(AWK) -f ./remove_module_aliases.awk" \
-	  stdlib.ml stdlib.mli >> .depend.tmp
-	sed -E \
+depend: .depend
+
+.depend: .depend.tmp
+	$(GNUISH_SED) -E \
 	-e 's/^(${STDLIB_NAMESPACE_MODULES})(\.[^i]*)(i?) :/\1\2\3 : \1.ml\3/' \
 	-e 's#(^| )(${STDLIB_NAMESPACE_MODULES})[.]#\1stdlib__\u\2.#' \
-	  .depend.tmp > .depend
-	rm -f .depend.tmp
+	$< > $@

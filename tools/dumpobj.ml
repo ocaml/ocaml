@@ -25,6 +25,7 @@ open Opnames
 open Cmo_format
 open Printf
 
+let print_banners = ref true
 let print_locations = ref true
 let print_reloc_info = ref false
 
@@ -81,7 +82,6 @@ let print_float f =
   if String.contains f '.'
   then printf "%s" f
   else printf "%s." f
-;;
 
 let rec print_struct_const = function
     Const_base(Const_int i) -> printf "%d" i
@@ -111,7 +111,7 @@ let rec print_struct_const = function
 (* Print an obj *)
 
 let same_custom x y =
-  Obj.field x 0 = Obj.field (Obj.repr y) 0
+  Nativeint.equal (Obj.raw_field x 0) (Obj.raw_field (Obj.repr y) 0)
 
 let rec print_obj x =
   if Obj.is_block x then begin
@@ -248,7 +248,6 @@ type shape =
   | Switch
   | Closurerec
   | Pubmet
-;;
 
 let op_shapes = [
   opACC0, Nothing;
@@ -404,7 +403,7 @@ let op_shapes = [
   opBREAK, Nothing;
   opRERAISE, Nothing;
   opRAISE_NOTRACE, Nothing;
-];;
+]
 
 let print_event ev =
   if !print_locations then
@@ -424,7 +423,7 @@ let print_instr ic =
   else print_string names_of_instructions.(op);
   begin try
     let shape = List.assoc op op_shapes in
-    if shape <> Nothing then print_string " ";
+    if shape <> Nothing && shape <> Switch then print_string " ";
     match shape with
     | Uint -> print_int (inputu ic)
     | Sint -> print_int (inputs ic)
@@ -471,8 +470,7 @@ let print_instr ic =
     | Nothing -> ()
   with Not_found -> print_string " (unknown arguments)"
   end;
-  print_string "\n";
-;;
+  print_string "\n"
 
 (* Disassemble a block of code *)
 
@@ -550,6 +548,7 @@ let dump_exe ic =
   print_code ic code_size
 
 let arg_list = [
+  "-nobanners", Arg.Clear print_banners, " : don't print banners";
   "-noloc", Arg.Clear print_locations, " : don't print source information";
   "-reloc", Arg.Set print_reloc_info, " : print relocation information";
   "-args", Arg.Expand Arg.read_arg,
@@ -569,14 +568,14 @@ let arg_fun filename =
   let ic = open_in_bin filename in
   if not !first_file then print_newline ();
   first_file := false;
-  printf "## start of ocaml dump of %S\n%!" filename;
+  if !print_banners then printf "## start of ocaml dump of %S\n%!" filename;
   begin try
           objfile := false; dump_exe ic
     with Bytesections.Bad_magic_number ->
       objfile := true; seek_in ic 0; dump_obj ic
   end;
   close_in ic;
-  printf "## end of ocaml dump of %S\n%!" filename
+  if !print_banners then printf "## end of ocaml dump of %S\n%!" filename
 
 let main() =
   Arg.parse_expand arg_list arg_fun arg_usage;

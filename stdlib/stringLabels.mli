@@ -59,19 +59,12 @@ v}
     example the string ["\u{1F42B}"] is the UTF-8 encoding of the
     Unicode character U+1F42B.
 
-    {b Past mutability.} OCaml strings used to be modifiable in place,
-    for instance via the {!String.set} and {!String.blit}
-    functions. This use is nowadays only possible when the compiler is
-    put in "unsafe-string" mode by giving the [-unsafe-string]
-    command-line option. This compatibility mode makes the types
-    [string] and [bytes] (see {!Bytes.t}) interchangeable so that
-    functions expecting byte sequences can also accept strings as
-    arguments and modify them.
-
-    The distinction between [bytes] and [string] was introduced in
-    OCaml 4.02, and the "unsafe-string" compatibility mode was the
-    default until OCaml 4.05. Starting with 4.06, the compatibility
-    mode is opt-in; we intend to remove the option in the future.
+    {b Past mutability.} Before OCaml 4.02, strings used to be modifiable in
+    place like {!Bytes.t} mutable sequences of bytes.
+    OCaml 4 had various compiler flags and configuration options to support the
+    transition period from mutable to immutable strings.
+    Those options are no longer available, and strings are now always
+    immutable.
 
     The labeled version of this module can be used as described in the
     {!StdLabels} module.
@@ -158,14 +151,14 @@ val compare : t -> t -> int
 
 val starts_with :
   prefix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
-(** [starts_with ][~][prefix s] is [true] if and only if [s] starts with
+(** [starts_with ][~prefix s] is [true] if and only if [s] starts with
     [prefix].
 
     @since 4.13.0 *)
 
 val ends_with :
   suffix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
-(** [ends_with ~suffix s] is [true] if and only if [s] ends with [suffix].
+(** [ends_with ][~suffix s] is [true] if and only if [s] ends with [suffix].
 
     @since 4.13.0 *)
 
@@ -492,6 +485,20 @@ val get_int32_ne : string -> int -> int32
 
     @since 4.13.0
 *)
+
+val hash : t -> int
+(** An unseeded hash function for strings, with the same output value as
+    {!Hashtbl.hash}. This function allows this module to be passed as argument
+    to the functor {!Hashtbl.Make}.
+
+    @since 5.0.0 *)
+
+val seeded_hash : int -> t -> int
+(** A seeded hash function for strings, with the same output value as
+    {!Hashtbl.seeded_hash}. This function allows this module to be passed as
+    argument to the functor {!Hashtbl.MakeSeeded}.
+
+    @since 5.0.0 *)
 
 val get_int32_be : string -> int -> int32
 (** [get_int32_be b i] is [b]'s big-endian 32-bit integer

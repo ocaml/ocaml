@@ -86,7 +86,8 @@ val pred : int64 -> int64
 (** Predecessor.  [Int64.pred x] is [Int64.sub x Int64.one]. *)
 
 val abs : int64 -> int64
-(** Return the absolute value of its argument. *)
+(** [abs x] is the absolute value of [x]. On [min_int] this
+   is [min_int] itself and thus remains negative. *)
 
 val max_int : int64
 (** The greatest representable 64-bit integer, 2{^63} - 1. *)

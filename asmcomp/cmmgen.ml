@@ -126,7 +126,6 @@ type rhs_kind =
   | RHS_infix of { blocksize : int; offset : int }
   | RHS_floatblock of int
   | RHS_nonrec
-;;
 
 let rec expr_size env = function
   | Uvar id ->
@@ -864,9 +863,9 @@ and transl_prim_1 env p arg dbg =
   | Pdls_get ->
       Cop(Cdls_get, [transl env arg], dbg)
   | Patomic_load {immediate_or_pointer = Immediate} ->
-      Cop(mk_load_mut Word_int, [transl env arg], dbg)
+      Cop(mk_load_atomic Word_int, [transl env arg], dbg)
   | Patomic_load {immediate_or_pointer = Pointer} ->
-      Cop(mk_load_mut Word_val, [transl env arg], dbg)
+      Cop(mk_load_atomic Word_val, [transl env arg], dbg)
   | (Pfield_computed | Psequand | Psequor
     | Prunstack | Presume | Preperform
     | Patomic_exchange | Patomic_cas | Patomic_fetch_add

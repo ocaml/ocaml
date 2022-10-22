@@ -35,12 +35,14 @@ val value : ('a, 'e) result -> default:'a -> 'a
 (** [value r ~default] is [v] if [r] is [Ok v] and [default] otherwise. *)
 
 val get_ok : ('a, 'e) result -> 'a
-(** [get_ok r] is [v] if [r] is [Ok v] and @raise Invalid_argument
-    otherwise. *)
+(** [get_ok r] is [v] if [r] is [Ok v] and raise otherwise.
+
+    @raise Invalid_argument if [r] is [Error _]. *)
 
 val get_error : ('a, 'e) result -> 'e
-(** [get_error r] is [e] if [r] is [Error e] and @raise Invalid_argument
-    otherwise. *)
+(** [get_error r] is [e] if [r] is [Error e] and raise otherwise.
+
+    @raise Invalid_argument if [r] is [Ok _]. *)
 
 val bind : ('a, 'e) result -> ('a -> ('b, 'e) result) -> ('b, 'e) result
 (** [bind r f] is [f v] if [r] is [Ok v] and [r] if [r] is [Error _]. *)

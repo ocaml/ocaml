@@ -111,24 +111,6 @@ Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some A
 val g : 'a M.j t option -> unit = <fun>
-|}, Principal{|
-module M :
-  sig
-    type 'a d
-    type i = < m : 'c. 'c -> 'c d >
-    type 'a j = < m : 'c. 'c -> 'a >
-  end
-type _ t = A : M.i t
-File "_none_", line 1:
-Warning 18 [not-principal]: typing this pattern requires considering $0 and 'c M.d as equal.
-But the knowledge of these types is not principal.
-Line 9, characters 2-20:
-9 |   let None = y in () ;;
-      ^^^^^^^^^^^^^^^^^^
-Warning 8 [partial-match]: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Some A
-val g : 'a M.j t option -> unit = <fun>
 |}]
 
 (* more examples by @lpw25 *)

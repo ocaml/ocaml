@@ -22,8 +22,8 @@ static int windows_unicode_enabled = WINDOWS_UNICODE;
 static int windows_unicode_strict = 1;
 
 /* Adapted from runtime/win32.c */
-int win_wide_char_to_multi_byte(const wchar_t *s, int slen,
-                                char *out, int outlen)
+int caml_win32_wide_char_to_multi_byte(const wchar_t *s, int slen,
+                                       char *out, int outlen)
 {
   int retcode;
 
@@ -50,10 +50,10 @@ char* caml_stat_strdup_of_utf16(const wchar_t *s)
   char *out = NULL;
   int retcode;
 
-  retcode = win_wide_char_to_multi_byte(s, -1, NULL, 0);
+  retcode = caml_win32_wide_char_to_multi_byte(s, -1, NULL, 0);
   if (retcode >= 0) {
     out = (char *)malloc(retcode);
-    win_wide_char_to_multi_byte(s, -1, out, retcode);
+    caml_win32_wide_char_to_multi_byte(s, -1, out, retcode);
   }
 
   return out;

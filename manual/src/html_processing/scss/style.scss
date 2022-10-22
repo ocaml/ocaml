@@ -878,25 +878,21 @@
 	vertical-align: bottom;
     }
 
-    .search_comment .search_help {
+    .search_comment .hide {
 	height: 0;
-	opacity: 0;
-	font-size: 10px;
-	overflow: hidden;
-	transition: all 0.5s;
-	ul {
-	    margin-top: 0;
-	}
+	visibility : hidden;
+	opacity: 0
     }
-    .search_comment:hover .search_help {
-	height: auto;
-	margin-top:-1px;
-	opacity: 0.8;
+    .search_comment #search_help {
+	overflow: hidden;
+	font-size: smaller;
 	background: linear-gradient(to bottom, white 0%, rgb(237, 232, 229) 100%);
 	transition: all 0.5s;
     }
-    .search_comment .search_help:hover {
-	font-size: 14px;
+    #help_icon {
+	margin-left: 1ex;
+	vertical-align: inherit;
+	cursor: help;
     }
 
     

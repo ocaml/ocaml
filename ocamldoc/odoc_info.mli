@@ -84,6 +84,11 @@ type param = (string * text)
 (** Raised exception name and description. *)
 type raised_exception = (string * text)
 
+type alert = Odoc_types.alert = {
+  alert_name : string;
+  alert_payload : string option;
+}
+
 (** Information in a special comment
 @before 3.12.0 \@before information was not present.
 *)
@@ -99,6 +104,7 @@ type info = Odoc_types.info = {
     i_raised_exceptions : raised_exception list; (** The list of raised exceptions. *)
     i_return_value : text option; (** The description text of the return value. *)
     i_custom : (string * text) list ; (** A text associated to a custom @-tag. *)
+    i_alerts : alert list ; (** Alerts associated to the same item. Not from special comments. *)
   }
 
 (** Location of elements in implementation and interface files. *)
@@ -843,11 +849,6 @@ val text_string_of_text : text -> string
    @return an empty structure if there was a syntax error. TODO: change this
 *)
 val info_of_string : string -> info
-
-(** [info_string_of_info info] returns the string representing
-   the given [info]. This string can then be parsed again
-   by {!Odoc_info.info_of_string}.*)
-val info_string_of_info : info -> string
 
 (** [info_of_comment_file file] parses the given file
    and return an {!Odoc_info.info} structure. The content of the

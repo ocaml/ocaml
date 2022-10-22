@@ -125,7 +125,7 @@ let ensure buf ofs n =
     in
     let new_buf = Bytes.create new_len in
     Bytes.blit buf 0 new_buf 0 ofs;
-    buf
+    new_buf
   end
 
 let input_all ic =
@@ -171,3 +171,5 @@ let input_all ic =
   end
 
 let set_binary_mode = Stdlib.set_binary_mode_in
+
+external isatty : t -> bool = "caml_sys_isatty"

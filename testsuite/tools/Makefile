@@ -19,12 +19,10 @@ ROOTDIR = ../..
 COMPILERLIBSDIR = $(ROOTDIR)/compilerlibs
 
 RUNTIME_VARIANT ?=
-ASPPFLAGS ?=
 
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
-STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC ?= $(BEST_OCAMLC) $(STDLIBFLAGS)
 OCAMLOPT ?= $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 
@@ -90,13 +88,13 @@ asmgen_i386.obj: asmgen_i386nt.asm
 	$(OCAMLOPT) $(COMPFLAGS) -c $<
 
 %.$(O): %.S
-	$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $@ $<
+	$(ASPP) $(OC_ASPPFLAGS) -o $@ $<
 
 .PHONY: clean
 clean:
 	rm -f *.cm* *.o *.obj
 	rm -f expect_test expect_test.exe codegen codegen.exe
-	rm -f parsecmm.ml parsecmm.mli lexcmm.ml
+	rm -f parsecmm.ml parsecmm.mli parsecmm.output lexcmm.ml
 
 .PHONY: distclean
 distclean: clean

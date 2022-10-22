@@ -34,15 +34,15 @@
   /* Supported since at least GCC 3.1 */
   #define CAMLdeprecated_typedef(name, type) \
     typedef type name __attribute ((deprecated))
-#elif _MSC_VER >= 1310
-  /* NB deprecated("message") only supported from _MSC_VER >= 1400 */
+#elif defined(_MSC_VER)
   #define CAMLdeprecated_typedef(name, type) \
     typedef __declspec(deprecated) type name
 #else
   #define CAMLdeprecated_typedef(name, type) typedef type name
 #endif
 
-#if defined(__GNUC__) && __STDC_VERSION__ >= 199901L || _MSC_VER >= 1925
+#if defined(__GNUC__) && __STDC_VERSION__ >= 199901L \
+ || defined(_MSC_VER) && _MSC_VER >= 1925
 
 #define CAML_STRINGIFY(x) #x
 #ifdef _MSC_VER
@@ -89,7 +89,7 @@ CAMLdeprecated_typedef(addr, char *);
   #define CAMLnoreturn_start
   #define CAMLnoreturn_end __attribute__ ((noreturn))
   #define Noreturn __attribute__ ((noreturn))
-#elif _MSC_VER >= 1500
+#elif defined(_MSC_VER)
   #define CAMLnoreturn_start __declspec(noreturn)
   #define CAMLnoreturn_end
   #define Noreturn
@@ -137,11 +137,12 @@ CAMLdeprecated_typedef(addr, char *);
 /* we need to be able to compute the exact offset of each member. */
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 #define CAMLalign(n) _Alignas(n)
-#elif defined(__cplusplus) && (__cplusplus >= 201103L || _MSC_VER >= 1900)
+#elif defined(__cplusplus) \
+   && (__cplusplus >= 201103L || defined(_MSC_VER) && _MSC_VER >= 1900)
 #define CAMLalign(n) alignas(n)
 #elif defined(SUPPORTS_ALIGNED_ATTRIBUTE)
 #define CAMLalign(n) __attribute__((aligned(n)))
-#elif _MSC_VER >= 1500
+#elif defined(_MSC_VER)
 #define CAMLalign(n) __declspec(align(n))
 #else
 #error "How do I align values on this platform?"
@@ -156,7 +157,7 @@ CAMLdeprecated_typedef(addr, char *);
 #else
 #define caml_prefetch(p)
 #endif
-#endif
+#endif /* CAML_INTERNALS */
 
 /* CAMLunused is preserved for compatibility reasons.
    Instead of the legacy GCC/Clang-only
@@ -169,7 +170,7 @@ CAMLdeprecated_typedef(addr, char *);
   #define CAMLunused_start __attribute__ ((unused))
   #define CAMLunused_end
   #define CAMLunused __attribute__ ((unused))
-#elif _MSC_VER >= 1500
+#elif defined(_MSC_VER)
   #define CAMLunused_start  __pragma( warning (push) )           \
     __pragma( warning (disable:4189 ) )
   #define CAMLunused_end __pragma( warning (pop))
@@ -180,17 +181,36 @@ CAMLdeprecated_typedef(addr, char *);
   #define CAMLunused
 #endif
 
+/* GC timing hooks. These can be assigned by the user. These hooks
+   must not allocate, change any heap value, nor call OCaml code. They
+   can obtain the domain id with Caml_state->id. These functions must
+   be reentrant. */
+#ifndef __cplusplus
+typedef void (*caml_timing_hook) (void);
+extern _Atomic caml_timing_hook caml_major_slice_begin_hook;
+extern _Atomic caml_timing_hook caml_major_slice_end_hook;
+extern _Atomic caml_timing_hook caml_minor_gc_begin_hook;
+extern _Atomic caml_timing_hook caml_minor_gc_end_hook;
+extern _Atomic caml_timing_hook caml_finalise_begin_hook;
+extern _Atomic caml_timing_hook caml_finalise_end_hook;
+extern _Atomic caml_timing_hook caml_domain_terminated_hook;
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* GC timing hooks. These can be assigned by the user. These hooks
-   must not allocate, change any heap value, nor call OCaml code.
-*/
-typedef void (*caml_timing_hook) (void);
-extern caml_timing_hook caml_major_slice_begin_hook, caml_major_slice_end_hook;
-extern caml_timing_hook caml_minor_gc_begin_hook, caml_minor_gc_end_hook;
-extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
+#ifdef CAML_INTERNALS
+
+#ifndef __cplusplus
+Caml_inline void call_timing_hook(_Atomic caml_timing_hook * a)
+{
+  caml_timing_hook h = atomic_load_explicit(a, memory_order_relaxed);
+  if (h != NULL) (*h)();
+}
+#endif
+
+#endif /* CAML_INTERNALS */
 
 #define CAML_STATIC_ASSERT_3(b, l) \
   CAMLunused_start \
@@ -224,7 +244,7 @@ typedef char char_os;
 #endif
 
 #define CAMLassert(x) \
-  ((x) ? (void) 0 : caml_failed_assert ( #x , __OSFILE__, __LINE__))
+  (CAMLlikely(x) ? (void) 0 : caml_failed_assert ( #x , __OSFILE__, __LINE__))
 CAMLnoreturn_start
 CAMLextern void caml_failed_assert (char *, char_os *, int)
 CAMLnoreturn_end;
@@ -233,14 +253,14 @@ CAMLnoreturn_end;
 #endif
 
 #ifdef __GNUC__
-#define CAMLcheckresult __attribute__((warn_unused_result))
-#define CAMLlikely(e)   __builtin_expect((e), 1)
-#define CAMLunlikely(e) __builtin_expect((e), 0)
+#define CAMLlikely(e)   __builtin_expect(!!(e), 1)
+#define CAMLunlikely(e) __builtin_expect(!!(e), 0)
 #else
-#define CAMLcheckresult
 #define CAMLlikely(e) (e)
 #define CAMLunlikely(e) (e)
 #endif
+
+#ifdef CAML_INTERNALS
 
 /* GC status assertions.
 
@@ -262,14 +282,21 @@ void caml_alloc_point_here(void);
 
 #define Is_power_of_2(x) ((x) > 0 && ((x) & ((x) - 1)) == 0)
 
+#endif
+
 /* This hook is called when a fatal error occurs in the OCaml
    runtime. It is given arguments to be passed to the [vprintf]-like
    functions in order to synthetize the error message.
    If it returns, the runtime calls [abort()].
 
    If it is [NULL], the error message is printed on stderr and then
-   [abort()] is called. */
-extern void (*caml_fatal_error_hook) (char *msg, va_list args);
+   [abort()] is called.
+
+   This function must be reentrant. */
+#ifndef __cplusplus
+typedef void (*fatal_error_hook) (char *msg, va_list args);
+extern _Atomic fatal_error_hook caml_fatal_error_hook;
+#endif
 
 CAMLnoreturn_start
 CAMLextern void caml_fatal_error (char *, ...)
@@ -277,11 +304,6 @@ CAMLextern void caml_fatal_error (char *, ...)
   __attribute__ ((format (printf, 1, 2)))
 #endif
 CAMLnoreturn_end;
-CAMLextern void caml_fatal_error_arg (const char *fmt, const char *arg)
-                                     Noreturn;
-CAMLextern void caml_fatal_error_arg2 (const char *fmt1, const char *arg1,
-                                       const char *fmt2, const char *arg2)
-                                      Noreturn;
 
 /* Detection of available C built-in functions, the Clang way. */
 
@@ -477,16 +499,13 @@ int caml_runtime_warnings_active(void);
 
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR
-#define Debug_tag(x) (INT64_LITERAL(0xD700D7D7D700D6D7u) \
+#define Debug_tag(x) (0xD700D7D7D700D6D7ull \
                       | ((uintnat) (x) << 16) \
                       | ((uintnat) (x) << 48))
-#define Is_debug_tag(x) \
-  (((x) & \
-      INT64_LITERAL(0xff00ffffff00ffffu)) == INT64_LITERAL(0xD700D7D7D700D6D7u))
+#define Is_debug_tag(x) (((x) & 0xff00ffffff00ffffull) == 0xD700D7D7D700D6D7ull)
 #else
 #define Debug_tag(x) (0xD700D6D7ul | ((uintnat) (x) << 16))
-#define Is_debug_tag(x) \
-  (((x) & 0xff00fffful) == 0xD700D6D7ul)
+#define Is_debug_tag(x) (((x) & 0xff00fffful) == 0xD700D6D7ul)
 #endif /* ARCH_SIXTYFOUR */
 
 /*
@@ -528,16 +547,13 @@ extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #define snprintf caml_snprintf
 #endif
 
-extern int caml_snwprintf(wchar_t * buf,
+CAMLextern int caml_snwprintf(wchar_t * buf,
                           size_t size,
                           const wchar_t * format, ...);
 #define snprintf_os caml_snwprintf
 #else
 #define snprintf_os snprintf
 #endif
-
-/* platform dependent thread naming */
-extern int caml_thread_setname(const char* name);
 
 /* Macro used to deactivate thread and address sanitizers on some
    functions. */

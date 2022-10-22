@@ -955,6 +955,21 @@ Warning 17 [undeclared-virtual-method]: the virtual method m is not declared.
 class c : object method m : int method n : int end
 |}];;
 
+class virtual c = object (self : 'c)
+  constraint 'c = < f : int; .. >
+end
+[%%expect {|
+class virtual c : object method virtual f : int end
+|}];;
+
+class virtual c = object (self : 'c)
+  constraint 'c = < f : int; .. >
+  method g = self # f
+end
+[%%expect {|
+class virtual c : object method virtual f : int method g : int end
+|}];;
+
 class [ 'a ] c = object (_ : 'a) end;;
 let o = object
     method m = 1
@@ -1329,3 +1344,77 @@ let _ = (new foo)#f true
 class foo : object method f : bool -> bool end
 - : bool = true
 |}];;
+
+
+class c : object
+    method virtual m : int
+end = object
+    method m = 9
+  end
+[%%expect {|
+Lines 1-3, characters 10-3:
+1 | ..........object
+2 |     method virtual m : int
+3 | end.........
+Error: This non-virtual class type has virtual methods.
+       The following methods are virtual : m
+|}];;
+
+class virtual c : object
+    method virtual m : int
+end = object
+    method m = 42
+  end
+[%%expect {|
+class virtual c : object method virtual m : int end
+|}];;
+
+class virtual cv = object
+    method virtual m : int
+  end
+
+class c : cv = object
+    method m = 42
+  end
+[%%expect {|
+class virtual cv : object method virtual m : int end
+Line 5, characters 10-12:
+5 | class c : cv = object
+              ^^
+Error: This non-virtual class type has virtual methods.
+       The following methods are virtual : m
+|}];;
+
+class virtual c : cv = object
+    method m = 41
+  end
+[%%expect {|
+class virtual c : cv
+|}];;
+
+class c = cv
+[%%expect {|
+Line 1, characters 10-12:
+1 | class c = cv
+              ^^
+Error: This non-virtual class has virtual methods.
+       The following methods are virtual : m
+|}];;
+
+class virtual c = cv
+[%%expect {|
+class virtual c : cv
+|}];;
+
+(** Test classes abbreviations with a recursive type *)
+class ['a] c = object method m: (<x:'a; f:'b> as 'b) -> unit = fun _ -> () end
+class d = ['a] c
+[%%expect {|
+class ['a] c : object method m : (< f : 'b; x : 'a > as 'b) -> unit end
+Line 2, characters 0-16:
+2 | class d = ['a] c
+    ^^^^^^^^^^^^^^^^
+Error: Some type variables are unbound in this type: class d : ['a] c
+       The method m has type (< f : 'b; x : 'a > as 'b) -> unit where 'a
+       is unbound
+|}]

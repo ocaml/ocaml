@@ -2,7 +2,6 @@ ROOTDIR = ../..
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
-STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC ?= $(BEST_OCAMLC) $(STDLIBFLAGS)
 
 all: texquote2 transf

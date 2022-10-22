@@ -31,6 +31,7 @@ SPACE := $(EMPTY) $(EMPTY)
 DESTDIR ?=
 INSTALL_BINDIR := $(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR := $(DESTDIR)$(LIBDIR)
+INSTALL_INCDIR=$(INSTALL_LIBDIR)/caml
 INSTALL_STUBLIBDIR := $(DESTDIR)$(STUBLIBDIR)
 INSTALL_MANDIR := $(DESTDIR)$(MANDIR)
 INSTALL_PROGRAMS_MAN_DIR := $(DESTDIR)$(PROGRAMS_MAN_DIR)
@@ -38,6 +39,8 @@ INSTALL_LIBRARIES_MAN_DIR := $(DESTDIR)$(LIBRARIES_MAN_DIR)
 INSTALL_DOCDIR := $(DESTDIR)$(DOCDIR)
 
 FLEXDLL_SUBMODULE_PRESENT := $(wildcard $(ROOTDIR)/flexdll/Makefile)
+
+IN_COREBOOT_CYCLE ?= false
 
 # Variables used to represent the OCaml runtime system
 # Most of the time, boot/ocamlrun and runtime/ocamlrun are the same.
@@ -49,6 +52,10 @@ FLEXDLL_SUBMODULE_PRESENT := $(wildcard $(ROOTDIR)/flexdll/Makefile)
 OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun$(EXE)
 NEW_OCAMLRUN ?= $(ROOTDIR)/runtime/ocamlrun$(EXE)
 
+# Standard library flags
+STDLIBFLAGS ?= -nostdlib -I $(ROOTDIR)/stdlib
+BOOT_STDLIBFLAGS ?= -nostdlib -I $(ROOTDIR)/boot
+
 TEST_BOOT_OCAMLC_OPT = $(shell \
   test $(ROOTDIR)/boot/ocamlc.opt -nt $(ROOTDIR)/boot/ocamlc; \
   echo $$?)
@@ -59,6 +66,8 @@ ifeq "$(TEST_BOOT_OCAMLC_OPT)" "0"
 else
   BOOT_OCAMLC = $(OCAMLRUN) $(ROOTDIR)/boot/ocamlc
 endif
+
+BOOT_OCAMLDEP = $(BOOT_OCAMLC) -depend
 
 ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
   FLEXLINK_ENV =
@@ -83,39 +92,30 @@ endif # ifeq "$(wildcard $(ROOTDIR)/flexlink.opt$(EXE))" ""
   ocamlopt_cmd = $(FLEXLINK_ENV) $(ocamlopt)
 endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
 
+# List of other libraries
+ALL_OTHERLIBS = dynlink str systhreads unix runtime_events
+
+# The following variable defines flags to be passed to the C preprocessor
+# when compiling C files for the native runtime.
+# These flags should be passed *in addition* to those in OC_CPPFLAGS, they
+# should not repace them.
+OC_NATIVE_CPPFLAGS=\
+  -DNATIVE_CODE -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM)
+
+# Flags to pass to the C preprocessor when preprocessing assembly files
+OC_ASPPFLAGS=-I $(ROOTDIR)/runtime $(OC_NATIVE_CPPFLAGS)
+
 OPTCOMPFLAGS=
 ifeq "$(FUNCTION_SECTIONS)" "true"
 OPTCOMPFLAGS += -function-sections
 endif
-
-# Escape special characters in the argument string.
-# There are four characters that need escaping:
-# - backslash and ampersand, which are special in the replacement text
-#   of sed's "s" command
-# - exclamation mark, which is the delimiter we use for sed's "s" command
-# - single quote, which interferes with shell quoting.  We are inside
-#   single quotes already, so the proper escape is '\''
-#   (close single quotation, insert single quote character,
-#    reopen single quotation).
-SED_ESCAPE=$(subst ','\'',$(subst !,\!,$(subst &,\&,$(subst \,\\,$1))))
-
-# Escape special characters in an OCaml string literal "..."
-# There are two: backslash and double quote.
-OCAML_ESCAPE=$(subst ",\",$(subst \,\\,$1))
-
-# SUBST generates the sed substitution for the variable *named* in $1
-SUBST=-e 's!%%$1%%!$(call SED_ESCAPE,$($1))!'
-
-# SUBST_STRING does the same, for a variable that occurs between "..."
-# in config.mlp.  Thus, backslashes and double quotes must be escaped.
-SUBST_STRING=-e 's!%%$1%%!$(call SED_ESCAPE,$(call OCAML_ESCAPE,$($1)))!'
 
 # The rule to compile C files
 
 # This rule is similar to GNU make's implicit rule, except that it is more
 # general (it supports both .o and .obj)
 
-ifneq "$(COMPUTE_DEPS)" "false"
+ifeq "$(COMPUTE_DEPS)" "true"
 RUNTIME_HEADERS :=
 REQUIRED_HEADERS :=
 else
@@ -140,6 +140,18 @@ $(1): $(1)$(EXE)
 endif
 endef # PROGRAM_SYNONYM
 
+# Definitions related to ocamldep
+
+# Default value for OCAMLDEP
+# In those directories where this needs to be overridden, the overriding
+# should take place *before* Makefile.common is included.
+
+OCAMLDEP ?= $(BEST_OCAMLDEP)
+OC_OCAMLDEPFLAGS = -slash
+OC_OCAMLDEPDIRS =
+OCAMLDEP_CMD = $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) \
+  $(addprefix -I ,$(OC_OCAMLDEPDIRS)) $(OCAMLDEPFLAGS)
+
 # Lexer generation
 
 BOOT_OCAMLLEX ?= $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
@@ -159,7 +171,7 @@ OCAMLLEXFLAGS ?= -q
 
 OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 
-OCAMLYACCFLAGS ?=
+OCAMLYACCFLAGS ?= --strict -v
 
 %.ml %.mli: %.mly
 	$(OCAMLYACC) $(OCAMLYACCFLAGS) $<
@@ -173,5 +185,13 @@ $(ROOTDIR)/%/sak$(EXE):
 	$(MAKE) -C $(ROOTDIR)/$* sak$(EXE)
 
 ifneq "$(REQUIRES_CONFIGURATION)" ""
+ifneq "$(wildcard $(ROOTDIR)/Makefile.config)" ""
 $(ROOTDIR)/%/StdlibModules: $(SAK) ;
 endif
+endif
+
+# Used with the Microsoft toolchain to merge generated manifest files into
+# executables
+if_file_exists = ( test ! -f $(1) || $(2) && rm -f $(1) )
+MERGEMANIFESTEXE = $(call if_file_exists, $(1).manifest, \
+  mt -nologo -outputresource:$(1) -manifest $(1).manifest)

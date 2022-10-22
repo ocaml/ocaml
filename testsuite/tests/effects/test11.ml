@@ -7,11 +7,11 @@
 open Effect
 open Effect.Deep
 
-type _ eff += E : int eff
+type _ t += E : int t
 
 let handle comp =
   try_with comp ()
-  { effc = fun (type a) (e : a eff) ->
+  { effc = fun (type a) (e : a t) ->
       match e with
       | E -> Some (fun (k : (a,_) continuation) -> continue k 10)
       | _ -> None }

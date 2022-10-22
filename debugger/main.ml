@@ -160,12 +160,11 @@ let set_directory dir =
   Sys.chdir dir
 let print_version () =
   printf "The OCaml debugger, version %s@." Sys.ocaml_version;
-  exit 0;
-;;
+  exit 0
+
 let print_version_num () =
   printf "%s@." Sys.ocaml_version;
-  exit 0;
-;;
+  exit 0
 
 let speclist = [
    "-c", Arg.Int set_checkpoints,
@@ -230,7 +229,7 @@ let main () =
     if !Parameters.version
     then printf "\tOCaml Debugger version %s@.@." Config.version;
     Loadprinter.init();
-    Load_path.init !default_load_path;
+    Load_path.init ~auto_include:Compmisc.auto_include !default_load_path;
     Clflags.recursive_types := true;    (* Allow recursive types. *)
     toplevel_loop ();                   (* Toplevel. *)
     kill_program ();

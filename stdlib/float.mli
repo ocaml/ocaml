@@ -110,9 +110,23 @@ val nan : float
 (** A special floating-point value denoting the result of an
     undefined operation such as [0.0 /. 0.0].  Stands for
     'not a number'.  Any floating-point operation with [nan] as
-    argument returns [nan] as result.  As for floating-point comparisons,
+    argument returns [nan] as result, unless otherwise specified in
+    IEEE 754 standard.  As for floating-point comparisons,
     [=], [<], [<=], [>] and [>=] return [false] and [<>] returns [true]
-    if one or both of their arguments is [nan]. *)
+    if one or both of their arguments is [nan].
+
+    [nan] is [quiet_nan] since 5.1; it was a signaling NaN before. *)
+
+val signaling_nan : float
+(** Signaling NaN. The corresponding signals do not raise OCaml exception,
+    but the value can be useful for interoperability with C libraries.
+
+    @since 5.1 *)
+
+val quiet_nan : float
+(** Quiet NaN.
+
+    @since 5.1 *)
 
 val pi : float
 (** The constant pi. *)
@@ -178,7 +192,12 @@ val of_string_opt: string -> float option
 (** Same as [of_string], but returns [None] instead of raising. *)
 
 val to_string : float -> string
-(** Return the string representation of a floating-point number. *)
+(** Return a string representation of a floating-point number.
+
+    This conversion can involve a loss of precision. For greater control over
+    the manner in which the number is printed, see {!Printf}.
+
+    This function is an alias for {!Stdlib.string_of_float}. *)
 
 type fpclass = Stdlib.fpclass =
     FP_normal           (** Normal number, none of the below *)
@@ -275,7 +294,7 @@ external atan2 : float -> float -> float = "caml_atan2_float" "atan2"
 
 external hypot : float -> float -> float = "caml_hypot_float" "caml_hypot"
 [@@unboxed] [@@noalloc]
-(** [hypot x y] returns [sqrt(x *. x + y *. y)], that is, the length
+(** [hypot x y] returns [sqrt(x *. x +. y *. y)], that is, the length
     of the hypotenuse of a right-angled triangle with sides of length
     [x] and [y], or, equivalently, the distance of the point [(x,y)]
     to origin.  If one of [x] or [y] is infinite, returns [infinity]

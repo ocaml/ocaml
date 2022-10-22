@@ -301,6 +301,10 @@ can help in writing an explicit interface (.mli file) for a file:
 just redirect the standard output of the compiler to a .mli file,
 and edit that file to remove all declarations of unexported names.
 .TP
+.B \-cmi-file \ filename
+Type-check the source implementation to be compiled against the
+specified interface file (by-passes the normal lookup for .mli and .cmi files).
+.TP
 .BI \-I \ directory
 Add the given directory to the list of directories searched for
 compiled interface files (.cmi), compiled object code files (.cmx),
@@ -537,11 +541,19 @@ types are derived in a principal way. All programs accepted in
 mode are also accepted in default mode with equivalent
 types, but different binary signatures.
 .TP
+.B \-no\-principal
+Do not check principality of type inference.
+This is the default.
+.TP
 .B \-rectypes
 Allow arbitrary recursive types during type-checking.  By default,
 only recursive types where the recursion goes through an object type
 are supported. Note that once you have created an interface using this
 flag, you must use it again for all dependencies.
+.TP
+.B \-no\-rectypes
+Do no allow arbitrary recursive types during type-checking.
+This is the default.
 .TP
 .BI \-runtime\-variant \ suffix
 Add
@@ -560,23 +572,21 @@ code for the source file
 is saved in the file
 .IR x .s.
 .TP
-.BI \-stop\-after \ pass
-Stop compilation after the given compilation pass. The currently
-supported passes are:
-.BR parsing ,
-.BR typing ,
-.BR scheduling ,
-.BR emit .
+.B \-safe\-string
+Enforce the separation between types
+.BR string \ and\  bytes ,
+thereby making strings read-only. This is the default.
+.TP
+.B \-safer\-matching
+Do not use type information to optimize pattern-matching.
+This allows to detect match failures even if a pattern-matching was
+wrongly assumed to be exhaustive. This only impacts GADT and
+polymorphic variant compilation.
 .TP
 .BI \-save\-ir\-after \ pass
 Save intermediate representation after the given compilation pass. The currently
 supported passes are:
 .BR scheduling .
-.TP
-.B \-safe\-string
-Enforce the separation between types
-.BR string \ and\  bytes ,
-thereby making strings read-only. This is the default.
 .TP
 .B \-shared
 Build a plugin (usually .cmxs) that can be dynamically loaded with
@@ -601,8 +611,20 @@ When a type is visible under several module-paths, use the shortest
 one when printing the type's name in inferred interfaces and error and
 warning messages.
 .TP
+.BI \-stop\-after \ pass
+Stop compilation after the given compilation pass. The currently
+supported passes are:
+.BR parsing ,
+.BR typing ,
+.BR scheduling ,
+.BR emit .
+.TP
 .B \-strict\-sequence
 The left-hand part of a sequence must have type unit.
+.TP
+.B \-no\-strict\-sequence
+Left-hand part of a sequence need not have type unit.
+This is the default.
 .TP
 .B \-unboxed\-types
 When a type is unboxable (i.e. a record with a single argument or a
@@ -705,6 +727,29 @@ as a file name, even if it starts with a dash (-) character.
 .TP
 .BR \-help \ or \ \-\-help
 Display a short usage summary and exit.
+
+.SH OPTIONS FOR THE FLAMBDA MIDDLE-END
+
+When the Flambda code generator has been enabled at configuration time,
+its behavior may be tuned up with the following additional options:
+.TP
+.B \-02
+Perform more optimisation than usual. Compilation times may be lengthened.
+.TP
+.B \-03
+Perform even more optimisation than usual, possibly including unrolling
+of recursive functions. Compilation times may be significantly lengthened.
+.TP
+.B \-Oclassic
+Makes inlining decisions at the point of definition of a function rather
+than at the call site(s). This mirrors the behaviour of OCaml compilers
+not using Flambda. Compared to compilation using the new Flambda inlining
+heuristics (for example at -O2) it produces smaller .cmx files, shorter
+compilation times and code that probably runs rather slower.
+.TP
+.B \-inlining-report
+Emit .inlining files (one per round of optimisation) showing all of the
+inliner's decisions.
 
 .SH OPTIONS FOR THE IA32 ARCHITECTURE
 

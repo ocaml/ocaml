@@ -31,6 +31,8 @@
 
 #include "caml/hooks.h"
 
+intnat caml_globals_inited = 0;
+
 CAMLexport void (*caml_natdynlink_hook)(void* handle, const char* unit) = NULL;
 
 #include <stdio.h>
@@ -45,7 +47,7 @@ static value Val_handle(void* handle) {
 }
 
 static void *getsym(void *handle, const char *module, const char *name){
-  char *fullname = caml_stat_strconcat(3, "caml", module, name);
+  char *fullname = caml_stat_strconcat(4, "caml", module, ".", name);
   void *sym;
   sym = caml_dlsym (handle, fullname);
   /*  printf("%s => %lx\n", fullname, (uintnat) sym); */
@@ -77,7 +79,7 @@ CAMLprim value caml_natdynlink_open(value filename, value global)
 
   p = caml_stat_strdup_to_os(String_val(filename));
   caml_enter_blocking_section();
-  dlhandle = caml_dlopen(p, 1, Int_val(global));
+  dlhandle = caml_dlopen(p, Int_val(global));
   caml_leave_blocking_section();
   caml_stat_free(p);
 
@@ -109,22 +111,23 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
 
   unit = String_val(symbol);
 
-  sym = optsym("__frametable");
+  sym = optsym("frametable");
   if (NULL != sym) caml_register_frametable(sym);
 
-  sym = optsym("__gc_roots");
+  sym = optsym("gc_roots");
   if (NULL != sym) caml_register_dyn_global(sym);
 
-  sym = optsym("__code_begin");
-  sym2 = optsym("__code_end");
-  if (NULL != sym && NULL != sym2) {
+  sym = optsym("code_begin");
+  sym2 = optsym("code_end");
+  /* Do not register empty code fragments */
+  if (NULL != sym && NULL != sym2 && sym != sym2) {
     caml_register_code_fragment((char *) sym, (char *) sym2,
                                 DIGEST_LATER, NULL);
   }
 
   if( caml_natdynlink_hook != NULL ) caml_natdynlink_hook(handle,unit);
 
-  entrypoint = optsym("__entry");
+  entrypoint = optsym("entry");
   if (NULL != entrypoint) result = caml_callback((value)(&entrypoint), 0);
   else result = Val_unit;
 
@@ -144,7 +147,7 @@ CAMLprim value caml_natdynlink_run_toplevel(value filename, value symbol)
 
   p = caml_stat_strdup_to_os(String_val(filename));
   caml_enter_blocking_section();
-  handle = caml_dlopen(p, 1, 1);
+  handle = caml_dlopen(p, 1);
   caml_leave_blocking_section();
   caml_stat_free(p);
 

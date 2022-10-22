@@ -19,6 +19,7 @@ ROOTDIR = ..
 # over the one there.
 OCAMLLEX ?= $(BOOT_OCAMLLEX)
 include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/Makefile.best_binaries
 
 # Setup GNU make variables storing per-target source and target,
 # a list of installed tools, and a function to quote a filename for
@@ -31,16 +32,16 @@ define byte2native
 $(patsubst %.cmo,%.cmx,$(patsubst %.cma,%.cmxa,$1))
 endef
 
-CAMLC = $(BOOT_OCAMLC) -g -nostdlib -I $(ROOTDIR)/boot \
+CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) -g \
         -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
-CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) \
-  -g -nostdlib -I $(ROOTDIR)/stdlib
-INCLUDES = $(addprefix -I $(ROOTDIR)/,utils parsing typing bytecomp \
-                       middle_end middle_end/closure middle_end/flambda \
-                       middle_end/flambda/base_types driver toplevel \
-                       file_formats lambda)
+CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) $(STDLIBFLAGS) -g
+DIRS = $(addprefix $(ROOTDIR)/,utils parsing typing bytecomp \
+                   middle_end middle_end/closure middle_end/flambda \
+                   middle_end/flambda/base_types driver toplevel \
+                   file_formats lambda)
+INCLUDES = $(addprefix -I ,$(DIRS))
 COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48-70 -strict-sequence \
--warn-error +A -principal -safe-string -strict-formats -bin-annot $(INCLUDES)
+-warn-error +A -principal -strict-formats -bin-annot $(INCLUDES)
 LINKFLAGS = $(INCLUDES)
 VPATH := $(filter-out -I,$(INCLUDES))
 
@@ -51,7 +52,7 @@ programs_byte := \
 install_files += $(filter $(installed_tools), $(programs_byte))
 programs_opt := $(programs_byte:%=%.opt)
 
-.PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
+.PHONY: all allopt opt.opt othertools # allopt and opt.opt are synonyms
 all: $(programs_byte)
 opt.opt: $(programs_opt)
 allopt: opt.opt
@@ -71,20 +72,20 @@ clean::
 
 # The dependency generator
 
-OCAMLDEP = \
+ocamldep_objects = \
   $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
   $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
   ocamldep.cmo depend.cmi
 
 ocamldep$(EXE): LINKFLAGS += -compat-32
-ocamldep$(EXE): $(OCAMLDEP)
-ocamldep.opt$(EXE): $(call byte2native, $(OCAMLDEP))
+ocamldep$(EXE): $(ocamldep_objects)
+ocamldep.opt$(EXE): $(call byte2native, $(ocamldep_objects))
 
 # The profiler
 
 OCAMLPROF=config.cmo build_path_prefix_map.cmo misc.cmo identifiable.cmo \
-  numbers.cmo arg_helper.cmo clflags.cmo terminfo.cmo \
-  warnings.cmo location.cmo longident.cmo docstrings.cmo \
+  numbers.cmo arg_helper.cmo local_store.cmo load_path.cmo clflags.cmo \
+  terminfo.cmo warnings.cmo location.cmo longident.cmo docstrings.cmo \
   syntaxerr.cmo ast_helper.cmo \
   camlinternalMenhirLib.cmo parser.cmo \
   pprintast.cmo \
@@ -97,9 +98,9 @@ opt.opt: profiling.cmx
 
 OCAMLCP = config.cmo build_path_prefix_map.cmo misc.cmo profile.cmo \
           warnings.cmo identifiable.cmo numbers.cmo arg_helper.cmo \
-          clflags.cmo local_store.cmo \
-          terminfo.cmo location.cmo load_path.cmo ccomp.cmo compenv.cmo \
-          main_args.cmo
+          local_store.cmo load_path.cmo clflags.cmo \
+          terminfo.cmo location.cmo ccomp.cmo compenv.cmo \
+          main_args.cmo ocamlcp_common.cmo
 
 ocamlcp$(EXE): $(OCAMLCP) ocamlcp.cmo
 ocamlcp.opt$(EXE): $(call byte2native, $(OCAMLCP) ocamlcp.cmo)
@@ -108,20 +109,26 @@ ocamloptp.opt$(EXE): $(call byte2native, $(OCAMLCP) ocamloptp.cmo)
 
 opt:: profiling.cmx
 
+INSTALL_LIBDIR_PROFILING = $(INSTALL_LIBDIR)/profiling
+
 install::
+# If installing over a previous OCaml version, ensure the module is removed
+# from the previous installation.
+	rm -f "$(INSTALL_LIBDIR)"/profiling.cm* "$(INSTALL_LIBDIR)/profiling.$(O)"
+	$(MKDIR) "$(INSTALL_LIBDIR_PROFILING)"
 	$(INSTALL_DATA) \
 	  profiling.cmi profiling.cmo \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR_PROFILING)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	  profiling.cmt profiling.cmti \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR_PROFILING)"
 endif
 
 installopt::
 	$(INSTALL_DATA) \
           profiling.cmx profiling.$(O) \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR_PROFILING)"
 
 # To help building mixed-mode libraries (OCaml + C)
 OCAMLMKLIB = config.cmo build_path_prefix_map.cmo misc.cmo ocamlmklib.cmo
@@ -132,11 +139,19 @@ ocamlmklib.opt$(EXE): $(call byte2native, $(OCAMLMKLIB))
 # To make custom toplevels
 
 OCAMLMKTOP=config.cmo build_path_prefix_map.cmo misc.cmo \
-       identifiable.cmo numbers.cmo arg_helper.cmo clflags.cmo \
-       local_store.cmo load_path.cmo profile.cmo ccomp.cmo ocamlmktop.cmo
+       identifiable.cmo numbers.cmo arg_helper.cmo local_store.cmo \
+       load_path.cmo clflags.cmo profile.cmo ccomp.cmo ocamlmktop.cmo
 
 ocamlmktop$(EXE): $(OCAMLMKTOP)
 ocamlmktop.opt$(EXE): $(call byte2native, $(OCAMLMKTOP))
+# othertools means "after the toplevel has been built" here
+othertools: ocamlmktop_init.cmo
+INSTALL_LIBDIR_OCAMLMKTOP = $(INSTALL_LIBDIR)/ocamlmktop
+install::
+	$(MKDIR) "$(INSTALL_LIBDIR_OCAMLMKTOP)"
+	$(INSTALL_DATA) \
+    ocamlmktop_init.cmi ocamlmktop_init.cmo \
+    "$(INSTALL_LIBDIR_OCAMLMKTOP)"
 
 # Converter olabl/ocaml 2.99 to ocaml 3
 
@@ -268,13 +283,6 @@ clean::
 	rm -f -- lintapidiff.opt lintapidiff.opt.exe
 	rm -f lintapidiff.cm? lintapidiff.o lintapidiff.obj
 
-# Eventlog metadata file
-
-install::
-	$(INSTALL_DATA) \
-	  eventlog_metadata \
-	  "$(INSTALL_LIBDIR)"
-
 # Copy a bytecode executable, stripping debug info
 
 STRIPDEBUG=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
@@ -293,13 +301,13 @@ CMPBYT=$(ROOTDIR)/compilerlibs/ocamlcommon.cma \
 cmpbyt$(EXE): $(CMPBYT)
 cmpbyt.opt$(EXE): $(call byte2native, $(CMPBYT))
 
-caml_tex_files := \
+ocamltex_files := \
   $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
   $(ROOTDIR)/compilerlibs/ocamlbytecomp.cma \
   $(ROOTDIR)/compilerlibs/ocamltoplevel.cma \
   $(ROOTDIR)/otherlibs/str/str.cma \
-  $(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.cma \
-  caml_tex.ml
+  $(ROOTDIR)/otherlibs/unix/unix.cma \
+  ocamltex.ml
 
 # checkstack tool
 
@@ -308,24 +316,24 @@ checkstack$(EXE): checkstack.$(O)
 
 #Scan latex files, and run ocaml code examples
 
-caml_tex := caml-tex$(EXE)
+ocamltex := ocamltex$(EXE)
 
-# caml-tex uses str.cma and unix.cma and so must be compiled with
+# ocamltex uses str.cma and unix.cma and so must be compiled with
 # $(ROOTDIR)/ocamlc not $(ROOTDIR)/boot/ocamlc since the boot
 # compiler does not necessarily have the correct shared library
 # configuration.
-$(caml_tex): INCLUDES += $(addprefix -I $(ROOTDIR)/otherlibs/,str $(UNIXLIB))
-$(caml_tex): $(caml_tex_files)
-	$(OCAMLRUN) $(ROOTDIR)/ocamlc$(EXE) -nostdlib -I $(ROOTDIR)/stdlib \
+$(ocamltex): INCLUDES += $(addprefix -I $(ROOTDIR)/otherlibs/,str unix)
+$(ocamltex): $(ocamltex_files)
+	$(OCAMLRUN) $(ROOTDIR)/ocamlc$(EXE) $(STDLIBFLAGS) \
 	  $(LINKFLAGS) -linkall -o $@ -no-alias-deps $^
 
 # we need str and unix which depend on the bytecode version of other tools
-# thus we delay building caml-tex to the opt.opt stage
-ifneq "$(WITH_CAMLTEX)" ""
-opt.opt: $(caml_tex)
+# thus we use the othertools target
+ifeq "$(build_ocamltex)" "true"
+othertools: $(ocamltex)
 endif
 clean::
-	rm -f -- caml-tex caml-tex.exe caml_tex.cm?
+	rm -f -- ocamltex ocamltex.exe ocamltex.cm?
 
 # Common stuff
 
@@ -341,11 +349,9 @@ clean::
 clean::
 	rm -f *.cmo *.cmi *.cma *.dll *.so *.lib *.a
 
-CAMLDEP=$(BOOT_OCAMLC) -depend
-DEPFLAGS=-slash
-DEPINCLUDES=$(INCLUDES)
+OC_OCAMLDEPDIRS = $(DIRS)
 depend: beforedepend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml > .depend
+	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 .PHONY: clean distclean install beforedepend depend
 

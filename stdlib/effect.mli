@@ -12,13 +12,25 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type _ eff = ..
-(* Type of effects *)
+(** Effects.
 
-external perform : 'a eff -> 'a = "%perform"
+    @since 5.0 *)
+
+type _ t = ..
+(** The type of effects. *)
+
+exception Unhandled : 'a t -> exn
+(** [Unhandled e] is raised when effect [e] is performed and there is no
+    handler for it. *)
+
+exception Continuation_already_resumed
+(** Exception raised when a continuation is continued or discontinued more
+    than once. *)
+
+external perform : 'a t -> 'a = "%perform"
 (** [perform e] performs an effect [e].
 
-    @raises Unhandled if there is no active handler. *)
+    @raise Unhandled if there is no handler for [e]. *)
 
 module Deep : sig
   (** Deep handlers *)
@@ -30,14 +42,14 @@ module Deep : sig
   val continue: ('a, 'b) continuation -> 'a -> 'b
   (** [continue k x] resumes the continuation [k] by passing [x] to [k].
 
-      @raise Continuation_already_taken if the continuation has already been
+      @raise Continuation_already_resumed if the continuation has already been
       resumed. *)
 
   val discontinue: ('a, 'b) continuation -> exn -> 'b
   (** [discontinue k e] resumes the continuation [k] by raising the
       exception [e] in [k].
 
-      @raise Continuation_already_taken if the continuation has already been
+      @raise Continuation_already_resumed if the continuation has already been
       resumed. *)
 
   val discontinue_with_backtrace:
@@ -46,13 +58,13 @@ module Deep : sig
       raising the exception [e] in [k] using [bt] as the origin for the
       exception.
 
-      @raise Continuation_already_taken if the continuation has already been
+      @raise Continuation_already_resumed if the continuation has already been
       resumed. *)
 
   type ('a,'b) handler =
     { retc: 'a -> 'b;
       exnc: exn -> 'b;
-      effc: 'c.'c eff -> (('c,'b) continuation -> 'b) option }
+      effc: 'c.'c t -> (('c,'b) continuation -> 'b) option }
   (** [('a,'b) handler] is a handler record with three fields -- [retc]
       is the value handler, [exnc] handles exceptions, and [effc] handles the
       effects performed by the computation enclosed by the handler. *)
@@ -61,7 +73,7 @@ module Deep : sig
   (** [match_with f v h] runs the computation [f v] in the handler [h]. *)
 
   type 'a effect_handler =
-    { effc: 'b. 'b eff -> (('b, 'a) continuation -> 'a) option }
+    { effc: 'b. 'b t -> (('b, 'a) continuation -> 'a) option }
   (** ['a effect_handler] is a deep handler with an identity value handler
       [fun x -> x] and an exception handler that raises any exception
       [fun e -> raise e]. *)
@@ -89,7 +101,7 @@ module Shallow : sig
   type ('a,'b) handler =
     { retc: 'a -> 'b;
       exnc: exn -> 'b;
-      effc: 'c.'c eff -> (('c,'a) continuation -> 'b) option }
+      effc: 'c.'c t -> (('c,'a) continuation -> 'b) option }
   (** [('a,'b) handler] is a handler record with three fields -- [retc]
       is the value handler, [exnc] handles exceptions, and [effc] handles the
       effects performed by the computation enclosed by the handler. *)
@@ -98,7 +110,7 @@ module Shallow : sig
   (** [continue_with k v h] resumes the continuation [k] with value [v] with
       the handler [h].
 
-      @raise Continuation_already_taken if the continuation has already been
+      @raise Continuation_already_resumed if the continuation has already been
       resumed.
    *)
 
@@ -106,7 +118,7 @@ module Shallow : sig
   (** [discontinue_with k e h] resumes the continuation [k] by raising the
       exception [e] with the handler [h].
 
-      @raise Continuation_already_taken if the continuation has already been
+      @raise Continuation_already_resumed if the continuation has already been
       resumed.
    *)
 
@@ -117,7 +129,7 @@ module Shallow : sig
       exception [e] with the handler [h] using the raw backtrace [bt] as the
       origin of the exception.
 
-      @raise Continuation_already_taken if the continuation has already been
+      @raise Continuation_already_resumed if the continuation has already been
       resumed.
    *)
 

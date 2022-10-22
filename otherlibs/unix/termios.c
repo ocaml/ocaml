@@ -23,16 +23,14 @@
 #include <termios.h>
 #include <errno.h>
 
-static struct termios terminal_status;
-
 enum { Bool, Enum, Speed, Char, End };
 
 enum { Input, Output };
 
-#define iflags ((long)(&terminal_status.c_iflag))
-#define oflags ((long)(&terminal_status.c_oflag))
-#define cflags ((long)(&terminal_status.c_cflag))
-#define lflags ((long)(&terminal_status.c_lflag))
+#define iflags (offsetof(struct termios, c_iflag))
+#define oflags (offsetof(struct termios, c_oflag))
+#define cflags (offsetof(struct termios, c_cflag))
+#define lflags (offsetof(struct termios, c_lflag))
 
 /* Number of fields in the terminal_io record field. Cf. unix.mli */
 
@@ -192,7 +190,7 @@ static struct {
 
 #define NSPEEDS (sizeof(speedtable) / sizeof(speedtable[0]))
 
-static void encode_terminal_status(value *dst)
+static void encode_terminal_status(volatile value *dst, struct termios *src)
 {
   long * pc;
   int i;
@@ -200,17 +198,17 @@ static void encode_terminal_status(value *dst)
   for(pc = terminal_io_descr; *pc != End; dst++) {
     switch(*pc++) {
     case Bool:
-      { int * src = (int *) (*pc++);
-        int msk = *pc++;
-        *dst = Val_bool(*src & msk);
+      { tcflag_t * src_p = (tcflag_t *) ((char *)src + *pc++);
+        tcflag_t msk = *pc++;
+        *dst = Val_bool(*src_p & msk);
         break; }
     case Enum:
-      { int * src = (int *) (*pc++);
+      { tcflag_t * src_p = (tcflag_t *) ((char *)src + *pc++);
         int ofs = *pc++;
         int num = *pc++;
-        int msk = *pc++;
+        tcflag_t msk = *pc++;
         for (i = 0; i < num; i++) {
-          if ((*src & msk) == pc[i]) {
+          if ((*src_p & msk) == pc[i]) {
             *dst = Val_int(i + ofs);
             break;
           }
@@ -223,9 +221,9 @@ static void encode_terminal_status(value *dst)
         *dst = Val_int(9600);   /* in case no speed in speedtable matches */
         switch (which) {
         case Output:
-          speed = cfgetospeed(&terminal_status); break;
+          speed = cfgetospeed(src); break;
         case Input:
-          speed = cfgetispeed(&terminal_status); break;
+          speed = cfgetispeed(src); break;
         }
         for (i = 0; i < NSPEEDS; i++) {
           if (speed == speedtable[i].speed) {
@@ -236,13 +234,13 @@ static void encode_terminal_status(value *dst)
         break; }
     case Char:
       { int which = *pc++;
-        *dst = Val_int(terminal_status.c_cc[which]);
+        *dst = Val_int(src->c_cc[which]);
         break; }
     }
   }
 }
 
-static void decode_terminal_status(value *src)
+static void decode_terminal_status(struct termios *dst, volatile value *src)
 {
   long * pc;
   int i;
@@ -250,23 +248,23 @@ static void decode_terminal_status(value *src)
   for (pc = terminal_io_descr; *pc != End; src++) {
     switch(*pc++) {
     case Bool:
-      { int * dst = (int *) (*pc++);
-        int msk = *pc++;
+      { tcflag_t * dst_p = (tcflag_t *) ((char *)dst + *pc++);
+        tcflag_t msk = *pc++;
         if (Bool_val(*src))
-          *dst |= msk;
+          *dst_p |= msk;
         else
-          *dst &= ~msk;
+          *dst_p &= ~msk;
         break; }
     case Enum:
-      { int * dst = (int *) (*pc++);
+      { tcflag_t * dst_p = (tcflag_t *) ((char *)dst + *pc++);
         int ofs = *pc++;
         int num = *pc++;
-        int msk = *pc++;
+        tcflag_t msk = *pc++;
         i = Int_val(*src) - ofs;
         if (i >= 0 && i < num) {
-          *dst = (*dst & ~msk) | pc[i];
+          *dst_p = (*dst_p & ~msk) | pc[i];
         } else {
-          unix_error(EINVAL, "tcsetattr", Nothing);
+          caml_unix_error(EINVAL, "tcsetattr", Nothing);
         }
         pc += num;
         break; }
@@ -278,33 +276,34 @@ static void decode_terminal_status(value *src)
           if (baud == speedtable[i].baud) {
             switch (which) {
             case Output:
-              res = cfsetospeed(&terminal_status, speedtable[i].speed); break;
+              res = cfsetospeed(dst, speedtable[i].speed); break;
             case Input:
-              res = cfsetispeed(&terminal_status, speedtable[i].speed); break;
+              res = cfsetispeed(dst, speedtable[i].speed); break;
             }
-            if (res == -1) uerror("tcsetattr", Nothing);
+            if (res == -1) caml_uerror("tcsetattr", Nothing);
             goto ok;
           }
         }
-        unix_error(EINVAL, "tcsetattr", Nothing);
+        caml_unix_error(EINVAL, "tcsetattr", Nothing);
       ok:
         break; }
     case Char:
       { int which = *pc++;
-        terminal_status.c_cc[which] = Int_val(*src);
+        dst->c_cc[which] = Int_val(*src);
         break; }
     }
   }
 }
 
-CAMLprim value unix_tcgetattr(value fd)
+CAMLprim value caml_unix_tcgetattr(value fd)
 {
   value res;
+  struct termios params;
 
-  if (tcgetattr(Int_val(fd), &terminal_status) == -1)
-    uerror("tcgetattr", Nothing);
+  if (tcgetattr(Int_val(fd), &params) == -1)
+    caml_uerror("tcgetattr", Nothing);
   res = caml_alloc_tuple(NFIELDS);
-  encode_terminal_status(&Field(res, 0));
+  encode_terminal_status(&Field(res, 0), &params);
   return res;
 }
 
@@ -312,32 +311,37 @@ static int when_flag_table[] = {
   TCSANOW, TCSADRAIN, TCSAFLUSH
 };
 
-CAMLprim value unix_tcsetattr(value fd, value when, value arg)
+CAMLprim value caml_unix_tcsetattr(value fd, value when, value arg)
 {
-  if (tcgetattr(Int_val(fd), &terminal_status) == -1)
-    uerror("tcsetattr", Nothing);
-  decode_terminal_status(&Field(arg, 0));
+  struct termios params;
+  /* struct termios contains additional, OS-specific fields and bits beyond the
+     standard ones that are mapped to the Unix.terminal_io OCaml type. It's
+     better not to change these additional fields. Therefore we call tcgettr
+     here to set those fields and bits. */
+  if (tcgetattr(Int_val(fd), &params) == -1)
+    caml_uerror("tcsetattr", Nothing);
+  decode_terminal_status(&params, &Field(arg, 0));
   if (tcsetattr(Int_val(fd),
                 when_flag_table[Int_val(when)],
-                &terminal_status) == -1)
-    uerror("tcsetattr", Nothing);
+                &params) == -1)
+    caml_uerror("tcsetattr", Nothing);
   return Val_unit;
 }
 
-CAMLprim value unix_tcsendbreak(value fd, value delay)
+CAMLprim value caml_unix_tcsendbreak(value fd, value delay)
 {
   if (tcsendbreak(Int_val(fd), Int_val(delay)) == -1)
-    uerror("tcsendbreak", Nothing);
+    caml_uerror("tcsendbreak", Nothing);
   return Val_unit;
 }
 
 #if defined(__ANDROID__)
-CAMLprim value unix_tcdrain(value fd)
+CAMLprim value caml_unix_tcdrain(value fd)
 { caml_invalid_argument("tcdrain not implemented"); }
 #else
-CAMLprim value unix_tcdrain(value fd)
+CAMLprim value caml_unix_tcdrain(value fd)
 {
-  if (tcdrain(Int_val(fd)) == -1) uerror("tcdrain", Nothing);
+  if (tcdrain(Int_val(fd)) == -1) caml_uerror("tcdrain", Nothing);
   return Val_unit;
 }
 #endif
@@ -346,10 +350,10 @@ static int queue_flag_table[] = {
   TCIFLUSH, TCOFLUSH, TCIOFLUSH
 };
 
-CAMLprim value unix_tcflush(value fd, value queue)
+CAMLprim value caml_unix_tcflush(value fd, value queue)
 {
   if (tcflush(Int_val(fd), queue_flag_table[Int_val(queue)]) == -1)
-    uerror("tcflush", Nothing);
+    caml_uerror("tcflush", Nothing);
   return Val_unit;
 }
 
@@ -357,31 +361,31 @@ static int action_flag_table[] = {
   TCOOFF, TCOON, TCIOFF, TCION
 };
 
-CAMLprim value unix_tcflow(value fd, value action)
+CAMLprim value caml_unix_tcflow(value fd, value action)
 {
   if (tcflow(Int_val(fd), action_flag_table[Int_val(action)]) == -1)
-    uerror("tcflow", Nothing);
+    caml_uerror("tcflow", Nothing);
   return Val_unit;
 }
 
 #else
 
-CAMLprim value unix_tcgetattr(value fd)
+CAMLprim value caml_unix_tcgetattr(value fd)
 { caml_invalid_argument("tcgetattr not implemented"); }
 
-CAMLprim value unix_tcsetattr(value fd, value when, value arg)
+CAMLprim value caml_unix_tcsetattr(value fd, value when, value arg)
 { caml_invalid_argument("tcsetattr not implemented"); }
 
-CAMLprim value unix_tcsendbreak(value fd, value delay)
+CAMLprim value caml_unix_tcsendbreak(value fd, value delay)
 { caml_invalid_argument("tcsendbreak not implemented"); }
 
-CAMLprim value unix_tcdrain(value fd)
+CAMLprim value caml_unix_tcdrain(value fd)
 { caml_invalid_argument("tcdrain not implemented"); }
 
-CAMLprim value unix_tcflush(value fd, value queue)
+CAMLprim value caml_unix_tcflush(value fd, value queue)
 { caml_invalid_argument("tcflush not implemented"); }
 
-CAMLprim value unix_tcflow(value fd, value action)
+CAMLprim value caml_unix_tcflow(value fd, value action)
 { caml_invalid_argument("tcflow not implemented"); }
 
 #endif

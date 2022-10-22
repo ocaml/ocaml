@@ -34,12 +34,11 @@ ${main} -conf --disable-native-compiler \
         -conf --disable-systhreads \
         -conf --disable-str-lib \
         -conf --disable-unix-lib \
-        -conf --disable-bigarray-lib \
         -conf --disable-ocamldoc \
         -conf --disable-dependency-generation \
         -no-native
-${main} -with-bootstrap -conf --disable-flat-float-array
+${main} -conf --disable-flat-float-array
 ${main} -conf --enable-flambda
-${main} -conf --enable-reserved-header-bits=27
+${main} -conf --enable-frame-pointers -conf --enable-reserved-header-bits=27
+${main} -with-bootstrap -conf --with-pic
 OCAMLRUNPARAM="c=1" ${main}
-${main} -conf --with-pic

@@ -429,8 +429,8 @@ FUNCTION(caml_callback3_asm)
 END_FUNCTION(caml_callback3_asm)
 
 FUNCTION(caml_ml_array_bound_error)
-        /* Load address of [caml_array_bound_error] in ARG */
-        la      ARG, caml_array_bound_error
+        /* Load address of [caml_array_bound_error_asm] in ARG */
+        la      ARG, caml_array_bound_error_asm
         /* Call that function */
         tail    caml_c_call
 END_FUNCTION(caml_ml_array_bound_error)

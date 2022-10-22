@@ -19,14 +19,6 @@
 #include "config.h"
 #include "misc.h"
 
-/* Needed here for domain_state */
-typedef intnat value;
-typedef atomic_intnat atomic_value;
-typedef int32_t opcode_t;
-typedef opcode_t * code_t;
-
-#include "domain_state.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -62,11 +54,15 @@ extern "C" {
          This is for use only by the GC.
 */
 
+typedef intnat value;
 typedef uintnat header_t;
 typedef uintnat mlsize_t;
 typedef unsigned int tag_t;             /* Actually, an unsigned char */
 typedef uintnat color_t;
 typedef uintnat mark_t;
+typedef atomic_intnat atomic_value;
+typedef int32_t opcode_t;
+typedef opcode_t * code_t;
 
 #include "domain_state.h"
 
@@ -139,8 +135,10 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #define Profinfo_hd(hd) NO_PROFINFO
 #endif /* WITH_PROFINFO */
 
-#define Hd_val(val) (((header_t *) (val)) [-1] + 0)
 #define Hp_atomic_val(val) ((atomic_uintnat *)(val) - 1)
+#define Hd_val(val) ((header_t) \
+  (atomic_load_explicit(Hp_atomic_val(val), memory_order_relaxed)))
+
 #define Hd_hp(hp) (* ((header_t *) (hp)))              /* Also an l-value. */
 #define Hp_val(val) (((header_t *) (val)) - 1)
 #define Hp_op(op) (Hp_val (op))
@@ -207,16 +205,7 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #define Op_val(x) ((value *) (x))
 #define Op_atomic_val(x) ((atomic_value *) (x))
 /* Fields are numbered from 0. */
-#define Field(x, i) (((value *)(x)) [i])           /* Also an l-value. */
-
-/* Is_young(val) is true iff val is in the reserved area for minor heaps */
-
-#define Is_young(val) \
-  (CAMLassert (Is_block (val)), \
-   (char *)(val) < (char *)caml_minor_heaps_end && \
-   (char *)(val) > (char *)caml_minor_heaps_base)
-
-#define Is_block_and_young(val) (Is_block(val) && Is_young(val))
+#define Field(x, i) (((volatile value *)(x)) [i]) /* Also an l-value. */
 
 /* NOTE: [Forward_tag] and [Infix_tag] must be just under
    [No_scan_tag], with [Infix_tag] the lower one.
@@ -315,11 +304,7 @@ CAMLextern value caml_hash_variant(char const * tag);
 
 /* Strings. */
 #define String_tag 252
-#ifdef CAML_SAFE_STRING
 #define String_val(x) ((const char *) Bp_val(x))
-#else
-#define String_val(x) ((char *) Bp_val(x))
-#endif
 #define Bytes_val(x) ((unsigned char *) Bp_val(x))
 CAMLextern mlsize_t caml_string_length (value);   /* size in bytes */
 CAMLextern int caml_string_is_c_safe (value);

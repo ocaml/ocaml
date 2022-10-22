@@ -24,6 +24,8 @@
 extern "C" {
 #endif
 
+CAMLextern char * caml_strerror(int errnum, char * buf, size_t buflen);
+
 #define NO_ARG Val_int(0)
 
 CAMLnoreturn_start

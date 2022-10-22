@@ -84,7 +84,7 @@ chapters (or sometimes sections) are mapped to a distinct `.etex` file:
     - Interfacing C with OCaml: `intf-c.etex`
     - Optimisation with Flambda: `flambda.etex`
     - Fuzzing with afl-fuzz: `afl-fuzz.etex`
-    - Runtime tracing with the instrumented runtime: `instrumented-runtime.etex`
+    - Runtime tracing with Runtime_events: `runtime_tracing.etex`
 
 Note that ocamlc,ocamlopt and the toplevel options overlap a lot.
 Consequently, these options are described together in the file
@@ -101,6 +101,7 @@ of `unified-options.etex` contains the relevant information.
     - The unix library: Unix system calls: `libunix.etex`
     - The str library: regular expressions and string processing: `libstr.etex`
     - The threads library: `libthreads.etex`
+    - The runtime_events library: `libruntime_events.etex`
     - The dynlink library: dynamic loading and linking of object files:
       `libdynlink.etex`
 
@@ -127,7 +128,7 @@ A similar macro, `\lparagraph`, is provided for paragraphs.
 
 ### Caml environments
 
-The tool `tools/caml-tex` is used to generate the LaTeX code for the examples
+The tool `tools/ocamltex` is used to generate the LaTeX code for the examples
 in the introduction and language extension parts of the manual. It implements
 two pseudo-environments: `caml_example` and `caml_eval`.
 
@@ -146,15 +147,14 @@ let f x = x
 \end{caml_example*}
 ```
 
-The {verbatim} or {toplevel} argument of the environment corresponds
-to the the mode of the example, three modes are available toplevel, verbatim and signature.
-The `toplevel` mode mimics the appearance and behavior of the toplevel.
-In particular, toplevel examples must end with a double semi-colon `;;`,
-otherwise an error would be raised.
-The `verbatim` does not require a final `;;` and is intended to be
-a lighter mode for code examples.
-If you want to declare a signature instead of ocaml code,
-you must use the `{signature}` argument to the `caml_example` environment.
+The {verbatim} or {toplevel} argument of the environment corresponds to the mode
+of the example. Three modes are available -- toplevel, verbatim and signature.
+The `toplevel` mode mimics the appearance and behavior of the toplevel. In
+particular, toplevel examples must end with a double semi-colon `;;`, otherwise
+an error would be raised. The `verbatim` does not require a final `;;` and is
+intended to be a lighter mode for code examples. If you want to declare a
+signature instead of ocaml code, you must use the `{signature}` argument to the
+`caml_example` environment.
 
 ```latex
 \begin{caml_example*}{signature}
@@ -162,11 +162,11 @@ val none : 'a option
 \end{caml_example*}
 ```
 
-By default, `caml-tex` raises an error and stops if the output of one
-the `caml_example` environment contains an unexpected error or warning.
-If such an error or warning is, in fact, expected, it is necessary to
-indicate the expected output status to `caml-tex` by adding either
-an option to the `caml_example` environment:
+By default, `ocamltex` raises an error and stops if the output of one the
+`caml_example` environment contains an unexpected error or warning. If such an
+error or warning is, in fact, expected, it is necessary to indicate the expected
+output status to `ocamltex` by adding either an option to the `caml_example`
+environment:
 ```latex
 \begin{caml_example}{toplevel}[error]
 1 + 2. ;;
@@ -207,10 +207,10 @@ module M = struct
 \end{caml_example*}
 ```
 
-Another possibility to avoid displaying distracting code is to use
-the `caml_eval` environment. This environment is a companion environment
-to `caml_example` and can be used to evaluate OCaml expressions in the
-toplevel without printing anything:
+Another possibility to avoid displaying distracting code is to use the
+`caml_eval` environment. This environment is a companion environment to
+`caml_example` and can be used to evaluate OCaml expressions in the toplevel
+without printing anything:
 ```latex
 \begin{caml_eval}
 let pi = 4. *. atan 1.;;

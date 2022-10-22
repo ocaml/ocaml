@@ -725,7 +725,7 @@ let rec expression : Typedtree.expression -> term_judg =
          G |- let exception A in e: m
       *)
       remove_id ext_id (expression e)
-    | Texp_assert e ->
+    | Texp_assert (e, _) ->
       (*
         G |- e: m[Dereference]
         -----------------------

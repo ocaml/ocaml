@@ -48,7 +48,7 @@ enum {
 #define EXTERN_STACK_INIT_SIZE 256
 #define EXTERN_STACK_MAX_SIZE (1024*1024*100)
 
-struct extern_item { value * v; mlsize_t count; };
+struct extern_item { volatile value * v; mlsize_t count; };
 
 /* Hash table to record already-marshaled objects and their positions */
 
@@ -118,6 +118,7 @@ struct caml_extern_state {
 
 static struct caml_extern_state* get_extern_state (void)
 {
+  Caml_check_caml_state();
   struct caml_extern_state* extern_state;
 
   if (Caml_state->extern_state != NULL)

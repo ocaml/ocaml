@@ -53,10 +53,9 @@ value mycallback4(value fun, value arg1, value arg2, value arg3, value arg4)
 
 value mypushroot(value v, value fun, value arg)
 {
-  Begin_root(v)
-    caml_callback(fun, arg);
-  End_roots();
-  return v;
+  CAMLparam1(v);
+  caml_callback(fun, arg);
+  CAMLreturn(v);
 }
 
 value mycamlparam (value v, value fun, value arg)

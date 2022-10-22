@@ -81,16 +81,16 @@ Before OCaml 4.08, there was support for a single kind of deprecation
 alert.  It is now known as the "deprecated" alert, but legacy
 attributes to trigger it and the legacy ways to control it as warning
 3 are still supported. For instance, passing "-w +3" on the
-command-line is equivant to "-alert +deprecated", and:
+command-line is equivalent to "-alert +deprecated", and:
 
 \begin{verbatim}
 val x: int
-  [@@@ocaml.deprecated "Please do something else"]
+  [@@ocaml.deprecated "Please do something else"]
 \end{verbatim}
 
 is equivalent to:
 
 \begin{verbatim}
 val x: int
-  [@@@ocaml.alert deprecated "Please do something else"]
+  [@@ocaml.alert deprecated "Please do something else"]
 \end{verbatim}

@@ -152,12 +152,10 @@ module Stdlib : sig
 
   module Array : sig
     val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
-    (* Same as [Array.exists], but for a two-argument predicate. Raise
-       Invalid_argument if the two arrays are determined to have
-       different lengths. *)
+    (** Same as [Array.exists2] from the standard library. *)
 
     val for_alli : (int -> 'a -> bool) -> 'a array -> bool
-    (** Same as {!Array.for_all}, but the
+    (** Same as [Array.for_all] from the standard library, but the
         function is applied with the index of the element as first argument,
         and the element itself as second argument. *)
 
@@ -187,7 +185,9 @@ val find_in_path_uncap: string list -> string -> string
            if name is Foo.ml, allow /path/Foo.ml and /path/foo.ml
            to match. *)
 val remove_file: string -> unit
-        (* Delete the given file if it exists. Never raise an error. *)
+        (* Delete the given file if it exists and is a regular file.
+           Does nothing for other kinds of files.
+           Never raises an error. *)
 val expand_directory: string -> string -> string
         (* [expand_directory alt file] eventually expands a [+] at the
            beginning of file into [alt] (an alternate root directory) *)
@@ -368,7 +368,6 @@ module Color : sig
     | Magenta
     | Cyan
     | White
-  ;;
 
   type style =
     | FG of color (* foreground *)

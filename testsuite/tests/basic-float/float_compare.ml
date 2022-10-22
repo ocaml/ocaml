@@ -1,3 +1,4 @@
+(* TEST *)
 
 let equal (x : float) (y : float) =
   x, "=", y, (x = y)

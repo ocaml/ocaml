@@ -54,9 +54,9 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 #ifdef THREADED_CODE
 #  define Instruct(name) lbl_##name
 #  if defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
-#    define Jumptbl_base ((char *) &&lbl_ACC0)
+#    define Jumptbl_base &&lbl_ACC0
 #  else
-#    define Jumptbl_base ((char *) 0)
+#    define Jumptbl_base 0
 #    define jumptbl_base ((char *) 0)
 #  endif
 #  ifdef DEBUG
@@ -71,18 +71,18 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 
 /* GC interface */
 
-#undef Alloc_small_origin
-// Do call asynchronous callbacks from allocation functions
-#define Alloc_small_origin CAML_FROM_CAML
 #define Setup_for_gc \
   { sp -= 3; sp[0] = accu; sp[1] = env; sp[2] = (value)pc; \
     domain_state->current_stack->sp = sp; }
 #define Restore_after_gc \
   { sp = domain_state->current_stack->sp; accu = sp[0]; env = sp[1]; sp += 3; }
-#define Enter_gc \
-  { Setup_for_gc; \
-    caml_process_pending_actions();         \
-    Restore_after_gc; }
+/* Do call asynchronous callbacks from allocation functions */
+#define Enter_gc(dom_st, wosize) do {                            \
+    Setup_for_gc;                                                \
+    Alloc_small_enter_GC_flags(CAML_DO_TRACK | CAML_FROM_CAML,   \
+                               dom_st, wosize);                  \
+    Restore_after_gc;                                            \
+  } while (0)
 
 /* We store [pc+1] in the stack so that, in case of an exception, the
    first backtrace slot points to the event following the C call
@@ -133,9 +133,31 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
   goto dispatch_instr
 #endif
 
-#define Check_trap_barrier \
-  if (domain_state->trap_sp_off >= domain_state->trap_barrier_off) \
-    caml_debugger(TRAP_BARRIER, Val_unit)
+Caml_inline void check_trap_barrier_for_exception
+  (caml_domain_state* domain_state)
+{
+  if (domain_state->current_stack->id == domain_state->trap_barrier_block
+      && domain_state->trap_sp_off >= domain_state->trap_barrier_off)
+    caml_debugger(TRAP_BARRIER, Val_unit);
+}
+
+Caml_inline void check_trap_barrier_for_effect
+  (caml_domain_state* domain_state)
+{
+  if (domain_state->current_stack->id == domain_state->trap_barrier_block){
+    caml_debugger(TRAP_BARRIER, Val_unit);
+  }else{
+    struct stack_info *parent_stack
+      = domain_state->current_stack->handler->parent;
+    if (parent_stack != NULL
+        && parent_stack->id == domain_state->trap_barrier_block
+        && parent_stack->sp + 2 - Stack_high (parent_stack)
+              /* Note: +2 is the same constant as in debugger.c:552 */
+           == domain_state->trap_barrier_off){
+      caml_debugger(TRAP_BARRIER, Val_unit);
+    }
+  }
+}
 
 /* Register optimization.
    Some compilers underestimate the use of the local variables representing
@@ -218,7 +240,7 @@ sp is a local copy of the global variable Caml_state->extern_sp. */
 static __thread intnat caml_bcodcount;
 #endif
 
-static value raise_unhandled;
+static value raise_unhandled_effect;
 
 /* The interpreter itself */
 
@@ -262,24 +284,25 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #endif
 
   if (prog == NULL) {           /* Interpreter is initializing */
-    static opcode_t raise_unhandled_code[] = { ACC, 0, RAISE };
-    value raise_unhandled_closure;
+    static opcode_t raise_unhandled_effect_code[] = { ACC, 0, RAISE };
+    value raise_unhandled_effect_closure;
 
     caml_register_code_fragment(
-      (char *) raise_unhandled_code,
-      (char *) raise_unhandled_code + sizeof(raise_unhandled_code),
+      (char *) raise_unhandled_effect_code,
+      (char *) raise_unhandled_effect_code +
+      sizeof(raise_unhandled_effect_code),
       DIGEST_IGNORE, NULL);
 #ifdef THREADED_CODE
-    caml_instr_table = (char **) jumptable;
-    caml_instr_base = Jumptbl_base;
-    caml_thread_code(raise_unhandled_code,
-                     sizeof(raise_unhandled_code));
+    caml_init_thread_code(jumptable, Jumptbl_base);
+    caml_thread_code(raise_unhandled_effect_code,
+                     sizeof(raise_unhandled_effect_code));
 #endif
-    raise_unhandled_closure = caml_alloc_small (2, Closure_tag);
-    Code_val(raise_unhandled_closure) = (code_t)raise_unhandled_code;
-    Closinfo_val(raise_unhandled_closure) = Make_closinfo(0, 2);
-    raise_unhandled = raise_unhandled_closure;
-    caml_register_generational_global_root(&raise_unhandled);
+    raise_unhandled_effect_closure = caml_alloc_small (2, Closure_tag);
+    Code_val(raise_unhandled_effect_closure) =
+      (code_t)raise_unhandled_effect_code;
+    Closinfo_val(raise_unhandled_effect_closure) = Make_closinfo(0, 2);
+    raise_unhandled_effect = raise_unhandled_effect_closure;
+    caml_register_generational_global_root(&raise_unhandled_effect);
     caml_global_data = Val_unit;
     caml_register_generational_global_root(&caml_global_data);
     caml_init_callbacks();
@@ -299,7 +322,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     sp = domain_state->current_stack->sp;
     accu = raise_exn_bucket;
 
-    Check_trap_barrier;
+    check_trap_barrier_for_exception (domain_state);
     if (domain_state->backtrace_active) {
          /* pc has already been pushed on the stack when calling the C
          function that raised the exception. No need to push it again
@@ -636,7 +659,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       mlsize_t envofs = nfuncs * 3 - 1;
       mlsize_t blksize = envofs + nvars;
       int i;
-      value * p;
+      volatile value * p;
       if (nvars > 0) *--sp = accu;
       if (blksize <= Max_young_wosize) {
         Alloc_small(accu, blksize, Closure_tag, Enter_gc);
@@ -914,8 +937,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
 
     Instruct(POPTRAP):
-      if (Caml_check_gc_interrupt(domain_state) ||
-          caml_check_for_pending_signals()) {
+      if (Caml_check_gc_interrupt(domain_state)) {
         /* We must check here so that if a signal is pending and its
            handler triggers an exception, the exception is trapped
            by the current try...with, not the enclosing one. */
@@ -927,11 +949,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
 
     Instruct(RAISE_NOTRACE):
-      Check_trap_barrier;
+      check_trap_barrier_for_exception (domain_state);
       goto raise_notrace;
 
     Instruct(RERAISE):
-      Check_trap_barrier;
+      check_trap_barrier_for_exception (domain_state);
       if (domain_state->backtrace_active) {
         *--sp = (value)(pc - 1);
         caml_stash_backtrace(accu, sp, 1);
@@ -940,7 +962,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(RAISE):
     raise_exception:
-      Check_trap_barrier;
+      check_trap_barrier_for_exception (domain_state);
       if (domain_state->backtrace_active) {
         *--sp = (value)(pc - 1);
         caml_stash_backtrace(accu, sp, 0);
@@ -998,8 +1020,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Signal handling */
 
     Instruct(CHECK_SIGNALS):    /* accu not preserved */
-      if (Caml_check_gc_interrupt(domain_state) ||
-          caml_check_for_pending_signals())
+      if (Caml_check_gc_interrupt(domain_state))
         goto process_signal;
       Next;
 
@@ -1187,7 +1208,10 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #endif
       *--sp = accu;
       accu = Val_int(*pc++);
-      ofs = *pc & Field(meths,1);
+      /* We use relaxed atomic accesses to avoid racing with other domains
+         updating the cache */
+      ofs = atomic_load_explicit((_Atomic opcode_t *)pc, memory_order_relaxed)
+            & Field(meths,1);
       if (*(value*)(((char*)&Field(meths,3)) + ofs) == accu) {
 #ifdef CAML_TEST_CACHE
         hits++;
@@ -1202,7 +1226,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
           if (accu < Field(meths,mi)) hi = mi-2;
           else li = mi;
         }
-        *pc = (li-3)*sizeof(value);
+        atomic_store_explicit((_Atomic opcode_t *)pc, (li-3)*sizeof(value),
+                              memory_order_relaxed);
         accu = Field (meths, li-1);
       }
       pc++;
@@ -1266,8 +1291,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
 do_resume: {
       struct stack_info* stk = Ptr_val(accu);
       if (stk == NULL) {
-         accu = Field(caml_global_data, CONTINUATION_ALREADY_TAKEN_EXN);
-         goto raise_exception;
+        Setup_for_c_call;
+        caml_raise_continuation_already_resumed();
       }
       while (Stack_parent(stk) != NULL) stk = Stack_parent(stk);
       Stack_parent(stk) = Caml_state->current_stack;
@@ -1299,8 +1324,9 @@ do_resume: {
       struct stack_info* old_stack = domain_state->current_stack;
       struct stack_info* parent_stack = Stack_parent(old_stack);
 
+      check_trap_barrier_for_effect (domain_state);
       if (parent_stack == NULL) {
-        accu = Field(caml_global_data, UNHANDLED_EXN);
+        accu = caml_make_unhandled_effect_exn(accu);
         goto raise_exception;
       }
 
@@ -1338,14 +1364,15 @@ do_resume: {
       struct stack_info* self = domain_state->current_stack;
       struct stack_info* parent = Stack_parent(domain_state->current_stack);
 
+      check_trap_barrier_for_effect (domain_state);
       sp = sp + *pc - 2;
       sp[0] = Val_long(domain_state->trap_sp_off);
       sp[1] = Val_long(extra_args);
 
       if (parent == NULL) {
         accu = caml_continuation_use(cont);
-        resume_fn = raise_unhandled;
-        resume_arg = Field(caml_global_data, UNHANDLED_EXN);
+        resume_fn = raise_unhandled_effect;
+        resume_arg = caml_make_unhandled_effect_exn(eff);
         goto do_resume;
       }
 
@@ -1372,7 +1399,7 @@ do_resume: {
 
 #ifndef THREADED_CODE
     default:
-#if _MSC_VER >= 1200
+#ifdef _MSC_VER
       __assume(0);
 #else
       caml_fatal_error("bad opcode (%"

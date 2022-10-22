@@ -281,7 +281,7 @@ let in_current_module = function
 
 let in_pervasives p =
   in_current_module p &&
-  try ignore (Env.find_type p Env.initial_safe_string); true
+  try ignore (Env.find_type p Env.initial); true
   with Not_found -> false
 
 let is_datatype decl=
@@ -853,6 +853,10 @@ let rec lower_contravariant env var_level visited contra ty =
         iter_type_expr (lower_rec contra) ty
   end
 
+let lower_variables_only env level ty =
+  simple_abbrevs := Mnil;
+  lower_contravariant env level (Hashtbl.create 7) true ty
+
 let lower_contravariant env ty =
   simple_abbrevs := Mnil;
   lower_contravariant env !nongen_level (Hashtbl.create 7) false ty
@@ -1189,28 +1193,32 @@ let existential_name cstr ty =
   | Tvar (Some name) -> "$" ^ cstr.cstr_name ^ "_'" ^ name
   | _ -> "$" ^ cstr.cstr_name
 
-let instance_constructor ?in_pattern cstr =
+type existential_treatment =
+  | Keep_existentials_flexible
+  | Make_existentials_abstract of { env: Env.t ref; scope: int }
+
+let instance_constructor existential_treatment cstr =
   For_copy.with_scope (fun scope ->
-    begin match in_pattern with
-    | None -> ()
-    | Some (env, fresh_constr_scope) ->
-        let process existential =
-          let decl = new_local_type () in
-          let name = existential_name cstr existential in
-          let (id, new_env) =
-            Env.enter_type (get_new_abstract_name name) decl !env
-              ~scope:fresh_constr_scope in
-          env := new_env;
-          let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
-          let tv = copy scope existential in
-          assert (is_Tvar tv);
-          link_type tv to_unify
-        in
-        List.iter process cstr.cstr_existentials
-    end;
+    let copy_existential =
+      match existential_treatment with
+      | Keep_existentials_flexible -> copy scope
+      | Make_existentials_abstract {env; scope = fresh_constr_scope} ->
+          fun existential ->
+            let decl = new_local_type () in
+            let name = existential_name cstr existential in
+            let (id, new_env) =
+              Env.enter_type (get_new_abstract_name name) decl !env
+                ~scope:fresh_constr_scope in
+            env := new_env;
+            let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
+            let tv = copy scope existential in
+            assert (is_Tvar tv);
+            link_type tv to_unify;
+            tv
+    in
+    let ty_ex = List.map copy_existential cstr.cstr_existentials in
     let ty_res = copy scope cstr.cstr_res in
     let ty_args = List.map (copy scope) cstr.cstr_args in
-    let ty_ex = List.map (copy scope) cstr.cstr_existentials in
     (ty_args, ty_res, ty_ex)
   )
 
@@ -1768,7 +1776,8 @@ let occur env ty0 ty =
   try
     while
       type_changed := false;
-      occur_rec env allow_recursive TypeSet.empty ty0 ty;
+      if not (eq_type ty0 ty) then
+        occur_rec env allow_recursive TypeSet.empty ty0 ty;
       !type_changed
     do () (* prerr_endline "changed" *) done;
     merge type_changed old
@@ -2153,13 +2162,10 @@ let reify env t =
   in
   iterator t
 
-let is_newtype env p =
-  try
-    let decl = Env.find_type p env in
-    decl.type_expansion_scope <> Btype.lowest_level &&
-    decl.type_kind = Type_abstract &&
-    decl.type_private = Public
-  with Not_found -> false
+let find_expansion_scope env path =
+  match Env.find_type path env with
+  | { type_manifest = None ; _ } | exception Not_found -> generic_level
+  | decl -> decl.type_expansion_scope
 
 let non_aliasable p decl =
   (* in_pervasives p ||  (subsumed by in_current_module) *)
@@ -2176,7 +2182,6 @@ let is_instantiable env p =
   with Not_found -> false
 
 
-(* PR#7113: -safe-string should be a global property *)
 let compatible_paths p1 p2 =
   let open Predef in
   Path.same p1 p2 ||
@@ -2418,9 +2423,6 @@ let find_lowest_level ty =
     end
   in find ty; unmark_type ty; !lowest
 
-let find_expansion_scope env path =
-  (Env.find_type path env).type_expansion_scope
-
 let add_gadt_equation env source destination =
   (* Format.eprintf "@[add_gadt_equation %s %a@]@."
     (Path.name source) !Btype.print_raw destination; *)
@@ -2627,18 +2629,8 @@ let rec unify (env:Env.t ref) t1 t2 =
         update_level_for Unify !env (get_level t1) t2;
         update_scope_for Unify (get_scope t1) t2;
         link_type t1 t2
-    | (Tconstr (p1, [], _), Tconstr (p2, [], _))
-      when Env.has_local_constraints !env
-      && is_newtype !env p1 && is_newtype !env p2 ->
-        (* Do not use local constraints more than necessary *)
-        begin try
-          if find_expansion_scope !env p1 > find_expansion_scope !env p2 then
-            unify env t1 (try_expand_safe !env t2)
-          else
-            unify env (try_expand_safe !env t1) t2
-        with Cannot_expand ->
-          unify2 env t1 t2
-        end
+    | (Tconstr _, Tconstr _) when Env.has_local_constraints !env ->
+        unify2_rec env t1 t1 t2 t2
     | _ ->
         unify2 env t1 t2
     end;
@@ -2647,13 +2639,34 @@ let rec unify (env:Env.t ref) t1 t2 =
     reset_trace_gadt_instances reset_tracing;
     raise_trace_for Unify (Diff {got = t1; expected = t2} :: trace)
 
-and unify2 env t1 t2 =
+and unify2 env t1 t2 = unify2_expand env t1 t1 t2 t2
+
+and unify2_rec env t10 t1 t20 t2 =
+  if unify_eq t1 t2 then () else
+  try match (get_desc t1, get_desc t2) with
+  | (Tconstr (p1, tl1, a1), Tconstr (p2, tl2, a2)) ->
+      if Path.same p1 p2 && tl1 = [] && tl2 = []
+      && not (has_cached_expansion p1 !a1 || has_cached_expansion p2 !a2)
+      then begin
+        update_level_for Unify !env (get_level t1) t2;
+        update_scope_for Unify (get_scope t1) t2;
+        link_type t1 t2
+      end else
+        if find_expansion_scope !env p1 > find_expansion_scope !env p2
+        then unify2_rec env t10 t1 t20 (try_expand_safe !env t2)
+        else unify2_rec env t10 (try_expand_safe !env t1) t20 t2
+  | _ ->
+      raise Cannot_expand
+  with Cannot_expand ->
+    unify2_expand env t10 t1 t20 t2
+
+and unify2_expand env t1 t1' t2 t2' =
   (* Second step: expansion of abbreviations *)
   (* Expansion may change the representative of the types. *)
-  ignore (expand_head_unif !env t1);
-  ignore (expand_head_unif !env t2);
-  let t1' = expand_head_unif !env t1 in
-  let t2' = expand_head_unif !env t2 in
+  ignore (expand_head_unif !env t1');
+  ignore (expand_head_unif !env t2');
+  let t1' = expand_head_unif !env t1' in
+  let t2' = expand_head_unif !env t2' in
   let lv = Int.min (get_level t1') (get_level t2') in
   let scope = Int.max (get_scope t1') (get_scope t2') in
   update_level_for Unify !env lv t2;
@@ -2698,7 +2711,7 @@ and unify3 env t1 t1' t2 t2' =
   | _ ->
     begin match !umode with
     | Expression ->
-        occur_for Unify !env t1' t2';
+        occur_for Unify !env t1' t2;
         link_type t1' t2
     | Pattern ->
         add_type_equality t1' t2'

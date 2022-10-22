@@ -18,6 +18,7 @@
 /* Callbacks from C to OCaml */
 
 #include <string.h>
+#include "caml/alloc.h"
 #include "caml/callback.h"
 #include "caml/codefrag.h"
 #include "caml/fail.h"
@@ -29,7 +30,7 @@
 /*
  * These functions are to ensure effects are handled correctly inside
  * callbacks. There are two aspects:
- *  - we clear the stack parent for a callback to force an Unhandled
+ *  - we clear the stack parent for a callback to force an Effect.Unhandled
  *  exception rather than effects being passed over the callback
  *  - we register the stack parent as a local root while the callback
  * is executing to ensure that the garbage collector follows the
@@ -135,7 +136,9 @@ CAMLexport value caml_callback3_exn(value closure,
   return caml_callbackN_exn(closure, 3, arg);
 }
 
-#else /* Nativecode callbacks */
+#else
+
+/* Native-code callbacks.  caml_callback[123]_asm are implemented in asm. */
 
 static void init_callback_code(void)
 {
@@ -149,6 +152,7 @@ callback_stub caml_callback_asm, caml_callback2_asm, caml_callback3_asm;
 
 CAMLexport value caml_callback_exn(value closure, value arg)
 {
+  Caml_check_caml_state();
   caml_domain_state* domain_state = Caml_state;
   caml_maybe_expand_stack();
 
@@ -169,6 +173,7 @@ CAMLexport value caml_callback_exn(value closure, value arg)
 
 CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
 {
+  Caml_check_caml_state();
   value args[] = {arg1, arg2};
   caml_domain_state* domain_state = Caml_state;
   caml_maybe_expand_stack();
@@ -191,6 +196,7 @@ CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
 CAMLexport value caml_callback3_exn(value closure,
                                     value arg1, value arg2, value arg3)
 {
+  Caml_check_caml_state();
   value args[] = {arg1, arg2, arg3};
   caml_domain_state* domain_state = Caml_state;
   caml_maybe_expand_stack();
@@ -209,8 +215,6 @@ CAMLexport value caml_callback3_exn(value closure,
     return caml_callback3_asm(domain_state, closure, args);
   }
 }
-
-/* Native-code callbacks.  caml_callback[123]_asm are implemented in asm. */
 
 CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
 {
@@ -289,7 +293,8 @@ void caml_init_callbacks(void)
 static unsigned int hash_value_name(char const *name)
 {
   unsigned int h;
-  for (h = 0; *name != 0; name++) h = h * 19 + *name;
+  /* "djb2" hash function */
+  for (h = 5381; *name != 0; name++) h = h * 33 + *name;
   return h % Named_value_size;
 }
 
@@ -341,10 +346,12 @@ CAMLexport const value* caml_named_value(char const *name)
 CAMLexport void caml_iterate_named_values(caml_named_action f)
 {
   int i;
+  caml_plat_lock(&named_value_lock);
   for(i = 0; i < Named_value_size; i++){
     struct named_value * nv;
     for (nv = named_value_table[i]; nv != NULL; nv = nv->next) {
       f( Op_val(nv->val), nv->name );
     }
   }
+  caml_plat_unlock(&named_value_lock);
 }

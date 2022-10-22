@@ -1,21 +1,22 @@
 (* TEST
 *)
 
-Random.init 12345;;
+let () = Random.init 12345
 
-let size = 1000;;
+let size, num_gcs =
+  1000, 20
 
-type block = int array;;
+type block = int array
 
 type objdata =
   | Present of block
   | Absent of int  (* GC count at time of erase *)
-;;
+
 
 type bunch = {
   objs : objdata array;
   wp : block Weak.t;
-};;
+}
 
 let data =
   Array.init size (fun i ->
@@ -25,11 +26,10 @@ let data =
       wp = Weak.create n;
     }
   )
-;;
 
-let gccount () = (Gc.quick_stat ()).Gc.major_collections;;
+let gccount () = (Gc.quick_stat ()).Gc.major_collections
 
-type change = No_change | Fill | Erase;;
+type change = No_change | Fill | Erase
 
 (* Check the correctness condition on the data at (i,j):
    1. if the block is present, the weak pointer must be full
@@ -56,7 +56,7 @@ let check_and_change i j =
     | Present _, true ->
       if Random.int 10 = 0 then Erase else No_change
   in
-  match change with
+  begin match change with
   | No_change -> ()
   | Fill ->
     let x = Array.make (1 + Random.int 10) 42 in
@@ -66,13 +66,14 @@ let check_and_change i j =
     data.(i).objs.(j) <- Absent gc1;
     let gc2 = gccount () in
     if gc1 <> gc2 then data.(i).objs.(j) <- Absent gc2;
-;;
+  end
 
-let dummy = ref [||];;
+let dummy = ref [||]
 
-while gccount () < 20 do
-  dummy := Array.make (Random.int 300) 0;
-  let i = Random.int size in
-  let j = Random.int (Array.length data.(i).objs) in
-  check_and_change i j;
-done
+let () =
+  while gccount () < num_gcs do
+    dummy := Array.make (Random.int 300) 0;
+    let i = Random.int size in
+    let j = Random.int (Array.length data.(i).objs) in
+    check_and_change i j;
+  done

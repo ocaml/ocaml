@@ -22,6 +22,7 @@
 #include "roots.h"
 #include "domain.h"
 #include "misc.h"
+#include "gc_stats.h"
 
 struct caml_heap_state;
 struct pool;
@@ -31,7 +32,13 @@ void caml_teardown_shared_heap(struct caml_heap_state* heap);
 
 value* caml_shared_try_alloc(struct caml_heap_state*, mlsize_t, tag_t, int);
 
-void caml_sample_heap_stats(struct caml_heap_state*, struct heap_stats*);
+/* Copy the domain-local heap stats into a heap stats sample. */
+void caml_collect_heap_stats_sample(
+  struct caml_heap_state* local,
+  struct heap_stats *sample);
+
+/* Add the global orphaned heap stats into an accumulator. */
+void caml_accum_orphan_heap_stats(struct heap_stats *acc);
 
 uintnat caml_heap_size(struct caml_heap_state*);
 uintnat caml_top_heap_words(struct caml_heap_state*);
@@ -86,10 +93,8 @@ void caml_cycle_heap(struct caml_heap_state*);
 
 /* Heap invariant verification (for debugging) */
 
-/* caml_verify_begin must only be called while all domains are paused */
-struct heap_verify_state* caml_verify_begin(void);
-void caml_verify_root(void*, value, value*);
-void caml_verify_heap(struct heap_verify_state*); /* deallocates arg */
+/* caml_verify_heap must only be called while all domains are paused */
+void caml_verify_heap(caml_domain_state *domain);
 
 #ifdef DEBUG
 /* [is_garbage(v)] returns true if [v] is a garbage value */

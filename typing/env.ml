@@ -104,6 +104,10 @@ let add_label_usage lu usage =
     lu.lu_mutation <- true;
     lu.lu_construct <- true
 
+let is_mutating_label_usage = function
+  | Mutation -> true
+  | (Projection | Construct | Exported_private | Exported) -> false
+
 let label_usages () =
   {lu_projection = false; lu_mutation = false; lu_construct = false}
 
@@ -937,6 +941,7 @@ let reset_declaration_caches () =
   Types.Uid.Tbl.clear !module_declarations;
   Types.Uid.Tbl.clear !used_constructors;
   Types.Uid.Tbl.clear !used_labels;
+  Types.Uid.Tbl.clear !uid_to_loc;
   ()
 
 let reset_cache () =
@@ -2551,7 +2556,7 @@ let save_signature_with_imports ~alerts sg modname filename imports =
     ~alerts sg modname filename
 
 (* Make the initial environment *)
-let (initial_safe_string, initial_unsafe_string) =
+let initial =
   Predef.build_initial_env
     (add_type ~check:false)
     (add_extension ~check:false ~rebind:false)
@@ -2722,7 +2727,10 @@ let use_cltype ~use ~loc path desc =
 let use_label ~use ~loc usage env lbl =
   if use then begin
     mark_label_description_used usage env lbl;
-    Builtin_attributes.check_alerts loc lbl.lbl_attributes lbl.lbl_name
+    Builtin_attributes.check_alerts loc lbl.lbl_attributes lbl.lbl_name;
+    if is_mutating_label_usage usage then
+      Builtin_attributes.check_deprecated_mutable loc lbl.lbl_attributes
+        lbl.lbl_name
   end
 
 let use_constructor_desc ~use ~loc usage env cstr =
@@ -3020,7 +3028,7 @@ let lookup_all_dot_constructors ~errors ~use ~loc usage l s env =
   | Longident.Lident "*predef*" ->
       (* Hack to support compilation of default arguments *)
       lookup_all_ident_constructors
-        ~errors ~use ~loc usage s initial_safe_string
+        ~errors ~use ~loc usage s initial
   | _ ->
       let (_, comps) = lookup_structure_components ~errors ~use ~loc l env in
       match NameMap.find s comps.comp_constrs with

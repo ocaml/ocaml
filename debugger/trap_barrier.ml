@@ -19,13 +19,13 @@
 open Debugcom
 open Checkpoints
 
-let current_trap_barrier = ref 0
+let current_trap_barrier = ref Sp.null
 
 let install_trap_barrier pos =
   current_trap_barrier := pos
 
 let remove_trap_barrier () =
-  current_trap_barrier := 0
+  current_trap_barrier := Sp.null
 
 (* Ensure the trap barrier state is up to date in current checkpoint. *)
 let update_trap_barrier () =

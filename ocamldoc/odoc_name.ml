@@ -70,7 +70,6 @@ let parens_if_infix name =
   | "or" | "mod" | "land" | "lor" | "lxor" | "lsl" | "lsr" | "asr" ->
      "(" ^ name ^ ")"
   | name -> name
-;;
 
 let cut name =
   match name with
@@ -123,7 +122,6 @@ let normalize_name name =
   match p with
     "" -> s
   | p -> concat p s
-  ;;
 
 let head_and_tail n =
   try

@@ -25,6 +25,8 @@ module Raw = struct
     = "caml_ml_domain_id"
   external cpu_relax : unit -> unit
     = "caml_ml_domain_cpu_relax"
+  external get_recommended_domain_count: unit -> int
+    = "caml_recommended_domain_count" [@@noalloc]
 end
 
 let cpu_relax () = Raw.cpu_relax ()
@@ -33,15 +35,14 @@ type id = Raw.t
 
 type 'a state =
 | Running
-| Joining of ('a, exn) result option ref
 | Finished of ('a, exn) result
-| Joined
 
 type 'a t = {
   domain : Raw.t;
-  termination_mutex: Mutex.t;
-  state: 'a state Atomic.t }
-
+  term_mutex: Mutex.t;
+  term_condition: Condition.t;
+  term_state: 'a state ref (* protected by [term_mutex] *)
+}
 
 module DLS = struct
 
@@ -130,21 +131,31 @@ module DLS = struct
 
 end
 
+(******** Identity **********)
+
+let get_id { domain; _ } = domain
+
+let self () = Raw.self ()
+
+let is_main_domain () = (self () :> int) = 0
+
+(******** Callbacks **********)
+
 (* first spawn, domain startup and at exit functionality *)
 let first_domain_spawned = Atomic.make false
 
 let first_spawn_function = ref (fun () -> ())
 
-let at_first_spawn f =
+let before_first_spawn f =
   if Atomic.get first_domain_spawned then
-    raise (Invalid_argument "First domain already spawned")
+    raise (Invalid_argument "first domain already spawned")
   else begin
     let old_f = !first_spawn_function in
-    let new_f () = f (); old_f () in
+    let new_f () = old_f (); f () in
     first_spawn_function := new_f
   end
 
-let do_at_first_spawn () =
+let do_before_first_spawn () =
   if not (Atomic.get first_domain_spawned) then begin
     Atomic.set first_domain_spawned true;
     !first_spawn_function();
@@ -152,107 +163,98 @@ let do_at_first_spawn () =
     first_spawn_function := (fun () -> ())
   end
 
-let exit_function = Atomic.make (fun () -> ())
+let at_exit_key = DLS.new_key (fun () -> (fun () -> ()))
 
-let rec at_exit f =
-  let wrapped_f () = try f () with _ -> () in
-  let old_exit = Atomic.get exit_function in
-  let new_exit () = wrapped_f (); old_exit () in
-  let success = Atomic.compare_and_set exit_function old_exit new_exit in
-  if success then
-    Stdlib.at_exit wrapped_f
-  else at_exit f
-
-let do_at_exit () = (Atomic.get exit_function) ()
-
-let startup_function = Atomic.make (fun () -> ())
-
-let rec at_startup f =
-  let old_startup = Atomic.get startup_function in
-  let new_startup () = f (); old_startup () in
-  let success =
-    Atomic.compare_and_set startup_function old_startup new_startup
+let at_exit f =
+  let old_exit : unit -> unit = DLS.get at_exit_key in
+  let new_exit () =
+    (* The domain termination callbacks ([at_exit]) are run in
+       last-in-first-out (LIFO) order in order to be symmetric with the domain
+       creation callbacks ([at_each_spawn]) which run in first-in-fisrt-out
+       (FIFO) order. *)
+    f (); old_exit ()
   in
-  if success then
-    ()
-  else
-    at_startup f
+  DLS.set at_exit_key new_exit
 
-(* Spawn and join functionality *)
-exception Retry
-let rec spin f =
-  try f () with Retry ->
-      cpu_relax ();
-      spin f
+let do_at_exit () =
+  let f : unit -> unit = DLS.get at_exit_key in
+  f ()
 
-let cas r vold vnew =
-  if not (Atomic.compare_and_set r vold vnew) then raise Retry
+let _ = Stdlib.do_domain_local_at_exit := do_at_exit
+
+(******* Creation and Termination ********)
 
 let spawn f =
-  do_at_first_spawn ();
+  do_before_first_spawn ();
   let pk = DLS.get_initial_keys () in
-  (* the termination_mutex is used to block a joining thread *)
-  let termination_mutex = Mutex.create () in
-  let state = Atomic.make Running in
-  let at_startup = Atomic.get startup_function in
+
+  (* The [term_mutex] and [term_condition] are used to
+     synchronize with the joining domains *)
+  let term_mutex = Mutex.create () in
+  let term_condition = Condition.create () in
+  let term_state = ref Running in
+
   let body () =
     let result =
       match
         DLS.create_dls ();
         DLS.set_initial_keys pk;
-        at_startup ();
-        f ()
+        let res = f () in
+        res
       with
       | x -> Ok x
       | exception ex -> Error ex
     in
-    do_at_exit ();
-    spin (fun () ->
-      match Atomic.get state with
-      | Running ->
-         cas state Running (Finished result)
-      | Joining x as old ->
-         cas state old Joined;
-         x := Some result
-      | Joined | Finished _ ->
-         failwith "internal error: I'm already finished?")
-  in
-  { domain = Raw.spawn body termination_mutex; termination_mutex; state }
 
-let termination_wait termination_mutex =
-  (* Raw.spawn returns with the mutex locked, so this will block if the
-     domain has not terminated yet *)
-  Mutex.lock termination_mutex;
-  Mutex.unlock termination_mutex
+    let result' =
+      (* Run the [at_exit] callbacks when the domain computation either
+         terminates normally or exceptionally. *)
+      match do_at_exit () with
+      | () -> result
+      | exception ex ->
+          begin match result with
+          | Ok _ ->
+              (* If the domain computation terminated normally, but the
+                 [at_exit] callbacks raised an exception, then return the
+                 exception. *)
+              Error ex
+          | Error _ ->
+              (* If both the domain computation and the [at_exit] callbacks
+                 raised exceptions, then ignore the exception from the
+                 [at_exit] callbacks and return the original exception. *)
+              result
+          end
+    in
 
-let join { termination_mutex; state; _ } =
-  let res = spin (fun () ->
-    match Atomic.get state with
-    | Running -> begin
-      let x = ref None in
-      cas state Running (Joining x);
-      termination_wait termination_mutex;
-      match !x with
-      | None ->
-          failwith "internal error: termination signaled but result not passed"
-      | Some r -> r
-    end
-    | Finished x as old ->
-      cas state old Joined;
-      termination_wait termination_mutex;
-      x
-    | Joining _ | Joined ->
-      raise (Invalid_argument "This domain has already been joined")
-    )
+    (* Synchronize with joining domains *)
+    Mutex.lock term_mutex;
+    match !term_state with
+    | Running ->
+        term_state := Finished result';
+        Condition.broadcast term_condition;
+    | Finished _ ->
+        failwith "internal error: Am I already finished?"
+    (* [term_mutex] is unlocked in the runtime after the cleanup functions on
+       the C side are finished. *)
   in
-  match res with
+  { domain = Raw.spawn body term_mutex;
+    term_mutex;
+    term_condition;
+    term_state }
+
+let join { term_mutex; term_condition; term_state; _ } =
+  Mutex.lock term_mutex;
+  let rec loop () =
+    match !term_state with
+    | Running ->
+        Condition.wait term_condition term_mutex;
+        loop ()
+    | Finished res ->
+        Mutex.unlock term_mutex;
+        res
+  in
+  match loop () with
   | Ok x -> x
   | Error ex -> raise ex
 
-let get_id { domain; _ } = domain
-
-let self () = Raw.self ()
-
-external set_name : string -> unit = "caml_ml_domain_set_name"
-
-let is_main_domain () = (self () :> int) == 0
+let recommended_domain_count = Raw.get_recommended_domain_count

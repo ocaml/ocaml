@@ -33,6 +33,9 @@ type system =
   | S_win64
   | S_linux
   | S_mingw64
+  | S_freebsd
+  | S_netbsd
+  | S_openbsd
 
   | S_unknown
 
@@ -50,6 +53,9 @@ let system = match Config.system with
   | "mingw64" -> S_mingw64
   | "win64" -> S_win64
   | "linux" -> S_linux
+  | "freebsd" -> S_freebsd
+  | "netbsd" -> S_netbsd
+  | "openbsd" -> S_openbsd
 
   | _ -> S_unknown
 
@@ -81,7 +87,7 @@ let string_of_symbol prefix s =
   let spec = ref false in
   for i = 0 to String.length s - 1 do
     match String.unsafe_get s i with
-    | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' -> ()
+    | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' | '.' -> ()
     | _ -> spec := true;
   done;
   if not !spec then if prefix = "" then s else prefix ^ s
@@ -90,8 +96,10 @@ let string_of_symbol prefix s =
     Buffer.add_string b prefix;
     String.iter
       (function
-        | ('A'..'Z' | 'a'..'z' | '0'..'9' | '_') as c -> Buffer.add_char b c
-        | c -> Printf.bprintf b "$%02x" (Char.code c)
+        | ('A'..'Z' | 'a'..'z' | '0'..'9' | '_' | '.') as c ->
+            Buffer.add_char b c
+        | c ->
+            Printf.bprintf b "$%02x" (Char.code c)
       )
       s;
     Buffer.contents b

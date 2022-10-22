@@ -118,16 +118,16 @@ let rec iteri_aux f i xs =
 let[@inline] iteri f xs =
   iteri_aux f 0 xs
 
-let rec fold_lefti_aux f i accu xs =
+let rec fold_lefti_aux f accu i xs =
   match xs() with
   | Nil ->
       accu
   | Cons (x, xs) ->
-      let accu = f i accu x in
-      fold_lefti_aux f (i+1) accu xs
+      let accu = f accu i x in
+      fold_lefti_aux f accu (i+1) xs
 
 let[@inline] fold_lefti f accu xs =
-  fold_lefti_aux f 0 accu xs
+  fold_lefti_aux f accu 0 xs
 
 let rec for_all p xs =
   match xs() with
@@ -425,12 +425,12 @@ module Suspension = struct
      raised. *)
 
   let once (f : 'a suspension) : 'a suspension =
-    let action = CamlinternalAtomic.make f in
+    let action = Atomic.make f in
     fun () ->
       (* Get the function currently stored in [action], and write the
          function [failure] in its place, so the next access will result
          in a call to [failure()]. *)
-      let f = CamlinternalAtomic.exchange action failure in
+      let f = Atomic.exchange action failure in
       f()
 
 end (* Suspension *)

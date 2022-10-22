@@ -62,6 +62,7 @@ frame_descr * caml_next_frame_descriptor
         *pc = 0;
         return NULL;
       }
+      Pop_frame_pointer(*sp);
       *pc = **(uintnat**)sp;
       *sp += sizeof(value); /* return address */
     }
@@ -74,6 +75,11 @@ int caml_alloc_backtrace_buffer(void){
     caml_stat_alloc_noexc(BACKTRACE_BUFFER_SIZE * sizeof(backtrace_slot));
   if (Caml_state->backtrace_buffer == NULL) return -1;
   return 0;
+}
+
+void caml_free_backtrace_buffer(backtrace_slot *backtrace_buffer) {
+  if (backtrace_buffer != NULL)
+    caml_stat_free(backtrace_buffer);
 }
 
 /* Stores the return addresses contained in the given stack fragment

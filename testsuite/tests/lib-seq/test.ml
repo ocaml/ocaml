@@ -89,7 +89,7 @@ let () =
 let () =
   let xs = !?["a"; "b"] in
   assert (
-    Seq.fold_lefti (fun i acc x -> (i, x) :: acc) [] xs = [ 1, "b"; 0, "a" ]
+    Seq.fold_lefti (fun acc i x -> (i, x) :: acc) [] xs = [ 1, "b"; 0, "a" ]
   )
 
 (* [scan] *)

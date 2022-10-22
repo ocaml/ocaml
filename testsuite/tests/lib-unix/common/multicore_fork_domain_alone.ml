@@ -12,11 +12,13 @@ include unix
 let expect_exn ="Unix.fork may not be called while other domains were created"
 
 let () =
-  let _ = Domain.spawn (fun () -> Unix.sleep 1) in
-  match Unix.fork () with
+  let d = Domain.spawn (fun () -> Unix.sleep 1) in
+  begin match Unix.fork () with
   | exception Failure msg ->
      if String.equal msg expect_exn then
        print_endline "OK"
      else
        Printf.printf "failed: expected Failure: %s, got %s\n" expect_exn msg
   | _ -> print_endline "NOK"
+  end;
+  Domain.join d

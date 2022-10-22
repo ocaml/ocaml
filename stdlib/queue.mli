@@ -16,6 +16,7 @@
 (** First-in first-out queues.
 
    This module implements queues (FIFOs), with in-place modification.
+   See {{!examples} the example section} below.
 
    {b Warning} This module is not thread-safe: each {!Queue.t} value
    must be protected from concurrent access (e.g. with a [Mutex.t]).
@@ -106,3 +107,98 @@ val add_seq : 'a t -> 'a Seq.t -> unit
 val of_seq : 'a Seq.t -> 'a t
 (** Create a queue from a sequence.
     @since 4.07 *)
+
+(** {1:examples Examples}
+
+  {2 Basic Example}
+
+   A basic example:
+    {[
+    # let q = Queue.create ()
+    val q : '_weak1 Queue.t = <abstr>
+
+
+    # Queue.push 1 q; Queue.push 2 q; Queue.push 3 q
+    - : unit = ()
+
+    # Queue.length q
+    - : int = 3
+
+    # Queue.pop q
+    - : int = 1
+
+    # Queue.pop q
+    - : int = 2
+
+    # Queue.pop q
+    - : int = 3
+
+    # Queue.pop q
+    Exception: Stdlib.Queue.Empty.
+    ]}
+
+  {2 Search Through a Graph}
+
+   For a more elaborate example, a classic algorithmic use of queues
+   is to implement a BFS (breadth-first search) through a graph.
+
+   {[
+     type graph = {
+       edges: (int, int list) Hashtbl.t
+     }
+
+    (* Search in graph [g] using BFS, starting from node [start].
+       It returns the first node that satisfies [p], or [None] if
+       no node reachable from [start] satifies [p].
+    *)
+    let search_for ~(g:graph) ~(start:int) (p:int -> bool) : int option =
+      let to_explore = Queue.create() in
+      let explored = Hashtbl.create 16 in
+
+      Queue.push start to_explore;
+      let rec loop () =
+        if Queue.is_empty to_explore then None
+        else
+          (* node to explore *)
+          let node = Queue.pop to_explore in
+          explore_node node
+
+      and explore_node node =
+        if not (Hashtbl.mem explored node) then (
+          if p node then Some node (* found *)
+          else (
+            Hashtbl.add explored node ();
+            let children =
+              Hashtbl.find_opt g.edges node
+              |> Option.value ~default:[]
+            in
+            List.iter (fun child -> Queue.push child to_explore) children;
+            loop()
+          )
+        ) else loop()
+      in
+      loop()
+
+    (* a sample graph *)
+    let my_graph: graph =
+      let edges =
+        List.to_seq [
+          1, [2;3];
+          2, [10; 11];
+          3, [4;5];
+          5, [100];
+          11, [0; 20];
+        ]
+        |> Hashtbl.of_seq
+      in {edges}
+
+    # search_for ~g:my_graph ~start:1 (fun x -> x = 30)
+    - : int option = None
+
+    # search_for ~g:my_graph ~start:1 (fun x -> x >= 15)
+    - : int option = Some 20
+
+    # search_for ~g:my_graph ~start:1 (fun x -> x >= 50)
+    - : int option = Some 100
+   ]}
+   *)

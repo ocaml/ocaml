@@ -1,13 +1,17 @@
 name: Hygiene
 on:
   push:
+    branches:
+      - '4.**'
+      - '5.**'
+      - 'trunk'
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
 jobs:
   hygiene:
     name: Checks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: GitHub Context
         run: echo $GITHUB_CONTEXT

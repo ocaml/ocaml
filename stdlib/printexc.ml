@@ -52,6 +52,20 @@ let use_printers x =
     | [] -> None in
   conv (Atomic.get printers)
 
+let destruct_ext_constructor x =
+  if Obj.tag x <> 0 then
+    ((Obj.magic (Obj.field x 0) : string), None)
+  else
+    let constructor =
+      (Obj.magic (Obj.field (Obj.field x 0) 0) : string) in
+    (constructor, Some (fields x))
+
+let string_of_extension_constructor t =
+  let constructor, fields_opt = destruct_ext_constructor t in
+  match fields_opt with
+  | None -> constructor
+  | Some f -> constructor ^ f
+
 let to_string_default = function
   | Out_of_memory -> "Out of memory"
   | Stack_overflow -> "Stack overflow"
@@ -62,13 +76,7 @@ let to_string_default = function
   | Undefined_recursive_module(file, line, char) ->
       sprintf locfmt file line char (char+6) "Undefined recursive module"
   | x ->
-      let x = Obj.repr x in
-      if Obj.tag x <> 0 then
-        (Obj.magic (Obj.field x 0) : string)
-      else
-        let constructor =
-          (Obj.magic (Obj.field (Obj.field x 0) 0) : string) in
-        constructor ^ (fields x)
+      string_of_extension_constructor (Obj.repr x)
 
 let to_string e =
   match use_printers e with

@@ -1,0 +1,44 @@
+# @configure_input@
+
+version = "@VERSION@"
+description = "compiler-libs support library"
+
+package "common" (
+  requires = "compiler-libs"
+  version = "@VERSION@"
+  description = "Common compiler routines"
+  archive(byte) = "ocamlcommon.cma"
+  archive(native) = "ocamlcommon.cmxa"
+)
+
+package "bytecomp" (
+  requires = "compiler-libs.common"
+  version = "@VERSION@"
+  description = "Bytecode compiler"
+  archive(byte) = "ocamlbytecomp.cma"
+  archive(native) = "ocamlbytecomp.cmxa"
+)
+
+package "optcomp" (
+  requires = "compiler-libs.common"
+  version = "@VERSION@"
+  description = "Native-code compiler"
+  archive(byte) = "ocamloptcomp.cma"
+  archive(native) = "ocamloptcomp.cmxa"
+  exists_if = "ocamloptcomp.cma"
+)
+
+package "toplevel" (
+  requires = "compiler-libs.bytecomp"
+  version = "@VERSION@"
+  description = "Toplevel interactions"
+  archive(byte) = "ocamltoplevel.cma"
+)
+
+package "native-toplevel" (
+  requires = "compiler-libs.optcomp dynlink"
+  version = "@VERSION@"
+  description = "Toplevel interactions"
+  archive(native) = "ocamltoplevel.cmxa"
+  exists_if = "ocamltoplevel.cmxa"
+)

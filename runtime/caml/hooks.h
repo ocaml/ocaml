@@ -28,7 +28,8 @@ extern "C" {
 #ifdef NATIVE_CODE
 
 /* executed just before calling the entry point of a dynamically
-   loaded native code module. */
+   loaded native code module.
+   This hook is not modified after other domains are spawned. */
 CAMLextern void (*caml_natdynlink_hook)(void* handle, const char* unit);
 
 #endif /* NATIVE_CODE */

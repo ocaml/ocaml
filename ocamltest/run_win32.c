@@ -29,6 +29,7 @@
 #include <stdarg.h>
 #include <sys/types.h>
 
+#include "caml/memory.h"
 #include "caml/osdeps.h"
 
 #include "run.h"

@@ -142,14 +142,8 @@ val is_empty : 'a t -> bool
 val uncons : 'a t -> ('a * 'a t) option
 (** If [xs] is empty, then [uncons xs] is [None].
 
-    If [xs] is nonempty, then [uncons xs] is
-    [Some (head xs, tail xs)],
-    that is, a pair of the head and tail of the sequence [xs].
-
-    This equivalence holds if [xs] is persistent.
-    If [xs] is ephemeral, then [uncons] must be preferred
-    over separate calls to [head] and [tail],
-    which would cause [xs] to be queried twice.
+    If [xs] is nonempty, then [uncons xs] is [Some (x, ys)] where [x] is the
+    head of the sequence and [ys] its tail.
 
     @since 4.14 *)
 
@@ -187,11 +181,11 @@ val iteri : (int -> 'a -> unit) -> 'a t -> unit
 
     @since 4.14 *)
 
-val fold_lefti : (int -> 'b -> 'a -> 'b) -> 'b -> 'a t -> 'b
+val fold_lefti : ('b -> int -> 'a -> 'b) -> 'b -> 'a t -> 'b
 (** [fold_lefti f _ xs] invokes [f _ i x] successively
     for every element [x] located at index [i] of the sequence [xs].
 
-    An accumulator of type ['a] is threaded through the calls to [f].
+    An accumulator of type ['b] is threaded through the calls to [f].
 
     It terminates only if the sequence [xs] is finite.
 

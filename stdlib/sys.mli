@@ -42,6 +42,13 @@ external is_directory : string -> bool = "caml_sys_is_directory"
     @since 3.10.0
 *)
 
+external is_regular_file : string -> bool = "caml_sys_is_regular_file"
+(** Returns [true] if the given name refers to a regular file,
+    [false] if it refers to another kind of file.
+    @raise Sys_error if no file exists with the given name.
+    @since 5.1
+*)
+
 external remove : string -> unit = "caml_sys_remove"
 (** Remove the given file name from the file system. *)
 
@@ -126,7 +133,7 @@ val interactive : bool ref
 val os_type : string
 (** Operating system currently executing the OCaml program. One of
 -  ["Unix"] (for all Unix versions, including Linux and Mac OS X),
--  ["Win32"] (for MS-Windows, OCaml compiled with MSVC++ or Mingw),
+-  ["Win32"] (for MS-Windows, OCaml compiled with MSVC++ or MinGW-w64),
 -  ["Cygwin"] (for MS-Windows, OCaml compiled with Cygwin). *)
 
 type backend_type =
