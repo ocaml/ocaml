@@ -328,6 +328,9 @@ OCaml 5.0
   no-flat-float-array mode, it's more efficient and avoids a a race condition
   (Xavier Leroy, report by Guillaume Munch-Maccagnoni, review by David Allsopp)
 
+- #11652: Fix benign off-by-one error in Windows implementation of caml_mem_map.
+  (David Allsopp, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #10972: ARM64 multicore support: OCaml & C stack separation;
