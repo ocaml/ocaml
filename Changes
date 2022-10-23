@@ -20,6 +20,9 @@ Working version
 
 ### Code generation and optimizations:
 
+- #11658: Migrate to integrated assembler for Darwin
+  extern assembler is deprecated (Élie BRAMI, review by I hope someone)
+
 - #8998, #11321, #11430: change mangling of OCaml long identifiers
   from `camlModule__name_NNN` to `camlModule.name_NNN`.  The previous
   mangling schema, using `__`, was ambiguous.

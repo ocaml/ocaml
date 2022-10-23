@@ -1382,9 +1382,6 @@ AS_CASE([$as_target,$ocaml_cv_cc_vendor],
   [x86_64-pc-windows,*],
     [default_as="ml64 -nologo -Cp -c -Fo"
     default_aspp="$default_as"],
-  [*-*-darwin*,clang-*],
-    [default_as="$default_as -Wno-trigraphs"
-    default_aspp="$default_as"],
   [])
 
 AS_IF([test "$with_pic"],
