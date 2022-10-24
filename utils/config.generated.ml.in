@@ -78,7 +78,6 @@ let flambda = @flambda@
 let with_flambda_invariants = @flambda_invariants@
 let with_cmm_invariants = @cmm_invariants@
 let windows_unicode = @windows_unicode@ != 0
-let force_instrumented_runtime = @force_instrumented_runtime@
 
 let flat_float_array = @flat_float_array@
 
