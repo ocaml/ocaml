@@ -1004,12 +1004,14 @@ let rec find_repr p1 =
 (*
    Generic nodes are duplicated, while non-generic nodes are left
    as-is.
-   During instantiation, the description of a generic node is first
-   replaced by a link to a stub ([Tsubst (newvar ())]). Once the
-   copy is made, it replaces the stub.
-   After instantiation, the description of generic node, which was
-   stored by [save_desc], must be put back, using [cleanup_types].
-*)
+
+   During instantiation, the result of copying a generic node is
+   "cached" in-place by temporarily mutating the node description by
+   a stub [Tsubst (newvar ())] using [For_copy.redirect_desc]. The
+   scope of this mutation is determined by the [copy_scope] parameter,
+   and the [For_copy.with_scope] helper is in charge of creating a new
+   scope and performing the necessary book-keeping -- in particular
+   reverting the in-place updates after the instantiation is done. *)
 
 let abbreviations = ref (ref Mnil)
   (* Abbreviation memorized. *)
