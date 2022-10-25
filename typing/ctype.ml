@@ -1140,7 +1140,8 @@ let instance ?partial sch =
       None -> None
     | Some keep -> Some (compute_univars sch, keep)
   in
-  For_copy.with_scope (fun scope -> copy ?partial scope sch)
+  For_copy.with_scope (fun copy_scope ->
+    copy ?partial copy_scope sch)
 
 let generic_instance sch =
   let old = !current_level in
@@ -1150,7 +1151,8 @@ let generic_instance sch =
   ty
 
 let instance_list schl =
-  For_copy.with_scope (fun scope -> List.map (fun t -> copy scope t) schl)
+  For_copy.with_scope (fun copy_scope ->
+    List.map (fun t -> copy copy_scope t) schl)
 
 let reified_var_counter = ref Vars.empty
 let reset_reified_var_counter () =
@@ -1225,17 +1227,17 @@ let instance_constructor existential_treatment cstr =
   )
 
 let instance_parameterized_type ?keep_names sch_args sch =
-  For_copy.with_scope (fun scope ->
-    let ty_args = List.map (fun t -> copy ?keep_names scope t) sch_args in
-    let ty = copy scope sch in
+  For_copy.with_scope (fun copy_scope ->
+    let ty_args = List.map (fun t -> copy ?keep_names copy_scope t) sch_args in
+    let ty = copy copy_scope sch in
     (ty_args, ty)
   )
 
 let instance_parameterized_type_2 sch_args sch_lst sch =
-  For_copy.with_scope (fun scope ->
-    let ty_args = List.map (copy scope) sch_args in
-    let ty_lst = List.map (copy scope) sch_lst in
-    let ty = copy scope sch in
+  For_copy.with_scope (fun copy_scope ->
+    let ty_args = List.map (copy copy_scope) sch_args in
+    let ty_lst = List.map (copy copy_scope) sch_lst in
+    let ty = copy copy_scope sch in
     (ty_args, ty_lst, ty)
   )
 
@@ -1260,10 +1262,10 @@ let map_kind f = function
 
 
 let instance_declaration decl =
-  For_copy.with_scope (fun scope ->
-    {decl with type_params = List.map (copy scope) decl.type_params;
-     type_manifest = Option.map (copy scope) decl.type_manifest;
-     type_kind = map_kind (copy scope) decl.type_kind;
+  For_copy.with_scope (fun copy_scope ->
+    {decl with type_params = List.map (copy copy_scope) decl.type_params;
+     type_manifest = Option.map (copy copy_scope) decl.type_manifest;
+     type_kind = map_kind (copy copy_scope) decl.type_kind;
     }
   )
 
@@ -1275,29 +1277,29 @@ let generic_instance_declaration decl =
   decl
 
 let instance_class params cty =
-  let rec copy_class_type scope = function
+  let rec copy_class_type copy_scope = function
     | Cty_constr (path, tyl, cty) ->
-        let tyl' = List.map (copy scope) tyl in
-        let cty' = copy_class_type scope cty in
+        let tyl' = List.map (copy copy_scope) tyl in
+        let cty' = copy_class_type copy_scope cty in
         Cty_constr (path, tyl', cty')
     | Cty_signature sign ->
         Cty_signature
-          {csig_self = copy scope sign.csig_self;
-           csig_self_row = copy scope sign.csig_self_row;
+          {csig_self = copy copy_scope sign.csig_self;
+           csig_self_row = copy copy_scope sign.csig_self_row;
            csig_vars =
              Vars.map
-               (function (m, v, ty) -> (m, v, copy scope ty))
+               (function (m, v, ty) -> (m, v, copy copy_scope ty))
                sign.csig_vars;
            csig_meths =
              Meths.map
-               (function (p, v, ty) -> (p, v, copy scope ty))
+               (function (p, v, ty) -> (p, v, copy copy_scope ty))
                sign.csig_meths}
     | Cty_arrow (l, ty, cty) ->
-        Cty_arrow (l, copy scope ty, copy_class_type scope cty)
+        Cty_arrow (l, copy copy_scope ty, copy_class_type copy_scope cty)
   in
-  For_copy.with_scope (fun scope ->
-    let params' = List.map (copy scope) params in
-    let cty' = copy_class_type scope cty in
+  For_copy.with_scope (fun copy_scope ->
+    let params' = List.map (copy copy_scope) params in
+    let cty' = copy_class_type copy_scope cty in
     (params', cty')
   )
 
@@ -1398,16 +1400,16 @@ let instance_poly ?(keep_names=false) fixed univars sch =
   )
 
 let instance_label fixed lbl =
-  For_copy.with_scope (fun scope ->
+  For_copy.with_scope (fun copy_scope ->
     let vars, ty_arg =
       match get_desc lbl.lbl_arg with
         Tpoly (ty, tl) ->
-          instance_poly' scope ~keep_names:false fixed tl ty
+          instance_poly' copy_scope ~keep_names:false fixed tl ty
       | _ ->
-          [], copy scope lbl.lbl_arg
+          [], copy copy_scope lbl.lbl_arg
     in
     (* call [copy] after [instance_poly] to avoid introducing [Tsubst] *)
-    let ty_res = copy scope lbl.lbl_res in
+    let ty_res = copy copy_scope lbl.lbl_res in
     (vars, ty_arg, ty_res)
   )
 
@@ -2009,20 +2011,20 @@ let univar_pairs = ref []
 (**** Instantiate a generic type into a poly type ***)
 
 let polyfy env ty vars =
-  let subst_univar scope ty =
+  let subst_univar copy_scope ty =
     match get_desc ty with
     | Tvar name when get_level ty = generic_level ->
         let t = newty (Tunivar name) in
-        For_copy.redirect_desc scope ty (Tsubst (t, None));
+        For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
         Some t
     | _ -> None
   in
   (* need to expand twice? cf. Ctype.unify2 *)
   let vars = List.map (expand_head env) vars in
   let vars = List.map (expand_head env) vars in
-  For_copy.with_scope (fun scope ->
-    let vars' = List.filter_map (subst_univar scope) vars in
-    let ty = copy scope ty in
+  For_copy.with_scope (fun copy_scope ->
+    let vars' = List.filter_map (subst_univar copy_scope) vars in
+    let ty = copy copy_scope ty in
     let ty = newty2 ~level:(get_level ty) (Tpoly(ty, vars')) in
     let complete = List.length vars = List.length vars' in
     ty, complete
