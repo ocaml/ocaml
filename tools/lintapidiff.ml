@@ -27,6 +27,10 @@
 open Location
 open Parsetree
 
+type diff_error =
+  | File_not_found
+  | Other_error
+
 (* oldest Ocaml version that we show missing @since errors for *)
 let oldest = "4.00.0"
 
@@ -38,7 +42,7 @@ let ignore_changes_for = [
   "value Unix.map_file_impl";
 ]
 
-module IdMap = Misc.StringMap
+module IdMap = Misc.Stdlib.String.Map
 
 module Version : sig
   type t
@@ -76,12 +80,12 @@ module Doc = struct
   let since = Str.regexp "\\(.\\|\n\\)*@since +\\([^ ]+\\).*"
 
   let find_attr lst attrs =
-    try Some (List.find (fun (loc, _) -> List.mem loc.txt lst) attrs)
+    try Some (List.find (fun attr -> List.mem attr.attr_name.txt lst) attrs)
     with Not_found -> None
 
   let get_doc lst attrs = match find_attr lst attrs with
-    | Some (_, PStr [{pstr_desc=Pstr_eval(
-        {pexp_desc=Pexp_constant(Pconst_string (doc, _));_}, _);_}])
+    | Some { attr_payload = PStr [{pstr_desc=Pstr_eval(
+        {pexp_desc=Pexp_constant(Pconst_string (doc, _,_));_}, _);_}]}
       when doc <> "/*" && doc <> "" -> Some doc
     | _ -> None
 
@@ -112,7 +116,7 @@ end
 
 module Ast = struct
   let add_path ~f prefix path name attrs inherits map =
-    let path = Path.Pdot (path, name.txt, 0) in
+    let path = Path.Pdot (path, name.txt) in
     let id = prefix ^ " " ^ (Printtyp.string_of_path path) in
     (* inherits: annotation on parent is inherited by all children,
        so it suffices to annotate just the new module, and not all its elements
@@ -125,19 +129,26 @@ module Ast = struct
       let self = add_item ~f path inherits in
       match ty.pmty_desc with
       | Pmty_signature lst -> List.fold_left self map lst
-      | Pmty_functor ({txt;_}, _, m) ->
-          let path = Path.Papply(path, Path.Pident (Ident.create txt)) in
+      | Pmty_functor ((Named ({txt = Some txt0},_)),m) ->
+          let ident = Ident.create_persistent txt0 in
+          let path = Path.Papply(path, Path.Pident ident) in
           add_module_type path m (inherits, map)
       | Pmty_ident _ | Pmty_with _ | Pmty_typeof _| Pmty_extension _
-      | Pmty_alias _ -> map
+      | Pmty_alias _ | Pmty_functor (Named ({txt=None; _ }, _), _)
+      | Pmty_functor (Unit, _) -> map
     in
     let enter_path path name ty attrs map =
-      let path = Path.Pdot (path, name.txt, 0) in
+      let path = Path.Pdot (path, name.txt) in
       let inherits = f inherits name.loc attrs in
       add_module_type path ty (inherits, map)
     in
     let add_module map m =
-      enter_path  path m.pmd_name m.pmd_type m.pmd_attributes map
+      let name =
+        match m.pmd_name.txt with
+        | None -> failwith "anonymous functor arguments are not supported"
+        | Some n -> { m.pmd_name with txt = n}
+      in
+      enter_path  path name m.pmd_type m.pmd_attributes map
     in
     match item.psig_desc with
     | Psig_value vd ->
@@ -147,7 +158,8 @@ module Ast = struct
             add_path ~f "type" path t.ptype_name t.ptype_attributes inherits map
           ) map lst
     | Psig_exception e ->
-        add_path ~f "exception" path e.pext_name e.pext_attributes inherits map
+        add_path ~f "exception" path e.ptyexn_constructor.pext_name
+          e.ptyexn_attributes inherits map
     | Psig_module m -> add_module map m
     | Psig_recmodule lst -> List.fold_left add_module map lst
     | Psig_modtype s ->
@@ -157,7 +169,8 @@ module Ast = struct
             enter_path path s.pmtd_name ty s.pmtd_attributes map
         end
     | Psig_typext _|Psig_open _|Psig_include _|Psig_class _|Psig_class_type _
-    | Psig_attribute _|Psig_extension _ -> map
+    | Psig_attribute _|Psig_extension _ | Psig_typesubst _
+    | Psig_modsubst _ | Psig_modtypesubst _ -> map
 
   let add_items ~f path (inherits,map) items =
     (* module doc *)
@@ -173,7 +186,7 @@ module Ast = struct
     try
       let id =
         orig |> Filename.chop_extension |> Filename.basename |>
-        String.capitalize_ascii |> Ident.create in
+        String.capitalize_ascii |> Ident.create_persistent in
       let ast = Pparse.file ~tool_name:"lintapidiff" input
           Parse.interface Pparse.Signature in
       Location.input_name := orig;
@@ -193,12 +206,12 @@ module Git = struct
     Misc.try_finally (fun () ->
         match Sys.command cmd with
         | 0 -> Ok (f tmp)
-        | 128 -> Error `Not_found
+        | 128 -> Result.Error File_not_found
         | r ->
             Location.errorf ~loc:(in_file obj) "exited with code %d" r |>
-            Format.eprintf "%a@." Location.report_error;
-            Error `Exit)
-      (fun () -> Misc.remove_file tmp)
+            Location.print_report Format.err_formatter;
+            Result.Error Other_error)
+      ~always:(fun () -> Misc.remove_file tmp)
 end
 
 module Diff = struct
@@ -235,7 +248,7 @@ module Diff = struct
     in
     Location.errorf ~loc "@[%s %s@,%a@,%a@]" msg k
       info_seen seen info_latest latest |>
-    Format.eprintf "%a@." Location.report_error
+    Location.print_report Format.err_formatter
 
   let parse_file_at_rev ~path (prev,accum) rev =
     let merge _ a b = match a, b with
@@ -252,8 +265,8 @@ module Diff = struct
     in
     let map = match Git.with_show ~f rev path with
       | Ok r -> r
-      | Error `Not_found -> IdMap.empty
-      | Error `Exit -> raise Exit in
+      | Error File_not_found -> IdMap.empty
+      | Result.Error Other_error -> raise Exit in
     Some first_seen, IdMap.merge merge accum map
 
   let check_changes ~first ~last default k seen latest =
