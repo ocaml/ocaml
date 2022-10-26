@@ -308,7 +308,6 @@ META
 /tools/make_opcodes.ml
 /tools/ocamltex
 /tools/eventlog_metadata
-/tools/lintapidiff
 /tools/lintapidiff.opt
 
 /toplevel/byte/topeval.mli
