@@ -201,13 +201,13 @@ val concat_map : ('a -> 'b list) -> 'a list -> 'b list
 *)
 
 val fold_left_map :
-  ('acc -> 'b -> 'acc * 'c) -> 'acc -> 'b list -> 'acc * 'c list
+  ('acc -> 'a -> 'acc * 'b) -> 'acc -> 'a list -> 'acc * 'b list
 (** [fold_left_map] is  a combination of [fold_left] and [map] that threads an
     accumulator through calls to [f].
     @since 4.11.0
 *)
 
-val fold_left : ('acc -> 'b -> 'acc) -> 'acc -> 'b list -> 'acc
+val fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a list -> 'acc
 (** [fold_left f init [b1; ...; bn]] is
    [f (... (f (f init b1) b2) ...) bn].
  *)
@@ -241,7 +241,7 @@ val rev_map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
  *)
 
 val fold_left2 :
-  ('acc -> 'b -> 'c -> 'acc) -> 'acc -> 'b list -> 'c list -> 'acc
+  ('acc -> 'a -> 'b -> 'acc) -> 'acc -> 'a list -> 'b list -> 'acc
 (** [fold_left2 f init [a1; ...; an] [b1; ...; bn]] is
    [f (... (f (f init a1 b1) a2 b2) ...) an bn].
    @raise Invalid_argument if the two lists are determined
