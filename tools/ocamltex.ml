@@ -765,7 +765,7 @@ let process_file file =
          spanned the interval %d-%d,@ \
          intersecting with another \"%a\" transform @ \
          on the %d-%d interval.@ \
-         Hind: did you try to elide a code fragment which raised a warning?"
+         Hint: did you try to elide a code fragment which raised a warning?"
         file (line-2)
         Text_transform.pp left.kind left.start left.stop
         Text_transform.pp right.kind right.start right.stop
