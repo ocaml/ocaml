@@ -1069,24 +1069,19 @@ int caml_num_rows_fd(int fd)
 /* UCRT clock function returns wall-clock time */
 CAMLexport clock_t caml_win32_clock(void)
 {
-  FILETIME c, e, stime, utime;
+  FILETIME _creation, _exit;
+  CAML_ULONGLONG_FILETIME stime, utime;
   ULARGE_INTEGER tmp;
-  ULONGLONG total, clocks_per_sec;
+  ULONGLONG clocks_per_sec;
 
-  if (!(GetProcessTimes(GetCurrentProcess(), &c, &e, &stime, &utime))) {
+  if (!(GetProcessTimes(GetCurrentProcess(), &_creation, &_exit,
+                        &stime.ft, &utime.ft))) {
     return (clock_t)(-1);
   }
 
-  tmp.u.LowPart = stime.dwLowDateTime;
-  tmp.u.HighPart = stime.dwHighDateTime;
-  total = tmp.QuadPart;
-  tmp.u.LowPart = utime.dwLowDateTime;
-  tmp.u.HighPart = utime.dwHighDateTime;
-  total += tmp.QuadPart;
-
   /* total in 100-nanosecond intervals (1e7 / CLOCKS_PER_SEC) */
   clocks_per_sec = 10000000ULL / (ULONGLONG)CLOCKS_PER_SEC;
-  return (clock_t)(total / clocks_per_sec);
+  return (clock_t)((stime.ul + utime.ul) / clocks_per_sec);
 }
 
 static double clock_period = 0;

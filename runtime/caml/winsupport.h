@@ -60,6 +60,11 @@ typedef struct _REPARSE_DATA_BUFFER
 } REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
 #endif
 
+typedef union {
+  FILETIME ft;
+  ULONGLONG ul;
+} CAML_ULONGLONG_FILETIME;
+
 #endif
 
 #endif /* CAML_WINSUPPORT_H */
