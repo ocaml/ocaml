@@ -1,5 +1,6 @@
 (* TEST
    include testing
+   flags = "-no-strict-formats"
 *)
 
 (*

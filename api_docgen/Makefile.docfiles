@@ -43,19 +43,19 @@ stdlib_UNPREFIXED=$(STDLIB_MODULE_BASENAMES)
 
 otherlibref := $(dynlink_MLIS:%.mli=%)
 
-ifneq "$(filter str,$(OTHERLIBRARIES))" ""
+ifeq "$(lib_str)" "true"
 otherlibref += $(str_MLIS:%.mli=%)
 endif
 
-ifneq "$(filter %unix,$(OTHERLIBRARIES))" ""
+ifeq "$(lib_unix)" "true"
 otherlibref += $(unix_MLIS:%.mli=%)
 endif
 
-ifneq "$(filter systhreads,$(OTHERLIBRARIES))" ""
+ifeq "$(lib_systhreads)" "true"
 otherlibref += $(thread_MLIS:%.mli=%)
 endif
 
-ifneq "$(filter runtime_events,$(OTHERLIBRARIES))" ""
+ifeq "$(lib_runtime_events)" "true"
 otherlibref += $(runtime_events_MLIS:%.mli=%)
 endif
 

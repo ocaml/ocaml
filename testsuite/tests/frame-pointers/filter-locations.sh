@@ -18,5 +18,6 @@ sed -e \
     /^${program_escaped}/ ! d
     s/${regex_backtrace}/\1/
     s/${regex_trim_fun}/\1/
+    s;caml_\(main\|startup\);caml_main/caml_startup;
   }" \
   -e '/^\[0x/d'

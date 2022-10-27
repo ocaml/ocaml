@@ -144,6 +144,7 @@ cleanup=false
 check_make_alldepend=false
 jobs=''
 bootstrap=false
+init_submodule=false
 
 case "${OCAML_ARCH}" in
   bsd|solaris)
@@ -169,8 +170,7 @@ case "${OCAML_ARCH}" in
     instdir='C:/ocamlmgw'
     cleanup=true
     check_make_alldepend=true
-    # This is needed until the winpthreads support is implemented directly
-    export PATH="$PATH:/usr/i686-w64-mingw32/sys-root/mingw/bin"
+    init_submodule=true
   ;;
   mingw64)
     build='--build=x86_64-pc-cygwin'
@@ -178,8 +178,7 @@ case "${OCAML_ARCH}" in
     instdir='C:/ocamlmgw64'
     cleanup=true
     check_make_alldepend=true
-    # This is needed until the winpthreads support is implemented directly
-    export PATH="$PATH:/usr/x86_64-w64-mingw32/sys-root/mingw/bin"
+    init_submodule=true
   ;;
   msvc)
     build='--build=i686-pc-cygwin'
@@ -217,6 +216,12 @@ fi
 pwd
 cd "$jenkinsdir"
 
+if $init_submodule; then
+  git submodule update --init flexdll
+elif [ -f flexdll/Makefile ]; then
+  git submodule deinit --force flexdll
+fi
+
 #########################################################################
 # parse optional command-line arguments (has to be done after the "cd")
 
@@ -246,7 +251,7 @@ fi
 
 eval ./configure "$CCOMP" $build $host --prefix='$instdir' $confoptions
 
-grep -q '^ARCH=none' Makefile.config && make_native=false
+grep -q '^NATIVE_COMPILER=false' Makefile.config && make_native=false
 
 if test "$flambda" = "true" && test "$make_native" = "false"; then
   echo "No need to test flambda in a bytecode-only system; skipping the test."

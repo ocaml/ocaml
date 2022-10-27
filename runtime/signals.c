@@ -510,8 +510,10 @@ void caml_free_signal_stack(void * signal_stack)
 #endif
 }
 
+#ifdef POSIX_SIGNALS
 /* This is the alternate signal stack block for domain 0 */
 static void * caml_signal_stack_0 = NULL;
+#endif
 
 void caml_init_signals(void)
 {

@@ -41,8 +41,9 @@ let rec remove_as = function
   | Alternative (e1, e2) -> Alternative (remove_as e1, remove_as e2)
   | Repetition e -> Repetition (remove_as e)
 
-let as_cset = function
+let rec as_cset = function
   | Characters s -> s
+  | Alternative (e1, e2) -> Cset.union (as_cset e1) (as_cset e2)
   | _ -> raise Cset.Bad
 
 %}

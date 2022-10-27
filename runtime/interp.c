@@ -240,7 +240,7 @@ Caml_inline void check_trap_barrier_for_effect
 static __thread intnat caml_bcodcount;
 #endif
 
-static value raise_unhandled;
+static value raise_unhandled_effect;
 
 /* The interpreter itself */
 
@@ -284,23 +284,25 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #endif
 
   if (prog == NULL) {           /* Interpreter is initializing */
-    static opcode_t raise_unhandled_code[] = { ACC, 0, RAISE };
-    value raise_unhandled_closure;
+    static opcode_t raise_unhandled_effect_code[] = { ACC, 0, RAISE };
+    value raise_unhandled_effect_closure;
 
     caml_register_code_fragment(
-      (char *) raise_unhandled_code,
-      (char *) raise_unhandled_code + sizeof(raise_unhandled_code),
+      (char *) raise_unhandled_effect_code,
+      (char *) raise_unhandled_effect_code +
+      sizeof(raise_unhandled_effect_code),
       DIGEST_IGNORE, NULL);
 #ifdef THREADED_CODE
     caml_init_thread_code(jumptable, Jumptbl_base);
-    caml_thread_code(raise_unhandled_code,
-                     sizeof(raise_unhandled_code));
+    caml_thread_code(raise_unhandled_effect_code,
+                     sizeof(raise_unhandled_effect_code));
 #endif
-    raise_unhandled_closure = caml_alloc_small (2, Closure_tag);
-    Code_val(raise_unhandled_closure) = (code_t)raise_unhandled_code;
-    Closinfo_val(raise_unhandled_closure) = Make_closinfo(0, 2);
-    raise_unhandled = raise_unhandled_closure;
-    caml_register_generational_global_root(&raise_unhandled);
+    raise_unhandled_effect_closure = caml_alloc_small (2, Closure_tag);
+    Code_val(raise_unhandled_effect_closure) =
+      (code_t)raise_unhandled_effect_code;
+    Closinfo_val(raise_unhandled_effect_closure) = Make_closinfo(0, 2);
+    raise_unhandled_effect = raise_unhandled_effect_closure;
+    caml_register_generational_global_root(&raise_unhandled_effect);
     caml_global_data = Val_unit;
     caml_register_generational_global_root(&caml_global_data);
     caml_init_callbacks();
@@ -1289,8 +1291,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
 do_resume: {
       struct stack_info* stk = Ptr_val(accu);
       if (stk == NULL) {
-         accu = Field(caml_global_data, CONTINUATION_ALREADY_TAKEN_EXN);
-         goto raise_exception;
+        Setup_for_c_call;
+        caml_raise_continuation_already_resumed();
       }
       while (Stack_parent(stk) != NULL) stk = Stack_parent(stk);
       Stack_parent(stk) = Caml_state->current_stack;
@@ -1324,7 +1326,7 @@ do_resume: {
 
       check_trap_barrier_for_effect (domain_state);
       if (parent_stack == NULL) {
-        accu = Field(caml_global_data, UNHANDLED_EXN);
+        accu = caml_make_unhandled_effect_exn(accu);
         goto raise_exception;
       }
 
@@ -1369,8 +1371,8 @@ do_resume: {
 
       if (parent == NULL) {
         accu = caml_continuation_use(cont);
-        resume_fn = raise_unhandled;
-        resume_arg = Field(caml_global_data, UNHANDLED_EXN);
+        resume_fn = raise_unhandled_effect;
+        resume_arg = caml_make_unhandled_effect_exn(eff);
         goto do_resume;
       }
 

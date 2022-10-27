@@ -840,7 +840,7 @@ val create_process :
   prog:string -> args:string array -> stdin:file_descr -> stdout:file_descr ->
     stderr:file_descr -> int
 (** [create_process ~prog ~args ~stdin ~stdout ~stderr]
-   forks a new process that executes the program
+   creates a new process that executes the program
    in file [prog], with arguments [args]. The pid of the new
    process is returned immediately; the new process executes
    concurrently with the current process.

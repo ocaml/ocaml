@@ -192,14 +192,6 @@ tools/pre-commit-githook text eol=lf
 tools/markdown-add-pr-links.sh text eol=lf
 runtime/caml/sizeclasses.h typo.missing-header typo.white-at-eol
 
-# These are all Perl scripts, so may not actually require this
-manual/tools/caml-tex text eol=lf
-manual/tools/format-intf text eol=lf
-manual/tools/htmlcut text eol=lf
-manual/tools/htmltbl text eol=lf
-manual/tools/htmlthread text eol=lf
-manual/tools/texexpand text eol=lf
-
 # Tests which include references spanning multiple lines fail with \r\n
 # endings, so use \n endings only, even on Windows.
 testsuite/tests/backtrace/names.ml text eol=lf

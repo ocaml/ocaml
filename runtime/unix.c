@@ -238,10 +238,9 @@ caml_stat_string caml_search_dll_in_path(struct ext_table * path,
 #ifdef __CYGWIN__
 /* Use flexdll */
 
-void * caml_dlopen(char * libname, int for_execution, int global)
+void * caml_dlopen(char * libname, int global)
 {
   int flags = (global ? FLEXDLL_RTLD_GLOBAL : 0);
-  if (!for_execution) flags |= FLEXDLL_RTLD_NOEXEC;
   return flexdll_dlopen(libname, flags);
 }
 
@@ -275,10 +274,9 @@ char * caml_dlerror(void)
 #define RTLD_LOCAL 0
 #endif
 
-void * caml_dlopen(char * libname, int for_execution, int global)
+void * caml_dlopen(char * libname, int global)
 {
   return dlopen(libname, RTLD_NOW | (global ? RTLD_GLOBAL : RTLD_LOCAL));
-  /* Could use RTLD_LAZY if for_execution == 0, but needs testing */
 }
 
 void caml_dlclose(void * handle)
@@ -308,7 +306,7 @@ char * caml_dlerror(void)
 #endif /* __CYGWIN__ */
 #else
 
-void * caml_dlopen(char * libname, int for_execution, int global)
+void * caml_dlopen(char * libname, int global)
 {
   return NULL;
 }

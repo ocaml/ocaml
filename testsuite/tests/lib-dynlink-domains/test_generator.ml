@@ -515,9 +515,10 @@ include dynlink
 libraries = ""
 readonly_files = "@[<h>store.ml main.ml%a@]"
 
-*01 shared-libraries
-*02 setup-ocamlc.byte-build-env
-*03 ocamlc.byte
+*01 not-windows
+*02 shared-libraries
+*03 setup-ocamlc.byte-build-env
+*04 ocamlc.byte
 module = "store.ml"@ @]|}
       files node;
     let bytecode_compilation i node =
@@ -528,7 +529,7 @@ module = "store.ml"@ @]|}
       i + 1
       end
     in
-    let stars = fold bytecode_compilation 4 node in
+    let stars = fold bytecode_compilation 5 node in
     Format.fprintf ppf
       "@[<v>%a ocamlc.byte@ \
        module = \"main.ml\"@ \

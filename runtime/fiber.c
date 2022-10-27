@@ -21,6 +21,7 @@
 #include <string.h>
 #include <unistd.h>
 #include "caml/alloc.h"
+#include "caml/callback.h"
 #include "caml/codefrag.h"
 #include "caml/fail.h"
 #include "caml/fiber.h"
@@ -630,7 +631,7 @@ CAMLprim value caml_continuation_use (value cont)
 {
   value v = caml_continuation_use_noexc(cont);
   if (v == Val_ptr(NULL))
-    caml_raise_continuation_already_taken();
+    caml_raise_continuation_already_resumed();
   return v;
 }
 
@@ -666,4 +667,48 @@ CAMLprim value caml_drop_continuation (value cont)
   struct stack_info* stk = Ptr_val(caml_continuation_use(cont));
   caml_free_stack(stk);
   return Val_unit;
+}
+
+static const value * _Atomic caml_unhandled_effect_exn = NULL;
+static const value * _Atomic caml_continuation_already_resumed_exn = NULL;
+
+static const value * cache_named_exception(const value * _Atomic * cache,
+                                           const char * name)
+{
+  const value * exn;
+  exn = atomic_load_explicit(cache, memory_order_acquire);
+  if (exn == NULL) {
+    exn = caml_named_value(name);
+    if (exn == NULL) {
+      fprintf(stderr, "Fatal error: exception %s\n", name);
+      exit(2);
+    }
+    atomic_store_explicit(cache, exn, memory_order_release);
+  }
+  return exn;
+}
+
+CAMLexport void caml_raise_continuation_already_resumed(void)
+{
+  const value * exn =
+    cache_named_exception(&caml_continuation_already_resumed_exn,
+                          "Effect.Continuation_already_resumed");
+  caml_raise(*exn);
+}
+
+value caml_make_unhandled_effect_exn (value effect)
+{
+  CAMLparam1(effect);
+  value res;
+  const value * exn =
+    cache_named_exception(&caml_unhandled_effect_exn, "Effect.Unhandled");
+  res = caml_alloc_small(2,0);
+  Field(res, 0) = *exn;
+  Field(res, 1) = effect;
+  CAMLreturn(res);
+}
+
+CAMLexport void caml_raise_unhandled_effect (value effect)
+{
+  caml_raise(caml_make_unhandled_effect_exn(effect));
 }

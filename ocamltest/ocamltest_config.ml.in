@@ -59,9 +59,9 @@ let ocamlopt_default_flags = ""
 
 let flat_float_array = @flat_float_array@
 
-let ocamldoc = @ocamltest_ocamldoc@
+let ocamldoc = @build_ocamldoc@
 
-let ocamldebug = @ocamltest_ocamldebug@
+let ocamldebug = @build_ocamldebug@
 
 let native_compiler = @native_compiler@
 

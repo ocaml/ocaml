@@ -1,4 +1,5 @@
 (* TEST
+   flags = "-no-strict-formats"
    * toplevel
 *)
 

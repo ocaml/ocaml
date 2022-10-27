@@ -105,15 +105,6 @@ if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
   esac
 fi
 
-# This is needed at all stages while winpthreads is in use for 5.0
-# This step can be moved back to the test phase (or removed entirely?) when
-# winpthreads stops being used.
-if [[ $PORT = 'mingw64' ]] ; then
-  export PATH="$PATH:/usr/x86_64-w64-mingw32/sys-root/mingw/bin"
-elif [[ $PORT = 'mingw32' ]] ; then
-  export PATH="$PATH:/usr/i686-w64-mingw32/sys-root/mingw/bin"
-fi
-
 case "$1" in
   install)
     if [ ! -e "$CACHE_DIRECTORY/parallel-source" ] || \
@@ -149,9 +140,17 @@ case "$1" in
           $FULL_BUILD_PREFIX-$PORT/runtime/*.a \
           $FULL_BUILD_PREFIX-$PORT/otherlibs/*/lib*.a
     fi
-    # FIXME At present, running the testsuite takes too long
-    #run "test $PORT" \
-    #    $MAKE -C "$FULL_BUILD_PREFIX-$PORT/testsuite" SHOW_TIMINGS=1 parallel
+    # The testsuite is too slow to run on AppVeyor in full. Run the dynlink
+    # tests now (to include natdynlink)
+    run "test dynlink $PORT" \
+        $MAKE -C "$FULL_BUILD_PREFIX-$PORT/testsuite" parallel-lib-dynlink
+    # Now reconfigure ocamltest to run in bytecode-only mode
+    sed -i '/native_/s/true/false/' \
+           "$FULL_BUILD_PREFIX-$PORT/ocamltest/ocamltest_config.ml"
+    $MAKE -C "$FULL_BUILD_PREFIX-$PORT/ocamltest" -j all allopt
+    # And run the entire testsuite, skipping all the native-code tests
+    run "test $PORT" \
+        make -C "$FULL_BUILD_PREFIX-$PORT/testsuite" SHOW_TIMINGS=1 all
     run "install $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" install
     if [[ $PORT = 'msvc64' ]] ; then
       run "$MAKE check_all_arches" \

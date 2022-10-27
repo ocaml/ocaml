@@ -30,7 +30,7 @@
 /*
  * These functions are to ensure effects are handled correctly inside
  * callbacks. There are two aspects:
- *  - we clear the stack parent for a callback to force an Unhandled
+ *  - we clear the stack parent for a callback to force an Effect.Unhandled
  *  exception rather than effects being passed over the callback
  *  - we register the stack parent as a local root while the callback
  * is executing to ensure that the garbage collector follows the

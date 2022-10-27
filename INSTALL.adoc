@@ -24,7 +24,7 @@
 
   ** For Windows +
    To produce native Windows executables from OCaml sources, you need to use
-   the MSVC or Mingw-w64 ports of OCaml, described in file
+   the MSVC or MinGW-w64 ports of OCaml, described in file
    https://github.com/ocaml/ocaml/blob/trunk/README.win32.adoc[README.win32.adoc]. +
    For a more Unix-like experience, you can use WSL, the
    https://aka.ms/wsl[Windows Subsystem for Linux], or the
