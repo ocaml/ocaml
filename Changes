@@ -502,8 +502,8 @@ OCaml 5.0
   (Sébastien Hinderer, review by David Allsopp, Florian Angeletti and
   Xavier Leroy)
 
-- #11184: Stop calling ranlib on created / installed libraries
-  (Sébastien Hinderer, review by Xavier Leroy)
+- #11184, #11670: Stop calling ranlib on created / installed libraries
+  (Sébastien Hinderer and Xavier Leroy, review by the same)
 
 - #11253: Deprecate `ocaml script` and `ocamlnat` script where `script` has no
   extension and is an implicit basename.
