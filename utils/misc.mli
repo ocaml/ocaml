@@ -374,6 +374,8 @@ module Color : sig
     | BG of color (* background *)
     | Bold
     | Reset
+    | Hint
+
 
   type Format.stag += Style of style list
 
@@ -384,6 +386,7 @@ module Color : sig
     error: style list;
     warning: style list;
     loc: style list;
+    hint: style list;
   }
 
   val default_styles: styles

@@ -3541,7 +3541,7 @@ let report_lookup_error _loc env ppf = function
           in
           fprintf ppf
             "@.@[%s@ %s %i@]"
-            "Hint: If this is a recursive definition,"
+            "@{<hint>Hint@}: If this is a recursive definition,"
             "you should add the 'rec' keyword on line"
             line
     end
@@ -3555,7 +3555,7 @@ let report_lookup_error _loc env ppf = function
       | _ ->
          fprintf ppf
            "@.@[%s %a, %s@]"
-           "Hint: There is a module type named"
+           "@{<hint>Hint@}: There is a module type named"
            !print_longident lid
            "but module types are not modules"
     end
@@ -3572,7 +3572,7 @@ let report_lookup_error _loc env ppf = function
       | _ ->
          fprintf ppf
            "@.@[%s %a, %s@]"
-           "Hint: There is a class type named"
+           "@{<hint>Hint@}: There is a class type named"
            !print_longident lid
            "but classes are not class types"
     end
@@ -3583,7 +3583,7 @@ let report_lookup_error _loc env ppf = function
       | _ ->
          fprintf ppf
            "@.@[%s %a, %s@]"
-           "Hint: There is a module named"
+           "@{<hint>Hint@}: There is a module named"
            !print_longident lid
            "but modules are not module types"
     end

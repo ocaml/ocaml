@@ -720,7 +720,7 @@ let report_error env ppf = function
         "@[<v>@[The constructor %s is missing from the upper bound@ \
          (between '<'@ and '>')@ of this polymorphic variant@ \
          but is present in@ its lower bound (after '>').@]@,\
-         @[Hint: Either add `%s in the upper bound,@ \
+         @[@{<hint>Hint@}: Either add `%s in the upper bound,@ \
          or remove it@ from the lower bound.@]@]"
          l l
   | Constructor_mismatch (ty, ty') ->

@@ -303,7 +303,7 @@ let prepare_error loc = function
       let msg = "Illegal empty character literal ''" in
       let sub =
         [Location.msg
-           "Hint: Did you mean ' ' or a type variable 'a?"] in
+           "@{<hint>Hint@}: Did you mean ' ' or a type variable 'a?"] in
       Location.error ~loc ~sub msg
   | Keyword_as_label kwd ->
       Location.errorf ~loc

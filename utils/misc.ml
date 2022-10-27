@@ -588,7 +588,7 @@ let did_you_mean ppf get_choices =
   | [] -> ()
   | choices ->
      let rest, last = split_last choices in
-     Format.fprintf ppf "@\nHint: Did you mean %s%s%s?@?"
+     Format.fprintf ppf "@\n@{<hint>Hint@}: Did you mean %s%s%s?@?"
        (String.concat ", " rest)
        (if rest = [] then "" else " or ")
        last
@@ -623,6 +623,7 @@ module Color = struct
     | BG of color (* background *)
     | Bold
     | Reset
+    | Hint
 
   let ansi_of_color = function
     | Black -> "0"
@@ -639,6 +640,7 @@ module Color = struct
     | BG c -> "4" ^ ansi_of_color c
     | Bold -> "1"
     | Reset -> "0"
+    | Hint -> "4"
 
   let ansi_of_style_l l =
     let s = match l with
@@ -654,12 +656,14 @@ module Color = struct
     error: style list;
     warning: style list;
     loc: style list;
+    hint: style list;
   }
 
   let default_styles = {
     warning = [Bold; FG Magenta];
     error = [Bold; FG Red];
     loc = [Bold];
+    hint=[Bold; FG Blue]
   }
 
   let cur_styles = ref default_styles
@@ -672,6 +676,7 @@ module Color = struct
     | Format.String_tag "error" -> (!cur_styles).error
     | Format.String_tag "warning" -> (!cur_styles).warning
     | Format.String_tag "loc" -> (!cur_styles).loc
+    | Format.String_tag "hint" -> (!cur_styles).hint
     | Style s -> s
     | _ -> raise Not_found
 
