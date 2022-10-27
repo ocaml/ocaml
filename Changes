@@ -1,6 +1,11 @@
 OCaml 4.14 maintenance branch
 -----------------------------
 
+### Compiler user-interface and warnings:
+
+- #11184, #11670: Stop calling ranlib on created / installed libraries
+  (Sébastien Hinderer and Xavier Leroy, review by the same)
+
 ### Build system:
 
 - #11370, #11373: Don't pass CFLAGS to flexlink during configure.
