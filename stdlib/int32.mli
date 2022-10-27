@@ -226,3 +226,17 @@ val max: t -> t -> t
 (** Return the greater of the two arguments.
     @since 4.13.0
  *)
+
+val seeded_hash : int -> t -> int
+(** A seeded hash function for 32-bit ints, with the same output value as
+    {!Hashtbl.seeded_hash}. This function allows this module to be passed as
+    argument to the functor {!Hashtbl.MakeSeeded}.
+
+    @since 5.1.0 *)
+
+val hash : t -> int
+(** An unseeded hash function for 32-bit ints, with the same output value as
+    {!Hashtbl.hash}. This function allows this module to be passed as argument
+    to the functor {!Hashtbl.Make}.
+
+    @since 5.1.0 *)

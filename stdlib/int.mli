@@ -152,3 +152,17 @@ val of_string : string -> int option
 
 val to_string : int -> string
 (** [to_string x] is the written representation of [x] in decimal. *)
+
+val seeded_hash : int -> int -> int
+(** A seeded hash function for ints, with the same output value as
+    {!Hashtbl.seeded_hash}. This function allows this module to be passed as
+    argument to the functor {!Hashtbl.MakeSeeded}.
+
+    @since 5.1.0 *)
+
+val hash : int -> int
+(** An unseeded hash function for ints, with the same output value as
+    {!Hashtbl.hash}. This function allows this module to be passed as argument
+    to the functor {!Hashtbl.Make}.
+
+    @since 5.1.0 *)

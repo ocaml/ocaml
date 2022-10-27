@@ -54,6 +54,10 @@ Working version
   (Greta Yorsh, review by Xavier Leroy, Guillaume Melquiond and
   Gabriel Scherer)
 
+- #11246: Add "hash" and "seeded_hash" functions to Bool, Int, Char, Float,
+  Int32, Int64, and Nativeint.
+  (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
+
 - #11354: Hashtbl.find_all is now tail-recursive.
   (Fermín Reig, review by Gabriel Scherer)
 

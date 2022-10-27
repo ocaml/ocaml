@@ -485,9 +485,17 @@ val min_max_num : float -> float -> float * float
 
    @since 4.08.0 *)
 
+val seeded_hash : int -> t -> int
+(** A seeded hash function for floats, with the same output value as
+    {!Hashtbl.seeded_hash}. This function allows this module to be passed as
+    argument to the functor {!Hashtbl.MakeSeeded}.
 
-val hash: t -> int
-(** The hash function for floating-point numbers. *)
+    @since 5.1.0 *)
+
+val hash : t -> int
+(** An unseeded hash function for floats, with the same output value as
+    {!Hashtbl.hash}. This function allows this module to be passed as argument
+    to the functor {!Hashtbl.Make}. *)
 
 module Array : sig
   type t = floatarray

@@ -164,8 +164,9 @@ let[@inline] min_max_num (x: float) (y: float) =
   else if is_nan y then (x,x)
   else if y > x || (not(sign_bit y) && sign_bit x) then (x,y) else (y,x)
 
-external seeded_hash_param : int -> int -> int -> float -> int
-                           = "caml_hash" [@@noalloc]
+external seeded_hash_param :
+  int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
+let seeded_hash seed x = seeded_hash_param 10 100 seed x
 let hash x = seeded_hash_param 10 100 0 x
 
 module Array = struct
