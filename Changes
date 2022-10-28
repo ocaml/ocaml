@@ -249,6 +249,9 @@ Working version
   the root Makefile.
   (Sébastien Hinderer, review by David Allsopp and Florian Angeletti)
 
+- #11828: Compile otherlibs/ C stubs in two version for native and bytecode
+  (Olivier Nicole, review by Sébastien Hinderer)
+
 ### Bug fixes:
 
 - #10664, #11600: Unsoundness in the typing of polymorphic methods
