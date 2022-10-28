@@ -41,7 +41,12 @@ type 'a t = 'a list = [] | (::) of 'a * 'a list (**)
 (** An alias for the type of lists. *)
 
 val length : 'a list -> int
-(** Return the length (number of elements) of the given list. *)
+(** Return the length (number of elements) of the given list.
+   Note: the function is not constant time, and goes through all elements in the list,
+   in order to calculate the length.
+   To compare with another length, [compare_lengths] and [compare_length_with] are more efficient.
+   Alternatively, you can use the [buffer] type to get a constant-time [length] function.
+  *)
 
 val compare_lengths : 'a list -> 'b list -> int
 (** Compare the lengths of two lists. [compare_lengths l1 l2] is
