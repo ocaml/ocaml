@@ -23,6 +23,8 @@ module C' :
     type t = char
     val compare : t -> t -> int
     val equal : t -> t -> bool
+    val seeded_hash : int -> t -> int
+    val hash : t -> int
     external unsafe_chr : int -> char = "%identity"
   end
 - : char = 'B'
@@ -36,6 +38,8 @@ module C3 :
     type t = char
     val compare : t -> t -> int
     val equal : t -> t -> bool
+    val seeded_hash : int -> t -> int
+    val hash : t -> int
     external unsafe_chr : int -> char = "%identity"
   end
 - : char = 'B'
@@ -63,6 +67,8 @@ module F :
       type t = char
       val compare : t -> t -> int
       val equal : t -> t -> bool
+      val seeded_hash : int -> t -> int
+      val hash : t -> int
       external unsafe_chr : int -> char = "%identity"
     end
 module C4 :
@@ -75,6 +81,8 @@ module C4 :
     type t = char
     val compare : t -> t -> int
     val equal : t -> t -> bool
+    val seeded_hash : int -> t -> int
+    val hash : t -> int
     external unsafe_chr : int -> char = "%identity"
   end
 - : char = 'B'

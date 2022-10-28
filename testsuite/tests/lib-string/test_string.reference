@@ -1,4 +1,4 @@
 -- Hashtbl.hash raw_string: 240a0e56
--- String.unseeded_hash raw_string: 240a0e56
+-- String.hash raw_string: 240a0e56
 -- Hashtbl.seeded_hash 16 raw_string: 3210af30
--- String.hash 16 raw_string: 3210af30
+-- String.seeded_hash 16 raw_string: 3210af30

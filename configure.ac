@@ -63,7 +63,7 @@ SO="so"
 toolchain="cc"
 profinfo=false
 profinfo_width=0
-instrumented_runtime=true
+instrumented_runtime=false
 force_instrumented_runtime=false
 instrumented_runtime_libs=""
 bootstrapping_flexdll=false
@@ -2166,8 +2166,8 @@ AC_CHECK_LIB(execinfo, backtrace, cclibs="$cclibs -lexecinfo",[])
 
 AS_CASE([$host],
   [*-*-mingw32],
-    [bytecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh -lDbgHelp"
-    nativecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh -lDbgHelp"],
+    [bytecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"
+    nativecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"],
   [*-pc-windows],
     [bytecclibs="advapi32.lib ws2_32.lib version.lib"
     nativecclibs="advapi32.lib ws2_32.lib version.lib"],

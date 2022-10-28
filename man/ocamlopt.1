@@ -541,11 +541,19 @@ types are derived in a principal way. All programs accepted in
 mode are also accepted in default mode with equivalent
 types, but different binary signatures.
 .TP
+.B \-no\-principal
+Do not check principality of type inference.
+This is the default.
+.TP
 .B \-rectypes
 Allow arbitrary recursive types during type-checking.  By default,
 only recursive types where the recursion goes through an object type
 are supported. Note that once you have created an interface using this
 flag, you must use it again for all dependencies.
+.TP
+.B \-no\-rectypes
+Do no allow arbitrary recursive types during type-checking.
+This is the default.
 .TP
 .BI \-runtime\-variant \ suffix
 Add
@@ -613,6 +621,10 @@ supported passes are:
 .TP
 .B \-strict\-sequence
 The left-hand part of a sequence must have type unit.
+.TP
+.B \-no\-strict\-sequence
+Left-hand part of a sequence need not have type unit.
+This is the default.
 .TP
 .B \-unboxed\-types
 When a type is unboxable (i.e. a record with a single argument or a

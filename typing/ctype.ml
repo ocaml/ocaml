@@ -2163,9 +2163,9 @@ let reify env t =
   iterator t
 
 let find_expansion_scope env path =
-  let decl = Env.find_type path env in
-  if decl.type_manifest = None then generic_level
-  else decl.type_expansion_scope
+  match Env.find_type path env with
+  | { type_manifest = None ; _ } | exception Not_found -> generic_level
+  | decl -> decl.type_expansion_scope
 
 let non_aliasable p decl =
   (* in_pervasives p ||  (subsumed by in_current_module) *)
