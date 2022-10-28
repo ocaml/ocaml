@@ -5462,7 +5462,8 @@ let report_literal_type_constraint expected_type const =
     else None
   in
   match const_str, suffix with
-  | Some c, Some s -> [ Location.msg "@[Hint: Did you mean `%s%c'?@]" c s ]
+  | Some c, Some s -> [ Location.msg "@[@{<hint>Hint@}: Did you \
+                                      mean `%s%c'?@]" c s ]
   | _, _ -> []
 
 let report_literal_type_constraint const = function
@@ -5479,7 +5480,7 @@ let report_partial_application = function
       match get_desc tr.Errortrace.got.Errortrace.expanded with
       | Tarrow _ ->
           [ Location.msg
-              "@[Hint: This function application is partial,@ \
+              "@[@{<hint>Hint@}: This function application is partial,@ \
                maybe some arguments are missing.@]" ]
       | _ -> []
     end
@@ -5716,7 +5717,7 @@ let report_error ~loc env = function
         if b then
           fprintf ppf ".@.@[<hov>%s@ %s@ %s@]"
             "This simple coercion was not fully general."
-            "Hint: Consider using a fully explicit coercion"
+            "@{<hint>Hint@}: Consider using a fully explicit coercion"
             "of the form: `(foo : ty1 :> ty2)'."
       ) ()
   | Not_a_function (ty, explanation) ->
