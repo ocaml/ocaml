@@ -623,7 +623,6 @@ module Color = struct
     | BG of color (* background *)
     | Bold
     | Reset
-    | Hint
 
   let ansi_of_color = function
     | Black -> "0"
@@ -640,7 +639,6 @@ module Color = struct
     | BG c -> "4" ^ ansi_of_color c
     | Bold -> "1"
     | Reset -> "0"
-    | Hint -> "4"
 
   let ansi_of_style_l l =
     let s = match l with
