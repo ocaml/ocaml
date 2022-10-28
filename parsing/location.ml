@@ -974,3 +974,9 @@ let () =
 
 let raise_errorf ?(loc = none) ?(sub = []) =
   Format.kdprintf (fun txt -> raise (Error (mkerror loc sub txt)))
+
+(* Printing the Hint Prefix with the accurate style *)
+
+let hint_prefix ppf = 
+  setup_colors ();
+Format.fprintf ppf "@\nHint"
