@@ -497,7 +497,7 @@ type geometry = { max_indent:int; margin: int}
 
 val check_geometry: geometry -> bool
 (** Check if the formatter geometry is valid: [1 < max_indent < margin] 
-     @since 4.14.0 *)
+     @since 4.08.0 *)
 
 val pp_set_geometry : formatter -> max_indent:int -> margin:int -> unit
 val set_geometry : max_indent:int -> margin:int -> unit
