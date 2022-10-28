@@ -78,9 +78,10 @@ Caml_inline void restore_stack_parent(caml_domain_state* domain_state,
 #include "caml/fix_code.h"
 #include "caml/fiber.h"
 
-static __thread opcode_t callback_code[] = { ACC, 0, APPLY, 0, POP, 1, STOP };
+static __declspec(thread) opcode_t callback_code[] =
+  { ACC, 0, APPLY, 0, POP, 1, STOP };
 
-static __thread int callback_code_inited = 0;
+static __declspec(thread) int callback_code_inited = 0;
 
 static void init_callback_code(void)
 {

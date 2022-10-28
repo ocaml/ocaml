@@ -146,7 +146,7 @@ Caml_inline void check_err(const char* action, int err)
 }
 
 #ifdef DEBUG
-static __thread int lockdepth;
+static __declspec(thread) int lockdepth;
 #define DEBUG_LOCK(m) (lockdepth++)
 #define DEBUG_UNLOCK(m) (lockdepth--)
 #else

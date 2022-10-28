@@ -49,7 +49,7 @@ CAML_STATIC_ASSERT(
     (Domain_state_num_fields - 1) * 8);
 
 #if defined(HAS_FULL_THREAD_VARIABLES) || defined(IN_CAML_RUNTIME)
-  CAMLextern __thread caml_domain_state* caml_state;
+  CAMLextern __declspec(thread) caml_domain_state* caml_state;
   #define Caml_state_opt caml_state
 #else
 #ifdef __GNUC__
