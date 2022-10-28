@@ -844,3 +844,19 @@ let split_pattern pat =
         combine_opts (into cpat) exns1 exns2
   in
   split_pattern pat
+
+(* Expressions are considered nominal if they can be used as the subject of a
+   sentence or action. In practice, we consider that an expression is nominal
+   if they satisfy one of:
+   - Similar to an identifier: words separated by '.' or '#'.
+   - Do not contain spaces when printed.
+  *)
+let rec exp_is_nominal exp =
+  match exp.exp_desc with
+  | _ when exp.exp_attributes <> [] -> false
+  | Texp_ident _ | Texp_instvar _ | Texp_constant _
+  | Texp_variant (_, None)
+  | Texp_construct (_, _, []) ->
+      true
+  | Texp_field (parent, _, _) | Texp_send (parent, _) -> exp_is_nominal parent
+  | _ -> false

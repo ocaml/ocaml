@@ -105,6 +105,7 @@ type error =
       Errortrace.unification_error * type_forcing_context option
       * Parsetree.expression_desc option
   | Apply_non_function of {
+      funct : Typedtree.expression;
       func_ty : type_expr;
       previous_arg_loc : Location.t;
       extra_arg_loc : Location.t;
@@ -4542,6 +4543,7 @@ and type_application env funct sargs =
                 |> Option.value ~default:funct.exp_loc
               in
               raise(Error(funct.exp_loc, env, Apply_non_function {
+                  funct;
                   func_ty = expand_head env funct.exp_type;
                   previous_arg_loc;
                   extra_arg_loc = sarg.pexp_loc; }))
@@ -5633,7 +5635,13 @@ let report_unification_error ~loc ?sub env err
       ?type_expected_explanation txt1 txt2
   ) ()
 
-let report_too_many_arg_error ~func_ty ~previous_arg_loc
+let report_this_function ppf funct =
+  if Typedtree.exp_is_nominal funct then
+    let pexp = Untypeast.untype_expression funct in
+    Format.fprintf ppf "The function '%a'" Pprintast.expression pexp
+  else Format.fprintf ppf "This function"
+
+let report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
     ~extra_arg_loc loc =
   let open Location in
   let app_loc =
@@ -5653,9 +5661,9 @@ let report_too_many_arg_error ~func_ty ~previous_arg_loc
     msg ~loc:extra_arg_loc "This extra argument is not expected.";
   ] in
   errorf ~loc:app_loc ~sub
-    "@[<v>@[<2>This function has type@ %a@]\
+    "@[<v>@[<2>%a has type@ %a@]\
      @ It is applied to too many arguments@]"
-    Printtyp.type_expr func_ty
+    report_this_function funct Printtyp.type_expr func_ty
 
 let report_error ~loc env = function
   | Constructor_arity_mismatch(lid, expected, provided) ->
@@ -5707,11 +5715,11 @@ let report_error ~loc env = function
            fprintf ppf "This expression has type")
         (function ppf ->
            fprintf ppf "but an expression was expected of type");
-  | Apply_non_function { func_ty; previous_arg_loc; extra_arg_loc } ->
+  | Apply_non_function { funct; func_ty; previous_arg_loc; extra_arg_loc } ->
       begin match get_desc func_ty with
         Tarrow _ ->
-          report_too_many_arg_error ~func_ty ~previous_arg_loc ~extra_arg_loc
-            loc
+          report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
+            ~extra_arg_loc loc
       | _ ->
           Location.errorf ~loc "@[<v>@[<2>This expression has type@ %a@]@ %s@]"
             Printtyp.type_expr func_ty
