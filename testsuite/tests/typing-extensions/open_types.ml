@@ -325,10 +325,14 @@ let f = function
 ;;
 [%%expect {|
 Lines 1-4, characters 8-11:
-1 | ........function
+1 | let f = function
+            ^^^^^^^^
 2 |   | [Foo] -> 1
+      ^^^^^^^^^^^^
 3 |   | _::_::_ -> 3
+      ^^^^^^^^^^^^^^
 4 |   | [] -> 2
+      ^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 *extension*::[]

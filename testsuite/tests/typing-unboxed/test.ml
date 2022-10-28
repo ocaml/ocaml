@@ -111,9 +111,12 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   external f : int -> (int [@untagged]) = "f" "f_nat"
-5 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : int -> (int [@untagged]) = "f" "f_nat" end
@@ -134,9 +137,12 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   external f : (int [@untagged]) -> int = "f" "f_nat"
-5 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : (int [@untagged]) -> int = "f" "f_nat" end
@@ -157,9 +163,12 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   external f : (int [@untagged]) -> int = "f" "f_nat"
-5 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : (int [@untagged]) -> int = "f" "f_nat" end
@@ -180,9 +189,12 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   external f : float -> (float [@unboxed]) = "f" "f_nat"
-5 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : float -> (float [@unboxed]) = "f" "f_nat" end
@@ -203,9 +215,12 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   external f : (float [@unboxed]) -> float = "f" "f_nat"
-5 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : (float [@unboxed]) -> float = "f" "f_nat" end
@@ -226,9 +241,12 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   external f : (float [@unboxed]) -> float = "f" "f_nat"
-5 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : (float [@unboxed]) -> float = "f" "f_nat" end
@@ -249,9 +267,12 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   external f : int -> int = "f" "f_nat" [@@noalloc]
-5 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : int -> int = "f" "f_nat" [@@noalloc] end
@@ -274,9 +295,12 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   external f : int -> int = "f" "f_nat"
-5 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : int -> int = "f" "f_nat" end
@@ -297,9 +321,12 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   external f : int -> int = "f" "f_nat"
-5 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : int -> int = "f" "f_nat" end
@@ -320,9 +347,12 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   external f : int -> int = "a" "a_nat"
-5 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : int -> int = "a" "a_nat" end
@@ -343,9 +373,12 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   external f : float -> float = "f" "f_nat"
-5 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : float -> float = "f" "f_nat" end
@@ -366,9 +399,12 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   external f : float -> float = "f" "f_nat"
-5 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : float -> float = "f" "f_nat" end
@@ -389,9 +425,12 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   external f : float -> float = "a" "a_nat"
-5 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : float -> float = "a" "a_nat" end
@@ -412,9 +451,12 @@ end;;
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   external f : int -> int = "f" "f_nat"
-5 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : int -> int = "f" "f_nat" end
@@ -437,9 +479,12 @@ end
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   let f x = x + 1
+      ^^^^^^^^^^^^^^^
 5 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig val f : int -> int end
@@ -477,9 +522,12 @@ end
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   external f : int -> int = "gg" "f_nat"
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 5 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : int -> int = "gg" "f_nat" end
@@ -500,9 +548,12 @@ end
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   external f : int -> int = "f" "gg_nat"
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 5 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : int -> int = "f" "gg_nat" end
@@ -523,9 +574,12 @@ end
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   external f : int -> int = "gg" "gg_nat"
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 5 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : int -> int = "gg" "gg_nat" end
@@ -554,9 +608,12 @@ end
 
 [%%expect{|
 Lines 4-6, characters 6-3:
-4 | ......struct
+4 | end = struct
+          ^^^^^^
 5 |   external f : int -> int -> int = "f" "f_nat"
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 6 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : int -> int -> int = "f" "f_nat" end
@@ -579,10 +636,14 @@ end
 
 [%%expect{|
 Lines 3-6, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   type int_int = int -> int
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
 5 |   external f : int -> int_int = "f" "f_nat"
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 6 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig
@@ -608,9 +669,12 @@ end
 
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   external f : int -> int -> int = "f" "f_nat"
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 5 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig external f : int -> int -> int = "f" "f_nat" end

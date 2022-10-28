@@ -291,13 +291,9 @@ module ISet : sig
   (* bounds are included *)
   val of_intervals : ('a bound * 'a bound) list -> 'a t
 
-  val mem : 'a t -> pos:int -> bool
-  val find_bound_in : 'a t -> range:(int * int) -> 'a bound option
-
-  val is_start : 'a t -> pos:int -> 'a option
-  val is_end : 'a t -> pos:int -> 'a option
-
-  val extrema : 'a t -> ('a bound * 'a bound) option
+  val find_interval_in :
+    'a t -> range:(int * int) -> ('a bound * 'a bound) option
+  (** Find the next interval starting within [range]. *)
 end
 =
 struct
@@ -330,29 +326,8 @@ struct
     assert (nesting = `Outside);
     List.rev acc
 
-  let mem iset ~pos =
-    List.exists (fun ((_, s), (_, e)) -> s <= pos && pos <= e) iset
-
-  let find_bound_in iset ~range:(start, end_)  =
-    List.find_map (fun ((a, x), (b, y)) ->
-      if start <= x && x <= end_ then Some (a, x)
-      else if start <= y && y <= end_ then Some (b, y)
-      else None
-    ) iset
-
-  let is_start iset ~pos =
-    List.find_map (fun ((a, x), _) ->
-      if pos = x then Some a else None
-    ) iset
-
-  let is_end iset ~pos =
-    List.find_map (fun (_, (b, y)) ->
-      if pos = y then Some b else None
-    ) iset
-
-  let extrema iset =
-    if iset = [] then None
-    else Some (fst (List.hd iset), snd (List.hd (List.rev iset)))
+  let find_interval_in iset ~range:(start, end_) =
+    List.find_opt (fun ((_, x), _) -> x >= start && x <= end_) iset
 end
 
 (******************************************************************************)
@@ -436,30 +411,14 @@ type input_line = {
   start_pos : int;
 }
 
-(* Takes a list of lines with possibly missing line numbers.
-
-   If the line numbers that are present are consistent with the number of lines
-   between them, then infer the intermediate line numbers.
-
-   This is not always the case, typically if lexer line directives are
-   involved... *)
-let infer_line_numbers
-    (lines: (int option * input_line) list):
-  (int option * input_line) list
-  =
-  let (_, offset, consistent) =
-    List.fold_left (fun (i, offset, consistent) (lnum, _) ->
-      match lnum, offset with
-      | None, _ -> (i+1, offset, consistent)
-      | Some n, None -> (i+1, Some (n - i), consistent)
-      | Some n, Some m -> (i+1, offset, consistent && n = m + i)
-    ) (0, None, true) lines
+let count_indentation s =
+  let rec loop s i =
+    if i >= String.length s then i
+    else match s.[i] with ' ' | '\t' -> loop s (i + 1) | _ -> i
   in
-  match offset, consistent with
-  | Some m, true ->
-      List.mapi (fun i (_, line) -> (Some (m + i), line)) lines
-  | _, _ ->
-      lines
+  loop s 0
+
+let mk_span a b = ((), a), ((), max a b)
 
 (* [get_lines] must return the lines to highlight, given starting and ending
    positions.
@@ -473,73 +432,80 @@ let highlight_quote ppf
     highlight_tag
     locs
   =
-  let iset = ISet.of_intervals @@ List.filter_map (fun loc ->
-    let s, e = loc.loc_start, loc.loc_end in
-    if s.pos_cnum = -1 || e.pos_cnum = -1 then None
-    else Some ((s, s.pos_cnum), (e, e.pos_cnum - 1))
-  ) locs in
-  match ISet.extrema iset with
-  | None -> ()
-  | Some ((leftmost, _), (rightmost, _)) ->
-      let lines =
-        get_lines ~start_pos:leftmost ~end_pos:rightmost
-        |> List.map (fun ({ text; start_pos } as line) ->
-          let end_pos = start_pos + String.length text - 1 in
-          let line_nb =
-            match ISet.find_bound_in iset ~range:(start_pos, end_pos) with
-            | None -> None
-            | Some (p, _) -> Some p.pos_lnum
-          in
-          (line_nb, line))
-        |> infer_line_numbers
-        |> List.map (fun (lnum, { text; start_pos }) ->
-          (text,
-           Option.fold ~some:Int.to_string ~none:"" lnum,
-           start_pos))
+  let intervals =
+    List.filter_map (fun loc ->
+      let s, e = loc.loc_start, loc.loc_end in
+      if s.pos_cnum = -1 || e.pos_cnum = -1 then None
+      else Some ((s, s.pos_cnum), (e, e.pos_cnum - 1))
+    ) locs
+  in
+  match intervals with
+  | [] -> ()
+  | int0 :: int_tl ->
+      let start_pos, end_pos =
+        let (init_a, _), (init_b, _) = int0 in
+        List.fold_left (fun (a, b) ((start, _), (end_, _)) ->
+            min a start, max b end_
+          ) (init_a, init_b) int_tl
       in
-    Format.fprintf ppf "@[<v>";
-    begin match lines with
-    | [] | [("", _, _)] -> ()
-    | [(line, line_nb, line_start_cnum)] ->
-        (* Single-line error *)
-        Format.fprintf ppf "%s | %s@," line_nb line;
-        Format.fprintf ppf "%*s   " (String.length line_nb) "";
-        (* Iterate up to [rightmost], which can be larger than the length of
-           the line because we may point to a location after the end of the
-           last token on the line, for instance:
-           {[
-             token
-                       ^
-             Did you forget ...
-           ]} *)
-        for i = 0 to rightmost.pos_cnum - line_start_cnum - 1 do
-          let pos = line_start_cnum + i in
-          if ISet.is_start iset ~pos <> None then
-            Format.fprintf ppf "@{<%s>" highlight_tag;
-          if ISet.mem iset ~pos then Format.pp_print_char ppf '^'
-          else if i < String.length line then begin
-            (* For alignment purposes, align using a tab for each tab in the
-               source code *)
-            if line.[i] = '\t' then Format.pp_print_char ppf '\t'
-            else Format.pp_print_char ppf ' '
-          end;
-          if ISet.is_end iset ~pos <> None then
-            Format.fprintf ppf "@}"
-        done;
-        Format.fprintf ppf "@}@,"
-    | _ ->
-        (* Multi-line error *)
-        Misc.pp_two_columns ~sep:"|" ~max_lines ppf
-        @@ List.map (fun (line, line_nb, line_start_cnum) ->
-          let line = String.mapi (fun i car ->
-            if ISet.mem iset ~pos:(line_start_cnum + i) then car else '.'
-          ) line in
-          (line_nb, line)
-        ) lines
-    end;
-    Format.fprintf ppf "@]"
-
-
+      let lines =
+        get_lines ~start_pos ~end_pos
+        |> List.mapi (fun i ({ text; start_pos = line_start_pos }) ->
+          (text, start_pos.pos_lnum + i, line_start_pos))
+      in
+      let iset =
+        ISet.of_intervals
+        @@ List.concat_map (fun ((a_pos, a_cnum), (b_pos, b_cnum)) ->
+            (* Split locations spanning multiple lines into one interval for
+               each span lines, removing the ends of lines from the interval
+               set. This allows to avoid highlighting ends of lines.
+               Indentation of each lines are removed from the spans. *)
+            List.filteri (fun i _ ->
+                let i = i + start_pos.pos_lnum in
+                i >= a_pos.pos_lnum && i <= b_pos.pos_lnum)
+              lines
+            |> List.fold_left (fun (spans, bol) (line, _, _) ->
+                let eol = bol + String.length line - 1 in
+                let begin_ = max a_cnum (bol + count_indentation line)
+                and end_ = min b_cnum eol in
+                mk_span begin_ end_ :: spans, eol + 2
+              ) ([], a_pos.pos_bol)
+            |> fst
+            |> List.rev
+          ) intervals
+      in
+      let highlight_line line line_start_cnum ppf =
+        let line_end_cnum = line_start_cnum + String.length line in
+        let rec segments pos =
+          match ISet.find_interval_in iset ~range:(pos, line_end_cnum) with
+          | None -> ()
+          | Some (((), start), ((), end_)) ->
+              (* [start] is guaranteed to be within the line due to the split *)
+              for pos = 0 to start - pos - 1 do
+                let padc = if line.[pos] = '\t' then '\t' else ' ' in
+                Format.pp_print_char ppf padc
+              done;
+              Format.fprintf ppf "@{<%s>%s@}" highlight_tag
+                (String.make (end_ - start + 1) '^');
+              segments (end_ + 1)
+        in
+        segments line_start_cnum
+      in
+      begin match lines with
+      | [] | [("", _, _)] -> ()
+      | lines ->
+          let pp_ellipsis ppf = Format.fprintf ppf "..." in
+          let highlighted_lines =
+            lines
+            |> List.map (fun (line, line_nb, line_start_cnum) ->
+                [ (Int.to_string line_nb, Fun.flip Format.pp_print_string line);
+                  ("", highlight_line line line_start_cnum) ])
+            |> Misc.ellipse ~ellipsis:[ "", pp_ellipsis ] ~max_lines
+            |> List.concat
+          in
+          Format.fprintf ppf "@[<v>%a@]" (Misc.pp_two_columns ~sep:"|")
+            highlighted_lines
+      end
 
 let lines_around
     ~(start_pos: position) ~(end_pos: position)

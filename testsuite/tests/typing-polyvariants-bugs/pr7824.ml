@@ -38,8 +38,10 @@ let f x =
 ;;
 [%%expect{|
 Lines 4-5, characters 2-38:
-4 | ..match [] with
+4 |   match [] with
+      ^^^^^^^^^^^^^
 5 |   | _::_ -> (x :> [`A | `C] Element.t)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 []

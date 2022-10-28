@@ -8,9 +8,12 @@ let f = function
   | Some _, Some _ -> 2;;
 [%%expect {|
 Lines 1-3, characters 8-23:
-1 | ........function
+1 | let f = function
+            ^^^^^^^^
 2 |     None, None -> 1
-3 |   | Some _, Some _ -> 2..
+        ^^^^^^^^^^^^^^^
+3 |   | Some _, Some _ -> 2;;
+      ^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (None, Some _)
@@ -346,10 +349,14 @@ let f = function
 ;;
 [%%expect {|
 Lines 1-4, characters 8-28:
-1 | ........function
+1 | let f = function
+            ^^^^^^^^
 2 |   | None -> ()
+      ^^^^^^^^^^^^
 3 |   | Some x when x > 0 -> ()
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
 4 |   | Some x when x <= 0 -> ()
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some _
@@ -384,9 +391,12 @@ let non_exhaustive : t * t * t * t -> unit = function
 end;;
 [%%expect {|
 Lines 20-22, characters 45-49:
-20 | .............................................function
+20 | let non_exhaustive : t * t * t * t -> unit = function
+                                                  ^^^^^^^^
 21 | | A, A, A, A -> ()
+     ^^^^^^^^^^^^^^^^^^
 22 | | (A|B), (A|B), (A|B), A (*missing B here*) -> ()
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 ((A|B), (A|B), (A|B), B)

@@ -54,10 +54,14 @@ File "morematch.ml", line 456, characters 2-7:
 Warning 11 [redundant-case]: this match case is unused.
 
 File "morematch.ml", lines 1050-1053, characters 8-10:
-1050 | ........function
+1050 | let f = function
+               ^^^^^^^^
 1051 |   | A (`A|`C) -> 0
+         ^^^^^^^^^^^^^^^^
 1052 |   | B (`B,`D) -> 1
+         ^^^^^^^^^^^^^^^^
 1053 |   | C -> 2
+         ^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 A `D

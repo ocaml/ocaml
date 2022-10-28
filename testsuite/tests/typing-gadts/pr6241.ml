@@ -22,8 +22,10 @@ let x = N.f A;;
 [%%expect{|
 type (_, _) t = A : ('a, 'a) t | B : string -> ('a, 'b) t
 Lines 8-9, characters 52-13:
-8 | ....................................................function
+8 |  let f : ((module A.T), (module B.T)) t -> string = function
+                                                        ^^^^^^^^
 9 |    | B s -> s
+       ^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 A

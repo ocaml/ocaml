@@ -64,10 +64,14 @@ end
 and B: sig val value: unit end = struct let value = A.f () end
 [%%expect {|
 Lines 4-7, characters 6-3:
-4 | ......struct
+4 | end = struct
+          ^^^^^^
 5 |   module F(X:sig end) = struct end
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 6 |   let f () = B.value
+      ^^^^^^^^^^^^^^^^^^
 7 | end
+    ^^^
 Error: Cannot safely evaluate the definition of the following cycle
        of recursively-defined modules: A -> B -> A.
        There are no safe modules in this cycle (see manual section 12.2).
@@ -94,10 +98,14 @@ module F(X: sig module type t module M: t end) = struct
 end
 [%%expect {|
 Lines 5-8, characters 8-5:
-5 | ........struct
+5 |   end = struct
+            ^^^^^^
 6 |     module M = X.M
+        ^^^^^^^^^^^^^^
 7 |     let f () = B.value
+        ^^^^^^^^^^^^^^^^^^
 8 |   end
+      ^^^
 Error: Cannot safely evaluate the definition of the following cycle
        of recursively-defined modules: A -> B -> A.
        There are no safe modules in this cycle (see manual section 12.2).

@@ -15,9 +15,13 @@ type z
 type 'a s
 Lines 3-6, characters 0-27:
 3 | type _ nat =
+    ^^^^^^^^^^^^
 4 |   | Nz : z -> z nat
+      ^^^^^^^^^^^^^^^^^
 5 |   | Nss : 'd nat -> 'd s s nat
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 6 |   | Ns : 'a nat -> 'a s nat
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the GADT constructor
          Nss : 'd nat -> 'd s s nat
        the type variable 'd cannot be deduced from the type parameters.

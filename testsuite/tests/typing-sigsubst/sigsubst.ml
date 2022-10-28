@@ -157,11 +157,16 @@ end with type 'a t2 := 'a t * bool
 [%%expect {|
 type 'a t constraint 'a = 'b list
 Lines 2-6, characters 16-34:
-2 | ................sig
+2 | module type S = sig
+                    ^^^
 3 |   type 'a t2 constraint 'a = 'b list
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 4 |   type 'a mylist = 'a list
+      ^^^^^^^^^^^^^^^^^^^^^^^^
 5 |   val x : int mylist t2
+      ^^^^^^^^^^^^^^^^^^^^^
 6 | end with type 'a t2 := 'a t * bool
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Destructive substitutions are not supported for constrained
        types (other than when replacing a type constructor with
        a type constructor with the same arguments).
@@ -262,10 +267,14 @@ module type S = sig
 end with type M.t := float
 [%%expect {|
 Lines 1-4, characters 16-26:
-1 | ................sig
+1 | module type S = sig
+                    ^^^
 2 |   module M : sig type t end
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
 3 |   module A = M
+      ^^^^^^^^^^^^
 4 | end with type M.t := float
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This `with' constraint on M.t changes M, which is aliased
        in the constrained signature (as A).
 |}]
@@ -324,10 +333,14 @@ end with type M2.t := int
 [%%expect {|
 module Id : functor (X : sig type t end) -> sig type t = X.t end
 Lines 2-5, characters 17-25:
-2 | .................sig
+2 | module type S3 = sig
+                     ^^^
 3 |   module rec M : sig type t = A of Id(M2).t end
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 4 |   and M2 : sig type t end
+      ^^^^^^^^^^^^^^^^^^^^^^^
 5 | end with type M2.t := int
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This `with' constraint on M2.t makes the applicative functor
        type Id(M2).t ill-typed in the constrained signature:
        Modules do not match: sig end is not included in sig type t end
@@ -367,16 +380,26 @@ module type S = sig
 end with module M.N := A
 [%%expect {|
 Lines 1-10, characters 16-24:
- 1 | ................sig
+ 1 | module type S = sig
+                     ^^^
  2 |   module M : sig
+       ^^^^^^^^^^^^^^
  3 |     module N : sig
+         ^^^^^^^^^^^^^^
  4 |       module P : sig
+           ^^^^^^^^^^^^^^
  5 |         type t
+             ^^^^^^
  6 |       end
+           ^^^
  7 |     end
+         ^^^
  8 |   end
+       ^^^
  9 |   module Alias = M
+       ^^^^^^^^^^^^^^^^
 10 | end with module M.N := A
+     ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This `with' constraint on M.N changes M, which is aliased
        in the constrained signature (as Alias).
 |}]

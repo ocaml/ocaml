@@ -11,10 +11,14 @@ end = struct
 end;;
 [%%expect{|
 Lines 4-7, characters 6-3:
-4 | ......struct
+4 | end = struct
+          ^^^^^^
 5 |   type t = {f0 : unit * unit * unit * float* unit * unit * unit;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 6 |             f1 : unit * unit * unit * string * unit * unit * unit}
-7 | end..
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+7 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig
@@ -66,10 +70,14 @@ end = struct
 end;;
 [%%expect{|
 Lines 4-7, characters 6-3:
-4 | ......struct
+4 | end = struct
+          ^^^^^^
 5 |   type t = {f0 : unit * unit * unit * float* unit * unit * unit;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 6 |             f1 : unit * unit * unit * string * unit * unit * unit}
-7 | end..
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+7 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig
@@ -116,9 +124,12 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   type t = {f1 : unit}
-5 | end..
+      ^^^^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig type t = { f1 : unit; } end
@@ -138,9 +149,12 @@ end = struct
 end;;
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   type t = {f0 : unit}
-5 | end..
+      ^^^^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig type t = { f0 : unit; } end
@@ -163,9 +177,12 @@ end = struct
 end
 [%%expect {|
 Lines 5-7, characters 6-3:
-5 | ......struct
+5 | end = struct
+          ^^^^^^
 6 |   type t = {a : unit; b : unit; beta : unit; c : unit; d: unit}
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 7 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig
@@ -188,9 +205,12 @@ end = struct
 end
 [%%expect {|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   type t = {a : unit; c : unit; d : unit}
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 5 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig type t = { a : unit; c : unit; d : unit; } end
@@ -229,16 +249,25 @@ end
 
 [%%expect {|
 Lines 11-22, characters 6-3:
-11 | ......struct
+11 | end = struct
+           ^^^^^^
 12 |   type t = {
+       ^^^^^^^^^^
 13 |     a : unit;
+         ^^^^^^^^^
 14 |     b : unit;
+         ^^^^^^^^^
 15 |     beta: int;
-...
+         ^^^^^^^^^^
+     ...
 19 |     g : unit;
+         ^^^^^^^^^
 20 |     phi : unit;
+         ^^^^^^^^^^^
 21 |   }
+       ^
 22 | end
+     ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig
@@ -301,9 +330,12 @@ end = struct
 end
 [%%expect {|
 Lines 5-7, characters 6-3:
-5 | ......struct
+5 | end = struct
+          ^^^^^^
 6 |   type t = { alpha:int; b:int; c:int; d:int; e:int }
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 7 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig
@@ -329,8 +361,11 @@ end
 [%%expect {|
 Lines 4-6, characters 0-3:
 4 | struct
+    ^^^^^^
 5 |   type t = { b:int; c:int; d:int; e:int; a:int; f:int }
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 6 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig
@@ -371,9 +406,12 @@ end = struct
 end
 [%%expect {|
 Lines 8-10, characters 6-3:
- 8 | ......struct
+ 8 | end = struct
+           ^^^^^^
  9 |   type t = A: { a:'a; b:'b; x:'x } -> t
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 10 | end
+     ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig type t = A : { a : 'a; b : 'b; x : 'x; } -> t end
@@ -402,9 +440,12 @@ end = struct
 end
 [%%expect {|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   type t = A: { y:'a; a:'a; b:'b; x:'b} -> t
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 5 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig type t = A : { y : 'a; a : 'a; b : 'b; x : 'b; } -> t end
@@ -429,9 +470,12 @@ end = struct
 end
 [%%expect {|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   type t = A: { y:'b; a:'a; b:'b; x:'a} -> t
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 5 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig type t = A : { y : 'b; a : 'a; b : 'b; x : 'a; } -> t end
@@ -456,9 +500,12 @@ end = struct
 end
 [%%expect {|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   type t = A: { x:'a; a:'a; b:'b} -> t
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 5 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig type t = A : { x : 'a; a : 'a; b : 'b; } -> t end
@@ -484,9 +531,12 @@ end = struct
 end
 [%%expect {|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   type t = A: { x:'b; a:'a; b:'b} -> t
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 5 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig type t = A : { x : 'b; a : 'a; b : 'b; } -> t end

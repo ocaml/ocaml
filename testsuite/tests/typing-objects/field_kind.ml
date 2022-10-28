@@ -25,10 +25,14 @@ let o' =
 let aargh = assert (o'#m Int o' = 3);;
 [%%expect{|
 Lines 2-5, characters 2-5:
-2 | ..object (self : 's)
+2 |   object (self : 's)
+      ^^^^^^^^^^^^^^^^^^
 3 |     method private x = 3
+        ^^^^^^^^^^^^^^^^^^^^
 4 |     method m : type a. a t -> 's -> a = fun Int other -> (other#x : int)
-5 |   end..
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 |   end;;
+      ^^^
 Warning 15 [implicit-public-methods]: the following private methods were made public implicitly:
  x.
 
@@ -43,10 +47,14 @@ let o2 =
   end;;
 [%%expect{|
 Lines 2-5, characters 2-5:
-2 | ..object (self : 's)
+2 |   object (self : 's)
+      ^^^^^^^^^^^^^^^^^^
 3 |     method private x = 3
+        ^^^^^^^^^^^^^^^^^^^^
 4 |     method m : 's -> int = fun other -> (other#x : int)
-5 |   end..
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 |   end;;
+      ^^^
 Warning 15 [implicit-public-methods]: the following private methods were made public implicitly:
  x.
 
@@ -63,11 +71,16 @@ let o3 =
 let aargh = assert (o3#m o3 = 3);;
 [%%expect{|
 Lines 2-6, characters 2-5:
-2 | ..object (self : 's)
+2 |   object (self : 's)
+      ^^^^^^^^^^^^^^^^^^
 3 |     method private x = 3
+        ^^^^^^^^^^^^^^^^^^^^
 4 |     method m : 's -> int = fun other ->
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 5 |       let module M = struct let other = other end in (M.other#x : int)
-6 |   end..
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6 |   end;;
+      ^^^
 Warning 15 [implicit-public-methods]: the following private methods were made public implicitly:
  x.
 

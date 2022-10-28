@@ -15,12 +15,18 @@ module Non_recursive_let_bad = struct
 end
 [%%expect {|
 Lines 6-11, characters 30-40:
- 6 | ..............................f l =
+ 6 |   let[@tail_mod_cons] rec map f l =
+                                   ^^^^^
  7 |     match l with
+         ^^^^^^^^^^^^
  8 |     | N v -> N (f v)
+         ^^^^^^^^^^^^^^^^
  9 |     | C (a, b) ->
+         ^^^^^^^^^^^^^
 10 |         let map' l = map f l in
+             ^^^^^^^^^^^^^^^^^^^^^^^
 11 |         C (map' a, (map' [@tailcall]) b)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 71 [unused-tmc-attribute]: This function is marked @tail_mod_cons
 but is never applied in TMC position.
 

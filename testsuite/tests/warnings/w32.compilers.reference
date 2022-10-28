@@ -74,14 +74,23 @@ Warning 32 [unused-value-declaration]: unused value k.
 
 File "w32.ml", lines 52-60, characters 0-3:
 52 | module M = struct
+     ^^^^^^^^^^^^^^^^^
 53 |   [@@@warning "-32"]
+       ^^^^^^^^^^^^^^^^^^
 54 |   let f x = x
+       ^^^^^^^^^^^
 55 |   let[@warning "+32"] g x = x
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 56 |   let[@warning "+32"] h x = x
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 57 |   and i x = x
+       ^^^^^^^^^^^
 58 |   let j x = x
+       ^^^^^^^^^^^
 59 |   and[@warning "+32"] k x = x
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 60 | end
+     ^^^
 Warning 60 [unused-module]: unused module M.
 
 File "w32.ml", line 63, characters 18-29:

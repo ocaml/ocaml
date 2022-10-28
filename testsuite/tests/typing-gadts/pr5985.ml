@@ -39,8 +39,10 @@ module F(T:sig type 'a t end) = struct
 end;; (* fail *)
 [%%expect{|
 Lines 2-3, characters 2-67:
-2 | ..class ['a] c x =
+2 |   class ['a] c x =
+      ^^^^^^^^^^^^^^^^
 3 |     object constraint 'a = 'b T.t val x' : 'b = x method x = x' end
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the definition
          type 'a c = < x : 'b > constraint 'a = 'b T.t
        the type variable 'b cannot be deduced from the type parameters.

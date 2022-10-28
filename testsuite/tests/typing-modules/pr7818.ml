@@ -111,10 +111,14 @@ module Make2 (T' : S) : sig module Id : sig end module Id2 = Id end
 end;;
 [%%expect{|
 Lines 2-5, characters 57-3:
-2 | .........................................................struct
+2 |                         with module Id := T'.Term0.Id  = struct
+                                                             ^^^^^^
 3 |   module Id = T'.T.Id
+      ^^^^^^^^^^^^^^^^^^^
 4 |   module Id2 = Id
-5 | end..
+      ^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig module Id : sig end module Id2 = Id end

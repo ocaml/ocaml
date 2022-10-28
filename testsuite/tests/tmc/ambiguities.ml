@@ -194,14 +194,22 @@ module Disjunctions_ambiguous = struct
 end
 [%%expect {|
 Lines 13-20, characters 8-9:
-13 | ........Node (
+13 |         Node (
+             ^^^^^^
 14 |           (if flip
+               ^^^^^^^^
 15 |            then shift ~flip (- k) left
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 16 |            else shift ~flip k left),
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
 17 |           (if flip
+               ^^^^^^^^
 18 |            then shift ~flip (- k) right
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 19 |            else shift ~flip k right)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
 20 |         )
+             ^
 Error: [@tail_mod_cons]: this constructor application may be TMC-transformed
        in several different ways. Please disambiguate by adding an explicit
        [@tailcall] attribute to the call that should be made tail-recursive,
@@ -265,14 +273,22 @@ module Disjunctions_ambiguous_again = struct
 end
 [%%expect {|
 Lines 7-14, characters 8-9:
- 7 | ........Node (
+ 7 |         Node (
+             ^^^^^^
  8 |           (if flip
+               ^^^^^^^^
  9 |            then (shift[@tailcall]) ~flip (- k) left
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 10 |            else shift ~flip k left),
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
 11 |           (if flip
+               ^^^^^^^^
 12 |            then shift ~flip (- k) right
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 13 |            else (shift[@tailcall]) ~flip k right)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 14 |         )
+             ^
 Error: [@tail_mod_cons]: this constructor application may be TMC-transformed
        in several different ways. Only one of the arguments may become a TMC
        call, but several arguments contain calls that are explicitly marked

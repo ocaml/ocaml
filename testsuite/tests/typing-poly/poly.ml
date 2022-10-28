@@ -49,9 +49,13 @@ match px with
 [%%expect {|
 Lines 1-4, characters 0-24:
 1 | match px with
+    ^^^^^^^^^^^^^
 2 | | {pv=[]} -> "OK"
+    ^^^^^^^^^^^^^^^^^
 3 | | {pv=5::_} -> "int"
+    ^^^^^^^^^^^^^^^^^^^^
 4 | | {pv=true::_} -> "bool"
+    ^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {pv=false::_}
@@ -67,9 +71,13 @@ match px with
 [%%expect {|
 Lines 1-4, characters 0-20:
 1 | match px with
+    ^^^^^^^^^^^^^
 2 | | {pv=[]} -> "OK"
+    ^^^^^^^^^^^^^^^^^
 3 | | {pv=true::_} -> "bool"
+    ^^^^^^^^^^^^^^^^^^^^^^^^
 4 | | {pv=5::_} -> "int"
+    ^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {pv=0::_}
@@ -559,10 +567,14 @@ end
 ;;
 [%%expect {|
 Lines 4-7, characters 12-17:
-4 | ............x =
+4 |   method id x =
+                ^^^
 5 |     match r with
+        ^^^^^^^^^^^^
 6 |       None -> r <- Some x; x
+          ^^^^^^^^^^^^^^^^^^^^^^
 7 |     | Some y -> y
+        ^^^^^^^^^^^^^
 Error: This method has type 'b -> 'b which is less general than 'a. 'a -> 'a
 |}];;
 
@@ -1259,8 +1271,10 @@ let f6 x =
   (x : <m:'a. [< `A of < > ] as 'a> :> <m:'a. [< `A of <p:int> ] as 'a>);;
 [%%expect {|
 Lines 2-3, characters 2-47:
-2 | ..(x : <m:'a. (<p:int;..> as 'a) -> int>
-3 |     :> <m:'b. (<p:int;q:int;..> as 'b) -> int>)..
+2 |   (x : <m:'a. (<p:int;..> as 'a) -> int>
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3 |     :> <m:'b. (<p:int;q:int;..> as 'b) -> int>);;
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type < m : 'a. (< p : int; .. > as 'a) -> int > is not a subtype of
          < m : 'b. (< p : int; q : int; .. > as 'b) -> int >
        Type < p : int; q : int; .. > is not a subtype of < p : int; .. >
@@ -1880,9 +1894,12 @@ let x : 'a c = object
 end
 [%%expect{|
 Lines 1-3, characters 15-3:
-1 | ...............object
+1 | let x : 'a c = object
+                   ^^^^^^
 2 |   method x : 'b . 'b s list = [S]
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 3 | end
+    ^^^
 Error: This expression has type < x : 'b. 'b s list >
        but an expression was expected of type 'a c
        The method x has type 'b. 'b s list, but the expected method type was
@@ -1916,9 +1933,12 @@ let x : 'a c = object
 end
 [%%expect{|
 Lines 1-3, characters 15-3:
-1 | ...............object
+1 | let x : 'a c = object
+                   ^^^^^^
 2 |   method x : 'b . 'b s list = []
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 3 | end
+    ^^^
 Error: This expression has type < x : 'b. 'b s list >
        but an expression was expected of type 'a c
        The method x has type 'b. 'b s list, but the expected method type was

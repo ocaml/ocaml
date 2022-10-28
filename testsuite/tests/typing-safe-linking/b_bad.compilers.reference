@@ -1,6 +1,8 @@
 File "b_bad.ml", lines 13-14, characters 29-28:
-13 | .............................function
+13 | let f : string A.t -> unit = function
+                                  ^^^^^^^^
 14 |     A.X s -> print_endline s
+         ^^^^^^^^^^^^^^^^^^^^^^^^
 Error (warning 8 [partial-match]): this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Y

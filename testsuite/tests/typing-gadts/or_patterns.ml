@@ -528,8 +528,10 @@ let extract_merged_annotated (type a) (t2 : a t2) : a =
 
 [%%expect{|
 Lines 3-4, characters 4-10:
-3 | ....Int x
-4 |   | Bool x.....
+3 |   | Int x
+        ^^^^^
+4 |   | Bool x -> x
+      ^^^^^^^^
 Error: The variable x on the left-hand side of this or-pattern has type
        int but on the right-hand side it has type bool
 |}]
@@ -552,8 +554,10 @@ let extract_merged_too_lightly_annotated (type a) (t2 : a t2) : a =
 
 [%%expect{|
 Lines 3-4, characters 4-10:
-3 | ....Int (x : a)
-4 |   | Bool x.....
+3 |   | Int (x : a)
+        ^^^^^^^^^^^
+4 |   | Bool x -> x
+      ^^^^^^^^
 Error: The variable x on the left-hand side of this or-pattern has type
        a but on the right-hand side it has type bool
 |}]
@@ -586,8 +590,10 @@ let rambiguity (type a) (t2 : a t2) =
 
 [%%expect{|
 Lines 3-4, characters 4-23:
-3 | ....Int (_ as x)
-4 |   | Bool ((_ : a) as x).....
+3 |   | Int (_ as x)
+        ^^^^^^^^^^^^
+4 |   | Bool ((_ : a) as x) -> x
+      ^^^^^^^^^^^^^^^^^^^^^
 Error: The variable x on the left-hand side of this or-pattern has type
        int but on the right-hand side it has type a
 |}]
@@ -702,8 +708,10 @@ let f_amb (type a) (t : a t) (a : bool ref) (b : a ref) =
 ;;
 [%%expect{|
 Lines 3-4, characters 4-65:
-3 | ....IntLit,  ({ contents = true } as x), _
-4 |   | BoolLit,  _,                        ({ contents = true} as x)............
+3 |   | IntLit,  ({ contents = true } as x), _
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+4 |   | BoolLit,  _,                        ({ contents = true} as x) -> ignore x
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The variable x on the left-hand side of this or-pattern has type
          bool ref
        but on the right-hand side it has type a ref

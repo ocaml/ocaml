@@ -140,10 +140,14 @@ class leading_up_to = object(self : 'a)
 end;;
 [%%expect{|
 Lines 4-7, characters 4-7:
-4 | ....object
+4 |     object
+        ^^^^^^
 5 |       inherit child1 self
+          ^^^^^^^^^^^^^^^^^^^
 6 |       inherit child2
+          ^^^^^^^^^^^^^^
 7 |     end
+        ^^^
 Error: This object has undeclared virtual methods.
        The following methods were not declared : previous child
 |}]
@@ -161,13 +165,20 @@ class assertion_failure = object(self : 'a)
 end;;
 [%%expect{|
 Lines 4-10, characters 4-7:
- 4 | ....object
+ 4 |     object
+         ^^^^^^
  5 |       inherit child1 self
+           ^^^^^^^^^^^^^^^^^^^
  6 |       inherit child2
+           ^^^^^^^^^^^^^^
  7 |
+     ^
  8 |       method previous = None
+           ^^^^^^^^^^^^^^^^^^^^^^
  9 |       method child = assert false
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 10 |     end
+         ^^^
 Error: Cannot close type of object literal:
        < child : '_weak2; previous : '_weak1 option; .. > as '_weak1
        it has been unified with the self type of a class that is not yet

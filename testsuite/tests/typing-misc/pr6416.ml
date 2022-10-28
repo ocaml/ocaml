@@ -13,10 +13,14 @@ module M = struct
 end;;
 [%%expect{|
 Lines 5-8, characters 8-5:
-5 | ........struct
+5 |   end = struct
+            ^^^^^^
 6 |     type t = B
+        ^^^^^^^^^^
 7 |     let f B = ()
+        ^^^^^^^^^^^^
 8 |   end
+      ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig type t = B val f : t -> unit end
@@ -74,10 +78,14 @@ end;;
 
 [%%expect{|
 Lines 4-7, characters 4-7:
-4 | ....struct
+4 |     struct
+        ^^^^^^
 5 |       module type s
+          ^^^^^^^^^^^^^
 6 |       module A(X:s) =struct end
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
 7 |     end
+        ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig module type s module A : functor (X : s) -> sig end end
@@ -108,10 +116,14 @@ module L = struct
 end;;
       [%%expect {|
 Lines 4-7, characters 4-7:
-4 | ....struct
+4 |     struct
+        ^^^^^^
 5 |       module T = struct type t end
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 6 |       type t = A of T.t
+          ^^^^^^^^^^^^^^^^^
 7 |     end
+        ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig module T : sig type t end type t = A of T.t end
@@ -206,10 +218,14 @@ end;;
 
 [%%expect{|
 Lines 4-7, characters 2-5:
-4 | ..struct
+4 |   struct
+      ^^^^^^
 5 |     class a = object method c = let module X = struct type t end in () end
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 6 |     class b = a
+        ^^^^^^^^^^^
 7 |   end
+      ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig class a : object method c : unit end class b : a end
@@ -238,10 +254,14 @@ end;;
 
 [%%expect{|
 Lines 4-7, characters 2-5:
-4 | ..struct
+4 |   struct
+      ^^^^^^
 5 |     class type a = object end
+        ^^^^^^^^^^^^^^^^^^^^^^^^^
 6 |     class type b = a
+        ^^^^^^^^^^^^^^^^
 7 |   end
+      ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig class type a = object  end class type b = a end
@@ -285,14 +305,22 @@ end;;
 
 [%%expect{|
 Lines 8-15, characters 6-3:
- 8 | ......struct
+ 8 | end = struct
+           ^^^^^^
  9 |   type t
+       ^^^^^^
 10 |   class type a = object method m:t end
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 11 |   module K = struct
+       ^^^^^^^^^^^^^^^^^
 12 |     type t
+         ^^^^^^
 13 |     class type c = object inherit a end
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 14 |   end
-15 | end..
+       ^^^
+15 | end;;
+     ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig
@@ -363,9 +391,12 @@ type t = B
 type t = C
 type t = D
 Lines 5-7, characters 44-3:
-5 | ............................................struct
+5 | module M: sig val f: t -> t -> t -> t end = struct
+                                                ^^^^^^
 6 |   let f A B C = D
-7 | end..
+      ^^^^^^^^^^^^^^^
+7 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig val f : t/4 -> t/3 -> t/2 -> t end

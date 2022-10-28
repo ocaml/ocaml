@@ -17,10 +17,14 @@ let test_match_exhaustiveness () =
 
 [%%expect{|
 Lines 8-11, characters 4-16:
- 8 | ....match None with
+ 8 |     match None with
+         ^^^^^^^^^^^^^^^
  9 |     | exception e -> ()
+         ^^^^^^^^^^^^^^^^^^^
 10 |     | Some false -> ()
+         ^^^^^^^^^^^^^^^^^^
 11 |     | None -> ()
+         ^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some true
@@ -37,9 +41,12 @@ let test_match_exhaustiveness_nest1 () =
 
 [%%expect{|
 Lines 2-4, characters 4-30:
-2 | ....match None with
+2 |     match None with
+        ^^^^^^^^^^^^^^^
 3 |     | Some false -> ()
+        ^^^^^^^^^^^^^^^^^^
 4 |     | None | exception _ -> ()
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some true
@@ -56,9 +63,12 @@ let test_match_exhaustiveness_nest2 () =
 
 [%%expect{|
 Lines 2-4, characters 4-16:
-2 | ....match None with
+2 |     match None with
+        ^^^^^^^^^^^^^^^
 3 |     | Some false | exception _ -> ()
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 4 |     | None -> ()
+        ^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some true
@@ -76,10 +86,14 @@ let test_match_exhaustiveness_full () =
 
 [%%expect{|
 Lines 2-5, characters 4-30:
-2 | ....match None with
+2 |     match None with
+        ^^^^^^^^^^^^^^^
 3 |     | exception e -> ()
+        ^^^^^^^^^^^^^^^^^^^
 4 |     | Some false | exception _ -> ()
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 5 |     | None | exception _ -> ()
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some true

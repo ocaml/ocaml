@@ -97,10 +97,15 @@ end;;
 [%%expect{|
 Lines 1-5, characters 0-3:
 1 | class ref x_init = object
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
 2 |   val mutable x = x_init
+      ^^^^^^^^^^^^^^^^^^^^^^
 3 |   method get = x
+      ^^^^^^^^^^^^^^
 4 |   method set y = x <- y
-5 | end..
+      ^^^^^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Some type variables are unbound in this type:
          class ref :
            'a ->

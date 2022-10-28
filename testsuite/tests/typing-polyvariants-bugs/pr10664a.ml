@@ -148,8 +148,10 @@ let o =
   end;;
 [%%expect{|
 Lines 3-4, characters 4-34:
-3 | ....method m : 'a. < n : [< `A of 'a] -> 'b > =
+3 |     method m : 'a. < n : [< `A of 'a] -> 'b > =
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 4 |       object method n _ = self end
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The method m has type 'b but is expected to have type
          < n : ([< `A of 'a ] as 'c) ->
                (< m : 'a. < n : 'c -> 'd >; .. > as 'd) >
