@@ -374,9 +374,7 @@ module Color : sig
     | BG of color (* background *)
     | Bold
     | Reset
-    | Hint
-
-
+    
   type Format.stag += Style of style list
 
   val ansi_of_style_l : style list -> string

@@ -146,7 +146,6 @@ let prepare_error err =
          syntax for them.\n\
          @{<hint>Hint@}: Mutable sequences of bytes are available in the Bytes module.\n\
          @{<hint>Hint@}: Did you mean to use 'Bytes.set'?"
-
 let () =
   Location.register_error_of_exn
     (function
