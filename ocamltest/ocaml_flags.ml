@@ -24,7 +24,7 @@ let include_toplevel_directory =
 
 let c_includes =
   let dir = Ocaml_directories.runtime in
-  "-ccopt -I" ^ dir
+  "-ccopt -I" ^ dir ^ " -ccopt -I" ^ dir ^ "/winpthreads/include"
 
 let runtime_variant_flags () = match Ocaml_files.runtime_variant() with
   | Ocaml_files.Normal -> ""

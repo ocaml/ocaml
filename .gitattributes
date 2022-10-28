@@ -65,6 +65,7 @@ META.in                  typo.missing-header
 /Changes                 typo.utf8 typo.missing-header
 /release-info/News       typo.utf8 typo.missing-header
 /LICENSE                 typo.very-long-line typo.missing-header
+/Makefile.config.in      typo.long-line
 # tools/ci/appveyor/appveyor_build.cmd only has missing-header because
 # dra27 too lazy to update check-typo to interpret Cmd-style comments!
 /tools/ci/appveyor/appveyor_build.cmd       typo.very-long-line typo.missing-header typo.non-ascii
@@ -104,6 +105,7 @@ otherlibs/unix/stat_win32.c        typo.long-line
 otherlibs/unix/symlink_win32.c     typo.long-line
 
 runtime/sak.c            typo.non-ascii
+runtime/winpthreads/**   typo.prune linguist-generated
 
 stdlib/hashbang     typo.white-at-eol typo.missing-lf
 

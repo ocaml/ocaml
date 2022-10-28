@@ -52,7 +52,8 @@ COMPUTE_DEPS=@compute_deps@
 
 # Build-system flags to use to compile C files
 OC_CFLAGS=@oc_cflags@
-OC_CPPFLAGS=-I$(ROOTDIR)/runtime @oc_cppflags@
+OC_CPPFLAGS=\
+  -I$(ROOTDIR)/runtime -I$(ROOTDIR)/runtime/winpthreads/include @oc_cppflags@
 
 # The following variable defines flags to be passed to the C preprocessor
 # when compiling C files to be linked with native code. This includes
