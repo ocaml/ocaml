@@ -182,11 +182,6 @@ typedef uint64_t uintnat;
 #define THREADED_CODE
 #endif
 
-#if defined(_WIN32) || defined(__CYGWIN__)
-/* On Windows and Cygwin (which both ultimately use VirtualAlloc), memory
-   allocations will be returned aligned to the value of caml_sys_pagesize */
-#define MMAP_ALIGNS_TO_PAGESIZE
-#endif
 
 /* Memory model parameters */
 

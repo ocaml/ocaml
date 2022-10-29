@@ -56,6 +56,9 @@
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #endif
+#ifdef HAS_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
@@ -475,6 +478,109 @@ int caml_num_rows_fd(int fd)
 
 void caml_init_os_params(void)
 {
-  caml_sys_pagesize = sysconf(_SC_PAGESIZE);
+  caml_plat_mmap_granularity = sysconf(_SC_PAGESIZE);
   return;
+}
+
+#ifndef __CYGWIN__
+
+/* Standard Unix implementation: reserve with mmap (and trim to alignment) with
+   commit done using mmap as well. */
+
+Caml_inline void safe_munmap(uintnat addr, uintnat size)
+{
+  if (size > 0) {
+    caml_gc_message(0x1000, "munmap %" ARCH_INTNAT_PRINTF_FORMAT "d"
+                            " bytes at %" ARCH_INTNAT_PRINTF_FORMAT "x"
+                            " for heaps\n", size, addr);
+    munmap((void*)addr, size);
+  }
+}
+
+void *caml_plat_mem_map(uintnat size, uintnat alignment, int reserve_only)
+{
+  uintnat alloc_sz = size + alignment;
+  uintnat base, aligned_start, aligned_end;
+  void* mem;
+
+  mem = mmap(0, alloc_sz, reserve_only ? PROT_NONE : (PROT_READ | PROT_WRITE),
+             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  if (mem == MAP_FAILED)
+    return 0;
+
+  /* trim to an aligned region */
+  base = (uintnat)mem;
+  aligned_start = (base + alignment - 1) & ~(alignment - 1);
+  aligned_end = aligned_start + size;
+  safe_munmap(base, aligned_start - base);
+  safe_munmap(aligned_end, (base + alloc_sz) - aligned_end);
+  mem = (void*)aligned_start;
+
+  return mem;
+}
+
+static void* map_fixed(void* mem, uintnat size, int prot)
+{
+  if (mmap(mem, size, prot, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED,
+           -1, 0) == MAP_FAILED) {
+    return 0;
+  } else {
+    return mem;
+  }
+}
+
+#else
+
+/* Cygwin implementation: memory reserved using mmap, but relying on the large
+   allocation granularity of the underlying Windows VirtualAlloc call to ensure
+   alignment (since on Windows it is not possible to trim the region). Commit
+   done using mprotect, since Cygwin's mmap doesn't implement the required
+   functions for committing using mmap. */
+
+void *caml_plat_mem_map(uintnat size, uintnat alignment, int reserve_only)
+{
+  void* mem;
+
+  if (alignment > caml_sys_pagesize)
+    caml_fatal_error("Cannot align memory to %lx on this platform", alignment);
+
+  mem = mmap(0, size, reserve_only ? PROT_NONE : (PROT_READ | PROT_WRITE),
+             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  if (mem == MAP_FAILED)
+    return 0;
+
+  return mem;
+}
+
+static void* map_fixed(void* mem, uintnat size, int prot)
+{
+  if (mprotect(mem, size, prot) != 0) {
+    return 0;
+  } else {
+    return mem;
+  }
+}
+
+#endif /* !__CYGWIN__ */
+
+void* caml_plat_mem_commit(void* mem, uintnat size)
+{
+  void* p = map_fixed(mem, size, PROT_READ | PROT_WRITE);
+  /*
+    FIXME: On Linux, it might be useful to populate page tables with
+    MAP_POPULATE to reduce the time spent blocking on page faults at
+    a later point.
+  */
+  return p;
+}
+
+void caml_plat_mem_decommit(void* mem, uintnat size)
+{
+  map_fixed(mem, size, PROT_NONE);
+}
+
+void caml_plat_mem_unmap(void* mem, uintnat size)
+{
+  if (munmap(mem, size) != 0)
+    CAMLassert(0);
 }

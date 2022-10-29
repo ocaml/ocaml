@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/time.h>
+#include "caml/osdeps.h"
 #include "caml/platform.h"
 #include "caml/fail.h"
 #include "caml/lf_skiplist.h"
@@ -137,33 +138,20 @@ static uintnat round_up(uintnat size, uintnat align) {
   return (size + align - 1) & ~(align - 1);
 }
 
-intnat caml_sys_pagesize = 0;
+intnat caml_plat_mmap_granularity = 0;
 
 uintnat caml_mem_round_up_pages(uintnat size)
 {
-  return round_up(size, caml_sys_pagesize);
+  return round_up(size, caml_plat_mmap_granularity);
 }
 
-#define Is_page_aligned(size) ((size & (caml_sys_pagesize - 1)) == 0)
-
-#ifdef _WIN32
-#define MAP_FAILED 0
-#endif
+#define Is_page_aligned(size) ((size & (caml_plat_mmap_granularity - 1)) == 0)
 
 #ifdef DEBUG
 static struct lf_skiplist mmap_blocks = {NULL};
 #endif
 
 #ifndef _WIN32
-Caml_inline void safe_munmap(uintnat addr, uintnat size)
-{
-  if (size > 0) {
-    caml_gc_message(0x1000, "munmap %" ARCH_INTNAT_PRINTF_FORMAT "d"
-                            " bytes at %" ARCH_INTNAT_PRINTF_FORMAT "x"
-                            " for heaps\n", size, addr);
-    munmap((void*)addr, size);
-  }
-}
 #endif
 
 void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
@@ -171,14 +159,6 @@ void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
   CAMLassert(Is_power_of_2(alignment));
   CAMLassert(Is_page_aligned(size));
   alignment = caml_mem_round_up_pages(alignment);
-
-#ifdef MMAP_ALIGNS_TO_PAGESIZE
-  uintnat alloc_sz = size;
-#else
-  uintnat alloc_sz = size + alignment;
-  uintnat base, aligned_start, aligned_end;
-#endif
-  void* mem;
 
 #ifdef DEBUG
   if (mmap_blocks.head == NULL) {
@@ -189,41 +169,16 @@ void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
   }
 #endif
 
-#ifdef _WIN32
-  /* caml_sys_pagesize has been engineered to be the granularity of
-     VirtualAlloc, so trimming will be unnecessary. */
-  if (alignment > caml_sys_pagesize)
-    caml_fatal_error("Cannot align memory to %" ARCH_INTNAT_PRINTF_FORMAT "x"
-                     " on this platform", alignment);
-  mem =
-    VirtualAlloc(NULL, alloc_sz,
-                 MEM_RESERVE | (reserve_only ? 0 : MEM_COMMIT),
-                 reserve_only ? PAGE_NOACCESS : PAGE_READWRITE);
-#else
-#ifdef __CYGWIN__
-  if (alignment > caml_sys_pagesize)
-    caml_fatal_error("Cannot align memory to %lx on this platform", alignment);
-#endif
-  mem = mmap(0, alloc_sz, reserve_only ? PROT_NONE : (PROT_READ | PROT_WRITE),
-             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-#endif
-  if (mem == MAP_FAILED) {
+  void* mem = caml_plat_mem_map(size, alignment, reserve_only);
+
+  if (mem == 0) {
     caml_gc_message(0x1000, "mmap %" ARCH_INTNAT_PRINTF_FORMAT "d bytes failed",
-                            alloc_sz);
+                            size);
     return 0;
   }
-  caml_gc_message(0x1000, "mmap %" ARCH_INTNAT_PRINTF_FORMAT "d"
-                          " bytes at %p for heaps\n", alloc_sz, mem);
 
-#ifndef MMAP_ALIGNS_TO_PAGESIZE
-  /* trim to an aligned region */
-  base = (uintnat)mem;
-  aligned_start = round_up(base, alignment);
-  aligned_end = aligned_start + size;
-  safe_munmap(base, aligned_start - base);
-  safe_munmap(aligned_end, (base + alloc_sz) - aligned_end);
-  mem = (void*)aligned_start;
-#endif
+  caml_gc_message(0x1000, "mmap %" ARCH_INTNAT_PRINTF_FORMAT "d"
+                          " bytes at %p for heaps\n", size, mem);
 
 #ifdef DEBUG
   caml_lf_skiplist_insert(&mmap_blocks, (uintnat)mem, size);
@@ -232,38 +187,12 @@ void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
   return mem;
 }
 
-#ifndef _WIN32
-static void* map_fixed(void* mem, uintnat size, int prot)
-{
-#ifdef __CYGWIN__
-  if (mprotect(mem, size, prot) != 0) {
-#else
-  if (mmap(mem, size, prot, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED,
-           -1, 0) == MAP_FAILED) {
-#endif
-    return 0;
-  } else {
-    return mem;
-  }
-}
-#endif
-
 void* caml_mem_commit(void* mem, uintnat size)
 {
   CAMLassert(Is_page_aligned(size));
   caml_gc_message(0x1000, "commit %" ARCH_INTNAT_PRINTF_FORMAT "d"
                           " bytes at %p for heaps\n", size, mem);
-#ifdef _WIN32
-  return VirtualAlloc(mem, size, MEM_COMMIT, PAGE_READWRITE);
-#else
-  void* p = map_fixed(mem, size, PROT_READ | PROT_WRITE);
-  /*
-    FIXME: On Linux, it might be useful to populate page tables with
-    MAP_POPULATE to reduce the time spent blocking on page faults at
-    a later point.
-  */
-  return p;
-#endif
+  return caml_plat_mem_commit(mem, size);
 }
 
 void caml_mem_decommit(void* mem, uintnat size)
@@ -271,11 +200,7 @@ void caml_mem_decommit(void* mem, uintnat size)
   if (size) {
     caml_gc_message(0x1000, "decommit %" ARCH_INTNAT_PRINTF_FORMAT "d"
                             " bytes at %p for heaps\n", size, mem);
-#ifdef _WIN32
-    VirtualFree(mem, size, MEM_DECOMMIT);
-#else
-    map_fixed(mem, size, PROT_NONE);
-#endif
+    caml_plat_mem_decommit(mem, size);
   }
 }
 
@@ -288,13 +213,7 @@ void caml_mem_unmap(void* mem, uintnat size)
 #endif
   caml_gc_message(0x1000, "munmap %" ARCH_INTNAT_PRINTF_FORMAT "d"
                           " bytes at %p for heaps\n", size, mem);
-#ifdef _WIN32
-  if (!VirtualFree(mem, 0, MEM_RELEASE))
-    CAMLassert(0);
-#else
-  if (munmap(mem, size) != 0)
-    CAMLassert(0);
-#endif
+  caml_plat_mem_unmap(mem, size);
 #ifdef DEBUG
   caml_lf_skiplist_remove(&mmap_blocks, (uintnat)mem);
 #endif
