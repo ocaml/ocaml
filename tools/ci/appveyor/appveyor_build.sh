@@ -15,6 +15,8 @@
 
 set -e
 
+export OCAMLPARAM='linscan=1,_'
+
 BUILD_PID=0
 
 # This must correspond with the entry in appveyor.yml

@@ -22,6 +22,7 @@ MAKE="make $MAKE_ARG"
 SHELL=dash
 
 export PATH=$PREFIX/bin:$PATH
+export OCAMLPARAM='linscan=1,_'
 
 Configure () {
   mkdir -p $PREFIX
