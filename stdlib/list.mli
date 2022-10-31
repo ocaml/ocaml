@@ -60,7 +60,7 @@ val compare_length_with : 'a list -> int -> int
 val is_empty : 'a list -> bool
 (** [is_empty l] is true if and only if [l] has no elements. It is equivalent to
     [compare_length_with l 0 = 0].
-    @since 5.00.0
+    @since 5.1
  *)
 
 val cons : 'a -> 'a list -> 'a list
