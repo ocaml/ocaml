@@ -26,12 +26,16 @@ type class_intervals =
     mutable ci_fixed: Interval.t list;
     mutable ci_active: Interval.t list;
     mutable ci_inactive: Interval.t list;
+    mutable ci_spilled: Interval.t list;
+    mutable ci_free_slots: int list; (* stack slots available for reuse *)
   }
 
 let active = Array.init Proc.num_register_classes (fun _ -> {
   ci_fixed = [];
   ci_active = [];
-  ci_inactive = []
+  ci_inactive = [];
+  ci_spilled = [];
+  ci_free_slots = [];
 })
 
 (* Insert interval into list sorted by end position *)
@@ -40,6 +44,24 @@ let rec insert_interval_sorted i = function
     [] -> [i]
   | j :: _ as il when j.iend <= i.iend -> i :: il
   | j :: il -> j :: insert_interval_sorted i il
+
+let rec insert_sorted_uniq i = function
+    [] -> [i]
+  | j :: js as il ->
+      let c = compare i j in
+      if c = 0 then il
+      else if c < 0 then i :: il
+      else j :: insert_sorted_uniq i js
+
+let rec release_expired_spilled ci pos = function
+    i :: il when i.iend >= pos ->
+      i :: release_expired_spilled ci pos il
+  | i :: il ->
+      let ss =
+        match i.reg.loc with Stack(Local ss) -> ss | _ -> assert false in
+      ci.ci_free_slots <- insert_sorted_uniq ss ci.ci_free_slots;
+      release_expired_spilled ci pos il
+  | [] -> []
 
 let rec release_expired_fixed pos = function
     i :: il when i.iend >= pos ->
@@ -73,10 +95,20 @@ let rec release_expired_inactive ci pos = function
 
 let allocate_stack_slot num_stack_slots i =
   let cl = Proc.register_class i.reg in
-  let ss = num_stack_slots.(cl) in
-  num_stack_slots.(cl) <- succ ss;
+  let ci = active.(cl) in
+  let ss =
+    match ci.ci_free_slots with
+    | ss :: slots ->
+        ci.ci_free_slots <- slots;
+        ss
+    | [] ->
+        let ss = num_stack_slots.(cl) in
+        num_stack_slots.(cl) <- succ ss;
+        ss
+  in
   i.reg.loc <- Stack(Local ss);
-  i.reg.spill <- true
+  i.reg.spill <- true;
+  ci.ci_spilled <- i :: ci.ci_spilled
 
 (* Find a register for the given interval and assigns this register.
    The interval is added to active. Raises Not_found if no free registers
@@ -168,7 +200,8 @@ let walk_interval num_stack_slots i =
     (fun ci ->
       ci.ci_fixed <- release_expired_fixed pos ci.ci_fixed;
       ci.ci_active <- release_expired_active ci pos ci.ci_active;
-      ci.ci_inactive <- release_expired_inactive ci pos ci.ci_inactive)
+      ci.ci_inactive <- release_expired_inactive ci pos ci.ci_inactive;
+      ci.ci_spilled <- release_expired_spilled ci pos ci.ci_spilled)
     active;
   try
     (* Allocate free register (if any) *)
@@ -185,7 +218,9 @@ let allocate_registers (intervals : Interval.result) =
     active.(cl) <- {
       ci_fixed = [];
       ci_active = [];
-      ci_inactive = []
+      ci_inactive = [];
+      ci_spilled = [];
+      ci_free_slots = [];
     };
   done;
   (* Reset the stack slot counts *)
