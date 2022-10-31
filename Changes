@@ -858,6 +858,9 @@ OCaml 4.14.0 (28 March 2022)
 - #10786: The implementation of Complex.norm now uses Float.hypot.
   (Christophe Troestler, review by David Allsopp and Xavier Leroy)
 
+- #10464: Add List.is_empty.
+  (Craig Ferguson, review by David Allsopp)
+
 ### Other libraries:
 
 - #10192: Add support for Unix domain sockets on Windows and use them

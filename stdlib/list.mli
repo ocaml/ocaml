@@ -57,6 +57,12 @@ val compare_length_with : 'a list -> int -> int
    @since 4.05.0
  *)
 
+val is_empty : 'a list -> bool
+(** [is_empty l] is true if and only if [l] has no elements. It is equivalent to
+    [compare_length_with l 0 = 0].
+    @since 5.1
+ *)
+
 val cons : 'a -> 'a list -> 'a list
 (** [cons x xs] is [x :: xs]
     @since 4.03.0 (4.05.0 in ListLabels)
