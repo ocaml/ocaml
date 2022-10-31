@@ -110,12 +110,12 @@ val compare : int -> int -> int
 
 val min : int -> int -> int
 (** Return the smaller of the two arguments.
-    @since 4.13.0
+    @since 4.13
 *)
 
 val max : int -> int -> int
 (** Return the greater of the two arguments.
-    @since 4.13.0
+    @since 4.13
  *)
 
 (** {1:convert Converting} *)
@@ -158,11 +158,11 @@ val seeded_hash : int -> int -> int
     {!Hashtbl.seeded_hash}. This function allows this module to be passed as
     argument to the functor {!Hashtbl.MakeSeeded}.
 
-    @since 5.1.0 *)
+    @since 5.1 *)
 
 val hash : int -> int
 (** An unseeded hash function for ints, with the same output value as
     {!Hashtbl.hash}. This function allows this module to be passed as argument
     to the functor {!Hashtbl.Make}.
 
-    @since 5.1.0 *)
+    @since 5.1 *)

@@ -50,7 +50,7 @@
    The labeled version of this module can be used as described in the
    {!StdLabels} module.
 
-   @since 4.02.0
+   @since 4.02
 
    *)
 
@@ -116,7 +116,7 @@ val extend : bytes -> left:int -> right:int -> bytes
     the corresponding side of [s].
     @raise Invalid_argument if the result length is negative or
     longer than {!Sys.max_string_length} bytes.
-    @since 4.05.0 in BytesLabels *)
+    @since 4.05 in BytesLabels *)
 
 val fill : bytes -> pos:int -> len:int -> char -> unit
 (** [fill s ~pos ~len c] modifies [s] in place, replacing [len]
@@ -145,7 +145,7 @@ val blit_string :
     @raise Invalid_argument if [src_pos] and [len] do not
     designate a valid range of [src], or if [dst_pos] and [len]
     do not designate a valid range of [dst].
-    @since 4.05.0 in BytesLabels *)
+    @since 4.05 in BytesLabels *)
 
 val concat : sep:bytes -> bytes list -> bytes
 (** [concat ~sep sl] concatenates the list of byte sequences [sl],
@@ -160,7 +160,7 @@ val cat : bytes -> bytes -> bytes
     as a new byte sequence.
     @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes.
-    @since 4.05.0 in BytesLabels *)
+    @since 4.05 in BytesLabels *)
 
 val iter : f:(char -> unit) -> bytes -> unit
 (** [iter ~f s] applies function [f] in turn to all the bytes of [s].
@@ -186,22 +186,22 @@ val fold_left : f:('a -> char -> 'a) -> init:'a -> bytes -> 'a
 (** [fold_left f x s] computes
     [f (... (f (f x (get s 0)) (get s 1)) ...) (get s (n-1))],
     where [n] is the length of [s].
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 val fold_right : f:(char -> 'a -> 'a) -> bytes -> init:'a -> 'a
 (** [fold_right f s x] computes
     [f (get s 0) (f (get s 1) ( ... (f (get s (n-1)) x) ...))],
     where [n] is the length of [s].
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 val for_all : f:(char -> bool) -> bytes -> bool
 (** [for_all p s] checks if all characters in [s] satisfy the predicate [p].
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 val exists : f:(char -> bool) -> bytes -> bool
 (** [exists p s] checks if at least one character of [s] satisfies the predicate
     [p].
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 val trim : bytes -> bytes
 (** Return a copy of the argument, without leading and trailing
@@ -284,22 +284,22 @@ val rcontains_from : bytes -> int -> char -> bool
 val uppercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all lowercase letters
    translated to uppercase, using the US-ASCII character set.
-   @since 4.03.0 (4.05.0 in BytesLabels) *)
+   @since 4.03 (4.05 in BytesLabels) *)
 
 val lowercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all uppercase letters
    translated to lowercase, using the US-ASCII character set.
-   @since 4.03.0 (4.05.0 in BytesLabels) *)
+   @since 4.03 (4.05 in BytesLabels) *)
 
 val capitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to uppercase,
    using the US-ASCII character set.
-   @since 4.03.0 (4.05.0 in BytesLabels) *)
+   @since 4.03 (4.05 in BytesLabels) *)
 
 val uncapitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to lowercase,
    using the US-ASCII character set.
-   @since 4.03.0 (4.05.0 in BytesLabels) *)
+   @since 4.03 (4.05 in BytesLabels) *)
 
 type t = bytes
 (** An alias for the type of byte sequences. *)
@@ -312,20 +312,20 @@ val compare: t -> t -> int
 
 val equal: t -> t -> bool
 (** The equality function for byte sequences.
-    @since 4.03.0 (4.05.0 in BytesLabels) *)
+    @since 4.03 (4.05 in BytesLabels) *)
 
 val starts_with :
   prefix (* comment thwarts tools/sync_stdlib_docs *) :bytes -> bytes -> bool
 (** [starts_with ][~prefix s] is [true] if and only if [s] starts with
     [prefix].
 
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 val ends_with :
   suffix (* comment thwarts tools/sync_stdlib_docs *) :bytes -> bytes -> bool
 (** [ends_with ][~suffix s] is [true] if and only if [s] ends with [suffix].
 
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 (** {1:unsafe Unsafe conversions (for advanced users)}
 
@@ -469,7 +469,7 @@ val split_on_char: sep:char -> bytes -> bytes list
       (Bytes.split_on_char sep s) = s]).
     - No byte sequence in the result contains the [sep] character.
 
-    @since 4.13.0
+    @since 4.13
 *)
 
 (** {1 Iterators} *)

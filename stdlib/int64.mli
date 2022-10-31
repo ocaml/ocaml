@@ -65,7 +65,7 @@ val unsigned_div : int64 -> int64 -> int64
 (** Same as {!div}, except that arguments and result are interpreted as {e
     unsigned} 64-bit integers.
 
-    @since 4.08.0 *)
+    @since 4.08 *)
 
 external rem : int64 -> int64 -> int64 = "%int64_mod"
 (** Integer remainder.  If [y] is not zero, the result
@@ -77,7 +77,7 @@ val unsigned_rem : int64 -> int64 -> int64
 (** Same as {!rem}, except that arguments and result are interpreted as {e
     unsigned} 64-bit integers.
 
-    @since 4.08.0 *)
+    @since 4.08 *)
 
 val succ : int64 -> int64
 (** Successor.  [Int64.succ x] is [Int64.add x Int64.one]. *)
@@ -140,7 +140,7 @@ val unsigned_to_int : int64 -> int option
     Returns [None] if the unsigned value of the argument cannot fit into an
     [int].
 
-    @since 4.08.0 *)
+    @since 4.08 *)
 
 external of_float : float -> int64
   = "caml_int64_of_float" "caml_int64_of_float_unboxed"
@@ -230,20 +230,20 @@ val unsigned_compare: t -> t -> int
 (** Same as {!compare}, except that arguments are interpreted as {e unsigned}
     64-bit integers.
 
-    @since 4.08.0 *)
+    @since 4.08 *)
 
 val equal: t -> t -> bool
 (** The equal function for int64s.
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 val min: t -> t -> t
 (** Return the smaller of the two arguments.
-    @since 4.13.0
+    @since 4.13
 *)
 
 val max: t -> t -> t
 (** Return the greater of the two arguments.
-    @since 4.13.0
+    @since 4.13
  *)
 
 val seeded_hash : int -> t -> int
@@ -251,11 +251,11 @@ val seeded_hash : int -> t -> int
     {!Hashtbl.seeded_hash}. This function allows this module to be passed as
     argument to the functor {!Hashtbl.MakeSeeded}.
 
-    @since 5.1.0 *)
+    @since 5.1 *)
 
 val hash : t -> int
 (** An unseeded hash function for 64-bit ints, with the same output value as
     {!Hashtbl.hash}. This function allows this module to be passed as argument
     to the functor {!Hashtbl.Make}.
 
-    @since 5.1.0 *)
+    @since 5.1 *)

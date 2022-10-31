@@ -35,20 +35,20 @@
     [1.0 /. infinity] is [0.0], basic arithmetic operations
     ([+.], [-.], [*.], [/.]) with [nan] as an argument return [nan], ...
 
-    @since 4.07.0
+    @since 4.07
 *)
 
 val zero : float
 (** The floating point 0.
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 val one : float
 (** The floating-point 1.
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 val minus_one : float
 (** The floating-point -1.
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 external neg : float -> float = "%negfloat"
 (** Unary negation. *)
@@ -77,7 +77,7 @@ external fma : float -> float -> float -> float =
    Note: since software emulation of the fma is costly, make sure that you are
    using hardware fma support if performance matters.
 
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 external rem : float -> float -> float = "caml_fmod_float" "fmod"
 [@@unboxed] [@@noalloc]
@@ -89,13 +89,13 @@ val succ : float -> float
 (** [succ x] returns the floating point number right after [x] i.e.,
    the smallest floating-point number greater than [x].  See also
    {!next_after}.
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 val pred : float -> float
 (** [pred x] returns the floating-point number right before [x] i.e.,
    the greatest floating-point number smaller than [x].  See also
    {!next_after}.
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 external abs : float -> float = "%absfloat"
 (** [abs f] returns the absolute value of [f]. *)
@@ -145,23 +145,23 @@ val is_finite : float -> bool
 (** [is_finite x] is [true] if and only if [x] is finite i.e., not infinite and
    not {!nan}.
 
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 val is_infinite : float -> bool
 (** [is_infinite x] is [true] if and only if [x] is {!infinity} or
     {!neg_infinity}.
 
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 val is_nan : float -> bool
 (** [is_nan x] is [true] if and only if [x] is not a number (see {!nan}).
 
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 val is_integer : float -> bool
 (** [is_integer x] is [true] if and only if [x] is an integer.
 
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 external of_int : int -> float = "%floatofint"
 (** Convert an integer to floating-point. *)
@@ -225,7 +225,7 @@ external cbrt : float -> float = "caml_cbrt_float" "caml_cbrt"
   [@@unboxed] [@@noalloc]
 (** Cube root.
 
-    @since 4.13.0
+    @since 4.13
 *)
 
 external exp : float -> float = "caml_exp_float" "exp" [@@unboxed] [@@noalloc]
@@ -235,7 +235,7 @@ external exp2 : float -> float = "caml_exp2_float" "caml_exp2"
   [@@unboxed] [@@noalloc]
 (** Base 2 exponential function.
 
-    @since 4.13.0
+    @since 4.13
 *)
 
 external log : float -> float = "caml_log_float" "log" [@@unboxed] [@@noalloc]
@@ -249,7 +249,7 @@ external log2 : float -> float = "caml_log2_float" "caml_log2"
   [@@unboxed] [@@noalloc]
 (** Base 2 logarithm.
 
-    @since 4.13.0
+    @since 4.13
 *)
 
 external expm1 : float -> float = "caml_expm1_float" "caml_expm1"
@@ -318,7 +318,7 @@ external acosh : float -> float = "caml_acosh_float" "caml_acosh"
     [[1.0, inf]].
     Result is in radians and is between [0.0] and [inf].
 
-    @since 4.13.0
+    @since 4.13
 *)
 
 external asinh : float -> float = "caml_asinh_float" "caml_asinh"
@@ -327,7 +327,7 @@ external asinh : float -> float = "caml_asinh_float" "caml_asinh"
     real line.
     Result is in radians.
 
-    @since 4.13.0
+    @since 4.13
 *)
 
 external atanh : float -> float = "caml_atanh_float" "caml_atanh"
@@ -336,7 +336,7 @@ external atanh : float -> float = "caml_atanh_float" "caml_atanh"
     [[-1.0, 1.0]].
     Result is in radians and ranges over the entire real line.
 
-    @since 4.13.0
+    @since 4.13
 *)
 
 external erf : float -> float = "caml_erf_float" "caml_erf"
@@ -344,7 +344,7 @@ external erf : float -> float = "caml_erf_float" "caml_erf"
 (** Error function.  The argument ranges over the entire real line.
     The result is always within [[-1.0, 1.0]].
 
-    @since 4.13.0
+    @since 4.13
 *)
 
 external erfc : float -> float = "caml_erfc_float" "caml_erfc"
@@ -353,7 +353,7 @@ external erfc : float -> float = "caml_erfc_float" "caml_erfc"
     The argument ranges over the entire real line.
     The result is always within [[-1.0, 1.0]].
 
-    @since 4.13.0
+    @since 4.13
 *)
 
 external trunc : float -> float = "caml_trunc_float" "caml_trunc"
@@ -361,7 +361,7 @@ external trunc : float -> float = "caml_trunc_float" "caml_trunc"
 (** [trunc x] rounds [x] to the nearest integer whose absolute value is
    less than or equal to [x].
 
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 external round : float -> float = "caml_round_float" "caml_round"
                                     [@@unboxed] [@@noalloc]
@@ -373,7 +373,7 @@ external round : float -> float = "caml_round_float" "caml_round"
    On 64-bit mingw-w64, this function may be emulated owing to a bug in the
    C runtime library (CRT) on this platform.
 
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 external ceil : float -> float = "caml_ceil_float" "ceil"
 [@@unboxed] [@@noalloc]
@@ -401,7 +401,7 @@ external next_after : float -> float -> float
    If [x] is the smallest denormalized positive number,
    [next_after x 0. = 0.]
 
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 external copy_sign : float -> float -> float
   = "caml_copysign_float" "caml_copysign"
@@ -417,7 +417,7 @@ external sign_bit : (float [@unboxed]) -> bool
     For example [sign_bit 1.] and [signbit 0.] are [false] while
     [sign_bit (-1.)] and [sign_bit (-0.)] are [true].
 
-    @since 4.08.0 *)
+    @since 4.08 *)
 
 external frexp : float -> float * int = "caml_frexp_float"
 (** [frexp f] returns the pair of the significant
@@ -451,46 +451,46 @@ val min : t -> t -> t
 (** [min x y] returns the minimum of [x] and [y].  It returns [nan]
    when [x] or [y] is [nan].  Moreover [min (-0.) (+0.) = -0.]
 
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 val max : float -> float -> float
 (** [max x y] returns the maximum of [x] and [y].  It returns [nan]
    when [x] or [y] is [nan].  Moreover [max (-0.) (+0.) = +0.]
 
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 val min_max : float -> float -> float * float
 (** [min_max x y] is [(min x y, max x y)], just more efficient.
 
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 val min_num : t -> t -> t
 (** [min_num x y] returns the minimum of [x] and [y] treating [nan] as
    missing values.  If both [x] and [y] are [nan], [nan] is returned.
    Moreover [min_num (-0.) (+0.) = -0.]
 
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 val max_num : t -> t -> t
 (** [max_num x y] returns the maximum of [x] and [y] treating [nan] as
    missing values.  If both [x] and [y] are [nan] [nan] is returned.
    Moreover [max_num (-0.) (+0.) = +0.]
 
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 val min_max_num : float -> float -> float * float
 (** [min_max_num x y] is [(min_num x y, max_num x y)], just more
    efficient.  Note that in particular [min_max_num x nan = (x, x)]
    and [min_max_num nan y = (y, y)].
 
-   @since 4.08.0 *)
+   @since 4.08 *)
 
 val seeded_hash : int -> t -> int
 (** A seeded hash function for floats, with the same output value as
     {!Hashtbl.seeded_hash}. This function allows this module to be passed as
     argument to the functor {!Hashtbl.MakeSeeded}.
 
-    @since 5.1.0 *)
+    @since 5.1 *)
 
 val hash : t -> int
 (** An unseeded hash function for floats, with the same output value as

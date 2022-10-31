@@ -47,14 +47,14 @@ val compare_lengths : 'a list -> 'b list -> int
 (** Compare the lengths of two lists. [compare_lengths l1 l2] is
    equivalent to [compare (length l1) (length l2)], except that
    the computation stops after reaching the end of the shortest list.
-   @since 4.05.0
+   @since 4.05
  *)
 
 val compare_length_with : 'a list -> len:int -> int
 (** Compare the length of a list to an integer. [compare_length_with l len] is
    equivalent to [compare (length l) len], except that the computation stops
    after at most [len] iterations on the list.
-   @since 4.05.0
+   @since 4.05
  *)
 
 val is_empty : 'a list -> bool
@@ -65,7 +65,7 @@ val is_empty : 'a list -> bool
 
 val cons : 'a -> 'a list -> 'a list
 (** [cons x xs] is [x :: xs]
-    @since 4.03.0 (4.05.0 in ListLabels)
+    @since 4.03 (4.05 in ListLabels)
  *)
 
 val hd : 'a list -> 'a
@@ -99,7 +99,7 @@ val rev : 'a list -> 'a list
 val init : len:int -> f:(int -> 'a) -> 'a list
 (** [init ~len ~f] is [[f 0; f 1; ...; f (len-1)]], evaluated left to right.
     @raise Invalid_argument if [len < 0].
-    @since 4.06.0
+    @since 4.06
  *)
 
 val append : 'a list -> 'a list -> 'a list
@@ -140,7 +140,7 @@ val equal : eq:('a -> 'a -> bool) -> 'a list -> 'a list -> bool
     function is costly, you may want to check {!compare_lengths}
     first.
 
-    @since 4.12.0
+    @since 4.12
 *)
 
 val compare : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> int
@@ -156,7 +156,7 @@ val compare : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> int
     Note: the [cmp] function will be called even if the lists have
     different lengths.
 
-    @since 4.12.0
+    @since 4.12
 *)
 
 (** {1 Iterators} *)
@@ -172,7 +172,7 @@ val iteri : f:(int -> 'a -> unit) -> 'a list -> unit
 (** Same as {!iter}, but the function is applied to the index of
    the element as first argument (counting from 0), and the element
    itself as second argument.
-   @since 4.00.0
+   @since 4.00
  *)
 
 val map : f:('a -> 'b) -> 'a list -> 'b list
@@ -185,7 +185,7 @@ val mapi : f:(int -> 'a -> 'b) -> 'a list -> 'b list
 (** Same as {!map}, but the function is applied to the index of
    the element as first argument (counting from 0), and the element
    itself as second argument.
-   @since 4.00.0
+   @since 4.00
  *)
 
 val rev_map : f:('a -> 'b) -> 'a list -> 'b list
@@ -197,20 +197,20 @@ val filter_map : f:('a -> 'b option) -> 'a list -> 'b list
 (** [filter_map ~f l] applies [f] to every element of [l], filters
     out the [None] elements and returns the list of the arguments of
     the [Some] elements.
-    @since 4.08.0
+    @since 4.08
  *)
 
 val concat_map : f:('a -> 'b list) -> 'a list -> 'b list
 (** [concat_map ~f l] gives the same result as
     {!concat}[ (]{!map}[ f l)]. Tail-recursive.
-    @since 4.10.0
+    @since 4.10
 *)
 
 val fold_left_map :
   f:('a -> 'b -> 'a * 'c) -> init:'a -> 'b list -> 'a * 'c list
 (** [fold_left_map] is  a combination of [fold_left] and [map] that threads an
     accumulator through calls to [f].
-    @since 4.11.0
+    @since 4.11
 *)
 
 val fold_left : f:('a -> 'b -> 'a) -> init:'a -> 'b list -> 'a
@@ -325,7 +325,7 @@ val find_map : f:('a -> 'b option) -> 'a list -> 'b option
 (** [find_map ~f l] applies [f] to the elements of [l] in order,
     and returns the first result of the form [Some v], or [None]
     if none exist.
-    @since 4.10.0
+    @since 4.10
 *)
 
 val filter : f:('a -> bool) -> 'a list -> 'a list
@@ -342,7 +342,7 @@ val filteri : f:(int -> 'a -> bool) -> 'a list -> 'a list
 (** Same as {!filter}, but the predicate is applied to the index of
    the element as first argument (counting from 0), and the element
    itself as second argument.
-   @since 4.11.0
+   @since 4.11
 *)
 
 val partition : f:('a -> bool) -> 'a list -> 'a list * 'a list
@@ -365,7 +365,7 @@ val partition_map : f:('a -> ('b, 'c) Either.t) -> 'a list -> 'b list * 'c list
     In particular, [partition_map (fun x -> if f x then Left x else Right x) l]
     is equivalent to [partition f l].
 
-    @since 4.12.0
+    @since 4.12
 *)
 
 
@@ -399,7 +399,7 @@ val assq : 'a -> ('a * 'b) list -> 'b
 val assq_opt : 'a -> ('a * 'b) list -> 'b option
 (** Same as {!assoc_opt}, but uses physical equality instead of
    structural equality to compare keys.
-   @since 4.05.0
+   @since 4.05
  *)
 
 val mem_assoc : 'a -> map:('a * 'b) list -> bool
@@ -477,7 +477,7 @@ val fast_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
 
 val sort_uniq : cmp:('a -> 'a -> int) -> 'a list -> 'a list
 (** Same as {!sort}, but also remove duplicates.
-    @since 4.02.0 (4.03.0 in ListLabels)
+    @since 4.02 (4.03 in ListLabels)
  *)
 
 val merge : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> 'a list

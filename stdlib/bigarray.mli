@@ -87,7 +87,7 @@
    [*_elt] types defined below (defined with a single constructor instead
    of abstract types for technical injectivity reasons).
 
-   @since 4.07.0 Moved from otherlibs to stdlib.
+   @since 4.07 Moved from otherlibs to stdlib.
 *)
 
 type float32_elt = Float32_elt
@@ -205,7 +205,7 @@ val kind_size_in_bytes : ('a, 'b) kind -> int
 (** [kind_size_in_bytes k] is the number of bytes used to store
    an element of type [k].
 
-   @since 4.03.0 *)
+   @since 4.03 *)
 
 (** {1 Array layouts} *)
 
@@ -324,7 +324,7 @@ module Genarray :
       is not in the range 0 to 16 inclusive, or if one of the dimensions
       is negative.
 
-      @since 4.12.0 *)
+      @since 4.12 *)
 
   external num_dims: ('a, 'b, 'c) t -> int = "caml_ba_num_dims"
   (** Return the number of dimensions of the given Bigarray. *)
@@ -356,14 +356,14 @@ module Genarray :
       The dimensions are reversed, such that [get v [| a; b |]] in
       C layout becomes [get v [| b+1; a+1 |]] in Fortran layout.
 
-      @since 4.04.0
+      @since 4.04
   *)
 
   val size_in_bytes : ('a, 'b, 'c) t -> int
   (** [size_in_bytes a] is the number of elements in [a] multiplied
     by [a]'s {!kind_size_in_bytes}.
 
-    @since 4.03.0 *)
+    @since 4.03 *)
 
   external get: ('a, 'b, 'c) t -> int array -> 'a = "caml_ba_get_generic"
   (** Read an element of a generic Bigarray.
@@ -503,7 +503,7 @@ module Genarray :
    of zero-dimensional arrays that only contain a single scalar value.
    Statically knowing the number of dimensions of the array allows
    faster operations, and more precise static type-checking.
-   @since 4.05.0 *)
+   @since 4.05 *)
 module Array0 : sig
   type (!'a, !'b, !'c) t
   (** The type of zero-dimensional Bigarrays whose elements have
@@ -518,7 +518,7 @@ module Array0 : sig
   (** [Array0.init kind layout v] behaves like [Array0.create kind layout]
      except that the element is additionally initialized to the value [v].
 
-     @since 4.12.0 *)
+     @since 4.12 *)
 
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
   (** Return the kind of the given Bigarray. *)
@@ -532,7 +532,7 @@ module Array0 : sig
       is involved: the new array and the original array share the same
       storage space.
 
-      @since 4.06.0
+      @since 4.06
   *)
 
   val size_in_bytes : ('a, 'b, 'c) t -> int
@@ -593,7 +593,7 @@ module Array1 : sig
      the results of [f] applied to the indices of a new Bigarray whose
      layout is described by [kind], [layout] and [dim].
 
-     @since 4.12.0 *)
+     @since 4.12 *)
 
   external dim: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   (** Return the size (dimension) of the given one-dimensional
@@ -611,7 +611,7 @@ module Array1 : sig
       the same dimension as [a]). No copying of elements is involved: the
       new array and the original array share the same storage space.
 
-      @since 4.06.0
+      @since 4.06
   *)
 
 
@@ -619,7 +619,7 @@ module Array1 : sig
   (** [size_in_bytes a] is the number of elements in [a]
     multiplied by [a]'s {!kind_size_in_bytes}.
 
-    @since 4.03.0 *)
+    @since 4.03 *)
 
   external get: ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_ref_1"
   (** [Array1.get a x], or alternatively [a.{x}],
@@ -646,7 +646,7 @@ module Array1 : sig
      Bigarray.  The integer parameter is the index of the scalar to
      extract.  See {!Bigarray.Genarray.slice_left} and
      {!Bigarray.Genarray.slice_right} for more details.
-     @since 4.05.0 *)
+     @since 4.05 *)
 
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit
       = "caml_ba_blit"
@@ -708,7 +708,7 @@ module Array2 :
      the results of [f] applied to the indices of a new Bigarray whose
      layout is described by [kind], [layout], [dim1] and [dim2].
 
-     @since 4.12.0 *)
+     @since 4.12 *)
 
   external dim1: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   (** Return the first dimension of the given two-dimensional Bigarray. *)
@@ -730,7 +730,7 @@ module Array2 :
       The dimensions are reversed, such that [get v [| a; b |]] in
       C layout becomes [get v [| b+1; a+1 |]] in Fortran layout.
 
-      @since 4.06.0
+      @since 4.06
   *)
 
 
@@ -738,7 +738,7 @@ module Array2 :
   (** [size_in_bytes a] is the number of elements in [a]
     multiplied by [a]'s {!kind_size_in_bytes}.
 
-    @since 4.03.0 *)
+    @since 4.03 *)
 
   external get: ('a, 'b, 'c) t -> int -> int -> 'a = "%caml_ba_ref_2"
   (** [Array2.get a x y], also written [a.{x,y}],
@@ -841,7 +841,7 @@ module Array3 :
      the results of [f] applied to the indices of a new Bigarray whose
      layout is described by [kind], [layout], [dim1], [dim2] and [dim3].
 
-     @since 4.12.0 *)
+     @since 4.12 *)
 
   external dim1: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   (** Return the first dimension of the given three-dimensional Bigarray. *)
@@ -867,14 +867,14 @@ module Array3 :
       The dimensions are reversed, such that [get v [| a; b; c |]] in
       C layout becomes [get v [| c+1; b+1; a+1 |]] in Fortran layout.
 
-      @since 4.06.0
+      @since 4.06
   *)
 
   val size_in_bytes : ('a, 'b, 'c) t -> int
   (** [size_in_bytes a] is the number of elements in [a]
     multiplied by [a]'s {!kind_size_in_bytes}.
 
-    @since 4.03.0 *)
+    @since 4.03 *)
 
   external get: ('a, 'b, 'c) t -> int -> int -> int -> 'a = "%caml_ba_ref_3"
   (** [Array3.get a x y z], also written [a.{x,y,z}],
@@ -972,7 +972,7 @@ external genarray_of_array0 :
   ('a, 'b, 'c) Array0.t -> ('a, 'b, 'c) Genarray.t = "%identity"
 (** Return the generic Bigarray corresponding to the given zero-dimensional
     Bigarray.
-    @since 4.05.0 *)
+    @since 4.05 *)
 
 external genarray_of_array1 :
   ('a, 'b, 'c) Array1.t -> ('a, 'b, 'c) Genarray.t = "%identity"
@@ -994,7 +994,7 @@ val array0_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array0.t
    generic Bigarray.
    @raise Invalid_argument if the generic Bigarray
    does not have exactly zero dimension.
-   @since 4.05.0 *)
+   @since 4.05 *)
 
 val array1_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array1.t
 (** Return the one-dimensional Bigarray corresponding to the given
@@ -1036,7 +1036,7 @@ val reshape : ('a, 'b, 'c) Genarray.t -> int array -> ('a, 'b, 'c) Genarray.t
 val reshape_0 : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array0.t
 (** Specialized version of {!Bigarray.reshape} for reshaping to
    zero-dimensional arrays.
-   @since 4.05.0 *)
+   @since 4.05 *)
 
 val reshape_1 : ('a, 'b, 'c) Genarray.t -> int -> ('a, 'b, 'c) Array1.t
 (** Specialized version of {!Bigarray.reshape} for reshaping to

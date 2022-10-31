@@ -33,12 +33,12 @@ val escaped : char -> string
 val lowercase_ascii : char -> char
 (** Convert the given character to its equivalent lowercase character,
    using the US-ASCII character set.
-   @since 4.03.0 *)
+   @since 4.03 *)
 
 val uppercase_ascii : char -> char
 (** Convert the given character to its equivalent uppercase character,
    using the US-ASCII character set.
-   @since 4.03.0 *)
+   @since 4.03 *)
 
 type t = char
 (** An alias for the type of characters. *)
@@ -51,21 +51,21 @@ val compare: t -> t -> int
 
 val equal: t -> t -> bool
 (** The equal function for chars.
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 val seeded_hash : int -> t -> int
 (** A seeded hash function for characters, with the same output value as
     {!Hashtbl.seeded_hash}. This function allows this module to be passed as
     argument to the functor {!Hashtbl.MakeSeeded}.
 
-    @since 5.1.0 *)
+    @since 5.1 *)
 
 val hash : t -> int
 (** An unseeded hash function for characters, with the same output value as
     {!Hashtbl.hash}. This function allows this module to be passed as argument
     to the functor {!Hashtbl.Make}.
 
-    @since 5.1.0 *)
+    @since 5.1 *)
 
 (**/**)
 

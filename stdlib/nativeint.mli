@@ -69,7 +69,7 @@ val unsigned_div : nativeint -> nativeint -> nativeint
 (** Same as {!div}, except that arguments and result are interpreted as {e
     unsigned} native integers.
 
-    @since 4.08.0 *)
+    @since 4.08 *)
 
 external rem : nativeint -> nativeint -> nativeint = "%nativeint_mod"
 (** Integer remainder.  If [y] is not zero, the result
@@ -83,7 +83,7 @@ val unsigned_rem : nativeint -> nativeint -> nativeint
 (** Same as {!rem}, except that arguments and result are interpreted as {e
     unsigned} native integers.
 
-    @since 4.08.0 *)
+    @since 4.08 *)
 
 val succ : nativeint -> nativeint
 (** Successor.
@@ -158,7 +158,7 @@ val unsigned_to_int : nativeint -> int option
     Returns [None] if the unsigned value of the argument cannot fit into an
     [int].
 
-    @since 4.08.0 *)
+    @since 4.08 *)
 
 external of_float : float -> nativeint
   = "caml_nativeint_of_float" "caml_nativeint_of_float_unboxed"
@@ -220,20 +220,20 @@ val unsigned_compare: t -> t -> int
 (** Same as {!compare}, except that arguments are interpreted as {e unsigned}
     native integers.
 
-    @since 4.08.0 *)
+    @since 4.08 *)
 
 val equal: t -> t -> bool
 (** The equal function for native ints.
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 val min: t -> t -> t
 (** Return the smaller of the two arguments.
-    @since 4.13.0
+    @since 4.13
 *)
 
 val max: t -> t -> t
 (** Return the greater of the two arguments.
-    @since 4.13.0
+    @since 4.13
  *)
 
 val seeded_hash : int -> t -> int
@@ -241,11 +241,11 @@ val seeded_hash : int -> t -> int
     {!Hashtbl.seeded_hash}. This function allows this module to be passed as
     argument to the functor {!Hashtbl.MakeSeeded}.
 
-    @since 5.1.0 *)
+    @since 5.1 *)
 
 val hash : t -> int
 (** An unseeded hash function for native ints, with the same output value as
     {!Hashtbl.hash}. This function allows this module to be passed as argument
     to the functor {!Hashtbl.Make}.
 
-    @since 5.1.0 *)
+    @since 5.1 *)

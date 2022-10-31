@@ -79,7 +79,7 @@ val map : ('a -> 'b) -> 'a t -> 'b t
 
     It is equivalent to [lazy (f (Lazy.force x))].
 
-    @since 4.13.0
+    @since 4.13
 *)
 
 (** {1 Reasoning on already-forced suspensions} *)
@@ -87,14 +87,14 @@ val map : ('a -> 'b) -> 'a t -> 'b t
 val is_val : 'a t -> bool
 (** [is_val x] returns [true] if [x] has already been forced and
     did not raise an exception.
-    @since 4.00.0 *)
+    @since 4.00 *)
 
 val from_val : 'a -> 'a t
 (** [from_val v] evaluates [v] first (as any function would) and returns
     an already-forced suspension of its result.
     It is the same as [let x = v in lazy x], but uses dynamic tests
     to optimize suspension creation in some cases.
-    @since 4.00.0 *)
+    @since 4.00 *)
 
 val map_val : ('a -> 'b) -> 'a t -> 'b t
 (** [map_val f x] applies [f] directly if [x] is already forced,
@@ -110,7 +110,7 @@ val map_val : ('a -> 'b) -> 'a t -> 'b t
    If [map_val f x] does not raise an exception, then
    [is_val (map_val f x)] is equal to [is_val x].
 
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 
 (** {1 Advanced}
@@ -125,7 +125,7 @@ val from_fun : (unit -> 'a) -> 'a t
     In particular it is always less efficient to write
     [from_fun (fun () -> expr)] than [lazy expr].
 
-    @since 4.00.0 *)
+    @since 4.00 *)
 
 val force_val : 'a t -> 'a
 (** [force_val x] forces the suspension [x] and returns its result.  If [x]
