@@ -72,11 +72,11 @@ val seeded_hash : int -> bool -> int
     {!Hashtbl.seeded_hash}. This function allows this module to be passed as
     argument to the functor {!Hashtbl.MakeSeeded}.
 
-    @since 5.1.0 *)
+    @since 5.1 *)
 
 val hash : bool -> int
 (** An unseeded hash function for booleans, with the same output value as
     {!Hashtbl.hash}. This function allows this module to be passed as argument
     to the functor {!Hashtbl.Make}.
 
-    @since 5.1.0 *)
+    @since 5.1 *)

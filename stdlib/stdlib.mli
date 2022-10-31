@@ -32,7 +32,7 @@ external raise : exn -> 'a = "%raise"
 
 external raise_notrace : exn -> 'a = "%raise_notrace"
 (** A faster version [raise] which does not record the backtrace.
-    @since 4.02.0
+    @since 4.02
 *)
 
 val invalid_arg : string -> 'a
@@ -231,25 +231,25 @@ external __LOC__ : string = "%loc_LOC"
 (** [__LOC__] returns the location at which this expression appears in
     the file currently being parsed by the compiler, with the standard
     error format of OCaml: "File %S, line %d, characters %d-%d".
-    @since 4.02.0
+    @since 4.02
 *)
 
 external __FILE__ : string = "%loc_FILE"
 (** [__FILE__] returns the name of the file currently being
     parsed by the compiler.
-    @since 4.02.0
+    @since 4.02
 *)
 
 external __LINE__ : int = "%loc_LINE"
 (** [__LINE__] returns the line number at which this expression
     appears in the file currently being parsed by the compiler.
-    @since 4.02.0
+    @since 4.02
 *)
 
 external __MODULE__ : string = "%loc_MODULE"
 (** [__MODULE__] returns the module name of the file being
     parsed by the compiler.
-    @since 4.02.0
+    @since 4.02
 *)
 
 external __POS__ : string * int * int * int = "%loc_POS"
@@ -258,28 +258,28 @@ external __POS__ : string * int * int * int = "%loc_POS"
     currently being parsed by the compiler. [file] is the current
     filename, [lnum] the line number, [cnum] the character position in
     the line and [enum] the last character position in the line.
-    @since 4.02.0
+    @since 4.02
  *)
 
 external __FUNCTION__ : string = "%loc_FUNCTION"
 (** [__FUNCTION__] returns the name of the current function or method, including
     any enclosing modules or classes.
 
-    @since 4.12.0 *)
+    @since 4.12 *)
 
 external __LOC_OF__ : 'a -> string * 'a = "%loc_LOC"
 (** [__LOC_OF__ expr] returns a pair [(loc, expr)] where [loc] is the
     location of [expr] in the file currently being parsed by the
     compiler, with the standard error format of OCaml: "File %S, line
     %d, characters %d-%d".
-    @since 4.02.0
+    @since 4.02
 *)
 
 external __LINE_OF__ : 'a -> int * 'a = "%loc_LINE"
 (** [__LINE_OF__ expr] returns a pair [(line, expr)], where [line] is the
     line number at which the expression [expr] appears in the file
     currently being parsed by the compiler.
-    @since 4.02.0
+    @since 4.02
  *)
 
 external __POS_OF__ : 'a -> (string * int * int * int) * 'a = "%loc_POS"
@@ -289,7 +289,7 @@ external __POS_OF__ : 'a -> (string * int * int * int) * 'a = "%loc_POS"
     parsed by the compiler. [file] is the current filename, [lnum] the
     line number, [cnum] the character position in the line and [enum]
     the last character position in the line.
-    @since 4.02.0
+    @since 4.02
  *)
 
 (** {1 Composition operators} *)
@@ -323,7 +323,7 @@ external ( ~- ) : int -> int = "%negint"
 external ( ~+ ) : int -> int = "%identity"
 (** Unary addition. You can also write [+ e] instead of [~+ e].
     Unary operator, see {!Ocaml_operators} for more information.
-    @since 3.12.0
+    @since 3.12
 *)
 
 external succ : int -> int = "%succint"
@@ -444,7 +444,7 @@ external ( ~-. ) : float -> float = "%negfloat"
 external ( ~+. ) : float -> float = "%identity"
 (** Unary addition. You can also write [+. e] instead of [~+. e].
     Unary operator, see {!Ocaml_operators} for more information.
-    @since 3.12.0
+    @since 3.12
 *)
 
 external ( +. ) : float -> float -> float = "%addfloat"
@@ -491,14 +491,14 @@ external expm1 : float -> float = "caml_expm1_float" "caml_expm1"
   [@@unboxed] [@@noalloc]
 (** [expm1 x] computes [exp x -. 1.0], giving numerically-accurate results
     even if [x] is close to [0.0].
-    @since 3.12.0
+    @since 3.12
 *)
 
 external log1p : float -> float = "caml_log1p_float" "caml_log1p"
   [@@unboxed] [@@noalloc]
 (** [log1p x] computes [log(1.0 +. x)] (natural logarithm),
     giving numerically-accurate results even if [x] is close to [0.0].
-    @since 3.12.0
+    @since 3.12
 *)
 
 external cos : float -> float = "caml_cos_float" "cos" [@@unboxed] [@@noalloc]
@@ -538,7 +538,7 @@ external hypot : float -> float -> float = "caml_hypot_float" "caml_hypot"
   [x] and [y], or, equivalently, the distance of the point [(x,y)]
   to origin.  If one of [x] or [y] is infinite, returns [infinity]
   even if the other is [nan].
-  @since 4.00.0  *)
+  @since 4.00  *)
 
 external cosh : float -> float = "caml_cosh_float" "cosh"
   [@@unboxed] [@@noalloc]
@@ -558,7 +558,7 @@ external acosh : float -> float = "caml_acosh_float" "caml_acosh"
     [[1.0, inf]].
     Result is in radians and is between [0.0] and [inf].
 
-    @since 4.13.0
+    @since 4.13
 *)
 
 external asinh : float -> float = "caml_asinh_float" "caml_asinh"
@@ -567,7 +567,7 @@ external asinh : float -> float = "caml_asinh_float" "caml_asinh"
     real line.
     Result is in radians.
 
-    @since 4.13.0
+    @since 4.13
 *)
 
 external atanh : float -> float = "caml_atanh_float" "caml_atanh"
@@ -576,7 +576,7 @@ external atanh : float -> float = "caml_atanh_float" "caml_atanh"
     [[-1.0, 1.0]].
     Result is in radians and ranges over the entire real line.
 
-    @since 4.13.0
+    @since 4.13
 *)
 
 external ceil : float -> float = "caml_ceil_float" "ceil"
@@ -602,7 +602,7 @@ external copysign : float -> float -> float
   and whose sign is that of [y].  If [x] is [nan], returns [nan].
   If [y] is [nan], returns either [x] or [-. x], but it is not
   specified which.
-  @since 4.00.0  *)
+  @since 4.00  *)
 
 external mod_float : float -> float -> float = "caml_fmod_float" "fmod"
   [@@unboxed] [@@noalloc]
@@ -849,7 +849,7 @@ val print_string : string -> unit
 
 val print_bytes : bytes -> unit
 (** Print a byte sequence on standard output.
-   @since 4.02.0 *)
+   @since 4.02 *)
 
 val print_int : int -> unit
 (** Print an integer, in decimal, on standard output. *)
@@ -880,7 +880,7 @@ val prerr_string : string -> unit
 
 val prerr_bytes : bytes -> unit
 (** Print a byte sequence on standard error.
-   @since 4.02.0 *)
+   @since 4.02 *)
 
 val prerr_int : int -> unit
 (** Print an integer, in decimal, on standard error. *)
@@ -931,7 +931,7 @@ val read_float_opt: unit -> float option
 
    Return [None] if the line read is not a valid representation of a
    floating-point number.
-   @since 4.05.0
+   @since 4.05
 *)
 
 val read_float : unit -> float
@@ -991,7 +991,7 @@ val output_string : out_channel -> string -> unit
 
 val output_bytes : out_channel -> bytes -> unit
 (** Write the byte sequence on the given output channel.
-   @since 4.02.0 *)
+   @since 4.02 *)
 
 val output : out_channel -> bytes -> int -> int -> unit
 (** [output oc buf pos len] writes [len] characters from byte sequence [buf],
@@ -1002,7 +1002,7 @@ val output : out_channel -> bytes -> int -> int -> unit
 val output_substring : out_channel -> string -> int -> int -> unit
 (** Same as [output] but take a string as argument instead of
    a byte sequence.
-   @since 4.02.0 *)
+   @since 4.02 *)
 
 val output_byte : out_channel -> int -> unit
 (** Write one 8-bit integer (as the single character with that code)
@@ -1129,7 +1129,7 @@ val really_input_string : in_channel -> int -> string
    and returns them in a new string.
    @raise End_of_file if the end of file is reached before [len]
    characters have been read.
-   @since 4.02.0 *)
+   @since 4.02 *)
 
 val input_byte : in_channel -> int
 (** Same as {!Stdlib.input_char}, but return the 8-bit integer representing
@@ -1240,7 +1240,7 @@ external decr : int ref -> unit = "%decr"
 
 (** {1 Result type} *)
 
-(** @since 4.03.0 *)
+(** @since 4.03 *)
 type ('a,'b) result = Ok of 'a | Error of 'b
 
 (** {1 Operations on format strings} *)

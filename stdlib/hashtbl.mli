@@ -84,7 +84,7 @@ val create : ?random: (* thwart tools/sync_stdlib_docs *) bool ->
    either programmatically by calling {!randomize} or by
    setting the [R] flag in the [OCAMLRUNPARAM] environment variable.
 
-   @before 4.00.0 the [~random] parameter was not present and all
+   @before 4.00 the [~random] parameter was not present and all
    hash tables were created in non-randomized mode. *)
 
 val clear : ('a, 'b) t -> unit
@@ -94,7 +94,7 @@ val clear : ('a, 'b) t -> unit
 val reset : ('a, 'b) t -> unit
 (** Empty a hash table and shrink the size of the bucket table
     to its initial size.
-    @since 4.00.0 *)
+    @since 4.00 *)
 
 val copy : ('a, 'b) t -> ('a, 'b) t
 (** Return a copy of the given hashtable. *)
@@ -170,7 +170,7 @@ val filter_map_inplace: ('a -> 'b -> 'b option) -> ('a, 'b) t ->
     to [new_val].
 
     Other comments for {!iter} apply as well.
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
 (** [Hashtbl.fold f tbl init] computes
@@ -217,12 +217,12 @@ val randomize : unit -> unit
     This is intentional.  Non-randomized hash tables can still be
     created using [Hashtbl.create ~random:false].
 
-    @since 4.00.0 *)
+    @since 4.00 *)
 
 val is_randomized : unit -> bool
 (** Return [true] if the tables are currently created in randomized mode
     by default, [false] otherwise.
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 val rebuild : ?random (* thwart tools/sync_stdlib_docs *) :bool ->
     ('a, 'b) t -> ('a, 'b) t
@@ -239,9 +239,9 @@ val rebuild : ?random (* thwart tools/sync_stdlib_docs *) :bool ->
     to produce a hash table for the current version of the {!Hashtbl}
     module.
 
-    @since 4.12.0 *)
+    @since 4.12 *)
 
-(** @since 4.00.0 *)
+(** @since 4.00 *)
 type statistics = {
   num_bindings: int;
     (** Number of bindings present in the table.
@@ -260,7 +260,7 @@ val stats : ('a, 'b) t -> statistics
 (** [Hashtbl.stats tbl] returns statistics about the table [tbl]:
    number of buckets, size of the biggest bucket, distribution of
    buckets by size.
-   @since 4.00.0 *)
+   @since 4.00 *)
 
 (** {1 Hash tables and Sequences} *)
 
@@ -359,14 +359,14 @@ module type S =
     type !'a t
     val create : int -> 'a t
     val clear : 'a t -> unit
-    val reset : 'a t -> unit (** @since 4.00.0 *)
+    val reset : 'a t -> unit (** @since 4.00 *)
 
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
     val find : 'a t -> key -> 'a
     val find_opt : 'a t -> key -> 'a option
-    (** @since 4.05.0 *)
+    (** @since 4.05 *)
 
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
@@ -374,11 +374,11 @@ module type S =
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t ->
       unit
-    (** @since 4.03.0 *)
+    (** @since 4.03 *)
 
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val length : 'a t -> int
-    val stats: 'a t -> statistics (** @since 4.00.0 *)
+    val stats: 'a t -> statistics (** @since 4.00 *)
 
     val to_seq : 'a t -> (key * 'a) Seq.t
     (** @since 4.07 *)
@@ -428,7 +428,7 @@ module type SeededHashedType =
           {!Hashtbl.seeded_hash} below. *)
   end
 (** The input signature of the functor {!MakeSeeded}.
-    @since 4.00.0 *)
+    @since 4.00 *)
 
 module type SeededS =
   sig
@@ -442,7 +442,7 @@ module type SeededS =
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
     val find : 'a t -> key -> 'a
-    val find_opt : 'a t -> key -> 'a option (** @since 4.05.0 *)
+    val find_opt : 'a t -> key -> 'a option (** @since 4.05 *)
 
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
@@ -450,7 +450,7 @@ module type SeededS =
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t ->
       unit
-    (** @since 4.03.0 *)
+    (** @since 4.03 *)
 
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val length : 'a t -> int
@@ -475,7 +475,7 @@ module type SeededS =
     (** @since 4.07 *)
   end
 (** The output signature of the functor {!MakeSeeded}.
-    @since 4.00.0 *)
+    @since 4.00 *)
 
 module MakeSeeded (H : SeededHashedType) : SeededS with type key = H.t
 (** Functor building an implementation of the hashtable structure.
@@ -489,7 +489,7 @@ module MakeSeeded (H : SeededHashedType) : SeededS with type key = H.t
     result structure supports the [~random] optional parameter
     and returns randomized hash tables if [~random:true] is passed
     or if randomization is globally on (see {!Hashtbl.randomize}).
-    @since 4.00.0 *)
+    @since 4.00 *)
 
 
 (** {1 The polymorphic hash functions} *)
@@ -504,7 +504,7 @@ val hash : 'a -> int
 val seeded_hash : int -> 'a -> int
 (** A variant of {!hash} that is further parameterized by
    an integer seed.
-   @since 4.00.0 *)
+   @since 4.00 *)
 
 val hash_param : int -> int -> 'a -> int
 (** [Hashtbl.hash_param meaningful total x] computes a hash value for [x],
@@ -529,7 +529,7 @@ val seeded_hash_param : int -> int -> int -> 'a -> int
 (** A variant of {!hash_param} that is further parameterized by
    an integer seed.  Usage:
    [Hashtbl.seeded_hash_param meaningful total seed x].
-   @since 4.00.0 *)
+   @since 4.00 *)
 
 (** {1:examples Examples}
 

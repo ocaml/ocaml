@@ -143,7 +143,7 @@ val parse_dynamic :
     is to parse command lines of the form:
 -     command subcommand [options]
     where the list of options depends on the value of the subcommand argument.
-    @since 4.01.0
+    @since 4.01
 *)
 
 val parse_argv : ?current: int ref -> string array ->
@@ -164,7 +164,7 @@ val parse_argv_dynamic : ?current:int ref -> string array ->
 (** Same as {!Arg.parse_argv}, except that the [speclist] argument is a
     reference and may be updated during the parsing.
     See {!Arg.parse_dynamic}.
-    @since 4.01.0
+    @since 4.01
 *)
 
 val parse_and_expand_argv_dynamic : int ref -> string array ref ->
@@ -172,14 +172,14 @@ val parse_and_expand_argv_dynamic : int ref -> string array ref ->
 (** Same as {!Arg.parse_argv_dynamic}, except that the [argv] argument is a
     reference and may be updated during the parsing of [Expand] arguments.
     See {!Arg.parse_argv_dynamic}.
-    @since 4.05.0
+    @since 4.05
 *)
 
 val parse_expand:
   (key * spec * doc) list -> anon_fun -> usage_msg -> unit
 (** Same as {!Arg.parse}, except that the [Expand] arguments are allowed and
     the {!current} reference is not updated.
-    @since 4.05.0
+    @since 4.05
 *)
 
 exception Help of string
@@ -219,21 +219,21 @@ val current : int ref
 val read_arg: string -> string array
 (** [Arg.read_arg file] reads newline-terminated command line arguments from
     file [file].
-    @since 4.05.0 *)
+    @since 4.05 *)
 
 val read_arg0: string -> string array
 (** Identical to {!Arg.read_arg} but assumes null character terminated command
     line arguments.
-    @since 4.05.0 *)
+    @since 4.05 *)
 
 
 val write_arg: string -> string array -> unit
 (** [Arg.write_arg file args] writes the arguments [args] newline-terminated
     into the file [file]. If the any of the arguments in [args] contains a
     newline, use {!Arg.write_arg0} instead.
-    @since 4.05.0 *)
+    @since 4.05 *)
 
 val write_arg0: string -> string array -> unit
 (** Identical to {!Arg.write_arg} but uses the null character for terminator
     instead of newline.
-    @since 4.05.0 *)
+    @since 4.05 *)

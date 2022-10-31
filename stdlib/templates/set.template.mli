@@ -100,7 +100,7 @@ module type S =
 
     val disjoint: t -> t -> bool
     (** Test if two sets are disjoint.
-        @since 4.08.0 *)
+        @since 4.08 *)
 
     val diff: t -> t -> t
     (** Set difference: [diff s1 s2] contains the elements of [s1]
@@ -154,7 +154,7 @@ module type S =
     (** [find x s] returns the element of [s] equal to [x] (according
         to [Ord.compare]), or raise [Not_found] if no such element
         exists.
-        @since 4.01.0 *)
+        @since 4.01 *)
 
     val find_opt: elt -> t -> elt option
     (** [find_opt x s] returns the element of [s] equal to [x] (according
@@ -216,7 +216,7 @@ module type S =
         If no element of [s] is changed by [f], [s] is returned
         unchanged. (If each output of [f] is physically equal to its
         input, the returned set is physically equal to [s].)
-        @since 4.04.0 *)
+        @since 4.04 *)
 
     val filter: f:(elt -> bool) -> t -> t
     (** [filter ~f s] returns the set of all elements in [s]
@@ -238,7 +238,7 @@ module type S =
         [s] is returned unchanged: the result of the function
         is then physically equal to [s].
 
-        @since 4.11.0 *)
+        @since 4.11 *)
 
     val partition: f:(elt -> bool) -> t -> t * t
     (** [partition ~f s] returns a pair of sets [(s1, s2)], where
@@ -287,13 +287,13 @@ module type S =
 
     val to_list : t -> elt list
     (** [to_list s] is {!elements}[ s].
-        @since 5.1.0 *)
+        @since 5.1 *)
 
     val of_list: elt list -> t
     (** [of_list l] creates a set from a list of elements.
         This is usually more efficient than folding [add] over the list,
         except perhaps for lists with many duplicated elements.
-        @since 4.02.0 *)
+        @since 4.02 *)
 
     val to_seq_from : elt -> t -> elt Seq.t
     (** [to_seq_from x s] iterates on a subset of the elements of [s]
