@@ -36,6 +36,10 @@ Working version
 - #11102: Speed up register allocation by permanently spilling registers
   (Stephen Dolan, review by Xavier Leroy)
 
+- #11686: More efficient use of stack space in the Linear Scan register
+  allocator.
+  (Nicolás Ojeda Bär)
+
 ### Standard library:
 
 - #11410: Add Set.to_list, Map.to_list, Map.of_list, Map.add_to_list,
