@@ -1004,20 +1004,22 @@ let rec find_repr p1 =
 (*
    Generic nodes are duplicated, while non-generic nodes are left
    as-is.
-   During instantiation, the description of a generic node is first
-   replaced by a link to a stub ([Tsubst (newvar ())]). Once the
-   copy is made, it replaces the stub.
-   After instantiation, the description of generic node, which was
-   stored by [save_desc], must be put back, using [cleanup_types].
-*)
+
+   During instantiation, the result of copying a generic node is
+   "cached" in-place by temporarily mutating the node description by
+   a stub [Tsubst (newvar ())] using [For_copy.redirect_desc]. The
+   scope of this mutation is determined by the [copy_scope] parameter,
+   and the [For_copy.with_scope] helper is in charge of creating a new
+   scope and performing the necessary book-keeping -- in particular
+   reverting the in-place updates after the instantiation is done. *)
 
 let abbreviations = ref (ref Mnil)
   (* Abbreviation memorized. *)
 
 (* partial: we may not wish to copy the non generic types
    before we call type_pat *)
-let rec copy ?partial ?keep_names scope ty =
-  let copy = copy ?partial ?keep_names scope in
+let rec copy ?partial ?keep_names copy_scope ty =
+  let copy = copy ?partial ?keep_names copy_scope in
   match get_desc ty with
     Tsubst (ty, _) -> ty
   | desc ->
@@ -1036,7 +1038,7 @@ let rec copy ?partial ?keep_names scope ty =
     in
     if forget <> generic_level then newty2 ~level:forget (Tvar None) else
     let t = newstub ~scope:(get_scope ty) in
-    For_copy.redirect_desc scope ty (Tsubst (t, None));
+    For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
     let desc' =
       match desc with
       | Tconstr (p, tl, _) ->
@@ -1068,7 +1070,7 @@ let rec copy ?partial ?keep_names scope ty =
             Tsubst (_, Some ty2) ->
               (* This variant type has been already copied *)
               (* Change the stub to avoid Tlink in the new type *)
-              For_copy.redirect_desc scope ty (Tsubst (ty2, None));
+              For_copy.redirect_desc copy_scope ty (Tsubst (ty2, None));
               Tlink ty2
           | _ ->
               (* If the row variable is not generic, we must keep it *)
@@ -1118,7 +1120,7 @@ let rec copy ?partial ?keep_names scope ty =
                 | _ -> (more', row)
               in
               (* Register new type first for recursion *)
-              For_copy.redirect_desc scope more
+              For_copy.redirect_desc copy_scope more
                 (Tsubst(more', Some t));
               (* Return a new copy *)
               Tvariant (copy_row copy true row keep more')
@@ -1138,7 +1140,8 @@ let instance ?partial sch =
       None -> None
     | Some keep -> Some (compute_univars sch, keep)
   in
-  For_copy.with_scope (fun scope -> copy ?partial scope sch)
+  For_copy.with_scope (fun copy_scope ->
+    copy ?partial copy_scope sch)
 
 let generic_instance sch =
   let old = !current_level in
@@ -1148,7 +1151,8 @@ let generic_instance sch =
   ty
 
 let instance_list schl =
-  For_copy.with_scope (fun scope -> List.map (fun t -> copy scope t) schl)
+  For_copy.with_scope (fun copy_scope ->
+    List.map (fun t -> copy copy_scope t) schl)
 
 let reified_var_counter = ref Vars.empty
 let reset_reified_var_counter () =
@@ -1198,10 +1202,10 @@ type existential_treatment =
   | Make_existentials_abstract of { env: Env.t ref; scope: int }
 
 let instance_constructor existential_treatment cstr =
-  For_copy.with_scope (fun scope ->
+  For_copy.with_scope (fun copy_scope ->
     let copy_existential =
       match existential_treatment with
-      | Keep_existentials_flexible -> copy scope
+      | Keep_existentials_flexible -> copy copy_scope
       | Make_existentials_abstract {env; scope = fresh_constr_scope} ->
           fun existential ->
             let decl = new_local_type () in
@@ -1211,29 +1215,29 @@ let instance_constructor existential_treatment cstr =
                 ~scope:fresh_constr_scope in
             env := new_env;
             let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
-            let tv = copy scope existential in
+            let tv = copy copy_scope existential in
             assert (is_Tvar tv);
             link_type tv to_unify;
             tv
     in
     let ty_ex = List.map copy_existential cstr.cstr_existentials in
-    let ty_res = copy scope cstr.cstr_res in
-    let ty_args = List.map (copy scope) cstr.cstr_args in
+    let ty_res = copy copy_scope cstr.cstr_res in
+    let ty_args = List.map (copy copy_scope) cstr.cstr_args in
     (ty_args, ty_res, ty_ex)
   )
 
 let instance_parameterized_type ?keep_names sch_args sch =
-  For_copy.with_scope (fun scope ->
-    let ty_args = List.map (fun t -> copy ?keep_names scope t) sch_args in
-    let ty = copy scope sch in
+  For_copy.with_scope (fun copy_scope ->
+    let ty_args = List.map (fun t -> copy ?keep_names copy_scope t) sch_args in
+    let ty = copy copy_scope sch in
     (ty_args, ty)
   )
 
 let instance_parameterized_type_2 sch_args sch_lst sch =
-  For_copy.with_scope (fun scope ->
-    let ty_args = List.map (copy scope) sch_args in
-    let ty_lst = List.map (copy scope) sch_lst in
-    let ty = copy scope sch in
+  For_copy.with_scope (fun copy_scope ->
+    let ty_args = List.map (copy copy_scope) sch_args in
+    let ty_lst = List.map (copy copy_scope) sch_lst in
+    let ty = copy copy_scope sch in
     (ty_args, ty_lst, ty)
   )
 
@@ -1258,10 +1262,10 @@ let map_kind f = function
 
 
 let instance_declaration decl =
-  For_copy.with_scope (fun scope ->
-    {decl with type_params = List.map (copy scope) decl.type_params;
-     type_manifest = Option.map (copy scope) decl.type_manifest;
-     type_kind = map_kind (copy scope) decl.type_kind;
+  For_copy.with_scope (fun copy_scope ->
+    {decl with type_params = List.map (copy copy_scope) decl.type_params;
+     type_manifest = Option.map (copy copy_scope) decl.type_manifest;
+     type_kind = map_kind (copy copy_scope) decl.type_kind;
     }
   )
 
@@ -1273,29 +1277,29 @@ let generic_instance_declaration decl =
   decl
 
 let instance_class params cty =
-  let rec copy_class_type scope = function
+  let rec copy_class_type copy_scope = function
     | Cty_constr (path, tyl, cty) ->
-        let tyl' = List.map (copy scope) tyl in
-        let cty' = copy_class_type scope cty in
+        let tyl' = List.map (copy copy_scope) tyl in
+        let cty' = copy_class_type copy_scope cty in
         Cty_constr (path, tyl', cty')
     | Cty_signature sign ->
         Cty_signature
-          {csig_self = copy scope sign.csig_self;
-           csig_self_row = copy scope sign.csig_self_row;
+          {csig_self = copy copy_scope sign.csig_self;
+           csig_self_row = copy copy_scope sign.csig_self_row;
            csig_vars =
              Vars.map
-               (function (m, v, ty) -> (m, v, copy scope ty))
+               (function (m, v, ty) -> (m, v, copy copy_scope ty))
                sign.csig_vars;
            csig_meths =
              Meths.map
-               (function (p, v, ty) -> (p, v, copy scope ty))
+               (function (p, v, ty) -> (p, v, copy copy_scope ty))
                sign.csig_meths}
     | Cty_arrow (l, ty, cty) ->
-        Cty_arrow (l, copy scope ty, copy_class_type scope cty)
+        Cty_arrow (l, copy copy_scope ty, copy_class_type copy_scope cty)
   in
-  For_copy.with_scope (fun scope ->
-    let params' = List.map (copy scope) params in
-    let cty' = copy_class_type scope cty in
+  For_copy.with_scope (fun copy_scope ->
+    let params' = List.map (copy copy_scope) params in
+    let cty' = copy_class_type copy_scope cty in
     (params', cty')
   )
 
@@ -1315,14 +1319,14 @@ let delayed_copy = ref []
 
 (* Copy without sharing until there are no free univars left *)
 (* all free univars must be included in [visited]            *)
-let rec copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share
+let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
     (visited : (int * (type_expr * type_expr list)) list) (ty : type_expr) =
   let univars = free ty in
   if is_Tvar ty || may_share && TypeSet.is_empty univars then
     if get_level ty <> generic_level then ty else
     let t = newstub ~scope:(get_scope ty) in
     delayed_copy :=
-      lazy (Transient_expr.set_stub_desc t (Tlink (copy cleanup_scope ty)))
+      lazy (Transient_expr.set_stub_desc t (Tlink (copy copy_scope ty)))
       :: !delayed_copy;
     t
   else try
@@ -1342,7 +1346,7 @@ let rec copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share
       | Tlink _ | Tsubst _ ->
           assert false
     in
-    let copy_rec = copy_sep ~cleanup_scope ~fixed ~free ~bound visited in
+    let copy_rec = copy_sep ~copy_scope ~fixed ~free ~bound visited in
     let desc' =
       match desc with
       | Tvariant row ->
@@ -1360,7 +1364,7 @@ let rec copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share
           let visited =
             List.map2 (fun ty t -> get_id ty, (t, bound)) tl tl' @ visited in
           let body =
-            copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share:true
+            copy_sep ~copy_scope ~fixed ~free ~bound ~may_share:true
               visited t1 in
           Tpoly (body, tl')
       | Tfield (p, k, ty1, ty2) ->
@@ -1373,7 +1377,7 @@ let rec copy_sep ~cleanup_scope ~fixed ~free ~bound ~may_share
     t
   end
 
-let instance_poly' cleanup_scope ~keep_names fixed univars sch =
+let instance_poly' copy_scope ~keep_names fixed univars sch =
   (* In order to compute univars below, [sch] should not contain [Tsubst] *)
   let copy_var ty =
     match get_desc ty with
@@ -1384,28 +1388,28 @@ let instance_poly' cleanup_scope ~keep_names fixed univars sch =
   let pairs = List.map2 (fun u v -> get_id u, (v, [])) univars vars in
   delayed_copy := [];
   let ty =
-    copy_sep ~cleanup_scope ~fixed ~free:(compute_univars sch) ~bound:[]
+    copy_sep ~copy_scope ~fixed ~free:(compute_univars sch) ~bound:[]
       ~may_share:true pairs sch in
   List.iter Lazy.force !delayed_copy;
   delayed_copy := [];
   vars, ty
 
 let instance_poly ?(keep_names=false) fixed univars sch =
-  For_copy.with_scope (fun cleanup_scope ->
-    instance_poly' cleanup_scope ~keep_names fixed univars sch
+  For_copy.with_scope (fun copy_scope ->
+    instance_poly' copy_scope ~keep_names fixed univars sch
   )
 
 let instance_label fixed lbl =
-  For_copy.with_scope (fun scope ->
+  For_copy.with_scope (fun copy_scope ->
     let vars, ty_arg =
       match get_desc lbl.lbl_arg with
         Tpoly (ty, tl) ->
-          instance_poly' scope ~keep_names:false fixed tl ty
+          instance_poly' copy_scope ~keep_names:false fixed tl ty
       | _ ->
-          [], copy scope lbl.lbl_arg
+          [], copy copy_scope lbl.lbl_arg
     in
     (* call [copy] after [instance_poly] to avoid introducing [Tsubst] *)
-    let ty_res = copy scope lbl.lbl_res in
+    let ty_res = copy copy_scope lbl.lbl_res in
     (vars, ty_arg, ty_res)
   )
 
@@ -2007,20 +2011,20 @@ let univar_pairs = ref []
 (**** Instantiate a generic type into a poly type ***)
 
 let polyfy env ty vars =
-  let subst_univar scope ty =
+  let subst_univar copy_scope ty =
     match get_desc ty with
     | Tvar name when get_level ty = generic_level ->
         let t = newty (Tunivar name) in
-        For_copy.redirect_desc scope ty (Tsubst (t, None));
+        For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
         Some t
     | _ -> None
   in
   (* need to expand twice? cf. Ctype.unify2 *)
   let vars = List.map (expand_head env) vars in
   let vars = List.map (expand_head env) vars in
-  For_copy.with_scope (fun scope ->
-    let vars' = List.filter_map (subst_univar scope) vars in
-    let ty = copy scope ty in
+  For_copy.with_scope (fun copy_scope ->
+    let vars' = List.filter_map (subst_univar copy_scope) vars in
+    let ty = copy copy_scope ty in
     let ty = newty2 ~level:(get_level ty) (Tpoly(ty, vars')) in
     let complete = List.length vars = List.length vars' in
     ty, complete
