@@ -59,16 +59,13 @@ let insert_interval_sorted i il =
 let release_expired_spilled ci pos ci_spilled =
   let rec loop free set =
     match SpilledSet.min_elt_opt set with
-    | None ->
-        free, SpilledSet.empty
     | Some ((iend, ss) as x) when iend < pos ->
         loop (IntSet.add ss free) (SpilledSet.remove x set)
-    | Some _ ->
-        free, set
+    | _ ->
+        ci.ci_free_slots <- free;
+        set
   in
-  let free_slots, ci_spilled = loop ci.ci_free_slots ci_spilled in
-  if free_slots != ci.ci_free_slots then ci.ci_free_slots <- free_slots;
-  ci_spilled
+  loop ci.ci_free_slots ci_spilled
 
 let rec release_expired_fixed pos = function
     i :: il when i.iend >= pos ->
