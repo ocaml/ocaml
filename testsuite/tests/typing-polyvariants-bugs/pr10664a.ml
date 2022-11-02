@@ -83,7 +83,7 @@ val y :
 
 (* Since the row variable is not explicitly bound, 'a and 'b leak *)
 
-let h (x : < m : 'a. <n : 'b. [< `A of 'a * 'b * 'c] > > as 'c) = x#m;; 
+let h (x : < m : 'a. <n : 'b. [< `A of 'a * 'b * 'c] > > as 'c) = x#m;;
 [%%expect{|
 Line 1:
 Error: Values do not match:
