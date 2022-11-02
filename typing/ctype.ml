@@ -1307,34 +1307,28 @@ let add_delayed_copy t copy_scope ty =
     lazy (Transient_expr.set_stub_desc t (Tlink (copy copy_scope ty))) ::
     !delayed_copy
 
-let add_with_empty ty t = TypeMap.add ty (t, TypeSet.empty)
-
 (* Copy without sharing until there are no free univars left *)
 (* all free univars must be included in [visited]            *)
 let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
-    ~(shared : (type_expr * TypeSet.t) TypeHash.t)
-    (visited : (type_expr * TypeSet.t) TypeMap.t) (ty : type_expr) =
+    ~(shared : type_expr TypeHash.t)
+    (visited : type_expr TypeMap.t) (ty : type_expr) =
   let univars = free ty in
-  let unbound = TypeSet.diff univars bound in
   if is_Tvar ty || may_share && TypeSet.is_empty univars then
     if get_level ty <> generic_level then ty else
     let t = newstub ~scope:(get_scope ty) in
     add_delayed_copy t copy_scope ty;
     t
   else try
-    let tyl = TypeHash.find_all shared ty in
-    fst (List.find (fun (_ty', unbound') -> TypeSet.equal unbound unbound') tyl)
+    TypeHash.find shared ty
   with Not_found -> try
-    let t, unbound' = TypeMap.find ty visited in
-    if is_Tunivar ty || TypeSet.equal unbound unbound' then t
-    else raise Not_found
+    TypeMap.find ty visited
   with Not_found -> begin
     let t = newstub ~scope:(get_scope ty) in
     let desc = get_desc ty in
     let visited =
       match desc with
         Tarrow _ | Ttuple _ | Tvariant _ | Tconstr _ | Tobject _ | Tpackage _ ->
-          TypeMap.add ty (t, unbound) visited
+          TypeMap.add ty t visited
       | Tvar _ | Tfield _ | Tnil | Tpoly _ | Tunivar _ ->
           visited
       | Tlink _ | Tsubst _ ->
@@ -1344,7 +1338,7 @@ let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
     let desc' =
       match desc with
       | Tvariant row ->
-          if not (static_row row) then TypeHash.add shared ty (t, unbound);
+          if not (static_row row) then TypeHash.add shared ty t;
           let more = row_more row in
           (* We shall really check the level on the row variable *)
           let keep = is_Tvar more && get_level more <> generic_level in
@@ -1359,7 +1353,7 @@ let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
       | Tpoly (t1, tl) ->
           let tl' = List.map (fun t -> newty (get_desc t)) tl in
           let bound = List.fold_right TypeSet.add tl bound in
-          let visited = List.fold_right2 add_with_empty tl tl' visited in
+          let visited = List.fold_right2 TypeMap.add tl tl' visited in
           let body =
             copy_sep ~copy_scope ~fixed ~free ~bound ~may_share:true
               ~shared visited t1 in
@@ -1382,7 +1376,7 @@ let instance_poly' copy_scope ~keep_names fixed univars sch =
     | _ -> assert false
   in
   let vars = List.map copy_var univars in
-  let pairs = List.fold_right2 add_with_empty univars vars TypeMap.empty in
+  let pairs = List.fold_right2 TypeMap.add univars vars TypeMap.empty in
   delayed_copy := [];
   let free = compute_univars sch in
   let ty =

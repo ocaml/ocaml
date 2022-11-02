@@ -48,7 +48,6 @@ module TypeHash = struct
   include TransientTypeHash
   let add hash = wrap_repr (add hash)
   let find hash = wrap_repr (find hash)
-  let find_all hash = wrap_repr (find_all hash)
   let iter f = TransientTypeHash.iter (wrap_type_expr f)
 end
 module TransientTypePairs =
