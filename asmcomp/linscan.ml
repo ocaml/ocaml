@@ -21,6 +21,13 @@ open Reg
 
 module IntSet = Stdlib.Set.Make(Int)
 
+module SpilledSet = Stdlib.Set.Make (struct
+    type t = int * int
+    let compare (iend1, ss1) (iend2, ss2) =
+      let c = Int.compare iend1 iend2 in
+      if c = 0 then Int.compare ss1 ss2 else c
+  end)
+
 (* Live intervals per register class *)
 
 type class_intervals =
@@ -28,15 +35,15 @@ type class_intervals =
     mutable ci_fixed: Interval.t list;
     mutable ci_active: Interval.t list;
     mutable ci_inactive: Interval.t list;
-    mutable ci_spilled: (int * int) list; (* (iend, stack slot) pairs, sorted by increasing iend *)
-    mutable ci_free_slots: IntSet.t;      (* stack slots available for reuse *)
+    mutable ci_spilled: SpilledSet.t;
+    mutable ci_free_slots: IntSet.t; (* stack slots available for reuse *)
   }
 
 let active = Array.init Proc.num_register_classes (fun _ -> {
   ci_fixed = [];
   ci_active = [];
   ci_inactive = [];
-  ci_spilled = [];
+  ci_spilled = SpilledSet.empty;
   ci_free_slots = IntSet.empty;
 })
 
@@ -50,9 +57,6 @@ let rec insert_sorted leq i = function
 let insert_interval_sorted i il =
   insert_sorted (fun i j -> j.iend <= i.iend) i il
 
-let insert_spilled_sorted x xl =
-  insert_sorted (fun (iend, _) (jend, _) -> iend <= jend) x xl
-
 (* Note that we do not call [Interval.remove_expired_ranges] in
    [release_expired_spilled], unlike in the rest of the [remove_expired_*]
    functions.
@@ -63,12 +67,19 @@ let insert_spilled_sorted x xl =
    As we do not call either of these functions in [release_expired_spilled] we
    do not need to call [remove_expired_ranges]. *)
 
-let rec release_expired_spilled ci pos = function
-    (iend, ss) :: il when iend < pos ->
-      ci.ci_free_slots <- IntSet.add ss ci.ci_free_slots;
-      release_expired_spilled ci pos il
-  | _ as il ->
-      il
+let release_expired_spilled ci pos ci_spilled =
+  let rec loop free set =
+    match SpilledSet.min_elt_opt set with
+    | None ->
+        free, SpilledSet.empty
+    | Some ((iend, ss) as x) when iend < pos ->
+        loop (IntSet.add ss free) (SpilledSet.remove x set)
+    | Some _ ->
+        free, set
+  in
+  let free_slots, ci_spilled = loop ci.ci_free_slots ci_spilled in
+  if free_slots != ci.ci_free_slots then ci.ci_free_slots <- free_slots;
+  ci_spilled
 
 let rec release_expired_fixed pos = function
     i :: il when i.iend >= pos ->
@@ -115,7 +126,7 @@ let allocate_stack_slot num_stack_slots i =
   in
   i.reg.loc <- Stack(Local ss);
   i.reg.spill <- true;
-  ci.ci_spilled <- insert_spilled_sorted (i.iend, ss) ci.ci_spilled
+  ci.ci_spilled <- SpilledSet.add (i.iend, ss) ci.ci_spilled
 
 (* Find a register for the given interval and assigns this register.
    The interval is added to active. Raises Not_found if no free registers
@@ -226,7 +237,7 @@ let allocate_registers (intervals : Interval.result) =
       ci_fixed = [];
       ci_active = [];
       ci_inactive = [];
-      ci_spilled = [];
+      ci_spilled = SpilledSet.empty;
       ci_free_slots = IntSet.empty;
     };
   done;
