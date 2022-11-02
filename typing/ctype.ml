@@ -1309,7 +1309,7 @@ let add_delayed_copy t copy_scope ty =
 
 (* Copy without sharing until there are no free univars left *)
 (* all free univars must be included in [visited]            *)
-let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
+let rec copy_sep ~copy_scope ~fixed ~free ~may_share
     ~(shared : type_expr TypeHash.t)
     (visited : type_expr TypeMap.t) (ty : type_expr) =
   let univars = free ty in
@@ -1334,7 +1334,7 @@ let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
       | Tlink _ | Tsubst _ ->
           assert false
     in
-    let copy_rec = copy_sep ~copy_scope ~fixed ~free ~bound ~shared visited in
+    let copy_rec = copy_sep ~copy_scope ~fixed ~free ~shared visited in
     let desc' =
       match desc with
       | Tvariant row ->
@@ -1352,10 +1352,9 @@ let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
           Tvariant row
       | Tpoly (t1, tl) ->
           let tl' = List.map (fun t -> newty (get_desc t)) tl in
-          let bound = List.fold_right TypeSet.add tl bound in
           let visited = List.fold_right2 TypeMap.add tl tl' visited in
           let body =
-            copy_sep ~copy_scope ~fixed ~free ~bound ~may_share:true
+            copy_sep ~copy_scope ~fixed ~free ~may_share:true
               ~shared visited t1 in
           Tpoly (body, tl')
       | Tfield (p, k, ty1, ty2) ->
@@ -1378,9 +1377,8 @@ let instance_poly' copy_scope ~keep_names fixed univars sch =
   let vars = List.map copy_var univars in
   let pairs = List.fold_right2 TypeMap.add univars vars TypeMap.empty in
   delayed_copy := [];
-  let free = compute_univars sch in
   let ty =
-    copy_sep ~copy_scope ~fixed ~free ~bound:TypeSet.empty
+    copy_sep ~copy_scope ~fixed ~free:(compute_univars sch)
       ~may_share:true ~shared:(TypeHash.create 7) pairs sch in
   List.iter Lazy.force !delayed_copy;
   delayed_copy := [];
