@@ -34,8 +34,6 @@ module TypeSet = struct
   let exists p = TransientTypeSet.exists (wrap_type_expr p)
   let elements set =
     List.map Transient_expr.type_expr (TransientTypeSet.elements set)
-  let of_list tl =
-    of_list (List.map Transient_expr.repr tl)
 end
 module TransientTypeMap = Map.Make(TransientTypeOps)
 module TypeMap = struct
