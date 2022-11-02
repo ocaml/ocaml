@@ -478,7 +478,7 @@ int caml_num_rows_fd(int fd)
 
 void caml_init_os_params(void)
 {
-  caml_plat_mmap_granularity = sysconf(_SC_PAGESIZE);
+  caml_plat_mmap_alignment = caml_plat_pagesize = sysconf(_SC_PAGESIZE);
   return;
 }
 
@@ -541,7 +541,7 @@ void *caml_plat_mem_map(uintnat size, uintnat alignment, int reserve_only)
 {
   void* mem;
 
-  if (alignment > caml_sys_pagesize)
+  if (alignment > caml_plat_mmap_alignment)
     caml_fatal_error("Cannot align memory to %lx on this platform", alignment);
 
   mem = mmap(0, size, reserve_only ? PROT_NONE : (PROT_READ | PROT_WRITE),

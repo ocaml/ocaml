@@ -724,8 +724,8 @@ static void reserve_minor_heaps(void) {
   minor_heap_reservation_bsize = minor_heap_max_bsz * Max_domains;
 
   /* reserve memory space for minor heaps */
-  heaps_base = caml_mem_map(minor_heap_reservation_bsize,
-                            caml_plat_mmap_granularity, 1 /* reserve_only */);
+  heaps_base = caml_mem_map(minor_heap_reservation_bsize, caml_plat_pagesize,
+                1 /* reserve_only */);
   if (heaps_base == NULL)
     caml_fatal_error("Not enough heap memory to reserve minor heaps");
 

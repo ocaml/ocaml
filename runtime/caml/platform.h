@@ -131,9 +131,14 @@ void caml_plat_cond_free(caml_plat_cond*);
 
 uintnat caml_mem_round_up_pages(uintnat size);
 /* The size given to caml_mem_map and caml_mem_commit must be a multiple of
-   caml_plat_mmap_granularity. The size given to caml_mem_unmap and
-   caml_mem_decommit must match the size given to caml_mem_map/caml_mem_commit
-   for mem. */
+   caml_plat_pagesize. The size given to caml_mem_unmap and caml_mem_decommit
+   must match the size given to caml_mem_map/caml_mem_commit for mem.
+
+   The Windows and Cygwin implementations do not support arbitrary alignment
+   and will fail for alignment values greater than caml_plat_mmap_alignment.
+   Luckily, this value is rather large on those platforms: 64KiB. This is enough
+   for all alignments used in the runtime system so far, the larger being the
+   major heap pools aligned on 32KiB boundaries. */
 void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only);
 void* caml_mem_commit(void* mem, uintnat size);
 void caml_mem_decommit(void* mem, uintnat size);
@@ -182,9 +187,8 @@ Caml_inline void caml_plat_unlock(caml_plat_mutex* m)
   check_err("unlock", pthread_mutex_unlock(m));
 }
 
-/* On Windows, the SYSTEM_INFO.dwPageSize is a DWORD (32-bit), but conveniently
-   long is also 32-bit */
-extern intnat caml_plat_mmap_granularity;
+extern intnat caml_plat_pagesize;
+extern intnat caml_plat_mmap_alignment;
 
 #endif /* CAML_INTERNALS */
 

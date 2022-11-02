@@ -1092,15 +1092,11 @@ void caml_init_os_params(void)
   SYSTEM_INFO si;
   LARGE_INTEGER frequency;
 
-  /* Get the system page size */
+  /* Get the system page size and allocation granularity. */
   GetSystemInfo(&si);
-  /* Use the Allocation Granularity rather than the Page Size. Page Size only
-     applies when committing a previous reservation, which for OCaml only occurs
-     when committing a minor heap, which will necessarily be larger than both
-     page size and granularity. This simplifies caml_mem_map, since we can
-     guarantee that trimming will not be required. */
   CAMLassert(si.dwAllocationGranularity >= si.dwPageSize);
-  caml_plat_mmap_granularity = si.dwAllocationGranularity;
+  caml_plat_pagesize = si.dwPageSize;
+  caml_plat_mmap_alignment = si.dwAllocationGranularity;
 
   /* Get the number of nanoseconds for each tick in QueryPerformanceCounter */
   QueryPerformanceFrequency(&frequency);
@@ -1117,9 +1113,9 @@ int64_t caml_time_counter(void)
 
 void *caml_plat_mem_map(uintnat size, uintnat alignment, int reserve_only)
 {
-  /* VirtualAlloc returns an address aligned to caml_plat_mmap_granularity, so
+  /* VirtualAlloc returns an address aligned to caml_plat_mmap_alignment, so
      trimming will not be required. VirtualAlloc returns 0 on error. */
-  if (alignment > caml_plat_mmap_granularity)
+  if (alignment > caml_plat_mmap_alignment)
     caml_fatal_error("Cannot align memory to %" ARCH_INTNAT_PRINTF_FORMAT "x"
                      " on this platform", alignment);
   return
