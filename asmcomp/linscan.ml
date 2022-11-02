@@ -53,6 +53,16 @@ let rec insert_sorted_uniq i = function
       else if c < 0 then i :: il
       else j :: insert_sorted_uniq i js
 
+(* Note that we do not call [Interval.remove_expired_ranges] in
+   [release_expired_spilled], unlike in the rest of the [remove_expired_*]
+   functions.
+
+   [remove_expired_ranges] discards already handled live ranges in each interval
+   to make [Interval.is_live] and [Interval.overlap] more efficient.
+
+   As we do not call either of these functions in [release_expired_spilled] we
+   do not need to call [remove_expired_ranges]. *)
+
 let rec release_expired_spilled ci pos = function
     i :: il when i.iend >= pos ->
       i :: release_expired_spilled ci pos il
