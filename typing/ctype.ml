@@ -1300,24 +1300,18 @@ let instance_class params cty =
 
 (**** Instantiation for types with free universal variables ****)
 
-let rec diff_list l1 l2 =
-  if l1 == l2 then [] else
-  match l1 with [] -> invalid_arg "Ctype.diff_list"
-  | a :: l1 -> a :: diff_list l1 l2
-
-let conflicts free bound =
-  let bound = List.map get_id bound in
-  TypeSet.exists (fun t -> List.memq (get_id t) bound) free
-
 let delayed_copy = ref []
     (* copying to do later *)
+
+let add_with_empty ty t = TypeMap.add ty (t, TypeSet.empty)
 
 (* Copy without sharing until there are no free univars left *)
 (* all free univars must be included in [visited]            *)
 let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
     ~(shared : (type_expr * TypeSet.t) TypeHash.t)
-    (visited : (int * (type_expr * type_expr list)) list) (ty : type_expr) =
+    (visited : (type_expr * TypeSet.t) TypeMap.t) (ty : type_expr) =
   let univars = free ty in
+  let unbound = TypeSet.diff univars bound in
   if is_Tvar ty || may_share && TypeSet.is_empty univars then
     if get_level ty <> generic_level then ty else
     let t = newstub ~scope:(get_scope ty) in
@@ -1327,20 +1321,18 @@ let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
     t
   else try
     let tyl = TypeHash.find_all shared ty in
-    let freeu = TypeSet.diff univars (TypeSet.of_list bound) in
-    fst (List.find (fun (_ty', freeu') -> TypeSet.equal freeu freeu') tyl)
+    fst (List.find (fun (_ty', unbound') -> TypeSet.equal unbound unbound') tyl)
   with Not_found -> try
-    let t, bound_t = List.assq (get_id ty) visited in
-    let dl = if is_Tunivar ty then [] else diff_list bound bound_t in
-    if dl <> [] && conflicts univars dl then raise Not_found;
-    t
+    let t, unbound' = TypeMap.find ty visited in
+    if is_Tunivar ty || TypeSet.equal unbound unbound' then t
+    else raise Not_found
   with Not_found -> begin
     let t = newstub ~scope:(get_scope ty) in
     let desc = get_desc ty in
     let visited =
       match desc with
         Tarrow _ | Ttuple _ | Tvariant _ | Tconstr _ | Tobject _ | Tpackage _ ->
-          (get_id ty, (t, bound)) :: visited
+          TypeMap.add ty (t, unbound) visited
       | Tvar _ | Tfield _ | Tnil | Tpoly _ | Tunivar _ ->
           visited
       | Tlink _ | Tsubst _ ->
@@ -1350,10 +1342,7 @@ let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
     let desc' =
       match desc with
       | Tvariant row ->
-          if not (static_row row) then begin
-            let freeu = TypeSet.diff univars (TypeSet.of_list bound) in
-            TypeHash.add shared ty (t, freeu)
-          end;
+          if not (static_row row) then TypeHash.add shared ty (t, unbound);
           let more = row_more row in
           (* We shall really check the level on the row variable *)
           let keep = is_Tvar more && get_level more <> generic_level in
@@ -1371,9 +1360,8 @@ let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
           Tvariant row
       | Tpoly (t1, tl) ->
           let tl' = List.map (fun t -> newty (get_desc t)) tl in
-          let bound = tl @ bound in
-          let visited =
-            List.map2 (fun ty t -> get_id ty, (t, bound)) tl tl' @ visited in
+          let bound = List.fold_right TypeSet.add tl bound in
+          let visited = List.fold_right2 add_with_empty tl tl' visited in
           let body =
             copy_sep ~copy_scope ~fixed ~free ~bound ~may_share:true
               ~shared visited t1 in
@@ -1396,10 +1384,11 @@ let instance_poly' copy_scope ~keep_names fixed univars sch =
     | _ -> assert false
   in
   let vars = List.map copy_var univars in
-  let pairs = List.map2 (fun u v -> get_id u, (v, [])) univars vars in
+  let pairs = List.fold_right2 add_with_empty univars vars TypeMap.empty in
   delayed_copy := [];
+  let free = compute_univars sch in
   let ty =
-    copy_sep ~copy_scope ~fixed ~free:(compute_univars sch) ~bound:[]
+    copy_sep ~copy_scope ~fixed ~free ~bound:TypeSet.empty
       ~may_share:true ~shared:(TypeHash.create 7) pairs sch in
   List.iter Lazy.force !delayed_copy;
   delayed_copy := [];
