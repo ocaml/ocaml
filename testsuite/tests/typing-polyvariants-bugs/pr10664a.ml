@@ -81,6 +81,13 @@ val g2 :
   <fun>
 |}]
 
+let g3 (x : < m : 'a. (< n : 'b. [< `A of 'a] as 'b > as 'c) * 'c >) = x#m;;
+[%%expect{|
+val g3 :
+  < m : 'a. < n : 'b. [< `A of 'a ] as 'b > * < n : 'c. [< `A of 'a ] as 'c > > ->
+  < n : 'd. [< `A of 'e ] as 'd > * < n : 'f. [< `A of 'e ] as 'f > = <fun>
+|}]
+
 let g (x : < m : 'a 'b. <n : ([< `A of 'a ] as 'b) -> 'c > > as 'c) = x#m;;
 [%%expect{|
 val g :
