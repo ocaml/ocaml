@@ -1302,6 +1302,10 @@ let instance_class params cty =
 
 let delayed_copy = ref []
     (* copying to do later *)
+let add_delayed_copy t copy_scope ty =
+  delayed_copy :=
+    lazy (Transient_expr.set_stub_desc t (Tlink (copy copy_scope ty))) ::
+    !delayed_copy
 
 let add_with_empty ty t = TypeMap.add ty (t, TypeSet.empty)
 
@@ -1315,9 +1319,7 @@ let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
   if is_Tvar ty || may_share && TypeSet.is_empty univars then
     if get_level ty <> generic_level then ty else
     let t = newstub ~scope:(get_scope ty) in
-    delayed_copy :=
-      lazy (Transient_expr.set_stub_desc t (Tlink (copy copy_scope ty)))
-      :: !delayed_copy;
+    add_delayed_copy t copy_scope ty;
     t
   else try
     let tyl = TypeHash.find_all shared ty in
@@ -1348,12 +1350,8 @@ let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
           let keep = is_Tvar more && get_level more <> generic_level in
           (* In that case we should keep the original, but we still
              call copy to correct the levels *)
-          if keep then begin
-            delayed_copy := lazy (Transient_expr.set_stub_desc t
-                                    (Tlink (copy copy_scope ty)))
-              :: !delayed_copy;
-            Tvar None
-          end else let more' = copy_rec ~may_share:false more in
+          if keep then (add_delayed_copy t copy_scope ty; Tvar None) else
+          let more' = copy_rec ~may_share:false more in
           let fixed' = fixed && (is_Tvar more || is_Tunivar more) in
           let row =
             copy_row (copy_rec ~may_share:true) fixed' row keep more' in
