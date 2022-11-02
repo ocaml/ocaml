@@ -19,6 +19,8 @@
 open Interval
 open Reg
 
+module IntSet = Stdlib.Set.Make(Int)
+
 (* Live intervals per register class *)
 
 type class_intervals =
@@ -27,7 +29,7 @@ type class_intervals =
     mutable ci_active: Interval.t list;
     mutable ci_inactive: Interval.t list;
     mutable ci_spilled: Interval.t list;
-    mutable ci_free_slots: int list; (* stack slots available for reuse *)
+    mutable ci_free_slots: IntSet.t; (* stack slots available for reuse *)
   }
 
 let active = Array.init Proc.num_register_classes (fun _ -> {
@@ -35,7 +37,7 @@ let active = Array.init Proc.num_register_classes (fun _ -> {
   ci_active = [];
   ci_inactive = [];
   ci_spilled = [];
-  ci_free_slots = [];
+  ci_free_slots = IntSet.empty;
 })
 
 (* Insert interval into list sorted by end position *)
@@ -44,14 +46,6 @@ let rec insert_interval_sorted i = function
     [] -> [i]
   | j :: _ as il when j.iend <= i.iend -> i :: il
   | j :: il -> j :: insert_interval_sorted i il
-
-let rec insert_sorted_uniq i = function
-    [] -> [i]
-  | j :: js as il ->
-      let c = compare i j in
-      if c = 0 then il
-      else if c < 0 then i :: il
-      else j :: insert_sorted_uniq i js
 
 (* Note that we do not call [Interval.remove_expired_ranges] in
    [release_expired_spilled], unlike in the rest of the [remove_expired_*]
@@ -69,7 +63,7 @@ let rec release_expired_spilled ci pos = function
   | i :: il ->
       let ss =
         match i.reg.loc with Stack(Local ss) -> ss | _ -> assert false in
-      ci.ci_free_slots <- insert_sorted_uniq ss ci.ci_free_slots;
+      ci.ci_free_slots <- IntSet.add ss ci.ci_free_slots;
       release_expired_spilled ci pos il
   | [] -> []
 
@@ -107,11 +101,11 @@ let allocate_stack_slot num_stack_slots i =
   let cl = Proc.register_class i.reg in
   let ci = active.(cl) in
   let ss =
-    match ci.ci_free_slots with
-    | ss :: slots ->
-        ci.ci_free_slots <- slots;
+    match IntSet.min_elt_opt ci.ci_free_slots with
+    | Some ss ->
+        ci.ci_free_slots <- IntSet.remove ss ci.ci_free_slots;
         ss
-    | [] ->
+    | None ->
         let ss = num_stack_slots.(cl) in
         num_stack_slots.(cl) <- succ ss;
         ss
@@ -230,7 +224,7 @@ let allocate_registers (intervals : Interval.result) =
       ci_active = [];
       ci_inactive = [];
       ci_spilled = [];
-      ci_free_slots = [];
+      ci_free_slots = IntSet.empty;
     };
   done;
   (* Reset the stack slot counts *)
