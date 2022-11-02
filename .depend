@@ -2811,12 +2811,10 @@ asmcomp/linearize.cmi : \
     asmcomp/mach.cmi \
     asmcomp/linear.cmi
 asmcomp/linscan.cmo : \
-    asmcomp/reg.cmi \
     asmcomp/proc.cmi \
     asmcomp/interval.cmi \
     asmcomp/linscan.cmi
 asmcomp/linscan.cmx : \
-    asmcomp/reg.cmx \
     asmcomp/proc.cmx \
     asmcomp/interval.cmx \
     asmcomp/linscan.cmi
