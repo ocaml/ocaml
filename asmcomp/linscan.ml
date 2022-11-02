@@ -46,15 +46,12 @@ let active = Array.init Proc.num_register_classes (fun _ -> {
   ci_free_slots = IntSet.empty;
 })
 
-(* Insert into sorted list *)
+(* Insert interval into list sorted by end position *)
 
-let rec insert_sorted leq i = function
+let rec insert_interval_sorted i = function
     [] -> [i]
-  | j :: _ as il when leq i j -> i :: il
-  | j :: il -> j :: insert_sorted leq i il
-
-let insert_interval_sorted i il =
-  insert_sorted (fun i j -> j.iend <= i.iend) i il
+  | j :: _ as il when j.iend <= i.iend -> i :: il
+  | j :: il -> j :: insert_interval_sorted i il
 
 let release_expired_spilled ci pos ci_spilled =
   let rec loop free set =
