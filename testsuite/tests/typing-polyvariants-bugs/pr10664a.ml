@@ -54,6 +54,33 @@ val x :
   <obj>
 |}]
 
+let g1 (x : < m : 'a. <n : 'r. ([< `A of 'a * 'c] as 'r) -> unit > as 'c >) =
+  x#m;;
+[%%expect{|
+val g1 :
+  < m : 'a. < n : 'c. ([< `A of 'a * 'b ] as 'c) -> unit > as 'b > ->
+  (< n : 'e. ([< `A of 'f * 'd ] as 'e) -> unit > as 'd) = <fun>
+|}]
+
+let g2 (x : < m : 'a. <n : 'r. ([< `A of 'a * 'c] as 'r) -> unit > > as 'c) =
+  x#m;;
+[%%expect{|
+val g2 :
+  (< m : 'a. < n : 'c. ([< `A of 'a * 'b ] as 'c) -> unit > > as 'b) ->
+  < n : 'd. ([< `A of 'e * 'b ] as 'd) -> unit > = <fun>
+|}, Principal{|
+val g2 :
+  (< m : 'a. < n : 'c. ([< `A of 'a * 'b ] as 'c) -> unit > > as 'b) ->
+  < n : 'd.
+          ([< `A of
+                'e *
+                (< m : 'a. < n : 'g. ([< `A of 'a * 'f ] as 'g) -> unit > >
+                 as 'f) ]
+           as 'd) ->
+          unit > =
+  <fun>
+|}]
+
 let g (x : < m : 'a 'b. <n : ([< `A of 'a ] as 'b) -> 'c > > as 'c) = x#m;;
 [%%expect{|
 val g :
@@ -85,74 +112,26 @@ val y :
 
 let h (x : < m : 'a. <n : 'b. [< `A of 'a * 'b * 'c] > > as 'c) = x#m;;
 [%%expect{|
-Line 1:
-Error: Values do not match:
-         val h :
-           (< m : 'a. < n : 'b. [< `A of 'a * 'b * 'c ] as 'd > > as 'c) ->
-           < n : 'b. 'd >
-       is not included in
-         val h :
-           (< m : 'a. < n : 'b. [< `A of 'e * 'b0 * 'c ] as 'd > > as 'c) ->
-           < n : 'b0. 'd >
-       The type
-         (< m : 'a. < n : 'b. [< `A of 'e * 'b0 * 'c ] as 'd > > as 'c) ->
-         < n : 'b0. 'd >
-       is not compatible with the type
-         (< m : 'a. < n : 'b. [< `A of 'e * 'b0 * 'f ] as 'g > > as 'f) ->
-         < n : 'b0. 'g >
-       Types for tag `A are incompatible
-|}, Principal{|
-Line 1:
-Error: Values do not match:
-         val h :
-           (< m : 'a. < n : 'b. [< `A of 'a * 'b * 'c ] as 'd > > as 'c) ->
-           < n : 'b. 'd >
-       is not included in
-         val h :
-           < m : 'a.
-                   < n : 'b.
-                           [< `A of 'd * 'b0 * < m : 'a0. < n : 'b1. 'c > > ]
-                           as 'c > > ->
-           < n : 'b0. 'c >
-       The type
-         < m : 'a.
-                 < n : 'b.
-                         [< `A of 'd * 'b0 * < m : 'a0. < n : 'b1. 'c > > ]
-                         as 'c > > ->
-         < n : 'b0. 'c >
-       is not compatible with the type
-         < m : 'a.
-                 < n : 'b.
-                         [< `A of 'd * 'b0 * < m : 'a0. < n : 'b1. 'e > > ]
-                         as 'e > > ->
-         < n : 'b0. 'e >
-       Types for tag `A are incompatible
+Line 1, characters 66-69:
+1 | let h (x : < m : 'a. <n : 'b. [< `A of 'a * 'b * 'c] > > as 'c) = x#m;;
+                                                                      ^^^
+Error: This expression has type
+         < n : 'b. [< `A of 'a * 'b0 * < m : 'a. < n : 'b0. 'c > > ] as 'c >
+       but an expression was expected of type 'd
+       The universal variable 'a would escape its scope
 |}]
 
 (* Since the row variable is not bound, 'a leaks *)
 
 let j (x : < m : 'a. <n : 'b. [< `A of 'a ] -> 'c > > as 'c) = x#m;;
 [%%expect{|
-val j :
-  (< m : 'a. < n : ([< `A of 'a ] as 'c) -> 'b > > as 'b) -> < n : 'c -> 'b > =
-  <fun>
-|}, Principal{|
-Line 1:
-Error: Values do not match:
-         val j :
-           (< m : 'a. < n : ([< `A of 'a ] as 'c) -> 'b > > as 'b) ->
-           < n : 'c -> (< m : 'a. < n : 'c -> 'd > > as 'd) >
-       is not included in
-         val j :
-           (< m : 'a. < n : ([< `A of 'a0 ] as 'c) -> 'b > > as 'b) ->
-           < n : 'c -> (< m : 'a0. < n : 'c -> 'd > > as 'd) >
-       The type
-         (< m : 'a. < n : ([< `A of 'a0 ] as 'c) -> 'b > > as 'b) ->
-         < n : 'c -> (< m : 'a0. < n : 'c -> 'd > > as 'd) >
-       is not compatible with the type
-         (< m : 'a. < n : ([< `A of 'a0 ] as 'f) -> 'e > > as 'e) ->
-         < n : 'f -> (< m : 'a0. < n : 'f -> 'g > > as 'g) >
-       Types for tag `A are incompatible
+Line 1, characters 63-66:
+1 | let j (x : < m : 'a. <n : 'b. [< `A of 'a ] -> 'c > > as 'c) = x#m;;
+                                                                   ^^^
+Error: This expression has type
+         < n : ([< `A of 'a ] as 'b) -> (< m : 'a. < n : 'b -> 'c > > as 'c) >
+       but an expression was expected of type 'd
+       The universal variable 'a would escape its scope
 |}]
 
 let o =
@@ -160,21 +139,12 @@ let o =
     method m : 'a. < n : [< `A of 'a] -> 'b > =
       object method n _ = self end
   end;;
-let z = j o;;
 [%%expect{|
-val o : < m : 'a. < n : [< `A of 'a ] -> 'b > > as 'b = <obj>
-Line 6, characters 8-9:
-6 | let z = j o;;
-            ^
-Error: This expression has type
-         (< m : 'a. < n : ([< `A of 'a ] as 'c) -> 'b > > as 'b) ->
-         < n : 'c -> 'b >
-       but an expression was expected of type 'd
+Lines 3-4, characters 4-34:
+3 | ....method m : 'a. < n : [< `A of 'a] -> 'b > =
+4 |       object method n _ = self end
+Error: The method m has type 'b but is expected to have type
+         < n : ([< `A of 'a ] as 'c) ->
+               (< m : 'a. < n : 'c -> 'd >; .. > as 'd) >
        The universal variable 'a would escape its scope
-|}, Principal{|
-val o : < m : 'a. < n : [< `A of 'a ] -> 'b > > as 'b = <obj>
-Line 6, characters 8-9:
-6 | let z = j o;;
-            ^
-Error: Unbound value j
 |}]

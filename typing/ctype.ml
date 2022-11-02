@@ -1315,7 +1315,7 @@ let delayed_copy = ref []
 (* Copy without sharing until there are no free univars left *)
 (* all free univars must be included in [visited]            *)
 let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
-    ~(shared : type_expr TypeHash.t)
+    ~(shared : (type_expr * TypeSet.t) TypeHash.t)
     (visited : (int * (type_expr * type_expr list)) list) (ty : type_expr) =
   let univars = free ty in
   if is_Tvar ty || may_share && TypeSet.is_empty univars then
@@ -1326,7 +1326,9 @@ let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
       :: !delayed_copy;
     t
   else try
-    TypeHash.find shared ty
+    let tyl = TypeHash.find_all shared ty in
+    let freeu = TypeSet.empty (*TypeSet.diff univars (TypeSet.of_list bound)*) in
+    fst (List.find (fun (_ty', freeu') -> TypeSet.equal freeu freeu') tyl)
   with Not_found -> try
     let t, bound_t = List.assq (get_id ty) visited in
     let dl = if is_Tunivar ty then [] else diff_list bound bound_t in
@@ -1348,11 +1350,21 @@ let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
     let desc' =
       match desc with
       | Tvariant row ->
-          if not (static_row row) then TypeHash.add shared ty t;
+          if not (static_row row) then begin
+            let freeu = TypeSet.empty (*TypeSet.diff univars (TypeSet.of_list bound)*) in
+            TypeHash.add shared ty (t, freeu)
+          end;
           let more = row_more row in
           (* We shall really check the level on the row variable *)
           let keep = is_Tvar more && get_level more <> generic_level in
-          let more' = copy_rec ~may_share:false more in
+          (* In that case we should keep the original, but we still
+             call copy to correct the levels *)
+          if keep then begin
+            delayed_copy := lazy (Transient_expr.set_stub_desc t
+                                    (Tlink (copy copy_scope ty)))
+              :: !delayed_copy;
+            Tvar None
+          end else let more' = copy_rec ~may_share:false more in
           let fixed' = fixed && (is_Tvar more || is_Tunivar more) in
           let row =
             copy_row (copy_rec ~may_share:true) fixed' row keep more' in
