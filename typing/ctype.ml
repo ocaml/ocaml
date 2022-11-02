@@ -1327,7 +1327,7 @@ let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
     t
   else try
     let tyl = TypeHash.find_all shared ty in
-    let freeu = TypeSet.empty (*TypeSet.diff univars (TypeSet.of_list bound)*) in
+    let freeu = TypeSet.diff univars (TypeSet.of_list bound) in
     fst (List.find (fun (_ty', freeu') -> TypeSet.equal freeu freeu') tyl)
   with Not_found -> try
     let t, bound_t = List.assq (get_id ty) visited in
@@ -1351,7 +1351,7 @@ let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
       match desc with
       | Tvariant row ->
           if not (static_row row) then begin
-            let freeu = TypeSet.empty (*TypeSet.diff univars (TypeSet.of_list bound)*) in
+            let freeu = TypeSet.diff univars (TypeSet.of_list bound) in
             TypeHash.add shared ty (t, freeu)
           end;
           let more = row_more row in
