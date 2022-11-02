@@ -57,16 +57,6 @@ let rec insert_sorted leq i = function
 let insert_interval_sorted i il =
   insert_sorted (fun i j -> j.iend <= i.iend) i il
 
-(* Note that we do not call [Interval.remove_expired_ranges] in
-   [release_expired_spilled], unlike in the rest of the [remove_expired_*]
-   functions.
-
-   [remove_expired_ranges] discards already handled live ranges in each interval
-   to make [Interval.is_live] and [Interval.overlap] more efficient.
-
-   As we do not call either of these functions in [release_expired_spilled] we
-   do not need to call [remove_expired_ranges]. *)
-
 let release_expired_spilled ci pos ci_spilled =
   let rec loop free set =
     match SpilledSet.min_elt_opt set with
