@@ -17,11 +17,10 @@
 (* Linear scan register allocation. *)
 
 open Interval
-open Reg
 
-module IntSet = Stdlib.Set.Make(Int)
+module IntSet = Set.Make(Int)
 
-module SpilledSet = Stdlib.Set.Make (struct
+module SpilledSet = Set.Make (struct
     type t = int * int
     let compare (iend1, ss1) (iend2, ss2) =
       let c = Int.compare iend1 iend2 in
