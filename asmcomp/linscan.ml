@@ -28,8 +28,8 @@ type class_intervals =
     mutable ci_fixed: Interval.t list;
     mutable ci_active: Interval.t list;
     mutable ci_inactive: Interval.t list;
-    mutable ci_spilled: Interval.t list;
-    mutable ci_free_slots: IntSet.t; (* stack slots available for reuse *)
+    mutable ci_spilled: (int * int) list; (* (iend, stack slot) pairs, sorted by increasing iend *)
+    mutable ci_free_slots: IntSet.t;      (* stack slots available for reuse *)
   }
 
 let active = Array.init Proc.num_register_classes (fun _ -> {
@@ -40,12 +40,18 @@ let active = Array.init Proc.num_register_classes (fun _ -> {
   ci_free_slots = IntSet.empty;
 })
 
-(* Insert interval into list sorted by end position *)
+(* Insert into sorted list *)
 
-let rec insert_interval_sorted i = function
+let rec insert_sorted leq i = function
     [] -> [i]
-  | j :: _ as il when j.iend <= i.iend -> i :: il
-  | j :: il -> j :: insert_interval_sorted i il
+  | j :: _ as il when leq i j -> i :: il
+  | j :: il -> j :: insert_sorted leq i il
+
+let insert_interval_sorted i il =
+  insert_sorted (fun i j -> j.iend <= i.iend) i il
+
+let insert_spilled_sorted x xl =
+  insert_sorted (fun (iend, _) (jend, _) -> iend <= jend) x xl
 
 (* Note that we do not call [Interval.remove_expired_ranges] in
    [release_expired_spilled], unlike in the rest of the [remove_expired_*]
@@ -58,14 +64,11 @@ let rec insert_interval_sorted i = function
    do not need to call [remove_expired_ranges]. *)
 
 let rec release_expired_spilled ci pos = function
-    i :: il when i.iend >= pos ->
-      i :: release_expired_spilled ci pos il
-  | i :: il ->
-      let ss =
-        match i.reg.loc with Stack(Local ss) -> ss | _ -> assert false in
+    (iend, ss) :: il when iend < pos ->
       ci.ci_free_slots <- IntSet.add ss ci.ci_free_slots;
       release_expired_spilled ci pos il
-  | [] -> []
+  | _ as il ->
+      il
 
 let rec release_expired_fixed pos = function
     i :: il when i.iend >= pos ->
@@ -112,7 +115,7 @@ let allocate_stack_slot num_stack_slots i =
   in
   i.reg.loc <- Stack(Local ss);
   i.reg.spill <- true;
-  ci.ci_spilled <- i :: ci.ci_spilled
+  ci.ci_spilled <- insert_spilled_sorted (i.iend, ss) ci.ci_spilled
 
 (* Find a register for the given interval and assigns this register.
    The interval is added to active. Raises Not_found if no free registers
