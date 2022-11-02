@@ -1310,7 +1310,7 @@ let add_delayed_copy t copy_scope ty =
 (* Copy without sharing until there are no free univars left *)
 (* all free univars must be included in [visited]            *)
 let rec copy_sep ~copy_scope ~fixed ~free ~may_share
-    ~(shared : type_expr TypeHash.t) (ty : type_expr) =
+    ~(visited : type_expr TypeHash.t) (ty : type_expr) =
   let univars = free ty in
   if is_Tvar ty || may_share && TypeSet.is_empty univars then
     if get_level ty <> generic_level then ty else
@@ -1318,19 +1318,19 @@ let rec copy_sep ~copy_scope ~fixed ~free ~may_share
     add_delayed_copy t copy_scope ty;
     t
   else try
-    TypeHash.find shared ty
+    TypeHash.find visited ty
   with Not_found -> begin
     let t = newstub ~scope:(get_scope ty) in
     let desc = get_desc ty in
     begin match desc with
       Tarrow _ | Ttuple _ | Tvariant _ | Tconstr _ | Tobject _ | Tpackage _ ->
-        TypeHash.add shared ty t
+        TypeHash.add visited ty t
     | Tvar _ | Tfield _ | Tnil | Tpoly _ | Tunivar _ ->
         ()
     | Tlink _ | Tsubst _ ->
         assert false
     end;
-    let copy_rec = copy_sep ~copy_scope ~fixed ~free ~shared in
+    let copy_rec = copy_sep ~copy_scope ~fixed ~free ~visited in
     let desc' =
       match desc with
       | Tvariant row ->
@@ -1347,9 +1347,9 @@ let rec copy_sep ~copy_scope ~fixed ~free ~may_share
           Tvariant row
       | Tpoly (t1, tl) ->
           let tl' = List.map (fun t -> newty (get_desc t)) tl in
-          List.iter2 (TypeHash.add shared) tl tl';
+          List.iter2 (TypeHash.add visited) tl tl';
           let body =
-            copy_sep ~copy_scope ~fixed ~free ~may_share:true ~shared t1 in
+            copy_sep ~copy_scope ~fixed ~free ~may_share:true ~visited t1 in
           Tpoly (body, tl')
       | Tfield (p, k, ty1, ty2) ->
           (* the kind is kept shared, see Btype.copy_type_desc *)
@@ -1369,12 +1369,12 @@ let instance_poly' copy_scope ~keep_names fixed univars sch =
     | _ -> assert false
   in
   let vars = List.map copy_var univars in
-  let shared = TypeHash.create 17 in
-  List.iter2 (TypeHash.add shared) univars vars;
+  let visited = TypeHash.create 17 in
+  List.iter2 (TypeHash.add visited) univars vars;
   delayed_copy := [];
   let ty =
     copy_sep ~copy_scope ~fixed ~free:(compute_univars sch)
-      ~may_share:true ~shared sch in
+      ~may_share:true ~visited sch in
   List.iter Lazy.force !delayed_copy;
   delayed_copy := [];
   vars, ty
