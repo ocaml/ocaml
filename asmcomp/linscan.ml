@@ -53,16 +53,14 @@ let rec insert_interval_sorted i = function
   | j :: _ as il when j.iend <= i.iend -> i :: il
   | j :: il -> j :: insert_interval_sorted i il
 
-let release_expired_spilled ci pos ci_spilled =
-  let rec loop free set =
-    match SpilledSet.min_elt_opt set with
-    | Some ((iend, ss) as x) when iend < pos ->
-        loop (IntSet.add ss free) (SpilledSet.remove x set)
-    | _ ->
-        ci.ci_free_slots <- free;
-        set
-  in
-  loop ci.ci_free_slots ci_spilled
+let rec release_expired_spilled ci pos =
+  match SpilledSet.min_elt_opt ci.ci_spilled with
+  | Some ((iend, ss) as x) when iend < pos ->
+      ci.ci_free_slots <- IntSet.add ss ci.ci_free_slots;
+      ci.ci_spilled <- SpilledSet.remove x ci.ci_spilled;
+      release_expired_spilled ci pos
+  | _ ->
+      ()
 
 let rec release_expired_fixed pos = function
     i :: il when i.iend >= pos ->
@@ -202,7 +200,7 @@ let walk_interval num_stack_slots i =
       ci.ci_fixed <- release_expired_fixed pos ci.ci_fixed;
       ci.ci_active <- release_expired_active ci pos ci.ci_active;
       ci.ci_inactive <- release_expired_inactive ci pos ci.ci_inactive;
-      ci.ci_spilled <- release_expired_spilled ci pos ci.ci_spilled)
+      release_expired_spilled ci pos)
     active;
   try
     (* Allocate free register (if any) *)
