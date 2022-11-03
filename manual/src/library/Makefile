@@ -1,8 +1,8 @@
 ROOTDIR = ../../..
 
 TEXQUOTE = $(ROOTDIR)/runtime/ocamlrun ../../tools/texquote2
-CAMLLATEX = CAML_LD_LIBRARY_PATH="" $(OCAMLRUN) $(addprefix -I ,$(LD_PATH)) \
-  $(ROOTDIR)/tools/caml-tex -repo-root $(ROOTDIR) -n 80 -v false
+CAMLLATEX = $(OCAMLRUN) $(addprefix -I ,$(LD_PATH)) \
+  $(ROOTDIR)/tools/ocamltex -repo-root $(ROOTDIR) -n 80 -v false
 
 FILES = core.tex builtin.tex stdlib-blurb.tex compilerlibs.tex \
   libunix.tex libstr.tex old.tex libthreads.tex libdynlink.tex \

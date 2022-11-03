@@ -57,6 +57,9 @@ method! select_operation op args dbg =
       (Ispecific (Imultsubf true), [arg1; arg2; arg3])
   | (Cnegf, [Cop(Caddf, [Cop(Cmulf, [arg1; arg2], _); arg3], _)]) ->
       (Ispecific (Imultaddf true), [arg1; arg2; arg3])
+  | (Cstore (Word_int | Word_val as memory_chunk, Assignment), [arg1; arg2]) ->
+      (* Use trivial addressing mode for non-initializing stores *)
+      (Istore (memory_chunk, Iindexed 0, true), [arg2; arg1])
   | _ ->
       super#select_operation op args dbg
 

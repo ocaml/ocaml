@@ -36,6 +36,9 @@ Working version
 - #11102: Speed up register allocation by permanently spilling registers
   (Stephen Dolan, review by Xavier Leroy)
 
+- #11418: RISC-V multicore support.
+  (Nicolás Ojeda Bär, review by KC Sivaramakrishnan)
+
 - #11686: Better spilling heuristic for the Linear Scan allocator for more
   efficient stack usage.
   (Nicolás Ojeda Bär, Gabriel Scherer, Alain Frisch, review by Gabriel Scherer,
@@ -138,6 +141,9 @@ Working version
 - #1391, #7645, #3922: Add an early error when compiling different
   modules with mismatching -for-pack
   (Pierre Chambart and Vincent Laviron, review by Mark Shinwell)
+
+- #11653: Add the -no-absname option to ocamlc, ocamlopt and ocamldep.
+  (Abiola Abdulsalam, review by Sébastien Hinderer and Florian Angeletti)
 
 ### Internal/compiler-libs changes:
 - #11027: Separate typing counter-examples from type_pat into retype_pat;
