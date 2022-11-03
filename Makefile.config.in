@@ -24,7 +24,7 @@ OCAML_VERSION_MINOR=@OCAML_VERSION_MINOR@
 OCAML_VERSION_PATCHLEVEL=@OCAML_VERSION_PATCHLEVEL@
 OCAML_VERSION_EXTRA=@OCAML_VERSION_EXTRA@
 
-## The EMPTY variable, used in other definitions
+## The EMPTY variable, used in other definitions to preserve spaces
 EMPTY=
 
 ## Arguments passed to the configure script
@@ -83,6 +83,7 @@ AS_HAS_DEBUG_PREFIX_MAP=@as_has_debug_prefix_map@
 # our own symbols):
 OC_LDFLAGS=@oc_ldflags@
 OC_DLL_LDFLAGS=@oc_dll_ldflags@
+OC_EXE_LDFLAGS=@oc_exe_ldflags@
 
 LDFLAGS?=@LDFLAGS@
 
@@ -97,7 +98,7 @@ O=@OBJEXT@
 EXT_OBJ=.@OBJEXT@
 
 ### How to tell the C compiler to output an object file
-OUTPUTOBJ=@outputobj@
+OUTPUTOBJ=@outputobj@$(EMPTY)
 
 ### Extension of static libraries
 A=@libext@
@@ -171,25 +172,19 @@ INSTALL_BYTECODE_PROGRAMS=@install_bytecode_programs@
 #       systhreads        Same as threads, requires POSIX threads
 OTHERLIBRARIES=@otherlibraries@
 
-### Link-time options to ocamlc or ocamlopt for linking with POSIX threads
-# Needed for the "systhreads" package
-PTHREAD_LIBS=@PTHREAD_LIBS@
-PTHREAD_CAML_LIBS=$(addprefix -cclib ,$(PTHREAD_LIBS))
-PTHREAD_CFLAGS=@PTHREAD_CFLAGS@
-
 UNIX_OR_WIN32=@unix_or_win32@
 INSTALL_SOURCE_ARTIFACTS=@install_source_artifacts@
 
 OC_CFLAGS=@oc_cflags@
-CFLAGS?=@CFLAGS@
+CFLAGS=@CFLAGS@
 OC_CPPFLAGS=-I$(ROOTDIR)/runtime @oc_cppflags@
-CPPFLAGS?=@CPPFLAGS@
+CPPFLAGS=@CPPFLAGS@
 OCAMLC_CFLAGS=@ocamlc_cflags@
 
 OCAMLC_CPPFLAGS=@ocamlc_cppflags@
 BYTECCLIBS=@bytecclibs@
 EXE=@exeext@
-OUTPUTEXE=@outputexe@
+OUTPUTEXE=@outputexe@$(EMPTY)
 SUPPORTS_SHARED_LIBRARIES=@supports_shared_libraries@
 MKSHAREDLIBRPATH=@mksharedlibrpath@
 DYNLINKOPTS=@DLLIBS@
@@ -203,7 +198,7 @@ OCAMLOPT_CFLAGS=@ocamlc_cflags@
 OCAMLOPT_CPPFLAGS=@ocamlc_cppflags@
 NATIVECCLIBS=@nativecclibs@
 SYSTHREAD_SUPPORT=@systhread_support@
-PACKLD=@PACKLD@
+PACKLD=@PACKLD@$(EMPTY)
 CCOMPTYPE=@ccomptype@
 TOOLCHAIN=@toolchain@
 CMXS=@cmxs@
@@ -213,19 +208,19 @@ CMXS=@cmxs@
 # or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 
 FLEXDLL_CHAIN=@flexdll_chain@
-FLEXLINK_FLAGS=@mkexe_extra_flags@
+FLEXLINK_FLAGS=@flexlink_flags@
 
 MKEXE=@mkexe@
 MKDLL=@mkdll@
 MKMAINDLL=@mkmaindll@
 MKEXEDEBUGFLAG=@mkexedebugflag@
-MKEXE_VIA_CC=$(CC) $(OC_CFLAGS) $(CFLAGS) @mkexe_via_cc_ldflags@
+MKEXE_VIA_CC=\
+  $(CC) $(OC_EXE_LDFLAGS) $(OC_CFLAGS) $(CFLAGS) @mkexe_via_cc_ldflags@
 
 RUNTIMED=@debug_runtime@
 INSTRUMENTED_RUNTIME=@instrumented_runtime@
 INSTRUMENTED_RUNTIME_LIBS=@instrumented_runtime_libs@
 WITH_DEBUGGER=@with_debugger@
-WITH_CAMLTEX=@with_camltex@
 WITH_OCAMLDOC=@ocamldoc@
 WITH_OCAMLTEST=@ocamltest@
 ASM_CFI_SUPPORTED=@asm_cfi_supported@
@@ -261,13 +256,3 @@ UNIXLIB=unix
 ## Variables renamed in OCaml 4.13
 
 RUNTIMEI=$(INSTRUMENTED_RUNTIME)
-
-### pthread-related variables
-
-PTHREAD_LINK=$(PTHREAD_LIBS)
-PTHREAD_CAML_LINK=$(PTHREAD_CAML_LIBS)
-
-### It is expected that the value of PTHREAD_LINK changes between OCaml
-### 4.12 and 4.13. Indeed, for OCaml 4.12 most of the time the variable
-### contained -lpthread. From 4.13 onward it will most of the time be
-### empty since we have -pthread in CFLAGS which implies -lpthread.

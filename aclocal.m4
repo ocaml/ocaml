@@ -352,6 +352,7 @@ AC_DEFUN([OCAML_TEST_FLEXLINK], [
     CC="$1 -chain $2 -exe"
     LIBS="conftest2.$ac_objext"
     CPPFLAGS="$3 $CPPFLAGS"
+    CFLAGS=""
     AC_LINK_IFELSE(
       [AC_LANG_SOURCE([int main() { return 0; }])],
       [AC_MSG_RESULT([yes])],
@@ -463,7 +464,7 @@ int main (void) {
      broken implementations of Cygwin64, mingw-w64 (x86_64) and VS2013-2017.
      The static volatile variables aim to thwart GCC's constant folding. */
   static volatile double x, y, z;
-  double t264, t265, t266;
+  volatile double t264, t265, t266;
   x = 0x3.bd5b7dde5fddap-496;
   y = 0x3.bd5b7dde5fddap-496;
   z = -0xd.fc352bc352bap-992;

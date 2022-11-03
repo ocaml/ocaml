@@ -23,7 +23,7 @@ UNIXDIR=$(ROOTDIR)/otherlibs/unix
 
 CAMLC=$(BEST_OCAMLC) $(STDLIBFLAGS) -g
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
-          -safe-string -strict-sequence -strict-formats
+          -strict-sequence -strict-formats
 LINKFLAGS=-linkall -I $(UNIXDIR) -I $(DYNLINKDIR)
 OC_OCAMLDEPDIRS = $(DIRECTORIES)
 
@@ -85,7 +85,7 @@ clean::
 beforedepend:: debugger_lexer.ml
 
 clean::
-	rm -f debugger_parser.ml debugger_parser.mli
+	rm -f $(addprefix debugger_parser.,ml mli output)
 beforedepend:: debugger_parser.ml debugger_parser.mli
 
 include .depend

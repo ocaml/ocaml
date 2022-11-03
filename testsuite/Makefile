@@ -65,7 +65,8 @@ else
   # The testsuite needs an absolute path to the runtime, so override the
   # definition in Makefile.common
   FLEXLINK_DLL_LDFLAGS=$(if $(OC_DLL_LDFLAGS), -link "$(OC_DLL_LDFLAGS)")
-  FLEXLINK_EXE_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)")
+  FLEXLINK_EXE_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)") \
+                       $(if $(OC_EXE_LDFLAGS), -link "$(OC_EXE_LDFLAGS)")
 ifeq "$(wildcard $(ROOTDIR_HOST)/flexlink.opt$(EXE))" ""
   FLEXLINK_ENV = \
     OCAML_FLEXLINK="$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
@@ -227,6 +228,13 @@ all-%: lib tools
 # I chose to keep the previous behavior exactly unchanged,
 # but the demangling separation is arguably nicer behavior that we might
 # want to implement at the exec-one level to also have it in the 'all' target.
+
+# If make has been invoked with "-j n", pass this on to GNU parallel. parallel
+# does not support -j without an argument, hence the double-filter. Note that
+# GNU make normalises -j in $(MAKEFLAGS) so it will either be -j alone or -jn
+# (i.e. with no space).
+J_ARGUMENT = $(filter-out -j,$(filter -j%,$(MAKEFLAGS)))
+
 .PHONY: parallel-%
 parallel-%: lib tools
 	@echo | parallel >/dev/null 2>/dev/null \
@@ -238,7 +246,7 @@ parallel-%: lib tools
 	     echo "This target requires GNU parallel.";\
 	     exit 1)
 	@for dir in tests/$**; do echo $$dir; done \
-	 | parallel --gnu --no-notice --keep-order \
+	 | parallel --gnu --no-notice --keep-order $(J_ARGUMENT) \
 	     "$(MAKE) --no-print-directory exec-one DIR={} 2>&1" \
 	 | tee $(TESTLOG)
 	@$(MAKE) report

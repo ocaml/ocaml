@@ -5,7 +5,7 @@ readonly_files = "a.ml"
 module = "a.ml"
 *** ocamlc.byte
 module = "b_bad.ml"
-flags = "-safe-string -warn-error +8"
+flags = "-warn-error +8"
 ocamlc_byte_exit_status = "2"
 **** check-ocamlc.byte-output
 *)

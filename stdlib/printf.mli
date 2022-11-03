@@ -144,13 +144,13 @@ val bprintf : Buffer.t -> ('a, Buffer.t, unit) format -> 'a
 val ifprintf : 'b -> ('a, 'b, 'c, unit) format4 -> 'a
 (** Same as {!Printf.fprintf}, but does not print anything.
     Useful to ignore some material when conditionally printing.
-    @since 3.10.0
+    @since 3.10
 *)
 
 val ibprintf : Buffer.t -> ('a, Buffer.t, unit) format -> 'a
 (** Same as {!Printf.bprintf}, but does not print anything.
     Useful to ignore some material when conditionally printing.
-    @since 4.11.0
+    @since 4.11
 *)
 
 (** Formatted output functions with continuations. *)
@@ -159,33 +159,33 @@ val kfprintf : (out_channel -> 'd) -> out_channel ->
               ('a, out_channel, unit, 'd) format4 -> 'a
 (** Same as [fprintf], but instead of returning immediately,
    passes the out channel to its first argument at the end of printing.
-   @since 3.09.0
+   @since 3.09
 *)
 
 val ikfprintf : ('b -> 'd) -> 'b -> ('a, 'b, 'c, 'd) format4 -> 'a
 (** Same as [kfprintf] above, but does not print anything.
    Useful to ignore some material when conditionally printing.
-   @since 4.01.0
+   @since 4.01
 *)
 
 val ksprintf : (string -> 'd) -> ('a, unit, string, 'd) format4 -> 'a
 (** Same as [sprintf] above, but instead of returning the string,
    passes it to the first argument.
-   @since 3.09.0
+   @since 3.09
 *)
 
 val kbprintf : (Buffer.t -> 'd) -> Buffer.t ->
               ('a, Buffer.t, unit, 'd) format4 -> 'a
 (** Same as [bprintf], but instead of returning immediately,
    passes the buffer to its first argument at the end of printing.
-   @since 3.10.0
+   @since 3.10
 *)
 
 val ikbprintf : (Buffer.t -> 'd) -> Buffer.t ->
                ('a, Buffer.t, unit, 'd) format4 -> 'a
 (** Same as [kbprintf] above, but does not print anything.
    Useful to ignore some material when conditionally printing.
-   @since 4.11.0
+   @since 4.11
 *)
 
 (** Deprecated *)

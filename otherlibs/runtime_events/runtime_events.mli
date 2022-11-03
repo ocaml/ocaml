@@ -22,7 +22,7 @@
 
     When enabled (either via setting the OCAML_RUNTIME_EVENTS_START environment
     variable or calling Runtime_events.start) a file with the pid of the process
-    and extension .runtime_events will be created. By default this is in the
+    and extension .events will be created. By default this is in the
     current directory but can be over-ridden by the OCAML_RUNTIME_EVENTS_DIR
     environent variable. Each domain maintains its own ring buffer in a section
     of the larger file into which it emits events.
@@ -30,8 +30,23 @@
     There is additionally a set of C APIs in runtime_events.h that can enable
     zero-impact monitoring of the current process or bindings for other
     languages.
+
+    The runtime events system's behaviour can be controlled by the following
+    environment variables:
+
+    - OCAML_RUNTIME_EVENTS_START if set will cause the runtime events system
+    to be started as part of the OCaml runtime initialization.
+
+    - OCAML_RUNTIME_EVENTS_DIR sets the directory where the runtime events
+    ring buffers will be located. If not present the program's working directory
+    will be used.
+
+  - OCAML_RUNTIME_EVENTS_PRESERVE if set will prevent the OCaml runtime from
+    removing its ring buffers when it terminates. This can help if monitoring
+    very short running programs.
 *)
 
+(** The type for counter events emitted by the runtime *)
 type runtime_counter =
 | EV_C_FORCE_MINOR_ALLOC_SMALL
 | EV_C_FORCE_MINOR_MAKE_VECT
@@ -44,8 +59,8 @@ type runtime_counter =
 | EV_C_REQUEST_MINOR_REALLOC_REF_TABLE
 | EV_C_REQUEST_MINOR_REALLOC_EPHE_REF_TABLE
 | EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE
-(** The type for counter events emitted by the runtime *)
 
+(** The type for span events emitted by the runtime *)
 type runtime_phase =
 | EV_EXPLICIT_GC_SET
 | EV_EXPLICIT_GC_STAT
@@ -87,8 +102,8 @@ type runtime_phase =
 | EV_MINOR_LOCAL_ROOTS_PROMOTE
 | EV_DOMAIN_CONDITION_WAIT
 | EV_DOMAIN_RESIZE_HEAP_RESERVATION
-(** The type for span events emitted by the runtime *)
 
+(** Lifecycle events for the ring itself *)
 type lifecycle =
   EV_RING_START
 | EV_RING_STOP
@@ -98,7 +113,6 @@ type lifecycle =
 | EV_FORK_CHILD
 | EV_DOMAIN_SPAWN
 | EV_DOMAIN_TERMINATE
-(** Lifecycle events for the ring itself *)
 
 val lifecycle_name : lifecycle -> string
 (** Return a string representation of a given lifecycle event type *)
@@ -177,7 +191,7 @@ val create_cursor : (string * int) option -> cursor
   (for example if multiple consumers want different sets of events). If
    [path_pid] is None then a cursor is created for the current process.
    Otherwise the pair contains a string [path] to the directory that contains
-   the [pid].runtime_events file and int [pid] for the runtime_events of an
+   the [pid].events file and int [pid] for the runtime_events of an
    external process to monitor. *)
 
 val free_cursor : cursor -> unit

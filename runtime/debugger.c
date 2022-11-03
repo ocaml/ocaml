@@ -266,7 +266,9 @@ static void putval(struct channel *chan, value val)
 static void safe_output_value(struct channel *chan, value val)
 {
   struct longjmp_buffer raise_buf;
-  struct caml_exception_context exception_ctx = {&raise_buf, CAML_LOCAL_ROOTS};
+  volatile value raise_exn_bucket;
+  struct caml_exception_context exception_ctx =
+    {&raise_buf, CAML_LOCAL_ROOTS, &raise_exn_bucket};
   struct caml_exception_context* saved_external_raise;
 
   /* Catch exceptions raised by [caml_output_val] */

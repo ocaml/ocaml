@@ -16,7 +16,7 @@
 
 type t = floatarray
 (** The type of float arrays with packed representation.
-    @since 4.08.0
+    @since 4.08
   *)
 
 val length : t -> int

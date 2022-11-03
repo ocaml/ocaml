@@ -2,7 +2,7 @@
 unset FOO
 unset FOO2
 include unix
-flags += "-strict-sequence -safe-string -w +A-70 -warn-error +A"
+flags += "-strict-sequence -w +A-70 -warn-error +A"
 modules = "stubs.c"
 * libwin32unix
 ** bytecode

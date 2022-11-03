@@ -85,10 +85,9 @@ static void scanmult (char_os *opt, uintnat *var)
 
 void caml_parse_ocamlrunparam(void)
 {
-  char_os *opt = caml_secure_getenv (T("OCAMLRUNPARAM"));
-
   init_startup_params();
 
+  char_os *opt = caml_secure_getenv (T("OCAMLRUNPARAM"));
   if (opt == NULL) opt = caml_secure_getenv (T("CAMLRUNPARAM"));
 
   if (opt != NULL){
@@ -153,6 +152,7 @@ static void call_registered_value(char* name)
 
 CAMLexport void caml_shutdown(void)
 {
+  Caml_check_caml_state();
   if (startup_count <= 0)
     caml_fatal_error("a call to caml_shutdown has no "
                      "corresponding call to caml_startup");
@@ -170,7 +170,7 @@ CAMLexport void caml_shutdown(void)
   caml_free_shared_libs();
 #endif
   caml_stat_destroy_pool();
-  caml_free_signal_stack();
+  caml_terminate_signals();
 #if defined(_WIN32) && defined(NATIVE_CODE)
   caml_win32_unregister_overflow_detection();
 #endif

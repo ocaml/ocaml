@@ -1405,3 +1405,16 @@ class virtual c = cv
 [%%expect {|
 class virtual c : cv
 |}];;
+
+(** Test classes abbreviations with a recursive type *)
+class ['a] c = object method m: (<x:'a; f:'b> as 'b) -> unit = fun _ -> () end
+class d = ['a] c
+[%%expect {|
+class ['a] c : object method m : (< f : 'b; x : 'a > as 'b) -> unit end
+Line 2, characters 0-16:
+2 | class d = ['a] c
+    ^^^^^^^^^^^^^^^^
+Error: Some type variables are unbound in this type: class d : ['a] c
+       The method m has type (< f : 'b; x : 'a > as 'b) -> unit where 'a
+       is unbound
+|}]

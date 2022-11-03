@@ -35,18 +35,13 @@ endif
 
 include stdlib/StdlibModules
 
-CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) -g -use-prims runtime/primitives
-CAMLOPT=$(OCAMLRUN) ./ocamlopt$(EXE) $(STDLIBFLAGS) -g -I otherlibs/dynlink
+CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) -use-prims runtime/primitives
+CAMLOPT=$(OCAMLRUN) ./ocamlopt$(EXE) $(STDLIBFLAGS) -I otherlibs/dynlink
 ARCHES=amd64 i386 arm arm64 power s390x riscv
 DIRS = utils parsing typing bytecomp file_formats lambda middle_end \
   middle_end/closure middle_end/flambda middle_end/flambda/base_types \
   asmcomp driver toplevel
 INCLUDES = $(addprefix -I ,$(DIRS))
-COMPFLAGS=-strict-sequence -principal -absname \
-          -w +a-4-9-40-41-42-44-45-48-66 \
-          -warn-error +a \
-          -bin-annot -safe-string -strict-formats $(INCLUDES)
-LINKFLAGS=
 
 ifeq "$(strip $(NATDYNLINKOPTS))" ""
 OCAML_NATDYNLINKOPTS=
@@ -90,17 +85,14 @@ include compilerlibs/Makefile.compilerlibs
 
 # The configuration file
 
-CONFIG_MODULE_DEPENDENCIES = \
-  utils/config.common.ml Makefile.config utils/Makefile
+utils/config.ml: \
+  utils/config_$(if $(filter true,$(IN_COREBOOT_CYCLE)),boot,main).ml
+	cp $< $@
+utils/config_boot.ml: utils/config.fixed.ml utils/config.common.ml
+	cat $^ > $@
 
-utils/config.ml: utils/config_main.ml utils/config_boot.ml
-	$(MAKE) -C utils config.ml
-
-utils/config_main.ml: utils/config.mlp $(CONFIG_MODULE_DEPENDENCIES)
-	$(MAKE) -C utils config_main.ml
-
-utils/config_boot.ml: utils/config.fixed.ml $(CONFIG_MODULE_DEPENDENCIES)
-	$(MAKE) -C utils config_boot.ml
+utils/config_main.ml: utils/config.generated.ml utils/config.common.ml
+	cat $^ > $@
 
 .PHONY: reconfigure
 reconfigure:
@@ -117,16 +109,22 @@ configure: configure.ac aclocal.m4 build-aux/ocaml_version.m4 tools/autogen
 
 .PHONY: partialclean
 partialclean::
-	rm -f utils/config.ml utils/config_main.ml utils/config_main.mli \
-        utils/config_boot.ml utils/config_boot.mli \
+	rm -f utils/config.ml \
+	      utils/config_main.ml utils/config_main.mli \
+	      utils/config_boot.ml utils/config_boot.mli \
         utils/domainstate.ml utils/domainstate.mli
 
 .PHONY: beforedepend
-beforedepend:: utils/config.ml utils/domainstate.ml utils/domainstate.mli
+beforedepend:: \
+  utils/config.ml utils/config_boot.ml utils/config_main.ml \
+  utils/domainstate.ml utils/domainstate.mli
+
+ocamllex_PROGRAMS := $(addprefix lex/,ocamllex ocamllex.opt)
 
 ocamlyacc_PROGRAM = yacc/ocamlyacc
+
 PROGRAMS = expunge ocaml ocamlc ocamlc.opt ocamlnat ocamlopt ocamlopt.opt \
-  $(ocamlyacc_PROGRAM)
+  $(ocamllex_PROGRAMS) $(ocamlyacc_PROGRAM)
 
 $(foreach PROGRAM, $(PROGRAMS), $(eval $(call PROGRAM_SYNONYM,$(PROGRAM))))
 
@@ -423,13 +421,13 @@ clean::
 
 # The clean target
 clean:: partialclean
-	rm -f $(PROGRAMS) $(PROGRAMS:=.exe)
+	rm -f configure~ $(PROGRAMS) $(PROGRAMS:=.exe)
 
 # The bytecode compiler
 
 ocamlc$(EXE): compilerlibs/ocamlcommon.cma \
               compilerlibs/ocamlbytecomp.cma $(BYTESTART)
-	$(CAMLC) $(LINKFLAGS) -compat-32 -o $@ $^
+	$(CAMLC) $(OC_COMMON_LDFLAGS) -compat-32 -o $@ $^
 
 partialclean::
 	rm -rf ocamlc$(EXE)
@@ -438,7 +436,7 @@ partialclean::
 
 ocamlopt$(EXE): compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma \
           $(OPTSTART)
-	$(CAMLC) $(LINKFLAGS) -o $@ $^
+	$(CAMLC) $(OC_COMMON_LDFLAGS) -o $@ $^
 
 partialclean::
 	rm -f ocamlopt$(EXE)
@@ -452,7 +450,7 @@ ocaml_dependencies := \
 
 .INTERMEDIATE: ocaml.tmp
 ocaml.tmp: $(ocaml_dependencies)
-	$(CAMLC) $(LINKFLAGS) -I toplevel/byte -linkall -o $@ $^
+	$(CAMLC) $(OC_COMMON_LDFLAGS) -I toplevel/byte -linkall -o $@ $^
 
 ocaml$(EXE): $(expunge) ocaml.tmp
 	- $(OCAMLRUN) $^ $@ $(PERVASIVES)
@@ -499,7 +497,7 @@ beforedepend:: parsing/lexer.ml
 
 ocamlc.opt$(EXE): compilerlibs/ocamlcommon.cmxa \
                   compilerlibs/ocamlbytecomp.cmxa $(BYTESTART:.cmo=.cmx)
-	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^ -cclib "$(BYTECCLIBS)"
+	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) -o $@ $^ -cclib "$(BYTECCLIBS)"
 
 partialclean::
 	rm -f ocamlc.opt$(EXE)
@@ -510,7 +508,7 @@ ocamlopt.opt$(EXE): \
                     compilerlibs/ocamlcommon.cmxa \
                     compilerlibs/ocamloptcomp.cmxa \
                     $(OPTSTART:.cmo=.cmx)
-	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^
+	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) -o $@ $^
 
 partialclean::
 	rm -f ocamlopt.opt$(EXE)
@@ -570,7 +568,7 @@ $(cvt_emit): tools/cvt_emit.mll
 
 $(expunge): compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
          toplevel/expunge.cmo
-	$(CAMLC) $(LINKFLAGS) -o $@ $^
+	$(CAMLC) $(OC_COMMON_LDFLAGS) -o $@ $^
 
 partialclean::
 	rm -f $(expunge)
@@ -719,7 +717,7 @@ libasmrunpic_OBJECTS = $(runtime_NATIVE_C_SOURCES:.c=.npic.$(O)) \
 
 ## General (non target-specific) assembler and compiler flags
 
-runtime_CPPFLAGS = -DCAMLDLLIMPORT=
+runtime_CPPFLAGS = -DCAMLDLLIMPORT= -DIN_CAML_RUNTIME
 ocamlrund_CPPFLAGS = -DDEBUG
 ocamlruni_CPPFLAGS = -DCAML_INSTR
 
@@ -731,7 +729,7 @@ runtime-all: \
   $(runtime_PROGRAMS) $(SAK)
 
 .PHONY: runtime-allopt
-ifneq "$(NATIVE_COMPILER)" "false"
+ifeq "$(NATIVE_COMPILER)" "true"
 runtime-allopt: \
   $(runtime_NATIVE_STATIC_LIBRARIES) $(runtime_NATIVE_SHARED_LIBRARIES)
 else
@@ -899,7 +897,7 @@ $(DEPDIR)/runtime/%.npic.$(D): \
 # that corresponds to the name of the generated object file
 # (without the extension, which is added by the macro)
 define COMPILE_C_FILE
-ifneq "$(COMPUTE_DEPS)" "false"
+ifeq "$(COMPUTE_DEPS)" "true"
 ifneq "$(1)" "%"
 # -MG would ensure that the dependencies are generated even if the files listed
 # in $$(runtime_BUILT_HEADERS) haven't been assembled yet. However,
@@ -917,7 +915,7 @@ else
 $(1).$(O): $(2).c \
   $(runtime_CONFIGURED_HEADERS) $(runtime_BUILT_HEADERS) \
   $(RUNTIME_HEADERS)
-endif # ifneq "$(COMPUTE_DEPS)" "false"
+endif # ifeq "$(COMPUTE_DEPS)" "true"
 	$$(CC) -c $$(OC_CFLAGS) $$(CFLAGS) $$(OC_CPPFLAGS) $$(CPPFLAGS) \
 	  $$(OUTPUTOBJ)$$@ $$<
 endef
@@ -926,7 +924,7 @@ $(DEPDIR)/runtime:
 	$(MKDIR) $@
 
 runtime_OBJECT_TYPES = % %.b %.bd %.bi %.bpic
-ifneq "$(NATIVE_COMPILER)" "false"
+ifeq "$(NATIVE_COMPILER)" "true"
 runtime_OBJECT_TYPES += %.n %.nd %.ni %.np %.npic
 endif
 
@@ -995,7 +993,7 @@ runtime/%_libasmrunpic.obj: runtime/%.asm
 
 runtime_DEP_FILES := $(addsuffix .b, \
   $(basename $(runtime_BYTECODE_C_SOURCES) runtime/instrtrace))
-ifneq "$(NATIVE_COMPILER)" "false"
+ifeq "$(NATIVE_COMPILER)" "true"
 runtime_DEP_FILES += $(addsuffix .n, $(basename $(runtime_NATIVE_C_SOURCES)))
 endif
 runtime_DEP_FILES += $(addsuffix d, $(runtime_DEP_FILES)) \
@@ -1047,7 +1045,7 @@ clean::
 # Dependencies
 
 subdirs = stdlib $(addprefix otherlibs/, $(ALL_OTHERLIBS)) \
-  debugger lex ocamldoc ocamltest tools
+  debugger ocamldoc ocamltest tools
 
 .PHONY: alldepend
 alldepend: depend
@@ -1072,18 +1070,39 @@ libraryopt:
 partialclean::
 	$(MAKE) -C stdlib clean
 
-# The lexer and parser generators
+# The lexer generator
+
+ocamllex_MODULES = $(addprefix lex/,\
+  cset syntax parser lexer table lexgen compact  common output outputbis main)
+
+.PHONY: lex-all
+lex-all: lex/ocamllex
+
+.PHONY: lex-allopt
+lex-allopt: lex/ocamllex.opt
 
 .PHONY: ocamllex
 ocamllex: ocamlyacc
-	$(MAKE) -C lex all
+	$(MAKE) lex-all
 
 .PHONY: ocamllex.opt
 ocamllex.opt: ocamlopt
-	$(MAKE) -C lex allopt
+	$(MAKE) lex-allopt
+
+lex/ocamllex$(EXE): $(ocamllex_MODULES:=.cmo)
+	$(CAMLC) $(LINKFLAGS) -compat-32 -o $@ $^
+
+lex/ocamllex.opt$(EXE): $(ocamllex_MODULES:=.cmx)
+	$(CAMLOPT_CMD) $(LINKFLAGS) -o $@ $^
 
 partialclean::
-	$(MAKE) -C lex clean
+	rm -f lex/*.cm* lex/*.o lex/*.obj
+
+beforedepend:: lex/parser.ml lex/parser.mli lex/lexer.ml
+
+clean::
+	rm -f lex/parser.ml lex/parser.mli lex/parser.output
+	rm -f lex/lexer.ml
 
 # The ocamlyacc parser generator
 
@@ -1221,7 +1240,7 @@ partialclean::
 # Check that the native-code compiler is supported
 .PHONY: checknative
 checknative:
-ifneq "$(NATIVE_COMPILER)" "true"
+ifeq "$(NATIVE_COMPILER)" "false"
 	$(error The source tree was configured with --disable-native-compiler!)
 else
 ifeq "$(ARCH)" "none"
@@ -1322,18 +1341,17 @@ ocamlnat_dependencies := \
   $(TOPLEVELSTART:.cmo=.cmx)
 
 ocamlnat$(EXE): $(ocamlnat_dependencies)
-	$(CAMLOPT_CMD) $(LINKFLAGS) -linkall -I toplevel/native -o $@ $^
+	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) -linkall -I toplevel/native -o $@ $^
 
-toplevel/topdirs.cmx: toplevel/topdirs.ml
-	$(CAMLOPT_CMD) $(COMPFLAGS) $(OPTCOMPFLAGS) -I toplevel/native -c $<
+COMPILE_NATIVE_MODULE = \
+  $(CAMLOPT_CMD) $(OC_COMMON_CFLAGS) -I $(@D) $(INCLUDES) $(OC_NATIVE_CFLAGS)
 
-$(TOPLEVELINIT:.cmo=.cmx): $(TOPLEVELINIT:.cmo=.ml) \
-     toplevel/native/topeval.cmx
-	$(CAMLOPT_CMD) $(COMPFLAGS) $(OPTCOMPFLAGS) -I toplevel/native -c $<
+toplevel/topdirs.cmx toplevel/toploop.cmx $(TOPLEVELSTART:.cmo=.cmx): \
+  OC_NATIVE_CFLAGS += -I toplevel/native
 
-$(TOPLEVELSTART:.cmo=.cmx): $(TOPLEVELSTART:.cmo=.ml) \
-     toplevel/native/topmain.cmx
-	$(CAMLOPT_CMD) $(COMPFLAGS) $(OPTCOMPFLAGS) -I toplevel/native -c $<
+$(TOPLEVELINIT:.cmo=.cmx): toplevel/native/topeval.cmx
+
+$(TOPLEVELSTART:.cmo=.cmx): toplevel/native/topmain.cmx
 
 partialclean::
 	rm -f ocamlnat ocamlnat.exe
@@ -1366,13 +1384,13 @@ endif
 # Default rules
 
 %.cmo: %.ml
-	$(CAMLC) $(COMPFLAGS) -c $< -I $(@D)
+	$(CAMLC) $(OC_COMMON_CFLAGS) -I $(@D) $(INCLUDES) -c $<
 
 %.cmi: %.mli
-	$(CAMLC) $(COMPFLAGS) -c $<
+	$(CAMLC) $(OC_COMMON_CFLAGS) -I $(@D) $(INCLUDES) -c $<
 
 %.cmx: %.ml
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) -c $< -I $(@D)
+	$(COMPILE_NATIVE_MODULE) -c $<
 
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end file_formats \
@@ -1388,7 +1406,7 @@ depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
          lambda file_formats middle_end/closure middle_end/flambda \
          middle_end/flambda/base_types \
-         driver toplevel toplevel/byte toplevel/native; \
+         driver toplevel toplevel/byte toplevel/native lex; \
 	 do \
 	   $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $$d $(INCLUDES) \
 	   $(OCAMLDEPFLAGS) $$d/*.mli $$d/*.ml \
@@ -1398,7 +1416,6 @@ depend: beforedepend
 .PHONY: distclean
 distclean: clean
 	$(MAKE) -C debugger distclean
-	$(MAKE) -C lex distclean
 	$(MAKE) -C manual distclean
 	$(MAKE) -C ocamldoc distclean
 	$(MAKE) -C ocamltest distclean
@@ -1407,6 +1424,7 @@ distclean: clean
 	$(MAKE) -C stdlib distclean
 	$(MAKE) -C testsuite distclean
 	$(MAKE) -C tools distclean
+	rm -f utils/config.generated.ml
 	rm -f compilerlibs/META
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
 	      boot/ocamlruns boot/ocamlruns.exe \
@@ -1490,7 +1508,7 @@ endif
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKE) -C otherlibs/$$i install || exit $$?; \
 	done
-ifneq "$(WITH_OCAMLDOC)" ""
+ifeq "$(build_ocamldoc)" "true"
 	$(MAKE) -C ocamldoc install
 endif
 ifeq "$(WITH_OCAMLDOC)-$(STDLIB_MANPAGES)" "ocamldoc-true"
@@ -1578,7 +1596,7 @@ endif
 	$(INSTALL_DATA) \
 	    $(OPTSTART) \
 	    "$(INSTALL_COMPLIBDIR)"
-ifneq "$(WITH_OCAMLDOC)" ""
+ifeq "$(build_ocamldoc)" "true"
 	$(MAKE) -C ocamldoc installopt
 endif
 	for i in $(OTHERLIBRARIES); do \

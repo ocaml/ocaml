@@ -49,6 +49,8 @@ utils/config.common.cmo :
 utils/config.common.cmx :
 utils/config.fixed.cmo :
 utils/config.fixed.cmx :
+utils/config.generated.cmo :
+utils/config.generated.cmx :
 utils/config.cmo : \
     utils/config.cmi
 utils/config.cmx : \
@@ -900,7 +902,6 @@ typing/outcometree.cmi : \
     parsing/asttypes.cmi
 typing/parmatch.cmo : \
     utils/warnings.cmi \
-    typing/untypeast.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/tast_iterator.cmi \
@@ -918,11 +919,9 @@ typing/parmatch.cmo : \
     typing/ctype.cmi \
     typing/btype.cmi \
     parsing/asttypes.cmi \
-    parsing/ast_helper.cmi \
     typing/parmatch.cmi
 typing/parmatch.cmx : \
     utils/warnings.cmx \
-    typing/untypeast.cmx \
     typing/types.cmx \
     typing/typedtree.cmx \
     typing/tast_iterator.cmx \
@@ -940,12 +939,10 @@ typing/parmatch.cmx : \
     typing/ctype.cmx \
     typing/btype.cmx \
     parsing/asttypes.cmi \
-    parsing/ast_helper.cmx \
     typing/parmatch.cmi
 typing/parmatch.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
-    parsing/parsetree.cmi \
     parsing/location.cmi \
     typing/env.cmi \
     parsing/asttypes.cmi
@@ -1359,6 +1356,7 @@ typing/typeclass.cmi : \
     parsing/asttypes.cmi
 typing/typecore.cmo : \
     utils/warnings.cmi \
+    typing/untypeast.cmi \
     typing/typetexp.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
@@ -1391,6 +1389,7 @@ typing/typecore.cmo : \
     typing/typecore.cmi
 typing/typecore.cmx : \
     utils/warnings.cmx \
+    typing/untypeast.cmx \
     typing/typetexp.cmx \
     typing/types.cmx \
     typing/typedtree.cmx \
@@ -2821,7 +2820,8 @@ asmcomp/linscan.cmx : \
     asmcomp/proc.cmx \
     asmcomp/interval.cmx \
     asmcomp/linscan.cmi
-asmcomp/linscan.cmi :
+asmcomp/linscan.cmi : \
+    asmcomp/interval.cmi
 asmcomp/liveness.cmo : \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
@@ -2949,7 +2949,8 @@ asmcomp/printmach.cmx : \
     asmcomp/printmach.cmi
 asmcomp/printmach.cmi : \
     asmcomp/reg.cmi \
-    asmcomp/mach.cmi
+    asmcomp/mach.cmi \
+    asmcomp/interval.cmi
 asmcomp/proc.cmo : \
     asmcomp/x86_proc.cmi \
     asmcomp/reg.cmi \
@@ -6741,3 +6742,124 @@ toplevel/native/trace.cmi : \
     typing/path.cmi \
     parsing/longident.cmi \
     typing/env.cmi
+lex/common.cmo : \
+    lex/syntax.cmi \
+    lex/lexgen.cmi \
+    lex/common.cmi
+lex/common.cmx : \
+    lex/syntax.cmx \
+    lex/lexgen.cmx \
+    lex/common.cmi
+lex/common.cmi : \
+    lex/syntax.cmi \
+    lex/lexgen.cmi
+lex/compact.cmo : \
+    lex/table.cmi \
+    lex/lexgen.cmi \
+    lex/compact.cmi
+lex/compact.cmx : \
+    lex/table.cmx \
+    lex/lexgen.cmx \
+    lex/compact.cmi
+lex/compact.cmi : \
+    lex/lexgen.cmi
+lex/cset.cmo : \
+    lex/cset.cmi
+lex/cset.cmx : \
+    lex/cset.cmi
+lex/cset.cmi :
+lex/lexer.cmo : \
+    lex/syntax.cmi \
+    lex/parser.cmi \
+    lex/lexer.cmi
+lex/lexer.cmx : \
+    lex/syntax.cmx \
+    lex/parser.cmx \
+    lex/lexer.cmi
+lex/lexer.cmi : \
+    lex/parser.cmi
+lex/lexgen.cmo : \
+    lex/table.cmi \
+    lex/syntax.cmi \
+    lex/cset.cmi \
+    lex/lexgen.cmi
+lex/lexgen.cmx : \
+    lex/table.cmx \
+    lex/syntax.cmx \
+    lex/cset.cmx \
+    lex/lexgen.cmi
+lex/lexgen.cmi : \
+    lex/syntax.cmi
+lex/main.cmo : \
+    lex/syntax.cmi \
+    lex/parser.cmi \
+    lex/outputbis.cmi \
+    lex/output.cmi \
+    lex/lexgen.cmi \
+    lex/lexer.cmi \
+    lex/cset.cmi \
+    lex/compact.cmi \
+    lex/common.cmi \
+    lex/main.cmi
+lex/main.cmx : \
+    lex/syntax.cmx \
+    lex/parser.cmx \
+    lex/outputbis.cmx \
+    lex/output.cmx \
+    lex/lexgen.cmx \
+    lex/lexer.cmx \
+    lex/cset.cmx \
+    lex/compact.cmx \
+    lex/common.cmx \
+    lex/main.cmi
+lex/main.cmi :
+lex/output.cmo : \
+    lex/lexgen.cmi \
+    lex/compact.cmi \
+    lex/common.cmi \
+    lex/output.cmi
+lex/output.cmx : \
+    lex/lexgen.cmx \
+    lex/compact.cmx \
+    lex/common.cmx \
+    lex/output.cmi
+lex/output.cmi : \
+    lex/syntax.cmi \
+    lex/lexgen.cmi \
+    lex/compact.cmi \
+    lex/common.cmi
+lex/outputbis.cmo : \
+    lex/lexgen.cmi \
+    lex/common.cmi \
+    lex/outputbis.cmi
+lex/outputbis.cmx : \
+    lex/lexgen.cmx \
+    lex/common.cmx \
+    lex/outputbis.cmi
+lex/outputbis.cmi : \
+    lex/syntax.cmi \
+    lex/lexgen.cmi \
+    lex/common.cmi
+lex/parser.cmo : \
+    lex/syntax.cmi \
+    lex/cset.cmi \
+    lex/parser.cmi
+lex/parser.cmx : \
+    lex/syntax.cmx \
+    lex/cset.cmx \
+    lex/parser.cmi
+lex/parser.cmi : \
+    lex/syntax.cmi
+lex/syntax.cmo : \
+    lex/cset.cmi \
+    lex/syntax.cmi
+lex/syntax.cmx : \
+    lex/cset.cmx \
+    lex/syntax.cmi
+lex/syntax.cmi : \
+    lex/cset.cmi
+lex/table.cmo : \
+    lex/table.cmi
+lex/table.cmx : \
+    lex/table.cmi
+lex/table.cmi :

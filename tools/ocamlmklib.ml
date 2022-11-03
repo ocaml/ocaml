@@ -26,7 +26,7 @@ let mklib out files opts =
     else ""
   in
   Printf.sprintf "link -lib -nologo %s-out:%s %s %s" machine out opts files
-  else Printf.sprintf "%s rc %s %s %s" Config.ar out opts files
+  else Printf.sprintf "%s rcs %s %s %s" Config.ar out opts files
 
 (* PR#4783: under Windows, don't use absolute paths because we do
    not know where the binary distribution will be installed. *)

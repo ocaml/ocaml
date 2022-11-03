@@ -23,16 +23,14 @@
 #include <termios.h>
 #include <errno.h>
 
-static struct termios terminal_status;
-
 enum { Bool, Enum, Speed, Char, End };
 
 enum { Input, Output };
 
-#define iflags ((long)(&terminal_status.c_iflag))
-#define oflags ((long)(&terminal_status.c_oflag))
-#define cflags ((long)(&terminal_status.c_cflag))
-#define lflags ((long)(&terminal_status.c_lflag))
+#define iflags (offsetof(struct termios, c_iflag))
+#define oflags (offsetof(struct termios, c_oflag))
+#define cflags (offsetof(struct termios, c_cflag))
+#define lflags (offsetof(struct termios, c_lflag))
 
 /* Number of fields in the terminal_io record field. Cf. unix.mli */
 
@@ -192,7 +190,7 @@ static struct {
 
 #define NSPEEDS (sizeof(speedtable) / sizeof(speedtable[0]))
 
-static void encode_terminal_status(volatile value *dst)
+static void encode_terminal_status(volatile value *dst, struct termios *src)
 {
   long * pc;
   int i;
@@ -200,17 +198,17 @@ static void encode_terminal_status(volatile value *dst)
   for(pc = terminal_io_descr; *pc != End; dst++) {
     switch(*pc++) {
     case Bool:
-      { int * src = (int *) (*pc++);
-        int msk = *pc++;
-        *dst = Val_bool(*src & msk);
+      { tcflag_t * src_p = (tcflag_t *) ((char *)src + *pc++);
+        tcflag_t msk = *pc++;
+        *dst = Val_bool(*src_p & msk);
         break; }
     case Enum:
-      { int * src = (int *) (*pc++);
+      { tcflag_t * src_p = (tcflag_t *) ((char *)src + *pc++);
         int ofs = *pc++;
         int num = *pc++;
-        int msk = *pc++;
+        tcflag_t msk = *pc++;
         for (i = 0; i < num; i++) {
-          if ((*src & msk) == pc[i]) {
+          if ((*src_p & msk) == pc[i]) {
             *dst = Val_int(i + ofs);
             break;
           }
@@ -223,9 +221,9 @@ static void encode_terminal_status(volatile value *dst)
         *dst = Val_int(9600);   /* in case no speed in speedtable matches */
         switch (which) {
         case Output:
-          speed = cfgetospeed(&terminal_status); break;
+          speed = cfgetospeed(src); break;
         case Input:
-          speed = cfgetispeed(&terminal_status); break;
+          speed = cfgetispeed(src); break;
         }
         for (i = 0; i < NSPEEDS; i++) {
           if (speed == speedtable[i].speed) {
@@ -236,13 +234,13 @@ static void encode_terminal_status(volatile value *dst)
         break; }
     case Char:
       { int which = *pc++;
-        *dst = Val_int(terminal_status.c_cc[which]);
+        *dst = Val_int(src->c_cc[which]);
         break; }
     }
   }
 }
 
-static void decode_terminal_status(volatile value *src)
+static void decode_terminal_status(struct termios *dst, volatile value *src)
 {
   long * pc;
   int i;
@@ -250,21 +248,21 @@ static void decode_terminal_status(volatile value *src)
   for (pc = terminal_io_descr; *pc != End; src++) {
     switch(*pc++) {
     case Bool:
-      { int * dst = (int *) (*pc++);
-        int msk = *pc++;
+      { tcflag_t * dst_p = (tcflag_t *) ((char *)dst + *pc++);
+        tcflag_t msk = *pc++;
         if (Bool_val(*src))
-          *dst |= msk;
+          *dst_p |= msk;
         else
-          *dst &= ~msk;
+          *dst_p &= ~msk;
         break; }
     case Enum:
-      { int * dst = (int *) (*pc++);
+      { tcflag_t * dst_p = (tcflag_t *) ((char *)dst + *pc++);
         int ofs = *pc++;
         int num = *pc++;
-        int msk = *pc++;
+        tcflag_t msk = *pc++;
         i = Int_val(*src) - ofs;
         if (i >= 0 && i < num) {
-          *dst = (*dst & ~msk) | pc[i];
+          *dst_p = (*dst_p & ~msk) | pc[i];
         } else {
           caml_unix_error(EINVAL, "tcsetattr", Nothing);
         }
@@ -278,9 +276,9 @@ static void decode_terminal_status(volatile value *src)
           if (baud == speedtable[i].baud) {
             switch (which) {
             case Output:
-              res = cfsetospeed(&terminal_status, speedtable[i].speed); break;
+              res = cfsetospeed(dst, speedtable[i].speed); break;
             case Input:
-              res = cfsetispeed(&terminal_status, speedtable[i].speed); break;
+              res = cfsetispeed(dst, speedtable[i].speed); break;
             }
             if (res == -1) caml_uerror("tcsetattr", Nothing);
             goto ok;
@@ -291,7 +289,7 @@ static void decode_terminal_status(volatile value *src)
         break; }
     case Char:
       { int which = *pc++;
-        terminal_status.c_cc[which] = Int_val(*src);
+        dst->c_cc[which] = Int_val(*src);
         break; }
     }
   }
@@ -300,11 +298,12 @@ static void decode_terminal_status(volatile value *src)
 CAMLprim value caml_unix_tcgetattr(value fd)
 {
   value res;
+  struct termios params;
 
-  if (tcgetattr(Int_val(fd), &terminal_status) == -1)
+  if (tcgetattr(Int_val(fd), &params) == -1)
     caml_uerror("tcgetattr", Nothing);
   res = caml_alloc_tuple(NFIELDS);
-  encode_terminal_status(&Field(res, 0));
+  encode_terminal_status(&Field(res, 0), &params);
   return res;
 }
 
@@ -314,12 +313,17 @@ static int when_flag_table[] = {
 
 CAMLprim value caml_unix_tcsetattr(value fd, value when, value arg)
 {
-  if (tcgetattr(Int_val(fd), &terminal_status) == -1)
+  struct termios params;
+  /* struct termios contains additional, OS-specific fields and bits beyond the
+     standard ones that are mapped to the Unix.terminal_io OCaml type. It's
+     better not to change these additional fields. Therefore we call tcgettr
+     here to set those fields and bits. */
+  if (tcgetattr(Int_val(fd), &params) == -1)
     caml_uerror("tcsetattr", Nothing);
-  decode_terminal_status(&Field(arg, 0));
+  decode_terminal_status(&params, &Field(arg, 0));
   if (tcsetattr(Int_val(fd),
                 when_flag_table[Int_val(when)],
-                &terminal_status) == -1)
+                &params) == -1)
     caml_uerror("tcsetattr", Nothing);
   return Val_unit;
 }

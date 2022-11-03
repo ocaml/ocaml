@@ -229,10 +229,16 @@ stdlib__Domain.cmx : domain.ml \
     stdlib__Domain.cmi
 stdlib__Domain.cmi : domain.mli
 stdlib__Effect.cmo : effect.ml \
+    stdlib__Printf.cmi \
     stdlib__Printexc.cmi \
+    stdlib__Obj.cmi \
+    stdlib__Callback.cmi \
     stdlib__Effect.cmi
 stdlib__Effect.cmx : effect.ml \
+    stdlib__Printf.cmx \
     stdlib__Printexc.cmx \
+    stdlib__Obj.cmx \
+    stdlib__Callback.cmx \
     stdlib__Effect.cmi
 stdlib__Effect.cmi : effect.mli \
     stdlib__Printexc.cmi
@@ -316,6 +322,7 @@ stdlib__Format.cmo : format.ml \
     camlinternalFormat.cmi \
     stdlib__Bytes.cmi \
     stdlib__Buffer.cmi \
+    stdlib__Array.cmi \
     stdlib__Format.cmi
 stdlib__Format.cmx : format.ml \
     stdlib__String.cmx \
@@ -331,6 +338,7 @@ stdlib__Format.cmx : format.ml \
     camlinternalFormat.cmx \
     stdlib__Bytes.cmx \
     stdlib__Buffer.cmx \
+    stdlib__Array.cmx \
     stdlib__Format.cmi
 stdlib__Format.cmi : format.mli \
     stdlib.cmi \
@@ -448,12 +456,10 @@ stdlib__Lexing.cmx : lexing.ml \
     stdlib__Lexing.cmi
 stdlib__Lexing.cmi : lexing.mli
 stdlib__List.cmo : list.ml \
-    stdlib__Sys.cmi \
     stdlib__Seq.cmi \
     stdlib__Either.cmi \
     stdlib__List.cmi
 stdlib__List.cmx : list.ml \
-    stdlib__Sys.cmx \
     stdlib__Seq.cmx \
     stdlib__Either.cmx \
     stdlib__List.cmi
@@ -471,9 +477,11 @@ stdlib__ListLabels.cmi : listLabels.mli \
     stdlib__Either.cmi
 stdlib__Map.cmo : map.ml \
     stdlib__Seq.cmi \
+    stdlib__List.cmi \
     stdlib__Map.cmi
 stdlib__Map.cmx : map.ml \
     stdlib__Seq.cmx \
+    stdlib__List.cmx \
     stdlib__Map.cmi
 stdlib__Map.cmi : map.mli \
     stdlib__Seq.cmi
@@ -580,7 +588,8 @@ stdlib__Printexc.cmx : printexc.ml \
     stdlib__Atomic.cmx \
     stdlib__Array.cmx \
     stdlib__Printexc.cmi
-stdlib__Printexc.cmi : printexc.mli
+stdlib__Printexc.cmi : printexc.mli \
+    stdlib__Obj.cmi
 stdlib__Printf.cmo : printf.ml \
     camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi \

@@ -44,8 +44,7 @@ val self_init : unit -> unit
 
 val bits : unit -> int
 (** Return 30 random bits in a nonnegative integer.
-    @before 5.0.0 used a different algorithm
-                   (affects all the following functions)
+    @before 5.0 used a different algorithm (affects all the following functions)
 *)
 
 val int : int -> int
@@ -62,7 +61,7 @@ val full_int : int -> int
      or non-standard environments, such as JavaScript), [Random.full_int]
      returns a value, where {!Random.int} raises {!Stdlib.Invalid_argument}.
 
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 val int32 : Int32.t -> Int32.t
 (** [Random.int32 bound] returns a random integer between 0 (inclusive)
@@ -88,18 +87,18 @@ val bool : unit -> bool
 val bits32 : unit -> Int32.t
 (** [Random.bits32 ()] returns 32 random bits as an integer between
     {!Int32.min_int} and {!Int32.max_int}.
-    @since 4.14.0 *)
+    @since 4.14 *)
 
 val bits64 : unit -> Int64.t
 (** [Random.bits64 ()] returns 64 random bits as an integer between
     {!Int64.min_int} and {!Int64.max_int}.
-    @since 4.14.0 *)
+    @since 4.14 *)
 
 val nativebits : unit -> Nativeint.t
 (** [Random.nativebits ()] returns 32 or 64 random bits (depending on
     the bit width of the platform) as an integer between
     {!Nativeint.min_int} and {!Nativeint.max_int}.
-    @since 4.14.0 *)
+    @since 4.14 *)
 
 (** {1 Advanced functions} *)
 
@@ -146,7 +145,7 @@ module State : sig
       The new PRNG is statistically independent from the given PRNG.
       Data can be drawn from both PRNGs, in any order, without risk of
       correlation.  Both PRNGs can be split later, arbitrarily many times.
-      @since 5.0.0 *)
+      @since 5.0 *)
 
 end
 
@@ -164,4 +163,4 @@ val split : unit -> State.t
     generator used by the default functions.
     (The state of the domain-local generator is modified.)
     See {!Random.State.split}.
-    @since 5.0.0 *)
+    @since 5.0 *)

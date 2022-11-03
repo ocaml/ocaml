@@ -5,14 +5,14 @@ LD_PATH = $(ROOTDIR)/otherlibs/str $(ROOTDIR)/otherlibs/unix
 
 TOOLS = ../../tools
 CAMLLATEX = $(OCAMLRUN) $(addprefix -I ,$(LD_PATH)) \
-  $(ROOTDIR)/tools/caml-tex -repo-root $(ROOTDIR) -n 80 -v false
+  $(ROOTDIR)/tools/ocamltex -repo-root $(ROOTDIR) -n 80 -v false
 TEXQUOTE = $(OCAMLRUN) $(TOOLS)/texquote2
 TRANSF = $(OCAMLRUN) $(TOOLS)/transf
 
 FILES = comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex \
   ocamldep.tex profil.tex debugger.tex ocamldoc.tex \
   warnings-help.tex flambda.tex tail-mod-cons.tex \
-  afl-fuzz.tex instrumented-runtime.tex unified-options.tex
+  afl-fuzz.tex runtime-tracing.tex unified-options.tex
 
 etex-files: $(FILES)
 all: $(FILES)

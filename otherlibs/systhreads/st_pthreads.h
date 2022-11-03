@@ -291,7 +291,7 @@ static int st_event_wait(st_event e)
 
 static void * caml_thread_tick(void * arg)
 {
-  uintnat *domain_id = (uintnat *) arg;
+  int *domain_id = (int *) arg;
 
   caml_init_domain_self(*domain_id);
   caml_domain_state *domain = Caml_state;

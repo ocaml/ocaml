@@ -30,9 +30,13 @@ type t =
     mutable ranges: range list;
   }
 
-val all_intervals: unit -> t list
-val all_fixed_intervals: unit -> t list
+type result =
+  {
+    intervals : t list;
+    fixed_intervals : t list;
+  }
+
 val overlap: t -> t -> bool
 val is_live: t -> int -> bool
 val remove_expired_ranges: t -> int -> unit
-val build_intervals: Mach.fundecl -> unit
+val build_intervals: Mach.fundecl -> result

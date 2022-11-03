@@ -118,6 +118,7 @@ struct caml_extern_state {
 
 static struct caml_extern_state* get_extern_state (void)
 {
+  Caml_check_caml_state();
   struct caml_extern_state* extern_state;
 
   if (Caml_state->extern_state != NULL)

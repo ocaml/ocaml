@@ -84,7 +84,7 @@ chapters (or sometimes sections) are mapped to a distinct `.etex` file:
     - Interfacing C with OCaml: `intf-c.etex`
     - Optimisation with Flambda: `flambda.etex`
     - Fuzzing with afl-fuzz: `afl-fuzz.etex`
-    - Runtime tracing with the instrumented runtime: `instrumented-runtime.etex`
+    - Runtime tracing with Runtime_events: `runtime_tracing.etex`
 
 Note that ocamlc,ocamlopt and the toplevel options overlap a lot.
 Consequently, these options are described together in the file
@@ -101,6 +101,7 @@ of `unified-options.etex` contains the relevant information.
     - The unix library: Unix system calls: `libunix.etex`
     - The str library: regular expressions and string processing: `libstr.etex`
     - The threads library: `libthreads.etex`
+    - The runtime_events library: `libruntime_events.etex`
     - The dynlink library: dynamic loading and linking of object files:
       `libdynlink.etex`
 
@@ -127,7 +128,7 @@ A similar macro, `\lparagraph`, is provided for paragraphs.
 
 ### Caml environments
 
-The tool `tools/caml-tex` is used to generate the LaTeX code for the examples
+The tool `tools/ocamltex` is used to generate the LaTeX code for the examples
 in the introduction and language extension parts of the manual. It implements
 two pseudo-environments: `caml_example` and `caml_eval`.
 
@@ -161,10 +162,10 @@ val none : 'a option
 \end{caml_example*}
 ```
 
-By default, `caml-tex` raises an error and stops if the output of one the
+By default, `ocamltex` raises an error and stops if the output of one the
 `caml_example` environment contains an unexpected error or warning. If such an
 error or warning is, in fact, expected, it is necessary to indicate the expected
-output status to `caml-tex` by adding either an option to the `caml_example`
+output status to `ocamltex` by adding either an option to the `caml_example`
 environment:
 ```latex
 \begin{caml_example}{toplevel}[error]

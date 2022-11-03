@@ -143,7 +143,7 @@ let g = function
 After seeing the power of polymorphic variants, one may wonder why
 they were added to core language variants, rather than replacing them.
 
-The answer is twofold. One first aspect is that while being pretty
+The answer is twofold. The first aspect is that while being pretty
 efficient, the lack of static type information allows for less
 optimizations, and makes polymorphic variants slightly heavier than
 core language ones. However noticeable differences would only

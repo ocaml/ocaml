@@ -155,37 +155,23 @@ static value stat_aux(int use_64, __int64 st_ino, struct _stat64 *buf)
  * Microsoft CRT given in Microsoft Visual Studio 2013 Express
  */
 
-static int convert_time(FILETIME* time, __time64_t* result, __time64_t def)
+Caml_inline ULONGLONG convert_time(FILETIME time)
 {
-  /* Tempting though it may be, MSDN prohibits casting FILETIME directly
-   * to __int64 for alignment concerns. While this doesn't affect our supported
-   * platforms, it's easier to go with the flow...
-   */
-  ULARGE_INTEGER utime = {{time->dwLowDateTime, time->dwHighDateTime}};
-
-  if (utime.QuadPart) {
-    /* There are 11644473600 seconds between 1 January 1601 (the NT Epoch) and 1
-     * January 1970 (the Unix Epoch). FILETIME is measured in 100ns ticks.
-     */
-    *result = (utime.QuadPart - 116444736000000000ULL);
-  }
-  else {
-    *result = def;
-  }
-
-  return 1;
+  ULARGE_INTEGER uli = {{time.dwLowDateTime, time.dwHighDateTime}};
+  return uli.QuadPart;
 }
 
 /* path allocated outside the OCaml heap */
 static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, __int64* st_ino, struct _stat64* res)
 {
   BY_HANDLE_FILE_INFORMATION info;
-  int i;
   wchar_t* ptr;
   char c;
   HANDLE h;
   unsigned short mode;
   int is_symlink = 0;
+  ULONGLONG stamp;
+  __time64_t mtime = 0;
 
   if (!path) {
     h = fstat;
@@ -294,12 +280,17 @@ static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, _
       return 0;
     }
 
-    if (!convert_time(&info.ftLastWriteTime, &res->st_mtime, 0) ||
-        !convert_time(&info.ftLastAccessTime, &res->st_atime, res->st_mtime) ||
-        !convert_time(&info.ftCreationTime, &res->st_ctime, res->st_mtime)) {
-      caml_win32_maperr(GetLastError());
-      return 0;
-    }
+    if ((stamp = convert_time(info.ftLastWriteTime)) != 0)
+      mtime = stamp - CAML_NT_EPOCH_100ns_TICKS;
+    res->st_mtime = mtime;
+    if ((stamp = convert_time(info.ftLastAccessTime)) != 0)
+      res->st_atime = stamp - CAML_NT_EPOCH_100ns_TICKS;
+    else
+      res->st_atime = mtime;
+    if ((stamp = convert_time(info.ftCreationTime)) != 0)
+      res->st_ctime = stamp - CAML_NT_EPOCH_100ns_TICKS;
+    else
+      res->st_ctime = mtime;
 
     /*
      * Note MS CRT (still) puts st_nlink = 1 and gives st_ino = 0

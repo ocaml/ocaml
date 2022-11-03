@@ -20,16 +20,21 @@ are not available, they will raise "Invalid_arg" when called.
 
 Programs that use the "unix" library must be linked as follows:
 \begin{alltt}
-        ocamlc \var{other options} unix.cma \var{other files}
-        ocamlopt \var{other options} unix.cmxa \var{other files}
+        ocamlc \var{other options} -I +unix unix.cma \var{other files}
+        ocamlopt \var{other options}  -I +unix unix.cmxa \var{other files}
 \end{alltt}
 For interactive use of the "unix" library, do:
 \begin{alltt}
-        ocamlmktop -o mytop unix.cma
+        ocamlmktop -o mytop -I +unix unix.cma
         ./mytop
 \end{alltt}
 or (if dynamic linking of C libraries is supported on your platform),
-start "ocaml" and type "#load \"unix.cma\";;".
+start "ocaml" and type
+
+\begin{caml_example*}{toplevel}
+#directory "+unix";;
+#load "unix.cma";;
+\end{caml_example*}
 
 \begin{latexonly}
 \begin{windows}

@@ -180,7 +180,11 @@ let print_cmx_infos (ui, crc) =
   printf "Currying functions:%a\n" pr_funs ui.ui_curry_fun;
   printf "Apply functions:%a\n" pr_funs ui.ui_apply_fun;
   printf "Send functions:%a\n" pr_funs ui.ui_send_fun;
-  printf "Force link: %s\n" (if ui.ui_force_link then "YES" else "no")
+  printf "Force link: %s\n" (if ui.ui_force_link then "YES" else "no");
+  printf "For pack: %s\n"
+    (match ui.ui_for_pack with
+     | None -> "no"
+     | Some pack -> "YES: " ^ pack)
 
 let print_cmxa_infos (lib : Cmx_format.library_infos) =
   printf "Extra C object files:";

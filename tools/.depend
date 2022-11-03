@@ -1,31 +1,3 @@
-caml_tex.cmo : \
-    ../toplevel/toploop.cmi \
-    ../parsing/syntaxerr.cmi \
-    ../parsing/parsetree.cmi \
-    ../parsing/parse.cmi \
-    ../utils/misc.cmi \
-    ../parsing/location.cmi \
-    ../utils/load_path.cmi \
-    ../parsing/lexer.cmi \
-    ../driver/compmisc.cmi \
-    ../driver/compenv.cmi \
-    ../utils/clflags.cmi \
-    ../parsing/ast_iterator.cmi \
-    ../parsing/ast_helper.cmi
-caml_tex.cmx : \
-    ../toplevel/toploop.cmx \
-    ../parsing/syntaxerr.cmx \
-    ../parsing/parsetree.cmi \
-    ../parsing/parse.cmx \
-    ../utils/misc.cmx \
-    ../parsing/location.cmx \
-    ../utils/load_path.cmx \
-    ../parsing/lexer.cmx \
-    ../driver/compmisc.cmx \
-    ../driver/compenv.cmx \
-    ../utils/clflags.cmx \
-    ../parsing/ast_iterator.cmx \
-    ../parsing/ast_helper.cmx
 cmpbyt.cmo : \
     ../bytecomp/bytesections.cmi
 cmpbyt.cmx : \
@@ -194,6 +166,34 @@ ocamlprof.cmx : \
     ../parsing/parsetree.cmi \
     ../parsing/parse.cmx \
     ../parsing/location.cmx
+ocamltex.cmo : \
+    ../toplevel/toploop.cmi \
+    ../parsing/syntaxerr.cmi \
+    ../parsing/parsetree.cmi \
+    ../parsing/parse.cmi \
+    ../utils/misc.cmi \
+    ../parsing/location.cmi \
+    ../utils/load_path.cmi \
+    ../parsing/lexer.cmi \
+    ../driver/compmisc.cmi \
+    ../driver/compenv.cmi \
+    ../utils/clflags.cmi \
+    ../parsing/ast_iterator.cmi \
+    ../parsing/ast_helper.cmi
+ocamltex.cmx : \
+    ../toplevel/toploop.cmx \
+    ../parsing/syntaxerr.cmx \
+    ../parsing/parsetree.cmi \
+    ../parsing/parse.cmx \
+    ../utils/misc.cmx \
+    ../parsing/location.cmx \
+    ../utils/load_path.cmx \
+    ../parsing/lexer.cmx \
+    ../driver/compmisc.cmx \
+    ../driver/compenv.cmx \
+    ../utils/clflags.cmx \
+    ../parsing/ast_iterator.cmx \
+    ../parsing/ast_helper.cmx
 opnames.cmo :
 opnames.cmx :
 primreq.cmo : \

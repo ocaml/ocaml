@@ -1973,7 +1973,6 @@ let report_error env ppf = function
         (function ppf ->
            fprintf ppf "but is expected to have type")
   | Unexpected_field (ty, lab) ->
-      Printtyp.prepare_for_printing [ty];
       fprintf ppf
         "@[@[<2>This object is expected to have type :@ %a@]\
          @ This type does not have a method %s."
@@ -2062,7 +2061,8 @@ let report_error env ppf = function
       let print_reason ppf (ty0, real, lab, ty) =
         let ty1 =
           if real then ty0 else Btype.newgenty(Tobject(ty0, ref None)) in
-        Printtyp.prepare_for_printing [ty; ty1];
+        Printtyp.add_type_to_preparation ty;
+        Printtyp.add_type_to_preparation ty1;
         fprintf ppf
           "The method %s@ has type@;<1 2>%a@ where@ %a@ is unbound"
           lab
