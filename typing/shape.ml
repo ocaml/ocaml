@@ -178,7 +178,7 @@ let print fmt =
     | Struct map ->
         let print_map fmt =
           Item.Map.iter (fun item t ->
-              Format.fprintf fmt "@[<hv 4>%a ->@ %a;@]@,"
+              Format.fprintf fmt "@[<hv 2>%a ->@ %a;@]@,"
                 Item.print item
                 aux t
             )
