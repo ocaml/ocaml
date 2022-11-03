@@ -143,8 +143,20 @@ let print fmt =
     | Var id ->
         Format.fprintf fmt "%a%a" Ident.print id print_uid_opt uid
     | Abs (id, t) ->
+        let rec collect_idents = function
+          | { uid = None; desc = Abs(id, t) } ->
+            let (ids, body) = collect_idents t in
+            id :: ids, body
+          | body ->
+            ([], body)
+        in
+        let (other_idents, body) = collect_idents t in
+        let pp_idents fmt idents =
+          let pp_sep fmt () = Format.fprintf fmt ",@ " in
+          Format.pp_print_list ~pp_sep Ident.print fmt idents
+        in
         Format.fprintf fmt "Abs@[%a@,(@[%a,@ @[%a@]@])@]"
-          print_uid_opt uid Ident.print id aux t
+          print_uid_opt uid pp_idents (id :: other_idents) aux body
     | App (t1, t2) ->
         Format.fprintf fmt "@[%a(@,%a)%a@]" aux t1 aux t2
           print_uid_opt uid
