@@ -367,9 +367,10 @@ let emit_instr env i =
       `	fcvt.s.d	ft0, {emit_reg i.arg.(0)}\n`;
       `	fsw	ft0, {emit_int ofs}({emit_reg i.arg.(1)})\n`
   | Lop(Istore((Word_int | Word_val), Iindexed ofs, assignement)) ->
-      if assignement then
-        `	fence	iorw, ow; amoswap.d.aq	x0, {emit_reg i.arg.(0)}, {emit_int ofs}({emit_reg i.arg.(1)})\n`
-      else
+      if assignement then begin
+        `	fence	r, w\n`;
+        `	sd	{emit_reg i.arg.(0)}, {emit_int ofs}({emit_reg i.arg.(1)})\n`
+      end else
         `	sd	{emit_reg i.arg.(0)}, {emit_int ofs}({emit_reg i.arg.(1)})\n`;
   | Lop(Istore(chunk, Iindexed ofs, _)) ->
       let instr =
