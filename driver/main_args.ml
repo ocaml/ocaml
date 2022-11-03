@@ -30,6 +30,10 @@ let mk_alert f =
 let mk_absname f =
   "-absname", Arg.Unit f, " Show absolute filenames in error messages"
 
+let mk_no_absname f =
+    "-no-absname", Arg.Unit f,
+    " Do not try to show absolute filenames in error messages (default)"
+
 let mk_annot f =
   "-annot", Arg.Unit f, " (deprecated) Save information in <filename>.annot"
 
@@ -744,6 +748,7 @@ let mk__ f =
 
 module type Common_options = sig
   val _absname : unit -> unit
+  val _no_absname : unit -> unit
   val _alert : string -> unit
   val _I : string -> unit
   val _labels : unit -> unit
@@ -993,6 +998,7 @@ struct
     mk_a F._a;
     mk_alert F._alert;
     mk_absname F._absname;
+    mk_no_absname F._no_absname;
     mk_annot F._annot;
     mk_binannot F._binannot;
     mk_c F._c;
@@ -1109,6 +1115,7 @@ module Make_bytetop_options (F : Bytetop_options) =
 struct
   let list = [
     mk_absname F._absname;
+    mk_no_absname F._no_absname;
     mk_alert F._alert;
     mk_I F._I;
     mk_init F._init;
@@ -1178,6 +1185,7 @@ struct
     mk_a F._a;
     mk_alert F._alert;
     mk_absname F._absname;
+    mk_no_absname F._no_absname;
     mk_afl_instrument F._afl_instrument;
     mk_afl_inst_ratio F._afl_inst_ratio;
     mk_annot F._annot;
@@ -1337,6 +1345,7 @@ end;;
 module Make_opttop_options (F : Opttop_options) = struct
   let list = [
     mk_absname F._absname;
+    mk_no_absname F._no_absname;
     mk_alert F._alert;
     mk_compact F._compact;
     mk_I F._I;
@@ -1442,6 +1451,7 @@ module Make_ocamldoc_options (F : Ocamldoc_options) =
 struct
   let list = [
     mk_absname F._absname;
+    mk_no_absname F._no_absname;
     mk_alert F._alert;
     mk_I F._I;
     mk_impl F._impl;
@@ -1542,6 +1552,7 @@ module Default = struct
     let _alias_deps = clear transparent_modules
     let _app_funct = set applicative_functors
     let _labels = clear classic
+    let _no_absname = clear Clflags.absname
     let _no_alias_deps = set transparent_modules
     let _no_app_funct = clear applicative_functors
     let _no_principal = clear principal
