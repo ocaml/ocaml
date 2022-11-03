@@ -344,10 +344,10 @@ let emit_instr env i =
       `	fcvt.d.s	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
   | Lop(Iload { memory_chunk = Word_int | Word_val; addressing_mode = Iindexed ofs; is_atomic } ) ->
       if is_atomic then
-        `	fence rw, rw\n`;
+        `	fence	rw, rw\n`;
       `	ld	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg i.arg.(0)})\n`;
       if is_atomic then
-        `	fence r, rw\n`
+        `	fence	r, rw\n`
   | Lop(Iload { memory_chunk; addressing_mode = Iindexed ofs; is_atomic } ) ->
       assert (not is_atomic);
       let instr =
