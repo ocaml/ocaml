@@ -72,22 +72,32 @@ let dummy_interval pos =
    ranges = []}
 
 let release_expired_fixed ci pos =
-  let (rest, divider_in_set, _expired) = IntervalSet.split (dummy_interval pos) ci.ci_fixed in
+  let (rest, divider_in_set, _expired) =
+    IntervalSet.split (dummy_interval pos) ci.ci_fixed in
   assert (not divider_in_set);
   IntervalSet.iter (fun i -> Interval.remove_expired_ranges i pos) rest;
   ci.ci_fixed <- rest
 
 let release_expired_active ci pos =
-  let (rest, divider_in_set, _expired) = IntervalSet.split (dummy_interval pos) ci.ci_active in
+  let (rest, divider_in_set, _expired) =
+    IntervalSet.split (dummy_interval pos) ci.ci_active in
   assert (not divider_in_set);
-  let active, inactive = IntervalSet.partition (fun i -> Interval.remove_expired_ranges i pos; Interval.is_live i pos) rest in
+  let active, inactive =
+    IntervalSet.partition (fun i ->
+        Interval.remove_expired_ranges i pos;
+        Interval.is_live i pos) rest in
   ci.ci_active <- active;
   ci.ci_inactive <- IntervalSet.union inactive ci.ci_inactive
 
 let release_expired_inactive ci pos =
-  let (rest, divider_in_set, _expired) = IntervalSet.split (dummy_interval pos) ci.ci_inactive in
+  let (rest, divider_in_set, _expired) =
+    IntervalSet.split (dummy_interval pos) ci.ci_inactive in
   assert (not divider_in_set);
-  let active, inactive = IntervalSet.partition (fun i -> Interval.remove_expired_ranges i pos; Interval.is_live i pos) rest in
+  let active, inactive =
+    IntervalSet.partition
+      (fun i ->
+         Interval.remove_expired_ranges i pos;
+         Interval.is_live i pos) rest in
   ci.ci_inactive <- inactive;
   ci.ci_active <- IntervalSet.union active ci.ci_active
 
