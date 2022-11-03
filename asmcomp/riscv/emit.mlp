@@ -52,9 +52,6 @@ let slot_offset env loc cls =
 
 (* Output a symbol *)
 
-let emit_symbol s =
-  emit_symbol s
-
 let emit_jump op s =
   if !Clflags.dlcode || !Clflags.pic_code
   then `{emit_string op}	{emit_symbol s}@plt`
@@ -81,11 +78,14 @@ let rodata_space =
 
 (* Names for special regs *)
 
-let reg_tmp = phys_reg 23
-let reg_t2 = phys_reg 16
-let reg_domain_state_ptr = phys_reg 26
-let reg_trap = phys_reg 24
-let reg_alloc_ptr = phys_reg 25
+let reg_tmp = phys_reg 23 (* t1 *)
+let reg_tmp2 = phys_reg 22 (* t0 *)
+let reg_t2 = phys_reg 16 (* t2 *)
+let reg_domain_state_ptr = phys_reg 26 (* s11 *)
+let reg_trap_ptr = phys_reg 24 (* s1 *)
+let reg_alloc_ptr = phys_reg 25 (* s10 *)
+let reg_stack_arg_begin = phys_reg 9 (* s3 *)
+let reg_stack_arg_end = phys_reg 10 (* s4 *)
 
 (* Output a pseudo-register *)
 
@@ -96,48 +96,58 @@ let reg_name = function
 let emit_reg r =
   emit_string (reg_name r)
 
-(* Adjust sp by the given byte amount *)
+(* Adjust sp by the given byte amount, clobbers reg_tmp *)
 
-let emit_stack_adjustment = function
-  | 0 -> ()
-  | n when is_immediate n ->
-      `	addi	sp, sp, {emit_int n}\n`
-  | n ->
-      `	li	{emit_reg reg_tmp}, {emit_int n}\n`;
-      `	add	sp, sp, {emit_reg reg_tmp}\n`
+let emit_stack_adjustment n =
+  if n <> 0 then begin
+    if is_immediate n then
+      `        addi    sp, sp, {emit_int n}\n`
+    else begin
+      `        li      {emit_reg reg_tmp}, {emit_int n}\n`;
+      `        add     sp, sp, {emit_reg reg_tmp}\n`
+    end;
+    cfi_adjust_cfa_offset (-n)
+  end
 
-(* Adjust stack_offset and emit corresponding CFI directive *)
+(* Output add-immediate instruction, clobbers reg_tmp2 *)
 
-let adjust_stack_offset env delta =
-  env.stack_offset <- env.stack_offset + delta;
-  cfi_adjust_cfa_offset delta
+let emit_addimm rd rs n =
+  if is_immediate n then
+    `	addi	{emit_reg rd}, {emit_reg rs}, {emit_int n}\n`
+  else begin
+    `	li	{emit_reg reg_tmp2}, {emit_int n}\n`;
+    `	add	{emit_reg rd}, {emit_reg rs}, {emit_reg reg_tmp2}\n`
+  end
 
-let emit_mem_op ?(base = "sp") op src ofs =
+(* Output memory operation with a possibly non-immediate offset,
+   clobbers reg_tmp *)
+
+let emit_mem_op op reg ofs addr =
   if is_immediate ofs then
-    `	{emit_string op}	{emit_string src}, {emit_int ofs}({emit_string base})\n`
+    `	{emit_string op}	{emit_string reg}, {emit_int ofs}({emit_string addr})\n`
   else begin
     `	li	{emit_reg reg_tmp}, {emit_int ofs}\n`;
-    `	add	{emit_reg reg_tmp}, {emit_string base}, {emit_reg reg_tmp}\n`;
-    `	{emit_string op}	{emit_string src}, 0({emit_reg reg_tmp})\n`
+    `	add	{emit_reg reg_tmp}, {emit_string addr}, {emit_reg reg_tmp}\n`;
+    `	{emit_string op}	{emit_string reg}, 0({emit_reg reg_tmp})\n`
   end
 
 let reload_ra n =
-  emit_mem_op "ld" "ra" (n - size_addr)
+  emit_mem_op "ld" "ra" (n - 8) "sp"
 
 let store_ra n =
-  emit_mem_op "sd" "ra" (n - size_addr)
+  emit_mem_op "sd" "ra" (n - 8) "sp"
 
-let emit_store ?base src ofs =
-  emit_mem_op ?base "sd" (reg_name src) ofs
+let emit_store rs ofs rd =
+  emit_mem_op "sd" (reg_name rs) ofs rd
 
-let emit_load ?base dst ofs =
-  emit_mem_op ?base "ld" (reg_name dst) ofs
+let emit_load rd ofs rs =
+  emit_mem_op "ld" (reg_name rd) ofs rs
 
-let emit_float_load ?base dst ofs =
-  emit_mem_op ?base "fld" (reg_name dst) ofs
+let emit_float_load rd ofs rs =
+  emit_mem_op "fld" (reg_name rd) ofs rs
 
-let emit_float_store ?base src ofs =
-  emit_mem_op ?base "fsd" (reg_name src) ofs
+let emit_float_store rs ofs rd =
+  emit_mem_op "fsd" (reg_name rs) ofs rd
 
 (* Record live pointers at call points *)
 
@@ -243,10 +253,9 @@ let emit_instr env i =
       assert (env.f.fun_prologue_required);
       let n = frame_size env in
       emit_stack_adjustment (-n);
-      if n > 0 then cfi_adjust_cfa_offset n;
       if env.f.fun_contains_calls then begin
         store_ra n;
-        cfi_offset ~reg:1 (* ra *) ~offset:(-size_addr)
+        cfi_offset ~reg:1 (* ra *) ~offset:(-8)
       end;
   | Lop(Imove | Ispill | Ireload) ->
       let src = i.arg.(0) and dst = i.res.(0) in
@@ -260,16 +269,16 @@ let emit_instr env i =
             `	fmv.x.d {emit_reg dst}, {emit_reg src}\n`
         | {loc = Reg _; typ = (Val | Int | Addr)}, {loc = Stack s} ->
             let (base, ofs) = slot_offset env s (register_class dst) in
-            emit_store ~base src ofs
+            emit_store src ofs base
         | {loc = Reg _; typ = Float}, {loc = Stack s} ->
             let (base, ofs) = slot_offset env s (register_class dst) in
-            emit_float_store ~base src ofs
+            emit_float_store src ofs base
         | {loc = Stack s; typ = (Val | Int | Addr)}, {loc = Reg _} ->
             let (base, ofs) = slot_offset env s (register_class src) in
-            emit_load ~base dst ofs
+            emit_load dst ofs base
         | {loc = Stack s; typ = Float}, {loc = Reg _} ->
             let (base, ofs) = slot_offset env s (register_class src) in
-            emit_float_load ~base dst ofs
+            emit_float_load dst ofs base
         | {loc = Stack _}, {loc = Stack _}
         | {loc = Unknown}, _ | _, {loc = Unknown} ->
             Misc.fatal_error "Emit: Imove"
@@ -302,20 +311,43 @@ let emit_instr env i =
         emit_stack_adjustment n;
         `	{emit_tail func}\n`
       end
-  | Lop(Iextcall{func; alloc = true}) ->
-      `	la	{emit_reg reg_t2}, {emit_symbol func}\n`;
-      `	{emit_call "caml_c_call"}\n`;
-      record_frame env i.live (Dbg_other i.dbg)
-  | Lop(Iextcall{func; alloc = false}) ->
-      `	{emit_call func}\n`
+  | Lop(Iextcall{func; alloc; stack_ofs}) ->
+      if stack_ofs > 0 then begin
+        `	mv	{emit_reg reg_stack_arg_begin}, sp\n`;
+        `	addi	{emit_reg reg_stack_arg_end}, sp, {emit_int (Misc.align stack_ofs 16)}\n`;
+        `	la	{emit_reg reg_t2}, {emit_symbol func}\n`;
+        `	{emit_call "caml_c_call_stack_args"}\n`;
+        record_frame env i.live (Dbg_other i.dbg)
+      end else if alloc then begin
+        `	la	{emit_reg reg_t2}, {emit_symbol func}\n`;
+        `	{emit_call "caml_c_call"}\n`;
+        record_frame env i.live (Dbg_other i.dbg)
+      end else begin
+        (* store ocaml stack in s0, which is marked as being destroyed
+           at noalloc calls *)
+        `	mv	s0, sp\n`;
+        cfi_remember_state ();
+        cfi_def_cfa_register ~reg:21;
+        let ofs = Domainstate.(idx_of_field Domain_c_stack) * 8 in
+        `	ld	sp, {emit_int ofs}({emit_reg reg_domain_state_ptr})\n`;
+        `	{emit_call func}\n`;
+        `	mv	sp, s0\n`;
+        cfi_restore_state ()
+      end
   | Lop(Istackoffset n) ->
       assert (n mod 16 = 0);
       emit_stack_adjustment (-n);
-      adjust_stack_offset env n
-  | Lop(Iload { memory_chunk = Single; addressing_mode = Iindexed ofs; _ } ) ->
+      env.stack_offset <- env.stack_offset + n
+  | Lop(Iload { memory_chunk = Single; addressing_mode = Iindexed ofs; is_atomic } ) ->
+      assert (not is_atomic);
       `	flw	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg i.arg.(0)})\n`;
       `	fcvt.d.s	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
-  | Lop(Iload { memory_chunk; addressing_mode = Iindexed ofs } ) ->
+  | Lop(Iload { memory_chunk = Word_int | Word_val; addressing_mode = Iindexed ofs; is_atomic } ) ->
+      if is_atomic then `	fence	rw, rw\n`;
+      `	ld	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg i.arg.(0)})\n`;
+      if is_atomic then `	fence	r, rw\n`
+  | Lop(Iload { memory_chunk; addressing_mode = Iindexed ofs; is_atomic } ) ->
+      assert (not is_atomic);
       let instr =
         match memory_chunk with
         | Byte_unsigned -> "lbu"
@@ -324,8 +356,7 @@ let emit_instr env i =
         | Sixteen_signed -> "lh"
         | Thirtytwo_unsigned -> "lwu"
         | Thirtytwo_signed -> "lw"
-        | Word_int | Word_val -> "ld"
-        | Single -> assert false
+        | Word_int | Word_val | Single -> assert false
         | Double -> "fld"
       in
       `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg i.arg.(0)})\n`
@@ -333,37 +364,50 @@ let emit_instr env i =
       (* ft0 is marked as destroyed for this operation *)
       `	fcvt.s.d	ft0, {emit_reg i.arg.(0)}\n`;
       `	fsw	ft0, {emit_int ofs}({emit_reg i.arg.(1)})\n`
+  | Lop(Istore((Word_int | Word_val), Iindexed ofs, assignement)) ->
+      if assignement then begin
+        `	fence	r, w\n`;
+        `	sd	{emit_reg i.arg.(0)}, {emit_int ofs}({emit_reg i.arg.(1)})\n`
+      end else
+        `	sd	{emit_reg i.arg.(0)}, {emit_int ofs}({emit_reg i.arg.(1)})\n`;
   | Lop(Istore(chunk, Iindexed ofs, _)) ->
       let instr =
         match chunk with
         | Byte_unsigned | Byte_signed -> "sb"
         | Sixteen_unsigned | Sixteen_signed -> "sh"
         | Thirtytwo_unsigned | Thirtytwo_signed -> "sw"
-        | Word_int | Word_val -> "sd"
-        | Single -> assert false
+        | Word_int | Word_val | Single -> assert false
         | Double -> "fsd"
       in
       `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_int ofs}({emit_reg i.arg.(1)})\n`
   | Lop(Ialloc {bytes; dbginfo}) ->
       let lbl_frame_lbl = record_frame_label env i.live (Dbg_alloc dbginfo) in
-      let lbl_after_alloc = new_label () in
-      let lbl_call_gc = new_label () in
-      let n = -bytes in
-      let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
-      if is_immediate n then
-        `	addi	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_ptr}, {emit_int n}\n`
-      else begin
-        `	li	{emit_reg reg_tmp}, {emit_int n}\n`;
-        `	add	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_ptr}, {emit_reg reg_tmp}\n`
-      end;
-      `	ld	{emit_reg reg_tmp}, {emit_int offset}({emit_reg reg_domain_state_ptr})\n`;
-      `	bltu	{emit_reg reg_alloc_ptr}, {emit_reg reg_tmp}, {emit_label lbl_call_gc}\n`;
-      `{emit_label lbl_after_alloc}:\n`;
-      `	addi	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, {emit_int size_addr}\n`;
-      env.call_gc_sites <-
-        { gc_lbl = lbl_call_gc;
-          gc_return_lbl = lbl_after_alloc;
-          gc_frame_lbl = lbl_frame_lbl } :: env.call_gc_sites
+      if env.f.fun_fast then begin
+        let lbl_after_alloc = new_label () in
+        let lbl_call_gc = new_label () in
+        let n = -bytes in
+        let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
+        emit_addimm reg_alloc_ptr reg_alloc_ptr n;
+        `	ld	{emit_reg reg_tmp}, {emit_int offset}({emit_reg reg_domain_state_ptr})\n`;
+        `	bltu	{emit_reg reg_alloc_ptr}, {emit_reg reg_tmp}, {emit_label lbl_call_gc}\n`;
+        `{emit_label lbl_after_alloc}:\n`;
+        `	addi	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, 8\n`;
+        env.call_gc_sites <-
+          { gc_lbl = lbl_call_gc;
+            gc_return_lbl = lbl_after_alloc;
+            gc_frame_lbl = lbl_frame_lbl } :: env.call_gc_sites
+      end else begin
+        begin match bytes with
+        | 16 -> `	{emit_call "caml_alloc1"}\n`
+        | 24 -> `	{emit_call "caml_alloc2"}\n`
+        | 32 -> `	{emit_call "caml_alloc3"}\n`
+        | _  ->
+            `	li	{emit_reg reg_t2}, {emit_int bytes}\n`;
+            `	{emit_call "caml_allocN"}\n`
+        end;
+        `{emit_label lbl_frame_lbl}:\n`;
+        `	addi	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, 8\n`
+      end
   | Lop(Ipoll { return_label }) ->
       let lbl_frame_lbl = record_frame_label env i.live (Dbg_alloc []) in
       let lbl_after_poll = match return_label with
@@ -438,8 +482,8 @@ let emit_instr env i =
       let instr = name_for_specific sop in
       `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`
   | Lop (Idls_get) ->
-      (* Here to maintain build *)
-      assert false
+      let ofs = Domainstate.(idx_of_field Domain_dls_root) * 8 in
+      `	ld	{emit_reg i.res.(0)}, {emit_int ofs}({emit_reg reg_domain_state_ptr})\n`
   | Lreloadretaddr ->
       let n = frame_size env in
       reload_ra n
@@ -505,7 +549,6 @@ let emit_instr env i =
       | Some lbl -> `	bgtz	{emit_reg reg_tmp}, {emit_label lbl}\n`
       end
   | Lswitch jumptbl ->
-      (* t0 is marked as destroyed for this operation *)
       let lbl = new_label() in
       `	la	{emit_reg reg_tmp}, {emit_label lbl}\n`;
       `	slli	t0, {emit_reg i.arg.(0)}, 2\n`;
@@ -520,32 +563,33 @@ let emit_instr env i =
   | Ladjust_trap_depth { delta_traps } ->
       (* each trap occupes 16 bytes on the stack *)
       let delta = 16 * delta_traps in
-      adjust_stack_offset env delta
+      cfi_adjust_cfa_offset delta;
+      env.stack_offset <- env.stack_offset + delta
   | Lpushtrap {lbl_handler} ->
       `	la	{emit_reg reg_tmp}, {emit_label lbl_handler}\n`;
       `	addi	sp, sp, -16\n`;
-      adjust_stack_offset env 16;
-      emit_store reg_tmp size_addr;
-      emit_store reg_trap 0;
-      `	mv	{emit_reg reg_trap}, sp\n`
+      env.stack_offset <- env.stack_offset + 16;
+      `	sd	{emit_reg reg_trap_ptr}, 0(sp)\n`;
+      `	sd	{emit_reg reg_tmp}, 8(sp)\n`;
+      cfi_adjust_cfa_offset 16;
+      `	mv	{emit_reg reg_trap_ptr}, sp\n`
   | Lpoptrap ->
-      emit_load reg_trap 0;
+      `	ld	{emit_reg reg_trap_ptr}, 0(sp)\n`;
       `	addi	sp, sp, 16\n`;
-      adjust_stack_offset env (-16)
+      cfi_adjust_cfa_offset (-16);
+      env.stack_offset <- env.stack_offset - 16
   | Lraise k ->
       begin match k with
       | Lambda.Raise_regular ->
-          let offset = Domainstate.(idx_of_field Domain_backtrace_pos) * 8 in
-          `	sd zero, {emit_int offset}({emit_reg reg_domain_state_ptr})\n`;
           `	{emit_call "caml_raise_exn"}\n`;
           record_frame env Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_reraise ->
-          `	{emit_call "caml_raise_exn"}\n`;
+          `	{emit_call "caml_reraise_exn"}\n`;
           record_frame env Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_notrace ->
-          `	mv	sp, {emit_reg reg_trap}\n`;
-          emit_load reg_tmp size_addr;
-          emit_load reg_trap 0;
+          `	mv	sp, {emit_reg reg_trap_ptr}\n`;
+          `	ld	{emit_reg reg_tmp}, 8(sp)\n`;
+          `	ld	{emit_reg reg_trap_ptr}, 0(sp)\n`;
           `	addi	sp, sp, 16\n`;
           `	jr	{emit_reg reg_tmp}\n`
       end
@@ -566,9 +610,47 @@ let fundecl fundecl =
   `{emit_symbol fundecl.fun_name}:\n`;
   emit_debug_info fundecl.fun_dbg;
   cfi_startproc();
+
+  (* Dynamic stack checking *)
+  let stack_threshold_size = Config.stack_threshold * 8 in (* bytes *)
+  let { max_frame_size; contains_nontail_calls } =
+    preproc_stack_check
+      ~fun_body:fundecl.fun_body ~frame_size:(frame_size env) ~trap_size:16
+  in
+  let handle_overflow = ref None in
+  if contains_nontail_calls || max_frame_size >= stack_threshold_size then begin
+    let overflow = new_label () and ret = new_label () in
+    let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
+    let f = max_frame_size + threshold_offset in
+    let offset = Domainstate.(idx_of_field Domain_current_stack) * 8 in
+    `	ld	{emit_reg reg_tmp}, {emit_int offset}({emit_reg reg_domain_state_ptr})\n`;
+    emit_addimm reg_tmp reg_tmp f;
+    `	bltu	sp, {emit_reg reg_tmp}, {emit_label overflow}\n`;
+    `{emit_label ret}:\n`;
+    handle_overflow := Some (overflow, ret)
+  end;
+
   emit_all env fundecl.fun_body;
   List.iter emit_call_gc env.call_gc_sites;
   List.iter emit_call_bound_error env.bound_error_sites;
+
+  begin match !handle_overflow with
+  | None -> ()
+  | Some (overflow, ret) ->
+      `{emit_label overflow}:\n`;
+      (* Pass the desired frame size on the stack, since all of the
+         argument-passing registers may be in use. *)
+      let s = Config.stack_threshold + max_frame_size / 8 in
+      `	li	{emit_reg reg_tmp}, {emit_int s}\n`;
+      `	addi	sp, sp, -16\n`;
+      `	sd	{emit_reg reg_tmp}, 0(sp)\n`;
+      `	sd	ra, 8(sp)\n`;
+      `	{emit_call "caml_call_realloc_stack"}\n`;
+      `	ld	ra, 8(sp)\n`;
+      `	addi	sp, sp, 16\n`;
+      `	j	{emit_label ret}\n`
+  end;
+
   cfi_endproc();
   `	.size	{emit_symbol fundecl.fun_name}, .-{emit_symbol fundecl.fun_name}\n`;
   (* Emit the float literals *)

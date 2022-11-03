@@ -36,6 +36,9 @@ Working version
 - #11102: Speed up register allocation by permanently spilling registers
   (Stephen Dolan, review by Xavier Leroy)
 
+- #11418: RISC-V multicore support.
+  (Nicolás Ojeda Bär, review by KC Sivaramakrishnan)
+
 ### Standard library:
 
 - #11410: Add Set.to_list, Map.to_list, Map.of_list, Map.add_to_list,
