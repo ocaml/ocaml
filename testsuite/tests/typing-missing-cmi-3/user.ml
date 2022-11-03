@@ -99,3 +99,11 @@ let k = match Middle.s with Middle.S -> ()
 [%%expect {|
 val k : unit = ()
 |}]
+
+(* #11560: gadts and missing cmis *)
+
+let  f : type a b. (a Middle.ti -> unit) -> (a,b) Middle.gadt -> b -> unit =
+  fun call Middle.G x -> call x
+[%%expect {|
+val f : ('a Middle.ti -> unit) -> ('a, 'b) Middle.gadt -> 'b -> unit = <fun>
+|}]

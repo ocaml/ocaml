@@ -86,12 +86,12 @@ type stat =
 
     stack_size: int;
     (** Current size of the stack, in words.
-        @since 3.12.0 *)
+        @since 3.12 *)
 
     forced_major_collections: int;
     (** Number of forced full major collections completed since the program
         was started.
-        @since 4.12.0 *)
+        @since 4.12 *)
 }
 (** The memory management counters are returned in a [stat] record. These
    counters give values for the whole program.
@@ -191,14 +191,14 @@ type control =
 
         Default: 2.
 
-        @since 3.11.0 *)
+        @since 3.11 *)
 
     window_size : int;
     (** The size of the window used by the major GC for smoothing
         out variations in its workload. This is an integer between
         1 and 50.
         Default: 1.
-        @since 4.03.0 *)
+        @since 4.03 *)
 
     custom_major_ratio : int;
     (** Target ratio of floating garbage to major heap size for
@@ -211,7 +211,7 @@ type control =
         Note: this only applies to values allocated with
         [caml_alloc_custom_mem] (e.g. bigarrays).
         Default: 44.
-        @since 4.08.0 *)
+        @since 4.08 *)
 
     custom_minor_ratio : int;
     (** Bound on floating garbage for out-of-heap memory held by
@@ -221,7 +221,7 @@ type control =
         Note: this only applies to values allocated with
         [caml_alloc_custom_mem] (e.g. bigarrays).
         Default: 100.
-        @since 4.08.0 *)
+        @since 4.08 *)
 
     custom_minor_max_size : int;
     (** Maximum amount of out-of-heap memory for each custom value
@@ -232,7 +232,7 @@ type control =
         Note: this only applies to values allocated with
         [caml_alloc_custom_mem] (e.g. bigarrays).
         Default: 8192 bytes.
-        @since 4.08.0 *)
+        @since 4.08 *)
   }
 (** The GC parameters are given as a [control] record.  Note that
     these parameters can also be initialised by setting the
@@ -310,7 +310,7 @@ external get_minor_free : unit -> int = "caml_get_minor_free"
 (** Return the current size of the free space inside the minor heap of this
    domain.
 
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 val finalise : ('a -> unit) -> 'a -> unit
 (** [finalise f v] registers [f] as a finalisation function for [v].

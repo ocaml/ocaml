@@ -54,6 +54,10 @@ Working version
   (Greta Yorsh, review by Xavier Leroy, Guillaume Melquiond and
   Gabriel Scherer)
 
+- #11246: Add "hash" and "seeded_hash" functions to Bool, Int, Char, Float,
+  Int32, Int64, and Nativeint.
+  (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
+
 - #11354: Hashtbl.find_all is now tail-recursive.
   (Fermín Reig, review by Gabriel Scherer)
 
@@ -82,6 +86,14 @@ Working version
    Guillaume Munch-Maccagnoni)
 
 ### Other libraries:
+
+- #11374: Remove pointer cast to a type with stricter alignment requirements
+  in Windows implementation of Unix.gettimeofday. Windows implementations of
+  caml_unix_map_file, caml_unix_lseek and caml_unix_lseek_64 now release the
+  runtime lock. Windows implementation of caml_unix_lockf modernised and
+  simplified. Where possible, 64 bit integers are used instead of LARGE_INTEGER
+  structs.
+  (David Allsopp, review by Jonah Beckford and Xavier Leroy)
 
 - #11475: Make Unix terminal interface bindings domain-safe
   (Olivier Nicole and Xavier Leroy, review by Xavier Leroy)
@@ -125,6 +137,9 @@ Working version
 - #11646: Add colors to error message hints.
   (Christiana Anthony, review by Florian Angeletti)
 
+- #11653: Add the -no-absname option to ocamlc, ocamlopt and ocamldep.
+  (Abiola Abdulsalam, review by Sébastien Hinderer and Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 - #11027: Separate typing counter-examples from type_pat into retype_pat;
   type_pat is no longer in CPS.
@@ -161,7 +176,8 @@ Working version
   (Xavier Leroy, report by Thierry Martinez, review by
    Anil Madhavapeddy, Nicolás Ojeda Bär, David Allsopp)
 
-- #10348: Expand GADT equations lazily during unification to avoid ambiguity
+- #10348, #10560, #11561: Expand GADT equations lazily during unification to
+  avoid ambiguity
   (Jacques Garrigue, review by Leo White)
 
 - #11436: Fix wrong stack backtrace for out-of-bound exceptions raised
@@ -330,6 +346,9 @@ OCaml 5.0
   no-flat-float-array mode, it's more efficient and avoids a a race condition
   (Xavier Leroy, report by Guillaume Munch-Maccagnoni, review by David Allsopp)
 
+- #11652: Fix benign off-by-one error in Windows implementation of caml_mem_map.
+  (David Allsopp, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #10972: ARM64 multicore support: OCaml & C stack separation;
@@ -474,9 +493,10 @@ OCaml 5.0
   Scherer, Thomas Leonard, Tom Ridge, Xavier Leroy, Luc Maranget, Fabrice
   Buoro, Olivier Nicole, Guillaume Munch-Maccagnoni, Jacques-Henri Jourdan)
 
-- #11640: Add Flambda commonly-used options to the ocamlopt manpage
-  (Amandine Nangah, review by David Allsopp, Florian Angeletti,
-  Sébastien Hinderer, and Vincent Laviron)
+- #11640, #11647: Add missing options to the man pages:
+   flambda commonly-used options, and negative options (`-no-rectypes`, ... ).
+   (Amandine Nangah, review by David Allsopp, Florian Angeletti,
+   Sébastien Hinderer, and Vincent Laviron)
 
 ### Compiler user-interface and warnings:
 
@@ -500,8 +520,8 @@ OCaml 5.0
   (Sébastien Hinderer, review by David Allsopp, Florian Angeletti and
   Xavier Leroy)
 
-- #11184: Stop calling ranlib on created / installed libraries
-  (Sébastien Hinderer, review by Xavier Leroy)
+- #11184, #11670: Stop calling ranlib on created / installed libraries
+  (Sébastien Hinderer and Xavier Leroy, review by the same)
 
 - #11253: Deprecate `ocaml script` and `ocamlnat` script where `script` has no
   extension and is an implicit basename.
@@ -843,6 +863,9 @@ OCaml 4.14.0 (28 March 2022)
 
 - #10786: The implementation of Complex.norm now uses Float.hypot.
   (Christophe Troestler, review by David Allsopp and Xavier Leroy)
+
+- #10464: Add List.is_empty.
+  (Craig Ferguson, review by David Allsopp)
 
 ### Other libraries:
 

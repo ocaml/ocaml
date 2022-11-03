@@ -5715,9 +5715,9 @@ let report_error ~loc env = function
           (function ppf ->
              fprintf ppf "but is here used with type");
         if b then
-          fprintf ppf ".@.@[<hov>%s@ %s@ %s@]"
+          fprintf ppf ".@.@[<hov>%s@ @{<hint>Hint@}: Consider using a fully \
+                      explicit coercion@ %s@]"
             "This simple coercion was not fully general."
-            "@{<hint>Hint@}: Consider using a fully explicit coercion"
             "of the form: `(foo : ty1 :> ty2)'."
       ) ()
   | Not_a_function (ty, explanation) ->

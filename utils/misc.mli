@@ -524,7 +524,7 @@ module Magic_number : sig
       will generate a textual explanation of each error,
       for use in error messages.
 
-      @since 4.11.0
+      @since 4.11
   *)
 
   type native_obj_config = {

@@ -174,7 +174,7 @@ val fold_left_map :
   ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
 (** [fold_left_map] is a combination of {!fold_left} and {!map} that threads an
     accumulator through calls to [f].
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 val fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
 (** [fold_right f a init] computes
@@ -189,7 +189,7 @@ val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
 (** [iter2 f a b] applies function [f] to all the elements of [a]
    and [b].
    @raise Invalid_argument if the arrays are not the same size.
-   @since 4.03.0 (4.05.0 in ArrayLabels)
+   @since 4.03 (4.05 in ArrayLabels)
    *)
 
 val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
@@ -197,7 +197,7 @@ val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
    and [b], and builds an array with the results returned by [f]:
    [[| f a.(0) b.(0); ...; f a.(length a - 1) b.(length b - 1)|]].
    @raise Invalid_argument if the arrays are not the same size.
-   @since 4.03.0 (4.05.0 in ArrayLabels) *)
+   @since 4.03 (4.05 in ArrayLabels) *)
 
 
 (** {1 Array scanning} *)
@@ -206,60 +206,60 @@ val for_all : ('a -> bool) -> 'a array -> bool
 (** [for_all f [|a1; ...; an|]] checks if all elements
    of the array satisfy the predicate [f]. That is, it returns
    [(f a1) && (f a2) && ... && (f an)].
-   @since 4.03.0 *)
+   @since 4.03 *)
 
 val exists : ('a -> bool) -> 'a array -> bool
 (** [exists f [|a1; ...; an|]] checks if at least one element of
     the array satisfies the predicate [f]. That is, it returns
     [(f a1) || (f a2) || ... || (f an)].
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 val for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
 (** Same as {!for_all}, but for a two-argument predicate.
    @raise Invalid_argument if the two arrays have different lengths.
-   @since 4.11.0 *)
+   @since 4.11 *)
 
 val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
 (** Same as {!exists}, but for a two-argument predicate.
    @raise Invalid_argument if the two arrays have different lengths.
-   @since 4.11.0 *)
+   @since 4.11 *)
 
 val mem : 'a -> 'a array -> bool
 (** [mem a set] is true if and only if [a] is structurally equal
     to an element of [l] (i.e. there is an [x] in [l] such that
     [compare a x = 0]).
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 val memq : 'a -> 'a array -> bool
 (** Same as {!mem}, but uses physical equality
    instead of structural equality to compare list elements.
-   @since 4.03.0 *)
+   @since 4.03 *)
 
 val find_opt : ('a -> bool) -> 'a array -> 'a option
 (** [find_opt f a] returns the first element of the array [a] that satisfies
     the predicate [f], or [None] if there is no value that satisfies [f] in the
     array [a].
 
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 val find_map : ('a -> 'b option) -> 'a array -> 'b option
 (** [find_map f a] applies [f] to the elements of [a] in order, and returns the
     first result of the form [Some v], or [None] if none exist.
 
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 (** {1 Arrays of pairs} *)
 
 val split : ('a * 'b) array -> 'a array * 'b array
 (** [split [|(a1,b1); ...; (an,bn)|]] is [([|a1; ...; an|], [|b1; ...; bn|])].
 
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 val combine : 'a array -> 'b array -> ('a * 'b) array
 (** [combine [|a1; ...; an|] [|b1; ...; bn|]] is [[|(a1,b1); ...; (an,bn)|]].
     Raise [Invalid_argument] if the two arrays have different lengths.
 
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 (** {1 Sorting} *)
 

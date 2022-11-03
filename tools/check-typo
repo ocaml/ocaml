@@ -29,6 +29,7 @@
 # - maximum line length of 132 characters (very-long-line)
 # - presence of a copyright header (missing-header)
 # - absence of a leftover "$Id" string (svn-keyword)
+# - formatting of version numbers in @since, @after and @before (doc-version)
 
 # Exceptions are handled with git attributes: "typo.*".
 # Its value for a given file is a comma-separated list of rule names,
@@ -372,6 +373,20 @@ EXIT_CODE=0
             }
           } else {
             ++ counts["utf8"];
+          }
+        }
+
+        match($0, /@(since|after|before) +[0-9.]+/) {
+          if (match($0, / [34]\.[0-9]([^0-9]|$)/)) {
+            err("doc-version", "version should be formatted M.mm (e.g. 4.08)");
+          } else {
+            if (match($0, / [5-9][0-9]*\.0[0-9]/)) {
+              err("doc-version", "version should be formatted M.m (e.g. 5.0)");
+            } else {
+              if (match($0, / [0-9]+\.[0-9]+\.0/)) {
+                err("doc-version", "version should not include .0 revision");
+              }
+            }
           }
         }
 
