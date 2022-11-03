@@ -359,7 +359,7 @@ OCaml 5.0
   (Hannes Mehnert, review by Nicolás Ojeda Bär)
 
 - #11418: RISC-V multicore support.
-  (Nicolás Ojeda Bär)
+  (Nicolás Ojeda Bär, review by KC Sivaramakrishnan)
 
 ### Standard library:
 
