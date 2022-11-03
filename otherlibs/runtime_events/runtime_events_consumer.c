@@ -501,7 +501,7 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
             ((char *)cursor->metadata + cursor->metadata->custom_events_offset))
             [event_id];
         char* event_name = custom_event->name;
-        ev_user_msg_type event_type = RUNTIME_EVENTS_ITEM_TYPE(header);
+        ev_user_message_type event_type = RUNTIME_EVENTS_ITEM_TYPE(header);
 
         switch (event_type) {
           case EV_USER_MSG_TYPE_EVENT:

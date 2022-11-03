@@ -53,7 +53,7 @@ typedef enum {
     EV_COUNTER,
     EV_ALLOC,
     EV_FLUSH
-} ev_message_type;
+} ev_runtime_message_type;
 
 typedef enum {
     EV_GC
@@ -189,7 +189,12 @@ typedef enum {
    EV_USER_MSG_TYPE_SPAN_BEGIN,
    EV_USER_MSG_TYPE_SPAN_END,
    EV_USER_MSG_TYPE_CUSTOM
-} ev_user_msg_type;
+} ev_user_message_type;
+
+typedef union {
+   ev_runtime_message_type runtime;
+   ev_user_message_type user;
+} ev_message_type;
 
 /* The type for event messages in OCaml. */
 typedef enum {

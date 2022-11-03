@@ -123,7 +123,7 @@ static caml_plat_mutex user_events_lock;
 static value write_buffer = Val_none;
 static caml_plat_mutex write_buffer_lock;
 
-static void write_to_ring(ev_category category, int type,
+static void write_to_ring(ev_category category, ev_message_type type,
                           int event_id, int event_length, uint64_t *content,
                           int word_offset);
 
@@ -231,7 +231,8 @@ char_os* caml_runtime_events_current_location(void) {
   ring buffers */
 void caml_runtime_events_destroy(void) {
   if (atomic_load_acq(&runtime_events_enabled)) {
-    write_to_ring(EV_RUNTIME, EV_LIFECYCLE, EV_RING_STOP, 0, NULL, 0);
+    write_to_ring(
+      EV_RUNTIME, (ev_message_type){EV_LIFECYCLE}, EV_RING_STOP, 0, NULL, 0);
 
     /* clean up runtime_events when we exit if we haven't been instructed to
       preserve the file. */
@@ -458,7 +459,7 @@ static struct runtime_events_buffer_header *get_ring_buffer_by_domain_id
                                 current_metadata->ring_header_size_bytes);
 }
 
-static void write_to_ring(ev_category category, int type,
+static void write_to_ring(ev_category category, ev_message_type type,
                           int event_id, int event_length, uint64_t *content,
                           int word_offset) {
 
@@ -500,7 +501,8 @@ static void write_to_ring(ev_category category, int type,
   /* length must be less than 2^10 */
   CAMLassert(event_length < RUNTIME_EVENTS_MAX_MSG_LENGTH);
   /* Runtime event with type EV_INTERNAL and id 0 is reserved for padding */
-  CAMLassert(!(category == EV_RUNTIME && type == EV_INTERNAL && event_id == 0));
+  CAMLassert(
+    !(category == EV_RUNTIME && type.runtime == EV_INTERNAL && event_id == 0));
 
   /* work out if padding is required */
   if (ring_distance_to_end < length_with_header_ts) {
@@ -542,7 +544,7 @@ static void write_to_ring(ev_category category, int type,
   ring_ptr[ring_tail_offset++] = RUNTIME_EVENTS_HEADER(
                                   length_with_header_ts,
                                   category == EV_RUNTIME,
-                                  type,
+                                  (type.runtime | type.user),
                                   event_id);
 
   ring_ptr[ring_tail_offset++] = timestamp;
@@ -565,13 +567,13 @@ static inline int ring_is_active(void) {
 
 void caml_ev_begin(ev_runtime_phase phase) {
   if ( ring_is_active() ) {
-    write_to_ring(EV_RUNTIME, EV_BEGIN, phase, 0, NULL, 0);
+    write_to_ring(EV_RUNTIME, (ev_message_type){EV_BEGIN}, phase, 0, NULL, 0);
   }
 }
 
 void caml_ev_end(ev_runtime_phase phase) {
   if ( ring_is_active() ) {
-    write_to_ring(EV_RUNTIME, EV_EXIT, phase, 0, NULL, 0);
+    write_to_ring(EV_RUNTIME, (ev_message_type){EV_EXIT}, phase, 0, NULL, 0);
   }
 }
 
@@ -580,13 +582,14 @@ void caml_ev_counter(ev_runtime_counter counter, uint64_t val) {
     uint64_t buf[1];
     buf[0] = val;
 
-    write_to_ring(EV_RUNTIME, EV_COUNTER, counter, 1, buf, 0);
+    write_to_ring(
+      EV_RUNTIME, (ev_message_type){EV_COUNTER}, counter, 1, buf, 0);
   }
 }
 
 void caml_ev_lifecycle(ev_lifecycle lifecycle, int64_t data) {
   if ( ring_is_active() ) {
-    write_to_ring(EV_RUNTIME, EV_LIFECYCLE, lifecycle, 1, (uint64_t *)&data, 0);
+    write_to_ring(EV_RUNTIME, (ev_message_type){EV_LIFECYCLE}, lifecycle, 1, (uint64_t *)&data, 0);
   }
 }
 
@@ -613,8 +616,8 @@ void caml_ev_alloc_flush(void) {
   if ( !ring_is_active() )
     return;
 
-  write_to_ring(EV_RUNTIME, EV_ALLOC, 0, RUNTIME_EVENTS_NUM_ALLOC_BUCKETS,
-                                                              alloc_buckets, 0);
+  write_to_ring(EV_RUNTIME, (ev_message_type){EV_ALLOC}, 0,
+                  RUNTIME_EVENTS_NUM_ALLOC_BUCKETS, alloc_buckets, 0);
 
   for (i = 1; i < RUNTIME_EVENTS_NUM_ALLOC_BUCKETS; i++) {
     alloc_buckets[i] = 0;
@@ -742,7 +745,7 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
     uintnat len_64bit_word = (len_bytes + sizeof(uint64_t)) / sizeof(uint64_t);
     uintnat offset_index = len_64bit_word * sizeof(uint64_t) - 1;
     Bytes_val(write_buffer)[offset_index] = offset_index - len_bytes;
-    write_to_ring(EV_USER, EV_USER_MSG_TYPE_CUSTOM,
+    write_to_ring(EV_USER, (ev_message_type){EV_USER_MSG_TYPE_CUSTOM},
       Int_val(event_id), len_64bit_word, (uint64_t *) Bytes_val(write_buffer),
       0);
 
@@ -755,27 +758,27 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
 
     // Event
     if (event_type_id == EV_USER_ML_TYPE_EVENT) {
-      write_to_ring(EV_USER, EV_USER_MSG_TYPE_EVENT,
+      write_to_ring(EV_USER, (ev_message_type){EV_USER_MSG_TYPE_EVENT},
         Int_val(event_id), 0, NULL, 0);
     }
 
     // Counter
     if (event_type_id == EV_USER_ML_TYPE_COUNTER) {
       uint64_t c_event_content = Int_val(event_content);
-      write_to_ring(EV_USER, EV_USER_MSG_TYPE_COUNTER,
+      write_to_ring(EV_USER, (ev_message_type){EV_USER_MSG_TYPE_COUNTER},
         Int_val(event_id), 1, &c_event_content, 0);
     }
 
     // Span
     if (event_type_id == EV_USER_ML_TYPE_SPAN) {
       // event_content type is Begin | End
-      int message_type;
+      ev_user_message_type message_type;
       if (Int_val(event_content) == 0) {
         message_type = EV_USER_MSG_TYPE_SPAN_BEGIN;
       } else {
         message_type = EV_USER_MSG_TYPE_SPAN_END;
       }
-      write_to_ring(EV_USER, message_type,
+      write_to_ring(EV_USER, (ev_message_type)message_type,
         Int_val(event_id), 0, NULL, 0);
     }
   }
