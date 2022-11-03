@@ -53,14 +53,17 @@ let rec insert_interval_sorted i = function
   | j :: _ as il when j.iend <= i.iend -> i :: il
   | j :: il -> j :: insert_interval_sorted i il
 
-let rec release_expired_spilled ci pos =
-  match SpilledSet.min_elt_opt ci.ci_spilled with
-  | Some ((iend, ss) as x) when iend < pos ->
-      ci.ci_free_slots <- IntSet.add ss ci.ci_free_slots;
-      ci.ci_spilled <- SpilledSet.remove x ci.ci_spilled;
-      release_expired_spilled ci pos
-  | _ ->
-      ()
+let release_expired_spilled ci pos =
+  let (expired, divider_in_set, rest) =
+    (* (-1) is strictly below all valid positions, so (pos, (-1)) splits the set
+       into all spills with (iend < pos) and all spills above (iend >= 0),
+       without being itself in the set *)
+    SpilledSet.split (pos, (-1)) ci.ci_spilled in
+  assert (not divider_in_set);
+  ci.ci_free_slots <-
+    SpilledSet.fold (fun (_, ss) free -> IntSet.add ss free)
+      expired ci.ci_free_slots;
+  ci.ci_spilled <- rest
 
 let rec release_expired_fixed pos = function
     i :: il when i.iend >= pos ->
