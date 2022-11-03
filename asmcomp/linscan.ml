@@ -65,33 +65,42 @@ let release_expired_spilled ci pos =
       expired ci.ci_free_slots;
   ci.ci_spilled <- rest
 
-let rec release_expired_fixed pos = function
-    i :: il when i.iend >= pos ->
-      Interval.remove_expired_ranges i pos;
-      i :: release_expired_fixed pos il
-  | _ -> []
+let release_expired_fixed ci pos =
+  let rec loop ci pos = function
+      i :: il when i.iend >= pos ->
+        Interval.remove_expired_ranges i pos;
+        i :: loop ci pos il
+    | _ -> []
+  in
+  ci.ci_fixed <- loop ci pos ci.ci_fixed
 
-let rec release_expired_active ci pos = function
-    i :: il when i.iend >= pos ->
-      Interval.remove_expired_ranges i pos;
-      if Interval.is_live i pos then
-        i :: release_expired_active ci pos il
-      else begin
-        ci.ci_inactive <- insert_interval_sorted i ci.ci_inactive;
-        release_expired_active ci pos il
-      end
-  | _ -> []
+let release_expired_active ci pos =
+  let rec loop ci pos = function
+      i :: il when i.iend >= pos ->
+        Interval.remove_expired_ranges i pos;
+        if Interval.is_live i pos then
+          i :: loop ci pos il
+        else begin
+          ci.ci_inactive <- insert_interval_sorted i ci.ci_inactive;
+          loop ci pos il
+        end
+    | _ -> []
+  in
+  ci.ci_active <- loop ci pos ci.ci_active
 
-let rec release_expired_inactive ci pos = function
-    i :: il when i.iend >= pos ->
-      Interval.remove_expired_ranges i pos;
-      if not (Interval.is_live i pos) then
-        i :: release_expired_inactive ci pos il
-      else begin
-        ci.ci_active <- insert_interval_sorted i ci.ci_active;
-        release_expired_inactive ci pos il
-      end
-  | _ -> []
+let release_expired_inactive ci pos =
+  let rec loop ci pos = function
+      i :: il when i.iend >= pos ->
+        Interval.remove_expired_ranges i pos;
+        if not (Interval.is_live i pos) then
+          i :: loop ci pos il
+        else begin
+          ci.ci_active <- insert_interval_sorted i ci.ci_active;
+          loop ci pos il
+        end
+    | _ -> []
+  in
+  ci.ci_inactive <- loop ci pos ci.ci_inactive
 
 (* Allocate a new stack slot to the interval. *)
 
@@ -200,9 +209,9 @@ let walk_interval num_stack_slots i =
   (* Release all intervals that have been expired at the current position *)
   Array.iter
     (fun ci ->
-      ci.ci_fixed <- release_expired_fixed pos ci.ci_fixed;
-      ci.ci_active <- release_expired_active ci pos ci.ci_active;
-      ci.ci_inactive <- release_expired_inactive ci pos ci.ci_inactive;
+      release_expired_fixed ci pos;
+      release_expired_active ci pos;
+      release_expired_inactive ci pos;
       release_expired_spilled ci pos)
     active;
   try
