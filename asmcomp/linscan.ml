@@ -21,18 +21,11 @@ open Interval
 module IntervalSet = Set.Make (struct
     type t = Interval.t
     let compare i j =
-      let c = Int.compare j.iend i.iend in
+      let c = Int.compare i.iend j.iend in
       if c = 0 then Int.compare i.reg.stamp j.reg.stamp else c
   end)
 
-module IntSet = Set.Make(Int)
-
-module SpilledSet = Set.Make (struct
-    type t = int * int
-    let compare (iend1, ss1) (iend2, ss2) =
-      let c = Int.compare iend1 iend2 in
-      if c = 0 then Int.compare ss1 ss2 else c
-  end)
+module SlotSet = Set.Make(Int)
 
 (* Live intervals per register class *)
 
@@ -41,69 +34,73 @@ type class_intervals =
     mutable ci_fixed: IntervalSet.t;
     mutable ci_active: IntervalSet.t;
     mutable ci_inactive: IntervalSet.t;
-    mutable ci_spilled: SpilledSet.t;
-    mutable ci_free_slots: IntSet.t; (* stack slots available for reuse *)
+    mutable ci_spilled:
+      (* spilled stack slots (reg.loc = Stack (Local n)) still in use *)
+      IntervalSet.t;
+    mutable ci_free_slots:
+      (* expired stack slots available for reuse *)
+      SlotSet.t;
   }
 
 let active = Array.init Proc.num_register_classes (fun _ -> {
   ci_fixed = IntervalSet.empty;
   ci_active = IntervalSet.empty;
   ci_inactive = IntervalSet.empty;
-  ci_spilled = SpilledSet.empty;
-  ci_free_slots = IntSet.empty;
+  ci_spilled = IntervalSet.empty;
+  ci_free_slots = SlotSet.empty;
 })
 
-let release_expired_spilled ci pos =
-  let (expired, divider_in_set, rest) =
-    (* (-1) is strictly below all valid positions, so (pos, (-1)) splits the set
-       into all spills with (iend < pos) and all spills above (iend >= 0),
-       without being itself in the set *)
-    SpilledSet.split (pos, (-1)) ci.ci_spilled in
+let slot_of_spilled i =
+  match i.reg.loc with
+  | Stack(Local ss) -> ss
+  | _ -> invalid_arg "Linscan.slot_of_spilled"
+
+
+let split_by_pos intervals pos =
+  let divider =
+    (* this interval is strictly above intervals [i] with [i.iend < pos] and
+       strictly below [i] with [i.iend >= pos]. We use a dummy register with a
+       non-existent [stamp] to make sure that it is not "equal" to any of the
+       intervals in the set (according to the equality function of [IntervalSet]
+       above). *)
+    {Interval.reg = {Reg.dummy with stamp = -1};
+     ibegin = pos;
+     iend = pos;
+     ranges = []}
+  in
+  let (before, divider_in_set, after) = IntervalSet.split divider intervals in
   assert (not divider_in_set);
+  (before, after)
+
+let remove_expired_ranges intervals pos =
+  IntervalSet.iter (fun i -> Interval.remove_expired_ranges i pos) intervals
+
+let release_expired_spilled ci pos =
+  let (expired, rest) = split_by_pos ci.ci_spilled pos in
   ci.ci_free_slots <-
-    SpilledSet.fold (fun (_, ss) free -> IntSet.add ss free)
+    IntervalSet.fold (fun i free -> SlotSet.add (slot_of_spilled i) free)
       expired ci.ci_free_slots;
   ci.ci_spilled <- rest
 
-(* [dummy_interval pos] is strictly above intervals [i] with [i.iend >= pos] and
-   strictly below [i] with [i.iend < pos]. We use a dummy register with a
-   non-existent [stamp] to make sure that it is not "equal" to any of the
-   intervals in the set (according to the equality function of [IntervalSet]
-   above). *)
-
-let dummy_interval pos =
-  {Interval.reg = {Reg.dummy with stamp = -1};
-   ibegin = pos;
-   iend = pos;
-   ranges = []}
-
 let release_expired_fixed ci pos =
-  let (rest, divider_in_set, _expired) =
-    IntervalSet.split (dummy_interval pos) ci.ci_fixed in
-  assert (not divider_in_set);
-  IntervalSet.iter (fun i -> Interval.remove_expired_ranges i pos) rest;
+  let (_expired, rest) = split_by_pos ci.ci_fixed pos in
+  remove_expired_ranges rest pos;
   ci.ci_fixed <- rest
 
+let partition_live intervals pos =
+  IntervalSet.partition (fun i -> Interval.is_live i pos) intervals
+
 let release_expired_active ci pos =
-  let (rest, divider_in_set, _expired) =
-    IntervalSet.split (dummy_interval pos) ci.ci_active in
-  assert (not divider_in_set);
-  let active, inactive =
-    IntervalSet.partition (fun i ->
-        Interval.remove_expired_ranges i pos;
-        Interval.is_live i pos) rest in
+  let (_expired, rest) = split_by_pos ci.ci_active pos in
+  remove_expired_ranges rest pos;
+  let active, inactive = partition_live rest pos in
   ci.ci_active <- active;
   ci.ci_inactive <- IntervalSet.union inactive ci.ci_inactive
 
 let release_expired_inactive ci pos =
-  let (rest, divider_in_set, _expired) =
-    IntervalSet.split (dummy_interval pos) ci.ci_inactive in
-  assert (not divider_in_set);
-  let active, inactive =
-    IntervalSet.partition
-      (fun i ->
-         Interval.remove_expired_ranges i pos;
-         Interval.is_live i pos) rest in
+  let (_expired, rest) = split_by_pos ci.ci_inactive pos in
+  remove_expired_ranges rest pos;
+  let active, inactive = partition_live rest pos in
   ci.ci_inactive <- inactive;
   ci.ci_active <- IntervalSet.union active ci.ci_active
 
@@ -113,9 +110,9 @@ let allocate_stack_slot num_stack_slots i =
   let cl = Proc.register_class i.reg in
   let ci = active.(cl) in
   let ss =
-    match IntSet.min_elt_opt ci.ci_free_slots with
+    match SlotSet.min_elt_opt ci.ci_free_slots with
     | Some ss ->
-        ci.ci_free_slots <- IntSet.remove ss ci.ci_free_slots;
+        ci.ci_free_slots <- SlotSet.remove ss ci.ci_free_slots;
         ss
     | None ->
         let ss = num_stack_slots.(cl) in
@@ -124,7 +121,7 @@ let allocate_stack_slot num_stack_slots i =
   in
   i.reg.loc <- Stack(Local ss);
   i.reg.spill <- true;
-  ci.ci_spilled <- SpilledSet.add (i.iend, ss) ci.ci_spilled
+  ci.ci_spilled <- IntervalSet.add i ci.ci_spilled
 
 (* Find a register for the given interval and assigns this register.
    The interval is added to active. Raises Not_found if no free registers
@@ -187,7 +184,7 @@ let allocate_free_register num_stack_slots i =
 let allocate_blocked_register num_stack_slots i =
   let cl = Proc.register_class i.reg in
   let ci = active.(cl) in
-  match IntervalSet.min_elt_opt ci.ci_active with
+  match IntervalSet.max_elt_opt ci.ci_active with
   | Some ilast when
       ilast.iend > i.iend &&
       (* Last interval in active is the last interval, so spill it. *)
@@ -237,8 +234,8 @@ let allocate_registers (intervals : Interval.result) =
       ci_fixed = IntervalSet.empty;
       ci_active = IntervalSet.empty;
       ci_inactive = IntervalSet.empty;
-      ci_spilled = SpilledSet.empty;
-      ci_free_slots = IntSet.empty;
+      ci_spilled = IntervalSet.empty;
+      ci_free_slots = SlotSet.empty;
     };
   done;
   (* Reset the stack slot counts *)
