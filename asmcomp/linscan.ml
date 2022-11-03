@@ -65,50 +65,31 @@ let release_expired_spilled ci pos =
       expired ci.ci_free_slots;
   ci.ci_spilled <- rest
 
+let dummy_interval pos =
+  {Interval.reg = Reg.dummy;
+   ibegin = pos;
+   iend = pos;
+   ranges = []}
+
 let release_expired_fixed ci pos =
-  let rec loop ci pos fixed il =
-    match IntervalSet.min_elt_opt il with
-    | Some i when i.iend >= pos ->
-        Interval.remove_expired_ranges i pos;
-        loop ci pos (IntervalSet.add i fixed) (IntervalSet.remove i il)
-    | _ ->
-        ci.ci_fixed <- fixed
-  in
-  loop ci pos IntervalSet.empty ci.ci_fixed
+  let (rest, divider_in_set, _expired) = IntervalSet.split (dummy_interval pos) ci.ci_fixed in
+  assert (not divider_in_set);
+  IntervalSet.iter (fun i -> Interval.remove_expired_ranges i pos) rest;
+  ci.ci_fixed <- rest
 
 let release_expired_active ci pos =
-  let rec loop ci pos active inactive il =
-    match IntervalSet.min_elt_opt il with
-    | Some i when i.iend >= pos ->
-        let il = IntervalSet.remove i il in
-        Interval.remove_expired_ranges i pos;
-        if Interval.is_live i pos then
-          loop ci pos (IntervalSet.add i active) inactive il
-        else begin
-          loop ci pos active (IntervalSet.add i inactive) il
-        end
-    | _ ->
-        ci.ci_active <- active;
-        ci.ci_inactive <- inactive
-  in
-  loop ci pos IntervalSet.empty ci.ci_inactive ci.ci_active
+  let (rest, divider_in_set, _expired) = IntervalSet.split (dummy_interval pos) ci.ci_active in
+  assert (not divider_in_set);
+  let active, inactive = IntervalSet.partition (fun i -> Interval.remove_expired_ranges i pos; Interval.is_live i pos) rest in
+  ci.ci_active <- active;
+  ci.ci_inactive <- IntervalSet.union inactive ci.ci_inactive
 
 let release_expired_inactive ci pos =
-  let rec loop ci pos active inactive il =
-    match IntervalSet.min_elt_opt il with
-    | Some i when i.iend >= pos ->
-        let il = IntervalSet.remove i il in
-        Interval.remove_expired_ranges i pos;
-        if not (Interval.is_live i pos) then
-          loop ci pos active (IntervalSet.add i inactive) il
-        else begin
-          loop ci pos (IntervalSet.add i active) inactive il
-        end
-    | _ ->
-        ci.ci_active <- active;
-        ci.ci_inactive <- inactive
-  in
-  loop ci pos ci.ci_active IntervalSet.empty ci.ci_inactive
+  let (rest, divider_in_set, _expired) = IntervalSet.split (dummy_interval pos) ci.ci_inactive in
+  assert (not divider_in_set);
+  let active, inactive = IntervalSet.partition (fun i -> Interval.remove_expired_ranges i pos; Interval.is_live i pos) rest in
+  ci.ci_inactive <- inactive;
+  ci.ci_active <- IntervalSet.union active ci.ci_active
 
 (* Allocate a new stack slot to the interval. *)
 
