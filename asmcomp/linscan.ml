@@ -65,8 +65,14 @@ let release_expired_spilled ci pos =
       expired ci.ci_free_slots;
   ci.ci_spilled <- rest
 
+(* [dummy_interval pos] is strictly above intervals [i] with [i.iend >= pos] and
+   strictly below [i] with [i.iend < pos]. We use a dummy register with a
+   non-existent [stamp] to make sure that it is not "equal" to any of the
+   intervals in the set (according to the equality function of [IntervalSet]
+   above). *)
+
 let dummy_interval pos =
-  {Interval.reg = Reg.dummy;
+  {Interval.reg = {Reg.dummy with stamp = -1};
    ibegin = pos;
    iend = pos;
    ranges = []}
