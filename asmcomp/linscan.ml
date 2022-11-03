@@ -18,6 +18,13 @@
 
 open Interval
 
+module IntervalSet = Set.Make (struct
+    type t = Interval.t
+    let compare i j =
+      let c = Int.compare j.iend i.iend in
+      if c = 0 then Int.compare i.reg.stamp j.reg.stamp else c
+  end)
+
 module IntSet = Set.Make(Int)
 
 module SpilledSet = Set.Make (struct
@@ -31,27 +38,20 @@ module SpilledSet = Set.Make (struct
 
 type class_intervals =
   {
-    mutable ci_fixed: Interval.t list;
-    mutable ci_active: Interval.t list;
-    mutable ci_inactive: Interval.t list;
+    mutable ci_fixed: IntervalSet.t;
+    mutable ci_active: IntervalSet.t;
+    mutable ci_inactive: IntervalSet.t;
     mutable ci_spilled: SpilledSet.t;
     mutable ci_free_slots: IntSet.t; (* stack slots available for reuse *)
   }
 
 let active = Array.init Proc.num_register_classes (fun _ -> {
-  ci_fixed = [];
-  ci_active = [];
-  ci_inactive = [];
+  ci_fixed = IntervalSet.empty;
+  ci_active = IntervalSet.empty;
+  ci_inactive = IntervalSet.empty;
   ci_spilled = SpilledSet.empty;
   ci_free_slots = IntSet.empty;
 })
-
-(* Insert interval into list sorted by end position *)
-
-let rec insert_interval_sorted i = function
-    [] -> [i]
-  | j :: _ as il when j.iend <= i.iend -> i :: il
-  | j :: il -> j :: insert_interval_sorted i il
 
 let release_expired_spilled ci pos =
   let (expired, divider_in_set, rest) =
@@ -66,41 +66,49 @@ let release_expired_spilled ci pos =
   ci.ci_spilled <- rest
 
 let release_expired_fixed ci pos =
-  let rec loop ci pos = function
-      i :: il when i.iend >= pos ->
+  let rec loop ci pos fixed il =
+    match IntervalSet.min_elt_opt il with
+    | Some i when i.iend >= pos ->
         Interval.remove_expired_ranges i pos;
-        i :: loop ci pos il
-    | _ -> []
+        loop ci pos (IntervalSet.add i fixed) (IntervalSet.remove i il)
+    | _ ->
+        ci.ci_fixed <- fixed
   in
-  ci.ci_fixed <- loop ci pos ci.ci_fixed
+  loop ci pos IntervalSet.empty ci.ci_fixed
 
 let release_expired_active ci pos =
-  let rec loop ci pos = function
-      i :: il when i.iend >= pos ->
+  let rec loop ci pos active inactive il =
+    match IntervalSet.min_elt_opt il with
+    | Some i when i.iend >= pos ->
+        let il = IntervalSet.remove i il in
         Interval.remove_expired_ranges i pos;
         if Interval.is_live i pos then
-          i :: loop ci pos il
+          loop ci pos (IntervalSet.add i active) inactive il
         else begin
-          ci.ci_inactive <- insert_interval_sorted i ci.ci_inactive;
-          loop ci pos il
+          loop ci pos active (IntervalSet.add i inactive) il
         end
-    | _ -> []
+    | _ ->
+        ci.ci_active <- active;
+        ci.ci_inactive <- inactive
   in
-  ci.ci_active <- loop ci pos ci.ci_active
+  loop ci pos IntervalSet.empty ci.ci_inactive ci.ci_active
 
 let release_expired_inactive ci pos =
-  let rec loop ci pos = function
-      i :: il when i.iend >= pos ->
+  let rec loop ci pos active inactive il =
+    match IntervalSet.min_elt_opt il with
+    | Some i when i.iend >= pos ->
+        let il = IntervalSet.remove i il in
         Interval.remove_expired_ranges i pos;
         if not (Interval.is_live i pos) then
-          i :: loop ci pos il
+          loop ci pos active (IntervalSet.add i inactive) il
         else begin
-          ci.ci_active <- insert_interval_sorted i ci.ci_active;
-          loop ci pos il
+          loop ci pos (IntervalSet.add i active) inactive il
         end
-    | _ -> []
+    | _ ->
+        ci.ci_active <- active;
+        ci.ci_inactive <- inactive
   in
-  ci.ci_inactive <- loop ci pos ci.ci_inactive
+  loop ci pos ci.ci_active IntervalSet.empty ci.ci_inactive
 
 (* Allocate a new stack slot to the interval. *)
 
@@ -147,7 +155,7 @@ let allocate_free_register num_stack_slots i =
                    registers) *)
           let regmask = Array.make rn true in
           (* Remove all assigned registers from the register mask *)
-          List.iter
+          IntervalSet.iter
             (function
               {reg = {loc = Reg r}} ->
                 if r - r0 < rn then regmask.(r - r0) <- false
@@ -160,8 +168,8 @@ let allocate_free_register num_stack_slots i =
                    && Interval.overlap j i then
                 regmask.(r - r0) <- false
             | _ -> () in
-          List.iter remove_bound_overlapping ci.ci_inactive;
-          List.iter remove_bound_overlapping ci.ci_fixed;
+          IntervalSet.iter remove_bound_overlapping ci.ci_inactive;
+          IntervalSet.iter remove_bound_overlapping ci.ci_fixed;
           (* Assign the first free register (if any) *)
           let rec assign r =
             if r = rn then
@@ -171,7 +179,7 @@ let allocate_free_register num_stack_slots i =
                  current interval into the active list *)
               i.reg.loc <- Reg (r0 + r);
               i.reg.spill <- false;
-              ci.ci_active <- insert_interval_sorted i ci.ci_active
+              ci.ci_active <- IntervalSet.add i ci.ci_active
             end else
               assign (succ r) in
           assign 0
@@ -182,20 +190,21 @@ let allocate_free_register num_stack_slots i =
 let allocate_blocked_register num_stack_slots i =
   let cl = Proc.register_class i.reg in
   let ci = active.(cl) in
-  match ci.ci_active with
-  | ilast :: il when
+  match IntervalSet.min_elt_opt ci.ci_active with
+  | Some ilast when
       ilast.iend > i.iend &&
       (* Last interval in active is the last interval, so spill it. *)
       let chk r = r.reg.loc = ilast.reg.loc && Interval.overlap r i in
       (* But only if its physical register is admissible for the current
          interval. *)
-      not (List.exists chk ci.ci_fixed || List.exists chk ci.ci_inactive)
+      not (IntervalSet.exists chk ci.ci_fixed || IntervalSet.exists chk ci.ci_inactive)
     ->
+      let il = IntervalSet.remove ilast ci.ci_active in
       begin match ilast.reg.loc with Reg _ -> () | _ -> assert false end;
       (* Use register from last interval for current interval *)
       i.reg.loc <- ilast.reg.loc;
       (* Remove the last interval from active and insert the current *)
-      ci.ci_active <- insert_interval_sorted i il;
+      ci.ci_active <- IntervalSet.add i il;
       (* Now get a new stack slot for the spilled register *)
       allocate_stack_slot num_stack_slots ilast
   | _ ->
@@ -227,9 +236,9 @@ let allocate_registers (intervals : Interval.result) =
   for cl = 0 to Proc.num_register_classes - 1 do
     (* Start with empty interval lists *)
     active.(cl) <- {
-      ci_fixed = [];
-      ci_active = [];
-      ci_inactive = [];
+      ci_fixed = IntervalSet.empty;
+      ci_active = IntervalSet.empty;
+      ci_inactive = IntervalSet.empty;
       ci_spilled = SpilledSet.empty;
       ci_free_slots = IntSet.empty;
     };
@@ -240,7 +249,7 @@ let allocate_registers (intervals : Interval.result) =
   List.iter
     (fun i ->
       let ci = active.(Proc.register_class i.reg) in
-      ci.ci_fixed <- insert_interval_sorted i ci.ci_fixed)
+      ci.ci_fixed <- IntervalSet.add i ci.ci_fixed)
     intervals.fixed_intervals;
   (* Walk all the intervals within the list *)
   List.iter (walk_interval num_stack_slots) intervals.intervals;
