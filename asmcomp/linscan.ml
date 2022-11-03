@@ -197,7 +197,8 @@ let allocate_blocked_register num_stack_slots i =
       let chk r = r.reg.loc = ilast.reg.loc && Interval.overlap r i in
       (* But only if its physical register is admissible for the current
          interval. *)
-      not (IntervalSet.exists chk ci.ci_fixed || IntervalSet.exists chk ci.ci_inactive)
+      not (IntervalSet.exists chk ci.ci_fixed ||
+           IntervalSet.exists chk ci.ci_inactive)
     ->
       let il = IntervalSet.remove ilast ci.ci_active in
       begin match ilast.reg.loc with Reg _ -> () | _ -> assert false end;
