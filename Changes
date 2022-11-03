@@ -38,8 +38,8 @@ Working version
 
 - #11686: Better spilling heuristic for the Linear Scan allocator for more
   efficient stack usage.
-  (Nicolás Ojeda Bär, review by Gabriel Scherer, Alain Frisch and Nathanaëlle
-  Courant)
+  (Nicolás Ojeda Bär, Gabriel Scherer, Alain Frisch, review by Gabriel Scherer,
+  Alain Frisch and Nathanaëlle Courant)
 
 ### Standard library:
 
