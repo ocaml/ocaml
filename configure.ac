@@ -731,7 +731,8 @@ AS_CASE([$host],
         Please use GCC version 4.9 or above.]), 69)],
     [gcc-*],
       [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$cc_warnings -fno-common -fexcess-precision=standard"],
+      internal_cflags="$cc_warnings -fno-common -fexcess-precision=standard \
+-Wvla"],
     [msvc-*],
       [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
