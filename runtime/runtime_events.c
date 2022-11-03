@@ -123,7 +123,7 @@ static caml_plat_mutex user_events_lock;
 static value write_buffer = Val_none;
 static caml_plat_mutex write_buffer_lock;
 
-static void write_to_ring(ev_category category, ev_message_type type,
+static void write_to_ring(ev_category category, int type,
                           int event_id, int event_length, uint64_t *content,
                           int word_offset);
 
@@ -458,7 +458,7 @@ static struct runtime_events_buffer_header *get_ring_buffer_by_domain_id
                                 current_metadata->ring_header_size_bytes);
 }
 
-static void write_to_ring(ev_category category, ev_message_type type,
+static void write_to_ring(ev_category category, int type,
                           int event_id, int event_length, uint64_t *content,
                           int word_offset) {
 
