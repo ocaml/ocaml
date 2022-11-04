@@ -193,6 +193,10 @@ Working version
   run.
   (Stefan Muenzel, review by David Allsopp)
 
+- #11630: Use correct location when reporting record labels with non-existent
+  paths.
+  (Nicolás Ojeda Bär, report by Jason Gross, review by Gabriel Scherer)
+
 OCaml 5.0
 ---------
 
