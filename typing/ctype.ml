@@ -1341,10 +1341,9 @@ let rec copy_sep ~copy_scope ~fixed ~free ~may_share
   with Not_found -> begin
     let t = newstub ~scope:(get_scope ty) in
     TypeHash.add visited ty t;
-    let desc = get_desc ty in
     let copy_rec = copy_sep ~copy_scope ~fixed ~free ~visited in
     let desc' =
-      match desc with
+      match get_desc ty with
       | Tvariant row ->
           let more = row_more row in
           (* We shall really check the level on the row variable *)
@@ -1360,14 +1359,12 @@ let rec copy_sep ~copy_scope ~fixed ~free ~may_share
       | Tpoly (t1, tl) ->
           let tl' = List.map (fun t -> newty (get_desc t)) tl in
           List.iter2 (TypeHash.add visited) tl tl';
-          let body =
-            copy_sep ~copy_scope ~fixed ~free ~may_share:true ~visited t1 in
-          Tpoly (body, tl')
+          Tpoly (copy_rec ~may_share:true t1, tl')
       | Tfield (p, k, ty1, ty2) ->
           (* the kind is kept shared, see Btype.copy_type_desc *)
           Tfield (p, field_kind_internal_repr k, copy_rec ~may_share:true ty1,
                   copy_rec ~may_share:false ty2)
-      | _ -> copy_type_desc (copy_rec ~may_share:true) desc
+      | desc -> copy_type_desc (copy_rec ~may_share:true) desc
     in
     Transient_expr.set_stub_desc t desc';
     t
