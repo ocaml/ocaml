@@ -80,16 +80,15 @@ end = Set.Make(A)
                  "t"[type] -> <.35>;
                  };
  "ASet"[module] ->
-     {
-      "compare"[value] ->
-          CU Stdlib . "Set"[module] . "Make"[module](A/325<.19>) .
-          "compare"[value];
-      "elt"[type] ->
-          CU Stdlib . "Set"[module] . "Make"[module](A/325<.19>) .
-          "elt"[type];
-      "t"[type] ->
-          CU Stdlib . "Set"[module] . "Make"[module](A/325<.19>) . "t"[type];
-      };
+   {
+    "compare"[value] ->
+      CU Stdlib . "Set"[module] . "Make"[module](A/325<.19>) .
+      "compare"[value];
+    "elt"[type] ->
+      CU Stdlib . "Set"[module] . "Make"[module](A/325<.19>) . "elt"[type];
+    "t"[type] ->
+      CU Stdlib . "Set"[module] . "Make"[module](A/325<.19>) . "t"[type];
+    };
  }
 module rec A :
   sig

@@ -28,12 +28,12 @@ end
 [%%expect{|
 {
  "Finclude"[module] ->
-     Abs<.6>
-        (X/284,
-         {
-          "t"[type] -> X/284<.5> . "t"[type];
-          "x"[value] -> X/284<.5> . "x"[value];
-          });
+   Abs<.6>
+      (X/284,
+       {
+        "t"[type] -> X/284<.5> . "t"[type];
+        "x"[value] -> X/284<.5> . "x"[value];
+        });
  }
 module Finclude : functor (X : S) -> sig type t = X.t val x : t end
 |}]
@@ -45,10 +45,10 @@ end
 [%%expect{|
 {
  "Fredef"[module] ->
-     Abs<.10>(X/291, {
-                      "t"[type] -> <.8>;
-                      "x"[value] -> <.9>;
-                      });
+   Abs<.10>(X/291, {
+                    "t"[type] -> <.8>;
+                    "x"[value] -> <.9>;
+                    });
  }
 module Fredef : functor (X : S) -> sig type t = X.t val x : X.t end
 |}]
@@ -60,10 +60,10 @@ end
 [%%expect{|
 {
  "Fignore"[module] ->
-     Abs<.14>(()/1, {
-                     "t"[type] -> <.11>;
-                     "x"[value] -> <.13>;
-                     });
+   Abs<.14>(()/1, {
+                   "t"[type] -> <.11>;
+                   "x"[value] -> <.13>;
+                   });
  }
 module Fignore : S -> sig type t = Fresh val x : t end
 |}]
@@ -223,9 +223,9 @@ module Big_to_small1 : B2S = functor (X : Big) -> X
 [%%expect{|
 {
  "Big_to_small1"[module] ->
-     Abs<.40>(X/386, {<.39>
-                      "t"[type] -> X/386<.39> . "t"[type];
-                      });
+   Abs<.40>(X/386, {<.39>
+                    "t"[type] -> X/386<.39> . "t"[type];
+                    });
  }
 module Big_to_small1 : B2S
 |}]
@@ -234,9 +234,9 @@ module Big_to_small2 : B2S = functor (X : Big) -> struct include X end
 [%%expect{|
 {
  "Big_to_small2"[module] ->
-     Abs<.42>(X/389, {
-                      "t"[type] -> X/389<.41> . "t"[type];
-                      });
+   Abs<.42>(X/389, {
+                    "t"[type] -> X/389<.41> . "t"[type];
+                    });
  }
 module Big_to_small2 : B2S
 |}]
