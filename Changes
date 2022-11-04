@@ -39,6 +39,11 @@ Working version
 - #11418: RISC-V multicore support.
   (Nicolás Ojeda Bär, review by KC Sivaramakrishnan)
 
+- #11686: Better spilling heuristic for the Linear Scan allocator for more
+  efficient stack usage.
+  (Nicolás Ojeda Bär, Gabriel Scherer, Alain Frisch, review by Gabriel Scherer,
+  Alain Frisch and Nathanaëlle Courant)
+
 ### Standard library:
 
 - #11410: Add Set.to_list, Map.to_list, Map.of_list, Map.add_to_list,
