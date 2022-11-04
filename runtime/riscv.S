@@ -408,7 +408,7 @@ FUNCTION(caml_start_program)
         la      TMP2, caml_program
 
 /* Code shared with caml_callback* */
-/* Adress of domain state is in TMP */
+/* Address of domain state is in TMP */
 /* Address of OCaml code to call is in TMP2 */
 /* Arguments to the OCaml code are in a0...a7 */
 
