@@ -1307,8 +1307,27 @@ let add_delayed_copy t copy_scope ty =
     lazy (Transient_expr.set_stub_desc t (Tlink (copy copy_scope ty))) ::
     !delayed_copy
 
-(* Copy without sharing until there are no free univars left *)
-(* all free univars must be included in [visited]            *)
+(* [copy_sep] is used to instantiate first-class polymorphic types.
+   * It first makes a separate copy of the type as a graph, omitting nodes
+     that have no free univars.
+   * In this first pass, [visited] is used as a mapping for previously visited
+     nodes, and must already contain all the free univars in [ty].
+   * The remaining (univar-closed) parts of the type are then instantiated
+     with [copy] using a common [copy_scope].
+   The reason to work in two passes lies in recursive types such as:
+     [let h (x : < m : 'a. < n : 'a; p : 'b > > as 'b) = x#m]
+   The type of [x#m] should be:
+     [ < n : 'c; p : < m : 'a. < n : 'a; p : 'b > > as 'b > ]
+   I.e., the universal type variable ['a] is both instantiated as a fresh
+   type variable ['c] when outside of its binder, and kept as universal
+   when under its binder.
+   Assumption: in the first call to [copy_sep], all the free univars should
+   be bound by the same [Tpoly] node. This guarantees that they are only
+   bound when under this [Tpoly] node, which has no free univars, and as
+   such is not part of the separate copy. In turn, this allows the separate
+   copy to keep the sharing of the original type without breaking its
+   binding structure.
+ *)
 let rec copy_sep ~copy_scope ~fixed ~free ~may_share
     ~(visited : type_expr TypeHash.t) (ty : type_expr) =
   let univars = free ty in
