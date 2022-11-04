@@ -1192,7 +1192,37 @@ let disambiguate_lid_a_list loc closed env usage expected_type lid_a_list =
       disambiguate_label_by_ids closed ids in
     Label.disambiguate ~warn ~filter usage lid env expected_type scope in
   let lbl_a_list =
-    List.map (fun (lid,a) -> lid, process_label lid, a) lid_a_list in
+    (* Resolve qualified labels first to catch any unbound ones. *)
+    let lbl_list =
+      List.map (fun (lid, _) ->
+          match lid.txt with
+          | Longident.Ldot _ ->
+              Some (process_label lid)
+          | _ ->
+              None
+        ) lid_a_list
+    in
+    (* Find a module prefix (if any) to qualify unqualified labels *)
+    let qual =
+      List.find_map (function
+          | {txt = Longident.Ldot (modname, _); _}, _ -> Some modname
+          | _ -> None
+        ) lid_a_list
+    in
+    (* Prefix unqualified labels with [qual] and resolve them *)
+    List.map2 (fun lid_a lbl ->
+        match lbl, lid_a with
+        | Some lbl, (lid, a) -> lid, lbl, a
+        | None, (lid, a) ->
+            let lid =
+              match qual, lid.txt with
+              | Some modname, Longident.Lident s ->
+                  {lid with txt = Longident.Ldot (modname, s)}
+              | _ -> lid
+            in
+            lid, process_label lid, a
+      ) lid_a_list lbl_list
+  in
   if !w_pr then
     Location.prerr_warning loc
       (Warnings.Not_principal "this type-based record disambiguation")
@@ -1218,29 +1248,12 @@ let disambiguate_lid_a_list loc closed env usage expected_type lid_a_list =
       (Warnings.Name_out_of_scope (!w_scope_ty, List.rev !w_scope, true));
   lbl_a_list
 
-let find_record_qual lid_a_list =
-  let rec loop accu = function
-    | [] -> lid_a_list
-    | ({txt = Longident.Ldot (modname, _); _}, _ as lid_a) :: rest ->
-        lid_a ::
-        List.map (fun (lid, a as lid_a) ->
-            match lid.txt with
-            | Longident.Lident s ->
-                {lid with txt = Longident.Ldot (modname, s)}, a
-            | _ -> lid_a
-          ) (List.rev_append accu rest)
-    | lid_a :: rest ->
-        loop (lid_a :: accu) rest
-  in
-  loop [] lid_a_list
-
 let map_fold_cont f xs k =
   List.fold_right (fun x k ys -> f x (fun y -> k (y :: ys)))
     xs (fun ys -> k (List.rev ys)) []
 
 let type_label_a_list loc closed env usage type_lbl_a expected_type lid_a_list =
   let lbl_a_list =
-    let lid_a_list = find_record_qual lid_a_list in
     disambiguate_lid_a_list loc closed env usage expected_type lid_a_list
   in
   (* Invariant: records are sorted in the typed tree *)
