@@ -89,7 +89,7 @@ module type S =
     (** [add_to_list key data m] is [m] with [key] mapped to [l] such
         that [l] is [data :: Map.find key m] if [key] was bound in
         [m] and [[v]] otherwise.
-        @since 5.1.0 *)
+        @since 5.1 *)
 
     val update: key -> ('a option -> 'a option) -> 'a t -> 'a t
     (** [update key f m] returns a map containing the same bindings as
@@ -101,12 +101,12 @@ module type S =
         bound in [m] to a value that is physically equal to [z], [m]
         is returned unchanged (the result of the function is then
         physically equal to [m]).
-        @since 4.06.0 *)
+        @since 4.06 *)
 
     val singleton: key -> 'a -> 'a t
     (** [singleton x y] returns the one-element map that contains a binding
         [y] for [x].
-        @since 3.12.0 *)
+        @since 3.12 *)
 
     val remove: key -> 'a t -> 'a t
     (** [remove x m] returns a map containing the same bindings as
@@ -124,7 +124,7 @@ module type S =
         In terms of the [find_opt] operation, we have
         [find_opt x (merge f m1 m2) = f x (find_opt x m1) (find_opt x m2)]
         for any key [x], provided that [f x None None = None].
-        @since 3.12.0 *)
+        @since 3.12 *)
 
     val union: (key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
     (** [union f m1 m2] computes a map whose keys are a subset of the keys
@@ -137,11 +137,11 @@ module type S =
         - [f' _key None (Some v) = Some v]
         - [f' key (Some v1) (Some v2) = f key v1 v2]
 
-        @since 4.03.0 *)
+        @since 4.03 *)
 
     val cardinal: 'a t -> int
     (** Return the number of bindings of a map.
-        @since 3.12.0 *)
+        @since 3.12 *)
 
     (** {1:bindings Bindings} *)
 
@@ -150,13 +150,13 @@ module type S =
         The returned list is sorted in increasing order of keys with respect
         to the ordering [Ord.compare], where [Ord] is the argument
         given to {!Map.Make}.
-        @since 3.12.0 *)
+        @since 3.12 *)
 
     val min_binding: 'a t -> (key * 'a)
     (** Return the binding with the smallest key in a given map
         (with respect to the [Ord.compare] ordering), or raise
         [Not_found] if the map is empty.
-        @since 3.12.0 *)
+        @since 3.12 *)
 
     val min_binding_opt: 'a t -> (key * 'a) option
     (** Return the binding with the smallest key in the given map
@@ -167,7 +167,7 @@ module type S =
     val max_binding: 'a t -> (key * 'a)
     (** Same as {!min_binding}, but returns the binding with
         the largest key in the given map.
-        @since 3.12.0 *)
+        @since 3.12 *)
 
     val max_binding_opt: 'a t -> (key * 'a) option
     (** Same as {!min_binding_opt}, but returns the binding with
@@ -178,7 +178,7 @@ module type S =
     (** Return one binding of the given map, or raise [Not_found] if
         the map is empty. Which binding is chosen is unspecified,
         but equal bindings will be chosen for equal maps.
-        @since 3.12.0 *)
+        @since 3.12 *)
 
     val choose_opt: 'a t -> (key * 'a) option
     (** Return one binding of the given map, or [None] if
@@ -259,7 +259,7 @@ module type S =
         that satisfy predicate [p]. If every binding in [m] satisfies [f],
         [m] is returned unchanged (the result of the function is then
         physically equal to [m])
-        @since 3.12.0
+        @since 3.12
         @before 4.03 Physical equality was not ensured. *)
 
     val filter_map: (key -> 'a -> 'b option) -> 'a t -> 'b t
@@ -279,14 +279,14 @@ module type S =
         drops all bindings of [m] whose value is an empty list, and pops
         the first element of each value that is non-empty.
 
-        @since 4.11.0 *)
+        @since 4.11 *)
 
     val partition: (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     (** [partition f m] returns a pair of maps [(m1, m2)], where
         [m1] contains all the bindings of [m] that satisfy the
         predicate [f], and [m2] is the map with all the bindings of
         [m] that do not satisfy [f].
-        @since 3.12.0 *)
+        @since 3.12 *)
 
     val split: key -> 'a t -> 'a t * 'a option * 'a t
     (** [split x m] returns a triple [(l, data, r)], where
@@ -296,7 +296,7 @@ module type S =
         is strictly greater than [x];
           [data] is [None] if [m] contains no binding for [x],
           or [Some v] if [m] binds [v] to [x].
-        @since 3.12.0 *)
+        @since 3.12 *)
 
     (** {1:predicates Predicates and comparisons} *)
 
@@ -320,24 +320,24 @@ module type S =
     val for_all: (key -> 'a -> bool) -> 'a t -> bool
     (** [for_all f m] checks if all the bindings of the map
         satisfy the predicate [f].
-        @since 3.12.0 *)
+        @since 3.12 *)
 
     val exists: (key -> 'a -> bool) -> 'a t -> bool
     (** [exists f m] checks if at least one binding of the map
         satisfies the predicate [f].
-        @since 3.12.0 *)
+        @since 3.12 *)
 
     (** {1:converting Converting} *)
 
     val to_list : 'a t -> (key * 'a) list
     (** [to_list m] is {!bindings}[ m].
-        @since 5.1.0 *)
+        @since 5.1 *)
 
     val of_list : (key * 'a) list -> 'a t
     (** [of_list bs] adds the bindings of [bs] to the empty map,
         in list order (if a key is bound twice in [bs] the last one
         takes over).
-        @since 5.1.0 *)
+        @since 5.1 *)
 
     val to_seq : 'a t -> (key * 'a) Seq.t
     (** Iterate on the whole map, in ascending order of keys

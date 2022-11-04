@@ -184,7 +184,7 @@ val ext_dll: string
 val ext_exe: string
 (** Extension for executable programs, e.g. [.exe] under Windows.
 
-    @since 4.12.0 *)
+    @since 4.12 *)
 
 val default_executable_name: string
 (** Name of executable produced by linking if none is given with -o,
@@ -232,12 +232,12 @@ val windows_unicode: bool
 val naked_pointers : bool
 (** Whether the runtime supports naked pointers
 
-    @since 4.14.0 *)
+    @since 4.14 *)
 
 val supports_shared_libraries: bool
 (** Whether shared libraries are supported
 
-    @since 4.08.0 *)
+    @since 4.08 *)
 
 val force_instrumented_runtime: bool
 (** Force runtime-variant to be "i" at configure time

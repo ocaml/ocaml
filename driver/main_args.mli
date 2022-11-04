@@ -18,6 +18,7 @@
 
 module type Common_options = sig
   val _absname : unit -> unit
+  val _no_absname : unit -> unit
   val _alert : string -> unit
   val _I : string -> unit
   val _labels : unit -> unit
@@ -41,7 +42,6 @@ module type Common_options = sig
   val _no_strict_sequence : unit -> unit
   val _strict_formats : unit -> unit
   val _no_strict_formats : unit -> unit
-  val _force_tmc : unit -> unit
   val _unboxed_types : unit -> unit
   val _no_unboxed_types : unit -> unit
   val _version : unit -> unit

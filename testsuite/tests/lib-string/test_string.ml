@@ -44,9 +44,9 @@ let () =
 
 let () =
   printf "-- Hashtbl.hash raw_string: %x\n%!" (Hashtbl.hash raw_string);
-  printf "-- String.unseeded_hash raw_string: %x\n%!" (String.hash raw_string);
+  printf "-- String.hash raw_string: %x\n%!" (String.hash raw_string);
   printf "-- Hashtbl.seeded_hash 16 raw_string: %x\n%!" (Hashtbl.seeded_hash 16 raw_string);
-  printf "-- String.hash 16 raw_string: %x\n%!" (String.seeded_hash 16 raw_string);
+  printf "-- String.seeded_hash 16 raw_string: %x\n%!" (String.seeded_hash 16 raw_string);
 ;;
 
 (* GPR#805/815/833 *)

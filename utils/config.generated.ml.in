@@ -70,7 +70,9 @@ let mkdll, mkexe, mkmaindll =
       ^ {@QS@| @mkexe_extra_flags@|@QS@} ^ {@QS@|@mkexe_ldflags_exp@|@QS@},
     flexlink ^ " -maindll" ^ flags ^ {@QS@|@mkdll_ldflags_exp@|@QS@}
   else
-    {@QS@|@mkdll_exp@|@QS@}, {@QS@|@mkexe_exp@|@QS@}, {@QS@|@mkmaindll@|@QS@}
+    {@QS@|@mkdll_exp@|@QS@},
+    {@QS@|@mkexe_exp@|@QS@},
+    {@QS@|@mkmaindll_exp@|@QS@}
 
 let flambda = @flambda@
 let with_flambda_invariants = @flambda_invariants@

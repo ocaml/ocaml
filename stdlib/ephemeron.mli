@@ -62,7 +62,7 @@
     Ephemerons are defined in a language agnostic way in this paper:
     B. Hayes, Ephemerons: A New Finalization Mechanism, OOPSLA'97
 
-    @since 4.03.0
+    @since 4.03
 *)
 
 module type S = sig

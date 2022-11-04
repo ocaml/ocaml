@@ -152,7 +152,7 @@ val unsafe_environment : unit -> string array
     privileges.  See the documentation for {!unsafe_getenv} for more
     details.
 
-    @since 4.06.0 (4.12.0 in UnixLabels) *)
+    @since 4.06 (4.12 in UnixLabels) *)
 
 val getenv : string -> string
 (** Return the value associated to a variable in the process
@@ -174,7 +174,7 @@ val unsafe_getenv : string -> string
    like.
 
    @raise Not_found if the variable is unbound.
-   @since 4.06.0  *)
+   @since 4.06  *)
 
 val putenv : string -> string -> unit
 (** [putenv name value] sets the value associated to a
@@ -280,7 +280,7 @@ val _exit : int -> 'a
    process may flush them again later, resulting in duplicate
    output.
 
-   @since 4.12.0 *)
+   @since 4.12 *)
 
 val getpid : unit -> int
 (** Return the pid of the process. *)
@@ -355,7 +355,7 @@ val close : file_descr -> unit
 val fsync : file_descr -> unit
 (** Flush file buffers to disk.
 
-    @since 4.08.0 (4.12.0 in UnixLabels) *)
+    @since 4.08 (4.12 in UnixLabels) *)
 
 val read : file_descr -> bytes -> int -> int -> int
 (** [read fd buf pos len] reads [len] bytes from descriptor [fd],
@@ -377,13 +377,13 @@ val single_write : file_descr -> bytes -> int -> int -> int
 val write_substring : file_descr -> string -> int -> int -> int
 (** Same as {!write}, but take the data from a string instead of a byte
     sequence.
-    @since 4.02.0 *)
+    @since 4.02 *)
 
 val single_write_substring :
   file_descr -> string -> int -> int -> int
 (** Same as {!single_write}, but take the data from a string instead of
     a byte sequence.
-    @since 4.02.0 *)
+    @since 4.02 *)
 
 (** {1 Interfacing with the standard input/output library} *)
 
@@ -608,7 +608,7 @@ val map_file :
 
   [Invalid_argument] or [Failure] may be raised in cases where argument
   validation fails.
-  @since 4.06.0 *)
+  @since 4.06 *)
 
 (** {1 Operations on file names} *)
 
@@ -650,7 +650,7 @@ val realpath : string -> string
 (** [realpath p] is an absolute pathname for [p] obtained by resolving
     all extra [/] characters, relative path segments and symbolic links.
 
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 (** {1 File permissions and ownership} *)
 
@@ -914,7 +914,7 @@ val open_process_args_in : string -> string array -> in_channel
 
     The new process has the same environment as the current process.
 
-    @since 4.08.0 *)
+    @since 4.08 *)
 
 val open_process_args_out : string -> string array -> out_channel
 (** Same as {!open_process_args_in}, but redirect the standard input of the new
@@ -923,7 +923,7 @@ val open_process_args_out : string -> string array -> out_channel
     buffered, hence be careful to call {!Stdlib.flush} at the right times to
     ensure correct synchronization.
 
-    @since 4.08.0 *)
+    @since 4.08 *)
 
 val open_process_args : string -> string array -> in_channel * out_channel
 (** Same as {!open_process_args_out}, but redirects both the standard input and
@@ -931,7 +931,7 @@ val open_process_args : string -> string array -> in_channel * out_channel
     channels.  The input channel is connected to the output of the program, and
     the output channel to the input of the program.
 
-    @since 4.08.0 *)
+    @since 4.08 *)
 
 val open_process_args_full :
   string -> string array -> string array ->
@@ -941,31 +941,31 @@ val open_process_args_full :
     connected respectively to the standard output, standard input, and standard
     error of the program.
 
-    @since 4.08.0 *)
+    @since 4.08 *)
 
 val process_in_pid : in_channel -> int
 (** Return the pid of a process opened via {!open_process_in} or
    {!open_process_args_in}.
 
-    @since 4.08.0 (4.12.0 in UnixLabels) *)
+    @since 4.08 (4.12 in UnixLabels) *)
 
 val process_out_pid : out_channel -> int
 (** Return the pid of a process opened via {!open_process_out} or
    {!open_process_args_out}.
 
-    @since 4.08.0 (4.12.0 in UnixLabels) *)
+    @since 4.08 (4.12 in UnixLabels) *)
 
 val process_pid : in_channel * out_channel -> int
 (** Return the pid of a process opened via {!open_process} or
    {!open_process_args}.
 
-    @since 4.08.0 (4.12.0 in UnixLabels) *)
+    @since 4.08 (4.12 in UnixLabels) *)
 
 val process_full_pid : in_channel * out_channel * in_channel -> int
 (** Return the pid of a process opened via {!open_process_full} or
    {!open_process_args_full}.
 
-    @since 4.08.0 (4.12.0 in UnixLabels) *)
+    @since 4.08 (4.12 in UnixLabels) *)
 
 val close_process_in : in_channel -> process_status
 (** Close channels opened by {!open_process_in},
@@ -1030,7 +1030,7 @@ val has_symlink : unit -> bool
    this indicates that the user not only has the SeCreateSymbolicLinkPrivilege
    but is also running elevated, if necessary. On other platforms, this is
    simply indicates that the symlink system call is available.
-   @since 4.03.0 *)
+   @since 4.03 *)
 
 val readlink : string -> string
 (** Read the contents of a symbolic link. *)
@@ -1216,7 +1216,7 @@ val sleepf : float -> unit
 (** Stop execution for the given number of seconds.  Like [sleep],
     but fractions of seconds are supported.
 
-    @since 4.03.0 (4.12.0 in UnixLabels) *)
+    @since 4.03 (4.12 in UnixLabels) *)
 
 val times : unit -> process_times
 (** Return the execution times of the process.
@@ -1397,7 +1397,7 @@ val inet6_addr_loopback : inet_addr
 
 val is_inet6_addr : inet_addr -> bool
 (** Whether the given [inet_addr] is an IPv6 address.
-    @since 4.12.0 *)
+    @since 4.12 *)
 
 (** {1 Sockets} *)
 
@@ -1512,7 +1512,7 @@ val send_substring :
   file_descr -> string -> int -> int -> msg_flag list -> int
 (** Same as [send], but take the data from a string instead of a byte
     sequence.
-    @since 4.02.0 *)
+    @since 4.02 *)
 
 val sendto :
   file_descr -> bytes -> int -> int -> msg_flag list ->
@@ -1524,7 +1524,7 @@ val sendto_substring :
   -> sockaddr -> int
 (** Same as [sendto], but take the data from a string instead of a
     byte sequence.
-    @since 4.02.0 *)
+    @since 4.02 *)
 
 
 

@@ -194,7 +194,7 @@ again:
      time specify the address. */
   VirtualFree(mem, 0, MEM_RELEASE);
   mem = VirtualAlloc((void*)aligned_start,
-                     aligned_end - aligned_start + 1,
+                     aligned_end - aligned_start,
                      MEM_RESERVE | (reserve_only ? 0 : MEM_COMMIT),
                      reserve_only ? PAGE_NOACCESS : PAGE_READWRITE);
   if (mem == NULL) {
@@ -216,7 +216,8 @@ again:
   munmap((void*)aligned_end, (base + alloc_sz) - aligned_end);
 #endif
 #ifdef DEBUG
-  caml_lf_skiplist_insert(&mmap_blocks, aligned_start, size);
+  caml_lf_skiplist_insert(&mmap_blocks,
+                          aligned_start, aligned_end - aligned_start);
 #endif
   return (void*)aligned_start;
 }

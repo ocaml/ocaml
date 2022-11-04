@@ -70,9 +70,9 @@ external set_raw_field : t -> int -> raw_data -> unit
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
 external add_offset : t -> Int32.t -> t = "caml_obj_add_offset"
-         (* @since 3.12.0 *)
+         (* @since 3.12 *)
 external with_tag : int -> t -> t = "caml_obj_with_tag"
-  (* @since 4.09.0 *)
+  (* @since 4.09 *)
 
 val first_non_constant_constructor_tag : int
 val last_non_constant_constructor_tag : int
@@ -93,7 +93,7 @@ val custom_tag : int
 
 val int_tag : int
 val out_of_heap_tag : int
-val unaligned_tag : int   (* should never happen @since 3.11.0 *)
+val unaligned_tag : int   (* should never happen @since 3.11 *)
 
 module Closure : sig
   type info = {

@@ -63,7 +63,7 @@ SO="so"
 toolchain="cc"
 profinfo=false
 profinfo_width=0
-instrumented_runtime=true
+instrumented_runtime=false
 force_instrumented_runtime=false
 instrumented_runtime_libs=""
 bootstrapping_flexdll=false
@@ -189,6 +189,7 @@ AC_SUBST([rpath])
 AC_SUBST([mkdll])
 AC_SUBST([mkdll_exp])
 AC_SUBST([mkmaindll])
+AC_SUBST([mkmaindll_exp])
 AC_SUBST([mksharedlibrpath])
 AC_SUBST([install_bytecode_programs])
 AC_SUBST([install_source_artifacts])
@@ -782,12 +783,8 @@ AS_IF([test x"$enable_shared" = "xno"],
     [AC_MSG_ERROR([Cannot build native Win32 with --disable-shared])])],
   [supports_shared_libraries=true])
 
-# The flexlink command
-
-flexlink_cmd=flexlink
-flexlink_flags=''
-
 # Define flexlink chain and flags correctly for the different Windows ports
+flexlink_flags=''
 AS_CASE([$host],
   [i686-*-cygwin],
     [flexdll_chain='cygwin'
@@ -887,8 +884,10 @@ AS_CASE([$flexdir,$supports_shared_libraries,$flexlink,$host],
 
 mkexe_cmd_exp="$CC"
 
-boot_flexlink_cmd=\
-'$(ROOTDIR)/boot/ocamlruns.exe $(ROOTDIR)/boot/flexlink.byte.exe'
+AS_IF([$bootstrapping_flexdll],
+  [flexlink_cmd=\
+'$(ROOTDIR)/boot/ocamlruns.exe $(ROOTDIR)/boot/flexlink.byte.exe'],
+  [flexlink_cmd=flexlink])
 
 AS_CASE([$cc_basename,$host],
   [*,x86_64-*-darwin*],
@@ -901,10 +900,7 @@ AS_CASE([$cc_basename,$host],
     [common_cppflags="$common_cppflags -U_WIN32"
     AS_IF([$supports_shared_libraries],
       [mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-      AS_IF([$bootstrapping_flexdll],
-        [mkexe_cmd=\
-"$boot_flexlink_cmd -exe -chain ${flexdll_chain} ${flexlink_flags}"],
-        [mkexe_cmd="$mkexe_cmd_exp"])
+      mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
       mkexe_cflags=''
       mkexe_ldflags_prefix='-link '],
       [mkexe_extra_flags=''
@@ -917,10 +913,7 @@ AS_CASE([$cc_basename,$host],
     ostype="Win32"
     toolchain="mingw"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-    AS_IF([$bootstrapping_flexdll],
-      [mkexe_cmd=\
-"${boot_flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"],
-      [mkexe_cmd="$mkexe_cmd_exp"])
+    mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     oc_exe_ldflags='-municode'
@@ -930,10 +923,7 @@ AS_CASE([$cc_basename,$host],
     [toolchain=msvc
     ostype="Win32"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-    AS_IF([$bootstrapping_flexdll],
-      [mkexe_cmd=\
-"${boot_flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"],
-      [mkexe_cmd="$mkexe_cmd_exp"])
+    mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     mkexe_via_cc_ldflags_prefix='/link '
@@ -1070,9 +1060,9 @@ rpath=''
 mksharedlibrpath=''
 natdynlinkopts=""
 
-mkdll_ld=''
 AS_IF([test x"$enable_shared" != "xno"],
-  [AS_CASE([$host],
+  [mkdll=''
+  AS_CASE([$host],
     [x86_64-apple-darwin*],
       [mkdll_flags=\
 '-shared -undefined dynamic_lookup -Wl,-no_compact_unwind -Wl,-w'
@@ -1080,20 +1070,12 @@ AS_IF([test x"$enable_shared" != "xno"],
     [aarch64-apple-darwin*|arm64-apple-darwin*],
       [mkdll_flags='-shared -undefined dynamic_lookup -Wl,-w'
       supports_shared_libraries=true],
-    [*-*-mingw32],
-      [mkdll_ld="${flexlink_cmd} -chain ${flexdll_chain} ${flexlink_flags}"
-      mkmaindll=\
-"${flexlink_cmd} -maindll -chain ${flexdll_chain} ${flexlink_flags}"],
-    [*-pc-windows],
-      [mkdll_ld="${flexlink_cmd} -chain ${flexdll_chain} ${flexlink_flags}"
-      mkdll_flags=''
-      mkmaindll=\
-"${flexlink_cmd} -maindll -chain ${flexdll_chain} ${flexlink_flags}"],
-    [*-*-cygwin*],
-      [mkdll_ld="${flexlink_cmd} -chain ${flexdll_chain} ${flexlink_flags}"
-      mkdll_flags=''
-      mkmaindll=\
-"${flexlink_cmd} -maindll -chain ${flexdll_chain} ${flexlink_flags}"],
+    [*-*-mingw32|*-pc-windows|*-*-cygwin*],
+      [mkdll_flags="-chain ${flexdll_chain} ${flexlink_flags}"
+      mkdll_exp="flexlink ${mkdll_flags}"
+      mkdll="${flexlink_cmd} ${mkdll_flags}"
+      mkmaindll_exp="flexlink -maindll ${mkdll_flags}"
+      mkmaindll="${flexlink_cmd} -maindll ${mkdll_flags}"],
     [powerpc-ibm-aix*],
       [AS_CASE([$ocaml_cv_cc_vendor],
                [xlc*],
@@ -1120,14 +1102,15 @@ AS_IF([test x"$enable_shared" != "xno"],
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
       natdynlinkopts="-Wl,-E"
-      supports_shared_libraries=true])
-  AS_IF([$supports_shared_libraries && test -n "$mkdll_ld"],
-    [mkdll="$mkdll_ld $mkdll_flags"
-    mkdll_exp="$mkdll"],
+      supports_shared_libraries=true],
+      [mkdll='shared-libs-not-available'])
+  AS_IF([test -z "$mkdll"],
     [mkdll="\$(CC) $mkdll_flags"
     mkdll_exp="$CC $mkdll_flags"])])
 
-AS_IF([test -z "$mkmaindll"], [mkmaindll=$mkdll_exp])
+AS_IF([test -z "$mkmaindll"],
+  [mkmaindll_exp="$mkdll_exp"
+  mkmaindll="$mkdll"])
 
 # Configure native dynlink
 
@@ -1193,98 +1176,99 @@ arch=none
 model=default
 system=unknown
 
+has_native_backend=no
 AS_CASE([$host],
-dnl [[i[3456]86-*-linux*]],
-dnl   [arch=i386; system=linux_elf],
-dnl [[i[3456]86-*-*bsd*]],
-dnl   [arch=i386; system=bsd_elf],
-dnl [[i[3456]86-*-haiku*]],
-dnl   [arch=i386; system=beos],
-dnl [[i[3456]86-*-cygwin]],
-dnl   [arch=i386; system=cygwin],
-dnl [[i[3456]86-*-gnu*]],
-dnl   [arch=i386; system=gnu],
-dnl [[i[3456]86-*-mingw32]],
-dnl   [arch=i386; system=mingw],
-dnl [i686-pc-windows],
-dnl   [arch=i386; system=win32],
-dnl [x86_64-pc-windows],
-dnl   [arch=amd64; system=win64],
-dnl [[powerpc64le*-*-linux*]],
-dnl   [arch=power; model=ppc64le; system=elf],
-dnl [[powerpc*-*-linux*]],
-dnl   [arch=power; AS_IF([$arch64],[model=ppc64],[model=ppc]); system=elf],
-dnl [[s390x*-*-linux*]],
-dnl   [arch=s390x; model=z10; system=elf],
-dnl # expected to match "gnueabihf" as well as "musleabihf"
-dnl [armv6*-*-linux-*eabihf],
-dnl   [arch=arm; model=armv6; system=linux_eabihf],
-dnl [armv7*-*-linux-*eabihf],
-dnl   [arch=arm; model=armv7; system=linux_eabihf],
-dnl [armv8*-*-linux-*eabihf],
-dnl   [arch=arm; model=armv8; system=linux_eabihf],
-dnl [armv8*-*-linux-*eabi],
-dnl   [arch=arm; model=armv8; system=linux_eabi],
-dnl [armv7*-*-linux-*eabi],
-dnl   [arch=arm; model=armv7; system=linux_eabi],
-dnl [armv6t2*-*-linux-*eabi],
-dnl   [arch=arm; model=armv6t2; system=linux_eabi],
-dnl [armv6*-*-linux-*eabi],
-dnl   [arch=arm; model=armv6; system=linux_eabi],
-dnl [armv6*-*-freebsd*],
-dnl   [arch=arm; model=armv6; system=freebsd],
-dnl [earmv6*-*-netbsd*],
-dnl   [arch=arm; model=armv6; system=netbsd],
-dnl [earmv7*-*-netbsd*],
-dnl   [arch=arm; model=armv7; system=netbsd],
-dnl [armv5te*-*-linux-*eabi],
-dnl   [arch=arm; model=armv5te; system=linux_eabi],
-dnl [armv5*-*-linux-*eabi],
-dnl   [arch=arm; model=armv5; system=linux_eabi],
-dnl [arm*-*-linux-*eabihf],
-dnl   [arch=arm; system=linux_eabihf],
-dnl [arm*-*-linux-*eabi],
-dnl   [arch=arm; system=linux_eabi],
-dnl [arm*-*-openbsd*],
-dnl   [arch=arm; system=bsd],
-dnl [zaurus*-*-openbsd*],
-dnl   [arch=arm; system=bsd],
+  [[i[3456]86-*-linux*]],
+    [arch=i386; system=linux_elf],
+  [[i[3456]86-*-*bsd*]],
+    [arch=i386; system=bsd_elf],
+  [[i[3456]86-*-haiku*]],
+    [arch=i386; system=beos],
+  [[i[3456]86-*-cygwin]],
+    [arch=i386; system=cygwin],
+  [[i[3456]86-*-gnu*]],
+    [arch=i386; system=gnu],
+  [[i[3456]86-*-mingw32]],
+    [arch=i386; system=mingw],
+  [i686-pc-windows],
+    [arch=i386; system=win32],
+  [x86_64-pc-windows],
+    [arch=amd64; system=win64],
+  [[powerpc64le*-*-linux*]],
+    [arch=power; model=ppc64le; system=elf],
+  [[powerpc*-*-linux*]],
+    [arch=power; AS_IF([$arch64],[model=ppc64],[model=ppc]); system=elf],
+  [[s390x*-*-linux*]],
+    [arch=s390x; model=z10; system=elf],
+  # expected to match "gnueabihf" as well as "musleabihf"
+  [armv6*-*-linux-*eabihf],
+    [arch=arm; model=armv6; system=linux_eabihf],
+  [armv7*-*-linux-*eabihf],
+    [arch=arm; model=armv7; system=linux_eabihf],
+  [armv8*-*-linux-*eabihf],
+    [arch=arm; model=armv8; system=linux_eabihf],
+  [armv8*-*-linux-*eabi],
+    [arch=arm; model=armv8; system=linux_eabi],
+  [armv7*-*-linux-*eabi],
+    [arch=arm; model=armv7; system=linux_eabi],
+  [armv6t2*-*-linux-*eabi],
+    [arch=arm; model=armv6t2; system=linux_eabi],
+  [armv6*-*-linux-*eabi],
+    [arch=arm; model=armv6; system=linux_eabi],
+  [armv6*-*-freebsd*],
+    [arch=arm; model=armv6; system=freebsd],
+  [earmv6*-*-netbsd*],
+    [arch=arm; model=armv6; system=netbsd],
+  [earmv7*-*-netbsd*],
+    [arch=arm; model=armv7; system=netbsd],
+  [armv5te*-*-linux-*eabi],
+    [arch=arm; model=armv5te; system=linux_eabi],
+  [armv5*-*-linux-*eabi],
+    [arch=arm; model=armv5; system=linux_eabi],
+  [arm*-*-linux-*eabihf],
+    [arch=arm; system=linux_eabihf],
+  [arm*-*-linux-*eabi],
+    [arch=arm; system=linux_eabi],
+  [arm*-*-openbsd*],
+    [arch=arm; system=bsd],
+  [zaurus*-*-openbsd*],
+    [arch=arm; system=bsd],
   [x86_64-*-linux*],
-    [arch=amd64; system=linux],
-dnl [x86_64-*-gnu*],
-dnl   [arch=amd64; system=gnu],
-dnl [x86_64-*-dragonfly*],
-dnl   [arch=amd64; system=dragonfly],
+    [has_native_backend=yes; arch=amd64; system=linux],
+  [x86_64-*-gnu*],
+    [arch=amd64; system=gnu],
+  [x86_64-*-dragonfly*],
+    [arch=amd64; system=dragonfly],
   [x86_64-*-solaris*],
-    [arch=amd64; system=solaris],
+    [has_native_backend=yes; arch=amd64; system=solaris],
   [x86_64-*-freebsd*],
-    [arch=amd64; system=freebsd],
+    [has_native_backend=yes; arch=amd64; system=freebsd],
   [x86_64-*-netbsd*],
-    [arch=amd64; system=netbsd],
+    [has_native_backend=yes; arch=amd64; system=netbsd],
   [x86_64-*-openbsd*],
-    [arch=amd64; system=openbsd],
-dnl [x86_64-*-haiku*],
-dnl   [arch=amd64; system=beos],
+    [has_native_backend=yes; arch=amd64; system=openbsd],
+  [x86_64-*-haiku*],
+    [arch=amd64; system=beos],
   [arm64-*-darwin*],
-    [arch=arm64; system=macosx],
+    [has_native_backend=yes; arch=arm64; system=macosx],
   [aarch64-*-darwin*],
-    [arch=arm64; system=macosx],
+    [has_native_backend=yes; arch=arm64; system=macosx],
   [x86_64-*-darwin*],
-    [arch=amd64; system=macosx],
+    [has_native_backend=yes; arch=amd64; system=macosx],
   [x86_64-*-mingw32],
-    [arch=amd64; system=mingw64],
+    [has_native_backend=yes; arch=amd64; system=mingw64],
   [aarch64-*-linux*],
-    [arch=arm64; system=linux],
+    [has_native_backend=yes; arch=arm64; system=linux],
   [aarch64-*-freebsd*],
-    [arch=arm64; system=freebsd],
+    [has_native_backend=yes; arch=arm64; system=freebsd],
   [aarch64-*-openbsd*],
-    [arch=arm64; system=openbsd],
+    [has_native_backend=yes; arch=arm64; system=openbsd],
   [aarch64-*-netbsd*],
-    [arch=arm64; system=netbsd],
-dnl [x86_64-*-cygwin*],
-dnl   [arch=amd64; system=cygwin],
-dnl [riscv64-*-linux*],
-dnl   [arch=riscv; model=riscv64; system=linux]
+    [has_native_backend=yes; arch=arm64; system=netbsd],
+  [x86_64-*-cygwin*],
+    [arch=amd64; system=cygwin],
+  [riscv64-*-linux*],
+    [arch=riscv; model=riscv64; system=linux]
 )
 
 AS_CASE([$ccomptype],
@@ -1292,13 +1276,13 @@ AS_CASE([$ccomptype],
     [runtime_asm_objects=${arch}nt.${OBJEXT}],
   [runtime_asm_objects=${arch}.${OBJEXT}])
 
-AS_CASE([$enable_native_compiler,$arch],
+AS_CASE([$enable_native_compiler,$has_native_backend],
   [no,*],
     [native_compiler=false
     AC_MSG_NOTICE([the native compiler is disabled])],
-  [yes,none],
+  [yes,no],
     [AC_MSG_ERROR([the native compiler is not supported on this platform], 69)],
-  [*,none],
+  [*,no],
     [native_compiler=false
     AC_MSG_NOTICE([the native compiler is not supported on this platform])],
   [*,*],
@@ -2182,8 +2166,8 @@ AC_CHECK_LIB(execinfo, backtrace, cclibs="$cclibs -lexecinfo",[])
 
 AS_CASE([$host],
   [*-*-mingw32],
-    [bytecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh -lDbgHelp"
-    nativecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh -lDbgHelp"],
+    [bytecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"
+    nativecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"],
   [*-pc-windows],
     [bytecclibs="advapi32.lib ws2_32.lib version.lib"
     nativecclibs="advapi32.lib ws2_32.lib version.lib"],
