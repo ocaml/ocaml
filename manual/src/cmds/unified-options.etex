@@ -261,7 +261,7 @@ section~\ref{s:ocamlrun-options}).
 
 \notop{%
 \item["-no-g"]
-Do not add debugging information while compiling and linking.
+Do not record debugging information (default).
 }%notop
 
 \notop{%

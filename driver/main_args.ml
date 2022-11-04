@@ -135,15 +135,12 @@ let mk_for_pack_opt f =
 let mk_g_byt f =
   "-g", Arg.Unit f, " Save debugging information"
 
-let mk_no_g_byt f =
-  "-no-g", Arg.Unit f, " Do not save debugging information"
-
 let mk_g_opt f =
   "-g", Arg.Unit f, " Record debugging information for exception backtrace"
 
-let mk_no_g_opt f =
+let mk_no_g f =
   "-no-g", Arg.Unit f,
-  " Do not record debugging information for exception backtrace"
+  " Do not record debugging information (default)"
 
 let mk_i f =
   "-i", Arg.Unit f, " Print inferred interface"
@@ -859,7 +856,6 @@ module type Compiler_options = sig
   val _where : unit -> unit
   val _color : string -> unit
   val _error_style : string -> unit
-
   val _match_context_rows : int -> unit
   val _dtimings : unit -> unit
   val _dprofile : unit -> unit
@@ -1029,7 +1025,7 @@ struct
     mk_dtypes F._annot;
     mk_for_pack_byt F._for_pack;
     mk_g_byt F._g;
-    mk_no_g_byt F._no_g;
+    mk_no_g F._no_g;
     mk_stop_after ~native:false F._stop_after;
     mk_i F._i;
     mk_I F._I;
@@ -1220,7 +1216,7 @@ struct
     mk_dtypes F._annot;
     mk_for_pack_opt F._for_pack;
     mk_g_opt F._g;
-    mk_no_g_opt F._no_g;
+    mk_no_g F._no_g;
     mk_function_sections F._function_sections;
     mk_stop_after ~native:true F._stop_after;
     mk_save_ir_after ~native:true F._save_ir_after;

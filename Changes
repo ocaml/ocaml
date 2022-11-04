@@ -122,8 +122,10 @@ Working version
   modules with mismatching -for-pack
   (Pierre Chambart and Vincent Laviron, review by Mark Shinwell)
 
-- #11653, #11696: Add the -no-absname and -no-g option to ocamlc,
-  ocamlopt and ocamldep.
+- #11653: Add the -no-absname option to ocamlc, ocamlopt and ocamldep.
+  (Abiola Abdulsalam, review by Sébastien Hinderer and Florian Angeletti)
+
+- #11696: Add the -no-g option to ocamlc and ocamlopt.
   (Abiola Abdulsalam, review by Sébastien Hinderer and Florian Angeletti)
 
 ### Internal/compiler-libs changes:
