@@ -1340,15 +1340,8 @@ let rec copy_sep ~copy_scope ~fixed ~free ~may_share
     TypeHash.find visited ty
   with Not_found -> begin
     let t = newstub ~scope:(get_scope ty) in
+    TypeHash.add visited ty t;
     let desc = get_desc ty in
-    begin match desc with
-      Tarrow _ | Ttuple _ | Tvariant _ | Tconstr _ | Tobject _ | Tpackage _ ->
-        TypeHash.add visited ty t
-    | Tvar _ | Tfield _ | Tnil | Tpoly _ | Tunivar _ ->
-        ()
-    | Tlink _ | Tsubst _ ->
-        assert false
-    end;
     let copy_rec = copy_sep ~copy_scope ~fixed ~free ~visited in
     let desc' =
       match desc with
