@@ -149,7 +149,7 @@ val of_seq : 'a Seq.t -> 'a t
 
     (* Search in graph [g] using BFS, starting from node [start].
        It returns the first node that satisfies [p], or [None] if
-       no node reachable from [start] satifies [p].
+       no node reachable from [start] satisfies [p].
     *)
     let search_for ~(g:graph) ~(start:int) (p:int -> bool) : int option =
       let to_explore = Queue.create() in

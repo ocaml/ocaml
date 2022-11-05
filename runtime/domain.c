@@ -812,7 +812,7 @@ static void stw_resize_minor_heap_reservation(caml_domain_state* domain,
        and it also updates the reservation boundaries of each domain
        by mutating its [minor_heap_area_start{,_end}] variables.
 
-       Thse variables are synchronized by the fact that we are inside
+       These variables are synchronized by the fact that we are inside
        a STW section: no other domains are running in parallel, and
        the participating domains will synchronize with this write by
        exiting the barrier, before they read those variables in

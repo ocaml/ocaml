@@ -42,7 +42,7 @@ SOCKET caml_win32_socket(int domain, int type, int protocol,
   s = WSASocket(domain, type, protocol, info, 0, flags);
   if (s == INVALID_SOCKET) {
     if (! inherit && WSAGetLastError() == WSAEINVAL) {
-      /* WSASocket probably doesn't suport WSA_FLAG_NO_HANDLE_INHERIT,
+      /* WSASocket probably doesn't support WSA_FLAG_NO_HANDLE_INHERIT,
        * retry without. */
       flags &= ~(DWORD)WSA_FLAG_NO_HANDLE_INHERIT;
       s = WSASocket(domain, type, protocol, info, 0, flags);

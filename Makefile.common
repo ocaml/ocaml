@@ -98,7 +98,7 @@ ALL_OTHERLIBS = dynlink str systhreads unix runtime_events
 # The following variable defines flags to be passed to the C preprocessor
 # when compiling C files for the native runtime.
 # These flags should be passed *in addition* to those in OC_CPPFLAGS, they
-# should not repace them.
+# should not replace them.
 OC_NATIVE_CPPFLAGS=\
   -DNATIVE_CODE -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM)
 
