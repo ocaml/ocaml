@@ -358,6 +358,11 @@ OCaml 5.0
 - #11652: Fix benign off-by-one error in Windows implementation of caml_mem_map.
   (David Allsopp, review by Gabriel Scherer)
 
+- #11669, #11704: Fix construction of Effect.Unhandled exceptions in the
+  bytecode interpreter.
+  (David Allsopp and Xavier Leroy, report by Samuel Hym, review by Xavier Leroy
+  and Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #10972: ARM64 multicore support: OCaml & C stack separation;
