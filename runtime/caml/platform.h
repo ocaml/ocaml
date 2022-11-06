@@ -36,12 +36,12 @@
 Caml_inline void cpu_relax() {
 #ifdef __GNUC__
 #if defined(__x86_64__) || defined(__i386__)
-  asm volatile("pause" ::: "memory");
+  __asm__ volatile("pause" ::: "memory");
 #elif defined(__aarch64__)
-  asm volatile ("yield" ::: "memory");
+  __asm__ volatile ("yield" ::: "memory");
 #else
   /* Just a compiler barrier */
-  asm volatile ("" ::: "memory");
+  __asm__ volatile ("" ::: "memory");
 #endif
 #endif
 }
