@@ -15,7 +15,7 @@
 (** Runtime events - ring buffer-based runtime tracing
 
     This module enables users to enable and subscribe to tracing events
-    from the Garbage Collector and othe parts of the OCaml runtime. This can
+    from the Garbage Collector and other parts of the OCaml runtime. This can
     be useful for diagnostic or performance monitoring purposes. This module
     can be used to subscribe to events for the current process or external
     processes asynchronously.
@@ -24,7 +24,7 @@
     variable or calling Runtime_events.start) a file with the pid of the process
     and extension .events will be created. By default this is in the
     current directory but can be over-ridden by the OCAML_RUNTIME_EVENTS_DIR
-    environent variable. Each domain maintains its own ring buffer in a section
+    environment variable. Each domain maintains its own ring buffer in a section
     of the larger file into which it emits events.
 
     There is additionally a set of C APIs in runtime_events.h that can enable
@@ -150,7 +150,7 @@ module Callbacks : sig
   (** Create a [Callback] that optionally subscribes to one or more runtime
       events. The first int supplied to callbacks is the ring buffer index.
       Each domain owns a single ring buffer for the duration of the domain's
-      existance. After a domain terminates, a newly spawned domain may take
+      existence. After a domain terminates, a newly spawned domain may take
       ownership of the ring buffer. A [runtime_begin] callback is called when
       the runtime enters a new phase (e.g a runtime_begin with EV_MINOR is
       called at the start of a minor GC). A [runtime_end] callback is called
