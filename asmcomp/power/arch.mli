@@ -16,12 +16,6 @@
 
 (* Specific operations for the PowerPC processor *)
 
-val ppc64 : bool
-
-type abi = ELF32 | ELF64v1 | ELF64v2
-
-val abi : abi
-
 type cmm_label = int
 (* Do not introduce a dependency to Cmm *)
 

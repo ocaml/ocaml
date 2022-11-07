@@ -110,33 +110,14 @@ let loc_float last_float make_stack reg_use_stack int float ofs =
   if !float <= last_float then begin
     let l = phys_reg !float in
     incr float;
-    (* On 64-bit platforms, passing a float in a float register
-       reserves a normal register as well *)
-    if size_int = 8 then incr int;
+    (* Passing a float in a float register reserves a normal register as well *)
+    incr int;
     if reg_use_stack then ofs := !ofs + size_float;
     l
   end else begin
     ofs := Misc.align !ofs size_float;
     let l = stack_slot (make_stack !ofs) Float in
     ofs := !ofs + size_float; l
-  end
-
-let loc_int_pair last_int make_stack int ofs =
-  (* 64-bit quantities split across two registers must either be in a
-     consecutive pair of registers where the lowest numbered is an
-     even-numbered register; or in a stack slot that is 8-byte aligned. *)
-  int := Misc.align !int 2;
-  if !int <= last_int - 1 then begin
-    let reg_lower = phys_reg !int in
-    let reg_upper = phys_reg (1 + !int) in
-    int := !int + 2;
-    [| reg_lower; reg_upper |]
-  end else begin
-    ofs := Misc.align !ofs 8;
-    let stack_lower = stack_slot (make_stack !ofs) Int in
-    let stack_upper = stack_slot (make_stack (size_int + !ofs)) Int in
-    ofs := !ofs + 8;
-    [| stack_lower; stack_upper |]
   end
 
 let calling_conventions first_int last_int first_float last_float
@@ -214,16 +195,9 @@ let external_calling_conventions
   List.iteri
     (fun i ty_arg ->
       match ty_arg with
-      | XInt | XInt32 ->
+      | XInt | XInt32 | XInt64 ->
         loc.(i) <-
           [| loc_int last_int make_stack reg_use_stack int ofs |]
-      | XInt64 ->
-          if size_int = 4 then begin
-            assert (not reg_use_stack);
-            loc.(i) <- loc_int_pair last_int make_stack int ofs
-          end else
-            loc.(i) <-
-              [| loc_int last_int make_stack reg_use_stack int ofs |]
       | XFloat ->
         loc.(i) <-
           [| loc_float last_float make_stack reg_use_stack int float ofs |])
@@ -231,25 +205,15 @@ let external_calling_conventions
   (loc, Misc.align !ofs 16) (* Keep stack 16-aligned *)
 
 let loc_external_arguments ty_args =
-  match abi with
-  | ELF32 ->
-      external_calling_conventions 0 7 100 107 outgoing 8 false ty_args
-  | ELF64v1 ->
-      let (loc, ofs) =
-        external_calling_conventions 0 7 100 112 outgoing 0 true ty_args in
-      (loc, max ofs 64)
-  | ELF64v2 ->
-      let (loc, ofs) =
-        external_calling_conventions 0 7 100 112 outgoing 0 true ty_args in
-      if Array.fold_left
-           (fun stk r ->
-              assert (Array.length r = 1);
-              match r.(0).loc with
-              | Stack _ -> true
-              | _ -> stk)
-           false loc
-      then (loc, ofs)
-      else (loc, 0)
+  let (loc, ofs) =
+    external_calling_conventions 0 7 100 112 outgoing 0 true ty_args in
+  if Array.exists
+       (fun r ->
+          assert (Array.length r = 1);
+          match r.(0).loc with Stack _ -> true | _ -> false)
+       loc
+  then (loc, ofs)
+  else (loc, 0)
 
 (* Results are in GPR 3 and FPR 1 *)
 
@@ -261,20 +225,10 @@ let loc_external_results res =
 
 let loc_exn_bucket = phys_reg 0
 
-(* For ELF32 see:
-   "System V Application Binary Interface PowerPC Processor Supplement"
-   http://refspecs.linux-foundation.org/elf/elfspec_ppc.pdf
-
-   For ELF64v1 see:
-   "64-bit PowerPC ELF Application Binary Interface Supplement 1.9"
-   http://refspecs.linuxfoundation.org/ELF/ppc64/PPC-elf64abi.html
-
-   For ELF64v2 see:
+(* For ELF64v2 see:
    "64-Bit ELF V2 ABI Specification -- Power Architecture"
    http://openpowerfoundation.org/wp-content/uploads/resources/leabi/
      content/dbdoclet.50655239___RefHeading___Toc377640569.html
-
-   All of these specifications seem to agree on the numberings we need.
 *)
 
 let int_dwarf_reg_numbers =
@@ -327,25 +281,9 @@ let max_register_pressure = function
 
 (* Layout of the stack *)
 
-(* See [reserved_stack_space] in emit.mlp. *)
-let reserved_stack_space_required () =
-  match abi with
-  | ELF32 -> false
-  | ELF64v1 | ELF64v2 -> true
+let frame_required _ = true
 
-let frame_required fd =
-  let is_elf32 =
-    match abi with
-    | ELF32 -> true
-    | ELF64v1 | ELF64v2 -> false
-  in
-  reserved_stack_space_required ()
-    || fd.fun_num_stack_slots.(0) > 0
-    || fd.fun_num_stack_slots.(1) > 0
-    || (fd.fun_contains_calls && is_elf32)
-
-let prologue_required fd =
-  frame_required fd
+let prologue_required _ = true
 
 (* Calling the assembler *)
 
