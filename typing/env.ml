@@ -1968,6 +1968,8 @@ and store_label ~check type_decl type_id lbl_id lbl env =
       if not (ty_name = "" || ty_name.[0] = '_' || name.[0] = '_')
       then !add_delayed_check_forward
           (fun () ->
+            let attrs = lbl.lbl_attributes in                                              
+            attrs |> List.iter (Builtin_attributes.warning_attribute) ;   
             Option.iter
               (fun complaint ->
                  if not (is_in_signature env) then
