@@ -1222,7 +1222,7 @@ let disambiguate_lid_a_list loc closed env usage expected_type lid_a_list =
        Prefixing unqualified labels does not change the final
        disambiguation result, it restricts the set of candidates
        without removing any valid choice.
-       It matters if users activated warnings for ambigious or
+       It matters if users activated warnings for ambiguous or
        out-of-scope resolutions -- they get less warnings by
        qualifying at least one of the fields. *)
     List.map2 (fun lid_a lbl ->

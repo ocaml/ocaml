@@ -576,14 +576,14 @@ OCaml 5.0
   (Christopher Zimmermann, review by Anil Madhavapeddy)
 
 - #11126: Build system: make it possible to choose which ocamldep
-  (and flags) to use when computing depencies for the compiler.
+  (and flags) to use when computing dependencies for the compiler.
   Add a -no-slash option to ocamldep to let users override -slash.
   (Sébastien Hinderer, review by David Allsopp)
 
 - #11147: Factorize the stdlib-related compilation flags. Make it
   possible to control them consistently through the STDLIBFLAGS
   build variable. Make sure ocamldoc and ocamllex get compiled and
-  linked with debugging informations (-g).
+  linked with debugging information (-g).
   (Sébastien Hinderer, review by Gabriel Scherer)
 
 - #11149: Make the bootstrap process reproducible on systems with non-big-endian

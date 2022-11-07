@@ -1545,7 +1545,7 @@ static void mark_stack_prune(struct mark_stack* stk)
     mark_entry me = stk->stack[i];
     total_words += me.end - me.start;
     if (me.end - me.start > BITS_PER_WORD) {
-      /* keep entry in the stack as more efficent and move to front */
+      /* keep entry in the stack as more efficient and move to front */
       stk->stack[new_stk_count++] = me;
     } else {
       while(me.start < me.end) {

@@ -16,7 +16,7 @@
 (** Representation and manipulation of a type, but not class nor module type.*)
 
 (** This module has an implementation although it declares only types.
-    This is because other modules yse the let module construct ot access it
+    This is because other modules use the let module construct or access it
     so it is needed as a real module. *)
 
 module Name = Odoc_name

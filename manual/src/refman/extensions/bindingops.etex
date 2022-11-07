@@ -32,7 +32,7 @@ working with monads and applicative functors; for those, we propose
 conventions using operators "*" and "+" respectively. They may be used
 for other purposes, but one should keep in mind that each new
 unfamiliar notation introduced makes programs harder to understand for
-non-experts. We expect that new conventions will be developped over
+non-experts. We expect that new conventions will be developed over
 time on other families of operator.
 
 \subsection{ss:letop-examples}{Examples}
