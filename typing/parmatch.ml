@@ -1585,7 +1585,7 @@ let extract_columns pss qs = match pss with
 
 let rec every_satisfiables pss qs = match qs.active with
 | []     ->
-    (* qs is now partitionned,  check usefulness *)
+    (* qs is now partitioned,  check usefulness *)
     begin match qs.ors with
     | [] -> (* no or-patterns *)
         if satisfiable (make_matrix pss) (make_vector qs) then

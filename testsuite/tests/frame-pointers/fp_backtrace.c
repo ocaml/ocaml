@@ -18,7 +18,7 @@ jmp_buf resume_buf;
 static void signal_handler(int signum)
 {
   /* Should be safe to be called from a signal handler.
-   * See 21.2.1 "Performing a nonlocal goto from a signal hanlder" from
+   * See 21.2.1 "Performing a nonlocal goto from a signal handler" from
    * The Linux Programming Interface, Michael Kerrisk */
   siglongjmp(resume_buf, 1);
 }

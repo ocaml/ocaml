@@ -256,7 +256,7 @@ static intnat pool_sweep(struct caml_heap_state* local,
                          int release_to_global_pool);
 
 /* Adopt pool from the pool_freelist avail and full pools
-   to satisfy an alloction */
+   to satisfy an allocation */
 static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
 {
   pool* r = NULL;

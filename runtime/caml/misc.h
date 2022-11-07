@@ -286,7 +286,7 @@ void caml_alloc_point_here(void);
 
 /* This hook is called when a fatal error occurs in the OCaml
    runtime. It is given arguments to be passed to the [vprintf]-like
-   functions in order to synthetize the error message.
+   functions in order to synthesize the error message.
    If it returns, the runtime calls [abort()].
 
    If it is [NULL], the error message is printed on stderr and then
