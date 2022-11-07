@@ -51,24 +51,7 @@ val at_exit : (unit -> unit) -> unit
 (** [at_exit f] registers [f] to be called when the current domain exits. Note
     that [at_exit] callbacks are domain-local and only apply to the calling
     domain. The registered functions are called in 'last in, first out' order:
-    the function most recently added with [at_exit] is called first.
-
-    The [at_exit] function can be used in combination with [at_each_spawn] to
-    clean up domain-local resources. Consider the following example:
-
-    {[
-let temp_file_key = Domain.DLS.new_key (fun _ ->
-  snd (Filename.open_temp_file "" ""))
-
-let _ = Domain.(at_each_spawn (fun _ ->
-  at_exit (fun _ -> close_out (DLS.get temp_file_key))))
-    ]}
-
-    The snippet above uses domain-local state ({!Domain.DLS}) to create a
-    temporary file for each domain. The [at_each_spawn] callback installs an
-    [at_exit] callback on each domain which closes the temporary file when the
-    domain terminates.
-    *)
+    the function most recently added with [at_exit] is called first. *)
 
 val cpu_relax : unit -> unit
 (** If busy-waiting, calling cpu_relax () between iterations
