@@ -25,11 +25,10 @@ end
 [%%expect{|
 {
  "Pair"[module] ->
-     Abs<.9>
-        (X/280, Abs(Y/281, {
-                            "t"[type] -> <.5>;
-                            "to_string"[value] -> <.6>;
-                            }));
+   Abs<.9>(X/280, Y/281, {
+                          "t"[type] -> <.5>;
+                          "to_string"[value] -> <.6>;
+                          });
  }
 module Pair :
   functor (X : Stringable) (Y : Stringable) ->

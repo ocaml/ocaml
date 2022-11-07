@@ -2255,7 +2255,7 @@ AC_CONFIG_COMMANDS_PRE([
   mkexe_exp="$mkexe_cmd_exp"
   AS_IF([test -n "$mkexe_cflags"],
     [mkexe="$mkexe $mkexe_cflags"
-    mkexe_exp="$mkexe_exp $oc_cflags $CFLAGS"])
+    mkexe_exp="$mkexe_exp $common_cflags $CFLAGS"])
   AS_IF([test -n "$mkexe_extra_flags"],
     [mkexe="$mkexe $mkexe_extra_flags"
     mkexe_exp="$mkexe_exp $mkexe_extra_flags"])

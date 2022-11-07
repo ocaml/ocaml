@@ -269,3 +269,33 @@ Line 1, characters 0-30:
 Error: This variant or record definition does not match that of type d
        Fields x and y have been swapped.
 |}]
+
+type t = { f1 : int ; f2 : int }
+
+let f () = { f1 = 0
+        ; Coq__10.f2 = 0 }
+
+[%%expect{|
+type t = { f1 : int; f2 : int; }
+Line 4, characters 10-20:
+4 |         ; Coq__10.f2 = 0 }
+              ^^^^^^^^^^
+Error: Unbound module Coq__10
+|}]
+
+module Coq__11 = struct
+  type t = { f1 : int ; f2 : int; f3 : int }
+end
+
+let f () = { f1 = 0
+           ; Coq__10.f2 = 0
+           ; Coq__11.f3 = 0 }
+
+[%%expect{|
+module Coq__11 : sig type t = { f1 : int; f2 : int; f3 : int; } end
+Line 6, characters 13-23:
+6 |            ; Coq__10.f2 = 0
+                 ^^^^^^^^^^
+Error: Unbound module Coq__10
+Hint: Did you mean Coq__11?
+|}]

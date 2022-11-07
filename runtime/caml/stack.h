@@ -71,7 +71,15 @@
 #endif
 
 #ifdef TARGET_riscv
+/* Size of the gc_regs structure, in words.
+   See riscv.S and riscv/proc.ml for the indices */
+#define Wosize_gc_regs (2 + 22 /* int regs */ + 20 /* float regs */)
 #define Saved_return_address(sp) *((intnat *)((sp) - 8))
+/* RISC-V does not use a frame pointer, but requires the stack to be
+   16-aligned, so when pushing the return address to the stack there
+   is an extra word of padding after it that needs to be skipped when
+   walking the stack. */
+#define Pop_frame_pointer(sp) sp += sizeof(value)
 #endif
 
 /* Declaration of variables used in the asm code */

@@ -1326,7 +1326,9 @@ do_resume: {
 
       check_trap_barrier_for_effect (domain_state);
       if (parent_stack == NULL) {
+        Setup_for_c_call;
         accu = caml_make_unhandled_effect_exn(accu);
+        Restore_after_c_call;
         goto raise_exception;
       }
 
@@ -1370,9 +1372,12 @@ do_resume: {
       sp[1] = Val_long(extra_args);
 
       if (parent == NULL) {
-        accu = caml_continuation_use(cont);
-        resume_fn = raise_unhandled_effect;
+        Setup_for_c_call;
         resume_arg = caml_make_unhandled_effect_exn(eff);
+        accu = caml_continuation_use(cont);
+        Restore_after_c_call;
+        resume_fn = raise_unhandled_effect;
+
         goto do_resume;
       }
 

@@ -373,26 +373,6 @@ parameters.cmi :
 parser_aux.cmi : \
     ../parsing/longident.cmi \
     debugcom.cmi
-pattern_matching.cmo : \
-    ../typing/typedtree.cmi \
-    parser_aux.cmi \
-    ../utils/misc.cmi \
-    debugger_config.cmi \
-    debugcom.cmi \
-    ../typing/ctype.cmi \
-    pattern_matching.cmi
-pattern_matching.cmx : \
-    ../typing/typedtree.cmx \
-    parser_aux.cmi \
-    ../utils/misc.cmx \
-    debugger_config.cmx \
-    debugcom.cmx \
-    ../typing/ctype.cmx \
-    pattern_matching.cmi
-pattern_matching.cmi : \
-    ../typing/typedtree.cmi \
-    parser_aux.cmi \
-    debugcom.cmi
 pos.cmo : \
     ../parsing/location.cmi \
     ../bytecomp/instruct.cmi \

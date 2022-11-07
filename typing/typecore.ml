@@ -1192,7 +1192,52 @@ let disambiguate_lid_a_list loc closed env usage expected_type lid_a_list =
       disambiguate_label_by_ids closed ids in
     Label.disambiguate ~warn ~filter usage lid env expected_type scope in
   let lbl_a_list =
-    List.map (fun (lid,a) -> lid, process_label lid, a) lid_a_list in
+    (* If one label is qualified [{ foo = ...; M.bar = ... }],
+       we will disambiguate all labels using one of the qualifying modules,
+       as if the user had written [{ M.foo = ...; M.bar = ... }].
+
+       #11630: It is important to process first the
+       user-qualified labels, instead of processing all labels in
+       order, so that error messages coming from the lookup of
+       M (maybe no such module/path exists) are shown to the user
+       in context of a qualified field [M.bar] they wrote
+       themselves, instead of the "ghost" qualification [M.foo]
+       that does not come from the source program. *)
+    let lbl_list =
+      List.map (fun (lid, _) ->
+          match lid.txt with
+          | Longident.Ldot _ -> Some (process_label lid)
+          | _ -> None
+        ) lid_a_list
+    in
+    (* Find a module prefix (if any) to qualify unqualified labels *)
+    let qual =
+      List.find_map (function
+          | {txt = Longident.Ldot (modname, _); _}, _ -> Some modname
+          | _ -> None
+        ) lid_a_list
+    in
+    (* Prefix unqualified labels with [qual] and resolve them.
+
+       Prefixing unqualified labels does not change the final
+       disambiguation result, it restricts the set of candidates
+       without removing any valid choice.
+       It matters if users activated warnings for ambigious or
+       out-of-scope resolutions -- they get less warnings by
+       qualifying at least one of the fields. *)
+    List.map2 (fun lid_a lbl ->
+        match lbl, lid_a with
+        | Some lbl, (lid, a) -> lid, lbl, a
+        | None, (lid, a) ->
+            let qual_lid =
+              match qual, lid.txt with
+              | Some modname, Longident.Lident s ->
+                  {lid with txt = Longident.Ldot (modname, s)}
+              | _ -> lid
+            in
+            lid, process_label qual_lid, a
+      ) lid_a_list lbl_list
+  in
   if !w_pr then
     Location.prerr_warning loc
       (Warnings.Not_principal "this type-based record disambiguation")
@@ -1218,28 +1263,12 @@ let disambiguate_lid_a_list loc closed env usage expected_type lid_a_list =
       (Warnings.Name_out_of_scope (!w_scope_ty, List.rev !w_scope, true));
   lbl_a_list
 
-let rec find_record_qual = function
-  | [] -> None
-  | ({ txt = Longident.Ldot (modname, _) }, _) :: _ -> Some modname
-  | _ :: rest -> find_record_qual rest
-
 let map_fold_cont f xs k =
   List.fold_right (fun x k ys -> f x (fun y -> k (y :: ys)))
     xs (fun ys -> k (List.rev ys)) []
 
 let type_label_a_list loc closed env usage type_lbl_a expected_type lid_a_list =
   let lbl_a_list =
-    let lid_a_list =
-      match find_record_qual lid_a_list with
-        None -> lid_a_list
-      | Some modname ->
-          List.map
-            (fun (lid, a as lid_a) ->
-              match lid.txt with Longident.Lident s ->
-                {lid with txt=Longident.Ldot (modname, s)}, a
-              | _ -> lid_a)
-            lid_a_list
-    in
     disambiguate_lid_a_list loc closed env usage expected_type lid_a_list
   in
   (* Invariant: records are sorted in the typed tree *)
