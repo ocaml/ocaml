@@ -40,6 +40,7 @@ Caml_inline void cpu_relax() {
 #elif defined(__aarch64__)
   __asm__ volatile ("yield" ::: "memory");
 #elif defined(__riscv)
+  /* Encoding of the pause instruction */
   __asm__ volatile (".4byte 0x100000F");
 #else
   /* Just a compiler barrier */
