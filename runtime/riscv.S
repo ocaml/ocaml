@@ -702,15 +702,15 @@ L(do_perform):
         mv      a3, TMP                /* a3 := effect handler */
         tail    PLT(caml_apply3)
 1:
-    /*  switch back to original performer before raising Unhandled
+    /*  switch back to original performer before raising Effect.Unhandled
         (no-op unless this is a reperform) */
         ld      t4, 0(a1) /* load performer stack from continuation */
         addi    t4, t4, -1 /* t4 := Ptr_val(t4) */
         ld      t3, Caml_state(current_stack)
         SWITCH_OCAML_STACKS t3, t4
-    /*  No parent stack. Raise Unhandled. */
-        la      a0, caml_exn_Unhandled
-        j       caml_raise_exn
+    /*  No parent stack. Raise Effect.Unhandled. */
+        la      ADDITIONAL_ARG, caml_raise_unhandled_effect
+        j       caml_c_call
 END_FUNCTION(caml_perform)
 
 FUNCTION(caml_reperform)
@@ -743,8 +743,8 @@ FUNCTION(caml_resume)
         SWITCH_OCAML_STACKS t3, a0
         mv      a0, a2
         jr      a3
-2:      la      a0, caml_exn_Continuation_already_taken
-        j       caml_raise_exn
+2:      la      ADDITIONAL_ARG, caml_raise_continuation_already_resumed
+        j       caml_c_call
 END_FUNCTION(caml_resume)
 
 /* Run a function on a new stack, then either

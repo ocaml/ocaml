@@ -39,7 +39,7 @@ Working version
 - #11102: Speed up register allocation by permanently spilling registers
   (Stephen Dolan, review by Xavier Leroy)
 
-- #11418: RISC-V multicore support.
+- #11418, #11708: RISC-V multicore support.
   (Nicolás Ojeda Bär, review by KC Sivaramakrishnan)
 
 - #11686: Better spilling heuristic for the Linear Scan allocator for more
