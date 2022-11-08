@@ -103,7 +103,7 @@ module type M5_sig = sig type t val x : t type s = t val f : s -> bool end
 module M5_impl : M5_sig
 |}];;
 
-(* Test 9: Nested module names work *)
+(* Test 6: Nested module names work *)
 module type Eq9 = sig
   type t
   val z : t
@@ -177,7 +177,7 @@ module M9' :
   end
 |}];;
 
-(* Test 10: nondep_supertype: Get good error if we need a name for the
+(* Test 7: nondep_supertype: Get good error if we need a name for the
    parameter. *)
 module F10 (X : Set.OrderedType) = struct
   let s : Set.Make(X).t = assert false
@@ -199,7 +199,7 @@ Error: This functor has type
        This functor can't be included directly; please apply it to an explicit argument.
 |}];;
 
-(* Test 11: Include functor should work at the toplevel (and check shadowing). *)
+(* Test 8: Include functor should work at the toplevel (and check shadowing). *)
 type t = int
 let x : t = 3
 let x : t = 5
@@ -227,7 +227,7 @@ val y : int = 3
 Exception: Assert_failure ("", 6, 9).
 |}]
 
-(* Test 12: Check that things get marked used appropriately when they are
+(* Test 9: Check that things get marked used appropriately when they are
    used by include functor.  (And that we're getting the warnings we expect
    to see if they weren't). *)
 module M12_1 : sig val y : int list end = struct
@@ -358,7 +358,7 @@ module M12_3 : sig val y : int list end
 |}]
 
 
-(* Test 14: Check that we reject including a functor with multiple arguments *)
+(* Test 10: Check that we reject including a functor with multiple arguments *)
 module F14 (X : S) (Y : S) = struct
   let z = (X.x, Y.x)
 end
@@ -397,7 +397,7 @@ Error: The type of this functor's result is not includable; it is
        () () -> sig val z : X.t end
 |}];;
 
-(* Test 15: Make sure we're extracting functor return types appropriately *)
+(* Test 11: Make sure we're extracting functor return types appropriately *)
 module type S15 = sig val x : int end
 module type S15' = S15
 
@@ -420,7 +420,7 @@ module F15 : (X : sig end) -> S15'
 val x : int = 42
 |}]
 
-(* Test 17: Functors whose types don't begin with a normal applicative parameter
+(* Test 12: Functors whose types don't begin with a normal applicative parameter
    are rejected. *)
 module type S17 = sig
   type t
@@ -463,7 +463,7 @@ Error: The type of this functor is: () (X : S17) -> sig val z : X.t end.
        Its parameter is not a signature.
 |}];;
 
-(* Test 18: Generative functors *)
+(* Test 13: Generative functors *)
 module type S18 = sig
   type t
   val x : t
@@ -524,7 +524,7 @@ Error: This functor creates fresh types when applied.
        Including it is not allowed inside applicative functors.
 |}];;
 
-(* Test 19: Effects happen when they should *)
+(* Test 14: Effects happen when they should *)
 let r19 = ref 0
 
 module F19 (X : sig val x : int end) = struct
@@ -549,7 +549,7 @@ module F19 : (X : sig val x : int end) -> sig end
 module M19 : sig val x : int end
 |}];;
 
-(* Test 20: Shadowed types *)
+(* Test 15: Shadowed types *)
 module I20 = struct
   type t = int
 end
@@ -580,3 +580,25 @@ Line 20, characters 16-17:
 Error: The constant "3" has type "int" but an expression was expected of type
          "string"
 |}];;
+
+(* Test 16: Check that scraping of result type happens in environment expanded
+   with parameter type. *)
+module M21 = struct
+  module F (_ : sig end) = struct
+    module type S = sig end
+  end
+
+  module P = struct
+    module Make (M : sig end) : F(M).S = struct end
+  end
+
+  include functor P.Make
+end;;
+[%%expect{|
+module M21 :
+  sig
+    module F : sig end -> sig module type S = sig end end
+    module P : sig module Make : (M : sig end) -> F(M).S end
+  end
+|}];;
+
