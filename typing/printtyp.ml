@@ -172,7 +172,7 @@ module Conflicts = struct
       | [namespace, a] ->
           Format.fprintf ppf
         "@ \
-         @[<2>Hint: The %a %s has been defined multiple times@ \
+         @[<2>@{<hint>Hint@}: The %a %s has been defined multiple times@ \
          in@ this@ toplevel@ session.@ \
          Some toplevel values still refer to@ old@ versions@ of@ this@ %a.\
          @ Did you try to redefine them?@]"
@@ -180,7 +180,7 @@ module Conflicts = struct
       | (namespace, _) :: _ :: _ ->
       Format.fprintf ppf
         "@ \
-         @[<2>Hint: The %a %a have been defined multiple times@ \
+         @[<2>@{<hint>Hint@}: The %a %a have been defined multiple times@ \
          in@ this@ toplevel@ session.@ \
          Some toplevel values still refer to@ old@ versions@ of@ those@ %a.\
          @ Did you try to redefine them?@]"
@@ -2169,12 +2169,12 @@ let explanation_diff env t3 t4 : (Format.formatter -> unit) option =
     when is_unit env ty1 && unifiable env ty2 t4 ->
       Some (fun ppf ->
         fprintf ppf
-          "@,@[Hint: Did you forget to provide `()' as argument?@]")
+          "@,@[@{<hint>Hint@}: Did you forget to provide `()' as argument?@]")
   | _, Tarrow (_, ty1, ty2, _)
     when is_unit env ty1 && unifiable env t3 ty2 ->
       Some (fun ppf ->
         fprintf ppf
-          "@,@[Hint: Did you forget to wrap the expression using \
+          "@,@[@{<hint>Hint@}: Did you forget to wrap the expression using \
            `fun () ->'?@]")
   | _ ->
       None

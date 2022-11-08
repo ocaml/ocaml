@@ -145,6 +145,9 @@ Working version
   modules with mismatching -for-pack
   (Pierre Chambart and Vincent Laviron, review by Mark Shinwell)
 
+- #11646: Add colors to error message hints.
+  (Christiana Anthony, review by Florian Angeletti)
+
 - #11653: Add the -no-absname option to ocamlc, ocamlopt and ocamldep.
   (Abiola Abdulsalam, review by Sébastien Hinderer and Florian Angeletti)
 
