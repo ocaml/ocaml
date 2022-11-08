@@ -736,6 +736,10 @@ OCaml 5.0
   mismatch error involving recursive types.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #11662, #11673: fix a memory leak when using Dynlink,
+  the bug was only present in development version of OCaml 5.
+  (Stephen Dolan, report by Andre Maroneze, review by Gabriel Scherer)
+
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
 
