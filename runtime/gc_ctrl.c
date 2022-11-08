@@ -129,7 +129,7 @@ CAMLprim value caml_gc_get(value v)
   res = caml_alloc_tuple (11);
   Store_field (res, 0, Val_long (Caml_state->minor_heap_wsz));  /* s */
   Store_field (res, 2, Val_long (caml_percent_free));           /* o */
-  Store_field (res, 3, Val_long (caml_params->verb_gc));        /* v */
+  Store_field (res, 3, Val_long (atomic_load_relaxed(&caml_verb_gc)));        /* v */
   Store_field (res, 5, Val_long (caml_max_stack_wsize));        /* l */
   Store_field (res, 8, Val_long (caml_custom_major_ratio));     /* M */
   Store_field (res, 9, Val_long (caml_custom_minor_ratio));     /* m */
@@ -170,6 +170,8 @@ CAMLprim value caml_gc_set(value v)
     caml_gc_message (0x20, "New space overhead: %"
                      ARCH_INTNAT_PRINTF_FORMAT "u%%\n", caml_percent_free);
   }
+
+  atomic_store_relaxed(&caml_verb_gc, Long_val (Field (v, 3)));
 
   /* These fields were added in 4.08.0. */
   if (Wosize_val (v) >= 11){

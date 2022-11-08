@@ -231,7 +231,8 @@ void * caml_dlopen(wchar_t * libname, int global)
   void *handle;
   int flags = (global ? FLEXDLL_RTLD_GLOBAL : 0);
   handle = flexdll_wdlopen(libname, flags);
-  if ((handle != NULL) && ((caml_params->verb_gc & 0x100) != 0)) {
+  if ((handle != NULL)
+     && ((atomic_load_relaxed(&caml_verb_gc) & 0x100) != 0)) {
     flexdll_dump_exports(handle);
     fflush(stdout);
   }

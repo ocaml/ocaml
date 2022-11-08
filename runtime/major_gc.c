@@ -981,7 +981,7 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
       caml_major_cycles_completed++;
       caml_gc_message(0x40, "Starting major GC cycle\n");
 
-      if (caml_params->verb_gc & 0x400) {
+      if (atomic_load_relaxed(&caml_verb_gc) & 0x400) {
         struct gc_stats s;
         intnat heap_words, not_garbage_words, swept_words;
 
@@ -1232,7 +1232,7 @@ static intnat major_collection_slice(intnat howmuch,
   intnat computed_work, budget, interrupted_budget = 0;
 
   int log_events = mode != Slice_opportunistic ||
-                   (caml_params->verb_gc & 0x40) ||
+                   (atomic_load_relaxed(&caml_verb_gc) & 0x40) ||
                    major_cycle_spinning;
 
   update_major_slice_work();
