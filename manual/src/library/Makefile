@@ -1,4 +1,5 @@
 ROOTDIR = ../../..
+include $(ROOTDIR)/Makefile.common
 
 TEXQUOTE = $(ROOTDIR)/runtime/ocamlrun ../../tools/texquote2
 CAMLLATEX = $(OCAMLRUN) $(addprefix -I ,$(LD_PATH)) \
