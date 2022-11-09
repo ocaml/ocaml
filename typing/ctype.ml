@@ -1357,8 +1357,7 @@ let rec copy_sep ~copy_scope ~fixed ~free ~may_share
             copy_row (copy_rec ~may_share:true) fixed' row keep more' in
           Tvariant row
       | Tpoly (t1, tl) ->
-          let tl' = List.map (fun t -> newty (get_desc t)) tl in
-          List.iter2 (TypeHash.add visited) tl tl';
+          let tl' = List.map (copy_rec ~may_share:true) tl in
           Tpoly (copy_rec ~may_share:true t1, tl')
       | Tfield (p, k, ty1, ty2) ->
           (* the kind is kept shared, see Btype.copy_type_desc *)
