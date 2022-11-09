@@ -1356,9 +1356,6 @@ let rec copy_sep ~copy_scope ~fixed ~free ~may_share
           let row =
             copy_row (copy_rec ~may_share:true) fixed' row keep more' in
           Tvariant row
-      | Tpoly (t1, tl) ->
-          let tl' = List.map (copy_rec ~may_share:true) tl in
-          Tpoly (copy_rec ~may_share:true t1, tl')
       | Tfield (p, k, ty1, ty2) ->
           (* the kind is kept shared, see Btype.copy_type_desc *)
           Tfield (p, field_kind_internal_repr k, copy_rec ~may_share:true ty1,
