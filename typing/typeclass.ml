@@ -89,7 +89,8 @@ type error =
   | Undeclared_methods of kind * string list
   | Parameter_arity_mismatch of Longident.t * int * int
   | Parameter_mismatch of Errortrace.unification_error
-  | Bad_parameters of Ident.t * type_expr * type_expr
+  | Bad_parameters of Ident.t * type_expr list * type_expr list
+  | Bad_class_type_parameters of Ident.t * type_expr list * type_expr list
   | Class_match_failure of Ctype.class_match_failure list
   | Unbound_val of string
   | Unbound_type_var of
@@ -1558,9 +1559,7 @@ let class_infos define_class kind
       List.iter2 (Ctype.unify env) obj_params obj_params'
     with Ctype.Unify _ ->
       raise(Error(cl.pci_loc, env,
-            Bad_parameters (obj_id, constr,
-                            Ctype.newconstr (Path.Pident obj_id)
-                                            obj_params')))
+            Bad_parameters (obj_id, obj_params, obj_params')))
     end;
     let ty = Btype.self_type obj_type in
     begin try
@@ -1580,20 +1579,14 @@ let class_infos define_class kind
     begin try
       List.iter2 (Ctype.unify env) cl_params cl_params'
     with Ctype.Unify _ ->
-      let dummy_class_type params =
-        let tv = Ctype.newvar () in
-        Ctype.newty(Tobject (tv, ref (Some (Pident ty_id, tv :: params)))) in
-      let ty1 = dummy_class_type cl_params
-      and ty2 = dummy_class_type cl_params' in
-      raise(Error(cl.pci_loc, env, Bad_parameters (ty_id, ty1, ty2)))
+      raise(Error(cl.pci_loc, env,
+            Bad_class_type_parameters (ty_id, cl_params, cl_params')))
     end;
     begin try
       Ctype.unify env ty cl_ty
     with Ctype.Unify _ ->
-      let tv = Ctype.newvar () in
-      let constr =
-        Ctype.newty(Tobject (tv, ref (Some (Pident ty_id, tv :: params)))) in
-      raise(Error(cl.pci_loc, env, Abbrev_type_clash (constr, ty, cl_ty)))
+      let ty_expanded = Ctype.object_fields ty in
+      raise(Error(cl.pci_loc, env, Abbrev_type_clash (ty, ty_expanded, cl_ty)))
     end
   end;
 
@@ -2033,13 +2026,22 @@ let report_error env ppf = function
         (function ppf ->
            fprintf ppf "does not meet its constraint: it should be")
   | Bad_parameters (id, params, cstrs) ->
-      Printtyp.prepare_for_printing [params; cstrs];
+      Printtyp.prepare_for_printing (params @ cstrs);
       fprintf ppf
-        "@[The abbreviation %a@ is used with parameters@ %a@ \
-           which are incompatible with constraints@ %a@]"
+        "@[The abbreviation %a@ is used with parameter(s)@ %a@ \
+           which are incompatible with constraint(s)@ %a@]"
         Printtyp.ident id
-        !Oprint.out_type (Printtyp.tree_of_typexp Type params)
-        !Oprint.out_type (Printtyp.tree_of_typexp Type cstrs)
+        !Oprint.out_type_args (List.map (Printtyp.tree_of_typexp Type) params)
+        !Oprint.out_type_args (List.map (Printtyp.tree_of_typexp Type) cstrs)
+  | Bad_class_type_parameters (id, params, cstrs) ->
+      Printtyp.prepare_for_printing (params @ cstrs);
+      fprintf ppf
+        "@[The class type #%a@ is used with parameter(s)@ %a,@ \
+           whereas the class type definition@ constrains@ \
+           those parameters to be@ %a@]"
+        Printtyp.ident id
+        !Oprint.out_type_args (List.map (Printtyp.tree_of_typexp Type) params)
+        !Oprint.out_type_args (List.map (Printtyp.tree_of_typexp Type) cstrs)
   | Class_match_failure error ->
       Includeclass.report_error Type ppf error
   | Unbound_val lab ->
