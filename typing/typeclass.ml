@@ -1484,7 +1484,7 @@ let initial_env define_class approx
        clty_variance = [];
        clty_type = dummy_cty;       (* Dummy value *)
        clty_path = unbound_class;
-       clty_ty = cl_td;      (* Dummy value *)
+       clty_hash_type = cl_td;      (* Dummy value *)
        clty_loc = Location.none;
        clty_attributes = [];
        clty_uid = uid;
@@ -1614,7 +1614,7 @@ let class_infos define_class kind
     {clty_params = params; clty_type = Btype.class_body typ;
      clty_variance = cty_variance;
      clty_path = Path.Pident obj_id;
-     clty_ty = cl_td;
+     clty_hash_type = cl_td;
      clty_loc = cl.pci_loc;
      clty_attributes = cl.pci_attributes;
      clty_uid = dummy_class.cty_uid;
@@ -1692,7 +1692,7 @@ let class_infos define_class kind
     {clty_params = params'; clty_type = Btype.class_body typ';
      clty_variance = cty_variance;
      clty_path = Path.Pident obj_id;
-     clty_ty = cl_abbr;
+     clty_hash_type = cl_abbr;
      clty_loc = cl.pci_loc;
      clty_attributes = cl.pci_attributes;
      clty_uid = dummy_class.cty_uid;
@@ -1705,7 +1705,7 @@ let class_infos define_class kind
 let final_decl env define_class
     (cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, ci_params,
      arity, pub_meths, coe, expr) =
-  let cl_abbr = cltydef.clty_ty in
+  let cl_abbr = cltydef.clty_hash_type in
 
   begin try Ctype.collapse_conj_params env clty.cty_params
   with Ctype.Unify err ->
@@ -1791,7 +1791,7 @@ let final_env define_class env { id; clty; ty_id; cltydef; obj_id; obj_abbr; } =
 (* Check that #c is coercible to c if there is a self-coercion *)
 let check_coercions env { id; id_loc; clty; ty_id; cltydef; obj_id; obj_abbr;
     arity; pub_meths; coe; req } =
-  let cl_abbr = cltydef.clty_ty in
+  let cl_abbr = cltydef.clty_hash_type in
   begin match coe with [] -> ()
   | loc :: _ ->
       let cl_ty, obj_ty =

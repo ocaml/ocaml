@@ -380,6 +380,6 @@ let update_class_decls env cldecls =
       (decl, {clty with cty_variance = variance},
        {cltydef with
         clty_variance = variance;
-        clty_ty = {cltydef.clty_ty with type_variance = variance}
+        clty_hash_type = {cltydef.clty_hash_type with type_variance = variance}
        }))
     decls cldecls

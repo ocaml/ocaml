@@ -1245,11 +1245,11 @@ let find_hash_type path env =
       let _, cltda =
         IdTbl.find_name wrap_identity ~mark:false name env.cltypes
       in
-      cltda.cltda_declaration.clty_ty
+      cltda.cltda_declaration.clty_hash_type
   | Pdot(p, name) ->
       let c = find_structure_components p env in
       let cltda = NameMap.find name c.comp_cltypes in
-      cltda.cltda_declaration.clty_ty
+      cltda.cltda_declaration.clty_hash_type
   | Papply _ -> raise Not_found
 
 let find_shape env (ns : Shape.Sig_component_kind.t) id =

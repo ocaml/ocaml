@@ -274,7 +274,7 @@ and transl_type_aux env policy styp =
   | Ptyp_class(lid, stl) ->
       let (path, decl) =
         let path, decl = Env.lookup_cltype ~loc:lid.loc lid.txt env in
-        (path, decl.clty_ty)
+        (path, decl.clty_hash_type)
       in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, env,
