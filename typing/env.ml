@@ -1241,18 +1241,16 @@ let find_constructor_address path env =
 let find_hash_type path env =
   match path with
   | Pident id ->
-      let name = "#" ^ Ident.name id in
-      let _, tda =
-        IdTbl.find_name wrap_identity ~mark:false name env.types
+      let name = Ident.name id in
+      let _, cltda =
+        IdTbl.find_name wrap_identity ~mark:false name env.cltypes
       in
-      tda.tda_declaration
-  | Pdot(p, s) ->
+      cltda.cltda_declaration.clty_hash_type
+  | Pdot(p, name) ->
       let c = find_structure_components p env in
-      let name = "#" ^ s in
-      let tda = NameMap.find name c.comp_types in
-      tda.tda_declaration
-  | Papply _ ->
-      raise Not_found
+      let cltda = NameMap.find name c.comp_cltypes in
+      cltda.cltda_declaration.clty_hash_type
+  | Papply _ -> raise Not_found
 
 let find_shape env (ns : Shape.Sig_component_kind.t) id =
   match ns with

@@ -25,7 +25,6 @@ type 'a class_info = {
   cls_ty_decl : class_type_declaration;
   cls_obj_id : Ident.t;
   cls_obj_abbr : type_declaration;
-  cls_typesharp_id : Ident.t;
   cls_abbr : type_declaration;
   cls_arity : int;
   cls_pub_methods : string list;
@@ -38,7 +37,6 @@ type class_type_info = {
   clsty_ty_decl : class_type_declaration;
   clsty_obj_id : Ident.t;
   clsty_obj_abbr : type_declaration;
-  clsty_typesharp_id : Ident.t;
   clsty_abbr : type_declaration;
   clsty_info : Typedtree.class_type_declaration;
 }
@@ -109,7 +107,8 @@ type error =
   | Undeclared_methods of kind * string list
   | Parameter_arity_mismatch of Longident.t * int * int
   | Parameter_mismatch of Errortrace.unification_error
-  | Bad_parameters of Ident.t * type_expr * type_expr
+  | Bad_parameters of Ident.t * type_expr list * type_expr list
+  | Bad_class_type_parameters of Ident.t * type_expr list * type_expr list
   | Class_match_failure of Ctype.class_match_failure list
   | Unbound_val of string
   | Unbound_type_var of

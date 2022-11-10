@@ -273,25 +273,16 @@ and transl_type_aux env policy styp =
       ctyp (Ttyp_object (fields, o)) (newobj ty)
   | Ptyp_class(lid, stl) ->
       let (path, decl) =
-        try
-          let lid2 =
-            match lid.txt with
-              Longident.Lident s     -> Longident.Lident ("#" ^ s)
-            | Longident.Ldot(r, s)   -> Longident.Ldot (r, "#" ^ s)
-            | Longident.Lapply(_, _) -> fatal_error "Typetexp.transl_type"
-          in
-          let path, decl = Env.find_type_by_name lid2 env in
-          ignore(Env.lookup_cltype ~loc:lid.loc lid.txt env);
-          (path, decl)
-        with Not_found ->
-          ignore (Env.lookup_cltype ~loc:lid.loc lid.txt env); assert false
+        let path, decl = Env.lookup_cltype ~loc:lid.loc lid.txt env in
+        (path, decl.clty_hash_type)
       in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, env,
                     Type_arity_mismatch(lid.txt, decl.type_arity,
                                         List.length stl)));
       let args = List.map (transl_type env policy) stl in
-      let params = instance_list decl.type_params in
+      let body = Option.get decl.type_manifest in
+      let (params, body) = instance_parameterized_type decl.type_params body in
       List.iter2
         (fun (sty, cty) ty' ->
            try unify_var env ty' cty.ctyp_type with Unify err ->
@@ -300,7 +291,7 @@ and transl_type_aux env policy styp =
         )
         (List.combine stl args) params;
       let ty_args = List.map (fun ctyp -> ctyp.ctyp_type) args in
-      let ty = Ctype.expand_head env (newconstr path ty_args) in
+      let ty = Ctype.apply ~use_current_level:true env params body ty_args in
       let ty = match get_desc ty with
         | Tobject (fi, _) ->
             let _, tv = flatten_fields fi in

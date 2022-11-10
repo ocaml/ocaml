@@ -176,6 +176,9 @@ Working version
   opened for checking
   (Hugo Heuzard, review by Nicolás Ojeda Bär)
 
+- #11569: Remove hash type encoding
+  (Hyunggyu Jang, review by Gabriel Scherer and Florian Angeletti)
+
 ### Build system:
 - #11590: Allow installing to a destination path containing spaces.
    (Élie Brami, review by Sébastien Hinderer and David Allsopp)
