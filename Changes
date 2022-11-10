@@ -1346,6 +1346,10 @@ Some of those changes will benefit all OCaml packages.
   parameters.
   (Florian Angeletti, report by Wiktor Kuchta, review by Jules Aguillon)
 
+- #11716: ocamllex: mismatched parentheses and curly brackets are now caught
+  by ocamllex, instead of causing invalid OCaml code to be generated.
+  (Demi Marie Obenour)
+
 - #11787: Fix GDB scripts to work with OCaml 5's heap layout. (Nick
   Barnes)
 
