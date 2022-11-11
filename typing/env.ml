@@ -1129,19 +1129,21 @@ let rec find_type_data path env =
       | Pextra_ty (p, extra) -> begin
           match extra with
           | Pcstr_ty s ->
-              let tda = find_type_data p env in
-              let cstr =
-                match tda.tda_descriptions with
-                | Type_variant (cstrs, _) ->
-                    List.find (fun cstr -> cstr.cstr_name = s) cstrs
-                | Type_record _ | Type_abstract | Type_open -> raise Not_found
-              in
+              let cstr = find_cstr p s env in
               type_of_cstr path cstr
           | Pext_ty ->
               let cda = find_extension_full p env in
               type_of_cstr path cda.cda_description
         end
     end
+and find_cstr path name env =
+  let tda = find_type_data path env in
+  match tda.tda_descriptions with
+  | Type_variant (cstrs, _) ->
+      List.find (fun cstr -> cstr.cstr_name = name) cstrs
+  | Type_record _ | Type_abstract | Type_open -> raise Not_found
+
+
 
 let find_modtype_lazy path env =
   match path with
