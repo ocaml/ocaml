@@ -1082,7 +1082,7 @@ let find_value_full path env =
       NameMap.find s sc.comp_values
   | Papply _ | Pextra_ty _ -> raise Not_found
 
-let find_extension path env =
+let find_extension_full path env =
   match path with
   | Pident id -> TycompTbl.find_same id env.constrs
   | Pdot(p, s) -> begin
@@ -1138,7 +1138,7 @@ let rec find_type_data path env =
               in
               type_of_cstr path cstr
           | Pext_ty ->
-              let cda = find_extension p env in
+              let cda = find_extension_full p env in
               type_of_cstr path cda.cda_description
         end
     end
