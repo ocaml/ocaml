@@ -27,9 +27,6 @@
 #include <stdlib.h>
 #include <string.h>
 #define CAML_INTERNALS
-#include "caml/config.h"
-#include "caml/mlvalues.h"
-#include "caml/osdeps.h"
 #include "caml/misc.h"
 
 #define caml_stat_strdup strdup
