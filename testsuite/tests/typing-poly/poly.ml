@@ -1516,30 +1516,33 @@ val n : < m : 'x 'a. ([< `Foo of 'x ] as 'a) -> 'x > = <obj>
 let n =
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 [%%expect {|
-val n : < m : 'x. [< `Foo of 'x ] -> 'x > = <obj>
+Line 2, characters 9-68:
+2 |   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The method m has type 'a -> 'b but is expected to have type
+         [< `Foo of 'x ] -> 'c
+       The universal variable 'x would escape its scope
 |}];;
 (* fail *)
 let (n : < m : 'a. [< `Foo of int] -> 'a >) =
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 [%%expect {|
-Line 2, characters 2-72:
+Line 2, characters 9-68:
 2 |   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type < m : 'x. [< `Foo of 'x ] -> 'x >
-       but an expression was expected of type
-         < m : 'a. [< `Foo of int ] -> 'a >
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The method m has type 'a -> 'b but is expected to have type
+         [< `Foo of 'x ] -> 'c
        The universal variable 'x would escape its scope
 |}];;
 (* fail *)
 let (n : 'b -> < m : 'a . ([< `Foo of int] as 'b) -> 'a >) = fun x ->
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 [%%expect {|
-Line 2, characters 2-72:
+Line 2, characters 9-68:
 2 |   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type < m : 'x. [< `Foo of 'x ] -> 'x >
-       but an expression was expected of type
-         < m : 'a. [< `Foo of int ] -> 'a >
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The method m has type 'a -> 'b but is expected to have type
+         [< `Foo of 'x ] -> 'c
        The universal variable 'x would escape its scope
 |}];;
 (* ok *)

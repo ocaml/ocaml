@@ -497,6 +497,7 @@ and record_representation =
   | Record_unboxed of bool    (* Unboxed single-field record, inlined or not *)
   | Record_inlined of int               (* Inlined record *)
   | Record_extension of Path.t          (* Inlined record under extension *)
+                             (* The argument is the path of the extension *)
 
 and variant_representation =
     Variant_regular          (* Constant or boxed constructors *)

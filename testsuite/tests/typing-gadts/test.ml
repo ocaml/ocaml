@@ -798,10 +798,11 @@ let f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
 Lines 1-2, characters 4-15:
 1 | ....f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
 2 |   fun Eq o -> o..............
-Error: This definition has type
-         'c. ('d, 'c) eq -> ([< `A of 'c & 'f & 'd | `B ] as 'e) -> 'e
-       which is less general than
-         'a 'b. ('a, 'b) eq -> ([< `A of 'b & 'h | `B ] as 'g) -> 'g
+Error: This expression has type
+         ('a, 'b) eq -> ([< `A of 'b & 'a | `B ] as 'c) -> 'c
+       but an expression was expected of type
+         ('a, 'b) eq -> [< `A of 'a0 | `B ] -> [< `A of 'b0 | `B ]
+       The universal variable 'a0 would escape its scope
 |}];;
 
 let f : type a b. (a,b) eq -> [`A of a | `B] -> [`A of b | `B] =
@@ -823,7 +824,17 @@ let f : type a b. (a,b) eq -> [> `A of a | `B] -> [`A of b | `B] =
     let r : [`A of b | `B] = match eq with Eq -> o in (* fail with principal *)
     r;;
 [%%expect{|
-val f : ('a, 'b) eq -> [ `A of 'a | `B ] -> [ `A of 'b | `B ] = <fun>
+Lines 1-5, characters 4-5:
+1 | ....f : type a b. (a,b) eq -> [> `A of a | `B] -> [`A of b | `B] =
+2 |   fun eq o ->
+3 |     ignore (o : [< `A of a | `B]);
+4 |     let r : [`A of b | `B] = match eq with Eq -> o in (* fail with principal *)
+5 |     r..
+Error: This expression has type
+         ('a, 'b) eq -> [ `A of 'a | `B ] -> [ `A of 'b | `B ]
+       but an expression was expected of type
+         ('a, 'b) eq -> [> `A of 'a0 | `B ] -> [ `A of 'b | `B ]
+       The universal variable 'a0 would escape its scope
 |}, Principal{|
 Line 4, characters 49-50:
 4 |     let r : [`A of b | `B] = match eq with Eq -> o in (* fail with principal *)

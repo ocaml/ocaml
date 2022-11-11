@@ -179,11 +179,18 @@ Working version
 - #11569: Remove hash type encoding
   (Hyunggyu Jang, review by Gabriel Scherer and Florian Angeletti)
 
+- #11568: Encode inline record types in Path.t
+  (Leo White and Hyunggyu Jang, review by Gabriel Scherer)
+
 ### Build system:
 - #11590: Allow installing to a destination path containing spaces.
    (Élie Brami, review by Sébastien Hinderer and David Allsopp)
 
 ### Bug fixes:
+
+- #10664, #11600: Unsoundness in the typing of polymorphic methods
+  involving polymorphic variants
+  (Jacques Garrigue, report by Mike Shulman, review by Gabriel Scherer)
 
 - #11302, #11412: `ocamlc` and `ocamlopt` should not remove generated files
   when they are not regular files.

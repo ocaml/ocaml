@@ -211,6 +211,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           else Oide_dot (Printtyp.tree_of_path p, Out_name.print name)
       | Papply _ ->
           Printtyp.tree_of_path ty_path
+      | Pextra_ty _ ->
+          (* These can only appear directly inside of the associated
+             constructor so we can just drop the prefix *)
+          Oide_ident name
 
     let tree_of_constr =
       tree_of_qualified
