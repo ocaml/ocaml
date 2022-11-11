@@ -31,7 +31,11 @@ let rec same p1 p2 =
   | (Papply(fun1, arg1), Papply(fun2, arg2)) ->
       same fun1 fun2 && same arg1 arg2
   | (Pextra_ty (p1, t1), Pextra_ty (p2, t2)) ->
-      t1 = t2 && same p1 p2
+      let same_extra = match t1, t2 with
+        | (Pcstr_ty s1, Pcstr_ty s2) -> s1 = s2
+        | (Pext_ty, Pext_ty) -> true
+        | ((Pcstr_ty _ | Pext_ty), _) -> false
+      in same_extra && same p1 p2
   | (_, _) -> false
 
 let rec compare p1 p2 =
