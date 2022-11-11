@@ -188,6 +188,10 @@ Working version
 
 ### Bug fixes:
 
+- #10664, #11600: Unsoundness in the typing of polymorphic methods
+  involving polymorphic variants
+  (Jacques Garrigue, report by Mike Shulman, review by Gabriel Scherer)
+
 - #11302, #11412: `ocamlc` and `ocamlopt` should not remove generated files
   when they are not regular files.
   (Xavier Leroy, report by Thierry Martinez, review by

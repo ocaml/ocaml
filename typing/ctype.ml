@@ -1089,12 +1089,6 @@ let rec copy ?partial ?keep_names copy_scope ty =
               let more', row =
                 match partial with
                   Some (free_univars, false) ->
-                    let more' =
-                      if not (eq_type more more') then
-                        more' (* we've already made a copy *)
-                      else
-                        newvar ()
-                    in
                     let not_reither (_, f) =
                       match row_field_repr f with
                         Reither _ -> false
@@ -1104,6 +1098,7 @@ let rec copy ?partial ?keep_names copy_scope ty =
                     if row_closed row && not (is_fixed row)
                     && TypeSet.is_empty (free_univars ty)
                     && not (List.for_all not_reither fields) then
+                      let more' = newvar () in
                       (more',
                        create_row ~fields:(List.filter not_reither fields)
                          ~more:more' ~closed:false ~fixed:None ~name:None)
@@ -1296,73 +1291,67 @@ let instance_class params cty =
 
 (**** Instantiation for types with free universal variables ****)
 
-let rec diff_list l1 l2 =
-  if l1 == l2 then [] else
-  match l1 with [] -> invalid_arg "Ctype.diff_list"
-  | a :: l1 -> a :: diff_list l1 l2
-
-let conflicts free bound =
-  let bound = List.map get_id bound in
-  TypeSet.exists (fun t -> List.memq (get_id t) bound) free
-
 let delayed_copy = ref []
     (* copying to do later *)
+let add_delayed_copy t copy_scope ty =
+  delayed_copy :=
+    lazy (Transient_expr.set_stub_desc t (Tlink (copy copy_scope ty))) ::
+    !delayed_copy
 
-(* Copy without sharing until there are no free univars left *)
-(* all free univars must be included in [visited]            *)
-let rec copy_sep ~copy_scope ~fixed ~free ~bound ~may_share
-    (visited : (int * (type_expr * type_expr list)) list) (ty : type_expr) =
+(* [copy_sep] is used to instantiate first-class polymorphic types.
+   * It first makes a separate copy of the type as a graph, omitting nodes
+     that have no free univars.
+   * In this first pass, [visited] is used as a mapping for previously visited
+     nodes, and must already contain all the free univars in [ty].
+   * The remaining (univar-closed) parts of the type are then instantiated
+     with [copy] using a common [copy_scope].
+   The reason to work in two passes lies in recursive types such as:
+     [let h (x : < m : 'a. < n : 'a; p : 'b > > as 'b) = x#m]
+   The type of [x#m] should be:
+     [ < n : 'c; p : < m : 'a. < n : 'a; p : 'b > > as 'b > ]
+   I.e., the universal type variable ['a] is both instantiated as a fresh
+   type variable ['c] when outside of its binder, and kept as universal
+   when under its binder.
+   Assumption: in the first call to [copy_sep], all the free univars should
+   be bound by the same [Tpoly] node. This guarantees that they are only
+   bound when under this [Tpoly] node, which has no free univars, and as
+   such is not part of the separate copy. In turn, this allows the separate
+   copy to keep the sharing of the original type without breaking its
+   binding structure.
+ *)
+let rec copy_sep ~copy_scope ~fixed ~free ~may_share
+    ~(visited : type_expr TypeHash.t) (ty : type_expr) =
   let univars = free ty in
   if is_Tvar ty || may_share && TypeSet.is_empty univars then
     if get_level ty <> generic_level then ty else
     let t = newstub ~scope:(get_scope ty) in
-    delayed_copy :=
-      lazy (Transient_expr.set_stub_desc t (Tlink (copy copy_scope ty)))
-      :: !delayed_copy;
+    add_delayed_copy t copy_scope ty;
     t
   else try
-    let t, bound_t = List.assq (get_id ty) visited in
-    let dl = if is_Tunivar ty then [] else diff_list bound bound_t in
-    if dl <> [] && conflicts univars dl then raise Not_found;
-    t
+    TypeHash.find visited ty
   with Not_found -> begin
     let t = newstub ~scope:(get_scope ty) in
-    let desc = get_desc ty in
-    let visited =
-      match desc with
-        Tarrow _ | Ttuple _ | Tvariant _ | Tconstr _ | Tobject _ | Tpackage _ ->
-          (get_id ty, (t, bound)) :: visited
-      | Tvar _ | Tfield _ | Tnil | Tpoly _ | Tunivar _ ->
-          visited
-      | Tlink _ | Tsubst _ ->
-          assert false
-    in
-    let copy_rec = copy_sep ~copy_scope ~fixed ~free ~bound visited in
+    TypeHash.add visited ty t;
+    let copy_rec = copy_sep ~copy_scope ~fixed ~free ~visited in
     let desc' =
-      match desc with
+      match get_desc ty with
       | Tvariant row ->
           let more = row_more row in
           (* We shall really check the level on the row variable *)
           let keep = is_Tvar more && get_level more <> generic_level in
+          (* In that case we should keep the original, but we still
+             call copy to correct the levels *)
+          if keep then (add_delayed_copy t copy_scope ty; Tvar None) else
           let more' = copy_rec ~may_share:false more in
           let fixed' = fixed && (is_Tvar more || is_Tunivar more) in
           let row =
             copy_row (copy_rec ~may_share:true) fixed' row keep more' in
           Tvariant row
-      | Tpoly (t1, tl) ->
-          let tl' = List.map (fun t -> newty (get_desc t)) tl in
-          let bound = tl @ bound in
-          let visited =
-            List.map2 (fun ty t -> get_id ty, (t, bound)) tl tl' @ visited in
-          let body =
-            copy_sep ~copy_scope ~fixed ~free ~bound ~may_share:true
-              visited t1 in
-          Tpoly (body, tl')
       | Tfield (p, k, ty1, ty2) ->
           (* the kind is kept shared, see Btype.copy_type_desc *)
           Tfield (p, field_kind_internal_repr k, copy_rec ~may_share:true ty1,
                   copy_rec ~may_share:false ty2)
-      | _ -> copy_type_desc (copy_rec ~may_share:true) desc
+      | desc -> copy_type_desc (copy_rec ~may_share:true) desc
     in
     Transient_expr.set_stub_desc t desc';
     t
@@ -1376,11 +1365,12 @@ let instance_poly' copy_scope ~keep_names fixed univars sch =
     | _ -> assert false
   in
   let vars = List.map copy_var univars in
-  let pairs = List.map2 (fun u v -> get_id u, (v, [])) univars vars in
+  let visited = TypeHash.create 17 in
+  List.iter2 (TypeHash.add visited) univars vars;
   delayed_copy := [];
   let ty =
-    copy_sep ~copy_scope ~fixed ~free:(compute_univars sch) ~bound:[]
-      ~may_share:true pairs sch in
+    copy_sep ~copy_scope ~fixed ~free:(compute_univars sch)
+      ~may_share:true ~visited sch in
   List.iter Lazy.force !delayed_copy;
   delayed_copy := [];
   vars, ty
