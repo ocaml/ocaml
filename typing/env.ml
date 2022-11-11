@@ -710,10 +710,6 @@ let is_in_signature env = env.flags land in_signature_flag <> 0
 let has_local_constraints env =
   not (Path.Map.is_empty env.local_constraints)
 
-let is_ident = function
-    Pident _ -> true
-  | Pdot _ | Papply _ -> false
-
 let is_ext cda =
   match cda.cda_description with
   | {cstr_tag = Cstr_extension _} -> true
@@ -721,7 +717,11 @@ let is_ext cda =
 
 let is_local_ext cda =
   match cda.cda_description with
-  | {cstr_tag = Cstr_extension(p, _)} -> is_ident p
+  | {cstr_tag = Cstr_extension(p, _)} -> begin
+      match p with
+      | Pident _ -> true
+      | Pdot _ | Papply _ | Pextra_ty _ -> false
+  end
   | _ -> false
 
 let diff env1 env2 =
@@ -795,7 +795,7 @@ end = struct
     Ident.persistent id && is (Ident.name id)
   let is_path = function
   | Pident id -> is_ident id
-  | Pdot _ | Papply _ -> false
+  | Pdot _ | Papply _ | Pextra_ty _ -> false
 end
 
 let set_unit_name = Current_unit_name.set
@@ -1020,6 +1020,7 @@ let rec find_module_components path env =
       let f_comp = find_functor_components f_path env in
       let loc = Location.(in_file !input_name) in
       !components_of_functor_appl' ~loc ~f_path ~f_comp ~arg env
+  | Pextra_ty _ -> raise Not_found
 
 and find_structure_components path env =
   match get_components (find_module_components path env) with
@@ -1044,6 +1045,7 @@ let find_module ~alias path env =
       let fc = find_functor_components p1 env in
       if alias then md (fc.fcomp_res)
       else md (modtype_of_functor_appl fc p1 p2)
+  | Pextra_ty _ -> raise Not_found
 
 let find_module_lazy ~alias path env =
   match path with
@@ -1061,6 +1063,7 @@ let find_module_lazy ~alias path env =
         else md (modtype_of_functor_appl fc p1 p2)
       in
       Subst.Lazy.of_module_decl md
+  | Pextra_ty _ -> raise Not_found
 
 let find_strengthened_module ~aliasable path env =
   let md = find_module_lazy ~alias:true path env in
@@ -1077,54 +1080,20 @@ let find_value_full path env =
   | Pdot(p, s) ->
       let sc = find_structure_components p env in
       NameMap.find s sc.comp_values
-  | Papply _ -> raise Not_found
+  | Papply _ | Pextra_ty _ -> raise Not_found
 
-let find_type_full path env =
+let find_extension_full path env =
   match path with
-  | Pident id -> IdTbl.find_same id env.types
-  | Pdot(p, s) ->
-      let sc = find_structure_components p env in
-      NameMap.find s sc.comp_types
-  | Papply _ -> raise Not_found
-
-let find_modtype_lazy path env =
-  match path with
-  | Pident id -> (IdTbl.find_same id env.modtypes).mtda_declaration
-  | Pdot(p, s) ->
-      let sc = find_structure_components p env in
-      (NameMap.find s sc.comp_modtypes).mtda_declaration
-  | Papply _ -> raise Not_found
-
-let find_modtype path env =
-  Subst.Lazy.force_modtype_decl (find_modtype_lazy path env)
-
-let find_class_full path env =
-  match path with
-  | Pident id -> IdTbl.find_same id env.classes
-  | Pdot(p, s) ->
-      let sc = find_structure_components p env in
-      NameMap.find s sc.comp_classes
-  | Papply _ -> raise Not_found
-
-let find_cltype path env =
-  match path with
-  | Pident id -> (IdTbl.find_same id env.cltypes).cltda_declaration
-  | Pdot(p, s) ->
-      let sc = find_structure_components p env in
-      (NameMap.find s sc.comp_cltypes).cltda_declaration
-  | Papply _ -> raise Not_found
-
-let find_value path env =
-  (find_value_full path env).vda_description
-
-let find_class path env =
-  (find_class_full path env).clda_declaration
-
-let find_ident_constructor id env =
-  (TycompTbl.find_same id env.constrs).cda_description
-
-let find_ident_label id env =
-  TycompTbl.find_same id env.labels
+  | Pident id -> TycompTbl.find_same id env.constrs
+  | Pdot(p, s) -> begin
+      let comps = find_structure_components p env in
+      let cstrs = NameMap.find s comps.comp_constrs in
+      let exts = List.filter is_ext cstrs in
+      match exts with
+      | [cda] -> cda
+      | _ -> raise Not_found
+    end
+  | Papply _ | Pextra_ty _ -> raise Not_found
 
 let type_of_cstr path = function
   | {cstr_inlined = Some decl; _} ->
@@ -1142,54 +1111,78 @@ let type_of_cstr path = function
       end
   | _ -> assert false
 
-let find_type_data path env =
-  match Path.constructor_typath path with
-  | Regular p -> begin
-      match Path.Map.find p env.local_constraints with
-      | decl ->
-          {
-            tda_declaration = decl;
-            tda_descriptions = Type_abstract;
-            tda_shape = Shape.leaf decl.type_uid;
-          }
-      | exception Not_found -> find_type_full p env
-    end
-  | Cstr (ty_path, s) ->
-      (* This case corresponds to an inlined record *)
-      let tda =
-        try find_type_full ty_path env
-        with Not_found -> assert false
-      in
-      let cstr =
-        begin match tda.tda_descriptions with
-        | Type_variant (cstrs, _) -> begin
-            try
-              List.find (fun cstr -> cstr.cstr_name = s) cstrs
-            with Not_found -> assert false
-          end
-        | Type_record _ | Type_abstract | Type_open -> assert false
+let rec find_type_data path env =
+  match Path.Map.find path env.local_constraints with
+  | decl ->
+    {
+      tda_declaration = decl;
+      tda_descriptions = Type_abstract;
+      tda_shape = Shape.leaf decl.type_uid;
+    }
+  | exception Not_found -> begin
+      match path with
+      | Pident id -> IdTbl.find_same id env.types
+      | Pdot(p, s) ->
+          let sc = find_structure_components p env in
+          NameMap.find s sc.comp_types
+      | Papply _ -> raise Not_found
+      | Pextra_ty (p, extra) -> begin
+          match extra with
+          | Pcstr_ty s ->
+              let cstr = find_cstr p s env in
+              type_of_cstr path cstr
+          | Pext_ty ->
+              let cda = find_extension_full p env in
+              type_of_cstr path cda.cda_description
         end
-      in
-      type_of_cstr path cstr
-  | LocalExt id ->
-      let cstr =
-        try (TycompTbl.find_same id env.constrs).cda_description
-        with Not_found -> assert false
-      in
-      type_of_cstr path cstr
-  | Ext (mod_path, s) ->
-      let comps =
-        try find_structure_components mod_path env
-        with Not_found -> assert false
-      in
-      let cstrs =
-        try NameMap.find s comps.comp_constrs
-        with Not_found -> assert false
-      in
-      let exts = List.filter is_ext cstrs in
-      match exts with
-      | [cda] -> type_of_cstr path cda.cda_description
-      | _ -> assert false
+    end
+and find_cstr path name env =
+  let tda = find_type_data path env in
+  match tda.tda_descriptions with
+  | Type_variant (cstrs, _) ->
+      List.find (fun cstr -> cstr.cstr_name = name) cstrs
+  | Type_record _ | Type_abstract | Type_open -> raise Not_found
+
+
+
+let find_modtype_lazy path env =
+  match path with
+  | Pident id -> (IdTbl.find_same id env.modtypes).mtda_declaration
+  | Pdot(p, s) ->
+      let sc = find_structure_components p env in
+      (NameMap.find s sc.comp_modtypes).mtda_declaration
+  | Papply _ | Pextra_ty _ -> raise Not_found
+
+let find_modtype path env =
+  Subst.Lazy.force_modtype_decl (find_modtype_lazy path env)
+
+let find_class_full path env =
+  match path with
+  | Pident id -> IdTbl.find_same id env.classes
+  | Pdot(p, s) ->
+      let sc = find_structure_components p env in
+      NameMap.find s sc.comp_classes
+  | Papply _ | Pextra_ty _ -> raise Not_found
+
+let find_cltype path env =
+  match path with
+  | Pident id -> (IdTbl.find_same id env.cltypes).cltda_declaration
+  | Pdot(p, s) ->
+      let sc = find_structure_components p env in
+      (NameMap.find s sc.comp_cltypes).cltda_declaration
+  | Papply _ | Pextra_ty _ -> raise Not_found
+
+let find_value path env =
+  (find_value_full path env).vda_description
+
+let find_class path env =
+  (find_class_full path env).clda_declaration
+
+let find_ident_constructor id env =
+  (TycompTbl.find_same id env.constrs).cda_description
+
+let find_ident_label id env =
+  TycompTbl.find_same id env.labels
 
 let find_type p env =
   (find_type_data p env).tda_declaration
@@ -1202,7 +1195,7 @@ let rec find_module_address path env =
   | Pdot(p, s) ->
       let c = find_structure_components p env in
       get_address (NameMap.find s c.comp_modules).mda_address
-  | Papply _ -> raise Not_found
+  | Papply _ | Pextra_ty _ -> raise Not_found
 
 and force_address = function
   | Projection { parent; pos } -> Adot(get_address parent, pos)
@@ -1235,8 +1228,7 @@ let find_constructor_address path env =
   | Pdot(p, s) ->
       let c = find_structure_components p env in
       get_constrs_address (NameMap.find s c.comp_constrs)
-  | Papply _ ->
-      raise Not_found
+  | Papply _ | Pextra_ty _ -> raise Not_found
 
 let find_hash_type path env =
   match path with
@@ -1250,7 +1242,7 @@ let find_hash_type path env =
       let c = find_structure_components p env in
       let cltda = NameMap.find name c.comp_cltypes in
       cltda.cltda_declaration.clty_hash_type
-  | Papply _ -> raise Not_found
+  | Papply _ | Pextra_ty _ -> raise Not_found
 
 let find_shape env (ns : Shape.Sig_component_kind.t) id =
   match ns with
@@ -1313,6 +1305,7 @@ let rec normalize_module_path lax env = function
       else expand_module_path lax env (Papply(p1', p2'))
   | Pident _ as path ->
       expand_module_path lax env path
+  | Pextra_ty _ -> assert false
 
 and expand_module_path lax env path =
   try match find_module_lazy ~alias:true path env with
@@ -1336,36 +1329,22 @@ let normalize_module_path oloc env path =
         error (Missing_module(loc, path,
                               normalize_module_path true env path))
 
-let normalize_path_prefix oloc env path =
+let rec normalize_path_prefix oloc env path =
   match path with
-    Pdot(p, s) ->
+  | Pdot(p, s) ->
       let p2 = normalize_module_path oloc env p in
       if p == p2 then path else Pdot(p2, s)
   | Pident _ ->
       path
-  | Papply _ ->
+  | Pextra_ty (p, extra) ->
+      let p2 = normalize_path_prefix oloc env p in
+      if p == p2 then path else Pextra_ty (p2, extra)
+  | Papply _  ->
       assert false
 
-let normalize_type_path oloc env path =
-  (* Inlined version of Path.is_constructor_typath:
-     constructor type paths (i.e. path pointing to an inline
-     record argument of a constructpr) are built as a regular
-     type path followed by a capitalized constructor name. *)
-  match path with
-  | Pident _ ->
-      path
-  | Pdot(p, s) ->
-      let p2 =
-        if Path.is_uident s && not (Path.is_uident (Path.last p)) then
-          (* Cstr M.t.C *)
-          normalize_path_prefix oloc env p
-        else
-          (* Regular M.t, Ext M.C *)
-          normalize_module_path oloc env p
-      in
-      if p == p2 then path else Pdot (p2, s)
-  | Papply _ ->
-      assert false
+let normalize_type_path = normalize_path_prefix
+
+let normalize_value_path = normalize_path_prefix
 
 let rec normalize_modtype_path env path =
   let path = normalize_path_prefix None env path in
@@ -1425,7 +1404,7 @@ let rec is_functor_arg path env =
       begin try Ident.find_same id env.functor_args; true
       with Not_found -> false
       end
-  | Pdot (p, _s) -> is_functor_arg p env
+  | Pdot (p, _) | Pextra_ty (p, _) -> is_functor_arg p env
   | Papply _ -> true
 
 (* Copying types associated with values *)
@@ -1560,7 +1539,7 @@ let rec find_shadowed_comps path env =
              (fun comps -> comps.comp_modules) s) l
       in
       List.flatten l'
-  | Papply _ -> []
+  | Papply _ | Pextra_ty _ -> []
 
 let find_shadowed wrap proj1 proj2 path env =
   match path with
@@ -1570,7 +1549,7 @@ let find_shadowed wrap proj1 proj2 path env =
       let l = find_shadowed_comps p env in
       let l' = List.map (find_all_comps wrap proj2 s) l in
       List.flatten l'
-  | Papply _ -> []
+  | Papply _ | Pextra_ty _ -> []
 
 let find_shadowed_types path env =
   List.map fst

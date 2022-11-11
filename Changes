@@ -179,6 +179,9 @@ Working version
 - #11569: Remove hash type encoding
   (Hyunggyu Jang, review by Gabriel Scherer and Florian Angeletti)
 
+- #11568: Encode inline record types in Path.t
+  (Leo White and Hyunggyu Jang, review by Gabriel Scherer)
+
 ### Build system:
 - #11590: Allow installing to a destination path containing spaces.
    (Élie Brami, review by Sébastien Hinderer and David Allsopp)

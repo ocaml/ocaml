@@ -127,9 +127,8 @@ val normalize_module_path: Location.t option -> t -> Path.t -> Path.t
 val normalize_type_path: Location.t option -> t -> Path.t -> Path.t
 (* Normalize the prefix part of the type path *)
 
-val normalize_path_prefix: Location.t option -> t -> Path.t -> Path.t
-(* Normalize the prefix part of other kinds of paths
-   (value/modtype/etc) *)
+val normalize_value_path: Location.t option -> t -> Path.t -> Path.t
+(* Normalize the prefix part of the value path *)
 
 val normalize_modtype_path: t -> Path.t -> Path.t
 (* Normalize a module type path *)
