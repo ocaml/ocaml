@@ -16,6 +16,7 @@
 /* Based on public-domain code from Berkeley Yacc */
 
 #include <string.h>
+#include <stdbool.h>
 #include "defs.h"
 
 /*  The line size must be a positive integer.  One hundred was chosen      */
@@ -259,6 +260,9 @@ void process_apostrophe_body(FILE *f)
     }
 }
 
+static bool is_ocaml_ident_start_char(char p) {
+    return p == '_' || (p >= 'a' && p <= 'z');
+}
 
 static void process_open_curly_bracket(FILE *f) {
     char *idcptr = cptr;
@@ -282,12 +286,12 @@ static void process_open_curly_bracket(FILE *f) {
         }
     }
 
-    if (In_bitmap(caml_ident_start, *idcptr) || *idcptr == '|')
+    if (is_ocaml_ident_start_char(*idcptr) || *idcptr == '|')
     {
         char *newcptr = idcptr;
         size_t size = 0;
         char *buf;
-        while(In_bitmap(caml_ident_body, *newcptr)) { newcptr++; }
+        while (is_ocaml_ident_start_char(*newcptr)) { newcptr++; }
         if (*newcptr == '|')
         { /* Raw string */
             int s_lineno;
