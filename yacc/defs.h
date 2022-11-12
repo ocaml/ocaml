@@ -15,10 +15,6 @@
 
 /* Based on public-domain code from Berkeley Yacc */
 
-#if !defined(DEBUG) && !defined(NDEBUG)
-#define NDEBUG
-#endif
-
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
