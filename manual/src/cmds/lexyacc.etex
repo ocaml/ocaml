@@ -416,9 +416,10 @@ Grammar definitions have the following format:
   \var{trailer}
 \end{alltt}
 
-Comments are enclosed between \verb|/*| and \verb|*/| (as in C) in the
-``declarations'' and ``rules'' sections, and between \verb|(*| and
-\verb|*)| (as in OCaml) in the ``header'' and ``trailer'' sections.
+Comments are delimited by \verb|(*| and \verb|*)|, as in OCaml.
+Additionally, comments can be delimited by \verb|/*| and \verb|*/|,
+as in C, in the ``declarations'' and ``rules'' sections.  C-style
+comments do not nest, but OCaml-style comments do.
 
 \subsection{ss:ocamlyacc-header-trailer}{Header and trailer}
 
