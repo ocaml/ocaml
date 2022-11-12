@@ -15,7 +15,7 @@
 
 /* Based on public-domain code from Berkeley Yacc */
 
-#ifndef DEBUG
+#if !defined(DEBUG) && !defined(NDEBUG)
 #define NDEBUG
 #endif
 
