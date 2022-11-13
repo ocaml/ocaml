@@ -585,7 +585,7 @@ rule token = parse
 
 and directive = parse
   | ([' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*
-        ("\"" ([^ '\010' '\013' '\"' ] * as name) "\"") as directive)
+        ("\"" ([^ '\010' '\013' '\"' ] * as name) "\"")? as directive)
         [^ '\010' '\013'] *
       {
         match int_of_string num with
@@ -597,7 +597,7 @@ and directive = parse
            (* Documentation says that the line number should be
               positive, but we have never guarded against this and it
               might have useful hackish uses. *)
-            update_loc lexbuf (Some name) (line_num - 1) true 0;
+            update_loc lexbuf name (line_num - 1) true 0;
             token lexbuf
       }
 and comment = parse
