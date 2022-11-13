@@ -1,0 +1,12 @@
+File "line_number_directives_without_file.ml", line 8, characters 13-14:
+8 | let () = let z = 1 in ()
+                 ^
+Warning 26 [unused-var]: unused variable z.
+File "line_number_directives_without_file.ml", line 1000, characters 13-14:
+1000 | let () = let z = 1 in ()
+                    ^
+Warning 26 [unused-var]: unused variable z.
+File "test-line-number-directiveXXX.ml", line 20, characters 13-14:
+Warning 26 [unused-var]: unused variable z.
+File "test-line-number-directiveXXX.ml", line 1000, characters 13-14:
+Warning 26 [unused-var]: unused variable z.
