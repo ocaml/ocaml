@@ -201,7 +201,9 @@ Error: This recursive type is not regular.
        but it is used as
          int c
        after the following expansion(s):
-         'a d = < f : int c >
+         < f : 'a c; g : 'a d > contains 'a d,
+         'a d = < f : int c >,
+         < f : int c > contains int c
        All uses need to match the definition for the recursive type to be regular.
 |}];;
 type 'a c = <f : 'a c; g : 'a d>
@@ -223,7 +225,10 @@ Line 2, characters 0-17:
 2 | and 'a t = 'a t u;;
     ^^^^^^^^^^^^^^^^^
 Error: The definition of t contains a cycle:
-       'a t u
+         'a t u contains 'a t,
+         'a t = 'a t u,
+         'a t u contains 'a t,
+         'a t = 'a t u
 |}];; (* fails since 4.04 *)
 type 'a u = 'a
 and 'a t = 'a t u;;
@@ -231,7 +236,11 @@ and 'a t = 'a t u;;
 Line 2, characters 0-17:
 2 | and 'a t = 'a t u;;
     ^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic
+Error: The type abbreviation t is cyclic:
+         'a t = 'a t u,
+         'a t u contains 'a t,
+         'a t = 'a t u,
+         'a t u = 'a t
 |}];;
 type 'a u = 'a;;
 [%%expect{|
@@ -242,7 +251,12 @@ type t = t u * t u;;
 Line 1, characters 0-18:
 1 | type t = t u * t u;;
     ^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic
+Error: The type abbreviation t is cyclic:
+         t = t u * t u,
+         t u * t u contains t,
+         t = t u * t u,
+         t u * t u contains t u,
+         t u = t
 |}];;
 
 type t = <x : 'a> as 'a;;
