@@ -8,6 +8,9 @@ on:
       - 'trunk'
   pull_request:
 
+# Restrict the GITHUB_TOKEN
+permissions: {}
+
 # List of test directories for the debug-s4096 and linux-O0 jobs.
 # These directories are selected because of their tendencies to reach corner
 # cases in the runtime system.
@@ -25,6 +28,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          persist-credentials: false
       - name: Check for manual changes
         id: manual
         run: >-
@@ -47,9 +52,7 @@ jobs:
         run: |
           MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
       - name: Prepare Artifact
-        run: |
-          git config --local --unset http.https://github.com/.extraheader
-          tar --zstd -cf /tmp/sources.tar.zstd .
+        run: tar --zstd -cf /tmp/sources.tar.zstd .
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
@@ -105,6 +108,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          persist-credentials: false
       - name: OS Dependencies
         if: runner.os == 'MacOS'
         run: brew install parallel
