@@ -328,6 +328,8 @@ Working version
   reduction in size.
   (Xavier Leroy, review by Edwin Török and Gabriel Scherer)
 
+- #11728: ocamlyacc: generate line directives for %type declarations
+  (Demi Marie Obenour, review by Damien Doligez)
 
 ### Manual and documentation:
 
