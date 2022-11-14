@@ -152,6 +152,14 @@ uintnat caml_mem_round_up_pages(uintnat size)
 static struct lf_skiplist mmap_blocks = {NULL};
 #endif
 
+#ifndef _WIN32
+Caml_inline void safe_munmap(uintnat addr, uintnat size)
+{
+  if (size > 0)
+    munmap((void*)addr, size);
+}
+#endif
+
 void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
 {
   uintnat alloc_sz = caml_mem_round_up_pages(size + alignment);
@@ -212,8 +220,8 @@ again:
   }
   CAMLassert(mem == (void*)aligned_start);
 #else
-  munmap((void*)base, aligned_start - base);
-  munmap((void*)aligned_end, (base + alloc_sz) - aligned_end);
+  safe_munmap(base, aligned_start - base);
+  safe_munmap(aligned_end, (base + alloc_sz) - aligned_end);
 #endif
 #ifdef DEBUG
   caml_lf_skiplist_insert(&mmap_blocks,
@@ -255,13 +263,13 @@ void* caml_mem_commit(void* mem, uintnat size)
 
 void caml_mem_decommit(void* mem, uintnat size)
 {
+  if (size) {
 #ifdef _WIN32
-  /* VirtualFree can't decommit zero bytes */
-  if (size)
     VirtualFree(mem, size, MEM_DECOMMIT);
 #else
-  map_fixed(mem, size, PROT_NONE);
+    map_fixed(mem, size, PROT_NONE);
 #endif
+  }
 }
 
 void caml_mem_unmap(void* mem, uintnat size)
