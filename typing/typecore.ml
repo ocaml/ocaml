@@ -2042,18 +2042,17 @@ type abort_reason = Adds_constraints | Empty
 
 (** Remember current typing state for backtracking.
     No variable information, as we only backtrack on
-    patterns without variables (cf. assert statements). *)
-type state =
+    patterns without variables (cf. assert statements).
+    In the GADT mode, [env] may be extended by unification,
+    and therefore it needs to be saved along with a [snapshot]. *)
+type unification_state =
  { snapshot: snapshot;
-   levels: Ctype.levels;
    env: Env.t; }
 let save_state env =
   { snapshot = Btype.snapshot ();
-    levels = Ctype.save_levels ();
     env = !env; }
 let set_state s env =
   Btype.backtrack s.snapshot;
-  Ctype.set_levels s.levels;
   env := s.env
 
 (** Find the first alternative in the tree of or-patterns for which
@@ -2170,8 +2169,9 @@ let rec check_counter_example_pat ~info ~env tp expected_ty k =
         | Refine_or _ -> false in
       let state = save_state env in
       let split_or tp =
-        let typ pat = check_rec pat expected_ty k in
-        find_valid_alternative (fun pat -> set_state state env; typ pat) tp
+        let type_alternative pat =
+          set_state state env; check_rec pat expected_ty k in
+        find_valid_alternative type_alternative tp
       in
       if must_split then split_or tp else
       let check_rec_result env tp : (_, abort_reason) result =

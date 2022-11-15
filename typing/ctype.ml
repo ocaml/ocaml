@@ -150,20 +150,6 @@ let nongen_level = s_ref 0
 let global_level = s_ref 1
 let saved_level = s_ref []
 
-type levels =
-    { current_level: int; nongen_level: int; global_level: int;
-      saved_level: (int * int) list; }
-let save_levels () =
-  { current_level = !current_level;
-    nongen_level = !nongen_level;
-    global_level = !global_level;
-    saved_level = !saved_level }
-let set_levels l =
-  current_level := l.current_level;
-  nongen_level := l.nongen_level;
-  global_level := l.global_level;
-  saved_level := l.saved_level
-
 let get_current_level () = !current_level
 let init_def level = current_level := level; nongen_level := level
 let begin_def () =
