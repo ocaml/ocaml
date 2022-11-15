@@ -149,21 +149,6 @@ CAMLexport value caml_alloc_9 (tag_t tag, value a, value b, value c, value d,
   return do_alloc_small(9, tag, v);
 }
 
-CAMLexport value caml_alloc_N (mlsize_t wosize, tag_t tag, ...)
-{
-  va_list args;
-  mlsize_t i;
-  value vals[wosize];
-  value ret;
-  va_start(args, tag);
-  for (i = 0; i < wosize; i++)
-    vals[i] = va_arg(args, value);
-  ret = do_alloc_small(wosize, tag, vals);
-  va_end(args);
-  return ret;
-}
-
-
 CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
 {
   value result;
