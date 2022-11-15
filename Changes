@@ -575,6 +575,9 @@ OCaml 5.0
   from +compiler-libs, as the debugger does.
   (David Allsopp, review by Sébastien Hinderer)
 
+- #11729: The toplevels should respect -nostdlib when loading topdirs.cmi.
+  (Sébastien Hinderer, review by ?)
+
 - #11007, #11399: META files for the stdlib, compiler-libs and other libraries
   (unix, dynlink, str, runtime_events, threads, ocamldoc) are now installed
   along with the compiler.
