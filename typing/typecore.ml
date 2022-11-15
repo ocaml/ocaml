@@ -704,7 +704,7 @@ let solve_Ppat_construct ~refine env loc constr no_existentials
   in
 
   let ty_args, equated_types, existential_ctyp =
-    wrap_def_process ~proc: generalize_structure begin fun () ->
+    wrap_def_iter ~post: generalize_structure begin fun () ->
       let expected_ty = instance expected_ty in
       let expansion_scope = get_gadt_equations_level () in
       let ty_args, ty_res, equated_types, existential_ctyp =
@@ -764,7 +764,7 @@ let solve_Ppat_construct ~refine env loc constr no_existentials
   (ty_args, existential_ctyp)
 
 let solve_Ppat_record_field ~refine loc env label label_lid record_ty =
-  wrap_def_process ~proc:generalize_structure begin fun () ->
+  wrap_def_iter ~post:generalize_structure begin fun () ->
     let (_, ty_arg, ty_res) = instance_label false label in
     begin try
       unify_pat_types ~refine loc env ty_res (instance record_ty)
@@ -2518,7 +2518,7 @@ let list_labels env ty =
 let check_univars env kind exp ty_expected vars =
   let pty = instance ty_expected in
   let exp_ty, vars =
-    wrap_def_process ~proc:generalize begin fun () ->
+    wrap_def_iter ~post:generalize begin fun () ->
       match get_desc pty with
         Tpoly (body, tl) ->
           (* Enforce scoping for type_let:
@@ -3034,7 +3034,7 @@ and type_expect_
       in
       let type_sfunct sfunct =
         (* one more level for warning on non-returning functions *)
-        wrap_def_process
+        wrap_def_iter
           begin fun () ->
             let funct =
               wrap_def_principal (fun () -> type_exp env sfunct)
@@ -3043,7 +3043,7 @@ and type_expect_
             let ty = instance funct.exp_type in
             (funct, [ty])
           end
-          ~proc:(wrap_trace_gadt_instances env (lower_args TypeSet.empty))
+          ~post:(wrap_trace_gadt_instances env (lower_args TypeSet.empty))
       in
       let funct, sargs =
         let funct = type_sfunct sfunct in
@@ -3482,7 +3482,7 @@ and type_expect_
             (arg, ty', None, cty')
         | Some sty ->
             let cty, ty, force, cty', ty', force' =
-              wrap_def_process ~proc:generalize_structure begin fun () ->
+              wrap_def_iter ~post:generalize_structure begin fun () ->
                 let (cty, ty, force) =
                   Typetexp.transl_simple_type_delayed env sty
                 and (cty', ty', force') =
@@ -3854,7 +3854,7 @@ and type_expect_
       in
       let op_path, op_desc, op_type, spat_params, ty_params,
           ty_func_result, ty_result, ty_andops =
-        wrap_def_process_principal ~proc:generalize_structure begin fun () ->
+        wrap_def_iter_principal ~post:generalize_structure begin fun () ->
           let let_loc = slet.pbop_op.loc in
           let op_path, op_desc = type_binding_op_ident env slet.pbop_op in
           let op_type = instance op_desc.val_type in
@@ -3986,7 +3986,7 @@ and type_function ?(in_function : (Location.t * type_expr) option)
   in
   let separate = !Clflags.principal || Env.has_local_constraints env in
   let ty_arg, ty_res =
-    wrap_def_process_if separate ~proc:generalize_structure begin fun () ->
+    wrap_def_iter_if separate ~post:generalize_structure begin fun () ->
       let (ty_arg, ty_res) =
         try filter_arrow env (instance ty_expected) arg_label
         with Filter_arrow_failed err ->
@@ -4310,9 +4310,9 @@ and type_label_exp create env loc ty_expected
   let (vars, ty_arg, snap, arg) =
     wrap_def begin fun () ->
       let (vars, ty_arg) =
-        wrap_def_process_if separate ~proc:generalize_structure begin fun () ->
+        wrap_def_iter_if separate ~post:generalize_structure begin fun () ->
           let (vars, ty_arg, ty_res) =
-            wrap_def_process_if separate ~proc:generalize_structure
+            wrap_def_iter_if separate ~post:generalize_structure
               begin fun () ->
                 let ((_, ty_arg, ty_res) as r) = instance_label true label in
                 (r, [ty_arg; ty_res])
@@ -4707,7 +4707,7 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
                             (lid.txt, constr.cstr_arity, List.length sargs)));
   let separate = !Clflags.principal || Env.has_local_constraints env in
   let ty_args, ty_res, texp =
-    wrap_def_process_if separate ~proc:generalize_structure begin fun () ->
+    wrap_def_iter_if separate ~post:generalize_structure begin fun () ->
       let ty_args, ty_res, texp =
         wrap_def_if separate begin fun () ->
           let (ty_args, ty_res, _) =
@@ -4874,7 +4874,7 @@ and type_cases
     | _ -> true
   in
   let outer_level = get_current_level () in
-  wrap_def_process_if may_contain_gadts begin fun () ->
+  wrap_def_iter_if may_contain_gadts begin fun () ->
   let lev = get_current_level () in
   let take_partial_instance =
     if erase_either
@@ -5049,7 +5049,7 @@ and type_cases
   ((cases, partial), [ty_res'])
   end
   (* Ensure that existential types do not escape *)
-  ~proc:(fun ty_res' -> unify_exp_types loc env ty_res' (newvar ()))
+  ~post:(fun ty_res' -> unify_exp_types loc env ty_res' (newvar ()))
 
 (* Typing of let bindings *)
 
@@ -5344,7 +5344,7 @@ and type_andops env sarg sands expected_ty =
     | [] -> type_expect env let_sarg (mk_expected expected_ty), []
     | { pbop_op = sop; pbop_exp = sexp; pbop_loc = loc; _ } :: rest ->
         let op_path, op_desc, op_type, ty_arg, ty_rest, ty_result =
-          wrap_def_process_principal ~proc:generalize_structure begin fun () ->
+          wrap_def_iter_principal ~post:generalize_structure begin fun () ->
             let op_path, op_desc = type_binding_op_ident env sop in
             let op_type = instance op_desc.val_type in
             let ty_arg = newvar () in

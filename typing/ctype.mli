@@ -55,21 +55,21 @@ val wrap_def: ?post:('a -> unit) -> (unit -> 'a) -> 'a
 val wrap_def_if: bool -> (unit -> 'a) -> post:('a -> unit) -> 'a
         (* Same as [wrap_init_def], but only raise the level conditionally.
            [post] also is only called if the level is raised. *)
-val wrap_def_process: (unit -> 'a * 'b list) -> proc:('b -> unit) -> 'a
-        (* Variant of [wrap_def], where [proc] is iterated on the returned
+val wrap_def_iter: (unit -> 'a * 'b list) -> post:('b -> unit) -> 'a
+        (* Variant of [wrap_def], where [post] is iterated on the returned
            list. *)
-val wrap_def_process_if:
-    bool -> (unit -> 'a * 'b list) -> proc:('b -> unit) -> 'a
-        (* Conditional variant of [wrap_def_process] *)
+val wrap_def_iter_if:
+    bool -> (unit -> 'a * 'b list) -> post:('b -> unit) -> 'a
+        (* Conditional variant of [wrap_def_iter] *)
 val wrap_init_def: level: int -> (unit -> 'a) -> 'a
         (* [wrap_init_def ~level (fun () -> cmd)] evaluates [cmd] with
            [current_level] set to [level] *)
 val wrap_init_def_if: bool -> level: int -> (unit -> 'a) -> 'a
         (* Conditional variant of [wrap_init_def] *)
 val wrap_def_principal: (unit -> 'a) -> post:('a -> unit) -> 'a
-val wrap_def_process_principal:
-    (unit -> 'a * 'b list) -> proc:('b -> unit) -> 'a
-        (* Applications of [wrap_def_if] and [wrap_def_process_if] to
+val wrap_def_iter_principal:
+    (unit -> 'a * 'b list) -> post:('b -> unit) -> 'a
+        (* Applications of [wrap_def_if] and [wrap_def_iter_if] to
            [!Clflags.principal] *)
 
 val wrap_class_def: ?post:('a -> unit) -> (unit -> 'a) -> 'a

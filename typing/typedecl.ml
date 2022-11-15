@@ -887,7 +887,7 @@ let transl_type_decl env rec_flag sdecl_list =
     ) sdecl_list
   in
   let tdecls, decls, new_env =
-    Ctype.wrap_def_process ~proc:generalize_decl begin fun () ->
+    Ctype.wrap_def_iter ~post:generalize_decl begin fun () ->
       (* Enter types. *)
       let temp_env =
         List.fold_left2 (enter_type rec_flag) env sdecl_list ids_list in

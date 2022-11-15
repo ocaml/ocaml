@@ -192,16 +192,16 @@ let wrap_def ?post f =
   result
 let wrap_def_if cond f ~post =
   if cond then wrap_def f ~post else f ()
-let wrap_def_process f ~proc =
+let wrap_def_iter f ~post =
   begin_def ();
   let result, l = wrap_end_def f in
-  List.iter proc l;
+  List.iter post l;
   result
-let wrap_def_process_if cond f ~proc =
-  if cond then wrap_def_process f ~proc else fst (f ())
+let wrap_def_iter_if cond f ~post =
+  if cond then wrap_def_iter f ~post else fst (f ())
 let wrap_def_principal f ~post = wrap_def_if !Clflags.principal f ~post
-let wrap_def_process_principal f ~proc =
-  wrap_def_process_if !Clflags.principal f ~proc
+let wrap_def_iter_principal f ~post =
+  wrap_def_iter_if !Clflags.principal f ~post
 let wrap_init_def ~level f =
   begin_def (); init_def level;
   let result = wrap_end_def f in
