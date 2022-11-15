@@ -2523,7 +2523,7 @@ let check_univars env kind exp ty_expected vars =
         Tpoly (body, tl) ->
           (* Enforce scoping for type_let:
              since body is not generic,  instance_poly only makes
-             copies of nodes that have a Tvar as descendant *)
+             copies of nodes that have a Tunivar as descendant *)
           let _, ty' = instance_poly true tl body in
           let vars, exp_ty = instance_parameterized_type vars exp.exp_type in
           unify_exp_types exp.exp_loc env exp_ty ty';
