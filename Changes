@@ -125,6 +125,9 @@ Working version
   used in any context where a character set is expected.
   (Nicolás Ojeda Bär, Martin Jambon, review by Sébastien Hinderer)
 
+- #11774: ocamlyacc: fail if there is an I/O error
+  (Demi Marie Obenour)
+
 ### Manual and documentation:
 
 - #9430, #11291: Document the general desugaring rules for binding operators.
