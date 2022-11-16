@@ -129,6 +129,10 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #10009: Improve the error reported by mismatched struct/sig and =/: in module
+  and module type bindings.
+  (Jules Aguillon, review by Gabriel Scherer)
+
 - #11530: Include kinds in kind mismatch error message.
   (Leonhard Markert, review by Gabriel Scherer and Florian Angeletti)
 

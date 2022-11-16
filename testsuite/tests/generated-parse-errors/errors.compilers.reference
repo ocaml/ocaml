@@ -756,8 +756,8 @@ File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE COLON 
 Error: Syntax error
 File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE EQUAL UIDENT WITH", line 1, characters 29-33:
 Error: Syntax error
-File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE EQUAL WITH", line 1, characters 22-26:
-Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE EQUAL WITH", line 1, characters 20-21:
+Error: Syntax error: : expected.
 File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE LPAREN RPAREN WITH", line 1, characters 24-28:
 Error: Syntax error
 File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE WITH", line 1, characters 20-24:
@@ -1277,7 +1277,7 @@ Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON FUNCTOR LBRACKETAT AND RBRACKET WHILE", line 1, characters 28-33:
 Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON FUNCTOR LPAREN RPAREN MINUSGREATER QUOTED_STRING_EXPR WHILE", line 1, characters 42-47:
-Error: Syntax error
+Error: Syntax error: = expected.
 File "implementation: MODULE UNDERSCORE COLON FUNCTOR LPAREN RPAREN MINUSGREATER WITH", line 1, characters 26-30:
 Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON FUNCTOR LPAREN RPAREN WITH", line 1, characters 23-27:
@@ -1293,7 +1293,7 @@ Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON MODULE TYPE OF LBRACKETAT AND RBRACKET FUNCTION", line 1, characters 35-43:
 Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON MODULE TYPE OF UIDENT IN", line 1, characters 33-35:
-Error: Syntax error
+Error: Syntax error: = expected.
 File "implementation: MODULE UNDERSCORE COLON MODULE TYPE OF WITH", line 1, characters 26-30:
 Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON MODULE TYPE WITH", line 1, characters 23-27:
@@ -1313,7 +1313,7 @@ Error: Syntax error: 'end' expected
 File "implementation: MODULE UNDERSCORE COLON SIG WITH", line 1, characters 11-14:
   This 'sig' might be unmatched
 File "implementation: MODULE UNDERSCORE COLON UIDENT DOT UIDENT WHILE", line 1, characters 27-32:
-Error: Syntax error
+Error: Syntax error: = expected.
 File "implementation: MODULE UNDERSCORE COLON UIDENT DOT WITH", line 1, characters 20-24:
 Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON UIDENT EQUAL UIDENT WITH", line 1, characters 27-31:
@@ -1323,19 +1323,19 @@ Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON UIDENT LPAREN UIDENT RPAREN WITH", line 1, characters 29-33:
 Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON UIDENT MINUSGREATER QUOTED_STRING_EXPR WHILE", line 1, characters 37-42:
-Error: Syntax error
+Error: Syntax error: = expected.
 File "implementation: MODULE UNDERSCORE COLON UIDENT MINUSGREATER WITH", line 1, characters 21-25:
 Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON UIDENT VAL", line 1, characters 18-21:
-Error: Syntax error
+Error: Syntax error: = expected.
 File "implementation: MODULE UNDERSCORE COLON UIDENT WHILE", line 1, characters 18-23:
-Error: Syntax error
+Error: Syntax error: = expected.
 File "implementation: MODULE UNDERSCORE COLON UIDENT WITH MODULE UIDENT COLONEQUAL UIDENT WHILE", line 1, characters 47-52:
-Error: Syntax error
+Error: Syntax error: = expected.
 File "implementation: MODULE UNDERSCORE COLON UIDENT WITH MODULE UIDENT COLONEQUAL WITH", line 1, characters 40-44:
 Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON UIDENT WITH MODULE UIDENT EQUAL UIDENT WHILE", line 1, characters 46-51:
-Error: Syntax error
+Error: Syntax error: = expected.
 File "implementation: MODULE UNDERSCORE COLON UIDENT WITH MODULE UIDENT EQUAL WITH", line 1, characters 39-43:
 Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON UIDENT WITH MODULE UIDENT WITH", line 1, characters 37-41:
@@ -1343,7 +1343,7 @@ Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON UIDENT WITH MODULE WITH", line 1, characters 30-34:
 Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON UIDENT WITH TYPE LIDENT COLONEQUAL UNDERSCORE SEMI", line 1, characters 40-41:
-Error: Syntax error
+Error: Syntax error: = expected.
 File "implementation: MODULE UNDERSCORE COLON UIDENT WITH TYPE LIDENT COLONEQUAL WITH", line 1, characters 38-42:
 Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON UIDENT WITH TYPE LIDENT EQUAL PRIVATE WITH", line 1, characters 45-49:
@@ -1351,7 +1351,7 @@ Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON UIDENT WITH TYPE LIDENT EQUAL UNDERSCORE AND WITH", line 1, characters 43-47:
 Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON UIDENT WITH TYPE LIDENT EQUAL UNDERSCORE SEMI", line 1, characters 39-40:
-Error: Syntax error
+Error: Syntax error: = expected.
 File "implementation: MODULE UNDERSCORE COLON UIDENT WITH TYPE LIDENT EQUAL WITH", line 1, characters 37-41:
 Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON UIDENT WITH TYPE LIDENT WITH", line 1, characters 35-39:
