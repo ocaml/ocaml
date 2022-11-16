@@ -221,6 +221,9 @@ Working version
   currying optimisation accidentally disabled by #10340.
   (Stephen Dolan, review by Gabriel Scherer)
 
+- #11732: Ensure that types from packed modules are always generalised
+  (Stephen Dolan and Leo White, review by Jacques Garrigue)
+
 OCaml 5.0
 ---------
 
