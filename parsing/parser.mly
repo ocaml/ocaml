@@ -46,6 +46,12 @@ let ghost_loc (startpos, endpos) = {
   Location.loc_ghost = true;
 }
 
+(** Location to the character just after the given location. Useful to indicate
+    whether a token is missing. Might point to the end of the line. *)
+let loc_after (_, ({ Lexing.pos_cnum; pos_bol; _ } as pos)) =
+  let pos = { pos with pos_cnum = pos_cnum + 1; pos_bol = pos_bol + 1 } in
+  (pos, pos)
+
 let mktyp ~loc ?attrs d = Typ.mk ~loc:(make_loc loc) ?attrs d
 let mkpat ~loc d = Pat.mk ~loc:(make_loc loc) d
 let mkexp ~loc d = Exp.mk ~loc:(make_loc loc) d
@@ -1467,8 +1473,8 @@ structure_item:
 module_binding_body:
     EQUAL me = module_expr
       { me }
-  | COLON error
-      { expecting $loc($1) "=" }
+  | COLON module_type error
+      { expecting (loc_after $loc($2)) "=" }
   | mkmod(
       COLON mty = module_type EQUAL me = module_expr
         { Pmod_constraint(me, mty) }
