@@ -14,7 +14,9 @@ Line 3, characters 11-12:
 3 |   module M = struct end
                ^
 Error: Syntax error: : expected.
-Line 2, characters 18-18:
+Line 3, characters 0-2:
+3 | ;;
+    ^^
 Error: Syntax error: = expected.
 Line 2, characters 11-17:
 2 | module M : struct end
