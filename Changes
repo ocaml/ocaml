@@ -213,6 +213,10 @@ Working version
   paths.
   (Nicolás Ojeda Bär, report by Jason Gross, review by Gabriel Scherer)
 
+- #11727: Ensure push_defaults can push past module patterns, fixing an
+  currying optimisation accidentally disabled by #10340.
+  (Stephen Dolan, review by Gabriel Scherer)
+
 OCaml 5.0
 ---------
 
