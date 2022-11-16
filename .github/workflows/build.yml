@@ -17,6 +17,16 @@ permissions: {}
 env:
   PARALLEL_TESTS: parallel callback gc-roots weak-ephe-final
 
+# https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#concurrency
+# Concurrent workflows are grouped by the PR or branch that triggered them
+# (github.ref) and the name of the workflow (github.workflow). The
+# 'cancel-in-progress' option then make sure that only one workflow is running
+# at a time. This doesn't prevent new jobs from running, rather it cancels
+# already running jobs before scheduling new jobs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'pull_request' || github.sha }}
+  cancel-in-progress: true
+
 jobs:
 # This job will do the initial build of the compiler (on linux), with flambda on.
 # We then upload the compiler tree as a build artifact to enable re-use in

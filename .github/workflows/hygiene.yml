@@ -11,6 +11,10 @@ on:
 # Restrict the GITHUB_TOKEN
 permissions: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   hygiene:
     name: Checks
