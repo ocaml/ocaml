@@ -17,6 +17,10 @@ permissions: {}
 env:
   PARALLEL_TESTS: parallel callback gc-roots weak-ephe-final
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
 # This job will do the initial build of the compiler (on linux), with flambda on.
 # We then upload the compiler tree as a build artifact to enable re-use in
