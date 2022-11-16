@@ -24,7 +24,7 @@ env:
 # at a time. This doesn't prevent new jobs from running, rather it cancels
 # already running jobs before scheduling new jobs.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'pull_request' || github.sha }}
   cancel-in-progress: true
 
 jobs:
