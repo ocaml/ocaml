@@ -29,8 +29,10 @@ type error =
   | Unterminated_string_in_comment of Location.t * Location.t
   | Empty_character_literal
   | Keyword_as_label of string
+  | Capitalized_label of string
   | Invalid_literal of string
   | Invalid_directive of string * string option
+  | Invalid_char_in_ident of Uchar.t
 
 exception Error of error * Location.t
 
@@ -228,9 +230,17 @@ let uchar_for_uchar_escape lexbuf =
       illegal_escape lexbuf
         (Printf.sprintf "%X is not a Unicode scalar value" cp)
 
+let ident_for_extended lexbuf raw_name =
+  let name = UString.normalize raw_name in
+  match UString.validate_identifier name with
+  | UString.Valid -> name
+  | UString.Invalid_character u -> error lexbuf (Invalid_char_in_ident u)
+  | UString.Invalid_beginning _ -> assert false (* excluded by the regexps *)
+
 let is_keyword name = Hashtbl.mem keyword_table name
 
 let check_label_name lexbuf name =
+  if UString.is_capitalized name then error lexbuf (Capitalized_label name);
   if is_keyword name then error lexbuf (Keyword_as_label name)
 
 (* Update the current location with file name and line number. *)
@@ -250,13 +260,6 @@ let update_loc lexbuf file line absolute chars =
 let preprocessor = ref None
 
 let escaped_newlines = ref false
-
-(* Warn about Latin-1 characters used in idents *)
-
-let warn_latin1 lexbuf =
-  Location.deprecated
-    (Location.curr lexbuf)
-    "ISO-Latin1 characters in identifiers"
 
 let handle_docstrings = ref true
 let comment_list = ref []
@@ -308,6 +311,10 @@ let prepare_error loc = function
   | Keyword_as_label kwd ->
       Location.errorf ~loc
         "`%s' is a keyword, it cannot be used as label name" kwd
+  | Capitalized_label lbl ->
+      Location.errorf ~loc
+        "`%s' cannot be used as label name, \
+         it must start with a lowercase letter" lbl
   | Invalid_literal s ->
       Location.errorf ~loc "Invalid literal %s" s
   | Invalid_directive (dir, explanation) ->
@@ -315,6 +322,9 @@ let prepare_error loc = function
         (fun ppf -> match explanation with
            | None -> ()
            | Some expl -> fprintf ppf ": %s" expl)
+  | Invalid_char_in_ident u ->
+      Location.errorf ~loc "Invalid character U+%X in identifier"
+         (Uchar.to_int u)
 
 let () =
   Location.register_error_of_exn
@@ -331,12 +341,11 @@ let newline = ('\013'* '\010')
 let blank = [' ' '\009' '\012']
 let lowercase = ['a'-'z' '_']
 let uppercase = ['A'-'Z']
+let identstart = lowercase | uppercase
 let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
-let lowercase_latin1 = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
-let uppercase_latin1 = ['A'-'Z' '\192'-'\214' '\216'-'\222']
-let identchar_latin1 =
-  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
-(* This should be kept in sync with the [is_identchar] function in [env.ml] *)
+let utf8 = ['\192'-'\255'] ['\128'-'\191']*
+let identstart_ext = identstart | utf8
+let identchar_ext = identchar | utf8
 
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
@@ -390,29 +399,32 @@ rule token = parse
   | ".~"
       { error lexbuf
           (Reserved_sequence (".~", Some "is reserved for use in MetaOCaml")) }
-  | "~" (lowercase identchar * as name) ':'
+  | "~" (identstart identchar * as name) ':'
       { check_label_name lexbuf name;
         LABEL name }
-  | "~" (lowercase_latin1 identchar_latin1 * as name) ':'
-      { warn_latin1 lexbuf;
+  | "~" (identstart_ext identchar_ext * as raw_name) ':'
+      { let name = ident_for_extended lexbuf raw_name in
+        check_label_name lexbuf name;
         LABEL name }
   | "?"
       { QUESTION }
   | "?" (lowercase identchar * as name) ':'
       { check_label_name lexbuf name;
         OPTLABEL name }
-  | "?" (lowercase_latin1 identchar_latin1 * as name) ':'
-      { warn_latin1 lexbuf;
+  | "?" (identstart_ext identchar_ext * as raw_name) ':'
+      { let name = ident_for_extended lexbuf raw_name in
+        check_label_name lexbuf name;
         OPTLABEL name }
   | lowercase identchar * as name
       { try Hashtbl.find keyword_table name
         with Not_found -> LIDENT name }
-  | lowercase_latin1 identchar_latin1 * as name
-      { warn_latin1 lexbuf; LIDENT name }
   | uppercase identchar * as name
       { UIDENT name } (* No capitalized keywords *)
-  | uppercase_latin1 identchar_latin1 * as name
-      { warn_latin1 lexbuf; UIDENT name }
+  | identstart_ext identchar_ext * as raw_name
+      { let name = ident_for_extended lexbuf raw_name in
+        if UString.is_capitalized name
+        then UIDENT name
+        else LIDENT name }
   | int_literal as lit { INT (lit, None) }
   | (int_literal as lit) (literal_modifier as modif)
       { INT (lit, Some modif) }
