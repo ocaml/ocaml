@@ -32,7 +32,7 @@ let basename_chop_extensions basename  =
   | dot_pos -> String.sub basename 0 dot_pos
   | exception Not_found -> basename
 
-let modulize s = String.capitalize_ascii s
+let modulize s = Misc.UString.capitalize s
 
 (* We re-export the [Misc] definition *)
 let normalize = Misc.normalized_unit_filename
@@ -40,20 +40,8 @@ let normalize = Misc.normalized_unit_filename
 let modname_from_source source_file =
   source_file |> Filename.basename |> basename_chop_extensions |> modulize
 
-let start_char = function
-  | 'A' .. 'Z' -> true
-  | _ -> false
-
-let is_identchar_latin1 = function
-  | 'A'..'Z' | 'a'..'z' | '_' | '\192'..'\214' | '\216'..'\246'
-  | '\248'..'\255' | '\'' | '0'..'9' -> true
-  | _ -> false
-
 (* Check validity of module name *)
-let is_unit_name name =
-  String.length name > 0
-  && start_char name.[0]
-  && String.for_all is_identchar_latin1 name
+let is_unit_name name = Misc.UString.is_valid_identifier name
 
 let check_unit_name file =
   if not (is_unit_name (modname file)) then
