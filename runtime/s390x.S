@@ -374,7 +374,6 @@ CFI_STARTPROC
         stg     %r14, 0(%r15)
         CFI_OFFSET(14, 0)
         ENTER_FUNCTION
-        sgr     ALLOC_PTR, ADDITIONAL_ARG
         cg      ALLOC_PTR, Caml_state(young_limit)
         jl      LBL(caml_call_gc)
         LEAVE_FUNCTION

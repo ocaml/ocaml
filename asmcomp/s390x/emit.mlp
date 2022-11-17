@@ -431,21 +431,33 @@ let emit_instr env i =
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
 
     | Lop(Ialloc { bytes = n; dbginfo }) ->
-        let lbl_after_alloc = new_label() in
-        let lbl_call_gc = new_label() in
-        let lbl_frame =
-          record_frame_label env i.live (Dbg_alloc dbginfo)
-        in
-        env.call_gc_sites <-
-          { gc_lbl = lbl_call_gc;
-            gc_return_lbl = lbl_after_alloc;
-            gc_frame_lbl = lbl_frame; } :: env.call_gc_sites;
-        `	lay     %r11, {emit_int(-n)}(%r11)\n`;
-        let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
-        `	clg	%r11, {emit_int offset}(%r10)\n`;
-        `	brcl    4, {emit_label lbl_call_gc}\n`;  (* less than *)
-        `{emit_label lbl_after_alloc}:`;
-        `	la      {emit_reg i.res.(0)}, 8(%r11)\n`
+        let lbl_frame_lbl = record_frame_label env i.live (Dbg_alloc dbginfo) in
+        if env.f.fun_fast then begin
+          let lbl_after_alloc = new_label () in
+          let lbl_call_gc = new_label () in
+          let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
+          `	lay     %r11, {emit_int(-n)}(%r11)\n`;
+          `	clg	%r11, {emit_int offset}(%r10)\n`;
+          `	brcl    4, {emit_label lbl_call_gc}\n`;  (* less than *)
+          `{emit_label lbl_after_alloc}:`;
+          `	la      {emit_reg i.res.(0)}, 8(%r11)\n`;
+          env.call_gc_sites <-
+            { gc_lbl = lbl_call_gc;
+              gc_return_lbl = lbl_after_alloc;
+              gc_frame_lbl = lbl_frame_lbl } :: env.call_gc_sites
+        end else begin
+          begin match n with
+          | 16 -> `	{emit_call "caml_alloc1"}\n`
+          | 24 -> `	{emit_call "caml_alloc2"}\n`
+          | 32 -> `	{emit_call "caml_alloc3"}\n`
+          | _  ->
+              `	lay     %r11, {emit_int(-n)}(%r11)\n`;
+              `	{emit_call "caml_allocN"}\n`
+          end;
+          `{emit_label lbl_frame_lbl}:\n`;
+          `	la      {emit_reg i.res.(0)}, 8(%r11)\n`
+        end
+
     | Lop(Ipoll { return_label }) ->
         let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
           `	clg	%r11, {emit_int offset}(%r10)\n`;
