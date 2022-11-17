@@ -778,7 +778,6 @@ build_vendor
 build_cpu
 build
 QS
-force_instrumented_runtime
 compute_deps
 stdlib_manpages
 PACKLD
@@ -945,7 +944,6 @@ enable_installing_bytecode_programs
 enable_native_compiler
 enable_flambda
 enable_flambda_invariants
-enable_force_instrumented_runtime
 enable_cmm_invariants
 with_target_bindir
 enable_reserved_header_bits
@@ -1634,8 +1632,6 @@ Optional Features:
   --enable-flambda        enable flambda optimizations
   --enable-flambda-invariants
                           enable invariants checks in flambda
-  --force-instrumented-runtime
-                          force the usage of the instrumented runtime
   --enable-cmm-invariants enable invariants checks in Cmm
   --enable-reserved-header-bits=BITS
                           reserve BITS (between 0 and 31) bits in block
@@ -3210,7 +3206,6 @@ toolchain="cc"
 profinfo=false
 profinfo_width=0
 instrumented_runtime=false
-force_instrumented_runtime=false
 instrumented_runtime_libs=""
 bootstrapping_flexdll=false
 
@@ -3301,7 +3296,6 @@ OCAML_VERSION_SHORT=5.0
 
 
  # TODO: rename this variable
-
 
 
 
@@ -3744,13 +3738,6 @@ fi
 if test ${enable_flambda_invariants+y}
 then :
   enableval=$enable_flambda_invariants;
-fi
-
-
-# Check whether --enable-force-instrumented-runtime was given.
-if test ${enable_force_instrumented_runtime+y}
-then :
-  enableval=$enable_force_instrumented_runtime;
 fi
 
 
@@ -16149,12 +16136,6 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
  ;;
 esac
-
-if test "x$enable_force_instrumented_runtime" = "xyes"
-then :
-  force_instrumented_runtime=true
-
-fi
 
 # The instrumented runtime is built by default
 # if the proper clock source is found.

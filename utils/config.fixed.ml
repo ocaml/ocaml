@@ -47,7 +47,6 @@ let flambda = false
 let with_flambda_invariants = false
 let with_cmm_invariants = false
 let windows_unicode = false
-let force_instrumented_runtime = false
 let flat_float_array = true
 let function_sections = false
 let afl_instrument = false
