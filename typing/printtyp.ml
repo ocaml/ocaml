@@ -399,7 +399,7 @@ let rec rewrite_double_underscore_paths env p =
       let better_lid =
         Ldot
           (Lident (String.sub name 0 i),
-           String.capitalize_ascii
+           Misc.UString.capitalize
              (String.sub name (i + 2) (String.length name - i - 2)))
       in
       match Env.find_module_by_name better_lid env with

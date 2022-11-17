@@ -32,7 +32,7 @@ let input_name = Location.input_name
 
 let parse_mod_use_file name lb =
   let modname =
-    String.capitalize_ascii
+    Misc.UString.capitalize
       (Filename.remove_extension (Filename.basename name))
   in
   let items =

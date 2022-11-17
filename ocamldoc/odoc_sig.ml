@@ -1889,7 +1889,7 @@ module Analyser =
         (ast : Parsetree.signature) (signat : Types.signature) =
       prepare_file source_file input_file;
       (* We create the t_module for this file. *)
-      let mod_name = String.capitalize_ascii
+      let mod_name = Misc.UString.capitalize
           (Filename.basename (try Filename.chop_extension source_file with _ -> source_file))
       in
       let len, info_opt = preamble !file_name !file

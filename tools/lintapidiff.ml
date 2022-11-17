@@ -186,7 +186,7 @@ module Ast = struct
     try
       let id =
         orig |> Filename.chop_extension |> Filename.basename |>
-        String.capitalize_ascii |> Ident.create_persistent in
+        Misc.UString.capitalize |> Ident.create_persistent in
       let ast = Pparse.file ~tool_name:"lintapidiff" input
           Parse.interface Pparse.Signature in
       Location.input_name := orig;

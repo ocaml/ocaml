@@ -41,7 +41,7 @@ type pack_member =
 
 let read_member_info pack_path file = (
   let name =
-    String.capitalize_ascii(Filename.basename(chop_extensions file)) in
+    Misc.UString.capitalize(Filename.basename(chop_extensions file)) in
   let kind =
     if Filename.check_suffix file ".cmi" then
       PM_intf
@@ -261,7 +261,7 @@ let package_files ~ppf_dump initial_env files targetcmx ~backend =
   let prefix = chop_extensions targetcmx in
   let targetcmi = prefix ^ ".cmi" in
   let targetobj = Filename.remove_extension targetcmx ^ Config.ext_obj in
-  let targetname = String.capitalize_ascii(Filename.basename prefix) in
+  let targetname = Misc.UString.capitalize(Filename.basename prefix) in
   (* Set the name of the current "input" *)
   Location.input_name := targetcmx;
   (* Set the name of the current compunit *)

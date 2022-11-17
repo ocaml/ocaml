@@ -98,7 +98,7 @@ type pack_member =
 
 let read_member_info file = (
   let name =
-    String.capitalize_ascii(Filename.basename(chop_extensions file)) in
+    Misc.UString.capitalize(Filename.basename(chop_extensions file)) in
   let kind =
     (* PR#7479: make sure it is either a .cmi or a .cmo *)
     if Filename.check_suffix file ".cmi" then
@@ -287,7 +287,7 @@ let package_files ~ppf_dump initial_env files targetfile =
         files in
     let prefix = chop_extensions targetfile in
     let targetcmi = prefix ^ ".cmi" in
-    let targetname = String.capitalize_ascii(Filename.basename prefix) in
+    let targetname = Misc.UString.capitalize(Filename.basename prefix) in
     Misc.try_finally (fun () ->
         let coercion =
           Typemod.package_units initial_env files targetcmi targetname in

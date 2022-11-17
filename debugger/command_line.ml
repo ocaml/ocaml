@@ -155,7 +155,7 @@ let convert_module mdle =
   match mdle with
   | Some m ->
       (* Strip .ml extension if any, and capitalize *)
-      String.capitalize_ascii(if Filename.check_suffix m ".ml"
+      Misc.UString.capitalize(if Filename.check_suffix m ".ml"
                               then Filename.chop_suffix m ".ml"
                               else m)
   | None ->
