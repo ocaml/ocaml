@@ -103,6 +103,8 @@ otherlibs/unix/readlink_win32.c    typo.long-line
 otherlibs/unix/stat_win32.c        typo.long-line
 otherlibs/unix/symlink_win32.c     typo.long-line
 
+# Some Unicode characters here and there
+utils/misc.ml            typo.utf8
 runtime/sak.c            typo.non-ascii
 
 stdlib/hashbang     typo.white-at-eol typo.missing-lf

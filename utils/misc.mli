@@ -787,6 +787,58 @@ module Magic_number : sig
   val all_kinds : kind list
 end
 
+(** {1 Minimal support for Unicode characters in identifiers} *)
+
+(** Characters allowed in identifiers are, currently:
+      - ASCII letters A-Z a-z
+      - Latin-1 letters (U+00C0 - U+00FF except U+00D7 and U+00F7)
+      - digits 0-9, underscore, single quote
+*)
+
+module UString : sig
+  type t = string
+
+  val normalize: string -> t
+  (** Normalize the given UTF-8 encoded string.
+      Invalid UTF-8 sequences are replaced by U+FFFD.
+      Identifier characters are put in NFC normalized form.
+      Other Unicode characters are left unchanged. *)
+
+  val capitalize: string -> t
+  (** Like [normalize], but if the string starts with a lowercase identifier
+      character, it is replaced by the corresponding uppercase character.
+      Subsequent characters are not changed. *)
+
+  val uncapitalize: string -> t
+  (** Like [normalize], but if the string starts with an uppercase identifier
+      character, it is replaced by the corresponding lowercase character.
+      Subsequent characters are not changed. *)
+
+  val is_capitalized: t -> bool
+  (** Returns [true] if the given normalized string starts with an
+      uppercase identifier character, [false] otherwise.  May return
+      wrong results if the string is not normalized. *)
+
+  val is_valid_identifier: t -> bool
+  (** Check whether the given normalized string is a valid OCaml identifier:
+      - all characters are identifier characters
+      - it does not start with a digit or a single quote
+  *)
+
+  type validation_result =
+    | Valid
+    | Invalid_character of Uchar.t   (** Character not allowed *)
+    | Invalid_beginning of Uchar.t   (** Character not allowed as first char *)
+
+  val validate_identifier: t -> validation_result
+  (** Like [is_valid_identifier], but returns a more detailed error code. *)
+
+  val starts_like_a_valid_identifier: t -> bool
+  (** Checks whether the given normalized string starts with an identifier
+      character other than a digit or a single quote.  Subsequent characters
+      are not checked. *)
+end
+
 (** {1 Miscellaneous type aliases} *)
 
 type filepath = string
