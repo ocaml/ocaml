@@ -268,11 +268,10 @@ module UString = struct
 
   (* Non-ASCII letters that are allowed in identifiers (currently: Latin-9) *)
 
-  type case = Upper of Uchar.t | Lower of Uchar.t | Fixed
+  type case = Upper of Uchar.t | Lower of Uchar.t
   let known_chars : (Uchar.t, case) Hashtbl.t = Hashtbl.create 32
 
   let _ =
-    Hashtbl.add known_chars (Uchar.of_int 0xdf) Fixed; (* ß *)
     List.iter
       (fun (upper, lower) ->
         let upper = Uchar.of_int upper and lower = Uchar.of_int lower in
@@ -296,6 +295,7 @@ module UString = struct
     (0xdd, 0xfd); (* Ý, ý *)    (0xde, 0xfe); (* Þ, þ *)
     (0x160, 0x161); (* Š, š *)  (0x17d, 0x17e); (* Ž, ž *)
     (0x152, 0x153); (* Œ, œ *)  (0x178, 0xff); (* Ÿ, ÿ *)
+    (0x1e9e, 0xdf); (* ẞ, ß *)
   ]
 
   (* NFD to NFC conversion table for the letters above *)
