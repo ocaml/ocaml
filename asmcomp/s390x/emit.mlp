@@ -712,11 +712,51 @@ let fundecl fundecl =
   `	.align	8\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   cfi_startproc ();
+
+  (* Dynamic stack checking *)
+  let stack_threshold_size = Config.stack_threshold * 8 in (* bytes *)
+  let { max_frame_size; contains_nontail_calls} =
+    preproc_stack_check
+      ~fun_body:fundecl.fun_body ~frame_size:(frame_size env) ~trap_size:16
+  in
+  let handle_overflow = ref None in
+  if contains_nontail_calls || max_frame_size >= stack_threshold_size then begin
+    let overflow = new_label () and ret = new_label () in
+    let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
+    let f = max_frame_size + threshold_offset in
+    let offset = Domainstate.(idx_of_field Domain_current_stack) * 8 in
+    `  lg %r1, {emit_int offset}(%r10)\n`;
+    `  lay %r1, {emit_int f}(%r1)\n`;
+    `  clgr %r15, %r1\n`;
+    `  jl {emit_label overflow}\n`;
+    `{emit_label ret}:\n`;
+    handle_overflow := Some (overflow, ret);
+  end;
+
   emit_all env fundecl.fun_body;
   (* Emit the glue code to call the GC *)
   List.iter emit_call_gc env.call_gc_sites;
   (* Emit the glue code to handle bound errors *)
   emit_call_bound_errors env;
+
+  begin match !handle_overflow with
+  | None -> ()
+  | Some (overflow,ret) -> begin
+      `{emit_label overflow}:\n`;
+      (* Pass the desired frame size on the stack, since all of the
+        argument-passing registers may be in use. *)
+      let s = (Config.stack_threshold + max_frame_size / 8) in
+      `  lay  %r15, -16(%r15)\n`;
+      `  stg  %r14, 8(%r15)\n`;
+      `  lgfi %r1, {emit_int s}\n`;
+      `  stg %r1, 0(%r15)\n`;
+      `  brasl %r14, {emit_symbol "caml_call_realloc_stack"}\n`;
+      `  lg   %r14, 8(%r15)\n`;
+      `  la  %r15, 16(%r15)\n`;
+      `  jg {emit_label ret}\n`
+    end
+  end;
+
   cfi_endproc ();
   (* Emit the numeric literals *)
   if env.float_literals <> [] || env.int_literals <> [] then begin
