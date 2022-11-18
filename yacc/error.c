@@ -54,7 +54,7 @@ void unexpected_EOF(void)
 
 static void print_pos(char *st_line, char *st_cptr)
 {
-    register char *s;
+    char *s;
 
     if (st_line == 0) return;
     for (s = st_line; *s != '\n'; ++s)

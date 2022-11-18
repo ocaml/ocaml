@@ -155,8 +155,8 @@ void usage(void)
 
 void getargs(int argc, char_os **argv)
 {
-    register int i;
-    register char_os *s;
+    int i;
+    char_os *s;
 
     if (argc > 0) myname = caml_stat_strdup_of_os(argv[0]);
     if (!myname) no_space();
@@ -257,7 +257,7 @@ no_more_options:;
 char *
 allocate(unsigned int n)
 {
-    register char *p;
+    char *p;
 
     p = NULL;
     if (n)

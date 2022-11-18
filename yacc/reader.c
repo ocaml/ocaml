@@ -56,7 +56,7 @@ static unsigned char caml_ident_body[32] =
 
 #define In_bitmap(bm,c) (bm[(unsigned char)(c) >> 3] & (1 << ((c) & 7)))
 
-void start_rule (register bucket *bp, int s_lineno);
+void start_rule (bucket *bp, int s_lineno);
 
 static char *buffer;
 static size_t length;
@@ -98,9 +98,9 @@ static void cachec(int c)
 
 static void get_line(void)
 {
-    register FILE *f = input_file;
-    register int c;
-    register int i;
+    FILE *f = input_file;
+    int c;
+    int i;
 
     if (saw_eof || (c = getc(f)) == EOF)
     {
@@ -144,7 +144,7 @@ static void get_line(void)
 static char *
 dup_line(void)
 {
-    register char *p, *s, *t;
+    char *p, *s, *t;
 
     if (line == 0) return (0);
     s = line;
@@ -161,7 +161,7 @@ dup_line(void)
 
 static void skip_comment(void)
 {
-    register char *s;
+    char *s;
 
     int st_lineno = lineno;
     char *st_line = dup_line();
@@ -448,7 +448,7 @@ static void parse_line_directive (void)
 static int
 nextc(void)
 {
-    register char *s;
+    char *s;
 
     if (line == 0)
     {
@@ -513,7 +513,7 @@ nextc(void)
 static int
 keyword(void)
 {
-    register int c;
+    int c;
     char *t_cptr = cptr;
 
     c = *++cptr;
@@ -571,8 +571,8 @@ keyword(void)
 
 static void copy_text(void)
 {
-    register int c;
-    register FILE *f = text_file;
+    int c;
+    FILE *f = text_file;
     int need_newline = 0;
     int t_lineno = lineno;
     char *t_line = dup_line();
@@ -657,11 +657,11 @@ hexval(int c)
 static bucket *
 get_literal(void)
 {
-    register int c, quote;
-    register int i;
-    register int n;
-    register char *s;
-    register bucket *bp;
+    int c, quote;
+    int i;
+    int n;
+    char *s;
+    bucket *bp;
     int s_lineno = lineno;
     char *s_line = dup_line();
     char *s_cptr = s_line + (cptr - line);
@@ -817,7 +817,7 @@ is_reserved(char *name)
 static bucket *
 get_name(void)
 {
-    register int c;
+    int c;
 
     cinc = 0;
     for (c = *cptr; IS_IDENT(c); c = *++cptr)
@@ -833,8 +833,8 @@ get_name(void)
 static int
 get_number(void)
 {
-    register int c;
-    register int n;
+    int c;
+    int n;
 
     n = 0;
     for (c = *cptr; isdigit(c); c = *++cptr)
@@ -847,9 +847,9 @@ get_number(void)
 static char *
 get_tag(void)
 {
-    register int c;
-    register int i;
-    register char *s;
+    int c;
+    int i;
+    char *s;
     char *t_line = dup_line();
     long bracket_depth;
 
@@ -895,8 +895,8 @@ get_tag(void)
 static void
 declare_tokens(int assoc)
 {
-    register int c;
-    register bucket *bp;
+    int c;
+    bucket *bp;
     char *tag = 0;
 
     if (assoc != TOKEN) ++prec;
@@ -962,8 +962,8 @@ declare_tokens(int assoc)
 static void
 declare_types(void)
 {
-    register int c;
-    register bucket *bp;
+    int c;
+    bucket *bp;
     char *tag;
 
     c = nextc();
@@ -991,8 +991,8 @@ declare_types(void)
 static void
 declare_start(void)
 {
-    register int c;
-    register bucket *bp;
+    int c;
+    bucket *bp;
     static int entry_counter = 0;
 
     for (;;) {
@@ -1012,7 +1012,7 @@ declare_start(void)
 static void
 read_declarations(void)
 {
-    register int c, k;
+    int c, k;
 
     cache_size = 256;
     cache = MALLOC(cache_size);
@@ -1134,8 +1134,8 @@ expand_rules(void)
 static void
 advance_to_start(void)
 {
-    register int c;
-    register bucket *bp;
+    int c;
+    bucket *bp;
     char *s_cptr;
     int s_lineno;
 
@@ -1184,7 +1184,7 @@ advance_to_start(void)
 
 int at_first;
 
-void start_rule(register bucket *bp, int s_lineno)
+void start_rule(bucket *bp, int s_lineno)
 {
     if (bp->class == TERM)
         terminal_lhs(s_lineno);
@@ -1214,8 +1214,8 @@ end_rule(void)
 static void
 add_symbol(void)
 {
-    register int c;
-    register bucket *bp;
+    int c;
+    bucket *bp;
     int s_lineno = lineno;
     char *ecptr = cptr;
 
@@ -1246,12 +1246,12 @@ add_symbol(void)
 static void
 copy_action(void)
 {
-    register int c;
-    register int i, n;
+    int c;
+    int i, n;
     int depth;
     bucket *item;
     char *tagres;
-    register FILE *f = action_file;
+    FILE *f = action_file;
     int a_lineno = lineno;
     char *a_line = dup_line();
     char *a_cptr = a_line + (cptr - line);
@@ -1384,8 +1384,8 @@ loop:
 static int
 mark_symbol(void)
 {
-    register int c;
-    register bucket *bp;
+    int c;
+    bucket *bp;
 
     c = cptr[1];
     if (c == '%' || c == '\\')
@@ -1428,7 +1428,7 @@ mark_symbol(void)
 static void
 read_grammar(void)
 {
-    register int c;
+    int c;
 
     initialize_grammar();
     advance_to_start();
@@ -1467,7 +1467,7 @@ read_grammar(void)
 static void
 free_tags(void)
 {
-    register int i;
+    int i;
 
     if (tag_table == 0) return;
 
@@ -1483,8 +1483,8 @@ free_tags(void)
 static void
 pack_names(void)
 {
-    register bucket *bp;
-    register char *p, *s, *t;
+    bucket *bp;
+    char *p, *s, *t;
 
     name_pool_size = 13;  /* 13 == sizeof("$end") + sizeof("$accept") */
     for (bp = first_symbol; bp; bp = bp->next)
@@ -1509,7 +1509,7 @@ pack_names(void)
 static void
 check_symbols(void)
 {
-    register bucket *bp;
+    bucket *bp;
 
     if (goal->class == UNKNOWN)
         undefined_goal(goal->name);
@@ -1528,9 +1528,9 @@ check_symbols(void)
 static void
 pack_symbols(void)
 {
-    register bucket *bp;
-    register bucket **v;
-    register int i, j, k, n;
+    bucket *bp;
+    bucket **v;
+    int i, j, k, n;
 
     nsyms = 2;
     ntokens = 1;
@@ -1732,7 +1732,7 @@ make_goal(void)
 static void
 pack_grammar(void)
 {
-    register int i, j;
+    int i, j;
     int assoc, prec;
 
     ritem = (short *) MALLOC(nitems*sizeof(short));
@@ -1792,9 +1792,9 @@ pack_grammar(void)
 static void
 print_grammar(void)
 {
-    register int i, j, k;
+    int i, j, k;
     int spacing = 0;
-    register FILE *f = verbose_file;
+    FILE *f = verbose_file;
 
     if (!vflag) return;
 

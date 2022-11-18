@@ -32,12 +32,12 @@ void print_closure (int n);
 
 static void set_EFF(void)
 {
-    register unsigned *row;
-    register int symbol;
-    register short *sp;
-    register int rowsize;
-    register int i;
-    register int rule;
+    unsigned *row;
+    int symbol;
+    short *sp;
+    int rowsize;
+    int i;
+    int rule;
 
     rowsize = WORDSIZE(nvars);
     EFF = NEW2(nvars * rowsize, unsigned);
@@ -68,12 +68,12 @@ static void set_EFF(void)
 
 void set_first_derives(void)
 {
-  register unsigned *rrow;
-  register unsigned *vrow;
-  register int j;
-  register unsigned mask;
-  register unsigned cword;
-  register short *rp;
+  unsigned *rrow;
+  unsigned *vrow;
+  int j;
+  unsigned mask;
+  unsigned cword;
+  short *rp;
 
   int rule;
   int i;
@@ -125,13 +125,13 @@ void set_first_derives(void)
 
 void closure(short int *nucleus, int n)
 {
-    register int ruleno;
-    register unsigned word;
-    register unsigned mask;
-    register short *csp;
-    register unsigned *dsp;
-    register unsigned *rsp;
-    register int rulesetsize;
+    int ruleno;
+    unsigned word;
+    unsigned mask;
+    short *csp;
+    unsigned *dsp;
+    unsigned *rsp;
+    int rulesetsize;
 
     short *csend;
     unsigned *rsend;
@@ -208,7 +208,7 @@ void finalize_closure(void)
 
 void print_closure(int n)
 {
-  register short *isp;
+  short *isp;
 
   printf("\n\nn = %d\n\n", n);
   for (isp = itemset; isp < itemsetend; isp++)
@@ -218,10 +218,10 @@ void print_closure(int n)
 
 void print_EFF(void)
 {
-    register int i, j;
-    register unsigned *rowp;
-    register unsigned word;
-    register unsigned mask;
+    int i, j;
+    unsigned *rowp;
+    unsigned word;
+    unsigned mask;
 
     printf("\n\nEpsilon Free Firsts\n");
 
@@ -250,11 +250,11 @@ void print_EFF(void)
 
 void print_first_derives(void)
 {
-  register int i;
-  register int j;
-  register unsigned *rp;
-  register unsigned cword;
-  register unsigned mask;
+  int i;
+  int j;
+  unsigned *rp;
+  unsigned cword;
+  unsigned mask;
 
   printf("\n\n\nFirst Derives\n");
 
