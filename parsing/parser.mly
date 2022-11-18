@@ -1,26 +1,26 @@
-/**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
-/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
-/*                                                                        */
-/*   Copyright 1996 Institut National de Recherche en Informatique et     */
-/*     en Automatique.                                                    */
-/*                                                                        */
-/*   All rights reserved.  This file is distributed under the terms of    */
-/*   the GNU Lesser General Public License version 2.1, with the          */
-/*   special exception on linking described in the file LICENSE.          */
-/*                                                                        */
-/**************************************************************************/
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
-/* The parser definition */
+(* The parser definition *)
 
-/* The commands [make list-parse-errors] and [make generate-parse-errors]
+(* The commands [make list-parse-errors] and [make generate-parse-errors]
    run Menhir on a modified copy of the parser where every block of
    text comprised between the markers [BEGIN AVOID] and -----------
    [END AVOID] has been removed. This file should be formatted in
    such a way that this results in a clean removal of certain
-   symbols, productions, or declarations. */
+   symbols, productions, or declarations. *)
 
 %{
 
@@ -630,16 +630,16 @@ let mk_directive ~loc name arg =
 
 %}
 
-/* Tokens */
+(* Tokens *)
 
-/* The alias that follows each token is used by Menhir when it needs to
-   produce a sentence (that is, a sequence of tokens) in concrete syntax. */
+(* The alias that follows each token is used by Menhir when it needs to
+   produce a sentence (that is, a sequence of tokens) in concrete syntax. *)
 
-/* Some tokens represent multiple concrete strings. In most cases, an
+(* Some tokens represent multiple concrete strings. In most cases, an
    arbitrary concrete string can be chosen. In a few cases, one must
    be careful: e.g., in PREFIXOP and INFIXOP2, one must choose a concrete
    string that will not trigger a syntax error; see how [not_expecting]
-   is used in the definition of [type_variance]. */
+   is used in the definition of [type_variance]. *)
 
 %token AMPERAMPER             "&&"
 %token AMPERSAND              "&"
@@ -726,7 +726,7 @@ let mk_directive ~loc name arg =
 %token OPEN                   "open"
 %token <string> OPTLABEL      "?label:" (* just an example *)
 %token OR                     "or"
-/* %token PARSER              "parser" */
+(* %token PARSER              "parser" *)
 %token PERCENT                "%"
 %token PLUS                   "+"
 %token PLUSDOT                "+."
@@ -770,7 +770,7 @@ let mk_directive ~loc name arg =
 
 %token EOL                    "\\n"      (* not great, but EOL is unused *)
 
-/* Precedences and associativities.
+(* Precedences and associativities.
 
 Tokens and rules have precedences.  A reduce/reduce conflict is resolved
 in favor of the first rule (in source file order).  A shift/reduce conflict
@@ -791,69 +791,69 @@ in all other cases, we define two precedences if needed to resolve
 conflicts.
 
 The precedences must be listed from low to high.
-*/
+*)
 
 %nonassoc IN
 %nonassoc below_SEMI
-%nonassoc SEMI                          /* below EQUAL ({lbl=...; lbl=...}) */
-%nonassoc LET                           /* above SEMI ( ...; let ... in ...) */
+%nonassoc SEMI                          (* below EQUAL ({lbl=...; lbl=...}) *)
+%nonassoc LET                           (* above SEMI ( ...; let ... in ...) *)
 %nonassoc below_WITH
-%nonassoc FUNCTION WITH                 /* below BAR  (match ... with ...) */
-%nonassoc AND             /* above WITH (module rec A: SIG with ... and ...) */
-%nonassoc THEN                          /* below ELSE (if ... then ...) */
-%nonassoc ELSE                          /* (if ... then ... else ...) */
-%nonassoc LESSMINUS                     /* below COLONEQUAL (lbl <- x := e) */
-%right    COLONEQUAL                    /* expr (e := e := e) */
+%nonassoc FUNCTION WITH                 (* below BAR  (match ... with ...) *)
+%nonassoc AND             (* above WITH (module rec A: SIG with ... and ...) *)
+%nonassoc THEN                          (* below ELSE (if ... then ...) *)
+%nonassoc ELSE                          (* (if ... then ... else ...) *)
+%nonassoc LESSMINUS                     (* below COLONEQUAL (lbl <- x := e) *)
+%right    COLONEQUAL                    (* expr (e := e := e) *)
 %nonassoc AS
-%left     BAR                           /* pattern (p|p|p) */
+%left     BAR                           (* pattern (p|p|p) *)
 %nonassoc below_COMMA
-%left     COMMA                         /* expr/expr_comma_list (e,e,e) */
-%right    MINUSGREATER                  /* function_type (t -> t -> t) */
-%right    OR BARBAR                     /* expr (e || e || e) */
-%right    AMPERSAND AMPERAMPER          /* expr (e && e && e) */
+%left     COMMA                         (* expr/expr_comma_list (e,e,e) *)
+%right    MINUSGREATER                  (* function_type (t -> t -> t) *)
+%right    OR BARBAR                     (* expr (e || e || e) *)
+%right    AMPERSAND AMPERAMPER          (* expr (e && e && e) *)
 %nonassoc below_EQUAL
-%left     INFIXOP0 EQUAL LESS GREATER   /* expr (e OP e OP e) */
-%right    INFIXOP1                      /* expr (e OP e OP e) */
+%left     INFIXOP0 EQUAL LESS GREATER   (* expr (e OP e OP e) *)
+%right    INFIXOP1                      (* expr (e OP e OP e) *)
 %nonassoc below_LBRACKETAT
 %nonassoc LBRACKETAT
-%right    COLONCOLON                    /* expr (e :: e :: e) */
-%left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT PLUSEQ /* expr (e OP e OP e) */
-%left     PERCENT INFIXOP3 STAR                 /* expr (e OP e OP e) */
-%right    INFIXOP4                      /* expr (e OP e OP e) */
-%nonassoc prec_unary_minus prec_unary_plus /* unary - */
-%nonassoc prec_constant_constructor     /* cf. simple_expr (C versus C x) */
-%nonassoc prec_constr_appl              /* above AS BAR COLONCOLON COMMA */
+%right    COLONCOLON                    (* expr (e :: e :: e) *)
+%left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT PLUSEQ (* expr (e OP e OP e) *)
+%left     PERCENT INFIXOP3 STAR                 (* expr (e OP e OP e) *)
+%right    INFIXOP4                      (* expr (e OP e OP e) *)
+%nonassoc prec_unary_minus prec_unary_plus (* unary - *)
+%nonassoc prec_constant_constructor     (* cf. simple_expr (C versus C x) *)
+%nonassoc prec_constr_appl              (* above AS BAR COLONCOLON COMMA *)
 %nonassoc below_HASH
-%nonassoc HASH                         /* simple_expr/toplevel_directive */
+%nonassoc HASH                         (* simple_expr/toplevel_directive *)
 %left     HASHOP
 %nonassoc below_DOT
 %nonassoc DOT DOTOP
-/* Finally, the first tokens of simple_expr are above everything else. */
+(* Finally, the first tokens of simple_expr are above everything else. *)
 %nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT OBJECT
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
           NEW PREFIXOP STRING TRUE UIDENT
           LBRACKETPERCENT QUOTED_STRING_EXPR
 
 
-/* Entry points */
+(* Entry points *)
 
-/* Several start symbols are marked with AVOID so that they are not used by
+(* Several start symbols are marked with AVOID so that they are not used by
    [make generate-parse-errors]. The three start symbols that we keep are
    [implementation], [use_file], and [toplevel_phrase]. The latter two are
    of marginal importance; only [implementation] really matters, since most
-   states in the automaton are reachable from it. */
+   states in the automaton are reachable from it. *)
 
-%start implementation                   /* for implementation files */
+%start implementation                   (* for implementation files *)
 %type <Parsetree.structure> implementation
-/* BEGIN AVOID */
-%start interface                        /* for interface files */
+(* BEGIN AVOID *)
+%start interface                        (* for interface files *)
 %type <Parsetree.signature> interface
-/* END AVOID */
-%start toplevel_phrase                  /* for interactive use */
+(* END AVOID *)
+%start toplevel_phrase                  (* for interactive use *)
 %type <Parsetree.toplevel_phrase> toplevel_phrase
-%start use_file                         /* for the #use directive */
+%start use_file                         (* for the #use directive *)
 %type <Parsetree.toplevel_phrase list> use_file
-/* BEGIN AVOID */
+(* BEGIN AVOID *)
 %start parse_module_type
 %type <Parsetree.module_type> parse_module_type
 %start parse_module_expr
@@ -876,11 +876,11 @@ The precedences must be listed from low to high.
 %type <Longident.t> parse_mod_longident
 %start parse_any_longident
 %type <Longident.t> parse_any_longident
-/* END AVOID */
+(* END AVOID *)
 
 %%
 
-/* macros */
+(* macros *)
 %inline extra_str(symb): symb { extra_str $startpos $endpos $1 };
 %inline extra_sig(symb): symb { extra_sig $startpos $endpos $1 };
 %inline extra_cstr(symb): symb { extra_cstr $startpos $endpos $1 };
@@ -952,13 +952,13 @@ The precedences must be listed from low to high.
 %inline mk_directive_arg(symb): symb
     { mk_directive_arg ~loc:$sloc $1 }
 
-/* Generic definitions */
+(* Generic definitions *)
 
 (* [iloption(X)] recognizes either nothing or [X]. Assuming [X] produces
    an OCaml list, it produces an OCaml list, too. *)
 
 %inline iloption(X):
-  /* nothing */
+  (* nothing *)
     { [] }
 | x = X
     { x }
@@ -966,7 +966,7 @@ The precedences must be listed from low to high.
 (* [llist(X)] recognizes a possibly empty list of [X]s. It is left-recursive. *)
 
 reversed_llist(X):
-  /* empty */
+  (* empty *)
     { [] }
 | xs = reversed_llist(X) x = X
     { x :: xs }
@@ -1147,13 +1147,13 @@ implementation:
     { $1 }
 ;
 
-/* BEGIN AVOID */
+(* BEGIN AVOID *)
 (* An .mli file. *)
 interface:
   signature EOF
     { $1 }
 ;
-/* END AVOID */
+(* END AVOID *)
 
 (* A toplevel phrase. *)
 toplevel_phrase:
@@ -1206,7 +1206,7 @@ use_file:
       { $1 }
 ;
 
-/* BEGIN AVOID */
+(* BEGIN AVOID *)
 parse_module_type:
   module_type EOF
     { $1 }
@@ -1261,7 +1261,7 @@ parse_any_longident:
   any_longident EOF
     { $1 }
 ;
-/* END AVOID */
+(* END AVOID *)
 
 (* -------------------------------------------------------------------------- *)
 
@@ -1596,7 +1596,7 @@ open_description:
 
 (* -------------------------------------------------------------------------- *)
 
-/* Module types */
+(* Module types *)
 
 module_type:
   | SIG attrs = attributes s = signature END
@@ -1629,8 +1629,8 @@ module_type:
         { Pmty_functor(Named (mknoloc None, $1), $3) }
     | module_type WITH separated_nonempty_llist(AND, with_constraint)
         { Pmty_with($1, $3) }
-/*  | LPAREN MODULE mkrhs(mod_longident) RPAREN
-        { Pmty_alias $3 } */
+(*  | LPAREN MODULE mkrhs(mod_longident) RPAREN
+        { Pmty_alias $3 } *)
     | extension
         { Pmty_extension $1 }
     )
@@ -1936,7 +1936,7 @@ class_self_pattern:
   | mkpat(LPAREN pattern COLON core_type RPAREN
       { Ppat_constraint($2, $4) })
       { $1 }
-  | /* empty */
+  | (* empty *)
       { ghpat ~loc:$sloc Ppat_any }
 ;
 %inline class_fields:
@@ -2015,7 +2015,7 @@ method_:
         Cfk_concrete ($1, poly_exp)), $2 }
 ;
 
-/* Class types */
+(* Class types *)
 
 class_type:
     class_signature
@@ -2047,7 +2047,7 @@ class_signature:
         mkcty ~loc:$sloc ~attrs:$4 (Pcty_open(od, $7)) }
 ;
 %inline class_parameters(parameter):
-  | /* empty */
+  | (* empty *)
       { [] }
   | LBRACKET params = separated_nonempty_llist(COMMA, parameter) RBRACKET
       { params }
@@ -2190,7 +2190,7 @@ class_type_declarations:
     }
 ;
 
-/* Core expressions */
+(* Core expressions *)
 
 seq_expr:
   | expr        %prec below_SEMI  { $1 }
@@ -2301,10 +2301,10 @@ expr:
     { mk_indexop_expr user_indexing_operators ~loc:$sloc $1 }
   | expr attribute
       { Exp.attr $1 $2 }
-/* BEGIN AVOID */
+(* BEGIN AVOID *)
   | UNDERSCORE
      { not_expecting $loc($1) "wildcard \"_\"" }
-/* END AVOID */
+(* END AVOID *)
 ;
 %inline expr_attrs:
   | LET MODULE ext_attributes mkrhs(module_name) module_binding_body IN seq_expr
@@ -2551,14 +2551,14 @@ let_binding_body_no_punning:
 let_binding_body:
   | let_binding_body_no_punning
       { let p,e = $1 in (p,e,false) }
-/* BEGIN AVOID */
+(* BEGIN AVOID *)
   | val_ident %prec below_HASH
       { (mkpatvar ~loc:$loc $1, mkexpvar ~loc:$loc $1, true) }
   (* The production that allows puns is marked so that [make list-parse-errors]
      does not attempt to exploit it. That would be problematic because it
      would then generate bindings such as [let x], which are rejected by the
      auxiliary function [addlb] via a call to [syntax_error]. *)
-/* END AVOID */
+(* END AVOID *)
 ;
 (* The formal parameter EXT can be instantiated with ext or no_ext
    so as to indicate whether an extension is allowed or disallowed. *)
@@ -2643,7 +2643,7 @@ fun_def:
   | mkexp(COLON atomic_type MINUSGREATER seq_expr
       { Pexp_constraint ($4, $2) })
       { $1 }
-/* Cf #5939: we used to accept (fun p when e0 -> e) */
+(* Cf #5939: we used to accept (fun p when e0 -> e) *)
   | labeled_simple_pattern fun_def
       {
        let (l,o,p) = $1 in
@@ -2704,7 +2704,7 @@ type_constraint:
   | COLONGREATER error                          { syntax_error() }
 ;
 
-/* Patterns */
+(* Patterns *)
 
 (* Whereas [pattern] is an arbitrary pattern, [pattern_no_exn] is a pattern
    that does not begin with the [EXCEPTION] keyword. Thus, [pattern_no_exn]
@@ -2891,7 +2891,7 @@ pattern_comma_list(self):
     }
 ;
 
-/* Value descriptions */
+(* Value descriptions *)
 
 value_description:
   VAL
@@ -2908,7 +2908,7 @@ value_description:
       ext }
 ;
 
-/* Primitive declarations */
+(* Primitive declarations *)
 
 primitive_declaration:
   EXTERNAL
@@ -3029,7 +3029,7 @@ nonempty_type_kind:
     { $1 }
 ;
 type_kind:
-    /*empty*/
+    (*empty*)
       { (Ptype_abstract, Public, None) }
   | EQUAL nonempty_type_kind
       { $2 }
@@ -3039,7 +3039,7 @@ type_kind:
       { $2 }
 ;
 type_parameters:
-    /* empty */
+    (* empty *)
       { [] }
   | p = type_parameter
       { [p] }
@@ -3059,7 +3059,7 @@ type_variable:
 ;
 
 type_variance:
-    /* empty */                             { NoVariance, NoInjectivity }
+    (* empty *)                             { NoVariance, NoInjectivity }
   | PLUS                                    { Covariant, NoInjectivity }
   | MINUS                                   { Contravariant, NoInjectivity }
   | BANG                                    { NoVariance, Injective }
@@ -3148,7 +3148,7 @@ sig_exception_declaration:
         Te.decl $1 ~vars ~args ?res ~attrs:$3 ~loc:(make_loc $sloc) }
 ;
 generalized_constructor_arguments:
-    /*empty*/                     { ([],Pcstr_tuple [],None) }
+    (*empty*)                     { ([],Pcstr_tuple [],None) }
   | OF constructor_arguments      { ([],$2,None) }
   | COLON constructor_arguments MINUSGREATER atomic_type %prec below_HASH
                                   { ([],$2,Some $4) }
@@ -3188,7 +3188,7 @@ label_declaration_semi:
        Type.field $2 $4 ~mut:$1 ~attrs:($5 @ $7) ~loc:(make_loc $sloc) ~info }
 ;
 
-/* Type Extensions */
+(* Type Extensions *)
 
 %inline str_type_extension:
   type_extension(extension_constructor)
@@ -3237,7 +3237,7 @@ extension_constructor_rebind(opening):
         Te.rebind cid lid ~attrs ~loc:(make_loc $sloc) ~info }
 ;
 
-/* "with" constraints (additional type equations over signature components) */
+(* "with" constraints (additional type equations over signature components) *)
 
 with_constraint:
     TYPE type_parameters mkrhs(label_longident) with_type_binder
@@ -3251,8 +3251,8 @@ with_constraint:
               ~manifest:$5
               ~priv:$4
               ~loc:(make_loc $sloc))) }
-    /* used label_longident instead of type_longident to disallow
-       functor applications in type path */
+    (* used label_longident instead of type_longident to disallow
+       functor applications in type path *)
   | TYPE type_parameters mkrhs(label_longident)
     COLONEQUAL core_type_no_attr
       { let lident = loc_last $3 in
@@ -3276,7 +3276,7 @@ with_type_binder:
   | EQUAL PRIVATE  { Private }
 ;
 
-/* Polymorphic types */
+(* Polymorphic types *)
 
 %inline typevar:
   QUOTE mkrhs(ident)
@@ -3364,7 +3364,7 @@ function_type:
       { Optional label }
   | label = LIDENT COLON
       { Labelled label }
-  | /* empty */
+  | (* empty *)
       { Nolabel }
 ;
 (* Tuple types include:
@@ -3396,7 +3396,7 @@ atomic_type:
       { $2 }
   | LPAREN MODULE ext_attributes package_type RPAREN
       { wrap_typ_attrs ~loc:$sloc (reloc_typ ~loc:$sloc $4) $3 }
-  | mktyp( /* begin mktyp group */
+  | mktyp( (* begin mktyp group *)
       QUOTE ident
         { Ptyp_var $2 }
     | UNDERSCORE
@@ -3430,7 +3430,7 @@ atomic_type:
     | extension
         { Ptyp_extension $1 }
   )
-  { $1 } /* end mktyp group */
+  { $1 } (* end mktyp group *)
 ;
 
 (* This is the syntax of the actual type parameters in an application of
@@ -3444,7 +3444,7 @@ atomic_type:
      arbitrary types, between parentheses, separated with commas.
  *)
 %inline actual_type_parameters:
-  | /* empty */
+  | (* empty *)
       { [] }
   | ty = atomic_type
       { [ty] }
@@ -3479,7 +3479,7 @@ tag_field:
 ;
 opt_ampersand:
     AMPERSAND                                   { true }
-  | /* empty */                                 { false }
+  | (* empty *)                                 { false }
 ;
 %inline amper_type_list:
   separated_nonempty_llist(AMPERSAND, core_type_no_attr)
@@ -3530,7 +3530,7 @@ meth_list:
     LIDENT                                      { $1 }
 ;
 
-/* Constants */
+(* Constants *)
 
 constant:
   | INT          { let (n, m) = $1 in Pconst_integer (n, m) }
@@ -3546,7 +3546,7 @@ signed_constant:
   | PLUS FLOAT   { let (f, m) = $2 in Pconst_float(f, m) }
 ;
 
-/* Identifiers and long identifiers */
+(* Identifiers and long identifiers *)
 
 ident:
     UIDENT                    { $1 }
@@ -3618,7 +3618,7 @@ constr_ident:
   | constr_extra_nonprefix_ident                { $1 }
 ;
 constr_longident:
-    mod_longident       %prec below_DOT  { $1 } /* A.B.x vs (A).B.x */
+    mod_longident       %prec below_DOT  { $1 } (* A.B.x vs (A).B.x *)
   | mod_longident DOT constr_extra_ident { Ldot($1,$3) }
   | constr_extra_ident                   { Lident $1 }
   | constr_extra_nonprefix_ident         { Lident $1 }
@@ -3656,19 +3656,19 @@ class_longident:
    mk_longident(mod_longident,LIDENT) { $1 }
 ;
 
-/* BEGIN AVOID */
-/* For compiler-libs: parse all valid longidents and a little more:
+(* BEGIN AVOID *)
+(* For compiler-libs: parse all valid longidents and a little more:
    final identifiers which are value specific are accepted even when
-   the path prefix is only valid for types: (e.g. F(X).(::)) */
+   the path prefix is only valid for types: (e.g. F(X).(::)) *)
 any_longident:
   | mk_longident (mod_ext_longident,
      ident | constr_extra_ident | val_extra_ident { $1 }
     ) { $1 }
   | constr_extra_nonprefix_ident { Lident $1 }
 ;
-/* END AVOID */
+(* END AVOID *)
 
-/* Toplevel directives */
+(* Toplevel directives *)
 
 toplevel_directive:
   HASH dir = mkrhs(ident)
@@ -3685,11 +3685,11 @@ toplevel_directive:
   | TRUE          { Pdir_bool true }
 ;
 
-/* Miscellaneous */
+(* Miscellaneous *)
 
-(* The symbol epsilon can be used instead of an /* empty */ comment. *)
+(* The symbol epsilon can be used instead of an (* empty *) comment. *)
 %inline epsilon:
-  /* empty */
+  (* empty *)
     { () }
 ;
 
@@ -3702,18 +3702,18 @@ name_tag:
     BACKQUOTE ident                             { $2 }
 ;
 rec_flag:
-    /* empty */                                 { Nonrecursive }
+    (* empty *)                                 { Nonrecursive }
   | REC                                         { Recursive }
 ;
 %inline nonrec_flag:
-    /* empty */                                 { Recursive }
+    (* empty *)                                 { Recursive }
   | NONREC                                      { Nonrecursive }
 ;
 %inline no_nonrec_flag:
-    /* empty */ { Recursive }
-/* BEGIN AVOID */
+    (* empty *) { Recursive }
+(* BEGIN AVOID *)
   | NONREC      { not_expecting $loc "nonrec flag" }
-/* END AVOID */
+(* END AVOID *)
 ;
 direction_flag:
     TO                                          { Upto }
@@ -3724,19 +3724,19 @@ private_flag:
     { $1 }
 ;
 %inline inline_private_flag:
-    /* empty */                                 { Public }
+    (* empty *)                                 { Public }
   | PRIVATE                                     { Private }
 ;
 mutable_flag:
-    /* empty */                                 { Immutable }
+    (* empty *)                                 { Immutable }
   | MUTABLE                                     { Mutable }
 ;
 virtual_flag:
-    /* empty */                                 { Concrete }
+    (* empty *)                                 { Concrete }
   | VIRTUAL                                     { Virtual }
 ;
 mutable_virtual_flags:
-    /* empty */
+    (* empty *)
       { Immutable, Concrete }
   | MUTABLE
       { Mutable, Concrete }
@@ -3747,7 +3747,7 @@ mutable_virtual_flags:
       { Mutable, Virtual }
 ;
 private_virtual_flags:
-    /* empty */  { Public, Concrete }
+    (* empty *)  { Public, Concrete }
   | PRIVATE { Private, Concrete }
   | VIRTUAL { Public, Virtual }
   | PRIVATE VIRTUAL { Private, Virtual }
@@ -3768,10 +3768,10 @@ virtual_with_private_flag:
   | VIRTUAL PRIVATE { Private }
 ;
 %inline no_override_flag:
-    /* empty */                                 { Fresh }
+    (* empty *)                                 { Fresh }
 ;
 %inline override_flag:
-    /* empty */                                 { Fresh }
+    (* empty *)                                 { Fresh }
   | BANG                                        { Override }
 ;
 subtractive:
@@ -3787,7 +3787,7 @@ optlabel:
    | QUESTION LIDENT COLON                      { $2 }
 ;
 
-/* Attributes and extensions */
+(* Attributes and extensions *)
 
 single_attr_id:
     LIDENT { $1 }
@@ -3841,7 +3841,7 @@ single_attr_id:
   | WHEN { "when" }
   | WHILE { "while" }
   | WITH { "with" }
-/* mod/land/lor/lxor/lsl/lsr/asr are not supported for now */
+(* mod/land/lor/lxor/lsl/lsr/asr are not supported for now *)
 ;
 
 attr_id:
@@ -3872,14 +3872,14 @@ floating_attribute:
     { $1 }
 ;
 ext:
-  | /* empty */     { None }
+  | (* empty *)     { None }
   | PERCENT attr_id { Some $2 }
 ;
 %inline no_ext:
-  | /* empty */     { None }
-/* BEGIN AVOID */
+  | (* empty *)     { None }
+(* BEGIN AVOID *)
   | PERCENT attr_id { not_expecting $loc "extension" }
-/* END AVOID */
+(* END AVOID *)
 ;
 %inline ext_attributes:
   ext attributes    { $1, $2 }
