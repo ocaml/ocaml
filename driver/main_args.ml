@@ -138,6 +138,10 @@ let mk_g_byt f =
 let mk_g_opt f =
   "-g", Arg.Unit f, " Record debugging information for exception backtrace"
 
+let mk_no_g f =
+  "-no-g", Arg.Unit f,
+  " Do not record debugging information (default)"
+
 let mk_i f =
   "-i", Arg.Unit f, " Print inferred interface"
 
@@ -816,6 +820,7 @@ module type Compiler_options = sig
   val _config_var : string -> unit
   val _for_pack : string -> unit
   val _g : unit -> unit
+  val _no_g : unit -> unit
   val _stop_after : string -> unit
   val _i : unit -> unit
   val _impl : string -> unit
@@ -847,7 +852,6 @@ module type Compiler_options = sig
   val _where : unit -> unit
   val _color : string -> unit
   val _error_style : string -> unit
-
   val _match_context_rows : int -> unit
   val _dtimings : unit -> unit
   val _dprofile : unit -> unit
@@ -1017,6 +1021,7 @@ struct
     mk_dtypes F._annot;
     mk_for_pack_byt F._for_pack;
     mk_g_byt F._g;
+    mk_no_g F._no_g;
     mk_stop_after ~native:false F._stop_after;
     mk_i F._i;
     mk_I F._I;
@@ -1206,6 +1211,7 @@ struct
     mk_dtypes F._annot;
     mk_for_pack_opt F._for_pack;
     mk_g_opt F._g;
+    mk_no_g F._no_g;
     mk_function_sections F._function_sections;
     mk_stop_after ~native:true F._stop_after;
     mk_save_ir_after ~native:true F._save_ir_after;
@@ -1725,6 +1731,7 @@ module Default = struct
     let _dump_dir s = dump_dir := Some s
     let _for_pack s = for_package := (Some s)
     let _g = set debug
+    let _no_g = clear debug
     let _i = set print_types
     let _impl = Compenv.impl
     let _intf = Compenv.intf

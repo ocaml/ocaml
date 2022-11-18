@@ -260,6 +260,11 @@ section~\ref{s:ocamlrun-options}).
 }%notop
 
 \notop{%
+\item["-no-g"]
+Do not record debugging information (default).
+}%notop
+
+\notop{%
 \item["-i"]
 Cause the compiler to print all defined names (with their inferred
 types or their definitions) when compiling an implementation (".ml"
