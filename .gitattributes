@@ -113,7 +113,7 @@ testsuite/tests/**                                      typo.missing-header typo
 testsuite/tests/lib-bigarray-2/bigarrf.f                typo.tab linguist-language=Fortran
 testsuite/tests/lib-unix/win-stat/fakeclock.c           typo.missing-header=false
 testsuite/tests/misc-unsafe/almabench.ml                typo.long-line
-testsuite/tests/parsing/latin9.ml                       typo.utf8
+testsuite/tests/parsing/latin9.ml                       typo.utf8 typo.very-long-line
 testsuite/tests/typing-unicode/*.ml                     typo.utf8
 testsuite/tests/tool-toplevel/strings.ml                typo.utf8
 testsuite/tests/win-unicode/*.ml                        typo.utf8
