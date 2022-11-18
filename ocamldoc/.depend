@@ -38,6 +38,7 @@ odoc_analyse.cmo : \
     odoc_comments.cmi \
     odoc_class.cmi \
     odoc_ast.cmi \
+    ../utils/misc.cmi \
     ../parsing/location.cmi \
     ../parsing/lexer.cmi \
     ../typing/env.cmi \
@@ -65,6 +66,7 @@ odoc_analyse.cmx : \
     odoc_comments.cmx \
     odoc_class.cmx \
     odoc_ast.cmx \
+    ../utils/misc.cmx \
     ../parsing/location.cmx \
     ../parsing/lexer.cmx \
     ../typing/env.cmx \
@@ -124,6 +126,7 @@ odoc_ast.cmo : \
     odoc_exception.cmi \
     odoc_env.cmi \
     odoc_class.cmi \
+    ../utils/misc.cmi \
     ../parsing/location.cmi \
     ../typing/ident.cmi \
     ../typing/btype.cmi \
@@ -147,6 +150,7 @@ odoc_ast.cmx : \
     odoc_exception.cmx \
     odoc_env.cmx \
     odoc_class.cmx \
+    ../utils/misc.cmx \
     ../parsing/location.cmx \
     ../typing/ident.cmx \
     ../typing/btype.cmx \
@@ -753,6 +757,7 @@ odoc_sig.cmo : \
     odoc_exception.cmi \
     odoc_env.cmi \
     odoc_class.cmi \
+    ../utils/misc.cmi \
     ../parsing/longident.cmi \
     ../parsing/location.cmi \
     ../typing/ident.cmi \
@@ -777,6 +782,7 @@ odoc_sig.cmx : \
     odoc_exception.cmx \
     odoc_env.cmx \
     odoc_class.cmx \
+    ../utils/misc.cmx \
     ../parsing/longident.cmx \
     ../parsing/location.cmx \
     ../typing/ident.cmx \
