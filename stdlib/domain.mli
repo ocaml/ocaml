@@ -16,6 +16,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@alert unstable
+    "The Domain interface may change in incompatible ways in the future."
+]
+
 type !'a t
 (** A domain of type ['a t] runs independently, eventually producing a
     result of type 'a, or an exception *)

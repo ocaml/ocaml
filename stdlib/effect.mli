@@ -12,6 +12,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@alert unstable
+    "The Effect interface may change in incompatible ways in the future."
+]
+
 (** Effects.
 
     @since 5.0 *)
