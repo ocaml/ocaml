@@ -224,6 +224,9 @@ Working version
 - #11732: Ensure that types from packed modules are always generalised
   (Stephen Dolan and Leo White, review by Jacques Garrigue)
 
+- #11737: Missing CAMLparam in win32's Unix.stat
+  (Marc Lasson, Nicolás Ojeda Bär)
+
 OCaml 5.0
 ---------
 
