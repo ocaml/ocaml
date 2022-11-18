@@ -126,7 +126,8 @@ Working version
   (Abiola Abdulsalam, review by Sébastien Hinderer and Florian Angeletti)
 
 - #11696: Add the -no-g option to ocamlc and ocamlopt.
-  (Abiola Abdulsalam, review by Sébastien Hinderer and Florian Angeletti)
+  (Abiola Abdulsalam, review by Sébastien Hinderer, Nicolás Ojeda Bär and
+  Florian Angeletti)
 
 ### Internal/compiler-libs changes:
 - #11027: Separate typing counter-examples from type_pat into retype_pat;
