@@ -17,10 +17,18 @@
 
    This module implements queues (FIFOs), with in-place modification.
    See {{!examples} the example section} below.
+*)
 
-   {b Warning} This module is not thread-safe: each {!Queue.t} value
-   must be protected from concurrent access (e.g. with a [Mutex.t]).
-   Failure to do so can lead to a crash.
+(** {b Unsynchronized accesses} *)
+
+[@@@alert unsynchronized_access
+    "Unsynchronized accesses to queues are a programming error."
+]
+
+(**
+    Unsynchronized accesses to a queue may lead to an invalid queue state.
+    Thus, concurrent accesses to queues must be synchronized (for instance
+    with a {!Mutex.t}).
 *)
 
 type !'a t

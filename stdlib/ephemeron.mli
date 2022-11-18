@@ -65,6 +65,18 @@
     @since 4.03
 *)
 
+(** {b Unsynchronized accesses} *)
+
+[@@@alert unsynchronized_access
+  "Unsynchronized accesses to weak hash tables are a programming error."
+]
+
+(**
+    Unsynchronized accesses to a weak hash table may lead to an invalid
+    weak hash table state. Thus, concurrent accesses to a buffer must be
+    synchronized (for instance with a {!Mutex.t}).
+*)
+
 module type S = sig
   (** Propose the same interface as usual hash table. However since
       the bindings are weak, even if [mem h k] is true, a subsequent

@@ -112,6 +112,14 @@ val blit : 'a t -> int -> 'a t -> int -> int -> unit
     the values and give the same result as with the values themselves.
     *)
 
+(** {b Unsynchronized accesses}
+
+    Unsynchronized accesses to weak hash sets are a programming error.
+    Unsynchronized accesses to a weak hash set may lead to an invalid weak hash
+    set state. Thus, concurrent accesses to weak hash sets must be synchronized
+    (for instance with a {!Mutex.t}).
+*)
+
 module type S = sig
   type data
   (** The type of the elements stored in the table. *)
