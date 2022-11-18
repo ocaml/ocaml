@@ -83,6 +83,8 @@ MENHIRFLAGS := \
 
 ## promote-menhir
 
+shellquote = '$(subst ','\'',$1)'
+
 .PHONY: promote-menhir
 promote-menhir: parsing/parser.mly
 	@ $(MAKE) import-menhirLib
@@ -107,10 +109,10 @@ promote-menhir: parsing/parser.mly
 
 .PHONY: import-menhirLib
 import-menhirLib:
-	@ mkdir -p boot/menhir
-	@ cp \
-           $(addprefix `$(MENHIR) --suggest-menhirLib`/menhirLib.,ml mli) \
-           boot/menhir
+	mkdir -p boot/menhir && \
+	prefix=$(if $(MENHIR_LIB),$(call shellquote,$(MENHIR_LIB)),\
+	$$($(call shellquote,$(MENHIR)) --suggest-menhirLib)) && \
+	cp "$$prefix/menhirLib.ml" "$$prefix/menhirLib.mli" boot/menhir/
 
 
 ## demote-menhir
