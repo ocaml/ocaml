@@ -82,7 +82,7 @@ static void pop_stack(char x) {
    }
 }
 
-void cachec(int c)
+static void cachec(int c)
 {
     assert(cinc >= 0);
     if (cinc >= cache_size)
@@ -96,7 +96,7 @@ void cachec(int c)
 }
 
 
-void get_line(void)
+static void get_line(void)
 {
     register FILE *f = input_file;
     register int c;
@@ -141,7 +141,7 @@ void get_line(void)
 }
 
 
-char *
+static char *
 dup_line(void)
 {
     register char *p, *s, *t;
@@ -159,7 +159,7 @@ dup_line(void)
 }
 
 
-void skip_comment(void)
+static void skip_comment(void)
 {
     register char *s;
 
@@ -220,7 +220,7 @@ static void process_quoted_string(char c, FILE *const f)
     }
 }
 
-int process_apostrophe(FILE *const f)
+static int process_apostrophe(FILE *const f)
 {
     if (cptr[0] != 0 && cptr[0] != '\\' && cptr[1] == '\'') {
         fwrite(cptr, 1, 2, f);
@@ -249,7 +249,7 @@ int process_apostrophe(FILE *const f)
     return 1;
 }
 
-void process_apostrophe_body(FILE *f)
+static void process_apostrophe_body(FILE *f)
 {
     if (!process_apostrophe(f)) {
         while (In_bitmap(caml_ident_body, *cptr)) {
@@ -398,7 +398,7 @@ static void process_comment(FILE *const f) {
     }
 }
 
-char *substring (char *str, int start, int len)
+static char *substring (char *str, int start, int len)
 {
   int i;
   char *buf = MALLOC (len+1);
@@ -410,7 +410,7 @@ char *substring (char *str, int start, int len)
   return buf;
 }
 
-void parse_line_directive (void)
+static void parse_line_directive (void)
 {
   int i = 0, j = 0;
   int line_number = 0;
@@ -445,7 +445,7 @@ void parse_line_directive (void)
   goto again;
 }
 
-int
+static int
 nextc(void)
 {
     register char *s;
@@ -510,7 +510,7 @@ nextc(void)
 }
 
 
-int
+static int
 keyword(void)
 {
     register int c;
@@ -569,7 +569,7 @@ keyword(void)
     return 0;
 }
 
-void copy_text(void)
+static void copy_text(void)
 {
     register int c;
     register FILE *f = text_file;
@@ -641,7 +641,7 @@ loop:
     }
 }
 
-int
+static int
 hexval(int c)
 {
     if (c >= '0' && c <= '9')
@@ -654,7 +654,7 @@ hexval(int c)
 }
 
 
-bucket *
+static bucket *
 get_literal(void)
 {
     register int c, quote;
@@ -793,7 +793,7 @@ get_literal(void)
 }
 
 
-int
+static int
 is_reserved(char *name)
 {
     char *s;
@@ -814,7 +814,7 @@ is_reserved(char *name)
 }
 
 
-bucket *
+static bucket *
 get_name(void)
 {
     register int c;
@@ -830,7 +830,7 @@ get_name(void)
 }
 
 
-int
+static int
 get_number(void)
 {
     register int c;
@@ -844,7 +844,7 @@ get_number(void)
 }
 
 
-char *
+static char *
 get_tag(void)
 {
     register int c;
@@ -892,7 +892,8 @@ get_tag(void)
 }
 
 
-void declare_tokens(int assoc)
+static void
+declare_tokens(int assoc)
 {
     register int c;
     register bucket *bp;
@@ -958,7 +959,8 @@ void declare_tokens(int assoc)
 }
 
 
-void declare_types(void)
+static void
+declare_types(void)
 {
     register int c;
     register bucket *bp;
@@ -986,7 +988,8 @@ void declare_types(void)
 }
 
 
-void declare_start(void)
+static void
+declare_start(void)
 {
     register int c;
     register bucket *bp;
@@ -1006,7 +1009,8 @@ void declare_start(void)
 }
 
 
-void read_declarations(void)
+static void
+read_declarations(void)
 {
     register int c, k;
 
@@ -1046,7 +1050,7 @@ void read_declarations(void)
     }
 }
 
-void output_token_type(void)
+static void output_token_type(void)
 {
   bucket * bp;
 
@@ -1073,7 +1077,8 @@ void output_token_type(void)
   fprintf(output_file, "\n");
 }
 
-void initialize_grammar(void)
+static void
+initialize_grammar(void)
 {
     nitems = 4;
     maxitems = 300;
@@ -1104,7 +1109,8 @@ void initialize_grammar(void)
 }
 
 
-void expand_items(void)
+static void
+expand_items(void)
 {
     maxitems += 300;
     pitem = (bucket **) REALLOC(pitem, maxitems*sizeof(bucket *));
@@ -1112,7 +1118,8 @@ void expand_items(void)
 }
 
 
-void expand_rules(void)
+static void
+expand_rules(void)
 {
     maxrules += 100;
     plhs = (bucket **) REALLOC(plhs, maxrules*sizeof(bucket *));
@@ -1124,7 +1131,8 @@ void expand_rules(void)
 }
 
 
-void advance_to_start(void)
+static void
+advance_to_start(void)
 {
     register int c;
     register bucket *bp;
@@ -1190,7 +1198,8 @@ void start_rule(register bucket *bp, int s_lineno)
 }
 
 
-void end_rule(void)
+static void
+end_rule(void)
 {
     if (!last_was_action) default_action_error();
 
@@ -1202,36 +1211,8 @@ void end_rule(void)
 }
 
 
-void insert_empty_rule(void)
-{
-    register bucket *bp, **bpp;
-
-    assert(cache);
-    sprintf(cache, "$$%d", ++gensym);
-    bp = make_bucket(cache);
-    last_symbol->next = bp;
-    last_symbol = bp;
-    bp->tag = plhs[nrules]->tag;
-    bp->class = NONTERM;
-
-    if ((nitems += 2) > maxitems)
-        expand_items();
-    bpp = pitem + nitems - 1;
-    *bpp-- = bp;
-    while ((bpp[0] = bpp[-1])) --bpp;
-
-    if (++nrules >= maxrules)
-        expand_rules();
-    plhs[nrules] = plhs[nrules-1];
-    plhs[nrules-1] = bp;
-    rprec[nrules] = rprec[nrules-1];
-    rprec[nrules-1] = 0;
-    rassoc[nrules] = rassoc[nrules-1];
-    rassoc[nrules-1] = TOKEN;
-}
-
-
-void add_symbol(void)
+static void
+add_symbol(void)
 {
     register int c;
     register bucket *bp;
@@ -1262,7 +1243,8 @@ void add_symbol(void)
 }
 
 
-void copy_action(void)
+static void
+copy_action(void)
 {
     register int c;
     register int i, n;
@@ -1399,7 +1381,7 @@ loop:
 }
 
 
-int
+static int
 mark_symbol(void)
 {
     register int c;
@@ -1443,7 +1425,8 @@ mark_symbol(void)
 }
 
 
-void read_grammar(void)
+static void
+read_grammar(void)
 {
     register int c;
 
@@ -1481,7 +1464,8 @@ void read_grammar(void)
 }
 
 
-void free_tags(void)
+static void
+free_tags(void)
 {
     register int i;
 
@@ -1496,7 +1480,8 @@ void free_tags(void)
 }
 
 
-void pack_names(void)
+static void
+pack_names(void)
 {
     register bucket *bp;
     register char *p, *s, *t;
@@ -1521,7 +1506,8 @@ void pack_names(void)
 }
 
 
-void check_symbols(void)
+static void
+check_symbols(void)
 {
     register bucket *bp;
 
@@ -1539,7 +1525,8 @@ void check_symbols(void)
 }
 
 
-void pack_symbols(void)
+static void
+pack_symbols(void)
 {
     register bucket *bp;
     register bucket **v;
@@ -1691,7 +1678,8 @@ static int is_polymorphic(char * s)
   return 0;
 }
 
-void make_goal(void)
+static void
+make_goal(void)
 {
   static char name[7] = "'\\xxx'";
   bucket * bp;
@@ -1741,7 +1729,8 @@ void make_goal(void)
   }
 }
 
-void pack_grammar(void)
+static void
+pack_grammar(void)
 {
     register int i, j;
     int assoc, prec;
@@ -1800,7 +1789,8 @@ void pack_grammar(void)
 }
 
 
-void print_grammar(void)
+static void
+print_grammar(void)
 {
     register int i, j, k;
     int spacing = 0;

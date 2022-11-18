@@ -52,7 +52,7 @@ void unexpected_EOF(void)
 }
 
 
-void print_pos(char *st_line, char *st_cptr)
+static void print_pos(char *st_line, char *st_cptr)
 {
     register char *s;
 
@@ -107,15 +107,6 @@ void unterminated_string(int s_lineno, char *s_line, char *s_cptr)
 void unterminated_text(int t_lineno, char *t_line, char *t_cptr)
 {
     fprintf(stderr, "File \"%s\", line %d: unmatched %%{\n",
-            virtual_input_file_name, t_lineno);
-    print_pos(t_line, t_cptr);
-    done(1);
-}
-
-
-void illegal_tag(int t_lineno, char *t_line, char *t_cptr)
-{
-    fprintf(stderr, "File \"%s\", line %d: illegal tag\n",
             virtual_input_file_name, t_lineno);
     print_pos(t_line, t_cptr);
     done(1);
@@ -235,14 +226,6 @@ void untyped_lhs(void)
 {
     fprintf(stderr, "File \"%s\", line %d: $$ is untyped\n",
             virtual_input_file_name, lineno);
-    done(1);
-}
-
-
-void untyped_rhs(int i, char *s)
-{
-    fprintf(stderr, "File \"%s\", line %d: $%d (%s) is untyped\n",
-            virtual_input_file_name, lineno, i, s);
     done(1);
 }
 

@@ -54,7 +54,7 @@ void save_shifts (void);
 void print_derives (void);
 void show_cores (void), show_ritems (void), show_rrhs (void), show_shifts (void);
 
-void allocate_itemsets(void)
+static void allocate_itemsets(void)
 {
     register short *itemp;
     register short *item_end;
@@ -96,7 +96,7 @@ void allocate_itemsets(void)
 }
 
 
-void allocate_storage(void)
+static void allocate_storage(void)
 {
     allocate_itemsets();
     shiftset = NEW2(nsyms, short);
@@ -105,7 +105,7 @@ void allocate_storage(void)
 }
 
 
-void append_states(void)
+static void append_states(void)
 {
     register int i;
     register int j;
@@ -134,7 +134,7 @@ void append_states(void)
 }
 
 
-void free_storage(void)
+static void free_storage(void)
 {
     FREE(shift_symbol);
     FREE(redset);
@@ -147,7 +147,7 @@ void free_storage(void)
 
 
 
-void generate_states(void)
+static void generate_states(void)
 {
     allocate_storage();
     itemset = NEW2(nitems, short);
@@ -499,7 +499,7 @@ void save_reductions(void)
 }
 
 
-void set_derives(void)
+static void set_derives(void)
 {
     register int i, k;
     register int lhs;
@@ -529,7 +529,7 @@ void set_derives(void)
 #endif
 }
 
-void free_derives(void)
+static void free_derives(void)
 {
     FREE(derives[start_symbol]);
     FREE(derives);
@@ -558,7 +558,7 @@ void print_derives(void)
 #endif
 
 
-void set_nullable(void)
+static void set_nullable(void)
 {
     register int i, j;
     register int empty;
@@ -604,12 +604,6 @@ void set_nullable(void)
             printf("%s is not nullable\n", symbol_name[i]);
     }
 #endif
-}
-
-
-void free_nullable(void)
-{
-    FREE(nullable);
 }
 
 

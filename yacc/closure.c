@@ -30,7 +30,7 @@ void print_EFF (void);
 void print_first_derives (void);
 void print_closure (int n);
 
-void set_EFF(void)
+static void set_EFF(void)
 {
     register unsigned *row;
     register int symbol;

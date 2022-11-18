@@ -123,13 +123,13 @@ void done(int k)
 }
 
 
-void onintr(int dummy)
+static void onintr(int dummy)
 {
     done(1);
 }
 
 
-void set_signals(void)
+static void set_signals(void)
 {
 #ifdef SIGINT
     if (signal(SIGINT, SIG_IGN) != SIG_IGN)

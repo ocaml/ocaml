@@ -264,7 +264,7 @@ void set_goto_map(void)
 
 /*  Map_goto maps a state/symbol pair into its numeric representation.        */
 
-int
+static int
 map_goto(int state, int symbol)
 {
     register int high;
