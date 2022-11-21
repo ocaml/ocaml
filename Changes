@@ -228,10 +228,6 @@ Working version
 - #11732: Ensure that types from packed modules are always generalised
   (Stephen Dolan and Leo White, review by Jacques Garrigue)
 
-- #11737: Fix segfault condition in Unix.stat under Windows in the presence of
-  multiple threads.
-  (Marc Lasson, Nicolás Ojeda Bär, review by Gabriel Scherer and David Allsopp)
-
 OCaml 5.0
 ---------
 
@@ -771,6 +767,10 @@ OCaml 5.0
 - #11662, #11673: fix a memory leak when using Dynlink,
   the bug was only present in development version of OCaml 5.
   (Stephen Dolan, report by Andre Maroneze, review by Gabriel Scherer)
+
+- #11737: Fix segfault condition in Unix.stat under Windows in the presence of
+  multiple threads.
+  (Marc Lasson, Nicolás Ojeda Bär, review by Gabriel Scherer and David Allsopp)
 
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
