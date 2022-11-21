@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@alert "-unstable"]
+
 let generic_quote quotequote s =
   let l = String.length s in
   let b = Buffer.create (l + 20) in

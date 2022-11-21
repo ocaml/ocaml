@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@alert "-unstable"]
+
 (* Pseudo-random number generator *)
 
 external random_seed: unit -> int array = "caml_sys_random_seed"
