@@ -34,6 +34,7 @@
 # Basenames of the source files for the standard library (i.e. unprefixed and
 # with lowercase first letters). These must be listed in dependency order.
 STDLIB_MODULE_BASENAMES = \
+  type \
   camlinternalFormatBasics \
   stdlib \
   either \
@@ -97,8 +98,7 @@ STDLIB_MODULE_BASENAMES = \
   stdLabels \
   in_channel \
   out_channel \
-  effect \
-  type
+  effect
 
 STDLIB_PREFIXED_MODULES = \
   $(filter-out stdlib camlinternal%, $(STDLIB_MODULE_BASENAMES))
