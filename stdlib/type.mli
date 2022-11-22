@@ -17,7 +17,7 @@
 
     @since 5.1 *)
 
-(** {1 Type equality witness} *)
+(** {1:witness Type equality witness} *)
 
 type (_, _) eq = Equal: ('a, 'a) eq
 (** A value of type [(a, b) eq] exists whenever [a] and [b] are the same
