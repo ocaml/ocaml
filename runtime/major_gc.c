@@ -115,14 +115,16 @@ static caml_plat_mutex ephe_lock = CAML_PLAT_MUTEX_INITIALIZER;
 static void ephe_next_cycle ()
 {
   caml_plat_lock(&ephe_lock);
+
   atomic_fetch_add(&ephe_cycle_info.ephe_cycle, +1);
   CAMLassert(atomic_load_acq(&ephe_cycle_info.num_domains_done) <=
              atomic_load_acq(&ephe_cycle_info.num_domains_todo));
   atomic_store(&ephe_cycle_info.num_domains_done, 0);
+
   caml_plat_unlock(&ephe_lock);
 }
 
-void caml_ephe_todo_list_emptied (void)
+static void ephe_todo_list_emptied (void)
 {
   caml_plat_lock(&ephe_lock);
 
@@ -131,8 +133,10 @@ void caml_ephe_todo_list_emptied (void)
    * [ephe_cycle_info.num_domains_done] counter. */
   atomic_store(&ephe_cycle_info.num_domains_done, 0);
   atomic_fetch_add(&ephe_cycle_info.ephe_cycle, +1);
+
+  /* Since the todo list is empty, this domain does not need to participate in
+   * further ephemeron cycles. */
   atomic_fetch_add(&ephe_cycle_info.num_domains_todo, -1);
-  atomic_fetch_add_verify_ge0(&num_domains_to_ephe_sweep, -1);
   CAMLassert(atomic_load_acq(&ephe_cycle_info.num_domains_done) <=
              atomic_load_acq(&ephe_cycle_info.num_domains_todo));
 
@@ -249,7 +253,7 @@ void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info)
     while (ephe_info->todo) {
       ephe_mark (100000, 0, EPHE_MARK_FORCE_ALIVE);
     }
-    caml_ephe_todo_list_emptied ();
+    ephe_todo_list_emptied ();
   }
   CAMLassert (ephe_info->todo == 0);
 
@@ -262,6 +266,11 @@ void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info)
   }
 
   caml_plat_unlock(&orphaned_lock);
+
+  if (ephe_info->must_sweep_ephe) {
+    ephe_info->must_sweep_ephe = 0;
+    atomic_fetch_add_verify_ge0(&num_domains_to_ephe_sweep, -1);
+  }
 }
 
 void caml_adopt_orphaned_work (void)
@@ -913,11 +922,12 @@ static intnat ephe_mark (intnat budget, uintnat for_cycle,
   }
 
   caml_gc_log
-  ("Mark Ephemeron: %s. for ephemeron cycle=%"ARCH_INTNAT_PRINTF_FORMAT"d "
-  "marked=%"ARCH_INTNAT_PRINTF_FORMAT"d made_live=%"ARCH_INTNAT_PRINTF_FORMAT"d"
-  , domain_state->ephe_info->cursor.cycle == for_cycle
-                              ? "continued from cursor" : "discarded cursor",
-                              for_cycle, marked, made_live);
+  ("Mark Ephemeron: %s. Ephemeron cycle=%"ARCH_INTNAT_PRINTF_FORMAT"d "
+   "examined=%"ARCH_INTNAT_PRINTF_FORMAT"d "
+   "marked=%"ARCH_INTNAT_PRINTF_FORMAT"d",
+   domain_state->ephe_info->cursor.cycle == for_cycle ?
+     "Continued from cursor" : "Discarded cursor",
+   for_cycle, marked, made_live);
 
   domain_state->ephe_info->cursor.cycle = for_cycle;
   domain_state->ephe_info->cursor.todop = prev_linkp;
@@ -1042,7 +1052,11 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
       atomic_store(&ephe_cycle_info.num_domains_todo, num_domains_in_stw);
       atomic_store(&ephe_cycle_info.ephe_cycle, 1);
       atomic_store(&ephe_cycle_info.num_domains_done, 0);
-      atomic_store_rel(&num_domains_to_ephe_sweep, num_domains_in_stw);
+
+      atomic_store_rel(&num_domains_to_ephe_sweep, 0);
+      /* Will be set to the correct number when switching to
+         [Phase_sweep_ephe] */
+
       atomic_store_rel(&num_domains_to_final_update_first, num_domains_in_stw);
       atomic_store_rel(&num_domains_to_final_update_last, num_domains_in_stw);
 
@@ -1104,11 +1118,12 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
   CAMLassert(domain->ephe_info->todo == (value) NULL);
   domain->ephe_info->todo = domain->ephe_info->live;
   domain->ephe_info->live = (value) NULL;
+  domain->ephe_info->must_sweep_ephe = 0;
   domain->ephe_info->cycle = 0;
   domain->ephe_info->cursor.todop = NULL;
   domain->ephe_info->cursor.cycle = 0;
   if (domain->ephe_info->todo == (value) NULL)
-    caml_ephe_todo_list_emptied();
+    ephe_todo_list_emptied();
 
   /* Finalisers */
   domain->final_info->updated_first = 0;
@@ -1170,7 +1185,7 @@ static int is_complete_phase_sweep_ephe ()
 }
 
 static void try_complete_gc_phase (caml_domain_state* domain, void* unused,
-                                   int participating_count,
+                                   int participant_count,
                                    caml_domain_state** participating)
 {
   barrier_status b;
@@ -1182,6 +1197,9 @@ static void try_complete_gc_phase (caml_domain_state* domain, void* unused,
       caml_gc_phase = Phase_mark_final;
     } else if (is_complete_phase_mark_final()) {
       caml_gc_phase = Phase_sweep_ephe;
+      atomic_store_rel(&num_domains_to_ephe_sweep, participant_count);
+      for (int i = 0; i < participant_count; i++)
+        participating[i]->ephe_info->must_sweep_ephe = 1;
     }
   }
   caml_global_barrier_end(b);
@@ -1321,32 +1339,65 @@ mark_again:
     caml_adopt_orphaned_work();
 
     /* Ephemerons */
-    saved_ephe_cycle = atomic_load_acq(&ephe_cycle_info.ephe_cycle);
-    if (domain_state->ephe_info->todo != (value) NULL &&
-        saved_ephe_cycle > domain_state->ephe_info->cycle) {
-      CAML_EV_BEGIN(EV_MAJOR_EPHE_MARK);
-      budget = ephe_mark(budget, saved_ephe_cycle, EPHE_MARK_DEFAULT);
-      CAML_EV_END(EV_MAJOR_EPHE_MARK);
-      if (domain_state->ephe_info->todo == (value) NULL)
-        caml_ephe_todo_list_emptied ();
-      else if (budget > 0 && domain_state->marking_done)
-        record_ephe_marking_done(saved_ephe_cycle);
-      else if (budget > 0) goto mark_again;
+    if (caml_gc_phase != Phase_sweep_ephe) {
+      /* Ephemeron Marking */
+      saved_ephe_cycle = atomic_load_acq(&ephe_cycle_info.ephe_cycle);
+      if (domain_state->ephe_info->todo != (value) NULL &&
+          saved_ephe_cycle > domain_state->ephe_info->cycle) {
+        CAML_EV_BEGIN(EV_MAJOR_EPHE_MARK);
+        budget = ephe_mark(budget, saved_ephe_cycle, EPHE_MARK_DEFAULT);
+        CAML_EV_END(EV_MAJOR_EPHE_MARK);
+        if (domain_state->ephe_info->todo == (value) NULL) {
+          ephe_todo_list_emptied ();
+        }
+        else if (budget > 0 && domain_state->marking_done)
+          record_ephe_marking_done(saved_ephe_cycle);
+        else if (budget > 0) goto mark_again;
+      }
     }
 
-    if (caml_gc_phase == Phase_sweep_ephe &&
-        domain_state->ephe_info->todo != 0) {
-      CAML_EV_BEGIN(EV_MAJOR_EPHE_SWEEP);
-      budget = ephe_sweep (domain_state, budget);
-      CAML_EV_END(EV_MAJOR_EPHE_SWEEP);
-      if (domain_state->ephe_info->todo == 0) {
-        atomic_fetch_add_verify_ge0(&num_domains_to_ephe_sweep, -1);
+    if (caml_gc_phase == Phase_sweep_ephe) {
+      /* Ephemeron Sweeping */
+
+      if (domain_state->ephe_info->must_sweep_ephe) {
+        /* Move the ephemerons on the live list to the todo list. This is
+           needed since the live list may contain ephemerons with unmarked
+           keys, which need to be cleaned. This code is executed exactly once
+           per major cycle per domain. */
+        domain_state->ephe_info->must_sweep_ephe = 0;
+
+        value e = ephe_list_tail (domain_state->ephe_info->todo);
+        if (e == (value)NULL) {
+          domain_state->ephe_info->todo = domain_state->ephe_info->live;
+        } else {
+          CAMLassert(Ephe_link(e) == (value)NULL);
+          Ephe_link(e) = domain_state->ephe_info->live;
+        }
+        domain_state->ephe_info->live = (value)NULL;
+
+        /* If the todo list is empty, then the ephemeron has no sweeping work
+         * to do. */
+        if (domain_state->ephe_info->todo == 0) {
+          atomic_fetch_add_verify_ge0(&num_domains_to_ephe_sweep, -1);
+        }
+      }
+
+      if (domain_state->ephe_info->todo != 0) {
+        CAMLassert (domain_state->ephe_info->must_sweep_ephe == 0);
+        /* Sweep the ephemeron todo list */
+        CAML_EV_BEGIN(EV_MAJOR_EPHE_SWEEP);
+        budget = ephe_sweep (domain_state, budget);
+        CAML_EV_END(EV_MAJOR_EPHE_SWEEP);
+        if (domain_state->ephe_info->todo == 0) {
+          atomic_fetch_add_verify_ge0(&num_domains_to_ephe_sweep, -1);
+        }
       }
     }
 
     /* Complete GC phase */
     if (is_complete_phase_sweep_and_mark_main() ||
         is_complete_phase_mark_final ()) {
+      CAMLassert (caml_gc_phase != Phase_sweep_ephe);
       if (barrier_participants) {
         try_complete_gc_phase (domain_state,
                               (void*)0,

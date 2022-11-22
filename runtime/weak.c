@@ -394,23 +394,21 @@ static value ephe_blit_field (value es, mlsize_t offset_s,
   CAMLparam2(es,ed);
   CAMLlocal1(ar);
   long i;
-  caml_domain_state *domain_state;
-
 
   if (length == 0) CAMLreturn(Val_unit);
 
+  /* We clean the source and destination ephemerons before performing the blit.
+   * This guarnatees that none of the keys and the data fields being accessed
+   * during a blit operation is unmarked during [Phase_sweep]. */
   caml_ephe_clean(es);
   caml_ephe_clean(ed);
 
-  domain_state = Caml_state;
   if (offset_d < offset_s) {
     for (i = 0; i < length; i++) {
-      caml_darken(domain_state, Field(es, (offset_s + i)), 0);
       do_set(ed, offset_d + i, Field(es, (offset_s + i)));
     }
   } else {
     for (i = length - 1; i >= 0; i--) {
-      caml_darken(domain_state, Field(es, (offset_s + i)), 0);
       do_set(ed, offset_d + i, Field(es, (offset_s + i)));
     }
   }
@@ -435,8 +433,12 @@ CAMLprim value caml_ephe_blit_key (value es, value ofs,
 
 CAMLprim value caml_ephe_blit_data (value es, value ed)
 {
-  return ephe_blit_field (es, CAML_EPHE_DATA_OFFSET,
-                          ed, CAML_EPHE_DATA_OFFSET, 1);
+  ephe_blit_field (es, CAML_EPHE_DATA_OFFSET, ed, CAML_EPHE_DATA_OFFSET, 1);
+  caml_darken(0, Field(ed, CAML_EPHE_DATA_OFFSET), 0);
+  /* [ed] may be in [Caml_state->ephe_info-live] list. The data value may be
+     unmarked. The ephemerons on the live list are not scanned during ephemeron
+     marking. Hence, unconditionally darken the data value. */
+  return Val_unit;
 }
 
 CAMLprim value caml_weak_blit (value es, value ofs,
