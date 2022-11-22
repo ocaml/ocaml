@@ -71,17 +71,6 @@ DOMAIN_STATE(uintnat, allocated_words)
 
 DOMAIN_STATE(uintnat, swept_words)
 
-DOMAIN_STATE(intnat, major_work_computed)
-/* total work accumulated in this GC clock cycle (in words) */
-
-DOMAIN_STATE(intnat, major_work_todo)
-/* balance of work to do in this GC clock cycle (in words)
- *  positive: we need to do this amount of work to finish the slice
- *  negative: we have done more than we need and this is credit
- */
-
-DOMAIN_STATE(double, major_gc_clock)
-
 DOMAIN_STATE(uintnat, major_slice_epoch)
 
 DOMAIN_STATE(struct caml__roots_block*, local_roots)
@@ -127,6 +116,11 @@ DOMAIN_STATE(double, extra_heap_resources_minor)
 
 DOMAIN_STATE(uintnat, dependent_size)
 DOMAIN_STATE(uintnat, dependent_allocated)
+
+DOMAIN_STATE(double, alloc_ratio)
+DOMAIN_STATE(double, dependent_ratio)
+DOMAIN_STATE(double, extra_ratio)
+DOMAIN_STATE(intnat, slice_budget)
 
 DOMAIN_STATE(struct caml_extern_state*, extern_state)
 DOMAIN_STATE(struct caml_intern_state*, intern_state)

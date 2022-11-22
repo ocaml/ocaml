@@ -83,7 +83,15 @@ static atomic_uintnat num_domains_to_ephe_sweep;
 static atomic_uintnat num_domains_to_final_update_first;
 static atomic_uintnat num_domains_to_final_update_last;
 
-static atomic_uintnat terminated_domains_allocated_words;
+static caml_plat_mutex accounting_lock = CAML_PLAT_MUTEX_INITIALIZER;
+/* accounting_lock protects domain_accounts and num_active_domains */
+static struct domain_account {
+  intnat alloc;
+  intnat dependent;
+  double extra;
+  int is_active;
+} domain_accounts [Max_domains];
+static int num_active_domains;
 
 enum global_roots_status{
   WORK_UNSTARTED,
@@ -283,12 +291,6 @@ static int no_orphaned_work (void)
     orph_structs.final_info == NULL;
 }
 
-void caml_orphan_allocated_words (void)
-{
-  atomic_fetch_add(&terminated_domains_allocated_words,
-                   Caml_state->allocated_words);
-}
-
 Caml_inline value ephe_list_tail(value e)
 {
   value last = 0;
@@ -448,11 +450,80 @@ double caml_mean_space_overhead (void)
   return mean;
 }
 
+static intnat max3(intnat a, intnat b, intnat c)
+{
+  if (a > b){
+    if (a > c)
+      return a;
+    else
+      return c;
+  }else{
+    if (b > c)
+      return b;
+    else
+      return c;
+  }
+}
+
+static void distribute (caml_domain_state *dom_st, intnat alloc_count,
+                        intnat dependent_count, double extra_count)
+{
+  uintnat i, j;
+  intnat alloc_share, alloc_accu, dependent_share, dependent_accu;
+  double extra_share;
+
+  caml_gc_log ("Distribute work: "
+               " %"ARCH_INTNAT_PRINTF_FORMAT"d alloc, "
+               " %"ARCH_INTNAT_PRINTF_FORMAT"d dependent, "
+               " %g extra, ",
+               alloc_count, dependent_count, extra_count);
+
+  if (num_active_domains != 0){
+    alloc_share = alloc_count / num_active_domains;
+    alloc_accu = 0;
+    dependent_share = dependent_count / num_active_domains;
+    dependent_accu = 0;
+    extra_share = extra_count / num_active_domains;
+    j = 0;
+    for (i = num_active_domains; i > 1; i--){
+      while (!domain_accounts[j].is_active) ++j;
+      domain_accounts[j].alloc += alloc_share;
+      domain_accounts[j].dependent += dependent_share;
+      domain_accounts[j].extra += extra_share;
+    }
+    while (!domain_accounts[j].is_active) ++j;
+    CAMLassert (j < Max_domains);
+    domain_accounts[j].alloc += alloc_count - alloc_accu;
+    domain_accounts[j].dependent += dependent_count - dependent_accu;
+    domain_accounts[j].extra += extra_share;
+  }else{
+    domain_accounts[dom_st->id].alloc += alloc_count;
+    domain_accounts[dom_st->id].dependent += dependent_count;
+    domain_accounts[dom_st->id].extra += extra_count;
+  }
+}
+
 static void update_major_slice_work(void) {
-  double p, dp, heap_words;
-  intnat computed_work;
+  double alloc_ratio, dependent_ratio, extra_ratio, heap_words;
+  intnat alloc_work, dependent_work, extra_work;
+  intnat my_alloc_count, my_dependent_count;
+  double my_extra_count;
   caml_domain_state *dom_st = Caml_state;
-  uintnat heap_size, heap_sweep_words, saved_terminated_words;
+  uintnat heap_size, heap_sweep_words, total_cycle_work;
+
+  /* Distribute the allocation counters over all active domains,
+     then get our share. */
+  caml_plat_lock (&accounting_lock);
+  distribute (dom_st, dom_st->allocated_words, dom_st->dependent_allocated,
+              dom_st->extra_heap_resources);
+  dom_st->stat_major_words += dom_st->allocated_words;
+  dom_st->allocated_words = 0;
+  dom_st->dependent_allocated = 0;
+  dom_st->extra_heap_resources = 0.0;
+  my_alloc_count = domain_accounts[dom_st->id].alloc;
+  my_dependent_count = domain_accounts[dom_st->id].dependent;
+  my_extra_count = domain_accounts[dom_st->id].extra;
+  caml_plat_unlock (&accounting_lock);
   /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
                  FM = heap_words * caml_percent_free
@@ -491,36 +562,33 @@ static void update_major_slice_work(void) {
   heap_words = (double)Wsize_bsize(heap_size);
   heap_sweep_words = heap_words;
 
-  saved_terminated_words = terminated_domains_allocated_words;
-  if( saved_terminated_words > 0 ) {
-    while(!atomic_compare_exchange_strong
-            (&terminated_domains_allocated_words, &saved_terminated_words, 0));
-  }
+  total_cycle_work =
+    heap_sweep_words + (heap_words * 100 / (100 + caml_percent_free));
 
   if (heap_words > 0) {
-    p = (double) (saved_terminated_words
-                + dom_st->allocated_words) * 3.0 * (100 + caml_percent_free)
-                / heap_words / caml_percent_free / 2.0;
+    alloc_ratio =
+      total_cycle_work
+      * 3.0 * (100 + caml_percent_free)
+      / heap_words / caml_percent_free / 2.0;
+    alloc_work = (intnat) (my_alloc_count * alloc_ratio);
   } else {
-    p = 0.0;
+    alloc_ratio = INFINITY;
+    alloc_work = 0;
   }
 
   if (dom_st->dependent_size > 0) {
-    dp = (double) dom_st->dependent_allocated * (100 + caml_percent_free)
-         / dom_st->dependent_size / caml_percent_free;
+    dependent_ratio =
+      total_cycle_work
+      * (100 + caml_percent_free)
+      / dom_st-> dependent_size / caml_percent_free;
+    dependent_work = (intnat) (my_dependent_count * dependent_ratio);
   }else{
-    dp = 0.0;
+    dependent_ratio = INFINITY;
+    dependent_work = 0;
   }
-  if (p < dp) p = dp;
 
-  if (p < dom_st->extra_heap_resources) p = dom_st->extra_heap_resources;
-
-  computed_work = (intnat) (p * (heap_sweep_words
-                            + (heap_words * 100 / (100 + caml_percent_free))));
-
-  /* accumulate work */
-  dom_st->major_work_computed += computed_work;
-  dom_st->major_work_todo += computed_work;
+  extra_ratio = (double) total_cycle_work;
+  extra_work = (intnat) (my_extra_count * extra_ratio);
 
   caml_gc_message (0x40, "heap_words = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
@@ -528,34 +596,36 @@ static void update_major_slice_work(void) {
   caml_gc_message (0x40, "allocated_words = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
                    dom_st->allocated_words);
-  caml_gc_message (0x40, "raw work-to-do = %"
-                         ARCH_INTNAT_PRINTF_FORMAT "uu\n",
-                   (uintnat) (p * 1000000));
+  caml_gc_message (0x40, "alloc work-to-do = %"
+                         ARCH_INTNAT_PRINTF_FORMAT "d\n",
+                   alloc_work);
+  caml_gc_message (0x40, "dependent_words = %"
+                         ARCH_INTNAT_PRINTF_FORMAT "u\n",
+                   dom_st->dependent_allocated);
+  caml_gc_message (0x40, "dependent work-to-do = %"
+                         ARCH_INTNAT_PRINTF_FORMAT "d\n",
+                   dependent_work);
   caml_gc_message (0x40, "extra_heap_resources = %"
                          ARCH_INTNAT_PRINTF_FORMAT "uu\n",
                    (uintnat) (dom_st->extra_heap_resources * 1000000));
-  caml_gc_message (0x40, "computed work = %"
-                         ARCH_INTNAT_PRINTF_FORMAT "d words\n",
-                   computed_work);
+  caml_gc_message (0x40, "extra work-to-do = %"
+                         ARCH_INTNAT_PRINTF_FORMAT "d\n",
+                   extra_work);
 
   caml_gc_log("Updated major work: [%c] "
                          " %"ARCH_INTNAT_PRINTF_FORMAT "u heap_words, "
                          " %"ARCH_INTNAT_PRINTF_FORMAT "u allocated, "
-                         " %"ARCH_INTNAT_PRINTF_FORMAT "d computed_work, "
-                         " %"ARCH_INTNAT_PRINTF_FORMAT "d work_computed, "
-                         " %"ARCH_INTNAT_PRINTF_FORMAT "d work_todo, "
-                         " %"ARCH_INTNAT_PRINTF_FORMAT "u gc_clock",
+                         " %"ARCH_INTNAT_PRINTF_FORMAT "d alloc_work, "
+                         " %"ARCH_INTNAT_PRINTF_FORMAT "d dependent_work, "
+                         " %"ARCH_INTNAT_PRINTF_FORMAT "d extra_work, ",
                          caml_gc_phase_char(caml_gc_phase),
                          (uintnat)heap_words, dom_st->allocated_words,
-                         computed_work,
-                         dom_st->major_work_computed,
-                         dom_st->major_work_todo,
-                         (intnat)(dom_st->major_gc_clock*1000000));
+                         alloc_work, dependent_work, extra_work);
 
-  dom_st->stat_major_words += dom_st->allocated_words;
-  dom_st->allocated_words = 0;
-  dom_st->dependent_allocated = 0;
-  dom_st->extra_heap_resources = 0.0;
+  dom_st->alloc_ratio = alloc_ratio;
+  dom_st->dependent_ratio = dependent_ratio;
+  dom_st->extra_ratio = extra_ratio;
+  dom_st->slice_budget = max3 (alloc_work, dependent_work, extra_work);
 }
 
 static intnat get_major_slice_work(intnat howmuch) {
@@ -565,73 +635,47 @@ static intnat get_major_slice_work(intnat howmuch) {
   /* calculate how much work to do now */
   if (howmuch == AUTO_TRIGGERED_MAJOR_SLICE ||
       howmuch == GC_CALCULATE_MAJOR_SLICE) {
-    computed_work = (dom_st->major_work_todo > 0)
-      ? dom_st->major_work_todo
-      : 0;
-
-    /* cap computed_work to 0.3 */
-    {
-      uintnat heap_size = caml_heap_size(dom_st->shared_heap);
-      uintnat heap_words = (double)Wsize_bsize(heap_size);
-      uintnat heap_sweep_words = heap_words;
-      intnat limit = (intnat)(0.3 * (heap_sweep_words
-                            + (heap_words * 100 / (100 + caml_percent_free))));
-
-      if (computed_work > limit)
-      {
-        computed_work = limit;
-      }
-    }
+    computed_work =
+      dom_st->slice_budget < Major_slice_work_min ? 0 : dom_st->slice_budget;
   } else {
     /* forced or opportunistic GC slice with explicit quantity */
     computed_work = howmuch;
   }
-
-  /* TODO: do we want to do anything more complex or simplify the above? */
-
   return computed_work;
 }
 
 static void commit_major_slice_work(intnat words_done) {
   caml_domain_state *dom_st = Caml_state;
-  intnat limit;
+  intnat alloc, dependent;
+  double extra;
+  struct domain_account *acct = &domain_accounts[dom_st->id];
 
-  dom_st->major_work_todo -= words_done;
+  caml_gc_log ("Commit major slice work: "
+               " %"ARCH_INTNAT_PRINTF_FORMAT"d words_done, "
+               " %g alloc_ratio, "
+               " %g dependent_ratio, "
+               " %g extra_ratio, ",
+               words_done, dom_st->alloc_ratio, dom_st->dependent_ratio,
+               dom_st->extra_ratio);
 
-  /* cap how far work todo can be in credit */
-  limit = -2*Wsize_bsize(caml_heap_size(dom_st->shared_heap));
-  if (dom_st->major_work_todo < limit)
-  {
-    dom_st->major_work_todo = limit;
+  caml_plat_lock (&accounting_lock);
+  acct->alloc -= words_done / dom_st->alloc_ratio;
+  acct->dependent -= words_done / dom_st->dependent_ratio;
+  acct->extra -= words_done / dom_st->extra_ratio;
+  /* distribute any remainder or overflow to other domains */
+  if (acct->is_active){
+    -- num_active_domains;
+    acct->is_active = 0;
   }
-
-  /* check clock to close a cycle if need be */
-  if (dom_st->major_work_todo <= 0
-      && dom_st->major_gc_clock >= 1.0)
-  {
-    caml_gc_log("Major GC slice complete: "
-        " %"ARCH_INTNAT_PRINTF_FORMAT "d words_done, "
-        " %"ARCH_INTNAT_PRINTF_FORMAT "d todo, "
-        " %"ARCH_INTNAT_PRINTF_FORMAT "d computed, "
-        " %"ARCH_INTNAT_PRINTF_FORMAT "u clock",
-        words_done,
-        dom_st->major_work_todo,
-        dom_st->major_work_computed,
-        (uintnat)(dom_st->major_gc_clock * 1000000)
-      );
-
-    /* we have caught up */
-    while( dom_st->major_gc_clock >= 1.0 ) {
-      dom_st->major_gc_clock -= 1.;
-    }
-
-    /* limit amount of work credit that can go into next cycle */
-    limit = -2*dom_st->major_work_computed;
-    dom_st->major_work_todo = dom_st->major_work_todo < limit
-      ? limit
-      : dom_st->major_work_todo;
-    dom_st->major_work_computed = 0;
+  alloc = acct->alloc; acct->alloc = 0;
+  dependent = acct->dependent; acct->dependent = 0;
+  extra = acct->extra; acct->extra = 0.0;
+  distribute (dom_st, alloc, dependent, extra);
+  if (words_done >= dom_st->slice_budget){
+    ++ num_active_domains;
+    acct->is_active = 1;
   }
+  caml_plat_unlock (&accounting_lock);
 }
 
 static void mark_stack_prune(struct mark_stack* stk);
@@ -1161,7 +1205,7 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
                                        int participating_count,
                                        caml_domain_state** participating)
 {
-  uintnat num_domains_in_stw;
+  uintnat num_domains_in_stw, i;
 
   CAML_EV_BEGIN(EV_MAJOR_GC_CYCLE_DOMAINS);
 
@@ -1263,6 +1307,12 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
 
       atomic_store(&domain_global_roots_started, WORK_UNSTARTED);
 
+      /* Reset GC work accounting counters. */
+      for (i = 0; i < Max_domains; i++){
+        domain_accounts[i].alloc = 0;
+        domain_accounts[i].dependent = 0;
+        domain_accounts[i].extra = 0.0;
+      }
       /* Cleanups for various data structures that must be done in a STW by
         only a single domain */
       caml_code_fragment_cleanup();
@@ -1303,9 +1353,6 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
 
   /* Mark roots for new cycle */
   domain->marking_done = 0;
-  domain->major_work_computed = 0;
-  domain->major_work_todo = 0;
-  domain->major_gc_clock = 0.0;
 
   CAML_EV_BEGIN(EV_MAJOR_MARK_ROOTS);
   caml_do_roots (&caml_darken, darken_scanning_flags, domain, domain, 0);
@@ -1480,6 +1527,7 @@ static intnat major_collection_slice(intnat howmuch,
    * NB: needed particularly to avoid caml_ev spam when polling */
   if (mode == Slice_opportunistic &&
       !caml_opportunistic_major_work_available()) {
+    commit_major_slice_work (0);
     return budget;
   }
 
@@ -1641,9 +1689,10 @@ mark_again:
               (unsigned long)(domain_state->stat_blocks_marked
                                                       - blocks_marked_before));
 
-  /* we did: work we were asked - interrupted_budget + any overwork */
-  commit_major_slice_work
-              (computed_work - interrupted_budget + (budget < 0 ? -budget : 0));
+  /* We have at all times:
+     computed_work = budget + interrupted_budget + (work done)
+  */
+  commit_major_slice_work (computed_work - interrupted_budget - budget);
 
   if (mode != Slice_opportunistic && is_complete_phase_sweep_ephe()) {
     saved_major_cycle = caml_major_cycles_completed;
@@ -1865,9 +1914,6 @@ int caml_init_major_gc(caml_domain_state* d) {
   /* Fresh domains do not need to performing marking or sweeping. */
   d->sweeping_done = 1;
   d->marking_done = 1;
-  d->major_work_computed = 0;
-  d->major_work_todo = 0;
-  d->major_gc_clock = 0.0;
   /* Finalisers. Fresh domains participate in updating finalisers. */
   d->final_info = caml_alloc_final_info ();
   if(d->final_info == NULL) {
@@ -1892,6 +1938,15 @@ int caml_init_major_gc(caml_domain_state* d) {
 
 void caml_teardown_major_gc(void) {
   caml_domain_state* d = Caml_state;
+
+  caml_plat_lock (&accounting_lock);
+  if (domain_accounts[d->id].is_active){
+    -- num_active_domains;
+    domain_accounts[d->id].is_active = 0;
+  }
+  distribute (d, d->allocated_words, d->dependent_allocated,
+              d->extra_heap_resources);
+  caml_plat_unlock (&accounting_lock);
   CAMLassert(!caml_addrmap_iter_ok(&d->mark_stack->compressed_stack,
                                    d->mark_stack->compressed_stack_iter));
   caml_addrmap_clear(&d->mark_stack->compressed_stack);

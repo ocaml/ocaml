@@ -1744,7 +1744,6 @@ static void domain_terminate (void)
   call_timing_hook(&caml_domain_terminated_hook);
 
   while (!finished) {
-    caml_orphan_allocated_words();
     caml_finish_sweeping();
 
     caml_empty_minor_heaps_once();
