@@ -254,8 +254,8 @@ static value ephe_get_field (value e, mlsize_t offset)
   } else {
     elt = Field(e, offset);
     caml_darken (Caml_state, elt, 0);
-    res = caml_alloc_shr (1, Tag_some);
-    caml_initialize(&Field(res, 0), elt);
+    res = caml_alloc_small (1, Tag_some);
+    Field(res, 0) = elt;
   }
   /* run GC and memprof callbacks */
   caml_process_pending_actions();
@@ -328,8 +328,8 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
   } else {
     Field(e, offset) = elt = v;
   }
-  res = caml_alloc_shr (1, Tag_some);
-  caml_initialize(&Field(res, 0), elt + infix_offs);
+  res = caml_alloc_small (1, Tag_some);
+  Field(res, 0) = elt + infix_offs;
  out:
   /* run GC and memprof callbacks */
   caml_process_pending_actions();
