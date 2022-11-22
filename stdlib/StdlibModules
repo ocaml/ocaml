@@ -34,9 +34,9 @@
 # Basenames of the source files for the standard library (i.e. unprefixed and
 # with lowercase first letters). These must be listed in dependency order.
 STDLIB_MODULE_BASENAMES = \
-  type \
   camlinternalFormatBasics \
   stdlib \
+  type \
   either \
   sys \
   obj \
