@@ -80,7 +80,9 @@ val get_copy : 'a t -> int -> 'a option
 val check : 'a t -> int -> bool
 (** [Weak.check ar n] returns [true] if the [n]th cell of [ar] is
    full, [false] if it is empty.  Note that even if [Weak.check ar n]
-   returns [true], a subsequent {!Weak.get}[ ar n] can return [None].*)
+   returns [true], a subsequent {!Weak.get}[ ar n] can return [None].
+   @raise Invalid_argument if [n] is not in the range
+   0 to {!Weak.length}[ ar - 1].*)
 
 val fill : 'a t -> int -> int -> 'a option -> unit
 (** [Weak.fill ar ofs len el] sets to [el] all pointers of [ar] from
