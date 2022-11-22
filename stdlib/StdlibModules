@@ -56,7 +56,8 @@ STDLIB_MODULE_BASENAMES = \
   unit \
   marshal \
   array \
-  float \ int32 \
+  float \
+  int32 \
   int64 \
   nativeint \
   lexing \
