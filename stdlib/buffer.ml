@@ -97,10 +97,7 @@ let resize b more =
   (* PR#6148: let's keep using [blit] rather than [unsafe_blit] in
      this tricky function that is slow anyway. *)
   Bytes.blit b.inner.buffer 0 new_buffer 0 b.position;
-  b.inner <- { buffer = new_buffer; length = !new_len };
-  assert (b.position + more <= b.inner.length);
-  assert (old_pos + more <= b.inner.length);
-  ()
+  b.inner <- { buffer = new_buffer; length = !new_len }
 
 (* Note:
     Some of the functions below have a fast path when the inner
