@@ -365,6 +365,8 @@ type ocaml_release_info = {
 }
 
 val ocaml_release : ocaml_release_info
+(** [ocaml_release] is the version of OCaml.
+    @since 4.14 *)
 
 val enable_runtime_warnings: bool -> unit
 (** Control whether the OCaml runtime system can emit warnings
