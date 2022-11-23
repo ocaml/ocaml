@@ -112,7 +112,7 @@ static struct ephe_cycle_info_t {
  * the lock. */
 static caml_plat_mutex ephe_lock = CAML_PLAT_MUTEX_INITIALIZER;
 
-static void ephe_next_cycle ()
+static void ephe_next_cycle (void)
 {
   caml_plat_lock(&ephe_lock);
   atomic_fetch_add(&ephe_cycle_info.ephe_cycle, +1);
@@ -360,7 +360,7 @@ double caml_mean_space_overhead (void)
   return mean;
 }
 
-static void update_major_slice_work() {
+static void update_major_slice_work(void) {
   double p, dp, heap_words;
   intnat computed_work;
   caml_domain_state *dom_st = Caml_state;
@@ -1128,7 +1128,7 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
   CAML_EV_END(EV_MAJOR_GC_CYCLE_DOMAINS);
 }
 
-static int is_complete_phase_sweep_and_mark_main ()
+static int is_complete_phase_sweep_and_mark_main (void)
 {
   return
     caml_gc_phase == Phase_sweep_and_mark_main &&
@@ -1142,7 +1142,7 @@ static int is_complete_phase_sweep_and_mark_main ()
     /* All orphaned ephemerons have been adopted */
 }
 
-static int is_complete_phase_mark_final ()
+static int is_complete_phase_mark_final (void)
 {
   return
     caml_gc_phase == Phase_mark_final &&
@@ -1157,7 +1157,7 @@ static int is_complete_phase_mark_final ()
     /* All orphaned ephemerons have been adopted */
 }
 
-static int is_complete_phase_sweep_ephe ()
+static int is_complete_phase_sweep_ephe (void)
 {
   return
     caml_gc_phase == Phase_sweep_ephe &&

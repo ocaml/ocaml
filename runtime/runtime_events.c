@@ -114,9 +114,9 @@ static void write_to_ring(ev_category category, ev_message_type type,
                           int event_id, int event_length, uint64_t *content,
                           int word_offset);
 
-static void runtime_events_create_raw();
+static void runtime_events_create_raw(void);
 
-void caml_runtime_events_init() {
+void caml_runtime_events_init(void) {
   runtime_events_path = caml_secure_getenv(T("OCAML_RUNTIME_EVENTS_DIR"));
 
   if (runtime_events_path) {
@@ -178,7 +178,7 @@ static void stw_teardown_runtime_events(caml_domain_state *domain_state,
 }
 
 
-void caml_runtime_events_post_fork() {
+void caml_runtime_events_post_fork(void) {
   /* We are here in the child process after a call to fork (which can only
      happen when there is a single domain) and no mutator code that can spawn a
      new domain can have run yet. Let's be double sure. */
@@ -199,7 +199,7 @@ void caml_runtime_events_post_fork() {
 
 /* Return the current location for the ring buffers of this process. This is
   used in the consumer to read the ring buffers of the current process */
-char_os* caml_runtime_events_current_location() {
+char_os* caml_runtime_events_current_location(void) {
   if( atomic_load_acq(&runtime_events_enabled) ) {
     return current_ring_loc;
   } else {
@@ -209,7 +209,7 @@ char_os* caml_runtime_events_current_location() {
 
 /* Write a lifecycle event and then trigger a stop the world to tear down the
   ring buffers */
-void caml_runtime_events_destroy() {
+void caml_runtime_events_destroy(void) {
   if (atomic_load_acq(&runtime_events_enabled)) {
     write_to_ring(EV_RUNTIME, EV_LIFECYCLE, EV_RING_STOP, 0, NULL, 0);
 
@@ -227,7 +227,7 @@ void caml_runtime_events_destroy() {
 /* Create the initial runtime_events ring buffers. This must be called from
   within a stop-the-world section if we cannot be sure there is only a single
   domain running. */
-static void runtime_events_create_raw() {
+static void runtime_events_create_raw(void) {
   /* Don't initialise runtime_events twice */
   if (!atomic_load_acq(&runtime_events_enabled)) {
     int ret, ring_headers_length;
@@ -376,7 +376,7 @@ stw_create_runtime_events(caml_domain_state *domain_state, void *data,
   caml_global_barrier();
 }
 
-CAMLprim value caml_runtime_events_start() {
+CAMLprim value caml_runtime_events_start(void) {
   while (!atomic_load_acq(&runtime_events_enabled)) {
     caml_try_run_on_all_domains(&stw_create_runtime_events, NULL, NULL);
   }
@@ -384,7 +384,7 @@ CAMLprim value caml_runtime_events_start() {
   return Val_unit;
 }
 
-CAMLprim value caml_runtime_events_pause() {
+CAMLprim value caml_runtime_events_pause(void) {
   if (!atomic_load_acq(&runtime_events_enabled)) return Val_unit;
 
   uintnat not_paused = 0;
@@ -396,7 +396,7 @@ CAMLprim value caml_runtime_events_pause() {
   return Val_unit;
 }
 
-CAMLprim value caml_runtime_events_resume() {
+CAMLprim value caml_runtime_events_resume(void) {
   if (!atomic_load_acq(&runtime_events_enabled)) return Val_unit;
 
   uintnat paused = 1;
@@ -515,7 +515,7 @@ static void write_to_ring(ev_category category, ev_message_type type,
 
 /* Functions for putting runtime data on to the runtime_events */
 
-static inline int ring_is_active() {
+static inline int ring_is_active(void) {
     return
       atomic_load_explicit(&runtime_events_enabled, memory_order_relaxed)
       && !atomic_load_explicit(&runtime_events_paused, memory_order_relaxed);
@@ -565,7 +565,7 @@ void caml_ev_alloc(uint64_t sz) {
   }
 }
 
-void caml_ev_alloc_flush() {
+void caml_ev_alloc_flush(void) {
   int i;
 
   if ( !ring_is_active() )

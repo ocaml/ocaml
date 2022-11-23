@@ -145,20 +145,20 @@ typedef enum {
 /* Starts runtime_events. Needs to be called before
    [caml_runtime_events_create_cursor]. Needs the runtime lock held to call and
    will trigger a stop-the-world pause. Returns Val_unit. */
-CAMLextern value caml_runtime_events_start();
+CAMLextern value caml_runtime_events_start(void);
 
 /* Pauses runtime_events if not currently paused otherwise does nothing.
    No new events (other than the pause itself) will be written to the ring
    buffer by this domain immediately and all other domains soon. Needs the
    runtime lock held to call as a pause event is written during this call.
    Returns Val_unit. */
-CAMLextern value caml_runtime_events_pause();
+CAMLextern value caml_runtime_events_pause(void);
 
 /* Resumes runtime_events if currently paused otherwise does nothing. New events
    (as well as a resume event) will be written to this domain immediately and
    all other domains soon. Needs the runtime lock held to call as a resume event
    is written during this call. Returns Val_unit. */
-CAMLextern value caml_runtime_events_resume();
+CAMLextern value caml_runtime_events_resume(void);
 
 #ifdef CAML_INTERNALS
 
@@ -208,19 +208,19 @@ struct runtime_events_metadata_header {
 
 /* Set up runtime_events (and check if we need to start it immediately).
    Called from startup* */
-void caml_runtime_events_init();
+void caml_runtime_events_init(void);
 
 /* Destroy all allocated runtime_events structures and clear up the ring.
    Called from [caml_sys_exit] */
-void caml_runtime_events_destroy();
+void caml_runtime_events_destroy(void);
 
 /* Handle safely re-initialising the runtime_events structures
    in a forked child */
-void caml_runtime_events_post_fork();
+void caml_runtime_events_post_fork(void);
 
 /* Returns the location of the runtime_events for the current process if started
    or NULL otherwise */
-CAMLextern char_os* caml_runtime_events_current_location();
+CAMLextern char_os* caml_runtime_events_current_location(void);
 
 /* Functions for putting runtime data on to the runtime_events */
 void caml_ev_begin(ev_runtime_phase phase);
@@ -234,7 +234,7 @@ void caml_ev_lifecycle(ev_lifecycle lifecycle, int64_t data);
    function. Until then the buckets are just updated until flushed.
 */
 void caml_ev_alloc(uint64_t sz);
-void caml_ev_alloc_flush();
+void caml_ev_alloc_flush(void);
 
 #endif /* CAML_INTERNALS */
 

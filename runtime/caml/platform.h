@@ -33,7 +33,7 @@
 
 /* Hint for busy-waiting loops */
 
-Caml_inline void cpu_relax() {
+Caml_inline void cpu_relax(void) {
 #ifdef __GNUC__
 #if defined(__x86_64__) || defined(__i386__)
   __asm__ volatile("pause" ::: "memory");
