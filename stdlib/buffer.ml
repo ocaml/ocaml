@@ -114,7 +114,7 @@ let add_char b c =
   let {buffer;length} = b.inner in
   if pos >= length then (
     resize b 1;
-    Bytes.set b.inner.buffer pos c
+    Bytes.set b.inner.buffer b.position c
   ) else
     Bytes.unsafe_set buffer pos c;
   b.position <- pos + 1
