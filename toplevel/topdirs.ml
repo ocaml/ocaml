@@ -17,7 +17,6 @@
 
 open Format
 open Misc
-open Longident
 open Types
 open Toploop
 
@@ -208,27 +207,11 @@ let extract_target_parameters ty =
         Some (path, args)
   | _ -> None
 
-type 'a printer_type_new = Format.formatter -> 'a -> unit
-type 'a printer_type_old = 'a -> unit
-
-let printer_type ppf typename =
-  let printer_type =
-    match
-      Env.find_type_by_name
-        (Ldot(Lident "Topdirs", typename)) !toplevel_env
-    with
-    | path, _ -> path
-    | exception Not_found ->
-        fprintf ppf "Cannot find type Topdirs.%s.@." typename;
-        raise Exit
-  in
-  printer_type
-
-let match_simple_printer_type desc printer_type =
+let match_simple_printer_type env desc printer_type =
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
   begin try
-    Ctype.unify !toplevel_env
+    Ctype.unify env
       (Ctype.newconstr printer_type [ty_arg])
       (Ctype.instance desc.val_type);
   with Ctype.Unify _ ->
@@ -238,7 +221,7 @@ let match_simple_printer_type desc printer_type =
   Ctype.generalize ty_arg;
   (ty_arg, None)
 
-let match_generic_printer_type desc path args printer_type =
+let match_generic_printer_type env desc path args printer_type =
   Ctype.begin_def();
   let args = List.map (fun _ -> Ctype.newvar ()) args in
   let ty_target = Ctype.newty (Tconstr (path, args, ref Mnil)) in
@@ -250,7 +233,7 @@ let match_generic_printer_type desc path args printer_type =
                                              commu_var ())))
       ty_args (Ctype.newconstr printer_type [ty_target]) in
   begin try
-    Ctype.unify !toplevel_env
+    Ctype.unify env
       ty_expected
       (Ctype.instance desc.val_type);
   with Ctype.Unify _ ->
@@ -258,29 +241,30 @@ let match_generic_printer_type desc path args printer_type =
   end;
   Ctype.end_def();
   Ctype.generalize ty_expected;
-  if not (Ctype.all_distinct_vars !toplevel_env args) then
+  if not (Ctype.all_distinct_vars env args) then
     raise Bad_printing_function;
   (ty_expected, Some (path, ty_args))
 
-let match_printer_type ppf desc =
-  let printer_type_new = printer_type ppf "printer_type_new" in
-  let printer_type_old = printer_type ppf "printer_type_old" in
+let match_printer_type desc =
+  let (tmp_env, printer_type_new, printer_type_old) =
+    Topprinters.env_with_printer_types !toplevel_env
+  in
   try
-    (match_simple_printer_type desc printer_type_new, false)
+    (match_simple_printer_type tmp_env desc printer_type_new, false)
   with Bad_printing_function ->
     try
-      (match_simple_printer_type desc printer_type_old, true)
+      (match_simple_printer_type tmp_env desc printer_type_old, true)
     with Bad_printing_function as exn ->
       match extract_target_parameters desc.val_type with
       | None -> raise exn
       | Some (path, args) ->
-          (match_generic_printer_type desc path args printer_type_new,
-           false)
+          (match_generic_printer_type
+            tmp_env desc path args printer_type_new, false)
 
 let find_printer_type ppf lid =
   match Env.find_value_by_name lid !toplevel_env with
   | (path, desc) -> begin
-    match match_printer_type ppf desc with
+    match match_printer_type desc with
     | (ty_arg, is_old_style) -> (ty_arg, path, is_old_style)
     | exception Bad_printing_function ->
       fprintf ppf "%a has the wrong type for a printing function.@."

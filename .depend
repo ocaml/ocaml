@@ -6368,6 +6368,7 @@ toplevel/topcommon.cmi : \
 toplevel/topdirs.cmo : \
     utils/warnings.cmi \
     typing/types.cmi \
+    toplevel/topprinters.cmi \
     toplevel/toploop.cmi \
     toplevel/topeval.cmi \
     typing/printtyp.cmi \
@@ -6392,6 +6393,7 @@ toplevel/topdirs.cmo : \
 toplevel/topdirs.cmx : \
     utils/warnings.cmx \
     typing/types.cmx \
+    toplevel/topprinters.cmx \
     toplevel/toploop.cmx \
     toplevel/topeval.cmi \
     typing/printtyp.cmx \
@@ -6461,6 +6463,23 @@ toplevel/toploop.cmi : \
     utils/load_path.cmi \
     typing/env.cmi
 toplevel/topmain.cmi :
+toplevel/topprinters.cmo : \
+    typing/types.cmi \
+    typing/typemod.cmi \
+    typing/path.cmi \
+    parsing/parse.cmi \
+    typing/env.cmi \
+    toplevel/topprinters.cmi
+toplevel/topprinters.cmx : \
+    typing/types.cmx \
+    typing/typemod.cmx \
+    typing/path.cmx \
+    parsing/parse.cmx \
+    typing/env.cmx \
+    toplevel/topprinters.cmi
+toplevel/topprinters.cmi : \
+    typing/path.cmi \
+    typing/env.cmi
 toplevel/topstart.cmo : \
     toplevel/topmain.cmi \
     toplevel/topstart.cmi

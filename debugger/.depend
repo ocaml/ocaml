@@ -276,13 +276,15 @@ int64ops.cmx : \
 int64ops.cmi :
 loadprinter.cmo : \
     ../typing/types.cmi \
+    ../typing/typemod.cmi \
+    ../toplevel/topprinters.cmi \
     ../bytecomp/symtable.cmi \
     printval.cmi \
     ../typing/printtyp.cmi \
     ../typing/path.cmi \
-    parameters.cmi \
     ../utils/misc.cmi \
     ../parsing/longident.cmi \
+    ../parsing/location.cmi \
     ../utils/load_path.cmi \
     ../typing/ident.cmi \
     ../typing/env.cmi \
@@ -291,13 +293,15 @@ loadprinter.cmo : \
     loadprinter.cmi
 loadprinter.cmx : \
     ../typing/types.cmx \
+    ../typing/typemod.cmx \
+    ../toplevel/topprinters.cmx \
     ../bytecomp/symtable.cmx \
     printval.cmx \
     ../typing/printtyp.cmx \
     ../typing/path.cmx \
-    parameters.cmx \
     ../utils/misc.cmx \
     ../parsing/longident.cmx \
+    ../parsing/location.cmx \
     ../utils/load_path.cmx \
     ../typing/ident.cmx \
     ../typing/env.cmx \
@@ -318,7 +322,6 @@ main.cmo : \
     ../typing/persistent_env.cmi \
     parameters.cmi \
     ../utils/misc.cmi \
-    loadprinter.cmi \
     ../utils/load_path.cmi \
     input_handling.cmi \
     frames.cmi \
@@ -341,7 +344,6 @@ main.cmx : \
     ../typing/persistent_env.cmx \
     parameters.cmx \
     ../utils/misc.cmx \
-    loadprinter.cmx \
     ../utils/load_path.cmx \
     input_handling.cmx \
     frames.cmx \

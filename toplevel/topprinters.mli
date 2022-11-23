@@ -2,7 +2,7 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Florian Angeletti, projet Cambium, Inria Paris             *)
+(*                   Sebastien Hinderer, Tarides, Paris                   *)
 (*                                                                        *)
 (*   Copyright 2022 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
@@ -13,5 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let () =
-  Topcommon.load_topdirs_signature ()
+(* Infrastructure to support user-defined printers in toplevels and debugger *)
+
+val env_with_printer_types : Env.t -> Env.t * Path.t * Path.t

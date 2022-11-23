@@ -27,7 +27,7 @@ let _ =
     extra_quote ^ ocamlc ^
     " -I +compiler-libs -I +ocamlmktop " ^
     "-linkall ocamlcommon.cma ocamlbytecomp.cma ocamltoplevel.cma " ^
-    "ocamlmktop_init.cmo " ^ args ^ " topstart.cmo" ^
+    args ^ " topstart.cmo" ^
     extra_quote
   in
   exit(Sys.command cmdline)

@@ -16,7 +16,6 @@
 (* Loading and installation of user-defined printer functions *)
 
 open Misc
-open Longident
 open Types
 
 (* Error report *)
@@ -90,39 +89,26 @@ let eval_value_path env path =
 
 (* Install, remove a printer (as in toplevel/topdirs) *)
 
-(* since 4.00, "topdirs.cmi" is not in the same directory as the standard
-  library, so we load it beforehand as it cannot be found in the search path. *)
-let init () =
-  let topdirs =
-    Filename.concat !Parameters.topdirs_path "topdirs.cmi" in
-  ignore (Env.read_signature "Topdirs" topdirs)
-
-let match_printer_type desc typename =
-  let printer_type =
-    match
-      Env.find_type_by_name
-        (Ldot(Lident "Topdirs", typename)) Env.empty
-    with
-    | path, _ -> path
-    | exception Not_found ->
-        raise (Error(Unbound_identifier(Ldot(Lident "Topdirs", typename))))
-  in
+let match_printer_type env desc typepath =
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
-  Ctype.unify Env.empty
-    (Ctype.newconstr printer_type [ty_arg])
+  Ctype.unify env
+    (Ctype.newconstr typepath [ty_arg])
     (Ctype.instance desc.val_type);
   Ctype.end_def();
   Ctype.generalize ty_arg;
   ty_arg
 
-let find_printer_type lid =
-  match Env.find_value_by_name lid Env.empty with
+let find_printer_type env lid =
+  match Env.find_value_by_name lid env with
   | (path, desc) -> begin
-      match match_printer_type desc "printer_type_new" with
+      let (tmp_env, printer_type_new, printer_type_old) =
+        Topprinters.env_with_printer_types env
+      in
+      match match_printer_type tmp_env desc printer_type_new with
       | ty_arg -> (ty_arg, path, false)
       | exception Ctype.Unify _ -> begin
-          match match_printer_type desc "printer_type_old" with
+          match match_printer_type env desc printer_type_old with
           | ty_arg -> (ty_arg, path, true)
           | exception Ctype.Unify _ -> raise(Error(Wrong_type lid))
         end
@@ -130,11 +116,25 @@ let find_printer_type lid =
   | exception Not_found ->
       raise(Error(Unbound_identifier lid))
 
+let (local_env : Env.t option ref) = ref None
+
+let get_env () = match !local_env with
+  | None ->
+    let e =
+      Typemod.initial_env
+      ~loc:(Location.in_file "debugger initial environment")
+      ~initially_opened_module:(Some "Stdlib")
+      ~open_implicit_modules:[]
+    in
+    local_env := Some e; e
+  | Some e -> e
+
 let install_printer ppf lid =
-  let (ty_arg, path, is_old_style) = find_printer_type lid in
+  let env = get_env () in
+  let (ty_arg, path, is_old_style) = find_printer_type env lid in
   let v =
     try
-      eval_value_path Env.empty path
+      eval_value_path env path
     with Symtable.Error(Symtable.Undefined_global s) ->
       raise(Error(Unavailable_module(s, lid))) in
   let print_function =
@@ -145,7 +145,8 @@ let install_printer ppf lid =
   Printval.install_printer path ty_arg ppf print_function
 
 let remove_printer lid =
-  let (_ty_arg, path, _is_old_style) = find_printer_type lid in
+  let env = get_env () in
+  let (_ty_arg, path, _is_old_style) = find_printer_type env lid in
   try
     Printval.remove_printer path
   with Not_found ->

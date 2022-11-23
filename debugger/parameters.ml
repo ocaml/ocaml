@@ -30,8 +30,6 @@ let prompt = ref true
 let time = ref true
 let version = ref true
 
-let topdirs_path = ref (Filename.concat Config.standard_library "compiler-libs")
-
 let add_path dir =
   Load_path.add_dir dir;
   Envaux.reset_cache()

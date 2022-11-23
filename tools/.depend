@@ -146,10 +146,6 @@ ocamlmktop.cmo : \
 ocamlmktop.cmx : \
     ../utils/config.cmx \
     ../utils/ccomp.cmx
-ocamlmktop_init.cmo : \
-    ../toplevel/topcommon.cmi
-ocamlmktop_init.cmx : \
-    ../toplevel/topcommon.cmx
 ocamloptp.cmo : \
     ocamlcp_common.cmo \
     ../driver/main_args.cmi

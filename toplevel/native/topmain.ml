@@ -108,7 +108,6 @@ let main () =
   Compmisc.read_clflags_from_env ();
   if not (prepare Format.err_formatter) then raise (Compenv.Exit_with_status 2);
   Compmisc.init_path ();
-  Topcommon.load_topdirs_signature ();
   Toploop.loop Format.std_formatter
 
 let main () =
