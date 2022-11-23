@@ -1453,6 +1453,8 @@ void caml_opportunistic_major_collection_slice(intnat howmuch)
 
 void caml_major_collection_slice(intnat howmuch)
 {
+  caml_domain_state *d = Caml_state;
+  uintnat major_slice_epoch = atomic_load (&caml_major_slice_epoch);
 
   /* if this is an auto-triggered GC slice, make it interruptible */
   if (howmuch == AUTO_TRIGGERED_MAJOR_SLICE) {
@@ -1466,12 +1468,19 @@ void caml_major_collection_slice(intnat howmuch)
     if (interrupted_work > 0) {
       caml_gc_log("Major slice interrupted, rescheduling major slice");
       caml_request_major_slice();
+    } else {
+      /* Advance the [young_trigger] to [young_start] so that the allocation
+         fails when the minor heap is full. */
+      d->young_trigger = d->young_start;
     }
   } else {
     /* TODO: could make forced API slices interruptible, but would need to do
        accounting or pass up interrupt */
     major_collection_slice(howmuch, 0, 0, Slice_uninterruptible, 0);
   }
+  /* Record that this domain has completed a major slice for this minor cycle.
+   */
+  Caml_state->major_slice_epoch = major_slice_epoch;
 }
 
 static void finish_major_cycle_callback (caml_domain_state* domain, void* arg,

@@ -449,9 +449,10 @@ static void free_minor_heap(void) {
       (void*)domain_self->minor_heap_area_start,
       Bsize_wsize(domain_state->minor_heap_wsz));
 
-  domain_state->young_start =
-    domain_state->young_end =
-    domain_state->young_ptr = NULL;
+  domain_state->young_start   = NULL;
+  domain_state->young_end     = NULL;
+  domain_state->young_ptr     = NULL;
+  domain_state->young_trigger = NULL;
   atomic_store_rel(&domain_state->young_limit,
                    (uintnat) domain_state->young_start);
 }
@@ -490,6 +491,10 @@ static int allocate_minor_heap(asize_t wsize) {
   domain_state->young_end =
       (value*)(domain_self->minor_heap_area_start + Bsize_wsize(wsize));
   domain_state->young_ptr = domain_state->young_end;
+  /* Trigger a GC poll when half of the minor heap is filled. At that point, a
+   * major slice is scheduled. */
+  domain_state->young_trigger = domain_state->young_start
+         + (domain_state->young_end - domain_state->young_start) / 2;
   caml_reset_young_limit(domain_state);
 
   check_minor_heap();
@@ -599,9 +604,10 @@ static void domain_create(uintnat initial_minor_heap_wsize) {
 
   /* the minor heap will be initialized by
      [caml_reallocate_minor_heap] below. */
-  domain_state->young_start =
-    domain_state->young_end =
-    domain_state->young_ptr = NULL;
+  domain_state->young_start = NULL;
+  domain_state->young_end = NULL;
+  domain_state->young_ptr = NULL;
+  domain_state->young_trigger = NULL;
 
   domain_state->minor_tables = caml_alloc_minor_tables();
   if(domain_state->minor_tables == NULL) {
@@ -662,6 +668,7 @@ static void domain_create(uintnat initial_minor_heap_wsize) {
 
   domain_state->requested_major_slice = 0;
   domain_state->requested_minor_gc = 0;
+  domain_state->major_slice_epoch = 0;
   domain_state->requested_external_interrupt = 0;
 
   domain_state->parser_trace = 0;
@@ -1406,7 +1413,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   atomic_store_rel(&stw_request.domains_still_running, 1);
   stw_request.num_domains = stw_domains.participating_domains;
   atomic_store_rel(&stw_request.num_domains_still_processing,
-                     stw_domains.participating_domains);
+                   stw_domains.participating_domains);
 
   if( leader_setup ) {
     leader_setup(domain_state);
@@ -1431,6 +1438,7 @@ int caml_try_run_on_all_domains_with_spin_work(
     CAMLassert(!d->interruptor.interrupt_pending);
     if (d->state != domain_state) caml_send_interrupt(&d->interruptor);
   }
+
 
   /* Domains now know they are part of the STW.
 
@@ -1494,11 +1502,12 @@ void caml_reset_young_limit(caml_domain_state * dom_st)
 {
   /* An interrupt might have been queued in the meanwhile; this
      achieves the proper synchronisation. */
-  atomic_exchange(&dom_st->young_limit, (uintnat)dom_st->young_start);
+  atomic_exchange(&dom_st->young_limit, (uintnat)dom_st->young_trigger);
   dom_internal * d = &all_domains[dom_st->id];
   if (atomic_load_relaxed(&d->interruptor.interrupt_pending)
       || dom_st->requested_minor_gc
       || dom_st->requested_major_slice
+      || dom_st->major_slice_epoch < atomic_load (&caml_major_slice_epoch)
       || atomic_load_relaxed(&dom_st->requested_external_interrupt)
       || dom_st->action_pending) {
     atomic_store_rel(&dom_st->young_limit, (uintnat)-1);
@@ -1506,29 +1515,90 @@ void caml_reset_young_limit(caml_domain_state * dom_st)
   }
 }
 
+Caml_inline void advance_global_major_slice_epoch (caml_domain_state* d)
+{
+  uintnat old_value;
+
+  CAMLassert (atomic_load (&caml_major_slice_epoch) <=
+              atomic_load (&caml_minor_collections_count));
+
+  old_value = atomic_exchange (&caml_major_slice_epoch,
+                               atomic_load (&caml_minor_collections_count));
+
+  if (old_value != atomic_load (&caml_minor_collections_count)) {
+    /* This domain is the first one to use up half of its minor heap arena
+        in this minor cycle. Trigger major slice on other domains. */
+    if (caml_plat_try_lock(&all_domains_lock)) {
+      /* Note that this interrupt is best-effort. If we get the lock,
+         then interrupt all the domains. If not, either some other domain
+         is calling for a stop-the-world section interrupting all the
+         domains, or a domain is being created or terminated. All of these
+         actions also try to lock [all_domains_lock] mutex, and the above
+         lock acquisition may fail.
+
+         If we don't get the lock, we don't interrupt other domains. This is
+         acceptable since it does not affect safety but only liveness -- the
+         speed of the major gc. The other domains may themselves fill half of
+         their minor heap triggering a major slice, or will certainly do a
+         major slice right after their next minor GC when they observe that
+         their domain-local [Caml_state->major_slice_epoch] is less than the
+         global one [caml_major_slice_epoch]. */
+      for(int i = 0; i < stw_domains.participating_domains; i++) {
+        dom_internal * di = stw_domains.domains[i];
+        if (di->state != d) interrupt_domain(&di->interruptor);
+      }
+      caml_plat_unlock (&all_domains_lock);
+    }
+  }
+}
+
 void caml_poll_gc_work(void)
 {
   CAMLalloc_point_here;
 
-  if (((uintnat)Caml_state->young_ptr - Bhsize_wosize(Max_young_wosize) <
-       (uintnat)Caml_state->young_start) ||
-      Caml_state->requested_minor_gc) {
+  caml_domain_state* d = Caml_state;
+
+  if ((uintnat)d->young_ptr - Bhsize_wosize(Max_young_wosize) <
+      (uintnat)d->young_trigger) {
+
+    if (d->young_trigger == d->young_start) {
+      /* Trigger minor GC */
+      d->requested_minor_gc = 1;
+    } else {
+      CAMLassert (d->young_trigger ==
+                  d->young_start + (d->young_end - d->young_start) / 2);
+      /* We have used half of our minor heap arena. Request a major slice on
+         this domain. */
+      advance_global_major_slice_epoch (d);
+    }
+  } else if (d->requested_minor_gc) {
+    /* This domain has _not_ used up half of its minor heap arena, but a minor
+       collection has been requested. Schedule a major collection slice so as
+       to not lag behind. */
+    advance_global_major_slice_epoch (d);
+  }
+
+  if (d->major_slice_epoch < atomic_load (&caml_major_slice_epoch)) {
+    d->requested_major_slice = 1;
+  }
+
+  if (d->requested_minor_gc) {
     /* out of minor heap or collection forced */
-    Caml_state->requested_minor_gc = 0;
+    d->requested_minor_gc = 0;
     caml_empty_minor_heaps_once();
   }
 
-  if (Caml_state->requested_major_slice) {
+  if (d->requested_major_slice) {
     CAML_EV_BEGIN(EV_MAJOR);
-    Caml_state->requested_major_slice = 0;
+    d->requested_major_slice = 0;
     caml_major_collection_slice(AUTO_TRIGGERED_MAJOR_SLICE);
     CAML_EV_END(EV_MAJOR);
   }
 
-  if (atomic_load_acq(&Caml_state->requested_external_interrupt)) {
+  if (atomic_load_acq(&d->requested_external_interrupt)) {
     caml_domain_external_interrupt_hook();
   }
-  caml_reset_young_limit(Caml_state);
+  caml_reset_young_limit(d);
 }
 
 void caml_handle_gc_interrupt(void)
