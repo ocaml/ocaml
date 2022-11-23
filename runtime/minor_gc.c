@@ -63,7 +63,7 @@
 
 struct generic_table CAML_TABLE_STRUCT(char);
 
-void caml_alloc_minor_tables ()
+void caml_alloc_minor_tables (void)
 {
   Caml_state->ref_table =
     caml_stat_alloc_noexc(sizeof(struct caml_ref_table));
