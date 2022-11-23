@@ -67,7 +67,7 @@ static void afl_write(uint32_t msg)
     caml_fatal_error("writing to afl-fuzz");
 }
 
-static uint32_t afl_read()
+static uint32_t afl_read(void)
 {
   uint32_t msg;
   if (read(FORKSRV_FD_READ, &msg, 4) != 4)

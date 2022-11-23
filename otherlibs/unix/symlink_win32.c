@@ -36,7 +36,7 @@ static _Atomic DWORD additional_symlink_flags = -1;
 
 // Developer Mode allows the creation of symlinks without elevation - see
 // https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createsymboliclinkw
-static BOOL IsDeveloperModeEnabled()
+static BOOL IsDeveloperModeEnabled(void)
 {
   HKEY hKey;
   LSTATUS status;

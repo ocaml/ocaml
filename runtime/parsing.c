@@ -137,7 +137,7 @@ static void print_token(struct parser_tables *tables, int state, value tok)
   }
 }
 
-static int trace()
+static int trace(void)
 {
   return caml_params->parser_trace || Caml_state->parser_trace;
 }

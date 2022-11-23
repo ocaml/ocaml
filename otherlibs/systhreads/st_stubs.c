@@ -223,7 +223,7 @@ static void restore_runtime_state(caml_thread_t th)
 
 CAMLprim value caml_thread_cleanup(value unit);
 
-static void reset_active()
+static void reset_active(void)
 {
   Active_thread = NULL;
   /* If no other OCaml thread remains, ask the tick thread to stop
@@ -550,7 +550,7 @@ static void * caml_thread_start(void * v)
   return 0;
 }
 
-static int create_tick_thread()
+static int create_tick_thread(void)
 {
   int err;
 #ifdef POSIX_SIGNALS
