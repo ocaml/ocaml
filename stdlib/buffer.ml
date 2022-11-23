@@ -199,12 +199,6 @@ let really_input_up_to ic buf ofs len =
 let unsafe_add_channel_up_to b ic len =
   if b.position + len > b.inner.length then resize b len;
   let n = really_input_up_to ic b.inner.buffer b.position len in
-  (* The assertion below may fail in weird scenario where
-     threaded/finalizer code, run asynchronously during the
-     [really_input_up_to] call, races on the buffer; we don't ensure
-     correctness in this case, but need to preserve the invariants for
-     memory-safety (see discussion of [resize]). *)
-  assert (b.position + n <= b.inner.length);
   b.position <- b.position + n;
   n
 
