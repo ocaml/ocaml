@@ -19,9 +19,12 @@
 
 #include <signal.h>
 #include <errno.h>
+#include "caml/config.h"
+#ifdef USE_MMAP_MAP_STACK
+#include <sys/mman.h>
+#endif
 #include "caml/alloc.h"
 #include "caml/callback.h"
-#include "caml/config.h"
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
@@ -472,22 +475,33 @@ void * caml_init_signal_stack(void)
   stk.ss_flags = 0;
   stk.ss_size = SIGSTKSZ;
   /* The memory used for the alternate signal stack must not free'd before
-     calling sigaltstack with SS_DISABLE. malloc is therefore used rather
+     calling sigaltstack with SS_DISABLE. malloc/mmap is therefore used rather
      than caml_stat_alloc_noexc so that if a shutdown path erroneously fails
      to call caml_free_signal_stack then we have a memory leak rather than a
      nasty piece of undefined behaviour forced on the caller. */
-  stk.ss_sp = malloc(stk.ss_size);
-  if(stk.ss_sp == NULL) {
+#ifdef USE_MMAP_MAP_STACK
+  stk.ss_sp =
+    mmap(NULL, stk.ss_size, PROT_WRITE | PROT_READ,
+         MAP_ANONYMOUS | MAP_PRIVATE | MAP_STACK, -1, 0);
+  if (stk.ss_sp == MAP_FAILED)
+    return NULL;
+  if (sigaltstack(&stk, NULL) < 0) {
+    munmap(stk.ss_sp, SIGSTKSZ);
     return NULL;
   }
+#else
+  stk.ss_sp = malloc(stk.ss_size);
+  if (stk.ss_sp == NULL)
+    return NULL;
   if (sigaltstack(&stk, NULL) < 0) {
     free(stk.ss_sp);
     return NULL;
   }
+#endif /* USE_MMAP_MAP_STACK */
   return stk.ss_sp;
 #else
   return NULL;
-#endif
+#endif /* POSIX_SIGNALS */
 }
 
 void caml_free_signal_stack(void * signal_stack)
@@ -505,9 +519,14 @@ void caml_free_signal_stack(void * signal_stack)
     /* Re-activate their signal stack. */
     sigaltstack(&stk, NULL);
   }
-  /* Memory was allocated with malloc directly; see caml_init_signal_stack */
+  /* Memory was allocated with malloc/mmap directly (see
+     caml_init_signal_stack) */
+#ifdef USE_MMAP_MAP_STACK
+  munmap(signal_stack, SIGSTKSZ);
+#else
   free(signal_stack);
-#endif
+#endif /* USE_MMAP_MAP_STACK */
+#endif /* POSIX_SIGNALS */
 }
 
 #ifdef POSIX_SIGNALS
