@@ -665,11 +665,11 @@ let emit_instr env i =
         env.stack_offset <- env.stack_offset + 16;
         emit_stack_adjust 16;
         `	larl	%r14, {emit_label lbl_handler}\n`;
-        `	stg	%r14, 0(%r15)\n`;
-        `	stg	%r13, {emit_int size_addr}(%r15)\n`;
+        `	stg	%r14, {emit_int size_addr}(%r15)\n`;
+        `	stg	%r13, 0(%r15)\n`;
         `	lgr	%r13, %r15\n`
     | Lpoptrap ->
-        `	lg	%r13, {emit_int size_addr}(%r15)\n`;
+        `	lg	%r13, 0(%r15)\n`;
         emit_stack_adjust (-16);
         env.stack_offset <- env.stack_offset - 16
     | Lraise k ->
@@ -684,9 +684,9 @@ let emit_instr env i =
           emit_call "caml_raise_exn";
           `{record_frame env Reg.Set.empty (Dbg_raise i.dbg)}\n`
         | Lambda.Raise_notrace ->
-          `	lg	%r1, 0(%r13)\n`;
+          `	lg	%r1, {emit_int size_addr}(%r13)\n`;
           `	lgr	%r15, %r13\n`;
-          `	lg	%r13, {emit_int size_addr}(%r15)\n`;
+          `	lg	%r13, 0(%r15)\n`;
           emit_stack_adjust (-16);
           `	br	%r1\n`
         end

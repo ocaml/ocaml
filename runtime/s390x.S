@@ -591,8 +591,8 @@ ENDFUNCTION(G(caml_start_program))
 
 #define JUMP_TO_TRAP_PTR \
         lgr     %r15,     TRAP_PTR;                    \
-        lg      TMP,       0(%r15);                    \
-        lg      TRAP_PTR,  8(%r15);                    \
+        lg      TMP,       8(%r15);                    \
+        lg      TRAP_PTR,  0(%r15);                    \
         la      %r15,     16(%r15);                    \
         br      TMP;
 
