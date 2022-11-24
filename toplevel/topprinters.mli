@@ -2,10 +2,9 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*           Jerome Vouillon, projet Cristal, INRIA Rocquencourt          *)
-(*           OCaml port by John Malecki and Xavier Leroy                  *)
+(*                   Sebastien Hinderer, Tarides, Paris                   *)
 (*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2022 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
@@ -14,31 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Miscellaneous parameters *)
+(* Infrastructure to support user-defined printers in toplevels and debugger *)
 
-open Debugger_config
+type printer_type = Types.type_expr -> Types.type_expr
 
-let program_name = ref ""
-let socket_name = ref ""
-let arguments = ref ""
+val type_arrow : Types.type_expr -> Types.type_expr -> Types.type_expr
 
-let default_load_path =
-  ref [ Filename.current_dir_name; Config.standard_library ]
-
-let breakpoint = ref true
-let prompt = ref true
-let time = ref true
-let version = ref true
-
-let add_path dir =
-  Load_path.add_dir dir;
-  Envaux.reset_cache()
-
-let add_path_for mdl dir =
-  let old = try Hashtbl.find load_path_for mdl with Not_found -> [] in
-  Hashtbl.replace load_path_for mdl (dir :: old)
-
-(* Used by emacs ? *)
-let emacs = ref false
-
-let machine_readable = ref false
+val printer_type_new : printer_type
+val printer_type_old : printer_type

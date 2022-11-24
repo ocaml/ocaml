@@ -190,6 +190,11 @@ Working version
 - #11568: Encode inline record types in Path.t
   (Leo White and Hyunggyu Jang, review by Gabriel Scherer)
 
+- #11745: Debugger and toplevels: embed printer types rather than
+  reading their representations from topdirs.cmi at runtime.
+  (Sébastien Hinderer, review by Florian Angeletti, Nicolás Ojeda Bär and
+  Gabriel Scherer)
+
 ### Build system:
 - #11590: Allow installing to a destination path containing spaces.
    (Élie Brami, review by Sébastien Hinderer and David Allsopp)

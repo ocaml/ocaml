@@ -354,6 +354,7 @@ TOPLEVEL = \
   toplevel/byte/topeval.cmo \
   toplevel/byte/trace.cmo \
   toplevel/toploop.cmo \
+  toplevel/topprinters.cmo \
   toplevel/topdirs.cmo \
   toplevel/byte/topmain.cmo
 TOPLEVEL_CMI = \
@@ -361,6 +362,7 @@ TOPLEVEL_CMI = \
   toplevel/byte/topeval.cmi \
   toplevel/byte/trace.cmi \
   toplevel/toploop.cmi \
+  toplevel/topprinters.cmi \
   toplevel/topdirs.cmi \
   toplevel/byte/topmain.cmi
 
@@ -371,6 +373,7 @@ OPTTOPLEVEL = \
   toplevel/native/topeval.cmo \
   toplevel/native/trace.cmo \
   toplevel/toploop.cmo \
+  toplevel/topprinters.cmo \
   toplevel/topdirs.cmo \
   toplevel/native/topmain.cmo
 OPTTOPLEVEL_CMI = \
@@ -379,6 +382,7 @@ OPTTOPLEVEL_CMI = \
   toplevel/native/topeval.cmi \
   toplevel/native/trace.cmi \
   toplevel/toploop.cmi \
+  toplevel/topprinters.cmi \
   toplevel/topdirs.cmi \
   toplevel/native/topmain.cmi
 

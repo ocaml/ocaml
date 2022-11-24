@@ -284,13 +284,6 @@ let update_search_path_from_env () =
   in
   Clflags.include_dirs := List.rev_append extra_paths !Clflags.include_dirs
 
-let load_topdirs_signature () =
-  let compiler_libs =
-    Filename.concat Config.standard_library "compiler-libs" in
-  let topdirs_cmi = Filename.concat compiler_libs "topdirs.cmi" in
-  if Sys.file_exists topdirs_cmi then
-    ignore (Env.read_signature "Topdirs" topdirs_cmi)
-
 let initialize_toplevel_env () =
   toplevel_env := Compmisc.initial_env()
 
