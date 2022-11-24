@@ -126,7 +126,10 @@ external readdir : string -> string array = "caml_sys_read_directory"
    appear in alphabetical order. *)
 
 val interactive : bool ref
-(** This reference is initially set to [false] in standalone
+[@@alert unsynchronized_access
+    "The interactive status is a mutable global state."
+]
+ (** This reference is initially set to [false] in standalone
    programs and to [true] if the code is being executed under
    the interactive toplevel system [ocaml]. *)
 
@@ -367,6 +370,9 @@ type ocaml_release_info = {
 val ocaml_release : ocaml_release_info
 
 val enable_runtime_warnings: bool -> unit
+[@@alert unsynchronized_access
+    "The status of runtime warnings is a mutable global state."
+]
 (** Control whether the OCaml runtime system can emit warnings
     on stderr.  Currently, the only supported warning is triggered
     when a channel created by [open_*] functions is finalized without
@@ -375,7 +381,10 @@ val enable_runtime_warnings: bool -> unit
     @since 4.03 *)
 
 val runtime_warnings_enabled: unit -> bool
-(** Return whether runtime warnings are currently enabled.
+[@@alert unsynchronized_access
+    "The status of runtime warnings is a mutable global state."
+]
+ (** Return whether runtime warnings are currently enabled.
 
     @since 4.03 *)
 

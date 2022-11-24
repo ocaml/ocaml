@@ -71,6 +71,11 @@
     is called with an empty list.
 *)
 
+[@@@alert unsynchronized_access
+    "The Arg module relies on a mutable global state, parsing functions should \
+     only be called from a single domain."
+]
+
 type spec =
   | Unit of (unit -> unit)     (** Call the function with unit argument *)
   | Bool of (bool -> unit)     (** Call the function with a bool argument *)
