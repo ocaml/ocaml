@@ -55,7 +55,7 @@ static void init_startup_params(void)
   params.runtime_events_log_wsize = Default_runtime_events_log_wsize;
 
 #ifdef DEBUG
-  params.verb_gc = 0x3F;
+  atomic_store_relaxed(&caml_verb_gc, 0x3F);
 #endif
 #ifndef NATIVE_CODE
   cds_file = caml_secure_getenv(T("CAML_DEBUG_FILE"));
@@ -79,6 +79,7 @@ static void scanmult (char_os *opt, uintnat *var)
   case 'k':   *var = (uintnat) val * 1024; break;
   case 'M':   *var = (uintnat) val * (1024 * 1024); break;
   case 'G':   *var = (uintnat) val * (1024 * 1024 * 1024); break;
+  case 'v':   atomic_store_relaxed((atomic_uintnat *)var, val);
   default:    *var = (uintnat) val; break;
   }
 }
@@ -105,7 +106,7 @@ void caml_parse_ocamlrunparam(void)
       case 'R': break; /*  see stdlib/hashtbl.mli */
       case 's': scanmult (opt, &params.init_minor_heap_wsz); break;
       case 't': scanmult (opt, &params.trace_level); break;
-      case 'v': scanmult (opt, &params.verb_gc); break;
+      case 'v': scanmult (opt, (uintnat *)&caml_verb_gc); break;
       case 'V': scanmult (opt, &params.verify_heap); break;
       case 'W': scanmult (opt, &caml_runtime_warnings); break;
       case ',': continue;

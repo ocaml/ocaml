@@ -481,6 +481,8 @@ CAMLextern int caml_read_directory(char_os * dirname,
 
 /* GC flags and messages */
 
+extern atomic_uintnat caml_verb_gc;
+
 void caml_gc_log (char *, ...)
 #ifdef __GNUC__
   __attribute__ ((format (printf, 1, 2)))

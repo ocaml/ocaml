@@ -136,7 +136,7 @@ CAMLexport void caml_do_exit(int retcode)
   caml_domain_state* domain_state = Caml_state;
   struct gc_stats s;
 
-  if ((caml_params->verb_gc & 0x400) != 0) {
+  if ((atomic_load_relaxed(&caml_verb_gc) & 0x400) != 0) {
     caml_compute_gc_stats(&s);
     {
       /* cf caml_gc_counters */
