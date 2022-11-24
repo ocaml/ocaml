@@ -30,6 +30,18 @@
 
 *)
 
+(** {b Unsynchronized accesses} *)
+
+[@@@alert unsynchronized_access
+    "Unsynchronized accesses to buffers are a programming error."
+]
+
+ (**
+    Unsynchronized accesses to a buffer may lead to an invalid buffer state.
+    Thus, concurrent accesses to a buffer must be synchronized (for instance
+    with a {!Mutex.t}).
+*)
+
 type t
 (** The abstract type of buffers. *)
 

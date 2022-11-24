@@ -580,7 +580,7 @@ let current =
     {
       active = Array.make (last_warning_number + 1) true;
       error = Array.make (last_warning_number + 1) false;
-      alerts = (Misc.Stdlib.String.Set.empty, false); (* all enabled *)
+      alerts = (Misc.Stdlib.String.Set.empty, false);
       alert_errors = (Misc.Stdlib.String.Set.empty, true); (* all soft *)
     }
 
@@ -856,7 +856,7 @@ let parse_options errflag s =
 (* If you change these, don't forget to change them in man/ocamlc.m *)
 let defaults_w = "+a-4-7-9-27-29-30-32..42-44-45-48-50-60-66..70"
 let defaults_warn_error = "-a+31"
-let default_disabled_alerts = [ "unstable" ]
+let default_disabled_alerts = [ "unstable"; "unsynchronized_access" ]
 
 let () = ignore @@ parse_options false defaults_w
 let () = ignore @@ parse_options true defaults_warn_error

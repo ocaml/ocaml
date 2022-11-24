@@ -81,10 +81,17 @@
     facility is fully type-checked at compile time.
 *)
 
-(** {2 Note on concurrent use} *)
+(** {b Unsynchronized accesses} *)
 
-(** Since values of type {!Scanning.in_channel} contain inner mutable states,
-    they are not safe to use concurrently without external synchronization.
+[@@@alert unsynchronized_access
+    "Unsynchronized accesses to Scanning.in_channel are a programming error."
+]
+
+ (**
+      Unsynchronized accesses to a {!Scanning.in_channel} may lead to an
+      invalid {!Scanning.in_channel} state. Thus, concurrent accesses
+      to {!Scanning.in_channel}s must be synchronized (for instance with
+      a {!Mutex.t}).
 *)
 
 (** {1 Formatted input channel} *)
