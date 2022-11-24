@@ -6465,21 +6465,22 @@ toplevel/toploop.cmi : \
 toplevel/topmain.cmi :
 toplevel/topprinters.cmo : \
     typing/types.cmi \
-    typing/typemod.cmi \
+    typing/predef.cmi \
     typing/path.cmi \
-    parsing/parse.cmi \
-    typing/env.cmi \
+    typing/ident.cmi \
+    typing/ctype.cmi \
+    parsing/asttypes.cmi \
     toplevel/topprinters.cmi
 toplevel/topprinters.cmx : \
     typing/types.cmx \
-    typing/typemod.cmx \
+    typing/predef.cmx \
     typing/path.cmx \
-    parsing/parse.cmx \
-    typing/env.cmx \
+    typing/ident.cmx \
+    typing/ctype.cmx \
+    parsing/asttypes.cmi \
     toplevel/topprinters.cmi
 toplevel/topprinters.cmi : \
-    typing/path.cmi \
-    typing/env.cmi
+    typing/types.cmi
 toplevel/topstart.cmo : \
     toplevel/topmain.cmi \
     toplevel/topstart.cmi

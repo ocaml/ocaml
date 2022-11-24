@@ -207,12 +207,12 @@ let extract_target_parameters ty =
         Some (path, args)
   | _ -> None
 
-let match_simple_printer_type env desc printer_type =
+let match_simple_printer_type desc make_printer_type =
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
   begin try
-    Ctype.unify env
-      (Ctype.newconstr printer_type [ty_arg])
+    Ctype.unify !toplevel_env
+      (make_printer_type ty_arg)
       (Ctype.instance desc.val_type);
   with Ctype.Unify _ ->
     raise Bad_printing_function
@@ -221,19 +221,17 @@ let match_simple_printer_type env desc printer_type =
   Ctype.generalize ty_arg;
   (ty_arg, None)
 
-let match_generic_printer_type env desc path args printer_type =
+let match_generic_printer_type desc path args make_printer_type =
   Ctype.begin_def();
   let args = List.map (fun _ -> Ctype.newvar ()) args in
   let ty_target = Ctype.newty (Tconstr (path, args, ref Mnil)) in
   let ty_args =
-    List.map (fun ty_var -> Ctype.newconstr printer_type [ty_var]) args in
+    List.map (fun ty_var -> make_printer_type ty_var) args in
   let ty_expected =
-    List.fold_right
-      (fun ty_arg ty -> Ctype.newty (Tarrow (Asttypes.Nolabel, ty_arg, ty,
-                                             commu_var ())))
-      ty_args (Ctype.newconstr printer_type [ty_target]) in
+    List.fold_right Topprinters.type_arrow
+      ty_args (make_printer_type ty_target) in
   begin try
-    Ctype.unify env
+    Ctype.unify !toplevel_env
       ty_expected
       (Ctype.instance desc.val_type);
   with Ctype.Unify _ ->
@@ -241,25 +239,22 @@ let match_generic_printer_type env desc path args printer_type =
   end;
   Ctype.end_def();
   Ctype.generalize ty_expected;
-  if not (Ctype.all_distinct_vars env args) then
+  if not (Ctype.all_distinct_vars !toplevel_env args) then
     raise Bad_printing_function;
   (ty_expected, Some (path, ty_args))
 
 let match_printer_type desc =
-  let (tmp_env, printer_type_new, printer_type_old) =
-    Topprinters.env_with_printer_types !toplevel_env
-  in
   try
-    (match_simple_printer_type tmp_env desc printer_type_new, false)
+    (match_simple_printer_type desc Topprinters.printer_type_new, false)
   with Bad_printing_function ->
     try
-      (match_simple_printer_type tmp_env desc printer_type_old, true)
+      (match_simple_printer_type desc Topprinters.printer_type_old, true)
     with Bad_printing_function as exn ->
       match extract_target_parameters desc.val_type with
       | None -> raise exn
       | Some (path, args) ->
           (match_generic_printer_type
-            tmp_env desc path args printer_type_new, false)
+            desc path args Topprinters.printer_type_new, false)
 
 let find_printer_type ppf lid =
   match Env.find_value_by_name lid !toplevel_env with

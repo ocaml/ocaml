@@ -15,4 +15,9 @@
 
 (* Infrastructure to support user-defined printers in toplevels and debugger *)
 
-val env_with_printer_types : Env.t -> Env.t * Path.t * Path.t
+type printer_type = Types.type_expr -> Types.type_expr
+
+val type_arrow : Types.type_expr -> Types.type_expr -> Types.type_expr
+
+val printer_type_new : printer_type
+val printer_type_old : printer_type

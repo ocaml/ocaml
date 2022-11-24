@@ -276,7 +276,6 @@ int64ops.cmx : \
 int64ops.cmi :
 loadprinter.cmo : \
     ../typing/types.cmi \
-    ../typing/typemod.cmi \
     ../toplevel/topprinters.cmi \
     ../bytecomp/symtable.cmi \
     printval.cmi \
@@ -284,7 +283,6 @@ loadprinter.cmo : \
     ../typing/path.cmi \
     ../utils/misc.cmi \
     ../parsing/longident.cmi \
-    ../parsing/location.cmi \
     ../utils/load_path.cmi \
     ../typing/ident.cmi \
     ../typing/env.cmi \
@@ -293,7 +291,6 @@ loadprinter.cmo : \
     loadprinter.cmi
 loadprinter.cmx : \
     ../typing/types.cmx \
-    ../typing/typemod.cmx \
     ../toplevel/topprinters.cmx \
     ../bytecomp/symtable.cmx \
     printval.cmx \
@@ -301,7 +298,6 @@ loadprinter.cmx : \
     ../typing/path.cmx \
     ../utils/misc.cmx \
     ../parsing/longident.cmx \
-    ../parsing/location.cmx \
     ../utils/load_path.cmx \
     ../typing/ident.cmx \
     ../typing/env.cmx \

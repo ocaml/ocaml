@@ -15,25 +15,23 @@
 
 (* Infrastructure to support user-defined printers in toplevels and debugger *)
 
-let printertypes_str = {|
-  type 'a printer_type_new = Format.formatter -> 'a -> unit
+type printer_type = Types.type_expr -> Types.type_expr
+
+let type_arrow ta tb =
+  Ctype.newty (Tarrow (Asttypes.Nolabel, ta, tb, Types.commu_var ()))
+
+let type_formatter () =
+  let format = Path.Pident (Ident.create_persistent "Stdlib__Format") in
+  Ctype.newconstr (Path.Pdot(format, "formatter")) []
+
+let type_unit = Predef.type_unit
+
+(*
   type 'a printer_type_old = 'a -> unit
-|}
+  type 'a printer_type_new = Format.formatter -> 'a -> unit
+*)
+let printer_type_old alpha =
+  type_arrow alpha type_unit
 
-let printertypes_sig_ast =
-  Parse.interface (Lexing.from_string printertypes_str)
-
-let printertypes_sig env =
-  (Typemod.transl_signature env printertypes_sig_ast).sig_type
-
-let printer_types sign =
-  match sign with
-  | [Types.Sig_type(new_name,_,_,_); Types.Sig_type(old_name,_,_,_)] ->
-    (Path.Pident new_name, Path.Pident old_name)
-  | _ -> assert false
-
-let env_with_printer_types env =
-  let tmp_sign = printertypes_sig env in
-  let tmp_env = Env.add_signature tmp_sign env in
-  let printer_type_new, printer_type_old = printer_types tmp_sign in
-  (tmp_env, printer_type_new, printer_type_old)  
+let printer_type_new alpha =
+  type_arrow (type_formatter ()) (type_arrow alpha type_unit)
