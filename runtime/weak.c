@@ -252,7 +252,6 @@ static value ephe_get_field (value e, mlsize_t offset)
   if (elt == caml_ephe_none) {
     res = Val_none;
   } else {
-    elt = Field(e, offset);
     caml_darken (Caml_state, elt, 0);
     res = caml_alloc_shr (1, Tag_some);
     caml_initialize(&Field(res, 0), elt);
