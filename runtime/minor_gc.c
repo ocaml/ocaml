@@ -662,7 +662,7 @@ void caml_do_opportunistic_major_slice
   /* NB: need to put guard around the ev logs to prevent
     spam when we poll */
   if (caml_opportunistic_major_work_available()) {
-    int log_events = caml_params->verb_gc & 0x40;
+    uintnat log_events = atomic_load_relaxed(&caml_verb_gc) & 0x40;
     if (log_events) CAML_EV_BEGIN(EV_MAJOR_MARK_OPPORTUNISTIC);
     caml_opportunistic_major_collection_slice(0x200);
     if (log_events) CAML_EV_END(EV_MAJOR_MARK_OPPORTUNISTIC);
