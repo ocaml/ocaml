@@ -769,34 +769,43 @@ runtime_PRIMITIVES = $(addprefix runtime/, afl.c alloc.c array.c \
 # see http://pubs.opengroup.org/onlinepubs/9699919799/utilities/sort.html:
 # "using sort to process pathnames, it is recommended that LC_ALL .. set to C"
 
-# To speed up builds, we avoid changing "primitives" when files
-# containing primitives change but the primitives table does not
-runtime/primitives.new: \
+# To speed up builds, we avoid changing "primitives" and
+# "primitive-arguments" when files containing primitives change but
+# the primitives table does not
+runtime/primitives-arguments.new: \
   $(runtime_BUILT_HEADERS) \
   $(runtime_PRIMITIVES) \
-  runtime/gen_primitives_ints.sed
+  runtime/gen_primitives.sed runtime/gen_primitives_ints.sed
 	(for prim in $(runtime_PRIMITIVES); do \
 	     $(CPP) -I./runtime -D'CAMLprim()=0' "$${prim}" | \
-	     sed -n -e 's/^CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p'; \
+	     sed -n -f runtime/gen_primitives.sed; \
 	 done; \
 	 sed -n -f runtime/gen_primitives_ints.sed runtime/ints.c) | \
 	(export LC_ALL=C; sort | uniq) > $@
 
-runtime/primitives: runtime/primitives.new
-	if ! cmp -s runtime/primitives $<; then \
-	    cp $< $@; \
+runtime/primitives-arguments runtime/primitives: \
+  runtime/primitives-arguments.new
+	if ! cmp -s runtime/primitives-arguments $<; then \
+	    cp $< runtime/primitives-arguments; \
+	    sed -n -e 's/^\([a-z0-9_][a-z0-9_]*\).*$$/\1/p' \
+	      $< > runtime/primitives; \
 	fi
 
-runtime/prims.c : runtime/primitives
+runtime/prims.c : runtime/primitives-arguments
 	(echo '#define CAML_INTERNALS'; \
-         echo '#include "caml/mlvalues.h"'; \
+	 echo '#include "caml/mlvalues.h"'; \
 	 echo '#include "caml/prims.h"'; \
-	 sed -e 's/.*/extern value &();/' $<; \
+	 echo 'struct lexer_buffer; struct lexing_table;'; \
+	 echo 'struct parser_env; struct parser_tables;'; \
+	 echo; \
+	 sed -e 's/.*/extern value &;/' $<; \
+	 echo; \
 	 echo 'c_primitive caml_builtin_cprim[] = {'; \
-	 sed -e 's/.*/  &,/' $<; \
+	 sed -e 's/^\([a-z0-9_][a-z0-9_]*\) *(.*)/  (c_primitive)\1,/' $<; \
 	 echo '  0 };'; \
+	 echo; \
 	 echo 'char * caml_names_of_builtin_cprim[] = {'; \
-	 sed -e 's/.*/  "&",/' $<; \
+	 sed -e 's/^\([a-z0-9_][a-z0-9_]*\) *(.*)/  "\1",/' $<; \
 	 echo '  0 };') > $@
 
 runtime/caml/opnames.h : runtime/caml/instruct.h
@@ -1042,8 +1051,8 @@ clean::
 	rm -f $(addprefix runtime/, ocamlrun ocamlrund ocamlruni ocamlruns sak)
 	rm -f $(addprefix runtime/, \
 	  ocamlrun.exe ocamlrund.exe ocamlruni.exe ocamlruns.exe sak.exe)
-	rm -f runtime/primitives runtime/primitives.new runtime/prims.c \
-	  $(runtime_BUILT_HEADERS)
+	rm -f runtime/primitives-arguments runtime/primitives-arguments.new \
+	  runtime/primitives runtime/prims.c $(runtime_BUILT_HEADERS)
 	rm -f runtime/domain_state*.inc
 	rm -rf $(DEPDIR)
 	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib

@@ -198,6 +198,10 @@ Working version
   (Sébastien Hinderer, review by Florian Angeletti, Nicolás Ojeda Bär and
   Gabriel Scherer)
 
+- #11763, #11759: Enable stricter C compilation warnings, generate the
+  list of primitives with types.
+  (Antonin Décimo)
+
 ### Build system:
 - #11590: Allow installing to a destination path containing spaces.
    (Élie Brami, review by Sébastien Hinderer and David Allsopp)
