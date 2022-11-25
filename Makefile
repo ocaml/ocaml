@@ -743,6 +743,13 @@ runtime/ld.conf: $(ROOTDIR)/Makefile.config
 	echo "$(STUBLIBDIR)" > $@
 	echo "$(LIBDIR)" >> $@
 
+runtime_PRIMITIVES = $(addprefix runtime/, afl.c alloc.c array.c \
+  backtrace_byt.c backtrace.c bigarray.c callback.c compare.c domain.c \
+  dynlink.c extern.c fiber.c finalise.c floats.c gc_ctrl.c hash.c \
+  intern.c interp.c ints.c io.c lexing.c md5.c memory.c memprof.c meta.c \
+  obj.c parsing.c platform.c prng.c runtime_events.c signals.c \
+  startup_aux.c str.c sync.c sys.c weak.c)
+
 # If primitives contain duplicated lines (e.g. because the code is defined
 # like
 # #ifdef X
@@ -764,11 +771,21 @@ runtime/ld.conf: $(ROOTDIR)/Makefile.config
 
 # To speed up builds, we avoid changing "primitives" when files
 # containing primitives change but the primitives table does not
-runtime/primitives: \
-  $(shell runtime/gen_primitives.sh > runtime/primitives.new; \
-                    cmp -s runtime/primitives runtime/primitives.new || \
-                    echo runtime/primitives.new)
-	cp $^ $@
+runtime/primitives.new: \
+  $(runtime_BUILT_HEADERS) \
+  $(runtime_PRIMITIVES) \
+  runtime/gen_primitives_ints.sed
+	(for prim in $(runtime_PRIMITIVES); do \
+	     $(CPP) -I./runtime -D'CAMLprim()=0' "$${prim}" | \
+	     sed -n -e 's/^CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p'; \
+	 done; \
+	 sed -n -f runtime/gen_primitives_ints.sed runtime/ints.c) | \
+	(export LC_ALL=C; sort | uniq) > $@
+
+runtime/primitives: runtime/primitives.new
+	if ! cmp -s runtime/primitives $<; then \
+	    cp $< $@; \
+	fi
 
 runtime/prims.c : runtime/primitives
 	(echo '#define CAML_INTERNALS'; \
