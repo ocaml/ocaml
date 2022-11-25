@@ -291,8 +291,9 @@ let find_printer ppf lid =
       raise Exit
 
 let dir_install_printer ppf lid =
-  try
-    let (path, kind) = find_printer ppf lid in
+  match find_printer ppf lid with
+  | exception Exit -> ()
+  | (path, kind) ->
     let v = eval_value_path !toplevel_env path in
     match kind with
     | Printer.Old ty_arg ->
@@ -310,17 +311,16 @@ let dir_install_printer ppf lid =
             Succ
               (fun fn -> build ((Obj.obj v : _ -> Obj.t) fn) args) in
        install_generic_printer' path ty_path (build v printer_args_ty)
-  with Exit -> ()
 
 let dir_remove_printer ppf lid =
-  try
-    let (path, _kind) = find_printer ppf lid in
+  match find_printer ppf lid with
+  | exception Exit -> ()
+  | (path, _kind) ->
     begin try
       remove_printer path
     with Not_found ->
       fprintf ppf "No printer named %a.@." Printtyp.longident lid
     end
-  with Exit -> ()
 
 let _ = add_directive "install_printer"
     (Directive_ident (with_error_fmt dir_install_printer))
