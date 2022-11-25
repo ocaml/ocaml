@@ -221,7 +221,8 @@ let match_simple_printer_type desc make_printer_type =
   Ctype.generalize ty_arg;
   (ty_arg, None)
 
-let match_generic_printer_type desc path args make_printer_type =
+let match_generic_printer_type desc path args =
+  let make_printer_type = Topprinters.printer_type_new in
   Ctype.begin_def();
   let args = List.map (fun _ -> Ctype.newvar ()) args in
   let ty_target = Ctype.newty (Tconstr (path, args, ref Mnil)) in
@@ -253,8 +254,7 @@ let match_printer_type desc =
       match extract_target_parameters desc.val_type with
       | None -> raise exn
       | Some (path, args) ->
-          (match_generic_printer_type
-            desc path args Topprinters.printer_type_new, false)
+          (match_generic_printer_type desc path args, false)
 
 let find_printer_type ppf lid =
   match Env.find_value_by_name lid !toplevel_env with
@@ -284,14 +284,11 @@ let dir_install_printer ppf lid =
            (fun formatter repr -> Obj.obj v formatter (Obj.obj repr)) in
        install_printer path ty_arg print_function
     | Some (ty_path, ty_args) ->
+       assert (not is_old_style);
        let rec build v = function
          | [] ->
-            let print_function =
-              if is_old_style then
-                (fun _formatter repr -> Obj.obj v (Obj.obj repr))
-              else
-                (fun formatter repr -> Obj.obj v formatter (Obj.obj repr)) in
-            Zero print_function
+            Zero
+              (fun formatter repr -> Obj.obj v formatter (Obj.obj repr))
          | _ :: args ->
             Succ
               (fun fn -> build ((Obj.obj v : _ -> Obj.t) fn) args) in
