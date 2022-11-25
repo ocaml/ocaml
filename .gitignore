@@ -234,7 +234,8 @@ META
 /runtime/caml/m.h
 /runtime/caml/s.h
 /runtime/primitives
-/runtime/primitives.new
+/runtime/primitives-arguments
+/runtime/primitives-arguments.new
 /runtime/prims.c
 /runtime/caml/opnames.h
 /runtime/caml/version.h
