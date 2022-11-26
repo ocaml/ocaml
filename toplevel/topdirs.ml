@@ -183,7 +183,20 @@ let _ = add_directive "mod_use" (Directive_string (with_error_fmt dir_mod_use))
 
 (* Install, remove a printer *)
 
-exception Bad_printing_function
+module Printer = struct
+  type kind =
+    | Old of Types.type_expr
+      (* 'a -> unit *)
+    | Simple of Types.type_expr
+      (* Format.formatter -> 'a -> unit *)
+    | Generic of { ty_path: Path.t; arity: int; }
+      (* (formatter -> 'a1 -> unit) ->
+         (formatter -> 'a2 -> unit) ->
+         ... ->
+         (formatter -> 'an -> unit) ->
+         formatter -> ('a1, 'a2, ..., 'an) t -> unit
+      *)
+end
 
 let filter_arrow ty =
   let ty = Ctype.expand_head !toplevel_env ty in
@@ -191,122 +204,145 @@ let filter_arrow ty =
   | Tarrow (lbl, l, r, _) when not (Btype.is_optional lbl) -> Some (l, r)
   | _ -> None
 
-let rec extract_last_arrow desc =
-  match filter_arrow desc with
-  | None -> raise Bad_printing_function
-  | Some (_, r as res) ->
-      try extract_last_arrow r
-      with Bad_printing_function -> res
+let extract_last_arrow ty =
+  let rec extract last ty =
+    match filter_arrow ty with
+    | None -> last
+    | Some ((_, rest) as next) -> extract (Some next) rest
+  in extract None ty
 
-let extract_target_type ty = fst (extract_last_arrow ty)
+let extract_target_type ty =
+  Option.map fst (extract_last_arrow ty)
+
 let extract_target_parameters ty =
-  let ty = extract_target_type ty |> Ctype.expand_head !toplevel_env in
-  match get_desc ty with
-  | Tconstr (path, (_ :: _ as args), _)
-      when Ctype.all_distinct_vars !toplevel_env args ->
-        Some (path, args)
-  | _ -> None
+  match extract_target_type ty with
+  | None -> None
+  | Some tgt ->
+      let tgt = Ctype.expand_head !toplevel_env tgt in
+      match get_desc tgt with
+      | Tconstr (path, (_ :: _ as args), _)
+        when Ctype.all_distinct_vars !toplevel_env args ->
+          Some (path, args)
+      | _ -> None
 
-let match_simple_printer_type desc make_printer_type =
+let match_simple_printer_type desc ~is_old_style =
+  let make_printer_type =
+    if is_old_style
+    then Topprinters.printer_type_old
+    else Topprinters.printer_type_new
+  in
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
-  begin try
+  match
     Ctype.unify !toplevel_env
       (make_printer_type ty_arg)
       (Ctype.instance desc.val_type);
-  with Ctype.Unify _ ->
-    raise Bad_printing_function
-  end;
-  Ctype.end_def();
-  Ctype.generalize ty_arg;
-  (ty_arg, None)
+  with
+  | exception Ctype.Unify _ -> None
+  | () ->
+      Ctype.end_def();
+      Ctype.generalize ty_arg;
+      if is_old_style
+      then Some (Printer.Old ty_arg)
+      else Some (Printer.Simple ty_arg)
 
-let match_generic_printer_type desc path args make_printer_type =
+let match_generic_printer_type desc ty_path args =
+  let make_printer_type = Topprinters.printer_type_new in
   Ctype.begin_def();
   let args = List.map (fun _ -> Ctype.newvar ()) args in
-  let ty_target = Ctype.newty (Tconstr (path, args, ref Mnil)) in
-  let ty_args =
+  let ty_target = Ctype.newty (Tconstr (ty_path, args, ref Mnil)) in
+  let printer_args_ty =
     List.map (fun ty_var -> make_printer_type ty_var) args in
   let ty_expected =
     List.fold_right Topprinters.type_arrow
-      ty_args (make_printer_type ty_target) in
-  begin try
+      printer_args_ty (make_printer_type ty_target) in
+  match
     Ctype.unify !toplevel_env
       ty_expected
       (Ctype.instance desc.val_type);
-  with Ctype.Unify _ ->
-    raise Bad_printing_function
-  end;
-  Ctype.end_def();
-  Ctype.generalize ty_expected;
-  if not (Ctype.all_distinct_vars !toplevel_env args) then
-    raise Bad_printing_function;
-  (ty_expected, Some (path, ty_args))
+  with
+  | exception Ctype.Unify _ -> None
+  | _ ->
+    Ctype.end_def();
+    Ctype.generalize ty_expected;
+    if Ctype.all_distinct_vars !toplevel_env args
+    then Some ()
+    else None
 
 let match_printer_type desc =
-  try
-    (match_simple_printer_type desc Topprinters.printer_type_new, false)
-  with Bad_printing_function ->
-    try
-      (match_simple_printer_type desc Topprinters.printer_type_old, true)
-    with Bad_printing_function as exn ->
-      match extract_target_parameters desc.val_type with
-      | None -> raise exn
-      | Some (path, args) ->
-          (match_generic_printer_type
-            desc path args Topprinters.printer_type_new, false)
+  match match_simple_printer_type desc ~is_old_style:false with
+  | Some _ as res -> res
+  | None ->
+  match match_simple_printer_type desc ~is_old_style:true with
+  | Some _ as res -> res
+  | None ->
+  match extract_target_parameters desc.val_type with
+  | None -> None
+  | Some (ty_path, args) ->
+    match match_generic_printer_type desc ty_path args with
+    | None -> None
+    | Some () ->
+      Some (Printer.Generic { ty_path; arity = List.length args; })
 
-let find_printer_type ppf lid =
+let find_printer lid =
   match Env.find_value_by_name lid !toplevel_env with
-  | (path, desc) -> begin
-    match match_printer_type desc with
-    | (ty_arg, is_old_style) -> (ty_arg, path, is_old_style)
-    | exception Bad_printing_function ->
-      fprintf ppf "%a has the wrong type for a printing function.@."
-      Printtyp.longident lid;
-      raise Exit
-  end
   | exception Not_found ->
-      fprintf ppf "Unbound value %a.@." Printtyp.longident lid;
-      raise Exit
+    let report ppf =
+      fprintf ppf "Unbound value %a.@."
+        Printtyp.longident lid
+    in Error report
+  | (path, desc) ->
+    match match_printer_type desc with
+    | None ->
+      let report ppf =
+        fprintf ppf "%a has the wrong type for a printing function.@."
+          Printtyp.longident lid
+      in Error report
+    | Some kind -> Ok (path, kind)
+
+let install_printer_by_kind path kind =
+  let v = eval_value_path !toplevel_env path in
+  match kind with
+  | Printer.Old ty_arg ->
+    install_printer path ty_arg
+      (fun _formatter repr -> Obj.obj v (Obj.obj repr))
+  | Printer.Simple ty_arg ->
+    install_printer path ty_arg
+      (fun formatter repr -> Obj.obj v formatter (Obj.obj repr))
+  | Printer.Generic { ty_path; arity } ->
+     let rec build v = function
+       | 0 ->
+          Zero
+            (fun formatter repr -> Obj.obj v formatter (Obj.obj repr))
+       | n ->
+          Succ
+            (fun fn -> build ((Obj.obj v : _ -> Obj.t) fn) (n - 1)) in
+     install_generic_printer' path ty_path (build v arity)
+
+let remove_installed_printer path =
+  match remove_printer path with
+  | () -> Ok ()
+  | exception Not_found ->
+    let report ppf =
+      fprintf ppf "The printer named %a is not installed.@."
+        Printtyp.path path
+    in Error report
 
 let dir_install_printer ppf lid =
-  try
-    let ((ty_arg, ty), path, is_old_style) =
-      find_printer_type ppf lid in
-    let v = eval_value_path !toplevel_env path in
-    match ty with
-    | None ->
-       let print_function =
-         if is_old_style then
-           (fun _formatter repr -> Obj.obj v (Obj.obj repr))
-         else
-           (fun formatter repr -> Obj.obj v formatter (Obj.obj repr)) in
-       install_printer path ty_arg print_function
-    | Some (ty_path, ty_args) ->
-       let rec build v = function
-         | [] ->
-            let print_function =
-              if is_old_style then
-                (fun _formatter repr -> Obj.obj v (Obj.obj repr))
-              else
-                (fun formatter repr -> Obj.obj v formatter (Obj.obj repr)) in
-            Zero print_function
-         | _ :: args ->
-            Succ
-              (fun fn -> build ((Obj.obj v : _ -> Obj.t) fn) args) in
-       install_generic_printer' path ty_path (build v ty_args)
-  with Exit -> ()
+  match find_printer lid with
+  | Error report ->
+    report ppf
+  | Ok (path, kind) ->
+    install_printer_by_kind path kind
 
 let dir_remove_printer ppf lid =
-  try
-    let (_ty_arg, path, _is_old_style) = find_printer_type ppf lid in
-    begin try
-      remove_printer path
-    with Not_found ->
-      fprintf ppf "No printer named %a.@." Printtyp.longident lid
-    end
-  with Exit -> ()
+  match find_printer lid with
+  | Error report ->
+    report ppf
+  | Ok (path, _kind) ->
+    match remove_installed_printer path with
+    | Ok () -> ()
+    | Error report -> report ppf
 
 let _ = add_directive "install_printer"
     (Directive_ident (with_error_fmt dir_install_printer))
