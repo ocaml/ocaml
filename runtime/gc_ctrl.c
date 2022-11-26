@@ -156,40 +156,40 @@ static uintnat norm_custom_min (uintnat p)
 
 CAMLprim value caml_gc_set(value v)
 {
-  uintnat newpf;
-  uintnat newminwsz;
-  uintnat new_custom_maj, new_custom_min, new_custom_sz;
+  uintnat newminwsz = caml_norm_minor_heap_size (Long_val (Field (v, 0)));
+  uintnat newpf = norm_pfree (Long_val (Field (v, 2)));
+  uintnat new_verb_gc = Long_val (Field (v, 3));
+  uintnat new_max_stack_size = Long_val (Field (v, 5));
+  uintnat new_custom_maj = norm_custom_maj (Long_val (Field (v, 8)));
+  uintnat new_custom_min = norm_custom_min (Long_val (Field (v, 9)));
+  uintnat new_custom_sz = Long_val (Field (v, 10));
+
   CAML_EV_BEGIN(EV_EXPLICIT_GC_SET);
 
+  caml_change_max_stack_size (new_max_stack_size);
 
-  caml_change_max_stack_size (Long_val (Field (v, 5)));
-
-  newpf = norm_pfree (Long_val (Field (v, 2)));
   if (newpf != caml_percent_free){
     caml_percent_free = newpf;
     caml_gc_message (0x20, "New space overhead: %"
                      ARCH_INTNAT_PRINTF_FORMAT "u%%\n", caml_percent_free);
   }
 
-  atomic_store_relaxed(&caml_verb_gc, Long_val (Field (v, 3)));
+  atomic_store_relaxed(&caml_verb_gc, new_verb_gc);
 
   /* These fields were added in 4.08.0. */
   if (Wosize_val (v) >= 11){
-    new_custom_maj = norm_custom_maj (Long_val (Field (v, 8)));
     if (new_custom_maj != caml_custom_major_ratio){
       caml_custom_major_ratio = new_custom_maj;
       caml_gc_message (0x20, "New custom major ratio: %"
                        ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                        caml_custom_major_ratio);
     }
-    new_custom_min = norm_custom_min (Long_val (Field (v, 9)));
     if (new_custom_min != caml_custom_minor_ratio){
       caml_custom_minor_ratio = new_custom_min;
       caml_gc_message (0x20, "New custom minor ratio: %"
                        ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                        caml_custom_minor_ratio);
     }
-    new_custom_sz = Long_val (Field (v, 10));
     if (new_custom_sz != caml_custom_minor_max_bsz){
       caml_custom_minor_max_bsz = new_custom_sz;
       caml_gc_message (0x20, "New custom minor size limit: %"
@@ -200,8 +200,6 @@ CAMLprim value caml_gc_set(value v)
 
   /* Minor heap size comes last because it will trigger a minor collection
      (thus invalidating [v]) and it can raise [Out_of_memory]. */
-  newminwsz = caml_norm_minor_heap_size (Long_val (Field (v, 0)));
-
   if (newminwsz != Caml_state->minor_heap_wsz) {
     caml_gc_message (0x20, "New minor heap size: %"
                      ARCH_INTNAT_PRINTF_FORMAT "uk words\n", newminwsz / 1024);
