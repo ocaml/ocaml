@@ -324,7 +324,7 @@ let remove_installed_printer path =
   | () -> Ok ()
   | exception Not_found ->
     let report ppf =
-      fprintf ppf "No printer named %a.@."
+      fprintf ppf "The printer named %a is not installed.@."
         Printtyp.path path
     in Error report
 

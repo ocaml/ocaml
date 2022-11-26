@@ -28,6 +28,9 @@ let print_old = function
 #install_printer print_old;;
 [OA; OB];;
 
+#remove_printer print_old;;
+[OA; OB];;
+
 
 (* genreic printers *)
 type ('a, 'b) v = D of 'a * 'b;;
@@ -42,3 +45,14 @@ let print_generic (type a b) (pa : a printer) (pb : b printer) : (a, b) v printe
 
 #install_printer print_generic;;
 [D (0, A); D (42, B)];;
+
+
+(* error cases *)
+#install_printer name_that_does_not_exist;;
+#install_printer List.map;;
+
+#remove_printer name_that_does_not_exist;;
+#remove_printer List.map;;
+
+let non_installed_printer ppf () = ();;
+#remove_printer non_installed_printer;;
