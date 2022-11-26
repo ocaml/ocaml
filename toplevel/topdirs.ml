@@ -205,7 +205,8 @@ let filter_arrow ty =
   | _ -> None
 
 let extract_last_arrow ty =
-  let rec extract last ty = match filter_arrow desc with
+  let rec extract last ty =
+    match filter_arrow ty with
     | None -> last
     | Some ((_, rest) as next) -> extract (Some next) rest
   in extract None ty
@@ -283,52 +284,65 @@ let match_printer_type desc =
     | Some () ->
       Some (Printer.Generic { ty_path; arity = List.length args; })
 
-exception Bad_printing_function
-
 let find_printer lid =
   match Env.find_value_by_name lid !toplevel_env with
-  | exception Not_found -> raise Not_found
+  | exception Not_found ->
+    let report ppf =
+      fprintf ppf "Unbound value %a.@."
+        Printtyp.longident lid
+    in Error report
   | (path, desc) ->
     match match_printer_type desc with
-    | None -> raise Bad_printing_function
-    | Some kind -> (path, kind)
+    | None ->
+      let report ppf =
+        fprintf ppf "%a has the wrong type for a printing function.@."
+          Printtyp.longident lid
+      in Error report
+    | Some kind -> Ok (path, kind)
+
+let install_printer_by_kind path kind =
+  let v = eval_value_path !toplevel_env path in
+  match kind with
+  | Printer.Old ty_arg ->
+    install_printer path ty_arg
+      (fun _formatter repr -> Obj.obj v (Obj.obj repr))
+  | Printer.Simple ty_arg ->
+    install_printer path ty_arg
+      (fun formatter repr -> Obj.obj v formatter (Obj.obj repr))
+  | Printer.Generic { ty_path; arity } ->
+     let rec build v = function
+       | 0 ->
+          Zero
+            (fun formatter repr -> Obj.obj v formatter (Obj.obj repr))
+       | n ->
+          Succ
+            (fun fn -> build ((Obj.obj v : _ -> Obj.t) fn) (n - 1)) in
+     install_generic_printer' path ty_path (build v arity)
+
+let remove_installed_printer path =
+  match remove_printer path with
+  | () -> Ok ()
+  | exception Not_found ->
+    let report ppf =
+      fprintf ppf "No printer named %a.@."
+        Printtyp.path path
+    in Error report
 
 let dir_install_printer ppf lid =
   match find_printer lid with
-  | exception Not_found ->
-      fprintf ppf "Unbound value %a.@."
-        Printtyp.longident lid
-  | exception Bad_printing_function ->
-      fprintf ppf "%a has the wrong type for a printing function.@."
-        Printtyp.longident lid
-  | (path, kind) ->
-    let v = eval_value_path !toplevel_env path in
-    match kind with
-    | Printer.Old ty_arg ->
-      install_printer path ty_arg
-        (fun _formatter repr -> Obj.obj v (Obj.obj repr))
-    | Printer.Simple ty_arg ->
-      install_printer path ty_arg
-        (fun formatter repr -> Obj.obj v formatter (Obj.obj repr))
-    | Printer.Generic { ty_path; arity } ->
-       let rec build v = function
-         | 0 ->
-            Zero
-              (fun formatter repr -> Obj.obj v formatter (Obj.obj repr))
-         | n ->
-            Succ
-              (fun fn -> build ((Obj.obj v : _ -> Obj.t) fn) (n - 1)) in
-       install_generic_printer' path ty_path (build v arity)
+  | Error report ->
+    report ppf
+  | Ok (path, kind) ->
+    install_printer_by_kind path kind
 
 let dir_remove_printer ppf lid =
-  match find_printer ppf lid with
-  | exception Exit -> ()
-  | (path, _kind) ->
-    begin try
-      remove_printer path
-    with Not_found ->
-      fprintf ppf "No printer named %a.@." Printtyp.longident lid
-    end
+  match find_printer lid with
+  | Error report ->
+    report ppf
+  | Ok (path, _kind) ->
+    match remove_installed_printer path with
+    | Ok () -> ()
+    | Error report -> report ppf
 
 let _ = add_directive "install_printer"
     (Directive_ident (with_error_fmt dir_install_printer))
