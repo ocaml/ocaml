@@ -189,7 +189,7 @@ module Printer = struct
       (* 'a -> unit *)
     | Simple of Types.type_expr
       (* Format.formatter -> 'a -> unit *)
-    | Generic of { ty_path: Path.t; printer_args_ty: Types.type_expr list; }
+    | Generic of { ty_path: Path.t; arity: int; }
       (* (formatter -> 'a1 -> unit) ->
          (formatter -> 'a2 -> unit) ->
          ... ->
@@ -244,7 +244,7 @@ let match_simple_printer_type desc ~is_old_style =
   else Printer.Simple ty_arg
 
 
-let match_generic_printer_type desc ty_path args =
+let check_generic_printer_type desc ty_path args =
   let make_printer_type = Topprinters.printer_type_new in
   Ctype.begin_def();
   let args = List.map (fun _ -> Ctype.newvar ()) args in
@@ -265,7 +265,7 @@ let match_generic_printer_type desc ty_path args =
   Ctype.generalize ty_expected;
   if not (Ctype.all_distinct_vars !toplevel_env args) then
     raise Bad_printing_function;
-  Printer.Generic { ty_path; printer_args_ty }
+  ()
 
 let match_printer_type desc =
   try match_simple_printer_type desc ~is_old_style:false
@@ -275,7 +275,8 @@ let match_printer_type desc =
       match extract_target_parameters desc.val_type with
       | None -> raise exn
       | Some (ty_path, args) ->
-          match_generic_printer_type desc ty_path args
+          check_generic_printer_type desc ty_path args;
+          Printer.Generic { ty_path; arity = List.length args; }
 
 let find_printer ppf lid =
   match Env.find_value_by_name lid !toplevel_env with
@@ -302,15 +303,15 @@ let dir_install_printer ppf lid =
     | Printer.Simple ty_arg ->
       install_printer path ty_arg
         (fun formatter repr -> Obj.obj v formatter (Obj.obj repr))
-    | Printer.Generic { ty_path; printer_args_ty } ->
+    | Printer.Generic { ty_path; arity } ->
        let rec build v = function
-         | [] ->
+         | 0 ->
             Zero
               (fun formatter repr -> Obj.obj v formatter (Obj.obj repr))
-         | _ :: args ->
+         | n ->
             Succ
-              (fun fn -> build ((Obj.obj v : _ -> Obj.t) fn) args) in
-       install_generic_printer' path ty_path (build v printer_args_ty)
+              (fun fn -> build ((Obj.obj v : _ -> Obj.t) fn) (n - 1)) in
+       install_generic_printer' path ty_path (build v arity)
 
 let dir_remove_printer ppf lid =
   match find_printer ppf lid with
