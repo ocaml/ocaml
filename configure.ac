@@ -687,7 +687,7 @@ AS_CASE([$ocaml_cv_cc_vendor],
     cc_warnings=''],
   [outputobj='-o '
   warn_error_flag='-Werror'
-  cc_warnings='-Wall'])
+  cc_warnings='-Wall -Wno-deprecated-non-prototype'])
 
 AS_CASE([$enable_warn_error,OCAML__DEVELOPMENT_VERSION],
   [yes,*|,true],
