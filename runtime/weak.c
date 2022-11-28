@@ -398,7 +398,7 @@ static value ephe_blit_field (value es, mlsize_t offset_s,
   if (length == 0) CAMLreturn(Val_unit);
 
   /* We clean the source and destination ephemerons before performing the blit.
-   * This guarnatees that none of the keys and the data fields being accessed
+   * This guarantees that none of the keys and the data fields being accessed
    * during a blit operation is unmarked during [Phase_sweep]. */
   caml_ephe_clean(es);
   caml_ephe_clean(ed);
@@ -435,7 +435,7 @@ CAMLprim value caml_ephe_blit_data (value es, value ed)
 {
   ephe_blit_field (es, CAML_EPHE_DATA_OFFSET, ed, CAML_EPHE_DATA_OFFSET, 1);
   caml_darken(0, Field(ed, CAML_EPHE_DATA_OFFSET), 0);
-  /* [ed] may be in [Caml_state->ephe_info-live] list. The data value may be
+  /* [ed] may be in [Caml_state->ephe_info->live] list. The data value may be
      unmarked. The ephemerons on the live list are not scanned during ephemeron
      marking. Hence, unconditionally darken the data value. */
   return Val_unit;
