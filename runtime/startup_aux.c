@@ -79,7 +79,7 @@ static void scanmult (char_os *opt, uintnat *var)
   case 'k':   *var = (uintnat) val * 1024; break;
   case 'M':   *var = (uintnat) val * (1024 * 1024); break;
   case 'G':   *var = (uintnat) val * (1024 * 1024 * 1024); break;
-  case 'v':   atomic_store_relaxed((atomic_uintnat *)var, val);
+  case 'v':   atomic_store_relaxed((atomic_uintnat *)var, val); break;
   default:    *var = (uintnat) val; break;
   }
 }
