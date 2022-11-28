@@ -1046,7 +1046,7 @@ CAMLexport void (*caml_domain_external_interrupt_hook)(void) =
 CAMLexport _Atomic caml_timing_hook caml_domain_terminated_hook =
   (caml_timing_hook)NULL;
 
-static void domain_terminate();
+static void domain_terminate(void);
 
 static void* domain_thread_func(void* v)
 {
