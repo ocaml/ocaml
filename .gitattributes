@@ -52,7 +52,9 @@ api_docgen/alldoc.tex           typo.missing-header
 tools/mantis2gh_stripped.csv typo.missing-header
 META.in                  typo.missing-header
 
+# Hyperlinks and other markup features cause long lines
 *.adoc                   typo.long-line=may typo.very-long-line=may
+*.md                     typo.long-line=may typo.very-long-line=may
 
 # Github templates and scripts lack headers, have long lines
 /.github/**              typo.missing-header typo.long-line=may typo.very-long-line=may
