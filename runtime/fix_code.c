@@ -159,7 +159,7 @@ void caml_thread_code (code_t code, asize_t len)
 
 #else
 
-int* caml_init_opcode_nargs()
+int* caml_init_opcode_nargs(void)
 {
   return NULL;
 }

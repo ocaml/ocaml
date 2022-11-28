@@ -28,7 +28,7 @@ void caml_atfork_parent(pid_t child_pid) {
 }
 
 /* Post-fork tasks to be carried out in the child */
-void caml_atfork_child() {
+void caml_atfork_child(void) {
   caml_runtime_events_post_fork();
   CAML_EV_LIFECYCLE(EV_FORK_CHILD, 0);
 }

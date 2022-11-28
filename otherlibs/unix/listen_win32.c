@@ -16,8 +16,7 @@
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
 
-CAMLprim value caml_unix_listen(sock, backlog)
-     value sock, backlog;
+CAMLprim value caml_unix_listen(value sock, value backlog)
 {
   if (listen(Socket_val(sock), Int_val(backlog)) == -1) {
     caml_win32_maperr(WSAGetLastError());
