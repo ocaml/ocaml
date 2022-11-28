@@ -249,36 +249,44 @@ type unification_mode =
         assume_injective : bool;
         allow_recursive_equations : bool; }
     (* unification in pattern which may add local constraints *)
+  | Subst
+    (* unification during type constructor expansion; more
+       relaxed than [Expression] in some cases. *)
 
 let umode = ref Expression
 
 let in_pattern_mode () =
   match !umode with
-  | Expression -> false
+  | Expression | Subst -> false
   | Pattern _ -> true
+
+let in_subst_mode () =
+  match !umode with
+  | Expression | Pattern _ -> false
+  | Subst -> true
 
 let can_generate_equations () =
   match !umode with
-  | Expression | Pattern { equations_generation = Forbidden } -> false
+  | Expression | Subst | Pattern { equations_generation = Forbidden } -> false
   | Pattern { equations_generation = Allowed _ } -> true
 
 (* Can only be called when generate_equations is true *)
 let record_equation t1 t2 =
   match !umode with
-  | Expression | Pattern { equations_generation = Forbidden } ->
+  | Expression | Subst | Pattern { equations_generation = Forbidden } ->
       assert false
   | Pattern { equations_generation = Allowed { equated_types } } ->
       TypePairs.add equated_types (t1, t2)
 
 let can_assume_injective () =
   match !umode with
-  | Expression -> false
+  | Expression | Subst -> false
   | Pattern { assume_injective } -> assume_injective
 
 let allow_recursive_equations () =
   !Clflags.recursive_types
   || match !umode with
-     | Expression -> false
+     | Expression | Subst -> false
      | Pattern { allow_recursive_equations } -> allow_recursive_equations
 
 let set_mode_pattern ~allow_recursive_equations ~equated_types f =
@@ -294,14 +302,14 @@ let set_mode_pattern ~allow_recursive_equations ~equated_types f =
 
 let without_assume_injective f =
   match !umode with
-  | Expression -> f ()
+  | Expression | Subst -> f ()
   | Pattern r ->
       let new_umode = Pattern { r with assume_injective = false } in
       Misc.protect_refs [ Misc.R (umode, new_umode) ] f
 
 let without_generating_equations f =
   match !umode with
-  | Expression -> f ()
+  | Expression | Subst -> f ()
   | Pattern r ->
     let new_umode = Pattern { r with equations_generation = Forbidden } in
     Misc.protect_refs [ Misc.R (umode, new_umode) ] f
@@ -1448,13 +1456,17 @@ let subst env level priv abbrev oty params args body =
   abbreviations := abbrev;
   let (params', body') = instance_parameterized_type params body in
   abbreviations := ref Mnil;
+  let old_umode = !umode in
+  umode := Subst;
   try
     !unify_var' env body0 body';
     List.iter2 (!unify_var' env) params' args;
     current_level := old_level;
+    umode := old_umode;
     body'
   with Unify _ ->
     current_level := old_level;
+    umode := old_umode;
     undo_abbrev ();
     raise Cannot_subst
 
@@ -2903,7 +2915,8 @@ and unify_fields env ty1 ty2 =          (* Optimization *)
       (fun (name, k1, t1, k2, t2) ->
         unify_kind k1 k2;
         try
-          if !trace_gadt_instances then begin
+          if !trace_gadt_instances && not (in_subst_mode ()) then begin
+            (* in_subst_mode: see PR#11771 *)
             update_level_for Unify !env (get_level va) t1;
             update_scope_for Unify (get_scope va) t1
           end;
@@ -2995,7 +3008,8 @@ and unify_row env row1 row2 =
     (* The following test is not principal... should rather use Tnil *)
     let rm = row_more row in
     (*if !trace_gadt_instances && rm.desc = Tnil then () else*)
-    if !trace_gadt_instances then
+    if !trace_gadt_instances && not (in_subst_mode ()) then
+      (* in_subst_mode: see PR#11771 *)
       update_level_for Unify !env (get_level rm) (newgenty (Tvariant row));
     if has_fixed_explanation row then
       if eq_type more rm then () else
