@@ -227,7 +227,7 @@ val extract_concrete_typedecl:
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
 val unify_gadt:
-        equations_level:int -> allow_recursive:bool ->
+        equations_level:int -> allow_recursive_equations:bool ->
         Env.t ref -> type_expr -> type_expr -> Btype.TypePairs.t
         (* Unify the two types given and update the environment with the
            local constraints. Raise [Unify] if not possible.
