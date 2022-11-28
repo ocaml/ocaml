@@ -1,6 +1,8 @@
 /^CAMLprim value/ {
   :loop
-  /)/ ! { N; b loop }
+  /)/ ! {
+    N; b loop
+  }
 
   s/\n  */ /g
 
