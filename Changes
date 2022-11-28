@@ -21,6 +21,9 @@ Working version
 - #11691, #11706: use __asm__ instead of asm for strict ISO C conformance
   (Xavier Leroy, report by Gregg Reynolds , review by Sadiq Jaffer)
 
+- #11764: add prototypes to old-style C function definitions and declarations
+  (Antonin Décimo, review by Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #8998, #11321, #11430: change mangling of OCaml long identifiers
