@@ -1611,7 +1611,8 @@ CAMLexport void (*caml_atfork_hook)(void) = caml_atfork_default;
 static void handover_ephemerons(caml_domain_state* domain_state)
 {
   if (domain_state->ephe_info->todo == 0 &&
-      domain_state->ephe_info->live == 0)
+      domain_state->ephe_info->live == 0 &&
+      domain_state->ephe_info->must_sweep_ephe == 0)
     return;
 
   caml_add_to_orphaned_ephe_list(domain_state->ephe_info);
