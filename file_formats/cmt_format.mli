@@ -50,6 +50,19 @@ and binary_part =
   | Partial_signature_item of signature_item
   | Partial_module_type of module_type
 
+type uid_fragments =
+  | Class_declaration of class_declaration
+  | Class_description of class_description
+  | Class_type_declaration of class_type_declaration
+  | Extension_constructor of extension_constructor
+  | Module_binding of module_binding
+  | Module_declaration of module_declaration
+  | Tmodule_declaration of Types.module_declaration * string option Location.loc
+  | Module_type_declaration of module_type_declaration
+  | Type_declaration of type_declaration
+  | Value_description of value_description
+  | Tvalue_description of Types.value_description * string option Location.loc
+
 type cmt_infos = {
   cmt_modname : modname;
   cmt_annots : binary_annots;
@@ -65,7 +78,7 @@ type cmt_infos = {
   cmt_imports : crcs;
   cmt_interface_digest : Digest.t option;
   cmt_use_summaries : bool;
-  cmt_uid_to_loc : Location.t Shape.Uid.Tbl.t;
+  cmt_uid_to_loc : uid_fragments Shape.Uid.Tbl.t;
   cmt_impl_shape : Shape.t option; (* None for mli *)
 }
 
@@ -112,6 +125,7 @@ val set_saved_types : binary_part list -> unit
 val record_value_dependency:
   Types.value_description -> Types.value_description -> unit
 
+val register_uid : Shape.Uid.t -> uid_fragments -> unit
 
 (*
 
