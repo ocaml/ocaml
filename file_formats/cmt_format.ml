@@ -45,6 +45,19 @@ and binary_part =
 | Partial_signature_item of signature_item
 | Partial_module_type of module_type
 
+type uid_fragments =
+  | Class_declaration of class_declaration
+  | Class_description of class_description
+  | Class_type_declaration of class_type_declaration
+  | Extension_constructor of extension_constructor
+  | Module_binding of module_binding
+  | Module_declaration of module_declaration
+  | Tmodule_declaration of Types.module_declaration * string option Location.loc
+  | Module_type_declaration of module_type_declaration
+  | Type_declaration of type_declaration
+  | Value_description of value_description
+  | Tvalue_description of Types.value_description * string option Location.loc
+
 type cmt_infos = {
   cmt_modname : string;
   cmt_annots : binary_annots;
@@ -60,7 +73,7 @@ type cmt_infos = {
   cmt_imports : (string * Digest.t option) list;
   cmt_interface_digest : Digest.t option;
   cmt_use_summaries : bool;
-  cmt_uid_to_loc : Location.t Shape.Uid.Tbl.t;
+  cmt_uid_to_loc : uid_fragments Shape.Uid.Tbl.t;
   cmt_impl_shape : Shape.t option; (* None for mli *)
 }
 
@@ -164,6 +177,13 @@ let record_value_dependency vd1 vd2 =
   if vd1.Types.val_loc <> vd2.Types.val_loc then
     value_deps := (vd1, vd2) :: !value_deps
 
+let uid_to_loc : uid_fragments Types.Uid.Tbl.t ref =
+  Local_store.s_table Types.Uid.Tbl.create 16
+
+let register_uid uid decl = Types.Uid.Tbl.add !uid_to_loc uid decl
+
+let () = Env.clear_uid_tbl := fun () -> Types.Uid.Tbl.clear !uid_to_loc
+
 let save_cmt filename modname binary_annots sourcefile initial_env cmi shape =
   if !Clflags.binary_annotations && not !Clflags.print_types then begin
     Misc.output_to_file_via_temporary
@@ -190,7 +210,7 @@ let save_cmt filename modname binary_annots sourcefile initial_env cmi shape =
            cmt_imports = List.sort compare (Env.imports ());
            cmt_interface_digest = this_crc;
            cmt_use_summaries = need_to_clear_env;
-           cmt_uid_to_loc = Env.get_uid_to_loc_tbl ();
+           cmt_uid_to_loc = !uid_to_loc;
            cmt_impl_shape = shape;
          } in
          output_cmt oc cmt)

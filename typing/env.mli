@@ -18,10 +18,6 @@
 open Types
 open Misc
 
-val register_uid : Uid.t -> Location.t -> unit
-
-val get_uid_to_loc_tbl : unit -> Location.t Types.Uid.Tbl.t
-
 type value_unbound_reason =
   | Val_unbound_instance_variable
   | Val_unbound_self
@@ -522,3 +518,6 @@ val scrape_alias: t -> module_type -> module_type
 val check_value_name: string -> Location.t -> unit
 
 val print_address : Format.formatter -> address -> unit
+
+(* Forward decl filled in by Cmt_format *)
+val clear_uid_tbl : (unit -> unit) ref
