@@ -320,7 +320,6 @@ static void process_open_curly_bracket(FILE *f) {
                     size_t i;
                     for (i = 0; i <= size; ++i) {
                         if (cptr[i] != buf[i]) {
-                            newcptr--;
                             match = 0;
                             break;
                         }
