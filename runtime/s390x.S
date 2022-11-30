@@ -57,6 +57,7 @@
 #define CFI_SIGNAL_FRAME .cfi_signal_frame
 #define CFI_REMEMBER_STATE .cfi_remember_state
 #define CFI_RESTORE_STATE .cfi_restore_state
+#define CFI_RESTORE(r) .cfi_restore r
 #else
 #define CFI_STARTPROC
 #define CFI_ENDPROC
@@ -68,7 +69,24 @@
 #define CFI_SIGNAL_FRAME
 #define CFI_REMEMBER_STATE
 #define CFI_RESTORE_STATE
+#define CFI_RESTORE(r)
 #endif
+
+/* special sleb128 constants, precalculated */
+/* Cstack_sp + 160 = 8 + 160 = 168, encoded as sleb128 */
+#define Cstack_sp_plus_160_sleb128_2byte 168, 1
+
+/* struct c_stack_link + callee save regs = 24 + 8*8 = 88 */
+#define start_program_sleb128_2byte 216, 0
+
+/* struct exception handler + callee area = 16 + 160 = 176 */
+#define start_program_call_sleb128_2byte 176, 1
+
+/* exception handler + gc_regs slot + C_STACK_SP + Handler_parent = 16 + 8 + 8 + 24 = 56 */
+#define caml_runstack_sleb128_1byte 56
+
+/* exception handler + gc_regs slot + C_STACK_SP + Handler_parent + callee area = 16 + 8 + 8 + 24 + 160 = 216 */
+#define caml_runstack_callee_sleb128_2byte 216, 1
 
 #define RETADDR_ENTRY_SIZE   8 /* retaddr */
 
@@ -76,11 +94,8 @@
 #define LEAVE_FUNCTION
 
 #define CHECK_STACK_ALIGNMENT
-#define PREPARE_FOR_C_CALL      lay     %r15, -160(%r15); CFI_ADJUST(160)
-#define CLEANUP_AFTER_C_CALL    la      %r15,  160(%r15); CFI_ADJUST(-160)
-
-#define C_call(target) \
-  PREPARE_FOR_C_CALL; CHECK_STACK_ALIGNMENT; brasl %r14, target; CLEANUP_AFTER_C_CALL
+#define PREPARE_FOR_C_CALL      lay     %r15, -160(%r15); CFI_REMEMBER_STATE
+#define CLEANUP_AFTER_C_CALL    la      %r15,  160(%r15); CFI_RESTORE_STATE
 
 /* struct stack_info */
 #define Stack_sp                 0
@@ -163,10 +178,10 @@ caml_system__code_begin:
 #ifdef ASM_CFI_SUPPORTED
 #define SWITCH_OCAML_TO_C_CFI                                   \
         CFI_REMEMBER_STATE;                                     \
+        CFI_OFFSET(14, 0); \
           /* %r15 points to the c_stack_link. */                \
-        .cfi_escape DW_CFA_def_cfa_expression, 5,               \
-           DW_OP_breg + DW_REG_r15, Cstack_sp, DW_OP_deref,     \
-           DW_OP_plus_uconst, RETADDR_ENTRY_SIZE
+        .cfi_escape DW_CFA_def_cfa_expression, 3,               \
+           DW_OP_breg + DW_REG_r15, Cstack_sp, DW_OP_deref
 #else
 #define SWITCH_OCAML_TO_C_CFI
 #endif
@@ -280,22 +295,31 @@ FUNCTION(G(caml_call_realloc_stack))
 CFI_STARTPROC
         CFI_SIGNAL_FRAME
         lay     %r15, -8(%r15)
+        CFI_ADJUST(8)
         stg     %r14, 0(%r15)
-        CFI_OFFSET(14, 0)
+        CFI_OFFSET(14, -168)
         SAVE_ALL_REGS
         lg    C_ARG_1, RETADDR_ENTRY_SIZE(%r15) /* argument */
         SWITCH_OCAML_TO_C
-        C_call  (GCALL(caml_try_realloc_stack))
+        PREPARE_FOR_C_CALL
+#ifdef ASM_CFI_SUPPORTED
+        .cfi_escape DW_CFA_def_cfa_expression, 4, DW_OP_breg + DW_REG_r15, Cstack_sp_plus_160_sleb128_2byte, DW_OP_deref
+#endif
+        CHECK_STACK_ALIGNMENT
+        brasl %r14, GCALL(caml_try_realloc_stack)
+        CLEANUP_AFTER_C_CALL
         SWITCH_C_TO_OCAML
         cgfi    %r2, 0
         je      LBL(120)
         RESTORE_ALL_REGS
         lg      %r14, 0(%r15)
+        CFI_RESTORE(14)
         la      %r15, 8(%r15)
         br      %r14
 LBL(120):
         RESTORE_ALL_REGS
         lg      %r14, 0(%r15)
+        CFI_RESTORE(14)
         la      %r15, 16(%r15) /* %r14 register and pop argument, retaddr */
         LEA_VAR(caml_exn_Stack_overflow, %r2)
         brcl    15, GCALL(caml_raise_exn)
@@ -306,15 +330,23 @@ FUNCTION(G(caml_call_gc))
 CFI_STARTPROC
         CFI_SIGNAL_FRAME
         lay     %r15, -8(%r15)
+        CFI_ADJUST(8)
         stg     %r14, 0(%r15)
-        CFI_OFFSET(14, 0)
+        CFI_OFFSET(14, -168)
 LBL(caml_call_gc):
         SAVE_ALL_REGS
         SWITCH_OCAML_TO_C
-        C_call (GCALL(caml_garbage_collection))
+        PREPARE_FOR_C_CALL
+#ifdef ASM_CFI_SUPPORTED
+        .cfi_escape DW_CFA_def_cfa_expression, 4, DW_OP_breg + DW_REG_r15, Cstack_sp_plus_160_sleb128_2byte, DW_OP_deref
+#endif
+        CHECK_STACK_ALIGNMENT
+        brasl %r14, GCALL(caml_garbage_collection)
+        CLEANUP_AFTER_C_CALL
         SWITCH_C_TO_OCAML
         RESTORE_ALL_REGS
         lg      %r14, 0(%r15)
+        CFI_RESTORE(14)
         la      %r15, 8(%r15)
         br      %r14
 CFI_ENDPROC
@@ -323,14 +355,16 @@ ENDFUNCTION(G(caml_call_gc))
 FUNCTION(G(caml_alloc1))
 CFI_STARTPROC
         lay     %r15, -8(%r15)
+        CFI_ADJUST(8)
         stg     %r14, 0(%r15)
-        CFI_OFFSET(14, 0)
+        CFI_OFFSET(14, -168)
         ENTER_FUNCTION
         lay     ALLOC_PTR, -16(ALLOC_PTR)
         cg      ALLOC_PTR, Caml_state(young_limit)
         jl      LBL(caml_call_gc)
         LEAVE_FUNCTION
         lg      %r14, 0(%r15)
+        CFI_RESTORE(14)
         la      %r15, 8(%r15)
         br      %r14
 CFI_ENDPROC
@@ -339,14 +373,16 @@ ENDFUNCTION(G(caml_alloc1))
 FUNCTION(G(caml_alloc2))
 CFI_STARTPROC
         lay     %r15, -8(%r15)
+        CFI_ADJUST(8)
         stg     %r14, 0(%r15)
-        CFI_OFFSET(14, 0)
+        CFI_OFFSET(14, -168)
         ENTER_FUNCTION
         lay     ALLOC_PTR, -24(ALLOC_PTR)
         cg      ALLOC_PTR, Caml_state(young_limit)
         jl      LBL(caml_call_gc)
         LEAVE_FUNCTION
         lg      %r14, 0(%r15)
+        CFI_RESTORE(14)
         la      %r15, 8(%r15)
         br      %r14
 CFI_ENDPROC
@@ -355,14 +391,16 @@ ENDFUNCTION(G(caml_alloc2))
 FUNCTION(G(caml_alloc3))
 CFI_STARTPROC
         lay     %r15, -8(%r15)
+        CFI_ADJUST(8)
         stg     %r14, 0(%r15)
-        CFI_OFFSET(14, 0)
+        CFI_OFFSET(14, -168)
         ENTER_FUNCTION
         lay     ALLOC_PTR, -32(ALLOC_PTR)
         cg      ALLOC_PTR, Caml_state(young_limit)
         jl      LBL(caml_call_gc)
         LEAVE_FUNCTION
         lg      %r14, 0(%r15)
+        CFI_RESTORE(14)
         la      %r15, 8(%r15)
         br      %r14
 CFI_ENDPROC
@@ -371,13 +409,15 @@ ENDFUNCTION(G(caml_alloc3))
 FUNCTION(G(caml_allocN))
 CFI_STARTPROC
         lay     %r15, -8(%r15)
+        CFI_ADJUST(8)
         stg     %r14, 0(%r15)
-        CFI_OFFSET(14, 0)
+        CFI_OFFSET(14, -168)
         ENTER_FUNCTION
         cg      ALLOC_PTR, Caml_state(young_limit)
         jl      LBL(caml_call_gc)
         LEAVE_FUNCTION
         lg      %r14, 0(%r15)
+        CFI_RESTORE(14)
         la      %r15, 8(%r15)
         br      %r14
 CFI_ENDPROC
@@ -405,6 +445,9 @@ LBL(caml_c_call):
         stg     TRAP_PTR, Caml_state(exn_handler)
     /* Call the function (address in ADDITIONAL_ARG) */
         PREPARE_FOR_C_CALL
+#ifdef ASM_CFI_SUPPORTED
+        .cfi_escape DW_CFA_def_cfa_expression, 4, DW_OP_breg + DW_REG_r15, Cstack_sp_plus_160_sleb128_2byte, DW_OP_deref
+#endif
         basr    %r14, ADDITIONAL_ARG
         CLEANUP_AFTER_C_CALL
     /* Reload alloc ptr  */
@@ -413,6 +456,7 @@ LBL(caml_c_call):
         SWITCH_C_TO_OCAML
     /* Return to OCaml caller */
         lg      %r14, 0(%r15)
+        CFI_RESTORE(14)
         la      %r15, 8(%r15)
         br      %r14
 CFI_ENDPROC
@@ -422,8 +466,9 @@ FUNCTION(G(caml_c_call_stack_args))
 CFI_STARTPROC
         CFI_SIGNAL_FRAME
         lay     %r15, -8(%r15)
+        CFI_ADJUST(8)
         stg     %r14, 0(%r15)
-        CFI_OFFSET(14, 0)
+        CFI_OFFSET(14, -168)
     /* Arguments:
         C arguments         : %r2, %r3, %r4, %r5, %r6
         C function          : ADDITIONAL_ARG
@@ -436,10 +481,9 @@ CFI_STARTPROC
     /* Store sp to restore after call */
         lgr     %r12, %r15
 #ifdef ASM_CFI_SUPPORTED
-        .cfi_escape DW_CFA_def_cfa_expression, 5,           \
-          /* %rbp points to the c_stack_link structure */   \
-          DW_OP_breg + DW_REG_r12, Cstack_sp, DW_OP_deref,  \
-          DW_OP_plus_uconst, RETADDR_ENTRY_SIZE
+        .cfi_escape DW_CFA_def_cfa_expression, 3,           \
+          /* %r12 points to the c_stack_link structure */   \
+          DW_OP_breg + DW_REG_r12, Cstack_sp, DW_OP_deref
 #endif
     /* Copy arguments from OCaml to C stack */
 LBL(105):
@@ -464,6 +508,7 @@ LBL(106):
         SWITCH_C_TO_OCAML
     /* Return */
         lg      %r14, 0(%r15)
+        CFI_RESTORE(14)
         la      %r15, 8(%r15)
         br      %r14
 CFI_ENDPROC
@@ -488,7 +533,7 @@ LBL(caml_start_program):
     /* GPR 6..14 at sp + 0 ... sp + 64
        FPR 10..15 at sp + 72 ... sp + 128 */
         stmg    %r6,%r14, 0(%r15)
-        CFI_OFFSET(14, 64)
+        CFI_OFFSET(14, 64 - 160)
         std     %f8, 72(%r15)
         std     %f9, 80(%r15)
         std     %f10, 88(%r15)
@@ -530,16 +575,21 @@ LBL(caml_start_program):
         lgr     %r15, %r8
 #ifdef ASM_CFI_SUPPORTED
         CFI_REMEMBER_STATE
-        .cfi_escape DW_CFA_def_cfa_expression, 3 + 2,                 \
-            /* %rsp points to the exn handler on the OCaml stack */   \
-            /* %rsp + 16 contains the C_STACK_SP */                   \
+        CFI_OFFSET(14, 0)
+        .cfi_escape DW_CFA_def_cfa_expression, 3 + 3,                 \
+            /* %r15 points to the exn handler on the OCaml stack */   \
+            /* %r15 + 16 contains the C_STACK_SP */                   \
           DW_OP_breg + DW_REG_r15, 16 /* exn handler */, DW_OP_deref, \
-          DW_OP_plus_uconst,                                          \
-             24  /* struct c_stack_link */ +                          \
-             6*8 /* callee save regs */ +                             \
-             8   /* ret addr */
+          DW_OP_plus_uconst, start_program_sleb128_2byte
 #endif
         PREPARE_FOR_C_CALL
+#ifdef ASM_CFI_SUPPORTED
+        .cfi_escape DW_CFA_def_cfa_expression, 4 + 3,                 \
+            /* %r15 points to the exn handler on the OCaml stack */   \
+            /* %r15 + 16 contains the C_STACK_SP */                   \
+          DW_OP_breg + DW_REG_r15, start_program_call_sleb128_2byte, DW_OP_deref, \
+          DW_OP_plus_uconst, start_program_sleb128_2byte
+#endif
         basr    %r14, TMP
 LBL(caml_retaddr):
         CLEANUP_AFTER_C_CALL
@@ -563,6 +613,7 @@ LBL(return_result):  /* restore GC regs */
         la      %r15, 24(%r15); CFI_ADJUST(-24)
     /* Restore callee-save registers. */
         lmg     %r6,%r14, 0(%r15)
+        CFI_RESTORE(14)
         ld      %f8, 72(%r15)
         ld      %f9, 80(%r15)
         ld      %f10, 88(%r15)
@@ -617,7 +668,11 @@ LBL(caml_reraise_exn_stash):
         lg      C_ARG_4, TRAP_PTR /* arg4: SP of handler */
     /* Switch to C stack */
         lg      %r15, Caml_state(c_stack)
-        C_call  (GCALL(caml_stash_backtrace))
+        PREPARE_FOR_C_CALL
+        CFI_ADJUST(160)
+        CHECK_STACK_ALIGNMENT
+        brasl %r14, GCALL(caml_stash_backtrace)
+        CLEANUP_AFTER_C_CALL
     /* Restore exception bucket and raise */
         lgr     %r2, %r9
         brcl    15, LBL(116)
@@ -648,6 +703,7 @@ CFI_STARTPROC
         lg      %r15, Stack_sp(TMP)
     /* Restore frame and link on return to OCaml */
         lg      %r14, 0(%r15)
+        CFI_RESTORE(14)
         la      %r15, 8(%r15)
         brcl    15, LBL(caml_raise_exn)
 CFI_ENDPROC
@@ -794,8 +850,9 @@ FUNCTION(G(caml_runstack))
 CFI_STARTPROC
         CFI_SIGNAL_FRAME
         lay     %r15, -8(%r15)
+        CFI_ADJUST(8)
         stg     %r14, 0(%r15)
-        CFI_OFFSET(14, 0)
+        CFI_OFFSET(14, -168)
         ENTER_FUNCTION
     /* %r2 -> fiber, %r3 -> fun, %r4 -> arg */
         lay     %r2, -1(%r2)  /* %r2 (new stack) = Ptr_val(%r2) */
@@ -824,16 +881,22 @@ CFI_STARTPROC
         CFI_REMEMBER_STATE
         .cfi_escape DW_CFA_def_cfa_expression, 3+3+2, \
           DW_OP_breg + DW_REG_r15,                    \
-            16 /* exn */ +                            \
-            8 /* gc_regs slot (unused) */ +           \
-            8 /* C_STACK_SP for DWARF (unused) */     \
-            + Handler_parent, DW_OP_deref,            \
+          caml_runstack_sleb128_1byte,                \
+          DW_OP_deref,                                \
           DW_OP_plus_uconst, Stack_sp, DW_OP_deref,   \
           DW_OP_plus_uconst, RETADDR_ENTRY_SIZE
 #endif
     /* Call the function on the new stack */
         lgr     %r2, %r4 /* first argument */
         PREPARE_FOR_C_CALL
+#ifdef ASM_CFI_SUPPORTED
+        .cfi_escape DW_CFA_def_cfa_expression, 4+3+2, \
+          DW_OP_breg + DW_REG_r15,                    \
+          caml_runstack_callee_sleb128_2byte,         \
+          DW_OP_deref,                                \
+          DW_OP_plus_uconst, Stack_sp, DW_OP_deref,   \
+          DW_OP_plus_uconst, RETADDR_ENTRY_SIZE
+#endif
         basr    %r14, %r5 /* closure in %r3 (second argument) */
         CLEANUP_AFTER_C_CALL
 LBL(frame_runstack):
@@ -853,7 +916,11 @@ LBL(caml_runstack_1):
         CFI_REMEMBER_STATE
         CFI_DEF_CFA_REGISTER(DW_REG_r9)
         lg      %r15, Caml_state(c_stack)
-        C_call  (GCALL(caml_free_stack))
+        PREPARE_FOR_C_CALL
+        CFI_ADJUST(160)
+        CHECK_STACK_ALIGNMENT
+        brasl %r14, GCALL(caml_free_stack)
+        CLEANUP_AFTER_C_CALL
     /* switch directly to parent stack with correct return */
         lgr     %r2,  %r12
         lgr     %r3,  %r7
@@ -862,6 +929,7 @@ LBL(caml_runstack_1):
         lg      TMP, 0(%r3) /* code pointer */
     /* Invoke handle_value (or handle_exn) */
         lg      %r14, 0(%r15)
+        CFI_RESTORE(14)
         la      %r15, 8(%r15)
         br      TMP
 LBL(fiber_exn_handler):
@@ -874,7 +942,9 @@ ENDFUNCTION(G(caml_runstack))
 FUNCTION(G(caml_ml_array_bound_error))
 CFI_STARTPROC
         lay     %r15, -8(%r15)
+        CFI_ADJUST(8)
         stg     %r14, 0(%r15)
+        CFI_OFFSET(14, -168)
         ENTER_FUNCTION
         LEA_VAR(caml_array_bound_error_asm, %r2)
         brcl    15, LBL(caml_c_call)
