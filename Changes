@@ -119,7 +119,7 @@ Working version
   if the write blocks after some data has already been written (as otherwise
   there is no way of knowing how much data has been written before
   blocking). The same behaviour was already present under Unix.
-  (Nicolás Ojeda Bär)
+  (Nicolás Ojeda Bär, review by David Allsopp)
 
 ### Tools:
 
