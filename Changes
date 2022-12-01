@@ -125,6 +125,12 @@ Working version
   used in any context where a character set is expected.
   (Nicolás Ojeda Bär, Martin Jambon, review by Sébastien Hinderer)
 
+- #11773: ocamlyacc: Do not allow quoted literals (such as 'a' or "bc")
+  in a token name or %type declaration.  Previously such literals were
+  accepted by ocamlyacc, but produced malformed OCaml that was rejected
+  by the compiler.
+  (Demi Marie Obenour)
+
 ### Manual and documentation:
 
 - #9430, #11291: Document the general desugaring rules for binding operators.

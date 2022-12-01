@@ -98,6 +98,12 @@ void unterminated_comment(int c_lineno, char *c_line, char *c_cptr)
 }
 
 
+void invalid_literal(int s_lineno, char *s_line, char *s_cptr)
+{
+    gen_error(s_lineno, s_line, s_cptr, "cannot use literal as token name");
+}
+
+
 void unterminated_string(int s_lineno, char *s_line, char *s_cptr)
 {
     gen_error(s_lineno, s_line, s_cptr, "unterminated string");

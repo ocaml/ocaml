@@ -641,157 +641,6 @@ loop:
     }
 }
 
-static int
-hexval(int c)
-{
-    if (c >= '0' && c <= '9')
-        return (c - '0');
-    if (c >= 'A' && c <= 'F')
-        return (c - 'A' + 10);
-    if (c >= 'a' && c <= 'f')
-        return (c - 'a' + 10);
-    return (-1);
-}
-
-
-static bucket *
-get_literal(void)
-{
-    int c, quote;
-    int i;
-    int n;
-    char *s;
-    bucket *bp;
-    int s_lineno = lineno;
-    char *s_line = dup_line();
-    char *s_cptr = s_line + (cptr - line);
-
-    quote = *cptr++;
-    cinc = 0;
-    for (;;)
-    {
-        c = *cptr++;
-        if (c == quote) break;
-        if (c == '\n') unterminated_string(s_lineno, s_line, s_cptr);
-        if (c == '\\')
-        {
-            char *c_cptr = cptr - 1;
-
-            c = *cptr++;
-            switch (c)
-            {
-            case '\n':
-                get_line();
-                if (line == 0) unterminated_string(s_lineno, s_line, s_cptr);
-                continue;
-
-            case '0': case '1': case '2': case '3':
-            case '4': case '5': case '6': case '7':
-                n = c - '0';
-                c = *cptr;
-                if (IS_OCTAL(c))
-                {
-                    n = (n << 3) + (c - '0');
-                    c = *++cptr;
-                    if (IS_OCTAL(c))
-                    {
-                        n = (n << 3) + (c - '0');
-                        ++cptr;
-                    }
-                }
-                if (n > MAXCHAR) illegal_character(c_cptr);
-                c = n;
-                    break;
-
-            case 'x':
-                c = *cptr++;
-                n = hexval(c);
-                if (n < 0 || n >= 16)
-                    illegal_character(c_cptr);
-                for (;;)
-                {
-                    c = *cptr;
-                    i = hexval(c);
-                    if (i < 0 || i >= 16) break;
-                    ++cptr;
-                    n = (n << 4) + i;
-                    if (n > MAXCHAR) illegal_character(c_cptr);
-                }
-                c = n;
-                break;
-
-            case 'a': c = 7; break;
-            case 'b': c = '\b'; break;
-            case 'f': c = '\f'; break;
-            case 'n': c = '\n'; break;
-            case 'r': c = '\r'; break;
-            case 't': c = '\t'; break;
-            case 'v': c = '\v'; break;
-            }
-        }
-        cachec(c);
-    }
-    FREE(s_line);
-
-    n = cinc;
-    s = MALLOC(n);
-    if (s == 0) no_space();
-
-    for (i = 0; i < n; ++i)
-        s[i] = cache[i];
-
-    cinc = 0;
-    if (n == 1)
-        cachec('\'');
-    else
-        cachec('"');
-
-    for (i = 0; i < n; ++i)
-    {
-        c = ((unsigned char *)s)[i];
-        if (c == '\\' || c == cache[0])
-        {
-            cachec('\\');
-            cachec(c);
-        }
-        else if (isprint(c))
-            cachec(c);
-        else
-        {
-            cachec('\\');
-            switch (c)
-            {
-            case 7: cachec('a'); break;
-            case '\b': cachec('b'); break;
-            case '\f': cachec('f'); break;
-            case '\n': cachec('n'); break;
-            case '\r': cachec('r'); break;
-            case '\t': cachec('t'); break;
-            case '\v': cachec('v'); break;
-            default:
-                cachec(((c >> 6) & 7) + '0');
-                cachec(((c >> 3) & 7) + '0');
-                cachec((c & 7) + '0');
-                break;
-            }
-        }
-    }
-
-    if (n == 1)
-        cachec('\'');
-    else
-        cachec('"');
-
-    cachec(NUL);
-    bp = lookup(cache);
-    bp->class = TERM;
-    if (n == 1 && bp->value == UNDEFINED)
-        bp->value = *(unsigned char *)s;
-    FREE(s);
-
-    return (bp);
-}
-
 
 static int
 is_reserved(char *name)
@@ -915,7 +764,7 @@ declare_tokens(int assoc)
         if (isalpha(c) || c == '_' || c == '.' || c == '$')
             bp = get_name();
         else if (c == '\'' || c == '"')
-            bp = get_literal();
+            invalid_literal(lineno, line, cptr);
         else
             return;
 
@@ -977,7 +826,7 @@ declare_types(void)
         if (isalpha(c) || c == '_' || c == '.' || c == '$')
             bp = get_name();
         else if (c == '\'' || c == '"')
-            bp = get_literal();
+            invalid_literal(lineno, line, cptr);
         else
             return;
 
@@ -1221,7 +1070,7 @@ add_symbol(void)
 
     c = *cptr;
     if (c == '\'' || c == '"')
-        bp = get_literal();
+        invalid_literal(s_lineno, line, cptr);
     else
         bp = get_name();
 
@@ -1409,7 +1258,7 @@ mark_symbol(void)
     if (isalpha(c) || c == '_' || c == '.' || c == '$')
         bp = get_name();
     else if (c == '\'' || c == '"')
-        bp = get_literal();
+        invalid_literal(lineno, line, cptr);
     else
     {
         syntax_error(lineno, line, cptr);

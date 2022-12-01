@@ -357,3 +357,4 @@ extern void unterminated_text (int t_lineno, char *t_line, char *t_cptr) Noretur
 extern void used_reserved (char *s) Noreturn;
 extern void verbose (void);
 extern void write_section (char **section);
+extern void invalid_literal(int s_lineno, char *s_line, char *s_cptr) Noreturn;
