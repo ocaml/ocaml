@@ -53,9 +53,6 @@ external field : t -> int -> t = "%obj_field"
     be propagated.
 *)
 external set_field : t -> int -> t -> unit = "%obj_set_field"
-external compare_and_swap_field : t -> int -> t -> t -> bool
-  = "caml_obj_compare_and_swap"
-external is_shared : t -> bool = "caml_obj_is_shared"
 
 val [@inline always] double_field : t -> int -> float  (* @since 3.11.2 *)
 val [@inline always] set_double_field : t -> int -> float -> unit
