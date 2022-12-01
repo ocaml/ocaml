@@ -117,6 +117,9 @@ Working version
 
 ### Tools:
 
+- #1172: fix ocamlyacc's handling of raw string literals
+  (Demi Marie Obenour)
+
 - #9290: Add a directive to switch off debugging in toplevel.
   This allows to see optimized bytecode with -dlambda.
   (Jacques Garrigue, review by Gabriel Scherer)
