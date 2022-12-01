@@ -115,6 +115,12 @@ Working version
 - #11475: Make Unix terminal interface bindings domain-safe
   (Olivier Nicole and Xavier Leroy, review by Xavier Leroy)
 
+- #11775: Unix.write on a non-blocking socket under Windows will return normally
+  if the write blocks after some data has already been written (as otherwise
+  there is no way of knowing how much data has been written before
+  blocking). The same behaviour was already present under Unix.
+  (Nicolás Ojeda Bär, review by David Allsopp)
+
 ### Tools:
 
 - #1172: fix ocamlyacc's handling of raw string literals
