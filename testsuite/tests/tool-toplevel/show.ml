@@ -131,7 +131,6 @@ type 'a t += A : int t
 (* regression tests for #11533 *)
 #show Set.OrderedType;;
 [%%expect {|
-module type OrderedType = Set.OrderedType
 module type OrderedType = sig type t val compare : t -> t -> int end
 |}];;
 
@@ -157,14 +156,8 @@ module U = Unit
 module type OT = Set.OrderedType
 |}];;
 
-(* the stuttering in this example is a bit silly, it seems to be
-   a result of strengthening that only shows up for aliases on
-   non-local modules (from another compilation unit).
-
-   Note: This behavior predates the regression tracked in #11533.  *)
 #show U;;
 [%%expect {|
-module U = Unit
 module U = Unit
 module U :
   sig
@@ -175,11 +168,8 @@ module U :
   end
 |}];;
 
-(* Similar stuttering here now that (post-11533) module type synonyms
-   are also followed. *)
 #show OT;;
 [%%expect {|
-module type OT = Set.OrderedType
 module type OT = Set.OrderedType
 module type OT = sig type t val compare : t -> t -> int end
 |}];;
