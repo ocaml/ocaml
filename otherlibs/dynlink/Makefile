@@ -210,9 +210,7 @@ native/dynlink_compilerlibs.cmx: $(COMPILERLIBS_CMX)
 
 # The main dynlink rules start here.
 
-extract_crc := extract_crc$(EXE)
-
-all: dynlink.cma $(extract_crc)
+all: dynlink.cma
 
 allopt: dynlink.cmxa
 
@@ -235,11 +233,6 @@ dynlink.cmxa: $(NATOBJS)
 # to be to copy the .ml file, which is a valid .mli, to the .mli.
 dynlink_platform_intf.mli: dynlink_platform_intf.ml
 	cp $< $@
-
-$(eval $(call PROGRAM_SYNONYM,extract_crc))
-
-$(extract_crc): dynlink.cma byte/dynlink_compilerlibs.cmo extract_crc.cmo
-	$(OCAMLC) -o $@ $^
 
 INSTALL_LIBDIR_DYNLINK = $(INSTALL_LIBDIR)/dynlink
 
@@ -267,14 +260,13 @@ ifeq "$(strip $(NATDYNLINK))" "true"
 endif
 
 partialclean:
-	rm -f $(extract_crc) *.cm[ioaxt] *.cmti *.cmxa \
+	rm -f *.cm[ioaxt] *.cmti *.cmxa \
 	      byte/*.cm[iot] byte/*.cmti \
 	      native/*.cm[ixt] native/*.cmti native/*.o native/*.obj \
 	      $(LOCAL_SRC)/*.cm[ioaxt] $(LOCAL_SRC)/*.cmti \
         $(LOCAL_SRC)/*.o $(LOCAL_SRC)/*.obj
 
 clean: partialclean
-	rm -f extract_crc extract_crc.exe
 	rm -f *.a *.lib *.o *.obj *.so *.dll dynlink_platform_intf.mli \
 	      $(LOCAL_SRC)/*.ml $(LOCAL_SRC)/*.mli $(LOCAL_SRC)/Makefile \
 	      $(LOCAL_SRC)/.depend byte/dynlink.mli native/dynlink.mli

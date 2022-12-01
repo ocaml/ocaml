@@ -207,7 +207,6 @@ META
 /ocamltest/ocamltest.html
 
 /otherlibs/*/.dep
-/otherlibs/dynlink/extract_crc
 /otherlibs/dynlink/dynlink_platform_intf.mli
 /otherlibs/dynlink/byte/dynlink.mli
 /otherlibs/dynlink/native/dynlink.mli
