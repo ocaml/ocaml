@@ -101,6 +101,18 @@ char *nullable;
 
 void done(int k)
 {
+    if ((action_file && ferror(action_file)) ||
+        (entry_file && ferror(entry_file)) ||
+        (text_file && ferror(text_file)) ||
+        (input_file && ferror(input_file)) ||
+        (output_file && (fflush(output_file) || ferror(output_file))) ||
+        (verbose_file && (fflush(verbose_file) || ferror(verbose_file))) ||
+        (interface_file && (fflush(interface_file) || ferror(interface_file)))) {
+        fprintf(stderr, "%s: I/O error\n", myname);
+        if (k == 0)
+            k = 1;
+    }
+
 #ifdef HAS_MKSTEMP
     if (action_fd != -1)
        unlink(action_file_name);
