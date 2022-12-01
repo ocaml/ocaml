@@ -529,12 +529,6 @@ static void set_derives(void)
 #endif
 }
 
-static void free_derives(void)
-{
-    FREE(derives[start_symbol]);
-    FREE(derives);
-}
-
 #ifdef        DEBUG
 void print_derives(void)
 {

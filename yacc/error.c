@@ -203,30 +203,6 @@ void unterminated_action(int a_lineno, char *a_line, char *a_cptr)
 }
 
 
-void dollar_warning(int a_lineno, int i)
-{
-    fprintf(stderr, "File \"%s\", line %d: warning: $%d references beyond the \
-end of the current rule\n", virtual_input_file_name, a_lineno, i);
-}
-
-
-void dollar_error(int a_lineno, char *a_line, char *a_cptr)
-{
-    fprintf(stderr, "File \"%s\", line %d: illegal $-name\n",
-            virtual_input_file_name, a_lineno);
-    print_pos(a_line, a_cptr);
-    done(1);
-}
-
-
-void untyped_lhs(void)
-{
-    fprintf(stderr, "File \"%s\", line %d: $$ is untyped\n",
-            virtual_input_file_name, lineno);
-    done(1);
-}
-
-
 void unknown_rhs(int i)
 {
     fprintf(stderr, "File \"%s\", line %d: $%d is unbound\n",
