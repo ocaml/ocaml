@@ -78,7 +78,7 @@ static void pop_stack(char x) {
             default: break;
         }
         fprintf(stderr, "Mismatched parentheses or braces: '%c'\n", x);
-                syntax_error(lineno, line, cptr - 1);
+        syntax_error(lineno, line, cptr - 1);
    }
 }
 
