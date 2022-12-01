@@ -287,6 +287,8 @@ val add_extension:
   check:bool -> rebind:bool -> Ident.t -> extension_constructor -> t -> t
 val add_module: ?arg:bool -> ?shape:Shape.t ->
   Ident.t -> module_presence -> module_type -> t -> t
+val add_module_lazy: update_summary:bool ->
+  Ident.t -> module_presence -> Subst.Lazy.modtype -> t -> t
 val add_module_declaration: ?arg:bool -> ?shape:Shape.t -> check:bool ->
   Ident.t -> module_presence -> module_declaration -> t -> t
 val add_module_declaration_lazy: update_summary:bool ->
