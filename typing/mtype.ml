@@ -46,6 +46,9 @@ let rec strengthen_lazy ~aliasable env mty p =
       MtyL_signature(strengthen_lazy_sig ~aliasable env sg p)
   | MtyL_functor(Named (Some param, arg), res)
     when !Clflags.applicative_functors ->
+      let env =
+        Env.add_module_lazy ~update_summary:false param Mp_present arg env
+      in
       MtyL_functor(Named (Some param, arg),
         strengthen_lazy ~aliasable:false env res (Papply(p, Pident param)))
   | MtyL_functor(Named (None, arg), res)
