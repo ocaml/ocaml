@@ -799,6 +799,10 @@ OCaml 5.0
   multiple threads.
   (Marc Lasson, Nicolás Ojeda Bär, review by Gabriel Scherer and David Allsopp)
 
+- #11533, #11534: follow synonyms again in #show_module_type
+  (this had stopped working in 4.14.0)
+  (Gabriel Scherer, review by Jacques Garrigue, report by Yaron Minsky)
+
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
 
