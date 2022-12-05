@@ -589,7 +589,8 @@ void caml_ev_counter(ev_runtime_counter counter, uint64_t val) {
 
 void caml_ev_lifecycle(ev_lifecycle lifecycle, int64_t data) {
   if ( ring_is_active() ) {
-    write_to_ring(EV_RUNTIME, (ev_message_type){EV_LIFECYCLE}, lifecycle, 1, (uint64_t *)&data, 0);
+    write_to_ring(EV_RUNTIME, (ev_message_type){EV_LIFECYCLE}, lifecycle,
+                  1, (uint64_t *)&data, 0);
   }
 }
 
