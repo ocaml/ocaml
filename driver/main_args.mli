@@ -135,6 +135,8 @@ module type Toplevel_options = sig
   val _no_version : unit -> unit
   val _noprompt : unit -> unit
   val _nopromptcont : unit -> unit
+  val _show_uninformative_sigs: unit -> unit
+  val _hide_uninformative_sigs: unit -> unit
   val _stdin : unit -> unit
   val _args : string -> string array
   val _args0 : string -> string array

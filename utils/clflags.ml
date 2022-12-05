@@ -545,6 +545,9 @@ let set_save_ir_after pass enabled =
   in
   save_ir_after := new_passes
 
+let show_uninformative_sigs = ref true
+(* -{show,hide}-uninformative-sigs *)
+
 module String = Misc.Stdlib.String
 
 let arg_spec = ref []
