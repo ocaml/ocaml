@@ -150,8 +150,12 @@ module Type : sig
 
   val register : encode:(bytes -> 'a -> int) -> decode:(bytes -> int -> 'a)
                                                                         -> 'a t
-  (** Registers a custom type by providing an encoder and a decoder. The encoded
-      writes the value in the provided buffer and returns  *)
+  (** Registers a custom type by providing an encoder and a decoder. The encoder
+      writes the value in the provided buffer and returns the number of bytes
+      written. The decoder gets a slice of the buffer of specified length, and
+      returns the decoded value.
+
+      The maximum value length is 1024 bytes. *)
 end
 
 module User : sig
