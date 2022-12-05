@@ -731,3 +731,22 @@ Line 2, characters 6-7:
 Error: This pattern matches values of type $A_'a
        The type constructor $A_'a would escape its scope
 |}]
+
+
+type _ t =
+      | A : [ `A ] t
+      | B : [ `B ] t
+
+let foo : type a. a t -> a t =
+    fun t ->
+      match t with
+      | (A | B) as t -> t
+[%%expect{|
+type _ t = A : [ `A ] t | B : [ `B ] t
+Line 8, characters 13-14:
+8 |       | (A | B) as t -> t
+                 ^
+Error: This pattern matches values of type [ `B ] t
+       but a pattern was expected which matches values of type [ `A ] t
+       These two variant types have no intersection
+|}]
