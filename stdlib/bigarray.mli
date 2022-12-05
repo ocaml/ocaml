@@ -1049,4 +1049,64 @@ val reshape_2 : ('a, 'b, 'c) Genarray.t -> int -> int -> ('a, 'b, 'c) Array2.t
 val reshape_3 :
   ('a, 'b, 'c) Genarray.t -> int -> int -> int -> ('a, 'b, 'c) Array3.t
 (** Specialized version of {!Bigarray.reshape} for reshaping to
-   three-dimensional arrays. *)
+    three-dimensional arrays. *)
+
+(** {1:bigarray_concurrency Bigarrays and concurrency safety}
+
+    Care must be taken when concurrently accessing bigarrays from multiple
+    domains: accessing a bigarray will never crash a program, but unsynchronized
+    accesses might yield surprising (non-sequentially-consistent) results.
+
+    {2:bigarray_atomicity Atomicity}
+
+    Every bigarray operation that accesses more than one array element is not
+    atomic. This includes slicing, bliting, and filling bigarrays.
+
+    For example, consider the following program:
+{[open Bigarray
+let size = 100_000_000
+let a = Array1.init Int C_layout size (fun _ -> 1)
+let update f a () =
+  for i = 0 to size - 1 do a.{i} <- f a.{i} done
+let d1 = Domain.spawn (update (fun x -> x + 1) a)
+let d2 = Domain.spawn (update (fun x -> 2 * x + 1) a)
+let () = Domain.join d1; Domain.join d2
+]}
+
+    After executing this code, each field of the bigarray [a] is either [2],
+    [3], [4] or [5]. If atomicity is required, then the user must implement
+    their own synchronization (for example, using {!Mutex.t}).
+
+    {2:bigarray_data_race Data races}
+
+    If two domains only access disjoint parts of the bigarray, then the
+    observed behaviour is the equivalent to some sequential interleaving of the
+    operations from the two domains.
+
+    A data race is said to occur when two domains access the same bigarray
+    element without synchronization and at least one of the accesses is a
+    write. In the absence of data races, the observed behaviour is equivalent
+    to some sequential interleaving of the operations from different domains.
+
+    Whenever possible, data races should be avoided by using synchronization to
+    mediate the accesses to the bigarray elements.
+
+    Indeed, in the presence of data races, programs will not crash but the
+    observed behaviour may not be equivalent to any sequential interleaving of
+    operations from different domains.
+
+    {2:bigarrarray_data_race_tearing Tearing}
+
+    Bigarrays have a distinct caveat in the presence of data races:
+    concurrent bigarray operations might produce surprising values due to
+    tearing. More precisely, the interleaving of partial writes and reads might
+    create values that would not exist with a sequential execution.
+    For instance, at the end of
+{[let res = Array1.init Complex64 c_layout size (fun _ -> Complex.zero)
+let d1 = Domain.spawn (fun () -> Array1.fill res Complex.one)
+let d2 = Domain.spawn (fun () -> Array1.fill res Complex.i)
+let () = Domain.join d1; Domain.join d2
+]}
+    the [res] bigarray might contain values that are neither [Complex.i]
+    nor [Complex.one] (for instance [1 + i]).
+*)
