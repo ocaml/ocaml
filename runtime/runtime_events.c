@@ -232,7 +232,8 @@ char_os* caml_runtime_events_current_location(void) {
 void caml_runtime_events_destroy(void) {
   if (atomic_load_acq(&runtime_events_enabled)) {
     write_to_ring(
-      EV_RUNTIME, (ev_message_type){EV_LIFECYCLE}, EV_RING_STOP, 0, NULL, 0);
+      EV_RUNTIME, (ev_message_type){.runtime=EV_LIFECYCLE}, EV_RING_STOP, 0,
+      NULL, 0);
 
     /* clean up runtime_events when we exit if we haven't been instructed to
       preserve the file. */
@@ -567,13 +568,15 @@ static inline int ring_is_active(void) {
 
 void caml_ev_begin(ev_runtime_phase phase) {
   if ( ring_is_active() ) {
-    write_to_ring(EV_RUNTIME, (ev_message_type){EV_BEGIN}, phase, 0, NULL, 0);
+    write_to_ring(EV_RUNTIME, (ev_message_type){.runtime=EV_BEGIN}, phase, 0,
+                  NULL, 0);
   }
 }
 
 void caml_ev_end(ev_runtime_phase phase) {
   if ( ring_is_active() ) {
-    write_to_ring(EV_RUNTIME, (ev_message_type){EV_EXIT}, phase, 0, NULL, 0);
+    write_to_ring(EV_RUNTIME, (ev_message_type){.runtime=EV_EXIT}, phase, 0,
+                  NULL, 0);
   }
 }
 
@@ -583,14 +586,14 @@ void caml_ev_counter(ev_runtime_counter counter, uint64_t val) {
     buf[0] = val;
 
     write_to_ring(
-      EV_RUNTIME, (ev_message_type){EV_COUNTER}, counter, 1, buf, 0);
+      EV_RUNTIME, (ev_message_type){.runtime=EV_COUNTER}, counter, 1, buf, 0);
   }
 }
 
 void caml_ev_lifecycle(ev_lifecycle lifecycle, int64_t data) {
   if ( ring_is_active() ) {
-    write_to_ring(EV_RUNTIME, (ev_message_type){EV_LIFECYCLE}, lifecycle,
-                  1, (uint64_t *)&data, 0);
+    write_to_ring(EV_RUNTIME, (ev_message_type){.runtime=EV_LIFECYCLE},
+                  lifecycle, 1, (uint64_t *)&data, 0);
   }
 }
 
@@ -617,7 +620,7 @@ void caml_ev_alloc_flush(void) {
   if ( !ring_is_active() )
     return;
 
-  write_to_ring(EV_RUNTIME, (ev_message_type){EV_ALLOC}, 0,
+  write_to_ring(EV_RUNTIME, (ev_message_type){.runtime=EV_ALLOC}, 0,
                   RUNTIME_EVENTS_NUM_ALLOC_BUCKETS, alloc_buckets, 0);
 
   for (i = 1; i < RUNTIME_EVENTS_NUM_ALLOC_BUCKETS; i++) {
@@ -746,7 +749,7 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
     uintnat len_64bit_word = (len_bytes + sizeof(uint64_t)) / sizeof(uint64_t);
     uintnat offset_index = len_64bit_word * sizeof(uint64_t) - 1;
     Bytes_val(write_buffer)[offset_index] = offset_index - len_bytes;
-    write_to_ring(EV_USER, (ev_message_type){EV_USER_MSG_TYPE_CUSTOM},
+    write_to_ring(EV_USER, (ev_message_type){.user=EV_USER_MSG_TYPE_CUSTOM},
       Int_val(event_id), len_64bit_word, (uint64_t *) Bytes_val(write_buffer),
       0);
 
@@ -759,14 +762,14 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
 
     // Event
     if (event_type_id == EV_USER_ML_TYPE_EVENT) {
-      write_to_ring(EV_USER, (ev_message_type){EV_USER_MSG_TYPE_EVENT},
+      write_to_ring(EV_USER, (ev_message_type){.user=EV_USER_MSG_TYPE_EVENT},
         Int_val(event_id), 0, NULL, 0);
     }
 
     // Counter
     if (event_type_id == EV_USER_ML_TYPE_COUNTER) {
       uint64_t c_event_content = Int_val(event_content);
-      write_to_ring(EV_USER, (ev_message_type){EV_USER_MSG_TYPE_COUNTER},
+      write_to_ring(EV_USER, (ev_message_type){.user=EV_USER_MSG_TYPE_COUNTER},
         Int_val(event_id), 1, &c_event_content, 0);
     }
 
@@ -779,7 +782,7 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
       } else {
         message_type = EV_USER_MSG_TYPE_SPAN_END;
       }
-      write_to_ring(EV_USER, (ev_message_type)message_type,
+      write_to_ring(EV_USER, (ev_message_type){.user=message_type},
         Int_val(event_id), 0, NULL, 0);
     }
   }
