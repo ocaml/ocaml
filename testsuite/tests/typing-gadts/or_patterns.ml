@@ -743,10 +743,5 @@ let foo : type a. a t -> a t =
       | (A | B) as t -> t
 [%%expect{|
 type _ t = A : [ `A ] t | B : [ `B ] t
-Line 8, characters 13-14:
-8 |       | (A | B) as t -> t
-                 ^
-Error: This pattern matches values of type [ `B ] t
-       but a pattern was expected which matches values of type [ `A ] t
-       These two variant types have no intersection
+val foo : 'a t -> 'a t = <fun>
 |}]
