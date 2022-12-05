@@ -44,8 +44,8 @@ let () =
   in
   let callbacks =
     Callbacks.create ()
-    |> Callbacks.add Type.counter callback_counter
-    |> Callbacks.add Type.span callback_span
+    |> Callbacks.add_user_event Type.counter callback_counter
+    |> Callbacks.add_user_event Type.span callback_span
   in
   for _ = 0 to 10 do
     read_poll cursor callbacks None |> ignore

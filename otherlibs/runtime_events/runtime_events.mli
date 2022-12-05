@@ -216,11 +216,12 @@ module Callbacks : sig
       code detects some unconsumed events have been overwritten.
       *)
 
-  val add : 'a Type.t -> (int -> Timestamp.t -> 'a User.t -> 'a -> unit) -> t
-            -> t
-  (** [add ty callback t] extends [t] to additionally subscribe to user events
-      of type [ty], when such an event happen, [callback] is called with the
-      corresponding event and payload. *)
+  val add_user_event : 'a Type.t ->
+                        (int -> Timestamp.t -> 'a User.t -> 'a -> unit) ->
+                        t -> t
+  (** [add_user_event ty callback t] extends [t] to additionally subscribe to
+      user events of type [ty], when such an event happen, [callback] is called
+      with the corresponding event and payload. *)
 end
 
 val start : unit -> unit

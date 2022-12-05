@@ -249,7 +249,7 @@ module Callbacks = struct
     { runtime_begin; runtime_end; runtime_counter;
         alloc; lifecycle; lost_events; user_events = Array.make 2 [] }
 
-  let add ty callback t =
+  let add_user_event ty callback t =
     let cur_max_id = Array.length t.user_events - 1 in
     let id = Type.id ty in
     let user_events =

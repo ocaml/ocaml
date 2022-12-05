@@ -72,10 +72,10 @@ let () =
   let cursor = create_cursor None in
   let callbacks =
     Callbacks.create ()
-    |> Callbacks.add Type.event event_handler
-    |> Callbacks.add Type.counter counter_handler
-    |> Callbacks.add Type.span span_handler
-    |> Callbacks.add custom_type custom_handler
+    |> Callbacks.add_user_event Type.event event_handler
+    |> Callbacks.add_user_event Type.counter counter_handler
+    |> Callbacks.add_user_event Type.span span_handler
+    |> Callbacks.add_user_event custom_type custom_handler
   in
   for _ = 0 to 100 do
     ignore(read_poll cursor callbacks None)
