@@ -137,6 +137,11 @@ Working version
 - #11774: ocamlyacc: fail if there is an I/O error
   (Demi Marie Obenour)
 
+- #10060: toplevel: -{hide,show}-uninformative-sigs to hide (or show)
+  signatures that merely repeat the user definition in the toplevel
+  (shown by default, same as previous behavior)
+  (Gabriel Scherer, suggestion by Jean-Pierre Rodi and Florian Angeletti)
+
 ### Manual and documentation:
 
 - #9430, #11291: Document the general desugaring rules for binding operators.
@@ -1387,8 +1392,8 @@ OCaml 4.13.0 (24 September 2021)
   Adds some eighty examples to the reference manual, principally to the
   expressions and patterns sections.
   https://ocaml.org/releases/4.13/manual/patterns.html
-  (John Whitington, review by Xavier Leroy, Gabriel Scherer, @Fourchaux, and
-  Florian Angeletti)
+  (John Whitington, review by Xavier Leroy, Gabriel Scherer,
+  Jean-Pierre Rodi and Florian Angeletti)
 
 - #9987, #9988, #9996, #9997: add an odoc mode for the documentation
   of the standard library and compiler library
