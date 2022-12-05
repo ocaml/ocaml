@@ -82,11 +82,17 @@ val initialize_toplevel_env : unit -> unit
         (* Initialize the typing environment for the toplevel *)
 val print_exception_outcome : formatter -> exn -> unit
         (* Print an exception resulting from the evaluation of user code. *)
-val execute_phrase : bool -> formatter -> Parsetree.toplevel_phrase -> bool
+val execute_phrase :
+  in_use:bool -> print_outcome:bool ->
+  formatter -> Parsetree.toplevel_phrase -> bool
         (* Execute the given toplevel phrase. Return [true] if the
            phrase executed with no errors and [false] otherwise.
-           First bool says whether the values and types of the results
-           should be printed. Uncaught exceptions are always printed. *)
+           Uncaught exceptions are always printed.
+
+           - [in_use] indicates that we are called from a #use directive
+             or another file-providing command
+           - [print_outcome] indicates that we want to print the outcome of
+             each phrase executed. *)
 val preprocess_phrase :
       formatter -> Parsetree.toplevel_phrase ->  Parsetree.toplevel_phrase
         (* Preprocess the given toplevel phrase using regular and ppx

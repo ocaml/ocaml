@@ -115,7 +115,8 @@ let pr_item =
 
 (* Execute a toplevel phrase *)
 
-let execute_phrase print_outcome ppf phr =
+let execute_phrase ~in_use ~print_outcome ppf phr =
+  ignore in_use;
   match phr with
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
@@ -177,8 +178,8 @@ let execute_phrase print_outcome ppf phr =
   | Ptop_dir {pdir_name = {Location.txt = dir_name}; pdir_arg } ->
       try_run_directive ppf dir_name pdir_arg
 
-let execute_phrase print_outcome ppf phr =
-  try execute_phrase print_outcome ppf phr
+let execute_phrase ~in_use ~print_outcome ppf phr =
+  try execute_phrase ~in_use ~print_outcome ppf phr
   with exn ->
     Warnings.reset_fatal ();
     raise exn

@@ -153,7 +153,8 @@ let name_expression ~loc ~attrs exp =
    in
    str, sg
 
-let execute_phrase print_outcome ppf phr =
+let execute_phrase ~in_use ~print_outcome ppf phr =
+  ignore in_use;
   match phr with
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
