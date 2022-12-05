@@ -24,7 +24,7 @@
 #include "caml/mlvalues.h"
 #include "caml/stacks.h"
 
-value caml_global_data = 0;
+value caml_global_data = Val_unit; /* must be a valid value (#11768) */
 
 uintnat caml_max_stack_size;            /* also used in gc_ctrl.c */
 
