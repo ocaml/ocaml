@@ -1,6 +1,7 @@
 (* TEST
    include runtime_events
    include unix
+   set OCAML_RUNTIME_EVENTS_PRESERVE = "1"
    * libunix
    ** bytecode
    ** native
@@ -26,13 +27,12 @@ let () =
     User.write ev1 12;
     User.write ev2 28;
     User.write ev3 Begin;
-    User.write ev3 End;
-    Unix.sleepf 0.2
+    User.write ev3 End
   end
   else
   (* parent consumes events *)
   begin
-  Unix.sleepf 0.1;
+  Unix.waitpid [] child_pid |> ignore;
   let cursor = create_cursor (Some (parent_cwd, child_pid)) in
   let callback_counter _ _ ev v =
     match User.tag ev with
