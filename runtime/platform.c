@@ -250,12 +250,9 @@ void* caml_mem_commit(void* mem, uintnat size)
 #else
   void* p = map_fixed(mem, size, PROT_READ | PROT_WRITE);
   /*
-    FIXME: On Linux, with overcommit, you stand a better
-    chance of getting good error messages in OOM conditions
-    by forcing the kernel to allocate actual memory by touching
-    all the pages. Not sure whether this is a good idea, though.
-
-      if (p) memset(p, 0, size);
+    FIXME: On Linux, it might be useful to populate page tables with
+    MAP_POPULATE to reduce the time spent blocking on page faults at
+    a later point.
   */
   return p;
 #endif
