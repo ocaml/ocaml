@@ -20,7 +20,7 @@
 
 #ifdef CAML_INTERNALS
 
-typedef value (*c_primitive)(void);
+typedef void * c_primitive;
 typedef value (*c_primitive1)(value);
 typedef value (*c_primitive2)(value, value);
 typedef value (*c_primitive3)(value, value, value);

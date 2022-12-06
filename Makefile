@@ -801,7 +801,7 @@ runtime/prims.c : runtime/primitives-arguments
 	 sed -e 's/.*/extern value &;/' $<; \
 	 echo; \
 	 echo 'c_primitive caml_builtin_cprim[] = {'; \
-	 sed -e 's/^\([a-z0-9_][a-z0-9_]*\) *(.*)/  (c_primitive)\1,/' $<; \
+	 sed -e 's/^\([a-z0-9_][a-z0-9_]*\) *(.*)/  \1,/' $<; \
 	 echo '  0 };'; \
 	 echo; \
 	 echo 'char * caml_names_of_builtin_cprim[] = {'; \
