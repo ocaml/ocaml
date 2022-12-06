@@ -80,9 +80,7 @@ Only the `make` Cygwin package is required. `diffutils` is required if you wish
 to be able to run the test suite.
 
 Unless you are also compiling the Cygwin port of OCaml, you do not need the
-`gcc-core` or `flexdll` packages. If you do install them, care may be required
-to ensure that a particular build is using the correct installation of
-`flexlink`.
+`gcc-core` or `flexdll` packages.
 
 [[bmflex]]
 In addition to Cygwin, FlexDLL must also be installed, which is available from
