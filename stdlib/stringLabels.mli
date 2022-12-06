@@ -132,8 +132,8 @@ val concat : sep:string -> string list -> string
 val cat : string -> string -> string
 (** [cat s1 s2] concatenates s1 and s2 ([s1 ^ s2]).
 
-    @raise Invalid_argument if the result is longer then
-    than {!Sys.max_string_length} bytes.
+    @raise Invalid_argument if the result is longer than
+    {!Sys.max_string_length} bytes.
 
     @since 4.13
 *)
