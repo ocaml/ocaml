@@ -146,6 +146,9 @@ jobs=''
 bootstrap=false
 init_submodule=false
 
+memory_model_tests="tests/memory-model/forbidden.ml \
+tests/memory-model/publish.ml"
+
 case "${OCAML_ARCH}" in
   bsd|solaris)
     make=gmake
@@ -159,10 +162,12 @@ case "${OCAML_ARCH}" in
   cygwin)
     cleanup=true
     check_make_alldepend=true
+    export OCAMLTEST_SKIP_TESTS="$memory_model_tests"
   ;;
   cygwin64)
     cleanup=true
     check_make_alldepend=true
+    export OCAMLTEST_SKIP_TESTS="$memory_model_tests"
   ;;
   mingw)
     build='--build=i686-pc-cygwin'
@@ -278,8 +283,9 @@ rm -rf "$instdir"
 
 cd testsuite
 if test -n "$jobs" && test -x /usr/bin/parallel
-then PARALLEL="$jobs $PARALLEL" $make --warn-undefined-variables parallel
-else $make --warn-undefined-variables all
+then PARALLEL="$jobs $PARALLEL" $make --warn-undefined-variables \
+                                      SHOW_TIMINGS=1 parallel
+else $make --warn-undefined-variables SHOW_TIMINGS=1 all
 fi
 
 if $bootstrap; then
