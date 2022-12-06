@@ -13,9 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* NOTE: If this file is hashtbl.mli, do not edit it directly! Instead,
-   edit templates/hashtbl.template.mli and run tools/sync_stdlib_docs *)
-
 (** Hash tables and hash functions.
 
    Hash tables are hashed association tables, with in-place modification.
@@ -60,8 +57,7 @@
 type (!'a, !'b) t
 (** The type of hash tables from type ['a] to type ['b]. *)
 
-val create : ?random: (* thwart tools/sync_stdlib_docs *) bool ->
-             int -> ('a, 'b) t
+val create : ?random:bool -> int -> ('a, 'b) t
 (** [Hashtbl.create n] creates a new, empty hash table, with
    initial size [n].  For best results, [n] should be on the
    order of the expected number of elements that will be in
@@ -237,8 +233,7 @@ val is_randomized : unit -> bool
     by default, [false] otherwise.
     @since 4.03 *)
 
-val rebuild : ?random (* thwart tools/sync_stdlib_docs *) :bool ->
-    ('a, 'b) t -> ('a, 'b) t
+val rebuild : ?random:bool -> ('a, 'b) t -> ('a, 'b) t
 (** Return a copy of the given hashtable.  Unlike {!copy},
     {!rebuild}[ h] re-hashes all the (key, value) entries of
     the original table [h].  The returned hash table is randomized if
@@ -448,8 +443,7 @@ module type SeededS =
   sig
     type key
     type !'a t
-    val create : ?random (* thwart tools/sync_stdlib_docs *) :bool ->
-                 int -> 'a t
+    val create : ?random:bool -> int -> 'a t
     val clear : 'a t -> unit
     val reset : 'a t -> unit
     val copy : 'a t -> 'a t

@@ -13,14 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* NOTE:
-   If this file is listLabels.mli, run tools/sync_stdlib_docs after editing it
-   to generate list.mli.
-
-   If this file is list.mli, do not edit it directly -- edit
-   listLabels.mli instead.
- *)
-
 (** List operations.
 
    Some functions are flagged as not tail-recursive.  A tail-recursive

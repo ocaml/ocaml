@@ -605,9 +605,9 @@ Error: Signature mismatch:
        does not include
          sig end
        The type `t' is required but not provided
-       File "set.mli", line 52, characters 4-10: Expected declaration
+       File "set.mli", line 49, characters 4-10: Expected declaration
        The value `compare' is required but not provided
-       File "set.mli", line 55, characters 4-31: Expected declaration
+       File "set.mli", line 52, characters 4-31: Expected declaration
 |}]
 
 (** Deeply nested errors *)

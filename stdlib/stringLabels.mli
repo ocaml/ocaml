@@ -13,14 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* NOTE:
-   If this file is stringLabels.mli, run tools/sync_stdlib_docs after editing
-   it to generate string.mli.
-
-   If this file is string.mli, do not edit it directly -- edit
-   stringLabels.mli instead.
- *)
-
 (** Strings.
 
     A string [s] of length [n] is an indexable and immutable sequence
@@ -149,16 +141,13 @@ val compare : t -> t -> int
 (** [compare s0 s1] sorts [s0] and [s1] in lexicographical order. [compare]
     behaves like {!Stdlib.compare} on strings but may be more efficient. *)
 
-val starts_with :
-  prefix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
-(** [starts_with ][~prefix s] is [true] if and only if [s] starts with
-    [prefix].
+val starts_with : prefix:string -> string -> bool
+(** [starts_with ~prefix s] is [true] if and only if [s] starts with [prefix].
 
     @since 4.13 *)
 
-val ends_with :
-  suffix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
-(** [ends_with ][~suffix s] is [true] if and only if [s] ends with [suffix].
+val ends_with : suffix:string -> string -> bool
+(** [ends_with ~suffix s] is [true] if and only if [s] ends with [suffix].
 
     @since 4.13 *)
 

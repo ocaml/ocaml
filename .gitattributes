@@ -33,6 +33,11 @@
 # changes being displayed by default in pull requests.
 /configure text eol=lf -diff linguist-generated
 
+# Noone needs to see this!
+/tools/sync_stdlib_docs -diff linguist-generated
+
+/tools/labelled-patch-diff typo.long-line=may typo.missing-header
+
 # 'union' merge driver just unions textual content in case of conflict
 #   http://krlmlr.github.io/using-gitattributes-to-avoid-merge-conflicts/
 /.mailmap                merge=union

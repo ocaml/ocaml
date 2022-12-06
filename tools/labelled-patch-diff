@@ -1,0 +1,280 @@
+
+     For example, consider the following program:
+ {[let size = 100_000_000
+-let a = Array.make size 1
++let a = ArrayLabels.make size 1
+ let d1 = Domain.spawn (fun () ->
+-   Array.iteri (fun i x -> a.(i) <- x + 1) a
++   ArrayLabels.iteri f:(fun i x -> a.(i) <- x + 1) a
+ )
+ let d2 = Domain.spawn (fun () ->
+-  Array.iteri (fun i x -> a.(i) <- 2 * x + 1) a
++  ArrayLabels.iteri f:(fun i x -> a.(i) <- 2 * x + 1) a
+ )
+ let () = Domain.join d1; Domain.join d2
+ ]}
+ (** The equality function for byte sequences.
+     @since 4.03 (4.05 in BytesLabels) *)
+
+-val starts_with : prefix:bytes -> bytes -> bool
+-(** [starts_with ~prefix s] is [true] if and only if [s] starts with
++val starts_with : bytes -> bytes -> bool
++(** [starts_with prefix s] is [true] if and only if [s] starts with
+     [prefix].
+
+     @since 4.13 *)
+
+-val ends_with : suffix:bytes -> bytes -> bool
+-(** [ends_with ~suffix s] is [true] if and only if [s] ends with [suffix].
++val ends_with : bytes -> bytes -> bool
++(** [ends_with suffix s] is [true] if and only if [s] ends with [suffix].
+
+     @since 4.13 *)
+
+ (** [compare s0 s1] sorts [s0] and [s1] in lexicographical order. [compare]
+     behaves like {!Stdlib.compare} on strings but may be more efficient. *)
+
+-val starts_with : prefix:string -> string -> bool
+-(** [starts_with ~prefix s] is [true] if and only if [s] starts with [prefix].
++val starts_with : string -> string -> bool
++(** [starts_with prefix s] is [true] if and only if [s] starts with [prefix].
+
+     @since 4.13 *)
+
+-val ends_with : suffix:string -> string -> bool
+-(** [ends_with ~suffix s] is [true] if and only if [s] ends with [suffix].
++val ends_with : string -> string -> bool
++(** [ends_with suffix s] is [true] if and only if [s] ends with [suffix].
+
+     @since 4.13 *)
+
+    [link(2)] function is used whose behaviour is OS-dependent, but more widely
+    available.
+
+-   @raise ENOSYS On {e Unix} if [~follow:_] is requested, but linkat is
++   @raise ENOSYS On {e Unix} if [follow:_] is requested, but linkat is
+                  unavailable.
+-   @raise ENOSYS On {e Windows} if [~follow:false] is requested. *)
++   @raise ENOSYS On {e Windows} if [follow:false] is requested. *)
+
+ val realpath : string -> string
+ (** [realpath p] is an absolute pathname for [p] obtained by resolving
+    the Unix module that create file descriptors have an optional
+    argument [?cloexec:bool] to indicate whether the file descriptor
+    should be created in ``close-on-exec'' mode (by writing
+-   [~cloexec:true]) or in ``keep-on-exec'' mode (by writing
+-   [~cloexec:false]).  For historical reasons, the default file
++   [cloexec:true]) or in ``keep-on-exec'' mode (by writing
++   [cloexec:false]).  For historical reasons, the default file
+    descriptor creation mode is ``keep-on-exec'', if no [cloexec] optional
+    argument is given.  This is not a safe default, hence it is highly
+    recommended to pass explicit [cloexec] arguments to operations that
+    completes.  If another thread spawns another program during this window,
+    the descriptor will leak, as it is still in the ``keep-on-exec'' mode.
+
+-   Regarding the atomicity guarantees given by [~cloexec:true] or by
++   Regarding the atomicity guarantees given by [cloexec:true] or by
+    the use of the [O_CLOEXEC] flag: on all platforms it is guaranteed
+    that a concurrently-executing Caml thread cannot leak the descriptor
+    by starting a new process.  On Linux, this guarantee extends to
+
+ val symlink : ?to_dir:bool -> string -> string -> unit
+ (** [symlink ?to_dir src dst] creates the file [dst] as a symbolic link
+-   to the file [src]. On Windows, [~to_dir] indicates if the symbolic link
++   to the file [src]. On Windows, [to_dir] indicates if the symbolic link
+    points to a directory or a file; if omitted, [symlink] examines [src]
+    using [stat] and picks appropriately, if [src] does not exist then [false]
+-   is assumed (for this reason, it is recommended that the [~to_dir] parameter
+-   be specified in new code). On Unix, [~to_dir] is ignored.
++   is assumed (for this reason, it is recommended that the [to_dir] parameter
++   be specified in new code). On Unix, [to_dir] is ignored.
+
+    Windows symbolic links are available in Windows Vista onwards. There are some
+    important differences between Windows symlinks and their POSIX counterparts.
+
+       For example, consider the following program:
+   {[let size = 100_000_000
+-  let a = Float.Array.make size 1.
++  let a = Float.ArrayLabels.make size 1.
+   let update a f () =
+-     Float.Array.iteri (fun i x -> Float.Array.set a i (f x)) a
++     Float.ArrayLabels.iteri f:(fun i x -> Float.Array.set a i (f x)) a
+   let d1 = Domain.spawn (update a (fun x -> x +. 1.))
+   let d2 = Domain.spawn (update a (fun x ->  2. *. x +. 1.))
+   let () = Domain.join d1; Domain.join d2
+   (** {1 Generic interface} *)
+
+
+-  type (!'a, !'b) t
++  type (!'a, !'b) t = ('a, 'b) Hashtbl.t
+   (** The type of hash tables from type ['a] to type ['b]. *)
+
+   val create : ?random:bool -> int -> ('a, 'b) t
+      the table.  The table grows as needed, so [n] is just an
+      initial guess.
+
+-     The optional [~random] parameter (a boolean) controls whether
++     The optional [random] parameter (a boolean) controls whether
+      the internal organization of the hash table is randomized at each
+      execution of [Hashtbl.create] or deterministic over all executions.
+
+-     A hash table that is created with [~random] set to [false] uses a
++     A hash table that is created with [random] set to [false] uses a
+      fixed hash function ({!hash}) to distribute keys among
+      buckets.  As a consequence, collisions between keys happen
+      deterministically.  In Web-facing applications or other
+      denial-of-service attack: the attacker sends input crafted to
+      create many collisions in the table, slowing the application down.
+
+-     A hash table that is created with [~random] set to [true] uses the seeded
++     A hash table that is created with [random] set to [true] uses the seeded
+      hash function {!seeded_hash} with a seed that is randomly chosen at hash
+      table creation time.  In effect, the hash function used is randomly
+      selected among [2^{30}] different hash functions.  All these hash
+      or {!iter} is no longer deterministic: elements are enumerated in
+      different orders at different runs of the program.
+
+-     If no [~random] parameter is given, hash tables are created
++     If no [random] parameter is given, hash tables are created
+      in non-random mode by default.  This default can be changed
+      either programmatically by calling {!randomize} or by
+      setting the [R] flag in the [OCAMLRUNPARAM] environment variable.
+
+-     @before 4.00 the [~random] parameter was not present and all
++     @before 4.00 the [random] parameter was not present and all
+      hash tables were created in non-randomized mode. *)
+
+   val clear : ('a, 'b) t -> unit
+       @since 4.03 *)
+
+   val fold :
+-    ('a -> 'b -> 'acc -> 'acc) -> ('a, 'b) t -> 'acc -> 'acc
++    f:(key:'a -> 'b -> 'acc -> 'acc) -> ('a, 'b) t -> 'acc -> 'acc
+   (** [Hashtbl.fold f tbl init] computes
+      [(f kN dN ... (f k1 d1 init)...)],
+      where [k1 ... kN] are the keys of all bindings in [tbl],
+   val randomize : unit -> unit
+   (** After a call to [Hashtbl.randomize()], hash tables are created in
+       randomized mode by default: {!create} returns randomized
+-      hash tables, unless the [~random:false] optional parameter is given.
++      hash tables, unless the [random:false] optional parameter is given.
+       The same effect can be achieved by setting the [R] parameter in
+       the [OCAMLRUNPARAM] environment variable.
+
+       Note that once [Hashtbl.randomize()] was called, there is no way
+       to revert to the non-randomized default behavior of {!create}.
+       This is intentional.  Non-randomized hash tables can still be
+-      created using [Hashtbl.create ~random:false].
++      created using [Hashtbl.create random:false].
+
+       @since 4.00 *)
+
+       @since 4.12 *)
+
+   (** @since 4.00 *)
+-  type statistics = {
++  type statistics = Hashtbl.statistics = {
+     num_bindings: int;
+       (** Number of bindings present in the table.
+           Same value as returned by {!length}. *)
+       (** @since 4.03 *)
+
+       val fold :
+-        (key -> 'a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
++        f:(key:key -> 'a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
+       val length : 'a t -> int
+       val stats: 'a t -> statistics (** @since 4.00 *)
+
+     end
+   (** The output signature of the functor {!Make}. *)
+
+-  module Make (H : HashedType) : S with type key = H.t
++    module Make : functor (H : HashedType) -> S
++    with type key = H.t
++     and type 'a t = 'a Hashtbl.Make(H).t
+   (** Functor building an implementation of the hashtable structure.
+       The functor [Hashtbl.Make] returns a structure containing
+       a type [key] of keys and a type ['a t] of hash tables
+       (** @since 4.03 *)
+
+       val fold :
+-        (key -> 'a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
++        f:(key:key -> 'a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
+       val length : 'a t -> int
+       val stats: 'a t -> statistics
+
+   (** The output signature of the functor {!MakeSeeded}.
+       @since 4.00 *)
+
+-  module MakeSeeded (H : SeededHashedType) : SeededS with type key = H.t
++    module MakeSeeded (H : SeededHashedType) : SeededS
++    with type key = H.t
++     and type 'a t = 'a Hashtbl.MakeSeeded(H).t
+   (** Functor building an implementation of the hashtable structure.
+       The functor [Hashtbl.MakeSeeded] returns a structure containing
+       a type [key] of keys and a type ['a t] of hash tables
+       interface, but use the seeded hashing and equality functions
+       specified in the functor argument [H] instead of generic
+       equality and hashing.  The [create] operation of the
+-      result structure supports the [~random] optional parameter
+-      and returns randomized hash tables if [~random:true] is passed
++      result structure supports the [random] optional parameter
++      and returns randomized hash tables if [random:true] is passed
+       or if randomization is globally on (see {!Hashtbl.randomize}).
+       @since 4.00 *)
+
+             (fun c ->
+               let count_c =
+                 Char_tbl.find_opt counts c
+-                |> Option.value ~default:0
++                |> Option.value default:0
+               in
+               Char_tbl.replace counts c (count_c + 1))
+             seq;
+     ]}
+
+   *)
++
+   (** Association tables over ordered types.
+
+      This module implements applicative association tables, also known as
+           @before 4.03 Physical equality was not ensured. *)
+
+       val merge:
+-        (key -> 'a option -> 'b option -> 'c option) ->
++        f:(key -> 'a option -> 'b option -> 'c option) ->
+         'a t -> 'b t -> 'c t
+       (** [merge f m1 m2] computes a map whose keys are a subset of the keys of
+           [m1] and of [m2]. The presence of each such binding, and the
+           order with respect to the ordering over the type of the keys. *)
+
+       val fold:
+-        (key -> 'a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
++        f:(key:key -> 'a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
+       (** [fold f m init] computes [(f kN dN ... (f k1 d1 init)...)],
+           where [k1 ... kN] are the keys of all bindings in [m]
+           (in increasing order), and [d1 ... dN] are the associated data. *)
+     end
+   (** Output signature of the functor {!Make}. *)
+
+-  module Make (Ord : OrderedType) : S with type key = Ord.t
++    module Make : functor (Ord : OrderedType) -> S
++    with type key = Ord.t
++     and type 'a t = 'a Map.Make(Ord).t
+   (** Functor building an implementation of the map structure
+      given a totally ordered type. *)
++
+   (** Sets over ordered types.
+
+      This module implements the set data structure, given a total ordering
+     end
+   (** Output signature of the functor {!Make}. *)
+
+-  module Make (Ord : OrderedType) : S with type elt = Ord.t
++    module Make : functor (Ord : OrderedType) -> S
++    with type elt = Ord.t
++     and type t = Set.Make(Ord).t
+   (** Functor building an implementation of the set structure
+      given a totally ordered type. *)
++
++end
