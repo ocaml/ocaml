@@ -52,8 +52,6 @@ int caml_register_code_fragment(char *start, char *end,
   cf->code_start = start;
   cf->code_end = end;
   switch (digest_kind) {
-  case DIGEST_LATER:
-    break;
   case DIGEST_NOW:
     caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
     digest_kind = DIGEST_PROVIDED;
@@ -120,10 +118,6 @@ struct code_fragment *caml_find_code_fragment_by_num(int fragnum) {
 unsigned char *caml_digest_of_code_fragment(struct code_fragment *cf) {
   if (cf->digest_status == DIGEST_IGNORE)
     return NULL;
-  if (cf->digest_status == DIGEST_LATER) {
-    caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
-    cf->digest_status = DIGEST_PROVIDED;
-  }
   return cf->digest;
 }
 

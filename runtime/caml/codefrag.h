@@ -21,7 +21,6 @@
 #ifdef CAML_INTERNALS
 
 enum digest_status {
-  DIGEST_LATER,    /* computed on demand */
   DIGEST_NOW,      /* computed by caml_register_code_fragment */
   DIGEST_PROVIDED, /* passed by caller of caml_register_code_fragment */
   DIGEST_IGNORE    /* this code fragment is private and cannot be
@@ -33,6 +32,8 @@ struct code_fragment {
   char *code_end;
   int fragnum;
   unsigned char digest[16];
+  /* the digest is obtained by hashing
+     the bytes between [code_start] and [code_end]. */
   enum digest_status digest_status;
 };
 
@@ -73,9 +74,6 @@ extern struct code_fragment *
    caml_find_code_fragment_by_digest(unsigned char digest[16]);
 
 /* Return the digest of the given code fragment.
-   If the code fragment was registered in [DIGEST_LATER] mode
-   and if the digest was not computed yet, it is obtained by hashing
-   the bytes between [code_start] and [code_end].
    Returns NULL if the code fragment was registered with [DIGEST_IGNORE]. */
 extern unsigned char * caml_digest_of_code_fragment(struct code_fragment *);
 

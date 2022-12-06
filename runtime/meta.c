@@ -104,7 +104,7 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
     digest_kind = DIGEST_PROVIDED;
     digest = (unsigned char *) String_val(Some_val(digest_opt));
   } else {
-    digest_kind = DIGEST_LATER;
+    digest_kind = DIGEST_NOW;
     digest = NULL;
   }
   fragnum = caml_register_code_fragment((char *) prog, (char *) prog + len,

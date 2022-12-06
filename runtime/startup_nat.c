@@ -66,7 +66,7 @@ static void init_segments(void)
   /* Register the code in the table of code fragments */
   caml_register_code_fragment(caml_code_area_start,
                               caml_code_area_end,
-                              DIGEST_LATER, NULL);
+                              DIGEST_NOW, NULL);
   /* Also register the glue code written in assembly */
   caml_register_code_fragment(&caml_system__code_begin,
                               &caml_system__code_end,

@@ -122,7 +122,7 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
   /* Do not register empty code fragments */
   if (NULL != sym && NULL != sym2 && sym != sym2) {
     caml_register_code_fragment((char *) sym, (char *) sym2,
-                                DIGEST_LATER, NULL);
+                                DIGEST_NOW, NULL);
   }
 
   if( caml_natdynlink_hook != NULL ) caml_natdynlink_hook(handle,unit);
