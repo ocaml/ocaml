@@ -763,6 +763,9 @@ runtime_PRIMITIVES = $(addprefix runtime/, afl.c alloc.c array.c \
 # see http://pubs.opengroup.org/onlinepubs/9699919799/utilities/sort.html:
 # "using sort to process pathnames, it is recommended that LC_ALL .. set to C"
 
+# #8985: the meaning of character range a-z depends on the locale, so force C
+#        locale throughout.
+
 # To speed up builds, we avoid changing "primitives" and
 # "primitive-arguments" when files containing primitives change but
 # the primitives table does not
@@ -770,15 +773,17 @@ runtime/primitives-arguments.new: \
   $(runtime_BUILT_HEADERS) \
   $(runtime_PRIMITIVES) \
   runtime/gen_primitives.sed runtime/gen_primitives_ints.sed
+	export LC_ALL=C; \
 	(for prim in $(runtime_PRIMITIVES); do \
 	     $(CPP) -I./runtime -D'CAMLprim()=0' "$${prim}" | \
 	     sed -n -f runtime/gen_primitives.sed; \
 	 done; \
 	 sed -n -f runtime/gen_primitives_ints.sed runtime/ints.c) | \
-	(export LC_ALL=C; sort | uniq) > $@
+	(sort | uniq) > $@
 
 runtime/primitives-arguments runtime/primitives: \
   runtime/primitives-arguments.new
+	export LC_ALL=C; \
 	if ! cmp -s runtime/primitives-arguments $<; then \
 	    cp $< runtime/primitives-arguments; \
 	    sed -n -e 's/^\([a-z0-9_][a-z0-9_]*\).*$$/\1/p' \
@@ -786,6 +791,7 @@ runtime/primitives-arguments runtime/primitives: \
 	fi
 
 runtime/prims.c : runtime/primitives-arguments
+	export LC_ALL=C; \
 	(echo '#define CAML_INTERNALS'; \
 	 echo '#include "caml/mlvalues.h"'; \
 	 echo '#include "caml/prims.h"'; \
@@ -803,6 +809,7 @@ runtime/prims.c : runtime/primitives-arguments
 	 echo '  0 };') > $@
 
 runtime/caml/opnames.h : runtime/caml/instruct.h
+	export LC_ALL=C; \
 	tr -d '\r' < $< | \
 	sed -e '/\/\*/d' \
 	    -e '/^#/d' \
@@ -812,6 +819,7 @@ runtime/caml/opnames.h : runtime/caml/instruct.h
 
 # runtime/caml/jumptbl.h is required only if you have GCC 2.0 or later
 runtime/caml/jumptbl.h : runtime/caml/instruct.h
+	export LC_ALL=C; \
 	tr -d '\r' < $< | \
 	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&lbl_\1/gp' \
 	       -e '/^}/q' > $@
