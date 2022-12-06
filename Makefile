@@ -750,15 +750,9 @@ runtime_PRIMITIVES = $(addprefix runtime/, afl.c alloc.c array.c \
   obj.c parsing.c platform.c prng.c runtime_events.c signals.c \
   startup_aux.c str.c sync.c sys.c weak.c)
 
-# If primitives contain duplicated lines (e.g. because the code is defined
-# like
-# #ifdef X
-# CAMLprim value caml_foo() ...
-# #else
-# CAMLprim value caml_foo() ...
-# #endif), horrible things will happen: duplicated entries in Runtimedef ->
-# double registration in Symtable -> empty entry in the PRIM table ->
-# the bytecode interpreter is confused.
+# If primitives contain duplicated lines horrible things will happen:
+# duplicated entries in Runtimedef -> double registration in Symtable ->
+# empty entry in the PRIM table -> the bytecode interpreter is confused.
 # We sort the primitive file and remove duplicates to avoid this problem.
 
 # Warning: we use "sort | uniq" instead of "sort -u" because in the MSVC
