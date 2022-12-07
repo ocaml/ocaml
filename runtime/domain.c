@@ -1713,7 +1713,17 @@ static void domain_terminate (void)
       caml_plat_broadcast(&s->cond);
       caml_plat_unlock(&s->lock);
 
+      /* signal the domain termination to the backup thread
+         NB: for a program with no additional domains, the backup thread
+         will not have been started */
+      atomic_store_rel(&domain_self->backup_thread_msg, BT_TERMINATE);
+      caml_plat_signal(&domain_self->domain_cond);
+      caml_plat_unlock(&domain_self->domain_lock);
+
       CAMLassert (domain_self->backup_thread_running);
+      /* CR gasche: why is this assertion correct in the case where
+         we are terminating the main domain and no backup thread
+         has been started? */
       domain_self->backup_thread_running = 0;
     }
     caml_plat_unlock(&all_domains_lock);
@@ -1749,13 +1759,6 @@ static void domain_terminate (void)
   }
   caml_free_backtrace_buffer(domain_state->backtrace_buffer);
   caml_free_gc_regs_buckets(domain_state->gc_regs_buckets);
-
-  /* signal the domain termination to the backup thread
-     NB: for a program with no additional domains, the backup thread
-     will not have been started */
-  atomic_store_rel(&domain_self->backup_thread_msg, BT_TERMINATE);
-  caml_plat_signal(&domain_self->domain_cond);
-  caml_plat_unlock(&domain_self->domain_lock);
 
   caml_plat_assert_all_locks_unlocked();
   /* This is the last thing we do because we need to be able to rely
