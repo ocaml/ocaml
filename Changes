@@ -32,6 +32,13 @@ Working version
 - #11764: add prototypes to old-style C function definitions and declarations
   (Antonin Décimo, review by Xavier Leroy)
 
+### Type system:
+
+- #6941, #11187: prohibit using classes through recursive modules
+  inheriting or including a class belonging to a mutually-recursive module
+  would previous behave incorrectly, and now results in a clean error.
+  (Leo White, review by Gabriel Scherer and Florian Angeletti)
+
 ### Code generation and optimizations:
 
 - #8998, #11321, #11430: change mangling of OCaml long identifiers
