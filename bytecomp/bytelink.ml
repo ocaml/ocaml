@@ -745,7 +745,7 @@ open Format
 
 let report_error ppf = function
   | File_not_found name ->
-      fprintf ppf "Cannot find file %a" Location.print_filename name
+      fprintf ppf "Bytelink cannot find file %a" Location.print_filename name
   | Not_an_object_file name ->
       fprintf ppf "The file %a is not a bytecode object file"
         Location.print_filename name

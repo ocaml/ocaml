@@ -89,7 +89,7 @@ let use_input ppf ~wrap_in_module input =
           let lexbuf = Lexing.from_channel ic in
           use_lexbuf ppf ~wrap_in_module lexbuf name filename)
     | exception Not_found ->
-      fprintf ppf "Cannot find file %s.@." name;
+      fprintf ppf "Toploop cannot find file %s.@." name;
       false
 
 let mod_use_input ppf name =

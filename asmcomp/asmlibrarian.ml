@@ -73,7 +73,7 @@ open Format
 
 let report_error ppf = function
   | File_not_found name ->
-      fprintf ppf "Cannot find file %s" name
+      fprintf ppf "Asmlibrarian cannot find file %s" name
   | Archiver_error name ->
       fprintf ppf "Error while creating the library %s" name
 

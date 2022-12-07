@@ -241,7 +241,7 @@ let rec load_file recursive ppf name =
     try Some (Load_path.find name) with Not_found -> None
   in
   match filename with
-  | None -> fprintf ppf "Cannot find file %s.@." name; false
+  | None -> fprintf ppf "Topeval cannot find file %s.@." name; false
   | Some filename ->
       let ic = open_in_bin filename in
       Misc.try_finally
