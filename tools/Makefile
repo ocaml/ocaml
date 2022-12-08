@@ -44,6 +44,9 @@ all: $(TOOLS_BYTECODE_TARGETS)
 opt.opt: $(TOOLS_NATIVE_TARGETS)
 allopt: opt.opt
 
+$(foreach TOOL, $(TOOLS_BYTECODE_TARGETS),\
+  $(eval $(call OCAML_PROGRAM,$(TOOL))))
+
 clean::
 	rm -f $(TOOLS_BYTECODE_TARGETS) $(TOOLS_BYTECODE_TARGETS:=.exe)
 	rm -f $(TOOLS_NATIVE_TARGETS) $(TOOLS_NATIVE_TARGETS:=.exe)
@@ -138,10 +141,10 @@ endif
 
 cvt_emit = cvt_emit$(EXE)
 
+$(eval $(call OCAML_BYTECODE_PROGRAM,cvt_emit))
+
 cvt_emit_LIBRARIES =
 cvt_emit_MODULES = cvt_emit
-
-$(eval $(call OCAML_BYTECODE_PROGRAM,cvt_emit))
 
 clean::
 	rm -f cvt_emit.ml cvt_emit cvt_emit.exe
@@ -269,6 +272,3 @@ distclean: clean
 	rm -f eventlog_metadata *.bak
 
 include .depend
-
-$(foreach TOOL, $(TOOLS_BYTECODE_TARGETS),\
-  $(eval $(call OCAML_PROGRAM,$(TOOL))))
