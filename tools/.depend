@@ -57,7 +57,8 @@ lintapidiff.cmo : \
     ../parsing/parse.cmi \
     ../utils/misc.cmi \
     ../parsing/location.cmi \
-    ../typing/ident.cmi
+    ../typing/ident.cmi \
+    lintapidiff.cmi
 lintapidiff.cmx : \
     ../typing/printtyp.cmx \
     ../driver/pparse.cmx \
@@ -66,7 +67,9 @@ lintapidiff.cmx : \
     ../parsing/parse.cmx \
     ../utils/misc.cmx \
     ../parsing/location.cmx \
-    ../typing/ident.cmx
+    ../typing/ident.cmx \
+    lintapidiff.cmi
+lintapidiff.cmi :
 make_opcodes.cmo : \
     make_opcodes.cmi
 make_opcodes.cmx : \
