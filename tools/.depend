@@ -67,8 +67,11 @@ lintapidiff.cmx : \
     ../utils/misc.cmx \
     ../parsing/location.cmx \
     ../typing/ident.cmx
-make_opcodes.cmo :
-make_opcodes.cmx :
+make_opcodes.cmo : \
+    make_opcodes.cmi
+make_opcodes.cmx : \
+    make_opcodes.cmi
+make_opcodes.cmi :
 objinfo.cmo : \
     ../bytecomp/symtable.cmi \
     ../middle_end/symbol.cmi \

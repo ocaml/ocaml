@@ -217,8 +217,8 @@ make_opcodes := make_opcodes$(EXE)
 
 $(eval $(call PROGRAM_SYNONYM,make_opcodes))
 
-$(make_opcodes): make_opcodes.ml
-	$(CAMLC) -g $< -o $@
+$(make_opcodes): make_opcodes.cmo
+	$(CAMLC) $(LINKFLAGS) $< -o $@
 
 opnames.ml: $(ROOTDIR)/runtime/caml/instruct.h $(make_opcodes)
 	$(NEW_OCAMLRUN) $(make_opcodes) -opnames < $< > $@
@@ -226,7 +226,7 @@ opnames.ml: $(ROOTDIR)/runtime/caml/instruct.h $(make_opcodes)
 clean::
 	rm -f opnames.ml make_opcodes make_opcodes.exe make_opcodes.ml
 
-beforedepend:: opnames.ml
+beforedepend:: opnames.ml make_opcodes.ml
 
 # Display info on compiled files
 
