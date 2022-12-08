@@ -48,14 +48,6 @@ OC_OCAMLDEPDIRS = $(VPATH)
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 OCAMLTEST_OPT=$(WITH_OCAMLTEST:=.opt)
 
-BYTESTART=driver/main.cmo
-
-OPTSTART=driver/optmain.cmo
-
-TOPLEVELSTART=toplevel/topstart.cmo
-
-TOPLEVELINIT=toplevel/toploop.cmo
-
 # This list is passed to expunge, which accepts both uncapitalized and
 # capitalized module names.
 PERVASIVES=$(STDLIB_MODULES) outcometree topprinters topdirs toploop
@@ -113,12 +105,11 @@ beforedepend:: \
   utils/config.ml utils/config_boot.ml utils/config_main.ml \
   utils/domainstate.ml utils/domainstate.mli
 
-ocamllex_PROGRAMS := $(addprefix lex/,ocamllex ocamllex.opt)
+ocamllex_PROGRAMS = $(addprefix lex/,ocamllex ocamllex.opt)
 
 ocamlyacc_PROGRAM = yacc/ocamlyacc
 
-PROGRAMS = expunge ocaml ocamlc ocamlc.opt ocamlnat ocamlopt ocamlopt.opt \
-  $(ocamllex_PROGRAMS) $(ocamlyacc_PROGRAM)
+PROGRAMS = ocaml $(ocamlyacc_PROGRAM)
 
 $(foreach PROGRAM, $(PROGRAMS), $(eval $(call PROGRAM_SYNONYM,$(PROGRAM))))
 
@@ -416,37 +407,42 @@ clean::
 # The clean target
 clean:: partialclean
 	rm -f configure~ $(PROGRAMS) $(PROGRAMS:=.exe)
+	rm -f $(ocamllex_PROGRAMS) $(ocamllex_PROGRAMS:=.exe)
 
 # The bytecode compiler
 
+ocamlc_LIBRARIES = $(addprefix compilerlibs/ocaml,common bytecomp)
+
+ocamlc_MODULES = driver/main
+
 ocamlc$(EXE): OC_BYTECODE_LDFLAGS += -compat-32
-ocamlc$(EXE): compilerlibs/ocamlcommon.cma \
-              compilerlibs/ocamlbytecomp.cma $(BYTESTART)
-	$(CAMLC) $(OC_COMMON_LDFLAGS) $(OC_BYTECODE_LDFLAGS) -o $@ $^
+
+ocamlc.opt$(EXE): OC_NATIVE_LDFLAGS += $(addprefix -cclib ,$(BYTECCLIBS))
 
 partialclean::
-	rm -rf ocamlc$(EXE)
+	rm -f ocamlc ocamlc.exe ocamlc.opt ocamlc.opt.exe
 
 # The native-code compiler
 
-ocamlopt$(EXE): compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma \
-          $(OPTSTART)
-	$(CAMLC) $(OC_COMMON_LDFLAGS) $(OC_BYTECODE_LDFLAGS) -o $@ $^
+ocamlopt_LIBRARIES = $(addprefix compilerlibs/ocaml,common optcomp)
+
+ocamlopt_MODULES = driver/optmain
+
+$(eval $(call OCAML_PROGRAM,ocamlopt))
 
 partialclean::
-	rm -f ocamlopt$(EXE)
+	rm -f ocamlopt ocamlopt.exe ocamlopt.opt ocamlopt.opt.exe
 
 # The toplevel
 
-ocaml_dependencies := \
-  compilerlibs/ocamlcommon.cma \
-  compilerlibs/ocamlbytecomp.cma \
-  compilerlibs/ocamltoplevel.cma $(TOPLEVELSTART)
+ocaml_LIBRARIES = $(addprefix compilerlibs/ocaml,common bytecomp toplevel)
+
+ocaml_MODULES = toplevel/topstart
 
 .INTERMEDIATE: ocaml.tmp
 ocaml.tmp: OC_BYTECODE_LDFLAGS += -I toplevel/byte -linkall
-ocaml.tmp: $(ocaml_dependencies)
-	$(CAMLC) $(OC_COMMON_LDFLAGS) $(OC_BYTECODE_LDFLAGS) -o $@ $^
+ocaml.tmp: $(ocaml_LIBRARIES:=.cma) $(ocaml_MODULES:=.cmo)
+	$(LINK_BYTECODE_PROGRAM) -o $@ $^
 
 ocaml$(EXE): $(expunge) ocaml.tmp
 	- $(OCAMLRUN) $^ $@ $(PERVASIVES)
@@ -488,27 +484,6 @@ partialclean::
 	rm -f parsing/lexer.ml
 
 beforedepend:: parsing/lexer.ml
-
-# The bytecode compiler compiled with the native-code compiler
-
-ocamlc.opt$(EXE): OC_NATIVE_LDFLAGS += $(addprefix -cclib ,$(BYTECCLIBS))
-ocamlc.opt$(EXE): compilerlibs/ocamlcommon.cmxa \
-                  compilerlibs/ocamlbytecomp.cmxa $(BYTESTART:.cmo=.cmx)
-	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) $(OC_NATIVE_LDFLAGS) -o $@ $^
-
-partialclean::
-	rm -f ocamlc.opt$(EXE)
-
-# The native-code compiler compiled with itself
-
-ocamlopt.opt$(EXE): \
-                    compilerlibs/ocamlcommon.cmxa \
-                    compilerlibs/ocamloptcomp.cmxa \
-                    $(OPTSTART:.cmo=.cmx)
-	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) $(OC_NATIVE_LDFLAGS) -o $@ $^
-
-partialclean::
-	rm -f ocamlopt.opt$(EXE)
 
 # The predefined exceptions and primitives
 
@@ -563,12 +538,14 @@ $(cvt_emit): tools/cvt_emit.mll
 
 # The "expunge" utility
 
-$(expunge): compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
-         toplevel/expunge.cmo
-	$(CAMLC) $(OC_COMMON_LDFLAGS) $(OC_BYTECODE_LDFLAGS) -o $@ $^
+expunge_LIBRARIES = $(addprefix compilerlibs/ocaml,common bytecomp)
+
+expunge_MODULES = toplevel/expunge
+
+$(eval $(call OCAML_BYTECODE_PROGRAM,expunge))
 
 partialclean::
-	rm -f $(expunge)
+	rm -f expunge expunge.exe
 
 # The runtime system
 
@@ -1069,6 +1046,8 @@ partialclean::
 
 # The lexer generator
 
+ocamllex_LIBRARIES =
+
 ocamllex_MODULES = $(addprefix lex/,\
   cset syntax parser lexer table lexgen compact  common output outputbis main)
 
@@ -1087,11 +1066,8 @@ ocamllex.opt: ocamlopt
 	$(MAKE) lex-allopt
 
 lex/ocamllex$(EXE): OC_BYTECODE_LDFLAGS += -compat-32
-lex/ocamllex$(EXE): $(ocamllex_MODULES:=.cmo)
-	$(CAMLC) $(OC_COMMON_LDFLAGS) $(OC_BYTECODE_LDFLAGS) -o $@ $^
 
-lex/ocamllex.opt$(EXE): $(ocamllex_MODULES:=.cmx)
-	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) $(OC_NATIVE_LDFLAGS) -o $@ $^
+$(eval $(call OCAML_PROGRAM,lex/ocamllex))
 
 partialclean::
 	rm -f lex/*.cm* lex/*.o lex/*.obj
@@ -1335,27 +1311,26 @@ endif
 
 # The native toplevel
 
-ocamlnat_dependencies := \
-  compilerlibs/ocamlcommon.cmxa \
-  compilerlibs/ocamloptcomp.cmxa \
-  compilerlibs/ocamlbytecomp.cmxa \
-  otherlibs/dynlink/dynlink.cmxa \
-  compilerlibs/ocamltoplevel.cmxa \
-  $(TOPLEVELSTART:.cmo=.cmx)
+ocamlnat_LIBRARIES = \
+  compilerlibs/ocamlcommon compilerlibs/ocamloptcomp \
+  compilerlibs/ocamlbytecomp otherlibs/dynlink/dynlink \
+  compilerlibs/ocamltoplevel
+
+ocamlnat_MODULES = $(ocaml_MODULES)
 
 ocamlnat$(EXE): OC_NATIVE_LDFLAGS += -linkall -I toplevel/native
-ocamlnat$(EXE): $(ocamlnat_dependencies)
-	$(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) $(OC_NATIVE_LDFLAGS) -o $@ $^
+
+$(eval $(call OCAML_NATIVE_PROGRAM,ocamlnat))
 
 COMPILE_NATIVE_MODULE = \
   $(CAMLOPT_CMD) $(OC_COMMON_CFLAGS) -I $(@D) $(INCLUDES) $(OC_NATIVE_CFLAGS)
 
-toplevel/topdirs.cmx toplevel/toploop.cmx $(TOPLEVELSTART:.cmo=.cmx): \
+toplevel/topdirs.cmx toplevel/toploop.cmx $(ocamlnat_MODULES:=.cmx): \
   OC_NATIVE_CFLAGS += -I toplevel/native
 
-$(TOPLEVELINIT:.cmo=.cmx): toplevel/native/topeval.cmx
+toplevel/toploop.cmx: toplevel/native/topeval.cmx
 
-$(TOPLEVELSTART:.cmo=.cmx): toplevel/native/topmain.cmx
+$(ocamlnat_MODULES:=.cmx): toplevel/native/topmain.cmx
 
 partialclean::
 	rm -f ocamlnat ocamlnat.exe
@@ -1499,7 +1474,7 @@ endif
 	  compilerlibs/*.cma compilerlibs/META \
 	  "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-	   $(BYTESTART) $(TOPLEVELSTART) \
+	   $(ocamlc_MODULES:=.cmo) $(ocaml_MODULES:=.cmo) \
 	   "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_PROG) $(expunge) "$(INSTALL_LIBDIR)"
 # If installing over a previous OCaml version, ensure the module is removed
@@ -1598,7 +1573,7 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	    "$(INSTALL_COMPLIBDIR)"
 endif
 	$(INSTALL_DATA) \
-	    $(OPTSTART) \
+	    $(ocamlopt_MODULES:=.cmo) \
 	    "$(INSTALL_COMPLIBDIR)"
 ifeq "$(build_ocamldoc)" "true"
 	$(MAKE) -C ocamldoc installopt
@@ -1649,9 +1624,9 @@ endif
 	   compilerlibs/*.cmxa compilerlibs/*.$(A) \
 	   "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.$(O)) \
-	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
-	   $(TOPLEVELSTART:.cmo=.$(O)) \
+	   $(ocamlc_MODULES:=.cmx) $(ocamlc_MODULES:=.$(O)) \
+	   $(ocamlopt_MODULES:=.cmx) $(ocamlopt_MODULES:=.$(O)) \
+	   $(ocaml_MODULES:=.$(O)) \
 	   "$(INSTALL_COMPLIBDIR)"
 ifeq "$(INSTALL_OCAMLNAT)" "true"
 	  $(INSTALL_PROG) ocamlnat$(EXE) "$(INSTALL_BINDIR)"

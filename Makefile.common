@@ -195,3 +195,32 @@ endif
 if_file_exists = ( test ! -f $(1) || $(2) && rm -f $(1) )
 MERGEMANIFESTEXE = $(call if_file_exists, $(1).manifest, \
   mt -nologo -outputresource:$(1) -manifest $(1).manifest)
+
+# Macros and rules to compile OCaml programs
+
+LINK_BYTECODE_PROGRAM =\
+  $(CAMLC) $(OC_COMMON_LDFLAGS) $(OC_BYTECODE_LDFLAGS)
+
+define OCAML_BYTECODE_PROGRAM
+$(eval $(call PROGRAM_SYNONYM,$(1)))
+$(1)$(EXE): \
+  $$($(basename $(notdir $(1)))_LIBRARIES:=.cma) \
+  $$($(basename $(notdir $(1)))_MODULES:=.cmo)
+	$$(LINK_BYTECODE_PROGRAM) -o $$@ $$^
+endef # OCAML_BYTECODE_PROGRAM
+
+LINK_NATIVE_PROGRAM =\
+  $(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) $(OC_NATIVE_LDFLAGS)
+
+define OCAML_NATIVE_PROGRAM
+$(eval $(call PROGRAM_SYNONYM,$(1)))
+$(1)$(EXE): \
+  $$($(basename $(notdir $(1)))_LIBRARIES:=.cmxa) \
+  $$($(basename $(notdir $(1)))_MODULES:=.cmx)
+	$$(LINK_NATIVE_PROGRAM) -o $$@ $$^
+endef # OCAML_NATIVE_PROGRAM
+
+define OCAML_PROGRAM
+$(eval $(call OCAML_BYTECODE_PROGRAM,$(1)))
+$(eval $(call OCAML_NATIVE_PROGRAM,$(1).opt))
+endef # OCAML_PROGRAM
