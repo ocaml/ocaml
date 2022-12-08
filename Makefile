@@ -109,10 +109,38 @@ ocamllex_PROGRAMS = $(addprefix lex/,ocamllex ocamllex.opt)
 
 ocamlyacc_PROGRAM = yacc/ocamlyacc
 
-PROGRAMS = ocaml $(ocamlyacc_PROGRAM)
+# C programs
 
-$(foreach PROGRAM, $(PROGRAMS), $(eval $(call PROGRAM_SYNONYM,$(PROGRAM))))
+C_PROGRAMS = $(ocamlyacc_PROGRAM)
 
+$(foreach PROGRAM, $(C_PROGRAMS),\
+  $(eval $(call PROGRAM_SYNONYM,$(PROGRAM))))
+
+# OCaml programs that are compiled in both bytecode and native code
+
+OCAML_PROGRAMS = ocamlc ocamlopt lex/ocamllex
+
+$(foreach PROGRAM, $(OCAML_PROGRAMS),\
+  $(eval $(call OCAML_PROGRAM,$(PROGRAM))))
+
+# OCaml programs that are compiled only in bytecode
+# Note: the bytecode toplevel, ocaml, is a bytecode program but at the
+# moment it's a special one, because it needs to be expunged, so we
+# cannot declare it as we do for other bytecode-only programs.
+# We have to use dedicated rules to build it
+
+OCAML_BYTECODE_PROGRAMS = expunge
+
+$(foreach PROGRAM, $(OCAML_BYTECODE_PROGRAMS),\
+  $(eval $(call OCAML_BYTECODE_PROGRAM,$(PROGRAM))))
+
+# OCaml programs that are compiled only in native code
+
+OCAML_NATIVE_PROGRAMS = ocamlnat
+
+$(foreach PROGRAM, $(OCAML_NATIVE_PROGRAMS),\
+  $(eval $(call OCAML_NATIVE_PROGRAM,$(PROGRAM))))
+  
 USE_RUNTIME_PRIMS = -use-prims ../runtime/primitives
 USE_STDLIB = -nostdlib -I ../stdlib
 
@@ -406,8 +434,12 @@ clean::
 
 # The clean target
 clean:: partialclean
-	rm -f configure~ $(PROGRAMS) $(PROGRAMS:=.exe)
-	rm -f $(ocamllex_PROGRAMS) $(ocamllex_PROGRAMS:=.exe)
+	rm -f configure~
+	rm -f $(C_PROGRAMS) $(C_PROGRAMS:=.exe)
+	rm -f $(OCAML_PROGRAMS) $(OCAML_PROGRAMS:=.exe)
+	rm -f $(OCAML_PROGRAMS:=.opt) $(OCAML_PROGRAMS:=.opt.exe)
+	rm -f $(OCAML_BYTECODE_PROGRAMS) $(OCAML_BYTECODE_PROGRAMS:=.exe)
+	rm -f $(OCAML_NATIVE_PROGRAMS) $(OCAML_NATIVE_PROGRAMS:=.exe)
 
 # The bytecode compiler
 
@@ -428,8 +460,6 @@ ocamlopt_LIBRARIES = $(addprefix compilerlibs/ocaml,common optcomp)
 
 ocamlopt_MODULES = driver/optmain
 
-$(eval $(call OCAML_PROGRAM,ocamlopt))
-
 partialclean::
 	rm -f ocamlopt ocamlopt.exe ocamlopt.opt ocamlopt.opt.exe
 
@@ -444,11 +474,12 @@ ocaml.tmp: OC_BYTECODE_LDFLAGS += -I toplevel/byte -linkall
 ocaml.tmp: $(ocaml_LIBRARIES:=.cma) $(ocaml_MODULES:=.cmo)
 	$(LINK_BYTECODE_PROGRAM) -o $@ $^
 
+$(eval $(call PROGRAM_SYNONYM,ocaml))
 ocaml$(EXE): $(expunge) ocaml.tmp
 	- $(OCAMLRUN) $^ $@ $(PERVASIVES)
 
 partialclean::
-	rm -f ocaml$(EXE)
+	rm -f ocaml ocaml.exe
 
 # Use TOPFLAGS to pass additional flags to the bytecode or native toplevel
 # when running make runtop or make natruntop
@@ -541,8 +572,6 @@ $(cvt_emit): tools/cvt_emit.mll
 expunge_LIBRARIES = $(addprefix compilerlibs/ocaml,common bytecomp)
 
 expunge_MODULES = toplevel/expunge
-
-$(eval $(call OCAML_BYTECODE_PROGRAM,expunge))
 
 partialclean::
 	rm -f expunge expunge.exe
@@ -1067,8 +1096,6 @@ ocamllex.opt: ocamlopt
 
 lex/ocamllex$(EXE): OC_BYTECODE_LDFLAGS += -compat-32
 
-$(eval $(call OCAML_PROGRAM,lex/ocamllex))
-
 partialclean::
 	rm -f lex/*.cm* lex/*.o lex/*.obj
 
@@ -1319,8 +1346,6 @@ ocamlnat_LIBRARIES = \
 ocamlnat_MODULES = $(ocaml_MODULES)
 
 ocamlnat$(EXE): OC_NATIVE_LDFLAGS += -linkall -I toplevel/native
-
-$(eval $(call OCAML_NATIVE_PROGRAM,ocamlnat))
 
 COMPILE_NATIVE_MODULE = \
   $(CAMLOPT_CMD) $(OC_COMMON_CFLAGS) -I $(@D) $(INCLUDES) $(OC_NATIVE_CFLAGS)
