@@ -209,13 +209,13 @@ module Toplevel = struct
     try
       match mode with
       | Toplevel -> Parse.toplevel_phrase lex
-      | Verbatim -> Ptop_def (Parse.implementation lex)
+      | Verbatim -> Parsetree.Ptop_def (Parse.implementation lex)
       | Signature ->
           let sign = Parse.interface lex in
           let name = Location.mknoloc "wrap" in
           let str =
             Ast_helper.[Str.modtype @@ Mtd.mk ~typ:(Mty.signature sign) name] in
-          Ptop_def str
+          Parsetree.Ptop_def str
     with
     | Lexer.Error _ | Syntaxerr.Error _ ->
         raise (Phrase_parsing s)
@@ -421,8 +421,6 @@ module Text_transform = struct
     | Ellipsis -> Format.fprintf ppf "ellipsis"
 
   let underline start stop = { kind = Underline; start; stop}
-  let ellipsis start stop = { kind = Ellipsis; start; stop }
-
   let escape_specials s =
     s
     |> global_replace ~!{|\$|} {|$\textdollar$|}
@@ -560,7 +558,8 @@ module Ellipsis = struct
           | None -> raise (Unmatched_ellipsis {kind="right"; start; stop})
           | Some (start', stop' ) ->
               let start, stop = min start start', max stop stop' in
-              transforms := {kind=Ellipsis; start ; stop } :: !transforms;
+              let transform = {Text_transform.kind=Ellipsis; start ; stop } in
+              transforms :=  transform :: !transforms;
               left_mark := None
           end
       | _ -> ()
@@ -575,7 +574,7 @@ module Ellipsis = struct
 
   let find = function
     | Parsetree.Ptop_def ast -> extract (fun it -> it.structure it) ast
-    | Ptop_dir _ -> []
+    | Parsetree.Ptop_dir _ -> []
 
 end
 

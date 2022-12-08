@@ -215,7 +215,8 @@ ocamltex.cmo : \
     ../driver/compenv.cmi \
     ../utils/clflags.cmi \
     ../parsing/ast_iterator.cmi \
-    ../parsing/ast_helper.cmi
+    ../parsing/ast_helper.cmi \
+    ocamltex.cmi
 ocamltex.cmx : \
     ../toplevel/toploop.cmx \
     ../parsing/syntaxerr.cmx \
@@ -229,7 +230,9 @@ ocamltex.cmx : \
     ../driver/compenv.cmx \
     ../utils/clflags.cmx \
     ../parsing/ast_iterator.cmx \
-    ../parsing/ast_helper.cmx
+    ../parsing/ast_helper.cmx \
+    ocamltex.cmi
+ocamltex.cmi :
 opnames.cmo : \
     opnames.cmi
 opnames.cmx : \

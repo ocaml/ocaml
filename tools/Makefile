@@ -41,6 +41,7 @@ DIRS = $(addprefix $(ROOTDIR)/,utils parsing typing bytecomp \
                    file_formats lambda)
 INCLUDES = $(addprefix -I ,$(DIRS))
 LINKFLAGS = -g $(INCLUDES)
+OC_COMMON_LDFLAGS = -g $(INCLUDES)
 VPATH = $(DIRS)
 
 programs_byte := \
@@ -283,7 +284,7 @@ ocamltex_files := \
   $(ROOTDIR)/compilerlibs/ocamltoplevel.cma \
   $(ROOTDIR)/otherlibs/str/str.cma \
   $(ROOTDIR)/otherlibs/unix/unix.cma \
-  ocamltex.ml
+  ocamltex.cmo
 
 #Scan latex files, and run ocaml code examples
 
@@ -293,10 +294,13 @@ ocamltex := ocamltex$(EXE)
 # $(ROOTDIR)/ocamlc not $(ROOTDIR)/boot/ocamlc since the boot
 # compiler does not necessarily have the correct shared library
 # configuration.
+$(ocamltex): CAMLC = $(OCAMLRUN) $(ROOTDIR)/ocamlc$(EXE) $(STDLIBFLAGS)
+$(ocamltex): OC_COMMON_LDFLAGS += -linkall
 $(ocamltex): INCLUDES += $(addprefix -I $(ROOTDIR)/otherlibs/,str unix)
 $(ocamltex): $(ocamltex_files)
-	$(OCAMLRUN) $(ROOTDIR)/ocamlc$(EXE) $(STDLIBFLAGS) \
-	  $(LINKFLAGS) -linkall -o $@ -no-alias-deps $^
+	$(CAMLC) $(OC_COMMON_LDFLAGS) $(OC_BYTECODE_LDFLAGS) -o $@ $^
+
+ocamltex.cmo: OC_COMMON_CFLAGS += -no-alias-deps
 
 # we need str and unix which depend on the bytecode version of other tools
 # thus we use the othertools target
