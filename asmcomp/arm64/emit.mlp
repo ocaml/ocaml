@@ -1076,24 +1076,23 @@ let fundecl fundecl =
     preproc_stack_check
       ~fun_body:fundecl.fun_body ~frame_size:(frame_size env) ~trap_size:16
   in
-  let stack_check_size = ref 0 in
-  let handle_overflow = ref None in
-  if contains_nontail_calls || max_frame_size >= stack_threshold_size then begin
-    let overflow = new_label () and ret = new_label () in
-    let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
-    let f = max_frame_size + threshold_offset in
-    let offset = Domainstate.(idx_of_field Domain_current_stack) * 8 in
-    `  ldr {emit_reg reg_tmp1}, [{emit_reg reg_domain_state_ptr}, #{emit_int offset}]\n`;
-    emit_addimm reg_tmp1 reg_tmp1 f;
-    `  cmp sp, {emit_reg reg_tmp1}\n`;
-    `  bcc {emit_label overflow}\n`;
-    `{emit_label ret}:\n`;
-    handle_overflow := Some (overflow, ret);
-    stack_check_size := 5
-  end;
+  let handle_overflow, stack_check_size =
+    if contains_nontail_calls || max_frame_size >= stack_threshold_size then begin
+      let overflow = new_label () and ret = new_label () in
+      let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
+      let f = max_frame_size + threshold_offset in
+      let offset = Domainstate.(idx_of_field Domain_current_stack) * 8 in
+      `  ldr {emit_reg reg_tmp1}, [{emit_reg reg_domain_state_ptr}, #{emit_int offset}]\n`;
+      emit_addimm reg_tmp1 reg_tmp1 f;
+      `  cmp sp, {emit_reg reg_tmp1}\n`;
+      `  bcc {emit_label overflow}\n`;
+      `{emit_label ret}:\n`;
+      Some (overflow, ret), 5
+    end else None, 0
+  in
 
   let max_out_of_line_code_offset =
-    !stack_check_size +
+    stack_check_size +
     max_out_of_line_code_offset ~num_call_gc
       ~num_check_bound
   in
@@ -1106,7 +1105,7 @@ let fundecl fundecl =
   assert (List.length env.call_gc_sites = num_call_gc);
   assert (List.length env.bound_error_sites = num_check_bound);
 
-  begin match !handle_overflow with
+  begin match handle_overflow with
   | None -> ()
   | Some (overflow,ret) -> begin
       `{emit_label overflow}:\n`;
