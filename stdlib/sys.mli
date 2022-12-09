@@ -357,10 +357,10 @@ val development_version : bool
 *)
 
 type extra_prefix = Plus | Tilde
-(** @since 4.14.0 *)
+(** @since 4.14 *)
 
 type extra_info = extra_prefix * string
-(** @since 4.14.0 *)
+(** @since 4.14 *)
 
 type ocaml_release_info = {
   major : int;
@@ -368,11 +368,11 @@ type ocaml_release_info = {
   patchlevel : int;
   extra : extra_info option
 }
-(** @since 4.14.0 *)
+(** @since 4.14 *)
 
 val ocaml_release : ocaml_release_info
 (** [ocaml_release] is the version of OCaml.
-    @since 4.14.0
+    @since 4.14
 *)
 
 val enable_runtime_warnings: bool -> unit

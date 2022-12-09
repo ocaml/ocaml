@@ -493,11 +493,11 @@ coupled variables, margin and maximum indentation limit.
 *)
 
 type geometry = { max_indent:int; margin: int}
-(** @since 4.08.0 *)
+(** @since 4.08 *)
 
 val check_geometry: geometry -> bool
-(** Check if the formatter geometry is valid: [1 < max_indent < margin] 
-    @since 4.08.0 *)
+(** Check if the formatter geometry is valid: [1 < max_indent < margin]
+    @since 4.08 *)
 
 val pp_set_geometry : formatter -> max_indent:int -> margin:int -> unit
 val set_geometry : max_indent:int -> margin:int -> unit
