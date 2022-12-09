@@ -110,7 +110,11 @@ ocamllex_PROGRAMS = $(addprefix lex/,ocamllex ocamllex.opt)
 ocamlyacc_PROGRAM = yacc/ocamlyacc
 
 TOOLS_TO_INSTALL = \
-  ocamldep ocamlprof ocamlcp ocamloptp ocamlmklib ocamlmktop ocamlobjinfo
+  ocamldep ocamlprof ocamlcp ocamlmklib ocamlmktop ocamlobjinfo
+
+ifeq "$(NATIVE_COMPILER)" "true"
+TOOLS_TO_INSTALL += ocamloptp
+endif
 
 TOOLS = $(TOOLS_TO_INSTALL) ocamlcmt dumpobj primreq stripdebug cmpbyt
 
@@ -1299,9 +1303,12 @@ lintapidiff: tools/lintapidiff.opt$(EXE)
 
 # Tools
 
-TOOLS_BYTECODE_TARGETS = $(TOOLS_PROGRAMS) $(TOOLS_MODULES:=.cmo)
+TOOLS_BYTECODE_TARGETS = \
+  $(filter-out tools/ocamloptp,$(TOOLS_PROGRAMS)) $(TOOLS_MODULES:=.cmo)
 
-TOOLS_NATIVE_TARGETS = $(TOOLS_PROGRAMS:=.opt) $(TOOLS_MODULES:=.cmx)
+TOOLS_NATIVE_TARGETS = $(TOOLS_MODULES:=.cmx) tools/ocamloptp
+
+TOOLS_OPT_TARGETS = $(TOOLS_PROGRAMS:=.opt)
 
 .PHONY: ocamltools
 ocamltools: ocamlc ocamllex compilerlibs/ocamlmiddleend.cma
@@ -1313,13 +1320,16 @@ tools-all: $(TOOLS_BYTECODE_TARGETS)
 .PHONY: tools-allopt
 tools-allopt: $(TOOLS_NATIVE_TARGETS)
 
+.PHONY: tools-allopt.opt
+tools-allopt.opt: $(TOOLS_OPT_TARGETS)
+
 .PHONY: ocamltoolsopt
 ocamltoolsopt: ocamlopt
 	$(MAKE) tools-allopt
 
 .PHONY: ocamltoolsopt.opt
 ocamltoolsopt.opt: ocamlc.opt ocamllex.opt compilerlibs/ocamlmiddleend.cmxa
-	$(MAKE) tools-allopt
+	$(MAKE) tools-allopt.opt
 
 # Tools that require a full ocaml distribution: otherlibs and toplevel
 
