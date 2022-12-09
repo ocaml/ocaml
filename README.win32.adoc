@@ -63,9 +63,7 @@ Only the `make` Cygwin package is required. `diffutils` is required if you wish
 to be able to run the test suite.
 
 Unless you are also compiling the Cygwin port of OCaml, you do not need the
-`gcc-core` or `flexdll` packages. If you do install them, care may be required
-to ensure that a particular build is using the correct installation of
-`flexlink`.
+`gcc-core` or `flexdll` packages.
 
 [[bmflex]]
 In addition to Cygwin, FlexDLL must also be installed, which is available from
@@ -197,7 +195,7 @@ quickly as it will be unable to link `ocamlrun`.
 
 Now run:
 
-        ./configure --build=i686-pc-cygwin --host=i686-pc-windows
+        ./configure --build=x86_64-pc-cygwin --host=i686-pc-windows
 
 for 32-bit, or:
 
@@ -262,7 +260,7 @@ the WinZip Options Window.)
 
 Now run:
 
-        ./configure --build=i686-pc-cygwin --host=i686-w64-mingw32
+        ./configure --build=x86_64-pc-cygwin --host=i686-w64-mingw32
 
 for 32-bit, or:
 
