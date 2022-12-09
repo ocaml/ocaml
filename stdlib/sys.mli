@@ -359,7 +359,7 @@ val development_version : bool
 type extra_prefix = Plus | Tilde
 (** @since 4.14.0 *)
 
-type extra_info = extra_prefix * string 
+type extra_info = extra_prefix * string
 (** @since 4.14.0 *)
 
 type ocaml_release_info = {
@@ -371,7 +371,9 @@ type ocaml_release_info = {
 (** @since 4.14.0 *)
 
 val ocaml_release : ocaml_release_info
-(** @since 4.14.0 *)
+(** [ocaml_release] is the version of OCaml.
+    @since 4.14.0
+*)
 
 val enable_runtime_warnings: bool -> unit
 [@@alert unsynchronized_access
