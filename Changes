@@ -32,6 +32,11 @@ Working version
 - #11764: add prototypes to old-style C function definitions and declarations
   (Antonin Décimo, review by Xavier Leroy)
 
+- #11796: protect lazy computation of code fragment digest by a mutex.
+  This makes the thread sanitizer happier, and avoids duplicating
+  the hashing work.
+  (Gabriel Scherer, review by Xavier Leroy, report by Olivier Nicole)
+
 ### Type system:
 
 - #6941, #11187: prohibit using classes through recursive modules
