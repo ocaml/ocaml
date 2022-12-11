@@ -903,20 +903,21 @@ let fundecl fundecl =
     preproc_stack_check
       ~fun_body:fundecl.fun_body ~frame_size:(frame_size env) ~trap_size:16
   in
-  let handle_overflow = ref None in
-  if contains_nontail_calls || max_frame_size >= stack_threshold_size then begin
-    let overflow = new_label () and ret = new_label () in
-    let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
-    I.lea (mem64 NONE (-(max_frame_size + threshold_offset)) RSP) r10;
-    I.cmp (domain_field Domainstate.Domain_current_stack) r10;
-    I.jb (label overflow);
-    def_label ret;
-    handle_overflow := Some (overflow, ret)
-  end;
+  let handle_overflow =
+    if contains_nontail_calls || max_frame_size >= stack_threshold_size then begin
+      let overflow = new_label () and ret = new_label () in
+      let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
+      I.lea (mem64 NONE (-(max_frame_size + threshold_offset)) RSP) r10;
+      I.cmp (domain_field Domainstate.Domain_current_stack) r10;
+      I.jb (label overflow);
+      def_label ret;
+      Some (overflow, ret)
+    end else None
+  in
   emit_all env true fundecl.fun_body;
   List.iter emit_call_gc env.call_gc_sites;
   emit_call_bound_errors env;
-  begin match !handle_overflow with
+  begin match handle_overflow with
   | None -> ()
   | Some (overflow,ret) -> begin
       def_label overflow;

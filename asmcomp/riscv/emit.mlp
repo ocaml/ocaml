@@ -617,24 +617,25 @@ let fundecl fundecl =
     preproc_stack_check
       ~fun_body:fundecl.fun_body ~frame_size:(frame_size env) ~trap_size:16
   in
-  let handle_overflow = ref None in
-  if contains_nontail_calls || max_frame_size >= stack_threshold_size then begin
-    let overflow = new_label () and ret = new_label () in
-    let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
-    let f = max_frame_size + threshold_offset in
-    let offset = Domainstate.(idx_of_field Domain_current_stack) * 8 in
-    `	ld	{emit_reg reg_tmp}, {emit_int offset}({emit_reg reg_domain_state_ptr})\n`;
-    emit_addimm reg_tmp reg_tmp f;
-    `	bltu	sp, {emit_reg reg_tmp}, {emit_label overflow}\n`;
-    `{emit_label ret}:\n`;
-    handle_overflow := Some (overflow, ret)
-  end;
+  let handle_overflow =
+    if contains_nontail_calls || max_frame_size >= stack_threshold_size then begin
+      let overflow = new_label () and ret = new_label () in
+      let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
+      let f = max_frame_size + threshold_offset in
+      let offset = Domainstate.(idx_of_field Domain_current_stack) * 8 in
+      `	ld	{emit_reg reg_tmp}, {emit_int offset}({emit_reg reg_domain_state_ptr})\n`;
+      emit_addimm reg_tmp reg_tmp f;
+      `	bltu	sp, {emit_reg reg_tmp}, {emit_label overflow}\n`;
+      `{emit_label ret}:\n`;
+      Some (overflow, ret)
+    end else None
+  in
 
   emit_all env fundecl.fun_body;
   List.iter emit_call_gc env.call_gc_sites;
   List.iter emit_call_bound_error env.bound_error_sites;
 
-  begin match !handle_overflow with
+  begin match handle_overflow with
   | None -> ()
   | Some (overflow, ret) ->
       `{emit_label overflow}:\n`;
