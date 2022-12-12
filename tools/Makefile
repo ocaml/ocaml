@@ -32,17 +32,18 @@ define byte2native
 $(patsubst %.cmo,%.cmx,$(patsubst %.cma,%.cmxa,$1))
 endef
 
-CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) -g \
+CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) \
         -use-prims $(ROOTDIR)/runtime/primitives -I $(ROOTDIR)
-CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) $(STDLIBFLAGS) -g
+CAMLOPT = $(OCAMLRUN) $(ROOTDIR)/ocamlopt$(EXE) $(STDLIBFLAGS)
 DIRS = $(addprefix $(ROOTDIR)/,utils parsing typing bytecomp \
                    middle_end middle_end/closure middle_end/flambda \
                    middle_end/flambda/base_types driver toplevel \
                    file_formats lambda)
 INCLUDES = $(addprefix -I ,$(DIRS))
-COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48-70 -strict-sequence \
--warn-error +A -principal -strict-formats -bin-annot $(INCLUDES)
-LINKFLAGS = $(INCLUDES)
+COMPFLAGS = -g -strict-sequence -principal -absname \
+  -w +a-4-9-40-41-42-44-45-48 -warn-error +a -bin-annot \
+  -strict-formats $(INCLUDES)
+LINKFLAGS = -g $(INCLUDES)
 VPATH := $(filter-out -I,$(INCLUDES))
 
 programs_byte := \
@@ -220,7 +221,7 @@ make_opcodes := make_opcodes$(EXE)
 $(eval $(call PROGRAM_SYNONYM,make_opcodes))
 
 $(make_opcodes): make_opcodes.ml
-	$(CAMLC) $< -o $@
+	$(CAMLC) -g $< -o $@
 
 opnames.ml: $(ROOTDIR)/runtime/caml/instruct.h $(make_opcodes)
 	$(NEW_OCAMLRUN) $(make_opcodes) -opnames < $< > $@
@@ -311,13 +312,13 @@ clean::
 # Common stuff
 
 %.cmo: %.ml
-	$(CAMLC) -c $(COMPFLAGS) - $<
+	$(CAMLC) $(COMPFLAGS) -c $<
 
 %.cmi: %.mli
-	$(CAMLC) -c $(COMPFLAGS) - $<
+	$(CAMLC) $(COMPFLAGS) -c $<
 
 %.cmx: %.ml
-	$(CAMLOPT) $(COMPFLAGS) -c - $<
+	$(CAMLOPT) $(COMPFLAGS) -c $<
 
 clean::
 	rm -f *.cmo *.cmi *.cma *.dll *.so *.lib *.a

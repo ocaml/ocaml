@@ -15,9 +15,6 @@
 
 open Printf
 
-let syslib x =
-  if Config.ccomp_type = "msvc" then x ^ ".lib" else "-l" ^ x
-
 let mklib out files opts =
   if Config.ccomp_type = "msvc"
   then let machine =
@@ -61,7 +58,6 @@ let starts_with s pref =
 let ends_with = Filename.check_suffix
 let chop_prefix s pref =
   String.sub s (String.length pref) (String.length s - String.length pref)
-let chop_suffix = Filename.chop_suffix
 
 exception Bad_argument of string
 
@@ -342,7 +338,7 @@ let build_libs () =
                   (String.concat " " (prefix_list "-cclib " !c_libs))
                   (String.concat " " !caml_libs))
 
-let _ =
+let main () =
   try
     parse_arguments Sys.argv;
     build_libs()
@@ -355,3 +351,5 @@ let _ =
       prerr_string "System error: "; prerr_endline s; exit 4
   | x ->
       raise x
+
+let _ = main ()
