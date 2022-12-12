@@ -91,7 +91,5 @@ let () =
                                         ~lost_events () in
     ignore(read_poll cursor callbacks None);
     assert(!got_start);
-    (* this is num_full_majors rather than num_full_majors*num_domains
-        because in the worst case it can be that low. *)
     assert(Atomic.get minors >= num_minors);
     assert(!lost_events_count == 0)
