@@ -34,7 +34,7 @@ CAMLOPT=$(OCAMLRUN) ./ocamlopt$(EXE) $(STDLIBFLAGS) -I otherlibs/dynlink
 ARCHES=amd64 i386 arm arm64 power s390x riscv
 VPATH = utils parsing typing bytecomp file_formats lambda middle_end \
   middle_end/closure middle_end/flambda middle_end/flambda/base_types \
-  asmcomp driver toplevel
+  asmcomp driver toplevel tools
 INCLUDES = $(addprefix -I ,$(VPATH))
 
 ifeq "$(strip $(NATDYNLINKOPTS))" ""
@@ -90,8 +90,8 @@ utils/domainstate.ml: utils/domainstate.ml.c runtime/caml/domain_state.tbl
 utils/domainstate.mli: utils/domainstate.mli.c runtime/caml/domain_state.tbl
 	$(CPP) -I runtime/caml $< > $@
 
-configure: configure.ac aclocal.m4 build-aux/ocaml_version.m4 tools/autogen
-	tools/autogen
+configure: tools/autogen configure.ac aclocal.m4 build-aux/ocaml_version.m4
+	$<
 
 .PHONY: partialclean
 partialclean::
@@ -109,6 +109,15 @@ ocamllex_PROGRAMS = $(addprefix lex/,ocamllex ocamllex.opt)
 
 ocamlyacc_PROGRAM = yacc/ocamlyacc
 
+TOOLS_TO_INSTALL = \
+  ocamldep ocamlprof ocamlcp ocamloptp ocamlmklib ocamlmktop ocamlobjinfo
+
+TOOLS = $(TOOLS_TO_INSTALL) ocamlcmt dumpobj primreq stripdebug cmpbyt
+
+TOOLS_PROGRAMS = $(addprefix tools/,$(TOOLS))
+
+TOOLS_MODULES = tools/profiling
+
 # C programs
 
 C_PROGRAMS = $(ocamlyacc_PROGRAM)
@@ -118,7 +127,7 @@ $(foreach PROGRAM, $(C_PROGRAMS),\
 
 # OCaml programs that are compiled in both bytecode and native code
 
-OCAML_PROGRAMS = ocamlc ocamlopt lex/ocamllex
+OCAML_PROGRAMS = ocamlc ocamlopt lex/ocamllex $(TOOLS_PROGRAMS)
 
 $(foreach PROGRAM, $(OCAML_PROGRAMS),\
   $(eval $(call OCAML_PROGRAM,$(PROGRAM))))
@@ -129,18 +138,19 @@ $(foreach PROGRAM, $(OCAML_PROGRAMS),\
 # cannot declare it as we do for other bytecode-only programs.
 # We have to use dedicated rules to build it
 
-OCAML_BYTECODE_PROGRAMS = expunge
+OCAML_BYTECODE_PROGRAMS = expunge \
+  $(addprefix tools/,cvt_emit make_opcodes ocamltex)
 
 $(foreach PROGRAM, $(OCAML_BYTECODE_PROGRAMS),\
   $(eval $(call OCAML_BYTECODE_PROGRAM,$(PROGRAM))))
 
 # OCaml programs that are compiled only in native code
 
-OCAML_NATIVE_PROGRAMS = ocamlnat
+OCAML_NATIVE_PROGRAMS = ocamlnat tools/lintapidiff.opt
 
 $(foreach PROGRAM, $(OCAML_NATIVE_PROGRAMS),\
   $(eval $(call OCAML_NATIVE_PROGRAM,$(PROGRAM))))
-  
+
 USE_RUNTIME_PRIMS = -use-prims ../runtime/primitives
 USE_STDLIB = -nostdlib -I ../stdlib
 
@@ -551,8 +561,9 @@ asmcomp/scheduling.ml: asmcomp/$(ARCH)/scheduling.ml
 	cd asmcomp; $(LN) $(ARCH)/scheduling.ml .
 
 # Preprocess the code emitters
+cvt_emit = tools/cvt_emit$(EXE)
 
-cvt_emit := tools/cvt_emit$(EXE)
+beforedepend:: tools/cvt_emit.ml
 
 asmcomp/emit.ml: asmcomp/$(ARCH)/emit.mlp $(cvt_emit)
 	echo \# 1 \"asmcomp/$(ARCH)/emit.mlp\" > $@
@@ -560,12 +571,12 @@ asmcomp/emit.ml: asmcomp/$(ARCH)/emit.mlp $(cvt_emit)
 	|| { rm -f $@; exit 2; }
 
 partialclean::
-	rm -f asmcomp/emit.ml
+	rm -f asmcomp/emit.ml tools/cvt_emit.ml
 
 beforedepend:: asmcomp/emit.ml
 
-$(cvt_emit): tools/cvt_emit.mll
-	$(MAKE) -C tools cvt_emit
+cvt_emit_LIBRARIES =
+cvt_emit_MODULES = tools/cvt_emit
 
 # The "expunge" utility
 
@@ -1048,7 +1059,7 @@ clean::
 # Dependencies
 
 subdirs = stdlib $(addprefix otherlibs/, $(ALL_OTHERLIBS)) \
-  debugger ocamldoc ocamltest tools
+  debugger ocamldoc ocamltest
 
 .PHONY: alldepend
 alldepend: depend
@@ -1272,36 +1283,166 @@ endif
 
 # Lint @since and @deprecated annotations
 
+lintapidiff_LIBRARIES = \
+  $(addprefix compilerlibs/ocaml,common bytecomp middleend) \
+  otherlibs/str/str
+lintapidiff_MODULES = tools/lintapidiff
+
+tools/lintapidiff.opt$(EXE): VPATH += otherlibs/str
+
 VERSIONS=$(shell git tag|grep '^[0-9]*.[0-9]*.[0-9]*$$'|grep -v '^[12].')
 .PHONY: lintapidiff
-lintapidiff:
-	$(MAKE) -C tools lintapidiff.opt
+lintapidiff: tools/lintapidiff.opt$(EXE)
 	git ls-files -- 'otherlibs/*/*.mli' 'stdlib/*.mli' |\
 	    grep -Ev internal\|obj\|stdLabels\|moreLabels |\
 	    tools/lintapidiff.opt $(VERSIONS)
 
 # Tools
 
+TOOLS_BYTECODE_TARGETS = $(TOOLS_PROGRAMS) $(TOOLS_MODULES:=.cmo)
+
+TOOLS_NATIVE_TARGETS = $(TOOLS_PROGRAMS:=.opt) $(TOOLS_MODULES:=.cmx)
+
 .PHONY: ocamltools
 ocamltools: ocamlc ocamllex compilerlibs/ocamlmiddleend.cma
-	$(MAKE) -C tools all
+	$(MAKE) tools-all
+
+.PHONY: tools-all
+tools-all: $(TOOLS_BYTECODE_TARGETS)
+
+.PHONY: tools-allopt
+tools-allopt: $(TOOLS_NATIVE_TARGETS)
 
 .PHONY: ocamltoolsopt
 ocamltoolsopt: ocamlopt
-	$(MAKE) -C tools opt
+	$(MAKE) tools-allopt
 
 .PHONY: ocamltoolsopt.opt
 ocamltoolsopt.opt: ocamlc.opt ocamllex.opt compilerlibs/ocamlmiddleend.cmxa
-	$(MAKE) -C tools opt.opt
+	$(MAKE) tools-allopt
 
-# tools that require a full ocaml distribution: otherlibs and toplevel
-.PHONY:othertools
-othertools:
-	$(MAKE) -C tools othertools
+# Tools that require a full ocaml distribution: otherlibs and toplevel
+
+OTHER_TOOLS =
+
+ocamltex = tools/ocamltex$(EXE)
+
+ifeq "$(build_ocamltex)" "true"
+OTHER_TOOLS += $(ocamltex)
+endif
+
+.PHONY: othertools
+othertools: $(OTHER_TOOLS)
 
 partialclean::
-	$(MAKE) -C tools clean
+	for prefix in cm* dll so lib a obj; do \
+	  rm -f tools/*.$$prefix; \
+	done
 
+# The dependency generator
+
+ocamldep_LIBRARIES = $(addprefix compilerlibs/ocaml,common bytecomp)
+ocamldep_MODULES = tools/ocamldep
+
+tools/ocamldep$(EXE): OC_BYTECODE_LDFLAGS += -compat-32
+
+# The profiler
+
+ocamlprof_LIBRARIES =
+ocamlprof_MODULES = \
+  config build_path_prefix_map misc identifiable numbers arg_helper \
+  local_store load_path clflags terminfo warnings location longident \
+  docstrings syntaxerr ast_helper camlinternalMenhirLib parser pprintast \
+  lexer parse ocamlprof
+
+ocamlcp_ocamloptp_MODULES = \
+  config build_path_prefix_map misc profile warnings identifiable numbers \
+  arg_helper local_store load_path clflags terminfo location ccomp compenv \
+  main_args ocamlcp_common
+
+ocamlcp_LIBRARIES =
+ocamlcp_MODULES = $(ocamlcp_ocamloptp_MODULES) ocamlcp
+
+ocamloptp_LIBRARIES =
+ocamloptp_MODULES = $(ocamlcp_ocamloptp_MODULES) ocamloptp
+
+# To help building mixed-mode libraries (OCaml + C)
+ocamlmklib_LIBRARIES =
+ocamlmklib_MODULES = config build_path_prefix_map misc ocamlmklib
+
+# To make custom toplevels
+
+ocamlmktop_LIBRARIES =
+ocamlmktop_MODULES = \
+  config build_path_prefix_map misc identifiable numbers arg_helper \
+  local_store load_path clflags profile ccomp ocamlmktop
+
+# Reading cmt files
+
+ocamlcmt_LIBRARIES = $(addprefix compilerlibs/ocaml,common bytecomp)
+ocamlcmt_MODULES = tools/ocamlcmt
+
+# The bytecode disassembler
+
+dumpobj_LIBRARIES = $(addprefix compilerlibs/ocaml,common bytecomp)
+dumpobj_MODULES = $(addprefix tools/,opnames dumpobj)
+
+make_opcodes = tools/make_opcodes$(EXE)
+
+make_opcodes_LIBRARIES =
+make_opcodes_MODULES = tools/make_opcodes
+
+tools/opnames.ml: runtime/caml/instruct.h $(make_opcodes)
+	$(NEW_OCAMLRUN) $(make_opcodes) -opnames < $< > $@
+
+clean::
+	rm -f $(addprefix tools/,opnames.ml make_opcodes.ml)
+
+beforedepend:: $(addprefix tools/,opnames.ml make_opcodes.ml)
+
+# Display info on compiled files
+
+ocamlobjinfo_LIBRARIES = \
+  $(addprefix compilerlibs/ocaml,common bytecomp middleend)
+ocamlobjinfo_MODULES = tools/objinfo
+
+# Scan object files for required primitives
+
+primreq_LIBRARIES = $(addprefix compilerlibs/ocaml,common bytecomp)
+primreq_MODULES = tools/primreq
+
+# Copy a bytecode executable, stripping debug info
+
+stripdebug_LIBRARIES = \
+  $(addprefix compilerlibs/ocaml,common bytecomp)
+stripdebug_MODULES = tools/stripdebug
+
+# Compare two bytecode executables
+
+cmpbyt_LIBRARIES = $(addprefix compilerlibs/ocaml,common bytecomp)
+cmpbyt_MODULES = tools/cmpbyt
+
+# Scan latex files, and run ocaml code examples
+
+ocamltex_LIBRARIES = \
+  $(addprefix compilerlibs/ocaml,common bytecomp toplevel) \
+  $(addprefix otherlibs/,str/str unix/unix)
+ocamltex_MODULES = tools/ocamltex
+
+# ocamltex uses str.cma and unix.cma and so must be compiled with
+# $(ROOTDIR)/ocamlc rather than with $(ROOTDIR)/boot/ocamlc since the boot
+# compiler does not necessarily have the correct shared library
+# configuration.
+# Note: the following definitions apply to all the prerequisites
+# of ocamltex.
+$(ocamltex): CAMLC = $(OCAMLRUN) $(ROOTDIR)/ocamlc$(EXE) $(STDLIBFLAGS)
+$(ocamltex): OC_COMMON_LDFLAGS += -linkall
+$(ocamltex): VPATH += $(addprefix otherlibs/,str unix)
+
+tools/ocamltex.cmo: OC_COMMON_CFLAGS += -no-alias-deps
+
+# we need str and unix which depend on the bytecode version of other tools
+# thus we use the othertools target
 ## Test compilation of backend-specific parts
 
 ARCH_SPECIFIC =\
@@ -1364,16 +1505,11 @@ toplevel/native/topeval.cmx: otherlibs/dynlink/dynlink.cmxa
 
 # The numeric opcodes
 
-make_opcodes := tools/make_opcodes$(EXE)
-
 bytecomp/opcodes.ml: runtime/caml/instruct.h $(make_opcodes)
 	$(NEW_OCAMLRUN) $(make_opcodes) -opcodes < $< > $@
 
 bytecomp/opcodes.mli: bytecomp/opcodes.ml
 	$(CAMLC) -i $< > $@
-
-$(make_opcodes): tools/make_opcodes.mll
-	$(MAKE) -C tools make_opcodes
 
 partialclean::
 	rm -f bytecomp/opcodes.ml
@@ -1410,7 +1546,7 @@ depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
          lambda file_formats middle_end/closure middle_end/flambda \
          middle_end/flambda/base_types \
-         driver toplevel toplevel/byte toplevel/native lex; \
+         driver toplevel toplevel/byte toplevel/native lex tools; \
 	 do \
 	   $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $$d $(INCLUDES) \
 	   $(OCAMLDEPFLAGS) $$d/*.mli $$d/*.ml \
@@ -1427,7 +1563,7 @@ distclean: clean
 	rm -f $(runtime_CONFIGURED_HEADERS)
 	$(MAKE) -C stdlib distclean
 	$(MAKE) -C testsuite distclean
-	$(MAKE) -C tools distclean
+	rm -f tools/eventlog_metadata tools/*.bak
 	rm -f utils/config.generated.ml
 	rm -f compilerlibs/META
 	rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
@@ -1448,6 +1584,7 @@ install:
 	$(MKDIR) "$(INSTALL_COMPLIBDIR)"
 	$(MKDIR) "$(INSTALL_DOCDIR)"
 	$(MKDIR) "$(INSTALL_INCDIR)"
+	$(MKDIR) "$(INSTALL_LIBDIR_PROFILING)"
 	$(INSTALL_PROG) $(runtime_PROGRAMS) "$(INSTALL_BINDIR)"
 	$(INSTALL_DATA) $(runtime_BYTECODE_STATIC_LIBRARIES) \
 	  "$(INSTALL_LIBDIR)"
@@ -1465,8 +1602,32 @@ endif
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	$(INSTALL_PROG) lex/ocamllex$(EXE) \
 	  "$(INSTALL_BINDIR)/ocamllex.byte$(EXE)"
+	for i in $(TOOLS_TO_INSTALL); \
+	do \
+	  $(INSTALL_PROG) "tools/$$i$(EXE)" "$(INSTALL_BINDIR)/$$i.byte$(EXE)";\
+	  if test -f "tools/$$i".opt$(EXE); then \
+	    $(INSTALL_PROG) "tools/$$i.opt$(EXE)" "$(INSTALL_BINDIR)" && \
+	    (cd "$(INSTALL_BINDIR)" && $(LN) "$$i.opt$(EXE)" "$$i$(EXE)"); \
+	  else \
+	    (cd "$(INSTALL_BINDIR)" && $(LN) "$$i.byte$(EXE)" "$$i$(EXE)"); \
+	  fi; \
+	done
+else
+	for i in $(TOOLS_TO_INSTALL); \
+	do \
+	  if test -f "tools/$$i".opt$(EXE); then \
+	    $(INSTALL_PROG) "tools/$$i.opt$(EXE)" "$(INSTALL_BINDIR)"; \
+	    (cd "$(INSTALL_BINDIR)" && $(LN) "$$i.opt$(EXE)" "$$i$(EXE)"); \
+	  fi; \
+	done
 endif
 	$(INSTALL_PROG) $(ocamlyacc_PROGRAM)$(EXE) "$(INSTALL_BINDIR)"
+	if test -f tools/ocamlcmt.opt$(EXE); then \
+	  $(INSTALL_PROG)\
+	    tools/ocamlcmt.opt$(EXE) "$(INSTALL_BINDIR)/ocamlcmt$(EXE)"; \
+	else \
+	  $(INSTALL_PROG) tools/ocamlcmt$(EXE) "$(INSTALL_BINDIR)"; \
+	fi
 	$(INSTALL_DATA) \
 	   utils/*.cmi \
 	   parsing/*.cmi \
@@ -1494,6 +1655,9 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	   toplevel/byte/*.cmt \
 	   "$(INSTALL_COMPLIBDIR)"
+	$(INSTALL_DATA) \
+	  tools/profiling.cmt tools/profiling.cmti \
+	  "$(INSTALL_LIBDIR_PROFILING)"
 endif
 	$(INSTALL_DATA) \
 	  compilerlibs/*.cma compilerlibs/META \
@@ -1502,10 +1666,13 @@ endif
 	   $(ocamlc_MODULES:=.cmo) $(ocaml_MODULES:=.cmo) \
 	   "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_PROG) $(expunge) "$(INSTALL_LIBDIR)"
-# If installing over a previous OCaml version, ensure the module is removed
+# If installing over a previous OCaml version, ensure some modules are removed
 # from the previous installation.
 	rm -f "$(INSTALL_LIBDIR)"/topdirs.cm* "$(INSTALL_LIBDIR)/topdirs.mli"
-	$(MAKE) -C tools install
+	rm -f "$(INSTALL_LIBDIR)"/profiling.cm* "$(INSTALL_LIBDIR)/profiling.$(O)"
+	$(INSTALL_DATA) \
+	  tools/profiling.cmi tools/profiling.cmo \
+	  "$(INSTALL_LIBDIR_PROFILING)"
 ifeq "$(UNIX_OR_WIN32)" "unix" # Install manual pages only on Unix
 	$(MAKE) -C man install
 endif
@@ -1618,7 +1785,9 @@ ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 else
 	if test -f ocamlopt.opt$(EXE); then $(MAKE) installoptopt; fi
 endif
-	$(MAKE) -C tools installopt
+	$(INSTALL_DATA) \
+          tools/profiling.cmx tools/profiling.$(O) \
+	  "$(INSTALL_LIBDIR_PROFILING)"
 
 .PHONY: installoptopt
 installoptopt:
