@@ -40,7 +40,18 @@ method! makereg r =
 
 method! reload_operation op arg res =
   match op with
-    Iintop(Iadd|Isub|Iand|Ior|Ixor|Icomp _|Icheckbound) ->
+    Iintop(Iadd|Isub|Iand|Ior|Ixor|Icheckbound) ->
+      (* One of the two arguments can reside in the stack *)
+      if stackp arg.(0) && stackp arg.(1)
+      then ([|arg.(0); self#makereg arg.(1)|], res)
+      else (arg, res)
+  | Iintop(Icomp _) ->
+      (* The result must be a register *)
+      let res =
+        if stackp res.(0)
+        then [|self#makereg res.(0)|]
+        else res
+      in
       (* One of the two arguments can reside in the stack *)
       if stackp arg.(0) && stackp arg.(1)
       then ([|arg.(0); self#makereg arg.(1)|], res)
@@ -59,6 +70,11 @@ method! reload_operation op arg res =
       (* First argument and destination must be in register *)
       if stackp arg.(0)
       then let r = self#makereg arg.(0) in ([|r|], [|r|])
+      else (arg, res)
+  | Iintop_imm(Icomp _, _) ->
+      (* The result must be in a register *)
+      if stackp res.(0)
+      then (arg, [|self#makereg res.(0)|])
       else (arg, res)
   | Iintop(Imulh | Ilsl | Ilsr | Iasr) | Iintop_imm(_, _)
   | Ifloatofint | Iintoffloat | Ispecific(Ipush) ->
