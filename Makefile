@@ -116,6 +116,12 @@ ifeq "$(NATIVE_COMPILER)" "true"
 TOOLS_TO_INSTALL += ocamloptp
 endif
 
+# Clean should remove tools/ocamloptp etc. unconditionally because
+# the configuration is not available during clean so we don't
+# know whether they have been configured / built or not
+clean::
+	rm -f $(addprefix tools/ocamlopt,p p.opt p.exe p.opt.exe)
+
 TOOLS = $(TOOLS_TO_INSTALL) ocamlcmt dumpobj primreq stripdebug cmpbyt
 
 TOOLS_PROGRAMS = $(addprefix tools/,$(TOOLS))
