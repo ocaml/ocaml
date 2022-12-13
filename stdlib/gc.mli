@@ -79,7 +79,9 @@ type stat =
        are not available for allocation. *)
 
     compactions : int;
-    (** Number of heap compactions since the program was started. *)
+    (** Note: As of OCaml 5.0, compaction is not available and this field's
+        value will always be zero.
+        Number of heap compactions since the program was started. *)
 
     top_heap_words : int;
     (** Maximum size reached by the major heap, in words. *)
@@ -143,7 +145,9 @@ type control =
        Default: 0. *)
 
     max_overhead : int;
-    (** Heap compaction is triggered when the estimated amount
+    (** Note: As of OCaml 5.0, compaction is not implemented, and this field
+       will have no effect.
+       Heap compaction is triggered when the estimated amount
        of "wasted" memory is more than [max_overhead] percent of the
        amount of live data.  If [max_overhead] is set to 0, heap
        compaction is triggered at the end of each major GC cycle
@@ -300,7 +304,9 @@ external full_major : unit -> unit = "caml_gc_full_major"
    unreachable blocks. *)
 
 external compact : unit -> unit = "caml_gc_compaction"
-(** Perform a full major collection and compact the heap.  Note that heap
+(** Note: As of OCaml 5.0, compaction is not implemented, and calling this
+   function will only trigger a major collection.
+   Perform a full major collection and compact the heap.  Note that heap
    compaction is a lengthy operation. *)
 
 val print_stat : out_channel -> unit
