@@ -209,8 +209,10 @@ Working version
 - #11446: document switch compilation (lambda/switch.ml)
   (Gabriel Scherer, review by Luc Maranget and Vincent Laviron)
 
-- #11601, #11612: Clean up some global state handling in emitcode, spill.
-  (Hugo Heuzard, Stefan Muenzel review by Vincent Laviron and Gabriel Scherer)
+- #11601, #11612, #11628: Clean up some global state handling
+  in emitcode, bytepackager, spill.
+  (Hugo Heuzard, Stefan Muenzel, review by Vincent Laviron, Gabriel Scherer
+   and Nathanaëlle Courant)
 
 - #11627: use return values instead of globals for linear scan intervals
   (Stefan Muenzel, review by Nicolás Ojeda Bär)
