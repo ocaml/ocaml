@@ -1295,7 +1295,7 @@ endif
 # Lint @since and @deprecated annotations
 
 lintapidiff_LIBRARIES = \
-  $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp ocamlmiddleend) \
+  $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp) \
   otherlibs/str/str
 lintapidiff_MODULES = tools/lintapidiff
 
