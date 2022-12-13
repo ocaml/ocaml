@@ -824,11 +824,9 @@ let pat_of_constrs ex_pat cstrs =
   orify_many (List.map (pat_of_constr ex_pat) cstrs)
 
 let pats_of_type env ty =
-  let ty' = Ctype.expand_head env ty in
-  match get_desc ty' with
-  | Tconstr (path, _, _) ->
+  match Ctype.extract_concrete_typedecl env ty with
+  | Typedecl (_, path, {type_kind = Type_variant _ | Type_record _}) ->
       begin match Env.find_type_descrs path env with
-      | exception Not_found -> [omega]
       | Type_variant (cstrs,_) when List.length cstrs <= 1 ||
         (* Only explode when all constructors are GADTs *)
         List.for_all (fun cd -> cd.cstr_generalized) cstrs ->
@@ -840,24 +838,24 @@ let pats_of_type env ty =
               labels
           in
           [make_pat (Tpat_record (fields, Closed)) ty env]
-      | Type_variant _ | Type_abstract | Type_open -> [omega]
+      | _ -> [omega]
       end
-  | Ttuple tl ->
-      [make_pat (Tpat_tuple (omegas (List.length tl))) ty env]
-  | _ -> [omega]
+  | Has_no_typedecl ->
+      begin match get_desc (Ctype.expand_head env ty) with
+        Ttuple tl ->
+          [make_pat (Tpat_tuple (omegas (List.length tl))) ty env]
+      | _ -> [omega]
+      end
+  | Typedecl (_, _, {type_kind = Type_abstract | Type_open})
+  | May_have_typedecl -> [omega]
 
-let rec get_variant_constructors env ty =
-  match get_desc ty with
-  | Tconstr (path,_,_) -> begin
-      try match Env.find_type path env, Env.find_type_descrs path env with
-      | _, Type_variant (cstrs,_) -> cstrs
-      | {type_manifest = Some _}, _ ->
-          get_variant_constructors env
-            (Ctype.expand_head_once env (clean_copy ty))
+let get_variant_constructors env ty =
+  match Ctype.extract_concrete_typedecl env ty with
+  | Typedecl (_, path, {type_kind = Type_variant _}) ->
+      begin match Env.find_type_descrs path env with
+      | Type_variant (cstrs,_) -> cstrs
       | _ -> fatal_error "Parmatch.get_variant_constructors"
-      with Not_found ->
-        fatal_error "Parmatch.get_variant_constructors"
-    end
+      end
   | _ -> fatal_error "Parmatch.get_variant_constructors"
 
 module ConstructorSet = Set.Make(struct

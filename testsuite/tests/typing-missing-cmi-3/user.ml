@@ -107,3 +107,12 @@ let  f : type a b. (a Middle.ti -> unit) -> (a,b) Middle.gadt -> b -> unit =
 [%%expect {|
 val f : ('a Middle.ti -> unit) -> ('a, 'b) Middle.gadt -> 'b -> unit = <fun>
 |}]
+
+(* Check re-exportation of GADTs *)
+
+let f : type a. a Middle.is_int -> a -> int = fun Middle.Is_int x -> x
+let g : bool Middle.is_int -> 'a = function _ -> .
+[%%expect{|
+val f : 'a Middle.is_int -> 'a -> int = <fun>
+val g : bool Middle.is_int -> 'a = <fun>
+|}]
