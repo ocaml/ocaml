@@ -416,6 +416,15 @@ utils/config_%.mli: utils/config.mli
 
 beforedepend:: utils/config_main.mli utils/config_boot.mli
 
+# Since the compiler libraries are necessarily compiled with boot/ocamlc,
+# make sure they *always are*, even when rebuilding a program compiled
+# with ./ocamlc (e.g. ocamltex)
+
+$(addprefix compilerlibs/,\
+  ocamlcommon.cma ocamlbytecomp.cma ocamloptcomp.cma ocamlmiddleend.cma \
+  ocamltoplevel.cma): \
+  CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) -use-prims runtime/primitives
+
 compilerlibs/ocamlcommon.cma: $(COMMON_CMI) $(ALL_CONFIG_CMO) $(COMMON)
 	$(CAMLC) -a -linkall -o $@ $(COMMON)
 partialclean::

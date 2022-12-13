@@ -48,10 +48,12 @@ let stripdebug infile outfile =
   close_in ic;
   close_out oc
 
-let _ =
+let main () =
   if Array.length Sys.argv = 3
   then stripdebug Sys.argv.(1) Sys.argv.(2)
   else begin
     eprintf "Usage: stripdebug <source file> <destination file>\n";
     exit 2
   end
+
+let _ = main ()

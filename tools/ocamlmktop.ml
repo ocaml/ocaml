@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let _ =
+let main () =
   let args = Ccomp.quote_files (List.tl (Array.to_list Sys.argv)) in
   let ocamlmktop = Sys.executable_name in
   (* On Windows Sys.command calls system() which in turn calls 'cmd.exe /c'.
@@ -31,3 +31,5 @@ let _ =
     extra_quote
   in
   exit(Sys.command cmdline)
+
+let _ = main ()

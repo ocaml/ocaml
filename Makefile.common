@@ -33,6 +33,7 @@ INSTALL_BINDIR := $(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR := $(DESTDIR)$(LIBDIR)
 INSTALL_INCDIR=$(INSTALL_LIBDIR)/caml
 INSTALL_STUBLIBDIR := $(DESTDIR)$(STUBLIBDIR)
+INSTALL_LIBDIR_PROFILING = $(INSTALL_LIBDIR)/profiling
 INSTALL_MANDIR := $(DESTDIR)$(MANDIR)
 INSTALL_PROGRAMS_MAN_DIR := $(DESTDIR)$(PROGRAMS_MAN_DIR)
 INSTALL_LIBRARIES_MAN_DIR := $(DESTDIR)$(LIBRARIES_MAN_DIR)
@@ -195,3 +196,39 @@ endif
 if_file_exists = ( test ! -f $(1) || $(2) && rm -f $(1) )
 MERGEMANIFESTEXE = $(call if_file_exists, $(1).manifest, \
   mt -nologo -outputresource:$(1) -manifest $(1).manifest)
+
+# Macros and rules to compile OCaml programs
+
+# We use secondary expansion here so that variables like
+# foo_LIBRARIES and foo_MODULES can be defined after the calls
+# to the macros below. Without secondary expansion, those variables
+# would have to be defined before the calls to OCAML_BYTECODE_PROGRAM etc.
+
+.SECONDEXPANSION:
+
+LINK_BYTECODE_PROGRAM =\
+  $(CAMLC) $(OC_COMMON_LDFLAGS) $(OC_BYTECODE_LDFLAGS)
+
+define OCAML_BYTECODE_PROGRAM
+$(eval $(call PROGRAM_SYNONYM,$(1)))
+$(1)$(EXE): \
+  $$$$(patsubst %,%.cma, $$$$($(basename $(notdir $(1)))_LIBRARIES)) \
+  $$$$(patsubst %,%.cmo, $$$$($(basename $(notdir $(1)))_MODULES))
+	$$(LINK_BYTECODE_PROGRAM) -o $$@ $$^
+endef # OCAML_BYTECODE_PROGRAM
+
+LINK_NATIVE_PROGRAM =\
+  $(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) $(OC_NATIVE_LDFLAGS)
+
+define OCAML_NATIVE_PROGRAM
+$(eval $(call PROGRAM_SYNONYM,$(1)))
+$(1)$(EXE): \
+  $$$$(patsubst %,%.cmxa, $$$$($(basename $(notdir $(1)))_LIBRARIES)) \
+  $$$$(patsubst %,%.cmx, $$$$($(basename $(notdir $(1)))_MODULES))
+	$$(LINK_NATIVE_PROGRAM) -o $$@ $$^
+endef # OCAML_NATIVE_PROGRAM
+
+define OCAML_PROGRAM
+$(eval $(call OCAML_BYTECODE_PROGRAM,$(1)))
+$(eval $(call OCAML_NATIVE_PROGRAM,$(1).opt))
+endef # OCAML_PROGRAM

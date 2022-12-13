@@ -233,8 +233,13 @@ Working version
   Gabriel Scherer)
 
 ### Build system:
+
 - #11590: Allow installing to a destination path containing spaces.
    (Élie Brami, review by Sébastien Hinderer and David Allsopp)
+
+- #11243, #11248, #11268, #11420, #11675: merge the sub-makefiles into
+  the root Makefile.
+  (Sébastien Hinderer, review by David Allsopp and Florian Angeletti)
 
 ### Bug fixes:
 
