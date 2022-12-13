@@ -463,7 +463,7 @@ clean:: partialclean
 
 # The bytecode compiler
 
-ocamlc_LIBRARIES = $(addprefix compilerlibs/ocaml,common bytecomp)
+ocamlc_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 
 ocamlc_MODULES = driver/main
 
@@ -476,7 +476,7 @@ partialclean::
 
 # The native-code compiler
 
-ocamlopt_LIBRARIES = $(addprefix compilerlibs/ocaml,common optcomp)
+ocamlopt_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamloptcomp)
 
 ocamlopt_MODULES = driver/optmain
 
@@ -485,7 +485,8 @@ partialclean::
 
 # The toplevel
 
-ocaml_LIBRARIES = $(addprefix compilerlibs/ocaml,common bytecomp toplevel)
+ocaml_LIBRARIES = \
+  $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp ocamltoplevel)
 
 ocaml_MODULES = toplevel/topstart
 
@@ -590,7 +591,7 @@ cvt_emit_MODULES = tools/cvt_emit
 
 # The "expunge" utility
 
-expunge_LIBRARIES = $(addprefix compilerlibs/ocaml,common bytecomp)
+expunge_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 
 expunge_MODULES = toplevel/expunge
 
@@ -1294,7 +1295,7 @@ endif
 # Lint @since and @deprecated annotations
 
 lintapidiff_LIBRARIES = \
-  $(addprefix compilerlibs/ocaml,common bytecomp middleend) \
+  $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp ocamlmiddleend) \
   otherlibs/str/str
 lintapidiff_MODULES = tools/lintapidiff
 
@@ -1357,7 +1358,7 @@ partialclean::
 
 # The dependency generator
 
-ocamldep_LIBRARIES = $(addprefix compilerlibs/ocaml,common bytecomp)
+ocamldep_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 ocamldep_MODULES = tools/ocamldep
 
 tools/ocamldep$(EXE): OC_BYTECODE_LDFLAGS += -compat-32
@@ -1395,12 +1396,12 @@ ocamlmktop_MODULES = \
 
 # Reading cmt files
 
-ocamlcmt_LIBRARIES = $(addprefix compilerlibs/ocaml,common bytecomp)
+ocamlcmt_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 ocamlcmt_MODULES = tools/ocamlcmt
 
 # The bytecode disassembler
 
-dumpobj_LIBRARIES = $(addprefix compilerlibs/ocaml,common bytecomp)
+dumpobj_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 dumpobj_MODULES = $(addprefix tools/,opnames dumpobj)
 
 make_opcodes = tools/make_opcodes$(EXE)
@@ -1419,29 +1420,29 @@ beforedepend:: $(addprefix tools/,opnames.ml make_opcodes.ml)
 # Display info on compiled files
 
 ocamlobjinfo_LIBRARIES = \
-  $(addprefix compilerlibs/ocaml,common bytecomp middleend)
+  $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp ocamlmiddleend)
 ocamlobjinfo_MODULES = tools/objinfo
 
 # Scan object files for required primitives
 
-primreq_LIBRARIES = $(addprefix compilerlibs/ocaml,common bytecomp)
+primreq_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 primreq_MODULES = tools/primreq
 
 # Copy a bytecode executable, stripping debug info
 
 stripdebug_LIBRARIES = \
-  $(addprefix compilerlibs/ocaml,common bytecomp)
+  $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 stripdebug_MODULES = tools/stripdebug
 
 # Compare two bytecode executables
 
-cmpbyt_LIBRARIES = $(addprefix compilerlibs/ocaml,common bytecomp)
+cmpbyt_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 cmpbyt_MODULES = tools/cmpbyt
 
 # Scan latex files, and run ocaml code examples
 
 ocamltex_LIBRARIES = \
-  $(addprefix compilerlibs/ocaml,common bytecomp toplevel) \
+  $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp ocamltoplevel) \
   $(addprefix otherlibs/,str/str unix/unix)
 ocamltex_MODULES = tools/ocamltex
 
