@@ -1318,7 +1318,7 @@ TOOLS_NATIVE_TARGETS = $(TOOLS_MODULES:=.cmx) tools/ocamloptp
 TOOLS_OPT_TARGETS = $(TOOLS_PROGRAMS:=.opt)
 
 .PHONY: ocamltools
-ocamltools: ocamlc ocamllex compilerlibs/ocamlmiddleend.cma
+ocamltools: ocamlc ocamllex
 	$(MAKE) tools-all
 
 .PHONY: tools-all
@@ -1335,7 +1335,7 @@ ocamltoolsopt: ocamlopt
 	$(MAKE) tools-allopt
 
 .PHONY: ocamltoolsopt.opt
-ocamltoolsopt.opt: ocamlc.opt ocamllex.opt compilerlibs/ocamlmiddleend.cmxa
+ocamltoolsopt.opt: ocamlc.opt ocamllex.opt
 	$(MAKE) tools-allopt.opt
 
 # Tools that require a full ocaml distribution: otherlibs and toplevel
