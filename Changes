@@ -3,6 +3,12 @@ OCaml 4.14 maintenance branch
 
 ### Bug fixes:
 
+- #11803, #11808: on x86, the destination of an integer comparison must be
+  a register, it cannot be a stack slot.
+  (Vincent Laviron, review by Xavier Leroy, report by
+   Emilio Jesús Gallego Arias)
+
+
 OCaml 4.14.1
 -----------------------------
 
