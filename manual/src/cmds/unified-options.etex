@@ -100,7 +100,9 @@ compile modules separately.
 \item["-cc" \var{ccomp}]
 Use \var{ccomp} as the C linker \nat{called to build the final executable }
 \comp{when linking in ``custom runtime'' mode (see the "-custom" option)}
-and as the C compiler for compiling ".c" source files.
+and as the C compiler for compiling ".c" source files. When linking object
+files produced by a C++ compiler (such as "g++" or "clang++"), it is recommended
+to use "-cc c++".
 }%notop
 
 \notop{%
