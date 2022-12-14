@@ -1500,6 +1500,7 @@ void caml_interrupt_self(void) {
 
 void caml_reset_young_limit(caml_domain_state * dom_st)
 {
+  CAMLassert ((uintnat)dom_st->young_ptr > (uintnat)dom_st->young_trigger);
   /* An interrupt might have been queued in the meanwhile; this
      achieves the proper synchronisation. */
   atomic_exchange(&dom_st->young_limit, (uintnat)dom_st->young_trigger);
@@ -1570,6 +1571,9 @@ void caml_poll_gc_work(void)
       /* We have used half of our minor heap arena. Request a major slice on
          this domain. */
       advance_global_major_slice_epoch (d);
+      /* Advance the [young_trigger] to [young_start] so that the allocation
+         fails when the minor heap is full. */
+      d->young_trigger = d->young_start;
     }
   } else if (d->requested_minor_gc) {
     /* This domain has _not_ used up half of its minor heap arena, but a minor
