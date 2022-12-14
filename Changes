@@ -162,6 +162,9 @@ Working version
 - #11481: Fix the type of Unix.umask to Unix.file_perm -> Unix.file_perm
   (Favonia, review by Sébastien Hinderer)
 
+- #11676: Fix missing since annotation in the `Sys` and `Format` modules
+  (Github user Bukolab99, review by Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 - #10009: Improve the error reported by mismatched struct/sig and =/: in module

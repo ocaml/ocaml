@@ -493,9 +493,11 @@ coupled variables, margin and maximum indentation limit.
 *)
 
 type geometry = { max_indent:int; margin: int}
+(** @since 4.08 *)
 
 val check_geometry: geometry -> bool
-(** Check if the formatter geometry is valid: [1 < max_indent < margin] *)
+(** Check if the formatter geometry is valid: [1 < max_indent < margin]
+    @since 4.08 *)
 
 val pp_set_geometry : formatter -> max_indent:int -> margin:int -> unit
 val set_geometry : max_indent:int -> margin:int -> unit
@@ -983,6 +985,7 @@ val std_formatter : formatter
 val get_std_formatter : unit -> formatter
 (** [get_std_formatter ()] returns the current domain's standard formatter used
     to write to standard output.
+    @since 5.0
 *)
 
 val err_formatter : formatter
@@ -992,8 +995,9 @@ val err_formatter : formatter
 *)
 
 val get_err_formatter : unit -> formatter
-(* [get_err_formatter ()] returns the current domain's formatter used to write
+(** [get_err_formatter ()] returns the current domain's formatter used to write
    to standard error.
+   @since 5.0
 *)
 
 val formatter_of_buffer : Buffer.t -> formatter
@@ -1008,7 +1012,8 @@ val stdbuf : Buffer.t
 
 val get_stdbuf : unit -> Buffer.t
 (** [get_stdbuf ()] returns the current domain's string buffer in which the
-    current domain's string formatter writes. *)
+    current domain's string formatter writes.
+    @since 5.0 *)
 
 val str_formatter : formatter
 (** The initial domain's formatter to output to the {!stdbuf} string buffer.
@@ -1019,6 +1024,7 @@ val str_formatter : formatter
 val get_str_formatter : unit -> formatter
 (** The current domain's formatter to output to the current domains string
     buffer.
+    @since 5.0
 *)
 
 val flush_str_formatter : unit -> string
@@ -1050,6 +1056,7 @@ val make_synchronized_formatter :
     When the formatter is used with multiple domains, the output from the
     domains will be interleaved with each other at points where the formatter
     is flushed, such as with {!print_flush}.
+    @since 5.0
 *)
 
 val formatter_of_out_functions :
