@@ -2433,6 +2433,7 @@ When OCaml calls the C code implementing a primitive, the domain lock
 is held, therefore the C code has full access to the facilities of the
 run-time system.  However, no other thread in the same domain can execute
 OCaml code concurrently with the C code of the primitive.
+See also chapter~\ref{s:par_c_bindings} for the behaviour with multiple domains.
 
 If a C primitive runs for a long time or performs potentially blocking
 input-output operations, it can explicitly release the domain lock,

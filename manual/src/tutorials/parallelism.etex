@@ -594,6 +594,16 @@ systhread identifiers uniquely identify systhreads in the program. The initial
 domain gets the domain id and the thread id as 0. The newly spawned domain gets
 domain id as 1.
 
+\section{s:par_c_bindings}{Interaction with C bindings}
+
+During parallel execution with multiple domains, C code running on a domain may
+run in parallel with any C code running in other domains even if neither of
+them has released the ``domain lock''. Prior to OCaml 5.0, C bindings may have
+assumed that if the OCaml runtime lock is not released, then it would be safe
+to manipulate global C state (e.g. initialise a function-local static value).
+This is no longer true in the presence of parallel execution with multiple
+domains.
+
 \section{s:par_atomics}{Atomics}
 
 Mutex, condition variables and semaphores are used to implement blocking
