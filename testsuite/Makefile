@@ -99,9 +99,9 @@ endif
 # users should call the 'promote' target explicitly.
 PROMOTE =
 ifeq "$(PROMOTE)" ""
-  OCAMLTEST_PROMOTE_FLAG :=
+  OCAMLTEST_PROMOTE_FLAG =
 else
-  OCAMLTEST_PROMOTE_FLAG := -promote
+  OCAMLTEST_PROMOTE_FLAG = -promote
 endif
 
 # KEEP_TEST_DIR_ON_SUCCESS should be set by the user (to a non-empty value)
@@ -109,9 +109,9 @@ endif
 # to preserve test data of successful tests.
 KEEP_TEST_DIR_ON_SUCCESS ?=
 ifeq "$(KEEP_TEST_DIR_ON_SUCCESS)" ""
-  OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG :=
+  OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG =
 else
-  OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG := -keep-test-dir-on-success
+  OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG = -keep-test-dir-on-success
 endif
 
 TIMEOUT ?= 600 # 10 minutes
@@ -119,13 +119,14 @@ TIMEOUT ?= 600 # 10 minutes
 # SHOW_TIMINGS should be set by the user (to a non-empty value) if they want
 # the timings for each test file to be included in the log
 SHOW_TIMINGS ?=
-ifeq "$(SHOW_TIMINGS)" ""
-  OCAMLTEST_SHOW_TIMINGS_FLAG :=
-else
-  OCAMLTEST_SHOW_TIMINGS_FLAG := -show-timings
+OCAMLTEST_SHOW_TIMINGS_FLAG =
+ifneq "$(SHOW_TIMINGS)" ""
+ifeq "$(lib_unix)" "true"
+  OCAMLTEST_SHOW_TIMINGS_FLAG = -show-timings
+endif
 endif
 
-OCAMLTESTFLAGS := \
+OCAMLTESTFLAGS = \
   -timeout $(TIMEOUT) \
   $(OCAMLTEST_PROMOTE_FLAG) \
   $(OCAMLTEST_KEEP_TEST_DIR_ON_SUCCESS_FLAG) \

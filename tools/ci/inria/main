@@ -283,8 +283,9 @@ rm -rf "$instdir"
 
 cd testsuite
 if test -n "$jobs" && test -x /usr/bin/parallel
-then PARALLEL="$jobs $PARALLEL" $make --warn-undefined-variables parallel
-else $make --warn-undefined-variables all
+then PARALLEL="$jobs $PARALLEL" $make --warn-undefined-variables \
+                                      SHOW_TIMINGS=1 parallel
+else $make --warn-undefined-variables SHOW_TIMINGS=1 all
 fi
 
 if $bootstrap; then
