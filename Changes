@@ -1,5 +1,5 @@
-OCaml 5.0
----------
+OCaml 5.0 (16 December 2022)
+----------------------------
 
 - #10831: Multicore OCaml
   (Enguerrand Decorne, Stephen Dolan, Tom Kelly, Sadiq Jaffer,
