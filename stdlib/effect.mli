@@ -18,6 +18,8 @@
 
 (** Effects.
 
+    See 'Language extensions/Effect handlers' section in the manual.
+
     @since 5.0 *)
 
 type _ t = ..

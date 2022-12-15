@@ -611,6 +611,10 @@ OCaml 5.0
    (Amandine Nangah, review by David Allsopp, Florian Angeletti,
    Sébastien Hinderer, and Vincent Laviron)
 
+- #11813: Make new multicore chapters easier to discover, and emphasize impact
+  on C bindings.
+  (Edwin Török, review by KC Sivaramakrishnan, and Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 - #9140, #11131: New command-line flag -nocwd to not include implicit
