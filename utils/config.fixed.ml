@@ -40,6 +40,7 @@ let default_rpath = ""
 let mksharedlibrpath = ""
 let ar = boot_cannot_call "ar"
 let supports_shared_libraries = false
+let native_dynlink = false
 let mkdll = native_pack_linker
 let mkexe = native_pack_linker
 let mkmaindll = native_pack_linker

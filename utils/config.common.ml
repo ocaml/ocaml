@@ -119,6 +119,7 @@ let configuration_variables =
   p_bool "afl_instrument" afl_instrument;
   p_bool "windows_unicode" windows_unicode;
   p_bool "supports_shared_libraries" supports_shared_libraries;
+  p_bool "native_dynlink" native_dynlink;
   p_bool "naked_pointers" naked_pointers;
 
   p "exec_magic_number" exec_magic_number;

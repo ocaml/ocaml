@@ -50,6 +50,7 @@ let default_rpath = {@QS@|@rpath@|@QS@}
 let mksharedlibrpath = {@QS@|@mksharedlibrpath@|@QS@}
 let ar = {@QS@|@AR@|@QS@}
 let supports_shared_libraries = @supports_shared_libraries@
+let native_dynlink = @natdynlink@
 let mkdll, mkexe, mkmaindll =
   if Sys.win32 || Sys.cygwin && supports_shared_libraries then
     let flexlink =
