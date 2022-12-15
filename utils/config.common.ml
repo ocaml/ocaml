@@ -93,6 +93,7 @@ let configuration_variables =
   p "bytecomp_c_libraries" bytecomp_c_libraries;
   p "native_c_libraries" native_c_libraries;
   p "native_pack_linker" native_pack_linker;
+  p_bool "native_compiler" native_compiler;
   p "architecture" architecture;
   p "model" model;
   p_int "int_size" Sys.int_size;

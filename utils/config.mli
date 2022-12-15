@@ -150,6 +150,11 @@ val stack_safety_margin: int
     intermediate computations of some instructions, or the event
     handler. *)
 
+val native_compiler: bool
+(** Whether the native compiler is available or not
+
+    @since 5.1 *)
+
 val architecture: string
 (** Name of processor type for the native-code compiler *)
 

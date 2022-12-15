@@ -85,6 +85,8 @@ let flat_float_array = @flat_float_array@
 let function_sections = @function_sections@
 let afl_instrument = @afl@
 
+let native_compiler = @native_compiler@
+
 let architecture = {@QS@|@arch@|@QS@}
 let model = {@QS@|@model@|@QS@}
 let system = {@QS@|@system@|@QS@}
