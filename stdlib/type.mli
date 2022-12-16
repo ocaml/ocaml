@@ -20,5 +20,18 @@
 (** {1:witness Type equality witness} *)
 
 type (_, _) eq = Equal: ('a, 'a) eq
-(** A value of type [(a, b) eq] exists whenever [a] and [b] are the same
-    type. *)
+(** The purpose of [eq] is to represent type equalities that may not otherwise
+    be known by the type checker (eg because they may depend on dynamic data).
+
+    A value of type [(a, b) eq] represents the fact that types [a] and [b] are
+    equal.
+
+    If one has a value [eq : (a, b) eq] that proves types [a] and [b] are equal,
+    one can use it to convert a value of type [a] to a value of type [b] by
+    pattern matching on [Equal]:
+    {[
+      let cast (type a) (type b) (Equal : (a, b) Type.eq) (a : a) : b = a
+    ]}
+
+    At runtime, this function is just the identity.
+*)
