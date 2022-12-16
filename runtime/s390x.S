@@ -489,7 +489,7 @@ CFI_STARTPROC
 LBL(105):
         lay     %r8, -8(%r8)
         cgr     %r8, %r9
-        jh      LBL(106)
+        jl      LBL(106)
         lg      %r0, 0(%r8)
         lay     %r15, -8(%r15)
         stg     %r0, 0(%r15)

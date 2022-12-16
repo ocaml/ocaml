@@ -155,7 +155,7 @@ let loc_results res =
 
 let loc_external_arguments ty_args =
   let arg = Cmm.machtype_of_exttype_list ty_args in
-  let (loc, ofs) = calling_conventions 0 4 100 103 outgoing 160 arg in
+  let (loc, ofs) = calling_conventions 0 4 100 103 outgoing 0 arg in
   (Array.map (fun reg -> [|reg|]) loc, ofs)
 
 (* Results are in GPR 2 and FPR 0 *)
