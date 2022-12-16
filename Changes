@@ -122,7 +122,7 @@ Working version
 - #11581: Add type equality witness `type (_, _) eq = Equal: ('a, 'a) eq` in a
   new module Stdlib.Type.
   (Nicolás Ojeda Bär, review by Daniel Bünzli, Jacques Garrigue, Florian
-  Angeletti, Alain Frisch, Gabriel Scherer and Xavier Leroy)
+  Angeletti, Alain Frisch, Gabriel Scherer, Jeremy Yallop and Xavier Leroy)
 
 ### Other libraries:
 
