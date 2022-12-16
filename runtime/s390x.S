@@ -452,6 +452,7 @@ LBL(caml_c_call):
         CLEANUP_AFTER_C_CALL
     /* Reload alloc ptr  */
         lg      ALLOC_PTR, Caml_state(young_ptr)
+        lg      TRAP_PTR, Caml_state(exn_handler)
     /* Load ocaml stack and restore global variables */
         SWITCH_C_TO_OCAML
     /* Return to OCaml caller */
@@ -568,9 +569,10 @@ LBL(caml_start_program):
     /* link in the previous exn_handler so that copying stacks works */
         lg      %r9, Caml_state(exn_handler)
         stg     %r9, 0(%r8)
-        lay     %r9, LBL(trap_handler)
+        larl    %r9, LBL(trap_handler)
         stg     %r9, 8(%r8)
         stg     %r8, Caml_state(exn_handler)
+        lgr     TRAP_PTR, %r8
     /* Switch stacks and call the OCaml code */
         lgr     %r15, %r8
 #ifdef ASM_CFI_SUPPORTED
