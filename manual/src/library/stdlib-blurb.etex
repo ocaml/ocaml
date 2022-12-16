@@ -178,7 +178,7 @@ be called from C \\
 \stddocitem{String}{string operations}
 \stddocitem{StringLabels}{string operations (with labels)}
 \stddocitem{Sys}{system interface}
-\stddocitem{Type}{type instrospection}
+\stddocitem{Type}{type introspection}
 \stddocitem{Uchar}{Unicode characters}
 \stddocitem{Unit}{unit values}
 \stddocitem{Weak}{arrays of weak pointers}
