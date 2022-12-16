@@ -21,7 +21,7 @@
 
 type (_, _) eq = Equal: ('a, 'a) eq
 (** The purpose of [eq] is to represent type equalities that may not otherwise
-    be known by the type checker (eg because they may depend on dynamic data).
+    be known by the type checker (e.g. because they may depend on dynamic data).
 
     A value of type [(a, b) eq] represents the fact that types [a] and [b] are
     equal.
