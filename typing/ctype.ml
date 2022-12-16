@@ -171,37 +171,38 @@ let create_scope () =
 
 let wrap_end_def f = Misc.try_finally f ~always:end_def
 
-let wrap_def ?post f =
+let with_local_level ?post f =
   begin_def ();
   let result = wrap_end_def f in
   Option.iter (fun g -> g result) post;
   result
-let wrap_def_if cond f ~post =
-  if cond then wrap_def f ~post else f ()
-let wrap_def_iter f ~post =
+let with_local_level_if cond f ~post =
+  if cond then with_local_level f ~post else f ()
+let with_local_level_iter f ~post =
   begin_def ();
   let result, l = wrap_end_def f in
   List.iter post l;
   result
-let wrap_def_iter_if cond f ~post =
-  if cond then wrap_def_iter f ~post else fst (f ())
-let wrap_def_principal f ~post = wrap_def_if !Clflags.principal f ~post
-let wrap_def_iter_principal f ~post =
-  wrap_def_iter_if !Clflags.principal f ~post
-let wrap_init_def ~level f =
+let with_local_level_iter_if cond f ~post =
+  if cond then with_local_level_iter f ~post else fst (f ())
+let with_local_level_principal f ~post =
+  with_local_level_if !Clflags.principal f ~post
+let with_local_level_iter_principal f ~post =
+  with_local_level_iter_if !Clflags.principal f ~post
+let with_level ~level f =
   begin_def (); init_def level;
   let result = wrap_end_def f in
   result
-let wrap_init_def_if cond ~level f =
-  if cond then wrap_init_def ~level f else f ()
+let with_level_if cond ~level f =
+  if cond then with_level ~level f else f ()
 
-let wrap_class_def ?post f =
+let with_local_level_for_class ?post f =
   begin_class_def ();
   let result = wrap_end_def f in
   Option.iter (fun g -> g result) post;
   result
 
-let wrap_raise_nongen_level f =
+let with_raised_nongen_level f =
   raise_nongen_level ();
   wrap_end_def f
 
@@ -1694,7 +1695,7 @@ let full_expand ~may_forget_scope env ty =
     if may_forget_scope then
       try expand_head_unif env ty with Unify_trace _ ->
         (* #10277: forget scopes when printing trace *)
-        wrap_def begin fun () ->
+        with_local_level begin fun () ->
           init_def (get_level ty);
           (* The same as [expand_head], except in the failing case we return the
            *original* type, not [correct_levels ty].*)

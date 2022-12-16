@@ -232,7 +232,7 @@ let match_simple_printer_type desc ~is_old_style =
     else Topprinters.printer_type_new
   in
   match
-    Ctype.wrap_def ~post:Ctype.generalize begin fun () ->
+    Ctype.with_local_level ~post:Ctype.generalize begin fun () ->
       let ty_arg = Ctype.newvar() in
       Ctype.unify !toplevel_env
         (make_printer_type ty_arg)
@@ -249,7 +249,7 @@ let match_simple_printer_type desc ~is_old_style =
 let match_generic_printer_type desc ty_path params =
   let make_printer_type = Topprinters.printer_type_new in
   match
-    Ctype.wrap_def ~post:(List.iter Ctype.generalize) begin fun () ->
+    Ctype.with_local_level ~post:(List.iter Ctype.generalize) begin fun () ->
       let args = List.map (fun _ -> Ctype.newvar ()) params in
       let ty_target = Ctype.newty (Tconstr (ty_path, args, ref Mnil)) in
       let printer_args_ty =

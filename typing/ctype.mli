@@ -48,35 +48,36 @@ val end_def: unit -> unit
 
 (* All the following wrapper functions revert to the original level,
    even in case of exception. *)
-val wrap_def: ?post:('a -> unit) -> (unit -> 'a) -> 'a
-        (* [wrap_def (fun () -> cmd) ~post] evaluates [cmd] at a raised level.
+val with_local_level: ?post:('a -> unit) -> (unit -> 'a) -> 'a
+        (* [with_local_level (fun () -> cmd) ~post] evaluates [cmd] at a
+           raised level.
            If given, [post] is applied to the result, at the original level.
            It is expected to contain only level related post-processing. *)
-val wrap_def_if: bool -> (unit -> 'a) -> post:('a -> unit) -> 'a
-        (* Same as [wrap_init_def], but only raise the level conditionally.
+val with_local_level_if: bool -> (unit -> 'a) -> post:('a -> unit) -> 'a
+        (* Same as [with_local_level], but only raise the level conditionally.
            [post] also is only called if the level is raised. *)
-val wrap_def_iter: (unit -> 'a * 'b list) -> post:('b -> unit) -> 'a
-        (* Variant of [wrap_def], where [post] is iterated on the returned
-           list. *)
-val wrap_def_iter_if:
+val with_local_level_iter: (unit -> 'a * 'b list) -> post:('b -> unit) -> 'a
+        (* Variant of [with_local_level], where [post] is iterated on the
+           returned list. *)
+val with_local_level_iter_if:
     bool -> (unit -> 'a * 'b list) -> post:('b -> unit) -> 'a
-        (* Conditional variant of [wrap_def_iter] *)
-val wrap_init_def: level: int -> (unit -> 'a) -> 'a
-        (* [wrap_init_def ~level (fun () -> cmd)] evaluates [cmd] with
+        (* Conditional variant of [with_local_level_iter] *)
+val with_level: level: int -> (unit -> 'a) -> 'a
+        (* [with_level ~level (fun () -> cmd)] evaluates [cmd] with
            [current_level] set to [level] *)
-val wrap_init_def_if: bool -> level: int -> (unit -> 'a) -> 'a
-        (* Conditional variant of [wrap_init_def] *)
-val wrap_def_principal: (unit -> 'a) -> post:('a -> unit) -> 'a
-val wrap_def_iter_principal:
+val with_level_if: bool -> level: int -> (unit -> 'a) -> 'a
+        (* Conditional variant of [with_level] *)
+val with_local_level_principal: (unit -> 'a) -> post:('a -> unit) -> 'a
+val with_local_level_iter_principal:
     (unit -> 'a * 'b list) -> post:('b -> unit) -> 'a
-        (* Applications of [wrap_def_if] and [wrap_def_iter_if] to
-           [!Clflags.principal] *)
+        (* Applications of [with_local_level_if] and [with_local_level_iter_if]
+           to [!Clflags.principal] *)
 
-val wrap_class_def: ?post:('a -> unit) -> (unit -> 'a) -> 'a
-        (* Variant of [wrap_def], where the current level is raised but
+val with_local_level_for_class: ?post:('a -> unit) -> (unit -> 'a) -> 'a
+        (* Variant of [with_local_level], where the current level is raised but
            the nongen level is not touched *)
-val wrap_raise_nongen_level: (unit -> 'a) -> 'a
-        (* Variant of [wrap_def],
+val with_raised_nongen_level: (unit -> 'a) -> 'a
+        (* Variant of [with_local_level],
            raises the nongen level to the current level *)
 
 val reset_global_level: unit -> unit

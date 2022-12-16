@@ -2224,7 +2224,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       final_shape
   | Pmod_unpack sexp ->
       let exp =
-        Ctype.wrap_def_principal (fun () -> Typecore.type_exp env sexp)
+        Ctype.with_local_level_principal (fun () -> Typecore.type_exp env sexp)
           ~post:Typecore.generalize_structure_exp
       in
       let mty =
@@ -2887,7 +2887,7 @@ let type_package env m p fl =
   let modl, scope =
     Typetexp.wrap_type_variable_scope begin fun () ->
       (* type the module and create a scope in a raised level *)
-      Ctype.wrap_def begin fun () ->
+      Ctype.with_local_level begin fun () ->
         let modl, _mod_shape = type_module env m in
         let scope = Ctype.create_scope () in
         modl, scope

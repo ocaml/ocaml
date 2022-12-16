@@ -268,7 +268,7 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
       reset_type_variables ();
       let closed = svars <> [] in
       let targs, tret_type, args, ret_type, _univars =
-        Ctype.wrap_def_if closed begin fun () ->
+        Ctype.with_local_level_if closed begin fun () ->
           let univar_list =
             make_poly_univars (List.map (fun v -> v.txt) svars) in
           let univars = if closed then Some univar_list else None in
@@ -310,7 +310,7 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
 let transl_declaration env sdecl (id, uid) =
   (* Bind type parameters *)
   reset_type_variables();
-  Ctype.wrap_def begin fun () ->
+  Ctype.with_local_level begin fun () ->
   let tparams = make_params env sdecl.ptype_params in
   let params = List.map (fun (cty, _) -> cty.ctyp_type) tparams in
   let cstrs = List.map
@@ -887,7 +887,7 @@ let transl_type_decl env rec_flag sdecl_list =
     ) sdecl_list
   in
   let tdecls, decls, new_env =
-    Ctype.wrap_def_iter ~post:generalize_decl begin fun () ->
+    Ctype.with_local_level_iter ~post:generalize_decl begin fun () ->
       (* Enter types. *)
       let temp_env =
         List.fold_left2 (enter_type rec_flag) env sdecl_list ids_list in
@@ -1172,11 +1172,11 @@ let transl_type_extension extend env loc styext =
   | Some err -> raise (Error(loc, Extension_mismatch (type_path, env, err)))
   end;
   (* Note: it would be incorrect to call [create_scope] *after*
-     [reset_type_variables] or after [wrap_def] (see #10010). *)
+     [reset_type_variables] or after [with_local_level] (see #10010). *)
   let scope = Ctype.create_scope () in
   reset_type_variables();
   let ttype_params, _type_params, constructors =
-    Ctype.wrap_def begin fun () ->
+    Ctype.with_local_level begin fun () ->
       let ttype_params = make_params env styext.ptyext_params in
       let type_params = List.map (fun (cty, _) -> cty.ctyp_type) ttype_params in
       List.iter2 (Ctype.unify_var env)
@@ -1246,7 +1246,7 @@ let transl_exception env sext =
   let scope = Ctype.create_scope () in
   reset_type_variables();
   let ext =
-    Ctype.wrap_def
+    Ctype.with_local_level
       (fun () ->
         transl_extension_constructor ~scope env
           Predef.path_exn [] [] Asttypes.Public sext)
@@ -1461,7 +1461,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
     sdecl =
   Env.mark_type_used sig_decl.type_uid;
   reset_type_variables();
-  Ctype.wrap_def begin fun () ->
+  Ctype.with_local_level begin fun () ->
   (* In the first part of this function, we typecheck the syntactic
      declaration [sdecl] in the outer environment [outer_env]. *)
   let env = outer_env in
@@ -1601,7 +1601,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
 let abstract_type_decl ~injective arity =
   let rec make_params n =
     if n <= 0 then [] else Ctype.newvar() :: make_params (n-1) in
-  Ctype.wrap_def ~post:generalize_decl begin fun () ->
+  Ctype.with_local_level ~post:generalize_decl begin fun () ->
     { type_params = make_params arity;
       type_arity = arity;
       type_kind = Type_abstract;

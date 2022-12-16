@@ -644,7 +644,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
       with_attrs
         (fun () ->
            let cty =
-             Ctype.wrap_def_principal
+             Ctype.with_local_level_principal
                (fun () -> Typetexp.transl_simple_type val_env false styp)
                ~post:(fun cty -> Ctype.generalize_structure cty.ctyp_type)
            in
@@ -683,7 +683,8 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
                            No_overriding ("instance variable", label.txt)))
            end;
            let definition =
-             Ctype.wrap_def_principal ~post:Typecore.generalize_structure_exp
+             Ctype.with_local_level_principal
+               ~post:Typecore.generalize_structure_exp
                (fun () -> type_exp val_env sdefinition)
            in
            add_instance_variable ~strict:true loc val_env
@@ -904,7 +905,7 @@ and class_field_second_pass cl_num sign met_env field =
                (Btype.newgenty (Tarrow(Nolabel, self_type, ty, commu_ok)))
            in
            let texp =
-             Ctype.wrap_raise_nongen_level
+             Ctype.with_raised_nongen_level
                (fun () -> type_expect met_env sdefinition meth_type) in
            let kind = Tcfk_concrete (override, texp) in
            let desc = Tcf_method(label, priv, kind) in
@@ -922,7 +923,7 @@ and class_field_second_pass cl_num sign met_env field =
                (Ctype.newty (Tarrow (Nolabel, self_type, unit_type, commu_ok)))
            in
            let texp =
-             Ctype.wrap_raise_nongen_level
+             Ctype.with_raised_nongen_level
                (fun () -> type_expect met_env sexpr meth_type) in
            let desc = Tcf_initializer texp in
            met_env, mkcf desc loc attributes)
@@ -1139,7 +1140,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
       class_expr cl_num val_env met_env virt self_scope sfun
   | Pcl_fun (l, None, spat, scl') ->
       let (pat, pv, val_env', met_env) =
-        Ctype.wrap_def_principal
+        Ctype.with_local_level_principal
           (fun () ->
             Typecore.type_class_arg_pattern cl_num val_env met_env l spat)
           ~post: begin fun (pat, _, _, _) ->
@@ -1174,7 +1175,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
           [{c_lhs = pat; c_guard = None; c_rhs = dummy}]
       in
       let cl =
-        Ctype.wrap_raise_nongen_level
+        Ctype.with_raised_nongen_level
           (fun () -> class_expr cl_num val_env' met_env virt self_scope scl') in
       if Btype.is_optional l && not_nolabel_function cl.cl_type then
         Location.prerr_warning pat.pat_loc
@@ -1189,7 +1190,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
   | Pcl_apply (scl', sargs) ->
       assert (sargs <> []);
       let cl =
-        Ctype.wrap_def_principal
+        Ctype.with_local_level_principal
           (fun () -> class_expr cl_num val_env met_env virt self_scope scl')
           ~post:(fun cl -> Ctype.generalize_class_type_structure cl.cl_type)
       in
@@ -1302,7 +1303,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
              (* do not mark the value as used *)
              let vd = Env.find_value path val_env in
              let expr =
-               Ctype.wrap_def begin fun () ->
+               Ctype.with_local_level begin fun () ->
                  {exp_desc =
                   Texp_ident(path,
                              mknoloc(Longident.Lident (Ident.name id)),vd);
@@ -1341,7 +1342,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
          }
   | Pcl_constraint (scl', scty) ->
       let cl, clty =
-        Ctype.wrap_class_def begin fun () ->
+        Ctype.with_local_level_for_class begin fun () ->
           let cl =
             Typetexp.wrap_type_variable_scope begin fun () ->
               let cl = class_expr cl_num val_env met_env virt self_scope scl' in
@@ -1461,7 +1462,7 @@ let initial_env define_class approx
 
   (* Temporary type for the class constructor *)
   let constr_type =
-    Ctype.wrap_def_principal (fun () -> approx cl.pci_expr)
+    Ctype.with_local_level_principal (fun () -> approx cl.pci_expr)
       ~post:Ctype.generalize_structure
   in
   let dummy_cty = Cty_signature (Ctype.new_class_signature ()) in
@@ -1515,7 +1516,7 @@ let class_infos define_class kind
 
   reset_type_variables ();
   let ci_params, params, coercion_locs, expr, typ, sign =
-    Ctype.wrap_class_def begin fun () ->
+    Ctype.with_local_level_for_class begin fun () ->
       (* Introduce class parameters *)
       let ci_params =
         let make_param (sty, v) =
@@ -1836,7 +1837,7 @@ let type_classes define_class approx kind env cls =
       cls
   in
   let res, env =
-    Ctype.wrap_class_def begin fun () ->
+    Ctype.with_local_level_for_class begin fun () ->
       let (res, env) =
         List.fold_left (initial_env define_class approx) ([], env) cls
       in

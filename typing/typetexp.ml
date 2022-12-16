@@ -325,7 +325,7 @@ and transl_type_aux env policy styp =
           ty
         with Not_found ->
           let t, ty =
-            wrap_def_principal begin fun () ->
+            with_local_level_principal begin fun () ->
               let t = newvar () in
               used_variables :=
                 TyVarMap.add alias (t, styp.ptyp_loc) !used_variables;
@@ -446,7 +446,7 @@ and transl_type_aux env policy styp =
   | Ptyp_poly(vars, st) ->
       let vars = List.map (fun v -> v.txt) vars in
       let new_univars, cty =
-        wrap_def begin fun () ->
+        with_local_level begin fun () ->
           let new_univars = make_poly_univars vars in
           let old_univars = !univars in
           univars := new_univars @ !univars;
@@ -611,7 +611,7 @@ let transl_simple_type env ?univars:(uvs=[]) fixed styp =
 let transl_simple_type_univars env styp =
   univars := []; used_variables := TyVarMap.empty; pre_univars := [];
   let typ =
-    wrap_def ~post:generalize_ctyp begin fun () ->
+    with_local_level ~post:generalize_ctyp begin fun () ->
       let typ = transl_type env Univars styp in
       (* Only keep already global variables in used_variables *)
       let new_variables = !used_variables in
@@ -641,7 +641,7 @@ let transl_simple_type_univars env styp =
 let transl_simple_type_delayed env styp =
   univars := []; used_variables := TyVarMap.empty;
   let typ, force =
-    wrap_def begin fun () ->
+    with_local_level begin fun () ->
       let typ = transl_type env Extensible styp in
       make_fixed_univars typ.ctyp_type;
       (* This brings the used variables to the global level, but doesn't link
@@ -661,7 +661,7 @@ let transl_type_scheme env styp =
   | Ptyp_poly (vars, st) ->
      let vars = List.map (fun v -> v.txt) vars in
      let univars, typ =
-       wrap_def begin fun () ->
+       with_local_level begin fun () ->
          let univars = make_poly_univars vars in
          let typ = transl_simple_type env ~univars true st in
          (univars, typ)
@@ -675,7 +675,7 @@ let transl_type_scheme env styp =
        ctyp_loc = styp.ptyp_loc;
        ctyp_attributes = styp.ptyp_attributes }
   | _ ->
-      wrap_def (fun () -> transl_simple_type env false styp)
+      with_local_level (fun () -> transl_simple_type env false styp)
         ~post:generalize_ctyp
 
 
