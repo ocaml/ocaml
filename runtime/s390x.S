@@ -594,12 +594,13 @@ LBL(caml_start_program):
 LBL(caml_retaddr):
         CLEANUP_AFTER_C_CALL
     /* pop exn handler */
-        lay     %r8, 16(%r15)
+        lg      %r8, 0(%r15)
+        la      %r15, 16(%r15)
         stg     %r8, Caml_state(exn_handler)
 LBL(return_result):  /* restore GC regs */
-        lg      %r9, 8(%r8)
+        lg      %r9, 8(%r15)
+        la      %r15, 16(%r15)
         stg     %r9, Caml_state(gc_regs)
-        la      %r8, 16(%r8)
     /* Update alloc ptr */
         stg     ALLOC_PTR, Caml_state(young_ptr)
     /* Return to C stack. */
@@ -946,7 +947,7 @@ CFI_STARTPROC
         stg     %r14, 0(%r15)
         CFI_OFFSET(14, -168)
         ENTER_FUNCTION
-        LEA_VAR(caml_array_bound_error_asm, %r2)
+        LEA_VAR(caml_array_bound_error_asm, ADDITIONAL_ARG)
         brcl    15, LBL(caml_c_call)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_ml_array_bound_error))
