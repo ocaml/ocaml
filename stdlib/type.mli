@@ -33,5 +33,5 @@ type (_, _) eq = Equal: ('a, 'a) eq
       let cast (type a) (type b) (Equal : (a, b) Type.eq) (a : a) : b = a
     ]}
 
-    At runtime, this function acts as the identity on [a].
+    At runtime, this function simply returns its second argument unchanged.
 *)
