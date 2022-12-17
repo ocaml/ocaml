@@ -19,6 +19,10 @@ Working 4.05.x branch
   (Mark Shinwell, Xavier Clerc, report and initial debugging by
   Valentin Gatien-Baron)
 
+- GPR#1330: when generating dynamically-linkable code on AArch64, always
+  reference symbols (even locally-defined ones) through the GOT.
+  (Mark Shinwell, review by Xavier Leroy)
+
 - GPR#1752: do not alias function arguments to sigprocmask.
   (Anil Madhavapeddy)
 
