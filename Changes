@@ -1,6 +1,10 @@
 Working 4.02.x branch
 ---------------------
 
+- #1330: when generating dynamically-linkable code on AArch64, always
+  reference symbols (even locally-defined ones) through the GOT.
+  (Mark Shinwell, review by Xavier Leroy)
+
 - #9938, #9939: Define __USE_MINGW_ANSI_STDIO=0 for the mingw-w64 ports to
   prevent their C99-compliant snprintf conflicting with ours.
   (David Allsopp, report by Michael Soegtrop, review by Xavier Leroy)
