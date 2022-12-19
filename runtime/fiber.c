@@ -18,8 +18,11 @@
 
 #define CAML_INTERNALS
 
+#include "caml/config.h"
 #include <string.h>
+#ifdef HAS_UNISTD
 #include <unistd.h>
+#endif
 #include <assert.h>
 #include "caml/alloc.h"
 #include "caml/callback.h"

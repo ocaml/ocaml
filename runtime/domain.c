@@ -22,7 +22,9 @@
 #include "caml/config.h"
 #include <stdbool.h>
 #include <stdio.h>
+#ifdef HAS_UNISTD
 #include <unistd.h>
+#endif
 #include <pthread.h>
 #include <string.h>
 #include <assert.h>
