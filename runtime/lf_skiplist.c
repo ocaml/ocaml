@@ -105,14 +105,16 @@ void caml_lf_skiplist_init(struct lf_skiplist *sk) {
                              NUM_LEVELS * sizeof(struct lf_skipcell *));
   sk->head->key = 0;
   sk->head->data = 0;
-  sk->head->garbage_next = NULL;
+  /*sk->head->garbage_next = NULL;*/
+  atomic_store_explicit(&sk->head->garbage_next, NULL, memory_order_release);
   sk->head->top_level = NUM_LEVELS - 1;
 
   sk->tail = caml_stat_alloc(SIZEOF_LF_SKIPCELL +
                              NUM_LEVELS * sizeof(struct lf_skipcell *));
   sk->tail->key = UINTNAT_MAX;
   sk->tail->data = 0;
-  sk->tail->garbage_next = NULL;
+  /*sk->tail->garbage_next = NULL;*/
+  atomic_store_explicit(&sk->tail->garbage_next, NULL, memory_order_release);
   sk->tail->top_level = NUM_LEVELS - 1;
 
   /* We do this so that later in find when we try to CAS a cell's
@@ -120,7 +122,8 @@ void caml_lf_skiplist_init(struct lf_skiplist *sk) {
      an uninitialised `garbage_next` (that we may take ownership of) and one
      that is already in the garbage list. If we instead used NULL then this
      would not be possible.  */
-  sk->garbage_head = sk->head;
+  /*sk->garbage_head = sk->head;*/
+  atomic_store_explicit(&sk->garbage_head, sk->head, memory_order_release);
 
   /* each level in the skip list starts of being just head pointing to tail */
   for (int j = 0; j < NUM_LEVELS; j++) {
