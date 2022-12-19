@@ -84,9 +84,16 @@ extern int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key,
    If [key] was not there, leave the skip list unchanged and return 0. */
 extern int caml_lf_skiplist_remove(struct lf_skiplist *sk, uintnat key);
 
-/* This must only be called by a single domain during a stop-the world
-    protected by global barriers. */
+/* These are not concurrency-safe, they must only be called by
+    a single domain during a stop-the world protected by global
+    barriers.
+
+    [caml_lf_skiplist_free_garbage] frees the removed elemnts.
+    [caml_lf_skiplist_free] frees the whole data structure.
+*/
 extern void caml_lf_skiplist_free_garbage(struct lf_skiplist *sk);
+extern void caml_lf_skiplist_free(struct lf_skiplist *sk); /* free the whole structure */
+
 
 /* Macros used for marking pointers and that are unfortunately necessary
   in the header for FOREACH_LF_SKIPLIST_ELEMENT to work */

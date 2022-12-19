@@ -514,3 +514,21 @@ void caml_lf_skiplist_free_garbage(struct lf_skiplist *sk) {
 
   atomic_store_explicit(&sk->garbage_head, sk->head, memory_order_release);
 }
+
+/* Free a skiplist. This is not concurrency-safe, it must be calld from
+   a single thread at a time when there can be no concurrent access to this
+   skiplist */
+void caml_lf_skiplist_free(struct lf_skiplist *sk) {
+  struct lf_skipcell *curr, *next;
+  caml_lf_skiplist_free_garbage(sk);
+  curr = (sk)->head->forward[0];
+  while (curr != (sk)->tail) {
+    int marked;
+    LF_SK_EXTRACT(curr->forward[0], marked, next);
+    (void)marked;
+    caml_stat_free(curr);
+    curr = next;
+  }
+  caml_stat_free(sk->head);
+  caml_stat_free(sk->tail);
+}
