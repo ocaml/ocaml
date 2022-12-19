@@ -230,6 +230,8 @@ For production release, the following packages need to be updated:
 - `ocaml-src.$MAJOR.$MINOR.dev`
 - `ocaml-manual.$VERSION`
 - `ocaml.$NEXTVERSION`
+- `ocaml-variants.$NEXTVERSION+trunk` should be moved to
+   `ocaml-variants.$NEXTNEXTVERSION+trunk`
 
 Note that the `ocaml` virtual package needs to be updated to the next version.
 
