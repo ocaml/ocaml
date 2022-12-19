@@ -43,6 +43,7 @@
 #include "caml/fiber.h"
 #include "caml/fix_code.h"
 #include "caml/gc_ctrl.h"
+#include "caml/globroots.h"
 #include "caml/instrtrace.h"
 #include "caml/interp.h"
 #include "caml/intext.h"
@@ -470,6 +471,7 @@ CAMLexport void caml_main(char_os **argv)
     return;
 
   caml_init_codefrag();
+  caml_init_global_roots();
 
   caml_init_locale();
 #ifdef _MSC_VER
@@ -613,6 +615,7 @@ CAMLexport value caml_startup_code_exn(
     return Val_unit;
 
   caml_init_codefrag();
+  caml_init_global_roots();
 
   caml_init_locale();
 #ifdef _MSC_VER

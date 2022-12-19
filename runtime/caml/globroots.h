@@ -23,6 +23,8 @@
 #include "mlvalues.h"
 #include "roots.h"
 
+void caml_init_global_roots();
+
 void caml_scan_global_roots(scanning_action f, void* fdata);
 void caml_scan_global_young_roots(scanning_action f, void* fdata);
 

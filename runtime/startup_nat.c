@@ -28,6 +28,7 @@
 #include "caml/fail.h"
 #include "caml/gc.h"
 #include "caml/gc_ctrl.h"
+#include "caml/globroots.h"
 #include "caml/intext.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
@@ -102,6 +103,7 @@ value caml_startup_common(char_os **argv, int pooling)
     return Val_unit;
 
   caml_init_codefrag();
+  caml_init_global_roots();
   caml_init_locale();
 #ifdef _MSC_VER
   caml_install_invalid_parameter_handler();
