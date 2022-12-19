@@ -13720,7 +13720,7 @@ case $ocaml_cv_cc_vendor in #(
     outputobj='-o '; cc_warnings="" ;; #(
   msvc-*) :
     outputobj='-Fo'
-    warn_error_flag='-WX'
+    warn_error_flag=''
     cc_warnings='' ;; #(
   *) :
     outputobj='-o '
