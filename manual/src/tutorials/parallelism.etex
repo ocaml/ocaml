@@ -195,7 +195,7 @@ let rec fib_par pool n =
   end else fib n
 
 let main () =
-  let pool = T.setup_pool ~num_additional_domains:(num_domains - 1) () in
+  let pool = T.setup_pool ~num_domains:(num_domains - 1) () in
   let res = T.run pool (fun _ -> fib_par pool n) in
   T.teardown_pool pool;
   Printf.printf "fib(%d) = %d\n" n res
@@ -345,7 +345,7 @@ let eval_AtA_times_u pool u v =
   eval_A_times_u pool u w; eval_At_times_u pool w v
 
 let () =
-  let pool = T.setup_pool ~num_additional_domains:(num_domains - 1) () in
+  let pool = T.setup_pool ~num_domains:(num_domains - 1) () in
   let u = Array.make n 1.0  and  v = Array.make n 0.0 in
   T.run pool (fun _ ->
   for _i = 0 to 9 do
