@@ -20,7 +20,9 @@
 #include <unistd.h>
 #endif
 #include <errno.h>
+#ifndef _WIN32
 #include <sys/time.h>
+#endif
 #include "caml/osdeps.h"
 #include "caml/platform.h"
 #include "caml/fail.h"
@@ -209,22 +211,28 @@ void caml_mem_decommit(void* mem, uintnat size)
 
 void caml_mem_unmap(void* mem, uintnat size)
 {
-#ifdef DEBUG
-  uintnat data;
-  CAMLassert(caml_lf_skiplist_find(&mmap_blocks, (uintnat)mem, &data) != 0);
-  CAMLassert(data == size);
-#endif
   caml_gc_message(0x1000, "munmap %" ARCH_INTNAT_PRINTF_FORMAT "d"
                           " bytes at %p for heaps\n", size, mem);
   caml_plat_mem_unmap(mem, size);
-#ifdef DEBUG
-  caml_lf_skiplist_remove(&mmap_blocks, (uintnat)mem);
-#endif
 }
 
 #define Min_sleep_ns       10000 // 10 us
 #define Slow_sleep_ns    1000000 //  1 ms
 #define Max_sleep_ns  1000000000 //  1 s
+
+/* Again, TODO: how does this work on mingw-w64 atm? */
+void usleep(__int64 usec)
+{
+    HANDLE timer;
+    LARGE_INTEGER ft;
+
+    ft.QuadPart = -(10*usec);
+
+    timer = CreateWaitableTimer(NULL, TRUE, NULL);
+    SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
+    WaitForSingleObject(timer, INFINITE);
+    CloseHandle(timer);
+}
 
 unsigned caml_plat_spin_wait(unsigned spins,
                              const char* file, int line,
