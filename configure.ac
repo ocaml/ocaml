@@ -136,6 +136,7 @@ AC_SUBST([mkexe_exp])
 AC_SUBST([mkexedebugflag])
 AC_SUBST([mkexe_extra_flags])
 AC_SUBST([mkexe_via_cc_ldflags])
+AC_SUBST([mkexe_via_cc_extra_cmd])
 AC_SUBST([ccomptype])
 AC_SUBST([toolchain])
 AC_SUBST([oc_cflags])
@@ -2521,22 +2522,16 @@ ${mkdll_ldflags}"
   mkdll_exp="$mkdll_exp $mkdll_ldflags_exp"
   mkmaindll="$mkmaindll $mkdll_ldflags_exp"
   mkmaindll_exp="$mkmaindll_exp $mkdll_ldflags_exp"
-  # Do similarly with $mkexe_via_cc_ldflags_prefix, but this is only needed for
-  # the msvc ports.
-  AS_IF([test -n "$mkexe_via_cc_ldflags_prefix"],[
-    mkexe_via_cc_ldflags=\
-"\$(addprefix ${mkexe_via_cc_ldflags_prefix},\$(OC_LDFLAGS) \$(LDFLAGS))"
-  ],[
-    mkexe_via_cc_ldflags='$(OC_LDFLAGS) $(LDFLAGS)'
-  ])
+  mkexe_via_cc_ldflags="${mkexe_via_cc_ldflags_prefix}"
+  AS_IF([test -n "${oc_exe_ldflags}"],
+    [mkexe_via_cc_ldflags="${mkexe_via_cc_ldflags}${oc_exe_ldflags} "])
+  mkexe_via_cc_ldflags="${mkexe_via_cc_ldflags}\$(OC_LDFLAGS) \$(LDFLAGS)"
   # cl requires linker flags after the objects.
   AS_IF([test "$ccomptype" = 'msvc'],
     [mkexe_via_cc_ldflags=\
 "\$(OUTPUTEXE)\$(1) \$(2) $mkexe_via_cc_ldflags"],
     [mkexe_via_cc_ldflags=\
 "$mkexe_via_cc_ldflags \$(OUTPUTEXE)\$(1) \$(2)"])
-  AS_IF([test -n "$mkexe_via_cc_extra_cmd"],
-    [mkexe_via_cc_ldflags="$mkexe_via_cc_ldflags $mkexe_via_cc_extra_cmd"])
 ])
 
 AC_OUTPUT
