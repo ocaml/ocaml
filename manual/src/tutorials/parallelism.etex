@@ -170,7 +170,7 @@ library for nested-parallel programming, which is epitomised by the parallelism
 available in the recursive Fibonacci computation. Let us use domainslib to
 parallelise the recursive Fibonacci program. It is recommended that you install
 domainslib using the \href{https://opam.ocaml.org/}{opam} package manager. This
-tutorial uses domainslib version 0.4.2.
+tutorial uses domainslib version 0.5.0.
 
 Domainslib provides an async/await mechanism for spawning parallel tasks and
 awaiting their results. On top of this mechanism, domainslib provides parallel
