@@ -15,9 +15,12 @@
 
 /* Win32 implementation of the "st" interface */
 
-#undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0400
-#include <windows.h>
+/* This is a code smell - why is mingw-w64 not affected?? */
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <wtypes.h>
+#include <winbase.h>
+#endif
 
 Caml_inline void st_msleep(int msec)
 {

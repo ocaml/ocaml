@@ -18,6 +18,13 @@
 
 #define CAML_INTERNALS
 
+/* This is a code smell - why is mingw-w64 not affected?? */
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <wtypes.h>
+#include <winbase.h>
+#endif
+
 #define _GNU_SOURCE  /* For sched.h CPU_ZERO(3) and CPU_COUNT(3) */
 #include "caml/config.h"
 #include <stdbool.h>
