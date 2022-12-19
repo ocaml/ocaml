@@ -22,7 +22,9 @@
 #include "caml/config.h"
 #include <stdbool.h>
 #include <stdio.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <pthread.h>
 #include <string.h>
 #ifdef HAS_GNU_GETAFFINITY_NP

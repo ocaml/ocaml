@@ -19,7 +19,9 @@
 #define CAML_INTERNALS
 
 #include <string.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include "caml/alloc.h"
 #include "caml/callback.h"
 #include "caml/codefrag.h"

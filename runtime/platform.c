@@ -16,7 +16,9 @@
 #define CAML_INTERNALS
 
 #include <string.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <errno.h>
 #include <sys/time.h>
 #include "caml/osdeps.h"
