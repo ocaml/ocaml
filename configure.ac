@@ -788,6 +788,7 @@ AS_CASE([$host],
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
       internal_cppflags='-DUNICODE -D_UNICODE'
       internal_cflags='-experimental:c11atomics -std:c11'
+      oc_ldflags='-nodefaultlib:LIBCMT'
       CFLAGS="$CFLAGS -experimental:c11atomics -std:c11"
       OCAML_CL_HAS_VOLATILE_METADATA
       AS_IF([test "x$cl_has_volatile_metadata" = "xtrue"],

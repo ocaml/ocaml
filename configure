@@ -13826,6 +13826,7 @@ esac ;; #(
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
       internal_cppflags='-DUNICODE -D_UNICODE'
       internal_cflags='-experimental:c11atomics -std:c11'
+      oc_ldflags='-nodefaultlib:LIBCMT'
       CFLAGS="$CFLAGS -experimental:c11atomics -std:c11"
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports -d2VolatileMetadata-" >&5
