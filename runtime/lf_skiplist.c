@@ -176,8 +176,9 @@ retry:
         LF_SK_EXTRACT(curr->forward[level], is_marked, succ);
         while (is_marked) {
           struct lf_skipcell *null_cell = NULL;
-          int snip = atomic_compare_exchange_strong(&pred->forward[level],
-                                                    &curr, succ);
+          int snip = 0;
+          snip = atomic_compare_exchange_strong(&pred->forward[level],
+                                                &curr, succ);
           if (!snip) {
             goto retry;
           }
@@ -464,7 +465,8 @@ int caml_lf_skiplist_remove(struct lf_skiplist *sk, uintnat key) {
        won. */
     LF_SK_EXTRACT(to_remove->forward[0], marked, succ);
     while (1) {
-      int mark_success = atomic_compare_exchange_strong(
+      int mark_success = 0;
+      mark_success = atomic_compare_exchange_strong(
           &to_remove->forward[0], &succ, LF_SK_MARKED(succ));
 
       LF_SK_EXTRACT(to_remove->forward[0], marked, succ);
@@ -488,11 +490,13 @@ int caml_lf_skiplist_remove(struct lf_skiplist *sk, uintnat key) {
    skiplist */
 
 void caml_lf_skiplist_free_garbage(struct lf_skiplist *sk) {
-  struct lf_skipcell *curr = atomic_load_acquire(&sk->garbage_head);
+  struct lf_skipcell *curr = NULL;
+  curr = atomic_load_acquire(&sk->garbage_head);
 
   struct lf_skipcell *head = sk->head;
   while (curr != head) {
-    struct lf_skipcell *next = atomic_load_relaxed(&curr->garbage_next);
+    struct lf_skipcell *next = NULL;
+    next = atomic_load_relaxed(&curr->garbage_next);
     // acquire not useful, if executed in STW
     caml_stat_free(curr);
     curr = next;

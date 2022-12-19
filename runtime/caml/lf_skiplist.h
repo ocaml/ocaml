@@ -95,7 +95,8 @@ extern void caml_lf_skiplist_free_garbage(struct lf_skiplist *sk);
 #define LF_SK_UNMARK(p) ((struct lf_skipcell *)(((uintptr_t)(p)) & ~1))
 #define LF_SK_EXTRACT(from, mark_to, ptr_to)                                   \
   {                                                                            \
-    uintptr_t tmp = (uintptr_t)atomic_load_acquire(&(from));                   \
+    uintptr_t tmp = 0;                                                         \
+    tmp = (uintptr_t)atomic_load_acquire(&(from));                             \
     mark_to = LF_SK_IS_MARKED(tmp);                                            \
     ptr_to = LF_SK_UNMARK(tmp);                          \
   }

@@ -162,7 +162,7 @@ caml_find_code_fragment_by_digest(unsigned char digest[16]) {
 /* This is only ever called from a stw by one domain */
 void caml_code_fragment_cleanup (void)
 {
-  struct code_fragment_garbage *curr;
+  struct code_fragment_garbage *curr = NULL;
 
   caml_lf_skiplist_free_garbage(&code_fragments_by_pc);
   caml_lf_skiplist_free_garbage(&code_fragments_by_num);
