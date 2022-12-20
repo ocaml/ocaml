@@ -25,7 +25,7 @@ end
 [%%expect{|
 {
  "Pair"[module] ->
-   Abs<.9>(X/280, Y/281, {
+   Abs<.9>(X/281, Y/282, {
                           "t"[type] -> <.5>;
                           "to_string"[value] -> <.6>;
                           });

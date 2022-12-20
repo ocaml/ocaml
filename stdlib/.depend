@@ -754,6 +754,11 @@ stdlib__Sys.cmo : sys.ml \
 stdlib__Sys.cmx : sys.ml \
     stdlib__Sys.cmi
 stdlib__Sys.cmi : sys.mli
+stdlib__Type.cmo : type.ml \
+    stdlib__Type.cmi
+stdlib__Type.cmx : type.ml \
+    stdlib__Type.cmi
+stdlib__Type.cmi : type.mli
 stdlib__Uchar.cmo : uchar.ml \
     stdlib.cmi \
     stdlib__Char.cmi \
