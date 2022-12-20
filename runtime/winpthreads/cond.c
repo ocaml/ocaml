@@ -38,6 +38,8 @@
 
 #include "pthread_compat.h"
 
+struct _pthread_cleanup ** WINPTHREAD_API pthread_getclean (void);
+
 #ifdef _MSC_VER
 #define __sync_synchronize() MemoryBarrier()
 #endif

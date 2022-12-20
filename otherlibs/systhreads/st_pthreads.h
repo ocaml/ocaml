@@ -81,6 +81,8 @@ static int st_tls_newkey(st_tlskey * res)
   return pthread_key_create(res, NULL);
 }
 
+void * pthread_getspecific(pthread_key_t);
+
 Caml_inline void * st_tls_get(st_tlskey k)
 {
   return pthread_getspecific(k);

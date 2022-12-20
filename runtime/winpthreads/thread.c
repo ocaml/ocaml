@@ -31,6 +31,8 @@
 #include "misc.h"
 #include "winpthread_internal.h"
 
+struct _pthread_cleanup ** WINPTHREAD_API pthread_getclean (void);
+
 static _pthread_v *__pthread_self_lite (void);
 
 void (**_pthread_key_dest)(void *) = NULL;

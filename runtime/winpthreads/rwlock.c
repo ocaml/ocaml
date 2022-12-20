@@ -29,6 +29,8 @@
 #include "rwlock.h"
 #include "misc.h"
 
+struct _pthread_cleanup ** WINPTHREAD_API pthread_getclean (void);
+
 static pthread_spinlock_t rwl_global = PTHREAD_SPINLOCK_INITIALIZER;
 
 static WINPTHREADS_ATTRIBUTE((noinline)) int rwlock_static_init(pthread_rwlock_t *rw);

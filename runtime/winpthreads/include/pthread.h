@@ -176,7 +176,7 @@ extern "C" {
 #define __builtin_unreachable() UNREFERENCED_PARAMETER(0)
 #endif
 
-void * WINPTHREAD_API pthread_timechange_handler_np(void * dummy);
+/*void * WINPTHREAD_API pthread_timechange_handler_np(void * dummy);*/
 int    WINPTHREAD_API pthread_delay_np (const struct timespec *interval);
 int    WINPTHREAD_API pthread_num_processors_np(void);
 int    WINPTHREAD_API pthread_set_num_processors_np(int n);
@@ -296,7 +296,7 @@ typedef void	*pthread_barrier_t;
 extern void WINPTHREAD_API (**_pthread_key_dest)(void *);
 int         WINPTHREAD_API pthread_key_create(pthread_key_t *key, void (* dest)(void *));
 int         WINPTHREAD_API pthread_key_delete(pthread_key_t key);
-void *      WINPTHREAD_API pthread_getspecific(pthread_key_t key);
+/*void *      WINPTHREAD_API pthread_getspecific(pthread_key_t);*/
 int         WINPTHREAD_API pthread_setspecific(pthread_key_t key, const void *value);
 
 pthread_t WINPTHREAD_API pthread_self(void);
@@ -409,9 +409,9 @@ int WINPTHREAD_API pthread_barrierattr_setpshared(void **attr, int s);
 int WINPTHREAD_API pthread_barrierattr_getpshared(void **attr, int *s);
 
 /* Private extensions for analysis and internal use.  */
-struct _pthread_cleanup ** WINPTHREAD_API pthread_getclean (void);
+/*struct _pthread_cleanup ** WINPTHREAD_API pthread_getclean (void);
 void *                     WINPTHREAD_API pthread_gethandle (pthread_t t);
-void *                     WINPTHREAD_API pthread_getevent (void);
+void *                     WINPTHREAD_API pthread_getevent (void);/*
 
 unsigned long long         WINPTHREAD_API _pthread_rel_time_in_ms(const struct timespec *ts);
 unsigned long long         WINPTHREAD_API _pthread_time_in_ms(void);
