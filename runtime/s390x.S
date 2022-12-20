@@ -668,7 +668,7 @@ LBL(caml_reraise_exn_stash):
                                   /* arg1: exception bucket, already in r2 */
         lgr     C_ARG_2, %r14     /* arg2: PC of raise */
         lgr     C_ARG_3, %r15     /* arg3: SP of raise */
-        lg      C_ARG_4, TRAP_PTR /* arg4: SP of handler */
+        lgr     C_ARG_4, TRAP_PTR /* arg4: SP of handler */
     /* Switch to C stack */
         lg      %r15, Caml_state(c_stack)
         PREPARE_FOR_C_CALL
