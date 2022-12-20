@@ -784,7 +784,7 @@ AS_CASE([$host],
       internal_cflags="$cc_warnings -fno-common -fexcess-precision=standard \
 -Wvla"],
     [msvc-*],
-      [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
+      [common_cflags="-nologo -Od -Gy- -MD $cc_warnings"
       common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
       internal_cppflags='-DUNICODE -D_UNICODE'
       internal_cflags='-experimental:c11atomics -std:c11'
