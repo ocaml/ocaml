@@ -154,6 +154,9 @@ Working version
   (Nicolás Ojeda Bär, review by Daniel Bünzli, Jacques Garrigue, Florian
   Angeletti, Alain Frisch, Gabriel Scherer, Jeremy Yallop and Xavier Leroy)
 
+- #11830: Add Type.Id
+  (Daniel Bünzli, review by …)
+
 ### Other libraries:
 
 - #11374: Remove pointer cast to a type with stricter alignment requirements
