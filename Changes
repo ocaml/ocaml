@@ -1,16 +1,10 @@
-OCaml 4.14.1 (20 December 2022)
+OCaml 4.14 maintenance version
 ------------------------------
 
 ### Bug fixes:
 
-- #11803, #11808: on x86, the destination of an integer comparison must be
-  a register, it cannot be a stack slot.
-  (Vincent Laviron, review by Xavier Leroy, report by
-   Emilio Jesús Gallego Arias)
-
-
-OCaml 4.14.1
------------------------------
+OCaml 4.14.1 (20 December 2022)
+------------------------------
 
 ### Compiler user-interface and warnings:
 
@@ -97,6 +91,10 @@ OCaml 4.14.1
   no-naked-pointers mode caused by wrong initialization of caml_global_data
   (Xavier Leroy, report by Etienne Millon, review by Gabriel Scherer)
 
+- #11803, #11808: on x86, the destination of an integer comparison must be
+  a register, it cannot be a stack slot.
+  (Vincent Laviron, review by Xavier Leroy, report by
+   Emilio Jesús Gallego Arias)
 
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
