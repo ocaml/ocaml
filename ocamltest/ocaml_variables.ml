@@ -44,6 +44,9 @@ let c_preprocessor = make ("c_preprocessor",
 let cc = make ("cc",
   "Command to use to invoke the C compiler")
 
+let cflags = make ("cflags",
+  "Command to use to invoke the C compiler")
+
 let caml_ld_library_path_name = "CAML_LD_LIBRARY_PATH"
 
 let export_caml_ld_library_path value =
