@@ -19,7 +19,7 @@
 
 (** {1:witness Type equality witness} *)
 
-type (_, _) eq = Equal: ('a, 'a) eq
+type (_, _) eq = Equal: ('a, 'a) eq (** *)
 (** The purpose of [eq] is to represent type equalities that may not otherwise
     be known by the type checker (e.g. because they may depend on dynamic data).
 
