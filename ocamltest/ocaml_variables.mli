@@ -30,6 +30,8 @@ val c_preprocessor : Variables.t
 
 val cc : Variables.t
 
+val cflags : Variables.t
+
 val caml_ld_library_path : Variables.t
 
 val codegen_exit_status : Variables.t

@@ -25,7 +25,7 @@ val asm : string
 (** Path to the assembler *)
 
 val cc : string
-(** Path to the C compiler *)
+(** Command to use to invoke the C compiler *)
 
 val cflags : string
 (** Flags to pass to the C compiler *)

@@ -44,6 +44,9 @@ let c_preprocessor = make ("c_preprocessor",
 let cc = make ("cc",
   "Command to use to invoke the C compiler")
 
+let cflags = make ("cflags",
+  "Flags passed to the C compiler")
+
 let caml_ld_library_path_name = "CAML_LD_LIBRARY_PATH"
 
 let export_caml_ld_library_path value =
@@ -245,6 +248,8 @@ let _ = List.iter register_variable
     binary_modules;
     bytecc_libs;
     c_preprocessor;
+    cc;
+    cflags;
     caml_ld_library_path;
     codegen_exit_status;
     compare_programs;
