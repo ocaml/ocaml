@@ -364,8 +364,8 @@ let emit_instr env i =
       (* ft0 is marked as destroyed for this operation *)
       `	fcvt.s.d	ft0, {emit_reg i.arg.(0)}\n`;
       `	fsw	ft0, {emit_int ofs}({emit_reg i.arg.(1)})\n`
-  | Lop(Istore((Word_int | Word_val), Iindexed ofs, assignement)) ->
-      if assignement then begin
+  | Lop(Istore((Word_int | Word_val), Iindexed ofs, assignment)) ->
+      if assignment then begin
         `	fence	r, w\n`;
         `	sd	{emit_reg i.arg.(0)}, {emit_int ofs}({emit_reg i.arg.(1)})\n`
       end else
