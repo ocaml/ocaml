@@ -170,7 +170,7 @@ library for nested-parallel programming, which is epitomised by the parallelism
 available in the recursive Fibonacci computation. Let us use domainslib to
 parallelise the recursive Fibonacci program. It is recommended that you install
 domainslib using the \href{https://opam.ocaml.org/}{opam} package manager. This
-tutorial uses domainslib version 0.4.2.
+tutorial uses domainslib version 0.5.0.
 
 Domainslib provides an async/await mechanism for spawning parallel tasks and
 awaiting their results. On top of this mechanism, domainslib provides parallel
@@ -195,7 +195,7 @@ let rec fib_par pool n =
   end else fib n
 
 let main () =
-  let pool = T.setup_pool ~num_additional_domains:(num_domains - 1) () in
+  let pool = T.setup_pool ~num_domains:(num_domains - 1) () in
   let res = T.run pool (fun _ -> fib_par pool n) in
   T.teardown_pool pool;
   Printf.printf "fib(%d) = %d\n" n res
@@ -345,7 +345,7 @@ let eval_AtA_times_u pool u v =
   eval_A_times_u pool u w; eval_At_times_u pool w v
 
 let () =
-  let pool = T.setup_pool ~num_additional_domains:(num_domains - 1) () in
+  let pool = T.setup_pool ~num_domains:(num_domains - 1) () in
   let u = Array.make n 1.0  and  v = Array.make n 0.0 in
   T.run pool (fun _ ->
   for _i = 0 to 9 do
