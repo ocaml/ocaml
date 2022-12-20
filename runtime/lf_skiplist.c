@@ -105,16 +105,16 @@ void caml_lf_skiplist_init(struct lf_skiplist *sk) {
                              NUM_LEVELS * sizeof(struct lf_skipcell *));
   sk->head->key = 0;
   sk->head->data = 0;
-  /*sk->head->garbage_next = NULL;*/
-  atomic_store_explicit(&sk->head->garbage_next, NULL, memory_order_release);
+  sk->head->garbage_next = 0;
+  /*atomic_init(&sk->head->garbage_next, NULL);*/
   sk->head->top_level = NUM_LEVELS - 1;
 
   sk->tail = caml_stat_alloc(SIZEOF_LF_SKIPCELL +
                              NUM_LEVELS * sizeof(struct lf_skipcell *));
   sk->tail->key = UINTNAT_MAX;
   sk->tail->data = 0;
-  /*sk->tail->garbage_next = NULL;*/
-  atomic_store_explicit(&sk->tail->garbage_next, NULL, memory_order_release);
+  sk->tail->garbage_next = 0;
+  /*atomic_init(&sk->tail->garbage_next, NULL);*/
   sk->tail->top_level = NUM_LEVELS - 1;
 
   /* We do this so that later in find when we try to CAS a cell's
@@ -122,14 +122,14 @@ void caml_lf_skiplist_init(struct lf_skiplist *sk) {
      an uninitialised `garbage_next` (that we may take ownership of) and one
      that is already in the garbage list. If we instead used NULL then this
      would not be possible.  */
-  /*sk->garbage_head = sk->head;*/
-  atomic_store_explicit(&sk->garbage_head, sk->head, memory_order_release);
+  sk->garbage_head = (uintnat)sk->head;
+  /*atomic_init(&sk->garbage_head, sk->head);*/
 
   /* each level in the skip list starts of being just head pointing to tail */
   for (int j = 0; j < NUM_LEVELS; j++) {
-    atomic_store_release(&sk->head->forward[j], sk->tail);
+    sk->head->forward[j] = (uintnat)sk->tail;
 
-    atomic_store_release(&sk->tail->forward[j], NULL);
+    sk->tail->forward[j] = 0;
   }
 }
 
@@ -178,10 +178,10 @@ retry:
 
         LF_SK_EXTRACT(curr->forward[level], is_marked, succ);
         while (is_marked) {
-          struct lf_skipcell *null_cell = NULL;
+          uintnat null_cell = 0;
           int snip = 0;
           snip = atomic_compare_exchange_strong(&pred->forward[level],
-                                                &curr, succ);
+                                                (uintnat*)&curr, succ);
           if (!snip) {
             goto retry;
           }
@@ -203,20 +203,20 @@ retry:
           skiplist.
           */
           if (atomic_compare_exchange_strong(&curr->garbage_next, &null_cell,
-                                             (struct lf_skipcell *)1)) {
+                                             1)) {
             /* Despite now having exclusivity of the current node's
                garbage_next, having won the CAS, we might be racing another
                thread to add a different node to the skiplist's garbage_head.
                This is why we need to a retry loop and yet another CAS. */
             while (1) {
-              struct lf_skipcell *_Atomic current_garbage_head =
+              uintnat current_garbage_head =
                   atomic_load_acquire(&sk->garbage_head);
 
               atomic_store_release(&curr->garbage_next, current_garbage_head);
 
               if (atomic_compare_exchange_strong(
                       &sk->garbage_head,
-                      (struct lf_skipcell **)&current_garbage_head, curr)) {
+                      &current_garbage_head, curr)) {
                 break;
               }
             }

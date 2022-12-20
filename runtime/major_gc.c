@@ -298,7 +298,8 @@ static void record_ephe_marking_done (uintnat ephe_cycle)
  */
 static struct {
   value _Atomic ephe_list_live;
-  struct caml_final_info * _Atomic final_info;
+  /*struct caml_final_info * _Atomic final_info;*/
+  _Atomic uintnat final_info;
 } orph_structs = {0, NULL};
 
 static caml_plat_mutex orphaned_lock = CAML_PLAT_MUTEX_INITIALIZER;
