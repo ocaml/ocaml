@@ -1,5 +1,8 @@
 #define CAML_INTERNALS
 
+#pragma warning(disable:4047)
+#pragma warning(disable:4024)
+
 #include "caml/lf_skiplist.h"
 #include "caml/memory.h"
 #include <assert.h>
