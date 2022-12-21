@@ -63,7 +63,7 @@ module Id : sig
   (** {1:example Example}
 
       The following shows how type identifiers can be used to implement
-      an heterogeneous key-value dictionary.
+      a heterogeneous key-value dictionary.
 {[
 (** Heterogeneous dictionaries. *)
 module Dict : sig
@@ -104,8 +104,8 @@ end = struct
     | None -> None
     | Some (B (k', v)) ->
         match Type.Id.equal k.tid k'.tid with
-        | None -> None
         | Some Type.Equal -> Some v
+        | None -> assert false
 end
 ]}
 *)
