@@ -1,21 +1,20 @@
 === ⚠️ CAUTION
 
-The developer team is currently preparing the release of OCaml 5.0. This release
-sports a full rewrite of its runtime system for shared-memory parallel
-programming using domains and native support for concurrent programming using
-effect handlers.
+The developer team released OCaml 5.0.0 in December 2022. This release sports a
+full rewrite of its runtime system for shared-memory parallel programming using
+domains and native support for concurrent programming using effect handlers.
 
-Owing to the large number of changes, the initial 5.0 release will be more
+Owing to the large number of changes, the initial 5.0 release is more
 experimental than usual.  It is recommended that all users wanting a stable
 release use the 4.14 release which will continue to be supported and updated
-while 5.0 reaches feature and stability parity. Similarly, if you need one of
+while 5.x reaches feature and stability parity. Similarly, if you need one of
 the ports not yet supported in the 5.0 release you must use the 4.14 release.
 
-The initial release of OCaml 5.0 will only support the native compiler under
-ARM64 and x86-64 architectures under Linux and macOS. On Windows, only the
-MinGW-w64 port is supported.  Support for other 64-bit architectures and systems
-will be added back in later releases. On 32-bit systems, only the bytecode
-compiler is supported.  Native-code support for these systems is under
+The initial release of OCaml 5.0 only supports the native compiler under ARM64
+and x86-64 architectures under Linux, macOS and the BSDs. On Windows, only the
+MinGW-w64 port is supported.  Support for other 64-bit architectures and
+systems will be added back in later releases. On 32-bit systems, only the
+bytecode compiler is supported.  Native-code support for these systems is under
 discussion.
 
 |=====
