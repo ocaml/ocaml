@@ -294,6 +294,9 @@ Working version
 - #11809: Protect Parmatch.pats_of_type from missing cmis
   (Jacques Garrigue, review by Stephen Dolan and Gabriel Scherer)
 
+- #11824: Fix a crash when calling `ocamlrun -b`
+  (Florian Angeletti, review by Sébastien Hinderer)
+
 OCaml 5.0
 ---------
 
