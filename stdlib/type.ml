@@ -33,8 +33,7 @@ module Id = struct
 
   let some_equal = Some Equal
 
-  let equal (type a) (type b)
-      ((module A) : a t) ((module B) : b t) : (a, b) eq option
+  let equal (type a b) ((module A) : a t) ((module B) : b t) : (a, b) eq option
     =
     match A.Id with B.Id -> some_equal | _ -> None
 end
