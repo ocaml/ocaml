@@ -259,7 +259,10 @@ val map_single_tail : (expression -> expression) -> expression -> expression
     to the innermost sub-expression that can produce the final result.
     This function will not recurse into any expression that contain
     more than one result expression, meaning the transformation will be
-    applied exactly once *)
+    applied exactly once. Any phantom lets in the inner-most sub-expression
+    are moved out of that expression (up to a depth of 4 phantom lets), before
+    applying the transformation, so that pattern matching in the transformation
+    does not have to consider phantom lets. *)
 
 val map_single_tail2 :
   (expression -> expression -> expression) ->
