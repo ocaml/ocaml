@@ -31,8 +31,10 @@ module Id = struct
   let make () (type s) : s t =
     (module struct type t = s type _ id += Id : t id end)
 
+  let some_equal = Some Equal
+
   let equal (type a) (type b)
       ((module A) : a t) ((module B) : b t) : (a, b) eq option
     =
-    match A.Id with B.Id -> Some Equal | _ -> None
+    match A.Id with B.Id -> some_equal | _ -> None
 end
