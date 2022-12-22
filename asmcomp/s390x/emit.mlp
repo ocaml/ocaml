@@ -687,13 +687,10 @@ let emit_instr env i =
     | Lraise k ->
         begin match k with
         | Lambda.Raise_regular->
-          let offset = Domainstate.(idx_of_field Domain_backtrace_pos) * 8 in
-          `	lghi	%r1, 0\n`;
-          `	stg	%r1, {emit_int offset}(%r10)\n`;
           emit_call "caml_raise_exn";
           `{record_frame env Reg.Set.empty (Dbg_raise i.dbg)}\n`
         | Lambda.Raise_reraise ->
-          emit_call "caml_raise_exn";
+          emit_call "caml_reraise_exn";
           `{record_frame env Reg.Set.empty (Dbg_raise i.dbg)}\n`
         | Lambda.Raise_notrace ->
           `	lg	%r1, {emit_int size_addr}(%r13)\n`;
