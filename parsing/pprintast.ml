@@ -307,14 +307,11 @@ and core_type ctxt f x =
         core_type ctxt f ct
     | Ptyp_poly (sl, ct) ->
         pp f "@[<2>%a%a@]"
-          (fun f l ->
-             pp f "%a"
                (fun f l -> match l with
                   | [] -> ()
                   | _ ->
                       pp f "%a@;.@;"
                         (list tyvar_loc ~sep:"@;")  l)
-               l)
           sl (core_type ctxt) ct
     | _ -> pp f "@[<2>%a@]" (core_type1 ctxt) x
 
