@@ -202,6 +202,10 @@ Working version
   (Abiola Abdulsalam, review by Sébastien Hinderer, Nicolás Ojeda Bär and
   Florian Angeletti)
 
+- #11819: make the `native_compiler` and `native_dynlink` configuration
+  variables available through ocamlc -config.
+  (Sébastien Hinderer, review by Gabriel Scherer and David Allsopp)
+
 ### Internal/compiler-libs changes:
 - #11027: Separate typing counter-examples from type_pat into retype_pat;
   type_pat is no longer in CPS.
