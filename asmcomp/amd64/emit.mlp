@@ -989,6 +989,10 @@ let begin_assembly() =
     D.extrn "caml_alloc3" NEAR;
     D.extrn "caml_ml_array_bound_error" NEAR;
     D.extrn "caml_raise_exn" NEAR;
+    D.extrn "caml_call_realloc_stack" NEAR;
+    D.extrn "caml_reraise_exn" NEAR;
+    D.extrn "caml_c_call_stack_args" NEAR;
+    D.extrn "caml_assert_stack_invariants" NEAR;
   end;
 
 
