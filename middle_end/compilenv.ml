@@ -91,7 +91,7 @@ let current_unit =
     ui_for_pack = None }
 
 let concat_symbol unitname id =
-  unitname ^ "." ^ id
+  unitname ^ "$" ^ id
 
 let symbolname_for_pack pack name =
   match pack with

@@ -83,7 +83,7 @@ let string_of_symbol prefix s =
     Buffer.add_string b prefix;
     String.iter
       (function
-        | ('A'..'Z' | 'a'..'z' | '0'..'9' | '_' | '.') as c ->
+        | ('A'..'Z' | 'a'..'z' | '0'..'9' | '_' | '$') as c ->
             Buffer.add_char b c
         | c ->
             Printf.bprintf b "$%02x" (Char.code c)
