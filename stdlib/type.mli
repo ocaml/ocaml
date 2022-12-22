@@ -40,10 +40,14 @@ type (_, _) eq = Equal: ('a, 'a) eq (** *)
 
 (** Type identifiers.
 
-    Type identifiers are values that can be tested for
-    {{!Id.equal}equality} to prove they represent the same type. Note
-    that unequal identifiers does not imply unequal types: the same
-    type can be represented by multiple identifiers.
+    A type identifier is a value that denotes a type. Given two type
+    identifiers they can be tested for {{!Id.equal}equality} to prove
+    they denote the same type. Note that:
+
+    - Unequal identifiers does not imply unequal types: a given type can be
+      denoted by more than one identifier.
+    - Type identifiers can be marshalled, but they get a new, distinct,
+      identity on unmarshalling, so the equalities are lost.
 
     See an {{!Id.example}example} of use. *)
 module Id : sig
@@ -51,7 +55,7 @@ module Id : sig
   (** {1:ids Type identifiers} *)
 
   type 'a t
-  (** The type for type identifiers. ['a] is the represented type. *)
+  (** The type for identifiers for type ['a]. *)
 
   val make : unit -> 'a t
   (** [make ()] is a new type identifier. *)
@@ -65,8 +69,12 @@ module Id : sig
 
   (** {1:example Example}
 
-      The following shows how type identifiers can be used to implement
-      a heterogeneous key-value dictionary.
+      The following shows how type identifiers can be used to
+      implement a simple heterogeneous key-value dictionary which you
+      can see as an extensible record type. In contrast to
+      {!Stdlib.Map} values whose keys map to a single, homogeneous type of
+      values, this dictionary can associate a different type of value
+      to each key.
 {[
 (** Heterogeneous dictionaries. *)
 module Dict : sig
@@ -91,22 +99,19 @@ module Dict : sig
   val find : 'a key -> t -> 'a option
   (** [find k d] is the binding of [k] in [d], if any. *)
 end = struct
-  type 'a key = { tid : 'a Type.Id.t; exist : exist_key }
-  and exist_key = K : 'a key -> exist_key
-
-  let key () = let rec k = { tid = Type.Id.make (); exist = K k } in k
-
+  type 'a key = 'a Type.Id.t
   type binding = B : 'a key * 'a -> binding
-  type t = (exist_key * binding) list
+  type t = (int * binding) list
 
+  let key () = Type.Id.make ()
   let empty = []
-  let add k v d = (k.exist, B (k, v)) :: d
-  let remove k d = List.remove_assq k.exist d
+  let add k v d = (Type.Id.uid k, B (k, v)) :: d
+  let remove k d = List.remove_assoc (Type.Id.uid k) d
   let find : type a. a key -> t -> a option = fun k d ->
-    match List.assq_opt k.exist d with
+    match List.assoc_opt (Type.Id.uid k) d with
     | None -> None
     | Some (B (k', v)) ->
-        match Type.Id.equal k.tid k'.tid with
+        match Type.Id.equal k k' with
         | Some Type.Equal -> Some v
         | None -> assert false
 end
