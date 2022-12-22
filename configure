@@ -15514,7 +15514,7 @@ case $host in #(
   i686-pc-windows) :
     arch=i386; system=win32 ;; #(
   x86_64-pc-windows) :
-    arch=amd64; system=win64 ;; #(
+    has_native_backend=yes; arch=amd64; system=win64 ;; #(
   powerpc64le*-*-linux*) :
     has_native_backend=yes; arch=power; model=ppc64le; system=linux ;; #(
   s390x*-*-linux*) :
