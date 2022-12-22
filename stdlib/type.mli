@@ -60,6 +60,9 @@ module Id : sig
   (** [equal id0 id1] is [Some Equal] if identifier [id0] is equal to [id1]
       and [None] otherwise. *)
 
+  val uid : 'a t -> int
+  (** [uid id] is a runtime unique identifier for [id]. *)
+
   (** {1:example Example}
 
       The following shows how type identifiers can be used to implement
