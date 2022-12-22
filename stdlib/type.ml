@@ -28,8 +28,8 @@ module Id = struct
 
   type 'a t = (module ID with type t = 'a)
 
-  let make () (type s) : s t =
-    (module struct type t = s type _ id += Id : t id end)
+  let make (type a) () : a t =
+    (module struct type t = a type _ id += Id : t id end)
 
   let equal (type a b) ((module A) : a t) ((module B) : b t) : (a, b) eq option
     =
