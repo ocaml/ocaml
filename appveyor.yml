@@ -30,9 +30,9 @@ environment:
     OCAMLRUNPARAM: v=0,b
     FORCE_CYGWIN_UPGRADE: 0
     BUILD_MODE: world.opt
-  matrix:
-    - PORT: mingw64
-      BOOTSTRAP_FLEXDLL: true
+#  matrix:
+#    - PORT: mingw64
+#      BOOTSTRAP_FLEXDLL: true
 # OCaml 5.0 does not yet support MSVC
 #    - PORT: msvc64
 #      BOOTSTRAP_FLEXDLL: false
@@ -53,10 +53,11 @@ cache:
 install:
 # This is a hangover from monitoring effects of MPR#7452
   - wmic cpu get name
-  - call "%APPVEYOR_BUILD_FOLDER%\tools\ci\appveyor\appveyor_build.cmd" install
+#  - call "%APPVEYOR_BUILD_FOLDER%\tools\ci\appveyor\appveyor_build.cmd" install
 
 build_script:
-  - call "%APPVEYOR_BUILD_FOLDER%\tools\ci\appveyor\appveyor_build.cmd" build
+#  - call "%APPVEYOR_BUILD_FOLDER%\tools\ci\appveyor\appveyor_build.cmd" build
+  - echo Disabled
 
-test_script:
-  - call "%APPVEYOR_BUILD_FOLDER%\tools\ci\appveyor\appveyor_build.cmd" test
+#test_script:
+#  - call "%APPVEYOR_BUILD_FOLDER%\tools\ci\appveyor\appveyor_build.cmd" test

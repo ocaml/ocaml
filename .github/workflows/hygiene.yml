@@ -96,17 +96,17 @@ jobs:
         # This step records the build success in the variable build-status,
         # allowing the last two steps to skip, rather than go beserk with a
         # faulty compiler.
-      - name: Build a minimal compiler for alldepend
-        id: compiler
-        run: tools/ci/actions/runner.sh basic-compiler
-        if: always()
+#      - name: Build a minimal compiler for alldepend
+#        id: compiler
+#        run: tools/ci/actions/runner.sh basic-compiler
+#        if: always()
 
-      - name: Check that dependency info is up-to-date
-        run: tools/ci/actions/check-alldepend.sh
-        if: steps.compiler.outputs.build-status == 'success' && always()
+#      - name: Check that dependency info is up-to-date
+#        run: tools/ci/actions/check-alldepend.sh
+#        if: steps.compiler.outputs.build-status == 'success' && always()
 
-      - name: Check global structure of the reference manual
-        run: |
-          # Required configuration info is left-over from the previous step
-          make -C manual/tests check-stdlib check-case-collision
-        if: steps.compiler.outputs.build-status == 'success' && always()
+#      - name: Check global structure of the reference manual
+#        run: |
+#          # Required configuration info is left-over from the previous step
+#          make -C manual/tests check-stdlib check-case-collision
+#        if: steps.compiler.outputs.build-status == 'success' && always()

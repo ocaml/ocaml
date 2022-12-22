@@ -704,6 +704,9 @@ Some of those changes will benefit all OCaml packages.
   (Gabriel Scherer, review by Xavier Leroy, Guillaume Munch-Maccagnoni
    and Nicolás Ojeda Bär)
 
+- #11835: Restore MSVC port.
+  (David Allsopp, review by ???)
+
 - #11880: Restore the correct sigmask in systhreads.
   (Christiano Haesbaert, review by Guillaume Munch-Maccagnoni and
    Sébastien Hinderer)
