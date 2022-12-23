@@ -62,6 +62,10 @@ jobs:
           '${{ github.event.after }}'
         if: ${{ always() }}
 
+      - name: Check that no ignored files have been committed
+        run: tools/ci/actions/check-no-ignored-files.sh
+        if: ${{ always() }}
+
       - name: check-typo revered
         run: >-
           tools/ci/actions/check-typo.sh
