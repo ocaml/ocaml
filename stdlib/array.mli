@@ -160,6 +160,11 @@ val map : ('a -> 'b) -> 'a array -> 'b array
    and builds an array with the results returned by [f]:
    [[| f a.(0); f a.(1); ...; f a.(length a - 1) |]]. *)
 
+val map_inplace : ('a -> 'a) -> 'a array -> unit
+(** [map_inplace f a] applies function [f] to all elements of [a],
+    and updates their values in place.
+    @since 5.1 *)
+
 val mapi : (int -> 'a -> 'b) -> 'a array -> 'b array
 (** Same as {!map}, but the
    function is applied to the index of the element as first argument,
