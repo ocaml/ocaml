@@ -36,13 +36,17 @@ OPTCOMPFLAGS += -O3
 endif
 MKLIB=$(OCAMLRUN) $(ROOTDIR)/tools/ocamlmklib
 
+# The C stubs for the native backend may be built with specific flags by
+# redefining this variable.
+OC_NATIVE_C_FLAGS =
+
 # Variables that must be defined by individual libraries:
 # LIBNAME
 # CAMLOBJS
 
 # Variables that can be defined by individual libraries,
 # but have sensible default values:
-COBJS ?=
+C_SOURCES ?=
 EXTRACAMLFLAGS ?=
 LINKOPTS ?=
 LDOPTS ?=
@@ -51,49 +55,66 @@ CMIFILES ?= $(CAMLOBJS:.cmo=.cmi)
 CAMLOBJS_NAT ?= $(CAMLOBJS:.cmo=.cmx)
 CLIBNAME ?= $(LIBNAME)
 
-ifeq "$(COBJS)" ""
+ifeq "$(C_SOURCES)" ""
 STUBSLIB=
 else
-STUBSLIB=lib$(CLIBNAME).$(A)
+COBJS_BYTECODE = $(C_SOURCES:.c=.b.$(O))
+COBJS_NATIVE = $(C_SOURCES:.c=.n.$(O))
+COBJS = $(COBJS_BYTECODE) $(COBJS_NATIVE)
+
+CLIBNAME_BYTECODE=$(CLIBNAME)byt
+CLIBNAME_NATIVE=$(CLIBNAME)nat
+STUBSLIB_BYTECODE=lib$(CLIBNAME_BYTECODE).$(A)
+STUBSLIB_NATIVE=lib$(CLIBNAME_NATIVE).$(A)
 endif
 
 .PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
-all: $(STUBSLIB) $(LIBNAME).cma $(CMIFILES)
+all: $(STUBSLIB_BYTECODE) $(LIBNAME).cma $(CMIFILES)
 
-allopt: $(STUBSLIB) $(LIBNAME).cmxa $(LIBNAME).$(CMXS) $(CMIFILES)
+allopt: $(STUBSLIB_NATIVE) $(LIBNAME).cmxa $(LIBNAME).$(CMXS) $(CMIFILES)
 opt.opt: allopt
 
 $(LIBNAME).cma: $(CAMLOBJS)
 ifeq "$(COBJS)" ""
 	$(CAMLC) -o $@ -a -linkall $(CAMLOBJS) $(LINKOPTS)
 else
-	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME) -ocamlc '$(CAMLC)' -linkall \
-	         $(CAMLOBJS) $(LINKOPTS)
+	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME_BYTECODE) -ocamlc '$(CAMLC)' \
+                -linkall $(CAMLOBJS) $(LINKOPTS)
 endif
 
 $(LIBNAME).cmxa: $(CAMLOBJS_NAT)
 ifeq "$(COBJS)" ""
 	$(CAMLOPT) -o $@ -a -linkall $(CAMLOBJS_NAT) $(LINKOPTS)
 else
-	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME) -ocamlopt '$(CAMLOPT)' -linkall \
-	         $(CAMLOBJS_NAT) $(LINKOPTS)
+	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME_NATIVE) -ocamlopt '$(CAMLOPT)' \
+                -linkall $(CAMLOBJS_NAT) $(LINKOPTS)
 endif
 
-$(LIBNAME).cmxs: $(LIBNAME).cmxa $(STUBSLIB)
+$(LIBNAME).cmxs: $(LIBNAME).cmxa $(STUBSLIB_NATIVE)
 	$(CAMLOPT_CMD) -shared -o $(LIBNAME).cmxs -I . $(LIBNAME).cmxa
 
-lib$(CLIBNAME).$(A): $(COBJS)
-	$(MKLIB_CMD) -oc $(CLIBNAME) $(COBJS) $(LDOPTS)
+lib$(CLIBNAME_BYTECODE).$(A): $(COBJS)
+	$(MKLIB_CMD) -oc $(CLIBNAME_BYTECODE) $(COBJS_BYTECODE) $(LDOPTS)
+
+lib$(CLIBNAME_NATIVE).$(A): $(COBJS)
+	$(MKLIB_CMD) -oc $(CLIBNAME_NATIVE) $(COBJS_NATIVE) $(LDOPTS)
 
 INSTALL_LIBDIR_LIBNAME = $(INSTALL_LIBDIR)/$(LIBNAME)
 
 install::
-	if test -f dll$(CLIBNAME)$(EXT_DLL); then \
+	if test -f dll$(CLIBNAME_BYTECODE)$(EXT_DLL); then \
 	  $(INSTALL_PROG) \
-	    dll$(CLIBNAME)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"; \
+	    dll$(CLIBNAME_BYTECODE)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"; \
 	fi
-ifneq "$(STUBSLIB)" ""
-	$(INSTALL_DATA) $(STUBSLIB) "$(INSTALL_LIBDIR)/"
+	if test -f dll$(CLIBNAME_NATIVE)$(EXT_DLL); then \
+	  $(INSTALL_PROG) \
+	    dll$(CLIBNAME_NATIVE)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"; \
+	fi
+ifneq "$(STUBSLIB_BYTECODE)" ""
+	$(INSTALL_DATA) $(STUBSLIB_BYTECODE) "$(INSTALL_LIBDIR)/"
+endif
+ifneq "$(STUBSLIB_NATIVE)" ""
+	$(INSTALL_DATA) $(STUBSLIB_NATIVE) "$(INSTALL_LIBDIR)/"
 endif
 # If installing over a previous OCaml version, ensure the library is removed
 # from the previous installation.
@@ -143,9 +164,17 @@ distclean:: clean
 %.cmx: %.ml
 	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
+%.b.$(O): %.c $(REQUIRED_HEADERS)
+	$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	  $(OUTPUTOBJ)$@ $<
+
+%.n.$(O): %.c $(REQUIRED_HEADERS)
+	$(CC) -c $(OC_CFLAGS) $(OC_NATIVE_C_FLAGS) $(CFLAGS) \
+	  $(OC_CPPFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
+
 ifeq "$(COMPUTE_DEPS)" "true"
-ifneq "$(COBJS)" ""
-include $(addprefix $(DEPDIR)/, $(COBJS:.$(O)=.$(D)))
+ifneq "$(COBJS_BYTECODE)" ""
+include $(addprefix $(DEPDIR)/, $(COBJS_BYTECODE:.b.$(O)=.$(D)))
 endif
 endif
 
