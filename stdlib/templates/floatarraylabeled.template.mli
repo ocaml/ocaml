@@ -112,10 +112,20 @@ val map : f:(float -> float) -> t -> t
 (** [map ~f a] applies function [f] to all the elements of [a],
     and builds a floatarray with the results returned by [f]. *)
 
+val map_inplace : f:(float -> float) -> t -> unit
+(** [map_inplace f a] applies function [f] to all elements of [a],
+    and updates their values in place.
+    @since 5.1 *)
+
 val mapi : f:(int -> float -> float) -> t -> t
 (** Same as {!map}, but the
     function is applied to the index of the element as first argument,
     and the element itself as second argument. *)
+
+val mapi_inplace : f:(int -> float -> float) -> t -> unit
+(** Same as {!map_inplace}, but the function is applied to the index of the
+    element as first argument, and the element itself as second argument.
+    @since 5.1 *)
 
 val fold_left : f:('acc -> float -> 'acc) -> init:'acc -> t -> 'acc
 (** [fold_left ~f x ~init] computes
