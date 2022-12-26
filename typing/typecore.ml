@@ -3419,7 +3419,7 @@ and type_expect_
   | Pexp_constraint (sarg, sty) ->
       (* Pretend separate = true, 1% slowdown for lablgtk *)
       let cty =
-        with_local_level (fun () -> Typetexp.transl_simple_type env false sty)
+        with_local_level (fun () -> Typetexp.transl_simple_type env ~fixed:false sty)
           ~post:(fun cty -> generalize_structure cty.ctyp_type)
       in
       let ty = cty.ctyp_type in
@@ -3627,7 +3627,7 @@ and type_expect_
       let (id, pres, modl, _, body) =
         with_local_level begin fun () ->
           let modl, pres, id, new_env =
-            Typetexp.with_local_type_variable_scope begin fun () ->
+            Typetexp.TyVarEnv.with_local_scope begin fun () ->
               let modl, md_shape = !type_module env smodl in
               Mtype.lower_nongen lv modl.mod_type;
               let pres =
@@ -3737,7 +3737,7 @@ and type_expect_
             match sty with None -> protect_expansion env ty_expected, None
             | Some sty ->
                 let sty = Ast_helper.Typ.force_poly sty in
-                let cty = Typetexp.transl_simple_type env false sty in
+                let cty = Typetexp.transl_simple_type env ~fixed:false sty in
                 cty.ctyp_type, Some cty
           end
       in
@@ -4826,7 +4826,7 @@ and type_unpacks ?(in_function : (Location.t * type_expr) option)
     | unpack :: rem ->
         with_local_level begin fun () ->
           let name, modl, pres, id, extended_env =
-            Typetexp.with_local_type_variable_scope begin fun () ->
+            Typetexp.TyVarEnv.with_local_scope begin fun () ->
               let name = unpack.tu_name in
               let modl, md_shape =
                 !type_module env
@@ -5492,7 +5492,7 @@ and type_send env loc explanation e met =
 (* Typing of toplevel bindings *)
 
 let type_binding env rec_flag spat_sexp_list =
-  Typetexp.reset_type_variables();
+  Typetexp.TyVarEnv.reset ();
   let (pat_exp_list, new_env, _unpacks) =
     type_let
       ~check:(fun s -> Warnings.Unused_value_declaration s)
@@ -5510,7 +5510,7 @@ let type_let existential_ctx env rec_flag spat_sexp_list =
 (* Typing of toplevel expressions *)
 
 let type_expression env sexp =
-  Typetexp.reset_type_variables();
+  Typetexp.TyVarEnv.reset();
   let exp =
     with_local_level (fun () -> type_exp env sexp)
       ~post:(may_lower_contravariant_then_generalize env)
