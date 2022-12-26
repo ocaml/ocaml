@@ -592,6 +592,19 @@ val concat_map : ('a -> 'b t) -> 'a t -> 'b t
 
     @since 4.13 *)
 
+val intersperse : 'a -> 'a t -> 'a t
+(** [intersperse sep seq] is the sequence formed by inserting [sep] between
+    adjacent elements of [seq].
+
+    @since 5.1 *)
+
+val intercalate : 'a t -> 'a t t -> 'a t
+(** [intercalate sep seq] is the sequence formed by inserting the
+    sequence [sep] between adjacent sequences in [seq] and then concatenating
+    the result. It is equivalent to [concat (intersperse sep seq)].
+
+    @since 5.1 *)
+
 val zip : 'a t -> 'b t -> ('a * 'b) t
 (** [zip xs ys] is the sequence of pairs [(x, y)]
     drawn synchronously from the sequences [xs] and [ys].

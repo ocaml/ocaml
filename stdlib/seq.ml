@@ -62,6 +62,16 @@ let rec flat_map f seq () = match seq () with
 
 let concat_map = flat_map
 
+let rec intersperse sep seq () = match seq () with
+  | Nil -> Nil
+  | Cons (x, next) ->
+      match next () with
+      | Nil -> return x ()
+      | Cons (y, next) -> Cons (x, cons sep (intersperse sep (cons y next)))
+
+let intercalate sep seq () =
+  concat (intersperse sep seq) ()
+
 let rec fold_left f acc seq =
   match seq () with
     | Nil -> acc

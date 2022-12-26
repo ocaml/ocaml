@@ -77,7 +77,8 @@ Working version
 
 ### Standard library:
 
-- #11839: Add `List.intersperse`, `List.intercalate`.
+- #11839: Add `List.intersperse`, `List.intercalate`, `Seq.intersperse`,
+  `Seq.intercalate`.
   (Sima Kinsart, review by ???)
 
 - #11836: Add `Array.map_inplace`.
