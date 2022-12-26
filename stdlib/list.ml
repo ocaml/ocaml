@@ -77,6 +77,21 @@ let rec flatten = function
 
 let concat = flatten
 
+let[@tail_mod_cons] rec intersperse sep = function
+  | ([] | [ _ ]) as l -> l
+  | a :: (_ :: _ as l) -> a :: sep :: intersperse sep l
+
+let[@tail_mod_cons] rec intercalate sep = function
+  | [] -> []
+  | xs :: [] -> xs
+  | xs :: (_ :: _ as ls) -> ic_one sep ls xs
+and[@tail_mod_cons] ic_one sep ls = function
+  | [] -> ic_sep sep ls sep
+  | x :: xs -> x :: ic_one sep ls xs
+and[@tail_mod_cons] ic_sep sep ls = function
+  | [] -> intercalate sep ls
+  | x :: xs -> x :: ic_sep sep ls xs
+
 let[@tail_mod_cons] rec map f = function
     [] -> []
   | [a1] ->
