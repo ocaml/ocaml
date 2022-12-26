@@ -637,7 +637,11 @@ let check_coherence env loc dpath decl =
 let check_abbrev env sdecl (id, decl) =
   check_coherence env sdecl.ptype_loc (Path.Pident id) decl
 
-(* Check that recursion is well-founded *)
+(* Check that recursion is well-founded:
+   - if -rectypes is used, we must prevent non-contractive fixpoints
+     ('a as 'a)
+   - if -rectypes is not used, we only allow cycles in the type graph
+     if they go through an object or polymorphic variant type *)
 
 let check_well_founded env loc path to_check ty =
   let visited = ref TypeMap.empty in
@@ -693,7 +697,7 @@ let check_well_founded env loc path to_check ty =
   let snap = Btype.snapshot () in
   try Ctype.wrap_trace_gadt_instances env (check ty TypeSet.empty) ty
   with Ctype.Escape _ ->
-    (* Will be detected by check_recursion *)
+    (* Will be detected by check_regularity *)
     Btype.backtrack snap
 
 let check_well_founded_manifest env loc path decl =
@@ -708,9 +712,16 @@ let check_well_founded_decl env loc path decl to_check =
      it_type_expr = (fun _ -> check_well_founded env loc path to_check)} in
   it.it_type_declaration it (Ctype.generic_instance_declaration decl)
 
-(* Check for ill-defined abbrevs *)
+(* Check for non-regular abbreviations; an abbreviation
+   [type 'a t = ...] is non-regular if the expansion of [...]
+   contains instances [ty t] where [ty] is not equal to ['a].
 
-let check_recursion ~orig_env env loc path decl to_check =
+   Note: in the case of a constrained type definition
+   [type 'a t = ... constraint 'a = ...], we require
+   that all instances in [...] be equal to the constrainted type.
+*)
+
+let check_regularity ~orig_env env loc path decl to_check =
   (* to_check is true for potentially mutually recursive paths.
      (path, decl) is the type declaration to be checked. *)
 
@@ -773,10 +784,10 @@ let check_recursion ~orig_env env loc path decl to_check =
       check_regular path args [] [] body)
     decl.type_manifest
 
-let check_abbrev_recursion ~orig_env env id_loc_list to_check tdecl =
+let check_abbrev_regularity ~orig_env env id_loc_list to_check tdecl =
   let decl = tdecl.typ_type in
   let id = tdecl.typ_id in
-  check_recursion ~orig_env env (List.assoc id id_loc_list) (Path.Pident id)
+  check_regularity ~orig_env env (List.assoc id id_loc_list) (Path.Pident id)
     decl to_check
 
 let check_duplicates sdecl_list =
@@ -944,7 +955,7 @@ let transl_type_decl env rec_flag sdecl_list =
       decl to_check)
     decls;
   List.iter
-    (check_abbrev_recursion ~orig_env:env new_env id_loc_list to_check) tdecls;
+    (check_abbrev_regularity ~orig_env:env new_env id_loc_list to_check) tdecls;
   (* Check that all type variables are closed *)
   List.iter2
     (fun sdecl tdecl ->
@@ -1611,15 +1622,15 @@ let approx_type_decl sdecl_list =
        abstract_type_decl ~injective (List.length sdecl.ptype_params)))
     sdecl_list
 
-(* Variant of check_abbrev_recursion to check the well-formedness
-   conditions on type abbreviations defined within recursive modules. *)
+(* Check the well-formedness conditions on type abbreviations defined
+   within recursive modules. *)
 
 let check_recmod_typedecl env loc recmod_ids path decl =
   (* recmod_ids is the list of recursively-defined module idents.
      (path, decl) is the type declaration to be checked. *)
   let to_check path = Path.exists_free recmod_ids path in
   check_well_founded_decl env loc path decl to_check;
-  check_recursion ~orig_env:env env loc path decl to_check;
+  check_regularity ~orig_env:env env loc path decl to_check;
   (* additionally check coherece, as one might build an incoherent signature,
      and use it to build an incoherent module, cf. #7851 *)
   check_coherence env loc path decl
