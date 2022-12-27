@@ -37,6 +37,11 @@ Working version
   the hashing work.
   (Gabriel Scherer, review by Xavier Leroy, report by Olivier Nicole)
 
+- #11137: new `Unsafe_store_tag(val, new_tag)` macro to stop using
+  `Tag_val(val)` as lvalue.
+  (Gabriel Scherer, review by Xavier Leroy, Guillaume Munch-Maccagnoni
+   and Nicolás Ojeda Bär)
+
 ### Type system:
 
 - #6941, #11187: prohibit using classes through recursive modules
