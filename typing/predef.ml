@@ -134,8 +134,7 @@ and ident_cons = ident_create "::"
 and ident_none = ident_create "None"
 and ident_some = ident_create "Some"
 
-let mk_add_type add_type type_ident
-      ?manifest ?(immediate=Type_immediacy.Unknown) ?(kind=Type_abstract) env =
+let mk_add_type add_type type_ident ?manifest ?(kind=Types.kind_abstract) env =
   let decl =
     {type_params = [];
      type_arity = 0;
@@ -148,7 +147,6 @@ let mk_add_type add_type type_ident
      type_is_newtype = false;
      type_expansion_scope = lowest_level;
      type_attributes = [];
-     type_immediate = immediate;
      type_unboxed_default = false;
      type_uid = Uid.of_predef_id type_ident;
     }
@@ -158,7 +156,7 @@ let mk_add_type add_type type_ident
 let build_initial_env add_type add_extension empty_env =
   let add_type = mk_add_type add_type
   and add_type1 type_ident
-      ~variance ~separability ?(kind=fun _ -> Type_abstract) env =
+      ~variance ~separability ?(kind=fun _ -> Types.kind_abstract) env =
     let param = newgenvar () in
     let decl =
       {type_params = [param];
@@ -172,7 +170,6 @@ let build_initial_env add_type add_extension empty_env =
        type_is_newtype = false;
        type_expansion_scope = lowest_level;
        type_attributes = [];
-       type_immediate = Unknown;
        type_unboxed_default = false;
        type_uid = Uid.of_predef_id type_ident;
       }
@@ -193,6 +190,7 @@ let build_initial_env add_type add_extension empty_env =
         ext_uid = Uid.of_predef_id id;
       }
   in
+  let kind_immediate = Type_abstract { immediate = Always } in
   let variant constrs = Type_variant (constrs, Variant_regular) in
   empty_env
   (* Predefined types - alphabetical order *)
@@ -200,14 +198,13 @@ let build_initial_env add_type add_extension empty_env =
        ~variance:Variance.full
        ~separability:Separability.Ind
   |> add_type ident_bool
-       ~immediate:Always
        ~kind:(variant [cstr ident_false []; cstr ident_true []])
-  |> add_type ident_char ~immediate:Always
+  |> add_type ident_char ~kind:kind_immediate
   |> add_type ident_exn ~kind:Type_open
   |> add_type ident_extension_constructor
   |> add_type ident_float
   |> add_type ident_floatarray
-  |> add_type ident_int ~immediate:Always
+  |> add_type ident_int ~kind:kind_immediate
   |> add_type ident_int32
   |> add_type ident_int64
   |> add_type1 ident_lazy_t
@@ -227,7 +224,6 @@ let build_initial_env add_type add_extension empty_env =
   |> add_type ident_string
   |> add_type ident_bytes
   |> add_type ident_unit
-       ~immediate:Always
        ~kind:(variant [cstr ident_void []])
   (* Predefined exceptions - alphabetical order *)
   |> add_extension ident_assert_failure

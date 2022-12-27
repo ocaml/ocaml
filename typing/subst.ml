@@ -310,13 +310,12 @@ let type_declaration' copy_scope s decl =
     type_arity = decl.type_arity;
     type_kind =
       begin match decl.type_kind with
-        Type_abstract -> Type_abstract
-      | Type_variant (cstrs, rep) ->
+        Type_variant (cstrs, rep) ->
           Type_variant (List.map (constructor_declaration copy_scope s) cstrs,
                         rep)
       | Type_record(lbls, rep) ->
           Type_record (List.map (label_declaration copy_scope s) lbls, rep)
-      | Type_open -> Type_open
+      | (Type_abstract _ | Type_open) as k -> k
       end;
     type_manifest =
       begin
@@ -331,7 +330,6 @@ let type_declaration' copy_scope s decl =
     type_expansion_scope = Btype.lowest_level;
     type_loc = loc s decl.type_loc;
     type_attributes = attrs s decl.type_attributes;
-    type_immediate = decl.type_immediate;
     type_unboxed_default = decl.type_unboxed_default;
     type_uid = decl.type_uid;
   }

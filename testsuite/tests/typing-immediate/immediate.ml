@@ -24,6 +24,15 @@ module A = struct
   (* Mutually recursive declarations work as well *)
   type p = q [@@immediate]
   and q = int
+
+  (* Variants with only constant constructors are immediate *)
+  type o = Foo | Bar | Baz [@@immediate]
+
+  (* Can declare with a weaker immediacy than necessary *)
+  type m = int [@@immediate64]
+
+  (* ... and yet use the stronger one by expansion later *)
+  type n = m [@@immediate]
 end;;
 [%%expect{|
 module A :
@@ -33,6 +42,9 @@ module A :
     type r = s
     type p = q [@@immediate]
     and q = int
+    type o = Foo | Bar | Baz
+    type m = int [@@immediate64]
+    type n = m [@@immediate]
   end
 |}];;
 
@@ -119,6 +131,30 @@ Error: Types marked with the immediate attribute must be non-pointer types
        like int or bool.
 |}];;
 
+(* Cannot directly declare a non-immediate type as immediate (variant) *)
+module B = struct
+  type t = Foo of int | Bar [@@immediate]
+end;;
+[%%expect{|
+Line 2, characters 2-41:
+2 |   type t = Foo of int | Bar [@@immediate]
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Types marked with the immediate attribute must be non-pointer types
+       like int or bool.
+|}];;
+
+(* Cannot directly declare a non-immediate type as immediate (record) *)
+module B = struct
+  type t = { foo : int } [@@immediate]
+end;;
+[%%expect{|
+Line 2, characters 2-38:
+2 |   type t = { foo : int } [@@immediate]
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Types marked with the immediate attribute must be non-pointer types
+       like int or bool.
+|}];;
+
 (* Not guaranteed that t is immediate, so this is an invalid declaration *)
 module C = struct
   type t
@@ -180,4 +216,31 @@ Line 2, characters 2-26:
       ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Types marked with the immediate attribute must be non-pointer types
        like int or bool.
+|}];;
+
+
+(* Aliases should be expanded to check immediacy *)
+type 'a id = 'a
+type s = int id [@@immediate]
+[%%expect{|
+type 'a id = 'a
+type s = int id [@@immediate]
+|}];;
+module F (X : sig type t end) = X
+module I = struct type t = int end
+type t = F(I).t [@@immediate]
+[%%expect{|
+module F : functor (X : sig type t end) -> sig type t = X.t end
+module I : sig type t = int end
+type t = F(I).t [@@immediate]
+|}];;
+module type T = sig type t type s = t end
+module F (X : T with type t = int) = struct
+  type t = X.s [@@immediate]
+end
+[%%expect{|
+module type T = sig type t type s = t end
+module F :
+  functor (X : sig type t = int type s = t end) ->
+    sig type t = X.s [@@immediate] end
 |}];;
