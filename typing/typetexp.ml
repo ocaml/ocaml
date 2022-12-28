@@ -325,7 +325,7 @@ and transl_type_aux env policy styp =
           ty
         with Not_found ->
           let t, ty =
-            with_local_level_principal begin fun () ->
+            with_local_level_if_principal begin fun () ->
               let t = newvar () in
               used_variables :=
                 TyVarMap.add alias (t, styp.ptyp_loc) !used_variables;

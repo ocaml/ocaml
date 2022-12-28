@@ -67,8 +67,8 @@ val with_level: level: int -> (unit -> 'a) -> 'a
            [current_level] set to [level] *)
 val with_level_if: bool -> level: int -> (unit -> 'a) -> 'a
         (* Conditional variant of [with_level] *)
-val with_local_level_principal: (unit -> 'a) -> post:('a -> unit) -> 'a
-val with_local_level_iter_principal:
+val with_local_level_if_principal: (unit -> 'a) -> post:('a -> unit) -> 'a
+val with_local_level_iter_if_principal:
     (unit -> 'a * 'b list) -> post:('b -> unit) -> 'a
         (* Applications of [with_local_level_if] and [with_local_level_iter_if]
            to [!Clflags.principal] *)

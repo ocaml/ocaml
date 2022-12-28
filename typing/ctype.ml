@@ -185,9 +185,9 @@ let with_local_level_iter f ~post =
   result
 let with_local_level_iter_if cond f ~post =
   if cond then with_local_level_iter f ~post else fst (f ())
-let with_local_level_principal f ~post =
+let with_local_level_if_principal f ~post =
   with_local_level_if !Clflags.principal f ~post
-let with_local_level_iter_principal f ~post =
+let with_local_level_iter_if_principal f ~post =
   with_local_level_iter_if !Clflags.principal f ~post
 let with_level ~level f =
   begin_def (); init_def level;
@@ -1695,8 +1695,7 @@ let full_expand ~may_forget_scope env ty =
     if may_forget_scope then
       try expand_head_unif env ty with Unify_trace _ ->
         (* #10277: forget scopes when printing trace *)
-        with_local_level begin fun () ->
-          init_def (get_level ty);
+        with_level ~level:(get_level ty) begin fun () ->
           (* The same as [expand_head], except in the failing case we return the
            *original* type, not [correct_levels ty].*)
           try try_expand_head try_expand_safe env (correct_levels ty) with

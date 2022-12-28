@@ -3038,7 +3038,7 @@ and type_expect_
         with_local_level_iter
           begin fun () ->
             let funct =
-              with_local_level_principal (fun () -> type_exp env sfunct)
+              with_local_level_if_principal (fun () -> type_exp env sfunct)
                 ~post: generalize_structure_exp
             in
             let ty = instance funct.exp_type in
@@ -3162,7 +3162,8 @@ and type_expect_
           None -> None
         | Some sexp ->
             let exp =
-              with_local_level_principal (fun () -> type_exp ~recarg env sexp)
+              with_local_level_if_principal
+                (fun () -> type_exp ~recarg env sexp)
                 ~post: generalize_structure_exp
             in
             Some exp
@@ -3513,7 +3514,7 @@ and type_expect_
       }
   | Pexp_send (e, {txt=met}) ->
       let (obj,meth,typ) =
-        with_local_level_principal
+        with_local_level_if_principal
           (fun () -> type_send env loc explanation e met)
           ~post:(fun (_,_,typ) -> generalize_structure typ)
       in
@@ -3725,7 +3726,8 @@ and type_expect_
       }
   | Pexp_poly(sbody, sty) ->
       let ty, cty =
-        with_local_level_principal ~post:(fun (ty,_) -> generalize_structure ty)
+        with_local_level_if_principal
+          ~post:(fun (ty,_) -> generalize_structure ty)
           begin fun () ->
             match sty with None -> protect_expansion env ty_expected, None
             | Some sty ->
@@ -3747,7 +3749,7 @@ and type_expect_
             let (exp,_) =
               with_local_level begin fun () ->
                 let vars, ty'' =
-                  with_local_level_principal
+                  with_local_level_if_principal
                     (fun () -> instance_poly true tl ty')
                     ~post:(fun (_,ty'') -> generalize_structure ty'')
                 in
@@ -3857,7 +3859,7 @@ and type_expect_
       in
       let op_path, op_desc, op_type, spat_params, ty_params,
           ty_func_result, ty_result, ty_andops =
-        with_local_level_iter_principal
+        with_local_level_iter_if_principal
           ~post:generalize_structure begin fun () ->
           let let_loc = slet.pbop_op.loc in
           let op_path, op_desc = type_binding_op_ident env slet.pbop_op in
@@ -4042,7 +4044,7 @@ and type_function ?(in_function : (Location.t * type_expr) option)
 
 and type_label_access env srecord usage lid =
   let record =
-    with_local_level_principal ~post:generalize_structure_exp
+    with_local_level_if_principal ~post:generalize_structure_exp
       (fun () -> type_exp ~recarg:Allowed env srecord)
   in
   let ty_exp = record.exp_type in
@@ -4401,7 +4403,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
       (* apply optional arguments when expected type is "" *)
       (* we must be very careful about not breaking the semantics *)
       let texp =
-        with_local_level_principal ~post:generalize_structure_exp
+        with_local_level_if_principal ~post:generalize_structure_exp
           (fun () -> type_exp env sarg)
       in
       let rec make_args args ty_fun =
@@ -4895,7 +4897,7 @@ and type_cases
         List.map
         (fun ({pc_lhs; pc_guard = _; pc_rhs = _} as case) ->
           let htc =
-            with_local_level_principal begin fun () ->
+            with_local_level_if_principal begin fun () ->
               let ty_arg =
                 (* propagation of pattern *)
                 with_local_level ~post:generalize_structure
@@ -5082,7 +5084,7 @@ and type_let ?check ?check_strict
   let (pat_list, exp_list, new_env, unpacks, _pvs) =
     with_local_level begin fun () ->
       let (pat_list, new_env, force, pvs, unpacks) =
-        with_local_level_principal begin fun () ->
+        with_local_level_if_principal begin fun () ->
           let nvs = List.map (fun _ -> newvar ()) spatl in
           let (pat_list, _new_env, _force, _pvs, _unpacks as res) =
             type_pattern_list Value existential_context env spatl nvs allow in
@@ -5131,7 +5133,7 @@ and type_let ?check ?check_strict
             match get_desc pat.pat_type with
             | Tpoly (ty, tl) ->
                 let vars, ty' =
-                  with_local_level_principal
+                  with_local_level_if_principal
                     ~post:(fun (_,ty') -> generalize_structure ty')
                     (fun () -> instance_poly ~keep_names:true true tl ty)
                 in
@@ -5349,7 +5351,7 @@ and type_andops env sarg sands expected_ty =
     | [] -> type_expect env let_sarg (mk_expected expected_ty), []
     | { pbop_op = sop; pbop_exp = sexp; pbop_loc = loc; _ } :: rest ->
         let op_path, op_desc, op_type, ty_arg, ty_rest, ty_result =
-          with_local_level_iter_principal begin fun () ->
+          with_local_level_iter_if_principal begin fun () ->
             let op_path, op_desc = type_binding_op_ident env sop in
             let op_type = instance op_desc.val_type in
             let ty_arg = newvar () in

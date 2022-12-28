@@ -644,7 +644,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
       with_attrs
         (fun () ->
            let cty =
-             Ctype.with_local_level_principal
+             Ctype.with_local_level_if_principal
                (fun () -> Typetexp.transl_simple_type val_env false styp)
                ~post:(fun cty -> Ctype.generalize_structure cty.ctyp_type)
            in
@@ -683,7 +683,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
                            No_overriding ("instance variable", label.txt)))
            end;
            let definition =
-             Ctype.with_local_level_principal
+             Ctype.with_local_level_if_principal
                ~post:Typecore.generalize_structure_exp
                (fun () -> type_exp val_env sdefinition)
            in
@@ -1140,7 +1140,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
       class_expr cl_num val_env met_env virt self_scope sfun
   | Pcl_fun (l, None, spat, scl') ->
       let (pat, pv, val_env', met_env) =
-        Ctype.with_local_level_principal
+        Ctype.with_local_level_if_principal
           (fun () ->
             Typecore.type_class_arg_pattern cl_num val_env met_env l spat)
           ~post: begin fun (pat, _, _, _) ->
@@ -1190,7 +1190,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
   | Pcl_apply (scl', sargs) ->
       assert (sargs <> []);
       let cl =
-        Ctype.with_local_level_principal
+        Ctype.with_local_level_if_principal
           (fun () -> class_expr cl_num val_env met_env virt self_scope scl')
           ~post:(fun cl -> Ctype.generalize_class_type_structure cl.cl_type)
       in
@@ -1302,22 +1302,22 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
              let path = Pident id in
              (* do not mark the value as used *)
              let vd = Env.find_value path val_env in
+             let ty =
+               Ctype.with_local_level ~post:Ctype.generalize
+                 (fun () -> Ctype.instance vd.val_type)
+             in
              let expr =
-               Ctype.with_local_level begin fun () ->
-                 {exp_desc =
-                  Texp_ident(path,
-                             mknoloc(Longident.Lident (Ident.name id)),vd);
-                  exp_loc = Location.none; exp_extra = [];
-                  exp_type = Ctype.instance vd.val_type;
-                  exp_attributes = [];
-                  exp_env = val_env;
-                }
-               end
-               ~post:(fun exp -> Ctype.generalize exp.exp_type)
+               {exp_desc =
+                Texp_ident(path, mknoloc(Longident.Lident (Ident.name id)),vd);
+                exp_loc = Location.none; exp_extra = [];
+                exp_type = ty;
+                exp_attributes = [];
+                exp_env = val_env;
+               }
              in
              let desc =
-               {val_type = expr.exp_type; val_kind = Val_ivar (Immutable,
-                                                               cl_num);
+               {val_type = expr.exp_type;
+                val_kind = Val_ivar (Immutable, cl_num);
                 val_attributes = [];
                 Types.val_loc = vd.Types.val_loc;
                 val_uid = vd.val_uid;
@@ -1462,7 +1462,7 @@ let initial_env define_class approx
 
   (* Temporary type for the class constructor *)
   let constr_type =
-    Ctype.with_local_level_principal (fun () -> approx cl.pci_expr)
+    Ctype.with_local_level_if_principal (fun () -> approx cl.pci_expr)
       ~post:Ctype.generalize_structure
   in
   let dummy_cty = Cty_signature (Ctype.new_class_signature ()) in
