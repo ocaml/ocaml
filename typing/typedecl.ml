@@ -144,12 +144,8 @@ let update_type temp_env env id loc =
 
 (* Determine if a type's values are represented by floats at run-time. *)
 let is_float env ty =
-  match Typedecl_unboxed.get_unboxed_type_representation env ty with
-    Some ty' ->
-      begin match get_desc ty' with
-        Tconstr(p, _, _) -> Path.same p Predef.path_float
-      | _ -> false
-      end
+  match get_desc (Ctype.get_unboxed_type_representation env ty) with
+    Tconstr(p, _, _) -> Path.same p Predef.path_float
   | _ -> false
 
 (* Determine if a type definition defines a fixed type. (PW) *)
@@ -371,9 +367,10 @@ let transl_declaration env sdecl (id, uid) =
       Option.is_none unboxed_attr
     | _ -> false, false (* Not unboxable, mark as boxed *)
   in
+  let immediate = Type_immediacy.of_attributes sdecl.ptype_attributes in
   let (tkind, kind) =
     match sdecl.ptype_kind with
-      | Ptype_abstract -> Ttype_abstract, Type_abstract
+      | Ptype_abstract -> Ttype_abstract, Type_abstract {immediate}
       | Ptype_variant scstrs ->
         if List.exists (fun cstr -> cstr.pcd_res <> None) scstrs then begin
           match cstrs with
@@ -435,6 +432,11 @@ let transl_declaration env sdecl (id, uid) =
           Ttype_record lbls, Type_record(lbls', rep)
       | Ptype_open -> Ttype_open, Type_open
       in
+    let kind_imm = Ctype.kind_immediacy kind in
+    begin match Type_immediacy.coerce kind_imm ~as_:immediate with
+    | Ok () -> ()
+    | Error v -> raise(Error(sdecl.ptype_loc, Immediacy v))
+    end;
     let (tman, man) = match sdecl.ptype_manifest with
         None -> None, None
       | Some sty ->
@@ -603,9 +605,12 @@ let check_constraints env sdecl (_, decl) =
   end
 
 (*
+   Check that the type expression (if present) is compatible with the kind.
    If both a variant/record definition and a type equation are given,
    need to check that the equation refers to a type of the same kind
    with the same constructors and labels.
+   If the kind is Type_abstract {immediate}, need to check that the equation
+   refers to a sufficiently-immediate type.
 *)
 let check_coherence env loc dpath decl =
   match decl with
@@ -639,7 +644,13 @@ let check_coherence env loc dpath decl =
           end
       | _ -> raise(Error(loc, Definition_mismatch (ty, env, None)))
       end
-  | _ -> ()
+  | { type_kind = Type_abstract { immediate = imm };
+      type_manifest = Some ty } ->
+     begin match Ctype.check_type_immediate env ty imm with
+     | Ok () -> ()
+     | Error v -> raise(Error(loc, Immediacy v))
+     end
+  | { type_manifest = None } -> ()
 
 let check_abbrev env sdecl (id, decl) =
   check_coherence env sdecl.ptype_loc (Path.Pident id) decl
@@ -997,13 +1008,10 @@ let transl_type_decl env rec_flag sdecl_list =
       decls
       |> name_recursion_decls sdecl_list
       |> Typedecl_variance.update_decls env sdecl_list
-      |> Typedecl_immediacy.update_decls env
       |> Typedecl_separability.update_decls env
     with
     | Typedecl_variance.Error (loc, err) ->
         raise (Error (loc, Variance err))
-    | Typedecl_immediacy.Error (loc, err) ->
-        raise (Error (loc, Immediacy err))
     | Typedecl_separability.Error (loc, err) ->
         raise (Error (loc, Separability err))
   in
@@ -1573,9 +1581,6 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
       Typedecl_variance.compute_decl env ~check:true new_sig_decl required
     with Typedecl_variance.Error (loc, err) ->
       raise (Error (loc, Variance err)) in
-  let new_type_immediate =
-    (* Typedecl_immediacy.compute_decl never raises *)
-    Typedecl_immediacy.compute_decl env new_sig_decl in
   let new_type_separability =
     try Typedecl_separability.compute_decl env new_sig_decl
     with Typedecl_separability.Error (loc, err) ->

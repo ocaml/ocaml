@@ -234,6 +234,14 @@ module F : functor (X : sig type t end) -> sig type t = X.t end
 module I : sig type t = int end
 type t = F(I).t [@@immediate]
 |}];;
+module F (X : sig type t end) = X
+module I : sig type t = private int end = struct type t = int end
+type t = F(I).t [@@immediate]
+[%%expect{|
+module F : functor (X : sig type t end) -> sig type t = X.t end
+module I : sig type t = private int end
+type t = F(I).t [@@immediate]
+|}];;
 module type T = sig type t type s = t end
 module F (X : T with type t = int) = struct
   type t = X.s [@@immediate]
@@ -243,4 +251,19 @@ module type T = sig type t type s = t end
 module F :
   functor (X : sig type t = int type s = t end) ->
     sig type t = X.s [@@immediate] end
+|}];;
+module type T = sig type t type s = t end
+module F (X : T with type t = private int) = struct
+  type t = X.s [@@immediate]
+end
+[%%expect{|
+module type T = sig type t type s = t end
+module F :
+  functor (X : sig type t = private int type s = t end) ->
+    sig type t = X.s [@@immediate] end
+|}];;
+type t = int s [@@immediate] and 'a s = 'a
+[%%expect{|
+type t = int s [@@immediate]
+and 'a s = 'a
 |}];;

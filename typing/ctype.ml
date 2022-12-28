@@ -5450,17 +5450,47 @@ let same_constr env t1 t2 =
 let () =
   Env.same_constr := same_constr
 
-let immediacy env typ =
-   match get_desc typ with
-  | Tconstr(p, _args, _abbrev) ->
-    begin try
-      let type_decl = Env.find_type p env in
-      type_decl.type_immediate
-    with Not_found -> Type_immediacy.Unknown
-    (* This can happen due to e.g. missing -I options,
-       causing some .cmi files to be unavailable.
-       Maybe we should emit a warning. *)
+(* We use expand_head_opt version of expand_head to get access
+   to the manifest type of private abbreviations. *)
+let rec get_unboxed_type_representation env ty fuel =
+  if fuel < 0 then ty else
+  let ty = expand_head_opt env ty in
+  match get_desc ty with
+  | Tconstr (p, args, _) ->
+    begin match Env.find_type p env with
+    | exception Not_found -> ty
+    | {type_params; type_kind =
+         Type_record ([{ld_type = ty2; _}], Record_unboxed _)
+       | Type_variant ([{cd_args = Cstr_tuple [ty2]; _}], Variant_unboxed)
+       | Type_variant ([{cd_args = Cstr_record [{ld_type = ty2; _}]; _}],
+                       Variant_unboxed)}
+      ->
+        let ty2 = match get_desc ty2 with Tpoly (t, _) -> t | _ -> ty2 in
+        get_unboxed_type_representation env
+          (apply env type_params ty2 args) (fuel - 1)
+    | _ -> ty
     end
+  | _ -> ty
+
+let get_unboxed_type_representation env ty =
+  (* Do not give too much fuel: PR#7424 *)
+  get_unboxed_type_representation env ty 100
+
+let kind_immediacy = function
+  | Type_open | Type_record _ -> Type_immediacy.Unknown
+  | Type_abstract { immediate } -> immediate
+  | Type_variant (cstrs, _) ->
+     if List.exists (fun c -> c.Types.cd_args <> Types.Cstr_tuple []) cstrs
+     then Type_immediacy.Unknown
+     else Type_immediacy.Always
+
+let type_immediacy_head env ty =
+  match get_desc ty with
+  | Tconstr(p, _args, _abbrev) ->
+     begin match Env.find_type p env with
+     | { type_kind = k; _ } -> kind_immediacy k
+     | exception Not_found -> Type_immediacy.Unknown
+     end
   | Tvariant row ->
       (* if all labels are devoid of arguments, not a pointer *)
       if
@@ -5475,3 +5505,26 @@ let immediacy env typ =
       else
         Type_immediacy.Always
   | _ -> Type_immediacy.Unknown
+
+let check_type_immediate env ty imm =
+  match Type_immediacy.coerce (type_immediacy_head env ty) ~as_:imm with
+  | Ok () -> Ok ()
+  | Error _ ->
+    let ty = get_unboxed_type_representation env ty in
+    Type_immediacy.coerce (type_immediacy_head env ty) ~as_:imm
+
+let check_decl_immediate env decl imm =
+  match decl with
+  | { type_kind =
+        ( Type_record ([{ld_type = arg; _}], Record_unboxed _)
+        | Type_variant ([{cd_args = Cstr_tuple [arg]; _}], Variant_unboxed)
+        | Type_variant ([{cd_args = Cstr_record [{ld_type = arg; _}]; _}],
+                        Variant_unboxed)) } ->
+     check_type_immediate env arg imm
+  | { type_kind; type_manifest = None; _ } ->
+     Type_immediacy.coerce (kind_immediacy type_kind) ~as_:imm
+  | { type_kind; type_manifest = Some ty; _ } ->
+     (* Check the kind first, in case of missing cmis *)
+     match Type_immediacy.coerce (kind_immediacy type_kind) ~as_:imm with
+     | Ok () -> Ok ()
+     | _ -> check_type_immediate env ty imm
