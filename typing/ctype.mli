@@ -33,19 +33,6 @@ exception Matches_failure of Env.t * Errortrace.unification_error
 exception Incompatible
   (* Raised from [mcomp] *)
 
-(* Old API
-val init_def: int -> unit
-        (* Set the initial variable level *)
-val begin_def: unit -> unit
-        (* Raise the variable level by one at the beginning of a definition. *)
-val begin_class_def: unit -> unit
-        (* Raise the current level not touching the nongen level *)
-val raise_nongen_level: unit -> unit
-        (* Raise the nongen level to the current level *)
-val end_def: unit -> unit
-        (* Lower the variable level by one at the end of a definition *)
-*)
-
 (* All the following wrapper functions revert to the original level,
    even in case of exception. *)
 val with_local_level: ?post:('a -> unit) -> (unit -> 'a) -> 'a
