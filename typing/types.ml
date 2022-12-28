@@ -454,6 +454,15 @@ let decl_is_abstract decl =
   | Type_abstract _ -> true
   | Type_record _ | Type_variant _ | Type_open -> false
 
+let decl_is_unboxed decl =
+  match decl.type_kind with
+    Type_record ([{ld_type = arg; _}], Record_unboxed _)
+  | Type_variant ([{cd_args = Cstr_tuple [arg]; _}], Variant_unboxed)
+  | Type_variant ([{cd_args = Cstr_record [{ld_type = arg; _}]; _}],
+                  Variant_unboxed) ->
+    Some arg
+  | _ -> None
+
 type label_description =
   { lbl_name: string;                   (* Short name *)
     lbl_res: type_expr;                 (* Type of the result *)

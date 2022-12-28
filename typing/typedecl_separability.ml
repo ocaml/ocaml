@@ -55,23 +55,21 @@ let structure : type_definition -> type_structure = fun def ->
       | None -> Abstract
       | Some type_expr -> Synonym type_expr
       end
-
-  | ( Type_record ([{ld_type = ty; _}], Record_unboxed _)
-    | Type_variant ([{cd_args = Cstr_tuple [ty]; _}], Variant_unboxed)
-    | Type_variant ([{cd_args = Cstr_record [{ld_type = ty; _}]; _}],
-                    Variant_unboxed)) ->
-     let params =
-       match def.type_kind with
-       | Type_variant ([{cd_res = Some ret_type}], _) ->
-          begin match get_desc ret_type with
-          | Tconstr (_, tyl, _) -> tyl
-          | _ -> assert false
-          end
-       | _ -> def.type_params
-     in
-     Unboxed { argument_type = ty; result_type_parameter_instances = params }
-
-  | Type_record _ | Type_variant _ -> Algebraic
+  | Type_record _ | Type_variant _ ->
+      begin match decl_is_unboxed def with
+      | None -> Algebraic
+      | Some ty ->
+        let params =
+          match def.type_kind with
+          | Type_variant ([{cd_res = Some ret_type}], _) ->
+             begin match get_desc ret_type with
+             | Tconstr (_, tyl, _) -> tyl
+             | _ -> assert false
+             end
+          | _ -> def.type_params
+        in
+        Unboxed { argument_type = ty; result_type_parameter_instances = params }
+      end
 
 type error =
   | Non_separable_evar of string option

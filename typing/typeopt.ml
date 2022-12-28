@@ -27,11 +27,9 @@ let scrape_ty env ty =
       let ty = Ctype.expand_head_opt env (Ctype.correct_levels ty) in
       begin match get_desc ty with
       | Tconstr (p, _, _) ->
-          begin match Env.find_type p env with
-          | {type_kind = ( Type_variant (_, Variant_unboxed)
-          | Type_record (_, Record_unboxed _) ); _} ->
-            Ctype.get_unboxed_type_representation env ty
-          | _ -> ty
+          begin match decl_is_unboxed (Env.find_type p env) with
+          | Some _ -> Ctype.get_unboxed_type_representation env ty
+          | None -> ty
           | exception Not_found -> ty
           end
       | _ ->

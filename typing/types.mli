@@ -529,6 +529,9 @@ and constructor_arguments =
 val kind_abstract : ('a,'b) type_kind
 val decl_is_abstract : type_declaration -> bool
 
+(* Returns the inner type, if unboxed. *)
+val decl_is_unboxed : type_declaration -> type_expr option
+
 type extension_constructor =
   {
     ext_type_path: Path.t;

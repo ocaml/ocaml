@@ -5459,16 +5459,14 @@ let rec get_unboxed_type_representation env ty fuel =
   | Tconstr (p, args, _) ->
     begin match Env.find_type p env with
     | exception Not_found -> ty
-    | {type_params; type_kind =
-         Type_record ([{ld_type = ty2; _}], Record_unboxed _)
-       | Type_variant ([{cd_args = Cstr_tuple [ty2]; _}], Variant_unboxed)
-       | Type_variant ([{cd_args = Cstr_record [{ld_type = ty2; _}]; _}],
-                       Variant_unboxed)}
-      ->
+    | decl ->
+      begin match decl_is_unboxed decl with
+      | None -> ty
+      | Some ty2 ->
         let ty2 = match get_desc ty2 with Tpoly (t, _) -> t | _ -> ty2 in
         get_unboxed_type_representation env
-          (apply env type_params ty2 args) (fuel - 1)
-    | _ -> ty
+          (apply env decl.type_params ty2 args) (fuel - 1)
+      end
     end
   | _ -> ty
 
@@ -5514,17 +5512,11 @@ let check_type_immediate env ty imm =
     Type_immediacy.coerce (type_immediacy_head env ty) ~as_:imm
 
 let check_decl_immediate env decl imm =
-  match decl with
-  | { type_kind =
-        ( Type_record ([{ld_type = arg; _}], Record_unboxed _)
-        | Type_variant ([{cd_args = Cstr_tuple [arg]; _}], Variant_unboxed)
-        | Type_variant ([{cd_args = Cstr_record [{ld_type = arg; _}]; _}],
-                        Variant_unboxed)) } ->
-     check_type_immediate env arg imm
-  | { type_kind; type_manifest = None; _ } ->
-     Type_immediacy.coerce (kind_immediacy type_kind) ~as_:imm
-  | { type_kind; type_manifest = Some ty; _ } ->
+  match decl_is_unboxed decl, decl.type_manifest with
+  | Some arg, _ -> check_type_immediate env arg imm
+  | None, None -> Type_immediacy.coerce (kind_immediacy decl.type_kind) ~as_:imm
+  | None, Some ty ->
      (* Check the kind first, in case of missing cmis *)
-     match Type_immediacy.coerce (kind_immediacy type_kind) ~as_:imm with
+     match Type_immediacy.coerce (kind_immediacy decl.type_kind) ~as_:imm with
      | Ok () -> Ok ()
      | _ -> check_type_immediate env ty imm
