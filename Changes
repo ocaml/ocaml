@@ -231,7 +231,7 @@ Working version
 
 - #11536: Introduce wrapper functions for level management
   ([Ctype.with_level], etc) and for type variable scoping
-  ([Typetexp.with_type_variable_scope]).
+  ([Typetexp.with_local_type_variable_scope]).
   The older API ([Ctype.(begin_def,end_def)], [Typetexp.(narrow,widen)], etc.)
   is now removed.
   (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)

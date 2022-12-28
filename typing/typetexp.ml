@@ -53,8 +53,6 @@ exception Error_forward of Location.error
 (** Map indexed by type variable names. *)
 module TyVarMap = Misc.Stdlib.String.Map
 
-type variable_context = int * type_expr TyVarMap.t
-
 (* Support for first-class modules. *)
 
 let transl_modtype_longident = ref (fun _ -> assert false)
@@ -105,7 +103,7 @@ let widen (gl, tv) =
   restore_global_level gl;
   type_variables := tv
 
-let wrap_type_variable_scope f =
+let with_local_type_variable_scope f =
   let context = narrow () in
   let r = f () in
   widen context;
@@ -464,7 +462,8 @@ and transl_type_aux env policy styp =
       ctyp (Ttyp_poly (vars, cty)) ty'
   | Ptyp_package (p, l) ->
       let l, mty = create_package_mty true styp.ptyp_loc env (p, l) in
-      let mty = wrap_type_variable_scope (fun () -> !transl_modtype env mty) in
+      let mty =
+        with_local_type_variable_scope (fun () -> !transl_modtype env mty) in
       let ptys = List.map (fun (s, pty) ->
                              s, transl_type env policy pty
                           ) l in

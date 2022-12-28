@@ -1344,13 +1344,13 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
       let cl, clty =
         Ctype.with_local_level_for_class begin fun () ->
           let cl =
-            Typetexp.wrap_type_variable_scope begin fun () ->
+            Typetexp.with_local_type_variable_scope begin fun () ->
               let cl = class_expr cl_num val_env met_env virt self_scope scl' in
               complete_class_type cl.cl_loc val_env virt Class_type cl.cl_type;
               cl
             end
           and clty =
-            Typetexp.wrap_type_variable_scope begin fun () ->
+            Typetexp.with_local_type_variable_scope begin fun () ->
               let clty = class_type val_env virt self_scope scty in
               complete_class_type
                 clty.cltyp_loc val_env virt Class clty.cltyp_type;

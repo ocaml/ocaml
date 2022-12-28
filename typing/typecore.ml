@@ -3622,7 +3622,7 @@ and type_expect_
       let (id, name, pres, modl, _, body) =
         with_local_level begin fun () ->
           let modl, pres, id, new_env =
-            Typetexp.wrap_type_variable_scope begin fun () ->
+            Typetexp.with_local_type_variable_scope begin fun () ->
               let modl, md_shape = !type_module env smodl in
               Mtype.lower_nongen lv modl.mod_type;
               let pres =
@@ -4810,7 +4810,7 @@ and type_unpacks ?(in_function : (Location.t * type_expr) option)
     | unpack :: rem ->
         with_local_level begin fun () ->
           let name, modl, pres, id, extended_env =
-            Typetexp.wrap_type_variable_scope begin fun () ->
+            Typetexp.with_local_type_variable_scope begin fun () ->
               let name = unpack.tu_name in
               let modl, md_shape =
                 !type_module env

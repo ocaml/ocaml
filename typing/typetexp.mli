@@ -51,8 +51,7 @@ val type_variable: Location.t -> string -> type_expr
 val transl_type_param:
   Env.t -> Parsetree.core_type -> Typedtree.core_type
 
-type variable_context
-val wrap_type_variable_scope: (unit -> 'a) -> 'a
+val with_local_type_variable_scope: (unit -> 'a) -> 'a
 
 exception Already_bound
 
