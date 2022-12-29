@@ -210,6 +210,9 @@ Working version
   (Abiola Abdulsalam, review by Sébastien Hinderer, Nicolás Ojeda Bär and
   Florian Angeletti)
 
+- #11722: clearer error messages on non-well-founded type definitions
+  (Gabriel Scherer, review by Jacques Garrigue)
+
 - #11819: make the `native_compiler` and `native_dynlink` configuration
   variables available through ocamlc -config.
   (Sébastien Hinderer, review by Gabriel Scherer and David Allsopp)

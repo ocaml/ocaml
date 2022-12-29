@@ -26,13 +26,22 @@ module String = Misc.Stdlib.String
 
 type native_repr_kind = Unboxed | Untagged
 
+(* Our static analyses explore the set of type expressions "reachable"
+   from a type declaration, by expansion of definitions or by the
+   subterm relation (a type expression is syntactically contained
+   in another). *)
+type reaching_type_path = reaching_type_step list
+and reaching_type_step =
+  | Expands_to of type_expr * type_expr
+  | Contains of type_expr * type_expr
+
 type error =
     Repeated_parameter
   | Duplicate_constructor of string
   | Too_many_constructors
   | Duplicate_label of string
-  | Recursive_abbrev of string
-  | Cycle_in_def of string * type_expr
+  | Recursive_abbrev of string * Env.t * reaching_type_path
+  | Cycle_in_def of string * Env.t * reaching_type_path
   | Definition_mismatch of type_expr * Env.t * Includecore.type_mismatch option
   | Constraint_failed of Env.t * Errortrace.unification_error
   | Inconsistent_constraint of Env.t * Errortrace.unification_error
@@ -41,7 +50,7 @@ type error =
       definition: Path.t;
       used_as: type_expr;
       defined_as: type_expr;
-      expansions: (type_expr * type_expr) list;
+      reaching_path: reaching_type_path;
     }
   | Null_arity_external
   | Missing_native_external
@@ -645,14 +654,23 @@ let check_abbrev env sdecl (id, decl) =
 
 let check_well_founded env loc path to_check ty =
   let visited = ref TypeMap.empty in
-  let rec check ty0 parents ty =
+  let rec check ty0 parents trace ty =
     if TypeSet.mem ty parents then begin
       (*Format.eprintf "@[%a@]@." Printtyp.raw_type_expr ty;*)
-      if match get_desc ty0 with
-      | Tconstr (p, _, _) -> Path.same p path
-      | _ -> false
-      then raise (Error (loc, Recursive_abbrev (Path.name path)))
-      else raise (Error (loc, Cycle_in_def (Path.name path, ty0)))
+      let err =
+        let reaching_path =
+          (* The reaching trace is accumulated in reverse order, we
+             reverse it to get a reaching path. *)
+          match trace with
+          | [] -> assert false
+          | trace ->
+              List.rev trace in
+        if match get_desc ty0 with
+          | Tconstr (p, _, _) -> Path.same p path
+          | _ -> false
+        then Recursive_abbrev (Path.name path, env, reaching_path)
+        else Cycle_in_def (Path.name path, env, reaching_path)
+      in raise (Error (loc, err))
     end;
     let (fini, parents) =
       try
@@ -676,7 +694,7 @@ let check_well_founded env loc path to_check ty =
         visited := visited';
         let parents =
           if rec_ok then TypeSet.empty else TypeSet.add ty parents in
-        Btype.iter_type_expr (check ty0 parents) ty;
+        Btype.iter_type_expr (check_subtype ty0 parents trace ty) ty;
         None
       with e ->
         visited := visited'; Some e
@@ -684,18 +702,20 @@ let check_well_founded env loc path to_check ty =
     match get_desc ty with
     | Tconstr(p, _, _) when arg_exn <> None || to_check p ->
         if to_check p then Option.iter raise arg_exn
-        else Btype.iter_type_expr (check ty0 TypeSet.empty) ty;
+        else Btype.iter_type_expr (check_subtype ty0 TypeSet.empty trace ty) ty;
         begin try
           let ty' = Ctype.try_expand_once_opt env ty in
           let ty0 = if TypeSet.is_empty parents then ty else ty0 in
-          check ty0 (TypeSet.add ty parents) ty'
+          check ty0 (TypeSet.add ty parents) (Expands_to (ty, ty') :: trace) ty'
         with
           Ctype.Cannot_expand -> Option.iter raise arg_exn
         end
     | _ -> Option.iter raise arg_exn
+  and check_subtype ty0 parents trace outer_ty inner_ty =
+      check ty0 parents (Contains (outer_ty, inner_ty) :: trace) inner_ty
   in
   let snap = Btype.snapshot () in
-  try Ctype.wrap_trace_gadt_instances env (check ty TypeSet.empty) ty
+  try Ctype.wrap_trace_gadt_instances env (check ty TypeSet.empty []) ty
   with Ctype.Escape _ ->
     (* Will be detected by check_regularity *)
     Btype.backtrack snap
@@ -729,7 +749,7 @@ let check_regularity ~orig_env env loc path decl to_check =
 
   let visited = ref TypeSet.empty in
 
-  let rec check_regular cpath args prev_exp prev_expansions ty =
+  let rec check_regular cpath args prev_exp trace ty =
     if not (TypeSet.mem ty !visited) then begin
       visited := TypeSet.add ty !visited;
       match get_desc ty with
@@ -741,7 +761,7 @@ let check_regularity ~orig_env env loc path decl to_check =
                        definition=path;
                        used_as=ty;
                        defined_as=Ctype.newconstr path args;
-                       expansions=List.rev prev_expansions;
+                       reaching_path=List.rev trace;
                      }))
           end
           (* Attempt to expand a type abbreviation if:
@@ -762,18 +782,22 @@ let check_regularity ~orig_env env loc path decl to_check =
                   raise (Error(loc, Constraint_failed (orig_env, err)));
               end;
               check_regular path' args
-                (path' :: prev_exp) ((ty,body) :: prev_expansions)
+                (path' :: prev_exp) (Expands_to (ty,body) :: trace)
                 body
             with Not_found -> ()
           end;
-          List.iter (check_regular cpath args prev_exp prev_expansions) args'
+          List.iter (check_subtype cpath args prev_exp trace ty) args'
       | Tpoly (ty, tl) ->
           let (_, ty) = Ctype.instance_poly ~keep_names:true false tl ty in
-          check_regular cpath args prev_exp prev_expansions ty
+          check_regular cpath args prev_exp trace ty
       | _ ->
           Btype.iter_type_expr
-            (check_regular cpath args prev_exp prev_expansions) ty
-    end in
+            (check_subtype cpath args prev_exp trace ty) ty
+    end
+    and check_subtype cpath args prev_exp trace outer_ty inner_ty =
+      let trace = Contains (outer_ty, inner_ty) :: trace in
+      check_regular cpath args prev_exp trace inner_ty
+  in
 
   Option.iter
     (fun body ->
@@ -1682,6 +1706,51 @@ let tys_of_constr_args = function
   | Types.Cstr_tuple tl -> tl
   | Types.Cstr_record lbls -> List.map (fun l -> l.Types.ld_type) lbls
 
+module Reaching_path = struct
+  type t = reaching_type_path
+
+  (* Simplify a reaching path before showing it in error messages. *)
+  let simplify path =
+    let rec simplify : t -> t = function
+      | Contains (ty1, _ty2) :: Contains (_ty2', ty3) :: rest ->
+          (* If t1 contains t2 and t2 contains t3, then t1 contains t3
+             and we don't need to show t2. *)
+          simplify (Contains (ty1, ty3) :: rest)
+      | hd :: rest -> hd :: simplify rest
+      | [] -> []
+    in simplify path
+
+  (* See Printtyp.add_type_to_preparation.
+
+     Note: it is better to call this after [simplify], otherwise some
+     type variable names may be used for types that are removed
+     by simplification and never actually shown to the user.
+  *)
+  let add_to_preparation path =
+    List.iter (function
+      | Contains (ty1, ty2) | Expands_to (ty1, ty2) ->
+          List.iter Printtyp.add_type_to_preparation [ty1; ty2]
+    ) path
+
+  let pp ppf reaching_path =
+    let pp_step ppf = function
+      | Expands_to (ty, body) ->
+          Format.fprintf ppf "%a = %a"
+            Printtyp.prepared_type_expr ty
+            Printtyp.prepared_type_expr body
+      | Contains (outer, inner) ->
+          Format.fprintf ppf "%a contains %a"
+            Printtyp.prepared_type_expr outer
+            Printtyp.prepared_type_expr inner
+    in
+    let comma ppf () = Format.fprintf ppf ",@ " in
+    Format.(pp_print_list ~pp_sep:comma pp_step) ppf reaching_path
+
+  let pp_colon ppf path =
+  Format.fprintf ppf ":@;<1 2>@[<v>%a@]"
+    pp path
+end
+
 let report_error ppf = function
   | Repeated_parameter ->
       fprintf ppf "A type parameter occurs several times"
@@ -1693,11 +1762,22 @@ let report_error ppf = function
         (Config.max_tag + 1) "non-constant constructors"
   | Duplicate_label s ->
       fprintf ppf "Two labels are named %s" s
-  | Recursive_abbrev s ->
-      fprintf ppf "The type abbreviation %s is cyclic" s
-  | Cycle_in_def (s, ty) ->
-      fprintf ppf "@[<v>The definition of %s contains a cycle:@ %a@]"
-        s Printtyp.type_expr ty
+  | Recursive_abbrev (s, env, reaching_path) ->
+      let reaching_path = Reaching_path.simplify reaching_path in
+      Printtyp.wrap_printing_env ~error:true env @@ fun () ->
+      Printtyp.reset ();
+      Reaching_path.add_to_preparation reaching_path;
+      fprintf ppf "@[<v>The type abbreviation %s is cyclic%a@]"
+        s
+        Reaching_path.pp_colon reaching_path
+  | Cycle_in_def (s, env, reaching_path) ->
+      let reaching_path = Reaching_path.simplify reaching_path in
+      Printtyp.wrap_printing_env ~error:true env @@ fun () ->
+      Printtyp.reset ();
+      Reaching_path.add_to_preparation reaching_path;
+      fprintf ppf "@[<v>The definition of %s contains a cycle%a@]"
+        s
+        Reaching_path.pp_colon reaching_path
   | Definition_mismatch (ty, _env, None) ->
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]@]"
         "This variant or record definition" "does not match that of type"
@@ -1715,40 +1795,26 @@ let report_error ppf = function
         (fun ppf -> fprintf ppf "Type")
         (fun ppf -> fprintf ppf "should be an instance of");
       fprintf ppf "@]"
-  | Non_regular { definition; used_as; defined_as; expansions } ->
-      let pp_expansion ppf (ty,body) =
-        Format.fprintf ppf "%a = %a"
-          Printtyp.type_expr ty
-          Printtyp.type_expr body in
-      let comma ppf () = Format.fprintf ppf ",@;<1 2>" in
-      let pp_expansions ppf expansions =
-        Format.(pp_print_list ~pp_sep:comma pp_expansion) ppf expansions in
+  | Non_regular { definition; used_as; defined_as; reaching_path } ->
+      let reaching_path = Reaching_path.simplify reaching_path in
       Printtyp.prepare_for_printing [used_as; defined_as];
+      Reaching_path.add_to_preparation reaching_path;
       Printtyp.Naming_context.reset ();
-      begin match expansions with
-      | [] ->
-          fprintf ppf
-            "@[<hv>This recursive type is not regular.@ \
-             The type constructor %s is defined as@;<1 2>type %a@ \
-             but it is used as@;<1 2>%a.@ \
-             All uses need to match the definition for the recursive type \
-             to be regular.@]"
-            (Path.name definition)
-            !Oprint.out_type (Printtyp.tree_of_typexp Type defined_as)
-            !Oprint.out_type (Printtyp.tree_of_typexp Type used_as)
-      | _ :: _ ->
-          fprintf ppf
-            "@[<hv>This recursive type is not regular.@ \
-             The type constructor %s is defined as@;<1 2>type %a@ \
-             but it is used as@;<1 2>%a@ \
-             after the following expansion(s):@;<1 2>%a@ \
-             All uses need to match the definition for the recursive type \
-             to be regular.@]"
-            (Path.name definition)
-            !Oprint.out_type (Printtyp.tree_of_typexp Type defined_as)
-            !Oprint.out_type (Printtyp.tree_of_typexp Type used_as)
-            pp_expansions expansions
-      end
+      fprintf ppf
+        "@[<hv>This recursive type is not regular.@ \
+         The type constructor %s is defined as@;<1 2>type %a@ \
+         but it is used as@;<1 2>%a%t\
+         All uses need to match the definition for the recursive type \
+         to be regular.@]"
+        (Path.name definition)
+        !Oprint.out_type (Printtyp.tree_of_typexp Type defined_as)
+        !Oprint.out_type (Printtyp.tree_of_typexp Type used_as)
+        (fun pp ->
+           let is_expansion = function Expands_to _ -> true | _ -> false in
+           if List.exists is_expansion reaching_path then
+             fprintf pp "@ after the following expansion(s)%a@ "
+             Reaching_path.pp_colon reaching_path
+           else fprintf pp ".@ ")
   | Inconsistent_constraint (env, err) ->
       fprintf ppf "@[<v>The type constraints are not consistent.@ ";
       Printtyp.report_unification_error ppf env err
@@ -1772,13 +1838,13 @@ let report_error ppf = function
       begin match decl.type_kind, decl.type_manifest with
       | Type_variant (tl, _rep), _ ->
           explain_unbound_gen ppf ty tl (fun c ->
-              let tl = tys_of_constr_args c.Types.cd_args in
-              Btype.newgenty (Ttuple tl)
-            )
+            let tl = tys_of_constr_args c.Types.cd_args in
+            Btype.newgenty (Ttuple tl)
+          )
             "case" (fun ppf c ->
-                fprintf ppf
-                  "%a of %a" Printtyp.ident c.Types.cd_id
-                  Printtyp.constructor_arguments c.Types.cd_args)
+              fprintf ppf
+                "%a of %a" Printtyp.ident c.Types.cd_id
+                Printtyp.constructor_arguments c.Types.cd_args)
       | Type_record (tl, _), _ ->
           explain_unbound ppf ty tl (fun l -> l.Types.ld_type)
             "field" (fun l -> Ident.name l.Types.ld_id ^ ": ")
