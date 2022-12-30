@@ -162,6 +162,25 @@ val length : t -> int64
     into account the end-of-line translations that can be performed when reading
     from a channel opened in text mode. *)
 
+val input_lines : t -> string list
+(** [input_lines ic] reads lines using {!input_line}
+    until the end of file is reached.  It returns the list of all
+    lines read, in the order they were read.  The newline characters
+    that terminate lines are not included in the returned strings.
+    Empty lines produce empty strings.
+
+    @since 5.1 *)
+
+val fold_lines : ('a -> string -> 'a) -> 'a -> t -> 'a
+(** [fold_lines f init c] reads lines from [ic] using {!input_line}
+    until the end of file is reached.  Each line is passed to function [f]
+    in the style of a fold.  More precisely, [fold_lines f init c] is
+    [List.fold_left f init (In_channel.input_lines ic)],
+    but is more efficient since it does not construct the list of all
+    lines read.
+
+    @since 5.1 *)
+
 val set_binary_mode : t -> bool -> unit
 (** [set_binary_mode ic true] sets the channel [ic] to binary mode: no
     translations take place during input.
