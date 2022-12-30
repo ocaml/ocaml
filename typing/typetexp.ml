@@ -59,13 +59,18 @@ module TyVarEnv : sig
   val with_local_scope : (unit -> 'a) -> 'a
 
   type poly_univars
-  val new_pre_univar : ?name:string -> unit -> type_expr
-  val add_pre_univar : type_expr -> unit
-  val collect_pre_univars : (unit -> 'a) -> 'a * type_expr list
-
   val with_univars : poly_univars -> (unit -> 'a) -> 'a
   val make_poly_univars : string list -> poly_univars
   val check_poly_univars : Env.t -> Location.t -> poly_univars -> type_expr list
+
+  type policy
+  val fixed_policy : policy
+  val extensible_policy : policy
+  val univars_policy : policy
+  val new_any_var : Location.t -> Env.t -> policy -> type_expr
+  val new_var : ?name:string -> policy -> type_expr
+  val add_pre_univar : type_expr -> policy -> unit
+  val collect_pre_univars : (unit -> 'a) -> 'a * type_expr list
 
   val reset_locals : ?univars:poly_univars -> unit -> unit
   val lookup_local : string -> type_expr
@@ -116,28 +121,6 @@ end = struct
   (*****)
   type poly_univars = (string * type_expr) list
 
-  let add_pre_univar tv =
-    pre_univars := tv :: !pre_univars
-
-  let new_pre_univar ?name () =
-    let v = newvar ?name () in
-    add_pre_univar v;
-    v
-
-  let collect_pre_univars f =
-    pre_univars := [];
-    let result = f () in
-    let univs =
-      List.fold_left
-        (fun acc v ->
-           match get_desc v with
-           | Tvar name when get_level v = Btype.generic_level ->
-               set_type_desc v (Tunivar name);
-               v :: acc
-           | _ -> acc)
-        [] !pre_univars in
-    result, univs
-
   let with_univars new_ones f =
     let old_univars = !univars in
     univars := new_ones @ !univars;
@@ -177,6 +160,42 @@ end = struct
 
   let remember_used name v loc =
     used_variables := TyVarMap.add name (v, loc) !used_variables
+
+
+  type flavor = Unification | Universal
+  type extensibility = Extensible | Fixed
+  type policy = { flavor : flavor; extensibility : extensibility }
+
+  let fixed_policy = { flavor = Unification; extensibility = Fixed }
+  let extensible_policy = { flavor = Unification; extensibility = Extensible }
+  let univars_policy = { flavor = Universal; extensibility = Extensible }
+
+  let add_pre_univar tv = function
+    | { flavor = Universal } -> pre_univars := tv :: !pre_univars
+    | _ -> ()
+
+  let collect_pre_univars f =
+    pre_univars := [];
+    let result = f () in
+    let univs =
+      List.fold_left
+        (fun acc v ->
+           match get_desc v with
+           | Tvar name when get_level v = Btype.generic_level ->
+               set_type_desc v (Tunivar name);
+               v :: acc
+           | _ -> acc)
+        [] !pre_univars in
+    result, univs
+
+  let new_var ?name policy =
+    let tv = Ctype.newvar ?name () in
+    add_pre_univar tv policy;
+    tv
+
+  let new_any_var loc env = function
+    | { extensibility = Fixed } -> raise(Error(loc, env, No_type_wildcards))
+    | policy -> new_var policy
 
   let globalize_used_variables ~globals_only env ~fixed =
     let r = ref [] in
@@ -292,8 +311,6 @@ let instance_poly_univars env loc vars =
   vs
 
 
-type policy = Fixed | Extensible | Univars
-
 let rec transl_type env policy styp =
   Builtin_attributes.warning_scope styp.ptyp_attributes
     (fun () -> transl_type_aux env policy styp)
@@ -306,12 +323,7 @@ and transl_type_aux env policy styp =
   in
   match styp.ptyp_desc with
     Ptyp_any ->
-      let ty =
-        if policy = Univars then TyVarEnv.new_pre_univar () else
-          if policy = Fixed then
-            raise (Error (styp.ptyp_loc, env, No_type_wildcards))
-          else newvar ()
-      in
+      let ty = TyVarEnv.new_any_var styp.ptyp_loc env policy in
       ctyp Ttyp_any ty
   | Ptyp_var name ->
     let ty =
@@ -320,9 +332,7 @@ and transl_type_aux env policy styp =
       begin try
         TyVarEnv.lookup_local name
       with Not_found ->
-        let v =
-          if policy = Univars then TyVarEnv.new_pre_univar ~name () else newvar ~name ()
-        in
+        let v = TyVarEnv.new_var ~name policy in
         TyVarEnv.remember_used name v styp.ptyp_loc;
         v
       end
@@ -400,7 +410,7 @@ and transl_type_aux env policy styp =
       let ty = match get_desc ty with
         | Tobject (fi, _) ->
             let _, tv = flatten_fields fi in
-            if policy = Univars then TyVarEnv.add_pre_univar tv;
+            TyVarEnv.add_pre_univar tv policy;
             ty
         | _ ->
             assert false
@@ -531,7 +541,7 @@ and transl_type_aux env policy styp =
       in
       let more =
         if Btype.static_row (make_row (newvar ())) then newty Tnil else
-        if policy = Univars then TyVarEnv.new_pre_univar () else newvar ()
+           TyVarEnv.new_var policy
       in
       let ty = newty (Tvariant (make_row more)) in
       ctyp (Ttyp_variant (tfields, closed, present)) ty
@@ -632,10 +642,10 @@ and transl_fields env policy o fields =
   let object_fields = List.map add_field fields in
   let fields = Hashtbl.fold (fun s ty l -> (s, ty) :: l) hfields [] in
   let ty_init =
-     match o, policy with
-     | Closed, _ -> newty Tnil
-     | Open, Univars -> TyVarEnv.new_pre_univar ()
-     | Open, _ -> newvar () in
+     match o with
+     | Closed -> newty Tnil
+     | Open -> TyVarEnv.new_var policy
+  in
   let ty = List.fold_left (fun ty (s, ty') ->
       newty (Tfield (s, field_public, ty', ty))) ty_init fields in
   ty, object_fields
@@ -671,7 +681,8 @@ let make_fixed_univars ty =
 
 let transl_simple_type env ?univars ~fixed styp =
   TyVarEnv.reset_locals ?univars ();
-  let typ = transl_type env (if fixed then Fixed else Extensible) styp in
+  let policy = TyVarEnv.(if fixed then fixed_policy else extensible_policy) in
+  let typ = transl_type env policy styp in
   TyVarEnv.globalize_used_variables ~globals_only:false env ~fixed ();
   make_fixed_univars typ.ctyp_type;
   typ
@@ -681,7 +692,7 @@ let transl_simple_type_univars env styp =
   let typ, univs =
     TyVarEnv.collect_pre_univars begin fun () ->
       with_local_level ~post:generalize_ctyp begin fun () ->
-        let typ = transl_type env Univars styp in
+        let typ = transl_type env TyVarEnv.univars_policy styp in
         (* Globalize only local occurrences of variables that are already in global
            scope; others will be univars and dealt with in make_fixed_univars. *)
         TyVarEnv.globalize_used_variables ~globals_only:true env ~fixed:false ();
@@ -696,7 +707,7 @@ let transl_simple_type_delayed env styp =
   TyVarEnv.reset_locals ();
   let typ, force =
     with_local_level begin fun () ->
-      let typ = transl_type env Extensible styp in
+      let typ = transl_type env TyVarEnv.extensible_policy styp in
       make_fixed_univars typ.ctyp_type;
       (* This brings the used variables to the global level, but doesn't link
          them to their other occurrences just yet. This will be done when
