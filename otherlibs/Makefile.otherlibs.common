@@ -106,15 +106,8 @@ install::
 	  $(INSTALL_PROG) \
 	    dll$(CLIBNAME_BYTECODE)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"; \
 	fi
-	if test -f dll$(CLIBNAME_NATIVE)$(EXT_DLL); then \
-	  $(INSTALL_PROG) \
-	    dll$(CLIBNAME_NATIVE)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"; \
-	fi
 ifneq "$(STUBSLIB_BYTECODE)" ""
 	$(INSTALL_DATA) $(STUBSLIB_BYTECODE) "$(INSTALL_LIBDIR)/"
-endif
-ifneq "$(STUBSLIB_NATIVE)" ""
-	$(INSTALL_DATA) $(STUBSLIB_NATIVE) "$(INSTALL_LIBDIR)/"
 endif
 # If installing over a previous OCaml version, ensure the library is removed
 # from the previous installation.
@@ -143,6 +136,13 @@ installopt:
 	if test -f $(LIBNAME).cmxs; then \
 	  $(INSTALL_PROG) $(LIBNAME).cmxs "$(INSTALL_LIBDIR_LIBNAME)"; \
 	fi
+	if test -f dll$(CLIBNAME_NATIVE)$(EXT_DLL); then \
+	  $(INSTALL_PROG) \
+	    dll$(CLIBNAME_NATIVE)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)"; \
+	fi
+ifneq "$(STUBSLIB_NATIVE)" ""
+	$(INSTALL_DATA) $(STUBSLIB_NATIVE) "$(INSTALL_LIBDIR)/"
+endif
 
 partialclean:
 	rm -f *.cm*

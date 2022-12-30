@@ -265,7 +265,7 @@ Working version
   (Sébastien Hinderer, review by David Allsopp and Florian Angeletti)
 
 - #11828: Compile otherlibs/ C stubs in two version for native and bytecode
-  (Olivier Nicole, review by Sébastien Hinderer)
+  (Olivier Nicole, review by Sébastien Hinderer and Xavier Leroy)
 
 ### Bug fixes:
 
