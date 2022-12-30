@@ -193,30 +193,36 @@ clean::
 export AWK
 
 %.cmi: %.mli
-	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
+	@echo "OCAMLC $<"
+	@$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
 
 # The dependency on the .mli file is in .depend (since stdlib__Foo.cmi
 # depends on stdlib__foo.mli)
 stdlib__%.cmi:
-	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) \
+	@echo "OCAMLC $(filter %.mli, $^)"
+	@$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) \
 	         -o $@ -c $(filter %.mli, $^)
 
 %.cmo: %.ml
-	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
+	@echo "OCAMLC $<"
+	@$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
 
 # The dependency on the .ml file is in .depend (since stdlib__Foo.cmo
 # depends on stdlib__foo.ml)
 stdlib__%.cmo:
-	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) \
+	@echo "OCAMLC $(filter %.ml, $^)"
+	@$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) \
 	         -o $@ -c $(filter %.ml, $^)
 
 %.cmx: %.ml
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) -c $<
+	@echo "OCAMLOPT $<"
+	@$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) -c $<
 
 # The dependency on the .ml file is in .depend (since stdlib__Foo.cmx
 # depends on stdlib__foo.ml)
 stdlib__%.cmx:
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) \
+	@echo "OCAMLOPT $(filter %.ml, $^)"
+	@$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) \
 	           -o $@ -c $(filter %.ml, $^)
 
 # Dependencies on the compiler

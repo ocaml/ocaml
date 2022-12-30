@@ -95,7 +95,8 @@ st_stubs.%.$(O): st_stubs.c
 else
 st_stubs.%.$(O): st_stubs.c $(RUNTIME_HEADERS) $(wildcard *.h)
 endif
-	$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	@echo "CC $< -> $@"
+	@$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
 	  $(OUTPUTOBJ)$@ $<
 
 .PHONY: partialclean
@@ -137,13 +138,16 @@ installopt:
 	  "$(INSTALL_THREADSLIBDIR)"
 
 %.cmi: %.mli
-	$(CAMLC) -c $(COMPFLAGS) $<
+	@echo "OCAMLC $<"
+	@$(CAMLC) -c $(COMPFLAGS) $<
 
 %.cmo: %.ml
-	$(CAMLC) -c $(COMPFLAGS) $<
+	@echo "OCAMLC $<"
+	@$(CAMLC) -c $(COMPFLAGS) $<
 
 %.cmx: %.ml
-	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
+	@echo "OCAMLOPT $<"
+	@$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 DEP_FILES := st_stubs.b.$(D)
 ifeq "$(NATIVE_COMPILER)" "true"
@@ -159,7 +163,8 @@ endif
 
 define GEN_RULE
 $(DEPDIR)/%.$(1).$(D): %.c | $(DEPDIR)
-	$$(DEP_CC) $$(OC_CPPFLAGS) $$(CPPFLAGS) $$< -MT '$$*.$(1).$(O)' -MF $$@
+	@echo "CCDEPS $$< -> $$@"
+	@$$(DEP_CC) $$(OC_CPPFLAGS) $$(CPPFLAGS) $$< -MT '$$*.$(1).$(O)' -MF $$@
 endef
 
 $(foreach object_type, b n, $(eval $(call GEN_RULE,$(object_type))))
