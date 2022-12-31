@@ -41,10 +41,10 @@ type (_, _) eq = Equal: ('a, 'a) eq (** *)
 (** Type identifiers.
 
     A type identifier is a value that denotes a type. Given two type
-    identifiers they can be tested for {{!Id.equal}equality} to prove
-    they denote the same type. Note that:
+    identifiers, they can be tested for {{!Id.typed_equal}equality} to
+    prove they denote the same type. Note that:
 
-    - Unequal identifiers does not imply unequal types: a given type can be
+    - Unequal identifiers do not imply unequal types: a given type can be
       denoted by more than one identifier.
     - Type identifiers can be marshalled, but they get a new, distinct,
       identity on unmarshalling, so the equalities are lost.
@@ -60,18 +60,32 @@ module Id : sig
   val make : unit -> 'a t
   (** [make ()] is a new type identifier. *)
 
-  val equal : 'a t -> 'b t -> ('a, 'b) eq option
-  (** [equal id0 id1] is [Some Equal] if identifier [id0] is equal to [id1]
-      and [None] otherwise. *)
-
   val uid : 'a t -> int
   (** [uid id] is a runtime unique identifier for [id]. *)
+
+  val typed_equal : 'a t -> 'b t -> ('a, 'b) eq option
+  (** [typed_equal i0 i1] is [Some Equal] if identifier [i0] is equal
+      to [i1] and [None] otherwise. *)
+
+  val equal : 'a t -> 'b t -> bool
+  (** [equal i0 i1] is [true] if and only if [i0] and [i1] are the same
+      identifiers. *)
+
+  val compare : 'a t -> 'b t -> int
+  (** [compare] is a total order on identifiers compatible with {!equal}. *)
+
+  val seeded_hash : int -> 'a t -> int
+  (** A seeded hash function for identifiers, with the same output value as
+      {!Hashtbl.seeded_hash}. *)
+
+  val hash : 'a t -> int
+  (** An unseeded hash function for identifiers, with the same output value as
+      {!Hashtbl.hash}. *)
 
   (** {1:example Example}
 
       The following shows how type identifiers can be used to
-      implement a simple heterogeneous key-value dictionary which you
-      can see as an extensible record type. In contrast to
+      implement a simple heterogeneous key-value dictionary. In contrast to
       {!Stdlib.Map} values whose keys map to a single, homogeneous type of
       values, this dictionary can associate a different type of value
       to each key.
@@ -111,7 +125,7 @@ end = struct
     match List.assoc_opt (Type.Id.uid k) d with
     | None -> None
     | Some (B (k', v)) ->
-        match Type.Id.equal k k' with
+        match Type.Id.typed_equal k k' with
         | Some Type.Equal -> Some v
         | None -> assert false
 end

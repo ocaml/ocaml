@@ -155,7 +155,8 @@ Working version
   Angeletti, Alain Frisch, Gabriel Scherer, Jeremy Yallop and Xavier Leroy)
 
 - #11830: Add Type.Id
-  (Daniel Bünzli, review by Jeremy Yallop, Gabriel Scherer, Wiktor Kuchta)
+  (Daniel Bünzli, review by Jeremy Yallop, Gabriel Scherer, Wiktor Kuchta,
+   Nicolás Ojeda Bär)
 
 ### Other libraries:
 

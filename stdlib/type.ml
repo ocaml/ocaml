@@ -31,10 +31,19 @@ module Id = struct
   let make (type a) () : a t =
     (module struct type t = a type _ id += Id : t id end)
 
-  let equal (type a b) ((module A) : a t) ((module B) : b t) : (a, b) eq option
+  let[@inline] uid (type a) ((module A) : a t) =
+    Obj.Extension_constructor.id (Obj.Extension_constructor.of_val A.Id)
+
+  let typed_equal
+      (type a b) ((module A) : a t) ((module B) : b t) : (a, b) eq option
     =
     match A.Id with B.Id -> Some Equal | _ -> None
 
-  let uid (type a) ((module A) : a t) =
-    Obj.Extension_constructor.id (Obj.Extension_constructor.of_val A.Id)
+  let compare a b = Stdlib.compare (uid a : int) (uid b : int)
+  let equal a b = compare a b = 0
+
+  external seeded_hash_param :
+    int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
+  let seeded_hash seed a = seeded_hash_param 10 100 seed (uid a)
+  let hash a = seeded_hash_param 10 100 0 a
 end
