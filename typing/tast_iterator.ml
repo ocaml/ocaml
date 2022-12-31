@@ -375,8 +375,8 @@ let with_constraint sub = function
   | Twith_typesubst decl -> sub.type_declaration sub decl
   | Twith_module    (_, lid) -> iter_loc sub lid
   | Twith_modsubst  (_, lid) -> iter_loc sub lid
-  | Twith_modtype   _    -> ()
-  | Twith_modtypesubst _ -> ()
+  | Twith_modtype      mty -> sub.module_type sub mty
+  | Twith_modtypesubst mty -> sub.module_type sub mty
 
 
 let open_description sub {open_loc; open_expr; open_env; _} =
