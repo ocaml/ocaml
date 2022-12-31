@@ -111,7 +111,7 @@ let add_branch lbl n =
 
 type exit_info = {
   try_depth : int;
-  exit_label : (int * (int * int)) list ;
+  exit_label : (int * (int * int)) list;
   (* Association list: exit handler -> (handler label, try-nesting factor) *)
 }
 
