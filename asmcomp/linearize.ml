@@ -282,7 +282,7 @@ let linear i n contains_calls =
 
     | Iraise k ->
         copy_instr (Lraise k) i (discard_dead_code n)
-  in linear { exit_label = []; try_depth = 0} i n
+  in linear { exit_label = []; try_depth = 0 } i n
 
 let add_prologue first_insn prologue_required =
   let tailrec_entry_point_label = Cmm.new_label () in
