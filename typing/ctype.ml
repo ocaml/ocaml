@@ -410,8 +410,8 @@ let rec filter_row_fields erase = function
                     (*  Check genericity of type schemes  *)
                     (**************************************)
 
-
-exception Non_closed of type_expr * bool
+type variable_kind = Row_variable | Type_variable
+exception Non_closed of type_expr * variable_kind
 
 (* [free_vars] collects the variables of the input type expression. It
    is used for several different things in the type-checker, with the
@@ -420,8 +420,7 @@ exception Non_closed of type_expr * bool
      are expanded to check whether the apparently-free variable would vanish
      during expansion.
    - We collect both type variables and row variables, paired with
-     a boolean that is [false] if we have a row variable and [true] if
-     we have a "real" variable (not a row variable).
+     a [variable_kind] to distinguish them.
    - We do not count "virtual" free variables -- free variables stored in
      the abbreviation of an object type that has been expanded (we store
      the abbreviations for use when displaying the type).
@@ -431,34 +430,34 @@ exception Non_closed of type_expr * bool
    and only returns a [variable list].
  *)
 let free_vars ?env ty =
-  let rec fv ~real acc ty =
+  let rec fv ~kind acc ty =
     if not (try_mark_node ty) then acc
     else match get_desc ty, env with
       | Tvar _, _ ->
-          (ty, real) :: acc
+          (ty, kind) :: acc
       | Tconstr (path, tl, _), Some env ->
           let acc =
             match Env.find_type_expansion path env with
             | exception Not_found -> acc
             | (_, body, _) ->
                 if get_level body = generic_level then acc
-                else (ty, real) :: acc
+                else (ty, kind) :: acc
           in
-          List.fold_left (fv ~real:true) acc tl
+          List.fold_left (fv ~kind:Type_variable) acc tl
       | Tobject (ty, _), _ ->
           (* ignoring the second parameter of [Tobject] amounts to not
              counting "virtual free variables". *)
-          fv ~real:false acc ty
+          fv ~kind:Row_variable acc ty
       | Tfield (_, _, ty1, ty2), _ ->
-          let acc = fv ~real:true acc ty1 in
-          fv ~real:false acc ty2
+          let acc = fv ~kind:Type_variable acc ty1 in
+          fv ~kind:Row_variable acc ty2
       | Tvariant row, _ ->
-          let acc = fold_row (fv ~real:true) acc row in
+          let acc = fold_row (fv ~kind:Type_variable) acc row in
           if static_row row then acc
-          else fv ~real:false acc (row_more row)
+          else fv ~kind:Row_variable acc (row_more row)
       | _    ->
-          fold_type_expr (fv ~real) acc ty
-  in fv ~real:true [] ty
+          fold_type_expr (fv ~kind) acc ty
+  in fv ~kind:Type_variable [] ty
 
 let free_variables ?env ty =
   let tl = List.map fst (free_vars ?env ty) in
@@ -522,7 +521,12 @@ let closed_extension_constructor ext =
     unmark_extension_constructor ext;
     Some ty
 
-exception CCFailure of (type_expr * bool * string * type_expr)
+type closed_class_failure = {
+  free_variable: type_expr * variable_kind;
+  meth: string;
+  meth_ty: type_expr;
+}
+exception CCFailure of closed_class_failure
 
 let closed_class params sign =
   List.iter mark_type params;
@@ -531,8 +535,12 @@ let closed_class params sign =
     Meths.iter
       (fun lab (priv, _, ty) ->
         if priv = Mpublic then begin
-          try closed_type ty with Non_closed (ty0, real) ->
-            raise (CCFailure (ty0, real, lab, ty))
+          try closed_type ty with Non_closed (ty0, variable_kind) ->
+            raise (CCFailure {
+              free_variable = (ty0, variable_kind);
+              meth = lab;
+              meth_ty = ty;
+            })
         end)
       sign.csig_meths;
     List.iter unmark_type params;

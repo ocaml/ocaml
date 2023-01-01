@@ -402,13 +402,20 @@ val nongen_class_declaration: class_declaration -> bool
         (* Check whether the given class type contains no non-generic
            type variables. Uses the empty environment.  *)
 
+type variable_kind = Row_variable | Type_variable
+type closed_class_failure = {
+  free_variable: type_expr * variable_kind;
+  meth: string;
+  meth_ty: type_expr;
+}
+
 val free_variables: ?env:Env.t -> type_expr -> type_expr list
         (* If env present, then check for incomplete definitions too *)
 val closed_type_decl: type_declaration -> type_expr option
 val closed_extension_constructor: extension_constructor -> type_expr option
 val closed_class:
         type_expr list -> class_signature ->
-        (type_expr * bool * string * type_expr) option
+        closed_class_failure option
         (* Check whether all type variables are bound *)
 
 val unalias: type_expr -> type_expr
