@@ -3059,7 +3059,8 @@ and type_expect_
       begin_def ();
       let (args, ty_res) = type_application env funct sargs in
       end_def ();
-      unify_var env (newvar()) funct.exp_type;
+      (* Ensure that ty_res is at current level *)
+      unify_var env (newvar()) ty_res;
       rue {
         exp_desc = Texp_apply(funct, args);
         exp_loc = loc; exp_extra = [];
