@@ -320,12 +320,27 @@ val find_opt : f:('a -> bool) -> 'a list -> 'a option
    @since 4.05
  *)
 
+val find_index : f:('a -> bool) -> 'a list -> int option
+(** [find_index ~f xs] returns [Some i], where [i] is the index of the first
+   element of the list [xs] that satisfies [f x], if there is such an element.
+
+   It returns [None] if there is no such element.
+
+   @since 5.1 *)
+
 val find_map : f:('a -> 'b option) -> 'a list -> 'b option
 (** [find_map ~f l] applies [f] to the elements of [l] in order,
     and returns the first result of the form [Some v], or [None]
     if none exist.
     @since 4.10
 *)
+
+val find_mapi : f:(int -> 'a -> 'b option) -> 'a list -> 'b option
+(** Same as [find_map], but the predicate is applied to the index of
+   the element as first argument (counting from 0), and the element
+   itself as second argument.
+
+   @since 5.1 *)
 
 val filter : f:('a -> bool) -> 'a list -> 'a list
 (** [filter ~f l] returns all the elements of the list [l]
