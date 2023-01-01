@@ -163,9 +163,6 @@ val instance_constructor: existential_treatment ->
 val instance_parameterized_type:
         ?keep_names:bool ->
         type_expr list -> type_expr -> type_expr list * type_expr
-val instance_parameterized_type_2:
-        type_expr list -> type_expr list -> type_expr ->
-        type_expr list * type_expr list * type_expr
 val instance_declaration: type_declaration -> type_declaration
 val generic_instance_declaration: type_declaration -> type_declaration
         (* Same as instance_declaration, but new nodes at generic_level *)
