@@ -235,7 +235,7 @@ let win64_float_external_arguments =
 let win64_loc_external_arguments arg =
   let loc = Array.make (Array.length arg) Reg.dummy in
   let reg = ref 0
-  and ofs = ref 32 in
+  and ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i) with
     | Val | Int | Addr as ty ->
