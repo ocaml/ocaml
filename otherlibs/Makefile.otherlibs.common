@@ -156,24 +156,24 @@ distclean:: clean
 	rm -f META
 
 %.cmi: %.mli
-	@echo "OCAMLC $<"
+	$(info OCAMLC $<)
 	@$(CAMLC) -c $(COMPFLAGS) $<
 
 %.cmo: %.ml
-	@echo "OCAMLC $<"
+	$(info OCAMLC $<)
 	@$(CAMLC) -c $(COMPFLAGS) $<
 
 %.cmx: %.ml
-	@echo "OCAMLOPT $<"
+	$(info OCAMLOPT $<)
 	@$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 %.b.$(O): %.c $(REQUIRED_HEADERS)
-	@echo "CC $< -> $@"
+	$(info CC $< -> $@)
 	@$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
 	  $(OUTPUTOBJ)$@ $<
 
 %.n.$(O): %.c $(REQUIRED_HEADERS)
-	@echo "CC $< -> $@"
+	$(info CC $< -> $@)
 	@$(CC) -c $(OC_CFLAGS) $(OC_NATIVE_C_FLAGS) $(CFLAGS) \
 	  $(OC_CPPFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
@@ -184,5 +184,5 @@ endif
 endif
 
 $(DEPDIR)/%.$(D): %.c | $(DEPDIR)
-	@echo "CCDEPS $< -> $@"
+	$(info CCDEPS $< -> $@)
 	@$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@

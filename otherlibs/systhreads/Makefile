@@ -95,7 +95,7 @@ st_stubs.%.$(O): st_stubs.c
 else
 st_stubs.%.$(O): st_stubs.c $(RUNTIME_HEADERS) $(wildcard *.h)
 endif
-	@echo "CC $< -> $@"
+	$(info CC $< -> $@)
 	@$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
 	  $(OUTPUTOBJ)$@ $<
 
@@ -138,15 +138,15 @@ installopt:
 	  "$(INSTALL_THREADSLIBDIR)"
 
 %.cmi: %.mli
-	@echo "OCAMLC $<"
+	$(info OCAMLC $<)
 	@$(CAMLC) -c $(COMPFLAGS) $<
 
 %.cmo: %.ml
-	@echo "OCAMLC $<"
+	$(info OCAMLC $<)
 	@$(CAMLC) -c $(COMPFLAGS) $<
 
 %.cmx: %.ml
-	@echo "OCAMLOPT $<"
+	$(info OCAMLOPT $<)
 	@$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 DEP_FILES := st_stubs.b.$(D)
@@ -163,7 +163,7 @@ endif
 
 define GEN_RULE
 $(DEPDIR)/%.$(1).$(D): %.c | $(DEPDIR)
-	@echo "CCDEPS $$< -> $$@"
+	$$(info CCDEPS $$< -> $$@)
 	@$$(DEP_CC) $$(OC_CPPFLAGS) $$(CPPFLAGS) $$< -MT '$$*.$(1).$(O)' -MF $$@
 endef
 

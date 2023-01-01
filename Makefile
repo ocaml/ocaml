@@ -936,7 +936,7 @@ ifneq "$(1)" "%"
 # instead include $(runtime_BUILT_HEADERS) in the order only dependencies
 # to ensure that they exist before dependencies are computed.
 $(DEPDIR)/$(1).$(D): runtime/%.c | $(DEPDIR)/runtime $(runtime_BUILT_HEADERS)
-	@echo "CCDEPS $$< -> $$@"
+	$$(info CCDEPS $$< -> $$@)
 	@$$(DEP_CC) $$(OC_CPPFLAGS) $$(CPPFLAGS) $$< -MT \
 	  'runtime/$$*$(subst runtime/%,,$(1)).$(O)' -MF $$@
 endif # ifneq "$(1)" "%"
@@ -946,7 +946,7 @@ $(1).$(O): $(2).c \
   $(runtime_CONFIGURED_HEADERS) $(runtime_BUILT_HEADERS) \
   $(RUNTIME_HEADERS)
 endif # ifeq "$(COMPUTE_DEPS)" "true"
-	@echo "CC $$< -> $$@"
+	$$(info CC $$< -> $$@)
 	@$$(CC) -c $$(OC_CFLAGS) $$(CFLAGS) $$(OC_CPPFLAGS) $$(CPPFLAGS) \
 	  $$(OUTPUTOBJ)$$@ $$<
 endef
@@ -1547,15 +1547,15 @@ endif
 # Default rules
 
 %.cmo: %.ml
-	@echo "OCAMLC $<"
+	$(info OCAMLC $<)
 	@$(CAMLC) $(OC_COMMON_CFLAGS) -I $(@D) $(INCLUDES) -c $<
 
 %.cmi: %.mli
-	@echo "OCAMLC $<"
+	$(info OCAMLC $<)
 	@$(CAMLC) $(OC_COMMON_CFLAGS) -I $(@D) $(INCLUDES) -c $<
 
 %.cmx: %.ml
-	@echo "OCAMLOPT $<"
+	$(info OCAMLOPT $<)
 	@$(COMPILE_NATIVE_MODULE) -c $<
 
 partialclean::
