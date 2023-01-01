@@ -1307,43 +1307,45 @@ let add_delayed_copy t copy_scope ty =
    copy to keep the sharing of the original type without breaking its
    binding structure.
  *)
-let rec copy_sep ~copy_scope ~fixed ~free ~may_share
+let copy_sep ~copy_scope ~fixed ~free ~may_share
     ~(visited : type_expr TypeHash.t) (ty : type_expr) =
-  let univars = free ty in
-  if is_Tvar ty || may_share && TypeSet.is_empty univars then
-    if get_level ty <> generic_level then ty else
-    let t = newstub ~scope:(get_scope ty) in
-    add_delayed_copy t copy_scope ty;
-    t
-  else try
-    TypeHash.find visited ty
-  with Not_found -> begin
-    let t = newstub ~scope:(get_scope ty) in
-    TypeHash.add visited ty t;
-    let copy_rec = copy_sep ~copy_scope ~fixed ~free ~visited in
-    let desc' =
-      match get_desc ty with
-      | Tvariant row ->
-          let more = row_more row in
-          (* We shall really check the level on the row variable *)
-          let keep = is_Tvar more && get_level more <> generic_level in
-          (* In that case we should keep the original, but we still
-             call copy to correct the levels *)
-          if keep then (add_delayed_copy t copy_scope ty; Tvar None) else
-          let more' = copy_rec ~may_share:false more in
-          let fixed' = fixed && (is_Tvar more || is_Tunivar more) in
-          let row =
-            copy_row (copy_rec ~may_share:true) fixed' row keep more' in
-          Tvariant row
-      | Tfield (p, k, ty1, ty2) ->
-          (* the kind is kept shared, see Btype.copy_type_desc *)
-          Tfield (p, field_kind_internal_repr k, copy_rec ~may_share:true ty1,
-                  copy_rec ~may_share:false ty2)
-      | desc -> copy_type_desc (copy_rec ~may_share:true) desc
-    in
-    Transient_expr.set_stub_desc t desc';
-    t
-  end
+  let rec copy_rec ~may_share (ty : type_expr) =
+    let univars = free ty in
+    if is_Tvar ty || may_share && TypeSet.is_empty univars then
+      if get_level ty <> generic_level then ty else
+      let t = newstub ~scope:(get_scope ty) in
+      add_delayed_copy t copy_scope ty;
+      t
+    else try
+      TypeHash.find visited ty
+    with Not_found -> begin
+      let t = newstub ~scope:(get_scope ty) in
+      TypeHash.add visited ty t;
+      let desc' =
+        match get_desc ty with
+        | Tvariant row ->
+            let more = row_more row in
+            (* We shall really check the level on the row variable *)
+            let keep = is_Tvar more && get_level more <> generic_level in
+            (* In that case we should keep the original, but we still
+               call copy to correct the levels *)
+            if keep then (add_delayed_copy t copy_scope ty; Tvar None) else
+            let more' = copy_rec ~may_share:false more in
+            let fixed' = fixed && (is_Tvar more || is_Tunivar more) in
+            let row =
+              copy_row (copy_rec ~may_share:true) fixed' row keep more' in
+            Tvariant row
+        | Tfield (p, k, ty1, ty2) ->
+            (* the kind is kept shared, see Btype.copy_type_desc *)
+            Tfield (p, field_kind_internal_repr k,
+                    copy_rec ~may_share:true ty1,
+                    copy_rec ~may_share:false ty2)
+        | desc -> copy_type_desc (copy_rec ~may_share:true) desc
+      in
+      Transient_expr.set_stub_desc t desc';
+      t
+    end
+  in copy_rec ~may_share ty
 
 let instance_poly' copy_scope ~keep_names fixed univars sch =
   (* In order to compute univars below, [sch] should not contain [Tsubst] *)
