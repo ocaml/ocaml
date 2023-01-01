@@ -1215,14 +1215,6 @@ let instance_parameterized_type ?keep_names sch_args sch =
     (ty_args, ty)
   )
 
-let instance_parameterized_type_2 sch_args sch_lst sch =
-  For_copy.with_scope (fun copy_scope ->
-    let ty_args = List.map (copy copy_scope) sch_args in
-    let ty_lst = List.map (copy copy_scope) sch_lst in
-    let ty = copy copy_scope sch in
-    (ty_args, ty_lst, ty)
-  )
-
 let map_kind f = function
   | Type_abstract -> Type_abstract
   | Type_open -> Type_open
