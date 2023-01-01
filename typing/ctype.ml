@@ -1279,13 +1279,6 @@ let instance_class params cty =
 
 (**** Instantiation for types with free universal variables ****)
 
-let delayed_copy = ref []
-    (* copying to do later *)
-let add_delayed_copy t copy_scope ty =
-  delayed_copy :=
-    lazy (Transient_expr.set_stub_desc t (Tlink (copy copy_scope ty))) ::
-    !delayed_copy
-
 (* [copy_sep] is used to instantiate first-class polymorphic types.
    * It first makes a separate copy of the type as a graph, omitting nodes
      that have no free univars.
@@ -1309,12 +1302,18 @@ let add_delayed_copy t copy_scope ty =
  *)
 let copy_sep ~copy_scope ~fixed ~(visited : type_expr TypeHash.t) sch =
   let free = compute_univars sch in
+  let delayed_copies = ref [] in
+  let add_delayed_copy t ty =
+    delayed_copies :=
+      lazy (Transient_expr.set_stub_desc t (Tlink (copy copy_scope ty))) ::
+      !delayed_copies
+  in
   let rec copy_rec ~may_share (ty : type_expr) =
     let univars = free ty in
     if is_Tvar ty || may_share && TypeSet.is_empty univars then
       if get_level ty <> generic_level then ty else
       let t = newstub ~scope:(get_scope ty) in
-      add_delayed_copy t copy_scope ty;
+      add_delayed_copy t ty;
       t
     else try
       TypeHash.find visited ty
@@ -1329,7 +1328,7 @@ let copy_sep ~copy_scope ~fixed ~(visited : type_expr TypeHash.t) sch =
             let keep = is_Tvar more && get_level more <> generic_level in
             (* In that case we should keep the original, but we still
                call copy to correct the levels *)
-            if keep then (add_delayed_copy t copy_scope ty; Tvar None) else
+            if keep then (add_delayed_copy t ty; Tvar None) else
             let more' = copy_rec ~may_share:false more in
             let fixed' = fixed && (is_Tvar more || is_Tunivar more) in
             let row =
@@ -1345,7 +1344,10 @@ let copy_sep ~copy_scope ~fixed ~(visited : type_expr TypeHash.t) sch =
       Transient_expr.set_stub_desc t desc';
       t
     end
-  in copy_rec ~may_share:true sch
+  in
+  let ty = copy_rec ~may_share:true sch in
+  List.iter Lazy.force !delayed_copies;
+  ty
 
 let instance_poly' copy_scope ~keep_names fixed univars sch =
   (* In order to compute univars below, [sch] should not contain [Tsubst] *)
@@ -1357,11 +1359,7 @@ let instance_poly' copy_scope ~keep_names fixed univars sch =
   let vars = List.map copy_var univars in
   let visited = TypeHash.create 17 in
   List.iter2 (TypeHash.add visited) univars vars;
-  delayed_copy := [];
-  let ty =
-    copy_sep ~copy_scope ~fixed ~visited sch in
-  List.iter Lazy.force !delayed_copy;
-  delayed_copy := [];
+  let ty = copy_sep ~copy_scope ~fixed ~visited sch in
   vars, ty
 
 let instance_poly ?(keep_names=false) fixed univars sch =
