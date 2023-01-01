@@ -291,12 +291,12 @@ let destroyed_at_c_call =
      by the code sequence used for C calls in emit.mlp, so it
      is marked as destroyed. *)
   if win64 then
-    (* Win64: rbx, rsi, rdi, r12-r15, xmm6-xmm15 preserved *)
+    (* Win64: rsi, rdi, r12-r15, xmm6-xmm15 preserved *)
     Array.of_list(List.map phys_reg
-      [0;4;5;6;7;10;11;12;
+      [0;1;4;5;6;7;10;11;12;
        100;101;102;103;104;105])
   else
-    (* Unix: rbx, r12-r15 preserved *)
+    (* Unix: r12-r15 preserved *)
     Array.of_list(List.map phys_reg
       [0;1;2;3;4;5;6;7;10;11;
        100;101;102;103;104;105;106;107;
