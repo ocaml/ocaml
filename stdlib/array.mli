@@ -252,11 +252,27 @@ val find_opt : ('a -> bool) -> 'a array -> 'a option
 
     @since 4.13 *)
 
+val find_index : ('a -> bool) -> 'a array -> int option
+(** [find_index f a] returns [Some i], where [i] is the index of the first
+    element of the array [a] that satisfies [f x], if there is such an
+    element.
+
+    It returns [None] if there is no such element.
+
+    @since 5.1 *)
+
 val find_map : ('a -> 'b option) -> 'a array -> 'b option
 (** [find_map f a] applies [f] to the elements of [a] in order, and returns the
     first result of the form [Some v], or [None] if none exist.
 
     @since 4.13 *)
+
+val find_mapi : (int -> 'a -> 'b option) -> 'a array -> 'b option
+(** Same as [find_map], but the predicate is applied to the index of
+   the element as first argument (counting from 0), and the element
+   itself as second argument.
+
+   @since 5.1 *)
 
 (** {1 Arrays of pairs} *)
 
