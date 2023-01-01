@@ -413,64 +413,52 @@ let rec filter_row_fields erase = function
 
 exception Non_closed of type_expr * bool
 
-let free_variables = ref []
-let really_closed = ref None
-
-(* [free_vars_rec] collects the variables of the input type
-   expression into the [free_variables] reference. It is used for
-   several different things in the type-checker, with the following
-   bells and whistles:
-   - If [really_closed] is Some typing environment, types in the environment
+(* [free_vars] collects the variables of the input type expression. It
+   is used for several different things in the type-checker, with the
+   following bells and whistles:
+   - If [env] is Some typing environment, types in the environment
      are expanded to check whether the apparently-free variable would vanish
      during expansion.
-   - We collect both type variables and row variables, paired with a boolean
-     that is [true] if we have a row variable.
+   - We collect both type variables and row variables, paired with
+     a boolean that is [false] if we have a row variable and [true] if
+     we have a "real" variable (not a row variable).
    - We do not count "virtual" free variables -- free variables stored in
      the abbreviation of an object type that has been expanded (we store
      the abbreviations for use when displaying the type).
 
-   The functions [free_vars] and [free_variables] below receive
-   a typing environment as an optional [?env] parameter and
-   set [really_closed] accordingly.
    [free_vars] returns a [(variable * bool) list], while
-   [free_variables] drops the type/row information
+   [free_variables] below drops the type/row information
    and only returns a [variable list].
  *)
-let rec free_vars_rec real ty =
-  if try_mark_node ty then
-    match get_desc ty, !really_closed with
-      Tvar _, _ ->
-        free_variables := (ty, real) :: !free_variables
-    | Tconstr (path, tl, _), Some env ->
-        begin try
-          let (_, body, _) = Env.find_type_expansion path env in
-          if get_level body <> generic_level then
-            free_variables := (ty, real) :: !free_variables
-        with Not_found -> ()
-        end;
-        List.iter (free_vars_rec true) tl
-(* Do not count "virtual" free variables
-    | Tobject(ty, {contents = Some (_, p)}) ->
-        free_vars_rec false ty; List.iter (free_vars_rec true) p
-*)
-    | Tobject (ty, _), _ ->
-        free_vars_rec false ty
-    | Tfield (_, _, ty1, ty2), _ ->
-        free_vars_rec true ty1; free_vars_rec false ty2
-    | Tvariant row, _ ->
-        iter_row (free_vars_rec true) row;
-        if not (static_row row) then free_vars_rec false (row_more row)
-    | _    ->
-        iter_type_expr (free_vars_rec true) ty
-
 let free_vars ?env ty =
-  free_variables := [];
-  really_closed := env;
-  free_vars_rec true ty;
-  let res = !free_variables in
-  free_variables := [];
-  really_closed := None;
-  res
+  let rec fv ~real acc ty =
+    if not (try_mark_node ty) then acc
+    else match get_desc ty, env with
+      | Tvar _, _ ->
+          (ty, real) :: acc
+      | Tconstr (path, tl, _), Some env ->
+          let acc =
+            match Env.find_type_expansion path env with
+            | exception Not_found -> acc
+            | (_, body, _) ->
+                if get_level body = generic_level then acc
+                else (ty, real) :: acc
+          in
+          List.fold_left (fv ~real:true) acc tl
+      | Tobject (ty, _), _ ->
+          (* ignoring the second parameter of [Tobject] amounts to not
+             counting "virtual free variables". *)
+          fv ~real:false acc ty
+      | Tfield (_, _, ty1, ty2), _ ->
+          let acc = fv ~real:true acc ty1 in
+          fv ~real:false acc ty2
+      | Tvariant row, _ ->
+          let acc = fold_row (fv ~real:true) acc row in
+          if static_row row then acc
+          else fv ~real:false acc (row_more row)
+      | _    ->
+          fold_type_expr (fv ~real) acc ty
+  in fv ~real:true [] ty
 
 let free_variables ?env ty =
   let tl = List.map fst (free_vars ?env ty) in
