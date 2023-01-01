@@ -1307,8 +1307,8 @@ let add_delayed_copy t copy_scope ty =
    copy to keep the sharing of the original type without breaking its
    binding structure.
  *)
-let copy_sep ~copy_scope ~fixed ~free ~may_share
-    ~(visited : type_expr TypeHash.t) (ty : type_expr) =
+let copy_sep ~copy_scope ~fixed ~(visited : type_expr TypeHash.t) sch =
+  let free = compute_univars sch in
   let rec copy_rec ~may_share (ty : type_expr) =
     let univars = free ty in
     if is_Tvar ty || may_share && TypeSet.is_empty univars then
@@ -1345,7 +1345,7 @@ let copy_sep ~copy_scope ~fixed ~free ~may_share
       Transient_expr.set_stub_desc t desc';
       t
     end
-  in copy_rec ~may_share ty
+  in copy_rec ~may_share:true sch
 
 let instance_poly' copy_scope ~keep_names fixed univars sch =
   (* In order to compute univars below, [sch] should not contain [Tsubst] *)
@@ -1359,8 +1359,7 @@ let instance_poly' copy_scope ~keep_names fixed univars sch =
   List.iter2 (TypeHash.add visited) univars vars;
   delayed_copy := [];
   let ty =
-    copy_sep ~copy_scope ~fixed ~free:(compute_univars sch)
-      ~may_share:true ~visited sch in
+    copy_sep ~copy_scope ~fixed ~visited sch in
   List.iter Lazy.force !delayed_copy;
   delayed_copy := [];
   vars, ty
