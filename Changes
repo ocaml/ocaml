@@ -219,7 +219,7 @@ Working version
 
 ### Internal/compiler-libs changes:
 
-- #11847, #11849, #11850: small refactorings in the type checker
+- #11847, #11849, #11851: small refactorings in the type checker
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
 - #11027: Separate typing counter-examples from type_pat into retype_pat;
