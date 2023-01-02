@@ -601,12 +601,12 @@ module Array : sig
       function is applied to the index of the element as first argument,
       and the element itself as second argument. *)
 
-  val fold_left : ('a -> float -> 'a) -> 'a -> t -> 'a
+  val fold_left : ('acc -> float -> 'acc) -> 'acc -> t -> 'acc
   (** [fold_left f x init] computes
       [f (... (f (f x init.(0)) init.(1)) ...) init.(n-1)],
       where [n] is the length of the floatarray [init]. *)
 
-  val fold_right : (float -> 'a -> 'a) -> t -> 'a -> 'a
+  val fold_right : (float -> 'acc -> 'acc) -> t -> 'acc -> 'acc
   (** [fold_right f a init] computes
       [f a.(0) (f a.(1) ( ... (f a.(n-1) init) ...))],
       where [n] is the length of the floatarray [a]. *)
@@ -897,12 +897,12 @@ module ArrayLabels : sig
       function is applied to the index of the element as first argument,
       and the element itself as second argument. *)
 
-  val fold_left : f:('a -> float -> 'a) -> init:'a -> t -> 'a
+  val fold_left : f:('acc -> float -> 'acc) -> init:'acc -> t -> 'acc
   (** [fold_left ~f x ~init] computes
       [f (... (f (f x init.(0)) init.(1)) ...) init.(n-1)],
       where [n] is the length of the floatarray [init]. *)
 
-  val fold_right : f:(float -> 'a -> 'a) -> t -> init:'a -> 'a
+  val fold_right : f:(float -> 'acc -> 'acc) -> t -> init:'acc -> 'acc
   (** [fold_right f a init] computes
       [f a.(0) (f a.(1) ( ... (f a.(n-1) init) ...))],
       where [n] is the length of the floatarray [a]. *)

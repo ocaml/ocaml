@@ -328,7 +328,7 @@ module type MapT =
     val find_last : (key -> bool) -> 'a t -> key * 'a
     val find_last_opt : (key -> bool) -> 'a t -> (key * 'a) option
     val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val fold : (key -> 'a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
     val map : ('a -> 'b) -> 'a t -> 'b t
     val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
     val filter : (key -> 'a -> bool) -> 'a t -> 'a t
@@ -384,7 +384,7 @@ module SSMap :
     val find_last : (key -> bool) -> 'a t -> key * 'a
     val find_last_opt : (key -> bool) -> 'a t -> (key * 'a) option
     val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val fold : (key -> 'a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
     val map : ('a -> 'b) -> 'a t -> 'b t
     val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
     val filter : (key -> 'a -> bool) -> 'a t -> 'a t
