@@ -1,6 +1,10 @@
 OCaml 4.14 maintenance version
 ------------------------------
 
+- #11763, #11759, #11861, #12509: Use strict prototypes on primitives.
+  (Antonin Décimo, review by Xavier Leroy, David Allsopp and Sébastien
+   Hinderer)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.
