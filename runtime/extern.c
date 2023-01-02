@@ -853,6 +853,9 @@ static void extern_rec(struct caml_extern_state* s, value v)
       v = Field(v, i);
       continue;
     }
+    case Cont_tag:
+      extern_invalid_argument(s, "output_value: continuation value");
+      break;
     default: {
       extern_header(s, sz, tag);
       s->size_32 += 1 + sz;
