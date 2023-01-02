@@ -7,13 +7,20 @@ type 'a t = [`A of 'a t t] as 'a;; (* fails *)
 Line 1, characters 0-32:
 1 | type 'a t = [`A of 'a t t] as 'a;; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic
+Error: The type abbreviation t is cyclic:
+         ('a t as 'b) t as 'a contains 'b,
+         'b = 'a
 |}, Principal{|
 Line 1, characters 0-32:
 1 | type 'a t = [`A of 'a t t] as 'a;; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of t contains a cycle:
-       [ `A of 'a t t ] as 'a
+         [ `A of ('a t as 'c) t as 'b ] as 'a contains 'c,
+         'c = [ `A of ('d t as 'e) t ] as 'd,
+         'd contains 'e,
+         'e = 'b,
+         'b contains 'c,
+         'c = 'b
 |}];;
 type 'a t = [`A of 'a t t];; (* fails *)
 [%%expect{|
@@ -32,14 +39,18 @@ type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
 Line 1, characters 0-47:
 1 | type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic
+Error: The type abbreviation t is cyclic:
+         ('a t as 'a) t = [ `A of 'a t t ],
+         [ `A of 'a t t ] contains 'a
 |}];;
 type 'a t = [`A of 'a t] constraint 'a = 'a t;; (* fails since 4.04 *)
 [%%expect{|
 Line 1, characters 0-45:
 1 | type 'a t = [`A of 'a t] constraint 'a = 'a t;; (* fails since 4.04 *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic
+Error: The type abbreviation t is cyclic:
+         ('a t as 'a) t = [ `A of 'a t ],
+         [ `A of 'a t ] contains 'a
 |}];;
 type 'a t = [`A of 'a] as 'a;;
 [%%expect{|
@@ -53,7 +64,9 @@ Line 1, characters 0-41:
 1 | type 'a v = [`A of u v] constraint 'a = t and t = u and u = t;; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of v contains a cycle:
-       t
+         t = u,
+         u = t,
+         t = u
 |}];;
 
 type 'a t = 'a;;
@@ -81,7 +94,7 @@ Line 3, characters 2-44:
 3 |   and 'o abs constraint 'o = 'o is_an_object
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of abs contains a cycle:
-       'a is_an_object as 'a
+         'a is_an_object as 'a contains 'a
 |}];;
 
 module PR6505a_old = struct
@@ -190,7 +203,10 @@ type 'b t = 'b * 'b
 Line 2, characters 0-40:
 2 | type 'a t = 'a * 'b constraint 'a = 'b t;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic
+Error: The type abbreviation t is cyclic:
+         'a t t = 'a t * 'a,
+         'a t * 'a contains 'a t,
+         'a t = 'a t * 'a
 |}]
 
 type 'a t = <a : 'a; b : 'b> constraint 'a = 'b t;;

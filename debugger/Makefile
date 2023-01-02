@@ -32,7 +32,8 @@ DIRECTORIES=$(UNIXDIR) $(DYNLINKDIR) $(addprefix $(ROOTDIR)/,\
 
 INCLUDES=$(addprefix -I ,$(DIRECTORIES))
 
-compiler_modules := $(ROOTDIR)/toplevel/genprintval
+compiler_modules := $(addprefix $(ROOTDIR)/toplevel/,\
+  genprintval topprinters)
 
 debugger_modules := \
   int64ops primitives unix_tools debugger_config parameters debugger_lexer \

@@ -114,7 +114,6 @@ let run_script ppf name args =
   let filename = filename_of_input name in
   Compmisc.init_path ~dir:(Filename.dirname filename) ();
                    (* Note: would use [Filename.abspath] here, if we had it. *)
-  Topcommon.load_topdirs_signature ();
   begin
     try toplevel_env := Compmisc.initial_env()
     with Env.Error _ | Typetexp.Error _ as exn ->

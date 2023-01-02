@@ -16,7 +16,6 @@
 (* Loading and installation of user-defined printer functions *)
 
 open Misc
-open Longident
 open Types
 
 (* Error report *)
@@ -90,27 +89,11 @@ let eval_value_path env path =
 
 (* Install, remove a printer (as in toplevel/topdirs) *)
 
-(* since 4.00, "topdirs.cmi" is not in the same directory as the standard
-  library, so we load it beforehand as it cannot be found in the search path. *)
-let init () =
-  let topdirs =
-    Filename.concat !Parameters.topdirs_path "topdirs.cmi" in
-  ignore (Env.read_signature "Topdirs" topdirs)
-
-let match_printer_type desc typename =
-  let printer_type =
-    match
-      Env.find_type_by_name
-        (Ldot(Lident "Topdirs", typename)) Env.empty
-    with
-    | path, _ -> path
-    | exception Not_found ->
-        raise (Error(Unbound_identifier(Ldot(Lident "Topdirs", typename))))
-  in
+let match_printer_type desc make_printer_type =
   Ctype.begin_def();
   let ty_arg = Ctype.newvar() in
   Ctype.unify Env.empty
-    (Ctype.newconstr printer_type [ty_arg])
+    (make_printer_type ty_arg)
     (Ctype.instance desc.val_type);
   Ctype.end_def();
   Ctype.generalize ty_arg;
@@ -119,10 +102,10 @@ let match_printer_type desc typename =
 let find_printer_type lid =
   match Env.find_value_by_name lid Env.empty with
   | (path, desc) -> begin
-      match match_printer_type desc "printer_type_new" with
+      match match_printer_type desc Topprinters.printer_type_new with
       | ty_arg -> (ty_arg, path, false)
       | exception Ctype.Unify _ -> begin
-          match match_printer_type desc "printer_type_old" with
+          match match_printer_type desc Topprinters.printer_type_old with
           | ty_arg -> (ty_arg, path, true)
           | exception Ctype.Unify _ -> raise(Error(Wrong_type lid))
         end

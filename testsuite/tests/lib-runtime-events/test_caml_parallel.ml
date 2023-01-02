@@ -28,42 +28,47 @@ type phase_record = { mutable major: int; mutable minor: int }
 
 let domain_tbl : (int, phase_record) Hashtbl.t = Hashtbl.create 5
 
+let find_or_create_phase_count domain_id =
+        match Hashtbl.find_opt domain_tbl domain_id with
+        | None ->
+            begin
+                let new_count = { major = 0; minor = 0} in
+                Hashtbl.add domain_tbl domain_id new_count;
+                new_count
+            end
+        | Some(pc) -> pc
+
 let runtime_begin domain_id ts phase =
-    let phase_count = Hashtbl.find_opt domain_tbl domain_id
-        |> Option.value ~default:{ major = 0; minor = 0 } in
+    let phase_count = find_or_create_phase_count domain_id in
     match phase with
     | EV_MAJOR ->
         begin
             assert(phase_count.major >= 0);
-            phase_count.major <- phase_count.major + 1
+            phase_count.major <- phase_count.major + 1;
         end
     | EV_MINOR ->
         begin
             assert(phase_count.minor == 0);
             phase_count.minor <- 1
         end
-    | _ -> ();
-    Hashtbl.add domain_tbl domain_id phase_count
+    | _ -> ()
 
 let runtime_end domain_id ts phase =
-    let phase_count = Hashtbl.find_opt domain_tbl domain_id
-        |> Option.value ~default:{ major = 0; minor = 0 } in
+    let phase_count = find_or_create_phase_count domain_id in
     match phase with
-    | EV_MAJOR ->
-        begin
-            assert(phase_count.major >= 1);
-            phase_count.major <- phase_count.major - 1;
-            Atomic.incr majors
-        end
-    | EV_MINOR ->
-        begin
-            assert(phase_count.minor == 1);
-            phase_count.minor <- 0;
-            Atomic.incr minors
-        end
-    | _ -> ();
-    Hashtbl.add domain_tbl domain_id phase_count
-
+        | EV_MAJOR ->
+            begin
+                assert(phase_count.major >= 1);
+                phase_count.major <- phase_count.major - 1;
+                Atomic.incr majors
+            end
+        | EV_MINOR ->
+            begin
+                assert(phase_count.minor == 1);
+                phase_count.minor <- 0;
+                Atomic.incr minors
+            end
+        | _ -> ()
 let num_domains = 3
 let num_minors = 30
 
@@ -86,7 +91,5 @@ let () =
                                         ~lost_events () in
     ignore(read_poll cursor callbacks None);
     assert(!got_start);
-    (* this is num_full_majors rather than num_full_majors*num_domains
-        because in the worst case it can be that low. *)
     assert(Atomic.get minors >= num_minors);
     assert(!lost_events_count == 0)

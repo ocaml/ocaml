@@ -139,7 +139,6 @@ let profile_columns : Profile.column list ref = ref [] (* -dprofile/-dtimings *)
 
 let native_code = ref false             (* set to true under ocamlopt *)
 
-let force_tmc = ref false               (* -force-tmc *)
 let force_slash = ref false             (* for ocamldep *)
 let clambda_checks = ref false          (* -clambda-checks *)
 let cmm_invariants =
@@ -167,10 +166,7 @@ let pic_code = ref (match Config.architecture with (* -fPIC *)
                      | "amd64" -> true
                      | _       -> false)
 
-let runtime_variant =
-  ref (match Config.force_instrumented_runtime with (* -runtime-variant *)
-        | true -> "i"
-        | false -> "")
+let runtime_variant = ref ""
 
 let with_runtime = ref true         (* -with-runtime *)
 

@@ -206,7 +206,7 @@ static int obj_update_tag (value blk, int old_tag, int new_tag)
 
     if (tag != old_tag) return 0;
     if (caml_domain_alone()) {
-      Tag_val (blk) = new_tag;
+      Unsafe_store_tag_val(blk, new_tag);
       return 1;
     }
 

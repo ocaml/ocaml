@@ -780,7 +780,6 @@ build
 QS
 ocaml_libdir
 ocaml_bindir
-force_instrumented_runtime
 compute_deps
 stdlib_manpages
 PACKLD
@@ -873,6 +872,7 @@ syslib
 outputobj
 outputexe
 ocamlyacc_wstr_module
+ln
 unix_or_win32
 ocamlsrcdir
 systhread_support
@@ -969,7 +969,6 @@ enable_installing_bytecode_programs
 enable_native_compiler
 enable_flambda
 enable_flambda_invariants
-enable_force_instrumented_runtime
 enable_cmm_invariants
 with_target_bindir
 enable_reserved_header_bits
@@ -1658,8 +1657,6 @@ Optional Features:
   --enable-flambda        enable flambda optimizations
   --enable-flambda-invariants
                           enable invariants checks in flambda
-  --force-instrumented-runtime
-                          force the usage of the instrumented runtime
   --enable-cmm-invariants enable invariants checks in Cmm
   --enable-reserved-header-bits=BITS
                           reserve BITS (between 0 and 31) bits in block
@@ -3239,7 +3236,6 @@ toolchain="cc"
 profinfo=false
 profinfo_width=0
 instrumented_runtime=false
-force_instrumented_runtime=false
 instrumented_runtime_libs=""
 bootstrapping_flexdll=false
 flexdll_dir=
@@ -3355,8 +3351,8 @@ OCAML_VERSION_SHORT=5.1
 
 
 
- # TODO: rename this variable
 
+ # TODO: rename this variable
 
 
 
@@ -3574,8 +3570,6 @@ test -n "$target_alias" &&
 case $host in #(
   *-pc-windows) :
     as_fn_error 69 "the MSVC compiler is not supported currently" "$LINENO" 5 ;; #(
-  *-*-cygwin*) :
-    as_fn_error 69 "Cygwin is not supported currently" "$LINENO" 5 ;; #(
   i386-*-solaris*) :
     as_fn_error $? "Building for 32 bits target is not supported. \
 If your host is 64 bits, you can try with './configure CC=\"gcc -m64\"' \
@@ -3825,13 +3819,6 @@ fi
 if test ${enable_flambda_invariants+y}
 then :
   enableval=$enable_flambda_invariants;
-fi
-
-
-# Check whether --enable-force-instrumented-runtime was given.
-if test ${enable_force_instrumented_runtime+y}
-then :
-  enableval=$enable_force_instrumented_runtime;
 fi
 
 
@@ -13535,11 +13522,13 @@ ocamlsrcdir=${ocamlsrcdir%X}
 case $host in #(
   *-*-mingw32|*-pc-windows) :
     unix_or_win32="win32"
+    ln='cp -pf'
     ocamltest_libunix="Some false"
     ocamlsrcdir="$(LC_ALL=C.UTF-8 cygpath -w -- "$ocamlsrcdir")"
     ocamlyacc_wstr_module="yacc/wstr" ;; #(
   *) :
     unix_or_win32="unix"
+  ln='ln -sf'
   ocamltest_libunix="Some true"
   ocamlyacc_wstr_module="" ;;
 esac
@@ -15434,9 +15423,9 @@ fi; system=elf ;; #(
   aarch64-*-netbsd*) :
     has_native_backend=yes; arch=arm64; system=netbsd ;; #(
   x86_64-*-cygwin*) :
-    arch=amd64; system=cygwin ;; #(
+    has_native_backend=yes; arch=amd64; system=cygwin ;; #(
   riscv64-*-linux*) :
-    arch=riscv; model=riscv64; system=linux
+    has_native_backend=yes; arch=riscv; model=riscv64; system=linux
  ;; #(
   *) :
      ;;
@@ -16242,12 +16231,6 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
  ;;
 esac
-
-if test "x$enable_force_instrumented_runtime" = "xyes"
-then :
-  force_instrumented_runtime=true
-
-fi
 
 # The instrumented runtime is built by default
 # if the proper clock source is found.
@@ -19573,13 +19556,13 @@ unset ac_cv_header_flexdll_h
 
 # Just before config.status is generated, determine the final values for MKEXE,
 # MKDLL, MKMAINDLL and MKEXE_VIA_CC. The final variables controlling these are:
-# $mkexe - the linking commmand and munged CFLAGS + any extra flexlink flags
+# $mkexe - the linking command and munged CFLAGS + any extra flexlink flags
 # $mkexe_exp: same as above but expanded
 # $mkdll - the full linking command for DLLs
 # $mkdll_exp: same as above but expanded
 # $mkmaindll - the full linking command for main program in DLL
 # $oc_ldflags $oc_dll_ldflags are handled as $(OC_LDFLAGS) and
-# $(OC_DLL_LDFLAGS) and can be overidden in the build.
+# $(OC_DLL_LDFLAGS) and can be overridden in the build.
 
 
 cat >confcache <<\_ACEOF
@@ -19734,7 +19717,7 @@ fi
   if test -n "$mkexe_cflags"
 then :
   mkexe="$mkexe $mkexe_cflags"
-    mkexe_exp="$mkexe_exp $oc_cflags $CFLAGS"
+    mkexe_exp="$mkexe_exp $common_cflags $CFLAGS"
 fi
   if test -n "$mkexe_extra_flags"
 then :

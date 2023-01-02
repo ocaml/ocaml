@@ -62,7 +62,19 @@
     Ephemerons are defined in a language agnostic way in this paper:
     B. Hayes, Ephemerons: A New Finalization Mechanism, OOPSLA'97
 
-    @since 4.03.0
+    @since 4.03
+*)
+
+(** {b Unsynchronized accesses} *)
+
+[@@@alert unsynchronized_access
+  "Unsynchronized accesses to weak hash tables are a programming error."
+]
+
+(**
+    Unsynchronized accesses to a weak hash table may lead to an invalid
+    weak hash table state. Thus, concurrent accesses to a buffer must be
+    synchronized (for instance with a {!Mutex.t}).
 *)
 
 module type S = sig

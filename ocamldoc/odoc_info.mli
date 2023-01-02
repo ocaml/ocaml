@@ -90,7 +90,7 @@ type alert = Odoc_types.alert = {
 }
 
 (** Information in a special comment
-@before 3.12.0 \@before information was not present.
+@before 3.12 \@before information was not present.
 *)
 type info = Odoc_types.info = {
     i_desc : text option; (** The description text. *)

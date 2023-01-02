@@ -64,7 +64,6 @@ toolchain="cc"
 profinfo=false
 profinfo_width=0
 instrumented_runtime=false
-force_instrumented_runtime=false
 instrumented_runtime_libs=""
 bootstrapping_flexdll=false
 flexdll_dir=
@@ -120,6 +119,7 @@ AC_SUBST([system])
 AC_SUBST([systhread_support])
 AC_SUBST([ocamlsrcdir])
 AC_SUBST([unix_or_win32])
+AC_SUBST([ln])
 AC_SUBST([ocamlyacc_wstr_module])
 AC_SUBST([outputexe])
 AC_SUBST([outputobj])
@@ -212,7 +212,6 @@ AC_SUBST([mkexe_ldflags_exp])
 AC_SUBST([PACKLD])
 AC_SUBST([stdlib_manpages])
 AC_SUBST([compute_deps])
-AC_SUBST([force_instrumented_runtime])
 AC_SUBST([ocaml_bindir])
 AC_SUBST([ocaml_libdir])
 AC_SUBST([QS])
@@ -258,8 +257,6 @@ AC_CANONICAL_TARGET
 AS_CASE([$host],
   [*-pc-windows],
     [AC_MSG_ERROR([the MSVC compiler is not supported currently], 69)],
-  [*-*-cygwin*],
-    [AC_MSG_ERROR([Cygwin is not supported currently], 69)],
   [i386-*-solaris*],
     [AC_MSG_ERROR([Building for 32 bits target is not supported. \
 If your host is 64 bits, you can try with './configure CC="gcc -m64"' \
@@ -416,10 +413,6 @@ AC_ARG_ENABLE([flambda],
 AC_ARG_ENABLE([flambda-invariants],
   [AS_HELP_STRING([--enable-flambda-invariants],
     [enable invariants checks in flambda])])
-
-AC_ARG_ENABLE([force-instrumented-runtime],
-  [AS_HELP_STRING([--force-instrumented-runtime],
-    [force the usage of the instrumented runtime])])
 
 AC_ARG_ENABLE([cmm-invariants],
   [AS_HELP_STRING([--enable-cmm-invariants],
@@ -607,10 +600,12 @@ ocamlsrcdir=${ocamlsrcdir%X}
 AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
     [unix_or_win32="win32"
+    ln='cp -pf'
     ocamltest_libunix="Some false"
     ocamlsrcdir="$(LC_ALL=C.UTF-8 cygpath -w -- "$ocamlsrcdir")"
     ocamlyacc_wstr_module="yacc/wstr"],
   [unix_or_win32="unix"
+  ln='ln -sf'
   ocamltest_libunix="Some true"
   ocamlyacc_wstr_module=""])
 
@@ -1266,9 +1261,9 @@ AS_CASE([$host],
   [aarch64-*-netbsd*],
     [has_native_backend=yes; arch=arm64; system=netbsd],
   [x86_64-*-cygwin*],
-    [arch=amd64; system=cygwin],
+    [has_native_backend=yes; arch=amd64; system=cygwin],
   [riscv64-*-linux*],
-    [arch=riscv; model=riscv64; system=linux]
+    [has_native_backend=yes; arch=riscv; model=riscv64; system=linux]
 )
 
 AS_CASE([$ccomptype],
@@ -1501,10 +1496,6 @@ AS_CASE([$host],
     ],
     [has_monotonic_clock=false])
   ]
-)
-
-AS_IF([test "x$enable_force_instrumented_runtime" = "xyes"],
-  [force_instrumented_runtime=true]
 )
 
 # The instrumented runtime is built by default
@@ -2242,20 +2233,20 @@ AC_CONFIG_COMMANDS_PRE([
 
 # Just before config.status is generated, determine the final values for MKEXE,
 # MKDLL, MKMAINDLL and MKEXE_VIA_CC. The final variables controlling these are:
-# $mkexe - the linking commmand and munged CFLAGS + any extra flexlink flags
+# $mkexe - the linking command and munged CFLAGS + any extra flexlink flags
 # $mkexe_exp: same as above but expanded
 # $mkdll - the full linking command for DLLs
 # $mkdll_exp: same as above but expanded
 # $mkmaindll - the full linking command for main program in DLL
 # $oc_ldflags $oc_dll_ldflags are handled as $(OC_LDFLAGS) and
-# $(OC_DLL_LDFLAGS) and can be overidden in the build.
+# $(OC_DLL_LDFLAGS) and can be overridden in the build.
 AC_CONFIG_COMMANDS_PRE([
   # Construct $mkexe
   mkexe="$mkexe_cmd"
   mkexe_exp="$mkexe_cmd_exp"
   AS_IF([test -n "$mkexe_cflags"],
     [mkexe="$mkexe $mkexe_cflags"
-    mkexe_exp="$mkexe_exp $oc_cflags $CFLAGS"])
+    mkexe_exp="$mkexe_exp $common_cflags $CFLAGS"])
   AS_IF([test -n "$mkexe_extra_flags"],
     [mkexe="$mkexe $mkexe_extra_flags"
     mkexe_exp="$mkexe_exp $mkexe_extra_flags"])

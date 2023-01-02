@@ -1,0 +1,37 @@
+Line 5, characters 16-22:
+5 | module type S = struct end
+                    ^^^^^^
+Error: Syntax error: sig expected.
+Line 3, characters 18-24:
+3 |   module type S = struct end
+                      ^^^^^^
+Error: Syntax error: sig expected.
+Line 3, characters 13-19:
+3 |   module M : struct end
+                 ^^^^^^
+Error: Syntax error: sig expected.
+Line 3, characters 11-12:
+3 |   module M = struct end
+               ^
+Error: Syntax error: : expected.
+Line 3, characters 0-2:
+3 | ;;
+    ^^
+Error: Syntax error: = expected.
+Line 2, characters 11-17:
+2 | module M : struct end
+               ^^^^^^
+Error: Syntax error: sig expected.
+Line 3, characters 32-38:
+3 |   module M : functor (X : S) -> struct end
+                                    ^^^^^^
+Error: Syntax error: sig expected.
+Line 2, characters 15-18:
+2 | module M = X.Y(sig end)
+                   ^^^
+Error: Syntax error: struct expected.
+Line 3, characters 25-28:
+3 |   include module type of sig end
+                             ^^^
+Error: Syntax error: struct expected.
+

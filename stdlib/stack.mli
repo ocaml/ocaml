@@ -18,6 +18,18 @@
    This module implements stacks (LIFOs), with in-place modification.
 *)
 
+(** {b Unsynchronized accesses} *)
+
+[@@@alert unsynchronized_accesses
+    "Unsynchronized accesses to stacks are a programming error."
+]
+
+ (**
+    Unsynchronized accesses to a stack may lead to an invalid queue state.
+    Thus, concurrent accesses to stacks must be synchronized (for instance
+    with a {!Mutex.t}).
+*)
+
 type !'a t
 (** The type of stacks containing elements of type ['a]. *)
 
@@ -43,7 +55,7 @@ val pop_opt : 'a t -> 'a option
 val drop : 'a t -> unit
 (** [drop s] removes the topmost element in stack [s],
    or raises {!Empty} if the stack is empty.
-   @since 5.1.0 *)
+   @since 5.1 *)
 
 val top : 'a t -> 'a
 (** [top s] returns the topmost element in stack [s],

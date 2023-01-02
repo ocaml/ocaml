@@ -235,7 +235,6 @@ TARGET=@target@
 HOST=@host@
 FLAMBDA=@flambda@
 WITH_FLAMBDA_INVARIANTS=@flambda_invariants@
-FORCE_INSTRUMENTED_RUNTIME=@force_instrumented_runtime@
 WITH_CMM_INVARIANTS=@cmm_invariants@
 FORCE_SAFE_STRING=true
 DEFAULT_SAFE_STRING=true

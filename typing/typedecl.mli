@@ -60,13 +60,18 @@ val is_fixed_type : Parsetree.type_declaration -> bool
 
 type native_repr_kind = Unboxed | Untagged
 
+type reaching_type_path = reaching_type_step list
+and reaching_type_step =
+  | Expands_to of type_expr * type_expr
+  | Contains of type_expr * type_expr
+
 type error =
     Repeated_parameter
   | Duplicate_constructor of string
   | Too_many_constructors
   | Duplicate_label of string
-  | Recursive_abbrev of string
-  | Cycle_in_def of string * type_expr
+  | Recursive_abbrev of string * Env.t * reaching_type_path
+  | Cycle_in_def of string * Env.t * reaching_type_path
   | Definition_mismatch of type_expr * Env.t * Includecore.type_mismatch option
   | Constraint_failed of Env.t * Errortrace.unification_error
   | Inconsistent_constraint of Env.t * Errortrace.unification_error
@@ -75,7 +80,7 @@ type error =
       definition: Path.t;
       used_as: type_expr;
       defined_as: type_expr;
-      expansions: (type_expr * type_expr) list;
+      reaching_path: reaching_type_path;
     }
   | Null_arity_external
   | Missing_native_external

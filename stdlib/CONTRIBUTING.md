@@ -1,7 +1,7 @@
 # How to contribute changes
 
 Contributions to the standard library are very welcome.  There is some
-widespread belief in the community than the stdlib is somehow "frozen"
+widespread belief in the community that the stdlib is somehow "frozen"
 and that its evolutions are mostly driven by the need of the OCaml
 compiler itself.  Let's be clear: this is just plain wrong. The
 compiler is happy with its own local utility functions, and many
@@ -14,7 +14,7 @@ enough "market share" in the community.
 
 So: please contribute!
 
-Obviously, the proposals to evolve the standard library will be
+Obviously, proposals made to evolve the standard library will be
 evaluated with very high standards, similar to those applied to the
 evolution of the surface langage, and much higher than those for
 internal compiler changes (optimizations, etc).
@@ -48,7 +48,7 @@ contributions are welcome and appreciated.  Promised.
 
 ## Naming functions and API
 
-Naming functions or finding the a suitable argument order is a
+Naming functions or finding a suitable argument order is a
 notoriously hard task. In general the name of a function should
 be descriptive and already make the usage clear. In case a similar
 function already exists in another module of the standard library

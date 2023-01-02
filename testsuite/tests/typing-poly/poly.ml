@@ -617,7 +617,11 @@ val app : int * bool = (1, true)
 Line 9, characters 0-25:
 9 | type 'a foo = 'a foo list
     ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation foo is cyclic
+Error: The type abbreviation foo is cyclic:
+         'a foo = 'a foo list,
+         'a foo list contains 'a foo,
+         'a foo = 'a foo list,
+         'a foo list contains 'a foo
 |}];;
 
 class ['a] bar (x : 'a) = object end
@@ -910,7 +914,9 @@ Line 1, characters 0-10:
 1 | type t = u and u = t;;
     ^^^^^^^^^^
 Error: The definition of t contains a cycle:
-       u
+         u = t,
+         t = u,
+         u = t
 |}];;
 
 (* PR#8188 *)
@@ -991,6 +997,7 @@ Error: This recursive type is not regular.
        but it is used as
          'a list u
        after the following expansion(s):
+         < m : 'a v > contains 'a v,
          'a v = 'a list u
        All uses need to match the definition for the recursive type to be regular.
 |}];;
@@ -1026,7 +1033,7 @@ Line 1, characters 0-83:
 1 | type ('a1, 'b1) ty1 = 'a1 -> unit constraint 'a1 = [> `V1 of ('a1, 'b1) ty2 as 'b1]
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of ty1 contains a cycle:
-       [> `V1 of ('a, 'b) ty2 as 'b ] as 'a
+         [> `V1 of ('a, 'b) ty2 as 'b ] as 'a contains 'b
 |}];;
 
 (* PR#8359: expanding may change original in Ctype.unify2 *)
@@ -1516,30 +1523,33 @@ val n : < m : 'x 'a. ([< `Foo of 'x ] as 'a) -> 'x > = <obj>
 let n =
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 [%%expect {|
-val n : < m : 'x. [< `Foo of 'x ] -> 'x > = <obj>
+Line 2, characters 9-68:
+2 |   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The method m has type 'a -> 'b but is expected to have type
+         [< `Foo of 'x ] -> 'c
+       The universal variable 'x would escape its scope
 |}];;
 (* fail *)
 let (n : < m : 'a. [< `Foo of int] -> 'a >) =
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 [%%expect {|
-Line 2, characters 2-72:
+Line 2, characters 9-68:
 2 |   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type < m : 'x. [< `Foo of 'x ] -> 'x >
-       but an expression was expected of type
-         < m : 'a. [< `Foo of int ] -> 'a >
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The method m has type 'a -> 'b but is expected to have type
+         [< `Foo of 'x ] -> 'c
        The universal variable 'x would escape its scope
 |}];;
 (* fail *)
 let (n : 'b -> < m : 'a . ([< `Foo of int] as 'b) -> 'a >) = fun x ->
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 [%%expect {|
-Line 2, characters 2-72:
+Line 2, characters 9-68:
 2 |   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type < m : 'x. [< `Foo of 'x ] -> 'x >
-       but an expression was expected of type
-         < m : 'a. [< `Foo of int ] -> 'a >
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The method m has type 'a -> 'b but is expected to have type
+         [< `Foo of 'x ] -> 'c
        The universal variable 'x would escape its scope
 |}];;
 (* ok *)

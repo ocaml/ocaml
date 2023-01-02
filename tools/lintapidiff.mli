@@ -2,7 +2,7 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Sebastien Hinderer, projet Cambium, INRIA Paris            *)
+(*                   Sebastien Hinderer, Tarides, Paris                   *)
 (*                                                                        *)
 (*   Copyright 2022 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
@@ -13,7 +13,5 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Interface to extract_crc's main module *)
-
-(* This interface file is empty because extract_crc only runs
-   code during initialisation and exports nothing *)
+(* lintapidiff.ml does not need to export any definition so here is
+   an empty interface *)

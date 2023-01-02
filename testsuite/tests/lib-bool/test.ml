@@ -69,6 +69,14 @@ let test_to_string () =
   assert (Bool.to_string true = "true");
   ()
 
+
+let test_hash () =
+  let f b =
+    assert (Hashtbl.hash b = Bool.hash b);
+    assert (Hashtbl.seeded_hash 16 b = Bool.seeded_hash 16 b)
+  in
+  f true; f false
+
 let tests () =
   test_not ();
   test_and ();
@@ -79,6 +87,7 @@ let tests () =
   test_to_float ();
   test_of_string ();
   test_to_string ();
+  test_hash ();
   ()
 
 let () =

@@ -2,10 +2,9 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*           Jerome Vouillon, projet Cristal, INRIA Rocquencourt          *)
-(*           OCaml port by John Malecki and Xavier Leroy                  *)
+(*                         The OCaml programmers                          *)
 (*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2022 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
@@ -14,10 +13,4 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(************************ Simple pattern matching **********************)
-
-open Parser_aux
-
-val pattern_matching :
-  pattern -> Debugcom.remote_value -> Typedtree.type_expr ->
-    (string * Debugcom.remote_value * Typedtree.type_expr) list
+type (_, _) eq = Equal: ('a, 'a) eq

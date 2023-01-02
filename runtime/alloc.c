@@ -149,21 +149,6 @@ CAMLexport value caml_alloc_9 (tag_t tag, value a, value b, value c, value d,
   return do_alloc_small(9, tag, v);
 }
 
-CAMLexport value caml_alloc_N (mlsize_t wosize, tag_t tag, ...)
-{
-  va_list args;
-  mlsize_t i;
-  value vals[wosize];
-  value ret;
-  va_start(args, tag);
-  for (i = 0; i < wosize; i++)
-    vals[i] = va_arg(args, value);
-  ret = do_alloc_small(wosize, tag, vals);
-  va_end(args);
-  return ret;
-}
-
-
 CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
 {
   value result;
@@ -339,7 +324,7 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
   if (tag == Double_array_tag){
     CAMLassert (Wosize_val(newval) == Wosize_val(dummy));
     CAMLassert (Tag_val(dummy) != Infix_tag);
-    Tag_val(dummy) = Double_array_tag;
+    Unsafe_store_tag_val(dummy, Double_array_tag);
     size = Wosize_val (newval) / Double_wosize;
     for (i = 0; i < size; i++) {
       Store_double_flat_field (dummy, i, Double_flat_field (newval, i));
@@ -362,7 +347,7 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
   } else {
     CAMLassert (tag < No_scan_tag);
     CAMLassert (Tag_val(dummy) != Infix_tag);
-    Tag_val(dummy) = tag;
+    Unsafe_store_tag_val(dummy, tag);
     size = Wosize_val(newval);
     CAMLassert (size == Wosize_val(dummy));
     /* See comment above why this is safe even if [tag == Closure_tag]

@@ -15,7 +15,7 @@
 
 (** Output channels.
 
-    @since 4.14.0 *)
+    @since 4.14 *)
 
 type t = out_channel
 (** The type of output channel. *)
@@ -163,4 +163,4 @@ val isatty : t -> bool
 (** [isatty oc] is [true] if [oc] refers to a terminal or console window,
     [false] otherwise.
 
-    @since 5.1.0 *)
+    @since 5.1 *)

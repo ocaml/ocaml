@@ -274,7 +274,7 @@ static void remove_from_stw_domains(dom_internal* dom) {
   stw_domains.domains[stw_domains.participating_domains] = dom;
 }
 
-static dom_internal* next_free_domain() {
+static dom_internal* next_free_domain(void) {
   if (stw_domains.participating_domains == Max_domains)
     return NULL;
 
@@ -411,7 +411,7 @@ asize_t caml_norm_minor_heap_size (intnat wsize)
   domain, so they need no synchronization.
 */
 
-Caml_inline void check_minor_heap() {
+Caml_inline void check_minor_heap(void) {
   caml_domain_state* domain_state = Caml_state;
   CAMLassert(domain_state->young_ptr == domain_state->young_end);
 
@@ -433,7 +433,7 @@ Caml_inline void check_minor_heap() {
       && domain_state->young_end <= (value*)domain_self->minor_heap_area_end));
 }
 
-static void free_minor_heap() {
+static void free_minor_heap(void) {
   caml_domain_state* domain_state = Caml_state;
 
   caml_gc_log ("trying to free old minor heap: %"
@@ -712,7 +712,7 @@ CAMLexport void caml_reset_domain_lock(void)
 
 /* minor heap initialization and resizing */
 
-static void reserve_minor_heaps() {
+static void reserve_minor_heaps(void) {
   void* heaps_base;
   uintnat minor_heap_reservation_bsize;
   uintnat minor_heap_max_bsz;
@@ -724,7 +724,7 @@ static void reserve_minor_heaps() {
   minor_heap_reservation_bsize = minor_heap_max_bsz * Max_domains;
 
   /* reserve memory space for minor heaps */
-  heaps_base = caml_mem_map(minor_heap_reservation_bsize, caml_sys_pagesize,
+  heaps_base = caml_mem_map(minor_heap_reservation_bsize, caml_plat_pagesize,
                 1 /* reserve_only */);
   if (heaps_base == NULL)
     caml_fatal_error("Not enough heap memory to reserve minor heaps");
@@ -749,7 +749,7 @@ static void reserve_minor_heaps() {
   }
 }
 
-static void unreserve_minor_heaps() {
+static void unreserve_minor_heaps(void) {
   uintnat size;
 
   caml_gc_log("unreserve_minor_heaps");
@@ -812,7 +812,7 @@ static void stw_resize_minor_heap_reservation(caml_domain_state* domain,
        and it also updates the reservation boundaries of each domain
        by mutating its [minor_heap_area_start{,_end}] variables.
 
-       Thse variables are synchronized by the fact that we are inside
+       These variables are synchronized by the fact that we are inside
        a STW section: no other domains are running in parallel, and
        the participating domains will synchronize with this write by
        exiting the barrier, before they read those variables in
@@ -1046,7 +1046,7 @@ CAMLexport void (*caml_domain_external_interrupt_hook)(void) =
 CAMLexport _Atomic caml_timing_hook caml_domain_terminated_hook =
   (caml_timing_hook)NULL;
 
-static void domain_terminate();
+static void domain_terminate(void);
 
 static void* domain_thread_func(void* v)
 {
@@ -1611,7 +1611,8 @@ CAMLexport void (*caml_atfork_hook)(void) = caml_atfork_default;
 static void handover_ephemerons(caml_domain_state* domain_state)
 {
   if (domain_state->ephe_info->todo == 0 &&
-      domain_state->ephe_info->live == 0)
+      domain_state->ephe_info->live == 0 &&
+      domain_state->ephe_info->must_sweep_ephe == 0)
     return;
 
   caml_add_to_orphaned_ephe_list(domain_state->ephe_info);

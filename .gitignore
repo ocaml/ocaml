@@ -207,7 +207,6 @@ META
 /ocamltest/ocamltest.html
 
 /otherlibs/*/.dep
-/otherlibs/dynlink/extract_crc
 /otherlibs/dynlink/dynlink_platform_intf.mli
 /otherlibs/dynlink/byte/dynlink.mli
 /otherlibs/dynlink/native/dynlink.mli
@@ -308,6 +307,7 @@ META
 /tools/make_opcodes.ml
 /tools/ocamltex
 /tools/eventlog_metadata
+/tools/lintapidiff.opt
 
 /toplevel/byte/topeval.mli
 /toplevel/byte/trace.mli

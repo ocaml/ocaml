@@ -316,7 +316,7 @@ static int parse_command_line(char_os **argv)
         params->trace_level += 1; /* ignored unless DEBUG mode */
         break;
       case 'v':
-        params->verb_gc = 0x001+0x004+0x008+0x010+0x020;
+        atomic_store_relaxed(&caml_verb_gc, 0x001+0x004+0x008+0x010+0x020);
         break;
       case 'p':
         for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)
@@ -324,7 +324,7 @@ static int parse_command_line(char_os **argv)
         exit(0);
         break;
       case 'b':
-        caml_record_backtraces(1);
+        params->backtrace_enabled = 1;
         break;
       case 'I':
         if (argv[i + 1] != NULL) {

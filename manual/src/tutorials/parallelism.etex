@@ -170,7 +170,7 @@ library for nested-parallel programming, which is epitomised by the parallelism
 available in the recursive Fibonacci computation. Let us use domainslib to
 parallelise the recursive Fibonacci program. It is recommended that you install
 domainslib using the \href{https://opam.ocaml.org/}{opam} package manager. This
-tutorial uses domainslib version 0.4.2.
+tutorial uses domainslib version 0.5.0.
 
 Domainslib provides an async/await mechanism for spawning parallel tasks and
 awaiting their results. On top of this mechanism, domainslib provides parallel
@@ -195,7 +195,7 @@ let rec fib_par pool n =
   end else fib n
 
 let main () =
-  let pool = T.setup_pool ~num_additional_domains:(num_domains - 1) () in
+  let pool = T.setup_pool ~num_domains:(num_domains - 1) () in
   let res = T.run pool (fun _ -> fib_par pool n) in
   T.teardown_pool pool;
   Printf.printf "fib(%d) = %d\n" n res
@@ -345,7 +345,7 @@ let eval_AtA_times_u pool u v =
   eval_A_times_u pool u w; eval_At_times_u pool w v
 
 let () =
-  let pool = T.setup_pool ~num_additional_domains:(num_domains - 1) () in
+  let pool = T.setup_pool ~num_domains:(num_domains - 1) () in
   let u = Array.make n 1.0  and  v = Array.make n 0.0 in
   T.run pool (fun _ ->
   for _i = 0 to 9 do
@@ -593,6 +593,16 @@ between the different systhreads running on two different domains. The
 systhread identifiers uniquely identify systhreads in the program. The initial
 domain gets the domain id and the thread id as 0. The newly spawned domain gets
 domain id as 1.
+
+\section{s:par_c_bindings}{Interaction with C bindings}
+
+During parallel execution with multiple domains, C code running on a domain may
+run in parallel with any C code running in other domains even if neither of
+them has released the ``domain lock''. Prior to OCaml 5.0, C bindings may have
+assumed that if the OCaml runtime lock is not released, then it would be safe
+to manipulate global C state (e.g. initialise a function-local static value).
+This is no longer true in the presence of parallel execution with multiple
+domains.
 
 \section{s:par_atomics}{Atomics}
 

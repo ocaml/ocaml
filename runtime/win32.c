@@ -231,7 +231,8 @@ void * caml_dlopen(wchar_t * libname, int global)
   void *handle;
   int flags = (global ? FLEXDLL_RTLD_GLOBAL : 0);
   handle = flexdll_wdlopen(libname, flags);
-  if ((handle != NULL) && ((caml_params->verb_gc & 0x100) != 0)) {
+  if ((handle != NULL)
+     && ((atomic_load_relaxed(&caml_verb_gc) & 0x100) != 0)) {
     flexdll_dump_exports(handle);
     fflush(stdout);
   }
@@ -1069,24 +1070,19 @@ int caml_num_rows_fd(int fd)
 /* UCRT clock function returns wall-clock time */
 CAMLexport clock_t caml_win32_clock(void)
 {
-  FILETIME c, e, stime, utime;
+  FILETIME _creation, _exit;
+  CAML_ULONGLONG_FILETIME stime, utime;
   ULARGE_INTEGER tmp;
-  ULONGLONG total, clocks_per_sec;
+  ULONGLONG clocks_per_sec;
 
-  if (!(GetProcessTimes(GetCurrentProcess(), &c, &e, &stime, &utime))) {
+  if (!(GetProcessTimes(GetCurrentProcess(), &_creation, &_exit,
+                        &stime.ft, &utime.ft))) {
     return (clock_t)(-1);
   }
 
-  tmp.u.LowPart = stime.dwLowDateTime;
-  tmp.u.HighPart = stime.dwHighDateTime;
-  total = tmp.QuadPart;
-  tmp.u.LowPart = utime.dwLowDateTime;
-  tmp.u.HighPart = utime.dwHighDateTime;
-  total += tmp.QuadPart;
-
   /* total in 100-nanosecond intervals (1e7 / CLOCKS_PER_SEC) */
   clocks_per_sec = 10000000ULL / (ULONGLONG)CLOCKS_PER_SEC;
-  return (clock_t)(total / clocks_per_sec);
+  return (clock_t)((stime.ul + utime.ul) / clocks_per_sec);
 }
 
 static double clock_period = 0;
@@ -1096,9 +1092,11 @@ void caml_init_os_params(void)
   SYSTEM_INFO si;
   LARGE_INTEGER frequency;
 
-  /* Get the system page size */
+  /* Get the system page size and allocation granularity. */
   GetSystemInfo(&si);
-  caml_sys_pagesize = si.dwPageSize;
+  CAMLassert(si.dwAllocationGranularity >= si.dwPageSize);
+  caml_plat_pagesize = si.dwPageSize;
+  caml_plat_mmap_alignment = si.dwAllocationGranularity;
 
   /* Get the number of nanoseconds for each tick in QueryPerformanceCounter */
   QueryPerformanceFrequency(&frequency);
@@ -1111,4 +1109,33 @@ int64_t caml_time_counter(void)
 
   QueryPerformanceCounter(&now);
   return (int64_t)(now.QuadPart * clock_period);
+}
+
+void *caml_plat_mem_map(uintnat size, uintnat alignment, int reserve_only)
+{
+  /* VirtualAlloc returns an address aligned to caml_plat_mmap_alignment, so
+     trimming will not be required. VirtualAlloc returns 0 on error. */
+  if (alignment > caml_plat_mmap_alignment)
+    caml_fatal_error("Cannot align memory to %" ARCH_INTNAT_PRINTF_FORMAT "x"
+                     " on this platform", alignment);
+  return
+    VirtualAlloc(NULL, size,
+                 MEM_RESERVE | (reserve_only ? 0 : MEM_COMMIT),
+                 reserve_only ? PAGE_NOACCESS : PAGE_READWRITE);
+}
+
+void* caml_plat_mem_commit(void* mem, uintnat size)
+{
+  return VirtualAlloc(mem, size, MEM_COMMIT, PAGE_READWRITE);
+}
+
+void caml_plat_mem_decommit(void* mem, uintnat size)
+{
+  VirtualFree(mem, size, MEM_DECOMMIT);
+}
+
+void caml_plat_mem_unmap(void* mem, uintnat size)
+{
+  if (!VirtualFree(mem, 0, MEM_RELEASE))
+    CAMLassert(0);
 }

@@ -2,7 +2,7 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Florian Angeletti, projet Cambium, Inria Paris             *)
+(*                   Sebastien Hinderer, Tarides, Paris                   *)
 (*                                                                        *)
 (*   Copyright 2022 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
@@ -13,5 +13,4 @@
 (*                                                                        *)
 (**************************************************************************)
 
-let () =
-  Topcommon.load_topdirs_signature ()
+(* make_opcodes.mll exports no definition so here is an empty interface *)

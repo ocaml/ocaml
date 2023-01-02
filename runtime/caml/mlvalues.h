@@ -195,6 +195,14 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
                                                  /* Also an l-value. */
 #endif
 
+#define Unsafe_store_tag_val(dst, val) (Tag_val(dst) = val)
+/* Currently [Tag_val(dst)] is an lvalue, but in the future we may
+   have to break this property by using explicit (relaxed) atomics to
+   avoid undefined behaviors. [Unsafe_store_tag_val(dst, val)] is
+   provided to avoid direct uses of [Tag_val(dst)] on the left of an
+   assignment. The use of [Unsafe] emphasizes that the function
+   may result in unsafe data races in a concurrent setting. */
+
 /* The lowest tag for blocks containing no value. */
 #define No_scan_tag 251
 

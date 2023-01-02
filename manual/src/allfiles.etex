@@ -12,7 +12,8 @@
                 release \ocamlversion \\[1cm]
 \Large          Documentation and user's manual \\[1cm]
 \large          Xavier Leroy, \\
-                Damien Doligez, Alain Frisch, Jacques Garrigue, Didier Rémy and Jérôme Vouillon \\[1cm]
+                Damien Doligez, Alain Frisch, Jacques Garrigue, \\
+                Didier Rémy, KC Sivaramakrishnan and Jérôme Vouillon \\[1cm]
                 \today \\
                 ~
 \vfill

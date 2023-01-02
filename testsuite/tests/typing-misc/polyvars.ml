@@ -193,8 +193,11 @@ Error: This recursive type is not regular.
        but it is used as
          ('e, 'c, 'b, 'd, 'a) a
        after the following expansion(s):
+         [ `A of ('d, 'a, 'e, 'c, 'b) b ] contains ('d, 'a, 'e, 'c, 'b) b,
          ('d, 'a, 'e, 'c, 'b) b = [ `B of ('e, 'c, 'b, 'd, 'a) c ],
-         ('e, 'c, 'b, 'd, 'a) c = [ `C of ('e, 'c, 'b, 'd, 'a) a ]
+         [ `B of ('e, 'c, 'b, 'd, 'a) c ] contains ('e, 'c, 'b, 'd, 'a) c,
+         ('e, 'c, 'b, 'd, 'a) c = [ `C of ('e, 'c, 'b, 'd, 'a) a ],
+         [ `C of ('e, 'c, 'b, 'd, 'a) a ] contains ('e, 'c, 'b, 'd, 'a) a
        All uses need to match the definition for the recursive type to be regular.
 |}]
 

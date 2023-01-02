@@ -133,6 +133,18 @@ void caml_compute_gc_stats(struct gc_stats* buf)
   caml_accum_orphan_heap_stats(&buf->heap_stats);
   caml_accum_orphan_alloc_stats(&buf->alloc_stats);
 
+  /* The instantaneous maximum heap size cannot be computed
+     from per-domain statistics, and would be very expensive
+     to maintain directly. Here, we just sum the per-domain
+     maxima, which is completely wrong.
+
+     FIXME: maybe maintain coarse global maxima?
+
+     The summation starts here from the orphan-heap maxima.
+  */
+  pool_max = buf->heap_stats.pool_max_words;
+  large_max = buf->heap_stats.large_max_words;
+
   for (i=0; i<Max_domains; i++) {
     /* For allocation stats, we use the live stats of the current domain
        and the sampled stats of other domains.
@@ -150,12 +162,6 @@ void caml_compute_gc_stats(struct gc_stats* buf)
       caml_accum_heap_stats(&buf->heap_stats, &s->heap_stats);
       //FIXME use live heap stats instead of sampled heap stats below?
     }
-    /* The instantaneous maximum heap size cannot be computed
-       from per-domain statistics, and would be very expensive
-       to maintain directly. Here, we just sum the per-domain
-       maxima, which is completely wrong.
-
-       FIXME: maybe maintain coarse global maxima? */
     pool_max += s->heap_stats.pool_max_words;
     large_max += s->heap_stats.large_max_words;
   }

@@ -354,6 +354,7 @@ TOPLEVEL = \
   toplevel/byte/topeval.cmo \
   toplevel/byte/trace.cmo \
   toplevel/toploop.cmo \
+  toplevel/topprinters.cmo \
   toplevel/topdirs.cmo \
   toplevel/byte/topmain.cmo
 TOPLEVEL_CMI = \
@@ -361,6 +362,7 @@ TOPLEVEL_CMI = \
   toplevel/byte/topeval.cmi \
   toplevel/byte/trace.cmi \
   toplevel/toploop.cmi \
+  toplevel/topprinters.cmi \
   toplevel/topdirs.cmi \
   toplevel/byte/topmain.cmi
 
@@ -371,6 +373,7 @@ OPTTOPLEVEL = \
   toplevel/native/topeval.cmo \
   toplevel/native/trace.cmo \
   toplevel/toploop.cmo \
+  toplevel/topprinters.cmo \
   toplevel/topdirs.cmo \
   toplevel/native/topmain.cmo
 OPTTOPLEVEL_CMI = \
@@ -379,6 +382,7 @@ OPTTOPLEVEL_CMI = \
   toplevel/native/topeval.cmi \
   toplevel/native/trace.cmi \
   toplevel/toploop.cmi \
+  toplevel/topprinters.cmi \
   toplevel/topdirs.cmi \
   toplevel/native/topmain.cmi
 
@@ -411,6 +415,15 @@ utils/config_%.mli: utils/config.mli
 	cp $^ $@
 
 beforedepend:: utils/config_main.mli utils/config_boot.mli
+
+# Since the compiler libraries are necessarily compiled with boot/ocamlc,
+# make sure they *always are*, even when rebuilding a program compiled
+# with ./ocamlc (e.g. ocamltex)
+
+$(addprefix compilerlibs/,\
+  ocamlcommon.cma ocamlbytecomp.cma ocamloptcomp.cma ocamlmiddleend.cma \
+  ocamltoplevel.cma): \
+  CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) -use-prims runtime/primitives
 
 compilerlibs/ocamlcommon.cma: $(COMMON_CMI) $(ALL_CONFIG_CMO) $(COMMON)
 	$(CAMLC) -a -linkall -o $@ $(COMMON)
