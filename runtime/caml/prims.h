@@ -20,7 +20,7 @@
 
 #ifdef CAML_INTERNALS
 
-typedef value (*c_primitive)();
+typedef value (*c_primitive)(void);
 
 extern c_primitive caml_builtin_cprim[];
 extern char * caml_names_of_builtin_cprim[];
@@ -30,7 +30,18 @@ extern struct ext_table caml_prim_table;
 extern struct ext_table caml_prim_name_table;
 #endif
 
-#define Primitive(n) ((c_primitive)(caml_prim_table.contents[n]))
+#define Primitive1(n) \
+    ((value (*)(value)) caml_prim_table.contents[n])
+#define Primitive2(n) \
+    ((value (*)(value,value)) caml_prim_table.contents[n])
+#define Primitive3(n) \
+    ((value (*)(value,value,value)) caml_prim_table.contents[n])
+#define Primitive4(n) \
+    ((value (*)(value,value,value,value)) caml_prim_table.contents[n])
+#define Primitive5(n) \
+    ((value (*)(value,value,value,value,value)) caml_prim_table.contents[n])
+#define PrimitiveN(n) \
+    ((value (*)(value*,int)) caml_prim_table.contents[n])
 
 extern char * caml_section_table;
 extern asize_t caml_section_table_size;
