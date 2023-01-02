@@ -96,7 +96,13 @@ module Publish = struct
     end
 
     let sz = 8
-    let updates = List.init sz (Printf.sprintf "%d")
+
+    let digit_to_string i =
+      String.make 1 (Char.chr (Char.code '0' + (i mod 10)))
+
+    let updates = List.init sz digit_to_string
+
+
     module StringSet = Set.Make(String)
 
 
@@ -125,12 +131,12 @@ module Publish = struct
     (* publish *)
     type out0 = unit
     let code0 q =
-      q := Printf.sprintf "%d" 0 ; (* publish *)
+      q := digit_to_string 0 ; (* publish *)
       List.init (sz-1) (fun k -> k+1)
       |>
         List.iter
           (fun v ->
-            q := Printf.sprintf "%d" v)
+            q := digit_to_string v)
 
     (* Dereference twice *)
     type out1 = string
