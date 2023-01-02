@@ -24,7 +24,7 @@ open Arch
 
 let bind name arg fn =
   match arg with
-  | Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _ -> fn arg
+    Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _ -> fn arg
   | _ -> let id = V.create_local name in Clet(VP.create id, arg, fn (Cvar id))
 
 let bind_load name arg fn =
@@ -34,7 +34,7 @@ let bind_load name arg fn =
 
 let bind_nonvar name arg fn =
   match arg with
-  | Cconst_int _ | Cconst_natint _ | Cconst_symbol _ -> fn arg
+    Cconst_int _ | Cconst_natint _ | Cconst_symbol _ -> fn arg
   | _ -> let id = V.create_local name in Clet(VP.create id, arg, fn (Cvar id))
 
 let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8
@@ -192,7 +192,7 @@ let rec mul_int c1 c2 dbg =
       Cop(Cmuli, [c1; c2], dbg)
 
 let ignore_low_bit_int = function
-  | Cop(Caddi,
+    Cop(Caddi,
         [(Cop(Clsl, [_; Cconst_int (n, _)], _) as c); Cconst_int (1, _)], _)
       when n > 0
       -> c
@@ -201,13 +201,13 @@ let ignore_low_bit_int = function
 
 (* removes the 1-bit sign-extension left by untag_int (tag_int c) *)
 let ignore_high_bit_int = function
-  | Cop(Casr,
+    Cop(Casr,
         [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], _) -> c
   | c -> c
 
 let lsr_int c1 c2 dbg =
   match c2 with
-  | Cconst_int (0, _) ->
+    Cconst_int (0, _) ->
       c1
   | Cconst_int (n, _) when n > 0 ->
       Cop(Clsr, [ignore_low_bit_int c1; c2], dbg)
@@ -216,7 +216,7 @@ let lsr_int c1 c2 dbg =
 
 let asr_int c1 c2 dbg =
   match c2 with
-  | Cconst_int (0, _) ->
+    Cconst_int (0, _) ->
       c1
   | Cconst_int (n, _) when n > 0 ->
       Cop(Casr, [ignore_low_bit_int c1; c2], dbg)
@@ -243,12 +243,11 @@ let mul_float c1 c2 dbg =
 let div_float c1 c2 dbg =
   match (c1, c2) with
   | c, Cconst_float(f, _) ->
-      (* x = 0.5 if and only if f is a power of 2 *)
-      let x, exp = Float.frexp f in
+      let x, exp = Float.frexp f in (* x = 0.5 if and only if f is a power of 2 *)
       (* We can transform x/.2^{N} into x*.2^{-N} if and only if |N| < 1023,
-         because otherwise one of the may not be a valid floating point number
-         (2.**1023. evaluates to +infinity). *)
-      if x = 0.5 && abs exp < 1023
+         because otherwise one of them may not be a valid floating point number
+         (2.**1023. evaluates to +infinity). Here, N=exp-1. *)
+      if x = 0.5 && abs exp - 1 < 1023
       then
         mul_float c (Cconst_float(Float.ldexp 2.0 (-exp), dbg)) dbg
       else
@@ -258,7 +257,7 @@ let div_float c1 c2 dbg =
 
 let tag_int i dbg =
   match i with
-  | Cconst_int (n, _) ->
+    Cconst_int (n, _) ->
       int_const dbg n
   | Cop(Casr, [c; Cconst_int (n, _)], _) when n > 0 ->
       Cop(Cor,
@@ -269,7 +268,7 @@ let tag_int i dbg =
 
 let untag_int i dbg =
   match i with
-  | Cconst_int (n, _) -> Cconst_int(n asr 1, dbg)
+    Cconst_int (n, _) -> Cconst_int(n asr 1, dbg)
   | Cop(Cor, [Cop(Casr, [c; Cconst_int (n, _)], _); Cconst_int (1, _)], _)
     when n > 0 && n < size_int * 8 ->
       Cop(Casr, [c; Cconst_int (n+1, dbg)], dbg)
@@ -449,7 +448,7 @@ let raise_symbol dbg symb =
 
 let rec div_int c1 c2 is_safe dbg =
   match (c1, c2) with
-  | (c1, Cconst_int (0, _)) ->
+    (c1, Cconst_int (0, _)) ->
       Csequence(c1, raise_symbol dbg "caml_exn_Division_by_zero")
   | (c1, Cconst_int (1, _)) ->
       c1
@@ -505,7 +504,7 @@ let rec div_int c1 c2 is_safe dbg =
 
 let mod_int c1 c2 is_safe dbg =
   match (c1, c2) with
-  | (c1, Cconst_int (0, _)) ->
+    (c1, Cconst_int (0, _)) ->
       Csequence(c1, raise_symbol dbg "caml_exn_Division_by_zero")
   | (c1, Cconst_int ((1 | (-1)), _)) ->
       Csequence(c1, Cconst_int (0, dbg))
@@ -547,7 +546,7 @@ let mod_int c1 c2 is_safe dbg =
    can occur, in which case we force x / -1 = -x and x mod -1 = 0. (PR#5513). *)
 
 let is_different_from x = function
-  | Cconst_int (n, _) -> n <> x
+    Cconst_int (n, _) -> n <> x
   | Cconst_natint (n, _) -> n <> Nativeint.of_int x
   | _ -> false
 
@@ -627,7 +626,7 @@ let complex_im c dbg =
 let return_unit dbg c = Csequence(c, Cconst_int (1, dbg))
 
 let rec remove_unit = function
-  | Cconst_int (1, _) -> Ctuple []
+    Cconst_int (1, _) -> Ctuple []
   | Csequence(c, Cconst_int (1, _)) -> c
   | Csequence(c1, c2) ->
       Csequence(c1, remove_unit c2)
@@ -886,7 +885,7 @@ let curry_function_sym n =
 (* Big arrays *)
 
 let bigarray_elt_size : Lambda.bigarray_kind -> int = function
-  | Pbigarray_unknown -> assert false
+    Pbigarray_unknown -> assert false
   | Pbigarray_float32 -> 4
   | Pbigarray_float64 -> 8
   | Pbigarray_sint8 -> 1
@@ -910,7 +909,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
      transforms it into a one dimensional offset.  The offsets are expressions
      evaluating to tagged int. *)
   let rec ba_indexing dim_ofs delta_ofs = function
-  | [] -> assert false
+    [] -> assert false
   | [arg] ->
       if unsafe then arg
       else
@@ -944,7 +943,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
   (* The offset as an expression evaluating to int *)
   let offset =
     match (layout : Lambda.bigarray_layout) with
-    | Pbigarray_unknown_layout ->
+      Pbigarray_unknown_layout ->
         assert false
     | Pbigarray_c_layout ->
         ba_indexing (4 + List.length args) (-1) (List.rev args)
@@ -959,7 +958,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
                     [field_address b 1 dbg], dbg)) offset dbg
 
 let bigarray_word_kind : Lambda.bigarray_kind -> memory_chunk = function
-  | Pbigarray_unknown -> assert false
+    Pbigarray_unknown -> assert false
   | Pbigarray_float32 -> Single
   | Pbigarray_float64 -> Double
   | Pbigarray_sint8 -> Byte_signed
@@ -976,7 +975,7 @@ let bigarray_word_kind : Lambda.bigarray_kind -> memory_chunk = function
 let bigarray_get unsafe elt_kind layout b args dbg =
   bind "ba" b (fun b ->
     match (elt_kind : Lambda.bigarray_kind) with
-    | Pbigarray_complex32 | Pbigarray_complex64 ->
+      Pbigarray_complex32 | Pbigarray_complex64 ->
         let kind = bigarray_word_kind elt_kind in
         let sz = bigarray_elt_size elt_kind / 2 in
         bind "addr"
@@ -995,7 +994,7 @@ let bigarray_get unsafe elt_kind layout b args dbg =
 let bigarray_set unsafe elt_kind layout b args newval dbg =
   bind "ba" b (fun b ->
     match (elt_kind : Lambda.bigarray_kind) with
-    | Pbigarray_complex32 | Pbigarray_complex64 ->
+      Pbigarray_complex32 | Pbigarray_complex64 ->
         let kind = bigarray_word_kind elt_kind in
         let sz = bigarray_elt_size elt_kind / 2 in
         bind "newval" newval (fun newv ->
@@ -1044,13 +1043,13 @@ let zero_extend_32 dbg e =
 
 let operations_boxed_int (bi : Primitive.boxed_integer) =
   match bi with
-  | Pnativeint -> caml_nativeint_ops
+    Pnativeint -> caml_nativeint_ops
   | Pint32 -> caml_int32_ops
   | Pint64 -> caml_int64_ops
 
 let alloc_header_boxed_int (bi : Primitive.boxed_integer) =
   match bi with
-  | Pnativeint -> alloc_boxedintnat_header
+    Pnativeint -> alloc_boxedintnat_header
   | Pint32 -> alloc_boxedint32_header
   | Pint64 -> alloc_boxedint64_header
 
@@ -1413,7 +1412,7 @@ let int64_native_prim name arity ~alloc =
 
 let simplif_primitive_32bits :
   Clambda_primitives.primitive -> Clambda_primitives.primitive = function
-  | Pbintofint Pint64 -> Pccall (default_prim "caml_int64_of_int")
+    Pbintofint Pint64 -> Pccall (default_prim "caml_int64_of_int")
   | Pintofbint Pint64 -> Pccall (default_prim "caml_int64_to_int")
   | Pcvtbint(Pint32, Pint64) -> Pccall (default_prim "caml_int64_of_int32")
   | Pcvtbint(Pint64, Pint32) -> Pccall (default_prim "caml_int64_to_int32")
