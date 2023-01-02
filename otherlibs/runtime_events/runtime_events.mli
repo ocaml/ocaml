@@ -137,7 +137,7 @@ module Type : sig
   type 'a t
   (** The type for a user event content type *)
 
-  val event : unit t
+  val unit : unit t
   (** An event that has no data associated with it *)
 
   type span = Begin | End
@@ -145,8 +145,8 @@ module Type : sig
   val span : span t
   (** An event that has a beginning and an end *)
 
-  val counter : int t
-  (** A counter is a number *)
+  val int : int t
+  (** An event containing an integer value *)
 
   val register : encode:(bytes -> 'a -> int) -> decode:(bytes -> int -> 'a)
                                                                         -> 'a t

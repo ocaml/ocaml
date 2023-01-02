@@ -6,13 +6,13 @@ open Runtime_events
 (* let's register some custom events *)
 type User.tag += Libname | Counters of int
 
-let event = User.register "libname.event" Libname Type.event
+let event = User.register "libname.event" Libname Type.unit
 
 let span = User.register "libname.phase" Libname Type.span
 
-let counter = User.register "libname.counter" (Counters 1) Type.counter
+let counter = User.register "libname.counter" (Counters 1) Type.int
 
-let counter2 = User.register "libname.counter2" (Counters 2) Type.counter
+let counter2 = User.register "libname.counter2" (Counters 2) Type.int
 
 let custom_type =
   let encode buf value =
@@ -72,8 +72,8 @@ let () =
   let cursor = create_cursor None in
   let callbacks =
     Callbacks.create ()
-    |> Callbacks.add_user_event Type.event event_handler
-    |> Callbacks.add_user_event Type.counter counter_handler
+    |> Callbacks.add_user_event Type.unit event_handler
+    |> Callbacks.add_user_event Type.int counter_handler
     |> Callbacks.add_user_event Type.span span_handler
     |> Callbacks.add_user_event custom_type custom_handler
   in

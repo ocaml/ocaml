@@ -72,11 +72,11 @@ struct caml_runtime_events_cursor {
                     ev_lifecycle lifecycle, int64_t data);
   int (*lost_events)(int domain_id, void *callback_data, int lost_words);
   /* user events: mapped from type to callback */
-  int (*user_event)(int domain_id, void* callback_data, int64_t timestamp,
+  int (*user_unit)(int domain_id, void* callback_data, int64_t timestamp,
                       uintnat event_id, char* event_name);
   int (*user_span)(int domain_id, void* callback_data, int64_t timestamp,
                       uintnat event_id, char* event_name, ev_user_span value);
-  int (*user_counter)(int domain_id, void* callback_data, int64_t timestamp,
+  int (*user_int)(int domain_id, void* callback_data, int64_t timestamp,
                       uintnat event_id, char* event_name, uint64_t val);
   int (*user_custom)(int domain_id, void *callback_data, int64_t timestamp,
                       uintnat event_id, char* event_name,
@@ -233,8 +233,8 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
   cursor->alloc = NULL;
   cursor->lifecycle = NULL;
   cursor->lost_events = NULL;
-  cursor->user_event = NULL;
-  cursor->user_counter = NULL;
+  cursor->user_unit = NULL;
+  cursor->user_int = NULL;
   cursor->user_custom = NULL;
 
   *cursor_res = cursor;
@@ -289,13 +289,13 @@ void caml_runtime_events_set_lost_events(
   cursor->lost_events = f;
 }
 
-void caml_runtime_events_set_user_event(
+void caml_runtime_events_set_user_unit(
                                   struct caml_runtime_events_cursor *cursor,
                                   int (*f)(int domain_id, void *callback_data,
                                             int64_t timestamp,
                                             uintnat event_id,
                                             char* event_name)) {
-  cursor->user_event = f;
+  cursor->user_unit = f;
 }
 
 void caml_runtime_events_set_user_span(
@@ -308,14 +308,14 @@ void caml_runtime_events_set_user_span(
   cursor->user_span = f;
 }
 
-void caml_runtime_events_set_user_counter(
+void caml_runtime_events_set_user_int(
                                   struct caml_runtime_events_cursor *cursor,
                                   int (*f)(int domain_id, void *callback_data,
                                             int64_t timestamp,
                                             uintnat event_id,
                                             char* event_name,
                                             uint64_t val)) {
-  cursor->user_counter = f;
+  cursor->user_int = f;
 }
 
 void caml_runtime_events_set_user_custom(
@@ -504,9 +504,9 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
         ev_user_message_type event_type = RUNTIME_EVENTS_ITEM_TYPE(header);
 
         switch (event_type) {
-          case EV_USER_MSG_TYPE_EVENT:
-            if (cursor->user_event) {
-              if( !cursor->user_event(domain_num, callback_data, buf[1],
+          case EV_USER_MSG_TYPE_UNIT:
+            if (cursor->user_unit) {
+              if( !cursor->user_unit(domain_num, callback_data, buf[1],
                                       event_id, event_name) ) {
                                         early_exit = 1;
                                         continue;
@@ -530,9 +530,9 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
                                       }
             }
             break;
-          case EV_USER_MSG_TYPE_COUNTER:
-            if (cursor->user_counter) {
-              if( !cursor->user_counter(domain_num, callback_data, buf[1],
+          case EV_USER_MSG_TYPE_INT:
+            if (cursor->user_int) {
+              if( !cursor->user_int(domain_num, callback_data, buf[1],
                                       event_id, event_name, buf[2]) ) {
                                         early_exit = 1;
                                         continue;
@@ -891,7 +891,7 @@ static value caml_runtime_events_user_resolve_cached(
   CAMLreturn(event);
 }
 
-static int ml_user_event(int domain_id, void *callback_data, int64_t timestamp,
+static int ml_user_unit(int domain_id, void *callback_data, int64_t timestamp,
                            uintnat event_id, char* event_name) {
   CAMLparam0();
   CAMLlocal3(callback_list, event, callbacks_root);
@@ -904,7 +904,7 @@ static int ml_user_event(int domain_id, void *callback_data, int64_t timestamp,
 
   event = caml_runtime_events_user_resolve_cached(wrapper_root, event_id,
                                                                 event_name,
-                                                         EV_USER_ML_TYPE_EVENT);
+                                                         EV_USER_ML_TYPE_UNIT);
 
   callback_list = user_events_find_callback_list_for_event_type(callbacks_root,
                                                                 event);
@@ -967,7 +967,7 @@ static int ml_user_span(int domain_id, void *callback_data, int64_t timestamp,
   return 1;
 }
 
-static int ml_user_counter(int domain_id, void *callback_data,
+static int ml_user_int(int domain_id, void *callback_data,
                            int64_t timestamp, uintnat event_id,
                            char* event_name, uint64_t val) {
   CAMLparam0();
@@ -981,7 +981,7 @@ static int ml_user_counter(int domain_id, void *callback_data,
 
   event = caml_runtime_events_user_resolve_cached(wrapper_root, event_id,
                                                                   event_name,
-                                   EV_USER_ML_TYPE_COUNTER);
+                                   EV_USER_ML_TYPE_INT);
 
   callback_list = user_events_find_callback_list_for_event_type(callbacks_root,
                                                                 event);
@@ -1128,9 +1128,9 @@ CAMLprim value caml_ml_runtime_events_create_cursor(value path_pid_option) {
   caml_runtime_events_set_alloc(cursor, ml_alloc);
   caml_runtime_events_set_lifecycle(cursor, ml_lifecycle);
   caml_runtime_events_set_lost_events(cursor, ml_lost_events);
-  caml_runtime_events_set_user_event(cursor, ml_user_event);
+  caml_runtime_events_set_user_unit(cursor, ml_user_unit);
   caml_runtime_events_set_user_span(cursor, ml_user_span);
-  caml_runtime_events_set_user_counter(cursor, ml_user_counter);
+  caml_runtime_events_set_user_int(cursor, ml_user_int);
   caml_runtime_events_set_user_custom(cursor, ml_user_custom);
 
   Cursor_val(wrapper) = cursor;

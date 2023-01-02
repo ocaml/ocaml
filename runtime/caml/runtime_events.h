@@ -184,8 +184,8 @@ struct runtime_events_custom_event {
 /* The type for event messages in the ring. Span is separated in two types as an
    optimization to avoid associating a value with the span event. */
 typedef enum {
-   EV_USER_MSG_TYPE_EVENT,
-   EV_USER_MSG_TYPE_COUNTER,
+   EV_USER_MSG_TYPE_UNIT,
+   EV_USER_MSG_TYPE_INT,
    EV_USER_MSG_TYPE_SPAN_BEGIN,
    EV_USER_MSG_TYPE_SPAN_END,
    EV_USER_MSG_TYPE_CUSTOM
@@ -198,8 +198,8 @@ typedef union {
 
 /* The type for event messages in OCaml. */
 typedef enum {
-   EV_USER_ML_TYPE_EVENT,
-   EV_USER_ML_TYPE_COUNTER,
+   EV_USER_ML_TYPE_UNIT,
+   EV_USER_ML_TYPE_INT,
    EV_USER_ML_TYPE_SPAN,
    EV_USER_ML_TYPE_CUSTOM
 } ev_user_ml_type;

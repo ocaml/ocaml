@@ -11,7 +11,7 @@ open Runtime_events
 type User.tag += Ev of int
 
 let ev0 =
-  User.register "ev0" (Ev 0) Type.counter
+  User.register "ev0" (Ev 0) Type.int
 
 let () =
   start ();
@@ -20,8 +20,8 @@ let () =
   (* child generates events*)
   if child_pid == 0 then
   begin
-    let ev1 = User.register "ev1" (Ev 1) Type.counter in
-    let ev2 = User.register "ev2" (Ev 2) Type.counter in
+    let ev1 = User.register "ev1" (Ev 1) Type.int in
+    let ev2 = User.register "ev2" (Ev 2) Type.int in
     let ev3 = User.register "ev3" (Ev 3) Type.span in
     User.write ev0 17;
     User.write ev1 12;
@@ -44,7 +44,7 @@ let () =
   in
   let callbacks =
     Callbacks.create ()
-    |> Callbacks.add_user_event Type.counter callback_counter
+    |> Callbacks.add_user_event Type.int callback_counter
     |> Callbacks.add_user_event Type.span callback_span
   in
   for _ = 0 to 10 do

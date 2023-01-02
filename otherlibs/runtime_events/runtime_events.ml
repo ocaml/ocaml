@@ -169,16 +169,16 @@ module Type = struct
   type span = Begin | End
 
   type 'a t =
-  | Event : unit t
-  | Counter : int t
+  | Unit : unit t
+  | Int : int t
   | Span : span t
   | Custom : 'a custom -> 'a t
 
-  let event = Event
+  let unit = Unit
 
   let span = Span
 
-  let counter = Counter
+  let int = Int
 
   let next_id = ref 3
 
@@ -187,8 +187,8 @@ module Type = struct
     Custom { serialize = encode; deserialize = decode; id = !next_id - 1}
 
   let id: type a. a t -> int = function
-    | Event -> 0
-    | Counter -> 1
+    | Unit -> 0
+    | Int -> 1
     | Span -> 2
     | Custom {id; _} -> id
 
@@ -197,8 +197,8 @@ end
 module User = struct
   type tag = ..
 
-  (* the UNK tag is used when an unknown event of a known type (event or
-     counter) is received *)
+  (* the UNK tag is used when an unknown event of a known type (unit, int, span)
+     is received *)
   type tag += UNK : tag
 
   (* the data structure is primarily managed in C *)

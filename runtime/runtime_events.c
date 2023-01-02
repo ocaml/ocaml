@@ -717,8 +717,8 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
   event_type = Field(event, 2);
   /* event_type type:
   type 'a t =
-  | Event : unit t
-  | Counter : int t
+  | Unit : unit t
+  | Int : int t
   | Span : span t
   | Custom : 'a custom -> 'a t
   */
@@ -756,20 +756,20 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
     caml_plat_unlock(&write_buffer_lock);
 
   } else {
-    // Event | Counter | Span
+    // Unit | Int | Span
 
     int event_type_id = Int_val(event_type);
 
-    // Event
-    if (event_type_id == EV_USER_ML_TYPE_EVENT) {
-      write_to_ring(EV_USER, (ev_message_type){.user=EV_USER_MSG_TYPE_EVENT},
+    // Unit
+    if (event_type_id == EV_USER_ML_TYPE_UNIT) {
+      write_to_ring(EV_USER, (ev_message_type){.user=EV_USER_MSG_TYPE_UNIT},
         Int_val(event_id), 0, NULL, 0);
     }
 
-    // Counter
-    if (event_type_id == EV_USER_ML_TYPE_COUNTER) {
+    // Int
+    if (event_type_id == EV_USER_ML_TYPE_INT) {
       uint64_t c_event_content = Int_val(event_content);
-      write_to_ring(EV_USER, (ev_message_type){.user=EV_USER_MSG_TYPE_COUNTER},
+      write_to_ring(EV_USER, (ev_message_type){.user=EV_USER_MSG_TYPE_INT},
         Int_val(event_id), 1, &c_event_content, 0);
     }
 
