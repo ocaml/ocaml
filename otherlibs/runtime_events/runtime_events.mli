@@ -135,15 +135,15 @@ end
 
 module Type : sig
   type 'a t
-  (** The type for an user event content type *)
+  (** The type for a user event content type *)
 
   val event : unit t
-  (** An event has no data associated with it *)
+  (** An event that has no data associated with it *)
 
   type span = Begin | End
 
   val span : span t
-  (** An event that have a beginning and an end *)
+  (** An event that has a beginning and an end *)
 
   val counter : int t
   (** A counter is a number *)
@@ -164,11 +164,11 @@ module User : sig
       values. The current maximum number of user events is 8192. *)
 
   type tag = ..
-  (** The type for an user event tag. Tags are used to discriminate between
+  (** The type for a user event tag. Tags are used to discriminate between
       user events of the same type *)
 
   type 'value t
-  (** The type for an user event. User events describe their tag, carried data
+  (** The type for a user event. User events describe their tag, carried data
       type and an unique string-based name *)
 
   val register : string -> tag -> 'value Type.t -> 'value t
