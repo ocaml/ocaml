@@ -698,6 +698,12 @@ AS_CASE([$ocaml_cv_cc_vendor],
   cc_warnings="-Wall -Wint-conversion -Wstrict-prototypes \
 -Wold-style-definition"])
 
+# Use [$warn_error_flag] to turn a warning on an unrecognized flag to
+# a hard error with a non-zero exit code value, otherwise detection of
+# the flag fails.
+OCAML_CC_SUPPORTS_CFLAG([-Wold-style-declaration], [$warn_error_flag],
+  [cc_warnings="$cc_warnings -Wold-style-declaration"])
+
 AS_CASE([$enable_warn_error,OCAML__DEVELOPMENT_VERSION],
   [yes,*|,true],
     [cc_warnings="$cc_warnings $warn_error_flag"])

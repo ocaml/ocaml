@@ -13678,6 +13678,51 @@ case $ocaml_cv_cc_vendor in #(
 -Wold-style-definition" ;;
 esac
 
+# Use [$warn_error_flag] to turn a warning on an unrecognized flag to
+# a hard error with a non-zero exit code value, otherwise detection of
+# the flag fails.
+
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports -Wold-style-declaration" >&5
+printf %s "checking whether the C compiler supports -Wold-style-declaration... " >&6; }
+if test ${ax_cv_ocaml_cflags__Wold_style_declaration+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+    saved_CFLAGS="$CFLAGS"
+    CFLAGS="$CFLAGS -Wold-style-declaration $warn_error_flag"
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  ax_cv_ocaml_cflags__Wold_style_declaration=yes
+else $as_nop
+  ax_cv_ocaml_cflags__Wold_style_declaration=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+    CFLAGS="$saved_CFLAGS"
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ax_cv_ocaml_cflags__Wold_style_declaration" >&5
+printf "%s\n" "$ax_cv_ocaml_cflags__Wold_style_declaration" >&6; }
+  if test "x$ax_cv_ocaml_cflags__Wold_style_declaration" = xyes
+then :
+  cc_warnings="$cc_warnings -Wold-style-declaration"
+else $as_nop
+  :
+fi
+
+
+
 case $enable_warn_error,true in #(
   yes,*|,true) :
     cc_warnings="$cc_warnings $warn_error_flag" ;; #(
