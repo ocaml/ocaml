@@ -53,30 +53,59 @@ exception Error_forward of Location.error
 
 module TyVarEnv : sig
   val reset : unit -> unit
+  (* see mli file *)
+
   val is_in_scope : string -> bool
+
   val add : string -> type_expr -> unit
+  (* add a global type variable to the environment *)
 
   val with_local_scope : (unit -> 'a) -> 'a
+  (* see mli file *)
 
   type poly_univars
   val with_univars : poly_univars -> (unit -> 'a) -> 'a
+  (* evaluate with a locally extended set of univars *)
+
   val make_poly_univars : string list -> poly_univars
+  (* see mli file *)
+
   val check_poly_univars : Env.t -> Location.t -> poly_univars -> type_expr list
+  (* see mli file *)
 
   type policy
-  val fixed_policy : policy
-  val extensible_policy : policy
-  val univars_policy : policy
+  val fixed_policy : policy (* no wildcards allowed *)
+  val extensible_policy : policy (* common case *)
+  val univars_policy : policy (* fresh variables are univars (in methods) *)
   val new_any_var : Location.t -> Env.t -> policy -> type_expr
+    (* create a new variable to represent a _; fails for fixed_policy *)
   val new_var : ?name:string -> policy -> type_expr
+    (* create a new variable according to the given policy *)
+
   val add_pre_univar : type_expr -> policy -> unit
+    (* remember that a variable might become a univar if it isn't unified *)
   val collect_pre_univars : (unit -> 'a) -> 'a * type_expr list
+    (* collect univars during a computation; returns the univars
+       postcondition: the returned type_exprs are all Tunivar *)
 
   val reset_locals : ?univars:poly_univars -> unit -> unit
+    (* clear out the local type variable env't; call this when starting
+       a new e.g. type signature. Optionally pass some univars that
+       are in scope. *)
+
   val lookup_local : string -> type_expr
+    (* look up a local type variable; throws Not_found if it isn't in scope *)
+
   val remember_used : string -> type_expr -> Location.t -> unit
+    (* remember that a given name is bound to a given type at a given location *)
+
   val globalize_used_variables : globals_only:bool -> Env.t ->
     fixed:bool -> unit -> unit
+    (* after finishing with a type signature, add used variables to the
+       global type variable scope; with globals_only, only already-in-scope
+       variables are considered (but they are still unified with the global
+       type variables *)
+
 end = struct
   (** Map indexed by type variable names. *)
   module TyVarMap = Misc.Stdlib.String.Map
