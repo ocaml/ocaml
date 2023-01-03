@@ -2545,7 +2545,7 @@ let check_univars env kind exp ty_expected vars =
 
 let generalize_and_check_univars env kind exp ty_expected vars =
   generalize exp.exp_type;
-  generalize ty_expected;
+  generalize_structure ty_expected;
   List.iter generalize vars;
   check_univars env kind exp ty_expected vars
 
@@ -5169,11 +5169,13 @@ and type_let
       end_def ();
       iter_pattern_variables_type generalize_structure pvs;
       List.map (fun pat ->
-        generalize_structure pat.pat_type;
-        {pat with pat_type = instance pat.pat_type}
+        let ty = pat.pat_type in
+        generalize_structure ty;
+        {pat with pat_type = instance ty}, ty
       ) pat_list
-    end else
-      pat_list
+    end else begin
+      List.map (fun pat -> (pat, pat.pat_type)) pat_list
+    end
   in
   (* Only bind pattern variables after generalizing *)
   List.iter (fun f -> f()) force;
@@ -5212,7 +5214,7 @@ and type_let
            || (is_recursive && (Warnings.is_active Warnings.Unused_rec_flag))))
       attrs_list
   in
-  let pat_slot_list =
+  let typ_slot_list =
     (* Algorithm to detect unused declarations in recursive bindings:
        - During type checking of the definitions, we capture the 'value_used'
          events on the bound identifiers and record them in a slot corresponding
@@ -5230,9 +5232,9 @@ and type_let
        warning is 26, not 27.
      *)
     List.map2
-      (fun attrs pat ->
+      (fun attrs (pat, expected_ty) ->
          Builtin_attributes.warning_scope ~ppwarning:false attrs (fun () ->
-           if not warn_about_unused_bindings then pat, None
+           if not warn_about_unused_bindings then expected_ty, None
            else
              let some_used = ref false in
              (* has one of the identifier of this pattern been used? *)
@@ -5264,16 +5266,16 @@ and type_let
                     )
                )
                (Typedtree.pat_bound_idents pat);
-             pat, Some slot
+             expected_ty, Some slot
          ))
       attrs_list
       pat_list
   in
   let exp_list =
     List.map2
-      (fun {pvb_expr=sexp; pvb_attributes; _} (pat, slot) ->
+      (fun {pvb_expr=sexp; pvb_attributes; _} (expected_ty, slot) ->
         if is_recursive then current_slot := slot;
-        match get_desc pat.pat_type with
+        match get_desc expected_ty with
         | Tpoly (ty, tl) ->
             if !Clflags.principal then begin_def ();
             let vars, ty' = instance_poly ~keep_names:true true tl ty in
@@ -5294,12 +5296,13 @@ and type_let
             let exp =
               Builtin_attributes.warning_scope pvb_attributes (fun () ->
                   if rec_flag = Recursive then
-                    type_unpacks exp_env unpacks sexp (mk_expected pat.pat_type)
+                    type_unpacks exp_env unpacks
+                      sexp (mk_expected expected_ty)
                   else
-                    type_expect exp_env sexp (mk_expected pat.pat_type))
+                    type_expect exp_env sexp (mk_expected expected_ty))
             in
             exp, None)
-      spat_sexp_list pat_slot_list in
+      spat_sexp_list typ_slot_list in
   current_slot := None;
   if is_recursive && not !rec_needed then begin
     let {pvb_pat; pvb_attributes} = List.hd spat_sexp_list in
@@ -5310,7 +5313,7 @@ and type_let
       )
   end;
   List.iter2
-    (fun pat (attrs, exp) ->
+    (fun (pat, _) (attrs, exp) ->
        Builtin_attributes.warning_scope ~ppwarning:false attrs
          (fun () ->
             ignore(check_partial env pat.pat_type pat.pat_loc
@@ -5322,13 +5325,13 @@ and type_let
   let pvs = List.map (fun pv -> { pv with pv_type = instance pv.pv_type}) pvs in
   end_def();
   List.iter2
-    (fun pat (exp, _) ->
+    (fun (pat, _) (exp, _) ->
        if maybe_expansive exp then
          lower_contravariant env pat.pat_type)
     pat_list exp_list;
   iter_pattern_variables_type generalize pvs;
   List.iter2
-    (fun pat (exp, vars) ->
+    (fun (_, expected_ty) (exp, vars) ->
        match vars with
        | None ->
          (* We generalize expressions even if they are not bound to a variable
@@ -5344,12 +5347,12 @@ and type_let
        | Some vars ->
            if maybe_expansive exp then
              lower_contravariant env exp.exp_type;
-           generalize_and_check_univars env "definition" exp pat.pat_type vars)
+           generalize_and_check_univars env "definition" exp expected_ty vars)
     pat_list exp_list;
   let l = List.combine pat_list exp_list in
   let l =
     List.map2
-      (fun (p, (e, _)) pvb ->
+      (fun ((p, _), (e, _)) pvb ->
         {vb_pat=p; vb_expr=e; vb_attributes=pvb.pvb_attributes;
          vb_loc=pvb.pvb_loc;
         })
