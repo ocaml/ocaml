@@ -112,6 +112,11 @@ let map_inplace f a =
     unsafe_set a i (f (unsafe_get a i))
   done
 
+let mapi_inplace f a =
+  for i = 0 to length a - 1 do
+    unsafe_set a i (f i (unsafe_get a i))
+  done
+
 let map2 f a b =
   let la = length a in
   let lb = length b in

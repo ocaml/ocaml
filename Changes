@@ -85,8 +85,10 @@ Working version
   as well as tail-recursive.
   (Jeremy Yallop, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
-- #11836: Add `Array.map_inplace`.
-  (Léo Andrès, review by Gabriel Scherer and KC Sivaramakrishnan)
+- #11836, #11837: Add `Array.map_inplace`, `Array.mapi_inplace`,
+  `Float.Array.mapi_inplace` and `Float.Array.mapi_inplace`.
+  (Léo Andrès, review by Gabriel Scherer, KC Sivaramakrishnan and
+  Nicolás Ojeda Bär)
 
 - #11410: Add Set.to_list, Map.to_list, Map.of_list, Map.add_to_list,
   (Daniel Bünzli, review by Nicolás Ojeda Bär and Gabriel Scherer)
