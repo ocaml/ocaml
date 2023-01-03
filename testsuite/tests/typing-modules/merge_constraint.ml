@@ -58,8 +58,8 @@ module VarianceEnv :
         type 'a user = Foo of 'a abstract
         module M :
           sig
-            type 'a abstract = 'a abstract
-            type 'a user = 'a user = Foo of 'a abstract
+            type 'a abstract = 'a abstract/2
+            type 'a user = 'a user/2 = Foo of 'a abstract
           end
         type 'a foo = 'a M.user
       end
@@ -93,8 +93,8 @@ module UnboxedEnv :
         type t = T : 'e ind -> t [@@unboxed]
         module type ReboundSig =
           sig
-            type 'a ind = 'a ind
-            type t = t/2 = T : 'a ind -> t/1 [@@unboxed]
+            type 'a ind = 'a ind/2
+            type t = t/2 = T : 'a ind -> t [@@unboxed]
           end
       end
   end
@@ -115,7 +115,7 @@ module ParamsUnificationEnv :
       sig type 'a u = 'a list type +'a t constraint 'a = 'b u end
     type +'a t = 'b constraint 'a = 'b list
     module type Sig2 =
-      sig type 'a u = 'a list type +'a t = 'a t constraint 'a = 'b u end
+      sig type 'a u = 'a list type +'a t = 'a t/2 constraint 'a = 'b u end
   end
 |}]
 
@@ -147,7 +147,7 @@ module CorrectEnvConstructionTest :
         and +'a abstract
         module M :
           sig
-            type 'a user = 'a user = Foo of 'a abstract/1
+            type 'a user = 'a user/2 = Foo of 'a abstract
             and 'a abstract = 'a abstract/2
           end
         type 'a foo = 'a M.user

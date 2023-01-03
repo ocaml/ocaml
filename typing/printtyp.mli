@@ -58,9 +58,6 @@ module Naming_context: sig
   val enable: bool -> unit
   (** When contextual names are enabled, the mapping between identifiers
       and names is ensured to be one-to-one. *)
-
-  val reset: unit -> unit
-  (** Reset the naming context *)
 end
 
 (** The [Conflicts] module keeps track of conflicts arising when attributing
