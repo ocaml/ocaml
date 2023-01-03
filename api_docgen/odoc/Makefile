@@ -42,7 +42,7 @@ endef
 
 # define the right conditional for the manual
 build/latex/ifocamldoc.tex: | build/latex
-	printf '\\newif\\ifocamldoc\\ocamldocfalse\n' > $@
+	$(V_GEN)printf '\\newif\\ifocamldoc\\ocamldocfalse\n' > $@
 
 
 # \input{} all modules in the stdlib for the latex api manual
@@ -52,10 +52,10 @@ $(filter-out stdlib camlinternal%, $(STDLIB:stdlib__%=%)),\
 )
 
 build/latex/stdlib_input.tex: | build/latex
-	echo $(stdlib_INPUT)> $@
+	$(V_GEN)echo $(stdlib_INPUT)> $@
 
 build/latex/compilerlibs_input.tex: | build/latex
-	echo $(compilerlibref_C:%=\\input{compilerlibref/%})> $@
+	$(V_GEN)echo $(compilerlibref_C:%=\\input{compilerlibref/%})> $@
 
 # The build process for odoc has 3 phases:
 # 1. generation of internal individual documentation files  (.odoc)
@@ -65,26 +65,26 @@ build/latex/compilerlibs_input.tex: | build/latex
 # rules for the mld files
 $(libref_TEXT:%=build/libref/page-%.odoc):
 build/libref/page-%.odoc: build/%.mld | build/libref
-	$(odoc) compile -I build/libref --package libref $< -o $@
+	$(V_ODOC)$(odoc) compile -I build/libref --package libref $< -o $@
 
 $(compilerlibref_TEXT:%=build/compilerlibref/page-%.odoc):\
 build/compilerlibref/page-%.odoc: build/%.mld | build/compilerlibref
-	$(odoc) compile -I build/libref --package compilerlibref $< -o $@
+	$(V_ODOC)$(odoc) compile -I build/libref --package compilerlibref $< -o $@
 
 # rules for the stdlib and otherlibs .doc files
 $(libref:%=build/libref/%.odoc):\
 build/libref/%.odoc: %.cmti | build/libref
-	$(odoc) compile -I build/libref  --package libref $< -o $@
+	$(V_ODOC)$(odoc) compile -I build/libref  --package libref $< -o $@
 
 # pervasives is handled separatedly due to the lack of cmti file
 $(libref_EXTRA:%=build/libref/%.odoc):build/libref/%.odoc:%.cmt
-	$(odoc) compile -I build/libref --package libref $< -o $@
+	$(V_ODOC)$(odoc) compile -I build/libref --package libref $< -o $@
 
 # rules for the compilerlib documentation
 $(compilerlibref:%=build/compilerlibref/%.odoc):\
 build/compilerlibref/%.odoc: %.cmti $(libref:%=build/libref/%.odoc) \
 | build/compilerlibref
-	$(odoc) compile -I build/libref -I build/compilerlibref \
+	$(V_ODOC)$(odoc) compile -I build/libref -I build/compilerlibref \
 	--package compilerlibref $< -o $@
 
 ALL_TEXT = $(libref_TEXT:%=libref/%) $(compilerlibref_TEXT:%=compilerlibref/%)
@@ -101,11 +101,11 @@ ALL_PAGED_DOC = $(TARGET_UNITS) $(ALL_PAGE_TEXT)
 # the individual file dependencies
 %.odocl:%.odoc \
   | $(ALL_PAGED_DOC:%=build/%.odoc)
-	$(odoc) link -I build/libref -I build/compilerlibref $(ODOC_LINK_ARGS) $<
+	$(V_ODOC)$(odoc) link -I build/libref -I build/compilerlibref $(ODOC_LINK_ARGS) $<
 
 %.odocl:%.odoc \
   | $(ALL_PAGED_DOC:%=build/%.odoc)
-	$(odoc) link -I build/libref -I build/compilerlibref $(ODOC_LINK_ARGS) $<
+	$(V_ODOC)$(odoc) link -I build/libref -I build/compilerlibref $(ODOC_LINK_ARGS) $<
 
 build/libref/stdlib.odocl: ODOC_LINK_ARGS+=--open=""
 
@@ -125,15 +125,15 @@ html: build/libref/index.html.stamp build/compilerlibref/index.html.stamp
 
 # Html rules
 $(ALL_HTML): %.html.stamp: %.odocl | build/html
-	$(odoc) html-generate --output-dir build/html  $<
+	$(V_ODOC)$(odoc) html-generate --output-dir build/html  $<
 	touch $@
 
 build/html/odoc.css: | build/html
-	$(odoc) support-files --output-dir build/html
+	$(V_ODOC)$(odoc) support-files --output-dir build/html
 
 $(build/libref.html.stamp build/compilerlibref.html.stamp):
 %.html.stamp: %.mld | build/
-	$(odoc) html-generate --output-dir build/html  $<
+	$(V_ODOC)$(odoc) html-generate --output-dir build/html  $<
 	touch $@
 
 # Html indexes for the api documentation
