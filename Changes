@@ -100,9 +100,14 @@ Working version
   (Greta Yorsh, review by Xavier Leroy, Guillaume Melquiond and
   Gabriel Scherer)
 
-- #11026, #11858: Rename the type of the accumulator of fold functions
-  to 'acc (Valentin Gatien-Baron, report by Francois Berenger, review
-  by Gabriel Scherer)
+- #11026, #11667, #11858: Rename the type of the accumulator
+  of fold functions to 'acc:
+  fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a list -> 'acc
+  fold_right : ('a -> 'acc -> 'acc) -> 'a list -> 'acc -> 'acc
+  fold_left_map : ('acc -> 'a -> 'acc * 'b) -> 'acc -> 'a list -> 'acc * 'b list
+  ...
+  (Valentin Gatien-Baron and Francois Berenger,
+  review by Gabriel Scherer and Nicolás Ojeda Bär)
 
 - #11246: Add "hash" and "seeded_hash" functions to Bool, Int, Char, Float,
   Int32, Int64, and Nativeint.
