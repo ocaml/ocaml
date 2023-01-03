@@ -815,7 +815,7 @@ external snd : 'a * 'b -> 'b = "%field1"
 *)
 
 val ( @ ) : 'a list -> 'a list -> 'a list
-(** List concatenation.  Not tail-recursive (length of the first argument).
+(** List concatenation.
   Right-associative operator, see {!Ocaml_operators} for more information.
 *)
 

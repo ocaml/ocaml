@@ -104,8 +104,6 @@ val init : int -> (int -> 'a) -> 'a list
 
 val append : 'a list -> 'a list -> 'a list
 (** Concatenate two lists. Same function as the infix operator [@].
-   Not tail-recursive (length of the first argument). The [@]
-   operator is not tail-recursive either.
  *)
 
 val rev_append : 'a list -> 'a list -> 'a list
