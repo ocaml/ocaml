@@ -182,13 +182,13 @@ val mapi : (int -> char -> char) -> bytes -> bytes
     index (in increasing index order) and stores the resulting bytes
     in a new sequence that is returned as the result. *)
 
-val fold_left : ('a -> char -> 'a) -> 'a -> bytes -> 'a
+val fold_left : ('acc -> char -> 'acc) -> 'acc -> bytes -> 'acc
 (** [fold_left f x s] computes
     [f (... (f (f x (get s 0)) (get s 1)) ...) (get s (n-1))],
     where [n] is the length of [s].
     @since 4.13 *)
 
-val fold_right : (char -> 'a -> 'a) -> bytes -> 'a -> 'a
+val fold_right : (char -> 'acc -> 'acc) -> bytes -> 'acc -> 'acc
 (** [fold_right f s x] computes
     [f (get s 0) (f (get s 1) ( ... (f (get s (n-1)) x) ...))],
     where [n] is the length of [s].

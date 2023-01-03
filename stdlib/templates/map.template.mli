@@ -236,7 +236,8 @@ module type S =
         as second argument.  The bindings are passed to [f] in increasing
         order with respect to the ordering over the type of the keys. *)
 
-    val fold: f:(key:key -> data:'a -> 'b -> 'b) -> 'a t -> init:'b -> 'b
+    val fold:
+      f:(key:key -> data:'a -> 'acc -> 'acc) -> 'a t -> init:'acc -> 'acc
     (** [fold ~f m ~init] computes [(f kN dN ... (f k1 d1 init)...)],
         where [k1 ... kN] are the keys of all bindings in [m]
         (in increasing order), and [d1 ... dN] are the associated data. *)

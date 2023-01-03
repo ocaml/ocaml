@@ -170,18 +170,18 @@ val mapi : (int -> 'a -> 'b) -> 'a array -> 'b array
    function is applied to the index of the element as first argument,
    and the element itself as second argument. *)
 
-val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
+val fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a array -> 'acc
 (** [fold_left f init a] computes
    [f (... (f (f init a.(0)) a.(1)) ...) a.(n-1)],
    where [n] is the length of the array [a]. *)
 
 val fold_left_map :
-  ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
+  ('acc -> 'a -> 'acc * 'b) -> 'acc -> 'a array -> 'acc * 'b array
 (** [fold_left_map] is a combination of {!fold_left} and {!map} that threads an
     accumulator through calls to [f].
     @since 4.13 *)
 
-val fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
+val fold_right : ('a -> 'acc -> 'acc) -> 'a array -> 'acc -> 'acc
 (** [fold_right f a init] computes
    [f a.(0) (f a.(1) ( ... (f a.(n-1) init) ...))],
    where [n] is the length of the array [a]. *)

@@ -175,7 +175,7 @@ module type S = sig
         order.  It is not specified what happens if [f] tries to change
         [t] itself. *)
 
-  val fold : (data -> 'a -> 'a) -> t -> 'a -> 'a
+  val fold : (data -> 'acc -> 'acc) -> t -> 'acc -> 'acc
     (** [fold f t init] computes [(f d1 (... (f dN init)))] where
         [d1 ... dN] are the elements of [t] in some unspecified order.
         It is not specified what happens if [f] tries to change [t]

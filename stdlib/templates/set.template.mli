@@ -200,7 +200,7 @@ module type S =
         The elements of [s] are presented to [f] in increasing order
         with respect to the ordering over the type of the elements. *)
 
-    val fold: f:(elt -> 'a -> 'a) -> t -> init:'a -> 'a
+    val fold: f:(elt -> 'acc -> 'acc) -> t -> init:'acc -> 'acc
     (** [fold ~f s init] computes [(f xN ... (f x2 (f x1 init))...)],
         where [x1 ... xN] are the elements of [s], in increasing order. *)
 
