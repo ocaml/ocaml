@@ -103,7 +103,8 @@ val init : int -> (int -> 'a) -> 'a list
  *)
 
 val append : 'a list -> 'a list -> 'a list
-(** Concatenate two lists. Same function as the infix operator [@].
+(** [append l0 l1] appends [l1] to [l0].
+     Same function as the infix operator [@].
  *)
 
 val rev_append : 'a list -> 'a list -> 'a list

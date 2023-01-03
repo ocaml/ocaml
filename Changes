@@ -82,7 +82,7 @@ Working version
 ### Standard library:
 
 - #11859: Make Stdlib.(@) and List.append tail-recursive and faster.
-  (Jeremy Yallop, review by )
+  (Jeremy Yallop, review by Daniel Bünzli)
 
 - #11856: Rewrite List.concat_map using TRMC, making it faster
   as well as tail-recursive.
