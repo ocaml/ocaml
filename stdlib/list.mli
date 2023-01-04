@@ -105,6 +105,7 @@ val init : int -> (int -> 'a) -> 'a list
 val append : 'a list -> 'a list -> 'a list
 (** [append l0 l1] appends [l1] to [l0].
      Same function as the infix operator [@].
+     @since 5.1 this function is tail-recursive.
  *)
 
 val rev_append : 'a list -> 'a list -> 'a list
