@@ -1232,6 +1232,19 @@ static char collection_slice_mode_char(collection_slice_mode mode)
   }
 }
 
+static int sweep_must_be_noexc(collection_slice_mode mode)
+{
+  switch(mode) {
+    case Slice_uninterruptible:
+    case Slice_interruptible:
+      return 0;
+    case Slice_opportunistic:
+      return 1;
+    default:
+      return 0;
+  }
+}
+
 #define Chunk_size 0x400
 
 static intnat major_collection_slice(intnat howmuch,
@@ -1272,7 +1285,8 @@ static intnat major_collection_slice(intnat howmuch,
 
     do {
       available = budget > Chunk_size ? Chunk_size : budget;
-      left = caml_sweep(domain_state->shared_heap, available);
+      int noexc = sweep_must_be_noexc(mode);
+      left = caml_sweep(domain_state->shared_heap, available, noexc);
       budget -= available - left;
       sweep_work += available - left;
 
@@ -1532,7 +1546,7 @@ void caml_finish_sweeping (void)
   if (Caml_state->sweeping_done) return;
   CAML_EV_BEGIN(EV_MAJOR_FINISH_SWEEPING);
   while (!Caml_state->sweeping_done) {
-    if (caml_sweep(Caml_state->shared_heap, 10) > 0) {
+    if (caml_sweep(Caml_state->shared_heap, 10, 0 /* noexc */) > 0) {
       /* just finished sweeping */
       CAMLassert(Caml_state->sweeping_done == 0);
       Caml_state->sweeping_done = 1;

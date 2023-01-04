@@ -30,7 +30,8 @@ struct pool;
 struct caml_heap_state* caml_init_shared_heap(void);
 void caml_teardown_shared_heap(struct caml_heap_state* heap);
 
-value* caml_shared_try_alloc(struct caml_heap_state*, mlsize_t, tag_t, int);
+value* caml_shared_try_alloc(struct caml_heap_state*, mlsize_t, tag_t,
+                             int noexc, int pinned);
 
 /* Copy the domain-local heap stats into a heap stats sample. */
 void caml_collect_heap_stats_sample(
@@ -81,7 +82,7 @@ Caml_inline int is_marked(value v) {
 
 void caml_redarken_pool(struct pool*, scanning_action, void*);
 
-intnat caml_sweep(struct caml_heap_state*, intnat);
+intnat caml_sweep(struct caml_heap_state*, intnat work, int noexc);
 
 
 /* must be called during STW */

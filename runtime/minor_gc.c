@@ -147,6 +147,7 @@ struct oldify_state {
 static value alloc_shared(caml_domain_state* d, mlsize_t wosize, tag_t tag)
 {
   void* mem = caml_shared_try_alloc(d->shared_heap, wosize, tag,
+                                    1 /* noexc */,
                                     0 /* not pinned */);
   d->allocated_words += Whsize_wosize(wosize);
   if (mem == NULL) {

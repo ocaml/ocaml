@@ -252,12 +252,14 @@ Caml_inline void pool_initialize(pool* r,
 /* Allocating an object from a pool */
 static intnat pool_sweep(struct caml_heap_state* local,
                          pool**,
-                         sizeclass sz ,
+                         sizeclass sz,
+                         int noexc,
                          int release_to_global_pool);
 
 /* Adopt pool from the pool_freelist avail and full pools
    to satisfy an allocation */
-static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
+static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz,
+                               int noexc)
 {
   pool* r = NULL;
   int adopted_pool = 0;
@@ -311,14 +313,16 @@ static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
 
   if( !r && adopted_pool ) {
     local->owner->major_work_todo -=
-      pool_sweep(local, &local->full_pools[sz], sz, 0);
+      pool_sweep(local, &local->full_pools[sz], sz, noexc, 0);
     r = local->avail_pools[sz];
   }
   return r;
 }
 
 /* Allocating an object from a pool */
-static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
+static pool* pool_find(struct caml_heap_state* local, sizeclass sz,
+                       int noexc)
+{
   pool* r;
 
   /* Hopefully we have a pool we can use directly */
@@ -328,14 +332,14 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
   /* Otherwise, try to sweep until we find one */
   while (!local->avail_pools[sz] && local->unswept_avail_pools[sz]) {
     local->owner->major_work_todo -=
-      pool_sweep(local, &local->unswept_avail_pools[sz], sz, 0);
+      pool_sweep(local, &local->unswept_avail_pools[sz], sz, noexc, 0);
   }
 
   r = local->avail_pools[sz];
   if (r) return r;
 
   /* Haven't managed to find a pool locally, try the global ones */
-  r = pool_global_adopt(local, sz);
+  r = pool_global_adopt(local, sz, noexc);
   if (r) return r;
 
   /* Failing that, we need to allocate a new pool */
@@ -354,10 +358,12 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
   return r;
 }
 
-static void* pool_allocate(struct caml_heap_state* local, sizeclass sz) {
+static void* pool_allocate(struct caml_heap_state* local, sizeclass sz,
+                           int noexc)
+{
   value* p;
   value* next;
-  pool* r = pool_find(local, sz);
+  pool* r = pool_find(local, sz, noexc);
 
   if (!r) return 0;
 
@@ -389,7 +395,7 @@ static void* large_allocate(struct caml_heap_state* local, mlsize_t sz) {
 }
 
 value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
-                             tag_t tag, int pinned)
+                             tag_t tag, int noexc, int pinned)
 {
   mlsize_t whsize = Whsize_wosize(wosize);
   value* p;
@@ -404,7 +410,7 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
     struct heap_stats* s;
     sizeclass sz = sizeclass_wsize[whsize];
     CAMLassert(wsize_sizeclass[sz] >= whsize);
-    p = pool_allocate(local, sz);
+    p = pool_allocate(local, sz, noexc);
     if (!p) return 0;
     s = &local->stats;
     s->pool_live_blocks++;
@@ -442,7 +448,7 @@ struct pool* caml_pool_of_shared_block(value v)
 /* Sweeping */
 
 static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
-                         sizeclass sz, int release_to_global_pool) {
+                         sizeclass sz, int noexc, int release_to_global_pool) {
   intnat work = 0;
   pool* a = *plist;
   if (!a) return 0;
@@ -506,7 +512,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
   return work;
 }
 
-static intnat large_alloc_sweep(struct caml_heap_state* local) {
+static intnat large_alloc_sweep(struct caml_heap_state* local, int noexc) {
   value* p;
   header_t hd;
   large_alloc* a = local->unswept_large;
@@ -537,19 +543,19 @@ static intnat large_alloc_sweep(struct caml_heap_state* local) {
 
 static void verify_swept(struct caml_heap_state*);
 
-intnat caml_sweep(struct caml_heap_state* local, intnat work) {
+intnat caml_sweep(struct caml_heap_state* local, intnat work, int noexc) {
   /* Sweep local pools */
   while (work > 0 && local->next_to_sweep < NUM_SIZECLASSES) {
     sizeclass sz = local->next_to_sweep;
     intnat full_sweep_work = 0;
     intnat avail_sweep_work =
-      pool_sweep(local, &local->unswept_avail_pools[sz], sz, 1);
+      pool_sweep(local, &local->unswept_avail_pools[sz], sz, noexc, 1);
     work -= avail_sweep_work;
 
     if (work > 0) {
       full_sweep_work = pool_sweep(local,
                                    &local->unswept_full_pools[sz],
-                                   sz, 1);
+                                   sz, noexc, 1);
 
       work -= full_sweep_work;
     }
@@ -561,7 +567,7 @@ intnat caml_sweep(struct caml_heap_state* local, intnat work) {
 
   /* Sweep global pools */
   while (work > 0 && local->unswept_large) {
-    work -= large_alloc_sweep(local);
+    work -= large_alloc_sweep(local, noexc);
   }
 
   if (caml_params->verify_heap && work > 0) {
