@@ -92,6 +92,9 @@ static struct domain_account {
   int is_active;
 } domain_accounts [Max_domains];
 static int num_active_domains;
+/* For debugging only XXX */
+static uintnat total_alloc, total_dependent, total_work_done;
+static double total_extra;
 
 enum global_roots_status{
   WORK_UNSTARTED,
@@ -475,8 +478,8 @@ static void distribute (caml_domain_state *dom_st, intnat alloc_count,
   caml_gc_log ("Distribute work: "
                " %"ARCH_INTNAT_PRINTF_FORMAT"d alloc, "
                " %"ARCH_INTNAT_PRINTF_FORMAT"d dependent, "
-               " %g extra, ",
-               alloc_count, dependent_count, extra_count);
+               " %g extra,  %d active",
+               alloc_count, dependent_count, extra_count, num_active_domains);
 
   if (num_active_domains != 0){
     alloc_share = alloc_count / num_active_domains;
@@ -503,6 +506,38 @@ static void distribute (caml_domain_state *dom_st, intnat alloc_count,
   }
 }
 
+/* XXX debug */
+static void print_stats (int after, intnat budget)
+/* after = 0 -> budget for the slice
+   after = 1 -> budget remainder after the slice
+*/
+{
+  caml_domain_state *dom_st = Caml_state;
+
+  caml_plat_lock(&accounting_lock);
+  caml_gc_log ("DEBUG: "
+               " %"ARCH_INTNAT_PRINTF_FORMAT"d total alloc, "
+               " %"ARCH_INTNAT_PRINTF_FORMAT"d heap size, "
+               " %"ARCH_INTNAT_PRINTF_FORMAT"d total dependent, "
+               " ?? dependent size, "
+               " %.3g total extra, "
+               " %"ARCH_INTNAT_PRINTF_FORMAT"d total work done, "
+               " %"ARCH_INTNAT_PRINTF_FORMAT"d slice %s, "
+               " %s",
+               total_alloc, caml_heap_size(dom_st->shared_heap),
+               total_dependent,
+               total_extra,
+               total_work_done,
+               budget,
+               after ? "done" : "budget",
+               domain_accounts[dom_st->id].is_active ? "active" : "inactive");
+  caml_plat_unlock(&accounting_lock);
+
+  /*
+    eventuellement: tableau des budgets + is_active
+  */
+}
+
 static void update_major_slice_work(void) {
   double alloc_ratio, dependent_ratio, extra_ratio, heap_words;
   intnat alloc_work, dependent_work, extra_work;
@@ -517,6 +552,9 @@ static void update_major_slice_work(void) {
   distribute (dom_st, dom_st->allocated_words, dom_st->dependent_allocated,
               dom_st->extra_heap_resources);
   dom_st->stat_major_words += dom_st->allocated_words;
+  total_alloc += dom_st->allocated_words;
+  total_dependent += dom_st->dependent_allocated;
+  total_extra += dom_st->extra_heap_resources;
   dom_st->allocated_words = 0;
   dom_st->dependent_allocated = 0;
   dom_st->extra_heap_resources = 0.0;
@@ -617,7 +655,7 @@ static void update_major_slice_work(void) {
                          " %"ARCH_INTNAT_PRINTF_FORMAT "u allocated, "
                          " %"ARCH_INTNAT_PRINTF_FORMAT "d alloc_work, "
                          " %"ARCH_INTNAT_PRINTF_FORMAT "d dependent_work, "
-                         " %"ARCH_INTNAT_PRINTF_FORMAT "d extra_work, ",
+                         " %"ARCH_INTNAT_PRINTF_FORMAT "d extra_work",
                          caml_gc_phase_char(caml_gc_phase),
                          (uintnat)heap_words, dom_st->allocated_words,
                          alloc_work, dependent_work, extra_work);
@@ -636,11 +674,13 @@ static intnat get_major_slice_work(intnat howmuch) {
   if (howmuch == AUTO_TRIGGERED_MAJOR_SLICE ||
       howmuch == GC_CALCULATE_MAJOR_SLICE) {
     computed_work =
-      dom_st->slice_budget < Major_slice_work_min ? 0 : dom_st->slice_budget;
+      dom_st->slice_budget < Major_slice_work_min
+      ? Major_slice_work_min : dom_st->slice_budget;
   } else {
     /* forced or opportunistic GC slice with explicit quantity */
     computed_work = howmuch;
   }
+  print_stats (0, computed_work);
   return computed_work;
 }
 
@@ -654,28 +694,32 @@ static void commit_major_slice_work(intnat words_done) {
                " %"ARCH_INTNAT_PRINTF_FORMAT"d words_done, "
                " %g alloc_ratio, "
                " %g dependent_ratio, "
-               " %g extra_ratio, ",
+               " %g extra_ratio",
                words_done, dom_st->alloc_ratio, dom_st->dependent_ratio,
                dom_st->extra_ratio);
 
   caml_plat_lock (&accounting_lock);
+  total_work_done += words_done;
   acct->alloc -= words_done / dom_st->alloc_ratio;
   acct->dependent -= words_done / dom_st->dependent_ratio;
   acct->extra -= words_done / dom_st->extra_ratio;
-  /* distribute any remainder or overflow to other domains */
-  if (acct->is_active){
+  if (acct->is_active && words_done < Major_slice_work_min){
     -- num_active_domains;
     acct->is_active = 0;
   }
-  alloc = acct->alloc; acct->alloc = 0;
-  dependent = acct->dependent; acct->dependent = 0;
-  extra = acct->extra; acct->extra = 0.0;
-  distribute (dom_st, alloc, dependent, extra);
-  if (words_done >= dom_st->slice_budget){
+  if (!acct->is_active && words_done >= Major_slice_work_min){
     ++ num_active_domains;
     acct->is_active = 1;
   }
+  if (!acct->is_active){
+    /* distribute any remainder or overflow to other domains */
+    alloc = acct->alloc; acct->alloc = 0;
+    dependent = acct->dependent; acct->dependent = 0;
+    extra = acct->extra; acct->extra = 0.0;
+    distribute (dom_st, alloc, dependent, extra);
+  }
   caml_plat_unlock (&accounting_lock);
+  print_stats (1, words_done);
 }
 
 static void mark_stack_prune(struct mark_stack* stk);
@@ -1313,6 +1357,9 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
         domain_accounts[i].dependent = 0;
         domain_accounts[i].extra = 0.0;
       }
+      total_alloc = total_dependent = total_work_done = 0;
+      total_extra = 0.0;
+
       /* Cleanups for various data structures that must be done in a STW by
         only a single domain */
       caml_code_fragment_cleanup();
@@ -1522,6 +1569,7 @@ static intnat major_collection_slice(intnat howmuch,
   update_major_slice_work();
   computed_work = get_major_slice_work(howmuch);
   budget = computed_work;
+  caml_gc_log ("slice budget = %"ARCH_INTNAT_PRINTF_FORMAT"d", budget);
 
   /* shortcut out if there is no opportunistic work to be done
    * NB: needed particularly to avoid caml_ev spam when polling */
@@ -1946,6 +1994,12 @@ void caml_teardown_major_gc(void) {
   }
   distribute (d, d->allocated_words, d->dependent_allocated,
               d->extra_heap_resources);
+  total_alloc += d->allocated_words;
+  total_dependent += d->dependent_allocated;
+  total_extra += d->extra_heap_resources;
+  d->allocated_words = 0;
+  d->dependent_allocated = 0;
+  d->extra_heap_resources = 0.0;
   caml_plat_unlock (&accounting_lock);
   CAMLassert(!caml_addrmap_iter_ok(&d->mark_stack->compressed_stack,
                                    d->mark_stack->compressed_stack_iter));
