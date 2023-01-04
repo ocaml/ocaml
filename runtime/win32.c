@@ -431,7 +431,7 @@ CAMLexport int caml_read_directory(wchar_t * dirname,
   h = _wfindfirst(template, &fileinfo);
   if (h == -1) {
     caml_stat_free(template);
-    return errno == ENOENT ? 0 : -1;
+    return -1;
   }
   do {
     if (wcscmp(fileinfo.name, L".") != 0 && wcscmp(fileinfo.name, L"..") != 0) {
