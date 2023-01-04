@@ -771,6 +771,7 @@ int caml_try_stw_empty_minor_heap_on_all_domains (void)
 
   caml_gc_log("requesting stw empty_minor_heap");
   return caml_try_run_on_all_domains_with_spin_work(
+    1, /* synchronous */
     &caml_stw_empty_minor_heap, 0, /* stw handler */
     &caml_empty_minor_heap_setup, /* leader setup */
     &caml_do_opportunistic_major_slice, 0 /* enter spin work */);

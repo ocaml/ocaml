@@ -1363,8 +1363,16 @@ int caml_domain_is_in_stw(void) {
       finishes.
    The same logic would apply for any other situations in which a domain
    wants to join or leave the set of STW participants.
+
+  The explanation above applies if [sync] = 1. When [sync] = 0, no
+  synchronization happens, and we simply run the handler asynchronously on
+  all domains. We still hold the stw_leader field until we know that
+  every domain has run the handler, so another STW section cannot
+  interfere with this one.
+
 */
 int caml_try_run_on_all_domains_with_spin_work(
+  int sync,
   void (*handler)(caml_domain_state*, void*, int, caml_domain_state**),
   void* data,
   void (*leader_setup)(caml_domain_state*),
@@ -1374,7 +1382,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   int i;
   caml_domain_state* domain_state = domain_self->state;
 
-  caml_gc_log("requesting STW");
+  caml_gc_log("requesting STW, sync=%d", sync);
 
   /* Don't touch the lock if there's already a stw leader
      OR we can't get the lock.
@@ -1410,7 +1418,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   stw_request.callback = handler;
   stw_request.data = data;
   atomic_store_release(&stw_request.barrier, 0);
-  atomic_store_release(&stw_request.domains_still_running, 1);
+  atomic_store_release(&stw_request.domains_still_running, sync);
   stw_request.num_domains = stw_domains.participating_domains;
   atomic_store_release(&stw_request.num_domains_still_processing,
                    stw_domains.participating_domains);
@@ -1489,7 +1497,20 @@ int caml_try_run_on_all_domains(
   void (*leader_setup)(caml_domain_state*))
 {
   return
-      caml_try_run_on_all_domains_with_spin_work(handler,
+      caml_try_run_on_all_domains_with_spin_work(1,
+                                                 handler,
+                                                 data,
+                                                 leader_setup, 0, 0);
+}
+
+int caml_try_run_on_all_domains_async(
+  void (*handler)(caml_domain_state*, void*, int, caml_domain_state**),
+  void* data,
+  void (*leader_setup)(caml_domain_state*))
+{
+  return
+      caml_try_run_on_all_domains_with_spin_work(0,
+                                                 handler,
                                                  data,
                                                  leader_setup, 0, 0);
 }
