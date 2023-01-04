@@ -1,6 +1,11 @@
 OCaml 4.14 maintenance version
 ------------------------------
 
+### Build system:
+
+- #11590: Allow installing to a destination path containing spaces.
+  (Élie Brami, review by Sébastien Hinderer and David Allsopp)
+
 ### Bug fixes:
 
 OCaml 4.14.1 (20 December 2022)
