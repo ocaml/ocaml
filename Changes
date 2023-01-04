@@ -46,6 +46,9 @@ Working version
   (Gabriel Scherer, review by Xavier Leroy, Guillaume Munch-Maccagnoni
    and Nicolás Ojeda Bär)
 
+- #????: ensure that finalizers are not called in [noexc] mode
+  (Gabriel Scherer, report by Timothy Bourke)
+
 ### Type system:
 
 - #6941, #11187: prohibit using classes through recursive modules
