@@ -1,3 +1,11 @@
+OCaml 5.0 maintenance version
+-----------------------------
+
+### Build system:
+
+- #11590: Allow installing to a destination path containing spaces.
+  (Élie Brami, review by Sébastien Hinderer and David Allsopp)
+
 OCaml 5.0 (16 December 2022)
 ----------------------------
 
