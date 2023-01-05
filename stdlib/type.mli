@@ -41,7 +41,7 @@ type (_, _) eq = Equal: ('a, 'a) eq (** *)
 (** Type identifiers.
 
     A type identifier is a value that denotes a type. Given two type
-    identifiers, they can be tested for {{!Id.typed_equal}equality} to
+    identifiers, they can be tested for {{!Id.provably_equal}equality} to
     prove they denote the same type. Note that:
 
     - Unequal identifiers do not imply unequal types: a given type can be
@@ -63,8 +63,8 @@ module Id : sig
   val uid : 'a t -> int
   (** [uid id] is a runtime unique identifier for [id]. *)
 
-  val typed_equal : 'a t -> 'b t -> ('a, 'b) eq option
-  (** [typed_equal i0 i1] is [Some Equal] if identifier [i0] is equal
+  val provably_equal : 'a t -> 'b t -> ('a, 'b) eq option
+  (** [provably_equal i0 i1] is [Some Equal] if identifier [i0] is equal
       to [i1] and [None] otherwise. *)
 
   (** {1:example Example}
@@ -110,7 +110,7 @@ end = struct
     match List.assoc_opt (Type.Id.uid k) d with
     | None -> None
     | Some (B (k', v)) ->
-        match Type.Id.typed_equal k k' with
+        match Type.Id.provably_equal k k' with
         | Some Type.Equal -> Some v
         | None -> assert false
 end

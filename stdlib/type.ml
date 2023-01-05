@@ -34,7 +34,7 @@ module Id = struct
   let[@inline] uid (type a) ((module A) : a t) =
     Obj.Extension_constructor.id (Obj.Extension_constructor.of_val A.Id)
 
-  let typed_equal
+  let provably_equal
       (type a b) ((module A) : a t) ((module B) : b t) : (a, b) eq option
     =
     match A.Id with B.Id -> Some Equal | _ -> None
