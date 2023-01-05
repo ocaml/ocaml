@@ -159,6 +159,7 @@ CAMLprim value caml_gc_set(value v)
   uintnat newminwsz = caml_norm_minor_heap_size (Long_val (Field (v, 0)));
   uintnat newpf = norm_pfree (Long_val (Field (v, 2)));
   uintnat new_verb_gc = Long_val (Field (v, 3));
+  uintnat new_percent_max = Long_val (Field (v, 4));
   uintnat new_max_stack_size = Long_val (Field (v, 5));
   uintnat new_custom_maj = norm_custom_maj (Long_val (Field (v, 8)));
   uintnat new_custom_min = norm_custom_min (Long_val (Field (v, 9)));
@@ -168,6 +169,9 @@ CAMLprim value caml_gc_set(value v)
 
   caml_change_max_stack_size (new_max_stack_size);
 
+  if (new_percent_max != 0){
+    caml_invalid_argument("max_overhead must be zero");
+  }
   if (newpf != caml_percent_free){
     caml_percent_free = newpf;
     caml_gc_message (0x20, "New space overhead: %"
