@@ -22,6 +22,9 @@ Working version
 
 ### Runtime system:
 
+- #11287: Remove "profinfo" header bits once used for Spacetime profiling.
+  (Nick Barnes)
+
 - #11641: Restore Cygwin port. Add GC messages for address space reservations
   when OCAMLRUNPARAM option v includes 0x1000.
   (David Allsopp, review by Xavier Leroy, Guillaume Munch-Maccagnoni

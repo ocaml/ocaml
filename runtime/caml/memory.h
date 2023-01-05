@@ -35,17 +35,6 @@ extern "C" {
 
 CAMLextern value caml_alloc_shr (mlsize_t wosize, tag_t);
 CAMLextern value caml_alloc_shr_noexc(mlsize_t wosize, tag_t);
-#ifdef WITH_PROFINFO
-CAMLextern value caml_alloc_shr_with_profinfo (mlsize_t, tag_t, intnat);
-CAMLextern value caml_alloc_shr_preserving_profinfo (mlsize_t, tag_t,
-                                                     header_t);
-#else
-#define caml_alloc_shr_with_profinfo(size, tag, profinfo) \
-  caml_alloc_shr(size, tag)
-#define caml_alloc_shr_preserving_profinfo(size, tag, header) \
-  caml_alloc_shr(size, tag)
-#endif /* WITH_PROFINFO */
-
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t bsz);
 CAMLextern void caml_free_dependent_memory (mlsize_t bsz);
@@ -208,23 +197,21 @@ enum caml_alloc_small_flags {
 #define Alloc_small_enter_GC(dom_st, wosize)    \
   Alloc_small_enter_GC_flags(CAML_DO_TRACK | CAML_FROM_C, dom_st, wosize)
 
-#define Alloc_small_with_profinfo(result, wosize, tag, GC, profinfo) do{    \
-                                                CAMLassert ((wosize) >= 1); \
-                                          CAMLassert ((tag_t) (tag) < 256); \
-                                 CAMLassert ((wosize) <= Max_young_wosize); \
-  caml_domain_state* dom_st = Caml_state;                                   \
-  dom_st->young_ptr -=  Whsize_wosize(wosize);                              \
-  if (Caml_check_gc_interrupt(dom_st)) {                                    \
-    GC(dom_st, wosize);                                                     \
-  }                                                                         \
-  Hd_hp (dom_st->young_ptr) =                                               \
-    Make_header_with_profinfo ((wosize), (tag), 0, profinfo);               \
-  (result) = Val_hp (dom_st->young_ptr);                                    \
-  DEBUG_clear ((result), (wosize));                                         \
-}while(0)
+#define Alloc_small(result, wosize, tag, GC)                      \
+do{                                                               \
+    CAMLassert ((wosize) >= 1);                                   \
+    CAMLassert ((tag_t) (tag) < 256);                             \
+    CAMLassert ((wosize) <= Max_young_wosize);                    \
+    caml_domain_state* dom_st = Caml_state;                       \
+    dom_st->young_ptr -=  Whsize_wosize(wosize);                  \
+    if (Caml_check_gc_interrupt(dom_st)) {                        \
+        GC(dom_st, wosize);                                       \
+    }                                                             \
+    Hd_hp (dom_st->young_ptr) = Make_header ((wosize), (tag), 0); \
+    (result) = Val_hp (dom_st->young_ptr);                        \
+    DEBUG_clear ((result), (wosize));                             \
+} while(0)
 
-#define Alloc_small(result, wosize, tag, GC) \
-  Alloc_small_with_profinfo(result, wosize, tag, GC, (uintnat)0)
 
 #endif /* CAML_INTERNALS */
 

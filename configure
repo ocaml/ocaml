@@ -796,8 +796,6 @@ cmm_invariants
 flambda_invariants
 flambda
 frame_pointers
-profinfo_width
-profinfo
 install_ocamlnat
 install_source_artifacts
 install_bytecode_programs
@@ -3233,8 +3231,6 @@ CSCFLAGS=""
 ostype="Unix"
 SO="so"
 toolchain="cc"
-profinfo=false
-profinfo_width=0
 instrumented_runtime=false
 instrumented_runtime_libs=""
 bootstrapping_flexdll=false
@@ -3840,16 +3836,7 @@ fi
 # Check whether --enable-reserved-header-bits was given.
 if test ${enable_reserved_header_bits+y}
 then :
-  enableval=$enable_reserved_header_bits; case $enable_reserved_header_bits in #(
-  0) :
-    with_profinfo=false
-      profinfo_width=0 ;; #(
-  [1-9]|[1-2][0-9]|3[0-1]) :
-    with_profinfo=true
-      profinfo_width="$enable_reserved_header_bits" ;; #(
-  *) :
-    as_fn_error $? "invalid argument to --enable-reserved-header-bits" "$LINENO" 5 ;;
-esac
+  as_fn_error $? "spacetime profiling using reserved header bits was deleted in OCaml 4.12." "$LINENO" 5
 fi
 
 
@@ -19073,16 +19060,6 @@ printf "%s\n" "no" >&6; }
 fi
 rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
   conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-
-
-printf "%s\n" "#define PROFINFO_WIDTH $profinfo_width" >>confdefs.h
-
-if $profinfo
-then :
-  printf "%s\n" "#define WITH_PROFINFO 1" >>confdefs.h
-
 fi
 
 if test x"$enable_installing_bytecode_programs" = "xno"

@@ -103,37 +103,10 @@ For 64-bit architectures:
      +--------+-------+-----+
 bits  63    10 9     8 7   0
 
-For x86-64 with Spacetime profiling:
-  P = PROFINFO_WIDTH (as set by "configure", currently 26 bits, giving a
-    maximum block size of just under 4Gb)
-     +----------------+----------------+-------------+
-     | profiling info | wosize         | color | tag |
-     +----------------+----------------+-------------+
-bits  63        (64-P) (63-P)        10 9     8 7   0
-
 */
 
 #define Tag_hd(hd) ((tag_t) ((hd) & 0xFF))
-
-#define Gen_profinfo_shift(width) (64 - (width))
-#define Gen_profinfo_mask(width) ((1ull << (width)) - 1ull)
-#define Gen_profinfo_hd(width, hd) \
-  (((mlsize_t) ((hd) >> (Gen_profinfo_shift(width)))) \
-   & (Gen_profinfo_mask(width)))
-
-#ifdef WITH_PROFINFO
-#define PROFINFO_SHIFT (Gen_profinfo_shift(PROFINFO_WIDTH))
-#define PROFINFO_MASK (Gen_profinfo_mask(PROFINFO_WIDTH))
-/* Use NO_PROFINFO to debug problems with profinfo macros */
-#define NO_PROFINFO 0xff
-#define Hd_no_profinfo(hd) ((hd) & ~(PROFINFO_MASK << PROFINFO_SHIFT))
-#define Wosize_hd(hd) ((mlsize_t) ((Hd_no_profinfo(hd)) >> 10))
-#define Profinfo_hd(hd) (Gen_profinfo_hd(PROFINFO_WIDTH, hd))
-#else
-#define NO_PROFINFO 0
 #define Wosize_hd(hd) ((mlsize_t) ((hd) >> 10))
-#define Profinfo_hd(hd) NO_PROFINFO
-#endif /* WITH_PROFINFO */
 
 #define Hp_atomic_val(val) ((atomic_uintnat *)(val) - 1)
 #define Hd_val(val) ((header_t) \
@@ -150,11 +123,7 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 
 #define Num_tags (1 << 8)
 #ifdef ARCH_SIXTYFOUR
-#ifdef WITH_PROFINFO
-#define Max_wosize (((intnat)1 << (54-PROFINFO_WIDTH)) - 1)
-#else
 #define Max_wosize (((intnat)1 << 54) - 1)
-#endif
 #else
 #define Max_wosize ((1 << 22) - 1)
 #endif /* ARCH_SIXTYFOUR */
@@ -180,8 +149,6 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 #define Whsize_hd(hd) (Whsize_wosize (Wosize_hd (hd)))
 #define Bhsize_hp(hp) (Bsize_wsize (Whsize_hp (hp)))
 #define Bhsize_hd(hd) (Bsize_wsize (Whsize_hd (hd)))
-
-#define Profinfo_val(val) (Profinfo_hd (Hd_val (val)))
 
 #ifdef ARCH_BIG_ENDIAN
 #define Tag_val(val) (((unsigned char *) (val)) [-1])
