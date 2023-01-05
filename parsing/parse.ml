@@ -149,7 +149,7 @@ let prepare_error err =
          @{<hint>Hint@}: Did you mean to use 'Bytes.set'?"
   | Uninterpreted_metaocaml_expression loc ->
       Location.errorf ~loc
-        "Uninterpreted metaocaml expression."
+        "Uninterpreted MetaOCaml expression."
 
 let () =
   Location.register_error_of_exn
