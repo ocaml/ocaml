@@ -80,8 +80,7 @@ type stat =
 
     compactions : int;
     (** Note: As of OCaml 5.0, compaction is not available and this field's
-        value will always be zero.
-        Number of heap compactions since the program was started. *)
+        value will always be zero. *)
 
     top_heap_words : int;
     (** Maximum size reached by the major heap, in words. *)
@@ -145,17 +144,10 @@ type control =
        Default: 0. *)
 
     max_overhead : int;
-    (** Note: As of OCaml 5.0, compaction is not implemented, and this field
-       will have no effect.
-       Heap compaction is triggered when the estimated amount
-       of "wasted" memory is more than [max_overhead] percent of the
-       amount of live data.  If [max_overhead] is set to 0, heap
-       compaction is triggered at the end of each major GC cycle
-       (this setting is intended for testing purposes only).
-       If [max_overhead >= 1000000], compaction is never triggered.
-       If compaction is permanently disabled, it is strongly suggested
-       to set [allocation_policy] to 2.
-       Default: 500. *)
+    (** As of OCaml 5.0, compaction is not implemented.
+       As a result, setting this field to anything other than 0
+       will raise [Invalid_argument].
+       Default: 0. *)
 
     stack_limit : int;
     (** The maximum size of the fiber stacks (in words).
