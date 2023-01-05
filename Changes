@@ -219,6 +219,9 @@ Working version
   modules with mismatching -for-pack
   (Pierre Chambart and Vincent Laviron, review by Mark Shinwell)
 
+- #11635, #5461, #10564: Turn warning 31 (Module_linked_twice) into a hard error
+  (Hugo Heuzard, review by Valentin Gatien-Baron and Gabriel Scherer)
+
 - #11646: Add colors to error message hints.
   (Christiana Anthony, review by Florian Angeletti)
 

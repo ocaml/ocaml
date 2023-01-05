@@ -848,7 +848,7 @@ arguments to "-warn-error"
 in production code, because this can break your build when future versions
 of OCaml add some new warnings.
 
-The default setting is "-warn-error -a+31" (only warning 31 is fatal).
+The default setting is "-warn-error -a" (no warning is fatal).
 
 \item["-warn-help"]
 Show the description of all available warning numbers.

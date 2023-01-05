@@ -164,7 +164,7 @@ let save_pers_struct penv crc ps pm =
         | Alerts _ -> ()
         | Opaque -> register_import_as_opaque penv modname)
     ps.ps_flags;
-  Consistbl.set crc_units modname crc ps.ps_filename;
+  Consistbl.check crc_units modname crc ps.ps_filename;
   add_import penv modname
 
 let acknowledge_pers_struct penv check modname pers_sig pm =
