@@ -1209,7 +1209,9 @@ static void try_complete_gc_phase (caml_domain_state* domain, void* unused,
 intnat caml_opportunistic_major_work_available (void)
 {
   caml_domain_state* domain_state = Caml_state;
-  return !domain_state->sweeping_done || !domain_state->marking_done;
+  /* Sweeping may run callbacks, so we do not wish to perform
+     opportunistic sweeping work in the middle of the minor GC. */
+  return (domain_state->sweeping_done && !domain_state->marking_done);
 }
 
 typedef enum {
@@ -1229,19 +1231,6 @@ static char collection_slice_mode_char(collection_slice_mode mode)
       return 'o';
     default:
       return ' ';
-  }
-}
-
-static int sweep_must_be_noexc(collection_slice_mode mode)
-{
-  switch(mode) {
-    case Slice_uninterruptible:
-    case Slice_interruptible:
-      return 0;
-    case Slice_opportunistic:
-      return 1;
-    default:
-      return 0;
   }
 }
 
@@ -1280,13 +1269,19 @@ static intnat major_collection_slice(intnat howmuch,
   if (log_events) CAML_EV_BEGIN(EV_MAJOR_SLICE);
   call_timing_hook(&caml_major_slice_begin_hook);
 
+  /* sweeping may run callbacks, so we don't sweep
+     if !noexc. */
   if (!domain_state->sweeping_done) {
     if (log_events) CAML_EV_BEGIN(EV_MAJOR_SWEEP);
 
     do {
       available = budget > Chunk_size ? Chunk_size : budget;
-      int noexc = sweep_must_be_noexc(mode);
-      left = caml_sweep(domain_state->shared_heap, available, noexc);
+      /* Sweeping may run callbacks, so it must not be run
+         opportunistically during a minor GC. This should
+         be enforced statically by the definition of
+         caml_opportunistic_major_work_available(). */
+      CAMLassert(mode != Slice_opportunistic);
+      left = caml_sweep(domain_state->shared_heap, available);
       budget -= available - left;
       sweep_work += available - left;
 
@@ -1546,7 +1541,7 @@ void caml_finish_sweeping (void)
   if (Caml_state->sweeping_done) return;
   CAML_EV_BEGIN(EV_MAJOR_FINISH_SWEEPING);
   while (!Caml_state->sweeping_done) {
-    if (caml_sweep(Caml_state->shared_heap, 10, 0 /* noexc */) > 0) {
+    if (caml_sweep(Caml_state->shared_heap, 10) > 0) {
       /* just finished sweeping */
       CAMLassert(Caml_state->sweeping_done == 0);
       Caml_state->sweeping_done = 1;

@@ -82,7 +82,7 @@ Caml_inline int is_marked(value v) {
 
 void caml_redarken_pool(struct pool*, scanning_action, void*);
 
-intnat caml_sweep(struct caml_heap_state*, intnat work, int noexc);
+intnat caml_sweep(struct caml_heap_state*, intnat work);
 
 
 /* must be called during STW */
