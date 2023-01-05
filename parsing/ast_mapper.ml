@@ -463,6 +463,10 @@ module E = struct
           (List.map (sub.binding_op sub) ands) (sub.expr sub body)
     | Pexp_extension x -> extension ~loc ~attrs (sub.extension sub x)
     | Pexp_unreachable -> unreachable ~loc ~attrs ()
+    (* NNN begin *)
+    | Pexp_bracket e -> bracket ~loc ~attrs (sub.expr sub e)
+    | Pexp_escape e -> escape ~loc ~attrs (sub.expr sub e)
+    (* NNN end *)
 
   let map_binding_op sub {pbop_op; pbop_pat; pbop_exp; pbop_loc} =
     let open Exp in

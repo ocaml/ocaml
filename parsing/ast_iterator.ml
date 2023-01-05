@@ -420,6 +420,10 @@ module E = struct
         sub.expr sub body
     | Pexp_extension x -> sub.extension sub x
     | Pexp_unreachable -> ()
+    (* NNN begin *)
+    | Pexp_bracket e -> sub.expr sub e
+    | Pexp_escape e -> sub.expr sub e
+    (* NNN end *)
 
   let iter_binding_op sub {pbop_op; pbop_pat; pbop_exp; pbop_loc} =
     iter_loc sub pbop_op;

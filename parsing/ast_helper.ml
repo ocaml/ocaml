@@ -228,6 +228,11 @@ module Exp = struct
       pbop_exp = exp;
       pbop_loc = loc;
     }
+
+  (* NNN begin *)
+  let bracket ?loc ?attrs e = mk ?loc ?attrs (Pexp_bracket e)
+  let escape ?loc ?attrs e = mk ?loc ?attrs (Pexp_escape e)
+  (* NNN end *)
 end
 
 module Mty = struct
