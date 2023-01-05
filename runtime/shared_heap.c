@@ -34,7 +34,11 @@
 #include "caml/startup_aux.h"
 
 typedef unsigned int sizeclass;
-struct global_heap_state caml_global_heap_state = {0 << 8, 1 << 8, 2 << 8};
+struct global_heap_state caml_global_heap_state = {
+        0 << HEADER_COLOR_SHIFT, /* MARKED */
+        1 << HEADER_COLOR_SHIFT, /* UNMARKED */
+        2 << HEADER_COLOR_SHIFT, /* GARBAGE */
+};
 
 typedef struct pool {
   struct pool* next;
@@ -746,10 +750,10 @@ static void verify_object(struct heap_verify_state* st, value v) {
   if (*entry != ADDRMAP_NOT_PRESENT) return;
   *entry = 1;
 
-  if (Has_status_hd(Hd_val(v), NOT_MARKABLE)) return;
+  if (Has_status_val(v, NOT_MARKABLE)) return;
   st->objs++;
 
-  CAMLassert(Has_status_hd(Hd_val(v), caml_global_heap_state.UNMARKED));
+  CAMLassert(Has_status_val(v, caml_global_heap_state.UNMARKED));
 
   if (Tag_val(v) == Cont_tag) {
     struct stack_info* stk = Ptr_val(Field(v, 0));

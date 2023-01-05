@@ -30,7 +30,7 @@
 #include "caml/weak.h"
 
 value caml_dummy[] =
-  {(value)Make_header(0,Abstract_tag, NOT_MARKABLE),
+  {(value)Make_header(0, Abstract_tag, NOT_MARKABLE),
    Val_unit};
 value caml_ephe_none = (value)&caml_dummy[1];
 

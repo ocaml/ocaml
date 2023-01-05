@@ -20,16 +20,18 @@
 #include "mlvalues.h"
 
 /* This depends on the layout of the header.  See [mlvalues.h]. */
-#define Make_header(wosize, tag, color)                                       \
-      (/*CAMLassert ((wosize) <= Max_wosize),*/                               \
-       ((header_t) (((header_t) (wosize) << 10)                               \
-                    + (color)                                                 \
-                    + (tag_t) (tag)))                                         \
+
+#define Make_header_with_reserved(reserved, wosize, tag, color)      \
+      (/*CAMLassert ((wosize) <= Max_wosize),*/                      \
+       ((header_t) ((HEADER_RESERVED_BITS ? ((header_t) (reserved) << HEADER_RESERVED_SHIFT) : 0) \
+                    + ((header_t) (wosize) << HEADER_WOSIZE_SHIFT)      \
+                    + (color) /* colors are pre-shifted */              \
+                    + (tag_t) (tag)))                                   \
       )
 
-#define Make_header_with_profinfo(wosize, tag, color, profinfo) \
-  Make_header(wosize, tag, color)
+#define Make_header(wosize, tag, color) Make_header_with_reserved(0, wosize, tag, color)
 
-#define Whitehd_hd(hd) (((hd)  & ~(3 << 8)))
+#define Whitehd_hd(hd) Hd_with_color(hd, 0)
 
 #endif /* CAML_GC_H */
+

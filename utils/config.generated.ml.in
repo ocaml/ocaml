@@ -94,8 +94,7 @@ let system = {@QS@|@system@|@QS@}
 let asm = {@QS@|@AS@|@QS@}
 let asm_cfi_supported = @asm_cfi_supported@
 let with_frame_pointers = @frame_pointers@
-let profinfo = @profinfo@
-let profinfo_width = @profinfo_width@
+let reserved_header_bits = @reserved_header_bits@
 
 let ext_exe = {@QS@|@exeext@|@QS@}
 let ext_obj = "." ^ {@QS@|@OBJEXT@|@QS@}

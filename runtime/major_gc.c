@@ -231,7 +231,7 @@ static void orph_ephe_list_verify_status (int status)
   v = orph_structs.ephe_list_live;
   while (v) {
     CAMLassert (Tag_val(v) == Abstract_tag);
-    CAMLassert (Has_status_hd (Hd_val(v), status));
+    CAMLassert (Has_status_val(v, status));
     v = Ephe_link(v);
   }
 
@@ -638,7 +638,7 @@ static intnat mark_stack_push_block(struct mark_stack* stk, value block)
       && offset >= Start_env_closinfo(Closinfo_val(block)));
   }
 
-  CAMLassert(Has_status_hd(Hd_val(block), caml_global_heap_state.MARKED));
+  CAMLassert(Has_status_val(block, caml_global_heap_state.MARKED));
   CAMLassert(Is_block(block) && !Is_young(block));
   CAMLassert(Tag_val(block) != Infix_tag);
   CAMLassert(Tag_val(block) < No_scan_tag);
