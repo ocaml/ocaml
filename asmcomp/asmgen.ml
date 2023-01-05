@@ -213,6 +213,8 @@ let compile_unit ~output_prefix ~asm_filename ~keep_asm ~obj_filename gen =
                    (keep_asm || not !Emitaux.binary_backend_available) in
   Emitaux.create_asm_file := create_asm;
   let remove_asm_file () =
+    (* if [should_emit ()] is [false] then no assembly is generated,
+       so the (empty) temporary file should be deleted. *)
     if not create_asm || not keep_asm then remove_file asm_filename
   in
   Misc.try_finally
