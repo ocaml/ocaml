@@ -242,6 +242,10 @@ Working version
   variables available through ocamlc -config.
   (Sébastien Hinderer, review by Gabriel Scherer and David Allsopp)
 
+- #11235, #11864: usage warnings for constructors and fields can now be disabled
+  on field-by-field or constructor-by-constructor basis
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #11847, #11849, #11851: small refactorings in the type checker

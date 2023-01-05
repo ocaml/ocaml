@@ -1914,6 +1914,7 @@ and store_value ?check id addr decl shape env =
     summary = Env_value(env.summary, id, decl) }
 
 and store_constructor ~check type_decl type_id cstr_id cstr env =
+  Builtin_attributes.warning_scope cstr.cstr_attributes (fun () ->
   if check && not type_decl.type_loc.Location.loc_ghost
      && Warnings.is_active (Warnings.Unused_constructor ("", Unused))
   then begin
@@ -1937,7 +1938,7 @@ and store_constructor ~check type_decl type_id cstr_id cstr env =
                      (Warnings.Unused_constructor(name, complaint)))
               (constructor_usage_complaint ~rebind:false priv used));
     end;
-  end;
+  end);
   let cda_shape = Shape.leaf cstr.cstr_uid in
   { env with
     constrs =
@@ -1946,6 +1947,7 @@ and store_constructor ~check type_decl type_id cstr_id cstr env =
   }
 
 and store_label ~check type_decl type_id lbl_id lbl env =
+  Builtin_attributes.warning_scope lbl.lbl_attributes (fun () ->
   if check && not type_decl.type_loc.Location.loc_ghost
      && Warnings.is_active (Warnings.Unused_field ("", Unused))
   then begin
@@ -1968,7 +1970,7 @@ and store_label ~check type_decl type_id lbl_id lbl env =
                    Location.prerr_warning
                      loc (Warnings.Unused_field(name, complaint)))
               (label_usage_complaint priv mut used))
-  end;
+  end);
   { env with
     labels = TycompTbl.add lbl_id lbl env.labels;
   }
@@ -2037,6 +2039,7 @@ and store_extension ~check ~rebind id addr ext shape env =
       cda_address = Some addr;
       cda_shape = shape }
   in
+  Builtin_attributes.warning_scope ext.ext_attributes (fun () ->
   if check && not loc.Location.loc_ghost &&
     Warnings.is_active (Warnings.Unused_extension ("", false, Unused))
   then begin
@@ -2058,7 +2061,7 @@ and store_extension ~check ~rebind id addr ext shape env =
                        (name, is_exception, complaint)))
              (constructor_usage_complaint ~rebind priv used))
     end;
-  end;
+  end);
   { env with
     constrs = TycompTbl.add id cda env.constrs;
     summary = Env_extension(env.summary, id, ext) }
