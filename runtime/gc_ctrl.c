@@ -298,7 +298,7 @@ CAMLprim value caml_gc_compaction(value v)
   value exn = Val_unit;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_COMPACT);
   CAMLassert (v == Val_unit);
-  exn = gc_major_exn();
+  exn = gc_full_major_exn();
   ++ Caml_state->stat_forced_major_collections;
   CAML_EV_END(EV_EXPLICIT_GC_COMPACT);
   return exn;
