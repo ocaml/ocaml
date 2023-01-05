@@ -311,5 +311,9 @@ type 'a id = Id of 'a [@@unboxed]
 Line 2, characters 0-21:
 2 | type cycle = cycle id
     ^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation cycle is cyclic
+Error: The type abbreviation cycle is cyclic:
+         cycle = cycle id,
+         cycle id contains cycle,
+         cycle = cycle id,
+         cycle id contains cycle
 |}];;

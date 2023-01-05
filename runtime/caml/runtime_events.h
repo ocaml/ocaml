@@ -216,17 +216,20 @@ void caml_runtime_events_destroy(void);
 
 /* Handle safely re-initialising the runtime_events structures
    in a forked child */
-void caml_runtime_events_post_fork(void);
+CAMLextern void caml_runtime_events_post_fork(void);
 
 /* Returns the location of the runtime_events for the current process if started
    or NULL otherwise */
 CAMLextern char_os* caml_runtime_events_current_location(void);
 
-/* Functions for putting runtime data on to the runtime_events */
+/* Functions for putting runtime data on to the runtime_events. These are all
+   internal to the runtime, except for caml_ev_lifecycle which is needed in
+   otherlibs/unix/fork.c so must be declared CAMLextern in order to work on
+   Cygwin. */
 void caml_ev_begin(ev_runtime_phase phase);
 void caml_ev_end(ev_runtime_phase phase);
 void caml_ev_counter(ev_runtime_counter counter, uint64_t val);
-void caml_ev_lifecycle(ev_lifecycle lifecycle, int64_t data);
+CAMLextern void caml_ev_lifecycle(ev_lifecycle lifecycle, int64_t data);
 
 /* caml_ev_alloc records the (bucketed) size of allocations into the major heap.
    It appears only in alloc_shr and caml_shared_try_alloc. These buckets are

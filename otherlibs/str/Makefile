@@ -16,7 +16,7 @@
 # Makefile for the str library
 
 LIBNAME=str
-COBJS=strstubs.$(O)
+C_SOURCES=strstubs.c
 CLIBNAME=camlstr
 CAMLOBJS=str.cmo
 

@@ -617,7 +617,11 @@ val app : int * bool = (1, true)
 Line 9, characters 0-25:
 9 | type 'a foo = 'a foo list
     ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation foo is cyclic
+Error: The type abbreviation foo is cyclic:
+         'a foo = 'a foo list,
+         'a foo list contains 'a foo,
+         'a foo = 'a foo list,
+         'a foo list contains 'a foo
 |}];;
 
 class ['a] bar (x : 'a) = object end
@@ -910,7 +914,9 @@ Line 1, characters 0-10:
 1 | type t = u and u = t;;
     ^^^^^^^^^^
 Error: The definition of t contains a cycle:
-       u
+         u = t,
+         t = u,
+         u = t
 |}];;
 
 (* PR#8188 *)
@@ -991,6 +997,7 @@ Error: This recursive type is not regular.
        but it is used as
          'a list u
        after the following expansion(s):
+         < m : 'a v > contains 'a v,
          'a v = 'a list u
        All uses need to match the definition for the recursive type to be regular.
 |}];;
@@ -1026,7 +1033,7 @@ Line 1, characters 0-83:
 1 | type ('a1, 'b1) ty1 = 'a1 -> unit constraint 'a1 = [> `V1 of ('a1, 'b1) ty2 as 'b1]
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of ty1 contains a cycle:
-       [> `V1 of ('a, 'b) ty2 as 'b ] as 'a
+         [> `V1 of ('a, 'b) ty2 as 'b ] as 'a contains 'b
 |}];;
 
 (* PR#8359: expanding may change original in Ctype.unify2 *)

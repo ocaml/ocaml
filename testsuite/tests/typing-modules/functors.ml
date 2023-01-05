@@ -520,11 +520,11 @@ Error: The functor application is ill-typed.
          functor (X : x) (B : b/2) (Y : y) -> ...
        1. Module $S1 matches the expected module type x
        2. Modules do not match:
-            P.B : b/1
+            P.B : b
           is not included in
             b/2
           Line 5, characters 2-15:
-            Definition of module type b/1
+            Definition of module type b
           Line 2, characters 0-13:
             Definition of module type b/2
        3. Modules do not match: $S3 : sig type w end is not included in y
@@ -543,9 +543,9 @@ module F : functor (X : a) -> sig type t end
 Line 6, characters 13-19:
 6 |     type t = F(X).t
                  ^^^^^^
-Error: Modules do not match: a/1 is not included in a/2
+Error: Modules do not match: a is not included in a/2
      Line 3, characters 2-15:
-       Definition of module type a/1
+       Definition of module type a
      Line 1, characters 0-13:
        Definition of module type a/2
 |}]
@@ -576,16 +576,16 @@ Error: Signature mismatch:
          sig module F : functor (X : a) (Y : a) -> sig end end
        In module F:
        Modules do not match:
-         functor (X : aa) (Y : a/1) -> ...
+         functor (X : aa) (Y : a) -> ...
        is not included in
          functor (X : a/2) (Y : a/2) -> ...
        1. Module types aa and a/2 match
        2. Module types do not match:
-            a/1
+            a
           does not include
             a/2
           Line 4, characters 2-15:
-            Definition of module type a/1
+            Definition of module type a
           Line 1, characters 0-13:
             Definition of module type a/2
 |}]
@@ -1487,8 +1487,8 @@ Error: Signature mismatch:
        1. An extra argument is provided of module type
               $S1 = sig type wrong end
        2. Module types $S2 and $T2 match
-       3. Module types X/3.T and X/2.T match
-       4. Module types X/3.T and X/2.T match
+       3. Module types X.T and X.T match
+       4. Module types X.T and X.T match
 |}]
 
 
@@ -1561,9 +1561,9 @@ Error: Signature mismatch:
             sig end
           The type `wrong' is required but not provided
        2. Module types $S2 and $T2 match
-       3. An extra argument is provided of module type X/2.T
-       4. Module types X/2.T and X/2.T match
-       5. Module types X/2.T and X/2.T match
+       3. An extra argument is provided of module type X.T
+       4. Module types X.T and X.T match
+       5. Module types X.T and X.T match
 |}]
 
 
@@ -1596,7 +1596,7 @@ Error: The functor application is ill-typed.
        3. Modules do not match:
             Y : sig type t = Y.t = Y of int end
           is not included in
-            $T3 = sig type t = Y of X/2.t end
+            $T3 = sig type t = Y of X.t end
           Type declarations do not match:
             type t = Y.t = Y of int
           is not included in
@@ -1609,7 +1609,7 @@ Error: The functor application is ill-typed.
        4. Modules do not match:
             Z : sig type t = Z.t = Z of int end
           is not included in
-            $T4 = sig type t = Z of X/2.t end
+            $T4 = sig type t = Z of X.t end
           Type declarations do not match:
             type t = Z.t = Z of int
           is not included in
@@ -1700,4 +1700,48 @@ Error: The functor application Bar(A)(FiveArgsExt)(TY)(TY)(TY)(TY)(TY) is ill-ty
        7. Module TY matches the expected module type ty
        8. Module TY matches the expected module type ty
        9. Module TY matches the expected module type ty
+|}]
+
+module Shape_arg = struct
+  module M1 (Arg1 : sig end) = struct
+    module type S1 = sig
+      type t
+    end
+  end
+
+  module type S2 = sig
+    module Make (Arg2 : sig end) : M1(Arg2).S1
+  end
+
+  module M2 : S2 = struct
+    module Make (Arg3 : sig end) = struct
+      type t = T
+    end
+  end
+
+  module M3 (Arg4 : sig end) = struct
+    module type S3 = sig
+      type t = M2.Make(Arg4).t
+    end
+  end
+
+  module M4 (Arg5 : sig end) : M3(Arg5).S3 = struct
+    module M5 = M2.Make (Arg5)
+
+    type t = M5.t
+  end
+end
+[%%expect{|
+module Shape_arg :
+  sig
+    module M1 :
+      functor (Arg1 : sig end) -> sig module type S1 = sig type t end end
+    module type S2 =
+      sig module Make : functor (Arg2 : sig end) -> M1(Arg2).S1 end
+    module M2 : S2
+    module M3 :
+      functor (Arg4 : sig end) ->
+        sig module type S3 = sig type t = M2.Make(Arg4).t end end
+    module M4 : functor (Arg5 : sig end) -> M3(Arg5).S3
+  end
 |}]

@@ -119,6 +119,7 @@ AC_SUBST([system])
 AC_SUBST([systhread_support])
 AC_SUBST([ocamlsrcdir])
 AC_SUBST([unix_or_win32])
+AC_SUBST([ln])
 AC_SUBST([ocamlyacc_wstr_module])
 AC_SUBST([outputexe])
 AC_SUBST([outputobj])
@@ -256,8 +257,6 @@ AC_CANONICAL_TARGET
 AS_CASE([$host],
   [*-pc-windows],
     [AC_MSG_ERROR([the MSVC compiler is not supported currently], 69)],
-  [*-*-cygwin*],
-    [AC_MSG_ERROR([Cygwin is not supported currently], 69)],
   [i386-*-solaris*],
     [AC_MSG_ERROR([Building for 32 bits target is not supported. \
 If your host is 64 bits, you can try with './configure CC="gcc -m64"' \
@@ -601,10 +600,12 @@ ocamlsrcdir=${ocamlsrcdir%X}
 AS_CASE([$host],
   [*-*-mingw32|*-pc-windows],
     [unix_or_win32="win32"
+    ln='cp -pf'
     ocamltest_libunix="Some false"
     ocamlsrcdir="$(LC_ALL=C.UTF-8 cygpath -w -- "$ocamlsrcdir")"
     ocamlyacc_wstr_module="yacc/wstr"],
   [unix_or_win32="unix"
+  ln='ln -sf'
   ocamltest_libunix="Some true"
   ocamlyacc_wstr_module=""])
 
@@ -1260,7 +1261,7 @@ AS_CASE([$host],
   [aarch64-*-netbsd*],
     [has_native_backend=yes; arch=arm64; system=netbsd],
   [x86_64-*-cygwin*],
-    [arch=amd64; system=cygwin],
+    [has_native_backend=yes; arch=amd64; system=cygwin],
   [riscv64-*-linux*],
     [has_native_backend=yes; arch=riscv; model=riscv64; system=linux]
 )

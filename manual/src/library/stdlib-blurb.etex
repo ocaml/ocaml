@@ -117,6 +117,7 @@ be called from C \\
 \subsubsection*{sss:stdlib-misc}{Misc:}
 \begin{tabular}{lll}
 "Fun" & p.~\stdpageref{Fun} & function values \\
+"Type" & p.~\stdpageref{Type} & type introspection \\
 \end{tabular}
 \end{latexonly}
 
@@ -177,6 +178,7 @@ be called from C \\
 \stddocitem{String}{string operations}
 \stddocitem{StringLabels}{string operations (with labels)}
 \stddocitem{Sys}{system interface}
+\stddocitem{Type}{type introspection}
 \stddocitem{Uchar}{Unicode characters}
 \stddocitem{Unit}{unit values}
 \stddocitem{Weak}{arrays of weak pointers}

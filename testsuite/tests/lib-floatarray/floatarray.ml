@@ -23,7 +23,9 @@ module type S = sig
   val iter : (float -> unit) -> t -> unit
   val iteri : (int -> float -> unit) -> t -> unit
   val map : (float -> float) -> t -> t
+  val map_inplace : (float -> float) -> t -> unit
   val mapi : (int -> float -> float) -> t -> t
+  val mapi_inplace : (int -> float -> float) -> t -> unit
   val fold_left : ('a -> float -> 'a) -> 'a -> t -> 'a
   val fold_right : (float -> 'a -> 'a) -> t -> 'a -> 'a
   val iter2 : (float -> float -> unit) -> t -> t -> unit
@@ -538,6 +540,20 @@ module Test (A : S) : sig end = struct
   in
   let l = [0.; 0.25; -4.; 3.14159265; nan; infinity; neg_infinity; neg_zero] in
   test_structured_io (A.of_list l);
+
+  (* map_inplace *)
+  let a = A.init 4 (fun i -> Float.of_int (i + 1)) in
+  A.map_inplace (fun x -> 2. *. x) a;
+  let got = A.map_to_array Fun.id a in
+  let expected = [|2.; 4.; 6.; 8.|] in
+  assert (Array.for_all2 Float.equal got expected);
+
+  (* mapi_inplace *)
+  let a = A.init 4 (fun i -> Float.of_int (i + 1)) in
+  A.mapi_inplace (fun i x -> 1. +. (Float.of_int i) +. x) a;
+  let got = A.map_to_array Fun.id a in
+  let expected = [|2.; 4.; 6.; 8.|] in
+  assert (Array.for_all2 Float.equal got expected)
 
 end
 

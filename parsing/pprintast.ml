@@ -307,14 +307,11 @@ and core_type ctxt f x =
         core_type ctxt f ct
     | Ptyp_poly (sl, ct) ->
         pp f "@[<2>%a%a@]"
-          (fun f l ->
-             pp f "%a"
                (fun f l -> match l with
                   | [] -> ()
                   | _ ->
                       pp f "%a@;.@;"
                         (list tyvar_loc ~sep:"@;")  l)
-               l)
           sl (core_type ctxt) ct
     | _ -> pp f "@[<2>%a@]" (core_type1 ctxt) x
 
@@ -1049,7 +1046,7 @@ and module_type ctxt f x =
   end else
     match x.pmty_desc with
     | Pmty_functor (Unit, mt2) ->
-        pp f "@[<hov2>functor () ->@ %a@]" (module_type ctxt) mt2
+        pp f "@[<hov2>() ->@ %a@]" (module_type ctxt) mt2
     | Pmty_functor (Named (s, mt1), mt2) ->
         begin match s.txt with
         | None ->

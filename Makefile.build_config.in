@@ -108,9 +108,16 @@ DEFAULT_BUILD_TARGET = @default_build_target@
 OC_COMMON_CFLAGS = -g -strict-sequence -principal -absname \
   -w +a-4-9-40-41-42-44-45-48 -warn-error +a -bin-annot \
   -strict-formats
-OC_COMMON_LDFLAGS = -g
+OC_COMMON_LDFLAGS = -g $(INCLUDES)
+
+OC_BYTECODE_LDFLAGS =
 
 OC_NATIVE_CFLAGS = @oc_native_cflags@
+
+OC_NATIVE_LDFLAGS =
+
+# Platform-dependent command to create symbolic links
+LN = @ln@
 
 # Platform-dependent assembler files to use to build the runtime
 runtime_ASM_OBJECTS = $(addprefix runtime/,@runtime_asm_objects@)

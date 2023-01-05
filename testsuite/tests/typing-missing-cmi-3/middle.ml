@@ -18,3 +18,5 @@ let s = Original.s
 (* Check expansion in gadt *)
 type ('a,'b) gadt =
 | G: ('a, 'a ti) gadt
+
+type 'a is_int = 'a Original.is_int = Is_int : int is_int

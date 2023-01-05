@@ -18,7 +18,7 @@
 LIBNAME=runtime_events
 CLIBNAME=camlruntime_events
 CAMLOBJS=runtime_events.cmo
-COBJS=runtime_events_consumer.$(O)
+C_SOURCES=runtime_events_consumer.c
 HEADERS=runtime_events_consumer.h
 
 include ../Makefile.otherlibs.common

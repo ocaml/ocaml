@@ -577,7 +577,7 @@ let arg_fun filename =
   close_in ic;
   if !print_banners then printf "## end of ocaml dump of %S\n%!" filename
 
-let main() =
+let main () =
   Arg.parse_expand arg_list arg_fun arg_usage;
     exit 0
 

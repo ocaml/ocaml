@@ -1,7 +1,8 @@
 (* TEST
   modules="opt.ml barrier.ml hist.ml shared.ml run.ml outcome.ml"
   * not-bsd
-  ** bytecode
+  ** not-windows
+  *** bytecode
   ** native
 *)
 

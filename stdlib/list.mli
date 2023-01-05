@@ -103,15 +103,14 @@ val init : int -> (int -> 'a) -> 'a list
  *)
 
 val append : 'a list -> 'a list -> 'a list
-(** Concatenate two lists. Same function as the infix operator [@].
-   Not tail-recursive (length of the first argument). The [@]
-   operator is not tail-recursive either.
+(** [append l0 l1] appends [l1] to [l0].
+     Same function as the infix operator [@].
+     @since 5.1 this function is tail-recursive.
  *)
 
 val rev_append : 'a list -> 'a list -> 'a list
 (** [rev_append l1 l2] reverses [l1] and concatenates it with [l2].
-   This is equivalent to [(]{!rev}[ l1) @ l2], but [rev_append] is
-   tail-recursive and more efficient.
+   This is equivalent to [(]{!rev}[ l1) @ l2].
  *)
 
 val concat : 'a list list -> 'a list
@@ -207,18 +206,18 @@ val concat_map : ('a -> 'b list) -> 'a list -> 'b list
 *)
 
 val fold_left_map :
-  ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
+  ('acc -> 'a -> 'acc * 'b) -> 'acc -> 'a list -> 'acc * 'b list
 (** [fold_left_map] is  a combination of [fold_left] and [map] that threads an
     accumulator through calls to [f].
     @since 4.11
 *)
 
-val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
+val fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a list -> 'acc
 (** [fold_left f init [b1; ...; bn]] is
    [f (... (f (f init b1) b2) ...) bn].
  *)
 
-val fold_right : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
+val fold_right : ('a -> 'acc -> 'acc) -> 'a list -> 'acc -> 'acc
 (** [fold_right f [a1; ...; an] init] is
    [f a1 (f a2 (... (f an init) ...))]. Not tail-recursive.
  *)
@@ -247,7 +246,7 @@ val rev_map2 : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
  *)
 
 val fold_left2 :
-  ('a -> 'b -> 'c -> 'a) -> 'a -> 'b list -> 'c list -> 'a
+  ('acc -> 'a -> 'b -> 'acc) -> 'acc -> 'a list -> 'b list -> 'acc
 (** [fold_left2 f init [a1; ...; an] [b1; ...; bn]] is
    [f (... (f (f init a1 b1) a2 b2) ...) an bn].
    @raise Invalid_argument if the two lists are determined
@@ -255,7 +254,7 @@ val fold_left2 :
  *)
 
 val fold_right2 :
-  ('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> 'c -> 'c
+  ('a -> 'b -> 'acc -> 'acc) -> 'a list -> 'b list -> 'acc -> 'acc
 (** [fold_right2 f [a1; ...; an] [b1; ...; bn] init] is
    [f a1 b1 (f a2 b2 (... (f an bn init) ...))].
    @raise Invalid_argument if the two lists are determined

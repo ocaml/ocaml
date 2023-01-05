@@ -111,8 +111,7 @@ type error =
   | Bad_class_type_parameters of Ident.t * type_expr list * type_expr list
   | Class_match_failure of Ctype.class_match_failure list
   | Unbound_val of string
-  | Unbound_type_var of
-      (formatter -> unit) * (type_expr * bool * string * type_expr)
+  | Unbound_type_var of (formatter -> unit) * Ctype.closed_class_failure
   | Non_generalizable_class of Ident.t * Types.class_declaration
   | Cannot_coerce_self of type_expr
   | Non_collapsable_conjunction of

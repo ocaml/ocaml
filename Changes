@@ -16,7 +16,16 @@ Working version
 * #11565: Enable -strict-formats by default.
   (Nicolás Ojeda Bär, review by David Allsopp)
 
+* #11694: Add short syntax for generative functor types `() -> ...`
+  (Jeremy Yallop, review by Gabriel Scherer, Nicolás Ojeda Bär,
+  Jacques Garrigue)
+
 ### Runtime system:
+
+- #11641: Restore Cygwin port. Add GC messages for address space reservations
+  when OCAMLRUNPARAM option v includes 0x1000.
+  (David Allsopp, review by Xavier Leroy, Guillaume Munch-Maccagnoni
+  and Gabriel Scherer)
 
 - #11743: Speed up weak array operations
   (KC Sivaramakrishnan, review by François Bobot and Sadiq Jaffer)
@@ -26,6 +35,23 @@ Working version
 
 - #11764: add prototypes to old-style C function definitions and declarations
   (Antonin Décimo, review by Xavier Leroy)
+
+- #11796: protect lazy computation of code fragment digest by a mutex.
+  This makes the thread sanitizer happier, and avoids duplicating
+  the hashing work.
+  (Gabriel Scherer, review by Xavier Leroy, report by Olivier Nicole)
+
+- #11137: new `Unsafe_store_tag(val, new_tag)` macro to stop using
+  `Tag_val(val)` as lvalue.
+  (Gabriel Scherer, review by Xavier Leroy, Guillaume Munch-Maccagnoni
+   and Nicolás Ojeda Bär)
+
+### Type system:
+
+- #6941, #11187: prohibit using classes through recursive modules
+  inheriting or including a class belonging to a mutually-recursive module
+  would previous behave incorrectly, and now results in a clean error.
+  (Leo White, review by Gabriel Scherer and Florian Angeletti)
 
 ### Code generation and optimizations:
 
@@ -55,6 +81,18 @@ Working version
 
 ### Standard library:
 
+- #11859: Make Stdlib.(@) and List.append tail-recursive and faster.
+  (Jeremy Yallop, review by Daniel Bünzli, Anil Madhavapeddy, and Bannerets)
+
+- #11856: Rewrite List.concat_map using TRMC, making it faster
+  as well as tail-recursive.
+  (Jeremy Yallop, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
+- #11836, #11837: Add `Array.map_inplace`, `Array.mapi_inplace`,
+  `Float.Array.mapi_inplace` and `Float.Array.mapi_inplace`.
+  (Léo Andrès, review by Gabriel Scherer, KC Sivaramakrishnan and
+  Nicolás Ojeda Bär)
+
 - #11410: Add Set.to_list, Map.to_list, Map.of_list, Map.add_to_list,
   (Daniel Bünzli, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
@@ -70,6 +108,15 @@ Working version
 * #10899: Change Stdlib.nan from signaling NaN to quiet NaN.
   (Greta Yorsh, review by Xavier Leroy, Guillaume Melquiond and
   Gabriel Scherer)
+
+- #11026, #11667, #11858: Rename the type of the accumulator
+  of fold functions to 'acc:
+  fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a list -> 'acc
+  fold_right : ('a -> 'acc -> 'acc) -> 'a list -> 'acc -> 'acc
+  fold_left_map : ('acc -> 'a -> 'acc * 'b) -> 'acc -> 'a list -> 'acc * 'b list
+  ...
+  (Valentin Gatien-Baron and Francois Berenger,
+  review by Gabriel Scherer and Nicolás Ojeda Bär)
 
 - #11246: Add "hash" and "seeded_hash" functions to Bool, Int, Char, Float,
   Int32, Int64, and Nativeint.
@@ -102,6 +149,11 @@ Working version
   (Simon Cruanes, review by Gabriel Scherer, Xavier Leroy,
    Guillaume Munch-Maccagnoni)
 
+- #11581: Add type equality witness `type (_, _) eq = Equal: ('a, 'a) eq` in a
+  new module Stdlib.Type.
+  (Nicolás Ojeda Bär, review by Daniel Bünzli, Jacques Garrigue, Florian
+  Angeletti, Alain Frisch, Gabriel Scherer, Jeremy Yallop and Xavier Leroy)
+
 ### Other libraries:
 
 - #11374: Remove pointer cast to a type with stricter alignment requirements
@@ -115,7 +167,16 @@ Working version
 - #11475: Make Unix terminal interface bindings domain-safe
   (Olivier Nicole and Xavier Leroy, review by Xavier Leroy)
 
+- #11775: Unix.write on a non-blocking socket under Windows will return normally
+  if the write blocks after some data has already been written (as otherwise
+  there is no way of knowing how much data has been written before
+  blocking). The same behaviour was already present under Unix.
+  (Nicolás Ojeda Bär, review by David Allsopp)
+
 ### Tools:
+
+- #1172: fix ocamlyacc's handling of raw string literals
+  (Demi Marie Obenour)
 
 - #9290: Add a directive to switch off debugging in toplevel.
   This allows to see optimized bytecode with -dlambda.
@@ -131,6 +192,9 @@ Working version
   by the compiler.
   (Demi Marie Obenour)
 
+- #11774: ocamlyacc: fail if there is an I/O error
+  (Demi Marie Obenour)
+
 ### Manual and documentation:
 
 - #9430, #11291: Document the general desugaring rules for binding operators.
@@ -138,6 +202,9 @@ Working version
 
 - #11481: Fix the type of Unix.umask to Unix.file_perm -> Unix.file_perm
   (Favonia, review by Sébastien Hinderer)
+
+- #11676: Fix missing since annotation in the `Sys` and `Format` modules
+  (Github user Bukolab99, review by Florian Angeletti)
 
 ### Compiler user-interface and warnings:
 
@@ -161,6 +228,9 @@ Working version
   modules with mismatching -for-pack
   (Pierre Chambart and Vincent Laviron, review by Mark Shinwell)
 
+- #11635, #5461, #10564: Turn warning 31 (Module_linked_twice) into a hard error
+  (Hugo Heuzard, review by Valentin Gatien-Baron and Gabriel Scherer)
+
 - #11646: Add colors to error message hints.
   (Christiana Anthony, review by Florian Angeletti)
 
@@ -171,7 +241,22 @@ Working version
   (Abiola Abdulsalam, review by Sébastien Hinderer, Nicolás Ojeda Bär and
   Florian Angeletti)
 
+- #11722: clearer error messages on non-well-founded type definitions
+  (Gabriel Scherer, review by Jacques Garrigue)
+
+- #11819: make the `native_compiler` and `native_dynlink` configuration
+  variables available through ocamlc -config.
+  (Sébastien Hinderer, review by Gabriel Scherer and David Allsopp)
+
+- #11235, #11864: usage warnings for constructors and fields can now be disabled
+  on field-by-field or constructor-by-constructor basis
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
+
+- #11847, #11849, #11851: small refactorings in the type checker
+  (Gabriel Scherer, review by Nicolás Ojeda Bär)
+
 - #11027: Separate typing counter-examples from type_pat into retype_pat;
   type_pat is no longer in CPS.
   (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
@@ -180,14 +265,20 @@ Working version
   and defining explicitly composition.
   (Jacques Garrigue, review by Gabriel Scherer)
 
+- #11286, #11515: disambiguate identifiers by using how recently they have
+  been bound in the current environment
+  (Florian Angeletti, review by Gabriel Scherer)
+
 - #11364: Allow `make -C testsuite promote` to take `TEST` and `LIST` variables
   (Antal Spector-Zabusky, review by Gabriel Scherer and David Allsopp)
 
 - #11446: document switch compilation (lambda/switch.ml)
   (Gabriel Scherer, review by Luc Maranget and Vincent Laviron)
 
-- #11601, #11612: Clean up some global state handling in emitcode, spill.
-  (Hugo Heuzard, Stefan Muenzel review by Vincent Laviron and Gabriel Scherer)
+- #11601, #11612, #11628: Clean up some global state handling
+  in emitcode, bytepackager, spill.
+  (Hugo Heuzard, Stefan Muenzel, review by Vincent Laviron, Gabriel Scherer
+   and Nathanaëlle Courant)
 
 - #11627: use return values instead of globals for linear scan intervals
   (Stefan Muenzel, review by Nicolás Ojeda Bär)
@@ -207,9 +298,20 @@ Working version
   (Sébastien Hinderer, review by Florian Angeletti, Nicolás Ojeda Bär and
   Gabriel Scherer)
 
+- #11615: remove global variables form asmcomp/linearize.ml
+  (Stefan Muenzel, review by Nicolás Ojeda Bär)
+
 ### Build system:
+
 - #11590: Allow installing to a destination path containing spaces.
    (Élie Brami, review by Sébastien Hinderer and David Allsopp)
+
+- #11243, #11248, #11268, #11420, #11675: merge the sub-makefiles into
+  the root Makefile.
+  (Sébastien Hinderer, review by David Allsopp and Florian Angeletti)
+
+- #11828: Compile otherlibs/ C stubs in two version for native and bytecode
+  (Olivier Nicole, review by Sébastien Hinderer and Xavier Leroy)
 
 ### Bug fixes:
 
@@ -245,8 +347,39 @@ Working version
 - #11732: Ensure that types from packed modules are always generalised
   (Stephen Dolan and Leo White, review by Jacques Garrigue)
 
+- #11776: Extend environment with functor parameters in `strengthen_lazy`.
+  (Chris Casinghino and Luke Maurer, review by Gabriel Scherer)
+
+- #11803, #11808: on x86, the destination of an integer comparison must be
+  a register, it cannot be a stack slot.
+  (Vincent Laviron, review by Xavier Leroy, report by
+   Emilio Jesús Gallego Arias)
+
+- #11809: Protect Parmatch.pats_of_type from missing cmis
+  (Jacques Garrigue, review by Stephen Dolan and Gabriel Scherer)
+
+- #11824: Fix a crash when calling `ocamlrun -b`
+  (Florian Angeletti, review by Sébastien Hinderer)
+
+- #11815: Marshalling continuations raises invalid argument exception.
+  (Jérôme Vouillon, review by Nicolás Ojeda Bär, Stephen Dolan and
+   Hugo Heuzard)
+
+- #11850: When stopping before the `emit` phase (using `-stop-after`), an empty
+  temporary assembly file is no longer left in the file system.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer and Xavier Leroy)
+
 OCaml 5.0
 ---------
+
+- #10831: Multicore OCaml
+  (Enguerrand Decorne, Stephen Dolan, Tom Kelly, Sadiq Jaffer,
+  Anil Madhavapeddy, Sudha Parimala, KC Sivaramakrishnan,
+  Leo White, the Tarides multicore team,
+  review by Florian Angeletti, Damien Doligez, Xavier Leroy,
+  Guillaume Munch-Maccagnoni, Olivier Nicole, Nicolás Ojeda Bär,
+  Gabriel Scherer, the OCaml core development team, and many
+  other valued reviewers.)
 
 ### Language features:
 
@@ -274,9 +407,6 @@ OCaml 5.0
   (Sadiq Jaffer, review by Anil Madhavapeddy, Enguerrand Decorne,
   Richard Warburton, Gabriel Scherer, Sabine Schmaltz, Florian Angeletti,
   Patrick Ferris, Tom Kelly)
-
-- #10831: Multicore OCaml
-  (The multicore team, caml-devel and more)
 
 * #10723: do not use `-flat-namespace` linking for macOS.
   (Carlo Cabrera, review by Damien Doligez)
@@ -561,6 +691,10 @@ OCaml 5.0
    (Amandine Nangah, review by David Allsopp, Florian Angeletti,
    Sébastien Hinderer, and Vincent Laviron)
 
+- #11813: Make new multicore chapters easier to discover, and emphasize impact
+  on C bindings.
+  (Edwin Török, review by KC Sivaramakrishnan, and Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 - #9140, #11131: New command-line flag -nocwd to not include implicit
@@ -789,6 +923,11 @@ OCaml 5.0
 - #11737: Fix segfault condition in Unix.stat under Windows in the presence of
   multiple threads.
   (Marc Lasson, Nicolás Ojeda Bär, review by Gabriel Scherer and David Allsopp)
+
+- #11533, #11534: follow synonyms again in #show_module_type
+  (this had stopped working in 4.14.0)
+  (Gabriel Scherer, review by Jacques Garrigue and Florian Angeletti,
+   report by Yaron Minsky)
 
 OCaml 4.14.0 (28 March 2022)
 ----------------------------

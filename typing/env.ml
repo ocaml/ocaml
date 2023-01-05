@@ -435,6 +435,23 @@ module IdTbl =
           List.map (fun (p, desc) -> (p, f desc))
             (find_all wrap name next)
 
+    let rec find_all_idents name tbl () =
+      let current =
+        Ident.find_all_seq name tbl.current
+        |> Seq.map (fun (id, _) -> Some id)
+      in
+      let next () =
+        match tbl.layer with
+        | Nothing -> Seq.Nil
+        | Open { next; components; _ } ->
+            if NameMap.mem name components then
+              Seq.Cons(None, find_all_idents name next)
+            else
+              find_all_idents name next ()
+        | Map {next; _ } -> find_all_idents name next ()
+      in
+      Seq.append current next ()
+
     let rec fold_name wrap f tbl acc =
       let acc =
         Ident.fold_name
@@ -1897,6 +1914,7 @@ and store_value ?check id addr decl shape env =
     summary = Env_value(env.summary, id, decl) }
 
 and store_constructor ~check type_decl type_id cstr_id cstr env =
+  Builtin_attributes.warning_scope cstr.cstr_attributes (fun () ->
   if check && not type_decl.type_loc.Location.loc_ghost
      && Warnings.is_active (Warnings.Unused_constructor ("", Unused))
   then begin
@@ -1920,7 +1938,7 @@ and store_constructor ~check type_decl type_id cstr_id cstr env =
                      (Warnings.Unused_constructor(name, complaint)))
               (constructor_usage_complaint ~rebind:false priv used));
     end;
-  end;
+  end);
   let cda_shape = Shape.leaf cstr.cstr_uid in
   { env with
     constrs =
@@ -1929,6 +1947,7 @@ and store_constructor ~check type_decl type_id cstr_id cstr env =
   }
 
 and store_label ~check type_decl type_id lbl_id lbl env =
+  Builtin_attributes.warning_scope lbl.lbl_attributes (fun () ->
   if check && not type_decl.type_loc.Location.loc_ghost
      && Warnings.is_active (Warnings.Unused_field ("", Unused))
   then begin
@@ -1951,7 +1970,7 @@ and store_label ~check type_decl type_id lbl_id lbl env =
                    Location.prerr_warning
                      loc (Warnings.Unused_field(name, complaint)))
               (label_usage_complaint priv mut used))
-  end;
+  end);
   { env with
     labels = TycompTbl.add lbl_id lbl env.labels;
   }
@@ -2020,6 +2039,7 @@ and store_extension ~check ~rebind id addr ext shape env =
       cda_address = Some addr;
       cda_shape = shape }
   in
+  Builtin_attributes.warning_scope ext.ext_attributes (fun () ->
   if check && not loc.Location.loc_ghost &&
     Warnings.is_active (Warnings.Unused_extension ("", false, Unused))
   then begin
@@ -2041,7 +2061,7 @@ and store_extension ~check ~rebind id addr ext shape env =
                        (name, is_exception, complaint)))
              (constructor_usage_complaint ~rebind priv used))
     end;
-  end;
+  end);
   { env with
     constrs = TycompTbl.add id cda env.constrs;
     summary = Env_extension(env.summary, id, ext) }
@@ -2199,6 +2219,14 @@ and add_cltype ?shape id ty env =
 
 let add_module ?arg ?shape id presence mty env =
   add_module_declaration ~check:false ?arg ?shape id presence (md mty) env
+
+let add_module_lazy ~update_summary id presence mty env =
+  let md = Subst.Lazy.{mdl_type = mty;
+                       mdl_attributes = [];
+                       mdl_loc = Location.none;
+                       mdl_uid = Uid.internal_not_actually_unique}
+  in
+  add_module_declaration_lazy ~update_summary id presence md env
 
 let add_local_type path info env =
   { env with
@@ -3151,6 +3179,23 @@ let find_constructor_by_name lid env =
 let find_label_by_name lid env =
   let loc = Location.(in_file !input_name) in
   lookup_label ~errors:false ~use:false ~loc Projection lid env
+
+(* Stable name lookup for printing *)
+
+let find_index_tbl ident tbl  =
+  let lbs = IdTbl.find_all_idents (Ident.name ident) tbl in
+  let find_ident (n,p) = match p with
+    | Some id -> if Ident.same ident id then Some n else None
+    | _ -> None
+  in
+  Seq.find_map find_ident @@ Seq.mapi (fun i x -> i,x) lbs
+
+let find_value_index id env = find_index_tbl id env.values
+let find_type_index id env = find_index_tbl id env.types
+let find_module_index id env = find_index_tbl id env.modules
+let find_modtype_index id env = find_index_tbl id env.modtypes
+let find_class_index id env = find_index_tbl id env.classes
+let find_cltype_index id env = find_index_tbl id env.cltypes
 
 (* Ordinary lookup functions *)
 

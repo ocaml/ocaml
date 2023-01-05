@@ -184,7 +184,8 @@ val filter_map_inplace: ('a -> 'b -> 'b option) -> ('a, 'b) t ->
     Other comments for {!iter} apply as well.
     @since 4.03 *)
 
-val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
+val fold :
+  ('a -> 'b -> 'acc -> 'acc) -> ('a, 'b) t -> 'acc -> 'acc
 (** [Hashtbl.fold f tbl init] computes
    [(f kN dN ... (f k1 d1 init)...)],
    where [k1 ... kN] are the keys of all bindings in [tbl],
@@ -388,7 +389,8 @@ module type S =
       unit
     (** @since 4.03 *)
 
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val fold :
+      (key -> 'a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
     val length : 'a t -> int
     val stats: 'a t -> statistics (** @since 4.00 *)
 
@@ -464,7 +466,8 @@ module type SeededS =
       unit
     (** @since 4.03 *)
 
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val fold :
+      (key -> 'a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
     val length : 'a t -> int
     val stats: 'a t -> statistics
 

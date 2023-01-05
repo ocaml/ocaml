@@ -552,14 +552,14 @@ Error: Signature mismatch:
        is not included in
          sig val f : (module s) -> unit end
        Values do not match:
-         val f : (module s/1) -> unit
+         val f : (module s) -> unit
        is not included in
          val f : (module s/2) -> unit
-       The type (module s/1) -> unit is not compatible with the type
+       The type (module s) -> unit is not compatible with the type
          (module s/2) -> unit
-       Type (module s/1) is not compatible with type (module s/2)
+       Type (module s) is not compatible with type (module s/2)
        Line 6, characters 4-17:
-         Definition of module type s/1
+         Definition of module type s
        Line 2, characters 2-15:
          Definition of module type s/2
 |}];;

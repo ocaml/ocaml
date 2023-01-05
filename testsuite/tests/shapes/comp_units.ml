@@ -25,7 +25,7 @@ module Mproj = Unit
 module F (X : sig type t end) = X
 [%%expect{|
 {
- "F"[module] -> Abs<.4>(X/278, X/278<.3>);
+ "F"[module] -> Abs<.4>(X/279, X/279<.3>);
  }
 module F : functor (X : sig type t end) -> sig type t = X.t end
 |}]
@@ -126,7 +126,7 @@ module Without_constraint :
     val find_last : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
     val iter : (elt -> unit) -> t -> unit
-    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
     val map : (elt -> elt) -> t -> t
     val filter : (elt -> bool) -> t -> t
     val filter_map : (elt -> elt option) -> t -> t

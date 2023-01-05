@@ -212,6 +212,11 @@ let compile_unit ~output_prefix ~asm_filename ~keep_asm ~obj_filename gen =
   let create_asm = should_emit () &&
                    (keep_asm || not !Emitaux.binary_backend_available) in
   Emitaux.create_asm_file := create_asm;
+  let remove_asm_file () =
+    (* if [should_emit ()] is [false] then no assembly is generated,
+       so the (empty) temporary file should be deleted. *)
+    if not create_asm || not keep_asm then remove_file asm_filename
+  in
   Misc.try_finally
     ~exceptionally:(fun () -> remove_file obj_filename)
     (fun () ->
@@ -222,8 +227,7 @@ let compile_unit ~output_prefix ~asm_filename ~keep_asm ~obj_filename gen =
             write_linear output_prefix)
          ~always:(fun () ->
              if create_asm then close_out !Emitaux.output_channel)
-         ~exceptionally:(fun () ->
-             if create_asm && not keep_asm then remove_file asm_filename);
+         ~exceptionally:remove_asm_file;
        if should_emit () then begin
          let assemble_result =
            Profile.record "assemble"
@@ -232,7 +236,7 @@ let compile_unit ~output_prefix ~asm_filename ~keep_asm ~obj_filename gen =
          if assemble_result <> 0
          then raise(Error(Assembler_error asm_filename));
        end;
-       if create_asm && not keep_asm then remove_file asm_filename
+       remove_asm_file ()
     )
 
 let end_gen_implementation ?toplevel ~ppf_dump

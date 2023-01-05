@@ -57,12 +57,12 @@ Error: This is a generative functor. It can only be applied to ()
 
 (* Cannot coerce between applicative and generative *)
 module F1 (X : sig end) = struct end;;
-module F2 : functor () -> sig end = F1;; (* fail *)
+module F2 : () -> sig end = F1;; (* fail *)
 [%%expect{|
 module F1 : functor (X : sig end) -> sig end
-Line 2, characters 36-38:
-2 | module F2 : functor () -> sig end = F1;; (* fail *)
-                                        ^^
+Line 2, characters 28-30:
+2 | module F2 : () -> sig end = F1;; (* fail *)
+                                ^^
 Error: Signature mismatch:
        Modules do not match:
          functor (X : sig end) -> ...

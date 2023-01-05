@@ -31,6 +31,7 @@ type error =
   | Required_module_unavailable of modname * modname
   | Camlheader of string * filepath
   | Wrong_link_order of (modname * modname) list
+  | Multiple_definition of modname * filepath * filepath
 
 exception Error of error
 
@@ -175,15 +176,17 @@ let implementations_defined = ref ([] : (string * string) list)
 
 let check_consistency file_name cu =
   begin try
+    let source = List.assoc cu.cu_name !implementations_defined in
+    raise (Error (Multiple_definition(cu.cu_name, file_name, source)));
+  with Not_found -> ()
+  end;
+  begin try
     List.iter
       (fun (name, crco) ->
         interfaces := name :: !interfaces;
         match crco with
           None -> ()
-        | Some crc ->
-            if name = cu.cu_name
-            then Consistbl.set crc_interfaces name crc file_name
-            else Consistbl.check crc_interfaces name crc file_name)
+        | Some crc -> Consistbl.check crc_interfaces name crc file_name)
       cu.cu_imports
   with Consistbl.Inconsistency {
       unit_name = name;
@@ -191,14 +194,6 @@ let check_consistency file_name cu =
       original_source = auth;
     } ->
     raise(Error(Inconsistent_import(name, user, auth)))
-  end;
-  begin try
-    let source = List.assoc cu.cu_name !implementations_defined in
-    Location.prerr_warning (Location.in_file file_name)
-      (Warnings.Module_linked_twice(cu.cu_name,
-                                    Location.show_filename file_name,
-                                    Location.show_filename source))
-  with Not_found -> ()
   end;
   implementations_defined :=
     (cu.cu_name, file_name) :: !implementations_defined
@@ -780,6 +775,13 @@ let report_error ppf = function
       in
       fprintf ppf "@[<hov 2>Wrong link order: %a@]"
         (pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ",@ ") depends_on) l
+  | Multiple_definition(modname, file1, file2) ->
+      fprintf ppf
+        "@[<hov>Files %a@ and %a@ both define a module named %s@]"
+        Location.print_filename file1
+        Location.print_filename file2
+        modname
+
 
 let () =
   Location.register_error_of_exn

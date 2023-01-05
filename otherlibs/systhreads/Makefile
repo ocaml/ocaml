@@ -66,7 +66,7 @@ lib$(LIBNAME)nat.$(A): $(NATIVECODE_C_OBJS)
 
 $(LIBNAME).cma: $(THREADS_BCOBJS)
 ifeq "$(UNIX_OR_WIN32)" "unix"
-	$(MKLIB) -o $(LIBNAME) -ocamlc '$(CAMLC)' -cclib -lunix -linkall $^
+	$(MKLIB) -o $(LIBNAME) -ocamlc '$(CAMLC)' -cclib -lunixbyt -linkall $^
 # TODO: Figure out why -cclib -lunix is used here.
 # It may be because of the threadsUnix module which is deprecated.
 # It may hence be good to figure out whether this module shouldn't be

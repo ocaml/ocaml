@@ -50,6 +50,7 @@ let default_rpath = {@QS@|@rpath@|@QS@}
 let mksharedlibrpath = {@QS@|@mksharedlibrpath@|@QS@}
 let ar = {@QS@|@AR@|@QS@}
 let supports_shared_libraries = @supports_shared_libraries@
+let native_dynlink = @natdynlink@
 let mkdll, mkexe, mkmaindll =
   if Sys.win32 || Sys.cygwin && supports_shared_libraries then
     let flexlink =
@@ -83,6 +84,8 @@ let flat_float_array = @flat_float_array@
 
 let function_sections = @function_sections@
 let afl_instrument = @afl@
+
+let native_compiler = @native_compiler@
 
 let architecture = {@QS@|@arch@|@QS@}
 let model = {@QS@|@model@|@QS@}

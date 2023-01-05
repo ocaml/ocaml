@@ -41,6 +41,7 @@ CAMLprim value caml_unix_write(value fd, value buf, value vofs, value vlen)
       ret = send(s, iobuf, numbytes, 0);
       if (ret == SOCKET_ERROR) err = WSAGetLastError();
       caml_leave_blocking_section();
+      if (ret == SOCKET_ERROR && err == WSAEWOULDBLOCK && written > 0) break;
       numwritten = ret;
     } else {
       HANDLE h = Handle_val(fd);
