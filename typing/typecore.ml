@@ -3619,7 +3619,7 @@ and type_expect_
       end
   | Pexp_letmodule(name, smodl, sbody) ->
       let lv = get_current_level () in
-      let (id, name, pres, modl, _, body) =
+      let (id, pres, modl, _, body) =
         with_local_level begin fun () ->
           let modl, pres, id, new_env =
             Typetexp.with_local_type_variable_scope begin fun () ->
@@ -3655,9 +3655,9 @@ and type_expect_
              Scoping_let_module errors
            *)
           let body = type_expect new_env sbody ty_expected_explained in
-          (id, name, pres, modl, new_env, body)
+          (id, pres, modl, new_env, body)
         end
-        ~post: begin fun (_,_,_,_,new_env,body) ->
+        ~post: begin fun (_id, _pres, _modl, new_env, body) ->
           (* Ensure that local definitions do not leak. *)
           (* required for implicit unpack *)
           enforce_current_level new_env body.exp_type
