@@ -2392,16 +2392,6 @@ simple_expr:
       { $1 }
 ;
 %inline simple_expr_attrs:
-  | DOTLESS e = seq_expr GREATERDOT                 /* NNN */
-    { (e.pexp_desc,
-       (None,
-        Attr.mk ~loc:(make_loc $sloc) (mknoloc "metaocaml.bracket") (PStr []) ::
-                               e.pexp_attributes)) }/* NNN */
-  | DOTTILDE e = simple_expr                        /* NNN */
-    { (e.pexp_desc,
-       (None,
-        Attr.mk ~loc:(make_loc $sloc) (mknoloc "metaocaml.escape") (PStr []) ::
-        e.pexp_attributes)) }                       /* NNN */
   | BEGIN ext = ext attrs = attributes e = seq_expr END
       { e.pexp_desc, (ext, attrs @ e.pexp_attributes) }
   | BEGIN ext_attributes END
@@ -2508,6 +2498,10 @@ simple_expr:
   | mod_longident DOT
     LPAREN MODULE ext_attributes module_expr COLON error
       { unclosed "(" $loc($3) ")" $loc($8) }
+  | DOTLESS e = seq_expr GREATERDOT                 /* NNN */
+      { Pexp_bracket e }                              /* NNN */
+  | DOTTILDE e = simple_expr                        /* NNN */
+      { Pexp_escape e }                               /* NNN */
 ;
 labeled_simple_expr:
     simple_expr %prec below_HASH
