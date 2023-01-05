@@ -25,6 +25,9 @@ type error =
   | Ill_formed_ast of Location.t * string
   | Invalid_package_type of Location.t * string
   | Removed_string_set of Location.t
+  (* NNN begin *)
+  | Uninterpreted_metaocaml_expression of Location.t
+  (* NNN end *)
 
 exception Error of error
 exception Escape_error
@@ -39,7 +42,13 @@ let location_of_error = function
   | Invalid_package_type (l, _)
   | Expecting (l, _)
   | Removed_string_set l -> l
+  | Uninterpreted_metaocaml_expression l -> l
 
 
 let ill_formed_ast loc s =
   raise (Error (Ill_formed_ast (loc, s)))
+
+(* NNN begin *)
+let uninterpreted_metaocaml_expression loc =
+  raise (Error (Uninterpreted_metaocaml_expression loc))
+(* NNN end *)

@@ -30,9 +30,15 @@ type error =
   | Ill_formed_ast of Location.t * string
   | Invalid_package_type of Location.t * string
   | Removed_string_set of Location.t
+  (* NNN begin *)
+  | Uninterpreted_metaocaml_expression of Location.t
+  (* NNN end *)
 
 exception Error of error
 exception Escape_error
 
 val location_of_error: error -> Location.t
 val ill_formed_ast: Location.t -> string -> 'a
+
+(* NNN *)
+val uninterpreted_metaocaml_expression : Location.t -> 'a
