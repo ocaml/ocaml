@@ -382,6 +382,14 @@ and expression i ppf x =
       payload i ppf arg
   | Pexp_unreachable ->
       line i ppf "Pexp_unreachable"
+  (* NNN begin *)
+  | Pexp_bracket e ->
+      line i ppf "Pexp_bracket\n";
+      expression i ppf e;
+  | Pexp_escape e ->
+      line i ppf "Pexp_escape\n";
+      expression i ppf e;
+  (* NNN end *)
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_string_loc

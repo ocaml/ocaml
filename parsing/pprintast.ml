@@ -754,6 +754,14 @@ and expression ctxt f x =
           (expression ctxt) body
     | Pexp_extension e -> extension ctxt f e
     | Pexp_unreachable -> pp f "."
+    (* NNN begin *)
+    | Pexp_bracket e ->
+        pp f "@[<hov2>.<@ %a @ >.@]" (expression ctxt) e
+    | Pexp_escape e ->
+        (match e.pexp_desc with
+        | Pexp_ident li -> pp f ".~%a" longident_loc li
+        | _ -> pp f ".~%a" (paren true (expression ctxt)) e)
+    (* NNN end *)
     | _ -> expression1 ctxt f x
 
 and expression1 ctxt f x =
