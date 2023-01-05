@@ -38,12 +38,4 @@ module Id = struct
       (type a b) ((module A) : a t) ((module B) : b t) : (a, b) eq option
     =
     match A.Id with B.Id -> Some Equal | _ -> None
-
-  let compare a b = Stdlib.compare (uid a : int) (uid b : int)
-  let equal a b = compare a b = 0
-
-  external seeded_hash_param :
-    int -> int -> int -> 'a -> int = "caml_hash" [@@noalloc]
-  let seeded_hash seed a = seeded_hash_param 10 100 seed (uid a)
-  let hash a = seeded_hash_param 10 100 0 a
 end

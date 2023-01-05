@@ -67,21 +67,6 @@ module Id : sig
   (** [typed_equal i0 i1] is [Some Equal] if identifier [i0] is equal
       to [i1] and [None] otherwise. *)
 
-  val equal : 'a t -> 'b t -> bool
-  (** [equal i0 i1] is [true] if and only if [i0] and [i1] are the same
-      identifiers. *)
-
-  val compare : 'a t -> 'b t -> int
-  (** [compare] is a total order on identifiers compatible with {!equal}. *)
-
-  val seeded_hash : int -> 'a t -> int
-  (** A seeded hash function for identifiers, with the same output value as
-      {!Hashtbl.seeded_hash}. *)
-
-  val hash : 'a t -> int
-  (** An unseeded hash function for identifiers, with the same output value as
-      {!Hashtbl.hash}. *)
-
   (** {1:example Example}
 
       The following shows how type identifiers can be used to
