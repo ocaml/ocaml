@@ -355,6 +355,10 @@ Working version
   (Jérôme Vouillon, review by Nicolás Ojeda Bär, Stephen Dolan and
    Hugo Heuzard)
 
+- #11850: When stopping before the `emit` phase (using `-stop-after`), an empty
+  temporary assembly file is no longer left in the file system.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer and Xavier Leroy)
+
 OCaml 5.0
 ---------
 
