@@ -4969,7 +4969,7 @@ and type_cases
   (* type bodies *)
   let in_function = if List.length caselist = 1 then in_function else None in
   let ty_res' = instance ty_res in
-  let cases =
+  let cases = with_local_level_if_principal ~post:ignore begin fun () ->
     List.map
       (fun { typed_pat = pat; branch_env = ext_env; pat_vars = pvs; unpacks;
              untyped_case = {pc_lhs = _; pc_guard; pc_rhs};
@@ -5016,7 +5016,7 @@ and type_cases
         }
       )
       half_typed_cases
-  in
+  end in
   let do_init = may_contain_gadts || needs_exhaust_check in
   let ty_arg_check =
     if do_init then
