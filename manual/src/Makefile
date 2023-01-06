@@ -166,7 +166,8 @@ clean:
 	$(MAKE) -C refman clean
 	$(MAKE) -C tutorials clean
 	cd htmlman; rm -rf libref compilerlibref *.htoc *.html *.haux *.hind *.svg \
-	                   manual.hmanual manual.hmanual.kwd manual.css
+                       fonts/KaTeX* katex.min.css katex.min.js highlight.pack.js \
+	                   manual.hmanual manual.hmanual.kwd manual.css odoc.css
 	rm -rf $(DIRS)
 
 .PHONY: distclean
