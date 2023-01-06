@@ -23,11 +23,11 @@
 
 #define Make_header_with_reserved(reserved, wosize, tag, color)      \
       (/*CAMLassert ((wosize) <= Max_wosize),*/                      \
-       ((header_t) ((HEADER_RESERVED_BITS ? ((header_t) (reserved) << HEADER_RESERVED_SHIFT) : 0) \
-                    + ((header_t) (wosize) << HEADER_WOSIZE_SHIFT)      \
-                    + (color) /* colors are pre-shifted */              \
-                    + (tag_t) (tag)))                                   \
-      )
+       ((header_t) (Hd_reserved(reserved))                           \
+                    + ((header_t) (wosize) << HEADER_WOSIZE_SHIFT)   \
+                    + (color) /* colors are pre-shifted */           \
+                    + (tag_t) (tag)))
+      
 
 #define Make_header(wosize, tag, color) Make_header_with_reserved(0, wosize, tag, color)
 
