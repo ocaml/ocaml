@@ -125,12 +125,18 @@ where 0 <= R <= 31 is HEADER_RESERVED_BITS, set with the
 #define Tag_hd(hd) ((tag_t) ((hd) & HEADER_TAG_MASK))
 #define Wosize_hd(hd) ((mlsize_t) (((hd) >> HEADER_WOSIZE_SHIFT) & HEADER_WOSIZE_MASK))
 
-/* These macros are ugly because the compiler complains about (0 ? (x
- * << 64) : 0), so I have to conditionalize more. */
+#if HEADER_RESERVED_BITS > 0
 
-#define HEADER_RESERVED_SHIFT (HEADER_RESERVED_BITS ? (HEADER_BITS - HEADER_RESERVED_BITS) : 0)
-#define Reserved_hd(hd) (HEADER_RESERVED_BITS ? ((hd) >> HEADER_RESERVED_SHIFT) : (reserved_t)0)
-#define Hd_reserved(res) (HEADER_RESERVED_BITS ? ((header_t)(res) << HEADER_RESERVED_SHIFT) : (header_t)0)
+#define HEADER_RESERVED_SHIFT (HEADER_BITS - HEADER_RESERVED_BITS)
+#define Reserved_hd(hd)  ((hd) >> HEADER_RESERVED_SHIFT)
+#define Hd_reserved(res) ((header_t)(res) << HEADER_RESERVED_SHIFT)
+
+#else /* HEADER_RESERVED_BITS is 0 */
+
+#define Reserved_hd(hd)  ((reserved_t)0)
+#define Hd_reserved(res) ((header_t)0)
+
+#endif
 
 /* Color values are pre-shifted */
 
