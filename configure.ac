@@ -423,9 +423,9 @@ AC_ARG_WITH([target-bindir],
 AC_ARG_ENABLE([reserved-header-bits],
   [AS_HELP_STRING([--enable-reserved-header-bits=BITS],
     [reserve BITS (between 0 and 31) bits in block headers])],
-  [AS_CASE([enable_reserved_header_bits],
+  [AS_CASE([$enable_reserved_header_bits],
     [[[0-9]]|[[1-2]][[0-9]]|3[[0-1]]],
-      [ reserved_header_bits="$enable_reserved_header_bits"],
+      [ reserved_header_bits=$enable_reserved_header_bits],
   [AC_MSG_ERROR([invalid argument to --enable-reserved-header-bits])])])
 
 AC_ARG_ENABLE([stdlib-manpages],
