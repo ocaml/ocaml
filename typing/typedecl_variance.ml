@@ -88,9 +88,7 @@ let compute_variance env visited vari ty =
         compute_same ty
     | Tvar _ | Tnil | Tlink _ | Tunivar _ -> ()
     | Tpackage (_, fl) ->
-        let v =
-          Variance.(if mem Inv vari then full else unknown)
-        in
+        let v = Variance.(compose vari full) in
         List.iter (fun (_, ty) -> compute_variance_rec v ty) fl
   in
   compute_variance_rec vari ty
