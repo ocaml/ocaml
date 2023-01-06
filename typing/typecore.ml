@@ -4955,8 +4955,7 @@ and type_cases
       (* Post-processing and generalization *)
       if take_partial_instance <> None then unify_pats (instance ty_arg);
       List.iter (fun { pat_vars; _ } ->
-        iter_pattern_variables_type
-          (fun t -> unify_var env (newvar()) t) pat_vars
+        iter_pattern_variables_type (enforce_current_level env) pat_vars
       ) half_typed_cases;
       (half_typed_cases, ty_res, do_copy_types, ty_arg')
     end
