@@ -35,9 +35,7 @@ extern "C" {
 
 CAMLextern value caml_alloc_shr (mlsize_t wosize, tag_t);
 CAMLextern value caml_alloc_shr_noexc(mlsize_t wosize, tag_t);
-CAMLextern value caml_alloc_shr_reserved (mlsize_t, tag_t, intnat);
-CAMLextern value caml_alloc_shr_preserving_reserved (mlsize_t, tag_t,
-                                                     header_t);
+CAMLextern value caml_alloc_shr_reserved (mlsize_t, tag_t, reserved_t);
 
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t bsz);
@@ -211,7 +209,7 @@ enum caml_alloc_small_flags {
     GC(dom_st, wosize);                                                     \
   }                                                                         \
   Hd_hp (dom_st->young_ptr) =                                               \
-    Make_header_with_reserved((reserved), (wosize), (tag), 0);              \
+    Make_header_with_reserved((wosize), (tag), 0, (reserved));              \
   (result) = Val_hp (dom_st->young_ptr);                                    \
   DEBUG_clear ((result), (wosize));                                         \
 }while(0)

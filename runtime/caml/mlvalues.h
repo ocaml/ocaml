@@ -56,6 +56,7 @@ extern "C" {
 
 typedef intnat value;
 typedef uintnat header_t;
+typedef header_t reserved_t;
 typedef uintnat mlsize_t;
 typedef unsigned int tag_t;             /* Actually, an unsigned char */
 typedef uintnat color_t;
@@ -128,7 +129,7 @@ where 0 <= R <= 31 is HEADER_RESERVED_BITS, set with the
  * << 64) : 0), so I have to conditionalize more. */
 
 #define HEADER_RESERVED_SHIFT (HEADER_RESERVED_BITS ? (HEADER_BITS - HEADER_RESERVED_BITS) : 0)
-#define Reserved_hd(hd) (HEADER_RESERVED_BITS ? ((hd) >> HEADER_RESERVED_SHIFT) : (header_t)0)
+#define Reserved_hd(hd) (HEADER_RESERVED_BITS ? ((hd) >> HEADER_RESERVED_SHIFT) : (reserved_t)0)
 #define Hd_reserved(res) (HEADER_RESERVED_BITS ? ((header_t)(res) << HEADER_RESERVED_SHIFT) : (header_t)0)
 
 /* Color values are pre-shifted */
@@ -151,8 +152,8 @@ where 0 <= R <= 31 is HEADER_RESERVED_BITS, set with the
 #define Op_hp(hp) ((value *) Val_hp (hp))
 #define Bp_hp(hp) ((char *) Val_hp (hp))
 
-#define Num_tags (HEADER_TAG_MASK + 1)
-#define Max_wosize HEADER_WOSIZE_MASK
+#define Num_tags (1ull << HEADER_TAG_BITS)
+#define Max_wosize ((1ull << HEADER_WOSIZE_BITS) - 1ull)
 
 #define Wosize_val(val) (Wosize_hd (Hd_val (val)))
 #define Wosize_op(op) (Wosize_val (op))
