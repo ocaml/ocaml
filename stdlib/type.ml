@@ -26,7 +26,7 @@ module Id = struct
     type _ id += Id : t id
   end
 
-  type 'a t = (module ID with type t = 'a)
+  type !'a t = (module ID with type t = 'a)
 
   let make (type a) () : a t =
     (module struct type t = a type _ id += Id : t id end)
