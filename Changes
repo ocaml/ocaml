@@ -255,9 +255,9 @@ Working version
   type_pat is no longer in CPS.
   (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
 
-- #11018: Clean up Types.Variance, adding a description of the lattice used,
-  and defining explicitly composition.
-  (Jacques Garrigue, review by Gabriel Scherer)
+- #11018, #11869: Clean up Types.Variance, adding a description of
+  the lattice used, and defining explicitly composition.
+  (Jacques Garrigue, review by Gabriel Scherer and Jeremy Yallop)
 
 - #11286, #11515: disambiguate identifiers by using how recently they have
   been bound in the current environment
