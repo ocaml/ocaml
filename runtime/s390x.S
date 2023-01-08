@@ -584,7 +584,6 @@ LBL(caml_start_program):
           DW_OP_breg + DW_REG_r15, 16 /* exn handler */, DW_OP_deref, \
           DW_OP_plus_uconst, start_program_sleb128_2byte
 #endif
-        PREPARE_FOR_C_CALL
 #ifdef ASM_CFI_SUPPORTED
         .cfi_escape DW_CFA_def_cfa_expression, 4 + 3,                 \
             /* %r15 points to the exn handler on the OCaml stack */   \
@@ -594,7 +593,6 @@ LBL(caml_start_program):
 #endif
         basr    %r14, TMP
 LBL(caml_retaddr):
-        CLEANUP_AFTER_C_CALL
     /* pop exn handler */
         lg      %r8, 0(%r15)
         la      %r15, 16(%r15)
@@ -791,7 +789,7 @@ LBL(do_perform):
         stg     %r0, Handler_parent(%r9) /* Set parent of performer to NULL */
         lgr     %r4, %r5                 /* %r4 = last_fiber */
         lg      %r5, Handler_effect(%r9) /* %r5 := effect handler */
-        brasl    %r14, GCALL(caml_apply3)
+        brcl    15, GCALL(caml_apply3)
 LBL(112):
     /* Switch back to original performer before raising Unhandled
        (no-op unless this is a reperform) */
@@ -871,7 +869,7 @@ CFI_STARTPROC
         lg      %r9, Stack_sp(%r2) /* %r9 = sp of new stack */
     /* Create an exception handler on the target stack
        after 16byte DWARF & gc_regs block (which is unused here) */
-        lay     %r9, 32(%r9)
+        lay     %r9, -32(%r9)
         larl    TMP, LBL(fiber_exn_handler)
         stg     TMP, 8(%r9)
     /* link the previous exn_handler so that copying stacks works */
@@ -891,7 +889,6 @@ CFI_STARTPROC
 #endif
     /* Call the function on the new stack */
         lgr     %r2, %r4 /* first argument */
-        PREPARE_FOR_C_CALL
 #ifdef ASM_CFI_SUPPORTED
         .cfi_escape DW_CFA_def_cfa_expression, 4+3+2, \
           DW_OP_breg + DW_REG_r15,                    \
@@ -901,7 +898,6 @@ CFI_STARTPROC
           DW_OP_plus_uconst, RETADDR_ENTRY_SIZE
 #endif
         basr    %r14, %r5 /* closure in %r3 (second argument) */
-        CLEANUP_AFTER_C_CALL
 LBL(frame_runstack):
         lay     %r8, 32(%r15) /*%r8 = stack_handler */
         lg      %r7, Handler_value(%r8) /* saved across C call */
@@ -937,7 +933,7 @@ LBL(caml_runstack_1):
         br      TMP
 LBL(fiber_exn_handler):
         lay     %r8, 16(%r15)
-        lg      %r3, Handler_exception(%r8)
+        lg      %r7, Handler_exception(%r8)
         brcl    15, LBL(caml_runstack_1)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_runstack))

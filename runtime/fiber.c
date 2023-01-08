@@ -269,9 +269,6 @@ next_chunk:
       sp += 3 * sizeof(value); /* trap frame & DWARF pointer */
       regs = *(value**)sp;     /* update gc_regs */
       sp += 1 * sizeof(value); /* gc_regs */
-#ifdef TARGET_s390x
-      sp += 160; /* skip area reserved for regs on stack */
-#endif
       goto next_chunk;
     }
   }
