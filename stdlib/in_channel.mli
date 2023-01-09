@@ -176,7 +176,7 @@ val fold_lines : ('acc -> string -> 'acc) -> 'acc -> t -> 'acc
     until the end of file is reached, and successively passes each line
     to function [f] in the style of a fold.
     More precisely, if lines [l1, ..., lN] are read,
-    [fold_lines f init c] computes [f (... (f (f init l1) l2) ...) lN].
+    [fold_lines f init ic] computes [f (... (f (f init l1) l2) ...) lN].
     If [f] has no side effects, this is equivalent to
     [List.fold_left f init (In_channel.input_lines ic)],
     but is more efficient since it does not construct the list of all
