@@ -171,10 +171,13 @@ val input_lines : t -> string list
 
     @since 5.1 *)
 
-val fold_lines : ('a -> string -> 'a) -> 'a -> t -> 'a
-(** [fold_lines f init c] reads lines from [ic] using {!input_line}
-    until the end of file is reached.  Each line is passed to function [f]
-    in the style of a fold.  More precisely, [fold_lines f init c] is
+val fold_lines : ('acc -> string -> 'acc) -> 'acc -> t -> 'acc
+(** [fold_lines f init ic] reads lines from [ic] using {!input_line}
+    until the end of file is reached, and successively passes each line
+    to function [f] in the style of a fold.
+    More precisely, if lines [l1, ..., lN] are read,
+    [fold_lines f init c] computes [f (... (f (f init l1) l2) ...) lN].
+    If [f] has no side effects, this is equivalent to
     [List.fold_left f init (In_channel.input_lines ic)],
     but is more efficient since it does not construct the list of all
     lines read.
