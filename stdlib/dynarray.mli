@@ -111,11 +111,11 @@ val copy : 'a t -> 'a t
     Note: all operations adding elements can raise [Failure] if the
     length would need to grow beyond {!Sys.max_array_length}.
 
-    It is a programming error to mutate the dynamic array during the
-    execution of one of the [append*] functions, and the result is
-    unspecified in this case, in particular the array may end up in an
-    invalid state and the [append*] functions may raise
-    [Invalid_argument] in this situation.
+    For the [append*] functions adding several elements to a dynamic
+    array, it is unspecified at which point during the execution of
+    the [append*] function the element becomes visible in the dynamic
+    array -- when [length] is updated. For example, they may become
+    visible one by one during computation, or all at once at the end.
 *)
 
 val add_last : 'a t -> 'a -> unit
@@ -141,11 +141,10 @@ val append : 'a t -> 'a t -> unit
     but [b] is itself a dynamic arreay instead of a fixed-size array.
 
     Beware! Calling [append a a] iterates on [a] and adds elements to
-    it at the same time; it is a programming error and its behavior is
-    unspecified. In particular, if elements coming from
-    [a]-on-the-right become visible in [a]-on-the-left during the
-    iteration on [a], they may added again and again, resulting in an
-    infinite loop.
+    it at the same time; its behavior is unspecified. In particular,
+    if elements coming from [a]-on-the-right become visible in
+    [a]-on-the-left during the iteration on [a], they may added again
+    and again, resulting in an infinite loop.
 *)
 
 val append_seq : 'a t -> 'a Seq.t -> unit
@@ -212,11 +211,11 @@ val truncate : 'a t -> int -> unit
 
     The iteration functions traverse the elements of a dynamic array.
 
-    It is a programming error to mutate the dynamic array during the
-    traversal, and the result is unspecified in this case. In
-    particular, each mutation may or may not be observed by the
-    iteration function, the array may end up in an invalid state and
-    iterators may raise [Invalid_argument] in this situation.
+    If the array gets modified (by setting existing elements or adding
+    or removing elements) during traversal, it is unspecified which of
+    the modifications will be observed by the traversal. For example,
+    some modifications may not be observed while later modifications
+    are observed.
 *)
 
 val iter : ('a -> unit) -> 'a t -> unit
@@ -258,7 +257,7 @@ val filter_map : ('a -> 'b option) -> 'a t -> 'b t
     need to grow beyond {!Sys.max_array_length}.
 
     The [to_*] functions iterate on their dynarray argument. In
-    particular, except for [to_seq], it is a programming error
+    particular, except for [to_seq], their behavior is under-specified
     if the dynarray is mutated during their execution -- see the
     (un)specification in the {!section:Iteration} section.
 *)

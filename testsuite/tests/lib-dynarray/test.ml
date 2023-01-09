@@ -93,7 +93,21 @@ let () =
 
 let () =
   let a = A.init 3 (fun i->i) in
-  A.append a a;
+  A.append a (A.copy a);
+  (** Note: [A.append a a] is unspecified, and in particular it
+     loops infinitely with the following natural implementation:
+{[
+     let append a b =
+       append_iter a iter b
+
+     let iter f a =
+       let i = ref 0 in
+       while !i < length a do
+         f (get a !i);
+         incr i
+       done
+]}
+  *)
   assert (A.to_list a = [0; 1; 2; 0; 1; 2]);;
 
 let() =
