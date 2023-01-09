@@ -43,7 +43,19 @@ val clear : 'a t -> unit
 (** [clear a] clears the content of [a], and sets its length to 0.
     This ensures that [length v = 0] but the underlying array is kept,
     and possibly references to former elements, which are therefore
-    not garbage collectible. *)
+    not garbage collectible.
+
+    Similar to {!Buffer.clear}.
+*)
+
+val reset : 'a t -> unit
+(** [clear a] clears the content of [a], and sets its length to 0,
+    and reset the underlying array to be empty, allowing the previous
+    underlying array to be collected.
+
+    Similar to {!Buffer.reset}.
+*)
+
 
 val ensure_capacity : 'a t -> filler:'a -> int -> unit
 (** [ensure_capacity a ~filler n] makes sure that [a]

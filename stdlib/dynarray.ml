@@ -96,6 +96,10 @@ let ensure_capacity v ~filler size : unit =
 let[@inline] clear v =
   v.size <- 0
 
+let[@inline] reset v =
+  v.size <- 0;
+  v.arr <- [| |]
+
 let[@inline] is_empty v = v.size = 0
 
 let[@inline] unsafe_add_last v x =
