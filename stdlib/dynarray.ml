@@ -267,15 +267,6 @@ let for_all p v =
 
 let length v = v.size
 
-let rev a =
-  if is_empty a then create()
-  else (
-    let old_arr = a.arr in
-    let n = Array.length old_arr in
-    let arr = Array.init n (fun i -> old_arr.(n - i - 1)) in
-    { size=a.size; arr}
-  )
-
 let of_seq seq =
   let init = create() in
   append_seq init seq;

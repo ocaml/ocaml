@@ -196,10 +196,6 @@ val set : 'a t -> int -> 'a -> unit
     Just like {!get}, indexing starts at 0.
     @raise Invalid_argument if the index is invalid. *)
 
-val rev : 'a t -> 'a t
-(** [rev a] is a new array containing the same elements as [a], but in the
-    reverse order. *)
-
 val length : _ t -> int
 (** [length a] is the number of elements in the array.
     The last element of [a], if not empty, is [get a (length a - 1)].
