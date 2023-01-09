@@ -41,11 +41,6 @@ let init n f = {
   arr=Array.init n f;
 }
 
-let blit v1 i1 v2 i2 len =
-  if i1<0 || i2<0 || i1+len >= v1.size || i2 + len >= v2.size then
-    invalid_arg "Dynarray.blit";
-  Array.blit v1.arr i1 v2.arr i2 len
-
 (* is the underlying array empty? *)
 let[@inline] array_is_empty_ v =
   Array.length v.arr = 0

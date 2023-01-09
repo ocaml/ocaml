@@ -196,14 +196,6 @@ val set : 'a t -> int -> 'a -> unit
     Just like {!get}, indexing starts at 0.
     @raise Invalid_argument if the index is invalid. *)
 
-val blit : 'a t -> int -> 'a t -> int -> int -> unit
-(** [blit a i b j len] copies [len] elements from [a],
-    starting at index [i], into [b], starting at index [j].
-
-    See {!Array.blit}.
-    @raise Invalid_argument if the indices or lengthts are not valid.
-*)
-
 val rev : 'a t -> 'a t
 (** [rev a] is a new array containing the same elements as [a], but in the
     reverse order. *)
