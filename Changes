@@ -183,6 +183,9 @@ Working version
   (Daniel Bünzli, review by Jeremy Yallop, Gabriel Scherer, Wiktor Kuchta,
    Nicolás Ojeda Bär)
 
+- #11843: Add `In_channel.input_lines` and `In_channel.fold_lines`.
+  (Xavier Leroy, review by Nicolás Ojeda Bär and Wiktor Kuchta).
+
 ### Other libraries:
 
 - #11374: Remove pointer cast to a type with stricter alignment requirements
