@@ -13,7 +13,11 @@
 /**************************************************************************/
 
 /* Runtime support for afl-fuzz */
+
+#define CAML_INTERNALS
+
 #include "caml/config.h"
+#include "caml/mlvalues.h"
 
 /* Values used by the instrumentation logic (see cmmgen.ml) */
 static unsigned char afl_area_initial[1 << 16];
@@ -21,9 +25,6 @@ unsigned char* caml_afl_area_ptr = afl_area_initial;
 uintnat caml_afl_prev_loc;
 
 #if !defined(HAS_SYS_SHM_H) || !defined(HAS_SHMAT)
-
-#include "caml/mlvalues.h"
-#include "caml/domain.h"
 
 CAMLprim value caml_reset_afl_instrumentation(value full)
 {
@@ -46,9 +47,9 @@ CAMLexport value caml_setup_afl(value unit)
 #include <stdio.h>
 #include <string.h>
 
-#define CAML_INTERNALS
+#include "caml/domain.h"
+#include "caml/memory.h"
 #include "caml/misc.h"
-#include "caml/mlvalues.h"
 #include "caml/osdeps.h"
 
 static int afl_initialised = 0;
