@@ -45,8 +45,8 @@ val clear : 'a t -> unit
     and possibly references to former elements, which are therefore
     not garbage collectible. *)
 
-val ensure_capacity_with : 'a t -> filler:'a -> int -> unit
-(** [ensure_capacity_with a ~filler n] makes sure that [a]
+val ensure_capacity : 'a t -> filler:'a -> int -> unit
+(** [ensure_capacity a ~filler n] makes sure that [a]
     has at least a capacity for storing [n] elements.
 
     This is a more advanced operation that is only useful for performance
@@ -57,18 +57,6 @@ val ensure_capacity_with : 'a t -> filler:'a -> int -> unit
       empty or until it is garbage collected.
     @raise Invalid_arg if the size is not suitable (negative, or too big for
     OCaml arrays)
-*)
-
-val ensure_capacity_nonempty : 'a t -> int -> unit
-(** [ensure_capacity_nonempty a n] makes sure that [a] has at least the
-    capacity [n], assuming it is already non-empty.
-    The first element is used as the filler.
-
-    This is a more advanced operation that is only useful for performance
-    purposes.
-
-    @raise Invalid_arg if the array is empty or
-      if the size is not suitable (negative, or too big for OCaml arrays)
 *)
 
 val is_empty : 'a t -> bool

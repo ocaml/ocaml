@@ -91,17 +91,12 @@ let ensure_assuming_not_empty_ v ~size =
     actually_resize_array_ v !n ~filler;
   )
 
-let ensure_capacity_with v ~filler size : unit =
+let ensure_capacity v ~filler size : unit =
   if array_is_empty_ v then (
     v.arr <- Array.make size filler;
   ) else (
     ensure_assuming_not_empty_ v ~size
   )
-
-let ensure_capacity_nonempty v size : unit =
-  if array_is_empty_ v then
-    invalid_arg "Dynarray.ensure_capacity_nonempty: empty";
-  ensure_assuming_not_empty_  v ~size
 
 let[@inline] clear v =
   v.size <- 0
@@ -161,7 +156,7 @@ let append_list a b = match b with
        and use {!unsafe_add_last}. *)
     let len_a = a.size in
     let len_b = List.length b in
-    ensure_capacity_with ~filler:x a (len_a + len_b);
+    ensure_capacity ~filler:x a (len_a + len_b);
     List.iter (unsafe_add_last a) b
 
 let pop_last v =
@@ -319,7 +314,7 @@ let of_list l = match l with
   | [x;y] -> {size=2; arr=[| x; y |]}
   | x::_ ->
     let v = create() in
-    ensure_capacity_with v (List.length l) ~filler:x;
+    ensure_capacity v (List.length l) ~filler:x;
     List.iter (unsafe_add_last v) l;
     v
 
