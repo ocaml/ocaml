@@ -2,7 +2,7 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*                            Simon Cruanes                               *)
+(*           Gabriel Scherer, projet Partout, INRIA Paris-Saclay          *)
 (*                                                                        *)
 (*   Copyright 2022 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
@@ -14,38 +14,277 @@
 (**************************************************************************)
 
 type 'a t = {
-  mutable size : int;
-  mutable arr : 'a array;
+  mutable length : int;
+  mutable arr : 'a slot array;
 }
+(* {2 The type ['a t]}
 
-(* TODO: move to runtime? bypass write barrier *)
-let[@inline] fill_ (a:_ array) i ~filler : unit =
-  Array.set a i filler
+   A dynamic array is represented using a backing array [arr] and
+   a [length]. It behaves as an array of size [length] -- the indices
+   from [0] to [length - 1] included contain user-provided values and
+   can be [get] and [set] -- but the length may also change in the
+   future by adding or removing elements at the end.
 
-(* TODO: move to runtime? bypass write barrier *)
-let[@inline] fill_with_junk_ (a:_ array) i len ~filler : unit =
-  Array.fill a i len filler
+   We use the following concepts;
+   - capacity: the length of the backing array:
+     [Array.length  arr]
+   - live space: the portion of the backing array with
+     indices from [0] to [length] excluded.
+   - empty space: the portion of the backing array
+     from [length] to the end of the backing array.
+
+   {2 The type ['a slot]}
+
+   We should not keep a user-provided value in the empty space, as
+   this could extend its lifetime and may result in memory leaks of
+   arbitrary size. Functions that remove elements from the dynamic
+   array, such as [pop_last] or [truncate], must really erase the
+   element from the backing array.
+
+   This constraint makes it difficult to represent an dynamic array of
+   elements of type ['a] with a backing array of type ['a array]: what
+   valid value of type ['a] would we use in the empty space? Typical
+   choices include:
+   - accepting scenarios where we actually leak user-provided values
+     (but this can blowup memory usage in some cases, and is hard to debug)
+   - requiring a "dummy" value at creation of the dynamic array
+     or in the parts of the API that grow the empty space
+     (but users find this very inconvenient)
+   - using arcane Obj.magic tricks
+     (but experts don't agree on which tricks are safe to use and/or
+      should be used here)
+   - using a backing array of ['a option] values, using [None]
+     in the empty space
+     (but this gives a noticeably less efficient memory representation)
+
+   In the present implementation, we use the ['a option] approach,
+   with a twist. With ['a option], calling [set a i x] must reallocate
+   a new [Some x] block:
+{[
+   let set a i x =
+     if i < 0 || i >= a.length then error "out of bounds";
+     a.arr.(i) <- Some x
+]}
+   Instead we use the type ['a slot] below,
+   which behaves as an option whose [Some] constructor
+   (called [Elem] here) has a _mutable_ argument.
+*)
+and 'a slot =
+| Empty
+| Elem of { mutable v: 'a }
+(*
+   This gives an allocation-free implementation of [set] that calls
+   [Array.get] (instead of [Array.set]) on the backing array and then
+   mutates the [v] parameter. In pseudo-code:
+{[
+   let set a i x =
+     if i < 0 || i >= a.length then error "out of bounds";
+     match a.arr.(i) with
+     | Empty -> error "invalid state: missing element"
+     | Elem s -> s.v <- x
+]}
+   With this approach, accessing an element still pays the cost of an
+   extra indirection (compared to approaches that do not box elements
+   in the backing array), but only operations that add new elements at
+   the end of the array pay extra allocations.
+
+   There are some situations where ['a option] is better: it makes
+   [pop_last_opt] more efficient as the underlying option can be
+   returned directly, and it also lets us use [Array.blit] to
+   implement [append]. We believe that optimzing [get] and [set] is
+   more important for dynamic arrays.
+
+   {2 Invariants and valid states}
+
+   We enforce the invariant that [length >= 0] at all times.
+   we rely on this invariant for optimization.
+
+   The following conditions define what we call a "valid" dynarray:
+   - valid length: [length <= Array.length arr]
+   - no missing element in the live space:
+     forall i, [0 <= i <=length] implies [arr.(i) <> Empty]
+   - no element in the empty space:
+     forall i, [0 <= i < length] implies [arr.(i) = Empty]
+
+   Unfortunately, we cannot easily enforce validity as an invariant in
+   presence of concurrent udpates. We can thus observe dynarrays in
+   "invalid states". Our implementation may raise exceptions or return
+   incorrect results on observing invalid states, but of course it
+   must preserve memory safety.
+*)
+
+module Error = struct
+  let index_out_of_bounds f ~i ~length =
+    if length = 0 then
+      Printf.ksprintf invalid_arg
+        "Dynarray.%s: empty dynarray"
+        f
+    else
+      Printf.ksprintf invalid_arg
+        "Dynarray.%s: index %d out of bounds (0..%d)"
+        f i (length - 1)
+
+  let negative_length f n =
+    Printf.ksprintf invalid_arg
+      "Dynarray.%s: negative length %d"
+      f n
+
+  let negative_capacity f n =
+    Printf.ksprintf invalid_arg
+      "Dynarray.%s: negative capacity %d"
+      f n
+
+  let requested_length_out_of_bounds f requested_length =
+    (* We do not consider this error as a programming error,
+       so we raise [Failure] instead of [Invalid_argument]. *)
+    Printf.ksprintf failwith
+      "Dynarray.%s: cannot grow to requested length %d (max_array_length is %d)"
+      f requested_length Sys.max_array_length
+
+  (* When observing an invalid state ([missing_element],
+     [invalid_length]), we do not give the name of the calling function
+     in the error message, as the error is related to invalid operations
+     performed earlier, and not to the callsite of the function
+     itself. *)
+
+  let missing_element ~i ~length =
+    Printf.ksprintf invalid_arg
+      "Dynarray: invalid array (missing element at position %d < length %d)"
+      i length
+
+  let invalid_length ~length ~capacity =
+    Printf.ksprintf invalid_arg
+      "Dynarray: invalid array (length %d > capacity %d)"
+      length capacity
+
+  (* When an [Empty] element is observed unexpectedly at index [i],
+     it may be either an out-of-bounds access or an invalid-state situation
+     depending on whether [i <= length]. *)
+  let unexpected_empty_element f ~i ~length =
+    if i < length then
+      missing_element ~i ~length
+    else
+      index_out_of_bounds f ~i ~length
+end
+
+(** Careful unsafe access. *)
+
+(* Postcondition on non-exceptional return:
+   [length <= Array.length arr] *)
+let check_valid_length length arr =
+  let capacity = Array.length arr in
+  if length > capacity then
+    Error.invalid_length ~length ~capacity
+
+(* Precondition: [0 <= i < length <= Array.length arr]
+
+   This precondition is typically guaranteed by knowing
+   [0 <= i < length] and calling [check_valid_length length arr].*)
+let unsafe_get arr ~i ~length =
+  match Array.unsafe_get arr i with
+  | Empty -> Error.missing_element ~i ~length
+  | Elem {v} -> v
+
+
+(** {1:dynarrays Dynamic arrays} *)
 
 let create () = {
-  size = 0;
+  length = 0;
   arr = [| |];
 }
 
-let make n x = {
-  size=n;
-  arr=Array.make n x;
+let make n x =
+  if n < 0 then Error.negative_length "make" n;
+  {
+    length = n;
+    arr = Array.init n (fun _ -> Elem {v = x});
+  }
+
+let init n f =
+  if n < 0 then Error.negative_length "init" n;
+  {
+    length = n;
+    arr = Array.init n (fun i -> Elem {v = f i});
+  }
+
+let get a i =
+  (* This implementation will propagate an [Invalid_arg] exception
+     from array lookup if the index is out of the backing array,
+     instead of using our own [Error.index_out_of_bounds]. This is
+     allowed by our specification, and more efficient -- no need to
+     check that [length a <= capacity a] in the fast path. *)
+  match a.arr.(i) with
+  | Elem s -> s.v
+  | Empty ->
+      Error.unexpected_empty_element "get" ~i ~length:a.length
+
+let set a i x =
+  (* See {!get} comment on the use of checked array
+     access without our own bound checking. *)
+  match a.arr.(i) with
+  | Elem s -> s.v <- x
+  | Empty ->
+      Error.unexpected_empty_element "set" ~i ~length:a.length
+
+let length a = a.length
+
+let is_empty a = (a.length = 0)
+
+let copy {length; arr} = {
+  length;
+  arr =
+    Array.map (function
+      | Empty -> Empty
+      | Elem {v} -> Elem {v}
+    ) arr;
 }
 
-let init n f = {
-  size=n;
-  arr=Array.init n f;
-}
+(** {1:removing Removing elements} *)
 
-(* is the underlying array empty? *)
-let[@inline] array_is_empty_ v =
-  Array.length v.arr = 0
+let pop_last a =
+  let {arr; length} = a in
+  if length = 0 then raise Not_found;
+  let last = length - 1 in
+  (* We know [length > 0] so [last >= 0].
+     See {!get} comment on the use of checked array
+     access without our own bound checking.
+  *)
+  match arr.(last) with
+  (* At this point we know that [last] is a valid index in [arr]. *)
+  | Empty ->
+      Error.missing_element ~i:last ~length
+  | Elem s ->
+      Array.unsafe_set arr last Empty;
+      a.length <- last;
+      s.v
 
-let next_grow_ n =
+let pop_last_opt a =
+  match pop_last a with
+  | exception Not_found -> None
+  | x -> Some x
+
+let remove_last a =
+  let last = length a - 1 in
+  if last >= 0 then begin
+    a.length <- last;
+    a.arr.(last) <- Empty;
+  end
+
+let truncate a n =
+  if n < 0 then Error.negative_length "truncate" n;
+  let {arr; length} = a in
+  if length <= n then ()
+  else begin
+    a.length <- n;
+    Array.fill arr n (length - n) Empty;
+  end
+
+let clear a = truncate a 0
+
+
+(** {1:capacity Backing array and capacity} *)
+
+let next_capacity n =
   let n' =
     (* For large values of n, we use 1.5 as our growth factor.
 
@@ -63,272 +302,338 @@ let next_grow_ n =
   (* jump directly from 0 to 8 *)
   min (max 8 n') Sys.max_array_length
 
-(* resize the underlying array using x to temporarily fill the array *)
-let actually_resize_array_ a newcapacity ~filler : unit =
-  assert (newcapacity >= a.size);
-  assert (not (array_is_empty_ a));
-  let new_array = Array.make newcapacity filler in
-  Array.blit a.arr 0 new_array 0 a.size;
-  fill_with_junk_ new_array a.size (newcapacity-a.size) ~filler;
-  a.arr <- new_array
-
-(* grow the array, using [x] as a temporary filler if required *)
-let actually_grow_with_ a ~filler : unit =
-  if array_is_empty_ a then (
-    let len = 4 in
-    a.arr <- Array.make len filler;
-  ) else (
-    let n = Array.length a.arr in
-    let size = next_grow_ n in
-    if size = n then invalid_arg "Dynarray: cannot grow the array";
-    actually_resize_array_ a size ~filler
-  )
-
-(* [v] is not empty; ensure it has at least [size] slots.
-
-   Use {!resize_} so that calling [ensure_capacity v (length v+1)] in a loop
-   is still behaving well. *)
-let ensure_assuming_not_empty_ v ~size =
-  if size > Sys.max_array_length then (
-    invalid_arg "arr.ensure: size too big"
-  ) else if size > Array.length v.arr then (
-    let n = ref (Array.length v.arr) in
-    while !n < size do n := next_grow_ !n done;
-    let filler = v.arr.(0) in
-    actually_resize_array_ v !n ~filler;
-  )
-
-let ensure_capacity v ~filler size : unit =
-  if array_is_empty_ v then (
-    v.arr <- Array.make size filler;
-  ) else (
-    ensure_assuming_not_empty_ v ~size
-  )
-
-let[@inline] clear v =
-  v.size <- 0
-
-let[@inline] reset v =
-  v.size <- 0;
-  v.arr <- [| |]
-
-let[@inline] is_empty v = v.size = 0
-
-let[@inline] unsafe_add_last v x =
-  Array.set v.arr v.size x;
-  v.size <- v.size + 1
-
-let add_last v x =
-  if v.size < Array.length v.arr then unsafe_add_last v x
+let ensure_capacity a requested_length =
+  let arr = a.arr in
+  let cur_capacity = Array.length arr in
+  if cur_capacity >= requested_length then
+    (* This is the fast path, the code up to here must do as little as
+       possible. (This is why we don't use [let {arr; length} = a] as
+       usual, the length is not needed in the fast path.)*)
+    ()
   else begin
-    actually_grow_with_ v ~filler:x;
-    unsafe_add_last v x
+    if requested_length < 0 then
+      Error.negative_capacity "ensure_capacity" requested_length;
+    if requested_length > Sys.max_array_length then
+      Error.requested_length_out_of_bounds "ensure_capacity" requested_length;
+    let new_capacity = ref cur_capacity in
+    while !new_capacity < requested_length do
+      new_capacity := next_capacity !new_capacity
+    done;
+    let new_capacity = !new_capacity in
+    assert (new_capacity >= requested_length);
+    let new_arr = Array.make new_capacity Empty in
+    Array.blit arr 0 new_arr 0 a.length;
+    a.arr <- new_arr;
+    assert (0 <= requested_length);
+    assert (requested_length <= Array.length new_arr);
   end
 
-let append a b =
-  if array_is_empty_ a then (
-    if array_is_empty_ b then () else (
-      a.arr <- Array.copy b.arr;
-      a.size <- b.size
-    )
-  ) else (
-    ensure_assuming_not_empty_ a ~size:(a.size + b.size);
-    assert (Array.length a.arr >= a.size + b.size);
-    Array.blit b.arr 0 a.arr a.size b.size;
-    a.size <- a.size + b.size
-  )
+let fit_capacity a =
+  if Array.length a.arr = a.length
+  then ()
+  else a.arr <- Array.sub a.arr 0 a.length
 
-let[@inline] get v i =
-  if i < 0 || i >= v.size then invalid_arg "Dynarray.get";
-  Array.get v.arr i
+let reset a =
+  clear a;
+  fit_capacity a
 
-let[@inline] set v i x =
-  if i < 0 || i >= v.size then invalid_arg "Dynarray.set";
-  Array.set v.arr i x
+
+(** {1:adding Adding elements} *)
+
+(* We chose an implementation of [add_last a x] that behaves correctly
+   in presence of aynchronous code execution around allocations and
+   poll points: if another thread or a callback gets executed on
+   allocation, we add the element at the new end of the dynamic array.
+
+   (We do not give the same guarantees in presence of concurrent
+   updates, which are much more expansive to protect against.)
+*)
+
+(* [add_last_if_room a elem] only writes the slot if there is room, and
+   returns [false] otherwise.
+
+   It is sequentially atomic -- in absence of unsychronized concurrent
+   uses, the fields of [a.arr] and [a.length] will not be mutated
+   by any other code during execution of this function.
+*)
+let[@inline] add_last_if_room a elem =
+  (* BEGIN ATOMIC *)
+  let {arr; length} = a in
+  (* we know [0 <= length] *)
+  if length >= Array.length arr then false
+  else begin
+    (* we know [0 <= length < Array.length arr] *)
+    Array.unsafe_set arr length elem;
+    a.length <- length + 1;
+    true
+  end
+  (* END ATOMIC *)
+
+let add_last a x =
+  let elem = Elem {v = x} in
+  if add_last_if_room a elem then ()
+  else begin
+    (* slow path *)
+    let rec grow_and_add a elem =
+      ensure_capacity a (length a + 1);
+      if not (add_last_if_room a elem)
+      then grow_and_add a elem
+    in grow_and_add a elem
+  end
 
 let append_iter a iter b =
   iter (fun x -> add_last a x) b
 
-let append_seq a seq = append_iter a Seq.iter seq
+let append_list a li =
+  append_iter a List.iter li
+
+let append_seq a seq =
+  append_iter a Seq.iter seq
+
+(* append_array: same [..._if_room] and loop logic as [add_last]. *)
+
+let append_array_if_room a b =
+  (* BEGIN ATOMIC *)
+  let {arr; length = length_a} = a in
+  let length_b = Array.length b in
+  if length_a + length_b > Array.length arr then false
+  else begin
+    a.length <- length_a + length_b;
+    (* END ATOMIC *)
+    (* Note: we intentionally update the length *before* filling the
+       elements. This "reserve before fill" approach provides better
+       behavior than "fill then notify" in presence of reentrant
+       modifications (which may occur below, on a poll point in the loop or
+       the [Elem] allocation):
+
+       - If some code asynchronously adds new elements after this
+         length update, they will go after the space we just reserved,
+         and in particular no addition will be lost. If instead we
+         updated the length after the loop, any asynchronous addition
+         during the loop could be erased or erase one of our additions,
+         silently, without warning the user.
+
+       - If some code asynchronously iterates on the dynarray, or
+         removes elements, or otherwise tries to access the
+         reserved-but-not-yet-filled space, it will get a clean "missing
+         element" error. This is worse than with the fill-then-notify
+         approach where the new elements would only become visible
+         (to iterators, for removal, etc.) alltogether at the end of
+         loop.
+
+       To summarise, "reserve before fill" is better on add-add races,
+       and "fill then notify" is better on add-remove or add-iterate
+       races. But the key difference is the failure mode:
+       reserve-before fails on add-remove or add-iterate races with
+       a clean error, while notify-after fails on add-add races with
+       silently disappearing data. *)
+    for i = 0 to length_b - 1 do
+      let x = Array.unsafe_get b i in
+      Array.unsafe_set arr (length_a + i) (Elem {v = x})
+    done;
+    true
+  end
 
 let append_array a b =
-  let len_b = Array.length b in
-  if array_is_empty_ a then (
-    a.arr <- Array.copy b;
-    a.size <- len_b;
-  ) else (
-    ensure_assuming_not_empty_ a ~size:(a.size + len_b);
-    Array.blit b 0 a.arr a.size len_b;
-    a.size <- a.size + len_b
-  )
+  if append_array_if_room a b then ()
+  else begin
+    (* slow path *)
+    let rec grow_and_append a b =
+      ensure_capacity a (length a + Array.length b);
+      if not (append_array_if_room a b)
+      then grow_and_append a b
+    in grow_and_append a b
+  end
 
-let append_list a b = match b with
-  | [] -> ()
-  | x :: _ ->
-    (* use [x] as the filler, in case the array is empty.
-       We ensure capacity once, then we can skip the resizing checks
-       and use {!unsafe_add_last}. *)
-    let len_a = a.size in
-    let len_b = List.length b in
-    ensure_capacity ~filler:x a (len_a + len_b);
-    List.iter (unsafe_add_last a) b
+(* append: same [..._if_room] and loop logic as [add_last],
+   same reserve-before-fill logic as [append_array]. *)
 
-let pop_last v =
-  if v.size = 0 then raise Not_found;
-  let new_size = v.size - 1 in
-  v.size <- new_size;
-  let x = v.arr.(new_size) in
-  if new_size = 0 then (
-      v.arr <- [||]; (* free elements *)
-    ) else (
-      (* remove pointer to (removed) last element *)
-      let filler = Array.get v.arr 0 in
-      fill_ v.arr new_size ~filler;
-    );
-  x
+(* Note: unlike [add_last_if_room], [append_if_room] is *not* atomic. *)
+let append_if_room a b =
+  (* BEGIN ATOMIC *)
+  let {arr = arr_a; length = length_a} = a in
+  let {arr = arr_b; length = length_b} = b in
+  if length_a + length_b > Array.length arr_a then false
+  else begin
+    a.length <- length_a + length_b;
+    (* END ATOMIC *)
+    check_valid_length length_b arr_b;
+    for i = 0 to length_b - 1 do
+      let x = unsafe_get arr_b ~i ~length:length_b in
+      Array.unsafe_set arr_a (length_a + i) (Elem {v = x})
+    done;
+    true
+  end
 
-let pop_last_opt v =
-  try Some (pop_last v)
-  with Not_found -> None
+let append a b =
+  if append_if_room a b then ()
+  else begin
+    (* slow path *)
+    let rec grow_and_append a b =
+      ensure_capacity a (length a + length b);
+      if not (append_if_room a b)
+      then grow_and_append a b
+    in grow_and_append a b
+  end
 
-let remove_last v =
-  try ignore (pop_last v)
-  with Not_found -> ()
 
-let[@inline] copy v = {
-  size = v.size;
-  arr = Array.sub v.arr 0 v.size;
-}
 
-let truncate v n =
-  let old_size = v.size in
-  if n = 0 then (
-    v.size <- n;
-    (* free all elements *)
-    v.arr <- [||];
-  ) else if n < old_size then (
-    (* free elements by erasing them with the first element *)
-    v.size <- n;
-    let filler = Array.get v.arr 0 in
-    fill_with_junk_ v.arr n (old_size-n) ~filler;
-  )
+(** {1:iteration Iteration} *)
 
-let fit_capacity v : unit =
-  if v.size = 0 then (
-    v.arr <- [| |]
-  ) else if v.size < Array.length v.arr then (
-    v.arr <- Array.sub v.arr 0 v.size
-  )
+(* The implementation choice that we made for iterators is the one
+   that maximizes efficiency by avoiding repeated bound checking: we
+   check the length of the dynamic array once at the beginning, and
+   then only operate on that portion of the dynarray, ignoring
+   elements added in the meantime.
 
-let iter k v =
-  let n = v.size in
-  for i = 0 to n-1 do
-    k (Array.get v.arr i)
+   The specification says that it is unspecified which updates to the
+   dynarray happening during iteration will be observed by the
+   iterator. With our current implementation, they in fact have
+   a clear characterization, we:
+   - ignore all elements added during the iteration
+   - fail with a clean error if a removal occurs during iteration
+   - observe all [set] updates on the initial elements that have not
+     been visited yet.
+
+   This is slightly stronger/simpler than typical unboxed
+   implementation, where "observing [set] updates" stops after the
+   first reallocation of the backing array. It is a coincidence that
+   our implementation shares the mutable Elem references between the
+   initial and the reallocated backing array, and thus also observes
+   update happening after reallocation.
+*)
+
+let iter k a =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  for i = 0 to length - 1 do
+    k (unsafe_get arr ~i ~length)
   done
 
-let iteri k v =
-  let n = v.size in
-  for i = 0 to n-1 do
-    k i (Array.get v.arr i)
+let iteri k a =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  for i = 0 to length - 1 do
+    k i (unsafe_get arr ~i ~length)
   done
 
-let map f v =
-  if array_is_empty_ v
-  then create ()
-  else (
-    let arr = Array.init v.size (fun i -> f (Array.get v.arr i)) in
-    { size=v.size; arr; }
-  )
+let map f a =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  {
+    length;
+    arr = Array.init length (fun i ->
+      Elem {v = f (unsafe_get arr ~i ~length)});
+  }
 
-let mapi f v =
-  if array_is_empty_ v
-  then create ()
-  else (
-    let arr = Array.init v.size (fun i -> f i (Array.get v.arr i)) in
-    { size=v.size; arr; }
-  )
+let mapi f a =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  {
+    length;
+    arr = Array.init length (fun i ->
+      Elem {v = f i (unsafe_get arr ~i ~length)});
+  }
 
-let fold_left f acc v =
-  let rec fold acc i =
-    if i = v.size then acc
+let fold_left f acc a =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  let rec fold acc arr i length =
+    if i = length then acc
     else
-      let x = Array.get v.arr i in
-      fold (f acc x) (i+1)
-  in fold acc 0
+      let v = unsafe_get arr ~i ~length in
+      fold (f acc v) arr (i+1) length
+  in fold acc arr 0 length
+
+let exists p a =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  let rec loop p arr i length =
+    if i = length then false
+    else
+      p (unsafe_get arr ~i ~length)
+      || loop p arr (i + 1) length
+  in loop p arr 0 length
+
+let for_all p a =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  let rec loop p arr i length =
+    if i = length then true
+    else
+      p (unsafe_get arr ~i ~length)
+      && loop p arr (i + 1) length
+  in loop p arr 0 length
 
 let filter f a =
-  let b = create() in
+  let b = create () in
   iter (fun x -> if f x then add_last b x) a;
   b
 
 let filter_map f a =
   let b = create() in
   iter (fun x ->
-      match f x with
-      | None -> ()
-      | Some y -> add_last b y)
-    a;
+    match f x with
+    | None -> ()
+    | Some y -> add_last b y
+  ) a;
   b
 
-let exists p v =
-  let n = v.size in
-  let rec check i =
-    if i = n then false
-    else p v.arr.(i) || check (i+1)
-  in check 0
 
-let for_all p v =
-  let n = v.size in
-  let rec check i =
-    if i = n then true
-    else p v.arr.(i) && check (i+1)
-  in check 0
+(** {1:conversions Conversions to other data structures} *)
 
-let length v = v.size
+(* The eager [to_*] conversion functions behave similarly to iterators
+   in presence of updates during computation. The [to_seq*] functions
+   obey their more permissive specification, which tolerates any
+   concurrent update. *)
+
+let of_array a =
+  let length = Array.length a in
+  {
+    length;
+    arr = Array.init length (fun i -> Elem {v = Array.unsafe_get a i});
+  }
+
+let to_array a =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  Array.init length (fun i -> unsafe_get arr ~i ~length)
+
+let of_list li =
+  let a = create () in
+  List.iter (fun x -> add_last a x) li;
+  a
+
+let to_list a =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  let l = ref [] in
+  for i = length - 1 downto 0 do
+    l := unsafe_get arr ~i ~length :: !l
+  done;
+  !l
 
 let of_seq seq =
   let init = create() in
   append_seq init seq;
   init
 
-let to_seq v =
+let to_seq a =
   let rec aux i () =
-    if i >= length v then Seq.Nil
-    else Seq.Cons (v.arr.(i), aux (i+1))
+    if i >= length a then Seq.Nil
+    else begin
+      Seq.Cons (get a i, aux (i + 1))
+    end
   in
   aux 0
 
-let to_seq_rev v =
+let to_seq_rev a =
   let rec aux i () =
-    if i < 0 || i > length v then Seq.Nil
-    else Seq.Cons (v.arr.(i), aux (i-1))
+    if i < 0 then Seq.Nil
+    else if i >= length a then
+      (* If some elements have been removed in the meantime, we skip
+         those elements and continue with the new end of the array. *)
+      aux (length a - 1) ()
+    else Seq.Cons (get a i, aux (i - 1))
   in
-  aux (length v-1)
-
-let of_array a =
-  if Array.length a = 0
-  then create ()
-  else {
-    size=Array.length a;
-    arr=Array.copy a;
-  }
-
-let of_list l = match l with
-  | [] -> create()
-  | [x] -> make 1 x
-  | [x;y] -> {size=2; arr=[| x; y |]}
-  | x::_ ->
-    let v = create() in
-    ensure_capacity v (List.length l) ~filler:x;
-    List.iter (unsafe_add_last v) l;
-    v
-
-let to_array v =
-  Array.sub v.arr 0 v.size
-
-let to_list v =
-  let l = ref [] in
-  for i=length v-1 downto 0 do
-    l := get v i :: !l
-  done;
-  !l
+  aux (length a - 1)
