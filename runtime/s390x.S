@@ -79,14 +79,8 @@
 /* struct c_stack_link + callee save regs = 24 + 8*8 = 88 */
 #define start_program_sleb128_2byte 216, 0
 
-/* struct exception handler + callee area = 16 + 160 = 176 */
-#define start_program_call_sleb128_2byte 176, 1
-
 /* exception handler + gc_regs slot + C_STACK_SP + Handler_parent = 16 + 8 + 8 + 24 = 56 */
 #define caml_runstack_sleb128_1byte 56
-
-/* exception handler + gc_regs slot + C_STACK_SP + Handler_parent + callee area = 16 + 8 + 8 + 24 + 160 = 216 */
-#define caml_runstack_callee_sleb128_2byte 216, 1
 
 #define RETADDR_ENTRY_SIZE   8 /* retaddr */
 
@@ -584,13 +578,6 @@ LBL(caml_start_program):
           DW_OP_breg + DW_REG_r15, 16 /* exn handler */, DW_OP_deref, \
           DW_OP_plus_uconst, start_program_sleb128_2byte
 #endif
-#ifdef ASM_CFI_SUPPORTED
-        .cfi_escape DW_CFA_def_cfa_expression, 4 + 3,                 \
-            /* %r15 points to the exn handler on the OCaml stack */   \
-            /* %r15 + 16 contains the C_STACK_SP */                   \
-          DW_OP_breg + DW_REG_r15, start_program_call_sleb128_2byte, DW_OP_deref, \
-          DW_OP_plus_uconst, start_program_sleb128_2byte
-#endif
         basr    %r14, TMP
 LBL(caml_retaddr):
     /* pop exn handler */
@@ -889,14 +876,6 @@ CFI_STARTPROC
 #endif
     /* Call the function on the new stack */
         lgr     %r2, %r4 /* first argument */
-#ifdef ASM_CFI_SUPPORTED
-        .cfi_escape DW_CFA_def_cfa_expression, 4+3+2, \
-          DW_OP_breg + DW_REG_r15,                    \
-          caml_runstack_callee_sleb128_2byte,         \
-          DW_OP_deref,                                \
-          DW_OP_plus_uconst, Stack_sp, DW_OP_deref,   \
-          DW_OP_plus_uconst, RETADDR_ENTRY_SIZE
-#endif
         basr    %r14, %r5 /* closure in %r3 (second argument) */
 LBL(frame_runstack):
         lay     %r8, 32(%r15) /*%r8 = stack_handler */
