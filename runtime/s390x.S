@@ -798,8 +798,8 @@ LBL(112):
         lg      %r9, Caml_state(current_stack)
         SWITCH_OCAML_STACKS(%r9, %r8)
     /* No parent stack. Raise Unhandled. */
-        LEA_VAR(caml_raise_unhandled_effect, %r2)
-        brcl    15, LBL(caml_raise_exn)
+        LEA_VAR(caml_raise_unhandled_effect, ADDITIONAL_ARG)
+        brcl    15, LBL(caml_c_call)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_perform))
 
@@ -840,8 +840,8 @@ LBL(caml_resume_1):
         lgr     %r2, %r4
         br      %r5
 LBL(caml_resume_2):
-        LEA_VAR(caml_raise_continuation_already_resumed, %r2)
-        brcl    15, LBL(caml_raise_exn)
+        LEA_VAR(caml_raise_continuation_already_resumed, ADDITIONAL_ARG)
+        brcl    15, LBL(caml_c_call)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_resume))
 
