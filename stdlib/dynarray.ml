@@ -107,8 +107,11 @@ let[@inline] unsafe_add_last v x =
   v.size <- v.size + 1
 
 let add_last v x =
-  if v.size = Array.length v.arr then actually_grow_with_ v ~filler:x;
-  unsafe_add_last v x
+  if v.size < Array.length v.arr then unsafe_add_last v x
+  else begin
+    actually_grow_with_ v ~filler:x;
+    unsafe_add_last v x
+  end
 
 let append a b =
   if array_is_empty_ a then (

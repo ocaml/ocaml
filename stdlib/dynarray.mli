@@ -85,14 +85,6 @@ val add_last : 'a t -> 'a -> unit
     Calling [add_last a] n times is amortized O(n) complexity,
     and O(ln(n)) reallocations of the underlying array. *)
 
-val unsafe_add_last : 'a t -> 'a -> unit
-(** [unsafe_add_last a x] adds [x] as the last element of [a],
-    assuming there is room for it in [a] already
-    (e.g. using {!ensure_capacity_with}).
-
-    It is unspecified what happens if the capacity is not enough.
-    This is for advanced use cases only. *)
-
 val append : 'a t -> 'a t -> unit
 (** [append a b] adds all elements of [b] at the end of [a],
     in the order they appear in [b]. [b] is not modified.
