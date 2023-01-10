@@ -20,6 +20,8 @@ open Typedtree
 
 type mapper =
   {
+    attribute : mapper -> attribute -> attribute;
+    attributes : mapper -> attributes -> attributes;
     binding_op: mapper -> binding_op -> binding_op;
     case: 'k . mapper -> 'k case -> 'k case;
     class_declaration: mapper -> class_declaration -> class_declaration;

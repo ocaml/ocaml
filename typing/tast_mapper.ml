@@ -16,11 +16,13 @@
 open Asttypes
 open Typedtree
 
-(* TODO: add 'methods' for location, attribute, extension,
+(* TODO: add 'methods' for extension,
    include_declaration, include_description *)
 
 type mapper =
   {
+    attribute : mapper -> attribute -> attribute;
+    attributes : mapper -> attributes -> attributes;
     binding_op: mapper -> binding_op -> binding_op;
     case: 'k . mapper -> 'k case -> 'k case;
     class_declaration: mapper -> class_declaration -> class_declaration;
@@ -77,6 +79,19 @@ let map_loc sub {loc; txt} = {loc=sub.location sub loc; txt}
 
 let location _sub l = l
 
+let attribute sub x =
+  let mapper = {
+    Ast_mapper.default_mapper
+    with location = fun _this x -> sub.location sub x
+  } in
+  Parsetree.{
+    attr_name = map_loc sub x.attr_name;
+    attr_payload = mapper.payload mapper x.attr_payload;
+    attr_loc = sub.location sub x.attr_loc
+  }
+
+let attributes sub l = List.map (attribute sub) l
+
 let structure sub {str_items; str_type; str_final_env} =
   {
     str_items = List.map (sub.structure_item sub) str_items;
@@ -90,29 +105,34 @@ let class_infos sub f x =
    ci_id_name = map_loc sub x.ci_id_name;
    ci_params = List.map (tuple2 (sub.typ sub) id) x.ci_params;
    ci_expr = f x.ci_expr;
+   ci_attributes = sub.attributes sub x.ci_attributes;
   }
 
 let module_type_declaration sub x =
   let mtd_loc = sub.location sub x.mtd_loc in
   let mtd_name = map_loc sub x.mtd_name in
   let mtd_type = Option.map (sub.module_type sub) x.mtd_type in
-  {x with mtd_loc; mtd_name; mtd_type}
+  let mtd_attributes = sub.attributes sub x.mtd_attributes in
+  {x with mtd_loc; mtd_name; mtd_type; mtd_attributes}
 
 let module_declaration sub x =
   let md_loc = sub.location sub x.md_loc in
   let md_name = map_loc sub x.md_name in
   let md_type = sub.module_type sub x.md_type in
-  {x with md_loc; md_name; md_type}
+  let md_attributes = sub.attributes sub x.md_attributes in
+  {x with md_loc; md_name; md_type; md_attributes}
 
 let module_substitution sub x =
   let ms_loc = sub.location sub x.ms_loc in
   let ms_name = map_loc sub x.ms_name in
   let ms_txt = map_loc sub x.ms_txt in
-  {x with ms_loc; ms_name; ms_txt}
+  let ms_attributes = sub.attributes sub x.ms_attributes in
+  {x with ms_loc; ms_name; ms_txt; ms_attributes}
 
 let include_infos sub f x =
   let incl_loc = sub.location sub x.incl_loc in
-  {x with incl_loc; incl_mod = f x.incl_mod}
+  let incl_attributes = sub.attributes sub x.incl_attributes in
+  {x with incl_loc; incl_attributes; incl_mod = f x.incl_mod}
 
 let class_type_declaration sub x =
   class_infos sub (sub.class_type sub) x
@@ -125,7 +145,8 @@ let structure_item sub {str_loc; str_desc; str_env} =
   let str_env = sub.env sub str_env in
   let str_desc =
     match str_desc with
-    | Tstr_eval (exp, attrs) -> Tstr_eval (sub.expr sub exp, attrs)
+    | Tstr_eval (exp, attrs) ->
+        Tstr_eval (sub.expr sub exp, sub.attributes sub attrs)
     | Tstr_value (rec_flag, list) ->
         let (rec_flag, list) = sub.value_bindings sub (rec_flag, list) in
         Tstr_value (rec_flag, list)
@@ -149,7 +170,7 @@ let structure_item sub {str_loc; str_desc; str_env} =
     | Tstr_include incl ->
         Tstr_include (include_infos sub (sub.module_expr sub) incl)
     | Tstr_open od -> Tstr_open (sub.open_declaration sub od)
-    | Tstr_attribute _ as d -> d
+    | Tstr_attribute attr -> Tstr_attribute (sub.attribute sub attr)
   in
   {str_desc; str_env; str_loc}
 
@@ -157,13 +178,15 @@ let value_description sub x =
   let val_loc = sub.location sub x.val_loc in
   let val_name = map_loc sub x.val_name in
   let val_desc = sub.typ sub x.val_desc in
-  {x with val_loc; val_name; val_desc}
+  let val_attributes = sub.attributes sub x.val_attributes in
+  {x with val_loc; val_name; val_desc; val_attributes}
 
 let label_decl sub x =
   let ld_loc = sub.location sub x.ld_loc in
   let ld_name = map_loc sub x.ld_name in
   let ld_type = sub.typ sub x.ld_type in
-  {x with ld_loc; ld_name; ld_type}
+  let ld_attributes = sub.attributes sub x.ld_attributes in
+  {x with ld_loc; ld_name; ld_type; ld_attributes}
 
 let constructor_args sub = function
   | Cstr_tuple l -> Cstr_tuple (List.map (sub.typ sub) l)
@@ -175,7 +198,8 @@ let constructor_decl sub cd =
   let cd_vars = List.map (map_loc sub) cd.cd_vars in
   let cd_args = constructor_args sub cd.cd_args in
   let cd_res = Option.map (sub.typ sub) cd.cd_res in
-  {cd with cd_loc; cd_name; cd_vars; cd_args; cd_res}
+  let cd_attributes = sub.attributes sub cd.cd_attributes in
+  {cd with cd_loc; cd_name; cd_vars; cd_args; cd_res; cd_attributes}
 
 let type_kind sub = function
   | Ttype_abstract -> Ttype_abstract
@@ -194,7 +218,9 @@ let type_declaration sub x =
   let typ_kind = sub.type_kind sub x.typ_kind in
   let typ_manifest = Option.map (sub.typ sub) x.typ_manifest in
   let typ_params = List.map (tuple2 (sub.typ sub) id) x.typ_params in
-  {x with typ_loc; typ_name; typ_cstrs; typ_kind; typ_manifest; typ_params}
+  let typ_attributes = sub.attributes sub x.typ_attributes in
+  {x with typ_loc; typ_name; typ_cstrs; typ_kind; typ_manifest; typ_params;
+          typ_attributes}
 
 let type_declarations sub (rec_flag, list) =
   (rec_flag, List.map (sub.type_declaration sub) list)
@@ -206,14 +232,17 @@ let type_extension sub x =
   let tyext_constructors =
     List.map (sub.extension_constructor sub) x.tyext_constructors
   in
-  {x with tyext_loc; tyext_txt; tyext_constructors; tyext_params}
+  let tyext_attributes = sub.attributes sub x.tyext_attributes in
+  {x with tyext_loc; tyext_txt; tyext_constructors; tyext_params;
+          tyext_attributes}
 
 let type_exception sub x =
   let tyexn_loc = sub.location sub x.tyexn_loc in
   let tyexn_constructor =
     sub.extension_constructor sub x.tyexn_constructor
   in
-  {x with tyexn_loc; tyexn_constructor}
+  let tyexn_attributes = sub.attributes sub x.tyexn_attributes in
+  {tyexn_loc; tyexn_constructor; tyexn_attributes}
 
 let extension_constructor sub x =
   let ext_loc = sub.location sub x.ext_loc in
@@ -229,7 +258,8 @@ let extension_constructor sub x =
     | Text_rebind (path, lid) ->
         Text_rebind (path, map_loc sub lid)
   in
-  {x with ext_loc; ext_name; ext_kind}
+  let ext_attributes = sub.attributes sub x.ext_attributes in
+  {x with ext_loc; ext_name; ext_kind; ext_attributes}
 
 let pat_extra sub = function
   | Tpat_unpack as d -> d
@@ -243,7 +273,8 @@ let pat
   = fun sub x ->
   let pat_loc = sub.location sub x.pat_loc in
   let pat_env = sub.env sub x.pat_env in
-  let pat_extra = List.map (tuple3 (pat_extra sub) id id) x.pat_extra in
+  let pat_extra =
+    List.map (tuple3 (pat_extra sub) id (sub.attributes sub)) x.pat_extra in
   let pat_desc : k pattern_desc =
     match x.pat_desc with
     | Tpat_any
@@ -268,7 +299,8 @@ let pat
     | Tpat_or (p1, p2, rd) ->
         Tpat_or (sub.pat sub p1, sub.pat sub p2, rd)
   in
-  {x with pat_loc; pat_extra; pat_desc; pat_env}
+  let pat_attributes = sub.attributes sub x.pat_attributes in
+  {x with pat_loc; pat_extra; pat_desc; pat_env; pat_attributes}
 
 let expr sub x =
   let extra = function
@@ -428,7 +460,8 @@ let expr sub x =
     | Texp_open (od, e) ->
         Texp_open (sub.open_declaration sub od, sub.expr sub e)
   in
-  {x with exp_loc; exp_extra; exp_desc; exp_env}
+  let exp_attributes = sub.attributes sub x.exp_attributes in
+  {x with exp_loc; exp_extra; exp_desc; exp_env; exp_attributes}
 
 
 let package_type sub x =
@@ -482,7 +515,7 @@ let signature_item sub x =
         Tsig_class_type
           (List.map (sub.class_type_declaration sub) list)
     | Tsig_open od -> Tsig_open (sub.open_description sub od)
-    | Tsig_attribute _ as d -> d
+    | Tsig_attribute attr -> Tsig_attribute (sub.attribute sub attr)
   in
   {sig_loc; sig_desc; sig_env}
 
@@ -511,7 +544,8 @@ let module_type sub x =
     | Tmty_typeof mexpr ->
         Tmty_typeof (sub.module_expr sub mexpr)
   in
-  {x with mty_loc; mty_desc; mty_env}
+  let mty_attributes = sub.attributes sub x.mty_attributes in
+  {x with mty_loc; mty_desc; mty_env; mty_attributes}
 
 let with_constraint sub = function
   | Twith_type decl -> Twith_type (sub.type_declaration sub decl)
@@ -524,12 +558,14 @@ let with_constraint sub = function
 let open_description sub od =
   {od with open_loc = sub.location sub od.open_loc;
            open_expr = tuple2 id (map_loc sub) od.open_expr;
-           open_env = sub.env sub od.open_env}
+           open_env = sub.env sub od.open_env;
+           open_attributes = sub.attributes sub od.open_attributes}
 
 let open_declaration sub od =
   {od with open_loc = sub.location sub od.open_loc;
            open_expr = sub.module_expr sub od.open_expr;
-           open_env = sub.env sub od.open_env}
+           open_env = sub.env sub od.open_env;
+           open_attributes = sub.attributes sub od.open_attributes}
 
 let module_coercion sub = function
   | Tcoerce_none -> Tcoerce_none
@@ -579,13 +615,15 @@ let module_expr sub x =
             mty
           )
   in
-  {x with mod_loc; mod_desc; mod_env}
+  let mod_attributes = sub.attributes sub x.mod_attributes in
+  {x with mod_loc; mod_desc; mod_env; mod_attributes}
 
 let module_binding sub x =
   let mb_loc = sub.location sub x.mb_loc in
   let mb_name = map_loc sub x.mb_name in
   let mb_expr = sub.module_expr sub x.mb_expr in
-  {x with mb_loc; mb_name; mb_expr}
+  let mb_attributes = sub.attributes sub x.mb_attributes in
+  {x with mb_loc; mb_name; mb_expr; mb_attributes}
 
 let class_expr sub x =
   let cl_loc = sub.location sub x.cl_loc in
@@ -630,7 +668,8 @@ let class_expr sub x =
     | Tcl_open (od, e) ->
         Tcl_open (sub.open_description sub od, sub.class_expr sub e)
   in
-  {x with cl_loc; cl_desc; cl_env}
+  let cl_attributes = sub.attributes sub x.cl_attributes in
+  {x with cl_loc; cl_desc; cl_env; cl_attributes}
 
 let class_type sub x =
   let cltyp_loc = sub.location sub x.cltyp_loc in
@@ -653,7 +692,8 @@ let class_type sub x =
     | Tcty_open (od, e) ->
         Tcty_open (sub.open_description sub od, sub.class_type sub e)
   in
-  {x with cltyp_loc; cltyp_desc; cltyp_env}
+  let cltyp_attributes = sub.attributes sub x.cltyp_attributes in
+  {x with cltyp_loc; cltyp_desc; cltyp_env; cltyp_attributes}
 
 let class_signature sub x =
   let csig_self = sub.typ sub x.csig_self in
@@ -672,9 +712,11 @@ let class_type_field sub x =
         Tctf_method (s, priv, virt, sub.typ sub ct)
     | Tctf_constraint  (ct1, ct2) ->
         Tctf_constraint (sub.typ sub ct1, sub.typ sub ct2)
-    | Tctf_attribute _ as d -> d
+    | Tctf_attribute attr ->
+        Tctf_attribute (sub.attribute sub attr)
   in
-  {x with ctf_loc; ctf_desc}
+  let ctf_attributes = sub.attributes sub x.ctf_attributes in
+  {ctf_loc; ctf_desc; ctf_attributes}
 
 let typ sub x =
   let ctyp_loc = sub.location sub x.ctyp_loc in
@@ -705,7 +747,8 @@ let typ sub x =
     | Ttyp_package pack ->
         Ttyp_package (sub.package_type sub pack)
   in
-  {x with ctyp_loc; ctyp_desc; ctyp_env}
+  let ctyp_attributes = sub.attributes sub x.ctyp_attributes in
+  {x with ctyp_loc; ctyp_desc; ctyp_env; ctyp_attributes}
 
 let class_structure sub x =
   let cstr_self = sub.pat sub x.cstr_self in
@@ -719,7 +762,8 @@ let row_field sub x =
         Ttag (map_loc sub label, b, List.map (sub.typ sub) list)
     | Tinherit ct -> Tinherit (sub.typ sub ct)
   in
-  {x with rf_loc; rf_desc}
+  let rf_attributes = sub.attributes sub x.rf_attributes in
+  {rf_loc; rf_desc; rf_attributes}
 
 let object_field sub x =
   let of_loc = sub.location sub x.of_loc in
@@ -728,7 +772,8 @@ let object_field sub x =
         OTtag (map_loc sub label, (sub.typ sub ct))
     | OTinherit ct -> OTinherit (sub.typ sub ct)
   in
-  {x with of_loc; of_desc}
+  let of_attributes = sub.attributes sub x.of_attributes in
+  {of_loc; of_desc; of_attributes}
 
 let class_field_kind sub = function
   | Tcfk_virtual ct -> Tcfk_virtual (sub.typ sub ct)
@@ -751,9 +796,11 @@ let class_field sub x =
         Tcf_method (map_loc sub s, priv, class_field_kind sub k)
     | Tcf_initializer exp ->
         Tcf_initializer (sub.expr sub exp)
-    | Tcf_attribute _ as d -> d
+    | Tcf_attribute attr ->
+        Tcf_attribute (sub.attribute sub attr)
   in
-  {x with cf_loc; cf_desc}
+  let cf_attributes = sub.attributes sub x.cf_attributes in
+  {cf_loc; cf_desc; cf_attributes}
 
 let value_bindings sub (rec_flag, list) =
   (rec_flag, List.map (sub.value_binding sub) list)
@@ -771,12 +818,15 @@ let value_binding sub x =
   let vb_loc = sub.location sub x.vb_loc in
   let vb_pat = sub.pat sub x.vb_pat in
   let vb_expr = sub.expr sub x.vb_expr in
-  {x with vb_loc; vb_pat; vb_expr}
+  let vb_attributes = sub.attributes sub x.vb_attributes in
+  {vb_loc; vb_pat; vb_expr; vb_attributes}
 
 let env _sub x = x
 
 let default =
   {
+    attribute;
+    attributes;
     binding_op;
     case;
     class_declaration;
