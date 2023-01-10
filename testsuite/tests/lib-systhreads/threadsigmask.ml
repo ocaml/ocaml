@@ -24,7 +24,8 @@ let rec loop () =
   let res = List.length (List.rev_map sin long_list) in
   ignore (Sys.opaque_identity res)
 
-let thread s =
+let thread (s, init_mask) =
+  assert (init_mask = (Thread.sigmask Unix.SIG_UNBLOCK []));
   ignore (Thread.sigmask Unix.SIG_UNBLOCK [s]);
   while not !stopped do loop () done
 
@@ -35,6 +36,8 @@ let handler tid_exp cnt signal =
 
 let _ =
   ignore (Thread.sigmask Unix.SIG_BLOCK [Sys.sigusr1; Sys.sigusr2]);
+  (* expected initial mask of spawned thread *)
+  let init_mask = (Thread.sigmask Unix.SIG_BLOCK []) in
 
   (* Install the signal handlers *)
   let (tid1, tid2) = (ref 0, ref 0) in
@@ -43,7 +46,7 @@ let _ =
   Sys.set_signal Sys.sigusr2 (Sys.Signal_handle (handler tid2 cnt2));
 
   (* Spawn the other thread and unblock sigusr2 in the main thread *)
-  let t1 = Thread.create thread Sys.sigusr1 in
+  let t1 = Thread.create thread (Sys.sigusr1, init_mask) in
   let t2 = Thread.self () in
   ignore (Thread.sigmask Unix.SIG_UNBLOCK [Sys.sigusr2]);
   tid1 := Thread.id t1;
