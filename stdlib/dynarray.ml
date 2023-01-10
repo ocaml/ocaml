@@ -45,11 +45,23 @@ let init n f = {
 let[@inline] array_is_empty_ v =
   Array.length v.arr = 0
 
-(* next capacity, if current one is [n]. Roughly use [n * 1.5], because it
-   provides the good behavior of amortized O(1) number of allocations
-   without wasting too much memory in the worst case. *)
-let[@inline] next_grow_ n =
-  min Sys.max_array_length (1 + n + n lsr 1)
+let next_grow_ n =
+  let n' =
+    (* For large values of n, we use 1.5 as our growth factor.
+
+       For smaller values of n, we grow more aggressively to avoid
+       reallocating too much when accumulating elements into an empty
+       array.
+
+       The constants "512 words" and "8 words" below are taken from
+         https://github.com/facebook/folly/blob/
+           c06c0f41d91daf1a6a5f3fc1cd465302ac260459/folly/FBVector.h#L1128-L1157
+    *)
+    if n <= 512 then n * 2
+    else n + n / 2
+  in
+  (* jump directly from 0 to 8 *)
+  min (max 8 n') Sys.max_array_length
 
 (* resize the underlying array using x to temporarily fill the array *)
 let actually_resize_array_ a newcapacity ~filler : unit =
