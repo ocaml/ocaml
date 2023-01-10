@@ -5139,7 +5139,7 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
   with Not_found ->
     let ty' = newgenstub ~scope:(get_scope ty) in
     TypeHash.add nondep_hash ty ty';
-    let desc =
+    match
       match get_desc ty with
       | Tconstr(p, tl, _abbrev) as desc ->
           begin try
@@ -5200,9 +5200,13 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
             | _ -> Tvariant row
           end
       | desc -> copy_type_desc (nondep_type_rec env ids) desc
-    in
-    Transient_expr.set_stub_desc ty' desc;
-    ty'
+    with
+    | desc ->
+      Transient_expr.set_stub_desc ty' desc;
+      ty'
+    | exception e ->
+      TypeHash.remove nondep_hash ty;
+      raise e
 
 let nondep_type env id ty =
   try
