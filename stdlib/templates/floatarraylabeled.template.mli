@@ -170,6 +170,34 @@ val mem : float -> set:t -> bool
 val mem_ieee : float -> set:t -> bool
 (** Same as {!mem}, but uses IEEE equality instead of structural equality. *)
 
+(** {2 Array searching} *)
+
+val find_opt : f:(float -> bool) -> t -> float option
+(* [find_opt ~f a] returns the first element of the array [a] that satisfies
+   the predicate [f]. Returns [None] if there is no value that satisfies [f]
+   in the array [a].
+   @since 5.1 *)
+
+val find_index : f:(float-> bool) -> t -> int option
+(** [find_index ~f a] returns [Some i], where [i] is the index of the first
+    element of the array [a] that satisfies [f x], if there is such an
+    element.
+
+    It returns [None] if there is no such element.
+    @since 5.1 *)
+
+val find_map : f:(float -> 'a option) -> t -> 'a option
+(* [find_map ~f a] applies [f] to the elements of [a] in order, and returns
+   the first result of the form [Some v], or [None] if none exist.
+   @since 5.1 *)
+
+val find_mapi : f:(int -> float -> 'a option) -> t -> 'a option
+(** Same as [find_map], but the predicate is applied to the index of
+   the element as first argument (counting from 0), and the element
+   itself as second argument.
+
+   @since 5.1 *)
+
 (** {2 Sorting} *)
 
 val sort : cmp:(float -> float -> int) -> t -> unit

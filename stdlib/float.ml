@@ -378,6 +378,51 @@ module Array = struct
     loop 0
 
   (* duplicated from array.ml *)
+  let find_opt p a =
+    let n = length a in
+    let rec loop i =
+      if i = n then None
+      else
+        let x = unsafe_get a i in
+        if p x then Some x
+        else loop (i + 1)
+    in
+    loop 0
+
+  (* duplicated from array.ml *)
+  let find_index p a =
+    let n = length a in
+    let rec loop i =
+      if i = n then None
+      else if p (unsafe_get a i) then Some i
+      else loop (i + 1) in
+    loop 0
+
+  (* duplicated from array.ml *)
+  let find_map f a =
+    let n = length a in
+    let rec loop i =
+      if i = n then None
+      else
+        match f (unsafe_get a i) with
+        | None -> loop (i + 1)
+        | Some _ as r -> r
+    in
+    loop 0
+
+  (* duplicated from array.ml *)
+  let find_mapi f a =
+    let n = length a in
+    let rec loop i =
+      if i = n then None
+      else
+        match f i (unsafe_get a i) with
+        | None -> loop (i + 1)
+        | Some _ as r -> r
+    in
+    loop 0
+
+  (* duplicated from array.ml *)
   exception Bottom of int
   let sort cmp a =
     let maxson l i =
