@@ -3,11 +3,11 @@ Warning 63 [erroneous-printed-signature]: The printed interface differs from the
 The inferred interface contained items which could not be printed
 properly due to name collisions between identifiers.
 File "pervasives_leitmotiv.ml", lines 10-12, characters 0-3:
-  Definition of module Stdlib/1
+  Definition of module Stdlib
 File "_none_", line 1:
   Definition of module Stdlib/2
 Beware that this warning is purely informational and will not catch
 all instances of erroneous printed interface.
 type fpclass = A
 module Stdlib : sig type fpclass = B end
-val f : fpclass -> Stdlib/1.fpclass -> Stdlib/2.fpclass
+val f : fpclass -> Stdlib.fpclass -> Stdlib/2.fpclass

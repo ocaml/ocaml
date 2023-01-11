@@ -727,27 +727,27 @@ let emit_instr env i =
           output_epilogue env (fun () -> `	b	{emit_symbol func}\n`)
     | Lop(Iextcall {func; alloc; stack_ofs}) ->
         if stack_ofs > 0 then begin
-          ` mov {emit_reg reg_stack_arg_begin}, sp\n`;
-          ` add {emit_reg reg_stack_arg_end}, sp, #{emit_int (Misc.align stack_ofs 16)}\n`;
+          `	mov	{emit_reg reg_stack_arg_begin}, sp\n`;
+          `	add	{emit_reg reg_stack_arg_end}, sp, #{emit_int (Misc.align stack_ofs 16)}\n`;
           emit_load_symbol_addr reg_x8 func;
-          ` bl  {emit_symbol "caml_c_call_stack_args"}\n`;
+          `	bl	{emit_symbol "caml_c_call_stack_args"}\n`;
           `{record_frame env i.live (Dbg_other i.dbg)}\n`
         end else if alloc then begin
           emit_load_symbol_addr reg_x8 func;
-          ` bl  {emit_symbol "caml_c_call"}\n`;
+          `	bl	{emit_symbol "caml_c_call"}\n`;
           `{record_frame env i.live (Dbg_other i.dbg)}\n`
         end else begin
           (* store ocaml stack in the frame pointer register
              NB: no need to store previous x29 because OCaml frames don't
              maintain frame pointer *)
-          ` mov x29, sp\n`;
+          `	mov	x29, sp\n`;
           cfi_remember_state ();
           cfi_def_cfa_register ~reg:29;
           let offset = Domainstate.(idx_of_field Domain_c_stack) * 8 in
-          ` ldr {emit_reg reg_tmp1}, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`;
-          ` mov sp, {emit_reg reg_tmp1}\n`;
-          ` bl {emit_symbol func}\n`;
-          ` mov sp, x29\n`;
+          `	ldr	{emit_reg reg_tmp1}, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`;
+          `	mov	sp, {emit_reg reg_tmp1}\n`;
+          `	bl	{emit_symbol func}\n`;
+          `	mov	sp, x29\n`;
           cfi_restore_state ()
         end
     | Lop(Istackoffset n) ->
@@ -783,7 +783,7 @@ let emit_instr env i =
         | Word_int | Word_val ->
             if is_atomic then begin
               assert (addressing_mode = Iindexed 0);
-              ` dmb ishld\n`;
+              `	dmb	ishld\n`;
               `	ldar	{emit_reg dst}, [{emit_reg i.arg.(0)}]\n`
             end else
               `	ldr	{emit_reg dst}, {emit_addressing addressing_mode base}\n`
@@ -813,7 +813,7 @@ let emit_instr env i =
             `	str	s7, {emit_addressing addr base}\n`;
         | Word_int | Word_val ->
             (* memory model barrier for non-initializing store *)
-            if assignment then ` dmb ishld\n`;
+            if assignment then `	dmb	ishld\n`;
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
         | Double ->
             `	str	{emit_reg src}, {emit_addressing addr base}\n`
@@ -939,7 +939,7 @@ let emit_instr env i =
         `	sbfm	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #0, #{emit_int (size - 1)}\n`
     | Lop(Idls_get) ->
         let offset = Domainstate.(idx_of_field Domain_dls_root) * 8 in
-        ` ldr {emit_reg i.res.(0)}, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`
+        `	ldr	{emit_reg i.res.(0)}, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`
     | Lreloadretaddr ->
         ()
     | Lreturn ->
@@ -1082,10 +1082,10 @@ let fundecl fundecl =
       let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
       let f = max_frame_size + threshold_offset in
       let offset = Domainstate.(idx_of_field Domain_current_stack) * 8 in
-      `  ldr {emit_reg reg_tmp1}, [{emit_reg reg_domain_state_ptr}, #{emit_int offset}]\n`;
+      `	ldr	{emit_reg reg_tmp1}, [{emit_reg reg_domain_state_ptr}, #{emit_int offset}]\n`;
       emit_addimm reg_tmp1 reg_tmp1 f;
-      `  cmp sp, {emit_reg reg_tmp1}\n`;
-      `  bcc {emit_label overflow}\n`;
+      `	cmp	sp, {emit_reg reg_tmp1}\n`;
+      `	bcc	{emit_label overflow}\n`;
       `{emit_label ret}:\n`;
       Some (overflow, ret), 5
     end else None, 0
@@ -1112,11 +1112,11 @@ let fundecl fundecl =
       (* Pass the desired frame size on the stack, since all of the
         argument-passing registers may be in use. *)
       let s = (Config.stack_threshold + max_frame_size / 8) in
-      `  mov {emit_reg reg_tmp1}, #{emit_int s}\n`;
-      `  stp {emit_reg reg_tmp1}, x30, [sp, #-16]!\n`;
-      `  bl {emit_symbol "caml_call_realloc_stack"}\n`;
-      `  ldp {emit_reg reg_tmp1}, x30, [sp], #16\n`;
-      `  b {emit_label ret}\n`
+      `	mov	{emit_reg reg_tmp1}, #{emit_int s}\n`;
+      `	stp	{emit_reg reg_tmp1}, x30, [sp, #-16]!\n`;
+      `	bl	{emit_symbol "caml_call_realloc_stack"}\n`;
+      `	ldp	{emit_reg reg_tmp1}, x30, [sp], #16\n`;
+      `	b	{emit_label ret}\n`
     end
   end;
 
@@ -1151,7 +1151,7 @@ let emit_item = function
 
 let data l =
   `	.data\n`;
-  `	.align 3\n`;
+  `	.align	3\n`;
   List.iter emit_item l
 
 (* Beginning / end of an assembly file *)
@@ -1172,7 +1172,10 @@ let begin_assembly() =
      Alignment is needed to avoid linker warnings for
      shared_startup__code_{begin,end} (e.g. tests/lib-dynlink-pr4839).
    *)
-  if macosx then ` nop\n .align 3\n`;
+  if macosx then begin
+    `	nop\n`;
+    `	.align	3\n`
+  end;
   ()
 
 let end_assembly () =

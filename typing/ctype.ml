@@ -410,67 +410,54 @@ let rec filter_row_fields erase = function
                     (*  Check genericity of type schemes  *)
                     (**************************************)
 
+type variable_kind = Row_variable | Type_variable
+exception Non_closed of type_expr * variable_kind
 
-exception Non_closed of type_expr * bool
-
-let free_variables = ref []
-let really_closed = ref None
-
-(* [free_vars_rec] collects the variables of the input type
-   expression into the [free_variables] reference. It is used for
-   several different things in the type-checker, with the following
-   bells and whistles:
-   - If [really_closed] is Some typing environment, types in the environment
+(* [free_vars] collects the variables of the input type expression. It
+   is used for several different things in the type-checker, with the
+   following bells and whistles:
+   - If [env] is Some typing environment, types in the environment
      are expanded to check whether the apparently-free variable would vanish
      during expansion.
-   - We collect both type variables and row variables, paired with a boolean
-     that is [true] if we have a row variable.
+   - We collect both type variables and row variables, paired with
+     a [variable_kind] to distinguish them.
    - We do not count "virtual" free variables -- free variables stored in
      the abbreviation of an object type that has been expanded (we store
      the abbreviations for use when displaying the type).
 
-   The functions [free_vars] and [free_variables] below receive
-   a typing environment as an optional [?env] parameter and
-   set [really_closed] accordingly.
    [free_vars] returns a [(variable * bool) list], while
-   [free_variables] drops the type/row information
+   [free_variables] below drops the type/row information
    and only returns a [variable list].
  *)
-let rec free_vars_rec real ty =
-  if try_mark_node ty then
-    match get_desc ty, !really_closed with
-      Tvar _, _ ->
-        free_variables := (ty, real) :: !free_variables
-    | Tconstr (path, tl, _), Some env ->
-        begin try
-          let (_, body, _) = Env.find_type_expansion path env in
-          if get_level body <> generic_level then
-            free_variables := (ty, real) :: !free_variables
-        with Not_found -> ()
-        end;
-        List.iter (free_vars_rec true) tl
-(* Do not count "virtual" free variables
-    | Tobject(ty, {contents = Some (_, p)}) ->
-        free_vars_rec false ty; List.iter (free_vars_rec true) p
-*)
-    | Tobject (ty, _), _ ->
-        free_vars_rec false ty
-    | Tfield (_, _, ty1, ty2), _ ->
-        free_vars_rec true ty1; free_vars_rec false ty2
-    | Tvariant row, _ ->
-        iter_row (free_vars_rec true) row;
-        if not (static_row row) then free_vars_rec false (row_more row)
-    | _    ->
-        iter_type_expr (free_vars_rec true) ty
-
 let free_vars ?env ty =
-  free_variables := [];
-  really_closed := env;
-  free_vars_rec true ty;
-  let res = !free_variables in
-  free_variables := [];
-  really_closed := None;
-  res
+  let rec fv ~kind acc ty =
+    if not (try_mark_node ty) then acc
+    else match get_desc ty, env with
+      | Tvar _, _ ->
+          (ty, kind) :: acc
+      | Tconstr (path, tl, _), Some env ->
+          let acc =
+            match Env.find_type_expansion path env with
+            | exception Not_found -> acc
+            | (_, body, _) ->
+                if get_level body = generic_level then acc
+                else (ty, kind) :: acc
+          in
+          List.fold_left (fv ~kind:Type_variable) acc tl
+      | Tobject (ty, _), _ ->
+          (* ignoring the second parameter of [Tobject] amounts to not
+             counting "virtual free variables". *)
+          fv ~kind:Row_variable acc ty
+      | Tfield (_, _, ty1, ty2), _ ->
+          let acc = fv ~kind:Type_variable acc ty1 in
+          fv ~kind:Row_variable acc ty2
+      | Tvariant row, _ ->
+          let acc = fold_row (fv ~kind:Type_variable) acc row in
+          if static_row row then acc
+          else fv ~kind:Row_variable acc (row_more row)
+      | _    ->
+          fold_type_expr (fv ~kind) acc ty
+  in fv ~kind:Type_variable [] ty
 
 let free_variables ?env ty =
   let tl = List.map fst (free_vars ?env ty) in
@@ -534,7 +521,12 @@ let closed_extension_constructor ext =
     unmark_extension_constructor ext;
     Some ty
 
-exception CCFailure of (type_expr * bool * string * type_expr)
+type closed_class_failure = {
+  free_variable: type_expr * variable_kind;
+  meth: string;
+  meth_ty: type_expr;
+}
+exception CCFailure of closed_class_failure
 
 let closed_class params sign =
   List.iter mark_type params;
@@ -543,8 +535,12 @@ let closed_class params sign =
     Meths.iter
       (fun lab (priv, _, ty) ->
         if priv = Mpublic then begin
-          try closed_type ty with Non_closed (ty0, real) ->
-            raise (CCFailure (ty0, real, lab, ty))
+          try closed_type ty with Non_closed (ty0, variable_kind) ->
+            raise (CCFailure {
+              free_variable = (ty0, variable_kind);
+              meth = lab;
+              meth_ty = ty;
+            })
         end)
       sign.csig_meths;
     List.iter unmark_type params;
@@ -1219,14 +1215,6 @@ let instance_parameterized_type ?keep_names sch_args sch =
     (ty_args, ty)
   )
 
-let instance_parameterized_type_2 sch_args sch_lst sch =
-  For_copy.with_scope (fun copy_scope ->
-    let ty_args = List.map (copy copy_scope) sch_args in
-    let ty_lst = List.map (copy copy_scope) sch_lst in
-    let ty = copy copy_scope sch in
-    (ty_args, ty_lst, ty)
-  )
-
 let map_kind f = function
   | Type_abstract -> Type_abstract
   | Type_open -> Type_open
@@ -1291,13 +1279,6 @@ let instance_class params cty =
 
 (**** Instantiation for types with free universal variables ****)
 
-let delayed_copy = ref []
-    (* copying to do later *)
-let add_delayed_copy t copy_scope ty =
-  delayed_copy :=
-    lazy (Transient_expr.set_stub_desc t (Tlink (copy copy_scope ty))) ::
-    !delayed_copy
-
 (* [copy_sep] is used to instantiate first-class polymorphic types.
    * It first makes a separate copy of the type as a graph, omitting nodes
      that have no free univars.
@@ -1319,43 +1300,54 @@ let add_delayed_copy t copy_scope ty =
    copy to keep the sharing of the original type without breaking its
    binding structure.
  *)
-let rec copy_sep ~copy_scope ~fixed ~free ~may_share
-    ~(visited : type_expr TypeHash.t) (ty : type_expr) =
-  let univars = free ty in
-  if is_Tvar ty || may_share && TypeSet.is_empty univars then
-    if get_level ty <> generic_level then ty else
-    let t = newstub ~scope:(get_scope ty) in
-    add_delayed_copy t copy_scope ty;
-    t
-  else try
-    TypeHash.find visited ty
-  with Not_found -> begin
-    let t = newstub ~scope:(get_scope ty) in
-    TypeHash.add visited ty t;
-    let copy_rec = copy_sep ~copy_scope ~fixed ~free ~visited in
-    let desc' =
-      match get_desc ty with
-      | Tvariant row ->
-          let more = row_more row in
-          (* We shall really check the level on the row variable *)
-          let keep = is_Tvar more && get_level more <> generic_level in
-          (* In that case we should keep the original, but we still
-             call copy to correct the levels *)
-          if keep then (add_delayed_copy t copy_scope ty; Tvar None) else
-          let more' = copy_rec ~may_share:false more in
-          let fixed' = fixed && (is_Tvar more || is_Tunivar more) in
-          let row =
-            copy_row (copy_rec ~may_share:true) fixed' row keep more' in
-          Tvariant row
-      | Tfield (p, k, ty1, ty2) ->
-          (* the kind is kept shared, see Btype.copy_type_desc *)
-          Tfield (p, field_kind_internal_repr k, copy_rec ~may_share:true ty1,
-                  copy_rec ~may_share:false ty2)
-      | desc -> copy_type_desc (copy_rec ~may_share:true) desc
-    in
-    Transient_expr.set_stub_desc t desc';
-    t
-  end
+let copy_sep ~copy_scope ~fixed ~(visited : type_expr TypeHash.t) sch =
+  let free = compute_univars sch in
+  let delayed_copies = ref [] in
+  let add_delayed_copy t ty =
+    delayed_copies :=
+      lazy (Transient_expr.set_stub_desc t (Tlink (copy copy_scope ty))) ::
+      !delayed_copies
+  in
+  let rec copy_rec ~may_share (ty : type_expr) =
+    let univars = free ty in
+    if is_Tvar ty || may_share && TypeSet.is_empty univars then
+      if get_level ty <> generic_level then ty else
+      let t = newstub ~scope:(get_scope ty) in
+      add_delayed_copy t ty;
+      t
+    else try
+      TypeHash.find visited ty
+    with Not_found -> begin
+      let t = newstub ~scope:(get_scope ty) in
+      TypeHash.add visited ty t;
+      let desc' =
+        match get_desc ty with
+        | Tvariant row ->
+            let more = row_more row in
+            (* We shall really check the level on the row variable *)
+            let keep = is_Tvar more && get_level more <> generic_level in
+            (* In that case we should keep the original, but we still
+               call copy to correct the levels *)
+            if keep then (add_delayed_copy t ty; Tvar None) else
+            let more' = copy_rec ~may_share:false more in
+            let fixed' = fixed && (is_Tvar more || is_Tunivar more) in
+            let row =
+              copy_row (copy_rec ~may_share:true) fixed' row keep more' in
+            Tvariant row
+        | Tfield (p, k, ty1, ty2) ->
+            (* the kind is kept shared, see Btype.copy_type_desc *)
+            Tfield (p, field_kind_internal_repr k,
+                    copy_rec ~may_share:true ty1,
+                    copy_rec ~may_share:false ty2)
+        | desc -> copy_type_desc (copy_rec ~may_share:true) desc
+      in
+      Transient_expr.set_stub_desc t desc';
+      t
+    end
+  in
+  let ty = copy_rec ~may_share:true sch in
+  List.iter Lazy.force !delayed_copies;
+  ty
 
 let instance_poly' copy_scope ~keep_names fixed univars sch =
   (* In order to compute univars below, [sch] should not contain [Tsubst] *)
@@ -1367,12 +1359,7 @@ let instance_poly' copy_scope ~keep_names fixed univars sch =
   let vars = List.map copy_var univars in
   let visited = TypeHash.create 17 in
   List.iter2 (TypeHash.add visited) univars vars;
-  delayed_copy := [];
-  let ty =
-    copy_sep ~copy_scope ~fixed ~free:(compute_univars sch)
-      ~may_share:true ~visited sch in
-  List.iter Lazy.force !delayed_copy;
-  delayed_copy := [];
+  let ty = copy_sep ~copy_scope ~fixed ~visited sch in
   vars, ty
 
 let instance_poly ?(keep_names=false) fixed univars sch =

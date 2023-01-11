@@ -89,7 +89,7 @@ val iter : ('a -> unit) -> 'a t -> unit
    from the least recently entered to the most recently entered.
    The queue itself is unchanged. *)
 
-val fold : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
+val fold : ('acc -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
 (** [fold f accu q] is equivalent to [List.fold_left f accu l],
    where [l] is the list of [q]'s elements. The queue remains
    unchanged. *)

@@ -17,7 +17,7 @@ Error: Syntax error: : expected.
 Line 3, characters 0-2:
 3 | ;;
     ^^
-Error: Syntax error: = expected.
+Error: Syntax error
 Line 2, characters 11-17:
 2 | module M : struct end
                ^^^^^^

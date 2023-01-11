@@ -216,12 +216,12 @@ val mapi : (int -> char -> char) -> string -> string
 
     @since 4.02 *)
 
-val fold_left : ('a -> char -> 'a) -> 'a -> string -> 'a
+val fold_left : ('acc -> char -> 'acc) -> 'acc -> string -> 'acc
 (** [fold_left f x s] computes [f (... (f (f x s.[0]) s.[1]) ...) s.[n-1]],
     where [n] is the length of the string [s].
     @since 4.13 *)
 
-val fold_right : (char -> 'a -> 'a) -> string -> 'a -> 'a
+val fold_right : (char -> 'acc -> 'acc) -> string -> 'acc -> 'acc
 (** [fold_right f s x] computes [f s.[0] (f s.[1] ( ... (f s.[n-1] x) ...))],
     where [n] is the length of the string [s].
     @since 4.13 *)

@@ -815,8 +815,9 @@ external snd : 'a * 'b -> 'b = "%field1"
 *)
 
 val ( @ ) : 'a list -> 'a list -> 'a list
-(** List concatenation.  Not tail-recursive (length of the first argument).
+(** [l0 @ l1] appends [l1] to [l0]. Same function as {!List.append}.
   Right-associative operator, see {!Ocaml_operators} for more information.
+  @since 5.1 this function is tail-recursive.
 *)
 
 (** {1 Input/output}

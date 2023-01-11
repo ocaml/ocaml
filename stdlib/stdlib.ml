@@ -295,10 +295,12 @@ let float_of_string_opt s =
 
 (* List operations -- more in module List *)
 
-let rec ( @ ) l1 l2 =
+let[@tail_mod_cons] rec ( @ ) l1 l2 =
   match l1 with
-    [] -> l2
-  | hd :: tl -> hd :: (tl @ l2)
+  | [] -> l2
+  | h1 :: [] -> h1 :: l2
+  | h1 :: h2 :: [] -> h1 :: h2 :: l2
+  | h1 :: h2 :: h3 :: tl -> h1 :: h2 :: h3 :: (tl @ l2)
 
 (* I/O operations *)
 

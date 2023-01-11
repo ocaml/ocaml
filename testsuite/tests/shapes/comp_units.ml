@@ -126,7 +126,7 @@ module Without_constraint :
     val find_last : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
     val iter : (elt -> unit) -> t -> unit
-    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
     val map : (elt -> elt) -> t -> t
     val filter : (elt -> bool) -> t -> t
     val filter_map : (elt -> elt option) -> t -> t

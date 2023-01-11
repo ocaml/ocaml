@@ -265,13 +265,13 @@ let[@tail_mod_cons] rec filter_map f = function
       | None -> filter_map f l
       | Some v -> v :: filter_map f l
 
-let concat_map f l =
-  let rec aux f acc = function
-    | [] -> rev acc
-    | x :: l ->
-       let xs = f x in
-       aux f (rev_append xs acc) l
-  in aux f [] l
+let[@tail_mod_cons] rec concat_map f = function
+  | [] -> []
+  | x::xs -> prepend_concat_map (f x) f xs
+and[@tail_mod_cons] prepend_concat_map ys f xs =
+  match ys with
+  | [] -> concat_map f xs
+  | y :: ys -> y :: prepend_concat_map ys f xs
 
 let fold_left_map f accu l =
   let rec aux accu l_accu = function

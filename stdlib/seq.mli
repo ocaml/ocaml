@@ -161,7 +161,7 @@ val iter : ('a -> unit) -> 'a t -> unit
 
     It terminates only if the sequence [xs] is finite. *)
 
-val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
+val fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
 (** [fold_left f _ xs] invokes [f _ x] successively
     for every element [x] of the sequence [xs],
     from left to right.
@@ -181,7 +181,7 @@ val iteri : (int -> 'a -> unit) -> 'a t -> unit
 
     @since 4.14 *)
 
-val fold_lefti : ('b -> int -> 'a -> 'b) -> 'b -> 'a t -> 'b
+val fold_lefti : ('acc -> int -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
 (** [fold_lefti f _ xs] invokes [f _ i x] successively
     for every element [x] located at index [i] of the sequence [xs].
 
@@ -247,7 +247,7 @@ val iter2 : ('a -> 'b -> unit) -> 'a t -> 'b t -> unit
 
     @since 4.14 *)
 
-val fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b t -> 'c t -> 'a
+val fold_left2 : ('acc -> 'a -> 'b -> 'acc) -> 'acc -> 'a t -> 'b t -> 'acc
 (** [fold_left2 f _ xs ys] invokes [f _ x y] successively
     for every pair [(x, y)] of elements drawn synchronously
     from the sequences [xs] and [ys].

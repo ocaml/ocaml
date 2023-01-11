@@ -137,3 +137,11 @@ let a : int array =
 [%%expect{|
 val a : int array = [|2; 4; 6; 8|]
 |}]
+
+let a : int array =
+  let a = [| 1 ; 2 ; 3 ; 4 |] in
+  Array.mapi_inplace (fun i x -> 1 + i + x) a;
+  a
+[%%expect{|
+val a : int array = [|2; 4; 6; 8|]
+|}]

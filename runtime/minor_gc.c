@@ -43,6 +43,9 @@
 extern value caml_ephe_none; /* See weak.c */
 struct generic_table CAML_TABLE_STRUCT(char);
 
+CAMLexport atomic_uintnat caml_minor_collections_count;
+CAMLexport atomic_uintnat caml_major_slice_epoch;
+
 static atomic_intnat domains_finished_minor_gc;
 
 static atomic_uintnat caml_minor_cycles_started = 0;
@@ -452,8 +455,8 @@ void caml_empty_minor_heap_domain_clear(caml_domain_state* domain)
 }
 
 void caml_empty_minor_heap_promote(caml_domain_state* domain,
-                                    int participating_count,
-                                    caml_domain_state** participating)
+                                   int participating_count,
+                                   caml_domain_state** participating)
 {
   struct caml_minor_tables *self_minor_tables = domain->minor_tables;
   struct caml_custom_elt *elt;
@@ -632,6 +635,10 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS);
 
   domain->young_ptr = domain->young_end;
+  /* Trigger a GC poll when half of the minor heap is filled. At that point, a
+   * major slice is scheduled. */
+  domain->young_trigger = domain->young_start
+    + (domain->young_end - domain->young_start) / 2;
   caml_reset_young_limit(domain);
 
   if( participating_count > 1 ) {
@@ -640,7 +647,6 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   }
 
   domain->stat_minor_words += Wsize_bsize (minor_allocated_bytes);
-  domain->stat_minor_collections++;
   domain->stat_promoted_words += domain->allocated_words - prev_alloc_words;
 
   call_timing_hook(&caml_minor_gc_end_hook);
@@ -674,13 +680,16 @@ void caml_do_opportunistic_major_slice
 */
 void caml_empty_minor_heap_setup(caml_domain_state* domain_unused) {
   atomic_store_explicit(&domains_finished_minor_gc, 0, memory_order_release);
+  /* Increment the total number of minor collections done in the program */
+  atomic_fetch_add (&caml_minor_collections_count, 1);
 }
 
 /* must be called within a STW section */
-static void caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
-                                            void* unused,
-                                            int participating_count,
-                                            caml_domain_state** participating)
+static void
+caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
+                                         void* unused,
+                                         int participating_count,
+                                         caml_domain_state** participating)
 {
 #ifdef DEBUG
   uintnat* initial_young_ptr = (uintnat*)domain->young_ptr;
@@ -733,10 +742,7 @@ static void caml_stw_empty_minor_heap (caml_domain_state* domain, void* unused,
                                        caml_domain_state** participating)
 {
   caml_stw_empty_minor_heap_no_major_slice(domain, unused,
-                                            participating_count, participating);
-
-  /* schedule a major collection slice for this domain */
-  caml_request_major_slice();
+                                           participating_count, participating);
 
   /* can change how we account clock in future, here just do raw count */
   domain->major_gc_clock += 1.0;

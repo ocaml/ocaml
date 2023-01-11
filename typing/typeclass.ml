@@ -93,8 +93,7 @@ type error =
   | Bad_class_type_parameters of Ident.t * type_expr list * type_expr list
   | Class_match_failure of Ctype.class_match_failure list
   | Unbound_val of string
-  | Unbound_type_var of
-      (formatter -> unit) * (type_expr * bool * string * type_expr)
+  | Unbound_type_var of (formatter -> unit) * Ctype.closed_class_failure
   | Non_generalizable_class of Ident.t * Types.class_declaration
   | Cannot_coerce_self of type_expr
   | Non_collapsable_conjunction of
@@ -2075,15 +2074,19 @@ let report_error env ppf = function
   | Unbound_val lab ->
       fprintf ppf "Unbound instance variable %s" lab
   | Unbound_type_var (printer, reason) ->
-      let print_reason ppf (ty0, real, lab, ty) =
+      let print_reason ppf { Ctype.free_variable; meth; meth_ty; } =
+        let (ty0, kind) = free_variable in
         let ty1 =
-          if real then ty0 else Btype.newgenty(Tobject(ty0, ref None)) in
-        Printtyp.add_type_to_preparation ty;
+          match kind with
+          | Type_variable -> ty0
+          | Row_variable -> Btype.newgenty(Tobject(ty0, ref None))
+        in
+        Printtyp.add_type_to_preparation meth_ty;
         Printtyp.add_type_to_preparation ty1;
         fprintf ppf
           "The method %s@ has type@;<1 2>%a@ where@ %a@ is unbound"
-          lab
-          !Oprint.out_type (Printtyp.tree_of_typexp Type ty)
+          meth
+          !Oprint.out_type (Printtyp.tree_of_typexp Type meth_ty)
           !Oprint.out_type (Printtyp.tree_of_typexp Type ty0)
       in
       fprintf ppf

@@ -65,7 +65,7 @@ present, only consist of major heap allocation size counter events.
 
 The full set of events emitted by probes and their documentation can be found in
 \ifouthtml
- \ahref{libref/Runtime_events.html}{Module \texttt{Runtime_events}}.
+ \moduleref{libref}{Runtime_events}{Module \texttt{Runtime_events}}.
 \else
  section~\ref{Runtime_events}.
 \fi
@@ -91,7 +91,7 @@ running domain and, on domain termination, ring buffers may be re-used for newly
 spawned domains. The ring buffers themselves are stored in a memory-mapped file
 with the processes identifier as the name and the extension ".events", this
 enables them to be read from outside the main OCaml process. See
-\stdmoduleref{Runtime_events} for more information.
+\moduleref{libref}{Runtime_events}{\texttt{Runtime_events}} for more information.
 
 \subsubsection{s:runtime-tracing-apis}{Consumption APIs}
 
