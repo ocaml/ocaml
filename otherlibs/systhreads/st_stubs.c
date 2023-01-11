@@ -597,7 +597,7 @@ CAMLprim value caml_thread_new(value clos)
   th->descr = caml_thread_new_descriptor(clos);
 
 #ifdef POSIX_SIGNALS
-  th->init_mask = mask;
+  th->init_mask = old_mask;
 #endif
 
   th->next = Active_thread->next;

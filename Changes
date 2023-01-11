@@ -46,6 +46,10 @@ Working version
   (Gabriel Scherer, review by Xavier Leroy, Guillaume Munch-Maccagnoni
    and Nicolás Ojeda Bär)
 
+- #11880: Restore the correct sigmask in systhreads.
+  (Christiano Haesbaert, review by Guillaume Munch-Maccagnoni and
+   Sébastien Hinderer)
+
 ### Type system:
 
 - #6941, #11187: prohibit using classes through recursive modules
