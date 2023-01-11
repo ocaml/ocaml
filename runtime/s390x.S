@@ -79,7 +79,8 @@
 /* struct c_stack_link + callee save regs = 24 + 8*8 = 88 */
 #define start_program_sleb128_2byte 216, 0
 
-/* exception handler + gc_regs slot + C_STACK_SP + Handler_parent = 16 + 8 + 8 + 24 = 56 */
+/* exception handler + gc_regs slot + C_STACK_SP + Handler_parent
+   = 16 + 8 + 8 + 24 = 56 */
 #define caml_runstack_sleb128_1byte 56
 
 #define RETADDR_ENTRY_SIZE   8 /* retaddr */
@@ -175,7 +176,7 @@ caml_system__code_begin:
         CFI_OFFSET(14, 0); \
           /* %r15 points to the c_stack_link. */                \
         .cfi_escape DW_CFA_def_cfa_expression, 3,               \
-           DW_OP_breg + DW_REG_r15, Cstack_sp, DW_OP_deref
+          DW_OP_breg + DW_REG_r15, Cstack_sp, DW_OP_deref
 #else
 #define SWITCH_OCAML_TO_C_CFI
 #endif
@@ -297,7 +298,8 @@ CFI_STARTPROC
         SWITCH_OCAML_TO_C
         PREPARE_FOR_C_CALL
 #ifdef ASM_CFI_SUPPORTED
-        .cfi_escape DW_CFA_def_cfa_expression, 4, DW_OP_breg + DW_REG_r15, Cstack_sp_plus_160_sleb128_2byte, DW_OP_deref
+        .cfi_escape DW_CFA_def_cfa_expression, 4, DW_OP_breg + DW_REG_r15, \
+          Cstack_sp_plus_160_sleb128_2byte, DW_OP_deref
 #endif
         CHECK_STACK_ALIGNMENT
         brasl %r14, GCALL(caml_try_realloc_stack)
@@ -332,7 +334,8 @@ LBL(caml_call_gc):
         SWITCH_OCAML_TO_C
         PREPARE_FOR_C_CALL
 #ifdef ASM_CFI_SUPPORTED
-        .cfi_escape DW_CFA_def_cfa_expression, 4, DW_OP_breg + DW_REG_r15, Cstack_sp_plus_160_sleb128_2byte, DW_OP_deref
+        .cfi_escape DW_CFA_def_cfa_expression, 4, DW_OP_breg + DW_REG_r15, \
+          Cstack_sp_plus_160_sleb128_2byte, DW_OP_deref
 #endif
         CHECK_STACK_ALIGNMENT
         brasl %r14, GCALL(caml_garbage_collection)
@@ -440,7 +443,8 @@ LBL(caml_c_call):
     /* Call the function (address in ADDITIONAL_ARG) */
         PREPARE_FOR_C_CALL
 #ifdef ASM_CFI_SUPPORTED
-        .cfi_escape DW_CFA_def_cfa_expression, 4, DW_OP_breg + DW_REG_r15, Cstack_sp_plus_160_sleb128_2byte, DW_OP_deref
+        .cfi_escape DW_CFA_def_cfa_expression, 4, DW_OP_breg + DW_REG_r15, \
+          Cstack_sp_plus_160_sleb128_2byte, DW_OP_deref
 #endif
         basr    %r14, ADDITIONAL_ARG
         CLEANUP_AFTER_C_CALL
@@ -780,8 +784,8 @@ LBL(do_perform):
 LBL(112):
     /* Switch back to original performer before raising Unhandled
        (no-op unless this is a reperform) */
-        lg      %r8, 0(%r3)              /* load performer stack from continuation */
-        lay     %r8, -1(%r8)             /* r8 := Ptr_val(r8) */
+        lg      %r8, 0(%r3)         /* load performer stack from continuation */
+        lay     %r8, -1(%r8)        /* r8 := Ptr_val(r8) */
         lg      %r9, Caml_state(current_stack)
         SWITCH_OCAML_STACKS(%r9, %r8)
     /* No parent stack. Raise Unhandled. */
