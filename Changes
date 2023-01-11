@@ -255,6 +255,9 @@ Working version
   (Sébastien Hinderer, review by Florian Angeletti, Nicolás Ojeda Bär and
   Gabriel Scherer)
 
+- #10856: Add location, attribute(s) visitors to Tast_mapper/Tast_iterator
+  (Yan Dong, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.
