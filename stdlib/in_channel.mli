@@ -15,8 +15,7 @@
 
 (** Input channels.
 
-    This module provides helper functions for working with input
-    channels.
+    This module provides functions for working with input channels.
 
     See {{!examples} the example section} below.
 
@@ -182,17 +181,12 @@ val isatty : t -> bool
     @since 5.1 *)
 
 (** {1:examples Examples}
-   Reading the contents of a file:
+    Reading the contents of a file:
     {[
-    # let text = In_channel.with_open_text "./example.txt"
-                         (fun ic -> In_channel.input_all ic)
-    val text : string = "..."
+      let read_file file = In_channel.with_open_bin file In_channel.input_all
     ]}
 
-   Reading a line from stdin:
+    Reading a line from stdin:
     {[
-    # let user_input = In_channel.input_line In_channel.stdin
-    val user_input : string option = Some "..."
-    ]}
-
-   *)
+      let user_input () = In_channel.input_line In_channel.stdin
+    ]} *)
