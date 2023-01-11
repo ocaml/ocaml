@@ -36,10 +36,10 @@
 STDLIB_MODULE_BASENAMES = \
   camlinternalFormatBasics \
   stdlib \
-  type \
   either \
   sys \
   obj \
+  type \
   atomic \
   camlinternalLazy \
   lazy \

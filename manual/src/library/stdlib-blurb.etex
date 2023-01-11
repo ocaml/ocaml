@@ -110,10 +110,6 @@ be called from C \\
 "Semaphore" & p.~\stdpageref{Semaphore} & semaphores \\
 "Effect" & p.~\stdpageref{Effect} & deep and shallow effect handlers \\
 \end{tabular}
-\subsubsection*{sss:stdlib-tracing}{Tracing:}
-\begin{tabular}{lll}
-"Runtime_events" & p.~\stdpageref{Runtime_events} & runtime event tracing \\
-\end{tabular}
 \subsubsection*{sss:stdlib-misc}{Misc:}
 \begin{tabular}{lll}
 "Fun" & p.~\stdpageref{Fun} & function values \\
@@ -168,7 +164,6 @@ be called from C \\
 \stddocitem{Queue}{first-in first-out queues}
 \stddocitem{Random}{pseudo-random number generator (PRNG)}
 \stddocitem{Result}{result values}
-\stddocitem{Runtime_events}{Runtime event tracing}
 \stddocitem{Scanf}{formatted input functions}
 \stddocitem{Seq}{functional iterators}
 \stddocitem{Set}{sets over ordered types}

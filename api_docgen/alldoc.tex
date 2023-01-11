@@ -9,33 +9,14 @@
 \usepackage{textcomp}
 \else
 \usepackage{changepage}
-\usepackage{longtable}
 \usepackage{listings}
-\newcommand{\ocamlcodefragment}[1]{{\ttfamily\setlength{\parindent}{0cm}%
-\raggedright#1}}
-\newcommand{\ocamlinlinecode}[1]{{\ttfamily#1}}
-\newcommand{\bold}[1]{{\bfseries#1}}
-\newenvironment{ocamlexception}{\bfseries}{}
-\newenvironment{ocamlextension}{\bfseries}{}
-\newenvironment{ocamlarrow}{}
-
-\newcommand{\ocamltag}[2]{\begin{ocaml#1}#2\end{ocaml#1}}
-\newenvironment{ocamlkeyword}{\bfseries}{}
-\newenvironment{ocamlconstructor}{\bfseries}{}
-\newenvironment{ocamltype-var}{\itshape\ttfamily}{}
-
+\newcommand{\ocamlkeyword}{\bfseries}
 \newcommand{\ocamlhighlight}{\bfseries\uline}
 \newcommand{\ocamlerror}{\bfseries}
 \newcommand{\ocamlwarning}{\bfseries}
-
-\definecolor{lightgray}{gray}{0.97}
 \definecolor{gray}{gray}{0.5}
 \newcommand{\ocamlcomment}{\color{gray}\normalfont\small}
 \newcommand{\ocamlstring}{\color{gray}\bfseries}
-\newenvironment{ocamlindent}{\begin{adjustwidth}{2em}{0pt}}{\end{adjustwidth}}
-\newenvironment{ocamltabular}[2][l]{\begin{tabular}{#2}}%
-{\end{tabular}}
-
 \lstnewenvironment{ocamlcodeblock}{
   \lstset{
     backgroundcolor = \color{lightgray},
@@ -57,7 +38,22 @@
     literate={'"'}{\textquotesingle "\textquotesingle}3
     {'\\"'}{\textquotesingle \textbackslash"\textquotesingle}4,
   }
-}{}
+  }{}
+\newcommand{\ocamltag}[2]{\begin{ocaml#1}#2\end{ocaml#1}}
+\newcommand{\ocamlcodefragment}[1]{{\ttfamily\setlength{\parindent}{0cm}%
+\raggedright#1}}
+\newcommand{\ocamlinlinecode}[1]{{\ttfamily#1}}
+\newenvironment{ocamlarrow}{}{}
+\newenvironment{ocamlexception}{\bfseries}{}
+\newenvironment{ocamlextension}{\bfseries}{}
+\newenvironment{ocamlconstructor}{\bfseries}{}
+\newenvironment{ocamltype-var}{\itshape\ttfamily}{}
+\definecolor{lightgray}{gray}{0.97}
+\definecolor{gray}{gray}{0.5}
+\newenvironment{ocamlindent}{\begin{adjustwidth}{2em}{0pt}}{\end{adjustwidth}}
+\newenvironment{ocamltabular}[1]{\begin{tabular}{#1}}%
+{\end{tabular}}
+\newcommand{\bold}[1]{{\bfseries#1}}
 \fi
 
 \ifocamldoc

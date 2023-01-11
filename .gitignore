@@ -128,7 +128,10 @@ META
 /manual/src/htmlman/*.hind
 /manual/src/htmlman/compilerlibref
 /manual/src/htmlman/highlight.pack.js
+/manual/src/htmlman/katex.min.css
+/manual/src/htmlman/katex.min.js
 /manual/src/htmlman/libref
+/manual/src/htmlman/fonts/KaTeX*
 /manual/src/htmlman/manual.hmanual
 /manual/src/htmlman/manual.hmanual.kwd
 /manual/src/htmlman/manual.css
