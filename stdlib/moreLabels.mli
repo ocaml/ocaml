@@ -621,7 +621,7 @@ module Hashtbl : sig
         end)
 
       (*  count distinct occurrences of chars in [seq] *)
-      # let count_chars (seq:char Seq.t) : _ list =
+      # let count_chars (seq : char Seq.t) : _ list =
           let counts = Char_tbl.create 16 in
           Seq.iter
             (fun c ->

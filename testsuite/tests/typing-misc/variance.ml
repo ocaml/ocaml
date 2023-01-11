@@ -27,3 +27,12 @@ let ul = !(ref ([] : 'a u list));;
 type 'a u = U of (('a -> unit) -> unit)
 val ul : 'a u list = []
 |}]
+
+(* #11869 *)
+
+module type s = sig type t end;;
+type !'a t = (module s with type t = 'a);;
+[%%expect{|
+module type s = sig type t end
+type 'a t = (module s with type t = 'a)
+|}]

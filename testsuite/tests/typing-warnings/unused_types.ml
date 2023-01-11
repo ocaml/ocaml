@@ -196,6 +196,21 @@ Warning 38 [unused-extension]: unused extension constructor Nobody_uses_me
 module Unused_extension_constructor : sig type t = .. end
 |}]
 
+module Unused_extension_disabled_warning : sig
+  type t = ..
+end = struct
+  type t = ..
+  type t += Dont_warn_on_me [@warning "-unused-extension"] | Nobody_uses_me
+end
+;;
+[%%expect {|
+Line 5, characters 59-75:
+5 |   type t += Dont_warn_on_me [@warning "-unused-extension"] | Nobody_uses_me
+                                                               ^^^^^^^^^^^^^^^^
+Warning 38 [unused-extension]: unused extension constructor Nobody_uses_me
+module Unused_extension_disabled_warning : sig type t = .. end
+|}]
+
 module Unused_exception_outside_patterns : sig
   val falsity : exn -> bool
 end = struct
@@ -346,6 +361,21 @@ Warning 34 [unused-type-declaration]: unused type t.
 module Unused_constructor_disable_warning : sig end
 |}]
 
+module Unused_constructor_disable_one_warning : sig
+end = struct
+  type t = A [@warning "-37"] | B
+end;;
+[%%expect {|
+Line 3, characters 2-33:
+3 |   type t = A [@warning "-37"] | B
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 34 [unused-type-declaration]: unused type t.
+Line 3, characters 30-33:
+3 |   type t = A [@warning "-37"] | B
+                                  ^^^
+Warning 37 [unused-constructor]: unused constructor B.
+module Unused_constructor_disable_one_warning : sig end
+|}]
 
 module Unused_record : sig end = struct
   type t = { a : int; b : int }
@@ -442,4 +472,32 @@ Line 4, characters 22-37:
 Warning 69 [unused-field]: mutable record field b is never mutated.
 module Unused_mutable_field_exported_private :
   sig type t = private { a : int; mutable b : int; } end
+|}]
+
+module Unused_field_disable_warning : sig
+end = struct
+  type t = { a: int; b:int } [@@warning "-unused-field"]
+end;;
+[%%expect {|
+Line 3, characters 2-56:
+3 |   type t = { a: int; b:int } [@@warning "-unused-field"]
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 34 [unused-type-declaration]: unused type t.
+module Unused_field_disable_warning : sig end
+|}]
+
+module Unused_field_disable_one_warning : sig
+end = struct
+  type t = { a: int [@warning "-unused-field"]; b:int }
+end;;
+[%%expect {|
+Line 3, characters 2-55:
+3 |   type t = { a: int [@warning "-unused-field"]; b:int }
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 34 [unused-type-declaration]: unused type t.
+Line 3, characters 48-53:
+3 |   type t = { a: int [@warning "-unused-field"]; b:int }
+                                                    ^^^^^
+Warning 69 [unused-field]: unused record field b.
+module Unused_field_disable_one_warning : sig end
 |}]
