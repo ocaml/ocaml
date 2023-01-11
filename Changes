@@ -22,7 +22,8 @@ Working version
 
 ### Runtime system:
 
-- #11287: Clean up reserved header bits (once used for Spacetime profiling).
+- #11287, #11872: Clean up reserved header bits (once used for
+  Spacetime profiling).
   (Nick Barnes)
 
 - #11641: Restore Cygwin port. Add GC messages for address space reservations
