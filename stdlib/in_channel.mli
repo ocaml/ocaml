@@ -22,6 +22,8 @@
 
     @since 4.14 *)
 
+(** {1:channels Channels} *)
+
 type t = in_channel
 (** The type of input channel. *)
 
@@ -39,8 +41,6 @@ type open_flag = Stdlib.open_flag =
 
 val stdin : t
 (** The standard input for the process. *)
-
-(** {1 Opening/Closing channels} *)
 
 val open_bin : string -> t
 (** Open the named file for reading, and return a new input channel on that
@@ -79,7 +79,7 @@ val close : t -> unit
 val close_noerr : t -> unit
 (** Same as {!close}, but ignore all errors. *)
 
-(** {1 Consuming input} *)
+(** {1:input Input} *)
 
 val input_char : t -> char option
 (** Read one character from the given input channel.  Returns [None] if there
@@ -98,6 +98,22 @@ val input_line : t -> string option
     A newline is the character [\n] unless the file is open in text mode and
     {!Sys.win32} is [true] in which case it is the sequence of characters
     [\r\n]. *)
+
+val really_input_string : t -> int -> string option
+(** [really_input_string ic len] reads [len] characters from channel [ic] and
+    returns them in a new string.  Returns [None] if the end of file is reached
+    before [len] characters have been read.
+
+    If the same channel is read concurrently by multiple threads, the returned
+    string is not guaranteed to contain contiguous characters from the input. *)
+
+val input_all : t -> string
+(** [input_all ic] reads all remaining data from [ic].
+
+    If the same channel is read concurrently by multiple threads, the returned
+    string is not guaranteed to contain contiguous characters from the input. *)
+
+(** {1:advanced_input Advanced input}*)
 
 val input : t -> bytes -> int -> int -> int
 (** [input ic buf pos len] reads up to [len] characters from the given channel
@@ -123,22 +139,7 @@ val really_input : t -> bytes -> int -> int -> unit option
     @raise Invalid_argument if [pos] and [len] do not designate a valid range of
     [buf]. *)
 
-val really_input_string : t -> int -> string option
-(** [really_input_string ic len] reads [len] characters from channel [ic] and
-    returns them in a new string.  Returns [None] if the end of file is reached
-    before [len] characters have been read.
-
-    If the same channel is read concurrently by multiple threads, the returned
-    string is not guaranteed to contain contiguous characters from the input. *)
-
-val input_all : t -> string
-(** [input_all ic] reads all remaining data from [ic].
-
-    If the same channel is read concurrently by multiple threads, the returned
-    string is not guaranteed to contain contiguous characters from the input. *)
-
-
-(** {1 Channel management} *)
+(** {1:seeking Seeking} *)
 
 val seek : t -> int64 -> unit
 (** [seek chan pos] sets the current reading position to [pos] for channel
@@ -152,6 +153,8 @@ val pos : t -> int64
     {!pos}, then going back to this position using {!seek} will not work.  For
     this programming idiom to work reliably and portably, the file must be
     opened in binary mode. *)
+
+(** {1:attributes Attributes} *)
 
 val length : t -> int64
 (** Return the size (number of characters) of the regular file on which the
