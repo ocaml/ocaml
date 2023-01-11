@@ -73,7 +73,9 @@ module State = struct
     if String.length buf <> preflen + 4 * 8
        || not (String.starts_with ~prefix buf)
     then
-      failwith "Random.State.of_binary_string";
+      failwith
+        ("Random.State.of_binary_string: expected a format \
+          compatible with OCaml " ^ Sys.ocaml_version);
     let i1 = String.get_int64_le buf (preflen + 0 * 8) in
     let i2 = String.get_int64_le buf (preflen + 1 * 8) in
     let i3 = String.get_int64_le buf (preflen + 2 * 8) in
