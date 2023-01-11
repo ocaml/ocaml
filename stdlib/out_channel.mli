@@ -22,6 +22,8 @@
 
     @since 4.14 *)
 
+(** {1:channels Channels}  *)
+
 type t = out_channel
 (** The type of output channel. *)
 
@@ -42,8 +44,6 @@ val stdout : t
 
 val stderr : t
 (** The standard error output for the process. *)
-
-(** {1 Opening/Closing channels} *)
 
 val open_bin : string -> t
 (** Open the named file for writing, and return a new output channel on that
@@ -86,7 +86,7 @@ val close : t -> unit
 val close_noerr : t -> unit
 (** Same as {!close}, but ignore all errors. *)
 
-(** {1 Writing output} *)
+(** {1:output Output} *)
 
 val output_char : t -> char -> unit
 (** Write the character on the given output channel. *)
@@ -101,6 +101,8 @@ val output_string : t -> string -> unit
 val output_bytes : t -> bytes -> unit
 (** Write the byte sequence on the given output channel. *)
 
+(** {1:advanced_output Advanced output} *)
+
 val output : t -> bytes -> int -> int -> unit
 (** [output oc buf pos len] writes [len] characters from byte sequence [buf],
     starting at offset [pos], to the given output channel [oc].
@@ -112,6 +114,8 @@ val output_substring : t -> string -> int -> int -> unit
 (** Same as {!output} but take a string as argument instead of a byte
     sequence. *)
 
+(** {1:flushing Flushing} *)
+
 val flush : t -> unit
 (** Flush the buffer associated with the given output channel, performing all
     pending writes on that channel.  Interactive programs must be careful about
@@ -120,7 +124,7 @@ val flush : t -> unit
 val flush_all : unit -> unit
 (** Flush all open output channels; ignore errors. *)
 
-(** {1 Managing channels} *)
+(** {1:seeking Seeking} *)
 
 val seek : t -> int64 -> unit
 (** [seek chan pos] sets the current writing position to [pos] for channel
@@ -136,6 +140,8 @@ val pos : t -> int64
     current position with {!pos}, then going back to this position using {!seek}
     will not work.  For this programming idiom to work reliably and portably,
     the file must be opened in binary mode. *)
+
+(** {1:attributes Attributes}  *)
 
 val length : t -> int64
 (** Return the size (number of characters) of the regular file on which the
