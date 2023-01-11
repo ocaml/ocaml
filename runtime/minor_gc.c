@@ -144,7 +144,8 @@ struct oldify_state {
   caml_domain_state* domain;
 };
 
-static value alloc_shared(caml_domain_state* d, mlsize_t wosize, tag_t tag, reserved_t reserved)
+static value alloc_shared(caml_domain_state* d,
+                          mlsize_t wosize, tag_t tag, reserved_t reserved)
 {
   void* mem = caml_shared_try_alloc(d->shared_heap, wosize, tag,
                                     reserved, 0 /* not pinned */);

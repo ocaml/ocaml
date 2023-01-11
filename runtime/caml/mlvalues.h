@@ -118,12 +118,14 @@ where 0 <= R <= 31 is HEADER_RESERVED_BITS, set with the
 #define HEADER_COLOR_SHIFT HEADER_TAG_BITS
 #define HEADER_COLOR_MASK ((1ull << HEADER_COLOR_BITS) - 1ull)
 
-#define HEADER_WOSIZE_BITS (HEADER_BITS - HEADER_TAG_BITS - HEADER_COLOR_BITS - HEADER_RESERVED_BITS)
+#define HEADER_WOSIZE_BITS (HEADER_BITS - HEADER_TAG_BITS \
+                            - HEADER_COLOR_BITS - HEADER_RESERVED_BITS)
 #define HEADER_WOSIZE_SHIFT (HEADER_COLOR_SHIFT  + HEADER_COLOR_BITS)
 #define HEADER_WOSIZE_MASK ((1ull << HEADER_WOSIZE_BITS) - 1ull)
 
 #define Tag_hd(hd) ((tag_t) ((hd) & HEADER_TAG_MASK))
-#define Wosize_hd(hd) ((mlsize_t) (((hd) >> HEADER_WOSIZE_SHIFT) & HEADER_WOSIZE_MASK))
+#define Wosize_hd(hd) ((mlsize_t) (((hd) >> HEADER_WOSIZE_SHIFT) \
+                                   & HEADER_WOSIZE_MASK))
 
 #if HEADER_RESERVED_BITS > 0
 
@@ -141,7 +143,9 @@ where 0 <= R <= 31 is HEADER_RESERVED_BITS, set with the
 /* Color values are pre-shifted */
 
 #define Color_hd(hd) ((hd) & (HEADER_COLOR_MASK << HEADER_COLOR_SHIFT))
-#define Hd_with_color(hd, color) (((hd) &~ (HEADER_COLOR_MASK << HEADER_COLOR_SHIFT)) | (color))
+#define Hd_with_color(hd, color) (((hd) &~ \
+                                   (HEADER_COLOR_MASK << HEADER_COLOR_SHIFT)) \
+                                  | (color))
 
 #define Hp_atomic_val(val) ((atomic_uintnat *)(val) - 1)
 #define Hd_val(val) ((header_t) \
@@ -434,11 +438,11 @@ CAMLextern value caml_set_oo_id(value obj);
 
 /* Header for out-of-heap blocks. */
 
-#define Caml_out_of_heap_header(wosize, tag)                                              \
-      (/*CAMLassert ((wosize) <= Max_wosize),*/                                           \
-       ((header_t) (((header_t) (wosize) << HEADER_WOSIZE_SHIFT)                          \
-           + (3 << HEADER_COLOR_SHIFT) /* matches [NOT_MARKABLE]. See [shared_heap.h]. */ \
-           + (tag_t) (tag)))                                                              \
+#define Caml_out_of_heap_header(wosize, tag)                                   \
+      (/*CAMLassert ((wosize) <= Max_wosize),*/                                \
+       ((header_t) (((header_t) (wosize) << HEADER_WOSIZE_SHIFT)               \
+           + (3 << HEADER_COLOR_SHIFT) /* [NOT_MARKABLE] in [shared_heap.h] */ \
+           + (tag_t) (tag)))                                                   \
       )
 
 #ifdef __cplusplus
