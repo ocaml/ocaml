@@ -15,8 +15,7 @@
 
 (** Output channels.
 
-    This module provides helper functions for working with output
-    channels.
+    This module provides functions for working with output channels.
 
     See {{!examples} the example section} below.
 
@@ -184,10 +183,10 @@ val isatty : t -> bool
     @since 5.1 *)
 
 (** {1:examples Examples}
-   Writing a string to a file:
+    Writing the contents of a file:
     {[
-    # Out_channel.with_open_text "./example.txt"
-                    (fun oc -> Out_channel.ouptut_string oc "hello")
-    - : unit = ()
+      let write_file file s =
+        Out_channel.with_open_bin file
+          (fun oc -> Out_channel.output_string oc s))
     ]}
-   *)
+*)
