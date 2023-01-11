@@ -15,6 +15,11 @@
 
 (** Output channels.
 
+    This module provides helper functions for working with output
+    channels.
+
+    See {{!examples} the example section} below.
+
     @since 4.14 *)
 
 type t = out_channel
@@ -37,6 +42,8 @@ val stdout : t
 
 val stderr : t
 (** The standard error output for the process. *)
+
+(** {1 Opening/Closing channels} *)
 
 val open_bin : string -> t
 (** Open the named file for writing, and return a new output channel on that
@@ -69,26 +76,6 @@ val with_open_gen : open_flag list -> int -> string -> (t -> 'a) -> 'a
 (** Like {!with_open_bin}, but can specify the opening mode and file permission,
     in case the file must be created (see {!open_gen}). *)
 
-val seek : t -> int64 -> unit
-(** [seek chan pos] sets the current writing position to [pos] for channel
-    [chan]. This works only for regular files. On files of other kinds (such as
-    terminals, pipes and sockets), the behavior is unspecified. *)
-
-val pos : t -> int64
-(** Return the current writing position for the given channel.  Does not work on
-    channels opened with the [Open_append] flag (returns unspecified results).
-
-    For files opened in text mode under Windows, the returned position is
-    approximate (owing to end-of-line conversion); in particular, saving the
-    current position with {!pos}, then going back to this position using {!seek}
-    will not work.  For this programming idiom to work reliably and portably,
-    the file must be opened in binary mode. *)
-
-val length : t -> int64
-(** Return the size (number of characters) of the regular file on which the
-    given channel is opened.  If the channel is opened on a file that is not a
-    regular file, the result is meaningless. *)
-
 val close : t -> unit
 (** Close the given channel, flushing all buffered write operations.  Output
     functions raise a [Sys_error] exception when they are applied to a closed
@@ -99,13 +86,7 @@ val close : t -> unit
 val close_noerr : t -> unit
 (** Same as {!close}, but ignore all errors. *)
 
-val flush : t -> unit
-(** Flush the buffer associated with the given output channel, performing all
-    pending writes on that channel.  Interactive programs must be careful about
-    flushing standard output and standard error at the right time. *)
-
-val flush_all : unit -> unit
-(** Flush all open output channels; ignore errors. *)
+(** {1 Writing output} *)
 
 val output_char : t -> char -> unit
 (** Write the character on the given output channel. *)
@@ -130,6 +111,37 @@ val output : t -> bytes -> int -> int -> unit
 val output_substring : t -> string -> int -> int -> unit
 (** Same as {!output} but take a string as argument instead of a byte
     sequence. *)
+
+val flush : t -> unit
+(** Flush the buffer associated with the given output channel, performing all
+    pending writes on that channel.  Interactive programs must be careful about
+    flushing standard output and standard error at the right time. *)
+
+val flush_all : unit -> unit
+(** Flush all open output channels; ignore errors. *)
+
+(** {1 Managing channels} *)
+
+val seek : t -> int64 -> unit
+(** [seek chan pos] sets the current writing position to [pos] for channel
+    [chan]. This works only for regular files. On files of other kinds (such as
+    terminals, pipes and sockets), the behavior is unspecified. *)
+
+val pos : t -> int64
+(** Return the current writing position for the given channel.  Does not work on
+    channels opened with the [Open_append] flag (returns unspecified results).
+
+    For files opened in text mode under Windows, the returned position is
+    approximate (owing to end-of-line conversion); in particular, saving the
+    current position with {!pos}, then going back to this position using {!seek}
+    will not work.  For this programming idiom to work reliably and portably,
+    the file must be opened in binary mode. *)
+
+val length : t -> int64
+(** Return the size (number of characters) of the regular file on which the
+    given channel is opened.  If the channel is opened on a file that is not a
+    regular file, the result is meaningless. *)
+
 
 val set_binary_mode : t -> bool -> unit
 (** [set_binary_mode oc true] sets the channel [oc] to binary mode: no
@@ -164,3 +176,12 @@ val isatty : t -> bool
     [false] otherwise.
 
     @since 5.1 *)
+
+(** {1:examples Examples}
+   Writing a string to a file:
+    {[
+    # Out_channel.with_open_text "./example.txt"
+                    (fun oc -> Out_channel.ouptut_string oc "hello")
+    - : unit = ()
+    ]}
+   *)
