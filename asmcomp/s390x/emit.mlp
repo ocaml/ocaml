@@ -737,7 +737,7 @@ let fundecl fundecl =
     `  lg %r1, {emit_int offset}(%r10)\n`;
     `  lay %r1, {emit_int f}(%r1)\n`;
     `  clgr %r15, %r1\n`;
-    `  jl {emit_label overflow}\n`;
+    `  brcl 4, {emit_label overflow}\n`;
     `{emit_label ret}:\n`;
     handle_overflow := Some (overflow, ret);
   end;
@@ -762,7 +762,7 @@ let fundecl fundecl =
       `  brasl %r14, {emit_symbol "caml_call_realloc_stack"}\n`;
       `  lg   %r14, 8(%r15)\n`;
       `  la  %r15, 16(%r15)\n`;
-      `  jg {emit_label ret}\n`
+      `  brcl 15, {emit_label ret}\n`
     end
   end;
 
