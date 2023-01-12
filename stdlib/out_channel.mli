@@ -15,7 +15,13 @@
 
 (** Output channels.
 
+    This module provides functions for working with output channels.
+
+    See {{!examples} the example section} below.
+
     @since 4.14 *)
+
+(** {1:channels Channels}  *)
 
 type t = out_channel
 (** The type of output channel. *)
@@ -69,6 +75,56 @@ val with_open_gen : open_flag list -> int -> string -> (t -> 'a) -> 'a
 (** Like {!with_open_bin}, but can specify the opening mode and file permission,
     in case the file must be created (see {!open_gen}). *)
 
+val close : t -> unit
+(** Close the given channel, flushing all buffered write operations.  Output
+    functions raise a [Sys_error] exception when they are applied to a closed
+    output channel, except {!close} and {!flush}, which do nothing when applied
+    to an already closed channel.  Note that {!close} may raise [Sys_error] if
+    the operating system signals an error when flushing or closing. *)
+
+val close_noerr : t -> unit
+(** Same as {!close}, but ignore all errors. *)
+
+(** {1:output Output} *)
+
+val output_char : t -> char -> unit
+(** Write the character on the given output channel. *)
+
+val output_byte : t -> int -> unit
+(** Write one 8-bit integer (as the single character with that code) on the
+    given output channel. The given integer is taken modulo 256. *)
+
+val output_string : t -> string -> unit
+(** Write the string on the given output channel. *)
+
+val output_bytes : t -> bytes -> unit
+(** Write the byte sequence on the given output channel. *)
+
+(** {1:advanced_output Advanced output} *)
+
+val output : t -> bytes -> int -> int -> unit
+(** [output oc buf pos len] writes [len] characters from byte sequence [buf],
+    starting at offset [pos], to the given output channel [oc].
+
+    @raise Invalid_argument if [pos] and [len] do not designate a valid range of
+    [buf]. *)
+
+val output_substring : t -> string -> int -> int -> unit
+(** Same as {!output} but take a string as argument instead of a byte
+    sequence. *)
+
+(** {1:flushing Flushing} *)
+
+val flush : t -> unit
+(** Flush the buffer associated with the given output channel, performing all
+    pending writes on that channel.  Interactive programs must be careful about
+    flushing standard output and standard error at the right time. *)
+
+val flush_all : unit -> unit
+(** Flush all open output channels; ignore errors. *)
+
+(** {1:seeking Seeking} *)
+
 val seek : t -> int64 -> unit
 (** [seek chan pos] sets the current writing position to [pos] for channel
     [chan]. This works only for regular files. On files of other kinds (such as
@@ -84,52 +140,13 @@ val pos : t -> int64
     will not work.  For this programming idiom to work reliably and portably,
     the file must be opened in binary mode. *)
 
+(** {1:attributes Attributes}  *)
+
 val length : t -> int64
 (** Return the size (number of characters) of the regular file on which the
     given channel is opened.  If the channel is opened on a file that is not a
     regular file, the result is meaningless. *)
 
-val close : t -> unit
-(** Close the given channel, flushing all buffered write operations.  Output
-    functions raise a [Sys_error] exception when they are applied to a closed
-    output channel, except {!close} and {!flush}, which do nothing when applied
-    to an already closed channel.  Note that {!close} may raise [Sys_error] if
-    the operating system signals an error when flushing or closing. *)
-
-val close_noerr : t -> unit
-(** Same as {!close}, but ignore all errors. *)
-
-val flush : t -> unit
-(** Flush the buffer associated with the given output channel, performing all
-    pending writes on that channel.  Interactive programs must be careful about
-    flushing standard output and standard error at the right time. *)
-
-val flush_all : unit -> unit
-(** Flush all open output channels; ignore errors. *)
-
-val output_char : t -> char -> unit
-(** Write the character on the given output channel. *)
-
-val output_byte : t -> int -> unit
-(** Write one 8-bit integer (as the single character with that code) on the
-    given output channel. The given integer is taken modulo 256. *)
-
-val output_string : t -> string -> unit
-(** Write the string on the given output channel. *)
-
-val output_bytes : t -> bytes -> unit
-(** Write the byte sequence on the given output channel. *)
-
-val output : t -> bytes -> int -> int -> unit
-(** [output oc buf pos len] writes [len] characters from byte sequence [buf],
-    starting at offset [pos], to the given output channel [oc].
-
-    @raise Invalid_argument if [pos] and [len] do not designate a valid range of
-    [buf]. *)
-
-val output_substring : t -> string -> int -> int -> unit
-(** Same as {!output} but take a string as argument instead of a byte
-    sequence. *)
 
 val set_binary_mode : t -> bool -> unit
 (** [set_binary_mode oc true] sets the channel [oc] to binary mode: no
@@ -164,3 +181,12 @@ val isatty : t -> bool
     [false] otherwise.
 
     @since 5.1 *)
+
+(** {1:examples Examples}
+    Writing the contents of a file:
+    {[
+      let write_file file s =
+        Out_channel.with_open_bin file
+          (fun oc -> Out_channel.output_string oc s))
+    ]}
+*)

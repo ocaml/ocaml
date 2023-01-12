@@ -96,6 +96,9 @@ Working version
   Alain Frisch and Nathanaëlle Courant)
 
 ### Standard library:
+- #11883, #11884: Update documentation for In_channel and Out_channel
+  with examples and sections to group related functions.
+  (Kiran Gopinathan, review by Daniel Bünzli and Xavier Leroy)
 
 - #11859: Make Stdlib.(@) and List.append tail-recursive and faster.
   (Jeremy Yallop, review by Daniel Bünzli, Anil Madhavapeddy, and Bannerets)

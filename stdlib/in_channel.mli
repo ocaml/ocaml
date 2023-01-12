@@ -15,7 +15,13 @@
 
 (** Input channels.
 
+    This module provides functions for working with input channels.
+
+    See {{!examples} the example section} below.
+
     @since 4.14 *)
+
+(** {1:channels Channels} *)
 
 type t = in_channel
 (** The type of input channel. *)
@@ -64,26 +70,6 @@ val with_open_gen : open_flag list -> int -> string -> (t -> 'a) -> 'a
 (** Like {!with_open_bin}, but can specify the opening mode and file permission,
     in case the file must be created (see {!open_gen}). *)
 
-val seek : t -> int64 -> unit
-(** [seek chan pos] sets the current reading position to [pos] for channel
-    [chan]. This works only for regular files. On files of other kinds, the
-    behavior is unspecified. *)
-
-val pos : t -> int64
-(** Return the current reading position for the given channel.  For files opened
-    in text mode under Windows, the returned position is approximate (owing to
-    end-of-line conversion); in particular, saving the current position with
-    {!pos}, then going back to this position using {!seek} will not work.  For
-    this programming idiom to work reliably and portably, the file must be
-    opened in binary mode. *)
-
-val length : t -> int64
-(** Return the size (number of characters) of the regular file on which the
-    given channel is opened.  If the channel is opened on a file that is not a
-    regular file, the result is meaningless.  The returned size does not take
-    into account the end-of-line translations that can be performed when reading
-    from a channel opened in text mode. *)
-
 val close : t -> unit
 (** Close the given channel.  Input functions raise a [Sys_error] exception when
     they are applied to a closed input channel, except {!close}, which does
@@ -91,6 +77,8 @@ val close : t -> unit
 
 val close_noerr : t -> unit
 (** Same as {!close}, but ignore all errors. *)
+
+(** {1:input Input} *)
 
 val input_char : t -> char option
 (** Read one character from the given input channel.  Returns [None] if there
@@ -109,6 +97,22 @@ val input_line : t -> string option
     A newline is the character [\n] unless the file is open in text mode and
     {!Sys.win32} is [true] in which case it is the sequence of characters
     [\r\n]. *)
+
+val really_input_string : t -> int -> string option
+(** [really_input_string ic len] reads [len] characters from channel [ic] and
+    returns them in a new string.  Returns [None] if the end of file is reached
+    before [len] characters have been read.
+
+    If the same channel is read concurrently by multiple threads, the returned
+    string is not guaranteed to contain contiguous characters from the input. *)
+
+val input_all : t -> string
+(** [input_all ic] reads all remaining data from [ic].
+
+    If the same channel is read concurrently by multiple threads, the returned
+    string is not guaranteed to contain contiguous characters from the input. *)
+
+(** {1:advanced_input Advanced input}*)
 
 val input : t -> bytes -> int -> int -> int
 (** [input ic buf pos len] reads up to [len] characters from the given channel
@@ -134,19 +138,29 @@ val really_input : t -> bytes -> int -> int -> unit option
     @raise Invalid_argument if [pos] and [len] do not designate a valid range of
     [buf]. *)
 
-val really_input_string : t -> int -> string option
-(** [really_input_string ic len] reads [len] characters from channel [ic] and
-    returns them in a new string.  Returns [None] if the end of file is reached
-    before [len] characters have been read.
+(** {1:seeking Seeking} *)
 
-    If the same channel is read concurrently by multiple threads, the returned
-    string is not guaranteed to contain contiguous characters from the input. *)
+val seek : t -> int64 -> unit
+(** [seek chan pos] sets the current reading position to [pos] for channel
+    [chan]. This works only for regular files. On files of other kinds, the
+    behavior is unspecified. *)
 
-val input_all : t -> string
-(** [input_all ic] reads all remaining data from [ic].
+val pos : t -> int64
+(** Return the current reading position for the given channel.  For files opened
+    in text mode under Windows, the returned position is approximate (owing to
+    end-of-line conversion); in particular, saving the current position with
+    {!pos}, then going back to this position using {!seek} will not work.  For
+    this programming idiom to work reliably and portably, the file must be
+    opened in binary mode. *)
 
-    If the same channel is read concurrently by multiple threads, the returned
-    string is not guaranteed to contain contiguous characters from the input. *)
+(** {1:attributes Attributes} *)
+
+val length : t -> int64
+(** Return the size (number of characters) of the regular file on which the
+    given channel is opened.  If the channel is opened on a file that is not a
+    regular file, the result is meaningless.  The returned size does not take
+    into account the end-of-line translations that can be performed when reading
+    from a channel opened in text mode. *)
 
 val set_binary_mode : t -> bool -> unit
 (** [set_binary_mode ic true] sets the channel [ic] to binary mode: no
@@ -165,3 +179,14 @@ val isatty : t -> bool
     [false] otherwise.
 
     @since 5.1 *)
+
+(** {1:examples Examples}
+    Reading the contents of a file:
+    {[
+      let read_file file = In_channel.with_open_bin file In_channel.input_all
+    ]}
+
+    Reading a line from stdin:
+    {[
+      let user_input () = In_channel.input_line In_channel.stdin
+    ]} *)
