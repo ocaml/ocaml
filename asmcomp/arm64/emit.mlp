@@ -399,7 +399,7 @@ let max_out_of_line_code_offset ~num_call_gc ~num_check_bound =
     max_offset
   end
 
-module BR = Branch_relaxation.Make (struct
+module Size = struct
   (* CR-someday mshinwell: B and BL have +/- 128Mb ranges; for the moment we
      assume we will never exceed this.  It would seem to be most likely to
      occur for branches between functions; in this case, the linker should be
@@ -441,12 +441,27 @@ module BR = Branch_relaxation.Make (struct
 
   let offset_pc_at_branch = 0
 
+  let addsub_size n =
+    let m = abs n in
+    assert (m < 0x1_000_000);
+    let ml = m land 0xFFF and mh = m land 0xFFF_000 in
+    max 1 ((if mh <> 0 then 1 else 0) +
+           (if ml <> 0 then 1 else 0))
+
+  let stack_adj_size n =
+    (* see emit_stack_adjustment *)
+    addsub_size n
+
   let prologue_size f =
-    (if initial_stack_offset f > 0 then 2 else 0)
+    let stk = initial_stack_offset f in
+    (if stk > 0 then stack_adj_size (-stk) else 0)
       + (if f.fun_contains_calls then 1 else 0)
 
   let epilogue_size f =
-    if f.fun_contains_calls then 3 else 2
+    let stk = initial_stack_offset f in
+    (if stk > 0 then stack_adj_size stk else 0) +
+    (if f.fun_contains_calls then 1 else 0) +
+    1
 
   let instr_size f = function
     | Lend -> 0
@@ -454,7 +469,8 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Imove | Ispill | Ireload) -> 1
     | Lop (Iconst_int n) ->
       num_instructions_for_intconst n
-    | Lop (Iconst_float _) -> 2
+    | Lop (Iconst_float f) ->
+       if f = 0L || is_immediate_float f then 1 else 2
     | Lop (Iconst_symbol _) -> 2
     | Lop (Icall_ind) -> 1
     | Lop (Icall_imm _) -> 1
@@ -465,7 +481,7 @@ module BR = Branch_relaxation.Make (struct
       if stack_ofs > 0 then 5
       else if alloc then 3
       else 5
-    | Lop (Istackoffset _) -> 2
+    | Lop (Istackoffset n) -> stack_adj_size (-n)
     | Lop (Iload  { memory_chunk; addressing_mode; is_atomic }) ->
       let based = match addressing_mode with Iindexed _ -> 0 | Ibased _ -> 1
       and barrier = if is_atomic then 1 else 0
@@ -481,13 +497,15 @@ module BR = Branch_relaxation.Make (struct
       based + barrier + single
     | Lop (Ialloc _) when f.fun_fast -> 5
     | Lop (Ispecific (Ifar_alloc _)) when f.fun_fast -> 6
-    | Lop (Ipoll _) -> 3
-    | Lop (Ispecific (Ifar_poll _)) -> 4
+    | Lop (Ipoll {return_label=None}) -> 3
+    | Lop (Ipoll {return_label=Some _}) -> 4
+    | Lop (Ispecific (Ifar_poll {return_label=None})) -> 4
+    | Lop (Ispecific (Ifar_poll {return_label=Some _})) -> 5
     | Lop (Ialloc { bytes = num_bytes; _ })
     | Lop (Ispecific (Ifar_alloc { bytes = num_bytes; _ })) ->
       begin match num_bytes with
-      | 16 | 24 | 32 -> 1
-      | _ -> 1 + num_instructions_for_intconst (Nativeint.of_int num_bytes)
+      | 16 | 24 | 32 -> 2
+      | _ -> 2 + num_instructions_for_intconst (Nativeint.of_int num_bytes)
       end
     | Lop (Iintop (Icomp _)) -> 2
     | Lop (Iintop_imm (Icomp _, _)) -> 2
@@ -499,6 +517,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Ispecific (Ifar_shiftcheckbound _)) -> 3
     | Lop (Iintop Imod) -> 2
     | Lop (Iintop Imulh) -> 1
+    | Lop (Iintop_imm ((Iadd|Isub), n)) -> addsub_size n
     | Lop (Iintop _) -> 1
     | Lop (Iintop_imm _) -> 1
     | Lop (Ifloatofint | Iintoffloat | Iabsf | Inegf | Ispecific Isqrtf) -> 1
@@ -558,7 +577,8 @@ module BR = Branch_relaxation.Make (struct
     | Ishiftcheckbound { shift; } ->
       Lop (Ispecific (Ifar_shiftcheckbound { shift; }))
     | _ -> assert false
-end)
+end
+module BR = Branch_relaxation.Make (Size)
 
 (* Output the assembly code for allocation. *)
 
@@ -1052,8 +1072,33 @@ let emit_instr env i =
 
 (* Emission of an instruction sequence *)
 
-let rec emit_all env i =
-  if i.desc = Lend then () else (emit_instr env i; emit_all env i.next)
+(* for debugging instr_size errors *)
+let emit_instr_debug env i =
+  let lbl = new_label () in
+  `{emit_label lbl}:\n`;
+  emit_instr env i;
+  let sz = Size.instr_size env.f i.desc * 4 in
+  `	.ifne (. - {emit_label lbl}) - {emit_int sz}\n`;
+  `	.error \"Emit.instr_size: instruction length mismatch\"\n`;
+  `	.endif\n`
+
+let rec emit_all env lbl_start acc i =
+  match i.desc with
+  | Lend ->
+     (* acc measures in units of 32-bit instructions *)
+     let sz = acc * 4 in
+     `	.ifne (. - {emit_label lbl_start}) - {emit_int sz}\n`;
+     `	.error \"Emit.instr_size: instruction length mismatch\"\n`;
+     `	.endif\n`;
+  | _ ->
+     let debug = false in
+     if debug then emit_instr_debug env i else emit_instr env i;
+     emit_all env lbl_start (acc + Size.instr_size env.f i.desc) i.next
+
+let emit_all env i =
+  let lbl = new_label () in
+  `{emit_label lbl}:\n`;
+  emit_all env lbl 0 i
 
 (* Emission of a function declaration *)
 
