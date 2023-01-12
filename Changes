@@ -269,6 +269,9 @@ Working version
   on field-by-field or constructor-by-constructor basis
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #8602, #11863: Add -stop-after lambda flag option
+  (Douglas Smith and Dmitrii Kosarev, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #11847, #11849, #11851: small refactorings in the type checker
