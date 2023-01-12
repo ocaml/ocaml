@@ -357,7 +357,7 @@ val cast_via_module_type_under_equality2 :
 |}]
 
 (* Test from issue #10768 *)
-type _ t
+type _ t = private T
 
 module type S = sig type t end
 
@@ -389,7 +389,7 @@ let get (type a) : a t -> (module S with type t = a)  = fun index ->
   in
   unpack dispatch
 [%%expect {|
-type _ t
+type _ t = private T
 module type S = sig type t end
 type pack = Pack : 'a t * (module S with type t = 'a) -> pack
 val dispatch : pack list ref = {contents = []}
