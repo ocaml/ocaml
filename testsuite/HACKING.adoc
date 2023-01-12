@@ -50,6 +50,17 @@ then this will run all the tests in those three directories.
   output changed. `make promote` takes the same variables as `make one` to
   determine which tests to run (there is no analog to `make all`).
 
+== Useful environment variables
+
+`KEEP_TEST_DIR_ON_SUCCESS=1`::
+  Keeps temporary output files from a test run. This is handy to validate the
+  content of temporary output files, run a produced executable by hand, etc.
+
+`OCAMLTESTDIR=/tmp/foo`::
+  Changes the output directory to the specified one. This should be combined
+  with `KEEP_TEST_DIR_ON_SUCCESS=1` to inspect the test output. By default
+  `OCAMLTESTDIR` is `_ocamltest`.
+
 == Creating a new test
 
 == Dimensioning the tests
