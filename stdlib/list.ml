@@ -236,6 +236,12 @@ let rec find_opt p = function
   | [] -> None
   | x :: l -> if p x then Some x else find_opt p l
 
+let find_index p =
+  let rec aux i = function
+    [] -> None
+    | a::l -> if p a then Some i else aux (i+1) l in
+  aux 0
+
 let rec find_map f = function
   | [] -> None
   | x :: l ->
@@ -243,6 +249,16 @@ let rec find_map f = function
        | Some _ as result -> result
        | None -> find_map f l
      end
+
+let find_mapi f =
+  let rec aux i = function
+  | [] -> None
+  | x :: l ->
+     begin match f i x with
+       | Some _ as result -> result
+       | None -> aux (i+1) l
+     end in
+  aux 0
 
 let[@tail_mod_cons] rec find_all p = function
   | [] -> []

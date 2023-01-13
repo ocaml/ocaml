@@ -246,6 +246,31 @@ let () =
           = (List.of_seq s |> List.sort compare));
   ()
 
+(* [find_index] *)
+let () =
+  assert (Seq.find_index (fun x -> x=1) !?[] = None);
+  let xs = !?[1;2;3;4;5] in
+  assert (Seq.find_index (fun x -> x=1) xs = Some 0);
+  assert (Seq.find_index (fun x -> x=3) xs = Some 2);
+  assert (Seq.find_index (fun x -> x=5) xs = Some 4);
+  assert (Seq.find_index (fun x -> x=6) xs = None);
+  ()
+
+(* [find_mapi] *)
+let () =
+  assert (Seq.find_mapi
+    (fun i x -> if x+i=3 then Some(i, x) else None) !?[] = None);
+  let xs = !?[3;3;3;42;42] in
+  assert (Seq.find_mapi
+    (fun i x -> if x+i=3 then Some(i, x) else None) xs = Some (0, 3));
+  assert (Seq.find_mapi
+    (fun i x -> if x+i=4 then Some(i, x) else None) xs = Some (1, 3));
+  assert (Seq.find_mapi
+    (fun i x -> if x+i=5 then Some(i, x) else None) xs = Some (2, 3));
+  assert (Seq.find_mapi
+    (fun i x -> if x+i=7 then Some(i, x) else None) xs = None);
+  ()
+
 (* Auxiliary definitions of 2d matrices. *)
 let square n f =
   Seq.(init n (fun i -> init n (fun j -> f i j)))

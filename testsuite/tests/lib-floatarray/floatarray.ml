@@ -34,6 +34,10 @@ module type S = sig
   val exists : (float -> bool) -> t -> bool
   val mem : float -> t -> bool
   val mem_ieee : float -> t -> bool
+  val find_opt : (float -> bool) -> t -> float option
+  val find_index : (float-> bool) -> t -> int option
+  val find_map : (float -> 'a option) -> t -> 'a option
+  val find_mapi : (int -> float -> 'a option) -> t -> 'a option
   val sort : (float -> float -> int) -> t -> unit
   val stable_sort : (float -> float -> int) -> t -> unit
   val fast_sort : (float -> float -> int) -> t -> unit
@@ -369,6 +373,61 @@ module Test (A : S) : sig end = struct
   List.iter check [infinity; neg_infinity; neg_zero];
   A.set a 0 nan;
   assert (not (A.mem_ieee nan a));
+
+  (* [find_opt], test result and order of evaluation *)
+  let a = A.init 777 Float.of_int in
+  let r = ref 0.0 in
+  let f x =
+    assert (x = !r);
+    r := x +. 1.0;
+    false
+  in
+  assert (Option.is_none (A.find_opt f a));
+  let f x = assert (x = 0.0); true in
+  assert (Option.is_some (A.find_opt f a));
+
+  (* [find_index], test result and order of evaluation *)
+  let a = A.init 777 Float.of_int in
+  let r = ref 0.0 in
+  let f x =
+    assert (x = !r);
+    r := x +. 1.0;
+    false
+  in
+  assert (Option.is_none (A.find_index f a));
+  let f x = assert (x = 0.0); true in
+  assert (Option.get (A.find_index f a) = 0);
+
+  (* [find_map], test result and order of evaluation *)
+  let a = A.init 777 Float.of_int in
+  let r = ref 0.0 in
+  let f x =
+    assert (x = !r);
+    r := x +. 1.0;
+    None
+  in
+  assert (Option.is_none (A.find_map f a));
+  let f x = assert (x = 0.0); Some "abc" in
+  assert (Option.get (A.find_map f a) = "abc");
+
+  (* [find_mapi], test result and order of evaluation *)
+  let a = A.init 777 Float.of_int in
+  let r = ref 0.0 in
+  let r_i = ref 0 in
+  let f i x =
+    assert (i = !r_i);
+    assert (x = !r);
+    r_i := !r_i + 1;
+    r := x +. 1.0;
+    None
+  in
+  assert (Option.is_none (A.find_mapi f a));
+  let f i x =
+    assert (i = 0);
+    assert (x = 0.0);
+    Some "abc"
+  in
+  assert (Option.get (A.find_mapi f a) = "abc");
 
   (* [sort] [fast_sort] [stable_sort] *)
   let check_sort sort cmp a =

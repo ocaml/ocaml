@@ -255,12 +255,31 @@ let find_opt p a =
   in
   loop 0
 
+let find_index p a =
+  let n = length a in
+  let rec loop i =
+    if i = n then None
+    else if p (unsafe_get a i) then Some i
+    else loop (succ i) in
+  loop 0
+
 let find_map f a =
   let n = length a in
   let rec loop i =
     if i = n then None
     else
       match f (unsafe_get a i) with
+      | None -> loop (succ i)
+      | Some _ as r -> r
+  in
+  loop 0
+
+let find_mapi f a =
+  let n = length a in
+  let rec loop i =
+    if i = n then None
+    else
+      match f i (unsafe_get a i) with
       | None -> loop (succ i)
       | Some _ as r -> r
   in

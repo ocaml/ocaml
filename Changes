@@ -100,6 +100,12 @@ Working version
   with examples and sections to group related functions.
   (Kiran Gopinathan, review by Daniel Bünzli and Xavier Leroy)
 
+- #11848: Add `List.find_mapi`, `List.find_index`, `Seq.find_mapi`,
+  `Seq.find_index`, `Array.find_mapi`, `Array.find_index`,
+  `Float.Array.find_opt`, `Float.Array.find_index`, `Float.Array.find_map`,
+  `Float.Array.find_mapi`.
+  (Sima Kinsart, review by Daniel Bünzli and Nicolás Ojeda Bär)
+
 - #11859: Make Stdlib.(@) and List.append tail-recursive and faster.
   (Jeremy Yallop, review by Daniel Bünzli, Anil Madhavapeddy, and Bannerets)
 

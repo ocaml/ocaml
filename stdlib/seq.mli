@@ -220,6 +220,17 @@ val find : ('a -> bool) -> 'a t -> 'a option
 
     @since 4.14 *)
 
+val find_index : ('a -> bool) -> 'a t -> int option
+(** [find_index p xs] returns [Some i], where [i] is the index of the first
+    element of the sequence [xs] that satisfies [p x], if there is such an
+    element.
+
+    It returns [None] if there is no such element.
+
+    The sequence [xs] must be finite.
+
+    @since 5.1 *)
+
 val find_map : ('a -> 'b option) -> 'a t -> 'b option
 (** [find_map f xs] returns [Some y], where [x] is the first element of the
     sequence [xs] such that [f x = Some _], if there is such an element,
@@ -230,6 +241,15 @@ val find_map : ('a -> 'b option) -> 'a t -> 'b option
     The sequence [xs] must be finite.
 
     @since 4.14 *)
+
+val find_mapi : (int -> 'a -> 'b option) -> 'a t -> 'b option
+(** Same as [find_map], but the predicate is applied to the index of
+   the element as first argument (counting from 0), and the element
+   itself as second argument.
+
+   The sequence [xs] must be finite.
+
+   @since 5.1 *)
 
 val iter2 : ('a -> 'b -> unit) -> 'a t -> 'b t -> unit
 (** [iter2 f xs ys] invokes [f x y] successively for every pair [(x, y)] of

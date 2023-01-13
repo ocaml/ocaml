@@ -94,11 +94,34 @@ val a : int array = [|1; 2; 3|]
 - : int option = Some 2
 |}]
 
+let a = [|1; 2; 3|];;
+let _ = Array.find_index (function 2 -> true | _ -> false) a;;
+[%%expect{|
+val a : int array = [|1; 2; 3|]
+- : int option = Some 1
+|}]
+
+let a = [|1; 2; 3|];;
+let _ = Array.find_index (function 42 -> true | _ -> false) a;;
+[%%expect{|
+val a : int array = [|1; 2; 3|]
+- : int option = None
+|}]
+
 let a = [|'a'; 'b'; 'c'|];;
 let _ = Array.find_map (function 'b' -> Some 121 | _ -> None) a;;
 [%%expect{|
 val a : char array = [|'a'; 'b'; 'c'|]
 - : int option = Some 121
+|}]
+
+let a = [|1; 2; 3|];;
+let _ = Array.find_mapi (fun i x -> match (i, x) with
+  | (1, 2) -> Some(1, 2)
+  | _ -> None) a;;
+[%%expect{|
+val a : int array = [|1; 2; 3|]
+- : (int * int) option = Some (1, 2)
 |}]
 
 let a = [|1; 2|];;
@@ -113,6 +136,15 @@ let _ = Array.find_map (fun _ -> None) a;;
 [%%expect{|
 val a : int array = [|1; 2|]
 - : 'a option = None
+|}]
+
+let a = [|1; 2|];;
+let _ = Array.find_mapi (fun i x -> match (i, x) with
+  | (i, 101) -> Some(i, 101)
+  | _ -> None) a;;
+[%%expect{|
+val a : int array = [|1; 2|]
+- : (int * int) option = None
 |}]
 
 let a = Array.init 8 succ;;
