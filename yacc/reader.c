@@ -57,7 +57,7 @@ static unsigned char caml_ident_body[32] =
 
 #define In_bitmap(bm,c) (bm[(unsigned char)(c) >> 3] & (1 << ((c) & 7)))
 
-void start_rule (register bucket *bp, int s_lineno);
+void start_rule (bucket *bp, int s_lineno);
 
 static char *buffer;
 static size_t length;
@@ -79,11 +79,11 @@ static void pop_stack(char x) {
             default: break;
         }
         fprintf(stderr, "Mismatched parentheses or braces: '%c'\n", x);
-                syntax_error(lineno, line, cptr - 1);
+        syntax_error(lineno, line, cptr - 1);
    }
 }
 
-void cachec(int c)
+static void cachec(int c)
 {
     assert(cinc >= 0);
     if (cinc >= cache_size)
@@ -97,11 +97,11 @@ void cachec(int c)
 }
 
 
-void get_line(void)
+static void get_line(void)
 {
-    register FILE *f = input_file;
-    register int c;
-    register int i;
+    FILE *f = input_file;
+    int c;
+    int i;
 
     if (saw_eof || (c = getc(f)) == EOF)
     {
@@ -142,10 +142,10 @@ void get_line(void)
 }
 
 
-char *
+static char *
 dup_line(void)
 {
-    register char *p, *s, *t;
+    char *p, *s, *t;
 
     if (line == 0) return (0);
     s = line;
@@ -160,9 +160,9 @@ dup_line(void)
 }
 
 
-void skip_comment(void)
+static void skip_comment(void)
 {
-    register char *s;
+    char *s;
 
     int st_lineno = lineno;
     char *st_line = dup_line();
@@ -221,7 +221,7 @@ static void process_quoted_string(char c, FILE *const f)
     }
 }
 
-int process_apostrophe(FILE *const f)
+static int process_apostrophe(FILE *const f)
 {
     if (cptr[0] != 0 && cptr[0] != '\\' && cptr[1] == '\'') {
         fwrite(cptr, 1, 2, f);
@@ -250,7 +250,7 @@ int process_apostrophe(FILE *const f)
     return 1;
 }
 
-void process_apostrophe_body(FILE *f)
+static void process_apostrophe_body(FILE *f)
 {
     if (!process_apostrophe(f)) {
         while (In_bitmap(caml_ident_body, *cptr)) {
@@ -401,7 +401,7 @@ static void process_comment(FILE *const f) {
     }
 }
 
-char *substring (char *str, int start, int len)
+static char *substring (char *str, int start, int len)
 {
   int i;
   char *buf = MALLOC (len+1);
@@ -413,7 +413,7 @@ char *substring (char *str, int start, int len)
   return buf;
 }
 
-void parse_line_directive (void)
+static void parse_line_directive (void)
 {
   int i = 0, j = 0;
   int line_number = 0;
@@ -448,10 +448,10 @@ void parse_line_directive (void)
   goto again;
 }
 
-int
+static int
 nextc(void)
 {
-    register char *s;
+    char *s;
 
     if (line == 0)
     {
@@ -513,10 +513,10 @@ nextc(void)
 }
 
 
-int
+static int
 keyword(void)
 {
-    register int c;
+    int c;
     char *t_cptr = cptr;
 
     c = *++cptr;
@@ -572,10 +572,10 @@ keyword(void)
     return 0;
 }
 
-void copy_text(void)
+static void copy_text(void)
 {
-    register int c;
-    register FILE *f = text_file;
+    int c;
+    FILE *f = text_file;
     int need_newline = 0;
     int t_lineno = lineno;
     char *t_line = dup_line();
@@ -644,159 +644,8 @@ loop:
     }
 }
 
-int
-hexval(int c)
-{
-    if (c >= '0' && c <= '9')
-        return (c - '0');
-    if (c >= 'A' && c <= 'F')
-        return (c - 'A' + 10);
-    if (c >= 'a' && c <= 'f')
-        return (c - 'a' + 10);
-    return (-1);
-}
 
-
-bucket *
-get_literal(void)
-{
-    register int c, quote;
-    register int i;
-    register int n;
-    register char *s;
-    register bucket *bp;
-    int s_lineno = lineno;
-    char *s_line = dup_line();
-    char *s_cptr = s_line + (cptr - line);
-
-    quote = *cptr++;
-    cinc = 0;
-    for (;;)
-    {
-        c = *cptr++;
-        if (c == quote) break;
-        if (c == '\n') unterminated_string(s_lineno, s_line, s_cptr);
-        if (c == '\\')
-        {
-            char *c_cptr = cptr - 1;
-
-            c = *cptr++;
-            switch (c)
-            {
-            case '\n':
-                get_line();
-                if (line == 0) unterminated_string(s_lineno, s_line, s_cptr);
-                continue;
-
-            case '0': case '1': case '2': case '3':
-            case '4': case '5': case '6': case '7':
-                n = c - '0';
-                c = *cptr;
-                if (IS_OCTAL(c))
-                {
-                    n = (n << 3) + (c - '0');
-                    c = *++cptr;
-                    if (IS_OCTAL(c))
-                    {
-                        n = (n << 3) + (c - '0');
-                        ++cptr;
-                    }
-                }
-                if (n > MAXCHAR) illegal_character(c_cptr);
-                c = n;
-                    break;
-
-            case 'x':
-                c = *cptr++;
-                n = hexval(c);
-                if (n < 0 || n >= 16)
-                    illegal_character(c_cptr);
-                for (;;)
-                {
-                    c = *cptr;
-                    i = hexval(c);
-                    if (i < 0 || i >= 16) break;
-                    ++cptr;
-                    n = (n << 4) + i;
-                    if (n > MAXCHAR) illegal_character(c_cptr);
-                }
-                c = n;
-                break;
-
-            case 'a': c = 7; break;
-            case 'b': c = '\b'; break;
-            case 'f': c = '\f'; break;
-            case 'n': c = '\n'; break;
-            case 'r': c = '\r'; break;
-            case 't': c = '\t'; break;
-            case 'v': c = '\v'; break;
-            }
-        }
-        cachec(c);
-    }
-    FREE(s_line);
-
-    n = cinc;
-    s = MALLOC(n);
-    if (s == 0) no_space();
-
-    for (i = 0; i < n; ++i)
-        s[i] = cache[i];
-
-    cinc = 0;
-    if (n == 1)
-        cachec('\'');
-    else
-        cachec('"');
-
-    for (i = 0; i < n; ++i)
-    {
-        c = ((unsigned char *)s)[i];
-        if (c == '\\' || c == cache[0])
-        {
-            cachec('\\');
-            cachec(c);
-        }
-        else if (isprint(c))
-            cachec(c);
-        else
-        {
-            cachec('\\');
-            switch (c)
-            {
-            case 7: cachec('a'); break;
-            case '\b': cachec('b'); break;
-            case '\f': cachec('f'); break;
-            case '\n': cachec('n'); break;
-            case '\r': cachec('r'); break;
-            case '\t': cachec('t'); break;
-            case '\v': cachec('v'); break;
-            default:
-                cachec(((c >> 6) & 7) + '0');
-                cachec(((c >> 3) & 7) + '0');
-                cachec((c & 7) + '0');
-                break;
-            }
-        }
-    }
-
-    if (n == 1)
-        cachec('\'');
-    else
-        cachec('"');
-
-    cachec(NUL);
-    bp = lookup(cache);
-    bp->class = TERM;
-    if (n == 1 && bp->value == UNDEFINED)
-        bp->value = *(unsigned char *)s;
-    FREE(s);
-
-    return (bp);
-}
-
-
-int
+static int
 is_reserved(char *name)
 {
     char *s;
@@ -817,10 +666,10 @@ is_reserved(char *name)
 }
 
 
-bucket *
+static bucket *
 get_name(void)
 {
-    register int c;
+    int c;
 
     cinc = 0;
     for (c = *cptr; IS_IDENT(c); c = *++cptr)
@@ -833,11 +682,11 @@ get_name(void)
 }
 
 
-int
+static int
 get_number(void)
 {
-    register int c;
-    register int n;
+    int c;
+    int n;
 
     n = 0;
     for (c = *cptr; isdigit(c); c = *++cptr)
@@ -847,12 +696,12 @@ get_number(void)
 }
 
 
-char *
+static char *
 get_tag(void)
 {
-    register int c;
-    register int i;
-    register char *s;
+    int c;
+    int i;
+    char *s;
     char *t_line = dup_line();
     long bracket_depth;
 
@@ -895,10 +744,11 @@ get_tag(void)
 }
 
 
-void declare_tokens(int assoc)
+static void
+declare_tokens(int assoc)
 {
-    register int c;
-    register bucket *bp;
+    int c;
+    bucket *bp;
     char *tag = 0;
 
     if (assoc != TOKEN) ++prec;
@@ -917,7 +767,7 @@ void declare_tokens(int assoc)
         if (isalpha(c) || c == '_' || c == '.' || c == '$')
             bp = get_name();
         else if (c == '\'' || c == '"')
-            bp = get_literal();
+            invalid_literal(lineno, line, cptr);
         else
             return;
 
@@ -961,10 +811,11 @@ void declare_tokens(int assoc)
 }
 
 
-void declare_types(void)
+static void
+declare_types(void)
 {
-    register int c;
-    register bucket *bp;
+    int c;
+    bucket *bp;
     char *tag;
 
     c = nextc();
@@ -978,7 +829,7 @@ void declare_types(void)
         if (isalpha(c) || c == '_' || c == '.' || c == '$')
             bp = get_name();
         else if (c == '\'' || c == '"')
-            bp = get_literal();
+            invalid_literal(lineno, line, cptr);
         else
             return;
 
@@ -989,10 +840,11 @@ void declare_types(void)
 }
 
 
-void declare_start(void)
+static void
+declare_start(void)
 {
-    register int c;
-    register bucket *bp;
+    int c;
+    bucket *bp;
     static int entry_counter = 0;
 
     for (;;) {
@@ -1009,9 +861,10 @@ void declare_start(void)
 }
 
 
-void read_declarations(void)
+static void
+read_declarations(void)
 {
-    register int c, k;
+    int c, k;
 
     cache_size = 256;
     cache = MALLOC(cache_size);
@@ -1049,7 +902,7 @@ void read_declarations(void)
     }
 }
 
-void output_token_type(void)
+static void output_token_type(void)
 {
   bucket * bp;
 
@@ -1076,7 +929,8 @@ void output_token_type(void)
   fprintf(output_file, "\n");
 }
 
-void initialize_grammar(void)
+static void
+initialize_grammar(void)
 {
     nitems = 4;
     maxitems = 300;
@@ -1107,7 +961,8 @@ void initialize_grammar(void)
 }
 
 
-void expand_items(void)
+static void
+expand_items(void)
 {
     maxitems += 300;
     pitem = (bucket **) REALLOC(pitem, maxitems*sizeof(bucket *));
@@ -1115,7 +970,8 @@ void expand_items(void)
 }
 
 
-void expand_rules(void)
+static void
+expand_rules(void)
 {
     maxrules += 100;
     plhs = (bucket **) REALLOC(plhs, maxrules*sizeof(bucket *));
@@ -1127,10 +983,11 @@ void expand_rules(void)
 }
 
 
-void advance_to_start(void)
+static void
+advance_to_start(void)
 {
-    register int c;
-    register bucket *bp;
+    int c;
+    bucket *bp;
     char *s_cptr;
     int s_lineno;
 
@@ -1179,7 +1036,7 @@ void advance_to_start(void)
 
 int at_first;
 
-void start_rule(register bucket *bp, int s_lineno)
+void start_rule(bucket *bp, int s_lineno)
 {
     if (bp->class == TERM)
         terminal_lhs(s_lineno);
@@ -1193,7 +1050,8 @@ void start_rule(register bucket *bp, int s_lineno)
 }
 
 
-void end_rule(void)
+static void
+end_rule(void)
 {
     if (!last_was_action) default_action_error();
 
@@ -1205,45 +1063,17 @@ void end_rule(void)
 }
 
 
-void insert_empty_rule(void)
+static void
+add_symbol(void)
 {
-    register bucket *bp, **bpp;
-
-    assert(cache);
-    sprintf(cache, "$$%d", ++gensym);
-    bp = make_bucket(cache);
-    last_symbol->next = bp;
-    last_symbol = bp;
-    bp->tag = plhs[nrules]->tag;
-    bp->class = NONTERM;
-
-    if ((nitems += 2) > maxitems)
-        expand_items();
-    bpp = pitem + nitems - 1;
-    *bpp-- = bp;
-    while ((bpp[0] = bpp[-1])) --bpp;
-
-    if (++nrules >= maxrules)
-        expand_rules();
-    plhs[nrules] = plhs[nrules-1];
-    plhs[nrules-1] = bp;
-    rprec[nrules] = rprec[nrules-1];
-    rprec[nrules-1] = 0;
-    rassoc[nrules] = rassoc[nrules-1];
-    rassoc[nrules-1] = TOKEN;
-}
-
-
-void add_symbol(void)
-{
-    register int c;
-    register bucket *bp;
+    int c;
+    bucket *bp;
     int s_lineno = lineno;
     char *ecptr = cptr;
 
     c = *cptr;
     if (c == '\'' || c == '"')
-        bp = get_literal();
+        invalid_literal(s_lineno, line, cptr);
     else
         bp = get_name();
 
@@ -1265,14 +1095,15 @@ void add_symbol(void)
 }
 
 
-void copy_action(void)
+static void
+copy_action(void)
 {
-    register int c;
-    register int i, n;
+    int c;
+    int i, n;
     int depth;
     bucket *item;
     char *tagres;
-    register FILE *f = action_file;
+    FILE *f = action_file;
     int a_lineno = lineno;
     char *a_line = dup_line();
     char *a_cptr = a_line + (cptr - line);
@@ -1402,11 +1233,11 @@ loop:
 }
 
 
-int
+static int
 mark_symbol(void)
 {
-    register int c;
-    register bucket *bp;
+    int c;
+    bucket *bp;
 
     c = cptr[1];
     if (c == '%' || c == '\\')
@@ -1430,7 +1261,7 @@ mark_symbol(void)
     if (isalpha(c) || c == '_' || c == '.' || c == '$')
         bp = get_name();
     else if (c == '\'' || c == '"')
-        bp = get_literal();
+        invalid_literal(lineno, line, cptr);
     else
     {
         syntax_error(lineno, line, cptr);
@@ -1446,9 +1277,10 @@ mark_symbol(void)
 }
 
 
-void read_grammar(void)
+static void
+read_grammar(void)
 {
-    register int c;
+    int c;
 
     initialize_grammar();
     advance_to_start();
@@ -1484,9 +1316,10 @@ void read_grammar(void)
 }
 
 
-void free_tags(void)
+static void
+free_tags(void)
 {
-    register int i;
+    int i;
 
     if (tag_table == 0) return;
 
@@ -1499,10 +1332,11 @@ void free_tags(void)
 }
 
 
-void pack_names(void)
+static void
+pack_names(void)
 {
-    register bucket *bp;
-    register char *p, *s, *t;
+    bucket *bp;
+    char *p, *s, *t;
 
     name_pool_size = 13;  /* 13 == sizeof("$end") + sizeof("$accept") */
     for (bp = first_symbol; bp; bp = bp->next)
@@ -1524,9 +1358,10 @@ void pack_names(void)
 }
 
 
-void check_symbols(void)
+static void
+check_symbols(void)
 {
-    register bucket *bp;
+    bucket *bp;
 
     if (goal->class == UNKNOWN)
         undefined_goal(goal->name);
@@ -1542,11 +1377,12 @@ void check_symbols(void)
 }
 
 
-void pack_symbols(void)
+static void
+pack_symbols(void)
 {
-    register bucket *bp;
-    register bucket **v;
-    register int i, j, k, n;
+    bucket *bp;
+    bucket **v;
+    int i, j, k, n;
 
     nsyms = 2;
     ntokens = 1;
@@ -1694,7 +1530,8 @@ static int is_polymorphic(char * s)
   return 0;
 }
 
-void make_goal(void)
+static void
+make_goal(void)
 {
   static char name[7] = "'\\xxx'";
   bucket * bp;
@@ -1744,9 +1581,10 @@ void make_goal(void)
   }
 }
 
-void pack_grammar(void)
+static void
+pack_grammar(void)
 {
-    register int i, j;
+    int i, j;
     int assoc, prec;
 
     ritem = (short *) MALLOC(nitems*sizeof(short));
@@ -1803,11 +1641,12 @@ void pack_grammar(void)
 }
 
 
-void print_grammar(void)
+static void
+print_grammar(void)
 {
-    register int i, j, k;
+    int i, j, k;
     int spacing = 0;
-    register FILE *f = verbose_file;
+    FILE *f = verbose_file;
 
     if (!vflag) return;
 

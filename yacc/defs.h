@@ -310,10 +310,10 @@ extern short final_state;
 extern char *allocate(unsigned int n);
 extern bucket *lookup(char *name);
 extern bucket *make_bucket(char *name);
-extern action *parse_actions(register int stateno);
+extern action *parse_actions(int stateno);
 extern action *get_shifts(int stateno);
-extern action *add_reductions(int stateno, register action *actions);
-extern action *add_reduce(register action *actions, register int ruleno, register int symbol);
+extern action *add_reductions(int stateno, action *actions);
+extern action *add_reduce(action *actions, int ruleno, int symbol);
 extern void closure (short int *nucleus, int n);
 extern void create_symbol_table (void);
 extern void default_action_error (void) Noreturn;
@@ -357,3 +357,4 @@ extern void unterminated_text (int t_lineno, char *t_line, char *t_cptr) Noretur
 extern void used_reserved (char *s) Noreturn;
 extern void verbose (void);
 extern void write_section (char **section);
+extern void invalid_literal(int s_lineno, char *s_line, char *s_cptr) Noreturn;

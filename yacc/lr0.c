@@ -54,15 +54,15 @@ void save_shifts (void);
 void print_derives (void);
 void show_cores (void), show_ritems (void), show_rrhs (void), show_shifts (void);
 
-void allocate_itemsets(void)
+static void allocate_itemsets(void)
 {
-    register short *itemp;
-    register short *item_end;
-    register int symbol;
-    register int i;
-    register int count;
-    register int max;
-    register short *symbol_count;
+    short *itemp;
+    short *item_end;
+    int symbol;
+    int i;
+    int count;
+    int max;
+    short *symbol_count;
 
     count = 0;
     symbol_count = NEW2(nsyms, short);
@@ -96,7 +96,7 @@ void allocate_itemsets(void)
 }
 
 
-void allocate_storage(void)
+static void allocate_storage(void)
 {
     allocate_itemsets();
     shiftset = NEW2(nsyms, short);
@@ -105,11 +105,11 @@ void allocate_storage(void)
 }
 
 
-void append_states(void)
+static void append_states(void)
 {
-    register int i;
-    register int j;
-    register int symbol;
+    int i;
+    int j;
+    int symbol;
 
 #ifdef        TRACE
     fprintf(stderr, "Entering append_states()\n");
@@ -134,7 +134,7 @@ void append_states(void)
 }
 
 
-void free_storage(void)
+static void free_storage(void)
 {
     FREE(shift_symbol);
     FREE(redset);
@@ -147,7 +147,7 @@ void free_storage(void)
 
 
 
-void generate_states(void)
+static void generate_states(void)
 {
     allocate_storage();
     itemset = NEW2(nitems, short);
@@ -177,13 +177,13 @@ void generate_states(void)
 int
 get_state(int symbol)
 {
-    register int key;
-    register short *isp1;
-    register short *isp2;
-    register short *iend;
-    register core *sp;
-    register int found;
-    register int n;
+    int key;
+    short *isp1;
+    short *isp2;
+    short *iend;
+    core *sp;
+    int found;
+    int n;
 
 #ifdef        TRACE
     fprintf(stderr, "Entering get_state(%d)\n", symbol);
@@ -240,9 +240,9 @@ get_state(int symbol)
 
 void initialize_states(void)
 {
-    register int i;
-    register short *start_derives;
-    register core *p;
+    int i;
+    short *start_derives;
+    core *p;
 
     start_derives = derives[start_symbol];
     for (i = 0; start_derives[i] >= 0; ++i)
@@ -267,11 +267,11 @@ void initialize_states(void)
 
 void new_itemsets(void)
 {
-    register int i;
-    register int shiftcount;
-    register short *isp;
-    register short *ksp;
-    register int symbol;
+    int i;
+    int shiftcount;
+    short *isp;
+    short *ksp;
+    int symbol;
 
     for (i = 0; i < nsyms; i++)
         kernel_end[i] = 0;
@@ -304,11 +304,11 @@ void new_itemsets(void)
 core *
 new_state(int symbol)
 {
-    register int n;
-    register core *p;
-    register short *isp1;
-    register short *isp2;
-    register short *iend;
+    int n;
+    core *p;
+    short *isp1;
+    short *isp2;
+    short *iend;
 
 #ifdef        TRACE
     fprintf(stderr, "Entering new_state(%d)\n", symbol);
@@ -418,10 +418,10 @@ void show_shifts(void)
 
 void save_shifts(void)
 {
-    register shifts *p;
-    register short *sp1;
-    register short *sp2;
-    register short *send;
+    shifts *p;
+    short *sp1;
+    short *sp2;
+    short *send;
 
     p = (shifts *) allocate((unsigned) (sizeof(shifts) +
                         (nshifts - 1) * sizeof(short)));
@@ -452,13 +452,13 @@ void save_shifts(void)
 
 void save_reductions(void)
 {
-    register short *isp;
-    register short *rp1;
-    register short *rp2;
-    register int item;
-    register int count;
-    register reductions *p;
-    register short *rend;
+    short *isp;
+    short *rp1;
+    short *rp2;
+    int item;
+    int count;
+    reductions *p;
+    short *rend;
 
     count = 0;
     for (isp = itemset; isp < itemsetend; isp++)
@@ -499,11 +499,11 @@ void save_reductions(void)
 }
 
 
-void set_derives(void)
+static void set_derives(void)
 {
-    register int i, k;
-    register int lhs;
-    register short *rules;
+    int i, k;
+    int lhs;
+    short *rules;
 
     derives = NEW2(nsyms, short *);
     rules = NEW2(nvars + nrules, short);
@@ -529,17 +529,11 @@ void set_derives(void)
 #endif
 }
 
-void free_derives(void)
-{
-    FREE(derives[start_symbol]);
-    FREE(derives);
-}
-
 #ifdef        DEBUG
 void print_derives(void)
 {
-    register int i;
-    register short *sp;
+    int i;
+    short *sp;
 
     printf("\nDERIVES\n\n");
 
@@ -558,10 +552,10 @@ void print_derives(void)
 #endif
 
 
-void set_nullable(void)
+static void set_nullable(void)
 {
-    register int i, j;
-    register int empty;
+    int i, j;
+    int empty;
     int done;
 
     nullable = MALLOC(nsyms);
@@ -604,12 +598,6 @@ void set_nullable(void)
             printf("%s is not nullable\n", symbol_name[i]);
     }
 #endif
-}
-
-
-void free_nullable(void)
-{
-    FREE(nullable);
 }
 
 

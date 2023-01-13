@@ -135,13 +135,13 @@ void done(int k)
 }
 
 
-void onintr(int dummy)
+static void onintr(int dummy)
 {
     done(1);
 }
 
 
-void set_signals(void)
+static void set_signals(void)
 {
 #ifdef SIGINT
     if (signal(SIGINT, SIG_IGN) != SIG_IGN)
@@ -167,8 +167,8 @@ void usage(void)
 
 void getargs(int argc, char_os **argv)
 {
-    register int i;
-    register char_os *s;
+    int i;
+    char_os *s;
 
     if (argc > 0) myname = caml_stat_strdup_of_os(argv[0]);
     if (!myname) no_space();
@@ -269,7 +269,7 @@ no_more_options:;
 char *
 allocate(unsigned int n)
 {
-    register char *p;
+    char *p;
 
     p = NULL;
     if (n)
