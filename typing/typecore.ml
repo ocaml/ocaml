@@ -367,9 +367,9 @@ let nothing_equated = TypePairs.create 0
 let unify_pat_types_return_equated_pairs ?(refine = None) loc env ty ty' =
   try
     match refine with
-    | Some allow_recursive ->
+    | Some allow_recursive_equations ->
         unify_gadt ~equations_level:(get_gadt_equations_level ())
-          ~allow_recursive env ty ty'
+          ~allow_recursive_equations env ty ty'
     | None ->
         unify !env ty ty';
         nothing_equated

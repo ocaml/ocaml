@@ -345,3 +345,45 @@ end;;
 [%%expect{|
 Exception: Failure "Default_extension failure".
 |}]
+
+
+(* PR#11771 -- Constraints making expansion affect typeability *)
+type foo = Foo
+type bar = Bar
+
+type _ tag =
+  | Foo_tag : foo tag
+  | Bar_tag : bar tag
+
+type ('a, 'self) obj =
+  < foo : foo -> 'a ; bar : bar -> 'a; .. > as 'self
+[%%expect {|
+type foo = Foo
+type bar = Bar
+type _ tag = Foo_tag : foo tag | Bar_tag : bar tag
+type ('a, 'self) obj = 'self
+  constraint 'self = < bar : bar -> 'a; foo : foo -> 'a; .. >
+|}]
+
+let test_obj_no_expansion :
+  type a b. a tag -> < foo : foo -> b ; bar : bar -> b; .. > -> a -> b =
+    fun t obj x ->
+      match t with
+      | Foo_tag -> obj#foo x
+      | Bar_tag -> obj#bar x
+[%%expect {|
+val test_obj_no_expansion :
+  'a tag -> < bar : bar -> 'b; foo : foo -> 'b; .. > -> 'a -> 'b = <fun>
+|}]
+
+let test_obj_with_expansion :
+  type a b. a tag -> (b, _) obj -> a -> b =
+    fun t obj x ->
+      match t with
+      | Foo_tag -> obj#foo x
+      | Bar_tag -> obj#bar x
+[%%expect {|
+val test_obj_with_expansion :
+  'a tag -> ('b, < bar : bar -> 'b; foo : foo -> 'b; .. >) obj -> 'a -> 'b =
+  <fun>
+|}]
