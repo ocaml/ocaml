@@ -321,6 +321,11 @@ Working version
 - #11615: remove global variables form asmcomp/linearize.ml
   (Stefan Muenzel, review by Nicolás Ojeda Bär)
 
+- #11763, #11759, #11861: Enable stricter C compilation warnings, use
+  strict prototypes on primitives.
+  (Antonin Décimo, review by Xavier Leroy, David Allsopp and Sébastien
+  Hinderer)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.

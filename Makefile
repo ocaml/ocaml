@@ -796,13 +796,17 @@ runtime/primitives: \
 	cp $^ $@
 
 runtime/prims.c : runtime/primitives
-	(echo '#define CAML_INTERNALS'; \
-         echo '#include "caml/mlvalues.h"'; \
-	 echo '#include "caml/prims.h"'; \
-	 sed -e 's/.*/extern value &();/' $<; \
+	export LC_ALL=C; \
+	(echo '#include "caml/config.h"'; \
+	 echo 'typedef intnat value;'; \
+	 echo 'typedef value (*c_primitive)(void);'; \
+	 echo; \
+	 sed -e 's/.*/extern value &(void);/' $<; \
+	 echo; \
 	 echo 'c_primitive caml_builtin_cprim[] = {'; \
 	 sed -e 's/.*/  &,/' $<; \
 	 echo '  0 };'; \
+	 echo; \
 	 echo 'char * caml_names_of_builtin_cprim[] = {'; \
 	 sed -e 's/.*/  "&",/' $<; \
 	 echo '  0 };') > $@
