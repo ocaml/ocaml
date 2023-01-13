@@ -1253,30 +1253,44 @@ typing/subst.cmi : \
     typing/ident.cmi
 typing/tast_iterator.cmo : \
     typing/typedtree.cmi \
+    parsing/parsetree.cmi \
+    parsing/location.cmi \
     typing/env.cmi \
     parsing/asttypes.cmi \
+    parsing/ast_iterator.cmi \
     typing/tast_iterator.cmi
 typing/tast_iterator.cmx : \
     typing/typedtree.cmx \
+    parsing/parsetree.cmi \
+    parsing/location.cmx \
     typing/env.cmx \
     parsing/asttypes.cmi \
+    parsing/ast_iterator.cmx \
     typing/tast_iterator.cmi
 typing/tast_iterator.cmi : \
     typing/typedtree.cmi \
+    parsing/location.cmi \
     typing/env.cmi \
     parsing/asttypes.cmi
 typing/tast_mapper.cmo : \
     typing/typedtree.cmi \
+    parsing/parsetree.cmi \
+    parsing/location.cmi \
     typing/env.cmi \
     parsing/asttypes.cmi \
+    parsing/ast_mapper.cmi \
     typing/tast_mapper.cmi
 typing/tast_mapper.cmx : \
     typing/typedtree.cmx \
+    parsing/parsetree.cmi \
+    parsing/location.cmx \
     typing/env.cmx \
     parsing/asttypes.cmi \
+    parsing/ast_mapper.cmx \
     typing/tast_mapper.cmi
 typing/tast_mapper.cmi : \
     typing/typedtree.cmi \
+    parsing/location.cmi \
     typing/env.cmi \
     parsing/asttypes.cmi
 typing/type_immediacy.cmo : \

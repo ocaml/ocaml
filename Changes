@@ -331,7 +331,10 @@ Working version
   Gabriel Scherer)
 
 - #11615: remove global variables form asmcomp/linearize.ml
-  (Stefan Muenzel, review by Nicolás Ojeda Bär)
+  (Stefan Muenzel, review by Nicolás Ojeda Bär
+
+- #10856: Add location, attribute(s) visitors to Tast_mapper/Tast_iterator
+  (Yan Dong, review by Nicolás Ojeda Bär and Gabriel Scherer)
 
 - #11763, #11759, #11861: Enable stricter C compilation warnings, use
   strict prototypes on primitives.
