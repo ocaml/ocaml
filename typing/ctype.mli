@@ -347,8 +347,8 @@ type add_instance_variable_failure =
 
 exception Add_instance_variable_failed of add_instance_variable_failure
 
-val add_instance_variable : strict:bool -> Env.t ->
-  label -> mutable_flag -> virtual_flag -> type_expr -> class_signature -> unit
+val add_instance_variable : Env.t -> label -> mutable_flag ->
+  virtual_flag -> type_expr -> class_signature -> unit
 
 type inherit_class_signature_failure =
   | Self_type_mismatch of Errortrace.unification_error
@@ -357,8 +357,8 @@ type inherit_class_signature_failure =
 
 exception Inherit_class_signature_failed of inherit_class_signature_failure
 
-val inherit_class_signature : strict:bool -> Env.t ->
-  class_signature -> class_signature -> unit
+val inherit_class_signature : Env.t -> class_signature ->
+  class_signature -> unit
 
 val update_class_signature :
   Env.t -> class_signature -> label list * label list
