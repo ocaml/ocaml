@@ -588,6 +588,9 @@ OCaml 5.0
   (emitted for Linux in #8805)
   (Hannes Mehnert, review by Nicolás Ojeda Bär)
 
+- #11134: Optimise 'include struct' in more cases
+  (Stephen Dolan, review by Leo White and Vincent Laviron)
+
 ### Standard library:
 
 - #10742: Use LXM as the pseudo-random number generator for module Random.

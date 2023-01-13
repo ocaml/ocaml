@@ -888,7 +888,8 @@ let rec more_idents = function
     | Tstr_class_type _ -> more_idents rem
     | Tstr_include{incl_mod={mod_desc =
                              Tmod_constraint ({mod_desc = Tmod_structure str},
-                                              _, _, _)}} ->
+                                              _, _, _)
+                            | Tmod_structure str }} ->
         all_idents str.str_items @ more_idents rem
     | Tstr_include _ -> more_idents rem
     | Tstr_module
@@ -930,9 +931,10 @@ and all_idents = function
       List.map (fun (ci, _) -> ci.ci_id_class) cl_list @ all_idents rem
     | Tstr_class_type _ -> all_idents rem
 
-    | Tstr_include{incl_type; incl_mod={mod_desc =
-                             Tmod_constraint ({mod_desc = Tmod_structure str},
-                                              _, _, _)}} ->
+    | Tstr_include{incl_type;
+                   incl_mod={mod_desc =
+                     ( Tmod_constraint({mod_desc=Tmod_structure str}, _, _, _)
+                     | Tmod_structure str )}} ->
         bound_value_identifiers incl_type
         @ all_idents str.str_items
         @ all_idents rem
@@ -1161,15 +1163,16 @@ let transl_store_structure ~scopes glob map prims aliases str =
                       transl_store ~scopes rootpath (add_idents false ids subst)
                         cont rem)
 
-        | Tstr_include{
+        | Tstr_include({
             incl_loc=loc;
             incl_mod= {
               mod_desc = Tmod_constraint (
                   ({mod_desc = Tmod_structure str} as mexp), _, _,
-                  (Tcoerce_structure (map, _)))};
+                  (Tcoerce_structure _ | Tcoerce_none))}
+            | ({ mod_desc = Tmod_structure str} as mexp);
             incl_attributes;
             incl_type;
-          } ->
+          } as incl) ->
             List.iter (Translattribute.check_attribute_on_module mexp)
               incl_attributes;
             (* Shouldn't we use mod_attributes instead of incl_attributes?
@@ -1196,8 +1199,16 @@ let transl_store_structure ~scopes glob map prims aliases str =
                                  loop ids args))
               | _ -> assert false
             in
+            let map =
+              match incl.incl_mod.mod_desc with
+              | Tmod_constraint (_, _, _, Tcoerce_structure (map, _)) ->
+                 map
+              | Tmod_structure _
+              | Tmod_constraint (_, _, _, Tcoerce_none) ->
+                 List.init (List.length ids0) (fun i -> i, Tcoerce_none)
+              | _ -> assert false
+            in
             Lsequence(lam, loop ids0 map)
-
 
         | Tstr_include incl ->
             let ids = bound_value_identifiers incl.incl_type in
