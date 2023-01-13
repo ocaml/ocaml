@@ -27,7 +27,6 @@
 #include <winbase.h>
 #include <winsock2.h>
 #include <winioctl.h>
-#include <fileapi.h>
 #include <direct.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -416,7 +415,7 @@ CAMLexport void caml_expand_command_line(int * argcp, wchar_t *** argvp)
 CAMLexport int caml_read_directory(wchar_t * dirname,
                                    struct ext_table * contents)
 {
-  size_t dirnamelen;
+  size_t dirnamelen, xdirnamelen;
   wchar_t * template;
   intptr_t h;
   struct _wfinddata_t fileinfo;
@@ -426,11 +425,12 @@ CAMLexport int caml_read_directory(wchar_t * dirname,
   if (dirnamelen > 0 &&
       (dirname[dirnamelen - 1] == L'/'
        || dirname[dirnamelen - 1] == L'\\'
-       || dirname[dirnamelen - 1] == L':'))
+       || dirname[dirnamelen - 1] == L':')) {
     template = caml_stat_wcsconcat(2, dirname, L"*.*");
-  else {
+    xdirnamelen = dirnamelen;
+  } else {
     template = caml_stat_wcsconcat(2, dirname, L"\\*.*");
-    dirnamelen++;
+    xdirnamelen = dirnamelen + 1;
   }
   h = _wfindfirst(template, &fileinfo);
   if (h == -1) {
@@ -438,9 +438,9 @@ CAMLexport int caml_read_directory(wchar_t * dirname,
        [GetFileAttributes()] on [template] without the trailing [*.*].
        The added backslash at the end gives us the expected result (-1)
        on pathological paths like [...]. */
-    template[dirnamelen] = L'\0';
+    template[xdirnamelen] = L'\0';
     res = errno == ENOENT &&
-          GetFileAttributesW(template) != INVALID_FILE_ATTRIBUTES ? 0 : -1;
+          GetFileAttributes(template) != INVALID_FILE_ATTRIBUTES ? 0 : -1;
     caml_stat_free(template);
     return res;
   }
