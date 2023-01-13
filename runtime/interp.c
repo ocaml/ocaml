@@ -1034,34 +1034,34 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(C_CALL1):
       Setup_for_c_call;
-      accu = Primitive(*pc)(accu);
+      accu = Primitive1(*pc)(accu);
       Restore_after_c_call;
       pc++;
       Next;
     Instruct(C_CALL2):
       Setup_for_c_call;
-      accu = Primitive(*pc)(accu, sp[2]);
+      accu = Primitive2(*pc)(accu, sp[2]);
       Restore_after_c_call;
       sp += 1;
       pc++;
       Next;
     Instruct(C_CALL3):
       Setup_for_c_call;
-      accu = Primitive(*pc)(accu, sp[2], sp[3]);
+      accu = Primitive3(*pc)(accu, sp[2], sp[3]);
       Restore_after_c_call;
       sp += 2;
       pc++;
       Next;
     Instruct(C_CALL4):
       Setup_for_c_call;
-      accu = Primitive(*pc)(accu, sp[2], sp[3], sp[4]);
+      accu = Primitive4(*pc)(accu, sp[2], sp[3], sp[4]);
       Restore_after_c_call;
       sp += 3;
       pc++;
       Next;
     Instruct(C_CALL5):
       Setup_for_c_call;
-      accu = Primitive(*pc)(accu, sp[2], sp[3], sp[4], sp[5]);
+      accu = Primitive5(*pc)(accu, sp[2], sp[3], sp[4], sp[5]);
       Restore_after_c_call;
       sp += 4;
       pc++;
@@ -1070,7 +1070,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       int nargs = *pc++;
       *--sp = accu;
       Setup_for_c_call;
-      accu = Primitive(*pc)(sp + 2, nargs);
+      accu = PrimitiveN(*pc)(sp + 2, nargs);
       Restore_after_c_call;
       sp += nargs;
       pc++;

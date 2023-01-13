@@ -1,6 +1,13 @@
 OCaml 5.0 maintenance version
 -----------------------------
 
+### Internal/compiler-libs changes:
+
+- #11763, #11759, #11861: Enable stricter C compilation warnings, use
+  strict prototypes on primitives.
+  (Antonin Décimo, review by Xavier Leroy, David Allsopp and Sébastien
+  Hinderer)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.
