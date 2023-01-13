@@ -112,6 +112,15 @@ val input_all : t -> string
     If the same channel is read concurrently by multiple threads, the returned
     string is not guaranteed to contain contiguous characters from the input. *)
 
+val input_lines : t -> string list
+(** [input_lines ic] reads lines using {!input_line}
+    until the end of file is reached.  It returns the list of all
+    lines read, in the order they were read.  The newline characters
+    that terminate lines are not included in the returned strings.
+    Empty lines produce empty strings.
+
+    @since 5.1 *)
+
 (** {1:advanced_input Advanced input}*)
 
 val input : t -> bytes -> int -> int -> int
@@ -137,6 +146,19 @@ val really_input : t -> bytes -> int -> int -> unit option
 
     @raise Invalid_argument if [pos] and [len] do not designate a valid range of
     [buf]. *)
+
+val fold_lines : ('acc -> string -> 'acc) -> 'acc -> t -> 'acc
+(** [fold_lines f init ic] reads lines from [ic] using {!input_line}
+    until the end of file is reached, and successively passes each line
+    to function [f] in the style of a fold.
+    More precisely, if lines [l1, ..., lN] are read,
+    [fold_lines f init ic] computes [f (... (f (f init l1) l2) ...) lN].
+    If [f] has no side effects, this is equivalent to
+    [List.fold_left f init (In_channel.input_lines ic)],
+    but is more efficient since it does not construct the list of all
+    lines read.
+
+    @since 5.1 *)
 
 (** {1:seeking Seeking} *)
 
