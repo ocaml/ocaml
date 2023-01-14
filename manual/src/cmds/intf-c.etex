@@ -926,9 +926,10 @@ keyword "return".  Every occurrence of "return x" must be replaced by
 "CAMLreturn (x)" if "x" has type "value", or "CAMLreturnT (t, x)"
 (where "t" is the type of "x"); every occurrence of "return" without
 argument must be
-replaced by "CAMLreturn0".  If your C function is a procedure (i.e. if
-it returns void), you must insert "CAMLreturn0" at the end (to replace
+replaced by "CAMLreturn(Val_unit)".  If your C function is a procedure (i.e. if
+it returns void), you must insert "CAMLreturn(Val_unit)" at the end (to replace
 C's implicit "return").
+If it is in internal FFI procedures of type "void", please use "CAMLreturn0" instead of "return".
 
 \paragraph{Note:} some C compilers give bogus warnings about unused
 variables "caml__dummy_xxx" at each use of "CAMLparam" and
@@ -942,7 +943,7 @@ void foo (value v1, value v2, value v3)
 {
   CAMLparam3 (v1, v2, v3);
   ...
-  CAMLreturn0;
+  CAMLreturn(Val_unit);
 }
 \end{verbatim}
 
