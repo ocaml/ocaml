@@ -355,6 +355,9 @@ Working version
 
 ### Bug fixes:
 
+- #11887, #11893: Code duplication in pattern-matching compilation
+  (Vincent Laviron, report par Greta Yorsh, review by ...)
+
 - #10664, #11600: Unsoundness in the typing of polymorphic methods
   involving polymorphic variants
   (Jacques Garrigue, report by Mike Shulman, review by Gabriel Scherer)
