@@ -53,8 +53,6 @@ exception Error_forward of Location.error
 (** Map indexed by type variable names. *)
 module TyVarMap = Misc.Stdlib.String.Map
 
-type variable_context = int * type_expr TyVarMap.t
-
 (* Support for first-class modules. *)
 
 let transl_modtype_longident = ref (fun _ -> assert false)
@@ -104,6 +102,14 @@ let narrow () =
 let widen (gl, tv) =
   restore_global_level gl;
   type_variables := tv
+
+let with_local_type_variable_scope f =
+  let context = narrow () in
+  let r = f () in
+  widen context;
+  r
+
+let generalize_ctyp typ = generalize typ.ctyp_type
 
 let strict_ident c = (c = '_' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z')
 
@@ -316,19 +322,20 @@ and transl_type_aux env policy styp =
           end;
           ty
         with Not_found ->
-          if !Clflags.principal then begin_def ();
-          let t = newvar () in
-          used_variables :=
-            TyVarMap.add alias (t, styp.ptyp_loc) !used_variables;
-          let ty = transl_type env policy st in
-          begin try unify_var env t ty.ctyp_type with Unify err ->
-             let err = Errortrace.swap_unification_error err in
-            raise(Error(styp.ptyp_loc, env, Alias_type_mismatch err))
-          end;
-          if !Clflags.principal then begin
-            end_def ();
-            generalize_structure t;
-          end;
+          let t, ty =
+            with_local_level_if_principal begin fun () ->
+              let t = newvar () in
+              used_variables :=
+                TyVarMap.add alias (t, styp.ptyp_loc) !used_variables;
+              let ty = transl_type env policy st in
+              begin try unify_var env t ty.ctyp_type with Unify err ->
+                let err = Errortrace.swap_unification_error err in
+                raise(Error(styp.ptyp_loc, env, Alias_type_mismatch err))
+              end;
+              (t, ty)
+            end
+            ~post: (fun (t, _) -> generalize_structure t)
+          in
           let t = instance t in
           let px = Btype.proxy t in
           begin match get_desc px with
@@ -436,15 +443,18 @@ and transl_type_aux env policy styp =
       ctyp (Ttyp_variant (tfields, closed, present)) ty
   | Ptyp_poly(vars, st) ->
       let vars = List.map (fun v -> v.txt) vars in
-      begin_def();
-      let new_univars = make_poly_univars vars in
-      let old_univars = !univars in
-      univars := new_univars @ !univars;
-      let cty = transl_type env policy st in
+      let new_univars, cty =
+        with_local_level begin fun () ->
+          let new_univars = make_poly_univars vars in
+          let old_univars = !univars in
+          univars := new_univars @ !univars;
+          let cty = transl_type env policy st in
+          univars := old_univars;
+          (new_univars, cty)
+        end
+        ~post:(fun (_,cty) -> generalize_ctyp cty)
+      in
       let ty = cty.ctyp_type in
-      univars := old_univars;
-      end_def();
-      generalize ty;
       let ty_list = check_poly_univars env styp.ptyp_loc new_univars in
       let ty_list = List.filter (fun v -> deep_occur v ty) ty_list in
       let ty' = Btype.newgenty (Tpoly(ty, ty_list)) in
@@ -452,9 +462,8 @@ and transl_type_aux env policy styp =
       ctyp (Ttyp_poly (vars, cty)) ty'
   | Ptyp_package (p, l) ->
       let l, mty = create_package_mty true styp.ptyp_loc env (p, l) in
-      let z = narrow () in
-      let mty = !transl_modtype env mty in
-      widen z;
+      let mty =
+        with_local_type_variable_scope (fun () -> !transl_modtype env mty) in
       let ptys = List.map (fun (s, pty) ->
                              s, transl_type env policy pty
                           ) l in
@@ -600,19 +609,21 @@ let transl_simple_type env ?univars:(uvs=[]) fixed styp =
 
 let transl_simple_type_univars env styp =
   univars := []; used_variables := TyVarMap.empty; pre_univars := [];
-  begin_def ();
-  let typ = transl_type env Univars styp in
-  (* Only keep already global variables in used_variables *)
-  let new_variables = !used_variables in
-  used_variables := TyVarMap.empty;
-  TyVarMap.iter
-    (fun name p ->
-      if TyVarMap.mem name !type_variables then
-        used_variables := TyVarMap.add name p !used_variables)
-    new_variables;
-  globalize_used_variables env false ();
-  end_def ();
-  generalize typ.ctyp_type;
+  let typ =
+    with_local_level ~post:generalize_ctyp begin fun () ->
+      let typ = transl_type env Univars styp in
+      (* Only keep already global variables in used_variables *)
+      let new_variables = !used_variables in
+      used_variables := TyVarMap.empty;
+      TyVarMap.iter
+        (fun name p ->
+          if TyVarMap.mem name !type_variables then
+            used_variables := TyVarMap.add name p !used_variables)
+        new_variables;
+      globalize_used_variables env false ();
+      typ
+    end
+  in
   let univs =
     List.fold_left
       (fun acc v ->
@@ -628,28 +639,34 @@ let transl_simple_type_univars env styp =
 
 let transl_simple_type_delayed env styp =
   univars := []; used_variables := TyVarMap.empty;
-  begin_def ();
-  let typ = transl_type env Extensible styp in
-  end_def ();
-  make_fixed_univars typ.ctyp_type;
-  (* This brings the used variables to the global level, but doesn't link them
-     to their other occurrences just yet. This will be done when [force] is
-     called. *)
-  let force = globalize_used_variables env false in
-  (* Generalizes everything except the variables that were just globalized. *)
-  generalize typ.ctyp_type;
+  let typ, force =
+    with_local_level begin fun () ->
+      let typ = transl_type env Extensible styp in
+      make_fixed_univars typ.ctyp_type;
+      (* This brings the used variables to the global level, but doesn't link
+         them to their other occurrences just yet. This will be done when
+         [force] is  called. *)
+      let force = globalize_used_variables env false in
+      (typ, force)
+    end
+    (* Generalize everything except the variables that were just globalized. *)
+    ~post:(fun (typ,_) -> generalize_ctyp typ)
+  in
   (typ, instance typ.ctyp_type, force)
 
 let transl_type_scheme env styp =
   reset_type_variables();
   match styp.ptyp_desc with
   | Ptyp_poly (vars, st) ->
-     begin_def();
      let vars = List.map (fun v -> v.txt) vars in
-     let univars = make_poly_univars vars in
-     let typ = transl_simple_type env ~univars true st in
-     end_def();
-     generalize typ.ctyp_type;
+     let univars, typ =
+       with_local_level begin fun () ->
+         let univars = make_poly_univars vars in
+         let typ = transl_simple_type env ~univars true st in
+         (univars, typ)
+       end
+       ~post:(fun (_,typ) -> generalize_ctyp typ)
+     in
      let _ = instance_poly_univars env styp.ptyp_loc univars in
      { ctyp_desc = Ttyp_poly (vars, typ);
        ctyp_type = typ.ctyp_type;
@@ -657,11 +674,8 @@ let transl_type_scheme env styp =
        ctyp_loc = styp.ptyp_loc;
        ctyp_attributes = styp.ptyp_attributes }
   | _ ->
-     begin_def();
-     let typ = transl_simple_type env false styp in
-     end_def();
-     generalize typ.ctyp_type;
-     typ
+      with_local_level (fun () -> transl_simple_type env false styp)
+        ~post:generalize_ctyp
 
 
 (* Error report *)

@@ -272,54 +272,54 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
   | Some sret_type ->
       (* if it's a generalized constructor we must first narrow and
          then widen so as to not introduce any new constraints *)
-      let z = narrow () in
+      (* narrow and widen are now invoked through wrap_type_variable_scope *)
+      with_local_type_variable_scope begin fun () ->
       reset_type_variables ();
-      let univars, closed =
-        match svars with
-        | [] -> None, false
-        | vs ->
-           Ctype.begin_def();
-           Some (make_poly_univars (List.map (fun v -> v.txt) vs)), true
-      in
-      let args, targs =
-        transl_constructor_arguments env univars closed sargs
-      in
-      let tret_type = transl_simple_type env ?univars closed sret_type in
-      let ret_type = tret_type.ctyp_type in
-      (* TODO add back type_path as a parameter ? *)
-      begin match get_desc ret_type with
-        | Tconstr (p', _, _) when Path.same type_path p' -> ()
-        | _ ->
-          let trace =
-            (* Expansion is not helpful here -- the restriction on GADT return
-               types is purely syntactic.  (In the worst case, expansion
-               produces gibberish.) *)
-            [Ctype.unexpanded_diff
-               ~got:ret_type
-               ~expected:(Ctype.newconstr type_path type_params)]
+      let closed = svars <> [] in
+      let targs, tret_type, args, ret_type, _univars =
+        Ctype.with_local_level_if closed begin fun () ->
+          let univar_list =
+            make_poly_univars (List.map (fun v -> v.txt) svars) in
+          let univars = if closed then Some univar_list else None in
+          let args, targs =
+            transl_constructor_arguments env univars closed sargs
           in
-          raise (Error(sret_type.ptyp_loc,
-                       Constraint_failed(env,
-                                         Errortrace.unification_error ~trace)))
-      end;
-      begin match univars with
-      | None -> ()
-      | Some univars ->
-         Ctype.end_def();
-         Btype.iter_type_expr_cstr_args Ctype.generalize args;
-         Ctype.generalize ret_type;
-         let _vars = instance_poly_univars env loc univars in
-         let set_level t = Ctype.unify_var env (Ctype.newvar()) t in
-         Btype.iter_type_expr_cstr_args set_level args;
-         set_level ret_type;
-      end;
-      widen z;
+          let tret_type = transl_simple_type env ?univars closed sret_type in
+          let ret_type = tret_type.ctyp_type in
+          (* TODO add back type_path as a parameter ? *)
+          begin match get_desc ret_type with
+          | Tconstr (p', _, _) when Path.same type_path p' -> ()
+          | _ ->
+              let trace =
+                (* Expansion is not helpful here -- the restriction on GADT
+                   return types is purely syntactic.  (In the worst case,
+                   expansion produces gibberish.) *)
+                [Ctype.unexpanded_diff
+                   ~got:ret_type
+                   ~expected:(Ctype.newconstr type_path type_params)]
+              in
+              raise (Error(sret_type.ptyp_loc,
+                           Constraint_failed(
+                           env, Errortrace.unification_error ~trace)))
+          end;
+          (targs, tret_type, args, ret_type, univar_list)
+        end
+        ~post: begin fun (_, _, args, ret_type, univars) ->
+          Btype.iter_type_expr_cstr_args Ctype.generalize args;
+          Ctype.generalize ret_type;
+          let _vars = instance_poly_univars env loc univars in
+          let set_level t = Ctype.enforce_current_level env t in
+          Btype.iter_type_expr_cstr_args set_level args;
+          set_level ret_type;
+        end
+      in
       targs, Some tret_type, args, Some ret_type
+      end
 
 let transl_declaration env sdecl (id, uid) =
   (* Bind type parameters *)
   reset_type_variables();
-  Ctype.begin_def ();
+  Ctype.with_local_level begin fun () ->
   let tparams = make_params env sdecl.ptype_params in
   let params = List.map (fun (cty, _) -> cty.ctyp_type) tparams in
   let cstrs = List.map
@@ -469,7 +469,6 @@ let transl_declaration env sdecl (id, uid) =
         try Ctype.unify env ty ty' with Ctype.Unify err ->
           raise(Error(loc, Inconsistent_constraint (env, err))))
       cstrs;
-    Ctype.end_def ();
   (* Add abstract row *)
     if is_fixed_type sdecl then begin
       let p, _ =
@@ -491,6 +490,7 @@ let transl_declaration env sdecl (id, uid) =
       typ_private = sdecl.ptype_private;
       typ_attributes = sdecl.ptype_attributes;
     }
+  end
 
 (* Generalize a type declaration *)
 
@@ -910,59 +910,62 @@ let transl_type_decl env rec_flag sdecl_list =
       Uid.mk ~current_unit:(Env.get_unit_name ())
     ) sdecl_list
   in
-  Ctype.begin_def();
-  (* Enter types. *)
-  let temp_env =
-    List.fold_left2 (enter_type rec_flag) env sdecl_list ids_list in
-  (* Translate each declaration. *)
-  let current_slot = ref None in
-  let warn_unused = Warnings.is_active (Warnings.Unused_type_declaration "") in
-  let ids_slots (id, _uid as ids) =
-    match rec_flag with
-    | Asttypes.Recursive when warn_unused ->
-        (* See typecore.ml for a description of the algorithm used
-             to detect unused declarations in a set of recursive definitions. *)
-        let slot = ref [] in
-        let td = Env.find_type (Path.Pident id) temp_env in
-        Env.set_type_used_callback
-          td
-          (fun old_callback ->
-             match !current_slot with
-             | Some slot -> slot := td.type_uid :: !slot
-             | None ->
-                 List.iter Env.mark_type_used (get_ref slot);
-                 old_callback ()
-          );
-        ids, Some slot
-    | Asttypes.Recursive | Asttypes.Nonrecursive ->
-        ids, None
+  let tdecls, decls, new_env =
+    Ctype.with_local_level_iter ~post:generalize_decl begin fun () ->
+      (* Enter types. *)
+      let temp_env =
+        List.fold_left2 (enter_type rec_flag) env sdecl_list ids_list in
+      (* Translate each declaration. *)
+      let current_slot = ref None in
+      let warn_unused =
+        Warnings.is_active (Warnings.Unused_type_declaration "") in
+      let ids_slots (id, _uid as ids) =
+        match rec_flag with
+        | Asttypes.Recursive when warn_unused ->
+            (* See typecore.ml for a description of the algorithm used to
+               detect unused declarations in a set of recursive definitions. *)
+            let slot = ref [] in
+            let td = Env.find_type (Path.Pident id) temp_env in
+            Env.set_type_used_callback
+              td
+              (fun old_callback ->
+                match !current_slot with
+                | Some slot -> slot := td.type_uid :: !slot
+                | None ->
+                    List.iter Env.mark_type_used (get_ref slot);
+                    old_callback ()
+              );
+            ids, Some slot
+        | Asttypes.Recursive | Asttypes.Nonrecursive ->
+            ids, None
+      in
+      let transl_declaration name_sdecl (id, slot) =
+        current_slot := slot;
+        Builtin_attributes.warning_scope
+          name_sdecl.ptype_attributes
+          (fun () -> transl_declaration temp_env name_sdecl id)
+      in
+      let tdecls =
+        List.map2 transl_declaration sdecl_list (List.map ids_slots ids_list) in
+      let decls =
+        List.map (fun tdecl -> (tdecl.typ_id, tdecl.typ_type)) tdecls in
+      current_slot := None;
+      (* Check for duplicates *)
+      check_duplicates sdecl_list;
+      (* Build the final env. *)
+      let new_env = add_types_to_env decls env in
+      (* Update stubs *)
+      begin match rec_flag with
+      | Asttypes.Nonrecursive -> ()
+      | Asttypes.Recursive ->
+          List.iter2
+            (fun (id, _) sdecl ->
+              update_type temp_env new_env id sdecl.ptype_loc)
+            ids_list sdecl_list
+      end;
+      ((tdecls, decls, new_env), List.map snd decls)
+    end
   in
-  let transl_declaration name_sdecl (id, slot) =
-    current_slot := slot;
-    Builtin_attributes.warning_scope
-      name_sdecl.ptype_attributes
-      (fun () -> transl_declaration temp_env name_sdecl id)
-  in
-  let tdecls =
-    List.map2 transl_declaration sdecl_list (List.map ids_slots ids_list) in
-  let decls =
-    List.map (fun tdecl -> (tdecl.typ_id, tdecl.typ_type)) tdecls in
-  current_slot := None;
-  (* Check for duplicates *)
-  check_duplicates sdecl_list;
-  (* Build the final env. *)
-  let new_env = add_types_to_env decls env in
-  (* Update stubs *)
-  begin match rec_flag with
-    | Asttypes.Nonrecursive -> ()
-    | Asttypes.Recursive ->
-      List.iter2
-        (fun (id, _) sdecl -> update_type temp_env new_env id sdecl.ptype_loc)
-        ids_list sdecl_list
-  end;
-  (* Generalize type declarations. *)
-  Ctype.end_def();
-  List.iter (fun (_, decl) -> generalize_decl decl) decls;
   (* Check for ill-formed abbrevs *)
   let id_loc_list =
     List.map2 (fun (id, _) sdecl -> (id, sdecl.ptype_loc))
@@ -1148,11 +1151,6 @@ let is_rebind ext =
   | Text_decl _ -> false
 
 let transl_type_extension extend env loc styext =
-  (* Note: it would be incorrect to call [create_scope] *after*
-     [reset_type_variables] or after [begin_def] (see #10010). *)
-  let scope = Ctype.create_scope () in
-  reset_type_variables();
-  Ctype.begin_def();
   let type_path, type_decl =
     let lid = styext.ptyext_path in
     Env.lookup_type ~loc:lid.loc lid.txt env
@@ -1197,24 +1195,34 @@ let transl_type_extension extend env loc styext =
   | None -> ()
   | Some err -> raise (Error(loc, Extension_mismatch (type_path, env, err)))
   end;
-  let ttype_params = make_params env styext.ptyext_params in
-  let type_params = List.map (fun (cty, _) -> cty.ctyp_type) ttype_params in
-  List.iter2 (Ctype.unify_var env)
-    (Ctype.instance_list type_decl.type_params)
-    type_params;
-  let constructors =
-    List.map (transl_extension_constructor ~scope env type_path
-               type_decl.type_params type_params styext.ptyext_private)
-      styext.ptyext_constructors
+  let ttype_params, _type_params, constructors =
+    (* Note: it would be incorrect to call [create_scope] *after*
+       [reset_type_variables] or after [with_local_level] (see #10010). *)
+    let scope = Ctype.create_scope () in
+    reset_type_variables();
+    Ctype.with_local_level begin fun () ->
+      let ttype_params = make_params env styext.ptyext_params in
+      let type_params = List.map (fun (cty, _) -> cty.ctyp_type) ttype_params in
+      List.iter2 (Ctype.unify_var env)
+        (Ctype.instance_list type_decl.type_params)
+        type_params;
+      let constructors =
+        List.map (transl_extension_constructor ~scope env type_path
+                    type_decl.type_params type_params styext.ptyext_private)
+          styext.ptyext_constructors
+      in
+      (ttype_params, type_params, constructors)
+    end
+    ~post: begin fun (_, type_params, constructors) ->
+      (* Generalize types *)
+      List.iter Ctype.generalize type_params;
+      List.iter
+        (fun ext ->
+          Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_type.ext_args;
+          Option.iter Ctype.generalize ext.ext_type.ext_ret_type)
+        constructors;
+    end
   in
-  Ctype.end_def();
-  (* Generalize types *)
-  List.iter Ctype.generalize type_params;
-  List.iter
-    (fun ext ->
-       Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_type.ext_args;
-       Option.iter Ctype.generalize ext.ext_type.ext_ret_type)
-    constructors;
   (* Check that all type variables are closed *)
   List.iter
     (fun ext ->
@@ -1259,17 +1267,18 @@ let transl_type_extension extend env loc styext =
     (fun () -> transl_type_extension extend env loc styext)
 
 let transl_exception env sext =
-  let scope = Ctype.create_scope () in
-  reset_type_variables();
-  Ctype.begin_def();
   let ext =
-    transl_extension_constructor ~scope env
-      Predef.path_exn [] [] Asttypes.Public sext
+    let scope = Ctype.create_scope () in
+    reset_type_variables();
+    Ctype.with_local_level
+      (fun () ->
+        transl_extension_constructor ~scope env
+          Predef.path_exn [] [] Asttypes.Public sext)
+      ~post: begin fun ext ->
+        Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_type.ext_args;
+        Option.iter Ctype.generalize ext.ext_type.ext_ret_type;
+      end
   in
-  Ctype.end_def();
-  (* Generalize types *)
-  Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_type.ext_args;
-  Option.iter Ctype.generalize ext.ext_type.ext_ret_type;
   (* Check that all type variables are closed *)
   begin match Ctype.closed_extension_constructor ext.ext_type with
     Some ty ->
@@ -1476,7 +1485,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
     sdecl =
   Env.mark_type_used sig_decl.type_uid;
   reset_type_variables();
-  Ctype.begin_def();
+  Ctype.with_local_level begin fun () ->
   (* In the first part of this function, we typecheck the syntactic
      declaration [sdecl] in the outer environment [outer_env]. *)
   let env = outer_env in
@@ -1596,8 +1605,6 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
       type_immediate = new_type_immediate;
       type_separability = new_type_separability;
     } in
-  Ctype.end_def();
-  generalize_decl new_sig_decl;
   {
     typ_id = id;
     typ_name = sdecl.ptype_name;
@@ -1610,14 +1617,15 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
     typ_private = sdecl.ptype_private;
     typ_attributes = sdecl.ptype_attributes;
   }
+  end
+  ~post:(fun ttyp -> generalize_decl ttyp.typ_type)
 
 (* Approximate a type declaration: just make all types abstract *)
 
 let abstract_type_decl ~injective arity =
   let rec make_params n =
     if n <= 0 then [] else Ctype.newvar() :: make_params (n-1) in
-  Ctype.begin_def();
-  let decl =
+  Ctype.with_local_level ~post:generalize_decl begin fun () ->
     { type_params = make_params arity;
       type_arity = arity;
       type_kind = Type_abstract;
@@ -1632,10 +1640,8 @@ let abstract_type_decl ~injective arity =
       type_immediate = Unknown;
       type_unboxed_default = false;
       type_uid = Uid.internal_not_actually_unique;
-     } in
-  Ctype.end_def();
-  generalize_decl decl;
-  decl
+    }
+  end
 
 let approx_type_decl sdecl_list =
   let scope = Ctype.create_scope () in
