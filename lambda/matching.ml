@@ -2895,17 +2895,15 @@ let make_test_sequence_variant_constant fail arg int_lambda_list =
   let _, (cases, actions) = as_interval fail min_int max_int int_lambda_list in
   Switcher.test_sequence arg cases actions
 
-let call_switcher_variant_constant loc fail arg int_lambda_list =
-  call_switcher loc fail arg min_int max_int int_lambda_list
-
-let call_switcher_variant_constr loc fail arg int_lambda_list =
+let make_test_sequence_variant_constr loc fail arg int_lambda_list =
   let v = Ident.create_local "variant" in
+  let _, (cases, actions) = as_interval fail min_int max_int int_lambda_list in
   Llet
     ( Alias,
       Pgenval,
       v,
       Lprim (Pfield (0, Pointer, Immutable), [ arg ], loc),
-      call_switcher loc fail (Lvar v) min_int max_int int_lambda_list )
+      Switcher.test_sequence (Lvar v) cases actions )
 
 let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)
     =
@@ -2955,16 +2953,16 @@ let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)
             | Some fail -> test_int_or_block arg lam fail
           )
         | [], _ -> (
-            let lam = call_switcher_variant_constr loc fail arg nonconsts in
+            let lam = make_test_sequence_variant_constr loc fail arg nonconsts in
             (* One must not dereference integers *)
             match fail with
             | None -> lam
             | Some fail -> test_int_or_block arg fail lam
           )
         | _, _ ->
-            let lam_const = call_switcher_variant_constant loc fail arg consts
+            let lam_const = make_test_sequence_variant_constant fail arg consts
             and lam_nonconst =
-              call_switcher_variant_constr loc fail arg nonconsts
+              make_test_sequence_variant_constr loc fail arg nonconsts
             in
             test_int_or_block arg lam_const lam_nonconst
       )
