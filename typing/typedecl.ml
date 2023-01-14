@@ -1171,11 +1171,11 @@ let transl_type_extension extend env loc styext =
   | None -> ()
   | Some err -> raise (Error(loc, Extension_mismatch (type_path, env, err)))
   end;
-  (* Note: it would be incorrect to call [create_scope] *after*
-     [reset_type_variables] or after [with_local_level] (see #10010). *)
-  let scope = Ctype.create_scope () in
-  reset_type_variables();
   let ttype_params, _type_params, constructors =
+    (* Note: it would be incorrect to call [create_scope] *after*
+       [reset_type_variables] or after [with_local_level] (see #10010). *)
+    let scope = Ctype.create_scope () in
+    reset_type_variables();
     Ctype.with_local_level begin fun () ->
       let ttype_params = make_params env styext.ptyext_params in
       let type_params = List.map (fun (cty, _) -> cty.ctyp_type) ttype_params in
@@ -1243,9 +1243,9 @@ let transl_type_extension extend env loc styext =
     (fun () -> transl_type_extension extend env loc styext)
 
 let transl_exception env sext =
-  let scope = Ctype.create_scope () in
-  reset_type_variables();
   let ext =
+    let scope = Ctype.create_scope () in
+    reset_type_variables();
     Ctype.with_local_level
       (fun () ->
         transl_extension_constructor ~scope env
