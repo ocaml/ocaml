@@ -2376,11 +2376,24 @@ module SArg = struct
   let make_if cond ifso ifnot = Lifthenelse (cond, ifso, ifnot)
 
   let make_switch loc arg cases acts =
+    let act_uses = Array.make (Array.length acts) 0 in
+    for i = 0 to Array.length cases - 1 do
+      act_uses.(cases.(i)) <- act_uses.(cases.(i)) + 1
+    done;
+    let wrapper = ref (fun lam -> lam) in
+    for j = 0 to Array.length acts - 1 do
+      if act_uses.(j) > 1 then begin
+        let nfail, wrap = make_catch_delayed acts.(j) in
+        acts.(j) <- make_exit nfail;
+        let prev_wrapper = !wrapper in
+        wrapper := (fun lam -> wrap (prev_wrapper lam))
+      end;
+    done;
     let l = ref [] in
     for i = Array.length cases - 1 downto 0 do
       l := (i, acts.(cases.(i))) :: !l
     done;
-    Lswitch
+    !wrapper (Lswitch
       ( arg,
         { sw_numconsts = Array.length cases;
           sw_consts = !l;
@@ -2388,7 +2401,7 @@ module SArg = struct
           sw_blocks = [];
           sw_failaction = None
         },
-        loc )
+        loc ))
 
   let make_catch = make_catch_delayed
 
@@ -2895,15 +2908,17 @@ let make_test_sequence_variant_constant fail arg int_lambda_list =
   let _, (cases, actions) = as_interval fail min_int max_int int_lambda_list in
   Switcher.test_sequence arg cases actions
 
-let make_test_sequence_variant_constr loc fail arg int_lambda_list =
+let call_switcher_variant_constant loc fail arg int_lambda_list =
+  call_switcher loc fail arg min_int max_int int_lambda_list
+
+let call_switcher_variant_constr loc fail arg int_lambda_list =
   let v = Ident.create_local "variant" in
-  let _, (cases, actions) = as_interval fail min_int max_int int_lambda_list in
   Llet
     ( Alias,
       Pgenval,
       v,
       Lprim (Pfield (0, Pointer, Immutable), [ arg ], loc),
-      Switcher.test_sequence (Lvar v) cases actions )
+      call_switcher loc fail (Lvar v) min_int max_int int_lambda_list )
 
 let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)
     =
@@ -2953,16 +2968,16 @@ let combine_variant loc row arg partial ctx def (tag_lambda_list, total1, _pats)
             | Some fail -> test_int_or_block arg lam fail
           )
         | [], _ -> (
-            let lam = make_test_sequence_variant_constr loc fail arg nonconsts in
+            let lam = call_switcher_variant_constr loc fail arg nonconsts in
             (* One must not dereference integers *)
             match fail with
             | None -> lam
             | Some fail -> test_int_or_block arg fail lam
           )
         | _, _ ->
-            let lam_const = make_test_sequence_variant_constant fail arg consts
+            let lam_const = call_switcher_variant_constant loc fail arg consts
             and lam_nonconst =
-              make_test_sequence_variant_constr loc fail arg nonconsts
+              call_switcher_variant_constr loc fail arg nonconsts
             in
             test_int_or_block arg lam_const lam_nonconst
       )
