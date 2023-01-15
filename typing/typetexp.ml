@@ -58,30 +58,12 @@ module TyVarMap = Misc.Stdlib.String.Map
 let transl_modtype_longident = ref (fun _ -> assert false)
 let transl_modtype = ref (fun _ -> assert false)
 
-let create_package_mty ~fake loc env (p, l) =
-  let l =
-    List.sort
-      (fun (s1, _t1) (s2, _t2) ->
-         if s1.txt = s2.txt then
-           raise (Error (loc, env, Multiple_constraints_on_type s1.txt));
-         compare s1.txt s2.txt)
-      l
-  in
-  l,
-  List.fold_left
-    (fun mty (s, t) ->
-      let d = {ptype_name = mkloc (Longident.last s.txt) s.loc;
-               ptype_params = [];
-               ptype_cstrs = [];
-               ptype_kind = Ptype_abstract;
-               ptype_private = Asttypes.Public;
-               ptype_manifest = if fake then None else Some t;
-               ptype_attributes = [];
-               ptype_loc = loc} in
-      Ast_helper.Mty.mk ~loc
-        (Pmty_with (mty, [ Pwith_type ({ txt = s.txt; loc }, d) ]))
-    )
-    (Ast_helper.Mty.mk ~loc (Pmty_ident p))
+let sort_constraints_no_duplicates loc env l =
+  List.sort
+    (fun (s1, _t1) (s2, _t2) ->
+       if s1.txt = s2.txt then
+         raise (Error (loc, env, Multiple_constraints_on_type s1.txt));
+       compare s1.txt s2.txt)
     l
 
 (* Translation of type expressions *)
@@ -461,7 +443,7 @@ and transl_type_aux env policy styp =
       unify_var env (newvar()) ty';
       ctyp (Ttyp_poly (vars, cty)) ty'
   | Ptyp_package (p, l) ->
-      let l, _mty = create_package_mty ~fake:true styp.ptyp_loc env (p, l) in
+      let l = sort_constraints_no_duplicates styp.ptyp_loc env l in
       let ptys = List.map (fun (s, pty) ->
                              s, transl_type env policy pty
                           ) l in
