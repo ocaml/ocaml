@@ -461,9 +461,7 @@ and transl_type_aux env policy styp =
       unify_var env (newvar()) ty';
       ctyp (Ttyp_poly (vars, cty)) ty'
   | Ptyp_package (p, l) ->
-      let l, mty = create_package_mty ~fake:true styp.ptyp_loc env (p, l) in
-      let mty =
-        with_local_type_variable_scope (fun () -> !transl_modtype env mty) in
+      let l, _mty = create_package_mty ~fake:true styp.ptyp_loc env (p, l) in
       let ptys = List.map (fun (s, pty) ->
                              s, transl_type env policy pty
                           ) l in
@@ -473,7 +471,6 @@ and transl_type_aux env policy styp =
       in
       ctyp (Ttyp_package {
             pack_path = path;
-            pack_type = mty.mty_type;
             pack_fields = ptys;
             pack_txt = p;
            }) ty
