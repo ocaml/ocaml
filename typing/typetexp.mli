@@ -85,7 +85,3 @@ val transl_modtype_longident:  (* from Typemod *)
     (Location.t -> Env.t -> Longident.t -> Path.t) ref
 val transl_modtype: (* from Typemod *)
     (Env.t -> Parsetree.module_type -> Typedtree.module_type) ref
-val create_package_mty:
-    Location.t -> Env.t -> Parsetree.package_type ->
-    (Longident.t Asttypes.loc * Parsetree.core_type) list *
-      Parsetree.module_type

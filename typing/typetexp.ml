@@ -574,8 +574,6 @@ let make_fixed_univars ty =
   make_fixed_univars ty;
   Btype.unmark_type ty
 
-let create_package_mty = create_package_mty ~fake:false
-
 let globalize_used_variables env fixed =
   let r = ref [] in
   TyVarMap.iter
