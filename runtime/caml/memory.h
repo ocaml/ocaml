@@ -267,7 +267,7 @@ struct caml__roots_block {
    Your function may raise an exception or return a [value] with the
    [CAMLreturn] macro.  Its argument is simply the [value] returned by
    your function.  Do NOT directly return a [value] with the [return]
-   keyword.  If your function returns void, use [CAMLreturn0].
+   keyword. If your function returns void, use [CAMLreturn0].
    If you un-register the local roots (i.e. undo the effects of the [CAMLparam*]
    and [CAMLlocal] macros) without returning immediately, use [CAMLdrop].
 
