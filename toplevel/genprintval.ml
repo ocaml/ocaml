@@ -384,9 +384,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               try
                 let decl = Env.find_type path env in
                 match decl with
-                | {type_kind = Type_abstract; type_manifest = None} ->
+                | {type_kind = Type_abstract _; type_manifest = None} ->
                     Oval_stuff "<abstr>"
-                | {type_kind = Type_abstract; type_manifest = Some body} ->
+                | {type_kind = Type_abstract _; type_manifest = Some body} ->
                     tree_of_val depth obj
                       (instantiate_type env decl.type_params ty_list body)
                 | {type_kind = Type_variant (constr_list,rep)} ->

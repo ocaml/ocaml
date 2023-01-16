@@ -353,7 +353,7 @@ let in_pervasives p =
 let is_datatype decl=
   match decl.type_kind with
     Type_record _ | Type_variant _ | Type_open -> true
-  | Type_abstract -> false
+  | Type_abstract _ -> false
 
 
                   (**********************************************)
@@ -555,7 +555,7 @@ let closed_type_decl decl =
   try
     List.iter mark_type decl.type_params;
     begin match decl.type_kind with
-      Type_abstract ->
+      Type_abstract _ ->
         ()
     | Type_variant (v, _rep) ->
         List.iter
@@ -885,7 +885,7 @@ let rec lower_contravariant env var_level visited contra ty =
          try
            let typ = Env.find_type path env in
            typ.type_variance,
-           typ.type_kind = Type_abstract
+           decl_is_abstract typ
           with Not_found ->
             (* See testsuite/tests/typing-missing-cmi-2 for an example *)
             List.map (fun _ -> Variance.unknown) tyl,
@@ -1234,7 +1234,7 @@ let new_local_type ?(loc = Location.none) ?manifest_and_scope () =
   {
     type_params = [];
     type_arity = 0;
-    type_kind = Type_abstract;
+    type_kind = Types.kind_abstract;
     type_private = Public;
     type_manifest = manifest;
     type_variance = [];
@@ -1243,7 +1243,6 @@ let new_local_type ?(loc = Location.none) ?manifest_and_scope () =
     type_expansion_scope = expansion_scope;
     type_loc = loc;
     type_attributes = [];
-    type_immediate = Unknown;
     type_unboxed_default = false;
     type_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
   }
@@ -1290,8 +1289,7 @@ let instance_parameterized_type ?keep_names sch_args sch =
   )
 
 let map_kind f = function
-  | Type_abstract -> Type_abstract
-  | Type_open -> Type_open
+  | (Type_abstract _ | Type_open) as k -> k
   | Type_variant (cl, rep) ->
       Type_variant (
         List.map
@@ -1678,7 +1676,7 @@ let rec extract_concrete_typedecl env ty =
       begin match Env.find_type p env with
       | exception Not_found -> May_have_typedecl
       | decl ->
-          if decl.type_kind <> Type_abstract then Typedecl(p, p, decl)
+          if not (decl_is_abstract decl) then Typedecl(p, p, decl)
           else begin
             match try_expand_safe env ty with
             | exception Cannot_expand -> May_have_typedecl
@@ -1766,7 +1764,7 @@ let generic_abbrev env path =
 let generic_private_abbrev env path =
   try
     match Env.find_type path env with
-      {type_kind = Type_abstract;
+      {type_kind = Type_abstract _;
        type_private = Private;
        type_manifest = Some body} ->
          get_level body = generic_level
@@ -2217,7 +2215,7 @@ let non_aliasable p decl =
 let is_instantiable env p =
   try
     let decl = Env.find_type p env in
-    decl.type_kind = Type_abstract &&
+    decl_is_abstract decl &&
     decl.type_private = Public &&
     decl.type_arity = 0 &&
     decl.type_manifest = None &&
@@ -2400,9 +2398,9 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
           mcomp_variant_description type_pairs env v1 v2
       | Type_open, Type_open ->
           mcomp_list type_pairs env tl1 tl2
-      | Type_abstract, Type_abstract -> ()
-      | Type_abstract, _ when not (non_aliasable p1 decl)-> ()
-      | _, Type_abstract when not (non_aliasable p2 decl') -> ()
+      | Type_abstract _, Type_abstract _ -> ()
+      | Type_abstract _, _ when not (non_aliasable p1 decl)-> ()
+      | _, Type_abstract _ when not (non_aliasable p2 decl') -> ()
       | _ -> raise Incompatible
   with Not_found -> ()
 
@@ -2538,7 +2536,7 @@ let complete_type_list ?(allow_absent=false) env fl1 lv2 mty2 fl2 =
     | (n, _) :: nl, _ ->
         let lid = concat_longident (Longident.Lident "Pkg") n in
         match Env.find_type_by_name lid env' with
-        | (_, {type_arity = 0; type_kind = Type_abstract;
+        | (_, {type_arity = 0; type_kind = Type_abstract _;
                type_private = Public; type_manifest = Some t2}) ->
             begin match nondep_instance env' lv2 id2 t2 with
             | t -> (n, t) :: complete nl fl2
@@ -2548,7 +2546,7 @@ let complete_type_list ?(allow_absent=false) env fl1 lv2 mty2 fl2 =
                 else
                   raise Exit
             end
-        | (_, {type_arity = 0; type_kind = Type_abstract;
+        | (_, {type_arity = 0; type_kind = Type_abstract _;
                type_private = Public; type_manifest = None})
           when allow_absent ->
             complete nl fl2
@@ -5286,7 +5284,7 @@ let nondep_type_decl env mid is_covariant decl =
     let params = List.map (nondep_type_rec env mid) decl.type_params in
     let tk =
       try map_kind (nondep_type_rec env mid) decl.type_kind
-      with Nondep_cannot_erase _ when is_covariant -> Type_abstract
+      with Nondep_cannot_erase _ when is_covariant -> Types.kind_abstract
     and tm, priv =
       match decl.type_manifest with
       | None -> None, decl.type_private
@@ -5316,7 +5314,6 @@ let nondep_type_decl env mid is_covariant decl =
       type_expansion_scope = Btype.lowest_level;
       type_loc = decl.type_loc;
       type_attributes = decl.type_attributes;
-      type_immediate = decl.type_immediate;
       type_unboxed_default = decl.type_unboxed_default;
       type_uid = decl.type_uid;
     }
@@ -5453,17 +5450,45 @@ let same_constr env t1 t2 =
 let () =
   Env.same_constr := same_constr
 
-let immediacy env typ =
-   match get_desc typ with
-  | Tconstr(p, _args, _abbrev) ->
-    begin try
-      let type_decl = Env.find_type p env in
-      type_decl.type_immediate
-    with Not_found -> Type_immediacy.Unknown
-    (* This can happen due to e.g. missing -I options,
-       causing some .cmi files to be unavailable.
-       Maybe we should emit a warning. *)
+(* We use expand_head_opt version of expand_head to get access
+   to the manifest type of private abbreviations. *)
+let rec get_unboxed_type_representation env ty fuel =
+  if fuel < 0 then ty else
+  let ty = expand_head_opt env ty in
+  match get_desc ty with
+  | Tconstr (p, args, _) ->
+    begin match Env.find_type p env with
+    | exception Not_found -> ty
+    | decl ->
+      begin match find_unboxed_type decl with
+      | None -> ty
+      | Some ty2 ->
+        let ty2 = match get_desc ty2 with Tpoly (t, _) -> t | _ -> ty2 in
+        get_unboxed_type_representation env
+          (apply env decl.type_params ty2 args) (fuel - 1)
+      end
     end
+  | _ -> ty
+
+let get_unboxed_type_representation env ty =
+  (* Do not give too much fuel: PR#7424 *)
+  get_unboxed_type_representation env ty 100
+
+let kind_immediacy = function
+  | Type_open | Type_record _ -> Type_immediacy.Unknown
+  | Type_abstract { immediate } -> immediate
+  | Type_variant (cstrs, _) ->
+     if List.exists (fun c -> c.Types.cd_args <> Types.Cstr_tuple []) cstrs
+     then Type_immediacy.Unknown
+     else Type_immediacy.Always
+
+let type_immediacy_head env ty =
+  match get_desc ty with
+  | Tconstr(p, _args, _abbrev) ->
+     begin match Env.find_type p env with
+     | { type_kind = k; _ } -> kind_immediacy k
+     | exception Not_found -> Type_immediacy.Unknown
+     end
   | Tvariant row ->
       (* if all labels are devoid of arguments, not a pointer *)
       if
@@ -5478,3 +5503,20 @@ let immediacy env typ =
       else
         Type_immediacy.Always
   | _ -> Type_immediacy.Unknown
+
+let check_type_immediate env ty imm =
+  match Type_immediacy.coerce (type_immediacy_head env ty) ~as_:imm with
+  | Ok () -> Ok ()
+  | Error _ ->
+    let ty = get_unboxed_type_representation env ty in
+    Type_immediacy.coerce (type_immediacy_head env ty) ~as_:imm
+
+let check_decl_immediate env decl imm =
+  match find_unboxed_type decl, decl.type_manifest with
+  | Some arg, _ -> check_type_immediate env arg imm
+  | None, None -> Type_immediacy.coerce (kind_immediacy decl.type_kind) ~as_:imm
+  | None, Some ty ->
+     (* Check the kind first, in case of missing cmis *)
+     match Type_immediacy.coerce (kind_immediacy decl.type_kind) ~as_:imm with
+     | Ok () -> Ok ()
+     | _ -> check_type_immediate env ty imm

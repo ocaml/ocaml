@@ -450,7 +450,6 @@ val get_current_level: unit -> int
 val wrap_trace_gadt_instances: Env.t -> ('a -> 'b) -> 'a -> 'b
 val reset_reified_var_counter: unit -> unit
 
-val immediacy : Env.t -> type_expr -> Type_immediacy.t
 
 (* Stubs *)
 val package_subtype :
@@ -459,3 +458,13 @@ val package_subtype :
 
 (* Raises [Incompatible] *)
 val mcomp : Env.t -> type_expr -> type_expr -> unit
+
+val get_unboxed_type_representation : Env.t -> type_expr -> type_expr
+
+val kind_immediacy : type_decl_kind -> Type_immediacy.t
+val check_decl_immediate :
+  Env.t -> type_declaration -> Type_immediacy.t ->
+  (unit, Type_immediacy.Violation.t) result
+val check_type_immediate :
+  Env.t -> type_expr -> Type_immediacy.t ->
+  (unit, Type_immediacy.Violation.t) result

@@ -846,7 +846,7 @@ let pats_of_type env ty =
           [make_pat (Tpat_tuple (omegas (List.length tl))) ty env]
       | _ -> [omega]
       end
-  | Typedecl (_, _, {type_kind = Type_abstract | Type_open})
+  | Typedecl (_, _, {type_kind = Type_abstract _ | Type_open})
   | May_have_typedecl -> [omega]
 
 let get_variant_constructors env ty =

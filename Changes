@@ -69,6 +69,11 @@ Working version
 - #11879: Bugfix for Ctype.nondep_type
   (Stephen Dolan, review by Gabriel Scherer)
 
+- #10017, #10041, #11841: expand aliases if necessary during immediacy
+  computation. This fixes issues where the (now removed) `type_immediate` field
+  in declarations could become stale after substitutions.
+  (Stephen Dolan and Chris Casinghino, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #8998, #11321, #11430: change mangling of OCaml long identifiers
