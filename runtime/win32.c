@@ -415,7 +415,7 @@ CAMLexport void caml_expand_command_line(int * argcp, wchar_t *** argvp)
 CAMLexport int caml_read_directory(wchar_t * dirname,
                                    struct ext_table * contents)
 {
-  size_t dirnamelen, xdirnamelen;
+  size_t dirnamelen;
   wchar_t * template;
   intptr_t h;
   struct _wfinddata_t fileinfo;
@@ -425,12 +425,11 @@ CAMLexport int caml_read_directory(wchar_t * dirname,
   if (dirnamelen > 0 &&
       (dirname[dirnamelen - 1] == L'/'
        || dirname[dirnamelen - 1] == L'\\'
-       || dirname[dirnamelen - 1] == L':')) {
+       || dirname[dirnamelen - 1] == L':'))
     template = caml_stat_wcsconcat(2, dirname, L"*.*");
-    xdirnamelen = dirnamelen;
-  } else {
+  else {
     template = caml_stat_wcsconcat(2, dirname, L"\\*.*");
-    xdirnamelen = dirnamelen + 1;
+    dirnamelen++; /* template[dirnamelen] always points after the backslash */
   }
   h = _wfindfirst(template, &fileinfo);
   if (h == -1) {
@@ -438,7 +437,7 @@ CAMLexport int caml_read_directory(wchar_t * dirname,
        [GetFileAttributes()] on [template] without the trailing [*.*].
        The added backslash at the end gives us the expected result (-1)
        on pathological paths like [...]. */
-    template[xdirnamelen] = L'\0';
+    template[dirnamelen] = L'\0';
     res = errno == ENOENT &&
           GetFileAttributes(template) != INVALID_FILE_ATTRIBUTES ? 0 : -1;
     caml_stat_free(template);
