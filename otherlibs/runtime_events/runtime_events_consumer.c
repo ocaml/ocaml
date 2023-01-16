@@ -790,9 +790,27 @@ static value user_events_find_callback_list_for_event_type(value callbacks_root,
 
   uintnat event_index;
   event_type = Field(event, 2);
+  /* we seek to obtain the event type ID
+
+  module Type = struct
+    type 'a custom = {
+      serialize: bytes -> 'a -> int;
+      deserialize: bytes -> int -> 'a;
+      id: int;
+    }
+
+    type 'a t =
+    | Unit : unit t
+    | Int : int t
+    | Span : span t
+    | Custom : 'a custom -> 'a t
+  end
+  */
   if (Is_block(event_type)) {
+    // Custom
     event_index = Int_val(Field(Field(event_type, 0), 2));
   } else {
+    // Unit | Int | Span
     event_index = Int_val(event_type);
   }
 
@@ -865,8 +883,9 @@ static value caml_runtime_events_user_resolve_cached(
   // we never encountered this ID
   event = caml_runtime_events_user_resolve(event_name, event_type);
 
-  if (event_id >= len) { // TODO/ what's the limit ?
+  if (event_id >= len) {
     // we grow the cache to fit the event
+    // maximum ID is RUNTIME_EVENTS_MAX_CUSTOM_EVENTS - 1
     uintnat new_len = len * 2;
     while (event_id >= new_len) {
       new_len *= 2;
@@ -874,18 +893,22 @@ static value caml_runtime_events_user_resolve_cached(
 
     cache_resized = caml_alloc(new_len, 0);
 
+    // copy values from the cache to the new array
     for (uintnat i = 0; i < len; i++) {
       Field(cache_resized, i) = Field(cache, i);
     }
 
+    // write None for the rest of the values
     for (uintnat i = len; i < new_len; i++) {
       Field(cache_resized, i) = Val_none;
     }
 
+    // update the wrapper structure
     Store_field(wrapper_root, 2, cache_resized);
     cache = cache_resized;
   }
 
+  // store event in the cache
   Store_field(cache, event_id, event);
 
   CAMLreturn(event);
