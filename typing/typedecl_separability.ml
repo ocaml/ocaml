@@ -56,7 +56,7 @@ let structure : type_definition -> type_structure = fun def ->
       | Some type_expr -> Synonym type_expr
       end
   | Type_record _ | Type_variant _ ->
-      begin match decl_is_unboxed def with
+      begin match find_unboxed_type def with
       | None -> Algebraic
       | Some ty ->
         let params =

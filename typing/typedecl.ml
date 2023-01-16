@@ -1548,8 +1548,8 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
   && sdecl.ptype_private = Private then
     Location.deprecated loc "spurious use of private";
   let type_kind, type_unboxed_default =
-    (* Here, `man = None` indicates we have a "fake" module type built by
-       [Typetexp.create_package_mty] for a constraint on a package type. *)
+    (* Here, `man = None` indicates we have a "fake" with constraint built by
+       [Typetexp.create_package_mty] for a package type. *)
     if arity_ok && man <> None then
       sig_decl.type_kind, sig_decl.type_unboxed_default
     else

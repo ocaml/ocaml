@@ -5460,7 +5460,7 @@ let rec get_unboxed_type_representation env ty fuel =
     begin match Env.find_type p env with
     | exception Not_found -> ty
     | decl ->
-      begin match decl_is_unboxed decl with
+      begin match find_unboxed_type decl with
       | None -> ty
       | Some ty2 ->
         let ty2 = match get_desc ty2 with Tpoly (t, _) -> t | _ -> ty2 in
@@ -5512,7 +5512,7 @@ let check_type_immediate env ty imm =
     Type_immediacy.coerce (type_immediacy_head env ty) ~as_:imm
 
 let check_decl_immediate env decl imm =
-  match decl_is_unboxed decl, decl.type_manifest with
+  match find_unboxed_type decl, decl.type_manifest with
   | Some arg, _ -> check_type_immediate env arg imm
   | None, None -> Type_immediacy.coerce (kind_immediacy decl.type_kind) ~as_:imm
   | None, Some ty ->
