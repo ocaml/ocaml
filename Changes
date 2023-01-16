@@ -292,6 +292,9 @@ Working version
 - #11847, #11849, #11851: small refactorings in the type checker
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
+- #????: refactor `type_label_exp` in the type checker
+  (Gabriel Scherer, review by ???)
+
 - #11027: Separate typing counter-examples from type_pat into retype_pat;
   type_pat is no longer in CPS.
   (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
