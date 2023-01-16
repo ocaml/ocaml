@@ -183,7 +183,8 @@ module User : sig
 
   val tag : 'a t -> tag
   (** [tag t] is the associated tag of event [t], when it is known.
-      Events can be unknown if the event has not been *)
+      An event can be unknown if it was not registered in the consumer
+      program. *)
 
 end
 
@@ -220,7 +221,7 @@ module Callbacks : sig
                         (int -> Timestamp.t -> 'a User.t -> 'a -> unit) ->
                         t -> t
   (** [add_user_event ty callback t] extends [t] to additionally subscribe to
-      user events of type [ty], when such an event happen, [callback] is called
+      user events of type [ty]. When such an event happens, [callback] is called
       with the corresponding event and payload. *)
 end
 
