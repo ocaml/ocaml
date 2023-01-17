@@ -86,7 +86,7 @@ type exttype =
 let machtype_of_exttype = function
   | XInt -> typ_int
   | XInt32 -> typ_int
-  | XInt64 -> if Arch.size_int = 4 then [|Int;Int|] else typ_int
+  | XInt64 -> typ_int
   | XFloat -> typ_float
 
 let machtype_of_exttype_list xtl =
