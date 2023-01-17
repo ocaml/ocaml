@@ -904,6 +904,9 @@ OCaml 5.0
   socket and deadlock the parent.
   (Antonin Décimo, review by Xavier Leroy)
 
+- #11150, #11207: Avoid recomputation in Typedecl.check_wellfounded
+  (Jacques Garrigue, report by Boris Yakobowski, review by Gabriel Scherer)
+
 - #11186, #11188: Fix composition of coercions with aliases
   (Vincent Laviron, report and review by Leo White)
 

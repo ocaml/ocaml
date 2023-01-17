@@ -652,70 +652,64 @@ let check_abbrev env sdecl (id, decl) =
    - if -rectypes is not used, we only allow cycles in the type graph
      if they go through an object or polymorphic variant type *)
 
-let check_well_founded env loc path to_check ty =
-  let visited = ref TypeMap.empty in
-  let rec check ty0 parents trace ty =
+let check_well_founded env loc path to_check visited ty0 =
+  let rec check parents trace ty =
     if TypeSet.mem ty parents then begin
       (*Format.eprintf "@[%a@]@." Printtyp.raw_type_expr ty;*)
       let err =
-        let reaching_path =
+        let reaching_path, rec_abbrev =
           (* The reaching trace is accumulated in reverse order, we
              reverse it to get a reaching path. *)
           match trace with
           | [] -> assert false
-          | trace ->
-              List.rev trace in
-        if match get_desc ty0 with
-          | Tconstr (p, _, _) -> Path.same p path
-          | _ -> false
+          | Expands_to (ty1, _) :: trace when (match get_desc ty1 with
+              Tconstr (p,_,_) -> Path.same p path | _ -> false) ->
+                List.rev trace, true
+          | trace -> List.rev trace, false
+        in
+        if rec_abbrev
         then Recursive_abbrev (Path.name path, env, reaching_path)
         else Cycle_in_def (Path.name path, env, reaching_path)
       in raise (Error (loc, err))
     end;
     let (fini, parents) =
       try
+        (* Map each node to the set of its already checked parents *)
         let prev = TypeMap.find ty !visited in
         if TypeSet.subset parents prev then (true, parents) else
-        (false, TypeSet.union parents prev)
+        let parents = TypeSet.union parents prev in
+        visited := TypeMap.add ty parents !visited;
+        (false, parents)
       with Not_found ->
+        visited := TypeMap.add ty parents !visited;
         (false, parents)
     in
     if fini then () else
     let rec_ok =
       match get_desc ty with
-        Tconstr(p,_,_) ->
+      | Tconstr(p,_,_) ->
           !Clflags.recursive_types && Ctype.is_contractive env p
       | Tobject _ | Tvariant _ -> true
       | _ -> !Clflags.recursive_types
     in
-    let visited' = TypeMap.add ty parents !visited in
-    let arg_exn =
-      try
-        visited := visited';
-        let parents =
-          if rec_ok then TypeSet.empty else TypeSet.add ty parents in
-        Btype.iter_type_expr (check_subtype ty0 parents trace ty) ty;
-        None
-      with e ->
-        visited := visited'; Some e
-    in
+    if rec_ok then () else
+    let parents = TypeSet.add ty parents in
     match get_desc ty with
-    | Tconstr(p, _, _) when arg_exn <> None || to_check p ->
-        if to_check p then Option.iter raise arg_exn
-        else Btype.iter_type_expr (check_subtype ty0 TypeSet.empty trace ty) ty;
-        begin try
-          let ty' = Ctype.try_expand_once_opt env ty in
-          let ty0 = if TypeSet.is_empty parents then ty else ty0 in
-          check ty0 (TypeSet.add ty parents) (Expands_to (ty, ty') :: trace) ty'
-        with
-          Ctype.Cannot_expand -> Option.iter raise arg_exn
+    | Tconstr(p, tyl, _) ->
+        let to_check = to_check p in
+        if to_check then List.iter (check_subtype parents trace ty) tyl;
+        begin match Ctype.try_expand_once_opt env ty with
+        | ty' -> check parents (Expands_to (ty, ty') :: trace) ty'
+        | exception Ctype.Cannot_expand ->
+            if not to_check then List.iter (check_subtype parents trace ty) tyl
         end
-    | _ -> Option.iter raise arg_exn
-  and check_subtype ty0 parents trace outer_ty inner_ty =
-      check ty0 parents (Contains (outer_ty, inner_ty) :: trace) inner_ty
+    | _ ->
+        Btype.iter_type_expr (check_subtype parents trace ty) ty
+  and check_subtype parents trace outer_ty inner_ty =
+      check parents (Contains (outer_ty, inner_ty) :: trace) inner_ty
   in
   let snap = Btype.snapshot () in
-  try Ctype.wrap_trace_gadt_instances env (check ty TypeSet.empty []) ty
+  try Ctype.wrap_trace_gadt_instances env (check TypeSet.empty []) ty0
   with Ctype.Escape _ ->
     (* Will be detected by check_regularity *)
     Btype.backtrack snap
@@ -723,13 +717,22 @@ let check_well_founded env loc path to_check ty =
 let check_well_founded_manifest env loc path decl =
   if decl.type_manifest = None then () else
   let args = List.map (fun _ -> Ctype.newvar()) decl.type_params in
-  check_well_founded env loc path (Path.same path) (Ctype.newconstr path args)
+  let visited = ref TypeMap.empty in
+  check_well_founded env loc path (Path.same path) visited
+    (Ctype.newconstr path args)
 
 let check_well_founded_decl env loc path decl to_check =
   let open Btype in
+  let visited = ref TypeMap.empty in
+  let checked = ref TypeSet.empty in
   let it =
-    {type_iterators with
-     it_type_expr = (fun _ -> check_well_founded env loc path to_check)} in
+    {type_iterators with it_type_expr =
+     (fun self ty ->
+       if TypeSet.mem ty !checked then () else begin
+         check_well_founded env loc path to_check visited ty;
+         checked := TypeSet.add ty !checked;
+         self.it_do_type_expr self ty
+       end)} in
   it.it_type_declaration it (Ctype.generic_instance_declaration decl)
 
 (* Check for non-regular abbreviations; an abbreviation
