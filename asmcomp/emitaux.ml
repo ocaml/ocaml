@@ -418,10 +418,6 @@ let mk_env f : Emitenv.per_function_env =
     jumptables = [];
     float_literals = [];
     int_literals = [];
-    offset_literals = [];
-    gotrel_literals = [];
-    symbol_literals = [];
-    size_literals = 0;
   }
 
 type preproc_stack_check_result =
