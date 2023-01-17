@@ -95,6 +95,9 @@ Working version
   (Nicolás Ojeda Bär, Gabriel Scherer, Alain Frisch, review by Gabriel Scherer,
   Alain Frisch and Nathanaëlle Courant)
 
+- #11904: Remove arm, i386 native-code backends.
+  (Nicolás Ojeda Bär)
+
 ### Standard library:
 - #11883, #11884: Update documentation for In_channel and Out_channel
   with examples and sections to group related functions.
