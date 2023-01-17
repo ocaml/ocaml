@@ -50,7 +50,7 @@ and binary_part =
   | Partial_signature_item of signature_item
   | Partial_module_type of module_type
 
-type uid_fragments =
+type uid_fragment =
   | Class_declaration of class_declaration
   | Class_description of class_description
   | Class_type_declaration of class_type_declaration
@@ -78,7 +78,7 @@ type cmt_infos = {
   cmt_imports : crcs;
   cmt_interface_digest : Digest.t option;
   cmt_use_summaries : bool;
-  cmt_uid_to_loc : uid_fragments Shape.Uid.Tbl.t;
+  cmt_uid_to_loc : uid_fragment Shape.Uid.Tbl.t;
   cmt_impl_shape : Shape.t option; (* None for mli *)
 }
 
@@ -125,7 +125,7 @@ val set_saved_types : binary_part list -> unit
 val record_value_dependency:
   Types.value_description -> Types.value_description -> unit
 
-val register_uid : Shape.Uid.t -> uid_fragments -> unit
+val register_uid : Shape.Uid.t -> uid_fragment -> unit
 
 (*
 
