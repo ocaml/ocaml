@@ -5644,16 +5644,20 @@ let report_this_function ppf funct =
 let report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
     ~extra_arg_loc loc =
   let open Location in
+  let cnum_offset off (pos : Lexing.position) =
+    { pos with pos_cnum = pos.pos_cnum + off }
+  in
   let app_loc =
     (* Span the application, including the extra argument. *)
     { loc_start = loc.loc_start;
       loc_end = extra_arg_loc.loc_end;
       loc_ghost = false }
   and tail_loc =
-    (* Possible location for a ';'. *)
-    let loc_start = previous_arg_loc.loc_end in
-    { loc_start;
-      loc_end = { loc_start with pos_cnum = loc_start.pos_cnum + 1 };
+    (* Possible location for a ';'. The location is widened to overlap the end
+       of the argument. *)
+    let arg_end = previous_arg_loc.loc_end in
+    { loc_start = cnum_offset ~-1 arg_end;
+      loc_end = cnum_offset ~+1 arg_end;
       loc_ghost = false }
   in
   let sub = [

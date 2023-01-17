@@ -14,9 +14,9 @@ Lines 4-5, characters 2-15:
 5 |   print_endline......
 Error: The function 'print_lines' has type string list -> unit
        It is applied to too many arguments
-Line 4, characters 56-57:
- |   print_lines (List.map string_of_int [ 1; 2; 3; 4; 5 ])
-                                                           ^
+Line 4, characters 55-57:
+4 |   print_lines (List.map string_of_int [ 1; 2; 3; 4; 5 ])
+                                                           ^^
   Hint: Did you forget a ';'?
 Line 5, characters 2-15:
 5 |   print_endline "foo"
@@ -35,9 +35,9 @@ Line 4, characters 2-9:
       ^^^^^^^
 Error: The function 't.f' has type int -> unit
        It is applied to too many arguments
-Line 4, characters 7-8:
+Line 4, characters 6-8:
 4 |   t.f 1 2
-           ^
+          ^^
   Hint: Did you forget a ';'?
 Line 4, characters 8-9:
 4 |   t.f 1 2
@@ -53,9 +53,9 @@ Line 2, characters 2-9:
       ^^^^^^^
 Error: The function 't#f' has type int -> unit
        It is applied to too many arguments
-Line 2, characters 7-8:
+Line 2, characters 6-8:
 2 |   t#f 1 2
-           ^
+          ^^
   Hint: Did you forget a ';'?
 Line 2, characters 8-9:
 2 |   t#f 1 2
@@ -74,9 +74,9 @@ Line 4, characters 15-20:
                    ^^^^^
 Error: The function 'a' has type 'a -> unit
        It is applied to too many arguments
-Line 4, characters 18-19:
+Line 4, characters 17-19:
 4 |     method b = a 1 2
-                      ^
+                     ^^
   Hint: Did you forget a ';'?
 Line 4, characters 19-20:
 4 |     method b = a 1 2
