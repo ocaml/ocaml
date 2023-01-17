@@ -156,25 +156,128 @@ module Timestamp = struct
     t
 end
 
-module Callbacks = struct
-    (* these record callbacks are only called from C code in the runtime
-       so we suppress the unused field warning *)
-    type[@warning "-unused-field"] t = {
-      runtime_begin: (int -> Timestamp.t -> runtime_phase -> unit) option;
-      runtime_end: (int -> Timestamp.t -> runtime_phase -> unit) option;
-      runtime_counter: (int -> Timestamp.t -> runtime_counter
-                        -> int -> unit) option;
-      alloc: (int -> Timestamp.t -> int array -> unit) option;
-      lifecycle: (int -> Timestamp.t -> lifecycle
-                  -> int option -> unit) option;
-      lost_events: (int -> int -> unit) option
-    }
+module Type = struct
 
-    let create ?runtime_begin ?runtime_end ?runtime_counter ?alloc ?lifecycle
-               ?lost_events () =
-      { runtime_begin; runtime_end; runtime_counter;
-          alloc; lifecycle; lost_events}
-  end
+  (* the data structure is primarily managed in C *)
+  type[@warning "-unused-field"] 'a custom = {
+    serialize: bytes -> 'a -> int;
+    deserialize: bytes -> int -> 'a;
+    (* id is used for the callback table *)
+    id: int;
+  }
+
+  type span = Begin | End
+
+  type 'a t =
+  | Unit : unit t
+  | Int : int t
+  | Span : span t
+  | Custom : 'a custom -> 'a t
+
+  let unit = Unit
+
+  let span = Span
+
+  let int = Int
+
+  let next_id = ref 3
+
+  let register ~encode ~decode =
+    incr next_id;
+    Custom { serialize = encode; deserialize = decode; id = !next_id - 1}
+
+  let id: type a. a t -> int = function
+    | Unit -> 0
+    | Int -> 1
+    | Span -> 2
+    | Custom {id; _} -> id
+
+end
+
+module User = struct
+  type tag = ..
+
+  (* the UNK tag is used when an unknown event of a known type (unit, int, span)
+     is received *)
+  type tag += UNK : tag
+
+  (* the data structure is primarily managed in C *)
+  type [@warning "-unused-field"] 'a t = {
+    id: int;
+    name: string;
+    typ: 'a Type.t;
+    tag: tag option;
+  }
+
+  external user_register : string -> tag option -> 'a Type.t -> 'a t
+                         = "caml_runtime_events_user_register"
+  external user_write : 'a t -> 'a -> unit = "caml_runtime_events_user_write"
+
+  let register name tag typ = user_register name (Some tag) typ
+
+  let write event value = user_write event value
+
+  let name ev = ev.name
+
+  let tag ev = Option.value ~default:UNK ev.tag
+end
+
+module Callbacks = struct
+
+  type 'a callback = int -> Timestamp.t -> 'a User.t -> 'a -> unit
+  (* Callbacks are bound to a specific event type *)
+  type any_callback = U : 'a callback -> any_callback
+
+  (* these record callbacks are only called from C code in the runtime
+      so we suppress the unused field warning *)
+  type[@warning "-unused-field"] t = {
+    runtime_begin: (int -> Timestamp.t -> runtime_phase -> unit) option;
+    runtime_end: (int -> Timestamp.t -> runtime_phase -> unit) option;
+    runtime_counter: (int -> Timestamp.t -> runtime_counter
+                      -> int -> unit) option;
+    alloc: (int -> Timestamp.t -> int array -> unit) option;
+    lifecycle: (int -> Timestamp.t -> lifecycle
+                -> int option -> unit) option;
+    lost_events: (int -> int -> unit) option;
+    (* user event callbacks is an array containing at each indice [i] a list
+        of functions to call when an event of type id [i] happen *)
+    user_events: any_callback list array;
+  }
+
+  let create ?runtime_begin ?runtime_end ?runtime_counter ?alloc ?lifecycle
+             ?lost_events () =
+    { runtime_begin; runtime_end; runtime_counter;
+        alloc; lifecycle; lost_events; user_events = Array.make 1 [] }
+
+
+  (* returns an array that is sufficiently large to contain a value of given
+     index *)
+  let fit_or_grow array index =
+    let size = Array.length array in
+    if index < size then
+      (* array is large enough *)
+      array
+    else
+      (* array is too small. we resize it by finding the power of two that is
+         big enough to contain the index *)
+      let rec find_new_size sz =
+        if index < sz then
+          sz
+        else
+          find_new_size (2 * sz)
+      in
+      let new_size = find_new_size size in
+      let new_array = Array.make new_size [] in
+      Array.blit array 0 new_array 0 size;
+      new_array
+
+  let add_user_event ty callback t =
+    let id = Type.id ty in
+    let user_events = fit_or_grow t.user_events id in
+    user_events.(id) <- U callback :: user_events.(id);
+    {t with user_events}
+
+end
 
 external start : unit -> unit = "caml_runtime_events_start"
 external pause : unit -> unit = "caml_runtime_events_pause"
