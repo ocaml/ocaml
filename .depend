@@ -2585,7 +2585,6 @@ asmcomp/cmmgen.cmo : \
     middle_end/clambda.cmi \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi \
-    asmcomp/arch.cmi \
     asmcomp/afl_instrument.cmi \
     asmcomp/cmmgen.cmi
 asmcomp/cmmgen.cmx : \
@@ -2605,7 +2604,6 @@ asmcomp/cmmgen.cmx : \
     middle_end/clambda.cmx \
     middle_end/backend_var.cmx \
     parsing/asttypes.cmi \
-    asmcomp/arch.cmx \
     asmcomp/afl_instrument.cmx \
     asmcomp/cmmgen.cmi
 asmcomp/cmmgen.cmi : \
