@@ -186,10 +186,6 @@ let dwarf_register_numbers ~reg_class =
 
 let stack_ptr_dwarf_register_number = 15
 
-(* Volatile registers: none *)
-
-let regs_are_volatile _rs = false
-
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_call =
