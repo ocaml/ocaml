@@ -247,20 +247,33 @@ module Callbacks = struct
   let create ?runtime_begin ?runtime_end ?runtime_counter ?alloc ?lifecycle
              ?lost_events () =
     { runtime_begin; runtime_end; runtime_counter;
-        alloc; lifecycle; lost_events; user_events = Array.make 2 [] }
+        alloc; lifecycle; lost_events; user_events = Array.make 1 [] }
+
+
+  (* returns an array that is sufficiently large to contain a value of given
+     index *)
+  let fit_or_grow array index =
+    let size = Array.length array in
+    if index < size then
+      (* array is large enough *)
+      array
+    else
+      (* array is too small. we resize it by finding the power of two that is
+         big enough to contain the index *)
+      let rec find_new_size sz =
+        if index < sz then
+          sz
+        else
+          find_new_size (2 * sz)
+      in
+      let new_size = find_new_size size in
+      let new_array = Array.make new_size [] in
+      Array.blit array 0 new_array 0 size;
+      new_array
 
   let add_user_event ty callback t =
-    let cur_max_id = Array.length t.user_events - 1 in
     let id = Type.id ty in
-    let user_events =
-      if id > cur_max_id then
-        (* we need to resize the array. TODO maybe double the size ? *)
-        let delta = id - cur_max_id in
-        let extra = Array.make delta [] in
-        Array.append t.user_events extra
-      else
-        t.user_events
-    in
+    let user_events = fit_or_grow t.user_events id in
     user_events.(id) <- U callback :: user_events.(id);
     {t with user_events}
 
