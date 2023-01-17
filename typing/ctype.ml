@@ -2497,8 +2497,7 @@ let eq_package_path env p1 p2 =
 let nondep_type' = ref (fun _ _ _ -> assert false)
 let package_subtype = ref (fun _ _ _ _ _ -> assert false)
 
-exception Nondep_cannot_erase of Ident.t
-
+exception Nondep_cannot_erase of Ident.Set.t
 let rec concat_longident lid1 =
   let open Longident in
   function
@@ -5189,7 +5188,8 @@ let nondep_variants = TypeHash.create 17
 let clear_hash ()   =
   TypeHash.clear nondep_hash; TypeHash.clear nondep_variants
 
-let rec nondep_type_rec ?(expand_private=false) env ids ty =
+let rec nondep_type_rec ?(expanded=Ident.Set.empty) ?(expand_private=false)
+    env ids ty =
   let try_expand env t =
     if expand_private then try_expand_safe_opt env t
     else try_expand_safe env t
@@ -5207,36 +5207,43 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
             (* First, try keeping the same type constructor p *)
             match Path.find_free_opt ids p with
             | Some id ->
-               raise (Nondep_cannot_erase id)
+               raise (Nondep_cannot_erase (Ident.Set.add id expanded))
             | None ->
-               Tconstr(p, List.map (nondep_type_rec env ids) tl, ref Mnil)
-          with (Nondep_cannot_erase _) as exn ->
-            (* If that doesn't work, try expanding abbrevs *)
-            try Tlink (nondep_type_rec ~expand_private env ids
-                         (try_expand env (newty2 ~level:(get_level ty) desc)))
+                let args = List.map (nondep_type_rec ~expanded env ids) tl in
+                Tconstr(p, args, ref Mnil)
+          with (Nondep_cannot_erase conflicting_ids) as exn ->
+          (* If that doesn't work, try expanding abbrevs *)
+            let expansion =
+              try try_expand env (newty2 ~level:(get_level ty) desc) with
+                | Cannot_expand -> raise exn
+            in
+            let expanded = Ident.Set.union expanded conflicting_ids in
+            Tlink (nondep_type_rec ~expanded ~expand_private env ids expansion)
               (*
                  The [Tlink] is important. The expanded type may be a
                  variable, or may not be completely copied yet
                  (recursive type), so one cannot just take its
                  description.
                *)
-            with Cannot_expand -> raise exn
           end
       | Tpackage(p, fl) when Path.exists_free ids p ->
           let p' = normalize_package_path env p in
           begin match Path.find_free_opt ids p' with
-          | Some id -> raise (Nondep_cannot_erase id)
+          | Some id -> raise (Nondep_cannot_erase (Ident.Set.add id expanded))
           | None ->
-            let nondep_field_rec (n, ty) = (n, nondep_type_rec env ids ty) in
-            Tpackage (p', List.map nondep_field_rec fl)
+              let nondep_field_rec (n, ty) =
+                (n, nondep_type_rec ~expanded env ids ty)
+              in
+              Tpackage (p', List.map nondep_field_rec fl)
           end
       | Tobject (t1, name) ->
-          Tobject (nondep_type_rec env ids t1,
-                 ref (match !name with
-                        None -> None
-                      | Some (p, tl) ->
-                          if Path.exists_free ids p then None
-                          else Some (p, List.map (nondep_type_rec env ids) tl)))
+          let t1 = nondep_type_rec ~expanded env ids t1 in
+          let nondep_name (p,tl) =
+            if Path.exists_free ids p then None
+            else
+              Some (p, List.map (nondep_type_rec ~expanded env ids) tl)
+          in
+          Tobject (t1, ref(Option.bind !name nondep_name))
       | Tvariant row ->
           let more = row_more row in
           (* We must keep sharing according to the row variable *)
@@ -5250,17 +5257,19 @@ let rec nondep_type_rec ?(expand_private=false) env ids ty =
             TypeHash.add nondep_variants more ty';
             let static = static_row row in
             let more' =
-              if static then newgenty Tnil else nondep_type_rec env ids more
+              if static then newgenty Tnil
+              else nondep_type_rec ~expanded env ids more
             in
             (* Return a new copy *)
             let row =
-              copy_row (nondep_type_rec env ids) true row true more' in
+              copy_row (nondep_type_rec ~expanded env ids) true row true more'
+            in
             match row_name row with
               Some (p, _tl) when Path.exists_free ids p ->
                 Tvariant (set_row_name row None)
             | _ -> Tvariant row
           end
-      | desc -> copy_type_desc (nondep_type_rec env ids) desc
+      | desc -> copy_type_desc (nondep_type_rec ~expanded env ids) desc
     with
     | desc ->
       Transient_expr.set_stub_desc ty' desc;
@@ -5294,7 +5303,7 @@ let nondep_type_decl env mid is_covariant decl =
           try Some (nondep_type_rec env mid ty), decl.type_private
           with Nondep_cannot_erase _ when is_covariant ->
             clear_hash ();
-            try Some (nondep_type_rec ~expand_private:true env mid ty),
+            try Some (nondep_type_rec  ~expand_private:true env mid ty),
                 Private
             with Nondep_cannot_erase _ ->
               None, decl.type_private
@@ -5337,7 +5346,7 @@ let nondep_extension_constructor env ids ext =
           let ty' = nondep_type_rec env ids ty in
             match get_desc ty' with
                 Tconstr(p, tl, _) -> p, tl
-              | _ -> raise (Nondep_cannot_erase id)
+              | _ -> raise (Nondep_cannot_erase (Ident.Set.singleton id))
         end
       | None ->
         let type_params =

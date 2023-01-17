@@ -390,7 +390,7 @@ val hide_private_methods : Env.t -> class_signature -> unit
 
 val close_class_signature : Env.t -> class_signature -> bool
 
-exception Nondep_cannot_erase of Ident.t
+exception Nondep_cannot_erase of Ident.Set.t
 
 val nondep_type: Env.t -> Ident.t list -> type_expr -> type_expr
         (* Return a type equivalent to the given type but without
