@@ -19330,7 +19330,7 @@ then :
   function_sections=false
 else $as_nop
   case $arch in #(
-  amd64|i386|arm64) :
+  amd64|arm64) :
     # not supported on arm32, see issue #9124.
      case $target in #(
   *-cygwin*|*-mingw*|*-windows|*-apple-darwin*) :
