@@ -431,6 +431,10 @@ Working version
   temporary assembly file is no longer left in the file system.
   (Nicolás Ojeda Bär, review by Gabriel Scherer and Xavier Leroy)
 
+- #11866: Fix the result of `caml_read_directory()` on non-existent paths.
+  (Andrei Paskevich and Charlène Gros, review by David Allsopp and
+   Nicolás Ojeda Bär)
+
 OCaml 5.0
 ---------
 

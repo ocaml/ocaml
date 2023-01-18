@@ -419,6 +419,7 @@ CAMLexport int caml_read_directory(wchar_t * dirname,
   wchar_t * template;
   intptr_t h;
   struct _wfinddata_t fileinfo;
+  int res;
 
   dirnamelen = wcslen(dirname);
   if (dirnamelen > 0 &&
@@ -426,12 +427,21 @@ CAMLexport int caml_read_directory(wchar_t * dirname,
        || dirname[dirnamelen - 1] == L'\\'
        || dirname[dirnamelen - 1] == L':'))
     template = caml_stat_wcsconcat(2, dirname, L"*.*");
-  else
+  else {
     template = caml_stat_wcsconcat(2, dirname, L"\\*.*");
+    dirnamelen++; /* template[dirnamelen] always points after the backslash */
+  }
   h = _wfindfirst(template, &fileinfo);
   if (h == -1) {
+    /* Instead of checking the existence of [dirname] directly, we call
+       [GetFileAttributes()] on [template] without the trailing [*.*].
+       The added backslash at the end gives us the expected result (-1)
+       on pathological paths like [...]. */
+    template[dirnamelen] = L'\0';
+    res = errno == ENOENT &&
+          GetFileAttributes(template) != INVALID_FILE_ATTRIBUTES ? 0 : -1;
     caml_stat_free(template);
-    return errno == ENOENT ? 0 : -1;
+    return res;
   }
   do {
     if (wcscmp(fileinfo.name, L".") != 0 && wcscmp(fileinfo.name, L"..") != 0) {
