@@ -384,6 +384,10 @@ Working version
   the type parameters.
   (Stefan Muenzel, review by Florian Angeletti and Gabriel Scherer)
 
+- #11910: Simplify naming convention for shadowed or ephemeral identifiers in
+  error messages (eg: `Illegal shadowing of included type t/2 by t`)
+  (Florian Angeletti, review by Jules Aguillon)
+
 ### Internal/compiler-libs changes:
 
 - #11990: Improve comments and macros around frame descriptors.
