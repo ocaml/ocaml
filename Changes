@@ -26,7 +26,7 @@ Working version
   (KC Sivaramakrishnan, review by Sadiq Jaffer, Guillaume Munch-Maccagnoni and
   Damien Doligez)
 
-- #11641: Restore Cygwin port. Add GC messages for address space reservations
+- #11642: Restore Cygwin port. Add GC messages for address space reservations
   when OCAMLRUNPARAM option v includes 0x1000.
   (David Allsopp, review by Xavier Leroy, Guillaume Munch-Maccagnoni
   and Gabriel Scherer)
