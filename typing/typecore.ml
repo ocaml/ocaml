@@ -3419,8 +3419,10 @@ and type_expect_
   | Pexp_constraint (sarg, sty) ->
       (* Pretend separate = true, 1% slowdown for lablgtk *)
       let cty =
-        with_local_level (fun () -> Typetexp.transl_simple_type env ~fixed:false sty)
-          ~post:(fun cty -> generalize_structure cty.ctyp_type)
+        with_local_level begin fun () ->
+          Typetexp.transl_simple_type env ~fixed:false sty
+        end
+        ~post:(fun cty -> generalize_structure cty.ctyp_type)
       in
       let ty = cty.ctyp_type in
       let (arg, ty') = (type_argument env sarg ty (instance ty), instance ty) in

@@ -97,7 +97,7 @@ module TyVarEnv : sig
     (* look up a local type variable; throws Not_found if it isn't in scope *)
 
   val remember_used : string -> type_expr -> Location.t -> unit
-    (* remember that a given name is bound to a given type at a given location *)
+    (* remember that a given name is bound to a given type *)
 
   val globalize_used_variables : globals_only:bool -> Env.t ->
     fixed:bool -> unit -> unit
@@ -113,7 +113,8 @@ end = struct
   let type_variables = ref (TyVarMap.empty : type_expr TyVarMap.t)
   let univars        = ref ([] : (string * type_expr) list)
   let pre_univars    = ref ([] : type_expr list)
-  let used_variables = ref (TyVarMap.empty : (type_expr * Location.t) TyVarMap.t)
+  let used_variables =
+    ref (TyVarMap.empty : (type_expr * Location.t) TyVarMap.t)
 
   let reset () =
     reset_global_level ();
@@ -239,7 +240,8 @@ end = struct
           with Not_found ->
             if fixed && Btype.is_Tvar ty then
               raise(Error(loc, env,
-                          Unbound_type_variable ("'"^name, get_in_scope_names ())));
+                          Unbound_type_variable ("'"^name,
+                                                 get_in_scope_names ())));
             let v2 = new_global_var () in
             r := (loc, v, v2) :: !r;
             add name v2)
@@ -722,9 +724,11 @@ let transl_simple_type_univars env styp =
     TyVarEnv.collect_pre_univars begin fun () ->
       with_local_level ~post:generalize_ctyp begin fun () ->
         let typ = transl_type env TyVarEnv.univars_policy styp in
-        (* Globalize only local occurrences of variables that are already in global
-           scope; others will be univars and dealt with in make_fixed_univars. *)
-        TyVarEnv.globalize_used_variables ~globals_only:true env ~fixed:false ();
+        (* Globalize only local occurrences of variables that are already in
+           global scope; others will be univars and dealt with in
+           make_fixed_univars. *)
+        TyVarEnv.globalize_used_variables
+          ~globals_only:true env ~fixed:false ();
         typ
       end
   end in
