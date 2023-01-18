@@ -2376,6 +2376,11 @@ module SArg = struct
   let make_if cond ifso ifnot = Lifthenelse (cond, ifso, ifnot)
 
   let make_switch loc arg cases acts =
+    (* The [acts] array can contain arbitrary terms.
+       If several entries in the [cases] array point to the same action,
+       we must share it to avoid duplicating terms.
+       See PR#11893 on Github for an example where the other de-duplication
+       mechanisms do not apply. *)
     let act_uses = Array.make (Array.length acts) 0 in
     for i = 0 to Array.length cases - 1 do
       act_uses.(cases.(i)) <- act_uses.(cases.(i)) + 1
