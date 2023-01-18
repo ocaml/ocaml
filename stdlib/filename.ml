@@ -347,7 +347,7 @@ let temp_file ?(temp_dir = Domain.DLS.get current_temp_dir_name) prefix suffix =
       close_desc(open_desc name [Open_wronly; Open_creat; Open_excl] 0o600);
       name
     with Sys_error _ as e ->
-      if counter >= 1000 then raise e else try_name (counter + 1)
+      if counter >= 20 then raise e else try_name (counter + 1)
   in try_name 0
 
 let open_temp_file ?(mode = [Open_text]) ?(perms = 0o600)
@@ -359,5 +359,5 @@ let open_temp_file ?(mode = [Open_text]) ?(perms = 0o600)
       (name,
        open_out_gen (Open_wronly::Open_creat::Open_excl::mode) perms name)
     with Sys_error _ as e ->
-      if counter >= 1000 then raise e else try_name (counter + 1)
+      if counter >= 20 then raise e else try_name (counter + 1)
   in try_name 0
