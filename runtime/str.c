@@ -305,12 +305,10 @@ CAMLprim value caml_string_compare(value s1, value s2)
   if (s1 == s2) return Val_int(0);
   len1 = caml_string_length(s1);
   len2 = caml_string_length(s2);
-  res = memcmp(String_val(s1), String_val(s2), len1 <= len2 ? len1 : len2);
-  if (res < 0) return Val_int(-1);
-  if (res > 0) return Val_int(1);
   if (len1 < len2) return Val_int(-1);
   if (len1 > len2) return Val_int(1);
-  return Val_int(0);
+  res = memcmp(String_val(s1), String_val(s2), len1);
+  return Val_int(res);
 }
 
 CAMLprim value caml_bytes_compare(value s1, value s2)
