@@ -99,6 +99,7 @@ Working version
   Alain Frisch and Nathanaëlle Courant)
 
 ### Standard library:
+
 - #11883, #11884: Update documentation for In_channel and Out_channel
   with examples and sections to group related functions.
   (Kiran Gopinathan, review by Daniel Bünzli and Xavier Leroy)
@@ -365,6 +366,11 @@ Working version
 
 - #11828: Compile otherlibs/ C stubs in two version for native and bytecode
   (Olivier Nicole, review by Sébastien Hinderer and Xavier Leroy)
+
+- #11844: Reduce verbosity of `make` logs by printing program invocations in
+  shorthand (eg `OCAMLC foo.cmo`). Setting `V=1` recovers the old style (with
+  full command-lines).
+  (Xavier Leroy, Nicolás Ojeda Bär, review by Sébastien Hinderer)
 
 ### Bug fixes:
 
