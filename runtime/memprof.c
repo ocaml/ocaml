@@ -46,34 +46,34 @@ CAMLprim value caml_memprof_stop(value unit)
 #include "caml/printexc.h"
 #include "caml/runtime_events.h"
 
-#define RAND_BLOCK_SIZE 64
-
-static uint32_t xoshiro_state[4][RAND_BLOCK_SIZE];
-static uintnat rand_geom_buff[RAND_BLOCK_SIZE];
-static uint32_t rand_pos;
-
-/* [lambda] is the mean number of samples for each allocated word (including
-   block headers). */
+/* [lambda] is the mean number of samples for each allocated word
+ * (including block headers). Non-negative. Usually a very small value
+ * such as 1e-4 or 1e-5. */
 static double lambda = 0;
-/* Precomputed value of [1/log(1-lambda)], for fast sampling of
-   geometric distribution.
-   Dummy if [lambda = 0]. */
-static float one_log1m_lambda;
+
+/* [callstack_size] is the maximum number of stack frames to provide
+ * to the tracker callback for each sampled event. */
 
 static intnat callstack_size;
 
+/* [tracker] is a tuple of callbacks to call for various events: See
+ * [Gc.Memprof.tracker]. */
+
+static value tracker;
+
 /* accessors for the OCaml type [Gc.Memprof.tracker],
-   which is the type of the [tracker] global below. */
+   which is the type of the [tracker] global above. */
 #define Alloc_minor(tracker) (Field(tracker, 0))
 #define Alloc_major(tracker) (Field(tracker, 1))
 #define Promote(tracker) (Field(tracker, 2))
 #define Dealloc_minor(tracker) (Field(tracker, 3))
 #define Dealloc_major(tracker) (Field(tracker, 4))
 
-static value tracker;
+/* [Gc.Memprof.allocation_source] */
 
-/* Gc.Memprof.allocation_source */
 enum { SRC_NORMAL = 0, SRC_MARSHAL = 1, SRC_CUSTOM = 2 };
+
+/* Structure for each tracked allocation. Six words. */
 
 struct tracked {
   /* Memory block being sampled. This is a weak GC root. */
@@ -200,6 +200,21 @@ static intnat callstack_buffer_len = 0;
 
 /**** Statistical sampling ****/
 
+/* We use a low-quality SplitMix64 PRNG to initialize state vectors
+ * for a high-quality high-performance 32-bit PRNG (xoshiro128+). That
+ * PRNG generates uniform random 32-bit numbers, which we use in turn
+ * to generate geometric random numbers parameterized by [lambda].
+ * This is all coded in such a way that compilers can readily use SIMD
+ * optimisations.
+ */
+
+/* number of random variables in a batch */
+#define RAND_BLOCK_SIZE 64
+
+/* splitmix64 PRNG, used to initialize the xoshiro+128 state
+ * vectors. Closely based on the public-domain implementation
+ * by Sebastiano Vigna https://xorshift.di.unimi.it/splitmix64.c */
+
 Caml_inline uint64_t splitmix64_next(uint64_t* x)
 {
   uint64_t z = (*x += 0x9E3779B97F4A7C15ull);
@@ -208,11 +223,18 @@ Caml_inline uint64_t splitmix64_next(uint64_t* x)
   return z ^ (z >> 31);
 }
 
+/* RAND_BLOCK_SIZE separate xoshiro+128 state vectors, defined in this
+ * column-major order so that SIMD-aware compilers can parallelize the
+ * algorithm. */
+
+static uint32_t xoshiro_state[4][RAND_BLOCK_SIZE];
+
+/* Initialize all the xoshiro+128 state vectors. */
+
 static void xoshiro_init(void)
 {
   int i;
   uint64_t splitmix64_state = 42;
-  rand_pos = RAND_BLOCK_SIZE;
   for (i = 0; i < RAND_BLOCK_SIZE; i++) {
     uint64_t t = splitmix64_next(&splitmix64_state);
     xoshiro_state[0][i] = t & 0xFFFFFFFF;
@@ -222,6 +244,11 @@ static void xoshiro_init(void)
     xoshiro_state[3][i] = t >> 32;
   }
 }
+
+/* xoshiro128+ PRNG. See Blackman & Vigna; "Scrambled linear
+ * pseudorandom number generators"; ACM Trans. Math. Softw., 47:1-32,
+ * 2021:
+ * "xoshiro128+ is our choice for 32-bit floating-point generation." */
 
 Caml_inline uint32_t xoshiro_next(int i)
 {
@@ -238,25 +265,54 @@ Caml_inline uint32_t xoshiro_next(int i)
 }
 
 /* Computes [log((y+0.5)/2^32)], up to a relatively good precision,
-   and guarantee that the result is negative.
-   The average absolute error is very close to 0. */
+ * and guarantee that the result is negative, in such a way that SIMD
+ * can parallelize it. The average absolute error is very close to
+ * 0. */
+
 Caml_inline float log_approx(uint32_t y)
 {
+  /* Use a type pun to break y+0.5 into biased exponent (in the range
+   * 126-159) and mantissa (a float in [1,2)).
+   */
+
   union { float f; int32_t i; } u;
   float exp, x;
-  u.f = y + 0.5f;    /* We convert y to a float ... */
-  exp = u.i >> 23;   /* ... of which we extract the exponent ... */
+
+  /* This may discard up to eight low bits of y. The sign bit of u.f
+   * (and u.i) is always clear, as y is non-negative. The other bits
+   * of y (disregarding the leading 1) end up in the mantissa */
+
+  u.f = y + 0.5f;
+
+  /* exp is the biased exponent, as a float. Given that u.f ranges
+   * between 0.5 and 2^32, and the bias of 127, exp is in [126, 159].
+   */
+
+
+  exp = u.i >> 23;
+
+  /* Set the biased exponent to 127, i.e. exponent of zero, and obtain
+   * the resulting float, the mantissa, as x. */
+
   u.i = (u.i & 0x7FFFFF) | 0x3F800000;
-  x = u.f;           /* ... and the mantissa. */
+
+  x = u.f;
+
+  /* y+0.5 = x * 2^(exp-127), so if log(x) ~= f(x), then
+   * log((y+0.5)/2^32) ~= f(x) + log(2) * exp - log(2)*159.  (of
+   * course we fold the constant term of f(x) into the other
+   * constant).
+   */
 
   return
-    /* This polynomial computes the logarithm of the mantissa (which
-       is in [1, 2]), up to an additive constant. It is chosen such that :
-       - Its degree is 4.
+    /* This polynomial computes log(x), up to an additive constant. It
+     * is chosen such that :
+
+       - Its degree is 3.
        - Its average value is that of log in [1, 2]
-             (the sampling has the right mean when lambda is small).
+             (so the sampling has the right mean when lambda is small).
        - f(1) = f(2) - log(2) = -159*log(2) - 1e-5
-             (this guarantee that log_approx(y) is always <= -1e-5 < 0).
+             (this guarantees that log_approx(y) is always <= -1e-5 < 0).
        - The maximum of abs(f(x)-log(x)+159*log(2)) is minimized.
     */
     x * (2.104659476859f + x * (-0.720478916626f + x * 0.107132064797f))
@@ -266,14 +322,23 @@ Caml_inline float log_approx(uint32_t y)
     + (-111.701724334061f + 0.6931471805f*exp);
 }
 
-/* This function regenerates [MT_STATE_SIZE] geometric random
-   variables at once. Doing this by batches help us gain performances:
-   many compilers (e.g., GCC, CLang, ICC) will be able to use SIMD
-   instructions to get a performance boost.
-*/
+/* Precomputed value of [1/log(1-lambda)], for fast sampling of
+   geometric distribution. For small lambda this is like [-1/lambda].
+   Dummy if [lambda = 0]. */
+static float one_log1m_lambda;
+
+static uintnat rand_geom_buff[RAND_BLOCK_SIZE];
+static uint32_t rand_pos = RAND_BLOCK_SIZE;
+
+/* This function regenerates [RAND_BLOCK_SIZE] geometric random
+ * variables at once. Doing this by batches help us gain performances:
+ * many compilers (e.g., GCC, CLang, ICC) will be able to use SIMD
+ * instructions to get a performance boost.
+ */
 #ifdef SUPPORTS_TREE_VECTORIZE
 __attribute__((optimize("tree-vectorize")))
 #endif
+
 static void rand_batch(void)
 {
   int i;
@@ -286,13 +351,11 @@ static void rand_batch(void)
 
   CAMLassert(lambda > 0.);
 
-  /* Shuffle the xoshiro samplers, and generate uniform variables in A. */
+  /* Generate uniform variables in A using the xoshiro128+ PRNG. */
   for (i = 0; i < RAND_BLOCK_SIZE; i++)
     A[i] = xoshiro_next(i);
 
-  /* Generate exponential random variables by computing logarithms. We
-     do not use math.h library functions, which are slow and prevent
-     compiler from using SIMD instructions. */
+  /* Generate exponential random variables by computing logarithms. */
   for (i = 0; i < RAND_BLOCK_SIZE; i++)
     B[i] = 1 + log_approx(A[i]) * one_log1m_lambda;
 
@@ -312,8 +375,8 @@ static void rand_batch(void)
   rand_pos = 0;
 }
 
-/* Simulate a geometric variable of parameter [lambda].
-   The result is clipped in [1..Max_long] */
+/* Simulate a geometric random variable of parameter [lambda].
+ * The result is clipped in [1..Max_long] */
 static uintnat rand_geom(void)
 {
   uintnat res;
@@ -324,17 +387,22 @@ static uintnat rand_geom(void)
   return res;
 }
 
+/* Surplus amount of the current sampling distance, not consumed by
+ * previous allocations. Still a legitimate sample of a geometric
+ * random variable. */
 static uintnat next_rand_geom;
-/* Simulate a binomial variable of parameters [len] and [lambda].
-   This sampling algorithm has running time linear with [len *
-   lambda].  We could use more a involved algorithm, but this should
-   be good enough since, in the average use case, [lambda] <= 0.01 and
-   therefore the generation of the binomial variable is amortized by
-   the initialialization of the corresponding block.
 
-   If needed, we could use algorithm BTRS from the paper:
-     Hormann, Wolfgang. "The generation of binomial random variates."
-     Journal of statistical computation and simulation 46.1-2 (1993), pp101-110.
+/* Simulate a binomial random variable of parameters [len] and
+ * [lambda]. This tells us how many times a single block allocation is
+ * sampled.  This sampling algorithm has running time linear with [len
+ * * lambda].  We could use more a involved algorithm, but this should
+ * be good enough since, in the average use case, [lambda] <= 0.01 and
+ * therefore the generation of the binomial variable is amortized by
+ * the initialialization of the corresponding block.
+ *
+ * If needed, we could use algorithm BTRS from the paper:
+ *   Hormann, Wolfgang. "The generation of binomial random variates."
+ *   Journal of statistical computation and simulation 46.1-2 (1993), pp101-110.
  */
 static uintnat rand_binom(uintnat len)
 {
@@ -348,14 +416,13 @@ static uintnat rand_binom(uintnat len)
 
 /**** Capturing the call stack *****/
 
-/* This function is called in, e.g., [caml_alloc_shr], which
-   guarantees that the GC is not called. Clients may use it in a
-   context where the heap is in an invalid state, or when the roots
-   are not properly registered. Therefore, we do not use [caml_alloc],
-   which may call the GC, but prefer using [caml_alloc_shr], which
-   gives this guarantee. The return value is either a valid callstack
-   or 0 in out-of-memory scenarios. */
-static value capture_callstack_postponed()
+/* This function may be called in a context where the heap is in an
+   invalid state, or when the roots are not properly
+   registered. Therefore, we do not use [caml_alloc], which may call
+   the GC, but prefer using [caml_alloc_shr], which gives this
+   guarantee. The return value is either a valid callstack or 0 in
+   out-of-memory scenarios. */
+static value capture_callstack_postponed(void)
 {
   value res;
   intnat callstack_len =
@@ -765,6 +832,11 @@ void caml_memprof_invert_tracked(void)
 
 /**** Sampling procedures ****/
 
+/* Respond to the allocation of new block [block], size [wosize], with
+ * [n_samples] samples. [src] is one of the [SRC_] enum values
+ * ([Gc.Memprof.allocation_source]).
+ */
+
 static void maybe_track_block(value block, uintnat n_samples,
                               uintnat wosize, int src)
 {
@@ -1114,7 +1186,7 @@ static void th_ctx_iter_default(th_ctx_action f, void* data) {
 CAMLexport void (*caml_memprof_th_ctx_iter_hook)(th_ctx_action, void*)
   = th_ctx_iter_default;
 
-CAMLexport struct caml_memprof_th_ctx* caml_memprof_new_th_ctx()
+CAMLexport struct caml_memprof_th_ctx* caml_memprof_new_th_ctx(void)
 {
   struct caml_memprof_th_ctx* ctx =
     caml_stat_alloc(sizeof(struct caml_memprof_th_ctx));
