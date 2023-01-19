@@ -308,7 +308,7 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
         ~post: begin fun (_, _, args, ret_type, univars) ->
           Btype.iter_type_expr_cstr_args Ctype.generalize args;
           Ctype.generalize ret_type;
-          let _vars = instance_poly_univars env loc univars in
+          let _vars = TyVarEnv.instance_poly_univars env loc univars in
           let set_level t = Ctype.enforce_current_level env t in
           Btype.iter_type_expr_cstr_args set_level args;
           set_level ret_type;
