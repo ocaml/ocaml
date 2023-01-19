@@ -130,3 +130,58 @@ module Constr = struct
     in
     current
 end
+
+module Gadts = struct
+  type keep = private Keep
+  type drop = private Drop
+
+  type _ t =
+  | C00 : keep t
+  | C01 : drop t
+  | C02 : drop t
+  | C03 : drop t
+  | C04 : drop t
+  | C05 : drop t
+  | C06 : drop t
+  | C07 : drop t
+  | C08 : drop t
+  | C09 : drop t
+  | C10 : drop t
+  | C11 : drop t
+  | C12 : drop t
+  | C13 : drop t
+  | C14 : drop t
+  | C15 : drop t
+  | C16 : drop t
+  | C17 : drop t
+  | C18 : drop t
+  | C19 : drop t
+  | C20 : keep t
+  | C21 : drop t
+  | C22 : drop t
+  | C23 : drop t
+  | C24 : keep t
+  | C25 : keep t
+  | C26 : drop t
+  | C27 : drop t
+  | C28 : keep t
+
+  let not_at_toplevel b =
+    let f (x: keep t) =
+      match x with
+      | C00 -> 0
+      | C20 ->
+        begin
+          (* The implementation of the local function optimisation will not
+             handle well multiple bindings of the same function, so this
+             code will reliably fail to compile with Closure if it ends up
+             duplicated. *)
+          let[@local] handler x = x + 2 in
+          if b then handler 0 else handler 1
+        end
+      | C24 -> 2
+      | C25 -> 3
+      | C28 -> 4
+    in
+    f
+end
