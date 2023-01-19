@@ -388,6 +388,11 @@ Working version
   error messages (eg: `Illegal shadowing of included type t/2 by t`)
   (Florian Angeletti, review by Jules Aguillon)
 
+- #?????: report all involved `include`s in complex signature avoidance issues
+  when it is a set of `include`s which is responsible for making the type of an
+  exported value non-anchorable to an exported type.
+  (Florian Angeletti, review by ????)
+
 ### Internal/compiler-libs changes:
 
 - #11990: Improve comments and macros around frame descriptors.
