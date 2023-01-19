@@ -81,6 +81,9 @@ Working version
   would previous behave incorrectly, and now results in a clean error.
   (Leo White, review by Gabriel Scherer and Florian Angeletti)
 
+- #11912: Refactoring handling of scoped type variables
+  (Richard Eisenberg, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #11967: Remove traces of Obj.truncate, which allows some mutable
