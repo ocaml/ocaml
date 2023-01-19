@@ -110,11 +110,42 @@ end = struct
   (** Map indexed by type variable names. *)
   module TyVarMap = Misc.Stdlib.String.Map
 
+  let not_generic v = get_level v <> Btype.generic_level
+
+  (* These are the "global" type variables: they were in scope before
+     we started processing the current type.
+
+     INVARIANT: No types at generic_level.
+  *)
   let type_variables = ref (TyVarMap.empty : type_expr TyVarMap.t)
-  let univars        = ref ([] : (string * type_expr) list)
-  let pre_univars    = ref ([] : type_expr list)
+
+  (* These are variables that have been used in the currently-being-checked
+     type.
+
+     INVARIANT: No types at generic_level.
+  *)
   let used_variables =
     ref (TyVarMap.empty : (type_expr * Location.t) TyVarMap.t)
+
+  (* These are variables we expect to become univars (they were introduced with
+     e.g. ['a .]), but we need to make sure they don't unify first.  Why not
+     just birth them as univars? Because they might successfully unify with a
+     row variable in the ['a. < m : ty; .. > as 'a] idiom.  They are like the
+     [used_variables], but will not be globalized in [globalize_used_variables].
+
+     INVARIANT: No types at generic_level.
+  *)
+  let univars = ref ([] : (string * type_expr) list)
+  let assert_univars uvs =
+    assert (List.for_all (fun (_name, v) -> not_generic v) uvs)
+
+  (* These are variables that will become univars when we're done with the
+     current type. Used to force free variables in method types to become
+     univars.
+
+     INVARIANT: No types at generic_level.
+  *)
+  let pre_univars = ref ([] : type_expr list)
 
   let reset () =
     reset_global_level ();
@@ -125,6 +156,7 @@ end = struct
     TyVarMap.mem name !type_variables
 
   let add name v =
+    assert (not_generic v);
     type_variables := TyVarMap.add name v !type_variables
 
   let narrow () =
@@ -152,6 +184,7 @@ end = struct
   type poly_univars = (string * type_expr) list
 
   let with_univars new_ones f =
+    assert_univars new_ones;
     let old_univars = !univars in
     univars := new_ones @ !univars;
     Fun.protect
@@ -175,20 +208,19 @@ end = struct
 
   (*****)
   let reset_locals ?univars:(uvs=[]) () =
+    assert_univars uvs;
     univars := uvs;
     used_variables := TyVarMap.empty
 
   (* throws Not_found if the variable is not in scope *)
   let lookup_local name =
-    let v =
-      try
-        List.assoc name !univars
-      with Not_found ->
-        fst (TyVarMap.find name !used_variables)
-    in
-    instance v
+    try
+      List.assoc name !univars
+    with Not_found ->
+      fst (TyVarMap.find name !used_variables)
 
   let remember_used name v loc =
+    assert (not_generic v);
     used_variables := TyVarMap.add name (v, loc) !used_variables
 
 
@@ -201,7 +233,9 @@ end = struct
   let univars_policy = { flavor = Universal; extensibility = Extensible }
 
   let add_pre_univar tv = function
-    | { flavor = Universal } -> pre_univars := tv :: !pre_univars
+    | { flavor = Universal } ->
+      assert (not_generic tv);
+      pre_univars := tv :: !pre_univars
     | _ -> ()
 
   let collect_pre_univars f =
