@@ -51,9 +51,7 @@ val type_variable: Location.t -> string -> type_expr
 val transl_type_param:
   Env.t -> Parsetree.core_type -> Typedtree.core_type
 
-type variable_context
-val narrow: unit -> variable_context
-val widen: variable_context -> unit
+val with_local_type_variable_scope: (unit -> 'a) -> 'a
 
 exception Already_bound
 
@@ -87,7 +85,3 @@ val transl_modtype_longident:  (* from Typemod *)
     (Location.t -> Env.t -> Longident.t -> Path.t) ref
 val transl_modtype: (* from Typemod *)
     (Env.t -> Parsetree.module_type -> Typedtree.module_type) ref
-val create_package_mty:
-    Location.t -> Env.t -> Parsetree.package_type ->
-    (Longident.t Asttypes.loc * Parsetree.core_type) list *
-      Parsetree.module_type

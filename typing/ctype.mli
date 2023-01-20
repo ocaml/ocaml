@@ -33,24 +33,45 @@ exception Matches_failure of Env.t * Errortrace.unification_error
 exception Incompatible
   (* Raised from [mcomp] *)
 
-val init_def: int -> unit
-        (* Set the initial variable level *)
-val begin_def: unit -> unit
-        (* Raise the variable level by one at the beginning of a definition. *)
-val end_def: unit -> unit
-        (* Lower the variable level by one at the end of a definition *)
-val begin_class_def: unit -> unit
-val raise_nongen_level: unit -> unit
+(* All the following wrapper functions revert to the original level,
+   even in case of exception. *)
+val with_local_level: ?post:('a -> unit) -> (unit -> 'a) -> 'a
+        (* [with_local_level (fun () -> cmd) ~post] evaluates [cmd] at a
+           raised level.
+           If given, [post] is applied to the result, at the original level.
+           It is expected to contain only level related post-processing. *)
+val with_local_level_if: bool -> (unit -> 'a) -> post:('a -> unit) -> 'a
+        (* Same as [with_local_level], but only raise the level conditionally.
+           [post] also is only called if the level is raised. *)
+val with_local_level_iter: (unit -> 'a * 'b list) -> post:('b -> unit) -> 'a
+        (* Variant of [with_local_level], where [post] is iterated on the
+           returned list. *)
+val with_local_level_iter_if:
+    bool -> (unit -> 'a * 'b list) -> post:('b -> unit) -> 'a
+        (* Conditional variant of [with_local_level_iter] *)
+val with_level: level: int -> (unit -> 'a) -> 'a
+        (* [with_level ~level (fun () -> cmd)] evaluates [cmd] with
+           [current_level] set to [level] *)
+val with_level_if: bool -> level: int -> (unit -> 'a) -> 'a
+        (* Conditional variant of [with_level] *)
+val with_local_level_if_principal: (unit -> 'a) -> post:('a -> unit) -> 'a
+val with_local_level_iter_if_principal:
+    (unit -> 'a * 'b list) -> post:('b -> unit) -> 'a
+        (* Applications of [with_local_level_if] and [with_local_level_iter_if]
+           to [!Clflags.principal] *)
+
+val with_local_level_for_class: ?post:('a -> unit) -> (unit -> 'a) -> 'a
+        (* Variant of [with_local_level], where the current level is raised but
+           the nongen level is not touched *)
+val with_raised_nongen_level: (unit -> 'a) -> 'a
+        (* Variant of [with_local_level],
+           raises the nongen level to the current level *)
+
 val reset_global_level: unit -> unit
         (* Reset the global level before typing an expression *)
 val increase_global_level: unit -> int
 val restore_global_level: int -> unit
         (* This pair of functions is only used in Typetexp *)
-type levels =
-    { current_level: int; nongen_level: int; global_level: int;
-      saved_level: (int * int) list; }
-val save_levels: unit -> levels
-val set_levels: levels -> unit
 
 val create_scope : unit -> int
 
@@ -115,6 +136,8 @@ val lower_contravariant: Env.t -> type_expr -> unit
            to be used before generalize for expansive expressions *)
 val lower_variables_only: Env.t -> int -> type_expr -> unit
         (* Lower all variables to the given level *)
+val enforce_current_level: Env.t -> type_expr -> unit
+        (* Lower whole type to !current_level *)
 val generalize_structure: type_expr -> unit
         (* Generalize the structure of a type, lowering variables
            to !current_level *)

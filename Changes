@@ -26,7 +26,7 @@ Working version
   (KC Sivaramakrishnan, review by Sadiq Jaffer, Guillaume Munch-Maccagnoni and
   Damien Doligez)
 
-- #11641: Restore Cygwin port. Add GC messages for address space reservations
+- #11642: Restore Cygwin port. Add GC messages for address space reservations
   when OCAMLRUNPARAM option v includes 0x1000.
   (David Allsopp, review by Xavier Leroy, Guillaume Munch-Maccagnoni
   and Gabriel Scherer)
@@ -58,6 +58,9 @@ Working version
    values.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer and KC
    Sivaramakrishnan)
+
+- #11474: Add support for user-defined events in the runtime event tracing
+  system. (Lucas Pluvinage, review by Sadiq Jaffer)
 
 ### Type system:
 
@@ -96,6 +99,7 @@ Working version
   Alain Frisch and Nathanaëlle Courant)
 
 ### Standard library:
+
 - #11883, #11884: Update documentation for In_channel and Out_channel
   with examples and sections to group related functions.
   (Kiran Gopinathan, review by Daniel Bünzli and Xavier Leroy)
@@ -240,6 +244,9 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #11679: Improve the error message about too many arguments to a function
+  (Jules Aguillon, review by Gabriel Scherer and Florian Angeletti)
+
 - #10009: Improve the error reported by mismatched struct/sig and =/: in module
   and module type bindings.
   (Jules Aguillon, review by Gabriel Scherer)
@@ -289,7 +296,7 @@ Working version
 
 ### Internal/compiler-libs changes:
 
-- #11847, #11849, #11851: small refactorings in the type checker
+- #11847, #11849, #11851, #11898: small refactorings in the type checker
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
 - #11027: Separate typing counter-examples from type_pat into retype_pat;
@@ -310,6 +317,19 @@ Working version
 - #11446: document switch compilation (lambda/switch.ml)
   (Gabriel Scherer, review by Luc Maranget and Vincent Laviron)
 
+- #11536: Introduce wrapper functions for level management
+  ([Ctype.with_level], etc) and for type variable scoping
+  ([Typetexp.with_local_type_variable_scope]).
+  The older API ([Ctype.(begin_def,end_def)], [Typetexp.(narrow,widen)], etc.)
+  is now removed.
+  (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
+
+- #11568: Encode inline record types in Path.t
+  (Leo White and Hyunggyu Jang, review by Gabriel Scherer)
+
+- #11569: Remove hash type encoding
+  (Hyunggyu Jang, review by Gabriel Scherer and Florian Angeletti)
+
 - #11601, #11612, #11628: Clean up some global state handling
   in emitcode, bytepackager, spill.
   (Hugo Heuzard, Stefan Muenzel, review by Vincent Laviron, Gabriel Scherer
@@ -321,12 +341,6 @@ Working version
 - #11634: Dll.open_dll now properly handle opening for execution while already
   opened for checking
   (Hugo Heuzard, review by Nicolás Ojeda Bär)
-
-- #11569: Remove hash type encoding
-  (Hyunggyu Jang, review by Gabriel Scherer and Florian Angeletti)
-
-- #11568: Encode inline record types in Path.t
-  (Leo White and Hyunggyu Jang, review by Gabriel Scherer)
 
 - #11745: Debugger and toplevels: embed printer types rather than
   reading their representations from topdirs.cmi at runtime.
@@ -356,7 +370,16 @@ Working version
 - #11828: Compile otherlibs/ C stubs in two version for native and bytecode
   (Olivier Nicole, review by Sébastien Hinderer and Xavier Leroy)
 
+- #11844: Reduce verbosity of `make` logs by printing program invocations in
+  shorthand (eg `OCAMLC foo.cmo`). Setting `V=1` recovers the old style (with
+  full command-lines).
+  (Xavier Leroy, Nicolás Ojeda Bär, review by Sébastien Hinderer)
+
 ### Bug fixes:
+
+- #11887, #11893: Code duplication in pattern-matching compilation
+  (Vincent Laviron, report par Greta Yorsh, review by Luc Maranget and
+   Gabriel Scherer)
 
 - #10664, #11600: Unsoundness in the typing of polymorphic methods
   involving polymorphic variants
@@ -414,6 +437,10 @@ Working version
 - #11850: When stopping before the `emit` phase (using `-stop-after`), an empty
   temporary assembly file is no longer left in the file system.
   (Nicolás Ojeda Bär, review by Gabriel Scherer and Xavier Leroy)
+
+- #11866: Fix the result of `caml_read_directory()` on non-existent paths.
+  (Andrei Paskevich and Charlène Gros, review by David Allsopp and
+   Nicolás Ojeda Bär)
 
 OCaml 5.0
 ---------
@@ -718,6 +745,9 @@ OCaml 5.0
   toplevel printers.
   (Florian Angeletti, review by Gabriel Scherer and David Allsopp)
 
+- #11514: Document ocamltest builtin variables and actions
+  (Olivier Nicole, review by Sébastien Hinderer)
+
 ### Manual and documentation:
 
 - #11058: runtime/HACKING.adoc tips on debugging the runtime
@@ -896,6 +926,9 @@ OCaml 5.0
   true. Fixes a race condition where a child process could inherit the
   socket and deadlock the parent.
   (Antonin Décimo, review by Xavier Leroy)
+
+- #11150, #11207: Avoid recomputation in Typedecl.check_wellfounded
+  (Jacques Garrigue, report by Boris Yakobowski, review by Gabriel Scherer)
 
 - #11186, #11188: Fix composition of coercions with aliases
   (Vincent Laviron, report and review by Leo White)

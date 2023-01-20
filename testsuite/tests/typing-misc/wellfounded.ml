@@ -20,6 +20,5 @@ Line 6, characters 6-20:
           ^^^^^^^^^^^^^^
 Error: The type abbreviation d is cyclic:
          d = d * d,
-         d * d contains d,
-         d = d * d
+         d * d contains d
 |}];;

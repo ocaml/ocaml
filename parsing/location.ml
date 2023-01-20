@@ -459,20 +459,28 @@ let highlight_quote ppf
         (* Single-line error *)
         Format.fprintf ppf "%s | %s@," line_nb line;
         Format.fprintf ppf "%*s   " (String.length line_nb) "";
-        String.iteri (fun i c ->
+        (* Iterate up to [rightmost], which can be larger than the length of
+           the line because we may point to a location after the end of the
+           last token on the line, for instance:
+           {[
+             token
+                       ^
+             Did you forget ...
+           ]} *)
+        for i = 0 to rightmost.pos_cnum - line_start_cnum - 1 do
           let pos = line_start_cnum + i in
           if ISet.is_start iset ~pos <> None then
             Format.fprintf ppf "@{<%s>" highlight_tag;
           if ISet.mem iset ~pos then Format.pp_print_char ppf '^'
-          else if pos < rightmost.pos_cnum then begin
+          else if i < String.length line then begin
             (* For alignment purposes, align using a tab for each tab in the
                source code *)
-            if c = '\t' then Format.pp_print_char ppf '\t'
+            if line.[i] = '\t' then Format.pp_print_char ppf '\t'
             else Format.pp_print_char ppf ' '
           end;
           if ISet.is_end iset ~pos <> None then
             Format.fprintf ppf "@}"
-        ) line;
+        done;
         Format.fprintf ppf "@}@,"
     | _ ->
         (* Multi-line error *)

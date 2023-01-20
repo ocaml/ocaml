@@ -135,24 +135,24 @@ $(eval $(call PROGRAM_SYNONYM,ocamltest))
 ocamltest_unix.%: flags+=$(ocamltest_unix_include) -opaque
 
 ocamltest$(EXE): $(deps_byte) $(bytecode_modules)
-	$(ocamlc_cmd) $(ocamltest_unix_include)-custom -o $@ $^
+	$(V_LINKC)$(ocamlc_cmd) $(ocamltest_unix_include)-custom -o $@ $^
 
 %.cmo: %.ml $(deps_byte)
-	$(ocamlc) -c $<
+	$(V_OCAMLC)$(ocamlc) -c $<
 
 $(eval $(call PROGRAM_SYNONYM,ocamltest.opt))
 
 ocamltest.opt$(EXE): $(deps_opt) $(native_modules)
-	$(ocamlopt_cmd) $(ocamltest_unix_include)-o $@ $^
+	$(V_LINKOPT)$(ocamlopt_cmd) $(ocamltest_unix_include)-o $@ $^
 
 %.cmx: %.ml $(deps_opt)
-	$(ocamlopt) -c $<
+	$(V_OCAMLOPT)$(ocamlopt) -c $<
 
 %.cmi: %.mli $(deps_byte)
-	$(ocamlc) -c $<
+	$(V_OCAMLC)$(ocamlc) -c $<
 
 ocamltest_unix.ml: ocamltest_unix_$(ocamltest_unix_impl).ml
-	echo '# 1 "$<"' > $@
+	$(V_GEN)echo '# 1 "$<"' > $@ && \
 	cat $< >> $@
 
 # Manual
@@ -181,10 +181,10 @@ distclean: clean
 	rm -f ocamltest_config.ml
 
 $(DEPDIR)/%.$(D): %.c | $(DEPDIR)
-	$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@
+	$(V_CCDEPS)$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@
 
 .PHONY: depend
 depend: $(dependencies_generated_prereqs)
-	$(OCAMLDEP_CMD) $(mli_files) $(ml_files) > .depend
+	$(V_OCAMLDEP)$(OCAMLDEP_CMD) $(mli_files) $(ml_files) > .depend
 
 -include .depend

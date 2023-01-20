@@ -823,3 +823,7 @@ val pat_bound_idents_full:
 (** Splits an or pattern into its value (left) and exception (right) parts. *)
 val split_pattern:
   computation general_pattern -> pattern option * pattern option
+
+(** Whether an expression looks nice as the subject of a sentence in a error
+    message. *)
+val exp_is_nominal : expression -> bool

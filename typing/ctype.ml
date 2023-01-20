@@ -150,20 +150,6 @@ let nongen_level = s_ref 0
 let global_level = s_ref 1
 let saved_level = s_ref []
 
-type levels =
-    { current_level: int; nongen_level: int; global_level: int;
-      saved_level: (int * int) list; }
-let save_levels () =
-  { current_level = !current_level;
-    nongen_level = !nongen_level;
-    global_level = !global_level;
-    saved_level = !saved_level }
-let set_levels l =
-  current_level := l.current_level;
-  nongen_level := l.nongen_level;
-  global_level := l.global_level;
-  saved_level := l.saved_level
-
 let get_current_level () = !current_level
 let init_def level = current_level := level; nongen_level := level
 let begin_def () =
@@ -182,6 +168,44 @@ let end_def () =
 let create_scope () =
   init_def (!current_level + 1);
   !current_level
+
+let wrap_end_def f = Misc.try_finally f ~always:end_def
+
+let with_local_level ?post f =
+  begin_def ();
+  let result = wrap_end_def f in
+  Option.iter (fun g -> g result) post;
+  result
+let with_local_level_if cond f ~post =
+  if cond then with_local_level f ~post else f ()
+let with_local_level_iter f ~post =
+  begin_def ();
+  let result, l = wrap_end_def f in
+  List.iter post l;
+  result
+let with_local_level_iter_if cond f ~post =
+  if cond then with_local_level_iter f ~post else fst (f ())
+let with_local_level_if_principal f ~post =
+  with_local_level_if !Clflags.principal f ~post
+let with_local_level_iter_if_principal f ~post =
+  with_local_level_iter_if !Clflags.principal f ~post
+let with_level ~level f =
+  begin_def (); init_def level;
+  let result = wrap_end_def f in
+  result
+let with_level_if cond ~level f =
+  if cond then with_level ~level f else f ()
+
+let with_local_level_for_class ?post f =
+  begin_class_def ();
+  let result = wrap_end_def f in
+  Option.iter (fun g -> g result) post;
+  result
+
+let with_raised_nongen_level f =
+  raise_nongen_level ();
+  wrap_end_def f
+
 
 let reset_global_level () =
   global_level := !current_level + 1
@@ -1712,16 +1736,12 @@ let full_expand ~may_forget_scope env ty =
     if may_forget_scope then
       try expand_head_unif env ty with Unify_trace _ ->
         (* #10277: forget scopes when printing trace *)
-        begin_def ();
-        init_def (get_level ty);
-        let ty =
+        with_level ~level:(get_level ty) begin fun () ->
           (* The same as [expand_head], except in the failing case we return the
-             *original* type, not [correct_levels ty].*)
+           *original* type, not [correct_levels ty].*)
           try try_expand_head try_expand_safe env (correct_levels ty) with
           | Cannot_expand -> ty
-        in
-        end_def ();
-        ty
+        end
     else expand_head env ty
   in
   match get_desc ty with
@@ -3192,6 +3212,8 @@ let unify_pairs env ty1 ty2 pairs =
 let unify env ty1 ty2 =
   unify_pairs (ref env) ty1 ty2 []
 
+(* Lower the level of a type to the current level *)
+let enforce_current_level env ty = unify_var env (newvar ()) ty
 
 
 (**** Special cases of unification ****)
