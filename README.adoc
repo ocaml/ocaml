@@ -68,7 +68,6 @@ compiler currently runs on the following platforms:
 | x86 64 bits    | Linux, macOS, Windows, FreeBSD  |  NetBSD, OpenBSD
 | ARM 64 bits    | Linux, macOS                    |  FreeBSD
 | Power 64 bits  | Linux                           |
-| Power 32 bits  | Linux                           |
 | RISC-V 64 bits | Linux                           |
 | IBM Z (s390x)  | Linux                           |
 |====
