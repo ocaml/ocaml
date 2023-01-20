@@ -99,7 +99,8 @@ Working version
   Alain Frisch and Nathanaëlle Courant)
 
 - #11904: Remove arm, i386 native-code backends.
-  (Nicolás Ojeda Bär)
+  (Nicolás Ojeda Bär, review by Stephen Dolan, Anil Madhavapeddy, and Xavier
+  Leroy)
 
 ### Standard library:
 
