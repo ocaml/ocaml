@@ -298,28 +298,24 @@ Caml_inline float log_approx(uint32_t y)
 
   x = u.f;
 
-  /* y+0.5 = x * 2^(exp-127), so if log(x) ~= f(x), then
-   * log((y+0.5)/2^32) ~= f(x) + log(2) * exp - log(2)*159.  (of
-   * course we fold the constant term of f(x) into the other
-   * constant).
-   */
+  /* y+0.5 = x * 2^(exp-127), so if f(x) ~= log(x) - 159*log(2), then
+   * log((y+0.5)/2^32) ~= f(x) + exp * log(2). We choose the unique
+   * degree-3 polynomial f such that :
 
-  return
-    /* This polynomial computes log(x), up to an additive constant. It
-     * is chosen such that :
-
-       - Its degree is 3.
-       - Its average value is that of log in [1, 2]
+       - Its average value is that of the desired function  in [1, 2]
              (so the sampling has the right mean when lambda is small).
-       - f(1) = f(2) - log(2) = -159*log(2) - 1e-5
-             (this guarantees that log_approx(y) is always <= -1e-5 < 0).
-       - The maximum of abs(f(x)-log(x)+159*log(2)) is minimized.
-    */
-    x * (2.104659476859f + x * (-0.720478916626f + x * 0.107132064797f))
+       - f(1) = f(2) - log(2), so that it is continuous at the exponent steps.
+       - f(1) = -1e-5, so the function is everywhere negative.
+       - The maximum absolute error is minimized in [1, 2].
 
-    /* Then, we add the term corresponding to the exponent, and
-       additive constants. */
-    + (-111.701724334061f + 0.6931471805f*exp);
+    The actual maximum absolute error is around 7e-4. Computed with sollya.
+    */
+
+  return (-111.70172433407f +
+          x * (2.104659476859f +
+               x * (-0.720478916626f +
+                    x * 0.107132064797f)) +
+          0.6931471805f*exp);
 }
 
 /* Precomputed value of [1/log(1-lambda)], for fast sampling of
