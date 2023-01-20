@@ -190,6 +190,11 @@ Working version
 - #11843: Add `In_channel.input_lines` and `In_channel.fold_lines`.
   (Xavier Leroy, review by Nicolás Ojeda Bär and Wiktor Kuchta).
 
+- #11892: Document the semantic differences of Unix.exec* between Unix and
+  Windows.
+  (Boris Yakobowski, review by Daniel Bünzli, Gabriel Scherer and Nicolás Ojeda
+  Bär)
+
 ### Other libraries:
 
 - #11374: Remove pointer cast to a type with stricter alignment requirements
