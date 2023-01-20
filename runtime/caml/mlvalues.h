@@ -129,18 +129,19 @@ where 0 <= R <= 31 is HEADER_RESERVED_BITS, set with the
 #define Wosize_hd(hd) ((mlsize_t) (((hd) & HEADER_WOSIZE_MASK) \
                                      >> HEADER_WOSIZE_SHIFT))
 
+/* A "clean" header, without reserved or color bits. */
+#define Cleanhd_hd(hd) (((header_t)(hd)) & \
+                        (HEADER_TAG_MASK | HEADER_WOSIZE_MASK))
+
 #if HEADER_RESERVED_BITS > 0
 
 #define HEADER_RESERVED_SHIFT (HEADER_BITS - HEADER_RESERVED_BITS)
 #define Reserved_hd(hd)   (((header_t) (hd)) >> HEADER_RESERVED_SHIFT)
-#define Noreserved_hd(hd) ((header_t)(hd) & ((1ull << HEADER_RESERVED_SHIFT) \
-                                             - 1ull))
 #define Hd_reserved(res)  ((header_t)(res) << HEADER_RESERVED_SHIFT)
 
 #else /* HEADER_RESERVED_BITS is 0 */
 
 #define Reserved_hd(hd)   ((reserved_t)0)
-#define Noreserved_hd(hd) ((header_t)(hd))
 #define Hd_reserved(res)  ((header_t)0)
 
 #endif
