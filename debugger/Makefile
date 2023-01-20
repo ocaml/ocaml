@@ -52,11 +52,11 @@ libraries = $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
 all: ocamldebug$(EXE)
 
 ocamldebug.cmo: $(debugger_objects)
-	$(CAMLC) -pack $(COMPFLAGS) -o $@ $^
+	$(V_OCAMLC)$(CAMLC) -pack $(COMPFLAGS) -o $@ $^
 
 ocamldebug$(EXE): $(libraries) $(compiler_objects) ocamldebug.cmo \
     ocamldebug_entry.cmo
-	$(CAMLC) $(LINKFLAGS) -o $@ -linkall $^
+	$(V_LINKC)$(CAMLC) $(LINKFLAGS) -o $@ -linkall $^
 
 install:
 	$(INSTALL_PROG) ocamldebug$(EXE) "$(INSTALL_BINDIR)"
@@ -70,16 +70,16 @@ clean::
 distclean: clean
 
 ocamldebug_entry.cmo: ocamldebug_entry.ml ocamldebug.cmo
-	$(CAMLC) -c $(COMPFLAGS) $<
+	$(V_OCAMLC)$(CAMLC) -c $(COMPFLAGS) $<
 
 %.cmo: %.ml
-	$(CAMLC) -c $(COMPFLAGS) -for-pack ocamldebug $<
+	$(V_OCAMLC)$(CAMLC) -c $(COMPFLAGS) -for-pack ocamldebug $<
 
 %.cmi: %.mli
-	$(CAMLC) -c $(COMPFLAGS) -for-pack ocamldebug $<
+	$(V_OCAMLC)$(CAMLC) -c $(COMPFLAGS) -for-pack ocamldebug $<
 
 depend: beforedepend
-	$(OCAMLDEP_CMD) *.mli *.ml > .depend
+	$(V_OCAMLDEP)$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 clean::
 	rm -f debugger_lexer.ml

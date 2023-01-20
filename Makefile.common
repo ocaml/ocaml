@@ -28,6 +28,50 @@ EMPTY :=
 # $(SPACE) contains a single space
 SPACE := $(EMPTY) $(EMPTY)
 
+V ?= 0
+
+ifeq "$(V)" "0"
+
+V_CC         = @$(info $   CC $@)
+V_CCDEPS     = @$(info $   CCDEPS $@)
+V_OCAMLC     = @$(info $   OCAMLC $@)
+V_OCAMLOPT   = @$(info $   OCAMLOPT $@)
+V_GEN        = @$(info $   GEN $@)
+V_LINKC      = @$(info $   LINKC $@)
+V_LINKOPT    = @$(info $   LINKOPT $@)
+V_MKEXE      = @$(info $   MKEXE $@)
+V_MKLIB      = @$(info $   MKLIB $@)
+V_MKDLL      = @$(info $   MKDLL $@)
+V_OCAMLLEX   = @$(info $   OCAMLLEX $@)
+V_OCAMLYACC  = @$(info $   OCAMLYACC $@)
+V_OCAMLDEP   = @$(info $   OCAMLDEP $@)
+V_ASM        = @$(info $   ASM $@)
+V_OCAMLMKLIB = @$(info $   OCAMLMKLIB $@)
+V_OCAMLDOC   = @$(info $   OCAMLDOC $@)
+V_ODOC       = @$(info $   ODOC $@)
+
+else
+
+V_CC         =
+V_CCDEPS     =
+V_OCAMLC     =
+V_OCAMLOPT   =
+V_GEN        =
+V_LINKC      =
+V_LINKOPT    =
+V_MKEXE      =
+V_MKLIB      =
+V_MKDLL      =
+V_OCAMLLEX   =
+V_OCAMLYACC  =
+V_OCAMLDEP   =
+V_ASM        =
+V_OCAMLMKLIB =
+V_OCAMLDOC   =
+V_ODOC       =
+
+endif
+
 DESTDIR ?=
 INSTALL_BINDIR := $(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR := $(DESTDIR)$(LIBDIR)
@@ -126,7 +170,7 @@ REQUIRED_HEADERS := $(RUNTIME_HEADERS) $(wildcard *.h)
 endif
 
 %.$(O): %.c $(REQUIRED_HEADERS)
-	$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	$(V_CC)$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
 	  $(OUTPUTOBJ)$@ $<
 
 $(DEPDIR):
@@ -166,7 +210,7 @@ OCAMLLEX ?= $(BEST_OCAMLLEX)
 OCAMLLEXFLAGS ?= -q
 
 %.ml: %.mll
-	$(OCAMLLEX) $(OCAMLLEXFLAGS) $<
+	$(V_OCAMLLEX)$(OCAMLLEX) $(OCAMLLEXFLAGS) $<
 
 # Parser generation
 
@@ -175,7 +219,7 @@ OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 OCAMLYACCFLAGS ?= --strict -v
 
 %.ml %.mli: %.mly
-	$(OCAMLYACC) $(OCAMLYACCFLAGS) $<
+	$(V_OCAMLYACC)$(OCAMLYACC) $(OCAMLYACCFLAGS) $<
 
 SAK = $(ROOTDIR)/runtime/sak$(EXE)
 
@@ -214,7 +258,7 @@ $(eval $(call PROGRAM_SYNONYM,$(1)))
 $(1)$(EXE): \
   $$$$(patsubst %,%.cma, $$$$($(basename $(notdir $(1)))_LIBRARIES)) \
   $$$$(patsubst %,%.cmo, $$$$($(basename $(notdir $(1)))_MODULES))
-	$$(LINK_BYTECODE_PROGRAM) -o $$@ $$^
+	$$(V_LINKC)$$(LINK_BYTECODE_PROGRAM) -o $$@ $$^
 endef # OCAML_BYTECODE_PROGRAM
 
 LINK_NATIVE_PROGRAM =\
@@ -225,7 +269,7 @@ $(eval $(call PROGRAM_SYNONYM,$(1)))
 $(1)$(EXE): \
   $$$$(patsubst %,%.cmxa, $$$$($(basename $(notdir $(1)))_LIBRARIES)) \
   $$$$(patsubst %,%.cmx, $$$$($(basename $(notdir $(1)))_MODULES))
-	$$(LINK_NATIVE_PROGRAM) -o $$@ $$^
+	$$(V_LINKOPT)$$(LINK_NATIVE_PROGRAM) -o $$@ $$^
 endef # OCAML_NATIVE_PROGRAM
 
 define OCAML_PROGRAM

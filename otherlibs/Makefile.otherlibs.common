@@ -76,28 +76,28 @@ opt.opt: allopt
 
 $(LIBNAME).cma: $(CAMLOBJS)
 ifeq "$(COBJS)" ""
-	$(CAMLC) -o $@ -a -linkall $(CAMLOBJS) $(LINKOPTS)
+	$(V_LINKC)$(CAMLC) -o $@ -a -linkall $(CAMLOBJS) $(LINKOPTS)
 else
-	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME_BYTECODE) -ocamlc '$(CAMLC)' \
+	$(V_OCAMLMKLIB)$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME_BYTECODE) -ocamlc '$(CAMLC)' \
                 -linkall $(CAMLOBJS) $(LINKOPTS)
 endif
 
 $(LIBNAME).cmxa: $(CAMLOBJS_NAT)
 ifeq "$(COBJS)" ""
-	$(CAMLOPT) -o $@ -a -linkall $(CAMLOBJS_NAT) $(LINKOPTS)
+	$(V_OCAMLOPT)$(CAMLOPT) -o $@ -a -linkall $(CAMLOBJS_NAT) $(LINKOPTS)
 else
-	$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME_NATIVE) -ocamlopt '$(CAMLOPT)' \
+	$(V_OCAMLMKLIB)$(MKLIB) -o $(LIBNAME) -oc $(CLIBNAME_NATIVE) -ocamlopt '$(CAMLOPT)' \
                 -linkall $(CAMLOBJS_NAT) $(LINKOPTS)
 endif
 
 $(LIBNAME).cmxs: $(LIBNAME).cmxa $(STUBSLIB_NATIVE)
-	$(CAMLOPT_CMD) -shared -o $(LIBNAME).cmxs -I . $(LIBNAME).cmxa
+	$(V_OCAMLOPT)$(CAMLOPT_CMD) -shared -o $(LIBNAME).cmxs -I . $(LIBNAME).cmxa
 
 lib$(CLIBNAME_BYTECODE).$(A): $(COBJS)
-	$(MKLIB_CMD) -oc $(CLIBNAME_BYTECODE) $(COBJS_BYTECODE) $(LDOPTS)
+	$(V_OCAMLMKLIB)$(MKLIB_CMD) -oc $(CLIBNAME_BYTECODE) $(COBJS_BYTECODE) $(LDOPTS)
 
 lib$(CLIBNAME_NATIVE).$(A): $(COBJS)
-	$(MKLIB_CMD) -oc $(CLIBNAME_NATIVE) $(COBJS_NATIVE) $(LDOPTS)
+	$(V_OCAMLMKLIB)$(MKLIB_CMD) -oc $(CLIBNAME_NATIVE) $(COBJS_NATIVE) $(LDOPTS)
 
 INSTALL_LIBDIR_LIBNAME = $(INSTALL_LIBDIR)/$(LIBNAME)
 
@@ -156,20 +156,20 @@ distclean:: clean
 	rm -f META
 
 %.cmi: %.mli
-	$(CAMLC) -c $(COMPFLAGS) $<
+	$(V_OCAMLC)$(CAMLC) -c $(COMPFLAGS) $<
 
 %.cmo: %.ml
-	$(CAMLC) -c $(COMPFLAGS) $<
+	$(V_OCAMLC)$(CAMLC) -c $(COMPFLAGS) $<
 
 %.cmx: %.ml
-	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
+	$(V_OCAMLOPT)$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 %.b.$(O): %.c $(REQUIRED_HEADERS)
-	$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	$(V_CC)$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
 	  $(OUTPUTOBJ)$@ $<
 
 %.n.$(O): %.c $(REQUIRED_HEADERS)
-	$(CC) -c $(OC_CFLAGS) $(OC_NATIVE_C_FLAGS) $(CFLAGS) \
+	$(V_CC)$(CC) -c $(OC_CFLAGS) $(OC_NATIVE_C_FLAGS) $(CFLAGS) \
 	  $(OC_CPPFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 ifeq "$(COMPUTE_DEPS)" "true"
@@ -179,4 +179,4 @@ endif
 endif
 
 $(DEPDIR)/%.$(D): %.c | $(DEPDIR)
-	$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@
+	$(V_CCDEPS)$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@

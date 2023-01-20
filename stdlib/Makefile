@@ -114,19 +114,19 @@ CAMLHEADERS =\
 ifeq "$(SHEBANGSCRIPTS)" "true"
 camlhead%: $(ROOTDIR)/Makefile.config Makefile
 ifeq "$(LONG_SHEBANG)" "true"
-	echo '#!/bin/sh' > $@
+	$(V_GEN)echo '#!/bin/sh' > $@ && \
 	echo 'exec "$(BINDIR)/ocamlrun$(subst er,,$*)" "$$0" "$$@"' >> $@
 else
-	echo '#!$(BINDIR)/ocamlrun$(subst er,,$*)' > $@
+	$(V_GEN)echo '#!$(BINDIR)/ocamlrun$(subst er,,$*)' > $@
 endif
 
 # TODO This does not take long shebangs into account (since TARGET_BINDIR is not
 #      yet processed by configure)
 target_%: $(ROOTDIR)/Makefile.config Makefile
-	echo '#!$(TARGET_BINDIR)/ocamlrun$(subst camlheader,,$*)' > $@
+	$(V_GEN)echo '#!$(TARGET_BINDIR)/ocamlrun$(subst camlheader,,$*)' > $@
 
 camlheader_ur: Makefile
-	echo '#!' | tr -d '\012' > $@
+	$(V_GEN)echo '#!' | tr -d '\012' > $@
 
 else # Hashbang scripts not supported
 
@@ -134,13 +134,13 @@ $(CAMLHEADERS): $(HEADERPROGRAM).c $(ROOTDIR)/Makefile.config Makefile
 
 # $@.exe is deleted to ensure no Cygwin .exe mangling takes place
 camlhead%: tmphead%.exe
-	rm -f $@.exe
+	$(V_GEN)rm -f $@.exe && \
 	mv $< $@
 
 # Again, pattern weirdness here means that the dot is always present so that
 # tmpheader.exe matches.
 tmpheader%exe: $(HEADERPROGRAM)%$(O)
-	$(call MKEXE_VIA_CC,$@,$^)
+	$(V_MKEXE)$(call MKEXE_VIA_CC,$@,$^)
 # FIXME This is wrong - mingw could invoke strip; MSVC equivalent?
 ifneq "$(UNIX_OR_WIN32)" "win32"
 	strip $@
@@ -150,37 +150,37 @@ $(HEADERPROGRAM)%$(O): \
   OC_CPPFLAGS += -DRUNTIME_NAME='"$(HEADER_PATH)ocamlrun$(subst .,,$*)"'
 
 $(HEADERPROGRAM)%$(O): $(HEADERPROGRAM).c
-	$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	$(V_CC)$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
 	  $(OUTPUTOBJ)$@ $^
 
 camlheader_ur: camlheader
-	cp camlheader $@
+	$(V_GEN)cp camlheader $@
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
 tmptargetcamlheader%exe: $(TARGETHEADERPROGRAM)%$(O)
-	$(call MKEXE_VIA_CC,$@,$^)
+	$(V_MKEXE)$(call MKEXE_VIA_CC,$@,$^)
 	strip $@
 
 $(TARGETHEADERPROGRAM)%$(O): $(HEADERPROGRAM).c
-	$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
+	$(V_CC)$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
 	      -DRUNTIME_NAME='"$(HEADER_TARGET_PATH)ocamlrun$(subst .,,$*)"' \
 	      $(OUTPUTOBJ)$@ $^
 
 target_%: tmptarget%.exe
-	rm -f $@.exe
+	$(V_GEN)rm -f $@.exe && \
 	mv $< $@
 else
 target_%: %
-	cp $< $@
+	$(V_GEN)cp $< $@
 endif
 
 endif # ifeq "$(SHEBANGSCRIPTS)" "true"
 
 stdlib.cma: $(OBJS)
-	$(CAMLC) -a -o $@ $^
+	$(V_LINKC)$(CAMLC) -a -o $@ $^
 
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o $@ $^
+	$(V_LINKOPT)$(CAMLOPT) -a -o $@ $^
 
 .PHONY: distclean
 distclean: clean
@@ -193,30 +193,30 @@ clean::
 export AWK
 
 %.cmi: %.mli
-	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
+	$(V_OCAMLC)$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
 
 # The dependency on the .mli file is in .depend (since stdlib__Foo.cmi
 # depends on stdlib__foo.mli)
 stdlib__%.cmi:
-	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) \
+	$(V_OCAMLC)$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) \
 	         -o $@ -c $(filter %.mli, $^)
 
 %.cmo: %.ml
-	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
+	$(V_OCAMLC)$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
 
 # The dependency on the .ml file is in .depend (since stdlib__Foo.cmo
 # depends on stdlib__foo.ml)
 stdlib__%.cmo:
-	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) \
+	$(V_OCAMLC)$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) \
 	         -o $@ -c $(filter %.ml, $^)
 
 %.cmx: %.ml
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) -c $<
+	$(V_OCAMLOPT)$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) -c $<
 
 # The dependency on the .ml file is in .depend (since stdlib__Foo.cmx
 # depends on stdlib__foo.ml)
 stdlib__%.cmx:
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) \
+	$(V_OCAMLOPT)$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) \
 	           -o $@ -c $(filter %.ml, $^)
 
 # Dependencies on the compiler
@@ -246,7 +246,7 @@ GNUISH_SED = \
 
 .PHONY: depend
 depend:
-	{ \
+	$(V_OCAMLDEP){ \
 	  $(OCAMLDEP_CMD) $(filter-out stdlib.%,$(wildcard *.mli *.ml)); \
 	  $(OCAMLDEP_CMD) -pp "$(AWK) -f ./remove_module_aliases.awk" \
 	  stdlib.ml stdlib.mli; \

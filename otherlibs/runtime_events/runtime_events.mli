@@ -133,6 +133,61 @@ module Timestamp : sig
     val to_int64 : t -> int64
 end
 
+module Type : sig
+  type 'a t
+  (** The type for a user event content type *)
+
+  val unit : unit t
+  (** An event that has no data associated with it *)
+
+  type span = Begin | End
+
+  val span : span t
+  (** An event that has a beginning and an end *)
+
+  val int : int t
+  (** An event containing an integer value *)
+
+  val register : encode:(bytes -> 'a -> int) -> decode:(bytes -> int -> 'a)
+                                                                        -> 'a t
+  (** Registers a custom type by providing an encoder and a decoder. The encoder
+      writes the value in the provided buffer and returns the number of bytes
+      written. The decoder gets a slice of the buffer of specified length, and
+      returns the decoded value.
+
+      The maximum value length is 1024 bytes. *)
+end
+
+module User : sig
+  (** User events is a way for libraries to provide runtime events that can be
+      consumed by other tools. These events can carry known data types or custom
+      values. The current maximum number of user events is 8192. *)
+
+  type tag = ..
+  (** The type for a user event tag. Tags are used to discriminate between
+      user events of the same type *)
+
+  type 'value t
+  (** The type for a user event. User events describe their tag, carried data
+      type and an unique string-based name *)
+
+  val register : string -> tag -> 'value Type.t -> 'value t
+  (** [register name tag ty] registers a new event with an unique [name],
+      carrying a [tag] and values of type [ty] *)
+
+  val write : 'value t -> 'value -> unit
+  (** [write t v] records a new event [t] with value [v] *)
+
+  val name : _ t -> string
+  (** [name t] is the uniquely identifying name of event [t] *)
+
+  val tag : 'a t -> tag
+  (** [tag t] is the associated tag of event [t], when it is known.
+      An event can be unknown if it was not registered in the consumer
+      program. *)
+
+end
+
 module Callbacks : sig
   type t
   (** Type of callbacks *)
@@ -161,6 +216,13 @@ module Callbacks : sig
       instrumented runtime. [lost_events] callbacks are called if the consumer
       code detects some unconsumed events have been overwritten.
       *)
+
+  val add_user_event : 'a Type.t ->
+                        (int -> Timestamp.t -> 'a User.t -> 'a -> unit) ->
+                        t -> t
+  (** [add_user_event ty callback t] extends [t] to additionally subscribe to
+      user events of type [ty]. When such an event happens, [callback] is called
+      with the corresponding event and payload. *)
 end
 
 val start : unit -> unit

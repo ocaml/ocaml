@@ -2376,11 +2376,29 @@ module SArg = struct
   let make_if cond ifso ifnot = Lifthenelse (cond, ifso, ifnot)
 
   let make_switch loc arg cases acts =
+    (* The [acts] array can contain arbitrary terms.
+       If several entries in the [cases] array point to the same action,
+       we must share it to avoid duplicating terms.
+       See PR#11893 on Github for an example where the other de-duplication
+       mechanisms do not apply. *)
+    let act_uses = Array.make (Array.length acts) 0 in
+    for i = 0 to Array.length cases - 1 do
+      act_uses.(cases.(i)) <- act_uses.(cases.(i)) + 1
+    done;
+    let wrapper = ref (fun lam -> lam) in
+    for j = 0 to Array.length acts - 1 do
+      if act_uses.(j) > 1 then begin
+        let nfail, wrap = make_catch_delayed acts.(j) in
+        acts.(j) <- make_exit nfail;
+        let prev_wrapper = !wrapper in
+        wrapper := (fun lam -> wrap (prev_wrapper lam))
+      end;
+    done;
     let l = ref [] in
     for i = Array.length cases - 1 downto 0 do
       l := (i, acts.(cases.(i))) :: !l
     done;
-    Lswitch
+    !wrapper (Lswitch
       ( arg,
         { sw_numconsts = Array.length cases;
           sw_consts = !l;
@@ -2388,7 +2406,7 @@ module SArg = struct
           sw_blocks = [];
           sw_failaction = None
         },
-        loc )
+        loc ))
 
   let make_catch = make_catch_delayed
 

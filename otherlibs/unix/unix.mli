@@ -212,6 +212,13 @@ val execv : string -> string array -> 'a
    the arguments [args], and the current process environment.
    These [execv*] functions never return: on success, the current
    program is replaced by the new one.
+
+   On Windows: the CRT simply spawns a new process and exits the
+   current one. This will have unwanted consequences if e.g.
+   another process is waiting on the current one.
+   Using {!create_process} or one of the [open_process_*] functions
+   instead is recommended.
+
    @raise Unix_error on failure *)
 
 val execve : string -> string array -> string array -> 'a

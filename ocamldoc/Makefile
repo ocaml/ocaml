@@ -162,18 +162,18 @@ OCAMLDOC_NCLIBRARIES = $(OCAMLDOC_LIBRARIES:%=%.cmxa)
 $(eval $(call PROGRAM_SYNONYM,ocamldoc))
 
 $(OCAMLDOC): $(EXECMOFILES)
-	$(OCAMLC) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_BCLIBRARIES) $^
+	$(V_LINKC)$(OCAMLC) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_BCLIBRARIES) $^
 
 $(eval $(call PROGRAM_SYNONYM,ocamldoc.opt))
 
 $(OCAMLDOC_OPT): $(EXECMXFILES)
-	$(OCAMLOPT_CMD) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_NCLIBRARIES) $^
+	$(V_LINKOPT)$(OCAMLOPT_CMD) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_NCLIBRARIES) $^
 
 $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
-	$(OCAMLC) -a -o $@ $(LINKFLAGS) $^
+	$(V_LINKC)$(OCAMLC) -a -o $@ $(LINKFLAGS) $^
 
 $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
-	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $^
+	$(V_LINKOPT)$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $^
 
 .PHONY: dot
 dot: ocamldoc.dot
@@ -195,16 +195,16 @@ DEPEND_PREREQS = $(LEXERS:.mll=.ml) \
 #################
 
 %.cmo: %.ml
-	$(OCAMLC) $(COMPFLAGS) -c $<
+	$(V_OCAMLC)$(OCAMLC) $(COMPFLAGS) -c $<
 
 %.cmi: %.mli
-	$(OCAMLC) $(COMPFLAGS) -c $<
+	$(V_OCAMLC)$(OCAMLC) $(COMPFLAGS) -c $<
 
 %.cmx: %.ml
-	$(OCAMLOPT) $(COMPFLAGS) -c $<
+	$(V_OCAMLOPT)$(OCAMLOPT) $(COMPFLAGS) -c $<
 
 %.cmxs: %.ml
-	$(OCAMLOPT_CMD) -shared -o $@ $(COMPFLAGS) $<
+	$(V_OCAMLOPT)$(OCAMLOPT_CMD) -shared -o $@ $(COMPFLAGS) $<
 
 # Installation targets
 ######################

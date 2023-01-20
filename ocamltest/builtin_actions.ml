@@ -24,28 +24,32 @@ let reason_with_fallback env fallback =
   | Some reason -> reason
 
 let pass = make
-  "pass"
+  ~name:"pass"
+  ~description:"Always succeed"
   (fun _log env ->
     let reason = reason_with_fallback env "the pass action always succeeds" in
     let result = Result.pass_with_reason reason in
     (result, env))
 
 let skip = make
-  "skip"
+  ~name:"skip"
+  ~description:"Always skip the test"
   (fun _log env ->
     let reason = reason_with_fallback env "the skip action always skips" in
     let result = Result.skip_with_reason reason in
     (result, env))
 
 let fail = make
-  "fail"
+  ~name:"fail"
+  ~description:"Always fail"
   (fun _log env ->
     let reason = reason_with_fallback env "the fail action always fails" in
     let result = Result.fail_with_reason reason in
     (result, env))
 
 let cd = make
-  "cd"
+  ~name:"cd"
+  ~description:"Change working directory"
   (fun _log env ->
     let cwd = Environments.safe_lookup Builtin_variables.cwd env in
     begin
@@ -58,36 +62,42 @@ let cd = make
     end)
 
 let dumpenv = make
-  "dumpenv"
+  ~name:"dumpenv"
+  ~description:"Dump the environment"
   (fun log env ->
     Environments.dump log env; (Result.pass, env))
 
 let hasunix = make
-  "hasunix"
+  ~name:"hasunix"
+  ~description:"Pass if the unix library is available"
   (Actions_helpers.pass_or_skip (Ocamltest_config.libunix <> None)
     "unix library available"
     "unix library not available")
 
 let libunix = make
-  "libunix"
+  ~name:"libunix"
+  ~description:"Pass if libunix is available"
   (Actions_helpers.pass_or_skip (Ocamltest_config.libunix = Some true)
     "libunix available"
     "libunix not available")
 
 let libwin32unix = make
-  "libwin32unix"
+  ~name:"libwin32unix"
+  ~description:"Pass if the win32 variant of the unix library is available"
   (Actions_helpers.pass_or_skip (Ocamltest_config.libunix = Some false)
     "win32 variant of the unix library available"
     "win32 variant of the unix library not available")
 
 let hassysthreads = make
-  "hassysthreads"
+  ~name:"hassysthreads"
+  ~description:"Pass if the systhreads library is available"
   (Actions_helpers.pass_or_skip Ocamltest_config.systhreads
     "systhreads library available"
     "systhreads library not available")
 
 let hasstr = make
-  "hasstr"
+  ~name:"hasstr"
+  ~description:"Pass if the str library is available"
   (Actions_helpers.pass_or_skip Ocamltest_config.str
     "str library available"
     "str library not available")
@@ -97,13 +107,15 @@ let windows_OS = "Windows_NT"
 let get_OS () = Sys.safe_getenv "OS"
 
 let windows = make
-  "windows"
+  ~name:"windows"
+  ~description:"Pass if running on Windows"
   (Actions_helpers.pass_or_skip (get_OS () = windows_OS)
     "running on Windows"
     "not running on Windows")
 
 let not_windows = make
-  "not-windows"
+  ~name:"not-windows"
+  ~description:"Pass if not running on Windows"
   (Actions_helpers.pass_or_skip (get_OS () <> windows_OS)
     "not running on Windows"
     "running on Windows")
@@ -114,13 +126,15 @@ let is_bsd_system s =
   | _ -> false
 
 let bsd = make
-  "bsd"
+  ~name:"bsd"
+  ~description:"Pass if running on a BSD system"
   (Actions_helpers.pass_or_skip (is_bsd_system Ocamltest_config.system)
     "on a BSD system"
     "not on a BSD system")
 
 let not_bsd = make
-  "not-bsd"
+  ~name:"not-bsd"
+  ~description:"Pass if not running on a BSD system"
   (Actions_helpers.pass_or_skip (not (is_bsd_system Ocamltest_config.system))
     "not on a BSD system"
     "on a BSD system")
@@ -128,89 +142,106 @@ let not_bsd = make
 let macos_system = "macosx"
 
 let macos = make
-  "macos"
+  ~name:"macos"
+  ~description:"Pass if running on a MacOS system"
   (Actions_helpers.pass_or_skip (Ocamltest_config.system = macos_system)
     "on a MacOS system"
     "not on a MacOS system")
 
 let arch32 = make
-  "arch32"
+  ~name:"arch32"
+  ~description:"Pass if running on a 32-bit architecture"
   (Actions_helpers.pass_or_skip (Sys.word_size = 32)
     "32-bit architecture"
     "non-32-bit architecture")
 
 let arch64 = make
-  "arch64"
+  ~name:"arch64"
+  ~description:"Pass if running on a 64-bit architecture"
   (Actions_helpers.pass_or_skip (Sys.word_size = 64)
     "64-bit architecture"
     "non-64-bit architecture")
 
 let arch_arm = make
-  "arch_arm"
+  ~name:"arch_arm"
+  ~description:"Pass if target is an ARM architecture"
   (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "arm")
      "Target is ARM architecture"
      "Target is not ARM architecture")
 
 let arch_arm64 = make
-  "arch_arm64"
+  ~name:"arch_arm64"
+  ~description:"Pass if target is an ARM64 architecture"
   (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "arm64")
      "Target is ARM64 architecture"
      "Target is not ARM64 architecture")
 
  let arch_amd64 = make
-  "arch_amd64"
+  ~name:"arch_amd64"
+  ~description:"Pass if target is an AMD64 architecture"
   (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "amd64")
      "Target is AMD64 architecture"
      "Target is not AMD64 architecture")
 
  let arch_i386 = make
-  "arch_i386"
+  ~name:"arch_i386"
+  ~description:"Pass if target is an i386 architecture"
   (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "i386")
      "Target is i386 architecture"
      "Target is not i386 architecture")
 
 let arch_power = make
-  "arch_power"
+  ~name:"arch_power"
+  ~description:"Pass if target is a POWER architecture"
   (Actions_helpers.pass_or_skip (String.equal Ocamltest_config.arch "power")
     "Target is POWER architecture"
     "Target is not POWER architecture")
 
 let function_sections = make
-  "function_sections"
+  ~name:"function_sections"
+  ~description:"Pass if target supports function sections"
   (Actions_helpers.pass_or_skip (Ocamltest_config.function_sections)
      "Target supports function sections"
      "Target does not support function sections")
 
 let frame_pointers = make
-  "frame_pointers"
+  ~name:"frame_pointers"
+  ~description:"Pass if frame pointers are available"
   (Actions_helpers.pass_or_skip (Ocamltest_config.frame_pointers)
      "frame-pointers available"
      "frame-pointers not available")
 
 let has_symlink = make
-  "has_symlink"
+  ~name:"has_symlink"
+  ~description:"Pass if symbolic links are available"
   (Actions_helpers.pass_or_skip (Unix.has_symlink () )
     "symlinks available"
     "symlinks not available")
 
 let setup_build_env = make
-  "setup-build-env"
+  ~name:"setup-build-env"
+  ~description:"Create a dedicated directory for the test and populates it"
   (Actions_helpers.setup_build_env true [])
 
 let setup_simple_build_env = make
-  "setup-simple-build-env"
+  ~name:"setup-simple-build-env"
+  ~description:"Do not create a dedicated directory, but only sets the \
+    test_build_directory variable"
   (Actions_helpers.setup_simple_build_env true [])
 
 let run = make
-  "run"
+  ~name:"run"
+  ~description:"Run the program"
   Actions_helpers.run_program
 
 let script = make
-  "script"
+  ~name:"script"
+  ~description:"Run the script specified by the script variable"
   Actions_helpers.run_script
 
 let check_program_output = make
-  "check-program-output"
+  ~name:"check-program-output"
+  ~description:"Compare the output of the program with its reference"
   (Actions_helpers.check_output "program"
     Builtin_variables.output
     Builtin_variables.reference)
@@ -236,7 +267,11 @@ let file_exists_action _log env =
         let result = Result.fail_with_reason reason in
         (result, env)
       end
-let file_exists = make "file-exists" file_exists_action
+let file_exists = make
+  ~name:"file-exists"
+  ~description:"Pass if there is a file at the path contained in variable \
+    `file`"
+  file_exists_action
 
 let copy_action log env =
   let do_copy src dst =
@@ -264,7 +299,7 @@ let copy_action log env =
       List.iter f (String.words src);
       (Result.pass, env)
 
-let copy = make "copy" copy_action
+let copy = make ~name:"copy" ~description:"Copy a file" copy_action
 
 let initialize_test_exit_status_variables _log env =
   Environments.add_bindings
