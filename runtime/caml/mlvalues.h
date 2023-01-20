@@ -116,36 +116,39 @@ where 0 <= R <= 31 is HEADER_RESERVED_BITS, set with the
 
 #define HEADER_COLOR_BITS 2
 #define HEADER_COLOR_SHIFT HEADER_TAG_BITS
-#define HEADER_COLOR_MASK ((1ull << HEADER_COLOR_BITS) - 1ull)
+#define HEADER_COLOR_MASK (((1ull << HEADER_COLOR_BITS) - 1ull) \
+                            << HEADER_COLOR_SHIFT)
 
 #define HEADER_WOSIZE_BITS (HEADER_BITS - HEADER_TAG_BITS \
                             - HEADER_COLOR_BITS - HEADER_RESERVED_BITS)
 #define HEADER_WOSIZE_SHIFT (HEADER_COLOR_SHIFT  + HEADER_COLOR_BITS)
-#define HEADER_WOSIZE_MASK ((1ull << HEADER_WOSIZE_BITS) - 1ull)
+#define HEADER_WOSIZE_MASK (((1ull << HEADER_WOSIZE_BITS) - 1ull) \
+                             << HEADER_WOSIZE_SHIFT)
 
 #define Tag_hd(hd) ((tag_t) ((hd) & HEADER_TAG_MASK))
-#define Wosize_hd(hd) ((mlsize_t) (((hd) >> HEADER_WOSIZE_SHIFT) \
-                                   & HEADER_WOSIZE_MASK))
+#define Wosize_hd(hd) ((mlsize_t) (((hd) & HEADER_WOSIZE_MASK) \
+                                     >> HEADER_WOSIZE_SHIFT))
 
 #if HEADER_RESERVED_BITS > 0
 
 #define HEADER_RESERVED_SHIFT (HEADER_BITS - HEADER_RESERVED_BITS)
-#define Reserved_hd(hd)  ((hd) >> HEADER_RESERVED_SHIFT)
-#define Hd_reserved(res) ((header_t)(res) << HEADER_RESERVED_SHIFT)
+#define Reserved_hd(hd)   (((header_t) (hd)) >> HEADER_RESERVED_SHIFT)
+#define Noreserved_hd(hd) ((header_t)(hd) & ((1ull << HEADER_RESERVED_SHIFT) \
+                                             - 1ull))
+#define Hd_reserved(res)  ((header_t)(res) << HEADER_RESERVED_SHIFT)
 
 #else /* HEADER_RESERVED_BITS is 0 */
 
-#define Reserved_hd(hd)  ((reserved_t)0)
-#define Hd_reserved(res) ((header_t)0)
+#define Reserved_hd(hd)   ((reserved_t)0)
+#define Noreserved_hd(hd) ((header_t)(hd))
+#define Hd_reserved(res)  ((header_t)0)
 
 #endif
 
 /* Color values are pre-shifted */
 
-#define Color_hd(hd) ((hd) & (HEADER_COLOR_MASK << HEADER_COLOR_SHIFT))
-#define Hd_with_color(hd, color) (((hd) &~ \
-                                   (HEADER_COLOR_MASK << HEADER_COLOR_SHIFT)) \
-                                  | (color))
+#define Color_hd(hd) ((hd) & HEADER_COLOR_MASK)
+#define Hd_with_color(hd, color) (((hd) &~ HEADER_COLOR_MASK) | (color))
 
 #define Hp_atomic_val(val) ((atomic_uintnat *)(val) - 1)
 #define Hd_val(val) ((header_t) \
@@ -438,12 +441,15 @@ CAMLextern value caml_set_oo_id(value obj);
 
 /* Header for out-of-heap blocks. */
 
-#define Caml_out_of_heap_header(wosize, tag)                                   \
-      (/*CAMLassert ((wosize) <= Max_wosize),*/                                \
-       ((header_t) (((header_t) (wosize) << HEADER_WOSIZE_SHIFT)               \
-           + (3 << HEADER_COLOR_SHIFT) /* [NOT_MARKABLE] in [shared_heap.h] */ \
-           + (tag_t) (tag)))                                                   \
-      )
+#define Caml_out_of_heap_header_with_reserved(wosize, tag, reserved)   \
+      (/*CAMLassert ((wosize) <= Max_wosize),*/                        \
+       ((header_t) (Hd_reserved(reserved))                             \
+                    + ((header_t) (wosize) << HEADER_WOSIZE_SHIFT)     \
+                    + (3 << HEADER_COLOR_SHIFT) /* [NOT_MARKABLE] */   \
+                    + (tag_t) (tag)))
+
+#define Caml_out_of_heap_header(wosize, tag)                           \
+        Caml_out_of_heap_header_with_reserved(wosize, tag, 0)
 
 #ifdef __cplusplus
 }

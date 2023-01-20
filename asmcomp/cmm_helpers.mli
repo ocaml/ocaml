@@ -235,7 +235,8 @@ val is_addr_array_ptr : expression -> Debuginfo.t -> expression
 (** Get the length of an array from its header
     Shifts by one bit less than necessary, keeping one of the GC colour bits,
     to save an operation when returning the length as a caml integer or when
-    comparing it to a caml integer. *)
+    comparing it to a caml integer.
+    Assumes that the reserved bits are clear (see get_header_masked) *)
 val addr_array_length_shifted : expression -> Debuginfo.t -> expression
 val float_array_length_shifted : expression -> Debuginfo.t -> expression
 

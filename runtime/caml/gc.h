@@ -32,6 +32,6 @@
 #define Make_header(wosize, tag, color) \
         Make_header_with_reserved(wosize, tag, color, 0)
 
-#define Whitehd_hd(hd) Hd_with_color(hd, 0)
+#define Cleanhd_hd(hd) Noreserved_hd(Hd_with_color(hd, 0))
 
 #endif /* CAML_GC_H */
