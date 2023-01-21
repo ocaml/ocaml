@@ -33,10 +33,23 @@ let hashcons x = SW.merge sw x
 let hw = HW.create n
 
 let rec fill_hw x =
-  if not (HW.mem hw x) then begin
-    let y = hashcons (collatz x) in
-    HW.add hw x y;
-    fill_hw y
+  (* Coin-flip whether to use naive approach (if not mem then add), or an
+     equivalent call to [update]. *)
+  if Random.bool () then begin
+    if not (HW.mem hw x) then begin
+      let y = hashcons (collatz x) in
+      HW.add hw x y;
+      fill_hw y
+    end
+  end else begin
+    let continue = ref None in
+    HW.update hw x (function
+      | Some _ as result -> result
+      | None ->
+        let y = hashcons (collatz x) in
+        continue := Some y; Some y
+    );
+    match !continue with Some y -> fill_hw y | None -> ()
   end
 
 exception InvariantBroken of string

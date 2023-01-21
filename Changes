@@ -100,6 +100,9 @@ Working version
 
 ### Standard library:
 
+- #11753: Add `Hashtbl.update`.
+  (André Duarte)
+
 - #11883, #11884: Update documentation for In_channel and Out_channel
   with examples and sections to group related functions.
   (Kiran Gopinathan, review by Daniel Bünzli and Xavier Leroy)

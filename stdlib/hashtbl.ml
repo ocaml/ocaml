@@ -297,6 +297,7 @@ module type S =
     val copy: 'a t -> 'a t
     val add: 'a t -> key -> 'a -> unit
     val remove: 'a t -> key -> unit
+    val update: 'a t -> key -> ('a option -> 'a option) -> unit
     val find: 'a t -> key -> 'a
     val find_opt: 'a t -> key -> 'a option
     val find_all: 'a t -> key -> 'a list
@@ -325,6 +326,7 @@ module type SeededS =
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
     val remove : 'a t -> key -> unit
+    val update: 'a t -> key -> ('a option -> 'a option) -> unit
     val find : 'a t -> key -> 'a
     val find_opt: 'a t -> key -> 'a option
     val find_all : 'a t -> key -> 'a list
@@ -419,6 +421,69 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
               | Empty -> None
               | Cons{key=k3; data=d3; next=next3} ->
                   if H.equal key k3 then Some d3 else find_rec_opt key next3
+
+    let update h key f =
+      let rec find_slot_rec key prev curr =
+        match curr with
+        | Empty -> Empty, Empty
+        | Cons{key=k; next} ->
+          if H.equal key k then prev, curr else
+          find_slot_rec key curr next
+      in
+      (* Manually unrolled for first 3 slots *)
+      let find_slot key x =
+        match x with
+        | Empty -> Empty, Empty
+        | Cons{key=k1; next=next1} ->
+        if H.equal key k1 then Empty, x else
+        match next1 with
+        | Empty -> Empty, Empty
+        | Cons{key=k2; next=next2} ->
+        if H.equal key k2 then x, next1 else
+        match next2 with
+        | Empty -> Empty, Empty
+        | Cons{key=k3; next=next3} ->
+        if H.equal key k3 then next1, next2 else
+        find_slot_rec key next2 next3
+      in
+
+      let old_trav = ongoing_traversal h in
+      if not old_trav then flip_ongoing_traversal h;
+      try
+        let i = key_index h key in
+        let bucket = h.data.(i) in
+        let prev, slot = find_slot key bucket in
+        begin match slot with
+        (* Key not in table *)
+        | Empty ->
+          begin match f None with
+          | Some data ->
+            h.data.(i) <- Cons{key; data; next=bucket};
+            h.size <- h.size + 1;
+            if h.size > Array.length h.data lsl 1 then resize key_index h
+          | None ->
+            ()
+          end
+        (* Key in table *)
+        | Cons slot ->
+          begin match f (Some slot.data) with
+          | Some data ->
+            slot.key <- key;
+            slot.data <- data;
+          | None ->
+            h.size <- h.size - 1;
+            begin match prev with
+            (* Key was in the head slot of its bucket *)
+            | Empty -> h.data.(i) <- slot.next
+            (* Key was in a tail slot of its bucket *)
+            | Cons prev -> prev.next <- slot.next
+            end
+          end
+        end;
+        if not old_trav then flip_ongoing_traversal h
+      with exn when not old_trav ->
+        flip_ongoing_traversal h;
+        raise exn
 
     let find_all h key =
       let[@tail_mod_cons] rec find_in_bucket = function
@@ -570,6 +635,69 @@ let find_opt h key =
           | Empty -> None
           | Cons{key=k3; data=d3; next=next3} ->
               if compare key k3 = 0 then Some d3 else find_rec_opt key next3
+
+let update h key f =
+  let rec find_slot_rec key prev curr =
+    match curr with
+    | Empty -> Empty, Empty
+    | Cons{key=k; next} ->
+      if compare key k = 0 then prev, curr else find_slot_rec key curr next
+  in
+  (* Manually unrolled for first 3 slots *)
+  let find_slot key x =
+    match x with
+    | Empty -> Empty, Empty
+    | Cons{key=k1; next=next1} ->
+    if compare key k1 = 0 then Empty, x else
+    match next1 with
+    | Empty -> Empty, Empty
+    | Cons{key=k2; next=next2} ->
+    if compare key k2 = 0 then x, next1 else
+    match next2 with
+    | Empty -> Empty, Empty
+    | Cons{key=k3; next=next3} ->
+    if compare key k3 = 0 then next1, next2 else
+    find_slot_rec key next2 next3
+  in
+
+  let old_trav = ongoing_traversal h in
+  if not old_trav then flip_ongoing_traversal h;
+  try
+    let i = key_index h key in
+    let bucket = h.data.(i) in
+    let prev, slot = find_slot key bucket in
+    begin match slot with
+    (* Key not in table *)
+    | Empty ->
+      begin match f None with
+      | Some data ->
+        h.data.(i) <- Cons{key; data; next=bucket};
+        h.size <- h.size + 1;
+        if h.size > Array.length h.data lsl 1 then resize key_index h
+      | None ->
+        ()
+      end
+    (* Key in table *)
+    | Cons slot ->
+      begin match f (Some slot.data) with
+      | Some data ->
+        slot.key <- key;
+        slot.data <- data;
+      | None ->
+        h.size <- h.size - 1;
+        begin match prev with
+        (* Key was in the head slot of its bucket *)
+        | Empty -> h.data.(i) <- slot.next
+        (* Key was in a tail slot of its bucket *)
+        | Cons prev -> prev.next <- slot.next
+        end
+      end
+    end;
+    if not old_trav then flip_ongoing_traversal h
+  with exn when not old_trav ->
+    flip_ongoing_traversal h;
+    raise exn
+
 
 let find_all h key =
   let[@tail_mod_cons] rec find_in_bucket = function

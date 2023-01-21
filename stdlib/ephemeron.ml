@@ -27,6 +27,7 @@ module type SeededS = sig
   val find_opt : 'a t -> key -> 'a option
   val find_all : 'a t -> key -> 'a list
   val replace : 'a t -> key -> 'a -> unit
+  val update : 'a t -> key -> ('a option -> 'a option) -> unit
   val mem : 'a t -> key -> bool
   val length : 'a t -> int
   val stats : 'a t -> Hashtbl.statistics
@@ -52,6 +53,7 @@ module type S = sig
   val find_opt : 'a t -> key -> 'a option
   val find_all : 'a t -> key -> 'a list
   val replace : 'a t -> key -> 'a -> unit
+  val update : 'a t -> key -> ('a option -> 'a option) -> unit
   val mem : 'a t -> key -> bool
   val length : 'a t -> int
   val stats : 'a t -> Hashtbl.statistics
@@ -264,6 +266,49 @@ module GenHashTable = struct
       let hkey = H.seeded_hash h.seed key in
       (* TODO inline 3 iterations *)
       find_rec_opt key hkey (h.data.(key_index h hkey))
+
+    let update h key f =
+      let rec loop h key (hkey: int) f = function
+        (* Key not in table *)
+        | Empty ->
+          raise_notrace Not_found
+        | Cons(hk, c, next) as curr when hkey = hk ->
+          begin match H.equal c key with
+          | ETrue ->
+            begin match H.get_data c with
+            | None -> Cons(hk, c, loop h key hkey f next)
+            (* Key found in table *)
+            | Some _ as input ->
+              begin match f input with
+              | Some info ->
+                H.set_key_data c key info;
+                curr
+              | None ->
+                h.size <- h.size - 1;
+                next
+              end
+            end
+          | EFalse | EDead ->
+            Cons(hk, c, loop h key hkey f next)
+          end
+        | Cons(hk, c, next) ->
+          Cons(hk, c, loop h key hkey f next)
+      in
+      let hkey = H.seeded_hash h.seed key in
+      let i = key_index h hkey in
+      try
+        h.data.(i) <- loop h key hkey f h.data.(i);
+        if h.size > Array.length h.data lsl 1 then resize h
+      with Not_found ->
+        begin match f None with
+        | Some info ->
+          h.size <- h.size + 1;
+          let container = H.create key info in
+          h.data.(i) <- Cons(hkey, container, h.data.(i));
+          if h.size > Array.length h.data lsl 1 then resize h
+        | None ->
+          ()
+        end
 
     let find_all h key =
       let hkey = H.seeded_hash h.seed key in
