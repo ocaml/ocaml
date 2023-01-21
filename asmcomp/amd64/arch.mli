@@ -78,4 +78,4 @@ val operation_is_pure : specific_operation -> bool
 val operation_can_raise : specific_operation -> bool
 
 val float_cond_and_need_swap
-  :  Mach.float_comparison -> X86_ast.float_condition * bool
+  :  Lambda.float_comparison -> X86_ast.float_condition * bool

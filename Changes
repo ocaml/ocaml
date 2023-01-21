@@ -81,7 +81,7 @@ Working version
 - #9945: Turn boolean-result float comparisons into primitive operations.
   Uses the architecture's elementary operations for float comparisons,
   when available, rather than branching and then setting the return value.
-  (Stefan Muenzel, review by Stephen Dolan and Alain Frisch)
+  (Stefan Muenzel, review by Stephen Dolan, Alain Frisch and Vincent Laviron)
 
 - #8998, #11321, #11430: change mangling of OCaml long identifiers
   from `camlModule__name_NNN` to `camlModule.name_NNN`.  The previous
