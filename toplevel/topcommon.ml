@@ -393,7 +393,7 @@ let loading_hint_printer ppf err =
       in
       fprintf ppf
         "@.Hint: @[\
-         This means a module's interface is loaded, \
+         This means that the interface of a module is loaded, \
          but its implementation is not.@,";
       begin match List.find_map find_with_ext [".cma"; ".cmo"] with
       | Some path ->
