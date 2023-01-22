@@ -2107,7 +2107,7 @@ oc_native_cflags=''
 AS_IF([test x"$enable_function_sections" = "xno"],
   [function_sections=false],
   [AS_CASE([$arch],
-    [amd64|i386|arm64], # not supported on arm32, see issue #9124.
+    [amd64|arm64], # not supported on arm32, see issue #9124.
      [AS_CASE([$target],
         [*-cygwin*|*-mingw*|*-windows|*-apple-darwin*],
           [function_sections=false;

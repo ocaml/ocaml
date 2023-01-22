@@ -524,7 +524,7 @@ let safe_divmod_bi mkop is_safe mkm1 c1 c2 bi dbg =
   bind "dividend" c1 (fun c1 ->
     let c = mkop c1 c2 is_safe dbg in
     if Arch.division_crashes_on_overflow
-    && (size_int = 4 || bi <> Primitive.Pint32)
+    && bi <> Primitive.Pint32
     && not (is_different_from (-1) c2)
     then
       Cifthenelse(Cop(Ccmpi Cne, [c2; Cconst_int (-1, dbg)], dbg),
@@ -980,12 +980,11 @@ let bigarray_set unsafe elt_kind layout b args newval dbg =
             [bigarray_indexing unsafe elt_kind layout b args dbg; newval],
             dbg))
 
-(* the three functions below assume either 32-bit or 64-bit words *)
-let () = assert (size_int = 4 || size_int = 8)
+(* the three functions below assume 64-bit words *)
+let () = assert (size_int = 8)
 
 (* low_32 x is a value which agrees with x on at least the low 32 bits *)
 let rec low_32 dbg = function
-  | x when size_int = 4 -> x
     (* Ignore sign and zero extensions, which do not affect the low bits *)
   | Cop(Casr, [Cop(Clsl, [x; Cconst_int (32, _)], _);
                Cconst_int (32, _)], _)
@@ -995,18 +994,14 @@ let rec low_32 dbg = function
     Clet(id, e, low_32 dbg body)
   | x -> x
 
-(* sign_extend_32 sign-extends values from 32 bits to the word size.
-   (if the word size is 32, this is a no-op) *)
+(* sign_extend_32 sign-extends values from 32 bits to the word size. *)
 let sign_extend_32 dbg e =
-  if size_int = 4 then e else
-    Cop(Casr, [Cop(Clsl, [low_32 dbg e; Cconst_int(32, dbg)], dbg);
-               Cconst_int(32, dbg)], dbg)
+  Cop(Casr, [Cop(Clsl, [low_32 dbg e; Cconst_int(32, dbg)], dbg);
+             Cconst_int(32, dbg)], dbg)
 
-(* zero_extend_32 zero-extends values from 32 bits to the word size.
-   (if the word size is 32, this is a no-op) *)
+(* zero_extend_32 zero-extends values from 32 bits to the word size. *)
 let zero_extend_32 dbg e =
-  if size_int = 4 then e else
-    Cop(Cand, [low_32 dbg e; natint_const_untagged dbg 0xFFFFFFFFn], dbg)
+  Cop(Cand, [low_32 dbg e; natint_const_untagged dbg 0xFFFFFFFFn], dbg)
 
 (* Boxed integers *)
 
@@ -1024,7 +1019,7 @@ let alloc_header_boxed_int (bi : Primitive.boxed_integer) =
 
 let box_int_gen dbg (bi : Primitive.boxed_integer) arg =
   let arg' =
-    if bi = Primitive.Pint32 && size_int = 8 then
+    if bi = Primitive.Pint32 then
       if big_endian
       then Cop(Clsl, [arg; Cconst_int (32, dbg)], dbg)
       else sign_extend_32 dbg arg
@@ -1033,13 +1028,6 @@ let box_int_gen dbg (bi : Primitive.boxed_integer) arg =
   Cop(Calloc, [alloc_header_boxed_int bi dbg;
                Cconst_symbol(operations_boxed_int bi, dbg);
                arg'], dbg)
-
-let split_int64_for_32bit_target arg dbg =
-  bind "split_int64" arg (fun arg ->
-    let first = Cop (Cadda, [Cconst_int (size_int, dbg); arg], dbg) in
-    let second = Cop (Cadda, [Cconst_int (2 * size_int, dbg); arg], dbg) in
-    Ctuple [Cop (mk_load_mut Thirtytwo_unsigned, [first], dbg);
-            Cop (mk_load_mut Thirtytwo_unsigned, [second], dbg)])
 
 let alloc_matches_boxed_int bi ~hdr ~ops =
   match (bi : Primitive.boxed_integer), hdr, ops with
@@ -1056,28 +1044,25 @@ let alloc_matches_boxed_int bi ~hdr ~ops =
 
 let unbox_int dbg bi =
   let default arg =
-    if size_int = 4 && bi = Primitive.Pint64 then
-      split_int64_for_32bit_target arg dbg
-    else
-      let memory_chunk = if bi = Primitive.Pint32
+    let memory_chunk = if bi = Primitive.Pint32
       then Thirtytwo_signed else Word_int
-      in
-      Cop(
-        Cload {memory_chunk; mutability=Immutable; is_atomic=false},
-        [Cop(Cadda, [arg; Cconst_int (size_addr, dbg)], dbg)], dbg)
+    in
+    Cop(
+      Cload {memory_chunk; mutability=Immutable; is_atomic=false},
+      [Cop(Cadda, [arg; Cconst_int (size_addr, dbg)], dbg)], dbg)
   in
   map_tail
     (function
       | Cop(Calloc,
             [hdr; ops;
              Cop(Clsl, [contents; Cconst_int (32, _)], _dbg')], _dbg)
-        when bi = Primitive.Pint32 && size_int = 8 && big_endian
+        when bi = Primitive.Pint32 && big_endian
              && alloc_matches_boxed_int bi ~hdr ~ops ->
           (* Force sign-extension of low 32 bits *)
           sign_extend_32 dbg contents
       | Cop(Calloc,
             [hdr; ops; contents], _dbg)
-        when bi = Primitive.Pint32 && size_int = 8 && not big_endian
+        when bi = Primitive.Pint32 && not big_endian
              && alloc_matches_boxed_int bi ~hdr ~ops ->
           (* Force sign-extension of low 32 bits *)
           sign_extend_32 dbg contents
@@ -1091,19 +1076,7 @@ let unbox_int dbg bi =
           | Some (Uconst_int32 n), Primitive.Pint32 ->
               natint_const_untagged dbg (Nativeint.of_int32 n)
           | Some (Uconst_int64 n), Primitive.Pint64 ->
-              if size_int = 8 then
-                natint_const_untagged dbg (Int64.to_nativeint n)
-              else
-                let low = Int64.to_nativeint n in
-                let high =
-                  Int64.to_nativeint (Int64.shift_right_logical n 32)
-                in
-                if big_endian then
-                  Ctuple [natint_const_untagged dbg high;
-                          natint_const_untagged dbg low]
-                else
-                  Ctuple [natint_const_untagged dbg low;
-                          natint_const_untagged dbg high]
+              natint_const_untagged dbg (Int64.to_nativeint n)
           | _ ->
               default cmm
           end
@@ -1112,7 +1085,7 @@ let unbox_int dbg bi =
     )
 
 let make_unsigned_int bi arg dbg =
-  if bi = Primitive.Pint32 && size_int = 8
+  if bi = Primitive.Pint32
   then zero_extend_32 dbg arg
   else arg
 
@@ -1207,7 +1180,6 @@ let unaligned_set_32 ptr idx newval dbg =
                 dbg)))
 
 let unaligned_load_64 ptr idx dbg =
-  assert(size_int = 8);
   if Arch.allow_unaligned_access
   then Cop(mk_load_mut Word_int, [add_int ptr idx dbg], dbg)
   else
@@ -1246,7 +1218,6 @@ let unaligned_load_64 ptr idx dbg =
              dbg)], dbg)
 
 let unaligned_set_64 ptr idx newval dbg =
-  assert(size_int = 8);
   if Arch.allow_unaligned_access
   then Cop(Cstore (Word_int, Assignment), [add_int ptr idx dbg; newval], dbg)
   else
@@ -1370,65 +1341,6 @@ let box_sized size dbg exp =
 let default_prim name =
   Primitive.simple ~name ~arity:0(*ignored*) ~alloc:true
 
-
-let int64_native_prim name arity ~alloc =
-  let u64 = Primitive.Unboxed_integer Primitive.Pint64 in
-  let rec make_args = function 0 -> [] | n -> u64 :: make_args (n - 1) in
-  Primitive.make ~name ~native_name:(name ^ "_native")
-    ~alloc
-    ~native_repr_args:(make_args arity)
-    ~native_repr_res:u64
-
-let simplif_primitive_32bits :
-  Clambda_primitives.primitive -> Clambda_primitives.primitive = function
-    Pbintofint Pint64 -> Pccall (default_prim "caml_int64_of_int")
-  | Pintofbint Pint64 -> Pccall (default_prim "caml_int64_to_int")
-  | Pcvtbint(Pint32, Pint64) -> Pccall (default_prim "caml_int64_of_int32")
-  | Pcvtbint(Pint64, Pint32) -> Pccall (default_prim "caml_int64_to_int32")
-  | Pcvtbint(Pnativeint, Pint64) ->
-      Pccall (default_prim "caml_int64_of_nativeint")
-  | Pcvtbint(Pint64, Pnativeint) ->
-      Pccall (default_prim "caml_int64_to_nativeint")
-  | Pnegbint Pint64 -> Pccall (int64_native_prim "caml_int64_neg" 1
-                                 ~alloc:false)
-  | Paddbint Pint64 -> Pccall (int64_native_prim "caml_int64_add" 2
-                                 ~alloc:false)
-  | Psubbint Pint64 -> Pccall (int64_native_prim "caml_int64_sub" 2
-                                 ~alloc:false)
-  | Pmulbint Pint64 -> Pccall (int64_native_prim "caml_int64_mul" 2
-                                 ~alloc:false)
-  | Pdivbint {size=Pint64} -> Pccall (int64_native_prim "caml_int64_div" 2
-                                        ~alloc:true)
-  | Pmodbint {size=Pint64} -> Pccall (int64_native_prim "caml_int64_mod" 2
-                                        ~alloc:true)
-  | Pandbint Pint64 -> Pccall (int64_native_prim "caml_int64_and" 2
-                                 ~alloc:false)
-  | Porbint Pint64 ->  Pccall (int64_native_prim "caml_int64_or" 2
-                                 ~alloc:false)
-  | Pxorbint Pint64 -> Pccall (int64_native_prim "caml_int64_xor" 2
-                                 ~alloc:false)
-  | Plslbint Pint64 -> Pccall (default_prim "caml_int64_shift_left")
-  | Plsrbint Pint64 -> Pccall (default_prim "caml_int64_shift_right_unsigned")
-  | Pasrbint Pint64 -> Pccall (default_prim "caml_int64_shift_right")
-  | Pbintcomp(Pint64, Lambda.Ceq) -> Pccall (default_prim "caml_equal")
-  | Pbintcomp(Pint64, Lambda.Cne) -> Pccall (default_prim "caml_notequal")
-  | Pbintcomp(Pint64, Lambda.Clt) -> Pccall (default_prim "caml_lessthan")
-  | Pbintcomp(Pint64, Lambda.Cgt) -> Pccall (default_prim "caml_greaterthan")
-  | Pbintcomp(Pint64, Lambda.Cle) -> Pccall (default_prim "caml_lessequal")
-  | Pbintcomp(Pint64, Lambda.Cge) -> Pccall (default_prim "caml_greaterequal")
-  | Pcompare_bints Pint64 -> Pccall (default_prim "caml_int64_compare")
-  | Pbigarrayref(_unsafe, n, Pbigarray_int64, _layout) ->
-      Pccall (default_prim ("caml_ba_get_" ^ Int.to_string n))
-  | Pbigarrayset(_unsafe, n, Pbigarray_int64, _layout) ->
-      Pccall (default_prim ("caml_ba_set_" ^ Int.to_string n))
-  | Pstring_load(Sixty_four, _) -> Pccall (default_prim "caml_string_get64")
-  | Pbytes_load(Sixty_four, _) -> Pccall (default_prim "caml_bytes_get64")
-  | Pbytes_set(Sixty_four, _) -> Pccall (default_prim "caml_bytes_set64")
-  | Pbigstring_load(Sixty_four,_) -> Pccall (default_prim "caml_ba_uint8_get64")
-  | Pbigstring_set(Sixty_four,_) -> Pccall (default_prim "caml_ba_uint8_set64")
-  | Pbbswap Pint64 -> Pccall (default_prim "caml_int64_bswap")
-  | p -> p
-
 let simplif_primitive p : Clambda_primitives.primitive =
   match (p : Clambda_primitives.primitive) with
   | Pduprecord _ ->
@@ -1442,7 +1354,7 @@ let simplif_primitive p : Clambda_primitives.primitive =
   | Pbigarrayset(_unsafe, n, _kind, Pbigarray_unknown_layout) ->
       Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
   | p ->
-      if size_int = 8 then p else simplif_primitive_32bits p
+      p
 
 (* Build switchers both for constants and blocks *)
 
@@ -2549,22 +2461,11 @@ let emit_string_constant_fields s cont =
 
 let emit_boxed_int32_constant_fields n cont =
   let n = Nativeint.of_int32 n in
-  if size_int = 8 then
-    Csymbol_address caml_int32_ops :: Cint32 n :: Cint32 0n :: cont
-  else
-    Csymbol_address caml_int32_ops :: Cint n :: cont
+  Csymbol_address caml_int32_ops :: Cint32 n :: Cint32 0n :: cont
 
 let emit_boxed_int64_constant_fields n cont =
   let lo = Int64.to_nativeint n in
-  if size_int = 8 then
-    Csymbol_address caml_int64_ops :: Cint lo :: cont
-  else begin
-    let hi = Int64.to_nativeint (Int64.shift_right n 32) in
-    if big_endian then
-      Csymbol_address caml_int64_ops :: Cint hi :: Cint lo :: cont
-    else
-      Csymbol_address caml_int64_ops :: Cint lo :: Cint hi :: cont
-  end
+  Csymbol_address caml_int64_ops :: Cint lo :: cont
 
 let emit_boxed_nativeint_constant_fields n cont =
   Csymbol_address caml_nativeint_ops :: Cint n :: cont

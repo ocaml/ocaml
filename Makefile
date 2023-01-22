@@ -31,7 +31,7 @@ include stdlib/StdlibModules
 
 CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) -use-prims runtime/primitives
 CAMLOPT=$(OCAMLRUN) ./ocamlopt$(EXE) $(STDLIBFLAGS) -I otherlibs/dynlink
-ARCHES=amd64 i386 arm arm64 power s390x riscv
+ARCHES=amd64 arm64 power s390x riscv
 VPATH = utils parsing typing bytecomp file_formats lambda middle_end \
   middle_end/closure middle_end/flambda middle_end/flambda/base_types \
   asmcomp driver toplevel tools
@@ -423,7 +423,7 @@ endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
 
 INSTALL_COMPLIBDIR = $(DESTDIR)$(COMPLIBDIR)
 INSTALL_FLEXDLLDIR = $(INSTALL_LIBDIR)/flexdll
-FLEXDLL_MANIFEST = default$(filter-out _i386,_$(ARCH)).manifest
+FLEXDLL_MANIFEST = default_$(ARCH).manifest
 
 DOC_FILES=\
   Changes \
@@ -1000,19 +1000,10 @@ runtime/domain_state32.inc: \
 runtime/amd64nt.obj: runtime/amd64nt.asm runtime/domain_state64.inc
 	$(V_ASM)$(ASM)$@ $<
 
-runtime/i386nt.obj: runtime/i386nt.asm runtime/domain_state32.inc
-	$(V_ASM)$(ASM)$@ $<
-
 runtime/amd64nt.d.obj: runtime/amd64nt.asm runtime/domain_state64.inc
 	$(V_ASM)$(ASM)$@ $(ocamlrund_CPPFLAGS) $<
 
-runtime/i386nt.d.obj: runtime/i386nt.asm runtime/domain_state32.inc
-	$(V_ASM)$(ASM)$@ $(ocmalrund_CPPFLAGS) $<
-
 runtime/amd64nt.i.obj: runtime/amd64nt.asm runtime/domain_state64.inc
-	$(V_ASM)$(ASM)$@ $(ocamlruni_CPPFLAGS) $<
-
-runtime/i386nt.i.obj: runtime/i386nt.asm runtime/domain_state32.inc
 	$(V_ASM)$(ASM)$@ $(ocamlruni_CPPFLAGS) $<
 
 runtime/%_libasmrunpic.obj: runtime/%.asm

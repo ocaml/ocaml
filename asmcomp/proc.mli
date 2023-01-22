@@ -55,9 +55,6 @@ val destroyed_at_oper: Mach.instruction_desc -> Reg.t array
 val destroyed_at_raise: Reg.t array
 val destroyed_at_reloadretaddr : Reg.t array
 
-(* Volatile registers: those that change value when read *)
-val regs_are_volatile: Reg.t array -> bool
-
 (* Info for laying out the stack frame *)
 val frame_required : Mach.fundecl -> bool
 
