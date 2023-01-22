@@ -191,7 +191,8 @@ module Toplevel = struct
 
   let exec (_,ppf) p =
     try
-      ignore @@ Toploop.execute_phrase true ppf p
+      Toploop.execute_phrase ~in_use:false ~print_outcome:true ppf p
+      |> ignore
     with exn ->
       let bt = Printexc.get_raw_backtrace () in
       begin try Location.report_exception (snd error_fmt) exn

@@ -115,7 +115,7 @@ let pr_item =
 
 (* Execute a toplevel phrase *)
 
-let execute_phrase print_outcome ppf phr =
+let execute_phrase ~in_use ~print_outcome ppf phr =
   match phr with
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
@@ -137,7 +137,11 @@ let execute_phrase print_outcome ppf phr =
         let out_phr =
           match res with
           | Result v ->
-              if print_outcome then
+              if print_outcome
+              && (in_use
+                  || !Clflags.show_uninformative_sigs
+                  || List.exists has_informative_sig str.str_items)
+              then
                 Printtyp.wrap_printing_env ~error:false oldenv (fun () ->
                   match str.str_items with
                   | [] -> Ophr_signature []
@@ -177,8 +181,8 @@ let execute_phrase print_outcome ppf phr =
   | Ptop_dir {pdir_name = {Location.txt = dir_name}; pdir_arg } ->
       try_run_directive ppf dir_name pdir_arg
 
-let execute_phrase print_outcome ppf phr =
-  try execute_phrase print_outcome ppf phr
+let execute_phrase ~in_use ~print_outcome ppf phr =
+  try execute_phrase ~in_use ~print_outcome ppf phr
   with exn ->
     Warnings.reset_fatal ();
     raise exn

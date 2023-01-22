@@ -153,7 +153,7 @@ let name_expression ~loc ~attrs exp =
    in
    str, sg
 
-let execute_phrase print_outcome ppf phr =
+let execute_phrase ~in_use ~print_outcome ppf phr =
   match phr with
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
@@ -217,7 +217,11 @@ let execute_phrase print_outcome ppf phr =
                 Env.register_import_as_opaque (Ident.name module_ident)
               else
                 Compilenv.record_global_approx_toplevel ();
-              if print_outcome then
+              if print_outcome
+              && (in_use
+                  || !Clflags.show_uninformative_sigs
+                  || List.exists has_informative_sig str.str_items)
+              then
                 Printtyp.wrap_printing_env ~error:false oldenv (fun () ->
                 match str.str_items with
                 | [] -> Ophr_signature []

@@ -77,6 +77,30 @@ let find_eval_phrase str =
       Some (e, attrs, loc)
   | _ -> None
 
+let has_informative_sig str = match str.Typedtree.str_desc with
+  | Tstr_eval _
+  | Tstr_value _
+  | Tstr_include _
+  | Tstr_module _ | Tstr_recmodule _
+      (* could be refined:
+         modules with only uninformative items are uninformative *)
+  | Tstr_class _
+      (* could be refined:
+         virtual classes are uninformative *)
+    -> true
+  | Tstr_primitive _
+  | Tstr_exception _
+  | Tstr_type _
+  | Tstr_typext _
+  | Tstr_open _
+  | Tstr_class_type _
+  | Tstr_attribute _
+  | Tstr_modtype _
+      (* could be refined:
+         'include' makes signatures informative *)
+    -> false
+
+
 (* The current typing environment for the toplevel *)
 
 let toplevel_env = ref Env.empty

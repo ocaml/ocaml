@@ -41,7 +41,9 @@ let use_lexbuf ppf ~wrap_in_module lb name filename =
       List.iter
         (fun ph ->
           let ph = preprocess_phrase ppf ph in
-          if not (execute_phrase !use_print_results ppf ph) then raise Exit)
+          let in_use = true in
+          let print_outcome = !use_print_results in
+          if not (execute_phrase ~in_use ~print_outcome ppf ph) then raise Exit)
         (if wrap_in_module then
            parse_mod_use_file name lb
          else
@@ -217,7 +219,7 @@ let loop ppf =
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
       let phr = preprocess_phrase ppf phr  in
       Env.reset_cache_toplevel ();
-      ignore(execute_phrase true ppf phr)
+      ignore(execute_phrase ~in_use:false ~print_outcome:true ppf phr)
     with
     | End_of_file -> raise (Compenv.Exit_with_status 0)
     | Sys.Break -> fprintf ppf "Interrupted.@."; Btype.backtrack snap

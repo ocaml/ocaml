@@ -746,6 +746,16 @@ let mk_afl_inst_ratio f =
   "Configure percentage of branches instrumented\n\
   \     (advanced, see afl-fuzz docs for AFL_INST_RATIO)"
 
+let mk_show_uninformative_sigs f =
+  "-show-uninformative-sigs", Arg.Unit f,
+  " Reprint uninformative signatures (repeating the user definition)\n\
+  \     in the interactive toplevel (default)"
+
+let mk_hide_uninformative_sigs f =
+  "-hide-uninformative-sigs", Arg.Unit f,
+  " Omit uninformative signatures (repeating the user definition)\n\
+  \     in the interactive toplevel"
+
 let mk__ f =
   "-", Arg.String f,
   "<file>  Treat <file> as a file name (even if it starts with `-')"
@@ -869,6 +879,8 @@ module type Toplevel_options = sig
   val _no_version : unit -> unit
   val _noprompt : unit -> unit
   val _nopromptcont : unit -> unit
+  val _show_uninformative_sigs: unit -> unit
+  val _hide_uninformative_sigs: unit -> unit
   val _stdin : unit -> unit
   val _args : string -> string array
   val _args0 : string -> string array
@@ -1134,6 +1146,8 @@ struct
     mk_nolabels F._nolabels;
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
+    mk_show_uninformative_sigs F._show_uninformative_sigs;
+    mk_hide_uninformative_sigs F._hide_uninformative_sigs;
     mk_nostdlib F._nostdlib;
     mk_nocwd F._nocwd;
     mk_nopervasives F._nopervasives;
@@ -1381,6 +1395,8 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_nolabels F._nolabels;
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
+    mk_show_uninformative_sigs F._show_uninformative_sigs;
+    mk_hide_uninformative_sigs F._hide_uninformative_sigs;
     mk_nostdlib F._nostdlib;
     mk_nocwd F._nocwd;
     mk_nopervasives F._nopervasives;
@@ -1797,6 +1813,8 @@ module Default = struct
     let _version () = print_version ()
     let _vnum () = print_version_num ()
     let _eval (_:string) = ()
+    let _show_uninformative_sigs = set show_uninformative_sigs
+    let _hide_uninformative_sigs = clear show_uninformative_sigs
   end
 
   module Topmain = struct

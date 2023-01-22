@@ -165,7 +165,7 @@ let capture_everything buf ppf ~f =
 let exec_phrase ppf phrase =
   if !Clflags.dump_parsetree then Printast. top_phrase ppf phrase;
   if !Clflags.dump_source    then Pprintast.top_phrase ppf phrase;
-  Toploop.execute_phrase true ppf phrase
+  Toploop.execute_phrase ~in_use:false ~print_outcome:true ppf phrase
 
 let parse_contents ~fname contents =
   let lexbuf = Lexing.from_string contents in

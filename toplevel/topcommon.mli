@@ -55,6 +55,28 @@ val find_eval_phrase :
   Typedtree.structure ->
     (Typedtree.expression * Typedtree.attributes * Location.t) option
 
+(* A structure item has an informative (most general) signature
+   when the signature contains elements that are not directly
+   visible in the source of the structure item itself.
+
+   For example, the signature of [let x = ...] shows the type
+   of [x], which may not be obvious from the source, it is
+   informative. On the other the signature of [type t = Foo]
+   is exactly [type t = Foo], it is not informativee.
+
+   Note: our current implementation is best-effort, and in particular
+   it both under-approximates and over-approximates:
+
+   - we consider that all modules and classes are informative
+     (but arguably an unconstrained module that contains only type
+     declarations has an uninformative signature)
+
+   - we consider that all module types and class types are
+     uninformative (but arguably a module type that contains
+     a signature inclusion has an informative signature)
+*)
+val has_informative_sig : Typedtree.structure_item -> bool
+
 val max_printer_depth: int ref
 val max_printer_steps: int ref
 
