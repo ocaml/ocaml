@@ -392,6 +392,9 @@ let loading_hint_printer ppf s =
     "@.Hint: @[\
      This means that the interface of a module is loaded, \
      but its implementation is not.@,";
+  (* Filenames don't have to correspond to module names,
+     especially for archives (cmas), which bundle multiple modules.
+     But very often they do. *)
   begin match List.find_map find_with_ext [".cma"; ".cmo"] with
   | Some path ->
     fprintf ppf
