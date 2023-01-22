@@ -216,12 +216,8 @@ val with_flambda_invariants : bool
 val with_cmm_invariants : bool
 (** Whether the invariants checks for Cmm are enabled *)
 
-val profinfo : bool
-(** Whether the compiler was configured for profiling *)
-
-val profinfo_width : int
-(** How many bits are to be used in values' headers for profiling
-    information *)
+val reserved_header_bits : int
+(** How many bits of a block's header are reserved *)
 
 val flat_float_array : bool
 (** Whether the compiler and runtime automagically flatten float

@@ -22,6 +22,10 @@ Working version
 
 ### Runtime system:
 
+- #11287, #11872: Clean up reserved header bits (once used for
+  Spacetime profiling).
+  (Nick Barnes, review by Gabriel Scherer and Damien Doligez)
+
 - #11750: Decouple major slice from minor GC.
   (KC Sivaramakrishnan, review by Sadiq Jaffer, Guillaume Munch-Maccagnoni and
   Damien Doligez)

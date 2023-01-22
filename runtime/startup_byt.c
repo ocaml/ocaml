@@ -412,13 +412,7 @@ static void do_print_config(void)
          "false");
 #endif
   printf("no_naked_pointers: true\n");
-  printf("profinfo: %s\n"
-         "profinfo_width: %d\n",
-#ifdef WITH_PROFINFO
-         "true", PROFINFO_WIDTH);
-#else
-         "false", 0);
-#endif
+  printf("reserved header bits: %d\n", HEADER_RESERVED_BITS);
   printf("exec_magic_number: %s\n", EXEC_MAGIC);
 
   /* Parse ld.conf and print the effective search path */

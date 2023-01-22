@@ -76,15 +76,13 @@
    supports word-aligned 64-bit integers.  Leave undefined if
    64-bit integers are not supported. */
 
-#undef PROFINFO_WIDTH
+#undef HEADER_RESERVED_BITS
 
 #undef ASM_CFI_SUPPORTED
 
 #undef WITH_FRAME_POINTERS
 
 #define NO_NAKED_POINTERS 1
-
-#undef WITH_PROFINFO
 
 #undef CAML_WITH_FPIC
 

@@ -259,7 +259,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         startenv = Start_env_closinfo(Closinfo_val(v));
         CAMLassert (startenv <= len);
         /* Mix in the tag and size, but do not count this towards [num] */
-        h = caml_hash_mix_uint32(h, Whitehd_hd(Hd_val(v)));
+        h = caml_hash_mix_uint32(h, Cleanhd_hd(Hd_val(v)));
         /* Mix the code pointers, closure info fields, and infix headers */
         for (i = 0; i < startenv; i++) {
           h = caml_hash_mix_intnat(h, Field(v, i));
@@ -280,7 +280,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
 
       default:
         /* Mix in the tag and size, but do not count this towards [num] */
-        h = caml_hash_mix_uint32(h, Whitehd_hd(Hd_val(v)));
+        h = caml_hash_mix_uint32(h, Cleanhd_hd(Hd_val(v)));
         /* Copy fields into queue, not exceeding the total size [sz] */
         for (i = 0, len = Wosize_val(v); i < len; i++) {
           if (wr >= sz) break;

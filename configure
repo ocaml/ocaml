@@ -796,8 +796,7 @@ cmm_invariants
 flambda_invariants
 flambda
 frame_pointers
-profinfo_width
-profinfo
+reserved_header_bits
 install_ocamlnat
 install_source_artifacts
 install_bytecode_programs
@@ -1660,7 +1659,7 @@ Optional Features:
   --enable-cmm-invariants enable invariants checks in Cmm
   --enable-reserved-header-bits=BITS
                           reserve BITS (between 0 and 31) bits in block
-                          headers for profiling info
+                          headers
   --disable-stdlib-manpages
                           do not build or install the library man pages
   --enable-warn-error     treat C compiler warnings as errors
@@ -3233,8 +3232,7 @@ CSCFLAGS=""
 ostype="Unix"
 SO="so"
 toolchain="cc"
-profinfo=false
-profinfo_width=0
+reserved_header_bits=0
 instrumented_runtime=false
 instrumented_runtime_libs=""
 bootstrapping_flexdll=false
@@ -3353,7 +3351,6 @@ OCAML_VERSION_SHORT=5.1
 
 
  # TODO: rename this variable
-
 
 
 
@@ -3841,12 +3838,8 @@ fi
 if test ${enable_reserved_header_bits+y}
 then :
   enableval=$enable_reserved_header_bits; case $enable_reserved_header_bits in #(
-  0) :
-    with_profinfo=false
-      profinfo_width=0 ;; #(
-  [1-9]|[1-2][0-9]|3[0-1]) :
-    with_profinfo=true
-      profinfo_width="$enable_reserved_header_bits" ;; #(
+  [0-9]|[1-2][0-9]|3[0-1]) :
+     reserved_header_bits=$enable_reserved_header_bits ;; #(
   *) :
     as_fn_error $? "invalid argument to --enable-reserved-header-bits" "$LINENO" 5 ;;
 esac
@@ -19078,13 +19071,8 @@ fi
 
 
 
-printf "%s\n" "#define PROFINFO_WIDTH $profinfo_width" >>confdefs.h
+printf "%s\n" "#define HEADER_RESERVED_BITS $reserved_header_bits" >>confdefs.h
 
-if $profinfo
-then :
-  printf "%s\n" "#define WITH_PROFINFO 1" >>confdefs.h
-
-fi
 
 if test x"$enable_installing_bytecode_programs" = "xno"
 then :

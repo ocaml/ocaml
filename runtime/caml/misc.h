@@ -25,6 +25,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <limits.h>
 
 #include "camlatomic.h"
 
