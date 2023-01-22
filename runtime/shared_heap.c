@@ -37,9 +37,9 @@ typedef unsigned int sizeclass;
 
 /* Initial MARKED, UNMARKED, and GARBAGE values; any permutation would work */
 struct global_heap_state caml_global_heap_state = {
-        0 << HEADER_COLOR_SHIFT,
-        1 << HEADER_COLOR_SHIFT,
-        2 << HEADER_COLOR_SHIFT,
+  0 << HEADER_COLOR_SHIFT,
+  1 << HEADER_COLOR_SHIFT,
+  2 << HEADER_COLOR_SHIFT,
 };
 
 typedef struct pool {

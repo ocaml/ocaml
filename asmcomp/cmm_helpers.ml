@@ -650,11 +650,11 @@ let get_header ptr dbg =
     [Cop(Cadda, [ptr; Cconst_int(-size_int, dbg)], dbg)], dbg)
 
 let get_header_masked ptr dbg =
-    if Config.reserved_header_bits > 0 then
-        let header_mask = (1 lsl (64 - Config.reserved_header_bits)) - 1
-        in Cop(Cand, [get_header ptr dbg; Cconst_int (header_mask, dbg)], dbg)
-    else
-        get_header ptr dbg
+  if Config.reserved_header_bits > 0 then
+    let header_mask = (1 lsl (64 - Config.reserved_header_bits)) - 1
+    in Cop(Cand, [get_header ptr dbg; Cconst_int (header_mask, dbg)], dbg)
+  else
+    get_header ptr dbg
 
 let tag_offset =
   if big_endian then -1 else -size_int
