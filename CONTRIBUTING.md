@@ -15,17 +15,13 @@ how to build the compiler distribution from sources. See
 
 ## Contribution
 
-Modifying its sources is far from the only way to contribute to the
+Modifying the sources is far from the only way to contribute to the
 OCaml distribution. Bug reports (in particular when they come with
 a reproducible example), simple typos or clarifications in the
 documentation also help, and help evaluating and integrating existing
 change proposals also help. Providing good answers on the discussion
 forums, or asking the good questions that highlight deficiencies in
-existing documentations, also help. We currently have more
-contributors willing to propose changes than contributors willing to
-review other people's changes, so more eyes on the existing change
-requests is a good way to increase the integration bandwidth of
-external contributions.
+existing documentations, also help.
 
 There are also many valuable ways to contribute to the wider OCaml
 ecosystem that do not involve changes to the OCaml distribution.
@@ -414,6 +410,52 @@ A major criterion in assessing whether to include an optimisation in
 the compiler is the balance between the increased complexity of the
 compiler code and the expected benefits of the benchmark. Contributors
 are asked to bear this in mind when making submissions.
+
+## Collective maintenance
+
+Proposing changes to the OCaml compiler contribution generates
+"maintenance work" for other people. Maintenance work includes, for
+example:
+
+- reviewing Pull Requests or language change proposals,
+
+- considering change suggestions and giving feedback to turn them into
+  actionable issues,
+
+- implementing bug fixes or feature requests of general interest,
+
+- improving the documentation of the tools or other usability aspects,
+
+- or documenting or clarifying the codebase to preserve and improve
+  our ability to change it in the future.
+
+Doing this collective maintenance work is a selfless task, and we
+typically have much fewer people willing to to do it than people
+willing to submit new language features or generally evolve the
+codebase for their own specific needs. Without a collective effort to
+participate, we end up with a handful of people doing the vast
+majority of this collective maintenance work. This is exhausting, does
+not scale, and slows down the pace of improvement of the compiler
+distribution.
+
+To keep a healthy open source project, we need the total maintenance
+work performed by all contributors to scale proportionally with the
+total demand for maintenance work they generate. This can only work if
+as many contributors as possible perform some (possibly small) amount of
+maintenance work: collective maintenance. One could use the metaphor
+of a shared house: things work well when most people, not just a few
+people, participate to the house chores.
+
+If your contributions generate maintenance work for others -- in
+particular, if you spend a substantial effort working on a change to
+the language or compiler codebase meant to be eventually proposed
+upstream -- we expect that you will spend a fraction of your
+contribution time on maintenance tasks, typically on the parts of the
+compiler codebase that you are already working on. This approach is
+good for the project, and also for you: helping maintain the codebase
+will improve the quality of your own contributions, and the social
+ties created by infrequent collaboration with other contributors will
+be useful when submitting your own work.
 
 ## Contributor License Agreement
 
