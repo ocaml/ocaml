@@ -244,6 +244,9 @@ Working version
 - #11774: ocamlyacc: fail if there is an I/O error
   (Demi Marie Obenour)
 
+- #10647: Show hints for the "undefined global" error in the toplevel
+  (Wiktor Kuchta, review by Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #9430, #11291: Document the general desugaring rules for binding operators.
