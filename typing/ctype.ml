@@ -1521,6 +1521,7 @@ let subst env level priv abbrev oty params args body =
    care about efficiency here.
 *)
 let apply ?(use_current_level = false) env params body args =
+  simple_abbrevs := Mnil;
   let level = if use_current_level then !current_level else generic_level in
   try
     subst env level Public (ref Mnil) None params args body
