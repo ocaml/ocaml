@@ -611,6 +611,7 @@ stdlib__Queue.cmx : queue.ml \
 stdlib__Queue.cmi : queue.mli \
     stdlib__Seq.cmi
 stdlib__Random.cmo : random.ml \
+    stdlib__Sys.cmi \
     stdlib__String.cmi \
     stdlib__Nativeint.cmi \
     stdlib__Int64.cmi \
@@ -622,6 +623,7 @@ stdlib__Random.cmo : random.ml \
     stdlib__Array.cmi \
     stdlib__Random.cmi
 stdlib__Random.cmx : random.ml \
+    stdlib__Sys.cmx \
     stdlib__String.cmx \
     stdlib__Nativeint.cmx \
     stdlib__Int64.cmx \
