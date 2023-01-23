@@ -457,6 +457,13 @@ will improve the quality of your own contributions, and the social
 ties created by infrequent collaboration with other contributors will
 be useful when submitting your own work.
 
+Note: we have been asked whether groups of contributors could balance
+maintenance work at the level of the whole group, rather than
+individual contributors -- for example a company where some frequent
+OCaml contributors would do less maintenance and others would do more
+to compensate. Yes, that sounds reasonable, but also harder to balance
+than encouraging everyone to play nice individually.
+
 ## Contributor License Agreement
 
 We distinguish two kind of contributions:
