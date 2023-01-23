@@ -227,9 +227,14 @@ up to a few hours before the results are available on the results page.
 The description of the merge request must contain a precise
 explanation of the proposed change.
 
-Before going in the implementation details, you should include
-a summary of the change, and a high-level description of the design
-of the proposed change, with example use-cases.
+Before going into the implementation details, you should include
+a summary of the change, a justification of why it is beneficial, and
+a high-level description of the design of the proposed change with
+example use cases.
+
+Changes have a cost, they require review work and may accidentally
+introduce new bugs. Communicating as clearly as you can the benefits
+of your PR will reassure and motivate potential reviewers.
 
 ### In the patches
 
