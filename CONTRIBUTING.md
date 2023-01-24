@@ -123,51 +123,17 @@ preserving the code semantics.
 
 ## Test you must.
 
-Whenever applicable, merge requests must come with tests
-exercising the affected features: regression tests for bug fixes,
-and correctness tests for new features (including corner cases and
-failure cases). For regression tests, testing other aspects of the
-feature (in particular, related edge cases) that are not currently
-covered is a good way to catch other instances of bugs -- this did
-happen several times in the past. Warnings and errors should also
-be tested.
+Whenever applicable, merge requests must come with tests exercising
+the affected features: regression tests for bug fixes, and correctness
+tests for new features (including corner cases and
+failure cases). Warnings and errors should also be tested.
 
-Tests go in the sub-directories of `testsuite/tests`. Running
-`make all` in `testsuite/` runs all tests (this takes
-a few minutes), and you can use `make one DIR=tests/foo` to run
-the tests of a specific sub-directory. There are many kind of tests
-already, so the easiest way to start is to extend or copy an
-existing test.
+See [testsuite/HACKING.adoc](testsuite/HACKING.adoc) for details on
+how to write tests and run the testsuite.
 
-In general, running a test produces one (or several) `.result` file,
-that are compared to one (or several) `.reference` file present in the
-repository; the test succeeds if they are identical. If your patch
-breaks a test, diffing the `.result` and `.reference` file is a way to
-see what went wrong. Some reasonable compiler changes affect the
-compiler output in way that make those outputs differ (for example
-slight modifications of warning or error messages may break all tests
-checking warnings). If you are positive that the new `.result` file
-is correct (and that the change in behavior does not endanger
-backward compatibility), you can replace the old `.reference` file
-with it. Finally, when adding new tests, do not forget to include your
-`.reference` files (but not `.result`) in the versioned repository.
-
-Testing is also a way to make sure reviewers see working
+Adding tests is also a way to make sure reviewers see working
 (and failing) examples of the feature you fix, extend or
 introduce, rather than just an abstract description of it.
-
-
-### Run tests before sending a PR
-
-You should run all the tests before creating the merge request or
-pushing new commits (even if Travis will also do it for you): `make
-tests` (this takes a few minutes).
-
-Unfortunately some of the `lib-threads` test are non-deterministic
-and fail once in a while (it's hard to test these well). If they
-consistently break after your change, you should investigate, but if
-you only see a transient failure once and your change has no reason
-to affect threading, it's probably not your fault.
 
 
 ## Description of the proposed change
