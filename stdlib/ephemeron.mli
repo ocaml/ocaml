@@ -96,6 +96,9 @@ module type S = sig
   val find_opt : 'a t -> key -> 'a option
   val find_all : 'a t -> key -> 'a list
   val replace : 'a t -> key -> 'a -> unit
+  val update : 'a t -> key -> ('a option -> 'a option) -> unit
+  (** @since 5.1 *)
+
   val mem : 'a t -> key -> bool
   val length : 'a t -> int
   val stats : 'a t -> Hashtbl.statistics
@@ -129,6 +132,9 @@ module type SeededS = sig
   val find_opt : 'a t -> key -> 'a option
   val find_all : 'a t -> key -> 'a list
   val replace : 'a t -> key -> 'a -> unit
+  val update : 'a t -> key -> ('a option -> 'a option) -> unit
+  (** @since 5.1 *)
+
   val mem : 'a t -> key -> bool
   val length : 'a t -> int
   val stats : 'a t -> Hashtbl.statistics

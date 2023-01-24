@@ -2,30 +2,37 @@
 Insertion: passed
 Insertion: passed
 Removal: passed
+Update: passed
 -- Random integers, narrow range
 Insertion: passed
 Insertion: passed
 Removal: passed
+Update: passed
 -- Strings, generic interface
 Insertion: passed
 Insertion: passed
 Removal: passed
+Update: passed
 -- Strings, functorial interface
 Insertion: passed
 Insertion: passed
 Removal: passed
+Update: passed
 -- Strings, functorial(String) interface
 Insertion: passed
 Insertion: passed
 Removal: passed
+Update: passed
 -- Pairs of strings
 Insertion: passed
 Insertion: passed
 Removal: passed
+Update: passed
 -- Lists of strings
 Insertion: passed
 Insertion: passed
 Removal: passed
+Update: passed
 1000 elements
 100,2
 200,4

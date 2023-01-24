@@ -170,6 +170,36 @@ module Hashtbl : sig
      This is functionally equivalent to {!remove}[ tbl key]
      followed by {!add}[ tbl key data]. *)
 
+  val update : ('a, 'b) t -> key:'a -> f:('b option -> 'b option) -> unit
+  (** [Hashtbl.update tbl ~key ~f] modifies the binding of [key] in [tbl]
+      depending on the result of [f x], where [x] is [find_opt key tbl].
+      - If [f x] is [None], the previous binding is removed, if it exists
+        (see {!remove}).
+      - If [f x] is [Some y], a binding to [data] is added, replacing the
+        previous binding, if it exists (see {!replace}).
+
+      Regardless of the operation, this function only calculates the hash of
+      [key] once.
+
+      [Hashtbl.update] is useful for modifications where the operation depends
+      on the previous binding. For example, if [tbl] is a [('a, int) t],
+
+      {[
+        match find_opt tbl ~key with
+        | None   -> replace tbl ~key ~data:y
+        | Some x -> replace tbl ~key ~data:(x+y)
+      ]}
+
+      can be written as
+
+      {[
+        update tbl ~key ~f:(function None -> Some y | Some x -> Some (x+y))
+      ]}
+
+      where the first snippet calculates the hash of [key] twice but the second
+      only once.
+      @since 5.1 *)
+
   val iter : f:(key:'a -> data:'b -> unit) -> ('a, 'b) t -> unit
   (** [Hashtbl.iter ~f tbl] applies [f] to all bindings in table [tbl].
      [f] receives the key as first argument, and the associated value
@@ -394,6 +424,9 @@ module Hashtbl : sig
       val copy : 'a t -> 'a t
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
+      val update : 'a t -> key -> ('a option -> 'a option) -> unit
+      (** @since 5.1 *)
+
       val find : 'a t -> key -> 'a
       val find_opt : 'a t -> key -> 'a option
       (** @since 4.05 *)
@@ -474,6 +507,9 @@ module Hashtbl : sig
       val copy : 'a t -> 'a t
       val add : 'a t -> key:key -> data:'a -> unit
       val remove : 'a t -> key -> unit
+      val update : 'a t -> key -> ('a option -> 'a option) -> unit
+      (** @since 5.1 *)
+
       val find : 'a t -> key -> 'a
       val find_opt : 'a t -> key -> 'a option (** @since 4.05 *)
 
