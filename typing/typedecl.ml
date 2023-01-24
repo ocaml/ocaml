@@ -311,20 +311,8 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
       targs, Some tret_type, args, Some ret_type
       end
 
-let transl_declaration env sdecl (id, uid) =
-  (* Bind type parameters *)
-  reset_type_variables();
-  Ctype.with_local_level begin fun () ->
-  let tparams = make_params env sdecl.ptype_params in
-  let params = List.map (fun (cty, _) -> cty.ctyp_type) tparams in
-  let cstrs = List.map
-    (fun (sty, sty', loc) ->
-      transl_simple_type env false sty,
-      transl_simple_type env false sty', loc)
-    sdecl.ptype_cstrs
-  in
-  let unboxed_attr = get_unboxed_from_attributes sdecl in
-  begin match unboxed_attr with
+let verify_unboxed_attr unboxed_attr sdecl =
+  match unboxed_attr with
   | (None | Some false) -> ()
   | Some true ->
     let bad msg = raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute msg)) in
@@ -357,7 +345,26 @@ let transl_declaration env sdecl (id, uid) =
                 ()
           end
       end
-  end;
+
+let verify_immediacy_attr loc immediate kind =
+  let kind_imm = Ctype.kind_immediacy kind in
+  match Type_immediacy.coerce kind_imm ~as_:immediate with
+  | Ok () -> ()
+  | Error v -> raise(Error(loc, Immediacy v))
+
+let transl_declaration env sdecl (id, uid) =
+  (* Bind type parameters *)
+  reset_type_variables();
+  Ctype.with_local_level begin fun () ->
+  let tparams = make_params env sdecl.ptype_params in
+  let params = List.map (fun (cty, _) -> cty.ctyp_type) tparams in
+  let cstrs = List.map
+    (fun (sty, sty', loc) ->
+      transl_simple_type env false sty,
+      transl_simple_type env false sty', loc)
+    sdecl.ptype_cstrs
+  in
+  let unboxed_attr = get_unboxed_from_attributes sdecl in
   let unbox, unboxed_default =
     match sdecl.ptype_kind with
     | Ptype_variant [{pcd_args = Pcstr_tuple [_]; _}]
@@ -432,11 +439,8 @@ let transl_declaration env sdecl (id, uid) =
           Ttype_record lbls, Type_record(lbls', rep)
       | Ptype_open -> Ttype_open, Type_open
       in
-    let kind_imm = Ctype.kind_immediacy kind in
-    begin match Type_immediacy.coerce kind_imm ~as_:immediate with
-    | Ok () -> ()
-    | Error v -> raise(Error(sdecl.ptype_loc, Immediacy v))
-    end;
+    verify_unboxed_attr unboxed_attr sdecl;
+    verify_immediacy_attr sdecl.ptype_loc immediate kind;
     let (tman, man) = match sdecl.ptype_manifest with
         None -> None, None
       | Some sty ->
