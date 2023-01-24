@@ -144,7 +144,7 @@ let update_type temp_env env id loc =
 
 (* Determine if a type's values are represented by floats at run-time. *)
 let is_float env ty =
-  match get_desc (Ctype.get_unboxed_type_representation env ty) with
+  match get_desc (Ctype.get_unboxed_type_approximation env ty) with
     Tconstr(p, _, _) -> Path.same p Predef.path_float
   | _ -> false
 

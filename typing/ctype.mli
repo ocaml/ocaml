@@ -459,7 +459,16 @@ val package_subtype :
 (* Raises [Incompatible] *)
 val mcomp : Env.t -> type_expr -> type_expr -> unit
 
-val get_unboxed_type_representation : Env.t -> type_expr -> type_expr
+(* [get_unboxed_type_representation] attempts to fully expand the input
+   type_expr, descending through [@@unboxed] types.  May fail in the case of
+   circular types or very deeply nested unboxed types, in which case it returns
+   the most expanded version it was able to compute.
+
+   [get_unboxed_type_approximation] does the same, but doesn't indicate whether
+   the type was fully expanded or not. *)
+val get_unboxed_type_representation :
+  Env.t -> type_expr -> (type_expr, type_expr) result
+val get_unboxed_type_approximation : Env.t -> type_expr -> type_expr
 
 val kind_immediacy : type_decl_kind -> Type_immediacy.t
 val check_decl_immediate :

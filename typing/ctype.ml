@@ -5453,26 +5453,30 @@ let () =
 (* We use expand_head_opt version of expand_head to get access
    to the manifest type of private abbreviations. *)
 let rec get_unboxed_type_representation env ty fuel =
-  if fuel < 0 then ty else
+  if fuel < 0 then Error ty else
   let ty = expand_head_opt env ty in
   match get_desc ty with
   | Tconstr (p, args, _) ->
     begin match Env.find_type p env with
-    | exception Not_found -> ty
+    | exception Not_found -> Ok ty
     | decl ->
       begin match find_unboxed_type decl with
-      | None -> ty
+      | None -> Ok ty
       | Some ty2 ->
         let ty2 = match get_desc ty2 with Tpoly (t, _) -> t | _ -> ty2 in
         get_unboxed_type_representation env
           (apply env decl.type_params ty2 args) (fuel - 1)
       end
     end
-  | _ -> ty
+  | _ -> Ok ty
 
 let get_unboxed_type_representation env ty =
   (* Do not give too much fuel: PR#7424 *)
   get_unboxed_type_representation env ty 100
+
+let get_unboxed_type_approximation env ty =
+  match get_unboxed_type_representation env ty with
+  | Ok ty | Error ty -> ty
 
 let kind_immediacy = function
   | Type_open | Type_record _ -> Type_immediacy.Unknown
@@ -5508,7 +5512,7 @@ let check_type_immediate env ty imm =
   match Type_immediacy.coerce (type_immediacy_head env ty) ~as_:imm with
   | Ok () -> Ok ()
   | Error _ ->
-    let ty = get_unboxed_type_representation env ty in
+    let ty = get_unboxed_type_approximation env ty in
     Type_immediacy.coerce (type_immediacy_head env ty) ~as_:imm
 
 let check_decl_immediate env decl imm =
