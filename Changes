@@ -247,6 +247,10 @@ OCaml 5.1.0
   (Nicolás Ojeda Bär, review by Stephen Dolan, Anil Madhavapeddy, and Xavier
   Leroy)
 
+- #11712: s390x multicore support: OCaml & C stack separation;
+  dynamic stack size checks; fiber and effects support.
+  (Aleksei Nikiforov, Vincent Laviron, suggestions by Xavier Leroy, Luc Maranget)
+
 ### Standard library:
 
 * #11565: Enable -strict-formats by default. Some incorrect format
