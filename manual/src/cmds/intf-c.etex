@@ -942,7 +942,7 @@ void foo (value v1, value v2, value v3)
 {
   CAMLparam3 (v1, v2, v3);
   ...
-  CAMLreturn(Val_unit);
+  CAMLreturn0;
 }
 \end{verbatim}
 
