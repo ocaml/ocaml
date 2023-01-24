@@ -489,6 +489,12 @@ and ('lbl, 'cstr) type_kind =
   | Type_record of 'lbl list  * record_representation
   | Type_variant of 'cstr list * variant_representation
   | Type_open
+(* In the case of abbreviations (declarations whose kind is [Type_abstract] and
+   which have a manifest), the [immediate] field of [Type_abstract] is a
+   conservative approximation (it may be [Unknown] when the type is actually
+   immediate).  It is therefore necessary to check the manifest.  See PR#10017
+   for motivating examples where subsitution or instantiation may refine the
+   immediacy of a type.  *)
 
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)

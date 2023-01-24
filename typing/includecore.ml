@@ -912,6 +912,11 @@ let type_declarations ?(equality = false) ~loc env ~mark name
   if err <> None then err else
   let err = match (decl1.type_kind, decl2.type_kind) with
       (_, Type_abstract { immediate = imm }) ->
+       (* Note that [imm] is an approximation (it may be [Unknown] even if
+          [decl2] is actually immediate). In that case, [decl2] must have a
+          manifest, which we're already checking for equality above. Similarly,
+          [decl1]'s kind may conservatively approximate its immediacy, but
+          [check_decl_immediate] will expand its manifest.  *)
        (match Ctype.check_decl_immediate env decl1 imm with
         | Ok () -> None
         | Error v -> Some (Immediate v))
