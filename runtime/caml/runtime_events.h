@@ -53,7 +53,7 @@ typedef enum {
     EV_COUNTER,
     EV_ALLOC,
     EV_FLUSH
-} ev_message_type;
+} ev_runtime_message_type;
 
 typedef enum {
     EV_GC
@@ -127,6 +127,11 @@ typedef enum {
     EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE
 } ev_runtime_counter;
 
+typedef enum {
+    EV_USER_SPAN_BEGIN,
+    EV_USER_SPAN_END
+} ev_user_span;
+
 /* external C-API for reading from the runtime_events */
 struct caml_runtime_events_cursor;
 
@@ -170,6 +175,35 @@ struct runtime_events_buffer_header {
                           cache lines, even for non-aligned allocations. */
 };
 
+#define RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH 128
+
+struct runtime_events_custom_event {
+   char name[RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH];
+};
+
+/* The type for event messages in the ring. Span is separated in two types as an
+   optimization to avoid associating a value with the span event. */
+typedef enum {
+   EV_USER_MSG_TYPE_UNIT,
+   EV_USER_MSG_TYPE_INT,
+   EV_USER_MSG_TYPE_SPAN_BEGIN,
+   EV_USER_MSG_TYPE_SPAN_END,
+   EV_USER_MSG_TYPE_CUSTOM
+} ev_user_message_type;
+
+typedef union {
+   ev_runtime_message_type runtime;
+   ev_user_message_type user;
+} ev_message_type;
+
+/* The type for event messages in OCaml. */
+typedef enum {
+   EV_USER_ML_TYPE_UNIT,
+   EV_USER_ML_TYPE_INT,
+   EV_USER_ML_TYPE_SPAN,
+   EV_USER_ML_TYPE_CUSTOM
+} ev_user_ml_type;
+
 /* For a more detailed explanation of the runtime_events file layout, see
    runtime_events.c */
 struct runtime_events_metadata_header {
@@ -180,9 +214,11 @@ struct runtime_events_metadata_header {
   uint64_t ring_size_elements; /* Ring size in 64-bit elements */
   uint64_t headers_offset; /* Offset from this struct to first header (bytes) */
   uint64_t data_offset; /* Offset from this struct to first data (byte) */
-  uint64_t padding; /* Make the header a multiple of 64 bytes */
+  uint64_t custom_events_offset; /* Offset from this struct to first custom
+                                    event (byte) */
 };
 
+#define RUNTIME_EVENTS_MAX_CUSTOM_EVENTS (1 << 13)
 #define RUNTIME_EVENTS_NUM_ALLOC_BUCKETS 20
 #define RUNTIME_EVENTS_MAX_MSG_LENGTH (1 << 10)
 
@@ -195,8 +231,8 @@ struct runtime_events_metadata_header {
 
 #define RUNTIME_EVENTS_ITEM_LENGTH(header) \
         (((header) >> 54) & ((1UL << 10) - 1))
-#define RUNTIME_EVENTS_ITEM_IS_RUNTIME(header) !((header) & (1UL << 53))
-#define RUNTIME_EVENTS_ITEM_IS_USER(header) ((header) & (1UL << 53))
+#define RUNTIME_EVENTS_ITEM_IS_RUNTIME(header) !((header) & (1ULL << 53))
+#define RUNTIME_EVENTS_ITEM_IS_USER(header) ((header) & (1ULL << 53))
 #define RUNTIME_EVENTS_ITEM_TYPE(header) (((header) >> 49) & ((1UL << 4) - 1))
 #define RUNTIME_EVENTS_ITEM_ID(header) (((header) >> 36) & ((1UL << 13) - 1))
 
@@ -238,6 +274,21 @@ CAMLextern void caml_ev_lifecycle(ev_lifecycle lifecycle, int64_t data);
 */
 void caml_ev_alloc(uint64_t sz);
 void caml_ev_alloc_flush(void);
+
+
+/* Allocate a unique ID for the event and construct its value: there are at
+   most RUNTIME_EVENTS_MAX_CUSTOM_EVENTS of them. */
+CAMLextern value caml_runtime_events_user_register(value event_name,
+   value event_tag, value event_type);
+
+/* Write event data to ring buffer. */
+CAMLextern value caml_runtime_events_user_write(value event,
+   value event_content);
+
+/* Resolve an event name to the associated event value using known registered
+   events. */
+CAMLextern value caml_runtime_events_user_resolve(char* event_name,
+   ev_user_ml_type event_type);
 
 #endif /* CAML_INTERNALS */
 

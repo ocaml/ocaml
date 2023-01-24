@@ -75,6 +75,12 @@ CAMLextern void caml_runtime_events_set_lost_events(
     struct caml_runtime_events_cursor *cursor,
     int (*f)(int domain_id, void *callback_data, int lost_words));
 
+/* Set the user events callback on the cursor */
+CAMLextern void caml_runtime_events_set_user_events(
+    struct caml_runtime_events_cursor *cursor,
+    int (*f)(int domain_id, void *callback_data, int64_t timestamp,
+            value event, uintnat event_data_len, uint64_t* event_data));
+
 /* frees a cursor obtained from caml_runtime_events_creator_cursor */
 CAMLextern void
 caml_runtime_events_free_cursor(struct caml_runtime_events_cursor *cursor);

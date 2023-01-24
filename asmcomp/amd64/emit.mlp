@@ -698,6 +698,12 @@ let emit_instr env fallthrough i =
   | Lop(Iintop_imm(op, n)) ->
       (* We have i.arg.(0) = i.res.(0) *)
       instr_for_intop op (int n) (res i 0)
+  | Lop(Icompf cmp) ->
+      let cond, need_swap = float_cond_and_need_swap cmp in
+      let a0, a1 = if need_swap then arg i 1, arg i 0 else arg i 0, arg i 1 in
+      I.cmpsd cond a1 a0;
+      I.movd a0 (res i 0);
+      I.neg (res i 0)
   | Lop(Inegf) ->
       I.xorpd (mem64_rip OWORD (emit_symbol "caml_negf_mask")) (res i 0)
   | Lop(Iabsf) ->

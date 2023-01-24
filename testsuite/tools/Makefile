@@ -74,10 +74,6 @@ lexcmm.cmo: lexcmm.cmi
 
 parsecmm.cmo: parsecmm.cmi
 
-asmgen_i386.obj: asmgen_i386nt.asm
-	@set -o pipefail ; \
-	$(ASM) $@ $^ | tail -n +2
-
 %.cmi: %.mli
 	$(OCAMLC) $(COMPFLAGS) -c $<
 

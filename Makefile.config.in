@@ -205,7 +205,7 @@ CMXS=@cmxs@
 
 # On Windows, MKDLL, MKEXE and MKMAINDLL must ultimately be equivalent to
 #   flexlink $(FLEXLINK_FLAGS) [-exe|-maindll]
-# or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
+# or OCAML_FLEXLINK overriding will not work (see utils/config.generated.ml.in)
 
 FLEXDLL_CHAIN=@flexdll_chain@
 FLEXLINK_FLAGS=@flexlink_flags@
@@ -225,8 +225,7 @@ WITH_OCAMLDOC=@ocamldoc@
 WITH_OCAMLTEST=@ocamltest@
 ASM_CFI_SUPPORTED=@asm_cfi_supported@
 WITH_FRAME_POINTERS=@frame_pointers@
-WITH_PROFINFO=@profinfo@
-PROFINFO_WIDTH=@profinfo_width@
+HEADER_RESERVED_BITS=@reserved_header_bits@
 LIBUNWIND_AVAILABLE=@libunwind_available@
 LIBUNWIND_INCLUDE_FLAGS=@libunwind_include_flags@
 LIBUNWIND_LINK_FLAGS=@libunwind_link_flags@

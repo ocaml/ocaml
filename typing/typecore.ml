@@ -104,7 +104,12 @@ type error =
   | Expr_type_clash of
       Errortrace.unification_error * type_forcing_context option
       * Parsetree.expression_desc option
-  | Apply_non_function of type_expr
+  | Apply_non_function of {
+      funct : Typedtree.expression;
+      func_ty : type_expr;
+      previous_arg_loc : Location.t;
+      extra_arg_loc : Location.t;
+    }
   | Apply_wrong_label of arg_label * type_expr * bool
   | Label_multiply_defined of string
   | Label_missing of Ident.t list
@@ -4528,8 +4533,20 @@ and type_application env funct sargs =
               else
                 raise (Error(funct.exp_loc, env, Incoherent_label_order))
           | _ ->
-              raise(Error(funct.exp_loc, env, Apply_non_function
-                            (expand_head env funct.exp_type)))
+              let previous_arg_loc =
+                (* [typed_args] is the arguments typed until now, in reverse
+                   order of appearance. Not all arguments have a location
+                   attached (eg. an optional argument that is not passed). *)
+                typed_args
+                |> List.find_map
+                    (function (_, Some (_, loc)) -> loc | _ -> None)
+                |> Option.value ~default:funct.exp_loc
+              in
+              raise(Error(funct.exp_loc, env, Apply_non_function {
+                  funct;
+                  func_ty = expand_head env funct.exp_type;
+                  previous_arg_loc;
+                  extra_arg_loc = sarg.pexp_loc; }))
     in
     let arg () =
       let arg = type_expect env sarg (mk_expected ty_arg) in
@@ -4537,7 +4554,7 @@ and type_application env funct sargs =
         unify_exp env arg (type_option(newvar()));
       arg
     in
-    (ty_res, (lbl, Some arg) :: typed_args)
+    (ty_res, (lbl, Some (arg, Some sarg.pexp_loc)) :: typed_args)
   in
   let ignore_labels =
     !Clflags.classic ||
@@ -4557,6 +4574,7 @@ and type_application env funct sargs =
     end
   in
   let warned = ref false in
+  (* [args] remember the location of each argument in sources. *)
   let rec type_args args ty_fun ty_fun0 sargs =
     let type_unknown_args () =
       (* We're not looking at a *known* function type anymore, or there are no
@@ -4571,7 +4589,7 @@ and type_application env funct sargs =
         List.map
           (function
             | l, None -> l, None
-            | l, Some f -> l, Some (f ()))
+            | l, Some (f, _loc) -> l, Some (f ()))
           (List.rev typed_args)
       in
       let result_ty = instance (result_type !omitted_parameters ty_fun) in
@@ -4593,24 +4611,22 @@ and type_application env funct sargs =
         let name = label_name l
         and optional = is_optional l in
         let use_arg sarg l' =
-          Some (
-            if not optional || is_optional l' then
-              (fun () -> type_argument env sarg ty ty0)
-            else begin
-              may_warn sarg.pexp_loc
-                (Warnings.Not_principal "using an optional argument here");
-              (fun () -> option_some env (type_argument env sarg
-                                            (extract_option_type env ty)
-                                            (extract_option_type env ty0)))
-            end
-          )
+          if not optional || is_optional l' then
+            (fun () -> type_argument env sarg ty ty0)
+          else begin
+            may_warn sarg.pexp_loc
+              (Warnings.Not_principal "using an optional argument here");
+            (fun () -> option_some env (type_argument env sarg
+                                          (extract_option_type env ty)
+                                          (extract_option_type env ty0)))
+          end
         in
         let eliminate_optional_arg () =
           may_warn funct.exp_loc
             (Warnings.Non_principal_labels "eliminated optional argument");
           eliminated_optional_arguments :=
             (l,ty,lv) :: !eliminated_optional_arguments;
-          Some (fun () -> option_none env (instance ty) Location.none)
+          (fun () -> option_none env (instance ty) Location.none)
         in
         let remaining_sargs, arg =
           if ignore_labels then begin
@@ -4619,7 +4635,7 @@ and type_application env funct sargs =
             | [] -> assert false
             | (l', sarg) :: remaining_sargs ->
                 if name = label_name l' || (not optional && l' = Nolabel) then
-                  (remaining_sargs, use_arg sarg l')
+                  (remaining_sargs, Some (use_arg sarg l', Some sarg.pexp_loc))
                 else if
                   optional &&
                   not (List.exists (fun (l, _) -> name = label_name l)
@@ -4627,7 +4643,7 @@ and type_application env funct sargs =
                   List.exists (function (Nolabel, _) -> true | _ -> false)
                     sargs
                 then
-                  (sargs, eliminate_optional_arg ())
+                  (sargs, Some (eliminate_optional_arg (), Some sarg.pexp_loc))
                 else
                   raise(Error(sarg.pexp_loc, env,
                               Apply_wrong_label(l', ty_fun', optional)))
@@ -4643,11 +4659,11 @@ and type_application env funct sargs =
                 if not optional && is_optional l' then
                   Location.prerr_warning sarg.pexp_loc
                     (Warnings.Nonoptional_label (Printtyp.string_of_label l));
-                remaining_sargs, use_arg sarg l'
+                remaining_sargs, Some (use_arg sarg l', Some sarg.pexp_loc)
             | None ->
                 sargs,
                 if optional && List.mem_assoc Nolabel sargs then
-                  eliminate_optional_arg ()
+                  Some (eliminate_optional_arg (), None)
                 else begin
                   (* No argument was given for this parameter, we abstract over
                      it. *)
@@ -5619,6 +5635,40 @@ let report_unification_error ~loc ?sub env err
       ?type_expected_explanation txt1 txt2
   ) ()
 
+let report_this_function ppf funct =
+  if Typedtree.exp_is_nominal funct then
+    let pexp = Untypeast.untype_expression funct in
+    Format.fprintf ppf "The function '%a'" Pprintast.expression pexp
+  else Format.fprintf ppf "This function"
+
+let report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
+    ~extra_arg_loc loc =
+  let open Location in
+  let cnum_offset off (pos : Lexing.position) =
+    { pos with pos_cnum = pos.pos_cnum + off }
+  in
+  let app_loc =
+    (* Span the application, including the extra argument. *)
+    { loc_start = loc.loc_start;
+      loc_end = extra_arg_loc.loc_end;
+      loc_ghost = false }
+  and tail_loc =
+    (* Possible location for a ';'. The location is widened to overlap the end
+       of the argument. *)
+    let arg_end = previous_arg_loc.loc_end in
+    { loc_start = cnum_offset ~-1 arg_end;
+      loc_end = cnum_offset ~+1 arg_end;
+      loc_ghost = false }
+  in
+  let sub = [
+    msg ~loc:tail_loc "@{<hint>Hint@}: Did you forget a ';'?";
+    msg ~loc:extra_arg_loc "This extra argument is not expected.";
+  ] in
+  errorf ~loc:app_loc ~sub
+    "@[<v>@[<2>%a has type@ %a@]\
+     @ It is applied to too many arguments@]"
+    report_this_function funct Printtyp.type_expr func_ty
+
 let report_error ~loc env = function
   | Constructor_arity_mismatch(lid, expected, provided) ->
       Location.errorf ~loc
@@ -5669,16 +5719,14 @@ let report_error ~loc env = function
            fprintf ppf "This expression has type")
         (function ppf ->
            fprintf ppf "but an expression was expected of type");
-  | Apply_non_function typ ->
-      begin match get_desc typ with
+  | Apply_non_function { funct; func_ty; previous_arg_loc; extra_arg_loc } ->
+      begin match get_desc func_ty with
         Tarrow _ ->
-          Location.errorf ~loc
-            "@[<v>@[<2>This function has type@ %a@]\
-             @ @[It is applied to too many arguments;@ %s@]@]"
-            Printtyp.type_expr typ "maybe you forgot a `;'.";
+          report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
+            ~extra_arg_loc loc
       | _ ->
           Location.errorf ~loc "@[<v>@[<2>This expression has type@ %a@]@ %s@]"
-            Printtyp.type_expr typ
+            Printtyp.type_expr func_ty
             "This is not a function; it cannot be applied."
       end
   | Apply_wrong_label (l, ty, extra_info) ->

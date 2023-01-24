@@ -80,7 +80,7 @@ val flambda : bool
 (** Whether flambda has been enabled at configure time *)
 
 val flat_float_array : bool
-(* Whether the compiler was configured with -flat-float-array *)
+(* Whether the compiler was configured with --enable-flat-float-array *)
 
 val ocamldoc : bool
 (** Whether ocamldoc has been enabled at configure time *)

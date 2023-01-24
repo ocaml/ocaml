@@ -8,19 +8,17 @@ Line 1, characters 0-32:
 1 | type 'a t = [`A of 'a t t] as 'a;; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The type abbreviation t is cyclic:
-         ('a t as 'b) t as 'a contains 'b,
-         'b = 'a
+         ('a t as 'b) t as 'a contains 'b
 |}, Principal{|
 Line 1, characters 0-32:
 1 | type 'a t = [`A of 'a t t] as 'a;; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The definition of t contains a cycle:
-         [ `A of ('a t as 'c) t as 'b ] as 'a contains 'c,
-         'c = [ `A of ('d t as 'e) t ] as 'd,
-         'd contains 'e,
-         'e = 'b,
-         'b contains 'c,
-         'c = 'b
+Error: This recursive type is not regular.
+       The type constructor t is defined as
+         type 'b t
+       but it is used as
+         ([ `A of 'a ] as 'b) t t as 'a.
+       All uses need to match the definition for the recursive type to be regular.
 |}];;
 type 'a t = [`A of 'a t t];; (* fails *)
 [%%expect{|
@@ -39,18 +37,16 @@ type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
 Line 1, characters 0-47:
 1 | type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic:
-         ('a t as 'a) t = [ `A of 'a t t ],
-         [ `A of 'a t t ] contains 'a
+Error: The definition of t contains a cycle:
+         'a t as 'a contains 'a
 |}];;
 type 'a t = [`A of 'a t] constraint 'a = 'a t;; (* fails since 4.04 *)
 [%%expect{|
 Line 1, characters 0-45:
 1 | type 'a t = [`A of 'a t] constraint 'a = 'a t;; (* fails since 4.04 *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic:
-         ('a t as 'a) t = [ `A of 'a t ],
-         [ `A of 'a t ] contains 'a
+Error: The definition of t contains a cycle:
+         'a t as 'a contains 'a
 |}];;
 type 'a t = [`A of 'a] as 'a;;
 [%%expect{|
@@ -60,13 +56,12 @@ type 'a t = [ `A of 'b ] as 'b constraint 'a = [ `A of 'a ]
 |}];;
 type 'a v = [`A of u v] constraint 'a = t and t = u and u = t;; (* fails *)
 [%%expect{|
-Line 1, characters 0-41:
+Line 1, characters 42-51:
 1 | type 'a v = [`A of u v] constraint 'a = t and t = u and u = t;; (* fails *)
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The definition of v contains a cycle:
+                                              ^^^^^^^^^
+Error: The type abbreviation t is cyclic:
          t = u,
-         u = t,
-         t = u
+         u = t
 |}];;
 
 type 'a t = 'a;;
@@ -205,8 +200,7 @@ Line 2, characters 0-40:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The type abbreviation t is cyclic:
          'a t t = 'a t * 'a,
-         'a t * 'a contains 'a t,
-         'a t = 'a t * 'a
+         'a t * 'a contains 'a t
 |}]
 
 type 'a t = <a : 'a; b : 'b> constraint 'a = 'b t;;
@@ -346,6 +340,19 @@ end;;
 Exception: Failure "Default_extension failure".
 |}]
 
+(* #11207 *)
+
+type 'a t = 'b constraint 'a = < x : 'b >
+type u = < x : u > t
+[%%expect{|
+type 'a t = 'b constraint 'a = < x : 'b >
+Line 2, characters 0-20:
+2 | type u = < x : u > t
+    ^^^^^^^^^^^^^^^^^^^^
+Error: The type abbreviation u is cyclic:
+         u = < x : u > t,
+         < x : u > t = u
+|}]
 
 (* PR#11771 -- Constraints making expansion affect typeability *)
 type foo = Foo

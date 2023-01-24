@@ -275,6 +275,27 @@ let emit_set_comp cmp res =
   | _ -> ()
   end
 
+let emit_float_comp cmp arg =
+  `	fcmpu	0, {emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;
+  (* bit 0 = lt, bit 1 = gt, bit 2 = eq *)
+  let bitnum =
+    match cmp with
+    | CFeq | CFneq -> 2
+    | CFle | CFnle ->
+    `	cror	3, 0, 2\n`; (* lt or eq *)
+    3
+    | CFgt | CFngt -> 1
+    | CFge | CFnge ->
+    `	cror	3, 1, 2\n`; (* gt or eq *)
+    3
+    | CFlt | CFnlt -> 0
+  in
+  match cmp with
+  | CFneq | CFngt | CFnge | CFnlt | CFnle ->
+    bitnum, true
+  | CFeq | CFgt | CFge | CFlt | CFle ->
+    bitnum, false
+
 (* Free the stack frame *)
 
 let emit_free_frame env =
@@ -478,6 +499,9 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Ispecific(Ipoll_far { return_label = None } )) -> 4
     | Lop(Iintop Imod) -> 3
     | Lop(Iintop(Icomp _)) -> 4
+    | Lop(Icompf _) ->
+        Misc.fatal_error "Icompf is not implemented for this platform";
+        (* 5 *)
     | Lop(Iintop _) -> 1
     | Lop(Iintop_imm(Icomp _, _)) -> 4
     | Lop(Iintop_imm _) -> 1
@@ -821,6 +845,21 @@ let emit_instr env i =
             `	{emit_string cmplg}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
             emit_set_comp c i.res.(0)
         end
+    | Lop(Icompf cmp) ->
+        ignore cmp;
+        Misc.fatal_error "Icompf is not implemented for this platform";
+        (* smuenzel: the following code may be used to implement
+           Icompf when this platform is supported again post 5.0.
+           It will need to be tested.
+           {[
+             let res = i.res.(0) in
+             let bitnum, negated = emit_float_comp cmp i.arg in
+             `	mfcr	0\n`;
+             `	rlwinm	{emit_reg res}, 0, {emit_int(bitnum+1)}, 31, 31\n`;
+             if negated
+             then `  xori  {emit_reg res}, {emit_reg res}, 1\n`
+           ]}
+        *)
     | Lop(Iintop (Icheckbound)) ->
         if !Clflags.debug then
           record_frame env Reg.Set.empty (Dbg_other i.dbg);
@@ -918,25 +957,10 @@ let emit_instr env i =
             `	{emit_string comp}i	{emit_reg i.arg.(0)}, {emit_int n}\n`;
             `	{emit_string branch}	{emit_label lbl}\n`
         | Ifloattest cmp -> begin
-            `	fcmpu	0, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-            (* bit 0 = lt, bit 1 = gt, bit 2 = eq *)
-            let bitnum =
-              match cmp with
-              | CFeq | CFneq -> 2
-              | CFle | CFnle ->
-                `	cror	3, 0, 2\n`; (* lt or eq *)
-                3
-              | CFgt | CFngt -> 1
-              | CFge | CFnge ->
-                `	cror	3, 1, 2\n`; (* gt or eq *)
-                3
-              | CFlt | CFnlt -> 0
-            in
-            match cmp with
-            | CFneq | CFngt | CFnge | CFnlt | CFnle ->
-               `	bf	{emit_int bitnum}, {emit_label lbl}\n`
-            | CFeq | CFgt | CFge | CFlt | CFle ->
-               `	bt	{emit_int bitnum}, {emit_label lbl}\n`
+            let bitnum, negated = emit_float_comp cmp i.arg in
+            if negated
+            then `	bf	{emit_int bitnum}, {emit_label lbl}\n`
+            else `	bt	{emit_int bitnum}, {emit_label lbl}\n`
           end
         | Ioddtest ->
             `	andi.	0, {emit_reg i.arg.(0)}, 1\n`;

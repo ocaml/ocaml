@@ -1382,6 +1382,7 @@ typing/typecore.cmo : \
     typing/printpat.cmi \
     typing/primitive.cmi \
     typing/predef.cmi \
+    parsing/pprintast.cmi \
     typing/persistent_env.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
@@ -1415,6 +1416,7 @@ typing/typecore.cmx : \
     typing/printpat.cmx \
     typing/primitive.cmx \
     typing/predef.cmx \
+    parsing/pprintast.cmx \
     typing/persistent_env.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
@@ -1880,8 +1882,7 @@ typing/typetexp.cmi : \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/errortrace.cmi \
-    typing/env.cmi \
-    parsing/asttypes.cmi
+    typing/env.cmi
 typing/untypeast.cmo : \
     typing/typedtree.cmi \
     typing/path.cmi \
@@ -2239,14 +2240,20 @@ asmcomp/afl_instrument.cmi : \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi
 asmcomp/arch.cmo : \
+    asmcomp/x86_ast.cmi \
+    lambda/lambda.cmi \
     utils/config.cmi \
     utils/clflags.cmi \
     asmcomp/arch.cmi
 asmcomp/arch.cmx : \
+    asmcomp/x86_ast.cmi \
+    lambda/lambda.cmx \
     utils/config.cmx \
     utils/clflags.cmx \
     asmcomp/arch.cmi
-asmcomp/arch.cmi :
+asmcomp/arch.cmi : \
+    asmcomp/x86_ast.cmi \
+    lambda/lambda.cmi
 asmcomp/asmgen.cmo : \
     lambda/translmod.cmi \
     asmcomp/split.cmi \
@@ -2485,7 +2492,6 @@ asmcomp/cmm.cmo : \
     lambda/debuginfo.cmi \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi \
-    asmcomp/arch.cmi \
     asmcomp/cmm.cmi
 asmcomp/cmm.cmx : \
     utils/targetint.cmx \
@@ -2494,7 +2500,6 @@ asmcomp/cmm.cmx : \
     lambda/debuginfo.cmx \
     middle_end/backend_var.cmx \
     parsing/asttypes.cmi \
-    asmcomp/arch.cmx \
     asmcomp/cmm.cmi
 asmcomp/cmm.cmi : \
     utils/targetint.cmi \
@@ -2586,7 +2591,6 @@ asmcomp/cmmgen.cmo : \
     middle_end/clambda.cmi \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi \
-    asmcomp/arch.cmi \
     asmcomp/afl_instrument.cmi \
     asmcomp/cmmgen.cmi
 asmcomp/cmmgen.cmx : \
@@ -2606,7 +2610,6 @@ asmcomp/cmmgen.cmx : \
     middle_end/clambda.cmx \
     middle_end/backend_var.cmx \
     parsing/asttypes.cmi \
-    asmcomp/arch.cmx \
     asmcomp/afl_instrument.cmx \
     asmcomp/cmmgen.cmi
 asmcomp/cmmgen.cmi : \
@@ -2665,14 +2668,12 @@ asmcomp/dataflow.cmi : \
     asmcomp/mach.cmi
 asmcomp/deadcode.cmo : \
     asmcomp/reg.cmi \
-    asmcomp/proc.cmi \
     utils/numbers.cmi \
     asmcomp/mach.cmi \
     asmcomp/cmm.cmi \
     asmcomp/deadcode.cmi
 asmcomp/deadcode.cmx : \
     asmcomp/reg.cmx \
-    asmcomp/proc.cmx \
     utils/numbers.cmx \
     asmcomp/mach.cmx \
     asmcomp/cmm.cmx \
@@ -3095,6 +3096,7 @@ asmcomp/selectgen.cmi : \
     asmcomp/arch.cmi
 asmcomp/selection.cmo : \
     asmcomp/selectgen.cmi \
+    asmcomp/reg.cmi \
     asmcomp/proc.cmi \
     asmcomp/mach.cmi \
     asmcomp/cmm.cmi \
@@ -3103,6 +3105,7 @@ asmcomp/selection.cmo : \
     asmcomp/selection.cmi
 asmcomp/selection.cmx : \
     asmcomp/selectgen.cmx \
+    asmcomp/reg.cmx \
     asmcomp/proc.cmx \
     asmcomp/mach.cmx \
     asmcomp/cmm.cmx \
@@ -6310,6 +6313,7 @@ toplevel/genprintval.cmi : \
     typing/env.cmi
 toplevel/topcommon.cmo : \
     typing/typedtree.cmi \
+    bytecomp/symtable.cmi \
     parsing/printast.cmi \
     typing/predef.cmi \
     parsing/pprintast.cmi \
@@ -6337,6 +6341,7 @@ toplevel/topcommon.cmo : \
     toplevel/topcommon.cmi
 toplevel/topcommon.cmx : \
     typing/typedtree.cmx \
+    bytecomp/symtable.cmx \
     parsing/printast.cmx \
     typing/predef.cmx \
     parsing/pprintast.cmx \

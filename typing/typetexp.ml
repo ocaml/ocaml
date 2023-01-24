@@ -58,24 +58,23 @@ module TyVarMap = Misc.Stdlib.String.Map
 let transl_modtype_longident = ref (fun _ -> assert false)
 let transl_modtype = ref (fun _ -> assert false)
 
-let create_package_mty fake loc env (p, l) =
-  let l =
-    List.sort
-      (fun (s1, _t1) (s2, _t2) ->
-         if s1.txt = s2.txt then
-           raise (Error (loc, env, Multiple_constraints_on_type s1.txt));
-         compare s1.txt s2.txt)
-      l
-  in
-  l,
+let sort_constraints_no_duplicates loc env l =
+  List.sort
+    (fun (s1, _t1) (s2, _t2) ->
+       if s1.txt = s2.txt then
+         raise (Error (loc, env, Multiple_constraints_on_type s1.txt));
+       compare s1.txt s2.txt)
+    l
+
+let create_package_mty loc p l =
   List.fold_left
-    (fun mty (s, t) ->
+    (fun mty (s, _) ->
       let d = {ptype_name = mkloc (Longident.last s.txt) s.loc;
                ptype_params = [];
                ptype_cstrs = [];
                ptype_kind = Ptype_abstract;
                ptype_private = Asttypes.Public;
-               ptype_manifest = if fake then None else Some t;
+               ptype_manifest = None;
                ptype_attributes = [];
                ptype_loc = loc} in
       Ast_helper.Mty.mk ~loc
@@ -461,13 +460,15 @@ and transl_type_aux env policy styp =
       unify_var env (newvar()) ty';
       ctyp (Ttyp_poly (vars, cty)) ty'
   | Ptyp_package (p, l) ->
-      let l, mty = create_package_mty true styp.ptyp_loc env (p, l) in
+      let loc = styp.ptyp_loc in
+      let l = sort_constraints_no_duplicates loc env l in
+      let mty = create_package_mty loc p l in
       let mty =
         with_local_type_variable_scope (fun () -> !transl_modtype env mty) in
       let ptys = List.map (fun (s, pty) ->
                              s, transl_type env policy pty
                           ) l in
-      let path = !transl_modtype_longident styp.ptyp_loc env p.txt in
+      let path = !transl_modtype_longident loc env p.txt in
       let ty = newty (Tpackage (path,
                        List.map (fun (s, cty) -> (s.txt, cty.ctyp_type)) ptys))
       in
@@ -573,8 +574,6 @@ let rec make_fixed_univars ty =
 let make_fixed_univars ty =
   make_fixed_univars ty;
   Btype.unmark_type ty
-
-let create_package_mty = create_package_mty false
 
 let globalize_used_variables env fixed =
   let r = ref [] in
