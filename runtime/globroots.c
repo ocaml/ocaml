@@ -179,9 +179,11 @@ static link *cons(void *data, link *tl) {
 /* protected by roots_mutex */
 static link * caml_dyn_globals = NULL;
 
-void caml_register_dyn_global(void *v) {
+void caml_register_dyn_globals(void **globals, int nglobals) {
+  int i;
   caml_plat_lock(&roots_mutex);
-  caml_dyn_globals = cons((void*) v,caml_dyn_globals);
+  for (i = 0; i < nglobals; i++)
+    caml_dyn_globals = cons(globals[i],caml_dyn_globals);
   caml_plat_unlock(&roots_mutex);
 }
 
