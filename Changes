@@ -6,19 +6,15 @@ Working version
 - #9975, #11365: Make empty types (`type t = |`) immediate.
   (Antal Spector-Zabusky, review by Gabriel Scherer)
 
-- #11297: Report "unclosed" error when "done" is missing in a "do .. done"
-  construct.
-  (Nicolás Ojeda Bär)
-
-- #11457: Remove old polymorphic variant syntax.
-  (Stefan Muenzel, review by Gabriel Scherer and Jacques Garrigue)
-
-* #11565: Enable -strict-formats by default.
-  (Nicolás Ojeda Bär, review by David Allsopp)
-
 * #11694: Add short syntax for generative functor types `() -> ...`
   (Jeremy Yallop, review by Gabriel Scherer, Nicolás Ojeda Bär,
   Jacques Garrigue)
+
+- #11457: Remove old polymorphic variant syntax.
+  With ``type t = [ `A | `B ]``, we could write either `[< t]` or `#t`.
+  `#t` for polymorphic variants was deprecated in 2001, it is now only
+  available for objects.
+  (Stefan Muenzel, review by Gabriel Scherer and Jacques Garrigue)
 
 ### Runtime system:
 
@@ -73,9 +69,6 @@ Working version
   would previous behave incorrectly, and now results in a clean error.
   (Leo White, review by Gabriel Scherer and Florian Angeletti)
 
-- #11879: Bugfix for Ctype.nondep_type
-  (Stephen Dolan, review by Gabriel Scherer)
-
 ### Code generation and optimizations:
 
 - #9945, #10883: Turn boolean-result float comparisons into primitive operations
@@ -112,6 +105,13 @@ Working version
   Leroy)
 
 ### Standard library:
+
+* #11565: Enable -strict-formats by default. Some incorrect format
+  specifications (for `printf`) where silently ignored and now fail.
+  Those new failures occur at compile-time, except if you use advanced
+  format features like `%(...%)` that parse format strings dynamically.
+  Pass -no-strict-formats to revert to the previous lenient behavior.
+  (Nicolás Ojeda Bär, review by David Allsopp)
 
 - #11883, #11884: Update documentation for In_channel and Out_channel
   with examples and sections to group related functions.
@@ -299,6 +299,10 @@ Working version
   modules with mismatching -for-pack
   (Pierre Chambart and Vincent Laviron, review by Mark Shinwell)
 
+- #11297: Report "unclosed" error when "done" is missing in a "do .. done"
+  construct.
+  (Nicolás Ojeda Bär)
+
 - #11635, #5461, #10564: Turn warning 31 (Module_linked_twice) into a hard error
   (Hugo Heuzard, review by Valentin Gatien-Baron and Gabriel Scherer)
 
@@ -473,6 +477,9 @@ Working version
 - #11866: Fix the result of `caml_read_directory()` on non-existent paths.
   (Andrei Paskevich and Charlène Gros, review by David Allsopp and
    Nicolás Ojeda Bär)
+
+- #11879: Bugfix for Ctype.nondep_type
+  (Stephen Dolan, review by Gabriel Scherer)
 
 OCaml 5.0
 ---------
