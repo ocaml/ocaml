@@ -72,6 +72,22 @@ module Empty_valid : S = struct type t = | end;;
 module Empty_valid : S
 |}];;
 
+(* Value when unboxed *)
+module Unboxed_valid = struct
+  type t = { x : int } [@@unboxed] [@@immediate]
+
+  type u = { x : s } [@@unboxed] [@@immediate]
+  and s = int
+end;;
+[%%expect{|
+module Unboxed_valid :
+  sig
+    type t = { x : int; } [@@unboxed]
+    type u = { x : s; } [@@unboxed]
+    and s = int
+  end
+|}];;
+
 (* Practical usage over modules *)
 module Foo : sig type t val x : t ref end = struct
   type t = int

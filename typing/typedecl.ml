@@ -346,11 +346,19 @@ let verify_unboxed_attr unboxed_attr sdecl =
           end
       end
 
-let verify_immediacy_attr loc immediate kind =
-  let kind_imm = Ctype.kind_immediacy kind in
-  match Type_immediacy.coerce kind_imm ~as_:immediate with
+(* Note that here we are checking the kind, and depend on [check_coherence] to
+   verify that manifest is immediate if the kind says it is. *)
+let verify_immediacy_attr env immediate decl =
+  let check =
+    match find_unboxed_type decl with
+    | Some ty -> Ctype.check_type_immediate env ty immediate
+    | None ->
+      let kind_imm = Ctype.kind_immediacy_approx decl.type_kind in
+      Type_immediacy.coerce kind_imm ~as_:immediate
+  in
+  match check with
   | Ok () -> ()
-  | Error v -> raise(Error(loc, Immediacy v))
+  | Error v -> raise(Error(decl.type_loc, Immediacy v))
 
 let transl_declaration env sdecl (id, uid) =
   (* Bind type parameters *)
@@ -374,10 +382,12 @@ let transl_declaration env sdecl (id, uid) =
       Option.is_none unboxed_attr
     | _ -> false, false (* Not unboxable, mark as boxed *)
   in
-  let immediate = Type_immediacy.of_attributes sdecl.ptype_attributes in
+  verify_unboxed_attr unboxed_attr sdecl;
   let (tkind, kind) =
     match sdecl.ptype_kind with
-      | Ptype_abstract -> Ttype_abstract, Type_abstract {immediate}
+      | Ptype_abstract ->
+        let immediate = Type_immediacy.of_attributes sdecl.ptype_attributes in
+        Ttype_abstract, Type_abstract {immediate}
       | Ptype_variant scstrs ->
         if List.exists (fun cstr -> cstr.pcd_res <> None) scstrs then begin
           match cstrs with
@@ -439,8 +449,6 @@ let transl_declaration env sdecl (id, uid) =
           Ttype_record lbls, Type_record(lbls', rep)
       | Ptype_open -> Ttype_open, Type_open
       in
-    verify_unboxed_attr unboxed_attr sdecl;
-    verify_immediacy_attr sdecl.ptype_loc immediate kind;
     let (tman, man) = match sdecl.ptype_manifest with
         None -> None, None
       | Some sty ->
@@ -996,6 +1004,12 @@ let transl_type_decl env rec_flag sdecl_list =
     decls;
   List.iter
     (check_abbrev_regularity ~orig_env:env new_env id_loc_list to_check) tdecls;
+  (* Check that [@@immediate] annotations are correct. *)
+  List.iter2
+    (fun sdecl tdecl ->
+       let immediate = Type_immediacy.of_attributes sdecl.ptype_attributes in
+       verify_immediacy_attr new_env immediate tdecl.typ_type)
+    sdecl_list tdecls;
   (* Check that all type variables are closed *)
   List.iter2
     (fun sdecl tdecl ->

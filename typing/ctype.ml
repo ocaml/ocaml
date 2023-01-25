@@ -5478,7 +5478,7 @@ let get_unboxed_type_approximation env ty =
   match get_unboxed_type_representation env ty with
   | Ok ty | Error ty -> ty
 
-let kind_immediacy = function
+let kind_immediacy_approx = function
   | Type_open | Type_record _ -> Type_immediacy.Unknown
   | Type_abstract { immediate } -> immediate
   | Type_variant (cstrs, _) ->
@@ -5490,7 +5490,7 @@ let type_immediacy_head env ty =
   match get_desc ty with
   | Tconstr(p, _args, _abbrev) ->
      begin match Env.find_type p env with
-     | { type_kind = k; _ } -> kind_immediacy k
+     | { type_kind = k; _ } -> kind_immediacy_approx k
      | exception Not_found -> Type_immediacy.Unknown
      end
   | Tvariant row ->
@@ -5516,11 +5516,13 @@ let check_type_immediate env ty imm =
     Type_immediacy.coerce (type_immediacy_head env ty) ~as_:imm
 
 let check_decl_immediate env decl imm =
-  match find_unboxed_type decl, decl.type_manifest with
-  | Some arg, _ -> check_type_immediate env arg imm
-  | None, None -> Type_immediacy.coerce (kind_immediacy decl.type_kind) ~as_:imm
-  | None, Some ty ->
-     (* Check the kind first, in case of missing cmis *)
-     match Type_immediacy.coerce (kind_immediacy decl.type_kind) ~as_:imm with
-     | Ok () -> Ok ()
-     | _ -> check_type_immediate env ty imm
+  match find_unboxed_type decl with
+  | Some arg -> check_type_immediate env arg imm
+  | None ->
+    (* Check the kind first, even if there is a manifest, in case of missing
+       cmis *)
+    let kind_imm = kind_immediacy_approx decl.type_kind in
+    match Type_immediacy.coerce kind_imm ~as_:imm, decl.type_manifest with
+    | Ok (), _ -> Ok ()
+    | Error _ as err, None -> err
+    | Error _, Some ty -> check_type_immediate env ty imm

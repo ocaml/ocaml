@@ -470,7 +470,10 @@ val get_unboxed_type_representation :
   Env.t -> type_expr -> (type_expr, type_expr) result
 val get_unboxed_type_approximation : Env.t -> type_expr -> type_expr
 
-val kind_immediacy : type_decl_kind -> Type_immediacy.t
+(* [kind_immediacy_approx] may be a conservative approximation (return Unknown
+   for types that are actually immediate) in two cases: [@@unboxed] types, and
+   abbreviations (abstract types with a manifest).  *)
+val kind_immediacy_approx : type_decl_kind -> Type_immediacy.t
 val check_decl_immediate :
   Env.t -> type_declaration -> Type_immediacy.t ->
   (unit, Type_immediacy.Violation.t) result
