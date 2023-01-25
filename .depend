@@ -1071,6 +1071,7 @@ typing/printtyp.cmo : \
     typing/types.cmi \
     typing/type_immediacy.cmi \
     typing/signature_group.cmi \
+    typing/shape.cmi \
     typing/primitive.cmi \
     typing/predef.cmi \
     typing/path.cmi \
@@ -1093,6 +1094,7 @@ typing/printtyp.cmx : \
     typing/types.cmx \
     typing/type_immediacy.cmx \
     typing/signature_group.cmx \
+    typing/shape.cmx \
     typing/primitive.cmx \
     typing/predef.cmx \
     typing/path.cmx \
@@ -1112,6 +1114,7 @@ typing/printtyp.cmx : \
     typing/printtyp.cmi
 typing/printtyp.cmi : \
     typing/types.cmi \
+    typing/shape.cmi \
     typing/path.cmi \
     typing/outcometree.cmi \
     parsing/longident.cmi \
