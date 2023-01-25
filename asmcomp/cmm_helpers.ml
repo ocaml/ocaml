@@ -1967,7 +1967,8 @@ let rec intermediate_curry_functions arity num =
           let rec iter i args clos =
             if i = 0 then
               Cop(Capply typ_val,
-                  (get_field_codepointer Asttypes.Mutable (Cvar clos) 2 (dbg ()))
+                  (get_field_codepointer
+                     Asttypes.Mutable (Cvar clos) 2 (dbg ()))
                   :: args @ [Cvar clos],
                   dbg ())
             else
