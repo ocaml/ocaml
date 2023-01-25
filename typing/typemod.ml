@@ -3339,28 +3339,34 @@ let report_error ~loc _env = function
         Printtyp.namespaced_ident shadowed_item_kind shadower_id
       in
       let shadowed_item_kind= Sig_component_kind.to_string shadowed_item_kind in
-      Location.errorf ~loc
-        "@[<v>Illegal shadowing of included %s %s by %s@ \
-         %a:@;<1 2>%s %s came from this include@ \
-         %a:@;<1 2>The %s %s has no valid type if %s is shadowed@]"
-        shadowed_item_kind shadowed shadower
-        Location.print_loc shadowed_item_loc
-        (String.capitalize_ascii shadowed_item_kind)
-        shadowed
-        Location.print_loc user_loc
+      let shadowed_msg =
+        Location.msg ~loc:shadowed_item_loc
+          "@[%s %s came from this include.@]"
+          (String.capitalize_ascii shadowed_item_kind)
+          shadowed
+      in
+      let user_msg =
+        Location.msg ~loc:user_loc
+        "@[The %s %s has no valid type@ if %s is shadowed.@]"
         (Sig_component_kind.to_string user_kind) (Ident.name user_id)
         shadowed
+      in
+      Location.errorf ~loc ~sub:[shadowed_msg; user_msg]
+        "Illegal shadowing of included %s %s@ by %s."
+        shadowed_item_kind shadowed shadower
   | Cannot_hide_id Appears_in_signature
       { opened_item_kind; opened_item_id; user_id; user_kind; user_loc } ->
       let opened_item_kind= Sig_component_kind.to_string opened_item_kind in
       let opened_id = Ident.name opened_item_id in
-      Location.errorf ~loc
-        "@[<v>The %s %s introduced by this open appears in the signature@ \
-         %a:@;<1 2>The %s %s has no valid type if %s is hidden@]"
-        opened_item_kind opened_id
-        Location.print_loc user_loc
+      let user_msg =
+        Location.msg ~loc:user_loc
+          "@[The %s %s has no valid type@ if %s is hidden.@]"
         (Sig_component_kind.to_string user_kind) (Ident.name user_id)
         opened_id
+      in
+      Location.errorf ~loc ~sub:[user_msg]
+        "The %s %s introduced by this open appears in the signature."
+        opened_item_kind opened_id
   | Invalid_type_subst_rhs ->
       Location.errorf ~loc "Only type synonyms are allowed on the right of :="
   | Unpackable_local_modtype_subst p ->
