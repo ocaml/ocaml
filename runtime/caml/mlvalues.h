@@ -126,6 +126,7 @@ where 0 <= R <= 31 is HEADER_RESERVED_BITS, set with the
                              << HEADER_WOSIZE_SHIFT)
 
 #define Tag_hd(hd) ((tag_t) ((hd) & HEADER_TAG_MASK))
+#define Hd_with_tag(hd, tag) (((hd) &~ HEADER_TAG_MASK) | (tag))
 #define Wosize_hd(hd) ((mlsize_t) (((hd) & HEADER_WOSIZE_MASK) \
                                      >> HEADER_WOSIZE_SHIFT))
 
