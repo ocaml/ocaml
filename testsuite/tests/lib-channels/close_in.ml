@@ -11,10 +11,6 @@ let () =
   seek_in ic nb_bytes;
   close_in ic;
   seek_in ic 0;
-  for _ = 1 to nb_bytes do
-    (* the bytes we get here were never initialised *)
-    ignore (input_byte ic)
-  done;
   assert (
     try
       ignore (input_byte ic);

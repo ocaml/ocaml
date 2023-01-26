@@ -681,6 +681,9 @@ CAMLprim value caml_ml_close_channel(value vchannel)
      immediate caml_flush_partial or caml_refill, thus raising a Sys_error
      exception */
   channel->curr = channel->max = channel->end;
+  /* Prevent any seek backward that would mark the last bytes of the
+   * channel buffer as valid */
+  channel->offset = 0;
 
   /* If already closed, we are done */
   if (channel->fd != -1) {
