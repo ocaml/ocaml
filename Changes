@@ -394,6 +394,9 @@ Working version
   (Antonin Décimo, review by Xavier Leroy, David Allsopp and Sébastien
   Hinderer)
 
+- #11933: Use the correct machtype when reading the code pointer from closures
+  (Nathanaëlle Courant, review by Gabriel Scherer and Vincent Laviron)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.
