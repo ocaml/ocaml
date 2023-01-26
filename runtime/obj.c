@@ -211,7 +211,7 @@ static int obj_update_tag (value blk, int old_tag, int new_tag)
     }
 
     if (atomic_compare_exchange_strong(Hp_atomic_val(blk), &hd,
-                                       (hd & ~HEADER_TAG_MASK) | new_tag))
+                                       Hd_with_tag(hd, new_tag)))
       return 1;
   }
 }
