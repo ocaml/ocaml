@@ -73,8 +73,7 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Pdivfloat
   | Pfloatcomp _ -> No_effects, No_coeffects
   | Pstringlength | Pbyteslength
-  | Parraylength _ ->
-      No_effects, Has_coeffects  (* That old chestnut: [Obj.truncate]. *)
+  | Parraylength _ -> No_effects, No_coeffects
   | Pisint
   | Pisout
   | Pbintofint _
