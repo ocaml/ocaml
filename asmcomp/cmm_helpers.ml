@@ -642,7 +642,8 @@ let set_field ptr n newval init dbg =
   Cop(Cstore (Word_val, init), [field_address ptr n dbg; newval], dbg)
 
 let get_header ptr dbg =
-  Cop(mk_load_immut Word_int,
+  (* header loads are mutable because laziness changes tags. *)
+  Cop(mk_load_mut Word_int,
     [Cop(Cadda, [ptr; Cconst_int(-size_int, dbg)], dbg)], dbg)
 
 let get_header_masked ptr dbg =
@@ -659,7 +660,8 @@ let get_tag ptr dbg =
   if Proc.word_addressed then           (* If byte loads are slow *)
     Cop(Cand, [get_header ptr dbg; Cconst_int (255, dbg)], dbg)
   else                                  (* If byte loads are efficient *)
-    Cop(mk_load_immut Byte_unsigned,
+    (* header loads are mutable because laziness changes tags. *)
+    Cop(mk_load_mut Byte_unsigned,
         [Cop(Cadda, [ptr; Cconst_int(tag_offset, dbg)], dbg)], dbg)
 
 let get_size ptr dbg =
