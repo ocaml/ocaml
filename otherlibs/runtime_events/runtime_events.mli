@@ -60,11 +60,33 @@ type runtime_counter =
 | EV_C_REQUEST_MINOR_REALLOC_EPHE_REF_TABLE
 | EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE
 | EV_C_MAJOR_HEAP_POOL_WORDS
+(**
+Total words in a Domain's major heap pools. This is the sum of unallocated and
+live words in each pool.
+@since 5.1 *)
 | EV_C_MAJOR_HEAP_POOL_LIVE_WORDS
+(**
+Current live words in a Domain's major heap pools.
+@since 5.1 *)
 | EV_C_MAJOR_HEAP_LARGE_WORDS
+(**
+Total words of a Domain's major heap large allocations.
+A large allocation is an allocation larger than the largest sized pool.
+@since 5.1 *)
 | EV_C_MAJOR_HEAP_POOL_FRAG_WORDS
+(**
+Words in a Domain's major heap pools lost to fragmentation. This is due to
+there not being a pool with the exact size of an allocation and a larger sized
+pool needing to be used.
+@since 5.1 *)
 | EV_C_MAJOR_HEAP_POOL_LIVE_BLOCKS
+(**
+Live blocks of a Domain's major heap pools.
+@since 5.1 *)
 | EV_C_MAJOR_HEAP_LARGE_BLOCKS
+(**
+Live blocks of a Domain's major heap large allocations.
+@since 5.1 *)
 
 (** The type for span events emitted by the runtime *)
 type runtime_phase =
