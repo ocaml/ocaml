@@ -11,9 +11,11 @@ Working version
   Jacques Garrigue)
 
 - #11457: Remove old polymorphic variant syntax.
-  With ``type t = [ `A | `B ]``, we could write either `[< t]` or `#t`.
-  `#t` for polymorphic variants was deprecated in 2001, it is now only
-  available for objects.
+  With ``type t = [ `A | `B ]``, one could use the syntax `#t` in types,
+  where it means the same thing as `[< t]`, and in patterns, where it means
+  ``(`A | `B)``. The use of `#t` in types for polymorphic variants
+  was deprecated since 2001, and is now removed. The syntax remains available
+  in patterns, or for objects -- when `t` is a class type.
   (Stefan Muenzel, review by Gabriel Scherer and Jacques Garrigue)
 
 ### Runtime system:
