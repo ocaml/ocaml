@@ -237,51 +237,53 @@ G(name):
 .endm
 
 /* Save all of the registers that may be in use to a free gc_regs bucket
-   and store ALLOC_PTR and TRAP_PTR back to Caml_state
-   At the end the saved registers are placed in Caml_state(gc_regs)
+   and store ALLOC_PTR and TRAP_PTR back to Caml_state.
+   Returns the bucket in x19.
  */
 .macro SAVE_ALL_REGS
     /* First, save the young_ptr & exn_handler */
         str     ALLOC_PTR, Caml_state(young_ptr)
         str     TRAP_PTR, Caml_state(exn_handler)
-    /* Now, use TMP to point to the gc_regs bucket */
         ldr     TMP, Caml_state(gc_regs_buckets)
-        ldr     TMP2, [TMP, 0] /* next ptr */
-        str     TMP2, Caml_state(gc_regs_buckets)
-    /* Save allocatable registers */
-        stp     x0, x1, [TMP]
-        stp     x2, x3, [TMP, 16]
-        stp     x4, x5, [TMP, 32]
-        stp     x6, x7, [TMP, 48]
-        stp     x8, x9, [TMP, 64]
-        stp     x10, x11, [TMP, 80]
-        stp     x12, x13, [TMP, 96]
-        stp     x14, x15, [TMP, 112]
+    /* Store x19 and x20, so we can use x19 */
         stp     x19, x20, [TMP, 128]
-        stp     x21, x22, [TMP, 144]
-        stp     x23, x24, [TMP, 160]
-        str     x25, [TMP, 176]
+    /* Now, use x19 to point to the gc_regs bucket */
+        mov     x19, TMP
+        ldr     TMP, [x19, 0] /* next ptr */
+        str     TMP, Caml_state(gc_regs_buckets)
+    /* Save allocatable registers */
+        stp     x0, x1, [x19]
+        stp     x2, x3, [x19, 16]
+        stp     x4, x5, [x19, 32]
+        stp     x6, x7, [x19, 48]
+        stp     x8, x9, [x19, 64]
+        stp     x10, x11, [x19, 80]
+        stp     x12, x13, [x19, 96]
+        stp     x14, x15, [x19, 112]
+    /* x19 and x20 are at [x19, 128] */
+        stp     x21, x22, [x19, 144]
+        stp     x23, x24, [x19, 160]
+        str     x25, [x19, 176]
     /* Save caller-save floating-point registers
        (callee-saves are preserved by C functions) */
-        stp     d0, d1, [TMP, 192]
-        stp     d2, d3, [TMP, 208]
-        stp     d4, d5, [TMP, 224]
-        stp     d6, d7, [TMP, 240]
-        stp     d16, d17, [TMP, 256]
-        stp     d18, d19, [TMP, 272]
-        stp     d20, d21, [TMP, 288]
-        stp     d22, d23, [TMP, 304]
-        stp     d24, d25, [TMP, 320]
-        stp     d26, d27, [TMP, 336]
-        stp     d28, d29, [TMP, 352]
-        stp     d30, d31, [TMP, 368]
-        str     TMP, Caml_state(gc_regs)
+        stp     d0, d1, [x19, 192]
+        stp     d2, d3, [x19, 208]
+        stp     d4, d5, [x19, 224]
+        stp     d6, d7, [x19, 240]
+        stp     d16, d17, [x19, 256]
+        stp     d18, d19, [x19, 272]
+        stp     d20, d21, [x19, 288]
+        stp     d22, d23, [x19, 304]
+        stp     d24, d25, [x19, 320]
+        stp     d26, d27, [x19, 336]
+        stp     d28, d29, [x19, 352]
+        stp     d30, d31, [x19, 368]
 .endm
 
-/* Undo SAVE_ALL_REGS by loading the registers saved in Caml_state(gc_regs)
+/* Undo SAVE_ALL_REGS by loading the registers from the bucket in x19
    and refreshing ALLOC_PTR & TRAP_PTR from Caml_state */
 .macro RESTORE_ALL_REGS
-        ldr     TMP, Caml_state(gc_regs)
+        mov     TMP, x19
     /* Restore registers */
         ldp     x0, x1, [TMP]
         ldp     x2, x3, [TMP, 16]
@@ -360,10 +362,12 @@ L(caml_call_gc):
         add     x29, sp, #0
     /* Store all registers (including ALLOC_PTR & TRAP_PTR) */
         SAVE_ALL_REGS
+        str     x19, Caml_state(gc_regs)
         SWITCH_OCAML_TO_C
     /* Call the garbage collector */
         bl      G(caml_garbage_collection)
         SWITCH_C_TO_OCAML
+        ldr     x19, Caml_state(gc_regs)
         RESTORE_ALL_REGS
     /* Free stack space and return to caller */
         ldp     x29, x30, [sp], 16
