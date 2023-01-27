@@ -19,7 +19,21 @@
 module Raw = struct
   (* Low-level primitives provided by the runtime *)
   type t = private int
-  external spawn : (unit -> unit) -> Mutex.t -> t
+
+  (* The layouts of [state] and [term_sync] are hard-coded in
+     [runtime/domain.c] *)
+
+  type 'a state =
+    | Running
+    | Finished of ('a, exn) result
+
+  type 'a term_sync = {
+    mutable state : 'a state [@warning "-69"] ; (* protected by [mut] *)
+    mut : Mutex.t ;
+    cond : Condition.t ;
+  }
+
+  external spawn : (unit -> 'a state) -> 'a term_sync -> t
     = "caml_domain_spawn"
   external self : unit -> t
     = "caml_ml_domain_id"
@@ -33,15 +47,9 @@ let cpu_relax () = Raw.cpu_relax ()
 
 type id = Raw.t
 
-type 'a state =
-| Running
-| Finished of ('a, exn) result
-
 type 'a t = {
   domain : Raw.t;
-  term_mutex: Mutex.t;
-  term_condition: Condition.t;
-  term_state: 'a state ref (* protected by [term_mutex] *)
+  term_sync : 'a Raw.term_sync;
 }
 
 module DLS = struct
@@ -188,11 +196,12 @@ let spawn f =
   do_before_first_spawn ();
   let pk = DLS.get_initial_keys () in
 
-  (* The [term_mutex] and [term_condition] are used to
-     synchronize with the joining domains *)
-  let term_mutex = Mutex.create () in
-  let term_condition = Condition.create () in
-  let term_state = ref Running in
+  (* [term_sync] is used to synchronize with the joining domains *)
+  let term_sync =
+    Raw.{ state = Running ;
+          mut = Mutex.create () ;
+          cond = Condition.create () }
+  in
 
   let body () =
     let result =
@@ -225,35 +234,22 @@ let spawn f =
               result
           end
     in
-
-    (* Synchronize with joining domains *)
-    Mutex.lock term_mutex;
-    match !term_state with
-    | Running ->
-        term_state := Finished result';
-        Condition.broadcast term_condition;
-    | Finished _ ->
-        failwith "internal error: Am I already finished?"
-    (* [term_mutex] is unlocked in the runtime after the cleanup functions on
-       the C side are finished. *)
+    Raw.Finished result'
   in
-  { domain = Raw.spawn body term_mutex;
-    term_mutex;
-    term_condition;
-    term_state }
+  let domain = Raw.spawn body term_sync in
+  { domain ; term_sync }
 
-let join { term_mutex; term_condition; term_state; _ } =
-  Mutex.lock term_mutex;
+let join { term_sync ; _ } =
+  let open Raw in
   let rec loop () =
-    match !term_state with
+    match term_sync.state with
     | Running ->
-        Condition.wait term_condition term_mutex;
+        Condition.wait term_sync.cond term_sync.mut;
         loop ()
     | Finished res ->
-        Mutex.unlock term_mutex;
         res
   in
-  match loop () with
+  match Mutex.protect term_sync.mut loop with
   | Ok x -> x
   | Error ex -> raise ex
 
