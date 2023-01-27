@@ -64,6 +64,9 @@ Working version
 - #11474: Add support for user-defined events in the runtime event tracing
   system. (Lucas Pluvinage, review by Sadiq Jaffer)
 
+- #11935: Load frametables of dynlink'd modules in batch
+  (Stephen Dolan, review by David Allsopp and Guillaume Munch-Maccagnoni)
+
 ### Type system:
 
 - #6941, #11187: prohibit using classes through recursive modules

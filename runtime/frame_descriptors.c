@@ -158,13 +158,15 @@ void caml_init_frame_descriptors(void)
   caml_plat_unlock(&descr_mutex);
 }
 
-void caml_register_frametable(intnat *table)
+void caml_register_frametables(void **tables, int ntables)
 {
+  int i;
   struct frametable_version *ft, *old;
 
   caml_plat_lock(&descr_mutex);
 
-  frametables = cons(table, frametables);
+  for (i = 0; i < ntables; i++)
+    frametables = cons((intnat*)tables[i], frametables);
   old = (struct frametable_version*)atomic_load_acq(&current_frametable);
   CAMLassert(old != NULL);
   ft = caml_stat_alloc(sizeof(*ft));
