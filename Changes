@@ -71,6 +71,10 @@ Working version
 
 ### Code generation and optimizations:
 
+- #11967: Remove traces of Obj.truncate, which allows some mutable
+  loads to become immutable.
+  (Nick Barnes, review by Vincent Laviron and KC Sivaramakrishnan)
+
 - #9945, #10883: Turn boolean-result float comparisons into primitive operations
   Uses the architecture's elementary operations for float comparisons,
   when available, rather than branching and then setting the return value.

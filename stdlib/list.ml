@@ -408,38 +408,11 @@ let stable_sort cmp l =
 let sort = stable_sort
 let fast_sort = stable_sort
 
-(* Note: on a list of length between about 100000 (depending on the minor
-   heap size and the type of the list) and Sys.max_array_size, it is
-   actually faster to use the following, but it might also use more memory
-   because the argument list cannot be deallocated incrementally.
-
-   Also, there seems to be a bug in this code or in the
-   implementation of obj_truncate.
-
-external obj_truncate : 'a array -> int -> unit = "caml_obj_truncate"
-
-let array_to_list_in_place a =
-  let l = Array.length a in
-  let rec loop accu n p =
-    if p <= 0 then accu else begin
-      if p = n then begin
-        obj_truncate a p;
-        loop (a.(p-1) :: accu) (n-1000) (p-1)
-      end else begin
-        loop (a.(p-1) :: accu) n (p-1)
-      end
-    end
-  in
-  loop [] (l-1000) l
-
-
-let stable_sort cmp l =
-  let a = Array.of_list l in
-  Array.stable_sort cmp a;
-  array_to_list_in_place a
-
-*)
-
+(* Note: on a very long list (length over about 100000), it used to be
+   faster to convert the list to an array, sort the array, and convert
+   back, truncating the array object after prepending each thousand
+   entries to the resulting list. Impossible now that Obj.truncate has
+   been removed. *)
 
 (** sorting + removing duplicates *)
 

@@ -40,6 +40,17 @@ let bind_nonvar name arg fn =
 let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8
     (* cf. runtime/caml/gc.h *)
 
+(* Loads *)
+
+let mk_load_immut memory_chunk =
+  Cload {memory_chunk; mutability=Immutable; is_atomic=false}
+
+let mk_load_mut memory_chunk =
+  Cload {memory_chunk; mutability=Mutable; is_atomic=false}
+
+let mk_load_atomic memory_chunk =
+  Cload {memory_chunk; mutability=Mutable; is_atomic=true}
+
 (* Block headers. Meaning of the tag field: see stdlib/obj.ml *)
 
 let floatarray_tag dbg = Cconst_int (Obj.double_array_tag, dbg)
@@ -569,13 +580,9 @@ let unbox_float dbg =
           | Some (Uconst_float x) ->
               Cconst_float (x, dbg) (* or keep _dbg? *)
           | _ ->
-              Cop(Cload {memory_chunk=Double; mutability=Immutable;
-                         is_atomic=false},
-                  [cmm], dbg)
+              Cop(mk_load_immut Double, [cmm], dbg)
           end
-      | cmm -> Cop(Cload {memory_chunk=Double; mutability=Immutable;
-                         is_atomic=false},
-                   [cmm], dbg)
+      | cmm -> Cop(mk_load_immut Double, [cmm], dbg)
     )
 
 (* Complex *)
@@ -584,10 +591,9 @@ let box_complex dbg c_re c_im =
   Cop(Calloc, [alloc_floatarray_header 2 dbg; c_re; c_im], dbg)
 
 let complex_re c dbg =
-  Cop(Cload {memory_chunk=Double; mutability=Immutable; is_atomic=false},
-      [c], dbg)
+  Cop(mk_load_immut Double, [c], dbg)
 let complex_im c dbg =
-  Cop(Cload {memory_chunk=Double; mutability=Immutable; is_atomic=false},
+  Cop(mk_load_immut Double,
       [Cop(Cadda, [c; Cconst_int (size_float, dbg)], dbg)], dbg)
 
 (* Unit *)
@@ -623,14 +629,6 @@ let rec remove_unit = function
   | Ctuple [] as c -> c
   | c -> Csequence(c, Ctuple [])
 
-(* Access to block fields *)
-
-let mk_load_mut memory_chunk =
-  Cload {memory_chunk; mutability=Mutable; is_atomic=false}
-
-let mk_load_atomic memory_chunk =
-  Cload {memory_chunk; mutability=Mutable; is_atomic=true}
-
 let field_address ptr n dbg =
   if n = 0
   then ptr
@@ -648,8 +646,7 @@ let set_field ptr n newval init dbg =
   Cop(Cstore (Word_val, init), [field_address ptr n dbg; newval], dbg)
 
 let get_header ptr dbg =
-  (* We cannot deem this as [Immutable] due to the presence of [Obj.truncate]
-     and [Obj.set_tag]. *)
+  (* header loads are mutable because laziness changes tags. *)
   Cop(mk_load_mut Word_int,
     [Cop(Cadda, [ptr; Cconst_int(-size_int, dbg)], dbg)], dbg)
 
@@ -667,7 +664,7 @@ let get_tag ptr dbg =
   if Proc.word_addressed then           (* If byte loads are slow *)
     Cop(Cand, [get_header ptr dbg; Cconst_int (255, dbg)], dbg)
   else                                  (* If byte loads are efficient *)
-    (* Same comment as [get_header] above *)
+    (* header loads are mutable because laziness changes tags. *)
     Cop(mk_load_mut Byte_unsigned,
         [Cop(Cadda, [ptr; Cconst_int(tag_offset, dbg)], dbg)], dbg)
 
@@ -1048,7 +1045,7 @@ let unbox_int dbg bi =
       then Thirtytwo_signed else Word_int
     in
     Cop(
-      Cload {memory_chunk; mutability=Immutable; is_atomic=false},
+      mk_load_immut memory_chunk,
       [Cop(Cadda, [arg; Cconst_int (size_addr, dbg)], dbg)], dbg)
   in
   map_tail
