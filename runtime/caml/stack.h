@@ -57,7 +57,7 @@
 #ifdef TARGET_arm64
 /* Size of the gc_regs structure, in words.
    See arm64.S and arm64/proc.ml for the indices */
-#define Wosize_gc_regs (24 /* int regs */ + 24 /* float regs */)
+#define Wosize_gc_regs (23 /* int regs */ + 24 /* float regs */)
 #define Saved_return_address(sp) *((intnat *)((sp) - 8))
 #define Pop_frame_pointer(sp) sp += sizeof(value)
 #endif
