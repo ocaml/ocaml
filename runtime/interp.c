@@ -262,8 +262,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
   register char * jumptbl_base;
 #endif
 #endif
-  value env;
-  intnat extra_args;
+  value env = Atom(0);
+  pc = 0;
+  intnat extra_args = 0;
   struct caml_exception_context * initial_external_raise;
   int initial_stack_words;
   intnat initial_trap_sp_off;
