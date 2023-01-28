@@ -950,8 +950,9 @@ void foo (value v1, value v2, value v3)
 for use with the byte-code runtime, its arguments are not "value"s and
 must not be declared (they have types "value *" and "int").
 
-\paragraph{Warning:} If using "CAMLreturn0", it should only be used for internal FFI procedures of type void.
-If using "CAMLreturn(Val_unit)", it should be used for functions that return an OCaml unit vlaue.
+\paragraph{Warning:} "CAMLreturn0" should only be used for internal procedures that return void.
+"CAMLreturn(Val_unit)" should be used for functions that return an OCaml unit value.
+Primitives (C functions that can be called from OCaml) should never return void.
 
 \begin{gcrule}
 Local variables of type "value" must be declared with one of the
