@@ -331,7 +331,7 @@ val sigxfsz : int
 
 exception Break
 (** Exception raised on interactive interrupt if {!Sys.catch_break}
-   is on. *)
+   is enabled. *)
 
 
 val catch_break : bool -> unit
@@ -339,7 +339,13 @@ val catch_break : bool -> unit
    terminates the program or raises the [Break] exception.
    Call [catch_break true] to enable raising [Break],
    and [catch_break false] to let the system
-   terminate the program on user interrupt. *)
+   terminate the program on user interrupt.
+
+   Inside multi-threaded programs, the [Break] exception will arise in
+   any one of the active threads, and will keep arising on further
+   interactive interrupt until all threads are terminated. Use
+   signal masks from [Thread.sigmask] to direct the interrupt towards a
+   specific thread. *)
 
 
 val ocaml_version : string
