@@ -68,6 +68,12 @@ static frame_descr * next_frame_descr(frame_descr * d) {
   }
 }
 
+static int capacity(caml_frame_descrs table) {
+  int capacity = table.mask + 1;
+  CAMLassert(capacity == 0 || Is_power_of_2(capacity));
+  return capacity;
+}
+
 static caml_frame_descrs build_frame_descriptors(link* frametables)
 {
   intnat num_descr, tblsize, i, j, len;
@@ -89,8 +95,11 @@ static caml_frame_descrs build_frame_descriptors(link* frametables)
   while (tblsize < 2 * num_descr) tblsize *= 2;
 
   /* Allocate the hash table */
-  table.descriptors = caml_stat_alloc(tblsize * sizeof(frame_descr*));
+  CAMLassert(2 * num_descr <= tblsize);
+  CAMLassert(Is_power_of_2(tblsize));
+  table.num_descr = num_descr;
   table.mask = tblsize - 1;
+  table.descriptors = caml_stat_alloc(tblsize * sizeof(frame_descr*));
   for (i = 0; i < tblsize; i++) table.descriptors[i] = NULL;
 
   /* Fill the hash table */
@@ -99,7 +108,7 @@ static caml_frame_descrs build_frame_descriptors(link* frametables)
     len = *tbl;
     d = (frame_descr *)(tbl + 1);
     for (j = 0; j < len; j++) {
-      h = Hash_retaddr(d->retaddr, tblsize - 1);
+      h = Hash_retaddr(d->retaddr, table.mask);
       while (table.descriptors[h] != NULL) {
         h = (h+1) & table.mask;
       }
@@ -179,7 +188,7 @@ void caml_register_frametables(void **tables, int ntables)
      heap memory being stale frame tables */
   caml_adjust_gc_speed(
      /* Size of the table just allocated */
-     (sizeof(*ft) + sizeof(ft->table.descriptors[0]) * (ft->table.mask + 1)),
+     (sizeof(*ft) + sizeof(ft->table.descriptors[0]) * capacity(ft->table)),
      /* 1/4 of the heap size */
      caml_heap_size(Caml_state->shared_heap) / 4
   );

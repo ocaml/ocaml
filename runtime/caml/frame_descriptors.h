@@ -52,9 +52,23 @@ void caml_init_frame_descriptors(void);
 void caml_register_frametables(void **tables, int ntables);
 
 typedef struct {
-  frame_descr** descriptors;
+  int num_descr;
   int mask;
+  frame_descr** descriptors;
 } caml_frame_descrs;
+/* Let us call 'capacity' the length of the descriptors array.
+
+   We maintain the following invariants:
+     capacity = mask + 1
+     capacity = 0 || Is_power_of_2(capacity)
+     num_desc <= 2 * num_descr <= capacity
+
+   For an extensible array we would maintain
+      num_desc <= capacity,
+    but this is a linear-problem hash table, we need to ensure that
+    free slots are frequent enough, so we use a twice-larger capacity:
+      num_desc * 2 <= capacity
+*/
 
 caml_frame_descrs caml_get_frame_descrs(void);
 
