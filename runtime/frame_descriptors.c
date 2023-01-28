@@ -68,30 +68,48 @@ static frame_descr * next_frame_descr(frame_descr * d) {
   }
 }
 
+static intnat count_descriptors(link *list) {
+  intnat num_descr = 0;
+  link *lnk;
+  iter_list(list,lnk) {
+    num_descr += *((intnat*) lnk->frametable);
+  }
+  return num_descr;
+}
+
 static int capacity(caml_frame_descrs table) {
   int capacity = table.mask + 1;
   CAMLassert(capacity == 0 || Is_power_of_2(capacity));
   return capacity;
 }
 
+static void fill_hashtable(caml_frame_descrs *table, link *new_frametables) {
+  link *lnk = NULL;
+  iter_list(new_frametables,lnk) {
+    intnat * tbl = (intnat*) lnk->frametable;
+    intnat len = *tbl;
+    frame_descr * d = (frame_descr *)(tbl + 1);
+    for (intnat j = 0; j < len; j++) {
+      uintnat h = Hash_retaddr(d->retaddr, table->mask);
+      while (table->descriptors[h] != NULL) {
+        h = (h+1) & table->mask;
+      }
+      table->descriptors[h] = d;
+      d = next_frame_descr(d);
+    }
+  }
+}
+
 static caml_frame_descrs build_frame_descriptors(link* frametables)
 {
-  intnat num_descr, tblsize, i, j, len;
-  intnat * tbl;
-  frame_descr * d;
-  uintnat h;
-  link *lnk;
   caml_frame_descrs table;
 
   /* Count the frame descriptors */
-  num_descr = 0;
-  iter_list(frametables,lnk) {
-    num_descr += *lnk->frametable;
-  }
+  intnat num_descr = count_descriptors(frametables);
 
   /* The size of the hashtable is a power of 2 greater or equal to
      2 times the number of descriptors */
-  tblsize = 4;
+  intnat tblsize = 4;
   while (tblsize < 2 * num_descr) tblsize *= 2;
 
   /* Allocate the hash table */
@@ -100,24 +118,11 @@ static caml_frame_descrs build_frame_descriptors(link* frametables)
   table.num_descr = num_descr;
   table.mask = tblsize - 1;
   table.descriptors = caml_stat_alloc(tblsize * sizeof(frame_descr*));
-  for (i = 0; i < tblsize; i++) table.descriptors[i] = NULL;
+  for (intnat i = 0; i < tblsize; i++) table.descriptors[i] = NULL;
 
   /* Fill the hash table */
-  iter_list(frametables,lnk) {
-    tbl = lnk->frametable;
-    len = *tbl;
-    d = (frame_descr *)(tbl + 1);
-    for (j = 0; j < len; j++) {
-      h = Hash_retaddr(d->retaddr, table.mask);
-      while (table.descriptors[h] != NULL) {
-        h = (h+1) & table.mask;
-      }
-      table.descriptors[h] = d;
-      if (j != len - 1) {
-        d = next_frame_descr(d);
-      }
-    }
-  }
+  fill_hashtable(&table, frametables);
+
   return table;
 }
 
