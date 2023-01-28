@@ -49,7 +49,7 @@ typedef struct {
 
 
 void caml_init_frame_descriptors(void);
-void caml_register_frametable(intnat *table);
+void caml_register_frametables(void **tables, int ntables);
 
 typedef struct {
   frame_descr** descriptors;

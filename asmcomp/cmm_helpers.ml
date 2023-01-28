@@ -40,6 +40,17 @@ let bind_nonvar name arg fn =
 let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8
     (* cf. runtime/caml/gc.h *)
 
+(* Loads *)
+
+let mk_load_immut memory_chunk =
+  Cload {memory_chunk; mutability=Immutable; is_atomic=false}
+
+let mk_load_mut memory_chunk =
+  Cload {memory_chunk; mutability=Mutable; is_atomic=false}
+
+let mk_load_atomic memory_chunk =
+  Cload {memory_chunk; mutability=Mutable; is_atomic=true}
+
 (* Block headers. Meaning of the tag field: see stdlib/obj.ml *)
 
 let floatarray_tag dbg = Cconst_int (Obj.double_array_tag, dbg)
@@ -569,13 +580,9 @@ let unbox_float dbg =
           | Some (Uconst_float x) ->
               Cconst_float (x, dbg) (* or keep _dbg? *)
           | _ ->
-              Cop(Cload {memory_chunk=Double; mutability=Immutable;
-                         is_atomic=false},
-                  [cmm], dbg)
+              Cop(mk_load_immut Double, [cmm], dbg)
           end
-      | cmm -> Cop(Cload {memory_chunk=Double; mutability=Immutable;
-                         is_atomic=false},
-                   [cmm], dbg)
+      | cmm -> Cop(mk_load_immut Double, [cmm], dbg)
     )
 
 (* Complex *)
@@ -584,10 +591,9 @@ let box_complex dbg c_re c_im =
   Cop(Calloc, [alloc_floatarray_header 2 dbg; c_re; c_im], dbg)
 
 let complex_re c dbg =
-  Cop(Cload {memory_chunk=Double; mutability=Immutable; is_atomic=false},
-      [c], dbg)
+  Cop(mk_load_immut Double, [c], dbg)
 let complex_im c dbg =
-  Cop(Cload {memory_chunk=Double; mutability=Immutable; is_atomic=false},
+  Cop(mk_load_immut Double,
       [Cop(Cadda, [c; Cconst_int (size_float, dbg)], dbg)], dbg)
 
 (* Unit *)
@@ -623,14 +629,6 @@ let rec remove_unit = function
   | Ctuple [] as c -> c
   | c -> Csequence(c, Ctuple [])
 
-(* Access to block fields *)
-
-let mk_load_mut memory_chunk =
-  Cload {memory_chunk; mutability=Mutable; is_atomic=false}
-
-let mk_load_atomic memory_chunk =
-  Cload {memory_chunk; mutability=Mutable; is_atomic=true}
-
 let field_address ptr n dbg =
   if n = 0
   then ptr
@@ -640,12 +638,15 @@ let get_field_gen mutability ptr n dbg =
   Cop(Cload {memory_chunk=Word_val; mutability; is_atomic=false},
       [field_address ptr n dbg], dbg)
 
+let get_field_codepointer mutability ptr n dbg =
+  Cop(Cload {memory_chunk=Word_int; mutability; is_atomic=false},
+      [field_address ptr n dbg], dbg)
+
 let set_field ptr n newval init dbg =
   Cop(Cstore (Word_val, init), [field_address ptr n dbg; newval], dbg)
 
 let get_header ptr dbg =
-  (* We cannot deem this as [Immutable] due to the presence of [Obj.truncate]
-     and [Obj.set_tag]. *)
+  (* header loads are mutable because laziness changes tags. *)
   Cop(mk_load_mut Word_int,
     [Cop(Cadda, [ptr; Cconst_int(-size_int, dbg)], dbg)], dbg)
 
@@ -663,7 +664,7 @@ let get_tag ptr dbg =
   if Proc.word_addressed then           (* If byte loads are slow *)
     Cop(Cand, [get_header ptr dbg; Cconst_int (255, dbg)], dbg)
   else                                  (* If byte loads are efficient *)
-    (* Same comment as [get_header] above *)
+    (* header loads are mutable because laziness changes tags. *)
     Cop(mk_load_mut Byte_unsigned,
         [Cop(Cadda, [ptr; Cconst_int(tag_offset, dbg)], dbg)], dbg)
 
@@ -1044,7 +1045,7 @@ let unbox_int dbg bi =
       then Thirtytwo_signed else Word_int
     in
     Cop(
-      Cload {memory_chunk; mutability=Immutable; is_atomic=false},
+      mk_load_immut memory_chunk,
       [Cop(Cadda, [arg; Cconst_int (size_addr, dbg)], dbg)], dbg)
   in
   map_tail
@@ -1613,7 +1614,7 @@ let generic_apply mut clos args dbg =
   match args with
   | [arg] ->
       bind "fun" clos (fun clos ->
-        Cop(Capply typ_val, [get_field_gen mut clos 0 dbg; arg; clos],
+        Cop(Capply typ_val, [get_field_codepointer mut clos 0 dbg; arg; clos],
           dbg))
   | _ ->
       let arity = List.length args in
@@ -1723,7 +1724,7 @@ let apply_function_body arity =
   let rec app_fun clos n =
     if n = arity-1 then
       Cop(Capply typ_val,
-          [get_field_gen Asttypes.Mutable (Cvar clos) 0 (dbg ());
+          [get_field_codepointer Asttypes.Mutable (Cvar clos) 0 (dbg ());
            Cvar arg.(n);
            Cvar clos],
           dbg ())
@@ -1731,7 +1732,7 @@ let apply_function_body arity =
       let newclos = V.create_local "clos" in
       Clet(VP.create newclos,
            Cop(Capply typ_val,
-               [get_field_gen Asttypes.Mutable (Cvar clos) 0 (dbg ());
+               [get_field_codepointer Asttypes.Mutable (Cvar clos) 0 (dbg ());
                 Cvar arg.(n); Cvar clos], dbg ()),
            app_fun newclos (n+1))
     end in
@@ -1746,7 +1747,7 @@ let apply_function_body arity =
                    Cconst_int(arity, dbg())], dbg()),
    dbg (),
    Cop(Capply typ_val,
-       get_field_gen Asttypes.Mutable (Cvar clos) 2 (dbg ())
+       get_field_codepointer Asttypes.Mutable (Cvar clos) 2 (dbg ())
        :: List.map (fun s -> Cvar s) all_args,
        dbg ()),
    dbg (),
@@ -1839,7 +1840,7 @@ let tuplify_function arity =
     fun_args = [VP.create arg, typ_val; VP.create clos, typ_val];
     fun_body =
       Cop(Capply typ_val,
-          get_field_gen Asttypes.Mutable (Cvar clos) 2 (dbg ())
+          get_field_codepointer Asttypes.Mutable (Cvar clos) 2 (dbg ())
           :: access_components 0 @ [Cvar clos],
           (dbg ()));
     fun_codegen_options = [];
@@ -1883,7 +1884,7 @@ let final_curry_function arity =
   let rec curry_fun args clos n =
     if n = 0 then
       Cop(Capply typ_val,
-          get_field_gen Asttypes.Mutable (Cvar clos) 2 (dbg ()) ::
+          get_field_codepointer Asttypes.Mutable (Cvar clos) 2 (dbg ()) ::
             args @ [Cvar last_arg; Cvar clos],
           dbg ())
     else
@@ -1963,7 +1964,8 @@ let rec intermediate_curry_functions arity num =
           let rec iter i args clos =
             if i = 0 then
               Cop(Capply typ_val,
-                  (get_field_gen Asttypes.Mutable (Cvar clos) 2 (dbg ()))
+                  (get_field_codepointer
+                     Asttypes.Mutable (Cvar clos) 2 (dbg ()))
                   :: args @ [Cvar clos],
                   dbg ())
             else
