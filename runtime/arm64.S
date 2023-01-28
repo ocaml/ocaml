@@ -331,7 +331,8 @@ FUNCTION(caml_call_realloc_stack)
         stp     x29, x30, [sp, -16]!
         CFI_ADJUST(16)
         add     x29, sp, #0
-    /* Save all registers (including ALLOC_PTR & TRAP_PTR) */
+    /* SAVE_ALL_REGS / RESTORE_ALL_REGS saves more than is needed for a C call,
+       but it's simpler than having a dedicated macro for this non-hot path */
         SAVE_ALL_REGS
         ldr     C_ARG_1, [sp, 16] /* argument */
         SWITCH_OCAML_TO_C
