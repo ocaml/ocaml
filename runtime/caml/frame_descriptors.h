@@ -51,10 +51,18 @@ typedef struct {
 void caml_init_frame_descriptors(void);
 void caml_register_frametables(void **tables, int ntables);
 
+/* a linked list of frametabless */
+typedef struct caml_frametable_list {
+  intnat* frametable;
+  struct caml_frametable_list *next;
+} caml_frametable_list;
+
+/* a hashtable of frame descriptors */
 typedef struct {
   int num_descr;
   int mask;
   frame_descr** descriptors;
+  caml_frametable_list *frametables;
 } caml_frame_descrs;
 /* Let us call 'capacity' the length of the descriptors array.
 
@@ -68,6 +76,13 @@ typedef struct {
     but this is a linear-problem hash table, we need to ensure that
     free slots are frequent enough, so we use a twice-larger capacity:
       num_desc * 2 <= capacity
+
+   We keep the list of frametables that was used to build the hashtable.
+   We use it when rebuilding the table after resizing.
+
+   Some frame tables in the list may have been unregistered after the
+   hashtable was built, so in general [num_descrs] is an over-approximation
+   of the true number of frame descriptors in the [list].
 */
 
 caml_frame_descrs caml_get_frame_descrs(void);
