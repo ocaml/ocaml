@@ -164,6 +164,10 @@ Working version
   (Greta Yorsh, review by Xavier Leroy, Guillaume Melquiond and
   Gabriel Scherer)
 
+- #10967: Add Filename.temp_dir.
+  (David Turner, review by Anil Madhavapeddy, Valentin Gatien-Baron, Nicolás
+  Ojeda Bär, Gabriel Scherer, and Daniel Bünzli)
+
 - #11026, #11667, #11858: Rename the type of the accumulator
   of fold functions to 'acc:
   fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a list -> 'acc
