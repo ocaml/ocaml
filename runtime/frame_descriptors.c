@@ -22,6 +22,7 @@
 #include "caml/frame_descriptors.h"
 #include "caml/major_gc.h" /* for caml_major_cycles_completed */
 #include "caml/memory.h"
+#include "caml/fail.h"
 #include "caml/shared_heap.h"
 #include <stddef.h>
 
@@ -77,6 +78,14 @@ static intnat count_descriptors(link *list) {
   return num_descr;
 }
 
+static link* frametables_list_tail(link *list) {
+  link *lnk, *tail = NULL;
+  iter_list(list,lnk) {
+    tail = lnk;
+  }
+  return tail;
+}
+
 static int capacity(caml_frame_descrs table) {
   int capacity = table.mask + 1;
   CAMLassert(capacity == 0 || Is_power_of_2(capacity));
@@ -100,28 +109,67 @@ static void fill_hashtable(caml_frame_descrs *table, link *new_frametables) {
   }
 }
 
+/* [add_frame_descriptors(table, frametables, new_frametables)]
+   assumes that [table] is the hashtable of frame descriptors computed
+   from the current list [frametables] (which may be NULL). It extends
+   both [frametables] and [table] with the new frame descriptors from
+   the list [new_frametables.
+
+   If the function returns normally (in absence of
+   out-of-memory failure), then both [frametables] and
+   [new_frametables] point to the extended list of frame descriptors,
+   and [table] is the hashtable corresponding to that list. */
+static void add_frame_descriptors(
+  caml_frame_descrs *table, link *frametables, link *new_frametables)
+{
+  CAMLassert(new_frametables != NULL);
+
+  link *tail = frametables_list_tail(new_frametables);
+  intnat increase = count_descriptors(new_frametables);
+  intnat tblsize = capacity(*table);
+
+  /* The size of the hashtable is a power of 2 that must remain
+     greater or equal to 2 times the number of descriptors. */
+
+  /* Reallocate the caml_frame_descriptor table if it is too small */
+  if(tblsize < (table->num_descr + increase) * 2) {
+
+    /* Merge both lists */
+    tail->next = frametables;
+    frametables = NULL;
+
+    /* [num_descr] can be less than [num_descr + increase] if frame
+       tables were unregistered */
+    intnat num_descr = count_descriptors(new_frametables);
+
+    tblsize = 4;
+    while (tblsize < 2 * num_descr) tblsize *= 2;
+
+    table->num_descr = num_descr;
+    table->mask = tblsize - 1;
+
+    if (table->descriptors != NULL) caml_stat_free(table->descriptors);
+    table->descriptors =
+      (frame_descr **) caml_stat_calloc_noexc(tblsize, sizeof(frame_descr *));
+    if (table->descriptors == NULL) caml_raise_out_of_memory();
+
+    fill_hashtable(table, new_frametables);
+  } else {
+    table->num_descr += increase;
+    fill_hashtable(table, new_frametables);
+    tail->next = frametables;
+  }
+
+  frametables = new_frametables;
+}
+
 static caml_frame_descrs build_frame_descriptors(link* frametables)
 {
-  caml_frame_descrs table;
+  caml_frame_descrs table = { 0, -1, NULL };
 
-  /* Count the frame descriptors */
-  intnat num_descr = count_descriptors(frametables);
-
-  /* The size of the hashtable is a power of 2 greater or equal to
-     2 times the number of descriptors */
-  intnat tblsize = 4;
-  while (tblsize < 2 * num_descr) tblsize *= 2;
-
-  /* Allocate the hash table */
-  CAMLassert(2 * num_descr <= tblsize);
-  CAMLassert(Is_power_of_2(tblsize));
-  table.num_descr = num_descr;
-  table.mask = tblsize - 1;
-  table.descriptors = caml_stat_alloc(tblsize * sizeof(frame_descr*));
-  for (intnat i = 0; i < tblsize; i++) table.descriptors[i] = NULL;
-
-  /* Fill the hash table */
-  fill_hashtable(&table, frametables);
+  add_frame_descriptors(&table, NULL, frametables);
+  /* Note: this call does not modify [frametables],
+     as it is appended to the NULL list. */
 
   return table;
 }
