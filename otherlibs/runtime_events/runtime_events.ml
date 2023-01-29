@@ -24,6 +24,12 @@ type runtime_counter =
 | EV_C_REQUEST_MINOR_REALLOC_REF_TABLE
 | EV_C_REQUEST_MINOR_REALLOC_EPHE_REF_TABLE
 | EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE
+| EV_C_MAJOR_HEAP_POOL_WORDS
+| EV_C_MAJOR_HEAP_POOL_LIVE_WORDS
+| EV_C_MAJOR_HEAP_LARGE_WORDS
+| EV_C_MAJOR_HEAP_POOL_FRAG_WORDS
+| EV_C_MAJOR_HEAP_POOL_LIVE_BLOCKS
+| EV_C_MAJOR_HEAP_LARGE_BLOCKS
 
 type runtime_phase =
 | EV_EXPLICIT_GC_SET
@@ -92,6 +98,18 @@ let runtime_counter_name counter =
       "request_minor_realloc_ephe_ref_table"
   | EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE ->
       "request_minor_realloc_custom_table"
+  | EV_C_MAJOR_HEAP_POOL_WORDS ->
+      "major_heap_pool_words"
+  | EV_C_MAJOR_HEAP_POOL_LIVE_WORDS ->
+      "major_heap_pool_live_words"
+  | EV_C_MAJOR_HEAP_LARGE_WORDS ->
+      "major_heap_large_words"
+  | EV_C_MAJOR_HEAP_POOL_FRAG_WORDS ->
+      "major_heap_pool_frag_words"
+  | EV_C_MAJOR_HEAP_POOL_LIVE_BLOCKS ->
+      "major_heap_pool_live_blocks"
+  | EV_C_MAJOR_HEAP_LARGE_BLOCKS ->
+      "major_heap_large_blocks"
 
 let runtime_phase_name phase =
   match phase with
