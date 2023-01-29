@@ -1289,6 +1289,10 @@ OCaml 4.14.0 (28 March 2022)
 
 ### Manual and documentation:
 
+- #7179, #11894: correct the description of CAMLreturn and CAMLreturn0 in
+  the Interfacing C page and memory.h file.
+  (Dong An, review by Guillaume Munch-Maccagnoni and Olivier Nicole )
+
 - #7812, #10475: reworded the description of the behaviors of
   float->int conversions in case of overflow, and of iterators
   in case of concurrent modifications.

@@ -930,7 +930,7 @@ replaced by "CAMLreturn0".  If your C function is a procedure (i.e. if
 it returns void), you must insert "CAMLreturn0" at the end (to replace
 C's implicit "return").
 
-\paragraph{Note:} some C compilers give bogus warnings about unused
+\paragraph{Note:} Some C compilers give bogus warnings about unused
 variables "caml__dummy_xxx" at each use of "CAMLparam" and
 "CAMLlocal".  You should ignore them.
 
@@ -946,9 +946,13 @@ void foo (value v1, value v2, value v3)
 }
 \end{verbatim}
 
-\paragraph{Note:} if your function is a primitive with more than 5 arguments
+\paragraph{Note:} If your function is a primitive with more than 5 arguments
 for use with the byte-code runtime, its arguments are not "value"s and
 must not be declared (they have types "value *" and "int").
+
+\paragraph{Warning:} "CAMLreturn0" should only be used for internal procedures that return void.
+"CAMLreturn(Val_unit)" should be used for functions that return an OCaml unit value.
+Primitives (C functions that can be called from OCaml) should never return void.
 
 \begin{gcrule}
 Local variables of type "value" must be declared with one of the
@@ -2259,7 +2263,7 @@ Fortran arrays can be made available to OCaml.
 
 This section describe how to make calling C functions cheaper.
 
-{\bf Note:} this only applies to the native compiler. So whenever you
+{\bf Note:} This only applies to the native compiler. So whenever you
 use any of these methods, you have to provide an alternative byte-code
 stub that ignores all the special annotations.
 
@@ -2348,7 +2352,7 @@ external f : string -> (int [@untagged]) = "f_byte" "f"
 
 The corresponding C type must be "intnat".
 
-{\bf Note:} do not use the C "int" type in correspondence with "(int
+{\bf Note:} Do not use the C "int" type in correspondence with "(int
 [\@untagged])". This is because they often differ in size.
 
 \subsection{ss:c-direct-call}{Direct C call}
