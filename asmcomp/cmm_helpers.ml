@@ -247,9 +247,10 @@ let div_float c1 c2 dbg =
       (* We can transform x/.2^{N} into x*.2^{-N} if and only if |N| <= 1023,
          because otherwise one of them may not be a valid floating point number
          (2.**1024. evaluates to +infinity). Here, N=exp-1. *)
-      if x = 0.5 && abs (exp - 1) <= 1023
+      let n = exp - 1 in
+      if x = 0.5 && abs n <= 1023
       then
-        mul_float c (Cconst_float(Float.ldexp 2.0 (-exp), dbg)) dbg
+        mul_float c (Cconst_float(Float.ldexp 1.0 (- n), dbg)) dbg
       else
         Cop(Cdivf, [c1; c2], dbg)
   | _, _ ->
