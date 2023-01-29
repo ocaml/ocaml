@@ -277,7 +277,7 @@ AS_CASE([$host],
   syslib='-l$(1)'])
 
 AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows],
+  [*-*-mingw32*|*-pc-windows],
     [CSC=csc
     CSCFLAGS="/nologo /nowarn:1668"
     AS_CASE([$host_cpu], [i*86], [CSCFLAGS="$CSCFLAGS /platform:x86"])])
@@ -592,7 +592,7 @@ ocamlsrcdir=${ocamlsrcdir%X}
 # Libraries to build depending on the host
 
 AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows],
+  [*-*-mingw32*|*-pc-windows],
     [unix_or_win32="win32"
     ln='cp -pf'
     ocamltest_libunix="Some false"
@@ -604,7 +604,7 @@ AS_CASE([$host],
   ocamlyacc_wstr_module=""])
 
 AS_CASE([$host],
-  [*-*-cygwin*|*-*-mingw32|*-pc-windows],
+  [*-*-cygwin*|*-*-mingw32*|*-pc-windows],
     [exeext=".exe"],
   [exeext=''])
 
@@ -637,7 +637,7 @@ long_shebang=false
 AS_IF(
   [test "x$interpval" = "xyes"],
     [AS_CASE([$host],
-      [*-cygwin|*-*-mingw32|*-pc-windows],
+      [*-cygwin|*-*-mingw32*|*-pc-windows],
         [shebangscripts=false],
       [shebangscripts=true
        prev_exec_prefix="$exec_prefix"
@@ -703,7 +703,7 @@ AS_CASE([$enable_warn_error,OCAML__DEVELOPMENT_VERSION],
 # the vendor only as a fall-back. We could put tis part of the logic
 # in the macro itself, too
 AS_CASE([$host],
-  [*-*-mingw32],
+  [*-*-mingw32*],
     [AS_CASE([$ocaml_cv_cc_vendor],
       [gcc-[[01234]]-*],
         [AC_MSG_ERROR(m4_normalize([This version of MinGW-w64 GCC is too old.
@@ -748,14 +748,14 @@ AS_CASE([$host],
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
 AS_CASE([$host],
-  [i686-*-mingw32],
+  [i686-*-mingw32*],
     [internal_cflags="$internal_cflags -mfpmath=sse -msse2"])
 
 # Use 64-bit file offset if possible
 # See also AC_SYS_LARGEFILE
 # Problem: flags are added to CC rather than CPPFLAGS
 AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows], [],
+  [*-*-mingw32*|*-pc-windows], [],
   [common_cppflags="$common_cppflags -D_FILE_OFFSET_BITS=64"])
 
 # Adjust according to target
@@ -769,7 +769,7 @@ AS_CASE([$host],
 AS_IF([test x"$enable_shared" = "xno"],
   [supports_shared_libraries=false
   AS_CASE([$host],
-    [*-pc-windows|*-w64-mingw32],
+    [*-pc-windows|*-w64-mingw32*],
     [AC_MSG_ERROR([Cannot build native Win32 with --disable-shared])])],
   [supports_shared_libraries=true])
 
@@ -784,10 +784,10 @@ AS_CASE([$host],
     flexlink_flags='-merge-manifest -stack 16777216'],
   [*-*-cygwin*],
     [AC_MSG_ERROR([unknown cygwin variant])],
-  [i686-w64-mingw32],
+  [i686-w64-mingw32*],
     [flexdll_chain='mingw'
     flexlink_flags='-stack 16777216'],
-  [x86_64-w64-mingw32],
+  [x86_64-w64-mingw32*],
     [flexdll_chain='mingw64'
     flexlink_flags='-stack 33554432'],
   [i686-pc-windows],
@@ -805,7 +805,7 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
     AC_MSG_RESULT([disabled])],
     [flexmsg=''
     AS_CASE([$target],
-      [*-*-cygwin*|*-w64-mingw32|*-pc-windows],
+      [*-*-cygwin*|*-w64-mingw32*|*-pc-windows],
       [AS_IF([m4_normalize([test x"$with_flexdll" = 'x'
                             || test x"$with_flexdll" = 'xflexdll'])],
         [AS_IF([test -f 'flexdll/flexdll.h'],
@@ -842,7 +842,7 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
                         [$internal_cppflags], [$host])
 
     AS_CASE([$host],
-      [*-w64-mingw32|*-pc-windows],
+      [*-w64-mingw32*|*-pc-windows],
       [flexlink_where="$(cmd /c "$flexlink" -where 2>/dev/null)"
       AS_IF([test -z "$flexlink_where"],
         [AC_MSG_ERROR([$flexlink is not executable from a native Win32 process])
@@ -862,14 +862,14 @@ AS_CASE([$have_flexdll_h,$supports_shared_libraries,$host],
  [no,true,*-*-cygwin*],
    [supports_shared_libraries=false
    AC_MSG_WARN([flexdll.h not found: shared library support disabled.])],
- [no,*,*-w64-mingw32|no,*,*-pc-windows],
+ [no,*,*-w64-mingw32*|no,*,*-pc-windows],
    [AC_MSG_ERROR([flexdll.h is required for native Win32])])
 
 AS_CASE([$flexdir,$supports_shared_libraries,$flexlink,$host],
   [,true,,*-*-cygwin*],
     [supports_shared_libraries=false
     AC_MSG_WARN([flexlink not found: shared library support disabled.])],
-  [,*,,*-w64-mingw32|,*,,*-pc-windows],
+  [,*,,*-w64-mingw32*|,*,,*-pc-windows],
     [AC_MSG_ERROR([flexlink is required for native Win32])])
 
 mkexe_cmd_exp="$CC"
@@ -897,7 +897,7 @@ AS_CASE([$cc_basename,$host],
       oc_ldflags='-Wl,--stack,16777216']
     )
     ostype="Cygwin"],
-  [*,*-*-mingw32],
+  [*,*-*-mingw32*],
     [AS_CASE([$host],
       [i686-*-*], [oc_dll_ldflags="-static-libgcc"])
     ostype="Win32"
@@ -1037,7 +1037,7 @@ AS_IF([! $cc_supports_atomic],
 # macOS and MinGW-64 have problems with __thread variables accessed from DLLs
 
 AS_CASE([$host],
-  [*-apple-darwin*|*-mingw32], [],
+  [*-apple-darwin*|*-mingw32*], [],
   [AC_DEFINE([HAS_FULL_THREAD_VARIABLES])]
 )
 
@@ -1060,7 +1060,7 @@ AS_IF([test x"$enable_shared" != "xno"],
     [aarch64-apple-darwin*|arm64-apple-darwin*],
       [mkdll_flags='-shared -undefined dynamic_lookup -Wl,-w'
       supports_shared_libraries=true],
-    [*-*-mingw32|*-pc-windows|*-*-cygwin*],
+    [*-*-mingw32*|*-pc-windows|*-*-cygwin*],
       [mkdll_flags="-chain ${flexdll_chain} ${flexlink_flags}"
       mkdll_exp="flexlink ${mkdll_flags}"
       mkdll="${flexlink_cmd} ${mkdll_flags}"
@@ -1109,7 +1109,7 @@ natdynlink=false
 AS_IF([test x"$supports_shared_libraries" = 'xtrue'],
   [AS_CASE(["$host"],
     [*-*-cygwin*], [natdynlink=true],
-    [*-*-mingw32], [natdynlink=true],
+    [*-*-mingw32*], [natdynlink=true],
     [*-pc-windows], [natdynlink=true],
     [[i[3456]86-*-linux*]], [natdynlink=true],
     [[i[3456]86-*-gnu*]], [natdynlink=true],
@@ -1178,7 +1178,7 @@ AS_CASE([$host],
     [arch=i386; system=cygwin],
   [[i[3456]86-*-gnu*]],
     [arch=i386; system=gnu],
-  [[i[3456]86-*-mingw32]],
+  [[i[3456]86-*-mingw32*]],
     [arch=i386; system=mingw],
   [i686-pc-windows],
     [arch=i386; system=win32],
@@ -1245,7 +1245,7 @@ AS_CASE([$host],
     [has_native_backend=yes; arch=arm64; system=macosx],
   [x86_64-*-darwin*],
     [has_native_backend=yes; arch=amd64; system=macosx],
-  [x86_64-*-mingw32],
+  [x86_64-*-mingw32*],
     [has_native_backend=yes; arch=amd64; system=mingw64],
   [aarch64-*-linux*],
     [has_native_backend=yes; arch=arm64; system=linux],
@@ -1551,7 +1551,7 @@ but no proper monotonic clock source was found.])
 sockets=true
 
 AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows],
+  [*-*-mingw32*|*-pc-windows],
     [cclibs="$cclibs -lws2_32"
     AC_SEARCH_LIBS([socket], [ws2_32])
     AC_CHECK_FUNC([socketpair], [AC_DEFINE([HAS_SOCKETPAIR])])],
@@ -1575,7 +1575,7 @@ AS_IF([$sockets], [AC_DEFINE([HAS_SOCKETS])])
 ## socklen_t
 
 AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows],
+  [*-*-mingw32*|*-pc-windows],
     [AC_CHECK_TYPE([socklen_t], [AC_DEFINE([HAS_SOCKLEN_T])], [],
       [#include <ws2tcpip.h>])],
   [AC_CHECK_TYPE([socklen_t], [AC_DEFINE([HAS_SOCKLEN_T])], [],
@@ -1586,7 +1586,7 @@ AC_CHECK_FUNC([inet_aton], [AC_DEFINE([HAS_INET_ATON])])
 ## Unix domain sockets support on Windows
 
 AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows],
+  [*-*-mingw32*|*-pc-windows],
     [AC_CHECK_HEADERS([afunix.h], [AC_DEFINE([HAS_AFUNIX_H])], [],
       [#include <winsock2.h>])])
 
@@ -1595,7 +1595,7 @@ AS_CASE([$host],
 ipv6=true
 
 AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows],
+  [*-*-mingw32*|*-pc-windows],
     [AC_CHECK_TYPE(
       [struct sockaddr_in6], [], [ipv6=false], [#include <ws2tcpip.h>])],
   [AC_CHECK_TYPE(
@@ -1635,7 +1635,7 @@ AC_CHECK_DECL([system], [AC_DEFINE([HAS_SYSTEM])], [], [[#include <stdlib.h>]])
 # seem to detect it properly on Windows so we hardcode the definition
 # of HAS_UTIME on Windows but this will probably need to be clarified
 AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows], [AC_DEFINE([HAS_UTIME])],
+  [*-*-mingw32*|*-pc-windows], [AC_DEFINE([HAS_UTIME])],
   [AC_CHECK_HEADER([sys/types.h],
     [AC_CHECK_HEADER([utime.h],
       [AC_CHECK_FUNC([utime], [AC_DEFINE([HAS_UTIME])])])])])
@@ -1712,7 +1712,7 @@ AC_CHECK_FUNC([setitimer],
 # Note: detection fails on Windows so hardcoding the result
 # (should be debugged later)
 AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows], [AC_DEFINE([HAS_GETHOSTNAME])],
+  [*-*-mingw32*|*-pc-windows], [AC_DEFINE([HAS_GETHOSTNAME])],
   [AC_CHECK_FUNC([gethostname], [AC_DEFINE([HAS_GETHOSTNAME])])])
 
 ## uname
@@ -1736,7 +1736,7 @@ AC_CHECK_FUNC([mktime], [AC_DEFINE([HAS_MKTIME])])
 ## setsid
 
 AS_CASE([$host],
-  [*-cygwin|*-*-mingw32|*-pc-windows], [],
+  [*-cygwin|*-*-mingw32*|*-pc-windows], [],
   [AC_CHECK_FUNC([setsid], [AC_DEFINE([HAS_SETSID])])])
 
 ## putenv
@@ -1773,7 +1773,7 @@ AS_CASE([$host],
 ## shared library support
 AS_IF([$supports_shared_libraries],
   [AS_CASE([$host],
-    [*-*-mingw32|*-pc-windows|*-*-cygwin*],
+    [*-*-mingw32*|*-pc-windows|*-*-cygwin*],
       [DLLIBS=""],
     [AC_CHECK_FUNC([dlopen],
       [supports_shared_libraries=true DLLIBS=""],
@@ -1799,7 +1799,7 @@ AC_CHECK_FUNC([pwrite], [AC_DEFINE([HAS_PWRITE])])
 
 ## -fdebug-prefix-map support by the C compiler
 AS_CASE([$ocaml_cv_cc_vendor,$host],
-  [*,*-*-mingw32], [cc_has_debug_prefix_map=false],
+  [*,*-*-mingw32*], [cc_has_debug_prefix_map=false],
   [*,*-pc-windows], [cc_has_debug_prefix_map=false],
   [xlc*,powerpc-ibm-aix*], [cc_has_debug_prefix_map=false],
   [sunc*,sparc-sun-*], [cc_has_debug_prefix_map=false],
@@ -1953,7 +1953,7 @@ AS_CASE([$enable_debug_runtime],
 ## Determine how to link with the POSIX threads library
 
 AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows],
+  [*-*-mingw32*|*-pc-windows],
     [PTHREAD_LIBS="-l:libpthread.a"],
   [AX_PTHREAD(
     [common_cflags="$common_cflags $PTHREAD_CFLAGS"
@@ -1987,7 +1987,7 @@ as_has_debug_prefix_map=false
 asm_cfi_supported=false
 AS_IF([$native_compiler],
   [AS_CASE([$host],
-    [*-*-mingw32|*-pc-windows], [],
+    [*-*-mingw32*|*-pc-windows], [],
     [OCAML_AS_HAS_DEBUG_PREFIX_MAP
     OCAML_AS_HAS_CFI_DIRECTIVES])])
 
@@ -2150,7 +2150,7 @@ cclibs="$cclibs $mathlib"
 AC_CHECK_LIB(execinfo, backtrace, cclibs="$cclibs -lexecinfo",[])
 
 AS_CASE([$host],
-  [*-*-mingw32],
+  [*-*-mingw32*],
     [bytecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"
     nativecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"],
   [*-pc-windows],
@@ -2166,7 +2166,7 @@ AS_IF([test x"$mandir" = x'${datarootdir}/man'],
   [mandir='${prefix}/man'])
 
 AS_CASE([$host],
-  [*-*-mingw32|*-pc-windows],
+  [*-*-mingw32*|*-pc-windows],
     [AS_CASE([$WINDOWS_UNICODE_MODE],
       [ansi],
         [windows_unicode=0],
@@ -2178,8 +2178,8 @@ AS_CASE([$host],
 # Define default prefix correctly for the different Windows ports
 AS_IF([test x"$prefix" = "xNONE"],
   [AS_CASE([$host],
-    [i686-w64-mingw32], [prefix='C:/ocamlmgw'],
-    [x86_64-w64-mingw32], [prefix='C:/ocamlmgw64'],
+    [i686-w64-mingw32*], [prefix='C:/ocamlmgw'],
+    [x86_64-w64-mingw32*], [prefix='C:/ocamlmgw64'],
     [i686-pc-windows], [prefix='C:/ocamlms'],
     [x86_64-pc-windows], [prefix='C:/ocamlms64'])],
   [AS_IF([test x"$unix_or_win32" = "xwin32" \
@@ -2191,7 +2191,7 @@ AS_IF([test x"$prefix" = "xNONE"],
 # but whose value is not guessed properly by configure
 # (all this should be understood and fixed)
 AS_CASE([$host],
-  [*-*-mingw32],
+  [*-*-mingw32*],
     [AC_DEFINE([HAS_BROKEN_PRINTF])
     AC_DEFINE([HAS_STRERROR])
     AC_DEFINE([HAS_IPV6])

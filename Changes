@@ -274,6 +274,9 @@ Working version
 - #10647: Show hints for the "undefined global" error in the toplevel
   (Wiktor Kuchta, review by Gabriel Scherer)
 
+- #11973: Add support for postfixed mingw host triplets
+  (Romain Beauxis)
+
 ### Manual and documentation:
 
 - #9430, #11291: Document the general desugaring rules for binding operators.
