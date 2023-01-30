@@ -36,7 +36,8 @@ type summary =
   | Env_value of summary * Ident.t * value_description
   | Env_type of summary * Ident.t * type_declaration
   | Env_extension of summary * Ident.t * extension_constructor
-  | Env_module of summary * Ident.t * module_presence * module_declaration
+  | Env_module of
+      summary * Ident.t * module_presence * module_declaration * Shape.t
   | Env_modtype of summary * Ident.t * modtype_declaration
   | Env_class of summary * Ident.t * class_declaration
   | Env_cltype of summary * Ident.t * class_type_declaration

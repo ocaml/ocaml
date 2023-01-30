@@ -151,7 +151,8 @@ type summary =
   | Env_value of summary * Ident.t * value_description
   | Env_type of summary * Ident.t * type_declaration
   | Env_extension of summary * Ident.t * extension_constructor
-  | Env_module of summary * Ident.t * module_presence * module_declaration
+  | Env_module of
+      summary * Ident.t * module_presence * module_declaration * Shape.t
   | Env_modtype of summary * Ident.t * modtype_declaration
   | Env_class of summary * Ident.t * class_declaration
   | Env_cltype of summary * Ident.t * class_type_declaration
@@ -168,7 +169,7 @@ let map_summary f = function
   | Env_value (s, id, d) -> Env_value (f s, id, d)
   | Env_type (s, id, d) -> Env_type (f s, id, d)
   | Env_extension (s, id, d) -> Env_extension (f s, id, d)
-  | Env_module (s, id, p, d) -> Env_module (f s, id, p, d)
+  | Env_module (s, id, p, d, sh) -> Env_module (f s, id, p, d, sh)
   | Env_modtype (s, id, d) -> Env_modtype (f s, id, d)
   | Env_class (s, id, d) -> Env_class (f s, id, d)
   | Env_cltype (s, id, d) -> Env_cltype (f s, id, d)
@@ -2085,7 +2086,7 @@ and store_module ?(update_summary=true) ~check
   in
   let summary =
     if not update_summary then env.summary
-    else Env_module (env.summary, id, presence, force_module_decl md) in
+    else Env_module (env.summary, id, presence, force_module_decl md, shape) in
   { env with
     modules = IdTbl.add id (Mod_local mda) env.modules;
     summary }
