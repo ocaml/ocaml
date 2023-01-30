@@ -467,7 +467,7 @@ ocamlc_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 
 ocamlc_MODULES = driver/main
 
-ocamlc$(EXE): OC_BYTECODE_LDFLAGS += -compat-32
+ocamlc$(EXE): OC_BYTECODE_LDFLAGS += -compat-32 -g
 
 ocamlc.opt$(EXE): OC_NATIVE_LDFLAGS += $(addprefix -cclib ,$(BYTECCLIBS))
 
@@ -480,6 +480,8 @@ ocamlopt_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamloptcomp)
 
 ocamlopt_MODULES = driver/optmain
 
+ocamlopt$(EXE): OC_BYTECODE_LDFLAGS += -g
+
 partialclean::
 	rm -f ocamlopt ocamlopt.exe ocamlopt.opt ocamlopt.opt.exe
 
@@ -491,7 +493,7 @@ ocaml_LIBRARIES = \
 ocaml_MODULES = toplevel/topstart
 
 .INTERMEDIATE: ocaml.tmp
-ocaml.tmp: OC_BYTECODE_LDFLAGS += -I toplevel/byte -linkall
+ocaml.tmp: OC_BYTECODE_LDFLAGS += -I toplevel/byte -linkall -g
 ocaml.tmp: $(ocaml_LIBRARIES:=.cma) $(ocaml_MODULES:=.cmo)
 	$(V_LINKC)$(LINK_BYTECODE_PROGRAM) -o $@ $^
 
