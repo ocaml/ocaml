@@ -39,47 +39,31 @@ let rec is_arrow_type t =
   | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
   | Types.Tsubst _ -> assert false
 
-let raw_string_of_type_list sep type_list =
-  let buf = Buffer.create 256 in
-  let fmt = Format.formatter_of_buffer buf in
-  let rec need_parent t =
-    match Types.get_desc t with
-      Types.Tarrow _ | Types.Ttuple _ -> true
-    | Types.Tlink t2 -> need_parent t2
-    | Types.Tconstr _
-    | Types.Tvar _ | Types.Tunivar _ | Types.Tobject _ | Types.Tpoly _
-    | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
-    | Types.Tsubst _ -> assert false
-  in
-  let print_one_type variance t =
-    if need_parent t then
-      (
-       Format.fprintf fmt "(%s" variance;
-       Printtyp.shared_type_scheme fmt t;
-       Format.fprintf fmt ")"
-      )
-    else
-      (
-       Format.fprintf fmt "%s" variance;
-       Printtyp.shared_type_scheme fmt t
-      )
-  in
-  begin match type_list with
-    [] -> ()
-  | [(variance, ty)] -> print_one_type variance ty
-  | (variance, ty) :: tyl ->
-      Format.fprintf fmt "@[<hov 2>";
-      print_one_type variance ty;
-      List.iter
-        (fun (variance, t) ->
-          Format.fprintf fmt "@,%s" sep;
-          print_one_type variance t
-        )
-        tyl;
-      Format.fprintf fmt "@]"
-  end;
-  Format.pp_print_flush fmt ();
-  Buffer.contents buf
+
+let rec need_parent t =
+  match Types.get_desc t with
+    Types.Tarrow _ | Types.Ttuple _ -> true
+  | Types.Tlink t2 -> need_parent t2
+  | Types.Tconstr _
+  | Types.Tvar _ | Types.Tunivar _ | Types.Tobject _ | Types.Tpoly _
+  | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
+  | Types.Tsubst _ -> assert false
+
+let print_type_scheme ppf t =
+  if need_parent t then
+    Format.fprintf ppf "(%a)" Printtyp.shared_type_scheme t
+  else
+    Printtyp.shared_type_scheme ppf t
+
+let print_type_param t ppf (param,co,cn) =
+  Format.fprintf ppf "%s%a"
+    (string_of_variance t (co, cn))
+    print_type_scheme param
+
+let raw_string_of_type_list sep elt ppf type_list =
+  let pp_sep ppf () = Format.fprintf ppf "@,%s" sep in
+  Format.fprintf ppf "@[<hov 2>%a@]"
+    (Format.pp_print_list ~pp_sep elt) type_list
 
 let string_of_type_list ?par sep type_list =
   let par =
@@ -90,9 +74,9 @@ let string_of_type_list ?par sep type_list =
           [] | [_] -> false
         | _ -> true
   in
-  Printf.sprintf "%s%s%s"
+  Format.asprintf "%s%a%s"
     (if par then "(" else "")
-    (raw_string_of_type_list sep (List.map (fun t -> ("", t)) type_list))
+    (raw_string_of_type_list sep print_type_scheme) type_list
     (if par then ")" else "")
 
 let string_of_type_param_list t =
@@ -101,14 +85,10 @@ let string_of_type_param_list t =
       [] | [_] -> false
     | _ -> true
   in
-  Printf.sprintf "%s%s%s"
+  Format.asprintf "%s%a%s"
     (if par then "(" else "")
-    (raw_string_of_type_list ", "
-       (List.map
-          (fun (typ, co, cn) -> (string_of_variance t (co, cn), typ))
+    (raw_string_of_type_list ", " @@ print_type_param t)
           t.Odoc_type.ty_parameters
-       )
-    )
     (if par then ")" else "")
 
 let string_of_type_extension_param_list te =
@@ -117,14 +97,10 @@ let string_of_type_extension_param_list te =
       [] | [_] -> false
     | _ -> true
   in
-  Printf.sprintf "%s%s%s"
+  Format.asprintf "%s%a%s"
     (if par then "(" else "")
-    (raw_string_of_type_list ", "
-       (List.map
-          (fun typ -> ("", typ))
+    (raw_string_of_type_list ", " print_type_scheme)
           te.Odoc_extension.te_type_parameters
-       )
-    )
     (if par then ")" else "")
 
 
@@ -134,14 +110,10 @@ let string_of_class_type_param_list l =
       [] | [_] -> false
     | _ -> true
   in
-  Printf.sprintf "%s%s%s"
+  Format.asprintf "%s%a%s"
     (if par then "[" else "")
-    (raw_string_of_type_list ", "
-       (List.map
-          (fun typ -> ("", typ))
-          l
-       )
-    )
+    (raw_string_of_type_list ", " print_type_scheme)
+    l
     (if par then "]" else "")
 
 let string_of_class_params c =
