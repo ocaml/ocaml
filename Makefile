@@ -1610,7 +1610,8 @@ endif
 	  "$(INSTALL_INCDIR)"
 	$(INSTALL_PROG) ocaml$(EXE) "$(INSTALL_BINDIR)"
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
-	$(INSTALL_PROG) ocamlc$(EXE) "$(INSTALL_BINDIR)/ocamlc.byte$(EXE)"
+	$(call INSTALL_STRIPPED_BYTE_PROG,\
+               ocamlc$(EXE),"$(INSTALL_BINDIR)/ocamlc.byte$(EXE)")
 endif
 	$(MAKE) -C stdlib install
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
@@ -1737,7 +1738,8 @@ ifneq "$(runtime_NATIVE_SHARED_LIBRARIES)" ""
 	$(INSTALL_PROG) $(runtime_NATIVE_SHARED_LIBRARIES) "$(INSTALL_LIBDIR)"
 endif
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
-	$(INSTALL_PROG) ocamlopt$(EXE) "$(INSTALL_BINDIR)/ocamlopt.byte$(EXE)"
+	$(call INSTALL_STRIPPED_BYTE_PROG,\
+               ocamlopt$(EXE),"$(INSTALL_BINDIR)/ocamlopt.byte$(EXE)")
 endif
 	$(MAKE) -C stdlib installopt
 	$(INSTALL_DATA) \
