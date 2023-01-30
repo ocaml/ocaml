@@ -71,11 +71,11 @@ let int_reg_name =
     |]
 
 let float_reg_name =
-  [| "$ft0"; "$ft1"; "$ft2"; "$ft3"; "$ft4"; "$ft5"; "$ft6";"$ft7";     (*100-107*)
-     "$fs0"; "$fs1";                                              (*108-109*)
-     "$fa0"; "$fa1"; "$fa2"; "$fa3"; "$fa4"; "$fa5"; "$fa6"; "$fa7";    (*110-117*)
-     "$fs2"; "$fs3"; "$fs4"; "$fs5"; "$fs6"; "$fs7";                  (*118-123*)
-     "$ft8"; "$ft9"; "$ft10"; "$ft11";"$ft12";"$ft13";"$ft14";"$ft15"; |] (*124-131*)
+  [| "$ft0"; "$ft1"; "$ft2"; "$ft3"; "$ft4"; "$ft5"; "$ft6";"$ft7";
+     "$fs0"; "$fs1";
+     "$fa0"; "$fa1"; "$fa2"; "$fa3"; "$fa4"; "$fa5"; "$fa6"; "$fa7";
+     "$fs2"; "$fs3"; "$fs4"; "$fs5"; "$fs6"; "$fs7";
+     "$ft8"; "$ft9"; "$ft10"; "$ft11";"$ft12";"$ft13";"$ft14";"$ft15"; |]
 let num_register_classes = 2
 
 let register_class r =
