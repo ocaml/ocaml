@@ -3594,7 +3594,7 @@ case $host in #(
 esac
 
 case $host in #(
-  *-*-mingw32|*-pc-windows) :
+  *-*-mingw32*|*-pc-windows) :
     CSC=csc
     CSCFLAGS="/nologo /nowarn:1668"
     case $host_cpu in #(
@@ -13513,7 +13513,7 @@ ocamlsrcdir=${ocamlsrcdir%X}
 # Libraries to build depending on the host
 
 case $host in #(
-  *-*-mingw32|*-pc-windows) :
+  *-*-mingw32*|*-pc-windows) :
     unix_or_win32="win32"
     ln='cp -pf'
     ocamltest_libunix="Some false"
@@ -13527,7 +13527,7 @@ case $host in #(
 esac
 
 case $host in #(
-  *-*-cygwin*|*-*-mingw32|*-pc-windows) :
+  *-*-cygwin*|*-*-mingw32*|*-pc-windows) :
     exeext=".exe" ;; #(
   *) :
     exeext='' ;;
@@ -13590,7 +13590,7 @@ long_shebang=false
 if test "x$interpval" = "xyes"
 then :
   case $host in #(
-  *-cygwin|*-*-mingw32|*-pc-windows) :
+  *-cygwin|*-*-mingw32*|*-pc-windows) :
     shebangscripts=false ;; #(
   *) :
     shebangscripts=true
@@ -13674,7 +13674,7 @@ esac
 # the vendor only as a fall-back. We could put tis part of the logic
 # in the macro itself, too
 case $host in #(
-  *-*-mingw32) :
+  *-*-mingw32*) :
     case $ocaml_cv_cc_vendor in #(
   gcc-[01234]-*) :
     as_fn_error $? "This version of MinGW-w64 GCC is too old. Please use GCC version 5 or above." "$LINENO" 5 ;; #(
@@ -13747,7 +13747,7 @@ esac
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
 case $host in #(
-  i686-*-mingw32) :
+  i686-*-mingw32*) :
     internal_cflags="$internal_cflags -mfpmath=sse -msse2" ;; #(
   *) :
      ;;
@@ -13757,7 +13757,7 @@ esac
 # See also AC_SYS_LARGEFILE
 # Problem: flags are added to CC rather than CPPFLAGS
 case $host in #(
-  *-*-mingw32|*-pc-windows) :
+  *-*-mingw32*|*-pc-windows) :
      ;; #(
   *) :
     common_cppflags="$common_cppflags -D_FILE_OFFSET_BITS=64" ;;
@@ -13775,7 +13775,7 @@ if test x"$enable_shared" = "xno"
 then :
   supports_shared_libraries=false
   case $host in #(
-  *-pc-windows|*-w64-mingw32) :
+  *-pc-windows|*-w64-mingw32*) :
     as_fn_error $? "Cannot build native Win32 with --disable-shared" "$LINENO" 5 ;; #(
   *) :
      ;;
@@ -13795,10 +13795,10 @@ case $host in #(
     flexlink_flags='-merge-manifest -stack 16777216' ;; #(
   *-*-cygwin*) :
     as_fn_error $? "unknown cygwin variant" "$LINENO" 5 ;; #(
-  i686-w64-mingw32) :
+  i686-w64-mingw32*) :
     flexdll_chain='mingw'
     flexlink_flags='-stack 16777216' ;; #(
-  x86_64-w64-mingw32) :
+  x86_64-w64-mingw32*) :
     flexdll_chain='mingw64'
     flexlink_flags='-stack 33554432' ;; #(
   i686-pc-windows) :
@@ -13824,7 +13824,7 @@ printf "%s\n" "disabled" >&6; }
 else $as_nop
   flexmsg=''
     case $target in #(
-  *-*-cygwin*|*-w64-mingw32|*-pc-windows) :
+  *-*-cygwin*|*-w64-mingw32*|*-pc-windows) :
     if test x"$with_flexdll" = 'x' || test x"$with_flexdll" = 'xflexdll'
 then :
   if test -f 'flexdll/flexdll.h'
@@ -13996,7 +13996,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
 
     case $host in #(
-  *-w64-mingw32|*-pc-windows) :
+  *-w64-mingw32*|*-pc-windows) :
     flexlink_where="$(cmd /c "$flexlink" -where 2>/dev/null)"
       if test -z "$flexlink_where"
 then :
@@ -14119,7 +14119,7 @@ case $have_flexdll_h,$supports_shared_libraries,$host in #(
     supports_shared_libraries=false
    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: flexdll.h not found: shared library support disabled." >&5
 printf "%s\n" "$as_me: WARNING: flexdll.h not found: shared library support disabled." >&2;} ;; #(
-  no,*,*-w64-mingw32|no,*,*-pc-windows) :
+  no,*,*-w64-mingw32*|no,*,*-pc-windows) :
     as_fn_error $? "flexdll.h is required for native Win32" "$LINENO" 5 ;; #(
   *) :
      ;;
@@ -14130,7 +14130,7 @@ case $flexdir,$supports_shared_libraries,$flexlink,$host in #(
     supports_shared_libraries=false
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: flexlink not found: shared library support disabled." >&5
 printf "%s\n" "$as_me: WARNING: flexlink not found: shared library support disabled." >&2;} ;; #(
-  ,*,,*-w64-mingw32|,*,,*-pc-windows) :
+  ,*,,*-w64-mingw32*|,*,,*-pc-windows) :
     as_fn_error $? "flexlink is required for native Win32" "$LINENO" 5 ;; #(
   *) :
      ;;
@@ -14170,7 +14170,7 @@ else $as_nop
 
 fi
     ostype="Cygwin" ;; #(
-  *,*-*-mingw32) :
+  *,*-*-mingw32*) :
     case $host in #(
   i686-*-*) :
     oc_dll_ldflags="-static-libgcc" ;; #(
@@ -15072,7 +15072,7 @@ fi
 # macOS and MinGW-64 have problems with __thread variables accessed from DLLs
 
 case $host in #(
-  *-apple-darwin*|*-mingw32) :
+  *-apple-darwin*|*-mingw32*) :
      ;; #(
   *) :
     printf "%s\n" "#define HAS_FULL_THREAD_VARIABLES 1" >>confdefs.h
@@ -15100,7 +15100,7 @@ then :
   aarch64-apple-darwin*|arm64-apple-darwin*) :
     mkdll_flags='-shared -undefined dynamic_lookup -Wl,-w'
       supports_shared_libraries=true ;; #(
-  *-*-mingw32|*-pc-windows|*-*-cygwin*) :
+  *-*-mingw32*|*-pc-windows|*-*-cygwin*) :
     mkdll_flags="-chain ${flexdll_chain} ${flexlink_flags}"
       mkdll_exp="flexlink ${mkdll_flags}"
       mkdll="${flexlink_cmd} ${mkdll_flags}"
@@ -15163,7 +15163,7 @@ then :
   case "$host" in #(
   *-*-cygwin*) :
     natdynlink=true ;; #(
-  *-*-mingw32) :
+  *-*-mingw32*) :
     natdynlink=true ;; #(
   *-pc-windows) :
     natdynlink=true ;; #(
@@ -15334,7 +15334,7 @@ case $host in #(
     arch=i386; system=cygwin ;; #(
   i[3456]86-*-gnu*) :
     arch=i386; system=gnu ;; #(
-  i[3456]86-*-mingw32) :
+  i[3456]86-*-mingw32*) :
     arch=i386; system=mingw ;; #(
   i686-pc-windows) :
     arch=i386; system=win32 ;; #(
@@ -15406,7 +15406,7 @@ fi; system=elf ;; #(
     has_native_backend=yes; arch=arm64; system=macosx ;; #(
   x86_64-*-darwin*) :
     has_native_backend=yes; arch=amd64; system=macosx ;; #(
-  x86_64-*-mingw32) :
+  x86_64-*-mingw32*) :
     has_native_backend=yes; arch=amd64; system=mingw64 ;; #(
   aarch64-*-linux*) :
     has_native_backend=yes; arch=arm64; system=linux ;; #(
@@ -15838,7 +15838,7 @@ fi
   if test "$cross_compiling" = yes
 then :
   case $target in #(
-  x86_64-w64-mingw32) :
+  x86_64-w64-mingw32*) :
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: cross-compiling; assume not" >&5
 printf "%s\n" "cross-compiling; assume not" >&6; } ;; #(
   *) :
@@ -15872,7 +15872,7 @@ printf "%s\n" "no" >&6; }
     hard_error=true ;; #(
   yes,*) :
     hard_error=false ;; #(
-  *,x86_64-w64-mingw32) :
+  *,x86_64-w64-mingw32*) :
     hard_error=false ;; #(
   *) :
     hard_error=true ;;
@@ -15906,7 +15906,7 @@ fi
   if test "$cross_compiling" = yes
 then :
   case $target in #(
-  x86_64-w64-mingw32|x86_64-*-cygwin*) :
+  x86_64-w64-mingw32*|x86_64-*-cygwin*) :
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: cross-compiling; assume not" >&5
 printf "%s\n" "cross-compiling; assume not" >&6; } ;; #(
   *) :
@@ -15962,7 +15962,7 @@ printf "%s\n" "no" >&6; }
     hard_error=true ;; #(
   yes,*) :
     hard_error=false ;; #(
-  *,x86_64-w64-mingw32|*,x86_64-*-cygwin*) :
+  *,x86_64-w64-mingw32*|*,x86_64-*-cygwin*) :
     hard_error=false ;; #(
   *) :
     case $ocaml_cv_cc_vendor in #(
@@ -16358,7 +16358,7 @@ fi
 sockets=true
 
 case $host in #(
-  *-*-mingw32|*-pc-windows) :
+  *-*-mingw32*|*-pc-windows) :
     cclibs="$cclibs -lws2_32"
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing socket" >&5
 printf %s "checking for library containing socket... " >&6; }
@@ -16638,7 +16638,7 @@ fi
 ## socklen_t
 
 case $host in #(
-  *-*-mingw32|*-pc-windows) :
+  *-*-mingw32*|*-pc-windows) :
     ac_fn_c_check_type "$LINENO" "socklen_t" "ac_cv_type_socklen_t" "#include <ws2tcpip.h>
 "
 if test "x$ac_cv_type_socklen_t" = xyes
@@ -16669,7 +16669,7 @@ fi
 ## Unix domain sockets support on Windows
 
 case $host in #(
-  *-*-mingw32|*-pc-windows) :
+  *-*-mingw32*|*-pc-windows) :
            for ac_header in afunix.h
 do :
   ac_fn_c_check_header_compile "$LINENO" "afunix.h" "ac_cv_header_afunix_h" "#include <winsock2.h>
@@ -16691,7 +16691,7 @@ esac
 ipv6=true
 
 case $host in #(
-  *-*-mingw32|*-pc-windows) :
+  *-*-mingw32*|*-pc-windows) :
     ac_fn_c_check_type "$LINENO" "struct sockaddr_in6" "ac_cv_type_struct_sockaddr_in6" "#include <ws2tcpip.h>
 "
 if test "x$ac_cv_type_struct_sockaddr_in6" = xyes
@@ -16811,7 +16811,7 @@ fi
 # seem to detect it properly on Windows so we hardcode the definition
 # of HAS_UTIME on Windows but this will probably need to be clarified
 case $host in #(
-  *-*-mingw32|*-pc-windows) :
+  *-*-mingw32*|*-pc-windows) :
     printf "%s\n" "#define HAS_UTIME 1" >>confdefs.h
  ;; #(
   *) :
@@ -17029,7 +17029,7 @@ fi
 # Note: detection fails on Windows so hardcoding the result
 # (should be debugged later)
 case $host in #(
-  *-*-mingw32|*-pc-windows) :
+  *-*-mingw32*|*-pc-windows) :
     printf "%s\n" "#define HAS_GETHOSTNAME 1" >>confdefs.h
  ;; #(
   *) :
@@ -17085,7 +17085,7 @@ fi
 ## setsid
 
 case $host in #(
-  *-cygwin|*-*-mingw32|*-pc-windows) :
+  *-cygwin|*-*-mingw32*|*-pc-windows) :
      ;; #(
   *) :
     ac_fn_c_check_func "$LINENO" "setsid" "ac_cv_func_setsid"
@@ -17198,7 +17198,7 @@ esac
 if $supports_shared_libraries
 then :
   case $host in #(
-  *-*-mingw32|*-pc-windows|*-*-cygwin*) :
+  *-*-mingw32*|*-pc-windows|*-*-cygwin*) :
     DLLIBS="" ;; #(
   *) :
     ac_fn_c_check_func "$LINENO" "dlopen" "ac_cv_func_dlopen"
@@ -17298,7 +17298,7 @@ fi
 
 ## -fdebug-prefix-map support by the C compiler
 case $ocaml_cv_cc_vendor,$host in #(
-  *,*-*-mingw32) :
+  *,*-*-mingw32*) :
     cc_has_debug_prefix_map=false ;; #(
   *,*-pc-windows) :
     cc_has_debug_prefix_map=false ;; #(
@@ -18008,7 +18008,7 @@ esac
 ## Determine how to link with the POSIX threads library
 
 case $host in #(
-  *-*-mingw32|*-pc-windows) :
+  *-*-mingw32*|*-pc-windows) :
     PTHREAD_LIBS="-l:libpthread.a" ;; #(
   *) :
 
@@ -18813,7 +18813,7 @@ asm_cfi_supported=false
 if $native_compiler
 then :
   case $host in #(
-  *-*-mingw32|*-pc-windows) :
+  *-*-mingw32*|*-pc-windows) :
      ;; #(
   *) :
 
@@ -19435,7 +19435,7 @@ fi
 
 
 case $host in #(
-  *-*-mingw32) :
+  *-*-mingw32*) :
     bytecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"
     nativecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh" ;; #(
   *-pc-windows) :
@@ -19457,7 +19457,7 @@ then :
 fi
 
 case $host in #(
-  *-*-mingw32|*-pc-windows) :
+  *-*-mingw32*|*-pc-windows) :
     case $WINDOWS_UNICODE_MODE in #(
   ansi) :
     windows_unicode=0 ;; #(
@@ -19474,9 +19474,9 @@ esac
 if test x"$prefix" = "xNONE"
 then :
   case $host in #(
-  i686-w64-mingw32) :
+  i686-w64-mingw32*) :
     prefix='C:/ocamlmgw' ;; #(
-  x86_64-w64-mingw32) :
+  x86_64-w64-mingw32*) :
     prefix='C:/ocamlmgw64' ;; #(
   i686-pc-windows) :
     prefix='C:/ocamlms' ;; #(
@@ -19502,7 +19502,7 @@ fi
 # but whose value is not guessed properly by configure
 # (all this should be understood and fixed)
 case $host in #(
-  *-*-mingw32) :
+  *-*-mingw32*) :
     printf "%s\n" "#define HAS_BROKEN_PRINTF 1" >>confdefs.h
 
     printf "%s\n" "#define HAS_STRERROR 1" >>confdefs.h
