@@ -417,6 +417,10 @@ Working version
 - #11933: Use the correct machtype when reading the code pointer from closures
   (Nathanaëlle Courant, review by Gabriel Scherer and Vincent Laviron)
 
+- #11972: refactor runtime/frame_descriptors.c
+  in preparation for quadratic-time fix
+  (Gabriel Scherer, review by Enguerrand Decorne)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.

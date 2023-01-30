@@ -55,12 +55,7 @@ void caml_garbage_collection(void)
   atomic_thread_fence(memory_order_acquire);
 
   { /* Find the frame descriptor for the current allocation */
-    uintnat h = Hash_retaddr(retaddr, fds.mask);
-    while (1) {
-      d = fds.descriptors[h];
-      if (d->retaddr == retaddr) break;
-      h = (h + 1) & fds.mask;
-    }
+    d = caml_find_frame_descr(fds, retaddr);
     /* Must be an allocation frame */
     CAMLassert(d && d->frame_size != 0xFFFF && (d->frame_size & 2));
   }

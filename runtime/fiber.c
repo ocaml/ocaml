@@ -230,7 +230,6 @@ Caml_inline void scan_stack_frames(
   uintnat retaddr;
   value * regs;
   frame_descr * d;
-  uintnat h;
   int n, ofs;
   unsigned short * p;
   value *root;
@@ -247,13 +246,8 @@ next_chunk:
   sp += sizeof(value);
 
   while(1) {
-    /* Find the descriptor corresponding to the return address */
-    h = Hash_retaddr(retaddr, fds.mask);
-    while(1) {
-      d = fds.descriptors[h];
-      if (d->retaddr == retaddr) break;
-      h = (h+1) & fds.mask;
-    }
+    d = caml_find_frame_descr(fds, retaddr);
+    CAMLassert(d);
     if (d->frame_size != 0xFFFF) {
       /* Scan the roots in this frame */
       for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
