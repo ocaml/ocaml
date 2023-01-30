@@ -18,15 +18,21 @@
 module Name = Odoc_name
 let () = Printtyp.Naming_context.enable false
 
-let string_of_variance t (co,cn) =
+let string_of_variance t v =
   if ( t.Odoc_type.ty_kind = Odoc_type.Type_abstract ||
       t.Odoc_type.ty_kind = Odoc_type.Type_open ) &&
     t.Odoc_type.ty_manifest = None
   then
-    match (co, cn) with
-      (true, false) -> "+"
-    | (false, true) -> "-"
-    | _ -> ""
+    let inj =
+      if t.Odoc_type.ty_kind = Odoc_type.Type_abstract
+      && Types.Variance.(mem Inj v)
+      then "!"
+      else ""
+    in
+    match Types.Variance.get_upper v with
+    | (true, false) -> inj ^ "+"
+    | (false, true) -> inj ^ "-"
+    | _ -> inj
   else
     ""
 let rec is_arrow_type t =
@@ -55,11 +61,11 @@ let print_type_scheme ppf t =
   else
     Printtyp.shared_type_scheme ppf t
 
-let print_type_param decl ppf (param,co,cn) =
+let print_type_param decl ppf (param,v) =
   (* HACK: we print type parameters as type expressions, and amend ["'_"] to ["_"] *)
   let ty = Format.asprintf "%a" Printtyp.shared_type_scheme param in
   let ty = if ty = "'_" then "_" else ty in
-  let var = string_of_variance decl (co, cn) in
+  let var = string_of_variance decl v in
   if need_parent param then
     Format.fprintf  ppf "(%s%s)" var ty
   else
@@ -176,8 +182,8 @@ let string_of_type t =
    let priv = bool_of_private t.M.ty_private in
    let parameters_str =
      String.concat " " (
-       List.map (fun (p, co, cn) ->
-         (string_of_variance t (co, cn)) ^ (Odoc_print.string_of_type_expr p)
+       List.map (fun (p, v) ->
+         (string_of_variance t v) ^ (Odoc_print.string_of_type_expr p)
        ) t.M.ty_parameters
      )
    in

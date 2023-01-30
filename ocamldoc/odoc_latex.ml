@@ -507,13 +507,13 @@ class latex =
 
     (** Print LaTeX code for the parameters of a type. *)
     method latex_of_type_params fmt m_name t =
-      let print_one (p, co, cn) =
-        ps fmt (Odoc_info.string_of_variance t (co,cn));
+      let print_one (p, v) =
+        ps fmt (Odoc_info.string_of_variance t v);
         ps fmt (self#normal_type m_name p)
       in
       match t.ty_parameters with
         [] -> ()
-      | [(p,co,cn)] -> print_one (p, co, cn)
+      | [t] -> print_one t
       | _ ->
           ps fmt "(";
           print_concat fmt ", " print_one t.ty_parameters;

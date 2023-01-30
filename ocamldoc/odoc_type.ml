@@ -59,8 +59,7 @@ type type_manifest =
 type t_type = {
     ty_name : Name.t ;
     mutable ty_info : Odoc_types.info option ; (** optional user information *)
-    ty_parameters : (Types.type_expr * bool * bool) list ;
-                    (** type parameters: (type, covariant, contravariant) *)
+    ty_parameters : (Types.type_expr * Types.Variance.t ) list ;
     ty_kind : type_kind ;
     ty_private : private_flag;
     ty_manifest : type_manifest option;
