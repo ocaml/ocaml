@@ -381,8 +381,20 @@ static void* pool_allocate(struct caml_heap_state* local, sizeclass sz) {
   return p;
 }
 
-static void* large_allocate(struct caml_heap_state* local, mlsize_t sz) {
-  large_alloc* a = malloc(sz + LARGE_ALLOC_HEADER_SZ);
+static void* large_allocate(struct caml_heap_state* local, mlsize_t sz, mlsize_t alignment) {
+  large_alloc* a;
+  if (!alignment) {
+    a = malloc(sz + LARGE_ALLOC_HEADER_SZ);
+  } else {
+    // extend size to be a multiple of alignment, if needed
+    mlsize_t sz_mod = (sz + LARGE_ALLOC_HEADER_SZ) % alignment;
+    if (sz_mod != 0) {
+      sz = sz + (alignment - sz_mod);
+    }
+
+    CAMLassert(sz % alignment == 0);    
+    a = aligned_alloc(alignment, sz + LARGE_ALLOC_HEADER_SZ);
+  }
   if (!a) return NULL;
   local->stats.large_words += Wsize_bsize(sz + LARGE_ALLOC_HEADER_SZ);
   if (local->stats.large_words > local->stats.large_max_words)
@@ -390,12 +402,13 @@ static void* large_allocate(struct caml_heap_state* local, mlsize_t sz) {
   local->stats.large_blocks++;
   a->owner = local->owner;
   a->next = local->swept_large;
+  /* shift a from real start to beggining of the structure and save real pointer into a */
   local->swept_large = a;
   return (char*)a + LARGE_ALLOC_HEADER_SZ;
 }
 
 value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
-                             tag_t tag, reserved_t reserved, int pinned)
+                             tag_t tag, reserved_t reserved, int pinned, mlsize_t alignment)
 {
   mlsize_t whsize = Whsize_wosize(wosize);
   value* p;
@@ -406,7 +419,13 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
 
   CAML_EV_ALLOC(wosize);
 
-  if (whsize <= SIZECLASS_MAX) {
+  if (whsize <= SIZECLASS_MAX
+    && 
+      /* Cache line on a modern CPU is half of sizeclass_max, and we might need
+        more than one as pools are not aligned. Let's delegate this entire case 
+        to large alloc. */
+      !alignment) {
+    CAMLassert(alignment == 0);
     struct heap_stats* s;
     sizeclass sz = sizeclass_wsize[whsize];
     CAMLassert(wsize_sizeclass[sz] >= whsize);
@@ -417,7 +436,7 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
     s->pool_live_words += whsize;
     s->pool_frag_words += wsize_sizeclass[sz] - whsize;
   } else {
-    p = large_allocate(local, Bsize_wsize(whsize));
+    p = large_allocate(local, Bsize_wsize(whsize), alignment);
     if (!p) return 0;
   }
   colour = pinned ? NOT_MARKABLE : caml_global_heap_state.MARKED;
