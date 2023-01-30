@@ -160,8 +160,6 @@ static caml_frame_descrs build_frame_descriptors(
   return table;
 }
 
-static caml_plat_mutex descr_mutex;
-
 /* Memory used by frametables is only freed once a GC cycle has
    completed, because other threads access the frametable at
    unpredictable times. */
@@ -176,8 +174,7 @@ struct frametable_version {
 };
 #define No_need_to_free ((uintnat)(-1))
 
-/* Only modified when holding descr_mutex, but read without locking */
-static atomic_uintnat current_frametable = ATOMIC_UINTNAT_INIT(0);
+struct frametable_version *current_frametable = NULL;
 
 static caml_frametable_list *cons(
   intnat *frametable, caml_frametable_list *tl)
@@ -194,9 +191,9 @@ void caml_init_frame_descriptors(void)
   struct frametable_version *ft;
   caml_frametable_list *frametables = NULL;
 
-  caml_plat_mutex_init(&descr_mutex);
+  /* `init_frame_descriptors` is called from `init_gc`, befor
+     any mutator can run. */
 
-  caml_plat_lock(&descr_mutex);
   for (i = 0; caml_frametable[i] != 0; i++)
     frametables = cons(caml_frametable[i], frametables);
 
@@ -204,18 +201,20 @@ void caml_init_frame_descriptors(void)
   ft->table = build_frame_descriptors(frametables);
   atomic_store_rel(&ft->free_prev_after_cycle, No_need_to_free);
   ft->prev = 0;
-  atomic_store_rel(&current_frametable, (uintnat)ft);
-  caml_plat_unlock(&descr_mutex);
+  current_frametable = ft;
 }
 
-void caml_register_frametables(void **tables, int ntables)
+typedef struct frametable_array {
+  void **table;
+  int ntables;
+} frametable_array;
+
+static void register_frametables(frametable_array *array)
 {
   int i;
   struct frametable_version *ft, *old;
 
-  caml_plat_lock(&descr_mutex);
-
-  old = (struct frametable_version*)atomic_load_acq(&current_frametable);
+  old = current_frametable;
   CAMLassert(old != NULL);
 
   /* Free the old table(s) if it is safe to do so */
@@ -237,8 +236,8 @@ void caml_register_frametables(void **tables, int ntables)
   /* The frametable list of the new version is the frametable list of
      the old version, plus the new frametables. */
   caml_frametable_list *frametables = old->table.frametables;
-  for (i = 0; i < ntables; i++)
-    frametables = cons((intnat*)tables[i], frametables);
+  for (i = 0; i < array->ntables; i++)
+    frametables = cons((intnat*)array->table[i], frametables);
 
   /* The hashtable is recomputed from scratch from the new
      frametable list.
@@ -249,7 +248,7 @@ void caml_register_frametables(void **tables, int ntables)
   ft->table = build_frame_descriptors(frametables);
   atomic_store_rel(&ft->free_prev_after_cycle, caml_major_cycles_completed);
   ft->prev = old;
-  atomic_store_rel(&current_frametable, (uintnat)ft);
+  current_frametable = ft;
 
   /* Ensure that we GC often enough to prevent more than 1/4 of
      heap memory being stale frame tables */
@@ -259,16 +258,33 @@ void caml_register_frametables(void **tables, int ntables)
      /* 1/4 of the heap size */
      caml_heap_size(Caml_state->shared_heap) / 4
   );
+}
 
-  caml_plat_unlock(&descr_mutex);
+static void stw_register_frametables(
+    caml_domain_state* domain,
+    void* frametables,
+    int participating_count,
+    caml_domain_state** participating)
+{
+  barrier_status b = caml_global_barrier_begin ();
+
+  if (caml_global_barrier_is_final(b)) {
+    register_frametables((frametable_array*) frametables);
+  }
+
+  caml_global_barrier_end(b);
+}
+
+void caml_register_frametables(void **table, int ntables) {
+  struct frametable_array frametables = { table, ntables };
+  do {} while (!caml_try_run_on_all_domains(
+                 &stw_register_frametables, &frametables, 0));
 }
 
 caml_frame_descrs caml_get_frame_descrs(void)
 {
-  struct frametable_version *ft =
-    (struct frametable_version*)atomic_load_acq(&current_frametable);
-  CAMLassert(ft);
-  return ft->table;
+  CAMLassert(current_frametable);
+  return current_frametable->table;
 }
 
 frame_descr* caml_find_frame_descr(caml_frame_descrs fds, uintnat pc)
