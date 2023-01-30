@@ -150,31 +150,8 @@ static void add_frame_descriptors(
   table->frametables = new_frametables;
 }
 
-static caml_frame_descrs build_frame_descriptors(
-  caml_frametable_list* frametables)
-{
-  caml_frame_descrs table = { 0, -1, NULL, NULL };
-
-  add_frame_descriptors(&table, frametables);
-
-  return table;
-}
-
-/* Memory used by frametables is only freed once a GC cycle has
-   completed, because other threads access the frametable at
-   unpredictable times. */
-struct frametable_version {
-  caml_frame_descrs table;
-
-  /* after this cycle has completed,
-     the previous table should be deallocated.
-     Set to No_need_to_free after prev is freed */
-  atomic_uintnat free_prev_after_cycle;
-  struct frametable_version* prev;
-};
-#define No_need_to_free ((uintnat)(-1))
-
-struct frametable_version *current_frametable = NULL;
+/* protected by STW sections */
+static caml_frame_descrs current_frame_descrs = { 0, -1, NULL, NULL };
 
 static caml_frametable_list *cons(
   intnat *frametable, caml_frametable_list *tl)
@@ -187,22 +164,16 @@ static caml_frametable_list *cons(
 
 void caml_init_frame_descriptors(void)
 {
-  int i;
-  struct frametable_version *ft;
   caml_frametable_list *frametables = NULL;
-
-  /* `init_frame_descriptors` is called from `init_gc`, befor
-     any mutator can run. */
-
-  for (i = 0; caml_frametable[i] != 0; i++)
+  for (int i = 0; caml_frametable[i] != 0; i++)
     frametables = cons(caml_frametable[i], frametables);
 
-  ft = caml_stat_alloc(sizeof(*ft));
-  ft->table = build_frame_descriptors(frametables);
-  atomic_store_rel(&ft->free_prev_after_cycle, No_need_to_free);
-  ft->prev = 0;
-  current_frametable = ft;
+  /* `init_frame_descriptors` is called from `init_gc`, before
+     any mutator can run. We can mutate [current_frame_descrs]
+     at will. */
+  add_frame_descriptors(&current_frame_descrs, frametables);
 }
+
 
 typedef struct frametable_array {
   void **table;
@@ -211,53 +182,11 @@ typedef struct frametable_array {
 
 static void register_frametables(frametable_array *array)
 {
-  int i;
-  struct frametable_version *ft, *old;
+  caml_frametable_list *new_frametables = NULL;
+  for (int i = 0; i < array->ntables; i++)
+    new_frametables = cons((intnat*)array->table[i], new_frametables);
 
-  old = current_frametable;
-  CAMLassert(old != NULL);
-
-  /* Free the old table(s) if it is safe to do so */
-  if (atomic_load_acq(&old->free_prev_after_cycle) < caml_major_cycles_completed)
-  {
-    if (old->prev != NULL) {
-      struct frametable_version *p = old->prev;
-      while (p != NULL) {
-        struct frametable_version *next = p->prev;
-        caml_stat_free(p->table.descriptors);
-        caml_stat_free(p);
-        p = next;
-      }
-      old->prev = NULL;
-      atomic_store_rel(&old->free_prev_after_cycle, No_need_to_free);
-    }
-  }
-
-  /* The frametable list of the new version is the frametable list of
-     the old version, plus the new frametables. */
-  caml_frametable_list *frametables = old->table.frametables;
-  for (i = 0; i < array->ntables; i++)
-    frametables = cons((intnat*)array->table[i], frametables);
-
-  /* The hashtable is recomputed from scratch from the new
-     frametable list.
-
-     FIXME: repeating this linear reconstruction on each registration
-     leads to quadratic behavior. */
-  ft = caml_stat_alloc(sizeof(*ft));
-  ft->table = build_frame_descriptors(frametables);
-  atomic_store_rel(&ft->free_prev_after_cycle, caml_major_cycles_completed);
-  ft->prev = old;
-  current_frametable = ft;
-
-  /* Ensure that we GC often enough to prevent more than 1/4 of
-     heap memory being stale frame tables */
-  caml_adjust_gc_speed(
-     /* Size of the table just allocated */
-     (sizeof(*ft) + sizeof(ft->table.descriptors[0]) * capacity(ft->table)),
-     /* 1/4 of the heap size */
-     caml_heap_size(Caml_state->shared_heap) / 4
-  );
+  add_frame_descriptors(&current_frame_descrs, new_frametables);
 }
 
 static void stw_register_frametables(
@@ -283,8 +212,7 @@ void caml_register_frametables(void **table, int ntables) {
 
 caml_frame_descrs caml_get_frame_descrs(void)
 {
-  CAMLassert(current_frametable);
-  return current_frametable->table;
+  return current_frame_descrs;
 }
 
 frame_descr* caml_find_frame_descr(caml_frame_descrs fds, uintnat pc)
