@@ -131,7 +131,7 @@ name:
         st.d      TRAP_PTR, Caml_state(exn_handler)
     /* Now, use TMP to point to the gc_regs bucket */
         ld.d      TMP, Caml_state(gc_regs_buckets)
-		ld.d      TMP2, TMP, 0  /* next ptr */
+        ld.d      TMP2, TMP, 0  /* next ptr */
         st.d      TMP2, Caml_state(gc_regs_buckets)
     /* Save allocatable integer registers Must be in
     the same order as proc.ml int_reg_name*/
@@ -240,7 +240,7 @@ name:
         fld.d     $ft15, TMP, 46*8
     /* Put gc_regs struct back in bucket linked list */
         ld.d      TMP2, Caml_state(gc_regs_buckets)
-		st.d      TMP2, TMP, 0  /* next ptr */
+        st.d      TMP2, TMP, 0  /* next ptr */
         st.d      TMP, Caml_state(gc_regs_buckets)
     /* Reload new allocation pointer & exn handler */
         ld.d      ALLOC_PTR, Caml_state(young_ptr)
@@ -257,23 +257,23 @@ FUNCTION(caml_call_realloc_stack)
     /* Save return address */
         CFI_OFFSET($ra, -8)
         addi.d    $sp, $sp, -16
-		st.d      $ra, $sp, 8 
+        st.d      $ra, $sp, 8
         //CFI_ADJUST(16)
     /* Save all registers (including ALLOC_PTR & TRAP_PTR) */
         SAVE_ALL_REGS
-		ld.d      C_ARG_1, $sp, 16  /* argument */
+        ld.d      C_ARG_1, $sp, 16  /* argument */
         SWITCH_OCAML_TO_C
         bl    PLT(caml_try_realloc_stack)
         SWITCH_C_TO_OCAML
         beqz    $a0, 1f
         RESTORE_ALL_REGS
     /* Free stack $space and return to caller */
-		ld.d      $ra, $sp, 8 
+        ld.d      $ra, $sp, 8
         addi.d    $sp, $sp, 16
         jr    $ra
 1:      RESTORE_ALL_REGS
     /* Raise the Stack_overflow exception */
-		ld.d      $ra, $sp, 8 
+        ld.d      $ra, $sp, 8
         addi.d    $sp, $sp, 16
         addi.d    $sp, $sp, 16 /* pop argument */
         la.global      $a0, caml_exn_Stack_overflow
@@ -285,7 +285,7 @@ L(caml_call_gc):
     /* Save return address */
         CFI_OFFSET($ra, -8)
         addi.d    $sp, $sp, -16
-		st.d      $ra, $sp, 8 
+        st.d      $ra, $sp, 8
         CFI_ADJUST(16)
     /* Store all registers (including ALLOC_PTR & TRAP_PTR) */
         SAVE_ALL_REGS
@@ -295,7 +295,7 @@ L(caml_call_gc):
         SWITCH_C_TO_OCAML
         RESTORE_ALL_REGS
     /* Free stack $space and return to caller */
-		ld.d      $ra, $sp, 8 
+        ld.d      $ra, $sp, 8
         addi.d    $sp, $sp, 16
         jr    $ra
 END_FUNCTION(caml_call_gc)
@@ -334,7 +334,7 @@ END_FUNCTION(caml_allocN)
 FUNCTION(caml_c_call)
         CFI_OFFSET($ra, -8)
         addi.d    $sp, $sp, -16
-		st.d      $ra, $sp, 8 
+        st.d      $ra, $sp, 8
         CFI_ADJUST(16)
     /* Switch form OCaml to C */
         SWITCH_OCAML_TO_C
@@ -348,7 +348,7 @@ FUNCTION(caml_c_call)
     /* Load ocaml stack */
         SWITCH_C_TO_OCAML
     /* Return */
-		ld.d      $ra, $sp, 8 
+        ld.d      $ra, $sp, 8
         addi.d    $sp, $sp, 16
         jr    $ra
 END_FUNCTION(caml_c_call)
@@ -361,7 +361,7 @@ FUNCTION(caml_c_call_stack_args)
                        end=STACK_ARG_END */
         CFI_OFFSET($ra, -8)
         addi.d    $sp, $sp, -16
-		st.d      $ra, $sp, 8 
+        st.d      $ra, $sp, 8
         CFI_ADJUST(16)
     /* Switch from OCaml to C */
         SWITCH_OCAML_TO_C
@@ -374,11 +374,11 @@ FUNCTION(caml_c_call_stack_args)
        NB: STACK_ARG_{BEGIN,END} are 16-byte aligned */
 1:      addi.d    STACK_ARG_END, STACK_ARG_END, -16
         bltu    STACK_ARG_END, STACK_ARG_BEGIN, 2f
-		ld.d      TMP, STACK_ARG_END, 0 
-		ld.d      TMP2, STACK_ARG_END, 8 
+        ld.d      TMP, STACK_ARG_END, 0
+        ld.d      TMP2, STACK_ARG_END, 8
         addi.d    $sp, $sp, -16
-		st.d      TMP, $sp, 0 
-		st.d      TMP2, $sp, 8 
+        st.d      TMP, $sp, 0
+        st.d      TMP2, $sp, 8
         b       1b
 2:  /* Call the function */
         jirl    $ra, ADDITIONAL_ARG, 0
@@ -389,7 +389,7 @@ FUNCTION(caml_c_call_stack_args)
     /* Switch from C to OCaml */
         SWITCH_C_TO_OCAML
     /* Return */
-		ld.d      $ra, $sp, 8 
+        ld.d      $ra, $sp, 8
         addi.d    $sp, $sp, 16
         jr    $ra
 END_FUNCTION(caml_c_call_stack_args)
@@ -410,7 +410,7 @@ L(jump_to_caml):
     /* Set up stack frame and save callee-save registers */
         CFI_OFFSET($ra, -200)
         addi.d    $sp, $sp, -208
-		st.d      $ra, $sp, 8 
+        st.d      $ra, $sp, 8
         CFI_ADJUST(208)
         st.d      $s0, $sp, 2*8
         st.d      $s1, $sp, 3*8
@@ -448,16 +448,16 @@ L(jump_to_caml):
     /* Store the gc_regs for callbacks during a GC */
         ld.d      $t3, Caml_state(gc_regs)
         addi.d    $t2, $t2, -8
-		st.d      $t3, $t2, 0 
+        st.d      $t3, $t2, 0
     /* Store the stack pointer to allow DWARF unwind */
         addi.d    $t2, $t2, -8
-		st.d      $sp, $t2, 0  /* C_stack_sp */
+        st.d      $sp, $t2, 0  /* C_stack_sp */
     /* Setup a trap frame to catch exceptions escaping the OCaml code */
         ld.d      $t3, Caml_state(exn_handler)
         la.local      $t4, L(trap_handler)
         addi.d    $t2, $t2, -16
-		st.d      $t3, $t2, 0 
-		st.d      $t4, $t2, 8 
+        st.d      $t3, $t2, 0
+        st.d      $t4, $t2, 8
         move      TRAP_PTR, $t2
     /* Switch stacks and call the OCaml code */
         move      $sp, $t2
@@ -466,14 +466,14 @@ L(jump_to_caml):
         jirl    $ra, TMP2, 0
 L(caml_retaddr):
     /* Pop the trap frame, restoring Caml_state->exn_handler */
-		ld.d      $t2, $sp, 0 
+        ld.d      $t2, $sp, 0
         addi.d    $sp, $sp, 16
         CFI_ADJUST(-16)
         st.d      $t2, Caml_state(exn_handler)
 L(return_result):
     /* Restore GC regs */
-		ld.d      $t2, $sp, 0 
-		ld.d      $t3, $sp, 8 
+        ld.d      $t2, $sp, 0
+        ld.d      $t3, $sp, 8
         addi.d    $sp, $sp, 16
         CFI_ADJUST(-16)
         st.d      $t3, Caml_state(gc_regs)
@@ -535,8 +535,8 @@ L(trap_handler):
     /* Cut stack at current trap handler */
         move      $sp, TRAP_PTR
     /* Pop previous handler and jump to it */
-		ld.d      TMP, $sp, 8 
-		ld.d      TRAP_PTR, $sp, 0 
+        ld.d      TMP, $sp, 8
+        ld.d      TRAP_PTR, $sp, 0
         addi.d    $sp, $sp, 16
         jr      TMP
 .endm
@@ -588,7 +588,7 @@ FUNCTION(caml_raise_exception)
         ld.d      TMP, Stack_sp(TMP)
         move      $sp, TMP
     /* Restore frame and link on return to OCaml */
-		ld.d      $ra, $sp, 8 
+        ld.d      $ra, $sp, 8
         addi.d    $sp, $sp, 16
         b       caml_raise_exn
 END_FUNCTION(caml_raise_exception)
@@ -599,9 +599,9 @@ FUNCTION(caml_callback_asm)
     /* Initial shuffling of arguments */
     /* ($a0 = Caml_state, $a1 = closure, 0(a2) = first arg) */
         move      TMP, $a0
-		ld.d      $a0, $a2, 0            /* $a0 = first arg */
+        ld.d      $a0, $a2, 0            /* $a0 = first arg */
                                     /* $a1 = closure environment */
-		ld.d      TMP2, $a1, 0           /* code pointer */
+        ld.d      TMP2, $a1, 0           /* code pointer */
         b       L(jump_to_caml)
 END_FUNCTION(caml_callback_asm)
 
@@ -610,8 +610,8 @@ FUNCTION(caml_callback2_asm)
     /* ($a0 = Caml_state, $a1 = closure, 0(a2) = arg1, 8(a2) = arg2) */
         move      TMP, $a0
         move      TMP2, $a1
-		ld.d      $a0, $a2, 0  /* $a0 = first arg */
-		ld.d      $a1, $a2, 8  /* $a1 = second arg */
+        ld.d      $a0, $a2, 0  /* $a0 = first arg */
+        ld.d      $a1, $a2, 8  /* $a1 = second arg */
         move      $a2, TMP2   /* a2 = closure environment */
         la.global      TMP2, caml_apply2
         b       L(jump_to_caml)
@@ -623,9 +623,9 @@ FUNCTION(caml_callback3_asm)
         16(a2) = arg3) */
         move      TMP, $a0
         move      $a3, $a1       /* a3 = closure environment */
-		ld.d      $a0, $a2, 0     /* $a0 = first arg */
-		ld.d      $a1, $a2, 8     /* $a1 = second arg */
-		ld.d      $a2, $a2, 16    /* a2 = third arg */
+        ld.d      $a0, $a2, 0     /* $a0 = first arg */
+        ld.d      $a1, $a2, 8     /* $a1 = second arg */
+        ld.d      $a2, $a2, 16    /* a2 = third arg */
         la.global      TMP2, caml_apply3
         b       L(jump_to_caml)
 END_FUNCTION(caml_callback3_asm)
@@ -637,7 +637,7 @@ END_FUNCTION(caml_callback3_asm)
 .macro SWITCH_OCAML_STACKS old_stack, new_stack
     /* Save frame pointer and return address for old_stack */
         addi.d    $sp, $sp, -16
-		st.d      $ra, $sp, 8 
+        st.d      $ra, $sp, 8
         CFI_ADJUST(16)
     /* Save OCaml SP and exn_handler in the stack info */
         st.d      $sp, Stack_sp(\old_stack)
@@ -649,7 +649,7 @@ END_FUNCTION(caml_callback3_asm)
     /* restore exn_handler for new stack */
         ld.d      TRAP_PTR, Stack_exception(\new_stack)
     /* Restore frame pointer and return address for new_stack */
-		ld.d      $ra, $sp, 8 
+        ld.d      $ra, $sp, 8
         addi.d    $sp, $sp, 16
 .endm
 
@@ -665,7 +665,7 @@ FUNCTION(caml_perform)
         $a1: freshly allocated continuation */
         ld.d      $a2, Caml_state(current_stack) /* a2 := old stack */
         addi.d    $a3, $a2, 1 /* a3 := Val_ptr(old stack) */
-		st.d      $a3, $a1, 0  /* Iniitalize continuation */
+        st.d      $a3, $a1, 0  /* Iniitalize continuation */
 L(do_perform):
     /*  $a0: effect to perform
         $a1: continuation
@@ -686,7 +686,7 @@ L(do_perform):
 1:
     /*  switch back to original performer before $raising Effect.Unhandled
         (no-op unless this is a reperform) */
-		ld.d      $t4, $a1, 0  /* load performer stack from continuation */
+        ld.d      $t4, $a1, 0  /* load performer stack from continuation */
         addi.d    $t4, $t4, -1 /* t4 := Ptr_val(t4) */
         ld.d      $t3, Caml_state(current_stack)
         SWITCH_OCAML_STACKS $t3, $t4
@@ -711,7 +711,7 @@ FUNCTION(caml_resume)
         $a1: fun
         a2: arg */
         addi.d    $a0, $a0, -1 /* $a0 = Ptr_val($a0) */
-		ld.d      $a3, $a1, 0   /* code pointer */
+        ld.d      $a3, $a1, 0   /* code pointer */
     /* Check if stack null, then already used */
         beqz    $a0, 2f
     /* Find end of list of stacks (put in $t2) */
@@ -737,10 +737,10 @@ FUNCTION(caml_runstack)
         a2: arg */
         CFI_OFFSET($ra, -8)
         addi.d    $sp, $sp, -16
-		st.d      $ra, $sp, 8 
+        st.d      $ra, $sp, 8
         CFI_ADJUST(16)
         addi.d    $a0, $a0, -1  /* $a0 := Ptr_val($a0) */
-		ld.d      $a3, $a1, 0    /* code pointer */
+        ld.d      $a3, $a1, 0    /* code pointer */
     /*  save old stack pointer and exception handler */
         ld.d      $t2, Caml_state(current_stack) /* $t2 := old stack */
         st.d      $sp, Stack_sp($t2)
@@ -754,10 +754,10 @@ FUNCTION(caml_runstack)
        after 16byte DWARF & gc_regs block (which is unused here) */
         addi.d    $t3, $t3, -32
         la.local      TMP, L(fiber_exn_handler)
-		st.d      TMP, $t3, 8 
+        st.d      TMP, $t3, 8
     /* link the previous exn_handler so that copying stacks works */
         ld.d      TMP, Stack_exception($a0)
-		st.d      TMP, $t3, 0 
+        st.d      TMP, $t3, 0
         move      TRAP_PTR, $t3
     /* Switch to the new stack */
         move      $sp, $t3
@@ -789,9 +789,9 @@ L(frame_runstack):
         move      $a1, $s2
         move      $sp, $s4
         CFI_RESTORE_STATE
-		ld.d      TMP, $s2, 0   /* code pointer */
+        ld.d      TMP, $s2, 0   /* code pointer */
     /* Invoke handle_value (or handle_exn) */
-		ld.d      $ra, $sp, 8 
+        ld.d      $ra, $sp, 8
         addi.d    $sp, $sp, 16
         CFI_ADJUST(-16)
         jr      TMP
