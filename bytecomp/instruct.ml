@@ -117,3 +117,22 @@ and immed_max = 0x3FFFFFFF
 (* Actually the abstract machine accommodates -0x80000000 to 0x7FFFFFFF,
    but these numbers overflow the OCaml type int if the compiler runs on
    a 32-bit processor. *)
+
+let empty_env =
+  { ce_stack = Ident.empty;
+    ce_heap = Ident.empty;
+    ce_rec = Ident.empty }
+
+(* Remove all type information from a debug_event.
+   Keep only the fields that are accessed by the backtrace machinery
+   in byterun/backtrace_byt.c *)
+
+let trim_debug_event ev =
+  { ev with
+    ev_kind =
+     (match ev.ev_kind with
+       | Event_after _ -> Event_after_novalue
+       | k -> k);
+    ev_typenv = Env.Env_empty;
+    ev_typsubst = Subst.identity;
+    ev_compenv = empty_env }

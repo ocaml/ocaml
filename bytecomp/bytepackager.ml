@@ -101,6 +101,8 @@ let rename_relocation packagename objfile mapping base (rel, ofs) =
 (* relocate a debugging event *)
 
 let relocate_debug base prefix subst ev =
+  let ev =
+    if !Clflags.debug_light then Instruct.trim_debug_event ev else ev in
   { ev with ev_pos = base + ev.ev_pos;
             ev_module = prefix ^ "." ^ ev.ev_module;
             ev_typsubst = Subst.compose ev.ev_typsubst subst }

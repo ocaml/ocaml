@@ -133,3 +133,7 @@ type instruction =
 
 val immed_min: int
 val immed_max: int
+
+val empty_env: compilation_env
+
+val trim_debug_event: debug_event -> debug_event

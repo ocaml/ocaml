@@ -33,9 +33,6 @@ let new_label () =
 
 (**** Operations on compilation environments. ****)
 
-let empty_env =
-  { ce_stack = Ident.empty; ce_heap = Ident.empty; ce_rec = Ident.empty }
-
 (* Add a stack-allocated variable *)
 
 let add_var id pos env =

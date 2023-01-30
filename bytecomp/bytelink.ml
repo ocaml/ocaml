@@ -221,6 +221,10 @@ let link_compunit output_fun currpos_fun inchan file_name compunit =
     let debug_event_list : Instruct.debug_event list = input_value inchan in
     let debug_dirs : string list = input_value inchan in
     let file_path = Filename.dirname (Location.absolute_path file_name) in
+    let debug_event_list =
+      if !Clflags.debug_light
+      then List.map Instruct.trim_debug_event debug_event_list
+      else debug_event_list in
     let debug_dirs =
       if List.mem file_path debug_dirs
       then debug_dirs

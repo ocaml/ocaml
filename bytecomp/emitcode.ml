@@ -169,6 +169,7 @@ let events = ref ([] : debug_event list)
 let debug_dirs = ref String.Set.empty
 
 let record_event ev =
+  let ev = if !Clflags.debug_light then trim_debug_event ev else ev in
   let path = ev.ev_loc.Location.loc_start.Lexing.pos_fname in
   let abspath = Location.absolute_path path in
   debug_dirs := String.Set.add (Filename.dirname abspath) !debug_dirs;
