@@ -218,6 +218,22 @@ void caml_register_frametables(void **tables, int ntables)
   old = (struct frametable_version*)atomic_load_acq(&current_frametable);
   CAMLassert(old != NULL);
 
+  /* Free the old table(s) if it is safe to do so */
+  if (atomic_load_acq(&old->free_prev_after_cycle) < caml_major_cycles_completed)
+  {
+    if (old->prev != NULL) {
+      struct frametable_version *p = old->prev;
+      while (p != NULL) {
+        struct frametable_version *next = p->prev;
+        caml_stat_free(p->table.descriptors);
+        caml_stat_free(p);
+        p = next;
+      }
+      old->prev = NULL;
+      atomic_store_rel(&old->free_prev_after_cycle, No_need_to_free);
+    }
+  }
+
   /* The frametable list of the new version is the frametable list of
      the old version, plus the new frametables. */
   caml_frametable_list *frametables = old->table.frametables;
@@ -252,23 +268,6 @@ caml_frame_descrs caml_get_frame_descrs(void)
   struct frametable_version *ft =
     (struct frametable_version*)atomic_load_acq(&current_frametable);
   CAMLassert(ft);
-  if (atomic_load_acq(&ft->free_prev_after_cycle) < caml_major_cycles_completed)
-  {
-    /* it's now safe to free the old table(s) */
-    caml_plat_lock(&descr_mutex);
-    if (ft->prev != NULL) {
-      struct frametable_version *p = ft->prev;
-      while (p != NULL) {
-        struct frametable_version *next = p->prev;
-        caml_stat_free(p->table.descriptors);
-        caml_stat_free(p);
-        p = next;
-      }
-      ft->prev = NULL;
-      atomic_store_rel(&ft->free_prev_after_cycle, No_need_to_free);
-    }
-    caml_plat_unlock(&descr_mutex);
-  }
   return ft->table;
 }
 
