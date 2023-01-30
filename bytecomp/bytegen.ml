@@ -257,9 +257,11 @@ let merge_events ev ev' =
       Event_pseudo,  _                              -> ev', ev
     | _,             Event_pseudo                   -> ev,  ev'
     (* Keep following event, supposedly more informative *)
-    | Event_before,  (Event_after _ | Event_before) -> ev',  ev
+    | Event_before,
+          (Event_after _ | Event_after_novalue | Event_before) -> ev',  ev
     (* Discard following events, supposedly less informative *)
-    | Event_after _, (Event_after _ | Event_before) -> ev, ev'
+    | (Event_after _ | Event_after_novalue),
+          (Event_after _ | Event_after_novalue | Event_before) -> ev, ev'
   in
   copy_event maj maj.ev_kind (merge_infos maj min) (merge_repr maj min)
 
