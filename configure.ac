@@ -16,7 +16,7 @@
 # Process this file with autoconf to produce a configure script.
 
 # Require Autoconf 2.71 for repeatability in CI
-AC_PREREQ([2.71])
+AC_PREREQ([2.61])
 AC_INIT([OCaml],
         [OCAML__VERSION],
         [caml-list@inria.fr],
@@ -1138,7 +1138,8 @@ AS_IF([test x"$supports_shared_libraries" = 'xtrue'],
     [aarch64-*-freebsd*], [natdynlink=true],
     [aarch64-*-openbsd*], [natdynlink=true],
     [aarch64-*-netbsd*], [natdynlink=true],
-    [riscv*-*-linux*], [natdynlink=true])])
+    [riscv*-*-linux*], [natdynlink=true],
+    [loongarch*-*-linux*], [natdynlink=true])])
 
 AS_CASE([$enable_native_toplevel,$natdynlink],
   [yes,false],
@@ -1258,7 +1259,9 @@ AS_CASE([$host],
   [x86_64-*-cygwin*],
     [has_native_backend=yes; arch=amd64; system=cygwin],
   [riscv64-*-linux*],
-    [has_native_backend=yes; arch=riscv; model=riscv64; system=linux]
+    [has_native_backend=yes; arch=riscv; model=riscv64; system=linux],
+  [loongarch64-*-linux*],
+    [has_native_backend=yes; arch=loongarch64; system=linux]
 )
 
 AS_CASE([$ccomptype],
@@ -1364,7 +1367,7 @@ default_aspp="$CC -c"
 AS_CASE([$as_target,$ocaml_cv_cc_vendor],
   [*-*-linux*,gcc-*],
     [AS_CASE([$as_cpu],
-      [x86_64|arm*|aarch64*|i[[3-6]]86|riscv*],
+      [x86_64|arm*|aarch64*|i[[3-6]]86|riscv*|loongarch*],
         [default_as="${toolpref}as"])],
   [i686-pc-windows,*],
     [default_as="ml -nologo -coff -Cp -c -Fo"
