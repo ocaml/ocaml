@@ -86,6 +86,8 @@ module type Compiler_options = sig
   val _for_pack : string -> unit
   val _g : unit -> unit
   val _no_g : unit -> unit
+  val _g1 : unit -> unit
+  val _g0 : unit -> unit
   val _stop_after : string -> unit
   val _i : unit -> unit
   val _impl : string -> unit
@@ -146,6 +148,7 @@ end
 module type Bytecomp_options = sig
   include Core_options
   include Compiler_options
+  val _g2 : unit -> unit
   val _compat_32 : unit -> unit
   val _custom : unit -> unit
   val _no_check_prims : unit -> unit

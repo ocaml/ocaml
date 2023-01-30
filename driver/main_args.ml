@@ -140,7 +140,22 @@ let mk_g_opt f =
 
 let mk_no_g f =
   "-no-g", Arg.Unit f,
-  " Do not record debugging information (default)"
+  " Do not record debugging information (same as -g0) (default)"
+
+let mk_g2_byt f =
+  "-g2", Arg.Unit f, " Save debugging information (synonymous with -g)"
+
+let mk_g1_byt f =
+  "-g1", Arg.Unit f,
+  " Record debugging information for exception backtrace"
+
+let mk_g1_opt f =
+  "-g1", Arg.Unit f,
+  " Record debugging information for exception backtrace (same as -g)"
+
+let mk_g0 f =
+  "-g0", Arg.Unit f,
+  " Do not record debugging information (same as -no-g) (default)"
 
 let mk_i f =
   "-i", Arg.Unit f, " Print inferred interface"
@@ -821,6 +836,8 @@ module type Compiler_options = sig
   val _for_pack : string -> unit
   val _g : unit -> unit
   val _no_g : unit -> unit
+  val _g1 : unit -> unit
+  val _g0 : unit -> unit
   val _stop_after : string -> unit
   val _i : unit -> unit
   val _impl : string -> unit
@@ -880,6 +897,7 @@ end
 module type Bytecomp_options = sig
   include Core_options
   include Compiler_options
+  val _g2 : unit -> unit
   val _compat_32 : unit -> unit
   val _custom : unit -> unit
   val _no_check_prims : unit -> unit
@@ -1022,6 +1040,9 @@ struct
     mk_for_pack_byt F._for_pack;
     mk_g_byt F._g;
     mk_no_g F._no_g;
+    mk_g2_byt F._g2;
+    mk_g1_byt F._g1;
+    mk_g0 F._g0;
     mk_stop_after ~native:false F._stop_after;
     mk_i F._i;
     mk_I F._I;
@@ -1212,6 +1233,8 @@ struct
     mk_for_pack_opt F._for_pack;
     mk_g_opt F._g;
     mk_no_g F._no_g;
+    mk_g1_opt F._g1;
+    mk_g0 F._g0;
     mk_function_sections F._function_sections;
     mk_stop_after ~native:true F._stop_after;
     mk_save_ir_after ~native:true F._save_ir_after;
@@ -1730,8 +1753,11 @@ module Default = struct
     let _dump_into_file = set dump_into_file
     let _dump_dir s = dump_dir := Some s
     let _for_pack s = for_package := (Some s)
-    let _g = set debug
+    let _g () = debug := true; debug_light := false
     let _no_g = clear debug
+    let _g2 = _g
+    let _g1 () = debug := true; debug_light := true
+    let _g0 = _no_g
     let _i = set print_types
     let _impl = Compenv.impl
     let _intf = Compenv.intf
