@@ -94,6 +94,16 @@
 #define Stack_header_size 32
 #endif
 
+#ifdef TARGET_loongarch64
+/* Size of the gc_regs structure, in words.
+   See loongarch64.S and loongarch64/proc.ml for the indices */
+#define Wosize_gc_regs (2 + 23 /* int regs */ + 24 /* float regs */)
+#define Saved_return_address(sp) *((intnat *)((sp) - 8))
+/* LoongArch does not use a frame pointer, but requires the stack to be
+   16-aligned. */
+#define Pop_frame_pointer(sp) sp += sizeof(value)
+#endif
+
 /* Declaration of variables used in the asm code */
 extern value * caml_globals[];
 extern intnat caml_globals_inited;
