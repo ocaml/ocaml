@@ -372,14 +372,14 @@ CAMLexport value caml_alloc_shr_reserved(mlsize_t wosize,
 
 
 CAMLexport value caml_alloc_shr_noexc(mlsize_t wosize, tag_t tag) {
-  return alloc_shr(wosize, tag, 0, 1, 0);
+  return alloc_shr(wosize, tag, 0, 0, 1);
 }
 
 CAMLexport value caml_alloc_shr_aligned(mlsize_t wosize,
                                          tag_t tag,
-                                         mlsize_t aligned)
+                                         mlsize_t alignment)
 {
-  return alloc_shr(wosize, tag, 0, 0, aligned);
+  return alloc_shr(wosize, tag, 0, alignment, 0);
 }
 
 /* Global memory pool.

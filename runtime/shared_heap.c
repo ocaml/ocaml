@@ -391,9 +391,9 @@ static void* large_allocate(struct caml_heap_state* local, mlsize_t sz, mlsize_t
     if (sz_mod != 0) {
       sz = sz + (alignment - sz_mod);
     }
-
-    CAMLassert(sz % alignment == 0);    
+    
     a = aligned_alloc(alignment, sz + LARGE_ALLOC_HEADER_SZ);
+    //printf("\n sz: %lu, alignment: %lu, aligned addr: %p\n", sz + LARGE_ALLOC_HEADER_SZ, alignment, (void*)a);
   }
   if (!a) return NULL;
   local->stats.large_words += Wsize_bsize(sz + LARGE_ALLOC_HEADER_SZ);
@@ -402,7 +402,6 @@ static void* large_allocate(struct caml_heap_state* local, mlsize_t sz, mlsize_t
   local->stats.large_blocks++;
   a->owner = local->owner;
   a->next = local->swept_large;
-  /* shift a from real start to beggining of the structure and save real pointer into a */
   local->swept_large = a;
   return (char*)a + LARGE_ALLOC_HEADER_SZ;
 }
@@ -425,7 +424,6 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
         more than one as pools are not aligned. Let's delegate this entire case 
         to large alloc. */
       !alignment) {
-    CAMLassert(alignment == 0);
     struct heap_stats* s;
     sizeclass sz = sizeclass_wsize[whsize];
     CAMLassert(wsize_sizeclass[sz] >= whsize);
