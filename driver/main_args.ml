@@ -143,7 +143,7 @@ let mk_no_g f =
   " Do not record debugging information (same as -g0) (default)"
 
 let mk_g2_byt f =
-  "-g2", Arg.Unit f, " Save debugging information (synonymous with -g)"
+  "-g2", Arg.Unit f, " Save all debugging information (same as -g)"
 
 let mk_g1_byt f =
   "-g1", Arg.Unit f,
