@@ -533,7 +533,7 @@ let descriptions = [
     names = ["generative-application-expects-unit"];
     description = "A generative functor is applied to an empty structure \
                    (struct end) rather than to ().";
-    since = since 4 15 };
+    since = since 5 1 };
 ]
 
 let name_to_number =
