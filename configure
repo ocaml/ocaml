@@ -777,6 +777,8 @@ build_os
 build_vendor
 build_cpu
 build
+ac_config_headers
+ac_config_files
 QS
 ocaml_libdir
 ocaml_bindir
@@ -3351,6 +3353,8 @@ OCAML_VERSION_SHORT=5.1
 
 
  # TODO: rename this variable
+
+
 
 
 
