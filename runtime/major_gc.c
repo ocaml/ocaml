@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <stdbool.h>
 
 #include "caml/addrmap.h"
 #include "caml/config.h"
@@ -111,6 +112,84 @@ static struct ephe_cycle_info_t {
  * ephe_lock or in the global barrier. However, the fields may be read without
  * the lock. */
 static caml_plat_mutex ephe_lock = CAML_PLAT_MUTEX_INITIALIZER;
+
+#define PREFETCH_BUFFER_SIZE  (1 << 8)
+#define PREFETCH_BUFFER_MIN   64 /* keep pb at least this full */
+#define PREFETCH_BUFFER_MASK  (PREFETCH_BUFFER_SIZE - 1)
+
+typedef struct prefetch_buffer {
+  uintnat enqueued;
+  uintnat dequeued;
+  uintnat waterline;
+  value   buffer[PREFETCH_BUFFER_SIZE];
+} prefetch_buffer_t;
+
+Caml_inline bool pb_full(const prefetch_buffer_t *pb)
+{
+  return pb->enqueued == (pb->dequeued + PREFETCH_BUFFER_SIZE);
+}
+
+Caml_inline uintnat pb_size(const prefetch_buffer_t *pb)
+{
+  return pb->enqueued - pb->dequeued;
+}
+
+Caml_inline bool pb_above_waterline(const prefetch_buffer_t *pb)
+{
+  return ((pb->enqueued - pb->dequeued) > pb->waterline);
+}
+
+Caml_inline void pb_drain_mode(prefetch_buffer_t *pb)
+{
+  pb->waterline = 0;
+}
+
+Caml_inline void pb_fill_mode(prefetch_buffer_t *pb)
+{
+  pb->waterline = PREFETCH_BUFFER_MIN;
+}
+
+Caml_inline void pb_push(prefetch_buffer_t* pb, value v)
+{
+  CAMLassert(Is_block(v) && !Is_young(v));
+  CAMLassert(v != Debug_free_major);
+  CAMLassert(pb->enqueued < pb->dequeued + PREFETCH_BUFFER_SIZE);
+
+  pb->buffer[pb->enqueued & PREFETCH_BUFFER_MASK] = v;
+  pb->enqueued += 1;
+}
+
+Caml_inline value pb_pop(prefetch_buffer_t *pb)
+{
+  CAMLassert(pb->enqueued > pb->dequeued);
+
+  value v = pb->buffer[pb->dequeued & PREFETCH_BUFFER_MASK];
+  pb->dequeued += 1;
+  return v;
+}
+
+Caml_inline void prefetch_block(value v)
+{
+  /* Prefetch a block so that scanning it later avoids cache misses.
+     We will access at least the header, but we don't yet know how
+     many of the fields we will access - the block might be already
+     marked, not scannable, or very short. The compromise here is to
+     prefetch the header and the first few fields.
+
+     We issue two prefetches, with the second being a few words ahead
+     of the first. Most of the time, these will land in the same
+     cacheline, be coalesced by hardware, and so not cost any more
+     than a single prefetch. Two memory operations are issued only
+     when the two prefetches land in different cachelines.
+
+     In the case where the block is not already in cache, and yet is
+     already marked, not markable, or extremely short, then we waste
+     somewhere between 1/8-1/2 of a prefetch operation (in expectation,
+     depending on alignment, word size, and cache line size), which is
+     cheap enough to make this worthwhile. */
+  caml_prefetch(Hp_val(v));
+  caml_prefetch((void*)&Field(v, 3));
+}
 
 static void ephe_next_cycle (void)
 {
@@ -699,6 +778,10 @@ static void mark_slice_darken(struct mark_stack* stk, value child,
   header_t chd;
 
   if (Is_markable(child)){
+
+  /* This part of the code is duplicated in do_some_marking for performance
+   * reasons.
+   * Changes here should probably be reflected in do_some_marking. */
     chd = Hd_val(child);
     if (Tag_hd(chd) == Infix_tag) {
       child -= Infix_offset_hd(chd);
@@ -733,20 +816,126 @@ static void mark_slice_darken(struct mark_stack* stk, value child,
   }
 }
 
-static intnat do_some_marking(struct mark_stack* stk, intnat budget) {
-  while (stk->count > 0) {
-    mark_entry me = stk->stack[--stk->count];
-    while (me.start < me.end) {
-      if (budget <= 0) {
-        mark_stack_push_range(stk, me.start, me.end);
-        return budget;
+Caml_noinline static intnat do_some_marking(struct mark_stack* stk,
+                                            intnat budget) {
+  prefetch_buffer_t pb = { .enqueued = 0, .dequeued = 0,
+                           .waterline = PREFETCH_BUFFER_MIN };
+  mark_entry me;
+  /* These global values are cached in locals,
+     so that they can be stored in registers */
+  struct global_heap_state heap_state = caml_global_heap_state;
+  uintnat blocks_marked = 0;
+
+  while (1) {
+    if (pb_above_waterline(&pb)) {
+      /* Dequeue from prefetch buffer */
+      value block = pb_pop(&pb);
+      CAMLassert(Is_markable(block));
+
+      /* This part of the code is a duplicate of mark_slice_darken for
+       * performance reasons.
+       * Changes here should probably be reflected here in mark_slice_darken. */
+      header_t hd = Hd_val(block);
+
+      if (Tag_hd(hd) == Infix_tag) {
+        block -= Infix_offset_hd(hd);
+        hd = Hd_val(block);
       }
-      budget--;
-      mark_slice_darken(stk, *me.start, &budget);
-      me.start++;
+
+      CAMLassert(!Has_status_hd(hd, heap_state.GARBAGE));
+      if (!Has_status_hd(hd, heap_state.UNMARKED)) {
+        /* Already black, nothing to do */
+        continue;
+      }
+      blocks_marked++;
+
+      if (Tag_hd(hd) == Cont_tag) {
+        caml_darken_cont(block);
+        budget -= Wosize_hd(block);
+        continue;
+      }
+
+again:
+      if (Tag_hd(hd) == Lazy_tag || Tag_hd(hd) == Forcing_tag) {
+        if (!atomic_compare_exchange_strong(Hp_atomic_val(block), &hd,
+              With_status_hd(hd, caml_global_heap_state.MARKED))) {
+          hd = Hd_val(block);
+          goto again;
+        }
+      } else {
+        atomic_store_relaxed(
+            Hp_atomic_val(block),
+            With_status_hd(hd, caml_global_heap_state.MARKED));
+      }
+
+      budget--; /* header word */
+      if (Tag_hd(hd) >= No_scan_tag) {
+        /* Nothing to scan here */
+        budget -= Wosize_hd(hd);
+        continue;
+      }
+
+      me.start = Op_val(block);
+      me.end = me.start + Wosize_hd(hd);
+
+      if (Tag_hd(hd) == Closure_tag) {
+        uintnat env_offset = Start_env_closinfo(Closinfo_val(block));
+        budget -= env_offset;
+        me.start += env_offset;
+      }
     }
-    budget--; /* credit for header */
+    else if (budget <= 0 || stk->count == 0) {
+      if (pb.waterline > 0) {
+        /* Dequeue from pb even when close to empty, because
+           we have nothing else to do */
+        pb_drain_mode(&pb);
+        continue;
+      }
+      else {
+        /* Couldn't find work with pb in draining mode,
+           so there's nothing to do */
+        break;
+      }
+    }
+    else {
+      me = stk->stack[--stk->count];
+    }
+
+    value* scan_end = me.end;
+    if (scan_end - me.start > budget) {
+      intnat scan_len = budget < 0 ? 0 : budget;
+      scan_end = me.start + scan_len;
+    }
+
+    for (; me.start < scan_end; me.start++) {
+      CAMLassert(budget >= 0);
+
+      value child = *me.start;
+      budget--;
+      if (Is_markable(child)) {
+        if (pb_full(&pb))
+          break;
+        prefetch_block(child);
+        pb_push(&pb, child);
+      }
+    }
+
+    if (me.start < me.end) {
+      /* Didn't finish scanning this object, either because budget <= 0,
+         or the prefetch buffer filled up. Leave the rest on the stack. */
+      mark_stack_push_range(stk, me.start, me.end);
+      caml_prefetch(me.start+1);
+
+      if (pb_size(&pb) > PREFETCH_BUFFER_MIN) {
+        /* We may have just discovered more work when we were about to run out.
+           Reset waterline so that we try to refill the buffer again. */
+        pb_fill_mode(&pb);
+      }
+    }
   }
+
+  Caml_state->stat_blocks_marked += blocks_marked;
+  CAMLassert(pb_size(&pb) == 0);
   return budget;
 }
 
@@ -1251,7 +1440,7 @@ static char collection_slice_mode_char(collection_slice_mode mode)
   }
 }
 
-#define Chunk_size 0x400
+#define Chunk_size 0x4000
 
 static intnat major_collection_slice(intnat howmuch,
                                      int participant_count,
