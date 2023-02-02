@@ -460,6 +460,7 @@ module Color : sig
     warning: style list;
     loc: style list;
     hint: style list;
+    clash: style list;
   }
 
   val default_styles: styles
