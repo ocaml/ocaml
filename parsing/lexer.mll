@@ -576,8 +576,10 @@ rule token = parse
   | '#' symbolchar_or_hash + as op
             { HASHOP op }
   | "let" kwdopchar dotsymbolchar * as op
+  | "let" kwdopchar? '.' lowercase identchar* as op
             { LETOP op }
   | "and" kwdopchar dotsymbolchar * as op
+  | "and" kwdopchar? '.' lowercase identchar* as op
             { ANDOP op }
   | eof { EOF }
   | (_ as illegal_char)

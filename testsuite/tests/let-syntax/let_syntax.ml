@@ -729,3 +729,46 @@ Error: This pattern matches values of type GADT_ordering.point
        This instance of GADT_ordering.point is ambiguous:
        it would escape the scope of its equation
 |}];;
+
+module Named_let_syntax = struct
+  let (let.apply) = apply
+  let (and.pair) = pair
+  let nine =
+    let.apply four = 4
+    and.pair five = 5 in
+    4 + 5
+
+  let (let*.some) = Option.bind
+  let (let+.some) v f = Option.map f v
+  let some_four =
+    let*.some four = Some 4 in
+    Some four
+  let some_five =
+    let+.some four = Some 4 in
+    four + 1
+end;;
+[%%expect{|
+module Named_let_syntax :
+  sig
+    val ( let.apply ) : 'a -> ('a -> 'b) -> 'b
+    val ( and.pair ) : 'a -> 'b -> 'a * 'b
+    val nine : int
+    val ( let*.some ) : 'a option -> ('a -> 'b option) -> 'b option
+    val ( let+.some ) : 'a option -> ('a -> 'b) -> 'b option
+    val some_four : int option
+    val some_five : int option
+  end
+|}];;
+
+
+module Let_syntax_without_separator = struct
+  let (let+) x f = f x
+  let fourty_two =
+    (* intentionally no space*)
+    let+x = 40 in
+    40 + 2
+end
+[%%expect{|
+module Let_syntax_without_separator :
+  sig val ( let+ ) : 'a -> ('a -> 'b) -> 'b val fourty_two : int end
+|}];;
