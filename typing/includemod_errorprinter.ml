@@ -492,8 +492,8 @@ module Functor_suberror = struct
       let g = With_shorthand.definition_of_argument g in
       let e = With_shorthand.definition e in
       Format.dprintf
-        "Modules do not match:@ @[%t@]@;<1 -2>\
-         is not included in@ @[%t@]%t"
+        "Modules do not match:@ @[@{<clash>%t@}@]@;<1 -2>\
+         is not included in@ @[@{<clash>%t@}@]%t"
         g e (more ())
 
     (** Specialized to avoid introducing shorthand names
@@ -506,8 +506,8 @@ module Functor_suberror = struct
         | Types.Named(_, mty) -> dmodtype mty
       in
       Format.dprintf
-        "Modules do not match:@ @[%t@]@;<1 -2>\
-         is not included in@ @[%t@]%t"
+        "Modules do not match:@ @[@{<clash>%t@}@]@;<1 -2>\
+         is not included in@ @[@{<clash>%t@}@]%t"
         (dmodtype mty) e (more ())
 
 
@@ -657,14 +657,14 @@ let core env id x =
 
 let missing_field ppf item =
   let id, loc, kind =  Includemod.item_ident_name item in
-  Format.fprintf ppf "The %s `%a' is required but not provided%a"
+  Format.fprintf ppf "The %s `@{<clash>%a@}' is required but not provided%a"
     (Includemod.kind_of_field_desc kind) Printtyp.ident id
     (show_loc "Expected declaration") loc
 
 let module_types {Err.got=mty1; expected=mty2} =
   Format.dprintf
     "@[<hv 2>Modules do not match:@ \
-     %a@;<1 -2>is not included in@ %a@]"
+      @{<clash>%a@}@;<1 -2>is not included in@ @{<clash>%a@}@]"
     !Oprint.out_module_type (Printtyp.tree_of_modtype mty1)
     !Oprint.out_module_type (Printtyp.tree_of_modtype mty2)
 
@@ -746,8 +746,8 @@ and functor_params ~expansion_token ~env ~before ~ctx {got;expected;_} =
   let main =
     Format.dprintf
       "@[<hv 2>Modules do not match:@ \
-       @[functor@ %t@ -> ...@]@;<1 -2>is not included in@ \
-       @[functor@ %t@ -> ...@]@]"
+       @[functor@ @{<clash>%t@}@ -> ...@]@;<1 -2>is not included in@ \
+       @[functor@ @{<clash>%t@}@ -> ...@]@]"
       actual expected
   in
   let msgs = dwith_context ctx main :: before in
