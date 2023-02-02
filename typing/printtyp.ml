@@ -2056,7 +2056,7 @@ let type_path_expansion ppf = function
 let rec trace fst txt ppf = function
   | {Errortrace.got; expected} :: rem ->
       if not fst then fprintf ppf "@,";
-      fprintf ppf "@[Type@;<1 2>%a@ %s@;<1 2>%a@]%a"
+      fprintf ppf "@[Type@;<1 2>@{<clash>%a@}@ %s@;<1 2>@{<clash>%a@}@]%a"
        type_expansion got txt type_expansion expected
        (trace false txt) rem
   | _ -> ()
@@ -2357,7 +2357,7 @@ let head_error_printer mode txt_got txt_but = function
   | None -> ignore
   | Some d ->
       let d = Errortrace.map_diff (trees_of_type_expansion mode) d in
-      dprintf "%t@;<1 2>%a@ %t@;<1 2>%a"
+      dprintf "%t@;<1 2>@{<clash>%a@}@ %t@;<1 2>@{<clash>%a@}"
         txt_got type_expansion d.Errortrace.got
         txt_but type_expansion d.Errortrace.expected
 
