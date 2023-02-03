@@ -71,6 +71,9 @@ Working version
 - #11935: Load frametables of dynlink'd modules in batch
   (Stephen Dolan, review by David Allsopp and Guillaume Munch-Maccagnoni)
 
+- #11827: Restore prefetching for GC marking
+  (Fabrice Buoro and Stephen Dolan, review by Gabriel Scherer and Sadiq Jaffer)
+
 ### Type system:
 
 - #6941, #11187: prohibit using classes through recursive modules
@@ -437,6 +440,12 @@ Working version
   shorthand (eg `OCAMLC foo.cmo`). Setting `V=1` recovers the old style (with
   full command-lines).
   (Xavier Leroy, Nicolás Ojeda Bär, review by Sébastien Hinderer)
+
+- #11981: Reduce size of OCaml installations by removing debugging information
+  from installed bytecode executables.  It is no longer possible to
+  run ocamldebug over these installed bytecode executables, nor to get
+  exception backtraces for them.
+  (Xavier Leroy, review by David Allsopp)
 
 ### Bug fixes:
 

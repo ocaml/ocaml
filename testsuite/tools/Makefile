@@ -43,10 +43,13 @@ codegen_LIBS = $(addprefix $(COMPILERLIBSDIR)/,\
 codegen_OBJECTS = $(addsuffix .cmo,\
   parsecmmaux parsecmm lexcmm codegen_main)
 
+ALL_LIBS = $(expect_LIBS)
+
 tools := $(expect_PROG)
 
 ifeq "$(NATIVE_COMPILER)" "true"
 tools += $(codegen_PROG)
+ALL_LIBS += $(codegen_LIBS)
 ifneq "$(CCOMPTYPE)-$(ARCH)" "msvc-amd64"
 # The asmgen tests are not ported to MSVC64 yet
 # so do not compile any arch-specific module
@@ -74,13 +77,13 @@ lexcmm.cmo: lexcmm.cmi
 
 parsecmm.cmo: parsecmm.cmi
 
-%.cmi: %.mli
+%.cmi: %.mli $(ALL_LIBS:=.cma)
 	$(OCAMLC) $(COMPFLAGS) -c $<
 
-%.cmo: %.ml
+%.cmo: %.ml $(ALL_LIBS:=.cma)
 	$(OCAMLC) $(COMPFLAGS) -c $<
 
-%.cmx: %.ml
+%.cmx: %.ml $(ALL_LIBS:=.cmxa)
 	$(OCAMLOPT) $(COMPFLAGS) -c $<
 
 %.$(O): %.S
