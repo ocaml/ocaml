@@ -441,6 +441,12 @@ Working version
   full command-lines).
   (Xavier Leroy, Nicolás Ojeda Bär, review by Sébastien Hinderer)
 
+- #11981: Reduce size of OCaml installations by removing debugging information
+  from installed bytecode executables.  It is no longer possible to
+  run ocamldebug over these installed bytecode executables, nor to get
+  exception backtraces for them.
+  (Xavier Leroy, review by David Allsopp)
+
 ### Bug fixes:
 
 - #11887, #11893: Code duplication in pattern-matching compilation

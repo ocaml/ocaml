@@ -276,3 +276,10 @@ define OCAML_PROGRAM
 $(eval $(call OCAML_BYTECODE_PROGRAM,$(1)))
 $(eval $(call OCAML_NATIVE_PROGRAM,$(1).opt))
 endef # OCAML_PROGRAM
+
+# Installing a bytecode executable, with debug information removed
+define INSTALL_STRIPPED_BYTE_PROG
+$(OCAMLRUN) $(ROOTDIR)/tools/stripdebug $(1) $(1).tmp \
+&& $(INSTALL_PROG) $(1).tmp $(2) \
+&& rm $(1).tmp
+endef # INSTALL_STRIPPED_BYTE_PROG
