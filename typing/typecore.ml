@@ -3420,7 +3420,7 @@ and type_expect_
       (* Pretend separate = true, 1% slowdown for lablgtk *)
       let cty =
         with_local_level begin fun () ->
-          Typetexp.transl_simple_type env ~fixed:false sty
+          Typetexp.transl_simple_type env ~closed:false sty
         end
         ~post:(fun cty -> generalize_structure cty.ctyp_type)
       in
@@ -3739,7 +3739,7 @@ and type_expect_
             match sty with None -> protect_expansion env ty_expected, None
             | Some sty ->
                 let sty = Ast_helper.Typ.force_poly sty in
-                let cty = Typetexp.transl_simple_type env ~fixed:false sty in
+                let cty = Typetexp.transl_simple_type env ~closed:false sty in
                 cty.ctyp_type, Some cty
           end
       in

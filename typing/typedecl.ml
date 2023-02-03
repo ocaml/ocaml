@@ -229,7 +229,7 @@ let transl_labels env univars closed lbls =
     Builtin_attributes.warning_scope attrs
       (fun () ->
          let arg = Ast_helper.Typ.force_poly arg in
-         let cty = transl_simple_type env ?univars ~fixed:closed arg in
+         let cty = transl_simple_type env ?univars ~closed arg in
          {ld_id = Ident.create_local name.txt;
           ld_name = name; ld_mutable = mut;
           ld_type = cty; ld_loc = loc; ld_attributes = attrs}
@@ -254,7 +254,7 @@ let transl_labels env univars closed lbls =
 
 let transl_constructor_arguments env univars closed = function
   | Pcstr_tuple l ->
-      let l = List.map (transl_simple_type env ?univars ~fixed:closed) l in
+      let l = List.map (transl_simple_type env ?univars ~closed) l in
       Types.Cstr_tuple (List.map (fun t -> t.ctyp_type) l),
       Cstr_tuple l
   | Pcstr_record l ->
@@ -285,7 +285,7 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
             transl_constructor_arguments env univars closed sargs
           in
           let tret_type =
-            transl_simple_type env ?univars ~fixed:closed sret_type in
+            transl_simple_type env ?univars ~closed sret_type in
           let ret_type = tret_type.ctyp_type in
           (* TODO add back type_path as a parameter ? *)
           begin match get_desc ret_type with
@@ -325,8 +325,8 @@ let transl_declaration env sdecl (id, uid) =
   let params = List.map (fun (cty, _) -> cty.ctyp_type) tparams in
   let cstrs = List.map
     (fun (sty, sty', loc) ->
-      transl_simple_type env ~fixed:false sty,
-      transl_simple_type env ~fixed:false sty', loc)
+      transl_simple_type env ~closed:false sty,
+      transl_simple_type env ~closed:false sty', loc)
     sdecl.ptype_cstrs
   in
   let unboxed_attr = get_unboxed_from_attributes sdecl in
@@ -441,7 +441,7 @@ let transl_declaration env sdecl (id, uid) =
         None -> None, None
       | Some sty ->
         let no_row = not (is_fixed_type sdecl) in
-        let cty = transl_simple_type env ~fixed:no_row sty in
+        let cty = transl_simple_type env ~closed:no_row sty in
         Some cty, Some cty.ctyp_type
     in
     let arity = List.length params in
@@ -1499,8 +1499,8 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
   let arity = List.length params in
   let constraints =
     List.map (fun (ty, ty', loc) ->
-      let cty = transl_simple_type env ~fixed:false ty in
-      let cty' = transl_simple_type env ~fixed:false ty' in
+      let cty = transl_simple_type env ~closed:false ty in
+      let cty' = transl_simple_type env ~closed:false ty' in
       (* Note: We delay the unification of those constraints
          after the unification of parameters, so that clashing
          constraints report an error on the constraint location
@@ -1512,7 +1512,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
   let (tman, man) =  match sdecl.ptype_manifest with
       None -> None, None
     | Some sty ->
-        let cty = transl_simple_type env ~fixed:no_row sty in
+        let cty = transl_simple_type env ~closed:no_row sty in
         Some cty, Some cty.ctyp_type
   in
   (* In the second part, we check the consistency between the two

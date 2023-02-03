@@ -48,7 +48,7 @@ end
 val valid_tyvar_name : string -> bool
 
 val transl_simple_type:
-        Env.t -> ?univars:TyVarEnv.poly_univars -> fixed:bool
+        Env.t -> ?univars:TyVarEnv.poly_univars -> closed:bool
         -> Parsetree.core_type -> Typedtree.core_type
 val transl_simple_type_univars:
         Env.t -> Parsetree.core_type -> Typedtree.core_type

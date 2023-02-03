@@ -106,12 +106,9 @@ module TyVarEnv : sig
   val remember_used : string -> type_expr -> Location.t -> unit
     (* remember that a given name is bound to a given type *)
 
-  val globalize_used_variables : globals_only:bool -> Env.t ->
-    fixed:bool -> unit -> unit
+  val globalize_used_variables : policy -> Env.t -> unit -> unit
     (* after finishing with a type signature, add used variables to the
-       global type variable scope; with globals_only, only already-in-scope
-       variables are considered (but they are still unified with the global
-       type variables *)
+       global type variable scope *)
 
 end = struct
   (** Map indexed by type variable names. *)
@@ -277,18 +274,18 @@ end = struct
     | { extensibility = Fixed } -> raise(Error(loc, env, No_type_wildcards))
     | policy -> new_var policy
 
-  let globalize_used_variables ~globals_only env ~fixed =
+  let globalize_used_variables { flavor; extensibility } env =
     let r = ref [] in
     TyVarMap.iter
       (fun name (ty, loc) ->
-        if not globals_only || is_in_scope name then
+        if flavor = Unification || is_in_scope name then
           let v = new_global_var () in
           let snap = Btype.snapshot () in
           if try unify env v ty; true with _ -> Btype.backtrack snap; false
           then try
             r := (loc, v, lookup_global_type_variable name) :: !r
           with Not_found ->
-            if fixed && Btype.is_Tvar ty then
+            if extensibility = Fixed && Btype.is_Tvar ty then
               raise(Error(loc, env,
                           Unbound_type_variable ("'"^name,
                                                  get_in_scope_names ())));
@@ -749,11 +746,11 @@ let make_fixed_univars ty =
   make_fixed_univars ty;
   Btype.unmark_type ty
 
-let transl_simple_type env ?univars ~fixed styp =
+let transl_simple_type env ?univars ~closed styp =
   TyVarEnv.reset_locals ?univars ();
-  let policy = TyVarEnv.(if fixed then fixed_policy else extensible_policy) in
+  let policy = TyVarEnv.(if closed then fixed_policy else extensible_policy) in
   let typ = transl_type env policy styp in
-  TyVarEnv.globalize_used_variables ~globals_only:false env ~fixed ();
+  TyVarEnv.globalize_used_variables policy env ();
   make_fixed_univars typ.ctyp_type;
   typ
 
@@ -762,12 +759,9 @@ let transl_simple_type_univars env styp =
   let typ, univs =
     TyVarEnv.collect_univars begin fun () ->
       with_local_level ~post:generalize_ctyp begin fun () ->
-        let typ = transl_type env TyVarEnv.univars_policy styp in
-        (* Globalize only local occurrences of variables that are already in
-           global scope; others will be univars and dealt with in
-           make_fixed_univars. *)
-        TyVarEnv.globalize_used_variables
-          ~globals_only:true env ~fixed:false ();
+        let policy = TyVarEnv.univars_policy in
+        let typ = transl_type env policy styp in
+        TyVarEnv.globalize_used_variables policy env ();
         typ
       end
   end in
@@ -779,13 +773,13 @@ let transl_simple_type_delayed env styp =
   TyVarEnv.reset_locals ();
   let typ, force =
     with_local_level begin fun () ->
-      let typ = transl_type env TyVarEnv.extensible_policy styp in
+      let policy = TyVarEnv.extensible_policy in
+      let typ = transl_type env policy styp in
       make_fixed_univars typ.ctyp_type;
       (* This brings the used variables to the global level, but doesn't link
          them to their other occurrences just yet. This will be done when
          [force] is  called. *)
-      let force = TyVarEnv.globalize_used_variables
-                    ~globals_only:false env ~fixed:false in
+      let force = TyVarEnv.globalize_used_variables policy env in
       (typ, force)
     end
     (* Generalize everything except the variables that were just globalized. *)
@@ -801,7 +795,7 @@ let transl_type_scheme env styp =
      let univars, typ =
        with_local_level begin fun () ->
          let univars = TyVarEnv.make_poly_univars vars in
-         let typ = transl_simple_type env ~univars ~fixed:true st in
+         let typ = transl_simple_type env ~univars ~closed:true st in
          (univars, typ)
        end
        ~post:(fun (_,typ) -> generalize_ctyp typ)
@@ -813,7 +807,7 @@ let transl_type_scheme env styp =
        ctyp_loc = styp.ptyp_loc;
        ctyp_attributes = styp.ptyp_attributes }
   | _ ->
-      with_local_level (fun () -> transl_simple_type env ~fixed:false styp)
+      with_local_level (fun () -> transl_simple_type env ~closed:false styp)
         ~post:generalize_ctyp
 
 
@@ -828,7 +822,7 @@ let report_error env ppf = function
       name
       did_you_mean (fun () -> Misc.spellcheck in_scope_names name )
   | No_type_wildcards ->
-    fprintf ppf "A type wildcard \"_\" is not allowed here."
+    fprintf ppf "A type wildcard \"_\" is not allowed in this type declaration."
   | Undefined_type_constructor p ->
     fprintf ppf "The type constructor@ %a@ is not yet completely defined"
       path p
