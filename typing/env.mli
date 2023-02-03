@@ -184,6 +184,7 @@ type lookup_error =
   | Generative_used_as_applicative of Longident.t
   | Illegal_reference_to_recursive_module
   | Cannot_scrape_alias of Longident.t * Path.t
+  | Reference_to_hidden_module
 
 val lookup_error: Location.t -> t -> lookup_error -> 'a
 
@@ -323,7 +324,7 @@ val add_local_type: Path.t -> type_declaration -> t -> t
 
    The compilation unit itself is looked up in the load path when the
    contents of the module is accessed. *)
-val add_persistent_structure : Ident.t -> t -> t
+val add_persistent_structure : ?hidden:bool -> Ident.t -> t -> t
 
 (* Returns the set of persistent structures found in the given
    directory. *)

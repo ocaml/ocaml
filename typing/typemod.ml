@@ -125,10 +125,10 @@ let initial_env ~loc ~initially_opened_module
       Parse.simple_module_path lexbuf in
         snd (type_open_ Override env loc {txt;loc})
   in
-  let add_units env (units, _) =
+  let add_units env (units, hidden) =
     String.Set.fold
       (fun name env ->
-           Env.add_persistent_structure (Ident.create_persistent name) env)
+           Env.add_persistent_structure ~hidden (Ident.create_persistent name) env)
       units
       env
   in

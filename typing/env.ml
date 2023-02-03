@@ -610,7 +610,7 @@ and module_data =
 
 and module_entry =
   | Mod_local of module_data
-  | Mod_persistent
+  | Mod_persistent of { hidden : bool }
   | Mod_unbound of module_unbound_reason
 
 and modtype_data =
@@ -661,6 +661,7 @@ type lookup_error =
   | Generative_used_as_applicative of Longident.t
   | Illegal_reference_to_recursive_module
   | Cannot_scrape_alias of Longident.t * Path.t
+  | Reference_to_hidden_module
 
 type error =
   | Missing_module of Location.t * Path.t * Path.t
@@ -823,16 +824,16 @@ let find_same_module id tbl =
   | x -> x
   | exception Not_found
     when Ident.persistent id && not (Current_unit_name.is_ident id) ->
-      Mod_persistent
+      Mod_persistent { hidden = false }
 
 let find_name_module ~mark name tbl =
   match IdTbl.find_name wrap_module ~mark name tbl with
   | x -> x
   | exception Not_found when not (Current_unit_name.is name) ->
       let path = Pident(Ident.create_persistent name) in
-      path, Mod_persistent
+      path, Mod_persistent { hidden = false }
 
-let add_persistent_structure id env =
+let add_persistent_structure ?(hidden=false) id env =
   if not (Ident.persistent id) then invalid_arg "Env.add_persistent_structure";
   if Current_unit_name.is_ident id then env
   else begin
@@ -843,7 +844,7 @@ let add_persistent_structure id env =
       match
         IdTbl.find_name wrap_module ~mark:false (Ident.name id) env.modules
       with
-      | exception Not_found | _, Mod_persistent -> false
+      | exception Not_found | _, Mod_persistent _ -> false
       | _ -> true
     in
     let summary =
@@ -856,7 +857,7 @@ let add_persistent_structure id env =
          existence of a cmi when accessing components of the module.
          (See #9991). *)
       if material || not !Clflags.transparent_modules then
-        IdTbl.add id Mod_persistent env.modules
+        IdTbl.add id (Mod_persistent { hidden }) env.modules
       else
         env.modules
     in
@@ -1025,7 +1026,7 @@ let find_ident_module id env =
   match find_same_module id env.modules with
   | Mod_local data -> data
   | Mod_unbound _ -> raise Not_found
-  | Mod_persistent -> find_pers_mod (Ident.name id)
+  | Mod_persistent _ -> find_pers_mod (Ident.name id)
 
 let rec find_module_components path env =
   match path with
@@ -1275,7 +1276,7 @@ let find_shape env (ns : Shape.Sig_component_kind.t) id =
   | Module ->
       begin match IdTbl.find_same id env.modules with
       | Mod_local { mda_shape; _ } -> mda_shape
-      | Mod_persistent -> Shape.for_persistent_unit (Ident.name id)
+      | Mod_persistent _ -> Shape.for_persistent_unit (Ident.name id)
       | Mod_unbound _ ->
           (* Only present temporarily while approximating the environment for
              recursive modules.
@@ -1503,7 +1504,7 @@ let iter_env wrap proj1 proj2 f env () =
        | Mod_unbound _ -> ()
        | Mod_local data ->
            iter_components (Pident id) path data.mda_components
-       | Mod_persistent ->
+       | Mod_persistent _ ->
            let modname = Ident.name id in
            match Persistent_env.find_in_cache !persistent_env modname with
            | None -> ()
@@ -1546,7 +1547,7 @@ let rec find_shadowed_comps path env =
         (fun (p, data) ->
            match data with
            | Mod_local x -> Some (p, x)
-           | Mod_unbound _ | Mod_persistent -> None)
+           | Mod_unbound _ | Mod_persistent _ -> None)
         (IdTbl.find_all wrap_module (Ident.name id) env.modules)
   | Pdot (p, s) ->
       let l = find_shadowed_comps p env in
@@ -2656,7 +2657,7 @@ let report_module_unbound ~errors ~loc env reason =
   match reason with
   | Mod_unbound_illegal_recursion ->
       (* see #5965 *)
-    may_lookup_error errors loc env Illegal_reference_to_recursive_module
+      may_lookup_error errors loc env Illegal_reference_to_recursive_module
 
 let report_value_unbound ~errors ~loc env reason lid =
   match reason with
@@ -2765,9 +2766,11 @@ let lookup_ident_module (type a) (load : a load) ~errors ~use ~loc s env =
       | Load -> path, (mda : a)
       | Don't_load -> path, (() : a)
     end
-  | Mod_unbound reason ->
-      report_module_unbound ~errors ~loc env reason
-  | Mod_persistent -> begin
+  | Mod_persistent { hidden = true } ->
+      may_lookup_error errors loc env Reference_to_hidden_module
+  | Mod_unbound Mod_unbound_illegal_recursion ->
+      report_module_unbound ~errors ~loc env Mod_unbound_illegal_recursion
+  | Mod_persistent _ -> begin
       match load with
       | Don't_load ->
           check_pers_mod ~loc s;
@@ -3360,7 +3363,7 @@ let fold_modules f lid env acc =
                  Subst.Lazy.force_module_decl mda.mda_declaration
                in
                f name p md acc
-           | Mod_persistent ->
+           | Mod_persistent _ ->
                match Persistent_env.find_in_cache !persistent_env name with
                | None -> acc
                | Some mda ->
@@ -3424,7 +3427,7 @@ let filter_non_loaded_persistent f env =
          match entry with
          | Mod_local _ -> acc
          | Mod_unbound _ -> acc
-         | Mod_persistent ->
+         | Mod_persistent _ ->
              match Persistent_env.find_in_cache !persistent_env name with
              | Some _ -> acc
              | None ->
@@ -3631,6 +3634,8 @@ let report_lookup_error _loc env ppf = function
         !print_longident lid
   | Illegal_reference_to_recursive_module ->
      fprintf ppf "Illegal recursive module reference"
+  | Reference_to_hidden_module ->
+     fprintf ppf "Reference to a hidden module"
   | Structure_used_as_functor lid ->
       fprintf ppf "@[The module %a is a structure, it cannot be applied@]"
         !print_longident lid
