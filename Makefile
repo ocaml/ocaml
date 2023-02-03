@@ -109,11 +109,15 @@ ocamllex_PROGRAMS = $(addprefix lex/,ocamllex ocamllex.opt)
 
 ocamlyacc_PROGRAM = yacc/ocamlyacc
 
-TOOLS_TO_INSTALL = \
-  ocamldep ocamlprof ocamlcp ocamlmklib ocamlmktop ocamlobjinfo
+# Tools to be compiled to native and bytecode, then installed
+TOOLS_TO_INSTALL_NAT = ocamldep
+
+# Tools to be compiled to bytecode only, then installed
+TOOLS_TO_INSTALL_BYT = \
+  ocamlcmt ocamlprof ocamlcp ocamlmklib ocamlmktop ocamlobjinfo
 
 ifeq "$(NATIVE_COMPILER)" "true"
-TOOLS_TO_INSTALL += ocamloptp
+TOOLS_TO_INSTALL_BYT += ocamloptp
 endif
 
 # Clean should remove tools/ocamloptp etc. unconditionally because
@@ -122,9 +126,11 @@ endif
 clean::
 	rm -f $(addprefix tools/ocamlopt,p p.opt p.exe p.opt.exe)
 
-TOOLS = $(TOOLS_TO_INSTALL) ocamlcmt dumpobj primreq stripdebug cmpbyt
+TOOLS_NAT = $(TOOLS_TO_INSTALL_NAT)
+TOOLS_BYT = $(TOOLS_TO_INSTALL_BYT) dumpobj primreq stripdebug cmpbyt
 
-TOOLS_PROGRAMS = $(addprefix tools/,$(TOOLS))
+TOOLS_NAT_PROGRAMS = $(addprefix tools/,$(TOOLS_NAT))
+TOOLS_BYT_PROGRAMS = $(addprefix tools/,$(TOOLS_BYT))
 
 TOOLS_MODULES = tools/profiling
 
@@ -137,7 +143,7 @@ $(foreach PROGRAM, $(C_PROGRAMS),\
 
 # OCaml programs that are compiled in both bytecode and native code
 
-OCAML_PROGRAMS = ocamlc ocamlopt lex/ocamllex $(TOOLS_PROGRAMS)
+OCAML_PROGRAMS = ocamlc ocamlopt lex/ocamllex $(TOOLS_NAT_PROGRAMS)
 
 $(foreach PROGRAM, $(OCAML_PROGRAMS),\
   $(eval $(call OCAML_PROGRAM,$(PROGRAM))))
@@ -149,7 +155,8 @@ $(foreach PROGRAM, $(OCAML_PROGRAMS),\
 # We have to use dedicated rules to build it
 
 OCAML_BYTECODE_PROGRAMS = expunge \
-  $(addprefix tools/,cvt_emit make_opcodes ocamltex)
+  $(TOOLS_BYT_PROGRAMS) \
+  $(addprefix tools/, cvt_emit make_opcodes ocamltex)
 
 $(foreach PROGRAM, $(OCAML_BYTECODE_PROGRAMS),\
   $(eval $(call OCAML_BYTECODE_PROGRAM,$(PROGRAM))))
@@ -1308,11 +1315,11 @@ lintapidiff: tools/lintapidiff.opt$(EXE)
 # Tools
 
 TOOLS_BYTECODE_TARGETS = \
-  $(filter-out tools/ocamloptp,$(TOOLS_PROGRAMS)) $(TOOLS_MODULES:=.cmo)
+  $(TOOLS_NAT_PROGRAMS) $(TOOLS_BYT_PROGRAMS) $(TOOLS_MODULES:=.cmo)
 
-TOOLS_NATIVE_TARGETS = $(TOOLS_MODULES:=.cmx) tools/ocamloptp
+TOOLS_NATIVE_TARGETS = $(TOOLS_MODULES:=.cmx)
 
-TOOLS_OPT_TARGETS = $(TOOLS_PROGRAMS:=.opt)
+TOOLS_OPT_TARGETS = $(TOOLS_NAT_PROGRAMS:=.opt)
 
 .PHONY: ocamltools
 ocamltools: ocamlc ocamllex
@@ -1617,7 +1624,7 @@ endif
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	$(INSTALL_PROG) lex/ocamllex$(EXE) \
 	  "$(INSTALL_BINDIR)/ocamllex.byte$(EXE)"
-	for i in $(TOOLS_TO_INSTALL); \
+	for i in $(TOOLS_TO_INSTALL_NAT); \
 	do \
 	  $(INSTALL_PROG) "tools/$$i$(EXE)" "$(INSTALL_BINDIR)/$$i.byte$(EXE)";\
 	  if test -f "tools/$$i".opt$(EXE); then \
@@ -1628,7 +1635,7 @@ ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	  fi; \
 	done
 else
-	for i in $(TOOLS_TO_INSTALL); \
+	for i in $(TOOLS_TO_INSTALL_NAT); \
 	do \
 	  if test -f "tools/$$i".opt$(EXE); then \
 	    $(INSTALL_PROG) "tools/$$i.opt$(EXE)" "$(INSTALL_BINDIR)"; \
@@ -1636,13 +1643,11 @@ else
 	  fi; \
 	done
 endif
+	for i in $(TOOLS_TO_INSTALL_BYT); \
+	do \
+	  $(INSTALL_PROG) "tools/$$i$(EXE)" "$(INSTALL_BINDIR)";\
+	done
 	$(INSTALL_PROG) $(ocamlyacc_PROGRAM)$(EXE) "$(INSTALL_BINDIR)"
-	if test -f tools/ocamlcmt.opt$(EXE); then \
-	  $(INSTALL_PROG)\
-	    tools/ocamlcmt.opt$(EXE) "$(INSTALL_BINDIR)/ocamlcmt$(EXE)"; \
-	else \
-	  $(INSTALL_PROG) tools/ocamlcmt$(EXE) "$(INSTALL_BINDIR)"; \
-	fi
 	$(INSTALL_DATA) \
 	   utils/*.cmi \
 	   parsing/*.cmi \
