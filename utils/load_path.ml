@@ -26,10 +26,12 @@ module Dir = struct
   type t = {
     path : string;
     files : string list;
+    hidden : bool;
   }
 
   let path t = t.path
   let files t = t.files
+  let hidden t = t.hidden
 
   let find t fn =
     if List.mem fn t.files then
@@ -57,7 +59,10 @@ module Dir = struct
       [||]
 
   let create path =
-    { path; files = Array.to_list (readdir_compat path) }
+    { path; files = Array.to_list (readdir_compat path); hidden = false }
+
+  let create_hidden path =
+    { path; files = Array.to_list (readdir_compat path); hidden = true }
 end
 
 type auto_include_callback =
@@ -75,6 +80,7 @@ let reset () =
   auto_include_callback := no_auto_include
 
 let get () = List.rev !dirs
+let get_not_hidden () = List.rev (List.filter (fun d -> not d.Dir.hidden) !dirs)
 let get_paths () = List.rev_map Dir.path !dirs
 
 (* Optimized version of [add] below, for use in [init] and [remove_dir]: since
@@ -91,6 +97,13 @@ let prepend_add dir =
 let init ~auto_include l =
   reset ();
   dirs := List.rev_map Dir.create l;
+  List.iter prepend_add !dirs;
+  auto_include_callback := auto_include
+
+
+let init' ~auto_include l =
+  reset ();
+  dirs := List.rev_map (fun (d,k) -> match k with `In_scope -> Dir.create d | `Hidden -> Dir.create_hidden d) l;
   List.iter prepend_add !dirs;
   auto_include_callback := auto_include
 
@@ -158,7 +171,7 @@ let find fn =
   assert (not Config.merlin || Local_store.is_bound ());
   try
     if is_basename fn && not !Sys.interactive then
-      STbl.find !files fn
+       (STbl.find !files fn)
     else
       Misc.find_in_path (get_paths ()) fn
   with Not_found ->
@@ -168,9 +181,20 @@ let find_uncap fn =
   assert (not Config.merlin || Local_store.is_bound ());
   try
     if is_basename fn && not !Sys.interactive then
-      STbl.find !files_uncap (String.uncapitalize_ascii fn)
+       (STbl.find !files_uncap (String.uncapitalize_ascii fn))
     else
       Misc.find_in_path_uncap (get_paths ()) fn
   with Not_found ->
     let fn_uncap = String.uncapitalize_ascii fn in
     !auto_include_callback Dir.find_uncap fn_uncap
+
+(* let is_hidden_uncap fn =
+ *   assert (not Config.merlin || Local_store.is_bound ());
+ *   try
+ *     if is_basename fn && not !Sys.interactive then
+ *       snd (STbl.find !files_uncap (String.uncapitalize_ascii fn))
+ *     else
+ *       false (\** todo *\)
+ *   with Not_found ->
+ *     let fn_uncap = String.uncapitalize_ascii fn in
+ *     !auto_include_callback Dir.find_uncap fn_uncap *)

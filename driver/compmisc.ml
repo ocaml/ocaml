@@ -23,28 +23,29 @@ let auto_include find_in_dir fn =
 (* Initialize the search path.
    [dir] (default: the current directory)
    is always searched first  unless -nocwd is specified,
-   then the directories specified with the -I option (in command-line order),
+   then the directories specified with the -I or -H option (in command-line order),
    then the standard library directory (unless the -nostdlib option is given).
  *)
 
 let init_path ?(auto_include=auto_include) ?(dir="") () =
   let dirs =
-    if !Clflags.use_threads then "+threads" :: !Clflags.include_dirs
+    if !Clflags.use_threads then ("+threads",`In_scope) :: !Clflags.include_dirs
     else
       !Clflags.include_dirs
   in
+  let in_scope dir = List.map (fun d -> (d,`In_scope)) dir in
   let dirs =
-    !Compenv.last_include_dirs @ dirs @ Config.flexdll_dirs @
-    !Compenv.first_include_dirs
+    (in_scope !Compenv.last_include_dirs) @ dirs @ (in_scope Config.flexdll_dirs) @
+    (in_scope !Compenv.first_include_dirs)
   in
   let exp_dirs =
-    List.map (Misc.expand_directory Config.standard_library) dirs
+    List.map (fun (d,kind) -> Misc.expand_directory Config.standard_library d,kind) dirs
   in
   let dirs =
-    (if !Clflags.no_cwd then [] else [dir])
-    @ List.rev_append exp_dirs (Clflags.std_include_dir ())
+    (if !Clflags.no_cwd then [] else [dir,`In_scope])
+    @ List.rev_append exp_dirs (in_scope (Clflags.std_include_dir ()))
   in
-  Load_path.init ~auto_include dirs;
+  Load_path.init' ~auto_include dirs;
   Env.reset_cache ()
 
 (* Return the initial environment in which compilation proceeds. *)

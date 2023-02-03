@@ -117,7 +117,7 @@ let analyse_files
     ?(init=[])
     files =
   Odoc_global.merge_options := merge_options;
-  Odoc_global.include_dirs := include_dirs;
+  Odoc_global.include_dirs := List.map (fun s -> (s,`In_scope)) include_dirs;
   Odoc_global.classic := not labels;
   Odoc_global.sort_modules := sort_modules;
   Odoc_global.no_stop := no_stop;

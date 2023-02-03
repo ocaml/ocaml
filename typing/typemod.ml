@@ -125,15 +125,16 @@ let initial_env ~loc ~initially_opened_module
       Parse.simple_module_path lexbuf in
         snd (type_open_ Override env loc {txt;loc})
   in
-  let add_units env units =
+  let add_units env (units, _) =
     String.Set.fold
       (fun name env ->
-         Env.add_persistent_structure (Ident.create_persistent name) env)
+           Env.add_persistent_structure (Ident.create_persistent name) env)
       units
       env
   in
   let units =
-    List.map Env.persistent_structures_of_dir (Load_path.get ())
+    let map dir = Env.persistent_structures_of_dir dir, Load_path.Dir.hidden dir in
+    List.map map (Load_path.get ())
   in
   let env, units =
     match initially_opened_module with
@@ -145,11 +146,13 @@ let initial_env ~loc ~initially_opened_module
         let rec loop before after =
           match after with
           | [] -> None
-          | units :: after ->
+          | ((units,hidden) as p) :: after ->
               if String.Set.mem m units then
-                Some (units, List.rev_append before after)
+                if hidden then None
+                else
+                  Some (p, List.rev_append before after)
               else
-                loop (units :: before) after
+                loop (p :: before) after
         in
         let env, units =
           match loop [] units with

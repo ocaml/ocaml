@@ -37,11 +37,18 @@ module Dir : sig
 
   val create : string -> t
 
+  val create_hidden : string -> t
+  (** The modules of this directory are not present in the initial scope *)
+
   val path : t -> string
 
   val files : t -> string list
   (** All the files in that directory. This doesn't include files in
       sub-directories of this directory. *)
+
+  val hidden : t -> bool
+  (** If the modules in this directory should not be bounded in the initial
+      scope *)
 
   val find : t -> string -> string option
   (** [find dir fn] returns the full path to [fn] in [dir]. *)
@@ -60,6 +67,9 @@ val no_auto_include : auto_include_callback
     as normal. *)
 
 val init : auto_include:auto_include_callback -> string list -> unit
+(** [init l] is the same as [reset (); List.iter add_dir (List.rev l)] *)
+
+val init' : auto_include:auto_include_callback -> (string * [`Hidden | `In_scope]) list -> unit
 (** [init l] is the same as [reset (); List.iter add_dir (List.rev l)] *)
 
 val auto_include_otherlibs :
@@ -81,6 +91,8 @@ val find_uncap : string -> string
 (** Same as [find], but search also for uncapitalized name, i.e.  if
     name is Foo.ml, allow /path/Foo.ml and /path/foo.ml to match. *)
 
+(** . *)
+
 val[@deprecated] add : Dir.t -> unit
 (** Old name for {!append_dir} *)
 
@@ -94,3 +106,7 @@ val prepend_dir : Dir.t -> unit
 
 val get : unit -> Dir.t list
 (** Same as [get_paths ()], except that it returns a [Dir.t list]. *)
+
+val get_not_hidden : unit -> Dir.t list
+(** Same as [get ()], except that it returns only the directories for each to
+    add the module in the initial scope. *)

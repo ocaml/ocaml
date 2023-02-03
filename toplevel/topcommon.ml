@@ -268,7 +268,7 @@ let set_paths ?(auto_include=Compmisc.auto_include) () =
   let load_path = List.concat [
       [ "" ];
       List.map expand (List.rev !Compenv.first_include_dirs);
-      List.map expand (List.rev !Clflags.include_dirs);
+      List.map expand (List.rev (List.map fst !Clflags.include_dirs));
       List.map expand (List.rev !Compenv.last_include_dirs);
       current_load_path;
       [expand "+camlp4"];
@@ -282,7 +282,7 @@ let update_search_path_from_env () =
     let env = Sys.getenv_opt "OCAMLTOP_INCLUDE_PATH" in
     Option.fold ~none:[] ~some:Misc.split_path_contents env
   in
-  Clflags.include_dirs := List.rev_append extra_paths !Clflags.include_dirs
+  Clflags.include_dirs := List.rev_append (List.map (fun s -> (s,`In_scope)) extra_paths) !Clflags.include_dirs
 
 let initialize_toplevel_env () =
   toplevel_env := Compmisc.initial_env()

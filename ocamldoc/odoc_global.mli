@@ -22,7 +22,7 @@ type source_file =
   | Text_file of string
 
 (** The include_dirs in the OCaml compiler. *)
-val include_dirs : string list ref
+val include_dirs : (string * [`Hidden | `In_scope]) list ref
 
 (** The merge options to be used. *)
 val merge_options : Odoc_types.merge_option list ref
