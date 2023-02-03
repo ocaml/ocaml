@@ -23,23 +23,61 @@
 
 #include "config.h"
 
-#define Hash_retaddr(addr, mask)                          \
-  (((uintnat)(addr) >> 3) & (mask))
-
-/* Structure of frame descriptors */
+/* The compiler generates a "frame descriptor" for every potential
+ * return address. Each loaded module has a block of memory consisting
+ * of these frame descriptors concatenated. Each frame descriptor
+ * includes:
+ *
+ * - the stack frame size, in bytes;
+ *
+ * - whether it is the return address of a call into the garbage collector,
+ *   and if so the sizes of all objects to be allocated by this call;
+ *
+ * - whether we have debug information for this stack frame, and if so
+ *   the "debuginfo" (source location) of this return address. (For
+ *   GC return addresses, this is an array of debuginfo, one for each
+ *   of the set of allocations performed by this GC entry).
+ *
+ * - the register or stack frame offset of every "live" value,
+ *   which should be scanned by the garbage collector if a GC is
+ *   performed at this point.
+ */
 
 typedef struct {
   uintnat retaddr;
-  unsigned short frame_size;
-  unsigned short num_live;
-  unsigned short live_ofs[1 /* num_live */];
+  uint16_t frame_size;
+  uint16_t num_live;
+  uint16_t live_ofs[1 /* num_live */];
   /*
-    If frame_size & 1, then debug info follows:
-  uint32_t debug_info_offset;
-    Debug info is stored as a relative offset to a debuginfo structure. */
+    If FRAME_HAS_ALLOC, alloc lengths follow:
+        uint8_t num_allocs;
+        uint8_t alloc[num_allocs];
+    Each alloc length has an offset of 1, giving sizes 1-256.
+
+    If FRAME_HAS_DEBUG, debug info follows (32-bit aligned):
+        uint32_t debug_info[FRAME_HAS_ALLOC ? num_allocs : 1];
+
+    Debug info is stored as a relative offset, in bytes, from the
+    debug_info itself to a debuginfo structure. */
 } frame_descr;
 
+/* Two bits in the frame_size field are used to indicate whether the
+ * allocation sizes and debug info are present: */
+
+#define FRAME_DESCRIPTOR_DEBUG 1
+#define FRAME_DESCRIPTOR_ALLOC 2
+#define FRAME_SIZE(fd) ((fd)->frame_size &~ 3)
+#define FRAME_HAS_ALLOC(fd) ((fd)->frame_size & FRAME_DESCRIPTOR_ALLOC)
+#define FRAME_HAS_DEBUG(fd) ((fd)->frame_size & FRAME_DESCRIPTOR_DEBUG)
+
+/* If frame_size is 0xFFFF, this stack frame has no debug info or
+ * allocation sizes but is the special entry frame at the top of each
+ * ML stack chunk. */
+
+#define FRAME_CHUNK_TOP(fd) ((fd)->frame_size == 0xFFFF)
+
 /* Allocation lengths are encoded as 0-255, giving sizes 1-256 */
+
 #define Wosize_encoded_alloc_len(n) ((uintnat)(n) + 1)
 
 /* Used to compute offsets in frame tables.
@@ -47,11 +85,13 @@ typedef struct {
 #define Align_to(p, ty) \
   (void*)(((uintnat)(p) + sizeof(ty) - 1) & -sizeof(ty))
 
+#define Hash_retaddr(addr, mask)                          \
+  (((uintnat)(addr) >> 3) & (mask))
 
 void caml_init_frame_descriptors(void);
 void caml_register_frametables(void **tables, int ntables);
 
-/* a linked list of frametabless */
+/* a linked list of frametables */
 typedef struct caml_frametable_list {
   intnat* frametable;
   struct caml_frametable_list *next;
