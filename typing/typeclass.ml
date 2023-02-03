@@ -644,7 +644,8 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
         (fun () ->
            let cty =
              Ctype.with_local_level_if_principal
-               (fun () -> Typetexp.transl_simple_type val_env ~closed:false styp)
+               (fun () -> Typetexp.transl_simple_type val_env
+                            ~closed:false styp)
                ~post:(fun cty -> Ctype.generalize_structure cty.ctyp_type)
            in
            add_instance_variable ~strict:true loc val_env
