@@ -445,7 +445,7 @@ Working version
   from installed bytecode executables.  It is no longer possible to
   run ocamldebug over these installed bytecode executables, nor to get
   exception backtraces for them.
-  (Xavier Leroy, review by David Allsopp)
+  (Xavier Leroy, review by David Allsopp, report by Fabrice Le Fessant)
 
 ### Bug fixes:
 
