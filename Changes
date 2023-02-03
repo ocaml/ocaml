@@ -20,6 +20,9 @@ Working version
 
 ### Runtime system:
 
+- #11990: Improve comments and macros around frame descriptors.
+  (Nick Barnes, review by ??)
+
 - #11919: New runtime events counters for major heap stats and minor heap
   resizing.
   (Sadiq Jaffer, review by Gabriel Scherer and David Allsopp)
