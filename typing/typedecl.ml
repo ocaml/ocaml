@@ -646,7 +646,136 @@ let check_coherence env loc dpath decl =
 let check_abbrev env sdecl (id, decl) =
   check_coherence env sdecl.ptype_loc (Path.Pident id) decl
 
-(* Check that recursion is well-founded:
+
+(* Note: Well-foundedness for OCaml types
+
+   We want to guarantee that all cycles within OCaml types are
+   "guarded".
+
+   More precisly, we consider a reachability relation
+     "[t] is reachable [guarded|unguarded] from [u]"
+   defined as follows:
+
+   - [t1, t2...] are reachable guarded from object types
+       [< m1 : t1; m2 : t2; ... >]
+     or polymorphic variants
+       [[`A of t1 | `B of t2 | ...]].
+
+   - [t1, t2...] are reachable rectypes-guarded from
+     [t1 -> t2], [t1 * t2 * ...], and all other built-in
+     contractive type constructors.
+
+     (By rectypes-guarded we mean: guarded if -rectypes is set,
+      unguarded if it is not set.)
+
+   - If [(t1, t2...) c] is a datatype (variant or record),
+     then [t1, t2...] are reachable rectypes-guarded from it.
+
+   - If [(t1, t2...) c] is an abstract type,
+     then [t1, t2...] are reachable unguarded from it.
+
+   - If [(t1, t2...) c] is an (expandable) abbreviation,
+     then its expansion is reachable unguarded from it.
+     Note that we do not define [t1, t2...] as reachable.
+
+   - The relation is transitive and guardedness of a composition
+     is the disjunction of each guardedness:
+     if t1 is reachable from t2 and t2 is reachable from t3;
+     then t1 is reachable guarded from t3 if t1 is guarded in t2
+     or t2 is guarded in t3, and reachable unguarded otherwise.
+
+   A type [t] is not well-founded if and only if [t] is reachable
+   unguarded in [t].
+
+   Notice that, in the case of datatypes, the arguments of
+   a parametrized datatype are reachable (they must not contain
+   recursive occurrences of the type), but the definition of the
+   datatype is not defined as reachable.
+
+      (* well-founded *)
+      type t = Foo of u
+      and u = t
+
+      (* ill-founded *)
+      type 'a t = Foo of 'a
+      and u = u t
+      > Error: The type abbreviation u is cyclic
+
+   Indeed, in the second example [u] is reachable unguarded in [u t]
+   -- its own definition.
+*)
+
+(* Note: Forms of ill-foundedness
+
+   Several OCaml language constructs could introduce ill-founded
+   types, and there are several distinct checks that forbid different
+   sources of ill-foundedness.
+
+   1. Type aliases.
+
+      (* well-founded *)
+      type t = < x : 'a > as 'a
+
+      (* ill-founded, unless -rectypes is used *)
+      type t = (int * 'a) as 'a
+      > Error: This alias is bound to type int * 'a
+      > but is used as an instance of type 'a
+      > The type variable 'a occurs inside int * 'a
+
+      Ill-foundedness coming from type aliases is detected by the "occur check"
+      used by our type unification algorithm. See typetexp.ml.
+
+   2. Type abbreviations.
+
+      (* well-founded *)
+      type t = < x : t >
+
+      (* ill-founded, unless -rectypes is used *)
+      type t = (int * t)
+      > Error: The type abbreviation t is cyclic
+
+      Ill-foundedness coming from type abbreviations is detected by
+      [check_well_founded] below.
+
+  3. Recursive modules.
+
+     (* well-founded *)
+     module rec M : sig type t = < x : M.t > end = M
+
+     (* ill-founded, unless -rectypes is used *)
+     module rec M : sig type t = int * M.t end = M
+     > Error: The definition of M.t contains a cycle:
+     >        int * M.t
+
+     This is also checked by [check_well_founded] below,
+     as called from [check_recmod_typedecl].
+
+  4. Functor application
+
+     A special case of (3) is that a type can be abstract
+     in a functor definition, and be instantiated with
+     an abbreviation in an application of the functor.
+     This can introduce ill-foundedness, so functor applications
+     must be checked by re-checking the type declarations of their result.
+
+     module type T = sig type t end
+     module Fix(F:(T -> T)) = struct
+       (* this recursive definition is well-founded
+          as F(Fixed).t contains no reachable type expression. *)
+       module rec Fixed : T with type t = F(Fixed).t = F(Fixed)
+     end
+
+     (* well-founded *)
+     Module M = Fix(functor (M:T) -> struct type t = < x : M.t > end)
+
+     (* ill-founded *)
+     module M = Fix(functor (M:T) -> struct type t = int * M.t end);;
+     > Error: In the signature of this functor application:
+     >   The definition of Fixed.t contains a cycle:
+     >   F(Fixed).t
+*)
+
+(* Check that a type expression is well-founded:
    - if -rectypes is used, we must prevent non-contractive fixpoints
      ('a as 'a)
    - if -rectypes is not used, we only allow cycles in the type graph
@@ -721,11 +850,37 @@ let check_well_founded_manifest env loc path decl =
   check_well_founded env loc path (Path.same path) visited
     (Ctype.newconstr path args)
 
+(* Given a new type declaration [type t = ...] (potentially mutually-recursive),
+   we check that accepting the declaration does not introduce ill-founded types.
+
+   Note: we check that the types at the toplevel of the declaration
+   are not reachable unguarded from themselves, that is, we check that
+   there is no cycle going through the "root" of the declaration. But
+   we *also* check that all the type sub-expressions reachable from
+   the root even those that are guarded, are themselves
+   well-founded. (So we check the absence of cycles, even for cycles
+   going through inner type subexpressions but not the root.
+
+   We are not actually sure that this "deep check" is necessary
+   (we don't have an example at hand where it is necessary), but we
+   are doing it anyway out of caution.
+*)
 let check_well_founded_decl env loc path decl to_check =
   let open Btype in
-  let visited = ref TypeMap.empty in
-  let checked = ref TypeSet.empty in
+  (* We iterate on all subexpressions of the declaration to check
+     "in depth" that no ill-founded type exists. *)
   let it =
+    let checked =
+      (* [checked] remembers the types that the iterator already
+         checked, to avoid looping on cyclic types. *)
+      ref TypeSet.empty in
+    let visited =
+      (* [visited] remembers the inner visits performed by
+         [check_well_founded] on each type expression reachable from
+         this declaration. This avoids unnecessary duplication of
+         [check_well_founded] work when invoked on two parts of the
+         type declaration that have common subexpressions. *)
+      ref TypeMap.empty in
     {type_iterators with it_type_expr =
      (fun self ty ->
        if TypeSet.mem ty !checked then () else begin
