@@ -252,6 +252,9 @@ Working version
   blocking). The same behaviour was already present under Unix.
   (Nicolás Ojeda Bär, review by David Allsopp)
 
+* #11991: Unix on Windows: map ERROR_TOO_MANY_LINKS to EMLINK.
+  (Nicolás Ojeda Bär)
+
 ### Tools:
 
 - #1172: fix ocamlyacc's handling of raw string literals
