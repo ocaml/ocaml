@@ -520,8 +520,8 @@ Working version
 - #11879: Bugfix for Ctype.nondep_type
   (Stephen Dolan, review by Gabriel Scherer)
 
-OCaml 5.0
----------
+OCaml 5.0.0 (15 December 2022)
+------------------------------
 
 - #10831: Multicore OCaml
   (Enguerrand Decorne, Stephen Dolan, Tom Kelly, Sadiq Jaffer,
