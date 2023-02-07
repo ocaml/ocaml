@@ -24,6 +24,7 @@ val command_line_options : (string * Arg.spec * string) list
 type specific_operation =
   | Imultaddf of bool        (* multiply, optionally negate, and add *)
   | Imultsubf of bool        (* multiply, optionally negate, and subtract *)
+  | Isqrtf                   (* floating-point square root *)
 
 (* Addressing modes *)
 

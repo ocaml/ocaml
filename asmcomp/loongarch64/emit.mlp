@@ -242,6 +242,7 @@ let name_for_intop_imm = function
 let name_for_floatop1 = function
   | Inegf -> "fneg.d"
   | Iabsf -> "fabs.d"
+  | Ispecific Isqrtf -> "fsqrt.d"
   | _ -> Misc.fatal_error "Emit.Iopf1"
 
 let name_for_floatop2 = function
@@ -256,6 +257,7 @@ let name_for_specific = function
   | Imultaddf true  -> "fnmadd.d"
   | Imultsubf false -> "fmsub.d"
   | Imultsubf true  -> "fnmsub.d"
+  | _ -> Misc.fatal_error "Emit.Iopf3"
 
 (* Output the assembly code for an instruction *)
 
@@ -492,7 +494,7 @@ let emit_instr env i =
           ` addi.d   {emit_reg reg_tmp2}, $zero, {emit_int n}\n {emit_string instr}    {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg reg_tmp2} \n`
       else
       `	{emit_string instri}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_int n}\n`
-  | Lop(Inegf | Iabsf as op) ->
+  | Lop(Inegf | Iabsf | Ispecific Isqrtf as op) ->
       let instr = name_for_floatop1 op in
       `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
   | Lop(Iaddf | Isubf | Imulf | Idivf as op) ->

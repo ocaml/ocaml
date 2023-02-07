@@ -26,6 +26,7 @@ let command_line_options = []
 type specific_operation =
   | Imultaddf of bool        (* multiply, optionally negate, and add *)
   | Imultsubf of bool        (* multiply, optionally negate, and subtract *)
+  | Isqrtf                   (* floating-point square root *)
 
 (* Addressing modes *)
 
@@ -82,6 +83,9 @@ let print_specific_operation printreg op ppf arg =
   | Imultsubf true ->
       fprintf ppf "-f (%a *f %a -f %a)"
         printreg arg.(0) printreg arg.(1) printreg arg.(2)
+  | Isqrtf ->
+      fprintf ppf "sqrtf %a"
+        printreg arg.(0)
 
 (* Specific operations that are pure *)
 
