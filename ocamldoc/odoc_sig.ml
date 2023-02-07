@@ -1059,9 +1059,7 @@ module Analyser =
                       ty_name = Name.concat current_module_name name.txt ;
                       ty_info = assoc_com ;
                       ty_parameters =
-                        List.map2 (fun p v ->
-                          let (co, cn) = Types.Variance.get_upper v in
-                          (Odoc_env.subst_type env p,co, cn))
+                        List.map2 (fun p v -> Odoc_env.subst_type env p,v)
                         sig_type_decl.Types.type_params
                         sig_type_decl.Types.type_variance;
                       ty_kind = type_kind;
@@ -1144,9 +1142,7 @@ module Analyser =
                       ty_name = Name.concat current_module_name name.txt ;
                       ty_info = assoc_com ;
                       ty_parameters =
-                        List.map2 (fun p v ->
-                          let (co, cn) = Types.Variance.get_upper v in
-                          (Odoc_env.subst_type env p,co, cn))
+                        List.map2 (fun p v -> Odoc_env.subst_type env p,v)
                         sig_type_decl.Types.type_params
                         sig_type_decl.Types.type_variance;
                       ty_kind = type_kind;

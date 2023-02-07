@@ -301,8 +301,8 @@ module Type :
         {
           ty_name : Name.t ; (** Complete name of the type. *)
           mutable ty_info : info option ; (** Information found in the optional associated comment. *)
-          ty_parameters : (Types.type_expr * bool * bool) list ;
-                    (** type parameters: (type, covariant, contravariant) *)
+          ty_parameters : (Types.type_expr * Types.Variance.t) list ;
+                    (** type parameters: (type, variance) *)
           ty_kind : type_kind; (** Type kind. *)
           ty_private : private_flag; (** Private or public type. *)
           ty_manifest : type_manifest option ;
@@ -687,12 +687,10 @@ module Module :
    classes (call it) and methods and attributes (don't call it).*)
 val reset_type_names : unit -> unit
 
-(** [string_of_variance t (covariant, invariant)] returns ["+"] if
-   the given information means "covariant", ["-"] if it means
-   "contravariant", orelse [""], and always [""] if the given
-   type is not an abstract type with no manifest (i.e. no need
-   for the variance to be printed).*)
-val string_of_variance : Type.t_type -> (bool * bool) -> string
+(** [string_of_variance t variance] returns the variance and injectivity
+   annotation (e.g ["+"] for covariance, ["-"] for contravariance,
+   ["!-"] for injectivity) if the type [t] is abstract.*)
+val string_of_variance : Type.t_type -> Types.Variance.t -> string
 
 (** This function returns a string representing a Types.type_expr. *)
 val string_of_type_expr : Types.type_expr -> string

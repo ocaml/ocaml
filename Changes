@@ -283,6 +283,10 @@ Working version
 - #11973: Add support for postfixed mingw host triplets
   (Romain Beauxis)
 
+- #11889, #11978: ocamldoc: handle injectivity annotations and wildcards in type
+  parameters.
+  (Florian Angeletti, report by Wiktor Kuchta, review by Jules Aguillon)
+
 ### Manual and documentation:
 
 - #9430, #11291: Document the general desugaring rules for binding operators.

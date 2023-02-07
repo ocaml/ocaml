@@ -18,15 +18,21 @@
 module Name = Odoc_name
 let () = Printtyp.Naming_context.enable false
 
-let string_of_variance t (co,cn) =
+let string_of_variance t v =
   if ( t.Odoc_type.ty_kind = Odoc_type.Type_abstract ||
       t.Odoc_type.ty_kind = Odoc_type.Type_open ) &&
     t.Odoc_type.ty_manifest = None
   then
-    match (co, cn) with
-      (true, false) -> "+"
-    | (false, true) -> "-"
-    | _ -> ""
+    let inj =
+      if t.Odoc_type.ty_kind = Odoc_type.Type_abstract
+      && Types.Variance.(mem Inj v)
+      then "!"
+      else ""
+    in
+    match Types.Variance.get_upper v with
+    | (true, false) -> inj ^ "+"
+    | (false, true) -> inj ^ "-"
+    | _ -> inj
   else
     ""
 let rec is_arrow_type t =
@@ -39,47 +45,36 @@ let rec is_arrow_type t =
   | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
   | Types.Tsubst _ -> assert false
 
-let raw_string_of_type_list sep type_list =
-  let buf = Buffer.create 256 in
-  let fmt = Format.formatter_of_buffer buf in
-  let rec need_parent t =
-    match Types.get_desc t with
-      Types.Tarrow _ | Types.Ttuple _ -> true
-    | Types.Tlink t2 -> need_parent t2
-    | Types.Tconstr _
-    | Types.Tvar _ | Types.Tunivar _ | Types.Tobject _ | Types.Tpoly _
-    | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
-    | Types.Tsubst _ -> assert false
-  in
-  let print_one_type variance t =
-    if need_parent t then
-      (
-       Format.fprintf fmt "(%s" variance;
-       Printtyp.shared_type_scheme fmt t;
-       Format.fprintf fmt ")"
-      )
-    else
-      (
-       Format.fprintf fmt "%s" variance;
-       Printtyp.shared_type_scheme fmt t
-      )
-  in
-  begin match type_list with
-    [] -> ()
-  | [(variance, ty)] -> print_one_type variance ty
-  | (variance, ty) :: tyl ->
-      Format.fprintf fmt "@[<hov 2>";
-      print_one_type variance ty;
-      List.iter
-        (fun (variance, t) ->
-          Format.fprintf fmt "@,%s" sep;
-          print_one_type variance t
-        )
-        tyl;
-      Format.fprintf fmt "@]"
-  end;
-  Format.pp_print_flush fmt ();
-  Buffer.contents buf
+
+let rec need_parent t =
+  match Types.get_desc t with
+    Types.Tarrow _ | Types.Ttuple _ -> true
+  | Types.Tlink t2 -> need_parent t2
+  | Types.Tconstr _
+  | Types.Tvar _ | Types.Tunivar _ | Types.Tobject _ | Types.Tpoly _
+  | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
+  | Types.Tsubst _ -> assert false
+
+let print_type_scheme ppf t =
+  if need_parent t then
+    Format.fprintf ppf "(%a)" Printtyp.shared_type_scheme t
+  else
+    Printtyp.shared_type_scheme ppf t
+
+let print_type_param decl ppf (param,v) =
+  (* HACK: we print type parameters as type expressions, and amend ["'_"] to ["_"] *)
+  let ty = Format.asprintf "%a" Printtyp.shared_type_scheme param in
+  let ty = if ty = "'_" then "_" else ty in
+  let var = string_of_variance decl v in
+  if need_parent param then
+    Format.fprintf  ppf "(%s%s)" var ty
+  else
+    Format.fprintf ppf "%s%s" var ty
+
+let raw_string_of_type_list sep elt ppf type_list =
+  let pp_sep ppf () = Format.fprintf ppf "@,%s" sep in
+  Format.fprintf ppf "@[<hov 2>%a@]"
+    (Format.pp_print_list ~pp_sep elt) type_list
 
 let string_of_type_list ?par sep type_list =
   let par =
@@ -90,9 +85,9 @@ let string_of_type_list ?par sep type_list =
           [] | [_] -> false
         | _ -> true
   in
-  Printf.sprintf "%s%s%s"
+  Format.asprintf "%s%a%s"
     (if par then "(" else "")
-    (raw_string_of_type_list sep (List.map (fun t -> ("", t)) type_list))
+    (raw_string_of_type_list sep print_type_scheme) type_list
     (if par then ")" else "")
 
 let string_of_type_param_list t =
@@ -101,14 +96,10 @@ let string_of_type_param_list t =
       [] | [_] -> false
     | _ -> true
   in
-  Printf.sprintf "%s%s%s"
+  Format.asprintf "%s%a%s"
     (if par then "(" else "")
-    (raw_string_of_type_list ", "
-       (List.map
-          (fun (typ, co, cn) -> (string_of_variance t (co, cn), typ))
+    (raw_string_of_type_list ", " @@ print_type_param t)
           t.Odoc_type.ty_parameters
-       )
-    )
     (if par then ")" else "")
 
 let string_of_type_extension_param_list te =
@@ -117,14 +108,10 @@ let string_of_type_extension_param_list te =
       [] | [_] -> false
     | _ -> true
   in
-  Printf.sprintf "%s%s%s"
+  Format.asprintf "%s%a%s"
     (if par then "(" else "")
-    (raw_string_of_type_list ", "
-       (List.map
-          (fun typ -> ("", typ))
+    (raw_string_of_type_list ", " print_type_scheme)
           te.Odoc_extension.te_type_parameters
-       )
-    )
     (if par then ")" else "")
 
 
@@ -134,14 +121,10 @@ let string_of_class_type_param_list l =
       [] | [_] -> false
     | _ -> true
   in
-  Printf.sprintf "%s%s%s"
+  Format.asprintf "%s%a%s"
     (if par then "[" else "")
-    (raw_string_of_type_list ", "
-       (List.map
-          (fun typ -> ("", typ))
-          l
-       )
-    )
+    (raw_string_of_type_list ", " print_type_scheme)
+    l
     (if par then "]" else "")
 
 let string_of_class_params c =
@@ -199,8 +182,8 @@ let string_of_type t =
    let priv = bool_of_private t.M.ty_private in
    let parameters_str =
      String.concat " " (
-       List.map (fun (p, co, cn) ->
-         (string_of_variance t (co, cn)) ^ (Odoc_print.string_of_type_expr p)
+       List.map (fun (p, v) ->
+         (string_of_variance t v) ^ (Odoc_print.string_of_type_expr p)
        ) t.M.ty_parameters
      )
    in

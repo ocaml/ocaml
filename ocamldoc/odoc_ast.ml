@@ -1228,10 +1228,7 @@ module Analyser =
                       ty_name = complete_name ;
                       ty_info = com_opt ;
                       ty_parameters =
-                      List.map2
-                       (fun p v ->
-                         let (co, cn) = Types.Variance.get_upper v in
-                         (Odoc_env.subst_type env p, co, cn))
+                      List.map2 (fun p v -> Odoc_env.subst_type env p, v)
                        tt_type_decl.Types.type_params
                        tt_type_decl.Types.type_variance ;
                       ty_kind = kind ;
