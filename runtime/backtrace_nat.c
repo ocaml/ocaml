@@ -47,9 +47,9 @@ frame_descr * caml_next_frame_descriptor
     }
 
     /* Skip to next frame */
-    if (!FRAME_CHUNK_TOP(d)) {
+    if (!frame_return_to_C(d)) {
       /* Regular frame, update sp/pc and return the frame descriptor */
-      *sp += FRAME_SIZE(d);
+      *sp += frame_size(d);
       *pc = Saved_return_address(*sp);
       return d;
     } else {
@@ -222,16 +222,17 @@ debuginfo caml_debuginfo_extract(backtrace_slot slot)
   uint32_t debuginfo_offset;
   frame_descr * d = (frame_descr *)slot;
 
-  /* The special frames marking the top of an ML stack chunk are never
-     returned by caml_next_frame_descriptor, so should never reach here. */
-  CAMLassert(!FRAME_CHUNK_TOP(d));
+  /* The special frames marking returns from Caml to C are never
+     returned by caml_next_frame_descriptor, so should never reach
+     here. */
+  CAMLassert(!frame_return_to_C(d));
 
-  if (!FRAME_HAS_DEBUG(d)) {
+  if (!frame_has_debug(d)) {
     return NULL;
   }
   /* Recover debugging info */
   infoptr = (unsigned char*)&d->live_ofs[d->num_live];
-  if (FRAME_HAS_ALLOC(d)) {
+  if (frame_has_allocs(d)) {
     /* skip alloc_lengths */
     infoptr += *infoptr + 1;
     /* align to 32 bits */

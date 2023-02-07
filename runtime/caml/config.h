@@ -49,6 +49,7 @@
 #ifndef CAML_CONFIG_H_NO_TYPEDEFS
 
 #include <stddef.h>
+#include <stdbool.h>
 
 #if defined(HAS_LOCALE_H) || defined(HAS_XLOCALE_H)
 #define HAS_LOCALE

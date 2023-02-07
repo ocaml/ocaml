@@ -248,7 +248,7 @@ next_chunk:
   while(1) {
     d = caml_find_frame_descr(fds, retaddr);
     CAMLassert(d);
-    if (!FRAME_CHUNK_TOP(d)) {
+    if (!frame_return_to_C(d)) {
       /* Scan the roots in this frame */
       for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
         ofs = *p;
@@ -260,7 +260,7 @@ next_chunk:
         f (fdata, *root, root);
       }
       /* Move to next frame */
-      sp += FRAME_SIZE(d);
+      sp += frame_size(d);
       retaddr = Saved_return_address(sp);
       /* XXX KC: disabled already scanned optimization. */
     } else {
