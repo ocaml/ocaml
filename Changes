@@ -133,6 +133,10 @@ Working version
   with examples and sections to group related functions.
   (Kiran Gopinathan, review by Daniel Bünzli and Xavier Leroy)
 
+- #11878, #11965: Prevent seek_in from marking buffer data as valid after
+  closing the channel. This could lead to inputting uninitialized bytes.
+  (Samuel Hym, review by Xavier Leroy and Olivier Nicole)
+
 - #11848: Add `List.find_mapi`, `List.find_index`, `Seq.find_mapi`,
   `Seq.find_index`, `Array.find_mapi`, `Array.find_index`,
   `Float.Array.find_opt`, `Float.Array.find_index`, `Float.Array.find_map`,
