@@ -793,7 +793,8 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
 /* Find which event has the given name using the list of globally known events.
    If the event is not globally known but the type is one of the known types,
    then it can be partially reconstructed, the only missing information being
-   the associated tag.  */
+   the associated tag. This function returns an event structure, except when the
+   event is unknown and the event type id is EV_USER_ML_TYPE_CUSTOM. */
 CAMLprim value caml_runtime_events_user_resolve(
   char* event_name, ev_user_ml_type event_type_id)
 {
@@ -833,5 +834,5 @@ CAMLprim value caml_runtime_events_user_resolve(
 
 
   CAMLdrop;
-  return (value) NULL;
+  return (value) Val_none;
 }
