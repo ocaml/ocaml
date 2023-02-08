@@ -20,6 +20,10 @@ Working version
 
 ### Runtime system:
 
+- #12001: Fix book keeping for last finalisers during the minor cycle
+  (KC Sivaramakrishnan and Enguerrand Decorne, report by Guillaume Bury
+   and Vincent Laviron, review by Sadiq Jaffer and KC Sivaramakrishnan)
+
 - #11919: New runtime events counters for major heap stats and minor heap
   resizing.
   (Sadiq Jaffer, review by Gabriel Scherer and David Allsopp)
