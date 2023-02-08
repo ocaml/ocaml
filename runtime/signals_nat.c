@@ -57,7 +57,7 @@ void caml_garbage_collection(void)
   { /* Find the frame descriptor for the current allocation */
     d = caml_find_frame_descr(fds, retaddr);
     /* Must be an allocation frame */
-    CAMLassert(d && d->frame_size != 0xFFFF && (d->frame_size & 2));
+    CAMLassert(d && !frame_return_to_C(d) && frame_has_allocs(d));
   }
 
   { /* Compute the total allocation size at this point,

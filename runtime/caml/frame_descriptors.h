@@ -23,23 +23,77 @@
 
 #include "config.h"
 
-#define Hash_retaddr(addr, mask)                          \
-  (((uintnat)(addr) >> 3) & (mask))
+/* The compiler generates a "frame descriptor" for every potential
+ * return address. Each loaded module has a block of memory, the
+ * "frame table", consisting of these frame descriptors
+ * concatenated. Each frame descriptor includes:
+ *
+ * - frame_return_to_C(): Whether the return is to C from OCaml, in
+ *   which case there is no actual stack frame, GC roots, allocation
+ *   sizes, or debug info.  See caml_system.frametable in the various
+ *   architecture-specific OCaml/C interfaces.
+ *
+ * - frame_size(): The stack frame size, in bytes. All stack frames
+ *   are word-aligned so we also store information in the bottom two
+ *   bits:
+ *
+ * - frame_has_allocs(): Whether it is the return address of a call
+ *   into the garbage collector, and if so the sizes of all objects to
+ *   be allocated by this call. Each size is stored reduced by 1, so
+ *   that a single byte can record sizes (wosize) from 1 to 256 words.
+ *
+ * - frame_has_debug(): Whether we have debug information for this
+ *   stack frame, and if so the "debuginfo" (source location) of this
+ *   return address. (If frame_has_allocs(), this is an array of
+ *   debuginfo, one for each of the set of allocations performed by
+ *   this GC entry).
+ *
+ * - the register or stack frame offset of every "live" value,
+ *   which should be scanned by the garbage collector if a GC is
+ *   performed at this point.
+ */
 
-/* Structure of frame descriptors */
+#define FRAME_DESCRIPTOR_DEBUG 1
+#define FRAME_DESCRIPTOR_ALLOC 2
+#define FRAME_DESCRIPTOR_FLAGS 3
+#define FRAME_RETURN_TO_C 0xFFFF
 
 typedef struct {
   uintnat retaddr;
-  unsigned short frame_size;
-  unsigned short num_live;
-  unsigned short live_ofs[1 /* num_live */];
+  uint16_t frame_data; /* frame size and various flags */
+  uint16_t num_live;
+  uint16_t live_ofs[1 /* num_live */];
   /*
-    If frame_size & 1, then debug info follows:
-  uint32_t debug_info_offset;
-    Debug info is stored as a relative offset to a debuginfo structure. */
+    If frame_has_allocs(), alloc lengths follow:
+        uint8_t num_allocs;
+        uint8_t alloc[num_allocs];
+
+    If frame_has_debug(), debug info follows (32-bit aligned):
+        uint32_t debug_info[frame_has_allocs() ? num_allocs : 1];
+
+    Debug info is stored as a relative offset, in bytes, from the
+    debug_info itself to a debuginfo structure. */
 } frame_descr;
 
-/* Allocation lengths are encoded as 0-255, giving sizes 1-256 */
+Caml_inline bool frame_return_to_C(frame_descr *d) {
+  return d->frame_data == 0xFFFF;
+}
+
+Caml_inline uint16_t frame_size(frame_descr *d) {
+  return d->frame_data &~ FRAME_DESCRIPTOR_FLAGS;
+}
+
+Caml_inline bool frame_has_allocs(frame_descr *d) {
+  return (d->frame_data & FRAME_DESCRIPTOR_ALLOC) != 0;
+}
+
+Caml_inline bool frame_has_debug(frame_descr *d) {
+  return (d->frame_data & FRAME_DESCRIPTOR_DEBUG) != 0;
+}
+
+/* Allocation lengths are encoded reduced by one, so values 0-255 mean
+ * sizes 1-256 words. */
+
 #define Wosize_encoded_alloc_len(n) ((uintnat)(n) + 1)
 
 /* Used to compute offsets in frame tables.
@@ -47,11 +101,13 @@ typedef struct {
 #define Align_to(p, ty) \
   (void*)(((uintnat)(p) + sizeof(ty) - 1) & -sizeof(ty))
 
+#define Hash_retaddr(addr, mask)                          \
+  (((uintnat)(addr) >> 3) & (mask))
 
 void caml_init_frame_descriptors(void);
 void caml_register_frametables(void **tables, int ntables);
 
-/* a linked list of frametabless */
+/* a linked list of frametables */
 typedef struct caml_frametable_list {
   intnat* frametable;
   struct caml_frametable_list *next;
