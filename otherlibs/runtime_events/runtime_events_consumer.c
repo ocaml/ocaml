@@ -1044,6 +1044,14 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
   event = caml_runtime_events_user_resolve_cached(wrapper_root, event_id,
                                                                 event_name,
                                     EV_USER_ML_TYPE_CUSTOM);
+
+  // the function may return Val_none if the event is unknown
+  // (see caml_runtime_events_user_resolve)
+  if (event == Val_none) {
+    CAMLdrop;
+    return 1;
+  }
+
   event_type = Field(event, 2);
 
   callback_list = user_events_find_callback_list_for_event_type(callbacks_root,

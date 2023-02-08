@@ -13,6 +13,9 @@ type User.tag += Ev of int
 let ev0 =
   User.register "ev0" (Ev 0) Type.int
 
+let custom_unit_type =
+  Type.register ~encode:(fun buf () -> 0) ~decode:(fun buf sz -> ())
+
 let () =
   start ();
   let parent_cwd = Sys.getcwd () in
@@ -23,11 +26,14 @@ let () =
     let ev1 = User.register "ev1" (Ev 1) Type.int in
     let ev2 = User.register "ev2" (Ev 2) Type.int in
     let ev3 = User.register "ev3" (Ev 3) Type.span in
+    let ev4 = User.register "ev4" (Ev 4) custom_unit_type in
+
     User.write ev0 17;
     User.write ev1 12;
     User.write ev2 28;
     User.write ev3 Begin;
-    User.write ev3 End
+    User.write ev3 End;
+    User.write ev4 ()
   end
   else
   (* parent consumes events *)
