@@ -2311,6 +2311,11 @@ and type_one_application ~ctx:(apply_loc,md_f,args)
         | None -> ()
         | Some arg ->
           if arg.is_syntactic_unit then
+            (* this call to warning_scope allows e.g.
+               [ F (struct end [@warning "-73"]) ]
+               not to warn; useful when generating code that must
+               work over multiple versions of OCaml *)
+            Builtin_attributes.warning_scope arg.arg.mod_attributes @@ fun () ->
             Location.prerr_warning arg.arg.mod_loc
               Warnings.Generative_application_expects_unit
           else
@@ -2325,22 +2330,20 @@ and type_one_application ~ctx:(apply_loc,md_f,args)
         mod_loc = funct.mod_loc },
       Shape.app funct_shape ~arg:Shape.dummy_mod
   | Mty_functor (Named (param, mty_param), mty_res) as mty_functor ->
-      begin match app_view with
-      | { arg = None; _ } ->
+      let apply_error () =
         let args = List.map simplify_app_summary args in
         let mty_f = md_f.mod_type in
         let lid_app = None in
         raise(Includemod.Apply_error {loc=apply_loc;env;lid_app;mty_f;args})
+      in
+      begin match app_view with
+      | { arg = None; _ } -> apply_error ()
       | { loc = app_loc; attributes = app_attributes;
           arg = Some { shape = app_shape; path = arg_path; arg } } ->
       let coercion =
         try Includemod.modtypes
               ~loc:arg.mod_loc ~mark:Mark_both env arg.mod_type mty_param
-        with Includemod.Error _ ->
-          let args = List.map simplify_app_summary args in
-          let mty_f = md_f.mod_type in
-          let lid_app = None in
-          raise(Includemod.Apply_error {loc=apply_loc;env;lid_app;mty_f;args})
+        with Includemod.Error _ -> apply_error ()
       in
       let mty_appl =
         match arg_path with

@@ -105,3 +105,11 @@ module Y : functor (X : sig end) (Y : sig end) (Z : sig end) -> sig end
 module Z : sig end -> sig end -> sig end -> sig end
 module GZ : functor (X : sig end) () (Z : sig end) -> sig end
 |}];;
+
+(* disabling warning 73 in the argument *)
+module F5 () = struct end;;
+module No_warn = F5 (struct end [@warning "-73"])
+
+[%%expect{|
+success
+|}]
