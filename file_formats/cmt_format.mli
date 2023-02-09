@@ -57,11 +57,10 @@ type uid_fragment =
   | Extension_constructor of extension_constructor
   | Module_binding of module_binding
   | Module_declaration of module_declaration
-  | Tmodule_declaration of Types.module_declaration * string option Location.loc
   | Module_type_declaration of module_type_declaration
   | Type_declaration of type_declaration
+  | Value_binding of value_binding
   | Value_description of value_description
-  | Tvalue_description of Types.value_description * string option Location.loc
 
 type cmt_infos = {
   cmt_modname : modname;

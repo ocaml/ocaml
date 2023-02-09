@@ -783,12 +783,20 @@ let pat_bound_idents pat =
 
 let rev_let_bound_idents_full bindings =
   let idents_full = ref [] in
-  let add id_full = idents_full := id_full :: !idents_full in
-  List.iter (fun vb -> iter_bound_idents add vb.vb_pat) bindings;
+  let add vb id_full = idents_full := (vb, id_full) :: !idents_full in
+  List.iter (fun vb -> iter_bound_idents (add vb) vb.vb_pat) bindings;
   !idents_full
 
-let let_bound_idents_full bindings =
+let rev_full idents_full =
+  List.rev_map (fun (_vb, full) -> full) idents_full
+
+let rev_only_idents idents_full =
+  List.rev_map (fun (_vb, (id,_,_)) -> id) idents_full
+
+let let_bound_idents_full_with_bindings bindings =
   List.rev (rev_let_bound_idents_full bindings)
+let let_bound_idents_full bindings =
+  rev_full (rev_let_bound_idents_full bindings)
 let let_bound_idents pat =
   rev_only_idents (rev_let_bound_idents_full pat)
 
