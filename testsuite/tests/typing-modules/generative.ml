@@ -111,5 +111,6 @@ module F5 () = struct end;;
 module No_warn = F5 (struct end [@warning "-73"])
 
 [%%expect{|
-success
+module F5 : functor () -> sig end
+module No_warn : sig end
 |}]
