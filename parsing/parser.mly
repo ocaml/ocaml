@@ -641,6 +641,9 @@ let mk_directive ~loc name arg =
    string that will not trigger a syntax error; see how [not_expecting]
    is used in the definition of [type_variance]. */
 
+%token DOTLESS                ".<"  /* NNN */
+%token GREATERDOT             ">."  /* NNN */
+%token DOTTILDE               ".~"  /* NNN */
 %token AMPERAMPER             "&&"
 %token AMPERSAND              "&"
 %token AND                    "and"
@@ -833,6 +836,8 @@ The precedences must be listed from low to high.
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
           NEW PREFIXOP STRING TRUE UIDENT
           LBRACKETPERCENT QUOTED_STRING_EXPR
+          DOTLESS DOTTILDE             /* NNN */
+
 
 
 /* Entry points */
@@ -2493,6 +2498,10 @@ simple_expr:
   | mod_longident DOT
     LPAREN MODULE ext_attributes module_expr COLON error
       { unclosed "(" $loc($3) ")" $loc($8) }
+  | DOTLESS e = seq_expr GREATERDOT                 /* NNN */
+      { Pexp_bracket e }                              /* NNN */
+  | DOTTILDE e = simple_expr                        /* NNN */
+      { Pexp_escape e }                               /* NNN */
 ;
 labeled_simple_expr:
     simple_expr %prec below_HASH

@@ -299,6 +299,10 @@ and rw_exp iflag sexp =
       rewrite_exp iflag body
   | Pexp_extension _ -> ()
   | Pexp_unreachable -> ()
+  (* NNN begin *)
+  (* Handle metaocaml expressions in the same way as extensions *)
+  | Pexp_bracket _ | Pexp_escape _ -> ()
+  (* NNN end *)
 
 and rewrite_ifbody iflag ghost sifbody =
   if !instr_if && not ghost then

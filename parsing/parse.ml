@@ -147,6 +147,10 @@ let prepare_error err =
          @{<hint>Hint@}: Mutable sequences of bytes are available in \
          the Bytes module.\n\
          @{<hint>Hint@}: Did you mean to use 'Bytes.set'?"
+  | Uninterpreted_metaocaml_expression loc ->
+      Location.errorf ~loc
+        "Uninterpreted MetaOCaml expression."
+
 let () =
   Location.register_error_of_exn
     (function

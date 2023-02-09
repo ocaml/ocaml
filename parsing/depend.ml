@@ -95,6 +95,10 @@ let handle_extension ext =
   | _ ->
     ()
 
+let handle_metaocaml_expression _e = 
+  (* For now we treat metaocaml expressions like extensions *)
+  ()
+
 let rec add_type bv ty =
   match ty.ptyp_desc with
     Ptyp_any -> ()
@@ -270,6 +274,7 @@ let rec add_expr bv exp =
       end
   | Pexp_extension e -> handle_extension e
   | Pexp_unreachable -> ()
+  | Pexp_bracket e | Pexp_escape e -> handle_metaocaml_expression e
 
 and add_cases bv cases =
   List.iter (add_case bv) cases

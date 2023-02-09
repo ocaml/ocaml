@@ -340,6 +340,8 @@ let identchar_latin1 =
 
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
+let symbolcharnodot =
+  ['!' '$' '%' '&' '*' '+' '-'     '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
 let dotsymbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '/' ':' '=' '>' '?' '@' '^' '|']
 let symbolchar_or_hash =
@@ -387,9 +389,9 @@ rule token = parse
       { UNDERSCORE }
   | "~"
       { TILDE }
-  | ".~"
-      { error lexbuf
-          (Reserved_sequence (".~", Some "is reserved for use in MetaOCaml")) }
+  | ".<" { DOTLESS }     (* NNN *)
+  | ">." { GREATERDOT }  (* NNN *)
+  | ".~" { DOTTILDE }    (* NNN *)
   | "~" (lowercase identchar * as name) ':'
       { check_label_name lexbuf name;
         LABEL name }
@@ -562,8 +564,12 @@ rule token = parse
             { PREFIXOP op }
   | ['~' '?'] symbolchar_or_hash + as op
             { PREFIXOP op }
-  | ['=' '<' '>' '|' '&' '$'] symbolchar * as op
-            { INFIXOP0 op }
+  (* NNN The following is needed for the case >.>.
+     NNN So it will parse as two closing brackets rather that INFIXOP0 *)
+  | ['=' '<' '|' '&' '$'] symbolchar * as op(* NNN: ">." is not INFIXOP0 *)
+             { INFIXOP0 op }
+  | ['>'] symbolcharnodot symbolchar * as op    (* NNN exclude ">." case *)
+            { INFIXOP0 op }                     (* NNN *)
   | ['@' '^'] symbolchar * as op
             { INFIXOP1 op }
   | ['+' '-'] symbolchar * as op

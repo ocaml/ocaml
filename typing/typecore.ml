@@ -3952,6 +3952,8 @@ and type_expect_
            exp_type = instance ty_expected;
            exp_attributes = sexp.pexp_attributes;
            exp_env = env }
+  | Pexp_bracket _ | Pexp_escape _ ->
+      Syntaxerr.uninterpreted_metaocaml_expression loc
 
 and type_ident env ?(recarg=Rejected) lid =
   let (path, desc) = Env.lookup_value ~loc:lid.loc lid.txt env in
