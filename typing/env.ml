@@ -516,6 +516,7 @@ type type_descriptions = type_descr_kind
 let in_signature_flag = 0x01
 
 type ts = {
+  values: (value_entry, value_data) IdTbl.t;
   constrs: constructor_data TycompTbl.t;
   labels: label_data TycompTbl.t;
   types: (type_data, type_data) IdTbl.t;
@@ -529,7 +530,6 @@ type ts = {
 }
 
 and t = {
-  values: (value_entry, value_data) IdTbl.t;
   sub: ts;
   summary: summary;
 }
@@ -713,6 +713,7 @@ let check_shadowing env = function
 
 let empty = {
   sub = {
+    values = IdTbl.empty;
     constrs = TycompTbl.empty;
     labels = TycompTbl.empty; types = IdTbl.empty;
     modules = IdTbl.empty; modtypes = IdTbl.empty;
@@ -721,7 +722,6 @@ let empty = {
     local_constraints = Path.Map.empty;
     flags = 0;
   };
-  values = IdTbl.empty;
   summary = Env_empty;
  }
 
@@ -751,11 +751,11 @@ let is_local_ext cda =
   end
   | _ -> false
 
-let diff env1 env2 =
+let diff {sub=env1;_} {sub=env2;_} =
   IdTbl.diff_keys env1.values env2.values @
-  TycompTbl.diff_keys is_local_ext env1.sub.constrs env2.sub.constrs @
-  IdTbl.diff_keys env1.sub.modules env2.sub.modules @
-  IdTbl.diff_keys env1.sub.classes env2.sub.classes
+  TycompTbl.diff_keys is_local_ext env1.constrs env2.constrs @
+  IdTbl.diff_keys env1.modules env2.modules @
+  IdTbl.diff_keys env1.classes env2.classes
 
 (* Functions for use in "wrap" parameters in IdTbl *)
 let wrap_identity x = x
@@ -870,7 +870,7 @@ let add_persistent_structure id env =
       else
         env.sub.modules
     in
-    { env with sub = {env.sub with modules}; summary }
+    { sub = {env.sub with modules}; summary }
   end
 
 let components_of_module ~alerts ~uid env ps path addr mty shape =
@@ -1100,7 +1100,7 @@ let find_strengthened_module ~aliasable path env =
 let find_value_full path env =
   match path with
   | Pident id -> begin
-      match IdTbl.find_same id env.values with
+      match IdTbl.find_same id env.sub.values with
       | Val_bound data -> data
       | Val_unbound _ -> raise Not_found
     end
@@ -1278,7 +1278,7 @@ let find_shape env (ns : Shape.Sig_component_kind.t) id =
   | Extension_constructor ->
       (TycompTbl.find_same id env.sub.constrs).cda_shape
   | Value ->
-      begin match IdTbl.find_same id env.values with
+      begin match IdTbl.find_same id env.sub.values with
       | Val_bound x -> x.vda_shape
       | Val_unbound _ -> raise Not_found
       end
@@ -1454,11 +1454,11 @@ let make_copy_of_types env0 =
         Val_bound { vda with vda_description = desc }
   in
   let values =
-    IdTbl.map f env0.values
+    IdTbl.map f env0.sub.values
   in
   (fun env ->
-     (*if env.values != env0.values then fatal_error "Env.make_copy_of_types";*)
-     {env with values; summary = Env_copy_types env.summary}
+     (*if env.sub.values != env0.sub.values then fatal_error "Env.make_copy_of_types";*)
+     {sub = {env.sub with values}; summary = Env_copy_types env.summary}
   )
 
 (* Iter on an environment (ignoring the body of functors and
@@ -1919,8 +1919,8 @@ and store_value ?check id addr decl shape env =
       vda_address = addr;
       vda_shape = shape }
   in
-  { env with
-    values = IdTbl.add id (Val_bound vda) env.values;
+  {
+    sub = {env.sub with values = IdTbl.add id (Val_bound vda) env.sub.values};
     summary = Env_value(env.summary, id, decl) }
 
 and store_constructor ~check type_decl type_id cstr_id cstr env =
@@ -2019,7 +2019,7 @@ and store_type ~check id info shape env =
       tda_descriptions = descrs;
       tda_shape = shape }
   in
-  { env with
+  {
     sub = {env.sub with types = IdTbl.add id tda env.sub.types};
     summary = Env_type(env.summary, id, info) }
 
@@ -2036,7 +2036,7 @@ and store_type_infos ~tda_shape id info env =
       tda_shape
     }
   in
-  { env with
+  {
     sub = {env.sub with types = IdTbl.add id tda env.sub.types};
     summary = Env_type(env.summary, id, info) }
 
@@ -2073,7 +2073,7 @@ and store_extension ~check ~rebind id addr ext shape env =
              (constructor_usage_complaint ~rebind priv used))
     end;
   end);
-  { env with
+  {
     sub = {env.sub with constrs = TycompTbl.add id cda env.sub.constrs};
     summary = Env_extension(env.summary, id, ext) }
 
@@ -2097,7 +2097,7 @@ and store_module ?(update_summary=true) ~check
   let summary =
     if not update_summary then env.summary
     else Env_module (env.summary, id, presence, force_module_decl md) in
-  { env with
+  {
     sub = {env.sub with modules = IdTbl.add id (Mod_local mda) env.sub.modules};
     summary }
 
@@ -2106,7 +2106,7 @@ and store_modtype ?(update_summary=true) id info shape env =
   let summary =
     if not update_summary then env.summary
     else Env_modtype (env.summary, id, Subst.Lazy.force_modtype_decl info) in
-  { env with
+  {
     sub = {env.sub with modtypes = IdTbl.add id mtda env.sub.modtypes};
     summary }
 
@@ -2116,13 +2116,13 @@ and store_class id addr desc shape env =
       clda_address = addr;
       clda_shape = shape; }
   in
-  { env with
+  {
     sub = {env.sub with classes = IdTbl.add id clda env.sub.classes};
     summary = Env_class(env.summary, id, desc) }
 
 and store_cltype id desc shape env =
   let cltda = { cltda_declaration = desc; cltda_shape = shape } in
-  { env with
+  {
     sub = {env.sub with cltypes = IdTbl.add id cltda env.sub.cltypes};
     summary = Env_cltype(env.summary, id, desc) }
 
@@ -2170,7 +2170,7 @@ let _ =
 (* Insertion of bindings by identifier *)
 
 let add_functor_arg id env =
-  {env with
+  {
    sub = {env.sub with functor_args = Ident.add id () env.sub.functor_args};
    summary = Env_functor_arg (env.summary, id)}
 
@@ -2361,13 +2361,13 @@ let add_signature sg env =
 
 let enter_unbound_value name reason env =
   let id = Ident.create_local name in
-  { env with
-    values = IdTbl.add id (Val_unbound reason) env.values;
+  {
+    sub = {env.sub with values = IdTbl.add id (Val_unbound reason) env.sub.values};
     summary = Env_value_unbound(env.summary, name, reason) }
 
 let enter_unbound_module name reason env =
   let id = Ident.create_local name in
-  { env with
+  {
     sub = {env.sub with modules = IdTbl.add id (Mod_unbound reason) env.sub.modules};
     summary = Env_module_unbound(env.summary, name, reason) }
 
@@ -2385,7 +2385,7 @@ let add_components slot root env0 comps =
     add_l (fun x -> `Label x) comps.comp_labels env0.sub.labels
   in
   let values =
-    add (fun x -> `Value x) comps.comp_values env0.values
+    add (fun x -> `Value x) comps.comp_values env0.sub.values
   in
   let types =
     add (fun x -> `Type x) comps.comp_types env0.sub.types
@@ -2404,9 +2404,9 @@ let add_components slot root env0 comps =
   in
   {
     summary = Env_open(env0.summary, root);
-    values;
     sub = {
       env0.sub with
+      values;
       constrs;
       labels;
       types;
@@ -2453,9 +2453,9 @@ let remove_last_open root env0 =
       and rem tbl = IdTbl.remove_last_open root tbl in
       Some {
              summary;
-             values = rem env0.values;
              sub = {
                env0.sub with
+               values = rem env0.sub.values;
                constrs = rem_l env0.sub.constrs;
                labels = rem_l env0.sub.labels;
                types = rem env0.sub.types;
@@ -2803,7 +2803,7 @@ let lookup_ident_module (type a) (load : a load) ~errors ~use ~loc s env =
     end
 
 let lookup_ident_value ~errors ~use ~loc name env =
-  match IdTbl.find_name wrap_value ~mark:use name env.values with
+  match IdTbl.find_name wrap_value ~mark:use name env.sub.values with
   | (path, Val_bound vda) ->
       use_value ~use ~loc path vda;
       path, vda.vda_description
@@ -3210,7 +3210,7 @@ let find_index_tbl ident tbl  =
   in
   Seq.find_map find_ident @@ Seq.mapi (fun i x -> i,x) lbs
 
-let find_value_index id env = find_index_tbl id env.values
+let find_value_index id env = find_index_tbl id env.sub.values
 let find_type_index id env = find_index_tbl id env.sub.types
 let find_module_index id env = find_index_tbl id env.sub.modules
 let find_modtype_index id env = find_index_tbl id env.sub.modtypes
@@ -3269,7 +3269,7 @@ let lookup_all_labels_from_type ?(use=true) ~loc usage ty_path env =
   lookup_all_labels_from_type ~use ~loc usage ty_path env
 
 let lookup_instance_variable ?(use=true) ~loc name env =
-  match IdTbl.find_name wrap_value ~mark:use name env.values with
+  match IdTbl.find_name wrap_value ~mark:use name env.sub.values with
   | (path, Val_bound vda) -> begin
       let desc = vda.vda_description in
       match desc.val_kind with
@@ -3309,7 +3309,7 @@ let bound wrap proj name env =
   | exception Not_found -> false
 
 let bound_value name env =
-  bound wrap_value (fun env -> env.values) name env
+  bound wrap_value (fun env -> env.sub.values) name env
 
 let bound_type name env =
   bound wrap_identity (fun env -> env.sub.types) name env
@@ -3410,7 +3410,7 @@ let fold_modules f lid env acc =
       end
 
 let fold_values f =
-  find_all wrap_value (fun env -> env.values) (fun sc -> sc.comp_values)
+  find_all wrap_value (fun env -> env.sub.values) (fun sc -> sc.comp_values)
     (fun k p ve acc ->
        match ve with
        | Val_unbound _ -> acc
@@ -3486,7 +3486,7 @@ let filter_non_loaded_persistent f (env : t) =
       | Env_module_unbound _ ->
           map_summary (fun s -> filter_summary s ids) summary
   in
-  { env with
+  {
     sub = {env.sub with modules = remove_ids env.sub.modules to_remove};
     summary = filter_summary env.summary to_remove;
   }
