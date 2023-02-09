@@ -52,11 +52,10 @@ type uid_fragment =
   | Extension_constructor of extension_constructor
   | Module_binding of module_binding
   | Module_declaration of module_declaration
-  | Tmodule_declaration of Types.module_declaration * string option Location.loc
   | Module_type_declaration of module_type_declaration
   | Type_declaration of type_declaration
+  | Value_binding of value_binding
   | Value_description of value_description
-  | Tvalue_description of Types.value_description * string option Location.loc
 
 type cmt_infos = {
   cmt_modname : string;
@@ -86,17 +85,113 @@ let need_to_clear_env =
 
 let keep_only_summary = Env.keep_only_summary
 
-open Tast_mapper
 
+let uid_to_loc : uid_fragment Types.Uid.Tbl.t ref =
+  Local_store.s_table Types.Uid.Tbl.create 16
 
+let register_uid uid fragment =
+  Types.Uid.Tbl.add !uid_to_loc uid fragment
 
 let rec tast_map =
+  let open Tast_mapper in
   let env_mapper =
-    if need_to_clear_env then (fun _sub env -> keep_only_summary env)
-    else Tast_mapper.default.env
+    { default with env =
+        if need_to_clear_env then (fun _sub env -> keep_only_summary env)
+        else Tast_mapper.default.env }
   in
-  fun ~env:_ () ->
-  {Tast_mapper.default with env = env_mapper }
+  fun ~env () -> { env_mapper with
+
+  signature = (fun _sub ({sig_final_env; _} as x) ->
+    let sub = tast_map ~env:sig_final_env () in
+    let sig_final_env = sub.env sub x.sig_final_env in
+    let sig_items = List.map (sub.signature_item sub) x.sig_items in
+    {x with sig_items; sig_final_env});
+
+  structure = (fun _sub {str_items; str_type; str_final_env} ->
+    let sub = tast_map ~env:str_final_env () in
+    {
+      str_items = List.map (sub.structure_item sub) str_items;
+      str_final_env = sub.env sub str_final_env;
+      str_type;
+    });
+
+  value_bindings = (fun sub bindings ->
+    let bindings = env_mapper.value_bindings sub bindings in
+    let ((_, vbs) as bindings) =
+      env_mapper.value_bindings sub bindings
+    in
+    let bound_idents = let_bound_idents_full_with_bindings vbs in
+    List.iter (fun (vb, (id, _loc, _typ)) ->
+      try
+        let vd = Env.find_value (Pident id) env in
+        register_uid vd.val_uid
+          (Value_binding vb)
+      with Not_found -> ())
+      bound_idents;
+    bindings);
+
+  module_binding = (fun sub mb ->
+    let mb = env_mapper.module_binding sub mb in
+    Option.iter
+      (fun id ->
+        (try
+          let tmd = Env.find_module (Pident id) env in
+          register_uid tmd.md_uid (Module_binding mb);
+        with Not_found -> ()))
+      mb.mb_id;
+    mb);
+
+  module_declaration = (fun sub md ->
+    let md = env_mapper.module_declaration sub md in
+    Option.iter
+      (fun id -> try
+        let tmd = Env.find_module (Pident id) env in
+        register_uid tmd.md_uid (Module_declaration md);
+      with Not_found -> ())
+      md.md_id;
+      md);
+
+  module_type_declaration = (fun sub mtd ->
+    let mtd = env_mapper.module_type_declaration sub mtd in
+    (try
+      let tmt = Env.find_modtype (Pident mtd.mtd_id) env in
+      register_uid tmt.mtd_uid (Module_type_declaration mtd);
+    with Not_found -> ());
+    mtd);
+
+  value_description = (fun sub vd ->
+    let vd = env_mapper.value_description sub vd in
+    register_uid vd.val_val.val_uid (Value_description vd);
+    vd);
+
+  type_declaration = (fun sub td ->
+    let td = env_mapper.type_declaration sub td in
+    register_uid td.typ_type.type_uid (Type_declaration td);
+    td);
+
+  extension_constructor = (fun sub ec ->
+    let ec = env_mapper.extension_constructor sub ec in
+    register_uid ec.ext_type.ext_uid (Extension_constructor ec);
+    ec);
+
+  class_declaration = (fun sub cd ->
+    let cd = env_mapper.class_declaration sub cd in
+    (* a class declaration might be duplicated during typing *)
+    if not (Shape.Uid.Tbl.mem !uid_to_loc cd.ci_decl.cty_uid) then
+      register_uid cd.ci_decl.cty_uid (Class_declaration cd);
+    cd);
+
+  class_type_declaration = (fun sub ctd ->
+    let ctd = env_mapper.class_type_declaration sub ctd in
+    register_uid ctd.ci_decl.cty_uid (Class_type_declaration ctd);
+    ctd);
+
+  class_description =(fun sub cd ->
+    let cd = env_mapper.class_description sub cd in
+    register_uid cd.ci_decl.cty_uid (Class_description cd);
+    cd);
+  }
+
 
 let clear_part =
   function

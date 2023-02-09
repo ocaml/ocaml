@@ -809,6 +809,9 @@ val exists_pattern: (pattern -> bool) -> pattern -> bool
 val let_bound_idents: value_binding list -> Ident.t list
 val let_bound_idents_full:
     value_binding list -> (Ident.t * string loc * Types.type_expr) list
+val let_bound_idents_full_with_bindings:
+    value_binding list -> (value_binding * (Ident.t * string loc * Types.type_expr)) list
+
 
 (** Alpha conversion of patterns *)
 val alpha_pat:
