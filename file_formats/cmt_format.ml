@@ -139,23 +139,6 @@ let clear_env binary_annots =
   | Partial_interface array ->
       Partial_interface (Array.map clear_part array)
 
-let clear_fragment =
-  let cenv = tast_map ~env:Env.empty () in
-  function
-| Class_declaration cd -> Class_declaration (cenv.class_declaration cenv cd)
-| Class_description cd -> Class_description (cenv.class_description cenv cd)
-| Class_type_declaration ctd ->
-    Class_type_declaration (cenv.class_type_declaration cenv ctd)
-| Extension_constructor ec ->
-    Extension_constructor (cenv.extension_constructor cenv ec)
-| Module_binding mb -> Module_binding (cenv.module_binding cenv mb)
-| Module_declaration md -> Module_declaration (cenv.module_declaration cenv md)
-| Module_type_declaration mtd ->
-    Module_type_declaration (cenv.module_type_declaration cenv mtd)
-| Type_declaration td -> Type_declaration (cenv.type_declaration cenv td)
-| Value_description vd -> Value_description (cenv.value_description cenv vd)
-| (Tmodule_declaration _ | Tvalue_description _) as t -> t
-
 exception Error of error
 
 let input_cmt ic = (input_value ic : cmt_infos)
@@ -216,14 +199,6 @@ let set_saved_types l = saved_types := l
 let record_value_dependency vd1 vd2 =
   if vd1.Types.val_loc <> vd2.Types.val_loc then
     value_deps := (vd1, vd2) :: !value_deps
-
-let uid_to_loc : uid_fragment Types.Uid.Tbl.t ref =
-  Local_store.s_table Types.Uid.Tbl.create 16
-
-let register_uid uid fragment =
-  Types.Uid.Tbl.add !uid_to_loc uid @@ clear_fragment fragment
-
-let () = Env.clear_uid_tbl := fun () -> Types.Uid.Tbl.clear !uid_to_loc
 
 let save_cmt filename modname binary_annots sourcefile initial_env cmi shape =
   if !Clflags.binary_annotations && not !Clflags.print_types then begin
