@@ -125,8 +125,6 @@ val set_saved_types : binary_part list -> unit
 val record_value_dependency:
   Types.value_description -> Types.value_description -> unit
 
-val register_uid : Shape.Uid.t -> uid_fragment -> unit
-
 (*
 
   val is_magic_number : string -> bool
