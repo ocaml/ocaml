@@ -158,6 +158,7 @@ type summary =
   | Env_open of summary * Path.t
   | Env_functor_arg of summary * Ident.t
   | Env_constraints of summary * type_declaration Path.Map.t
+  | Env_in_signature of summary
   | Env_copy_types of summary
   | Env_persistent of summary * Ident.t
   | Env_value_unbound of summary * string * value_unbound_reason
@@ -175,6 +176,7 @@ let map_summary f = function
   | Env_open (s, p) -> Env_open (f s, p)
   | Env_functor_arg (s, id) -> Env_functor_arg (f s, id)
   | Env_constraints (s, m) -> Env_constraints (f s, m)
+  | Env_in_signature s -> Env_in_signature (f s)
   | Env_copy_types s -> Env_copy_types (f s)
   | Env_persistent (s, id) -> Env_persistent (f s, id)
   | Env_value_unbound (s, u, r) -> Env_value_unbound (f s, u, r)
@@ -522,14 +524,14 @@ type ts = {
   classes: (class_data, class_data) IdTbl.t;
   cltypes: (cltype_data, cltype_data) IdTbl.t;
   functor_args: unit Ident.tbl;
+  local_constraints: type_declaration Path.Map.t;
+  flags: int;
 }
 
 and t = {
   values: (value_entry, value_data) IdTbl.t;
   sub: ts;
   summary: summary;
-  local_constraints: type_declaration Path.Map.t;
-  flags: int;
 }
 
 and module_components =
@@ -716,23 +718,24 @@ let empty = {
     modules = IdTbl.empty; modtypes = IdTbl.empty;
     classes = IdTbl.empty; cltypes = IdTbl.empty;
     functor_args = Ident.empty;
+    local_constraints = Path.Map.empty;
+    flags = 0;
   };
   values = IdTbl.empty;
-  summary = Env_empty; local_constraints = Path.Map.empty;
-  flags = 0;
+  summary = Env_empty;
  }
 
 let in_signature b env =
   let flags =
-    if b then env.flags lor in_signature_flag
-    else env.flags land (lnot in_signature_flag)
+    if b then env.sub.flags lor in_signature_flag
+    else env.sub.flags land (lnot in_signature_flag)
   in
-  {env with flags}
+  {env with sub={env.sub with flags}}
 
-let is_in_signature env = env.flags land in_signature_flag <> 0
+let is_in_signature env = env.sub.flags land in_signature_flag <> 0
 
 let has_local_constraints env =
-  not (Path.Map.is_empty env.local_constraints)
+  not (Path.Map.is_empty env.sub.local_constraints)
 
 let is_ext cda =
   match cda.cda_description with
@@ -1136,7 +1139,7 @@ let type_of_cstr path = function
   | _ -> assert false
 
 let rec find_type_data path env =
-  match Path.Map.find path env.local_constraints with
+  match Path.Map.find path env.sub.local_constraints with
   | decl ->
     {
       tda_declaration = decl;
@@ -2238,7 +2241,8 @@ let add_module_lazy ~update_summary id presence mty env =
 
 let add_local_type path info env =
   { env with
-    local_constraints = Path.Map.add path info env.local_constraints }
+    sub = {env.sub with local_constraints = Path.Map.add path info env.sub.local_constraints }
+  }
 
 (* Non-lazy version of scrape_alias *)
 let scrape_alias t mty =
@@ -2398,7 +2402,7 @@ let add_components slot root env0 comps =
   let modules =
     add (fun x -> `Module x) comps.comp_modules env0.sub.modules
   in
-  { env0 with
+  {
     summary = Env_open(env0.summary, root);
     values;
     sub = {
@@ -2436,6 +2440,7 @@ let remove_last_open root env0 =
     | Env_cltype _
     | Env_functor_arg _
     | Env_constraints _
+    | Env_in_signature _
     | Env_persistent _
     | Env_copy_types _
     | Env_value_unbound _
@@ -2446,7 +2451,7 @@ let remove_last_open root env0 =
   | summary ->
       let rem_l tbl = TycompTbl.remove_last_open root tbl
       and rem tbl = IdTbl.remove_last_open root tbl in
-      Some { env0 with
+      Some {
              summary;
              values = rem env0.values;
              sub = {
@@ -3474,6 +3479,7 @@ let filter_non_loaded_persistent f (env : t) =
       | Env_open _
       | Env_functor_arg _
       | Env_constraints _
+      | Env_in_signature _
       | Env_copy_types _
       | Env_persistent _
       | Env_value_unbound _
@@ -3488,8 +3494,13 @@ let filter_non_loaded_persistent f (env : t) =
 (* Return the environment summary *)
 
 let summary env =
-  if Path.Map.is_empty env.local_constraints then env.summary
-  else Env_constraints (env.summary, env.local_constraints)
+  let summary = env.summary in
+  let summary =
+    if Path.Map.is_empty env.sub.local_constraints then summary
+    else Env_constraints (summary, env.sub.local_constraints)
+  in
+  if is_in_signature env then Env_in_signature summary
+  else summary
 
 let last_env = s_ref empty
 let last_reduced_env = s_ref empty
@@ -3500,9 +3511,7 @@ let keep_only_summary env =
     let new_env =
       {
        empty with
-       summary = env.summary;
-       local_constraints = env.local_constraints;
-       flags = env.flags;
+       summary = summary env;
       }
     in
     last_env := env;
@@ -3512,11 +3521,7 @@ let keep_only_summary env =
 
 
 let env_of_only_summary env_from_summary env =
-  let new_env = env_from_summary env.summary Subst.identity in
-  { new_env with
-    local_constraints = env.local_constraints;
-    flags = env.flags;
-  }
+  env_from_summary env.summary Subst.identity
 
 (* Error report *)
 
