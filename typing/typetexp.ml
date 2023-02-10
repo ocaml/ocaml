@@ -118,15 +118,11 @@ end = struct
 
   (* These are the "global" type variables: they were in scope before
      we started processing the current type.
-
-     INVARIANT: No types at generic_level.
   *)
   let type_variables = ref (TyVarMap.empty : type_expr TyVarMap.t)
 
   (* These are variables that have been used in the currently-being-checked
      type.
-
-     INVARIANT: No types at generic_level.
   *)
   let used_variables =
     ref (TyVarMap.empty : (type_expr * Location.t) TyVarMap.t)
@@ -136,8 +132,6 @@ end = struct
      just birth them as univars? Because they might successfully unify with a
      row variable in the ['a. < m : ty; .. > as 'a] idiom.  They are like the
      [used_variables], but will not be globalized in [globalize_used_variables].
-
-     INVARIANT: No types at generic_level.
   *)
   let univars = ref ([] : (string * type_expr) list)
   let assert_univars uvs =
@@ -146,8 +140,6 @@ end = struct
   (* These are variables that will become univars when we're done with the
      current type. Used to force free variables in method types to become
      univars.
-
-     INVARIANT: No types at generic_level.
   *)
   let pre_univars = ref ([] : type_expr list)
 
