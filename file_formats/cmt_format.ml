@@ -36,14 +36,14 @@ type binary_annots =
   | Partial_interface of binary_part array
 
 and binary_part =
-| Partial_structure of structure
-| Partial_structure_item of structure_item
-| Partial_expression of expression
-| Partial_pattern : 'k pattern_category * 'k general_pattern -> binary_part
-| Partial_class_expr of class_expr
-| Partial_signature of signature
-| Partial_signature_item of signature_item
-| Partial_module_type of module_type
+  | Partial_structure of structure
+  | Partial_structure_item of structure_item
+  | Partial_expression of expression
+  | Partial_pattern : 'k pattern_category * 'k general_pattern -> binary_part
+  | Partial_class_expr of class_expr
+  | Partial_signature of signature
+  | Partial_signature_item of signature_item
+  | Partial_module_type of module_type
 
 type uid_fragment =
   | Class_declaration of class_declaration
@@ -191,7 +191,6 @@ let rec tast_map =
     register_uid cd.ci_decl.cty_uid (Class_description cd);
     cd);
   }
-
 
 let clear_part =
   function
