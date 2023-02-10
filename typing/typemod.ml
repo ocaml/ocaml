@@ -1814,11 +1814,13 @@ exception Not_a_path
 let rec path_of_module mexp =
   match mexp.mod_desc with
   | Tmod_ident (p,_) -> p
-  | Tmod_apply(funct, arg, _coe) when !Clflags.applicative_functors ->
+  | Tmod_apply(funct, arg, _coercon) when !Clflags.applicative_functors ->
       Papply(path_of_module funct, path_of_module arg)
   | Tmod_constraint (mexp, _, _, _) ->
       path_of_module mexp
-  | _ -> raise Not_a_path
+  | (Tmod_structure _ | Tmod_functor _ | Tmod_apply_unit _ | Tmod_unpack _ |
+    Tmod_apply _) ->
+    raise Not_a_path
 
 let path_of_module mexp =
  try Some (path_of_module mexp) with Not_a_path -> None
@@ -2339,7 +2341,7 @@ and type_one_application ~ctx:(apply_loc,md_f,args)
       begin match app_view with
       | { arg = None; _ } -> apply_error ()
       | { loc = app_loc; attributes = app_attributes;
-          arg = Some { shape = app_shape; path = arg_path; arg } } ->
+          arg = Some { shape = arg_shape; path = arg_path; arg } } ->
       let coercion =
         try Includemod.modtypes
               ~loc:arg.mod_loc ~mark:Mark_both env arg.mod_type mty_param
@@ -2392,7 +2394,7 @@ and type_one_application ~ctx:(apply_loc,md_f,args)
         mod_env = env;
         mod_attributes = app_attributes;
         mod_loc = app_loc },
-      Shape.app ~arg:app_shape funct_shape
+      Shape.app ~arg:arg_shape funct_shape
     end
   | Mty_alias path ->
       raise(Error(app_view.f_loc, env, Cannot_scrape_alias path))

@@ -25,7 +25,7 @@ Working version
   was made based on the type of `F`. With this patch, we now distinguish
   these two application forms; writing `F (struct end)` for a generative
   functor leads to new warning 73.
-  (Frederic Bour and Richard Eisenberg)
+  (Frederic Bour and Richard Eisenberg, review by Florian Angeletti)
 
 ### Runtime system:
 
