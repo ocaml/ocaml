@@ -875,7 +875,19 @@ and transl_function ~scopes e param cases partial =
   let attr = default_function_attribute in
   let loc = of_location ~scopes e.exp_loc in
   let lam = lfunction ~kind ~params ~return ~body ~attr ~loc in
-  Translattribute.add_function_attributes lam e.exp_loc e.exp_attributes
+  let attrs =
+    (* Collect attributes from the Pexp_newtype node for locally abstract types.
+       Otherwise we'd ignore the attribute in, e.g.:
+           fun [@inline] (type a) x -> ...
+    *)
+    List.fold_left
+      (fun attrs (extra_exp, _, extra_attrs) ->
+         match extra_exp with
+         | Texp_newtype _ -> extra_attrs @ attrs
+         | (Texp_constraint _ | Texp_coerce _ | Texp_poly _) -> attrs)
+      e.exp_attributes e.exp_extra
+  in
+  Translattribute.add_function_attributes lam e.exp_loc attrs
 
 (* Like transl_exp, but used when a new scope was just introduced. *)
 and transl_scoped_exp ~scopes expr =
