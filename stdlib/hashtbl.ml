@@ -18,24 +18,25 @@
 (* We do dynamic hashing, and resize the table and rehash the elements
    when the load factor becomes too high. *)
 
-type ('a, 'b) t =
-  { mutable size: int;                        (* number of entries *)
-    mutable data: ('a, 'b) bucketlist array;  (* the buckets *)
-    seed: int;                        (* for randomization *)
-    mutable initial_size: int;                (* initial array size *)
-  }
+type ('a, 'b) t = {
+  mutable size: int;                        (* number of entries *)
+  mutable data: ('a, 'b) bucketlist array;  (* the buckets *)
+  seed: int;                                (* for randomization *)
+  mutable initial_size: int;                (* initial array size *)
+}
 
 and ('a, 'b) bucketlist =
-    Empty
-  | Cons of { mutable key: 'a;
-              mutable data: 'b;
-              mutable next: ('a, 'b) bucketlist }
+  | Empty
+  | Cons of {
+    mutable key: 'a;
+    mutable data: 'b;
+    mutable next: ('a, 'b) bucketlist;
+  }
 
 (* The sign of initial_size encodes the fact that a traversal is
    ongoing or not.
 
-   This disables the efficient in place implementation of resizing.
-*)
+   This disables the efficient in-place implementation of resizing. *)
 
 let is_old_hashtbl h =
   Obj.size (Obj.repr h) < 4
@@ -100,7 +101,8 @@ let clear h =
 let reset h =
   let len = Array.length h.data in
   if is_old_hashtbl h (* compatibility with old hash tables *)
-    || len = abs h.initial_size then
+  || len = abs h.initial_size
+  then
     clear h
   else begin
     h.size <- 0;
@@ -110,19 +112,19 @@ let reset h =
 let copy_bucketlist = function
   | Empty -> Empty
   | Cons {key; data; next} ->
-      let rec loop prec = function
-        | Empty -> ()
-        | Cons {key; data; next} ->
-            let r = Cons {key; data; next} in
-            begin match prec with
-            | Empty -> assert false
-            | Cons prec ->  prec.next <- r
-            end;
-            loop r next
-      in
-      let r = Cons {key; data; next} in
-      loop r next;
-      r
+    let rec loop prev = function
+      | Empty -> ()
+      | Cons {key; data; next} ->
+        let r = Cons {key; data; next} in
+        begin match prev with
+        | Empty -> assert false
+        | Cons prev ->  prev.next <- r
+        end;
+        loop r next
+    in
+    let r = Cons {key; data; next} in
+    loop r next;
+    r
 
 let copy h = { h with data = Array.map copy_bucketlist h.data }
 
@@ -134,17 +136,14 @@ let insert_all_buckets indexfun inplace odata ndata =
   let rec insert_bucket = function
     | Empty -> ()
     | Cons {key; data; next} as cell ->
-        let cell =
-          if inplace then cell
-          else Cons {key; data; next = Empty}
-        in
-        let nidx = indexfun key in
-        begin match ndata_tail.(nidx) with
-        | Empty -> ndata.(nidx) <- cell;
-        | Cons tail -> tail.next <- cell;
-        end;
-        ndata_tail.(nidx) <- cell;
-        insert_bucket next
+      let cell = if inplace then cell else Cons {key; data; next = Empty} in
+      let nidx = indexfun key in
+      begin match ndata_tail.(nidx) with
+      | Empty -> ndata.(nidx) <- cell;
+      | Cons tail -> tail.next <- cell;
+      end;
+      ndata_tail.(nidx) <- cell;
+      insert_bucket next
   in
   for i = 0 to Array.length odata - 1 do
     insert_bucket odata.(i)
@@ -163,16 +162,15 @@ let resize indexfun h =
   if nsize < Sys.max_array_length then begin
     let ndata = Array.make nsize Empty in
     let inplace = not (ongoing_traversal h) in
-    h.data <- ndata;          (* so that indexfun sees the new bucket count *)
+    h.data <- ndata;  (* so that indexfun sees the new bucket count *)
     insert_all_buckets (indexfun h) inplace odata ndata
   end
 
 let iter f h =
   let rec do_bucket = function
-    | Empty ->
-        ()
-    | Cons{key; data; next} ->
-        f key data; do_bucket next in
+    | Empty -> ()
+    | Cons {key; data; next} -> f key data; do_bucket next
+  in
   protect_traversal h (fun () ->
     let d = h.data in
     for i = 0 to Array.length d - 1 do
@@ -182,23 +180,23 @@ let iter f h =
 
 let rec filter_map_inplace_bucket f h i prec = function
   | Empty ->
-      begin match prec with
-      | Empty -> h.data.(i) <- Empty
-      | Cons c -> c.next <- Empty
-      end
+    begin match prec with
+    | Empty -> h.data.(i) <- Empty
+    | Cons c -> c.next <- Empty
+    end
   | (Cons ({key; data; next} as c)) as slot ->
-      begin match f key data with
-      | None ->
-          h.size <- h.size - 1;
-          filter_map_inplace_bucket f h i prec next
-      | Some data ->
-          begin match prec with
-          | Empty -> h.data.(i) <- slot
-          | Cons c -> c.next <- slot
-          end;
-          c.data <- data;
-          filter_map_inplace_bucket f h i slot next
-      end
+    begin match f key data with
+    | None ->
+      h.size <- h.size - 1;
+      filter_map_inplace_bucket f h i prec next
+    | Some data ->
+      begin match prec with
+      | Empty -> h.data.(i) <- slot
+      | Cons c -> c.next <- slot
+      end;
+      c.data <- data;
+      filter_map_inplace_bucket f h i slot next
+    end
 
 let filter_map_inplace f h =
   protect_traversal h (fun () ->
@@ -221,22 +219,25 @@ type statistics = {
   num_bindings: int;
   num_buckets: int;
   max_bucket_length: int;
-  bucket_histogram: int array
+  bucket_histogram: int array;
 }
 
-let rec bucket_length accu = function
-  | Empty -> accu
-  | Cons{next} -> bucket_length (accu + 1) next
+let bucket_length b =
+  let rec loop acc = function
+    | Empty -> acc
+    | Cons {next} -> loop (acc + 1) next
+  in
+  loop 0 b
 
 let stats h =
   let mbl =
-    Array.fold_left (fun m b -> Int.max m (bucket_length 0 b)) 0 h.data in
+    Array.fold_left (fun m b -> Int.max m (bucket_length b)) 0 h.data
+  in
   let histo = Array.make (mbl + 1) 0 in
-  Array.iter
-    (fun b ->
-      let l = bucket_length 0 b in
-      histo.(l) <- histo.(l) + 1)
-    h.data;
+  h.data |> Array.iter (fun b ->
+    let l = bucket_length b in
+    histo.(l) <- histo.(l) + 1
+  );
   { num_bindings = h.size;
     num_buckets = Array.length h.data;
     max_bucket_length = mbl;
@@ -251,11 +252,11 @@ let to_seq tbl =
   (* state: index * next bucket to traverse *)
   let rec aux i buck () = match buck with
     | Empty ->
-        if i = Array.length tbl_data
-        then Seq.Nil
-        else aux(i+1) tbl_data.(i) ()
+      if i = Array.length tbl_data
+      then Seq.Nil
+      else aux (i+1) tbl_data.(i) ()
     | Cons {key; data; next} ->
-        Seq.Cons ((key, data), aux i next)
+      Seq.Cons ((key, data), aux i next)
   in
   aux 0 Empty
 
@@ -279,61 +280,60 @@ module type SeededHashedType =
     val seeded_hash: int -> t -> int
   end
 
-module type S =
-  sig
-    type key
-    type !'a t
-    val create: int -> 'a t
-    val clear : 'a t -> unit
-    val reset : 'a t -> unit
-    val copy: 'a t -> 'a t
-    val add: 'a t -> key -> 'a -> unit
-    val remove: 'a t -> key -> unit
-    val find: 'a t -> key -> 'a
-    val find_opt: 'a t -> key -> 'a option
-    val find_all: 'a t -> key -> 'a list
-    val replace : 'a t -> key -> 'a -> unit
-    val mem : 'a t -> key -> bool
-    val iter: (key -> 'a -> unit) -> 'a t -> unit
-    val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
-    val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    val length: 'a t -> int
-    val stats: 'a t -> statistics
-    val to_seq : 'a t -> (key * 'a) Seq.t
-    val to_seq_keys : _ t -> key Seq.t
-    val to_seq_values : 'a t -> 'a Seq.t
-    val add_seq : 'a t -> (key * 'a) Seq.t -> unit
-    val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
-    val of_seq : (key * 'a) Seq.t -> 'a t
-  end
+module type S = sig
+  type key
+  type !'a t
+  val create: int -> 'a t
+  val clear : 'a t -> unit
+  val reset : 'a t -> unit
+  val copy: 'a t -> 'a t
+  val add: 'a t -> key -> 'a -> unit
+  val remove: 'a t -> key -> unit
+  val find: 'a t -> key -> 'a
+  val find_opt: 'a t -> key -> 'a option
+  val find_all: 'a t -> key -> 'a list
+  val replace : 'a t -> key -> 'a -> unit
+  val mem : 'a t -> key -> bool
+  val iter: (key -> 'a -> unit) -> 'a t -> unit
+  val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
+  val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  val length: 'a t -> int
+  val stats: 'a t -> statistics
+  val to_seq : 'a t -> (key * 'a) Seq.t
+  val to_seq_keys : _ t -> key Seq.t
+  val to_seq_values : 'a t -> 'a Seq.t
+  val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+  val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+  val of_seq : (key * 'a) Seq.t -> 'a t
+end
 
-module type SeededS =
-  sig
-    type key
-    type !'a t
-    val create : ?random:bool -> int -> 'a t
-    val clear : 'a t -> unit
-    val reset : 'a t -> unit
-    val copy : 'a t -> 'a t
-    val add : 'a t -> key -> 'a -> unit
-    val remove : 'a t -> key -> unit
-    val find : 'a t -> key -> 'a
-    val find_opt: 'a t -> key -> 'a option
-    val find_all : 'a t -> key -> 'a list
-    val replace : 'a t -> key -> 'a -> unit
-    val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    val length : 'a t -> int
-    val stats: 'a t -> statistics
-    val to_seq : 'a t -> (key * 'a) Seq.t
-    val to_seq_keys : _ t -> key Seq.t
-    val to_seq_values : 'a t -> 'a Seq.t
-    val add_seq : 'a t -> (key * 'a) Seq.t -> unit
-    val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
-    val of_seq : (key * 'a) Seq.t -> 'a t
-  end
+module type SeededS = sig
+  type key
+  type !'a t
+  val create : ?random:bool -> int -> 'a t
+  val clear : 'a t -> unit
+  val reset : 'a t -> unit
+  val copy: 'a t -> 'a t
+  val add: 'a t -> key -> 'a -> unit
+  val remove: 'a t -> key -> unit
+  val find: 'a t -> key -> 'a
+  val find_opt: 'a t -> key -> 'a option
+  val find_all: 'a t -> key -> 'a list
+  val replace : 'a t -> key -> 'a -> unit
+  val mem : 'a t -> key -> bool
+  val iter: (key -> 'a -> unit) -> 'a t -> unit
+  val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
+  val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  val length: 'a t -> int
+  val stats: 'a t -> statistics
+  val to_seq : 'a t -> (key * 'a) Seq.t
+  val to_seq_keys : _ t -> key Seq.t
+  val to_seq_values : 'a t -> 'a Seq.t
+  val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+  val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+  val of_seq : (key * 'a) Seq.t -> 'a t
+end
+
 
 module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
   struct
@@ -469,19 +469,18 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
     let to_seq_values = to_seq_values
   end
 
-module Make(H: HashedType): (S with type key = H.t) =
-  struct
-    include MakeSeeded(struct
-        type t = H.t
-        let equal = H.equal
-        let seeded_hash (_seed: int) x = H.hash x
-      end)
-    let create sz = create ~random:false sz
-    let of_seq i =
-      let tbl = create 16 in
-      replace_seq tbl i;
-      tbl
-  end
+module Make (H: HashedType): (S with type key = H.t) = struct
+  include MakeSeeded(struct
+      type t = H.t
+      let equal = H.equal
+      let seeded_hash (_seed: int) x = H.hash x
+    end)
+  let create sz = create ~random:false sz
+  let of_seq i =
+    let tbl = create 16 in
+    replace_seq tbl i;
+    tbl
+end
 
 (* Polymorphic hash function-based tables *)
 (* Code included below the functorial interface to guard against accidental
