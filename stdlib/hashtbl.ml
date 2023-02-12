@@ -209,20 +209,12 @@ let filter_map_inplace f h =
   )
 
 let fold f h init =
-  let rec do_bucket b accu =
-    match b with
-      Empty ->
-        accu
-    | Cons{key; data; next} ->
-        do_bucket next (f key data accu) in
+  let rec do_bucket acc = function
+    | Empty -> acc
+    | Cons {key; data; next} -> do_bucket (f key data acc) next
+  in
   protect_traversal h (fun () ->
-    let d = h.data in
-    let accu = ref init in
-    for i = 0 to Array.length d - 1 do
-      accu := do_bucket d.(i) !accu
-    done;
-    if not old_trav then flip_ongoing_traversal h;
-    !accu
+    Array.fold_left do_bucket init h.data
   )
 
 type statistics = {
