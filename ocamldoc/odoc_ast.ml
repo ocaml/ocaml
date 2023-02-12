@@ -880,6 +880,7 @@ module Analyser =
       | Typedtree.Tmod_structure _
       | Typedtree.Tmod_functor _
       | Typedtree.Tmod_apply _
+      | Typedtree.Tmod_apply_unit _
       | Typedtree.Tmod_unpack _ ->
           Odoc_messages.struct_end
 
@@ -1820,6 +1821,23 @@ module Analyser =
               tt_module_expr2
           in
           { m_base with m_kind = Module_apply (m1.m_kind, m2.m_kind) }
+
+      | (Parsetree.Pmod_apply_unit p_module_expr1,
+         Typedtree.Tmod_apply_unit tt_module_expr1)
+      | (Parsetree.Pmod_apply_unit p_module_expr1,
+         Typedtree.Tmod_constraint
+           ({ Typedtree.mod_desc = Typedtree.Tmod_apply_unit tt_module_expr1}, _,
+            _, _)
+        ) ->
+          let m1 = analyse_module
+              env
+              current_module_name
+              module_name
+              None
+              p_module_expr1
+              tt_module_expr1
+          in
+          { m_base with m_kind = Module_apply_unit m1.m_kind }
 
       | (Parsetree.Pmod_constraint (p_module_expr2, p_modtype),
          Typedtree.Tmod_constraint (tt_module_expr2, tt_modtype, _, _)) ->

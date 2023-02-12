@@ -670,7 +670,10 @@ let module_expr (sub : mapper) mexpr =
               Pmod_functor
                 (functor_parameter sub arg, sub.module_expr sub mexpr)
           | Tmod_apply (mexp1, mexp2, _) ->
-              Pmod_apply (sub.module_expr sub mexp1, sub.module_expr sub mexp2)
+              Pmod_apply (sub.module_expr sub mexp1,
+                          sub.module_expr sub mexp2)
+          | Tmod_apply_unit mexp1 ->
+              Pmod_apply_unit (sub.module_expr sub mexp1)
           | Tmod_constraint (mexpr, _, Tmodtype_explicit mtype, _) ->
               Pmod_constraint (sub.module_expr sub mexpr,
                 sub.module_type sub mtype)

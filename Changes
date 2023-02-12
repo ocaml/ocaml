@@ -18,6 +18,15 @@ Working version
   in patterns, or for objects -- when `t` is a class type.
   (Stefan Muenzel, review by Gabriel Scherer and Jacques Garrigue)
 
+- #11984: Add dedicated syntax for generative functor application.
+  Previously, OCaml did not disinguish between `F ()` and
+  `F (struct end)`, even though the latter looks applicative. Instead,
+  the decision between generative and applicative functor application
+  was made based on the type of `F`. With this patch, we now distinguish
+  these two application forms; writing `F (struct end)` for a generative
+  functor leads to new warning 73.
+  (Frederic Bour and Richard Eisenberg, review by Florian Angeletti)
+
 ### Runtime system:
 
 - #11919: New runtime events counters for major heap stats and minor heap

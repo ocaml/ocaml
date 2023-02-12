@@ -1223,6 +1223,8 @@ and module_expr ctxt f x =
     | Pmod_apply (me1, me2) ->
         pp f "(%a)(%a)" (module_expr ctxt) me1 (module_expr ctxt) me2
         (* Cf: #7200 *)
+    | Pmod_apply_unit me1 ->
+        pp f "(%a)()" (module_expr ctxt) me1
     | Pmod_unpack e ->
         pp f "(val@ %a)" (expression ctxt) e
     | Pmod_extension e -> extension ctxt f e

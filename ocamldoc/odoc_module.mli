@@ -51,6 +51,7 @@ and module_kind =
   | Module_alias of module_alias
   | Module_functor of module_parameter * module_kind
   | Module_apply of module_kind * module_kind
+  | Module_apply_unit of module_kind
   | Module_with of module_type_kind * string
   | Module_constraint of module_kind * module_type_kind
   | Module_typeof of string
