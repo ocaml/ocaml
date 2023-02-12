@@ -47,6 +47,17 @@ let ongoing_traversal h =
 let flip_ongoing_traversal h =
   h.initial_size <- - h.initial_size
 
+let[@inline] protect_traversal h f =
+  let old_trav = ongoing_traversal h in
+  if not old_trav then flip_ongoing_traversal h;
+  try
+    let result = f () in
+    if not old_trav then flip_ongoing_traversal h;
+    result
+  with exn when not old_trav ->
+    flip_ongoing_traversal h;
+    raise exn
+
 (* To pick random seeds if requested *)
 
 let randomized_default =
@@ -162,17 +173,12 @@ let iter f h =
         ()
     | Cons{key; data; next} ->
         f key data; do_bucket next in
-  let old_trav = ongoing_traversal h in
-  if not old_trav then flip_ongoing_traversal h;
-  try
+  protect_traversal h (fun () ->
     let d = h.data in
     for i = 0 to Array.length d - 1 do
       do_bucket d.(i)
-    done;
-    if not old_trav then flip_ongoing_traversal h;
-  with exn when not old_trav ->
-    flip_ongoing_traversal h;
-    raise exn
+    done
+  )
 
 let rec filter_map_inplace_bucket f h i prec = function
   | Empty ->
@@ -195,17 +201,12 @@ let rec filter_map_inplace_bucket f h i prec = function
       end
 
 let filter_map_inplace f h =
-  let d = h.data in
-  let old_trav = ongoing_traversal h in
-  if not old_trav then flip_ongoing_traversal h;
-  try
-    for i = 0 to Array.length d - 1 do
+  protect_traversal h (fun () ->
+    let n = Array.length h.data in
+    for i = 0 to n - 1 do
       filter_map_inplace_bucket f h i Empty h.data.(i)
-    done;
-    if not old_trav then flip_ongoing_traversal h
-  with exn when not old_trav ->
-    flip_ongoing_traversal h;
-    raise exn
+    done
+  )
 
 let fold f h init =
   let rec do_bucket b accu =
@@ -214,9 +215,7 @@ let fold f h init =
         accu
     | Cons{key; data; next} ->
         do_bucket next (f key data accu) in
-  let old_trav = ongoing_traversal h in
-  if not old_trav then flip_ongoing_traversal h;
-  try
+  protect_traversal h (fun () ->
     let d = h.data in
     let accu = ref init in
     for i = 0 to Array.length d - 1 do
@@ -224,9 +223,7 @@ let fold f h init =
     done;
     if not old_trav then flip_ongoing_traversal h;
     !accu
-  with exn when not old_trav ->
-    flip_ongoing_traversal h;
-    raise exn
+  )
 
 type statistics = {
   num_bindings: int;
