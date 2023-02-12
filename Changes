@@ -540,6 +540,10 @@ Working version
 - #11879: Bugfix for Ctype.nondep_type
   (Stephen Dolan, review by Gabriel Scherer)
 
+- #12004: Don't ignore function attributes on lambdas with locally abstract
+  types.
+  (Chris Casinghino, review by Gabriel Scherer)
+
 OCaml 5.0.0 (15 December 2022)
 ------------------------------
 
