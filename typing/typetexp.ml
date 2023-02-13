@@ -222,7 +222,10 @@ end = struct
     try
       List.assoc name !univars
     with Not_found ->
-      fst (TyVarMap.find name !used_variables)
+      instance (fst (TyVarMap.find name !used_variables))
+      (* This call to instance might be redundant; all variables
+         inserted into [used_variables] are non-generic, but some
+         might get generalized. *)
 
   let remember_used name v loc =
     assert (not_generic v);

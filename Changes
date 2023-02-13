@@ -82,7 +82,7 @@ Working version
   (Leo White, review by Gabriel Scherer and Florian Angeletti)
 
 - #11912: Refactoring handling of scoped type variables
-  (Richard Eisenberg, review by Gabriel Scherer)
+  (Richard Eisenberg, review by Gabriel Scherer and Florian Angeletti)
 
 ### Code generation and optimizations:
 
