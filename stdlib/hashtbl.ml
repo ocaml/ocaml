@@ -172,10 +172,7 @@ let iter f h =
     | Cons {key; data; next} -> f key data; do_bucket next
   in
   protect_traversal h (fun () ->
-    let d = h.data in
-    for i = 0 to Array.length d - 1 do
-      do_bucket d.(i)
-    done
+    Array.iter do_bucket h.data
   )
 
 let rec filter_map_inplace_bucket f h i prev = function
