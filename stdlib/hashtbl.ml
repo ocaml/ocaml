@@ -178,9 +178,9 @@ let iter f h =
     done
   )
 
-let rec filter_map_inplace_bucket f h i prec = function
+let rec filter_map_inplace_bucket f h i prev = function
   | Empty ->
-    begin match prec with
+    begin match prev with
     | Empty -> h.data.(i) <- Empty
     | Cons c -> c.next <- Empty
     end
@@ -188,9 +188,9 @@ let rec filter_map_inplace_bucket f h i prec = function
     begin match f key data with
     | None ->
       h.size <- h.size - 1;
-      filter_map_inplace_bucket f h i prec next
+      filter_map_inplace_bucket f h i prev next
     | Some data ->
-      begin match prec with
+      begin match prev with
       | Empty -> h.data.(i) <- slot
       | Cons c -> c.next <- slot
       end;
@@ -234,10 +234,10 @@ let stats h =
     Array.fold_left (fun m b -> Int.max m (bucket_length b)) 0 h.data
   in
   let histo = Array.make (mbl + 1) 0 in
-  h.data |> Array.iter (fun b ->
+  Array.iter (fun b ->
     let l = bucket_length b in
     histo.(l) <- histo.(l) + 1
-  );
+  ) h.data;
   { num_bindings = h.size;
     num_buckets = Array.length h.data;
     max_bucket_length = mbl;
