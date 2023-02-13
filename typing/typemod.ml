@@ -1382,9 +1382,6 @@ and transl_signature env sg =
             in
             List.iter (fun td ->
               Signature_names.check_type names td.typ_loc td.typ_id;
-              (* if not (Btype.is_row_name (Ident.name td.typ_id)) then
-                Cmt_format.register_uid td.typ_type.type_uid
-                  (Type_declaration td) *)
             ) decls;
             let (trem, rem, final_env) = transl_sig newenv srem in
             let sg =
@@ -2507,8 +2504,6 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
         let shape_map = List.fold_left
           (fun shape_map info ->
             if not (Btype.is_row_name (Ident.name info.typ_id)) then begin
-              (* Cmt_format.register_uid info.typ_type.type_uid
-                (Type_declaration info); *)
               Shape.Map.add_type shape_map info.typ_id info.typ_type.type_uid
             end else shape_map
           )

@@ -166,7 +166,10 @@ let rec tast_map =
 
   type_declaration = (fun sub td ->
     let td = env_mapper.type_declaration sub td in
-    register_uid td.typ_type.type_uid (Type_declaration td);
+    (* compiler-generated "row_names" share the uid of their corresponding
+       class declaration, so we ignore them to prevent duplication *)
+    if not (Btype.is_row_name (Ident.name td.typ_id)) then
+      register_uid td.typ_type.type_uid (Type_declaration td);
     td);
 
   extension_constructor = (fun sub ec ->
@@ -176,9 +179,7 @@ let rec tast_map =
 
   class_declaration = (fun sub cd ->
     let cd = env_mapper.class_declaration sub cd in
-    (* a class declaration might be duplicated during typing *)
-    if not (Shape.Uid.Tbl.mem !uid_to_loc cd.ci_decl.cty_uid) then
-      register_uid cd.ci_decl.cty_uid (Class_declaration cd);
+    register_uid cd.ci_decl.cty_uid (Class_declaration cd);
     cd);
 
   class_type_declaration = (fun sub ctd ->
