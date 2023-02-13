@@ -1528,8 +1528,6 @@ let apply ?(use_current_level = false) env params body args =
   with
     Cannot_subst -> raise Cannot_apply
 
-let () = Subst.ctype_apply_env_empty := apply Env.empty
-
                               (****************************)
                               (*  Abbreviation expansion  *)
                               (****************************)
