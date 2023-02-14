@@ -107,8 +107,15 @@ module TyVarEnv : sig
     (* remember that a given name is bound to a given type *)
 
   val globalize_used_variables : policy -> Env.t -> unit -> unit
-    (* after finishing with a type signature, add used variables to the
-       global type variable scope *)
+   (* after finishing with a type signature, used variables are unified to the
+      corresponding global type variables if they exist. Otherwise, in function
+      of the policy, fresh used variables are either
+        - added to the global type variable scope if they are not longer
+        variables under the {!fixed_policy}
+        - added to the global type variable scope under the {!extensible_policy}
+        - expected to be collected later by a call to `collect_univar` under the
+        {!universal_policy}
+   *)
 
 end = struct
   (** Map indexed by type variable names. *)
