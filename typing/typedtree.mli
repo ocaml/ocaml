@@ -75,10 +75,11 @@ and 'k pattern_desc =
   (* value patterns *)
   | Tpat_any : value pattern_desc
         (** _ *)
-  | Tpat_var : Ident.t * string loc -> value pattern_desc
+  | Tpat_var : Ident.t * string loc * Types.Uid.t -> value pattern_desc
         (** x *)
   | Tpat_alias :
-      value general_pattern * Ident.t * string loc -> value pattern_desc
+      value general_pattern * Ident.t * string loc * Types.Uid.t ->
+      value pattern_desc
         (** P as a *)
   | Tpat_constant : constant -> value pattern_desc
         (** 1, 'a', "true", 1.0, 1l, 1L, 1n *)
@@ -811,9 +812,11 @@ val exists_pattern: (pattern -> bool) -> pattern -> bool
 
 val let_bound_idents: value_binding list -> Ident.t list
 val let_bound_idents_full:
-    value_binding list -> (Ident.t * string loc * Types.type_expr) list
+    value_binding list ->
+    (Ident.t * string loc * Types.type_expr * Types.Uid.t) list
 val let_bound_idents_full_with_bindings:
-    value_binding list -> (value_binding * (Ident.t * string loc * Types.type_expr)) list
+    value_binding list -> (value_binding *
+      (Ident.t * string loc * Types.type_expr * Types.Uid.t)) list
 
 
 (** Alpha conversion of patterns *)
@@ -825,7 +828,8 @@ val mkloc: 'a -> Location.t -> 'a Asttypes.loc
 
 val pat_bound_idents: 'k general_pattern -> Ident.t list
 val pat_bound_idents_full:
-  'k general_pattern -> (Ident.t * string loc * Types.type_expr) list
+  'k general_pattern ->
+  (Ident.t * string loc * Types.type_expr * Types.Uid.t) list
 
 (** Splits an or pattern into its value (left) and exception (right) parts. *)
 val split_pattern:

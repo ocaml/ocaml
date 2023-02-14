@@ -117,7 +117,7 @@ let rec tast_map =
       env_mapper.value_bindings sub bindings
     in
     let bound_idents = let_bound_idents_full_with_bindings vbs in
-    List.iter (fun (vb, (id, _loc, _typ)) ->
+    List.iter (fun (vb, (id, _loc, _typ, _)) ->
       try
         let vd = Env.find_value (Pident id) env in
         register_uid vd.val_uid

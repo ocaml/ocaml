@@ -2478,7 +2478,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
            will be marked as being used during the signature inclusion test. *)
         let items, shape_map =
           List.fold_left
-            (fun (acc, shape_map) (id, { Asttypes.loc; _ }, _typ)->
+            (fun (acc, shape_map) (id, { Asttypes.loc; _ }, _typ, _uid)->
               Signature_names.check_value names loc id;
               let vd =  Env.find_value (Pident id) newenv in
               Sig_value(id, vd, Exported) :: acc,
