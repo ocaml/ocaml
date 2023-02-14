@@ -101,19 +101,15 @@ let rec tast_map =
   in
   fun ~env () -> { env_mapper with
 
-  signature = (fun _sub ({sig_final_env; _} as x) ->
+  signature = (fun _sub ({sig_final_env; _} as str) ->
+    (* Update the mapper's environment *)
     let sub = tast_map ~env:sig_final_env () in
-    let sig_final_env = sub.env sub x.sig_final_env in
-    let sig_items = List.map (sub.signature_item sub) x.sig_items in
-    {x with sig_items; sig_final_env});
+    env_mapper.signature sub str);
 
-  structure = (fun _sub {str_items; str_type; str_final_env} ->
+  structure = (fun _sub ({str_final_env; _} as str) ->
+    (* Update the mapper's environment *)
     let sub = tast_map ~env:str_final_env () in
-    {
-      str_items = List.map (sub.structure_item sub) str_items;
-      str_final_env = sub.env sub str_final_env;
-      str_type;
-    });
+    env_mapper.structure sub str);
 
   value_bindings = (fun sub bindings ->
     let bindings = env_mapper.value_bindings sub bindings in
