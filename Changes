@@ -373,6 +373,10 @@ Working version
 - #8602, #11863: Add -stop-after lambda flag option
   (Douglas Smith and Dmitrii Kosarev, review by Gabriel Scherer)
 
+- #11888: Improve the error message when type variables cannot be deduced from
+  the type parameters.
+  (Stefan Muenzel, review by Florian Angeletti and Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #11990: Improve comments and macros around frame descriptors.

@@ -1316,12 +1316,38 @@ let prepare_type_constructor_arguments = function
   | Cstr_tuple l -> List.iter prepare_type l
   | Cstr_record l -> List.iter (fun l -> prepare_type l.ld_type) l
 
-let rec tree_of_type_decl id decl =
+let tree_of_label l =
+  (Ident.name l.ld_id, l.ld_mutable = Mutable, tree_of_typexp Type l.ld_type)
 
-  reset_except_context();
+let tree_of_constructor_arguments = function
+  | Cstr_tuple l -> tree_of_typlist Type l
+  | Cstr_record l -> [ Otyp_record (List.map tree_of_label l) ]
 
+let tree_of_single_constructor cd =
+  let name = Ident.name cd.cd_id in
+  let ret = Option.map (tree_of_typexp Type) cd.cd_res in
+  let args = tree_of_constructor_arguments cd.cd_args in
+  {
+      ocstr_name = name;
+      ocstr_args = args;
+      ocstr_return_type = ret;
+  }
+
+(* When printing GADT constructor, we need to forget the naming decision we took
+  for the type parameters and constraints. Indeed, in
+  {[
+  type 'a t = X: 'a -> 'b t
+   ]}
+  It is fine to print both the type parameter ['a] and the existentially
+  quantified ['a] in the definition of the constructor X as ['a]
+ *)
+let tree_of_constructor_in_decl cd =
+  match cd.cd_res with
+  | None -> tree_of_single_constructor cd
+  | Some _ -> Names.with_local_names (fun () -> tree_of_single_constructor cd)
+
+let prepare_decl id decl =
   let params = filter_params decl.type_params in
-
   begin match decl.type_manifest with
   | Some ty ->
       let vars = free_variables ty in
@@ -1332,7 +1358,6 @@ let rec tree_of_type_decl id decl =
         params
   | None -> ()
   end;
-
   List.iter add_alias params;
   List.iter prepare_type params;
   List.iter add_printed_alias params;
@@ -1366,7 +1391,10 @@ let rec tree_of_type_decl id decl =
       List.iter (fun l -> prepare_type l.ld_type) l
   | Type_open -> ()
   end;
+  ty_manifest, params
 
+let tree_of_type_decl id decl =
+  let ty_manifest, params = prepare_decl id decl in
   let type_param =
     function
     | Otyp_var (_, id) -> id
@@ -1424,7 +1452,8 @@ let rec tree_of_type_decl id decl =
             tree_of_typexp Type ty, decl.type_private, false
         end
     | Type_variant (cstrs, rep) ->
-        tree_of_manifest (Otyp_sum (List.map tree_of_constructor cstrs)),
+        tree_of_manifest
+          (Otyp_sum (List.map tree_of_constructor_in_decl cstrs)),
         decl.type_private,
         (rep = Variant_unboxed)
     | Type_record(lbls, rep) ->
@@ -1444,37 +1473,27 @@ let rec tree_of_type_decl id decl =
       otype_unboxed = unboxed;
       otype_cstrs = constraints }
 
-and tree_of_constructor_arguments = function
-  | Cstr_tuple l -> tree_of_typlist Type l
-  | Cstr_record l -> [ Otyp_record (List.map tree_of_label l) ]
+let add_type_decl_to_preparation id decl =
+   ignore @@ prepare_decl id decl
 
-and tree_of_constructor cd =
-  let name = Ident.name cd.cd_id in
-  let arg () = tree_of_constructor_arguments cd.cd_args in
-  match cd.cd_res with
-  | None -> {
-      ocstr_name = name;
-      ocstr_args = arg ();
-      ocstr_return_type = None;
-    }
-  | Some res ->
-      Names.with_local_names (fun () ->
-        let ret = tree_of_typexp Type res in
-        let args = arg () in
-        {
-          ocstr_name = name;
-          ocstr_args = args;
-          ocstr_return_type = Some ret;
-        })
+let tree_of_prepared_type_decl id decl =
+  tree_of_type_decl id decl
 
-and tree_of_label l =
-  (Ident.name l.ld_id, l.ld_mutable = Mutable, tree_of_typexp Type l.ld_type)
+let tree_of_type_decl id decl =
+  reset_except_context();
+  tree_of_type_decl id decl
+
+let add_constructor_to_preparation c =
+  prepare_type_constructor_arguments c.cd_args;
+  Option.iter prepare_type c.cd_res
+
+let prepared_constructor ppf c =
+  !Oprint.out_constr ppf (tree_of_single_constructor c)
 
 let constructor ppf c =
   reset_except_context ();
-  prepare_type_constructor_arguments c.cd_args;
-  Option.iter prepare_type c.cd_res;
-  !Oprint.out_constr ppf (tree_of_constructor c)
+  add_constructor_to_preparation c;
+  prepared_constructor ppf c
 
 let label ppf l =
   reset_except_context ();
@@ -1484,8 +1503,18 @@ let label ppf l =
 let tree_of_type_declaration id decl rs =
   Osig_type (tree_of_type_decl id decl, tree_of_rec rs)
 
+let tree_of_prepared_type_declaration id decl rs =
+  Osig_type (tree_of_prepared_type_decl id decl, tree_of_rec rs)
+
 let type_declaration id ppf decl =
   !Oprint.out_sig_item ppf (tree_of_type_declaration id decl Trec_first)
+
+let add_type_declaration_to_preparation id decl =
+  add_type_decl_to_preparation id decl
+
+let prepared_type_declaration id ppf decl =
+  !Oprint.out_sig_item ppf
+    (tree_of_prepared_type_declaration id decl Trec_first)
 
 let constructor_arguments ppf a =
   let tys = tree_of_constructor_arguments a in
@@ -1494,30 +1523,62 @@ let constructor_arguments ppf a =
 (* Print an extension declaration *)
 
 let extension_constructor_args_and_ret_type_subtree ext_args ext_ret_type =
-  match ext_ret_type with
-  | None -> (tree_of_constructor_arguments ext_args, None)
-  | Some res ->
-      Names.with_local_names (fun () ->
-        let ret = tree_of_typexp Type res in
-        let args = tree_of_constructor_arguments ext_args in
-        (args, Some ret))
+  let ret = Option.map (tree_of_typexp Type) ext_ret_type in
+  let args = tree_of_constructor_arguments ext_args in
+  (args, ret)
 
-let tree_of_extension_constructor id ext es =
-  reset_except_context ();
-  let ty_name = Path.name ext.ext_type_path in
+(* When printing extension constructor, it is important to ensure that
+after printing the constructor, we are still in the scope of the constructor.
+For GADT constructor, this can be done by printing the type parameters inside
+their own isolated scope. This ensures that in
+{[
+   type 'b t += A: 'b -> 'b any t
+]}
+the type parameter `'b` is not bound when printing the type variable `'b` from
+the constructor definition from the type parameter.
+
+Contrarily, for non-gadt constructor, we must keep the same scope for
+the type parameters and the constructor because a type constraint may
+have changed the name of the type parameter:
+{[
+type -'a t = .. constraint <x:'a. 'a t -> 'a> = 'a
+(* the universal 'a is here to steal the name 'a from the type parameter *)
+type 'a t = X of 'a
+]} *)
+
+
+let add_extension_constructor_to_preparation ext =
   let ty_params = filter_params ext.ext_type_params in
   List.iter add_alias ty_params;
   List.iter prepare_type ty_params;
-  List.iter add_printed_alias ty_params;
   prepare_type_constructor_arguments ext.ext_args;
-  Option.iter prepare_type ext.ext_ret_type;
+  Option.iter prepare_type ext.ext_ret_type
+
+let prepared_tree_of_extension_constructor
+   id ext es
+  =
+  let ty_name = Path.name ext.ext_type_path in
+  let ty_params = filter_params ext.ext_type_params in
   let type_param =
     function
     | Otyp_var (_, id) -> id
     | _ -> "?"
   in
+  let param_scope f =
+    match ext.ext_ret_type with
+    | None ->
+        (* normal constructor: same scope for parameters and the constructor *)
+        f ()
+    | Some _ ->
+        (* gadt constructor: isolated scope for the type parameters *)
+        Names.with_local_names f
+  in
   let ty_params =
-    List.map (fun ty -> type_param (tree_of_typexp Type ty)) ty_params
+    param_scope
+      (fun () ->
+         List.iter add_printed_alias ty_params;
+         List.map (fun ty -> type_param (tree_of_typexp Type ty)) ty_params
+      )
   in
   let name = Ident.name id in
   let args, ret =
@@ -1541,8 +1602,17 @@ let tree_of_extension_constructor id ext es =
   in
     Osig_typext (ext, es)
 
+let tree_of_extension_constructor id ext es =
+  reset_except_context ();
+  add_extension_constructor_to_preparation ext;
+  prepared_tree_of_extension_constructor id ext es
+
 let extension_constructor id ppf ext =
   !Oprint.out_sig_item ppf (tree_of_extension_constructor id ext Text_first)
+
+let prepared_extension_constructor id ppf ext =
+  !Oprint.out_sig_item ppf
+    (prepared_tree_of_extension_constructor id ext Text_first)
 
 let extension_only_constructor id ppf ext =
   reset_except_context ();
