@@ -2109,7 +2109,7 @@ let report_error ppf = function
                  "cannot be deduced from the type parameters."
            end
        | Variance_not_satisfied n ->
-           fprintf ppf "@[%s@ %s@ The %d%s type parameter"
+           fprintf ppf "@[@[%s@ %s@ The %d%s type parameter"
              "In this definition, expected parameter"
              "variances are not satisfied."
              n (Misc.ordinal_suffix n));
