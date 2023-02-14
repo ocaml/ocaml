@@ -92,24 +92,14 @@ let uid_to_loc : uid_fragment Types.Uid.Tbl.t ref =
 let register_uid uid fragment =
   Types.Uid.Tbl.add !uid_to_loc uid fragment
 
-let rec tast_map =
+let tast_map =
   let open Tast_mapper in
   let env_mapper =
     { default with env =
         if need_to_clear_env then (fun _sub env -> keep_only_summary env)
         else Tast_mapper.default.env }
   in
-  fun ~env () -> { env_mapper with
-
-  signature = (fun _sub ({sig_final_env; _} as str) ->
-    (* Update the mapper's environment *)
-    let sub = tast_map ~env:sig_final_env () in
-    env_mapper.signature sub str);
-
-  structure = (fun _sub ({str_final_env; _} as str) ->
-    (* Update the mapper's environment *)
-    let sub = tast_map ~env:str_final_env () in
-    env_mapper.structure sub str);
+  { env_mapper with
 
   value_bindings = (fun sub bindings ->
     let bindings = env_mapper.value_bindings sub bindings in
@@ -117,12 +107,9 @@ let rec tast_map =
       env_mapper.value_bindings sub bindings
     in
     let bound_idents = let_bound_idents_full_with_bindings vbs in
-    List.iter (fun (vb, (id, _loc, _typ, _)) ->
-      try
-        let vd = Env.find_value (Pident id) env in
-        register_uid vd.val_uid
-          (Value_binding vb)
-      with Not_found -> ())
+    List.iter
+      (fun (vb, (_id, _loc, _typ, uid)) ->
+        register_uid uid (Value_binding vb))
       bound_idents;
     bindings);
 
@@ -182,37 +169,27 @@ let rec tast_map =
 let clear_part =
   function
   | Partial_structure s ->
-      let tast_map = tast_map ~env:s.str_final_env () in
       Partial_structure (tast_map.structure tast_map s)
   | Partial_structure_item s ->
-        let tast_map = tast_map ~env:s.str_env () in
         Partial_structure_item (tast_map.structure_item tast_map s)
   | Partial_expression e ->
-      let tast_map = tast_map ~env:e.exp_env () in
       Partial_expression (tast_map.expr tast_map e)
   | Partial_pattern (category, p) ->
-      let tast_map = tast_map ~env:p.pat_env () in
       Partial_pattern (category, tast_map.pat tast_map p)
   | Partial_class_expr ce ->
-      let tast_map = tast_map ~env:ce.cl_env () in
       Partial_class_expr (tast_map.class_expr tast_map ce)
   | Partial_signature s ->
-      let tast_map = tast_map ~env:s.sig_final_env () in
       Partial_signature (tast_map.signature tast_map s)
   | Partial_signature_item s ->
-      let tast_map = tast_map ~env:s.sig_env () in
       Partial_signature_item (tast_map.signature_item tast_map s)
   | Partial_module_type s ->
-    let tast_map = tast_map ~env:s.mty_env () in
     Partial_module_type (tast_map.module_type tast_map s)
 
 let clear_env binary_annots =
   match binary_annots with
   | Implementation s ->
-      let tast_map = tast_map ~env:s.str_final_env () in
       Implementation (tast_map.structure tast_map s)
   | Interface s ->
-      let tast_map = tast_map ~env:s.sig_final_env () in
       Interface (tast_map.signature tast_map s)
   | Packed _ -> binary_annots
   | Partial_implementation array ->
