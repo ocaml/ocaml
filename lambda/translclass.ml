@@ -123,8 +123,8 @@ let create_object cl obj init =
 
 let name_pattern default p =
   match p.pat_desc with
-  | Tpat_var (id, _) -> id
-  | Tpat_alias(_, id, _) -> id
+  | Tpat_var (id, _, _) -> id
+  | Tpat_alias(_, id, _, _) -> id
   | _ -> Ident.create_local default
 
 let rec build_object_init ~scopes cl_table obj params inh_init obj_init cl =

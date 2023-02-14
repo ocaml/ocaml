@@ -455,6 +455,7 @@ type pattern_variable =
     pv_loc: Location.t;
     pv_as_var: bool;
     pv_attributes: attributes;
+    pv_uid : Uid.t;
   }
 
 type module_variable =
@@ -512,13 +513,15 @@ let enter_variable ?(is_module=false) ?(is_as_variable=false) loc name ty
     end else
       Ident.create_local name.txt
   in
+  let pv_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) in
   pattern_variables :=
     {pv_id = id;
      pv_type = ty;
      pv_loc = loc;
      pv_as_var = is_as_variable;
-     pv_attributes = attrs} :: !pattern_variables;
-  id
+     pv_attributes = attrs;
+     pv_uid} :: !pattern_variables;
+  id, pv_uid
 
 let sort_pattern_variables vs =
   List.sort
@@ -584,7 +587,7 @@ let rec build_as_type ~refine (env : Env.t ref) p =
 and build_as_type_aux ~refine (env : Env.t ref) p =
   let build_as_type = build_as_type ~refine in
   match p.pat_desc with
-    Tpat_alias(p1,_, _) -> build_as_type env p1
+    Tpat_alias(p1,_, _, _) -> build_as_type env p1
   | Tpat_tuple pl ->
       let tyl = List.map (build_as_type env) pl in
       newty (Ttuple tyl)
@@ -1505,9 +1508,9 @@ and type_pat_aux
         pat_env = !env }
   | Ppat_var name ->
       let ty = instance expected_ty in
-      let id = enter_variable loc name ty sp.ppat_attributes in
+      let id, uid = enter_variable loc name ty sp.ppat_attributes in
       rvp {
-        pat_desc = Tpat_var (id, name);
+        pat_desc = Tpat_var (id, name, uid);
         pat_loc = loc; pat_extra=[];
         pat_type = ty;
         pat_attributes = sp.ppat_attributes;
@@ -1528,9 +1531,11 @@ and type_pat_aux
           (* We're able to pass ~is_module:true here without an error because
              [Ppat_unpack] is a case identified by [may_contain_modules]. See
              the comment on [may_contain_modules]. *)
-          let id = enter_variable loc v t ~is_module:true sp.ppat_attributes in
+          let id, uid =
+            enter_variable loc v t ~is_module:true sp.ppat_attributes
+          in
           rvp {
-            pat_desc = Tpat_var (id, v);
+            pat_desc = Tpat_var (id, v, uid);
             pat_loc = sp.ppat_loc;
             pat_extra=[Tpat_unpack, loc, sp.ppat_attributes];
             pat_type = t;
@@ -1543,8 +1548,8 @@ and type_pat_aux
       (* explicitly polymorphic type *)
       let cty, ty, ty' =
         solve_Ppat_poly_constraint ~refine env lloc sty expected_ty in
-      let id = enter_variable lloc name ty' attrs in
-      rvp { pat_desc = Tpat_var (id, name);
+      let id, uid = enter_variable lloc name ty' attrs in
+      rvp { pat_desc = Tpat_var (id, name, uid);
             pat_loc = lloc;
             pat_extra = [Tpat_constraint cty, loc, sp.ppat_attributes];
             pat_type = ty;
@@ -1553,10 +1558,10 @@ and type_pat_aux
   | Ppat_alias(sq, name) ->
       let q = type_pat Value sq expected_ty in
       let ty_var = solve_Ppat_alias ~refine env q in
-      let id =
+      let id, uid =
         enter_variable ~is_as_variable:true loc name ty_var sp.ppat_attributes
       in
-      rvp { pat_desc = Tpat_alias(q, id, name);
+      rvp { pat_desc = Tpat_alias(q, id, name, uid);
             pat_loc = loc; pat_extra=[];
             pat_type = q.pat_type;
             pat_attributes = sp.ppat_attributes;
@@ -1805,12 +1810,12 @@ and type_pat_aux
       let p = type_pat category sp expected_ty' in
       let extra = (Tpat_constraint cty, loc, sp.ppat_attributes) in
       begin match category, (p : k general_pattern) with
-      | Value, {pat_desc = Tpat_var (id,s); _} ->
+      | Value, {pat_desc = Tpat_var (id,s,uid); _} ->
           { p with
             pat_type = ty;
             pat_desc =
             Tpat_alias
-              ({p with pat_desc = Tpat_any; pat_attributes = []}, id,s);
+              ({p with pat_desc = Tpat_any; pat_attributes = []}, id,s, uid);
             pat_extra = [extra];
           }
       | _, p ->
@@ -1856,12 +1861,12 @@ let iter_pattern_variables_type f : pattern_variable list -> unit =
 
 let add_pattern_variables ?check ?check_as env pv =
   List.fold_right
-    (fun {pv_id; pv_type; pv_loc; pv_as_var; pv_attributes} env ->
+    (fun {pv_id; pv_type; pv_loc; pv_as_var; pv_attributes; pv_uid} env ->
        let check = if pv_as_var then check_as else check in
        Env.add_value ?check pv_id
          {val_type = pv_type; val_kind = Val_reg; Types.val_loc = pv_loc;
           val_attributes = pv_attributes;
-          val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+          val_uid = pv_uid;
          } env
     )
     pv env
@@ -2172,7 +2177,7 @@ let rec check_counter_example_pat ~info ~env tp expected_ty k =
           in
           check_rec ~info:(decrease 5) tp expected_ty k
       end
-  | Tpat_alias (p, _, _) -> check_rec ~info p expected_ty k
+  | Tpat_alias (p, _, _, _) -> check_rec ~info p expected_ty k
   | Tpat_constant cst ->
       let cst = constant_or_raise !env loc (Untypeast.constant cst) in
       k @@ solve_expected (mp (Tpat_constant cst) ~pat_type:(type_constant cst))
@@ -2872,8 +2877,8 @@ let rec name_pattern default = function
     [] -> Ident.create_local default
   | p :: rem ->
     match p.pat_desc with
-      Tpat_var (id, _) -> id
-    | Tpat_alias(_, id, _) -> id
+      Tpat_var (id, _, _) -> id
+    | Tpat_alias(_, id, _, _) -> id
     | _ -> name_pattern default rem
 
 let name_cases default lst =
@@ -4648,7 +4653,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
           }
         in
         let exp_env = Env.add_value id desc env in
-        {pat_desc = Tpat_var (id, mknoloc name); pat_type = ty;pat_extra=[];
+        {pat_desc = Tpat_var (id, mknoloc name, desc.val_uid); pat_type = ty;pat_extra=[];
          pat_attributes = [];
          pat_loc = Location.none; pat_env = env},
         {exp_type = ty; exp_loc = Location.none; exp_env = exp_env;
@@ -5377,7 +5382,7 @@ and type_let ?check ?check_strict
     List.iter
       (fun {vb_pat=pat} -> match pat.pat_desc with
            Tpat_var _ -> ()
-         | Tpat_alias ({pat_desc=Tpat_any}, _, _) -> ()
+         | Tpat_alias ({pat_desc=Tpat_any}, _, _, _) -> ()
          | _ -> raise(Error(pat.pat_loc, env, Illegal_letrec_pat)))
       l;
   List.iter (fun vb ->

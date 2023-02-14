@@ -279,7 +279,7 @@ let pat
     match x.pat_desc with
     | Tpat_any
     | Tpat_constant _ -> x.pat_desc
-    | Tpat_var (id, s) -> Tpat_var (id, map_loc sub s)
+    | Tpat_var (id, s, uid) -> Tpat_var (id, map_loc sub s, uid)
     | Tpat_tuple l -> Tpat_tuple (List.map (sub.pat sub) l)
     | Tpat_construct (loc, cd, l, vto) ->
         let vto = Option.map (fun (vl,cty) ->
@@ -290,7 +290,8 @@ let pat
     | Tpat_record (l, closed) ->
         Tpat_record (List.map (tuple3 (map_loc sub) id (sub.pat sub)) l, closed)
     | Tpat_array l -> Tpat_array (List.map (sub.pat sub) l)
-    | Tpat_alias (p, id, s) -> Tpat_alias (sub.pat sub p, id, map_loc sub s)
+    | Tpat_alias (p, id, s, uid) ->
+        Tpat_alias (sub.pat sub p, id, map_loc sub s, uid)
     | Tpat_lazy p -> Tpat_lazy (sub.pat sub p)
     | Tpat_value p ->
        (as_computation_pattern (sub.pat sub (p :> pattern))).pat_desc
