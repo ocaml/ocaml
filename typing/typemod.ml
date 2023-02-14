@@ -1466,18 +1466,18 @@ and transl_signature env sg =
               md_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
             }
             in
-            let id, newenv =
+            let id, md_decl, newenv =
               match pmd.pmd_name.txt with
-              | None -> None, env
+              | None -> None, None, env
               | Some name ->
                 let id, newenv =
                   Env.enter_module_declaration ~scope name pres md env
                 in
                 Signature_names.check_module names pmd.pmd_name.loc id;
-                Some id, newenv
+                Some id, Some md, newenv
             in
             let (trem, rem, final_env) = transl_sig newenv srem in
-            mksig (Tsig_module {md_id=id; md_name=pmd.pmd_name;
+            mksig (Tsig_module {md_id=id; md_name=pmd.pmd_name; md_decl;
                                 md_presence=pres; md_type=tmty;
                                 md_loc=pmd.pmd_loc;
                                 md_attributes=pmd.pmd_attributes})
@@ -1700,6 +1700,7 @@ and transl_modtype_decl_aux env
     {
      mtd_id=id;
      mtd_name=pmtd_name;
+     mtd_decl=decl;
      mtd_type=tmty;
      mtd_attributes=pmtd_attributes;
      mtd_loc=pmtd_loc;
@@ -1781,8 +1782,9 @@ and transl_recmodule_modtypes env sdecls =
   let dcl2 =
     List.map2 (fun pmd (id_shape, id_loc, md, mty) ->
       let tmd =
+        let md_decl = Option.map (fun _ -> md) id_shape in
         {md_id=Option.map fst id_shape; md_name=id_loc; md_type=mty;
-         md_presence=Mp_present;
+         md_decl; md_presence=Mp_present;
          md_loc=pmd.pmd_loc;
          md_attributes=pmd.pmd_attributes}
       in

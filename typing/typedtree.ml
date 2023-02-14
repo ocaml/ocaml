@@ -369,6 +369,7 @@ and module_declaration =
     {
      md_id: Ident.t option;
      md_name: string option loc;
+     md_decl: Types.module_declaration option;
      md_presence: module_presence;
      md_type: module_type;
      md_attributes: attribute list;
@@ -389,6 +390,7 @@ and module_type_declaration =
     {
      mtd_id: Ident.t;
      mtd_name: string loc;
+     mtd_decl: Types.modtype_declaration;
      mtd_type: module_type option;
      mtd_attributes: attribute list;
      mtd_loc: Location.t;
