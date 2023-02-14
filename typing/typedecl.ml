@@ -1731,7 +1731,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
   let new_type_variance =
     let required = Typedecl_variance.variance_of_sdecl sdecl in
     try
-      Typedecl_variance.compute_decl env ~check:true new_sig_decl required
+      Typedecl_variance.compute_decl env ~check:(Some id) new_sig_decl required
     with Typedecl_variance.Error (loc, err) ->
       raise (Error (loc, Variance err)) in
   let new_type_immediate =
@@ -2066,27 +2066,57 @@ let report_error ppf = function
         | false, false -> if inj = "" then "unrestricted" else inj
       in
       (match n with
-       | Variance_not_reflected ->
-           fprintf ppf "@[%s@ %s@ It"
-             "In this definition, a type variable has a variance that"
-             "is not reflected by its occurrence in type parameters."
-       | No_variable ->
-           fprintf ppf "@[%s@ %s@]"
-             "In this definition, a type variable cannot be deduced"
-             "from the type parameters."
-       | Variance_not_deducible ->
-           fprintf ppf "@[%s@ %s@ It"
-             "In this definition, a type variable has a variance that"
-             "cannot be deduced from the type parameters."
+       | Variance_variable_error { error; variable; context } ->
+           Printtyp.prepare_for_printing [ variable ];
+           begin match context with
+           | Type_declaration (id, decl) ->
+               Printtyp.add_type_declaration_to_preparation id decl;
+               fprintf ppf "@[<v>%s@;<1 2>%a@;"
+                 "In the definition"
+                 (Printtyp.prepared_type_declaration id)
+                 decl
+           | Gadt_constructor c ->
+               Printtyp.add_constructor_to_preparation c;
+               fprintf ppf "@[<v>%s@;<1 2>%a@;"
+                 "In the GADT constructor"
+                 Printtyp.prepared_constructor
+                 c
+           | Extension_constructor (id, e) ->
+               Printtyp.add_extension_constructor_to_preparation e;
+               fprintf ppf "@[<v>%s@;<1 2>%a@;"
+                 "In the extension constructor"
+                 (Printtyp.prepared_extension_constructor id)
+                 e
+           end;
+           begin match error with
+           | Variance_not_reflected ->
+               fprintf ppf "@[%s@ %a@ %s@ %s@ It"
+                 "the type variable"
+                 Printtyp.prepared_type_expr variable
+                 "has a variance that"
+                 "is not reflected by its occurrence in type parameters."
+           | No_variable ->
+               fprintf ppf "@[%s@ %a@ %s@ %s@]@]"
+                 "the type variable"
+                 Printtyp.prepared_type_expr variable
+                 "cannot be deduced"
+                 "from the type parameters."
+           | Variance_not_deducible ->
+               fprintf ppf "@[%s@ %a@ %s@ %s@ It"
+                 "the type variable"
+                 Printtyp.prepared_type_expr variable
+                 "has a variance that"
+                 "cannot be deduced from the type parameters."
+           end
        | Variance_not_satisfied n ->
            fprintf ppf "@[%s@ %s@ The %d%s type parameter"
              "In this definition, expected parameter"
              "variances are not satisfied."
              n (Misc.ordinal_suffix n));
       (match n with
-       | No_variable -> ()
+       | Variance_variable_error { error = No_variable; _ } -> ()
        | _ ->
-           fprintf ppf " was expected to be %s,@ but it is %s.@]"
+           fprintf ppf " was expected to be %s,@ but it is %s.@]@]"
              (variance v2) (variance v1))
   | Unavailable_type_constructor p ->
       fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p
