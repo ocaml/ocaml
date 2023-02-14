@@ -129,12 +129,8 @@ let rec tast_map =
   module_binding = (fun sub mb ->
     let mb = env_mapper.module_binding sub mb in
     Option.iter
-      (fun id ->
-        (try
-          let tmd = Env.find_module (Pident id) env in
-          register_uid tmd.md_uid (Module_binding mb);
-        with Not_found -> ()))
-      mb.mb_id;
+      (fun decl -> register_uid decl.Types.md_uid (Module_binding mb))
+      mb.mb_decl;
     mb);
 
   module_declaration = (fun sub md ->

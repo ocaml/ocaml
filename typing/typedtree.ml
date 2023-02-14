@@ -289,6 +289,7 @@ and module_binding =
     {
      mb_id: Ident.t option;
      mb_name: string option loc;
+     mb_decl: Types.module_declaration option;
      mb_presence: module_presence;
      mb_expr: module_expr;
      mb_attributes: attribute list;
