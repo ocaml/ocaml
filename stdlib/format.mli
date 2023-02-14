@@ -235,6 +235,14 @@ val pp_print_string : formatter -> string -> unit
 val print_string : string -> unit
 (** [pp_print_string ppf s] prints [s] in the current pretty-printing box. *)
 
+val pp_print_substring : start:int -> len:int -> formatter -> string -> unit
+val print_substring : start:int -> len:int -> string -> unit
+(** [pp_print_substring ~start ~len ppf s] prints the substring of [s]
+  that starts at index [start] and stop at index [start+len] in the current
+  pretty-printing box.
+  @since 5.1
+*)
+
 val pp_print_bytes : formatter -> bytes -> unit
 val print_bytes : bytes -> unit
 (** [pp_print_bytes ppf b] prints [b] in the current pretty-printing box.
@@ -245,6 +253,15 @@ val pp_print_as : formatter -> int -> string -> unit
 val print_as : int -> string -> unit
 (** [pp_print_as ppf len s] prints [s] in the current pretty-printing box.
   The pretty-printer formats [s] as if it were of length [len].
+*)
+
+val pp_print_substring_as :
+  start:int -> len:int -> formatter -> int -> string -> unit
+val print_substring_as : start:int -> len:int -> int -> string -> unit
+(** [pp_print_substring_as ~start ~len ppf len_as s] prints the substring of [s]
+  that starts at index [start] and stop at index [start+len] in the current
+  pretty-printing box as if it were of length [len_as].
+  @since 5.1
 *)
 
 val pp_print_int : formatter -> int -> unit

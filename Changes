@@ -1311,6 +1311,9 @@ Some of those changes will benefit all OCaml packages.
 - #11134: Optimise 'include struct' in more cases
   (Stephen Dolan, review by Leo White and Vincent Laviron)
 
+- #?????: Expose support for printing substrings in Format
+  (Florian Angeletti, review by ????)
+
 ### Other libraries:
 
 - #11374: Remove pointer cast to a type with stricter alignment requirements
