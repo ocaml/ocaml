@@ -31,10 +31,10 @@ end = struct
   type line = { pos_fname: string; pos_lnum: int; pos_bol: int }
 
   type loc =
-    | SameLine of { line: line; cnum_start: int; cnum_end: int }
-    | SameLineGhost of { line: line; cnum_start: int; cnum_end: int }
-    | MultiLine of { line_start: line; cnum_start: int; line_end: line; cnum_end: int }
-    | MultiLineGhost of { line_start: line; cnum_start: int; line_end: line; cnum_end: int }
+    | SameLine of { line: line; cnum_start: int; offset: int }
+    | SameLineGhost of { line: line; cnum_start: int; offset: int }
+    | MultiLine of { line_start: line; cnum_start: int; line_end: line; offset: int }
+    | MultiLineGhost of { line_start: line; cnum_start: int; line_end: line; offset: int }
 
   module WLine = Weak.Make(struct type t = line let equal = (=) let hash = Hashtbl.hash end)
   let memo_line = WLine.create 512
@@ -51,11 +51,12 @@ end = struct
   let mkloc ghost loc_start loc_end =
     let cnum_start, line_start = split loc_start in
     let cnum_end, line_end = split loc_end in
+    let offset = cnum_end - cnum_start in
     begin match ghost, line_start == line_end with
-    | false, false -> MultiLine {line_start; cnum_start; line_end; cnum_end}
-    | true, false -> MultiLineGhost {line_start; cnum_start; line_end; cnum_end}
-    | false, true -> SameLine {line = line_start; cnum_start; cnum_end}
-    | true, true -> SameLineGhost {line = line_start; cnum_start; cnum_end}
+    | false, false -> MultiLine {line_start; cnum_start; line_end; offset}
+    | true, false -> MultiLineGhost {line_start; cnum_start; line_end; offset}
+    | false, true -> SameLine {line = line_start; cnum_start; offset}
+    | true, true -> SameLineGhost {line = line_start; cnum_start; offset}
     end |> WLoc.merge memo_loc
 
   let loc_start = function
@@ -66,11 +67,11 @@ end = struct
       -> unsplit line cnum_start
 
   let loc_end = function
-    | SameLine { line; cnum_end; _ }
-    | SameLineGhost { line; cnum_end; _ }
-    | MultiLine { line_end = line; cnum_end; _ }
-    | MultiLineGhost { line_end = line; cnum_end; _ }
-      -> unsplit line cnum_end
+    | SameLine { line; cnum_start; offset; _ }
+    | SameLineGhost { line; cnum_start; offset; _ }
+    | MultiLine { line_end = line; cnum_start; offset; _ }
+    | MultiLineGhost { line_end = line; cnum_start; offset; _ }
+      -> unsplit line (cnum_start + offset)
 
   let loc_ghost = function
     | SameLine _ | MultiLine _ -> false
