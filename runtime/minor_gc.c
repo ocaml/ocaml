@@ -597,11 +597,6 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   caml_gc_log("promoted %d roots, %" ARCH_INTNAT_PRINTF_FORMAT "u bytes",
               remembered_roots, st.live_bytes);
 
-  CAML_EV_BEGIN(EV_MINOR_FINALIZERS_ADMIN);
-  caml_gc_log("running finalizer data structure book-keeping");
-  caml_final_update_last_minor(domain);
-  CAML_EV_END(EV_MINOR_FINALIZERS_ADMIN);
-
 #ifdef DEBUG
   caml_global_barrier();
   caml_gc_log("ref_base: %p, ref_ptr: %p",
@@ -723,6 +718,11 @@ caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
     }
     CAML_EV_END(EV_MINOR_LEAVE_BARRIER);
   }
+
+  CAML_EV_BEGIN(EV_MINOR_FINALIZERS_ADMIN);
+  caml_gc_log("running finalizer data structure book-keeping");
+  caml_final_update_last_minor(domain);
+  CAML_EV_END(EV_MINOR_FINALIZERS_ADMIN);
 
   CAML_EV_BEGIN(EV_MINOR_CLEAR);
   caml_gc_log("running stw empty_minor_heap_domain_clear");
