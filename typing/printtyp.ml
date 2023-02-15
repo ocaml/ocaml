@@ -2173,11 +2173,9 @@ let prepare_any_trace printing_status tr =
 let prepare_trace f tr =
   prepare_any_trace printing_status (Errortrace.map f tr)
 
-(** Keep elements that are not [Diff _ ] and take the decision
+(** Keep elements that are [Diff _ ] and take the decision
     for the last element, require a prepared trace *)
-let rec filter_trace
-          keep_last
-  : ('a, 'variety) Errortrace.t -> _ = function
+let rec filter_trace keep_last = function
   | [] -> []
   | [Errortrace.Diff d as elt]
     when printing_status elt = Optional_refinement ->
