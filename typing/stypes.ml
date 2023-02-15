@@ -50,7 +50,7 @@ let annotations = ref ([] : annotation list)
 let phrases = ref ([] : Location.t list)
 
 let record ti =
-  if !Clflags.annotations && not (get_location ti).Location.loc_ghost then
+  if !Clflags.annotations && not (Location.loc_ghost (get_location ti)) then
     annotations := ti :: !annotations
 
 let record_phrase loc =
@@ -61,8 +61,8 @@ let record_phrase loc =
    same upper bound -> sorted by decreasing lower bound
 *)
 let cmp_loc_inner_first loc1 loc2 =
-  match compare loc1.loc_end.pos_cnum loc2.loc_end.pos_cnum with
-  | 0 -> compare loc2.loc_start.pos_cnum loc1.loc_start.pos_cnum
+  match compare (loc_end loc1).pos_cnum (loc_end loc2).pos_cnum with
+  | 0 -> compare (loc_start loc2).pos_cnum (loc_start loc1).pos_cnum
   | x -> x
 
 let cmp_ti_inner_first ti1 ti2 =
@@ -83,9 +83,9 @@ let print_position pp pos =
   end
 
 let print_location pp loc =
-  print_position pp loc.loc_start;
+  print_position pp (loc_start loc);
   output_char pp ' ';
-  print_position pp loc.loc_end
+  print_position pp (loc_end loc)
 
 let sort_filter_phrases () =
   let ph = List.sort (fun x y -> cmp_loc_inner_first y x) !phrases in
@@ -93,8 +93,8 @@ let sort_filter_phrases () =
     match l with
     | [] -> accu
     | loc :: t ->
-       if cur.loc_start.pos_cnum <= loc.loc_start.pos_cnum
-          && cur.loc_end.pos_cnum >= loc.loc_end.pos_cnum
+       if (loc_start cur).pos_cnum <= (loc_start loc).pos_cnum
+          && (loc_end cur).pos_cnum >= (loc_end loc).pos_cnum
        then loop accu cur t
        else loop (loc :: accu) loc t
   in
@@ -102,7 +102,7 @@ let sort_filter_phrases () =
 
 let rec printtyp_reset_maybe loc =
   match !phrases with
-  | cur :: t when cur.loc_start.pos_cnum <= loc.loc_start.pos_cnum ->
+  | cur :: t when (loc_start cur).pos_cnum <= (loc_start loc).pos_cnum ->
      Printtyp.reset ();
      phrases := t;
      printtyp_reset_maybe loc;

@@ -48,7 +48,7 @@ let bind_cases l =
         let open Location in
         match c_guard with
         | None -> c_rhs.exp_loc
-        | Some g -> {c_rhs.exp_loc with loc_start=g.exp_loc.loc_start}
+        | Some g -> set_loc_start (loc_start g.exp_loc) c_rhs.exp_loc
       in
       bind_variables loc c_lhs
     )
@@ -84,7 +84,7 @@ let rec iterator ~scope rebuild_env =
           try
             let desc = Env.find_value path env in
             let dloc = desc.Types.val_loc in
-            if dloc.Location.loc_ghost then Annot.Iref_external
+            if (Location.loc_ghost dloc) then Annot.Iref_external
             else Annot.Iref_internal dloc
           with Not_found ->
             Annot.Iref_external
@@ -119,18 +119,18 @@ let rec iterator ~scope rebuild_env =
     let loc = str.str_loc in
     begin match str.str_desc with
     | Tstr_value (rec_flag, bindings) ->
-        let doit loc_start = bind_bindings {scope with loc_start} bindings in
+        let doit loc_start = bind_bindings (set_loc_start loc_start scope) bindings in
         begin match rec_flag, rem with
-        | Recursive, _ -> doit loc.loc_start
-        | Nonrecursive, [] -> doit loc.loc_end
-        | Nonrecursive,  {str_loc = loc2} :: _ -> doit loc2.loc_start
+        | Recursive, _ -> doit (loc_start loc)
+        | Nonrecursive, [] -> doit (loc_end loc)
+        | Nonrecursive,  {str_loc = loc2} :: _ -> doit (loc_start loc2)
         end
     | Tstr_module mb ->
         record_module_binding
-          { scope with Location.loc_start = loc.loc_end } mb
+          (set_loc_start (loc_end loc) scope) mb
     | Tstr_recmodule mbs ->
         List.iter (record_module_binding
-                   { scope with Location.loc_start = loc.loc_start }) mbs
+                   (set_loc_start (loc_start loc) scope)) mbs
     | _ ->
         ()
     end;

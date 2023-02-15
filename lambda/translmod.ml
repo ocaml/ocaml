@@ -220,7 +220,7 @@ let record_primitive = function
 let mod_prim = Lambda.transl_prim "CamlinternalMod"
 
 let undefined_location loc =
-  let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
+  let (fname, line, char) = Location.get_pos_info (Location.loc_start loc) in
   Lconst(Const_block(0,
                      [Const_base(Const_string (fname, loc, None));
                       const_int line;

@@ -22,11 +22,7 @@
 
 open Format
 
-type t = Warnings.loc = {
-  loc_start: Lexing.position;
-  loc_end: Lexing.position;
-  loc_ghost: bool;
-}
+type t = Warnings.loc
 
 (** Note on the use of Lexing.position in this module.
    If [pos_fname = ""], then use [!input_name] instead.
@@ -34,6 +30,16 @@ type t = Warnings.loc = {
      re-parse the file to get the line and character numbers.
    Else all fields are correct.
 *)
+
+val mk: ?ghost:unit -> Lexing.position -> Lexing.position -> t
+val loc_start: t -> Lexing.position
+val loc_end: t -> Lexing.position
+val loc_ghost: t -> bool
+
+val set_loc_start: Lexing.position -> t -> t
+val set_loc_end: Lexing.position -> t -> t
+val set_loc_ghost: bool -> t -> t
+
 
 val none : t
 (** An arbitrary value of type [t]; describes an empty ghost range. *)

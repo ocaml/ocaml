@@ -3468,7 +3468,7 @@ let failure_handler ~scopes loc ~failer () =
         Env.initial Predef.path_match_failure
     in
     let fname, line, char =
-      Location.get_pos_info loc.Location.loc_start in
+      Location.get_pos_info (Location.loc_start loc) in
     Lprim
       ( Praise Raise_regular,
         [ Lprim

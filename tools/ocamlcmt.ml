@@ -134,14 +134,11 @@ let generate_ml target_filename filename cmt =
    provided to ocaml_cmt.
 *)
 let record_cmt_info cmt =
-  let location_none = {
-    Location.none with Location.loc_ghost = false }
-  in
-  let location_file file = {
-    Location.none with
-      Location.loc_start = {
-        Location.none.Location.loc_start with
-          Lexing.pos_fname = file }}
+  let location_none = Location.set_loc_ghost false Location.none in
+  let location_file file =
+    Location.set_loc_start
+      { (Location.loc_start Location.none) with Lexing.pos_fname = file }
+      Location.none
   in
   let record_info name value =
     let ident = Printf.sprintf ".%s" name in

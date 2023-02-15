@@ -624,14 +624,14 @@ let comparison_primitive comparison comparison_kind =
 
 let lambda_of_loc kind sloc =
   let loc = to_location sloc in
-  let loc_start = loc.Location.loc_start in
+  let loc_start = Location.loc_start loc in
   let (file, lnum, cnum) = Location.get_pos_info loc_start in
   let file =
     if Filename.is_relative file then
       file
     else
       Location.rewrite_absolute_path file in
-  let enum = loc.Location.loc_end.Lexing.pos_cnum -
+  let enum = (Location.loc_end loc).Lexing.pos_cnum -
       loc_start.Lexing.pos_cnum + cnum in
   match kind with
   | Loc_POS ->

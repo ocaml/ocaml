@@ -314,11 +314,11 @@ let zero = "zero"
 
 let anon_fn_with_loc (sloc: Lambda.scoped_location) =
   let loc = Debuginfo.Scoped_location.to_location sloc in
-  let (file, line, startchar) = Location.get_pos_info loc.loc_start in
-  let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_bol in
+  let (file, line, startchar) = Location.get_pos_info (Location.loc_start loc) in
+  let endchar = (Location.loc_end loc).pos_cnum - (Location.loc_start loc).pos_bol in
   let pp_chars ppf =
     if startchar >= 0 then Format.fprintf ppf ",%i--%i" startchar endchar in
-  if loc.Location.loc_ghost then "anon_fn"
+  if (Location.loc_ghost loc) then "anon_fn"
   else
     Format.asprintf "anon_fn[%s:%i%t]"
       (Filename.basename file) line pp_chars

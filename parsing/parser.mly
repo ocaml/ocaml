@@ -34,17 +34,11 @@ open Docstrings.WithMenhir
 let mkloc = Location.mkloc
 let mknoloc = Location.mknoloc
 
-let make_loc (startpos, endpos) = {
-  Location.loc_start = startpos;
-  Location.loc_end = endpos;
-  Location.loc_ghost = false;
-}
+let make_loc (startpos, endpos) =
+  Location.mk startpos endpos
 
-let ghost_loc (startpos, endpos) = {
-  Location.loc_start = startpos;
-  Location.loc_end = endpos;
-  Location.loc_ghost = true;
-}
+let ghost_loc (startpos, endpos) =
+  Location.mk ~ghost:() startpos endpos
 
 let mktyp ~loc ?attrs d = Typ.mk ~loc:(make_loc loc) ?attrs d
 let mkpat ~loc d = Pat.mk ~loc:(make_loc loc) d
@@ -92,7 +86,7 @@ let mkrhs rhs loc = mkloc rhs (make_loc loc)
 let ghrhs rhs loc = mkloc rhs (ghost_loc loc)
 
 let push_loc x acc =
-  if x.Location.loc_ghost
+  if Location.loc_ghost x
   then acc
   else x :: acc
 
@@ -189,7 +183,7 @@ let rec mktailexp nilloc = let open Location in function
       Pexp_construct (nil, None), nilloc
   | e1 :: el ->
       let exp_el, el_loc = mktailexp nilloc el in
-      let loc = (e1.pexp_loc.loc_start, snd el_loc) in
+      let loc = (loc_start e1.pexp_loc, snd el_loc) in
       let arg = ghexp ~loc (Pexp_tuple [e1; ghexp ~loc:el_loc exp_el]) in
       ghexp_cons_desc loc arg, loc
 
@@ -199,7 +193,7 @@ let rec mktailpat nilloc = let open Location in function
       Ppat_construct (nil, None), nilloc
   | p1 :: pl ->
       let pat_pl, el_loc = mktailpat nilloc pl in
-      let loc = (p1.ppat_loc.loc_start, snd el_loc) in
+      let loc = (loc_start p1.ppat_loc, snd el_loc) in
       let arg = ghpat ~loc (Ppat_tuple [p1; ghpat ~loc:el_loc pat_pl]) in
       ghpat_cons_desc loc arg, loc
 
@@ -386,7 +380,7 @@ let lapply ~loc p1 p2 =
 let loc_map (f : 'a -> 'b) (x : 'a Location.loc) : 'b Location.loc =
   { x with txt = f x.txt }
 
-let make_ghost x = { x with loc = { x.loc with loc_ghost = true }}
+let make_ghost x = { x with loc = Location.set_loc_ghost true x.loc }
 
 let loc_last (id : Longident.t Location.loc) : string Location.loc =
   loc_map Longident.last id
@@ -1994,7 +1988,7 @@ method_:
       { (label, private_, Cfk_virtual ty), attrs }
   | override_flag attributes private_flag mkrhs(label) strict_binding
       { let e = $5 in
-        let loc = Location.(e.pexp_loc.loc_start, e.pexp_loc.loc_end) in
+        let loc = Location.(loc_start e.pexp_loc, loc_end e.pexp_loc) in
         ($4, $3,
         Cfk_concrete ($1, ghexp ~loc (Pexp_poly (e, None)))), $2 }
   | override_flag attributes private_flag mkrhs(label)
@@ -2529,7 +2523,7 @@ let_binding_body_no_punning:
           | _, Some t -> t
           | _ -> assert false
         in
-        let loc = Location.(t.ptyp_loc.loc_start, t.ptyp_loc.loc_end) in
+        let loc = Location.(loc_start t.ptyp_loc, loc_end t.ptyp_loc) in
         let typ = ghtyp ~loc (Ptyp_poly([],t)) in
         let patloc = ($startpos($1), $endpos($2)) in
         (ghpat ~loc:patloc (Ppat_constraint(v, typ)),

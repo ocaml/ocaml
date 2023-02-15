@@ -353,8 +353,8 @@ module Analyser =
            let complete_name = Name.concat current_module_name name in
            let code =
               if !Odoc_global.keep_code then
-                Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum
-                      loc.Location.loc_end.Lexing.pos_cnum)
+                Some (get_string_of_file (Location.loc_start loc).Lexing.pos_cnum
+                      (Location.loc_end loc).Lexing.pos_cnum)
               else
                 None
             in
@@ -378,8 +378,8 @@ module Analyser =
            let complete_name = Name.concat current_module_name name in
            let code =
              if !Odoc_global.keep_code then
-                Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum
-                      loc.Location.loc_end.Lexing.pos_cnum)
+                Some (get_string_of_file (Location.loc_start loc).Lexing.pos_cnum
+                      (Location.loc_end loc).Lexing.pos_cnum)
              else
                None
             in
@@ -534,7 +534,7 @@ module Analyser =
             in
             let (info_opt, ele_comments) =
               get_comments_in_class last_pos
-                p_clexp.Parsetree.pcl_loc.Location.loc_start.Lexing.pos_cnum
+                (p_clexp.Parsetree.pcl_loc |> Location.loc_start).Lexing.pos_cnum
             in
             let text_opt =
               match info_opt with None -> None
@@ -548,13 +548,13 @@ module Analyser =
               }
             in
             iter (acc_inher @ [ inher ]) (acc_fields @ ele_comments)
-              p_clexp.Parsetree.pcl_loc.Location.loc_end.Lexing.pos_cnum
+              (p_clexp.Parsetree.pcl_loc |> Location.loc_end).Lexing.pos_cnum
               q
 
       | Parsetree.Pcf_val ({ txt = label }, mutable_flag, k) ->
             let virt = match k with Parsetree.Cfk_virtual _ -> true | Parsetree.Cfk_concrete _ -> false in
             let complete_name = Name.concat current_class_name label in
-            let (info_opt, ele_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
+            let (info_opt, ele_comments) = get_comments_in_class last_pos (Location.loc_start loc).Lexing.pos_cnum in
             let type_exp =
               try Typedtree_search.search_attribute_type tt_cls label
               with Not_found ->
@@ -562,8 +562,8 @@ module Analyser =
           in
           let code =
             if !Odoc_global.keep_code then
-              Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum
-                    loc.Location.loc_end.Lexing.pos_cnum)
+              Some (get_string_of_file (Location.loc_start loc).Lexing.pos_cnum
+                    (Location.loc_end loc).Lexing.pos_cnum)
             else
               None
           in
@@ -581,11 +581,11 @@ module Analyser =
               att_virtual = virt ;
             }
           in
-          iter acc_inher (acc_fields @ ele_comments @ [ Class_attribute att ]) loc.Location.loc_end.Lexing.pos_cnum q
+          iter acc_inher (acc_fields @ ele_comments @ [ Class_attribute att ]) (Location.loc_end loc).Lexing.pos_cnum q
 
         | (Parsetree.Pcf_method  ({ txt = label }, private_flag, Parsetree.Cfk_virtual _)) ->
             let complete_name = Name.concat current_class_name label in
-            let (info_opt, ele_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
+            let (info_opt, ele_comments) = get_comments_in_class last_pos (Location.loc_start loc).Lexing.pos_cnum in
             let met_type =
               try Odoc_sig.Signature_search.search_method_type label tt_class_sig
               with Not_found -> raise (Failure (Odoc_messages.method_type_not_found current_class_name label))
@@ -600,8 +600,8 @@ module Analyser =
           in
           let code =
             if !Odoc_global.keep_code then
-              Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum
-               loc.Location.loc_end.Lexing.pos_cnum)
+              Some (get_string_of_file (Location.loc_start loc).Lexing.pos_cnum
+               (Location.loc_end loc).Lexing.pos_cnum)
             else
               None
           in
@@ -623,11 +623,11 @@ module Analyser =
           (* update the parameter description *)
           Odoc_value.update_value_parameters_text met.met_value;
 
-          iter acc_inher (acc_fields @ ele_comments @ [ Class_method met ]) loc.Location.loc_end.Lexing.pos_cnum q
+          iter acc_inher (acc_fields @ ele_comments @ [ Class_method met ]) (Location.loc_end loc).Lexing.pos_cnum q
 
         | (Parsetree.Pcf_method ({ txt = label }, private_flag, Parsetree.Cfk_concrete _)) ->
             let complete_name = Name.concat current_class_name label in
-            let (info_opt, ele_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
+            let (info_opt, ele_comments) = get_comments_in_class last_pos (Location.loc_start loc).Lexing.pos_cnum in
             let exp =
               try Typedtree_search.search_method_expression tt_cls label
             with Not_found -> raise (Failure (Odoc_messages.method_not_found_in_typedtree complete_name))
@@ -642,8 +642,8 @@ module Analyser =
           in
           let code =
             if !Odoc_global.keep_code then
-                Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum
-               loc.Location.loc_end.Lexing.pos_cnum)
+                Some (get_string_of_file (Location.loc_start loc).Lexing.pos_cnum
+               (Location.loc_end loc).Lexing.pos_cnum)
             else
               None
           in
@@ -664,17 +664,17 @@ module Analyser =
           (* update the parameter description *)
           Odoc_value.update_value_parameters_text met.met_value;
 
-          iter acc_inher (acc_fields @ ele_comments @ [ Class_method met ]) loc.Location.loc_end.Lexing.pos_cnum q
+          iter acc_inher (acc_fields @ ele_comments @ [ Class_method met ]) (Location.loc_end loc).Lexing.pos_cnum q
 
         | Parsetree.Pcf_constraint (_, _) ->
             (* don't give a $*%@ ! *)
-            iter acc_inher acc_fields loc.Location.loc_end.Lexing.pos_cnum q
+            iter acc_inher acc_fields (Location.loc_end loc).Lexing.pos_cnum q
 
         | (Parsetree.Pcf_initializer exp) ->
-            iter acc_inher acc_fields exp.Parsetree.pexp_loc.Location.loc_end.Lexing.pos_cnum q
+            iter acc_inher acc_fields (exp.Parsetree.pexp_loc |> Location.loc_end).Lexing.pos_cnum q
 
         | Parsetree.Pcf_attribute _ ->
-            iter acc_inher acc_fields loc.Location.loc_end.Lexing.pos_cnum q
+            iter acc_inher acc_fields (Location.loc_end loc).Lexing.pos_cnum q
 
         | Parsetree.Pcf_extension _ -> assert false
       in
@@ -722,7 +722,7 @@ module Analyser =
               current_class_name
               tt_class_sig
               last_pos
-              p_class_expr.Parsetree.pcl_loc.Location.loc_end.Lexing.pos_cnum
+              (p_class_expr.Parsetree.pcl_loc |> Location.loc_end).Lexing.pos_cnum
               p_class_structure
               tt_class_structure
               table
@@ -798,8 +798,8 @@ module Analyser =
           let params_code =
             List.map
               (fun e -> get_string_of_file
-                  e.exp_loc.Location.loc_start.Lexing.pos_cnum
-                  e.exp_loc.Location.loc_end.Lexing.pos_cnum)
+                  (e.exp_loc |> Location.loc_start).Lexing.pos_cnum
+                  (e.exp_loc |> Location.loc_end).Lexing.pos_cnum)
               param_exps
           in
           ([],
@@ -844,7 +844,7 @@ module Analyser =
       let name = p_class_decl.Parsetree.pci_name in
       let complete_name = Name.concat current_module_name name.txt in
       let loc = p_class_decl.Parsetree.pci_expr.Parsetree.pcl_loc in
-      let pos_start = loc.Location.loc_start.Lexing.pos_cnum in
+      let pos_start = (Location.loc_start loc).Lexing.pos_cnum in
       let type_parameters = tt_type_params in
       let virt = p_class_decl.Parsetree.pci_virt = Asttypes.Virtual in
       let cltype = Odoc_env.subst_class_type env tt_class_exp.Typedtree.cl_type in
@@ -1043,12 +1043,12 @@ module Analyser =
               ele_coms
         | item :: q ->
             let (comment_opt, ele_comments) =
-              get_comments_in_module last_pos item.Parsetree.pstr_loc.Location.loc_start.Lexing.pos_cnum
+              get_comments_in_module last_pos (item.Parsetree.pstr_loc |> Location.loc_start).Lexing.pos_cnum
             in
             let pos_limit2 =
               match q with
                 [] -> pos_limit
-              | item2 :: _ -> item2.Parsetree.pstr_loc.Location.loc_start.Lexing.pos_cnum
+              | item2 :: _ -> (item2.Parsetree.pstr_loc|> Location.loc_start).Lexing.pos_cnum
             in
             let (maybe_more, new_env, elements) = analyse_structure_item
                 env
@@ -1061,7 +1061,7 @@ module Analyser =
                 table
                 table_values
             in
-            ele_comments @ elements @ (iter new_env (item.Parsetree.pstr_loc.Location.loc_end.Lexing.pos_cnum + maybe_more) q)
+            ele_comments @ elements @ (iter new_env ((item.Parsetree.pstr_loc |> Location.loc_end).Lexing.pos_cnum + maybe_more) q)
       in
       iter env last_pos parsetree
 
@@ -1093,7 +1093,7 @@ module Analyser =
                 (acc_env, acc)
             | {Parsetree.pvb_pat=pat; pvb_expr=exp;pvb_attributes=attrs} :: q ->
                 let value_name_opt = iter_pat pat.Parsetree.ppat_desc in
-                let new_last_pos = exp.Parsetree.pexp_loc.Location.loc_end.Lexing.pos_cnum in
+                let new_last_pos = (exp.Parsetree.pexp_loc |> Location.loc_end).Lexing.pos_cnum in
                 match value_name_opt with
                   None ->
                     iter new_last_pos acc_env acc q
@@ -1107,7 +1107,7 @@ module Analyser =
                         else
                           get_comments_in_module
                             last_pos
-                            pat.Parsetree.ppat_loc.Location.loc_start.Lexing.pos_cnum
+                            (pat.Parsetree.ppat_loc |> Location.loc_start).Lexing.pos_cnum
                       in
                       let l_values = tt_analyse_value
                           env
@@ -1135,7 +1135,7 @@ module Analyser =
                       Not_found ->
                         iter new_last_pos acc_env acc q
           in
-          let (new_env, l_ele) = iter ~first: true loc.Location.loc_start.Lexing.pos_cnum env [] pat_exp_list in
+          let (new_env, l_ele) = iter ~first: true (Location.loc_start loc).Lexing.pos_cnum env [] pat_exp_list in
           (0, new_env, l_ele)
 
       | Parsetree.Pstr_primitive val_desc ->
@@ -1146,8 +1146,8 @@ module Analyser =
             let complete_name = Name.concat current_module_name name in
             let code =
               if !Odoc_global.keep_code then
-                Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum
-                      loc.Location.loc_end.Lexing.pos_cnum)
+                Some (get_string_of_file (Location.loc_start loc).Lexing.pos_cnum
+                      (Location.loc_end loc).Lexing.pos_cnum)
               else
                 None
             in
@@ -1188,12 +1188,12 @@ module Analyser =
                 let name = type_decl.Parsetree.ptype_name.txt in
                 let complete_name = Name.concat current_module_name name in
                 let loc = type_decl.Parsetree.ptype_loc in
-                let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
-                let loc_end =  loc.Location.loc_end.Lexing.pos_cnum in
+                let loc_start = (Location.loc_start loc).Lexing.pos_cnum in
+                let loc_end =  (Location.loc_end loc).Lexing.pos_cnum in
                 let pos_limit2 =
                   match q with
                       [] -> pos_limit
-                    | td :: _ -> td.Parsetree.ptype_loc.Location.loc_start.Lexing.pos_cnum
+                    | td :: _ -> (td.Parsetree.ptype_loc |> Location.loc_start).Lexing.pos_cnum
                   in
                   let (maybe_more, name_comment_list) =
                     Sig.name_comment_from_type_decl loc_end pos_limit2 type_decl
@@ -1251,7 +1251,7 @@ module Analyser =
                   let (maybe_more3, eles) = f (maybe_more + maybe_more2) (new_end + maybe_more2) q in
                   (maybe_more3, ele_comments @ ((Element_type t) :: eles))
             in
-            let (maybe_more, eles) = f ~first: true 0 loc.Location.loc_start.Lexing.pos_cnum name_typedecl_list in
+            let (maybe_more, eles) = f ~first: true 0 (Location.loc_start loc).Lexing.pos_cnum name_typedecl_list in
             (maybe_more, extended_env, eles)
 
       | Parsetree.Pstr_typext tyext ->
@@ -1280,8 +1280,8 @@ module Analyser =
             Odoc_sig.analyze_alerts comment_opt
               tyext.Parsetree.ptyext_attributes
           in
-          let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
-          let loc_end =  loc.Location.loc_end.Lexing.pos_cnum in
+          let loc_start = (Location.loc_start loc).Lexing.pos_cnum in
+          let loc_end =  (Location.loc_end loc).Lexing.pos_cnum in
           let new_te =
             {
               te_info = comment_opt;
@@ -1306,7 +1306,7 @@ module Analyser =
                   [] -> (maybe_more, List.rev exts_acc)
                 | tt_ext :: q ->
                     let complete_name = Name.concat current_module_name tt_ext.ext_name.txt in
-                    let ext_loc_end =  tt_ext.ext_loc.Location.loc_end.Lexing.pos_cnum in
+                    let ext_loc_end =  (tt_ext.ext_loc |> Location.loc_end).Lexing.pos_cnum in
                     let new_xt =
                       match tt_ext.ext_kind with
                           Text_decl(_, args, ret_type) ->
@@ -1341,7 +1341,7 @@ module Analyser =
                         match q with
                           [] -> pos_limit
                         | next :: _ ->
-                            next.ext_loc.Location.loc_start.Lexing.pos_cnum
+                            (next.ext_loc |> Location.loc_start).Lexing.pos_cnum
                       in
                       let s = get_string_of_file ext_loc_end pos_limit2 in
                       let (maybe_more, comment_opt) =  My_ir.just_after_special !file_name s in
@@ -1373,8 +1373,8 @@ module Analyser =
           let new_ext =
             match tt_ext.Typedtree.tyexn_constructor.ext_kind with
               Text_decl(_, tt_args, tt_ret_type) ->
-                let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
-                let loc_end =  loc.Location.loc_end.Lexing.pos_cnum in
+                let loc_start = (Location.loc_start loc).Lexing.pos_cnum in
+                let loc_end =  (Location.loc_end loc).Lexing.pos_cnum in
                 let ex_args =
                   Sig.get_cstr_args env loc_end tt_args in
                 {
@@ -1431,8 +1431,8 @@ module Analyser =
              let code =
                if !Odoc_global.keep_code then
                  let loc = module_expr.Parsetree.pmod_loc in
-                 let st = loc.Location.loc_start.Lexing.pos_cnum in
-                 let en = loc.Location.loc_end.Lexing.pos_cnum in
+                 let st = (Location.loc_start loc).Lexing.pos_cnum in
+                 let en = (Location.loc_end loc).Lexing.pos_cnum in
                  Some (get_string_of_file st en)
                else
                  None
@@ -1494,8 +1494,8 @@ module Analyser =
             match name_mod_exp_list with
               [] -> []
             | {Parsetree.pmb_name={txt=None};pmb_expr=mod_exp} :: q ->
-                let loc_start = mod_exp.Parsetree.pmod_loc.Location.loc_start.Lexing.pos_cnum in
-                let loc_end =  mod_exp.Parsetree.pmod_loc.Location.loc_end.Lexing.pos_cnum in
+                let loc_start = (mod_exp.Parsetree.pmod_loc |> Location.loc_start).Lexing.pos_cnum in
+                let loc_end =  (mod_exp.Parsetree.pmod_loc |> Location.loc_end).Lexing.pos_cnum in
                 let (_, ele_comments) = (* the comment for the first type was already retrieved *)
                   if first then
                     (None, [])
@@ -1506,8 +1506,8 @@ module Analyser =
                 ele_comments @ eles
             | {Parsetree.pmb_name={txt=Some name};pmb_expr=mod_exp} :: q ->
                 let complete_name = Name.concat current_module_name name in
-                let loc_start = mod_exp.Parsetree.pmod_loc.Location.loc_start.Lexing.pos_cnum in
-                let loc_end =  mod_exp.Parsetree.pmod_loc.Location.loc_end.Lexing.pos_cnum in
+                let loc_start = (mod_exp.Parsetree.pmod_loc |> Location.loc_start).Lexing.pos_cnum in
+                let loc_end =  (mod_exp.Parsetree.pmod_loc |> Location.loc_end).Lexing.pos_cnum in
                 let tt_mod_exp =
                   try Typedtree_search.search_module table name
                   with Not_found -> raise (Failure (Odoc_messages.module_not_found_in_typedtree complete_name))
@@ -1529,7 +1529,7 @@ module Analyser =
                 let eles = f loc_end q in
                 ele_comments @ ((Element_module new_module) :: eles)
           in
-          let eles = f ~first: true loc.Location.loc_start.Lexing.pos_cnum mods in
+          let eles = f ~first: true (Location.loc_start loc).Lexing.pos_cnum mods in
           (0, new_env, eles)
 
       | Parsetree.Pstr_modtype {Parsetree.pmtd_name=name; pmtd_type=modtype;
@@ -1610,9 +1610,9 @@ module Analyser =
                   if first then
                     (comment_opt, [])
                   else
-                    get_comments_in_module last_pos class_decl.Parsetree.pci_loc.Location.loc_start.Lexing.pos_cnum
+                    get_comments_in_module last_pos (class_decl.Parsetree.pci_loc |> Location.loc_start).Lexing.pos_cnum
                 in
-                let last_pos2 = class_decl.Parsetree.pci_loc.Location.loc_end.Lexing.pos_cnum in
+                let last_pos2 = (class_decl.Parsetree.pci_loc |> Location.loc_end).Lexing.pos_cnum in
                 let new_class = analyse_class
                     new_env
                     current_module_name
@@ -1624,7 +1624,7 @@ module Analyser =
                 in
                 ele_comments @ ((Element_class new_class) :: (f last_pos2 q))
           in
-          (0, new_env, f ~first: true loc.Location.loc_start.Lexing.pos_cnum class_decl_list)
+          (0, new_env, f ~first: true (Location.loc_start loc).Lexing.pos_cnum class_decl_list)
 
       | Parsetree.Pstr_class_type class_type_decl_list ->
           (* we start by extending the environment *)
@@ -1655,7 +1655,7 @@ module Analyser =
                 let kind = Sig.analyse_class_type_kind
                     new_env
                     complete_name
-                    class_type_decl.Parsetree.pci_loc.Location.loc_start.Lexing.pos_cnum
+                    (class_type_decl.Parsetree.pci_loc |> Location.loc_start).Lexing.pos_cnum
                     class_type_decl.Parsetree.pci_expr
                     tt_cltype_declaration.Types.clty_type
                 in
@@ -1663,13 +1663,13 @@ module Analyser =
                   if first then
                     (comment_opt, [])
                   else
-                    get_comments_in_module last_pos class_type_decl.Parsetree.pci_loc.Location.loc_start.Lexing.pos_cnum
+                    get_comments_in_module last_pos (class_type_decl.Parsetree.pci_loc |> Location.loc_start).Lexing.pos_cnum
                 in
                 let com_opt =
                   Odoc_sig.analyze_alerts com_opt
                     class_type_decl.Parsetree.pci_attributes
                 in
-                let last_pos2 = class_type_decl.Parsetree.pci_loc.Location.loc_end.Lexing.pos_cnum in
+                let last_pos2 = (class_type_decl.Parsetree.pci_loc |> Location.loc_end).Lexing.pos_cnum in
                 let new_ele =
                   Element_class_type
                     {
@@ -1685,7 +1685,7 @@ module Analyser =
                 in
                 ele_comments @ (new_ele :: (f last_pos2 q))
           in
-          (0, new_env, f ~first: true loc.Location.loc_start.Lexing.pos_cnum class_type_decl_list)
+          (0, new_env, f ~first: true (Location.loc_start loc).Lexing.pos_cnum class_type_decl_list)
 
       | Parsetree.Pstr_include _ ->
           (* we add a dummy included module which will be replaced by a correct
@@ -1704,8 +1704,8 @@ module Analyser =
      and analyse_module env current_module_name module_name comment_opt p_module_expr tt_module_expr =
       let complete_name = Name.concat current_module_name module_name in
       let loc = p_module_expr.Parsetree.pmod_loc in
-      let pos_start = loc.Location.loc_start.Lexing.pos_cnum in
-      let pos_end = loc.Location.loc_end.Lexing.pos_cnum in
+      let pos_start = (Location.loc_start loc).Lexing.pos_cnum in
+      let pos_end = (Location.loc_end loc).Lexing.pos_cnum in
       let modtype =
         (* FIXME : Odoc_env.subst_module_type env  ? *)
         tt_module_expr.Typedtree.mod_type
@@ -1713,8 +1713,8 @@ module Analyser =
       let m_code_intf =
         match p_module_expr.Parsetree.pmod_desc with
           Parsetree.Pmod_constraint (_, pmodule_type) ->
-            let loc_start = pmodule_type.Parsetree.pmty_loc.Location.loc_start.Lexing.pos_cnum in
-            let loc_end = pmodule_type.Parsetree.pmty_loc.Location.loc_end.Lexing.pos_cnum in
+            let loc_start = (pmodule_type.Parsetree.pmty_loc |> Location.loc_start).Lexing.pos_cnum in
+            let loc_end = (pmodule_type.Parsetree.pmty_loc |> Location.loc_end).Lexing.pos_cnum in
             Some (get_string_of_file loc_start loc_end)
         | _ ->
             None
@@ -1771,8 +1771,8 @@ module Analyser =
                loc, mp_name, mp_kind, Some mp_type
              | _, _ -> assert false
            in
-           let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
-           let loc_end = loc.Location.loc_end.Lexing.pos_cnum in
+           let loc_start = (Location.loc_start loc).Lexing.pos_cnum in
+           let loc_end = (Location.loc_end loc).Lexing.pos_cnum in
            let mp_type_code = get_string_of_file loc_start loc_end in
            let param =
              {
@@ -1863,9 +1863,9 @@ module Analyser =
          Typedtree.Tmod_unpack (_t_exp, tt_modtype)) ->
           let code =
             let loc = p_module_expr.Parsetree.pmod_loc in
-            let loc_end = loc.Location.loc_end.Lexing.pos_cnum in
+            let loc_end = (Location.loc_end loc).Lexing.pos_cnum in
             let exp_loc = p_exp.Parsetree.pexp_loc in
-            let exp_loc_end = exp_loc.Location.loc_end.Lexing.pos_cnum in
+            let exp_loc_end = (exp_loc |> Location.loc_end).Lexing.pos_cnum in
             let s = get_string_of_file exp_loc_end loc_end in
             Printf.sprintf "(val ...%s" s
           in

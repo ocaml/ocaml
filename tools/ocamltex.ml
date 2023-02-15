@@ -134,8 +134,8 @@ module Toplevel = struct
   (** Store character intervals directly *)
   let locs = ref []
   let register_loc (loc : Location.t) =
-    let startchar = loc.loc_start.pos_cnum in
-    let endchar = loc.loc_end.pos_cnum in
+    let startchar = (loc |> Location.loc_start).pos_cnum in
+    let endchar = (loc |> Location.loc_end).pos_cnum in
     if startchar >= 0 then
       locs := (startchar, endchar) :: !locs
 
@@ -537,10 +537,10 @@ module Ellipsis = struct
       let module P = Parsetree in
       let name = attr.P.attr_name.L.txt in
       let loc = !last_loc in
-      let start = loc.L.loc_start.Lexing.pos_cnum in
-      let attr_start = attr.P.attr_loc.L.loc_start.Lexing.pos_cnum in
-      let attr_stop = attr.P.attr_loc.L.loc_end.Lexing.pos_cnum in
-      let stop = max loc.L.loc_end.Lexing.pos_cnum attr_stop  in
+      let start = (loc |> L.loc_start).Lexing.pos_cnum in
+      let attr_start = (attr.P.attr_loc |> L.loc_start).Lexing.pos_cnum in
+      let attr_stop = (attr.P.attr_loc |> L.loc_end).Lexing.pos_cnum in
+      let stop = max (loc |> L.loc_end).Lexing.pos_cnum attr_stop  in
       let check_nested () = match !left_mark with
         | Some (first,_) -> raise (Nested_ellipses {first; second=attr_start})
         | None -> () in

@@ -407,8 +407,8 @@ let op_shapes = [
 
 let print_event ev =
   if !print_locations then
-    let ls = ev.ev_loc.loc_start in
-    let le = ev.ev_loc.loc_end in
+    let ls = loc_start ev.ev_loc in
+    let le = loc_end ev.ev_loc in
     printf "File \"%s\", line %d, characters %d-%d:\n" ls.Lexing.pos_fname
       ls.Lexing.pos_lnum (ls.Lexing.pos_cnum - ls.Lexing.pos_bol)
       (le.Lexing.pos_cnum - ls.Lexing.pos_bol)

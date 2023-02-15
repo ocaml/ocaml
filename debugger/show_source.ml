@@ -52,10 +52,10 @@ let show_point ev selected =
   if !emacs && selected then
     begin try
       let buffer = get_buffer (Events.get_pos ev) mdle in
-      let source = source_of_module ev.ev_loc.Location.loc_start mdle in
+      let source = source_of_module (ev.ev_loc |> Location.loc_start) mdle in
       printf "\026\026M%s:%i:%i" source
-        (snd (start_and_cnum buffer ev.ev_loc.Location.loc_start))
-        (snd (start_and_cnum buffer ev.ev_loc.Location.loc_end));
+        (snd (start_and_cnum buffer (ev.ev_loc |> Location.loc_start)))
+        (snd (start_and_cnum buffer (ev.ev_loc |> Location.loc_end)));
       printf "%s\n" (if before then ":before" else ":after")
     with
       Out_of_range -> (* point_of_coord *)

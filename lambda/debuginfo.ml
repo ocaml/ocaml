@@ -135,22 +135,23 @@ let to_string dbg =
     "{" ^ String.concat ";" items ^ "}"
 
 let item_from_location ~scopes loc =
+  let loc_start = loc_start loc and loc_end = loc_end loc in
   let valid_endpos =
-    String.equal loc.loc_end.pos_fname loc.loc_start.pos_fname in
-  { dinfo_file = loc.loc_start.pos_fname;
-    dinfo_line = loc.loc_start.pos_lnum;
-    dinfo_char_start = loc.loc_start.pos_cnum - loc.loc_start.pos_bol;
+    String.equal loc_end.pos_fname loc_start.pos_fname in
+  { dinfo_file = loc_start.pos_fname;
+    dinfo_line = loc_start.pos_lnum;
+    dinfo_char_start = loc_start.pos_cnum - loc_start.pos_bol;
     dinfo_char_end =
       if valid_endpos
-      then loc.loc_end.pos_cnum - loc.loc_start.pos_bol
-      else loc.loc_start.pos_cnum - loc.loc_start.pos_bol;
-    dinfo_start_bol = loc.loc_start.pos_bol;
+      then loc_end.pos_cnum - loc_start.pos_bol
+      else loc_start.pos_cnum - loc_start.pos_bol;
+    dinfo_start_bol = loc_start.pos_bol;
     dinfo_end_bol =
-      if valid_endpos then loc.loc_end.pos_bol
-      else loc.loc_start.pos_bol;
+      if valid_endpos then loc_end.pos_bol
+      else loc_start.pos_bol;
     dinfo_end_line =
-      if valid_endpos then loc.loc_end.pos_lnum
-      else loc.loc_start.pos_lnum;
+      if valid_endpos then loc_end.pos_lnum
+      else loc_start.pos_lnum;
     dinfo_scopes = scopes
   }
 
@@ -175,7 +176,7 @@ let to_location = function
         pos_bol = d.dinfo_end_bol;
         pos_cnum = d.dinfo_start_bol + d.dinfo_char_end;
       } in
-    { loc_ghost = false; loc_start; loc_end; }
+    Location.mk loc_start loc_end
 
 let inline dbg1 dbg2 =
   dbg1 @ dbg2

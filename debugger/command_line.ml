@@ -958,11 +958,11 @@ let info_events _ppf lexbuf =
         let start_char, end_char =
           try
             let buffer = get_buffer (Events.get_pos ev) ev.ev_module in
-            (snd (start_and_cnum buffer ev.ev_loc.Location.loc_start)),
-            (snd (start_and_cnum buffer ev.ev_loc.Location.loc_end))
+            (snd (start_and_cnum buffer (ev.ev_loc |> Location.loc_start))),
+            (snd (start_and_cnum buffer (ev.ev_loc |> Location.loc_end)))
           with _ ->
-            ev.ev_loc.Location.loc_start.Lexing.pos_cnum,
-            ev.ev_loc.Location.loc_end.Lexing.pos_cnum in
+            (ev.ev_loc |> Location.loc_start).Lexing.pos_cnum,
+            (ev.ev_loc |> Location.loc_end).Lexing.pos_cnum in
         Printf.printf
            "%d:%10d %6d-%-6d  %10s %10s\n"
            frag

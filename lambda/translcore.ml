@@ -194,7 +194,7 @@ let assert_failed loc ~scopes exp =
       Env.initial Predef.path_assert_failure
   in
   let (fname, line, char) =
-    Location.get_pos_info loc.Location.loc_start
+    Location.get_pos_info (Location.loc_start loc)
   in
   let loc = of_location ~scopes exp.exp_loc in
   Lprim(Praise Raise_regular, [event_after ~scopes exp

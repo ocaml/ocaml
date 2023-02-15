@@ -15,19 +15,25 @@
 
 open Lexing
 
-type t = Warnings.loc =
-  { loc_start: position; loc_end: position; loc_ghost: bool }
+type t = Warnings.loc
+
+let mk = Warnings.mkloc
+let loc_start = Warnings.loc_start
+let loc_end = Warnings.loc_end
+let loc_ghost = Warnings.loc_ghost
+let set_loc_ghost = Warnings.set_loc_ghost
+let set_loc_start = Warnings.set_loc_start
+let set_loc_end = Warnings.set_loc_end
 
 let in_file = Warnings.ghost_loc_in_file
 
 let none = in_file "_none_"
 let is_none l = (l = none)
 
-let curr lexbuf = {
-  loc_start = lexbuf.lex_start_p;
-  loc_end = lexbuf.lex_curr_p;
-  loc_ghost = false
-}
+let curr lexbuf =
+  mk
+    lexbuf.lex_start_p
+    lexbuf.lex_curr_p
 
 let init lexbuf fname =
   lexbuf.lex_curr_p <- {
@@ -37,29 +43,25 @@ let init lexbuf fname =
     pos_cnum = 0;
   }
 
-let symbol_rloc () = {
-  loc_start = Parsing.symbol_start_pos ();
-  loc_end = Parsing.symbol_end_pos ();
-  loc_ghost = false;
-}
+let symbol_rloc () =
+  mk
+    (Parsing.symbol_start_pos ())
+    (Parsing.symbol_end_pos ())
 
-let symbol_gloc () = {
-  loc_start = Parsing.symbol_start_pos ();
-  loc_end = Parsing.symbol_end_pos ();
-  loc_ghost = true;
-}
+let symbol_gloc () =
+  mk ~ghost:()
+    (Parsing.symbol_start_pos ())
+    (Parsing.symbol_end_pos ())
 
-let rhs_loc n = {
-  loc_start = Parsing.rhs_start_pos n;
-  loc_end = Parsing.rhs_end_pos n;
-  loc_ghost = false;
-}
+let rhs_loc n =
+  mk
+    (Parsing.rhs_start_pos n)
+    (Parsing.rhs_end_pos n)
 
-let rhs_interval m n = {
-  loc_start = Parsing.rhs_start_pos m;
-  loc_end = Parsing.rhs_end_pos n;
-  loc_ghost = false;
-}
+let rhs_interval m n =
+  mk
+    (Parsing.rhs_start_pos m)
+    (Parsing.rhs_end_pos n)
 
 (* return file, line, char from the given position *)
 let get_pos_info pos =
@@ -181,16 +183,17 @@ let print_loc ppf loc =
   let line_valid line = line > 0 in
   let chars_valid ~startchar ~endchar = startchar <> -1 && endchar <> -1 in
 
+  let loc_start = loc_start loc and loc_end = loc_end loc in
   let file =
     (* According to the comment in location.mli, if [pos_fname] is "", we must
        use [!input_name]. *)
-    if loc.loc_start.pos_fname = "" then !input_name
-    else loc.loc_start.pos_fname
+    if loc_start.pos_fname = "" then !input_name
+    else loc_start.pos_fname
   in
-  let startline = loc.loc_start.pos_lnum in
-  let endline = loc.loc_end.pos_lnum in
-  let startchar = loc.loc_start.pos_cnum - loc.loc_start.pos_bol in
-  let endchar = loc.loc_end.pos_cnum - loc.loc_end.pos_bol in
+  let startline = loc_start.pos_lnum in
+  let endline = loc_end.pos_lnum in
+  let startchar = loc_start.pos_cnum - loc_start.pos_bol in
+  let endchar = loc_end.pos_cnum - loc_end.pos_bol in
 
   let first = ref true in
   let capitalize s =
@@ -337,9 +340,9 @@ let highlight_terminfo lb ppf locs =
   print_string "# ";
   for pos = 0 to lb.lex_buffer_len - pos0 - 1 do
     if !bol then (print_string "  "; bol := false);
-    if List.exists (fun loc -> pos = loc.loc_start.pos_cnum) locs then
+    if List.exists (fun loc -> pos = (loc_start loc).pos_cnum) locs then
       Terminfo.standout stdout true;
-    if List.exists (fun loc -> pos = loc.loc_end.pos_cnum) locs then
+    if List.exists (fun loc -> pos = (loc_end loc).pos_cnum) locs then
       Terminfo.standout stdout false;
     let c = Bytes.get lb.lex_buffer (pos + pos0) in
     print_char c;
@@ -429,7 +432,7 @@ let highlight_quote ppf
     locs
   =
   let iset = ISet.of_intervals @@ List.filter_map (fun loc ->
-    let s, e = loc.loc_start, loc.loc_end in
+    let s, e = loc_start loc, loc_end loc in
     if s.pos_cnum = -1 || e.pos_cnum = -1 then None
     else Some ((s, s.pos_cnum), (e, e.pos_cnum - 1))
   ) locs in
@@ -678,7 +681,7 @@ let is_dummy_loc loc =
      locations with valid ranges that should still be printed. These locations
      should be made non-ghost -- in the meantime we just check if the ranges are
      valid. *)
-  loc.loc_start.pos_cnum = -1 || loc.loc_end.pos_cnum = -1
+  (loc_start loc).pos_cnum = -1 || (loc_end loc).pos_cnum = -1
 
 (* It only makes sense to highlight (i.e. quote or underline the corresponding
    source code) locations that originate from the current input.
@@ -698,8 +701,8 @@ let is_dummy_loc loc =
 *)
 let is_quotable_loc loc =
   not (is_dummy_loc loc)
-  && loc.loc_start.pos_fname = !input_name
-  && loc.loc_end.pos_fname = !input_name
+  && (loc_start loc).pos_fname = !input_name
+  && (loc_end loc).pos_fname = !input_name
 
 let error_style () =
   match !Clflags.error_style with
@@ -771,7 +774,7 @@ let batch_mode_printer : report_printer =
       (self.pp_submsg_txt self report) txt
   in
   let pp_submsg_loc self report ppf loc =
-    if not loc.loc_ghost then
+    if not (loc_ghost loc) then
       pp_loc self report ppf loc
   in
   let pp_submsg_txt _self _ ppf loc =
@@ -794,7 +797,7 @@ let terminfo_toplevel_printer (lb: lexbuf): report_printer =
   in
   let pp_main_loc _ _ _ _ = () in
   let pp_submsg_loc _ _ ppf loc =
-    if not loc.loc_ghost then
+    if not (loc_ghost loc) then
       Format.fprintf ppf "%a:@ " print_loc loc in
   { batch_mode_printer with pp; pp_main_loc; pp_submsg_loc }
 

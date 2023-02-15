@@ -124,7 +124,8 @@ let store_escaped_char lexbuf c =
 let store_escaped_uchar lexbuf u =
   if in_comment () then store_lexeme lexbuf else store_string_utf_8_uchar u
 
-let compute_quoted_string_idloc {Location.loc_start = orig_loc } shift id =
+let compute_quoted_string_idloc loc shift id =
+  let orig_loc = Location.loc_start loc in
   let id_start_pos = orig_loc.Lexing.pos_cnum + shift in
   let loc_start =
     Lexing.{orig_loc with pos_cnum = id_start_pos }
@@ -132,7 +133,7 @@ let compute_quoted_string_idloc {Location.loc_start = orig_loc } shift id =
   let loc_end =
     Lexing.{orig_loc with pos_cnum = id_start_pos + String.length id}
   in
-  {Location. loc_start ; loc_end ; loc_ghost = false }
+  Location.mk loc_start loc_end
 
 let wrap_string_lexer f lexbuf =
   let loc_start = lexbuf.lex_curr_p in
@@ -143,8 +144,7 @@ let wrap_string_lexer f lexbuf =
   let loc_end = f lexbuf in
   is_in_string := false;
   lexbuf.lex_start_p <- string_start;
-  let loc = Location.{loc_ghost= false; loc_start; loc_end} in
-  get_stored_string (), loc
+  get_stored_string (), Location.mk loc_start loc_end
 
 let wrap_comment_lexer comment lexbuf =
   let start_loc = Location.curr lexbuf  in
@@ -154,7 +154,7 @@ let wrap_comment_lexer comment lexbuf =
   let s = get_stored_string () in
   reset_string_buffer ();
   s,
-  { start_loc with Location.loc_end = end_loc.Location.loc_end }
+  Location.set_loc_end (Location.loc_end end_loc) start_loc
 
 let error lexbuf e = raise (Error(e, Location.curr lexbuf))
 let error_loc loc e = raise (Error(e, loc))

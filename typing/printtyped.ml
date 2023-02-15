@@ -28,8 +28,8 @@ let fmt_position f l =
 let fmt_location f loc =
   if not !Clflags.locations then ()
   else begin
-    fprintf f "(%a..%a)" fmt_position loc.loc_start fmt_position loc.loc_end;
-    if loc.loc_ghost then fprintf f " ghost";
+    fprintf f "(%a..%a)" fmt_position (loc_start loc) fmt_position (loc_end loc);
+    if loc_ghost loc then fprintf f " ghost";
   end
 
 let rec fmt_longident_aux f x =

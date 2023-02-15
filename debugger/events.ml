@@ -24,9 +24,9 @@ type code_event =
 
 let get_pos ev =
   match ev.ev_kind with
-  | Event_before -> ev.ev_loc.Location.loc_start
-  | Event_after _ -> ev.ev_loc.Location.loc_end
-  | _ -> ev.ev_loc.Location.loc_start
+  | Event_before -> ev.ev_loc |> Location.loc_start
+  | Event_after _ -> ev.ev_loc |> Location.loc_end
+  | _ -> ev.ev_loc |> Location.loc_start
 
 
 (*** Current events. ***)

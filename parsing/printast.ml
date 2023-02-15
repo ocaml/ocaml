@@ -29,10 +29,11 @@ let fmt_position with_name f l =
 let fmt_location f loc =
   if not !Clflags.locations then ()
   else begin
-    let p_2nd_name = loc.loc_start.pos_fname <> loc.loc_end.pos_fname in
-    fprintf f "(%a..%a)" (fmt_position true) loc.loc_start
-                         (fmt_position p_2nd_name) loc.loc_end;
-    if loc.loc_ghost then fprintf f " ghost";
+    let loc_start = loc_start loc and loc_end = loc_end loc in
+    let p_2nd_name = loc_start.pos_fname <> loc_end.pos_fname in
+    fprintf f "(%a..%a)" (fmt_position true) loc_start
+                         (fmt_position p_2nd_name) loc_end;
+    if loc_ghost loc then fprintf f " ghost";
   end
 
 let rec fmt_longident_aux f x =

@@ -18,11 +18,35 @@
    - man/ocamlc.m
 *)
 
-type loc = {
-  loc_start: Lexing.position;
-  loc_end: Lexing.position;
-  loc_ghost: bool;
-}
+module Loc : sig
+  type loc
+  val mkloc: ?ghost:unit -> Lexing.position -> Lexing.position -> loc
+  val loc_start: loc -> Lexing.position
+  val loc_end: loc -> Lexing.position
+  val loc_ghost: loc -> bool
+  val set_loc_start: Lexing.position -> loc -> loc
+  val set_loc_end: Lexing.position -> loc -> loc
+  val set_loc_ghost: bool -> loc -> loc
+end = struct
+  type loc = {
+    loc_start: Lexing.position;
+    loc_end: Lexing.position;
+    loc_ghost: bool;
+  }
+
+  let mkloc ?ghost loc_start loc_end =
+    { loc_start; loc_end; loc_ghost = Option.is_some ghost }
+
+  let loc_start l = l.loc_start
+  let loc_end l = l.loc_end
+  let loc_ghost l = l.loc_ghost
+
+  let set_loc_start loc_start l = {l with loc_start}
+  let set_loc_end loc_end l = {l with loc_end}
+  let set_loc_ghost loc_ghost l = {l with loc_ghost}
+end
+
+include Loc
 
 type field_usage_warning =
   | Unused
@@ -690,7 +714,7 @@ type token =
 
 let ghost_loc_in_file name =
   let pos = { Lexing.dummy_pos with pos_fname = name } in
-  { loc_start = pos; loc_end = pos; loc_ghost = true }
+  mkloc ~ghost:() pos pos
 
 let letter_alert tokens =
   let print_warning_char ppf c =
@@ -1173,7 +1197,7 @@ let report_alert (alert : alert) =
              testsuite
        *)
       let sub_locs =
-        if not alert.def.loc_ghost && not alert.use.loc_ghost then
+        if not (loc_ghost alert.def) && not (loc_ghost alert.use) then
           [
             alert.def, "Definition";
             alert.use, "Expected signature";

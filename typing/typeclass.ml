@@ -957,7 +957,7 @@ and class_structure cl_num virt self_scope final val_env met_env loc
   let par_env = met_env in
 
   (* Location of self. Used for locations of self arguments *)
-  let self_loc = {spat.ppat_loc with Location.loc_ghost = true} in
+  let self_loc = Location.set_loc_ghost true spat.ppat_loc in
 
   let sign = Ctype.new_class_signature () in
 

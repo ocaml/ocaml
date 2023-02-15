@@ -212,8 +212,8 @@ module Analyser =
     (** Helper functions for extracting location*)
     module Loc = struct
       let gen proj =
-        (fun ct -> (proj ct).Location.loc_start.Lexing.pos_cnum),
-        (fun ct -> (proj ct).Location.loc_end.Lexing.pos_cnum)
+        (fun ct -> (proj ct |> Location.loc_start).Lexing.pos_cnum),
+        (fun ct -> (proj ct |> Location.loc_end).Lexing.pos_cnum)
     let ptyp' ct = ct.Parsetree.ptyp_loc
     let pcd' pcd = pcd.Parsetree.pcd_loc
     let loc' loc = loc

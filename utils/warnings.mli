@@ -20,11 +20,21 @@
 
 *)
 
-type loc = {
+type loc (*= {
   loc_start: Lexing.position;
   loc_end: Lexing.position;
   loc_ghost: bool;
-}
+}*)
+
+val mkloc: ?ghost:unit -> Lexing.position -> Lexing.position -> loc
+
+val loc_start: loc -> Lexing.position
+val loc_end: loc -> Lexing.position
+val loc_ghost: loc -> bool
+
+val set_loc_start: Lexing.position -> loc -> loc
+val set_loc_end: Lexing.position -> loc -> loc
+val set_loc_ghost: bool -> loc -> loc
 
 val ghost_loc_in_file : string -> loc
 (** Return an empty ghost range located in a given file *)

@@ -197,7 +197,7 @@ let is_big obj =
   end
 
 let show_loc msg ppf loc =
-  let pos = loc.Location.loc_start in
+  let pos = Location.loc_start loc in
   if List.mem pos.Lexing.pos_fname [""; "_none_"; "//toplevel//"] then ()
   else Format.fprintf ppf "@\n@[<2>%a:@ %s@]" Location.print_loc loc msg
 

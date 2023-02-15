@@ -20,7 +20,8 @@ open Events
 
 let get_desc ev =
   let loc = ev.ev_ev.ev_loc in
+  let loc_start = loc_start loc and loc_end = loc_end loc in
   Printf.sprintf "file %s, line %d, characters %d-%d"
-                 loc.loc_start.pos_fname loc.loc_start.pos_lnum
-                 (loc.loc_start.pos_cnum - loc.loc_start.pos_bol + 1)
-                 (loc.loc_end.pos_cnum - loc.loc_start.pos_bol + 1)
+                 loc_start.pos_fname loc_start.pos_lnum
+                 (loc_start.pos_cnum - loc_start.pos_bol + 1)
+                 (loc_end.pos_cnum - loc_start.pos_bol + 1)

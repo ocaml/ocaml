@@ -1615,8 +1615,8 @@ let rec every_satisfiables pss qs = match qs.active with
           every_satisfiables (push_no_or_column pss) (push_no_or qs)
     | `Or (q1,q2,_) ->
         if
-          q1.pat_loc.Location.loc_ghost &&
-          q2.pat_loc.Location.loc_ghost
+          (Location.loc_ghost q1.pat_loc) &&
+          (Location.loc_ghost q2.pat_loc)
         then
           (* syntactically generated or-pats should not be expanded *)
           every_satisfiables (push_no_or_column pss) (push_no_or qs)

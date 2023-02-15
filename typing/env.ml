@@ -1875,7 +1875,7 @@ let rec components_of_module_maker
 (* Insertion of bindings by identifier + path *)
 
 and check_usage loc id uid warn tbl =
-  if not loc.Location.loc_ghost &&
+  if not (Location.loc_ghost loc) &&
      Uid.for_actual_declaration uid &&
      Warnings.is_active (warn "")
   then begin
@@ -1915,7 +1915,7 @@ and store_value ?check id addr decl shape env =
 
 and store_constructor ~check type_decl type_id cstr_id cstr env =
   Builtin_attributes.warning_scope cstr.cstr_attributes (fun () ->
-  if check && not type_decl.type_loc.Location.loc_ghost
+  if check && not (Location.loc_ghost type_decl.type_loc)
      && Warnings.is_active (Warnings.Unused_constructor ("", Unused))
   then begin
     let ty_name = Ident.name type_id in
@@ -1948,7 +1948,7 @@ and store_constructor ~check type_decl type_id cstr_id cstr env =
 
 and store_label ~check type_decl type_id lbl_id lbl env =
   Builtin_attributes.warning_scope lbl.lbl_attributes (fun () ->
-  if check && not type_decl.type_loc.Location.loc_ghost
+  if check && not (Location.loc_ghost type_decl.type_loc)
      && Warnings.is_active (Warnings.Unused_field ("", Unused))
   then begin
     let ty_name = Ident.name type_id in
@@ -2040,7 +2040,7 @@ and store_extension ~check ~rebind id addr ext shape env =
       cda_shape = shape }
   in
   Builtin_attributes.warning_scope ext.ext_attributes (fun () ->
-  if check && not loc.Location.loc_ghost &&
+  if check && not (Location.loc_ghost loc) &&
     Warnings.is_active (Warnings.Unused_extension ("", false, Unused))
   then begin
     let priv = ext.ext_private in
@@ -2472,7 +2472,7 @@ let open_signature
   and warn_shadow_lc =
     Warnings.is_active (Warnings.Open_shadow_label_constructor ("",""))
   in
-  if not toplevel && not loc.Location.loc_ghost
+  if not toplevel && not (Location.loc_ghost loc)
      && (warn_unused || warn_shadow_id || warn_shadow_lc)
   then begin
     let used = used_slot in
@@ -2669,8 +2669,8 @@ let report_value_unbound ~errors ~loc env reason lid =
   | Val_unbound_ghost_recursive rloc ->
       let show_hint =
         (* Only display the "missing rec" hint for non-ghost code *)
-        not loc.Location.loc_ghost
-        && not rloc.Location.loc_ghost
+        not (Location.loc_ghost loc)
+        && not (Location.loc_ghost rloc)
       in
       let hint =
         if show_hint then Missing_rec rloc else No_hint
@@ -3559,7 +3559,7 @@ let report_lookup_error _loc env ppf = function
       | No_hint -> ()
       | Missing_rec def_loc ->
           let (_, line, _) =
-            Location.get_pos_info def_loc.Location.loc_start
+            Location.get_pos_info (Location.loc_start def_loc)
           in
           fprintf ppf
             "@.@[@{<hint>Hint@}: If this is a recursive definition,@ %s %i@]"

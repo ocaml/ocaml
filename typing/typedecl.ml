@@ -1048,12 +1048,12 @@ let transl_type_decl env rec_flag sdecl_list =
     List.map
       (fun sdecl ->
          let ptype_name =
-           let loc = { sdecl.ptype_name.loc with Location.loc_ghost = true } in
+           let loc = Location.set_loc_ghost true sdecl.ptype_name.loc in
            mkloc (sdecl.ptype_name.txt ^"#row") loc
          in
          let ptype_kind = Ptype_abstract in
          let ptype_manifest = None in
-         let ptype_loc = { sdecl.ptype_loc with Location.loc_ghost = true } in
+         let ptype_loc = Location.set_loc_ghost true sdecl.ptype_loc in
         {sdecl with
            ptype_name; ptype_kind; ptype_manifest; ptype_loc })
       fixed_types

@@ -169,7 +169,7 @@ let events = ref ([] : debug_event list)
 let debug_dirs = ref String.Set.empty
 
 let record_event ev =
-  let path = ev.ev_loc.Location.loc_start.Lexing.pos_fname in
+  let path = (Location.loc_start ev.ev_loc).Lexing.pos_fname in
   let abspath = Location.absolute_path path in
   debug_dirs := String.Set.add (Filename.dirname abspath) !debug_dirs;
   if Filename.is_relative path then begin

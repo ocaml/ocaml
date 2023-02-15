@@ -209,7 +209,7 @@ module Conflicts = struct
     let ltop, l =
       (* isolate toplevel locations, since they are too imprecise *)
       let from_toplevel a =
-        a.location.Location.loc_start.Lexing.pos_fname = "//toplevel//" in
+        (Location.loc_start a.location).Lexing.pos_fname = "//toplevel//" in
       List.partition from_toplevel (list_explanations ())
     in
     begin match l with

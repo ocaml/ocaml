@@ -106,9 +106,9 @@ let instruction ppf = function
   | Kreperformterm n -> fprintf ppf "\treperformterm %i" n
   | Kstop -> fprintf ppf "\tstop"
   | Kevent ev -> fprintf ppf "\tevent \"%s\" %i-%i"
-                         ev.ev_loc.Location.loc_start.Lexing.pos_fname
-                         ev.ev_loc.Location.loc_start.Lexing.pos_cnum
-                         ev.ev_loc.Location.loc_end.Lexing.pos_cnum
+                         (Location.loc_start ev.ev_loc).Lexing.pos_fname
+                         (Location.loc_start ev.ev_loc).Lexing.pos_cnum
+                         (Location.loc_end ev.ev_loc).Lexing.pos_cnum
 
 let rec instruction_list ppf = function
     [] -> ()

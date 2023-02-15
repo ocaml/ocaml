@@ -557,12 +557,7 @@ let load_config ppf filename =
                 pos_cnum = pos_in ic;
               }
             in
-            let loc = Location.{
-                loc_start = position;
-                loc_end = position;
-                loc_ghost = false;
-              }
-            in
+            let loc = Location.mk position position in
             Location.errorf ~loc "Configuration file error %s" error
             |> Location.print_report ppf;
             close_in ic;

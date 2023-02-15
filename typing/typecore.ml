@@ -849,7 +849,7 @@ let build_or_pat env loc lid =
   let make_row more =
     create_row ~fields ~more ~closed:false ~fixed:None ~name in
   let ty = newty (Tvariant (make_row (newvar()))) in
-  let gloc = {loc with Location.loc_ghost=true} in
+  let gloc = Location.set_loc_ghost true loc in
   let row' = ref (make_row (newvar())) in
   let pats =
     List.map
@@ -1545,7 +1545,7 @@ and type_pat_aux
         pat_env = !env }
   | Ppat_interval (Pconst_char c1, Pconst_char c2) ->
       let open Ast_helper.Pat in
-      let gloc = {loc with Location.loc_ghost=true} in
+      let gloc = Location.set_loc_ghost true loc in
       let rec loop c1 c2 =
         if c1 = c2 then constant ~loc:gloc (Pconst_char c1)
         else
@@ -2848,7 +2848,7 @@ let with_explanation explanation f =
   | Some explanation ->
       try f ()
       with Error (loc', env', Expr_type_clash(err', None, exp'))
-        when not loc'.Location.loc_ghost ->
+        when not (Location.loc_ghost loc') ->
         let err = Expr_type_clash(err', Some explanation, exp') in
         raise (Error (loc', env', err))
 
@@ -3003,9 +3003,9 @@ and type_expect_
        ]
       in
       let sloc =
-        { Location.loc_start = spat.ppat_loc.Location.loc_start;
-          loc_end = default_loc.Location.loc_end;
-          loc_ghost = true }
+        Location.mk ~ghost:()
+          (Location.loc_start spat.ppat_loc)
+          (Location.loc_end default_loc)
       in
       let smatch =
         Exp.match_ ~loc:sloc
@@ -3857,7 +3857,7 @@ and type_expect_
         | [] -> spat_acc, ty_acc
         | { pbop_pat = spat; _} :: rest ->
             let ty = newvar () in
-            let loc = { slet.pbop_op.loc with Location.loc_ghost = true } in
+            let loc = Location.set_loc_ghost true slet.pbop_op.loc in
             let spat_acc = Ast_helper.Pat.tuple ~loc [spat_acc; spat] in
             let ty_acc = newty (Ttuple [ty_acc; ty]) in
             loop spat_acc ty_acc rest
@@ -4073,7 +4073,7 @@ and type_label_access env srecord usage lid =
    (Handling of * modifiers contributed by Thorsten Ohl.) *)
 
 and type_format loc str env =
-  let loc = {loc with Location.loc_ghost = true} in
+  let loc = Location.set_loc_ghost true loc in
   try
     CamlinternalFormatBasics.(CamlinternalFormat.(
       let mk_exp_loc pexp_desc = {
@@ -4813,7 +4813,7 @@ and type_statement ?explanation env sexp =
 and type_unpacks ?(in_function : (Location.t * type_expr) option)
     env (unpacks : to_unpack list) sbody expected_ty =
   let ty = newvar() (* remember original level *)
-  and exp_loc = { sbody.pexp_loc with loc_ghost = true }
+  and exp_loc = Location.set_loc_ghost true sbody.pexp_loc
   and exp_attributes = [Ast_helper.Attr.mk (mknoloc "#modulepat") (PStr [])]
   in
   let rec fold_unpacks env = function
@@ -5088,7 +5088,7 @@ and type_let ?check ?check_strict
             (* propagate type annotation to pattern,
                to allow it to be generalized in -principal mode *)
             Ast_helper.Pat.constraint_
-              ~loc:{spat.ppat_loc with Location.loc_ghost=true}
+              ~loc:(Location.set_loc_ghost true spat.ppat_loc)
               spat
               sty
         | _ -> spat)
@@ -5649,16 +5649,14 @@ let report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
   in
   let app_loc =
     (* Span the application, including the extra argument. *)
-    { loc_start = loc.loc_start;
-      loc_end = extra_arg_loc.loc_end;
-      loc_ghost = false }
+    Location.mk (loc_start loc) (loc_end extra_arg_loc)
   and tail_loc =
     (* Possible location for a ';'. The location is widened to overlap the end
        of the argument. *)
-    let arg_end = previous_arg_loc.loc_end in
-    { loc_start = cnum_offset ~-1 arg_end;
-      loc_end = cnum_offset ~+1 arg_end;
-      loc_ghost = false }
+    let arg_end = loc_end previous_arg_loc in
+    Location.mk
+      (cnum_offset ~-1 arg_end)
+      (cnum_offset ~+1 arg_end)
   in
   let sub = [
     msg ~loc:tail_loc "@{<hint>Hint@}: Did you forget a ';'?";
