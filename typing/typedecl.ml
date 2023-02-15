@@ -229,7 +229,7 @@ let transl_labels env univars closed lbls =
     Builtin_attributes.warning_scope attrs
       (fun () ->
          let arg = Ast_helper.Typ.force_poly arg in
-         let cty = transl_simple_type env ?univars closed arg in
+         let cty = transl_simple_type env ?univars ~closed arg in
          {ld_id = Ident.create_local name.txt;
           ld_name = name; ld_mutable = mut;
           ld_type = cty; ld_loc = loc; ld_attributes = attrs}
@@ -254,7 +254,7 @@ let transl_labels env univars closed lbls =
 
 let transl_constructor_arguments env univars closed = function
   | Pcstr_tuple l ->
-      let l = List.map (transl_simple_type env ?univars closed) l in
+      let l = List.map (transl_simple_type env ?univars ~closed) l in
       Types.Cstr_tuple (List.map (fun t -> t.ctyp_type) l),
       Cstr_tuple l
   | Pcstr_record l ->
@@ -273,18 +273,19 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
       (* if it's a generalized constructor we must first narrow and
          then widen so as to not introduce any new constraints *)
       (* narrow and widen are now invoked through wrap_type_variable_scope *)
-      with_local_type_variable_scope begin fun () ->
-      reset_type_variables ();
+      TyVarEnv.with_local_scope begin fun () ->
+      TyVarEnv.reset ();
       let closed = svars <> [] in
       let targs, tret_type, args, ret_type, _univars =
         Ctype.with_local_level_if closed begin fun () ->
           let univar_list =
-            make_poly_univars (List.map (fun v -> v.txt) svars) in
+            TyVarEnv.make_poly_univars (List.map (fun v -> v.txt) svars) in
           let univars = if closed then Some univar_list else None in
           let args, targs =
             transl_constructor_arguments env univars closed sargs
           in
-          let tret_type = transl_simple_type env ?univars closed sret_type in
+          let tret_type =
+            transl_simple_type env ?univars ~closed sret_type in
           let ret_type = tret_type.ctyp_type in
           (* TODO add back type_path as a parameter ? *)
           begin match get_desc ret_type with
@@ -307,7 +308,7 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
         ~post: begin fun (_, _, args, ret_type, univars) ->
           Btype.iter_type_expr_cstr_args Ctype.generalize args;
           Ctype.generalize ret_type;
-          let _vars = instance_poly_univars env loc univars in
+          let _vars = TyVarEnv.instance_poly_univars env loc univars in
           let set_level t = Ctype.enforce_current_level env t in
           Btype.iter_type_expr_cstr_args set_level args;
           set_level ret_type;
@@ -318,14 +319,14 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
 
 let transl_declaration env sdecl (id, uid) =
   (* Bind type parameters *)
-  reset_type_variables();
+  TyVarEnv.reset();
   Ctype.with_local_level begin fun () ->
   let tparams = make_params env sdecl.ptype_params in
   let params = List.map (fun (cty, _) -> cty.ctyp_type) tparams in
   let cstrs = List.map
     (fun (sty, sty', loc) ->
-      transl_simple_type env false sty,
-      transl_simple_type env false sty', loc)
+      transl_simple_type env ~closed:false sty,
+      transl_simple_type env ~closed:false sty', loc)
     sdecl.ptype_cstrs
   in
   let unboxed_attr = get_unboxed_from_attributes sdecl in
@@ -440,7 +441,7 @@ let transl_declaration env sdecl (id, uid) =
         None -> None, None
       | Some sty ->
         let no_row = not (is_fixed_type sdecl) in
-        let cty = transl_simple_type env no_row sty in
+        let cty = transl_simple_type env ~closed:no_row sty in
         Some cty, Some cty.ctyp_type
     in
     let arity = List.length params in
@@ -1355,9 +1356,9 @@ let transl_type_extension extend env loc styext =
   end;
   let ttype_params, _type_params, constructors =
     (* Note: it would be incorrect to call [create_scope] *after*
-       [reset_type_variables] or after [with_local_level] (see #10010). *)
+       [TyVarEnv.reset] or after [with_local_level] (see #10010). *)
     let scope = Ctype.create_scope () in
-    reset_type_variables();
+    TyVarEnv.reset();
     Ctype.with_local_level begin fun () ->
       let ttype_params = make_params env styext.ptyext_params in
       let type_params = List.map (fun (cty, _) -> cty.ctyp_type) ttype_params in
@@ -1427,7 +1428,7 @@ let transl_type_extension extend env loc styext =
 let transl_exception env sext =
   let ext =
     let scope = Ctype.create_scope () in
-    reset_type_variables();
+    TyVarEnv.reset();
     Ctype.with_local_level
       (fun () ->
         transl_extension_constructor ~scope env
@@ -1642,7 +1643,7 @@ let transl_value_decl env loc valdecl =
 let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
     sdecl =
   Env.mark_type_used sig_decl.type_uid;
-  reset_type_variables();
+  TyVarEnv.reset();
   Ctype.with_local_level begin fun () ->
   (* In the first part of this function, we typecheck the syntactic
      declaration [sdecl] in the outer environment [outer_env]. *)
@@ -1653,8 +1654,8 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
   let arity = List.length params in
   let constraints =
     List.map (fun (ty, ty', loc) ->
-      let cty = transl_simple_type env false ty in
-      let cty' = transl_simple_type env false ty' in
+      let cty = transl_simple_type env ~closed:false ty in
+      let cty' = transl_simple_type env ~closed:false ty' in
       (* Note: We delay the unification of those constraints
          after the unification of parameters, so that clashing
          constraints report an error on the constraint location
@@ -1666,7 +1667,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
   let (tman, man) =  match sdecl.ptype_manifest with
       None -> None, None
     | Some sty ->
-        let cty = transl_simple_type env no_row sty in
+        let cty = transl_simple_type env ~closed:no_row sty in
         Some cty, Some cty.ctyp_type
   in
   (* In the second part, we check the consistency between the two

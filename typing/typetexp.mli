@@ -17,24 +17,39 @@
 
 open Types
 
+module TyVarEnv : sig
+  (* this is just the subset of [TyVarEnv] that is needed outside
+     of [Typetexp]. See the ml file for more. *)
+
+  val reset : unit -> unit
+  (** removes all type variables from scope *)
+
+  val with_local_scope : (unit -> 'a) -> 'a
+  (** Evaluate in a narrowed type-variable scope *)
+
+  type poly_univars
+  val make_poly_univars : string list -> poly_univars
+    (** remember that a list of strings connotes univars; this must
+        always be paired with a [check_poly_univars]. *)
+
+  val check_poly_univars :
+     Env.t -> Location.t -> poly_univars -> type_expr list
+    (** Verify that the given univars are universally quantified,
+       and return the list of variables. The type in which the
+       univars are used must be generalised *)
+
+  val instance_poly_univars :
+     Env.t -> Location.t -> poly_univars -> type_expr list
+    (** Same as [check_poly_univars], but instantiates the resulting
+       type scheme (i.e. variables become Tvar rather than Tunivar) *)
+
+end
+
 val valid_tyvar_name : string -> bool
 
-type poly_univars
-val make_poly_univars : string list -> poly_univars
-  (* Create a set of univars with given names *)
-val check_poly_univars :
-   Env.t -> Location.t -> poly_univars -> type_expr list
-  (* Verify that the given univars are universally quantified,
-     and return the list of variables. The type in which the
-     univars are used must be generalised *)
-val instance_poly_univars :
-   Env.t -> Location.t -> poly_univars -> type_expr list
-  (* Same as [check_poly_univars], but instantiates the resulting
-     type scheme (i.e. variables become Tvar rather than Tunivar) *)
-
 val transl_simple_type:
-        Env.t -> ?univars:poly_univars -> bool -> Parsetree.core_type
-        -> Typedtree.core_type
+        Env.t -> ?univars:TyVarEnv.poly_univars -> closed:bool
+        -> Parsetree.core_type -> Typedtree.core_type
 val transl_simple_type_univars:
         Env.t -> Parsetree.core_type -> Typedtree.core_type
 val transl_simple_type_delayed
@@ -46,17 +61,14 @@ val transl_simple_type_delayed
            function that binds the type variable. *)
 val transl_type_scheme:
         Env.t -> Parsetree.core_type -> Typedtree.core_type
-val reset_type_variables: unit -> unit
-val type_variable: Location.t -> string -> type_expr
 val transl_type_param:
   Env.t -> Parsetree.core_type -> Typedtree.core_type
-
-val with_local_type_variable_scope: (unit -> 'a) -> 'a
 
 exception Already_bound
 
 type error =
-    Unbound_type_variable of string
+  | Unbound_type_variable of string * string list
+  | No_type_wildcards
   | Undefined_type_constructor of Path.t
   | Type_arity_mismatch of Longident.t * int * int
   | Bound_type_variable of string

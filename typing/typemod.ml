@@ -2922,7 +2922,7 @@ let lookup_type_in_sig sg =
 let type_package env m p fl =
   (* Same as Pexp_letmodule *)
   let modl, scope =
-    Typetexp.with_local_type_variable_scope begin fun () ->
+    Typetexp.TyVarEnv.with_local_scope begin fun () ->
       (* type the module and create a scope in a raised level *)
       Ctype.with_local_level begin fun () ->
         let modl, _mod_shape = type_module env m in
