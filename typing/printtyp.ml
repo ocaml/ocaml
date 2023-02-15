@@ -2173,18 +2173,15 @@ let prepare_any_trace printing_status tr =
 let prepare_trace f tr =
   prepare_any_trace printing_status (Errortrace.map f tr)
 
-(** Keep elements that are not [Diff _ ] and take the decision
+(** Keep elements that are [Diff _ ] and take the decision
     for the last element, require a prepared trace *)
-let rec filter_trace
-          (trace_format : 'variety trace_format)
-          keep_last
-  : ('a, 'variety) Errortrace.t -> _ = function
+let rec filter_trace keep_last = function
   | [] -> []
   | [Errortrace.Diff d as elt]
     when printing_status elt = Optional_refinement ->
     if keep_last then [d] else []
-  | Errortrace.Diff d :: rem -> d :: filter_trace trace_format keep_last rem
-  | _ :: rem -> filter_trace trace_format keep_last rem
+  | Errortrace.Diff d :: rem -> d :: filter_trace keep_last rem
+  | _ :: rem -> filter_trace keep_last rem
 
 let type_path_list =
   Format.pp_print_list ~pp_sep:(fun ppf () -> Format.pp_print_break ppf 2 0)
@@ -2455,7 +2452,7 @@ let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
   | elt :: tr ->
     try
       print_labels := not !Clflags.classic;
-      let tr = filter_trace trace_format (mis = None) tr in
+      let tr = filter_trace (mis = None) tr in
       let head = prepare_expansion_head (tr=[]) elt in
       let tr = List.map (Errortrace.map_diff prepare_expansion) tr in
       let head_error = head_error_printer mode txt1 txt2 head in
@@ -2539,8 +2536,6 @@ module Subtype = struct
       print_labels := true;
       raise exn
 
-  let filter_unification_trace = filter_trace Unification
-
   let rec filter_subtype_trace keep_last = function
     | [] -> []
     | [Errortrace.Subtype.Diff d as elt]
@@ -2576,7 +2571,7 @@ module Subtype = struct
       if tr_unif = [] then fprintf ppf "@]" else
         let mis = mismatch (dprintf "Within this type") env tr_unif in
         fprintf ppf "%a%t%t@]"
-          (trace filter_unification_trace unification_get_diff false
+          (trace filter_trace unification_get_diff false
              (mis = None) "is not compatible with type") tr_unif
           (explain mis)
           Conflicts.print_explanations
