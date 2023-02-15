@@ -28,22 +28,59 @@ module Loc : sig
   val set_loc_end: Lexing.position -> loc -> loc
   val set_loc_ghost: bool -> loc -> loc
 end = struct
-  type loc = {
-    loc_start: Lexing.position;
-    loc_end: Lexing.position;
-    loc_ghost: bool;
-  }
+  type line = { pos_fname: string; pos_lnum: int; pos_bol: int }
 
-  let mkloc ?ghost loc_start loc_end =
-    { loc_start; loc_end; loc_ghost = Option.is_some ghost }
+  type loc =
+    | SameLine of { line: line; cnum_start: int; cnum_end: int }
+    | SameLineGhost of { line: line; cnum_start: int; cnum_end: int }
+    | MultiLine of { line_start: line; cnum_start: int; line_end: line; cnum_end: int }
+    | MultiLineGhost of { line_start: line; cnum_start: int; line_end: line; cnum_end: int }
 
-  let loc_start l = l.loc_start
-  let loc_end l = l.loc_end
-  let loc_ghost l = l.loc_ghost
+  module WLine = Weak.Make(struct type t = line let equal = (=) let hash = Hashtbl.hash end)
+  let memo_line = WLine.create 512
 
-  let set_loc_start loc_start l = {l with loc_start}
-  let set_loc_end loc_end l = {l with loc_end}
-  let set_loc_ghost loc_ghost l = {l with loc_ghost}
+  module WLoc = Weak.Make(struct type t = loc let equal = (=) let hash = Hashtbl.hash end)
+  let memo_loc = WLoc.create 512
+
+  let split ({pos_fname; pos_lnum; pos_bol; pos_cnum} : Lexing.position) =
+    pos_cnum,  {pos_fname; pos_lnum; pos_bol} |> WLine.merge memo_line
+
+  let unsplit {pos_fname; pos_lnum; pos_bol} pos_cnum : Lexing.position =
+    {pos_fname; pos_lnum; pos_bol; pos_cnum}
+
+  let mkloc ghost loc_start loc_end =
+    let cnum_start, line_start = split loc_start in
+    let cnum_end, line_end = split loc_end in
+    begin match ghost, line_start == line_end with
+    | false, false -> MultiLine {line_start; cnum_start; line_end; cnum_end}
+    | true, false -> MultiLineGhost {line_start; cnum_start; line_end; cnum_end}
+    | false, true -> SameLine {line = line_start; cnum_start; cnum_end}
+    | true, true -> SameLineGhost {line = line_start; cnum_start; cnum_end}
+    end |> WLoc.merge memo_loc
+
+  let loc_start = function
+    | SameLine { line; cnum_start; _ }
+    | SameLineGhost { line; cnum_start; _ }
+    | MultiLine { line_start = line; cnum_start; _ }
+    | MultiLineGhost { line_start = line; cnum_start; _ }
+      -> unsplit line cnum_start
+
+  let loc_end = function
+    | SameLine { line; cnum_end; _ }
+    | SameLineGhost { line; cnum_end; _ }
+    | MultiLine { line_end = line; cnum_end; _ }
+    | MultiLineGhost { line_end = line; cnum_end; _ }
+      -> unsplit line cnum_end
+
+  let loc_ghost = function
+    | SameLine _ | MultiLine _ -> false
+    | SameLineGhost _ | MultiLineGhost _ -> true
+
+  let set_loc_start loc_start l = mkloc (loc_ghost l) loc_start (loc_end l)
+  let set_loc_end loc_end l = mkloc (loc_ghost l) (loc_start l) loc_end
+  let set_loc_ghost ghost l = mkloc ghost (loc_start l) (loc_end l)
+
+  let mkloc ?ghost loc_start loc_end = mkloc (Option.is_some ghost) loc_start loc_end
 end
 
 include Loc
