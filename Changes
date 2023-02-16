@@ -566,6 +566,9 @@ Working version
   (Sébastien Hinderer, review by Xavier Leroy, Nicolás Ojeda Bär and
   Hugo Heuzard)
 
+- #12011: remove Ctype.reified_var_counter
+  (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer)
+
 - #12012: move calls to Typetexp.TyVarEnv.reset inside with_local_level etc.
   (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
 
