@@ -458,6 +458,9 @@ Working version
   in preparation for quadratic-time fix
   (Gabriel Scherer, review by Enguerrand Decorne)
 
+- #12012: move calls to Typetexp.TyVarEnv.reset inside with_local_level etc.
+  (Takafumi Saikawa and Jacques Garrigue, review by ??)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.
