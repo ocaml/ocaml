@@ -152,7 +152,6 @@ end = struct
 
   let reset () =
     reset_global_level ();
-    Ctype.reset_reified_var_counter ();
     type_variables := TyVarMap.empty
 
   let is_in_scope name =
