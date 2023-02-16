@@ -119,101 +119,17 @@ preserving the code semantics.
 
 ## Test you must.
 
-Whenever applicable, merge requests must come with tests
-exercising the affected features: regression tests for bug fixes,
-and correctness tests for new features (including corner cases and
-failure cases). For regression tests, testing other aspects of the
-feature (in particular, related edge cases) that are not currently
-covered is a good way to catch other instances of bugs -- this did
-happen several times in the past. Warnings and errors should also
-be tested.
+Whenever applicable, merge requests must come with tests exercising
+the affected features: regression tests for bug fixes, and correctness
+tests for new features (including corner cases and
+failure cases). Warnings and errors should also be tested.
 
-Tests go in the sub-directories of `testsuite/tests`. Running
-`make all` in `testsuite/` runs all tests (this takes
-a few minutes), and you can use `make one DIR=tests/foo` to run
-the tests of a specific sub-directory. There are many kind of tests
-already, so the easiest way to start is to extend or copy an
-existing test.
+See [testsuite/HACKING.adoc](testsuite/HACKING.adoc) for details on
+how to write tests and run the testsuite.
 
-In general, running a test produces one (or several) `.result` file,
-that are compared to one (or several) `.reference` file present in the
-repository; the test succeeds if they are identical. If your patch
-breaks a test, diffing the `.result` and `.reference` file is a way to
-see what went wrong. Some reasonable compiler changes affect the
-compiler output in way that make those outputs differ (for example
-slight modifications of warning or error messages may break all tests
-checking warnings). If you are positive that the new `.result` file
-is correct (and that the change in behavior does not endanger
-backward compatibility), you can replace the old `.reference` file
-with it. Finally, when adding new tests, do not forget to include your
-`.reference` files (but not `.result`) in the versioned repository.
-
-Testing is also a way to make sure reviewers see working
+Adding tests is also a way to make sure reviewers see working
 (and failing) examples of the feature you fix, extend or
 introduce, rather than just an abstract description of it.
-
-
-### Run tests before sending a PR
-
-You should run all the tests before creating the merge request or
-pushing new commits (even if Travis will also do it for you): `make
-tests` (this takes a few minutes).
-
-Unfortunately some of the `lib-threads` test are non-deterministic
-and fail once in a while (it's hard to test these well). If they
-consistently break after your change, you should investigate, but if
-you only see a transient failure once and your change has no reason
-to affect threading, it's probably not your fault.
-
-
-### Benchmarking
-
-If your contribution can impact the performance of the code generated
-by the native compiler, you can use the infrastructure that the
-flambda team put together to benchmark the compiler to assess the
-consequences of your contribution. It has two main accessible parts:
-
-- The website that hosts benchmarks results, at
-[http://bench.flambda.ocamlpro.com/](http://bench.flambda.ocamlpro.com/).
-It exposes two ways to compare compilers: the first, under the header
-`Plot a given benchmark`, allows to select a benchmark and
-see graphs plotting the evolution of the performance of the different
-compilers over time. The second, under `Compare two runs`, allows
-to get an overview of the differences between a reference compiler
-(selected using the `ref` button) and a compiler under test (using
-the `tst` button). Clicking on the `Compare` button at the bottom
-right of the page will create a new page containing summaries and
-raw data comparing the selected runs.
-
-- The git repository containing the data about which benchmarks
-to run, on which compilers, at [https://github.com/OCamlPro/ocamlbench-repo](
-https://github.com/OCamlPro/ocamlbench-repo). This needs to be a valid
-opam 2.0 repository, and contains the benchmarks as normal packages
-and the compilers as versions of the package `ocaml-variants`.
-To add a compiler to the list, you must have a publicly accessible
-version of your branch (if you're making a pull request again the
-compiler, you should have a branch on github that was used to make
-the pull request, that you can use for this purpose).
-Then, you should make a pull request against `ocamlbench-repo`
-that adds a repertory in the `packages/ocaml-variants` sub-folder
-which contains a single `opam` file. The contents of the file
-should be inspired from the other files already present, with
-the main points of interest being the `url` field, which should
-point to your branch, the `build` field that should be adapted
-if the features that you want to benchmark depend on configure-time
-options, and the `setenv` field that can be used to pass compiler
-options via the `OCAMLPARAM` environment variable.
-The `trunk+flambda+opt` compiler, for instance, both uses a
-`configure` option and sets the `OCAMLPARAM` variable.
-The folder you add has to be named `ocaml-variants.%VERSION%+%DESCR%`,
-where `%VERSION%` is the version that will be used by opam to
-check compatibility with the opam packages that are needed for the
-benchmarks, and `%DESCR%` should be a short description of the feature
-you're benchmarking (if you're making a pull request against `ocaml`,
-you can use the PR number in the description, e.g. `+gpr0000`).
-Once your pull request is merged, it will likely take a few hours
-until the benchmark server picks up the new definition and again
-up to a few hours before the results are available on the results page.
 
 
 ## Description of the proposed change
@@ -223,9 +139,14 @@ up to a few hours before the results are available on the results page.
 The description of the merge request must contain a precise
 explanation of the proposed change.
 
-Before going in the implementation details, you should include
-a summary of the change, and a high-level description of the design
-of the proposed change, with example use-cases.
+Before going into the implementation details, you should include
+a summary of the change, a justification of why it is beneficial, and
+a high-level description of the design of the proposed change with
+example use cases.
+
+Changes have a cost, they require review work and may accidentally
+introduce new bugs. Communicating as clearly as you can the benefits
+of your PR will reassure and motivate potential reviewers.
 
 ### In the patches
 
