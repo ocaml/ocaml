@@ -208,7 +208,7 @@ let with_raised_nongen_level f =
 
 
 let reset_global_level () =
-  global_level := !current_level + 1
+  global_level := !current_level
 let increase_global_level () =
   let gl = !global_level in
   global_level := !current_level;

@@ -1514,9 +1514,9 @@ let class_infos define_class kind
      dummy_class)
     (res, env) =
 
-  TyVarEnv.reset ();
   let ci_params, params, coercion_locs, expr, typ, sign =
     Ctype.with_local_level_for_class begin fun () ->
+      TyVarEnv.reset ();
       (* Introduce class parameters *)
       let ci_params =
         let make_param (sty, v) =

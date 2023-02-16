@@ -790,12 +790,12 @@ let transl_simple_type_delayed env styp =
   (typ, instance typ.ctyp_type, force)
 
 let transl_type_scheme env styp =
-  TyVarEnv.reset ();
   match styp.ptyp_desc with
   | Ptyp_poly (vars, st) ->
      let vars = List.map (fun v -> v.txt) vars in
      let univars, typ =
        with_local_level begin fun () ->
+         TyVarEnv.reset ();
          let univars = TyVarEnv.make_poly_univars vars in
          let typ = transl_simple_type env ~univars ~closed:true st in
          (univars, typ)
@@ -809,7 +809,8 @@ let transl_type_scheme env styp =
        ctyp_loc = styp.ptyp_loc;
        ctyp_attributes = styp.ptyp_attributes }
   | _ ->
-      with_local_level (fun () -> transl_simple_type env ~closed:false styp)
+      with_local_level
+        (fun () -> TyVarEnv.reset (); transl_simple_type env ~closed:false styp)
         ~post:generalize_ctyp
 
 
