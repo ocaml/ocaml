@@ -487,6 +487,9 @@ Working version
 
 ### Bug fixes:
 
+- #12017: Re-register finaliser only after calling user alarm in Gc.create_alarm
+  (Fabrice Buoro, report by Sam Goldman, review by ...)
+
 - #11887, #11893: Code duplication in pattern-matching compilation
   (Vincent Laviron, report par Greta Yorsh, review by Luc Maranget and
    Gabriel Scherer)
