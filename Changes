@@ -508,6 +508,10 @@ Working version
   by leaf functions.
   (Tom Kelly and Xavier Leroy, review by Mark Shinwell)
 
+- #11450, #12018: Fix erroneous functor error messages that were too eager to
+  cast `struct end` functor arguments as unit modules in `F(struct end)`.
+  (Florian Angetti, review by Gabriel Scherer)
+
 - #11643: Add missing test declaration to float_compare test, so that it will
   run.
   (Stefan Muenzel, review by David Allsopp)
