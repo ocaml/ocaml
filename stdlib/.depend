@@ -358,6 +358,7 @@ stdlib__Gc.cmo : gc.ml \
     stdlib__String.cmi \
     stdlib__Printf.cmi \
     stdlib__Printexc.cmi \
+    stdlib__Fun.cmi \
     stdlib__Atomic.cmi \
     stdlib__Gc.cmi
 stdlib__Gc.cmx : gc.ml \
@@ -365,6 +366,7 @@ stdlib__Gc.cmx : gc.ml \
     stdlib__String.cmx \
     stdlib__Printf.cmx \
     stdlib__Printexc.cmx \
+    stdlib__Fun.cmx \
     stdlib__Atomic.cmx \
     stdlib__Gc.cmi
 stdlib__Gc.cmi : gc.mli \
