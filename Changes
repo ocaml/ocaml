@@ -35,6 +35,10 @@ Working version
 
 ### Tools:
 
+- #12019: ocamlc: add `align_double` and `align_int64` to `ocamlc -config`
+  output.
+  (Romain Beauxis, review by David Allsopp)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:

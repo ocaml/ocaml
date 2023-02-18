@@ -61,6 +61,8 @@ let with_cmm_invariants = @cmm_invariants@
 let windows_unicode = @windows_unicode@ != 0
 
 let flat_float_array = @flat_float_array@
+let align_double = @align_double@
+let align_int64 = @align_int64@
 
 let function_sections = @function_sections@
 let afl_instrument = @afl@

@@ -243,6 +243,8 @@ AC_SUBST([flambda])
 AC_SUBST([flambda_invariants])
 AC_SUBST([cmm_invariants])
 AC_SUBST([windows_unicode])
+AC_SUBST([align_double])
+AC_SUBST([align_int64])
 AC_SUBST([flat_float_array])
 AC_SUBST([function_sections])
 AC_SUBST([oc_native_compflags])
@@ -1230,17 +1232,23 @@ AC_CHECK_ALIGNOF([double])
 AC_CHECK_ALIGNOF([long])
 AC_CHECK_ALIGNOF([long long])
 
+align_double=false
+align_int64=false
+
 AS_IF([! $arch64],
   [AS_CASE([$target_cpu],
     [i686], [],
     [AS_IF([test "$ac_cv_alignof_double" -gt 4],
-      [AC_DEFINE([ARCH_ALIGN_DOUBLE], [1])])
+      [align_double=true,
+       AC_DEFINE([ARCH_ALIGN_DOUBLE], [1])])
      AS_IF([test "x$ac_cv_sizeof_long" = "x8" &&
             test "$ac_cv_alignof_long" -gt 4],
-      [AC_DEFINE([ARCH_ALIGN_INT64], [1])],
+      [align_int64=true,
+       AC_DEFINE([ARCH_ALIGN_INT64], [1])],
       [AS_IF([test "x$ac_cv_sizeof_long_long" = "x8" &&
               test "$ac_cv_alignof_long_long" -gt 4],
-      [AC_DEFINE([ARCH_ALIGN_INT64], [1])])])
+      [align_int64=true,
+       AC_DEFINE([ARCH_ALIGN_INT64], [1])])])
     ])])
 
 AC_CHECK_TYPES([max_align_t], [], [], [[#include <stddef.h>]])

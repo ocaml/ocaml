@@ -114,6 +114,8 @@ let configuration_variables () =
   p_bool "safe_string" safe_string;
   p_bool "default_safe_string" default_safe_string;
   p_bool "flat_float_array" flat_float_array;
+  p_bool "align_double" align_double;
+  p_bool "align_int64" align_int64;
   p_bool "function_sections" function_sections;
   p_bool "afl_instrument" afl_instrument;
   p_bool "tsan" tsan;
