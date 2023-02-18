@@ -110,11 +110,11 @@ ocamllex_PROGRAMS = $(addprefix lex/,ocamllex ocamllex.opt)
 ocamlyacc_PROGRAM = yacc/ocamlyacc
 
 # Tools to be compiled to native and bytecode, then installed
-TOOLS_TO_INSTALL_NAT = ocamldep
+TOOLS_TO_INSTALL_NAT = ocamldep ocamlobjinfo
 
 # Tools to be compiled to bytecode only, then installed
 TOOLS_TO_INSTALL_BYT = \
-  ocamlcmt ocamlprof ocamlcp ocamlmklib ocamlmktop ocamlobjinfo
+  ocamlcmt ocamlprof ocamlcp ocamlmklib ocamlmktop
 
 ifeq "$(NATIVE_COMPILER)" "true"
 TOOLS_TO_INSTALL_BYT += ocamloptp
