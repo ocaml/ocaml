@@ -537,7 +537,7 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
           raise (Error (loc, env, err)) in
   unify_vars p1_vs p2_vs
 
-let rec build_as_type ~refine (env : Env.t ref) p =
+let rec build_as_type ~refine (env : Env.t) p =
   let as_ty = build_as_type_aux ~refine env p in
   (* Cf. #1655 *)
   List.fold_left (fun as_ty (extra, _loc, _attrs) ->
@@ -554,11 +554,11 @@ let rec build_as_type ~refine (env : Env.t ref) p =
           (fun () -> instance cty.ctyp_type)
       in
       (* This call to unify can't fail since the pattern is well typed. *)
-      unify_pat_types ~refine p.pat_loc env (instance as_ty) (instance ty);
+      unify_pat_types ~refine p.pat_loc (ref env) (instance as_ty) (instance ty);
       ty
   ) as_ty p.pat_extra
 
-and build_as_type_aux ~refine (env : Env.t ref) p =
+and build_as_type_aux ~refine (env : Env.t) p =
   let build_as_type = build_as_type ~refine in
   match p.pat_desc with
     Tpat_alias(p1,_, _) -> build_as_type env p1
@@ -574,7 +574,7 @@ and build_as_type_aux ~refine (env : Env.t ref) p =
       let ty_args, ty_res, _ =
         instance_constructor Keep_existentials_flexible cstr
       in
-      List.iter2 (fun (p,ty) -> unify_pat ~refine env {p with pat_type = ty})
+      List.iter2 (fun (p,ty) -> unify_pat ~refine (ref env) {p with pat_type = ty})
         (List.combine pl tyl) ty_args;
       ty_res
   | Tpat_variant(l, p', _) ->
@@ -587,20 +587,21 @@ and build_as_type_aux ~refine (env : Env.t ref) p =
       if lbl.lbl_private = Private then p.pat_type else
       let ty = newvar () in
       let ppl = List.map (fun (_, l, p) -> l.lbl_pos, p) lpl in
+      let uenv = ref env in
       let do_label lbl =
         let _, ty_arg, ty_res = instance_label false lbl in
-        unify_pat ~refine env {p with pat_type = ty} ty_res;
+        unify_pat ~refine uenv {p with pat_type = ty} ty_res;
         let refinable =
           lbl.lbl_mut = Immutable && List.mem_assoc lbl.lbl_pos ppl &&
           match get_desc lbl.lbl_arg with Tpoly _ -> false | _ -> true in
         if refinable then begin
           let arg = List.assoc lbl.lbl_pos ppl in
-          unify_pat ~refine env
+          unify_pat ~refine uenv
             {arg with pat_type = build_as_type env arg} ty_arg
         end else begin
           let _, ty_arg', ty_res' = instance_label false lbl in
-          unify_pat_types ~refine p.pat_loc env ty_arg ty_arg';
-          unify_pat ~refine env p ty_res'
+          unify_pat_types ~refine p.pat_loc uenv ty_arg ty_arg';
+          unify_pat ~refine uenv p ty_res'
         end in
       Array.iter do_label lbl.lbl_all;
       ty
@@ -608,7 +609,7 @@ and build_as_type_aux ~refine (env : Env.t ref) p =
       begin match row with
         None ->
           let ty1 = build_as_type env p1 and ty2 = build_as_type env p2 in
-          unify_pat ~refine env {p2 with pat_type = ty2} ty1;
+          unify_pat ~refine (ref env) {p2 with pat_type = ty2} ty1;
           ty1
       | Some row ->
           let Row {fields; fixed; name} = row_repr row in
@@ -1526,7 +1527,7 @@ and type_pat_aux
             pat_env = !env }
   | Ppat_alias(sq, name) ->
       let q = type_pat Value sq expected_ty in
-      let ty_var = solve_Ppat_alias ~refine env q in
+      let ty_var = solve_Ppat_alias ~refine !env q in
       let id =
         enter_variable ~is_as_variable:true loc name ty_var sp.ppat_attributes
       in
