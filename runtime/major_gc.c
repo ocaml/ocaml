@@ -1244,12 +1244,21 @@ static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
   return budget;
 }
 
+static void reset_domain_account (int id)
+{
+  CAMLassert (id < Max_domains);
+  domain_accounts[id].alloc = 0;
+  domain_accounts[id].dependent = 0;
+  domain_accounts[id].extra = 0.0;
+  if (!domain_accounts[id].is_active) ++ num_active_domains;
+  domain_accounts[id].is_active = 1;
+}
 
 static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
                                        int participating_count,
                                        caml_domain_state** participating)
 {
-  uintnat num_domains_in_stw, i;
+  uintnat num_domains_in_stw;
 
   CAML_EV_BEGIN(EV_MAJOR_GC_CYCLE_DOMAINS);
 
@@ -1351,14 +1360,13 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
 
       atomic_store(&domain_global_roots_started, WORK_UNSTARTED);
 
-      /* Reset GC work accounting counters. */
-      for (i = 0; i < Max_domains; i++){
-        domain_accounts[i].alloc = 0;
-        domain_accounts[i].dependent = 0;
-        domain_accounts[i].extra = 0.0;
-      }
+      /* reset work counters */
+      caml_plat_lock (&accounting_lock);
+      caml_enumerate_participating_domains (&reset_domain_account);
+      /* XXX debug only */
       total_alloc = total_dependent = total_work_done = 0;
       total_extra = 0.0;
+      caml_plat_unlock (&accounting_lock);
 
       /* Cleanups for various data structures that must be done in a STW by
         only a single domain */

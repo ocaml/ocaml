@@ -1858,6 +1858,15 @@ static void domain_terminate (void)
   atomic_fetch_add(&caml_num_domains_running, -1);
 }
 
+void caml_enumerate_participating_domains (void (*f) (int))
+{
+  int i;
+
+  for (i = 0; i < stw_domains.participating_domains; i++){
+    f (stw_domains.domains[i]->id);
+  }
+}
+
 CAMLprim value caml_ml_domain_cpu_relax(value t)
 {
   struct interruptor* self = &domain_self->interruptor;

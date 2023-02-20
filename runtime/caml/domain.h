@@ -121,6 +121,8 @@ int caml_global_barrier_num_domains(void);
 
 int caml_domain_is_terminating(void);
 
+void caml_enumerate_participating_domains(void (*f) (int));
+
 #endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
