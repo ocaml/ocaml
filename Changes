@@ -459,7 +459,7 @@ Working version
   (Gabriel Scherer, review by Enguerrand Decorne)
 
 - #12012: move calls to Typetexp.TyVarEnv.reset inside with_local_level etc.
-  (Takafumi Saikawa and Jacques Garrigue, review by ??)
+  (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer)
 
 ### Build system:
 
