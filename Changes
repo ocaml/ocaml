@@ -462,6 +462,9 @@ Working version
   in preparation for quadratic-time fix
   (Gabriel Scherer, review by Enguerrand Decorne)
 
+- #12020: Let build_as_type take an environment directly, not a reference to it
+  (Takafumi Saikawa and Jacques Garrigue, review by ??)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.
