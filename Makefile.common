@@ -194,6 +194,7 @@ endef # PROGRAM_SYNONYM
 # should take place *before* Makefile.common is included.
 
 OCAMLDEP ?= $(BEST_OCAMLDEP)
+OCAMLDEPFLAGS ?=
 OC_OCAMLDEPFLAGS = -slash
 OC_OCAMLDEPDIRS =
 OCAMLDEP_CMD = $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) \
