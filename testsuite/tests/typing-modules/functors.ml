@@ -1745,3 +1745,54 @@ module Shape_arg :
     module M4 : functor (Arg5 : sig end) -> M3(Arg5).S3
   end
 |}]
+
+
+(* Applicative or generative *)
+
+module F(X:A) = struct end
+module R = F(struct end[@warning "-73"]);;
+[%%expect {|
+module F : functor (X : A) -> sig end
+Line 2, characters 11-40:
+2 | module R = F(struct end[@warning "-73"]);;
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Modules do not match: sig end is not included in A
+     The type `a' is required but not provided
+|}]
+
+module F()(X:empty)()(Y:A) = struct end
+module R =
+  F(struct end[@warning "-73"])(struct end)(struct end[@warning "-73"])();;
+[%%expect {|
+module F : functor () (X : empty) () (Y : A) -> sig end
+Line 3, characters 2-73:
+3 |   F(struct end[@warning "-73"])(struct end)(struct end[@warning "-73"])();;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The functor application is ill-typed.
+       These arguments:
+         (struct end) (struct end) (struct end) ()
+       do not match these parameters:
+         functor () (X : empty) () (Y : A) -> ...
+       1. Module (struct end) matches the expected module type
+       2. Module (struct end) matches the expected module type empty
+       3. Module (struct end) matches the expected module type
+       4. The functor was expected to be applicative at this position
+|}]
+
+
+module F(X:empty) = struct end
+module R =
+  F(struct end)();;
+[%%expect {|
+module F : functor (X : empty) -> sig end
+Line 3, characters 2-17:
+3 |   F(struct end)();;
+      ^^^^^^^^^^^^^^^
+Error: The functor application is ill-typed.
+       These arguments:
+         (struct end) ()
+       do not match these parameters:
+         functor (X : empty) -> ...
+       1. Module (struct end) matches the expected module type empty
+       2. The following extra argument is provided ()
+|}]

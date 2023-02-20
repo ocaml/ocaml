@@ -2118,7 +2118,7 @@ let simplify_app_summary app_view = match app_view.arg with
   | Some arg ->
     let mty = arg.arg.mod_type in
     match arg.is_syntactic_unit , arg.path with
-    | true , _      -> Includemod.Error.Unit, mty
+    | true , _      -> Includemod.Error.Empty_struct, mty
     | false, Some p -> Includemod.Error.Named p, mty
     | false, None   -> Includemod.Error.Anonymous, mty
 
