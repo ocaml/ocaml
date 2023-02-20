@@ -952,6 +952,15 @@ ASPP_ERROR = \
 runtime/%.o: runtime/%.S
 	$(ASPP) $(OC_ASPPFLAGS) -o $@ $< || $(ASPP_ERROR)
 
+# $(OC_DEBUG_CPPFLAGS) and $(OC_INSTR_CPPFLAGS) are still used in the two
+# recipes just below instead of the correct $(ocamlrund_CPPFLAGS) and
+# $(ocamlruni_CPPFLAGS). This has been fixed on trunk, but in the
+# 5.0 maintenance branch here we just define default values for those OC_*
+# variables to avoid an undefined-variable warning, preserving exactly the
+# (somewhat strange) behaviour of the 5.0.0 release.
+OC_DEBUG_CPPFLAGS ?=
+OC_INSTR_CPPFLAGS ?=
+
 runtime/%.d.o: runtime/%.S
 	$(ASPP) $(OC_ASPPFLAGS) $(OC_DEBUG_CPPFLAGS) -o $@ $< || $(ASPP_ERROR)
 
