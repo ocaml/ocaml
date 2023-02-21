@@ -247,6 +247,9 @@ type control =
     [ocamlrun]. *)
 
 external stat : unit -> stat = "caml_gc_stat"
+[@@alert deprecated
+    "Use full_major() followed by quick_stat()."
+]
 (** Return the current values of the memory management counters in a
     [stat] record that represents the program's total memory stats.
     The [heap_chunks], [free_blocks], [largest_free], and [stack_size] metrics
@@ -255,12 +258,14 @@ external stat : unit -> stat = "caml_gc_stat"
     This function causes a full major collection. *)
 
 external quick_stat : unit -> stat = "caml_gc_quick_stat"
-(** Returns a record with the current values of the memory management counters
-    like [stat]. Unlike [stat], [quick_stat] does not perform a full major
-    collection, and hence, is much faster. However, [quick_stat] reports the
-    counters sampled at the last minor collection or at the end of the last
-    major collection cycle (whichever is the latest). Hence, the memory stats
-    returned by [quick_stat] are not instantaneously accurate. *)
+(** Return the current values of the memory management counters in a
+    {!type:stat} record that represents the program's total memory
+    stats. Due to per-domain buffers it may only represent the state
+    of the program's total memory usage at the time of the last minor
+    collection or at the end of the last major collection cycle
+    (whichever is the latest). To get exact values, you need to call
+    {!full_major} (which takes a lot of time) immediately before
+    {!quick_stat}. *)
 
 external counters : unit -> float * float * float = "caml_gc_counters"
 (** Return [(minor_words, promoted_words, major_words)] for the current
