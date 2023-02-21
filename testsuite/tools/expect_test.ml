@@ -163,6 +163,7 @@ let capture_everything buf ppf ~f =
                      ~f:(fun () -> Compiler_messages.capture ppf ~f)
 
 let exec_phrase ppf phrase =
+  Location.reset ();
   if !Clflags.dump_parsetree then Printast. top_phrase ppf phrase;
   if !Clflags.dump_source    then Pprintast.top_phrase ppf phrase;
   Toploop.execute_phrase true ppf phrase
