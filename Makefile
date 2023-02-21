@@ -983,10 +983,10 @@ runtime/%.o: runtime/%.S
 	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) -o $@ $< || $(ASPP_ERROR)
 
 runtime/%.d.o: runtime/%.S
-	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) $(OC_DEBUG_CPPFLAGS) -o $@ $< || $(ASPP_ERROR)
+	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) $(ocamlrund_CPPFLAGS) -o $@ $< || $(ASPP_ERROR)
 
 runtime/%.i.o: runtime/%.S
-	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) $(OC_INSTR_CPPFLAGS) -o $@ $< || $(ASPP_ERROR)
+	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) $(ocamlruni_CPPFLAGS) -o $@ $< || $(ASPP_ERROR)
 
 runtime/%_libasmrunpic.o: runtime/%.S
 	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) $(SHAREDLIB_CFLAGS) -o $@ $<
