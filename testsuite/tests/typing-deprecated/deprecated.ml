@@ -99,6 +99,7 @@ Line 1, characters 9-12:
 1 | type t = X.t * X.s
              ^^^
 Alert deprecated: X.t
+
 Line 1, characters 15-18:
 1 | type t = X.t * X.s
                    ^^^
@@ -218,6 +219,7 @@ Line 1, characters 26-29:
 1 | module rec M : sig val x: X.t end = struct let x = X.x end
                               ^^^
 Alert deprecated: X.t
+
 Line 1, characters 51-54:
 1 | module rec M : sig val x: X.t end = struct let x = X.x end
                                                        ^^^
@@ -542,6 +544,7 @@ Line 2, characters 24-39:
 2 |     [@@ocaml.ppwarning  "Pp warning 2!"]
                             ^^^^^^^^^^^^^^^
 Warning 22 [preprocessor]: Pp warning 2!
+
 Line 1, characters 29-44:
 1 | let x = () [@ocaml.ppwarning "Pp warning 1!"]
                                  ^^^^^^^^^^^^^^^
@@ -600,6 +603,7 @@ Line 4, characters 21-36:
 4 |   [@@ocaml.ppwarning "Pp warning 3!"]
                          ^^^^^^^^^^^^^^^
 Warning 22 [preprocessor]: Pp warning 3!
+
 Line 3, characters 21-36:
 3 |   [@ocaml.ppwarning  "Pp warning 2!"]
                          ^^^^^^^^^^^^^^^
@@ -614,6 +618,7 @@ Line 1, characters 25-29:
 1 | let ([][@ocaml.ppwarning "XX"]) = []
                              ^^^^
 Warning 22 [preprocessor]: XX
+
 Line 1, characters 4-31:
 1 | let ([][@ocaml.ppwarning "XX"]) = []
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^

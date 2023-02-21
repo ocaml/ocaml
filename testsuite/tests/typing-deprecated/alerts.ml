@@ -49,6 +49,7 @@ Line 1, characters 8-11:
             ^^^
 Error (alert baz): X.t
 BAZ
+
 Line 1, characters 8-11:
 1 | let _ = X.t;;
             ^^^
@@ -87,6 +88,7 @@ Line 2, characters 2-12:
 2 |   val x: int
       ^^^^^^^^^^
   Expected signature
+
 Line 6, characters 6-7:
 6 | end = X;;
           ^
@@ -100,6 +102,7 @@ Line 4, characters 2-12:
 4 |   val z: int
       ^^^^^^^^^^
   Expected signature
+
 Line 6, characters 6-7:
 6 | end = X;;
           ^
@@ -113,6 +116,7 @@ Line 5, characters 2-12:
 5 |   val t: int
       ^^^^^^^^^^
   Expected signature
+
 Line 6, characters 6-7:
 6 | end = X;;
           ^
@@ -151,6 +155,7 @@ Line 4, characters 2-12:
 4 |   val x: int
       ^^^^^^^^^^
   Expected signature
+
 Line 8, characters 6-7:
 8 | end = X;;
           ^
@@ -164,6 +169,7 @@ Line 6, characters 2-12:
 6 |   val z: int
       ^^^^^^^^^^
   Expected signature
+
 Line 8, characters 6-7:
 8 | end = X;;
           ^
@@ -177,6 +183,7 @@ Line 7, characters 2-12:
 7 |   val t: int
       ^^^^^^^^^^
   Expected signature
+
 Line 8, characters 6-7:
 8 | end = X;;
           ^
@@ -259,11 +266,13 @@ Line 2, characters 13-25:
                  ^^^^^^^^^^^^
 Warning 47 [attribute-payload]: illegal payload for attribute 'alert'.
 Invalid payload
+
 Line 3, characters 13-29:
 3 |   val y: int [@@alert bla 42]
                  ^^^^^^^^^^^^^^^^
 Warning 47 [attribute-payload]: illegal payload for attribute 'alert'.
 Invalid payload
+
 Line 4, characters 13-28:
 4 |   val z: int [@@alert "bla"]
                  ^^^^^^^^^^^^^^^

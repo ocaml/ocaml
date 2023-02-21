@@ -484,15 +484,18 @@ Line 3, characters 2-13:
       ^^^^^^^^^^^
 Warning 13 [instance-variable-override]: the following instance variables are overridden by the class c :
   x
+
 Line 4, characters 6-7:
 4 |   val y = 3
           ^
 Warning 13 [instance-variable-override]: the instance variable y is overridden.
+
 Line 6, characters 2-13:
 6 |   inherit d 7
       ^^^^^^^^^^^
 Warning 13 [instance-variable-override]: the following instance variables are overridden by the class d :
   t z
+
 Line 7, characters 6-7:
 7 |   val u = 3
           ^

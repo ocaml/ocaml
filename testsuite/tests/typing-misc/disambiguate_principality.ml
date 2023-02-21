@@ -117,6 +117,7 @@ Line 4, characters 4-15:
 4 |   | { lbl = _ } -> ()
         ^^^^^^^^^^^
 Warning 18 [not-principal]: this type-based record disambiguation is not principal.
+
 Line 4, characters 4-15:
 4 |   | { lbl = _ } -> ()
         ^^^^^^^^^^^
@@ -152,6 +153,7 @@ Line 4, characters 4-15:
 4 |   | { lbl = _ } -> ()
         ^^^^^^^^^^^
 Warning 18 [not-principal]: this type-based record disambiguation is not principal.
+
 Line 4, characters 4-15:
 4 |   | { lbl = _ } -> ()
         ^^^^^^^^^^^
@@ -206,6 +208,7 @@ Line 4, characters 17-28:
 4 |   | { contents = { lbl = _ } } -> ()
                      ^^^^^^^^^^^
 Warning 18 [not-principal]: this type-based record disambiguation is not principal.
+
 Line 4, characters 4-30:
 4 |   | { contents = { lbl = _ } } -> ()
         ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -241,6 +244,7 @@ Line 4, characters 17-28:
 4 |   | { contents = { lbl = _ } } -> ()
                      ^^^^^^^^^^^
 Warning 18 [not-principal]: this type-based record disambiguation is not principal.
+
 Line 4, characters 4-30:
 4 |   | { contents = { lbl = _ } } -> ()
         ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -466,6 +470,7 @@ Line 4, characters 17-18:
 4 |   | { contents = A } -> ()
                      ^
 Warning 18 [not-principal]: this type-based constructor disambiguation is not principal.
+
 Line 4, characters 4-20:
 4 |   | { contents = A } -> ()
         ^^^^^^^^^^^^^^^^
@@ -501,6 +506,7 @@ Line 4, characters 17-18:
 4 |   | { contents = A } -> ()
                      ^
 Warning 18 [not-principal]: this type-based constructor disambiguation is not principal.
+
 Line 4, characters 4-20:
 4 |   | { contents = A } -> ()
         ^^^^^^^^^^^^^^^^
@@ -553,6 +559,7 @@ Line 3, characters 9-10:
 3 |     x := B
              ^
 Warning 18 [not-principal]: this type-based constructor disambiguation is not principal.
+
 Lines 1-3, characters 8-10:
 1 | ........function
 2 |   | ({ contents = M.A } : M.t ref) as x ->

@@ -109,6 +109,7 @@ Lines 11-12, characters 6-19:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 C1 _
+
 Lines 24-26, characters 6-30:
 24 | ......function
 25 |         | Foo _ , Foo _ -> true
@@ -163,6 +164,7 @@ Line 2, characters 10-18:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 None
+
 Line 4, characters 10-18:
 4 |   class d (Just x) = object method x : int = x end
               ^^^^^^^^

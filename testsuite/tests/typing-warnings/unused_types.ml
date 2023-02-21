@@ -40,6 +40,7 @@ Line 3, characters 2-27:
 3 |   type unused = A of unused
       ^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 34 [unused-type-declaration]: unused type unused.
+
 Line 3, characters 16-27:
 3 |   type unused = A of unused
                     ^^^^^^^^^^^
@@ -370,6 +371,7 @@ Line 3, characters 2-33:
 3 |   type t = A [@warning "-37"] | B
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 34 [unused-type-declaration]: unused type t.
+
 Line 3, characters 30-33:
 3 |   type t = A [@warning "-37"] | B
                                   ^^^
@@ -387,6 +389,7 @@ Line 2, characters 13-21:
 2 |   type t = { a : int; b : int }
                  ^^^^^^^^
 Warning 69 [unused-field]: unused record field a.
+
 Line 2, characters 22-29:
 2 |   type t = { a : int; b : int }
                           ^^^^^^^
@@ -495,6 +498,7 @@ Line 3, characters 2-55:
 3 |   type t = { a: int [@warning "-unused-field"]; b:int }
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 34 [unused-type-declaration]: unused type t.
+
 Line 3, characters 48-53:
 3 |   type t = { a: int [@warning "-unused-field"]; b:int }
                                                     ^^^^^

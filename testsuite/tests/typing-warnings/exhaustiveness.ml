@@ -36,6 +36,7 @@ Line 1, characters 20-48:
                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 4 [fragile-match]: this pattern-matching is fragile.
 It will remain exhaustive when constructors are added to type t.
+
 Line 1, characters 42-43:
 1 | let f (x : int t) = match x with A -> 1 | _ -> 2;; (* warn *)
                                               ^

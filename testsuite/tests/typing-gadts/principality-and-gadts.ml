@@ -48,6 +48,7 @@ Line 4, characters 4-10:
         ^^^^^^
 Warning 18 [not-principal]: typing this pattern requires considering int and a as equal.
 But the knowledge of these types is not principal.
+
 Line 5, characters 4-11:
 5 |   | BoolLit, b -> 1
         ^^^^^^^
@@ -154,6 +155,7 @@ Line 4, characters 4-6:
         ^^
 Warning 18 [not-principal]: typing this pattern requires considering unit ab and x as equal.
 But the knowledge of these types is not principal.
+
 Line 5, characters 4-7:
 5 |   | MAB -> false;;
         ^^^
@@ -385,6 +387,7 @@ Line 3, characters 26-31:
                               ^^^^^
 Warning 18 [not-principal]: typing this pattern requires considering M.t and N.t as equal.
 But the knowledge of these types is not principal.
+
 Line 3, characters 4-33:
 3 |   | { x = (x : N.t); eq = Refl3 } -> x
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

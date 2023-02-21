@@ -23,6 +23,7 @@ Line 2, characters 36-66:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Y
+
 val f : ('a list, 'a) eqp -> unit = <fun>
 module rec A : sig type t = B.t list end
 and B : sig type t val eq : (B.t list, t) eqp end

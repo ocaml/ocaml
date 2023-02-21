@@ -83,6 +83,7 @@ Line 10, characters 0-29:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (_, 0)
+
 Line 10, characters 21-24:
 10 | function `B,1 -> 1 | _,1 -> 2;;
                           ^^^
@@ -94,6 +95,7 @@ Line 11, characters 0-29:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (0, _)
+
 Line 11, characters 21-24:
 11 | function 1,`B -> 1 | 1,_ -> 2;;
                           ^^^

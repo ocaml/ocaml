@@ -387,12 +387,14 @@ Line 2, characters 4-5:
         ^
 Warning 41 [ambiguous-name]: A belongs to several types: t2 t
 The first one was selected. Please disambiguate if this is wrong.
+
 Lines 1-3, characters 41-10:
 1 | .........................................function
 2 |   | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
 3 |   | _ -> 2
 Warning 4 [fragile-match]: this pattern-matching is fragile.
 It will remain exhaustive when constructors are added to type t2.
+
 Line 2, characters 4-56:
 2 |   | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -408,22 +410,26 @@ Line 2, characters 4-5:
         ^
 Warning 41 [ambiguous-name]: A belongs to several types: t2 t
 The first one was selected. Please disambiguate if this is wrong.
+
 Line 2, characters 24-25:
 2 |   | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
                             ^
 Warning 41 [ambiguous-name]: A belongs to several types: t2 t
 The first one was selected. Please disambiguate if this is wrong.
+
 Line 2, characters 42-43:
 2 |   | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
                                               ^
 Warning 41 [ambiguous-name]: B belongs to several types: t2 t
 The first one was selected. Please disambiguate if this is wrong.
+
 Lines 1-3, characters 41-10:
 1 | .........................................function
 2 |   | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
 3 |   | _ -> 2
 Warning 4 [fragile-match]: this pattern-matching is fragile.
 It will remain exhaustive when constructors are added to type t2.
+
 Line 2, characters 4-56:
 2 |   | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

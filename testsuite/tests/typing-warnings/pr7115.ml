@@ -45,6 +45,7 @@ Line 2, characters 24-25:
 2 |   module O = struct let x = 42 (* unused *) end
                             ^
 Warning 32 [unused-value-declaration]: unused value x.
+
 Line 3, characters 2-8:
 3 |   open O (* unused open *)
       ^^^^^^

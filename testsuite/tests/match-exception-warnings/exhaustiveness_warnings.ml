@@ -80,10 +80,12 @@ Lines 2-5, characters 4-30:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some true
+
 Line 4, characters 29-30:
 4 |     | Some false | exception _ -> ()
                                  ^
 Warning 11 [redundant-case]: this match case is unused.
+
 Line 5, characters 23-24:
 5 |     | None | exception _ -> ()
                            ^

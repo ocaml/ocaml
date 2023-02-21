@@ -720,6 +720,7 @@ Line 4, characters 11-19:
                ^^^^^^^^
 Warning 18 [not-principal]: typing this pattern requires considering GADT_ordering.point and a as equal.
 But the knowledge of these types is not principal.
+
 Line 5, characters 11-19:
 5 |       and+ { x; y } = a in
                ^^^^^^^^

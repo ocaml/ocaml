@@ -2,66 +2,82 @@ File "w53.ml", line 12, characters 4-5:
 12 | let h x = x [@inline] (* rejected *)
          ^
 Warning 32 [unused-value-declaration]: unused value h.
+
 File "w53.ml", line 12, characters 14-20:
 12 | let h x = x [@inline] (* rejected *)
                    ^^^^^^
 Warning 53 [misplaced-attribute]: the "inline" attribute cannot appear in this context
+
 File "w53.ml", line 13, characters 14-26:
 13 | let h x = x [@ocaml.inline] (* rejected *)
                    ^^^^^^^^^^^^
 Warning 53 [misplaced-attribute]: the "ocaml.inline" attribute cannot appear in this context
+
 File "w53.ml", line 15, characters 14-21:
 15 | let i x = x [@inlined] (* rejected *)
                    ^^^^^^^
 Warning 53 [misplaced-attribute]: the "inlined" attribute cannot appear in this context
+
 File "w53.ml", line 16, characters 14-27:
 16 | let j x = x [@ocaml.inlined] (* rejected *)
                    ^^^^^^^^^^^^^
 Warning 53 [misplaced-attribute]: the "ocaml.inlined" attribute cannot appear in this context
+
 File "w53.ml", line 19, characters 16-23:
 19 | let l x = h x [@inlined] (* rejected *)
                      ^^^^^^^
 Warning 53 [misplaced-attribute]: the "inlined" attribute cannot appear in this context
+
 File "w53.ml", line 21, characters 14-22:
 21 | let m x = x [@tailcall] (* rejected *)
                    ^^^^^^^^
 Warning 53 [misplaced-attribute]: the "tailcall" attribute cannot appear in this context
+
 File "w53.ml", line 22, characters 14-28:
 22 | let n x = x [@ocaml.tailcall] (* rejected *)
                    ^^^^^^^^^^^^^^
 Warning 53 [misplaced-attribute]: the "ocaml.tailcall" attribute cannot appear in this context
+
 File "w53.ml", line 25, characters 16-24:
 25 | let q x = h x [@tailcall] (* rejected *)
                      ^^^^^^^^
 Warning 53 [misplaced-attribute]: the "tailcall" attribute cannot appear in this context
+
 File "w53.ml", line 33, characters 0-32:
 33 | module C = struct end [@@inline] (* rejected *)
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 53 [misplaced-attribute]: the "inline" attribute cannot appear in this context
+
 File "w53.ml", line 34, characters 0-39:
 34 | module C' = struct end [@@ocaml.inline] (* rejected *)
      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 53 [misplaced-attribute]: the "inline" attribute cannot appear in this context
+
 File "w53.ml", line 40, characters 16-22:
 40 | module G = (A [@inline])(struct end) (* rejected *)
                      ^^^^^^
 Warning 53 [misplaced-attribute]: the "inline" attribute cannot appear in this context
+
 File "w53.ml", line 41, characters 17-29:
 41 | module G' = (A [@ocaml.inline])(struct end) (* rejected *)
                       ^^^^^^^^^^^^
 Warning 53 [misplaced-attribute]: the "ocaml.inline" attribute cannot appear in this context
+
 File "w53.ml", line 45, characters 22-29:
 45 | module I = Set.Make [@inlined]
                            ^^^^^^^
 Warning 53 [misplaced-attribute]: the "inlined" attribute cannot appear in this context
+
 File "w53.ml", line 46, characters 23-36:
 46 | module I' = Set.Make [@ocaml.inlined]
                             ^^^^^^^^^^^^^
 Warning 53 [misplaced-attribute]: the "ocaml.inlined" attribute cannot appear in this context
+
 File "w53.ml", line 48, characters 23-30:
 48 | module J = Set.Make [@@inlined]
                             ^^^^^^^
 Warning 53 [misplaced-attribute]: the "inlined" attribute cannot appear in this context
+
 File "w53.ml", line 49, characters 24-37:
 49 | module J' = Set.Make [@@ocaml.inlined]
                              ^^^^^^^^^^^^^

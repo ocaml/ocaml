@@ -23,10 +23,12 @@ Lines 6-11, characters 30-40:
 11 |         C (map' a, (map' [@tailcall]) b)
 Warning 71 [unused-tmc-attribute]: This function is marked @tail_mod_cons
 but is never applied in TMC position.
+
 Line 11, characters 19-39:
 11 |         C (map' a, (map' [@tailcall]) b)
                         ^^^^^^^^^^^^^^^^^^^^
 Warning 51 [wrong-tailcall-expectation]: expected tailcall
+
 Line 11, characters 19-39:
 11 |         C (map' a, (map' [@tailcall]) b)
                         ^^^^^^^^^^^^^^^^^^^^

@@ -63,6 +63,7 @@ Line 1, characters 26-27:
 1 | function Not_found -> 1 | A -> 2 | _ -> 3
                               ^
 Warning 18 [not-principal]: this type-based constructor disambiguation is not principal.
+
 Line 1, characters 26-27:
 1 | function Not_found -> 1 | A -> 2 | _ -> 3
                               ^
@@ -79,6 +80,7 @@ Line 1, characters 10-11:
               ^
 Warning 42 [disambiguated-name]: this use of A relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
+
 Line 1, characters 17-18:
 1 | try raise A with A -> 2
                      ^

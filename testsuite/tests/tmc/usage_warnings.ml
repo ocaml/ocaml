@@ -25,6 +25,7 @@ so the call will not be transformed into a tail call.
 Please either mark the called function with the [@tail_mod_cons]
 attribute, or mark this call with the [@tailcall false] attribute
 to make its non-tailness explicit.
+
 Lines 1-3, characters 34-40:
 1 | ..................................function
 2 |   | [] -> []
@@ -69,6 +70,7 @@ so the call will not be transformed into a tail call.
 Please either mark the called function with the [@tail_mod_cons]
 attribute, or mark this call with the [@tailcall false] attribute
 to make its non-tailness explicit.
+
 Lines 1-10, characters 34-30:
  1 | ..................................function
  2 |   | [] -> []
@@ -250,14 +252,17 @@ so the call will not be transformed into a tail call.
 Please either mark the called function with the [@tail_mod_cons]
 attribute, or mark this call with the [@tailcall false] attribute
 to make its non-tailness explicit.
+
 Line 17, characters 17-67:
 17 |         else Tau ((graft[@tailcall]) (* this should also warn *) n)
                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 51 [wrong-tailcall-expectation]: expected tailcall
+
 Line 16, characters 13-56:
 16 |         then (graft[@tailcall]) (* this should warn *) n
                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 51 [wrong-tailcall-expectation]: expected tailcall
+
 Line 17, characters 17-67:
 17 |         else Tau ((graft[@tailcall]) (* this should also warn *) n)
                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
