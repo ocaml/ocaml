@@ -118,6 +118,13 @@ let echo_eof () =
   print_newline ();
   incr num_loc_lines
 
+(* This is used by the toplevel and the report printers below. *)
+let separate_new_message ppf =
+  if not (is_first_message ()) then begin
+    Format.pp_print_newline ppf ();
+    incr num_loc_lines
+  end
+
 (* Code printing errors and warnings must be wrapped using this function, in
    order to update [num_loc_lines].
 
@@ -741,9 +748,7 @@ let batch_mode_printer : report_printer =
   let pp_txt ppf txt = Format.fprintf ppf "@[%t@]" txt in
   let pp self ppf report =
     setup_colors ();
-    (* Print a blank line between consecutive reports. *)
-    if not (is_first_message ()) then
-      Format.pp_print_newline ppf ();
+    separate_new_message ppf;
     (* Make sure we keep [num_loc_lines] updated.
        The tabulation box is here to give submessage the option
        to be aligned with the main message box
