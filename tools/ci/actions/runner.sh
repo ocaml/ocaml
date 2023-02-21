@@ -63,13 +63,19 @@ Build () {
   else
     script --return --command "$MAKE_WARN" build.log
   fi
-  echo Ensuring that all names are prefixed in the runtime
-  ./tools/check-symbol-names runtime/*.a otherlibs/*/lib*.a
+  failed=0
   if grep -Fq ' warning: undefined variable ' build.log; then
     echo Undefined Makefile variables detected
-    exit 1
+    failed=1
   fi
   rm build.log
+  echo Ensuring that all names are prefixed in the runtime
+  if ! ./tools/check-symbol-names runtime/*.a otherlibs/*/lib*.a ; then
+    failed=1
+  fi
+  if ((failed)); then
+    exit 1
+  fi
 }
 
 Test () {
