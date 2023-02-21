@@ -14,6 +14,7 @@ Lines 1-3, characters 8-23:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (None, Some _)
+
 val f : 'a option * 'b option -> int = <fun>
 |}]
 
@@ -42,6 +43,7 @@ Line 1, characters 42-43:
                                               ^
 Warning 56 [unreachable-case]: this match case is unreachable.
 Consider replacing it with a refutation case '<pat> -> .'
+
 val f : int t -> int = <fun>
 |}]
 
@@ -52,6 +54,7 @@ Line 1, characters 53-54:
                                                          ^
 Warning 56 [unreachable-case]: this match case is unreachable.
 Consider replacing it with a refutation case '<pat> -> .'
+
 val f : unit t option -> int = <fun>
 |}]
 
@@ -62,6 +65,7 @@ Line 1, characters 53-59:
                                                          ^^^^^^
 Warning 56 [unreachable-case]: this match case is unreachable.
 Consider replacing it with a refutation case '<pat> -> .'
+
 val f : unit t option -> int = <fun>
 |}]
 
@@ -78,6 +82,7 @@ Line 1, characters 27-49:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some A
+
 val f : int t option -> int = <fun>
 |}]
 
@@ -98,6 +103,7 @@ Line 1, characters 49-68:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some ({left=Box A; right=Box A}, _)
+
 val f : (int t box pair * bool) option -> unit = <fun>
 |}]
 
@@ -114,6 +120,7 @@ Line 1, characters 8-39:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {left=Box 1; _ }
+
 val f : int box pair -> unit = <fun>
 |}]
 
@@ -125,6 +132,7 @@ Line 1, characters 8-47:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {left=Box 0; right=Box 0}
+
 val f : int box pair -> unit = <fun>
 |}]
 
@@ -182,6 +190,7 @@ Line 1, characters 33-51:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Eq
+
 val f : (A.a, A.b) cmp -> unit = <fun>
 |}]
 
@@ -235,6 +244,7 @@ Line 2, characters 2-24:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some (PlusS _)
+
 val harder : (zero succ, zero succ, zero succ) plus option -> bool = <fun>
 |}]
 
@@ -311,6 +321,7 @@ Line 1, characters 12-42:
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 All clauses in this pattern-matching are guarded.
+
 val f : 'a -> 'a -> int = <fun>
 |}]
 
@@ -323,6 +334,7 @@ Line 1, characters 8-37:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (_, 1)
+
 val f : 'a ref * int -> int = <fun>
 |}]
 
@@ -342,6 +354,7 @@ Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some _
 (However, some guarded clause may match this value.)
+
 val f : int option -> unit = <fun>
 |}]
 
@@ -377,6 +390,7 @@ Lines 20-22, characters 45-49:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 ((A|B), (A|B), (A|B), B)
+
 module Single_row_optim :
   sig type t = A | B val non_exhaustive : t * t * t * t -> unit end
 |}]

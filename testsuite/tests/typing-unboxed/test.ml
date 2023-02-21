@@ -90,6 +90,7 @@ Line 6, characters 2-45:
 6 |   external d : float -> float = "d" "noalloc"
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Alert deprecated: [@@noalloc] should be used instead of "noalloc"
+
 module Old_style_warning :
   sig
     external a : float -> float = "a" "a_nat" [@@unboxed] [@@noalloc]
@@ -767,6 +768,7 @@ versions of the compiler, breaking the primitive implementation.
 You should explicitly annotate the declaration of i
 with [@@boxed] or [@@unboxed], so that its external interface
 remains stable in the future.
+
 external id : i -> i = "%identity"
 |}];;
 
@@ -799,6 +801,7 @@ versions of the compiler, breaking the primitive implementation.
 You should explicitly annotate the declaration of j
 with [@@boxed] or [@@unboxed], so that its external interface
 remains stable in the future.
+
 external id : i -> j = "%identity"
 |}];;
 

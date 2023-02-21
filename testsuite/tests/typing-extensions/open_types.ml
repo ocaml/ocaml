@@ -312,6 +312,7 @@ Here is an example of a case that is not matched:
 *extension*
 Matching over values of extensible variant types (the *extension* above)
 must include a wild card pattern in order to be exhaustive.
+
 val f : foo -> unit = <fun>
 |}]
 
@@ -333,6 +334,7 @@ Here is an example of a case that is not matched:
 *extension*::[]
 Matching over values of extensible variant types (the *extension* above)
 must include a wild card pattern in order to be exhaustive.
+
 val f : foo list -> int = <fun>
 |}]
 
@@ -356,5 +358,6 @@ Here is an example of a case that is not matched:
 *extension*
 Matching over values of extensible variant types (the *extension* above)
 must include a wild card pattern in order to be exhaustive.
+
 val f : t -> string = <fun>
 |}]

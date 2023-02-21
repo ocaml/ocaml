@@ -588,6 +588,7 @@ Line 3, characters 9-10:
 3 |     let+ A = A.A in
              ^
 Warning 18 [not-principal]: this type-based constructor disambiguation is not principal.
+
 val let_not_principal : unit = ()
 |}];;
 
@@ -617,6 +618,7 @@ Line 5, characters 11-12:
 5 |       and+ A = y in
                ^
 Warning 18 [not-principal]: this type-based constructor disambiguation is not principal.
+
 val and_not_principal : A.t -> A.t -> unit = <fun>
 |}];;
 

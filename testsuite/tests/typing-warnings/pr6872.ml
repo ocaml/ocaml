@@ -29,6 +29,7 @@ Line 1, characters 0-1:
     ^
 Warning 41 [ambiguous-name]: A belongs to several types: a exn
 The first one was selected. Please disambiguate if this is wrong.
+
 - : a = A
 |}]
 ;;
@@ -40,6 +41,7 @@ Line 1, characters 6-7:
           ^
 Warning 42 [disambiguated-name]: this use of A relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
+
 Exception: A.
 |}]
 ;;
@@ -57,6 +59,7 @@ Line 1, characters 26-27:
                               ^
 Warning 42 [disambiguated-name]: this use of A relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
+
 - : exn -> int = <fun>
 |}, Principal{|
 Line 1, characters 26-27:
@@ -69,6 +72,7 @@ Line 1, characters 26-27:
                               ^
 Warning 42 [disambiguated-name]: this use of A relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
+
 - : exn -> int = <fun>
 |}]
 ;;
@@ -86,6 +90,7 @@ Line 1, characters 17-18:
                      ^
 Warning 42 [disambiguated-name]: this use of A relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
+
 - : int = 2
 |}]
 ;;

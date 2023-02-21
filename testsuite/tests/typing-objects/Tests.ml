@@ -500,6 +500,7 @@ Line 7, characters 6-7:
 7 |   val u = 3
           ^
 Warning 13 [instance-variable-override]: the instance variable u is overridden.
+
 class e :
   unit ->
   object
@@ -805,6 +806,7 @@ Line 1, characters 18-26:
 1 | fun (x : 'a t) -> (x : 'a); ();;
                       ^^^^^^^^
 Warning 10 [non-unit-statement]: this expression should have type unit.
+
 - : ('a t as 'a) t -> unit = <fun>
 |}];;
 
@@ -964,6 +966,7 @@ Line 4, characters 17-23:
 4 |       method n = self#m
                      ^^^^^^
 Warning 17 [undeclared-virtual-method]: the virtual method m is not declared.
+
 class c : object method m : int method n : int end
 |}];;
 
@@ -1130,6 +1133,7 @@ Line 3, characters 10-75:
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 15 [implicit-public-methods]: the following private methods were made public implicitly:
  foo.
+
 class c : object method foo : int end
 |}];;
 

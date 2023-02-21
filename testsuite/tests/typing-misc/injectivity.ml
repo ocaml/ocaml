@@ -316,6 +316,7 @@ Line 47, characters 4-11:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 None
+
 val v' : int Vec.t Vec.t = <abstr>
 |}]
 
@@ -347,6 +348,7 @@ Line 17, characters 2-30:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Vec (Vec Int)
+
 val eq_int_any : unit -> (int, 'a) eq = <fun>
 |}]
 

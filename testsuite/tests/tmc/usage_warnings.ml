@@ -32,6 +32,7 @@ Lines 1-3, characters 34-40:
 3 |   | xs :: xss -> append xs (flatten xss)
 Warning 71 [unused-tmc-attribute]: This function is marked @tail_mod_cons
 but is never applied in TMC position.
+
 val flatten : 'a list list -> 'a list = <fun>
 |}]
 
@@ -84,6 +85,7 @@ Lines 1-10, characters 34-30:
 10 |       in append_flatten xs xss
 Warning 71 [unused-tmc-attribute]: This function is marked @tail_mod_cons
 but is never applied in TMC position.
+
 val flatten : 'a list list -> 'a list = <fun>
 |}]
 
@@ -115,6 +117,7 @@ so the call will not be transformed into a tail call.
 Please either mark the called function with the [@tail_mod_cons]
 attribute, or mark this call with the [@tailcall false] attribute
 to make its non-tailness explicit.
+
 val flatten : 'a list list -> 'a list = <fun>
 |}]
 
@@ -169,6 +172,7 @@ so the call will not be transformed into a tail call.
 Please either mark the called function with the [@tail_mod_cons]
 attribute, or mark this call with the [@tailcall false] attribute
 to make its non-tailness explicit.
+
 module Tail_calls_to_non_specialized_functions :
   sig
     val list_id : 'a list -> 'a list
@@ -267,6 +271,7 @@ Line 17, characters 17-67:
 17 |         else Tau ((graft[@tailcall]) (* this should also warn *) n)
                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 51 [wrong-tailcall-expectation]: expected tailcall
+
 module All_annotations_flipped :
   sig
     type 'a t = N of 'a | Graft of int | Tau of 'a t | C of 'a t * 'a t

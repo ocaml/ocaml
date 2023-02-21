@@ -34,6 +34,7 @@ Line 17, characters 5-35:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some (Is Eq)
+
 module Make : functor (M : T) -> sig val f : unit -> int end
 |}]
 

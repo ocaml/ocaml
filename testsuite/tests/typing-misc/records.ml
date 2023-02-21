@@ -172,6 +172,7 @@ Line 1, characters 8-44:
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 23 [useless-record-with]: all the fields are explicitly listed in this record:
 the 'with' clause is useless.
+
 Exception: Assert_failure ("", 1, 10).
 |}]
 

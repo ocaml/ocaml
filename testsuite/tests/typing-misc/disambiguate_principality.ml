@@ -39,6 +39,7 @@ Line 3, characters 2-20:
       ^^^^^^^^^^^^^^^^^^
 Warning 23 [useless-record-with]: all the fields are explicitly listed in this record:
 the 'with' clause is useless.
+
 val after_a : M.r = {M.lbl = 4}
 |}]
 
@@ -53,6 +54,7 @@ Line 3, characters 7-18:
 3 |   x := { lbl = 4 }
            ^^^^^^^^^^^
 Warning 18 [not-principal]: this type-based record disambiguation is not principal.
+
 val b : unit = ()
 |}]
 
@@ -111,6 +113,7 @@ Line 4, characters 4-15:
 4 |   | { lbl = _ } -> ()
         ^^^^^^^^^^^
 Warning 11 [redundant-case]: this match case is unused.
+
 val h : M.r -> unit = <fun>
 |}, Principal{|
 Line 4, characters 4-15:
@@ -122,6 +125,7 @@ Line 4, characters 4-15:
 4 |   | { lbl = _ } -> ()
         ^^^^^^^^^^^
 Warning 11 [redundant-case]: this match case is unused.
+
 val h : M.r -> unit = <fun>
 |}]
 
@@ -147,6 +151,7 @@ Line 4, characters 4-15:
 4 |   | { lbl = _ } -> ()
         ^^^^^^^^^^^
 Warning 12 [redundant-subpat]: this sub-pattern is unused.
+
 val j : M.r -> unit = <fun>
 |}, Principal{|
 Line 4, characters 4-15:
@@ -158,6 +163,7 @@ Line 4, characters 4-15:
 4 |   | { lbl = _ } -> ()
         ^^^^^^^^^^^
 Warning 12 [redundant-subpat]: this sub-pattern is unused.
+
 val j : M.r -> unit = <fun>
 |}]
 
@@ -202,6 +208,7 @@ Line 4, characters 4-30:
 4 |   | { contents = { lbl = _ } } -> ()
         ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 11 [redundant-case]: this match case is unused.
+
 val n : M.r ref -> unit = <fun>
 |}, Principal{|
 Line 4, characters 17-28:
@@ -213,6 +220,7 @@ Line 4, characters 4-30:
 4 |   | { contents = { lbl = _ } } -> ()
         ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 11 [redundant-case]: this match case is unused.
+
 val n : M.r ref -> unit = <fun>
 |}]
 
@@ -238,6 +246,7 @@ Line 4, characters 4-30:
 4 |   | { contents = { lbl = _ } } -> ()
         ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 12 [redundant-subpat]: this sub-pattern is unused.
+
 val p : M.r ref -> unit = <fun>
 |}, Principal{|
 Line 4, characters 17-28:
@@ -249,6 +258,7 @@ Line 4, characters 4-30:
 4 |   | { contents = { lbl = _ } } -> ()
         ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 12 [redundant-subpat]: this sub-pattern is unused.
+
 val p : M.r ref -> unit = <fun>
 |}]
 
@@ -285,6 +295,7 @@ Line 4, characters 9-20:
 4 |     x := { lbl = 4 }
              ^^^^^^^^^^^
 Warning 18 [not-principal]: this type-based record disambiguation is not principal.
+
 val s : M.r ref -> unit = <fun>
 |}]
 
@@ -299,6 +310,7 @@ Line 3, characters 9-20:
 3 |     x := { lbl = 4 }
              ^^^^^^^^^^^
 Warning 18 [not-principal]: this type-based record disambiguation is not principal.
+
 val t : M.r ref -> unit = <fun>
 |}]
 
@@ -349,6 +361,7 @@ Line 3, characters 7-8:
 3 |   x := B
            ^
 Warning 18 [not-principal]: this type-based constructor disambiguation is not principal.
+
 val b : unit = ()
 |}]
 
@@ -393,6 +406,7 @@ Line 4, characters 4-5:
 4 |   | B -> ()
         ^
 Warning 18 [not-principal]: this type-based constructor disambiguation is not principal.
+
 val h : M.t -> unit = <fun>
 |}]
 
@@ -420,6 +434,7 @@ Line 4, characters 4-5:
 4 |   | B -> ()
         ^
 Warning 18 [not-principal]: this type-based constructor disambiguation is not principal.
+
 val j : M.t -> unit = <fun>
 |}]
 
@@ -464,6 +479,7 @@ Line 4, characters 4-20:
 4 |   | { contents = A } -> ()
         ^^^^^^^^^^^^^^^^
 Warning 11 [redundant-case]: this match case is unused.
+
 val n : M.t ref -> unit = <fun>
 |}, Principal{|
 Line 4, characters 17-18:
@@ -475,6 +491,7 @@ Line 4, characters 4-20:
 4 |   | { contents = A } -> ()
         ^^^^^^^^^^^^^^^^
 Warning 11 [redundant-case]: this match case is unused.
+
 val n : M.t ref -> unit = <fun>
 |}]
 
@@ -500,6 +517,7 @@ Line 4, characters 4-20:
 4 |   | { contents = A } -> ()
         ^^^^^^^^^^^^^^^^
 Warning 12 [redundant-subpat]: this sub-pattern is unused.
+
 val p : M.t ref -> unit = <fun>
 |}, Principal{|
 Line 4, characters 17-18:
@@ -511,6 +529,7 @@ Line 4, characters 4-20:
 4 |   | { contents = A } -> ()
         ^^^^^^^^^^^^^^^^
 Warning 12 [redundant-subpat]: this sub-pattern is unused.
+
 val p : M.t ref -> unit = <fun>
 |}]
 
@@ -538,6 +557,7 @@ Line 4, characters 9-10:
 4 |     x := A
              ^
 Warning 18 [not-principal]: this type-based constructor disambiguation is not principal.
+
 val s : M.t ref -> unit = <fun>
 |}]
 
@@ -553,6 +573,7 @@ Lines 1-3, characters 8-10:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {contents=B}
+
 val t : M.t ref -> unit = <fun>
 |}, Principal{|
 Line 3, characters 9-10:
@@ -567,5 +588,6 @@ Lines 1-3, characters 8-10:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {contents=B}
+
 val t : M.t ref -> unit = <fun>
 |}]

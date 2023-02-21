@@ -24,6 +24,7 @@ Line 2, characters 2-8:
 2 |   open A
       ^^^^^^
 Warning 33 [unused-open]: unused open A.
+
 module rec C : sig end
 |}]
 
@@ -47,5 +48,6 @@ Line 4, characters 6-12:
 4 |       open A
           ^^^^^^
 Warning 33 [unused-open]: unused open A.
+
 module rec D : sig module M : sig module X : sig end end end
 |}]

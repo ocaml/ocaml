@@ -16,6 +16,7 @@ Line 3, characters 2-8:
 3 |   open M  (* unused open *)
       ^^^^^^
 Warning 33 [unused-open]: unused open M.
+
 module T1 : sig end
 |}]
 
@@ -50,6 +51,7 @@ Line 2, characters 12-13:
 2 |   type t0 = A  (* unused type and constructor *)
                 ^
 Warning 37 [unused-constructor]: unused constructor A.
+
 module T3 : sig end
 |}]
 
@@ -74,6 +76,7 @@ Line 4, characters 2-8:
 4 |   open M (* unused open; no shadowing (A below refers to the one in t0) *)
       ^^^^^^
 Warning 33 [unused-open]: unused open M.
+
 module T4 : sig end
 |}]
 
@@ -98,6 +101,7 @@ Line 2, characters 12-13:
 2 |   type t0 = A (* unused type and constructor *)
                 ^
 Warning 37 [unused-constructor]: unused constructor A.
+
 module T5 : sig end
 |}]
 
@@ -116,6 +120,7 @@ Line 3, characters 2-9:
 3 |   open! M  (* unused open *)
       ^^^^^^^
 Warning 66 [unused-open-bang]: unused open! M.
+
 module T1_bis : sig end
 |}]
 
@@ -144,6 +149,7 @@ Line 2, characters 12-13:
 2 |   type t0 = A  (* unused type and constructor *)
                 ^
 Warning 37 [unused-constructor]: unused constructor A.
+
 module T3_bis : sig end
 |}]
 
@@ -168,6 +174,7 @@ Line 4, characters 2-9:
 4 |   open! M (* unused open; no shadowing (A below refers to the one in t0) *)
       ^^^^^^^
 Warning 66 [unused-open-bang]: unused open! M.
+
 module T4_bis : sig end
 |}]
 
@@ -187,6 +194,7 @@ Line 2, characters 12-13:
 2 |   type t0 = A (* unused type and constructor *)
                 ^
 Warning 37 [unused-constructor]: unused constructor A.
+
 module T5_bis : sig end
 |}]
 

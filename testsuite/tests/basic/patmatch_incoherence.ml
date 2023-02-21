@@ -42,6 +42,7 @@ Lines 1-3, characters 0-20:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x=Some _}
+
 Exception: Assert_failure ("", 1, 12).
 |}];;
 
@@ -57,6 +58,7 @@ Lines 1-3, characters 0-18:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x="*"}
+
 Exception: Assert_failure ("", 1, 12).
 |}];;
 
@@ -72,6 +74,7 @@ Lines 1-3, characters 0-18:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x=`AnyOtherTag}
+
 Exception: Assert_failure ("", 1, 12).
 |}];;
 
@@ -87,6 +90,7 @@ Lines 1-3, characters 0-17:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x=0}
+
 Exception: Assert_failure ("", 1, 12).
 |}];;
 
@@ -102,6 +106,7 @@ Lines 1-3, characters 0-17:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x=0}
+
 Exception: Assert_failure ("", 1, 12).
 |}];;
 
@@ -117,6 +122,7 @@ Lines 1-3, characters 0-17:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x=0}
+
 Exception: Assert_failure ("", 1, 12).
 |}];;
 
@@ -134,5 +140,6 @@ Lines 1-4, characters 0-17:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {x=0}
+
 Exception: Assert_failure ("", 1, 12).
 |}];;

@@ -21,6 +21,7 @@ Line 1, characters 8-22:
             ^^^^^^^^^^^^^^
 Warning 5 [ignored-partial-application]: this function application is partial,
 maybe some arguments are missing.
+
 - : int -> 'a = <fun>
 |}]
 
@@ -50,6 +51,7 @@ Line 1, characters 21-35:
                          ^^^^^^^^^^^^^^
 Warning 5 [ignored-partial-application]: this function application is partial,
 maybe some arguments are missing.
+
 - : int -> int = <fun>
 |}]
 
@@ -73,6 +75,7 @@ Line 1, characters 18-23:
                       ^^^^^
 Warning 5 [ignored-partial-application]: this function application is partial,
 maybe some arguments are missing.
+
 val f : t -> unit = <fun>
 |}]
 
@@ -82,6 +85,7 @@ Line 1, characters 19-20:
 1 | let _ = raise Exit 3;;
                        ^
 Warning 20 [ignored-extra-argument]: this argument will not be used by the function.
+
 Exception: Stdlib.Exit.
 |}]
 
