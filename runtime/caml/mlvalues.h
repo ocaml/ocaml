@@ -202,6 +202,10 @@ where 0 <= R <= 31 is HEADER_RESERVED_BITS, set with the
 #else
 #define Tag_val(val) (((unsigned char *) (val)) [-sizeof(value)])
                                                  /* Also an l-value. */
+#define Tag_atomic_val(val) \
+  atomic_load_explicit(((unsigned char *) (val)) - sizeof(value), \
+                       memory_order_relaxed)
+
 #define Tag_hp(hp) (((unsigned char *) (hp)) [0])
                                                  /* Also an l-value. */
 #endif
@@ -225,6 +229,10 @@ where 0 <= R <= 31 is HEADER_RESERVED_BITS, set with the
 #define Op_atomic_val(x) ((atomic_value *) (x))
 /* Fields are numbered from 0. */
 #define Field(x, i) (((volatile value *)(x)) [i]) /* Also an l-value. */
+
+#define Field_atomic(x, i) \
+  atomic_load_explicit(Op_atomic_val((volatile value *)(x) + i), \
+                       memory_order_relaxed)
 
 /* NOTE: [Forward_tag] and [Infix_tag] must be just under
    [No_scan_tag], with [Infix_tag] the lower one.
