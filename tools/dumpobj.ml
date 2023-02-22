@@ -15,10 +15,8 @@
 
 (* Disassembler for executable and .cmo object files *)
 
-open Asttypes
 open Config
 open Instruct
-open Lambda
 open Location
 open Opcodes
 open Opnames
@@ -75,38 +73,6 @@ let record_events orig evl =
       relocate_event orig ev;
       Hashtbl.add event_table ev.ev_pos ev)
     evl
-
-(* Print a structured constant *)
-
-let print_float f =
-  if String.contains f '.'
-  then printf "%s" f
-  else printf "%s." f
-
-let rec print_struct_const = function
-    Const_base(Const_int i) -> printf "%d" i
-  | Const_base(Const_float f) -> print_float f
-  | Const_base(Const_string (s, _, _)) -> printf "%S" s
-  | Const_immstring s -> printf "%S" s
-  | Const_base(Const_char c) -> printf "%C" c
-  | Const_base(Const_int32 i) -> printf "%ldl" i
-  | Const_base(Const_nativeint i) -> printf "%ndn" i
-  | Const_base(Const_int64 i) -> printf "%LdL" i
-  | Const_block(tag, args) ->
-      printf "<%d>" tag;
-      begin match args with
-        [] -> ()
-      | [a1] ->
-          printf "("; print_struct_const a1; printf ")"
-      | a1::al ->
-          printf "("; print_struct_const a1;
-          List.iter (fun a -> printf ", "; print_struct_const a) al;
-          printf ")"
-      end
-  | Const_float_array a ->
-      printf "[|";
-      List.iter (fun f -> print_float f; printf "; ") a;
-      printf "|]"
 
 (* Print an obj *)
 
@@ -172,7 +138,7 @@ let print_getglobal_name ic =
     begin try
       match find_reloc ic with
           Reloc_getglobal id -> print_string (Ident.name id)
-        | Reloc_literal sc -> print_struct_const sc
+        | Reloc_literal sc -> print_obj sc
         | _ -> print_string "<wrong reloc>"
     with Not_found ->
       print_string "<no reloc>"
@@ -484,7 +450,7 @@ let print_code ic len =
 let print_reloc (info, pos) =
   printf "    %d    (%d)    " pos (pos/4);
   match info with
-    Reloc_literal sc -> print_struct_const sc; printf "\n"
+    Reloc_literal sc -> print_obj sc; printf "\n"
   | Reloc_getglobal id -> printf "require    %s\n" (Ident.name id)
   | Reloc_setglobal id -> printf "provide    %s\n" (Ident.name id)
   | Reloc_primitive s -> printf "prim    %s\n" s

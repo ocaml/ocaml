@@ -469,6 +469,12 @@ Working version
   in preparation for quadratic-time fix
   (Gabriel Scherer, review by Enguerrand Decorne)
 
+- #11997: translate structured constants into their Obj.t representation
+  at compile time rather than link time. Changes the way dumpobj prints
+  these constants because their representaiton becomes untyped.
+  (Sébastien Hinderer, review by Xavier Leroy, Nicolás Ojeda Bär and
+  Hugo Heuzard)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.

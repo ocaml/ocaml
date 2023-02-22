@@ -2072,6 +2072,7 @@ bytecomp/dll.cmx : \
 bytecomp/dll.cmi :
 bytecomp/emitcode.cmo : \
     lambda/translmod.cmi \
+    bytecomp/symtable.cmi \
     typing/primitive.cmi \
     bytecomp/opcodes.cmi \
     utils/misc.cmi \
@@ -2089,6 +2090,7 @@ bytecomp/emitcode.cmo : \
     bytecomp/emitcode.cmi
 bytecomp/emitcode.cmx : \
     lambda/translmod.cmx \
+    bytecomp/symtable.cmx \
     typing/primitive.cmx \
     bytecomp/opcodes.cmx \
     utils/misc.cmx \
@@ -3916,7 +3918,6 @@ file_formats/cmi_format.cmi : \
     utils/misc.cmi
 file_formats/cmo_format.cmi : \
     utils/misc.cmi \
-    lambda/lambda.cmi \
     typing/ident.cmi
 file_formats/cmt_format.cmo : \
     typing/types.cmi \
@@ -6918,26 +6919,22 @@ tools/dumpobj.cmo : \
     tools/opnames.cmi \
     bytecomp/opcodes.cmi \
     parsing/location.cmi \
-    lambda/lambda.cmi \
     bytecomp/instruct.cmi \
     typing/ident.cmi \
     utils/config.cmi \
     file_formats/cmo_format.cmi \
     bytecomp/bytesections.cmi \
-    parsing/asttypes.cmi \
     tools/dumpobj.cmi
 tools/dumpobj.cmx : \
     bytecomp/symtable.cmx \
     tools/opnames.cmx \
     bytecomp/opcodes.cmx \
     parsing/location.cmx \
-    lambda/lambda.cmx \
     bytecomp/instruct.cmx \
     typing/ident.cmx \
     utils/config.cmx \
     file_formats/cmo_format.cmi \
     bytecomp/bytesections.cmx \
-    parsing/asttypes.cmi \
     tools/dumpobj.cmi
 tools/dumpobj.cmi :
 tools/eqparsetree.cmo : \
