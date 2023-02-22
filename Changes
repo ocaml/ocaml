@@ -307,6 +307,13 @@ Working version
   parameters.
   (Florian Angeletti, report by Wiktor Kuchta, review by Jules Aguillon)
 
+* #11993: install only bytecode executables for the `ocamlmklib`, `ocamlcmt`,
+  `ocamlprof`, `ocamlcp`, `ocamloptp`, and `ocamlmktop` tools, but no
+  native-code executables.  A tool like `ocamlmklib` for example is now
+  installed directly to `$BINDIR/ocamlmklib`; `ocamlmklib.byte` and
+  `ocamlmklib.opt` are no longer installed to `$BINDIR`.
+  (Xavier Leroy, review by Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #9430, #11291: Document the general desugaring rules for binding operators.
