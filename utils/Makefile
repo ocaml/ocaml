@@ -90,7 +90,6 @@ config_main.ml: config.mlp $(ROOTDIR)/Makefile.config Makefile config.common.ml
 	    $(call SUBST,FUNCTION_SECTIONS) \
 	    $(call SUBST,CC_HAS_DEBUG_PREFIX_MAP) \
 	    $(call SUBST,AS_HAS_DEBUG_PREFIX_MAP) \
-	    $(call SUBST,FORCE_INSTRUMENTED_RUNTIME) \
 	    $< > $@
 	cat config.common.ml >> $@
 
