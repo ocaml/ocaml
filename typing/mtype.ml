@@ -187,7 +187,7 @@ let rec nondep_mty_with_presence env va ids pres mty =
           let expansion =
             try Env.find_modtype_expansion p env
             with Not_found ->
-              raise (Ctype.Nondep_cannot_erase id)
+              raise (Ctype.Nondep_cannot_erase (Ident.Set.singleton id))
           in
           nondep_mty_with_presence env va ids pres expansion
       | None -> pres, mty
@@ -198,7 +198,7 @@ let rec nondep_mty_with_presence env va ids pres mty =
           let expansion =
             try Env.find_module p env
             with Not_found ->
-              raise (Ctype.Nondep_cannot_erase id)
+              raise (Ctype.Nondep_cannot_erase (Ident.Set.singleton id))
           in
           nondep_mty_with_presence env va ids Mp_present expansion.md_type
       | None -> pres, mty

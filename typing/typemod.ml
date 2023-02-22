@@ -26,22 +26,27 @@ let () = Includemod_errorprinter.register ()
 module Sig_component_kind = Shape.Sig_component_kind
 module String = Misc.Stdlib.String
 
-type hiding_error =
-  | Illegal_shadowing of {
+
+type shadowed_ident = {
       shadowed_item_id: Ident.t;
       shadowed_item_kind: Sig_component_kind.t;
       shadowed_item_loc: Location.t;
       shadower_id: Ident.t;
-      user_id: Ident.t;
-      user_kind: Sig_component_kind.t;
-      user_loc: Location.t;
+      shadower_loc: Location.t ;
     }
-  | Appears_in_signature of {
+
+type ephemeral_ident = {
       opened_item_id: Ident.t;
       opened_item_kind: Sig_component_kind.t;
+      opened_item_loc: Location.t
+    }
+
+type hiding_error = {
       user_id: Ident.t;
       user_kind: Sig_component_kind.t;
-      user_loc: Location.t;
+      user_loc: Location.t ;
+      ephemeral_idents: ephemeral_ident list;
+      shadowed_idents: shadowed_ident list
     }
 
 type error =
@@ -70,7 +75,7 @@ type error =
   | Cannot_scrape_alias of Path.t
   | Cannot_scrape_package_type of Path.t
   | Badly_formed_signature of string * Typedecl.error
-  | Cannot_hide_id of hiding_error
+  | Signature_avoidance of hiding_error
   | Invalid_type_subst_rhs
   | Unpackable_local_modtype_subst of Path.t
   | With_cannot_remove_packed_modtype of Path.t * module_type
@@ -961,7 +966,8 @@ module Signature_names : sig
   val check_sig_item:
     ?info:info -> t -> Location.t -> Signature_group.rec_group -> unit
 
-  val simplify: Env.t -> t -> Types.signature -> Types.signature
+  val simplify:
+    Env.t -> t -> (unit -> Location.t) -> Types.signature -> Types.signature
 end = struct
 
   type shadowable =
@@ -1157,7 +1163,7 @@ end = struct
      [Cannot_hide_id].
   *)
 
-  let simplify env t sg =
+  let simplify env t compute_loc sg =
     let to_remove = t.to_be_removed in
     let ids_to_remove =
       Ident.Map.fold (fun id (kind,  _, _) lst ->
@@ -1196,34 +1202,41 @@ end = struct
           | [] -> component
           | ids ->
             try Mtype.nondep_sig_item env ids component with
-            | Ctype.Nondep_cannot_erase removed_item_id ->
-              let (removed_item_kind, removed_item_loc, reason) =
-                Ident.Map.find removed_item_id to_remove.hide
-              in
-              let err_loc, hiding_error =
+            | Ctype.Nondep_cannot_erase removed_item_ids ->
+              let hidden_ident_info removed_item_id (opened,shadowed) =
+                let (removed_item_kind, removed_item_loc, reason) =
+                  Ident.Map.find removed_item_id to_remove.hide
+                in
                 match reason with
                 | From_open ->
-                  removed_item_loc,
-                  Appears_in_signature {
-                    opened_item_kind = removed_item_kind;
-                    opened_item_id = removed_item_id;
-                    user_id;
-                    user_kind;
-                    user_loc;
-                  }
+                     {
+                      opened_item_kind = removed_item_kind;
+                      opened_item_id = removed_item_id;
+                      opened_item_loc = removed_item_loc;
+                    } :: opened, shadowed
                 | Shadowed_by (shadower_id, shadower_loc) ->
-                  shadower_loc,
-                  Illegal_shadowing {
-                    shadowed_item_kind = removed_item_kind;
-                    shadowed_item_id = removed_item_id;
-                    shadowed_item_loc = removed_item_loc;
-                    shadower_id;
-                    user_id;
-                    user_kind;
-                    user_loc;
-                  }
+                    opened, {
+                      shadowed_item_kind = removed_item_kind;
+                      shadowed_item_id = removed_item_id;
+                      shadowed_item_loc = removed_item_loc;
+                      shadower_loc;
+                      shadower_id;
+                    } :: shadowed
               in
-              raise (Error(err_loc, env, Cannot_hide_id hiding_error))
+              let ephemeral_idents, shadowed_idents =
+                Ident.Set.fold hidden_ident_info removed_item_ids ([],[])
+              in
+              let error = {
+                user_id; user_kind; user_loc;
+                shadowed_idents; ephemeral_idents
+              }
+              in
+              let loc = match shadowed_idents, ephemeral_idents with
+                | [], a :: _ -> a.opened_item_loc
+                | [a], _ -> a.shadower_loc
+                | _ -> compute_loc ()
+              in
+              raise (Error(loc, env, Signature_avoidance error))
         in
         Some component
       end
@@ -1286,7 +1299,7 @@ and transl_modtype_aux env smty =
       mkmty (Tmty_alias (path, lid)) (Mty_alias path) env loc
         smty.pmty_attributes
   | Pmty_signature ssg ->
-      let sg = transl_signature env ssg in
+      let sg = transl_signature env (fun () -> loc) ssg in
       mkmty (Tmty_signature sg) (Mty_signature sg.sig_type) env loc
         smty.pmty_attributes
   | Pmty_functor(sarg_opt, sres) ->
@@ -1359,7 +1372,7 @@ and transl_with ~loc env remove_aliases (rev_tcstrs,sg) constr =
 
 
 
-and transl_signature env sg =
+and transl_signature env loc sg =
   let names = Signature_names.create () in
   let rec transl_sig env sg =
     match sg with
@@ -1684,7 +1697,7 @@ and transl_signature env sg =
   Builtin_attributes.warning_scope []
     (fun () ->
        let (trem, rem, final_env) = transl_sig (Env.in_signature true env) sg in
-       let rem = Signature_names.simplify final_env names rem in
+       let rem = Signature_names.simplify final_env names loc rem in
        let sg =
          { sig_items = trem; sig_type = rem; sig_final_env = final_env }
        in
@@ -2167,7 +2180,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       in
       md, shape
   | Pmod_structure sstr ->
-      let (str, sg, names, shape, _finalenv) =
+      let (str, sg, names, shape, finalenv) =
         type_structure funct_body anchor env sstr in
       let md =
         { mod_desc = Tmod_structure str;
@@ -2176,7 +2189,9 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
           mod_attributes = smod.pmod_attributes;
           mod_loc = smod.pmod_loc }
       in
-      let sg' = Signature_names.simplify _finalenv names sg in
+      let sg' =
+        Signature_names.simplify finalenv names (fun () -> smod.pmod_loc) sg
+      in
       if List.length sg' = List.length sg then md, shape else
       wrap_constraint_with_shape env false md
         (Mty_signature sg') shape Tmodtype_implicit
@@ -3023,7 +3038,10 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
         Shape.set_uid_if_none shape
           (Uid.of_compilation_unit_id (Ident.create_persistent modulename))
       in
-      let simple_sg = Signature_names.simplify finalenv names sg in
+      let loc () =
+        Location.union @@ Seq.map (fun i -> i.pstr_loc) @@ List.to_seq ast
+      in
+      let simple_sg = Signature_names.simplify finalenv names loc sg in
       if !Clflags.print_types then begin
         Typecore.force_delayed_checks ();
         let shape = Shape.local_reduce shape in
@@ -3119,7 +3137,10 @@ let save_signature modname tsg outputprefix source_file initial_env cmi =
     (Cmt_format.Interface tsg) (Some source_file) initial_env (Some cmi) None
 
 let type_interface env ast =
-  transl_signature env ast
+  let loc () =
+    Location.union @@ Seq.map (fun i -> i.psig_loc) @@ List.to_seq ast
+  in
+  transl_signature env loc ast
 
 (* "Packaging" of several compilation units into one unit
    having them as sub-modules.  *)
@@ -3219,7 +3240,86 @@ let package_units initial_env objfiles cmifile modulename =
 
 
 (* Error report *)
-
+let signature_avoidance_report loc issue =
+  match issue.shadowed_idents, issue.ephemeral_idents with
+  | [sh], _ ->
+      let shadowed =
+        Printtyp.namespaced_ident sh.shadowed_item_kind sh.shadowed_item_id
+      in
+      let shadower =
+        Printtyp.namespaced_ident sh.shadowed_item_kind sh.shadower_id
+      in
+      let shadowed_item_kind=
+        Sig_component_kind.to_string sh.shadowed_item_kind
+      in
+      let shadowed_msg =
+        Location.msg ~loc:sh.shadowed_item_loc
+          "@[%s %s came from this include.@]"
+          (String.capitalize_ascii shadowed_item_kind)
+          shadowed
+      in
+      let user_msg =
+        Location.msg ~loc:issue.user_loc
+        "@[The %s %s has no valid type@ if %s is shadowed.@]"
+        (Sig_component_kind.to_string issue.user_kind)
+        (Ident.name issue.user_id)
+        shadowed
+      in
+      Location.errorf ~loc ~sub:[shadowed_msg; user_msg]
+        "Illegal shadowing of included %s %s@ by %s."
+        shadowed_item_kind shadowed shadower
+  | [], eph :: _ ->
+      let opened_item_kind= Sig_component_kind.to_string eph.opened_item_kind in
+      let opened_id = Ident.name eph.opened_item_id in
+      let user_msg =
+        Location.msg ~loc:issue.user_loc
+          "@[The %s %s has no valid type@ if %s is hidden.@]"
+          (Sig_component_kind.to_string issue.user_kind)
+          (Ident.name issue.user_id)
+          opened_id
+      in
+      Location.errorf ~loc ~sub:[user_msg]
+        "The %s %s introduced by this open appears in the signature."
+        opened_item_kind opened_id
+  |  many, _ ->
+      let shadowed_ident sh =
+          Printtyp.namespaced_ident sh.shadowed_item_kind sh.shadowed_item_id
+      in
+      let pp_shadowed_name sh =
+        let shadower =
+          Printtyp.namespaced_ident sh.shadowed_item_kind sh.shadower_id
+        in
+        let shadowed = shadowed_ident sh in
+        [Location.msg ~loc:sh.shadowed_item_loc
+           "@[<h>The %s %s is introduced by this include.@]"
+           (Sig_component_kind.to_string sh.shadowed_item_kind)
+           shadowed
+        ;
+          Location.msg ~loc:sh.shadower_loc
+            "@[<h>The %s %s is shadowed by %s here.@]"
+            (Sig_component_kind.to_string sh.shadowed_item_kind)
+            shadowed shadower
+        ]
+      in
+      let user = Printtyp.namespaced_ident issue.user_kind issue.user_id in
+      let user_sub =
+        Location.msg ~loc:issue.user_loc "@[<v>The %s %s is defined here.@]"
+          (Sig_component_kind.to_string issue.user_kind)
+          user
+      in
+      let sub = user_sub :: List.concat_map pp_shadowed_name many in
+      let loc_sort (x:Location.msg) (y:Location.msg) =
+        Stdlib.compare x.loc y.loc
+      in
+      let comma ppf () = Format.fprintf ppf ",@ " in
+      let sub = List.sort loc_sort sub in
+      Location.errorf ~loc ~sub
+        "@[<hov>Illegal signature:@ the %s %s has no valid type@ \
+         once the following type(s) are shadowed:@ %a.@]"
+        (Sig_component_kind.to_string issue.user_kind)
+        user
+        (Format.pp_print_list ~pp_sep:comma Format.pp_print_string)
+        (List.map shadowed_ident many)
 
 open Printtyp
 
@@ -3329,44 +3429,7 @@ let report_error ~loc _env = function
         path p
   | Badly_formed_signature (context, err) ->
       Location.errorf ~loc "@[In %s:@ %a@]" context Typedecl.report_error err
-  | Cannot_hide_id Illegal_shadowing
-      { shadowed_item_kind; shadowed_item_id; shadowed_item_loc;
-        shadower_id; user_id; user_kind; user_loc } ->
-      let shadowed =
-        Printtyp.namespaced_ident shadowed_item_kind shadowed_item_id
-      in
-      let shadower =
-        Printtyp.namespaced_ident shadowed_item_kind shadower_id
-      in
-      let shadowed_item_kind= Sig_component_kind.to_string shadowed_item_kind in
-      let shadowed_msg =
-        Location.msg ~loc:shadowed_item_loc
-          "@[%s %s came from this include.@]"
-          (String.capitalize_ascii shadowed_item_kind)
-          shadowed
-      in
-      let user_msg =
-        Location.msg ~loc:user_loc
-        "@[The %s %s has no valid type@ if %s is shadowed.@]"
-        (Sig_component_kind.to_string user_kind) (Ident.name user_id)
-        shadowed
-      in
-      Location.errorf ~loc ~sub:[shadowed_msg; user_msg]
-        "Illegal shadowing of included %s %s@ by %s."
-        shadowed_item_kind shadowed shadower
-  | Cannot_hide_id Appears_in_signature
-      { opened_item_kind; opened_item_id; user_id; user_kind; user_loc } ->
-      let opened_item_kind= Sig_component_kind.to_string opened_item_kind in
-      let opened_id = Ident.name opened_item_id in
-      let user_msg =
-        Location.msg ~loc:user_loc
-          "@[The %s %s has no valid type@ if %s is hidden.@]"
-        (Sig_component_kind.to_string user_kind) (Ident.name user_id)
-        opened_id
-      in
-      Location.errorf ~loc ~sub:[user_msg]
-        "The %s %s introduced by this open appears in the signature."
-        opened_item_kind opened_id
+  | Signature_avoidance r -> signature_avoidance_report loc r
   | Invalid_type_subst_rhs ->
       Location.errorf ~loc "Only type synonyms are allowed on the right of :="
   | Unpackable_local_modtype_subst p ->

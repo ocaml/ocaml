@@ -70,6 +70,22 @@ type 'a loc = {
   loc : t;
 }
 
+let merge l1 l2 = {
+  loc_start = min l1.loc_start l2.loc_start;
+  loc_end = max l1.loc_end l2.loc_end;
+  loc_ghost = l1.loc_ghost && l2.loc_ghost
+}
+
+let union seq =
+  let rec union loc seq = match seq () with
+    | Seq.Nil -> loc
+    | Seq.Cons (x, seq) ->
+        union (merge x loc) seq
+  in
+  match seq () with
+  | Seq.Nil -> none
+  | Seq.Cons(x,seq) -> union x seq
+
 let mkloc txt loc = { txt ; loc }
 let mknoloc txt = mkloc txt none
 

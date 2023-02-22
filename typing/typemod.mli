@@ -25,7 +25,7 @@ open Types
 module Signature_names : sig
   type t
 
-  val simplify: Env.t -> t -> signature -> signature
+  val simplify: Env.t -> t -> (unit -> Location.t) -> signature -> signature
 end
 
 val type_module:
@@ -44,7 +44,7 @@ val type_implementation:
 val type_interface:
         Env.t -> Parsetree.signature -> Typedtree.signature
 val transl_signature:
-        Env.t -> Parsetree.signature -> Typedtree.signature
+  Env.t -> (unit -> Location.t) ->  Parsetree.signature -> Typedtree.signature
 val check_nongen_signature:
         Env.t -> Types.signature -> unit
         (*
@@ -85,22 +85,26 @@ module Sig_component_kind : sig
   val to_string : t -> string
 end
 
-type hiding_error =
-  | Illegal_shadowing of {
+type shadowed_ident = {
       shadowed_item_id: Ident.t;
       shadowed_item_kind: Sig_component_kind.t;
       shadowed_item_loc: Location.t;
       shadower_id: Ident.t;
-      user_id: Ident.t;
-      user_kind: Sig_component_kind.t;
-      user_loc: Location.t;
+      shadower_loc: Location.t ;
     }
-  | Appears_in_signature of {
+
+type ephemeral_ident = {
       opened_item_id: Ident.t;
       opened_item_kind: Sig_component_kind.t;
+      opened_item_loc: Location.t
+    }
+
+type hiding_error = {
       user_id: Ident.t;
       user_kind: Sig_component_kind.t;
-      user_loc: Location.t;
+      user_loc: Location.t ;
+      ephemeral_idents: ephemeral_ident list;
+      shadowed_idents: shadowed_ident list
     }
 
 type error =
@@ -129,7 +133,7 @@ type error =
   | Cannot_scrape_alias of Path.t
   | Cannot_scrape_package_type of Path.t
   | Badly_formed_signature of string * Typedecl.error
-  | Cannot_hide_id of hiding_error
+  | Signature_avoidance of hiding_error
   | Invalid_type_subst_rhs
   | Unpackable_local_modtype_subst of Path.t
   | With_cannot_remove_packed_modtype of Path.t * module_type
