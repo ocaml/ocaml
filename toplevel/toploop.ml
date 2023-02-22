@@ -183,6 +183,18 @@ let load_ocamlinit ppf =
       | None -> ()
       | Some file -> ignore (use_silently ppf (File file))
 
+(* Test whether a lexbuf contains only blank characters. See newline and blank
+   in lexer.mll. *)
+let is_blank lb =
+  try
+    for i = lb.Lexing.lex_curr_pos to lb.Lexing.lex_buffer_len - 1 do
+      match Bytes.get lb.Lexing.lex_buffer i with
+      | '\009' | '\010' | '\012' | '\013' | ' ' -> ()
+      | _ -> raise Exit
+    done;
+    true
+  with Exit -> false
+
 (* The interactive loop *)
 
 exception PPerror
@@ -209,21 +221,42 @@ let loop ppf =
   run_hooks After_setup;
   load_ocamlinit ppf;
   while true do
-    let snap = Btype.snapshot () in
+    let snap = ref (Btype.snapshot ()) in
     try
       Lexing.flush_input lb;
       (* Reset the phrase buffer when we flush the lexing buffer. *)
       Buffer.reset phrase_buffer;
       Location.reset();
-      Warnings.reset_fatal ();
       first_line := true;
-      let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
-      let phr = preprocess_phrase ppf phr  in
-      Env.reset_cache_toplevel ();
-      ignore(execute_phrase true ppf phr)
+      let rec get_phrases phrs =
+        match !parse_toplevel_phrase lb with
+        | phr ->
+          if is_blank lb then
+            List.rev (phr :: phrs)
+          else
+            get_phrases (phr :: phrs)
+        | exception Exit -> raise PPerror
+        | exception e -> Location.report_exception ppf e; []
+      in
+      let phrs = get_phrases [] in
+      let saved_report_printer = !Location.report_printer in
+      let nonfirst_report_printer = fun () -> Location.batch_mode_printer in
+      let snap = ref (Btype.snapshot ()) in
+      let finally () = Location.report_printer := saved_report_printer in
+      Fun.protect ~finally begin fun () ->
+        let execute i phr =
+          if i > 0 then Location.report_printer := nonfirst_report_printer;
+          snap := Btype.snapshot ();
+          Warnings.reset_fatal ();
+          let phr = preprocess_phrase ppf phr in
+          Env.reset_cache_toplevel ();
+          ignore(execute_phrase true ppf phr)
+        in
+        List.iteri execute phrs
+      end
     with
     | End_of_file -> raise (Compenv.Exit_with_status 0)
-    | Sys.Break -> fprintf ppf "Interrupted.@."; Btype.backtrack snap
+    | Sys.Break -> fprintf ppf "Interrupted.@."; Btype.backtrack !snap
     | PPerror -> ()
-    | x -> Location.report_exception ppf x; Btype.backtrack snap
+    | x -> Location.report_exception ppf x; Btype.backtrack !snap
   done
