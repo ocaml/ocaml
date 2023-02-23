@@ -320,7 +320,7 @@ Working version
 
 - #12028: Update format documentation to make it clearer that
   `pp_print_newline` flushes its newline
-  (Floian Angeletti, review by Gabriel Scherer)
+  (Florian Angeletti, review by Gabriel Scherer)
 
 ### Compiler user-interface and warnings:
 
