@@ -341,6 +341,9 @@ let mk_noinit f =
 let mk_nolabels f =
   "-nolabels", Arg.Unit f, " Ignore non-optional labels in types"
 
+let mk_prompt f =
+  "-prompt", Arg.Unit f, " Output prompts (default)"
+
 let mk_noprompt f =
   "-noprompt", Arg.Unit f, " Suppress all prompts"
 
@@ -873,6 +876,7 @@ module type Toplevel_options = sig
   val _init : string -> unit
   val _noinit : unit -> unit
   val _no_version : unit -> unit
+  val _prompt : unit -> unit
   val _noprompt : unit -> unit
   val _nopromptcont : unit -> unit
   val _stdin : unit -> unit
@@ -1140,6 +1144,7 @@ struct
     mk_noassert F._noassert;
     mk_noinit F._noinit;
     mk_nolabels F._nolabels;
+    mk_prompt F._prompt;
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
@@ -1389,6 +1394,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_noassert F._noassert;
     mk_noinit F._noinit;
     mk_nolabels F._nolabels;
+    mk_prompt F._prompt;
     mk_noprompt F._noprompt;
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
@@ -1803,6 +1809,7 @@ module Default = struct
     let _init s = init_file := (Some s)
     let _no_version = set noversion
     let _noinit = set noinit
+    let _prompt = clear noprompt
     let _noprompt = set noprompt
     let _nopromptcont = set nopromptcont
     let _stdin () = (* placeholder: file_argument ""*) ()
