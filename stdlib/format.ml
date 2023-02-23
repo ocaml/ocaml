@@ -604,14 +604,14 @@ let clear_tag_stack state =
 
 
 (* Flushing pretty-printer queue. *)
-let pp_flush_queue state b =
+let pp_flush_queue state ~end_with_newline =
   clear_tag_stack state;
   while state.pp_curr_depth > 1 do
     pp_close_box state ()
   done;
   state.pp_right_total <- pp_infinity;
   advance_left state;
-  if b then pp_output_newline state;
+  if end_with_newline then pp_output_newline state;
   pp_rinit state
 
 (*
@@ -668,9 +668,9 @@ and pp_open_box state indent = pp_open_box_gen state indent Pp_box
    [pp_print_newline] behaves as [pp_print_flush] after printing an additional
    new line. *)
 let pp_print_newline state () =
-  pp_flush_queue state true; state.pp_out_flush ()
+  pp_flush_queue state ~end_with_newline:true; state.pp_out_flush ()
 and pp_print_flush state () =
-  pp_flush_queue state false; state.pp_out_flush ()
+  pp_flush_queue state ~end_with_newline:false; state.pp_out_flush ()
 
 
 (* To get a newline when one does not want to close the current box. *)
@@ -1077,7 +1077,7 @@ let get_stdbuf () = DLS.get stdbuf_key
    Formatter [ppf] is supposed to print to buffer [buf], otherwise this
    function is not really useful. *)
 let flush_buffer_formatter buf ppf =
-  pp_flush_queue ppf false;
+  pp_flush_queue ppf ~end_with_newline:false;
   let s = Buffer.contents buf in
   Buffer.reset buf;
   s

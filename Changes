@@ -325,6 +325,10 @@ Working version
 - #11676: Fix missing since annotation in the `Sys` and `Format` modules
   (Github user Bukolab99, review by Florian Angeletti)
 
+- #12028: Update format documentation to make it clearer that
+  `pp_print_newline` flushes its newline
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Compiler user-interface and warnings:
 
 - #11679: Improve the error message about too many arguments to a function

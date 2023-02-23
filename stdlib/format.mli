@@ -407,7 +407,8 @@ val print_newline : unit -> unit
 
   All open pretty-printing boxes are closed, all pending text is printed.
 
-  Equivalent to {!print_flush} followed by a new line.
+  Equivalent to {!print_flush} with a new line emitted on the pretty-printer
+  low-level output device immediately before the device is flushed.
   See corresponding words of caution for {!print_flush}.
 
   Note: this is not the normal way to output a new line;
