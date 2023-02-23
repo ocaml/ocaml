@@ -500,6 +500,9 @@ Working version
 - #12012: move calls to Typetexp.TyVarEnv.reset inside with_local_level etc.
   (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
 
+- #12034: a logarithmic algorithm to find the next free variable
+  (Gabriel Scherer, review by Stefan Muenzel)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.
