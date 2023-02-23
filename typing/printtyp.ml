@@ -936,16 +936,16 @@ end = struct
             (* Some part of the type we've already printed has assigned another
              * unification variable to that name. We want to keep the name, so
              * try adding a number until we find a name that's not taken. *)
-            let current_name = ref name in
-            let i = ref 0 in
-            while List.exists
-                    (fun (_, name') -> !current_name = name')
-                    !names
-            do
-              current_name := name ^ (Int.to_string !i);
-              i := !i + 1;
-            done;
-            !current_name
+            let available name =
+              List.for_all
+                (fun (_, name') -> name <> name')
+                !names
+            in
+            if available name then name
+            else
+              let suffixed i = name ^ Int.to_string i in
+              let i = Misc.find_first_mono (fun i -> available (suffixed i)) in
+              suffixed i
         | _ ->
             (* No name available, create a new one *)
             name_generator ()
