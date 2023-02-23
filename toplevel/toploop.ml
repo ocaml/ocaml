@@ -183,21 +183,52 @@ let load_ocamlinit ppf =
       | None -> ()
       | Some file -> ignore (use_silently ppf (File file))
 
-(* Test whether a lexbuf contains only blank characters. See newline and blank
-   in lexer.mll. *)
-let is_blank lb =
-  try
-    for i = lb.Lexing.lex_curr_pos to lb.Lexing.lex_buffer_len - 1 do
-      match Bytes.get lb.Lexing.lex_buffer i with
-      | '\009' | '\010' | '\012' | '\013' | ' ' -> ()
-      | _ -> raise Exit
-    done;
-    true
-  with Exit -> false
-
 (* The interactive loop *)
 
 exception PPerror
+
+(* Test whether a lexbuf contains only blank characters, including at least
+   one linefeed. See newline and blank in lexer.mll. *)
+let is_blank_with_linefeed lb =
+  let rec loop i lf_seen =
+    if i >= lb.Lexing.lex_buffer_len then lf_seen else
+      match Bytes.get lb.Lexing.lex_buffer i with
+      | '\009' | '\012' | '\013' | ' ' -> loop (i+1) lf_seen
+      | '\010' -> loop (i+1) true
+      | _ -> false
+  in
+  loop lb.Lexing.lex_curr_pos false
+
+(* Read and parse toplevel phrases, stop when a complete phrase has been
+   parsed and the lexbuf contains and end of line with optional whitespace. *)
+let rec get_phrases ppf lb phrs =
+  match !parse_toplevel_phrase lb with
+  | phr ->
+    if is_blank_with_linefeed lb then
+      List.rev (phr :: phrs)
+    else
+      get_phrases ppf lb (phr :: phrs)
+  | exception Exit -> raise PPerror
+  | exception e -> Location.report_exception ppf e; []
+
+(* Type, compile and execute a phrase. *)
+let process_phrase ppf snap phr =
+  snap := Btype.snapshot ();
+  Warnings.reset_fatal ();
+  let phr = preprocess_phrase ppf phr in
+  Env.reset_cache_toplevel ();
+  ignore(execute_phrase true ppf phr)
+
+(* Type, compile and execute a list of phrases, setting the report printer
+   to bach mode for all but the first one. *)
+let process_phrases ppf snap phrs =
+  match phrs with
+  | [] -> ()
+  | phr :: rest ->
+    process_phrase ppf snap phr;
+    Misc.protect_refs
+      Location.[R (report_printer, fun () -> batch_mode_printer)]
+      (fun () -> List.iter (process_phrase ppf snap) rest)
 
 let loop ppf =
   Clflags.debug := true;
@@ -228,32 +259,8 @@ let loop ppf =
       Buffer.reset phrase_buffer;
       Location.reset();
       first_line := true;
-      let rec get_phrases phrs =
-        match !parse_toplevel_phrase lb with
-        | phr ->
-          if is_blank lb then
-            List.rev (phr :: phrs)
-          else
-            get_phrases (phr :: phrs)
-        | exception Exit -> raise PPerror
-        | exception e -> Location.report_exception ppf e; []
-      in
-      let phrs = get_phrases [] in
-      let saved_report_printer = !Location.report_printer in
-      let nonfirst_report_printer = fun () -> Location.batch_mode_printer in
-      let snap = ref (Btype.snapshot ()) in
-      let finally () = Location.report_printer := saved_report_printer in
-      Fun.protect ~finally begin fun () ->
-        let execute i phr =
-          if i > 0 then Location.report_printer := nonfirst_report_printer;
-          snap := Btype.snapshot ();
-          Warnings.reset_fatal ();
-          let phr = preprocess_phrase ppf phr in
-          Env.reset_cache_toplevel ();
-          ignore(execute_phrase true ppf phr)
-        in
-        List.iteri execute phrs
-      end
+      let phrs = get_phrases ppf lb [] in
+      process_phrases ppf snap phrs
     with
     | End_of_file -> raise (Compenv.Exit_with_status 0)
     | Sys.Break -> fprintf ppf "Interrupted.@."; Btype.backtrack !snap
