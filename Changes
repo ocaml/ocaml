@@ -1240,14 +1240,14 @@ Some of those changes will benefit all OCaml packages.
 
 ### Bug fixes:
 
+- #8813, #12029: In the toplevel, let the user type several phrases in one line
+  (Damien Doligez, report by Daniel Bünzli, review by Gabriel Scherer)
+
 - #12062: fix runtime events consumer: when events are dropped they shouldn't be
   parsed. (Lucas Pluvinage)
 
 - #12132: Fix overcounting of minor collections in GC stats.
   (Damien Doligez, review by Gabriel Scherer)
-
-- #8813, #??: In the toplevel, let the user type several phrases in one line
-  (Damien Doligez, report by Daniel Bünzli, review by ??)
 
 - #12017: Re-register finaliser only after calling user alarm in Gc.create_alarm
   (Fabrice Buoro, report by Sam Goldman, review by Guillaume Munch-Maccagnoni)
