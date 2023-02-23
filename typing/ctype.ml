@@ -147,7 +147,7 @@ exception Incompatible
 
 let current_level = s_ref 0
 let nongen_level = s_ref 0
-let global_level = s_ref 1
+let global_level = s_ref 0
 let saved_level = s_ref []
 
 let get_current_level () = !current_level
@@ -208,7 +208,7 @@ let with_raised_nongen_level f =
 
 
 let reset_global_level () =
-  global_level := !current_level + 1
+  global_level := !current_level
 let increase_global_level () =
   let gl = !global_level in
   global_level := !current_level;

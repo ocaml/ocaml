@@ -5100,6 +5100,7 @@ and type_let ?check ?check_strict
 
   let (pat_list, exp_list, new_env, unpacks, _pvs) =
     with_local_level begin fun () ->
+      if existential_context = At_toplevel then Typetexp.TyVarEnv.reset ();
       let (pat_list, new_env, force, pvs, unpacks) =
         with_local_level_if_principal begin fun () ->
           let nvs = List.map (fun _ -> newvar ()) spatl in
@@ -5494,7 +5495,6 @@ and type_send env loc explanation e met =
 (* Typing of toplevel bindings *)
 
 let type_binding env rec_flag spat_sexp_list =
-  Typetexp.TyVarEnv.reset ();
   let (pat_exp_list, new_env, _unpacks) =
     type_let
       ~check:(fun s -> Warnings.Unused_value_declaration s)
@@ -5512,10 +5512,12 @@ let type_let existential_ctx env rec_flag spat_sexp_list =
 (* Typing of toplevel expressions *)
 
 let type_expression env sexp =
-  Typetexp.TyVarEnv.reset();
   let exp =
-    with_local_level (fun () -> type_exp env sexp)
-      ~post:(may_lower_contravariant_then_generalize env)
+    with_local_level begin fun () ->
+      Typetexp.TyVarEnv.reset();
+      type_exp env sexp
+    end
+    ~post:(may_lower_contravariant_then_generalize env)
   in
   match sexp.pexp_desc with
     Pexp_ident lid ->

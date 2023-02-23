@@ -274,10 +274,10 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
          then widen so as to not introduce any new constraints *)
       (* narrow and widen are now invoked through wrap_type_variable_scope *)
       TyVarEnv.with_local_scope begin fun () ->
-      TyVarEnv.reset ();
       let closed = svars <> [] in
       let targs, tret_type, args, ret_type, _univars =
         Ctype.with_local_level_if closed begin fun () ->
+          TyVarEnv.reset ();
           let univar_list =
             TyVarEnv.make_poly_univars (List.map (fun v -> v.txt) svars) in
           let univars = if closed then Some univar_list else None in
@@ -319,8 +319,8 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
 
 let transl_declaration env sdecl (id, uid) =
   (* Bind type parameters *)
-  TyVarEnv.reset();
   Ctype.with_local_level begin fun () ->
+  TyVarEnv.reset();
   let tparams = make_params env sdecl.ptype_params in
   let params = List.map (fun (cty, _) -> cty.ctyp_type) tparams in
   let cstrs = List.map
@@ -1358,8 +1358,8 @@ let transl_type_extension extend env loc styext =
     (* Note: it would be incorrect to call [create_scope] *after*
        [TyVarEnv.reset] or after [with_local_level] (see #10010). *)
     let scope = Ctype.create_scope () in
-    TyVarEnv.reset();
     Ctype.with_local_level begin fun () ->
+      TyVarEnv.reset();
       let ttype_params = make_params env styext.ptyext_params in
       let type_params = List.map (fun (cty, _) -> cty.ctyp_type) ttype_params in
       List.iter2 (Ctype.unify_var env)
@@ -1428,9 +1428,9 @@ let transl_type_extension extend env loc styext =
 let transl_exception env sext =
   let ext =
     let scope = Ctype.create_scope () in
-    TyVarEnv.reset();
     Ctype.with_local_level
       (fun () ->
+        TyVarEnv.reset();
         transl_extension_constructor ~scope env
           Predef.path_exn [] [] Asttypes.Public sext)
       ~post: begin fun ext ->
@@ -1643,8 +1643,8 @@ let transl_value_decl env loc valdecl =
 let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
     sdecl =
   Env.mark_type_used sig_decl.type_uid;
-  TyVarEnv.reset();
   Ctype.with_local_level begin fun () ->
+  TyVarEnv.reset();
   (* In the first part of this function, we typecheck the syntactic
      declaration [sdecl] in the outer environment [outer_env]. *)
   let env = outer_env in
