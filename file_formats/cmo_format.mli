@@ -20,7 +20,7 @@ open Misc
 (* Relocation information *)
 
 type reloc_info =
-    Reloc_literal of Lambda.structured_constant    (* structured constant *)
+    Reloc_literal of Obj.t                  (* structured constant *)
   | Reloc_getglobal of Ident.t              (* reference to a global *)
   | Reloc_setglobal of Ident.t              (* definition of a global *)
   | Reloc_primitive of string               (* C primitive number *)

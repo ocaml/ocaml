@@ -411,7 +411,8 @@ type alarm
 
 val create_alarm : (unit -> unit) -> alarm
 (** [create_alarm f] will arrange for [f] to be called at the end of each
-   major GC cycle, starting with the current cycle or the next one.
+   major GC cycle, not caused by [f] itself, starting with the current
+   cycle or the next one.
    A value of type [alarm] is returned that you can
    use to call [delete_alarm]. *)
 

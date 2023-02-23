@@ -100,11 +100,15 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included type t/131 by t/146
-       Line 2, characters 2-11:
-         Type t/131 came from this include
-       Line 3, characters 2-24:
-         The value ignore has no valid type if t/131 is shadowed
+Error: Illegal shadowing of included type t/2 by t.
+Line 2, characters 2-11:
+2 |   include S
+      ^^^^^^^^^
+  Type t/2 came from this include.
+Line 3, characters 2-24:
+3 |   val ignore : t -> unit
+      ^^^^^^^^^^^^^^^^^^^^^^
+  The value ignore has no valid type if t/2 is shadowed.
 |}]
 
 module type Module = sig
@@ -140,11 +144,15 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included module M/211 by M/226
-       Line 2, characters 2-11:
-         Module M/211 came from this include
-       Line 3, characters 2-26:
-         The value ignore has no valid type if M/211 is shadowed
+Error: Illegal shadowing of included module M/2 by M.
+Line 2, characters 2-11:
+2 |   include S
+      ^^^^^^^^^
+  Module M/2 came from this include.
+Line 3, characters 2-26:
+3 |   val ignore : M.t -> unit
+      ^^^^^^^^^^^^^^^^^^^^^^^^
+  The value ignore has no valid type if M/2 is shadowed.
 |}]
 
 
@@ -181,11 +189,15 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included module type T/287 by T/302
-       Line 2, characters 2-11:
-         Module type T/287 came from this include
-       Line 3, characters 2-39:
-         The module F has no valid type if T/287 is shadowed
+Error: Illegal shadowing of included module type T/2 by T.
+Line 2, characters 2-11:
+2 |   include S
+      ^^^^^^^^^
+  Module type T/2 came from this include.
+Line 3, characters 2-39:
+3 |   module F : functor (_ : T) -> sig end
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  The module F has no valid type if T/2 is shadowed.
 |}]
 
 module type Extension = sig
@@ -198,11 +210,15 @@ end
 Line 4, characters 2-11:
 4 |   include S
       ^^^^^^^^^
-Error: Illegal shadowing of included type ext/318 by ext/333
-       Line 2, characters 2-11:
-         Type ext/318 came from this include
-       Line 3, characters 14-16:
-         The extension constructor C2 has no valid type if ext/318 is shadowed
+Error: Illegal shadowing of included type ext/2 by ext.
+Line 2, characters 2-11:
+2 |   include S
+      ^^^^^^^^^
+  Type ext/2 came from this include.
+Line 3, characters 14-16:
+3 |   type ext += C2
+                  ^^
+  The extension constructor C2 has no valid type if ext/2 is shadowed.
 |}]
 
 module type Class = sig
@@ -474,4 +490,31 @@ module Class_type :
     class c : object  end
     class type ct = object  end
   end
+|}]
+
+(** Test rare interaction between shadowing and generalized open in error messages *)
+module M = struct
+  include struct
+    type t = A
+    let x = A
+  end
+  open struct type t end
+  open struct type t end
+  type t
+end
+[%%expect {|
+Line 8, characters 2-8:
+8 |   type t
+      ^^^^^^
+Error: Illegal shadowing of included type t/4 by t.
+Lines 2-5, characters 2-5:
+2 | ..include struct
+3 |     type t = A
+4 |     let x = A
+5 |   end
+  Type t/4 came from this include.
+Line 4, characters 8-9:
+4 |     let x = A
+            ^
+  The value x has no valid type if t/4 is shadowed.
 |}]

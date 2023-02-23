@@ -1,5 +1,66 @@
 == Running the testsuite
 
+From the root directory of this repository, `make tests` will run all
+the tests, which takes a few minutes.
+
+More control is available from the `testsuite/` subdirectory (here):
+`make all` runs all tests, `make parallel` runs the tests in parallel,
+and you can use `make one DIR=tests/foo` to run the tests of
+a specific sub-directory.
+
+== Writing new tests
+
+There are many kind of tests already, so the easiest way to start is
+to extend or copy an existing test.
+
+== Sorts of tests
+
+A test is specified in a `.ml` file containing a `TEST` block which is
+processed by our `ocamltest` testing tool, and contains a description
+of the testing to be performed.
+
+There are two common sorts of tests:
+
+- file-based tests: running them produces a `.result` file, that are
+  compared to one (or several) `.reference` file(s) present in the
+  repository. (Some tests, for example, have different reference
+  results depending on whether the bytecode or native compilers are
+  used, or depending on whether flambda is used or not). The tests
+  succeeds if the .result and .reference files are identical.
+
+- expect-style tests: those are toplevel-based tests with inline
+  `[%%expect {|...|}]` blocks that contain the expected output for the
+  toplevel phrases before them. The test succeeds if the toplevel
+  output is identical to the expected output.
+
+expect-style tests are typically easier to read and maintain; we
+recommend using then whenever the feature that you want to test can be
+observed from the bytecode toplevel.
+
+== Promotion
+
+Tests compare their current result with recorded reference results,
+and fail if they differ. Sometimes changes to test results are in fact
+expected and innocuous, they come from an intended change in output
+instead of a regression. Modifying each reference file by hand would
+be extremely time-consuming. The standard approach in this case is to
+automatically "promote" the current results into expected results, by
+overwriting the `.reference` file or `expect` payload.
+
+Promoting a test is done using the `make promote DIR=tests/foo`
+target. In general `make promote` accepts the same arguments (`TEST`,
+`LIST`) as `make one` -- there is no analogue to `make all`.
+
+Typical use-cases for promotion are changes to a compiler message that
+occurs in the reference results, or code modifications that change
+source locations included in reference results.
+
+Whenever you promote test results, please check carefully using `git
+diff` that the changes really correspond to an intended output
+difference, and not to a regression. You then need to commit the
+changes to the reference files (or expect test output); consider
+explaining in the commit message why the output changed.
+
 == Useful Makefile targets
 
 `make parallel`::
@@ -35,20 +96,8 @@ tests/baz
 then this will run all the tests in those three directories.
 
 `make promote DIR=tests/foo`, `make promote TEST=tests/foo/bar.ml`, `make promote LIST=file.txt`::
-  Most tests run a program and compare the result of the program, stored in a
-  file `foo.result`, with a reference output, stored in `foo.reference`; the
-  test fails if the two outputs differ. Similarly, many other tests are expect
-  tests, with the expected output following the code inline in the test file. In
-  both cases, sometimes a change in the result is innocuous, as it comes from an
-  intended change in output instead of a regression. `make promote` is like
-  `make one`, but for each failing test, it copies the new results into the
-  reference files (or into the expect test expected output), making the failing
-  test pass again. Whenever you use this rule please check carefully, using `git
-  diff`, that the changes really correspond to an intended output difference,
-  and not to a regression. You then need to commit the changes to the reference
-  files (or expect test output), and your commit message should explain why the
-  output changed. `make promote` takes the same variables as `make one` to
-  determine which tests to run (there is no analog to `make all`).
+  Promotes the current outputs to reference outputs for the specified tests.
+
 
 == Useful environment variables
 
@@ -60,8 +109,6 @@ then this will run all the tests in those three directories.
   Changes the output directory to the specified one. This should be combined
   with `KEEP_TEST_DIR_ON_SUCCESS=1` to inspect the test output. By default
   `OCAMLTESTDIR` is `_ocamltest`.
-
-== Creating a new test
 
 == Dimensioning the tests
 

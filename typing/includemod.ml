@@ -53,6 +53,9 @@ module Error = struct
     | Anonymous
     | Named of Path.t
     | Unit
+    | Empty_struct
+     (** For backward compatibility's sake, an empty struct can be implicitly
+         converted to an unit module  *)
 
   type ('a,'b) diff = {got:'a; expected:'a; symptom:'b}
   type 'a core_diff =('a,unit) diff
@@ -1104,13 +1107,13 @@ module Functor_app_diff = struct
         begin
           let desc1 : Error.functor_arg_descr = fst param1 in
           match desc1, I.param_name param2 with
-          | (Unit | Anonymous) , None
+          | (Unit | Empty_struct | Anonymous) , None
             -> 0
           | Named (Path.Pident n1), Some n2
             when String.equal (Ident.name n1) (Ident.name n2)
             -> 0
           | Named _, Some _ -> 1
-          | Named _,  None | (Unit | Anonymous), Some _ -> 1
+          | Named _,  None | (Unit | Empty_struct | Anonymous), Some _ -> 1
         end
 
   let update (d: Diff.change) (st:Defs.state) =
@@ -1140,8 +1143,8 @@ module Functor_app_diff = struct
         | None ->
             st, [||]
         end
-    | Keep ((Anonymous, mty) , Named (param_name, _param), _)
-    | Change ((Anonymous, mty), Named (param_name, _param), _) -> begin
+    | Keep (((Anonymous|Empty_struct), mty) , Named (param_name, _param), _)
+    | Change (((Anonymous|Empty_struct), mty), Named (param_name, _param), _) ->
         begin match param_name with
         | Some param ->
             let mty' = Subst.modtype Keep st.subst mty in
@@ -1153,7 +1156,6 @@ module Functor_app_diff = struct
         | None ->
             st, [||]
         end
-      end
 
   let diff env ~f ~args =
     let params, res = retrieve_functor_params env f in
@@ -1162,10 +1164,10 @@ module Functor_app_diff = struct
         let test (state:Defs.state) (arg,arg_mty) param =
           let loc = Location.none in
           let res = match (arg:Error.functor_arg_descr), param with
-            | Unit, Unit -> Ok Tcoerce_none
+            | (Unit|Empty_struct), Unit -> Ok Tcoerce_none
             | Unit, Named _ | (Anonymous | Named _), Unit ->
                 Result.Error (Error.Incompatible_params(arg,param))
-            | ( Anonymous | Named _ ) , Named (_, param) ->
+            | ( Anonymous | Named _ | Empty_struct ), Named (_, param) ->
                 match
                   modtypes ~in_eq:false ~loc state.env ~mark:Mark_neither
                     state.subst arg_mty param Shape.dummy_mod

@@ -307,6 +307,13 @@ Working version
   parameters.
   (Florian Angeletti, report by Wiktor Kuchta, review by Jules Aguillon)
 
+* #11993: install only bytecode executables for the `ocamlmklib`, `ocamlcmt`,
+  `ocamlprof`, `ocamlcp`, `ocamloptp`, and `ocamlmktop` tools, but no
+  native-code executables.  A tool like `ocamlmklib` for example is now
+  installed directly to `$BINDIR/ocamlmklib`; `ocamlmklib.byte` and
+  `ocamlmklib.opt` are no longer installed to `$BINDIR`.
+  (Xavier Leroy, review by Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #9430, #11291: Document the general desugaring rules for binding operators.
@@ -384,6 +391,10 @@ Working version
   the type parameters.
   (Stefan Muenzel, review by Florian Angeletti and Gabriel Scherer)
 
+- #11910: Simplify naming convention for shadowed or ephemeral identifiers in
+  error messages (eg: `Illegal shadowing of included type t/2 by t`)
+  (Florian Angeletti, review by Jules Aguillon)
+
 ### Internal/compiler-libs changes:
 
 - #11990: Improve comments and macros around frame descriptors.
@@ -458,8 +469,14 @@ Working version
   in preparation for quadratic-time fix
   (Gabriel Scherer, review by Enguerrand Decorne)
 
+- #11997: translate structured constants into their Obj.t representation
+  at compile time rather than link time. Changes the way dumpobj prints
+  these constants because their representaiton becomes untyped.
+  (Sébastien Hinderer, review by Xavier Leroy, Nicolás Ojeda Bär and
+  Hugo Heuzard)
+
 - #12012: move calls to Typetexp.TyVarEnv.reset inside with_local_level etc.
-  (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer)
+  (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
 
 ### Build system:
 
@@ -486,6 +503,9 @@ Working version
 
 ### Bug fixes:
 
+- #12017: Re-register finaliser only after calling user alarm in Gc.create_alarm
+  (Fabrice Buoro, report by Sam Goldman, review by Guillaume Munch-Maccagnoni)
+
 - #11887, #11893: Code duplication in pattern-matching compilation
   (Vincent Laviron, report par Greta Yorsh, review by Luc Maranget and
    Gabriel Scherer)
@@ -506,6 +526,10 @@ Working version
 - #11436: Fix wrong stack backtrace for out-of-bound exceptions raised
   by leaf functions.
   (Tom Kelly and Xavier Leroy, review by Mark Shinwell)
+
+- #11450, #12018: Fix erroneous functor error messages that were too eager to
+  cast `struct end` functor arguments as unit modules in `F(struct end)`.
+  (Florian Angetti, review by Gabriel Scherer)
 
 - #11643: Add missing test declaration to float_compare test, so that it will
   run.
