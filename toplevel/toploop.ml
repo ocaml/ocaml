@@ -220,7 +220,12 @@ let process_phrase ppf snap phr =
   ignore(execute_phrase true ppf phr)
 
 (* Type, compile and execute a list of phrases, setting the report printer
-   to bach mode for all but the first one. *)
+   to batch mode for all but the first one.
+   We have to use batch mode for reporting for two reasons:
+   1. we can't underline several parts of the input line(s) in place
+   2. the execution of the first phrase may mess up the line count so we
+      can't move the cursor back to the correct line
+ *)
 let process_phrases ppf snap phrs =
   match phrs with
   | [] -> ()
