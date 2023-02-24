@@ -439,7 +439,10 @@ module type SeededHashedType =
           the seed.  It must be the case that if [equal x y] is true,
           then [seeded_hash seed x = seeded_hash seed y] for any value of
           [seed].  A suitable choice for [seeded_hash] is the function
-          {!Hashtbl.seeded_hash} below. *)
+          {!Hashtbl.seeded_hash} below.
+
+        @since 5.00
+        *)
   end
 (** The input signature of the functor {!MakeSeeded}.
     @since 4.00 *)
