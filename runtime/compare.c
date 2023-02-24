@@ -31,6 +31,8 @@ struct compare_item { volatile value * v1, * v2; mlsize_t count; };
 #define COMPARE_STACK_MIN_ALLOC_SIZE 32
 #define COMPARE_STACK_MAX_SIZE (1024*1024)
 
+#define COMPARE_SIGNAL_POLL_PERIOD 1024
+
 struct compare_stack {
   struct compare_item init_stack[COMPARE_STACK_INIT_SIZE];
   struct compare_item* stack;
@@ -118,6 +120,8 @@ static intnat do_compare_val(struct compare_stack* stk,
 {
   struct compare_item * sp;
   tag_t t1, t2;
+  value orig1 = v1, orig2 = v2;
+  int signal_poll_timer = 0;
 
   sp = stk->stack;
   while (1) {
@@ -293,6 +297,27 @@ static intnat do_compare_val(struct compare_stack* stk,
   next_item:
     /* Pop one more item to compare, if any */
     if (sp == stk->stack) return EQUAL; /* we're done */
+
+    /* Periodically poll for actions, since this loop can run for
+       unbounded time. Instead of trying to keep the stack alive, just
+       free it and retry. */
+    if (++signal_poll_timer >= COMPARE_SIGNAL_POLL_PERIOD) {
+      signal_poll_timer = 0;
+      if (caml_check_pending_actions()) {
+        compare_free_stack(stk);
+        CAMLparam2(orig1, orig2);
+        value exn = caml_do_pending_actions_exn();
+        if (Is_exception_result(exn)) {
+          caml_raise(exn);
+        }
+        CAMLdrop;
+        v1 = orig1;
+        v2 = orig2;
+        sp = stk->stack = stk->init_stack;
+        continue;
+      }
+    }
+
     v1 = *((sp->v1)++);
     v2 = *((sp->v2)++);
     if (--(sp->count) == 0) sp--;
@@ -302,7 +327,6 @@ static intnat do_compare_val(struct compare_stack* stk,
 CAMLprim value caml_compare(value v1, value v2)
 {
   intnat res = compare_val(v1, v2, 1);
-  /* Free stack if needed */
   if (res < 0)
     return Val_int(LESS);
   else if (res > 0)
