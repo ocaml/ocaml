@@ -15,7 +15,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Types shared amongst the various parts of the dynlink code. *)
+(** Types shared amongst the various parts of the dynlink code.
+
+    @since 4.8
+    *)
 
 [@@@ocaml.warning "+a-4-30-40-41-42"]
 

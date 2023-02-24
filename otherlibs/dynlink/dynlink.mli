@@ -85,7 +85,10 @@ val set_allowed_units : string list -> unit
     dynamically-linked code, and prevent access to all other units,
     e.g. private, internal modules of the running program.
 
-    Note that {!loadfile} changes the allowed-units list. *)
+    Note that {!loadfile} changes the allowed-units list.
+
+    @since 4.8
+    *)
 
 val allow_only: string list -> unit
 (** [allow_only units] sets the list of allowed units to be the intersection
@@ -100,17 +103,26 @@ val prohibit : string list -> unit
 
 val main_program_units : unit -> string list
 (** Return the list of compilation units that form the main program (i.e.
-    are not dynamically linked). *)
+    are not dynamically linked).
+
+    @since 4.8
+    *)
 
 val public_dynamically_loaded_units : unit -> string list
 (** Return the list of compilation units that have been dynamically loaded via
     [loadfile] (and not via [loadfile_private]).  Note that compilation units
-    loaded dynamically cannot be unloaded. *)
+    loaded dynamically cannot be unloaded.
+
+    @since 4.8
+    *)
 
 val all_units : unit -> string list
 (** Return the list of compilation units that form the main program together
     with those that have been dynamically loaded via [loadfile] (and not via
-    [loadfile_private]). *)
+    [loadfile_private]).
+
+    @since 4.8
+    *)
 
 val allow_unsafe_modules : bool -> unit
 (** Govern whether unsafe object files are allowed to be
@@ -170,4 +182,6 @@ val unsafe_get_global_value : bytecode_or_asm_symbol:string -> Obj.t option
     ([update_global_table] and [assign_global_value], accessed through a
     client's version of [Symtable]). This is why we can't use [Dynlink] from the
     toplevel interactive loop, in particular.
-*)
+
+    @since 4.9
+    *)
