@@ -517,7 +517,7 @@ static value val_of_typtr(ty * p)
 /* Extract the pointer encapsulated in the given OCaml value */
 static ty * typtr_of_val(value v)
 {
-  return (ty *) (v & ~1);
+  return (ty *) (v ^ 1);
 }
 \end{verbatim}
 
