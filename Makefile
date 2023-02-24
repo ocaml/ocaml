@@ -1309,7 +1309,7 @@ VERSIONS=$(shell git tag|grep '^[0-9]*.[0-9]*.[0-9]*$$'|grep -v '^[12].')
 .PHONY: lintapidiff
 lintapidiff: tools/lintapidiff.opt$(EXE)
 	git ls-files -- 'otherlibs/*/*.mli' 'stdlib/*.mli' |\
-	    grep -Ev internal\|obj\|stdLabels\|moreLabels |\
+	    grep -Ev internal\|obj\|stdLabels\|moreLabels\|templates |\
 	    tools/lintapidiff.opt $(VERSIONS)
 
 # Tools
