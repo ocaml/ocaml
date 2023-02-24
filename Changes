@@ -81,11 +81,16 @@ Working version
 - #11474, #11998: Add support for user-defined events in the runtime event
   tracing system. (Lucas Pluvinage, review by Sadiq Jaffer)
 
+- #11827: Restore prefetching for GC marking
+  (Fabrice Buoro and Stephen Dolan, review by Gabriel Scherer and Sadiq Jaffer)
+
 - #11935: Load frametables of dynlink'd modules in batch
   (Stephen Dolan, review by David Allsopp and Guillaume Munch-Maccagnoni)
 
-- #11827: Restore prefetching for GC marking
-  (Fabrice Buoro and Stephen Dolan, review by Gabriel Scherer and Sadiq Jaffer)
+- #11980: fix quadratic behavior in natdynlink by using a STW section
+  for frame-descriptor updates.
+  (Gabriel Scherer, review by Sadiq Jaffer, report by André Maroneze
+  for Frama-C and Guillaume Melquiond for Coq)
 
 ### Type system:
 
