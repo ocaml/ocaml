@@ -29,6 +29,9 @@ Working version
 
 ### Runtime system:
 
+- #12039: Poll for actions in structural equality loop.
+  (B. Szilvasy, reviewed by Gabriel Scherer)
+
 - #12001: Fix book keeping for last finalisers during the minor cycle
   (KC Sivaramakrishnan and Enguerrand Decorne, report by Guillaume Bury
    and Vincent Laviron, review by Sadiq Jaffer and KC Sivaramakrishnan)
