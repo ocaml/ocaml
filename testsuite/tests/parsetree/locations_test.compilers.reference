@@ -643,6 +643,7 @@ Line 2, characters 12-13:
 2 | let x = M.( 3; 4 );;
                 ^
 Warning 10 [non-unit-statement]: this expression should have type unit.
+
 val x : int = 4
 Ptop_def
   [

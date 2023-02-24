@@ -27,6 +27,7 @@ Lines 8-9, characters 52-13:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 A
+
 module M :
   functor (A : sig module type T end) (B : sig module type T end) ->
     sig val f : ((module A.T), (module B.T)) t -> string end

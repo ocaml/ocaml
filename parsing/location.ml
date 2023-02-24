@@ -95,8 +95,19 @@ let setup_terminal () =
    input in the terminal. This would not be possible without this information,
    since printing several warnings/errors adds text between the user input and
    the bottom of the terminal.
+
+   We also use for {!is_first_report}, see below.
 *)
 let num_loc_lines = ref 0
+
+(* We use [num_loc_lines] to determine if the report about to be
+   printed is the first or a follow-up report of the current
+   "batch" -- contiguous reports without user input in between, for
+   example for the current toplevel phrase. We use this to print
+   a blank line between messages of the same batch.
+*)
+let is_first_message () =
+  !num_loc_lines = 0
 
 (* This is used by the toplevel to reset [num_loc_lines] before each phrase *)
 let reset () =
@@ -106,6 +117,13 @@ let reset () =
 let echo_eof () =
   print_newline ();
   incr num_loc_lines
+
+(* This is used by the toplevel and the report printers below. *)
+let separate_new_message ppf =
+  if not (is_first_message ()) then begin
+    Format.pp_print_newline ppf ();
+    incr num_loc_lines
+  end
 
 (* Code printing errors and warnings must be wrapped using this function, in
    order to update [num_loc_lines].
@@ -730,6 +748,7 @@ let batch_mode_printer : report_printer =
   let pp_txt ppf txt = Format.fprintf ppf "@[%t@]" txt in
   let pp self ppf report =
     setup_colors ();
+    separate_new_message ppf;
     (* Make sure we keep [num_loc_lines] updated.
        The tabulation box is here to give submessage the option
        to be aligned with the main message box

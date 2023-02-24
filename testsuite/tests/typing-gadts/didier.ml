@@ -18,6 +18,7 @@ Lines 6-7, characters 2-13:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Int
+
 val fbool : 't -> 't ty -> 't = <fun>
 |}];;
 (* val fbool : 'a -> 'a ty -> 'a = <fun> *)
@@ -34,6 +35,7 @@ Lines 2-3, characters 2-16:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Bool
+
 val fint : 't -> 't ty -> bool = <fun>
 |}];;
 (* val fint : 'a -> 'a ty -> bool = <fun> *)

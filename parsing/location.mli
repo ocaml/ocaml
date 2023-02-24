@@ -88,6 +88,7 @@ val input_phrase_buffer: Buffer.t option ref
 (** {1 Toplevel-specific functions} *)
 
 val echo_eof: unit -> unit
+val separate_new_message: formatter -> unit
 val reset: unit -> unit
 
 

@@ -6,6 +6,7 @@ Line 1, characters 18-54:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 B
+
 val print_t : Format.formatter -> t -> unit = <fun>
 - : t =
 <printer print_t raised an exception: File "//toplevel//", line 1, characters 18-23: Pattern matching failed>

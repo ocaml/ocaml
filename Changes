@@ -399,6 +399,9 @@ Working version
   error messages (eg: `Illegal shadowing of included type t/2 by t`)
   (Florian Angeletti, review by Jules Aguillon)
 
+- #12024: insert a blank line between separate compiler messages
+  (Gabriel Scherer, review by Florian Angeletti, report by David Wong)
+
 ### Internal/compiler-libs changes:
 
 - #11990: Improve comments and macros around frame descriptors.

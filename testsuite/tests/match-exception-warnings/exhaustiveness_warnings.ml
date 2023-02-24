@@ -24,6 +24,7 @@ Lines 8-11, characters 4-16:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some true
+
 val test_match_exhaustiveness : unit -> unit = <fun>
 |}]
 ;;
@@ -42,6 +43,7 @@ Lines 2-4, characters 4-30:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some true
+
 val test_match_exhaustiveness_nest1 : unit -> unit = <fun>
 |}]
 ;;
@@ -60,6 +62,7 @@ Lines 2-4, characters 4-16:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some true
+
 val test_match_exhaustiveness_nest2 : unit -> unit = <fun>
 |}]
 ;;
@@ -80,14 +83,17 @@ Lines 2-5, characters 4-30:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some true
+
 Line 4, characters 29-30:
 4 |     | Some false | exception _ -> ()
                                  ^
 Warning 11 [redundant-case]: this match case is unused.
+
 Line 5, characters 23-24:
 5 |     | None | exception _ -> ()
                            ^
 Warning 11 [redundant-case]: this match case is unused.
+
 val test_match_exhaustiveness_full : unit -> unit = <fun>
 |}]
 ;;

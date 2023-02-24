@@ -109,6 +109,7 @@ Lines 11-12, characters 6-19:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 C1 _
+
 Lines 24-26, characters 6-30:
 24 | ......function
 25 |         | Foo _ , Foo _ -> true
@@ -116,6 +117,7 @@ Lines 24-26, characters 6-30:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (Foo _, Bar _)
+
 module Nonexhaustive :
   sig
     type 'a u = C1 : int -> int u | C2 : bool -> bool u
@@ -163,12 +165,14 @@ Line 2, characters 10-18:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 None
+
 Line 4, characters 10-18:
 4 |   class d (Just x) = object method x : int = x end
               ^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Nothing
+
 module PR6862 :
   sig
     class c : int option -> object method x : int end
@@ -197,6 +201,7 @@ Line 4, characters 43-44:
                                                ^
 Warning 56 [unreachable-case]: this match case is unreachable.
 Consider replacing it with a refutation case '<pat> -> .'
+
 module PR6220 :
   sig
     type 'a t = I : int t | F : float t
@@ -266,6 +271,7 @@ Lines 8-9, characters 4-33:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Any
+
 module PR6801 :
   sig
     type _ value =
@@ -920,6 +926,7 @@ Lines 2-8, characters 2-16:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (TE TC, D [| 0. |])
+
 val f : 'a ty -> 'a t -> int = <fun>
 |}];;
 
@@ -984,6 +991,7 @@ Lines 4-10, characters 2-29:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {left=TE TC; right=D [| 0. |]}
+
 val f : 'a ty -> 'a t -> int = <fun>
 |}];;
 
