@@ -109,11 +109,44 @@ static intnat compare_val(value v1, value v2, int total)
 #define GREATER 1
 #define UNORDERED ((intnat)1 << (8 * sizeof(value) - 1))
 
+static bool compare_poll_actions(struct compare_item** sp,
+                                 struct compare_stack* stk,
+                                 value *orig1, value *orig2,
+                                 value *v1, value *v2)
+{
+  value o1 = *orig1, o2 = *orig2;
+  if (caml_check_pending_actions()) {
+    compare_free_stack(stk);
+    CAMLparam2(o1, o2);
+    value exn = caml_do_pending_actions_exn();
+    if (Is_exception_result(exn)) {
+      caml_raise(exn);
+    }
+    CAMLdrop;
+    *v1 = *orig1 = o1;
+    *v2 = *orig2 = o2;
+    *sp = stk->stack = stk->init_stack;
+    return true;
+  }
+  return false;
+}
+
 /* The return value of compare_val is as follows:
       > 0                 v1 is greater than v2
       0                   v1 is equal to v2
       < 0 and > UNORDERED v1 is less than v2
       UNORDERED           v1 and v2 cannot be compared */
+
+#define COMPARE_DO_POLL()                                           \
+  do {                                                              \
+    signal_poll_timer = 0;                                          \
+    if (compare_poll_actions(&sp, stk, &orig1, &orig2, &v1, &v2))   \
+      goto loop_start;                                              \
+  } while (0)
+#define COMPARE_INC_POLL_TIMER(inc)                                 \
+  if ((signal_poll_timer += (inc)) >= COMPARE_SIGNAL_POLL_PERIOD) { \
+    COMPARE_DO_POLL();                                              \
+  }
 
 static intnat do_compare_val(struct compare_stack* stk,
                              value v1, value v2, int total)
@@ -125,6 +158,7 @@ static intnat do_compare_val(struct compare_stack* stk,
 
   sp = stk->stack;
   while (1) {
+  loop_start:
     if (v1 == v2 && total) goto next_item;
     if (Is_long(v1)) {
       if (v1 == v2) goto next_item;
@@ -194,14 +228,30 @@ static intnat do_compare_val(struct compare_stack* stk,
         continue;
     }
     case String_tag: {
-      mlsize_t len1, len2;
+      mlsize_t len1, len2, len_remaining;
       int res;
+      const char *str1, *str2;
+      bool last_block;
       if (v1 == v2) break;
       len1 = caml_string_length(v1);
       len2 = caml_string_length(v2);
-      res = memcmp(String_val(v1), String_val(v2), len1 <= len2 ? len1 : len2);
-      if (res < 0) return LESS;
-      if (res > 0) return GREATER;
+      len_remaining = len1 <= len2 ? len1 : len2;
+      str1 = String_val(v1);
+      str2 = String_val(v2);
+      while (1) {
+        last_block = len_remaining <= COMPARE_SIGNAL_POLL_PERIOD;
+        res = memcmp(str1, str2,
+                     last_block
+                     ? len_remaining
+                     : COMPARE_SIGNAL_POLL_PERIOD);
+        if (res < 0) return LESS;
+        if (res > 0) return GREATER;
+        if (last_block) break;
+        COMPARE_DO_POLL();
+        str1 += COMPARE_SIGNAL_POLL_PERIOD;
+        str2 += COMPARE_SIGNAL_POLL_PERIOD;
+        len_remaining -= COMPARE_SIGNAL_POLL_PERIOD;
+      }
       if (len1 != len2) return len1 - len2;
       break;
     }
@@ -236,6 +286,7 @@ static intnat do_compare_val(struct compare_stack* stk,
           if (d1 == d1) return GREATER;
           if (d2 == d2) return LESS;
         }
+        COMPARE_INC_POLL_TIMER(1);
       }
       break;
     }
@@ -291,38 +342,26 @@ static intnat do_compare_val(struct compare_stack* stk,
       /* Continue comparison with first field */
       v1 = Field(v1, 0);
       v2 = Field(v2, 0);
-      continue;
+      goto poll;
     }
     }
   next_item:
     /* Pop one more item to compare, if any */
     if (sp == stk->stack) return EQUAL; /* we're done */
+    v1 = *((sp->v1)++);
+    v2 = *((sp->v2)++);
+    if (--(sp->count) == 0) sp--;
 
     /* Periodically poll for actions, since this loop can run for
        unbounded time. Instead of trying to keep the stack alive, just
        free it and retry. */
-    if (++signal_poll_timer >= COMPARE_SIGNAL_POLL_PERIOD) {
-      signal_poll_timer = 0;
-      if (caml_check_pending_actions()) {
-        compare_free_stack(stk);
-        CAMLparam2(orig1, orig2);
-        value exn = caml_do_pending_actions_exn();
-        if (Is_exception_result(exn)) {
-          caml_raise(exn);
-        }
-        CAMLdrop;
-        v1 = orig1;
-        v2 = orig2;
-        sp = stk->stack = stk->init_stack;
-        continue;
-      }
-    }
-
-    v1 = *((sp->v1)++);
-    v2 = *((sp->v2)++);
-    if (--(sp->count) == 0) sp--;
+  poll:
+    COMPARE_INC_POLL_TIMER(1);
   }
 }
+
+#undef COMPARE_DO_POLL
+#undef COMPARE_INC_POLL_TIMER
 
 CAMLprim value caml_compare(value v1, value v2)
 {
