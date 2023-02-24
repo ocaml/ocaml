@@ -554,8 +554,8 @@ static intnat caml_ba_offset(struct caml_ba_array * b, intnat * index)
 static value copy_two_doubles(double d0, double d1)
 {
   value res = caml_alloc_small(2 * Double_wosize, Double_array_tag);
-  Store_double_field(res, 0, d0);
-  Store_double_field(res, 1, d1);
+  Store_double_flat_field(res, 0, d0);
+  Store_double_flat_field(res, 1, d1);
   return res;
 }
 
