@@ -742,13 +742,13 @@ static value caml_ba_set_aux(value vb, volatile value * vind,
     ((intnat *) b->data)[offset] = Long_val(newval); break;
   case CAML_BA_COMPLEX32:
     { float * p = ((float *) b->data) + offset * 2;
-      p[0] = Double_field(newval, 0);
-      p[1] = Double_field(newval, 1);
+      p[0] = Double_flat_field(newval, 0);
+      p[1] = Double_flat_field(newval, 1);
       break; }
   case CAML_BA_COMPLEX64:
     { double * p = ((double *) b->data) + offset * 2;
-      p[0] = Double_field(newval, 0);
-      p[1] = Double_field(newval, 1);
+      p[0] = Double_flat_field(newval, 0);
+      p[1] = Double_flat_field(newval, 1);
       break; }
   }
   return Val_unit;
@@ -1183,15 +1183,15 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
     break;
   }
   case CAML_BA_COMPLEX32: {
-    float init0 = Double_field(vinit, 0);
-    float init1 = Double_field(vinit, 1);
+    float init0 = Double_flat_field(vinit, 0);
+    float init1 = Double_flat_field(vinit, 1);
     float * p;
     FILL_COMPLEX_LOOP;
     break;
   }
   case CAML_BA_COMPLEX64: {
-    double init0 = Double_field(vinit, 0);
-    double init1 = Double_field(vinit, 1);
+    double init0 = Double_flat_field(vinit, 0);
+    double init1 = Double_flat_field(vinit, 1);
     double * p;
     FILL_COMPLEX_LOOP;
     break;
