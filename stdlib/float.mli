@@ -498,9 +498,10 @@ val hash : t -> int
     to the functor {!Hashtbl.Make}. *)
 
 module Array : sig
+  (** @since 4.12 *)
+
   type t = floatarray
   (** The type of float arrays with packed representation.
-      @since 4.08
     *)
 
   val length : t -> int
@@ -657,7 +658,7 @@ module Array : sig
   (** {2 Array searching} *)
 
   val find_opt : (float -> bool) -> t -> float option
-  (* [find_opt f a] returns the first element of the array [a] that satisfies
+  (** [find_opt f a] returns the first element of the array [a] that satisfies
      the predicate [f]. Returns [None] if there is no value that satisfies [f]
      in the array [a].
      @since 5.1 *)
@@ -671,7 +672,7 @@ module Array : sig
       @since 5.1 *)
 
   val find_map : (float -> 'a option) -> t -> 'a option
-  (* [find_map f a] applies [f] to the elements of [a] in order, and returns
+  (** [find_map f a] applies [f] to the elements of [a] in order, and returns
      the first result of the form [Some v], or [None] if none exist.
      @since 5.1 *)
 
@@ -832,9 +833,10 @@ end
 (** Float arrays with packed representation. *)
 
 module ArrayLabels : sig
+  (** @since 4.12 *)
+
   type t = floatarray
   (** The type of float arrays with packed representation.
-      @since 4.08
     *)
 
   val length : t -> int
@@ -991,7 +993,7 @@ module ArrayLabels : sig
   (** {2 Array searching} *)
 
   val find_opt : f:(float -> bool) -> t -> float option
-  (* [find_opt ~f a] returns the first element of the array [a] that satisfies
+  (** [find_opt ~f a] returns the first element of the array [a] that satisfies
      the predicate [f]. Returns [None] if there is no value that satisfies [f]
      in the array [a].
      @since 5.1 *)
@@ -1005,7 +1007,7 @@ module ArrayLabels : sig
       @since 5.1 *)
 
   val find_map : f:(float -> 'a option) -> t -> 'a option
-  (* [find_map ~f a] applies [f] to the elements of [a] in order, and returns
+  (** [find_map ~f a] applies [f] to the elements of [a] in order, and returns
      the first result of the form [Some v], or [None] if none exist.
      @since 5.1 *)
 

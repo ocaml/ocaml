@@ -173,7 +173,7 @@ val mem_ieee : float -> set:t -> bool
 (** {2 Array searching} *)
 
 val find_opt : f:(float -> bool) -> t -> float option
-(* [find_opt ~f a] returns the first element of the array [a] that satisfies
+(** [find_opt ~f a] returns the first element of the array [a] that satisfies
    the predicate [f]. Returns [None] if there is no value that satisfies [f]
    in the array [a].
    @since 5.1 *)
@@ -187,7 +187,7 @@ val find_index : f:(float-> bool) -> t -> int option
     @since 5.1 *)
 
 val find_map : f:(float -> 'a option) -> t -> 'a option
-(* [find_map ~f a] applies [f] to the elements of [a] in order, and returns
+(** [find_map ~f a] applies [f] to the elements of [a] in order, and returns
    the first result of the form [Some v], or [None] if none exist.
    @since 5.1 *)
 
