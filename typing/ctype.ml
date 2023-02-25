@@ -3428,9 +3428,8 @@ let add_method env label priv virt ty sign =
             match priv with
             | Public ->
                 begin match field_kind_repr k with
-                | Fpublic -> ()
+                | Fabsent | Fpublic -> ()
                 | Fprivate -> link_kind ~inside:k field_public
-                | Fabsent -> assert false
                 end;
                 Mpublic
             | Private -> priv'

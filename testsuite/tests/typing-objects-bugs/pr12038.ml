@@ -23,6 +23,18 @@ Line 5, characters 16-22:
 5 |   method q () = self#z ()
                     ^^^^^^
 Warning 17 [undeclared-virtual-method]: the virtual method z is not declared.
-Uncaught exception: File "typing/ctype.ml", line 3433, characters 29-35: Assertion failed
 
+class virtual ['a] x :
+  object ('a)
+    constraint 'a = < q : unit -> unit; .. >
+    method q : unit -> unit
+    method private virtual z : unit -> unit
+  end
+and virtual ['a] x' :
+  object ('a)
+    constraint 'a = < q : unit -> unit; .. >
+    method q : unit -> unit
+    method private virtual z : unit -> unit
+  end
+and y : object method q : unit -> unit method z : unit -> unit end
 |}]
