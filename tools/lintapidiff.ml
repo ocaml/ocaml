@@ -83,11 +83,16 @@ module Doc = struct
     try Some (List.find (fun attr -> List.mem attr.attr_name.txt lst) attrs)
     with Not_found -> None
 
-  let get_doc lst attrs = match find_attr lst attrs with
+  let get_doc_raw lst attrs = match find_attr lst attrs with
     | Some { attr_payload = PStr [{pstr_desc=Pstr_eval(
         {pexp_desc=Pexp_constant(Pconst_string (doc, _,_));_}, _);_}]}
-      when doc <> "/*" && doc <> "" -> Some doc
+       -> Some doc
     | _ -> None
+
+  let get_doc lst attrs =
+    match get_doc_raw lst attrs with
+    | Some ("/*" | "") -> None
+    | d -> d
 
   let is_deprecated attrs =
     find_attr ["ocaml.deprecated"; "deprecated"] attrs <> None ||
@@ -173,14 +178,25 @@ module Ast = struct
     | Psig_modsubst _ | Psig_modtypesubst _ -> map
 
   let add_items ~f path (inherits,map) items =
+    let not_stop = function
+        | {psig_desc=Psig_attribute a;_} ->
+            (match Doc.get_doc_raw ["ocaml.doc"; "ocaml.text"] [a] with
+            | Some "/*" ->
+                (* (**/**) means everything that follows is undocumented *)
+                false
+            | _ -> true)
+        | _ -> true
+    in
     (* module doc *)
     let inherits = List.fold_left (fun inherits -> function
         | {psig_desc=Psig_attribute a;_}
-          when (Doc.get_doc ["ocaml.doc";"ocaml.text"][a] <> None) ->
+          when (Doc.get_doc ["ocaml.doc";"ocaml.text"] [a] <> None) ->
             f inherits (Location.none) [a]
         | _ -> inherits
       ) inherits items in
-    List.fold_left (add_item ~f path inherits) map items
+    items |> List.to_seq
+    |> Seq.take_while not_stop
+    |> Seq.fold_left (add_item ~f path inherits) map
 
   let parse_file ~orig ~f ~init input =
     try
