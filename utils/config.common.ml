@@ -74,7 +74,7 @@ type configuration_value =
   | Int of int
   | Bool of bool
 
-let configuration_variables =
+let configuration_variables () =
   let p x v = (x, String v) in
   let p_int x v = (x, Int v) in
   let p_bool x v = (x, Bool v) in
@@ -147,11 +147,11 @@ let print_config_value oc = function
 let print_config oc =
   let print (x, v) =
     Printf.fprintf oc "%s: %a\n" x print_config_value v in
-  List.iter print configuration_variables;
+  List.iter print (configuration_variables ());
   flush oc
 
 let config_var x =
-  match List.assoc_opt x configuration_variables with
+  match List.assoc_opt x (configuration_variables()) with
   | None -> None
   | Some v ->
       let s = match v with
