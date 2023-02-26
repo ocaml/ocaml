@@ -265,7 +265,7 @@ module Diff = struct
           if s.Doc.deprecated then
             Format.fprintf ppf "@,%s is marked as deprecated" k
     in
-    Location.errorf ~loc "@[%s %s@,%a@,%a@]" msg k
+    Location.errorf ~loc "@[<v>%s %s@,%a@,%a@]" msg k
       info_seen seen info_latest latest |>
     Location.print_report Format.err_formatter
 
