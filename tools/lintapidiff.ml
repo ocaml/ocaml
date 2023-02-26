@@ -77,7 +77,10 @@ module Doc = struct
   let empty = {since = None; deprecated=false; loc=Location.none;
                has_doc_parent=false;has_doc=false}
 
-  let since = Str.regexp "\\(.\\|\n\\)*@since +\\([^ ]+\\).*"
+  (* only match @since that contains version number and nothing else,
+     @since can also be used for semantic changes with a comment
+   *)
+  let since = Str.regexp "\\(.\\|\n\\)*@since +\\([^ ]+\\) *$"
 
   let find_attr lst attrs =
     try Some (List.find (fun attr -> List.mem attr.attr_name.txt lst) attrs)
