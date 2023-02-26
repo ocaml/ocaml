@@ -143,7 +143,10 @@ module Ast = struct
       | Pmty_functor (Unit, _) -> map
     in
     let enter_path path name ty attrs map =
-      let path = Path.Pdot (path, name.txt) in
+      let path =
+          (* 4.07.0 had Stdlib.Pervasives *)
+          if name.txt = "Pervasives" then path
+          else Path.Pdot (path, name.txt) in
       let inherits = f inherits name.loc attrs in
       add_module_type path ty (inherits, map)
     in
@@ -279,7 +282,12 @@ module Diff = struct
     let f = Ast.parse_file ~orig:path ~init:empty ~f:(fun _ _ attrs ->
         { last_not_seen=None;first_seen; deprecated=Doc.is_deprecated attrs })
     in
-    let map = match Git.with_show ~f rev path with
+    let git_show_result = match Git.with_show ~f rev path with
+        | Error File_not_found when path = "stdlib/stdlib.mli" ->
+            Git.with_show ~f rev "stdlib/pervasives.mli"
+        | r -> r
+    in
+    let map = match git_show_result with
       | Ok r -> r
       | Error File_not_found -> IdMap.empty
       | Result.Error Other_error -> raise Exit in
