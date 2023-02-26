@@ -122,6 +122,7 @@ let configuration_variables () =
   p_bool "supports_shared_libraries" supports_shared_libraries;
   p_bool "native_dynlink" native_dynlink;
   p_bool "naked_pointers" naked_pointers;
+  p_bool "compression_supported" (Marshal.compression_supported());
 
   p "exec_magic_number" exec_magic_number;
   p "cmi_magic_number" cmi_magic_number;
