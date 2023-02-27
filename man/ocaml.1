@@ -36,14 +36,15 @@ The
 command is the toplevel system for OCaml,
 that permits interactive use of the OCaml system through a
 read-eval-print loop. In this mode, the system repeatedly reads OCaml
-phrases from the input, then typechecks, compiles and evaluates
+phrases from standard input, then typechecks, compiles and evaluates
 them, then prints the inferred type and result value, if any.
+End-of-file on standard input terminates
+.BR ocaml (1).
 
 Input to the toplevel can span several lines. It begins after the #
 (sharp) prompt printed by the system and is terminated by ;; (a
 double-semicolon) followed by optional white space and an end of line.
 The toplevel input consists in one or several toplevel phrases.
-
 
 If one or more
 .I object-files
