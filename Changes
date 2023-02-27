@@ -594,6 +594,10 @@ Working version
   types.
   (Chris Casinghino, review by Gabriel Scherer)
 
+- #12038, #12049: When inheriting from multiple bases with the same absent
+  method,  don't `assert false` when the method is overridden.
+  (Stefan Muenzel, review by ????)
+
 OCaml 5.0.0 (15 December 2022)
 ------------------------------
 
