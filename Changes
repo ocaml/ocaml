@@ -258,6 +258,10 @@ Working version
   (Boris Yakobowski, review by Daniel Bünzli, Gabriel Scherer and Nicolás Ojeda
   Bär)
 
+- #12006: Add `Marshal.Compression` flag to `Marshal.to_*` functions,
+  causing marshaled data to be compressed using ZSTD.
+  (Xavier Leroy, review by Edwin Török and Gabriel Scherer)
+
 ### Other libraries:
 
 - #11374: Remove pointer cast to a type with stricter alignment requirements
@@ -318,6 +322,12 @@ Working version
   installed directly to `$BINDIR/ocamlmklib`; `ocamlmklib.byte` and
   `ocamlmklib.opt` are no longer installed to `$BINDIR`.
   (Xavier Leroy, review by Gabriel Scherer)
+
+- #12006: use compressed marshaled format for .cmi, .cmt, .cmti files,
+  and for debug info in .cmo and .cma files, resulting in major
+  reduction in size.
+  (Xavier Leroy, review by Edwin Török and Gabriel Scherer)
+
 
 ### Manual and documentation:
 

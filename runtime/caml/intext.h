@@ -28,6 +28,7 @@
 
 #define Intext_magic_number_small 0x8495A6BE
 #define Intext_magic_number_big 0x8495A6BF
+#define Intext_magic_number_compressed 0x8495A6BD
 
 /* Header format for the "small" model: 20 bytes
        0   "small" magic number
@@ -44,7 +45,27 @@
       16   number of shared blocks
       24   size in words when read on a 64-bit platform
    The 3 numbers are 64 bits each, in big endian.
+
+  Header format for the "compressed" model: 10 to 55 bytes
+       0   "compressed" magic number
+       4   low 6 bits: total size of the header
+           high 2 bits: reserved, currently 0
+       5 and following
+           5 variable-length integers, in VLQ format (1 to 10 bytes each)
+           - length of compressed marshaled data, in bytes
+           - length of uncompressed marshaled data, in bytes
+           - number of shared blocks
+           - size in words when read on a 32-bit platform
+           - size in words when read on a 64-bit platform
+
+  VLQ format is one or several bytes like 1xxxxxxx 1yyyyyyy 0zzzzzzz.
+  First bytes have top bit 1, last byte has top bit 0.
+  Each byte carries 7 bits of the number.
+  Bytes come in big-endian order: xxxxxxx are the 7 high-order bits,
+  zzzzzzzz the 7 low-order bits.
 */
+
+#define MAX_INTEXT_HEADER_SIZE 55
 
 /* Codes for the compact format */
 

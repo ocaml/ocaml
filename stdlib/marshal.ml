@@ -17,6 +17,7 @@ type extern_flags =
     No_sharing
   | Closures
   | Compat_32
+  | Compression
 (* note: this type definition is used in 'runtime/debugger.c' *)
 
 external to_channel: out_channel -> 'a -> extern_flags list -> unit
@@ -44,7 +45,7 @@ external from_channel: in_channel -> 'a = "caml_input_value"
 external from_bytes_unsafe: bytes -> int -> 'a = "caml_input_value_from_bytes"
 external data_size_unsafe: bytes -> int -> int = "caml_marshal_data_size"
 
-let header_size = 20
+let header_size = 16
 let data_size buff ofs =
   if ofs < 0 || ofs > Bytes.length buff - header_size
   then invalid_arg "Marshal.data_size"
@@ -65,3 +66,10 @@ let from_string buff ofs =
   (* Bytes.unsafe_of_string is safe here, as the produced byte
      sequence is never mutated *)
   from_bytes (Bytes.unsafe_of_string buff) ofs
+
+let compression_supported () =
+  let s = to_string () [Compression] in
+  match s.[3] with
+  | '\xBD' -> true
+  | '\xBE' -> false
+  | _ -> assert false

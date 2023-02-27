@@ -488,9 +488,11 @@ stdlib__Map.cmx : map.ml \
 stdlib__Map.cmi : map.mli \
     stdlib__Seq.cmi
 stdlib__Marshal.cmo : marshal.ml \
+    stdlib__String.cmi \
     stdlib__Bytes.cmi \
     stdlib__Marshal.cmi
 stdlib__Marshal.cmx : marshal.ml \
+    stdlib__String.cmx \
     stdlib__Bytes.cmx \
     stdlib__Marshal.cmi
 stdlib__Marshal.cmi : marshal.mli

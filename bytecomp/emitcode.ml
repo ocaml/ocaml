@@ -416,8 +416,9 @@ let to_file outchan unit_name objfile ~required_globals code =
         (Filename.dirname (Location.absolute_path objfile))
         !debug_dirs;
       let p = pos_out outchan in
-      output_value outchan !events;
-      output_value outchan (String.Set.elements !debug_dirs);
+      Marshal.(to_channel outchan !events [Compression]);
+      Marshal.(to_channel outchan (String.Set.elements !debug_dirs)
+                          [Compression]);
       (p, pos_out outchan - p)
     end else
       (0, 0) in
