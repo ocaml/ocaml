@@ -135,6 +135,7 @@ static void print_token(struct parser_tables *tables, int state, value tok)
       fprintf(stderr, "_");
     fprintf(stderr, ")\n");
   }
+  fflush(stderr);
 }
 
 static int trace(void)
@@ -205,16 +206,20 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
         n2 = n1 + ERRCODE;
         if (n1 != 0 && n2 >= 0 && n2 <= Int_val(tables->tablesize) &&
             Short(tables->check, n2) == ERRCODE) {
-          if (trace())
+          if (trace()){
             fprintf(stderr, "Recovering in state %d\n", state1);
+            fflush(stderr);
+          }
           goto shift_recover;
         } else {
           if (trace()){
             fprintf(stderr, "Discarding state %d\n", state1);
+            fflush(stderr);
           }
           if (sp <= Int_val(env->stackbase)) {
             if (trace()){
               fprintf(stderr, "No more states to discard\n");
+              fflush(stderr);
             }
             return RAISE_PARSE_ERROR; /* The ML code raises Parse_error */
           }
@@ -224,7 +229,10 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
     } else {
       if (Int_val(env->curr_char) == 0)
         return RAISE_PARSE_ERROR; /* The ML code raises Parse_error */
-      if (trace()) fprintf(stderr, "Discarding last token read\n");
+      if (trace()){
+        fprintf(stderr, "Discarding last token read\n");
+        fflush(stderr);
+      }
       env->curr_char = Val_int(-1);
       goto loop;
     }
@@ -233,9 +241,11 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
     env->curr_char = Val_int(-1);
     if (errflag > 0) errflag--;
   shift_recover:
-    if (trace())
+    if (trace()){
       fprintf(stderr, "State %d: shift to state %d\n",
               state, Short(tables->table, n2));
+      fflush(stderr);
+    }
     state = Short(tables->table, n2);
     sp++;
     if (sp < Long_val(env->stacksize)) goto push;
@@ -252,8 +262,10 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
     goto loop;
 
   reduce:
-    if (trace())
+    if (trace()){
       fprintf(stderr, "State %d: reduce by rule %d\n", state, n);
+      fflush(stderr);
+    }
     m = Short(tables->len, n);
     env->asp = Val_int(sp);
     env->rule_number = Val_int(n);
