@@ -3010,6 +3010,36 @@ let gen_annot outputprefix sourcefile annots =
   Cmt2annot.gen_annot (Some (outputprefix ^ ".annot"))
     ~sourcefile:(Some sourcefile) ~use_summaries:false annots
 
+(* dune plays tricks while compiling implementation file, consequently we cannot
+   rely on the information available in the CLI to recover an interface source
+   file name. As an alternative, we use the filename part of the location of
+   the toplevel signature items recorded in the cmi but only if this filename
+   is the same for all items.
+
+   This specification fails for chimeric interfaces assembled from many source
+   files using line directives, but it seems fine to use the cmi filename in
+   those exceptional cases.
+*)
+let retrieve_source_intf cmi_file cmi () =
+  let filename x =
+    let start = x.Location.loc_start.Lexing.pos_fname in
+    let stop = x.Location.loc_end.Lexing.pos_fname in
+    if start = stop then Some start else None
+  in
+  let item_filename id  =
+    let _, loc, _ = Includemod.item_ident_name id in
+    filename loc
+  in
+  match cmi with
+  | [] -> cmi_file
+  | a :: q ->
+      match item_filename a with
+      | None -> cmi_file
+      | Some first as candidate ->
+          let same_name item =  item_filename item = candidate in
+          if List.for_all same_name q then first
+          else cmi_file
+
 let type_implementation sourcefile outputprefix modulename initial_env ast =
   Cmt_format.clear ();
   Misc.try_finally (fun () ->
@@ -3054,7 +3084,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           let dclsig = Env.read_signature modulename intf_file in
           let coercion, shape =
             Includemod.compunit initial_env ~mark:Mark_positive
-              sourcefile sg intf_file dclsig shape
+              sourcefile sg (retrieve_source_intf intf_file dclsig) dclsig shape
           in
           Typecore.force_delayed_checks ();
           (* It is important to run these checks after the inclusion test above,
@@ -3075,7 +3105,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
             Warnings.Missing_mli;
           let coercion, shape =
             Includemod.compunit initial_env ~mark:Mark_positive
-              sourcefile sg "(inferred signature)" simple_sg shape
+              sourcefile sg (fun () -> "(inferred signature)") simple_sg shape
           in
           check_nongen_signature finalenv simple_sg;
           normalize_signature simple_sg;
@@ -3191,7 +3221,7 @@ let package_units initial_env objfiles cmifile modulename =
     let dclsig = Env.read_signature modulename cmifile in
     let cc, _shape =
       Includemod.compunit initial_env ~mark:Mark_both
-        "(obtained by packing)" sg mlifile dclsig shape
+        "(obtained by packing)" sg (fun () -> mlifile) dclsig shape
     in
     Cmt_format.save_cmt  (prefix ^ ".cmt") modulename
       (Cmt_format.Packed (sg, objfiles)) None initial_env  None (Some shape);

@@ -417,6 +417,10 @@ Working version
 - #12024: insert a blank line between separate compiler messages
   (Gabriel Scherer, review by Florian Angeletti, report by David Wong)
 
+- #?????: In error messages, retrieve interface source file from the compiled
+  interface whenever possible
+  (Florian Angeletti, report by David Wong, review by ????)
+
 ### Internal/compiler-libs changes:
 
 - #11990: Improve comments and macros around frame descriptors.

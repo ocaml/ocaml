@@ -178,7 +178,7 @@ val signatures: Env.t -> mark:mark ->
 
 val compunit:
       Env.t -> mark:mark -> string -> signature ->
-      string -> signature -> Shape.t -> module_coercion * Shape.t
+      (unit -> string) -> signature -> Shape.t -> module_coercion * Shape.t
 
 val type_declarations:
   loc:Location.t -> Env.t -> mark:mark ->

@@ -969,7 +969,7 @@ let compunit env ~mark impl_name impl_sig intf_name intf_sig unit_shape =
       Subst.identity impl_sig intf_sig unit_shape
   with Result.Error reasons ->
     let cdiff =
-      Error.In_Compilation_unit(Error.diff impl_name intf_name reasons) in
+      Error.In_Compilation_unit(Error.diff impl_name (intf_name ()) reasons) in
     raise(Error(env, cdiff))
   | Ok x -> x
 
