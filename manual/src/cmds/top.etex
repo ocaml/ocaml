@@ -30,7 +30,7 @@ directive-argument:
 A phrase can consist of a sequence of definitions, like those found in
 implementations of compilation units or in @'struct' \ldots 'end'@
 module expressions. The definitions can bind value names, type names,
-a exceptions, module names, or module type names. The toplevel
+exceptions, module names, or module type names. The toplevel
 system performs the bindings, then prints the types and values (if
 any) for the names thus defined.
 

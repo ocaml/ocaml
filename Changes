@@ -1241,7 +1241,8 @@ Some of those changes will benefit all OCaml packages.
 ### Bug fixes:
 
 - #8813, #12029: In the toplevel, let the user type several phrases in one line
-  (Damien Doligez, report by Daniel Bünzli, review by Gabriel Scherer)
+  (Damien Doligez, report by Daniel Bünzli, review by Gabriel Scherer and
+   Wiktor Kuchta)
 
 - #12062: fix runtime events consumer: when events are dropped they shouldn't be
   parsed. (Lucas Pluvinage)

@@ -231,9 +231,10 @@ let process_phrases ppf snap phrs =
   | [] -> ()
   | phr :: rest ->
     process_phrase ppf snap phr;
-    Misc.protect_refs
-      Location.[R (report_printer, fun () -> batch_mode_printer)]
-      (fun () -> List.iter (process_phrase ppf snap) rest)
+    if rest <> [] then
+      Misc.protect_refs
+        Location.[R (report_printer, fun () -> batch_mode_printer)]
+        (fun () -> List.iter (process_phrase ppf snap) rest)
 
 let loop ppf =
   Clflags.debug := true;
