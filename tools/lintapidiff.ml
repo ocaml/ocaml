@@ -306,6 +306,11 @@ module Diff = struct
     let git_show_result = match Git.with_show ~f rev path with
         | Error File_not_found when path = "stdlib/stdlib.mli" ->
             Git.with_show ~f rev "stdlib/pervasives.mli"
+        | Error File_not_found when path = "stdlib/bigarray.mli" ->
+            Git.with_show ~f rev "otherlibs/bigarray/bigarray.mli"
+        | Error File_not_found when Filename.dirname path = "stdlib" ->
+            Filename.concat "otherlibs/systhreads" (Filename.basename path)
+            |> Git.with_show ~f rev
         | r -> r
     in
     let map = match git_show_result with
