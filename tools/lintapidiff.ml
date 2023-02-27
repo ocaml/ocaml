@@ -272,6 +272,22 @@ module Diff = struct
       info_seen seen info_latest latest |>
     Location.print_report Format.err_formatter
 
+  let predef =
+    [ "exception Match_failure"
+    ;"exception Out_of_memory"
+    ;"exception Invalid_argument"
+    ;"exception Failure"
+    ;"exception Not_found"
+    ;"exception Sys_error"
+    ;"exception End_of_file"
+    ;"exception Division_by_zero"
+    ;"exception Stack_overflow"
+    ;"exception Sys_blocked_io"
+    ;"exception Assert_failure"
+    ;"exception Undefined_recursive_module"
+    ]
+
+
   let parse_file_at_rev ~path (prev,accum) rev =
     let merge _ a b = match a, b with
       | Some a, Some b ->
@@ -282,6 +298,8 @@ module Diff = struct
     in
     let first_seen = Version.of_string_exn rev in
     let empty = {last_not_seen=None;first_seen;deprecated=false} in
+    let predef = predef |> List.map (fun e -> e, empty) |> IdMap.of_list in
+    let merge_predef = IdMap.union (fun _ _ r -> Some r) predef in
     let f = Ast.parse_file ~orig:path ~init:empty ~f:(fun _ _ attrs ->
         { last_not_seen=None;first_seen; deprecated=Doc.is_deprecated attrs })
     in
@@ -291,6 +309,7 @@ module Diff = struct
         | r -> r
     in
     let map = match git_show_result with
+      | Ok r when path = "stdlib/stdlib.mli" -> merge_predef r
       | Ok r -> r
       | Error File_not_found -> IdMap.empty
       | Result.Error Other_error -> raise Exit in
