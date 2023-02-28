@@ -22,6 +22,7 @@
 *)
 
 open Asttypes
+module Uid = Shape.Uid
 
 (* Value expressions for the core language *)
 
@@ -77,11 +78,10 @@ and 'k pattern_desc =
   (* value patterns *)
   | Tpat_any : value pattern_desc
         (** _ *)
-  | Tpat_var : Ident.t * string loc * Types.Uid.t -> value pattern_desc
+  | Tpat_var : Ident.t * string loc * Uid.t -> value pattern_desc
         (** x *)
   | Tpat_alias :
-      value general_pattern * Ident.t * string loc * Types.Uid.t ->
-      value pattern_desc
+      value general_pattern * Ident.t * string loc * Uid.t -> value pattern_desc
         (** P as a *)
   | Tpat_constant : constant -> value pattern_desc
         (** 1, 'a', "true", 1.0, 1l, 1L, 1n *)
@@ -433,7 +433,7 @@ and module_binding =
     {
      mb_id: Ident.t option;
      mb_name: string option loc;
-     mb_decl: Types.module_declaration option;
+     mb_decl_uid: Uid.t option;
      mb_presence: Types.module_presence;
      mb_expr: module_expr;
      mb_attributes: attributes;
@@ -512,7 +512,7 @@ and module_declaration =
     {
      md_id: Ident.t option;
      md_name: string option loc;
-     md_decl: Types.module_declaration option;
+     md_uid: Uid.t option;
      md_presence: Types.module_presence;
      md_type: module_type;
      md_attributes: attributes;
@@ -533,7 +533,7 @@ and module_type_declaration =
     {
      mtd_id: Ident.t;
      mtd_name: string loc;
-     mtd_decl: Types.modtype_declaration;
+     mtd_uid: Uid.t;
      mtd_type: module_type option;
      mtd_attributes: attributes;
      mtd_loc: Location.t;
