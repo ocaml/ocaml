@@ -72,7 +72,7 @@ type cmt_infos = {
   cmt_imports : (string * Digest.t option) list;
   cmt_interface_digest : Digest.t option;
   cmt_use_summaries : bool;
-  cmt_uid_to_loc : item_declaration Shape.Uid.Tbl.t;
+  cmt_uid_to_decl : item_declaration Shape.Uid.Tbl.t;
   cmt_impl_shape : Shape.t option; (* None for mli *)
 }
 
@@ -88,11 +88,11 @@ let keep_only_summary = Env.keep_only_summary
 let cenv =
   {Tast_mapper.default with env = fun _sub env -> keep_only_summary env}
 
-let uid_to_loc : item_declaration Types.Uid.Tbl.t ref =
+let uid_to_decl : item_declaration Types.Uid.Tbl.t ref =
   Local_store.s_table Types.Uid.Tbl.create 16
 
 let register_uid uid fragment =
-  Types.Uid.Tbl.add !uid_to_loc uid fragment
+  Types.Uid.Tbl.add !uid_to_decl uid fragment
 
 let iter_decl =
   Tast_iterator.{ default_iterator with
@@ -276,7 +276,7 @@ let save_cmt filename modname binary_annots sourcefile initial_env cmi shape =
            cmt_imports = List.sort compare (Env.imports ());
            cmt_interface_digest = this_crc;
            cmt_use_summaries = need_to_clear_env;
-           cmt_uid_to_loc = !uid_to_loc;
+           cmt_uid_to_decl = !uid_to_decl;
            cmt_impl_shape = shape;
          } in
          output_cmt oc cmt)
