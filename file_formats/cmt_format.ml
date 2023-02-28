@@ -85,6 +85,8 @@ let need_to_clear_env =
 
 let keep_only_summary = Env.keep_only_summary
 
+let cenv =
+  {Tast_mapper.default with env = fun _sub env -> keep_only_summary env}
 
 let uid_to_loc : uid_fragment Types.Uid.Tbl.t ref =
   Local_store.s_table Types.Uid.Tbl.create 16
@@ -92,106 +94,98 @@ let uid_to_loc : uid_fragment Types.Uid.Tbl.t ref =
 let register_uid uid fragment =
   Types.Uid.Tbl.add !uid_to_loc uid fragment
 
-let tast_map =
-  let open Tast_mapper in
-  let env_mapper =
-    { default with env =
-        if need_to_clear_env then (fun _sub env -> keep_only_summary env)
-        else Tast_mapper.default.env }
-  in
-  { env_mapper with
+let iter_decl =
+  Tast_iterator.{ default_iterator with
 
-  value_bindings = (fun sub bindings ->
-    let bindings = env_mapper.value_bindings sub bindings in
-    let ((_, vbs) as bindings) =
-      env_mapper.value_bindings sub bindings
-    in
+  value_bindings = (fun sub ((_, vbs) as bindings) ->
     let bound_idents = let_bound_idents_full_with_bindings vbs in
     List.iter
       (fun (vb, (_id, _loc, _typ, uid)) ->
         register_uid uid (Value_binding vb))
       bound_idents;
-    bindings);
+      default_iterator.value_bindings sub bindings);
 
   module_binding = (fun sub mb ->
-    let mb = env_mapper.module_binding sub mb in
     register_uid mb.mb_decl_uid (Module_binding mb);
-    mb);
+    default_iterator.module_binding sub mb);
 
   module_declaration = (fun sub md ->
-    let md = env_mapper.module_declaration sub md in
     register_uid md.md_uid (Module_declaration md);
-    md);
+    default_iterator.module_declaration sub md);
 
   module_type_declaration = (fun sub mtd ->
-    let mtd = env_mapper.module_type_declaration sub mtd in
     register_uid mtd.mtd_uid (Module_type_declaration mtd);
-    mtd);
+    default_iterator.module_type_declaration sub mtd);
 
   value_description = (fun sub vd ->
-    let vd = env_mapper.value_description sub vd in
     register_uid vd.val_val.val_uid (Value_description vd);
-    vd);
+    default_iterator.value_description sub vd);
 
   type_declaration = (fun sub td ->
-    let td = env_mapper.type_declaration sub td in
     (* compiler-generated "row_names" share the uid of their corresponding
        class declaration, so we ignore them to prevent duplication *)
     if not (Btype.is_row_name (Ident.name td.typ_id)) then
       register_uid td.typ_type.type_uid (Type_declaration td);
-    td);
+      default_iterator.type_declaration sub td);
 
   extension_constructor = (fun sub ec ->
-    let ec = env_mapper.extension_constructor sub ec in
     register_uid ec.ext_type.ext_uid (Extension_constructor ec);
-    ec);
+    default_iterator.extension_constructor sub ec);
 
   class_declaration = (fun sub cd ->
-    let cd = env_mapper.class_declaration sub cd in
     register_uid cd.ci_decl.cty_uid (Class_declaration cd);
-    cd);
+    default_iterator.class_declaration sub cd);
 
   class_type_declaration = (fun sub ctd ->
-    let ctd = env_mapper.class_type_declaration sub ctd in
     register_uid ctd.ci_decl.cty_uid (Class_type_declaration ctd);
-    ctd);
+    default_iterator.class_type_declaration sub ctd);
 
   class_description =(fun sub cd ->
-    let cd = env_mapper.class_description sub cd in
     register_uid cd.ci_decl.cty_uid (Class_description cd);
-    cd);
-  }
+    default_iterator.class_description sub cd); }
 
-let clear_part =
-  function
-  | Partial_structure s ->
-      Partial_structure (tast_map.structure tast_map s)
+let clear_part = function
+  | Partial_structure s -> Partial_structure (cenv.structure cenv s)
   | Partial_structure_item s ->
-        Partial_structure_item (tast_map.structure_item tast_map s)
-  | Partial_expression e ->
-      Partial_expression (tast_map.expr tast_map e)
-  | Partial_pattern (category, p) ->
-      Partial_pattern (category, tast_map.pat tast_map p)
-  | Partial_class_expr ce ->
-      Partial_class_expr (tast_map.class_expr tast_map ce)
-  | Partial_signature s ->
-      Partial_signature (tast_map.signature tast_map s)
+      Partial_structure_item (cenv.structure_item cenv s)
+  | Partial_expression e -> Partial_expression (cenv.expr cenv e)
+  | Partial_pattern (category, p) -> Partial_pattern (category, cenv.pat cenv p)
+  | Partial_class_expr ce -> Partial_class_expr (cenv.class_expr cenv ce)
+  | Partial_signature s -> Partial_signature (cenv.signature cenv s)
   | Partial_signature_item s ->
-      Partial_signature_item (tast_map.signature_item tast_map s)
-  | Partial_module_type s ->
-    Partial_module_type (tast_map.module_type tast_map s)
+      Partial_signature_item (cenv.signature_item cenv s)
+  | Partial_module_type s -> Partial_module_type (cenv.module_type cenv s)
 
 let clear_env binary_annots =
+  if need_to_clear_env then
+    match binary_annots with
+    | Implementation s -> Implementation (cenv.structure cenv s)
+    | Interface s -> Interface (cenv.signature cenv s)
+    | Packed _ -> binary_annots
+    | Partial_implementation array ->
+        Partial_implementation (Array.map clear_part array)
+    | Partial_interface array ->
+        Partial_interface (Array.map clear_part array)
+
+  else binary_annots
+
+let gather_declarations_in_part = function
+  | Partial_structure s -> iter_decl.structure iter_decl s
+  | Partial_structure_item s -> iter_decl.structure_item iter_decl s
+  | Partial_expression e -> iter_decl.expr iter_decl e
+  | Partial_pattern (_category, p) -> iter_decl.pat iter_decl p
+  | Partial_class_expr ce -> iter_decl.class_expr iter_decl ce
+  | Partial_signature s -> iter_decl.signature iter_decl s
+  | Partial_signature_item s -> iter_decl.signature_item iter_decl s
+  | Partial_module_type s -> iter_decl.module_type iter_decl s
+
+let gather_declarations binary_annots =
   match binary_annots with
-  | Implementation s ->
-      Implementation (tast_map.structure tast_map s)
-  | Interface s ->
-      Interface (tast_map.signature tast_map s)
-  | Packed _ -> binary_annots
-  | Partial_implementation array ->
-      Partial_implementation (Array.map clear_part array)
-  | Partial_interface array ->
-      Partial_interface (Array.map clear_part array)
+  | Implementation s -> iter_decl.structure iter_decl s
+  | Interface s -> iter_decl.signature iter_decl s
+  | Packed _ -> ()
+  | Partial_implementation array -> Array.iter gather_declarations_in_part array
+  | Partial_interface array -> Array.iter gather_declarations_in_part array
 
 exception Error of error
 
@@ -264,10 +258,12 @@ let save_cmt filename modname binary_annots sourcefile initial_env cmi shape =
            | None -> None
            | Some cmi -> Some (output_cmi temp_file_name oc cmi)
          in
+         let cmt_annots = clear_env binary_annots in
+         gather_declarations cmt_annots;
          let source_digest = Option.map Digest.file sourcefile in
          let cmt = {
            cmt_modname = modname;
-           cmt_annots = clear_env binary_annots;
+           cmt_annots;
            cmt_value_dependencies = !value_deps;
            cmt_comments = Lexer.comments ();
            cmt_args = Sys.argv;
