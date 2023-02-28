@@ -767,7 +767,7 @@ get_tag(void)
 static void
 declare_tokens(int assoc)
 {
-    int c;
+    int c, column;
     bucket *bp;
     char *tag = 0;
 
@@ -777,6 +777,7 @@ declare_tokens(int assoc)
     if (c == EOF) unexpected_EOF();
     if (c == '<')
     {
+        column = cptr - line + 1;
         tag = get_tag();
         c = nextc();
         if (c == EOF) unexpected_EOF();
@@ -804,6 +805,10 @@ declare_tokens(int assoc)
         if (assoc == TOKEN)
         {
             bp->true_token = 1;
+            if (tag) {
+                bp->lineno = lineno;
+                bp->column = column;
+            }
         }
         else
         {
@@ -921,10 +926,12 @@ read_declarations(void)
         }
     }
 }
+static int infline = 1;
 
 static void output_token_type(void)
 {
   bucket * bp;
+  int i;
 
   fprintf(interface_file, "type token =\n");
   if (!rflag) ++outline;
@@ -936,15 +943,25 @@ static void output_token_type(void)
       if (bp->tag) {
         /* Print the type expression in parentheses to make sure
            that the constructor is unary */
-        fprintf(interface_file, " of (%s)", bp->tag);
-        fprintf(output_file, " of (%s)", bp->tag);
+        fprintf(output_file, " of (\n" line_format, bp->lineno, input_file_name_disp);
+        fprintf(interface_file, " of (\n" line_format, bp->lineno, input_file_name_disp);
+        for (i = 0; i < bp->column; i++) {
+            fputc(' ', interface_file);
+            fputc(' ', output_file);
+        }
+        fprintf(interface_file, "%s\n" line_format ")", bp->tag, infline + 5, interface_file_name_disp);
+        fprintf(output_file, "%s\n" line_format ")", bp->tag, outline + 5, code_file_name_disp);
+        infline += 4;
+        if (!rflag) outline += 4;
       }
       fprintf(interface_file, "\n");
+      infline++;
       if (!rflag) ++outline;
       fprintf(output_file, "\n");
     }
   }
   fprintf(interface_file, "\n");
+  infline++;
   if (!rflag) ++outline;
   fprintf(output_file, "\n");
 }

@@ -107,12 +107,10 @@ let map_loc sub {loc; txt} = {loc = sub.location sub loc; txt}
 
 (** Try a name [$name$0], check if it's free, if not, increment and repeat. *)
 let fresh_name s env =
-  let rec aux i =
-    let name = s ^ Int.to_string i in
-    if Env.bound_value name env then aux (i+1)
-    else name
-  in
-  aux 0
+  let name i = s ^ Int.to_string i in
+  let available i = not (Env.bound_value (name i) env) in
+  let first_i = Misc.find_first_mono available in
+  name first_i
 
 (** Extract the [n] patterns from the case of a letop *)
 let rec extract_letop_patterns n pat =

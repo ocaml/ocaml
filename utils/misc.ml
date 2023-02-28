@@ -395,6 +395,32 @@ module Int_literal_converter = struct
   let nativeint s = cvt_int_aux s Nativeint.neg Nativeint.of_string
 end
 
+(* [find_first_mono p] assumes that there exists a natural number
+   N such that [p] is false on [0; N[ and true on [N; max_int], and
+   returns this N. (See misc.mli for the detailed specification.) *)
+let find_first_mono =
+  let rec find p ~low ~jump ~high =
+    (* Invariants:
+       [low, jump, high] are non-negative with [low < high],
+       [p low = false],
+       [p high = true]. *)
+    if low + 1 = high then high
+    (* ensure that [low + jump] is in ]low; high[ *)
+    else if jump < 1 then find p ~low ~jump:1 ~high
+    else if jump >= high - low then find p ~low ~jump:((high - low) / 2) ~high
+    else if p (low + jump) then
+      (* We jumped too high: continue with a smaller jump and lower limit *)
+      find p ~low:low ~jump:(jump / 2) ~high:(low + jump)
+    else
+      (* we jumped too low:
+         continue from [low + jump] with a larger jump *)
+      let next_jump = max jump (2 * jump) (* avoid overflows *) in
+      find p ~low:(low + jump) ~jump:next_jump ~high
+  in
+  fun p ->
+    if p 0 then 0
+    else find p ~low:0 ~jump:1 ~high:max_int
+
 (* String operations *)
 
 let chop_extensions file =

@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #define CAML_INTERNALS
 #include "caml/osdeps.h"
 #include "caml/misc.h"
@@ -142,6 +143,8 @@ struct bucket
     char assoc;
     unsigned char entry;  /* 1..MAX_ENTRY_POINT (0 for unassigned) */
     char true_token;
+    int lineno;
+    int column;
 };
 
 /* MAX_ENTRY_POINT is the maximal number of entry points into the grammar. */
@@ -239,6 +242,7 @@ extern char_os *interface_file_name;
 
 /* UTF-8 versions of code_file_name and input_file_name */
 extern char *code_file_name_disp;
+extern char *interface_file_name_disp;
 extern char *input_file_name_disp;
 
 extern FILE *action_file;
