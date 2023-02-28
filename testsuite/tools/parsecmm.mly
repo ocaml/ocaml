@@ -1,19 +1,19 @@
-/**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
-/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
-/*                                                                        */
-/*   Copyright 1996 Institut National de Recherche en Informatique et     */
-/*     en Automatique.                                                    */
-/*                                                                        */
-/*   All rights reserved.  This file is distributed under the terms of    */
-/*   the GNU Lesser General Public License version 2.1, with the          */
-/*   special exception on linking described in the file LICENSE.          */
-/*                                                                        */
-/**************************************************************************/
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
-/* A simple parser for C-- */
+(* A simple parser for C-- *)
 
 %{
 open Cmm
@@ -188,7 +188,7 @@ fun_name:
   | IDENT               { $1 }
 params:
     oneparam params     { $1 :: $2 }
-  | /**/                { [] }
+  | (**)                { [] }
 ;
 oneparam:
     IDENT COLON machtype { (bind_ident $1, $3) }
@@ -293,14 +293,14 @@ expr:
 ;
 exprlist:
     exprlist expr               { $2 :: $1 }
-  | /**/                        { [] }
+  | (**)                        { [] }
 ;
 letdef:
     oneletdef                   { [$1] }
   | LPAREN letdefmult RPAREN    { $2 }
 ;
 letdefmult:
-    /**/                        { [] }
+    (**)                        { [] }
   | oneletdef letdefmult        { $1 :: $2 }
 ;
 oneletdef:
@@ -311,7 +311,7 @@ letmutdef:
   | LPAREN letmutdefmult RPAREN { $2 }
 ;
 letmutdefmult:
-    /**/                        { [] }
+    (**)                        { [] }
   | oneletmutdef letmutdefmult  { $1 :: $2 }
 ;
 oneletmutdef:
@@ -389,7 +389,7 @@ sequence:
 ;
 caselist:
     onecase sequence caselist   { ($1, $2) :: $3 }
-  | /**/                        { [] }
+  | (**)                        { [] }
 ;
 onecase:
     CASE INTCONST COLON onecase { $2 :: $4 }
@@ -404,7 +404,7 @@ datadecl:
 ;
 datalist:
     datalist dataitem           { $2 :: $1 }
-  | /**/                        { [] }
+  | (**)                        { [] }
 ;
 dataitem:
     STRING COLON                { Cdefine_symbol $1 }
@@ -432,5 +432,5 @@ catch_handler:
     { find_label $2, $3, $5, debuginfo () }
 
 location:
-    /**/                        { None }
+    (**)                        { None }
   | LOCATION                    { Some $1 }

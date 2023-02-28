@@ -355,7 +355,7 @@ extern void undefined_symbol (char *s);
 extern void unexpected_EOF (void) Noreturn;
 extern void unknown_rhs (int i) Noreturn;
 extern void unterminated_action (int a_lineno, char *a_line, char *a_cptr) Noreturn;
-extern void unterminated_comment (int c_lineno, char *c_line, char *c_cptr) Noreturn;
+extern void unterminated_comment (int c_lineno, char *c_line, char *c_cptr, char start_char) Noreturn;
 extern void unterminated_string (int s_lineno, char *s_line, char *s_cptr) Noreturn;
 extern void unterminated_text (int t_lineno, char *t_line, char *t_cptr) Noreturn;
 extern void used_reserved (char *s) Noreturn;

@@ -1,19 +1,19 @@
-/**************************************************************************/
-/*                                                                        */
-/*                                 OCaml                                  */
-/*                                                                        */
-/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
-/*                                                                        */
-/*   Copyright 1996 Institut National de Recherche en Informatique et     */
-/*     en Automatique.                                                    */
-/*                                                                        */
-/*   All rights reserved.  This file is distributed under the terms of    */
-/*   the GNU Lesser General Public License version 2.1, with the          */
-/*   special exception on linking described in the file LICENSE.          */
-/*                                                                        */
-/**************************************************************************/
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
-/* The grammar for lexer definitions */
+(* The grammar for lexer definitions *)
 
 %{
 open Syntax
@@ -79,25 +79,25 @@ lexer_definition:
 header:
     Taction
         { $1 }
-  | /*epsilon*/
+  | (*epsilon*)
         { { loc_file = ""; start_pos = 0; end_pos = 0; start_line = 1;
             start_col = 0 } }
 ;
 named_regexps:
     named_regexps Tlet Tident Tequal regexp
         { Hashtbl.add named_regexps $3 $5 }
-  | /*epsilon*/
+  | (*epsilon*)
         { () }
 ;
 other_definitions:
     other_definitions Tand definition
         { $3::$1 }
-  | /*epsilon*/
+  | (*epsilon*)
         { [] }
 ;
 refill_handler:
   | Trefill Taction { Some $2 }
-  | /*empty*/ { None }
+  | (*empty*) { None }
 ;
 definition:
     Tident arguments Tequal Tparse entry
@@ -108,7 +108,7 @@ definition:
 
 arguments:
     Tident arguments        { $1::$2 }
-|     /*epsilon*/           { [] }
+|     (*epsilon*)           { [] }
 ;
 
 
