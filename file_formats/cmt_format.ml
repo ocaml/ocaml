@@ -45,7 +45,7 @@ and binary_part =
   | Partial_signature_item of signature_item
   | Partial_module_type of module_type
 
-type uid_fragment =
+type item_declaration =
   | Class_declaration of class_declaration
   | Class_description of class_description
   | Class_type_declaration of class_type_declaration
@@ -72,7 +72,7 @@ type cmt_infos = {
   cmt_imports : (string * Digest.t option) list;
   cmt_interface_digest : Digest.t option;
   cmt_use_summaries : bool;
-  cmt_uid_to_loc : uid_fragment Shape.Uid.Tbl.t;
+  cmt_uid_to_loc : item_declaration Shape.Uid.Tbl.t;
   cmt_impl_shape : Shape.t option; (* None for mli *)
 }
 
@@ -88,7 +88,7 @@ let keep_only_summary = Env.keep_only_summary
 let cenv =
   {Tast_mapper.default with env = fun _sub env -> keep_only_summary env}
 
-let uid_to_loc : uid_fragment Types.Uid.Tbl.t ref =
+let uid_to_loc : item_declaration Types.Uid.Tbl.t ref =
   Local_store.s_table Types.Uid.Tbl.create 16
 
 let register_uid uid fragment =
