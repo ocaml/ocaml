@@ -18,6 +18,8 @@
 open Asttypes
 open Types
 
+module Uid = Shape.Uid
+
 (* Value expressions for the core language *)
 
 type partial = Partial | Total
@@ -53,10 +55,9 @@ and pat_extra =
 and 'k pattern_desc =
   (* value patterns *)
   | Tpat_any : value pattern_desc
-  | Tpat_var : Ident.t * string loc * Types.Uid.t -> value pattern_desc
+  | Tpat_var : Ident.t * string loc * Uid.t -> value pattern_desc
   | Tpat_alias :
-      value general_pattern * Ident.t * string loc * Types.Uid.t ->
-      value pattern_desc
+      value general_pattern * Ident.t * string loc * Uid.t -> value pattern_desc
   | Tpat_constant : constant -> value pattern_desc
   | Tpat_tuple : value general_pattern list -> value pattern_desc
   | Tpat_construct :
@@ -290,7 +291,7 @@ and module_binding =
     {
      mb_id: Ident.t option;
      mb_name: string option loc;
-     mb_decl: Types.module_declaration option;
+     mb_decl_uid: Uid.t option;
      mb_presence: module_presence;
      mb_expr: module_expr;
      mb_attributes: attribute list;
@@ -370,7 +371,7 @@ and module_declaration =
     {
      md_id: Ident.t option;
      md_name: string option loc;
-     md_decl: Types.module_declaration option;
+     md_uid: Uid.t option;
      md_presence: module_presence;
      md_type: module_type;
      md_attributes: attribute list;
@@ -391,7 +392,7 @@ and module_type_declaration =
     {
      mtd_id: Ident.t;
      mtd_name: string loc;
-     mtd_decl: Types.modtype_declaration;
+     mtd_uid: Uid.t;
      mtd_type: module_type option;
      mtd_attributes: attribute list;
      mtd_loc: Location.t;
