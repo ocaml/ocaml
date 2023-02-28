@@ -307,6 +307,25 @@ module Int_literal_converter : sig
 
 end
 
+val find_first_mono : (int -> bool) -> int
+  (**[find_first_mono p] takes an integer predicate [p : int -> bool]
+     that we assume:
+     1. is monotonic on natural numbers:
+        if [a <= b] then [p a] implies [p b],
+     2. is satisfied for some natural numbers in range [0; max_int]
+        (this is equivalent to: [p max_int = true]).
+
+     [find_first_mono p] is the smallest natural number N that satisfies [p],
+     computed in O(log(N)) calls to [p].
+
+     Our implementation supports two cases where the preconditions on [p]
+     are not respected:
+     - If [p] is always [false], we silently return [max_int]
+       instead of looping or crashing.
+     - If [p] is non-monotonic but eventually true,
+       we return some satisfying value.
+  *)
+
 (** {1 String operations} *)
 
 val search_substring: string -> string -> int -> int

@@ -1890,6 +1890,7 @@ typing/untypeast.cmo : \
     typing/typedtree.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
+    utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
@@ -1901,6 +1902,7 @@ typing/untypeast.cmx : \
     typing/typedtree.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
+    utils/misc.cmx \
     parsing/longident.cmx \
     parsing/location.cmx \
     typing/ident.cmx \
