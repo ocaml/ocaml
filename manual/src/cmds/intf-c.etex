@@ -2191,6 +2191,7 @@ as follows:
 \end{tableau}
 The kind of array elements is one of the following constants:
 \begin{tableau}{|l|l|}{Constant}{Element kind}
+\entree{"CAML_BA_FLOAT16"}{16-bit half-precision floats}
 \entree{"CAML_BA_FLOAT32"}{32-bit single-precision floats}
 \entree{"CAML_BA_FLOAT64"}{64-bit double-precision floats}
 \entree{"CAML_BA_SINT8"}{8-bit signed integers}
