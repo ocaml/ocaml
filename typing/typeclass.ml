@@ -94,7 +94,8 @@ type error =
   | Class_match_failure of Ctype.class_match_failure list
   | Unbound_val of string
   | Unbound_type_var of (formatter -> unit) * Ctype.closed_class_failure
-  | Non_generalizable_class of Ident.t * Types.class_declaration
+  | Non_generalizable_class of
+      Ident.t * Types.class_declaration * (type_expr list)
   | Cannot_coerce_self of type_expr
   | Non_collapsable_conjunction of
       Ident.t * Types.class_declaration * Errortrace.unification_error
@@ -1716,8 +1717,11 @@ let final_decl env define_class
   List.iter Ctype.generalize cl_abbr.type_params;
   Option.iter  Ctype.generalize cl_abbr.type_manifest;
 
-  if Ctype.nongen_class_declaration clty then
-    raise(Error(cl.pci_loc, env, Non_generalizable_class (id, clty)));
+  Ctype.nongen_vars_in_class_declaration clty
+  |> Option.iter (fun vars ->
+      let vars = Btype.TypeSet.elements vars in
+      raise(Error(cl.pci_loc, env, Non_generalizable_class (id, clty,vars)));
+    );
 
   begin match
     Ctype.closed_class clty.cty_params
@@ -2100,11 +2104,17 @@ let report_error env ppf = function
         "@[<v>@[Some type variables are unbound in this type:@;<1 2>%t@]@ \
               @[%a@]@]"
        printer print_reason reason
-  | Non_generalizable_class (id, clty) ->
+  | Non_generalizable_class (id, clty, vars) ->
+      let[@manual.ref "ss:valuerestriction"] manual_ref = [ 6; 1; 2] in
+      Printtyp.prepare_for_printing vars;
       fprintf ppf
         "@[The type of this class,@ %a,@ \
-           contains type variables that cannot be generalized@]"
+         contains the non-generalizable type variable(s) %a@ %a@]"
         (Printtyp.class_declaration id) clty
+        (pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ")
+           Printtyp.prepared_type_scheme) vars
+        Misc.print_see_manual manual_ref
+
   | Cannot_coerce_self ty ->
       fprintf ppf
         "@[The type of self cannot be coerced to@ \

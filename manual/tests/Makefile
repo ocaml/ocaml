@@ -25,7 +25,9 @@ check-cross-references: cross-reference-checker
 	  -auxfile $(MANUAL)/texstuff/manual.aux \
 	  $(ROOTDIR)/utils/warnings.ml \
 	  $(ROOTDIR)/driver/main_args.ml \
-	  $(ROOTDIR)/lambda/translmod.ml
+	  $(ROOTDIR)/lambda/translmod.ml \
+	  $(ROOTDIR)/typing/typemod.ml \
+	  $(ROOTDIR)/typing/typeclass.ml
 
 # check that all standard library modules are referenced by the
 # standard library chapter of the manual
