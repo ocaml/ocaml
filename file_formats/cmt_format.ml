@@ -115,16 +115,12 @@ let tast_map =
 
   module_binding = (fun sub mb ->
     let mb = env_mapper.module_binding sub mb in
-    Option.iter
-      (fun uid -> register_uid uid (Module_binding mb))
-      mb.mb_decl_uid;
+    register_uid mb.mb_decl_uid (Module_binding mb);
     mb);
 
   module_declaration = (fun sub md ->
     let md = env_mapper.module_declaration sub md in
-    Option.iter
-      (fun uid -> register_uid uid (Module_declaration md))
-      md.md_uid;
+    register_uid md.md_uid (Module_declaration md);
     md);
 
   module_type_declaration = (fun sub mtd ->

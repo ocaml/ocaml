@@ -431,7 +431,7 @@ and module_binding =
     {
      mb_id: Ident.t option;
      mb_name: string option loc;
-     mb_decl_uid: Uid.t option;
+     mb_decl_uid: Uid.t;
      mb_presence: Types.module_presence;
      mb_expr: module_expr;
      mb_attributes: attributes;
@@ -510,7 +510,7 @@ and module_declaration =
     {
      md_id: Ident.t option;
      md_name: string option loc;
-     md_uid: Uid.t option;
+     md_uid: Uid.t;
      md_presence: Types.module_presence;
      md_type: module_type;
      md_attributes: attributes;
