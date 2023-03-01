@@ -829,7 +829,7 @@ static int user_events_call_callback_list(
 
   while (Is_block(callback_list)) {
       // two indirections as callback is a list item wrapped in a gadt
-    value callback = Field(Field(callback_list, 0), 0);
+    callback = Field(Field(callback_list, 0), 0);
     res = caml_callbackN_exn(callback, 4, params);
 
     if( Is_exception_result(res) ) {
@@ -895,13 +895,10 @@ static value caml_runtime_events_user_resolve_cached(
 
     // copy values from the cache to the new array
     for (uintnat i = 0; i < len; i++) {
-      Field(cache_resized, i) = Field(cache, i);
+      caml_initialize(&Field(cache_resized, i), Field(cache, i));
     }
 
-    // write None for the rest of the values
-    for (uintnat i = len; i < new_len; i++) {
-      Field(cache_resized, i) = Val_none;
-    }
+    // the rest of the values is None
 
     // update the wrapper structure
     Store_field(wrapper_root, 2, cache_resized);
@@ -943,6 +940,7 @@ static int ml_user_unit(int domain_id, void *callback_data, int64_t timestamp,
 
     // payload is prepared, we call the callbacks sequentially.
     if (user_events_call_callback_list(holder, callback_list, params) == 0) {
+      CAMLdrop;
       return 0;
     }
   }
@@ -982,6 +980,7 @@ static int ml_user_span(int domain_id, void *callback_data, int64_t timestamp,
 
     // payload is prepared, we call the callbacks sequentially.
     if (user_events_call_callback_list(holder, callback_list, params) == 0) {
+      CAMLdrop;
       return 0;
     }
   }
@@ -1020,6 +1019,7 @@ static int ml_user_int(int domain_id, void *callback_data,
 
     // payload is prepared, we call the callbacks sequentially.
     if (user_events_call_callback_list(holder, callback_list, params) == 0) {
+      CAMLdrop;
       return 0;
     }
   }
@@ -1036,6 +1036,7 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
   CAMLlocal4(callback_list, event, callbacks_root, event_type);
   CAMLlocalN(params, 4);
   CAMLlocal2(wrapper_root, read_buffer);
+  CAMLlocal3(data, record, deserializer);
 
   struct callbacks_exception_holder* holder = callback_data;
   callbacks_root = *holder->callbacks_val;
@@ -1060,7 +1061,6 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
   if (Is_block(callback_list)) {
     // at least one callback is listening for this event type, so we
     // deserialize the value and prepare the callback payload
-    CAMLlocal3(data, record, deserializer);
 
     const char* data_str = (const char*) event_data;
     uintnat string_len = event_data_len * sizeof(uint64_t) - 1;
@@ -1091,6 +1091,7 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
 
     // payload is prepared, we call the callbacks sequentially.
     if (user_events_call_callback_list(holder, callback_list, params) == 0) {
+      CAMLdrop;
       return 0;
     }
   }
