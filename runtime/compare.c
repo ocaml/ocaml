@@ -25,7 +25,7 @@
 
 /* Structural comparison on trees. */
 
-struct compare_item { volatile value * v1, * v2; mlsize_t count; };
+struct compare_item { value v1, v2, offset, size; };
 
 #define COMPARE_STACK_INIT_SIZE 8
 #define COMPARE_STACK_MIN_ALLOC_SIZE 32
@@ -280,9 +280,10 @@ static intnat do_compare_val(struct compare_stack* stk,
       if (sz1 > 1) {
         sp++;
         if (sp >= stk->limit) sp = compare_resize_stack(stk, sp);
-        sp->v1 = &Field(v1, 1);
-        sp->v2 = &Field(v2, 1);
-        sp->count = sz1 - 1;
+        sp->v1 = v1;
+        sp->v2 = v2;
+        sp->offset = Val_long(1);
+        sp->size = Val_long(sz1);
       }
       /* Continue comparison with first field */
       v1 = Field(v1, 0);
@@ -293,9 +294,10 @@ static intnat do_compare_val(struct compare_stack* stk,
   next_item:
     /* Pop one more item to compare, if any */
     if (sp == stk->stack) return EQUAL; /* we're done */
-    v1 = *((sp->v1)++);
-    v2 = *((sp->v2)++);
-    if (--(sp->count) == 0) sp--;
+    v1 = Field(sp->v1, Long_val(sp->offset));
+    v2 = Field(sp->v2, Long_val(sp->offset));
+    sp->offset += 2;/* Long_val(sp->offset) += 1 */
+    if (sp->offset == sp->size) sp--;
   }
 }
 
