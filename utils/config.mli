@@ -224,11 +224,11 @@ val flat_float_array : bool
     arrays *)
 
 val align_double : bool
-(** Wether the compiler and runtime needs to align double values.
+(** Wether the compiler and runtime need to align double values.
     If [false], a [floatarray] value can be casted into a C array of double. *)
 
 val align_int64 : bool
-(** Wether the compiler and runtime needs to align int64 values *)
+(** Wether the compiler and runtime need to align int64 values *)
 
 val function_sections : bool
 (** Whether the compiler was configured to generate
