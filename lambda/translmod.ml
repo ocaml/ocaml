@@ -763,11 +763,12 @@ let _ =
 (* Introduce dependencies on modules referenced only by "external". *)
 
 let scan_used_globals lam =
+  let not_predef id = not (Ident.is_predef id) in
   let globals = ref Ident.Set.empty in
   let rec scan lam =
     Lambda.iter_head_constructor scan lam;
     match lam with
-      Lprim ((Pgetglobal id | Psetglobal id), _, _) ->
+      Lprim ((Pgetglobal id | Psetglobal id), _, _) when (not_predef id) ->
         globals := Ident.Set.add id !globals
     | _ -> ()
   in

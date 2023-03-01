@@ -348,9 +348,10 @@ let defined_globals patchlist =
     patchlist
 
 let required_globals patchlist =
+  let not_predef id = not (Ident.is_predef id) in
   List.fold_left (fun accu rel ->
       match rel with
-      | (Reloc_getglobal id, _pos) -> id :: accu
+      | (Reloc_getglobal id, _pos) when (not_predef id) -> id :: accu
       | _ -> accu)
     []
     patchlist
