@@ -125,8 +125,8 @@ class c : object  end
 class type c = object end
 [%%expect{|
 {
- "c"[type] -> <.34>;
- "c"[class type] -> <.34>;
+ "c"[type] -> <.35>;
+ "c"[class type] -> <.35>;
  }
 class type c = object  end
 |}]
