@@ -96,6 +96,9 @@ Working version
   (Gabriel Scherer, review by Sadiq Jaffer, report by André Maroneze
   for Frama-C and Guillaume Melquiond for Coq)
 
+- #12062: fix runtime events consumer: when events are dropped they shouldn't be
+  parsed. (Lucas Pluvinage)
+
 ### Type system:
 
 - #6941, #11187: prohibit using classes through recursive modules
