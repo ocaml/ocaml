@@ -789,8 +789,8 @@ static void caml_parse_header(struct caml_intern_state* s,
 /* Decompress the input if needed.
    Must be called after [intern_init].
    Should preferably be called before [intern_alloc_storage]
-   (so that the memory block for the compressed input can be freed
-    before more memory is allocated). */
+   when the memory block for the compressed input can be freed
+   before more memory is allocated. */
 
 static void intern_decompress_input(struct caml_intern_state * s,
                                     const char * fun_name,
@@ -907,11 +907,11 @@ CAMLexport value caml_input_val_from_bytes(value str, intnat ofs)
   caml_parse_header(s, "input_val_from_string", &h);
   if (ofs + h.header_len + h.data_len > caml_string_length(str))
     caml_failwith("input_val_from_string: bad length");
-  /* Decompress if needed */
-  s->intern_src = &Byte_u(str, ofs + h.header_len); /* If a GC occurred */
-  intern_decompress_input(s, "input_val_from_string", &h);
   /* Allocate result */
   intern_alloc_storage(s, h.whsize, h.num_objects);
+  s->intern_src = &Byte_u(str, ofs + h.header_len); /* If a GC occurred */
+  /* Decompress if needed */
+  intern_decompress_input(s, "input_val_from_string", &h);
   /* Fill it in */
   intern_rec(s, &obj);
   CAMLreturn (intern_end(s, obj));

@@ -258,9 +258,10 @@ Working version
   (Boris Yakobowski, review by Daniel Bünzli, Gabriel Scherer and Nicolás Ojeda
   Bär)
 
-- #12006: Add `Marshal.Compression` flag to `Marshal.to_*` functions,
+- #12006, #12064: Add `Marshal.Compression` flag to `Marshal.to_*` functions,
   causing marshaled data to be compressed using ZSTD.
-  (Xavier Leroy, review by Edwin Török and Gabriel Scherer)
+  (Xavier Leroy, review by Edwin Török and Gabriel Scherer, fix by Damien
+   Doligez)
 
 ### Other libraries:
 
