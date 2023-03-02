@@ -32,6 +32,10 @@ $2 ~ /^_?wmain$/ { next }
 $2 ~ /^__x86.get_pc_thunk./ { next }
 # for mingw32
 $2 ~ /^.debug_/ { next }
+# ignore "__tsan_default_suppressions"
+$2 ~ /^___?tsan_default_suppressions$/ { next }
+# ignore custom handlers of volatile reads/writes for TSan
+$2 ~ /^___?tsan(_unaligned)?_volatile_(read|write)[0-9]+$/ { next }
 # print the rest
 { found=1; print $1 " " $2 " " $3 }
 # fail if there were any results

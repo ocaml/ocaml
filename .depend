@@ -2379,6 +2379,7 @@ asmcomp/asmlibrarian.cmx : \
     asmcomp/asmlibrarian.cmi
 asmcomp/asmlibrarian.cmi :
 asmcomp/asmlink.cmo : \
+    asmcomp/thread_sanitizer.cmi \
     lambda/runtimedef.cmi \
     utils/profile.cmi \
     utils/misc.cmi \
@@ -2397,6 +2398,7 @@ asmcomp/asmlink.cmo : \
     asmcomp/asmgen.cmi \
     asmcomp/asmlink.cmi
 asmcomp/asmlink.cmx : \
+    asmcomp/thread_sanitizer.cmx \
     lambda/runtimedef.cmx \
     utils/profile.cmx \
     utils/misc.cmx \
@@ -2581,6 +2583,7 @@ asmcomp/cmm_invariants.cmi : \
     asmcomp/cmm.cmi
 asmcomp/cmmgen.cmo : \
     typing/types.cmi \
+    asmcomp/thread_sanitizer.cmi \
     middle_end/printclambda_primitives.cmi \
     typing/primitive.cmi \
     utils/misc.cmi \
@@ -2600,6 +2603,7 @@ asmcomp/cmmgen.cmo : \
     asmcomp/cmmgen.cmi
 asmcomp/cmmgen.cmx : \
     typing/types.cmx \
+    asmcomp/thread_sanitizer.cmx \
     middle_end/printclambda_primitives.cmx \
     typing/primitive.cmx \
     utils/misc.cmx \
@@ -3169,6 +3173,22 @@ asmcomp/strmatch.cmx : \
     asmcomp/strmatch.cmi
 asmcomp/strmatch.cmi : \
     lambda/debuginfo.cmi \
+    asmcomp/cmm.cmi
+asmcomp/thread_sanitizer.cmo : \
+    lambda/debuginfo.cmi \
+    asmcomp/cmm_helpers.cmi \
+    asmcomp/cmm.cmi \
+    middle_end/backend_var.cmi \
+    parsing/asttypes.cmi \
+    asmcomp/thread_sanitizer.cmi
+asmcomp/thread_sanitizer.cmx : \
+    lambda/debuginfo.cmx \
+    asmcomp/cmm_helpers.cmx \
+    asmcomp/cmm.cmx \
+    middle_end/backend_var.cmx \
+    parsing/asttypes.cmi \
+    asmcomp/thread_sanitizer.cmi
+asmcomp/thread_sanitizer.cmi : \
     asmcomp/cmm.cmi
 asmcomp/x86_ast.cmi :
 asmcomp/x86_dsl.cmo : \

@@ -67,6 +67,7 @@ type operation =
   | Ispecific of Arch.specific_operation
   | Ipoll of { return_label: Cmm.label option }
   | Idls_get
+  | Ireturn_addr
 
 type instruction =
   { desc: instruction_desc;
