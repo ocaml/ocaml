@@ -195,14 +195,14 @@ where 0 <= R <= 31 is HEADER_RESERVED_BITS, set with the
 #define Reserved_val(val) (Reserved_hd (Hd_val (val)))
 
 #ifdef ARCH_BIG_ENDIAN
-#define Tag_val(val) (((unsigned char *) (val)) [-1])
+#define Tag_val(val) (((volatile unsigned char *) (val)) [-1])
                                                  /* Also an l-value. */
-#define Tag_hp(hp) (((unsigned char *) (hp)) [sizeof(value)-1])
+#define Tag_hp(hp) (((volatile unsigned char *) (hp)) [sizeof(value)-1])
                                                  /* Also an l-value. */
 #else
-#define Tag_val(val) (((unsigned char *) (val)) [-sizeof(value)])
+#define Tag_val(val) (((volatile unsigned char *) (val)) [-sizeof(value)])
                                                  /* Also an l-value. */
-#define Tag_hp(hp) (((unsigned char *) (hp)) [0])
+#define Tag_hp(hp) (((volatile unsigned char *) (hp)) [0])
                                                  /* Also an l-value. */
 #endif
 
