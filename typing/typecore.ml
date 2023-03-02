@@ -4320,7 +4320,12 @@ and type_label_exp create env loc ty_expected
           (lid, label, sarg) =
   (* Here also ty_expected may be at generic_level *)
   let separate = !Clflags.principal || Env.has_local_constraints env in
+  (* #4682: we try two type-checking approaches for [arg] using backtracking:
+     - first try: we try with [ty_arg] as expected type;
+     - second try; if that fails, we backtrack and try without
+  *)
   let (vars, ty_arg, snap, arg) =
+    (* try the first approach *)
     with_local_level begin fun () ->
       let (vars, ty_arg) =
         with_local_level_iter_if separate begin fun () ->
@@ -4352,18 +4357,22 @@ and type_label_exp create env loc ty_expected
       let arg = type_argument env sarg ty_arg (instance ty_arg) in
       (vars, ty_arg, snap, arg)
     end
+    (* Note: there is no generalization logic here as could be expected,
+       because it is part of the backtracking logic below. *)
   in
   let arg =
     try
       if (vars = []) then arg
       else begin
+        (* We detect if the first try failed here,
+           during generalization. *)
         if maybe_expansive arg then
           lower_contravariant env arg.exp_type;
         generalize_and_check_univars env "field value" arg label.lbl_arg vars;
         {arg with exp_type = instance arg.exp_type}
       end
-    with exn when maybe_expansive arg -> try
-      (* Try to retype without propagating ty_arg, cf PR#4862 *)
+    with first_try_exn when maybe_expansive arg -> try
+      (* backtrack and try the second approach *)
       Option.iter Btype.backtrack snap;
       let arg = with_local_level (fun () -> type_exp env sarg)
           ~post:(fun arg -> lower_contravariant env arg.exp_type)
@@ -4380,7 +4389,7 @@ and type_label_exp create env loc ty_expected
       in
       {arg with exp_type = instance arg.exp_type}
     with Error (_, _, Less_general _) as e -> raise e
-    | _ -> raise exn    (* In case of failure return the first error *)
+    | _ -> raise first_try_exn
   in
   (lid, label, arg)
 
