@@ -179,7 +179,7 @@ typedef uint64_t uintnat;
    as first-class values (GCC 2.x). */
 
 #if defined(__GNUC__) && __GNUC__ >= 2 && !defined(DEBUG) \
-    && !defined (SHRINKED_GNUC)
+    && !defined (SHRINKED_GNUC) && !defined (__LCC__)
 #define THREADED_CODE
 #endif
 

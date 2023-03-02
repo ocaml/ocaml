@@ -168,6 +168,11 @@ Caml_inline void check_trap_barrier_for_effect
 
 #if defined(__GNUC__) && !defined(DEBUG) && !defined(__INTEL_COMPILER) \
     && !defined(__llvm__)
+#ifdef __e2k__
+#define PC_REG asm("%g0")
+#define SP_REG asm("%g1")
+#define ACCU_REG asm("%g2")
+#endif
 #ifdef __mips__
 #define PC_REG asm("$16")
 #define SP_REG asm("$17")
