@@ -268,6 +268,7 @@ CAMLprim value caml_bytes_set64(value str, value index, value newval)
   return Val_unit;
 }
 
+CAMLno_tsan /* Disable TSan instrumentation for performance. */
 CAMLprim value caml_string_equal(value s1, value s2)
 {
   mlsize_t sz1, sz2;
