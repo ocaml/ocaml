@@ -1151,6 +1151,14 @@ class ['a] p :
 class c : object method foo : int end
 |}];;
 
+class ['a] p = object (_ : 'a) method private foo = 5 end;;
+class c = [ < foo : string; .. > ] p;;
+[%%expect {|
+class ['a] p :
+  object ('a) constraint 'a = < .. > method private foo : int end
+class c : object method foo : int end
+|}];;
+
 (* Errors for undefined methods *)
 
 class c = object method virtual foo : int end;;
