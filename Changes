@@ -646,6 +646,10 @@ Working version
 - #12046: Flush stderr when tracing the parser
   (Hugo Heuzard, review by David Allsopp and Nicolás Ojeda Bär)
 
+- #12061, #12063: don't add inconsistent equalities when computing
+  high-level error messages for functor applications and inclusions.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 - #12075: auto-detect whether `ar` support @FILE arguments at
   configure-time to avoid using this feature with toolchains
   that do not support it (eg FreeBSD/Darwin).
