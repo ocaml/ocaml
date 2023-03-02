@@ -1042,12 +1042,11 @@ module Functor_inclusion_diff = struct
         st, [||]
     | Insert (Named (Some id, arg))
     | Delete (Named (Some id, arg))
-    | Change (Unit, Named (Some id, arg), _) ->
+    | Change (_, Named (Some id, arg), _) ->
         let arg' = Subst.modtype Keep st.subst arg in
         let env = Env.add_module id Mp_present arg' st.env in
         expand_params { st with env }
-    | Keep (Named (name1, _), Named (name2, arg2), _)
-    | Change (Named (name1, _), Named (name2, arg2), _) -> begin
+    | Keep (Named (name1, _), Named (name2, arg2), _) -> begin
         let arg' = Subst.modtype Keep st.subst arg2 in
         match name1, name2 with
         | Some id1, Some id2 ->
@@ -1119,15 +1118,20 @@ module Functor_app_diff = struct
   let update (d: Diff.change) (st:Defs.state) =
     let open Error in
     match d with
-    | Insert _
+    | Insert (Unit|Named(None,_))
     | Delete _
     | Keep ((Unit,_),_,_)
     | Keep (_,Unit,_)
-    | Change (_,(Unit | Named (None,_)), _ )
-    | Change ((Unit,_), Named (Some _, _), _) ->
+    | Change (_,(Unit|Named (None,_)), _ ) ->
         st, [||]
-    | Keep ((Named arg,  _mty) , Named (param_name, _param), _)
-    | Change ((Named arg, _mty), Named (param_name, _param), _) ->
+    | Insert(Named(Some param, param_ty))
+    | Change(_, Named(Some param, param_ty), _ ) ->
+        (* we add the parameter to the environnement to track equalities with
+           external components that the parameter might add. *)
+        let mty = Subst.modtype Keep st.subst param_ty in
+        let env = Env.add_module ~arg:true param Mp_present mty st.env in
+        I.expand_params { st with env }
+    | Keep ((Named arg,  _mty) , Named (param_name, _param), _) ->
         begin match param_name with
         | Some param ->
             let res =
@@ -1143,8 +1147,7 @@ module Functor_app_diff = struct
         | None ->
             st, [||]
         end
-    | Keep (((Anonymous|Empty_struct), mty) , Named (param_name, _param), _)
-    | Change (((Anonymous|Empty_struct), mty), Named (param_name, _param), _) ->
+    | Keep (((Anonymous|Empty_struct), mty) , Named (param_name, _param), _) ->
         begin match param_name with
         | Some param ->
             let mty' = Subst.modtype Keep st.subst mty in
