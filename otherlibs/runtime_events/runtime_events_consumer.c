@@ -439,10 +439,10 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
         if (cursor->lost_events) {
           if( !(cursor->lost_events(domain_num, callback_data, lost_words)) ) {
             early_exit = 1;
-            continue;
           }
-
         }
+
+        continue;
       }
 
       if (RUNTIME_EVENTS_ITEM_IS_RUNTIME(header)) {
