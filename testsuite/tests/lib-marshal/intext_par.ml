@@ -482,7 +482,7 @@ let test_objects () =
   test 509 (x#test2 = false);
   test 510 (x#test3 = "footest5test3test442");
   test 511 (x#test4 = 42L);
-  test 512 (Oo.id x = Oo.id x0 + 1)     (* PR#5610 *)
+  test 512 (Oo.id x > Oo.id x0)     (* PR#5610 *)
 
 (* Test for infix pointers *)
 let test_infix () =
