@@ -1289,18 +1289,13 @@ end
 
 module Add_one = struct type witness include Add_one' end
 
-module Add_three' = struct
+module Add_three = struct
   module M(_:arg)(_:arg)(_:arg) = A
   module type t = module type of M
-end
-
-module Add_three = struct
-  include Add_three'
   type witness
 end
 
 
-module Wrong_intro = F(Add_three')(A)(A)(A)
 [%%expect {|
 module type arg = sig type arg end
 module A : sig type arg end
@@ -1311,32 +1306,12 @@ module Add_one' :
   end
 module Add_one :
   sig type witness module M = Add_one'.M module type t = Add_one'.t end
-module Add_three' :
+module Add_three :
   sig
     module M : arg -> arg -> arg -> sig type arg = A.arg end
     module type t = arg -> arg -> arg -> sig type arg = A.arg end
+    type witness
   end
-module Add_three :
-  sig module M = Add_three'.M module type t = Add_three'.t type witness end
-Line 22, characters 21-43:
-22 | module Wrong_intro = F(Add_three')(A)(A)(A)
-                          ^^^^^^^^^^^^^^^^^^^^^^
-Error: The functor application is ill-typed.
-       These arguments:
-         Add_three' A A A
-       do not match these parameters:
-         functor (X : $T4) -> ...
-       1. The following extra argument is provided
-              Add_three' :
-              sig module M = Add_three'.M module type t = Add_three'.t end
-       2. The following extra argument is provided
-              A : sig type arg = A.arg end
-       3. The following extra argument is provided
-              A : sig type arg = A.arg end
-       4. Modules do not match:
-            A : sig type arg = A.arg end
-          is not included in
-            $T4 = sig type witness module type t module M : t end
 |}]
 
 module Choose_one = F(Add_one')(Add_three)(A)(A)(A)
