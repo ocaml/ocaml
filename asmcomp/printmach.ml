@@ -156,6 +156,7 @@ let operation op arg ppf res =
   | Ispecific op ->
       Arch.print_specific_operation reg op ppf arg
   | Idls_get -> fprintf ppf "dls_get"
+  | Ireturn_addr -> fprintf ppf "return_addr"
   | Ipoll { return_label } ->
       fprintf ppf "poll call";
       match return_label with

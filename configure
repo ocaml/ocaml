@@ -855,11 +855,13 @@ bootstrapping_flexdll
 flexdll_source_dir
 ocamlc_cppflags
 ocamlc_cflags
+native_ldflags
 cclibs
 oc_exe_ldflags
 oc_dll_ldflags
 oc_ldflags
 oc_cppflags
+tsan_native_runtime_c_sources
 tsan
 oc_cflags
 toolchain
@@ -1711,10 +1713,10 @@ Some influential environment variables:
   DLLIBS      which libraries to use (in addition to -ldl) to load dynamic
               libs
   LIBUNWIND_CPPFLAGS
-              cc flags for libunwind (e.g. -I<location of header files>)
+              C preprocessor flags for libunwind (e.g. -I<location of
+              libunwind headers>)
   LIBUNWIND_LDFLAGS
-              linker flags for libunwind (e.g. -L<location of static object
-              files>
+              linker flags for libunwind (e.g. -L<location of libunwind>
   WINDOWS_UNICODE_MODE
               how to handle Unicode under Windows: ansi, compatible
   DEFAULT_STRING
@@ -3244,8 +3246,11 @@ oc_dll_ldflags=""
 oc_exe_ldflags=""
 
 tsan=false
+oc_tsan_cflags="-fsanitize=thread"
+
 # Passed to the linker by ocamlopt when tsan is enabled
-oc_tsan_ldflags="-fsanitize=thread"
+
+oc_tsan_cppflags="-DWITH_THREAD_SANITIZER"
 
 # The C# compiler and its flags
 CSC=""
@@ -3305,6 +3310,8 @@ OCAML_VERSION_SHORT=5.2
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
+
 
 
 
@@ -15408,6 +15415,7 @@ model=default
 system=unknown
 
 has_native_backend=no
+native_ldflags=""
 case $host in #(
   i[3456]86-*-linux*) :
     arch=i386; system=linux_elf ;; #(
@@ -16442,7 +16450,7 @@ then :
   case "$arch" in #(
   amd64) :
     case "$system" in #(
-  linux) :
+  linux|macosx) :
     case "$cc_basename" in #(
   gcc*|clang*) :
     tsan=true ;; #(
@@ -16451,18 +16459,8 @@ then :
 $cc_basename\"" "$LINENO" 5
           ;;
 esac ;; #(
-  macosx) :
-    case "$cc_basename" in #(
-  gcc*|clang*) :
-    tsan=true ;; #(
   *) :
-    as_fn_error $? "thread sanitizer not supported with compiler \
-$cc_basename on system $system\"" "$LINENO" 5
-          ;;
-esac ;; #(
-  *) :
-    as_fn_error $? "thread sanitizer not supported on system $system" "$LINENO" 5
-        ;;
+     ;;
 esac ;; #(
   *) :
     as_fn_error $? "thread sanitizer not supported on arch $arch" "$LINENO" 5
@@ -16472,19 +16470,67 @@ else $as_nop
   tsan=false
 fi
 
-# libunwind detection when TSan is enabled
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether libunwind is required" >&5
-printf %s "checking whether libunwind is required... " >&6; }
-if ! $tsan
+if $tsan
 then :
-  libunwind_available=false
-  libunwind_cppflags=
-  libunwind_link_flags=
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: using thread sanitizer with vendor=$ocaml_cv_cc_vendor" >&5
+printf "%s\n" "$as_me: using thread sanitizer with vendor=$ocaml_cv_cc_vendor" >&6;}
+
+  # Check for libtsan library files (necessary on some Linux distributions)
+  SAVED_LDFLAGS="$LDFLAGS"
+  LDFLAGS="$LDFLAGS -fsanitize=thread"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+void __tsan_func_entry(void *retaddr);
+int
+main (void)
+{
+__tsan_func_entry((void *)0);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+
 else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
+  as_fn_error $? "libtsan is necessary for TSan but cannot be found.
+                   Try installing it on your system." "$LINENO" 5
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+  LDFLAGS="$SAVED_LDFLAGS"
+
+  case $ocaml_cv_cc_vendor in #(
+  gcc-[0123456789]-*|gcc-10-*|clang-*) :
+     ;; #(
+  *) :
+    oc_tsan_cflags="$oc_tsan_cflags -Wno-tsan" ;;
+esac
+  case $ocaml_cv_cc_vendor in #(
+  gcc*) :
+    oc_tsan_cflags="$oc_tsan_cflags --param=tsan-distinguish-volatile=1" ;; #(
+  clang*) :
+    oc_tsan_cflags="$oc_tsan_cflags -mllvm -tsan-distinguish-volatile" ;; #(
+  *) :
+     ;;
+esac
+  common_cppflags="$common_cppflags $oc_tsan_cppflags"
+  native_cflags="$native_cflags $oc_tsan_cflags"
+  ocamlc_cflags="$ocamlc_cflags $oc_tsan_cflags"
+  tsan_native_runtime_c_sources="tsan"
+else $as_nop
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: not using thread sanitizer" >&5
+printf "%s\n" "$as_me: not using thread sanitizer" >&6;}
+  tsan_native_runtime_c_sources=""
+
+fi
+
+# libunwind detection when TSan is enabled
+libunwind_cppflags=""
+libunwind_ldflags=""
+
+if $tsan
+then :
   if test "$system" = "macosx"
 then :
   if test x"$LIBUNWIND_CPPFLAGS" != x -o \
@@ -16515,7 +16561,7 @@ then :
 fi
 
   native_cppflags="$native_cppflags $libunwind_cppflags"
-  oc_tsan_ldflags="$oc_tsan_ldflags $libunwind_ldflags"
+  native_ldflags="$native_ldflags -fsanitize=thread $libunwind_ldflags"
 
 
   SAVED_CPPFLAGS="$CPPFLAGS"
@@ -16538,7 +16584,7 @@ fi
 
   if ! $libunwind_available
 then :
-  as_fn_error $? "libunwind was requested by tsan but can not be found" "$LINENO" 5
+  as_fn_error $? "libunwind is necessary for TSan but cannot be found" "$LINENO" 5
 fi
 
     # We need unwinding information at runtime, but since we use
@@ -19879,7 +19925,7 @@ fi
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
-ocamlc_cflags="$common_cflags $sharedlib_cflags $CFLAGS"
+ocamlc_cflags="$ocamlc_cflags $common_cflags $sharedlib_cflags $CFLAGS"
 ocamlc_cppflags="$common_cppflags $CPPFLAGS"
 
 case $host in #(
@@ -19894,6 +19940,11 @@ case $host in #(
 esac
 
 
+
+if $tsan
+then :
+  cclibs="$cclibs -fsanitize=thread"
+fi
 
 if test x"$libdir" = x'${exec_prefix}/lib'
 then :
