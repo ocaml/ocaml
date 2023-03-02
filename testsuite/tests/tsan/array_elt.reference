@@ -1,0 +1,41 @@
+==================
+WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
+  Read of size 8 at <implemspecific> by thread T4 (mutexes: write M<implemspecific>):
+    #0 camlArray_elt.fun_<implemspecific> <implemspecific> (<implemspecific>)
+    #1 camlStdlib__Domain.body_<implemspecific> <implemspecific> (<implemspecific>)
+
+  Previous write of size 8 at <implemspecific> by thread T1 (mutexes: write M<implemspecific>):
+    #0 camlArray_elt.fun_<implemspecific> <implemspecific> (<implemspecific>)
+    #1 camlStdlib__Domain.body_<implemspecific> <implemspecific> (<implemspecific>)
+
+  Mutex M<implemspecific> (<implemspecific>) created at:
+    #0 pthread_mutex_init <implemspecific> (<implemspecific>)
+    #1 caml_plat_mutex_init <implemspecific> (<implemspecific>)
+    #2 caml_init_domains <implemspecific> (<implemspecific>)
+    #3 caml_init_gc <implemspecific> (<implemspecific>)
+
+  Mutex M<implemspecific> (<implemspecific>) created at:
+    #0 pthread_mutex_init <implemspecific> (<implemspecific>)
+    #1 caml_plat_mutex_init <implemspecific> (<implemspecific>)
+    #2 caml_init_domains <implemspecific> (<implemspecific>)
+    #3 caml_init_gc <implemspecific> (<implemspecific>)
+
+  Thread T4 (tid=<implemspecific>, running) created by main thread at:
+    #0 pthread_create <implemspecific> (<implemspecific>)
+    #1 caml_domain_spawn <implemspecific> (<implemspecific>)
+    #2 caml_c_call <implemspecific> (<implemspecific>)
+    #3 camlStdlib__Domain.spawn_<implemspecific> <implemspecific> (<implemspecific>)
+    #4 camlArray_elt.entry <implemspecific> (<implemspecific>)
+    #5 caml_program <implemspecific> (<implemspecific>)
+
+  Thread T1 (tid=<implemspecific>, running) created by main thread at:
+    #0 pthread_create <implemspecific> (<implemspecific>)
+    #1 caml_domain_spawn <implemspecific> (<implemspecific>)
+    #2 caml_c_call <implemspecific> (<implemspecific>)
+    #3 camlStdlib__Domain.spawn_<implemspecific> <implemspecific> (<implemspecific>)
+    #4 camlArray_elt.entry <implemspecific> (<implemspecific>)
+    #5 caml_program <implemspecific> (<implemspecific>)
+
+SUMMARY: ThreadSanitizer: data race (<systemspecific>:<implemspecific>) in camlArray_elt.fun_<implemspecific>
+==================
+ThreadSanitizer: reported 1 warnings

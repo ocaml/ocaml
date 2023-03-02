@@ -91,3 +91,5 @@ let function_sections = @function_sections@
 let instrumented_runtime = @instrumented_runtime@
 
 let frame_pointers = @frame_pointers@
+
+let tsan = @tsan@
