@@ -3089,7 +3089,10 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
             let alerts = Builtin_attributes.alerts_of_str ast in
             let cmi =
               Env.save_signature ~alerts
-                simple_sg modulename (outputprefix ^ ".cmi")
+                simple_sg
+                ~modname:modulename
+                ~source_file:(sourcefile ^ " (inferred signature)")
+                (outputprefix ^ ".cmi")
             in
             let annots = Cmt_format.Implementation str in
             Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
@@ -3207,7 +3210,7 @@ let package_units initial_env objfiles cmifile modulename =
     if not !Clflags.dont_write_files then begin
       let cmi =
         Env.save_signature_with_imports ~alerts:Misc.Stdlib.String.Map.empty
-          sg modulename
+          sg ~modname:modulename ~source_file:"(obtained by packing)"
           (prefix ^ ".cmi") imports
       in
       Cmt_format.save_cmt (prefix ^ ".cmt")  modulename

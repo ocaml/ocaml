@@ -39,17 +39,20 @@ type cmi_infos = {
     cmi_sign : signature;
     cmi_crcs : crcs;
     cmi_flags : flags;
+    cmi_source_file : string;
 }
 
 let input_cmi ic =
   let (name, sign) = (input_value ic : header) in
   let crcs = (input_value ic : crcs) in
   let flags = (input_value ic : flags) in
+  let cmi_source_file = (input_value ic: string) in
   {
       cmi_name = name;
       cmi_sign = sign;
       cmi_crcs = crcs;
       cmi_flags = flags;
+      cmi_source_file;
     }
 
 let read_cmi filename =
@@ -90,6 +93,7 @@ let output_cmi filename oc cmi =
   let crcs = (cmi.cmi_name, Some crc) :: cmi.cmi_crcs in
   output_value oc (crcs : crcs);
   output_value oc (cmi.cmi_flags : flags);
+  output_value oc (cmi.cmi_source_file : string);
   crc
 
 (* Error report *)

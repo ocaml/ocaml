@@ -76,7 +76,8 @@ let emit_signature info ast tsg =
   let sg =
     let alerts = Builtin_attributes.alerts_of_sig ast in
     Env.save_signature ~alerts tsg.Typedtree.sig_type
-      info.module_name (info.output_prefix ^ ".cmi")
+      ~modname:info.module_name ~source_file:info.source_file
+      (info.output_prefix ^ ".cmi")
   in
   Typemod.save_signature info.module_name tsg
     info.output_prefix info.source_file info.env sg

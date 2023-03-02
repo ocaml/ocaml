@@ -293,7 +293,7 @@ let is_imported {imported_units; _} s =
 let is_imported_opaque {imported_opaque_units; _} s =
   String.Set.mem s !imported_opaque_units
 
-let make_cmi penv modname sign alerts =
+let make_cmi penv ~source_file ~modname sign alerts =
   let flags =
     List.concat [
       if !Clflags.recursive_types then [Cmi_format.Rectypes] else [];
@@ -306,7 +306,8 @@ let make_cmi penv modname sign alerts =
     cmi_name = modname;
     cmi_sign = sign;
     cmi_crcs = crcs;
-    cmi_flags = flags
+    cmi_flags = flags;
+    cmi_source_file = source_file;
   }
 
 let save_cmi penv psig pm =
@@ -317,6 +318,7 @@ let save_cmi penv psig pm =
         cmi_sign = _;
         cmi_crcs = imports;
         cmi_flags = flags;
+        cmi_source_file = _
       } = cmi in
       let crc =
         output_to_file_via_temporary (* see MPR#7472, MPR#4991 *)
