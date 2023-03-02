@@ -42,6 +42,7 @@ let callbacks =
 
 let ()
  =
+  Unix.sleepf 0.1;
   let cursor = Runtime_events.create_cursor None in
   wait_ready ();
   for _ = 0 to 10 do
