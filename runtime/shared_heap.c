@@ -257,6 +257,7 @@ Caml_inline void pool_initialize(pool* r,
 }
 
 /* Allocating an object from a pool */
+CAMLno_tsan /* Disable TSan instrumentation for performance. */
 static intnat pool_sweep(struct caml_heap_state* local,
                          pool**,
                          sizeclass sz ,
