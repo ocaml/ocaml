@@ -22,6 +22,7 @@ open Cmo_format
 type error =
     File_not_found of string
   | Not_an_object_file of string
+  | Link_error of Linkdeps.error
 
 exception Error of error
 
@@ -71,7 +72,7 @@ let copy_object_file oc name =
       Bytelink.check_consistency file_name compunit;
       copy_compunit ic oc compunit;
       close_in ic;
-      [compunit]
+      [name,compunit]
     end else
     if buffer = cma_magic_number then begin
       let toc_pos = input_binary_int ic in
@@ -81,7 +82,7 @@ let copy_object_file oc name =
       add_ccobjs toc;
       List.iter (copy_compunit ic oc) toc.lib_units;
       close_in ic;
-      toc.lib_units
+      List.map (fun u -> name, u) toc.lib_units
     end else
       raise(Error(Not_an_object_file file_name))
   with
@@ -99,8 +100,15 @@ let create_archive file_list lib_name =
        output_binary_int outchan 0;
        let units =
          List.flatten(List.map (copy_object_file outchan) file_list) in
+       let ldeps = Linkdeps.create ~complete:false in
+       List.iter
+         (fun (filename,u) -> Bytelink.linkdeps_unit ldeps ~filename u)
+         (List.rev units);
+       (match Linkdeps.check ldeps with
+        | None -> ()
+        | Some e -> raise (Error (Link_error e)));
        let toc =
-         { lib_units = units;
+         { lib_units = (List.map snd units);
            lib_custom = !Clflags.custom_runtime;
            lib_ccobjs = !Clflags.ccobjs @ !lib_ccobjs;
            lib_ccopts = !Clflags.all_ccopts @ !lib_ccopts;
@@ -122,6 +130,8 @@ let report_error ppf = function
   | Not_an_object_file name ->
       fprintf ppf "The file %a is not a bytecode object file"
         (Style.as_inline_code Location.print_filename) name
+  | Link_error e ->
+      Linkdeps.report_error ~print_filename:Location.print_filename ppf e
 
 let () =
   Location.register_error_of_exn
