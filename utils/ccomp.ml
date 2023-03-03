@@ -38,20 +38,21 @@ let run_command cmdline = ignore(command cmdline)
    between 70000 and 80000 for macOS).
 *)
 
-let build_diversion lst =
+let build_response_file lst =
   let (responsefile, oc) = Filename.open_temp_file "camlresp" "" in
   List.iter (fun f -> Printf.fprintf oc "%s\n" f) lst;
   close_out oc;
   at_exit (fun () -> Misc.remove_file responsefile);
   "@" ^ responsefile
 
-let quote_files lst =
+let quote_files ?(response_files = true) lst =
   let lst = List.filter (fun f -> f <> "") lst in
   let quoted = List.map Filename.quote lst in
   let s = String.concat " " quoted in
-  if String.length s >= 65536
-  || (String.length s >= 4096 && Sys.os_type = "Win32")
-  then build_diversion quoted
+  if response_files &&
+  (String.length s >= 65536
+  || (String.length s >= 4096 && Sys.os_type = "Win32"))
+  then build_response_file quoted
   else s
 
 let quote_prefixed pr lst =
@@ -141,7 +142,8 @@ let create_archive archive file_list =
     | _ ->
         assert(String.length Config.ar > 0);
         command(Printf.sprintf "%s rc %s %s"
-                Config.ar quoted_archive (quote_files file_list))
+                Config.ar quoted_archive
+                (quote_files ~response_files:Config.ar_supports_response_files file_list))
 
 let expand_libname cclibs =
   cclibs |> List.map (fun cclib ->
@@ -207,3 +209,6 @@ let linker_is_flexlink =
      invocations for the native Windows ports and for Cygwin, if shared library
      support is enabled. *)
   Sys.win32 || Config.supports_shared_libraries && Sys.cygwin
+
+let quote_files =
+  quote_files ~response_files:true
