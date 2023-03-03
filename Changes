@@ -284,6 +284,10 @@ Working version
 * #11991: Unix on Windows: map ERROR_TOO_MANY_LINKS to EMLINK.
   (Nicolás Ojeda Bär)
 
+- #12067: Document Windows specific meanings of `Unix.process_status`
+  type
+  (Samuel Hym, review by David Allsopp)
+
 ### Tools:
 
 - #1172: fix ocamlyacc's handling of raw string literals
