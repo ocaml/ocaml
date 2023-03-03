@@ -5986,7 +5986,9 @@ driver/compile_common.cmo : \
     parsing/printast.cmi \
     parsing/pprintast.cmi \
     driver/pparse.cmi \
+    parsing/parsetree.cmi \
     utils/misc.cmi \
+    parsing/location.cmi \
     typing/includemod.cmi \
     typing/env.cmi \
     utils/config.cmi \
@@ -6007,7 +6009,9 @@ driver/compile_common.cmx : \
     parsing/printast.cmx \
     parsing/pprintast.cmx \
     driver/pparse.cmx \
+    parsing/parsetree.cmi \
     utils/misc.cmx \
+    parsing/location.cmx \
     typing/includemod.cmx \
     typing/env.cmx \
     utils/config.cmx \
