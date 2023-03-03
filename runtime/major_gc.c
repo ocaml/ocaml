@@ -522,12 +522,14 @@ static void print_stats (int after, intnat budget)
                " ?? dependent size, "
                " %.3g total extra, "
                " %"ARCH_INTNAT_PRINTF_FORMAT"d total work done, "
+               " %.2g work/alloc, "
                " %"ARCH_INTNAT_PRINTF_FORMAT"d slice %s, "
                " %s",
                total_alloc, caml_heap_size(dom_st->shared_heap),
                total_dependent,
                total_extra,
                total_work_done,
+               (double) total_work_done / (double) total_alloc,
                budget,
                after ? "done" : "budget",
                domain_accounts[dom_st->id].is_active ? "active" : "inactive");
