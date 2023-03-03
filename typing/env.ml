@@ -877,11 +877,13 @@ let components_of_module ~alerts ~uid env ps path addr mty shape =
     }
   }
 
-let sign_of_cmi ~freshen { Persistent_env.Persistent_signature.cmi; _ } =
+let name_and_sign_of_cmi ~freshen
+    { Persistent_env.Persistent_signature.cmi; _ } =
   let name = cmi.cmi_name in
   let sign = cmi.cmi_sign in
   let flags = cmi.cmi_flags in
   let id = Ident.create_persistent name in
+  let source_file = cmi.cmi_source_file in
   let path = Pident id in
   let alerts =
     List.fold_left (fun acc -> function Alerts s -> s | _ -> acc)
@@ -912,6 +914,7 @@ let sign_of_cmi ~freshen { Persistent_env.Persistent_signature.cmi; _ } =
       empty Subst.identity
       path mda_address mty mda_shape
   in
+  source_file,
   {
     mda_declaration;
     mda_components;
@@ -919,12 +922,15 @@ let sign_of_cmi ~freshen { Persistent_env.Persistent_signature.cmi; _ } =
     mda_shape;
   }
 
-let read_sign_of_cmi = sign_of_cmi ~freshen:true
+let read_sign_of_cmi = name_and_sign_of_cmi ~freshen:true
 
-let save_sign_of_cmi = sign_of_cmi ~freshen:false
+let save_sign_of_cmi x = snd @@ name_and_sign_of_cmi ~freshen:false x
 
-let persistent_env : module_data Persistent_env.t ref =
+let persistent_env : (string * module_data) Persistent_env.t ref =
   s_table Persistent_env.empty ()
+
+let find_mod_in_cache id =
+  Option.map snd @@ Persistent_env.find_in_cache !persistent_env id
 
 let without_cmis f x =
   Persistent_env.without_cmis !persistent_env f x
@@ -938,7 +944,7 @@ let read_pers_mod modname filename =
   Persistent_env.read !persistent_env read_sign_of_cmi modname filename
 
 let find_pers_mod name =
-  Persistent_env.find !persistent_env read_sign_of_cmi name
+  snd @@ Persistent_env.find !persistent_env read_sign_of_cmi name
 
 let check_pers_mod ~loc name =
   Persistent_env.check !persistent_env read_sign_of_cmi ~loc name
@@ -1505,7 +1511,7 @@ let iter_env wrap proj1 proj2 f env () =
            iter_components (Pident id) path data.mda_components
        | Mod_persistent ->
            let modname = Ident.name id in
-           match Persistent_env.find_in_cache !persistent_env modname with
+           match find_mod_in_cache modname with
            | None -> ()
            | Some data ->
                iter_components (Pident id) path data.mda_components)
@@ -1813,7 +1819,8 @@ let rec components_of_module_maker
               { mda_declaration = md';
                 mda_components = comps;
                 mda_address = addr;
-                mda_shape = shape; }
+                mda_shape = shape;
+              }
             in
             c.comp_modules <-
               NameMap.add (Ident.name id) mda c.comp_modules;
@@ -2507,10 +2514,10 @@ let open_signature
 
 (* Read a signature from a file *)
 let read_signature modname filename =
-  let mda = read_pers_mod modname filename in
+  let name, mda = read_pers_mod modname filename in
   let md = Subst.Lazy.force_module_decl mda.mda_declaration in
   match md.md_type with
-  | Mty_signature sg -> sg
+  | Mty_signature sg -> name, sg
   | Mty_ident _ | Mty_functor _ | Mty_alias _ -> assert false
 
 let is_identchar_latin1 = function
@@ -2549,7 +2556,7 @@ let save_signature_with_transform cmi_transform ~alerts sg
   let pm = save_sign_of_cmi
       { Persistent_env.Persistent_signature.cmi; filename } in
   Persistent_env.save_cmi !persistent_env
-    { Persistent_env.Persistent_signature.filename; cmi } pm;
+    { Persistent_env.Persistent_signature.filename; cmi } (source_file, pm);
   cmi
 
 let save_signature ~alerts sg ~source_file ~modname filename =
@@ -3363,7 +3370,7 @@ let fold_modules f lid env acc =
                in
                f name p md acc
            | Mod_persistent ->
-               match Persistent_env.find_in_cache !persistent_env name with
+               match find_mod_in_cache name with
                | None -> acc
                | Some mda ->
                    let md =
@@ -3427,7 +3434,7 @@ let filter_non_loaded_persistent f env =
          | Mod_local _ -> acc
          | Mod_unbound _ -> acc
          | Mod_persistent ->
-             match Persistent_env.find_in_cache !persistent_env name with
+             match find_mod_in_cache name with
              | Some _ -> acc
              | None ->
                  if f (Ident.create_persistent name) then
