@@ -618,6 +618,9 @@ Working version
   types.
   (Chris Casinghino, review by Gabriel Scherer)
 
+- #12046: Flush stderr when tracing the parser
+  (Hugo Heuzard, review by David Allsopp and Nicolás Ojeda Bär)
+
 OCaml 5.0.0 (15 December 2022)
 ------------------------------
 
