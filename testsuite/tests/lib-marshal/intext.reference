@@ -1,3 +1,4 @@
+Default flags
 Test 1 passed.
 Test 2 passed.
 Test 3 passed.
@@ -37,6 +38,7 @@ Test 36 passed.
 Test 37 passed.
 Test 38 passed.
 Test 39 passed.
+Default flags (again)
 Test 1 passed.
 Test 2 passed.
 Test 3 passed.
@@ -76,6 +78,47 @@ Test 36 passed.
 Test 37 passed.
 Test 38 passed.
 Test 39 passed.
+[Compression] flags
+Test 1 passed.
+Test 2 passed.
+Test 3 passed.
+Test 4 passed.
+Test 5 passed.
+Test 6 passed.
+Test 7 passed.
+Test 8 passed.
+Test 9 passed.
+Test 10 passed.
+Test 11 passed.
+Test 12 passed.
+Test 13 passed.
+Test 14 passed.
+Test 15 passed.
+Test 16 passed.
+Test 17 passed.
+Test 18 passed.
+Test 19 passed.
+Test 20 passed.
+Test 21 passed.
+Test 22 passed.
+Test 23 passed.
+Test 24 passed.
+Test 25 passed.
+Test 26 passed.
+Test 27 passed.
+Test 28 passed.
+Test 29 passed.
+Test 30 passed.
+Test 31 passed.
+Test 32 passed.
+Test 33 passed.
+Test 34 passed.
+Test 35 passed.
+Test 36 passed.
+Test 37 passed.
+Test 38 passed.
+Test 39 passed.
+Marshal.to_string
 Test 101 passed.
 Test 102 passed.
 Test 103 passed.
@@ -99,6 +142,7 @@ Test 120 passed.
 Test 121 passed.
 Test 122 passed.
 Test 123 passed.
+Marshal.to_buffer
 Test 201 passed.
 Test 202 passed.
 Test 203 passed.
@@ -122,7 +166,16 @@ Test 220 passed.
 Test 221 passed.
 Test 222 passed.
 Test 223 passed.
+Marshal.{header_size,data_size}
 Test 300 passed.
+Test 301 passed.
+Test 310 passed.
+Test 311 passed.
+Test 312 passed.
+Test 320 passed.
+Test 321 passed.
+Test 322 passed.
+Marshaling to a block
 Test 401 passed.
 Test 402 passed.
 Test 403 passed.
@@ -147,6 +200,7 @@ Test 421 passed.
 Test 422 passed.
 Test 423 passed.
 Test 424 passed.
+Miscellaneous tests
 Test 425 passed.
 Test 426 passed.
 Test 500 passed.

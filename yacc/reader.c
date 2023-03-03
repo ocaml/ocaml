@@ -50,6 +50,14 @@ bucket **plhs;
 int name_pool_size;
 char *name_pool;
 
+static int safe_putc(int x, FILE *f) {
+    return f == NULL ? x : putc(x, f);
+}
+
+static size_t safe_fwrite(void *ptr, size_t nmemb, FILE *f) {
+    return f == NULL ? nmemb : fwrite(ptr, 1, nmemb, f);
+}
+
 static unsigned char caml_ident_start[32] =
 "\000\000\000\000\000\000\000\000\376\377\377\207\376\377\377\007\000\000\000\000\000\000\000\000\377\377\177\377\377\377\177\377";
 static unsigned char caml_ident_body[32] =
@@ -181,7 +189,7 @@ static void skip_comment(void)
         {
             get_line();
             if (line == 0)
-                unterminated_comment(st_lineno, st_line, st_cptr);
+                unterminated_comment(st_lineno, st_line, st_cptr, '/');
             s = cptr;
         }
         else
@@ -199,7 +207,7 @@ static void process_quoted_string(char c, FILE *const f)
     for (;;)
     {
         c = *cptr++;
-        putc(c, f);
+        safe_putc(c, f);
         if (c == quote)
         {
             FREE(s_line);
@@ -210,7 +218,7 @@ static void process_quoted_string(char c, FILE *const f)
         if (c == '\\')
         {
             c = *cptr++;
-            putc(c, f);
+            safe_putc(c, f);
             if (c == '\n')
             {
                 get_line();
@@ -224,14 +232,14 @@ static void process_quoted_string(char c, FILE *const f)
 static int process_apostrophe(FILE *const f)
 {
     if (cptr[0] != 0 && cptr[0] != '\\' && cptr[1] == '\'') {
-        fwrite(cptr, 1, 2, f);
+        safe_fwrite(cptr, 2, f);
         cptr += 2;
     } else if (cptr[0] == '\\'
             && (isdigit((unsigned char) cptr[1]) || cptr[1] == 'x')
             && isdigit((unsigned char) cptr[2])
             && isdigit((unsigned char) cptr[3])
             && cptr[4] == '\'') {
-        fwrite(cptr, 1, 5, f);
+        safe_fwrite(cptr, 5, f);
         cptr += 5;
     } else if (cptr[0] == '\\'
             && cptr[1] == 'o'
@@ -239,10 +247,10 @@ static int process_apostrophe(FILE *const f)
             && cptr[3] >= '0' && cptr[3] <= '7'
             && cptr[4] >= '0' && cptr[4] <= '7'
             && cptr[5] == '\'') {
-        fwrite(cptr, 1, 6, f);
+        safe_fwrite(cptr, 6, f);
         cptr += 6;
     } else if (cptr[0] == '\\' && cptr[2] == '\'') {
-        fwrite(cptr, 1, 3, f);
+        safe_fwrite(cptr, 3, f);
         cptr += 3;
     } else {
         return 0;
@@ -254,8 +262,8 @@ static void process_apostrophe_body(FILE *f)
 {
     if (!process_apostrophe(f)) {
         while (In_bitmap(caml_ident_body, *cptr)) {
-           putc(*cptr, f);
-           cptr++;
+            putc(*cptr, f);
+            cptr++;
         }
     }
 }
@@ -304,7 +312,7 @@ static void process_open_curly_bracket(FILE *f) {
             memcpy(buf, idcptr, size);
             buf[size] = '}';
             buf[size + 1] = '\0';
-            fwrite(cptr, 1, newcptr - cptr + 1, f);
+            safe_fwrite(cptr, newcptr - cptr + 1, f);
             cptr = newcptr + 1;
             s_lineno = lineno;
             s_line = dup_line();
@@ -313,7 +321,7 @@ static void process_open_curly_bracket(FILE *f) {
             for (;;)
             {
                 char c = *cptr++;
-                putc(c, f);
+                safe_putc(c, f);
                 if (c == '|')
                 {
                     int match = 1;
@@ -327,7 +335,7 @@ static void process_open_curly_bracket(FILE *f) {
                     if (match) {
                         FREE(s_line);
                         FREE(buf);
-                        fwrite(cptr, 1, size, f);
+                        safe_fwrite(cptr, size, f);
                         cptr += size;
                         return;
                     }
@@ -355,12 +363,12 @@ static void process_comment(FILE *const f) {
         char *c_line = dup_line();
         char *c_cptr = c_line + (cptr - line - 1);
 
-        putc('*', f);
+        safe_putc('*', f);
         ++cptr;
         for (;;)
         {
             c = *cptr++;
-            putc(c, f);
+            safe_putc(c, f);
 
             switch (c)
             {
@@ -377,7 +385,7 @@ static void process_comment(FILE *const f) {
             case '\n':
                 get_line();
                 if (line == 0)
-                    unterminated_comment(c_lineno, c_line, c_cptr);
+                    unterminated_comment(c_lineno, c_line, c_cptr, '(');
                 continue;
             case '(':
                 if (*cptr == '*') ++depth;
@@ -393,7 +401,10 @@ static void process_comment(FILE *const f) {
                 continue;
             default:
                 if (In_bitmap(caml_ident_start, c)) {
-                  while (In_bitmap(caml_ident_body, *cptr)) putc(*cptr++, f);
+                    while (In_bitmap(caml_ident_body, *cptr)) {
+                        safe_putc(*cptr, f);
+                        cptr++;
+                    }
                 }
                 continue;
             }
@@ -486,7 +497,16 @@ nextc(void)
         case '\\':
             cptr = s;
             return ('%');
-
+        case '(':
+            if (s[1] == '*') {
+                cptr = s + 1;
+                process_comment(NULL);
+                s = cptr + 1;
+                break;
+            } else {
+                cptr = s;
+                return (*s);
+            }
         case '/':
             if (s[1] == '*')
             {
@@ -747,7 +767,7 @@ get_tag(void)
 static void
 declare_tokens(int assoc)
 {
-    int c;
+    int c, column;
     bucket *bp;
     char *tag = 0;
 
@@ -757,6 +777,7 @@ declare_tokens(int assoc)
     if (c == EOF) unexpected_EOF();
     if (c == '<')
     {
+        column = cptr - line + 1;
         tag = get_tag();
         c = nextc();
         if (c == EOF) unexpected_EOF();
@@ -784,6 +805,10 @@ declare_tokens(int assoc)
         if (assoc == TOKEN)
         {
             bp->true_token = 1;
+            if (tag) {
+                bp->lineno = lineno;
+                bp->column = column;
+            }
         }
         else
         {
@@ -901,10 +926,12 @@ read_declarations(void)
         }
     }
 }
+static int infline = 1;
 
 static void output_token_type(void)
 {
   bucket * bp;
+  int i;
 
   fprintf(interface_file, "type token =\n");
   if (!rflag) ++outline;
@@ -916,15 +943,25 @@ static void output_token_type(void)
       if (bp->tag) {
         /* Print the type expression in parentheses to make sure
            that the constructor is unary */
-        fprintf(interface_file, " of (%s)", bp->tag);
-        fprintf(output_file, " of (%s)", bp->tag);
+        fprintf(output_file, " of (\n" line_format, bp->lineno, input_file_name_disp);
+        fprintf(interface_file, " of (\n" line_format, bp->lineno, input_file_name_disp);
+        for (i = 0; i < bp->column; i++) {
+            fputc(' ', interface_file);
+            fputc(' ', output_file);
+        }
+        fprintf(interface_file, "%s\n" line_format ")", bp->tag, infline + 5, interface_file_name_disp);
+        fprintf(output_file, "%s\n" line_format ")", bp->tag, outline + 5, code_file_name_disp);
+        infline += 4;
+        if (!rflag) outline += 4;
       }
       fprintf(interface_file, "\n");
+      infline++;
       if (!rflag) ++outline;
       fprintf(output_file, "\n");
     }
   }
   fprintf(interface_file, "\n");
+  infline++;
   if (!rflag) ++outline;
   fprintf(output_file, "\n");
 }

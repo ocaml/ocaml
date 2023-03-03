@@ -19,7 +19,7 @@
 
 char *header[] =
 {
-  "open Parsing;;",
+  "open Parsing",
   "let _ = parse_error;;", /* avoid warning 33 (PR#5719) */
   0
 };

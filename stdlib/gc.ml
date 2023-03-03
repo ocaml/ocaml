@@ -109,7 +109,7 @@ type alarm_rec = {active : alarm; f : unit -> unit}
 let rec call_alarm arec =
   if Atomic.get arec.active then begin
     let finally () = finalise call_alarm arec in
-    Fun.protect arec.f ~finally
+    Fun.protect ~finally arec.f
   end
 
 

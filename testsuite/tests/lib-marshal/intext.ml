@@ -26,49 +26,52 @@ let bigint = Int64.to_int 0x123456789ABCDEF0L
 let rec fib n =
   if n < 2 then 1 else fib(n-1) + fib(n-2)
 
-let test_out filename =
+let test_out ?(flags = []) filename =
   let oc = open_out_bin filename in
-  output_value oc 1;
-  output_value oc (-1);
-  output_value oc 258;
-  output_value oc 20000;
-  output_value oc 0x12345678;
-  output_value oc bigint;
-  output_value oc "foobargeebuz";
-  output_value oc longstring;
-  output_value oc verylongstring;
-  output_value oc 3.141592654;
-  output_value oc ();
-  output_value oc A;
-  output_value oc (B 1);
-  output_value oc (C 2.718);
-  output_value oc (D "hello, world!");
-  output_value oc (E 'l');
-  output_value oc (F(B 1));
-  output_value oc (G(A, G(B 2, G(C 3.14, G(D "glop", E 'e')))));
-  output_value oc (H(1, A));
-  output_value oc (I(B 2, 1e-6));
+  Marshal.to_channel oc 1 flags;
+  Marshal.to_channel oc (-1) flags;
+  Marshal.to_channel oc 258 flags;
+  Marshal.to_channel oc 20000 flags;
+  Marshal.to_channel oc 0x12345678 flags;
+  Marshal.to_channel oc bigint flags;
+  Marshal.to_channel oc "foobargeebuz" flags;
+  Marshal.to_channel oc longstring flags;
+  Marshal.to_channel oc verylongstring flags;
+  Marshal.to_channel oc 3.141592654 flags;
+  Marshal.to_channel oc () flags;
+  Marshal.to_channel oc A flags;
+  Marshal.to_channel oc (B 1) flags;
+  Marshal.to_channel oc (C 2.718) flags;
+  Marshal.to_channel oc (D "hello, world!") flags;
+  Marshal.to_channel oc (E 'l') flags;
+  Marshal.to_channel oc (F(B 1)) flags;
+  Marshal.to_channel oc (G(A, G(B 2, G(C 3.14, G(D "glop", E 'e'))))) flags;
+  Marshal.to_channel oc (H(1, A)) flags;
+  Marshal.to_channel oc (I(B 2, 1e-6)) flags;
   let x = D "sharing" in
   let y = G(x, x) in
   let z = G(y, G(x, y)) in
-  output_value oc z;
-  output_value oc [|1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16|];
+  Marshal.to_channel oc z flags;
+  Marshal.to_channel oc [|1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16|] flags;
   let rec big n = if n <= 0 then A else H(n, big(n-1)) in
-  output_value oc (big 1000);
-  Marshal.to_channel oc y [Marshal.No_sharing];
-  Marshal.to_channel oc fib [Marshal.Closures];
-  output_value oc (Int32.of_string "0");
-  output_value oc (Int32.of_string "123456");
-  output_value oc (Int32.of_string "-123456");
-  output_value oc (Int64.of_string "0");
-  output_value oc (Int64.of_string "123456789123456");
-  output_value oc (Int64.of_string "-123456789123456");
-  output_value oc (Nativeint.of_string "0");
-  output_value oc (Nativeint.of_string "123456");
-  output_value oc (Nativeint.of_string "-123456");
-  output_value oc (Nativeint.shift_left (Nativeint.of_string "123456789") 32);
-  output_value oc (Nativeint.shift_left (Nativeint.of_string "-123456789") 32);
-  let i = Int64.of_string "123456789123456" in output_value oc (i,i);
+  Marshal.to_channel oc (big 1000) flags;
+  Marshal.to_channel oc y (Marshal.No_sharing :: flags);
+  Marshal.to_channel oc fib (Marshal.Closures :: flags);
+  Marshal.to_channel oc (Int32.of_string "0") flags;
+  Marshal.to_channel oc (Int32.of_string "123456") flags;
+  Marshal.to_channel oc (Int32.of_string "-123456") flags;
+  Marshal.to_channel oc (Int64.of_string "0") flags;
+  Marshal.to_channel oc (Int64.of_string "123456789123456") flags;
+  Marshal.to_channel oc (Int64.of_string "-123456789123456") flags;
+  Marshal.to_channel oc (Nativeint.of_string "0") flags;
+  Marshal.to_channel oc (Nativeint.of_string "123456") flags;
+  Marshal.to_channel oc (Nativeint.of_string "-123456") flags;
+  Marshal.to_channel oc
+    (Nativeint.shift_left (Nativeint.of_string "123456789") 32) flags;
+  Marshal.to_channel oc
+    (Nativeint.shift_left (Nativeint.of_string "-123456789") 32) flags;
+  let i = Int64.of_string "123456789123456" in
+    Marshal.to_channel oc (i,i) flags;
   close_out oc
 
 
@@ -238,7 +241,6 @@ let test_string () =
 
 let marshal_to_buffer s start len v flags =
   ignore (Marshal.to_buffer s start len v flags)
-;;
 
 let test_buffer () =
   let s = Bytes.create 512 in
@@ -317,9 +319,30 @@ let test_buffer () =
     (try marshal_to_buffer s 0 512 (big 1000) []; false
      with Failure s when s = "Marshal.to_buffer: buffer overflow" -> true)
 
+(* Test bounds checking and the [Marshal.data_size] primitive *)
+
 let test_size() =
-  let s = Marshal.to_bytes (G(A, G(B 2, G(C 3.14, G(D "glop", E 'e'))))) [] in
-  test 300 (Marshal.header_size + Marshal.data_size s 0 = Bytes.length s)
+  let test_one n flags =
+    let s =
+      Marshal.to_bytes (G(A, G(B 2, G(C 3.14, G(D "glop", E 'e'))))) flags in
+    test n (Marshal.header_size + Marshal.data_size s 0 = Bytes.length s) in
+  test_one 300 [];
+  test_one 301 [Marshal.Compression]
+
+let test_bounds_checking () =
+  let test_one n v flags =
+    let s = Marshal.to_string v flags in
+    assert (String.length s > 20);
+    test n
+      (try ignore (Marshal.from_string (String.sub s 0 10) 0); false
+       with Invalid_argument _ -> true);
+    test (n+1)
+      (try ignore (Marshal.from_string (String.sub s 0 20) 0); false
+       with Invalid_argument _ -> true);
+    test (n+2)
+      (Marshal.from_string (s ^ "silly padding") 0 = v) in
+  test_one 310 longstring [];
+  test_one 320 longstring [Marshal.Compression]
 
 external marshal_to_block : int -> 'a -> Marshal.extern_flags list -> unit
                           = "marshal_to_block"
@@ -591,12 +614,22 @@ let test_buggy_serialisers () =
 
 let main() =
   if Array.length Sys.argv <= 2 then begin
+    print_string "Default flags\n";
     test_out "intext.data"; test_in "intext.data";
+    print_string "Default flags (again)\n";
     test_out "intext.data"; test_in "intext.data";
+    print_string "[Compression] flags\n";
+    test_out ~flags:[Marshal.Compression] "intext.data"; test_in "intext.data";
+    print_string "Marshal.to_string\n";
     test_string();
+    print_string "Marshal.to_buffer\n";
     test_buffer();
+    print_string "Marshal.{header_size,data_size}\n";
     test_size();
+    test_bounds_checking();
+    print_string "Marshaling to a block\n";
     test_block();
+    print_string "Miscellaneous tests\n";
     test_deep();
     test_objects();
     test_infix ();

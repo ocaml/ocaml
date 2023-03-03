@@ -198,7 +198,15 @@ type process_status = Unix.process_status =
            signal number. *)
 (** The termination status of a process.  See module {!Sys} for the
     definitions of the standard signal numbers.  Note that they are
-    not the numbers used by the OS. *)
+    not the numbers used by the OS.
+
+    On Windows: only [WEXITED] is used (as there are no inter-process signals)
+    but with specific return codes to indicate special termination causes.
+    Look for [NTSTATUS] values in the Windows documentation to decode such error
+    return codes. In particular, [STATUS_ACCESS_VIOLATION] error code
+    is the 32-bit [0xC0000005]: as [Int32.of_int 0xC0000005] is
+    [-1073741819], [WEXITED -1073741819] is the Windows equivalent of
+    [WSIGNALED Sys.sigsegv]. *)
 
 
 type wait_flag = Unix.wait_flag =
