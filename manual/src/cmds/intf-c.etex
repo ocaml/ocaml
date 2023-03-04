@@ -573,28 +573,25 @@ default is the boxed representation.
 
 \subsection{ss:c-arrays}{Arrays}
 
-Arrays of integers and pointers are represented like tuples,
+Arrays of integers and pointers are represented like tuples and records,
 that is, as pointers to blocks tagged~0.  They are accessed with the
 "Field" macro for reading and the "caml_modify" function for writing.
 
-Arrays of floating-point numbers (type "float array")
-have a special, unboxed, more efficient representation.
-These arrays are represented by pointers to blocks with tag
-"Double_array_tag".  They should be accessed with the "Double_array_field"
-and "Store_double_array_field" macros.
-
-The special representation of "float array" necessitates an extra runtime check
-in most polymorphic array operations. To avoid this penalty, a dedicated type
-"floatarray" is also available which enjoys the special representation
-unconditionally. Values of type "floatarray", as well as records consisting
-solely of floats, should be accessed using the "Double_flat_field" and
+Values of type "floatarray" (as manipulated by the "Float.Array"
+module), as well as records whose declaration contains only float
+fields, use an efficient unboxed representation: blocks whose content
+consist of raw double values, which are not themselves valid OCaml
+values. They should be accessed using the "Double_flat_field" and
 "Store_double_flat_field" macros.
 
-While currently "float array" and "floatarray" enjoy the same unboxed
-representation, it is possible to revert "float array" to its natural unboxed
-representation by passing the "--disable-flat-float-array" flag to the
-"configure" script (in this case, values of type "float array" will be
-tagged~0). The above macros will continue to work in either case.
+Finally, arrays of type "float array" may use either the boxed or the
+unboxed representation depending on the how the compiler is
+configured. They currently use the unboxed representation by default,
+but can be made to use the boxed representation by passing the
+"--disable-flat-float-array" flag to the `configure` script. They should
+be accessed using the "Double_array_field" and
+"Store_double_array_field" macros, which will work correctly under both
+modes.
 
 \subsection{ss:c-concrete-datatypes}{Concrete data types}
 
