@@ -579,10 +579,10 @@ that is, as pointers to blocks tagged~0.  They are accessed with the
 
 Values of type "floatarray" (as manipulated by the "Float.Array"
 module), as well as records whose declaration contains only float
-fields, use an efficient unboxed representation: blocks whose content
-consist of raw double values, which are not themselves valid OCaml
-values. They should be accessed using the "Double_flat_field" and
-"Store_double_flat_field" macros.
+fields, use an efficient unboxed representation: blocks with tag
+"Double_array_tag" whose content consist of raw double values, which are
+not themselves valid OCaml values. They should be accessed using the
+"Double_flat_field" and "Store_double_flat_field" macros.
 
 Finally, arrays of type "float array" may use either the boxed or the
 unboxed representation depending on the how the compiler is
