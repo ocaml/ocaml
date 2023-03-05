@@ -648,8 +648,6 @@ let string_of_fmt fmt =
 (******************************************************************************)
                           (* Type extraction *)
 
-type (_, _) eq = Refl : ('a, 'a) eq
-
 (* Invariant: this function is the identity on values.
 
    In particular, if (ty1, ty2) have equal values, then
@@ -682,97 +680,97 @@ let rec symm : type a1 b1 c1 d1 e1 f1 a2 b2 c2 d2 e2 f2 .
 let rec fmtty_rel_det : type a1 b c d1 e1 f1 a2 d2 e2 f2 .
   (a1, b, c, d1, e1, f1,
    a2, b, c, d2, e2, f2) fmtty_rel ->
-    ((f1, f2) eq -> (a1, a2) eq)
-  * ((a1, a2) eq -> (f1, f2) eq)
-  * ((e1, e2) eq -> (d1, d2) eq)
-  * ((d1, d2) eq -> (e1, e2) eq)
+    ((f1, f2) Type.eq -> (a1, a2) Type.eq)
+  * ((a1, a2) Type.eq -> (f1, f2) Type.eq)
+  * ((e1, e2) Type.eq -> (d1, d2) Type.eq)
+  * ((d1, d2) Type.eq -> (e1, e2) Type.eq)
 = function
   | End_of_fmtty ->
-    (fun Refl -> Refl),
-    (fun Refl -> Refl),
-    (fun Refl -> Refl),
-    (fun Refl -> Refl)
+    (fun Type.Equal -> Type.Equal),
+    (fun Type.Equal -> Type.Equal),
+    (fun Type.Equal -> Type.Equal),
+    (fun Type.Equal -> Type.Equal)
   | Char_ty rest ->
     let fa, af, ed, de = fmtty_rel_det rest in
-    (fun Refl -> let Refl = fa Refl in Refl),
-    (fun Refl -> let Refl = af Refl in Refl),
+    (fun Type.Equal -> let Type.Equal = fa Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = af Type.Equal in Type.Equal),
     ed, de
   | String_ty rest ->
     let fa, af, ed, de = fmtty_rel_det rest in
-    (fun Refl -> let Refl = fa Refl in Refl),
-    (fun Refl -> let Refl = af Refl in Refl),
+    (fun Type.Equal -> let Type.Equal = fa Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = af Type.Equal in Type.Equal),
     ed, de
   | Int_ty rest ->
     let fa, af, ed, de = fmtty_rel_det rest in
-    (fun Refl -> let Refl = fa Refl in Refl),
-    (fun Refl -> let Refl = af Refl in Refl),
+    (fun Type.Equal -> let Type.Equal = fa Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = af Type.Equal in Type.Equal),
     ed, de
   | Int32_ty rest ->
     let fa, af, ed, de = fmtty_rel_det rest in
-    (fun Refl -> let Refl = fa Refl in Refl),
-    (fun Refl -> let Refl = af Refl in Refl),
+    (fun Type.Equal -> let Type.Equal = fa Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = af Type.Equal in Type.Equal),
     ed, de
   | Int64_ty rest ->
     let fa, af, ed, de = fmtty_rel_det rest in
-    (fun Refl -> let Refl = fa Refl in Refl),
-    (fun Refl -> let Refl = af Refl in Refl),
+    (fun Type.Equal -> let Type.Equal = fa Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = af Type.Equal in Type.Equal),
     ed, de
   | Nativeint_ty rest ->
     let fa, af, ed, de = fmtty_rel_det rest in
-    (fun Refl -> let Refl = fa Refl in Refl),
-    (fun Refl -> let Refl = af Refl in Refl),
+    (fun Type.Equal -> let Type.Equal = fa Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = af Type.Equal in Type.Equal),
     ed, de
   | Float_ty rest ->
     let fa, af, ed, de = fmtty_rel_det rest in
-    (fun Refl -> let Refl = fa Refl in Refl),
-    (fun Refl -> let Refl = af Refl in Refl),
+    (fun Type.Equal -> let Type.Equal = fa Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = af Type.Equal in Type.Equal),
     ed, de
   | Bool_ty rest ->
     let fa, af, ed, de = fmtty_rel_det rest in
-    (fun Refl -> let Refl = fa Refl in Refl),
-    (fun Refl -> let Refl = af Refl in Refl),
+    (fun Type.Equal -> let Type.Equal = fa Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = af Type.Equal in Type.Equal),
     ed, de
 
   | Theta_ty rest ->
     let fa, af, ed, de = fmtty_rel_det rest in
-    (fun Refl -> let Refl = fa Refl in Refl),
-    (fun Refl -> let Refl = af Refl in Refl),
+    (fun Type.Equal -> let Type.Equal = fa Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = af Type.Equal in Type.Equal),
     ed, de
   | Alpha_ty rest ->
     let fa, af, ed, de = fmtty_rel_det rest in
-    (fun Refl -> let Refl = fa Refl in Refl),
-    (fun Refl -> let Refl = af Refl in Refl),
+    (fun Type.Equal -> let Type.Equal = fa Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = af Type.Equal in Type.Equal),
     ed, de
   | Any_ty rest ->
     let fa, af, ed, de = fmtty_rel_det rest in
-    (fun Refl -> let Refl = fa Refl in Refl),
-    (fun Refl -> let Refl = af Refl in Refl),
+    (fun Type.Equal -> let Type.Equal = fa Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = af Type.Equal in Type.Equal),
     ed, de
   | Reader_ty rest ->
     let fa, af, ed, de = fmtty_rel_det rest in
-    (fun Refl -> let Refl = fa Refl in Refl),
-    (fun Refl -> let Refl = af Refl in Refl),
-    (fun Refl -> let Refl = ed Refl in Refl),
-    (fun Refl -> let Refl = de Refl in Refl)
+    (fun Type.Equal -> let Type.Equal = fa Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = af Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = ed Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = de Type.Equal in Type.Equal)
   | Ignored_reader_ty rest ->
     let fa, af, ed, de = fmtty_rel_det rest in
-    (fun Refl -> let Refl = fa Refl in Refl),
-    (fun Refl -> let Refl = af Refl in Refl),
-    (fun Refl -> let Refl = ed Refl in Refl),
-    (fun Refl -> let Refl = de Refl in Refl)
+    (fun Type.Equal -> let Type.Equal = fa Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = af Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = ed Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = de Type.Equal in Type.Equal)
   | Format_arg_ty (_ty, rest) ->
     let fa, af, ed, de = fmtty_rel_det rest in
-    (fun Refl -> let Refl = fa Refl in Refl),
-    (fun Refl -> let Refl = af Refl in Refl),
+    (fun Type.Equal -> let Type.Equal = fa Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = af Type.Equal in Type.Equal),
     ed, de
   | Format_subst_ty (ty1, ty2, rest) ->
     let fa, af, ed, de = fmtty_rel_det rest in
     let ty = trans (symm ty1) ty2 in
     let ag, ga, dj, jd = fmtty_rel_det ty in
-    (fun Refl -> let Refl = fa Refl in let Refl = ag Refl in Refl),
-    (fun Refl -> let Refl = ga Refl in let Refl = af Refl in Refl),
-    (fun Refl -> let Refl = ed Refl in let Refl = dj Refl in Refl),
-    (fun Refl -> let Refl = jd Refl in let Refl = de Refl in Refl)
+    (fun Type.Equal -> let Type.Equal = fa Type.Equal in let Type.Equal = ag Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = ga Type.Equal in let Type.Equal = af Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = ed Type.Equal in let Type.Equal = dj Type.Equal in Type.Equal),
+    (fun Type.Equal -> let Type.Equal = jd Type.Equal in let Type.Equal = de Type.Equal in Type.Equal)
 
 (* Precondition: we assume that the two fmtty_rel arguments have equal
    values (at possibly distinct types); this invariant comes from the way
@@ -840,8 +838,8 @@ and trans : type
     Format_subst_ty (ty21, ty22, rest2) ->
     let ty = trans (symm ty12) ty21 in
     let _, f2, _, f4 = fmtty_rel_det ty in
-    let Refl = f2 Refl in
-    let Refl = f4 Refl in
+    let Type.Equal = f2 Type.Equal in
+    let Type.Equal = f4 Type.Equal in
     Format_subst_ty (ty11, ty22, trans rest1 rest2)
   | Format_subst_ty _, _ -> assert false
   | _, Format_subst_ty _ -> assert false
@@ -1264,8 +1262,8 @@ fun sub_fmtty fmt fmtty -> match sub_fmtty, fmtty with
     then raise Type_mismatch;
     let sub_fmtty' = trans (symm sub1_fmtty') sub2_fmtty' in
     let _, f2, _, f4 = fmtty_rel_det sub_fmtty' in
-    let Refl = f2 Refl in
-    let Refl = f4 Refl in
+    let Type.Equal = f2 Type.Equal in
+    let Type.Equal = f4 Type.Equal in
     let Fmtty_fmt_EBB (sub_fmtty_rest', fmt') =
       type_ignored_format_substitution (erase_rel sub_fmtty_rest) fmt fmtty_rest
     in
