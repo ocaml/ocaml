@@ -486,7 +486,7 @@ let rec transl env e =
             bigarray_get unsafe elt_kind layout
               (transl env arg1) (List.map (transl env) argl) dbg in
           begin match elt_kind with
-            Pbigarray_float32 | Pbigarray_float64 -> box_float dbg elt
+            Pbigarray_float16 | Pbigarray_float32 | Pbigarray_float64 -> box_float dbg elt
           | Pbigarray_complex32 | Pbigarray_complex64 -> elt
           | Pbigarray_int32 -> box_int dbg Pint32 elt
           | Pbigarray_int64 -> box_int dbg Pint64 elt
@@ -502,7 +502,7 @@ let rec transl env e =
             (transl env arg1)
             (List.map (transl env) argidx)
             (match elt_kind with
-              Pbigarray_float32 | Pbigarray_float64 ->
+              Pbigarray_float16 | Pbigarray_float32 | Pbigarray_float64 ->
                 transl_unbox_float dbg env argnewval
             | Pbigarray_complex32 | Pbigarray_complex64 -> transl env argnewval
             | Pbigarray_int32 -> transl_unbox_int dbg env Pint32 argnewval

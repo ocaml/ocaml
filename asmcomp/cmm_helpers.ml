@@ -852,6 +852,7 @@ let curry_function_sym n =
 
 let bigarray_elt_size : Lambda.bigarray_kind -> int = function
     Pbigarray_unknown -> assert false
+  | Pbigarray_float16 -> 2
   | Pbigarray_float32 -> 4
   | Pbigarray_float64 -> 8
   | Pbigarray_sint8 -> 1
@@ -925,6 +926,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
 
 let bigarray_word_kind : Lambda.bigarray_kind -> memory_chunk = function
     Pbigarray_unknown -> assert false
+  | Pbigarray_float16 -> Sixteen_unsigned
   | Pbigarray_float32 -> Single
   | Pbigarray_float64 -> Double
   | Pbigarray_sint8 -> Byte_signed
