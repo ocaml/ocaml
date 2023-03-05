@@ -33,9 +33,9 @@ value caml_unix_times(value unit) {
   }
 
   res = caml_alloc_small(4 * Double_wosize, Double_array_tag);
-  Store_double_field(res, 0, (double)(utime.ul / 1e7));
-  Store_double_field(res, 1, (double)(stime.ul / 1e7));
-  Store_double_field(res, 2, 0);
-  Store_double_field(res, 3, 0);
+  Store_double_flat_field(res, 0, (double)(utime.ul / 1e7));
+  Store_double_flat_field(res, 1, (double)(stime.ul / 1e7));
+  Store_double_flat_field(res, 2, 0);
+  Store_double_flat_field(res, 3, 0);
   return res;
 }

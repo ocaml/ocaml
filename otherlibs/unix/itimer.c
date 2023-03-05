@@ -39,8 +39,8 @@ static value caml_unix_convert_itimer(struct itimerval *tp)
 {
 #define Get_timeval(tv) (double) tv.tv_sec + (double) tv.tv_usec / 1e6
   value res = caml_alloc_small(Double_wosize * 2, Double_array_tag);
-  Store_double_field(res, 0, Get_timeval(tp->it_interval));
-  Store_double_field(res, 1, Get_timeval(tp->it_value));
+  Store_double_flat_field(res, 0, Get_timeval(tp->it_interval));
+  Store_double_flat_field(res, 1, Get_timeval(tp->it_value));
   return res;
 #undef Get_timeval
 }
@@ -50,8 +50,8 @@ static int itimers[3] = { ITIMER_REAL, ITIMER_VIRTUAL, ITIMER_PROF };
 CAMLprim value caml_unix_setitimer(value which, value newval)
 {
   struct itimerval new, old;
-  caml_unix_set_timeval(&new.it_interval, Double_field(newval, 0));
-  caml_unix_set_timeval(&new.it_value, Double_field(newval, 1));
+  caml_unix_set_timeval(&new.it_interval, Double_flat_field(newval, 0));
+  caml_unix_set_timeval(&new.it_value, Double_flat_field(newval, 1));
   if (setitimer(itimers[Int_val(which)], &new, &old) == -1)
     caml_uerror("setitimer", Nothing);
   return caml_unix_convert_itimer(&old);

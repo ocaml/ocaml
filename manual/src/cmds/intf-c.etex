@@ -573,15 +573,25 @@ default is the boxed representation.
 
 \subsection{ss:c-arrays}{Arrays}
 
-Arrays of integers and pointers are represented like tuples,
+Arrays of integers and pointers are represented like tuples and records,
 that is, as pointers to blocks tagged~0.  They are accessed with the
 "Field" macro for reading and the "caml_modify" function for writing.
 
-Arrays of floating-point numbers (type "float array")
-have a special, unboxed, more efficient representation.
-These arrays are represented by pointers to blocks with tag
-"Double_array_tag".  They should be accessed with the "Double_field"
-and "Store_double_field" macros.
+Values of type "floatarray" (as manipulated by the "Float.Array"
+module), as well as records whose declaration contains only float
+fields, use an efficient unboxed representation: blocks with tag
+"Double_array_tag" whose content consist of raw double values, which are
+not themselves valid OCaml values. They should be accessed using the
+"Double_flat_field" and "Store_double_flat_field" macros.
+
+Finally, arrays of type "float array" may use either the boxed or the
+unboxed representation depending on the how the compiler is
+configured. They currently use the unboxed representation by default,
+but can be made to use the boxed representation by passing the
+"--disable-flat-float-array" flag to the `configure` script. They should
+be accessed using the "Double_array_field" and
+"Store_double_array_field" macros, which will work correctly under both
+modes.
 
 \subsection{ss:c-concrete-datatypes}{Concrete data types}
 
@@ -733,12 +743,17 @@ which will confuse the usual C functions over strings.
 byte sequence \var{v}, with type "unsigned char *".
 \item "Double_val("\var{v}")" returns the floating-point number contained in
 value \var{v}, with type "double".
-\item "Double_field("\var{v}", "\var{n}")" returns
-the $n\th$ element of the array of floating-point numbers \var{v} (a
-block tagged "Double_array_tag").
-\item "Store_double_field("\var{v}", "\var{n}",
+\item "Double_array_field("\var{v}", "\var{n}")" returns
+the $n\th$ element of a "float array" \var{v}.
+\item "Store_double_array_field("\var{v}", "\var{n}",
 "\var{d}")" stores the double precision floating-point number \var{d}
-in the $n\th$ element of the array of floating-point numbers \var{v}.
+in the $n\th$ element of a "float array" \var{v}.
+\item "Double_flat_field("\var{v}", "\var{n}")" returns
+the $n\th$ element of a "floatarray" or a record of floats \var{v}
+(an unboxed block tagged "Double_array_tag").
+\item "Store_double_flat_field("\var{v}", "\var{n}",
+"\var{d}")" stores the double precision floating-point number \var{d}
+in the $n\th$ element of a "floatarray" or a record of floats \var{v}.
 \item "Data_custom_val("\var{v}")" returns a pointer to the data part
 of the custom block \var{v}.  This pointer has type "void *" and must
 be cast to the type of the data contained in the custom block.
@@ -982,9 +997,10 @@ CAMLprim value bar (value v1, value v2, value v3)
 
 \begin{gcrule}
 Assignments to the fields of structured blocks must be done with the
-"Store_field" macro (for normal blocks) or "Store_double_field" macro
-(for arrays and records of floating-point numbers).  Other assignments
-must not use "Store_field" nor "Store_double_field".
+"Store_field" macro (for normal blocks), "Store_double_array_field" macro (for
+"float array" values) or "Store_double_flat_field" (for "floatarray" values and
+records of floating-point numbers).  Other assignments must not use
+"Store_field", "Store_double_array_field" nor "Store_double_flat_field".
 \end{gcrule}
 
 "Store_field ("\var{b}", "\var{n}", "\var{v}")" stores the value
