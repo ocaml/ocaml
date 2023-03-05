@@ -109,14 +109,7 @@ val copy : 'a t -> 'a t
 (** {1:adding Adding elements}
 
     Note: all operations adding elements can raise [Failure] if the
-    length would need to grow beyond {!Sys.max_array_length}.
-
-    For the [append*] functions adding several elements to a dynamic
-    array, it is unspecified at which point during the execution of
-    the [append*] function the element becomes visible in the dynamic
-    array -- when [length] is updated. For example, they may become
-    visible one by one during computation, or all at once at the end.
-*)
+    length would need to grow beyond {!Sys.max_array_length}. *)
 
 val add_last : 'a t -> 'a -> unit
 (** [add_last a x] adds the element [x] at the end of the array [a].
@@ -141,10 +134,8 @@ val append : 'a t -> 'a t -> unit
     but [b] is itself a dynamic arreay instead of a fixed-size array.
 
     Beware! Calling [append a a] iterates on [a] and adds elements to
-    it at the same time; its behavior is unspecified. In particular,
-    if elements coming from [a]-on-the-right become visible in
-    [a]-on-the-left during the iteration on [a], they may added again
-    and again, resulting in an infinite loop.
+    it at the same time; it is a programming error and fails with
+    [Invalid_argument].
 *)
 
 val append_seq : 'a t -> 'a Seq.t -> unit
@@ -211,11 +202,10 @@ val truncate : 'a t -> int -> unit
 
     The iteration functions traverse the elements of a dynamic array.
 
-    If the array gets modified (by setting existing elements or adding
-    or removing elements) during traversal, it is unspecified which of
-    the modifications will be observed by the traversal. For example,
-    some modifications may not be observed while later modifications
-    are observed.
+    It is a programming error to modify the length of an array
+    (by adding or removing elements) during an iteration on the
+    array. Any iteration function will fail with [Invalid_argument]
+    if it detects such a length change.
 *)
 
 val iter : ('a -> unit) -> 'a t -> unit
@@ -256,10 +246,15 @@ val filter_map : ('a -> 'b option) -> 'a t -> 'b t
     Note: the [of_*] functions can raise [Failure] if the length would
     need to grow beyond {!Sys.max_array_length}.
 
-    The [to_*] functions iterate on their dynarray argument. In
-    particular, except for [to_seq], their behavior is under-specified
-    if the dynarray is mutated during their execution -- see the
-    (un)specification in the {!section:Iteration} section.
+    The [to_*] functions, expect for {!to_seq}, iterate on their
+    dynarray argument. In particular it is a programming error if the
+    length of the dynarray changes during their execution, and the
+    conversion functions raise [Invalid_argument] if they observe such
+    a change.
+
+    {!to_seq} produces an on-demand sequence of values, and is expected
+    to be called with effects happening in-between. Its specification
+    tolerates changes of length. (See below.)
 *)
 
 val of_array : 'a array -> 'a t

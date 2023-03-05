@@ -157,6 +157,11 @@ module Error = struct
       "Dynarray: invalid array (length %d > capacity %d)"
       length capacity
 
+  let iterator_invalidation ~expected ~observed =
+    Printf.ksprintf invalid_arg
+      "Dynarray: iterator invalidated by a length change from %d to %d"
+      expected observed
+
   (* When an [Empty] element is observed unexpectedly at index [i],
      it may be either an out-of-bounds access or an invalid-state situation
      depending on whether [i <= length]. *)
@@ -166,6 +171,16 @@ module Error = struct
     else
       index_out_of_bounds f ~i ~length
 end
+
+(* Detecting iterator invalidation.
+
+   See {!iter} below for a detailed usage example.
+*)
+let check_same_length a ~length =
+  let length_a = a.length in
+  if length <> length_a then
+    Error.iterator_invalidation
+      ~expected:length ~observed:length_a
 
 (** Careful unsafe access. *)
 
@@ -340,7 +355,7 @@ let reset a =
 
 (** {1:adding Adding elements} *)
 
-(* We want an implementation of [add_last a x] that behaves correctly
+(* We chose an implementation of [add_last a x] that behaves correctly
    in presence of aynchronous code execution around allocations and
    poll points: if another thread or a callback gets executed on
    allocation, we add the element at the new end of the dynamic array.
@@ -386,98 +401,230 @@ let rec append_list a li =
   | [] -> ()
   | x :: xs -> add_last a x; append_list a xs
 
-let append_array a b =
-  let len_b = Array.length b in
-  ensure_capacity a (length a + len_b);
-  for i = 0 to len_b - 1 do
-    add_last a (Array.unsafe_get b i)
-  done
-
 let append_iter a iter b =
   iter (fun x -> add_last a x) b
 
 let append_seq a seq =
   Seq.iter (add_last a) seq
 
-(* [append] is below, after [iter] *)
+(* append_array: same [..._if_room] and loop logic as [add_last]. *)
+
+let append_array_if_room a b =
+  (* BEGIN ATOMIC *)
+  let {arr; length = length_a} = a in
+  let length_b = Array.length b in
+  if length_a + length_b > Array.length arr then false
+  else begin
+    a.length <- length_a + length_b;
+    (* END ATOMIC *)
+    (* Note: we intentionally update the length *before* filling the
+       elements. This "reserve before fill" approach provides better
+       behavior than "fill then notify" in presence of reentrant
+       modifications (which may occur below, on a poll point in the loop or
+       the [Elem] allocation):
+
+       - If some code asynchronously adds new elements after this
+         length update, they will go after the space we just reserved,
+         and in particular no addition will be lost. If instead we
+         updated the length after the loop, any asynchronous addition
+         during the loop could be erased or erase one of our additions,
+         silently, without warning the user.
+
+       - If some code asynchronously iterates on the dynarray, or
+         removes elements, or otherwise tries to access the
+         reserved-but-not-yet-filled space, it will get a clean "missing
+         element" error. This is worse than with the fill-then-notify
+         approach where the new elements would only become visible
+         (to iterators, for removal, etc.) alltogether at the end of
+         loop.
+
+       To summarise, "reserve before fill" is better on add-add races,
+       and "fill then notify" is better on add-remove or add-iterate
+       races. But the key difference is the failure mode:
+       reserve-before fails on add-remove or add-iterate races with
+       a clean error, while notify-after fails on add-add races with
+       silently disappearing data. *)
+    for i = 0 to length_b - 1 do
+      let x = Array.unsafe_get b i in
+      Array.unsafe_set arr (length_a + i) (Elem {v = x})
+    done;
+    true
+  end
+
+let append_array a b =
+  if append_array_if_room a b then ()
+  else begin
+    (* slow path *)
+    let rec grow_and_append a b =
+      ensure_capacity a (length a + Array.length b);
+      if not (append_array_if_room a b)
+      then grow_and_append a b
+    in grow_and_append a b  end
+
+(* append: same [..._if_room] and loop logic as [add_last],
+   same reserve-before-fill logic as [append_array]. *)
+
+(* Note: unlike [add_last_if_room], [append_if_room] is *not* atomic.
+
+   It is a programming error to mutate the length of [b] during a call
+   to [append a b]. To detect this mistake we keep track of the length
+   of [b] throughout the computation and check it that does not
+   change.
+*)
+let append_if_room a b ~length_b =
+  (* BEGIN ATOMIC *)
+  let {arr = arr_a; length = length_a} = a in
+  if length_a + length_b > Array.length arr_a then false
+  else begin
+    a.length <- length_a + length_b;
+    (* END ATOMIC *)
+    let arr_b = b.arr in
+    check_valid_length length_b arr_b;
+    for i = 0 to length_b - 1 do
+      let x = unsafe_get arr_b ~i ~length:length_b in
+      Array.unsafe_set arr_a (length_a + i) (Elem {v = x})
+    done;
+    check_same_length b ~length:length_b;
+    true
+  end
+
+let append a b =
+  let length_b = length b in
+  if append_if_room a b ~length_b then ()
+  else begin
+    (* slow path *)
+    let rec grow_and_append a b ~length_b =
+      ensure_capacity a (length a + length_b);
+      (* Eliding the [check_same_length] call below would be wrong in
+         the case where [a] and [b] are aliases of each other, we
+         would get into an infinite loop instead of failing.
+
+         We could push the call to [append_if_room] itself, but we
+         prefer to keep it in the slow path.  *)
+      check_same_length b ~length:length_b;
+      if not (append_if_room a b ~length_b)
+      then grow_and_append a b ~length_b
+    in grow_and_append a b ~length_b
+  end
+
+
 
 (** {1:iteration Iteration} *)
 
-(* The specification says that it is unspecified which updates to the
-   dynarray happening during iteration will be observed by the
-   iterator. Our implmentation is in fact designed to give the best
-   possible guarantees: we observe all updates (insertion, removal,
-   modification) to parts of the array that we have not traversed yet.
+(* The implementation choice that we made for iterators is the one
+   that maximizes efficiency by avoiding repeated bound checking: we
+   check the length of the dynamic array once at the beginning, and
+   then only operate on that portion of the dynarray, ignoring
+   elements added in the meantime.
+
+   The specification states that it is a programming error to mutate
+   the length of the array during iteration. We check for this and
+   raise an error on size change.
+   Note that we may still miss some transient state changes that cancel
+   each other and leave the length unchanged at the next check.
 *)
 
-let iter f a =
-  let i = ref 0 in
-  while !i < length a do
-    f (get a !i);
-    incr i
-  done
+let iter k a =
+  let {arr; length} = a in
+  (* [check_valid_length length arr] is used for memory safety, it
+     guarantees that the backing array has capacity at least [length],
+     allowing unsafe array access.
 
-let append a b =
-  ensure_capacity a (length a + length b);
-  append_iter a iter b
+     [check_same_length] is used for correctness, it lets the function
+     fail more often if we discover the programming error of mutating
+     the length during iteration.
 
-let iteri f a =
-  let i = ref 0 in
-  while !i < length a do
-    f !i (get a !i);
-    incr i
-  done
+     We could, naively, call [check_same_length] at each iteration of
+     the loop (before or after, or both). However, notice that this is
+     not necessary to detect the removal of elements from [a]: if
+     elements have been removed by the time the [for] loop reaches
+     them, then [unsafe_get] will itself fail with an [Invalid_arg]
+     exception. We only need to detect the addition of new elements to
+     [a] during iteration, and for this it suffics to call
+     [check_same_length] once at the end.
+
+     Calling [check_same_length] more often could catch more
+     programming errors, but the only errors that we miss with this
+     optimization are those that keep the array size constant --
+     additions and deletions that cancel each other. We consider this
+     an acceptable tradeoff.
+  *)
+  check_valid_length length arr;
+  for i = 0 to length - 1 do
+    k (unsafe_get arr ~i ~length);
+  done;
+  check_same_length a ~length
+
+
+let iteri k a =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  for i = 0 to length - 1 do
+    k i (unsafe_get arr ~i ~length);
+  done;
+  check_same_length a ~length
 
 let map f a =
-  let i = ref 0 in
-  let b = create () in
-  ensure_capacity b (length a);
-  (* Calls to [f] may add further elements to the array [a]; those
-     will get added in the final result as well. This means that the
-     capacity hint above is sometimes not sufficient to guarantee the
-     absence of further reallocations, but this is innocuous. *)
-  while !i < length a do
-    add_last b (f (get a !i));
-    incr i
-  done;
-  b
+  let {arr; length} = a in
+  check_valid_length length arr;
+  let res = {
+    length;
+    arr = Array.init length (fun i ->
+      Elem {v = f (unsafe_get arr ~i ~length)});
+  } in
+  check_same_length a ~length;
+  res
+
 
 let mapi f a =
-  let i = ref 0 in
-  let b = create () in
-  ensure_capacity b (length a);
-  while !i < length a do
-    add_last b (f !i (get a !i));
-    incr i
-  done;
-  b
+  let {arr; length} = a in
+  check_valid_length length arr;
+  let res = {
+    length;
+    arr = Array.init length (fun i ->
+      Elem {v = f i (unsafe_get arr ~i ~length)});
+  } in
+  check_same_length a ~length;
+  res
 
 let fold_left f acc a =
-  let i = ref 0 in
-  let acc = ref acc in
-  while !i < length a do
-    acc := f !acc (get a !i);
-    incr i
-  done;
-  !acc
+  let {arr; length} = a in
+  check_valid_length length arr;
+  let rec fold acc arr i length =
+    if i = length then acc
+    else
+      let v = unsafe_get arr ~i ~length in
+      fold (f acc v) arr (i+1) length
+  in
+  let res = fold acc arr 0 length in
+  check_same_length a ~length;
+  res
 
 let exists p a =
-  let i = ref 0 in
-  let stop = ref false in
-  while not !stop && !i < length a do
-    if p (get a !i) then stop := true;
-    incr i;
-  done;
-  !stop
+  let {arr; length} = a in
+  check_valid_length length arr;
+  let rec loop p arr i length =
+    if i = length then false
+    else
+      p (unsafe_get arr ~i ~length)
+      || loop p arr (i + 1) length
+  in
+  let res = loop p arr 0 length in
+  check_same_length a ~length;
+  res
 
 let for_all p a =
-  let i = ref 0 in
-  let continue = ref true in
-  while !continue && !i < length a do
-    if not (p (get a !i)) then continue := false;
-    incr i;
-  done;
-  !continue
+  let {arr; length} = a in
+  check_valid_length length arr;
+  let rec loop p arr i length =
+    if i = length then true
+    else
+      p (unsafe_get arr ~i ~length)
+      && loop p arr (i + 1) length
+  in
+  let res = loop p arr 0 length in
+  check_same_length a ~length;
+  res
 
 let filter f a =
   let b = create () in
@@ -501,19 +648,6 @@ let filter_map f a =
    obey their more permissive specification, which tolerates any
    concurrent update. *)
 
-let of_list li =
-  let a = create () in
-  List.iter (fun x -> add_last a x) li;
-  a
-
-let[@tail_mod_cons] rec to_list_from a i =
-  if i >= length a then []
-  else
-    let x = get a i in
-    x :: to_list_from a (i + 1)
-
-let to_list a = to_list_from a 0
-
 let of_array a =
   let length = Array.length a in
   {
@@ -522,34 +656,28 @@ let of_array a =
   }
 
 let to_array a =
-  let initial_length = length a in
-  if initial_length = 0 then [| |]
-  else begin
-    let x0 = get a 0 in
-    let dst = Array.make initial_length x0 in
-    let i = ref 1 in
-    let arr = a.arr in
-    check_valid_length initial_length arr;
-    while !i < initial_length && !i < length a do
-      Array.unsafe_set dst !i (unsafe_get arr ~i:!i ~length:initial_length);
-      incr i;
-    done;
-    (* At this point we know that either [!i = initial_length]
-       or we have observed [!i >= length a]. *)
-    if !i < initial_length then begin
-      (* In this case we must have observed [!i >= length a]:
-         we reached the end of [a]. *)
-      Array.sub dst 0 !i
-   end else if !i < length a then begin
-      (* In this case we know [!i = initial_length < length a]:
-         the array has grown during our iteration.
-         Aim for simplicity rather than efficiency in this weird corner case. *)
-      Array.append dst (Array.of_list (to_list_from a !i))
-    end else begin
-      (* we know [!i = initial_length] and have observed [!i >= length a] *)
-      dst
-    end
-  end
+  let {arr; length} = a in
+  check_valid_length length arr;
+  let res = Array.init length (fun i ->
+    unsafe_get arr ~i ~length)
+  in
+  check_same_length a ~length;
+  res
+
+let of_list li =
+  let a = create () in
+  List.iter (fun x -> add_last a x) li;
+  a
+
+let to_list a =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  let l = ref [] in
+  for i = length - 1 downto 0 do
+    l := unsafe_get arr ~i ~length :: !l
+  done;
+  check_same_length a ~length;
+  !l
 
 let of_seq seq =
   let init = create() in
