@@ -14,8 +14,7 @@ The initial release of OCaml 5.0 only supports the native compiler under ARM64
 and x86-64 architectures under Linux, macOS and the BSDs. On Windows, only the
 MinGW-w64 port is supported.  Support for other 64-bit architectures and
 systems will be added back in later releases. On 32-bit systems, only the
-bytecode compiler is supported.  Native-code support for these systems is under
-discussion.
+bytecode compiler will be supported.
 
 |=====
 | Branch `trunk` | Branch `5.0` | Branch `4.14` | Branch `4.13`
