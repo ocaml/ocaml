@@ -2888,7 +2888,7 @@ let combine_constructor loc arg pat_env cstr partial ctx def
                 (* This case is very frequent, it corresponds to
                    options and lists. *)
                 (* Keeping the Pisint test would make the bytecode
-                   slightly worse, but it lets the native compilre generate
+                   slightly worse, but it lets the native compiler generate
                    better code -- see #10681. *)
                 if !Clflags.native_code then
                   Lifthenelse(Lprim (Pisint, [ arg ], loc), act1, act2)
