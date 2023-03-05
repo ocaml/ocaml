@@ -15,6 +15,9 @@ tools:
 manual: tools
 	$(MAKE) -C src all
 
+pdf: tools
+	$(MAKE) -C src pdf
+
 html: tools
 	$(MAKE) -C src html
 
