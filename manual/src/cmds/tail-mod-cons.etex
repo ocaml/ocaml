@@ -22,11 +22,19 @@ remember to continue with "y :: r" after the call returns a value "r",
 therefore this function consumes some amount of call-stack space on
 each recursive call. The stack usage of "map f li" is proportional to
 the length of "li". This is a correctness issue for large lists on
-operating systems with limited stack space -- the dreaded
+systems configured with limited stack space -- the dreaded
 "Stack_overflow" exception.
 
 \begin{caml_example}{toplevel}
-List.length (map Fun.id (List.init 1_000_000 Fun.id));;
+let with_stack_limit stack_limit f =
+   let old_gc_settings = Gc.get () in
+   Gc.set { old_gc_settings with stack_limit };
+   Fun.protect ~finally:(fun () -> Gc.set old_gc_settings) f
+ ;;
+
+with_stack_limit 20_000 (fun () ->
+  List.length (map Fun.id (List.init 1_000_000 Fun.id))
+);;
 \end{caml_example}
 
 In this implementation of "map", the recursive call happens in
