@@ -17,9 +17,11 @@ manual: tools
 
 pdf: tools
 	$(MAKE) -C src pdf
+	@echo "The generated manual is at ./src/texstuff/manual.pdf"
 
 html: tools
 	$(MAKE) -C src html
+	@echo "The generated manual is at ./src/htmlman/index.html"
 
 web: tools
 	$(MAKE) -C src web
