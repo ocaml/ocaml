@@ -143,7 +143,8 @@ let create_archive archive file_list =
         assert(String.length Config.ar > 0);
         command(Printf.sprintf "%s rc %s %s"
                 Config.ar quoted_archive
-                (quote_files ~response_files:Config.ar_supports_response_files file_list))
+                (quote_files ~response_files:Config.ar_supports_response_files
+                  file_list))
 
 let expand_libname cclibs =
   cclibs |> List.map (fun cclib ->
