@@ -54,7 +54,7 @@ endif
 $(DIRS):
 	$(MKDIR) $@
 
-manual: files latex_files | texstuff
+pdf: files latex_files | texstuff
 	cd texstuff \
 	  && TEXINPUTS=$(TEXINPUTS) pdflatex manual.tex
 
@@ -101,9 +101,9 @@ all:
 	$(MAKE) html
 	$(MAKE) text
 	$(MAKE) info
-	$(MAKE) manual
+	$(MAKE) pdf
 	$(MAKE) index
-	$(MAKE) manual
+	$(MAKE) pdf
 
 release: all
 	cp htmlman/manual.html $(RELEASE)refman.html
