@@ -92,6 +92,10 @@ let missing_globals = ref Ident.Map.empty
 let provided_globals = ref Ident.Set.empty
 let badly_ordered_dependencies : (string * string) list ref = ref []
 
+let record_badly_ordered_dependency (id, compunit) =
+  badly_ordered_dependencies :=
+    ((Ident.name id), compunit.cu_name) :: !badly_ordered_dependencies
+
 let is_required (rel, _pos) =
   match rel with
     Reloc_setglobal id ->
@@ -101,8 +105,7 @@ let is_required (rel, _pos) =
 let add_required compunit =
   let add id =
     if Ident.Set.mem id !provided_globals then
-      badly_ordered_dependencies :=
-        ((Ident.name id), compunit.cu_name) :: !badly_ordered_dependencies;
+      record_badly_ordered_dependency (id, compunit);
     missing_globals := Ident.Map.add id compunit.cu_name !missing_globals
   in
   List.iter add (Symtable.required_globals compunit.cu_reloc);
