@@ -326,6 +326,14 @@ let call_linker file_list startup_file output_name =
     else if !Clflags.output_c_object then Ccomp.Partial
     else Ccomp.Exe
   in
+  let files =
+    List.map
+      (fun file ->
+        if output_name = file && !Clflags.output_c_object
+        then "_" ^ file
+        else file)
+      files
+  in
   let exitcode = Ccomp.call_linker mode output_name files c_lib in
   if not (exitcode = 0)
   then raise(Error(Linking_error exitcode))

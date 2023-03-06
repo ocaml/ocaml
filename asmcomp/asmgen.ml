@@ -274,9 +274,16 @@ let asm_filename output_prefix =
 
 let compile_implementation ?toplevel ~backend ~prefixname ~middle_end
       ~ppf_dump (program : Lambda.program) =
+  let obj_filename =
+    let preferred_name = prefixname ^ ext_obj in
+    match !Clflags.output_name with
+    | Some output_name when !Clflags.output_c_object && output_name = preferred_name ->
+       "_" ^ preferred_name
+    | _ -> preferred_name
+  in
   compile_unit ~output_prefix:prefixname
     ~asm_filename:(asm_filename prefixname) ~keep_asm:!keep_asm_file
-    ~obj_filename:(prefixname ^ ext_obj)
+    ~obj_filename
     (fun () ->
       Ident.Set.iter Compilenv.require_global program.required_globals;
       let clambda_with_constants =

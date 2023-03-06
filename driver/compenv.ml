@@ -21,7 +21,7 @@ let output_prefix name =
   let oname =
     match !output_name with
     | None -> name
-    | Some n -> if !compile_only then (output_name := None; n) else name in
+    | Some n -> if !compile_only then n else name in
   Filename.remove_extension oname
 
 let print_version_and_library compiler =
@@ -653,11 +653,13 @@ let process_action
   | ProcessCFile name ->
       readenv ppf (Before_compile name);
       Location.input_name := name;
-      let obj_name = match !output_name with
-        | None -> c_object_of_filename name
-        | Some n -> n
+      let obj_name =
+        match !output_name with
+        | Some output when Filename.check_suffix output ".o" ->
+           output
+        | _ -> c_object_of_filename name
       in
-      if Ccomp.compile_file ?output:!output_name name <> 0
+      if Ccomp.compile_file ?output:(Some obj_name) name <> 0
       then raise (Exit_with_status 2);
       ccobjs := obj_name :: !ccobjs
   | ProcessObjects names ->
@@ -708,7 +710,6 @@ let process_deferred_actions env =
   let final_output_name = !output_name in
   (* Make sure the intermediate products don't clash with the final one
      when we're invoked like: ocamlopt -o foo bar.c baz.ml. *)
-  if not !compile_only then output_name := None;
   begin
     match final_output_name with
     | None -> ()
