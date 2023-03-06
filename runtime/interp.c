@@ -276,6 +276,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #ifndef THREADED_CODE
   opcode_t curr_instr;
 #endif
+#ifdef DEBUG
+  bool print_instruction_counter;
+#endif
 
 #ifdef THREADED_CODE
   static void * jumptable[] = {
@@ -354,7 +357,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #ifdef DEBUG
     caml_bcodcount++;
     if (caml_icount-- == 0) caml_stop_here ();
-    if (caml_params->trace_level>1)
+    /* NOTE: Print the current instruction count every [instruction_counter]
+       instructions only to allow making the tracing faster */
+    print_instruction_counter =
+      (caml_params->instruction_counter > 0
+       && (caml_bcodcount % caml_params->instruction_counter) == 0)
+      || caml_params->trace_level > 1;
+    if (print_instruction_counter)
       printf("\n##%" ARCH_INTNAT_PRINTF_FORMAT "d\n", caml_bcodcount);
     if (caml_params->trace_level>0) caml_disasm_instr(pc);
     if (caml_params->trace_level>1) {
@@ -362,8 +371,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
       caml_trace_value_file(env,prog,prog_size,stdout);
       putchar('\n');
       caml_trace_accu_sp_file(accu,sp,prog,prog_size,stdout);
-      fflush(stdout);
     };
+    if (print_instruction_counter)
+      fflush(stdout);
     CAMLassert(Stack_base(domain_state->current_stack) <= sp);
     CAMLassert(sp <= Stack_high(domain_state->current_stack));
 

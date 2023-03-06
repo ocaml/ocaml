@@ -315,6 +315,9 @@ static int parse_command_line(char_os **argv)
       case 't':
         params->trace_level += 1; /* ignored unless DEBUG mode */
         break;
+      case 'C':
+        params->instruction_counter += 1; /* ignored unless DEBUG mode */
+        break;
       case 'v':
         atomic_store_relaxed(&caml_verb_gc, 0x001+0x004+0x008+0x010+0x020);
         break;

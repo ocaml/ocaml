@@ -64,6 +64,7 @@ static void init_startup_params(void)
   }
 #endif
   params.trace_level = 0;
+  params.instruction_counter = 0;
   params.cleanup_on_exit = 0;
   params.print_magic = 0;
   params.print_config = 0;
@@ -106,6 +107,7 @@ void caml_parse_ocamlrunparam(void)
       case 'R': break; /*  see stdlib/hashtbl.mli */
       case 's': scanmult (opt, &params.init_minor_heap_wsz); break;
       case 't': scanmult (opt, &params.trace_level); break;
+      case 'C': scanmult (opt, &params.instruction_counter); break;
       case 'v': scanmult (opt, (uintnat *)&caml_verb_gc); break;
       case 'V': scanmult (opt, &params.verify_heap); break;
       case 'W': scanmult (opt, &caml_runtime_warnings); break;
