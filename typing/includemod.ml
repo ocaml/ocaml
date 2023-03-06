@@ -1038,13 +1038,20 @@ module Functor_inclusion_diff = struct
     | Delete (Unit | Named (None,_))
     | Keep (Unit,_,_)
     | Keep (_,Unit,_)
-    | Change (_,(Unit | Named (None,_)), _) ->
+    | Change ((Unit|Named(None,_)),(Unit | Named (None,_)), _) ->
         st, [||]
     | Insert (Named (Some id, arg))
     | Delete (Named (Some id, arg))
-    | Change (_, Named (Some id, arg), _) ->
+    | Change ((Unit|Named(None,_)), Named (Some id, arg), _)
+    | Change (Named (Some id, arg), (Unit|Named(None,_)), _) ->
         let arg' = Subst.modtype Keep st.subst arg in
         let env = Env.add_module id Mp_present arg' st.env in
+        expand_params { st with env }
+    | Change (Named (Some id, arg), Named(Some id2, arg2), _) ->
+        let arg = Subst.modtype Keep st.subst arg in
+        let env = Env.add_module id Mp_present arg st.env in
+        let arg2 = Subst.modtype Keep st.subst arg2 in
+        let env = Env.add_module id2 Mp_present arg2 env in
         expand_params { st with env }
     | Keep (Named (name1, _), Named (name2, arg2), _) -> begin
         let arg' = Subst.modtype Keep st.subst arg2 in

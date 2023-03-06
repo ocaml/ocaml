@@ -1980,3 +1980,47 @@ Error: The functor application is ill-typed.
             'a X.s -> 'a
           Type 'a X.s is not compatible with type 'a
 |}]
+
+
+(* Mixed information: the Y module is fine if we have both version of the
+   abstract parameter Xs in scope *)
+
+module _: sig
+  module F: functor (X: sig type 'a t = 'a * 'a end)(Y: sig type 'a t = 'a X.t * 'a list end) -> sig end
+end = struct
+  module F(X: sig type 'a t = 'a list end)(Y: sig type 'a t = ('a * 'a) * 'a X.t end) = struct end
+end
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   module F(X: sig type 'a t = 'a list end)(Y: sig type 'a t = ('a * 'a) * 'a X.t end) = struct end
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           module F :
+             functor (X : sig type 'a t = 'a list end)
+               (Y : sig type 'a t = ('a * 'a) * 'a X.t end) -> sig end
+         end
+       is not included in
+         sig
+           module F :
+             functor (X : sig type 'a t = 'a * 'a end)
+               (Y : sig type 'a t = 'a X.t * 'a list end) -> sig end
+         end
+       In module F:
+       Modules do not match:
+         functor (X : $S1) (Y : $S2) -> ...
+       is not included in
+         functor (X : $T1) (Y : $T2) -> ...
+       1. Module types do not match:
+            $S1 = sig type 'a t = 'a list end
+          does not include
+            $T1 = sig type 'a t = 'a * 'a end
+          Type declarations do not match:
+            type 'a t = 'a * 'a
+          is not included in
+            type 'a t = 'a list
+          The type 'a * 'a is not equal to the type 'a list
+       2. Module types $S2 and $T2 match
+|}]
