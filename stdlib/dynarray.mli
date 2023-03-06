@@ -17,9 +17,9 @@
 
 (** Dynamic arrays.
 
-    The {!Array} module provide arrays of fixed length. In contrast,
-    the length of a dynamic array can change over time, we can add
-    more elements or remove elements at the end of the array.
+    The {!Array} module provide arrays of fixed length. {!Dynarray}
+    provides array whose length can change over time, by adding or
+    removing elements at the end of the array.
 
     This is typically used to accumulate elements whose number is not
     known in advance or changes during computation, while also
@@ -33,11 +33,15 @@
 ]}
 
     The {!Buffer} module provides similar features, but it is
-    specialized for accumulating characters into a dynamically-growing
+    specialized for accumulating characters into a dynamically-resized
     string.
 
     The {!Stack} module provides a last-in first-out data structure
     that can be easily implemented on top of dynamic arrays.
+
+    {b Warning.} In their current implementation, the memory layout
+    of dynamic arrays differs from the one of {!Array}s. See the
+    {{!section:memory_layout} Memory Layout} section for more information.
 
     @since 5.1
 *)
@@ -302,7 +306,9 @@ val to_seq_rev : 'a t -> 'a Seq.t
 *)
 
 
-(** {1:capacity Backing array and capacity}
+(** {1:advanced Advanced topics for performance} *)
+
+(** {2:capacity Backing array, capacity}
 
     Internally, a dynamic array uses a {b backing array} (a fixed-size
     array as provided by the {!Array} module) whose length is greater
@@ -381,10 +387,35 @@ val reset : 'a t -> unit
 
     Similar to {!Buffer.reset}. *)
 
-(** {b No leaks: preservation of memory liveness}
+(** {2:noleaks No leaks: preservation of memory liveness}
 
     The user-provided values reachable from a dynamic array [a] are
     exactly the elements in the positions [0] to [length a - 1]. In
     particular, no user-provided values are "leaked" by being present
     in the backing array in position [length a] or later.
 *)
+
+(** {2:memory_layout Memory layout of dynarrays}
+
+    In the current implementation, the backing array of an
+    ['a Dynarray.t] is not an ['a array], but something closer to an
+    ['a option array] in terms of memory layout -- with a mutable field,
+    so that we allocate only when adding new elements to the array.
+
+    Using a ['a array] would be delicate, as there is no obvious
+    type-correct way to represent the empty space at the end of the
+    backing array -- using user-provided values would either
+    complicate the API or violate the {{!section:noleaks}no leaks}
+    guarantee. The constraint of remaining memory-safe under
+    unsynchronized concurrent usage makes it even more
+    difficult. Various unsafe ways to do this have been discussed,
+    with no consensus for a standard implementation so far.
+
+    On a realistic automated-theorem-proving program that relies
+    heavily on dynamic arrays, we measured the overhead of this extra
+    "boxing" as at most 25%. We believe that the overhead for most
+    uses of dynarray is much smaller, neglectible in most cases, but
+    you may still prefer to use your own, customized implementation
+    for performance.
+*)
+
