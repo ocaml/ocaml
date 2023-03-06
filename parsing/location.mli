@@ -99,7 +99,23 @@ val rewrite_absolute_path: string -> string
         variable (https://reproducible-builds.org/specs/build-path-prefix-map/)
         if it is set. *)
 
+val rewrite_to_search_list: string -> string list
+    (** [rewrite_to_search_list path] rewrite path to a search list
+        to honor the BUILD_PATH_PREFIX_MAP
+        variable (https://reproducible-builds.org/specs/build-path-prefix-map/)
+        if it is set. *)
+
+val search_list_find: string -> string option
+    (** [search_list_find path] will first rewrite path using
+       rewrite_to_search_list to produce a searchlist l.
+       If l is of length 1 and its sole item is the same
+       as path, then it is assumed there is no mapping and
+       [None] is return. Otherwise one of the elements of
+       l, say f, must exists, and [Some f] is returned.
+       If no elements of l exists, then [Not_found] is raised. *)
+
 val absolute_path: string -> string
+    (** Makes absolute and uses rewrite_absolute_path. *)
 
 val show_filename: string -> string
     (** In -absname mode, return the absolute path for this filename.

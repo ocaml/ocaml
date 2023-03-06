@@ -893,10 +893,11 @@ let debug_prefix_map_flags () =
         (fun map_elem acc ->
            match map_elem with
            | None -> acc
-           | Some { Build_path_prefix_map.target; source; } ->
+           | Some { Build_path_prefix_map.targets; source; } ->
              (Printf.sprintf "--debug-prefix-map %s=%s"
                 (Filename.quote source)
-                (Filename.quote target)) :: acc)
+                (String.concat ";" (List.map Filename.quote targets)))
+                 :: acc)
         map
         []
   end

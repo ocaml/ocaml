@@ -15,6 +15,7 @@
 
 type path = string
 type path_prefix = string
+type search_list = path_prefix list
 type error_message = string
 
 let errorf fmt = Printf.ksprintf (fun err -> Error err) fmt
@@ -25,6 +26,7 @@ let encode_prefix str =
     | '%' -> Buffer.add_string buf "%#"
     | '=' -> Buffer.add_string buf "%+"
     | ':' -> Buffer.add_string buf "%."
+    | ';' -> Buffer.add_string buf "%,"
     | c -> Buffer.add_char buf c
   in
   String.iter push_char str;
@@ -36,7 +38,7 @@ let decode_prefix str =
     if i >= String.length str
     then Ok (Buffer.contents buf)
     else match str.[i] with
-      | ('=' | ':') as c ->
+      | ('=' | ':' | ';') as c ->
         errorf "invalid character '%c' in key or value" c
       | '%' ->
         let push c = Buffer.add_char buf c; loop (i + 2) in
@@ -46,6 +48,7 @@ let decode_prefix str =
             | '#' -> push '%'
             | '+' -> push '='
             | '.' -> push ':'
+            | ',' -> push ';'
             | c -> errorf "invalid %%-escaped character '%c'" c
         end
       | c ->
@@ -53,21 +56,35 @@ let decode_prefix str =
         loop (i + 1)
   in loop 0
 
-type pair = { target: path_prefix; source : path_prefix }
+type pair = { targets: search_list; source : path_prefix }
 
-let encode_pair { target; source } =
-  String.concat "=" [encode_prefix target; encode_prefix source]
+let encode_search_list (targets: search_list) =
+  String.concat ";" (List.map (fun str -> encode_prefix str) targets)
+
+let encode_pair { targets; source } =
+  String.concat "=" [encode_search_list targets; encode_prefix source]
+
+let decode_search_list str =
+  let parts = String.split_on_char ';' str in
+  let rec loop parts acc =
+    match parts with
+    | [] -> Ok acc
+    | part :: tail ->
+      match decode_prefix part with
+      | (Error _ as err) -> err
+      | Ok target -> loop tail (target :: acc)
+    in loop parts []
 
 let decode_pair str =
   match String.index str '=' with
   | exception Not_found ->
     errorf "invalid key/value pair %S, no '=' separator" str
   | equal_pos ->
-    let encoded_target = String.sub str 0 equal_pos in
+    let encoded_targets = String.sub str 0 equal_pos in
     let encoded_source =
       String.sub str (equal_pos + 1) (String.length str - equal_pos - 1) in
-    match decode_prefix encoded_target, decode_prefix encoded_source with
-    | Ok target, Ok source -> Ok { target; source }
+    match decode_search_list encoded_targets, decode_prefix encoded_source with
+    | Ok targets, Ok source -> Ok { targets; source }
     | ((Error _ as err), _) | (_, (Error _ as err)) -> err
 
 type map = pair option list
@@ -95,10 +112,10 @@ let decode_map str =
   | exception (Shortcut err) -> Error err
   | map -> Ok map
 
-let rewrite_opt prefix_map path =
+let rewrite_to_search_list_opt prefix_map path =
   let is_prefix = function
     | None -> false
-    | Some { target = _; source } ->
+    | Some { targets = _; source } ->
       String.length source <= String.length path
       && String.equal source (String.sub path 0 (String.length source))
   in
@@ -109,9 +126,22 @@ let rewrite_opt prefix_map path =
   with
   | exception Not_found -> None
   | None -> None
-  | Some { source; target } ->
-      Some (target ^ (String.sub path (String.length source)
-                       (String.length path - String.length source)))
+  | Some { source; targets } ->
+    let tail = String.sub path (String.length source)
+                       (String.length path - String.length source) in
+      Some (List.map (fun target -> target ^ tail) targets)
+
+let rewrite_opt prefix_map path =
+  match rewrite_to_search_list_opt prefix_map path with
+  | None -> None
+  | Some [] -> None
+  | Some [target] -> Some target
+  | Some _ -> None
+
+let rewrite_to_search_list prefix_map path =
+  match rewrite_to_search_list_opt prefix_map path with
+  | None -> [path]
+  | Some paths -> paths
 
 let rewrite prefix_map path =
   match rewrite_opt prefix_map path with

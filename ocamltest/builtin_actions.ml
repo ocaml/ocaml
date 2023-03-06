@@ -67,6 +67,14 @@ let dumpenv = make
   (fun log env ->
     Environments.dump log env; (Result.pass, env))
 
+let dumpenv_expanded = make
+  ~name:"dumpenv_expanded"
+  ~description:"Dump the environment raw and expanded"
+  (fun log env ->
+    Environments.dump_expanded log env; (Result.pass, env))
+
+let dune = Actions_helpers.available_in_path "has_dune" "dune"
+
 let hasunix = make
   ~name:"hasunix"
   ~description:"Pass if the unix library is available"
@@ -301,6 +309,57 @@ let copy_action log env =
 
 let copy = make ~name:"copy" ~description:"Copy a file" copy_action
 
+let copy_and_expand_file src_file dst_file env =
+  let ic = open_in src_file in
+  let oc = open_out dst_file in
+  try
+    while true do
+      let line = input_line ic in
+      let expanded = Environments.expand_string env line in
+      output_string oc expanded;
+      output_char oc '\n';
+    done
+  with End_of_file ->
+    close_in ic;
+    close_out oc
+
+let expand_action log env =
+  let do_expand src dst =
+    Printf.fprintf log "Expanding file %s to %s\n%!" src dst;
+    copy_and_expand_file src dst env
+  in
+  let src = Environments.lookup Builtin_variables.src env in
+  let dst = Environments.lookup Builtin_variables.dst env in
+  match (src, dst) with
+    | (None, _) | (_, None) ->
+      let reason = reason_with_fallback env "src or dst are undefined" in
+      let result = Result.fail_with_reason reason in
+      (result, env)
+    | (Some src, Some dst) ->
+      let f =
+        if String.ends_with ~suffix:"/" dst
+        then fun src -> do_expand src (dst ^ (Filename.basename src))
+        else fun src -> do_expand src dst
+      in
+      let srcs = (String.words src) in
+      (* We don't support expansion of directories, so check. *)
+      let first_dir_opt = List.find_opt (fun s -> Sys.is_directory s) srcs in
+      match first_dir_opt with
+      | Some adir ->
+          let reason = reason_with_fallback env
+          "expand of directory " ^ adir ^ "is not supported" in
+          let result = Result.fail_with_reason reason in
+          (result, env)
+      | None ->
+        begin
+          List.iter f (String.words src);
+          (Result.pass, env)
+        end
+
+let expand =
+  make ~name:"expand"
+  ~description:"Expand variables in src to dst file" expand_action
+
 let initialize_test_exit_status_variables _log env =
   Environments.add_bindings
   [
@@ -319,6 +378,8 @@ let _ =
     fail;
     cd;
     dumpenv;
+    dumpenv_expanded;
+    dune;
     hasunix;
     hassysthreads;
     hasstr;
@@ -346,4 +407,5 @@ let _ =
     frame_pointers;
     file_exists;
     copy;
+    expand;
   ]

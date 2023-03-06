@@ -128,7 +128,7 @@ let initialize_loading () =
   end;
   Symbols.clear_symbols ();
   Symbols.read_symbols Debugcom.main_frag !program_name;
-  let dirs = Load_path.get_paths () @ !Symbols.program_source_dirs in
+  let dirs = Load_path.get_paths () @ (List.rev !Symbols.program_source_dirs) in
   Load_path.init ~auto_include:Compmisc.auto_include dirs;
   Envaux.reset_cache ();
   if !debug_loading then

@@ -308,6 +308,13 @@ Working version
 
 ### Tools:
 
+- #12085: Support BUILD_PATH_PREFIX_PATH in ocamldebug. This allows
+  ocamldebug to find the source code even when the build system
+  has mapped build-time absolute paths to abstract paths,
+  such as "/workspace_root" (like Dune does).
+  (Richard L Ford, review and discusson by David Allsop, Gabriel Scherer,
+  and Daniel Bünzli)
+
 - #1172: fix ocamlyacc's handling of raw string literals
   (Demi Marie Obenour)
 

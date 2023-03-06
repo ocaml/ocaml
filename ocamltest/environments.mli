@@ -24,6 +24,7 @@ val to_bindings : t -> (Variables.t * string) list
 val to_system_env : t -> string array
 val append_to_system_env : string array -> t -> string array
 
+val expand_string : t -> string -> string
 val lookup : Variables.t -> t -> string option
 val lookup_nonempty : Variables.t -> t -> string option
 val safe_lookup : Variables.t -> t -> string
@@ -50,6 +51,8 @@ val unsetenv : Variables.t -> t -> t
 val append : Variables.t -> string -> t -> t
 
 val dump : out_channel -> t -> unit
+
+val dump_expanded : out_channel -> t -> unit
 
 (* Initializers *)
 

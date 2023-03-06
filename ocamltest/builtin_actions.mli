@@ -20,6 +20,7 @@ val skip : Actions.t
 val fail : Actions.t
 
 val dumpenv : Actions.t
+val dumpenv_expanded : Actions.t
 
 val hasunix : Actions.t
 val libunix : Actions.t

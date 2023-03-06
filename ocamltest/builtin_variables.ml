@@ -146,3 +146,62 @@ let _ = List.iter Variables.register_variable
     test_fail;
     timeout;
   ]
+
+  (* Definition of builtin functions available for use *)
+
+(* The functions are listed in alphabetical order *)
+
+let bppm_decode_fun (arg: string) =
+  let l = String.length arg in
+  let b = Buffer.create 100 in
+  let rec loop i =
+    if i >= l then ()
+    else begin
+      let c = arg.[i] in
+      if c = '%' then begin
+        if (i + 1) >= l then ()
+        else
+          let nc = arg.[i+1] in
+          match nc with
+          | '#' -> Buffer.add_char b '%'; loop (i+2)
+          | '+' -> Buffer.add_char b '='; loop (i+2)
+          | '.' -> Buffer.add_char b ':'; loop (i+2)
+          | ',' -> Buffer.add_char b ';'; loop (i+2)
+          | _ -> ()
+      end else begin
+        Buffer.add_char b c;
+        loop (i+1)
+      end
+    end
+  in loop 0;
+  let res = Buffer.contents b in
+  res
+
+let bppm_decode = Variables.make ~variable_function: bppm_decode_fun
+  ("bppm_decode",
+  "function to do BUILD_PATH_PREFIX_MAP decoding")
+
+let bppm_encode_fun (arg: string) =
+  let l = String.length arg in
+  let b = Buffer.create 100 in
+  for i = 0 to (l - 1) do
+    let c = arg.[i] in
+    match c with
+    | '%' -> Buffer.add_string b "%#"
+    | '=' -> Buffer.add_string b "%+"
+    | ':' -> Buffer.add_string b "%."
+    | ';' -> Buffer.add_string b "%,"
+    | _ -> Buffer.add_char b c
+  done;
+  let res = Buffer.contents b in
+  res
+
+let bppm_encode = Variables.make ~variable_function: bppm_encode_fun
+  ("bppm_encode",
+  "function to do BUILD_PATH_PREFIX_MAP encoding")
+
+  let _ = List.iter Variables.register_variable
+  [
+    bppm_decode;
+    bppm_encode
+  ]

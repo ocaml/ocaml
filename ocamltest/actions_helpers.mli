@@ -60,3 +60,10 @@ val run_script : Actions.code
 val run_hook : string -> Actions.code
 
 val check_output : string -> Variables.t -> Variables.t -> Actions.code
+
+val available_in_path : string -> string -> Actions.t
+  (**
+    [available_in_path action_name exec_name] returns an
+    action with name [action_name] that checks whether
+    [exec_name] is available on the path.
+   *)

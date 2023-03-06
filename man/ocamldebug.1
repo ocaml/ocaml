@@ -114,6 +114,22 @@ Note that you can also use the
 .B source file
 command to read commands from a file.
 
+.SH ENVIRONMENT VARIABLES
+
+The following environment variable is also consulted:
+.TP
+.B BUILD_PATH_PREFIX_MAP
+ocamldebug(1) follows the BUILD_PATH_PREFIX_MAP specification. See
+.IR https://reproducible-builds.org/specs/build-path-prefix-map/ .
+Its format is a list of pairs, separated by ':'.
+Each pair is of the form "lhs=rhs", where "lhs" is a list of
+target paths, separated by ';'. The rhs is a source path.
+The source and target paths all are encoded in a way that
+avoids occurrences of ':', '=', and ';'. In particular,
+':' -> "%.", '=' -> "%+", ';' -> "%,", '%' -> "%#".
+For example.
+"/mybuilddir;opamroot/switch/lib=/workspace_root".
+
 .SH SEE ALSO
 .BR ocamlc (1)
 .br

@@ -26,9 +26,18 @@ module String = Misc.Stdlib.String
 let modules =
   ref ([] : string list)
 
+(* The list of program source directories in reverse order.contents
+   That is, the head of the list is the last to used. *)
 let program_source_dirs =
   ref ([] : string list)
 
+let program_source_set = ref String.Set.empty
+
+let add_to_program_source dir =
+  if String.Set.mem dir !program_source_set then ()
+  else
+    program_source_dirs := dir :: !program_source_dirs;
+    program_source_set :=  String.Set.add dir !program_source_set
 let events_by_pc =
   (Hashtbl.create 257 : (pc, debug_event) Hashtbl.t)
 let events_by_module =
@@ -54,6 +63,14 @@ let relocate_event orig ev =
     Event_parent repr -> repr := ev.ev_pos
   | _                 -> ()
 
+let bppm_expand_path path =
+
+  let search_list = Location.rewrite_to_search_list path in
+  search_list
+
+let get_load_path () =
+  Load_path.get_paths ()
+
 let read_symbols' bytecode_file =
   let ic = open_in_bin bytecode_file in
   let toc =
@@ -73,7 +90,6 @@ let read_symbols' bytecode_file =
     raise Toplevel
   end;
   let num_eventlists = input_binary_int ic in
-  let dirs = ref String.Set.empty in
   let eventlists = ref [] in
   for _i = 1 to num_eventlists do
     let orig = input_binary_int ic in
@@ -82,8 +98,11 @@ let read_symbols' bytecode_file =
     List.iter (relocate_event orig) evl;
     let evll = partition_modules evl in
     eventlists := evll @ !eventlists;
-    dirs :=
-      List.fold_left (fun s e -> String.Set.add e s) !dirs (input_value ic)
+    let dirlist = (input_value ic : string list) in
+    List.iter (fun dir ->
+      let search_list = bppm_expand_path dir in
+      List.iter add_to_program_source search_list;
+      ) dirlist;
   done;
   begin try
     ignore (Bytesections.seek_section toc ic Bytesections.Name.CODE)
@@ -93,11 +112,12 @@ let read_symbols' bytecode_file =
     set_launching_function (List.assoc "manual" loading_modes)
   end;
   close_in_noerr ic;
-  !eventlists, !dirs
+  !eventlists
 
 let clear_symbols () =
   modules := [];
   program_source_dirs := [];
+  program_source_set := String.Set.empty;
   Hashtbl.clear events_by_pc; Hashtbl.clear events_by_module;
   Hashtbl.clear all_events_by_module
 
@@ -132,8 +152,7 @@ let add_symbols frag all_events =
     all_events
 
 let read_symbols frag bytecode_file =
-  let all_events, all_dirs = read_symbols' bytecode_file in
-  program_source_dirs := !program_source_dirs @ (String.Set.elements all_dirs);
+  let all_events = read_symbols' bytecode_file in
   add_symbols frag all_events
 
 let erase_symbols frag =
