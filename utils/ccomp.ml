@@ -45,7 +45,7 @@ let build_response_file lst =
   at_exit (fun () -> Misc.remove_file responsefile);
   "@" ^ responsefile
 
-let quote_files ?(response_files = true) lst =
+let quote_files ~response_files lst =
   let lst = List.filter (fun f -> f <> "") lst in
   let quoted = List.map Filename.quote lst in
   let s = String.concat " " quoted in
@@ -55,10 +55,10 @@ let quote_files ?(response_files = true) lst =
   then build_response_file quoted
   else s
 
-let quote_prefixed pr lst =
+let quote_prefixed ~response_files pr lst =
   let lst = List.filter (fun f -> f <> "") lst in
   let lst = List.map (fun f -> pr ^ f) lst in
-  quote_files lst
+  quote_files ~response_files lst
 
 let quote_optfile = function
   | None -> ""
@@ -113,7 +113,7 @@ let compile_file ?output ?(opt="") ?stable_name name =
          opt
          (if !Clflags.debug && Config.ccomp_type <> "msvc" then "-g" else "")
          (String.concat " " (List.rev !Clflags.all_ccopts))
-         (quote_prefixed "-I"
+         (quote_prefixed ~response_files:true "-I"
             (List.map (Misc.expand_directory Config.standard_library)
                (List.rev !Clflags.include_dirs)))
          (Clflags.std_include_flag "-I")
@@ -138,7 +138,8 @@ let create_archive archive file_list =
     match Config.ccomp_type with
       "msvc" ->
         command(Printf.sprintf "link /lib /nologo /out:%s %s"
-                               quoted_archive (quote_files file_list))
+                               quoted_archive
+                               (quote_files ~response_files:true file_list))
     | _ ->
         assert(String.length Config.ar > 0);
         command(Printf.sprintf "%s rc %s %s"
@@ -183,8 +184,9 @@ let call_linker mode output_name files extra =
         Printf.sprintf "%s%s %s %s %s"
           Config.native_pack_linker
           (Filename.quote output_name)
-          (quote_prefixed l_prefix (Load_path.get_paths ()))
-          (quote_files (remove_Wl files))
+          (quote_prefixed ~response_files:true
+            l_prefix (Load_path.get_paths ()))
+          (quote_files ~response_files:true (remove_Wl files))
           extra
       else
         Printf.sprintf "%s -o %s %s %s %s %s %s"
@@ -197,9 +199,9 @@ let call_linker mode output_name files extra =
           )
           (Filename.quote output_name)
           ""  (*(Clflags.std_include_flag "-I")*)
-          (quote_prefixed "-L" (Load_path.get_paths ()))
+          (quote_prefixed ~response_files:true "-L" (Load_path.get_paths ()))
           (String.concat " " (List.rev !Clflags.all_ccopts))
-          (quote_files files)
+          (quote_files ~response_files:true files)
           extra
     in
     command cmd
@@ -210,6 +212,3 @@ let linker_is_flexlink =
      invocations for the native Windows ports and for Cygwin, if shared library
      support is enabled. *)
   Sys.win32 || Config.supports_shared_libraries && Sys.cygwin
-
-let quote_files =
-  quote_files ~response_files:true
