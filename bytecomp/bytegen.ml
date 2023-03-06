@@ -367,13 +367,13 @@ let code_as_jump stack_info l sz = match l with
 (* Function bodies that remain to be compiled *)
 
 type function_to_compile =
-  { params: Ident.t list;     (* function parameters *)
-    body: lambda;             (* the function body *)
-    label: label;             (* the label of the function entry *)
-    free_vars: Ident.t list;  (* free variables of the function *)
+  { params: Ident.t list;               (* function parameters *)
+    body: lambda;                       (* the function body *)
+    label: label;                       (* the label of the function entry *)
+    free_vars: Ident.t list;            (* free variables of the function *)
     num_defs: int;            (* number of mutually recursive definitions *)
-    rec_vars: Ident.t list;   (* mutually recursive fn names *)
-    rec_pos: int }            (* rank in recursive definition *)
+    rec_vars: Ident.t list;             (* mutually recursive fn names *)
+    rec_pos: int }                      (* rank in recursive definition *)
 
 let functions_to_compile  = (Stack.create () : function_to_compile Stack.t)
 
