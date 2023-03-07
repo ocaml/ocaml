@@ -19,6 +19,13 @@ open Misc
 open Config
 open Cmo_format
 
+module Dep = struct
+  type t = string * string
+  let compare = compare
+end
+
+module DepSet = Set.Make (Dep)
+
 type error =
   | File_not_found of filepath
   | Not_an_object_file of filepath
@@ -30,7 +37,7 @@ type error =
   | Cannot_open_dll of filepath
   | Required_module_unavailable of modname * modname
   | Camlheader of string * filepath
-  | Wrong_link_order of (modname * modname) list
+  | Wrong_link_order of DepSet.t
   | Multiple_definition of modname * filepath * filepath
 
 exception Error of error
@@ -90,7 +97,11 @@ let add_ccobjs origin l =
 
 let missing_globals = ref Ident.Map.empty
 let provided_globals = ref Ident.Set.empty
-let badly_ordered_dependencies : (string * string) list ref = ref []
+let badly_ordered_dependencies : DepSet.t ref = ref DepSet.empty
+
+let record_badly_ordered_dependency (id, compunit) =
+  let dep = ((Ident.name id), compunit.cu_name) in
+  badly_ordered_dependencies := DepSet.add dep !badly_ordered_dependencies
 
 let is_required (rel, _pos) =
   match rel with
@@ -101,8 +112,7 @@ let is_required (rel, _pos) =
 let add_required compunit =
   let add id =
     if Ident.Set.mem id !provided_globals then
-      badly_ordered_dependencies :=
-        ((Ident.name id), compunit.cu_name) :: !badly_ordered_dependencies;
+      record_badly_ordered_dependency (id, compunit);
     missing_globals := Ident.Map.add id compunit.cu_name !missing_globals
   in
   List.iter add (Symtable.required_globals compunit.cu_reloc);
@@ -629,11 +639,11 @@ let link objfiles output_name =
     match Ident.Map.bindings missing_modules with
     | [] -> ()
     | (id, cu_name) :: _ ->
-        match !badly_ordered_dependencies with
-        | [] ->
+        if DepSet.is_empty !badly_ordered_dependencies
+        then
             raise (Error (Required_module_unavailable (Ident.name id, cu_name)))
-        | l ->
-            raise (Error (Wrong_link_order l))
+        else
+            raise (Error (Wrong_link_order !badly_ordered_dependencies))
   end;
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs; (* put user's libs last *)
   Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
@@ -769,7 +779,8 @@ let report_error ppf = function
       fprintf ppf "Module `%s' is unavailable (required by `%s')" s m
   | Camlheader (msg, header) ->
       fprintf ppf "System error while copying file %s: %s" header msg
-  | Wrong_link_order l ->
+  | Wrong_link_order depset ->
+      let l = DepSet.elements depset in
       let depends_on ppf (dep, depending) =
         fprintf ppf "%s depends on %s" depending dep
       in
