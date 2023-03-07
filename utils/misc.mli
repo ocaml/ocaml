@@ -257,6 +257,14 @@ val protect_writing_to_file
           channel. If the function raises an exception then [filename]
           will be removed. *)
 
+val concat_null_terminated : string list -> string
+(** [concat_null_terminated [x1;x2; ... xn]] is
+    [x1 ^ "\000" ^ x2 ^ "\000" ^ ... ^ xn ^ "\000"] *)
+
+val split_null_terminated : string -> string list
+(** [split_null_terminated s] is similar
+    [String.split_on_char '\000'] but ignores the trailing separator, if any *)
+
 val chop_extensions: string -> string
        (** Return the given file name without its extensions. The extensions
            is the longest suffix starting with a period and not including

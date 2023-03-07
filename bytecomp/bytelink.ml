@@ -297,11 +297,6 @@ let output_debug_info oc =
     !debug_info;
   debug_info := []
 
-(* Output a list of strings with 0-termination *)
-
-let output_stringlist oc l =
-  List.iter (fun s -> output_string oc s; output_byte oc 0) l
-
 (* Transform a file name into an absolute file name *)
 
 let make_absolute file =
@@ -385,10 +380,10 @@ let link_bytecode ?final_name tolink exec_name standalone =
        (* DLL stuff *)
        if standalone then begin
          (* The extra search path for DLLs *)
-         output_stringlist outchan !Clflags.dllpaths;
+         output_string outchan (concat_null_terminated !Clflags.dllpaths);
          Bytesections.record outchan "DLPT";
          (* The names of the DLLs *)
-         output_stringlist outchan sharedobjs;
+         output_string outchan (concat_null_terminated sharedobjs);
          Bytesections.record outchan "DLLS"
        end;
        (* The names of all primitives *)

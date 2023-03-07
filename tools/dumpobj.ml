@@ -477,18 +477,13 @@ let dump_obj ic =
   seek_in ic cu.cu_pos;
   print_code ic cu.cu_codesize
 
-(* Read the primitive table from an executable *)
-
-let read_primitive_table ic len =
-  let p = really_input_string ic len in
-  String.split_on_char '\000' p |> List.filter ((<>) "") |> Array.of_list
-
 (* Print an executable file *)
 
 let dump_exe ic =
   Bytesections.read_toc ic;
-  let prim_size = Bytesections.seek_section ic "PRIM" in
-  primitives := read_primitive_table ic prim_size;
+  (* Read the primitive table from an executable *)
+  let prims = Bytesections.read_section_string ic "PRIM" in
+  primitives := Array.of_list (Misc.split_null_terminated prims);
   ignore(Bytesections.seek_section ic "DATA");
   let init_data = (input_value ic : Obj.t array) in
   globals := Array.make (Array.length init_data) Empty;

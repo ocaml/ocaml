@@ -423,6 +423,17 @@ let find_first_mono =
 
 (* String operations *)
 
+let split_null_terminated s =
+  let[@tail_mod_cons] rec discard_last_sep = function
+    | [] | [""] -> []
+    | x :: xs -> x :: discard_last_sep xs
+  in
+  discard_last_sep (String.split_on_char '\000' s)
+
+let concat_null_terminated = function
+  | [] -> ""
+  | l -> String.concat "\000" (l @ [""])
+
 let chop_extensions file =
   let dirname = Filename.dirname file and basename = Filename.basename file in
   try

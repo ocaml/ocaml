@@ -117,12 +117,9 @@ let all_primitives () =
   prim
 
 let data_primitive_names () =
-  let prim = all_primitives() in
-  let b = Buffer.create 512 in
-  for i = 0 to Array.length prim - 1 do
-    Buffer.add_string b prim.(i); Buffer.add_char b '\000'
-  done;
-  Buffer.contents b
+  all_primitives()
+  |> Array.to_list
+  |> concat_null_terminated
 
 let output_primitive_names outchan =
   output_string outchan (data_primitive_names())
@@ -307,17 +304,14 @@ let init_toplevel () =
     (* Locations of globals *)
     global_table := (Obj.magic (sect.read_struct "SYMB") : GlobalMap.t);
     (* Primitives *)
-    let prims = sect.read_string "PRIM" in
+    let prims = Misc.split_null_terminated (sect.read_string "PRIM") in
     c_prim_table := PrimMap.empty;
-    let pos = ref 0 in
-    while !pos < String.length prims do
-      let i = String.index_from prims !pos '\000' in
-      set_prim_table (String.sub prims !pos (i - !pos));
-      pos := i + 1
-    done;
+    List.iter set_prim_table prims;
     (* DLL initialization *)
-    let dllpath = try sect.read_string "DLPT" with Not_found -> "" in
-    Dll.init_toplevel dllpath;
+    let dllpaths =
+      try Misc.split_null_terminated (sect.read_string "DLPT")
+      with Not_found -> [] in
+    Dll.init_toplevel dllpaths;
     (* Recover CRC infos for interfaces *)
     let crcintfs =
       try

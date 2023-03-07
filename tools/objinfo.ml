@@ -33,17 +33,8 @@ let shape = ref false
 module Magic_number = Misc.Magic_number
 
 let input_stringlist ic len =
-  let get_string_list sect len =
-    let rec fold s e acc =
-      if e != len then
-        if sect.[e] = '\000' then
-          fold (e+1) (e+1) (String.sub sect s (e-s) :: acc)
-        else fold s (e+1) acc
-      else acc
-    in fold 0 0 []
-  in
   let sect = really_input_string ic len in
-  get_string_list sect len
+  split_null_terminated sect
 
 let dummy_crc = String.make 32 '-'
 let null_crc = String.make 32 '0'

@@ -6920,6 +6920,7 @@ tools/dumpobj.cmo : \
     bytecomp/symtable.cmi \
     tools/opnames.cmi \
     bytecomp/opcodes.cmi \
+    utils/misc.cmi \
     parsing/location.cmi \
     bytecomp/instruct.cmi \
     typing/ident.cmi \
@@ -6931,6 +6932,7 @@ tools/dumpobj.cmx : \
     bytecomp/symtable.cmx \
     tools/opnames.cmx \
     bytecomp/opcodes.cmx \
+    utils/misc.cmx \
     parsing/location.cmx \
     bytecomp/instruct.cmx \
     typing/ident.cmx \
