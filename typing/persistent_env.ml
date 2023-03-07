@@ -196,9 +196,9 @@ let read_pers_struct penv val_of_pers_sig check modname filename =
   add_import penv modname;
   let cmi = read_cmi filename in
   let pers_sig = { Persistent_signature.filename; cmi } in
-  let pm = val_of_pers_sig pers_sig in
+  let pm, metadata = val_of_pers_sig pers_sig in
   let ps = acknowledge_pers_struct penv check modname pers_sig pm in
-  (ps, pm)
+  (ps, pm, metadata)
 
 let find_pers_struct penv val_of_pers_sig check name =
   let {persistent_structures; _} = penv in
@@ -252,7 +252,8 @@ let check_pers_struct penv f ~loc name =
         Location.prerr_warning loc warn
 
 let read penv f modname filename =
-  snd (read_pers_struct penv f true modname filename)
+  let _ps, md, metadata = read_pers_struct penv f true modname filename in
+  md, metadata
 
 let find penv f name =
   snd (find_pers_struct penv f true name)

@@ -53,8 +53,10 @@ val clear_missing : 'a t -> unit
 
 val fold : 'a t -> (modname -> 'a -> 'b -> 'b) -> 'b -> 'b
 
-val read : 'a t -> (Persistent_signature.t -> 'a)
-  -> modname -> filepath -> 'a
+
+val read : 'a t -> (Persistent_signature.t -> 'a * 'b)
+  -> modname -> filepath -> 'a * 'b
+
 val find : 'a t -> (Persistent_signature.t -> 'a)
   -> modname -> 'a
 
