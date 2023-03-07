@@ -432,7 +432,7 @@ let split_null_terminated s =
 
 let concat_null_terminated = function
   | [] -> ""
-  | l -> String.concat "\000" l ^ "\000"
+  | l -> String.concat "\000" (l @ [""])
 
 let chop_extensions file =
   let dirname = Filename.dirname file and basename = Filename.basename file in
