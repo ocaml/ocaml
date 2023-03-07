@@ -433,6 +433,10 @@ Working version
 - #12024: insert a blank line between separate compiler messages
   (Gabriel Scherer, review by Florian Angeletti, report by David Wong)
 
+- #12043, #?????: store the source file name inside cmi files, and use that
+  name in error messages.
+  (Florian Angeletti, report by David Wong, review by ????)
+
 ### Internal/compiler-libs changes:
 
 - #10512: explain the compilation strategy for switches on constructors
