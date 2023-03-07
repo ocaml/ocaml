@@ -63,57 +63,58 @@
 type 'a t
 (** A dynamic array containing values of type ['a].
 
-    A dynamic array [a] is an array, that is, it provides
-    constant-time [get] and [set] operation on indices between [0] and
-    [Dynarray.length a - 1] included. Its {b length} may change over
-    time by adding or removing elements to the end of the array.
+    A dynamic array [a] provides constant-time [get] and [set]
+    operation on indices between [0] and [Dynarray.length a - 1]
+    included. Its {!length} may change over time by adding or removing
+    elements to the end of the array.
+
+    We say that an index into a dynarray [a] is valid if it is in
+    [0 .. length a - 1] and invalid otherwise.
 *)
 
 val create : unit -> 'a t
 (** [create ()] is a new, empty array. *)
 
 val make : int -> 'a -> 'a t
-(** [make n x] makes a array of length [n], filled with [x]. *)
+(** [make n x] is a new array of length [n], filled with [x]. *)
 
 val init : int -> (int -> 'a) -> 'a t
 (** [init n f] is a new array [a] of length [n],
     such that [get a i] is [f i]. In other words,
-    [a] is the the array whose elements are
-    [f 0; f 1; f 2; ...; f (n - 1)].
+    the elements of [a] are [f 0], then [f 1],
+    then [f 2]... and [f (n - 1)] last, evaluated
+    in that order.
 
     This is similar to {!Array.init}. *)
 
 val get : 'a t -> int -> 'a
 (** [get a i] is the [i]-th element of [a], starting with index [0].
 
-    @raise Invalid_argument if the index is
-      invalid (not in [0 .. length a-1]). *)
+    @raise Invalid_argument if the index is invalid *)
 
 val set : 'a t -> int -> 'a -> unit
 (** [set a i x] sets the [i]-th element of [a] to be [x].
 
-    Just like {!get}, [i] must be between [0] and [length a - 1]
-    included. [set] does not add new elements to the array -- see
-    {!add_last} to add an element.
+    Just like {!get}, [i] must be a valid index. [set] does not add
+    new elements to the array -- see {!add_last} to add an element.
 
     @raise Invalid_argument if the index is invalid. *)
 
 val length : _ t -> int
-(** [length a] is the number of elements in the array.
-    The last element of [a], if not empty, is [get a (length a - 1)].
-    This operation is constant time. *)
+(** [length a] is the number of elements in the array. *)
 
 val is_empty : 'a t -> bool
 (** [is_empty a] is [true] if [a] is empty, that is, if [length a = 0]. *)
 
 val copy : 'a t -> 'a t
-(** [copy a] is a shallow copy of [a], that can be modified independently. *)
+(** [copy a] is a shallow copy of [a], a fresh array
+    containing the same elements as [a]. *)
 
 
 (** {1:adding Adding elements}
 
-    Note: all operations adding elements can raise [Failure] if the
-    length would need to grow beyond {!Sys.max_array_length}. *)
+    Note: all operations adding elements raise [Failure] if the
+    length needs to grow beyond {!Sys.max_array_length}. *)
 
 val add_last : 'a t -> 'a -> unit
 (** [add_last a x] adds the element [x] at the end of the array [a].
@@ -337,10 +338,10 @@ val to_seq_rev : 'a t -> 'a Seq.t
 *)
 
 val ensure_capacity : 'a t -> int -> unit
-(** [ensure_capacity a n] makes sure that [a] has capacity has least [n].
+(** [ensure_capacity a n] makes sure that the capacity of [a]
+    is at least [n].
 
     @raise Invalid_argument if the requested capacity is negative.
-    (We consider that this is a programming error.)
 
     @raise Failure if the requested capacity is above
       {!Sys.max_array_length}.
@@ -348,7 +349,7 @@ val ensure_capacity : 'a t -> int -> unit
     scenarios. In particular, all functions adding elements to a dynamic
     array may propagate this exception.)
 
-    An example use-case would be to implement [append_array]:
+    A use case would be to implement {!append_array}:
 {[
     let append_array a arr =
       ensure_capacity a (length a + Array.length arr);
@@ -384,8 +385,7 @@ val reset : 'a t -> unit
 (** [reset a] clears [a] and replaces its backing array by an empty array.
 
     It is equivalent to [clear a; fit_capacity a].
-
-    Similar to {!Buffer.reset}. *)
+*)
 
 (** {2:noleaks No leaks: preservation of memory liveness}
 
@@ -398,9 +398,10 @@ val reset : 'a t -> unit
 (** {2:memory_layout Memory layout of dynarrays}
 
     In the current implementation, the backing array of an
-    ['a Dynarray.t] is not an ['a array], but something closer to an
-    ['a option array] in terms of memory layout -- with a mutable field,
-    so that we allocate only when adding new elements to the array.
+    ['a Dynarray.t] is not an ['a array], but something with the same
+    representation as an ['a option array] or ['a ref array].
+    Each element is in a "box", allocated when the element is first
+    added to the array -- see the implementation for more details.
 
     Using a ['a array] would be delicate, as there is no obvious
     type-correct way to represent the empty space at the end of the
