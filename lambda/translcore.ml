@@ -529,15 +529,10 @@ and transl_exp0 ~in_new_scope ~scopes e =
       let lam = !transl_module ~scopes Tcoerce_none None modl in
       Lsequence(Lprim(Pignore, [lam], of_location ~scopes loc.loc),
                 transl_exp ~scopes body)
-  | Texp_letmodule(Some id, loc, Mp_present, modl, body) ->
+  | Texp_letmodule(Some id, _loc, Mp_present, modl, body) ->
       let defining_expr =
         let mod_scopes = enter_module_definition ~scopes id in
-        Levent (!transl_module ~scopes:mod_scopes Tcoerce_none None modl, {
-          lev_loc = of_location ~scopes loc.loc;
-          lev_kind = Lev_module_definition id;
-          lev_repr = None;
-          lev_env = Env.empty;
-        })
+        !transl_module ~scopes:mod_scopes Tcoerce_none None modl
       in
       Llet(Strict, Pgenval, id, defining_expr, transl_exp ~scopes body)
   | Texp_letmodule(_, _, Mp_absent, _, body) ->
