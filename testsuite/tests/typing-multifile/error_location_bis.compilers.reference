@@ -1,0 +1,11 @@
+File "error_location_bis.ml", line 1:
+Error: The implementation error_location_bis.ml
+       does not match the interface A_far_away_module: 
+       The type `t' is required but not provided
+       File "A_far_away_module", line 1, characters 0-10:
+         Expected declaration
+       The module `M' is required but not provided
+       File "A_far_away_module", line 2, characters 0-3: Expected declaration
+       The type `s' is required but not provided
+       File "A_far_away_module", line 3, characters 0-10:
+         Expected declaration

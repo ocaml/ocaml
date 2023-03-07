@@ -1,0 +1,12 @@
+File "error_location.ml", line 1:
+Error: The implementation error_location.ml
+       does not match the interface error_location.mli: 
+       The type `t' is required but not provided
+       File "error_location.mli", line 1, characters 0-10:
+         Expected declaration
+       The module `M' is required but not provided
+       File "error_location.mli", lines 2-4, characters 0-3:
+         Expected declaration
+       The type `s' is required but not provided
+       File "error_location.mli", line 5, characters 0-10:
+         Expected declaration
