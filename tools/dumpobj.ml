@@ -483,7 +483,7 @@ let dump_exe ic =
   Bytesections.read_toc ic;
   (* Read the primitive table from an executable *)
   let prims = Bytesections.read_section_string ic "PRIM" in
-  primitives := Array.of_list (Misc.split_null_separated prims);
+  primitives := Array.of_list (Misc.split_null_terminated prims);
   ignore(Bytesections.seek_section ic "DATA");
   let init_data = (input_value ic : Obj.t array) in
   globals := Array.make (Array.length init_data) Empty;

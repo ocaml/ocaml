@@ -34,7 +34,7 @@ module Magic_number = Misc.Magic_number
 
 let input_stringlist ic len =
   let sect = really_input_string ic len in
-  split_null_separated sect
+  split_null_terminated sect
 
 let dummy_crc = String.make 32 '-'
 let null_crc = String.make 32 '0'

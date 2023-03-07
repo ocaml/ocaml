@@ -370,10 +370,10 @@ let link_bytecode ?final_name tolink exec_name standalone =
        (* DLL stuff *)
        if standalone then begin
          (* The extra search path for DLLs *)
-         output_string outchan (concat_null_separated !Clflags.dllpaths);
+         output_string outchan (concat_null_terminated !Clflags.dllpaths);
          Bytesections.record outchan "DLPT";
          (* The names of the DLLs *)
-         output_string outchan (concat_null_separated sharedobjs);
+         output_string outchan (concat_null_terminated sharedobjs);
          Bytesections.record outchan "DLLS"
        end;
        (* The names of all primitives *)
