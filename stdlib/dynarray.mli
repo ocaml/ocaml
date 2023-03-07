@@ -95,8 +95,8 @@ val get : 'a t -> int -> 'a
 val set : 'a t -> int -> 'a -> unit
 (** [set a i x] sets the [i]-th element of [a] to be [x].
 
-    Just like {!get}, [i] must be a valid index. [set] does not add
-    new elements to the array -- see {!add_last} to add an element.
+    [i] must be a valid index. [set] does not add new elements to the
+    array -- see {!add_last} to add an element.
 
     @raise Invalid_argument if the index is invalid. *)
 
@@ -107,7 +107,7 @@ val is_empty : 'a t -> bool
 (** [is_empty a] is [true] if [a] is empty, that is, if [length a = 0]. *)
 
 val copy : 'a t -> 'a t
-(** [copy a] is a shallow copy of [a], a fresh array
+(** [copy a] is a shallow copy of [a], a new array
     containing the same elements as [a]. *)
 
 
@@ -117,17 +117,17 @@ val copy : 'a t -> 'a t
     length needs to grow beyond {!Sys.max_array_length}. *)
 
 val add_last : 'a t -> 'a -> unit
-(** [add_last a x] adds the element [x] at the end of the array [a].
-    The length of [a] increases by [1]. *)
+(** [add_last a x] adds the element [x] at the end of the array [a]. *)
 
 val append_array : 'a t -> 'a array -> unit
 (** [append_array a b] adds all elements of [b] at the end of [a],
     in the order they appear in [b].
 
-    For example, [a] will contain [1,2,3,4,5,6] after this code runs:
+    For example:
     {[
-      let a = of_list [1;2;3];;
-      let () = append a [|4; 5; 6|];;
+      let a = Dynarray.of_list [1;2]
+      let () = Dynarray.append a [|3; 4|]
+      let () = assert (Dynarray.to_list a = [1; 2; 3; 4])
     ]}
 *)
 
@@ -154,11 +154,11 @@ val append_iter :
   'a t ->
   (('a -> unit) -> 'x -> unit) ->
   'x -> unit
-(** [append_iter a iter x] adds to [a] each element in [x]. It uses [iter]
-    to iterate over [x].
+(** [append_iter a iter x] adds each element of [x] to the end of [a].
+    This is [iter (add_last a) x].
 
     For example, [append_iter a List.iter [1;2;3]] would add elements
-    [1], [2], and [3] at the end of [a].
+    [1], [2], and then [3] at the end of [a].
     [append_iter a Queue.iter q] adds elements from the queue [q]. *)
 
 
@@ -174,32 +174,24 @@ val pop_last : 'a t -> 'a
     @raise Not_found on an empty array. *)
 
 val remove_last : 'a t -> unit
-(** [remove_last a] removes the last element of [a] , or does nothing
-    if [is_empty a].
-*)
+(** [remove_last a] removes the last element of [a], if any.
+    It does nothing if [a] is empty. *)
 
 val clear : 'a t -> unit
-(** [clear a] removes all the elements of [a].
-
-    It is equivalent to [truncate a 0].
-
-    Similar to {!Buffer.clear}.
-*)
+(** [clear a] is [truncate a 0], it removes all the elements of [a]. *)
 
 val truncate : 'a t -> int -> unit
 (** [truncate a n] truncates [a] to have at most [n] elements.
 
-    It removes elements whose index is great or equal than [n].
+    It removes elements whose index is greater or equal to [n].
     It does nothing if [n >= length a].
 
-    It is equivalent to:
+    [truncate a n] is equivalent to:
     {[
       while length a > n do
         remove_last a
       done
     ]}
-
-    Similar to {!Buffer.truncate}.
 *)
 
 
@@ -231,14 +223,15 @@ val fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
 (** [fold_left f acc a] folds [f] over [a] starting with accumulator [acc]. *)
 
 val exists : ('a -> bool) -> 'a t -> bool
-(** [exists f a] returns [true] if some element of [a] satisfies [f]. *)
+(** [exists f a] is [true] if some element of [a] satisfies [f]. *)
 
 val for_all : ('a -> bool) -> 'a t -> bool
-(** [for_all f a] returns [true] if all elements of [a] satisfie [f].
+(** [for_all f a] is [true] if all elements of [a] satisfy [f].
     This includes the case where [a] is empty. *)
 
 val filter : ('a -> bool) -> 'a t -> 'a t
-(** [filter f a] is an array containing all elements of [a] that satisfy [f] *)
+(** [filter f a] is a new array containing
+    all elements of [a] that satisfy [f]. *)
 
 val filter_map : ('a -> 'b option) -> 'a t -> 'b t
 (** [filter_map f a] is a new array [b], such that for each item [x] in [a]:
@@ -251,7 +244,7 @@ val filter_map : ('a -> 'b option) -> 'a t -> 'b t
     Note: the [of_*] functions can raise [Failure] if the length would
     need to grow beyond {!Sys.max_array_length}.
 
-    The [to_*] functions, expect for {!to_seq}, iterate on their
+    The [to_*] functions, except for {!to_seq}, iterate on their
     dynarray argument. In particular it is a programming error if the
     length of the dynarray changes during their execution, and the
     conversion functions raise [Invalid_argument] if they observe such
