@@ -777,6 +777,7 @@ build_os
 build_vendor
 build_cpu
 build
+ar_supports_response_files
 QS
 ocaml_libdir
 ocaml_bindir
@@ -3353,6 +3354,7 @@ OCAML_VERSION_SHORT=5.1
 
 
  # TODO: rename this variable
+
 
 
 
@@ -13519,6 +13521,15 @@ esac
 
 ocamlsrcdir=$(unset CDPATH; cd -- "$srcdir" && printf %sX "$PWD") || fail
 ocamlsrcdir=${ocamlsrcdir%X}
+
+# Whether ar supports @FILE arguments
+
+case lt_cv_ar_at_file in #(
+  no) :
+    ar_supports_response_files=false ;; #(
+  *) :
+    ar_supports_response_files=true ;;
+esac
 
 # Libraries to build depending on the host
 

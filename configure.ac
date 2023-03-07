@@ -213,6 +213,7 @@ AC_SUBST([compute_deps])
 AC_SUBST([ocaml_bindir])
 AC_SUBST([ocaml_libdir])
 AC_SUBST([QS])
+AC_SUBST([ar_supports_response_files])
 
 ## Generated files
 
@@ -592,6 +593,12 @@ AS_CASE([$ocaml_cv_cc_vendor],
 
 ocamlsrcdir=$(unset CDPATH; cd -- "$srcdir" && printf %sX "$PWD") || fail
 ocamlsrcdir=${ocamlsrcdir%X}
+
+# Whether ar supports @FILE arguments
+
+AS_CASE([lt_cv_ar_at_file],
+  [no], [ar_supports_response_files=false],
+  [ar_supports_response_files=true])
 
 # Libraries to build depending on the host
 
