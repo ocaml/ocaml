@@ -522,7 +522,7 @@ static void print_stats (int after, intnat budget)
                " ?? dependent size, "
                " %.3g total extra, "
                " %"ARCH_INTNAT_PRINTF_FORMAT"d total work done, "
-               " %.2g work/alloc, "
+               " %.3g work/alloc, "
                " %"ARCH_INTNAT_PRINTF_FORMAT"d slice %s, "
                " %s",
                total_alloc, caml_heap_size(dom_st->shared_heap),
@@ -538,6 +538,34 @@ static void print_stats (int after, intnat budget)
   /*
     eventuellement: tableau des budgets + is_active
   */
+}
+
+static void log_gc_speed (void) /* XXX debug */
+{
+  static intnat prev_alloc, prev_work;
+  intnat pending_alloc = 0;
+  int i;
+
+  caml_gc_log ("GCSP avg: %"ARCH_INTNAT_PRINTF_FORMAT"d total alloc, "
+               " %"ARCH_INTNAT_PRINTF_FORMAT"d total work, "
+               " %.3g work/alloc",
+               total_alloc, total_work_done,
+               (double) total_work_done / (double) total_alloc);
+  if (total_alloc != prev_alloc){
+    caml_gc_log ("GCSP inst: %"ARCH_INTNAT_PRINTF_FORMAT"d total alloc, "
+                 " %"ARCH_INTNAT_PRINTF_FORMAT"d total work, "
+                 " %.3g work/alloc",
+                 total_alloc - prev_alloc, total_work_done - prev_work,
+                 (double) (total_work_done - prev_work)
+                 / (double) (total_alloc - prev_alloc));
+  }
+  prev_alloc = total_alloc;
+  prev_work = total_work_done;
+  for (i = 0; i < Max_domains; i++){
+    pending_alloc += domain_accounts[i].alloc;
+  }
+  caml_gc_log ("GCSP pending alloc = %"ARCH_INTNAT_PRINTF_FORMAT"d",
+               pending_alloc);
 }
 
 static void update_major_slice_work(void) {
@@ -662,10 +690,21 @@ static void update_major_slice_work(void) {
                          (uintnat)heap_words, dom_st->allocated_words,
                          alloc_work, dependent_work, extra_work);
 
+  //log_gc_speed ();
+
   dom_st->alloc_ratio = alloc_ratio;
   dom_st->dependent_ratio = dependent_ratio;
   dom_st->extra_ratio = extra_ratio;
   dom_st->slice_budget = max3 (alloc_work, dependent_work, extra_work);
+
+  caml_gc_log ("my alloc count = %"ARCH_INTNAT_PRINTF_FORMAT "u, "
+               "alloc ratio = %.3g, "
+               "slice_budget = %"ARCH_INTNAT_PRINTF_FORMAT "u, "
+               "budget / alloc = %.3g",
+               my_alloc_count,
+               alloc_ratio,
+               dom_st->slice_budget,
+               (double) dom_st->slice_budget / my_alloc_count);
 }
 
 static intnat get_major_slice_work(intnat howmuch) {
@@ -721,7 +760,8 @@ static void commit_major_slice_work(intnat words_done) {
     distribute (dom_st, alloc, dependent, extra);
   }
   caml_plat_unlock (&accounting_lock);
-  print_stats (1, words_done);
+  //print_stats (1, words_done);
+  log_gc_speed ();
 }
 
 static void mark_stack_prune(struct mark_stack* stk);
@@ -1249,9 +1289,12 @@ static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
 static void reset_domain_account (int id)
 {
   CAMLassert (id < Max_domains);
-  domain_accounts[id].alloc = 0;
-  domain_accounts[id].dependent = 0;
-  domain_accounts[id].extra = 0.0;
+//caml_gc_log ("GCSP reset account : dropping %"ARCH_INTNAT_PRINTF_FORMAT"u allocs",
+//             domain_accounts[id].alloc);
+//  total_alloc -= domain_accounts[id].alloc;
+//  domain_accounts[id].alloc = 0;
+//  domain_accounts[id].dependent = 0;
+//  domain_accounts[id].extra = 0.0;
   if (!domain_accounts[id].is_active) ++ num_active_domains;
   domain_accounts[id].is_active = 1;
 }
@@ -1366,8 +1409,8 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
       caml_plat_lock (&accounting_lock);
       caml_enumerate_participating_domains (&reset_domain_account);
       /* XXX debug only */
-      total_alloc = total_dependent = total_work_done = 0;
-      total_extra = 0.0;
+      //total_alloc = total_dependent = total_work_done = 0;
+      //total_extra = 0.0;
       caml_plat_unlock (&accounting_lock);
 
       /* Cleanups for various data structures that must be done in a STW by
@@ -2002,8 +2045,12 @@ void caml_teardown_major_gc(void) {
     -- num_active_domains;
     domain_accounts[d->id].is_active = 0;
   }
-  distribute (d, d->allocated_words, d->dependent_allocated,
-              d->extra_heap_resources);
+  distribute (d, d->allocated_words + domain_accounts[d->id].alloc,
+              d->dependent_allocated + domain_accounts[d->id].dependent,
+              d->extra_heap_resources + domain_accounts[d->id].extra);
+  domain_accounts[d->id].alloc = 0;
+  domain_accounts[d->id].dependent = 0;
+  domain_accounts[d->id].extra = 0.0;
   total_alloc += d->allocated_words;
   total_dependent += d->dependent_allocated;
   total_extra += d->extra_heap_resources;
