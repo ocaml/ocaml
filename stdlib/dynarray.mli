@@ -198,6 +198,8 @@ val truncate : 'a t -> int -> unit
 (** {1:iteration Iteration}
 
     The iteration functions traverse the elements of a dynamic array.
+    Traversals of [a] are computed in increasing index order: from
+    the element of index [0] to the element of index [length a - 1].
 
     It is a programming error to modify the length of an array
     (by adding or removing elements) during an iteration on the
@@ -206,38 +208,77 @@ val truncate : 'a t -> int -> unit
 *)
 
 val iter : ('a -> unit) -> 'a t -> unit
-(** [iter f a] calls [f] on each element of [a], in increasing index order. *)
+(** [iter f a] calls [f] on each element of [a]. *)
 
 val iteri : (int -> 'a -> unit) -> 'a t -> unit
 (** [iteri f a] calls [f i x] for each [x] at index [i] in [a]. *)
 
 val map : ('a -> 'b) -> 'a t -> 'b t
-(** [map f a] is a new array of length [length a], with elements mapped
-    from [a] using [f]. *)
+(** [map f a] is a new array of elements of the form [f x]
+    for each element [x] of [a].
+
+    For example, if the elements of [a] are [x0, x1, x2],
+    then the elements of [b] are [f x0, f x1, f x2].
+*)
 
 val mapi : (int -> 'a -> 'b) -> 'a t -> 'b t
-(** [mapi f v] is just like {!map}, but it also passes in the index
-    of each element as the first argument to the function [f]. *)
+(** [mapi f a] is a new array of elements of the form [f i x]
+    for each element [x] of [a] at index [i].
+
+    For example, if the elements of [a] are [x0, x1, x2],
+    then the elements of [b] are [f 0 x0, f 1 x1, f 2 x2].
+*)
 
 val fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
-(** [fold_left f acc a] folds [f] over [a] starting with accumulator [acc]. *)
+(** [fold_left f acc a] folds [f] over [a] in order,
+    starting with accumulator [acc].
+
+    For example, if the elements of [a] are [x0, x1],
+    then [fold f acc a] is
+    {[
+      let acc = f acc x0 in
+      let acc = f acc x1 in
+      acc
+    ]}
+*)
 
 val exists : ('a -> bool) -> 'a t -> bool
-(** [exists f a] is [true] if some element of [a] satisfies [f]. *)
+(** [exists f a] is [true] if some element of [a] satisfies [f].
+
+    For example, if the elements of [a] are [x0, x1, x2], then
+    [exists f a] is [f x0 || f x1 || f x2].
+*)
 
 val for_all : ('a -> bool) -> 'a t -> bool
 (** [for_all f a] is [true] if all elements of [a] satisfy [f].
-    This includes the case where [a] is empty. *)
+    This includes the case where [a] is empty.
+
+    For example, if the elements of [a] are [x0, x1], then
+    [exists f a] is [f x0 && f x1 && f x2].
+*)
 
 val filter : ('a -> bool) -> 'a t -> 'a t
-(** [filter f a] is a new array containing
-    all elements of [a] that satisfy [f]. *)
+(** [filter f a] is a new array of all the elements of [a] that satisfy [f].
+    In other words, it is an array [b] such that, for each element [x]
+    in [a] in order, [x] is added to [b] if [f x] is [true].
+
+    For example, [filter (fun x -> x >= 0) a] is a new array
+    of all non-negative elements of [a], in order.
+*)
 
 val filter_map : ('a -> 'b option) -> 'a t -> 'b t
-(** [filter_map f a] is a new array [b], such that for each item [x] in [a]:
-  - if [f x = Some y], then [y] is in [b]
-  - if [f x = None], then no element is added to [b]. *)
+(** [filter_map f a] is a new array of elements [y]
+    such that [f x] is [Some y] for an element [x] of [a].
+    In others words, it is an array [b] such that, for each element
+    [x] of [a] in order:
+    {ul
+    {- if [f x = Some y], then [y] is added to [b],}
+    {- if [f x = None], then no element is added to [b].}}
 
+    For example, [filter_map int_of_string_opt inputs] returns
+    a new array of integers read from the strings in [inputs],
+    ignoring strings that cannot be converted to integers.
+*)
 
 (** {1:conversions Conversions to other data structures}
 
