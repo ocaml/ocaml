@@ -303,7 +303,7 @@ val of_array : 'a array -> 'a t
 val to_array : 'a t -> 'a array
 (** [to_array a] returns a fixed-sized array corresponding to the
     dynamic array [a]. This always allocate a new array and copies
-    item into it. *)
+    elements into it. *)
 
 val of_list : 'a list -> 'a t
 (** [of_list l] is the array containing the elements of [l] in
@@ -318,7 +318,7 @@ val of_seq : 'a Seq.t -> 'a t
     It traverses [seq] once and will terminate only if [seq] is finite. *)
 
 val to_seq : 'a t -> 'a Seq.t
-(** [to_seq a] is the sequence of items
+(** [to_seq a] is the sequence of elements
     [get a 0], [get a 1]... [get a (length a - 1)].
 
     Because sequences are computed on-demand, we have to assume that
@@ -332,7 +332,7 @@ val to_seq : 'a t -> 'a Seq.t
 *)
 
 val to_seq_rev : 'a t -> 'a Seq.t
-(** [to_seq_rev a] is the sequence of items
+(** [to_seq_rev a] is the sequence of elements
     [get a (l - 1)], [get a (l - 2)]... [get a 0],
     where [l] is [length a] at the time [to_seq_rev] is invoked.
 
