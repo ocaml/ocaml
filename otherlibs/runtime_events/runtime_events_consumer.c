@@ -235,6 +235,7 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
   cursor->lost_events = NULL;
   cursor->user_unit = NULL;
   cursor->user_int = NULL;
+  cursor->user_span = NULL;
   cursor->user_custom = NULL;
 
   *cursor_res = cursor;
