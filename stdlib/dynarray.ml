@@ -330,12 +330,22 @@ let ensure_capacity a capacity_request =
       Error.negative_capacity "ensure_capacity" capacity_request;
     if capacity_request > Sys.max_array_length then
       Error.requested_length_out_of_bounds "ensure_capacity" capacity_request;
-    let new_capacity = ref cur_capacity in
-    while !new_capacity < capacity_request do
-      new_capacity := next_capacity !new_capacity
-    done;
-    let new_capacity = !new_capacity in
-    assert (new_capacity >= capacity_request);
+    let new_capacity =
+      (* We use either the next exponential-growth strategy,
+         or the requested strategy, whichever is bigger.
+
+         Compared to only using the exponential-growth strategy, this
+         lets us use less memory by avoiding any overshoot whenever
+         the capacity request is noticeably larger than the current
+         capacity.
+
+         Compared to only using the requested capacity, this avoids
+         losing the amortized guarantee: we allocated "exponentially
+         or more", so the amortization holds. In particular, notice
+         that repeated calls to [ensure_capacity a (length a + 1)]
+         will have amortized-linear rather than quadratic complexity.
+      *)
+      max (next_capacity cur_capacity) capacity_request in
     let new_arr = Array.make new_capacity Empty in
     Array.blit arr 0 new_arr 0 a.length;
     a.arr <- new_arr;
