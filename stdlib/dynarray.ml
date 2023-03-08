@@ -351,10 +351,17 @@ let fit_capacity a =
   then ()
   else a.arr <- Array.sub a.arr 0 a.length
 
-let reset a =
-  clear a;
-  fit_capacity a
+let truncate_capacity a n =
+  if n >= Array.length a.arr then ()
+  else if n < 0 then
+    Error.negative_capacity "truncate_capacity" n
+  else begin
+    a.length <- n;
+    a.arr <- Array.sub a.arr 0 n;
+  end
 
+let reset a =
+  truncate_capacity a 0
 
 (** {1:adding Adding elements} *)
 

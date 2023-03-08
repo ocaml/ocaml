@@ -138,6 +138,15 @@ let () =
 
 let () =
   let a = A.create() in
+  for i=0 to 20_000 do A.add_last a i; done;
+  List.iter
+    (fun size ->
+      A.truncate_capacity a size;
+      assert (A.to_list a = list_range 0 size))
+    [ 19_999; 2000; 100; 50; 4; 4; 3; 2; 1; 0];;
+
+let () =
+  let a = A.create() in
   for i = 0 to 200 do
     A.add_last a i;
   done;

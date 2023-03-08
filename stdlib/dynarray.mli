@@ -417,14 +417,30 @@ val fit_capacity : 'a t -> unit
     a long-lived array.
 
     Note that calling [fit_capacity] breaks the amortized complexity
-    guarantees provided by the default reallocation strategy, and may
-    result in more reallocations in the future.
+    guarantees provided by the default reallocation strategy. Calling
+    it repeatedly on an array may have quadratic complexity, both in
+    time and in total number of allocations.
 
     If you know that a dynamic array has reached its final length,
     which will remain fixed in the future, it is sufficient to call
     [to_array] and only keep the resulting fixed-size
     array. [fit_capacity] is useful when you need to keep a dynamic
     array for eventual future resizes.
+*)
+
+val truncate_capacity : 'a t -> int -> unit
+(** [truncate_capacity a n] shrinks the backing array to have
+    capacity at most [n]; in particular, like [truncate a n],
+    all elements of index [n] or greater are removed.
+
+    This is equivalent to [truncate a n; fit_capacity a] but more
+    efficient: [truncate a n] needs to overwrite the removed elements
+    to preserve the {{!section:noleaks} no leaks} guarantee.
+
+    Like {!fit_capacity}, this function breaks the amortized
+    complexity guarantees provided by the reallocation
+    strategy. Calling it repeatedly on an array may have quadratic
+    complexity, both in time and in total number of allocations.
 *)
 
 val reset : 'a t -> unit
