@@ -355,16 +355,15 @@ val to_seq_rev : 'a t -> 'a Seq.t
     {ul
     {- The memory usage of a dynamic array is proportional to its capacity,
        rather than its length.}
-    {- Adding elements to the end of a dynamic array may require
-       allocating a new, larger backing array when its length
-       is already equal to its capacity, so there is no room
-       for more elements in the current backing array.}}
+    {- When then is no empty space left at the end of the backing array.
+       adding elements requires allocating a new, larger backing array.}}
 
     The implementation uses a standard exponential reallocation
     strategy which guarantees amortized constant-time operation: the
     total capacity of all backing arrays allocated over the lifetime
-    of a dynamic array is proportional to the total number of elements
-    added or removed.
+    of a dynamic array is at worst proportional to the total number of
+    elements added.
+
     In other words, users need not care about capacity and reallocations,
     and they will get reasonable behavior by default. However, in some
     performance-sensitive scenarios the functions below can help control
@@ -383,19 +382,32 @@ val ensure_capacity : 'a t -> int -> unit
     scenarios. In particular, all functions adding elements to a dynamic
     array may propagate this exception.)
 
-    A use case would be to implement {!append_array}:
-{[
-    let append_array a arr =
-      ensure_capacity a (length a + Array.length arr);
+    A use case would be to implement {!of_array} (without using {!init} directly):
+    {[
+    let of_array arr =
+      let a = Dynarray.create () in
+      Dynarray.ensure_capacity a (Array.length arr);
       Array.iter (fun v -> add_last a v) arr
-]}
+    ]}
 
     Using [ensure_capacity] guarantees that at most one reallocation
     will take place, instead of possibly several.
 
     Without this [ensure_capacity] hint, the number of resizes would
     be logarithmic in the length of [arr], creating a constant-factor
-    slowdown noticeable when [a] is small and [arr] is large.
+    slowdown noticeable when [arr] is large.
+*)
+
+val ensure_extra_capacity : 'a t -> int -> unit
+(** [ensure_extra_capacity a n] is [ensure_capacity a (length a + n)],
+    it makes sure that [a] has room for [n] extra items.
+
+    A use case would be to implement {!append_array}:
+    {[
+    let append_array a arr =
+      ensure_extra_capacity a (Array.length arr);
+      Array.iter (fun v -> add_last a v) arr
+    ]}
 *)
 
 val fit_capacity : 'a t -> unit
@@ -449,8 +461,10 @@ val reset : 'a t -> unit
     On a realistic automated-theorem-proving program that relies
     heavily on dynamic arrays, we measured the overhead of this extra
     "boxing" as at most 25%. We believe that the overhead for most
-    uses of dynarray is much smaller, neglectible in most cases, but
-    you may still prefer to use your own, customized implementation
-    for performance.
+    uses of dynarray is much smaller, neglectible in many cases, but
+    you may still prefer to use your own specialized implementation
+    for performance. (If you know that you do not need the
+    {{:noleaks}no leaks} guarantee, you can also speed up deleting
+    elements.)
 *)
 

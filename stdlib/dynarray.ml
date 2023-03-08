@@ -317,31 +317,34 @@ let next_capacity n =
   (* jump directly from 0 to 8 *)
   min (max 8 n') Sys.max_array_length
 
-let ensure_capacity a requested_length =
+let ensure_capacity a capacity_request =
   let arr = a.arr in
   let cur_capacity = Array.length arr in
-  if cur_capacity >= requested_length then
+  if cur_capacity >= capacity_request then
     (* This is the fast path, the code up to here must do as little as
        possible. (This is why we don't use [let {arr; length} = a] as
        usual, the length is not needed in the fast path.)*)
     ()
   else begin
-    if requested_length < 0 then
-      Error.negative_capacity "ensure_capacity" requested_length;
-    if requested_length > Sys.max_array_length then
-      Error.requested_length_out_of_bounds "ensure_capacity" requested_length;
+    if capacity_request < 0 then
+      Error.negative_capacity "ensure_capacity" capacity_request;
+    if capacity_request > Sys.max_array_length then
+      Error.requested_length_out_of_bounds "ensure_capacity" capacity_request;
     let new_capacity = ref cur_capacity in
-    while !new_capacity < requested_length do
+    while !new_capacity < capacity_request do
       new_capacity := next_capacity !new_capacity
     done;
     let new_capacity = !new_capacity in
-    assert (new_capacity >= requested_length);
+    assert (new_capacity >= capacity_request);
     let new_arr = Array.make new_capacity Empty in
     Array.blit arr 0 new_arr 0 a.length;
     a.arr <- new_arr;
-    assert (0 <= requested_length);
-    assert (requested_length <= Array.length new_arr);
+    assert (0 <= capacity_request);
+    assert (capacity_request <= Array.length new_arr);
   end
+
+let ensure_extra_capacity a extra_capacity_request =
+  ensure_capacity a (length a + extra_capacity_request)
 
 let fit_capacity a =
   if Array.length a.arr = a.length
@@ -390,7 +393,7 @@ let add_last a x =
   else begin
     (* slow path *)
     let rec grow_and_add a elem =
-      ensure_capacity a (length a + 1);
+      ensure_extra_capacity a 1;
       if not (add_last_if_room a elem)
       then grow_and_add a elem
     in grow_and_add a elem
@@ -456,7 +459,7 @@ let append_array a b =
   else begin
     (* slow path *)
     let rec grow_and_append a b =
-      ensure_capacity a (length a + Array.length b);
+      ensure_extra_capacity a (Array.length b);
       if not (append_array_if_room a b)
       then grow_and_append a b
     in grow_and_append a b  end
@@ -494,7 +497,7 @@ let append a b =
   else begin
     (* slow path *)
     let rec grow_and_append a b ~length_b =
-      ensure_capacity a (length a + length_b);
+      ensure_extra_capacity a length_b;
       (* Eliding the [check_same_length] call below would be wrong in
          the case where [a] and [b] are aliases of each other, we
          would get into an infinite loop instead of failing.
