@@ -41,7 +41,8 @@
 #include <immintrin.h>
 
 #define caml_float16_to_float(d) _cvtsh_ss(d)
-#define caml_float_to_float16(d) _cvtss_sh(d, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC))
+#define caml_float_to_float16(d) \
+  _cvtss_sh(d, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC))
 
 #else  /* defined(__GNUC__) && defined(__F16C__) */
 
@@ -77,7 +78,8 @@ static uint16 caml_float_to_float16(float d)
 {
   static const union float_bits f32infty = { 255 << 23 };
   static const union float_bits f16max = { (127 + 16) << 23 };
-  static const union float_bits denorm_magic = { ((127 - 15) + (23 - 10) + 1) << 23 };
+  static const union float_bits denorm_magic =
+    { ((127 - 15) + (23 - 10) + 1) << 23 };
   static const uint32_t sign_mask = 0x80000000u;
 
   union float_bits f;
@@ -698,7 +700,8 @@ value caml_ba_get_N(value vb, volatile value * vind, int nind)
   default:
     CAMLassert(0);
   case CAML_BA_FLOAT16:
-    return caml_copy_double((double) caml_float16_to_float(((uint16 *) b->data)[offset]));
+    return caml_copy_double(
+      (double) caml_float16_to_float(((uint16 *) b->data)[offset]));
   case CAML_BA_FLOAT32:
     return caml_copy_double((double) ((float *) b->data)[offset]);
   case CAML_BA_FLOAT64:
@@ -842,7 +845,8 @@ static value caml_ba_set_aux(value vb, volatile value * vind,
   default:
     CAMLassert(0);
   case CAML_BA_FLOAT16:
-    ((uint16 *) b->data)[offset] = caml_float_to_float16(Double_val(newval)); break;
+    ((uint16 *) b->data)[offset] =
+      caml_float_to_float16(Double_val(newval)); break;
   case CAML_BA_FLOAT32:
     ((float *) b->data)[offset] = Double_val(newval); break;
   case CAML_BA_FLOAT64:
