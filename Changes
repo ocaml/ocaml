@@ -32,6 +32,9 @@ Working version
 - #12217: Add `Array.shuffle`.
   (Daniel Bünzli, review by Nicolás Ojeda Bär, David Allsopp and Alain Frisch)
 
+* #10775: Half-precision floating-point elements in Bigarray.
+  (Anton Yabchinskiy, review by )
+
 ### Other libraries:
 
 - #12213: Dynlink library, improve legibility of error messages
