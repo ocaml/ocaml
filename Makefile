@@ -924,7 +924,8 @@ runtime/%.ni.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
 $(DEPDIR)/runtime/%.ni.$(D): \
   OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
 
-runtime/%.npic.$(O): OC_CFLAGS += $(OC_NATIVE_CPPFLAGS) $(SHAREDLIB_CFLAGS)
+runtime/%.npic.$(O): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
+runtime/%.npic.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 $(DEPDIR)/runtime/%.npic.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 
 ## Compilation of runtime C files
