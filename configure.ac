@@ -115,6 +115,7 @@ AC_SUBST([arch])
 AC_SUBST([arch64])
 AC_SUBST([model])
 AC_SUBST([system])
+AC_SUBST([native_cflags])
 AC_SUBST([native_cppflags])
 AC_SUBST([systhread_support])
 AC_SUBST([ocamlsrcdir])
@@ -1274,6 +1275,7 @@ AS_CASE([$host],
     [has_native_backend=yes; arch=riscv; model=riscv64; system=linux]
 )
 
+native_cflags=''
 native_cppflags="-DTARGET_${arch} -DMODEL_${model} -DSYS_${system}"
 
 AS_CASE([$ccomptype],

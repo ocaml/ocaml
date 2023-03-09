@@ -65,6 +65,9 @@ OC_CPPFLAGS=-I$(ROOTDIR)/runtime @oc_cppflags@
 
 OC_NATIVE_CPPFLAGS=-DNATIVE_CODE @native_cppflags@
 
+# Same as above, for CFLAGS
+OC_NATIVE_CFLAGS=@native_cflags@
+
 # Additional link-time options
 # To support dynamic loading of shared libraries (they need to look at
 # our own symbols):
