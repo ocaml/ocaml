@@ -135,9 +135,7 @@ module Error = struct
       f n
 
   let requested_length_out_of_bounds f requested_length =
-    (* We do not consider this error as a programming error,
-       so we raise [Failure] instead of [Invalid_argument]. *)
-    Printf.ksprintf failwith
+    Printf.ksprintf invalid_arg
       "Dynarray.%s: cannot grow to requested length %d (max_array_length is %d)"
       f requested_length Sys.max_array_length
 

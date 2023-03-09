@@ -113,7 +113,7 @@ val copy : 'a t -> 'a t
 
 (** {1:adding Adding elements}
 
-    Note: all operations adding elements raise [Failure] if the
+    Note: all operations adding elements raise [Invalid_argument] if the
     length needs to grow beyond {!Sys.max_array_length}. *)
 
 val add_last : 'a t -> 'a -> unit
@@ -282,8 +282,8 @@ val filter_map : ('a -> 'b option) -> 'a t -> 'b t
 
 (** {1:conversions Conversions to other data structures}
 
-    Note: the [of_*] functions can raise [Failure] if the length would
-    need to grow beyond {!Sys.max_array_length}.
+    Note: the [of_*] functions raise [Invalid_argument] if the
+    length needs to grow beyond {!Sys.max_array_length}.
 
     The [to_*] functions, except for {!to_seq}, iterate on their
     dynarray argument. In particular it is a programming error if the
@@ -374,13 +374,8 @@ val ensure_capacity : 'a t -> int -> unit
 (** [ensure_capacity a n] makes sure that the capacity of [a]
     is at least [n].
 
-    @raise Invalid_argument if the requested capacity is negative.
-
-    @raise Failure if the requested capacity is above
-      {!Sys.max_array_length}.
-    (We consider that this is a valid failure mode in some exceptional
-    scenarios. In particular, all functions adding elements to a dynamic
-    array may propagate this exception.)
+    @raise Invalid_argument if the requested capacity is
+      outside the range [0 .. Sys.max_array_length].
 
     A use case would be to implement {!of_array} (without using {!init} directly):
     {[
