@@ -50,6 +50,20 @@ INSTALL_OCAMLNAT = @install_ocamlnat@
 DEP_CC=@DEP_CC@ -MM
 COMPUTE_DEPS=@compute_deps@
 
+# Build-system flags to use to compile C files
+OC_CFLAGS=@oc_cflags@
+OC_CPPFLAGS=-I$(ROOTDIR)/runtime @oc_cppflags@
+
+# Additional link-time options
+# To support dynamic loading of shared libraries (they need to look at
+# our own symbols):
+OC_LDFLAGS=@oc_ldflags@
+OC_DLL_LDFLAGS=@oc_dll_ldflags@
+OC_EXE_LDFLAGS=@oc_exe_ldflags@
+
+MKEXE_VIA_CC=\
+  $(CC) $(OC_EXE_LDFLAGS) $(OC_CFLAGS) $(CFLAGS) @mkexe_via_cc_ldflags@
+
 # Which tool to use to display differences between files
 DIFF=@DIFF@
 # Which flags to pass to the diff tool
