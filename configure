@@ -859,6 +859,7 @@ oc_exe_ldflags
 oc_dll_ldflags
 oc_ldflags
 oc_cppflags
+tsan
 oc_cflags
 toolchain
 ccomptype
@@ -953,6 +954,7 @@ enable_dependency_generation
 enable_instrumented_runtime
 enable_vmthreads
 enable_systhreads
+enable_tsan
 enable_graph_lib
 enable_str_lib
 enable_unix_lib
@@ -1641,6 +1643,7 @@ Optional Features:
                           build the instrumented runtime [default=auto]
 
   --disable-systhreads    disable the Win32/POSIX threads library
+  --enable-tsan           enable ThreadSanitizer support [default=no]
   --disable-str-lib       do not build the str library
   --disable-unix-lib      do not build the unix library
   --disable-ocamldoc      do not build the ocamldoc documentation system
@@ -3232,6 +3235,8 @@ oc_ldflags=""
 oc_dll_ldflags=""
 oc_exe_ldflags=""
 
+tsan=false
+
 # The C# compiler and its flags
 CSC=""
 CSCFLAGS=""
@@ -3290,6 +3295,7 @@ OCAML_VERSION_SHORT=5.2
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
 
 
 
@@ -3693,6 +3699,15 @@ fi
 if test ${enable_systhreads+y}
 then :
   enableval=$enable_systhreads;
+fi
+
+
+# Check whether --enable-tsan was given.
+if test ${enable_tsan+y}
+then :
+  enableval=$enable_tsan;
+else $as_nop
+  enable_tsan=no
 fi
 
 
@@ -16409,6 +16424,44 @@ esac
      ;;
 esac
 
+fi
+
+# ThreadSanitizer support is only for Linux/FreeBSD/macOS on amd64.
+# ThreadSanitizer supports more architectures but the OCaml client side is not
+# implemented (yet).
+if test "x$enable_tsan" = "xyes"
+then :
+  case "$arch" in #(
+  amd64) :
+    case "$system" in #(
+  linux) :
+    case "$cc_basename" in #(
+  gcc*|clang*) :
+    tsan=true ;; #(
+  *) :
+    as_fn_error $? "thread sanitizer not supported with compiler \
+$cc_basename\"" "$LINENO" 5
+          ;;
+esac ;; #(
+  macosx) :
+    case "$cc_basename" in #(
+  gcc*|clang*) :
+    tsan=true ;; #(
+  *) :
+    as_fn_error $? "thread sanitizer not supported with compiler \
+$cc_basename on system $system\"" "$LINENO" 5
+          ;;
+esac ;; #(
+  *) :
+    as_fn_error $? "thread sanitizer not supported on system $system" "$LINENO" 5
+        ;;
+esac ;; #(
+  *) :
+    as_fn_error $? "thread sanitizer not supported on arch $arch" "$LINENO" 5
+   ;;
+esac
+else $as_nop
+  tsan=false
 fi
 
 ## Sockets
