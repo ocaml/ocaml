@@ -913,18 +913,21 @@ $(DEPDIR)/runtime/%.bi.$(D): OC_CPPFLAGS += $(ocamlruni_CPPFLAGS)
 
 runtime/%.bpic.$(O): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
 
+runtime/%.n.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS)
 runtime/%.n.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 $(DEPDIR)/runtime/%.n.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 
+runtime/%.nd.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS)
 runtime/%.nd.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlrund_CPPFLAGS)
 $(DEPDIR)/runtime/%.nd.$(D): \
   OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlrund_CPPFLAGS)
 
+runtime/%.ni.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS)
 runtime/%.ni.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
 $(DEPDIR)/runtime/%.ni.$(D): \
   OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
 
-runtime/%.npic.$(O): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
+runtime/%.npic.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS) $(SHAREDLIB_CFLAGS)
 runtime/%.npic.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 $(DEPDIR)/runtime/%.npic.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 

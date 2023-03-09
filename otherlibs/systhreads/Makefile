@@ -61,6 +61,8 @@ allopt: lib$(LIBNAME)nat.$(A) $(LIBNAME).cmxa $(CMIFILES)
 lib$(LIBNAME).$(A): $(BYTECODE_C_OBJS)
 	$(V_OCAMLMKLIB)$(MKLIB_CMD) -o $(LIBNAME) $(BYTECODE_C_OBJS)
 
+lib$(LIBNAME)nat.$(A): OC_CFLAGS += $(OC_NATIVE_CFLAGS)
+
 lib$(LIBNAME)nat.$(A): $(NATIVECODE_C_OBJS)
 	$(V_OCAMLMKLIB)$(MKLIB_CMD) -o $(LIBNAME)nat $^
 
@@ -87,8 +89,6 @@ $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 # The following lines produce two object files st_stubs.b.$(O) and
 # st_stubs.n.$(O) from the same source file st_stubs.c (it is compiled
 # twice, each time with different options).
-
-st_stubs.n.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 
 ifeq "$(COMPUTE_DEPS)" "true"
 st_stubs.%.$(O): st_stubs.c
@@ -154,7 +154,6 @@ ifeq "$(COMPUTE_DEPS)" "true"
 include $(addprefix $(DEPDIR)/, $(DEP_FILES))
 endif
 
-%.n.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 %.n.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 
 define GEN_RULE
