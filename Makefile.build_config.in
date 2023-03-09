@@ -63,8 +63,7 @@ OC_CPPFLAGS=-I$(ROOTDIR)/runtime @oc_cppflags@
 # These flags should be passed *in addition* to those in OC_CPPFLAGS, they
 # should not replace them.
 
-OC_NATIVE_CPPFLAGS=\
-  -DNATIVE_CODE -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM)
+OC_NATIVE_CPPFLAGS=-DNATIVE_CODE @native_cppflags@
 
 # Additional link-time options
 # To support dynamic loading of shared libraries (they need to look at

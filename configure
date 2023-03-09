@@ -876,6 +876,7 @@ ln
 unix_or_win32
 ocamlsrcdir
 systhread_support
+native_cppflags
 system
 model
 arch64
@@ -3286,6 +3287,7 @@ OCAML_VERSION_SHORT=5.1
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
 
 
 
@@ -15446,6 +15448,8 @@ fi; system=elf ;; #(
   *) :
      ;;
 esac
+
+native_cppflags="-DTARGET_${arch} -DMODEL_${model} -DSYS_${system}"
 
 case $ccomptype in #(
   msvc) :
