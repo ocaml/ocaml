@@ -157,10 +157,10 @@ module Error = struct
       "Dynarray: invalid array (length %d > capacity %d)"
       length capacity
 
-  let iterator_invalidation ~expected ~observed =
+  let iterator_invalidation f ~expected ~observed =
     Printf.ksprintf invalid_arg
-      "Dynarray: iterator invalidated by a length change from %d to %d"
-      expected observed
+      "Dynarray.%s: iterator invalidated by a length change from %d to %d"
+      f expected observed
 
   (* When an [Empty] element is observed unexpectedly at index [i],
      it may be either an out-of-bounds access or an invalid-state situation
@@ -176,10 +176,10 @@ end
 
    See {!iter} below for a detailed usage example.
 *)
-let check_same_length a ~length =
+let check_same_length f a ~length =
   let length_a = a.length in
   if length <> length_a then
-    Error.iterator_invalidation
+    Error.iterator_invalidation f
       ~expected:length ~observed:length_a
 
 (** Careful unsafe access. *)
@@ -504,7 +504,7 @@ let append_if_room a b ~length_b =
       let x = unsafe_get arr_b ~i ~length:length_b in
       Array.unsafe_set arr_a (length_a + i) (Elem {v = x})
     done;
-    check_same_length b ~length:length_b;
+    check_same_length "append" b ~length:length_b;
     true
   end
 
@@ -521,7 +521,7 @@ let append a b =
 
          We could push the call to [append_if_room] itself, but we
          prefer to keep it in the slow path.  *)
-      check_same_length b ~length:length_b;
+      check_same_length "append" b ~length:length_b;
       if not (append_if_room a b ~length_b)
       then grow_and_append a b ~length_b
     in grow_and_append a b ~length_b
@@ -544,7 +544,7 @@ let append a b =
    each other and leave the length unchanged at the next check.
 *)
 
-let iter k a =
+let iter_ f k a =
   let {arr; length} = a in
   (* [check_valid_length length arr] is used for memory safety, it
      guarantees that the backing array has capacity at least [length],
@@ -573,8 +573,10 @@ let iter k a =
   for i = 0 to length - 1 do
     k (unsafe_get arr ~i ~length);
   done;
-  check_same_length a ~length
+  check_same_length f a ~length
 
+let iter k a =
+  iter_ "iter" k a
 
 let iteri k a =
   let {arr; length} = a in
@@ -582,7 +584,7 @@ let iteri k a =
   for i = 0 to length - 1 do
     k i (unsafe_get arr ~i ~length);
   done;
-  check_same_length a ~length
+  check_same_length "iteri" a ~length
 
 let map f a =
   let {arr; length} = a in
@@ -592,7 +594,7 @@ let map f a =
     arr = Array.init length (fun i ->
       Elem {v = f (unsafe_get arr ~i ~length)});
   } in
-  check_same_length a ~length;
+  check_same_length "map" a ~length;
   res
 
 
@@ -604,7 +606,7 @@ let mapi f a =
     arr = Array.init length (fun i ->
       Elem {v = f i (unsafe_get arr ~i ~length)});
   } in
-  check_same_length a ~length;
+  check_same_length "mapi" a ~length;
   res
 
 let fold_left f acc a =
@@ -617,7 +619,7 @@ let fold_left f acc a =
       fold (f acc v) arr (i+1) length
   in
   let res = fold acc arr 0 length in
-  check_same_length a ~length;
+  check_same_length "fold_left" a ~length;
   res
 
 let exists p a =
@@ -630,7 +632,7 @@ let exists p a =
       || loop p arr (i + 1) length
   in
   let res = loop p arr 0 length in
-  check_same_length a ~length;
+  check_same_length "exists" a ~length;
   res
 
 let for_all p a =
@@ -643,17 +645,17 @@ let for_all p a =
       && loop p arr (i + 1) length
   in
   let res = loop p arr 0 length in
-  check_same_length a ~length;
+  check_same_length "for_all" a ~length;
   res
 
 let filter f a =
   let b = create () in
-  iter (fun x -> if f x then add_last b x) a;
+  iter_ "filter" (fun x -> if f x then add_last b x) a;
   b
 
 let filter_map f a =
   let b = create() in
-  iter (fun x ->
+  iter_ "filter_map" (fun x ->
     match f x with
     | None -> ()
     | Some y -> add_last b y
@@ -681,7 +683,7 @@ let to_array a =
   let res = Array.init length (fun i ->
     unsafe_get arr ~i ~length)
   in
-  check_same_length a ~length;
+  check_same_length "to_array" a ~length;
   res
 
 let of_list li =
@@ -696,7 +698,7 @@ let to_list a =
   for i = length - 1 downto 0 do
     l := unsafe_get arr ~i ~length :: !l
   done;
-  check_same_length a ~length;
+  check_same_length "to_list" a ~length;
   !l
 
 let of_seq seq =
