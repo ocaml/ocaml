@@ -16,10 +16,10 @@
 #include <assert.h>
 #include "caml/mlvalues.h"
 
-void fp_backtrace(void);
+void fp_backtrace(value);
 
-value fp_backtrace_many_args(value a, value b, value c, value d, value e,
-    value f, value g, value h, value i, value j, value k)
+value fp_backtrace_many_args(value argv0, value a, value b, value c,
+    value d, value e, value f, value g, value h, value i, value j, value k)
 {
   assert(Int_val(a) == 1);
   assert(Int_val(b) == 2);
@@ -33,15 +33,15 @@ value fp_backtrace_many_args(value a, value b, value c, value d, value e,
   assert(Int_val(j) == 10);
   assert(Int_val(k) == 11);
 
-  fp_backtrace();
+  fp_backtrace(argv0);
 
   return Val_unit;
 }
 
-value fp_bactrace_many_args_argv(value *argv, int argc)
+value fp_bactrace_many_args_argv(value argv0, value *argv, int argc)
 {
   assert(argc == 11);
 
-  return fp_backtrace_many_args(argv[0], argv[1], argv[2], argv[3], argv[4],
-      argv[5], argv[6], argv[7], argv[8], argv[9], argv[10]);
+  return fp_backtrace_many_args(argv0, argv[0], argv[1], argv[2], argv[3],
+      argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10]);
 }

@@ -8,7 +8,7 @@ all_modules = "${readonly_files} exception_handler.ml"
 *)
 
 (* https://github.com/ocaml/ocaml/pull/11031 *)
-external fp_backtrace : unit -> unit = "fp_backtrace" [@@noalloc]
+external fp_backtrace : string -> unit = "fp_backtrace" [@@noalloc]
 
 exception Exn1
 exception Exn2
@@ -38,7 +38,7 @@ let[@inline never] handler () =
   let _ = Sys.opaque_identity x0 in
   let _ = Sys.opaque_identity x1 in
   let _ = Sys.opaque_identity x2 in
-  fp_backtrace ()
+  fp_backtrace Sys.argv.(0)
 
 let[@inline never] nested i =
   begin
