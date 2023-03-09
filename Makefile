@@ -912,7 +912,6 @@ runtime/%.bi.$(O): OC_CPPFLAGS += $(ocamlruni_CPPFLAGS)
 $(DEPDIR)/runtime/%.bi.$(D): OC_CPPFLAGS += $(ocamlruni_CPPFLAGS)
 
 runtime/%.bpic.$(O): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
-$(DEPDIR)/runtime/%.bpic.$(D): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
 
 runtime/%.n.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 $(DEPDIR)/runtime/%.n.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
@@ -926,8 +925,7 @@ $(DEPDIR)/runtime/%.ni.$(D): \
   OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
 
 runtime/%.npic.$(O): OC_CFLAGS += $(OC_NATIVE_CPPFLAGS) $(SHAREDLIB_CFLAGS)
-$(DEPDIR)/runtime/%.npic.$(D): \
-  OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(SHAREDLIB_CFLAGS)
+$(DEPDIR)/runtime/%.npic.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 
 ## Compilation of runtime C files
 
