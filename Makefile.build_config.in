@@ -54,6 +54,18 @@ COMPUTE_DEPS=@compute_deps@
 OC_CFLAGS=@oc_cflags@
 OC_CPPFLAGS=-I$(ROOTDIR)/runtime @oc_cppflags@
 
+# The following variable defines flags to be passed to the C preprocessor
+# when compiling C files to be linked with native code. This includes
+# the native runtime itself and can also include the stub code around
+# C libraries when it needs to be different from the one used to
+# link with bytecode.
+
+# These flags should be passed *in addition* to those in OC_CPPFLAGS, they
+# should not replace them.
+
+OC_NATIVE_CPPFLAGS=\
+  -DNATIVE_CODE -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM)
+
 # Additional link-time options
 # To support dynamic loading of shared libraries (they need to look at
 # our own symbols):
