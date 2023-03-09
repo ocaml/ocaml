@@ -370,6 +370,9 @@ val to_seq_rev : 'a t -> 'a Seq.t
     memory usage or guarantee an optimal number of reallocations.
 *)
 
+val capacity : 'a t -> int
+(** [capacity a] is the length of [a]'s backing array. *)
+
 val ensure_capacity : 'a t -> int -> unit
 (** [ensure_capacity a n] makes sure that the capacity of [a]
     is at least [n].

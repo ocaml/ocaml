@@ -297,6 +297,8 @@ let clear a = truncate a 0
 
 (** {1:capacity Backing array and capacity} *)
 
+let capacity a = Array.length a.arr
+
 let next_capacity n =
   let n' =
     (* For large values of n, we use 1.5 as our growth factor.
@@ -355,12 +357,12 @@ let ensure_extra_capacity a extra_capacity_request =
   ensure_capacity a (length a + extra_capacity_request)
 
 let fit_capacity a =
-  if Array.length a.arr = a.length
+  if capacity a = a.length
   then ()
   else a.arr <- Array.sub a.arr 0 a.length
 
 let truncate_capacity a n =
-  if n >= Array.length a.arr then ()
+  if n >= capacity a then ()
   else if n < 0 then
     Error.negative_capacity "truncate_capacity" n
   else begin
