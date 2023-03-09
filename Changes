@@ -526,6 +526,9 @@ Working version
 - #12034: a logarithmic algorithm to find the next free variable
   (Gabriel Scherer, review by Stefan Muenzel)
 
+- #12092: remove Lev_module_definition from lambda
+  (Nick Roberts, review by ???)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.
