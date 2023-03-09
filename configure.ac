@@ -54,6 +54,8 @@ oc_ldflags=""
 oc_dll_ldflags=""
 oc_exe_ldflags=""
 
+tsan=false
+
 # The C# compiler and its flags
 CSC=""
 CSCFLAGS=""
@@ -134,6 +136,7 @@ AC_SUBST([mkexe_via_cc_ldflags])
 AC_SUBST([ccomptype])
 AC_SUBST([toolchain])
 AC_SUBST([oc_cflags])
+AC_SUBST([tsan])
 AC_SUBST([oc_cppflags])
 AC_SUBST([oc_ldflags])
 AC_SUBST([oc_dll_ldflags])
@@ -341,6 +344,12 @@ AC_ARG_ENABLE([vmthreads], [],
 AC_ARG_ENABLE([systhreads],
   [AS_HELP_STRING([--disable-systhreads],
     [disable the Win32/POSIX threads library])])
+
+AC_ARG_ENABLE([tsan],
+  [AS_HELP_STRING([--enable-tsan],
+    [enable ThreadSanitizer support @<:@default=no@:>@])],
+  [],
+  [enable_tsan=no])
 
 AC_ARG_ENABLE([graph-lib], [],
   [AS_IF([test "x$enableval" != 'xno'],
@@ -1579,6 +1588,33 @@ but no proper monotonic clock source was found.])
       )]
     )]
 )
+
+# ThreadSanitizer support is only for Linux/FreeBSD/macOS on amd64.
+# ThreadSanitizer supports more architectures but the OCaml client side is not
+# implemented (yet).
+AS_IF([test "x$enable_tsan" = "xyes" ],
+  [AS_CASE(["$arch"],
+    [amd64],
+      [AS_CASE(["$system"],
+        [linux],
+        [AS_CASE(["$cc_basename"],
+          [gcc*|clang*],
+          [tsan=true],
+          [AC_MSG_ERROR([thread sanitizer not supported with compiler \
+$cc_basename"])]
+         )],
+        [macosx],
+        [AS_CASE(["$cc_basename"],
+          [gcc*|clang*],
+          [tsan=true],
+          [AC_MSG_ERROR([thread sanitizer not supported with compiler \
+$cc_basename on system $system"])]
+         )],
+        [AC_MSG_ERROR([thread sanitizer not supported on system $system])]
+       )],
+      [AC_MSG_ERROR([thread sanitizer not supported on arch $arch])]
+  )],
+  [tsan=false])
 
 ## Sockets
 
