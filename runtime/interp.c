@@ -357,6 +357,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     if (caml_params->trace_level>1)
       printf("\n##%" ARCH_INTNAT_PRINTF_FORMAT "d\n", caml_bcodcount);
     if (caml_params->trace_level>0) caml_disasm_instr(pc);
+    if (caml_params->event_trace>0) caml_event_trace(pc);
     if (caml_params->trace_level>1) {
       printf("env=");
       caml_trace_value_file(env,prog,prog_size,stdout);

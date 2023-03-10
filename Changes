@@ -29,6 +29,10 @@ Working version
 
 ### Runtime system:
 
+- #12099: Add ocamlrund option, -events, to produce a trace of
+  debug events during bytecode interpretation. Fixes #12098.
+  (Richard L Ford, review by Gabriel Scherer)
+
 - #12001: Fix book keeping for last finalisers during the minor cycle
   (KC Sivaramakrishnan and Enguerrand Decorne, report by Guillaume Bury
    and Vincent Laviron, review by Sadiq Jaffer and KC Sivaramakrishnan)
