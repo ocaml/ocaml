@@ -31,7 +31,7 @@ systems, including Linux and macOS.
 \end{unix}
 
 \begin{windows} This is material specific to Microsoft Windows
-  (Vista, 7, 8, 10).
+  (Vista, 7, 8, 10, 11).
 \end{windows}
 
 \section*{license}{License}
