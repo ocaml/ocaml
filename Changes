@@ -527,7 +527,7 @@ Working version
   (Gabriel Scherer, review by Stefan Muenzel)
 
 - #12092: remove Lev_module_definition from lambda
-  (Nick Roberts, review by ???)
+  (Nick Roberts, review by Gabriel Scherer)
 
 ### Build system:
 
