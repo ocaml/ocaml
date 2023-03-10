@@ -1,78 +1,79 @@
-(* TEST
-*)
-
-module A = Dynarray
-
-let () =
-  let a = A.create() in
-  A.add_last a 1;
-  A.add_last a 2;
-  assert (A.to_list a = [1;2]);;
-
-let () =
-  let a = A.create() in
-  A.add_last a 1;
-  A.add_last a 2;
-  A.add_last a 3;
-  assert (A.length a = 3);;
-
-let () =
-  let a = A.make 1 5 in
-  A.add_last a 6;
-  assert (A.to_list a = [5;6]);;
-
-let () =
-  List.iter
-    (fun l ->
-      let a = A.of_list l in
-      assert (A.to_list a = l))
-    [
-      [];
-      [1];
-      [1;2];
-      [1;2;3];
-      [1;2;3;4];
-      [1;2;3;4;5;6;7;8;9;10];
-    ]
-;;
-
-let () =
-  let a = A.create() in
-  A.add_last a 0.; A.add_last a 1.;
-  A.clear a;
-  A.add_last a 0.; A.add_last a 1.; A.add_last a 7.; A.add_last a 10.; A.add_last a 12.;
-  A.truncate a 2;
-  assert (1. = A.fold_left (+.) 0. a);
-  A.clear a;
-  assert (0 = A.length a);
-  A.add_last a 0.; A.add_last a 1.; A.add_last a 7.; A.add_last a 10.; A.add_last a 12.;
-  assert (1. +. 7. +. 10. +. 12. = A.fold_left (+.) 0. a);;
-
-let () =
-  let seq = Seq.(ints 0 |> take 10_000) in
-  let a = A.of_seq seq in
-  assert (Some 9999 = A.pop_last_opt a);
-  assert (Some 9998 = A.pop_last_opt a);
-  assert (Some 9997 = A.pop_last_opt a);
-  assert (9997 = A.length a);
-  ();;
-
-let () =
-  let a = A.of_list [1;2] in
-  assert (Some 2 = A.pop_last_opt a);
-  assert (Some 1 = A.pop_last_opt a);
-  assert (None = A.pop_last_opt a);
-  assert (None = A.pop_last_opt a);
-  ();;
-
-let () =
-  let a = A.of_list [1;2;3] in
-  A.add_last a 4;
-  assert (A.to_list a = [1;2;3;4]);;
+(* TEST *)
 
 let list_range start len : _ list =
   Seq.ints start |> Seq.take len |> List.of_seq
-;;
+
+module A = Dynarray
+
+(** {1:dynarrays Dynamic arrays} *)
+
+(** create, add_last *)
+
+let () =
+  let a = A.create() in
+  A.add_last a 1;
+  A.add_last a 2;
+  assert (A.length a = 2);
+  assert (A.to_list a = [1;2]);;
+
+
+(** make *)
+
+let () =
+  let a = A.make 3 5 in
+  A.add_last a 6;
+  assert (A.to_list a = [5; 5; 5; 6]);;
+
+
+(** init *)
+
+let () =
+  let test_init n f =
+    assert (A.init n f |> A.to_array = Array.init n f) in
+  for i = 0 to 1024 do
+    test_init i Fun.id
+  done;;
+
+
+(** is_empty *)
+
+let () =
+  let a = A.create () in
+  assert (A.is_empty a);
+  A.ensure_capacity a 256;
+  assert (A.is_empty a);;
+
+
+(** length is tested below *)
+
+(** copy, add_last *)
+
+let () =
+  assert (A.of_list [1;2;3] |> A.copy |> A.to_list = [1;2;3]);;
+
+let () =
+  let a = A.create() in
+  for i=0 to 20 do A.add_last a i; done;
+  assert (A.to_list (A.copy a) = list_range 0 21);;
+
+let () =
+  assert (A.create() |> A.copy |> A.is_empty);;
+
+let () =
+  let a = A.of_list [1; 2; 3] in
+  let b = A.copy a in
+  for i = 4 to 1024 do
+    A.add_last b i
+  done;
+  assert (A.fold_left (+) 0 a = (1 + 2 + 3));
+  assert (A.fold_left (+) 0 b = (1024 * 1025) / 2);;
+
+
+(** {1:adding Adding elements} *)
+
+(** add_last was tested above *)
+
+(** append *)
 
 let () =
   let a1 = A.init 5 (fun i->i)
@@ -115,64 +116,83 @@ let() =
   A.append empty empty;
   assert (A.to_list empty = []);;
 
-let () =
-  assert (A.of_list [1;2;3] |> A.copy |> A.to_list = [1;2;3]);;
+
+(** dynarrays with floats *)
 
 let () =
   let a = A.create() in
-  for i=0 to 20 do A.add_last a i; done;
-  assert (A.to_list (A.copy a) = list_range 0 21);;
+  A.add_last a 0.; A.add_last a 1.;
+  assert (0. = A.get a 0);
+  assert (1. = A.get a 1);
+  assert (1. = A.fold_left (+.) 0. a);
+  A.clear a;
+  A.add_last a 0.; A.add_last a 1.; A.add_last a 7.; A.add_last a 10.; A.add_last a 12.;
+  A.truncate a 2;
+  assert (1. = A.fold_left (+.) 0. a);
+  A.clear a;
+  assert (0 = A.length a);
+  A.add_last a 0.; A.add_last a 1.; A.add_last a 7.; A.add_last a 10.; A.add_last a 12.;
+  A.set a 2 8.;
+  assert (0. +. 1. +. 8. +. 10. +. 12. = A.fold_left (+.) 0. a);;
+
+
+(** {1:removing Removing elements} *)
+
+
+(** pop_last_opt, length *)
 
 let () =
-  assert (A.create() |> A.copy |> A.is_empty);;
+  let seq = Seq.(ints 0 |> take 10_000) in
+  let a = A.of_seq seq in
+  assert (Some 9999 = A.pop_last_opt a);
+  assert (Some 9998 = A.pop_last_opt a);
+  assert (Some 9997 = A.pop_last_opt a);
+  assert (9997 = A.length a);
+  ();;
 
+let () =
+  let a = A.of_list [1;2] in
+  assert (Some 2 = A.pop_last_opt a);
+  assert (Some 1 = A.pop_last_opt a);
+  assert (None = A.pop_last_opt a);
+  assert (None = A.pop_last_opt a);
+  ();;
+
+
+(** truncate *)
 
 let () =
   let a = A.create() in
-  for i=0 to 20_000 do A.add_last a i; done;
+  let max_length = 20_000 in
+  for i = 0 to max_length - 1 do A.add_last a i; done;
   List.iter
     (fun size ->
       A.truncate a size;
-      assert (A.to_list a = list_range 0 size))
-    [ 19_999; 2000; 100; 50; 4; 4; 3; 2; 1; 0];;
+      let result_size = min max_length size in
+      assert (A.to_list a = list_range 0 result_size))
+    [ 30_000; 20_000; 19_999; 2000; 100; 50; 4; 4; 3; 2; 1; 0];;
 
-let () =
-  let a = A.create() in
-  for i=0 to 20_000 do A.add_last a i; done;
-  List.iter
-    (fun size ->
-      A.truncate_capacity a size;
-      assert (A.to_list a = list_range 0 size))
-    [ 19_999; 2000; 100; 50; 4; 4; 3; 2; 1; 0];;
 
-let () =
-  let a = A.create() in
-  for i = 0 to 200 do
-    A.add_last a i;
-  done;
-  A.fit_capacity a;
-  assert (A.length a = 201);;
+
+(** {1:iteration Iteration} *)
+
+(** map *)
 
 let () =
   let a = A.of_list [1;2;3] in
   assert (A.to_list @@ A.map string_of_int a = ["1"; "2"; "3"]);;
+
+
+(** mapi *)
 
 let () =
   let a = A.of_list [1;2;3] in
   let a = A.mapi (fun i e -> Printf.sprintf "%i %i" i e) a in
   assert (A.to_list a = ["0 1"; "1 2"; "2 3"]);;
 
-let () =
-  let a = A.of_list [1;2;3;4;5] in
-  assert (A.fold_left (+) 0 a = 15);;
 
-let () =
-  let l = list_range 0 300_000 in
-  let a = A.of_list l in
-  assert (A.to_list a = l);;
+(** Iterator invalidation *)
 
-
-(* Iterator invalidation *)
 let raises_invalid_argument f =
   match f () with
   | exception Invalid_argument _ -> true
@@ -227,4 +247,102 @@ let () =
     )
   ))
 
-let () = print_endline "OK";;
+(** Iterator invalidation *)
+
+let raises_invalid_argument f =
+  match f () with
+  | exception Invalid_argument _ -> true
+  | exception _ | _ -> false
+
+let () =
+  let a = A.of_list [1; 2; 3] in
+  assert (raises_invalid_argument (fun () ->
+    A.append a a
+  ))
+
+let () =
+  let a = A.of_list [1; 2; 3] in
+  assert (raises_invalid_argument (fun () ->
+    a |> A.iter (fun i ->
+      A.add_last a (10 + i)
+    )
+  ))
+
+let () =
+  let a = A.of_list [1; 2; 3] in
+  assert (raises_invalid_argument (fun () ->
+    a |> A.iter (fun i ->
+      if i >= 2 then A.remove_last a
+    )
+  ))
+
+let does_not_raise_invalid_argument f =
+  not (raises_invalid_argument f)
+
+(* The spec says that this is a programming error, but currently we accept
+   the following without an error. *)
+let () =
+  let a = A.of_list [1; 2; 3] in
+  A.ensure_capacity a 10;
+  assert (does_not_raise_invalid_argument (fun () ->
+    a |> A.iter (fun i ->
+      A.add_last a i;
+      A.remove_last a
+    )
+  ))
+
+(* Even with a capacity increase in the middle,
+   we still accept this although the spec would let us reject. *)
+let () =
+  let a = A.of_list [1; 2; 3] in
+  A.fit_capacity a;
+  assert (does_not_raise_invalid_argument (fun () ->
+    a |> A.iter (fun i ->
+      A.add_last a i;
+      A.remove_last a
+    )
+  ))
+
+
+(** {1:conversions Conversions to other data structures} *)
+
+(** {of,to}_{list,array,seq} *)
+
+let () =
+  for i = 0 to 1024 do
+    let ints = List.init i Fun.id in
+    assert ((ints |> A.of_list |> A.to_list) = ints);
+    let arr = Array.of_list ints in
+    assert ((arr |> A.of_array |> A.to_array) = arr);
+    let seq = Array.to_seq arr in
+    assert ((seq |> A.of_seq |> A.to_seq) |> Array.of_seq = arr);
+  done;;
+;;
+
+
+(** {1:advanced Advanced topics for performance} *)
+
+(** truncate_capacity *)
+
+let () =
+  let a = A.create() in
+  let max_length = 20_000 in
+  for i = 0 to max_length - 1 do A.add_last a i; done;
+  List.iter
+    (fun size ->
+      A.truncate_capacity a size;
+      let result_size = min max_length size in
+      assert (A.to_list a = list_range 0 result_size))
+    [ 30_000; 20_000; 19_999; 2000; 100; 50; 4; 4; 3; 2; 1; 0];;
+
+
+(** fit_capacity, capacity *)
+
+let () =
+  let a = A.create() in
+  for i = 0 to 200 do
+    A.add_last a i;
+  done;
+  A.fit_capacity a;
+  assert (A.length a = 201);
+  assert (A.length a = A.capacity a);
