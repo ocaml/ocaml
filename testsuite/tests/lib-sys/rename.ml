@@ -83,3 +83,11 @@ let _ =
   testfailure "foo" "bar";
   print_newline();
   safe_remove f1; safe_remove_dir "foo"; safe_remove_dir "bar";
+  print_string "Rename directory to existing file: ";
+  Sys.mkdir "foo" 0o755;
+  writefile f2 "xyz";
+  testfailure "foo" f2;
+  print_newline();
+  safe_remove_dir "foo";
+  safe_remove f2;
+  safe_remove_dir f2;
