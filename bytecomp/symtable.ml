@@ -275,8 +275,8 @@ let update_global_table () =
    executable file (normal case) or from linked-in data (-output-obj). *)
 
 type section_reader = {
-  read_string: string -> string;
-  read_struct: string -> Obj.t;
+  read_string: Bytesections.Name.t -> string;
+  read_struct: Bytesections.Name.t -> Obj.t;
   close_reader: unit -> unit
 }
 
@@ -284,16 +284,17 @@ let read_sections () =
   try
     let sections = Meta.get_section_table () in
     { read_string =
-        (fun name -> (Obj.magic(List.assoc name sections) : string));
+        (fun name ->
+           (Obj.magic(List.assoc name sections) : string));
       read_struct =
         (fun name -> List.assoc name sections);
       close_reader =
         (fun () -> ()) }
   with Not_found ->
     let ic = open_in_bin Sys.executable_name in
-    Bytesections.read_toc ic;
-    { read_string = Bytesections.read_section_string ic;
-      read_struct = Bytesections.read_section_struct ic;
+    let section_table = Bytesections.read_toc ic in
+    { read_string = Bytesections.read_section_string section_table ic;
+      read_struct = Bytesections.read_section_struct section_table ic;
       close_reader = fun () -> close_in ic }
 
 (* Initialize the linker for toplevel use *)
@@ -302,20 +303,23 @@ let init_toplevel () =
   try
     let sect = read_sections () in
     (* Locations of globals *)
-    global_table := (Obj.magic (sect.read_struct "SYMB") : GlobalMap.t);
+    global_table :=
+      (Obj.magic (sect.read_struct Bytesections.Name.SYMB) : GlobalMap.t);
     (* Primitives *)
-    let prims = Misc.split_null_terminated (sect.read_string "PRIM") in
+    let prims =
+      Misc.split_null_terminated (sect.read_string Bytesections.Name.PRIM) in
     c_prim_table := PrimMap.empty;
     List.iter set_prim_table prims;
     (* DLL initialization *)
     let dllpaths =
-      try Misc.split_null_terminated (sect.read_string "DLPT")
+      try Misc.split_null_terminated (sect.read_string Bytesections.Name.DLPT)
       with Not_found -> [] in
     Dll.init_toplevel dllpaths;
     (* Recover CRC infos for interfaces *)
     let crcintfs =
       try
-        (Obj.magic (sect.read_struct "CRCS") : (string * Digest.t option) list)
+        (Obj.magic (sect.read_struct Bytesections.Name.CRCS)
+         : (string * Digest.t option) list)
       with Not_found -> [] in
     (* Done *)
     sect.close_reader();
