@@ -340,6 +340,14 @@ module Array = struct
     !r
 
   (* duplicated from array.ml *)
+  let count_if f a =
+    let r = ref 0 in
+    for i = 0 to length a - 1 do
+      if f (unsafe_get a i) then r := !r + 1
+    done;
+    !r
+
+  (* duplicated from array.ml *)
   let exists p a =
     let n = length a in
     let rec loop i =
