@@ -28,6 +28,7 @@ module type S = sig
   val mapi_inplace : (int -> float -> float) -> t -> unit
   val fold_left : ('a -> float -> 'a) -> 'a -> t -> 'a
   val fold_right : (float -> 'a -> 'a) -> t -> 'a -> 'a
+  val count_if : (float -> bool) -> t -> int
   val iter2 : (float -> float -> unit) -> t -> t -> unit
   val map2 : (float -> float -> float) -> t -> t -> t
   val for_all : (float -> bool) -> t -> bool
@@ -293,6 +294,10 @@ module Test (A : S) : sig end = struct
   in
   let acc = A.fold_right f a 500.0 in
   assert (acc = 0.0);
+
+  (* [count_if] *)
+  let a = A.init 5 (fun i -> float (i + 1)) in
+  assert (A.count_if (fun n -> Float.to_int n mod 2 = 0) a = 2);
 
   (* [iter2], test result and order of evaluation *)
   let a = A.init 123 Float.of_int in

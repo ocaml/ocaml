@@ -118,6 +118,10 @@ let () =
   assert (List.find_mapi
     (fun i x -> if x+i=7 then Some(i, x) else None) xs = None);
 
+  (* [count_if] *)
+  assert (List.count_if
+    (fun n -> n mod 2 = 0) [1; 2; 3; 4; 5] = 2);
+
   ()
 ;;
 

@@ -271,6 +271,11 @@ let () =
     (fun i x -> if x+i=7 then Some(i, x) else None) xs = None);
   ()
 
+(* [count_if] *)
+let () =
+  assert (Seq.count_if
+    (fun n -> n mod 2 = 0) (Seq.init 5 (fun i -> i + 1)) = 2)
+
 (* Auxiliary definitions of 2d matrices. *)
 let square n f =
   Seq.(init n (fun i -> init n (fun j -> f i j)))

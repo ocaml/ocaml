@@ -177,3 +177,10 @@ let a : int array =
 [%%expect{|
 val a : int array = [|2; 4; 6; 8|]
 |}]
+
+let n : int =
+  let a = [| 1 ; 2 ; 3 ; 4 |] in
+  Array.count_if (fun n -> n mod 2 = 0) a;
+[%%expect{|
+val n : int = 2
+|}]
