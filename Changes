@@ -267,7 +267,8 @@ Working version
   (Xavier Leroy, review by Edwin Török and Gabriel Scherer, fix by Damien
    Doligez)
 
-- #11098: Add `List.count_if`.
+- #11098: Add `List.count_if`, `Array.count_if`, `Float.Array.count_if`,
+  `Seq.count_if`.
   (Tarun Agarwal, review by Léo Andrès, Pierre Chambart, Alain Frisch,
   Gabriel Scherer, Nicolás Ojeda Bär)
 
