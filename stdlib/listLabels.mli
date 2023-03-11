@@ -353,8 +353,8 @@ val find_all : f:('a -> bool) -> 'a list -> 'a list
  *)
 
 val count_if : f:('a -> bool) -> 'a list -> int
-(** [count_if ~f l] returns the number of elements in the list [l]
-   that satisfy the predicate [f].
+(** [count_if ~f l] is the number of elements of the list [l] that
+   satisfy the predicate [f].
 
    @since 5.1 *)
 
