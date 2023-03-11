@@ -352,8 +352,8 @@ val find_all : f:('a -> bool) -> 'a list -> 'a list
 (** [find_all] is another name for {!filter}.
  *)
 
-val count : f:('a -> bool) -> 'a list -> int
-(** [count ~f l] returns the number of elements in the list [l]
+val count_if : f:('a -> bool) -> 'a list -> int
+(** [count_if ~f l] returns the number of elements in the list [l]
    that satisfy the predicate [f].
  *)
 

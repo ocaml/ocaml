@@ -264,11 +264,11 @@ let[@tail_mod_cons] rec find_all p = function
   | [] -> []
   | x :: l -> if p x then x :: find_all p l else find_all p l
 
-let count f lst = 
+let count_if f lst =
   let rec aux n = function
     | [] -> n
     | h :: t -> if f h then aux (n + 1) t else aux n t
-  in 
+  in
   aux 0 lst
 
 let filter = find_all
