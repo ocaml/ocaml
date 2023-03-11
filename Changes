@@ -267,6 +267,10 @@ Working version
   (Xavier Leroy, review by Edwin Török and Gabriel Scherer, fix by Damien
    Doligez)
 
+- #11098: Add `List.count_if`.
+  (Tarun Agarwal, review by Léo Andrès, Pierre Chambart, Alain Frisch,
+  Gabriel Scherer, Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 - #11374: Remove pointer cast to a type with stricter alignment requirements
