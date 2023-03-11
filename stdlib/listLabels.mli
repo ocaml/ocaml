@@ -355,7 +355,8 @@ val find_all : f:('a -> bool) -> 'a list -> 'a list
 val count_if : f:('a -> bool) -> 'a list -> int
 (** [count_if ~f l] returns the number of elements in the list [l]
    that satisfy the predicate [f].
- *)
+
+   @since 5.1 *)
 
 val filteri : f:(int -> 'a -> bool) -> 'a list -> 'a list
 (** Same as {!filter}, but the predicate is applied to the index of
