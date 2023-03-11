@@ -16,6 +16,7 @@
 #ifndef CAML_MINOR_GC_H
 #define CAML_MINOR_GC_H
 
+#include "address_class.h"
 #include "misc.h"
 #include "config.h"
 
@@ -37,6 +38,13 @@
   asize_t size;                \
   asize_t reserve;             \
 }
+
+/* Count of the total number of minor collections performed by the program */
+CAMLextern atomic_uintnat caml_minor_collections_count;
+
+/* The epoch number for major slice. Used to trigger major slices.
+   Always, [caml_major_slice_epoch <= caml_minor_collections_count] */
+CAMLextern atomic_uintnat caml_major_slice_epoch;
 
 struct caml_ref_table CAML_TABLE_STRUCT(value *);
 
@@ -68,7 +76,9 @@ extern void caml_empty_minor_heap_no_major_slice_from_stw
     caml_domain_state** participating); /* in STW */
 extern int caml_try_stw_empty_minor_heap_on_all_domains(void); /* out STW */
 extern void caml_empty_minor_heaps_once(void); /* out STW */
-CAMLextern void garbage_collection (void); /* def in asmrun/signals.c */
+void caml_alloc_small_dispatch (caml_domain_state* domain,
+                                intnat wosize, int flags,
+                                int nallocs, unsigned char* encoded_alloc_lens);
 header_t caml_get_header_val(value v);
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv);
 extern void caml_realloc_ref_table (struct caml_ref_table *);
@@ -89,11 +99,11 @@ extern int caml_debug_is_major(value val);
       CAMLassert (ref->ptr == ref->limit);                              \
       caml_realloc_ref_table (ref);                                     \
     }                                                                   \
-    *ref->ptr++ = (x);                                                  \
+    *ref->ptr++ = (value*)(x);                                          \
   } while (0)
 
 Caml_inline void add_to_ephe_ref_table (struct caml_ephe_ref_table *tbl,
-                                          value ar, mlsize_t offset)
+                                        value ar, mlsize_t offset)
 {
   struct caml_ephe_ref_elt *ephe_ref;
   if (tbl->ptr >= tbl->limit){

@@ -1,0 +1,8 @@
+# @configure_input@
+
+version = "@VERSION@"
+description = "Ring buffer-based runtime tracing"
+archive(byte) = "runtime_events.cma"
+archive(native) = "runtime_events.cmxa"
+plugin(byte) = "runtime_events.cma"
+plugin(native) = "runtime_events.cmxs"

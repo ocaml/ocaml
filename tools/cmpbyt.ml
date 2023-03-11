@@ -79,9 +79,11 @@ let cmpbyt file1 file2 =
   close_in ic1; close_in ic2;
   res
 
-let _ =
+let main () =
   if Array.length Sys.argv <> 3 then begin
     eprintf "Usage: cmpbyt <file 1> <file 2>\n";
     exit 2
   end;
   if cmpbyt Sys.argv.(1) Sys.argv.(2) then exit 0 else exit 1
+
+let _ = main ()

@@ -18,7 +18,7 @@
 #include <string.h>
 
 #include "caml/callback.h"
-#include "caml/eventlog.h"
+#include "caml/runtime_events.h"
 #include "caml/fail.h"
 #include "caml/finalise.h"
 #include "caml/memory.h"
@@ -74,6 +74,7 @@ static void generic_final_update
       - k : index in to_do_tl, next available slot.
   */
   if (todo_count > 0) {
+    caml_set_action_pending(d);
     alloc_todo (d, todo_count);
     j = k = 0;
     for (i = 0; i < final->old; i++){
@@ -106,7 +107,7 @@ static void generic_final_update
       for (i = 0; i < k; i++) {
         /* Note that item may already be dark due to multiple entries in
            the final table. */
-        caml_darken (NULL, f->todo_tail->item[i].val, NULL);
+        caml_darken (d, f->todo_tail->item[i].val, NULL);
       }
     }
   }
@@ -178,7 +179,8 @@ value caml_final_do_calls_exn(void)
 
 /* Called my major_gc for marking roots */
 void caml_final_do_roots
-  (scanning_action act, void* fdata, caml_domain_state* d, int do_val)
+  (scanning_action act, scanning_action_flags fflags, void* fdata,
+   caml_domain_state* d, int do_val)
 {
   uintnat i;
   struct final_todo *todo;
@@ -208,7 +210,8 @@ void caml_final_do_roots
 
 /* Called by minor gc for marking roots */
 void caml_final_do_young_roots
-  (scanning_action act, void* fdata, caml_domain_state* d, int do_last_val)
+  (scanning_action act, scanning_action_flags fflags, void* fdata,
+   caml_domain_state* d, int do_last_val)
 {
   uintnat i;
   struct caml_final_info *f = d->final_info;
@@ -252,6 +255,7 @@ static void generic_final_minor_update
       - k : index in to_do_tl, next available slot.
   */
   if (todo_count > 0) {
+    caml_set_action_pending(d);
     alloc_todo (d, todo_count);
     k = 0;
     j = final->old;

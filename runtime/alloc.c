@@ -41,7 +41,8 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
     if (wosize == 0){
       result = Atom (tag);
     }else{
-      Alloc_small (result, wosize, tag, { caml_handle_gc_interrupt(); });
+      Caml_check_caml_state();
+      Alloc_small (result, wosize, tag, Alloc_small_enter_GC);
       if (tag < No_scan_tag){
         for (i = 0; i < wosize; i++) Field (result, i) = Val_unit;
       }
@@ -56,107 +57,92 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
   return result;
 }
 
-Caml_inline void enter_gc_preserving_vals(mlsize_t wosize, value* vals)
+/* This is used by the native compiler for large block allocations. */
+CAMLexport value caml_alloc_shr_check_gc (mlsize_t wosize, tag_t tag)
 {
-  mlsize_t i;
-  CAMLparam0();
-  /* Copy the values to be preserved to a different array.
-     The original vals array never escapes, generating better code in
-     the fast path. */
-  CAMLlocalN(vals_copy, wosize);
-  for (i = 0; i < wosize; i++) vals_copy[i] = vals[i];
-  caml_handle_gc_interrupt();
-  for (i = 0; i < wosize; i++) vals[i] = vals_copy[i];
-  CAMLreturn0;
+  caml_check_urgent_gc (Val_unit);
+  return caml_alloc_shr (wosize, tag);
 }
 
-Caml_inline value do_alloc_small(mlsize_t wosize, tag_t tag, value* vals)
-{
-  value v;
-  mlsize_t i;
-  CAMLassert (tag < 256);
-  Alloc_small(v, wosize, tag,
-      { enter_gc_preserving_vals(wosize, vals); });
-  for (i = 0; i < wosize; i++) {
-    Field(v, i) = vals[i];
-  }
-  return v;
-}
+/* Copy the values to be preserved to a different array.
+   The original vals array never escapes, generating better code in
+   the fast path. */
+#define Enter_gc_preserve_vals(dom_st, wosize) do {         \
+    CAMLparam0();                                           \
+    CAMLlocalN(vals_copy, (wosize));                        \
+    for (i = 0; i < (wosize); i++) vals_copy[i] = vals[i];  \
+    Alloc_small_enter_GC(dom_st, wosize);                   \
+    for (i = 0; i < (wosize); i++) vals[i] = vals_copy[i];  \
+    CAMLdrop;                                               \
+  } while (0)
 
+/* This has to be done with a macro, rather than an inline function, since
+   otherwise the wosize parameter to CAMLlocalN expands to be a VLA, which
+   breaks MSVC. */
+#define Do_alloc_small(wosize, tag, ...)                \
+{                                                       \
+  Caml_check_caml_state();                              \
+  value v;                                              \
+  value vals[wosize] = {__VA_ARGS__};                   \
+  mlsize_t i;                                           \
+  CAMLassert ((tag) < 256);                             \
+                                                        \
+  Alloc_small(v, wosize, tag, Enter_gc_preserve_vals);  \
+  for (i = 0; i < (wosize); i++) {                      \
+    Field(v, i) = vals[i];                              \
+  }                                                     \
+  return v;                                             \
+}
 
 CAMLexport value caml_alloc_1 (tag_t tag, value a)
 {
-  value v[1] = {a};
-  return do_alloc_small(1, tag, v);
+  Do_alloc_small(1, tag, a);
 }
 
 CAMLexport value caml_alloc_2 (tag_t tag, value a, value b)
 {
-  value v[2] = {a, b};
-  return do_alloc_small(2, tag, v);
+  Do_alloc_small(2, tag, a, b);
 }
 
 CAMLexport value caml_alloc_3 (tag_t tag, value a, value b, value c)
 {
-  value v[3] = {a, b, c};
-  return do_alloc_small(3, tag, v);
+  Do_alloc_small(3, tag, a, b, c);
 }
 
 CAMLexport value caml_alloc_4 (tag_t tag, value a, value b, value c, value d)
 {
-  value v[4] = {a, b, c, d};
-  return do_alloc_small(4, tag, v);
+  Do_alloc_small(4, tag, a, b, c, d);
 }
 
 CAMLexport value caml_alloc_5 (tag_t tag, value a, value b, value c, value d,
                                value e)
 {
-  value v[5] = {a, b, c, d, e};
-  return do_alloc_small(5, tag, v);
+  Do_alloc_small(5, tag, a, b, c, d, e);
 }
 
 CAMLexport value caml_alloc_6 (tag_t tag, value a, value b, value c, value d,
                                value e, value f)
 {
-  value v[6] = {a, b, c, d, e, f};
-  return do_alloc_small(6, tag, v);
+  Do_alloc_small(6, tag, a, b, c, d, e, f);
 }
 
 CAMLexport value caml_alloc_7 (tag_t tag, value a, value b, value c, value d,
                                value e, value f, value g)
 {
-  value v[7] = {a, b, c, d, e, f, g};
-  return do_alloc_small(7, tag, v);
+  Do_alloc_small(7, tag, a, b, c, d, e, f, g);
 }
 
 CAMLexport value caml_alloc_8 (tag_t tag, value a, value b, value c, value d,
                                value e, value f, value g, value h)
 {
-  value v[8] = {a, b, c, d, e, f, g, h};
-  return do_alloc_small(8, tag, v);
+  Do_alloc_small(8, tag, a, b, c, d, e, f, g, h);
 }
 
 CAMLexport value caml_alloc_9 (tag_t tag, value a, value b, value c, value d,
                                value e, value f, value g, value h, value i)
 {
-  value v[9] = {a, b, c, d, e, f, g, h, i};
-  return do_alloc_small(9, tag, v);
+  Do_alloc_small(9, tag, a, b, c, d, e, f, g, h, i);
 }
-
-CAMLexport value caml_alloc_N (mlsize_t wosize, tag_t tag, ...)
-{
-  va_list args;
-  mlsize_t i;
-  value vals[wosize];
-  value ret;
-  va_start(args, tag);
-  for (i = 0; i < wosize; i++)
-    vals[i] = va_arg(args, value);
-  ret = do_alloc_small(wosize, tag, vals);
-  va_end(args);
-  return ret;
-}
-
 
 CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
 {
@@ -166,7 +152,7 @@ CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
   CAMLassert (wosize <= Max_young_wosize);
   CAMLassert (tag < 256);
   CAMLassert (tag != Infix_tag);
-  Alloc_small (result, wosize, tag, { caml_handle_gc_interrupt(); });
+  Alloc_small (result, wosize, tag, Alloc_small_enter_GC);
   return result;
 }
 
@@ -184,7 +170,8 @@ CAMLexport value caml_alloc_string (mlsize_t len)
   mlsize_t wosize = (len + sizeof (value)) / sizeof (value);
 
   if (wosize <= Max_young_wosize) {
-    Alloc_small (result, wosize, String_tag, { caml_handle_gc_interrupt(); });
+    Caml_check_caml_state();
+    Alloc_small (result, wosize, String_tag, Alloc_small_enter_GC);
   }else{
     result = caml_alloc_shr (wosize, String_tag);
     result = caml_check_urgent_gc (result);
@@ -247,6 +234,7 @@ CAMLexport value caml_alloc_array(value (*funct)(char const *),
 value caml_alloc_float_array(mlsize_t len)
 {
 #ifdef FLAT_FLOAT_ARRAY
+  Caml_check_caml_state();
   mlsize_t wosize = len * Double_wosize;
   value result;
   /* For consistency with [caml_make_vect], which can't tell whether it should
@@ -256,8 +244,7 @@ value caml_alloc_float_array(mlsize_t len)
     if (wosize == 0)
       return Atom(0);
     else
-      Alloc_small (result, wosize, Double_array_tag,
-                   { caml_handle_gc_interrupt(); });
+      Alloc_small (result, wosize, Double_array_tag, Alloc_small_enter_GC);
   } else {
     result = caml_alloc_shr (wosize, Double_array_tag);
     result = caml_check_urgent_gc (result);
@@ -332,7 +319,7 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
   if (tag == Double_array_tag){
     CAMLassert (Wosize_val(newval) == Wosize_val(dummy));
     CAMLassert (Tag_val(dummy) != Infix_tag);
-    Tag_val(dummy) = Double_array_tag;
+    Unsafe_store_tag_val(dummy, Double_array_tag);
     size = Wosize_val (newval) / Double_wosize;
     for (i = 0; i < size; i++) {
       Store_double_flat_field (dummy, i, Double_flat_field (newval, i));
@@ -355,7 +342,7 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
   } else {
     CAMLassert (tag < No_scan_tag);
     CAMLassert (Tag_val(dummy) != Infix_tag);
-    Tag_val(dummy) = tag;
+    Unsafe_store_tag_val(dummy, tag);
     size = Wosize_val(newval);
     CAMLassert (size == Wosize_val(dummy));
     /* See comment above why this is safe even if [tag == Closure_tag]

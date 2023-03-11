@@ -593,6 +593,8 @@ let run_main argv =
     Clflags.add_arguments __LOC__ [
       "-absname", Arg.Set Clflags.absname,
         " Show absolute filenames in error messages";
+      "-no-absname", Arg.Clear Clflags.absname,
+        " Do not try to show absolute filenames in error messages (default)";
       "-all", Arg.Set all_dependencies,
         " Generate dependencies on all files";
       "-allow-approx", Arg.Set allow_approximation,
@@ -637,6 +639,8 @@ let run_main argv =
         " Generate dependencies for native plugin files (.cmxs targets)";
       "-slash", Arg.Set Clflags.force_slash,
         " (Windows) Use forward slash / instead of backslash \\ in file paths";
+      "-no-slash", Arg.Clear Clflags.force_slash,
+        " (Windows) Preserve any backslash \\ in file paths";
       "-sort", Arg.Set sort_files,
         " Sort files according to their dependencies";
       "-version", Arg.Unit print_version,

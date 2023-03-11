@@ -3,6 +3,8 @@
 #include <caml/mlvalues.h>
 #include <caml/domain_state.h>
 #include <caml/signals.h>
+#include <caml/minor_gc.h>
+#include <caml/camlatomic.h>
 
 CAMLprim value request_minor_gc(value v) {
   Caml_state->requested_minor_gc = 1;
@@ -18,5 +20,5 @@ CAMLprim value request_minor_gc(value v) {
 }
 
 CAMLprim value minor_gcs(value v) {
-  return Val_long(Caml_state->stat_minor_collections);
+  return Val_long(atomic_load(&caml_minor_collections_count));
 }

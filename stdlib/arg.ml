@@ -165,7 +165,7 @@ let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
   while !current < (Array.length !argv) do
     begin try
       let s = !argv.(!current) in
-      if String.length s >= 1 && s.[0] = '-' then begin
+      if String.starts_with ~prefix:"-" s then begin
         let action, follow =
           try assoc3 s !speclist, None
           with Not_found ->

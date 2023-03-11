@@ -31,4 +31,5 @@ else
   fi
 fi
 
-echo "::set-output name=changed::$result"
+echo "Manual altered: $result"
+echo "::set-output name=manual_changed::$result"

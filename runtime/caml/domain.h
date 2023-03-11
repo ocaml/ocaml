@@ -23,31 +23,54 @@ extern "C" {
 
 #ifdef CAML_INTERNALS
 
+#include "camlatomic.h"
 #include "config.h"
 #include "mlvalues.h"
 #include "domain_state.h"
 #include "platform.h"
 
+/* The runtime currently has a hard limit on the number of domains.
+   This hard limit may go away in the future. */
+#ifdef ARCH_SIXTYFOUR
+#define Max_domains 128
+#else
+#define Max_domains 16
+#endif
+
 /* is the minor heap full or an external interrupt has been triggered */
-#define Caml_check_gc_interrupt(dom_st)   \
-  (CAMLalloc_point_here, \
-   CAMLunlikely( \
-     (uintnat)(dom_st)->young_ptr < \
-     atomic_load_explicit(&((dom_st)->young_limit), memory_order_relaxed)))
+Caml_inline int caml_check_gc_interrupt(caml_domain_state * dom_st)
+{
+  CAMLalloc_point_here;
+  uintnat young_limit = atomic_load_relaxed(&dom_st->young_limit);
+  if ((uintnat)dom_st->young_ptr < young_limit) {
+    /* Synchronise for the case when [young_limit] was used to interrupt
+       us. */
+    atomic_thread_fence(memory_order_acquire);
+    return 1;
+  }
+  return 0;
+}
+
+#define Caml_check_gc_interrupt(dom_st)           \
+  (CAMLunlikely(caml_check_gc_interrupt(dom_st)))
 
 asize_t caml_norm_minor_heap_size (intnat);
 int caml_reallocate_minor_heap(asize_t);
+void caml_update_minor_heap_max(uintnat minor_heap_wsz);
 
 /* is there a STW interrupt queued that needs servicing */
 int caml_incoming_interrupts_queued(void);
 
+void caml_poll_gc_work(void);
 void caml_handle_gc_interrupt(void);
 void caml_handle_incoming_interrupts(void);
 
 CAMLextern void caml_interrupt_self(void);
+void caml_reset_young_limit(caml_domain_state *);
 
 CAMLextern void caml_reset_domain_lock(void);
 CAMLextern int caml_bt_is_in_blocking_section(void);
+CAMLextern int caml_bt_is_self(void);
 CAMLextern intnat caml_domain_is_multicore (void);
 CAMLextern void caml_bt_enter_ocaml(void);
 CAMLextern void caml_bt_exit_ocaml(void);
@@ -56,15 +79,16 @@ CAMLextern void caml_release_domain_lock(void);
 
 /* These hooks are not modified after other domains are spawned. */
 CAMLextern void (*caml_atfork_hook)(void);
+CAMLextern void (*caml_domain_initialize_hook)(void);
 CAMLextern void (*caml_domain_stop_hook)(void);
 CAMLextern void (*caml_domain_external_interrupt_hook)(void);
 
-CAMLextern void caml_init_domains(uintnat minor_heap_size);
+CAMLextern void caml_init_domains(uintnat minor_heap_wsz);
 CAMLextern void caml_init_domain_self(int);
 
+CAMLextern uintnat caml_minor_heap_max_wsz;
+
 CAMLextern atomic_uintnat caml_num_domains_running;
-CAMLextern uintnat caml_minor_heaps_base;
-CAMLextern uintnat caml_minor_heaps_end;
 
 Caml_inline intnat caml_domain_alone(void)
 {
@@ -95,8 +119,6 @@ void caml_global_barrier_end(barrier_status);
 int caml_global_barrier_num_domains(void);
 
 int caml_domain_is_terminating(void);
-
-CAMLextern void caml_domain_set_name(char*);
 
 #endif /* CAML_INTERNALS */
 

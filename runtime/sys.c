@@ -45,8 +45,12 @@
 #ifdef HAS_GETTIMEOFDAY
 #include <sys/time.h>
 #endif
+#ifdef __APPLE__
+#include <sys/random.h> /* for getentropy */
+#endif
 #include "caml/alloc.h"
 #include "caml/debugger.h"
+#include "caml/runtime_events.h"
 #include "caml/fail.h"
 #include "caml/gc_ctrl.h"
 #include "caml/major_gc.h"
@@ -132,7 +136,7 @@ CAMLexport void caml_do_exit(int retcode)
   caml_domain_state* domain_state = Caml_state;
   struct gc_stats s;
 
-  if ((caml_params->verb_gc & 0x400) != 0) {
+  if ((atomic_load_relaxed(&caml_verb_gc) & 0x400) != 0) {
     caml_compute_gc_stats(&s);
     {
       /* cf caml_gc_counters */
@@ -156,9 +160,9 @@ CAMLexport void caml_do_exit(int retcode)
       }
 
       caml_gc_message(0x400, "allocated_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                      (intnat)allocated_words);
+                    (intnat)allocated_words);
       caml_gc_message(0x400, "minor_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                      (intnat) minwords);
+                    (intnat) minwords);
       caml_gc_message(0x400, "promoted_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                       (intnat) s.alloc_stats.promoted_words);
       caml_gc_message(0x400, "major_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
@@ -168,18 +172,21 @@ CAMLexport void caml_do_exit(int retcode)
           (intnat) s.alloc_stats.minor_collections);
       caml_gc_message(0x400,
           "major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-          domain_state->stat_major_collections);
+          caml_major_cycles_completed);
       caml_gc_message(0x400,
           "forced_major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
           (intnat)s.alloc_stats.forced_major_collections);
       caml_gc_message(0x400, "heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-                      heap_words);
+                    heap_words);
       caml_gc_message(0x400, "top_heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
                       top_heap_words);
       caml_gc_message(0x400, "mean_space_overhead: %lf\n",
                       caml_mean_space_overhead());
     }
   }
+
+/* Tear down runtime_events before we leave */
+CAML_RUNTIME_EVENTS_DESTROY();
 
 #ifndef NATIVE_CODE
   caml_debugger(PROGRAM_EXIT, Val_unit);
@@ -189,6 +196,7 @@ CAMLexport void caml_do_exit(int retcode)
 #ifdef _WIN32
   caml_restore_win32_terminal();
 #endif
+  caml_terminate_signals();
   exit(retcode);
 }
 
@@ -258,7 +266,7 @@ CAMLprim value caml_sys_close(value fd_v)
   return Val_unit;
 }
 
-CAMLprim value caml_sys_file_exists(value name)
+static int caml_sys_file_mode(value name)
 {
 #ifdef _WIN32
   struct _stati64 st;
@@ -268,39 +276,42 @@ CAMLprim value caml_sys_file_exists(value name)
   char_os * p;
   int ret;
 
-  if (! caml_string_is_c_safe(name)) return Val_false;
+  if (! caml_string_is_c_safe(name)) { errno = ENOENT; return -1; }
   p = caml_stat_strdup_to_os(String_val(name));
   caml_enter_blocking_section();
   ret = stat_os(p, &st);
   caml_leave_blocking_section();
   caml_stat_free(p);
+  if (ret == -1) return -1; else return st.st_mode;
+}
 
-  return Val_bool(ret == 0);
+CAMLprim value caml_sys_file_exists(value name)
+{
+  int mode = caml_sys_file_mode(name);
+  return (Val_bool(mode != -1));
 }
 
 CAMLprim value caml_sys_is_directory(value name)
 {
   CAMLparam1(name);
-#ifdef _WIN32
-  struct _stati64 st;
-#else
-  struct stat st;
-#endif
-  char_os * p;
-  int ret;
-
-  caml_sys_check_path(name);
-  p = caml_stat_strdup_to_os(String_val(name));
-  caml_enter_blocking_section();
-  ret = stat_os(p, &st);
-  caml_leave_blocking_section();
-  caml_stat_free(p);
-
-  if (ret == -1) caml_sys_error(name);
+  int mode = caml_sys_file_mode(name);
+  if (mode == -1) caml_sys_error(name);
 #ifdef S_ISDIR
-  CAMLreturn(Val_bool(S_ISDIR(st.st_mode)));
+  CAMLreturn(Val_bool(S_ISDIR(mode)));
 #else
-  CAMLreturn(Val_bool(st.st_mode & S_IFDIR));
+  CAMLreturn(Val_bool(mode & S_IFDIR));
+#endif
+}
+
+CAMLprim value caml_sys_is_regular_file(value name)
+{
+  CAMLparam1(name);
+  int mode = caml_sys_file_mode(name);
+  if (mode == -1) caml_sys_error(name);
+#ifdef S_ISREG
+  CAMLreturn(Val_bool(S_ISREG(mode)));
+#else
+  CAMLreturn(Val_bool(mode & S_IFREG));
 #endif
 }
 
@@ -586,20 +597,27 @@ extern int caml_win32_random_seed (intnat data[16]);
 #else
 int caml_unix_random_seed(intnat data[16])
 {
-  int fd;
   int n = 0;
+  unsigned char buffer[12];
+  int nread = 0;
 
-  /* Try /dev/urandom first */
-  fd = open("/dev/urandom", O_RDONLY, 0);
-  if (fd != -1) {
-    unsigned char buffer[12];
-    int nread = read(fd, buffer, 12);
-    close(fd);
-    while (nread > 0) data[n++] = buffer[--nread];
+  /* Try kernel entropy first */
+#if defined(HAS_GETENTROPY) || defined(__APPLE__)
+  if (getentropy(buffer, 12) != -1) {
+    nread = 12;
+  } else
+#endif
+  { int fd = open("/dev/urandom", O_RDONLY, 0);
+    if (fd != -1) {
+      nread = read(fd, buffer, 12);
+      close(fd);
+    }
   }
-  /* If the read from /dev/urandom fully succeeded, we now have 96 bits
+  while (nread > 0) data[n++] = buffer[--nread];
+  /* If the kernel provided enough entropy, we now have 96 bits
      of good random data and can stop here. */
   if (n >= 12) return n;
+
   /* Otherwise, complement whatever we got (probably nothing)
      with some not-very-random data. */
   {

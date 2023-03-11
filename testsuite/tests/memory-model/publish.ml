@@ -1,5 +1,9 @@
 (* TEST
   modules="opt.ml barrier.ml hist.ml shared.ml run.ml outcome.ml"
+  * not-bsd
+  ** not-windows
+  *** bytecode
+  ** native
 *)
 
 (* Memory model: test the _publish idiom *)
@@ -82,7 +86,7 @@ module Publish = struct
 
   (* Publication of string reference, with subsequent updates.
    * Notice that if publication is not properly protected,
-   * the test may crash by attemping to print junk *)
+   * the test may crash by attempting to print junk *)
   module String = struct
 
     let null = "*null*"

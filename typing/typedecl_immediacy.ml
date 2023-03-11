@@ -29,7 +29,7 @@ let compute_decl env tdecl =
     | None -> Type_immediacy.Unknown
     | Some argrepr -> Ctype.immediacy env argrepr
     end
-  | (Type_variant (_ :: _ as cstrs, _), _) ->
+  | (Type_variant (cstrs, _), _) ->
     if not (List.exists (fun c -> c.Types.cd_args <> Types.Cstr_tuple []) cstrs)
     then
       Type_immediacy.Always

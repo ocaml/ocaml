@@ -396,6 +396,8 @@ let out_label = ref print_out_label
 
 let out_type = ref print_out_type
 
+let out_type_args = ref print_typargs
+
 (* Class types *)
 
 let print_type_parameter ppf s =

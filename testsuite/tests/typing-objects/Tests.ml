@@ -137,8 +137,8 @@ Lines 1-4, characters 0-3:
 2 |   constraint 'a = int
 3 |   method f x = (x : bool c)
 4 | end..
-Error: The abbreviation c is used with parameters bool c
-       which are incompatible with constraints int c
+Error: The abbreviation c is used with parameter(s) bool
+       which are incompatible with constraint(s) int
 |}];;
 
 (* Different constraints *)
@@ -201,7 +201,9 @@ Error: This recursive type is not regular.
        but it is used as
          int c
        after the following expansion(s):
-         'a d = < f : int c >
+         < f : 'a c; g : 'a d > contains 'a d,
+         'a d = < f : int c >,
+         < f : int c > contains int c
        All uses need to match the definition for the recursive type to be regular.
 |}];;
 type 'a c = <f : 'a c; g : 'a d>
@@ -222,8 +224,10 @@ and 'a t = 'a t u;;
 Line 2, characters 0-17:
 2 | and 'a t = 'a t u;;
     ^^^^^^^^^^^^^^^^^
-Error: The definition of t contains a cycle:
-       'a t u
+Error: The type abbreviation t is cyclic:
+         'a t u contains 'a t,
+         'a t = 'a t u,
+         'a t u contains 'a t
 |}];; (* fails since 4.04 *)
 type 'a u = 'a
 and 'a t = 'a t u;;
@@ -231,7 +235,9 @@ and 'a t = 'a t u;;
 Line 2, characters 0-17:
 2 | and 'a t = 'a t u;;
     ^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic
+Error: The type abbreviation t is cyclic:
+         'a t = 'a t u,
+         'a t u = 'a t
 |}];;
 type 'a u = 'a;;
 [%%expect{|
@@ -242,7 +248,10 @@ type t = t u * t u;;
 Line 1, characters 0-18:
 1 | type t = t u * t u;;
     ^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic
+Error: The type abbreviation t is cyclic:
+         t = t u * t u,
+         t u * t u contains t u,
+         t u = t
 |}];;
 
 type t = <x : 'a> as 'a;;
@@ -475,19 +484,23 @@ Line 3, characters 2-13:
       ^^^^^^^^^^^
 Warning 13 [instance-variable-override]: the following instance variables are overridden by the class c :
   x
+
 Line 4, characters 6-7:
 4 |   val y = 3
           ^
 Warning 13 [instance-variable-override]: the instance variable y is overridden.
+
 Line 6, characters 2-13:
 6 |   inherit d 7
       ^^^^^^^^^^^
 Warning 13 [instance-variable-override]: the following instance variables are overridden by the class d :
   t z
+
 Line 7, characters 6-7:
 7 |   val u = 3
           ^
 Warning 13 [instance-variable-override]: the instance variable u is overridden.
+
 class e :
   unit ->
   object
@@ -793,6 +806,7 @@ Line 1, characters 18-26:
 1 | fun (x : 'a t) -> (x : 'a); ();;
                       ^^^^^^^^
 Warning 10 [non-unit-statement]: this expression should have type unit.
+
 - : ('a t as 'a) t -> unit = <fun>
 |}];;
 
@@ -952,7 +966,23 @@ Line 4, characters 17-23:
 4 |       method n = self#m
                      ^^^^^^
 Warning 17 [undeclared-virtual-method]: the virtual method m is not declared.
+
 class c : object method m : int method n : int end
+|}];;
+
+class virtual c = object (self : 'c)
+  constraint 'c = < f : int; .. >
+end
+[%%expect {|
+class virtual c : object method virtual f : int end
+|}];;
+
+class virtual c = object (self : 'c)
+  constraint 'c = < f : int; .. >
+  method g = self # f
+end
+[%%expect {|
+class virtual c : object method virtual f : int method g : int end
 |}];;
 
 class [ 'a ] c = object (_ : 'a) end;;
@@ -1103,6 +1133,7 @@ Line 3, characters 10-75:
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 15 [implicit-public-methods]: the following private methods were made public implicitly:
  foo.
+
 class c : object method foo : int end
 |}];;
 
@@ -1329,3 +1360,77 @@ let _ = (new foo)#f true
 class foo : object method f : bool -> bool end
 - : bool = true
 |}];;
+
+
+class c : object
+    method virtual m : int
+end = object
+    method m = 9
+  end
+[%%expect {|
+Lines 1-3, characters 10-3:
+1 | ..........object
+2 |     method virtual m : int
+3 | end.........
+Error: This non-virtual class type has virtual methods.
+       The following methods are virtual : m
+|}];;
+
+class virtual c : object
+    method virtual m : int
+end = object
+    method m = 42
+  end
+[%%expect {|
+class virtual c : object method virtual m : int end
+|}];;
+
+class virtual cv = object
+    method virtual m : int
+  end
+
+class c : cv = object
+    method m = 42
+  end
+[%%expect {|
+class virtual cv : object method virtual m : int end
+Line 5, characters 10-12:
+5 | class c : cv = object
+              ^^
+Error: This non-virtual class type has virtual methods.
+       The following methods are virtual : m
+|}];;
+
+class virtual c : cv = object
+    method m = 41
+  end
+[%%expect {|
+class virtual c : cv
+|}];;
+
+class c = cv
+[%%expect {|
+Line 1, characters 10-12:
+1 | class c = cv
+              ^^
+Error: This non-virtual class has virtual methods.
+       The following methods are virtual : m
+|}];;
+
+class virtual c = cv
+[%%expect {|
+class virtual c : cv
+|}];;
+
+(** Test classes abbreviations with a recursive type *)
+class ['a] c = object method m: (<x:'a; f:'b> as 'b) -> unit = fun _ -> () end
+class d = ['a] c
+[%%expect {|
+class ['a] c : object method m : (< f : 'b; x : 'a > as 'b) -> unit end
+Line 2, characters 0-16:
+2 | class d = ['a] c
+    ^^^^^^^^^^^^^^^^
+Error: Some type variables are unbound in this type: class d : ['a] c
+       The method m has type (< f : 'b; x : 'a > as 'b) -> unit where 'a
+       is unbound
+|}]

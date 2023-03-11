@@ -94,11 +94,34 @@ val a : int array = [|1; 2; 3|]
 - : int option = Some 2
 |}]
 
+let a = [|1; 2; 3|];;
+let _ = Array.find_index (function 2 -> true | _ -> false) a;;
+[%%expect{|
+val a : int array = [|1; 2; 3|]
+- : int option = Some 1
+|}]
+
+let a = [|1; 2; 3|];;
+let _ = Array.find_index (function 42 -> true | _ -> false) a;;
+[%%expect{|
+val a : int array = [|1; 2; 3|]
+- : int option = None
+|}]
+
 let a = [|'a'; 'b'; 'c'|];;
 let _ = Array.find_map (function 'b' -> Some 121 | _ -> None) a;;
 [%%expect{|
 val a : char array = [|'a'; 'b'; 'c'|]
 - : int option = Some 121
+|}]
+
+let a = [|1; 2; 3|];;
+let _ = Array.find_mapi (fun i x -> match (i, x) with
+  | (1, 2) -> Some(1, 2)
+  | _ -> None) a;;
+[%%expect{|
+val a : int array = [|1; 2; 3|]
+- : (int * int) option = Some (1, 2)
 |}]
 
 let a = [|1; 2|];;
@@ -115,6 +138,15 @@ val a : int array = [|1; 2|]
 - : 'a option = None
 |}]
 
+let a = [|1; 2|];;
+let _ = Array.find_mapi (fun i x -> match (i, x) with
+  | (i, 101) -> Some(i, 101)
+  | _ -> None) a;;
+[%%expect{|
+val a : int array = [|1; 2|]
+- : (int * int) option = None
+|}]
+
 let a = Array.init 8 succ;;
 let _ = Array.fold_left_map (fun a b -> a + b, string_of_int b) 0 a;;
 a (* [a] is unchanged *);;
@@ -128,4 +160,20 @@ let (_ : (_ * unit array)) =
   Array.fold_left_map (fun _ _ -> assert false) 0 [||];;
 [%%expect{|
 - : int * unit array = (0, [||])
+|}]
+
+let a : int array =
+  let a = [| 1 ; 2 ; 3 ; 4 |] in
+  Array.map_inplace (fun x -> 2 * x) a;
+  a
+[%%expect{|
+val a : int array = [|2; 4; 6; 8|]
+|}]
+
+let a : int array =
+  let a = [| 1 ; 2 ; 3 ; 4 |] in
+  Array.mapi_inplace (fun i x -> 1 + i + x) a;
+  a
+[%%expect{|
+val a : int array = [|2; 4; 6; 8|]
 |}]

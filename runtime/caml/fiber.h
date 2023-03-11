@@ -50,14 +50,15 @@ struct stack_info {
 #endif
   struct stack_handler* handler; /* effect handling state for the fiber */
 
-  /* [size_bucket] is a pointer to a bucket in Caml->stack_cache if this
-   * size is pooled. If unpooled, it is NULL.
+  /* [cache_bucket] is an index into the [Caml_state->stack_cache] array if
+   * this size is pooled. If unpooled, it is [-1].
    *
    * Stacks may be unpooled if either the stack size is not 2**N multiple of
    * [caml_fiber_wsz] or the stack is bigger than pooled sizes. */
-  struct stack_info** size_bucket;
+  int cache_bucket;
   size_t size; /* only used when USE_MMAP_MAP_STACK is defined */
   uintnat magic;
+  int64_t id;
 };
 
 CAML_STATIC_ASSERT(sizeof(struct stack_info) ==
@@ -77,7 +78,8 @@ CAML_STATIC_ASSERT(sizeof(struct stack_info) ==
  * +------------------------+
  * |  struct stack_handler  |
  * +------------------------+ <--- Stack_high
- * |     caml_runstack      |
+ * |    caml_runstack /     |
+ * |   caml_start_program   |
  * +------------------------+
  * |                        |
  * .      OCaml frames      . <--- sp
@@ -102,6 +104,39 @@ struct c_stack_link {
   void* sp;
   struct c_stack_link* prev;
 };
+
+/* `gc_regs` and `gc_regs_buckets`.
+
+   When entering certain runtime functions, the OCaml runtime saves
+   all registers into a `gc_regs` "bucket", a value array allocated on
+   the C heap. This is notably used by the garbage collector to know
+   which registers contain local roots.
+
+   `Caml_state->gc_regs` points to the bucket currently in use, or
+   NULL if no runtime function saving all registers is currently being
+   called.
+
+   `Caml_state->gc_regs_buckets` is a domain-local cache of buckets
+   that are not currently in use. It has a linked list structure
+   (the first element of each bucket is a pointer to the next
+   available bucket or 0). It is guaranteed to be non-empty, to
+   contain at least one free bucket, whenever we are running OCaml
+   code on the domain. This invariant is maintained by calling
+   [caml_maybe_expand_stack] before calling OCaml code from C code,
+   which allocates a new bucket if the list is empty.
+
+   When OCaml code needs to save all registers, it pops the next
+   bucket from `gc_regs_bucket`. It is pushed back on return.
+
+   When C code passes control to an OCaml callback, the current
+   `Caml_state->gc_regs` value is saved to the top of the OCaml stack
+   (see the `caml_start_program` logic, which is also used by
+   `caml_callback` functions). In general we can thus have several
+   buckets storing registers, one for each nested call to runtime
+   functions saving all registers, with the currently-active one in
+   `Caml_state` and the rest at the beginning of each OCaml stack
+   fragment created from C.
+*/
 
 /* Overview of the stack switching primitives for effects
  *
@@ -133,7 +168,7 @@ struct c_stack_link {
  *  caml_perform captures the current OCaml stack in the continuation object
  *  provided and raises the effect by switching to the parent OCaml stack and
  *  then executing the handle_effect function. Should there be no parent OCaml
- *  stack then the Unhandled exception is raised.
+ *  stack then the Effect.Unhandled exception is raised.
  *
  * caml_reperform effect continuation last_fiber
  *  caml_reperform is used to walk up the parent OCaml stacks to execute the
@@ -166,14 +201,15 @@ struct c_stack_link {
  *   PERFORM captures the current stack in a continuation object it allocates.
  *   The parent stack is then switched to and the handle_effect function for
  *   the parent stack is executed. If no parent stack exists then the
- *   Unhandled exception is raised.
+ *   Effect.Unhandled exception is raised.
  *
  *  Preperform -> REPERFORMTERM
  *   REPERFORMTERM is used to walk up the parent OCaml stacks to execute the
  *   next effect handler installed in the chain. The instruction takes care to
- *   switch back to the continuation stack to raise the Unhandled exception in
- *   in the case no parent is left. Otherwise the instruction switches to the
- *   parent stack and executes the handle_effect function for that parent stack.
+ *   switch back to the continuation stack to raise the Effect.Unhandled
+ *   exception in in the case no parent is left. Otherwise the instruction
+ *   switches to the parent stack and executes the handle_effect function for
+ *   that parent stack.
  *
  *  Special return handling:
  *   There is special handling on every function return (see do_return of
@@ -195,28 +231,50 @@ extern value caml_global_data;
 #define Trap_link(tp) ((tp)[1])
 
 struct stack_info** caml_alloc_stack_cache (void);
-CAMLextern struct stack_info* caml_alloc_main_stack (uintnat init_size);
-void caml_scan_stack(scanning_action f, void* fdata,
-                     struct stack_info* stack, value* v_gc_regs);
+CAMLextern struct stack_info* caml_alloc_main_stack (uintnat init_wsize);
+
+void caml_scan_stack(
+  scanning_action f, scanning_action_flags fflags, void* fdata,
+  struct stack_info* stack, value* v_gc_regs);
+
+struct stack_info* caml_alloc_stack_noexc(mlsize_t wosize, value hval,
+                                          value hexn, value heff, int64_t id);
 /* try to grow the stack until at least required_size words are available.
    returns nonzero on success */
-int caml_try_realloc_stack (asize_t required_size);
-void caml_change_max_stack_size (uintnat new_max_size);
+CAMLextern int caml_try_realloc_stack (asize_t required_wsize);
+CAMLextern uintnat caml_get_init_stack_wsize(void);
+void caml_change_max_stack_size (uintnat new_max_wsize);
 void caml_maybe_expand_stack(void);
 CAMLextern void caml_free_stack(struct stack_info* stk);
+
+/* gc_regs_buckets is allocated on-demand by [maybe_expand_stack]. */
+CAMLextern void caml_free_gc_regs_buckets(value *gc_regs_buckets);
 
 #ifdef NATIVE_CODE
 void caml_get_stack_sp_pc (struct stack_info* stack,
                            char** sp /* out */, uintnat* pc /* out */);
+void
+caml_rewrite_exception_stack(struct stack_info *old_stack,
+                             value** exn_ptr, struct stack_info *new_stack);
 #endif
 
 value caml_continuation_use (value cont);
 
-/* Replace the stack of a continuation that was previouly removed
+/* Replace the stack of a continuation that was previously removed
    with caml_continuation_use. The GC must not be allowed to run
    between continuation_use and continuation_replace.
    Used for cloning continuations and continuation backtraces. */
 void caml_continuation_replace(value cont, struct stack_info* stack);
+
+CAMLnoreturn_start
+CAMLextern void caml_raise_continuation_already_resumed (void)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_raise_unhandled_effect (value effect)
+CAMLnoreturn_end;
+
+value caml_make_unhandled_effect_exn (value effect);
 
 #endif /* CAML_INTERNALS */
 

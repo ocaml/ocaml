@@ -49,6 +49,31 @@ type pc =
   { frag : int;
     pos : int; }
 
+module Sp = struct
+
+  (* Position in the debuggee's stack. *)
+  type t = {
+    block : int;
+    offset : int;
+  }
+
+  let null = { block = -1; offset = -1}
+
+  let base sp n = {sp with offset = sp.offset - n}
+
+  let compare sp1 sp2 =
+    match Stdlib.compare sp1.block sp2.block with
+    | 0 -> Stdlib.compare sp1.offset sp2.offset
+    | x -> x
+
+end
+
+(* Identifier of the code fragment for the main program.
+   Numbering starts at 1 and the runtime registers 2 fragments before
+   the main program: one for uncaught exceptions and one for callbacks.
+*)
+let main_frag = 3
+
 let set_event {frag; pos} =
   output_char !conn.io_out 'e';
   output_binary_int !conn.io_out frag;
@@ -79,7 +104,7 @@ type execution_summary =
 type report = {
   rep_type : execution_summary;
   rep_event_count : int64;
-  rep_stack_pointer : int;
+  rep_stack_pointer : Sp.t;
   rep_program_pointer : pc
 }
 
@@ -112,12 +137,13 @@ let do_go_smallint n =
          |  c  -> Misc.fatal_error (Printf.sprintf "Debugcom.do_go %c" c)
        in
        let event_counter = input_binary_int !conn.io_in in
-       let stack_pos = input_binary_int !conn.io_in in
+       let block = input_binary_int !conn.io_in in
+       let offset = input_binary_int !conn.io_in in
        let frag = input_binary_int !conn.io_in in
        let pos = input_binary_int !conn.io_in in
        { rep_type = summary;
          rep_event_count = Int64.of_int event_counter;
-         rep_stack_pointer = stack_pos;
+         rep_stack_pointer = Sp.{block; offset};
          rep_program_pointer = {frag; pos} })
 
 let rec do_go n =
@@ -166,10 +192,11 @@ let wait_child chan =
 let initial_frame () =
   output_char !conn.io_out '0';
   flush !conn.io_out;
-  let stack_pos = input_binary_int !conn.io_in in
+  let block = input_binary_int !conn.io_in in
+  let offset = input_binary_int !conn.io_in in
   let frag = input_binary_int !conn.io_in in
   let pos = input_binary_int !conn.io_in in
-  (stack_pos, {frag; pos})
+  (Sp.{block; offset}, {frag; pos})
 
 let set_initial_frame () =
   ignore(initial_frame ())
@@ -182,35 +209,43 @@ let up_frame stacksize =
   output_char !conn.io_out 'U';
   output_binary_int !conn.io_out stacksize;
   flush !conn.io_out;
-  let stack_pos = input_binary_int !conn.io_in in
+  let block = input_binary_int !conn.io_in in
+  let offset = input_binary_int !conn.io_in in
   let frag, pos =
-    if stack_pos = -1
-    then 0, 0
-    else let frag = input_binary_int !conn.io_in in
-         let pos = input_binary_int !conn.io_in in
-         frag, pos
+    if block = -1 then
+    begin
+      assert (offset = -1);
+      0, 0
+    end else begin
+      let frag = input_binary_int !conn.io_in in
+      let pos = input_binary_int !conn.io_in in
+      frag, pos
+    end
   in
-  (stack_pos, { frag; pos })
+  (Sp.{block; offset}, { frag; pos })
 
 (* Get and set the current frame position *)
 
 let get_frame () =
   output_char !conn.io_out 'f';
   flush !conn.io_out;
-  let stack_pos = input_binary_int !conn.io_in in
+  let block = input_binary_int !conn.io_in in
+  let offset = input_binary_int !conn.io_in in
   let frag = input_binary_int !conn.io_in in
   let pos = input_binary_int !conn.io_in in
-  (stack_pos, {frag; pos})
+  (Sp.{block; offset}, {frag; pos})
 
 let set_frame stack_pos =
   output_char !conn.io_out 'S';
-  output_binary_int !conn.io_out stack_pos
+  output_binary_int !conn.io_out stack_pos.Sp.block;
+  output_binary_int !conn.io_out stack_pos.Sp.offset
 
 (* Set the trap barrier to given stack position. *)
 
 let set_trap_barrier pos =
   output_char !conn.io_out 'b';
-  output_binary_int !conn.io_out pos
+  output_binary_int !conn.io_out pos.Sp.block;
+  output_binary_int !conn.io_out pos.Sp.offset
 
 (* Handling of remote values *)
 

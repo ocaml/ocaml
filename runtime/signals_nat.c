@@ -42,33 +42,29 @@
 void caml_garbage_collection(void)
 {
   frame_descr* d;
-  intnat allocsz = 0;
-  char *sp;
-  uintnat retaddr;
-  intnat whsize;
-
+  caml_domain_state * dom_st = Caml_state;
   caml_frame_descrs fds = caml_get_frame_descrs();
-  struct stack_info* stack = Caml_state->current_stack;
+  struct stack_info* stack = dom_st->current_stack;
 
-  sp = (char*)stack->sp;
+  char * sp = (char*)stack->sp;
   Pop_frame_pointer(sp);
-  retaddr = *(uintnat*)sp;
+  uintnat retaddr = *(uintnat*)sp;
+
+  /* Synchronise for the case when [young_limit] was used to interrupt
+     us. */
+  atomic_thread_fence(memory_order_acquire);
 
   { /* Find the frame descriptor for the current allocation */
-    uintnat h = Hash_retaddr(retaddr, fds.mask);
-    while (1) {
-      d = fds.descriptors[h];
-      if (d->retaddr == retaddr) break;
-      h = (h + 1) & fds.mask;
-    }
+    d = caml_find_frame_descr(fds, retaddr);
     /* Must be an allocation frame */
-    CAMLassert(d && d->frame_size != 0xFFFF && (d->frame_size & 2));
+    CAMLassert(d && !frame_return_to_C(d) && frame_has_allocs(d));
   }
 
   { /* Compute the total allocation size at this point,
        including allocations combined by Comballoc */
     unsigned char* alloc_len = (unsigned char*)(&d->live_ofs[d->num_live]);
     int i, nallocs = *alloc_len++;
+    intnat allocsz = 0;
 
     if (nallocs == 0) {
       /* This is a poll */
@@ -85,24 +81,7 @@ void caml_garbage_collection(void)
       allocsz -= 1;
     }
 
-    whsize = Whsize_wosize(allocsz);
-
-    /* Put the young pointer back to what is was before our tiggering
-       allocation */
-    Caml_state->young_ptr += whsize;
-
-    /* When caml_garbage_collection returns, we assume there is enough space in
-      the minor heap for the triggering allocation. Due to finalisers in the
-      major heap, it is possible for there to be a sequence of events where a
-      single call to caml_handle_gc_interrupt does not lead to that. We do it
-      in a loop to ensure it. */
-    do {
-      caml_process_pending_actions();
-    } while
-       ( (uintnat)(Caml_state->young_ptr - whsize) <=
-         atomic_load_explicit(&Caml_state->young_limit, memory_order_relaxed) );
-
-    /* Re-do the allocation: we now have enough space in the minor heap. */
-    Caml_state->young_ptr -= whsize;
+    caml_alloc_small_dispatch(dom_st, allocsz, CAML_DO_TRACK | CAML_FROM_CAML,
+                              nallocs, alloc_len);
   }
 }

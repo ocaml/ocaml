@@ -18,18 +18,12 @@ ROOTDIR = ..
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
-OCAMLYACCFLAGS = --strict -v
-
-STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 OCAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
-OCAMLDEP = $(BEST_OCAMLDEP)
-DEPFLAGS = -slash
 
 # For installation
 ##############
 
-CP=cp
 programs := ocamldoc ocamldoc.opt
 include Makefile.best_ocamldoc
 
@@ -38,7 +32,10 @@ OCAMLDOC_LIBCMI=odoc_info.cmi
 OCAMLDOC_LIBCMXA=odoc_info.cmxa
 OCAMLDOC_LIBA=odoc_info.$(A)
 
-OCAMLDOC_LIBMLIS=odoc_info.mli
+OCAMLDOC_LIBMLIS=$(addsuffix .mli,\
+  odoc_dep odoc_dot odoc_extension odoc_html odoc_info odoc_latex \
+  odoc_latex_style odoc_man odoc_messages odoc_ocamlhtml odoc_parameter \
+  odoc_texi odoc_text_lexer odoc_to_text odoc_type odoc_value)
 OCAMLDOC_LIBCMIS=$(OCAMLDOC_LIBMLIS:.mli=.cmi)
 OCAMLDOC_LIBCMTS=$(OCAMLDOC_LIBMLIS:.mli=.cmt) $(OCAMLDOC_LIBMLIS:.mli=.cmti)
 
@@ -55,29 +52,22 @@ endif
 # Compilation
 #############
 
-INCLUDES_DEP=\
-  -I $(ROOTDIR)/utils \
-  -I $(ROOTDIR)/parsing \
-  -I $(ROOTDIR)/typing \
-  -I $(ROOTDIR)/driver \
-  -I $(ROOTDIR)/bytecomp \
-  -I $(ROOTDIR)/toplevel
 
-INCLUDES_NODEP=\
-  -I $(ROOTDIR)/stdlib \
-  -I $(ROOTDIR)/compilerlibs \
-  -I $(ROOTDIR)/otherlibs/str \
-  -I $(ROOTDIR)/otherlibs/dynlink \
-  -I $(ROOTDIR)/otherlibs/dynlink/native \
-  -I $(ROOTDIR)/otherlibs/$(UNIXLIB)
+INCLUDE_DIRS = $(addprefix $(ROOTDIR)/,\
+  utils parsing typing driver bytecomp toplevel) generators
+INCLUDES_DEP = $(addprefix -I ,$(INCLUDE_DIRS))
+INCLUDES_NODEP = $(addprefix -I $(ROOTDIR)/,\
+  compilerlibs otherlibs/str otherlibs/dynlink \
+  otherlibs/dynlink/native otherlibs/unix)
 
-DEPINCLUDES=$(INCLUDES_DEP)
+OC_OCAMLDEPDIRS = $(INCLUDE_DIRS)
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
-COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
-  -safe-string -strict-sequence -strict-formats -bin-annot -principal
+COMPFLAGS = \
+  -g $(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error +A \
+  -strict-sequence -strict-formats -bin-annot -principal
 
-LINKFLAGS=$(INCLUDES) -nostdlib
+LINKFLAGS = $(INCLUDES)
 
 CMOFILES=\
   odoc_config.cmo \
@@ -106,8 +96,6 @@ CMOFILES=\
   odoc_merge.cmo \
   odoc_sig.cmo \
   odoc_ast.cmo \
-  odoc_control.cmo \
-  odoc_inherit.cmo \
   odoc_search.cmo \
   odoc_scan.cmo \
   odoc_cross.cmo \
@@ -174,18 +162,18 @@ OCAMLDOC_NCLIBRARIES = $(OCAMLDOC_LIBRARIES:%=%.cmxa)
 $(eval $(call PROGRAM_SYNONYM,ocamldoc))
 
 $(OCAMLDOC): $(EXECMOFILES)
-	$(OCAMLC) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_BCLIBRARIES) $^
+	$(V_LINKC)$(OCAMLC) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_BCLIBRARIES) $^
 
 $(eval $(call PROGRAM_SYNONYM,ocamldoc.opt))
 
 $(OCAMLDOC_OPT): $(EXECMXFILES)
-	$(OCAMLOPT_CMD) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_NCLIBRARIES) $^
+	$(V_LINKOPT)$(OCAMLOPT_CMD) -o $@ -linkall $(LINKFLAGS) $(OCAMLDOC_NCLIBRARIES) $^
 
 $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
-	$(OCAMLC) -a -o $@ $(LINKFLAGS) $^
+	$(V_LINKC)$(OCAMLC) -a -o $@ $(LINKFLAGS) $^
 
 $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
-	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $^
+	$(V_LINKOPT)$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $^
 
 .PHONY: dot
 dot: ocamldoc.dot
@@ -207,16 +195,16 @@ DEPEND_PREREQS = $(LEXERS:.mll=.ml) \
 #################
 
 %.cmo: %.ml
-	$(OCAMLC) $(COMPFLAGS) -c $<
+	$(V_OCAMLC)$(OCAMLC) $(COMPFLAGS) -c $<
 
 %.cmi: %.mli
-	$(OCAMLC)  $(COMPFLAGS) -c $<
+	$(V_OCAMLC)$(OCAMLC) $(COMPFLAGS) -c $<
 
 %.cmx: %.ml
-	$(OCAMLOPT) $(COMPFLAGS) -c $<
+	$(V_OCAMLOPT)$(OCAMLOPT) $(COMPFLAGS) -c $<
 
 %.cmxs: %.ml
-	$(OCAMLOPT_CMD) -shared -o $@ $(COMPFLAGS) $<
+	$(V_OCAMLOPT)$(OCAMLOPT_CMD) -shared -o $@ $(COMPFLAGS) $<
 
 # Installation targets
 ######################
@@ -230,7 +218,7 @@ install:
 	$(MKDIR) "$(INSTALL_LIBDIR)/ocamldoc"
 	$(INSTALL_PROG) $(OCAMLDOC) "$(INSTALL_BINDIR)"
 	$(INSTALL_DATA) \
-	  ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) \
+	  ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) META \
 	  "$(INSTALL_LIBDIR)/ocamldoc"
 	$(INSTALL_DATA) \
 	  $(OCAMLDOC_LIBCMIS) \
@@ -284,7 +272,7 @@ test_stdlib:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc -keep-code \
 	$(ROOTDIR)/stdlib/*.mli \
-	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
+	$(ROOTDIR)/otherlibs/unix/unix.mli \
 	$(ROOTDIR)/otherlibs/str/str.mli
 
 .PHONY: test_stdlib_code
@@ -292,7 +280,7 @@ test_stdlib_code:
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc -keep-code \
 	`ls $(ROOTDIR)/stdlib/*.ml | grep -v Labels` \
-	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.ml \
+	$(ROOTDIR)/otherlibs/unix/unix.ml \
 	$(ROOTDIR)/otherlibs/str/str.ml
 
 .PHONY: test_latex
@@ -308,7 +296,7 @@ test_latex_simple:
 	-latextitle 6,subsection -latextitle 7,subsubection \
 	$(ROOTDIR)/stdlib/hashtbl.mli \
 	$(ROOTDIR)/stdlib/arg.mli \
-	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
+	$(ROOTDIR)/otherlibs/unix/unix.mli \
 	$(ROOTDIR)/stdlib/map.mli
 
 .PHONY: test_man
@@ -330,7 +318,7 @@ autotest_stdlib:
 	$(OCAMLDOC_RUN_PLUGINS) -g autotest/odoc_test.cmo\
 	$(INCLUDES) -keep-code \
 	$(ROOTDIR)/stdlib/*.mli \
-	$(ROOTDIR)/otherlibs/$(UNIXLIB)/unix.mli \
+	$(ROOTDIR)/otherlibs/unix/unix.mli \
 	$(ROOTDIR)/otherlibs/str/str.mli
 
 # backup, clean and depend :
@@ -345,14 +333,15 @@ clean:
 	rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
 	rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
 	rm -f generators/*.cm[taiox] generators/*.a generators/*.lib generators/*.o generators/*.obj \
-        generators/*.cmx[as]
+        generators/*.cmx[as] generators/*.cmti
 
 .PHONY: distclean
 distclean: clean
+	rm -f META
 
 .PHONY: depend
 depend: $(DEPEND_PREREQS)
-	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mll *.mly *.ml *.mli > .depend
-	$(OCAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) -shared generators/*.ml >> .depend
+	$(OCAMLDEP_CMD) *.mll *.mly *.ml *.mli > .depend
+	$(OCAMLDEP_CMD) -shared generators/*.ml generators/*.mli >> .depend
 
 include .depend

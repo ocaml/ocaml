@@ -221,11 +221,16 @@
 
 %%% Linking to modules
 \ifocamldoc
-\newcommand{\stdmoduleref}[1]{\hyperref[#1]{\texttt{#1}}[\ref{#1}]}
+\newcommand{\moduleref}[3]{\hyperref[#2]{#3}[\ref{#2}]}
+\newcommand{\stdmoduleref}[1]{\moduleref{}{#1}{\texttt{#1}}}
 \newcommand{\stdpageref}[1]{\pageref{#1}}
 \else
-\newcommand{\stdmoduleref}[1]{\hyperref[container-page-libref-module-Stdlib-module-#1]{\texttt{#1}}[\ref{container-page-libref-module-Stdlib-module-#1}]}
-\newcommand{\stdpageref}[1]{\pageref{container-page-libref-module-Stdlib-module-#1}}
+\newcommand{\moduleLabel}[2]{page-#1-module-#2}
+\newcommand{\moduleref}[3]{%
+\hyperref[\moduleLabel{#1}{#2}]{#3}[\ref{\moduleLabel{#1}{#2}}]%
+}
+\newcommand{\stdmoduleref}[1]{\moduleref{libref-module-Stdlib}{#1}{\texttt{#1}}}
+\newcommand{\stdpageref}[1]{\pageref{\moduleLabel{libref-module-Stdlib}{#1}}}
 \fi
 \newenvironment{linklist}{\begingroup\ocamldocinputstart}{\endgroup}
 

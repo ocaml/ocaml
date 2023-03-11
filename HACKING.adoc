@@ -127,6 +127,21 @@ link:typing/HACKING.adoc[].
 
 === Runtime system
 
+The low-level routines that OCaml programs use during their execution:
+garbage collection, interaction with the operating system
+(IO in particular), low-level primitives to manipulate some OCaml data
+structures, etc. Mostly implemented in C, with some rare bits of
+assembly code in architecture-specific files. The "includes"
+corresponding to the `.c` files are in the link:runtime/caml[]
+subdirectory.
+
+Some files are only used by bytecode programs, some only used by
+native-compiled programs, but most of the runtime code is
+common. (See link:runtime/Makefile[] for the list of common,
+bytecode-only and native-only source files.)
+
+See link:runtime/HACKING.adoc[].
+
 === Libraries
 
 link:stdlib/[]:: The standard library. Each file is largely

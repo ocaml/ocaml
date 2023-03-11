@@ -1,4 +1,3 @@
-#2 "asmcomp/power/emit.mlp"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -75,10 +74,6 @@ let (trap_size, trap_handler_offset, trap_previous_offset) =
   | ELF32 -> (16, 0, 4)
   | ELF64v1 -> (32, 56, 64)
   | ELF64v2 -> (32, 40, 48)
-
-(* Output a symbol *)
-
-let emit_symbol s = Emitaux.emit_symbol '.' s
 
 (* Output a label *)
 
@@ -280,6 +275,27 @@ let emit_set_comp cmp res =
   | _ -> ()
   end
 
+let emit_float_comp cmp arg =
+  `	fcmpu	0, {emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;
+  (* bit 0 = lt, bit 1 = gt, bit 2 = eq *)
+  let bitnum =
+    match cmp with
+    | CFeq | CFneq -> 2
+    | CFle | CFnle ->
+    `	cror	3, 0, 2\n`; (* lt or eq *)
+    3
+    | CFgt | CFngt -> 1
+    | CFge | CFnge ->
+    `	cror	3, 1, 2\n`; (* gt or eq *)
+    3
+    | CFlt | CFnlt -> 0
+  in
+  match cmp with
+  | CFneq | CFngt | CFnge | CFnlt | CFnle ->
+    bitnum, true
+  | CFeq | CFgt | CFge | CFlt | CFle ->
+    bitnum, false
+
 (* Free the stack frame *)
 
 let emit_free_frame env =
@@ -470,10 +486,10 @@ module BR = Branch_relaxation.Make (struct
       size 3 (2 + tocload_size()) (2 + tocload_size())
     | Lop(Iextcall { alloc = false; _}) -> size 1 2 2
     | Lop(Istackoffset _) -> 1
-    | Lop(Iload(chunk, addr, _mut)) ->
-      if chunk = Byte_signed
-      then load_store_size addr + 1
-      else load_store_size addr
+    | Lop(Iload {memory_chunk; addressing_mode; _ }) ->
+      if memory_chunk = Byte_signed
+      then load_store_size addressing_mode + 1
+      else load_store_size addressing_mode
     | Lop(Istore(_chunk, addr, _)) -> load_store_size addr
     | Lop(Ialloc _) -> 5
     | Lop(Ispecific(Ialloc_far _)) -> 6
@@ -483,6 +499,9 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Ispecific(Ipoll_far { return_label = None } )) -> 4
     | Lop(Iintop Imod) -> 3
     | Lop(Iintop(Icomp _)) -> 4
+    | Lop(Icompf _) ->
+        Misc.fatal_error "Icompf is not implemented for this platform";
+        (* 5 *)
     | Lop(Iintop _) -> 1
     | Lop(Iintop_imm(Icomp _, _)) -> 4
     | Lop(Iintop_imm _) -> 1
@@ -491,6 +510,9 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Iintoffloat) -> 4
     | Lop(Iopaque) -> 0
     | Lop(Ispecific _) -> 1
+    | Lop (Idls_get) ->
+        (* Here to maintain build *)
+        assert false
     | Lreloadretaddr -> 2
     | Lreturn -> 2
     | Llabel _ -> 0
@@ -775,28 +797,28 @@ let emit_instr env i =
     | Lop(Istackoffset n) ->
         `	addi	1, 1, {emit_int (-n)}\n`;
         adjust_stack_offset env n
-    | Lop(Iload(chunk, addr, _mut)) ->
+    | Lop(Iload { memory_chunk; addressing_mode; _ }) ->
         let loadinstr =
-          match chunk with
+          match memory_chunk with
           | Byte_unsigned -> "lbz"
           | Byte_signed -> "lbz"
           | Sixteen_unsigned -> "lhz"
           | Sixteen_signed -> "lha"
           | Thirtytwo_unsigned -> "lwz"
           | Thirtytwo_signed -> if ppc64 then "lwa" else "lwz"
-	  | Word_int | Word_val -> lg
+          | Word_int | Word_val -> lg
           | Single -> "lfs"
           | Double -> "lfd" in
-        emit_load_store loadinstr addr i.arg 0 i.res.(0);
-        if chunk = Byte_signed then
+        emit_load_store loadinstr addressing_mode i.arg 0 i.res.(0);
+        if memory_chunk = Byte_signed then
           `	extsb	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
     | Lop(Istore(chunk, addr, _)) ->
         let storeinstr =
           match chunk with
           | Byte_unsigned | Byte_signed -> "stb"
           | Sixteen_unsigned | Sixteen_signed -> "sth"
-	  | Thirtytwo_unsigned | Thirtytwo_signed -> "stw"
-	  | Word_int | Word_val -> stg
+          | Thirtytwo_unsigned | Thirtytwo_signed -> "stw"
+          | Word_int | Word_val -> stg
           | Single -> "stfs"
           | Double -> "stfd" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
@@ -823,6 +845,21 @@ let emit_instr env i =
             `	{emit_string cmplg}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
             emit_set_comp c i.res.(0)
         end
+    | Lop(Icompf cmp) ->
+        ignore cmp;
+        Misc.fatal_error "Icompf is not implemented for this platform";
+        (* smuenzel: the following code may be used to implement
+           Icompf when this platform is supported again post 5.0.
+           It will need to be tested.
+           {[
+             let res = i.res.(0) in
+             let bitnum, negated = emit_float_comp cmp i.arg in
+             `	mfcr	0\n`;
+             `	rlwinm	{emit_reg res}, 0, {emit_int(bitnum+1)}, 31, 31\n`;
+             if negated
+             then `  xori  {emit_reg res}, {emit_reg res}, 1\n`
+           ]}
+        *)
     | Lop(Iintop (Icheckbound)) ->
         if !Clflags.debug then
           record_frame env Reg.Set.empty (Dbg_other i.dbg);
@@ -855,12 +892,12 @@ let emit_instr env i =
         let instr = name_for_floatop2 op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
     | Lop(Ifloatofint) ->
-	if ppc64 then begin
+        if ppc64 then begin
           (* Can use protected zone (288 bytes below r1 *)
-	  `	std	{emit_reg i.arg.(0)}, -16(1)\n`;
+          `	std	{emit_reg i.arg.(0)}, -16(1)\n`;
           `	lfd	{emit_reg i.res.(0)}, -16(1)\n`;
           `	fcfid	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
-	end else begin
+        end else begin
           let lbl = new_label() in
           env.float_literals <- {fl=0x4330000080000000L; lbl} :: env.float_literals;
           `	addis	11, 0, {emit_upper emit_label lbl}\n`;
@@ -872,7 +909,7 @@ let emit_instr env i =
           `	lfd	{emit_reg i.res.(0)}, 0(1)\n`;
           `	addi	1, 1, 16\n`;
           `	fsub	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, 0\n`
-	end
+        end
     | Lop(Iintoffloat) ->
         if ppc64 then begin
           (* Can use protected zone (288 bytes below r1 *)
@@ -890,6 +927,9 @@ let emit_instr env i =
     | Lop(Ispecific sop) ->
         let instr = name_for_specific sop in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`
+    | Lop (Idls_get) ->
+        (* Here to maintain build *)
+        assert false
     | Lreloadretaddr ->
         `	{emit_string lg}	11, {emit_int(retaddr_offset env)}(1)\n`;
         `	mtlr	11\n`
@@ -917,25 +957,10 @@ let emit_instr env i =
             `	{emit_string comp}i	{emit_reg i.arg.(0)}, {emit_int n}\n`;
             `	{emit_string branch}	{emit_label lbl}\n`
         | Ifloattest cmp -> begin
-            `	fcmpu	0, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-            (* bit 0 = lt, bit 1 = gt, bit 2 = eq *)
-            let bitnum =
-              match cmp with
-              | CFeq | CFneq -> 2
-              | CFle | CFnle ->
-                `	cror	3, 0, 2\n`; (* lt or eq *)
-                3
-              | CFgt | CFngt -> 1
-              | CFge | CFnge ->
-                `	cror	3, 1, 2\n`; (* gt or eq *)
-                3
-              | CFlt | CFnlt -> 0
-            in
-            match cmp with
-            | CFneq | CFngt | CFnge | CFnlt | CFnle ->
-               `	bf	{emit_int bitnum}, {emit_label lbl}\n`
-            | CFeq | CFgt | CFge | CFlt | CFle ->
-               `	bt	{emit_int bitnum}, {emit_label lbl}\n`
+            let bitnum, negated = emit_float_comp cmp i.arg in
+            if negated
+            then `	bf	{emit_int bitnum}, {emit_label lbl}\n`
+            else `	bt	{emit_int bitnum}, {emit_label lbl}\n`
           end
         | Ioddtest ->
             `	andi.	0, {emit_reg i.arg.(0)}, 1\n`;

@@ -46,7 +46,7 @@ static value alloc_service_entry(struct servent *entry)
   CAMLreturn(res);
 }
 
-CAMLprim value unix_getservbyname(value name, value proto)
+CAMLprim value caml_unix_getservbyname(value name, value proto)
 {
   struct servent * entry;
   if (! (caml_string_is_c_safe(name) && caml_string_is_c_safe(proto)))
@@ -56,7 +56,7 @@ CAMLprim value unix_getservbyname(value name, value proto)
   return alloc_service_entry(entry);
 }
 
-CAMLprim value unix_getservbyport(value port, value proto)
+CAMLprim value caml_unix_getservbyport(value port, value proto)
 {
   struct servent * entry;
   if (! caml_string_is_c_safe(proto)) caml_raise_not_found();
@@ -67,10 +67,10 @@ CAMLprim value unix_getservbyport(value port, value proto)
 
 #else
 
-CAMLprim value unix_getservbyport(value port, value proto)
+CAMLprim value caml_unix_getservbyport(value port, value proto)
 { caml_invalid_argument("getservbyport not implemented"); }
 
-CAMLprim value unix_getservbyname(value name, value proto)
+CAMLprim value caml_unix_getservbyname(value name, value proto)
 { caml_invalid_argument("getservbyname not implemented"); }
 
 #endif

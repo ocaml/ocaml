@@ -29,37 +29,28 @@
 #include "caml/shared_heap.h"
 #include "caml/fiber.h"
 
-#ifdef NATIVE_CODE
-#include "caml/stack.h"
-/* Communication with [caml_start_program] and [caml_call_gc]. */
-
-/* The global roots.
-   FIXME: These should be promoted, and not scanned here.
-   FIXME: caml_globals_inited makes assumptions about store ordering.
-   XXX KC : What to do here?
-*/
-
-intnat caml_globals_inited = 0;
-#endif
-
 CAMLexport _Atomic scan_roots_hook caml_scan_roots_hook =
   (scan_roots_hook)NULL;
 
-void caml_do_roots (scanning_action f, void* fdata, caml_domain_state* d,
-                    int do_final_val)
+void caml_do_roots (
+  scanning_action f, scanning_action_flags fflags, void* fdata,
+  caml_domain_state* d,
+  int do_final_val)
 {
   scan_roots_hook hook;
-  caml_do_local_roots(f, fdata, d->local_roots, d->current_stack, d->gc_regs);
+  caml_do_local_roots(f, fflags, fdata,
+                      d->local_roots, d->current_stack, d->gc_regs);
   hook = atomic_load(&caml_scan_roots_hook);
-  if (hook != NULL) (*hook)(f, fdata, d);
-  caml_final_do_roots(f, fdata, d, do_final_val);
+  if (hook != NULL) (*hook)(f, fflags, fdata, d);
+  caml_final_do_roots(f, fflags, fdata, d, do_final_val);
 
 }
 
-CAMLexport void caml_do_local_roots (scanning_action f, void* fdata,
-                                     struct caml__roots_block *local_roots,
-                                     struct stack_info *current_stack,
-                                     value * v_gc_regs)
+CAMLexport void caml_do_local_roots (
+  scanning_action f, scanning_action_flags fflags, void* fdata,
+  struct caml__roots_block *local_roots,
+  struct stack_info *current_stack,
+  value * v_gc_regs)
 {
   struct caml__roots_block *lr;
   int i, j;
@@ -75,5 +66,5 @@ CAMLexport void caml_do_local_roots (scanning_action f, void* fdata,
       }
     }
   }
-  caml_scan_stack(f, fdata, current_stack, v_gc_regs);
+  caml_scan_stack(f, fflags, fdata, current_stack, v_gc_regs);
 }

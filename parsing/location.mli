@@ -88,6 +88,7 @@ val input_phrase_buffer: Buffer.t option ref
 (** {1 Toplevel-specific functions} *)
 
 val echo_eof: unit -> unit
+val separate_new_message: formatter -> unit
 val reset: unit -> unit
 
 
@@ -243,6 +244,13 @@ val deprecated: ?def:t -> ?use:t -> t -> string -> unit
 val alert: ?def:t -> ?use:t -> kind:string -> t -> string -> unit
 (** Prints an arbitrary alert. *)
 
+val auto_include_alert: string -> unit
+(** Prints an alert that -I +lib has been automatically added to the load
+    path *)
+
+val deprecated_script_alert: string -> unit
+(** [deprecated_script_alert command] prints an alert that [command foo] has
+    been deprecated in favour of [command ./foo] *)
 
 (** {1 Reporting errors} *)
 

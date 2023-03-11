@@ -15,10 +15,6 @@
 
 /* Based on public-domain code from Berkeley Yacc */
 
-#ifndef DEBUG
-#define NDEBUG
-#endif
-
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -26,9 +22,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #define CAML_INTERNALS
-#include "caml/config.h"
-#include "caml/mlvalues.h"
 #include "caml/osdeps.h"
 #include "caml/misc.h"
 
@@ -42,7 +37,7 @@
 /*  MAXSHORT is the largest value of a C short                 */
 /*  MINSHORT is the most negative value of a C short           */
 /*  MAXTABLE is the maximum table size                         */
-/*  BITS_PER_WORD is the number of bits in a C unsigned        */
+/*  BITS_PER_INT is the number of bits in a C unsigned         */
 /*  WORDSIZE computes the number of words needed to            */
 /*        store n bits                                         */
 /*  BIT returns the value of the n-th bit starting             */
@@ -54,10 +49,10 @@
 #define MINSHORT        SHRT_MIN
 #define MAXTABLE        32500
 
-#define BITS_PER_WORD        (8*sizeof(unsigned))
-#define        WORDSIZE(n)        (((n)+(BITS_PER_WORD-1))/BITS_PER_WORD)
-#define        BIT(r, n)        ((((r)[(n)/BITS_PER_WORD])>>((n)%BITS_PER_WORD))&1)
-#define        SETBIT(r, n)        ((r)[(n)/BITS_PER_WORD]|=(1<<((n)%BITS_PER_WORD)))
+#define BITS_PER_INT    (8*sizeof(unsigned))
+#define WORDSIZE(n)     (((n)+(BITS_PER_INT-1))/BITS_PER_INT)
+#define BIT(r, n)       ((((r)[(n)/BITS_PER_INT])>>((n)%BITS_PER_INT))&1)
+#define SETBIT(r, n)    ((r)[(n)/BITS_PER_INT]|=(1<<((n)%BITS_PER_INT)))
 
 /*  character names  */
 
@@ -148,6 +143,8 @@ struct bucket
     char assoc;
     unsigned char entry;  /* 1..MAX_ENTRY_POINT (0 for unassigned) */
     char true_token;
+    int lineno;
+    int column;
 };
 
 /* MAX_ENTRY_POINT is the maximal number of entry points into the grammar. */
@@ -245,6 +242,7 @@ extern char_os *interface_file_name;
 
 /* UTF-8 versions of code_file_name and input_file_name */
 extern char *code_file_name_disp;
+extern char *interface_file_name_disp;
 extern char *input_file_name_disp;
 
 extern FILE *action_file;
@@ -316,10 +314,10 @@ extern short final_state;
 extern char *allocate(unsigned int n);
 extern bucket *lookup(char *name);
 extern bucket *make_bucket(char *name);
-extern action *parse_actions(register int stateno);
+extern action *parse_actions(int stateno);
 extern action *get_shifts(int stateno);
-extern action *add_reductions(int stateno, register action *actions);
-extern action *add_reduce(register action *actions, register int ruleno, register int symbol);
+extern action *add_reductions(int stateno, action *actions);
+extern action *add_reduce(action *actions, int ruleno, int symbol);
 extern void closure (short int *nucleus, int n);
 extern void create_symbol_table (void);
 extern void default_action_error (void) Noreturn;
@@ -357,9 +355,10 @@ extern void undefined_symbol (char *s);
 extern void unexpected_EOF (void) Noreturn;
 extern void unknown_rhs (int i) Noreturn;
 extern void unterminated_action (int a_lineno, char *a_line, char *a_cptr) Noreturn;
-extern void unterminated_comment (int c_lineno, char *c_line, char *c_cptr) Noreturn;
+extern void unterminated_comment (int c_lineno, char *c_line, char *c_cptr, char start_char) Noreturn;
 extern void unterminated_string (int s_lineno, char *s_line, char *s_cptr) Noreturn;
 extern void unterminated_text (int t_lineno, char *t_line, char *t_cptr) Noreturn;
 extern void used_reserved (char *s) Noreturn;
 extern void verbose (void);
 extern void write_section (char **section);
+extern void invalid_literal(int s_lineno, char *s_line, char *s_cptr) Noreturn;

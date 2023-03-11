@@ -20,10 +20,10 @@
 
 extern char * getlogin(void);
 
-CAMLprim value unix_getlogin(value unit)
+CAMLprim value caml_unix_getlogin(value unit)
 {
   char * name;
   name = getlogin();
-  if (name == NULL) unix_error(ENOENT, "getlogin", Nothing);
+  if (name == NULL) caml_unix_error(ENOENT, "getlogin", Nothing);
   return caml_copy_string(name);
 }

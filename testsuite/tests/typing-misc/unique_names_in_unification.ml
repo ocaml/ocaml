@@ -14,10 +14,9 @@ val x : t = A
 Line 5, characters 27-28:
 5 |   let f: t -> t = fun B -> x
                                ^
-Error: This expression has type t/2 but an expression was expected of type
-         t/1
+Error: This expression has type t/2 but an expression was expected of type t
        Line 4, characters 2-12:
-         Definition of type t/1
+         Definition of type t
        Line 1, characters 0-10:
          Definition of type t/2
 |}]
@@ -38,9 +37,9 @@ Line 7, characters 34-35:
 7 |   let f : M.t -> M.t = fun M.C -> y
                                       ^
 Error: This expression has type M/2.t but an expression was expected of type
-         M/1.t
+         M.t
        Lines 4-6, characters 2-5:
-         Definition of module M/1
+         Definition of module M
        Line 1, characters 0-32:
          Definition of module M/2
 |}]
@@ -54,10 +53,9 @@ type t = D
 Line 2, characters 25-26:
 2 | let f: t -> t = fun D -> x;;
                              ^
-Error: This expression has type t/2 but an expression was expected of type
-         t/1
+Error: This expression has type t/2 but an expression was expected of type t
        Line 1, characters 0-10:
-         Definition of type t/1
+         Definition of type t
        Line 1, characters 0-10:
          Definition of type t/2
 |}]
@@ -79,9 +77,9 @@ Line 2, characters 32-33:
 2 | let x: ttt = let rec y = A y in y;;
                                     ^
 Error: This expression has type ttt/2 but an expression was expected of type
-         ttt/1
+         ttt
        Line 1, characters 0-26:
-         Definition of type ttt/1
+         Definition of type ttt
        Line 2, characters 0-30:
          Definition of type ttt/2
 |}]

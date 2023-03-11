@@ -17,7 +17,7 @@
 #include <caml/fail.h>
 #include "cst2constr.h"
 
-value cst_to_constr(int n, int *tbl, int size, int deflt)
+value caml_unix_cst_to_constr(int n, int *tbl, int size, int deflt)
 {
   int i;
   for (i = 0; i < size; i++)

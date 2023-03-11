@@ -71,28 +71,18 @@ val complete_constrs :
     constructor_description list ->
     constructor_description list
 
-(** [ppat_of_type] builds an untyped pattern from its expected type,
+(** [pats_of_type] builds a list of patterns from a given expected type,
     for explosion of wildcard patterns in Typecore.type_pat.
 
     There are four interesting cases:
-    - the type is empty ([PT_empty])
-    - no further explosion is necessary ([PT_any])
+    - the type is empty ([])
+    - no further explosion is necessary ([Pat_any])
     - a single pattern is generated, from a record or tuple type
-      or a single-variant type ([PE_single])
-    - an or-pattern is generated, in the case that all branches
-      are GADT constructors ([PE_gadt_cases]).
+      or a single-variant type ([tp])
+    - a list of patterns, in the case that all branches
+      are GADT constructors ([tp1; ..; tpn]).
  *)
-type pat_explosion = PE_single | PE_gadt_cases
-type ppat_of_type =
-  | PT_empty
-  | PT_any
-  | PT_pattern of
-      pat_explosion *
-      Parsetree.pattern *
-      (string, constructor_description) Hashtbl.t *
-      (string, label_description) Hashtbl.t
-
-val ppat_of_type: Env.t -> type_expr -> ppat_of_type
+val pats_of_type : Env.t -> type_expr -> pattern list
 
 val pressure_variants:
   Env.t -> pattern list -> unit
@@ -107,16 +97,9 @@ val pressure_variants_in_computation_pattern:
     [refute] indicates that [check_unused] was called on a refutation clause.
  *)
 val check_partial:
-    ((string, constructor_description) Hashtbl.t ->
-     (string, label_description) Hashtbl.t ->
-     Parsetree.pattern -> pattern option) ->
-    Location.t -> value case list -> partial
+    (pattern -> pattern option) -> Location.t -> value case list -> partial
 val check_unused:
-    (bool ->
-     (string, constructor_description) Hashtbl.t ->
-     (string, label_description) Hashtbl.t ->
-     Parsetree.pattern -> pattern option) ->
-    value case list -> unit
+    (bool -> pattern -> pattern option) -> value case list -> unit
 
 (* Irrefutability tests *)
 val irrefutable : pattern -> bool

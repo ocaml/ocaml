@@ -52,10 +52,10 @@ let randomized_default =
     try Sys.getenv "CAMLRUNPARAM" with Not_found -> "" in
   String.contains params 'R'
 
-let randomized = ref randomized_default
+let randomized = Atomic.make randomized_default
 
-let randomize () = randomized := true
-let is_randomized () = !randomized
+let randomize () = Atomic.set randomized true
+let is_randomized () = Atomic.get randomized
 
 let prng_key = Domain.DLS.new_key Random.State.make_self_init
 
@@ -70,7 +70,7 @@ let rec power_2_above x n =
   else if x * 2 > Sys.max_array_length then x
   else power_2_above (x * 2) n
 
-let create ?(random = !randomized) initial_size =
+let create ?(random = Atomic.get randomized) initial_size =
   let s = power_2_above 16 initial_size in
   let seed =
     if random then Random.State.bits (Domain.DLS.get prng_key) else 0
@@ -284,7 +284,7 @@ module type SeededHashedType =
   sig
     type t
     val equal: t -> t -> bool
-    val hash: int -> t -> int
+    val seeded_hash: int -> t -> int
   end
 
 module type S =
@@ -354,7 +354,7 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
     let copy = copy
 
     let key_index h key =
-      (H.hash h.seed key) land (Array.length h.data - 1)
+      (H.seeded_hash h.seed key) land (Array.length h.data - 1)
 
     let add h key data =
       let i = key_index h key in
@@ -421,7 +421,7 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
                   if H.equal key k3 then Some d3 else find_rec_opt key next3
 
     let find_all h key =
-      let rec find_in_bucket = function
+      let[@tail_mod_cons] rec find_in_bucket = function
       | Empty ->
           []
       | Cons{key=k; data=d; next} ->
@@ -447,13 +447,14 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
         if h.size > Array.length h.data lsl 1 then resize key_index h
       end
 
-    let mem h key =
-      let rec mem_in_bucket = function
+    let rec mem_in_bucket key = function
       | Empty ->
           false
       | Cons{key=k; next} ->
-          H.equal k key || mem_in_bucket next in
-      mem_in_bucket h.data.(key_index h key)
+          H.equal k key || mem_in_bucket key next
+
+    let mem h key =
+      mem_in_bucket key h.data.(key_index h key)
 
     let add_seq tbl i =
       Seq.iter (fun (k,v) -> add tbl k v) i
@@ -481,7 +482,7 @@ module Make(H: HashedType): (S with type key = H.t) =
     include MakeSeeded(struct
         type t = H.t
         let equal = H.equal
-        let hash (_seed: int) x = H.hash x
+        let seeded_hash (_seed: int) x = H.hash x
       end)
     let create sz = create ~random:false sz
     let of_seq i =
@@ -571,7 +572,7 @@ let find_opt h key =
               if compare key k3 = 0 then Some d3 else find_rec_opt key next3
 
 let find_all h key =
-  let rec find_in_bucket = function
+  let[@tail_mod_cons] rec find_in_bucket = function
   | Empty ->
       []
   | Cons{key=k; data; next} ->
@@ -597,13 +598,14 @@ let replace h key data =
     if h.size > Array.length h.data lsl 1 then resize key_index h
   end
 
-let mem h key =
-  let rec mem_in_bucket = function
+let rec mem_in_bucket key = function
   | Empty ->
       false
   | Cons{key=k; next} ->
-      compare k key = 0 || mem_in_bucket next in
-  mem_in_bucket h.data.(key_index h key)
+      compare k key = 0 || mem_in_bucket key next
+
+let mem h key =
+  mem_in_bucket key h.data.(key_index h key)
 
 let add_seq tbl i =
   Seq.iter (fun (k,v) -> add tbl k v) i
@@ -616,7 +618,7 @@ let of_seq i =
   replace_seq tbl i;
   tbl
 
-let rebuild ?(random = !randomized) h =
+let rebuild ?(random = Atomic.get randomized) h =
   let s = power_2_above 16 (Array.length h.data) in
   let seed =
     if random then Random.State.bits (Domain.DLS.get prng_key)

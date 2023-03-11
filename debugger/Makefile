@@ -19,22 +19,21 @@ include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
 DYNLINKDIR=$(ROOTDIR)/otherlibs/dynlink
-UNIXDIR=$(ROOTDIR)/otherlibs/$(UNIXLIB)
+UNIXDIR=$(ROOTDIR)/otherlibs/unix
 
-CAMLC=$(BEST_OCAMLC) -g -nostdlib -I $(ROOTDIR)/stdlib
+CAMLC=$(BEST_OCAMLC) $(STDLIBFLAGS)
 COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
-          -safe-string -strict-sequence -strict-formats
+          -strict-sequence -strict-formats
 LINKFLAGS=-linkall -I $(UNIXDIR) -I $(DYNLINKDIR)
-CAMLDEP=$(BEST_OCAMLDEP)
-DEPFLAGS=-slash
-DEPINCLUDES=$(INCLUDES)
+OC_OCAMLDEPDIRS = $(DIRECTORIES)
 
 DIRECTORIES=$(UNIXDIR) $(DYNLINKDIR) $(addprefix $(ROOTDIR)/,\
   utils parsing typing bytecomp toplevel driver file_formats lambda)
 
 INCLUDES=$(addprefix -I ,$(DIRECTORIES))
 
-compiler_modules := $(ROOTDIR)/toplevel/genprintval
+compiler_modules := $(addprefix $(ROOTDIR)/toplevel/,\
+  genprintval topprinters)
 
 debugger_modules := \
   int64ops primitives unix_tools debugger_config parameters debugger_lexer \
@@ -53,11 +52,11 @@ libraries = $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
 all: ocamldebug$(EXE)
 
 ocamldebug.cmo: $(debugger_objects)
-	$(CAMLC) -pack $(COMPFLAGS) -o $@ $^
+	$(V_OCAMLC)$(CAMLC) -pack $(COMPFLAGS) -o $@ $^
 
 ocamldebug$(EXE): $(libraries) $(compiler_objects) ocamldebug.cmo \
     ocamldebug_entry.cmo
-	$(CAMLC) $(LINKFLAGS) -o $@ -linkall $^
+	$(V_LINKC)$(CAMLC) $(LINKFLAGS) -o $@ -linkall $^
 
 install:
 	$(INSTALL_PROG) ocamldebug$(EXE) "$(INSTALL_BINDIR)"
@@ -71,24 +70,23 @@ clean::
 distclean: clean
 
 ocamldebug_entry.cmo: ocamldebug_entry.ml ocamldebug.cmo
-	$(CAMLC) -c $(COMPFLAGS) $<
+	$(V_OCAMLC)$(CAMLC) -c $(COMPFLAGS) $<
 
 %.cmo: %.ml
-	$(CAMLC) -c $(COMPFLAGS) -for-pack ocamldebug $<
+	$(V_OCAMLC)$(CAMLC) -c $(COMPFLAGS) -for-pack ocamldebug $<
 
 %.cmi: %.mli
-	$(CAMLC) -c $(COMPFLAGS) -for-pack ocamldebug $<
+	$(V_OCAMLC)$(CAMLC) -c $(COMPFLAGS) -for-pack ocamldebug $<
 
 depend: beforedepend
-	$(CAMLDEP) $(DEPFLAGS) $(DEPINCLUDES) *.mli *.ml \
-	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend
+	$(V_OCAMLDEP)$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 clean::
 	rm -f debugger_lexer.ml
 beforedepend:: debugger_lexer.ml
 
 clean::
-	rm -f debugger_parser.ml debugger_parser.mli
+	rm -f $(addprefix debugger_parser.,ml mli output)
 beforedepend:: debugger_parser.ml debugger_parser.mli
 
 include .depend

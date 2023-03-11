@@ -55,7 +55,6 @@ let toplevel_default_flags = "-noinit -no-version -noprompt"
 
 let ocamldebug_default_flags =
   "-no-version -no-prompt -no-time -no-breakpoint-message " ^
-  ("-I " ^ Ocaml_directories.stdlib ^ " ") ^
-  ("-topdirs-path " ^ Ocaml_directories.toplevel)
+  ("-I " ^ Ocaml_directories.stdlib ^ " ")
 
 let ocamlobjinfo_default_flags = "-null-crc"

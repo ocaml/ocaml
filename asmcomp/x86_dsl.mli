@@ -37,6 +37,7 @@ val ah: arg
 val cl: arg
 val ax: arg
 val rax: arg
+val rbx: arg
 val rdx: arg
 val r10: arg
 val r11: arg
@@ -113,6 +114,7 @@ module I : sig
   val call: arg -> unit
   val cdq: unit -> unit
   val cmp: arg -> arg -> unit
+  val cmpsd : float_condition -> arg -> arg -> unit
   val comisd: arg -> arg -> unit
   val cqo: unit -> unit
   val cvtsd2ss: arg -> arg -> unit
@@ -172,12 +174,14 @@ module I : sig
   val lea: arg -> arg -> unit
   val mov: arg -> arg -> unit
   val movapd: arg -> arg -> unit
+  val movd: arg -> arg -> unit
   val movsd: arg -> arg -> unit
   val movss: arg -> arg -> unit
   val movsx: arg -> arg -> unit
   val movsxd: arg -> arg -> unit
   val movzx: arg -> arg -> unit
   val mulsd: arg -> arg -> unit
+  val neg : arg -> unit
   val nop: unit -> unit
   val or_: arg -> arg -> unit
   val pop: arg -> unit

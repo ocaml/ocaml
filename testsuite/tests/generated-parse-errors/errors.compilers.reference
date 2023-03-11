@@ -350,8 +350,10 @@ File "implementation: FOR LBRACKETAT AND RBRACKET ASSERT", line 1, characters 13
 Error: Syntax error
 File "implementation: FOR PERCENT AND ASSERT", line 1, characters 10-16:
 Error: Syntax error
-File "implementation: FOR UNDERSCORE EQUAL UIDENT TO UIDENT DO UIDENT WITH", line 1, characters 35-39:
-Error: Syntax error
+File "implementation: FOR UNDERSCORE EQUAL UIDENT TO UIDENT DO UIDENT WITH", line 1, characters 28-34:
+Error: Syntax error: 'done' expected
+File "implementation: FOR UNDERSCORE EQUAL UIDENT TO UIDENT DO UIDENT WITH", line 1, characters 25-27:
+  This 'do' might be unmatched
 File "implementation: FOR UNDERSCORE EQUAL UIDENT TO UIDENT DO WITH", line 1, characters 28-32:
 Error: Syntax error
 File "implementation: FOR UNDERSCORE EQUAL UIDENT TO UIDENT WITH", line 1, characters 25-29:
@@ -754,8 +756,8 @@ File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE COLON 
 Error: Syntax error
 File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE EQUAL UIDENT WITH", line 1, characters 29-33:
 Error: Syntax error
-File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE EQUAL WITH", line 1, characters 22-26:
-Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE EQUAL WITH", line 1, characters 20-21:
+Error: Syntax error: : expected.
 File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE LPAREN RPAREN WITH", line 1, characters 24-28:
 Error: Syntax error
 File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE WITH", line 1, characters 20-24:
@@ -1360,8 +1362,8 @@ File "implementation: MODULE UNDERSCORE COLON UIDENT WITH TYPE WITH", line 1, ch
 Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON UIDENT WITH WITH", line 1, characters 23-27:
 Error: Syntax error
-File "implementation: MODULE UNDERSCORE COLON WITH", line 1, characters 11-15:
-Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON WITH", line 1, characters 9-10:
+Error: Syntax error: = expected.
 File "implementation: MODULE UNDERSCORE EQUAL QUOTED_STRING_EXPR IN", line 1, characters 27-29:
 Error: Syntax error
 File "implementation: MODULE UNDERSCORE EQUAL UIDENT WITH", line 1, characters 18-22:
@@ -1942,8 +1944,10 @@ File "implementation: TRUE DOT LBRACE UIDENT WITH", line 1, characters 7-8:
   This '{' might be unmatched
 File "implementation: TRUE DOT LBRACE WITH", line 1, characters 9-13:
 Error: Syntax error
-File "implementation: TRUE DOT LBRACKET UIDENT RBRACKET LESSMINUS OBJECT END WHILE", line 1, characters 32-37:
-Error: Syntax error
+File "implementation: TRUE DOT LBRACKET UIDENT RBRACKET LESSMINUS OBJECT END WHILE", line 1, characters 0-31:
+Error: Syntax error: strings are immutable, there is no assignment syntax for them.
+Hint: Mutable sequences of bytes are available in the Bytes module.
+Hint: Did you mean to use 'Bytes.set'?
 File "implementation: TRUE DOT LBRACKET UIDENT RBRACKET LESSMINUS WITH", line 1, characters 21-25:
 Error: Syntax error
 File "implementation: TRUE DOT LBRACKET UIDENT RBRACKET WHILE", line 1, characters 18-23:
@@ -2388,8 +2392,10 @@ File "implementation: WHILE LBRACKETAT WITH RBRACKET AND", line 1, characters 16
 Error: Syntax error
 File "implementation: WHILE PERCENT WITH VIRTUAL", line 1, characters 13-20:
 Error: Syntax error
-File "implementation: WHILE UIDENT DO UIDENT WITH", line 1, characters 23-27:
-Error: Syntax error
+File "implementation: WHILE UIDENT DO UIDENT WITH", line 1, characters 16-22:
+Error: Syntax error: 'done' expected
+File "implementation: WHILE UIDENT DO UIDENT WITH", line 1, characters 13-15:
+  This 'do' might be unmatched
 File "implementation: WHILE UIDENT DO WITH", line 1, characters 16-20:
 Error: Syntax error
 File "implementation: WHILE UIDENT WITH", line 1, characters 13-17:

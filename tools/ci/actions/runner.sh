@@ -21,6 +21,8 @@ PREFIX=~/local
 MAKE="make $MAKE_ARG"
 SHELL=dash
 
+MAKE_WARN="$MAKE --warn-undefined-variables"
+
 export PATH=$PREFIX/bin:$PATH
 
 Configure () {
@@ -45,11 +47,7 @@ EOF
     ./configure $configure_flags
     ;;
   i386)
-    ./configure --build=x86_64-pc-linux-gnu --host=i386-linux \
-      CC='gcc -m32 -march=x86-64' \
-      AS='as --32' \
-      ASPP='gcc -m32 -march=x86-64 -c' \
-      PARTIALLD='ld -r -melf_i386' \
+    ./configure --build=x86_64-pc-linux-gnu --host=i386-pc-linux-gnu \
       $configure_flags
     ;;
   *)
@@ -60,9 +58,24 @@ EOF
 }
 
 Build () {
-  $MAKE world.opt
+  if [ "$(uname)" = 'Darwin' ]; then
+    script -q build.log $MAKE_WARN
+  else
+    script --return --command "$MAKE_WARN" build.log
+  fi
+  failed=0
+  if grep -Fq ' warning: undefined variable ' build.log; then
+    echo Undefined Makefile variables detected
+    failed=1
+  fi
+  rm build.log
   echo Ensuring that all names are prefixed in the runtime
-  ./tools/check-symbol-names runtime/*.a
+  if ! ./tools/check-symbol-names runtime/*.a otherlibs/*/lib*.a ; then
+    failed=1
+  fi
+  if ((failed)); then
+    exit 1
+  fi
 }
 
 Test () {
@@ -71,17 +84,12 @@ Test () {
   cd ..
 }
 
-TestLoop () {
-  echo Running testsuite for "$@"
-  rm -f to_test.txt
-  for test in "$@"
-  do
-      echo tests/$test >> to_test.txt
-  done
-  for it in {1..$2}
-  do
-      $MAKE -C testsuite one LIST=../to_test.txt || exit 1
-  done || exit 1
+# By default, TestPrefix will attempt to run the tests
+# in the given directory in parallel.
+TestPrefix () {
+  TO_RUN=parallel-"$1"
+  echo Running single testsuite directory with $TO_RUN
+  $MAKE -C testsuite $TO_RUN
   cd ..
 }
 
@@ -170,7 +178,7 @@ case $1 in
 configure) Configure;;
 build) Build;;
 test) Test;;
-test_multicore) TestLoop "${@:3}";;
+test_prefix) TestPrefix $2;;
 api-docs) API_Docs;;
 install) Install;;
 manual) BuildManual;;

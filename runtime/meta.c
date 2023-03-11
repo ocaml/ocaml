@@ -116,12 +116,8 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
   caml_thread_code((code_t) prog, len);
 #endif
 
-#if 0
-  /* TODO: support dynlink debugger: PR8654 */
   /* Notify debugger after fragment gets added and reified. */
   caml_debugger(CODE_LOADED, Val_long(fragnum));
-#endif
-  (void)fragnum; /* clobber warning */
 
   clos = caml_alloc_small (2, Closure_tag);
   Code_val(clos) = (code_t) prog;
@@ -160,9 +156,8 @@ CAMLprim value caml_static_release_bytecode(value bc)
 
 CAMLprim value caml_realloc_global(value size)
 {
-  CAMLparam1(size);
-  CAMLlocal2(old_global_data, new_global_data);
   mlsize_t requested_size, actual_size, i;
+  value new_global_data, old_global_data;
   old_global_data = caml_global_data;
 
   requested_size = Long_val(size);
@@ -180,7 +175,7 @@ CAMLprim value caml_realloc_global(value size)
     }
     caml_modify_generational_global_root(&caml_global_data, new_global_data);
   }
-  CAMLreturn (Val_unit);
+  return Val_unit;
 }
 
 CAMLprim value caml_get_current_environment(value unit)

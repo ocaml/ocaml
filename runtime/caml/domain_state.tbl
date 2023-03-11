@@ -28,11 +28,18 @@ DOMAIN_STATE(value*, young_start)
 DOMAIN_STATE(value*, young_end)
 /* End of the minor heap. always(young_start <= young_ptr <= young_end) */
 
+DOMAIN_STATE(value*, young_trigger)
+/* Input for setting the young_limit */
+
 DOMAIN_STATE(struct stack_info*, current_stack)
 /* Current stack */
 
 DOMAIN_STATE(void*, exn_handler)
 /* Pointer into the current stack */
+
+DOMAIN_STATE(int, action_pending)
+/* Whether we are due to start the processing of delayable pending
+   actions. See runtime/signal.c. */
 
 DOMAIN_STATE(struct c_stack_link*, c_stack)
 /* The C stack associated with this domain.
@@ -42,8 +49,12 @@ DOMAIN_STATE(struct stack_info**, stack_cache)
 /* This is a list of freelist buckets of stacks */
 
 DOMAIN_STATE(value*, gc_regs_buckets)
+/* Cache of free gc_regs buckets.
+   Documented in fiber.h. */
 
 DOMAIN_STATE(value*, gc_regs)
+/* Pointer to currently-used register bucket, or NULL.
+   Documented in fiber.h. */
 
 DOMAIN_STATE(struct caml_minor_tables*, minor_tables)
 
@@ -71,6 +82,8 @@ DOMAIN_STATE(intnat, major_work_todo)
 
 DOMAIN_STATE(double, major_gc_clock)
 
+DOMAIN_STATE(uintnat, major_slice_epoch)
+
 DOMAIN_STATE(struct caml__roots_block*, local_roots)
 
 DOMAIN_STATE(struct caml_ephe_info*, ephe_info)
@@ -81,7 +94,7 @@ DOMAIN_STATE(intnat, backtrace_pos)
 
 DOMAIN_STATE(intnat, backtrace_active)
 
-DOMAIN_STATE(code_t*, backtrace_buffer)
+DOMAIN_STATE(backtrace_slot*, backtrace_buffer)
 
 DOMAIN_STATE(value, backtrace_last_exn)
 
@@ -93,7 +106,7 @@ DOMAIN_STATE(uintnat, requested_major_slice)
 
 DOMAIN_STATE(uintnat, requested_minor_gc)
 
-DOMAIN_STATE(uintnat, requested_external_interrupt)
+DOMAIN_STATE(atomic_uintnat, requested_external_interrupt)
 
 DOMAIN_STATE(int, parser_trace)
 /* See parsing.c */
@@ -105,10 +118,6 @@ DOMAIN_STATE(struct caml_heap_state*, shared_heap)
 DOMAIN_STATE(int, id)
 
 DOMAIN_STATE(int, unique_id)
-
-DOMAIN_STATE(struct pool**, pools_to_rescan)
-DOMAIN_STATE(int, pools_to_rescan_len)
-DOMAIN_STATE(int, pools_to_rescan_count)
 
 DOMAIN_STATE(value, dls_root)
 /* Domain-local state */
@@ -130,16 +139,8 @@ DOMAIN_STATE(struct caml_intern_state*, intern_state)
 DOMAIN_STATE(uintnat, stat_minor_words)
 DOMAIN_STATE(uintnat, stat_promoted_words)
 DOMAIN_STATE(uintnat, stat_major_words)
-DOMAIN_STATE(intnat, stat_minor_collections)
-DOMAIN_STATE(intnat, stat_major_collections)
 DOMAIN_STATE(intnat, stat_forced_major_collections)
 DOMAIN_STATE(uintnat, stat_blocks_marked)
-
-DOMAIN_STATE(uintnat, eventlog_paused)
-DOMAIN_STATE(uintnat, eventlog_enabled)
-DOMAIN_STATE(FILE*, eventlog_out)
-DOMAIN_STATE(struct event_buffer *, eventlog_buffer)
-/* See eventlog.c */
 
 DOMAIN_STATE(int, inside_stw_handler)
 /* whether or not a domain is inside of a stop-the-world handler
@@ -148,6 +149,7 @@ DOMAIN_STATE(int, inside_stw_handler)
 
 DOMAIN_STATE(intnat, trap_sp_off)
 DOMAIN_STATE(intnat, trap_barrier_off)
+DOMAIN_STATE(int64_t, trap_barrier_block)
 DOMAIN_STATE(struct caml_exception_context*, external_raise)
 /* Bytecode TLS vars, not used for native code */
 

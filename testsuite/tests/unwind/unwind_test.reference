@@ -4,6 +4,7 @@ Mylib.baz
 Driver.entry
 caml_program
 caml_start_program
+caml_startup_common
 caml_main
 main
 ml_perform_stack_walk
@@ -12,5 +13,6 @@ Mylib.bob
 Driver.entry
 caml_program
 caml_start_program
+caml_startup_common
 caml_main
 main

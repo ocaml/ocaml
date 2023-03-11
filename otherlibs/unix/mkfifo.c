@@ -23,7 +23,7 @@
 
 #ifdef HAS_MKFIFO
 
-CAMLprim value unix_mkfifo(value path, value mode)
+CAMLprim value caml_unix_mkfifo(value path, value mode)
 {
   CAMLparam2(path, mode);
   char * p;
@@ -35,7 +35,7 @@ CAMLprim value unix_mkfifo(value path, value mode)
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)
-    uerror("mkfifo", path);
+    caml_uerror("mkfifo", path);
   CAMLreturn(Val_unit);
 }
 
@@ -46,7 +46,7 @@ CAMLprim value unix_mkfifo(value path, value mode)
 
 #ifdef S_IFIFO
 
-CAMLprim value unix_mkfifo(value path, value mode)
+CAMLprim value caml_unix_mkfifo(value path, value mode)
 {
   CAMLparam2(path, mode);
   char * p;
@@ -58,13 +58,13 @@ CAMLprim value unix_mkfifo(value path, value mode)
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)
-    uerror("mkfifo", path);
+    caml_uerror("mkfifo", path);
   CAMLreturn(Val_unit);
 }
 
 #else
 
-CAMLprim value unix_mkfifo(value path, value mode)
+CAMLprim value caml_unix_mkfifo(value path, value mode)
 {
   caml_invalid_argument("mkfifo not implemented");
 }

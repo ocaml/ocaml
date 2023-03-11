@@ -604,14 +604,14 @@ let clear_tag_stack state =
 
 
 (* Flushing pretty-printer queue. *)
-let pp_flush_queue state b =
+let pp_flush_queue state ~end_with_newline =
   clear_tag_stack state;
   while state.pp_curr_depth > 1 do
     pp_close_box state ()
   done;
   state.pp_right_total <- pp_infinity;
   advance_left state;
-  if b then pp_output_newline state;
+  if end_with_newline then pp_output_newline state;
   pp_rinit state
 
 (*
@@ -668,9 +668,9 @@ and pp_open_box state indent = pp_open_box_gen state indent Pp_box
    [pp_print_newline] behaves as [pp_print_flush] after printing an additional
    new line. *)
 let pp_print_newline state () =
-  pp_flush_queue state true; state.pp_out_flush ()
+  pp_flush_queue state ~end_with_newline:true; state.pp_out_flush ()
 and pp_print_flush state () =
-  pp_flush_queue state false; state.pp_out_flush ()
+  pp_flush_queue state ~end_with_newline:false; state.pp_out_flush ()
 
 
 (* To get a newline when one does not want to close the current box. *)
@@ -905,7 +905,7 @@ let rec display_blanks state n =
 let display_indent = display_blanks
 
 (* Setting a formatter basic output functions as printing to a given
-   [Pervasive.out_channel] value. *)
+   [Stdlib.out_channel] value. *)
 let pp_set_formatter_out_channel state oc =
   state.pp_out_string <- output_substring oc;
   state.pp_out_flush <- (fun () -> flush oc);
@@ -994,7 +994,7 @@ let make_formatter output flush =
   ppf
 
 
-(* Make a formatter writing to a given [Pervasive.out_channel] value. *)
+(* Make a formatter writing to a given [Stdlib.out_channel] value. *)
 let formatter_of_out_channel oc =
   make_formatter (output_substring oc) (fun () -> flush oc)
 
@@ -1051,6 +1051,7 @@ let std_formatter_key = DLS.new_key (fun () ->
   ppf.pp_out_newline <- display_newline ppf;
   ppf.pp_out_spaces <- display_blanks ppf;
   ppf.pp_out_indent <- display_indent ppf;
+  Domain.at_exit (pp_print_flush ppf);
   ppf)
 let _ = DLS.set std_formatter_key std_formatter
 
@@ -1062,6 +1063,7 @@ let err_formatter_key = DLS.new_key (fun () ->
   ppf.pp_out_newline <- display_newline ppf;
   ppf.pp_out_spaces <- display_blanks ppf;
   ppf.pp_out_indent <- display_indent ppf;
+  Domain.at_exit (pp_print_flush ppf);
   ppf)
 let _ = DLS.set err_formatter_key err_formatter
 
@@ -1075,7 +1077,7 @@ let get_stdbuf () = DLS.get stdbuf_key
    Formatter [ppf] is supposed to print to buffer [buf], otherwise this
    function is not really useful. *)
 let flush_buffer_formatter buf ppf =
-  pp_flush_queue ppf false;
+  pp_flush_queue ppf ~end_with_newline:false;
   let s = Buffer.contents buf in
   Buffer.reset buf;
   s
@@ -1248,30 +1250,25 @@ and set_tags v =
 
 (* Convenience functions *)
 
+let pp_print_iter ?(pp_sep = pp_print_cut) iter pp_v ppf v =
+  let is_first = ref true in
+  let pp_v v =
+    if !is_first then is_first := false else pp_sep ppf ();
+    pp_v ppf v
+  in
+  iter pp_v v
+
 (* To format a list *)
-let rec pp_print_list ?(pp_sep = pp_print_cut) pp_v ppf = function
-  | [] -> ()
-  | [v] -> pp_v ppf v
-  | v :: vs ->
-    pp_v ppf v;
-    pp_sep ppf ();
-    pp_print_list ~pp_sep pp_v ppf vs
+let pp_print_list ?(pp_sep = pp_print_cut) pp_v ppf v =
+  pp_print_iter ~pp_sep List.iter pp_v ppf v
+
+(* To format an array *)
+let pp_print_array ?(pp_sep = pp_print_cut) pp_v ppf v =
+  pp_print_iter ~pp_sep Array.iter pp_v ppf v
 
 (* To format a sequence *)
-let rec pp_print_seq_in ~pp_sep pp_v ppf seq =
-  match seq () with
-  | Seq.Nil -> ()
-  | Seq.Cons (v, seq) ->
-    pp_sep ppf ();
-    pp_v ppf v;
-    pp_print_seq_in ~pp_sep pp_v ppf seq
-
 let pp_print_seq ?(pp_sep = pp_print_cut) pp_v ppf seq =
-  match seq () with
-  | Seq.Nil -> ()
-  | Seq.Cons (v, seq) ->
-    pp_v ppf v;
-    pp_print_seq_in ~pp_sep pp_v ppf seq
+  pp_print_iter ~pp_sep Seq.iter pp_v ppf seq
 
 (* To format free-flowing text *)
 let pp_print_text ppf s =
@@ -1474,9 +1471,8 @@ let flush_standard_formatters () =
 
 let () = at_exit flush_standard_formatters
 
-let () = Domain.at_first_spawn (fun () ->
+let () = Domain.before_first_spawn (fun () ->
   flush_standard_formatters ();
-
   let fs = pp_get_formatter_out_functions std_formatter () in
   pp_set_formatter_out_functions std_formatter
     {fs with out_string = buffered_out_string std_buf_key;
@@ -1486,5 +1482,4 @@ let () = Domain.at_first_spawn (fun () ->
   pp_set_formatter_out_functions err_formatter
     {fs with out_string = buffered_out_string err_buf_key;
              out_flush = buffered_out_flush Stdlib.stderr err_buf_key};
-
-  Domain.at_exit flush_standard_formatters)
+)

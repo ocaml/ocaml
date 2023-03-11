@@ -247,6 +247,7 @@ let read_one_param ppf position name v =
   | "noassert" -> set "noassert" [ noassert ] v
   | "noautolink" -> set "noautolink" [ no_auto_link ] v
   | "nostdlib" -> set "nostdlib" [ no_std_include ] v
+  | "nocwd" -> set "nocwd" [ no_cwd ] v
   | "linkall" -> set "linkall" [ link_everything ] v
   | "nolabels" -> set "nolabels" [ classic ] v
   | "principal" -> set "principal"  [ principal ] v
@@ -260,6 +261,7 @@ let read_one_param ppf position name v =
   | "verbose" -> set "verbose" [ verbose ] v
   | "nopervasives" -> set "nopervasives" [ nopervasives ] v
   | "slash" -> set "slash" [ force_slash ] v (* for ocamldep *)
+  | "no-slash" -> clear "no-slash" [ force_slash ] v (* for ocamldep *)
   | "keep-docs" -> set "keep-docs" [ Clflags.keep_docs ] v
   | "keep-locs" -> set "keep-locs" [ Clflags.keep_locs ] v
 

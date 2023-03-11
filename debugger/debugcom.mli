@@ -16,9 +16,18 @@
 
 (* Low-level communication with the debuggee *)
 
+module Sp : sig
+  type t
+  val null : t
+  val base : t -> int -> t
+  val compare : t -> t -> int
+end
+
 type pc =
   { frag : int;
     pos : int; }
+
+val main_frag : int
 
 type execution_summary =
     Event
@@ -33,7 +42,7 @@ type execution_summary =
 type report =
   { rep_type : execution_summary;
     rep_event_count : int64;
-    rep_stack_pointer : int;
+    rep_stack_pointer : Sp.t;
     rep_program_pointer : pc }
 
 type checkpoint_report =
@@ -70,23 +79,25 @@ val wait_child : Primitives.io_channel -> unit
 
 (* Move to initial frame (that of current function). *)
 (* Return stack position and current pc *)
-val initial_frame : unit -> int * pc
+val initial_frame : unit -> Sp.t * pc
 val set_initial_frame : unit -> unit
 
 (* Get the current frame position *)
 (* Return stack position and current pc *)
-val get_frame : unit -> int * pc
+val get_frame : unit -> Sp.t * pc
 
 (* Set the current frame *)
-val set_frame : int -> unit
+val set_frame : Sp.t -> unit
 
 (* Move up one frame *)
 (* Return stack position and current pc.
-   If there's no frame above, return (-1, 0). *)
-val up_frame : int -> int * pc
+   If there's no frame above, return (null_sp, _).
+   The argument is the size of the current frame.
+ *)
+val up_frame : int -> Sp.t * pc
 
 (* Set the trap barrier to given stack position. *)
-val set_trap_barrier : int -> unit
+val set_trap_barrier : Sp.t -> unit
 
 (* Set whether the debugger follow the child or the parent process on fork *)
 val fork_mode : follow_fork_mode ref

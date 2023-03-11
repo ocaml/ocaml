@@ -1053,6 +1053,12 @@ let tests () =
   let ba = Array0.init int fortran_layout 10 in
   test 2 ba (Array0.of_value int fortran_layout 10);
 
+  let ba = Bigarray.(Genarray.init float64 c_layout [||] (fun _ -> 5.)) in
+  test 3 5. (Bigarray.Genarray.get ba [||]);
+
+  let ba = Bigarray.(Genarray.init float64 fortran_layout [||] (fun _ -> 5.)) in
+  test 4 5. (Bigarray.Genarray.get ba [||]);
+
 (* Kind size *)
   testing_function "kind_size_in_bytes";
   let arr1 = Array1.create Float32 c_layout 1 in

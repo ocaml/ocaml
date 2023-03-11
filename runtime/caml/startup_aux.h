@@ -33,9 +33,9 @@ struct caml_params {
 
   const char_os* cds_file;
 
-  uintnat verb_gc;
   uintnat parser_trace;
   uintnat trace_level;
+  uintnat runtime_events_log_wsize;
   uintnat verify_heap;
   uintnat print_magic;
   uintnat print_config;

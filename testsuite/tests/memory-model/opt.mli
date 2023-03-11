@@ -1,7 +1,7 @@
 (* Configuration:
  * the test can also be used as a program, with command line options.
  * In particular, option `-v` also runs allowed tests,
- * whose occurence is legal according to the memory model
+ * whose occurrence is legal according to the memory model
  * By contrast, option `-q` (default) does not runs
  * forbidden tests only, whose occurrence are not legal
  * according to the memory model.

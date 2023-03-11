@@ -49,14 +49,13 @@ void caml_finish_sweeping(void);
 void caml_finish_marking (void);
 int caml_init_major_gc(caml_domain_state*);
 void caml_teardown_major_gc(void);
-void caml_darken(void*, value, value* ignored);
+void caml_darken(void*, value, volatile value* ignored);
 void caml_darken_cont(value);
 void caml_mark_root(value, value*);
 void caml_empty_mark_stack(void);
 void caml_finish_major_cycle(void);
 
 /* Ephemerons and finalisers */
-void caml_ephe_todo_list_emptied(void);
 void caml_orphan_allocated_words(void);
 void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info);
 void caml_add_orphaned_finalisers (struct caml_final_info*);

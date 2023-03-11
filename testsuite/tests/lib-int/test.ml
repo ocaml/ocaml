@@ -61,6 +61,12 @@ let test_min_max () =
   assert (Int.max 2 3 = 3);
   assert (Int.min 2 3 = 2)
 
+let test_hash () =
+  let f n =
+    assert (Hashtbl.hash n = Int.hash n);
+    assert (Hashtbl.seeded_hash 16 n = Int.seeded_hash 16 n)
+  in
+  f 0; f 123; f (-456); f 0x3FFFFFFF; f (-0x40000000)
 
 let tests () =
   test_consts ();
@@ -71,6 +77,7 @@ let tests () =
   test_float_conv ();
   test_string_conv ();
   test_min_max ();
+  test_hash ();
   ()
 
 let () =

@@ -21,12 +21,14 @@ let show_objects title string_of_object objects =
   List.iter print_object objects;
   exit 0
 
-let string_of_action = Actions.name
+let string_of_action a =
+  Printf.sprintf "%s: %s" (Actions.name a) (Actions.description a)
 
 let string_of_test test =
-  if test.Tests.test_run_by_default
-  then (test.Tests.test_name ^ " (run by default)")
-  else test.Tests.test_name
+  if test.Tests.test_run_by_default then
+    test.Tests.test_name ^ " (run by default): " ^ test.Tests.test_description
+  else
+    test.Tests.test_name ^ ": " ^ test.Tests.test_description
 
 let string_of_variable v =
   Printf.sprintf "%s: %s"

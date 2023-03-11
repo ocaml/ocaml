@@ -32,7 +32,7 @@
 #include "caml/alloc.h"
 #include "caml/fiber.h"
 #include "caml/platform.h"
-#include "caml/eventlog.h"
+#include "caml/runtime_events.h"
 
 /* Note [MM]: Enforcing the memory model.
 
@@ -137,7 +137,7 @@ Caml_inline void write_barrier(
           then this is in a remembered set already */
        if (Is_young(old_val)) return;
        /* old is a block and in the major heap */
-       caml_darken(0, old_val, 0);
+       caml_darken(Caml_state, old_val, 0);
      }
      /* this update is creating a new link from major to minor, remember it */
      if (Is_block_and_young(new_val)) {
@@ -146,7 +146,7 @@ Caml_inline void write_barrier(
    }
 }
 
-CAMLexport CAMLweakdef void caml_modify (value *fp, value val)
+CAMLexport CAMLweakdef void caml_modify (volatile value *fp, value val)
 {
   write_barrier((value)fp, 0, *fp, val);
 
@@ -194,6 +194,7 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
   if (res > max) res = max;
   Caml_state->extra_heap_resources += (double) res / (double) max;
   if (Caml_state->extra_heap_resources > 1.0){
+    CAML_EV_COUNTER (EV_C_REQUEST_MAJOR_ADJUST_GC_SPEED, 1);
     Caml_state->extra_heap_resources = 1.0;
     caml_request_major_slice ();
   }
@@ -205,12 +206,12 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
 
    [caml_initialize] never calls the GC, so you may call it while a block is
    unfinished (i.e. just after a call to [caml_alloc_shr].) */
-CAMLexport CAMLweakdef void caml_initialize (value *fp, value val)
+CAMLexport CAMLweakdef void caml_initialize (volatile value *fp, value val)
 {
 #ifdef DEBUG
   /* Previous value should not be a pointer.
      In the debug runtime, it can be either a TMC placeholder,
-     or an unitialized value canary (Debug_uninit_{major,minor}). */
+     or an uninitialized value canary (Debug_uninit_{major,minor}). */
   CAMLassert(Is_long(*fp));
 #endif
   *fp = val;
@@ -223,7 +224,7 @@ CAMLexport int caml_atomic_cas_field (
 {
   if (caml_domain_alone()) {
     /* non-atomic CAS since only this thread can access the object */
-    value* p = &Field(obj, field);
+    volatile value* p = &Field(obj, field);
     if (*p == oldval) {
       *p = newval;
       write_barrier(obj, field, oldval, newval);
@@ -327,17 +328,20 @@ CAMLexport void caml_set_fields (value obj, value v)
   }
 }
 
-Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, int noexc)
+Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, reserved_t reserved,
+                            int noexc)
 {
+  Caml_check_caml_state();
   caml_domain_state *dom_st = Caml_state;
-  value *v = caml_shared_try_alloc(dom_st->shared_heap, wosize, tag, 0);
+  value *v = caml_shared_try_alloc(dom_st->shared_heap,
+                                   wosize, tag, reserved, 0);
   if (v == NULL) {
     if (!noexc)
       caml_raise_out_of_memory();
     else
       return (value)NULL;
   }
-  CAML_EV_ALLOC(wosize);
+
   dom_st->allocated_words += Whsize_wosize(wosize);
   if (dom_st->allocated_words > dom_st->minor_heap_wsz) {
     CAML_EV_COUNTER (EV_C_REQUEST_MAJOR_ALLOC_SHR, 1);
@@ -356,11 +360,19 @@ Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, int noexc)
 
 CAMLexport value caml_alloc_shr(mlsize_t wosize, tag_t tag)
 {
-  return alloc_shr(wosize, tag, 0);
+  return alloc_shr(wosize, tag, 0, 0);
 }
 
+CAMLexport value caml_alloc_shr_reserved(mlsize_t wosize,
+                                         tag_t tag,
+                                         reserved_t reserved)
+{
+  return alloc_shr(wosize, tag, reserved, 0);
+}
+
+
 CAMLexport value caml_alloc_shr_noexc(mlsize_t wosize, tag_t tag) {
-  return alloc_shr(wosize, tag, 1);
+  return alloc_shr(wosize, tag, 0, 1);
 }
 
 /* Global memory pool.

@@ -23,8 +23,7 @@ DOC_COMPILERLIBS_DIRS= $(addprefix $(ROOTDIR)/,\
   parsing utils typing bytecomp driver file_formats lambda)
 
 DOC_STDLIB_DIRS = $(addprefix $(ROOTDIR)/, stdlib \
-  otherlibs/str otherlibs/$(UNIXLIB) otherlibs/dynlink \
-  otherlibs/systhreads)
+  $(addprefix otherlibs/,$(ALL_OTHERLIBS)))
 
 .PHONY: all
 all: html pdf man
@@ -43,12 +42,12 @@ build/latex/alldoc.pdf: build/latex/stdlib_input.tex \
   build/latex/compilerlibs_input.tex | build/latex/ifocamldoc.tex
 
 build/Compiler_libs.mld: $(DOCGEN)/Compiler_libs.pre.mld | build/
-	cp $< $@ && echo "{!modules:$(compilerlibref_C)}" >> $@
+	$(V_GEN)cp $< $@ && echo "{!modules:$(compilerlibref_C)}" >> $@
 
 build/latex/ifocamldoc.tex: $(ROOTDIR)/Makefile.config | build/latex
 
 build/latex/alldoc.tex:$(DOCGEN)/alldoc.tex | build/latex
-	cp $< $@
+	$(V_GEN)cp $< $@
 
 build/%.mld: $(DOCGEN)/%.mld | build/
-	cp $< $@
+	$(V_GEN)cp $< $@

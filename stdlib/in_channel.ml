@@ -170,4 +170,16 @@ let input_all ic =
         loop buf (nread + 1)
   end
 
+let [@tail_mod_cons] rec input_lines ic =
+  match Stdlib.input_line ic with
+  | line -> line :: input_lines ic
+  | exception End_of_file -> []
+
+let rec fold_lines f accu ic =
+  match Stdlib.input_line ic with
+  | line -> fold_lines f (f accu line) ic
+  | exception End_of_file -> accu
+
 let set_binary_mode = Stdlib.set_binary_mode_in
+
+external isatty : t -> bool = "caml_sys_isatty"

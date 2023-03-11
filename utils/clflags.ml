@@ -48,6 +48,7 @@ let compile_only = ref false            (* -c *)
 and output_name = ref (None : string option) (* -o *)
 and include_dirs = ref ([] : string list)(* -I *)
 and no_std_include = ref false          (* -nostdlib *)
+and no_cwd = ref false                  (* -nocwd *)
 and print_types = ref false             (* -i *)
 and make_archive = ref false            (* -a *)
 and debug = ref false                   (* -g *)
@@ -65,6 +66,7 @@ and all_ccopts = ref ([] : string list)     (* -ccopt *)
 and classic = ref false                 (* -nolabels *)
 and nopervasives = ref false            (* -nopervasives *)
 and match_context_rows = ref 32         (* -match-context-rows *)
+and safer_matching = ref false          (* -safer-matching *)
 and preprocessor = ref(None : string option) (* -pp *)
 and all_ppx = ref ([] : string list)        (* -ppx *)
 let absname = ref false                 (* -absname *)
@@ -86,7 +88,7 @@ and principal = ref false               (* -principal *)
 and real_paths = ref true               (* -short-paths *)
 and recursive_types = ref false         (* -rectypes *)
 and strict_sequence = ref false         (* -strict-sequence *)
-and strict_formats = ref false          (* -strict-formats *)
+and strict_formats = ref true           (* -strict-formats *)
 and applicative_functors = ref true     (* -no-app-funct *)
 and make_runtime = ref false            (* -make-runtime *)
 and c_compiler = ref (None: string option) (* -cc *)
@@ -137,7 +139,6 @@ let profile_columns : Profile.column list ref = ref [] (* -dprofile/-dtimings *)
 
 let native_code = ref false             (* set to true under ocamlopt *)
 
-let force_tmc = ref false               (* -force-tmc *)
 let force_slash = ref false             (* for ocamldep *)
 let clambda_checks = ref false          (* -clambda-checks *)
 let cmm_invariants =
@@ -165,10 +166,7 @@ let pic_code = ref (match Config.architecture with (* -fPIC *)
                      | "amd64" -> true
                      | _       -> false)
 
-let runtime_variant =
-  ref (match Config.force_instrumented_runtime with (* -runtime-variant *)
-        | true -> "i"
-        | false -> "")
+let runtime_variant = ref ""
 
 let with_runtime = ref true         (* -with-runtime *)
 
@@ -465,17 +463,19 @@ module Compiler_pass = struct
      - the manpages in man/ocaml{c,opt}.m
      - the manual manual/src/cmds/unified-options.etex
   *)
-  type t = Parsing | Typing | Scheduling | Emit
+  type t = Parsing | Typing | Lambda | Scheduling | Emit
 
   let to_string = function
     | Parsing -> "parsing"
     | Typing -> "typing"
+    | Lambda -> "lambda"
     | Scheduling -> "scheduling"
     | Emit -> "emit"
 
   let of_string = function
     | "parsing" -> Some Parsing
     | "typing" -> Some Typing
+    | "lambda" -> Some Lambda
     | "scheduling" -> Some Scheduling
     | "emit" -> Some Emit
     | _ -> None
@@ -483,12 +483,14 @@ module Compiler_pass = struct
   let rank = function
     | Parsing -> 0
     | Typing -> 1
+    | Lambda -> 2
     | Scheduling -> 50
     | Emit -> 60
 
   let passes = [
     Parsing;
     Typing;
+    Lambda;
     Scheduling;
     Emit;
   ]

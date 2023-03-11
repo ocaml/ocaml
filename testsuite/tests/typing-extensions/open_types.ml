@@ -82,7 +82,7 @@ Line 1, characters 0-19:
 1 | type baz = bar = ..
     ^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type bar
-       Their kinds differ.
+       The original is abstract, but this is an extensible variant.
 |}]
 
 (* Abbreviations need to match parameters *)
@@ -176,7 +176,7 @@ Error: Signature mismatch:
          type foo = M.foo
        is not included in
          type foo = ..
-       Their kinds differ.
+       The first is abstract, but the second is an extensible variant.
 |}]
 
 (* Check that signatures can make exstensibility private *)
@@ -312,6 +312,7 @@ Here is an example of a case that is not matched:
 *extension*
 Matching over values of extensible variant types (the *extension* above)
 must include a wild card pattern in order to be exhaustive.
+
 val f : foo -> unit = <fun>
 |}]
 
@@ -333,6 +334,7 @@ Here is an example of a case that is not matched:
 *extension*::[]
 Matching over values of extensible variant types (the *extension* above)
 must include a wild card pattern in order to be exhaustive.
+
 val f : foo list -> int = <fun>
 |}]
 
@@ -356,5 +358,6 @@ Here is an example of a case that is not matched:
 *extension*
 Matching over values of extensible variant types (the *extension* above)
 must include a wild card pattern in order to be exhaustive.
+
 val f : t -> string = <fun>
 |}]

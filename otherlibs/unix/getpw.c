@@ -47,7 +47,7 @@ static value alloc_passwd_entry(struct passwd *entry)
   CAMLreturn(res);
 }
 
-CAMLprim value unix_getpwnam(value name)
+CAMLprim value caml_unix_getpwnam(value name)
 {
   struct passwd * entry;
   if (! caml_string_is_c_safe(name)) caml_raise_not_found();
@@ -55,7 +55,7 @@ CAMLprim value unix_getpwnam(value name)
   entry = getpwnam(String_val(name));
   if (entry == (struct passwd *) NULL) {
     if (errno == EINTR) {
-      uerror("getpwnam", Nothing);
+      caml_uerror("getpwnam", Nothing);
     } else {
       caml_raise_not_found();
     }
@@ -63,14 +63,14 @@ CAMLprim value unix_getpwnam(value name)
   return alloc_passwd_entry(entry);
 }
 
-CAMLprim value unix_getpwuid(value uid)
+CAMLprim value caml_unix_getpwuid(value uid)
 {
   struct passwd * entry;
   errno = 0;
   entry = getpwuid(Int_val(uid));
   if (entry == (struct passwd *) NULL) {
     if (errno == EINTR) {
-      uerror("getpwuid", Nothing);
+      caml_uerror("getpwuid", Nothing);
     } else {
       caml_raise_not_found();
     }

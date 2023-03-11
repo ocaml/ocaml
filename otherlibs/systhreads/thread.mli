@@ -23,7 +23,7 @@ type t
 val create : ('a -> 'b) -> 'a -> t
 (** [Thread.create funct arg] creates a new thread of control,
    in which the function application [funct arg]
-   is executed concurrently with the other threads of the program.
+   is executed concurrently with the other threads of the domain.
    The application of [Thread.create]
    returns the handle of the newly created thread.
    The new thread terminates when the application [funct arg]
@@ -32,7 +32,10 @@ val create : ('a -> 'b) -> 'a -> t
    In the last case, the uncaught exception is printed on standard error,
    but not propagated back to the parent thread. Similarly, the
    result of the application [funct arg] is discarded and not
-   directly accessible to the parent thread. *)
+   directly accessible to the parent thread.
+
+   See also {!Domain.spawn} if you want parallel execution instead.
+   *)
 
 val self : unit -> t
 (** Return the handle for the thread currently executing. *)
@@ -93,9 +96,11 @@ val yield : unit -> unit
     to use {!Unix} functions directly. *)
 
 val wait_timed_read : Unix.file_descr -> float -> bool
+[@@ocaml.deprecated "Use Unix.select instead."]
 (** See {!Thread.wait_timed_write}.*)
 
 val wait_timed_write : Unix.file_descr -> float -> bool
+[@@ocaml.deprecated "Use Unix.select instead."]
 (** Suspend the execution of the calling thread until at least
    one character or EOF is available for reading ([wait_timed_read]) or
    one character can be written without blocking ([wait_timed_write])
@@ -110,6 +115,7 @@ val select :
   Unix.file_descr list -> Unix.file_descr list ->
   Unix.file_descr list -> float ->
     Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
+[@@ocaml.deprecated "Use Unix.select instead."]
 (** Same function as {!Unix.select}.
    Suspend the execution of the calling thread until input/output
    becomes possible on the given Unix file descriptors.
@@ -117,6 +123,7 @@ val select :
    {!Unix.select}. *)
 
 val wait_pid : int -> int * Unix.process_status
+[@@ocaml.deprecated "Use Unix.waitpid instead."]
 (** Same function as {!Unix.waitpid}.
    [wait_pid p] suspends the execution of the calling thread
    until the process specified by the process identifier [p]

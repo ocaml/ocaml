@@ -16,6 +16,9 @@
 /* POSIX thread implementation of the user facing Mutex and Condition */
 /* To be included in runtime/sync.c */
 
+#ifndef CAML_SYNC_POSIX_H
+#define CAML_SYNC_POSIX_H
+
 #include <errno.h>
 #include <pthread.h>
 #include <string.h>
@@ -139,3 +142,5 @@ static void sync_check_error(int retcode, char * msg)
   memcpy (&Byte(str, msglen + 2), err, errlen);
   caml_raise_sys_error(str);
 }
+
+#endif /* CAML_SYNC_POSIX_H */

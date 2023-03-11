@@ -20,18 +20,6 @@
  (modules tsl_parser)
  (mode fallback))
 
-(rule
- (targets ocamltest_config.ml)
- (deps
-   ../Makefile.config
-   ../Makefile.build_config
-   ../Makefile.config_if_required
-   ../Makefile.common
-   ../Makefile.best_binaries
-   Makefile
-   ./ocamltest_config.ml.in)
- (action (run make %{targets} COMPUTE_DEPS=false)))
-
 ;; FIXME: handle UNIX_OR_WIN32 or something similar
 (library
  (name ocamltest_core_and_plugin)

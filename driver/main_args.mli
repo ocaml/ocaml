@@ -18,6 +18,7 @@
 
 module type Common_options = sig
   val _absname : unit -> unit
+  val _no_absname : unit -> unit
   val _alert : string -> unit
   val _I : string -> unit
   val _labels : unit -> unit
@@ -28,18 +29,19 @@ module type Common_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _nostdlib : unit -> unit
+  val _nocwd : unit -> unit
   val _open : string -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
   val _no_principal : unit -> unit
   val _rectypes : unit -> unit
   val _no_rectypes : unit -> unit
+  val _safer_matching : unit -> unit
   val _short_paths : unit -> unit
   val _strict_sequence : unit -> unit
   val _no_strict_sequence : unit -> unit
   val _strict_formats : unit -> unit
   val _no_strict_formats : unit -> unit
-  val _force_tmc : unit -> unit
   val _unboxed_types : unit -> unit
   val _no_unboxed_types : unit -> unit
   val _version : unit -> unit
@@ -83,6 +85,7 @@ module type Compiler_options = sig
   val _config_var : string -> unit
   val _for_pack : string -> unit
   val _g : unit -> unit
+  val _no_g : unit -> unit
   val _stop_after : string -> unit
   val _i : unit -> unit
   val _impl : string -> unit

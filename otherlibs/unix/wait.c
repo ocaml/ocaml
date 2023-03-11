@@ -66,14 +66,14 @@ static value alloc_process_status(int pid, int status)
   CAMLreturn(res);
 }
 
-CAMLprim value unix_wait(value unit)
+CAMLprim value caml_unix_wait(value unit)
 {
   int pid, status;
 
   caml_enter_blocking_section();
   pid = wait(&status);
   caml_leave_blocking_section();
-  if (pid == -1) uerror("wait", Nothing);
+  if (pid == -1) caml_uerror("wait", Nothing);
   return alloc_process_status(pid, status);
 }
 
@@ -87,7 +87,7 @@ static int wait_flag_table[] = {
   WNOHANG, WUNTRACED
 };
 
-CAMLprim value unix_waitpid(value flags, value pid_req)
+CAMLprim value caml_unix_waitpid(value flags, value pid_req)
 {
   int pid, status, cv_flags;
 
@@ -95,13 +95,13 @@ CAMLprim value unix_waitpid(value flags, value pid_req)
   caml_enter_blocking_section();
   pid = waitpid(Int_val(pid_req), &status, cv_flags);
   caml_leave_blocking_section();
-  if (pid == -1) uerror("waitpid", Nothing);
+  if (pid == -1) caml_uerror("waitpid", Nothing);
   return alloc_process_status(pid, status);
 }
 
 #else
 
-CAMLprim value unix_waitpid(value flags, value pid_req)
+CAMLprim value caml_unix_waitpid(value flags, value pid_req)
 { caml_invalid_argument("waitpid not implemented"); }
 
 #endif

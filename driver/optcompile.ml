@@ -38,32 +38,39 @@ let flambda i backend Typedtree.{structure; coercion; _} =
     Clflags.unbox_free_vars_of_closures := false;
     Clflags.unbox_specialised_args := false
   end;
+
   (structure, coercion)
   |> Profile.(record transl)
       (Translmod.transl_implementation_flambda i.module_name)
   |> Profile.(record generate)
     (fun {Lambda.module_ident; main_module_block_size;
           required_globals; code } ->
-    ((module_ident, main_module_block_size), code)
-    |>> print_if i.ppf_dump Clflags.dump_rawlambda Printlambda.lambda
-    |>> Simplif.simplify_lambda
-    |>> print_if i.ppf_dump Clflags.dump_lambda Printlambda.lambda
-    |> (fun ((module_ident, main_module_block_size), code) ->
-      let program : Lambda.program =
-        { Lambda.
-          module_ident;
-          main_module_block_size;
-          required_globals;
-          code;
-        }
+      let () =
+        let (module_ident, main_module_block_size), code =
+          ((module_ident, main_module_block_size), code)
+          |>> print_if i.ppf_dump Clflags.dump_rawlambda Printlambda.lambda
+          |>> Simplif.simplify_lambda
+          |>> print_if i.ppf_dump Clflags.dump_lambda Printlambda.lambda
+        in
+
+        if Clflags.(should_stop_after Compiler_pass.Lambda) then () else (
+          let program : Lambda.program =
+            { Lambda.
+              module_ident;
+              main_module_block_size;
+              required_globals;
+              code;
+            }
+          in
+          Asmgen.compile_implementation
+            ~backend
+            ~prefixname:i.output_prefix
+            ~middle_end:Flambda_middle_end.lambda_to_clambda
+            ~ppf_dump:i.ppf_dump
+            program)
       in
-      Asmgen.compile_implementation
-        ~backend
-        ~prefixname:i.output_prefix
-        ~middle_end:Flambda_middle_end.lambda_to_clambda
-        ~ppf_dump:i.ppf_dump
-        program);
-    Compilenv.save_unit_info (cmx i))
+      Compilenv.save_unit_info (cmx i))
+
 
 let clambda i backend Typedtree.{structure; coercion; _} =
   Clflags.use_inlining_arguments_set Clflags.classic_arguments;
@@ -76,12 +83,16 @@ let clambda i backend Typedtree.{structure; coercion; _} =
        let code = Simplif.simplify_lambda program.Lambda.code in
        { program with Lambda.code }
        |> print_if i.ppf_dump Clflags.dump_lambda Printlambda.program
-       |> Asmgen.compile_implementation
+       |>(fun lambda ->
+          if Clflags.(should_stop_after Compiler_pass.Lambda) then () else
+          Asmgen.compile_implementation
             ~backend
             ~prefixname:i.output_prefix
             ~middle_end:Closure_middle_end.lambda_to_clambda
-            ~ppf_dump:i.ppf_dump;
-       Compilenv.save_unit_info (cmx i))
+            ~ppf_dump:i.ppf_dump
+            lambda;
+          Compilenv.save_unit_info (cmx i)))
+
 
 (* Emit assembly directly from Linear IR *)
 let emit i =

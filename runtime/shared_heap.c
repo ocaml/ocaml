@@ -20,6 +20,7 @@
 
 #include "caml/addrmap.h"
 #include "caml/custom.h"
+#include "caml/runtime_events.h"
 #include "caml/fail.h"
 #include "caml/fiber.h" /* for verification */
 #include "caml/gc.h"
@@ -33,7 +34,13 @@
 #include "caml/startup_aux.h"
 
 typedef unsigned int sizeclass;
-struct global_heap_state caml_global_heap_state = {0 << 8, 1 << 8, 2 << 8};
+
+/* Initial MARKED, UNMARKED, and GARBAGE values; any permutation would work */
+struct global_heap_state caml_global_heap_state = {
+  0 << HEADER_COLOR_SHIFT,
+  1 << HEADER_COLOR_SHIFT,
+  2 << HEADER_COLOR_SHIFT,
+};
 
 typedef struct pool {
   struct pool* next;
@@ -208,8 +215,7 @@ static void calc_pool_stats(pool* a, sizeclass sz, struct heap_stats* s) {
   s->pool_frag_words += Wsize_bsize(POOL_HEADER_SZ);
 
   while (p + wh <= end) {
-    header_t hd = (header_t)atomic_load_explicit((atomic_uintnat*)p,
-                                                  memory_order_relaxed);
+    header_t hd = (header_t)atomic_load_relaxed((atomic_uintnat*)p);
     if (hd) {
       s->pool_live_words += Whsize_hd(hd);
       s->pool_frag_words += wh - Whsize_hd(hd);
@@ -256,7 +262,7 @@ static intnat pool_sweep(struct caml_heap_state* local,
                          int release_to_global_pool);
 
 /* Adopt pool from the pool_freelist avail and full pools
-   to satisfy an alloction */
+   to satisfy an allocation */
 static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
 {
   pool* r = NULL;
@@ -361,7 +367,6 @@ static void* pool_allocate(struct caml_heap_state* local, sizeclass sz) {
 
   if (!r) return 0;
 
-
   p = r->next_obj;
   next = (value*)p[1];
   r->next_obj = next;
@@ -390,7 +395,7 @@ static void* large_allocate(struct caml_heap_state* local, mlsize_t sz) {
 }
 
 value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
-                             tag_t tag, int pinned)
+                             tag_t tag, reserved_t reserved, int pinned)
 {
   mlsize_t whsize = Whsize_wosize(wosize);
   value* p;
@@ -398,6 +403,9 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
 
   CAMLassert (wosize > 0);
   CAMLassert (tag != Infix_tag);
+
+  CAML_EV_ALLOC(wosize);
+
   if (whsize <= SIZECLASS_MAX) {
     struct heap_stats* s;
     sizeclass sz = sizeclass_wsize[whsize];
@@ -413,7 +421,7 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
     if (!p) return 0;
   }
   colour = pinned ? NOT_MARKABLE : caml_global_heap_state.MARKED;
-  Hd_hp (p) = Make_header(wosize, tag, colour);
+  Hd_hp (p) = Make_header_with_reserved(wosize, tag, colour, reserved);
 #ifdef DEBUG
   {
     int i;
@@ -454,8 +462,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
     struct heap_stats* s = &local->stats;
 
     while (p + wh <= end) {
-      header_t hd = (header_t)atomic_load_explicit((atomic_uintnat*)p,
-                                                    memory_order_relaxed);
+      header_t hd = (header_t)atomic_load_relaxed((atomic_uintnat*)p);
       if (hd == 0) {
         /* already on freelist */
         all_used = 0;
@@ -466,7 +473,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
           if (final_fun != NULL) final_fun(Val_hp(p));
         }
         /* add to freelist */
-        atomic_store_explicit((atomic_uintnat*)p, 0, memory_order_relaxed);
+        atomic_store_relaxed((atomic_uintnat*)p, 0);
         p[1] = (value)a->next_obj;
         CAMLassert(Is_block((value)p));
 #ifdef DEBUG
@@ -709,7 +716,7 @@ struct heap_verify_state* caml_verify_begin (void)
   return st;
 }
 
-static void verify_push (void* st_v, value v, value* p)
+static void verify_push (void* st_v, value v, volatile value* ignored)
 {
   struct heap_verify_state* st = st_v;
   if (!Is_block(v)) return;
@@ -722,10 +729,12 @@ static void verify_push (void* st_v, value v, value* p)
   st->stack[st->sp++] = v;
 }
 
-void caml_verify_root(void* state, value v, value* p)
+void caml_verify_root(void* state, value v, volatile value* p)
 {
   verify_push(state, v, p);
 }
+
+static scanning_action_flags verify_scanning_flags = 0;
 
 static void verify_object(struct heap_verify_state* st, value v) {
   intnat* entry;
@@ -743,15 +752,15 @@ static void verify_object(struct heap_verify_state* st, value v) {
   if (*entry != ADDRMAP_NOT_PRESENT) return;
   *entry = 1;
 
-  if (Has_status_hd(Hd_val(v), NOT_MARKABLE)) return;
+  if (Has_status_val(v, NOT_MARKABLE)) return;
   st->objs++;
 
-  CAMLassert(Has_status_hd(Hd_val(v), caml_global_heap_state.UNMARKED));
+  CAMLassert(Has_status_val(v, caml_global_heap_state.UNMARKED));
 
   if (Tag_val(v) == Cont_tag) {
     struct stack_info* stk = Ptr_val(Field(v, 0));
     if (stk != NULL)
-      caml_scan_stack(verify_push, st, stk, 0);
+      caml_scan_stack(verify_push, verify_scanning_flags, st, stk, 0);
   } else if (Tag_val(v) < No_scan_tag) {
     int i = 0;
     if (Tag_val(v) == Closure_tag) {
@@ -764,7 +773,11 @@ static void verify_object(struct heap_verify_state* st, value v) {
   }
 }
 
-void caml_verify_heap(struct heap_verify_state* st) {
+void caml_verify_heap(caml_domain_state *domain) {
+  struct heap_verify_state* st = caml_verify_begin();
+  caml_do_roots (&caml_verify_root, verify_scanning_flags, st, domain, 1);
+  caml_scan_global_roots(&caml_verify_root, st);
+
   while (st->sp) verify_object(st, st->stack[--st->sp]);
 
   caml_addrmap_clear(&st->seen);
@@ -825,7 +838,7 @@ static void verify_large(large_alloc* a, struct mem_stats* s) {
 
 static void verify_swept (struct caml_heap_state* local) {
   int i;
-  struct mem_stats pool_stats = {}, large_stats = {};
+  struct mem_stats pool_stats = {0,}, large_stats = {0,};
 
   /* sweeping should be done by this point */
   CAMLassert(local->next_to_sweep == NUM_SIZECLASSES);

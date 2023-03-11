@@ -27,7 +27,7 @@
 #define MAXHOSTNAMELEN 256
 #endif
 
-CAMLprim value unix_gethostname(value unit)
+CAMLprim value caml_unix_gethostname(value unit)
 {
   char name[MAXHOSTNAMELEN];
   gethostname(name, MAXHOSTNAMELEN);
@@ -40,7 +40,7 @@ CAMLprim value unix_gethostname(value unit)
 
 #include <sys/utsname.h>
 
-CAMLprim value unix_gethostname(value unit)
+CAMLprim value caml_unix_gethostname(value unit)
 {
   struct utsname un;
   uname(&un);
@@ -49,7 +49,7 @@ CAMLprim value unix_gethostname(value unit)
 
 #else
 
-CAMLprim value unix_gethostname(value unit)
+CAMLprim value caml_unix_gethostname(value unit)
 { caml_invalid_argument("gethostname not implemented"); }
 
 #endif

@@ -15,11 +15,11 @@
 
 #include <signal.h>
 
+#define CAML_INTERNALS
+
 #include "caml/mlvalues.h"
 #include "caml/memory.h"
 #include "caml/callback.h"
-
-#define CAML_INTERNALS
 #include "caml/signals.h"
 
 value mycallback1(value fun, value arg)

@@ -105,14 +105,10 @@ let trim s =
   else s
 
 let escaped s =
-  let rec escape_if_needed s n i =
-    if i >= n then s else
-      match unsafe_get s i with
-      | '\"' | '\\' | '\000'..'\031' | '\127'.. '\255' ->
-          bts (B.escaped (bos s))
-      | _ -> escape_if_needed s n (i+1)
-  in
-  escape_if_needed s (length s) 0
+  let b = bos s in
+  (* We satisfy [unsafe_escape]'s precondition by passing an
+     immutable byte sequence [b]. *)
+  bts (B.unsafe_escape b)
 
 (* duplicated in bytes.ml *)
 let rec index_rec s lim i c =
@@ -221,6 +217,9 @@ let ends_with ~suffix s =
     else if unsafe_get s (diff + i) <> unsafe_get suffix i then false
     else aux (i + 1)
   in diff >= 0 && aux 0
+
+external seeded_hash : int -> string -> int = "caml_string_hash" [@@noalloc]
+let hash x = seeded_hash 0 x
 
 (* duplicated in bytes.ml *)
 let split_on_char sep s =

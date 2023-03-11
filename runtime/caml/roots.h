@@ -21,16 +21,28 @@
 #include "misc.h"
 #include "domain.h"
 
-typedef void (*scanning_action) (void*, value, value *);
-typedef void (*scan_roots_hook) (scanning_action, void*, caml_domain_state*);
-CAMLextern _Atomic scan_roots_hook caml_scan_roots_hook;
+typedef enum {
+  SCANNING_ONLY_YOUNG_VALUES = 1, // action is a no-op outside the minor heap
+} scanning_action_flags;
 
-CAMLextern void caml_do_roots (scanning_action f, void* data,
-                               caml_domain_state* d, int do_final_val);
-CAMLextern void caml_do_local_roots(scanning_action f, void* data,
-                                    struct caml__roots_block* local_roots,
-                                    struct stack_info *current_stack,
-                                    value * v_gc_regs);
+typedef void (*scanning_action) (void*, value, volatile value *);
+typedef void (*scan_roots_hook) (scanning_action, scanning_action_flags,
+                                 void*, caml_domain_state*);
+
+#ifndef __cplusplus
+CAMLextern _Atomic scan_roots_hook caml_scan_roots_hook;
+#endif
+
+CAMLextern void caml_do_roots (
+  scanning_action f, scanning_action_flags,
+  void* data, caml_domain_state* d, int do_final_val);
+
+CAMLextern void caml_do_local_roots(
+  scanning_action f, scanning_action_flags,
+  void* data,
+  struct caml__roots_block* local_roots,
+  struct stack_info *current_stack,
+  value * v_gc_regs);
 
 #endif /* CAML_INTERNALS */
 

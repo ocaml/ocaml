@@ -53,13 +53,13 @@ val set : 'a t -> int -> 'a option -> unit
    (full) pointer to [el]; [Weak.set ar n None] sets the [n]th
    cell of [ar] to empty.
    @raise Invalid_argument if [n] is not in the range
-   0 to {!Weak.length}[ a - 1].*)
+   0 to {!Weak.length}[ ar - 1].*)
 
 val get : 'a t -> int -> 'a option
 (** [Weak.get ar n] returns None if the [n]th cell of [ar] is
    empty, [Some x] (where [x] is the value) if it is full.
    @raise Invalid_argument if [n] is not in the range
-   0 to {!Weak.length}[ a - 1].*)
+   0 to {!Weak.length}[ ar - 1].*)
 
 val get_copy : 'a t -> int -> 'a option
 (** [Weak.get_copy ar n] returns None if the [n]th cell of [ar] is
@@ -70,7 +70,7 @@ val get_copy : 'a t -> int -> 'a option
    the incremental GC from erasing the value in its current cycle
    ([get] may delay the erasure to the next GC cycle).
    @raise Invalid_argument if [n] is not in the range
-   0 to {!Weak.length}[ a - 1].
+   0 to {!Weak.length}[ ar - 1].
 
    If the element is a custom block it is not copied.
 
@@ -80,13 +80,15 @@ val get_copy : 'a t -> int -> 'a option
 val check : 'a t -> int -> bool
 (** [Weak.check ar n] returns [true] if the [n]th cell of [ar] is
    full, [false] if it is empty.  Note that even if [Weak.check ar n]
-   returns [true], a subsequent {!Weak.get}[ ar n] can return [None].*)
+   returns [true], a subsequent {!Weak.get}[ ar n] can return [None].
+   @raise Invalid_argument if [n] is not in the range
+   0 to {!Weak.length}[ ar - 1].*)
 
 val fill : 'a t -> int -> int -> 'a option -> unit
 (** [Weak.fill ar ofs len el] sets to [el] all pointers of [ar] from
    [ofs] to [ofs + len - 1].
    @raise Invalid_argument
-   if [ofs] and [len] do not designate a valid subarray of [a].*)
+   if [ofs] and [len] do not designate a valid subarray of [ar].*)
 
 val blit : 'a t -> int -> 'a t -> int -> int -> unit
 (** [Weak.blit ar1 off1 ar2 off2 len] copies [len] weak pointers
@@ -111,6 +113,14 @@ val blit : 'a t -> int -> 'a t -> int -> int -> unit
     The [equal] relation must be able to work on a shallow copy of
     the values and give the same result as with the values themselves.
     *)
+
+(** {b Unsynchronized accesses}
+
+    Unsynchronized accesses to weak hash sets are a programming error.
+    Unsynchronized accesses to a weak hash set may lead to an invalid weak hash
+    set state. Thus, concurrent accesses to weak hash sets must be synchronized
+    (for instance with a {!Mutex.t}).
+*)
 
 module type S = sig
   type data
@@ -165,7 +175,7 @@ module type S = sig
         order.  It is not specified what happens if [f] tries to change
         [t] itself. *)
 
-  val fold : (data -> 'a -> 'a) -> t -> 'a -> 'a
+  val fold : (data -> 'acc -> 'acc) -> t -> 'acc -> 'acc
     (** [fold f t init] computes [(f d1 (... (f dN init)))] where
         [d1 ... dN] are the elements of [t] in some unspecified order.
         It is not specified what happens if [f] tries to change [t]

@@ -2,24 +2,24 @@ Thread 2 killed on uncaught exception Failure("0")
 Raised at Stdlib.failwith in file "stdlib.ml", line 29, characters 17-33
 Called from Backtrace_systhreads.thread_func in file "backtrace_systhreads.ml", line 14, characters 6-37
 Re-raised at Backtrace_systhreads.thread_func in file "backtrace_systhreads.ml", line 18, characters 5-14
-Called from Thread.create.(fun) in file "thread.ml", line 50, characters 8-14
+Called from Thread.create.(fun) in file "thread.ml", line 48, characters 8-14
 Thread 3 killed on uncaught exception Failure("1")
 Raised at Stdlib.failwith in file "stdlib.ml", line 29, characters 17-33
 Called from Backtrace_systhreads.thread_func in file "backtrace_systhreads.ml", line 14, characters 6-37
 Re-raised at Backtrace_systhreads.thread_func in file "backtrace_systhreads.ml", line 18, characters 5-14
-Called from Thread.create.(fun) in file "thread.ml", line 50, characters 8-14
+Called from Thread.create.(fun) in file "thread.ml", line 48, characters 8-14
 Thread 4 killed on uncaught exception Failure("2")
 Raised at Stdlib.failwith in file "stdlib.ml", line 29, characters 17-33
 Called from Backtrace_systhreads.thread_func in file "backtrace_systhreads.ml", line 14, characters 6-37
 Re-raised at Backtrace_systhreads.thread_func in file "backtrace_systhreads.ml", line 18, characters 5-14
-Called from Thread.create.(fun) in file "thread.ml", line 50, characters 8-14
+Called from Thread.create.(fun) in file "thread.ml", line 48, characters 8-14
 Thread 5 killed on uncaught exception Failure("3")
 Raised at Stdlib.failwith in file "stdlib.ml", line 29, characters 17-33
 Called from Backtrace_systhreads.thread_func in file "backtrace_systhreads.ml", line 14, characters 6-37
 Re-raised at Backtrace_systhreads.thread_func in file "backtrace_systhreads.ml", line 18, characters 5-14
-Called from Thread.create.(fun) in file "thread.ml", line 50, characters 8-14
+Called from Thread.create.(fun) in file "thread.ml", line 48, characters 8-14
 Thread 1 killed on uncaught exception Failure("backtrace")
 Raised at Stdlib.failwith in file "stdlib.ml", line 29, characters 17-33
 Called from Backtrace_systhreads.thread_backtrace in file "backtrace_systhreads.ml", line 22, characters 6-27
 Re-raised at Backtrace_systhreads.thread_backtrace in file "backtrace_systhreads.ml", line 26, characters 5-14
-Called from Thread.create.(fun) in file "thread.ml", line 50, characters 8-14
+Called from Thread.create.(fun) in file "thread.ml", line 48, characters 8-14

@@ -24,17 +24,17 @@
 #define fsync(fd) fsync(fd)
 #endif
 
-CAMLprim value unix_fsync(value v)
+CAMLprim value caml_unix_fsync(value v)
 {
   int ret;
 #ifdef _WIN32
-  int fd = win_CRT_fd_of_filedescr(v);
+  int fd = caml_win32_CRT_fd_of_filedescr(v);
 #else
   int fd = Int_val(v);
 #endif
   caml_enter_blocking_section();
   ret = fsync(fd);
   caml_leave_blocking_section();
-  if (ret == -1) uerror("fsync", Nothing);
+  if (ret == -1) caml_uerror("fsync", Nothing);
   return Val_unit;
 }

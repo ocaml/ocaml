@@ -16,7 +16,17 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type 'a t
+[@@@alert unstable
+    "The Domain interface may change in incompatible ways in the future."
+]
+
+(** Domains.
+
+    See 'Parallel programming' chapter in the manual.
+
+    @since 5.0 *)
+
+type !'a t
 (** A domain of type ['a t] runs independently, eventually producing a
     result of type 'a, or an exception *)
 
@@ -25,11 +35,9 @@ val spawn : (unit -> 'a) -> 'a t
     current domain. *)
 
 val join : 'a t -> 'a
-(** [join d] blocks until domain [d] runs to completion.
-    If [d] results in a value, then that is returned by [join d].
-    If [d] raises an uncaught exception, then that is thrown by [join d].
-    Domains may only be joined once: subsequent uses of [join d]
-    raise Invalid_argument. *)
+(** [join d] blocks until domain [d] runs to completion. If [d] results in a
+    value, then that is returned by [join d]. If [d] raises an uncaught
+    exception, then that is re-raised by [join d]. *)
 
 type id = private int
 (** Domains have unique integer identifiers *)
@@ -40,33 +48,45 @@ val get_id : 'a t -> id
 val self : unit -> id
 (** [self ()] is the identifier of the currently running domain *)
 
-val at_first_spawn : (unit -> unit) -> unit
-(** Register the given function to be called before the first domain is
-    spawned.
+val before_first_spawn : (unit -> unit) -> unit
+(** [before_first_spawn f] registers [f] to be called before the first domain
+    is spawned by the program. The functions registered with
+    [before_first_spawn] are called on the main (initial) domain. The functions
+    registered with [before_first_spawn] are called in 'first in, first out'
+    order: the oldest function added with [before_first_spawn] is called first.
 
-    @raise Invalid_argument if the first domain has already been spawned. *)
+    @raise Invalid_argument if the program has already spawned a domain. *)
 
 val at_exit : (unit -> unit) -> unit
-(** Register the given function to be called at when a domain exits. This
-    function is also registered with {!Stdlib.at_exit}. If the registered
-    function raises an exception, the exceptions are ignored. *)
+(** [at_exit f] registers [f] to be called when the current domain exits. Note
+    that [at_exit] callbacks are domain-local and only apply to the calling
+    domain. The registered functions are called in 'last in, first out' order:
+    the function most recently added with [at_exit] is called first. An example:
 
-val at_startup : (unit -> unit) -> unit
-(** Register the given function to be called when a domain starts. This
-    function is called before the callback specified to [spawn f] is
-    executed. *)
+    {[
+let temp_file_key = Domain.DLS.new_key (fun _ ->
+  let tmp = snd (Filename.open_temp_file "" "") in
+  Domain.at_exit (fun () -> close_out_noerr tmp);
+  tmp)
+    ]}
+
+    The snippet above creates a key that when retrieved for the first
+    time will open a temporary file and register an [at_exit] callback
+    to close it, thus guaranteeing the descriptor is not leaked in
+    case the current domain exits. *)
 
 val cpu_relax : unit -> unit
 (** If busy-waiting, calling cpu_relax () between iterations
     will improve performance on some CPU architectures *)
 
-val set_name : string -> unit
-(** [set_name s] set the domain's thread name to [s]. [s] should not be longer
-    than 15 characters. If [s] is longer than 15 characters,
-    raise Invalid_argument. *)
-
 val is_main_domain : unit -> bool
 (** [is_main_domain ()] returns true if called from the initial domain. *)
+
+val recommended_domain_count : unit -> int
+(** The recommended maximum number of domains which should be running
+    simultaneously (including domains already running).
+
+    The value returned is at least [1]. *)
 
 module DLS : sig
 (** Domain-local Storage *)
@@ -76,15 +96,38 @@ module DLS : sig
 
     val new_key : ?split_from_parent:('a -> 'a) -> (unit -> 'a) -> 'a key
     (** [new_key f] returns a new key bound to initialiser [f] for accessing
-        domain-local variables.
+,        domain-local variables.
 
-        If [split_from_parent] is provided, spawning a domain will derive the
-        child value (for this key) from the parent value.
+        If [split_from_parent] is not provided, the value for a new
+        domain will be computed on-demand by the new domain: the first
+        [get] call will call the initializer [f] and store that value.
 
-        Note that the [split_from_parent] call is computed in the parent
-        domain, and is always computed regardless of whether the child domain
-        will use it. If the splitting function is expensive or requires
-        client-side computation, consider using ['a Lazy.t key].
+        If [split_from_parent] is provided, spawning a domain will
+        derive the child value (for this key) from the parent
+        value. This computation happens in the parent domain and it
+        always happens, regardless of whether the child domain will
+        use it.
+        If the splitting function is expensive or requires
+        child-side computation, consider using ['a Lazy.t key]:
+
+        {[
+        let init () = ...
+
+        let split_from_parent parent_value =
+          ... parent-side computation ...;
+          lazy (
+            ... child-side computation ...
+          )
+
+        let key = Domain.DLS.new_key ~split_from_parent init
+
+        let get () = Lazy.force (Domain.DLS.get key)
+        ]}
+
+        In this case a part of the computation happens on the child
+        domain; in particular, it can access [parent_value]
+        concurrently with the parent domain, which may require
+        explicit synchronization to avoid data races.
     *)
 
     val get : 'a key -> 'a
@@ -97,4 +140,4 @@ module DLS : sig
         the key [k] with value [v]. It overwrites any previous values associated
         to [k], which cannot be restored later. *)
 
-  end
+end

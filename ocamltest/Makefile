@@ -20,82 +20,6 @@ ROOTDIR = ..
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
-ifeq "$(filter str,$(OTHERLIBRARIES))" ""
-  str := false
-else
-  str := true
-endif
-
-ifeq "$(filter systhreads,$(OTHERLIBRARIES))" ""
-  systhreads := false
-else
-  systhreads := true
-endif
-
-ifeq "$(filter $(UNIXLIB),$(OTHERLIBRARIES))" ""
-  ocamltest_unix := dummy
-  unix_name :=
-  unix_path :=
-  unix := None
-  unix_include :=
-else
-  ocamltest_unix := real
-  unix_name := unix
-  unix_path := $(ROOTDIR)/otherlibs/$(UNIXLIB)
-  unix_include := -I $(unix_path) $(EMPTY)
-  ifeq "$(UNIX_OR_WIN32)" "win32"
-    unix := Some false
-  else
-    unix := Some true
-  endif
-endif
-
-ifeq "$(UNIX_OR_WIN32)" "win32"
-  ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)" | cygpath -w -f -)
-  CSC := csc
-  ifeq "$(HOST:i686-%=i686)" "i686"
-    CSCFLAGS := /platform:x86
-  else
-    CSCFLAGS :=
-  endif
-  CSCFLAGS += /nologo /nowarn:1668
-else
-  ocamlsrcdir := $(abspath $(shell pwd)/..)
-  CSC :=
-  CSCFLAGS :=
-endif
-mkexe := $(MKEXE)
-
-ifeq "$(TOOLCHAIN)" "msvc"
-CPP := $(CPP) 2> nul
-endif
-
-ifeq "$(WITH_OCAMLDOC)" "ocamldoc"
-WITH_OCAMLDOC := true
-else
-WITH_OCAMLDOC := false
-endif
-
-ifeq "$(WITH_DEBUGGER)" "ocamldebugger"
-WITH_OCAMLDEBUG := true
-else
-WITH_OCAMLDEBUG := false
-endif
-
-OC_CPPFLAGS += -I$(ROOTDIR)/runtime -DCAML_INTERNALS
-
-ifdef UNIX_OR_WIN32
-run_source := run_$(UNIX_OR_WIN32).c
-else
-ifneq "$(filter-out $(CLEAN_TARGET_NAMES), $(MAKECMDGOALS))" ""
-$(warning The variable UNIX_OR_WIN32 is not defined. \
-  It must be set (usually by $(ROOTDIR)/configure), \
-  or only clean rules are supported.)
-endif
-# If we are in a 'clean' rule, we ask for both versions to be cleaned.
-run_source := run_unix.c run_win32.c
-endif
-
 # List of source files from which ocamltest is compiled
 # (all the different sorts of files are derived from this)
 
@@ -103,7 +27,7 @@ endif
 # which is actually built into the tool but clearly separated from its core
 
 core := \
-  $(run_source) run_stubs.c \
+  run_$(UNIX_OR_WIN32).c run_stubs.c \
   ocamltest_config.mli ocamltest_config.ml.in \
   ocamltest_unix.mli ocamltest_unix.ml \
   ocamltest_stdlib.mli ocamltest_stdlib.ml \
@@ -168,11 +92,8 @@ lexers := $(filter %.mll,$(sources))
 
 parsers := $(filter %.mly,$(sources))
 
-config_files := $(filter %.ml.in,$(sources))
-
 dependencies_generated_prereqs := \
   ocamltest_unix.ml \
-  $(config_files:.ml.in=.ml) \
   $(lexers:.mll=.ml) \
   $(parsers:.mly=.mli) $(parsers:.mly=.ml)
 
@@ -182,22 +103,18 @@ bytecode_modules := $(o_files) $(cmo_files)
 
 native_modules := $(o_files) $(cmx_files)
 
-directories := $(addprefix $(ROOTDIR)/,utils bytecomp parsing stdlib \
+directories := $(addprefix $(ROOTDIR)/,utils bytecomp parsing \
                                        compilerlibs file_formats)
 
 include_directories := $(addprefix -I , $(directories))
 
-flags := -g -nostdlib $(include_directories) \
-  -strict-sequence -safe-string -strict-formats \
+flags := $(STDLIBFLAGS) -g $(include_directories) \
+  -strict-sequence -strict-formats \
   -w +a-4-9-41-42-44-45-48 -warn-error +A
 
 ocamlc = $(BEST_OCAMLC) $(flags)
 
 ocamlopt = $(BEST_OCAMLOPT) $(flags)
-
-ocamldep := $(BEST_OCAMLDEP)
-depflags := -slash
-depincludes :=
 
 .SECONDARY: $(lexers:.mll=.ml) $(parsers:.mly=.mli) $(parsers:.mly=.ml)
 
@@ -208,71 +125,35 @@ opt.opt: allopt
 
 compdeps_names=ocamlcommon ocamlbytecomp
 compdeps_paths=$(addprefix $(ROOTDIR)/compilerlibs/,$(compdeps_names))
-deps_paths=$(compdeps_paths) $(addprefix $(unix_path)/,$(unix_name))
+deps_paths = \
+  $(compdeps_paths) $(addprefix $(ocamltest_unix_path)/,$(ocamltest_unix_name))
 deps_byte=$(addsuffix .cma,$(deps_paths))
 deps_opt=$(addsuffix .cmxa,$(deps_paths))
 
 $(eval $(call PROGRAM_SYNONYM,ocamltest))
 
-ocamltest_unix.%: flags+=$(unix_include) -opaque
+ocamltest_unix.%: flags+=$(ocamltest_unix_include) -opaque
 
 ocamltest$(EXE): $(deps_byte) $(bytecode_modules)
-	$(ocamlc_cmd) $(unix_include)-custom -o $@ $^
+	$(V_LINKC)$(ocamlc_cmd) $(ocamltest_unix_include)-custom -o $@ $^
 
 %.cmo: %.ml $(deps_byte)
-	$(ocamlc) -c $<
+	$(V_OCAMLC)$(ocamlc) -c $<
 
 $(eval $(call PROGRAM_SYNONYM,ocamltest.opt))
 
 ocamltest.opt$(EXE): $(deps_opt) $(native_modules)
-	$(ocamlopt_cmd) $(unix_include)-o $@ $^
+	$(V_LINKOPT)$(ocamlopt_cmd) $(ocamltest_unix_include)-o $@ $^
 
 %.cmx: %.ml $(deps_opt)
-	$(ocamlopt) -c $<
+	$(V_OCAMLOPT)$(ocamlopt) -c $<
 
 %.cmi: %.mli $(deps_byte)
-	$(ocamlc) -c $<
+	$(V_OCAMLC)$(ocamlc) -c $<
 
-ocamltest_unix.ml: ocamltest_unix_$(ocamltest_unix).ml
-	echo '# 1 "$^"' > $@
-	cat $^ >> $@
-
-ocamltest_config.ml: ocamltest_config.ml.in Makefile ../Makefile.config
-	sed $(call SUBST,AFL_INSTRUMENT) \
-	    $(call SUBST,INSTRUMENTED_RUNTIME) \
-	    $(call SUBST,ARCH) \
-	    $(call SUBST,SUPPORTS_SHARED_LIBRARIES) \
-	    $(call SUBST,unix) \
-	    $(call SUBST,systhreads) \
-	    $(call SUBST,str) \
-	    $(call SUBST,SYSTEM) \
-	    $(call SUBST_STRING,CPP) \
-	    $(call SUBST_STRING,ocamlsrcdir) \
-	    $(call SUBST,FLAMBDA) \
-	    $(call SUBST,FLAT_FLOAT_ARRAY) \
-	    $(call SUBST,WITH_OCAMLDOC) \
-	    $(call SUBST,WITH_OCAMLDEBUG) \
-	    $(call SUBST,O) \
-	    $(call SUBST,A) \
-	    $(call SUBST,S) \
-	    $(call SUBST,NATIVE_COMPILER) \
-	    $(call SUBST,NATDYNLINK) \
-	    $(call SUBST_STRING,SHAREDLIB_CFLAGS) \
-	    $(call SUBST,SO) \
-	    $(call SUBST_STRING,CSC) \
-	    $(call SUBST_STRING,CSCFLAGS) \
-	    $(call SUBST_STRING,EXE) \
-	    $(call SUBST_STRING,MKDLL) \
-	    $(call SUBST_STRING,mkexe) \
-	    $(call SUBST_STRING,BYTECCLIBS) \
-	    $(call SUBST_STRING,NATIVECCLIBS) \
-	    $(call SUBST_STRING,ASM) \
-	    $(call SUBST_STRING,CC) \
-	    $(call SUBST_STRING,OC_CFLAGS) \
-	    $(call SUBST,CCOMPTYPE) \
-	    $(call SUBST,WINDOWS_UNICODE) \
-	    $(call SUBST,FUNCTION_SECTIONS) \
-	    $< > $@
+ocamltest_unix.ml: ocamltest_unix_$(ocamltest_unix_impl).ml
+	$(V_GEN)echo '# 1 "$<"' > $@ && \
+	cat $< >> $@
 
 # Manual
 
@@ -286,11 +167,7 @@ ocamltest.html: ocamltest.org
 .PHONY: clean
 clean:
 	rm -rf ocamltest ocamltest.exe ocamltest.opt ocamltest.opt.exe
-	rm -rf $(c_files:.c=.o) $(c_files:.c=.obj)
-	rm -rf $(ml_files:.ml=.o) $(ml_files:.ml=.obj)
-	rm -rf $(cmi_files)
-	rm -rf $(cmo_files)
-	rm -rf $(cmx_files)
+	rm -rf *.o *.obj *.cm*
 	rm -rf $(generated)
 	rm -f ocamltest.html
 	rm -rf $(DEPDIR)
@@ -301,13 +178,13 @@ endif
 
 .PHONY: distclean
 distclean: clean
+	rm -f ocamltest_config.ml
 
 $(DEPDIR)/%.$(D): %.c | $(DEPDIR)
-	$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@
+	$(V_CCDEPS)$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@
 
 .PHONY: depend
 depend: $(dependencies_generated_prereqs)
-	$(ocamldep) $(depflags) $(depincludes) $(mli_files) $(ml_files) \
-	  > .depend
+	$(V_OCAMLDEP)$(OCAMLDEP_CMD) $(mli_files) $(ml_files) > .depend
 
 -include .depend

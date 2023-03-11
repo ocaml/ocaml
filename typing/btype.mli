@@ -40,6 +40,7 @@ end
 module TypeHash : sig
   include Hashtbl.S with type key = transient_expr
   val add: 'a t -> type_expr -> 'a -> unit
+  val remove : 'a t -> type_expr -> unit
   val find: 'a t -> type_expr -> 'a
   val iter: (type_expr -> 'a -> unit) -> 'a t -> unit
 end

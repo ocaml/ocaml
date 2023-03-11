@@ -18,7 +18,6 @@
 [@@@ocaml.warning "-40"]
 
 open Misc
-open Arch
 open Asttypes
 open Primitive
 open Types
@@ -245,7 +244,6 @@ let box_int dbg bi arg =
 
 let typ_of_boxed_number = function
   | Boxed_float _ -> Cmm.typ_float
-  | Boxed_integer (Pint64, _) when size_int = 4 -> [|Int;Int|]
   | Boxed_integer _ -> Cmm.typ_int
 
 let equal_unboxed_integer ui1 ui2 =
@@ -782,8 +780,6 @@ and transl_ccall env prim args dbg =
     match prim.prim_native_repr_res with
     | Same_as_ocaml_repr -> (typ_val, fun x -> x)
     | Unboxed_float -> (typ_float, box_float dbg)
-    | Unboxed_integer Pint64 when size_int = 4 ->
-        ([|Int; Int|], box_int dbg Pint64)
     | Unboxed_integer bi -> (typ_int, box_int dbg bi)
     | Untagged_int -> (typ_int, (fun i -> tag_int i dbg))
   in

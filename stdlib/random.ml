@@ -40,6 +40,48 @@ module State = struct
     let s = create () in
     set s i1 i2 i3 i4; s
 
+  let serialization_prefix =
+    "lxm1:"
+    (* "lxm" denotes the algorithm currently in use, and '1' is
+       a version number. We should update this prefix if we change
+       the Random algorithm or the serialization format, so that users
+       get a clean error instead of believing that they faithfully
+       reproduce their previous state and in fact get a differrent
+       stream.
+
+       Note that there is no constraint to keep the same
+       "<name><ver>:<data>" format or message size in future versions,
+       we could change the format completely if we wanted as long
+       as there is no confusion possible with the previous formats. *)
+
+  let serialization_prefix_len =
+    String.length serialization_prefix
+
+  let to_binary_string s =
+    let prefix = serialization_prefix in
+    let preflen = serialization_prefix_len in
+    let buf = Bytes.create (preflen + 4 * 8) in
+    Bytes.blit_string prefix 0 buf 0 preflen;
+    for i = 0 to 3 do
+      Bytes.set_int64_le buf (preflen + i * 8) (Array1.get s i)
+    done;
+    Bytes.unsafe_to_string buf
+
+  let of_binary_string buf =
+    let prefix = serialization_prefix in
+    let preflen = serialization_prefix_len in
+    if String.length buf <> preflen + 4 * 8
+       || not (String.starts_with ~prefix buf)
+    then
+      failwith
+        ("Random.State.of_binary_string: expected a format \
+          compatible with OCaml " ^ Sys.ocaml_version);
+    let i1 = String.get_int64_le buf (preflen + 0 * 8) in
+    let i2 = String.get_int64_le buf (preflen + 1 * 8) in
+    let i3 = String.get_int64_le buf (preflen + 2 * 8) in
+    let i4 = String.get_int64_le buf (preflen + 3 * 8) in
+    mk i1 i2 i3 i4
+
   let assign (dst: t) (src: t) =
     Array1.blit src dst
 

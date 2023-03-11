@@ -181,7 +181,7 @@ let infinity =
 let neg_infinity =
   float_of_bits 0xFF_F0_00_00_00_00_00_00L
 let nan =
-  float_of_bits 0x7F_F0_00_00_00_00_00_01L
+  float_of_bits 0x7F_F8_00_00_00_00_00_01L
 let max_float =
   float_of_bits 0x7F_EF_FF_FF_FF_FF_FF_FFL
 let min_float =
@@ -295,10 +295,12 @@ let float_of_string_opt s =
 
 (* List operations -- more in module List *)
 
-let rec ( @ ) l1 l2 =
+let[@tail_mod_cons] rec ( @ ) l1 l2 =
   match l1 with
-    [] -> l2
-  | hd :: tl -> hd :: (tl @ l2)
+  | [] -> l2
+  | h1 :: [] -> h1 :: l2
+  | h1 :: h2 :: [] -> h1 :: h2 :: l2
+  | h1 :: h2 :: h3 :: tl -> h1 :: h2 :: h3 :: (tl @ l2)
 
 (* I/O operations *)
 
@@ -567,7 +569,11 @@ let rec at_exit f =
   let success = atomic_compare_and_set exit_function old_exit new_exit in
   if not success then at_exit f
 
-let do_at_exit () = (atomic_get exit_function) ()
+let do_domain_local_at_exit = ref (fun () -> ())
+
+let do_at_exit () =
+  (!do_domain_local_at_exit) ();
+  (atomic_get exit_function) ()
 
 let exit retcode =
   do_at_exit ();
@@ -632,6 +638,7 @@ module StdLabels      = StdLabels
 module String         = String
 module StringLabels   = StringLabels
 module Sys            = Sys
+module Type           = Type
 module Uchar          = Uchar
 module Unit           = Unit
 module Weak           = Weak

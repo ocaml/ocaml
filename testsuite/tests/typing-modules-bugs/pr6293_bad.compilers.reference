@@ -7,6 +7,6 @@ Error: In this `with' constraint, the new definition of t
          type t
        is not included in
          type t = { a : int; b : int; }
-       Their kinds differ.
+       The first is abstract, but the second is a record.
        File "pr6293_bad.ml", line 9, characters 20-50: Expected declaration
        File "pr6293_bad.ml", line 10, characters 18-37: Actual declaration

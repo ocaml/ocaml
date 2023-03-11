@@ -54,6 +54,12 @@ module M_valid : S
 module FM_valid : S
 |}];;
 
+(* Valid for empty types *)
+module Empty_valid : S = struct type t = | end;;
+[%%expect{|
+module Empty_valid : S
+|}];;
+
 (* Practical usage over modules *)
 module Foo : sig type t val x : t ref end = struct
   type t = int

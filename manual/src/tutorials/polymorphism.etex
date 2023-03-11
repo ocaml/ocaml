@@ -9,7 +9,7 @@
 limitations of polymorphic functions and types. There are some situations
 in OCaml where the type inferred by the type checker may be less generic
 than expected. Such non-genericity can stem either from interactions
-between side-effect and typing or the difficulties of implicit polymorphic
+between side-effects and typing or the difficulties of implicit polymorphic
 recursion and higher-rank polymorphism.
 
 This chapter details each of these situations and, if it is possible,
@@ -26,9 +26,9 @@ let store = ref None ;;
 Since the type of "None" is "'a option" and the function "ref" has type
 "'b -> 'b ref", a natural deduction for the type of "store" would be
 "'a option ref". However, the inferred type, "'_weak1 option ref", is
-different. Type variables whose name starts with a "_weak" prefix like
-"'_weak1" are weakly polymorphic type variables, sometimes shortened as
-weak type variables.
+different. Type variables whose names start with a "_weak" prefix like
+"'_weak1" are weakly polymorphic type variables, sometimes shortened to
+``weak type variables''.
 A weak type variable is a placeholder for a single type that is currently
 unknown. Once the specific type "t" behind the placeholder type "'_weak1"
 is known, all occurrences of "'_weak1" will be replaced by "t". For instance,
@@ -63,8 +63,8 @@ let error = swap store (fun x -> x);;
 \end{caml_example}
 At this point, the type checker rightfully complains that it is not
 possible to swap an integer and a function, and that an "int" should always
-be traded for another "int". Furthermore, the type checker prevents us to
-change manually the type of the value stored by "store":
+be traded for another "int". Furthermore, the type checker prevents us from
+manually changing the type of the value stored by "store":
 \begin{caml_example}{toplevel}[error]
 store := Some (fun x -> x);;
 \end{caml_example}
@@ -97,7 +97,7 @@ let option_ref: int option ref = ref None
 \end{verbatim}
 This is in any case a good practice for such global mutable variables.
 Otherwise, they will pick out the type of first use. If there is a mistake
-at this point, this can result in confusing type errors when later, correct
+at this point, it can result in confusing type errors when later, correct
 uses are flagged as errors.
 
 \subsection{ss:valuerestriction}{The value restriction}
@@ -130,7 +130,7 @@ safely generalized to a polymorphic type:
 \begin{caml_example}{toplevel}
 let not_id = (fun x -> x) (fun x -> x);;
 \end{caml_example}
-Quite often, this happens when defining function using higher order function.
+Quite often, this happens when defining functions using higher order functions.
 To avoid this problem, a solution is to add an explicit argument to the
 function:
 \begin{caml_example}{toplevel}
@@ -142,7 +142,7 @@ eta-expansion in lambda calculus and is sometimes referred under this name.
 
 \subsection{ss:relaxed-value-restriction}{The relaxed value restriction}
 
-There is another partial solution to the problem of unnecessary weak type,
+There is another partial solution to the problem of unnecessary weak types,
 which is implemented directly within the type checker. Briefly, it is possible
 to prove that weak types that only appear as type parameters in covariant
 positions --also called positive positions-- can be safely generalized to
@@ -151,9 +151,8 @@ polymorphic types. For instance, the type "'a list" is covariant in "'a":
   let f () = [];;
   let empty = f ();;
 \end{caml_example}
-Remark that the type inferred for "empty" is "'a list" and not "'_weak5 list"
-that should have occurred with the value restriction since "f ()" is a
-function application.
+Note that the type inferred for "empty" is "'a list" and not the "'_weak5 list"
+that should have occurred with the value restriction.
 
 The value restriction combined with this generalization for covariant type
 parameters is called the relaxed value restriction.
@@ -274,8 +273,8 @@ We then recover polymorphism:
 The second major class of non-genericity is directly related to the problem
 of type inference for polymorphic functions. In some circumstances, the type
 inferred by OCaml might be not general enough to allow the definition of
-some recursive functions, in particular for recursive function acting on
-non-regular algebraic data type.
+some recursive functions, in particular for recursive functions acting on
+non-regular algebraic data types.
 
 With a regular polymorphic algebraic data type, the type parameters of
 the type constructor are constant within the definition of the type. For
@@ -343,7 +342,7 @@ Whereas the standard type "'a nested -> int" can be interpreted
 as ``let be a type variable "'a", then "depth" maps "'a nested" values
 to integers''. There are two major differences with these two type
 expressions. First, the explicit polymorphic annotation indicates to the
-type checker that it needs to introduce a new type variable every times
+type checker that it needs to introduce a new type variable every time
 the function "depth" is applied. This solves our problem with the definition
 of the function "depth".
 

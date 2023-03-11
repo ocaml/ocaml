@@ -39,9 +39,6 @@
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
-#if defined(DEBUG) || defined(NATIVE_CODE)
-#include <dbghelp.h>
-#endif
 #include "caml/alloc.h"
 #include "caml/codefrag.h"
 #include "caml/fail.h"
@@ -229,13 +226,13 @@ wchar_t * caml_search_dll_in_path(struct ext_table * path, const wchar_t * name)
 
 #ifdef WITH_DYNAMIC_LINKING
 
-void * caml_dlopen(wchar_t * libname, int for_execution, int global)
+void * caml_dlopen(wchar_t * libname, int global)
 {
   void *handle;
   int flags = (global ? FLEXDLL_RTLD_GLOBAL : 0);
-  if (!for_execution) flags |= FLEXDLL_RTLD_NOEXEC;
   handle = flexdll_wdlopen(libname, flags);
-  if ((handle != NULL) && ((caml_params->verb_gc & 0x100) != 0)) {
+  if ((handle != NULL)
+     && ((atomic_load_relaxed(&caml_verb_gc) & 0x100) != 0)) {
     flexdll_dump_exports(handle);
     fflush(stdout);
   }
@@ -264,7 +261,7 @@ char * caml_dlerror(void)
 
 #else
 
-void * caml_dlopen(wchar_t * libname, int for_execution, int global)
+void * caml_dlopen(wchar_t * libname, int global)
 {
   return NULL;
 }
@@ -422,6 +419,7 @@ CAMLexport int caml_read_directory(wchar_t * dirname,
   wchar_t * template;
   intptr_t h;
   struct _wfinddata_t fileinfo;
+  int res;
 
   dirnamelen = wcslen(dirname);
   if (dirnamelen > 0 &&
@@ -429,12 +427,21 @@ CAMLexport int caml_read_directory(wchar_t * dirname,
        || dirname[dirnamelen - 1] == L'\\'
        || dirname[dirnamelen - 1] == L':'))
     template = caml_stat_wcsconcat(2, dirname, L"*.*");
-  else
+  else {
     template = caml_stat_wcsconcat(2, dirname, L"\\*.*");
+    dirnamelen++; /* template[dirnamelen] always points after the backslash */
+  }
   h = _wfindfirst(template, &fileinfo);
   if (h == -1) {
+    /* Instead of checking the existence of [dirname] directly, we call
+       [GetFileAttributes()] on [template] without the trailing [*.*].
+       The added backslash at the end gives us the expected result (-1)
+       on pathological paths like [...]. */
+    template[dirnamelen] = L'\0';
+    res = errno == ENOENT &&
+          GetFileAttributes(template) != INVALID_FILE_ATTRIBUTES ? 0 : -1;
     caml_stat_free(template);
-    return errno == ENOENT ? 0 : -1;
+    return res;
   }
   do {
     if (wcscmp(fileinfo.name, L".") != 0 && wcscmp(fileinfo.name, L"..") != 0) {
@@ -638,7 +645,7 @@ int caml_win32_random_seed (intnat data[16])
 }
 
 
-#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
+#ifdef _MSC_VER
 
 static void invalid_parameter_handler(const wchar_t* expression,
    const wchar_t* function,
@@ -864,8 +871,8 @@ static uintnat windows_unicode_strict = 1;
    the argument string is encoded in the local codepage. */
 static uintnat windows_unicode_fallback = 1;
 
-CAMLexport int win_multi_byte_to_wide_char(const char *s, int slen,
-                                           wchar_t *out, int outlen)
+CAMLexport int caml_win32_multi_byte_to_wide_char(const char *s, int slen,
+                                                  wchar_t *out, int outlen)
 {
   int retcode;
 
@@ -896,8 +903,8 @@ CAMLexport int win_multi_byte_to_wide_char(const char *s, int slen,
 #define WC_ERR_INVALID_CHARS 0
 #endif
 
-CAMLexport int win_wide_char_to_multi_byte(const wchar_t *s, int slen,
-                                           char *out, int outlen)
+CAMLexport int caml_win32_wide_char_to_multi_byte(const wchar_t *s, int slen,
+                                                  char *out, int outlen)
 {
   int retcode;
 
@@ -928,9 +935,9 @@ CAMLexport value caml_copy_string_of_utf16(const wchar_t *s)
 
   slen = wcslen(s);
   /* Do not include final NULL */
-  retcode = win_wide_char_to_multi_byte(s, slen, NULL, 0);
+  retcode = caml_win32_wide_char_to_multi_byte(s, slen, NULL, 0);
   v = caml_alloc_string(retcode);
-  win_wide_char_to_multi_byte(s, slen, (char *)String_val(v), retcode);
+  caml_win32_wide_char_to_multi_byte(s, slen, (char *)String_val(v), retcode);
 
   return v;
 }
@@ -940,9 +947,9 @@ CAMLexport wchar_t* caml_stat_strdup_to_utf16(const char *s)
   wchar_t * ws;
   int retcode;
 
-  retcode = win_multi_byte_to_wide_char(s, -1, NULL, 0);
+  retcode = caml_win32_multi_byte_to_wide_char(s, -1, NULL, 0);
   ws = caml_stat_alloc_noexc(retcode * sizeof(*ws));
-  win_multi_byte_to_wide_char(s, -1, ws, retcode);
+  caml_win32_multi_byte_to_wide_char(s, -1, ws, retcode);
 
   return ws;
 }
@@ -952,9 +959,9 @@ CAMLexport caml_stat_string caml_stat_strdup_of_utf16(const wchar_t *s)
   caml_stat_string out;
   int retcode;
 
-  retcode = win_wide_char_to_multi_byte(s, -1, NULL, 0);
+  retcode = caml_win32_wide_char_to_multi_byte(s, -1, NULL, 0);
   out = caml_stat_alloc(retcode);
-  win_wide_char_to_multi_byte(s, -1, out, retcode);
+  caml_win32_wide_char_to_multi_byte(s, -1, out, retcode);
 
   return out;
 }
@@ -1073,84 +1080,72 @@ int caml_num_rows_fd(int fd)
 /* UCRT clock function returns wall-clock time */
 CAMLexport clock_t caml_win32_clock(void)
 {
-  FILETIME c, e, stime, utime;
+  FILETIME _creation, _exit;
+  CAML_ULONGLONG_FILETIME stime, utime;
   ULARGE_INTEGER tmp;
-  ULONGLONG total, clocks_per_sec;
+  ULONGLONG clocks_per_sec;
 
-  if (!(GetProcessTimes(GetCurrentProcess(), &c, &e, &stime, &utime))) {
+  if (!(GetProcessTimes(GetCurrentProcess(), &_creation, &_exit,
+                        &stime.ft, &utime.ft))) {
     return (clock_t)(-1);
   }
 
-  tmp.u.LowPart = stime.dwLowDateTime;
-  tmp.u.HighPart = stime.dwHighDateTime;
-  total = tmp.QuadPart;
-  tmp.u.LowPart = utime.dwLowDateTime;
-  tmp.u.HighPart = utime.dwHighDateTime;
-  total += tmp.QuadPart;
-
   /* total in 100-nanosecond intervals (1e7 / CLOCKS_PER_SEC) */
-  clocks_per_sec = INT64_LITERAL(10000000U) / (ULONGLONG)CLOCKS_PER_SEC;
-  return (clock_t)(total / clocks_per_sec);
+  clocks_per_sec = 10000000ULL / (ULONGLONG)CLOCKS_PER_SEC;
+  return (clock_t)((stime.ul + utime.ul) / clocks_per_sec);
 }
 
-void caml_thread_setname(const char* name)
-{
-  /* XXX Duplicates unix.c, but MSVC will add some specific code here */
-  pthread_t self = pthread_self();
-  pthread_setname_np(self, name);
-}
-
-static LARGE_INTEGER frequency;
-static LARGE_INTEGER clock_offset;
-typedef void (WINAPI *LPFN_GETSYSTEMTIME) (LPFILETIME);
+static double clock_period = 0;
 
 void caml_init_os_params(void)
 {
   SYSTEM_INFO si;
-  LPFN_GETSYSTEMTIME pGetSystemTime;
-  FILETIME stamp;
-  ULARGE_INTEGER now;
-  LARGE_INTEGER counter;
+  LARGE_INTEGER frequency;
 
-  /* Get the system page size */
+  /* Get the system page size and allocation granularity. */
   GetSystemInfo(&si);
-  caml_sys_pagesize = si.dwPageSize;
+  CAMLassert(si.dwAllocationGranularity >= si.dwPageSize);
+  caml_plat_pagesize = si.dwPageSize;
+  caml_plat_mmap_alignment = si.dwAllocationGranularity;
 
   /* Get the number of nanoseconds for each tick in QueryPerformanceCounter */
   QueryPerformanceFrequency(&frequency);
-  /* Convert the frequency to the duration of 1 tick in ns */
-  frequency.QuadPart = 1000000000LL / frequency.QuadPart;
+  clock_period = (1000000000.0 / frequency.QuadPart);
+}
 
-  /* Get the current time as accurately as we can.
-     GetSystemTimePreciseAsFileTime is available on Windows 8 / Server 2012+ and
-     gives <1us precision. For Windows 7 and earlier, which is only accurate to
-     10-100ms. */
-  pGetSystemTime =
-    (LPFN_GETSYSTEMTIME)GetProcAddress(GetModuleHandle(L"kernel32"),
-                                       "GetSystemTimePreciseAsFileTime");
-  if (!pGetSystemTime)
-    pGetSystemTime = GetSystemTimeAsFileTime;
+int64_t caml_time_counter(void)
+{
+  LARGE_INTEGER now;
 
-  /* Get the time and the performance counter. Get the performance counter first
-     to ensure no quantum effects */
-  QueryPerformanceCounter(&counter);
-  pGetSystemTime(&stamp);
+  QueryPerformanceCounter(&now);
+  return (int64_t)(now.QuadPart * clock_period);
+}
 
-  now.LowPart = stamp.dwLowDateTime;
-  now.HighPart = stamp.dwHighDateTime;
+void *caml_plat_mem_map(uintnat size, uintnat alignment, int reserve_only)
+{
+  /* VirtualAlloc returns an address aligned to caml_plat_mmap_alignment, so
+     trimming will not be required. VirtualAlloc returns 0 on error. */
+  if (alignment > caml_plat_mmap_alignment)
+    caml_fatal_error("Cannot align memory to %" ARCH_INTNAT_PRINTF_FORMAT "x"
+                     " on this platform", alignment);
+  return
+    VirtualAlloc(NULL, size,
+                 MEM_RESERVE | (reserve_only ? 0 : MEM_COMMIT),
+                 reserve_only ? PAGE_NOACCESS : PAGE_READWRITE);
+}
 
-  /* Convert a FILETIME in 100ns ticks since 1 January 1601 to
-     ns since 1 Jan 1970. */
-  clock_offset.QuadPart =
-    ((now.QuadPart - INT64_LITERAL(0x19DB1DED53E8000U)) * 100);
+void* caml_plat_mem_commit(void* mem, uintnat size)
+{
+  return VirtualAlloc(mem, size, MEM_COMMIT, PAGE_READWRITE);
+}
 
-  /* Get the offset between QueryPerformanceCounter and
-     GetSystemTimePreciseAsFileTime in order to return a true timestamp, rather
-     than just a monotonic time source */
-  clock_offset.QuadPart -= (counter.QuadPart * frequency.QuadPart);
+void caml_plat_mem_decommit(void* mem, uintnat size)
+{
+  VirtualFree(mem, size, MEM_DECOMMIT);
+}
 
-  GetSystemTimePreciseAsFileTime(&stamp);
-  now.LowPart = stamp.dwLowDateTime;
-  now.HighPart = stamp.dwHighDateTime;
-  now.QuadPart *= 100;
+void caml_plat_mem_unmap(void* mem, uintnat size)
+{
+  if (!VirtualFree(mem, 0, MEM_RELEASE))
+    CAMLassert(0);
 }

@@ -15,8 +15,9 @@
 
 #define CAML_INTERNALS
 
-#include "caml/shared_heap.h"
 #include "caml/gc_stats.h"
+#include "caml/minor_gc.h"
+#include "caml/shared_heap.h"
 
 Caml_inline intnat intnat_max(intnat a, intnat b) {
   return (a > b ? a : b);
@@ -64,7 +65,7 @@ void caml_collect_alloc_stats_sample(
   sample->minor_words = local->stat_minor_words;
   sample->promoted_words = local->stat_promoted_words;
   sample->major_words = local->stat_major_words;
-  sample->minor_collections = local->stat_minor_collections;
+  sample->minor_collections = atomic_load(&caml_minor_collections_count);
   sample->forced_major_collections = local->stat_forced_major_collections;
 }
 
@@ -73,7 +74,6 @@ void caml_reset_domain_alloc_stats(caml_domain_state *local)
   local->stat_minor_words = 0;
   local->stat_promoted_words = 0;
   local->stat_major_words = 0;
-  local->stat_minor_collections = 0;
   local->stat_forced_major_collections = 0;
 }
 
@@ -133,6 +133,18 @@ void caml_compute_gc_stats(struct gc_stats* buf)
   caml_accum_orphan_heap_stats(&buf->heap_stats);
   caml_accum_orphan_alloc_stats(&buf->alloc_stats);
 
+  /* The instantaneous maximum heap size cannot be computed
+     from per-domain statistics, and would be very expensive
+     to maintain directly. Here, we just sum the per-domain
+     maxima, which is completely wrong.
+
+     FIXME: maybe maintain coarse global maxima?
+
+     The summation starts here from the orphan-heap maxima.
+  */
+  pool_max = buf->heap_stats.pool_max_words;
+  large_max = buf->heap_stats.large_max_words;
+
   for (i=0; i<Max_domains; i++) {
     /* For allocation stats, we use the live stats of the current domain
        and the sampled stats of other domains.
@@ -150,12 +162,6 @@ void caml_compute_gc_stats(struct gc_stats* buf)
       caml_accum_heap_stats(&buf->heap_stats, &s->heap_stats);
       //FIXME use live heap stats instead of sampled heap stats below?
     }
-    /* The instantaneous maximum heap size cannot be computed
-       from per-domain statistics, and would be very expensive
-       to maintain directly. Here, we just sum the per-domain
-       maxima, which is completely wrong.
-
-       FIXME: maybe maintain coarse global maxima? */
     pool_max += s->heap_stats.pool_max_words;
     large_max += s->heap_stats.large_max_words;
   }

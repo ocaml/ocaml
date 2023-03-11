@@ -35,12 +35,8 @@
 #endif /* __PIC__ */
 #endif /* HAS_ARCH_CODE32 */
 
-/* Microsoft introduced the LL integer literal suffix in Visual C++ .NET 2003 */
-#if defined(_MSC_VER) && _MSC_VER < 1400
-#define INT64_LITERAL(s) s ## i64
-#else
+/* No longer used in the codebase, but kept because it was exported */
 #define INT64_LITERAL(s) s ## LL
-#endif
 
 #if defined(_MSC_VER) && !defined(__cplusplus)
 #define Caml_inline static __inline
@@ -53,6 +49,7 @@
 #ifndef CAML_CONFIG_H_NO_TYPEDEFS
 
 #include <stddef.h>
+#include <stdbool.h>
 
 #if defined(HAS_LOCALE_H) || defined(HAS_XLOCALE_H)
 #define HAS_LOCALE
@@ -198,9 +195,9 @@ typedef uint64_t uintnat;
 
 /* Initial size of stack (bytes). */
 #ifdef DEBUG
-#define Stack_size (64 * sizeof(value))
+#define Stack_init_bsize (64 * sizeof(value))
 #else
-#define Stack_size (4096 * sizeof(value))
+#define Stack_init_bsize (4096 * sizeof(value))
 #endif
 
 /* Minimum free size of stack (bytes); below that, it is reallocated. */
@@ -209,10 +206,15 @@ typedef uint64_t uintnat;
 
 /* Number of words used in the control structure at the start of a stack
    (see fiber.h) */
-#define Stack_ctx_words 6
+#ifdef ARCH_SIXTYFOUR
+#define Stack_ctx_words (6 + 1)
+#else
+#define Stack_ctx_words (6 + 2)
+#endif
 
 /* Default maximum size of the stack (words). */
-#define Max_stack_def (1024 * 1024)
+/* (1 Gib for 64-bit platforms, 512 Mib for 32-bit platforms) */
+#define Max_stack_def (128 * 1024 * 1024)
 
 
 /* Maximum size of a block allocated in the young generation (words). */
@@ -225,14 +227,8 @@ typedef uint64_t uintnat;
    This must be at least [Max_young_wosize + 1]. */
 #define Minor_heap_min (Max_young_wosize + 1)
 
-/* Maximum size of the minor zone (words).
-   Must be greater than or equal to [Minor_heap_min].
-*/
-#define Minor_heap_max (1 << 20)
-
 /* Default size of the minor zone. (words)  */
 #define Minor_heap_def 262144
-
 
 /* Minimum size increment when growing the heap (words).
    Must be a multiple of [Page_size / sizeof (value)]. */
@@ -243,13 +239,6 @@ typedef uint64_t uintnat;
    the dead objects and the free list represent this percentage of the
    total size of live objects. */
 #define Percent_free_def 120
-
-/* Maximum number of domains */
-#ifdef ARCH_SIXTYFOUR
-#define Max_domains 128
-#else
-#define Max_domains 16
-#endif
 
 /* Default setting for the major GC slice smoothing window: 1
    (i.e. no smoothing)
@@ -274,5 +263,8 @@ typedef uint64_t uintnat;
 
 /* Default allocation policy. */
 #define Allocation_policy_def caml_policy_best_fit
+
+/* Default size of runtime_events ringbuffers, in words, in powers of two */
+#define Default_runtime_events_log_wsize 16
 
 #endif /* CAML_CONFIG_H */

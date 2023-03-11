@@ -94,6 +94,7 @@ static enum gc_root_class classify_gc_root(value v)
 
 CAMLexport void caml_register_generational_global_root(value *r)
 {
+  Caml_check_caml_state();
   CAMLassert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
 
   switch(classify_gc_root(*r)) {
@@ -178,9 +179,11 @@ static link *cons(void *data, link *tl) {
 /* protected by roots_mutex */
 static link * caml_dyn_globals = NULL;
 
-void caml_register_dyn_global(void *v) {
+void caml_register_dyn_globals(void **globals, int nglobals) {
+  int i;
   caml_plat_lock(&roots_mutex);
-  caml_dyn_globals = cons((void*) v,caml_dyn_globals);
+  for (i = 0; i < nglobals; i++)
+    caml_dyn_globals = cons(globals[i],caml_dyn_globals);
   caml_plat_unlock(&roots_mutex);
 }
 
@@ -196,7 +199,7 @@ static void scan_native_globals(scanning_action f, void* fdata)
   caml_plat_unlock(&roots_mutex);
 
   /* The global roots */
-  for (i = 0; i <= caml_globals_inited && caml_globals[i] != 0; i++) {
+  for (i = 0; caml_globals[i] != 0; i++) {
     for(glob = caml_globals[i]; *glob != 0; glob++) {
       for (j = 0; j < Wosize_val(*glob); j++){
         f(fdata, Field(*glob, j), &Field(*glob, j));

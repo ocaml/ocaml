@@ -36,5 +36,11 @@ let a = A;;
 type a = A
 let b = A;;
 
+type a = A
+let c = A;;
+
 a = b;;
+a = c;;
+b = c;;
+
 exit 0;;

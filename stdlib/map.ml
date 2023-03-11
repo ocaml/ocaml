@@ -24,24 +24,15 @@ module type S =
     type key
     type !+'a t
     val empty: 'a t
-    val is_empty: 'a t -> bool
-    val mem:  key -> 'a t -> bool
     val add: key -> 'a -> 'a t -> 'a t
+    val add_to_list: key -> 'a -> 'a list t -> 'a list t
     val update: key -> ('a option -> 'a option) -> 'a t -> 'a t
     val singleton: key -> 'a -> 'a t
     val remove: key -> 'a t -> 'a t
     val merge:
-          (key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
+      (key -> 'a option -> 'b option -> 'c option) ->
+      'a t -> 'b t -> 'c t
     val union: (key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
-    val compare: ('a -> 'a -> int) -> 'a t -> 'a t -> int
-    val equal: ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-    val iter: (key -> 'a -> unit) -> 'a t -> unit
-    val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    val for_all: (key -> 'a -> bool) -> 'a t -> bool
-    val exists: (key -> 'a -> bool) -> 'a t -> bool
-    val filter: (key -> 'a -> bool) -> 'a t -> 'a t
-    val filter_map: (key -> 'a -> 'b option) -> 'a t -> 'b t
-    val partition: (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val cardinal: 'a t -> int
     val bindings: 'a t -> (key * 'a) list
     val min_binding: 'a t -> (key * 'a)
@@ -50,15 +41,28 @@ module type S =
     val max_binding_opt: 'a t -> (key * 'a) option
     val choose: 'a t -> (key * 'a)
     val choose_opt: 'a t -> (key * 'a) option
-    val split: key -> 'a t -> 'a t * 'a option * 'a t
     val find: key -> 'a t -> 'a
     val find_opt: key -> 'a t -> 'a option
     val find_first: (key -> bool) -> 'a t -> key * 'a
     val find_first_opt: (key -> bool) -> 'a t -> (key * 'a) option
     val find_last: (key -> bool) -> 'a t -> key * 'a
     val find_last_opt: (key -> bool) -> 'a t -> (key * 'a) option
+    val iter: (key -> 'a -> unit) -> 'a t -> unit
+    val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val map: ('a -> 'b) -> 'a t -> 'b t
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
+    val filter: (key -> 'a -> bool) -> 'a t -> 'a t
+    val filter_map: (key -> 'a -> 'b option) -> 'a t -> 'b t
+    val partition: (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
+    val split: key -> 'a t -> 'a t * 'a option * 'a t
+    val is_empty: 'a t -> bool
+    val mem: key -> 'a t -> bool
+    val equal: ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+    val compare: ('a -> 'a -> int) -> 'a t -> 'a t -> int
+    val for_all: (key -> 'a -> bool) -> 'a t -> bool
+    val exists: (key -> 'a -> bool) -> 'a t -> bool
+    val to_list : 'a t -> (key * 'a) list
+    val of_list : (key * 'a) list -> 'a t
     val to_seq : 'a t -> (key * 'a) Seq.t
     val to_rev_seq : 'a t -> (key * 'a) Seq.t
     val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
@@ -291,6 +295,10 @@ module Make(Ord: OrderedType) = struct
             let rr = update x f r in
             if r == rr then m else bal l v d rr
 
+    let add_to_list x data m =
+      let add = function None -> Some [data] | Some l -> Some (data :: l) in
+      update x add m
+
     let rec iter f = function
         Empty -> ()
       | Node {l; v; d; r} ->
@@ -496,6 +504,9 @@ module Make(Ord: OrderedType) = struct
     let choose = min_binding
 
     let choose_opt = min_binding_opt
+
+    let to_list = bindings
+    let of_list bs = List.fold_left (fun m (k, v) -> add k v m) empty bs
 
     let add_seq i m =
       Seq.fold_left (fun m (k,v) -> add k v m) m i

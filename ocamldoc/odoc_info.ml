@@ -129,7 +129,7 @@ let load_modules = Odoc_analyse.load_modules
 
 let reset_type_names = Printtyp.reset
 
-let string_of_variance t (co,cn) = Odoc_str.string_of_variance t (co, cn)
+let string_of_variance t v = Odoc_str.string_of_variance t v
 
 let string_of_type_expr t = Odoc_print.string_of_type_expr t
 

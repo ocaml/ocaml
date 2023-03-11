@@ -26,7 +26,7 @@
 #include <limits.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_getgroups(value unit)
+CAMLprim value caml_unix_getgroups(value unit)
 {
   gid_t gidset[NGROUPS_MAX];
   int n;
@@ -34,7 +34,7 @@ CAMLprim value unix_getgroups(value unit)
   int i;
 
   n = getgroups(NGROUPS_MAX, gidset);
-  if (n == -1) uerror("getgroups", Nothing);
+  if (n == -1) caml_uerror("getgroups", Nothing);
   res = caml_alloc_tuple(n);
   for (i = 0; i < n; i++)
     Field(res, i) = Val_int(gidset[i]);
@@ -43,7 +43,7 @@ CAMLprim value unix_getgroups(value unit)
 
 #else
 
-CAMLprim value unix_getgroups(value unit)
+CAMLprim value caml_unix_getgroups(value unit)
 { caml_invalid_argument("getgroups not implemented"); }
 
 #endif

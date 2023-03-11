@@ -20,11 +20,11 @@
 #include <unistd.h>
 #endif
 
-CAMLprim value unix_setsid(value unit)
+CAMLprim value caml_unix_setsid(value unit)
 {
 #ifdef HAS_SETSID
   pid_t pid = setsid();
-  if (pid == (pid_t)(-1)) uerror("setsid", Nothing);
+  if (pid == (pid_t)(-1)) caml_uerror("setsid", Nothing);
   return Val_long(pid);
 #else
   caml_invalid_argument("setsid not implemented");

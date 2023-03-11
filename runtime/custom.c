@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include "caml/alloc.h"
+#include "caml/camlatomic.h"
 #include "caml/custom.h"
 #include "caml/fail.h"
 #include "caml/gc_ctrl.h"
@@ -115,36 +116,48 @@ struct custom_operations_list {
   struct custom_operations_list * next;
 };
 
-static struct custom_operations_list * custom_ops_table = NULL;
+typedef _Atomic(struct custom_operations_list *) custom_operations_table;
+
+/* Thread-safety: the tables are append-only lists, hence we only need
+   a CAS loop update them. */
+static void push_custom_ops(custom_operations_table * table,
+                            const struct custom_operations * ops)
+{
+  struct custom_operations_list * l =
+    caml_stat_alloc(sizeof(struct custom_operations_list));
+  l->ops = ops;
+  struct custom_operations_list * prev = atomic_load(table);
+  do {
+    l->next = prev;
+  } while (!atomic_compare_exchange_weak(table, &prev, l));
+}
+
+static custom_operations_table custom_ops_table = NULL;
 
 CAMLexport void
 caml_register_custom_operations(const struct custom_operations * ops)
 {
-  struct custom_operations_list * l =
-    caml_stat_alloc(sizeof(struct custom_operations_list));
   CAMLassert(ops->identifier != NULL);
   CAMLassert(ops->deserialize != NULL);
-  l->ops = ops;
-  l->next = custom_ops_table;
-  custom_ops_table = l;
+  push_custom_ops(&custom_ops_table, ops);
 }
 
 struct custom_operations * caml_find_custom_operations(char * ident)
 {
   struct custom_operations_list * l;
-  for (l = custom_ops_table; l != NULL; l = l->next)
+  for (l = atomic_load(&custom_ops_table); l != NULL; l = l->next)
     if (strcmp(l->ops->identifier, ident) == 0)
       return (struct custom_operations*)l->ops;
   return NULL;
 }
 
-static struct custom_operations_list * custom_ops_final_table = NULL;
+static custom_operations_table custom_ops_final_table = NULL;
 
 struct custom_operations * caml_final_custom_operations(final_fun fn)
 {
   struct custom_operations_list * l;
   struct custom_operations * ops;
-  for (l = custom_ops_final_table; l != NULL; l = l->next)
+  for (l = atomic_load(&custom_ops_final_table); l != NULL; l = l->next)
     if (l->ops->finalize == fn) return (struct custom_operations*)l->ops;
   ops = caml_stat_alloc(sizeof(struct custom_operations));
   ops->identifier = "_final";
@@ -155,10 +168,7 @@ struct custom_operations * caml_final_custom_operations(final_fun fn)
   ops->deserialize = custom_deserialize_default;
   ops->compare_ext = custom_compare_ext_default;
   ops->fixed_length = custom_fixed_length_default;
-  l = caml_stat_alloc(sizeof(struct custom_operations_list));
-  l->ops = ops;
-  l->next = custom_ops_final_table;
-  custom_ops_final_table = l;
+  push_custom_ops(&custom_ops_final_table, ops);
   return ops;
 }
 

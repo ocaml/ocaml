@@ -23,7 +23,6 @@ module Env = struct
     mutable_variables : Mutable_variable.t Ident.tbl;
     static_exceptions : Static_exception.t Numbers.Int.Map.t;
     globals : Symbol.t Numbers.Int.Map.t;
-    at_toplevel : bool;
   }
 
   let empty = {
@@ -31,7 +30,6 @@ module Env = struct
     mutable_variables = Ident.empty;
     static_exceptions = Numbers.Int.Map.empty;
     globals = Numbers.Int.Map.empty;
-    at_toplevel = true;
   }
 
   let clear_local_bindings env =
@@ -75,10 +73,6 @@ module Env = struct
     with Not_found ->
       Misc.fatal_error ("Closure_conversion.Env.find_global: global "
         ^ Int.to_string pos)
-
-  let at_toplevel t = t.at_toplevel
-
-  let not_at_toplevel t = { t with at_toplevel = false; }
 end
 
 module Function_decls = struct

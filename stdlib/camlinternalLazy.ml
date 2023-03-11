@@ -83,7 +83,7 @@ let force_lazy_block blk = force_gen_lazy_block ~only_val:false blk
 let force_gen ~only_val (lzv : 'arg lazy_t) =
   (* Using [Sys.opaque_identity] prevents two potential problems:
      - If the value is known to have Forward_tag, then it could have been
-       shorcut during GC, so that information must be forgotten (see GPR#713
+       shortcut during GC, so that information must be forgotten (see GPR#713
        and issue #7301). This is not an issue here at the moment since
        [Obj.tag] is not simplified by the compiler, and GPR#713 also
        ensures that no value will be known to have Forward_tag.

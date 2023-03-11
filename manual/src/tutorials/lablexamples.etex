@@ -32,7 +32,7 @@ f ~x:3 ~y:2;;
 \end{caml_example}
 
 Labels obey the same rules as other identifiers in OCaml, that is you
-cannot use a reserved keyword (like "in" or "to") as label.
+cannot use a reserved keyword (like "in" or "to") as a label.
 
 Formal parameters and arguments are matched according to their
 respective labels, the absence of label
@@ -168,7 +168,7 @@ let bump_it (bump : ?step:int -> int -> int) x =
 bump_it bump 1;;
 \end{caml_example}
 In practice, such problems appear mostly when using objects whose
-methods have optional arguments, so that writing the type of object
+methods have optional arguments, so writing the type of object
 arguments is often a good idea.
 
 Normally the compiler generates a type error if you attempt to pass to
@@ -192,7 +192,7 @@ received function is really applied to an argument.
 \section{s:label-suggestions}{Suggestions for labeling}
 
 Like for names, choosing labels for functions is not an easy task. A
-good labeling is a labeling which
+good labeling is one which
 
 \begin{itemize}
 \item makes programs more readable,

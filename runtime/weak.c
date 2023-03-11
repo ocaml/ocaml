@@ -160,9 +160,15 @@ void caml_ephe_clean (value v) {
   if (child != caml_ephe_none) {
     if (release_data) {
       Field(v, CAML_EPHE_DATA_OFFSET) = caml_ephe_none;
-    } else {
-      CAMLassert (!Is_block(child) || !is_unmarked(child));
     }
+#ifdef DEBUG
+    else if (Is_block (child) && !Is_young (child)) {
+      if (Tag_val (child) == Infix_tag) child -= Infix_offset_val (child);
+      /* If we scanned all the keys and the data field remains filled,
+         then the mark phase must have marked it */
+      CAMLassert( is_marked (child) );
+    }
+#endif
   }
 }
 
@@ -246,10 +252,9 @@ static value ephe_get_field (value e, mlsize_t offset)
   if (elt == caml_ephe_none) {
     res = Val_none;
   } else {
-    elt = Field(e, offset);
-    caml_darken (0, elt, 0);
-    res = caml_alloc_shr (1, Tag_some);
-    caml_initialize(&Field(res, 0), elt);
+    caml_darken (Caml_state, elt, 0);
+    res = caml_alloc_small (1, Tag_some);
+    Field(res, 0) = elt;
   }
   /* run GC and memprof callbacks */
   caml_process_pending_actions();
@@ -303,6 +308,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
     }
 
     if (Tag_val(v) < No_scan_tag) {
+      caml_domain_state* domain_state = Caml_state;
       i = 0;
       if (Tag_val (v) == Closure_tag) {
         /* Direct copy of the code pointers and closure info fields */
@@ -312,7 +318,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
       /* Field-by-field copy and darkening of the remaining fields */
       for (/*nothing*/; i < Wosize_val(v); i++) {
         f = Field(v, i);
-        caml_darken (0, f, 0);
+        caml_darken (domain_state, f, 0);
         Store_field(elt, i, f);
       }
     } else {
@@ -321,8 +327,8 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
   } else {
     Field(e, offset) = elt = v;
   }
-  res = caml_alloc_shr (1, Tag_some);
-  caml_initialize(&Field(res, 0), elt + infix_offs);
+  res = caml_alloc_small (1, Tag_some);
+  Field(res, 0) = elt + infix_offs;
  out:
   /* run GC and memprof callbacks */
   caml_process_pending_actions();
@@ -390,17 +396,18 @@ static value ephe_blit_field (value es, mlsize_t offset_s,
 
   if (length == 0) CAMLreturn(Val_unit);
 
+  /* We clean the source and destination ephemerons before performing the blit.
+   * This guarantees that none of the keys and the data fields being accessed
+   * during a blit operation is unmarked during [Phase_sweep]. */
   caml_ephe_clean(es);
   caml_ephe_clean(ed);
 
   if (offset_d < offset_s) {
     for (i = 0; i < length; i++) {
-      caml_darken(0, Field(es, (offset_s + i)), 0);
       do_set(ed, offset_d + i, Field(es, (offset_s + i)));
     }
   } else {
     for (i = length - 1; i >= 0; i--) {
-      caml_darken(0, Field(es, (offset_s + i)), 0);
       do_set(ed, offset_d + i, Field(es, (offset_s + i)));
     }
   }
@@ -425,8 +432,12 @@ CAMLprim value caml_ephe_blit_key (value es, value ofs,
 
 CAMLprim value caml_ephe_blit_data (value es, value ed)
 {
-  return ephe_blit_field (es, CAML_EPHE_DATA_OFFSET,
-                          ed, CAML_EPHE_DATA_OFFSET, 1);
+  ephe_blit_field (es, CAML_EPHE_DATA_OFFSET, ed, CAML_EPHE_DATA_OFFSET, 1);
+  caml_darken(0, Field(ed, CAML_EPHE_DATA_OFFSET), 0);
+  /* [ed] may be in [Caml_state->ephe_info->live] list. The data value may be
+     unmarked. The ephemerons on the live list are not scanned during ephemeron
+     marking. Hence, unconditionally darken the data value. */
+  return Val_unit;
 }
 
 CAMLprim value caml_weak_blit (value es, value ofs,

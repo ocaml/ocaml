@@ -23,7 +23,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
-#include "caml/eventlog.h"
+#include "caml/runtime_events.h"
 
 static const mlsize_t mlsize_t_max = -1;
 
@@ -68,7 +68,7 @@ CAMLprim value caml_floatarray_get(value array, value index)
   if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
     caml_array_bound_error();
   d = Double_flat_field(array, idx);
-  Alloc_small(res, Double_wosize, Double_tag, { caml_handle_gc_interrupt(); });
+  Alloc_small(res, Double_wosize, Double_tag, Alloc_small_enter_GC);
   Store_double_val(res, d);
   return res;
 }
@@ -127,8 +127,7 @@ CAMLprim value caml_floatarray_unsafe_get(value array, value index)
 
   CAMLassert (Tag_val(array) == Double_array_tag);
   d = Double_flat_field(array, idx);
-  Alloc_small(res, Double_wosize, Double_tag,
-              { caml_handle_gc_interrupt(); });
+  Alloc_small(res, Double_wosize, Double_tag, Alloc_small_enter_GC);
   Store_double_val(res, d);
   return res;
 }
@@ -188,8 +187,7 @@ CAMLprim value caml_floatarray_create(value len)
     if (wosize == 0)
       return Atom(0);
     else
-      Alloc_small (result, wosize, Double_array_tag,
-                   { caml_handle_gc_interrupt(); });
+      Alloc_small (result, wosize, Double_array_tag, Alloc_small_enter_GC);
   }else if (wosize > Max_wosize)
     caml_invalid_argument("Float.Array.create");
   else {
@@ -254,12 +252,19 @@ CAMLprim value caml_make_float_vect(value len)
 #ifdef FLAT_FLOAT_ARRAY
   return caml_floatarray_create (len);
 #else
-  static value uninitialized_float = Val_unit;
-  if (uninitialized_float == Val_unit){
-    uninitialized_float = caml_alloc_shr (Double_wosize, Double_tag);
-    caml_register_generational_global_root (&uninitialized_float);
-  }
-  return caml_make_vect (len, uninitialized_float);
+  /* A signaling NaN, statically allocated */
+  static uintnat some_float_contents[] = {
+    Caml_out_of_heap_header(Double_wosize, Double_tag),
+#if defined(ARCH_SIXTYFOUR)
+    0x7FF0000000000001
+#elif defined(ARCH_BIG_ENDIAN)
+    0x7FF00000, 0x00000001,
+#else
+    0x00000001, 0x7FF00000
+#endif
+  };
+  value some_float = Val_hp(some_float_contents);
+  return caml_make_vect (len, some_float);
 #endif
 }
 
@@ -317,13 +322,14 @@ CAMLprim value caml_make_array(value init)
    sufficient to prevent smart compilers from coalesing the writes into vector
    writes, and hence prevent mixed-mode accesses. [MM].
    */
-static void wo_memmove (value* const dst, const value* const src,
+static void wo_memmove (volatile value* const dst,
+                        volatile const value* const src,
                         mlsize_t nvals)
 {
   mlsize_t i;
 
   if (caml_domain_alone ()) {
-    memmove (dst, src, nvals * sizeof (value));
+    memmove ((value*)dst, (value*)src, nvals * sizeof (value));
   } else {
     /* See memory model [MM] notes in memory.c */
     atomic_thread_fence(memory_order_acquire);
@@ -358,7 +364,7 @@ CAMLprim value caml_floatarray_blit(value a1, value ofs1, value a2, value ofs2,
 CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
                                value n)
 {
-  value * src, * dst;
+  volatile value * src, * dst;
   intnat count;
 
 #ifdef FLAT_FLOAT_ARRAY
@@ -415,7 +421,7 @@ static value caml_array_gather(intnat num_arrays,
   mlsize_t wsize;
 #endif
   mlsize_t i, size, count, pos;
-  value * src;
+  volatile value * src;
 
   /* Determine total size and whether result array is an array of floats */
   size = 0;
@@ -454,8 +460,8 @@ static value caml_array_gather(intnat num_arrays,
     for (i = 0, pos = 0; i < num_arrays; i++) {
       /* [res] is freshly allocated, and no other domain has a reference to it.
          Hence, a plain [memcpy] is sufficient. */
-      memcpy(&Field(res, pos),
-             &Field(arrays[i], offsets[i]),
+      memcpy((value*)&Field(res, pos),
+             (value*)&Field(arrays[i], offsets[i]),
              lengths[i] * sizeof(value));
       pos += lengths[i];
     }
@@ -555,7 +561,7 @@ CAMLprim value caml_array_fill(value array,
 {
   intnat ofs = Long_val(v_ofs);
   intnat len = Long_val(v_len);
-  value* fp;
+  volatile value* fp;
 
   /* This duplicates the logic of caml_modify.  Please refer to the
      implementation of that function for a description of GC
@@ -580,7 +586,7 @@ CAMLprim value caml_array_fill(value array,
       *fp = val;
       if (Is_block(old)) {
         if (Is_young(old)) continue;
-        caml_darken(NULL, old, NULL);
+        caml_darken(Caml_state, old, NULL);
       }
       if (is_val_young_block)
         Ref_table_add(&Caml_state->minor_tables->major_ref, fp);

@@ -73,7 +73,7 @@ enum caml_ba_managed {
 };
 
 struct caml_ba_proxy {
-  intnat refcount;              /* Reference count */
+  atomic_uintnat refcount;      /* Reference count */
   void * data;                  /* Pointer to base of actual data */
   uintnat size;                 /* Size of data in bytes (if mapped file) */
 };

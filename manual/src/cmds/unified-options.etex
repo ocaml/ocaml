@@ -60,6 +60,9 @@ command line, unless the "-noautolink" option is given.
 \item["-absname"]
 Force error messages to show absolute paths for file names.
 
+\item["-no-absname"]
+Do not try to show absolute filenames in error messages.
+
 \notop{\item["-annot"]
 Deprecated since OCaml 4.11. Please use "-bin-annot" instead.
 }%notop
@@ -97,7 +100,9 @@ compile modules separately.
 \item["-cc" \var{ccomp}]
 Use \var{ccomp} as the C linker \nat{called to build the final executable }
 \comp{when linking in ``custom runtime'' mode (see the "-custom" option)}
-and as the C compiler for compiling ".c" source files.
+and as the C compiler for compiling ".c" source files. When linking object
+files produced by a C++ compiler (such as "g++" or "clang++"), it is recommended
+to use "-cc c++".
 }%notop
 
 \notop{%
@@ -122,7 +127,7 @@ Use the given interface file to type-check the ML source file to compile.
 When this option is not specified, the compiler looks for a \var{.mli} file
 with the same base name than the implementation it is compiling and in the
 same directory. If such a file is found, the compiler looks for a
-correspoinding \var{.cmi} file in the included directories and reports an
+corresponding \var{.cmi} file in the included directories and reports an
 error if it fails to find one.
 }%notop
 
@@ -254,6 +259,11 @@ required in order to \comp{be able to debug the program with "ocamldebug"
 (see chapter~\ref{c:debugger}), and to} produce stack backtraces when
 the program terminates on an uncaught exception (see
 section~\ref{s:ocamlrun-options}).
+}%notop
+
+\notop{%
+\item["-no-g"]
+Do not record debugging information (default).
 }%notop
 
 \notop{%
@@ -624,12 +634,22 @@ runtime, which is useful for debugging pointer problems in low-level
 code such as C stubs.
 }%notop
 
-\notop{
-\item["-stop-after" \var{pass}]
-Stop compilation after the given compilation pass. The currently
-supported passes are:
-"parsing", "typing"\nat{, "scheduling", "emit"}.
-}%notop
+\nat{%
+\item["-S"]
+Keep the assembly code produced during the compilation. The assembly
+code for the source file \var{x}".ml" is saved in the file \var{x}".s".
+}%nat
+
+\item["-safe-string"]
+Enforce the separation between types "string" and "bytes",
+thereby making strings read-only. This is the default, and enforced
+since OCaml 5.0.
+
+\item["-safer-matching"]
+Do not use type information to optimize pattern-matching.
+This allows to detect match failures even if a pattern-matching was
+wrongly assumed to be exhaustive. This only impacts GADT and
+polymorphic variant compilation.
 
 \nat{
 \item["-save-ir-after" \var{pass}]
@@ -648,12 +668,6 @@ using "compiler-libs" library (see
 }%nat
 
 \nat{%
-\item["-S"]
-Keep the assembly code produced during the compilation. The assembly
-code for the source file \var{x}".ml" is saved in the file \var{x}".s".
-}%nat
-
-\nat{%
 \item["-shared"]
 Build a plugin (usually ".cmxs") that can be dynamically loaded with
 the "Dynlink" module. The name of the plugin must be
@@ -667,11 +681,6 @@ apply to the way the extra native objects have been compiled (under
 Linux AMD 64, they must contain only position-independent code).
 }%nat
 
-\item["-safe-string"]
-Enforce the separation between types "string" and "bytes",
-thereby making strings read-only. This is the default, and enforced
-since OCaml 5.0.
-
 \item["-short-paths"]
 When a type is visible under several module-paths, use the shortest
 one when printing the type's name in inferred interfaces and error and
@@ -684,6 +693,13 @@ their length.
 Read the standard input as a script file rather than starting an
 interactive session.
 }%top
+
+\notop{
+\item["-stop-after" \var{pass}]
+Stop compilation after the given compilation pass. The currently
+supported passes are:
+"parsing", "typing"\nat{, "scheduling", "emit"}.
+}%notop
 
 \item["-strict-sequence"]
 Force the left-hand part of each sequence to have type unit.
@@ -832,7 +848,7 @@ arguments to "-warn-error"
 in production code, because this can break your build when future versions
 of OCaml add some new warnings.
 
-The default setting is "-warn-error -a+31" (only warning 31 is fatal).
+The default setting is "-warn-error -a" (no warning is fatal).
 
 \item["-warn-help"]
 Show the description of all available warning numbers.

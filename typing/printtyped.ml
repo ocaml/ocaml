@@ -50,9 +50,11 @@ let fmt_modname f = function
 let rec fmt_path_aux f x =
   match x with
   | Path.Pident (s) -> fprintf f "%a" fmt_ident s
-  | Path.Pdot (y, s) -> fprintf f "%a.%s" fmt_path_aux y s
+  | Path.Pdot (y, s) | Path.(Pextra_ty (y, Pcstr_ty s)) ->
+      fprintf f "%a.%s" fmt_path_aux y s
   | Path.Papply (y, z) ->
       fprintf f "%a(%a)" fmt_path_aux y fmt_path_aux z
+  | Path.Pextra_ty (y, Pext_ty) -> fmt_path_aux f y
 
 let fmt_path f x = fprintf f "\"%a\"" fmt_path_aux x
 
@@ -406,7 +408,7 @@ and expression i ppf x =
       line i ppf "Texp_letexception\n";
       extension_constructor i ppf cd;
       expression i ppf e;
-  | Texp_assert (e) ->
+  | Texp_assert (e, _) ->
       line i ppf "Texp_assert";
       expression i ppf e;
   | Texp_lazy (e) ->
@@ -803,6 +805,9 @@ and module_expr i ppf x =
       line i ppf "Tmod_apply\n";
       module_expr i ppf me1;
       module_expr i ppf me2;
+  | Tmod_apply_unit me1 ->
+      line i ppf "Tmod_apply_unit\n";
+      module_expr i ppf me1;
   | Tmod_constraint (me, _, Tmodtype_explicit mt, _) ->
       line i ppf "Tmod_constraint\n";
       module_expr i ppf me;

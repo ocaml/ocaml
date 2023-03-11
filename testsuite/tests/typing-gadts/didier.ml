@@ -18,6 +18,7 @@ Lines 6-7, characters 2-13:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Int
+
 val fbool : 't -> 't ty -> 't = <fun>
 |}];;
 (* val fbool : 'a -> 'a ty -> 'a = <fun> *)
@@ -34,6 +35,7 @@ Lines 2-3, characters 2-16:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Bool
+
 val fint : 't -> 't ty -> bool = <fun>
 |}];;
 (* val fint : 'a -> 'a ty -> bool = <fun> *)
@@ -52,7 +54,10 @@ val f : 't -> 't ty -> bool = <fun>
 Line 4, characters 12-13:
 4 |   | Bool -> x
                 ^
-Error: This expression has type t but an expression was expected of type bool
+Error: This expression has type t = bool
+       but an expression was expected of type bool
+       This instance of bool is ambiguous:
+       it would escape the scope of its equation
 |}];;
 (* val f : 'a -> 'a ty -> bool = <fun> *)
 
@@ -72,7 +77,10 @@ Error: This expression has type bool but an expression was expected of type
 Line 4, characters 11-16:
 4 |   | Int -> x > 0
                ^^^^^
-Error: This expression has type bool but an expression was expected of type t
+Error: This expression has type bool but an expression was expected of type
+         t = int
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
 |}];;
 (* Error: This expression has type bool but an expression was expected of type
 t = int *)

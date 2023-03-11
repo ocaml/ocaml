@@ -171,13 +171,8 @@ above into a test usable by ocamltest to verify this:
 4. Finally, there is one extra step required if we want our newly created
    test to be run automatically as part of the OCaml compiler's test suite.
    We need to move =hello.ml= and =hello.reference= to a directory (say
-   =newtest=) located somewhere
-   below =testsuite/tests= in the compiler's source tree and we
-   need to declare the test. This is done by appending the name of the
-   file containing the =(* TEST *)= comment to an =ocamltests=
-   (mark the final s) file located in the =newtest= directory,
-   alongside the other files relevant to the test. Once this is done,
-   the command
+   =newtest=) located somewhere below =testsuite/tests= in the compiler's
+   source tree. Once this is done, the command
    : make all
    executed in the =testsuite= directory of the OCaml compiler' source
    tree will run all the test suite, which now also includes our own test.
@@ -235,7 +230,7 @@ actions does, let us take this opportunity to introduce a bit of
 ocamltest terminology. An /action/ is anything that can =pass=, =skip= or
 =fail=. A =test= is a sequence of such actions. Running
 a test thus means running each of its actions, in sequence, until all the
-actions have been run or one of them returns =pass= or =skip=. Whatever
+actions have been run or one of them returns =fail= or =skip=. Whatever
 the last run action returns, this value will be the result of the whole
 test.
 
@@ -265,7 +260,6 @@ quite similar):
 
 4. =run=:: now that the program has been successfully compiled, it is
    run with its standard output and error streams saved to a file.
-
 
 5. =check-program-output=:: this time it is the output of the program
    which is compared to a reference file, namely the =hello.reference=
@@ -402,7 +396,7 @@ modules = "greet.ml"
 let _ = Greet.greet "world"
 #+end_src
 
-Provided that the =hello.compilers.reference= file previously to test
+Provided that the =hello.compilers.reference= file previously used to test
 warnings is deleted, running ocamltest on =hello.ml= should work. It
 will also be worth looking at the two first lines of the log file generated
 while running the test. It says:
@@ -610,15 +604,16 @@ baz = "hij"
 ** Other useful tests
 
 This section introduces three tests provided by =ocamltest= and that can
-be of particular interest. A complete list of available tests and
-actions and their detailed descriptions are given in chapters
+be of particular interest. A brief description of each available test is shown
+by the option `-show-tests` of ocamltest. A complete list of available tests
+and actions and their detailed descriptions are given in chapters
 [[#builtins]] and [[#ocaml-specific]].
 
 *** Testing the top-level: the =toplevel= and =expect= tests
 
 Two tests are provided to make sure that the OCaml top-level behaves as
 expected: =toplevel= and =expect=. These tests are similar in that they
-both allow to test how the OCaml top-level reacts to some user input,
+both allow testing how the OCaml top-level reacts to some user input,
 but they are different in the way one specifies the expected output and
 also in what they can test. The =toplevel= test behaves in a spirit
 similar to the compiler tests described above, meaning that the expected
@@ -717,12 +712,33 @@ output:
 
 ** Variables, environments and how they are inherited
 
+** Builtin variables
+
+The list of builtin variables can be obtained by running =ocamltest
+-show-variables=.
+
 ** Environment modifiers
+
+Environment variables for a test can be set using:
+#+begin_src
+set VARIABLE_NAME="value"
+#+end_src
+in the test header (the quotes are mandatory).
+
+On the contrary, you can ensure that an environment variable is not set when
+the test runs with:
+#+begin_src
+unset VARIABLE_NAME
+#+end_src
 
 * Built-in actions and tests
   :PROPERTIES:
   :CUSTOM_ID: builtins
   :END:
+
+The list of builtin and OCaml-specific actions and tests can be obtained by
+running =ocamltest -show-actions=.
+
 
 * OCaml-specific actions and tests
   :PROPERTIES:

@@ -266,6 +266,11 @@ int caml_alloc_backtrace_buffer (void)
   return 0;
 }
 
+void caml_free_backtrace_buffer(backtrace_slot *backtrace_buffer) {
+  if (backtrace_buffer != NULL)
+    caml_stat_free(backtrace_buffer);
+}
+
 /* Store the return addresses contained in the given stack fragment
    into the backtrace array */
 
@@ -461,7 +466,6 @@ static void read_main_debug_info(struct debug_info *di)
   if (caml_seek_optional_section(fd, &trail, "DBUG") != -1) {
     chan = caml_open_descriptor_in(fd);
 
-    Lock(chan);
     num_events = caml_getword(chan);
     events = caml_alloc(num_events, 0);
 
@@ -477,7 +481,6 @@ static void read_main_debug_info(struct debug_info *di)
       /* Record event list */
       Store_field(events, i, evl);
     }
-    Unlock(chan);
 
     caml_close_channel(chan);
 

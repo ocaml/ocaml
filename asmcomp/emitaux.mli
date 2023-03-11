@@ -20,7 +20,7 @@ val emit_string: string -> unit
 val emit_int: int -> unit
 val emit_nativeint: nativeint -> unit
 val emit_int32: int32 -> unit
-val emit_symbol: char -> string -> unit
+val emit_symbol: string -> unit
 val emit_printf: ('a, out_channel, unit) format -> 'a
 val emit_char: char -> unit
 val emit_string_literal: string -> unit
@@ -73,6 +73,7 @@ val cfi_offset : reg:int -> offset:int -> unit
 val cfi_def_cfa_offset : int -> unit
 val cfi_remember_state : unit -> unit
 val cfi_restore_state : unit -> unit
+val cfi_def_cfa_register: reg:int -> unit
 
 val binary_backend_available: bool ref
     (** Is a binary backend available.  If yes, we don't need

@@ -15,33 +15,61 @@
 
 # Makefile for the Unix interface library
 
+ROOTDIR = ../..
+# Note: at the moment, we need to include the configuration makefile directly
+# even before we can include Makefile.otherlibs.common
+# because the UNIX_OR_WIN32 variable must be defined even before
+# we can include Makefile.otherlibs.common
+# This will be fixed later
+include $(ROOTDIR)/Makefile.config_if_required
+
 LIBNAME=unix
 
 EXTRACAMLFLAGS=-nolabels
 
+# This flag is used to disable compatibility definitions in header files to
+# ensure that they're not accidentally used in the library itself.
+OC_CPPFLAGS += -DCAML_BUILDING_UNIX
+
 unixLabels.cmi: \
   EXTRACAMLFLAGS += -pp "$(AWK) -f $(ROOTDIR)/stdlib/expand_module_aliases.awk"
 
+ifeq "$(UNIX_OR_WIN32)" "win32"
+WIN32_LIBS=$(call SYSLIB,ws2_32) $(call SYSLIB,advapi32)
+LINKOPTS=$(addprefix -cclib ,$(WIN32_LIBS))
+LDOPTS=$(addprefix -ldopt ,$(WIN32_LIBS))
+else # Unix
 # dllunix.so particularly requires libm for modf symbols
 LDOPTS=$(NATIVECCLIBS)
+endif
 
-COBJS=accept.o access.o addrofstr.o alarm.o bind.o channels.o chdir.o \
-  chmod.o chown.o chroot.o close.o fsync.o closedir.o connect.o cst2constr.o \
-  cstringv.o dup.o dup2.o envir.o errmsg.o execv.o execve.o execvp.o exit.o \
-  fchmod.o fchown.o fcntl.o fork.o ftruncate.o \
-  getaddrinfo.o getcwd.o getegid.o geteuid.o getgid.o \
-  getgr.o getgroups.o gethost.o gethostname.o getlogin.o \
-  getnameinfo.o getpeername.o getpid.o getppid.o getproto.o getpw.o \
-  gettimeofday.o getserv.o getsockname.o getuid.o gmtime.o \
-  initgroups.o isatty.o itimer.o kill.o link.o listen.o lockf.o lseek.o \
-  mkdir.o mkfifo.o mmap.o mmap_ba.o \
-  nice.o open.o opendir.o pipe.o putenv.o read.o realpath.o \
-  readdir.o readlink.o rename.o rewinddir.o rmdir.o select.o sendrecv.o \
-  setgid.o setgroups.o setsid.o setuid.o shutdown.o signals.o \
-  sleep.o socket.o socketaddr.o \
-  socketpair.o sockopt.o spawn.o stat.o strofaddr.o symlink.o termios.o \
-  time.o times.o truncate.o umask.o unixsupport.o unlink.o \
-  utimes.o wait.o write.o
+# C source files common to both Unix and Windows
+COMMON_C_SOURCES = $(addsuffix .c, \
+  access addrofstr chdir chmod cst2constr cstringv execv execve execvp fsync \
+  mkdir exit getaddrinfo getcwd gethost gethostname getnameinfo getproto \
+  getserv gmtime mmap_ba putenv rmdir socketaddr strofaddr time unlink)
+
+# OS-specific C source files
+OS_C_SOURCES = $(addsuffix _$(UNIX_OR_WIN32).c, \
+  accept bind channels close connect dup envir errmsg getpeername getpid \
+  getsockname gettimeofday isatty link listen lockf lseek mmap open pipe \
+  read readlink realpath rename select sendrecv shutdown sleep socket \
+  socketpair sockopt stat symlink times truncate unixsupport utimes write)
+
+# OS-specific modules that have no counterpart on the other OS
+ifeq "$(UNIX_OR_WIN32)" "win32"
+OS_C_SOURCES += $(addsuffix .c, \
+  close_on createprocess nonblock startup system windbug windir winlist \
+  winwait winworker)
+else
+OS_C_SOURCES += $(addsuffix .c, \
+  alarm chown chroot closedir dup2 fchmod fchown fcntl fork ftruncate \
+  getegid geteuid getgid getgr getgroups getlogin getppid getpw getuid \
+  initgroups itimer kill mkfifo nice opendir readdir rewinddir setgid \
+  setgroups setsid setuid signals spawn termios umask wait)
+endif
+
+C_SOURCES = $(COMMON_C_SOURCES) $(OS_C_SOURCES)
 
 CAMLOBJS=unix.cmo unixLabels.cmo
 
@@ -49,8 +77,14 @@ HEADERS=unixsupport.h socketaddr.h
 
 include ../Makefile.otherlibs.common
 
+unix.ml: unix_$(UNIX_OR_WIN32).ml
+	cp $< $@
+
+distclean::
+	rm -f unix.ml
+
 .PHONY: depend
-depend:
-	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml > .depend
+depend: unix.ml
+	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 include .depend

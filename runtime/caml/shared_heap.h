@@ -30,7 +30,8 @@ struct pool;
 struct caml_heap_state* caml_init_shared_heap(void);
 void caml_teardown_shared_heap(struct caml_heap_state* heap);
 
-value* caml_shared_try_alloc(struct caml_heap_state*, mlsize_t, tag_t, int);
+value* caml_shared_try_alloc(struct caml_heap_state*,
+                             mlsize_t, tag_t, reserved_t, int);
 
 /* Copy the domain-local heap stats into a heap stats sample. */
 void caml_collect_heap_stats_sample(
@@ -57,26 +58,30 @@ struct global_heap_state {
 extern struct global_heap_state caml_global_heap_state;
 
 /* CR mshinwell: ensure this matches [Emitaux] */
-enum {NOT_MARKABLE = 3 << 8};
+enum {NOT_MARKABLE = 3 << HEADER_COLOR_SHIFT};
 
 Caml_inline int Has_status_hd(header_t hd, status s) {
-  return (hd & (3 << 8)) == s;
+  return Color_hd(hd) == s;
+}
+
+Caml_inline int Has_status_val(value v, status s) {
+  return Has_status_hd(Hd_val(v), s);
 }
 
 Caml_inline header_t With_status_hd(header_t hd, status s) {
-  return (hd & ~(3 << 8)) | s;
+  return Hd_with_color(hd, s);
 }
 
 Caml_inline int is_garbage(value v) {
-  return Has_status_hd(Hd_val(v), caml_global_heap_state.GARBAGE);
+  return Has_status_val(v, caml_global_heap_state.GARBAGE);
 }
 
 Caml_inline int is_unmarked(value v) {
-  return Has_status_hd(Hd_val(v), caml_global_heap_state.UNMARKED);
+  return Has_status_val(v, caml_global_heap_state.UNMARKED);
 }
 
 Caml_inline int is_marked(value v) {
-  return Has_status_hd(Hd_val(v), caml_global_heap_state.MARKED);
+  return Has_status_val(v, caml_global_heap_state.MARKED);
 }
 
 void caml_redarken_pool(struct pool*, scanning_action, void*);
@@ -93,10 +98,8 @@ void caml_cycle_heap(struct caml_heap_state*);
 
 /* Heap invariant verification (for debugging) */
 
-/* caml_verify_begin must only be called while all domains are paused */
-struct heap_verify_state* caml_verify_begin(void);
-void caml_verify_root(void*, value, value*);
-void caml_verify_heap(struct heap_verify_state*); /* deallocates arg */
+/* caml_verify_heap must only be called while all domains are paused */
+void caml_verify_heap(caml_domain_state *domain);
 
 #ifdef DEBUG
 /* [is_garbage(v)] returns true if [v] is a garbage value */

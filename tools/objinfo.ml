@@ -33,17 +33,8 @@ let shape = ref false
 module Magic_number = Misc.Magic_number
 
 let input_stringlist ic len =
-  let get_string_list sect len =
-    let rec fold s e acc =
-      if e != len then
-        if sect.[e] = '\000' then
-          fold (e+1) (e+1) (String.sub sect s (e-s) :: acc)
-        else fold s (e+1) acc
-      else acc
-    in fold 0 0 []
-  in
   let sect = really_input_string ic len in
-  get_string_list sect len
+  split_null_terminated sect
 
 let dummy_crc = String.make 32 '-'
 let null_crc = String.make 32 '0'
@@ -180,7 +171,11 @@ let print_cmx_infos (ui, crc) =
   printf "Currying functions:%a\n" pr_funs ui.ui_curry_fun;
   printf "Apply functions:%a\n" pr_funs ui.ui_apply_fun;
   printf "Send functions:%a\n" pr_funs ui.ui_send_fun;
-  printf "Force link: %s\n" (if ui.ui_force_link then "YES" else "no")
+  printf "Force link: %s\n" (if ui.ui_force_link then "YES" else "no");
+  printf "For pack: %s\n"
+    (match ui.ui_for_pack with
+     | None -> "no"
+     | Some pack -> "YES: " ^ pack)
 
 let print_cmxa_infos (lib : Cmx_format.library_infos) =
   printf "Extra C object files:";
@@ -403,7 +398,7 @@ let arg_list = [
 let arg_usage =
    Printf.sprintf "%s [OPTIONS] FILES : give information on files" Sys.argv.(0)
 
-let main() =
+let main () =
   Arg.parse_expand arg_list dump_obj arg_usage;
   exit 0
 

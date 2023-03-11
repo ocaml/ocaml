@@ -142,14 +142,8 @@ val is_empty : 'a t -> bool
 val uncons : 'a t -> ('a * 'a t) option
 (** If [xs] is empty, then [uncons xs] is [None].
 
-    If [xs] is nonempty, then [uncons xs] is
-    [Some (head xs, tail xs)],
-    that is, a pair of the head and tail of the sequence [xs].
-
-    This equivalence holds if [xs] is persistent.
-    If [xs] is ephemeral, then [uncons] must be preferred
-    over separate calls to [head] and [tail],
-    which would cause [xs] to be queried twice.
+    If [xs] is nonempty, then [uncons xs] is [Some (x, ys)] where [x] is the
+    head of the sequence and [ys] its tail.
 
     @since 4.14 *)
 
@@ -167,7 +161,7 @@ val iter : ('a -> unit) -> 'a t -> unit
 
     It terminates only if the sequence [xs] is finite. *)
 
-val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
+val fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
 (** [fold_left f _ xs] invokes [f _ x] successively
     for every element [x] of the sequence [xs],
     from left to right.
@@ -187,7 +181,7 @@ val iteri : (int -> 'a -> unit) -> 'a t -> unit
 
     @since 4.14 *)
 
-val fold_lefti : ('b -> int -> 'a -> 'b) -> 'b -> 'a t -> 'b
+val fold_lefti : ('acc -> int -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
 (** [fold_lefti f _ xs] invokes [f _ i x] successively
     for every element [x] located at index [i] of the sequence [xs].
 
@@ -226,6 +220,17 @@ val find : ('a -> bool) -> 'a t -> 'a option
 
     @since 4.14 *)
 
+val find_index : ('a -> bool) -> 'a t -> int option
+(** [find_index p xs] returns [Some i], where [i] is the index of the first
+    element of the sequence [xs] that satisfies [p x], if there is such an
+    element.
+
+    It returns [None] if there is no such element.
+
+    The sequence [xs] must be finite.
+
+    @since 5.1 *)
+
 val find_map : ('a -> 'b option) -> 'a t -> 'b option
 (** [find_map f xs] returns [Some y], where [x] is the first element of the
     sequence [xs] such that [f x = Some _], if there is such an element,
@@ -236,6 +241,15 @@ val find_map : ('a -> 'b option) -> 'a t -> 'b option
     The sequence [xs] must be finite.
 
     @since 4.14 *)
+
+val find_mapi : (int -> 'a -> 'b option) -> 'a t -> 'b option
+(** Same as [find_map], but the predicate is applied to the index of
+   the element as first argument (counting from 0), and the element
+   itself as second argument.
+
+   The sequence [xs] must be finite.
+
+   @since 5.1 *)
 
 val iter2 : ('a -> 'b -> unit) -> 'a t -> 'b t -> unit
 (** [iter2 f xs ys] invokes [f x y] successively for every pair [(x, y)] of
@@ -253,7 +267,7 @@ val iter2 : ('a -> 'b -> unit) -> 'a t -> 'b t -> unit
 
     @since 4.14 *)
 
-val fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b t -> 'c t -> 'a
+val fold_left2 : ('acc -> 'a -> 'b -> 'acc) -> 'acc -> 'a t -> 'b t -> 'acc
 (** [fold_left2 f _ xs ys] invokes [f _ x y] successively
     for every pair [(x, y)] of elements drawn synchronously
     from the sequences [xs] and [ys].

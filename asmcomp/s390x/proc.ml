@@ -1,3 +1,4 @@
+# 2 "asmcomp/s390x/proc.ml"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -184,10 +185,6 @@ let dwarf_register_numbers ~reg_class =
   | _ -> Misc.fatal_errorf "Bad register class %d" reg_class
 
 let stack_ptr_dwarf_register_number = 15
-
-(* Volatile registers: none *)
-
-let regs_are_volatile _rs = false
 
 (* Registers destroyed by operations *)
 

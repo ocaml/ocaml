@@ -27,6 +27,7 @@
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
+#include "caml/atomic_refcount.h"
 
 #define int8 caml_ba_int8
 #define uint8 caml_ba_uint8
@@ -154,7 +155,7 @@ CAMLexport void caml_ba_finalize(value v)
     if (b->proxy == NULL) {
       free(b->data);
     } else {
-      if (-- b->proxy->refcount == 0) {
+      if (caml_atomic_refcount_decr(&b->proxy->refcount) == 1) {
         free(b->proxy->data);
         free(b->proxy);
       }
@@ -524,7 +525,7 @@ CAMLprim value caml_ba_create(value vkind, value vlayout, value vdim)
    are within the bounds and return the offset of the corresponding
    array element in the data part of the array. */
 
-static long caml_ba_offset(struct caml_ba_array * b, intnat * index)
+static intnat caml_ba_offset(struct caml_ba_array * b, intnat * index)
 {
   intnat offset;
   int i;
@@ -553,14 +554,14 @@ static long caml_ba_offset(struct caml_ba_array * b, intnat * index)
 static value copy_two_doubles(double d0, double d1)
 {
   value res = caml_alloc_small(2 * Double_wosize, Double_array_tag);
-  Store_double_field(res, 0, d0);
-  Store_double_field(res, 1, d1);
+  Store_double_flat_field(res, 0, d0);
+  Store_double_flat_field(res, 1, d1);
   return res;
 }
 
 /* Generic code to read from a big array */
 
-value caml_ba_get_N(value vb, value * vind, int nind)
+value caml_ba_get_N(value vb, volatile value * vind, int nind)
 {
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   intnat index[CAML_BA_MAX_NUM_DIMS];
@@ -701,7 +702,8 @@ CAMLprim value caml_ba_uint8_get64(value vb, value vind)
 
 /* Generic write to a big array */
 
-static value caml_ba_set_aux(value vb, value * vind, intnat nind, value newval)
+static value caml_ba_set_aux(value vb, volatile value * vind,
+                             intnat nind, value newval)
 {
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   intnat index[CAML_BA_MAX_NUM_DIMS];
@@ -740,13 +742,13 @@ static value caml_ba_set_aux(value vb, value * vind, intnat nind, value newval)
     ((intnat *) b->data)[offset] = Long_val(newval); break;
   case CAML_BA_COMPLEX32:
     { float * p = ((float *) b->data) + offset * 2;
-      p[0] = Double_field(newval, 0);
-      p[1] = Double_field(newval, 1);
+      p[0] = Double_flat_field(newval, 0);
+      p[1] = Double_flat_field(newval, 1);
       break; }
   case CAML_BA_COMPLEX64:
     { double * p = ((double *) b->data) + offset * 2;
-      p[0] = Double_field(newval, 0);
-      p[1] = Double_field(newval, 1);
+      p[0] = Double_flat_field(newval, 0);
+      p[1] = Double_flat_field(newval, 1);
       break; }
   }
   return Val_unit;
@@ -926,12 +928,13 @@ static void caml_ba_update_proxy(struct caml_ba_array * b1,
     /* If b1 is already a proxy for a larger array, increment refcount of
        proxy */
     b2->proxy = b1->proxy;
-    ++ b1->proxy->refcount;
+    caml_atomic_refcount_incr(&b1->proxy->refcount);
   } else {
     /* Otherwise, create proxy and attach it to both b1 and b2 */
     proxy = malloc(sizeof(struct caml_ba_proxy));
     if (proxy == NULL) caml_raise_out_of_memory();
-    proxy->refcount = 2;      /* original array + sub array */
+    caml_atomic_refcount_init(&proxy->refcount, 2);
+    /* initial refcount: 2 = original array + sub array */
     proxy->data = b1->data;
     proxy->size =
       b1->flags & CAML_BA_MAPPED_FILE ? caml_ba_byte_size(b1) : 0;
@@ -1180,15 +1183,15 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
     break;
   }
   case CAML_BA_COMPLEX32: {
-    float init0 = Double_field(vinit, 0);
-    float init1 = Double_field(vinit, 1);
+    float init0 = Double_flat_field(vinit, 0);
+    float init1 = Double_flat_field(vinit, 1);
     float * p;
     FILL_COMPLEX_LOOP;
     break;
   }
   case CAML_BA_COMPLEX64: {
-    double init0 = Double_field(vinit, 0);
-    double init1 = Double_field(vinit, 1);
+    double init0 = Double_flat_field(vinit, 0);
+    double init1 = Double_flat_field(vinit, 1);
     double * p;
     FILL_COMPLEX_LOOP;
     break;

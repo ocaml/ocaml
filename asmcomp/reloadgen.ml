@@ -46,7 +46,7 @@ method makereg r =
       newr.spill_cost <- 100000;
       newr
 
-method private makeregs rv =
+method makeregs rv =
   let n = Array.length rv in
   let newv = Array.make n Reg.dummy in
   for i = 0 to n-1 do newv.(i) <- self#makereg rv.(i) done;

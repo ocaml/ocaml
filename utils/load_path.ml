@@ -31,6 +31,22 @@ module Dir = struct
   let path t = t.path
   let files t = t.files
 
+  let find t fn =
+    if List.mem fn t.files then
+      Some (Filename.concat t.path fn)
+    else
+      None
+
+  let find_uncap t fn =
+    let fn = String.uncapitalize_ascii fn in
+    let search base =
+      if String.uncapitalize_ascii base = fn then
+        Some (Filename.concat t.path base)
+      else
+        None
+    in
+    List.find_map search t.files
+
   (* For backward compatibility reason, simulate the behavior of
      [Misc.find_in_path]: silently ignore directories that don't exist
      + treat [""] as the current directory. *)
@@ -44,13 +60,19 @@ module Dir = struct
     { path; files = Array.to_list (readdir_compat path) }
 end
 
+type auto_include_callback =
+  (Dir.t -> string -> string option) -> string -> string
+
 let dirs = s_ref []
+let no_auto_include _ _ = raise Not_found
+let auto_include_callback = ref no_auto_include
 
 let reset () =
   assert (not Config.merlin || Local_store.is_bound ());
   STbl.clear !files;
   STbl.clear !files_uncap;
-  dirs := []
+  dirs := [];
+  auto_include_callback := no_auto_include
 
 let get () = List.rev !dirs
 let get_paths () = List.rev_map Dir.path !dirs
@@ -66,10 +88,11 @@ let prepend_add dir =
       STbl.replace !files_uncap (String.uncapitalize_ascii base) fn
     ) dir.Dir.files
 
-let init l =
+let init ~auto_include l =
   reset ();
   dirs := List.rev_map Dir.create l;
-  List.iter prepend_add !dirs
+  List.iter prepend_add !dirs;
+  auto_include_callback := auto_include
 
 let remove_dir dir =
   assert (not Config.merlin || Local_store.is_bound ());
@@ -109,16 +132,45 @@ let prepend_dir dir =
 
 let is_basename fn = Filename.basename fn = fn
 
+let auto_include_libs libs alert find_in_dir fn =
+  let scan (lib, lazy dir) =
+    let file = find_in_dir dir fn in
+    let alert_and_add_dir _ =
+      alert lib;
+      append_dir dir
+    in
+    Option.iter alert_and_add_dir file;
+    file
+  in
+  match List.find_map scan libs with
+  | Some base -> base
+  | None -> raise Not_found
+
+let auto_include_otherlibs =
+  (* Ensure directories are only ever scanned once *)
+  let expand = Misc.expand_directory Config.standard_library in
+  let otherlibs =
+    let read_lib lib = lazy (Dir.create (expand ("+" ^ lib))) in
+    List.map (fun lib -> (lib, read_lib lib)) ["dynlink"; "str"; "unix"] in
+  auto_include_libs otherlibs
+
 let find fn =
   assert (not Config.merlin || Local_store.is_bound ());
-  if is_basename fn && not !Sys.interactive then
-    STbl.find !files fn
-  else
-    Misc.find_in_path (get_paths ()) fn
+  try
+    if is_basename fn && not !Sys.interactive then
+      STbl.find !files fn
+    else
+      Misc.find_in_path (get_paths ()) fn
+  with Not_found ->
+    !auto_include_callback Dir.find fn
 
 let find_uncap fn =
   assert (not Config.merlin || Local_store.is_bound ());
-  if is_basename fn && not !Sys.interactive then
-    STbl.find !files_uncap (String.uncapitalize_ascii fn)
-  else
-    Misc.find_in_path_uncap (get_paths ()) fn
+  try
+    if is_basename fn && not !Sys.interactive then
+      STbl.find !files_uncap (String.uncapitalize_ascii fn)
+    else
+      Misc.find_in_path_uncap (get_paths ()) fn
+  with Not_found ->
+    let fn_uncap = String.uncapitalize_ascii fn in
+    !auto_include_callback Dir.find_uncap fn_uncap

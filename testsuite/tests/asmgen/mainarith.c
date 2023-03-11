@@ -22,7 +22,7 @@
 #include <caml/config.h>
 #define FMT ARCH_INTNAT_PRINTF_FORMAT
 
-void caml_call_poll()
+void caml_call_poll(void)
 {
 }
 

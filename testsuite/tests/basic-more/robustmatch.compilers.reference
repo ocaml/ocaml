@@ -7,6 +7,7 @@ File "robustmatch.ml", lines 33-37, characters 6-23:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (AB, MAB, A)
+
 File "robustmatch.ml", lines 43-47, characters 4-21:
 43 | ....match t1, t2, x with
 44 |     | AB,  AB, A -> ()
@@ -16,6 +17,7 @@ File "robustmatch.ml", lines 43-47, characters 4-21:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (AB, MAB, A)
+
 File "robustmatch.ml", lines 54-56, characters 4-27:
 54 | ....match r1, r2, a with
 55 |     | R1, _, 0 -> ()
@@ -23,6 +25,7 @@ File "robustmatch.ml", lines 54-56, characters 4-27:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R1, R1, 1)
+
 File "robustmatch.ml", lines 64-66, characters 4-27:
 64 | ....match r1, r2, a with
 65 |     | R1, _, A -> ()
@@ -30,6 +33,7 @@ File "robustmatch.ml", lines 64-66, characters 4-27:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R1, R1, (B|C))
+
 File "robustmatch.ml", lines 69-71, characters 4-20:
 69 | ....match r1, r2, a with
 70 |     | _, R2, "coucou" -> ()
@@ -37,6 +41,7 @@ File "robustmatch.ml", lines 69-71, characters 4-20:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R1, R1, (B|C))
+
 File "robustmatch.ml", lines 74-76, characters 4-20:
 74 | ....match r1, r2, a with
 75 |     | _, R2, "coucou" -> ()
@@ -44,6 +49,7 @@ File "robustmatch.ml", lines 74-76, characters 4-20:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R2, R2, "")
+
 File "robustmatch.ml", lines 85-87, characters 4-20:
 85 | ....match r1, r2, a with
 86 |     | R1, _, A -> ()
@@ -51,6 +57,7 @@ File "robustmatch.ml", lines 85-87, characters 4-20:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R1, R1, (B|C))
+
 File "robustmatch.ml", lines 90-93, characters 4-20:
 90 | ....match r1, r2, a with
 91 |     | R1, _, A -> ()
@@ -59,6 +66,7 @@ File "robustmatch.ml", lines 90-93, characters 4-20:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R2, R2, (Y|Z))
+
 File "robustmatch.ml", lines 96-98, characters 4-20:
 96 | ....match r1, r2, a with
 97 |     | R1, _, _ -> ()
@@ -66,6 +74,7 @@ File "robustmatch.ml", lines 96-98, characters 4-20:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R2, R2, (Y|Z))
+
 File "robustmatch.ml", lines 107-109, characters 4-20:
 107 | ....match r1, r2, a with
 108 |     | R1, _, A -> ()
@@ -73,6 +82,7 @@ File "robustmatch.ml", lines 107-109, characters 4-20:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R1, R1, (B|C))
+
 File "robustmatch.ml", lines 129-131, characters 4-20:
 129 | ....match r1, r2, a with
 130 |     | R1, _, A -> ()
@@ -80,6 +90,7 @@ File "robustmatch.ml", lines 129-131, characters 4-20:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R1, R1, B)
+
 File "robustmatch.ml", lines 151-153, characters 4-20:
 151 | ....match r1, r2, a with
 152 |     | R1, _, A -> ()
@@ -87,6 +98,7 @@ File "robustmatch.ml", lines 151-153, characters 4-20:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R1, R1, B)
+
 File "robustmatch.ml", lines 156-159, characters 4-20:
 156 | ....match r1, r2, a with
 157 |     | R1, _, A -> ()
@@ -95,6 +107,7 @@ File "robustmatch.ml", lines 156-159, characters 4-20:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R2, R2, Y)
+
 File "robustmatch.ml", lines 162-164, characters 4-20:
 162 | ....match r1, r2, a with
 163 |     | R1, _, _ -> ()
@@ -102,6 +115,7 @@ File "robustmatch.ml", lines 162-164, characters 4-20:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R2, R2, Y)
+
 File "robustmatch.ml", lines 167-169, characters 4-20:
 167 | ....match r1, r2, a with
 168 |     | R1, _, C -> ()
@@ -109,6 +123,7 @@ File "robustmatch.ml", lines 167-169, characters 4-20:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R1, R1, A)
+
 File "robustmatch.ml", lines 176-179, characters 4-20:
 176 | ....match r1, r2, a with
 177 |     | _, R1, 0 -> ()
@@ -117,6 +132,7 @@ File "robustmatch.ml", lines 176-179, characters 4-20:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R2, R2, [| _ |])
+
 File "robustmatch.ml", lines 182-184, characters 4-23:
 182 | ....match r1, r2, a with
 183 |     | R1, _, _ -> ()
@@ -124,6 +140,7 @@ File "robustmatch.ml", lines 182-184, characters 4-23:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R2, R2, [| _ |])
+
 File "robustmatch.ml", lines 187-190, characters 4-20:
 187 | ....match r1, r2, a with
 188 |     | _, R2, [||] -> ()
@@ -132,6 +149,7 @@ File "robustmatch.ml", lines 187-190, characters 4-20:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R2, R2, [| _ |])
+
 File "robustmatch.ml", lines 200-203, characters 4-19:
 200 | ....match r1, r2, a with
 201 |     | _, R2, [||] -> ()
@@ -139,6 +157,7 @@ File "robustmatch.ml", lines 200-203, characters 4-19:
 203 |     | _, _, _ -> ()
 Warning 4 [fragile-match]: this pattern-matching is fragile.
 It will remain exhaustive when constructors are added to type repr.
+
 File "robustmatch.ml", lines 210-212, characters 4-27:
 210 | ....match r1, r2, a with
 211 |     | R1, _, 'c' -> ()
@@ -146,6 +165,7 @@ File "robustmatch.ml", lines 210-212, characters 4-27:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R1, R1, 'a')
+
 File "robustmatch.ml", lines 219-221, characters 4-27:
 219 | ....match r1, r2, a with
 220 |     | R1, _, `A -> ()
@@ -153,6 +173,7 @@ File "robustmatch.ml", lines 219-221, characters 4-27:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R1, R1, `B)
+
 File "robustmatch.ml", lines 228-230, characters 4-37:
 228 | ....match r1, r2, a with
 229 |     | R1, _, (3, "") -> ()
@@ -160,6 +181,7 @@ File "robustmatch.ml", lines 228-230, characters 4-37:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R1, R1, (3, "*"))
+
 File "robustmatch.ml", lines 239-241, characters 4-51:
 239 | ....match r1, r2, a with
 240 |     | R1, _, { x = 3; y = "" } -> ()
@@ -167,6 +189,7 @@ File "robustmatch.ml", lines 239-241, characters 4-51:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R1, R1, {x=3; y="*"})
+
 File "robustmatch.ml", lines 244-246, characters 4-36:
 244 | ....match r1, r2, a with
 245 |     | R2, _, { a = 1; b = "coucou"; c = 'a' } -> ()
@@ -174,6 +197,7 @@ File "robustmatch.ml", lines 244-246, characters 4-36:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R2, R2, {a=1; b="coucou"; c='b'})
+
 File "robustmatch.ml", lines 253-255, characters 4-20:
 253 | ....match r1, r2, a with
 254 |     | R1, _, (3, "") -> ()
@@ -181,6 +205,7 @@ File "robustmatch.ml", lines 253-255, characters 4-20:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R1, R1, (3, "*"))
+
 File "robustmatch.ml", lines 263-265, characters 4-20:
 263 | ....match r1, r2, a with
 264 |     | R1, _, { x = 3; y = "" } -> ()
@@ -188,6 +213,7 @@ File "robustmatch.ml", lines 263-265, characters 4-20:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R1, R1, {x=3; y="*"})
+
 File "robustmatch.ml", lines 272-274, characters 4-20:
 272 | ....match r1, r2, a with
 273 |     | R1, _, lazy 1 -> ()
@@ -195,6 +221,7 @@ File "robustmatch.ml", lines 272-274, characters 4-20:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (R1, R1, lazy 0)
+
 File "robustmatch.ml", lines 281-284, characters 4-24:
 281 | ....match r1, r2, a with
 282 |     | R1, _, () -> ()

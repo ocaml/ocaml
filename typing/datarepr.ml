@@ -125,7 +125,7 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
             | Variant_regular -> Record_inlined idx_nonconst
           in
           constructor_args ~current_unit decl.type_private cd_args cd_res
-            (Path.Pdot (ty_path, cstr_name)) representation
+            Path.(Pextra_ty (ty_path, Pcstr_ty cstr_name)) representation
         in
         let cstr =
           { cstr_name;
@@ -154,7 +154,7 @@ let extension_descr ~current_unit path_ext ext =
   in
   let existentials, cstr_args, cstr_inlined =
     constructor_args ~current_unit ext.ext_private ext.ext_args ext.ext_ret_type
-      path_ext (Record_extension path_ext)
+      Path.(Pextra_ty (path_ext, Pext_ty)) (Record_extension path_ext)
   in
     { cstr_name = Path.last path_ext;
       cstr_res = ty_res;

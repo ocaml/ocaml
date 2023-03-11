@@ -37,9 +37,11 @@ _ocamltestd
 *.odoc
 .merlin
 _build
+META
 
 # local to root directory
 
+/.dep
 /Makefile.build_config
 /Makefile.config
 /autom4te.cache
@@ -48,6 +50,7 @@ _build
 /ocaml-*.cache
 /config.log
 /config.status
+/configure~
 /flexlink.opt
 /libtool
 /ocamlc.opt
@@ -61,6 +64,7 @@ _build
 # specific files and patterns in sub-directories
 
 /asmcomp/emit.ml
+/asmcomp/arch.mli
 /asmcomp/arch.ml
 /asmcomp/proc.ml
 /asmcomp/selection.ml
@@ -80,6 +84,7 @@ _build
 /debugger/debugger_lexer.ml
 /debugger/debugger_parser.ml
 /debugger/debugger_parser.mli
+/debugger/debugger_parser.output
 /debugger/ocamldebug
 
 /emacs/ocamltags
@@ -95,10 +100,82 @@ _build
 /lex/ocamllex
 /lex/ocamllex.opt
 /lex/parser.output
-
+/manual/src/allfiles.tex
+/manual/src/biblio.tex
+/manual/src/foreword.tex
+/manual/src/version.tex
+/manual/src/warnings.etex
+/manual/src/warnings.tex
+/manual/src/foreword.htex
+/manual/src/manual.html
+/manual/src/webman
+/manual/src/ifocamldoc.tex
+/manual/src/cmds/*.tex
+/manual/src/cmds/*.htex
+/manual/src/cmds/warnings.etex
 /manual/src/cmds/warnings-help.etex
+/manual/src/html_processing/.sass-cache
+/manual/src/html_processing/camlp-streams
+/manual/src/html_processing/dune
+/manual/src/html_processing/markup.ml
+/manual/src/html_processing/uchar
+/manual/src/html_processing/uutf
+/manual/src/html_processing/lambdasoup
+/manual/src/html_processing/ocaml-re
 /manual/src/html_processing/src/common.ml
+/manual/src/htmlman/*.html
+/manual/src/htmlman/*.haux
+/manual/src/htmlman/*.hind
+/manual/src/htmlman/compilerlibref
+/manual/src/htmlman/highlight.pack.js
+/manual/src/htmlman/katex.min.css
+/manual/src/htmlman/katex.min.js
+/manual/src/htmlman/libref
+/manual/src/htmlman/fonts/KaTeX*
+/manual/src/htmlman/manual.hmanual
+/manual/src/htmlman/manual.hmanual.kwd
+/manual/src/htmlman/manual.css
+/manual/src/htmlman/odoc.css
+/manual/src/htmlman/*.htoc
+/manual/src/htmlman/*.svg
+/manual/src/infoman/*.haux
+/manual/src/infoman/*.hind
+/manual/src/infoman/*.info*.gz
+/manual/src/infoman/*.info.body*
+/manual/src/infoman/ocaml.hocaml.kwd
+/manual/src/library/*.tex
+/manual/src/library/*.htex
+/manual/src/library/ocamldoc.out
+/manual/src/library/ocamldoc.sty
+/manual/src/library/compiler_libs.txt
+/manual/src/refman/*.tex
+/manual/src/refman/*.htex
+/manual/src/refman/extensions/*.tex
+/manual/src/refman/extensions/*.htex
+/manual/src/texstuff/*.aux
+/manual/src/texstuff/*.dvi
+/manual/src/texstuff/*.idx
+/manual/src/texstuff/*.ilg
+/manual/src/texstuff/*.ind
+/manual/src/texstuff/*.log
+/manual/src/texstuff/*.toc
+/manual/src/texstuff/*.ipr
+/manual/src/texstuff/*.txt
+/manual/src/texstuff/*.pdf
+/manual/src/texstuff/*.ps
+/manual/src/texstuff/manual.out
+/manual/src/textman/manual.txt
+/manual/src/textman/manual.hmanual.kwd
+/manual/src/textman/*.haux
+/manual/src/textman/*.hind
+/manual/src/textman/*.htoc
+/manual/src/tutorials/*.tex
+/manual/src/tutorials/*.htex
 /manual/src/warnings-help.etex
+/manual/tests/cross-reference-checker
+/manual/tools/transf.ml
+/manual/tools/texquote2
+/manual/tools/transf
 
 /api_docgen/build
 /api_docgen/odoc/build
@@ -129,10 +206,10 @@ _build
 /ocamltest/tsl_lexer.ml
 /ocamltest/tsl_parser.ml
 /ocamltest/tsl_parser.mli
+/ocamltest/tsl_parser.output
 /ocamltest/ocamltest.html
 
 /otherlibs/*/.dep
-/otherlibs/dynlink/extract_crc
 /otherlibs/dynlink/dynlink_platform_intf.mli
 /otherlibs/dynlink/byte/dynlink.mli
 /otherlibs/dynlink/native/dynlink.mli
@@ -140,38 +217,7 @@ _build
 /otherlibs/dynlink/dynlink_compilerlibs/*.ml
 /otherlibs/dynlink/dynlink_compilerlibs/*.mli
 /otherlibs/dynlink/dynlink_compilerlibs/.depend
-/otherlibs/threads/marshal.mli
-/otherlibs/threads/stdlib.mli
-/otherlibs/threads/unix.mli
-/otherlibs/win32unix/unixLabels.ml*
-/otherlibs/win32unix/unix.mli
-/otherlibs/win32unix/access.c
-/otherlibs/win32unix/addrofstr.c
-/otherlibs/win32unix/chdir.c
-/otherlibs/win32unix/chmod.c
-/otherlibs/win32unix/cst2constr.c
-/otherlibs/win32unix/cstringv.c
-/otherlibs/win32unix/execv.c
-/otherlibs/win32unix/execve.c
-/otherlibs/win32unix/execvp.c
-/otherlibs/win32unix/exit.c
-/otherlibs/win32unix/getaddrinfo.c
-/otherlibs/win32unix/getcwd.c
-/otherlibs/win32unix/gethost.c
-/otherlibs/win32unix/gethostname.c
-/otherlibs/win32unix/getnameinfo.c
-/otherlibs/win32unix/getproto.c
-/otherlibs/win32unix/getserv.c
-/otherlibs/win32unix/gmtime.c
-/otherlibs/win32unix/mmap_ba.c
-/otherlibs/win32unix/putenv.c
-/otherlibs/win32unix/rmdir.c
-/otherlibs/win32unix/socketaddr.c
-/otherlibs/win32unix/strofaddr.c
-/otherlibs/win32unix/time.c
-/otherlibs/win32unix/unlink.c
-/otherlibs/win32unix/fsync.c
-/otherlibs/win32unix/mkdir.c
+/otherlibs/unix/unix.ml
 
 /parsing/parser.ml
 /parsing/parser.mli
@@ -199,7 +245,6 @@ _build
 /runtime/ocamlruni
 /runtime/ld.conf
 /runtime/.gdb_history
-/runtime/.dep
 /runtime/build_config.h
 /runtime/sak
 /runtime/domain_state32.inc
@@ -231,6 +276,7 @@ _build
 /testsuite/tools/lexcmm.ml
 /testsuite/tools/parsecmm.ml
 /testsuite/tools/parsecmm.mli
+/testsuite/tools/parsecmm.output
 
 /tools/ocamldep
 /tools/ocamldep.opt
@@ -239,7 +285,6 @@ _build
 /tools/opnames.ml
 /tools/dumpobj
 /tools/dumpobj.opt
-/tools/dumpapprox
 /tools/ocamlobjinfo
 /tools/ocamlobjinfo.opt
 /tools/cvt_emit
@@ -253,8 +298,6 @@ _build
 /tools/ocamlmktop.opt
 /tools/primreq
 /tools/primreq.opt
-/tools/ocamldumpobj
-/tools/keywords
 /tools/ocamlmklib
 /tools/ocamlmklib.opt
 /tools/ocamlcmt
@@ -265,8 +308,9 @@ _build
 /tools/stripdebug.opt
 /tools/make_opcodes
 /tools/make_opcodes.ml
-/tools/caml-tex
+/tools/ocamltex
 /tools/eventlog_metadata
+/tools/lintapidiff.opt
 
 /toplevel/byte/topeval.mli
 /toplevel/byte/trace.mli
@@ -275,6 +319,11 @@ _build
 /toplevel/native/trace.mli
 /toplevel/native/topmain.mli
 
+/utils/config_boot.ml
+/utils/config_boot.mli
+/utils/config.generated.ml
+/utils/config_main.ml
+/utils/config_main.mli
 /utils/config.ml
 /utils/domainstate.ml
 /utils/domainstate.mli

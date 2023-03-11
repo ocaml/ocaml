@@ -95,7 +95,7 @@ Error: Signature mismatch:
          type 'a t = 'a C.t = A of 'a | B
        is not included in
          type 'a t = { x : 'a; }
-       Their kinds differ.
+       The first is a variant, but the second is a record.
 |}];;
 
 

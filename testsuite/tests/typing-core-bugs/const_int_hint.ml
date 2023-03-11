@@ -144,3 +144,56 @@ Line 1, characters 14-16:
 Error: This expression has type int64 but an expression was expected of type
          int
 |}]
+
+(* Check that the hint preserves formatting of int, int32, int64 and nativeint
+   literals in decimal, hexadecimal, octal and binary notation *)
+let _ : int64 = min 0L 1_000;;
+[%%expect{|
+Line 1, characters 23-28:
+1 | let _ : int64 = min 0L 1_000;;
+                           ^^^^^
+Error: This expression has type int but an expression was expected of type
+         int64
+  Hint: Did you mean `1_000L'?
+|}]
+let _ : nativeint * nativeint = 0n, 0xAA_BBL;;
+[%%expect{|
+Line 1, characters 36-44:
+1 | let _ : nativeint * nativeint = 0n, 0xAA_BBL;;
+                                        ^^^^^^^^
+Error: This expression has type int64 but an expression was expected of type
+         nativeint
+  Hint: Did you mean `0xAA_BBn'?
+|}]
+let _ : int32 -> int32 = function
+  | 1l | 0o2_345 -> 3l
+  | x -> x;;
+[%%expect{|
+Line 2, characters 9-16:
+2 |   | 1l | 0o2_345 -> 3l
+             ^^^^^^^
+Error: This pattern matches values of type int
+       but a pattern was expected which matches values of type int32
+  Hint: Did you mean `0o2_345l'?
+|}]
+let _ : int32 -> int32 = fun x -> match x with
+  | 1l | 0b1000_1101 -> 3l
+  | x -> x;;
+[%%expect{|
+Line 2, characters 9-20:
+2 |   | 1l | 0b1000_1101 -> 3l
+             ^^^^^^^^^^^
+Error: This pattern matches values of type int
+       but a pattern was expected which matches values of type int32
+  Hint: Did you mean `0b1000_1101l'?
+|}]
+type t1 = {f1: int32};; let _ = fun x -> x.f1 <- 1_000n;;
+[%%expect{|
+type t1 = { f1 : int32; }
+Line 1, characters 49-55:
+1 | type t1 = {f1: int32};; let _ = fun x -> x.f1 <- 1_000n;;
+                                                     ^^^^^^
+Error: This expression has type nativeint
+       but an expression was expected of type int32
+  Hint: Did you mean `1_000l'?
+|}]

@@ -7,12 +7,10 @@ Debian architecture name: `riscv64`
 # Reference documents
 
 * Instruction set specification:
-  - https://riscv.org/specifications/isa-spec-pdf/
-  - https://rv8.io/isa
+  - https://riscv.org/technical/specifications/
 
 * ELF ABI specification:
-  - https://github.com/riscv/riscv-elf-psabi-doc/blob/master/riscv-elf.md
+  - https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/riscv-elf.adoc
 
 * Assembly language manual
   - https://github.com/riscv/riscv-asm-manual/blob/master/riscv-asm.md
-  - https://rv8.io/asm

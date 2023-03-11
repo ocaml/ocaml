@@ -4,6 +4,7 @@ File "w68.ml", line 34, characters 33-43:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Some _
+
 File "w68.ml", line 14, characters 10-13:
 14 | let alloc {a} b = a + b
                ^^^

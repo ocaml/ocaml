@@ -200,18 +200,16 @@ module Options = Main_args.Make_bytetop_options (struct
     let _eval s = input_argument (Toploop.String  s)
 end)
 
-let () =
-  let extra_paths =
-    match Sys.getenv "OCAMLTOP_INCLUDE_PATH" with
-    | exception Not_found -> []
-    | s -> Misc.split_path_contents s
-  in
-  Clflags.include_dirs := List.rev_append extra_paths !Clflags.include_dirs
-
 let main () =
   let ppf = Format.err_formatter in
   let program = "ocaml" in
+  let display_deprecated_script_alert =
+    Array.length !argv >= 2 && Topcommon.is_command_like_name !argv.(1)
+  in
+  Topcommon.update_search_path_from_env ();
   Compenv.readenv ppf Before_args;
+  if display_deprecated_script_alert then
+    Location.deprecated_script_alert program;
   Clflags.add_arguments __LOC__ Options.list;
   Compenv.parse_arguments ~current argv file_argument program;
   Compenv.readenv ppf Before_link;

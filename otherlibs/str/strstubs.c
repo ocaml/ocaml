@@ -160,7 +160,7 @@ static value re_match(value re,
   value normtable;
   int numgroups;
   /* Currently-executing instruction */
-  register value * pc;
+  register volatile value * pc;
   intnat instr;
   unsigned char c;
   /* Backtracking */

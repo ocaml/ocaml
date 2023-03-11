@@ -35,14 +35,14 @@ let emit_printf fmt =
 
 let emit_int32 n = emit_printf "0x%lx" n
 
-let emit_symbol esc s =
+let emit_symbol s =
   for i = 0 to String.length s - 1 do
     let c = s.[i] in
     match c with
-      'A'..'Z' | 'a'..'z' | '0'..'9' | '_' ->
+      'A'..'Z' | 'a'..'z' | '0'..'9' | '_' | '.' ->
         output_char !output_channel c
     | _ ->
-        Printf.fprintf !output_channel "%c%02x" esc (Char.code c)
+        Printf.fprintf !output_channel "$%02x" (Char.code c)
   done
 
 let emit_string_literal s =
@@ -340,6 +340,13 @@ let cfi_offset ~reg ~offset =
     emit_string "\n"
   end
 
+let cfi_def_cfa_register ~reg =
+  if is_cfi_enabled () then begin
+    emit_string "\t.cfi_def_cfa_register ";
+    emit_int reg;
+    emit_string "\n"
+  end
+
 (* Emit debug information *)
 
 (* This assoc list is expected to be very short *)
@@ -411,10 +418,6 @@ let mk_env f : Emitenv.per_function_env =
     jumptables = [];
     float_literals = [];
     int_literals = [];
-    offset_literals = [];
-    gotrel_literals = [];
-    symbol_literals = [];
-    size_literals = 0;
   }
 
 type preproc_stack_check_result =

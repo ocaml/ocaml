@@ -15,7 +15,8 @@ type test_record = {
   mutable lzy_int: int Lazy.t;
 }
 
-let is_shared x = Obj.is_shared (Obj.repr x)
+
+external is_shared : 'a -> bool = "caml_obj_is_shared"
 
 let glbl_int = ref 0
 let glbl_string = ref "init"

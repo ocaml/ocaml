@@ -1,3 +1,72 @@
+OCaml 4.14.0 (28 March 2022)
+----------------------------
+
+- Integrated support for "go to definitions" in Merlin.
+- Standard library: new modules In_channel and Out_channel,
+  many new functions in Seq module, UTF decoding and validation support
+  for strings and bytes.
+- Runtime optimisation: GC prefetching. Benchmarks show a speedup of around 20%
+  in GC-heavy programs.
+- Improved error messages in particular for module-level error.
+- Deprecated functions and modules in preparation for OCaml 5.
+  In particular, the Stream and Genlex modules are now deprecated.
+- Type variables can be explicitly introduced in value and variant constructor
+  declarations. For instance,
+```ocaml
+    val fold: ('acc -> 'elt -> 'acc) -> 'acc -> 'elt list -> 'acc
+    type showable = Show: 'a * ('a -> string) -> showable
+```
+can now be written as
+```ocaml
+    val fold: 'acc 'elt. ('acc -> 'elt -> 'acc) -> 'acc -> 'elt list -> 'acc
+    type showable = Show: 'a. 'a * ('a -> string) -> showable
+```
+- Tail-call with up to 64 arguments are now guaranteed to be optimized
+  for all architectures.
+- Experimental tail modulo cons (TMC) transformation
+
+OCaml 4.13.0 (24 September 2021)
+-------------------------------
+
+- Safe points: a multicore prerequisite that ensures that ocamlopt-generated
+  code can always be interrupted.
+- The best-fit GC allocation policy is now default policy
+  (and many other GCs improvements.)
+- Named existential type variables in pattern matching:
+    Showable (type a) (x, show : a * (a -> string)).
+- Improved error messages for functor application and functor types.
+- Let-punning for monadic let: let* x = x in can be shortened to let* x in.
+- Module type substitutions SIG with module type T = F(X).S.
+- Many other quality of life improvements
+- Many bug fixes
+
+OCaml 4.12.0 (24 February 2021)
+-------------------------------
+
+- Major progress in reducing the difference between the mainline and multicore
+  runtime
+- A new configuration option ocaml-option-nnpchecker which emits an alarm when
+  the garbage collector finds out-of-heap pointers that could cause a crash in
+  the multicore runtime
+- Support for macOS/arm64
+- Mnemonic names for warnings
+- Many quality of life improvements
+- Many bug fixes
+
+
+OCaml 4.11.0  (19 August 2020)
+------------------------------
+
+- Statmemprof: a new statistical memory profiler
+- A new instrumented runtime that logs runtime statistics in a standard format
+- A native backend for the RISC-V architecture
+- Improved backtraces that refer to function names
+- Support for recursive and yet unboxed types
+- A quoted extension syntax for ppxs.
+- Many quality of life improvements
+- Many bug fixes.
+
+
 OCaml 4.10.0 (21 February 2020)
 -------------------------------
 

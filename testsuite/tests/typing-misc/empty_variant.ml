@@ -60,6 +60,7 @@ Lines 16-17, characters 8-18:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 C ()
+
 val f : unit -> unit = <fun>
 |}]
 
@@ -75,5 +76,6 @@ Line 3, characters 22-42:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 C
+
 val g : nothing t -> unit = <fun>
 |}]

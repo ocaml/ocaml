@@ -31,8 +31,42 @@ val remove_dir : string -> unit
 val reset : unit -> unit
 (** Remove all directories *)
 
-val init : string list -> unit
+module Dir : sig
+  type t
+  (** Represent one directory in the load path. *)
+
+  val create : string -> t
+
+  val path : t -> string
+
+  val files : t -> string list
+  (** All the files in that directory. This doesn't include files in
+      sub-directories of this directory. *)
+
+  val find : t -> string -> string option
+  (** [find dir fn] returns the full path to [fn] in [dir]. *)
+
+  val find_uncap : t -> string -> string option
+  (** As {!find}, but search also for uncapitalized name, i.e. if name is
+      Foo.ml, either /path/Foo.ml or /path/foo.ml may be returned. *)
+end
+
+type auto_include_callback =
+  (Dir.t -> string -> string option) -> string -> string
+(** The type of callback functions on for [init ~auto_include] *)
+
+val no_auto_include : auto_include_callback
+(** No automatic directory inclusion: misses in the load path raise [Not_found]
+    as normal. *)
+
+val init : auto_include:auto_include_callback -> string list -> unit
 (** [init l] is the same as [reset (); List.iter add_dir (List.rev l)] *)
+
+val auto_include_otherlibs :
+  (string -> unit) -> auto_include_callback
+(** [auto_include_otherlibs alert] is a callback function to be passed to
+    {!Load_path.init} and automatically adds [-I +lib] to the load path after
+    calling [alert lib]. *)
 
 val get_paths : unit -> string list
 (** Return the list of directories passed to [add_dir] so far. *)
@@ -46,19 +80,6 @@ val find : string -> string
 val find_uncap : string -> string
 (** Same as [find], but search also for uncapitalized name, i.e.  if
     name is Foo.ml, allow /path/Foo.ml and /path/foo.ml to match. *)
-
-module Dir : sig
-  type t
-  (** Represent one directory in the load path. *)
-
-  val create : string -> t
-
-  val path : t -> string
-
-  val files : t -> string list
-  (** All the files in that directory. This doesn't include files in
-      sub-directories of this directory. *)
-end
 
 val[@deprecated] add : Dir.t -> unit
 (** Old name for {!append_dir} *)

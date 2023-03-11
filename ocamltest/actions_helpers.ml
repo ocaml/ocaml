@@ -22,7 +22,7 @@ let skip_with_reason reason =
     let result = Result.skip_with_reason reason in
     (result, env)
   in
-  Actions.make "skip" code
+  Actions.make ~name:"skip" ~description:"Skip the test" code
 
 let pass_or_skip test pass_reason skip_reason _log env =
   let open Result in

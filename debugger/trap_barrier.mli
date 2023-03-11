@@ -16,7 +16,7 @@
 
 (************************* Trap barrier ********************************)
 
-val install_trap_barrier : int -> unit
+val install_trap_barrier : Debugcom.Sp.t -> unit
 
 val remove_trap_barrier : unit -> unit
 
@@ -25,4 +25,4 @@ val update_trap_barrier : unit -> unit
 
 (* Execute `funct' with a trap barrier. *)
 (* --- Used by `finish'. *)
-val exec_with_trap_barrier : int -> (unit -> unit) -> unit
+val exec_with_trap_barrier : Debugcom.Sp.t -> (unit -> unit) -> unit

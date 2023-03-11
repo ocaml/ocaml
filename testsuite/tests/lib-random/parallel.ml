@@ -20,7 +20,7 @@ let delays =
 (* Each domain will start by waiting a random amount, to ensure that
    the Random.int functions we are testing execute in
    non-deterministic order. The Random.int result should remain
-   deterministic, as domains are spawned in a determinstic order and
+   deterministic, as domains are spawned in a deterministic order and
    each domain state is obtaind by splitting the global Random state
    that was initialized with a fixed seed. *)
 let f delay () =

@@ -787,6 +787,9 @@ and module_expr i ppf x =
       line i ppf "Pmod_apply\n";
       module_expr i ppf me1;
       module_expr i ppf me2;
+  | Pmod_apply_unit me1 ->
+      line i ppf "Pmod_apply_unit\n";
+      module_expr i ppf me1
   | Pmod_constraint (me, mt) ->
       line i ppf "Pmod_constraint\n";
       module_expr i ppf me;

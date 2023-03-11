@@ -139,15 +139,17 @@ and wrap_id_pos_list loc id_pos_list get_field lam =
   (*Format.eprintf "%a@." Printlambda.lambda lam;
   Ident.Set.iter (fun id -> Format.eprintf "%a " Ident.print id) fv;
   Format.eprintf "@.";*)
-  let (lam,s) =
-    List.fold_left (fun (lam, s) (id',pos,c) ->
+  let (lam, _fv, s) =
+    List.fold_left (fun (lam, fv, s) (id',pos,c) ->
       if Ident.Set.mem id' fv then
         let id'' = Ident.create_local (Ident.name id') in
-        (Llet(Alias, Pgenval, id'',
-             apply_coercion loc Alias c (get_field pos),lam),
+        let rhs = apply_coercion loc Alias c (get_field pos) in
+        let fv_rhs = free_variables rhs in
+        (Llet(Alias, Pgenval, id'', rhs, lam),
+         Ident.Set.union fv fv_rhs,
          Ident.Map.add id' id'' s)
-      else (lam, s))
-      (lam, Ident.Map.empty) id_pos_list
+      else (lam, fv, s))
+      (lam, fv, Ident.Map.empty) id_pos_list
   in
   if s == Ident.Map.empty then lam else Lambda.rename s lam
 
@@ -164,7 +166,10 @@ let rec compose_coercions c1 c2 =
       let v2 = Array.of_list pc2 in
       let ids1 =
         List.map (fun (id,pos1,c1) ->
-          let (pos2,c2) = v2.(pos1) in (id, pos2, compose_coercions c1 c2))
+            if pos1 < 0 then (id, pos1, c1)
+            else
+              let (pos2,c2) = v2.(pos1) in
+              (id, pos2, compose_coercions c1 c2))
           ids1
       in
       Tcoerce_structure
@@ -514,22 +519,28 @@ and transl_module ~scopes cc rootpath mexp =
       oo_wrap mexp.mod_env true (fun () ->
         compile_functor ~scopes mexp cc rootpath loc) ()
   | Tmod_apply(funct, arg, ccarg) ->
-      let inlined_attribute, funct =
-        Translattribute.get_and_remove_inlined_attribute_on_module funct
-      in
-      oo_wrap mexp.mod_env true
-        (apply_coercion loc Strict cc)
-        (Lapply{
-           ap_loc=loc;
-           ap_func=transl_module ~scopes Tcoerce_none None funct;
-           ap_args=[transl_module ~scopes ccarg None arg];
-           ap_tailcall=Default_tailcall;
-           ap_inlined=inlined_attribute;
-           ap_specialised=Default_specialise})
+      let translated_arg = transl_module ~scopes ccarg None arg in
+      transl_apply ~scopes ~loc ~cc mexp.mod_env funct translated_arg
+  | Tmod_apply_unit funct ->
+      transl_apply ~scopes ~loc ~cc mexp.mod_env funct lambda_unit
   | Tmod_constraint(arg, _, _, ccarg) ->
       transl_module ~scopes (compose_coercions cc ccarg) rootpath arg
   | Tmod_unpack(arg, _) ->
       apply_coercion loc Strict cc (Translcore.transl_exp ~scopes arg)
+
+and transl_apply ~scopes ~loc ~cc mod_env funct translated_arg =
+  let inlined_attribute, funct =
+    Translattribute.get_and_remove_inlined_attribute_on_module funct
+  in
+  oo_wrap mod_env true
+    (apply_coercion loc Strict cc)
+    (Lapply{
+       ap_loc=loc;
+       ap_func=transl_module ~scopes Tcoerce_none None funct;
+       ap_args=[translated_arg];
+       ap_tailcall=Default_tailcall;
+       ap_inlined=inlined_attribute;
+       ap_specialised=Default_specialise})
 
 and transl_struct ~scopes loc fields cc rootpath {str_final_env; str_items; _} =
   transl_structure ~scopes loc fields cc rootpath str_final_env str_items
@@ -883,7 +894,8 @@ let rec more_idents = function
     | Tstr_class_type _ -> more_idents rem
     | Tstr_include{incl_mod={mod_desc =
                              Tmod_constraint ({mod_desc = Tmod_structure str},
-                                              _, _, _)}} ->
+                                              _, _, _)
+                            | Tmod_structure str }} ->
         all_idents str.str_items @ more_idents rem
     | Tstr_include _ -> more_idents rem
     | Tstr_module
@@ -925,9 +937,10 @@ and all_idents = function
       List.map (fun (ci, _) -> ci.ci_id_class) cl_list @ all_idents rem
     | Tstr_class_type _ -> all_idents rem
 
-    | Tstr_include{incl_type; incl_mod={mod_desc =
-                             Tmod_constraint ({mod_desc = Tmod_structure str},
-                                              _, _, _)}} ->
+    | Tstr_include{incl_type;
+                   incl_mod={mod_desc =
+                     ( Tmod_constraint({mod_desc=Tmod_structure str}, _, _, _)
+                     | Tmod_structure str )}} ->
         bound_value_identifiers incl_type
         @ all_idents str.str_items
         @ all_idents rem
@@ -1156,15 +1169,16 @@ let transl_store_structure ~scopes glob map prims aliases str =
                       transl_store ~scopes rootpath (add_idents false ids subst)
                         cont rem)
 
-        | Tstr_include{
+        | Tstr_include({
             incl_loc=loc;
             incl_mod= {
               mod_desc = Tmod_constraint (
                   ({mod_desc = Tmod_structure str} as mexp), _, _,
-                  (Tcoerce_structure (map, _)))};
+                  (Tcoerce_structure _ | Tcoerce_none))}
+            | ({ mod_desc = Tmod_structure str} as mexp);
             incl_attributes;
             incl_type;
-          } ->
+          } as incl) ->
             List.iter (Translattribute.check_attribute_on_module mexp)
               incl_attributes;
             (* Shouldn't we use mod_attributes instead of incl_attributes?
@@ -1191,8 +1205,16 @@ let transl_store_structure ~scopes glob map prims aliases str =
                                  loop ids args))
               | _ -> assert false
             in
+            let map =
+              match incl.incl_mod.mod_desc with
+              | Tmod_constraint (_, _, _, Tcoerce_structure (map, _)) ->
+                 map
+              | Tmod_structure _
+              | Tmod_constraint (_, _, _, Tcoerce_none) ->
+                 List.init (List.length ids0) (fun i -> i, Tcoerce_none)
+              | _ -> assert false
+            in
             Lsequence(lam, loop ids0 map)
-
 
         | Tstr_include incl ->
             let ids = bound_value_identifiers incl.incl_type in
@@ -1698,7 +1720,7 @@ let explanation_submsg (id, unsafe_info) =
 
 let report_error loc = function
   | Circular_dependency cycle ->
-      let[@manual.ref "s:recursive-modules"] chapter, section = 10, 2 in
+      let[@manual.ref "s:recursive-modules"] chapter, section = 12, 2 in
       Location.errorf ~loc ~sub:(List.map explanation_submsg cycle)
         "Cannot safely evaluate the definition of the following cycle@ \
          of recursively-defined modules:@ %a.@ \

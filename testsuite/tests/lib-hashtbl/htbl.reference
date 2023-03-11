@@ -14,6 +14,10 @@ Removal: passed
 Insertion: passed
 Insertion: passed
 Removal: passed
+-- Strings, functorial(String) interface
+Insertion: passed
+Insertion: passed
+Removal: passed
 -- Pairs of strings
 Insertion: passed
 Insertion: passed

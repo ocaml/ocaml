@@ -1,0 +1,1 @@
+(setglobal Stop_after_lambda! (let (*match*/7 = ( 1)) (makeblock 0)))

@@ -37,29 +37,29 @@ static value alloc_tm(struct tm *tm)
   return res;
 }
 
-CAMLprim value unix_gmtime(value t)
+CAMLprim value caml_unix_gmtime(value t)
 {
   time_t clock;
   struct tm * tm;
   clock = (time_t) Double_val(t);
   tm = gmtime(&clock);
-  if (tm == NULL) unix_error(EINVAL, "gmtime", Nothing);
+  if (tm == NULL) caml_unix_error(EINVAL, "gmtime", Nothing);
   return alloc_tm(tm);
 }
 
-CAMLprim value unix_localtime(value t)
+CAMLprim value caml_unix_localtime(value t)
 {
   time_t clock;
   struct tm * tm;
   clock = (time_t) Double_val(t);
   tm = localtime(&clock);
-  if (tm == NULL) unix_error(EINVAL, "localtime", Nothing);
+  if (tm == NULL) caml_unix_error(EINVAL, "localtime", Nothing);
   return alloc_tm(tm);
 }
 
 #ifdef HAS_MKTIME
 
-CAMLprim value unix_mktime(value t)
+CAMLprim value caml_unix_mktime(value t)
 {
   CAMLparam0();
   CAMLlocal2(tmval, clkval);
@@ -77,7 +77,7 @@ CAMLprim value unix_mktime(value t)
   tm.tm_yday = Int_val(Field(t, 7));
   tm.tm_isdst = -1; /* tm.tm_isdst = Bool_val(Field(t, 8)); */
   clock = mktime(&tm);
-  if (clock == (time_t) -1) unix_error(ERANGE, "mktime", Nothing);
+  if (clock == (time_t) -1) caml_unix_error(ERANGE, "mktime", Nothing);
   tmval = alloc_tm(&tm);
   clkval = caml_copy_double((double) clock);
   res = caml_alloc_small(2, 0);
@@ -88,7 +88,7 @@ CAMLprim value unix_mktime(value t)
 
 #else
 
-CAMLprim value unix_mktime(value t)
+CAMLprim value caml_unix_mktime(value t)
 { caml_invalid_argument("mktime not implemented"); }
 
 #endif

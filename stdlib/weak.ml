@@ -93,7 +93,7 @@ module type S = sig
   val find_all : t -> data -> data list
   val mem : t -> data -> bool
   val iter : (data -> unit) -> t -> unit
-  val fold : (data -> 'a -> 'a) -> t -> 'a -> 'a
+  val fold : (data -> 'acc -> 'acc) -> t -> 'acc -> 'acc
   val count : t -> int
   val stats : t -> int * int * int * int * int * int
 end

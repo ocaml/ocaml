@@ -26,6 +26,9 @@ type loc = {
   loc_ghost: bool;
 }
 
+val ghost_loc_in_file : string -> loc
+(** Return an empty ghost range located in a given file *)
+
 type field_usage_warning =
   | Unused
   | Not_read
@@ -67,7 +70,6 @@ type t =
   | Wildcard_arg_to_constant_constr         (* 28 *)
   | Eol_in_string                           (* 29 *)
   | Duplicate_definitions of string * string * string * string (* 30 *)
-  | Module_linked_twice of string * string * string (* 31 *)
   | Unused_value_declaration of string      (* 32 *)
   | Unused_open of string                   (* 33 *)
   | Unused_type_declaration of string       (* 34 *)
@@ -109,6 +111,7 @@ type t =
   | Missing_mli                             (* 70 *)
   | Unused_tmc_attribute                    (* 71 *)
   | Tmc_breaks_tailcall                     (* 72 *)
+  | Generative_application_expects_unit     (* 73 *)
 
 type alert = {kind:string; message:string; def:loc; use:loc}
 
@@ -157,6 +160,7 @@ val mk_lazy: (unit -> 'a) -> 'a Lazy.t
 type description =
   { number : int;
     names : string list;
-    description : string; }
+    description : string;
+    since : Sys.ocaml_release_info option; }
 
 val descriptions : description list

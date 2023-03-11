@@ -22,10 +22,6 @@
 
 /* Macros to access the stack frame */
 
-#ifdef TARGET_i386
-#define Saved_return_address(sp) *((intnat *)((sp) - 4))
-#endif
-
 #ifdef TARGET_power
 #if defined(MODEL_ppc)
 #define Saved_return_address(sp) *((intnat *)((sp) - 4))
@@ -46,16 +42,16 @@
 #define Trap_frame_size 16
 #endif
 
-#ifdef TARGET_arm
-#define Saved_return_address(sp) *((intnat *)((sp) - 4))
-#endif
-
 #ifdef TARGET_amd64
 /* Size of the gc_regs structure, in words.
    See amd64.S and amd64/proc.ml for the indices */
 #define Wosize_gc_regs (13 /* int regs */ + 16 /* float regs */)
 #define Saved_return_address(sp) *((intnat *)((sp) - 8))
+#ifdef WITH_FRAME_POINTERS
+#define Pop_frame_pointer(sp) (sp) += sizeof(value)
+#else
 #define Pop_frame_pointer(sp)
+#endif
 #endif
 
 #ifdef TARGET_arm64
@@ -64,11 +60,18 @@
 #define Wosize_gc_regs (2 + 24 /* int regs */ + 24 /* float regs */)
 #define Saved_return_address(sp) *((intnat *)((sp) - 8))
 #define Pop_frame_pointer(sp) sp += sizeof(value)
-#define Context_needs_padding /* keep stack 16-byte aligned */
 #endif
 
 #ifdef TARGET_riscv
+/* Size of the gc_regs structure, in words.
+   See riscv.S and riscv/proc.ml for the indices */
+#define Wosize_gc_regs (2 + 22 /* int regs */ + 20 /* float regs */)
 #define Saved_return_address(sp) *((intnat *)((sp) - 8))
+/* RISC-V does not use a frame pointer, but requires the stack to be
+   16-aligned, so when pushing the return address to the stack there
+   is an extra word of padding after it that needs to be skipped when
+   walking the stack. */
+#define Pop_frame_pointer(sp) sp += sizeof(value)
 #endif
 
 /* Declaration of variables used in the asm code */

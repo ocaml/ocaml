@@ -23,7 +23,7 @@
 #include "caml/custom.h"
 #include "caml/codefrag.h"
 #include "caml/debugger.h"
-#include "caml/eventlog.h"
+#include "caml/runtime_events.h"
 #include "caml/fiber.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
@@ -41,6 +41,9 @@
 
 extern int caml_parser_trace;
 extern char caml_system__code_begin, caml_system__code_end;
+/* The two symbols above are defined in runtime/$ARCH.S.
+   They use the old `__` separator convention because the new convention
+   gives `caml_system.code_begin`, which is not a valid C identifier. */
 
 /* Initialize the static data and code area limits. */
 
@@ -75,7 +78,7 @@ extern value caml_start_program (caml_domain_state*);
 extern void caml_win32_overflow_detection (void);
 #endif
 
-#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
+#ifdef _MSC_VER
 
 /* PR 4887: avoid crash box of windows runtime on some system calls */
 extern void caml_install_invalid_parameter_handler(void);
@@ -85,12 +88,11 @@ extern void caml_install_invalid_parameter_handler(void);
 value caml_startup_common(char_os **argv, int pooling)
 {
   char_os * exe_name, * proc_self_exe;
-
-  /* Initialize the domain */
-  CAML_INIT_DOMAIN_STATE;
+  value res;
 
   /* Determine options */
   caml_parse_ocamlrunparam();
+
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif
@@ -101,14 +103,19 @@ value caml_startup_common(char_os **argv, int pooling)
 
   caml_init_codefrag();
   caml_init_locale();
-#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
+#ifdef _MSC_VER
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
   caml_init_os_params();
   caml_init_gc ();
 
+  /* runtime_events's init can cause a stop-the-world pause, so it must be done
+     after we've initialised the garbage collector */
+  CAML_RUNTIME_EVENTS_INIT();
+
   init_segments();
+  caml_init_signals();
 #ifdef _WIN32
   caml_win32_overflow_detection();
 #endif
@@ -122,7 +129,9 @@ value caml_startup_common(char_os **argv, int pooling)
     exe_name = caml_search_exe_in_path(exe_name);
   caml_sys_init(exe_name, argv);
   caml_maybe_expand_stack();
-  return caml_start_program(Caml_state);
+  res = caml_start_program(Caml_state);
+  caml_terminate_signals();
+  return res;
 }
 
 value caml_startup_exn(char_os **argv)

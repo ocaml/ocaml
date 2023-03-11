@@ -21,7 +21,7 @@
 #include <caml/osdeps.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_unlink(value path)
+CAMLprim value caml_unix_unlink(value path)
 {
   CAMLparam1(path);
   char_os * p;
@@ -32,6 +32,6 @@ CAMLprim value unix_unlink(value path)
   ret = caml_unlink(p);
   caml_leave_blocking_section();
   caml_stat_free(p);
-  if (ret == -1) uerror("unlink", path);
+  if (ret == -1) caml_uerror("unlink", path);
   CAMLreturn(Val_unit);
 }

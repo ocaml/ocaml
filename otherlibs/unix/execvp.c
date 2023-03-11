@@ -22,54 +22,54 @@
 #include "unixsupport.h"
 #include "errno.h"
 
-CAMLprim value unix_execvp(value path, value args)
+CAMLprim value caml_unix_execvp(value path, value args)
 {
   char_os ** argv;
   char_os * wpath;
   caml_unix_check_path(path, "execvp");
-  argv = cstringvect(args, "execvp");
+  argv = caml_unix_cstringvect(args, "execvp");
   wpath = caml_stat_strdup_to_os(String_val(path));
   (void) execvp_os((const char_os *)wpath, EXECV_CAST argv);
   caml_stat_free(wpath);
-  cstringvect_free(argv);
-  uerror("execvp", path);
+  caml_unix_cstringvect_free(argv);
+  caml_uerror("execvp", path);
   return Val_unit;                  /* never reached, but suppress warnings */
                                     /* from smart compilers */
 }
 
 #ifndef HAS_EXECVPE
-int unix_execvpe_emulation(const char * name,
+int caml_unix_execvpe_emulation(const char * name,
                            char * const argv[],
                            char * const envp[]);
 #endif
 
-CAMLprim value unix_execvpe(value path, value args, value env)
+CAMLprim value caml_unix_execvpe(value path, value args, value env)
 {
   char_os ** argv;
   char_os ** envp;
   char_os * wpath;
   int err;
   caml_unix_check_path(path, "execvpe");
-  argv = cstringvect(args, "execvpe");
-  envp = cstringvect(env, "execvpe");
+  argv = caml_unix_cstringvect(args, "execvpe");
+  envp = caml_unix_cstringvect(env, "execvpe");
   wpath = caml_stat_strdup_to_os(String_val(path));
 #ifdef HAS_EXECVPE
   (void) execvpe_os((const char_os *)wpath, EXECV_CAST argv, EXECV_CAST envp);
   err = errno;
 #else
-  err = unix_execvpe_emulation(wpath, argv, envp);
+  err = caml_unix_execvpe_emulation(wpath, argv, envp);
 #endif
   caml_stat_free(wpath);
-  cstringvect_free(argv);
-  cstringvect_free(envp);
-  unix_error(err, "execvpe", path);
+  caml_unix_cstringvect_free(argv);
+  caml_unix_cstringvect_free(envp);
+  caml_unix_error(err, "execvpe", path);
   return Val_unit;                  /* never reached, but suppress warnings */
                                     /* from smart compilers */
 }
 
 #ifndef HAS_EXECVPE
 
-static int unix_execve_script(const char * path,
+static int caml_unix_execve_script(const char * path,
                               char * const argv[],
                               char * const envp[])
 {
@@ -97,7 +97,7 @@ static int unix_execve_script(const char * path,
   return errno;
 }
 
-int unix_execvpe_emulation(const char * name,
+int caml_unix_execvpe_emulation(const char * name,
                            char * const argv[],
                            char * const envp[])
 {
@@ -106,7 +106,8 @@ int unix_execvpe_emulation(const char * name,
   int r, got_eacces;
 
   /* If name contains a '/', do not search in path */
-  if (strchr(name, '/') != NULL) return unix_execve_script(name, argv, envp);
+  if (strchr(name, '/') != NULL)
+    return caml_unix_execve_script(name, argv, envp);
   /* Determine search path */
   searchpath = getenv("PATH");
   if (searchpath == NULL) searchpath = "/bin:/usr/bin";
@@ -121,7 +122,7 @@ int unix_execvpe_emulation(const char * name,
     dirlen = q - p;
     if (dirlen == 0) {
       /* An empty path component means "current working directory" */
-      r = unix_execve_script(name, argv, envp);
+      r = caml_unix_execve_script(name, argv, envp);
     } else {
       /* Construct the string "directory/name" */
       fullname = malloc(dirlen + 1 + namelen + 1);
@@ -130,7 +131,7 @@ int unix_execvpe_emulation(const char * name,
       fullname[dirlen] = '/';        /* add separator */
       memcpy(fullname + dirlen + 1, name, namelen + 1);
                                      /* add name, including final 0 */
-      r = unix_execve_script(fullname, argv, envp);
+      r = caml_unix_execve_script(fullname, argv, envp);
       free(fullname);
     }
     switch (r) {

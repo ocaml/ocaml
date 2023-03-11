@@ -17,16 +17,10 @@
 (** Generation of html code to display OCaml code. *)
 open Lexing
 
-exception Fatal_error
-
-let fatal_error msg =
-  prerr_string ">> Fatal error: "; prerr_endline msg; raise Fatal_error
-
 type error =
   | Illegal_character of char
   | Unterminated_comment
   | Unterminated_string
-  | Unterminated_string_in_comment
   | Keyword_as_label of string
 
 exception Error of error * int * int
@@ -165,7 +159,6 @@ let margin = ref 0
 let comment_buffer = Buffer.create 32
 let reset_comment_buffer () = Buffer.reset comment_buffer
 let store_comment_char = Buffer.add_char comment_buffer
-let add_comment_string = Buffer.add_string comment_buffer
 
 let make_margin () =
   let rec iter n =
@@ -208,47 +201,9 @@ let store_string_char = Buffer.add_char string_buffer
 let get_stored_string () =
   Buffer.contents string_buffer
 
-(** To translate escape sequences *)
-
-let char_for_backslash = function
-  | 'n' -> '\010'
-  | 'r' -> '\013'
-  | 'b' -> '\008'
-  | 't' -> '\009'
-  | c   -> c
-
-let char_for_decimal_code lexbuf i =
-  let c = 100 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
-           10 * (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) +
-                (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48) in
-  Char.chr(c land 0xFF)
-
-let char_for_hexa_code lexbuf i =
-  let c = 16 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
-                (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) in
-  Char.chr(c land 0xFF)
-
 (** To store the position of the beginning of a string and comment *)
 let string_start_pos = ref 0
 let comment_start_pos = ref []
-let in_comment () = !comment_start_pos <> []
-
-(** Error report *)
-
-open Format
-
-let report_error ppf = function
-  | Illegal_character c ->
-      fprintf ppf "Illegal character (%s)" (Char.escaped c)
-  | Unterminated_comment ->
-      fprintf ppf "Comment not terminated"
-  | Unterminated_string ->
-      fprintf ppf "String literal not terminated"
-  | Unterminated_string_in_comment ->
-      fprintf ppf "This comment contains an unterminated string literal"
-  | Keyword_as_label kwd ->
-      fprintf ppf "`%s' is a keyword, it cannot be used as label name" kwd
-
 }
 
 let blank = [' ' '\010' '\013' '\009' '\012']

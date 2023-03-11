@@ -145,7 +145,7 @@
  (wrapped false)
  (flags (:standard -principal -nostdlib))
  (libraries stdlib ocamlcommon ocamlmiddleend)
- (modules_without_implementation x86_ast emitenv)
+ (modules_without_implementation x86_ast emitenv branch_relaxation_intf)
  (modules
    ;; asmcomp/
    afl_instrument arch asmgen asmlibrarian asmlink asmpackager branch_relaxation

@@ -1,4 +1,8 @@
-%token <int> INT
+(*
+  'a' char literal
+  '\'' another char literal
+  '\x00' '\000' '\o377' b'a aaa' a' '\'' {a| " |a} test for comment handling " (* " *) /* " *) */
+%token <int> INT (* simple token *)
 %token PLUS MINUS TIMES DIV
 %token LPAREN RPAREN
 %token EOL
@@ -12,7 +16,7 @@ main:
     expr EOL                { $1 }
 ;
 expr:
-    INT                     { $1 }
+    INT                     { let a'b = () in ignore a'b; $1 }
   | LPAREN expr RPAREN      { $2 }
   | expr PLUS expr          { $1 + $3 }
   | expr MINUS expr         { $1 - $3 }

@@ -73,7 +73,7 @@ module GenHashTable = struct
     type t
     type 'a container
     val create: t -> 'a -> 'a container
-    val hash: int -> t -> int
+    val seeded_hash: int -> t -> int
     val equal: 'a container -> t -> equal
     val get_data: 'a container -> 'a option
     val set_key_data: 'a container -> t -> 'a -> unit
@@ -185,7 +185,7 @@ module GenHashTable = struct
       end
 
     let add h key info =
-      let hkey = H.hash h.seed key in
+      let hkey = H.seeded_hash h.seed key in
       let i = key_index h hkey in
       let container = H.create key info in
       let bucket = Cons(hkey, container, h.data.(i)) in
@@ -194,7 +194,7 @@ module GenHashTable = struct
       if h.size > Array.length h.data lsl 1 then resize h
 
     let remove h key =
-      let hkey = H.hash h.seed key in
+      let hkey = H.seeded_hash h.seed key in
       let rec remove_bucket = function
         | Empty -> Empty
         | Cons(hk, c, next) when hkey = hk ->
@@ -236,7 +236,7 @@ module GenHashTable = struct
           find_rec key hkey rest
 
     let find h key =
-      let hkey = H.hash h.seed key in
+      let hkey = H.seeded_hash h.seed key in
       (* TODO inline 3 iterations *)
       find_rec key hkey (h.data.(key_index h hkey))
 
@@ -261,12 +261,12 @@ module GenHashTable = struct
           find_rec_opt key hkey rest
 
     let find_opt h key =
-      let hkey = H.hash h.seed key in
+      let hkey = H.seeded_hash h.seed key in
       (* TODO inline 3 iterations *)
       find_rec_opt key hkey (h.data.(key_index h hkey))
 
     let find_all h key =
-      let hkey = H.hash h.seed key in
+      let hkey = H.seeded_hash h.seed key in
       let rec find_in_bucket = function
       | Empty -> []
       | Cons(hk, c, rest) when hkey = hk  ->
@@ -286,7 +286,7 @@ module GenHashTable = struct
 
 
     let replace h key info =
-      let hkey = H.hash h.seed key in
+      let hkey = H.seeded_hash h.seed key in
       let rec replace_bucket = function
         | Empty -> raise Not_found
         | Cons(hk, c, next) when hkey = hk ->
@@ -307,7 +307,7 @@ module GenHashTable = struct
         if h.size > Array.length h.data lsl 1 then resize h
 
     let mem h key =
-      let hkey = H.hash h.seed key in
+      let hkey = H.seeded_hash h.seed key in
       let rec mem_in_bucket = function
       | Empty ->
           false
@@ -422,7 +422,7 @@ module K1 = struct
         set_data c d;
         set_key c k;
         c
-      let hash = H.hash
+      let seeded_hash = H.seeded_hash
       let equal c k =
         (* {!get_key_copy} is not used because the equality of the user can be
             the physical equality *)
@@ -443,7 +443,7 @@ module K1 = struct
     include MakeSeeded(struct
         type t = H.t
         let equal = H.equal
-        let hash (_seed: int) x = H.hash x
+        let seeded_hash (_seed: int) x = H.hash x
       end)
     let create sz = create ~random:false sz
     let of_seq i =
@@ -535,8 +535,8 @@ module K2 = struct
         set_data c d;
         set_key1 c k1; set_key2 c k2;
         c
-      let hash seed (k1,k2) =
-        H1.hash seed k1 + H2.hash seed k2 * 65599
+      let seeded_hash seed (k1,k2) =
+        H1.seeded_hash seed k1 + H2.seeded_hash seed k2 * 65599
       let equal c (k1,k2) =
         match get_key1 c, get_key2 c with
         | None, _ | _ , None -> GenHashTable.EDead
@@ -558,12 +558,12 @@ module K2 = struct
         (struct
           type t = H1.t
           let equal = H1.equal
-          let hash (_seed: int) x = H1.hash x
+          let seeded_hash (_seed: int) x = H1.hash x
         end)
         (struct
           type t = H2.t
           let equal = H2.equal
-          let hash (_seed: int) x = H2.hash x
+          let seeded_hash (_seed: int) x = H2.hash x
         end)
     let create sz = create ~random:false sz
     let of_seq i =
@@ -651,10 +651,10 @@ module Kn = struct
           set_key c i k.(i);
         done;
         c
-      let hash seed k =
+      let seeded_hash seed k =
         let h = ref 0 in
         for i=0 to Array.length k -1 do
-          h := H.hash seed k.(i) * 65599 + !h;
+          h := H.seeded_hash seed k.(i) * 65599 + !h;
         done;
         !h
       let equal c k =
@@ -691,7 +691,7 @@ module Kn = struct
     include MakeSeeded(struct
         type t = H.t
         let equal = H.equal
-        let hash (_seed: int) x = H.hash x
+        let seeded_hash (_seed: int) x = H.hash x
       end)
     let create sz = create ~random:false sz
     let of_seq i =

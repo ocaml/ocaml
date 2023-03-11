@@ -25,7 +25,7 @@ module Mproj = Unit
 module F (X : sig type t end) = X
 [%%expect{|
 {
- "F"[module] -> Abs<.4>(X/277, X/277<.3>);
+ "F"[module] -> Abs<.4>(X/279, X/279<.3>);
  }
 module F : functor (X : sig type t end) -> sig type t = X.t end
 |}]
@@ -97,16 +97,13 @@ module Without_constraint = Set.Make(Int)
 [%%expect{|
 {
  "Without_constraint"[module] ->
-     CU Stdlib . "Set"[module] . "Make"[module](
-     CU Stdlib . "Int"[module])<.9>;
+   CU Stdlib . "Set"[module] . "Make"[module](CU Stdlib . "Int"[module])<.9>;
  }
 module Without_constraint :
   sig
     type elt = Int.t
     type t = Set.Make(Int).t
     val empty : t
-    val is_empty : t -> bool
-    val mem : elt -> t -> bool
     val add : elt -> t -> t
     val singleton : elt -> t
     val remove : elt -> t -> t
@@ -114,17 +111,6 @@ module Without_constraint :
     val inter : t -> t -> t
     val disjoint : t -> t -> bool
     val diff : t -> t -> t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val subset : t -> t -> bool
-    val iter : (elt -> unit) -> t -> unit
-    val map : (elt -> elt) -> t -> t
-    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-    val for_all : (elt -> bool) -> t -> bool
-    val exists : (elt -> bool) -> t -> bool
-    val filter : (elt -> bool) -> t -> t
-    val filter_map : (elt -> elt option) -> t -> t
-    val partition : (elt -> bool) -> t -> t * t
     val cardinal : t -> int
     val elements : t -> elt list
     val min_elt : t -> elt
@@ -133,13 +119,27 @@ module Without_constraint :
     val max_elt_opt : t -> elt option
     val choose : t -> elt
     val choose_opt : t -> elt option
-    val split : elt -> t -> t * bool * t
     val find : elt -> t -> elt
     val find_opt : elt -> t -> elt option
     val find_first : (elt -> bool) -> t -> elt
     val find_first_opt : (elt -> bool) -> t -> elt option
     val find_last : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
+    val iter : (elt -> unit) -> t -> unit
+    val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
+    val map : (elt -> elt) -> t -> t
+    val filter : (elt -> bool) -> t -> t
+    val filter_map : (elt -> elt option) -> t -> t
+    val partition : (elt -> bool) -> t -> t * t
+    val split : elt -> t -> t * bool * t
+    val is_empty : t -> bool
+    val mem : elt -> t -> bool
+    val equal : t -> t -> bool
+    val compare : t -> t -> int
+    val subset : t -> t -> bool
+    val for_all : (elt -> bool) -> t -> bool
+    val exists : (elt -> bool) -> t -> bool
+    val to_list : t -> elt list
     val of_list : elt list -> t
     val to_seq_from : elt -> t -> elt Seq.t
     val to_seq : t -> elt Seq.t
@@ -157,11 +157,11 @@ end
 [%%expect{|
 {
  "With_identity_constraint"[module] ->
-     {<.12>
-      "M"[module] ->
-          CU Stdlib . "Set"[module] . "Make"[module](
-          CU Stdlib . "Int"[module])<.10>;
-      };
+   {<.12>
+    "M"[module] ->
+      CU Stdlib . "Set"[module] . "Make"[module](
+      CU Stdlib . "Int"[module])<.10>;
+    };
  }
 module With_identity_constraint : sig module M : Set.S end
 |}]
@@ -174,14 +174,14 @@ end
 [%%expect{|
 {
  "With_constraining_constraint"[module] ->
-     {<.16>
-      "M"[module] ->
-          {<.13>
-           "t"[type] ->
-               CU Stdlib . "Set"[module] . "Make"[module](
-               CU Stdlib . "Int"[module])<.13> . "t"[type];
-           };
-      };
+   {<.16>
+    "M"[module] ->
+      {<.13>
+       "t"[type] ->
+         CU Stdlib . "Set"[module] . "Make"[module](
+         CU Stdlib . "Int"[module])<.13> . "t"[type];
+       };
+    };
  }
 module With_constraining_constraint : sig module M : sig type t end end
 |}]

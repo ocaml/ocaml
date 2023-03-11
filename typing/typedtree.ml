@@ -133,7 +133,7 @@ and expression_desc =
       Ident.t option * string option loc * Types.module_presence * module_expr *
         expression
   | Texp_letexception of extension_constructor * expression
-  | Texp_assert of expression
+  | Texp_assert of expression * Location.t
   | Texp_lazy of expression
   | Texp_object of class_structure * string list
   | Texp_pack of module_expr
@@ -252,6 +252,7 @@ and module_expr_desc =
   | Tmod_structure of structure
   | Tmod_functor of functor_parameter * module_expr
   | Tmod_apply of module_expr * module_expr * module_coercion
+  | Tmod_apply_unit of module_expr
   | Tmod_constraint of
       module_expr * Types.module_type * module_type_constraint * module_coercion
   | Tmod_unpack of expression * Types.module_type
@@ -612,7 +613,6 @@ and 'a class_infos =
     ci_id_class: Ident.t;
     ci_id_class_type: Ident.t;
     ci_id_object: Ident.t;
-    ci_id_typehash: Ident.t;
     ci_expr: 'a;
     ci_decl: Types.class_declaration;
     ci_type_decl: Types.class_type_declaration;
@@ -845,3 +845,19 @@ let split_pattern pat =
         combine_opts (into cpat) exns1 exns2
   in
   split_pattern pat
+
+(* Expressions are considered nominal if they can be used as the subject of a
+   sentence or action. In practice, we consider that an expression is nominal
+   if they satisfy one of:
+   - Similar to an identifier: words separated by '.' or '#'.
+   - Do not contain spaces when printed.
+  *)
+let rec exp_is_nominal exp =
+  match exp.exp_desc with
+  | _ when exp.exp_attributes <> [] -> false
+  | Texp_ident _ | Texp_instvar _ | Texp_constant _
+  | Texp_variant (_, None)
+  | Texp_construct (_, _, []) ->
+      true
+  | Texp_field (parent, _, _) | Texp_send (parent, _) -> exp_is_nominal parent
+  | _ -> false

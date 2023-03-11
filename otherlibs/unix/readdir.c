@@ -28,12 +28,12 @@ typedef struct dirent directory_entry;
 typedef struct direct directory_entry;
 #endif
 
-CAMLprim value unix_readdir(value vd)
+CAMLprim value caml_unix_readdir(value vd)
 {
   DIR * d;
   directory_entry * e;
   d = DIR_Val(vd);
-  if (d == (DIR *) NULL) unix_error(EBADF, "readdir", Nothing);
+  if (d == (DIR *) NULL) caml_unix_error(EBADF, "readdir", Nothing);
   caml_enter_blocking_section();
   e = readdir((DIR *) d);
   caml_leave_blocking_section();

@@ -1,4 +1,3 @@
-# 2 "asmcomp/amd64/emit.mlp"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -554,16 +553,16 @@ let emit_instr env fallthrough i =
         emit_call "caml_c_call";
         record_frame env i.live (Dbg_other i.dbg);
       end else begin
-        I.mov rsp rbp;
+        I.mov rsp rbx;
         cfi_remember_state ();
-        cfi_def_cfa_register "rbp";
+        cfi_def_cfa_register "rbx";
         (* NB: gdb has asserts on contiguous stacks that mean it
            will not unwind through this unless we were to tag this
            calling frame with cfi_signal_frame in it's definition. *)
         I.mov (domain_field Domainstate.Domain_c_stack) rsp;
 
         emit_call func;
-        I.mov rbp rsp;
+        I.mov rbx rsp;
         cfi_restore_state ();
       end
   | Lop(Istackoffset n) ->
@@ -699,6 +698,12 @@ let emit_instr env fallthrough i =
   | Lop(Iintop_imm(op, n)) ->
       (* We have i.arg.(0) = i.res.(0) *)
       instr_for_intop op (int n) (res i 0)
+  | Lop(Icompf cmp) ->
+      let cond, need_swap = float_cond_and_need_swap cmp in
+      let a0, a1 = if need_swap then arg i 1, arg i 0 else arg i 0, arg i 1 in
+      I.cmpsd cond a1 a0;
+      I.movd a0 (res i 0);
+      I.neg (res i 0)
   | Lop(Inegf) ->
       I.xorpd (mem64_rip OWORD (emit_symbol "caml_negf_mask")) (res i 0)
   | Lop(Iabsf) ->
@@ -904,20 +909,21 @@ let fundecl fundecl =
     preproc_stack_check
       ~fun_body:fundecl.fun_body ~frame_size:(frame_size env) ~trap_size:16
   in
-  let handle_overflow = ref None in
-  if contains_nontail_calls || max_frame_size >= stack_threshold_size then begin
-    let overflow = new_label () and ret = new_label () in
-    let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
-    I.lea (mem64 NONE (-(max_frame_size + threshold_offset)) RSP) r10;
-    I.cmp (domain_field Domainstate.Domain_current_stack) r10;
-    I.jb (label overflow);
-    def_label ret;
-    handle_overflow := Some (overflow, ret)
-  end;
+  let handle_overflow =
+    if contains_nontail_calls || max_frame_size >= stack_threshold_size then begin
+      let overflow = new_label () and ret = new_label () in
+      let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
+      I.lea (mem64 NONE (-(max_frame_size + threshold_offset)) RSP) r10;
+      I.cmp (domain_field Domainstate.Domain_current_stack) r10;
+      I.jb (label overflow);
+      def_label ret;
+      Some (overflow, ret)
+    end else None
+  in
   emit_all env true fundecl.fun_body;
   List.iter emit_call_gc env.call_gc_sites;
   emit_call_bound_errors env;
-  begin match !handle_overflow with
+  begin match handle_overflow with
   | None -> ()
   | Some (overflow,ret) -> begin
       def_label overflow;
@@ -925,9 +931,11 @@ let fundecl fundecl =
         argument-passing registers may be in use.
         Also serves to align the stack properly before the call *)
       I.push (int (Config.stack_threshold + max_frame_size / 8));
+      cfi_adjust_cfa_offset 8;
         (* measured in words *)
       emit_call "caml_call_realloc_stack";
       I.pop r10; (* ignored *)
+      cfi_adjust_cfa_offset (-8);
       I.jmp (label ret)
     end
   end;
@@ -1072,7 +1080,7 @@ let end_assembly() =
       efa_string = (fun s -> D.bytes (s ^ "\000"))
     };
 
-  if system = S_linux then begin
+  if system = S_linux || system = S_freebsd || system = S_netbsd || system = S_openbsd then begin
     let frametable = emit_symbol (Compilenv.make_symbol (Some "frametable")) in
     D.size frametable (ConstSub (ConstThis, ConstLabel frametable))
   end;

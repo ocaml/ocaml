@@ -37,7 +37,7 @@
 #include "caml/debugger.h"
 #include "caml/domain_state.h"
 #include "caml/dynlink.h"
-#include "caml/eventlog.h"
+#include "caml/runtime_events.h"
 #include "caml/exec.h"
 #include "caml/fail.h"
 #include "caml/fiber.h"
@@ -235,9 +235,9 @@ static char_os * read_section_to_os(int fd, struct exec_trailer *trail,
   if (read(fd, data, len) != len)
     caml_fatal_error("error reading section %s", name);
   data[len] = 0;
-  wlen = win_multi_byte_to_wide_char(data, len, NULL, 0);
+  wlen = caml_win32_multi_byte_to_wide_char(data, len, NULL, 0);
   wdata = caml_stat_alloc((wlen + 1)*sizeof(wchar_t));
-  win_multi_byte_to_wide_char(data, len, wdata, wlen);
+  caml_win32_multi_byte_to_wide_char(data, len, wdata, wlen);
   wdata[wlen] = 0;
   caml_stat_free(data);
   return wdata;
@@ -316,7 +316,7 @@ static int parse_command_line(char_os **argv)
         params->trace_level += 1; /* ignored unless DEBUG mode */
         break;
       case 'v':
-        params->verb_gc = 0x001+0x004+0x008+0x010+0x020;
+        atomic_store_relaxed(&caml_verb_gc, 0x001+0x004+0x008+0x010+0x020);
         break;
       case 'p':
         for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)
@@ -324,7 +324,7 @@ static int parse_command_line(char_os **argv)
         exit(0);
         break;
       case 'b':
-        caml_record_backtraces(1);
+        params->backtrace_enabled = 1;
         break;
       case 'I':
         if (argv[i + 1] != NULL) {
@@ -412,13 +412,13 @@ static void do_print_config(void)
          "false");
 #endif
   printf("no_naked_pointers: true\n");
-  printf("profinfo: %s\n"
-         "profinfo_width: %d\n",
-#ifdef WITH_PROFINFO
-         "true", PROFINFO_WIDTH);
+  printf("compression_supported: %s\n",
+#ifdef HAS_ZSTD
+         "true");
 #else
-         "false", 0);
+         "false");
 #endif
+  printf("reserved header bits: %d\n", HEADER_RESERVED_BITS);
   printf("exec_magic_number: %s\n", EXEC_MAGIC);
 
   /* Parse ld.conf and print the effective search path */
@@ -441,7 +441,7 @@ static void do_print_config(void)
 extern void caml_signal_thread(void * lpParam);
 #endif
 
-#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
+#ifdef _MSC_VER
 
 /* PR 4887: avoid crash box of windows runtime on some system calls */
 extern void caml_install_invalid_parameter_handler(void);
@@ -460,12 +460,9 @@ CAMLexport void caml_main(char_os **argv)
   char_os * shared_lib_path, * shared_libs;
   char_os * exe_name, * proc_self_exe;
 
-  /* Initialize the domain */
-  CAML_INIT_DOMAIN_STATE;
-
   /* Determine options */
   caml_parse_ocamlrunparam();
-  CAML_EVENTLOG_INIT();
+
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif
@@ -475,7 +472,7 @@ CAMLexport void caml_main(char_os **argv)
   caml_init_codefrag();
 
   caml_init_locale();
-#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
+#ifdef _MSC_VER
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
@@ -535,7 +532,13 @@ CAMLexport void caml_main(char_os **argv)
   caml_read_section_descriptors(fd, &trail);
   /* Initialize the abstract machine */
   caml_init_gc ();
+
+  /* bring up runtime_events after we've initialised the gc */
+  CAML_RUNTIME_EVENTS_INIT();
+
   Caml_state->external_raise = NULL;
+  /* Setup signal handling */
+  caml_init_signals();
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
@@ -556,9 +559,7 @@ CAMLexport void caml_main(char_os **argv)
   /* Load the globals */
   caml_seek_section(fd, &trail, "DATA");
   chan = caml_open_descriptor_in(fd);
-  Lock(chan);
   value global_data = caml_input_val(chan);
-  Unlock(chan);
   caml_modify_generational_global_root(&caml_global_data, global_data);
   caml_close_channel(chan); /* this also closes fd */
   caml_stat_free(trail.section);
@@ -585,6 +586,7 @@ CAMLexport void caml_main(char_os **argv)
     }
     caml_fatal_uncaught_exception(exn);
   }
+  caml_terminate_signals();
 }
 
 /* Main entry point when code is linked in as initialized data */
@@ -597,13 +599,11 @@ CAMLexport value caml_startup_code_exn(
            char_os **argv)
 {
   char_os * exe_name;
-
-  /* Initialize the domain */
-  CAML_INIT_DOMAIN_STATE;
+  value res;
 
   /* Determine options */
   caml_parse_ocamlrunparam();
-  CAML_EVENTLOG_INIT();
+
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif
@@ -615,7 +615,7 @@ CAMLexport value caml_startup_code_exn(
   caml_init_codefrag();
 
   caml_init_locale();
-#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
+#ifdef _MSC_VER
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
@@ -623,13 +623,16 @@ CAMLexport value caml_startup_code_exn(
 
   /* Initialize the abstract machine */
   caml_init_gc ();
+
+  /* runtime_events has to be brought up after the gc */
+  CAML_RUNTIME_EVENTS_INIT();
+
   exe_name = caml_executable_name();
   if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
+
   Caml_state->external_raise = NULL;
-  caml_sys_init(exe_name, argv);
-  /* Load debugging info, if b>=2 */
-  caml_load_main_debug_info();
-  Caml_state->external_raise = NULL;
+  /* Setup signal handling */
+  caml_init_signals();
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
   /* Initialize the debugger, if needed */
@@ -647,16 +650,19 @@ CAMLexport value caml_startup_code_exn(
   /* Load the globals */
   caml_modify_generational_global_root
     (&caml_global_data, caml_input_value_from_block(data, data_size));
-  caml_minor_collection(); /* ensure all globals are in major heap */
-  /* Record the sections (for caml_get_section_table in meta.c) */
-  caml_init_section_table(section_table, section_table_size);
   /* Initialize system libraries */
   caml_sys_init(exe_name, argv);
   /* Load debugging info, if b>=2 */
   caml_load_main_debug_info();
+  /* ensure all globals are in major heap */
+  caml_minor_collection();
+  /* Record the sections (for caml_get_section_table in meta.c) */
+  caml_init_section_table(section_table, section_table_size);
   /* Execute the program */
   caml_debugger(PROGRAM_START, Val_unit);
-  return caml_interprete(caml_start_code, caml_code_size);
+  res = caml_interprete(caml_start_code, caml_code_size);
+  caml_terminate_signals();
+  return res;
 }
 
 CAMLexport void caml_startup_code(

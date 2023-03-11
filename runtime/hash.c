@@ -259,7 +259,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         startenv = Start_env_closinfo(Closinfo_val(v));
         CAMLassert (startenv <= len);
         /* Mix in the tag and size, but do not count this towards [num] */
-        h = caml_hash_mix_uint32(h, Whitehd_hd(Hd_val(v)));
+        h = caml_hash_mix_uint32(h, Cleanhd_hd(Hd_val(v)));
         /* Mix the code pointers, closure info fields, and infix headers */
         for (i = 0; i < startenv; i++) {
           h = caml_hash_mix_intnat(h, Field(v, i));
@@ -280,7 +280,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
 
       default:
         /* Mix in the tag and size, but do not count this towards [num] */
-        h = caml_hash_mix_uint32(h, Whitehd_hd(Hd_val(v)));
+        h = caml_hash_mix_uint32(h, Cleanhd_hd(Hd_val(v)));
         /* Copy fields into queue, not exceeding the total size [sz] */
         for (i = 0, len = Wosize_val(v); i < len; i++) {
           if (wr >= sz) break;
@@ -294,6 +294,15 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
   FINAL_MIX(h);
   /* Fold result to the range [0, 2^30-1] so that it is a nonnegative
      OCaml integer both on 32 and 64-bit platforms. */
+  return Val_int(h & 0x3FFFFFFFU);
+}
+
+CAMLprim value caml_string_hash(value seed, value string)
+{
+  uint32_t h;
+  h = Int_val(seed);
+  h = caml_hash_mix_string (h, string);
+  FINAL_MIX(h);
   return Val_int(h & 0x3FFFFFFFU);
 }
 

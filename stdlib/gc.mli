@@ -86,12 +86,12 @@ type stat =
 
     stack_size: int;
     (** Current size of the stack, in words.
-        @since 3.12.0 *)
+        @since 3.12 *)
 
     forced_major_collections: int;
     (** Number of forced full major collections completed since the program
         was started.
-        @since 4.12.0 *)
+        @since 4.12 *)
 }
 (** The memory management counters are returned in a [stat] record. These
    counters give values for the whole program.
@@ -106,8 +106,8 @@ type control =
   { minor_heap_size : int;
     (** The size (in words) of the minor heap.  Changing
        this parameter will trigger a minor collection. The total size of the
-       minor heap used by this program will be this number multiplied by the
-       number of active domains. Default: 256k. *)
+       minor heap used by this program is the sum of the heap sizes of the
+       active domains. Default: 256k. *)
 
     major_heap_increment : int;
     (** How much to add to the major heap when increasing it. If this
@@ -191,14 +191,14 @@ type control =
 
         Default: 2.
 
-        @since 3.11.0 *)
+        @since 3.11 *)
 
     window_size : int;
     (** The size of the window used by the major GC for smoothing
         out variations in its workload. This is an integer between
         1 and 50.
         Default: 1.
-        @since 4.03.0 *)
+        @since 4.03 *)
 
     custom_major_ratio : int;
     (** Target ratio of floating garbage to major heap size for
@@ -211,7 +211,7 @@ type control =
         Note: this only applies to values allocated with
         [caml_alloc_custom_mem] (e.g. bigarrays).
         Default: 44.
-        @since 4.08.0 *)
+        @since 4.08 *)
 
     custom_minor_ratio : int;
     (** Bound on floating garbage for out-of-heap memory held by
@@ -221,7 +221,7 @@ type control =
         Note: this only applies to values allocated with
         [caml_alloc_custom_mem] (e.g. bigarrays).
         Default: 100.
-        @since 4.08.0 *)
+        @since 4.08 *)
 
     custom_minor_max_size : int;
     (** Maximum amount of out-of-heap memory for each custom value
@@ -232,7 +232,7 @@ type control =
         Note: this only applies to values allocated with
         [caml_alloc_custom_mem] (e.g. bigarrays).
         Default: 8192 bytes.
-        @since 4.08.0 *)
+        @since 4.08 *)
   }
 (** The GC parameters are given as a [control] record.  Note that
     these parameters can also be initialised by setting the
@@ -268,10 +268,16 @@ external minor_words : unit -> (float [@unboxed])
     @since 4.04 *)
 
 external get : unit -> control = "caml_gc_get"
+[@@alert unsynchronized_access
+    "GC parameters are a mutable global state."
+]
 (** Return the current values of the GC parameters in a [control] record. *)
 
 external set : control -> unit = "caml_gc_set"
-(** [set r] changes the GC parameters according to the [control] record [r].
+[@@alert unsynchronized_access
+    "GC parameters are a mutable global state."
+]
+ (** [set r] changes the GC parameters according to the [control] record [r].
    The normal usage is: [Gc.set { (Gc.get()) with Gc.verbose = 0x00d }] *)
 
 external minor : unit -> unit = "caml_gc_minor"
@@ -310,7 +316,7 @@ external get_minor_free : unit -> int = "caml_get_minor_free"
 (** Return the current size of the free space inside the minor heap of this
    domain.
 
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 val finalise : ('a -> unit) -> 'a -> unit
 (** [finalise f v] registers [f] as a finalisation function for [v].
@@ -405,7 +411,8 @@ type alarm
 
 val create_alarm : (unit -> unit) -> alarm
 (** [create_alarm f] will arrange for [f] to be called at the end of each
-   major GC cycle, starting with the current cycle or the next one.
+   major GC cycle, not caused by [f] itself, starting with the current
+   cycle or the next one.
    A value of type [alarm] is returned that you can
    use to call [delete_alarm]. *)
 
@@ -413,23 +420,11 @@ val delete_alarm : alarm -> unit
 (** [delete_alarm a] will stop the calls to the function associated
    to [a]. Calling [delete_alarm a] again has no effect. *)
 
-external eventlog_pause : unit -> unit = "caml_eventlog_pause"
-(** [eventlog_pause ()] will pause the collection of traces in the
-   runtime.
-   Traces are collected if the program is linked to the instrumented runtime
-   and started with the environment variable OCAML_EVENTLOG_ENABLED.
-   Events are flushed to disk after pausing, and no new events will be
-   recorded until [eventlog_resume] is called. *)
+val eventlog_pause : unit -> unit
+[@@ocaml.deprecated "Use Runtime_events.pause instead."]
 
-external eventlog_resume : unit -> unit = "caml_eventlog_resume"
-(** [eventlog_resume ()] will resume the collection of traces in the
-   runtime.
-   Traces are collected if the program is linked to the instrumented runtime
-   and started with the environment variable OCAML_EVENTLOG_ENABLED.
-   This call can be used after calling [eventlog_pause], or if the program
-   was started with OCAML_EVENTLOG_ENABLED=p. (which pauses the collection of
-   traces before the first event.) *)
-
+val eventlog_resume : unit -> unit
+[@@ocaml.deprecated "Use Runtime_events.resume instead."]
 
 (** [Memprof] is a sampling engine for allocated memory words. Every
    allocated word has a probability of being sampled equal to a

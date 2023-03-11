@@ -244,5 +244,6 @@ Line 7, characters 8-14:
             ^^^^^^
 Warning 41 [ambiguous-name]: Unique belongs to several types: b M.s t a
 The first one was selected. Please disambiguate if this is wrong.
+
 val x : b = Unique
 |}]

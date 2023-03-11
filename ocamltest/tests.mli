@@ -18,7 +18,8 @@
 type t = {
   test_name : string;
   test_run_by_default : bool;
-  test_actions : Actions.t list
+  test_actions : Actions.t list;
+  test_description : string
 }
 
 val compare : t -> t -> int

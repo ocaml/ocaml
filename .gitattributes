@@ -42,7 +42,7 @@
 # the lines involved in the conflict, which is arguably worse
 #/Changes                 merge=union
 
-# No header for text files (would be too obtrusive).
+# No header for text and META files (would be too obtrusive).
 *.md                     typo.missing-header
 README*                  typo.missing-header
 VERSION                  typo.missing-header
@@ -50,14 +50,19 @@ VERSION                  typo.missing-header
 api_docgen/*.mld                typo.missing-header
 api_docgen/alldoc.tex           typo.missing-header
 tools/mantis2gh_stripped.csv typo.missing-header
+META.in                  typo.missing-header
 
-*.adoc                   typo.long-line=may
+# Hyperlinks and other markup features cause long lines
+*.adoc                   typo.long-line=may typo.very-long-line=may
+*.md                     typo.long-line=may typo.very-long-line=may
 
 # Github templates and scripts lack headers, have long lines
 /.github/**              typo.missing-header typo.long-line=may typo.very-long-line=may
 
 /.mailmap                typo.long-line typo.missing-header typo.non-ascii
 /CONTRIBUTING.md         typo.non-ascii=may
+/README.adoc             typo.non-ascii=may
+/README.win32.adoc       typo.non-ascii=may
 /.merlin                 typo.missing-header
 /Changes                 typo.utf8 typo.missing-header
 /release-info/News       typo.utf8 typo.missing-header
@@ -102,9 +107,9 @@ ocamldoc/Changes.txt     typo.missing-header
 ocamldoc/ocamldoc.sty    typo.missing-header
 ocamldoc/odoc_index.html typo.missing-header
 
-otherlibs/win32unix/readlink.c    typo.long-line
-otherlibs/win32unix/stat.c        typo.long-line
-otherlibs/win32unix/symlink.c     typo.long-line
+otherlibs/unix/readlink_win32.c    typo.long-line
+otherlibs/unix/stat_win32.c        typo.long-line
+otherlibs/unix/symlink_win32.c     typo.long-line
 
 runtime/sak.c            typo.non-ascii
 
@@ -137,7 +142,6 @@ testsuite/tests/lib-dynlink-domains/main.ml  typo.very-long-line
 testsuite/tests/tool-ocamltest/norm*.reference binary
 
 tools/magic                       typo.missing-header
-tools/eventlog_metadata.in        typo.missing-header
 
 # TODO we should fix the long-line errors in yacc/*.c
 /yacc/*.[ch]         typo.very-long-line=may
@@ -189,14 +193,6 @@ tools/ocamlsize text eol=lf
 tools/pre-commit-githook text eol=lf
 tools/markdown-add-pr-links.sh text eol=lf
 runtime/caml/sizeclasses.h typo.missing-header typo.white-at-eol
-
-# These are all Perl scripts, so may not actually require this
-manual/tools/caml-tex text eol=lf
-manual/tools/format-intf text eol=lf
-manual/tools/htmlcut text eol=lf
-manual/tools/htmltbl text eol=lf
-manual/tools/htmlthread text eol=lf
-manual/tools/texexpand text eol=lf
 
 # Tests which include references spanning multiple lines fail with \r\n
 # endings, so use \n endings only, even on Windows.

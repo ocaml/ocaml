@@ -1,5 +1,6 @@
 (* TEST
 *)
+open Printf
 
 let rec build_string f n accu =
   if n <= 0
@@ -38,6 +39,14 @@ let () =
   for i = 0 to String.length s do
     check_split ' ' (String.sub s 0 i)
   done
+;;
+
+
+let () =
+  printf "-- Hashtbl.hash raw_string: %x\n%!" (Hashtbl.hash raw_string);
+  printf "-- String.hash raw_string: %x\n%!" (String.hash raw_string);
+  printf "-- Hashtbl.seeded_hash 16 raw_string: %x\n%!" (Hashtbl.seeded_hash 16 raw_string);
+  printf "-- String.seeded_hash 16 raw_string: %x\n%!" (String.seeded_hash 16 raw_string);
 ;;
 
 (* GPR#805/815/833 *)

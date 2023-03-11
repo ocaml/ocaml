@@ -15,9 +15,6 @@
 
 open Printf
 
-let syslib x =
-  if Config.ccomp_type = "msvc" then x ^ ".lib" else "-l" ^ x
-
 let mklib out files opts =
   if Config.ccomp_type = "msvc"
   then let machine =
@@ -25,10 +22,8 @@ let mklib out files opts =
     then "-machine:AMD64 "
     else ""
   in
-  Printf.sprintf "link -lib -nologo %s-out:%s %s %s"
-                 machine out opts files
-  else Printf.sprintf "%s rcs %s %s %s && %s %s"
-                      Config.ar out opts files Config.ranlib out
+  Printf.sprintf "link -lib -nologo %s-out:%s %s %s" machine out opts files
+  else Printf.sprintf "%s rcs %s %s %s" Config.ar out opts files
 
 (* PR#4783: under Windows, don't use absolute paths because we do
    not know where the binary distribution will be installed. *)
@@ -38,14 +33,14 @@ let compiler_path name =
 let bytecode_objs = ref []  (* .cmo,.cma,.ml,.mli files to pass to ocamlc *)
 and native_objs = ref []    (* .cmx,.ml,.mli files to pass to ocamlopt *)
 and c_objs = ref []         (* .o, .a, .obj, .lib, .dll, .dylib, .so files to
-                               pass to mksharedlib and ar *)
+                               pass to mkdll and ar *)
 and caml_libs = ref []      (* -cclib to pass to ocamlc, ocamlopt *)
 and caml_opts = ref []      (* -ccopt to pass to ocamlc, ocamlopt *)
 and dynlink = ref Config.supports_shared_libraries
 and failsafe = ref false    (* whether to fall back on static build only *)
-and c_libs = ref []         (* libs to pass to mksharedlib and ocamlc -cclib *)
-and c_Lopts = ref []      (* options to pass to mksharedlib and ocamlc -cclib *)
-and c_opts = ref []       (* options to pass to mksharedlib and ocamlc -ccopt *)
+and c_libs = ref []         (* libs to pass to mkdll and ocamlc -cclib *)
+and c_Lopts = ref []      (* options to pass to mkdll and ocamlc -cclib *)
+and c_opts = ref []       (* options to pass to mkdll and ocamlc -ccopt *)
 and ld_opts = ref []        (* options to pass only to the linker *)
 and ocamlc = ref (compiler_path "ocamlc")
 and ocamlc_opts = ref []    (* options to pass only to ocamlc *)
@@ -63,7 +58,6 @@ let starts_with s pref =
 let ends_with = Filename.check_suffix
 let chop_prefix s pref =
   String.sub s (String.length pref) (String.length s - String.length pref)
-let chop_suffix = Filename.chop_suffix
 
 exception Bad_argument of string
 
@@ -344,7 +338,7 @@ let build_libs () =
                   (String.concat " " (prefix_list "-cclib " !c_libs))
                   (String.concat " " !caml_libs))
 
-let _ =
+let main () =
   try
     parse_arguments Sys.argv;
     build_libs()
@@ -357,3 +351,5 @@ let _ =
       prerr_string "System error: "; prerr_endline s; exit 4
   | x ->
       raise x
+
+let _ = main ()

@@ -219,10 +219,10 @@ Quoting commands for execution by cmd.exe is difficult.
       s;
     Buffer.contents b
   let quote_cmd_filename f =
-    if String.contains f '\"' || String.contains f '%' then
+    if String.exists (function '\"' | '%' -> true | _ -> false) f then
       failwith ("Filename.quote_command: bad file name " ^ f)
     else if String.contains f ' ' then
-      "\"" ^ f ^ "\""
+      String.concat "" ["\""; f; "\""]
     else
       f
   (* Redirections in cmd.exe: see https://ss64.com/nt/syntax-redirection.html
@@ -334,28 +334,41 @@ let temp_file_name temp_dir prefix suffix =
   let rnd = (Random.State.bits random_state) land 0xFFFFFF in
   concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
 
-let current_temp_dir_name = ref temp_dir_name
+let current_temp_dir_name =
+  Domain.DLS.new_key ~split_from_parent:Fun.id (fun () -> temp_dir_name)
 
-let set_temp_dir_name s = current_temp_dir_name := s
-let get_temp_dir_name () = !current_temp_dir_name
+let set_temp_dir_name s = Domain.DLS.set current_temp_dir_name s
+let get_temp_dir_name () = Domain.DLS.get current_temp_dir_name
 
-let temp_file ?(temp_dir = !current_temp_dir_name) prefix suffix =
+let temp_file ?(temp_dir = Domain.DLS.get current_temp_dir_name) prefix suffix =
   let rec try_name counter =
     let name = temp_file_name temp_dir prefix suffix in
     try
       close_desc(open_desc name [Open_wronly; Open_creat; Open_excl] 0o600);
       name
     with Sys_error _ as e ->
-      if counter >= 1000 then raise e else try_name (counter + 1)
+      if counter >= 20 then raise e else try_name (counter + 1)
   in try_name 0
 
 let open_temp_file ?(mode = [Open_text]) ?(perms = 0o600)
-                   ?(temp_dir = !current_temp_dir_name) prefix suffix =
+    ?(temp_dir = Domain.DLS.get current_temp_dir_name)
+    prefix suffix =
   let rec try_name counter =
     let name = temp_file_name temp_dir prefix suffix in
     try
       (name,
        open_out_gen (Open_wronly::Open_creat::Open_excl::mode) perms name)
     with Sys_error _ as e ->
-      if counter >= 1000 then raise e else try_name (counter + 1)
+      if counter >= 20 then raise e else try_name (counter + 1)
+  in try_name 0
+
+let temp_dir ?(temp_dir = Domain.DLS.get current_temp_dir_name)
+    ?(perms = 0o700) prefix suffix =
+  let rec try_name counter =
+    let name = temp_file_name temp_dir prefix suffix in
+    try
+      Sys.mkdir name perms;
+      name
+    with Sys_error _ as e ->
+      if counter >= 20 then raise e else try_name (counter + 1)
   in try_name 0

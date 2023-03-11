@@ -35,6 +35,11 @@ let pop_opt s =
   | hd::tl -> s.c <- tl; s.len <- s.len - 1; Some hd
   | []     -> None
 
+let drop s =
+  match s.c with
+  | _hd::tl -> s.c <- tl; s.len <- s.len - 1
+  | [] -> raise Empty
+
 let top s =
   match s.c with
   | hd::_ -> hd

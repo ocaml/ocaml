@@ -18,9 +18,7 @@ open Lexing
 type t = Warnings.loc =
   { loc_start: position; loc_end: position; loc_ghost: bool }
 
-let in_file name =
-  let loc = { dummy_pos with pos_fname = name } in
-  { loc_start = loc; loc_end = loc; loc_ghost = true }
+let in_file = Warnings.ghost_loc_in_file
 
 let none = in_file "_none_"
 let is_none l = (l = none)
@@ -97,8 +95,19 @@ let setup_terminal () =
    input in the terminal. This would not be possible without this information,
    since printing several warnings/errors adds text between the user input and
    the bottom of the terminal.
+
+   We also use for {!is_first_report}, see below.
 *)
 let num_loc_lines = ref 0
+
+(* We use [num_loc_lines] to determine if the report about to be
+   printed is the first or a follow-up report of the current
+   "batch" -- contiguous reports without user input in between, for
+   example for the current toplevel phrase. We use this to print
+   a blank line between messages of the same batch.
+*)
+let is_first_message () =
+  !num_loc_lines = 0
 
 (* This is used by the toplevel to reset [num_loc_lines] before each phrase *)
 let reset () =
@@ -108,6 +117,13 @@ let reset () =
 let echo_eof () =
   print_newline ();
   incr num_loc_lines
+
+(* This is used by the toplevel and the report printers below. *)
+let separate_new_message ppf =
+  if not (is_first_message ()) then begin
+    Format.pp_print_newline ppf ();
+    incr num_loc_lines
+  end
 
 (* Code printing errors and warnings must be wrapped using this function, in
    order to update [num_loc_lines].
@@ -461,20 +477,28 @@ let highlight_quote ppf
         (* Single-line error *)
         Format.fprintf ppf "%s | %s@," line_nb line;
         Format.fprintf ppf "%*s   " (String.length line_nb) "";
-        String.iteri (fun i c ->
+        (* Iterate up to [rightmost], which can be larger than the length of
+           the line because we may point to a location after the end of the
+           last token on the line, for instance:
+           {[
+             token
+                       ^
+             Did you forget ...
+           ]} *)
+        for i = 0 to rightmost.pos_cnum - line_start_cnum - 1 do
           let pos = line_start_cnum + i in
           if ISet.is_start iset ~pos <> None then
             Format.fprintf ppf "@{<%s>" highlight_tag;
           if ISet.mem iset ~pos then Format.pp_print_char ppf '^'
-          else if pos < rightmost.pos_cnum then begin
+          else if i < String.length line then begin
             (* For alignment purposes, align using a tab for each tab in the
                source code *)
-            if c = '\t' then Format.pp_print_char ppf '\t'
+            if line.[i] = '\t' then Format.pp_print_char ppf '\t'
             else Format.pp_print_char ppf ' '
           end;
           if ISet.is_end iset ~pos <> None then
             Format.fprintf ppf "@}"
-        ) line;
+        done;
         Format.fprintf ppf "@}@,"
     | _ ->
         (* Multi-line error *)
@@ -724,6 +748,7 @@ let batch_mode_printer : report_printer =
   let pp_txt ppf txt = Format.fprintf ppf "@[%t@]" txt in
   let pp self ppf report =
     setup_colors ();
+    separate_new_message ppf;
     (* Make sure we keep [num_loc_lines] updated.
        The tabulation box is here to give submessage the option
        to be aligned with the main message box
@@ -896,6 +921,32 @@ let alert ?(def = none) ?(use = none) ~kind loc message =
 
 let deprecated ?def ?use loc message =
   alert ?def ?use ~kind:"deprecated" loc message
+
+let auto_include_alert lib =
+  let message = Printf.sprintf "\
+    OCaml's lib directory layout changed in 5.0. The %s subdirectory has been \
+    automatically added to the search path, but you should add -I +%s to the \
+    command-line to silence this alert (e.g. by adding %s to the list of \
+    libraries in your dune file, or adding use_%s to your _tags file for \
+    ocamlbuild, or using -package %s for ocamlfind)." lib lib lib lib lib in
+  let alert =
+    {Warnings.kind="ocaml_deprecated_auto_include"; use=none; def=none;
+     message = Format.asprintf "@[@\n%a@]" Format.pp_print_text message}
+  in
+  prerr_alert none alert
+
+let deprecated_script_alert program =
+  let message = Printf.sprintf "\
+    Running %s where the first argument is an implicit basename with no \
+    extension (e.g. %s script-file) is deprecated. Either rename the script \
+    (%s script-file.ml) or qualify the basename (%s ./script-file)"
+    program program program program
+  in
+  let alert =
+    {Warnings.kind="ocaml_deprecated_cli"; use=none; def=none;
+     message = Format.asprintf "@[@\n%a@]" Format.pp_print_text message}
+  in
+  prerr_alert none alert
 
 (******************************************************************************)
 (* Reporting errors on exceptions *)

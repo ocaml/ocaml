@@ -12,8 +12,29 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type _ t = ..
+type 'a t = ..
 external perform : 'a t -> 'a = "%perform"
+
+type exn += Unhandled: 'a t -> exn
+exception Continuation_already_resumed
+
+let () =
+  let printer = function
+    | Unhandled x ->
+        let msg = Printf.sprintf "Stdlib.Effect.Unhandled(%s)"
+            (Printexc.string_of_extension_constructor @@ Obj.repr x)
+        in
+        Some msg
+    | _ -> None
+  in
+  Printexc.register_printer printer
+
+(* Register the exceptions so that the runtime can access it *)
+type _ t += Should_not_see_this__ : unit t
+let _ = Callback.register_exception "Effect.Unhandled"
+          (Unhandled Should_not_see_this__)
+let _ = Callback.register_exception "Effect.Continuation_already_resumed"
+          Continuation_already_resumed
 
 type ('a, 'b) stack
 

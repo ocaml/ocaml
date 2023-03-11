@@ -82,6 +82,10 @@ let () =
   assert (List.compare_length_with [1] 0 > 0);
   assert (List.compare_length_with ['1'] 1 = 0);
   assert (List.compare_length_with ['1'] 2 < 0);
+
+  assert (List.is_empty []);
+  assert (not (List.is_empty [1]));
+
   assert (List.filter_map string_of_even_opt l = ["0";"2";"4";"6";"8"]);
   assert (List.concat_map (fun i -> [i; i+1]) [1; 5] = [1; 2; 5; 6]);
   assert (
@@ -92,6 +96,28 @@ let () =
   assert (
     let f a b = a + b, string_of_int b in
     List.fold_left_map f 0 l = (45, sl));
+
+  (* [find_index] *)
+  assert (List.find_index (fun x -> x=1) [] = None);
+  let xs = [1;2;3;4;5] in
+  assert (List.find_index (fun x -> x=1) xs = Some 0);
+  assert (List.find_index (fun x -> x=3) xs = Some 2);
+  assert (List.find_index (fun x -> x=5) xs = Some 4);
+  assert (List.find_index (fun x -> x=6) xs = None);
+
+  (* [find_mapi] *)
+  assert (List.find_mapi
+    (fun i x -> if x+i=3 then Some(i, x) else None) [] = None);
+  let xs = [3;3;3;42;42] in
+  assert (List.find_mapi
+    (fun i x -> if x+i=3 then Some(i, x) else None) xs = Some (0, 3));
+  assert (List.find_mapi
+    (fun i x -> if x+i=4 then Some(i, x) else None) xs = Some (1, 3));
+  assert (List.find_mapi
+    (fun i x -> if x+i=5 then Some(i, x) else None) xs = Some (2, 3));
+  assert (List.find_mapi
+    (fun i x -> if x+i=7 then Some(i, x) else None) xs = None);
+
   ()
 ;;
 

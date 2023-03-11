@@ -19,7 +19,7 @@
 
 char *header[] =
 {
-  "open Parsing;;",
+  "open Parsing",
   "let _ = parse_error;;", /* avoid warning 33 (PR#5719) */
   0
 };
@@ -48,8 +48,8 @@ char *define_tables[] =
 
 void write_section(char **section)
 {
-    register int i;
-    register FILE *fp;
+    int i;
+    FILE *fp;
 
     fp = code_file;
     for (i = 0; section[i]; ++i)

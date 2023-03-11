@@ -100,22 +100,19 @@ OCAMLROOT=$(echo "$OCAMLROOT" | cygpath -f - -m)
 
 if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
   case "$PORT" in
-    cygwin*) ;;
-    *) export PATH="$FLEXDLLROOT:$PATH";;
+    cygwin*)
+      install_flexdll='false';;
+    *)
+      export PATH="$FLEXDLLROOT:$PATH"
+      install_flexdll='true';;
   esac
-fi
-
-# This is needed at all stages while winpthreads is in use for 5.0
-# This step can be moved back to the test phase (or removed entirely?) when
-# winpthreads stops being used.
-if [[ $PORT = 'mingw64' ]] ; then
-  export PATH="$PATH:/usr/x86_64-w64-mingw32/sys-root/mingw/bin"
-elif [[ $PORT = 'mingw32' ]] ; then
-  export PATH="$PATH:/usr/i686-w64-mingw32/sys-root/mingw/bin"
+else
+  install_flexdll='false'
 fi
 
 case "$1" in
   install)
+    mkdir -p "$CACHE_DIRECTORY"
     if [ ! -e "$CACHE_DIRECTORY/parallel-source" ] || \
        [ "$PARALLEL_URL" != "$(cat "$CACHE_DIRECTORY/parallel-source")" ] ; then
       # Download latest version directly from the repo
@@ -125,7 +122,7 @@ case "$1" in
     cp "$CACHE_DIRECTORY/parallel" /usr/bin
     chmod +x /usr/bin/parallel
     parallel --version
-    if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
+    if [[ $install_flexdll = 'true' ]] ; then
       mkdir -p "$FLEXDLLROOT"
       cd "$APPVEYOR_BUILD_FOLDER/../flexdll"
       # The objects are always built from the sources
@@ -143,14 +140,23 @@ case "$1" in
   test)
     FULL_BUILD_PREFIX="$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX"
     run 'ocamlc.opt -version' "$FULL_BUILD_PREFIX-$PORT/ocamlc.opt" -version
-    if [[ $PORT = 'mingw32' ]] ; then
+    if [[ $PORT =~ mingw* ]] ; then
       run "Check runtime symbols" \
           "$FULL_BUILD_PREFIX-$PORT/tools/check-symbol-names" \
-          $FULL_BUILD_PREFIX-$PORT/runtime/*.a
+          $FULL_BUILD_PREFIX-$PORT/runtime/*.a \
+          $FULL_BUILD_PREFIX-$PORT/otherlibs/*/lib*.a
     fi
-    # FIXME At present, running the testsuite takes too long
-    #run "test $PORT" \
-    #    $MAKE -C "$FULL_BUILD_PREFIX-$PORT/testsuite" SHOW_TIMINGS=1 parallel
+    # The testsuite is too slow to run on AppVeyor in full. Run the dynlink
+    # tests now (to include natdynlink)
+    run "test dynlink $PORT" \
+        $MAKE -C "$FULL_BUILD_PREFIX-$PORT/testsuite" parallel-lib-dynlink
+    # Now reconfigure ocamltest to run in bytecode-only mode
+    sed -i '/native_/s/true/false/' \
+           "$FULL_BUILD_PREFIX-$PORT/ocamltest/ocamltest_config.ml"
+    $MAKE -C "$FULL_BUILD_PREFIX-$PORT/ocamltest" -j all allopt
+    # And run the entire testsuite, skipping all the native-code tests
+    run "test $PORT" \
+        make -C "$FULL_BUILD_PREFIX-$PORT/testsuite" SHOW_TIMINGS=1 all
     run "install $PORT" $MAKE -C "$FULL_BUILD_PREFIX-$PORT" install
     if [[ $PORT = 'msvc64' ]] ; then
       run "$MAKE check_all_arches" \
@@ -180,7 +186,7 @@ case "$1" in
       run "$MAKE distclean" $MAKE distclean
     fi
 
-    if [[ $BOOTSTRAP_FLEXDLL = 'false' ]] ; then
+    if [[ $install_flexdll = 'true' ]] ; then
       tar -xzf "$APPVEYOR_BUILD_FOLDER/flexdll.tar.gz"
       cd "flexdll-$FLEXDLL_VERSION"
       $MAKE MSVC_DETECT=0 CHAINS=${PORT%32} support

@@ -29,6 +29,7 @@ type error =
   | Other of Location.t
   | Ill_formed_ast of Location.t * string
   | Invalid_package_type of Location.t * string
+  | Removed_string_set of Location.t
 
 exception Error of error
 exception Escape_error

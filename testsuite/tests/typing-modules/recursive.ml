@@ -9,5 +9,6 @@ module rec T : sig type t = T.t end = T;;
 Line 1, characters 0-39:
 1 | module rec T : sig type t = T.t end = T;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation T.t is cyclic
+Error: The type abbreviation T.t is cyclic:
+         T.t = T.t
 |}]

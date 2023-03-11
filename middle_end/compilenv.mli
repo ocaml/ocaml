@@ -151,6 +151,7 @@ type error =
     Not_a_unit_info of string
   | Corrupted_unit_info of string
   | Illegal_renaming of string * string * string
+  | Mismatching_for_pack of string * string * string * string option
 
 exception Error of error
 

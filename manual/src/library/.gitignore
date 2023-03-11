@@ -1,7 +1,0 @@
-*.tex
-*.htex
-arithstatus.mli
-ocamldoc.out
-ocamldoc.sty
-compiler_libs.txt
-

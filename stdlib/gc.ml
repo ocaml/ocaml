@@ -61,8 +61,9 @@ external major : unit -> unit = "caml_gc_major"
 external full_major : unit -> unit = "caml_gc_full_major"
 external compact : unit -> unit = "caml_gc_compaction"
 external get_minor_free : unit -> int = "caml_get_minor_free"
-external eventlog_pause : unit -> unit = "caml_eventlog_pause"
-external eventlog_resume : unit -> unit = "caml_eventlog_resume"
+
+let eventlog_pause () = ()
+let eventlog_resume () = ()
 
 open Printf
 
@@ -102,23 +103,23 @@ external finalise_last : (unit -> unit) -> 'a -> unit =
 external finalise_release : unit -> unit = "caml_final_release"
 
 
-type alarm = bool ref
+type alarm = bool Atomic.t
 type alarm_rec = {active : alarm; f : unit -> unit}
 
 let rec call_alarm arec =
-  if !(arec.active) then begin
-    finalise call_alarm arec;
-    arec.f ();
+  if Atomic.get arec.active then begin
+    let finally () = finalise call_alarm arec in
+    Fun.protect ~finally arec.f
   end
 
 
 let create_alarm f =
-  let arec = { active = ref true; f = f } in
+  let arec = { active = Atomic.make true; f = f } in
   finalise call_alarm arec;
   arec.active
 
 
-let delete_alarm a = a := false
+let delete_alarm a = Atomic.set a false
 
 module Memprof =
   struct

@@ -35,8 +35,6 @@ let transfer i ~next ~exn =
   | Iop op ->
       if operation_is_pure op                 (* no side effects *)
       && Reg.disjoint_set_array next i.res    (* results are not used after *)
-      && not (Proc.regs_are_volatile i.arg)   (* no stack-like hard reg *)
-      && not (Proc.regs_are_volatile i.res)   (*            is involved *)
       then begin
         (* This operation is dead code.  Ignore its arguments. *)
         i.live <- next;

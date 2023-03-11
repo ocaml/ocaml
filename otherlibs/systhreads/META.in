@@ -1,0 +1,13 @@
+# @configure_input@
+
+version = "@VERSION@"
+description = "Multi-threading"
+requires = "unix"
+archive(byte) = "threads.cma"
+archive(native) = "threads.cmxa"
+type_of_threads = "posix"
+
+package "posix" (
+  requires = "threads"
+  version = "[internal]"
+)

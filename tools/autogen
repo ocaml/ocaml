@@ -22,18 +22,9 @@ ${1-autoconf} --force --warnings=all,error
 # The sed call removes dra27's copyright on the whole configure script...
 sed -e '/^#[^!]/d' tools/git-dev-options.sh > configure.tmp
 
-# Some distros have the 2013 --runstatedir patch to autoconf (see
-# http://git.savannah.gnu.org/cgit/autoconf.git/commit/?id=a197431414088a417b407b9b20583b2e8f7363bd
-# in the GNU autoconf repo), and some don't, so ensure its effects are
-# removed for CI consistency...
-# POSIX Notes
-#  - sed -i without a backup file is not portable, hence configure.tmp
-#  - GNU sed's /../,+8d becomes /../{N;..;d;} (and the last ; is important)
-sed -e '/^runstatedir/d' \
-    -e '/-runstatedir /{N;N;N;N;N;N;N;N;d;}' \
-    -e '/--runstatedir=DIR/d' \
-    -e 's/ runstatedir//' \
-    -e '/split(line, arg/s|" "|/[ \\r\\t]/|' \
+# - Workaround sr #110554 (https://savannah.gnu.org/support/index.php?110554)
+# - sed -i without a backup file is not portable, hence configure.tmp
+sed -e '/split(line, arg/s|" "|/[ \\r\\t]/|' \
     -e '/define|undef/s/|\\\$/|\\r?\\$/' \
     -e '1d' \
     configure >> configure.tmp

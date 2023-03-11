@@ -47,8 +47,8 @@ let _ =
   begin
     let sock =
       Unix.socket (Unix.domain_of_sockaddr addr) Unix.SOCK_DGRAM 0 in
-    shouldfail "Stream socket 1" Unix.in_channel_of_descr sock;
-   shouldfail "Stream socket 2" Unix.out_channel_of_descr sock;
+    shouldfail "Datagram socket 1" Unix.in_channel_of_descr sock;
+   shouldfail "Datagram socket 2" Unix.out_channel_of_descr sock;
     Unix.close sock
   end;
   (* Whatever is connected to standard descriptors; hopefully a terminal *)
@@ -64,5 +64,11 @@ let _ =
     shouldfail "Closed file 1" Unix.in_channel_of_descr fd;
     shouldfail "Closed file 2" Unix.out_channel_of_descr fd
   end;
+  Sys.remove "file.tmp";
+  (* Send something to stdout, but don't flush and don't close the channel.
+     This tests proper auto-flushing at exit of channels created by
+     Unix.out_channel_of_descr.  (PR#11384) *)
+  flush stdout;
+  let oc = Unix.out_channel_of_descr Unix.stdout in
+  output_string oc "Test completed normally\n"
   (* End of test *)
-  Sys.remove "file.tmp"

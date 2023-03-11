@@ -19,6 +19,13 @@ open Misc
 open Config
 open Cmo_format
 
+module Dep = struct
+  type t = string * string
+  let compare = compare
+end
+
+module DepSet = Set.Make (Dep)
+
 type error =
   | File_not_found of filepath
   | Not_an_object_file of filepath
@@ -30,7 +37,8 @@ type error =
   | Cannot_open_dll of filepath
   | Required_module_unavailable of modname * modname
   | Camlheader of string * filepath
-  | Wrong_link_order of (modname * modname) list
+  | Wrong_link_order of DepSet.t
+  | Multiple_definition of modname * filepath * filepath
 
 exception Error of error
 
@@ -89,7 +97,11 @@ let add_ccobjs origin l =
 
 let missing_globals = ref Ident.Map.empty
 let provided_globals = ref Ident.Set.empty
-let badly_ordered_dependencies : (string * string) list ref = ref []
+let badly_ordered_dependencies : DepSet.t ref = ref DepSet.empty
+
+let record_badly_ordered_dependency (id, compunit) =
+  let dep = ((Ident.name id), compunit.cu_name) in
+  badly_ordered_dependencies := DepSet.add dep !badly_ordered_dependencies
 
 let is_required (rel, _pos) =
   match rel with
@@ -100,8 +112,7 @@ let is_required (rel, _pos) =
 let add_required compunit =
   let add id =
     if Ident.Set.mem id !provided_globals then
-      badly_ordered_dependencies :=
-        ((Ident.name id), compunit.cu_name) :: !badly_ordered_dependencies;
+      record_badly_ordered_dependency (id, compunit);
     missing_globals := Ident.Map.add id compunit.cu_name !missing_globals
   in
   List.iter add (Symtable.required_globals compunit.cu_reloc);
@@ -175,15 +186,17 @@ let implementations_defined = ref ([] : (string * string) list)
 
 let check_consistency file_name cu =
   begin try
+    let source = List.assoc cu.cu_name !implementations_defined in
+    raise (Error (Multiple_definition(cu.cu_name, file_name, source)));
+  with Not_found -> ()
+  end;
+  begin try
     List.iter
       (fun (name, crco) ->
         interfaces := name :: !interfaces;
         match crco with
           None -> ()
-        | Some crc ->
-            if name = cu.cu_name
-            then Consistbl.set crc_interfaces name crc file_name
-            else Consistbl.check crc_interfaces name crc file_name)
+        | Some crc -> Consistbl.check crc_interfaces name crc file_name)
       cu.cu_imports
   with Consistbl.Inconsistency {
       unit_name = name;
@@ -191,14 +204,6 @@ let check_consistency file_name cu =
       original_source = auth;
     } ->
     raise(Error(Inconsistent_import(name, user, auth)))
-  end;
-  begin try
-    let source = List.assoc cu.cu_name !implementations_defined in
-    Location.prerr_warning (Location.in_file file_name)
-      (Warnings.Module_linked_twice(cu.cu_name,
-                                    Location.show_filename file_name,
-                                    Location.show_filename source))
-  with Not_found -> ()
   end;
   implementations_defined :=
     (cu.cu_name, file_name) :: !implementations_defined
@@ -292,11 +297,6 @@ let output_debug_info oc =
     !debug_info;
   debug_info := []
 
-(* Output a list of strings with 0-termination *)
-
-let output_stringlist oc l =
-  List.iter (fun s -> output_string oc s; output_byte oc 0) l
-
 (* Transform a file name into an absolute file name *)
 
 let make_absolute file =
@@ -314,7 +314,9 @@ let link_bytecode ?final_name tolink exec_name standalone =
     | Link_object(file_name, _) when file_name = exec_name ->
       raise (Error (Wrong_object_name exec_name));
     | _ -> ()) tolink;
-  Misc.remove_file exec_name; (* avoid permission problems, cf PR#8354 *)
+  (* Remove the output file if it exists to avoid permission problems (PR#8354),
+     but don't risk removing a special file (PR#11302). *)
+  Misc.remove_file exec_name;
   let outperm = if !Clflags.with_runtime then 0o777 else 0o666 in
   let outchan =
     open_out_gen [Open_wronly; Open_trunc; Open_creat; Open_binary]
@@ -344,9 +346,9 @@ let link_bytecode ?final_name tolink exec_name standalone =
          let runtime = make_absolute !Clflags.use_runtime in
          let runtime =
            (* shebang mustn't exceed 128 including the #! and \0 *)
-           if String.length runtime > 125 then
+           if String.length runtime > 125 || String.contains runtime ' ' then
              "/bin/sh\n\
-              exec \"" ^ runtime ^ "\" \"$0\" \"$@\""
+              exec " ^ Filename.quote runtime ^ " \"$0\" \"$@\""
            else
              runtime
          in
@@ -378,10 +380,10 @@ let link_bytecode ?final_name tolink exec_name standalone =
        (* DLL stuff *)
        if standalone then begin
          (* The extra search path for DLLs *)
-         output_stringlist outchan !Clflags.dllpaths;
+         output_string outchan (concat_null_terminated !Clflags.dllpaths);
          Bytesections.record outchan "DLPT";
          (* The names of the DLLs *)
-         output_stringlist outchan sharedobjs;
+         output_string outchan (concat_null_terminated sharedobjs);
          Bytesections.record outchan "DLLS"
        end;
        (* The names of all primitives *)
@@ -632,11 +634,11 @@ let link objfiles output_name =
     match Ident.Map.bindings missing_modules with
     | [] -> ()
     | (id, cu_name) :: _ ->
-        match !badly_ordered_dependencies with
-        | [] ->
+        if DepSet.is_empty !badly_ordered_dependencies
+        then
             raise (Error (Required_module_unavailable (Ident.name id, cu_name)))
-        | l ->
-            raise (Error (Wrong_link_order l))
+        else
+            raise (Error (Wrong_link_order !badly_ordered_dependencies))
   end;
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs; (* put user's libs last *)
   Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
@@ -772,12 +774,20 @@ let report_error ppf = function
       fprintf ppf "Module `%s' is unavailable (required by `%s')" s m
   | Camlheader (msg, header) ->
       fprintf ppf "System error while copying file %s: %s" header msg
-  | Wrong_link_order l ->
+  | Wrong_link_order depset ->
+      let l = DepSet.elements depset in
       let depends_on ppf (dep, depending) =
         fprintf ppf "%s depends on %s" depending dep
       in
       fprintf ppf "@[<hov 2>Wrong link order: %a@]"
         (pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ",@ ") depends_on) l
+  | Multiple_definition(modname, file1, file2) ->
+      fprintf ppf
+        "@[<hov>Files %a@ and %a@ both define a module named %s@]"
+        Location.print_filename file1
+        Location.print_filename file2
+        modname
+
 
 let () =
   Location.register_error_of_exn
