@@ -191,6 +191,11 @@ val fold_right : ('a -> 'acc -> 'acc) -> 'a array -> 'acc -> 'acc
    [f a.(0) (f a.(1) ( ... (f a.(n-1) init) ...))],
    where [n] is the length of the array [a]. *)
 
+val count_if : ('a -> bool) -> 'a array -> int
+(** [count_if f a] is the number of elements of the array [a] that
+   satisfy the predicate [f].
+
+   @since 5.1 *)
 
 (** {1 Iterators on two arrays} *)
 

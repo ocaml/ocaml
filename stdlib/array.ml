@@ -192,6 +192,13 @@ let fold_right f a x =
   done;
   !r
 
+let count_if f a =
+  let r = ref 0 in
+  for i = 0 to length a - 1 do
+    if f (unsafe_get a i) then r := !r + 1
+  done;
+  !r
+
 let exists p a =
   let n = length a in
   let rec loop i =
