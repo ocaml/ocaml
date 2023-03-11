@@ -961,6 +961,12 @@ module ArrayLabels : sig
       [f a.(0) (f a.(1) ( ... (f a.(n-1) init) ...))],
       where [n] is the length of the floatarray [a]. *)
 
+  val count_if : f:(float -> bool) -> t -> int
+  (** [count_if ~f a] is the number of elements of the array [a] that
+      satisfy the predicate [f].
+
+      @since 5.1 *)
+
   (** {2 Iterators on two arrays} *)
 
   val iter2 : f:(float -> float -> unit) -> t -> t -> unit
