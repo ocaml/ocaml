@@ -256,7 +256,13 @@ let rec compare cmp xs ys =
   | Cons (_, _), Nil ->
       +1
 
-
+let count_if f xs =
+  let rec aux f n xs =
+    match xs() with
+    | Nil -> n
+    | Cons (x, xs) -> aux f (if f x then n + 1 else n) xs
+  in
+  aux f 0 xs
 
 (* [init_aux f i j] is the sequence [f i, ..., f (j-1)]. *)
 

@@ -338,6 +338,12 @@ val compare : ('a -> 'b -> int) -> 'a t -> 'b t -> int
 
     @since 4.14 *)
 
+val count_if : ('a -> bool) -> 'a t -> int
+(** [count_if f xs] is the number of elements in the sequence [xs] that
+    satisfy the predicate [f]. The sequence [xs] must be finite.
+
+    @since 5.1 *)
+
 (** {1 Constructing sequences} *)
 
 (** The functions in this section are lazy: that is, they return sequences
