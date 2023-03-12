@@ -135,7 +135,7 @@ Working version
 
 - #11383: Restrict the local function optimisation to forbid moving code
   inside a sub-function
-  (Vincent Laviron)
+  (Vincent Laviron, review by Gabriel Scherer)
 
 - #11418, #11708: RISC-V multicore support.
   (Nicolás Ojeda Bär, review by KC Sivaramakrishnan)

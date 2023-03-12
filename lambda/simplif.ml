@@ -791,6 +791,8 @@ let simplify_local_functions lam =
      by the outermost lambda for which the the current lambda
      is in tail position. *)
   let current_scope = ref lam in
+  (* PR11383: We will only apply the transformation if we don't have to move
+     code across function boundaries *)
   let current_function_scope = ref lam in
   let check_static lf =
     if lf.attr.local = Always_local then
