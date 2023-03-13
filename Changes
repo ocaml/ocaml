@@ -133,6 +133,10 @@ Working version
 - #11102: Speed up register allocation by permanently spilling registers
   (Stephen Dolan, review by Xavier Leroy)
 
+- #11383: Restrict the local function optimisation to forbid moving code
+  inside a sub-function
+  (Vincent Laviron, review by Gabriel Scherer)
+
 - #11418, #11708: RISC-V multicore support.
   (Nicolás Ojeda Bär, review by KC Sivaramakrishnan)
 
