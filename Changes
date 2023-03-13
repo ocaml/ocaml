@@ -639,6 +639,9 @@ Working version
   (Nicolás Ojeda Bär, review by Xavier Leroy, David Allsop, Javier
   Chávarri, Anil Madhavapeddy)
 
+- #12103, 12104: fix a concurrency memory-safety bug in Buffer
+  (Gabriel Scherer, review by ?, report by Samuel Hym)
+
 OCaml 5.0.0 (15 December 2022)
 ------------------------------
 
@@ -879,6 +882,14 @@ OCaml 5.0.0 (15 December 2022)
 
 - #8878: Add String.hash and String.seeded_hash.
   (Tom Kelly, review by Alain Frisch and Nicolás Ojeda Bär)
+
+- #11279, #11585, #11742: ensure that the unsafe Buffer code
+  remains memory-safe in concurrent settings.
+  Unsychronized access to Buffer is a programming error and may
+  result in wrong behavior, but it should preserve memory-safety.
+  (Florian Angeletti and Gabriel Scherer, review by Gabriel Scherer
+   and Vincent Laviron, report by David Allsopp)
+
 
 ### Other libraries:
 

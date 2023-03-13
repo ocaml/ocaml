@@ -166,7 +166,7 @@ let add_string b s =
   let len = String.length s in
   let position = b.position in
   let {buffer; length} = b.inner in
-  let new_position = b.position + len in
+  let new_position = position + len in
   if new_position > length then (
     resize b len;
     Bytes.blit_string s 0 b.inner.buffer b.position len;
