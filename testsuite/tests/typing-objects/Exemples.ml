@@ -517,7 +517,7 @@ class ['a] sorted_list :
 
 let l = new sorted_list ();;
 [%%expect{|
-val l : _#comparable sorted_list = <obj>
+val l : (#comparable as '_weak1) sorted_list = <obj>
 |}];;
 let c = new int_comparable 10;;
 [%%expect{|

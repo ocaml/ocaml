@@ -255,14 +255,28 @@ let pr_present =
   print_list (fun ppf s -> fprintf ppf "`%s" s) (fun ppf -> fprintf ppf "@ ")
 
 let pr_var = Pprintast.tyvar
+let ty_var ~non_gen ppf s =
+  pr_var ppf (if non_gen then "_" ^ s else s)
 
 let pr_vars =
   print_list pr_var (fun ppf -> fprintf ppf "@ ")
 
 let rec print_out_type ppf =
   function
-  | Otyp_alias (ty, s) ->
-      fprintf ppf "@[%a@ as %a@]" print_out_type ty pr_var s
+  (* If we have an alias to carry the information that a row variable is weakly
+     polymorphic, we don't need to add "_" prefix to the variant, open class,
+     or object types *)
+  | Otyp_alias {non_gen=true; aliased=Otyp_variant(true,x,y,z); alias} ->
+      let ty = Otyp_variant(false,x,y,z) in
+      fprintf ppf "@[%a@ as %a@]" print_out_type ty (ty_var ~non_gen:true) alias
+  | Otyp_alias {non_gen=true; aliased=Otyp_object(fields,Some true); alias} ->
+      let ty = Otyp_object(fields,Some false) in
+      fprintf ppf "@[%a@ as %a@]" print_out_type ty (ty_var ~non_gen:true) alias
+  | Otyp_alias {non_gen=true; aliased=Otyp_class(true, ty, params); alias} ->
+      let ty = Otyp_class(false,ty, params) in
+      fprintf ppf "@[%a@ as %a@]" print_out_type ty (ty_var ~non_gen:true) alias
+  | Otyp_alias {non_gen; aliased; alias } ->
+      fprintf ppf "@[%a@ as %a@]" print_out_type aliased (ty_var ~non_gen) alias
   | Otyp_poly (sl, ty) ->
       fprintf ppf "@[<hov 2>%a.@ %a@]"
         pr_vars sl
@@ -299,7 +313,7 @@ and print_simple_out_type ppf =
   | Otyp_object (fields, rest) ->
       fprintf ppf "@[<2>< %a >@]" (print_fields rest) fields
   | Otyp_stuff s -> pp_print_string ppf s
-  | Otyp_var (ng, s) -> pr_var ppf (if ng then "_" ^ s else s)
+  | Otyp_var (non_gen, s) -> ty_var ~non_gen ppf s
   | Otyp_variant (non_gen, row_fields, closed, tags) ->
       let print_present ppf =
         function

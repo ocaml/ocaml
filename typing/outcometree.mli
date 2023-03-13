@@ -61,7 +61,7 @@ type out_type_param = string * (Asttypes.variance * Asttypes.injectivity)
 type out_type =
   | Otyp_abstract
   | Otyp_open
-  | Otyp_alias of out_type * string
+  | Otyp_alias of {non_gen:bool; aliased:out_type; alias:string}
   | Otyp_arrow of string * out_type * out_type
   | Otyp_class of bool * out_ident * out_type list
   | Otyp_constr of out_ident * out_type list
