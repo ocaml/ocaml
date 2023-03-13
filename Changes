@@ -640,7 +640,7 @@ Working version
   Chávarri, Anil Madhavapeddy)
 
 - #12103, 12104: fix a concurrency memory-safety bug in Buffer
-  (Gabriel Scherer, review by ?, report by Samuel Hym)
+  (Gabriel Scherer, review by Florian Angeletti, report by Samuel Hym)
 
 OCaml 5.0.0 (15 December 2022)
 ------------------------------
