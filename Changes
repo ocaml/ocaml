@@ -351,6 +351,10 @@ Working version
 
 ### Manual and documentation:
 
+- #12095, #12097: Put the sample code of the user's manual and reference
+  documentation of the standard library under the CC0 1.0 Universal
+  (CC0 1.0) Public Domain Dedication license.
+
 - #9430, #11291: Document the general desugaring rules for binding operators.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
