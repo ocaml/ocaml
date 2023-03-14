@@ -1579,6 +1579,7 @@ let class_infos define_class kind
     begin try
       Ctype.unify env ty constr
     with Ctype.Unify _ ->
+      let constr = Ctype.newconstr (Path.Pident obj_id) obj_params in
       raise(Error(cl.pci_loc, env,
         Abbrev_type_clash (constr, ty, Ctype.expand_head env constr)))
     end

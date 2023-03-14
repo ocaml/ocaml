@@ -110,7 +110,7 @@ type t = int -> int -> unit
 Line 2, characters 14-21:
 2 | let f (x:t) = x 0 1 2
                   ^^^^^^^
-Error: The function "x" has type int -> int -> unit
+Error: The function "x" has type t
        It is applied to too many arguments
 Line 2, characters 18-20:
 2 | let f (x:t) = x 0 1 2

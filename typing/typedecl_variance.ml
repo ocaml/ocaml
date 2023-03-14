@@ -82,8 +82,6 @@ let compute_variance env visited vari ty =
     | Tfield (_, _, ty1, ty2) ->
         compute_same ty1;
         compute_same ty2
-    | Tsubst _ ->
-        assert false
     | Tvariant row ->
         List.iter
           (fun (_,f) ->
@@ -98,10 +96,12 @@ let compute_variance env visited vari ty =
         compute_same (row_more row)
     | Tpoly (ty, _) ->
         compute_same ty
-    | Tvar _ | Tnil | Tlink _ | Tunivar _ -> ()
+    | Tvar _ | Tnil | Tunivar _ -> ()
     | Tpackage (_, fl) ->
         let v = Variance.(compose vari full) in
         List.iter (fun (_, ty) -> compute_variance_rec v ty) fl
+    | Tsubst _ | Tlink _ | Texpand _ ->
+        assert false
   in
   compute_variance_rec vari ty
 

@@ -35,15 +35,15 @@ let string_of_variance t v =
     | _ -> inj
   else
     ""
-let rec is_arrow_type t =
-  match Types.get_desc t with
-    Types.Tarrow _ -> true
-  | Types.Tlink t2 -> is_arrow_type t2
-  | Types.Ttuple _
-  | Types.Tconstr _
-  | Types.Tvar _ | Types.Tunivar _ | Types.Tobject _ | Types.Tpoly _
-  | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
-  | Types.Tsubst _ -> assert false
+let is_arrow_type t =
+  let open Types in
+  match get_desc t with
+    Tarrow _ -> true
+  | Ttuple _
+  | Tconstr _
+  | Tvar _ | Tunivar _ | Tobject _ | Tpoly _
+  | Tfield _ | Tnil | Tvariant _ | Tpackage _ -> false
+  | Tlink _ | Texpand _ | Tsubst _ -> assert false
 
 
 let rec need_parent t =
@@ -53,7 +53,7 @@ let rec need_parent t =
   | Types.Tconstr _
   | Types.Tvar _ | Types.Tunivar _ | Types.Tobject _ | Types.Tpoly _
   | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
-  | Types.Tsubst _ -> assert false
+  | Types.Tsubst _ | Types.Texpand _ -> assert false
 
 let print_type_scheme ppf t =
   if need_parent t then

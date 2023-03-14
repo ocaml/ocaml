@@ -26,7 +26,7 @@ Line 7, characters 16-20:
                     ^^^^
 Error: This expression has type "(a, a) eq"
        but an expression was expected of type "(a, t) eq"
-       Type "a" is not compatible with type "t" = "[ `Rec of 'a ] X.t as 'a"
+       Type "a" is not compatible with type "t" = "([ `Rec of 'a X.t ] as 'a) X.t"
 |}]
 
 (* Trigger the unsoundness if Fix were definable *)

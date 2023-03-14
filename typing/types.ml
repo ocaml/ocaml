@@ -41,6 +41,9 @@ and type_desc =
   | Tunivar of string option
   | Tpoly of type_expr * type_expr list
   | Tpackage of Path.t * (Longident.t * type_expr) list
+  | Texpand of type_expr * Path.t * type_expr list
+        (* NB: let's move Tlink and Tsubst (temporary nodes) to the end of
+           this definition *)
 
 and row_desc =
     { row_fields: (label * row_field) list;
@@ -64,6 +67,7 @@ and _ row_field_gen =
 and abbrev_memo =
     Mnil
   | Mcons of private_flag * Path.t * type_expr * type_expr * abbrev_memo
+        (* NB: should use an inline record *)
   | Mlink of abbrev_memo ref
 
 and any = [`some | `none | `var]
@@ -548,31 +552,64 @@ let commu_var () = Cvar {commu=Cunknown}
 
 let rec repr_link (t : type_expr) d : type_expr -> type_expr =
  function
-   {desc = Tlink t' as d'} ->
+   {desc = Tlink t' | Texpand (t', _, _) as d'} ->
+     let d' = match d with
+     | Texpand (_, path, args) -> Texpand (t', path, args)
+           (* keep the original name and args if they exist *)
+           (* NB: Texpand is allocated at each recursion;
+              could be optimized *)
+     | _ -> d'
+     in
      repr_link t d' t'
  | {desc = Tfield (_, k, _, t') as d'}
    when field_kind_internal_repr k = FKabsent ->
      repr_link t d' t'
+     (* In the case of Tfield, d does not contain an abbreviation,
+        thus we do not need a case analysis like above. *)
  | t' ->
      log_change (Ccompress (t, t.desc, d));
      t.desc <- d;
      t'
 
-let repr_link1 t = function
-   {desc = Tlink t' as d'} ->
+let repr_link1 t d = function
+   {desc = Tlink t' | Texpand (t', _, _) as d'} ->
+     let d' = match d with
+     | Texpand (_, path, args) -> Texpand (t', path, args)
+     | _ -> d'
+     in
      repr_link t d' t'
  | {desc = Tfield (_, k, _, t') as d'}
    when field_kind_internal_repr k = FKabsent ->
      repr_link t d' t'
  | t' -> t'
 
+(* A non-normalized type may contain an arbitrarily long chain of
+   [Tlink] or [Texpand] prefixing the actual node (neither
+   [Tlink] nor [Texpand]).
+   [repr t] returns the actual node [t'], and also normalizes [t]
+   so that it is either [t'] itself (if there was no prefix) or
+   either [Tlink t'] or [Texpand (t', path, args)] where [path] and [args]
+   are taken from the first [Texpand] in the chain.
+   For instance, with "t1 -> t2" for [t1.desc = Tlink t2] and
+   "t1 -(path,args)-> t2" for [t1.desc = Texpand (t2, path, args)], we have
+   Before:
+      t -> t1 -(path1,args2)-> t2 -> t3 -(path2,args2)-> t'
+   After:
+      t -(path1,args1)-> t'
+   Before:
+      t -> t1 -> t2 -> t'
+   After:
+      t -> t'
+ *)
+
 let repr t =
-  match t.desc with
-   Tlink t' ->
-     repr_link1 t t'
- | Tfield (_, k, _, t') when field_kind_internal_repr k = FKabsent ->
-     repr_link1 t t'
- | _ -> t
+  let d = t.desc in
+  match d with
+    Tlink t' | Texpand (t', _, _) ->
+      repr_link1 t d t'
+  | Tfield (_, k, _, t') when field_kind_internal_repr k = FKabsent ->
+      repr_link1 t d t'
+  | _ -> t
 
 (* getters for type_expr *)
 
@@ -580,6 +617,20 @@ let get_desc t = (repr t).desc
 let get_level t = (repr t).level
 let get_scope t = (repr t).scope
 let get_id t = (repr t).id
+
+let get_expand t =
+  ignore (repr t);
+  match t.desc with Texpand (_, path, args) -> Some (path, args) | _ -> None
+
+let iter_expand f t =
+  ignore (repr t);
+  match t.desc with Texpand (_, path, args) -> f path args | _ -> ()
+
+let get_expand_scope t =
+  ignore (repr t);
+  match t.desc with
+    Texpand (_, path, _) -> Path.scope path
+  | _ -> Ident.lowest_scope
 
 (* transient type_expr *)
 
@@ -684,7 +735,7 @@ let rec row_field_ext (fi : row_field) =
   | RFeither {ext = {contents = RFnone} as ext} -> ext
   | RFeither {ext = {contents = RFeither _ | RFpresent _ | RFabsent as rf}} ->
       row_field_ext rf
-  | _ -> Misc.fatal_error "Types.row_field_ext "
+  | _ -> Misc.fatal_error "Types.row_field_ext"
 
 let rf_present oty = RFpresent oty
 let rf_absent = RFabsent
@@ -756,30 +807,54 @@ let last_snapshot = Local_store.s_ref 0
 
 let log_type ty =
   if ty.id <= !last_snapshot then log_change (Ctype (ty, ty.desc))
-let link_type ty ty' =
+
+let link_expand ty ty' =
   let ty = repr ty in
   let ty' = repr ty' in
-  if ty == ty' then () else begin
+  if ty == ty' then () else
+  match ty.desc with
+    Tconstr (path, args, _memo) ->
+      log_type ty;
+      Transient_expr.set_desc ty (Texpand (ty', path, args))
+  | _ -> Misc.fatal_error "Types.link_expand"
+
+let forget_expand ty =
+  ignore (repr ty);
+  match ty.desc with
+    Texpand (ty', _, _) ->
+      log_type ty;
+      ty.desc <- Tlink ty'
+  | _ -> Misc.fatal_error "Types.forget_expand"
+
+let link_type ty ty' =
+  let ty = repr ty in
+  let ty'' = repr ty' in
+  if ty == ty'' then () else begin
   log_type ty;
   let desc = ty.desc in
-  Transient_expr.set_desc ty (Tlink ty');
+  begin match ty'.desc with
+    Tlink _ | Texpand _ as d -> (* Keep [Texpand] for printing *)
+      Transient_expr.set_desc ty d
+  | _ ->
+      Transient_expr.set_desc ty (Tlink ty')
+  end;
   (* Name is a user-supplied name for this unification variable (obtained
    * through a type annotation for instance). *)
-  match desc, ty'.desc with
+  match desc, ty''.desc with
     Tvar name, Tvar name' ->
       begin match name, name' with
-      | Some _, None -> log_type ty'; Transient_expr.set_desc ty' (Tvar name)
+      | Some _, None -> log_type ty''; Transient_expr.set_desc ty'' (Tvar name)
       | None, Some _ -> ()
       | Some _, Some _ ->
-          if ty.level < ty'.level then
-            (log_type ty'; Transient_expr.set_desc ty' (Tvar name))
+          if ty.level < ty''.level then
+            (log_type ty''; Transient_expr.set_desc ty'' (Tvar name))
       | None, None   -> ()
       end
   | _ -> ()
   end
   (* ; assert (check_memorized_abbrevs ()) *)
   (*  ; check_expans [] ty' *)
-(* TODO: consider eliminating set_type_desc, replacing it with link types *)
+
 let set_type_desc ty td =
   let ty = repr ty in
   if td != ty.desc then begin
@@ -794,6 +869,7 @@ let set_level ty level =
     if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));
     Transient_expr.set_level ty level
   end
+
 (* TODO: introduce a guard and rename it to set_higher_scope? *)
 let set_scope ty scope =
   let ty = repr ty in
@@ -813,7 +889,7 @@ let rec link_row_field_ext ~(inside : row_field) (v : row_field) =
       log_change (Crow e); e := v
   | RFeither {ext = {contents = RFeither _ | RFpresent _ | RFabsent as rf}} ->
       link_row_field_ext ~inside:rf v
-  | _ -> invalid_arg "Types.link_row_field_ext"
+  | _ -> Misc.fatal_error "Types.link_row_field_ext"
 
 let rec link_kind ~(inside : field_kind) (k : field_kind) =
   match inside with
@@ -826,7 +902,7 @@ let rec link_kind ~(inside : field_kind) (k : field_kind) =
       end
   | FKvar {field_kind = FKvar _ | FKpublic | FKabsent as inside} ->
       link_kind ~inside k
-  | _ -> invalid_arg "Types.link_kind"
+  | _ -> Misc.fatal_error "Types.link_kind"
 
 let rec commu_repr : commutable -> commutable = function
   | Cvar {commu = Cvar _ | Cok as commu} -> commu_repr commu
@@ -843,7 +919,7 @@ let rec link_commu ~(inside : commutable) (c : commutable) =
       end
   | Cvar {commu = Cvar _ | Cok as inside} ->
       link_commu ~inside c
-  | _ -> invalid_arg "Types.link_commu"
+  | _ -> Misc.fatal_error "Types.link_commu"
 
 let set_commu_ok c = link_commu ~inside:c Cok
 

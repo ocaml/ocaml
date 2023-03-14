@@ -107,7 +107,7 @@ let is_absrow env ty =
          included into (usually numbered with "2" in this file).  In this case,
          the abstract row variable has been substituted for an object or variant
          type. *)
-      begin match get_desc (Ctype.expand_head env ty) with
+      begin match get_desc (Ctype.expand_head_nolink env ty) with
       | Tobject _|Tvariant _ -> true
       | _ -> false
       end
@@ -736,7 +736,7 @@ let privacy_mismatch env decl1 decl2 =
         when Option.is_some decl2.type_manifest -> begin
           match decl1.type_manifest with
           | Some ty1 -> begin
-            let ty1 = Ctype.expand_head env ty1 in
+            let ty1 = Ctype.expand_head_nolink env ty1 in
             match get_desc ty1 with
             | Tvariant row when Btype.is_constr_row ~allow_ident:true
                                   (row_more row) ->
@@ -848,7 +848,8 @@ let private_object env fields1 params1 fields2 params2 =
   end
 
 let type_manifest env ty1 params1 ty2 params2 priv2 kind2 =
-  let ty1' = Ctype.expand_head env ty1 and ty2' = Ctype.expand_head env ty2 in
+  let ty1' = Ctype.expand_head_nolink env ty1
+  and ty2' = Ctype.expand_head_nolink env ty2 in
   match get_desc ty1', get_desc ty2' with
   | Tvariant row1, Tvariant row2
     when is_absrow env (row_more row2) -> begin
@@ -886,7 +887,10 @@ let type_manifest env ty1 params1 ty2 params2 priv2 kind2 =
         else
           Ctype.equal env true (params1 @ [ty1]) (params2 @ [ty2])
       with
-      | exception Ctype.Equality err -> Some (Manifest err)
+      | exception Ctype.Equality err ->
+          (*Format.eprintf "@[ty1=%a@ ty2=%a@]@." Printtyp.raw_type_expr ty1'
+            Printtyp.raw_type_expr ty2';*)
+          Some (Manifest err)
       | () -> None
     end
 

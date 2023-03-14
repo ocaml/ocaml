@@ -43,6 +43,9 @@ val strings_of_paths: namespace -> Path.t list -> string list
 
 val raw_type_expr: formatter -> type_expr -> unit
 val string_of_label: Asttypes.arg_label -> string
+val raw_type_declaration: formatter -> type_declaration -> unit
+val raw_signature: formatter -> signature -> unit
+val raw_modtype: formatter -> module_type -> unit
 
 val wrap_printing_env: error:bool -> Env.t -> (unit -> 'a) -> 'a
     (* Call the function using the environment for type path shortening *)

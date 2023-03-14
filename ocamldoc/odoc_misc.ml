@@ -72,7 +72,9 @@ let list_concat sep =
   in
   iter
 
-let remove_duplicates (type a) compare (li : a list) =
+(* let remove_duplicates (type a) compare (li : a list) = *)
+let remove_duplicates : type a. (a -> a -> int) -> a list -> a list =
+  fun compare li ->
   let module S = Set.Make(struct type t = a let compare = compare end) in
   let maybe_cons ((set, rev_acc) as acc) x =
     if S.mem x set then acc
@@ -489,28 +491,22 @@ let create_index_lists elements string_of_ele =
 let is_optional = Btype.is_optional
 let label_name = Btype.label_name
 
-let remove_option typ =
+let rec remove_option typ =
   let open Types in
-  let rec trim t =
-    match t with
-    | Tconstr(path, [ty], _)
-      when Path.same path Predef.path_option -> get_desc ty
-    | Tconstr _
-    | Tvar _
-    | Tunivar _
-    | Tpoly _
-    | Tarrow _
-    | Ttuple _
-    | Tobject _
-    | Tfield _
-    | Tnil
-    | Tvariant _
-    | Tpackage _ -> t
-    | Tlink t2 -> trim (get_desc t2)
-    | Tsubst _ -> assert false
-  in
-  Transient_expr.type_expr
-    (Transient_expr.create (trim (get_desc typ))
-       ~level:(get_level typ)
-       ~scope:(get_scope typ)
-       ~id:(get_id typ))
+  match get_desc typ with
+  | Tconstr(path, [ty], _)
+    when Path.same path Predef.path_option -> remove_option ty
+  | Tconstr _
+  | Tvar _
+  | Tunivar _
+  | Tpoly _
+  | Tarrow _
+  | Ttuple _
+  | Tobject _
+  | Tfield _
+  | Tnil
+  | Tvariant _
+  | Tpackage _ -> typ
+  | Tlink _
+  | Texpand _
+  | Tsubst _ -> assert false
