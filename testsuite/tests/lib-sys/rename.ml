@@ -75,3 +75,11 @@ let _ =
   print_string "Rename a nonexisting directory: ";
   testfailure "foo" "bar";
   print_newline();
+  print_string "Rename directory to a non-empty directory: ";
+  Sys.mkdir "foo" 0o755;
+  Sys.mkdir "bar" 0o755;
+  let f1 = Filename.concat "bar" "file1.dat" in
+  writefile f1 "abc";
+  testfailure "foo" "bar";
+  print_newline();
+  safe_remove f1; safe_remove_dir "foo"; safe_remove_dir "bar";
