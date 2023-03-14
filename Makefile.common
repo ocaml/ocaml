@@ -143,7 +143,7 @@ endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
 ALL_OTHERLIBS = dynlink str systhreads unix runtime_events
 
 # Flags to pass to the C preprocessor when preprocessing assembly files
-OC_ASPPFLAGS=-I $(ROOTDIR)/runtime $(OC_NATIVE_CPPFLAGS)
+OC_ASPPFLAGS=$(OC_CPPFLAGS) $(OC_NATIVE_CPPFLAGS)
 
 OPTCOMPFLAGS=
 ifeq "$(FUNCTION_SECTIONS)" "true"
