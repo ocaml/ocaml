@@ -263,20 +263,10 @@ let pr_vars =
 
 let rec print_out_type ppf =
   function
-  (* If we have an alias to carry the information that a row variable is weakly
-     polymorphic, we don't need to add "_" prefix to the variant, open class,
-     or object types *)
-  | Otyp_alias {non_gen=true; aliased=Otyp_variant(true,x,y,z); alias} ->
-      let ty = Otyp_variant(false,x,y,z) in
-      fprintf ppf "@[%a@ as %a@]" print_out_type ty (ty_var ~non_gen:true) alias
-  | Otyp_alias {non_gen=true; aliased=Otyp_object(fields,Some true); alias} ->
-      let ty = Otyp_object(fields,Some false) in
-      fprintf ppf "@[%a@ as %a@]" print_out_type ty (ty_var ~non_gen:true) alias
-  | Otyp_alias {non_gen=true; aliased=Otyp_class(true, ty, params); alias} ->
-      let ty = Otyp_class(false,ty, params) in
-      fprintf ppf "@[%a@ as %a@]" print_out_type ty (ty_var ~non_gen:true) alias
   | Otyp_alias {non_gen; aliased; alias } ->
-      fprintf ppf "@[%a@ as %a@]" print_out_type aliased (ty_var ~non_gen) alias
+      fprintf ppf "@[%a@ as %a@]"
+        print_out_type aliased
+        (ty_var ~non_gen) alias
   | Otyp_poly (sl, ty) ->
       fprintf ppf "@[<hov 2>%a.@ %a@]"
         pr_vars sl
@@ -302,19 +292,18 @@ and print_out_type_2 ppf =
   | ty -> print_simple_out_type ppf ty
 and print_simple_out_type ppf =
   function
-    Otyp_class (ng, id, tyl) ->
-      fprintf ppf "@[%a%s#%a@]" print_typargs tyl (if ng then "_" else "")
-        print_ident id
+    Otyp_class (id, tyl) ->
+      fprintf ppf "@[%a#%a@]" print_typargs tyl print_ident id
   | Otyp_constr (id, tyl) ->
       pp_open_box ppf 0;
       print_typargs ppf tyl;
       print_ident ppf id;
       pp_close_box ppf ()
-  | Otyp_object (fields, rest) ->
-      fprintf ppf "@[<2>< %a >@]" (print_fields rest) fields
+  | Otyp_object {fields; open_row} ->
+      fprintf ppf "@[<2>< %a >@]" (print_fields open_row) fields
   | Otyp_stuff s -> pp_print_string ppf s
   | Otyp_var (non_gen, s) -> ty_var ~non_gen ppf s
-  | Otyp_variant (non_gen, row_fields, closed, tags) ->
+  | Otyp_variant (row_fields, closed, tags) ->
       let print_present ppf =
         function
           None | Some [] -> ()
@@ -328,8 +317,7 @@ and print_simple_out_type ppf =
         | Ovar_typ typ ->
            print_simple_out_type ppf typ
       in
-      fprintf ppf "%s@[<hov>[%s@[<hv>@[<hv>%a@]%a@]@ ]@]"
-        (if non_gen then "_" else "")
+      fprintf ppf "@[<hov>[%s@[<hv>@[<hv>%a@]%a@]@ ]@]"
         (if closed then if tags = None then " " else "< "
          else if tags = None then "> " else "? ")
         print_fields row_fields
@@ -358,22 +346,16 @@ and print_simple_out_type ppf =
 and print_record_decl ppf lbls =
   fprintf ppf "{%a@;<1 -2>}"
     (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
-and print_fields rest ppf =
+and print_fields open_row ppf =
   function
     [] ->
-      begin match rest with
-        Some non_gen -> fprintf ppf "%s.." (if non_gen then "_" else "")
-      | None -> ()
-      end
+      if open_row then fprintf ppf "..";
   | [s, t] ->
       fprintf ppf "%s : %a" s print_out_type t;
-      begin match rest with
-        Some _ -> fprintf ppf ";@ "
-      | None -> ()
-      end;
-      print_fields rest ppf []
+      if open_row then fprintf ppf ";@ ";
+      print_fields open_row ppf []
   | (s, t) :: l ->
-      fprintf ppf "%s : %a;@ %a" s print_out_type t (print_fields rest) l
+      fprintf ppf "%s : %a;@ %a" s print_out_type t (print_fields open_row) l
 and print_row_field ppf (l, opt_amp, tyl) =
   let pr_of ppf =
     if opt_amp then fprintf ppf " of@ &@ "

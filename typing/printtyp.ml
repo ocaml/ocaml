@@ -1147,18 +1147,14 @@ let rec tree_of_typexp mode ty =
             if closed && all_present then
               out_variant
             else
-              let non_gen = is_non_gen mode (Transient_expr.type_expr px) in
               let tags =
                 if all_present then None else Some (List.map fst present) in
-              Otyp_variant (non_gen, Ovar_typ out_variant, closed, tags)
+              Otyp_variant (Ovar_typ out_variant, closed, tags)
         | _ ->
-            let non_gen =
-              not (closed && all_present) &&
-              is_non_gen mode (Transient_expr.type_expr px) in
             let fields = List.map (tree_of_row_field mode) fields in
             let tags =
               if all_present then None else Some (List.map fst present) in
-            Otyp_variant (non_gen, Ovar_fields fields, closed, tags)
+            Otyp_variant (Ovar_fields fields, closed, tags)
         end
     | Tobject (fi, nm) ->
         tree_of_typobject mode fi !nm
@@ -1238,28 +1234,26 @@ and tree_of_typobject mode fi nm =
           List.sort
             (fun (n, _) (n', _) -> String.compare n n') present_fields in
         tree_of_typfields mode rest sorted_fields in
-      let (fields, rest) = pr_fields fi in
-      Otyp_object (fields, rest)
-  | Some (p, ty :: tyl) ->
-      let non_gen = is_non_gen mode ty in
+      let (fields, open_row) = pr_fields fi in
+      Otyp_object {fields; open_row}
+  | Some (p, _ty :: tyl) ->
       let args = tree_of_typlist mode tyl in
       let (p', s) = best_type_path p in
       assert (s = Id);
-      Otyp_class (non_gen, tree_of_best_type_path p p', args)
+      Otyp_class (tree_of_best_type_path p p', args)
   | _ ->
       fatal_error "Printtyp.tree_of_typobject"
   end
 
 and tree_of_typfields mode rest = function
   | [] ->
-      let rest =
+      let open_row =
         match get_desc rest with
-        | Tvar _ | Tunivar _ -> Some (is_non_gen mode rest)
-        | Tconstr _ -> Some false
-        | Tnil -> None
+        | Tvar _ | Tunivar _ | Tconstr _-> true
+        | Tnil -> false
         | _ -> fatal_error "typfields (1)"
       in
-      ([], rest)
+      ([], open_row)
   | (s, t) :: l ->
       let field = (s, tree_of_typexp mode t) in
       let (fields, rest) = tree_of_typfields mode rest l in
