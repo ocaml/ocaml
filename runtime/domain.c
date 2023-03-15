@@ -948,9 +948,11 @@ static void* backup_thread_func(void* v)
          *  - need to guarantee no blocking so that backup thread
          *    can be signalled from caml_leave_blocking_section
          */
-        if (caml_incoming_interrupts_queued()) {
+        if (caml_incoming_interrupts_queued()
+            //|| caml_check_gc_interrupt(caml_state)
+            ) {
           if (caml_plat_try_lock(&di->domain_lock)) {
-            caml_handle_incoming_interrupts();
+            caml_handle_incoming_interrupts(); // caml_handle_gc_interrupt();
             caml_plat_unlock(&di->domain_lock);
           }
         }
@@ -960,7 +962,9 @@ static void* backup_thread_func(void* v)
         caml_plat_lock(&s->lock);
         msg = atomic_load_acquire (&di->backup_thread_msg);
         if (msg == BT_IN_BLOCKING_SECTION &&
-            !caml_incoming_interrupts_queued())
+            !caml_incoming_interrupts_queued()
+            // && !caml_check_gc_interrupt(caml_state)
+            )
           caml_plat_wait(&s->cond);
         caml_plat_unlock(&s->lock);
         break;

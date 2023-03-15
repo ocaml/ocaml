@@ -244,7 +244,9 @@ static void major_slice_stw_handler (caml_domain_state *domain, void *unused,
                                      int participating_count,
                                      caml_domain_state **participating)
 {
+  CAMLassert (domain == Caml_state);
   domain->requested_major_slice = 1;
+  //caml_interrupt_self();
 }
 
 void caml_request_major_slice_global (void)
