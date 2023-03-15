@@ -29,6 +29,7 @@ void caml_disasm_instr (code_t pc);
 void caml_trace_value_file (value v, code_t prog, asize_t proglen, FILE * f);
 void caml_trace_accu_sp_file(value accu, value * sp, code_t prog,
                              asize_t proglen, FILE * f);
+void caml_event_trace (code_t pc);
 
 #endif /* CAML_INTERNALS */
 

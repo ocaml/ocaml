@@ -73,17 +73,6 @@ enum {
   POS_CNUM = 3
 };
 
-/* Runtime representation of the debug information, optimized
-   for quick lookup */
-struct ev_info {
-  code_t ev_pc;
-  char *ev_filename;
-  char *ev_defname;
-  int ev_lnum;
-  int ev_startchr;
-  int ev_endchr;
-};
-
 struct debug_info {
   code_t start;
   code_t end;
@@ -550,6 +539,16 @@ static struct ev_info *event_for_location(code_t pc)
     return &di->events[low];
   if (low+1 < di->num_events && di->events[low+1].ev_pc == pc + 1)
     return &di->events[low+1];
+
+  return NULL;
+}
+
+/* Search for event info at the exact given PC. */
+struct ev_info * caml_exact_event_for_location(code_t pc)
+{
+  struct ev_info *ev = event_for_location(pc);
+  if (ev && ev->ev_pc == pc)
+    return ev;
 
   return NULL;
 }
