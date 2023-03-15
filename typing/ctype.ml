@@ -1220,16 +1220,17 @@ let instance_list schl =
 let get_new_abstract_name env s =
   (* unique names are needed only for error messages *)
   if in_counterexample () then s else
-  let rec loop index =
-    let name =
-      if index = 0 && s <> "" && s.[String.length s - 1] <> '$' then s else
-      Printf.sprintf "%s%d" s index
-    in
-    match Env.find_type_by_name (Longident.Lident name) env with
-    | _ -> loop (index + 1)
-    | exception Not_found -> name
+  let name index =
+    if index = 0 && s <> "" && s.[String.length s - 1] <> '$' then s else
+    Printf.sprintf "%s%d" s index
   in
-  loop 0
+  let check index =
+    match Env.find_type_by_name (Longident.Lident (name index)) env with
+    | _ -> false
+    | exception Not_found -> true
+  in
+  let index = Misc.find_first_mono check in
+  name index
 
 let new_local_type ?(loc = Location.none) ?manifest_and_scope () =
   let manifest, expansion_scope =
