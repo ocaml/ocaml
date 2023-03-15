@@ -1037,32 +1037,30 @@ module Functor_inclusion_diff = struct
     | None -> state, [||]
     | Some (res, expansion) -> { state with res }, expansion
 
-  let update (d:Diff.change) st = match d with
+  (* Whenever we have a named parameter that doesn't match it anonymous
+     counterpart, we add it to the typing environment because it may
+     contain useful abbreviations, but without adding any equations  *)
+  let bind id arg state =
+    let arg' = Subst.modtype Keep state.subst arg in
+    let env = Env.add_module id Mp_present arg' state.env in
+    { state with env }
+
+  let rec update (d:Diff.change) st =
+    match d with
     | Insert (Unit | Named (None,_))
     | Delete (Unit | Named (None,_))
     | Keep (Unit,_,_)
-    | Keep (_,Unit,_)
-    | Change ((Unit|Named(None,_)),(Unit | Named (None,_)), _) ->
+    | Keep (_,Unit,_) ->
         (* No named abstract parameters: we keep the same environment *)
         st, [||]
-    | Insert (Named (Some id, arg))
-    | Delete (Named (Some id, arg))
-    | Change ((Unit|Named(None,_)), Named (Some id, arg), _)
-    | Change (Named (Some id, arg), (Unit|Named(None,_)), _) ->
-        (* One named parameter that doesn't match it anonymous counterpart,
-           we add it to the typing environment because it may
-           contain useful abbreviations. *)
-        let arg' = Subst.modtype Keep st.subst arg in
-        let env = Env.add_module id Mp_present arg' st.env in
-        expand_params { st with env }
-    | Change (Named (Some id, arg), Named(Some id2, arg2), _) ->
+    | Insert (Named (Some id, arg)) | Delete (Named (Some id, arg)) ->
+        (* one named parameter to bind *)
+        st |> bind id arg |> expand_params
+    | Change (delete, insert, _) ->
         (* Change should be delete + insert: we add both abstract parameters
            to the environment without equating them. *)
-        let arg = Subst.modtype Keep st.subst arg in
-        let env = Env.add_module id Mp_present arg st.env in
-        let arg2 = Subst.modtype Keep st.subst arg2 in
-        let env = Env.add_module id2 Mp_present arg2 env in
-        expand_params { st with env }
+        let st, _expansion = update (Diffing.Delete delete) st in
+        update (Diffing.Insert insert) st
     | Keep (Named (name1, _), Named (name2, arg2), _) ->
         let arg = Subst.modtype Keep st.subst arg2 in
         let env, subst =
