@@ -3051,10 +3051,10 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
                       Interface_not_compiled sourceintf)))
             | Some cmi_file -> cmi_file
           in
-          let dclsig = Env.read_signature modulename intf_file in
+          let intf_source, dclsig = Env.read_signature modulename intf_file in
           let coercion, shape =
             Includemod.compunit initial_env ~mark:Mark_positive
-              sourcefile sg intf_file dclsig shape
+              ~impl_name:sourcefile sg ~intf_name:intf_source dclsig shape
           in
           Typecore.force_delayed_checks ();
           (* It is important to run these checks after the inclusion test above,
@@ -3073,9 +3073,13 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
         end else begin
           Location.prerr_warning (Location.in_file sourcefile)
             Warnings.Missing_mli;
+          let intf_name =
+            Format.asprintf "inferred signature (from %s)" sourcefile
+          in
           let coercion, shape =
             Includemod.compunit initial_env ~mark:Mark_positive
-              sourcefile sg "(inferred signature)" simple_sg shape
+              ~impl_name:sourcefile ~intf_name
+              sg  simple_sg shape
           in
           check_nongen_signature finalenv simple_sg;
           normalize_signature simple_sg;
@@ -3089,7 +3093,10 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
             let alerts = Builtin_attributes.alerts_of_str ast in
             let cmi =
               Env.save_signature ~alerts
-                simple_sg modulename (outputprefix ^ ".cmi")
+                simple_sg
+                ~modname:modulename
+                ~source_file:intf_name
+                (outputprefix ^ ".cmi")
             in
             let annots = Cmt_format.Implementation str in
             Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
@@ -3161,12 +3168,12 @@ let package_units initial_env objfiles cmifile modulename =
       (fun f ->
          let pref = chop_extensions f in
          let modname = String.capitalize_ascii(Filename.basename pref) in
-         let sg = Env.read_signature modname (pref ^ ".cmi") in
+         let _name, sg = Env.read_signature modname (pref ^ ".cmi") in
          if Filename.check_suffix f ".cmi" &&
             not(Mtype.no_code_needed_sig Env.initial sg)
          then raise(Error(Location.none, Env.empty,
                           Implementation_is_required f));
-         (modname, Env.read_signature modname (pref ^ ".cmi")))
+         (modname, snd (Env.read_signature modname (pref ^ ".cmi"))))
       objfiles in
   (* Compute signature of packaged unit *)
   Ident.reinit();
@@ -3188,10 +3195,10 @@ let package_units initial_env objfiles cmifile modulename =
       raise(Error(Location.in_file mlifile, Env.empty,
                   Interface_not_compiled mlifile))
     end;
-    let dclsig = Env.read_signature modulename cmifile in
+    let intf_name, dclsig = Env.read_signature modulename cmifile in
     let cc, _shape =
       Includemod.compunit initial_env ~mark:Mark_both
-        "(obtained by packing)" sg mlifile dclsig shape
+        ~impl_name:"(obtained by packing)" sg ~intf_name dclsig shape
     in
     Cmt_format.save_cmt  (prefix ^ ".cmt") modulename
       (Cmt_format.Packed (sg, objfiles)) None initial_env  None (Some shape);
@@ -3207,7 +3214,7 @@ let package_units initial_env objfiles cmifile modulename =
     if not !Clflags.dont_write_files then begin
       let cmi =
         Env.save_signature_with_imports ~alerts:Misc.Stdlib.String.Map.empty
-          sg modulename
+          sg ~modname:modulename ~source_file:"(obtained by packing)"
           (prefix ^ ".cmi") imports
       in
       Cmt_format.save_cmt (prefix ^ ".cmt")  modulename

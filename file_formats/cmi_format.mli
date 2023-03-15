@@ -25,6 +25,7 @@ type cmi_infos = {
     cmi_sign : Types.signature_item list;
     cmi_crcs : crcs;
     cmi_flags : pers_flags list;
+    cmi_source_file: string;
 }
 
 (* write the magic + the cmi information *)

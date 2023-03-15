@@ -196,9 +196,9 @@ let read_pers_struct penv val_of_pers_sig check modname filename =
   add_import penv modname;
   let cmi = read_cmi filename in
   let pers_sig = { Persistent_signature.filename; cmi } in
-  let pm = val_of_pers_sig pers_sig in
+  let pm, metadata = val_of_pers_sig pers_sig in
   let ps = acknowledge_pers_struct penv check modname pers_sig pm in
-  (ps, pm)
+  (ps, pm, metadata)
 
 let find_pers_struct penv val_of_pers_sig check name =
   let {persistent_structures; _} = penv in
@@ -252,7 +252,8 @@ let check_pers_struct penv f ~loc name =
         Location.prerr_warning loc warn
 
 let read penv f modname filename =
-  snd (read_pers_struct penv f true modname filename)
+  let _ps, md, metadata = read_pers_struct penv f true modname filename in
+  md, metadata
 
 let find penv f name =
   snd (find_pers_struct penv f true name)
@@ -293,7 +294,7 @@ let is_imported {imported_units; _} s =
 let is_imported_opaque {imported_opaque_units; _} s =
   String.Set.mem s !imported_opaque_units
 
-let make_cmi penv modname sign alerts =
+let make_cmi penv ~source_file ~modname sign alerts =
   let flags =
     List.concat [
       if !Clflags.recursive_types then [Cmi_format.Rectypes] else [];
@@ -306,7 +307,8 @@ let make_cmi penv modname sign alerts =
     cmi_name = modname;
     cmi_sign = sign;
     cmi_crcs = crcs;
-    cmi_flags = flags
+    cmi_flags = flags;
+    cmi_source_file = source_file;
   }
 
 let save_cmi penv psig pm =
@@ -317,6 +319,7 @@ let save_cmi penv psig pm =
         cmi_sign = _;
         cmi_crcs = imports;
         cmi_flags = flags;
+        cmi_source_file = _
       } = cmi in
       let crc =
         output_to_file_via_temporary (* see MPR#7472, MPR#4991 *)

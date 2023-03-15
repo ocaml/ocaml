@@ -53,8 +53,10 @@ val clear_missing : 'a t -> unit
 
 val fold : 'a t -> (modname -> 'a -> 'b -> 'b) -> 'b -> 'b
 
-val read : 'a t -> (Persistent_signature.t -> 'a)
-  -> modname -> filepath -> 'a
+
+val read : 'a t -> (Persistent_signature.t -> 'a * 'b)
+  -> modname -> filepath -> 'a * 'b
+
 val find : 'a t -> (Persistent_signature.t -> 'a)
   -> modname -> 'a
 
@@ -80,8 +82,8 @@ val is_imported_opaque : 'a t -> modname -> bool
    opaque module *)
 val register_import_as_opaque : 'a t -> modname -> unit
 
-val make_cmi : 'a t -> modname -> Types.signature -> alerts
-  -> Cmi_format.cmi_infos
+val make_cmi : 'a t -> source_file:string -> modname:modname -> Types.signature
+  -> alerts -> Cmi_format.cmi_infos
 
 val save_cmi : 'a t -> Persistent_signature.t -> 'a -> unit
 

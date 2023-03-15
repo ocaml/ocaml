@@ -16,7 +16,11 @@
 open Misc
 
 type info = {
-  source_file : string;
+  source_file : string (** the source file read from the CLI*);
+  human_source_file : string
+(** the original source file written by a human.
+    In particular, generated code should point to its real source file by using
+    line directives *);
   module_name : string;
   output_prefix : string;
   env : Env.t;
@@ -42,10 +46,30 @@ let with_info ~native ~tool_name ~source_file ~output_prefix ~dump_ext k =
     output_prefix;
     env;
     source_file;
+    human_source_file=source_file;
     ppf_dump;
     tool_name;
     native;
   }
+
+
+(** Recompute human source path using line directives *)
+let human_source_path proj ast info =
+  let location loc item =
+    let item_loc = proj item in
+    if item_loc.Location.loc_ghost then loc
+      else
+        Some item_loc.Location.loc_start.Lexing.pos_fname
+  in
+  match List.fold_left location None ast with
+  | None -> info
+  | Some source -> { info with human_source_file = source }
+
+let impl_human_source ast info =
+  human_source_path (fun item -> item.Parsetree.pstr_loc) ast info
+
+let intf_human_source ast info =
+  human_source_path (fun item -> item.Parsetree.psig_loc) ast info
 
 (** Compile a .mli file *)
 
@@ -76,7 +100,8 @@ let emit_signature info ast tsg =
   let sg =
     let alerts = Builtin_attributes.alerts_of_sig ast in
     Env.save_signature ~alerts tsg.Typedtree.sig_type
-      info.module_name (info.output_prefix ^ ".cmi")
+      ~modname:info.module_name ~source_file:info.human_source_file
+      (info.output_prefix ^ ".cmi")
   in
   Typemod.save_signature info.module_name tsg
     info.output_prefix info.source_file info.env sg
@@ -84,6 +109,7 @@ let emit_signature info ast tsg =
 let interface info =
   Profile.record_call info.source_file @@ fun () ->
   let ast = parse_intf info in
+  let info = intf_human_source ast info in
   if Clflags.(should_stop_after Compiler_pass.Parsing) then () else begin
     let tsg = typecheck_intf info ast in
     if not !Clflags.print_types then begin
@@ -117,6 +143,7 @@ let implementation info ~backend =
   in
   Misc.try_finally ?always:None ~exceptionally (fun () ->
     let parsed = parse_impl info in
+    let info = impl_human_source parsed info in
     if Clflags.(should_stop_after Compiler_pass.Parsing) then () else begin
       let typed = typecheck_impl info parsed in
       if Clflags.(should_stop_after Compiler_pass.Typing) then () else begin

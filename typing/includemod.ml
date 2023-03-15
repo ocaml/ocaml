@@ -963,7 +963,7 @@ let () =
 (* Check that an implementation of a compilation unit meets its
    interface. *)
 
-let compunit env ~mark impl_name impl_sig intf_name intf_sig unit_shape =
+let compunit env ~mark ~impl_name impl_sig ~intf_name intf_sig unit_shape =
   match
     signatures ~in_eq:false ~loc:(Location.in_file impl_name) env ~mark
       Subst.identity impl_sig intf_sig unit_shape

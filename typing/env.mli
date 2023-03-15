@@ -398,15 +398,15 @@ val set_unit_name: string -> unit
 val get_unit_name: unit -> string
 
 (* Read, save a signature to/from a file *)
-val read_signature: modname -> filepath -> signature
+val read_signature: modname -> filepath -> string * signature
         (* Arguments: module name, file name. Results: signature. *)
 val save_signature:
-  alerts:alerts -> signature -> modname -> filepath
-  -> Cmi_format.cmi_infos
+  alerts:alerts -> signature -> source_file:string -> modname:modname
+  -> filepath -> Cmi_format.cmi_infos
         (* Arguments: signature, module name, file name. *)
 val save_signature_with_imports:
-  alerts:alerts -> signature -> modname -> filepath -> crcs
-  -> Cmi_format.cmi_infos
+  alerts:alerts -> signature ->  source_file:string -> modname:modname
+  -> filepath -> crcs -> Cmi_format.cmi_infos
         (* Arguments: signature, module name, file name,
            imported units with their CRCs. *)
 

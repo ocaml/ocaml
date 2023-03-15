@@ -17,7 +17,11 @@
 (** {2 Initialization} *)
 
 type info = {
-  source_file : string;
+  source_file : string  (** the source file read from the CLI*);
+  human_source_file : string
+  (** the original source file written by a human.
+      In particular, generated code should point to its real source file
+      by using line directives *);
   module_name : string;
   output_prefix : string;
   env : Env.t;
@@ -50,6 +54,12 @@ val with_info :
 val parse_intf : info -> Parsetree.signature
 (** [parse_intf info] parses an interface (usually an [.mli] file). *)
 
+val intf_human_source : Parsetree.signature -> info -> info
+(** [intf_human_source ast info ] updates the information to reflect the
+    human source file recorded in the parsetree (taking in account line
+    directives).
+*)
+
 val typecheck_intf : info -> Parsetree.signature -> Typedtree.signature
 (** [typecheck_intf info parsetree] typechecks an interface and returns
     the typedtree of the associated signature.
@@ -67,6 +77,12 @@ val interface : info -> unit
 
 val parse_impl : info -> Parsetree.structure
 (** [parse_impl info] parses an implementation (usually an [.ml] file). *)
+
+val impl_human_source : Parsetree.structure -> info -> info
+(** [intf_human_source ast info ] updates the information to reflect the
+    human source file recorded in the parsetree (taking in account line
+    directives).
+*)
 
 val typecheck_impl : info -> Parsetree.structure -> Typedtree.implementation
 (** [typecheck_impl info parsetree] typechecks an implementation and returns
