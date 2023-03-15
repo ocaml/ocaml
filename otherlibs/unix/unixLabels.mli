@@ -918,33 +918,37 @@ val open_process_full :
    {!open_process_args_full} can be used instead of
    {!open_process_full}. *)
 
-val open_process_args_in : string -> string array -> in_channel
-(** [open_process_args_in prog args] runs the program [prog] with arguments
-    [args].  The new process executes concurrently with the current process.
-    The standard output of the new process is redirected to a pipe, which can be
-    read via the returned input channel.
+val open_process_args : string -> string array -> in_channel * out_channel
+(** [open_process_args prog args] runs the program [prog] with arguments
+    [args].  Note that the first argument is by convention the filename of
+    the program being executed, just like {!Sys.argv.(0)}.  The new process
+    executes concurrently with the current process.  The standard input and
+    output of the new process are redirected to pipes, which can be
+    respectively read and written via the returned channels.  The input
+    channel is connected to the output of the program, and the output
+    channel to the input of the program.
 
-    The executable file [prog] is searched in the path. This behaviour changed
-    in 4.12; previously [prog] was looked up only in the current directory.
+    Warning: writes on output channels are buffered, hence be careful to
+    call {!Stdlib.flush} at the right times to ensure correct
+    synchronization.
+
+    The executable file [prog] is searched for in the path. This behaviour
+    changed in 4.12; previously [prog] was looked up only in the current
+    directory.
 
     The new process has the same environment as the current process.
 
     @since 4.08 *)
 
-val open_process_args_out : string -> string array -> out_channel
-(** Same as {!open_process_args_in}, but redirect the standard input of the new
-    process to a pipe.  Data written to the returned output channel is sent to
-    the standard input of the program.  Warning: writes on output channels are
-    buffered, hence be careful to call {!Stdlib.flush} at the right times to
-    ensure correct synchronization.
+val open_process_args_in : string -> string array -> in_channel
+(** Same as {!open_process_args}, but redirects only the standard output of
+    the new process.
 
     @since 4.08 *)
 
-val open_process_args : string -> string array -> in_channel * out_channel
-(** Same as {!open_process_args_out}, but redirects both the standard input and
-    standard output of the new process to pipes connected to the two returned
-    channels.  The input channel is connected to the output of the program, and
-    the output channel to the input of the program.
+val open_process_args_out : string -> string array -> out_channel
+(** Same as {!open_process_args}, but redirects only the standard input of
+    the new process.
 
     @since 4.08 *)
 
