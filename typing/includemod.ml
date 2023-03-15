@@ -574,6 +574,9 @@ and functor_param ~in_eq ~loc env ~mark subst param1 param2 =
 and equate_one_functor_param subst env arg2' name1 name2  =
   match name1, name2 with
   | Some id1, Some id2 ->
+  (* two matching abstract parameters: we add one identifier to the
+     environment and record the equality between the two identifiers
+     in the substitution *)
       Env.add_module id1 Mp_present arg2' env,
       Subst.add_module id2 (Path.Pident id1) subst
   | None, Some id2 ->
