@@ -184,6 +184,12 @@ CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
     value res;
 
     cont = save_and_clear_stack_parent(domain_state);
+
+    /* save_and_clear_stack_parent may trigger the GC and move values around.
+       so they are reloaded. */
+    args[0] = arg1;
+    args[1] = arg2;
+
     res = caml_callback2_asm(domain_state, closure, args);
     restore_stack_parent(domain_state, cont);
 
@@ -207,6 +213,13 @@ CAMLexport value caml_callback3_exn(value closure,
     value res;
 
     cont = save_and_clear_stack_parent(domain_state);
+
+    /* save_and_clear_stack_parent may trigger the GC and move values around.
+       so they are reloaded. */
+    args[0] = arg1;
+    args[1] = arg2;
+    args[2] = arg3;
+
     res = caml_callback3_asm(domain_state, closure, args);
     restore_stack_parent(domain_state, cont);
 
