@@ -518,7 +518,6 @@ Working version
   in preparation for quadratic-time fix
   (Gabriel Scherer, review by Enguerrand Decorne)
 
-<<<<<<< HEAD
 - #11997: translate structured constants into their Obj.t representation
   at compile time rather than link time. Changes the way dumpobj prints
   these constants because their representaiton becomes untyped.
