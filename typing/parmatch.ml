@@ -2312,52 +2312,17 @@ let pattern_stable_vars ns p =
 
 (* All identifier paths that appear in an expression that occurs
    as a clause right hand side or guard.
-
-  The function is rather complex due to the compilation of
-  unpack patterns by introducing code in rhs expressions
-  and **guards**.
-
-  For pattern (module M:S)  -> e the code is
-  let module M_mod = unpack M .. in e
-
-  Hence M is "free" in e iff M_mod is free in e.
-
-  Not doing so will yield excessive  warning in
-  (module (M:S) } ...) when true -> ....
-  as M is always present in
-  let module M_mod = unpack M .. in true
 *)
 
 let all_rhs_idents exp =
   let ids = ref Ident.Set.empty in
-(* Very hackish, detect unpack pattern  compilation
-   and perform "indirect check for them" *)
-  let is_unpack exp =
-      List.exists
-        (fun attr -> attr.Parsetree.attr_name.txt = "#modulepat")
-        exp.exp_attributes in
   let open Tast_iterator in
   let expr_iter iter exp =
-    (match exp.exp_desc with
-      | Texp_ident (path, _lid, _descr) ->
+    match exp.exp_desc with
+    | Texp_ident (path, _lid, _descr) ->
         List.iter (fun id -> ids := Ident.Set.add id !ids) (Path.heads path)
-      (* Use default iterator methods for rest of match.*)
-      | _ -> Tast_iterator.default_iterator.expr iter exp);
-
-    if is_unpack exp then begin match exp.exp_desc with
-    | Texp_letmodule
-        (id_mod,_,_,
-         {mod_desc=
-          Tmod_unpack ({exp_desc=Texp_ident (Path.Pident id_exp,_,_)},_)},
-         _) ->
-           assert (Ident.Set.mem id_exp !ids) ;
-           begin match id_mod with
-           | Some id_mod when not (Ident.Set.mem id_mod !ids) ->
-             ids := Ident.Set.remove id_exp !ids
-           | _ -> ()
-           end
-    | _ -> assert false
-    end
+    (* Use default iterator methods for rest of match.*)
+    | _ -> Tast_iterator.default_iterator.expr iter exp
   in
   let iterator = {Tast_iterator.default_iterator with expr = expr_iter} in
   iterator.expr iterator exp;
