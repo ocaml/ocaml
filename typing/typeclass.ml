@@ -1175,7 +1175,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
       in
       let partial =
         let dummy = type_exp val_env (Ast_helper.Exp.unreachable ()) in
-        Typecore.check_partial val_env pat.pat_type pat.pat_loc
+        Typecore.check_partial Modules_rejected val_env pat.pat_type pat.pat_loc
           [{c_lhs = pat; c_guard = None; c_rhs = dummy}]
       in
       let cl =

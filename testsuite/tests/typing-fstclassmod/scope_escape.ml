@@ -23,7 +23,6 @@ Lines 6-9, characters 2-22:
 9 |     with type t = M.t)
 Error: This expression has type (module S with type t = M.t)
        but an expression was expected of type (module S)
-       The type constructor M.t would escape its scope
 |}];;
 
 let rec k =
@@ -41,11 +40,26 @@ and (module A : S) =
 in
 ();;
 [%%expect{|
-Line 2, characters 41-42:
-2 |   let (module K : S with type t = A.t) = k in
-                                             ^
-Error: This expression has type 'a but an expression was expected of type
-         (module S with type t = A.t)
+Line 1, characters 8-9:
+1 | let rec k =
+            ^
+Error: This pattern matches values of type (module S with type t = A.t)
+       but a pattern was expected which matches values of type 'a
+       The type constructor A.t would escape its scope
+|}, Principal{|
+Lines 8-12, characters 2-6:
+ 8 | ..(module struct
+ 9 |     type t = unit
+10 |
+11 |     let x = ()
+12 |   end)
+Warning 18 [not-principal]: this module packing is not principal.
+
+Line 1, characters 8-9:
+1 | let rec k =
+            ^
+Error: This pattern matches values of type (module S with type t = A.t)
+       but a pattern was expected which matches values of type 'a
        The type constructor A.t would escape its scope
 |}];;
 
