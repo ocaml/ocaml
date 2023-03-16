@@ -654,7 +654,7 @@ Working version
   (Gabriel Scherer, review by Florian Angeletti, report by Samuel Hym)
 
 - #12112: Fix caml_callback{2,3}_exn when used with effect handlers.
-  (Lucas Pluvinage)
+  (Lucas Pluvinage, review by Gabriel Scherer, David Allsopp and Xavier Leroy)
 
 OCaml 5.0.0 (15 December 2022)
 ------------------------------
