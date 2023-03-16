@@ -174,7 +174,6 @@ CAMLexport value caml_callback_exn(value closure, value arg)
 CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
 {
   Caml_check_caml_state();
-  value args[] = {arg1, arg2};
   caml_domain_state* domain_state = Caml_state;
   caml_maybe_expand_stack();
 
@@ -184,17 +183,13 @@ CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
     value res;
 
     cont = save_and_clear_stack_parent(domain_state);
-
-    /* save_and_clear_stack_parent may trigger the GC and move values around.
-       so they are reloaded. */
-    args[0] = arg1;
-    args[1] = arg2;
-
+    value args[] = {arg1, arg2};
     res = caml_callback2_asm(domain_state, closure, args);
     restore_stack_parent(domain_state, cont);
 
     CAMLreturn (res);
   } else {
+    value args[] = {arg1, arg2};
     return caml_callback2_asm(domain_state, closure, args);
   }
 }
@@ -203,7 +198,6 @@ CAMLexport value caml_callback3_exn(value closure,
                                     value arg1, value arg2, value arg3)
 {
   Caml_check_caml_state();
-  value args[] = {arg1, arg2, arg3};
   caml_domain_state* domain_state = Caml_state;
   caml_maybe_expand_stack();
 
@@ -213,18 +207,13 @@ CAMLexport value caml_callback3_exn(value closure,
     value res;
 
     cont = save_and_clear_stack_parent(domain_state);
-
-    /* save_and_clear_stack_parent may trigger the GC and move values around.
-       so they are reloaded. */
-    args[0] = arg1;
-    args[1] = arg2;
-    args[2] = arg3;
-
+    value args[] = {arg1, arg2, arg3};
     res = caml_callback3_asm(domain_state, closure, args);
     restore_stack_parent(domain_state, cont);
 
     CAMLreturn (res);
   } else {
+    value args[] = {arg1, arg2, arg3};
     return caml_callback3_asm(domain_state, closure, args);
   }
 }
