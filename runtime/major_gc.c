@@ -93,7 +93,7 @@ static struct domain_account {
 } domain_accounts [Max_domains];
 static int num_active_domains;
 /* For debugging only XXX */
-static uintnat total_alloc, total_dependent, total_work_done;
+static uintnat total_alloc, total_dependent, total_work_done, total_slices;
 static double total_extra;
 
 enum global_roots_status{
@@ -471,8 +471,8 @@ static intnat max3(intnat a, intnat b, intnat c)
 static void distribute (caml_domain_state *dom_st, intnat alloc_count,
                         intnat dependent_count, double extra_count)
 {
-  uintnat i, j;
-  intnat alloc_share, alloc_accu, dependent_share, dependent_accu;
+  int i, j;
+  intnat alloc_share, dependent_share;
   double extra_share;
 
   caml_gc_log ("Distribute work: "
@@ -483,21 +483,26 @@ static void distribute (caml_domain_state *dom_st, intnat alloc_count,
 
   if (num_active_domains != 0){
     alloc_share = alloc_count / num_active_domains;
-    alloc_accu = 0;
     dependent_share = dependent_count / num_active_domains;
-    dependent_accu = 0;
     extra_share = extra_count / num_active_domains;
     j = 0;
     for (i = num_active_domains; i > 1; i--){
       while (!domain_accounts[j].is_active) ++j;
+caml_gc_log ("domain_accounts[%d] = %ld + %ld", 
+             j, domain_accounts[j].alloc, alloc_share);
       domain_accounts[j].alloc += alloc_share;
       domain_accounts[j].dependent += dependent_share;
       domain_accounts[j].extra += extra_share;
+      ++ j;
     }
     while (!domain_accounts[j].is_active) ++j;
     CAMLassert (j < Max_domains);
-    domain_accounts[j].alloc += alloc_count - alloc_accu;
-    domain_accounts[j].dependent += dependent_count - dependent_accu;
+caml_gc_log ("domain_accounts[%d] = %ld + %ld", 
+             j, domain_accounts[j].alloc, alloc_share);
+    domain_accounts[j].alloc +=
+      alloc_count - alloc_share * (num_active_domains - 1);
+    domain_accounts[j].dependent +=
+      dependent_count - dependent_count * (num_active_domains - 1);
     domain_accounts[j].extra += extra_share;
   }else{
     domain_accounts[dom_st->id].alloc += alloc_count;
@@ -516,12 +521,12 @@ static void print_stats (int after, intnat budget)
 
   caml_plat_lock(&accounting_lock);
   caml_gc_log ("DEBUG: "
-               " %"ARCH_INTNAT_PRINTF_FORMAT"d total alloc, "
+               " %"ARCH_INTNAT_PRINTF_FORMAT"u total alloc, "
                " %"ARCH_INTNAT_PRINTF_FORMAT"d heap size, "
-               " %"ARCH_INTNAT_PRINTF_FORMAT"d total dependent, "
+               " %"ARCH_INTNAT_PRINTF_FORMAT"u total dependent, "
                " ?? dependent size, "
                " %.3g total extra, "
-               " %"ARCH_INTNAT_PRINTF_FORMAT"d total work done, "
+               " %"ARCH_INTNAT_PRINTF_FORMAT"u total work done, "
                " %.3g work/alloc, "
                " %"ARCH_INTNAT_PRINTF_FORMAT"d slice %s, "
                " %s",
@@ -542,17 +547,17 @@ static void print_stats (int after, intnat budget)
 
 static void log_gc_speed (void) /* XXX debug */
 {
-  static intnat prev_alloc, prev_work;
+  static uintnat prev_alloc, prev_work;
   intnat pending_alloc = 0;
   int i;
 
-  caml_gc_log ("GCSP avg: %"ARCH_INTNAT_PRINTF_FORMAT"d total alloc, "
-               " %"ARCH_INTNAT_PRINTF_FORMAT"d total work, "
+  caml_gc_log ("GCSP avg: %"ARCH_INTNAT_PRINTF_FORMAT"u total alloc, "
+               " %"ARCH_INTNAT_PRINTF_FORMAT"u total work, "
                " %.3g work/alloc",
                total_alloc, total_work_done,
                (double) total_work_done / (double) total_alloc);
   if (total_alloc != prev_alloc){
-    caml_gc_log ("GCSP inst: %"ARCH_INTNAT_PRINTF_FORMAT"d total alloc, "
+    caml_gc_log ("GCSP inst: %"ARCH_INTNAT_PRINTF_FORMAT"u total alloc, "
                  " %"ARCH_INTNAT_PRINTF_FORMAT"d total work, "
                  " %.3g work/alloc",
                  total_alloc - prev_alloc, total_work_done - prev_work,
@@ -561,7 +566,10 @@ static void log_gc_speed (void) /* XXX debug */
   }
   prev_alloc = total_alloc;
   prev_work = total_work_done;
-  for (i = 0; i < Max_domains; i++){
+  for (i = 0; i < 5; i++){
+    caml_gc_log ("GCSP pending_alloc[%d] = %"ARCH_INTNAT_PRINTF_FORMAT"d",
+                 i,
+                 domain_accounts[i].alloc);
     pending_alloc += domain_accounts[i].alloc;
   }
   caml_gc_log ("GCSP pending alloc = %"ARCH_INTNAT_PRINTF_FORMAT"d",
@@ -697,7 +705,7 @@ static void update_major_slice_work(void) {
   dom_st->extra_ratio = extra_ratio;
   dom_st->slice_budget = max3 (alloc_work, dependent_work, extra_work);
 
-  caml_gc_log ("my alloc count = %"ARCH_INTNAT_PRINTF_FORMAT "u, "
+  caml_gc_log ("my alloc count = %"ARCH_INTNAT_PRINTF_FORMAT "d, "
                "alloc ratio = %.3g, "
                "slice_budget = %"ARCH_INTNAT_PRINTF_FORMAT "u, "
                "budget / alloc = %.3g",
@@ -1780,6 +1788,13 @@ mark_again:
 
   call_timing_hook(&caml_major_slice_end_hook);
   if (log_events) CAML_EV_END(EV_MAJOR_SLICE);
+
+  /* XXX debug */
+  caml_plat_lock (&accounting_lock);
+  ++ total_slices;
+  caml_plat_unlock (&accounting_lock);
+  caml_gc_log ("GCSP: major slices = %"ARCH_INTNAT_PRINTF_FORMAT"d",
+               total_slices);
 
   caml_gc_log
     ("Major slice [%c%c%c]: %ld work, %ld sweep, %ld mark (%lu blocks)",
