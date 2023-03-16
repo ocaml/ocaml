@@ -1,5 +1,5 @@
 (* TEST
-   ocamlrunparam = "s=512"
+   ocamlrunparam += ",s=512"
    * native
 *)
 
