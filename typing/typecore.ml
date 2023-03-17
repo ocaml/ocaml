@@ -1865,6 +1865,39 @@ let add_pattern_variables ?check ?check_as env pv =
     )
     pv env
 
+let add_module_variables env module_variables =
+  List.fold_left (fun env { tu_ident; tu_loc; tu_name; tu_uid } ->
+    Typetexp.TyVarEnv.with_local_scope begin fun () ->
+      (* This code is parallel to the typing of Pexp_letmodule. However we
+         omit the call to [Mtype.lower_nongen] as it's not necessary here.
+         For Pexp_letmodule, the call to [type_module] is done in a raised
+         level and so needs to be modified to have the correct, outer level.
+         Here, on the other hand, we're calling [type_module] outside the
+         raised level, so there's no extra step to take.
+      *)
+      let modl, md_shape =
+        !type_module env
+          Ast_helper.(
+            Mod.unpack ~loc:tu_loc
+              (Exp.ident ~loc:tu_name.loc
+                  (mkloc (Longident.Lident tu_name.txt)
+                    tu_name.loc)))
+      in
+      let pres =
+        match modl.mod_type with
+        | Mty_alias _ -> Mp_absent
+        | _ -> Mp_present
+      in
+      let md =
+        { md_type = modl.mod_type; md_attributes = [];
+          md_loc = tu_name.loc;
+          md_uid = tu_uid; }
+      in
+      Env.add_module_declaration ~shape:md_shape ~check:true
+        tu_ident pres md env
+    end
+  ) env module_variables
+
 let type_pattern category ~lev env spat expected_ty allow_modules =
   reset_pattern allow_modules;
   let new_env = ref env in
@@ -1887,8 +1920,7 @@ let type_pattern_list
   let patl = List.map2 type_pat spatl expected_tys in
   let pvs = get_ref pattern_variables in
   let unpacks = get_ref module_variables in
-  let new_env = add_pattern_variables !new_env pvs in
-  (patl, new_env, get_ref pattern_force, pvs, unpacks)
+  (patl, !new_env, get_ref pattern_force, pvs, unpacks)
 
 let type_class_arg_pattern cl_num val_env met_env l spat =
   reset_pattern Modules_rejected;
@@ -3081,7 +3113,7 @@ and type_expect_
       let may_contain_modules =
         List.exists (fun pvb -> may_contain_modules pvb.pvb_pat) spat_sexp_list
       in
-      let pat_exp_list, body, _extended_env =
+      let pat_exp_list, body, _new_env =
         with_local_level_if may_contain_modules begin fun () ->
           let allow_modules =
             if may_contain_modules
@@ -3090,17 +3122,16 @@ and type_expect_
               Modules_allowed { scope }
             else Modules_rejected
           in
-          let (pat_exp_list, new_env, unpacks) =
+          let (pat_exp_list, new_env) =
             type_let existential_context env rec_flag spat_sexp_list
               allow_modules
           in
-          let extended_env, body =
-            type_unpacks new_env unpacks sbody ty_expected_explained in
+          let body = type_expect new_env sbody ty_expected_explained in
           let () =
             if rec_flag = Recursive then
               check_recursive_bindings env pat_exp_list
           in
-          pat_exp_list, body, extended_env
+          pat_exp_list, body, new_env
         end
         (* If the patterns contain module unpacks, there is a possibility that
            the type of the let body or variables bound by the let mention types
@@ -3111,10 +3142,10 @@ and type_expect_
            accept more programs. This environment allows unification to identify
            more cases where a type introduced by the module is equal to a type
            introduced at an outer scope. *)
-        ~post:(fun (pat_exp_list, body, extended_env) ->
-          unify_exp extended_env body (newvar ());
+        ~post:(fun (pat_exp_list, body, new_env) ->
+          unify_exp new_env body (newvar ());
           if rec_flag = Recursive then
-            check_scope_escape_let_bound_idents extended_env pat_exp_list)
+            check_scope_escape_let_bound_idents new_env pat_exp_list)
       in
       re {
         exp_desc = Texp_let(rec_flag, pat_exp_list, body);
@@ -4964,57 +4995,6 @@ and type_statement ?explanation env sexp =
     exp
   end
 
-(* Type the body within an environment extended with the unpacked modules are
-   added, returning both the typechecked body and the extended environment. *)
-and type_unpacks
-    ?(in_function : (Location.t * type_expr) option)
-    env (unpacks : to_unpack list) sbody expected_ty =
-  let extended_env =
-    List.fold_left (fun env unpack ->
-      Typetexp.TyVarEnv.with_local_scope begin fun () ->
-        (* This code is parallel to the typing of Pexp_letmodule. However we
-           omit the call to [Mtype.lower_nongen] as it's not necessary here.
-           For Pexp_letmodule, the call to [type_module] is done in a raised
-           level and so needs to be modified to have the correct, outer level.
-           Here, on the other hand, we're calling [type_module] outside the
-           raised level, so there's no extra step to take.
-        *)
-        let modl, md_shape =
-          !type_module env
-            Ast_helper.(
-              Mod.unpack ~loc:unpack.tu_loc
-                (Exp.ident ~loc:unpack.tu_name.loc
-                   (mkloc (Longident.Lident unpack.tu_name.txt)
-                      unpack.tu_name.loc)))
-        in
-        let pres =
-          match modl.mod_type with
-          | Mty_alias _ -> Mp_absent
-          | _ -> Mp_present
-        in
-        let md =
-          { md_type = modl.mod_type; md_attributes = [];
-            md_loc = unpack.tu_name.loc;
-            md_uid = unpack.tu_uid; }
-        in
-        Env.add_module_declaration ~shape:md_shape ~check:true
-          unpack.tu_ident pres md env
-      end
-    ) env unpacks
-  in
-  (* ideally, we should catch Expr_type_clash errors
-     in type_expect triggered by escaping identifiers from the local module
-     and refine them into Scoping_let_module errors
-  *)
-  let body =
-    type_expect ?in_function extended_env sbody expected_ty
-  in
-  extended_env, body
-
-
-and type_unpacks' ?in_function env unpacks sbody expected_ty =
-  snd (type_unpacks ?in_function env unpacks sbody expected_ty)
-
 (* Typing of match cases *)
 and type_cases
     : type k . k pattern_category ->
@@ -5157,6 +5137,7 @@ and type_cases
             ~check:(fun s -> Warnings.Unused_var_strict s)
             ~check_as:(fun s -> Warnings.Unused_var s)
         in
+        let ext_env = add_module_variables ext_env unpacks in
         let ty_expected =
           if contains_gadt && not !Clflags.principal then
             (* Take a generic copy of [ty_res] again to allow propagation of
@@ -5168,12 +5149,12 @@ and type_cases
           | None -> None
           | Some scond ->
               Some
-                (type_unpacks' ext_env unpacks scond
+                (type_expect ext_env scond
                    (mk_expected ~explanation:When_guard Predef.type_bool))
         in
         let exp =
-          type_unpacks' ?in_function ext_env
-            unpacks pc_rhs (mk_expected ?explanation ty_expected)
+          type_expect ?in_function ext_env
+            pc_rhs (mk_expected ?explanation ty_expected)
         in
         {
          c_lhs = pat;
@@ -5269,6 +5250,17 @@ and type_let ?check ?check_strict
           List.iter (fun pat -> generalize_structure pat.pat_type) pat_list
         end
       in
+      (* Note [add_module_variables after checking expressions]
+         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+         Don't call [add_module_variables] here, because its use of [type_module]
+         will fail until after we have type-checked the expression of the let.
+         Example: [let m : (module S) = ... in let (module M) = m in ...]
+         We learn the signature [S] from the type of [m] in the RHS of the second
+         let, and we need that knowledge for [type_module] to succeed. If we
+         type-checked expressions before patterns, then we could call
+         [add_module_variables] here.
+      *)
+      let new_env = add_pattern_variables new_env pvs in
       let pat_list =
         List.map
           (fun pat -> {pat with pat_type = instance pat.pat_type})
@@ -5278,7 +5270,14 @@ and type_let ?check ?check_strict
       List.iter (fun f -> f()) force;
 
       let exp_list =
-        let exp_env = if is_recursive then new_env else env in
+        (* See Note [add_module_variables after checking expressions]
+           We can't defer type-checking module variables with recursive
+           definitions, so things like [let rec (module M) = m in ...] always
+           fail, even if the type of [m] is known.
+        *)
+        let exp_env =
+          if is_recursive then add_module_variables new_env unpacks else env
+        in
         type_let_def_wrap_warnings ?check ?check_strict ~is_recursive
           ~exp_env ~new_env ~spat_sexp_list ~attrs_list ~pat_list ~pvs
           (fun exp_env ({pvb_attributes; _} as vb) pat ->
@@ -5292,21 +5291,13 @@ and type_let ?check ?check_strict
                 in
                 let exp =
                   Builtin_attributes.warning_scope pvb_attributes (fun () ->
-                    if rec_flag = Recursive then
-                      type_unpacks' exp_env unpacks sexp (mk_expected ty')
-                    else
-                      type_expect exp_env sexp (mk_expected ty')
-                  )
+                    type_expect exp_env sexp (mk_expected ty'))
                 in
                 exp, Some vars
             | _ ->
                 let exp =
                   Builtin_attributes.warning_scope pvb_attributes (fun () ->
-                    if rec_flag = Recursive then
-                      type_unpacks' exp_env unpacks sexp
-                        (mk_expected pat.pat_type)
-                    else
-                      type_expect exp_env sexp (mk_expected pat.pat_type))
+                    type_expect exp_env sexp (mk_expected pat.pat_type))
                 in
                 exp, None)
       in
@@ -5371,7 +5362,9 @@ and type_let ?check ?check_strict
       if pattern_needs_partial_application_check vb.vb_pat then
         check_partial_application ~statement:false vb.vb_expr
     ) l;
-  (l, new_env, unpacks)
+  (* See Note [add_module_variables after checking expressions] *)
+  let new_env = add_module_variables new_env unpacks in
+  (l, new_env)
 
 and type_let_def_wrap_warnings
     ?(check = fun s -> Warnings.Unused_var s)
@@ -5628,7 +5621,7 @@ and type_send env loc explanation e met =
 (* Typing of toplevel bindings *)
 
 let type_binding env rec_flag spat_sexp_list =
-  let (pat_exp_list, new_env, _unpacks) =
+  let (pat_exp_list, new_env) =
     type_let
       ~check:(fun s -> Warnings.Unused_value_declaration s)
       ~check_strict:(fun s -> Warnings.Unused_value_declaration s)
@@ -5638,7 +5631,7 @@ let type_binding env rec_flag spat_sexp_list =
   (pat_exp_list, new_env)
 
 let type_let existential_ctx env rec_flag spat_sexp_list =
-  let (pat_exp_list, new_env, _unpacks) =
+  let (pat_exp_list, new_env) =
     type_let existential_ctx env rec_flag spat_sexp_list Modules_rejected in
   (pat_exp_list, new_env)
 
