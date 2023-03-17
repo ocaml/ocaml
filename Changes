@@ -539,6 +539,10 @@ Working version
 - #12092: remove Lev_module_definition from lambda
   (Nick Roberts, review by Gabriel Scherer)
 
+- #12118: stop storing names of predefined exceptions in the
+  cu_required_globals field of compilation unit descriptors.
+  (Sébastien Hinderer, review by Vincent Laviron)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.
