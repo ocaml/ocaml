@@ -28,6 +28,10 @@ OCaml 4.14 maintenance version
 
 ### Bug fixes:
 
+- #12061, #12063: don't add inconsistent equalities when computing
+  high-level error messages for functor applications and inclusions.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 - #12878: fix incorrect treatment of injectivity for private recursive types.
   (Jeremy Yallop, review by Gabriel Scherer and Jacques Garrigue)
 
