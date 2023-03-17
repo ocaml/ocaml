@@ -83,3 +83,20 @@ Line 4, characters 19-20:
                        ^
   This extra argument is not expected.
 |}]
+
+(* The result of [(+) 1 2] is not [unit], we don't expect the hint to insert a
+   ';'. *)
+
+let () =
+  (+) 1 2 3
+[%%expect{|
+Line 2, characters 2-11:
+2 |   (+) 1 2 3
+      ^^^^^^^^^
+Error: The function '(+)' has type int -> int -> int
+       It is applied to too many arguments
+Line 2, characters 10-11:
+2 |   (+) 1 2 3
+              ^
+  This extra argument is not expected.
+|}]

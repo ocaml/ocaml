@@ -5657,6 +5657,11 @@ let report_this_function ppf funct =
 let report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
     ~extra_arg_loc loc =
   let open Location in
+  let rec res_type_is_unit ty = match get_desc ty with
+    | Tarrow (_, _, rhs, _) -> res_type_is_unit rhs
+    | Tconstr (p, _, _) -> Path.same p Predef.path_unit
+    | _ -> false
+  in
   let cnum_offset off (pos : Lexing.position) =
     { pos with pos_cnum = pos.pos_cnum + off }
   in
@@ -5673,8 +5678,10 @@ let report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
       loc_end = cnum_offset ~+1 arg_end;
       loc_ghost = false }
   in
-  let sub = [
-    msg ~loc:tail_loc "@{<hint>Hint@}: Did you forget a ';'?";
+  let hint_semicolon = if res_type_is_unit func_ty then [
+      msg ~loc:tail_loc "@{<hint>Hint@}: Did you forget a ';'?";
+    ] else [] in
+  let sub = hint_semicolon @ [
     msg ~loc:extra_arg_loc "This extra argument is not expected.";
   ] in
   errorf ~loc:app_loc ~sub
