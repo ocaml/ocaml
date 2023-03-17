@@ -2138,15 +2138,12 @@ bytecomp/instruct.cmi : \
     typing/env.cmi
 bytecomp/meta.cmo : \
     bytecomp/instruct.cmi \
-    bytecomp/bytesections.cmi \
     bytecomp/meta.cmi
 bytecomp/meta.cmx : \
     bytecomp/instruct.cmx \
-    bytecomp/bytesections.cmx \
     bytecomp/meta.cmi
 bytecomp/meta.cmi : \
-    bytecomp/instruct.cmi \
-    bytecomp/bytesections.cmi
+    bytecomp/instruct.cmi
 bytecomp/opcodes.cmo : \
     bytecomp/opcodes.cmi
 bytecomp/opcodes.cmx : \
