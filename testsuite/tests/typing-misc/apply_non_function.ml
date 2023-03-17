@@ -100,3 +100,43 @@ Line 2, characters 10-11:
               ^
   This extra argument is not expected.
 |}]
+
+(* The arrow type might be hidden behind a constructor. *)
+
+type t = int -> int -> unit
+let f (x:t) = x 0 1 2
+[%%expect{|
+type t = int -> int -> unit
+Line 2, characters 14-21:
+2 | let f (x:t) = x 0 1 2
+                  ^^^^^^^
+Error: The function 'x' has type int -> int -> unit
+       It is applied to too many arguments
+Line 2, characters 18-20:
+2 | let f (x:t) = x 0 1 2
+                      ^^
+  Hint: Did you forget a ';'?
+Line 2, characters 20-21:
+2 | let f (x:t) = x 0 1 2
+                        ^
+  This extra argument is not expected.
+|}]
+
+type t = int -> unit
+let f (x:int -> t) = x 0 1 2
+[%%expect{|
+type t = int -> unit
+Line 2, characters 21-28:
+2 | let f (x:int -> t) = x 0 1 2
+                         ^^^^^^^
+Error: The function 'x' has type int -> t
+       It is applied to too many arguments
+Line 2, characters 25-27:
+2 | let f (x:int -> t) = x 0 1 2
+                             ^^
+  Hint: Did you forget a ';'?
+Line 2, characters 27-28:
+2 | let f (x:int -> t) = x 0 1 2
+                               ^
+  This extra argument is not expected.
+|}]

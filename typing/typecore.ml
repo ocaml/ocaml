@@ -5655,13 +5655,8 @@ let report_this_function ppf funct =
   else Format.fprintf ppf "This function"
 
 let report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
-    ~extra_arg_loc loc =
+    ~extra_arg_loc ~returns_unit loc =
   let open Location in
-  let rec res_type_is_unit ty = match get_desc ty with
-    | Tarrow (_, _, rhs, _) -> res_type_is_unit rhs
-    | Tconstr (p, _, _) -> Path.same p Predef.path_unit
-    | _ -> false
-  in
   let cnum_offset off (pos : Lexing.position) =
     { pos with pos_cnum = pos.pos_cnum + off }
   in
@@ -5678,7 +5673,7 @@ let report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
       loc_end = cnum_offset ~+1 arg_end;
       loc_ghost = false }
   in
-  let hint_semicolon = if res_type_is_unit func_ty then [
+  let hint_semicolon = if returns_unit then [
       msg ~loc:tail_loc "@{<hint>Hint@}: Did you forget a ';'?";
     ] else [] in
   let sub = hint_semicolon @ [
@@ -5742,8 +5737,14 @@ let report_error ~loc env = function
   | Apply_non_function { funct; func_ty; previous_arg_loc; extra_arg_loc } ->
       begin match get_desc func_ty with
         Tarrow _ ->
+          let rec res_type_is_unit ty = match get_desc (expand_head env ty) with
+            | Tarrow (_, _, rhs, _) -> res_type_is_unit rhs
+            | Tconstr (p, _, _) -> Path.same p Predef.path_unit
+            | _ -> false
+          in
+          let returns_unit = res_type_is_unit func_ty in
           report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
-            ~extra_arg_loc loc
+            ~extra_arg_loc ~returns_unit loc
       | _ ->
           Location.errorf ~loc "@[<v>@[<2>This expression has type@ %a@]@ %s@]"
             Printtyp.type_expr func_ty
