@@ -5253,12 +5253,12 @@ and type_let ?check ?check_strict
       in
       (* Note [add_module_variables after checking expressions]
          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-         Don't call [add_module_variables] here, because its use of [type_module]
-         will fail until after we have type-checked the expression of the let.
-         Example: [let m : (module S) = ... in let (module M) = m in ...]
-         We learn the signature [S] from the type of [m] in the RHS of the second
-         let, and we need that knowledge for [type_module] to succeed. If we
-         type-checked expressions before patterns, then we could call
+         Don't call [add_module_variables] here, because its use of
+         [type_module] will fail until after we have type-checked the expression
+         of the let. Example: [let m : (module S) = ... in let (module M) = m in
+         ...] We learn the signature [S] from the type of [m] in the RHS of the
+         second let, and we need that knowledge for [type_module] to succeed. If
+         we type-checked expressions before patterns, then we could call
          [add_module_variables] here.
       *)
       let new_env = add_pattern_variables new_env pvs in

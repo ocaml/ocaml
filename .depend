@@ -908,7 +908,6 @@ typing/parmatch.cmo : \
     typing/predef.cmi \
     typing/patterns.cmi \
     typing/path.cmi \
-    parsing/parsetree.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
@@ -928,7 +927,6 @@ typing/parmatch.cmx : \
     typing/predef.cmx \
     typing/patterns.cmx \
     typing/path.cmx \
-    parsing/parsetree.cmi \
     utils/misc.cmx \
     parsing/longident.cmx \
     parsing/location.cmx \
