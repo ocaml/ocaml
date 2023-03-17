@@ -764,6 +764,8 @@ ac_ct_LD
 LD
 DEFAULT_STRING
 WINDOWS_UNICODE_MODE
+LIBUNWIND_LDFLAGS
+LIBUNWIND_CPPFLAGS
 DLLIBS
 PARTIALLD
 target_os
@@ -1002,6 +1004,8 @@ AS
 ASPP
 PARTIALLD
 DLLIBS
+LIBUNWIND_CPPFLAGS
+LIBUNWIND_LDFLAGS
 WINDOWS_UNICODE_MODE
 DEFAULT_STRING
 CC
@@ -1707,6 +1711,11 @@ Some influential environment variables:
   PARTIALLD   how to build partial (relocatable) object files
   DLLIBS      which libraries to use (in addition to -ldl) to load dynamic
               libs
+  LIBUNWIND_CPPFLAGS
+              cc flags for libunwind (e.g. -I<location of header files>)
+  LIBUNWIND_LDFLAGS
+              linker flags for libunwind (e.g. -L<location of static object
+              files>
   WINDOWS_UNICODE_MODE
               how to handle Unicode under Windows: ansi, compatible
   DEFAULT_STRING
@@ -3236,6 +3245,8 @@ oc_dll_ldflags=""
 oc_exe_ldflags=""
 
 tsan=false
+# Passed to the linker by ocamlopt when tsan is enabled
+oc_tsan_ldflags="-fsanitize=thread"
 
 # The C# compiler and its flags
 CSC=""
@@ -3709,6 +3720,13 @@ then :
 else $as_nop
   enable_tsan=no
 fi
+
+
+# Preprocessor and linker flags for libunwind (currently only used when TSan is
+# enabled)
+
+
+
 
 
 # Check whether --enable-graph-lib was given.
@@ -16462,6 +16480,89 @@ esac ;; #(
 esac
 else $as_nop
   tsan=false
+fi
+
+# libunwind detection when TSan is enabled
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether libunwind is required" >&5
+printf %s "checking whether libunwind is required... " >&6; }
+if ! $tsan
+then :
+  libunwind_available=false
+  libunwind_cppflags=
+  libunwind_link_flags=
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+else $as_nop
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+  if test "$system" = "macosx"
+then :
+  if test x"$LIBUNWIND_CPPFLAGS" != x -o \
+                 x"$LIBUNWIND_LDFLAGS" != x
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: On MacOSX, specifying paths for libunwind headers or libraries is strongly discouraged. It is recommended to rely on the defaults provided by the configure script" >&5
+printf "%s\n" "$as_me: WARNING: On MacOSX, specifying paths for libunwind headers or libraries is strongly discouraged. It is recommended to rely on the defaults provided by the configure script" >&2;}
+fi
+fi
+
+  if test x"$LIBUNWIND_CPPFLAGS" != x
+then :
+  libunwind_cppflags="$LIBUNWIND_CPPFLAGS"
+else $as_nop
+  libunwind_cppflags=""
+fi
+
+  case "$system" in #(
+  "macosx") :
+    libunwind_ldflags="-framework System" ;; #(
+  *) :
+    libunwind_ldflags="-lunwind -lunwind-x86_64" ;;
+esac
+
+  if test x"$LIBUNWIND_LDFLAGS" != x
+then :
+  libunwind_ldflags="$LIBUNWIND_LDFLAGS $libunwind_ldflags"
+fi
+
+  native_cppflags="$native_cppflags $libunwind_cppflags"
+  oc_tsan_ldflags="$oc_tsan_ldflags $libunwind_ldflags"
+
+
+  SAVED_CPPFLAGS="$CPPFLAGS"
+  SAVED_LDFLAGS="$LDFLAGS"
+  CPPFLAGS="$CPPFLAGS $libunwind_cppflags"
+  LDFLAGS="$LDFLAGS $libunwind_ldflags"
+  ac_fn_c_check_header_compile "$LINENO" "libunwind.h" "ac_cv_header_libunwind_h" "$ac_includes_default"
+if test "x$ac_cv_header_libunwind_h" = xyes
+then :
+  printf "%s\n" "#define HAS_LIBUNWIND 1" >>confdefs.h
+
+    libunwind_available=true
+else $as_nop
+  libunwind_available=false
+fi
+
+  LDFLAGS="$SAVED_LDFLAGS"
+  CPPFLAGS="$SAVED_CPPFLAGS"
+
+
+  if ! $libunwind_available
+then :
+  as_fn_error $? "libunwind was requested by tsan but can not be found" "$LINENO" 5
+fi
+
+    # We need unwinding information at runtime, but since we use
+    # -no_compact_unwind, we also need -keep_dwarf_unwind otherwise
+    # the OS X linker will chuck away the DWARF-like (.eh_frame)
+    # information.  (Older versions of OS X don't provide this.)
+
+    if $libunwind_available && test x"$system" = "xmacosx"
+then :
+  extra_flags="-Wl,-keep_dwarf_unwind"
+      mkexe="$mkexe $extra_flags"
+      mksharedlib="$mksharedlib $extra_flags"
+fi
+
 fi
 
 ## Sockets

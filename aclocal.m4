@@ -322,16 +322,16 @@ int main (int argc, char *argv[]){
 ])
 
 AC_DEFUN([OCAML_CHECK_LIBUNWIND], [
-  SAVED_CFLAGS="$CFLAGS"
+  SAVED_CPPFLAGS="$CPPFLAGS"
   SAVED_LDFLAGS="$LDFLAGS"
-  CFLAGS="$CFLAGS $libunwind_include_flags"
-  LDFLAGS="$LDFLAGS $libunwind_link_flags"
+  CPPFLAGS="$CPPFLAGS $libunwind_cppflags"
+  LDFLAGS="$LDFLAGS $libunwind_ldflags"
   AC_CHECK_HEADER([libunwind.h],
     [AC_DEFINE([HAS_LIBUNWIND])
     libunwind_available=true],
     [libunwind_available=false])
   LDFLAGS="$SAVED_LDFLAGS"
-  CFLAGS="$SAVED_CFLAGS"
+  CPPFLAGS="$SAVED_CPPFLAGS"
 ])
 
 AC_DEFUN([OCAML_TEST_FLEXLINK], [
