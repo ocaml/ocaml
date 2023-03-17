@@ -3113,7 +3113,7 @@ and type_expect_
       let may_contain_modules =
         List.exists (fun pvb -> may_contain_modules pvb.pvb_pat) spat_sexp_list
       in
-      let pat_exp_list, body, _new_env =
+      let (pat_exp_list, body, _new_env) =
         with_local_level_if may_contain_modules begin fun () ->
           let allow_modules =
             if may_contain_modules
@@ -3131,17 +3131,19 @@ and type_expect_
             if rec_flag = Recursive then
               check_recursive_bindings env pat_exp_list
           in
-          pat_exp_list, body, new_env
+          (pat_exp_list, body, new_env)
         end
         (* If the patterns contain module unpacks, there is a possibility that
            the type of the let body or variables bound by the let mention types
            introduced by those unpacks. (The latter can only happen with
            recursive definitions.) Here, we check for scope escape via both of
-           these pathways (body, variables). Checking unification within an
-           environment extended with the module bindings allows us to correctly
-           accept more programs. This environment allows unification to identify
-           more cases where a type introduced by the module is equal to a type
-           introduced at an outer scope. *)
+           these pathways (body, variables).
+
+           Checking unification within an environment extended with the module
+           bindings allows us to correctly accept more programs. This
+           environment allows unification to identify more cases where a type
+           introduced by the module is equal to a type introduced at an outer
+           scope. *)
         ~post:(fun (pat_exp_list, body, new_env) ->
           unify_exp new_env body (newvar ());
           if rec_flag = Recursive then
