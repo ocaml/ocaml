@@ -91,8 +91,9 @@ static void init_callback_code(void)
 
 CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
 {
-  CAMLparam1(closure);
-  CAMLxparamN(args, narg);
+  CAMLparam0();
+  /* We explicitly avoid rooting [closure] and [args].
+     See the remark on "unrooted callbacks" above. */
   CAMLlocal1(cont);
   value res;
   int i;
@@ -115,6 +116,10 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   domain_state->current_stack->sp[narg + 3] = closure;
 
   cont = alloc_and_clear_stack_parent(domain_state);
+  /* This calls the GC and may invalidate the unrooted values
+     [closure] and [args]. They are never used afterwards,
+     as they were copied into the root [domain_state->current_stack].
+  */
 
   res = caml_interprete(callback_code, sizeof(callback_code));
   if (Is_exception_result(res))
