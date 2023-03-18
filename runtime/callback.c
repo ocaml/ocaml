@@ -257,35 +257,31 @@ CAMLexport value caml_callback3_exn(value closure,
   }
 }
 
-CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
-{
-  CAMLparam1 (closure);
-  CAMLxparamN (args, narg);
-  CAMLlocal1 (res);
-  int i;
+CAMLexport value caml_callbackN_exn(value closure, int narg, value args[]) {
+  while (narg >= 3) {
+    /* We apply the first 3 arguments to get a new closure,
+       and continue with the remaining arguments. */
+    value *remaining_args = args + 3;
+    int remaining_narg = narg - 3;
 
-  res = closure;
-  for (i = 0; i < narg; /*nothing*/) {
-    /* Pass as many arguments as possible */
-    switch (narg - i) {
-    case 1:
-      res = caml_callback_exn(res, args[i]);
-      if (Is_exception_result(res)) CAMLreturn (res);
-      i += 1;
-      break;
-    case 2:
-      res = caml_callback2_exn(res, args[i], args[i + 1]);
-      if (Is_exception_result(res)) CAMLreturn (res);
-      i += 2;
-      break;
-    default:
-      res = caml_callback3_exn(res, args[i], args[i + 1], args[i + 2]);
-      if (Is_exception_result(res)) CAMLreturn (res);
-      i += 3;
-      break;
-    }
+    /* See the remark on "unrooted callbacks" above. */
+    Begin_roots_block(remaining_args, remaining_narg);
+    closure = caml_callback3_exn(closure, args[0], args[1], args[2]);
+    End_roots();
+
+    if (Is_exception_result(closure)) return closure;
+
+    args = remaining_args;
+    narg = remaining_narg;
   }
-  CAMLreturn (res);
+  switch (narg) {
+  case 0:
+    return closure;
+  case 1:
+    return caml_callback_exn(closure, args[0]);
+  default: /* case 2: */
+    return caml_callback2_exn(closure, args[0], args[1]);
+  }
 }
 
 #endif
