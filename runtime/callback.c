@@ -36,7 +36,8 @@
  * is executing to ensure that the garbage collector follows the
  * stack parent
  */
-Caml_inline value save_and_clear_stack_parent(caml_domain_state* domain_state) {
+Caml_inline value alloc_and_clear_stack_parent(caml_domain_state* domain_state)
+{
   struct stack_info* parent_stack = Stack_parent(domain_state->current_stack);
   value cont = caml_alloc_1(Cont_tag, Val_ptr(parent_stack));
   Stack_parent(domain_state->current_stack) = NULL;
@@ -44,7 +45,8 @@ Caml_inline value save_and_clear_stack_parent(caml_domain_state* domain_state) {
 }
 
 Caml_inline void restore_stack_parent(caml_domain_state* domain_state,
-                                      value cont) {
+                                      value cont)
+{
   struct stack_info* parent_stack = Ptr_val(Op_val(cont)[0]);
   CAMLassert(Stack_parent(domain_state->current_stack) == NULL);
   Stack_parent(domain_state->current_stack) = parent_stack;
@@ -100,7 +102,7 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   domain_state->current_stack->sp[narg + 2] = Val_long(0); /* extra args */
   domain_state->current_stack->sp[narg + 3] = closure;
 
-  cont = save_and_clear_stack_parent(domain_state);
+  cont = alloc_and_clear_stack_parent(domain_state);
 
   res = caml_interprete(callback_code, sizeof(callback_code));
   if (Is_exception_result(res))
@@ -161,7 +163,7 @@ CAMLexport value caml_callback_exn(value closure, value arg)
     CAMLlocal1 (cont);
     value res;
 
-    cont = save_and_clear_stack_parent(domain_state);
+    cont = alloc_and_clear_stack_parent(domain_state);
     res = caml_callback_asm(domain_state, closure, &arg);
     restore_stack_parent(domain_state, cont);
 
@@ -182,7 +184,7 @@ CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
     CAMLlocal1 (cont);
     value res;
 
-    cont = save_and_clear_stack_parent(domain_state);
+    cont = alloc_and_clear_stack_parent(domain_state);
     value args[] = {arg1, arg2};
     res = caml_callback2_asm(domain_state, closure, args);
     restore_stack_parent(domain_state, cont);
@@ -206,7 +208,7 @@ CAMLexport value caml_callback3_exn(value closure,
     CAMLlocal1 (cont);
     value res;
 
-    cont = save_and_clear_stack_parent(domain_state);
+    cont = alloc_and_clear_stack_parent(domain_state);
     value args[] = {arg1, arg2, arg3};
     res = caml_callback3_asm(domain_state, closure, args);
     restore_stack_parent(domain_state, cont);
