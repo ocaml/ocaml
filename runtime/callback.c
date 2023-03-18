@@ -27,6 +27,18 @@
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
 
+/* Unrooted callbacks: an important performance property of callbacks,
+   for example
+     [caml_callback_exn(value closure, value arg)]
+   is that they should not extend the lifetime of the values [closure]
+   and [arg] any farther than necessary, that is, they should be
+   unrooted when the function call actually happens.
+
+   This mirrors the reachability/lifetime guarantees provided by
+   function calls in OCaml code, where the arguments can be collected
+   as soon as they are not used anymore within the function body.
+*/
+
 /*
  * These functions are to ensure effects are handled correctly inside
  * callbacks. There are two aspects:
