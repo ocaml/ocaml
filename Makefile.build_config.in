@@ -50,6 +50,34 @@ INSTALL_OCAMLNAT = @install_ocamlnat@
 DEP_CC=@DEP_CC@ -MM
 COMPUTE_DEPS=@compute_deps@
 
+# Build-system flags to use to compile C files
+OC_CFLAGS=@oc_cflags@
+OC_CPPFLAGS=-I$(ROOTDIR)/runtime @oc_cppflags@
+
+# The following variable defines flags to be passed to the C preprocessor
+# when compiling C files to be linked with native code. This includes
+# the native runtime itself and can also include the stub code around
+# C libraries when it needs to be different from the one used to
+# link with bytecode.
+
+# These flags should be passed *in addition* to those in OC_CPPFLAGS, they
+# should not replace them.
+
+OC_NATIVE_CPPFLAGS=-DNATIVE_CODE @native_cppflags@
+
+# Same as above, for CFLAGS
+OC_NATIVE_CFLAGS=@native_cflags@
+
+# Additional link-time options
+# To support dynamic loading of shared libraries (they need to look at
+# our own symbols):
+OC_LDFLAGS=@oc_ldflags@
+OC_DLL_LDFLAGS=@oc_dll_ldflags@
+OC_EXE_LDFLAGS=@oc_exe_ldflags@
+
+MKEXE_VIA_CC=\
+  $(CC) $(OC_EXE_LDFLAGS) $(OC_CFLAGS) $(CFLAGS) @mkexe_via_cc_ldflags@
+
 # Which tool to use to display differences between files
 DIFF=@DIFF@
 # Which flags to pass to the diff tool
@@ -89,9 +117,9 @@ DEFAULT_BUILD_TARGET = @default_build_target@
 
 # The names of the variables below take the form XXX_YYY_ZZZ where
 #
-# XXX is one of OC, OCAML or the name of a module. The OC prefix
+# XXX is one of OC, OCAML or the lower-case name of a module. The OC prefix
 # is for private variables (i.e. reserved by the compiler's build system),
-# the OCAML prefix is used for variables the user can define to add their
+# the OCAML prefix is used for variables users can define to add their
 # own flags and the module-name prefix is for flags that apply only
 # to one module.
 #
@@ -99,22 +127,22 @@ DEFAULT_BUILD_TARGET = @default_build_target@
 # COMMON for the flags shared by all the backends, BYTECODE or NATIVE
 # (other backends may be added in the future).
 #
-# ZZZ is either CFLAGS (compile-time flags) or LDFLAGS (link-time flags).
-# However, contrary to what is done for C compilers, the flags in the
-# CFLAGS category are not passed at link time, so if a flag is needed
-# at both stages, like e.g. -g, it should be added to both XXX_YYY_CFLAGS and
-# XXX_YYY_LDFLAGS.
+# ZZZ is either COMPFLAGS (compile-time flags) or LINKFLAGS (link-time flags).
+# Countrary to the C convention wrt. CFLAGS and LDFLAGS, the flags in the
+# COMPFLAGS category are not passed at link time, so if a flag is needed
+# at both stages, like e.g. -g, it should be added to both
+# XXX_YYY_COMPFLAGS and XXX_YYY_LINKFLAGS.
 
-OC_COMMON_CFLAGS = -g -strict-sequence -principal -absname \
+OC_COMMON_COMPFLAGS = -g -strict-sequence -principal -absname \
   -w +a-4-9-40-41-42-44-45-48 -warn-error +a -bin-annot \
   -strict-formats
-OC_COMMON_LDFLAGS = $(INCLUDES)
+OC_COMMON_LINKFLAGS = $(INCLUDES)
 
-OC_BYTECODE_LDFLAGS =
+OC_BYTECODE_LINKFLAGS =
 
-OC_NATIVE_CFLAGS = @oc_native_cflags@
+OC_NATIVE_COMPFLAGS = @oc_native_compflags@
 
-OC_NATIVE_LDFLAGS = -g
+OC_NATIVE_LINKFLAGS = -g
 
 # Platform-dependent command to create symbolic links
 LN = @ln@

@@ -78,13 +78,6 @@ CC=@CC@
 CC_HAS_DEBUG_PREFIX_MAP=@cc_has_debug_prefix_map@
 AS_HAS_DEBUG_PREFIX_MAP=@as_has_debug_prefix_map@
 
-### Additional link-time options
-# To support dynamic loading of shared libraries (they need to look at
-# our own symbols):
-OC_LDFLAGS=@oc_ldflags@
-OC_DLL_LDFLAGS=@oc_dll_ldflags@
-OC_EXE_LDFLAGS=@oc_exe_ldflags@
-
 LDFLAGS?=@LDFLAGS@
 
 ### How to invoke the C preprocessor through the C compiler
@@ -175,9 +168,7 @@ OTHERLIBRARIES=@otherlibraries@
 UNIX_OR_WIN32=@unix_or_win32@
 INSTALL_SOURCE_ARTIFACTS=@install_source_artifacts@
 
-OC_CFLAGS=@oc_cflags@
 CFLAGS=@CFLAGS@
-OC_CPPFLAGS=-I$(ROOTDIR)/runtime @oc_cppflags@
 CPPFLAGS=@CPPFLAGS@
 OCAMLC_CFLAGS=@ocamlc_cflags@
 
@@ -214,8 +205,6 @@ MKEXE=@mkexe@
 MKDLL=@mkdll@
 MKMAINDLL=@mkmaindll@
 MKEXEDEBUGFLAG=@mkexedebugflag@
-MKEXE_VIA_CC=\
-  $(CC) $(OC_EXE_LDFLAGS) $(OC_CFLAGS) $(CFLAGS) @mkexe_via_cc_ldflags@
 
 RUNTIMED=@debug_runtime@
 INSTRUMENTED_RUNTIME=@instrumented_runtime@

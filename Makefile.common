@@ -142,15 +142,8 @@ endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
 # List of other libraries
 ALL_OTHERLIBS = dynlink str systhreads unix runtime_events
 
-# The following variable defines flags to be passed to the C preprocessor
-# when compiling C files for the native runtime.
-# These flags should be passed *in addition* to those in OC_CPPFLAGS, they
-# should not replace them.
-OC_NATIVE_CPPFLAGS=\
-  -DNATIVE_CODE -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM)
-
 # Flags to pass to the C preprocessor when preprocessing assembly files
-OC_ASPPFLAGS=-I $(ROOTDIR)/runtime $(OC_NATIVE_CPPFLAGS)
+OC_ASPPFLAGS=$(OC_CPPFLAGS) $(OC_NATIVE_CPPFLAGS)
 
 OPTCOMPFLAGS=
 ifeq "$(FUNCTION_SECTIONS)" "true"
@@ -254,7 +247,7 @@ MERGEMANIFESTEXE = $(call if_file_exists, $(1).manifest, \
 .SECONDEXPANSION:
 
 LINK_BYTECODE_PROGRAM =\
-  $(CAMLC) $(OC_COMMON_LDFLAGS) $(OC_BYTECODE_LDFLAGS)
+  $(CAMLC) $(OC_COMMON_LINKFLAGS) $(OC_BYTECODE_LINKFLAGS)
 
 define OCAML_BYTECODE_PROGRAM
 $(eval $(call PROGRAM_SYNONYM,$(1)))
@@ -265,7 +258,7 @@ $(1)$(EXE): \
 endef # OCAML_BYTECODE_PROGRAM
 
 LINK_NATIVE_PROGRAM =\
-  $(CAMLOPT_CMD) $(OC_COMMON_LDFLAGS) $(OC_NATIVE_LDFLAGS)
+  $(CAMLOPT_CMD) $(OC_COMMON_LINKFLAGS) $(OC_NATIVE_LINKFLAGS)
 
 define OCAML_NATIVE_PROGRAM
 $(eval $(call PROGRAM_SYNONYM,$(1)))

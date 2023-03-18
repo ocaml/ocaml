@@ -115,6 +115,8 @@ AC_SUBST([arch])
 AC_SUBST([arch64])
 AC_SUBST([model])
 AC_SUBST([system])
+AC_SUBST([native_cflags])
+AC_SUBST([native_cppflags])
 AC_SUBST([systhread_support])
 AC_SUBST([ocamlsrcdir])
 AC_SUBST([unix_or_win32])
@@ -201,7 +203,7 @@ AC_SUBST([cmm_invariants])
 AC_SUBST([windows_unicode])
 AC_SUBST([flat_float_array])
 AC_SUBST([function_sections])
-AC_SUBST([oc_native_cflags])
+AC_SUBST([oc_native_compflags])
 AC_SUBST([afl])
 AC_SUBST([flexlink_cmd])
 AC_SUBST([flexdll_chain])
@@ -1273,6 +1275,9 @@ AS_CASE([$host],
     [has_native_backend=yes; arch=riscv; model=riscv64; system=linux]
 )
 
+native_cflags=''
+native_cppflags="-DTARGET_${arch} -DMODEL_${model} -DSYS_${system}"
+
 AS_CASE([$ccomptype],
   [msvc],
     [runtime_asm_objects=${arch}nt.${OBJEXT}],
@@ -2143,7 +2148,7 @@ AS_IF([test x"$enable_mmap_map_stack" = "xyes"],
      [with_mmap_map_stack=false])
   ])
 
-oc_native_cflags=''
+oc_native_compflags=''
 
 AS_IF([test x"$enable_function_sections" = "xno"],
   [function_sections=false],
@@ -2165,7 +2170,7 @@ AS_IF([test x"$enable_function_sections" = "xno"],
               in Clang prior to version 3.5.])],
             [gcc-*|clang-*],
               [function_sections=true;
-              oc_native_cflags='-function-sections'
+              oc_native_compflags='-function-sections'
               internal_cflags="$internal_cflags -ffunction-sections";
               AC_DEFINE([FUNCTION_SECTIONS])],
             [*],
