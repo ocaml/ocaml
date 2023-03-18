@@ -176,11 +176,21 @@ CAMLexport value caml_callback_exn(value closure, value arg)
   caml_maybe_expand_stack();
 
   if (Stack_parent(domain_state->current_stack)) {
-    CAMLparam2 (closure, arg);
+    CAMLparam0 ();
     CAMLlocal1 (cont);
     value res;
 
-    cont = alloc_and_clear_stack_parent(domain_state);
+    {
+      /* We ensure that [closure], [arg] are preserved over the stack
+         parent allocation, but avoid rooting them over the
+         [caml_callback_asm] call itself.
+
+         See the remark on "unrooted callbacks" above.
+      */
+      CAMLparam2 (closure, arg);
+      cont = alloc_and_clear_stack_parent(domain_state);
+      CAMLdrop;
+    }
     res = caml_callback_asm(domain_state, closure, &arg);
     restore_stack_parent(domain_state, cont);
 
@@ -197,11 +207,16 @@ CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
   caml_maybe_expand_stack();
 
   if (Stack_parent(domain_state->current_stack)) {
-    CAMLparam3 (closure, arg1, arg2);
+    CAMLparam0 ();
     CAMLlocal1 (cont);
     value res;
 
-    cont = alloc_and_clear_stack_parent(domain_state);
+    {
+      /* Unrooted callbacks; see caml_callback_exn. */
+      CAMLparam3 (closure, arg1, arg2);
+      cont = alloc_and_clear_stack_parent(domain_state);
+      CAMLdrop;
+    }
     value args[] = {arg1, arg2};
     res = caml_callback2_asm(domain_state, closure, args);
     restore_stack_parent(domain_state, cont);
@@ -221,11 +236,16 @@ CAMLexport value caml_callback3_exn(value closure,
   caml_maybe_expand_stack();
 
   if (Stack_parent(domain_state->current_stack))  {
-    CAMLparam4 (closure, arg1, arg2, arg3);
+    CAMLparam0 ();
     CAMLlocal1 (cont);
     value res;
 
-    cont = alloc_and_clear_stack_parent(domain_state);
+    {
+      /* Unrooted callbacks; see caml_callback_exn. */
+      CAMLparam4 (closure, arg1, arg2, arg3);
+      cont = alloc_and_clear_stack_parent(domain_state);
+      CAMLdrop;
+    }
     value args[] = {arg1, arg2, arg3};
     res = caml_callback3_asm(domain_state, closure, args);
     restore_stack_parent(domain_state, cont);
