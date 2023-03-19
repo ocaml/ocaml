@@ -176,25 +176,25 @@ CAMLexport value caml_callback_exn(value closure, value arg)
   caml_maybe_expand_stack();
 
   if (Stack_parent(domain_state->current_stack)) {
-    CAMLparam0 ();
-    CAMLlocal1 (cont);
-    value res;
+    value cont, res;
 
-    {
-      /* We ensure that [closure], [arg] are preserved over the stack
-         parent allocation, but avoid rooting them over the
-         [caml_callback_asm] call itself.
+    /* We ensure that [closure], [arg] are preserved over the stack
+       parent allocation, but avoid rooting them over the
+       [caml_callback_asm] call itself.
 
-         See the remark on "unrooted callbacks" above.
-      */
-      CAMLparam2 (closure, arg);
-      cont = alloc_and_clear_stack_parent(domain_state);
-      CAMLdrop;
-    }
+       See the remark on "unrooted callbacks" above.
+    */
+    Begin_roots2(closure, arg);
+    cont = alloc_and_clear_stack_parent(domain_state);
+    End_roots();
+
+    Begin_roots1(cont);
     res = caml_callback_asm(domain_state, closure, &arg);
+    End_roots();
+
     restore_stack_parent(domain_state, cont);
 
-    CAMLreturn (res);
+    return res;
   } else {
     return caml_callback_asm(domain_state, closure, &arg);
   }
@@ -207,21 +207,21 @@ CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
   caml_maybe_expand_stack();
 
   if (Stack_parent(domain_state->current_stack)) {
-    CAMLparam0 ();
-    CAMLlocal1 (cont);
-    value res;
+    value cont, res;
 
-    {
-      /* Unrooted callbacks; see caml_callback_exn. */
-      CAMLparam3 (closure, arg1, arg2);
-      cont = alloc_and_clear_stack_parent(domain_state);
-      CAMLdrop;
-    }
+    /* Unrooted callbacks; see caml_callback_exn. */
+    Begin_roots3(closure, arg1, arg2);
+    cont = alloc_and_clear_stack_parent(domain_state);
+    End_roots();
+
+    Begin_roots1(cont);
     value args[] = {arg1, arg2};
     res = caml_callback2_asm(domain_state, closure, args);
+    End_roots();
+
     restore_stack_parent(domain_state, cont);
 
-    CAMLreturn (res);
+    return res;
   } else {
     value args[] = {arg1, arg2};
     return caml_callback2_asm(domain_state, closure, args);
@@ -236,21 +236,21 @@ CAMLexport value caml_callback3_exn(value closure,
   caml_maybe_expand_stack();
 
   if (Stack_parent(domain_state->current_stack))  {
-    CAMLparam0 ();
-    CAMLlocal1 (cont);
-    value res;
+    value cont, res;
 
-    {
-      /* Unrooted callbacks; see caml_callback_exn. */
-      CAMLparam4 (closure, arg1, arg2, arg3);
-      cont = alloc_and_clear_stack_parent(domain_state);
-      CAMLdrop;
-    }
+    /* Unrooted callbacks; see caml_callback_exn. */
+    Begin_roots4(closure, arg1, arg2, arg3);
+    cont = alloc_and_clear_stack_parent(domain_state);
+    End_roots();
+
+    Begin_root(cont);
     value args[] = {arg1, arg2, arg3};
     res = caml_callback3_asm(domain_state, closure, args);
+    End_roots();
+
     restore_stack_parent(domain_state, cont);
 
-    CAMLreturn (res);
+    return res;
   } else {
     value args[] = {arg1, arg2, arg3};
     return caml_callback3_asm(domain_state, closure, args);
