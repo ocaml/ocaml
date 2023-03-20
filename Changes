@@ -497,8 +497,9 @@ Working version
 - #11569: Remove hash type encoding
   (Hyunggyu Jang, review by Gabriel Scherer and Florian Angeletti)
 
-- #11601, #11612, #11628, #11613, #11623: Clean up some global state handling
-  in emitcode, bytepackager, bytegen, bytesections, spill.
+- #11601, #11612, #11628, #11613, #11623, #12120 : Clean up some
+  global state handling in emitcode, bytepackager, bytegen,
+  bytesections, spill.
   (Hugo Heuzard, Stefan Muenzel, review by Vincent Laviron, Gabriel Scherer
    and Nathanaëlle Courant)
 

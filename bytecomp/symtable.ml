@@ -282,7 +282,11 @@ type section_reader = {
 
 let read_sections () =
   try
-    let sections = Meta.get_section_table () in
+    let sections =
+      List.map
+        (fun (n,o) -> Bytesections.Name.of_string n, o)
+        (Meta.get_section_table ())
+    in
     { read_string =
         (fun name ->
            (Obj.magic(List.assoc name sections) : string));
