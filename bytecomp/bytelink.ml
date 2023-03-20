@@ -503,9 +503,13 @@ let link_bytecode_as_c tolink outfile with_main =
        output_string outchan "\n};\n\n";
        (* The sections *)
        let sections =
-         [ Bytesections.Name.to_string SYMB, Symtable.data_global_map();
-           Bytesections.Name.to_string PRIM, Obj.repr(Symtable.data_primitive_names());
-           Bytesections.Name.to_string CRCS, Obj.repr(extract_crc_interfaces()) ] in
+         [ Bytesections.Name.to_string SYMB,
+           Symtable.data_global_map();
+           Bytesections.Name.to_string PRIM,
+           Obj.repr(Symtable.data_primitive_names());
+           Bytesections.Name.to_string CRCS,
+           Obj.repr(extract_crc_interfaces()) ]
+       in
        output_string outchan "static char caml_sections[] = {\n";
        output_data_string outchan
          (Marshal.to_string sections []);
