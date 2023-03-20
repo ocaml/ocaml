@@ -502,7 +502,7 @@ let link_bytecode_as_c tolink outfile with_main =
          (Marshal.to_string (Symtable.initial_global_table()) []);
        output_string outchan "\n};\n\n";
        (* The sections *)
-       let sections =
+       let sections : (string * Obj.t) list =
          [ Bytesections.Name.to_string SYMB,
            Symtable.data_global_map();
            Bytesections.Name.to_string PRIM,
