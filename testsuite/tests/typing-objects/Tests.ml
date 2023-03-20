@@ -950,7 +950,7 @@ end;;
 Line 2, characters 13-58:
 2 |   method o = object(_ : 'self) method o = assert false end
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Cannot close type of object literal: < o : '_weak3; _.. >
+Error: Cannot close type of object literal: < o : '_weak4; .. > as '_weak3
        it has been unified with the self type of a class that is not yet
        completely defined.
 |}];;

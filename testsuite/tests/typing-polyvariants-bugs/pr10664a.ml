@@ -110,7 +110,7 @@ let y = g o;;
 [%%expect{|
 val o : < m : 'a 'c. < n : ([< `A of 'a ] as 'c) -> 'b > > as 'b = <obj>
 val y :
-  < n : _[< `A of '_weak2 ] ->
+  < n : ([< `A of '_weak3 ] as '_weak2) ->
         (< m : 'a 'c. < n : ([< `A of 'a ] as 'c) -> 'b > > as 'b) > =
   <obj>
 |}]

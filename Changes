@@ -450,6 +450,11 @@ Working version
 - #12024: insert a blank line between separate compiler messages
   (Gabriel Scherer, review by Florian Angeletti, report by David Wong)
 
+- #12107: use aliases to mark weak row variables: `_[< ... ]`, `< _..>`, `_#ct`
+  are now rendered as `[< ...] as '_weak1`, `< .. > as '_weak1`,
+  and `#ct as '_weak1`.
+  (Florian Angeletti, suggestion by Stefan Muenzel, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #10512: explain the compilation strategy for switches on constructors

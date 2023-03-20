@@ -169,7 +169,7 @@ Lines 4-10, characters 4-7:
  9 |       method child = assert false
 10 |     end
 Error: Cannot close type of object literal:
-       < child : '_weak1; previous : 'a option; _.. > as 'a
+       < child : '_weak2; previous : '_weak1 option; .. > as '_weak1
        it has been unified with the self type of a class that is not yet
        completely defined.
 |}]
