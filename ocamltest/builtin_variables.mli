@@ -75,3 +75,13 @@ val test_skip : Variables.t
 val test_fail : Variables.t
 
 val timeout : Variables.t
+
+(* Builtin functions *)
+
+val bppm_decode : Variables.t
+  (* ${bppm_decode arg} will decode arg according to the
+     BUILD_PATH_PREFIX_MAP specification. *)
+
+val bppm_encode : Variables.t
+  (* ${bppm_encode arg} will encode arg according to the
+     BUILD_PATH_PREFIX_MAP specification. *)

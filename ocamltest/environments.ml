@@ -29,21 +29,46 @@ let to_bindings env =
   in
   VariableMap.fold f env []
 
-let expand_aux env value =
+let rec expand_aux env value =
   let bindings = to_bindings env in
   let f (variable, value) = ((Variables.name_of_variable variable), value) in
   let simple_bindings = List.map f bindings in
-  let subst s = try (List.assoc s simple_bindings) with Not_found -> "" in
+  let subst s =
+    try (List.assoc s simple_bindings) with
+    Not_found ->
+      (* Maybe it is a builtin function call *)
+      match String.index_opt s ' ' with
+      | None -> ""
+      | Some ix ->
+        let fun_name = String.sub s 0 ix in
+        match Variables.find_variable fun_name with
+        | None -> ""
+        | Some fun_var ->
+          match Variables.function_of_variable fun_var with
+          | None -> ""
+          | Some fun_val ->
+            let arg =
+              String.trim (String.sub s (ix+1) (String.length s - ix - 1)) in
+            let xarg =
+              if String.length arg = 0 then arg
+              else expand_rec env arg in
+            let result = fun_val xarg in
+            result
+  in
   let b = Buffer.create 100 in
   try Buffer.add_substitute b subst value; Buffer.contents b with _ -> value
 
-let rec expand env value =
+and expand_rec env value =
   let expanded = expand_aux env value in
-  if expanded=value then value else expand env expanded
+  if expanded=value then value else expand_rec env expanded
 
 let expand env = function
   | None -> raise Not_found
-  | Some value -> expand env value
+  | Some value -> expand_rec env value
+
+let expand_string env value =
+  (* This version for export. *)
+  expand_rec env value
 
 let append_to_system_env environment env =
   (* Augment env with any bindings which are only in environment. This must be
@@ -138,6 +163,23 @@ let dump_assignment log = function
 
 let dump log environment =
   List.iter (dump_assignment log) (VariableMap.bindings environment)
+
+let dump_assignment_expanded log env = function
+  | (variable, Some value) ->
+    begin
+      match lookup variable env with
+      | None ->
+      Printf.fprintf log "unsetenv %s\n%!" (Variables.name_of_variable variable)
+      | Some expanded_value ->
+      Printf.fprintf log "%s = \"%s\" expanded to: \"%s\"\n%!"
+      (Variables.name_of_variable variable) value expanded_value
+    end
+  | (variable, None) ->
+    Printf.fprintf log "unsetenv %s\n%!" (Variables.name_of_variable variable)
+
+let dump_expanded log environment =
+  List.iter (dump_assignment_expanded log environment)
+  (VariableMap.bindings environment)
 
 (* Initializers *)
 
