@@ -276,14 +276,14 @@ static intnat do_compare_val(struct compare_stack* stk,
       /* Compare sizes first for speed */
       if (sz1 != sz2) return sz1 - sz2;
       if (sz1 == 0) break;
-      /* Remember that we still have to compare fields 1 ... sz - 1 */
+      /* Remember that we still have to compare fields 1 ... sz - 1. */
       if (sz1 > 1) {
-        sp++;
         if (sp >= stk->limit) sp = compare_resize_stack(stk, sp);
-        sp->v1 = v1;
-        sp->v2 = v2;
-        sp->offset = Val_long(1);
-        sp->size = Val_long(sz1);
+        struct compare_item* next = sp++;
+        next->v1 = v1;
+        next->v2 = v2;
+        next->size = Val_long(sz1);
+        next->offset = Val_long(1);
       }
       /* Continue comparison with first field */
       v1 = Field(v1, 0);
@@ -294,17 +294,18 @@ static intnat do_compare_val(struct compare_stack* stk,
   next_item:
     /* Pop one more item to compare, if any */
     if (sp == stk->stack) return EQUAL; /* we're done */
-    v1 = Field(sp->v1, Long_val(sp->offset));
-    v2 = Field(sp->v2, Long_val(sp->offset));
-    sp->offset += 2;/* Long_val(sp->offset) += 1 */
-    if (sp->offset == sp->size) sp--;
+
+    struct compare_item* last = sp-1;
+    v1 = Field(last->v1, Long_val(last->offset));
+    v2 = Field(last->v2, Long_val(last->offset));
+    last->offset += 2;/* Long_val(last->offset) += 1 */
+    if (last->offset == last->size) sp--;
   }
 }
 
 CAMLprim value caml_compare(value v1, value v2)
 {
   intnat res = compare_val(v1, v2, 1);
-  /* Free stack if needed */
   if (res < 0)
     return Val_int(LESS);
   else if (res > 0)
