@@ -552,6 +552,10 @@ Working version
   cu_required_globals field of compilation unit descriptors.
   (Sébastien Hinderer, review by Vincent Laviron)
 
+- #????: Add Misc.print_see_manual and modify [@manual_ref] to accept
+  lists for simpler printing of manual references
+  (Stefan Muenzel, review by ????)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.

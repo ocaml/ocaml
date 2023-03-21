@@ -547,6 +547,9 @@ val pp_two_columns :
     v}
 *)
 
+val print_see_manual : Format.formatter -> int list -> unit
+(** See manual section *)
+
 (** {1 Displaying configuration variables} *)
 
 val show_config_and_exit : unit -> unit
