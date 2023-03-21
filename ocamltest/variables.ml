@@ -19,10 +19,13 @@ type value = string
 
 type exporter = value -> string * string
 
+type var_fun = (string -> string)
+
 type t = {
   variable_name : string;
   variable_description : string;
-  variable_exporter : exporter
+  variable_exporter : exporter;
+  variable_function : var_fun option
 }
 
 let compare v1 v2 = String.compare v1.variable_name v2.variable_name
@@ -35,23 +38,27 @@ exception No_such_variable of string
 
 let default_exporter varname value = (varname, value)
 
-let make (name, description) =
+let make ?variable_function (name, description) =
   if name="" then raise Empty_variable_name else {
     variable_name = name;
     variable_description = description;
-    variable_exporter = default_exporter name
+    variable_exporter = default_exporter name;
+    variable_function;
   }
 
-let make_with_exporter exporter (name, description) =
+let make_with_exporter ?variable_function exporter (name, description) =
   if name="" then raise Empty_variable_name else {
     variable_name = name;
     variable_description = description;
-    variable_exporter = exporter
+    variable_exporter = exporter;
+    variable_function;
   }
 
 let name_of_variable v = v.variable_name
 
 let description_of_variable v = v.variable_description
+
+let function_of_variable v = v.variable_function
 
 let (variables : (string, t) Hashtbl.t) = Hashtbl.create 10
 

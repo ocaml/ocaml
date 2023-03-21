@@ -168,6 +168,41 @@ and slot_for_c_prim name =
 let events = ref ([] : debug_event list)
 let debug_dirs = ref String.Set.empty
 
+(* Map from absolute paths of .ml files to their sanitized paths. *)
+let sanitize_map = Hashtbl.create 17
+
+let sanitize_event ev =
+  let loc = ev.ev_loc in
+  let sloc = loc.loc_start in
+  let path = sloc.pos_fname in
+  match path with
+  | "_none_" | "" | "//toplevel//" ->
+    (* Leave these as it. *)
+    ev
+  | _ ->
+  let unmapped_abspath =
+    if (Filename.is_relative path) then (Filename.concat (Sys.getcwd ()) path)
+    else path
+  in
+  let mapped_abspath = Location.rewrite_absolute_path unmapped_abspath in
+  (* If mapping did nothing, just keep the event as is. *)
+  if mapped_abspath = unmapped_abspath then ev
+  else begin
+    (* We want to share the same sanitized path to save space *)
+    let new_fname = match Hashtbl.find_opt sanitize_map mapped_abspath with
+    | Some saved_path -> saved_path
+    | None ->
+        Hashtbl.add sanitize_map mapped_abspath mapped_abspath;
+        mapped_abspath
+    in
+    let eloc = loc.loc_end in
+    let nsloc = {sloc with pos_fname=new_fname} in
+    let neloc = {eloc with pos_fname=new_fname} in
+    let new_loc: Location.t = {loc with loc_start=nsloc; loc_end=neloc} in
+    let new_ev: Instruct.debug_event = {ev with ev_loc=new_loc} in
+    new_ev
+  end
+
 let record_event ev =
   let path = ev.ev_loc.Location.loc_start.Lexing.pos_fname in
   let abspath = Location.absolute_path path in
@@ -177,6 +212,7 @@ let record_event ev =
     debug_dirs := String.Set.add cwd !debug_dirs;
   end;
   ev.ev_pos <- !out_position;
+  let ev = sanitize_event ev in
   events := ev :: !events
 
 (* Initialization *)
@@ -187,6 +223,7 @@ let clear() =
   reloc_info := [];
   debug_dirs := String.Set.empty;
   events := [];
+  Hashtbl.clear sanitize_map;
   out_buffer := LongString.create 0
 
 let init () =

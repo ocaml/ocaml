@@ -1,0 +1,6 @@
+set mapping ${the_map}
+break @ Foo 10
+run
+print x
+print y
+quit

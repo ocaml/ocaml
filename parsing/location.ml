@@ -158,7 +158,7 @@ let rewrite_absolute_path path =
   | Some map -> Build_path_prefix_map.rewrite map path
 
 let rewrite_find_first_existing path =
-  match Misc.get_build_path_prefix_map () with
+  match Misc.get_deploy_path_prefix_map () with
   | None ->
       if Sys.file_exists path then Some path
       else None
@@ -172,7 +172,7 @@ let rewrite_find_first_existing path =
 
 let rewrite_find_all_existing_dirs path =
   let ok path = Sys.file_exists path && Sys.is_directory path in
-  match Misc.get_build_path_prefix_map () with
+  match Misc.get_deploy_path_prefix_map () with
   | None ->
       if ok path then [path]
       else []
