@@ -31,7 +31,6 @@ case $1 in
   stdlib__Printf.cm[io]|stdlib__Format.cm[io]|stdlib__Scanf.cm[io])
       echo ' -w +A -w -fragile-match';;
   stdlib__Scanf.cmx) echo ' -inline 9';;
-  *Labels.cmi) echo ' -pp "$AWK -f ./expand_module_aliases.awk"';;
   *Labels.cm[ox]) echo ' -nolabels -no-alias-deps';;
   stdlib__Float.cm[ox]) echo ' -nolabels -no-alias-deps';;
   stdlib__Oo.cmi) echo ' -no-principal';;

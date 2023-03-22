@@ -40,11 +40,14 @@ ALL_LATEX= $(ALL_DOC:%=build/latex/%.tex)
 build/latex/ifocamldoc.tex: | build/latex
 	$(V_GEN)printf '\\newif\\ifocamldoc\\ocamldoctrue\n' > $@
 
+OCAMLDOC_FLAGS =
+
+build/libref/stdlib.odoc: OCAMLDOC_FLAGS += -pp \
+  "$(AWK) -v ocamldoc=true -f $(ROOTDIR)/stdlib/expand_module_aliases.awk"
+
 $(libref:%=build/libref/%.odoc): build/libref/%.odoc: %.mli | build/libref
 	$(V_OCAMLDOC)$(OCAMLDOC_RUN) -nostdlib -hide Stdlib -lib Stdlib \
-	-pp \
-"$(AWK) -v ocamldoc=true -f ../../stdlib/expand_module_aliases.awk" \
-	$(DOC_STDLIB_INCLUDES) -hide-warnings  $< -dump  $@
+	$(OCAMLDOC_FLAGS) $(DOC_STDLIB_INCLUDES) -hide-warnings  $< -dump  $@
 
 $(compilerlibref:%=build/compilerlibref/%.odoc):\
 build/compilerlibref/%.odoc: %.mli | build/compilerlibref
