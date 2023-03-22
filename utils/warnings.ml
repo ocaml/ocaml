@@ -872,12 +872,6 @@ let () = ignore @@ parse_options true defaults_warn_error
 let () =
   List.iter (set_alert ~error:false ~enable:false) default_disabled_alerts
 
-let ref_manual_explanation () =
-  (* manual references are checked a posteriori by the manual
-     cross-reference consistency check in manual/tests*)
-  let[@manual.ref "s:comp-warnings"] chapter, section = 13, 5 in
-  Printf.sprintf "(See manual section %d.%d)" chapter section
-
 let message = function
   | Comment_start ->
       "this `(*' is the start of a comment.\n\
@@ -1040,10 +1034,12 @@ let message = function
       Printf.sprintf "expected %s"
         (if b then "tailcall" else "non-tailcall")
   | Fragile_literal_pattern ->
-      Printf.sprintf
+      let[@manual.ref "ss:warn52"] ref_manual = [ 13; 5; 3 ] in
+      Format.asprintf
         "Code should not depend on the actual values of\n\
          this constructor's arguments. They are only for information\n\
-         and may change in future versions. %t" ref_manual_explanation
+         and may change in future versions. %a"
+        Misc.print_see_manual ref_manual
   | Unreachable_case ->
       "this match case is unreachable.\n\
        Consider replacing it with a refutation case '<pat> -> .'"
@@ -1056,6 +1052,7 @@ let message = function
   | Inlining_impossible reason ->
       Printf.sprintf "Cannot inline: %s" reason
   | Ambiguous_var_in_pattern_guard vars ->
+      let[@manual.ref "ss:warn57"] ref_manual = [ 13; 5; 4 ] in
       let vars = List.sort String.compare vars in
       let vars_explanation =
         let in_different_places =
@@ -1068,12 +1065,12 @@ let message = function
             let vars = String.concat ", " vars in
             "variables " ^ vars ^ " appear " ^ in_different_places
       in
-      Printf.sprintf
+      Format.asprintf
         "Ambiguous or-pattern variables under guard;\n\
          %s.\n\
          Only the first match will be used to evaluate the guard expression.\n\
-         %t"
-        vars_explanation ref_manual_explanation
+         %a"
+        vars_explanation Misc.print_see_manual ref_manual
   | No_cmx_file name ->
       Printf.sprintf
         "no cmx file was found in path for module %s, \
