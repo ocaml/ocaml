@@ -105,6 +105,9 @@ Working version
 - #12062: fix runtime events consumer: when events are dropped they shouldn't be
   parsed. (Lucas Pluvinage)
 
+- #12121: unrooted implementations of caml_callback*_exn
+  (Gabriel Scherer, review by KC Sivaramakrishnan and Xavier Leroy)
+
 ### Type system:
 
 - #6941, #11187: prohibit using classes through recursive modules
