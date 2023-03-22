@@ -135,7 +135,7 @@ val cat : string -> string -> string
 val equal : t -> t -> bool
 (** [equal s0 s1] is [true] if and only if [s0] and [s1] are character-wise
     equal.
-    @since 4.03 (4.05 in StringLabels) *)
+    @since 4.05 *)
 
 val compare : t -> t -> int
 (** [compare s0 s1] sorts [s0] and [s1] in lexicographical order. [compare]
@@ -189,7 +189,7 @@ val split_on_char : sep:char -> string -> string list
       (split_on_char sep s) = s]).}
     {- No string in the result contains the [sep] character.}}
 
-    @since 4.04 (4.05 in StringLabels) *)
+    @since 4.05 *)
 
 (** {1:transforming Transforming} *)
 
@@ -248,25 +248,25 @@ val uppercase_ascii : string -> string
 (** [uppercase_ascii s] is [s] with all lowercase letters
     translated to uppercase, using the US-ASCII character set.
 
-    @since 4.03 (4.05 in StringLabels) *)
+    @since 4.05 *)
 
 val lowercase_ascii : string -> string
 (** [lowercase_ascii s] is [s] with all uppercase letters translated
     to lowercase, using the US-ASCII character set.
 
-    @since 4.03 (4.05 in StringLabels) *)
+    @since 4.05 *)
 
 val capitalize_ascii : string -> string
 (** [capitalize_ascii s] is [s] with the first character set to
     uppercase, using the US-ASCII character set.
 
-    @since 4.03 (4.05 in StringLabels) *)
+    @since 4.05 *)
 
 val uncapitalize_ascii : string -> string
 (** [uncapitalize_ascii s] is [s] with the first character set to lowercase,
     using the US-ASCII character set.
 
-    @since 4.03 (4.05 in StringLabels) *)
+    @since 4.05 *)
 
 (** {1:traversing Traversing} *)
 
