@@ -278,58 +278,62 @@ CAMLprim value caml_weak_get (value ar, value n)
 static value ephe_get_field_copy (value e, mlsize_t offset)
 {
   CAMLparam1 (e);
-  CAMLlocal2 (res, elt);
-  mlsize_t i, infix_offs = 0;
-  value v; /* Caution: this is NOT a local root. */
-  value f;
+  CAMLlocal4 (res, val, copy, field);
+  mlsize_t i = 0, infix_offs = 0;
 
   clean_field(e, offset);
-  v = Field(e, offset);
-  if (v == caml_ephe_none) {
-    res = Val_none;
-    goto out;
-  }
+  val = Field(e, offset);
 
-  /** Don't copy custom_block #7279 */
-  if (Is_block(v) && Tag_val(v) != Custom_tag) {
-    if (Tag_val(v) == Infix_tag) {
-      infix_offs = Infix_offset_val(v);
-      v -= infix_offs;
+  /* Loop in case allocating the copy triggers a GC which modifies the
+   * ephemeron or the value. */
+  do {
+    if (val == caml_ephe_none) {
+      res = Val_none;
+      goto out;
     }
-    elt = caml_alloc (Wosize_val(v), Tag_val(v));
 
+    /* Don't copy immediates or custom blocks #7279 */
+    if (!Is_block(val) || Tag_val(val) == Custom_tag) {
+      copy = val;
+      goto some;
+    }
+
+    if (Tag_val(val) == Infix_tag) {
+      infix_offs = Infix_offset_val(val);
+      val -= infix_offs;
+    }
+
+    copy = caml_alloc (Wosize_val(val), Tag_val(val));
+
+    /* This allocation could provoke a GC, which could change the
+     * header or size of val (e.g. in a finalizer). If it does, go
+     * around the loop and try again. */
+    val = Val_unit;
     clean_field(e, offset);
-    v = Field(e, offset);
-    if (v == caml_ephe_none) CAMLreturn (Val_none);
+    val = Field(e, offset);
+  } while ((Tag_val(copy) != Tag_val(val)) ||
+           (Wosize_val(copy) != Wosize_val(val)));
 
-    if (Tag_val(v) == Infix_tag) {
-      infix_offs = Infix_offset_val(v);
-      v -= infix_offs;
-    }
-
-    if (Tag_val(v) < No_scan_tag) {
-      caml_domain_state* domain_state = Caml_state;
-      i = 0;
-      if (Tag_val (v) == Closure_tag) {
-        /* Direct copy of the code pointers and closure info fields */
-        i = Start_env_closinfo(Closinfo_val(v));
-        memcpy (Bp_val (elt), Bp_val (v), Bsize_wsize (i));
-      }
-      /* Field-by-field copy and darkening of the remaining fields */
-      for (/*nothing*/; i < Wosize_val(v); i++) {
-        f = Field(v, i);
-        caml_darken (domain_state, f, 0);
-        Store_field(elt, i, f);
-      }
-    } else {
-      memmove (Bp_val(elt), Bp_val(v), Bosize_val(v));
-    }
-  } else {
-    Field(e, offset) = elt = v;
+  /* Copy non-scannable prefix */
+  if (Tag_val(val) > No_scan_tag) {
+    i = Wosize_val(copy);
   }
-  res = caml_alloc_small (1, Tag_some);
-  Field(res, 0) = elt + infix_offs;
- out:
+  else if (Tag_val(val) == Closure_tag) {
+    i = Start_env_closinfo(Closinfo_val(val));
+  }
+  memcpy (Bp_val(copy), Bp_val(val), Bsize_wsize(i));
+
+  /* Copy and darken scannable fields */
+  caml_domain_state* domain_state = Caml_state;
+  while (i < Wosize_val(copy)) {
+    field = Field(val, i);
+    caml_darken (domain_state, field, 0);
+    Store_field(copy, i, field);
+    ++ i;
+  }
+some:
+  res = caml_alloc_some(copy + infix_offs);
+out:
   /* run GC and memprof callbacks */
   caml_process_pending_actions();
   CAMLreturn(res);
