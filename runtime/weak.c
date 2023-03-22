@@ -319,7 +319,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
     copy_tag = Tag_val(copy);
     copy_offs = infix_offs;
     val = Val_unit;
-  } 
+  }
 
   /* Copy non-scannable prefix */
   if (Tag_val(val) > No_scan_tag) {
