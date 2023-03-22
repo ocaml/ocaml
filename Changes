@@ -552,9 +552,9 @@ Working version
   cu_required_globals field of compilation unit descriptors.
   (Sébastien Hinderer, review by Vincent Laviron)
 
-- #????: Add Misc.print_see_manual and modify [@manual_ref] to accept
+- #12125: Add Misc.print_see_manual and modify [@manual_ref] to accept
   lists for simpler printing of manual references
-  (Stefan Muenzel, review by ????)
+  (Stefan Muenzel, review by Florian Angeletti)
 
 ### Build system:
 
