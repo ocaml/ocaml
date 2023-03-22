@@ -271,98 +271,45 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     let h = H.hash d in
     add_aux t set (Some d) h (get_index t h)
 
+  (* General auxiliary function for searching for a particular value
+   * in a hash-set, and acting according to whether or not it's found *)
 
-  let find_or t d ifnotfound =
+  let find_aux ?(collect=false) t d found notfound =
     let h = H.hash d in
     let index = get_index t h in
     let bucket = t.table.(index) in
     let hashes = t.hashes.(index) in
     let sz = length bucket in
-    let rec loop i =
-      if i >= sz then ifnotfound h index
+    let rec loop i acc =
+      if i >= sz then notfound h index acc
       else if h = hashes.(i) then begin
-        match get_copy bucket i with
-        | Some v when H.equal v d
-           -> begin match get bucket i with
-              | Some v -> v
-              | None -> loop (i + 1)
-              end
-        | _ -> loop (i + 1)
-      end else loop (i + 1)
-    in
-    loop 0
-
-
-  let merge t d =
-    find_or t d (fun h index -> add_aux t set (Some d) h index; d)
-
-
-  let find t d = find_or t d (fun _h _index -> raise Not_found)
-
-  let find_opt t d =
-    let h = H.hash d in
-    let index = get_index t h in
-    let bucket = t.table.(index) in
-    let hashes = t.hashes.(index) in
-    let sz = length bucket in
-    let rec loop i =
-      if i >= sz then None
-      else if h = hashes.(i) then begin
-        match get_copy bucket i with
-        | Some v when H.equal v d
-           -> begin match get bucket i with
-              | Some _ as v -> v
-              | None -> loop (i + 1)
-              end
-        | _ -> loop (i + 1)
-      end else loop (i + 1)
-    in
-    loop 0
-
-
-  let find_shadow t d iffound ifnotfound =
-    let h = H.hash d in
-    let index = get_index t h in
-    let bucket = t.table.(index) in
-    let hashes = t.hashes.(index) in
-    let sz = length bucket in
-    let rec loop i =
-      if i >= sz then ifnotfound
-      else if h = hashes.(i) then begin
-        match get_copy bucket i with
-        | Some v when H.equal v d -> iffound bucket i
-        | _ -> loop (i + 1)
-      end else loop (i + 1)
-    in
-    loop 0
-
-
-  let remove t d = find_shadow t d (fun w i -> set w i None) ()
-
-
-  let mem t d = find_shadow t d (fun _w _i -> true) false
-
-
-  let find_all t d =
-    let h = H.hash d in
-    let index = get_index t h in
-    let bucket = t.table.(index) in
-    let hashes = t.hashes.(index) in
-    let sz = length bucket in
-    let rec loop i accu =
-      if i >= sz then accu
-      else if h = hashes.(i) then begin
-        match get_copy bucket i with
-        | Some v when H.equal v d
-           -> begin match get bucket i with
-              | Some v -> loop (i + 1) (v :: accu)
-              | None -> loop (i + 1) accu
-              end
-        | _ -> loop (i + 1) accu
-      end else loop (i + 1) accu
+        match get bucket i with
+        | Some v as opt when H.equal v d ->
+               if collect then loop (i + 1) (v :: acc)
+                          else found bucket i opt v
+        | _ -> loop (i + 1) acc
+      end else loop (i + 1) acc
     in
     loop 0 []
 
+  let find_opt t d = find_aux t d (fun _b _i  o _v -> o)
+                                  (fun _h _i _a -> None)
+
+  let merge t d    = find_aux t d (fun _b _i _o  v -> v)
+                                  (fun  h  i _a ->
+                                        add_aux t set (Some d) h i; d)
+
+  let find t d     = find_aux t d (fun _b _i _o  v -> v)
+                                  (fun _h _i _a -> raise Not_found)
+
+  let remove t d   = find_aux t d (fun  b  i _o _v -> set b i None)
+                                  (fun _h _i _a -> ())
+
+  let mem t d      = find_aux t d (fun _b _i _o _v -> true)
+                                  (fun _h _i _a -> false)
+
+  let find_all t d = find_aux ~collect:true t d (fun _b _i _o _v -> [])
+                                                (fun _h _i a -> a)
 
   let stats t =
     let len = Array.length t.table in
