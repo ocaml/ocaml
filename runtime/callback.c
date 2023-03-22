@@ -27,17 +27,21 @@
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
 
-/* Unrooted callbacks: an important performance property of callbacks,
-   for example
+/* A note about callbacks and GC.  For best performance, a callback such as
      [caml_callback_exn(value closure, value arg)]
-   is that they should not extend the lifetime of the values [closure]
-   and [arg] any farther than necessary, that is, they should be
-   unrooted when the function call actually happens.
+   should not extend the lifetime of the values [closure]
+   and [arg] any farther than necessary, that is, they should not be
+   registered as GC roots when the function call actually happens.
 
    This mirrors the reachability/lifetime guarantees provided by
    function calls in OCaml code, where the arguments can be collected
    as soon as they are not used anymore within the function body.
-*/
+
+   The closure and its arguments may still have to be registered as
+   GC roots, typically across a call to [alloc_and_clear_stack_parent] below,
+   but registration should stop before the actual callback.
+
+   See #12121 for more discussion. */
 
 /*
  * These functions are to ensure effects are handled correctly inside
@@ -91,9 +95,7 @@ static void init_callback_code(void)
 
 CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
 {
-  CAMLparam0();
-  /* We explicitly avoid rooting [closure] and [args].
-     See the remark on "unrooted callbacks" above. */
+  CAMLparam0(); /* no need to register closure and args as roots, see below */
   CAMLlocal1(cont);
   value res;
   int i;
@@ -116,10 +118,9 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   domain_state->current_stack->sp[narg + 3] = closure;
 
   cont = alloc_and_clear_stack_parent(domain_state);
-  /* This calls the GC and may invalidate the unrooted values
-     [closure] and [args]. They are never used afterwards,
-     as they were copied into the root [domain_state->current_stack].
-  */
+  /* This can call the GC and invalidate the values [closure] and [args].
+     However, they are never used afterwards,
+     as they were copied into the root [domain_state->current_stack]. */
 
   res = caml_interprete(callback_code, sizeof(callback_code));
   if (Is_exception_result(res))
@@ -178,12 +179,9 @@ CAMLexport value caml_callback_exn(value closure, value arg)
   if (Stack_parent(domain_state->current_stack)) {
     value cont, res;
 
-    /* We ensure that [closure], [arg] are preserved over the stack
-       parent allocation, but avoid rooting them over the
-       [caml_callback_asm] call itself.
-
-       See the remark on "unrooted callbacks" above.
-    */
+    /* [closure] and [arg] need to be preserved across the allocation
+       of the stack parent, but need not and should not be registered
+       as roots past this allocation. */
     Begin_roots2(closure, arg);
     cont = alloc_and_clear_stack_parent(domain_state);
     End_roots();
@@ -209,7 +207,7 @@ CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
   if (Stack_parent(domain_state->current_stack)) {
     value cont, res;
 
-    /* Unrooted callbacks; see caml_callback_exn. */
+    /* Root registration policy: see caml_callback_exn. */
     Begin_roots3(closure, arg1, arg2);
     cont = alloc_and_clear_stack_parent(domain_state);
     End_roots();
@@ -238,7 +236,7 @@ CAMLexport value caml_callback3_exn(value closure,
   if (Stack_parent(domain_state->current_stack))  {
     value cont, res;
 
-    /* Unrooted callbacks; see caml_callback_exn. */
+    /* Root registration policy: see caml_callback_exn. */
     Begin_roots4(closure, arg1, arg2, arg3);
     cont = alloc_and_clear_stack_parent(domain_state);
     End_roots();
@@ -264,7 +262,9 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[]) {
     value *remaining_args = args + 3;
     int remaining_narg = narg - 3;
 
-    /* See the remark on "unrooted callbacks" above. */
+    /* We need to register the remaining arguments as roots
+       in case a GC occurs during [caml_callback3_exn].
+       Arguments 0, 1 and 2 need not and should not be registered. */
     Begin_roots_block(remaining_args, remaining_narg);
     closure = caml_callback3_exn(closure, args[0], args[1], args[2]);
     End_roots();
