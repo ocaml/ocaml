@@ -280,13 +280,16 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
   CAMLparam1 (e);
   CAMLlocal4 (res, val, copy, field);
   mlsize_t i = 0, infix_offs = 0;
-
-  clean_field(e, offset);
-  val = Field(e, offset);
+  tag_t copy_tag = 0;
+  mlsize_t copy_size = 0;
+  mlsize_t copy_offs = 0;
 
   /* Loop in case allocating the copy triggers a GC which modifies the
    * ephemeron or the value. */
-  do {
+  while(true) {
+    clean_field(e, offset);
+    val = Field(e, offset);
+
     if (val == caml_ephe_none) {
       res = Val_none;
       goto out;
@@ -303,16 +306,20 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
       val -= infix_offs;
     }
 
-    copy = caml_alloc (Wosize_val(val), Tag_val(val));
+    if ((Tag_val(val) == copy_tag) &&
+        (Wosize_val(val) == copy_size) &&
+        (infix_offs == copy_offs))
+      break;
 
     /* This allocation could provoke a GC, which could change the
      * header or size of val (e.g. in a finalizer). If it does, go
      * around the loop and try again. */
+    copy = caml_alloc (Wosize_val(val), Tag_val(val));
+    copy_size = Wosize_val(copy);
+    copy_tag = Tag_val(copy);
+    copy_offs = infix_offs;
     val = Val_unit;
-    clean_field(e, offset);
-    val = Field(e, offset);
-  } while ((Tag_val(copy) != Tag_val(val)) ||
-           (Wosize_val(copy) != Wosize_val(val)));
+  } 
 
   /* Copy non-scannable prefix */
   if (Tag_val(val) > No_scan_tag) {
@@ -331,6 +338,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
     Store_field(copy, i, field);
     ++ i;
   }
+
 some:
   res = caml_alloc_some(copy + infix_offs);
 out:
