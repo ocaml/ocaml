@@ -29,6 +29,9 @@ Working version
 
 ### Runtime system:
 
+- #12130: Fix multicore crashes with weak hash sets. Fixes #11934.
+  (Nick Barnes, review by ??)
+
 - #12099: Add ocamlrund option, -events, to produce a trace of
   debug events during bytecode interpretation. Fixes #12098.
   (Richard L Ford, review by Gabriel Scherer)
