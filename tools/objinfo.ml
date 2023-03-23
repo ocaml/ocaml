@@ -28,6 +28,7 @@ let no_approx = ref false
 let no_code = ref false
 let no_crc = ref false
 let shape = ref false
+let index = ref false
 
 module Magic_number = Misc.Magic_number
 
@@ -107,6 +108,24 @@ let print_cmt_infos cmt =
     (match cmt.cmt_impl_shape with
     | None -> printf "(none)\n"
     | Some shape -> Format.printf "\n%a" Shape.print shape)
+  end;
+  if !index then begin
+    printf "Indexed shapes: ";
+    List.iter (fun (item, loc) ->
+      let pp_loc fmt { Location.txt; loc } =
+        Format.fprintf fmt "%a (%a)"
+          Pprintast.longident txt Location.print_loc loc
+      in
+      match item with
+      | Resolved uid ->
+          Format.printf "%a: %a\n"
+            Shape.Uid.print uid
+            pp_loc loc
+      | Unresolved shape ->
+        Format.printf "%a: %a\n"
+          Shape.print shape
+          pp_loc loc)
+      cmt.cmt_index
   end
 
 let print_general_infos name crc defines cmi cmx =
@@ -381,6 +400,8 @@ let arg_list = [
     " Do not print code from exported flambda functions";
   "-shape", Arg.Set shape,
     " Print the shape of the module";
+  "-index", Arg.Set index,
+    " Print the index of the module";
   "-null-crc", Arg.Set no_crc, " Print a null CRC for imported interfaces";
   "-args", Arg.Expand Arg.read_arg,
      "<file> Read additional newline separated command line arguments \n\
