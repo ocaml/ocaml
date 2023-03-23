@@ -495,7 +495,7 @@ let token_bool ib =
   | "false" -> false
   | s -> bad_input (Printf.sprintf "invalid boolean '%s'" s)
 
-let token_binary ib = Bytes.of_string (Scanning.token ib)
+let token_binary ib = Bytes.unsafe_of_string (Scanning.token ib)
 
 (* The type of integer conversions. *)
 type integer_conversion =
