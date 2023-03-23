@@ -1480,9 +1480,9 @@ let test57 () =
   sscanf "12 \"%i\"89 " "%i %{%d%}%s %!"
     (fun i f s -> i = 12 && f = "%i" && s = "89") &&
 
-  (* Test if format %Y is indeed read as %Y. *)
-  let s, fmt = " %Y ", format_of_string "%Y" in
-  test_format_scan s fmt " %Y "
+  (* Test if format %y is indeed read as %y. *)
+  let s, fmt = " %y ", format_of_string "%y" in
+  test_format_scan s fmt " %y "
 ;;
 
 test (test57 ())
@@ -1574,10 +1574,10 @@ let test62 () =
 test (test62 ())
 ;;
 
-(* testing %Y binary scanning *)
+(* testing %y binary scanning *)
 let test63 () =
   let test x s = (Bytes.to_string x) = s in
-  sscanf "\001\002\t\003 \004\005" "%Y %Y %Y"
+  sscanf "\001\002\t\003 \004\005" "%y %y %y"
     (fun a b c ->
       test a "\001\002" &&
       test b "\003" &&

@@ -308,7 +308,7 @@ and ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
        'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
       (bool -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
        bool -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
-  | Binary_ty :                                               (* %Y  *)
+  | Bytes_ty :                                                (* %y  *)
       ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
        'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
       (bytes -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
@@ -404,7 +404,7 @@ and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
   | Bool :                                                   (* %[bB] *)
       ('x, bool -> 'a) padding * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
         ('x, 'b, 'c, 'd, 'e, 'f) fmt
-  | Binary :                                                 (* %Y *)
+  | Bytes :                                                  (* %y *)
       ('x, bytes -> 'a) padding * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
         ('x, 'b, 'c, 'd, 'e, 'f) fmt
   | Flush :                                                  (* %! *)
@@ -555,8 +555,8 @@ let rec erase_rel : type a b c d e f g h i j k l .
     Float_ty (erase_rel rest)
   | Bool_ty rest ->
     Bool_ty (erase_rel rest)
-  | Binary_ty rest ->
-    Binary_ty (erase_rel rest)
+  | Bytes_ty rest ->
+    Bytes_ty (erase_rel rest)
   | Format_arg_ty (ty, rest) ->
     Format_arg_ty (ty, erase_rel rest)
   | Format_subst_ty (ty1, _ty2, rest) ->
@@ -616,8 +616,8 @@ fun fmtty1 fmtty2 -> match fmtty1 with
     Float_ty (concat_fmtty rest fmtty2)
   | Bool_ty rest ->
     Bool_ty (concat_fmtty rest fmtty2)
-  | Binary_ty rest ->
-    Binary_ty (concat_fmtty rest fmtty2)
+  | Bytes_ty rest ->
+    Bytes_ty (concat_fmtty rest fmtty2)
   | Alpha_ty rest ->
     Alpha_ty (concat_fmtty rest fmtty2)
   | Theta_ty rest ->
@@ -665,8 +665,8 @@ fun fmt1 fmt2 -> match fmt1 with
     Caml_char (concat_fmt rest fmt2)
   | Bool (pad, rest) ->
     Bool (pad, concat_fmt rest fmt2)
-  | Binary (pad, rest) ->
-    Binary (pad, concat_fmt rest fmt2)
+  | Bytes (pad, rest) ->
+    Bytes (pad, concat_fmt rest fmt2)
   | Alpha rest ->
     Alpha (concat_fmt rest fmt2)
   | Theta rest ->

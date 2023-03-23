@@ -4182,7 +4182,7 @@ and type_format loc str env =
         | Int64_ty rest     -> mk_constr "Int64_ty"     [ mk_fmtty rest ]
         | Float_ty rest     -> mk_constr "Float_ty"     [ mk_fmtty rest ]
         | Bool_ty rest      -> mk_constr "Bool_ty"      [ mk_fmtty rest ]
-        | Binary_ty rest    -> mk_constr "Binary_ty"    [ mk_fmtty rest ]
+        | Bytes_ty rest     -> mk_constr "Bytes_ty"     [ mk_fmtty rest ]
         | Alpha_ty rest     -> mk_constr "Alpha_ty"     [ mk_fmtty rest ]
         | Theta_ty rest     -> mk_constr "Theta_ty"     [ mk_fmtty rest ]
         | Any_ty rest       -> mk_constr "Any_ty"       [ mk_fmtty rest ]
@@ -4274,8 +4274,8 @@ and type_format loc str env =
             mk_fconv fconv; mk_padding pad; mk_precision prec; mk_fmt rest ]
         | Bool (pad, rest) ->
           mk_constr "Bool" [ mk_padding pad; mk_fmt rest ]
-        | Binary (pad, rest) ->
-          mk_constr "Binary" [ mk_padding pad; mk_fmt rest ]
+        | Bytes (pad, rest) ->
+          mk_constr "Bytes" [ mk_padding pad; mk_fmt rest ]
         | Flush rest ->
           mk_constr "Flush" [ mk_fmt rest ]
         | String_literal (s, rest) ->

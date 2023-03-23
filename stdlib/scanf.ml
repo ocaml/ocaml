@@ -1174,7 +1174,7 @@ fun k fmt -> match fmt with
   | Int64 (_, _, _, rest)            -> take_format_readers k rest
   | Float (_, _, _, rest)            -> take_format_readers k rest
   | Bool (_, rest)                   -> take_format_readers k rest
-  | Binary (_, rest)                 -> take_format_readers k rest
+  | Bytes (_, rest)                  -> take_format_readers k rest
   | Alpha rest                       -> take_format_readers k rest
   | Theta rest                       -> take_format_readers k rest
   | Flush rest                       -> take_format_readers k rest
@@ -1220,7 +1220,7 @@ fun k fmtty fmt -> match fmtty with
   | Int64_ty rest               -> take_fmtty_format_readers k rest fmt
   | Float_ty rest               -> take_fmtty_format_readers k rest fmt
   | Bool_ty rest                -> take_fmtty_format_readers k rest fmt
-  | Binary_ty rest              -> take_fmtty_format_readers k rest fmt
+  | Bytes_ty rest               -> take_fmtty_format_readers k rest fmt
   | Alpha_ty rest               -> take_fmtty_format_readers k rest fmt
   | Theta_ty rest               -> take_fmtty_format_readers k rest fmt
   | Any_ty rest                 -> take_fmtty_format_readers k rest fmt
@@ -1323,7 +1323,7 @@ fun ib fmt readers -> match fmt with
   | Bool (pad, rest) ->
     let scan _ _ ib = scan_bool ib in
     pad_prec_scanf ib rest readers pad No_precision scan token_bool
-  | Binary (pad, rest) ->
+  | Bytes (pad, rest) ->
     (* TODO not sure if need the same treatment as for String here ? *)
     let scan width _ ib = scan_string None width ib in
     pad_prec_scanf ib rest readers pad No_precision scan token_binary

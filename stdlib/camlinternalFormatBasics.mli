@@ -117,7 +117,7 @@ and ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
      'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
     (bool -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
      bool -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
-| Binary_ty :                                               (* %Y  *)
+| Bytes_ty :                                                (* %y  *)
     ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
      'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
     (bytes -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
@@ -210,7 +210,7 @@ and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
 | Bool :                                                   (* %[bB] *)
     ('x, bool -> 'a) padding * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
       ('x, 'b, 'c, 'd, 'e, 'f) fmt
-| Binary :                                                 (* %Y *)
+| Bytes :                                                  (* %y *)
     ('x, bytes -> 'a) padding * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
       ('x, 'b, 'c, 'd, 'e, 'f) fmt
 | Flush :                                                  (* %! *)

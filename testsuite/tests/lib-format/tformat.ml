@@ -536,12 +536,12 @@ try
 
   say "\ny\n%!";
   let b = Bytes.make 5 (Char.chr 0) in
-  Bytes.set_int8 b 3 260;
+  Bytes.set_int8 b 3 260; (* =4 mod 256 *)
   Bytes.set_int8 b 2 1;
   Bytes.set_int8 b 1 2;
   Bytes.set_int8 b 0 3;
   Bytes.set_int8 b 4 (-1);
-  test (sprintf "hello %Y" b = "hello \003\002\001\004\255");
+  test (sprintf "hello %y" b = "hello \003\002\001\004\255");
 
   say "\nend of tests\n%!";
 
