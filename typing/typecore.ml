@@ -107,6 +107,7 @@ type error =
   | Apply_non_function of {
       funct : Typedtree.expression;
       func_ty : type_expr;
+      res_ty : type_expr;
       previous_arg_loc : Location.t;
       extra_arg_loc : Location.t;
     }
@@ -4556,6 +4557,7 @@ and type_application env funct sargs =
               raise(Error(funct.exp_loc, env, Apply_non_function {
                   funct;
                   func_ty = expand_head env funct.exp_type;
+                  res_ty = expand_head env ty_res;
                   previous_arg_loc;
                   extra_arg_loc = sarg.pexp_loc; }))
     in
@@ -5734,15 +5736,15 @@ let report_error ~loc env = function
            fprintf ppf "This expression has type")
         (function ppf ->
            fprintf ppf "but an expression was expected of type");
-  | Apply_non_function { funct; func_ty; previous_arg_loc; extra_arg_loc } ->
+  | Apply_non_function {
+      funct; func_ty; res_ty; previous_arg_loc; extra_arg_loc
+    } ->
       begin match get_desc func_ty with
         Tarrow _ ->
-          let rec res_type_is_unit ty = match get_desc (expand_head env ty) with
-            | Tarrow (_, _, rhs, _) -> res_type_is_unit rhs
+          let returns_unit = match get_desc res_ty with
             | Tconstr (p, _, _) -> Path.same p Predef.path_unit
             | _ -> false
           in
-          let returns_unit = res_type_is_unit func_ty in
           report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
             ~extra_arg_loc ~returns_unit loc
       | _ ->

@@ -158,6 +158,7 @@ type error =
   | Apply_non_function of {
       funct : Typedtree.expression;
       func_ty : type_expr;
+      res_ty : type_expr;
       previous_arg_loc : Location.t;
       extra_arg_loc : Location.t;
     }
