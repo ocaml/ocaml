@@ -62,6 +62,10 @@ type item_declaration =
   | Value_binding of value_binding
   | Value_description of value_description
 
+type index_item =
+| Resolved of Uid.t
+| Unresolved of Shape.t
+
 type cmt_infos = {
   cmt_modname : modname;
   cmt_annots : binary_annots;
@@ -79,6 +83,7 @@ type cmt_infos = {
   cmt_use_summaries : bool;
   cmt_uid_to_decl : item_declaration Shape.Uid.Tbl.t;
   cmt_impl_shape : Shape.t option; (* None for mli *)
+  cmt_index : (index_item * Longident.t Location.loc) list
 }
 
 type error =
