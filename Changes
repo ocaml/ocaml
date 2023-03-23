@@ -283,6 +283,9 @@ Working version
   (Xavier Leroy, review by Edwin Török and Gabriel Scherer, fix by Damien
    Doligez)
 
+- #10791: add format specifier %Y for bytes.
+  (Simon Parry, review by TODO)
+
 ### Other libraries:
 
 - #11374: Remove pointer cast to a type with stricter alignment requirements
