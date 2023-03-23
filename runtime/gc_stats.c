@@ -54,7 +54,6 @@ void caml_accum_alloc_stats(
   acc->minor_words += s->minor_words;
   acc->promoted_words += s->promoted_words;
   acc->major_words += s->major_words;
-  acc->minor_collections += s->minor_collections;
   acc->forced_major_collections += s->forced_major_collections;
 }
 
@@ -65,7 +64,6 @@ void caml_collect_alloc_stats_sample(
   sample->minor_words = local->stat_minor_words;
   sample->promoted_words = local->stat_promoted_words;
   sample->major_words = local->stat_major_words;
-  sample->minor_collections = atomic_load(&caml_minor_collections_count);
   sample->forced_major_collections = local->stat_forced_major_collections;
 }
 
@@ -96,7 +94,7 @@ void caml_orphan_alloc_stats(caml_domain_state *domain) {
   caml_collect_alloc_stats_sample(domain, &alloc_stats);
   caml_reset_domain_alloc_stats(domain);
 
-  /* push them into the oprhan stats */
+  /* push them into the orphan stats */
   caml_plat_lock(&orphan_lock);
   caml_accum_alloc_stats(&orphaned_alloc_stats, &alloc_stats);
   caml_plat_unlock(&orphan_lock);
