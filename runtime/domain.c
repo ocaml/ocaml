@@ -1470,6 +1470,7 @@ int caml_try_run_on_all_domains_with_spin_work(
 
   for(i = 0; i < stw_request.num_domains; i++) {
     int id = stw_request.participating[i]->id;
+caml_gc_log ("STW: waiting for domain %d", id);
     caml_wait_interrupt_serviced(&all_domains[id].interruptor);
   }
 
@@ -1578,6 +1579,14 @@ Caml_inline void advance_global_major_slice_epoch (caml_domain_state* d)
   }
 }
 
+static void global_major_slice_stw_handler (caml_domain_state *domain,
+                                            void *unused,
+                                            int participating_count,
+                                            caml_domain_state **participating)
+{
+  domain->requested_major_slice = 1;
+}
+
 void caml_poll_gc_work(void)
 {
   CAMLalloc_point_here;
@@ -1615,6 +1624,12 @@ void caml_poll_gc_work(void)
     /* out of minor heap or collection forced */
     d->requested_minor_gc = 0;
     caml_empty_minor_heaps_once();
+  }
+
+  if (d->requested_global_major_slice) {
+    d->requested_global_major_slice = 0;
+    (void) caml_try_run_on_all_domains_async(
+             &global_major_slice_stw_handler, NULL, NULL);
   }
 
   if (d->requested_major_slice) {

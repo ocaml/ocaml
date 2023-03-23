@@ -61,8 +61,7 @@ CAMLextern atomic_uintnat caml_pending_signals[NSIG_WORDS];
 #define caml_requested_minor_gc (Caml_state_field(requested_minor_gc))
 
 int caml_check_pending_signals(void);
-void caml_request_major_slice_local (void);
-void caml_request_major_slice_global (void);
+void caml_request_major_slice (int global);
 void caml_request_minor_gc (void);
 CAMLextern int caml_convert_signal_number (int);
 CAMLextern int caml_rev_convert_signal_number (int);

@@ -1850,7 +1850,7 @@ void caml_major_collection_slice(intnat howmuch)
         );
     if (interrupted_work > 0) {
       caml_gc_log("Major slice interrupted, rescheduling major slice");
-      caml_request_major_slice_local();
+      caml_request_major_slice(0);
     }
   } else {
     /* TODO: could make forced API slices interruptible, but would need to do

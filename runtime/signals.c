@@ -234,27 +234,11 @@ value caml_execute_signal_exn(int signal_number, int in_signal_handler)
 
 /* Arrange for a garbage collection to be performed as soon as possible */
 
-void caml_request_major_slice_local (void)
+void caml_request_major_slice (int global)
 {
   Caml_state->requested_major_slice = 1;
+  Caml_state->requested_global_major_slice |= global;
   caml_interrupt_self();
-}
-
-static void major_slice_stw_handler (caml_domain_state *d, void *unused,
-                                     int participating_count,
-                                     caml_domain_state **participating)
-{
-  CAMLassert (d == Caml_state);
-  d->requested_major_slice = 1;
-  caml_interrupt_self();
-}
-
-void caml_request_major_slice_global (void)
-{
-  (void) caml_try_run_on_all_domains_with_spin_work(
-    0,
-    &major_slice_stw_handler, NULL,
-    NULL, NULL, NULL);
 }
 
 void caml_request_minor_gc (void)

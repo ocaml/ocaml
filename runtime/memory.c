@@ -194,7 +194,7 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
   Caml_state->extra_heap_resources += (double) res / (double) max;
   if (Caml_state->extra_heap_resources > 0.5){
     CAML_EV_COUNTER (EV_C_REQUEST_MAJOR_ADJUST_GC_SPEED, 1);
-    caml_request_major_slice_global ();
+    caml_request_major_slice (1);
   }
 }
 
@@ -347,7 +347,7 @@ Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, reserved_t reserved,
                dom_st->minor_heap_wsz);
   if (dom_st->allocated_words > dom_st->minor_heap_wsz / 4) {
     CAML_EV_COUNTER (EV_C_REQUEST_MAJOR_ALLOC_SHR, 1);
-    caml_request_major_slice_global();
+    caml_request_major_slice(1);
   }
 
 #ifdef DEBUG
