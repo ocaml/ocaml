@@ -369,7 +369,7 @@ module Incl:
 module Vb:
   sig
     val mk: ?loc: loc -> ?attrs:attrs -> ?docs:docs -> ?text:text ->
-      pattern -> expression -> value_binding
+      ?typ:poly_constraint -> pattern -> expression -> value_binding
   end
 
 

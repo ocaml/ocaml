@@ -2858,6 +2858,45 @@ let may_lower_contravariant_then_generalize env exp =
   if maybe_expansive exp then lower_contravariant env exp.exp_type;
   generalize exp.exp_type
 
+(* value binding elaboration *)
+
+let vb_exp_constraint {pvb_expr=expr; pvb_pat=pat; pvb_constraint=ct; _ } =
+  let open Ast_helper in
+  match ct with
+  | None -> expr
+  | Some {locally_abstract_univars=[]; typ } ->
+      begin match typ.ptyp_desc with
+      | Ptyp_poly _ -> expr
+      | _ ->
+          let loc = { expr.pexp_loc with Location.loc_ghost = true } in
+          Exp.constraint_ ~loc expr typ
+      end
+  | Some {locally_abstract_univars;typ} ->
+      let loc_start = pat.ppat_loc.Location.loc_start in
+      let loc = { expr.pexp_loc with loc_start; loc_ghost=true } in
+      let expr = Exp.constraint_ ~loc expr typ in
+      List.fold_right (Exp.newtype ~loc) locally_abstract_univars expr
+
+let vb_pat_constraint ({pvb_pat=pat; pvb_expr = exp; _ } as vb) =
+  vb.pvb_attributes,
+  let open Ast_helper in
+  match vb.pvb_constraint, pat.ppat_desc, exp.pexp_desc with
+  | Some {locally_abstract_univars=[]; typ }, _, _ ->
+      Pat.constraint_ ~loc:{pat.ppat_loc with Location.loc_ghost=true} pat typ
+  | Some {locally_abstract_univars; typ }, _, _ ->
+      let varified = Typ.varify_constructors locally_abstract_univars typ in
+      let t = Typ.poly ~loc:typ.ptyp_loc locally_abstract_univars varified in
+      let loc_end = typ.ptyp_loc.Location.loc_end in
+      let loc =  { pat.ppat_loc with loc_end; loc_ghost=true } in
+      Pat.constraint_ ~loc pat t
+  | None, (Ppat_any | Ppat_constraint _), _ -> pat
+  | None, _, Pexp_coerce (_, _, sty)
+  | None, _, Pexp_constraint (_, sty) when !Clflags.principal ->
+      (* propagate type annotation to pattern,
+         to allow it to be generalized in -principal mode *)
+      Pat.constraint_ ~loc:{pat.ppat_loc with Location.loc_ghost=true} pat sty
+  | _ -> pat
+
 let rec type_exp ?recarg env sexp =
   (* We now delegate everything to type_expect *)
   type_expect ?recarg env sexp (mk_expected (newvar ()))
@@ -2959,9 +2998,10 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_let(Nonrecursive,
-             [{pvb_pat=spat; pvb_expr=sval; pvb_attributes=[]}], sbody)
+             [{pvb_pat=spat; pvb_attributes=[]; _ } as vb], sbody)
     when may_contain_gadts spat ->
-    (* TODO: allow non-empty attributes? *)
+      (* TODO: allow non-empty attributes? *)
+      let sval = vb_exp_constraint vb in
       type_expect ?in_function env
         {sexp with
          pexp_desc = Pexp_match (sval, [Ast_helper.Exp.case spat sbody])}
@@ -5088,22 +5128,7 @@ and type_cases
 
 and type_let ?check ?check_strict
     existential_context env rec_flag spat_sexp_list allow =
-  let spatl =
-    List.map
-      (fun {pvb_pat=spat; pvb_expr=sexp; pvb_attributes=attrs} ->
-        attrs,
-        match spat.ppat_desc, sexp.pexp_desc with
-          (Ppat_any | Ppat_constraint _), _ -> spat
-        | _, Pexp_coerce (_, _, sty)
-        | _, Pexp_constraint (_, sty) when !Clflags.principal ->
-            (* propagate type annotation to pattern,
-               to allow it to be generalized in -principal mode *)
-            Ast_helper.Pat.constraint_
-              ~loc:{spat.ppat_loc with Location.loc_ghost=true}
-              spat
-              sty
-        | _ -> spat)
-      spat_sexp_list in
+  let spatl =  List.map vb_pat_constraint spat_sexp_list in
   let attrs_list = List.map fst spatl in
   let is_recursive = (rec_flag = Recursive) in
 
@@ -5156,7 +5181,8 @@ and type_let ?check ?check_strict
         let exp_env = if is_recursive then new_env else env in
         type_let_def_wrap_warnings ?check ?check_strict ~is_recursive
           ~exp_env ~new_env ~spat_sexp_list ~attrs_list ~pat_list ~pvs
-          (fun exp_env {pvb_expr=sexp; pvb_attributes; _} pat ->
+          (fun exp_env ({pvb_attributes; _} as vb) pat ->
+            let sexp = vb_exp_constraint vb in
             match get_desc pat.pat_type with
             | Tpoly (ty, tl) ->
                 let vars, ty' =
