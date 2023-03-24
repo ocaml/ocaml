@@ -3315,17 +3315,18 @@ let report_error ~loc _env = function
       add_type_to_preparation item.val_type;
       let sub =
         [ Location.msg ~loc:item.val_loc
-            "This value has the non-generalizable type@ %a."
+            "The type of this value,@ %a,@ \
+             contains the non-generalizable type variable(s) %a."
             prepared_type_scheme
             item.val_type
+            (pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ")
+               prepared_type_scheme) vars
         ]
       in
       Location.errorf ~loc ~sub
         "@[The type of this module,@ %a,@ \
-         contains the non-generalizable type variable(s): %a.@ %a@]"
+         contains non-generalizable type variable(s).@ %a@]"
         modtype mty
-        (pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ")
-           prepared_type_scheme) vars
         Misc.print_see_manual manual_ref
   | Implementation_is_required intf_name ->
       Location.errorf ~loc

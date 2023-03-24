@@ -1821,7 +1821,7 @@ Line 1, characters 0-63:
 Error: The type of this class,
        class ['a] r :
          object constraint 'a = '_weak2 list ref method get : 'a end,
-       contains the non-generalizable type variable(s) '_weak2
+       contains the non-generalizable type variable(s): '_weak2.
        (see manual section 6.1.2)
 |}]
 
