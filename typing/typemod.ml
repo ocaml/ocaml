@@ -1852,7 +1852,7 @@ and nongen_signature_item env = function
   | Sig_module(_id, _, md, _, _) -> nongen_modtype env md.md_type
   | _ -> None
 
-let nongen_modtype env loc mty =
+let check_nongen_modtype env loc mty =
   nongen_modtype env mty
   |> Option.iter (fun (vars, item) ->
       let vars = Btype.TypeSet.elements vars in
@@ -1874,7 +1874,7 @@ let check_nongen_signature_item env sig_item =
           raise (Error (vd.val_loc, env, error))
         )
   | Sig_module (_id, _, md, _, _) ->
-      nongen_modtype env md.md_loc md.md_type
+      check_nongen_modtype env md.md_loc md.md_type
   | _ -> ()
 
 let check_nongen_signature env sg =
@@ -2895,7 +2895,7 @@ let type_module_type_of env smod =
   in
   let mty = Mtype.scrape_for_type_of ~remove_aliases env tmty.mod_type in
   (* PR#5036: must not contain non-generalized type variables *)
-  nongen_modtype env smod.pmod_loc mty;
+  check_nongen_modtype env smod.pmod_loc mty;
   tmty, mty
 
 (* For Typecore *)
@@ -3304,7 +3304,7 @@ let report_error ~loc _env = function
       add_type_to_preparation expression;
       Location.errorf ~loc
         "@[The type of this expression,@ %a,@ \
-         contains the non-generalizable type variable(s) %a@ %a@]"
+         contains the non-generalizable type variable(s): %a.@ %a@]"
         prepared_type_scheme expression
         (pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ")
            prepared_type_scheme) vars
@@ -3315,14 +3315,14 @@ let report_error ~loc _env = function
       add_type_to_preparation item.val_type;
       let sub =
         [ Location.msg ~loc:item.val_loc
-            "This item has the non-generalizable type@ %a."
+            "This value has the non-generalizable type@ %a."
             prepared_type_scheme
             item.val_type
         ]
       in
       Location.errorf ~loc ~sub
         "@[The type of this module,@ %a,@ \
-         contains the non-generalizable type variable(s) %a@ %a@]"
+         contains the non-generalizable type variable(s): %a.@ %a@]"
         modtype mty
         (pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ")
            prepared_type_scheme) vars
