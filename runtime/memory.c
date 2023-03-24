@@ -341,11 +341,11 @@ Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, reserved_t reserved,
   }
 
   dom_st->allocated_words += Whsize_wosize(wosize);
-  caml_gc_log ("alloc_shr: %"ARCH_INTNAT_PRINTF_FORMAT"u allocated, "
+  caml_gc_log ("GCSP: alloc_shr: %"ARCH_INTNAT_PRINTF_FORMAT"u allocated, "
                "%"ARCH_INTNAT_PRINTF_FORMAT"u minor_heap",
                dom_st->allocated_words,
                dom_st->minor_heap_wsz);
-  if (dom_st->allocated_words > dom_st->minor_heap_wsz / 4) {
+  if (dom_st->allocated_words > dom_st->minor_heap_wsz / 10) {
     CAML_EV_COUNTER (EV_C_REQUEST_MAJOR_ALLOC_SHR, 1);
     caml_request_major_slice(1);
   }

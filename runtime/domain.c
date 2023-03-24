@@ -1470,7 +1470,6 @@ int caml_try_run_on_all_domains_with_spin_work(
 
   for(i = 0; i < stw_request.num_domains; i++) {
     int id = stw_request.participating[i]->id;
-caml_gc_log ("STW: waiting for domain %d", id);
     caml_wait_interrupt_serviced(&all_domains[id].interruptor);
   }
 
@@ -1875,15 +1874,6 @@ static void domain_terminate (void)
      on caml_domain_alone (which uses caml_num_domains_running) in at least
      the shared_heap lockfree fast paths */
   atomic_fetch_add(&caml_num_domains_running, -1);
-}
-
-void caml_enumerate_participating_domains (void (*f) (int))
-{
-  int i;
-
-  for (i = 0; i < stw_domains.participating_domains; i++){
-    f (stw_domains.domains[i]->id);
-  }
 }
 
 CAMLprim value caml_ml_domain_cpu_relax(value t)
