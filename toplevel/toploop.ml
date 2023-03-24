@@ -187,20 +187,35 @@ let load_ocamlinit ppf =
 
 exception PPerror
 
-(* Test whether a lexbuf contains only blank characters, including at least
-   one linefeed. See newline and blank in lexer.mll. *)
+(* Refill the buffer until the linefeed or end-of-file is read and
+   check that its contents can be ignored.
+*)
 let is_blank_with_linefeed lb =
-  let rec loop i lf_seen =
-    if i >= lb.Lexing.lex_buffer_len then lf_seen else
-      match Bytes.get lb.Lexing.lex_buffer i with
-      | '\009' | '\012' | '\013' | ' ' -> loop (i+1) lf_seen
-      | '\010' -> loop (i+1) true
-      | _ -> false
-  in
-  loop lb.Lexing.lex_curr_pos false
+  let open Lexing in
+  if Bytes.get lb.lex_buffer lb.lex_curr_pos = '\n' then
+    true
+  else begin
+    let rec has_lf i =
+      if i >= lb.lex_buffer_len then false else
+        match Bytes.get lb.lex_buffer i with
+        | '\010' -> true
+        | _ -> has_lf (i+1)
+    in
+    while not (lb.lex_eof_reached || has_lf lb.lex_curr_pos) do
+      lb.refill_buff lb
+    done;
+    let len = lb.lex_buffer_len - lb.lex_curr_pos in
+    let s = Bytes.sub_string lb.lex_buffer lb.lex_curr_pos len in
+    let shadow = Lexing.from_string s in
+    match Lexer.token shadow with
+    | EOF -> true
+    | _ -> false
+    | exception _ -> false
+  end
 
 (* Read and parse toplevel phrases, stop when a complete phrase has been
-   parsed and the lexbuf contains and end of line with optional whitespace. *)
+   parsed and the lexbuf contains and end of line with optional whitespace
+   and comments. *)
 let rec get_phrases ppf lb phrs =
   match !parse_toplevel_phrase lb with
   | phr ->

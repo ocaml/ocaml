@@ -1,17 +1,17 @@
 \chapter{The toplevel system or REPL (ocaml)} \label{c:camllight}
 %HEVEA\cutname{toplevel.html}
 
-This chapter describes the toplevel system for OCaml, that permits
+This chapter describes "ocaml", the toplevel system for OCaml, that permits
 interactive use of the OCaml system
 through a read-eval-print loop (REPL). In this mode, the system repeatedly
 reads OCaml phrases from the input, then typechecks, compile and
 evaluate them, then prints the inferred type and result value, if
-any.
+any. End-of-file on standard input terminates "ocaml".
 
 Input to the toplevel can span several lines. It begins after the "#"
 (sharp) prompt printed by the system and is terminated by @";;"@ (a
-double-semicolon) followed by optional white space and an end of
-line. The toplevel input consists in one or several
+double-semicolon) followed by optional white space and comments and an
+end of line. The toplevel input consists in one or several
 toplevel phrases, with the following syntax:
 
 \begin{syntax}
