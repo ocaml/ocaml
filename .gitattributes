@@ -118,6 +118,7 @@ testsuite/tests/generated-parse-errors/errors.*         typo.very-long-line
 testsuite/tools/*.S                                     typo.missing-header
 testsuite/tools/*.asm                                   typo.missing-header
 testsuite/tests/messages/highlight_tabs.ml              typo.tab
+testsuite/tests/tool-toplevel/multi_phrase_line.ml      typo.very-long-line
 
 # prune testsuite reference files
 testsuite/tests/**/*.reference               typo.prune

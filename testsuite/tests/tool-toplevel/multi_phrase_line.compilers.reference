@@ -1,0 +1,56 @@
+#     - : int = 1
+- : int = 2
+#     - : int = 1
+- : unit = ()
+#       - : int = 1
+- : unit = ()
+#   Line 2, characters 7-9:
+2 | 1;; let;; 3;; (* Syntax error in second phrase. *)
+           ^^
+Error: Syntax error
+#   - : int = 1
+Line 2, characters 14-18:
+2 | 1;; let x = 2+true;; 3;; (* Type error in second phrase. *)
+                  ^^^^
+Error: This expression has type bool but an expression was expected of type
+         int
+#   Line 2, characters 0-21:
+2 | match 1 with 11 -> ();; 2;; 3;; (* Warning + run-time error in first phrase. *)
+    ^^^^^^^^^^^^^^^^^^^^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+0
+Exception: Match_failure ("//toplevel//", 2, 0).
+- : int = 2
+- : int = 3
+#   - : int = 1
+Line 2, characters 4-25:
+2 | 1;; match 2 with 22 -> ();; 3;; (* Warning + run-time error in second phrase. *)
+        ^^^^^^^^^^^^^^^^^^^^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+0
+Exception: Match_failure ("//toplevel//", 2, 4).
+- : int = 3
+#   Line 2, characters 6-12:
+2 | let f 1 = ();; let f 2 = ();; let f 3 = ();; (* Several warnings. *)
+          ^^^^^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+0
+val f : int -> unit = <fun>
+Line 2, characters 21-27:
+2 | let f 1 = ();; let f 2 = ();; let f 3 = ();; (* Several warnings. *)
+                         ^^^^^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+0
+val f : int -> unit = <fun>
+Line 2, characters 36-42:
+2 | let f 1 = ();; let f 2 = ();; let f 3 = ();; (* Several warnings. *)
+                                        ^^^^^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+0
+val f : int -> unit = <fun>
+#   * * *   
