@@ -2657,7 +2657,8 @@ let check_partial_application ~statement exp =
 
 let pattern_needs_partial_application_check p =
   let rec check : type a. a general_pattern -> bool = fun p ->
-    not (List.exists (function (Tpat_constraint _, _, _) -> true | _ -> false) p.pat_extra) &&
+    not (List.exists (function (Tpat_constraint _, _, _) -> true | _ -> false)
+          p.pat_extra) &&
     match p.pat_desc with
     | Tpat_any -> true
     | Tpat_exception _ -> true
