@@ -47,7 +47,6 @@ let inputs ic =
 (* Global variables *)
 
 type global_table_entry =
-    Empty
   | Global of Ident.t
   | Constant of Obj.t
 
@@ -152,7 +151,6 @@ let print_getglobal_name ic =
     else match !globals.(n) with
            Global id -> print_string(Ident.name id)
          | Constant obj -> print_obj obj
-         | _ -> print_string "???"
   end
 
 let print_setglobal_name ic =
@@ -480,32 +478,31 @@ let dump_obj ic =
 (* Print an executable file *)
 
 let dump_exe ic =
-  Bytesections.read_toc ic;
-  (* Read the primitive table from an executable *)
-  let prims = Bytesections.read_section_string ic "PRIM" in
+  let toc = Bytesections.read_toc ic in
+(* Read the primitive table from an executable *)
+  let prims = Bytesections.read_section_string toc ic Bytesections.Name.PRIM in
   primitives := Array.of_list (Misc.split_null_terminated prims);
-  ignore(Bytesections.seek_section ic "DATA");
-  let init_data = (input_value ic : Obj.t array) in
-  globals := Array.make (Array.length init_data) Empty;
-  for i = 0 to Array.length init_data - 1 do
-    !globals.(i) <- Constant (init_data.(i))
-  done;
-  ignore(Bytesections.seek_section ic "SYMB");
-  let sym_table = (input_value ic : Symtable.global_map) in
+  let init_data : Obj.t array =
+    Bytesections.read_section_struct toc ic Bytesections.Name.DATA in
+  globals := Array.map (fun x -> Constant x) init_data;
+  let sym_table : Symtable.global_map =
+    Bytesections.read_section_struct toc ic Bytesections.Name.SYMB in
   Symtable.iter_global_map
     (fun id pos -> !globals.(pos) <- Global id) sym_table;
-  begin try
-    ignore (Bytesections.seek_section ic "DBUG");
-    let num_eventlists = input_binary_int ic in
-    for _i = 1 to num_eventlists do
-      let orig = input_binary_int ic in
-      let evl = (input_value ic : debug_event list) in
-      ignore (input_value ic); (* Skip the list of absolute directory names *)
-      record_events orig evl
-    done
-  with Not_found -> ()
+  begin
+    match Bytesections.seek_section toc ic Bytesections.Name.DBUG with
+    | exception Not_found -> ()
+    | (_ : int) ->
+        let num_eventlists = input_binary_int ic in
+        for _i = 1 to num_eventlists do
+          let orig = input_binary_int ic in
+          let evl = (input_value ic : debug_event list) in
+          (* Skip the list of absolute directory names *)
+          ignore (input_value ic);
+          record_events orig evl
+        done
   end;
-  let code_size = Bytesections.seek_section ic "CODE" in
+  let code_size = Bytesections.seek_section toc ic Bytesections.Name.CODE in
   print_code ic code_size
 
 let arg_list = [

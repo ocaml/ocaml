@@ -474,9 +474,9 @@ ocamlc_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 
 ocamlc_MODULES = driver/main
 
-ocamlc$(EXE): OC_BYTECODE_LDFLAGS += -compat-32 -g
+ocamlc$(EXE): OC_BYTECODE_LINKFLAGS += -compat-32 -g
 
-ocamlc.opt$(EXE): OC_NATIVE_LDFLAGS += $(addprefix -cclib ,$(BYTECCLIBS))
+ocamlc.opt$(EXE): OC_NATIVE_LINKFLAGS += $(addprefix -cclib ,$(BYTECCLIBS))
 
 partialclean::
 	rm -f ocamlc ocamlc.exe ocamlc.opt ocamlc.opt.exe
@@ -487,7 +487,7 @@ ocamlopt_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamloptcomp)
 
 ocamlopt_MODULES = driver/optmain
 
-ocamlopt$(EXE): OC_BYTECODE_LDFLAGS += -g
+ocamlopt$(EXE): OC_BYTECODE_LINKFLAGS += -g
 
 partialclean::
 	rm -f ocamlopt ocamlopt.exe ocamlopt.opt ocamlopt.opt.exe
@@ -500,7 +500,7 @@ ocaml_LIBRARIES = \
 ocaml_MODULES = toplevel/topstart
 
 .INTERMEDIATE: ocaml.tmp
-ocaml.tmp: OC_BYTECODE_LDFLAGS += -I toplevel/byte -linkall -g
+ocaml.tmp: OC_BYTECODE_LINKFLAGS += -I toplevel/byte -linkall -g
 ocaml.tmp: $(ocaml_LIBRARIES:=.cma) $(ocaml_MODULES:=.cmo)
 	$(V_LINKC)$(LINK_BYTECODE_PROGRAM) -o $@ $^
 
@@ -912,22 +912,24 @@ runtime/%.bi.$(O): OC_CPPFLAGS += $(ocamlruni_CPPFLAGS)
 $(DEPDIR)/runtime/%.bi.$(D): OC_CPPFLAGS += $(ocamlruni_CPPFLAGS)
 
 runtime/%.bpic.$(O): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
-$(DEPDIR)/runtime/%.bpic.$(D): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
 
+runtime/%.n.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS)
 runtime/%.n.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 $(DEPDIR)/runtime/%.n.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 
+runtime/%.nd.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS)
 runtime/%.nd.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlrund_CPPFLAGS)
 $(DEPDIR)/runtime/%.nd.$(D): \
   OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlrund_CPPFLAGS)
 
+runtime/%.ni.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS)
 runtime/%.ni.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
 $(DEPDIR)/runtime/%.ni.$(D): \
   OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
 
-runtime/%.npic.$(O): OC_CFLAGS += $(OC_NATIVE_CPPFLAGS) $(SHAREDLIB_CFLAGS)
-$(DEPDIR)/runtime/%.npic.$(D): \
-  OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(SHAREDLIB_CFLAGS)
+runtime/%.npic.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS) $(SHAREDLIB_CFLAGS)
+runtime/%.npic.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
+$(DEPDIR)/runtime/%.npic.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 
 ## Compilation of runtime C files
 
@@ -1120,7 +1122,7 @@ ocamllex: ocamlyacc
 ocamllex.opt: ocamlopt
 	$(MAKE) lex-allopt
 
-lex/ocamllex$(EXE): OC_BYTECODE_LDFLAGS += -compat-32
+lex/ocamllex$(EXE): OC_BYTECODE_LINKFLAGS += -compat-32
 
 partialclean::
 	rm -f lex/*.cm* lex/*.o lex/*.obj
@@ -1365,7 +1367,7 @@ partialclean::
 ocamldep_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 ocamldep_MODULES = tools/ocamldep
 
-tools/ocamldep$(EXE): OC_BYTECODE_LDFLAGS += -compat-32
+tools/ocamldep$(EXE): OC_BYTECODE_LINKFLAGS += -compat-32
 
 # The profiler
 
@@ -1457,10 +1459,10 @@ ocamltex_MODULES = tools/ocamltex
 # Note: the following definitions apply to all the prerequisites
 # of ocamltex.
 $(ocamltex): CAMLC = $(OCAMLRUN) $(ROOTDIR)/ocamlc$(EXE) $(STDLIBFLAGS)
-$(ocamltex): OC_COMMON_LDFLAGS += -linkall
+$(ocamltex): OC_COMMON_LINKFLAGS += -linkall
 $(ocamltex): VPATH += $(addprefix otherlibs/,str unix)
 
-tools/ocamltex.cmo: OC_COMMON_CFLAGS += -no-alias-deps
+tools/ocamltex.cmo: OC_COMMON_COMPFLAGS += -no-alias-deps
 
 # we need str and unix which depend on the bytecode version of other tools
 # thus we use the othertools target
@@ -1507,13 +1509,15 @@ ocamlnat_LIBRARIES = \
 
 ocamlnat_MODULES = $(ocaml_MODULES)
 
-ocamlnat$(EXE): OC_NATIVE_LDFLAGS += -linkall -I toplevel/native
+ocamlnat$(EXE): OC_NATIVE_LINKFLAGS += -linkall -I toplevel/native
 
 COMPILE_NATIVE_MODULE = \
-  $(CAMLOPT_CMD) $(OC_COMMON_CFLAGS) -I $(@D) $(INCLUDES) $(OC_NATIVE_CFLAGS)
+  $(CAMLOPT_CMD) $(OC_COMMON_COMPFLAGS) -I $(@D) $(INCLUDES) \
+  $(OC_NATIVE_COMPFLAGS)
+
 
 toplevel/topdirs.cmx toplevel/toploop.cmx $(ocamlnat_MODULES:=.cmx): \
-  OC_NATIVE_CFLAGS += -I toplevel/native
+  OC_NATIVE_COMPFLAGS += -I toplevel/native
 
 toplevel/toploop.cmx: toplevel/native/topeval.cmx
 
@@ -1545,10 +1549,10 @@ endif
 # Default rules
 
 %.cmo: %.ml
-	$(V_OCAMLC)$(CAMLC) $(OC_COMMON_CFLAGS) -I $(@D) $(INCLUDES) -c $<
+	$(V_OCAMLC)$(CAMLC) $(OC_COMMON_COMPFLAGS) -I $(@D) $(INCLUDES) -c $<
 
 %.cmi: %.mli
-	$(V_OCAMLC)$(CAMLC) $(OC_COMMON_CFLAGS) -I $(@D) $(INCLUDES) -c $<
+	$(V_OCAMLC)$(CAMLC) $(OC_COMMON_COMPFLAGS) -I $(@D) $(INCLUDES) -c $<
 
 %.cmx: %.ml
 	$(V_OCAMLOPT)$(COMPILE_NATIVE_MODULE) -c $<

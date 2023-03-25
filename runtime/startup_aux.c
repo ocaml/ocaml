@@ -67,6 +67,7 @@ static void init_startup_params(void)
   params.cleanup_on_exit = 0;
   params.print_magic = 0;
   params.print_config = 0;
+  params.event_trace = 0;
 }
 
 static void scanmult (char_os *opt, uintnat *var)

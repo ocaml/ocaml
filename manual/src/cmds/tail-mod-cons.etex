@@ -22,11 +22,19 @@ remember to continue with "y :: r" after the call returns a value "r",
 therefore this function consumes some amount of call-stack space on
 each recursive call. The stack usage of "map f li" is proportional to
 the length of "li". This is a correctness issue for large lists on
-operating systems with limited stack space -- the dreaded
+systems configured with limited stack space -- the dreaded
 "Stack_overflow" exception.
 
 \begin{caml_example}{toplevel}
-List.length (map Fun.id (List.init 1_000_000 Fun.id));;
+let with_stack_limit stack_limit f =
+   let old_gc_settings = Gc.get () in
+   Gc.set { old_gc_settings with stack_limit };
+   Fun.protect ~finally:(fun () -> Gc.set old_gc_settings) f
+ ;;
+
+with_stack_limit 20_000 (fun () ->
+  List.length (map Fun.id (List.init 1_000_000 Fun.id))
+);;
 \end{caml_example}
 
 In this implementation of "map", the recursive call happens in
@@ -149,6 +157,32 @@ tail-mod-cons are as follows:
   continuation-passing-style versions can be written by hand, possibly
   using a convenient monadic notation.
 \end{itemize}
+
+\paragraph{Note: OCaml call stack size} In OCaml 4.x and earlier,
+bytecode programs respect the "stack_limit" runtime parameter
+configuration (as set using "Gc.set" in the example above), or the "l"
+setting of the "OCAMLRUNPARAM" variable. Native programs ignore these
+settings and only respect the operating system native stack limit, as
+set by "ulimit" on Unix systems. Most operating systems run with
+a relatively low stack size limit by default, so stack overflow on
+non-tail-recursive functions are a common programming bug.
+
+Starting from OCaml 5.0, native code does not use the native system
+stack for OCaml function calls anymore, so it is not affected by the
+operating system native stack size; both native and bytecode programs
+respect the OCaml runtime's own limit. The runtime limit is set to
+a much higher default than most operating system native stacks, with
+a limit of at least 512MiB, so stack overflow should be much less
+common in practice. There is still a stack limit by default, as it
+remains useful to quickly catch bugs with looping non-tail-recursive
+functions. Without a stack limit, one has to wait for the whole memory
+to be consumed by the stack for the program to crash, which can take
+a long time and make the system unresponsive.
+
+This means that the "tail modulo constructor" transformation is less
+important on OCaml 5: it does improve performance noticeably in some
+cases, but it is not necessary for basic correctness for most
+use-cases.
 
 \section{sec:disambiguation}{Disambiguation}
 

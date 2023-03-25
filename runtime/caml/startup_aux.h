@@ -51,6 +51,7 @@ struct caml_params {
   uintnat backtrace_enabled;
   uintnat runtime_warnings;
   uintnat cleanup_on_exit;
+  uintnat event_trace;
 };
 
 extern const struct caml_params* const caml_params;

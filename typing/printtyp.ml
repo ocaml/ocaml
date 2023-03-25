@@ -836,10 +836,10 @@ module Names : sig
   val add_subst : (type_expr * type_expr) list -> unit
 
   val new_name : unit -> string
-  val new_weak_name : type_expr -> unit -> string
+  val new_var_name : non_gen:bool -> type_expr -> unit -> string
 
   val name_of_type : (unit -> string) -> transient_expr -> string
-  val check_name_of_type : transient_expr -> unit
+  val check_name_of_type : non_gen:bool -> transient_expr -> unit
 
   val remove_names : transient_expr list -> unit
 
@@ -924,6 +924,10 @@ end = struct
         name
       end
 
+  let new_var_name ~non_gen ty () =
+    if non_gen then new_weak_name ty ()
+    else new_name ()
+
   let name_of_type name_generator t =
     (* We've already been through repr at this stage, so t is our representative
        of the union-find class. *)
@@ -954,7 +958,9 @@ end = struct
       if name <> "_" then names := (t, name) :: !names;
       name
 
-  let check_name_of_type t = ignore(name_of_type new_name t)
+  let check_name_of_type ~non_gen px =
+    let name_gen = new_var_name ~non_gen (Transient_expr.type_expr px) in
+    ignore(name_of_type name_gen px)
 
   let remove_names tyl =
     let tyl = List.map substitute tyl in
@@ -1009,8 +1015,8 @@ let add_alias_proxy px =
 
 let add_alias ty = add_alias_proxy (proxy ty)
 
-let add_printed_alias_proxy px =
-  Names.check_name_of_type px;
+let add_printed_alias_proxy ~non_gen px =
+  Names.check_name_of_type ~non_gen px;
   printed_aliases := px :: !printed_aliases
 
 let add_printed_alias ty = add_printed_alias_proxy (proxy ty)
@@ -1072,24 +1078,26 @@ let add_type_to_preparation = prepare_type
 (* Disabled in classic mode when printing an unification error *)
 let print_labels = ref true
 
+let alias_nongen_row mode px ty =
+    match get_desc ty with
+    | Tvariant _ | Tobject _ ->
+        if is_non_gen mode (Transient_expr.type_expr px) then
+          add_alias_proxy px
+    | _ -> ()
+
 let rec tree_of_typexp mode ty =
   let px = proxy ty in
   if List.memq px !printed_aliases && not (List.memq px !delayed) then
-   let mark = is_non_gen mode ty in
-   let name = Names.name_of_type
-                (if mark then Names.new_weak_name ty else Names.new_name)
-                px
-   in
-   Otyp_var (mark, name) else
+   let non_gen = is_non_gen mode (Transient_expr.type_expr px) in
+   let name = Names.name_of_type (Names.new_var_name ~non_gen ty) px in
+   Otyp_var (non_gen, name) else
 
   let pr_typ () =
     let tty = Transient_expr.repr ty in
     match tty.desc with
     | Tvar _ ->
         let non_gen = is_non_gen mode ty in
-        let name_gen =
-          if non_gen then Names.new_weak_name ty else Names.new_name
-        in
+        let name_gen = Names.new_var_name ~non_gen ty in
         Otyp_var (non_gen, Names.name_of_type name_gen tty)
     | Tarrow(l, ty1, ty2, _) ->
         let lab =
@@ -1139,18 +1147,14 @@ let rec tree_of_typexp mode ty =
             if closed && all_present then
               out_variant
             else
-              let non_gen = is_non_gen mode (Transient_expr.type_expr px) in
               let tags =
                 if all_present then None else Some (List.map fst present) in
-              Otyp_variant (non_gen, Ovar_typ out_variant, closed, tags)
+              Otyp_variant (Ovar_typ out_variant, closed, tags)
         | _ ->
-            let non_gen =
-              not (closed && all_present) &&
-              is_non_gen mode (Transient_expr.type_expr px) in
             let fields = List.map (tree_of_row_field mode) fields in
             let tags =
               if all_present then None else Some (List.map fst present) in
-            Otyp_variant (non_gen, Ovar_fields fields, closed, tags)
+            Otyp_variant (Ovar_fields fields, closed, tags)
         end
     | Tobject (fi, nm) ->
         tree_of_typobject mode fi !nm
@@ -1191,9 +1195,14 @@ let rec tree_of_typexp mode ty =
         Otyp_module (tree_of_path (Some Module_type) p, fl)
   in
   if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;
+  alias_nongen_row mode px ty;
   if is_aliased_proxy px && aliasable ty then begin
-    add_printed_alias_proxy px;
-    Otyp_alias (pr_typ (), Names.name_of_type Names.new_name px) end
+    let non_gen = is_non_gen mode (Transient_expr.type_expr px) in
+    add_printed_alias_proxy ~non_gen px;
+    (* add_printed_alias chose a name, thus the name generator
+       doesn't matter.*)
+    let alias = Names.name_of_type (Names.new_var_name ~non_gen ty) px in
+    Otyp_alias {non_gen;  aliased = pr_typ (); alias } end
   else pr_typ ()
 
 and tree_of_row_field mode (l, f) =
@@ -1225,28 +1234,26 @@ and tree_of_typobject mode fi nm =
           List.sort
             (fun (n, _) (n', _) -> String.compare n n') present_fields in
         tree_of_typfields mode rest sorted_fields in
-      let (fields, rest) = pr_fields fi in
-      Otyp_object (fields, rest)
-  | Some (p, ty :: tyl) ->
-      let non_gen = is_non_gen mode ty in
+      let (fields, open_row) = pr_fields fi in
+      Otyp_object {fields; open_row}
+  | Some (p, _ty :: tyl) ->
       let args = tree_of_typlist mode tyl in
       let (p', s) = best_type_path p in
       assert (s = Id);
-      Otyp_class (non_gen, tree_of_best_type_path p p', args)
+      Otyp_class (tree_of_best_type_path p p', args)
   | _ ->
       fatal_error "Printtyp.tree_of_typobject"
   end
 
 and tree_of_typfields mode rest = function
   | [] ->
-      let rest =
+      let open_row =
         match get_desc rest with
-        | Tvar _ | Tunivar _ -> Some (is_non_gen mode rest)
-        | Tconstr _ -> Some false
-        | Tnil -> None
+        | Tvar _ | Tunivar _ | Tconstr _-> true
+        | Tnil -> false
         | _ -> fatal_error "typfields (1)"
       in
-      ([], rest)
+      ([], open_row)
   | (s, t) :: l ->
       let field = (s, tree_of_typexp mode t) in
       let (fields, rest) = tree_of_typfields mode rest l in
@@ -1362,7 +1369,7 @@ let prepare_decl id decl =
   end;
   List.iter add_alias params;
   List.iter prepare_type params;
-  List.iter add_printed_alias params;
+  List.iter (add_printed_alias ~non_gen:false) params;
   let ty_manifest =
     match decl.type_manifest with
     | None -> None
@@ -1578,7 +1585,7 @@ let prepared_tree_of_extension_constructor
   let ty_params =
     param_scope
       (fun () ->
-         List.iter add_printed_alias ty_params;
+         List.iter (add_printed_alias ~non_gen:false) ty_params;
          List.map (fun ty -> type_param (tree_of_typexp Type ty)) ty_params
       )
   in
@@ -1783,8 +1790,8 @@ let tree_of_class_declaration id cl rs =
   let px = proxy (Btype.self_type_row cl.cty_type) in
   List.iter prepare_type params;
 
-  List.iter add_printed_alias params;
-  if is_aliased_proxy px then add_printed_alias_proxy px;
+  List.iter (add_printed_alias ~non_gen:false) params;
+  if is_aliased_proxy px then add_printed_alias_proxy ~non_gen:false px;
 
   let vir_flag = cl.cty_new = None in
   Osig_class
@@ -1805,8 +1812,8 @@ let tree_of_cltype_declaration id cl rs =
   let px = proxy (Btype.self_type_row cl.clty_type) in
   List.iter prepare_type params;
 
-  List.iter add_printed_alias params;
-  if is_aliased_proxy px then add_printed_alias_proxy px;
+  List.iter (add_printed_alias ~non_gen:false) params;
+  if is_aliased_proxy px then (add_printed_alias_proxy ~non_gen:false) px;
 
   let sign = Btype.signature_of_class_type cl.clty_type in
   let has_virtual_vars =

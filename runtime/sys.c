@@ -169,7 +169,7 @@ CAMLexport void caml_do_exit(int retcode)
                       (intnat) majwords);
       caml_gc_message(0x400,
           "minor_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-          (intnat) s.alloc_stats.minor_collections);
+          (intnat) atomic_load(&caml_minor_collections_count));
       caml_gc_message(0x400,
           "major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
           caml_major_cycles_completed);

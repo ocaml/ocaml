@@ -406,7 +406,7 @@ let compile_recmodule ~scopes compile_rhs bindings cont =
   eval_rec_bindings
     (reorder_rec_bindings
        (List.map
-          (fun {mb_id=id; mb_name; mb_expr=modl; mb_loc=loc; _} ->
+          (fun {mb_id=id; mb_name; mb_expr=modl; _} ->
              let id_or_ignore_loc, shape =
                match id with
                | None ->
@@ -414,7 +414,7 @@ let compile_recmodule ~scopes compile_rhs bindings cont =
                  Ignore_loc loc, Result.Error Unnamed
                | Some id -> Id id, init_shape id modl
              in
-             (id_or_ignore_loc, modl.mod_loc, shape, compile_rhs id modl loc))
+             (id_or_ignore_loc, modl.mod_loc, shape, compile_rhs id modl))
           bindings))
     cont
 
@@ -667,14 +667,6 @@ and transl_structure ~scopes loc fields cc rootpath final_env = function
                                of_location ~scopes mb.mb_name.loc), body),
               size
           | Some id ->
-              let module_body =
-                Levent (module_body, {
-                  lev_loc = of_location ~scopes mb.mb_loc;
-                  lev_kind = Lev_module_definition id;
-                  lev_repr = None;
-                  lev_env = Env.empty;
-                })
-              in
               Llet(pure_module mb.mb_expr, Pgenval, id, module_body, body), size
           end
       | Tstr_module ({mb_presence=Mp_absent} as mb) ->
@@ -692,21 +684,13 @@ and transl_structure ~scopes loc fields cc rootpath final_env = function
             transl_structure ~scopes loc ext_fields cc rootpath final_env rem
           in
           let lam =
-            compile_recmodule ~scopes (fun id modl loc ->
+            compile_recmodule ~scopes (fun id modl ->
               match id with
               | None -> transl_module ~scopes Tcoerce_none None modl
               | Some id ->
-                  let module_body =
-                    transl_module
-                      ~scopes:(enter_module_definition ~scopes id)
-                      Tcoerce_none (field_path rootpath id) modl
-                  in
-                  Levent (module_body, {
-                    lev_loc = of_location ~scopes loc;
-                    lev_kind = Lev_module_definition id;
-                    lev_repr = None;
-                    lev_env = Env.empty;
-                  })
+                  transl_module
+                    ~scopes:(enter_module_definition ~scopes id)
+                    Tcoerce_none (field_path rootpath id) modl
             ) bindings body
           in
           lam, size
@@ -779,11 +763,12 @@ let _ =
 (* Introduce dependencies on modules referenced only by "external". *)
 
 let scan_used_globals lam =
+  let is_compunit id = not (Ident.is_predef id) in
   let globals = ref Ident.Set.empty in
   let rec scan lam =
     Lambda.iter_head_constructor scan lam;
     match lam with
-      Lprim ((Pgetglobal id | Psetglobal id), _, _) ->
+      Lprim ((Pgetglobal id | Psetglobal id), _, _) when (is_compunit id) ->
         globals := Ident.Set.add id !globals
     | _ -> ()
   in
@@ -1147,7 +1132,7 @@ let transl_store_structure ~scopes glob map prims aliases str =
         | Tstr_recmodule bindings ->
             let ids = List.filter_map (fun mb -> mb.mb_id) bindings in
             compile_recmodule ~scopes
-              (fun id modl _loc ->
+              (fun id modl ->
                  Lambda.subst no_env_update subst
                    (match id with
                     | None ->
@@ -1520,7 +1505,7 @@ let transl_toplevel_item ~scopes item =
   | Tstr_recmodule bindings ->
       let idents = List.filter_map (fun mb -> mb.mb_id) bindings in
       compile_recmodule ~scopes
-        (fun id modl _loc ->
+        (fun id modl ->
            match id with
            | None ->
              transl_module ~scopes Tcoerce_none None modl
@@ -1720,12 +1705,12 @@ let explanation_submsg (id, unsafe_info) =
 
 let report_error loc = function
   | Circular_dependency cycle ->
-      let[@manual.ref "s:recursive-modules"] chapter, section = 12, 2 in
+      let[@manual.ref "s:recursive-modules"] manual_ref = [ 12; 2 ] in
       Location.errorf ~loc ~sub:(List.map explanation_submsg cycle)
         "Cannot safely evaluate the definition of the following cycle@ \
          of recursively-defined modules:@ %a.@ \
-         There are no safe modules in this cycle@ (see manual section %d.%d)."
-        print_cycle cycle chapter section
+         There are no safe modules in this cycle@ %a."
+        print_cycle cycle Misc.print_see_manual manual_ref
   | Conflicting_inline_attributes ->
       Location.errorf "@[Conflicting 'inline' attributes@]"
 

@@ -29,6 +29,10 @@ Working version
 
 ### Runtime system:
 
+- #12099: Add ocamlrund option, -events, to produce a trace of
+  debug events during bytecode interpretation. Fixes #12098.
+  (Richard L Ford, review by Gabriel Scherer)
+
 - #12001: Fix book keeping for last finalisers during the minor cycle
   (KC Sivaramakrishnan and Enguerrand Decorne, report by Guillaume Bury
    and Vincent Laviron, review by Sadiq Jaffer and KC Sivaramakrishnan)
@@ -78,8 +82,10 @@ Working version
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer and KC
    Sivaramakrishnan)
 
-- #11474, #11998: Add support for user-defined events in the runtime event
-  tracing system. (Lucas Pluvinage, review by Sadiq Jaffer)
+- #11474, #11998, #12065: Add support for user-defined events in the runtime
+  event tracing system.
+  (Lucas Pluvinage, review by Sadiq Jaffer, Guillaume Munch-Maccagnoni,
+   Enguerrand Decorne, Gabriel Scherer and Anil Madhavapeddy)
 
 - #11693: Remove use of C99 Variable Length Arrays (VLAs) in the runtime.
   (David Allsopp, review by Xavier Leroy, Guillaume Munch-Maccagnoni,
@@ -95,6 +101,15 @@ Working version
   for frame-descriptor updates.
   (Gabriel Scherer, review by Sadiq Jaffer, report by André Maroneze
   for Frama-C and Guillaume Melquiond for Coq)
+
+- #12062: fix runtime events consumer: when events are dropped they shouldn't be
+  parsed. (Lucas Pluvinage)
+
+- #12121: unrooted implementations of caml_callback*_exn
+  (Gabriel Scherer, review by KC Sivaramakrishnan and Xavier Leroy)
+
+- #12132: Fix overcounting of minor collections in GC stats.
+  (Damien Doligez, review by Gabriel Scherer)
 
 ### Type system:
 
@@ -132,6 +147,10 @@ Working version
 
 - #11102: Speed up register allocation by permanently spilling registers
   (Stephen Dolan, review by Xavier Leroy)
+
+- #11383: Restrict the local function optimisation to forbid moving code
+  inside a sub-function
+  (Vincent Laviron, review by Gabriel Scherer)
 
 - #11418, #11708: RISC-V multicore support.
   (Nicolás Ojeda Bär, review by KC Sivaramakrishnan)
@@ -347,6 +366,10 @@ Working version
 
 ### Manual and documentation:
 
+- #12095, #12097: Put the sample code of the user's manual and reference
+  documentation of the standard library under the CC0 1.0 Universal
+  (CC0 1.0) Public Domain Dedication license.
+
 - #9430, #11291: Document the general desugaring rules for binding operators.
   (Gabriel Scherer, review by Nicolás Ojeda Bär)
 
@@ -433,6 +456,15 @@ Working version
 - #12024: insert a blank line between separate compiler messages
   (Gabriel Scherer, review by Florian Angeletti, report by David Wong)
 
+- #12088, #9265, #11949: ocamldebug: fix confusing repeating behavior
+  on blank lines within source scripts
+  (Damien Doligez, review by Gabriel Scherer, report by Gaëtan Gilbert)
+
+- #12107: use aliases to mark weak row variables: `_[< ... ]`, `< _..>`, `_#ct`
+  are now rendered as `[< ...] as '_weak1`, `< .. > as '_weak1`,
+  and `#ct as '_weak1`.
+  (Florian Angeletti, suggestion by Stefan Muenzel, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #10512: explain the compilation strategy for switches on constructors
@@ -475,8 +507,9 @@ Working version
 - #11569: Remove hash type encoding
   (Hyunggyu Jang, review by Gabriel Scherer and Florian Angeletti)
 
-- #11601, #11612, #11628, #11613: Clean up some global state handling
-  in emitcode, bytepackager, bytegen, spill.
+- #11601, #11612, #11628, #11613, #11623, #12120 : Clean up some
+  global state handling in emitcode, bytepackager, bytegen,
+  bytesections, spill.
   (Hugo Heuzard, Stefan Muenzel, review by Vincent Laviron, Gabriel Scherer
    and Nathanaëlle Courant)
 
@@ -521,6 +554,22 @@ Working version
 
 - #12034: a logarithmic algorithm to find the next free variable
   (Gabriel Scherer, review by Stefan Muenzel)
+
+- #12092: remove Lev_module_definition from lambda
+  (Nick Roberts, review by Gabriel Scherer)
+
+- #12118: stop storing names of predefined exceptions in the
+  cu_required_globals field of compilation unit descriptors.
+  (Sébastien Hinderer, review by Vincent Laviron)
+
+- #12119: mirror type constraints on value binding in the parsetree:
+  the constraint `typ` in `let pat : typ = exp` is now directly stored
+  in the value binding node in the parsetree.
+  (Florian Angeletti, review by  Richard Eisenberg)
+
+- #12125: Add Misc.print_see_manual and modify [@manual_ref] to accept
+  lists for simpler printing of manual references
+  (Stefan Muenzel, review by Florian Angeletti)
 
 ### Build system:
 
@@ -629,11 +678,21 @@ Working version
 - #12046: Flush stderr when tracing the parser
   (Hugo Heuzard, review by David Allsopp and Nicolás Ojeda Bär)
 
+- #12061, #12063: don't add inconsistent equalities when computing
+  high-level error messages for functor applications and inclusions.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 - #12075: auto-detect whether `ar` support @FILE arguments at
   configure-time to avoid using this feature with toolchains
   that do not support it (eg FreeBSD/Darwin).
   (Nicolás Ojeda Bär, review by Xavier Leroy, David Allsop, Javier
   Chávarri, Anil Madhavapeddy)
+
+- #12103, 12104: fix a concurrency memory-safety bug in Buffer
+  (Gabriel Scherer, review by Florian Angeletti, report by Samuel Hym)
+
+- #12112: Fix caml_callback{2,3}_exn when used with effect handlers.
+  (Lucas Pluvinage, review by Gabriel Scherer, David Allsopp and Xavier Leroy)
 
 OCaml 5.0.0 (15 December 2022)
 ------------------------------
@@ -875,6 +934,14 @@ OCaml 5.0.0 (15 December 2022)
 
 - #8878: Add String.hash and String.seeded_hash.
   (Tom Kelly, review by Alain Frisch and Nicolás Ojeda Bär)
+
+- #11279, #11585, #11742: ensure that the unsafe Buffer code
+  remains memory-safe in concurrent settings.
+  Unsychronized access to Buffer is a programming error and may
+  result in wrong behavior, but it should preserve memory-safety.
+  (Florian Angeletti and Gabriel Scherer, review by Gabriel Scherer
+   and Vincent Laviron, report by David Allsopp)
+
 
 ### Other libraries:
 

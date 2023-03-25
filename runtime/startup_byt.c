@@ -281,6 +281,8 @@ static void do_print_help(void)
     "Options are:\n"
     "  -b  Set runtime parameter b (detailed exception backtraces)\n"
     "  -config  Print configuration values and exit\n"
+    "  -events  Trace debug events in bytecode interpreter (ignored \n"
+    "      if not ocamlrund)\n"
     "  -I <dir>  Add <dir> to the list of DLL search directories\n"
     "  -m  Print the magic number of <executable> and exit\n"
     "  -M  Print the magic number expected by this runtime and exit\n"
@@ -352,6 +354,8 @@ static int parse_command_line(char_os **argv)
       } else if (!strcmp_os(argv[i], T("-vnum"))) {
         printf("%s\n", OCAML_VERSION_STRING);
         exit(0);
+      } else if (!strcmp_os(argv[i], T("-events"))) {
+        params->event_trace = 1; /* Ignored unless DEBUG mode */
       } else if (!strcmp_os(argv[i], T("-help")) ||
                  !strcmp_os(argv[i], T("--help"))) {
         do_print_help();
