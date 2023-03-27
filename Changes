@@ -385,6 +385,9 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #12116: Don't suggest to insert a semicolon when the type is not unit
+  (Jules Aguillon, review by Florian Angeletti)
+
 - #11679: Improve the error message about too many arguments to a function
   (Jules Aguillon, review by Gabriel Scherer and Florian Angeletti)
 

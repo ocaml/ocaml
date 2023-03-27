@@ -107,6 +107,7 @@ type error =
   | Apply_non_function of {
       funct : Typedtree.expression;
       func_ty : type_expr;
+      res_ty : type_expr;
       previous_arg_loc : Location.t;
       extra_arg_loc : Location.t;
     }
@@ -4613,6 +4614,7 @@ and type_application env funct sargs =
               raise(Error(funct.exp_loc, env, Apply_non_function {
                   funct;
                   func_ty = expand_head env funct.exp_type;
+                  res_ty = expand_head env ty_res;
                   previous_arg_loc;
                   extra_arg_loc = sarg.pexp_loc; }))
     in
@@ -5696,7 +5698,7 @@ let report_this_function ppf funct =
   else Format.fprintf ppf "This function"
 
 let report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
-    ~extra_arg_loc loc =
+    ~extra_arg_loc ~returns_unit loc =
   let open Location in
   let cnum_offset off (pos : Lexing.position) =
     { pos with pos_cnum = pos.pos_cnum + off }
@@ -5714,8 +5716,10 @@ let report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
       loc_end = cnum_offset ~+1 arg_end;
       loc_ghost = false }
   in
-  let sub = [
-    msg ~loc:tail_loc "@{<hint>Hint@}: Did you forget a ';'?";
+  let hint_semicolon = if returns_unit then [
+      msg ~loc:tail_loc "@{<hint>Hint@}: Did you forget a ';'?";
+    ] else [] in
+  let sub = hint_semicolon @ [
     msg ~loc:extra_arg_loc "This extra argument is not expected.";
   ] in
   errorf ~loc:app_loc ~sub
@@ -5773,11 +5777,17 @@ let report_error ~loc env = function
            fprintf ppf "This expression has type")
         (function ppf ->
            fprintf ppf "but an expression was expected of type");
-  | Apply_non_function { funct; func_ty; previous_arg_loc; extra_arg_loc } ->
+  | Apply_non_function {
+      funct; func_ty; res_ty; previous_arg_loc; extra_arg_loc
+    } ->
       begin match get_desc func_ty with
         Tarrow _ ->
+          let returns_unit = match get_desc res_ty with
+            | Tconstr (p, _, _) -> Path.same p Predef.path_unit
+            | _ -> false
+          in
           report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
-            ~extra_arg_loc loc
+            ~extra_arg_loc ~returns_unit loc
       | _ ->
           Location.errorf ~loc "@[<v>@[<2>This expression has type@ %a@]@ %s@]"
             Printtyp.type_expr func_ty
