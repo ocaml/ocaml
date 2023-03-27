@@ -434,16 +434,19 @@ end) = struct
     | NComp_unit s -> Comp_unit s
     | NoFuelLeft t -> t
 
+  (* Sharing the memo tables is safe at the level of a compilation unit since
+    idents should be unique *)
+  let reduce_memo_table = Local_store.s_table Hashtbl.create 42
+  let read_back_memo_table = Local_store.s_table Hashtbl.create 42
+
   let reduce global_env t =
     let fuel = ref Params.fuel in
-    let reduce_memo_table = Hashtbl.create 42 in
-    let read_back_memo_table = Hashtbl.create 42 in
     let local_env = Ident.Map.empty in
     let env = {
       fuel;
       global_env;
-      reduce_memo_table;
-      read_back_memo_table;
+      reduce_memo_table = !reduce_memo_table;
+      read_back_memo_table = !read_back_memo_table;
       local_env;
     } in
     reduce_ env t |> read_back env
@@ -473,18 +476,14 @@ end) = struct
       | NoFuelLeft t -> t
     in weak_read_back env nf
 
-
-
   let weak_reduce global_env t =
     let fuel = ref Params.fuel in
-    let reduce_memo_table = Hashtbl.create 42 in
-    let read_back_memo_table = Hashtbl.create 42 in
     let local_env = Ident.Map.empty in
     let env = {
       fuel;
       global_env;
-      reduce_memo_table;
-      read_back_memo_table;
+      reduce_memo_table = !reduce_memo_table;
+      read_back_memo_table = !read_back_memo_table;
       local_env;
     } in
     reduce_ env t |> weak_read_back env
