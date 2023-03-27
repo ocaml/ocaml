@@ -1,0 +1,13 @@
+File printer.cmo loaded
+Loading program... done.
+Breakpoint: 1
+19   <|b|>for _i = 0 to x do
+x: int = 3
+BUILD_PATH_PREFIX_MAP="/abc;/def=/workspace_root"
+{t1, /workspace_root/pack1/lib1/ -> #items=2
+  [0]=/def/pack1/lib1/
+  [1]=/abc/pack1/lib1/
+  }
+
+Load path length = 5.
+

@@ -823,6 +823,14 @@ let raw_variable kill name =
        if (not kill) || ask_kill_program () then name := argument),
   function ppf -> fprintf ppf "%s@." !name
 
+let environ_variable kill name =
+  (function lexbuf ->
+     let argument = argument_eol argument lexbuf in
+       if (not kill) || ask_kill_program () then Unix.putenv name argument),
+  function ppf ->
+    try fprintf ppf "%s@." (Unix.getenv name)
+    with Not_found -> fprintf ppf "%s is not set.@." name
+
 let raw_line_variable kill name =
   (function lexbuf ->
      let argument = argument_eol line_argument lexbuf in
@@ -1221,7 +1229,13 @@ It can be either :\n\
      { var_name = "break_on_load";
        var_action = boolean_variable false break_on_load;
        var_help =
-"whether to stop after loading new code (e.g. with Dynlink)." }];
+"whether to stop after loading new code (e.g. with Dynlink)." };
+      { var_name = "mapping";
+        var_action = environ_variable false "BUILD_PATH_PREFIX_MAP";
+        var_help =
+"BUILD_PATH_PREFIX_MAP used to map abstract\n\
+paths to runtime environment."}
+];
 
   info_list :=
     (* info name, function, help *)

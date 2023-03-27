@@ -15,12 +15,15 @@
 open Local_store
 
 module STbl = Misc.Stdlib.String.Tbl
+module SSet = Misc.Stdlib.String.Set
 
 (* Mapping from basenames to full filenames *)
 type registry = string STbl.t
+type dir_registry = SSet.t
 
 let files : registry ref = s_table STbl.create 42
 let files_uncap : registry ref = s_table STbl.create 42
+let dir_paths : dir_registry ref = s_ref SSet.empty
 
 module Dir = struct
   type t = {
@@ -71,6 +74,7 @@ let reset () =
   assert (not Config.merlin || Local_store.is_bound ());
   STbl.clear !files;
   STbl.clear !files_uncap;
+  dir_paths := SSet.empty;
   dirs := [];
   auto_include_callback := no_auto_include
 
@@ -86,7 +90,8 @@ let prepend_add dir =
       let fn = Filename.concat dir.Dir.path base in
       STbl.replace !files base fn;
       STbl.replace !files_uncap (String.uncapitalize_ascii base) fn
-    ) dir.Dir.files
+    ) dir.Dir.files;
+  dir_paths := SSet.add dir.Dir.path !dir_paths
 
 let init ~auto_include l =
   reset ();
@@ -108,6 +113,9 @@ let remove_dir dir =
    order to enforce left-to-right precedence. *)
 let add dir =
   assert (not Config.merlin || Local_store.is_bound ());
+  (* Do nothing if already in the list. *)
+  if SSet.mem dir.Dir.path !dir_paths then ()
+  else begin
   List.iter
     (fun base ->
        let fn = Filename.concat dir.Dir.path base in
@@ -118,6 +126,7 @@ let add dir =
          STbl.replace !files_uncap ubase fn)
     dir.Dir.files;
   dirs := dir :: !dirs
+  end
 
 let append_dir = add
 
@@ -127,8 +136,12 @@ let add_dir dir = add (Dir.create dir)
    unconditionally added. *)
 let prepend_dir dir =
   assert (not Config.merlin || Local_store.is_bound ());
+  (* Do nothing if already in the list. *)
+  if SSet.mem dir.Dir.path !dir_paths then ()
+  else begin
   prepend_add dir;
   dirs := !dirs @ [dir]
+  end
 
 let is_basename fn = Filename.basename fn = fn
 

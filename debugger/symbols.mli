@@ -69,3 +69,13 @@ val event_near_pos : string -> int -> code_event
 
 (* Recompute the current event *)
 val update_current_event : unit -> unit
+
+val bppm_expand_path : string -> string list
+  (* [bppm_expand_path path] gives the expansing of
+     path into a search list according to the
+     BUILD_PATH_PREFIX_MAP spec, revised edition.
+     Made available externally for unit testing. *)
+
+val get_load_path : unit -> string list
+   (* [get_load_path ()] returns the current path from Load_path.
+      Made available for unit testing. *)

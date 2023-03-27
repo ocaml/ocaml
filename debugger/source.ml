@@ -25,6 +25,10 @@ let source_extensions = [".ml"]
 
 let source_of_module pos mdle =
   let pos_fname = pos.Lexing.pos_fname in
+  match Location.search_list_find pos_fname with
+  | Some found_file -> found_file
+  | None ->
+  begin
   if Sys.file_exists pos_fname then pos_fname else
   let is_submodule m m' =
     let len' = String.length m' in
@@ -59,6 +63,7 @@ let source_of_module pos mdle =
     find_in_path_rel path fname
   else if Sys.file_exists fname then fname
   else raise Not_found
+  end
 
 (*** Buffer cache ***)
 

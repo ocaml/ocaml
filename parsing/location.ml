@@ -157,10 +157,24 @@ let rewrite_absolute_path path =
   | None -> path
   | Some map -> Build_path_prefix_map.rewrite map path
 
+let rewrite_to_search_list path =
+  match Misc.get_build_path_prefix_map () with
+  | None -> [path]
+  | Some map -> Build_path_prefix_map.rewrite_to_search_list map path
+
+let search_list_find path =
+  let (mapped_fnames: string list) = rewrite_to_search_list path in
+  let mapped_len = List.length mapped_fnames in
+  assert(mapped_len >= 1);
+  if (mapped_len > 1 || List.hd mapped_fnames != path) then begin
+    (* A mapping is active. We expect to find it in one of these. *)
+    Some (List.find Sys.file_exists mapped_fnames)
+  end else None
+
 let absolute_path s = (* This function could go into Filename *)
   let open Filename in
   let s =
-    if not (is_relative s) then s
+    if not (is_relative s) then rewrite_absolute_path s
     else (rewrite_absolute_path (concat (Sys.getcwd ()) s))
   in
   (* Now simplify . and .. components *)

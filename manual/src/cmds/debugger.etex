@@ -79,6 +79,108 @@ file before giving control to the user. The default file is
 ".ocamldebug" in the current directory if it exists, otherwise
 ".ocamldebug" in the user's home directory.
 
+\subsection{ss:debugger-environ}{Environment Variables}
+
+The debugger supports the "BUILD_PATH_PREFIX_MAP" environment
+variable, as defined by the ``BUILD_PATH_PREFIX_MAP specification''
+(see
+\url{https://reproducible-builds.org/specs/build-path-prefix-map}),
+but with enhancements to support the "deployment phase"
+(that is, when using reproducible built products), 
+in addition to the "build phase" (that is, the phase when
+reproducible products are built).
+
+Whereas during the build phase, the "BUILD_PATH_PREFIX_MAP"
+is used to map absolute paths in the build environment to abstract
+paths, the debugger uses it to map the abstract paths to the runtime
+environment.
+
+For example, during the build phase, Dune replaces the root directory of
+a project with "/workspace_root".
+
+During the deployment phase, the abstract paths must be mapped to
+paths in the runtime environment. But the map is not just
+the inverse of the building phase as an abstract path
+represents potentially many original build environments.
+What matters is where the artifacts are located at runtime.
+
+In a typical debugging environment there may be three locations
+of interest.
+
+\begin{itemize}
+\item The root of the source directory from which the original
+source files are found.
+\item The root of the build directory (e.g. "_build/default"),
+where binaries and copies of the sources are found.
+\item The location of installed modules (e.g. ".opam/switch/lib").
+\end{itemize}
+
+An abstract path will need to expand into a list of paths in order to
+find all the desired artifacts (sources of the application being
+developed, sources of the installed libraries being used, and
+binaries).
+
+In a simple case we may only care about the source root. If we only
+want to map "/workspace_root" to a single directory, say "mydir", we
+would do:
+
+\begin{verbatim}
+    export BUILD_PATH_PREFIX_MAP="mydir=/workspace_root"
+\end{verbatim}
+
+Note that in a "BUILD_PATH_PREFIX_MAP", the source is
+to the right of the ``='' and the target to the left.
+
+If we want to map to multiple directories, they must separate
+by semicolons (``;''s).
+
+So to map to "mydir1" and "mydir2", the setting would be:
+
+\begin{verbatim}
+    export BUILD_PATH_PREFIX_MAP="mydir1;mydir2=/workspace_root"
+\end{verbatim}
+
+
+Then if ocamldebug has a path like
+
+\begin{verbatim}
+    "/workspace_root/stuff",
+\end{verbatim}
+
+it will convert it to the list
+
+\begin{verbatim}
+    ["mydir1/stuff" "mydir2/stuff"]
+\end{verbatim}
+
+Because ``:'', ``='', and ``;'' are used as delimeters in the
+"BUILD_PATH_PREFIX_MAP", the paths that are being delimited must
+have occurrences of these (and also ``\%'') encoded to avoid them.
+The encoding is:
+
+\begin{verbatim}
+    ':' -> "%.", '=' -> "%+", ';' -> "%,", '%' -> "%#".
+\end{verbatim}
+
+The user can either set the "BUILD_PATH_PREFIX_MAP" environment
+variable prior to invoking the debugger, or can use debugger commands
+to set or show it.
+
+To set it within the debugger, for example, use
+
+\begin{verbatim}
+    set mapping mydir1;mydir2=/workspace_root
+\end{verbatim}
+
+To show the current value, use
+
+\begin{verbatim}
+    show mapping
+\end{verbatim}
+
+Of course, these commands can be used from the user's initialization
+file to set the mapping conveniently.
+
 \subsection{ss:debugger-exut}{Exiting the debugger}
 
 The command "quit" exits the debugger. You can also exit the debugger
