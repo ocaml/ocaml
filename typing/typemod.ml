@@ -57,8 +57,9 @@ type error =
   | With_changes_module_alias of Longident.t * Ident.t * Path.t
   | With_cannot_remove_constrained_type
   | Repeated_name of Sig_component_kind.t * string
-  | Non_generalizable of type_expr
-  | Non_generalizable_module of module_type
+  | Non_generalizable of { vars : type_expr list; expression : type_expr }
+  | Non_generalizable_module of
+      { vars : type_expr list; item : value_description; mty : module_type }
   | Implementation_is_required of string
   | Interface_not_compiled of string
   | Not_allowed_in_functor_body
@@ -1829,11 +1830,11 @@ let path_of_module mexp =
    do not contain non-generalized type variable *)
 
 let rec nongen_modtype env = function
-    Mty_ident _ -> false
-  | Mty_alias _ -> false
+    Mty_ident _ -> None
+  | Mty_alias _ -> None
   | Mty_signature sg ->
       let env = Env.add_signature sg env in
-      List.exists (nongen_signature_item env) sg
+      List.find_map (nongen_signature_item env) sg
   | Mty_functor(arg_opt, body) ->
       let env =
         match arg_opt with
@@ -1845,18 +1846,35 @@ let rec nongen_modtype env = function
       nongen_modtype env body
 
 and nongen_signature_item env = function
-    Sig_value(_id, desc, _) -> Ctype.nongen_schema env desc.val_type
+  | Sig_value(_id, desc, _) ->
+      Ctype.nongen_vars_in_schema env desc.val_type
+      |> Option.map (fun vars -> (vars, desc))
   | Sig_module(_id, _, md, _, _) -> nongen_modtype env md.md_type
-  | _ -> false
+  | _ -> None
+
+let check_nongen_modtype env loc mty =
+  nongen_modtype env mty
+  |> Option.iter (fun (vars, item) ->
+      let vars = Btype.TypeSet.elements vars in
+      let error =
+        Non_generalizable_module { vars; item; mty }
+      in
+      raise(Error(loc, env, error))
+    )
 
 let check_nongen_signature_item env sig_item =
   match sig_item with
     Sig_value(_id, vd, _) ->
-      if Ctype.nongen_schema env vd.val_type then
-        raise (Error (vd.val_loc, env, Non_generalizable vd.val_type))
+      Ctype.nongen_vars_in_schema env vd.val_type
+      |> Option.iter (fun vars ->
+          let vars = Btype.TypeSet.elements vars in
+          let error =
+            Non_generalizable { vars; expression = vd.val_type }
+          in
+          raise (Error (vd.val_loc, env, error))
+        )
   | Sig_module (_id, _, md, _, _) ->
-      if nongen_modtype env md.md_type then
-        raise(Error(md.md_loc, env, Non_generalizable_module md.md_type))
+      check_nongen_modtype env md.md_loc md.md_type
   | _ -> ()
 
 let check_nongen_signature env sg =
@@ -2877,8 +2895,7 @@ let type_module_type_of env smod =
   in
   let mty = Mtype.scrape_for_type_of ~remove_aliases env tmty.mod_type in
   (* PR#5036: must not contain non-generalized type variables *)
-  if nongen_modtype env mty then
-    raise(Error(smod.pmod_loc, env, Non_generalizable_module mty));
+  check_nongen_modtype env smod.pmod_loc mty;
   tmty, mty
 
 (* For Typecore *)
@@ -3281,14 +3298,36 @@ let report_error ~loc _env = function
         "@[Multiple definition of the %s name %s.@ \
          Names must be unique in a given structure or signature.@]"
         (Sig_component_kind.to_string kind) name
-  | Non_generalizable typ ->
+  | Non_generalizable { vars; expression } ->
+      let[@manual.ref "ss:valuerestriction"] manual_ref = [ 6; 1; 2 ] in
+      prepare_for_printing vars;
+      add_type_to_preparation expression;
       Location.errorf ~loc
         "@[The type of this expression,@ %a,@ \
-           contains type variables that cannot be generalized@]" type_scheme typ
-  | Non_generalizable_module mty ->
-      Location.errorf ~loc
+         contains the non-generalizable type variable(s): %a.@ %a@]"
+        prepared_type_scheme expression
+        (pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ")
+           prepared_type_scheme) vars
+        Misc.print_see_manual manual_ref
+  | Non_generalizable_module { vars; mty; item } ->
+      let[@manual.ref "ss:valuerestriction"] manual_ref = [ 6; 1; 2 ] in
+      prepare_for_printing vars;
+      add_type_to_preparation item.val_type;
+      let sub =
+        [ Location.msg ~loc:item.val_loc
+            "The type of this value,@ %a,@ \
+             contains the non-generalizable type variable(s) %a."
+            prepared_type_scheme
+            item.val_type
+            (pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ")
+               prepared_type_scheme) vars
+        ]
+      in
+      Location.errorf ~loc ~sub
         "@[The type of this module,@ %a,@ \
-           contains type variables that cannot be generalized@]" modtype mty
+         contains non-generalizable type variable(s).@ %a@]"
+        modtype mty
+        Misc.print_see_manual manual_ref
   | Implementation_is_required intf_name ->
       Location.errorf ~loc
         "@[The interface %a@ declares values, not just types.@ \

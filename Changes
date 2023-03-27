@@ -465,6 +465,9 @@ Working version
   and `#ct as '_weak1`.
   (Florian Angeletti, suggestion by Stefan Muenzel, review by Gabriel Scherer)
 
+- #12051: Improve the error messages when type variables cannot be generalized
+  (Stefan Muenzel, review by Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - #10512: explain the compilation strategy for switches on constructors

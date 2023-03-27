@@ -414,13 +414,12 @@ val nondep_cltype_declaration:
 val is_contractive: Env.t -> Path.t -> bool
 val normalize_type: type_expr -> unit
 
-val nongen_schema: Env.t -> type_expr -> bool
-        (* Check whether the given type scheme contains no non-generic
-           type variables *)
+val nongen_vars_in_schema: Env.t -> type_expr -> Btype.TypeSet.t option
+        (* Return any non-generic variables in the type scheme *)
 
-val nongen_class_declaration: class_declaration -> bool
-        (* Check whether the given class type contains no non-generic
-           type variables. Uses the empty environment.  *)
+val nongen_vars_in_class_declaration:class_declaration -> Btype.TypeSet.t option
+        (* Return any non-generic variables in the class type.
+           Uses the empty environment.  *)
 
 type variable_kind = Row_variable | Type_variable
 type closed_class_failure = {
