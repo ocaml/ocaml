@@ -473,6 +473,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #12138: Generalize interface for BUILD_PATH_PREFIX_MAP mapping.
+  (Richard L Ford, suggestions and review by Gabriel Scherer)
+
 - #10512: explain the compilation strategy for switches on constructors
   (Gabriel Scherer, review by Vincent Laviron)
 
