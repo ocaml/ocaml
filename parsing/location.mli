@@ -92,14 +92,78 @@ val separate_new_message: formatter -> unit
 val reset: unit -> unit
 
 
-(** {1 Printing locations} *)
+(** {1 Rewriting path } *)
 
 val rewrite_absolute_path: string -> string
-    (** rewrite absolute path to honor the BUILD_PATH_PREFIX_MAP
-        variable (https://reproducible-builds.org/specs/build-path-prefix-map/)
-        if it is set. *)
+(** [rewrite_absolute_path path] rewrites [path] to honor the
+    BUILD_PATH_PREFIX_MAP variable
+    if it is set. It does not check whether [path] is absolute or not.
+    The result is as follows:
+    - If BUILD_PATH_PREFIX_MAP is not set, just return [path].
+    - otherwise, rewrite using the mapping (and if there are no
+      matching prefixes that will just return [path]).
+
+    See
+    {{: https://reproducible-builds.org/specs/build-path-prefix-map/ }
+    the BUILD_PATH_PREFIX_MAP spec}
+    *)
+
+val rewrite_find_first_existing: string -> string option
+(** [rewrite_find_first_existing path] uses a BUILD_PATH_PREFIX_MAP mapping
+    and tries to find a source in mapping
+    that maps to a result that exists in the file system.
+    There are the following return values:
+    - [None], means either
+      {ul {- BUILD_PATH_PREFIX_MAP is not set and [path] does not exists, or}
+          {- no source prefixes of [path] in the mapping were found,}}
+    - [Some target], means [target] exists and either
+      {ul {- BUILD_PATH_PREFIX_MAP is not set and [target] = [path], or}
+          {- [target] is the first file (in priority
+             order) that [path] mapped to that exists in the file system.}}
+    - [Not_found] raised, means some source prefixes in the map
+      were found that matched [path], but none of them existed
+      in the file system. The caller should catch this and issue
+      an appropriate error message.
+
+    See
+    {{: https://reproducible-builds.org/specs/build-path-prefix-map/ }
+    the BUILD_PATH_PREFIX_MAP spec}
+    *)
+
+val rewrite_find_all_existing_dirs: string -> string list
+(** [rewrite_find_all_existing_dirs dir] accumulates a list of existing
+    directories, [dirs], that are the result of mapping a potentially
+    abstract directory, [dir], over all the mapping pairs in the
+    BUILD_PATH_PREFIX_MAP environment variable, if any. The list [dirs]
+    will be in priority order (head as highest priority).
+
+    The possible results are:
+    - [[]], means either
+      {ul {- BUILD_PATH_PREFIX_MAP is not set and [dir] is not an existing
+      directory, or}
+          {- if set, then there were no matching prefixes of [dir].}}
+    - [Some dirs], means dirs are the directories found. Either
+      {ul {- BUILD_PATH_PREFIX_MAP is not set and [dirs = [dir]], or}
+          {- it was set and [dirs] are the mapped existing directories.}}
+    - Not_found raised, means some source prefixes in the map
+      were found that matched [dir], but none of mapping results
+      were existing directories (possibly due to misconfiguration).
+      The caller should catch this and issue an appropriate error
+      message.
+
+    See
+    {{: https://reproducible-builds.org/specs/build-path-prefix-map/ }
+    the BUILD_PATH_PREFIX_MAP spec}
+    *)
 
 val absolute_path: string -> string
+ (** [absolute_path path] first makes an absolute path, [s] from [path],
+     prepending the current working directory if [path] was relative.
+     Then [s] is rewritten using [rewrite_absolute_path].
+     Finally the result is normalized by eliminating instances of
+     ['.'] or ['..']. *)
+
+(** {1 Printing locations} *)
 
 val show_filename: string -> string
     (** In -absname mode, return the absolute path for this filename.
