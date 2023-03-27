@@ -571,6 +571,11 @@ Working version
   lists for simpler printing of manual references
   (Stefan Muenzel, review by Florian Angeletti)
 
+* #12094: Trigger warning 5 (ignored-partial-application) when the scrutinee of
+  a pattern matching is of arrow type and all cases match wildcard or exception
+  patterns.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.

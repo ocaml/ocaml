@@ -2655,6 +2655,19 @@ let check_partial_application ~statement exp =
   | _ ->
       doit ()
 
+let pattern_needs_partial_application_check p =
+  let rec check : type a. a general_pattern -> bool = fun p ->
+    not (List.exists (function (Tpat_constraint _, _, _) -> true | _ -> false)
+          p.pat_extra) &&
+    match p.pat_desc with
+    | Tpat_any -> true
+    | Tpat_exception _ -> true
+    | Tpat_or (p1, p2, _) -> check p1 && check p2
+    | Tpat_value p -> check (p :> value general_pattern)
+    | _ -> false
+  in
+  check p
+
 (* Check that a type is generalizable at some level *)
 let generalizable level ty =
   let rec check ty =
@@ -3123,6 +3136,10 @@ and type_expect_
       let cases, partial =
         type_cases Computation env
           arg.exp_type ty_expected_explained true loc caselist in
+      if
+        List.for_all (fun c -> pattern_needs_partial_application_check c.c_lhs)
+          cases
+      then check_partial_application ~statement:false arg;
       re {
         exp_desc = Texp_match(arg, cases, partial);
         exp_loc = loc; exp_extra = [];
@@ -5267,12 +5284,10 @@ and type_let ?check ?check_strict
          | Tpat_alias ({pat_desc=Tpat_any}, _, _) -> ()
          | _ -> raise(Error(pat.pat_loc, env, Illegal_letrec_pat)))
       l;
-  List.iter (function
-      | {vb_pat = {pat_desc = Tpat_any; pat_extra; _}; vb_expr; _} ->
-          if not (List.exists (function (Tpat_constraint _, _, _) -> true
-                                      | _ -> false) pat_extra) then
-            check_partial_application ~statement:false vb_expr
-      | _ -> ()) l;
+  List.iter (fun vb ->
+      if pattern_needs_partial_application_check vb.vb_pat then
+        check_partial_application ~statement:false vb.vb_expr
+    ) l;
   (l, new_env, unpacks)
 
 and type_let_def_wrap_warnings
