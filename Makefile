@@ -93,7 +93,7 @@ ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
   COLDSTART_DEPS =
   BOOT_FLEXLINK_CMD =
 else
-  COLDSTART_DEPS = boot/ocamlruns$(EXE)
+  COLDSTART_DEPS = boot/ocamlruns$(EXE) runtime/primitives
   BOOT_FLEXLINK_CMD = \
     FLEXLINK_CMD="../boot/ocamlruns$(EXE) ../boot/flexlink.byte$(EXE)"
 endif
