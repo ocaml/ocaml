@@ -2890,18 +2890,6 @@ let unify_exp ?sdesc_for_hint env exp expected_ty =
   with Error(loc, env, Expr_type_clash(err, tfc, None)) ->
     raise (Error(loc, env, Expr_type_clash(err, tfc, sdesc_for_hint)))
 
-(* Ensure that no bound ident's type mentions a type variable from an inner
-   scope.
-*)
-let check_scope_escape_let_bound_idents env value_bindings =
-  List.iter
-    (fun (_, ident_loc, bound_ident_type) ->
-       try unify env bound_ident_type (newvar ())
-       with Unify trace ->
-         let loc = ident_loc.loc in
-         raise (Error(loc, env, Pattern_type_clash(trace, None))))
-    (let_bound_idents_full value_bindings)
-
 (* If [is_inferred e] is true, [e] will be typechecked without using
    the "expected type" provided by the context. *)
 
@@ -3134,10 +3122,10 @@ and type_expect_
           (pat_exp_list, body, new_env)
         end
         (* If the patterns contain module unpacks, there is a possibility that
-           the type of the let body or variables bound by the let mention types
+           the types of the let body or let definitions mention types
            introduced by those unpacks. (The latter can only happen with
            recursive definitions.) Here, we check for scope escape via both of
-           these pathways (body, variables).
+           these pathways (body, definitions).
 
            Checking unification within an environment extended with the module
            bindings allows us to correctly accept more programs. This
@@ -3147,7 +3135,9 @@ and type_expect_
         ~post:(fun (pat_exp_list, body, new_env) ->
           unify_exp new_env body (newvar ());
           if rec_flag = Recursive then
-            check_scope_escape_let_bound_idents new_env pat_exp_list)
+            List.iter
+              (fun vb -> unify_exp new_env vb.vb_expr (newvar ()))
+              pat_exp_list)
       in
       re {
         exp_desc = Texp_let(rec_flag, pat_exp_list, body);
