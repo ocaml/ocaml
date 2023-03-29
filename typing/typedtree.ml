@@ -66,7 +66,7 @@ and 'k pattern_desc =
       label * value general_pattern option * row_desc ref ->
       value pattern_desc
   | Tpat_record :
-      (Longident.t loc * label_description * value general_pattern) list *
+      (Longident.t loc * label_description * value general_pattern) Nonempty_list.t *
         closed_flag ->
       value pattern_desc
   | Tpat_array : value general_pattern list -> value pattern_desc
@@ -503,7 +503,7 @@ and type_declaration =
 and type_kind =
     Ttype_abstract
   | Ttype_variant of constructor_declaration list
-  | Ttype_record of label_declaration list
+  | Ttype_record of label_declaration Nonempty_list.t
   | Ttype_open
 
 and label_declaration =
@@ -529,7 +529,7 @@ and constructor_declaration =
 
 and constructor_arguments =
   | Cstr_tuple of core_type list
-  | Cstr_record of label_declaration list
+  | Cstr_record of label_declaration Nonempty_list.t
 
 and type_extension =
   {
@@ -677,7 +677,7 @@ let shallow_iter_pattern_desc
   | Tpat_construct(_, _, patl, _) -> List.iter f.f patl
   | Tpat_variant(_, pat, _) -> Option.iter f.f pat
   | Tpat_record (lbl_pat_list, _) ->
-      List.iter (fun (_, _, pat) -> f.f pat) lbl_pat_list
+      Nonempty_list.iter (fun (_, _, pat) -> f.f pat) lbl_pat_list
   | Tpat_array patl -> List.iter f.f patl
   | Tpat_lazy p -> f.f p
   | Tpat_any
@@ -697,7 +697,7 @@ let shallow_map_pattern_desc
   | Tpat_tuple pats ->
       Tpat_tuple (List.map f.f pats)
   | Tpat_record (lpats, closed) ->
-      Tpat_record (List.map (fun (lid, l,p) -> lid, l, f.f p) lpats, closed)
+      Tpat_record (Nonempty_list.map (fun (lid, l,p) -> lid, l, f.f p) lpats, closed)
   | Tpat_construct (lid, c, pats, ty) ->
       Tpat_construct (lid, c, List.map f.f pats, ty)
   | Tpat_array pats ->

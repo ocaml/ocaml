@@ -158,11 +158,14 @@ and rewrite_cases iflag l =
     )
     l
 
-and rewrite_labelexp_list iflag l =
-  rewrite_exp_list iflag (List.map snd l)
+and rewrite_labelexp_nonempty_list iflag l =
+  rewrite_exp_nonempty_list iflag (Nonempty_list.map snd l)
 
 and rewrite_exp_list iflag l =
   List.iter (rewrite_exp iflag) l
+
+and rewrite_exp_nonempty_list iflag l =
+  Nonempty_list.iter (rewrite_exp iflag) l
 
 and rewrite_exp iflag sexp =
   if iflag then insert_profile rw_exp sexp
@@ -220,10 +223,10 @@ and rw_exp iflag sexp =
     rewrite_exp iflag sarg
 
   | Pexp_record(lid_sexp_list, None) ->
-    rewrite_labelexp_list iflag lid_sexp_list
+    rewrite_labelexp_nonempty_list iflag lid_sexp_list
   | Pexp_record(lid_sexp_list, Some sexp) ->
     rewrite_exp iflag sexp;
-    rewrite_labelexp_list iflag lid_sexp_list
+    rewrite_labelexp_nonempty_list iflag lid_sexp_list
 
   | Pexp_field(sarg, _) ->
     rewrite_exp iflag sarg

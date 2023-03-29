@@ -312,7 +312,7 @@ module Analyser =
         inline_record = begin
           fun c -> match c.pcd_args with
             | Pcstr_tuple _ -> None
-            | Pcstr_record r -> Some r
+            | Pcstr_record r -> Some (Nonempty_list.to_list r)
         end;
         inline_end = (fun c -> Loc.end_ c.pcd_loc)
       }
@@ -410,6 +410,7 @@ module Analyser =
           f [] cons_core_type_list_list
 
       | Parsetree.Ptype_record label_declaration_list ->
+          let label_declaration_list = Nonempty_list.to_list label_declaration_list in
           (0, Record.(doc parsetree) pos_end label_declaration_list)
       | Parsetree.Ptype_open ->
           (0, [])
@@ -463,7 +464,7 @@ module Analyser =
               match cd_args with
               | Cstr_tuple l -> Cstr_tuple (List.map (Odoc_env.subst_type env) l)
               | Cstr_record l ->
-                  Cstr_record (List.map (get_field env name_comment_list) l)
+                  Cstr_record (Nonempty_list.map_to_list (get_field env name_comment_list) l)
             in
             let vc_name = match constructor_name with
               | "::" ->
@@ -481,7 +482,7 @@ module Analyser =
           Odoc_type.Type_variant (List.map f l)
 
       | Types.Type_record (l, _) ->
-          Odoc_type.Type_record (List.map (get_field env name_comment_list) l)
+          Odoc_type.Type_record (Nonempty_list.map_to_list (get_field env name_comment_list) l)
 
       | Types.Type_open ->
           Odoc_type.Type_open
@@ -499,6 +500,7 @@ module Analyser =
       | Cstr_tuple l ->
           Odoc_type.Cstr_tuple (List.map tuple l)
       | Cstr_record l ->
+          let l = Nonempty_list.to_list l in
           let comments = Record.(doc typedtree) pos_end l in
           Odoc_type.Cstr_record (List.map (record comments) l)
 
@@ -924,6 +926,7 @@ module Analyser =
                 | Cstr_tuple l ->
                     Cstr_tuple (List.map (Odoc_env.subst_type new_env) l)
                 | Cstr_record l ->
+                    let l = Nonempty_list.to_list l in
                     let docs = Record.(doc types ext_loc_end) l in
                     Cstr_record (List.map (get_field new_env docs) l)
               in
@@ -970,6 +973,7 @@ module Analyser =
               match types_ext.ext_args with
               | Cstr_tuple l -> Cstr_tuple (List.map (Odoc_env.subst_type env) l)
               | Cstr_record l ->
+                  let l = Nonempty_list.to_list l in
                   let docs = Record.(doc types) pos_end l in
                   Cstr_record (List.map (get_field env docs) l)
             in

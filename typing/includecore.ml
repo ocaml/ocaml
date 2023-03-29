@@ -594,6 +594,8 @@ module Variant_diffing = struct
         | () -> None
       end
     | Types.Cstr_record l1, Types.Cstr_record l2 ->
+        let l1 = Nonempty_list.to_list l1 in
+        let l2 = Nonempty_list.to_list l2 in
         Option.map
           (fun rec_err -> Inline_record rec_err)
           (Record_diffing.compare env ~loc params1 params2 l1 l2)
@@ -932,6 +934,8 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           rep1
           rep2
     | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
+        let labels1 = Nonempty_list.to_list labels1 in
+        let labels2 = Nonempty_list.to_list labels2 in
         if mark then begin
           let mark usage lbls =
             List.iter (Env.mark_label_used usage) lbls

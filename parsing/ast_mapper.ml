@@ -176,13 +176,13 @@ module T = struct
     | Ptype_abstract -> Ptype_abstract
     | Ptype_variant l ->
         Ptype_variant (List.map (sub.constructor_declaration sub) l)
-    | Ptype_record l -> Ptype_record (List.map (sub.label_declaration sub) l)
+    | Ptype_record l -> Ptype_record (Nonempty_list.map (sub.label_declaration sub) l)
     | Ptype_open -> Ptype_open
 
   let map_constructor_arguments sub = function
     | Pcstr_tuple l -> Pcstr_tuple (List.map (sub.typ sub) l)
     | Pcstr_record l ->
-        Pcstr_record (List.map (sub.label_declaration sub) l)
+        Pcstr_record (Nonempty_list.map (sub.label_declaration sub) l)
 
   let map_type_extension sub
       {ptyext_path; ptyext_params;
@@ -412,7 +412,7 @@ module E = struct
     | Pexp_variant (lab, eo) ->
         variant ~loc ~attrs lab (map_opt (sub.expr sub) eo)
     | Pexp_record (l, eo) ->
-        record ~loc ~attrs (List.map (map_tuple (map_loc sub) (sub.expr sub)) l)
+        record ~loc ~attrs (Nonempty_list.map (map_tuple (map_loc sub) (sub.expr sub)) l)
           (map_opt (sub.expr sub) eo)
     | Pexp_field (e, lid) ->
         field ~loc ~attrs (sub.expr sub e) (map_loc sub lid)
@@ -499,7 +499,7 @@ module P = struct
     | Ppat_variant (l, p) -> variant ~loc ~attrs l (map_opt (sub.pat sub) p)
     | Ppat_record (lpl, cf) ->
         record ~loc ~attrs
-               (List.map (map_tuple (map_loc sub) (sub.pat sub)) lpl) cf
+               (Nonempty_list.map (map_tuple (map_loc sub) (sub.pat sub)) lpl) cf
     | Ppat_array pl -> array ~loc ~attrs (List.map (sub.pat sub) pl)
     | Ppat_or (p1, p2) -> or_ ~loc ~attrs (sub.pat sub p1) (sub.pat sub p2)
     | Ppat_constraint (p, t) ->
@@ -831,6 +831,7 @@ module PpxContext = struct
       (String.Map.bindings !cookies)
 
   let mk fields =
+    let fields = Nonempty_list.of_list_exn fields in
     {
       attr_name = { txt = "ocaml.ppx.context"; loc = Location.none };
       attr_payload = Parsetree.PStr [Str.eval (Exp.record fields None)];
@@ -861,7 +862,7 @@ module PpxContext = struct
   let get_fields = function
     | PStr [{pstr_desc = Pstr_eval
                  ({ pexp_desc = Pexp_record (fields, None) }, [])}] ->
-        fields
+        Nonempty_list.to_list fields
     | _ ->
         raise_errorf "Internal error: invalid [@@@ocaml.ppx.context] syntax"
 

@@ -147,6 +147,7 @@ let rec expression event env = function
           let tydesc = Env.find_type path env in
           begin match tydesc.type_kind with
             Type_record(lbl_list, _repr) ->
+              let lbl_list = Nonempty_list.to_list lbl_list in
               let (pos, ty_res) =
                 find_label lbl env ty path tydesc 0 lbl_list in
               (Debugcom.Remote_value.field v pos, ty_res)

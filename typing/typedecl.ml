@@ -215,10 +215,9 @@ let make_params env params =
   in
     List.map make_param params
 
-let transl_labels env univars closed lbls =
-  assert (lbls <> []);
+let transl_labels env univars closed (lbls : _ Nonempty_list.t) =
   let all_labels = ref String.Set.empty in
-  List.iter
+  Nonempty_list.iter
     (fun {pld_name = {txt=name; loc}} ->
        if String.Set.mem name !all_labels then
          raise(Error(loc, Duplicate_label name));
@@ -235,9 +234,9 @@ let transl_labels env univars closed lbls =
           ld_type = cty; ld_loc = loc; ld_attributes = attrs}
       )
   in
-  let lbls = List.map mk lbls in
+  let lbls = Nonempty_list.map mk lbls in
   let lbls' =
-    List.map
+    Nonempty_list.map
       (fun ld ->
          let ty = ld.ld_type.ctyp_type in
          let ty = match get_desc ty with Tpoly(t,[]) -> t | _ -> ty in
@@ -338,7 +337,6 @@ let transl_declaration env sdecl (id, uid) =
     | Ptype_abstract    -> bad "it is abstract"
     | Ptype_open        -> bad "extensible variant types cannot be unboxed"
     | Ptype_record fields -> begin match fields with
-        | [] -> bad "it has no fields"
         | _::_::_ -> bad "it has more than one field"
         | [{pld_mutable = Mutable}] -> bad "it is mutable"
         | [{pld_mutable = Immutable}] -> ()
@@ -353,8 +351,6 @@ let transl_declaration env sdecl (id, uid) =
                 bad "its constructor has more than one argument"
             | Pcstr_tuple [_]  ->
                 ()
-            | Pcstr_record [] ->
-                bad "its constructor has no fields"
             | Pcstr_record (_::_::_) ->
                 bad "its constructor has more than one field"
             | Pcstr_record [{pld_mutable = Mutable}] ->
@@ -430,7 +426,7 @@ let transl_declaration env sdecl (id, uid) =
           let lbls, lbls' = transl_labels env None true lbls in
           let rep =
             if unbox then Record_unboxed false
-            else if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
+            else if Nonempty_list.for_all (fun l -> is_float env l.Types.ld_type) lbls'
             then Record_float
             else Record_regular
           in
@@ -542,7 +538,8 @@ let check_constraints_labels env visited l pl =
         if name = pld.pld_name.txt then pld.pld_type.ptyp_loc
         else get_loc name tl
   in
-  List.iter
+  let pl = Nonempty_list.to_list pl in
+  Nonempty_list.iter
     (fun {Types.ld_id=name; ld_type=ty} ->
        check_constraints_rec env (get_loc (Ident.name name) pl) visited ty)
     l
@@ -990,7 +987,7 @@ let check_duplicates sdecl_list =
               Hashtbl.add constrs pcd.pcd_name.txt sdecl.ptype_name.txt)
           cl
     | Ptype_record fl ->
-        List.iter
+        Nonempty_list.iter
           (fun {pld_name=cname;pld_loc=loc} ->
             try
               let name' = Hashtbl.find labels cname.txt in
@@ -1869,7 +1866,7 @@ let explain_unbound_single ppf tv ty =
 
 let tys_of_constr_args = function
   | Types.Cstr_tuple tl -> tl
-  | Types.Cstr_record lbls -> List.map (fun l -> l.Types.ld_type) lbls
+  | Types.Cstr_record lbls -> Nonempty_list.map_to_list (fun l -> l.Types.ld_type) lbls
 
 module Reaching_path = struct
   type t = reaching_type_path
@@ -2010,6 +2007,7 @@ let report_error ppf = function
                 "%a of %a" Printtyp.ident c.Types.cd_id
                 Printtyp.constructor_arguments c.Types.cd_args)
       | Type_record (tl, _), _ ->
+          let tl = Nonempty_list.to_list tl in
           explain_unbound ppf ty tl (fun l -> l.Types.ld_type)
             "field" (fun l -> Ident.name l.Types.ld_id ^ ": ")
       | Type_abstract, Some ty' ->

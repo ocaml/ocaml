@@ -108,7 +108,7 @@ and 'k pattern_desc =
             See {!Types.row_desc} for an explanation of the last parameter.
          *)
   | Tpat_record :
-      (Longident.t loc * Types.label_description * value general_pattern) list *
+      (Longident.t loc * Types.label_description * value general_pattern) Nonempty_list.t *
         closed_flag ->
       value pattern_desc
         (** { l1=P1; ...; ln=Pn }     (flag = Closed)
@@ -645,7 +645,7 @@ and type_declaration =
 and type_kind =
     Ttype_abstract
   | Ttype_variant of constructor_declaration list
-  | Ttype_record of label_declaration list
+  | Ttype_record of label_declaration Nonempty_list.t
   | Ttype_open
 
 and label_declaration =
@@ -671,7 +671,7 @@ and constructor_declaration =
 
 and constructor_arguments =
   | Cstr_tuple of core_type list
-  | Cstr_record of label_declaration list
+  | Cstr_record of label_declaration Nonempty_list.t
 
 and type_extension =
   {

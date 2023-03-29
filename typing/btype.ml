@@ -315,12 +315,12 @@ type type_iterators =
 
 let iter_type_expr_cstr_args f = function
   | Cstr_tuple tl -> List.iter f tl
-  | Cstr_record lbls -> List.iter (fun d -> f d.ld_type) lbls
+  | Cstr_record lbls -> Nonempty_list.iter (fun d -> f d.ld_type) lbls
 
 let map_type_expr_cstr_args f = function
   | Cstr_tuple tl -> Cstr_tuple (List.map f tl)
   | Cstr_record lbls ->
-      Cstr_record (List.map (fun d -> {d with ld_type=f d.ld_type}) lbls)
+      Cstr_record (Nonempty_list.map (fun d -> {d with ld_type=f d.ld_type}) lbls)
 
 let iter_type_expr_kind f = function
   | Type_abstract -> ()
@@ -332,7 +332,7 @@ let iter_type_expr_kind f = function
         )
         cstrs
   | Type_record(lbls, _) ->
-      List.iter (fun d -> f d.ld_type) lbls
+      Nonempty_list.iter (fun d -> f d.ld_type) lbls
   | Type_open ->
       ()
 

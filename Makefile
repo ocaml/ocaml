@@ -1373,7 +1373,7 @@ tools/ocamldep$(EXE): OC_BYTECODE_LINKFLAGS += -compat-32
 
 ocamlprof_LIBRARIES =
 ocamlprof_MODULES = \
-  config build_path_prefix_map misc identifiable numbers arg_helper \
+  config build_path_prefix_map misc nonempty_list identifiable numbers arg_helper \
   local_store load_path clflags terminfo warnings location longident \
   docstrings syntaxerr ast_helper camlinternalMenhirLib parser pprintast \
   lexer parse ocamlprof
@@ -1381,7 +1381,7 @@ ocamlprof_MODULES = \
 ocamlcp_ocamloptp_MODULES = \
   config build_path_prefix_map misc profile warnings identifiable numbers \
   arg_helper local_store load_path clflags terminfo location ccomp compenv \
-  main_args ocamlcp_common
+  main_args ocamlcp_common nonempty_list
 
 ocamlcp_LIBRARIES =
 ocamlcp_MODULES = $(ocamlcp_ocamloptp_MODULES) ocamlcp

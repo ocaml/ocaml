@@ -1115,7 +1115,7 @@ let find_extension_full path env =
 let type_of_cstr path = function
   | {cstr_inlined = Some decl; _} ->
       let labels =
-        List.map snd (Datarepr.labels_of_type path decl)
+        Nonempty_list.map snd (Datarepr.labels_of_type_exn path decl)
       in
       begin match decl.type_kind with
       | Type_record (_, repr) ->
@@ -1750,10 +1750,10 @@ let rec components_of_module_maker
                     ) cstrs;
                  Type_variant (cstrs, repr)
               | Type_record (_, repr) ->
-                  let lbls = List.map snd
-                    (Datarepr.labels_of_type path final_decl)
+                  let lbls = Nonempty_list.map snd
+                    (Datarepr.labels_of_type_exn path final_decl)
                   in
-                  List.iter
+                  Nonempty_list.iter
                     (fun descr ->
                       c.comp_labels <-
                         add_to_tbl descr.lbl_name descr c.comp_labels)
@@ -1994,9 +1994,9 @@ and store_type ~check id info shape env =
             store_constructor ~check info id cstr_id cstr env)
           env constructors
     | Type_record (_, repr) ->
-        let labels = Datarepr.labels_of_type path info in
-        Type_record (List.map snd labels, repr),
-        List.fold_left
+        let labels = Datarepr.labels_of_type_exn path info in
+        Type_record (Nonempty_list.map snd labels, repr),
+        Nonempty_list.fold_left
           (fun env (lbl_id, lbl) ->
             store_label ~check info id lbl_id lbl env)
           env labels
@@ -3114,7 +3114,7 @@ let lookup_all_labels_from_type ~use ~loc usage ty_path env =
   | exception Not_found -> []
   | Type_variant _ | Type_abstract | Type_open -> []
   | Type_record (lbls, _) ->
-      List.map
+      Nonempty_list.map_to_list
         (fun lbl ->
            let use_fun () = use_label ~use ~loc usage env lbl in
            (lbl, use_fun))

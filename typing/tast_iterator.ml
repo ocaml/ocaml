@@ -156,7 +156,7 @@ let label_decl sub {ld_loc; ld_name; ld_type; ld_attributes; _} =
 
 let constructor_args sub = function
   | Cstr_tuple l -> List.iter (sub.typ sub) l
-  | Cstr_record l -> List.iter (label_decl sub) l
+  | Cstr_record l -> Nonempty_list.iter (label_decl sub) l
 
 let constructor_decl sub x =
   sub.location sub x.cd_loc;
@@ -169,7 +169,7 @@ let constructor_decl sub x =
 let type_kind sub = function
   | Ttype_abstract -> ()
   | Ttype_variant list -> List.iter (constructor_decl sub) list
-  | Ttype_record list -> List.iter (label_decl sub) list
+  | Ttype_record list -> Nonempty_list.iter (label_decl sub) list
   | Ttype_open -> ()
 
 let type_declaration sub x =
@@ -239,7 +239,7 @@ let pat
         List.iter (iter_loc sub) ids; sub.typ sub ct) vto
   | Tpat_variant (_, po, _) -> Option.iter (sub.pat sub) po
   | Tpat_record (l, _) ->
-      List.iter (fun (lid, _, i) -> iter_loc sub lid; sub.pat sub i) l
+      Nonempty_list.iter (fun (lid, _, i) -> iter_loc sub lid; sub.pat sub i) l
   | Tpat_array l -> List.iter (sub.pat sub) l
   | Tpat_alias (p, _, s) -> sub.pat sub p; iter_loc sub s
   | Tpat_lazy p -> sub.pat sub p

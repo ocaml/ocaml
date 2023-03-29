@@ -173,6 +173,7 @@ eval.cmo : \
     ../typing/predef.cmi \
     ../typing/path.cmi \
     parser_aux.cmi \
+    ../utils/nonempty_list.cmi \
     ../utils/misc.cmi \
     ../parsing/longident.cmi \
     ../bytecomp/instruct.cmi \
@@ -193,6 +194,7 @@ eval.cmx : \
     ../typing/predef.cmx \
     ../typing/path.cmx \
     parser_aux.cmi \
+    ../utils/nonempty_list.cmx \
     ../utils/misc.cmx \
     ../parsing/longident.cmx \
     ../bytecomp/instruct.cmx \

@@ -565,11 +565,11 @@ let closed_type_decl decl =
             | None ->
                 match cd_args with
                 | Cstr_tuple l ->  List.iter closed_type l
-                | Cstr_record l -> List.iter (fun l -> closed_type l.ld_type) l
+                | Cstr_record l -> Nonempty_list.iter (fun l -> closed_type l.ld_type) l
           )
           v
     | Type_record(r, _rep) ->
-        List.iter (fun l -> closed_type l.ld_type) r
+        Nonempty_list.iter (fun l -> closed_type l.ld_type) r
     | Type_open -> ()
     end;
     begin match decl.type_manifest with
@@ -1303,7 +1303,7 @@ let map_kind f = function
           cl, rep)
   | Type_record (fl, rr) ->
       Type_record (
-        List.map
+        Nonempty_list.map
           (fun l ->
              {l with ld_type = f l.ld_type}
           ) fl, rr)
@@ -2431,7 +2431,7 @@ and mcomp_variant_description type_pairs env xs ys =
   in
   iter xs ys
 
-and mcomp_record_description type_pairs env =
+and mcomp_record_description type_pairs env x y =
   let rec iter x y =
     match x, y with
     | l1 :: xs, l2 :: ys ->
@@ -2443,7 +2443,7 @@ and mcomp_record_description type_pairs env =
     | [], [] -> ()
     | _ -> raise Incompatible
   in
-  iter
+  iter (Nonempty_list.to_list x) (Nonempty_list.to_list y)
 
 let mcomp env t1 t2 =
   mcomp (TypePairs.create 4) env t1 t2

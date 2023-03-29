@@ -293,7 +293,7 @@ let constructor_arguments copy_scope s = function
   | Cstr_tuple l ->
       Cstr_tuple (List.map (typexp copy_scope s) l)
   | Cstr_record l ->
-      Cstr_record (List.map (label_declaration copy_scope s) l)
+      Cstr_record (Nonempty_list.map (label_declaration copy_scope s) l)
 
 let constructor_declaration copy_scope s c =
   {
@@ -315,7 +315,7 @@ let type_declaration' copy_scope s decl =
           Type_variant (List.map (constructor_declaration copy_scope s) cstrs,
                         rep)
       | Type_record(lbls, rep) ->
-          Type_record (List.map (label_declaration copy_scope s) lbls, rep)
+          Type_record (Nonempty_list.map (label_declaration copy_scope s) lbls, rep)
       | Type_open -> Type_open
       end;
     type_manifest =

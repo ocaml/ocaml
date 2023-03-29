@@ -75,6 +75,7 @@ COMPILERLIBS_SOURCES=\
   utils/config.ml \
   utils/build_path_prefix_map.ml \
   utils/misc.ml \
+	utils/nonempty_list.ml \
   utils/identifiable.ml \
   utils/numbers.ml \
   utils/arg_helper.ml \

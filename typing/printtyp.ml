@@ -1325,14 +1325,14 @@ let filter_params tyl =
 
 let prepare_type_constructor_arguments = function
   | Cstr_tuple l -> List.iter prepare_type l
-  | Cstr_record l -> List.iter (fun l -> prepare_type l.ld_type) l
+  | Cstr_record l -> Nonempty_list.iter (fun l -> prepare_type l.ld_type) l
 
 let tree_of_label l =
   (Ident.name l.ld_id, l.ld_mutable = Mutable, tree_of_typexp Type l.ld_type)
 
 let tree_of_constructor_arguments = function
   | Cstr_tuple l -> tree_of_typlist Type l
-  | Cstr_record l -> [ Otyp_record (List.map tree_of_label l) ]
+  | Cstr_record l -> [ Otyp_record (Nonempty_list.map_to_list tree_of_label l) ]
 
 let tree_of_single_constructor cd =
   let name = Ident.name cd.cd_id in
@@ -1399,7 +1399,7 @@ let prepare_decl id decl =
            Option.iter prepare_type c.cd_res)
         cstrs
   | Type_record(l, _rep) ->
-      List.iter (fun l -> prepare_type l.ld_type) l
+      Nonempty_list.iter (fun l -> prepare_type l.ld_type) l
   | Type_open -> ()
   end;
   ty_manifest, params
@@ -1468,7 +1468,7 @@ let tree_of_type_decl id decl =
         decl.type_private,
         (rep = Variant_unboxed)
     | Type_record(lbls, rep) ->
-        tree_of_manifest (Otyp_record (List.map tree_of_label lbls)),
+        tree_of_manifest (Otyp_record (Nonempty_list.map_to_list tree_of_label lbls)),
         decl.type_private,
         (match rep with Record_unboxed _ -> true | _ -> false)
     | Type_open ->

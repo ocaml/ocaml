@@ -18,7 +18,6 @@ open Ast_iterator
 
 let err = Syntaxerr.ill_formed_ast
 
-let empty_record loc = err loc "Records cannot be empty."
 let invalid_tuple loc = err loc "Tuples must have at least 2 components."
 let no_args loc = err loc "Function application with no argument."
 let empty_let loc = err loc "Let with no bindings."
@@ -39,9 +38,7 @@ let iterator =
   let super = Ast_iterator.default_iterator in
   let type_declaration self td =
     super.type_declaration self td;
-    let loc = td.ptype_loc in
     match td.ptype_kind with
-    | Ptype_record [] -> empty_record loc
     | _ -> ()
   in
   let typ self ty =
@@ -64,10 +61,9 @@ let iterator =
     let loc = pat.ppat_loc in
     match pat.ppat_desc with
     | Ppat_tuple ([] | [_]) -> invalid_tuple loc
-    | Ppat_record ([], _) -> empty_record loc
     | Ppat_construct (id, _) -> simple_longident id
     | Ppat_record (fields, _) ->
-      List.iter (fun (id, _) -> simple_longident id) fields
+      Nonempty_list.iter (fun (id, _) -> simple_longident id) fields
     | _ -> ()
   in
   let expr self exp =
@@ -81,7 +77,6 @@ let iterator =
     let loc = exp.pexp_loc in
     match exp.pexp_desc with
     | Pexp_tuple ([] | [_]) -> invalid_tuple loc
-    | Pexp_record ([], _) -> empty_record loc
     | Pexp_apply (_, []) -> no_args loc
     | Pexp_let (_, [], _) -> empty_let loc
     | Pexp_ident id
@@ -90,7 +85,7 @@ let iterator =
     | Pexp_setfield (_, id, _)
     | Pexp_new id -> simple_longident id
     | Pexp_record (fields, _) ->
-      List.iter (fun (id, _) -> simple_longident id) fields
+      Nonempty_list.iter (fun (id, _) -> simple_longident id) fields
     | _ -> ()
   in
   let extension_constructor self ec =

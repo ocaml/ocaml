@@ -511,7 +511,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               in
               (lid, v) :: tree_of_fields (pos + 1) remainder
         in
-        Oval_record (tree_of_fields pos lbl_list)
+        Oval_record (tree_of_fields pos (Nonempty_list.to_list lbl_list))
 
       and tree_of_val_list start depth obj ty_list =
         let rec tree_list i = function

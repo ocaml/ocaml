@@ -200,6 +200,9 @@ let list : 'a . ?sep:space_formatter -> ?first:space_formatter ->
           end in
     aux f xs
 
+let nonempty_list ?sep ?first ?last f formatter l =
+  list ?sep ?first ?last f formatter (Nonempty_list.to_list l)
+
 let option : 'a. ?first:space_formatter -> ?last:space_formatter ->
   (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a option -> unit
   = fun  ?first  ?last fu f a ->
@@ -477,9 +480,9 @@ and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
         in
         begin match closed with
         | Closed ->
-            pp f "@[<2>{@;%a@;}@]" (list longident_x_pattern ~sep:";@;") l
+            pp f "@[<2>{@;%a@;}@]" (nonempty_list longident_x_pattern ~sep:";@;") l
         | _ ->
-            pp f "@[<2>{@;%a;_}@]" (list longident_x_pattern ~sep:";@;") l
+            pp f "@[<2>{@;%a;_}@]" (nonempty_list longident_x_pattern ~sep:";@;") l
         end
     | Ppat_tuple l ->
         pp f "@[<1>(%a)@]" (list  ~sep:",@;" (pattern1 ctxt))  l (* level1*)
@@ -811,7 +814,7 @@ and simple_expr ctxt f x =
         in
         pp f "@[<hv0>@[<hv2>{@;%a%a@]@;}@]"(* "@[<hov2>{%a%a}@]" *)
           (option ~last:" with@;" (simple_expr ctxt)) eo
-          (list longident_x_expression ~sep:";@;") l
+          (nonempty_list longident_x_expression ~sep:";@;") l
     | Pexp_array (l) ->
         pp f "@[<0>@[<2>[|%a|]@]@]"
           (list (simple_expr (under_semi ctxt)) ~sep:";") l
@@ -1514,7 +1517,7 @@ and type_declaration ctxt f x =
       in pp f "%t%t%a" intro priv variants xs
     | Ptype_abstract -> ()
     | Ptype_record l ->
-        pp f "%t%t@;%a" intro priv (record_declaration ctxt) l
+        pp f "%t%t@;%a" intro priv (record_declaration ctxt) (Nonempty_list.to_list l)
     | Ptype_open -> pp f "%t%t@;.." intro priv
   in
   let constraints f =
@@ -1558,7 +1561,7 @@ and constructor_declaration ctxt f (name, vars, args, res, attrs) =
            | Pcstr_tuple [] -> ()
            | Pcstr_tuple l ->
              pp f "@;of@;%a" (list (core_type1 ctxt) ~sep:"@;*@;") l
-           | Pcstr_record l -> pp f "@;of@;%a" (record_declaration ctxt) l
+           | Pcstr_record l -> pp f "@;of@;%a" (record_declaration ctxt) (Nonempty_list.to_list l)
         ) args
         (attributes ctxt) attrs
   | Some r ->
@@ -1570,7 +1573,7 @@ and constructor_declaration ctxt f (name, vars, args, res, attrs) =
                                 (list (core_type1 ctxt) ~sep:"@;*@;") l
                                 (core_type1 ctxt) r
            | Pcstr_record l ->
-               pp f "%a@;->@;%a" (record_declaration ctxt) l (core_type1 ctxt) r
+               pp f "%a@;->@;%a" (record_declaration ctxt) (Nonempty_list.to_list l) (core_type1 ctxt) r
         )
         args
         (attributes ctxt) attrs

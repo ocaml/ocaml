@@ -129,9 +129,8 @@ let string_of_lam lam =
   Printlambda.lambda Format.str_formatter lam;
   Format.flush_str_formatter ()
 
-let all_record_args lbls =
+let all_record_args (lbls : _ Nonempty_list.t) =
   match lbls with
-  | [] -> fatal_error "Matching.all_record_args"
   | (_, { lbl_all }, _) :: _ ->
       let t =
         Array.map
@@ -139,15 +138,14 @@ let all_record_args lbls =
             (mknoloc (Longident.Lident "?temp?"), lbl, Patterns.omega))
           lbl_all
       in
-      List.iter (fun ((_, lbl, _) as x) -> t.(lbl.lbl_pos) <- x) lbls;
-      Array.to_list t
+      Nonempty_list.iter (fun ((_, lbl, _) as x) -> t.(lbl.lbl_pos) <- x) lbls;
+      Nonempty_list.of_array_exn t
 
 let expand_record_head h =
   let open Patterns.Head in
   match h.pat_desc with
-  | Record [] -> fatal_error "Matching.expand_record_head"
   | Record ({ lbl_all } :: _) ->
-      { h with pat_desc = Record (Array.to_list lbl_all) }
+      { h with pat_desc = Record (Nonempty_list.of_array_exn lbl_all) }
   | _ -> h
 
 let bind_alias p id ~arg ~action =
@@ -236,7 +234,6 @@ end = struct
           aux
             ( (General.view p, patl),
               bind_alias p id ~arg ~action )
-      | `Record ([], _) as view -> stop p view
       | `Record (lbls, closed) ->
           let full_view = `Record (all_record_args lbls, closed) in
           stop p full_view
@@ -288,7 +285,7 @@ end = struct
           `Variant (cstr, Option.map (alpha_pat env) argo, row_desc)
       | `Record (fields, closed) ->
           let alpha_field env (lid, l, p) = (lid, l, alpha_pat env p) in
-          `Record (List.map (alpha_field env) fields, closed)
+          `Record (Nonempty_list.map (alpha_field env) fields, closed)
       | `Array ps -> `Array (List.map (alpha_pat env) ps)
       | `Lazy p -> `Lazy (alpha_pat env p)
     in
@@ -450,7 +447,7 @@ let matcher discr (p : Simple.pattern) rem =
       no ()
   | Record l, Record l' ->
       (* we already expanded the record fully *)
-      yesif (List.length l = List.length l')
+      yesif (Nonempty_list.length l = Nonempty_list.length l')
   | Record _, (Constant _ | Construct _ | Variant _ | Lazy | Array _ | Tuple _)
     ->
       no ()
@@ -2035,7 +2032,7 @@ let get_pat_args_record num_fields p rem =
   match p with
   | { pat_desc = Tpat_any } -> record_matching_line num_fields [] @ rem
   | { pat_desc = Tpat_record (lbl_pat_list, _) } ->
-      record_matching_line num_fields lbl_pat_list @ rem
+      record_matching_line num_fields (Nonempty_list.to_list lbl_pat_list) @ rem
   | _ -> assert false
 
 let get_expr_args_record ~scopes head (arg, _mut) rem =
@@ -2044,7 +2041,6 @@ let get_expr_args_record ~scopes head (arg, _mut) rem =
     let open Patterns.Head in
     match head.pat_desc with
     | Record (lbl :: _) -> lbl.lbl_all
-    | Record []
     | _ ->
         assert false
   in
@@ -3354,7 +3350,6 @@ and do_compile_matching ~scopes repr partial ctx pmh =
           compile_no_test ~scopes
             (divide_tuple ~scopes ph)
             Context.combine repr partial ctx pm
-      | Record [] -> assert false
       | Record (lbl :: _) ->
           compile_no_test ~scopes
             (divide_record ~scopes lbl.lbl_all ph)
@@ -3446,7 +3441,7 @@ let has_lazy p = Typedtree.exists_pattern is_lazy_pat p
 let is_record_with_mutable_field p =
   match p.pat_desc with
   | Tpat_record (lps, _) ->
-      List.exists
+      Nonempty_list.exists
         (fun (_, lbl, _) ->
           match lbl.Types.lbl_mut with
           | Mutable -> true

@@ -255,7 +255,7 @@ let constrained vars ty =
 let for_constr = function
   | Types.Cstr_tuple l -> add_false l
   | Types.Cstr_record l ->
-      List.map
+      Nonempty_list.map_to_list
         (fun {Types.ld_mutable; ld_type} -> (ld_mutable = Mutable, ld_type))
         l
 
@@ -351,7 +351,7 @@ let compute_variance_decl env ~check decl (required, _ as rloc) =
           end
       | Type_record (ftl, _) ->
           compute_variance_type env ~check rloc decl
-            (mn @ List.map (fun {Types.ld_mutable; ld_type} ->
+            (mn @ Nonempty_list.map_to_list (fun {Types.ld_mutable; ld_type} ->
                  (ld_mutable = Mutable, ld_type)) ftl)
     in
     if mn = [] || decl.type_kind <> Type_abstract then

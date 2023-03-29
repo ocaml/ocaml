@@ -487,7 +487,7 @@ and type_decl_kind = (label_declaration, constructor_declaration) type_kind
 
 and ('lbl, 'cstr) type_kind =
     Type_abstract
-  | Type_record of 'lbl list  * record_representation
+  | Type_record of 'lbl Nonempty_list.t  * record_representation
   | Type_variant of 'cstr list * variant_representation
   | Type_open
 
@@ -525,7 +525,7 @@ and constructor_declaration =
 
 and constructor_arguments =
   | Cstr_tuple of type_expr list
-  | Cstr_record of label_declaration list
+  | Cstr_record of label_declaration Nonempty_list.t
 
 type extension_constructor =
   {

@@ -114,6 +114,13 @@ let list i f ppf l =
      List.iter (f (i+1) ppf) l;
      line i ppf "]\n"
 
+let nonempty_list i f ppf l =
+  match (l : _ Nonempty_list.t) with
+  | _ :: _ ->
+     line i ppf "[\n";
+     Nonempty_list.iter (f (i+1) ppf) l;
+     line i ppf "]\n"
+
 let option i f ppf x =
   match x with
   | None -> line i ppf "None\n"
@@ -216,7 +223,7 @@ and pattern i ppf x =
       option i pattern ppf po;
   | Ppat_record (l, c) ->
       line i ppf "Ppat_record %a\n" fmt_closed_flag c;
-      list i longident_x_pattern ppf l;
+      nonempty_list i longident_x_pattern ppf l;
   | Ppat_array (l) ->
       line i ppf "Ppat_array\n";
       list i pattern ppf l;
@@ -289,7 +296,7 @@ and expression i ppf x =
       option i expression ppf eo;
   | Pexp_record (l, eo) ->
       line i ppf "Pexp_record\n";
-      list i longident_x_expression ppf l;
+      nonempty_list i longident_x_expression ppf l;
       option i expression ppf eo;
   | Pexp_field (e, li) ->
       line i ppf "Pexp_field\n";
@@ -438,7 +445,7 @@ and type_kind i ppf x =
       list (i+1) constructor_decl ppf l;
   | Ptype_record l ->
       line i ppf "Ptype_record\n";
-      list (i+1) label_decl ppf l;
+      nonempty_list (i+1) label_decl ppf l;
   | Ptype_open ->
       line i ppf "Ptype_open\n";
 
@@ -883,7 +890,7 @@ and constructor_decl i ppf
 
 and constructor_arguments i ppf = function
   | Pcstr_tuple l -> list i core_type ppf l
-  | Pcstr_record l -> list i label_decl ppf l
+  | Pcstr_record l -> nonempty_list i label_decl ppf l
 
 and label_decl i ppf {pld_name; pld_mutable; pld_type; pld_loc; pld_attributes}=
   line i ppf "%a\n" fmt_location pld_loc;

@@ -49,7 +49,7 @@ let constructor_existentials cd_args cd_res =
   let tyl =
     match cd_args with
     | Cstr_tuple l -> l
-    | Cstr_record l -> List.map (fun l -> l.ld_type) l
+    | Cstr_record l -> Nonempty_list.map_to_list (fun l -> l.ld_type) l
   in
   let existentials =
     match cd_res with
@@ -186,26 +186,25 @@ let dummy_label =
   }
 
 let label_descrs ty_res lbls repres priv =
-  let all_labels = Array.make (List.length lbls) dummy_label in
-  let rec describe_labels num = function
-      [] -> []
-    | l :: rest ->
-        let lbl =
-          { lbl_name = Ident.name l.ld_id;
-            lbl_res = ty_res;
-            lbl_arg = l.ld_type;
-            lbl_mut = l.ld_mutable;
-            lbl_pos = num;
-            lbl_all = all_labels;
-            lbl_repres = repres;
-            lbl_private = priv;
-            lbl_loc = l.ld_loc;
-            lbl_attributes = l.ld_attributes;
-            lbl_uid = l.ld_uid;
-          } in
-        all_labels.(num) <- lbl;
-        (l.ld_id, lbl) :: describe_labels (num+1) rest in
-  describe_labels 0 lbls
+  let all_labels = Array.make (Nonempty_list.length lbls) dummy_label in
+  Nonempty_list.mapi
+    (fun num l ->
+       let lbl =
+         { lbl_name = Ident.name l.ld_id;
+           lbl_res = ty_res;
+           lbl_arg = l.ld_type;
+           lbl_mut = l.ld_mutable;
+           lbl_pos = num;
+           lbl_all = all_labels;
+           lbl_repres = repres;
+           lbl_private = priv;
+           lbl_loc = l.ld_loc;
+           lbl_attributes = l.ld_attributes;
+           lbl_uid = l.ld_uid;
+         } in
+       all_labels.(num) <- lbl;
+       (l.ld_id, lbl)
+    ) lbls
 
 exception Constr_not_found
 
@@ -230,9 +229,10 @@ let constructors_of_type ~current_unit ty_path decl =
      constructor_descrs ~current_unit ty_path decl cstrs rep
   | Type_record _ | Type_abstract | Type_open -> []
 
-let labels_of_type ty_path decl =
+let labels_of_type_exn ty_path decl =
   match decl.type_kind with
   | Type_record(labels, rep) ->
       label_descrs (newgenconstr ty_path decl.type_params)
         labels rep decl.type_private
-  | Type_variant _ | Type_abstract | Type_open -> []
+  | Type_variant _ | Type_abstract | Type_open ->
+      invalid_arg "Datarepr.labels_of_type_exn: not a record"

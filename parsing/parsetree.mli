@@ -246,7 +246,7 @@ and pattern_desc =
             - [`A]   when [pat] is [None],
             - [`A P] when [pat] is [Some P]
          *)
-  | Ppat_record of (Longident.t loc * pattern) list * closed_flag
+  | Ppat_record of (Longident.t loc * pattern) Nonempty_list.t * closed_flag
       (** [Ppat_record([(l1, P1) ; ... ; (ln, Pn)], flag)] represents:
             - [{ l1=P1; ...; ln=Pn }]
                  when [flag] is {{!Asttypes.closed_flag.Closed}[Closed]}
@@ -351,7 +351,7 @@ and expression_desc =
             - [`A]   when [exp] is [None]
             - [`A E] when [exp] is [Some E]
          *)
-  | Pexp_record of (Longident.t loc * expression) list * expression option
+  | Pexp_record of (Longident.t loc * expression) Nonempty_list.t * expression option
       (** [Pexp_record([(l1,P1) ; ... ; (ln,Pn)], exp0)] represents
             - [{ l1=P1; ...; ln=Pn }]         when [exp0] is [None]
             - [{ E0 with l1=P1; ...; ln=Pn }] when [exp0] is [Some E0]
@@ -501,7 +501,7 @@ and type_declaration =
 and type_kind =
   | Ptype_abstract
   | Ptype_variant of constructor_declaration list
-  | Ptype_record of label_declaration list  (** Invariant: non-empty list *)
+  | Ptype_record of label_declaration Nonempty_list.t
   | Ptype_open
 
 and label_declaration =
@@ -535,7 +535,7 @@ and constructor_declaration =
 
 and constructor_arguments =
   | Pcstr_tuple of core_type list
-  | Pcstr_record of label_declaration list
+  | Pcstr_record of label_declaration Nonempty_list.t
       (** Values of type {!constructor_declaration}
     represents the constructor arguments of:
   - [C of T1 * ... * Tn]     when [res = None],

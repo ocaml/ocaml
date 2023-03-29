@@ -1067,6 +1067,10 @@ separated_or_terminated_nonempty_list(delimiter, X):
   xs = separated_or_terminated_nonempty_list(delimiter, X)
     { x :: xs }
 
+separated_or_terminated_nonempty_list_t(delimiter, X):
+  x = separated_or_terminated_nonempty_list(delimiter,X)
+  { Nonempty_list.of_list_exn x }
+
 (* [reversed_preceded_or_separated_nonempty_llist(delimiter, X)] recognizes a
    nonempty list of [X]s, separated with [delimiter]s, and optionally preceded
    with a leading [delimiter]. It produces an OCaml list in reverse order. Its
@@ -1130,14 +1134,14 @@ reversed_bar_llist(X):
 
 listx(delimiter, X, Y):
 | x = X ioption(delimiter)
-    { [x], None }
+    { Nonempty_list.([x]), None }
 | x = X delimiter y = Y delimiter?
-    { [x], Some y }
+    { Nonempty_list.([x]), Some y }
 | x = X
   delimiter
   tail = listx(delimiter, X, Y)
     { let xs, y = tail in
-      x :: xs, y }
+      Nonempty_list.cons x xs, y }
 
 (* -------------------------------------------------------------------------- *)
 
@@ -2654,7 +2658,7 @@ fun_def:
 ;
 record_expr_content:
   eo = ioption(terminated(simple_expr, WITH))
-  fields = separated_or_terminated_nonempty_list(SEMI, record_expr_field)
+  fields = separated_or_terminated_nonempty_list_t(SEMI, record_expr_field)
     { eo, fields }
 ;
 %inline record_expr_field:
@@ -3165,9 +3169,9 @@ constructor_arguments:
       { Pcstr_record $2 }
 ;
 label_declarations:
-    label_declaration                           { [$1] }
-  | label_declaration_semi                      { [$1] }
-  | label_declaration_semi label_declarations   { $1 :: $2 }
+    label_declaration                           { Nonempty_list.([$1]) }
+  | label_declaration_semi                      { Nonempty_list.([$1]) }
+  | label_declaration_semi label_declarations   { Nonempty_list.cons $1 $2 }
 ;
 label_declaration:
     mutable_flag mkrhs(label) COLON poly_type_no_attr attributes

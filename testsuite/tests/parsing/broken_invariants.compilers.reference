@@ -2,10 +2,6 @@ Line 12, characters 20-25:
 12 | let empty_tuple = [%tuple];;
                          ^^^^^
 Error: broken invariant in parsetree: Tuples must have at least 2 components.
-Line 1, characters 21-27:
-1 | let empty_record = [%record];;
-                         ^^^^^^
-Error: broken invariant in parsetree: Records cannot be empty.
 Line 1, characters 20-27:
 1 | let empty_apply = [%no_args f];;
                         ^^^^^^^

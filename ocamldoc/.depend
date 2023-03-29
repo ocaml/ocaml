@@ -753,6 +753,7 @@ odoc_sig.cmo : \
     odoc_exception.cmi \
     odoc_env.cmi \
     odoc_class.cmi \
+    ../utils/nonempty_list.cmi \
     ../parsing/longident.cmi \
     ../parsing/location.cmi \
     ../typing/ident.cmi \
@@ -777,6 +778,7 @@ odoc_sig.cmx : \
     odoc_exception.cmx \
     odoc_env.cmx \
     odoc_class.cmx \
+    ../utils/nonempty_list.cmx \
     ../parsing/longident.cmx \
     ../parsing/location.cmx \
     ../typing/ident.cmx \

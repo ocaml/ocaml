@@ -118,6 +118,13 @@ let list i f ppf l =
      List.iter (f (i+1) ppf) l;
      line i ppf "]\n"
 
+let nonempty_list i f ppf l =
+  match (l : _ Nonempty_list.t) with
+  | _ :: _ ->
+     line i ppf "[\n";
+     Nonempty_list.iter (f (i+1) ppf) l;
+     line i ppf "]\n"
+
 let array i f ppf a =
   if Array.length a = 0 then
     line i ppf "[]\n"
@@ -249,7 +256,7 @@ and pattern : type k . _ -> _ -> k general_pattern -> unit = fun i ppf x ->
       option i pattern ppf po;
   | Tpat_record (l, _c) ->
       line i ppf "Tpat_record\n";
-      list i longident_x_pattern ppf l;
+      nonempty_list i longident_x_pattern ppf l;
   | Tpat_array (l) ->
       line i ppf "Tpat_array\n";
       list i pattern ppf l;
@@ -474,7 +481,7 @@ and type_kind i ppf x =
       list (i+1) constructor_decl ppf l;
   | Ttype_record l ->
       line i ppf "Ttype_record\n";
-      list (i+1) label_decl ppf l;
+      nonempty_list (i+1) label_decl ppf l;
   | Ttype_open ->
       line i ppf "Ttype_open\n"
 
@@ -890,7 +897,7 @@ and constructor_decl i ppf {cd_id; cd_name = _; cd_vars;
 
 and constructor_arguments i ppf = function
   | Cstr_tuple l -> list i core_type ppf l
-  | Cstr_record l -> list i label_decl ppf l
+  | Cstr_record l -> nonempty_list i label_decl ppf l
 
 and label_decl i ppf {ld_id; ld_name = _; ld_mutable; ld_type; ld_loc;
                       ld_attributes} =

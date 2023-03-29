@@ -22,9 +22,9 @@ val extension_descr:
   current_unit:string -> Path.t -> extension_constructor ->
   constructor_description
 
-val labels_of_type:
+val labels_of_type_exn:
   Path.t -> type_declaration ->
-  (Ident.t * label_description) list
+  (Ident.t * label_description) Nonempty_list.t
 val constructors_of_type:
   current_unit:string -> Path.t -> type_declaration ->
   (Ident.t * constructor_description) list

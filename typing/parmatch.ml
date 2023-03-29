@@ -145,7 +145,6 @@ let all_coherent column =
       Array.length lbl1.lbl_all = Array.length lbl2.lbl_all
     | Any, _
     | _, Any
-    | Record [], Record []
     | Variant _, Variant _
     | Array _, Array _
     | Lazy, Lazy -> true
@@ -254,6 +253,8 @@ let const_compare x y =
     ), _ -> Stdlib.compare x y
 
 let records_args l1 l2 =
+  let l1 = Nonempty_list.to_list l1 in
+  let l2 = Nonempty_list.to_list l2 in
   (* Invariant: fields are already sorted by Typecore.type_label_a_list *)
   let rec combine r1 r2 l1 l2 = match l1,l2 with
   | [],[] -> List.rev r1, List.rev r2
@@ -375,7 +376,7 @@ let record_arg ph =
   let open Patterns.Head in
   match ph.pat_desc with
   | Any -> []
-  | Record args -> args
+  | Record args -> Nonempty_list.to_list args
   | _ -> fatal_error "Parmatch.as_record"
 
 
@@ -397,13 +398,15 @@ let simple_match_args discr head args =
   | Tuple _
   | Array _
   | Lazy -> args
-  | Record lbls ->  extract_fields (record_arg discr) (List.combine lbls args)
+  | Record lbls ->
+      let lbls = Nonempty_list.to_list lbls in
+      extract_fields (record_arg discr) (List.combine lbls args)
   | Any ->
       begin match discr.pat_desc with
       | Construct cstr -> Patterns.omegas cstr.cstr_arity
       | Variant { has_arg = true }
       | Lazy -> [Patterns.omega]
-      | Record lbls ->  omega_list lbls
+      | Record lbls ->  omega_list (Nonempty_list.to_list lbls)
       | Array len
       | Tuple len -> Patterns.omegas len
       | Variant { has_arg = false }
@@ -454,12 +457,13 @@ let discr_pat q pss =
            However it makes the witness we generate for the exhaustivity warning
            less pretty. *)
         let fields =
-          List.fold_right (fun lbl r ->
+          Nonempty_list.fold_right (fun lbl r ->
             if List.exists (fun l -> l.lbl_pos = lbl.lbl_pos) r then
               r
             else
               lbl :: r
           ) lbls (record_arg acc)
+          |> Nonempty_list.of_list_exn
         in
         let d = { head with pat_desc = Record fields } in
         refine_pat d rows
@@ -491,19 +495,23 @@ let do_set_args ~erase_mutable q r = match q with
     let args,rest = read_args omegas r in
     make_pat (Tpat_tuple args) q.pat_type q.pat_env::rest
 | {pat_desc = Tpat_record (omegas,closed)} ->
+    let omegas = Nonempty_list.to_list omegas in
     let args,rest = read_args omegas r in
-    make_pat
-      (Tpat_record
-         (List.map2 (fun (lid, lbl,_) arg ->
-           if
-             erase_mutable &&
-             (match lbl.lbl_mut with
+    let fields =
+      List.map2 (fun (lid, lbl,_) arg ->
+          if
+            erase_mutable &&
+            (match lbl.lbl_mut with
              | Mutable -> true | Immutable -> false)
-           then
-             lid, lbl, omega
-           else
-             lid, lbl, arg)
-            omegas args, closed))
+          then
+            lid, lbl, omega
+          else
+            lid, lbl, arg)
+        omegas args
+      |> Nonempty_list.of_list_exn
+    in
+    make_pat
+      (Tpat_record (fields, closed))
       q.pat_type q.pat_env::
     rest
 | {pat_desc = Tpat_construct (lid, c, omegas, _)} ->
@@ -833,7 +841,7 @@ let pats_of_type env ty =
           List.map (pat_of_constr (make_pat Tpat_any ty env)) cstrs
       | Type_record (labels, _) ->
           let fields =
-            List.map (fun ld ->
+            Nonempty_list.map (fun ld ->
               mknoloc (Longident.Lident ld.lbl_name), ld, omega)
               labels
           in
@@ -1053,7 +1061,7 @@ let rec has_instance p = match p.pat_desc with
   | Tpat_or (p1,p2,_) -> has_instance p1 || has_instance p2
   | Tpat_construct (_,_,ps,_) | Tpat_tuple ps | Tpat_array ps ->
       has_instances ps
-  | Tpat_record (lps,_) -> has_instances (List.map (fun (_,_,x) -> x) lps)
+  | Tpat_record (lps,_) -> has_instances (Nonempty_list.map_to_list (fun (_,_,x) -> x) lps)
   | Tpat_lazy p
     -> has_instance p
 
@@ -1778,7 +1786,8 @@ and record_lubs l1 l2 =
         (lid2, lbl2,p2)::lub_rec l1 rem2
       else
         (lid1, lbl1,lub p1 p2)::lub_rec rem1 rem2 in
-  lub_rec l1 l2
+  lub_rec (Nonempty_list.to_list l1) (Nonempty_list.to_list l2)
+  |> Nonempty_list.of_list_exn
 
 and lubs ps qs = match ps,qs with
 | p::ps, q::qs -> lub p q :: lubs ps qs
@@ -1927,7 +1936,7 @@ let rec collect_paths_from_pat r p = match p.pat_desc with
 | Tpat_construct (_, {cstr_tag=Cstr_extension _}, ps, _)->
     List.fold_left collect_paths_from_pat r ps
 | Tpat_record (lps,_) ->
-    List.fold_left
+    Nonempty_list.fold_left
       (fun r (_, _, p) -> collect_paths_from_pat r p)
       r lps
 | Tpat_variant (_, Some p, _) | Tpat_alias (p,_,_) -> collect_paths_from_pat r p
@@ -2066,7 +2075,7 @@ let inactive ~partial pat =
         | Tpat_alias (p,_,_) | Tpat_variant (_, Some p, _) ->
             loop p
         | Tpat_record (ldps,_) ->
-            List.for_all
+            Nonempty_list.for_all
               (fun (_, lbl, p) -> lbl.lbl_mut = Immutable && loop p)
               ldps
         | Tpat_or (p,q,_) ->

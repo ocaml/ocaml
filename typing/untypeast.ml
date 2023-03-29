@@ -241,12 +241,12 @@ let type_kind sub tk = match tk with
   | Ttype_variant list ->
       Ptype_variant (List.map (sub.constructor_declaration sub) list)
   | Ttype_record list ->
-      Ptype_record (List.map (sub.label_declaration sub) list)
+      Ptype_record (Nonempty_list.map (sub.label_declaration sub) list)
   | Ttype_open -> Ptype_open
 
 let constructor_arguments sub = function
    | Cstr_tuple l -> Pcstr_tuple (List.map (sub.typ sub) l)
-   | Cstr_record l -> Pcstr_record (List.map (sub.label_declaration sub) l)
+   | Cstr_record l -> Pcstr_record (Nonempty_list.map (sub.label_declaration sub) l)
 
 let constructor_declaration sub cd =
   let loc = sub.location sub cd.cd_loc in
@@ -355,7 +355,7 @@ let pattern : type k . _ -> k T.general_pattern -> _ = fun sub pat ->
     | Tpat_variant (label, pato, _) ->
         Ppat_variant (label, Option.map (sub.pat sub) pato)
     | Tpat_record (list, closed) ->
-        Ppat_record (List.map (fun (lid, _, pat) ->
+        Ppat_record (Nonempty_list.map (fun (lid, _, pat) ->
             map_loc sub lid, sub.pat sub pat) list, closed)
     | Tpat_array list -> Ppat_array (List.map (sub.pat sub) list)
     | Tpat_lazy p -> Ppat_lazy (sub.pat sub p)
@@ -453,6 +453,7 @@ let expression sub exp =
             | _, Overridden (lid, exp) -> (lid, sub.expr sub exp) :: l)
             [] fields
         in
+        let list = Nonempty_list.of_list_exn list in
         Pexp_record (list, Option.map (sub.expr sub) extended_expression)
     | Texp_field (exp, lid, _label) ->
         Pexp_field (sub.expr sub exp, map_loc sub lid)

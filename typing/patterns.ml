@@ -57,7 +57,7 @@ module Simple = struct
         Longident.t loc * constructor_description * pattern list
     | `Variant of label * pattern option * row_desc ref
     | `Record of
-        (Longident.t loc * label_description * pattern) list * closed_flag
+        (Longident.t loc * label_description * pattern) Nonempty_list.t * closed_flag
     | `Array of pattern list
     | `Lazy of pattern
   ]
@@ -142,7 +142,7 @@ module Head : sig
     | Construct of constructor_description
     | Constant of constant
     | Tuple of int
-    | Record of label_description list
+    | Record of label_description Nonempty_list.t
     | Variant of
         { tag: label; has_arg: bool;
           cstr_row: row_desc ref;
@@ -167,7 +167,7 @@ end = struct
     | Construct of constructor_description
     | Constant of constant
     | Tuple of int
-    | Record of label_description list
+    | Record of label_description Nonempty_list.t
     | Variant of
         { tag: label; has_arg: bool;
           cstr_row: row_desc ref;
@@ -202,8 +202,8 @@ end = struct
       | `Array args ->
           Array (List.length args), args
       | `Record (largs, _) ->
-          let lbls = List.map (fun (_,lbl,_) -> lbl) largs in
-          let pats = List.map (fun (_,_,pat) -> pat) largs in
+          let lbls = Nonempty_list.map (fun (_,lbl,_) -> lbl) largs in
+          let pats = Nonempty_list.map_to_list (fun (_,_,pat) -> pat) largs in
           Record lbls, pats
       | `Lazy p ->
           Lazy, [p]
@@ -217,7 +217,7 @@ end = struct
       | Constant _ -> 0
       | Construct c -> c.cstr_arity
       | Tuple n | Array n -> n
-      | Record l -> List.length l
+      | Record l -> Nonempty_list.length l
       | Variant { has_arg; _ } -> if has_arg then 1 else 0
       | Lazy -> 1
 
@@ -238,7 +238,7 @@ end = struct
           Tpat_variant (tag, arg_opt, cstr_row)
       | Record lbls ->
           let lst =
-            List.map (fun lbl ->
+            Nonempty_list.map (fun lbl ->
               let lid_loc = mkloc (Longident.Lident lbl.lbl_name) in
               (lid_loc, lbl, omega)
             ) lbls

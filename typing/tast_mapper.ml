@@ -190,7 +190,7 @@ let label_decl sub x =
 
 let constructor_args sub = function
   | Cstr_tuple l -> Cstr_tuple (List.map (sub.typ sub) l)
-  | Cstr_record l -> Cstr_record (List.map (label_decl sub) l)
+  | Cstr_record l -> Cstr_record (Nonempty_list.map (label_decl sub) l)
 
 let constructor_decl sub cd =
   let cd_loc = sub.location sub cd.cd_loc in
@@ -204,7 +204,7 @@ let constructor_decl sub cd =
 let type_kind sub = function
   | Ttype_abstract -> Ttype_abstract
   | Ttype_variant list -> Ttype_variant (List.map (constructor_decl sub) list)
-  | Ttype_record list -> Ttype_record (List.map (label_decl sub) list)
+  | Ttype_record list -> Ttype_record (Nonempty_list.map (label_decl sub) list)
   | Ttype_open -> Ttype_open
 
 let type_declaration sub x =
@@ -288,7 +288,7 @@ let pat
     | Tpat_variant (l, po, rd) ->
         Tpat_variant (l, Option.map (sub.pat sub) po, rd)
     | Tpat_record (l, closed) ->
-        Tpat_record (List.map (tuple3 (map_loc sub) id (sub.pat sub)) l, closed)
+        Tpat_record (Nonempty_list.map (tuple3 (map_loc sub) id (sub.pat sub)) l, closed)
     | Tpat_array l -> Tpat_array (List.map (sub.pat sub) l)
     | Tpat_alias (p, id, s) -> Tpat_alias (sub.pat sub p, id, map_loc sub s)
     | Tpat_lazy p -> Tpat_lazy (sub.pat sub p)

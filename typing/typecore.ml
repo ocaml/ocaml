@@ -310,7 +310,7 @@ let protect_expansion env ty =
   if Env.has_local_constraints env then generic_instance ty else ty
 
 type record_extraction_result =
-  | Record_type of Path.t * Path.t * Types.label_declaration list
+  | Record_type of Path.t * Path.t * Types.label_declaration Nonempty_list.t
   | Not_a_record_type
   | Maybe_a_record_type
 
@@ -340,7 +340,7 @@ let extract_concrete_variant env ty =
 
 let extract_label_names env ty =
   match extract_concrete_record env ty with
-  | Record_type (_, _,fields) -> List.map (fun l -> l.Types.ld_id) fields
+  | Record_type (_, _,fields) -> Nonempty_list.map (fun l -> l.Types.ld_id) fields
   | Not_a_record_type | Maybe_a_record_type -> assert false
 
 let is_principal ty =
@@ -584,18 +584,18 @@ and build_as_type_aux ~refine (env : Env.t ref) p =
       newty (Tvariant (create_row ~fields ~more:(newvar())
                          ~name:None ~fixed:None ~closed:false))
   | Tpat_record (lpl,_) ->
-      let lbl = snd3 (List.hd lpl) in
+      let lbl = snd3 (Nonempty_list.hd lpl) in
       if lbl.lbl_private = Private then p.pat_type else
       let ty = newvar () in
-      let ppl = List.map (fun (_, l, p) -> l.lbl_pos, p) lpl in
+      let ppl = Nonempty_list.map (fun (_, l, p) -> l.lbl_pos, p) lpl in
       let do_label lbl =
         let _, ty_arg, ty_res = instance_label false lbl in
         unify_pat ~refine env {p with pat_type = ty} ty_res;
         let refinable =
-          lbl.lbl_mut = Immutable && List.mem_assoc lbl.lbl_pos ppl &&
+          lbl.lbl_mut = Immutable && Nonempty_list.mem_assoc lbl.lbl_pos ppl &&
           match get_desc lbl.lbl_arg with Tpoly _ -> false | _ -> true in
         if refinable then begin
-          let arg = List.assoc lbl.lbl_pos ppl in
+          let arg = Nonempty_list.assoc lbl.lbl_pos ppl in
           unify_pat ~refine env
             {arg with pat_type = build_as_type env arg} ty_arg
         end else begin
@@ -1271,6 +1271,10 @@ let map_fold_cont f xs k =
   List.fold_right (fun x k ys -> f x (fun y -> k (y :: ys)))
     xs (fun ys -> k (List.rev ys)) []
 
+let map_fold_cont_nonempty f xs k =
+  Nonempty_list.fold_right (fun x k ys -> f x (fun y -> k (y :: ys)))
+    xs (fun ys -> k (Nonempty_list.of_list_exn (List.rev ys))) []
+
 let type_label_a_list loc closed env usage type_lbl_a expected_type lid_a_list =
   let lbl_a_list =
     disambiguate_lid_a_list loc closed env usage expected_type lid_a_list
@@ -1287,8 +1291,7 @@ let type_label_a_list loc closed env usage type_lbl_a expected_type lid_a_list =
    no duplicate definitions (error); properly closed (warning) *)
 
 let check_recordpat_labels loc lbl_pat_list closed =
-  match lbl_pat_list with
-  | [] -> ()                            (* should not happen *)
+  match (lbl_pat_list : _ Nonempty_list.t) with
   | (_, label1, _) :: _ ->
       let all = label1.lbl_all in
       let defined = Array.make (Array.length all) false in
@@ -1296,7 +1299,7 @@ let check_recordpat_labels loc lbl_pat_list closed =
         if defined.(label.lbl_pos)
         then raise(Error(loc, Env.empty, Label_multiply_defined label.lbl_name))
         else defined.(label.lbl_pos) <- true in
-      List.iter check_defined lbl_pat_list;
+      Nonempty_list.iter check_defined lbl_pat_list;
       if closed = Closed
       && Warnings.is_active (Warnings.Missing_record_field_pattern "")
       then begin
@@ -1376,7 +1379,7 @@ let rec has_literal_pattern p = match p.ppat_desc with
   | Ppat_array ps ->
      List.exists has_literal_pattern ps
   | Ppat_record (ps, _) ->
-     List.exists (fun (_,p) -> has_literal_pattern p) ps
+     Nonempty_list.exists (fun (_,p) -> has_literal_pattern p) ps
   | Ppat_or (p, q) ->
      has_literal_pattern p || has_literal_pattern q
 
@@ -1679,7 +1682,6 @@ and type_pat_aux
         pat_attributes = sp.ppat_attributes;
         pat_env = !env }
   | Ppat_record(lid_sp_list, closed) ->
-      assert (lid_sp_list <> []);
       let expected_type, record_ty =
         match extract_concrete_record !env expected_ty with
         | Record_type(p0, p, _) ->
@@ -1706,11 +1708,13 @@ and type_pat_aux
         }
       in
       let lbl_a_list =
+        (* FIXME *)
         wrap_disambiguate "This record pattern is expected to have"
           (mk_expected expected_ty)
           (type_label_a_list loc false !env Env.Projection
              type_label_pat expected_type)
-          lid_sp_list
+          (Nonempty_list.to_list lid_sp_list)
+        |> Nonempty_list.of_list_exn
       in
       rvp @@ solve_expected (make_record_pat lbl_a_list)
   | Ppat_array spl ->
@@ -2162,7 +2166,7 @@ let rec check_counter_example_pat ~info ~env tp expected_ty k =
           solve_Ppat_record_field ~refine loc env label label_lid record_ty in
         check_rec targ ty_arg (fun arg -> k (label_lid, label, arg))
       in
-      map_fold_cont type_label_pat fields
+      map_fold_cont_nonempty type_label_pat fields
         (fun fields -> mkp k (Tpat_record (fields, closed)))
   | Tpat_array tpl ->
       let ty_elt = solve_Ppat_array ~refine loc env expected_ty in
@@ -2716,7 +2720,7 @@ let shallow_iter_ppat f p =
   | Ppat_exception p | Ppat_alias (p,_)
   | Ppat_open (_,p)
   | Ppat_constraint (p,_) | Ppat_lazy p -> f p
-  | Ppat_record (args, _flag) -> List.iter (fun (_,p) -> f p) args
+  | Ppat_record (args, _flag) -> Nonempty_list.iter (fun (_,p) -> f p) args
 
 let exists_ppat f p =
   let exception Found in
@@ -3219,7 +3223,6 @@ and type_expect_
           exp_env = env }
       end
   | Pexp_record(lid_sexp_list, opt_sexp) ->
-      assert (lid_sexp_list <> []);
       let opt_exp =
         match opt_sexp with
           None -> None
@@ -3267,12 +3270,14 @@ and type_expect_
       in
       let closed = (opt_sexp = None) in
       let lbl_exp_list =
+        (* FIXME *)
         wrap_disambiguate "This record expression is expected to have"
           (mk_expected ty_record)
           (type_label_a_list loc closed env Env.Construct
              (type_label_exp true env loc ty_record)
              expected_type)
-          lid_sexp_list
+          (Nonempty_list.to_list lid_sexp_list)
+        |> Nonempty_list.of_list_exn
       in
       with_explanation (fun () ->
         unify_exp_types loc env (instance ty_record) (instance ty_expected));
@@ -3287,11 +3292,11 @@ and type_expect_
             check_duplicates rem
         | [] -> ()
       in
-      check_duplicates lbl_exp_list;
+      check_duplicates (Nonempty_list.to_list lbl_exp_list);
       let opt_exp, label_definitions =
-        let (_lid, lbl, _lbl_exp) = List.hd lbl_exp_list in
+        let (_lid, lbl, _lbl_exp) = Nonempty_list.hd lbl_exp_list in
         let matching_label lbl =
-          List.find
+          Nonempty_list.find
             (fun (_, lbl',_) -> lbl'.lbl_pos = lbl.lbl_pos)
             lbl_exp_list
         in
@@ -3304,7 +3309,7 @@ and type_expect_
                       Overridden (lid, lbl_exp)
                   | exception Not_found ->
                       let present_indices =
-                        List.map (fun (_, lbl, _) -> lbl.lbl_pos) lbl_exp_list
+                        Nonempty_list.map_to_list (fun (_, lbl, _) -> lbl.lbl_pos) lbl_exp_list
                       in
                       let label_names = extract_label_names env ty_expected in
                       let rec missing_labels n = function
@@ -3314,7 +3319,7 @@ and type_expect_
                             then missing_labels (n + 1) rem
                             else lbl :: missing_labels (n + 1) rem
                       in
-                      let missing = missing_labels 0 label_names in
+                      let missing = missing_labels 0 (Nonempty_list.to_list label_names) in
                       raise(Error(loc, env, Label_missing missing)))
                 lbl.lbl_all
             in
@@ -3340,12 +3345,12 @@ and type_expect_
             Some {exp with exp_type = ty_exp}, label_definitions
       in
       let num_fields =
-        match lbl_exp_list with [] -> assert false
+        match lbl_exp_list with
         | (_, lbl,_)::_ -> Array.length lbl.lbl_all in
-      if opt_sexp <> None && List.length lid_sexp_list = num_fields then
+      if opt_sexp <> None && Nonempty_list.length lid_sexp_list = num_fields then
         Location.prerr_warning loc Warnings.Useless_record_with;
       let label_descriptions, representation =
-        let (_, { lbl_all; lbl_repres }, _) = List.hd lbl_exp_list in
+        let (_, { lbl_all; lbl_repres }, _) = Nonempty_list.hd lbl_exp_list in
         lbl_all, lbl_repres
       in
       let fields =
