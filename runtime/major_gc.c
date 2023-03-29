@@ -537,15 +537,9 @@ static void update_major_slice_work(void) {
   dom_st->allocated_words = 0;
   dom_st->dependent_allocated = 0;
   dom_st->extra_heap_resources = 0.0;
-  if (num_active_domains > 0){
-    my_alloc_count = alloc_backlog / num_active_domains;
-    my_dependent_count = dependent_backlog / num_active_domains;
-    my_extra_count = extra_backlog / num_active_domains;
-  }else{
-    my_alloc_count = alloc_backlog;
-    my_dependent_count = dependent_backlog;
-    my_extra_count = extra_backlog;
-  }
+  my_alloc_count = alloc_backlog;
+  my_dependent_count = dependent_backlog;
+  my_extra_count = extra_backlog;
   caml_plat_unlock (&accounting_lock);
   /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
@@ -680,15 +674,17 @@ static intnat get_major_slice_work(intnat howmuch) {
   return computed_work;
 }
 
-static void commit_major_slice_work(intnat words_done) {
+static void commit_major_slice_work(intnat words_done, intnat rem_budget) {
   caml_domain_state *dom_st = Caml_state;
 
   caml_gc_log ("GCSP: Commit major slice work: "
                " %"ARCH_INTNAT_PRINTF_FORMAT"d words_done, "
+               " %"ARCH_INTNAT_PRINTF_FORMAT"d remaining budget, "
                " %g alloc_ratio, "
                " %g dependent_ratio, "
                " %g extra_ratio",
-               words_done, dom_st->alloc_ratio, dom_st->dependent_ratio,
+               words_done, rem_budget,
+               dom_st->alloc_ratio, dom_st->dependent_ratio,
                dom_st->extra_ratio);
 
   caml_plat_lock (&accounting_lock);
@@ -696,11 +692,16 @@ static void commit_major_slice_work(intnat words_done) {
   alloc_backlog -= words_done / dom_st->alloc_ratio;
   dependent_backlog -= words_done / dom_st->dependent_ratio;
   extra_backlog -= words_done / dom_st->extra_ratio;
-  if (dom_st->is_actively_collecting && words_done < Major_slice_work_min){
+  if (alloc_backlog <= 0 && dependent_backlog <= 0 && extra_backlog <= 0){
+    /* We've done enough work by ourselves, no need to interrupt the other
+       domains. */
+    dom_st->requested_global_major_slice = 0;
+  }
+  if (dom_st->is_actively_collecting && rem_budget > 0){
     -- num_active_domains;
     dom_st->is_actively_collecting = 0;
   }
-  if (!dom_st->is_actively_collecting && words_done >= Major_slice_work_min){
+  if (!dom_st->is_actively_collecting && rem_budget <= 0){
     ++ num_active_domains;
     dom_st->is_actively_collecting = 1;
   }
@@ -1559,7 +1560,7 @@ static intnat major_collection_slice(intnat howmuch,
    * NB: needed particularly to avoid caml_ev spam when polling */
   if (mode == Slice_opportunistic &&
       !caml_opportunistic_major_work_available()) {
-    commit_major_slice_work (0);
+    commit_major_slice_work (0, budget);
     return budget;
   }
 
@@ -1731,7 +1732,7 @@ mark_again:
   /* We have at all times:
      computed_work = budget + interrupted_budget + (work done)
   */
-  commit_major_slice_work (computed_work - interrupted_budget - budget);
+  commit_major_slice_work (computed_work - interrupted_budget - budget, budget);
 
   if (mode != Slice_opportunistic && is_complete_phase_sweep_ephe()) {
     saved_major_cycle = caml_major_cycles_completed;

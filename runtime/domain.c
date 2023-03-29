@@ -1625,17 +1625,17 @@ void caml_poll_gc_work(void)
     caml_empty_minor_heaps_once();
   }
 
-  if (d->requested_global_major_slice) {
-    d->requested_global_major_slice = 0;
-    (void) caml_try_run_on_all_domains_async(
-             &global_major_slice_stw_handler, NULL, NULL);
-  }
-
   if (d->requested_major_slice) {
     CAML_EV_BEGIN(EV_MAJOR);
     d->requested_major_slice = 0;
     caml_major_collection_slice(AUTO_TRIGGERED_MAJOR_SLICE);
     CAML_EV_END(EV_MAJOR);
+  }
+
+  if (d->requested_global_major_slice) {
+    d->requested_global_major_slice = 0;
+    (void) caml_try_run_on_all_domains_async(
+             &global_major_slice_stw_handler, NULL, NULL);
   }
 
   if (atomic_load_acquire(&d->requested_external_interrupt)) {
