@@ -3430,7 +3430,7 @@ let add_method env label priv virt ty sign =
                 begin match field_kind_repr k with
                 | Fpublic -> ()
                 | Fprivate -> link_kind ~inside:k field_public
-                | Fabsent -> assert false
+                | Fabsent -> raise (Add_method_failed Unexpected_method)
                 end;
                 Mpublic
             | Private -> priv'
