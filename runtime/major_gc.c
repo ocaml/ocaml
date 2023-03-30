@@ -88,7 +88,6 @@ static caml_plat_mutex accounting_lock = CAML_PLAT_MUTEX_INITIALIZER;
   static intnat alloc_backlog;
   static intnat dependent_backlog;
   static double extra_backlog;
-  static int num_active_domains;
   /* For debugging only XXX */
   static uintnat total_alloc, total_dependent, total_work_done, total_slices;
   static double total_extra;
@@ -472,13 +471,13 @@ static void log_gc_speed (void) /* XXX debug */
 
   caml_gc_log ("GCSP avg: %"ARCH_INTNAT_PRINTF_FORMAT"u total alloc, "
                " %"ARCH_INTNAT_PRINTF_FORMAT"u total work, "
-               " %4.3g work/alloc",
+               " %.2f work/alloc",
                total_alloc, total_work_done,
                (double) total_work_done / (double) total_alloc);
   if (total_alloc != prev_alloc){
     caml_gc_log ("GCSP inst: %"ARCH_INTNAT_PRINTF_FORMAT"u total alloc, "
                  " %"ARCH_INTNAT_PRINTF_FORMAT"d total work, "
-                 " %4.3g work/alloc",
+                 " %.2f work/alloc",
                  total_alloc - prev_alloc, total_work_done - prev_work,
                  (double) (total_work_done - prev_work)
                  / (double) (total_alloc - prev_alloc));
@@ -674,16 +673,15 @@ static intnat get_major_slice_work(intnat howmuch) {
   return computed_work;
 }
 
-static void commit_major_slice_work(intnat words_done, intnat rem_budget) {
+static void commit_major_slice_work(intnat words_done) {
   caml_domain_state *dom_st = Caml_state;
 
   caml_gc_log ("GCSP: Commit major slice work: "
                " %"ARCH_INTNAT_PRINTF_FORMAT"d words_done, "
-               " %"ARCH_INTNAT_PRINTF_FORMAT"d remaining budget, "
                " %g alloc_ratio, "
                " %g dependent_ratio, "
                " %g extra_ratio",
-               words_done, rem_budget,
+               words_done,
                dom_st->alloc_ratio, dom_st->dependent_ratio,
                dom_st->extra_ratio);
 
@@ -696,14 +694,6 @@ static void commit_major_slice_work(intnat words_done, intnat rem_budget) {
     /* We've done enough work by ourselves, no need to interrupt the other
        domains. */
     dom_st->requested_global_major_slice = 0;
-  }
-  if (dom_st->is_actively_collecting && rem_budget > 0){
-    -- num_active_domains;
-    dom_st->is_actively_collecting = 0;
-  }
-  if (!dom_st->is_actively_collecting && rem_budget <= 0){
-    ++ num_active_domains;
-    dom_st->is_actively_collecting = 1;
   }
   caml_plat_unlock (&accounting_lock);
   //print_stats (1, words_done);
@@ -1374,13 +1364,6 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
   CAML_EV_COUNTER(EV_C_MAJOR_HEAP_LARGE_BLOCKS,
                   (uintnat)local_stats.large_blocks);
 
-  if (!domain->is_actively_collecting){
-    caml_plat_lock(&accounting_lock);
-    num_active_domains += 1;
-    domain->is_actively_collecting = 1;
-    caml_plat_unlock(&accounting_lock);
-  }
-
   domain->sweeping_done = 0;
 
   /* Mark roots for new cycle */
@@ -1560,7 +1543,7 @@ static intnat major_collection_slice(intnat howmuch,
    * NB: needed particularly to avoid caml_ev spam when polling */
   if (mode == Slice_opportunistic &&
       !caml_opportunistic_major_work_available()) {
-    commit_major_slice_work (0, budget);
+    commit_major_slice_work (0);
     return budget;
   }
 
@@ -1732,7 +1715,7 @@ mark_again:
   /* We have at all times:
      computed_work = budget + interrupted_budget + (work done)
   */
-  commit_major_slice_work (computed_work - interrupted_budget - budget, budget);
+  commit_major_slice_work (computed_work - interrupted_budget - budget);
 
   if (mode != Slice_opportunistic && is_complete_phase_sweep_ephe()) {
     saved_major_cycle = caml_major_cycles_completed;
@@ -1980,10 +1963,6 @@ void caml_teardown_major_gc(void) {
   caml_domain_state* d = Caml_state;
 
   caml_plat_lock (&accounting_lock);
-  if (d->is_actively_collecting){
-    -- num_active_domains;
-    d->is_actively_collecting = 0;
-  }
   total_alloc += d->allocated_words;
   total_dependent += d->dependent_allocated;
   total_extra += d->extra_heap_resources;
