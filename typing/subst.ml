@@ -342,6 +342,7 @@ let type_declaration s decl =
 let class_signature copy_scope s sign =
   { csig_self = typexp copy_scope s sign.csig_self;
     csig_self_row = typexp copy_scope s sign.csig_self_row;
+    csig_dummy_method = field_kind_internal_repr sign.csig_dummy_method;
     csig_vars =
       Vars.map
         (function (m, v, t) -> (m, v, typexp copy_scope s t))

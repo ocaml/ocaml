@@ -1019,7 +1019,7 @@ class type ['a] ct = object ('a) constraint 'a = < .. > end
 Line 2, characters 10-31:
 2 | class c : [ < a : int; ..> ] ct = object method a = 3 end;;
               ^^^^^^^^^^^^^^^^^^^^^
-Error: This non-virtual class has undeclared virtual methods.
+Error: This non-virtual class type has undeclared virtual methods.
        The following methods were not declared : a
 |}];;
 

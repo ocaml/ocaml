@@ -151,27 +151,18 @@ let rc node =
   node
 
 let update_class_signature loc env ~warn_implicit_public virt kind sign =
-  let implicit_public, implicit_declared =
-    Ctype.update_class_signature env sign
-  in
-  if implicit_declared <> [] then begin
+  let implicitly_public = Ctype.update_implicitly_public_methods sign in
+  if warn_implicit_public && implicitly_public <> [] then begin
+    Location.prerr_warning
+      loc (Warnings.Implicit_public_methods implicitly_public)
+  end;
+  let implicitly_declared = Ctype.update_implicitly_declared_methods env sign in
+  if implicitly_declared <> [] then begin
     match virt with
     | Virtual -> () (* Should perhaps emit warning 17 here *)
     | Concrete ->
-        raise (Error(loc, env, Undeclared_methods(kind, implicit_declared)))
-  end;
-  if warn_implicit_public && implicit_public <> [] then begin
-    Location.prerr_warning
-      loc (Warnings.Implicit_public_methods implicit_public)
+        raise (Error(loc, env, Undeclared_methods(kind, implicitly_declared)))
   end
-
-let complete_class_signature loc env virt kind sign =
-  update_class_signature loc env ~warn_implicit_public:false virt kind sign;
-  Ctype.hide_private_methods env sign
-
-let complete_class_type loc env virt kind typ =
-  let sign = Btype.signature_of_class_type typ in
-  complete_class_signature loc env virt kind sign
 
 let check_virtual loc env virt kind sign =
   match virt with
@@ -1373,14 +1364,21 @@ and class_expr_aux cl_num final val_env met_env virt self_scope scl =
                 class_expr cl_num Definitely_not_final
                   val_env met_env virt self_scope scl'
               in
-              complete_class_type cl.cl_loc val_env virt Class_type cl.cl_type;
+              let sign = Btype.signature_of_class_type cl.cl_type in
+              update_class_signature cl.cl_loc val_env
+                ~warn_implicit_public:false virt Class sign;
+              Ctype.remove_dummy_method sign;
+              Ctype.hide_private_methods sign;
               cl
             end
           and clty =
             Typetexp.TyVarEnv.with_local_scope begin fun () ->
               let clty = class_type val_env virt self_scope scty in
-              complete_class_type
-                clty.cltyp_loc val_env virt Class clty.cltyp_type;
+              let sign = Btype.signature_of_class_type clty.cltyp_type in
+              update_class_signature clty.cltyp_loc val_env
+                ~warn_implicit_public:false virt Class_type sign;
+              Ctype.remove_dummy_method sign;
+              Ctype.hide_private_methods sign;
               clty
             end
           in
@@ -1899,13 +1897,21 @@ let class_declaration env virt sexpr =
     class_expr (Int.to_string !class_num) Definitely_not_final
       env env virt self_scope sexpr
   in
-  complete_class_type expr.cl_loc env virt Class expr.cl_type;
+  let sign = Btype.signature_of_class_type expr.cl_type in
+  update_class_signature expr.cl_loc env
+    ~warn_implicit_public:false virt Class sign;
+  Ctype.remove_dummy_method sign;
+  Ctype.hide_private_methods sign;
   (expr, expr.cl_type)
 
 let class_description env virt sexpr =
   let self_scope = Ctype.get_current_level () in
   let expr = class_type env virt self_scope sexpr in
-  complete_class_type expr.cltyp_loc env virt Class_type expr.cltyp_type;
+  let sign = Btype.signature_of_class_type expr.cltyp_type in
+  update_class_signature expr.cltyp_loc env
+    ~warn_implicit_public:false virt Class_type sign;
+  Ctype.remove_dummy_method sign;
+  Ctype.hide_private_methods sign;
   (expr, expr.cltyp_type)
 
 let class_declarations env cls =
@@ -1946,7 +1952,7 @@ let type_object env loc s =
     class_structure (Int.to_string !class_num)
       Concrete Btype.lowest_level Definitely_final env env loc s
   in
-  complete_class_signature loc env Concrete Object desc.cstr_type;
+  Ctype.hide_private_methods desc.cstr_type;
   let meths = Btype.public_methods desc.cstr_type in
   (desc, meths)
 

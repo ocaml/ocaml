@@ -74,8 +74,11 @@ let o = new d
 
 let () = print_endline (o#n o)
 [%%expect{|
-Uncaught exception: File "typing/ctype.ml", line 3534, characters 13-19: Assertion failed
-
+Line 4, characters 34-37:
+4 |   method n (o : 'self) : string = o#m
+                                      ^^^
+Error: This expression has type int but an expression was expected of type
+         string
 |}]
 
 class d = object(self : 'self)
@@ -84,8 +87,7 @@ class d = object(self : 'self)
   method m = ()
 end
 [%%expect{|
-Uncaught exception: File "typing/ctype.ml", line 3534, characters 13-19: Assertion failed
-
+class d : object method m : unit end
 |}]
 
 let o = object(_ : 'self)

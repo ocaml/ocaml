@@ -1334,6 +1334,7 @@ let instance_class params cty =
         Cty_signature
           {csig_self = copy copy_scope sign.csig_self;
            csig_self_row = copy copy_scope sign.csig_self_row;
+           csig_dummy_method = field_kind_internal_repr sign.csig_dummy_method;
            csig_vars =
              Vars.map
                (function (m, v, ty) -> (m, v, copy copy_scope ty))
@@ -3353,32 +3354,24 @@ let rec filter_method_row env name priv ty =
       let level = get_level ty in
       let field = newvar2 level in
       let row = newvar2 level in
-      let kind, priv =
+      let kind =
         match priv with
-        | Private ->
-            let kind = field_private () in
-            kind, Mprivate kind
-        | Public ->
-            field_public, Mpublic
+        | Private -> field_private ()
+        | Public -> field_public
       in
       let ty' = newty2 ~level (Tfield (name, kind, field, row)) in
       link_type ty ty';
-      priv, field, row
+      kind, field, row
   | Tfield(n, kind, ty1, ty2) ->
       if n = name then begin
-        let priv =
-          match priv with
-          | Public ->
-              unify_kind kind field_public;
-              Mpublic
-          | Private -> Mprivate kind
-        in
-        priv, ty1, ty2
+        if priv = Public then
+          unify_kind kind field_public;
+        kind, ty1, ty2
       end else begin
         let level = get_level ty in
-        let priv, field, row = filter_method_row env name priv ty2 in
+        let kind', field, row = filter_method_row env name priv ty2 in
         let row = newty2 ~level (Tfield (n, kind, ty1, row)) in
-        priv, field, row
+        kind', field, row
       end
   | Tnil ->
       if name = Btype.dummy_method then raise Filter_method_row_failed
@@ -3388,7 +3381,7 @@ let rec filter_method_row env name priv ty =
         | Private ->
           let level = get_level ty in
           let kind = field_absent in
-          Mprivate kind, newvar2 level, ty
+          kind, newvar2 level, ty
       end
   | _ ->
       raise Filter_method_row_failed
@@ -3400,15 +3393,22 @@ let new_class_signature () =
   let self = newobj row in
   { csig_self = self;
     csig_self_row = row;
+    csig_dummy_method = field_absent;
     csig_vars = Vars.empty;
     csig_meths = Meths.empty; }
 
 let add_dummy_method env ~scope sign =
-  let _, ty, row =
+  assert (field_kind_repr sign.csig_dummy_method = Fabsent);
+  let kind, ty, row =
     filter_method_row env dummy_method Private sign.csig_self_row
   in
   unify env ty (new_scoped_ty scope (Ttuple []));
+  sign.csig_dummy_method <- kind;
   sign.csig_self_row <- row
+
+let remove_dummy_method sign =
+  assert (field_kind_repr sign.csig_dummy_method = Fprivate);
+  link_kind ~inside:sign.csig_dummy_method field_absent
 
 type add_method_failure =
   | Unexpected_method
@@ -3448,7 +3448,12 @@ let add_method env label priv virt ty sign =
     | exception Not_found -> begin
         let priv, ty', row =
           match filter_method_row env label priv sign.csig_self_row with
-          | priv, ty', row ->
+          | kind, ty', row ->
+              let priv =
+                match priv with
+                | Public -> Mpublic
+                | Private -> Mprivate kind
+              in
               priv, ty', row
           | exception Filter_method_row_failed ->
               raise (Add_method_failed Unexpected_method)
@@ -3547,59 +3552,58 @@ let inherit_class_signature ~strict env sign1 sign2 =
            raise (Inherit_class_signature_failed failure))
     sign2.csig_vars
 
-let update_class_signature env sign =
-  let self = expand_head env sign.Types.csig_self in
-  let fields, row = flatten_fields (object_fields self) in
-  let meths, implicitly_public, implicitly_declared =
+let update_implicitly_public_methods sign =
+  let meths = sign.csig_meths in
+  let meths, implicitly_public =
+    Meths.fold
+      (fun lab (priv, virt, ty) (meths, implicitly_public) ->
+         match priv with
+         | Mpublic -> meths, implicitly_public
+         | Mprivate k ->
+             match field_kind_repr k with
+             | Fprivate | Fabsent -> meths, implicitly_public
+             | Fpublic ->
+                 let meths = Meths.add lab (Mpublic, virt, ty) meths in
+                 let implicitly_public = lab :: implicitly_public in
+                 meths, implicitly_public)
+      meths (meths, [])
+  in
+  sign.csig_meths <- meths;
+  implicitly_public
+
+let update_implicitly_declared_methods env sign =
+  let row = expand_head env sign.Types.csig_self_row in
+  let fields, row = flatten_fields row in
+  let row_level = get_level row in
+  let meths, implicitly_declared, row =
     List.fold_left
-      (fun (meths, implicitly_public, implicitly_declared) (lab, k, ty) ->
-         if lab = dummy_method then
-           meths, implicitly_public, implicitly_declared
-         else begin
-           match Meths.find lab meths with
-           | priv, virt, ty' ->
-               let meths, implicitly_public =
-                 match priv, field_kind_repr k with
-                 | Mpublic, _ -> meths, implicitly_public
-                 | Mprivate _, Fpublic ->
-                     let meths = Meths.add lab (Mpublic, virt, ty') meths in
-                     let implicitly_public = lab :: implicitly_public in
-                     meths, implicitly_public
-                 | Mprivate _, _ -> meths, implicitly_public
-               in
-               meths, implicitly_public, implicitly_declared
-           | exception Not_found ->
-               let meths, implicitly_declared =
-                 match field_kind_repr k with
-                 | Fpublic ->
-                     let meths = Meths.add lab (Mpublic, Virtual, ty) meths in
-                     let implicitly_declared = lab :: implicitly_declared in
-                     meths, implicitly_declared
-                 | Fprivate ->
-                     let meths =
-                       Meths.add lab (Mprivate k, Virtual, ty) meths
-                     in
-                     let implicitly_declared = lab :: implicitly_declared in
-                     meths, implicitly_declared
-                 | Fabsent -> meths, implicitly_declared
-               in
-               meths, implicitly_public, implicitly_declared
-         end)
-      (sign.csig_meths, [], []) fields
+      (fun (meths, implicitly_declared, row) (lab, k, ty) ->
+         match field_kind_repr k with
+         | Fabsent -> assert false
+         | Fprivate ->
+             let row = newty2 ~level:row_level (Tfield (lab, k, ty, row)) in
+             meths, implicitly_declared, row
+         | Fpublic ->
+             let meths = Meths.add lab (Mpublic, Virtual, ty) meths in
+             let implicitly_declared = lab :: implicitly_declared in
+             meths, implicitly_declared, row)
+      (sign.csig_meths, [], row) fields
   in
   sign.csig_meths <- meths;
   sign.csig_self_row <- row;
-  implicitly_public, implicitly_declared
+  implicitly_declared
 
-let hide_private_methods env sign =
-  let self = expand_head env sign.Types.csig_self in
-  let fields, _ = flatten_fields (object_fields self) in
-  List.iter
-    (fun (_, k, _) ->
-       match field_kind_repr k with
-       | Fprivate -> link_kind ~inside:k field_absent
-       | _    -> ())
-    fields
+let hide_private_methods sign =
+  Meths.iter
+    (fun _ (priv, _, _) ->
+       match priv with
+       | Mpublic -> ()
+       | Mprivate k ->
+           match field_kind_repr k with
+           | Fpublic -> assert false
+           | Fabsent -> ()
+           | Fprivate -> link_kind ~inside:k field_absent)
+    sign.csig_meths
 
 let reveal_private_methods env sign =
   let meths = sign.csig_meths in
@@ -3610,11 +3614,11 @@ let reveal_private_methods env sign =
          | Mpublic -> (meths, row)
          | Mprivate kind ->
              assert (field_kind_repr kind = Fabsent);
-             let priv, ty', row =
+             let kind, ty', row =
                filter_method_row env lab Private row
              in
              unify env ty ty';
-             let meths = Meths.add lab (priv, virt, ty) meths in
+             let meths = Meths.add lab (Mprivate kind, virt, ty) meths in
              meths, row)
       meths (meths, sign.csig_self_row)
   in
@@ -3630,12 +3634,19 @@ let close_class_signature env sign =
         link_type ty (newty2 ~level Tnil); true
     | Tfield(lab, _, _, _) when lab = dummy_method ->
         false
-    | Tfield(_, _, _, ty') -> close env ty'
+    | Tfield(_, kind, _, ty') -> begin
+        match field_kind_repr kind with
+        | Fabsent -> assert false
+        | Fpublic -> false
+        | Fprivate ->
+            link_kind ~inside:kind field_absent;
+            close env ty'
+      end
     | Tnil -> true
     | _ -> assert false
   in
-  let self = expand_head env sign.csig_self in
-  close env (object_fields self)
+  let row = expand_head env sign.csig_self_row in
+  close env row
 
 let generalize_class_signature_spine env sign =
   (* Generalize the spine of methods *)
@@ -5423,6 +5434,7 @@ let nondep_extension_constructor env ids ext =
 let nondep_class_signature env id sign =
   { csig_self = nondep_type_rec env id sign.csig_self;
     csig_self_row = nondep_type_rec env id sign.csig_self_row;
+    csig_dummy_method = field_kind_internal_repr sign.csig_dummy_method;
     csig_vars =
       Vars.map (function (m, v, t) -> (m, v, nondep_type_rec env id t))
         sign.csig_vars;
