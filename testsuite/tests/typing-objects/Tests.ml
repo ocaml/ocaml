@@ -967,8 +967,8 @@ Line 4, characters 17-23:
 4 |       method n = self#m
                      ^^^^^^
 Warning 17 [undeclared-virtual-method]: the virtual method m is not declared.
+Uncaught exception: File "typing/ctype.ml", line 3534, characters 13-19: Assertion failed
 
-class c : object method m : int method n : int end
 |}];;
 
 class virtual c = object (self : 'c)
@@ -993,12 +993,7 @@ let o = object
   end;;
 [%%expect {|
 class ['a] c : object ('a) constraint 'a = < .. > end
-Line 4, characters 14-25:
-4 |     inherit [ < m : int > ] c
-                  ^^^^^^^^^^^
-Error: The type parameter < m : int >
-       does not meet its constraint: it should be < .. >
-       Self type cannot be unified with a closed object type
+val o : < m : int > = <obj>
 |}];;
 
 class type [ 'a ] d = object method a : 'a method b : 'a end

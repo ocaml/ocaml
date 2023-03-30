@@ -65,12 +65,17 @@ type kind =
   | Class_type
 
 type final =
-  | Final
-  | Not_final
+  | Definitely_final
+  | Maybe_final
+  | Definitely_not_final
 
 let kind_of_final = function
-  | Final -> Object
-  | Not_final -> Class
+  | Definitely_final -> Object
+  | Maybe_final | Definitely_not_final -> Class
+
+let inheriting_final = function
+  | Definitely_not_final -> Definitely_not_final
+  | Maybe_final | Definitely_final -> Maybe_final
 
 type error =
   | Unconsistent_constraint of Errortrace.unification_error
@@ -194,6 +199,13 @@ let rec constructor_type constr cty =
   | Cty_arrow (l, ty, cty) ->
       Ctype.newty (Tarrow (l, ty, constructor_type constr cty, commu_ok))
 
+let add_dummy_method env final ~scope sign =
+  match final with
+  | Definitely_not_final -> Ctype.add_dummy_method env ~scope sign
+  | Maybe_final | Definitely_final ->
+      (* Don't prevent closing the self type if it might be final *)
+      ()
+
                 (***********************************)
                 (*  Primitives for typing classes  *)
                 (***********************************)
@@ -290,8 +302,9 @@ let rec class_type_field env sign self_scope ctf =
       mkctf_with_attrs
         (fun () ->
           let parent = class_type env Virtual self_scope sparent in
-          complete_class_type parent.cltyp_loc
-            env Virtual Class_type parent.cltyp_type;
+          let parent_sign = Btype.signature_of_class_type parent.cltyp_type in
+          update_class_signature parent.cltyp_loc ~warn_implicit_public:false
+            env Virtual Class_type parent_sign;
           inherit_class_type ~strict:false loc env sign parent.cltyp_type;
           Tctf_inherit parent)
   | Pctf_val ({txt=lab}, mut, virt, sty) ->
@@ -563,7 +576,7 @@ type first_pass_accummulater =
     local_vals : VarSet.t;
     vars : Ident.t Vars.t; }
 
-let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
+let rec class_field_first_pass self_loc cl_num final sign self_scope acc cf =
   let { rev_fields; val_env; par_env; concrete_meths; concrete_vals;
         local_meths; local_vals; vars } = acc
   in
@@ -574,14 +587,15 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
   | Pcf_inherit (override, sparent, super) ->
       with_attrs
         (fun () ->
+           let final = inheriting_final final in
            let parent =
-             class_expr cl_num val_env par_env
+             class_expr cl_num final val_env par_env
                Virtual self_scope sparent
            in
-           complete_class_type parent.cl_loc
-             par_env Virtual Class parent.cl_type;
-           inherit_class_type ~strict:true loc val_env sign parent.cl_type;
            let parent_sign = Btype.signature_of_class_type parent.cl_type in
+           update_class_signature parent.cl_loc ~warn_implicit_public:false
+             par_env Virtual Class parent_sign;
+           inherit_class_type ~strict:true loc val_env sign parent.cl_type;
            let new_concrete_meths = Btype.concrete_methods parent_sign in
            let new_concrete_vals = Btype.concrete_instance_vars parent_sign in
            let over_meths = MethSet.inter new_concrete_meths concrete_meths in
@@ -820,7 +834,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
   | Pcf_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
-and class_fields_first_pass self_loc cl_num sign self_scope
+and class_fields_first_pass self_loc cl_num final sign self_scope
       val_env par_env cfs =
   let rev_fields = [] in
   let concrete_meths = MethSet.empty in
@@ -837,7 +851,7 @@ and class_fields_first_pass self_loc cl_num sign self_scope
     Builtin_attributes.warning_scope []
       (fun () ->
         List.fold_left
-          (class_field_first_pass self_loc cl_num sign self_scope)
+          (class_field_first_pass self_loc cl_num final sign self_scope)
           init_acc cfs)
   in
   List.rev acc.rev_fields, acc.vars
@@ -967,11 +981,9 @@ and class_structure cl_num virt self_scope final val_env met_env loc
   let sign = Ctype.new_class_signature () in
 
   (* Adding a dummy method to the signature prevents it from being closed /
-     escaping. That isn't needed for objects though. *)
-  begin match final with
-  | Not_final -> Ctype.add_dummy_method val_env ~scope:self_scope sign;
-  | Final -> ()
-  end;
+     escaping. *)
+  add_dummy_method val_env final ~scope:self_scope sign;
+
 
   (* Self binder *)
   let (self_pat, self_pat_vars) = type_self_pattern val_env spat in
@@ -994,7 +1006,7 @@ and class_structure cl_num virt self_scope final val_env met_env loc
 
   (* Typing of class fields *)
   let (fields, vars) =
-    class_fields_first_pass self_loc cl_num sign self_scope
+    class_fields_first_pass self_loc cl_num final sign self_scope
            val_env par_env str
   in
   let kind = kind_of_final final in
@@ -1013,10 +1025,10 @@ and class_structure cl_num virt self_scope final val_env met_env loc
       sign.csig_meths Meths.empty
   in
 
-  (* Close the signature if it is final *)
+  (* Close the signature if it is definitely final *)
   begin match final with
-  | Not_final -> ()
-  | Final ->
+  | Definitely_not_final | Maybe_final -> ()
+  | Definitely_final ->
       if not (Ctype.close_class_signature val_env sign) then
         raise(Error(loc, val_env, Closing_self_type sign));
   end;
@@ -1038,7 +1050,7 @@ and class_structure cl_num virt self_scope final val_env met_env loc
     class_fields_second_pass cl_num sign met_env fields
   in
 
-  (* Update the class signature and warn about public methods made private *)
+  (* Update the class signature and warn about private methods made public *)
   update_class_signature loc val_env
     ~warn_implicit_public:true virt kind sign;
 
@@ -1052,11 +1064,11 @@ and class_structure cl_num virt self_scope final val_env met_env loc
     cstr_type = sign;
     cstr_meths = meths; }
 
-and class_expr cl_num val_env met_env virt self_scope scl =
+and class_expr cl_num final val_env met_env virt self_scope scl =
   Builtin_attributes.warning_scope scl.pcl_attributes
-    (fun () -> class_expr_aux cl_num val_env met_env virt self_scope scl)
+    (fun () -> class_expr_aux cl_num final val_env met_env virt self_scope scl)
 
-and class_expr_aux cl_num val_env met_env virt self_scope scl =
+and class_expr_aux cl_num final val_env met_env virt self_scope scl =
   match scl.pcl_desc with
   | Pcl_constr (lid, styl) ->
       let (path, decl) = Env.lookup_class ~loc:scl.pcl_loc lid.txt val_env in
@@ -1072,7 +1084,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
       let clty' = Btype.abbreviate_class_type path params clty in
       (* Adding a dummy method to the self type prevents it from being closed /
          escaping. *)
-      Ctype.add_dummy_method val_env ~scope:self_scope
+      add_dummy_method val_env final ~scope:self_scope
         (Btype.signature_of_class_type clty');
       if List.length params <> List.length tyl then
         raise(Error(scl.pcl_loc, val_env,
@@ -1103,7 +1115,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
          }
   | Pcl_structure cl_str ->
       let desc =
-        class_structure cl_num virt self_scope Not_final
+        class_structure cl_num virt self_scope final
           val_env met_env scl.pcl_loc cl_str
       in
       rc {cl_desc = Tcl_structure desc;
@@ -1141,7 +1153,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
           (* Note: we don't put the '#default' attribute, as it
              is not detected for class-level let bindings.  See #5975.*)
       in
-      class_expr cl_num val_env met_env virt self_scope sfun
+      class_expr cl_num final val_env met_env virt self_scope sfun
   | Pcl_fun (l, None, spat, scl') ->
       let (pat, pv, val_env', met_env) =
         Ctype.with_local_level_if_principal
@@ -1180,7 +1192,9 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
       in
       let cl =
         Ctype.with_raised_nongen_level
-          (fun () -> class_expr cl_num val_env' met_env virt self_scope scl') in
+          (fun () ->
+             class_expr cl_num final val_env' met_env virt self_scope scl')
+      in
       if Btype.is_optional l && not_nolabel_function cl.cl_type then
         Location.prerr_warning pat.pat_loc
           Warnings.Unerasable_optional_argument;
@@ -1195,7 +1209,8 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
       assert (sargs <> []);
       let cl =
         Ctype.with_local_level_if_principal
-          (fun () -> class_expr cl_num val_env met_env virt self_scope scl')
+          (fun () ->
+             class_expr cl_num final val_env met_env virt self_scope scl')
           ~post:(fun cl -> Ctype.generalize_class_type_structure cl.cl_type)
       in
       let rec nonopt_labels ls ty_fun =
@@ -1334,7 +1349,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
           (let_bound_idents_full defs)
           ([], met_env)
       in
-      let cl = class_expr cl_num val_env met_env virt self_scope scl' in
+      let cl = class_expr cl_num final val_env met_env virt self_scope scl' in
       let () = if rec_flag = Recursive then
         check_recursive_bindings val_env defs
       in
@@ -1350,7 +1365,10 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
           let self_scope = Ctype.get_current_level () in
           let cl =
             Typetexp.TyVarEnv.with_local_scope begin fun () ->
-              let cl = class_expr cl_num val_env met_env virt self_scope scl' in
+              let cl =
+                class_expr cl_num Definitely_not_final
+                  val_env met_env virt self_scope scl'
+              in
               complete_class_type cl.cl_loc val_env virt Class_type cl.cl_type;
               cl
             end
@@ -1379,7 +1397,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
       let ty = snd (Ctype.instance_class [] clty.cltyp_type) in
       (* Adding a dummy method to the self type prevents it from being closed /
          escaping. *)
-      Ctype.add_dummy_method val_env ~scope:self_scope
+      add_dummy_method val_env final ~scope:self_scope
         (Btype.signature_of_class_type ty);
       rc {cl_desc = Tcl_constraint (cl, Some clty, vals, meths, concrs);
           cl_loc = scl.pcl_loc;
@@ -1391,7 +1409,9 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
       let used_slot = ref false in
       let (od, new_val_env) = !type_open_descr ~used_slot val_env pod in
       let ( _, new_met_env) = !type_open_descr ~used_slot met_env pod in
-      let cl = class_expr cl_num new_val_env new_met_env virt self_scope e in
+      let cl =
+        class_expr cl_num final new_val_env new_met_env virt self_scope e
+      in
       rc {cl_desc = Tcl_open (od, cl);
           cl_loc = scl.pcl_loc;
           cl_type = cl.cl_type;
@@ -1873,7 +1893,8 @@ let class_declaration env virt sexpr =
   incr class_num;
   let self_scope = Ctype.get_current_level () in
   let expr =
-    class_expr (Int.to_string !class_num) env env virt self_scope sexpr
+    class_expr (Int.to_string !class_num) Definitely_not_final
+      env env virt self_scope sexpr
   in
   complete_class_type expr.cl_loc env virt Class expr.cl_type;
   (expr, expr.cl_type)
@@ -1920,7 +1941,7 @@ let type_object env loc s =
   incr class_num;
   let desc =
     class_structure (Int.to_string !class_num)
-      Concrete Btype.lowest_level Final env env loc s
+      Concrete Btype.lowest_level Definitely_final env env loc s
   in
   complete_class_signature loc env Concrete Object desc.cstr_type;
   let meths = Btype.public_methods desc.cstr_type in

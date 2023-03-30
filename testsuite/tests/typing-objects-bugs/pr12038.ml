@@ -23,8 +23,20 @@ Line 5, characters 16-22:
 5 |   method q () = self#z ()
                     ^^^^^^
 Warning 17 [undeclared-virtual-method]: the virtual method z is not declared.
-Uncaught exception: File "typing/ctype.ml", line 3433, characters 29-35: Assertion failed
 
+class virtual ['a] x :
+  object ('a)
+    constraint 'a = < q : unit -> unit; .. >
+    method q : unit -> unit
+    method private virtual z : unit -> unit
+  end
+and virtual ['a] x' :
+  object ('a)
+    constraint 'a = < q : unit -> unit; .. >
+    method q : unit -> unit
+    method private virtual z : unit -> unit
+  end
+and y : object method q : unit -> unit method z : unit -> unit end
 |}]
 
 (* Variations on the same theme *)
@@ -62,7 +74,7 @@ let o = new d
 
 let () = print_endline (o#n o)
 [%%expect{|
-Uncaught exception: File "typing/ctype.ml", line 3433, characters 29-35: Assertion failed
+Uncaught exception: File "typing/ctype.ml", line 3534, characters 13-19: Assertion failed
 
 |}]
 
@@ -72,7 +84,7 @@ class d = object(self : 'self)
   method m = ()
 end
 [%%expect{|
-Uncaught exception: File "typing/ctype.ml", line 3433, characters 29-35: Assertion failed
+Uncaught exception: File "typing/ctype.ml", line 3534, characters 13-19: Assertion failed
 
 |}]
 

@@ -253,16 +253,9 @@ let can_close_object_via_inheritance param =
     inherit parameter_contains_self param
   end;;
 [%%expect{|
-Line 3, characters 36-41:
-3 |     inherit parameter_contains_self param
-                                        ^^^^^
-Error: This expression has type
-         < redrawWidget : parameter_contains_self -> unit; .. >
-       but an expression was expected of type
-         < redrawWidget : < invalidate : unit; .. > -> unit; .. >
-       Type parameter_contains_self = < invalidate : unit >
-       is not compatible with type < invalidate : unit; .. >
-       Self type cannot be unified with a closed object type
+val can_close_object_via_inheritance :
+  < redrawWidget : parameter_contains_self -> unit; .. > ->
+  parameter_contains_self = <fun>
 |}]
 
 let can_escape_object_via_inheritance param = object
@@ -281,17 +274,13 @@ end;;
 val can_close_object_explicitly : < i : int > = <obj>
 |}]
 
-let cannot_close_object_explicitly_with_inheritance = object
+let can_close_object_explicitly_with_inheritance = object
   inherit object (_ : < i : int >)
     method i = 5
   end
 end;;
 [%%expect{|
-Line 2, characters 17-34:
-2 |   inherit object (_ : < i : int >)
-                     ^^^^^^^^^^^^^^^^^
-Error: This pattern cannot match self: it only matches values of type
-       < i : int >
+val can_close_object_explicitly_with_inheritance : < i : int > = <obj>
 |}]
 
 class closes_after_constraint =
