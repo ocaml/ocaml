@@ -5,7 +5,7 @@
 - : unit = ()
 #       - : int = 5
 - : unit = ()
-#     - : int = 7
+#   * - : int = 7
 #   Line 2, characters 9-11:
 2 | 8;; let 9;; 10;; (* Syntax error in second phrase. *)
              ^^

@@ -239,13 +239,15 @@ let read_input_default prompt buffer len =
 
 let read_interactive_input = ref read_input_default
 
+let comment_prompt_override = ref false
+
 let refill_lexbuf buffer len =
   if !got_eof then (got_eof := false; 0) else begin
     let prompt =
       if !Clflags.noprompt then ""
       else if !first_line then "# "
       else if !Clflags.nopromptcont then ""
-      else if Lexer.in_comment () then "* "
+      else if Lexer.in_comment () || !comment_prompt_override then "* "
       else "  "
     in
     first_line := false;

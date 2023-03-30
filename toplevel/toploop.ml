@@ -220,7 +220,8 @@ let is_blank_with_linefeed lb =
                                    | Unterminated_string_in_comment _), _)) ->
             (* In this case we don't know whether there will be a token
                before the next linefeed, so get more chars and continue. *)
-            lb.refill_buff lb;
+            Misc.protect_refs [ R (comment_prompt_override, true) ]
+              (fun () -> lb.refill_buff lb);
             loop ()
         | exception _ -> false (* syntax error *)
       end
