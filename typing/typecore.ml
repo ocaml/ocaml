@@ -3345,8 +3345,7 @@ and type_expect_
             Some {exp with exp_type = ty_exp}, label_definitions
       in
       let num_fields =
-        match lbl_exp_list with
-        | (_, lbl,_)::_ -> Array.length lbl.lbl_all in
+        let (_, lbl,_)::_ = lbl_exp_list in Array.length lbl.lbl_all in
       if opt_sexp <> None && Nonempty_list.length lid_sexp_list = num_fields then
         Location.prerr_warning loc Warnings.Useless_record_with;
       let label_descriptions, representation =
