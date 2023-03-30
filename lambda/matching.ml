@@ -447,7 +447,7 @@ let matcher discr (p : Simple.pattern) rem =
       no ()
   | Record l, Record l' ->
       (* we already expanded the record fully *)
-      yesif (Nonempty_list.length l = Nonempty_list.length l')
+      yesif (Nonempty_list.compare_lengths l l' = 0)
   | Record _, (Constant _ | Construct _ | Variant _ | Lazy | Array _ | Tuple _)
     ->
       no ()

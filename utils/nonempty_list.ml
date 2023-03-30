@@ -31,22 +31,10 @@ let iter f = function
   | a::l -> f a; List.iter f l
 
 let map f = function
-  | [a1] ->
-      let r1 = f a1 in
-      [r1]
-  | a1::a2::l ->
-      let r1 = f a1 in
-      let r2 = f a2 in
-      r1::r2::List.map f l
+  | a::l -> let r1 = f a in r1:: List.map f l
 
 let map_to_list f = function
-  | [a1] ->
-      let r1 = f a1 in
-      List.([r1])
-  | a1::a2::l ->
-      let r1 = f a1 in
-      let r2 = f a2 in
-      List.(r1::r2::map f l)
+  | a::l -> let r1 = f a in List.cons r1 (List.map f l)
 
 let[@tail_mod_cons] rec mapi_list i f l =
   match (l : _ list) with
