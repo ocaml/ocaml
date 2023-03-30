@@ -187,30 +187,45 @@ let load_ocamlinit ppf =
 
 exception PPerror
 
-(* Refill the buffer until the linefeed or end-of-file is read and
-   check that its contents can be ignored.
+let ends_with_lf lb =
+  let open Lexing in
+  Bytes.get lb.lex_buffer (lb.lex_buffer_len - 1) = '\n'
+
+(* Refill the buffer until the next linefeed or end-of-file that is not
+   inside a comment and check that its contents can be ignored.
+   We do this check by making a copy  of the lexbuf and trying to get
+   a token from it.
 *)
 let is_blank_with_linefeed lb =
   let open Lexing in
   if Bytes.get lb.lex_buffer lb.lex_curr_pos = '\n' then
+    (* shortcut for the most usual case *)
     true
   else begin
-    let rec has_lf i =
-      if i >= lb.lex_buffer_len then false else
-        match Bytes.get lb.lex_buffer i with
-        | '\010' -> true
-        | _ -> has_lf (i+1)
+    let rec loop () =
+      if not (lb.lex_eof_reached || ends_with_lf lb) then begin
+        (* Make sure the buffer does not contain a truncated line. *)
+        lb.refill_buff lb;
+        loop ()
+      end else begin
+        (* Make a copy of the buffer. *)
+        let len = lb.lex_buffer_len - lb.lex_curr_pos in
+        let s = Bytes.sub_string lb.lex_buffer lb.lex_curr_pos len in
+        let shadow = Lexing.from_string s in
+        (* Check for tokens in the copy. *)
+        match Lexer.token shadow with
+        | EOF -> true (* no tokens *)
+        | _ -> false (* some token *)
+        | exception Lexer.(Error ((Unterminated_comment _
+                                   | Unterminated_string_in_comment _), _)) ->
+            (* In this case we don't know whether there will be a token
+               before the next linefeed, so get more chars and continue. *)
+            lb.refill_buff lb;
+            loop ()
+        | exception _ -> false (* syntax error *)
+      end
     in
-    while not (lb.lex_eof_reached || has_lf lb.lex_curr_pos) do
-      lb.refill_buff lb
-    done;
-    let len = lb.lex_buffer_len - lb.lex_curr_pos in
-    let s = Bytes.sub_string lb.lex_buffer lb.lex_curr_pos len in
-    let shadow = Lexing.from_string s in
-    match Lexer.token shadow with
-    | EOF -> true
-    | _ -> false
-    | exception _ -> false
+    loop ()
   end
 
 (* Read and parse toplevel phrases, stop when a complete phrase has been
@@ -246,10 +261,12 @@ let process_phrases ppf snap phrs =
   | [] -> ()
   | phr :: rest ->
     process_phrase ppf snap phr;
-    if rest <> [] then
+    if rest <> [] then begin
+      let process ph = Location.reset (); process_phrase ppf snap ph in
       Misc.protect_refs
         Location.[R (report_printer, fun () -> batch_mode_printer)]
-        (fun () -> List.iter (process_phrase ppf snap) rest)
+        (fun () -> List.iter process rest)
+    end
 
 let loop ppf =
   Clflags.debug := true;
