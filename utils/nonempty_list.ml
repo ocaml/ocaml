@@ -1,12 +1,7 @@
 
 type 'a t = (::) of 'a * 'a list
 
-let rec length_aux len (l : _ list) =
-  match l with
-    [] -> len
-  | _::l -> length_aux (len + 1) l
-
-let length (_::l) = length_aux 1 l
+let length (_::l) = 1 + List.length l
 
 let compare_lengths (_::l1) (_::l2) = List.compare_lengths l1 l2
 
@@ -36,19 +31,8 @@ let map f = function
 let map_to_list f = function
   | a::l -> let r1 = f a in List.cons r1 (List.map f l)
 
-let[@tail_mod_cons] rec mapi_list i f l =
-  match (l : _ list) with
-  | [] -> []
-  | [a1] ->
-      let r1 = f i a1 in
-      List.([r1])
-  | a1::a2::l ->
-      let r1 = f i a1 in
-      let r2 = f (i+1) a2 in
-      let open List in
-      r1::r2::(mapi_list (i+2) f l)
-and mapi f (x :: xs) =
-  f 0 x :: mapi_list 1 f xs
+let mapi f (x :: xs) =
+  f 0 x :: List.mapi (fun i x -> f (i+1) x) xs
 
 let fold_left f accu l =
   match l with
