@@ -434,11 +434,11 @@ let rec fields_row_variable ty =
 (**** Object name manipulation ****)
 (* +++ Bientot obsolete *)
 
-let set_object_name id params ty =
+let set_object_name p params ty =
   match get_desc ty with
   | Tobject (fi, nm) ->
       let rv = fields_row_variable fi in
-      set_name nm (Some (Path.Pident id, rv::params))
+      set_name nm (Some (p, rv::params))
   | Tconstr (_, _, _) -> ()
   | _ -> fatal_error "Ctype.set_object_name"
 
@@ -3530,9 +3530,7 @@ let inherit_class_signature ~strict env sign1 sign2 =
        let priv =
          match priv with
          | Mpublic -> Public
-         | Mprivate kind ->
-             assert (field_kind_repr kind = Fabsent);
-             Private
+         | Mprivate _ -> Private
        in
        match add_method env label priv virt ty sign1 with
        | () -> ()
@@ -3602,6 +3600,26 @@ let hide_private_methods env sign =
        | Fprivate -> link_kind ~inside:k field_absent
        | _    -> ())
     fields
+
+let reveal_private_methods env sign =
+  let meths = sign.csig_meths in
+  let meths, row =
+    Meths.fold
+      (fun lab (priv, virt, ty) (meths, row) ->
+         match priv with
+         | Mpublic -> (meths, row)
+         | Mprivate kind ->
+             assert (field_kind_repr kind = Fabsent);
+             let priv, ty', row =
+               filter_method_row env lab Private row
+             in
+             unify env ty ty';
+             let meths = Meths.add lab (priv, virt, ty) meths in
+             meths, row)
+      meths (meths, sign.csig_self_row)
+  in
+  sign.csig_meths <- meths;
+  sign.csig_self_row <- row
 
 let close_class_signature env sign =
   let rec close env ty =

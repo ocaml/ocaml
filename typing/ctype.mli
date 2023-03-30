@@ -117,7 +117,7 @@ val associate_fields:
         (string * field_kind * type_expr) list
 val opened_object: type_expr -> bool
 val set_object_name:
-        Ident.t -> type_expr list -> type_expr -> unit
+        Path.t -> type_expr list -> type_expr -> unit
 val remove_object_name: type_expr -> unit
 val find_cltype_for_path: Env.t -> Path.t -> type_declaration * type_expr
 
@@ -387,6 +387,7 @@ val update_class_signature :
   Env.t -> class_signature -> label list * label list
 
 val hide_private_methods : Env.t -> class_signature -> unit
+val reveal_private_methods : Env.t -> class_signature -> unit
 
 val close_class_signature : Env.t -> class_signature -> bool
 

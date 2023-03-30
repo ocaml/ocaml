@@ -398,10 +398,12 @@ and class_type_aux env virt self_scope scty =
       let (params, clty) =
         Ctype.instance_class decl.clty_params decl.clty_type
       in
+      let sign = Btype.signature_of_class_type clty in
       (* Adding a dummy method to the self type prevents it from being closed /
          escaping. *)
-      Ctype.add_dummy_method env ~scope:self_scope
-        (Btype.signature_of_class_type clty);
+      Ctype.add_dummy_method env ~scope:self_scope sign;
+      Ctype.reveal_private_methods env sign;
+      Ctype.set_object_name path params sign.csig_self;
       if List.length params <> List.length styl then
         raise(Error(scty.pcty_loc, env,
                     Parameter_arity_mismatch (lid.txt, List.length params,
@@ -1082,10 +1084,12 @@ and class_expr_aux cl_num final val_env met_env virt self_scope scl =
         Ctype.instance_class decl.cty_params decl.cty_type
       in
       let clty' = Btype.abbreviate_class_type path params clty in
+      let sign = Btype.signature_of_class_type clty' in
       (* Adding a dummy method to the self type prevents it from being closed /
          escaping. *)
-      add_dummy_method val_env final ~scope:self_scope
-        (Btype.signature_of_class_type clty');
+      add_dummy_method val_env final ~scope:self_scope sign;
+      Ctype.reveal_private_methods val_env sign;
+      Ctype.set_object_name path params sign.csig_self;
       if List.length params <> List.length tyl then
         raise(Error(scl.pcl_loc, val_env,
                     Parameter_arity_mismatch (lid.txt, List.length params,
@@ -1395,10 +1399,9 @@ and class_expr_aux cl_num final val_env met_env virt self_scope scl =
       end;
       let (vals, meths, concrs) = extract_constraints clty.cltyp_type in
       let ty = snd (Ctype.instance_class [] clty.cltyp_type) in
-      (* Adding a dummy method to the self type prevents it from being closed /
-         escaping. *)
-      add_dummy_method val_env final ~scope:self_scope
-        (Btype.signature_of_class_type ty);
+      let sign = Btype.signature_of_class_type ty in
+      add_dummy_method val_env final ~scope:self_scope sign;
+      Ctype.reveal_private_methods val_env sign;
       rc {cl_desc = Tcl_constraint (cl, Some clty, vals, meths, concrs);
           cl_loc = scl.pcl_loc;
           cl_type = ty;
@@ -1598,7 +1601,7 @@ let class_infos define_class kind
     end
   end;
 
-  Ctype.set_object_name obj_id params (Btype.self_type typ);
+  Ctype.set_object_name (Path.Pident obj_id) params (Btype.self_type typ);
 
   (* Check the other temporary abbreviation (#-type) *)
   begin
@@ -1702,7 +1705,7 @@ let class_infos define_class kind
   let (cl_params, cl_ty) =
     Ctype.instance_parameterized_type params (Btype.self_type typ)
   in
-  Ctype.set_object_name obj_id cl_params cl_ty;
+  Ctype.set_object_name (Path.Pident obj_id) cl_params cl_ty;
   let cl_abbr =
     { cl_td with
      type_params = cl_params;
