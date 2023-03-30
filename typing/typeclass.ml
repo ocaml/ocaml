@@ -1347,6 +1347,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
   | Pcl_constraint (scl', scty) ->
       let cl, clty =
         Ctype.with_local_level_for_class begin fun () ->
+          let self_scope = Ctype.get_current_level () in
           let cl =
             Typetexp.TyVarEnv.with_local_scope begin fun () ->
               let cl = class_expr cl_num val_env met_env virt self_scope scl' in

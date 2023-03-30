@@ -43,8 +43,12 @@ let o = new d
 let () = print_endline (o#n o)
 [%%expect{|
 class ['a] c : object ('a) constraint 'a = < .. > end
-Uncaught exception: File "typing/ctype.ml", line 3433, characters 29-35: Assertion failed
-
+Line 5, characters 12-17:
+5 |   inherit (['self] c : object ('self) method virtual private m : int end)
+                ^^^^^
+Error: The type parameter < .. > does not meet its constraint: it should be
+         < .. >
+       Self type cannot escape its class
 |}]
 
 class d = object(self : 'self)
