@@ -1479,7 +1479,7 @@ and record_declaration ctxt f lbls =
       (attributes ctxt) pld.pld_attributes
   in
   pp f "{@\n%a}"
-    (list type_record_field ~sep:";@\n" )  lbls
+    (nonempty_list type_record_field ~sep:";@\n" )  lbls
 
 and type_declaration ctxt f x =
   (* type_declaration has an attribute field,
@@ -1517,7 +1517,7 @@ and type_declaration ctxt f x =
       in pp f "%t%t%a" intro priv variants xs
     | Ptype_abstract -> ()
     | Ptype_record l ->
-        pp f "%t%t@;%a" intro priv (record_declaration ctxt) (Nonempty_list.to_list l)
+        pp f "%t%t@;%a" intro priv (record_declaration ctxt) l
     | Ptype_open -> pp f "%t%t@;.." intro priv
   in
   let constraints f =
@@ -1561,7 +1561,7 @@ and constructor_declaration ctxt f (name, vars, args, res, attrs) =
            | Pcstr_tuple [] -> ()
            | Pcstr_tuple l ->
              pp f "@;of@;%a" (list (core_type1 ctxt) ~sep:"@;*@;") l
-           | Pcstr_record l -> pp f "@;of@;%a" (record_declaration ctxt) (Nonempty_list.to_list l)
+           | Pcstr_record l -> pp f "@;of@;%a" (record_declaration ctxt) l
         ) args
         (attributes ctxt) attrs
   | Some r ->
@@ -1573,7 +1573,7 @@ and constructor_declaration ctxt f (name, vars, args, res, attrs) =
                                 (list (core_type1 ctxt) ~sep:"@;*@;") l
                                 (core_type1 ctxt) r
            | Pcstr_record l ->
-               pp f "%a@;->@;%a" (record_declaration ctxt) (Nonempty_list.to_list l) (core_type1 ctxt) r
+               pp f "%a@;->@;%a" (record_declaration ctxt) l (core_type1 ctxt) r
         )
         args
         (attributes ctxt) attrs

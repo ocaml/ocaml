@@ -38,8 +38,6 @@ let iterator =
   let super = Ast_iterator.default_iterator in
   let type_declaration self td =
     super.type_declaration self td;
-    match td.ptype_kind with
-    | _ -> ()
   in
   let typ self ty =
     super.typ self ty;
