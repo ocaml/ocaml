@@ -724,7 +724,7 @@ endif
 
 ## List of object files for each target
 
-libcamlrun_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.b.$(O))
+libcamlrun_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.b.$(O)) ./runtime/target/debug/librusttime.a
 
 libcamlrun_non_shared_OBJECTS = \
   $(subst $(UNIX_OR_WIN32).b.$(O),$(UNIX_OR_WIN32)_non_shared.b.$(O), \
@@ -855,11 +855,14 @@ runtime/build_config.h: $(ROOTDIR)/Makefile.config $(SAK)
 
 ## Runtime libraries and programs
 
-runtime/ocamlrun$(EXE): runtime/prims.$(O) runtime/libcamlrun.$(A)
-	$(V_MKEXE)$(MKEXE) -o $@ $^ $(BYTECCLIBS)
+runtime/target/debug/librusttime.a: runtime/src/lib.rs
+	@ cd runtime && cargo build
+
+runtime/ocamlrun$(EXE): runtime/prims.$(O) runtime/libcamlrun.$(A) 
+	$(V_MKEXE)$(MKEXE) -o $@ $^ $(BYTECCLIBS) -lrusttime -L./runtime/target/debug
 
 runtime/ocamlruns$(EXE): runtime/prims.$(O) runtime/libcamlrun_non_shared.$(A)
-	$(V_MKEXE)$(call MKEXE_VIA_CC,$@,$^ $(BYTECCLIBS))
+	$(V_MKEXE)$(call MKEXE_VIA_CC,$@,$^ $(BYTECCLIBS)) -lrusttime -L./runtime/target/debug
 
 runtime/libcamlrun.$(A): $(libcamlrun_OBJECTS)
 	$(V_MKLIB)$(call MKLIB,$@, $^)
@@ -868,13 +871,13 @@ runtime/libcamlrun_non_shared.$(A): $(libcamlrun_non_shared_OBJECTS)
 	$(V_MKLIB)$(call MKLIB,$@, $^)
 
 runtime/ocamlrund$(EXE): runtime/prims.$(O) runtime/libcamlrund.$(A)
-	$(V_MKEXE)$(MKEXE) $(MKEXEDEBUGFLAG) -o $@ $^ $(BYTECCLIBS)
+	$(V_MKEXE)$(MKEXE) $(MKEXEDEBUGFLAG) -o $@ $^ $(BYTECCLIBS) -lrusttime -L./runtime/target/debug
 
 runtime/libcamlrund.$(A): $(libcamlrund_OBJECTS)
 	$(V_MKLIB)$(call MKLIB,$@, $^)
 
 runtime/ocamlruni$(EXE): runtime/prims.$(O) runtime/libcamlruni.$(A)
-	$(V_MKEXE)$(MKEXE) -o $@ $^ $(INSTRUMENTED_RUNTIME_LIBS) $(BYTECCLIBS)
+	$(V_MKEXE)$(MKEXE) -o $@ $^ $(INSTRUMENTED_RUNTIME_LIBS) $(BYTECCLIBS) -lrusttime -L./runtime/target/debug
 
 runtime/libcamlruni.$(A): $(libcamlruni_OBJECTS)
 	$(V_MKLIB)$(call MKLIB,$@, $^)
