@@ -64,6 +64,7 @@ V_LINKC      =
 V_LINKOPT    =
 V_MKEXE      =
 V_MKLIB      =
+V_UPLIB      =
 V_MKDLL      =
 V_OCAMLLEX   =
 V_OCAMLYACC  =
