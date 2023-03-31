@@ -724,7 +724,7 @@ endif
 
 ## List of object files for each target
 
-libcamlrun_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.b.$(O)) ./runtime/target/debug/librusttime.a
+libcamlrun_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.b.$(O))
 
 libcamlrun_non_shared_OBJECTS = \
   $(subst $(UNIX_OR_WIN32).b.$(O),$(UNIX_OR_WIN32)_non_shared.b.$(O), \
@@ -858,47 +858,56 @@ runtime/build_config.h: $(ROOTDIR)/Makefile.config $(SAK)
 runtime/target/debug/librusttime.a: runtime/src/lib.rs
 	@ cd runtime && cargo build
 
-runtime/ocamlrun$(EXE): runtime/prims.$(O) runtime/libcamlrun.$(A) 
-	$(V_MKEXE)$(MKEXE) -o $@ $^ $(BYTECCLIBS) -lrusttime -L./runtime/target/debug
+runtime/ocamlrun$(EXE): runtime/prims.$(O) runtime/libcamlrun.$(A)
+	$(V_MKEXE)$(MKEXE) -o $@ $^ $(BYTECCLIBS)
 
 runtime/ocamlruns$(EXE): runtime/prims.$(O) runtime/libcamlrun_non_shared.$(A)
-	$(V_MKEXE)$(call MKEXE_VIA_CC,$@,$^ $(BYTECCLIBS)) -lrusttime -L./runtime/target/debug
+	$(V_MKEXE)$(call MKEXE_VIA_CC,$@,$^ $(BYTECCLIBS))
 
-runtime/libcamlrun.$(A): $(libcamlrun_OBJECTS)
-	$(V_MKLIB)$(call MKLIB,$@, $^)
+runtime/libcamlrun.$(A): $(libcamlrun_OBJECTS) runtime/target/debug/librusttime.a
+	cp runtime/target/debug/librusttime.a $@
+	$(V_UPLIB)$(call UPLIB,$@, $(libcamlrun_OBJECTS))
 
-runtime/libcamlrun_non_shared.$(A): $(libcamlrun_non_shared_OBJECTS)
-	$(V_MKLIB)$(call MKLIB,$@, $^)
+runtime/libcamlrun_non_shared.$(A): $(libcamlrun_non_shared_OBJECTS) runtime/target/debug/librusttime.a
+	cp runtime/target/debug/librusttime.a $@
+	$(V_UPLIB)$(call UPLIB,$@, $(libcamlrun_non_shared_OBJECTS))
 
 runtime/ocamlrund$(EXE): runtime/prims.$(O) runtime/libcamlrund.$(A)
-	$(V_MKEXE)$(MKEXE) $(MKEXEDEBUGFLAG) -o $@ $^ $(BYTECCLIBS) -lrusttime -L./runtime/target/debug
+	$(V_MKEXE)$(MKEXE) $(MKEXEDEBUGFLAG) -o $@ $^ $(BYTECCLIBS)
 
-runtime/libcamlrund.$(A): $(libcamlrund_OBJECTS)
-	$(V_MKLIB)$(call MKLIB,$@, $^)
+runtime/libcamlrund.$(A): $(libcamlrund_OBJECTS) runtime/target/debug/librusttime.a
+	cp runtime/target/debug/librusttime.a $@
+	$(V_UPLIB)$(call UPLIB,$@, $(libcamlrund_OBJECTS))
 
 runtime/ocamlruni$(EXE): runtime/prims.$(O) runtime/libcamlruni.$(A)
-	$(V_MKEXE)$(MKEXE) -o $@ $^ $(INSTRUMENTED_RUNTIME_LIBS) $(BYTECCLIBS) -lrusttime -L./runtime/target/debug
+	$(V_MKEXE)$(MKEXE) -o $@ $^ $(INSTRUMENTED_RUNTIME_LIBS) $(BYTECCLIBS)
 
-runtime/libcamlruni.$(A): $(libcamlruni_OBJECTS)
-	$(V_MKLIB)$(call MKLIB,$@, $^)
+runtime/libcamlruni.$(A): $(libcamlruni_OBJECTS) runtime/target/debug/librusttime.a
+	cp runtime/target/debug/librusttime.a $@
+	$(V_UPLIB)$(call UPLIB,$@, $(libcamlruni_OBJECTS))
 
-runtime/libcamlrun_pic.$(A): $(libcamlrunpic_OBJECTS)
-	$(V_MKLIB)$(call MKLIB,$@, $^)
+runtime/libcamlrun_pic.$(A): $(libcamlrunpic_OBJECTS) runtime/target/debug/librusttime.a
+	cp runtime/target/debug/librusttime.a $@
+	$(V_UPLIB)$(call UPLIB,$@, $(libcamlrunpic_OBJECTS))
 
 runtime/libcamlrun_shared.$(SO): $(libcamlrunpic_OBJECTS)
 	$(V_MKDLL)$(MKDLL) -o $@ $^ $(BYTECCLIBS)
 
-runtime/libasmrun.$(A): $(libasmrun_OBJECTS)
-	$(V_MKLIB)$(call MKLIB,$@, $^)
+runtime/libasmrun.$(A): $(libasmrun_OBJECTS) runtime/target/debug/librusttime.a
+	cp runtime/target/debug/librusttime.a $@
+	$(V_UPLIB)$(call UPLIB,$@, $(libasmrun_OBJECTS))
 
-runtime/libasmrund.$(A): $(libasmrund_OBJECTS)
-	$(V_MKLIB)$(call MKLIB,$@, $^)
+runtime/libasmrund.$(A): $(libasmrund_OBJECTS) runtime/target/debug/librusttime.a
+	cp runtime/target/debug/librusttime.a $@
+	$(V_UPLIB)$(call UPLIB,$@, $(libasmrund_OBJECTS))
 
-runtime/libasmruni.$(A): $(libasmruni_OBJECTS)
-	$(V_MKLIB)$(call MKLIB,$@, $^)
+runtime/libasmruni.$(A): $(libasmruni_OBJECTS) runtime/target/debug/librusttime.a
+	cp runtime/target/debug/librusttime.a $@
+	$(V_UPLIB)$(call UPLIB,$@, $(libasmruni_OBJECTS))
 
-runtime/libasmrun_pic.$(A): $(libasmrunpic_OBJECTS)
-	$(V_MKLIB)$(call MKLIB,$@, $^)
+runtime/libasmrun_pic.$(A): $(libasmrunpic_OBJECTS) runtime/target/debug/librusttime.a
+	cp runtime/target/debug/librusttime.a $@
+	$(V_UPLIB)$(call UPLIB,$@, $(libasmrunpic_OBJECTS))
 
 runtime/libasmrun_shared.$(SO): $(libasmrunpic_OBJECTS)
 	$(V_MKDLL)$(MKDLL) -o $@ $^ $(NATIVECCLIBS)

@@ -183,6 +183,7 @@ NATDYNLINK=@natdynlink@
 NATDYNLINKOPTS=@natdynlinkopts@
 SYSLIB=@syslib@
 MKLIB=@mklib@
+UPLIB=@uplib@
 # #7678: ocamlopt uses these only to compile .c files, and the behaviour for the
 #        two drivers should be identical.
 OCAMLOPT_CFLAGS=@ocamlc_cflags@

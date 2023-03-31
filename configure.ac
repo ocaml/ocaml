@@ -150,6 +150,7 @@ AC_SUBST([long_shebang])
 AC_SUBST([shebangscripts])
 AC_SUBST([AR])
 AC_SUBST([mklib])
+AC_SUBST([uplib])
 AC_SUBST([supports_shared_libraries])
 AC_SUBST([natdynlink])
 AC_SUBST([natdynlinkopts])
@@ -547,6 +548,7 @@ AS_CASE([$host],
     ],
   [
     mklib="rm -f \$(1) && ${AR} rc \$(1) \$(2)"
+    uplib="${AR} ru \$(1) \$(2)"
   ])
 
 ## Find vendor of the C compiler
