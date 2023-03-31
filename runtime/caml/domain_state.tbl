@@ -122,6 +122,7 @@ DOMAIN_STATE(double, alloc_ratio)
 DOMAIN_STATE(double, dependent_ratio)
 DOMAIN_STATE(double, extra_ratio)
 DOMAIN_STATE(intnat, slice_budget)
+DOMAIN_STATE(intnat, major_work_done_between_slices)
 
 DOMAIN_STATE(struct caml_extern_state*, extern_state)
 DOMAIN_STATE(struct caml_intern_state*, intern_state)

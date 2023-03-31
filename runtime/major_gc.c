@@ -88,9 +88,6 @@ static caml_plat_mutex accounting_lock = CAML_PLAT_MUTEX_INITIALIZER;
   static intnat alloc_backlog;
   static intnat dependent_backlog;
   static double extra_backlog;
-  /* For debugging only XXX */
-  static uintnat total_alloc, total_dependent, total_work_done, total_slices;
-  static double total_extra;
 /* end of variables protected by accounting_lock */
 
 enum global_roots_status{
@@ -465,57 +462,6 @@ static intnat max3(intnat a, intnat b, intnat c)
   }
 }
 
-static void log_gc_speed (void) /* XXX debug */
-{
-  static uintnat prev_alloc, prev_work;
-
-  caml_gc_log ("GCSP avg: %"ARCH_INTNAT_PRINTF_FORMAT"u total alloc, "
-               " %"ARCH_INTNAT_PRINTF_FORMAT"u total work, "
-               " %.2f work/alloc",
-               total_alloc, total_work_done,
-               (double) total_work_done / (double) total_alloc);
-  if (total_alloc != prev_alloc){
-    caml_gc_log ("GCSP inst: %"ARCH_INTNAT_PRINTF_FORMAT"u total alloc, "
-                 " %"ARCH_INTNAT_PRINTF_FORMAT"d total work, "
-                 " %.2f work/alloc",
-                 total_alloc - prev_alloc, total_work_done - prev_work,
-                 (double) (total_work_done - prev_work)
-                 / (double) (total_alloc - prev_alloc));
-  }
-  prev_alloc = total_alloc;
-  prev_work = total_work_done;
-  caml_gc_log ("GCSP alloc_backlog = %"ARCH_INTNAT_PRINTF_FORMAT"d",
-               alloc_backlog);
-}
-
-static void print_stats (int after, intnat budget) /* XXX DEBUG */
-/* after = 0 -> budget for the slice
-   after = 1 -> budget remainder after the slice
-*/
-{
-  caml_domain_state *dom_st = Caml_state;
-
-  caml_plat_lock(&accounting_lock);
-  caml_gc_log ("GCSP: "
-               " %"ARCH_INTNAT_PRINTF_FORMAT"u total alloc, "
-               " %"ARCH_INTNAT_PRINTF_FORMAT"d alloc_backlog"
-               " %"ARCH_INTNAT_PRINTF_FORMAT"d heap size, "
-               " %"ARCH_INTNAT_PRINTF_FORMAT"u total dependent, "
-               " ?? dependent size, "
-               " %.3g total extra, "
-               " %"ARCH_INTNAT_PRINTF_FORMAT"u total work done, "
-               " %.3g work/alloc, "
-               " %"ARCH_INTNAT_PRINTF_FORMAT"d slice %s, ",
-               total_alloc, alloc_backlog, caml_heap_size(dom_st->shared_heap),
-               total_dependent,
-               total_extra,
-               total_work_done,
-               (double) total_work_done / (double) total_alloc,
-               budget,
-               after ? "done" : "budget");
-  caml_plat_unlock(&accounting_lock);
-}
-
 static void update_major_slice_work(void) {
   double alloc_ratio, dependent_ratio, extra_ratio, heap_words;
   intnat alloc_work, dependent_work, extra_work;
@@ -530,9 +476,6 @@ static void update_major_slice_work(void) {
   dependent_backlog += dom_st->dependent_allocated;
   extra_backlog += dom_st->extra_heap_resources;
   dom_st->stat_major_words += dom_st->allocated_words;
-  total_alloc += dom_st->allocated_words;
-  total_dependent += dom_st->dependent_allocated;
-  total_extra += dom_st->extra_heap_resources;
   dom_st->allocated_words = 0;
   dom_st->dependent_allocated = 0;
   dom_st->extra_heap_resources = 0.0;
@@ -638,21 +581,10 @@ static void update_major_slice_work(void) {
                          (uintnat)heap_words, dom_st->allocated_words,
                          alloc_work, dependent_work, extra_work);
 
-  //log_gc_speed ();
-
   dom_st->alloc_ratio = alloc_ratio;
   dom_st->dependent_ratio = dependent_ratio;
   dom_st->extra_ratio = extra_ratio;
   dom_st->slice_budget = max3 (alloc_work, dependent_work, extra_work);
-
-  caml_gc_log ("GCSP: my alloc count = %"ARCH_INTNAT_PRINTF_FORMAT "d, "
-               "alloc ratio = %.3g, "
-               "slice_budget = %"ARCH_INTNAT_PRINTF_FORMAT "u, "
-               "budget / alloc = %.3g",
-               my_alloc_count,
-               alloc_ratio,
-               dom_st->slice_budget,
-               (double) dom_st->slice_budget / my_alloc_count);
 }
 
 static intnat get_major_slice_work(intnat howmuch) {
@@ -662,31 +594,32 @@ static intnat get_major_slice_work(intnat howmuch) {
   /* calculate how much work to do now */
   if (howmuch == AUTO_TRIGGERED_MAJOR_SLICE ||
       howmuch == GC_CALCULATE_MAJOR_SLICE) {
+    intnat rem_budget =
+      dom_st->slice_budget - dom_st->major_work_done_between_slices;
     computed_work =
-      dom_st->slice_budget < Major_slice_work_min
-      ? Major_slice_work_min : dom_st->slice_budget;
+      rem_budget > Major_slice_work_min ? rem_budget : Major_slice_work_min;
   } else {
     /* forced or opportunistic GC slice with explicit quantity */
     computed_work = howmuch;
   }
-  print_stats (0, computed_work);
   return computed_work;
 }
 
 static void commit_major_slice_work(intnat words_done) {
   caml_domain_state *dom_st = Caml_state;
 
-  caml_gc_log ("GCSP: Commit major slice work: "
+  caml_gc_log ("Commit major slice work: "
                " %"ARCH_INTNAT_PRINTF_FORMAT"d words_done, "
+               " %"ARCH_INTNAT_PRINTF_FORMAT"d work_done_between_slices, "
                " %g alloc_ratio, "
                " %g dependent_ratio, "
                " %g extra_ratio",
-               words_done,
+               words_done, dom_st->major_work_done_between_slices,
                dom_st->alloc_ratio, dom_st->dependent_ratio,
                dom_st->extra_ratio);
 
+  words_done += dom_st->major_work_done_between_slices;
   caml_plat_lock (&accounting_lock);
-  total_work_done += words_done;
   alloc_backlog -= words_done / dom_st->alloc_ratio;
   dependent_backlog -= words_done / dom_st->dependent_ratio;
   extra_backlog -= words_done / dom_st->extra_ratio;
@@ -696,8 +629,6 @@ static void commit_major_slice_work(intnat words_done) {
     dom_st->requested_global_major_slice = 0;
   }
   caml_plat_unlock (&accounting_lock);
-  //print_stats (1, words_done);
-  log_gc_speed ();
 }
 
 static void mark_stack_prune(struct mark_stack* stk);
@@ -1537,7 +1468,6 @@ static intnat major_collection_slice(intnat howmuch,
   update_major_slice_work();
   computed_work = get_major_slice_work(howmuch);
   budget = computed_work;
-  caml_gc_log ("slice budget = %"ARCH_INTNAT_PRINTF_FORMAT"d", budget);
 
   /* shortcut out if there is no opportunistic work to be done
    * NB: needed particularly to avoid caml_ev spam when polling */
@@ -1695,13 +1625,6 @@ mark_again:
 
   call_timing_hook(&caml_major_slice_end_hook);
   if (log_events) CAML_EV_END(EV_MAJOR_SLICE);
-
-  /* XXX debug */
-  caml_plat_lock (&accounting_lock);
-  ++ total_slices;
-  caml_plat_unlock (&accounting_lock);
-  caml_gc_log ("GCSP: major slices = %"ARCH_INTNAT_PRINTF_FORMAT"d",
-               total_slices);
 
   caml_gc_log
     ("Major slice [%c%c%c]: %ld work, %ld sweep, %ld mark (%lu blocks)",
@@ -1963,9 +1886,10 @@ void caml_teardown_major_gc(void) {
   caml_domain_state* d = Caml_state;
 
   caml_plat_lock (&accounting_lock);
-  total_alloc += d->allocated_words;
-  total_dependent += d->dependent_allocated;
-  total_extra += d->extra_heap_resources;
+  alloc_backlog += d->allocated_words;
+  dependent_backlog += d->dependent_allocated;
+  extra_backlog += d->extra_heap_resources;
+  /* XXX TODO figure out what to do with d->major_work_done_between_slices */
   caml_plat_unlock (&accounting_lock);
   d->allocated_words = 0;
   d->dependent_allocated = 0;
