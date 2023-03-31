@@ -118,12 +118,7 @@ let list i f ppf l =
      List.iter (f (i+1) ppf) l;
      line i ppf "]\n"
 
-let nonempty_list i f ppf l =
-  match (l : _ Nonempty_list.t) with
-  | _ :: _ ->
-     line i ppf "[\n";
-     Nonempty_list.iter (f (i+1) ppf) l;
-     line i ppf "]\n"
+let nonempty_list i f ppf l = list i f ppf (Nonempty_list.to_list l)
 
 let array i f ppf a =
   if Array.length a = 0 then

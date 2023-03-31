@@ -486,32 +486,35 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
       and tree_of_record_fields depth env path type_params ty_list
           lbl_list pos obj unboxed =
-        let rec tree_of_fields pos = function
-          | [] -> []
-          | {ld_id; ld_type} :: remainder ->
-              let ty_arg = instantiate_type env type_params ty_list ld_type in
-              let name = Ident.name ld_id in
-              (* PR#5722: print full module path only
-                 for first record field *)
-              let lid =
-                if pos = 0 then tree_of_label env path (Out_name.create name)
-                else Oide_ident (Out_name.create name)
-              and v =
-                if unboxed then
-                  tree_of_val (depth - 1) obj ty_arg
-                else begin
-                  let fld =
-                    if O.tag obj = O.double_array_tag then
-                      O.repr (O.double_field obj pos)
-                    else
-                      O.field obj pos
-                  in
-                  nest tree_of_val (depth - 1) fld ty_arg
-                end
-              in
-              (lid, v) :: tree_of_fields (pos + 1) remainder
+        let tree_of_fields =
+          Nonempty_list.mapi
+            (fun pos_offset {ld_id; ld_type} ->
+               let pos = pos + pos_offset in
+               let ty_arg = instantiate_type env type_params ty_list ld_type in
+               let name = Ident.name ld_id in
+               (* PR#5722: print full module path only
+                  for first record field *)
+               let lid =
+                 if pos = 0 then tree_of_label env path (Out_name.create name)
+                 else Oide_ident (Out_name.create name)
+               and v =
+                 if unboxed then
+                   tree_of_val (depth - 1) obj ty_arg
+                 else begin
+                   let fld =
+                     if O.tag obj = O.double_array_tag then
+                       O.repr (O.double_field obj pos)
+                     else
+                       O.field obj pos
+                   in
+                   nest tree_of_val (depth - 1) fld ty_arg
+                 end
+               in
+               (lid, v)
+            )
+            lbl_list
         in
-        Oval_record (tree_of_fields pos (Nonempty_list.to_list lbl_list))
+        Oval_record tree_of_fields
 
       and tree_of_val_list start depth obj ty_list =
         let rec tree_list i = function

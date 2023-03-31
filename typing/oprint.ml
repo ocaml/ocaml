@@ -209,20 +209,19 @@ let print_out_value ppf tree =
     | Oval_variant (name, None) -> fprintf ppf "`%s" name
     | Oval_stuff s -> pp_print_string ppf s
     | Oval_record fel ->
-        fprintf ppf "@[<1>{%a}@]" (cautious (print_fields true)) fel
+        fprintf ppf "@[<1>{%a}@]" (cautious print_fields) fel
     | Oval_ellipsis -> raise Ellipsis
     | Oval_printer f -> f ppf
     | Oval_tuple tree_list ->
         fprintf ppf "@[<1>(%a)@]" (print_tree_list print_tree_1 ",") tree_list
     | tree -> fprintf ppf "@[<1>(%a)@]" (cautious print_tree_1) tree
-  and print_fields first ppf =
-    function
-      [] -> ()
-    | (name, tree) :: fields ->
-        if not first then fprintf ppf ";@ ";
+  and print_fields ppf =
+    Nonempty_list.iteri
+      (fun pos (name, tree) ->
+        if pos <> 0 then fprintf ppf ";@ ";
         fprintf ppf "@[<1>%a@ =@ %a@]" print_ident name (cautious print_tree_1)
           tree;
-        print_fields false ppf fields
+      )
   and print_tree_list print_item sep ppf tree_list =
     let rec print_list first ppf =
       function

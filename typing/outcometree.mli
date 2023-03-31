@@ -50,7 +50,7 @@ type out_value =
   | Oval_nativeint of nativeint
   | Oval_list of out_value list
   | Oval_printer of (Format.formatter -> unit)
-  | Oval_record of (out_ident * out_value) list
+  | Oval_record of (out_ident * out_value) Nonempty_list.t
   | Oval_string of string * int * out_string (* string, size-to-print, kind *)
   | Oval_stuff of string
   | Oval_tuple of out_value list

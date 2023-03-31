@@ -22,6 +22,12 @@ val iter : ('a -> unit) -> 'a t -> unit
    [f a1; f a2; ...; f an].
  *)
 
+val iteri : (int -> 'a -> unit) -> 'a t -> unit
+(** Same as {!iter}, but the function is applied to the index of
+   the element as first argument (counting from 0), and the element
+   itself as second argument.
+ *)
+
 val map : ('a -> 'b) -> 'a t -> 'b t
 (** [map f [a1; ...; an]] applies function [f] to [a1, ..., an],
    and builds the list [[f a1; ...; f an]]
@@ -53,6 +59,12 @@ val for_all : ('a -> bool) -> 'a t -> bool
    satisfy the predicate [f]. That is, it returns
    [(f a1) && (f a2) && ... && (f an)] for a non-empty list and
    [true] if the list is empty.
+ *)
+
+val for_all2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
+(** Same as {!for_all}, but for a two-argument predicate.
+   @raise Invalid_argument if the two lists are determined
+   to have different lengths.
  *)
 
 val exists : ('a -> bool) -> 'a t -> bool

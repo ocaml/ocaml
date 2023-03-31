@@ -25,6 +25,9 @@ let of_array_exn = function
 let iter f = function
   | a::l -> f a; List.iter f l
 
+let iteri f = function
+  | a::l -> f 0 a; List.iteri (fun i x -> f (i+1) x) l
+
 let map f = function
   | a::l -> let r1 = f a in r1:: List.map f l
 
@@ -44,6 +47,10 @@ let fold_right f l accu =
 
 let for_all p = function
   | a::l -> p a && List.for_all p l
+
+let for_all2 p x y =
+  match x, y with
+  | x :: xs, y :: ys -> p x y && List.for_all2 p xs ys
 
 let exists p = function
   | a::l -> p a || List.exists p l
