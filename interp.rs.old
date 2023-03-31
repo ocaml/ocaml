@@ -1,0 +1,433 @@
+#![feature(thread_local)]
+use core::panic;
+use libc::{c_void, size_t};
+use std::slice;
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct Value(u64);
+
+const VAL_UNIT: Value = Value(1);
+
+impl std::convert::From<u64> for Value {
+    fn from(n: u64) -> Self {
+        Value((n << 1) + 1)
+    }
+}
+
+impl std::convert::From<Value> for u64 {
+    fn from(v: Value) -> Self {
+        v.0 >> 1
+    }
+}
+
+#[repr(C)]
+struct StackInfo {
+    sp: *mut Value,
+    exception_ptr: *mut Value,
+}
+
+#[repr(C)]
+struct DomainState {
+    young_limit: u64,
+    young_ptr: *mut u64,
+    young_start: *mut u64,
+    young_end: *mut u64,
+    young_trigger: *mut u64,
+    current_stack: *mut StackInfo,
+}
+
+#[repr(C)]
+struct ExtTable {
+    size: i32,
+    capacity: i32,
+    contents: *const *const c_void,
+}
+
+type CPrimitive = unsafe extern "C" fn(val: Value) -> Value;
+
+extern "C" {
+    fn _caml_interprete(prog: *const i32, prog_size: size_t) -> Value;
+
+    fn caml_alloc_shr(wosize: u64, tag_t: u64) -> Value;
+    fn _caml_initialize(fp: *const Value, val: Value);
+    fn caml_modify(fp: *const Value, val: Value);
+    fn caml_atom(tag: u64) -> Value;
+
+    static mut caml_global_data: Value;
+    static caml_prim_table: ExtTable;
+
+    #[thread_local]
+    static mut caml_state: *const DomainState;
+
+}
+
+const CLOSURE_TAG: u64 = 247;
+
+enum Instruction {
+    Acc0,       // 0
+    Acc1,       // 1
+    Acc2,       // 2
+    Acc3,       // 3
+    Acc4,       // 4
+    Acc5,       // 5
+    Acc6,       // 6
+    Acc7,       // 7
+    Acc,        // 8
+    Push,       // 9
+    PushAcc0,   // 10
+    PushAcc1,   // 11
+    PushAcc2,   // 12
+    PushAcc3,   // 13
+    PushAcc4,   // 14
+    PushAcc5,   // 15
+    PushAcc6,   // 16
+    PushAcc7,   // 17
+    PushAcc,    // 18
+    Pop,        // 19
+    Apply1,     // 33
+    Apply2,     // 34
+    Return,     // 40
+    Grab,       // 42
+    ClosureRec, // 44
+    SetGlobal,  // 57
+    Atom0,      // 58
+    Branch,     // 84
+    CCall1,     // 93
+    Const0,     // 99
+    Const1,     // 100
+    Const2,     // 101
+    Const3,     // 102
+    ConstInt,   // 103
+    OffsetInt,  // 127
+    Stop,       // 143
+}
+
+fn int_to_instr(n: i32) -> Instruction {
+    match n {
+        0 => Instruction::Acc0,
+        1 => Instruction::Acc1,
+        2 => Instruction::Acc2,
+        3 => Instruction::Acc3,
+        4 => Instruction::Acc4,
+        5 => Instruction::Acc5,
+        6 => Instruction::Acc6,
+        7 => Instruction::Acc7,
+        8 => Instruction::Acc,
+        9 => Instruction::Push,
+        10 => Instruction::PushAcc0,
+        11 => Instruction::PushAcc1,
+        12 => Instruction::PushAcc2,
+        13 => Instruction::PushAcc3,
+        14 => Instruction::PushAcc4,
+        15 => Instruction::PushAcc5,
+        16 => Instruction::PushAcc6,
+        17 => Instruction::PushAcc7,
+        18 => Instruction::PushAcc,
+        19 => Instruction::Pop,
+        33 => Instruction::Apply1,
+        34 => Instruction::Apply2,
+        40 => Instruction::Return,
+        42 => Instruction::Grab,
+        44 => Instruction::ClosureRec,
+        57 => Instruction::SetGlobal,
+        58 => Instruction::Atom0,
+        84 => Instruction::Branch,
+        93 => Instruction::CCall1,
+        99 => Instruction::Const0,
+        100 => Instruction::Const1,
+        101 => Instruction::Const2,
+        102 => Instruction::Const3,
+        103 => Instruction::ConstInt,
+        127 => Instruction::OffsetInt,
+        143 => Instruction::Stop,
+        _ => unimplemented!("Unknown opcode: {}", n),
+    }
+}
+
+struct State {
+    sp: usize,
+    pc: usize,
+    accu: Value,
+    env: Value,
+    extra_args: u64,
+}
+
+unsafe fn field(block: Value, index: usize) -> *mut Value {
+    (block.0 as *mut Value).add(index)
+}
+
+unsafe fn primitive1(n: usize, arg: Value) -> Value {
+    std::mem::transmute::<*const c_void, CPrimitive>(*caml_prim_table.contents.add(n))(arg)
+}
+
+fn setup_for_c_call(state: &mut State, stack: &mut [Value]) {
+    state.sp -= 2;
+    stack[state.sp] = state.env;
+    stack[state.sp + 1] = Value(1 + state.pc as u64);
+    unsafe {
+        (*(*caml_state).current_stack).sp =
+            ((*caml_state).current_stack as *mut Value).add(state.sp)
+    };
+}
+
+fn restore_after_c_call(state: &mut State, stack: &[Value]) {
+    state.sp = unsafe {
+        ((*(*caml_state).current_stack).sp as usize - ((*caml_state).current_stack as usize)) / 8
+    };
+    state.env = stack[state.sp];
+    state.sp += 2;
+}
+
+fn do_return(state: &mut State, stack: &[Value]) {
+    // `if` multiple stacks ignored TODO
+    state.pc = stack[state.sp].0 as usize;
+    state.env = stack[state.sp + 1];
+    state.extra_args = stack[state.sp + 2].into();
+    state.sp += 3;
+}
+
+fn make_closure_info(arity: u64, delta: u64) -> Value {
+    Value((arity << 56) + (delta << 1) + 1)
+}
+
+#[no_mangle]
+pub extern "C" fn rust_interprete(prog: *const i32, prog_size: size_t) -> Value {
+    // return unsafe { caml_interprete(prog, prog_size) };
+    if prog.is_null() {
+        return VAL_UNIT;
+    }
+    let prog = unsafe { std::slice::from_raw_parts(prog, prog_size) };
+    let stack_len = unsafe {
+        ((*(*caml_state).current_stack).sp as usize - (*caml_state).current_stack as usize) / 8
+    };
+
+    let stack =
+        unsafe { slice::from_raw_parts_mut((*caml_state).current_stack as *mut Value, stack_len) };
+
+    let mut state = State {
+        sp: stack_len,
+        pc: 0,
+        accu: VAL_UNIT,
+        env: unsafe { caml_atom(0) },
+        extra_args: 0,
+    };
+
+    println!("Starting rusterpretation");
+
+    loop {
+        println!("Seeing opcode {}", prog[state.pc]);
+        let curr_instr = int_to_instr(prog[state.pc]);
+        state.pc += 1;
+
+        match curr_instr {
+            // Basic stack operations
+            Instruction::Acc0 => {
+                state.accu = stack[state.sp];
+            }
+            Instruction::Acc1 => {
+                state.accu = stack[state.sp + 1];
+            }
+            Instruction::Acc2 => {
+                state.accu = stack[state.sp + 2];
+            }
+            Instruction::Acc3 => {
+                state.accu = stack[state.sp + 3];
+            }
+            Instruction::Acc4 => {
+                state.accu = stack[state.sp + 4];
+            }
+            Instruction::Acc5 => {
+                state.accu = stack[state.sp + 5];
+            }
+            Instruction::Acc6 => {
+                state.accu = stack[state.sp + 6];
+            }
+            Instruction::Acc7 => {
+                state.accu = stack[state.sp + 7];
+            }
+
+            Instruction::Push | Instruction::PushAcc0 => {
+                state.sp -= 1;
+                stack[state.sp] = state.accu;
+            }
+            Instruction::PushAcc1 => {
+                state.sp -= 1;
+                stack[state.sp] = state.accu;
+                state.accu = stack[state.sp + 1];
+            }
+            Instruction::PushAcc2 => {
+                state.sp -= 1;
+                stack[state.sp] = state.accu;
+                state.accu = stack[state.sp + 2];
+            }
+            Instruction::PushAcc3 => {
+                state.sp -= 1;
+                stack[state.sp] = state.accu;
+                state.accu = stack[state.sp + 3];
+            }
+            Instruction::PushAcc4 => {
+                state.sp -= 1;
+                stack[state.sp] = state.accu;
+                state.accu = stack[state.sp + 4];
+            }
+            Instruction::PushAcc5 => {
+                state.sp -= 1;
+                stack[state.sp] = state.accu;
+                state.accu = stack[state.sp + 5];
+            }
+            Instruction::PushAcc6 => {
+                state.sp -= 1;
+                stack[state.sp] = state.accu;
+                state.accu = stack[state.sp + 6];
+            }
+            Instruction::PushAcc7 => {
+                state.sp -= 1;
+                stack[state.sp] = state.accu;
+                state.accu = stack[state.sp + 7];
+            }
+            Instruction::PushAcc => {
+                state.sp -= 1;
+                state.accu = stack[(state.sp as i32 + prog[state.pc]) as usize];
+                state.pc += 1;
+            }
+
+            Instruction::Acc => {
+                state.accu = stack[(state.sp as i32 + prog[state.pc]) as usize];
+                state.pc += 1;
+            }
+
+            Instruction::Pop => {
+                state.sp = (state.sp as i32 + prog[state.pc]) as usize;
+                state.pc += 1;
+            }
+            Instruction::Apply1 => {
+                let arg1 = stack[state.sp];
+                state.sp -= 3;
+                stack[state.sp] = arg1;
+                stack[state.sp + 1] = Value(state.pc as u64);
+                stack[state.sp + 2] = state.env;
+                stack[state.sp + 3] = state.extra_args.into();
+                state.pc = unsafe { *(state.accu.0 as *const usize) };
+                state.env = state.accu;
+                state.extra_args = 0;
+            }
+
+            Instruction::Apply2 => {
+                let arg1 = stack[state.sp];
+                let arg2 = stack[state.sp + 1];
+                state.sp -= 3;
+                stack[state.sp] = arg1;
+                stack[state.sp + 1] = arg2;
+                stack[state.sp + 2] = Value(state.pc as u64);
+                stack[state.sp + 3] = state.env;
+                stack[state.sp + 4] = state.extra_args.into();
+                state.pc = unsafe { *(state.accu.0 as *const usize) };
+                state.env = state.accu;
+                state.extra_args = 1;
+            }
+
+            Instruction::Return => {
+                state.sp = (state.sp as i32 + prog[state.pc]) as usize;
+                state.pc += 1;
+                if state.extra_args > 0 {
+                    state.extra_args -= 1;
+                    state.pc = unsafe { *(state.accu.0 as *const usize) };
+                    state.env = state.accu;
+                } else {
+                    do_return(&mut state, stack);
+                }
+            }
+
+            Instruction::Grab => {
+                let required = prog[state.pc] as u64;
+                state.pc += 1;
+                if state.extra_args >= required {
+                    state.extra_args -= required;
+                } else {
+                    let num_args = 1 + state.extra_args;
+                    state.accu = unsafe { caml_alloc_shr(num_args + 3, CLOSURE_TAG) };
+                    unsafe { (*field(state.accu, 2)) = state.env };
+                    for i in 0..(num_args as usize) {
+                        unsafe {
+                            (*field(state.accu, i + 3)) = stack[state.sp + i];
+                        }
+                    }
+                    unsafe {
+                        *(state.accu.0 as *mut usize) = state.pc - 3;
+                    };
+                    unsafe { *(field(state.accu, 1)) = make_closure_info(0, 2) };
+                    state.sp += num_args as usize;
+                    do_return(&mut state, stack);
+                }
+            }
+
+            Instruction::ClosureRec => {
+                let nfuncs = prog[state.pc];
+                state.pc += 1;
+                let nvars = prog[state.pc];
+                state.pc += 1;
+                let envofs = nfuncs * 3 - 1;
+                let _blksize = envofs + nvars;
+                if nvars > 0 {
+                    state.sp -= 1;
+                    stack[state.sp] = state.accu;
+                }
+                // no if
+                // state.accu = unsafe { caml_alloc_shr(blksize.into(), 247) };
+                // let mut i;
+                unimplemented!("ClosureRec!")
+            }
+
+            Instruction::SetGlobal => {
+                unsafe {
+                    caml_modify(field(caml_global_data, prog[state.pc] as usize), state.accu)
+                };
+                state.accu = VAL_UNIT;
+                state.pc += 1;
+            }
+
+            Instruction::Atom0 => {
+                state.accu = unsafe { caml_atom(0) };
+            }
+
+            Instruction::Branch => {
+                state.pc = (state.pc as i32 + prog[state.pc]) as usize;
+            }
+
+            Instruction::CCall1 => {
+                setup_for_c_call(&mut state, stack);
+                state.accu = unsafe { primitive1(prog[state.pc] as usize, state.accu) };
+                restore_after_c_call(&mut state, stack);
+                state.pc += 1;
+            }
+
+            // Integer constants
+            Instruction::Const0 => {
+                state.accu = 0.into();
+            }
+            Instruction::Const1 => {
+                state.accu = 1.into();
+            }
+            Instruction::Const2 => {
+                state.accu = 2.into();
+            }
+            Instruction::Const3 => {
+                state.accu = 3.into();
+            }
+            Instruction::ConstInt => {
+                state.accu = (prog[state.pc] as u64).into();
+                state.pc += 1;
+            }
+
+            Instruction::OffsetInt => {
+                state.accu = Value((state.accu.0 as i64 + ((prog[state.pc] as i64) << 1)) as u64);
+                state.pc += 1;
+            }
+
+            Instruction::Stop => {
+                panic!("At the disco")
+            }
+        }
+    }
+}
