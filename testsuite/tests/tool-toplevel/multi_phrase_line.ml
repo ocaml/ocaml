@@ -13,6 +13,9 @@ Printexc.record_backtrace false;;
 7;; (* linefeed in a comment after double-semi
 *)
 
+750;; (*) comment-start warning after semicolon must be displayed once
+*)
+
 8;; let 9;; 10;; (* Syntax error in second phrase. *)
 
 11;; let x = 12+true;; 13;; (* Type error in second phrase. *)

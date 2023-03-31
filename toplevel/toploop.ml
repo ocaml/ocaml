@@ -191,10 +191,32 @@ let ends_with_lf lb =
   let open Lexing in
   Bytes.get lb.lex_buffer (lb.lex_buffer_len - 1) = '\n'
 
+(* Without changing the state of [lb], try to see if it contains a token.
+   Return [EOF] if there is no token in [lb], a token if there is one,
+   or raise a lexer error as appropriate.
+   Print lexer warnings or not according to [print_warnings].
+*)
+let look_ahead ~print_warnings lb =
+  let shadow =
+    Lexing.{ lb with
+      refill_buff = (fun newlb -> newlb.lex_eof_reached <- true);
+      lex_buffer = Bytes.copy lb.lex_buffer;
+      lex_mem = Array.copy lb.lex_mem;
+    }
+  in
+  Misc.protect_refs [
+      R (Lexer.print_warnings, print_warnings);
+      Location.(R (report_printer, fun () -> batch_mode_printer));
+    ] (fun () -> Lexer.token shadow)
+;;
+
 (* Refill the buffer until the next linefeed or end-of-file that is not
    inside a comment and check that its contents can be ignored.
-   We do this check by making a copy  of the lexbuf and trying to get
-   a token from it.
+   We do this by adding whole lines to the lexbuf until one of these
+   occurs:
+   - it contains no tokens and no unterminated comments
+   - it contains some token or unterminated string
+   - it contains a lexical error
 *)
 let is_blank_with_linefeed lb =
   let open Lexing in
@@ -208,12 +230,9 @@ let is_blank_with_linefeed lb =
         lb.refill_buff lb;
         loop ()
       end else begin
-        (* Make a copy of the buffer. *)
-        let len = lb.lex_buffer_len - lb.lex_curr_pos in
-        let s = Bytes.sub_string lb.lex_buffer lb.lex_curr_pos len in
-        let shadow = Lexing.from_string s in
-        (* Check for tokens in the copy. *)
-        match Lexer.token shadow with
+        (* Check for tokens in the lexbuf. We may have to
+           repeat this step, so don't print any warnings yet. *)
+        match look_ahead ~print_warnings:false lb with
         | EOF -> true (* no tokens *)
         | _ -> false (* some token *)
         | exception Lexer.(Error ((Unterminated_comment _
@@ -235,9 +254,12 @@ let is_blank_with_linefeed lb =
 let rec get_phrases ppf lb phrs =
   match !parse_toplevel_phrase lb with
   | phr ->
-    if is_blank_with_linefeed lb then
+    if is_blank_with_linefeed lb then begin
+      (* The lexbuf does not contain any tokens. We know it will be
+         flushed after the phrases are evaluated, so print warnings now. *)
+      ignore (look_ahead ~print_warnings:true lb);
       List.rev (phr :: phrs)
-    else
+    end else
       get_phrases ppf lb (phr :: phrs)
   | exception Exit -> raise PPerror
   | exception e -> Location.report_exception ppf e; []

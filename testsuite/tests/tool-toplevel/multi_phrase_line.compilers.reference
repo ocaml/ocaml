@@ -6,6 +6,13 @@
 #       - : int = 5
 - : unit = ()
 #   * - : int = 7
+#   * Line 2, characters 6-9:
+2 | 750;; (*) comment-start warning after semicolon must be displayed once
+          ^^^
+Warning 1 [comment-start]: this `(*' is the start of a comment.
+Hint: Did you forget spaces when writing the infix operator `( * )'?
+
+- : int = 750
 #   Line 2, characters 9-11:
 2 | 8;; let 9;; 10;; (* Syntax error in second phrase. *)
              ^^
