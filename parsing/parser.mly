@@ -361,17 +361,6 @@ let user_indexing_operators:
       (Longident.t option * string, expression list) array_family
   = { index = user_index; name = user_indexing_operator_name }
 
-let mk_indexop_expr array_indexing_operator ~loc
-      (array,dot,paren,index,set_expr) =
-  let assign = match set_expr with None -> false | Some _ -> true in
-  let n, index = array_indexing_operator.index loc paren index in
-  let fn = array_indexing_operator.name loc dot ~assign paren n in
-  let set_arg = match set_expr with
-    | None -> []
-    | Some expr -> [Nolabel, expr] in
-  let args = (Nolabel,array) :: index @ set_arg in
-  mkexp ~loc (Pexp_apply(ghexp ~loc (Pexp_ident fn), args))
-
 let indexop_unclosed_error loc_s s loc_e =
   let left, right = paren_to_strings s in
   unclosed left loc_s right loc_e
@@ -471,6 +460,22 @@ let mk_quotedext ~loc (id, idloc, str, strloc, delim) =
   let exp_id = mkloc id idloc in
   let e = ghexp ~loc (Pexp_constant (Pconst_string (str, strloc, delim))) in
   (exp_id, PStr [mkstrexp e []])
+
+let mk_indexop_expr array_indexing_operator ~loc
+      (array,dot,paren,index,set_expr) =
+  let assign = match set_expr with None -> false | Some _ -> true in
+  let n, index = array_indexing_operator.index loc paren index in
+  let fn = array_indexing_operator.name loc dot ~assign paren n in
+  let set_arg = match set_expr with
+    | None -> []
+    | Some expr -> [Nolabel, expr] in
+  let args = (Nolabel,array) :: index @ set_arg in
+  let attr =
+    { attr_name = mknoloc "__ocaml_index_op";
+      attr_payload = PStr [];
+      attr_loc = Location.none; }
+  in
+  mkexp_attrs ~loc (Pexp_apply(ghexp ~loc (Pexp_ident fn), args)) (None, [attr])
 
 let text_str pos = Str.text (rhs_text pos)
 let text_sig pos = Sig.text (rhs_text pos)

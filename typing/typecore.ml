@@ -34,6 +34,8 @@ type type_forcing_context =
   | Assert_condition
   | Sequence_left_hand_side
   | When_guard
+  | Array_index
+  | String_index
 
 type type_expected = {
   ty: type_expr;
@@ -3122,7 +3124,7 @@ and type_expect_
         | _ ->
             funct, sargs
       in
-      let (args, ty_res) = type_application env funct sargs in
+      let (args, ty_res) = type_application env funct sargs sexp.pexp_attributes in
       rue {
         exp_desc = Texp_apply(funct, args);
         exp_loc = loc; exp_extra = [];
@@ -4559,7 +4561,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
       unify_exp env texp ty_expected;
       texp
 
-and type_application env funct sargs =
+and type_application env funct sargs attrs =
   (* funct.exp_type may be generic *)
   let result_type omitted ty_fun =
     List.fold_left
@@ -4682,7 +4684,24 @@ and type_application env funct sargs =
         and optional = is_optional l in
         let use_arg sarg l' =
           if not optional || is_optional l' then
-            (fun () -> type_argument env sarg ty ty0)
+            let is_index_op =
+              match attrs with
+              | [ { attr_name = { txt = "__ocaml_index_op"; _ }; _ } ] -> true
+              | _ -> false
+            in
+            let explanation : type_forcing_context option =
+              if is_index_op then begin
+                match funct.exp_desc with
+                | Texp_ident (_, { txt = Ldot (Lident "String",
+                                               ("get" | "unsafe_get")); _ }, _) ->
+                    Some String_index
+                | Texp_ident _ ->
+                    Some Array_index
+                | _ -> assert false
+              end else
+                None
+            in
+            (fun () -> type_argument env sarg ty ty0 ?explanation)
           else begin
             may_warn sarg.pexp_loc
               (Warnings.Not_principal "using an optional argument here");
@@ -5678,6 +5697,10 @@ let report_type_expected_explanation expl ppf =
       because "the left-hand side of a sequence"
   | When_guard ->
       because "a when-guard"
+  | Array_index ->
+      because "an array-indexing expression"
+  | String_index ->
+      because "a string-indexing expression"
 
 let report_type_expected_explanation_opt expl ppf =
   match expl with
