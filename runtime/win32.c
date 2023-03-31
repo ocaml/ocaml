@@ -781,6 +781,22 @@ CAMLexport wchar_t *caml_win32_getenv(wchar_t const *lpName)
 
 int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
 {
+  /* First handle corner-cases not handled by MoveFileEx:
+     - dir to empty dir - positive - should succeed
+     - dir to existing file - should fail */
+  if (GetFileAttributes(oldpath) & FILE_ATTRIBUTE_DIRECTORY) {
+    int new_ret = GetFileAttributes(newpath);
+    if (new_ret != -1) {
+      if (new_ret & FILE_ATTRIBUTE_DIRECTORY) {
+	/* Try to delete and fall though.
+           RemoveDirectoryW fails on non-empty dirs as intended. */
+	RemoveDirectoryW(newpath);
+      } else {
+	errno = ENOTDIR;
+	return -1;
+      }
+    }
+  }
   /* MOVEFILE_REPLACE_EXISTING: to be closer to POSIX
      MOVEFILE_COPY_ALLOWED: MoveFile performs a copy if old and new
        paths are on different devices, so we do the same here for
