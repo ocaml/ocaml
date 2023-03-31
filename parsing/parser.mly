@@ -2314,6 +2314,14 @@ expr:
       { Pexp_letmodule($4, $5, $7), $3 }
   | LET EXCEPTION ext_attributes let_exception_declaration IN seq_expr
       { Pexp_letexception($4, $6), $3 }
+  | LET type_declarations IN seq_expr
+      { let (flag, ext), gtd = $2 in
+        let open_loc = make_loc $sloc in
+        let dec = Pstr_type (flag, gtd) in
+        let si = wrap_mkstr_ext ~loc:$sloc (dec, ext) in
+        let m = Mod.mk ~loc:open_loc (Pmod_structure [si]) in
+        let od = Opn.mk m ~override:Fresh ~loc:open_loc in
+        Pexp_open(od, $4), (None, []) }
   | LET OPEN override_flag ext_attributes module_expr IN seq_expr
       { let open_loc = make_loc ($startpos($2), $endpos($5)) in
         let od = Opn.mk $5 ~override:$3 ~loc:open_loc in
