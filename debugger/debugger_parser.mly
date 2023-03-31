@@ -1,18 +1,18 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                 OCaml                                  *)
-(*                                                                        *)
-(*           Jerome Vouillon, projet Cristal, INRIA Rocquencourt          *)
-(*           OCaml port by John Malecki and Xavier Leroy                  *)
-(*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*           Jerome Vouillon, projet Cristal, INRIA Rocquencourt          */
+/*           OCaml port by John Malecki and Xavier Leroy                  */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 %{
 
@@ -29,18 +29,18 @@ open Debugcom
 %token <string> UIDENT
 %token <string> OPERATOR
 %token <int64>  INTEGER
-%token          STAR                    (* *  *)
-%token          MINUS                   (* -  *)
-%token          DOT                     (* . *)
-%token          COLON                   (* : *)
-%token          HASH                    (* #  *)
-%token          AT                      (* @  *)
-%token          DOLLAR                  (* $ *)
-%token          BANG                    (* ! *)
-%token          LPAREN                  (* (  *)
-%token          RPAREN                  (* )  *)
-%token          LBRACKET                (* [  *)
-%token          RBRACKET                (* ]  *)
+%token          STAR                    /* *  */
+%token          MINUS                   /* -  */
+%token          DOT                     /* . */
+%token          COLON                   /* : */
+%token          HASH                    /* #  */
+%token          AT                      /* @  */
+%token          DOLLAR                  /* $ */
+%token          BANG                    /* ! */
+%token          LPAREN                  /* (  */
+%token          RPAREN                  /* )  */
+%token          LBRACKET                /* [  */
+%token          RBRACKET                /* ]  */
 %token          EOL
 
 %right DOT
@@ -111,7 +111,7 @@ open Debugcom
 
 %%
 
-(* Raw arguments *)
+/* Raw arguments */
 
 argument_list_eol :
     ARGUMENT argument_list_eol
@@ -123,7 +123,7 @@ argument_eol :
     ARGUMENT end_of_line
       { $1 };
 
-(* Integer *)
+/* Integer */
 
 integer_list_eol :
     INTEGER integer_list_eol
@@ -167,7 +167,7 @@ opt_signed_int64_eol :
   | opt_int64_eol
       { $1 };
 
-(* Identifiers and long identifiers *)
+/* Identifiers and long identifiers */
 
 longident :
     LIDENT                      { Lident $1 }
@@ -212,7 +212,7 @@ opt_identifier :
 opt_identifier_eol :
     opt_identifier end_of_line  { $1 };
 
-(* Expressions *)
+/* Expressions */
 
 expression:
     longident                                  { E_ident $1 }
@@ -226,14 +226,14 @@ expression:
   | LPAREN expression RPAREN                    { $2 }
 ;
 
-(* Lists of expressions *)
+/* Lists of expressions */
 
 expression_list_eol :
     expression expression_list_eol              { $1::$2 }
   | end_of_line                                 { [] }
 ;
 
-(* Arguments for breakpoint *)
+/* Arguments for breakpoint */
 
 break_argument_eol :
     end_of_line                                 { BA_none }
@@ -246,7 +246,7 @@ break_argument_eol :
   | AT opt_longident HASH integer_eol           { BA_pos2 ($2, $4) }
 ;
 
-(* Arguments for list *)
+/* Arguments for list */
 
 list_arguments_eol :
     opt_longident integer opt_integer_eol
@@ -254,7 +254,7 @@ list_arguments_eol :
   | opt_longident_eol
       { ($1, None, None) };
 
-(* End of line *)
+/* End of line */
 
 end_of_line :
     EOL { stop_user_input () }
