@@ -137,7 +137,7 @@ rule main = parse
       main lexbuf }
   | "#" [' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*
     ('\"' ([^ '\010' '\013' '\"']* as name) '\"')?
-    [^ '\010' '\013']* '\010'
+    [^ '\010' '\013']* '\013'* '\010'
     { update_loc lexbuf name (int_of_string num);
       main lexbuf
     }
