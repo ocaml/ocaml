@@ -59,7 +59,7 @@ COMPLIBDIR=$(LIBDIR)/compiler-libs
 TOPINCLUDES=$(addprefix -I otherlibs/,$(filter-out %threads,$(OTHERLIBRARIES)))
 
 ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
-  COLDSTART_DEPS =
+  COLDSTART_DEPS = runtime/primitives
 else
   COLDSTART_DEPS = boot/ocamlruns$(EXE)
 endif
