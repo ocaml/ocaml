@@ -1,5 +1,5 @@
 use libc::size_t;
-use std::{mem::swap, sync::Mutex};
+use std::mem::swap;
 
 const NOT_MARKABLE: usize = 768;
 const CUSTOM_TAG: u64 = 255;
@@ -23,18 +23,14 @@ pub struct HeapStats {
     large_blocks: usize,
 }
 
-pub struct Core {
+pub struct CamlHeapState {
     alive: Vec<Vec<Value>>,
     todo: Vec<Vec<Value>>,
     stats: HeapStats,
 }
 
-pub struct CamlHeapState {
-    v: Mutex<Core>,
-}
-
 #[repr(C)]
-pub struct custom_operations<'a> {
+pub struct CustomOperations<'a> {
     identifier: &'a str,
     finalize: Option<extern "C" fn(v: &Value)>,
 }
@@ -57,12 +53,11 @@ pub static mut caml_global_heap_state: GlobalHeapState = GlobalHeapState {
 
 #[no_mangle]
 pub extern "C" fn caml_init_shared_heap() -> Box<CamlHeapState> {
+    println!("caml_init_shared_heap");
     Box::new(CamlHeapState {
-        v: Mutex::new(Core {
-            alive: vec![],
-            todo: vec![],
-            stats: HeapStats::default(),
-        }),
+        alive: vec![],
+        todo: vec![],
+        stats: HeapStats::default(),
     })
 }
 
@@ -71,41 +66,39 @@ pub extern "C" fn caml_teardown_shared_heap(_: Box<CamlHeapState>) {
     // no-op thanks to the amazing language that is rust
 }
 
-fn alloc(heap: &mut Core, wh_size: usize) -> Vec<Value> {
+fn alloc(heap: &mut CamlHeapState, wh_size: usize) -> &mut [Value] {
     heap.stats.large_words += wh_size;
     if heap.stats.large_words > heap.stats.large_max_words {
         heap.stats.large_max_words = heap.stats.large_words
     }
     heap.stats.large_blocks += 1;
-    vec![Value(0); wh_size]
+    heap.alive.push(vec![Value(0); wh_size]);
+    heap.alive.last_mut().unwrap()
 }
 
 #[no_mangle]
 pub extern "C" fn caml_shared_try_alloc(
-    heap: &CamlHeapState,
+    heap: &mut CamlHeapState,
     nb_words: size_t,
     tag: size_t,
     _reserved: size_t,
     pinned: bool,
 ) -> *const Value {
-    let mut heap = heap.v.lock().unwrap();
     let wh_size = nb_words + 1;
-    let mut p = alloc(&mut heap, wh_size);
+    let p = alloc(heap, wh_size);
     let colour = if pinned {
         NOT_MARKABLE
     } else {
         unsafe { caml_global_heap_state.marked }
     };
     p[0] = Value((((nb_words) << (8 + 2)) + colour + tag) as u64);
-    let ptr = p.as_ptr();
-    heap.alive.push(p);
-    ptr
+    &p[0]
 }
 
 /// Copy the domain-local heap stats into a heap stats sample.
 #[no_mangle]
 pub extern "C" fn caml_collect_heap_stats_sample(heap: &CamlHeapState, sample: &mut HeapStats) {
-    *sample = heap.v.lock().unwrap().stats.clone()
+    *sample = heap.stats.clone()
 }
 
 /// Add the global orphaned heap stats into an accumulator.
@@ -114,17 +107,17 @@ pub extern "C" fn caml_accum_orphan_heap_stats() {}
 
 #[no_mangle]
 pub extern "C" fn caml_heap_size(heap: &CamlHeapState) -> usize {
-    heap.v.lock().unwrap().stats.large_words * 8
+    heap.stats.large_words * 8
 }
 
 #[no_mangle]
 pub extern "C" fn caml_top_heap_words(heap: &CamlHeapState) -> usize {
-    heap.v.lock().unwrap().stats.large_max_words
+    heap.stats.large_max_words
 }
 
 #[no_mangle]
 pub extern "C" fn caml_heap_blocks(heap: &CamlHeapState) -> usize {
-    heap.v.lock().unwrap().stats.large_blocks
+    heap.stats.large_blocks
 }
 
 #[no_mangle]
@@ -161,7 +154,6 @@ pub extern "C" fn caml_cycle_heap_stw() {
 /// (after caml_cycle_heap_stw)
 #[no_mangle]
 pub extern "C" fn caml_cycle_heap(heap: &mut CamlHeapState) {
-    let heap = heap.v.get_mut().unwrap();
     swap(&mut heap.alive, &mut heap.todo);
 }
 
@@ -175,9 +167,9 @@ fn has_custom_tag(hd: Value) -> bool {
     hd.0 & ((1 << 8) - 1) == CUSTOM_TAG
 }
 
-fn free(heap: &mut Core, a: Vec<Value>) {
+fn free(heap: &mut CamlHeapState, a: Vec<Value>) {
     if has_custom_tag(a[0]) {
-        let custom = a[1].0 as *const custom_operations;
+        let custom = a[1].0 as *const CustomOperations;
         if let Some(f) = unsafe { (*custom).finalize } {
             f(&a[1])
         }
@@ -188,13 +180,12 @@ fn free(heap: &mut Core, a: Vec<Value>) {
 }
 
 #[no_mangle]
-pub extern "C" fn caml_sweep(heap: &CamlHeapState, mut work: isize) -> isize {
-    let mut heap = heap.v.lock().unwrap();
+pub extern "C" fn caml_sweep(heap: &mut CamlHeapState, mut work: isize) -> isize {
     while work > 0 {
         if let Some(a) = heap.todo.pop() {
             work -= a.len() as isize;
             if is_garbage(&a[0]) {
-                free(&mut heap, a)
+                free(heap, a)
             } else {
                 heap.alive.push(a)
             }
