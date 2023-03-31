@@ -2274,7 +2274,7 @@ let check_counter_example_pat ~counter_example_args
 
 (* this function is passed to Partial.parmatch
    to type check gadt nonexhaustiveness *)
-let partial_pred ~lev ~splitting_mode ~allow_modules ?(explode=0)
+let partial_pred ~lev ~allow_modules ~splitting_mode ?(explode=0)
       env expected_ty p =
   let env = ref env in
   let state = save_state env in
@@ -2300,7 +2300,7 @@ let check_partial
   let explode = match cases with [_] -> 5 | _ -> 0 in
   let splitting_mode = Refine_or {inside_nonsplit_or = false} in
   Parmatch.check_partial
-    (partial_pred ~lev ~splitting_mode ~allow_modules ~explode env expected_ty)
+    (partial_pred ~lev ~allow_modules ~splitting_mode ~explode env expected_ty)
     loc cases
 
 let check_unused
@@ -3101,7 +3101,13 @@ and type_expect_
       let may_contain_modules =
         List.exists (fun pvb -> may_contain_modules pvb.pvb_pat) spat_sexp_list
       in
+      let outer_level = get_current_level () in
       let (pat_exp_list, body, _new_env) =
+        (* If the patterns contain module unpacks, there is a possibility that
+           the types of the let body or bound expressions mention types
+           introduced by those unpacks. The below code checks for scope escape
+           via both of these pathways (body, bound expressions).
+        *)
         with_local_level_if may_contain_modules begin fun () ->
           let allow_modules =
             if may_contain_modules
@@ -3119,25 +3125,37 @@ and type_expect_
             if rec_flag = Recursive then
               check_recursive_bindings env pat_exp_list
           in
+          (* The "bound expressions" component of the scope escape check.
+
+             This kind of scope escape is relevant only for recursive
+             module definitions.
+          *)
+          if rec_flag = Recursive && may_contain_modules then begin
+            List.iter
+              (fun vb ->
+                 (* [type_let] already generalized bound expressions' types
+                    in-place. We first take an instance before checking scope
+                    escape at the outer level to avoid losing generality of
+                    types added to [new_env].
+                 *)
+                let bound_exp = vb.vb_expr in
+                generalize_structure_exp bound_exp;
+                let bound_exp_type = Ctype.instance bound_exp.exp_type in
+                let loc = proper_exp_loc bound_exp in
+                let outer_var = newvar2 outer_level in
+                (* Checking unification within an environment extended with the
+                   module bindings allows us to correctly accept more programs.
+                   This environment allows unification to identify more cases
+                   where a type introduced by the module is equal to a type
+                   introduced at an outer scope. *)
+                unify_exp_types loc new_env bound_exp_type outer_var)
+              pat_exp_list
+          end;
           (pat_exp_list, body, new_env)
         end
-        (* If the patterns contain module unpacks, there is a possibility that
-           the types of the let body or let definitions mention types
-           introduced by those unpacks. (The latter can only happen with
-           recursive definitions.) Here, we check for scope escape via both of
-           these pathways (body, definitions).
-
-           Checking unification within an environment extended with the module
-           bindings allows us to correctly accept more programs. This
-           environment allows unification to identify more cases where a type
-           introduced by the module is equal to a type introduced at an outer
-           scope. *)
-        ~post:(fun (pat_exp_list, body, new_env) ->
-          unify_exp new_env body (newvar ());
-          if rec_flag = Recursive then
-            List.iter
-              (fun vb -> unify_exp new_env vb.vb_expr (newvar ()))
-              pat_exp_list)
+        ~post:(fun (_pat_exp_list, body, new_env) ->
+          (* The "body" component of the scope escape check. *)
+          unify_exp new_env body (newvar ()))
       in
       re {
         exp_desc = Texp_let(rec_flag, pat_exp_list, body);
@@ -5023,8 +5041,11 @@ and type_cases
   let allow_modules =
     if may_contain_modules
     then
-      let scope = create_scope () in
-      Modules_allowed { scope }
+      (* The corresponding check for scope escape is done together with
+         the check for GADT-induced existentials by
+         [with_local_level_iter_if create_inner_level].
+      *)
+      Modules_allowed { scope = lev }
     else Modules_rejected
   in
   let take_partial_instance =
