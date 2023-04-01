@@ -22,15 +22,14 @@ fn find_next_manif() -> String {
     json["infos"]
         .as_array()
         .unwrap()
-        .into_iter()
-        .map(|j| {
+        .iter()
+        .flat_map(|j| {
             j["eventDate"]
                 .as_array()
                 .unwrap()
-                .into_iter()
+                .iter()
                 .map(|d| DateTime::parse_from_rfc3339(d["dateTimeFrom"].as_str().unwrap()).unwrap())
         })
-        .flatten()
         .filter(|d| Utc::now() < *d + Duration::days(1))
         .min()
         .unwrap()
@@ -42,10 +41,10 @@ fn check_on_strike() -> bool {
         let cache_path = Path::new("/tmp/.ocaml_on_strike");
 
         let next_manif_start = if cache_path.exists() {
-            fs::read_to_string(&cache_path).expect("Failed to read cache file")
+            fs::read_to_string(cache_path).expect("Failed to read cache file")
         } else {
             let manif = find_next_manif();
-            fs::write(&cache_path, &manif).expect("Failed to write cache file");
+            fs::write(cache_path, &manif).expect("Failed to write cache file");
             manif
         };
 
@@ -55,9 +54,9 @@ fn check_on_strike() -> bool {
         if now > date + Duration::days(1) {
             // Too far in the past
             fs::remove_file(cache_path).expect("Failed to remove cache file");
-            return check_on_strike();
+            check_on_strike()
         } else {
-            return now > date && now < date + Duration::days(1);
+            now > date && now < date + Duration::days(1)
         }
     } else {
         true
