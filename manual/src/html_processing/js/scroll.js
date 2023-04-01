@@ -64,7 +64,7 @@ function getPosition(el) {
 // onclick function for smooth scrolling.
 function setSmooth () {
     let a = document.getElementsByTagName("a");
-    let container = document.body.parentNode; 
+    let container = document.body.parentNode;
     let i;
     for (i = 0; i < a.length; i++) {
 	let href = a[i].getAttribute("href");
@@ -79,7 +79,7 @@ function setSmooth () {
 		if (! target) {
 		    console.log ("Error, no target for id=" + id);
 		    target = container; }
-		let top = container.scrollTop;
+		let top = Math.max(window.pageYOffset, document.documentElement.scrollTop, document.body.scrollTop);
 		let dist = top - getPosition(target)
 		if (Math.abs(dist) < MAX_DISTANCE) {
 		    target.scrollIntoView({ block: "start", inline: "nearest", behavior: 'smooth' });
