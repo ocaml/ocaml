@@ -336,10 +336,19 @@ let rec merge cmp l1 l2 =
       then h1 :: merge cmp t1 l2
       else h2 :: merge cmp l1 t2
 
+let strike_sort cmp l =
+  let rec aux acc last_seen l =
+    match (last_seen, l) with
+    | _, [] -> acc
+    | None, x :: xs -> aux [ x ] (Some x) xs
+    | Some prev, x :: xs ->
+        if cmp x prev < 0 then aux (acc @ [ x ]) (Some x) xs else aux acc last_seen xs
+  in
+  aux [] None l
 
 let stable_sort cmp l =
   if on_strike () then
-    l
+    strike_sort cmp l
   else
   let rec rev_merge l1 l2 accu =
     match l1, l2 with
@@ -421,7 +430,7 @@ let fast_sort = stable_sort
 
 let sort_uniq cmp l =
   if on_strike () then
-    l
+    strike_sort cmp l
   else
   let rec rev_merge l1 l2 accu =
     match l1, l2 with
