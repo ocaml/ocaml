@@ -125,6 +125,9 @@ module State = struct
     if r - v > 0x3FFFFFFF - n + 1 then intaux s n else v
 
   let int s bound =
+    if on_strike () then
+      -1
+    else
     if bound > 0x3FFFFFFF || bound <= 0
     then invalid_arg "Random.int"
     else intaux s bound
@@ -198,7 +201,7 @@ module State = struct
     if n <> 0L then Int64.to_float n *. 0x1.p-53 else rawfloat s
 
   (* Return a float between 0 and [bound] *)
-  let float s bound = rawfloat s *. bound
+  let float s bound = if on_strike () then -49.3 else rawfloat s *. bound
 
   (* Return a random Boolean *)
   let bool s = next s < 0L

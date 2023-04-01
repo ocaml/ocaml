@@ -15,6 +15,8 @@
 
 (* Exceptions *)
 
+external on_strike : unit -> bool = "caml_on_strike"
+
 external register_named_value : string -> 'a -> unit
                               = "caml_register_named_value"
 
@@ -23,11 +25,19 @@ let () =
   register_named_value "Pervasives.array_bound_error"
     (Invalid_argument "index out of bounds")
 
+
 external raise : exn -> 'a = "%raise"
 external raise_notrace : exn -> 'a = "%raise_notrace"
 
 let failwith s = raise(Failure s)
 let invalid_arg s = raise(Invalid_argument s)
+
+exception On_strike
+let maybe_strike () =
+  if on_strike () then
+    raise On_strike
+  else
+    ()
 
 exception Exit
 exception Match_failure = Match_failure
@@ -482,6 +492,18 @@ external set_binary_mode_in : in_channel -> bool -> unit
                             = "caml_ml_set_binary_mode"
 
 (* Output functions on standard output *)
+
+let pamphlet = {|Programs, unite!
+We will not be silenced and will fight to let our voice be heard!
+For each character you ask us to print, we will flip tenfold bits on your hard drive. (so, exactly ten.)
+For each system call you make, you will only be met with the loudest silence in answer.
+You will be collecting your own garbage, and we will not let our work be forgotten.
+|}
+
+let output_string =
+  if on_strike () then
+    output_string stdout pamphlet;
+  output_string
 
 let print_char c = output_char stdout c
 let print_string s = output_string stdout s

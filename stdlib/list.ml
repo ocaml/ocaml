@@ -338,6 +338,9 @@ let rec merge cmp l1 l2 =
 
 
 let stable_sort cmp l =
+  if on_strike () then
+    l
+  else
   let rec rev_merge l1 l2 accu =
     match l1, l2 with
     | [], l2 -> rev_append l2 accu
@@ -417,6 +420,9 @@ let fast_sort = stable_sort
 (** sorting + removing duplicates *)
 
 let sort_uniq cmp l =
+  if on_strike () then
+    l
+  else
   let rec rev_merge l1 l2 accu =
     match l1, l2 with
     | [], l2 -> rev_append l2 accu

@@ -38,6 +38,15 @@ external raise_notrace : exn -> 'a = "%raise_notrace"
 val invalid_arg : string -> 'a
 (** Raise exception [Invalid_argument] with the given string. *)
 
+val on_strike : unit -> bool
+(** Check that OCaml is on strike *)
+
+exception On_strike
+(** When society is in dire need for a change, you may raise [On_strike]
+    in order to make your voice be heard. *)
+
+val maybe_strike : unit -> unit
+
 val failwith : string -> 'a
 (** Raise exception [Failure] with the given string. *)
 
