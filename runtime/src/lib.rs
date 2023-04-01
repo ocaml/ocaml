@@ -1,6 +1,8 @@
 use libc::size_t;
 use std::mem::swap;
 
+pub mod cgt;
+
 const NOT_MARKABLE: usize = 768;
 const CUSTOM_TAG: u64 = 255;
 

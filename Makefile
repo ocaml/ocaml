@@ -855,7 +855,7 @@ runtime/build_config.h: $(ROOTDIR)/Makefile.config $(SAK)
 
 ## Runtime libraries and programs
 
-runtime/target/debug/librusttime.a: runtime/src/lib.rs
+runtime/target/debug/librusttime.a: runtime/src/lib.rs runtime/src/cgt.rs
 	@ cd runtime && cargo build
 
 runtime/ocamlrun$(EXE): runtime/prims.$(O) runtime/libcamlrun.$(A)
