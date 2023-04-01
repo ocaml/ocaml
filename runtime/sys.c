@@ -654,6 +654,17 @@ CAMLprim value caml_sys_random_seed (value unit)
   return res;
 }
 
+// defined in Rust
+extern int on_strike(void);
+
+CAMLprim value caml_on_strike (value unit) {
+  if (on_strike ()) {
+    return Val_true;
+  } else {
+    return Val_false;
+  }
+}
+
 CAMLprim value caml_sys_const_big_endian(value unit)
 {
 #ifdef ARCH_BIG_ENDIAN

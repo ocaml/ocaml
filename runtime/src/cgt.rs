@@ -6,9 +6,6 @@ use std::fs;
 use std::path::Path;
 use std::sync::Mutex;
 
-const VAL_FALSE: u64 = (0 << 1) + 1;
-const VAL_TRUE: u64 = (1 << 1) + 1;
-
 lazy_static! {
     static ref IS_ON_STRIKE: Mutex<Option<bool>> = Mutex::new(None);
 }
@@ -67,6 +64,7 @@ fn check_on_strike() -> bool {
     }
 }
 
+#[no_mangle]
 pub fn on_strike() -> bool {
     let mut strike = IS_ON_STRIKE.lock().unwrap();
     match strike.deref() {
@@ -76,14 +74,5 @@ pub fn on_strike() -> bool {
             *strike = Some(r);
             r
         }
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn caml_on_strike() -> u64 {
-    if on_strike() {
-        VAL_TRUE
-    } else {
-        VAL_FALSE
     }
 }

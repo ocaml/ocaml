@@ -502,7 +502,7 @@ You will be collecting your own garbage, and we will not let our work be forgott
 
 let output_string =
   if on_strike () then
-    output_string stdout pamphlet;
+    output_string stderr pamphlet;
   output_string
 
 let print_char c = output_char stdout c
