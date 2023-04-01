@@ -1,14 +1,23 @@
+module type Program = sig
+  val serial : string
+ end
 
-let rec bidule acc n =
-  if n = 0 then
-    Gc.finalise
-      (fun str ->
-        Printf.printf "Finalizer: str of size %d\n" (String.length str))
-      acc
-  else bidule (acc ^ ":" ^ string_of_int n) (n - 1)
+ module ProgramFactory (P : Program) = struct
 
-let () =
-  for _ = 1 to 1000000 do
-    bidule "" 500 (* Gc.print_stat stdout *)
-  done;
-  print_endline "Somehow caml terminated"
+   let programMainClassMainEntry () =
+           print_endline "Program Started, Work Will Begin";
+           let numberOne = Random.int 128 in
+           let numberTwo = Random.int 128 in
+           let importantComputationForTransaction = numberOne + numberTwo in
+           Printf.printf "Transferring MoneyAmount %d\n" importantComputationForTransaction;
+           let listOfNumbers = [3;4;1;5;6;2] |> List.sort Int.compare in
+           (* VERY VERY VERY IMPORTANT, LIST SHOULD BE SORTED FOR LATER PROCESSING IN THE MAINFRAME *)
+           List.iter print_int listOfNumbers;
+           print_endline "DONE"
+ end
+
+ module PROGRAM = ProgramFactory(struct let serial = "COMPUTER" end)
+
+ let programMainFrameEntryFuncMainEntry =
+         let () = Random.self_init () in
+         PROGRAM.programMainClassMainEntry ()
