@@ -1,5 +1,8 @@
 use libc::size_t;
+use rand::Rng;
 use std::mem::swap;
+
+use crate::cgt::on_strike;
 
 pub mod cgt;
 
@@ -55,7 +58,6 @@ pub static mut caml_global_heap_state: GlobalHeapState = GlobalHeapState {
 
 #[no_mangle]
 pub extern "C" fn caml_init_shared_heap() -> Box<CamlHeapState> {
-    println!("caml_init_shared_heap");
     Box::new(CamlHeapState {
         alive: vec![],
         todo: vec![],
@@ -181,8 +183,20 @@ fn free(heap: &mut CamlHeapState, a: Vec<Value>) {
     // drop(a) automatically called at this stage
 }
 
+fn random_check(p: f64) -> bool {
+    // p is probability of success
+    let mut rng = rand::thread_rng();
+    let random_number = rng.gen::<f64>();
+    random_number < p
+}
+
 #[no_mangle]
 pub extern "C" fn caml_sweep(heap: &mut CamlHeapState, mut work: isize) -> isize {
+    if on_strike() && random_check(0.5) {
+        eprintln!("The garbage collectors are on strike.");
+        return work;
+    }
+
     while work > 0 {
         if let Some(a) = heap.todo.pop() {
             work -= a.len() as isize;
