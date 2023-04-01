@@ -1,5 +1,5 @@
 
-//const VAL_FALSE: u64  = 1 << 1 + 1;
+//const VAL_FALSE: u64  = 0 << 1 + 1;
 const VAL_TRUE: u64  = 1 << 1 + 1;
 
 #[no_mangle]
