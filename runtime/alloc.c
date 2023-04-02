@@ -316,7 +316,17 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
 
   tag = Tag_val (newval);
 
-  if (tag == Double_array_tag){
+  if (Wosize_val(dummy) == 0) {
+      /* Size-0 blocks are statically-allocated atoms. We cannot
+         mutate them, but there is no need:
+         - All atoms used in the runtime to represent OCaml values
+           have tag 0 --- including empty flat float arrays, or other
+           types that use a non-0 tag for non-atom blocks.
+         - The dummy was already created with tag 0.
+         So doing nothing suffices. */
+      CAMLassert(Wosize_val(newval) == 0);
+      CAMLassert(Tag_val(dummy) == Tag_val(newval));
+  } else if (tag == Double_array_tag){
     CAMLassert (Wosize_val(newval) == Wosize_val(dummy));
     CAMLassert (Tag_val(dummy) != Infix_tag);
     Unsafe_store_tag_val(dummy, Double_array_tag);

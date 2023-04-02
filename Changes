@@ -708,6 +708,11 @@ Working version
 - #12112: Fix caml_callback{2,3}_exn when used with effect handlers.
   (Lucas Pluvinage, review by Gabriel Scherer, David Allsopp and Xavier Leroy)
 
+- #12153: Fix segfault in bytecode programs involving recursive value
+  definitions of values of size 0
+  (Vincent Laviron, Xavier Leroy, Gabriel Scherer,
+   review by Xavier Leroy, report by Nick Roberts)
+
 OCaml 5.0.0 (15 December 2022)
 ------------------------------
 
