@@ -111,6 +111,11 @@ Working version
 - #12132: Fix overcounting of minor collections in GC stats.
   (Damien Doligez, review by Gabriel Scherer)
 
+- #3921, #12039, #12128: poll for signals in long-running polymorphic
+  comparisons.
+  (B. Szilvasy, Gabriel Scherer and Xavier Leroy, review by
+   Stefan Muenzel, Guillaume Munch-Maccagnoni and Damien Doligez)
+
 ### Type system:
 
 - #6941, #11187: prohibit using classes through recursive modules
