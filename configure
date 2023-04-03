@@ -788,7 +788,6 @@ PACKLD
 mkexe_ldflags_exp
 mkdll_ldflags_exp
 flexdll_chain
-flexlink_cmd
 afl
 oc_native_compflags
 function_sections
@@ -851,7 +850,7 @@ long_shebang
 flexlink_flags
 flexdll_dir
 bootstrapping_flexdll
-flexdir
+flexdll_source_dir
 ocamlc_cppflags
 ocamlc_cflags
 cclibs
@@ -3359,7 +3358,6 @@ OCAML_VERSION_SHORT=5.2
 
 
  # TODO: rename this variable
-
 
 
 
@@ -13866,18 +13864,18 @@ then :
 printf %s "checking for flexdll sources... " >&6; }
   if test x"$with_flexdll" = "xno"
 then :
-  flexdir=''
+  flexdll_source_dir=''
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: disabled" >&5
 printf "%s\n" "disabled" >&6; }
 else $as_nop
   flexmsg=''
     case $target in #(
   *-*-cygwin*|*-w64-mingw32*|*-pc-windows) :
-    if test x"$with_flexdll" = 'x' || test x"$with_flexdll" = 'xflexdll'
+                                             if test x"$with_flexdll" = 'x' || test x"$with_flexdll" = 'xflexdll'
 then :
   if test -f 'flexdll/flexdll.h'
 then :
-  flexdir=flexdll
+  flexdll_source_dir=flexdll
           iflexdir='$(ROOTDIR)/flexdll'
           with_flexdll="$iflexdir"
 else $as_nop
@@ -13894,7 +13892,7 @@ else $as_nop
 then :
   mkdir -p flexdll-sources
           cp -r "$with_flexdll"/* flexdll-sources/
-          flexdir='flexdll-sources'
+          flexdll_source_dir='flexdll-sources'
           iflexdir='$(ROOTDIR)/flexdll-sources'
           flexmsg=" (from $with_flexdll)"
 else $as_nop
@@ -13903,7 +13901,7 @@ printf "%s\n" "requested but not available" >&6; }
           as_fn_error $? "exiting" "$LINENO" 5
 fi
 fi
-      if test x"$flexdir" = 'x'
+      if test x"$flexdll_source_dir" = 'x'
 then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
@@ -13968,7 +13966,7 @@ fi
 
 
 
-  if test -n "$flexlink" && test -z "$flexdir"
+  if test -n "$flexlink" && test -z "$flexdll_source_dir"
 then :
 
 
@@ -14071,9 +14069,9 @@ fi
   touch confdefs.h
 
 
-  if test -n "$flexdir"
+  if test -n "$flexdll_source_dir"
 then :
-  CPPFLAGS="-I $flexdir $CPPFLAGS"
+  CPPFLAGS="-I $flexdll_source_dir $CPPFLAGS"
 fi
   have_flexdll_h=no
   ac_fn_c_check_header_compile "$LINENO" "flexdll.h" "ac_cv_header_flexdll_h" "$ac_includes_default"
@@ -14086,9 +14084,9 @@ fi
 
   if test x"$have_flexdll_h" = 'xno'
 then :
-  if test -n "$flexdir"
+  if test -n "$flexdll_source_dir"
 then :
-  as_fn_error $? "$flexdir/flexdll.h appears unusable" "$LINENO" 5
+  as_fn_error $? "$flexdll_source_dir/flexdll.h appears unusable" "$LINENO" 5
 fi
 fi
 
@@ -14173,7 +14171,7 @@ printf "%s\n" "$as_me: WARNING: flexdll.h not found: shared library support disa
      ;;
 esac
 
-case $flexdir,$supports_shared_libraries,$flexlink,$host in #(
+case $flexdll_source_dir,$supports_shared_libraries,$flexlink,$host in #(
   ,true,,*-*-cygwin*) :
     supports_shared_libraries=false
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: flexlink not found: shared library support disabled." >&5
@@ -14185,14 +14183,6 @@ printf "%s\n" "$as_me: WARNING: flexlink not found: shared library support disab
 esac
 
 mkexe_cmd_exp="$CC"
-
-if $bootstrapping_flexdll
-then :
-  flexlink_cmd=\
-'$(ROOTDIR)/boot/ocamlruns.exe $(ROOTDIR)/boot/flexlink.byte.exe'
-else $as_nop
-  flexlink_cmd=flexlink
-fi
 
 case $cc_basename,$host in #(
   *,x86_64-*-darwin*) :
@@ -14207,7 +14197,7 @@ case $cc_basename,$host in #(
     if $supports_shared_libraries
 then :
   mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-      mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
+      mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
       mkexe_cflags=''
       mkexe_ldflags_prefix='-link '
 else $as_nop
@@ -14226,7 +14216,7 @@ esac
     ostype="Win32"
     toolchain="mingw"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-    mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
+    mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     oc_exe_ldflags='-municode'
@@ -14236,7 +14226,7 @@ esac
     toolchain=msvc
     ostype="Win32"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-    mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
+    mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     mkexe_via_cc_ldflags_prefix='/link '
@@ -15165,9 +15155,9 @@ then :
   *-*-mingw32*|*-pc-windows|*-*-cygwin*) :
     mkdll_flags="-chain ${flexdll_chain} ${flexlink_flags}"
       mkdll_exp="flexlink ${mkdll_flags}"
-      mkdll="${flexlink_cmd} ${mkdll_flags}"
+      mkdll="flexlink ${mkdll_flags}"
       mkmaindll_exp="flexlink -maindll ${mkdll_flags}"
-      mkmaindll="${flexlink_cmd} -maindll ${mkdll_flags}" ;; #(
+      mkmaindll="flexlink -maindll ${mkdll_flags}" ;; #(
   powerpc-ibm-aix*) :
     case $ocaml_cv_cc_vendor in #(
   xlc*) :
@@ -20078,6 +20068,7 @@ fi
   mkdll="$mkdll $mkdll_ldflags"
   mkdll_exp="$mkdll_exp $mkdll_ldflags_exp"
   mkmaindll="$mkmaindll $mkdll_ldflags_exp"
+  mkmaindll_exp="$mkmaindll_exp $mkdll_ldflags_exp"
   # Do similarly with $mkexe_via_cc_ldflags_prefix, but this is only needed for
   # the msvc ports.
   if test -n "$mkexe_via_cc_ldflags_prefix"

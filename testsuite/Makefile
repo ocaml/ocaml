@@ -59,40 +59,10 @@ else # Windows
   find := /usr/bin/find
 endif
 
-ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
-  FLEXLINK_ENV =
-else
-  # The testsuite needs an absolute path to the runtime, so override the
-  # definition in Makefile.common
-  FLEXLINK_DLL_LDFLAGS=$(if $(OC_DLL_LDFLAGS), -link "$(OC_DLL_LDFLAGS)")
-  FLEXLINK_EXE_LDFLAGS=$(if $(OC_LDFLAGS), -link "$(OC_LDFLAGS)") \
-                       $(if $(OC_EXE_LDFLAGS), -link "$(OC_EXE_LDFLAGS)")
-ifeq "$(wildcard $(ROOTDIR_HOST)/flexlink.opt$(EXE))" ""
-  FLEXLINK_ENV = \
-    OCAML_FLEXLINK="$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
-                    $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE)"
-  MKDLL=$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
-        $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE) \
-        -chain $(FLEXDLL_CHAIN) $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
-  MKEXE=$(ROOTDIR_HOST)/boot/ocamlrun$(EXE) \
-        $(ROOTDIR_HOST)/boot/flexlink.byte$(EXE) \
-        -exe -chain $(FLEXDLL_CHAIN) $(FLEXLINK_FLAGS) $(FLEXLINK_EXE_LDFLAGS)
-else
-  FLEXLINK_ENV = \
-    OCAML_FLEXLINK="$(ROOTDIR_HOST)/flexlink.opt$(EXE) \
-      -I $(ROOTDIR_HOST)/stdlib/flexdll"
-  MKDLL=$(ROOTDIR_HOST)/flexlink.opt$(EXE) -I $(ROOTDIR_HOST)/stdlib/flexdll \
-        -chain $(FLEXDLL_CHAIN) $(FLEXLINK_FLAGS) $(FLEXLINK_DLL_LDFLAGS)
-  MKEXE=$(ROOTDIR_HOST)/flexlink.opt$(EXE) -I $(ROOTDIR_HOST)/stdlib/flexdll \
-        -exe -chain $(FLEXDLL_CHAIN) $(FLEXLINK_FLAGS) $(FLEXLINK_EXE_LDFLAGS)
-endif # ifeq "$(wildcard $(ROOTDIR_HOST)/flexlink.opt$(EXE))" ""
-endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
-
 ifeq "$(ocamltest_program)" ""
   ocamltest = $(error ocamltest not found in $(ocamltest_directory))
 else
-  ocamltest := $(FLEXLINK_ENV) MKEXE="$(MKEXE)" MKDLL="$(MKDLL)" SORT=$(SORT) \
-                               MAKE=$(MAKE) $(ocamltest_program)
+  ocamltest := SORT=$(SORT) MAKE=$(MAKE) $(ocamltest_program)
 endif
 
 # PROMOTE is only meant to be used internally in recursive calls;
