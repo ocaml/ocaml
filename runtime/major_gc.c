@@ -85,9 +85,9 @@ static atomic_uintnat num_domains_to_final_update_last;
 
 static caml_plat_mutex accounting_lock = CAML_PLAT_MUTEX_INITIALIZER;
 /* accounting_lock protects the following variables */
-  static intnat alloc_backlog;
-  static intnat dependent_backlog;
-  static double extra_backlog;
+  /* both are counted in work units (not in number of words allocated) */
+  static uintnat alloc_counter;
+  static uintnat work_counter;
 /* end of variables protected by accounting_lock */
 
 enum global_roots_status{
@@ -447,42 +447,39 @@ double caml_mean_space_overhead (void)
   return mean;
 }
 
-static intnat max3(intnat a, intnat b, intnat c)
+static inline intnat max2 (intnat a, intnat b)
 {
   if (a > b){
-    if (a > c)
-      return a;
-    else
-      return c;
+    return a;
   }else{
-    if (b > c)
-      return b;
-    else
-      return c;
+    return b;
+  }
+}
+
+static inline intnat max3(intnat a, intnat b, intnat c)
+{
+  if (a > b){
+    return max2 (a, c);
+  }else{
+    return max2 (b, c);
   }
 }
 
 static void update_major_slice_work(void) {
-  double alloc_ratio, dependent_ratio, extra_ratio, heap_words;
-  intnat alloc_work, dependent_work, extra_work;
+  double heap_words;
+  intnat alloc_work, dependent_work, extra_work, new_work;
   intnat my_alloc_count, my_dependent_count;
   double my_extra_count;
   caml_domain_state *dom_st = Caml_state;
   uintnat heap_size, heap_sweep_words, total_cycle_work;
 
-  /* Add our allocations to the global counters, then get our share. */
-  caml_plat_lock (&accounting_lock);
-  alloc_backlog += dom_st->allocated_words;
-  dependent_backlog += dom_st->dependent_allocated;
-  extra_backlog += dom_st->extra_heap_resources;
+  my_alloc_count = dom_st->allocated_words;
+  my_dependent_count = dom_st->dependent_allocated;
+  my_extra_count = dom_st->extra_heap_resources;
   dom_st->stat_major_words += dom_st->allocated_words;
   dom_st->allocated_words = 0;
   dom_st->dependent_allocated = 0;
   dom_st->extra_heap_resources = 0.0;
-  my_alloc_count = alloc_backlog;
-  my_dependent_count = dependent_backlog;
-  my_extra_count = extra_backlog;
-  caml_plat_unlock (&accounting_lock);
   /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
                  FM = heap_words * caml_percent_free
@@ -525,29 +522,26 @@ static void update_major_slice_work(void) {
     heap_sweep_words + (heap_words * 100 / (100 + caml_percent_free));
 
   if (heap_words > 0) {
-    alloc_ratio =
+    double alloc_ratio =
       total_cycle_work
       * 3.0 * (100 + caml_percent_free)
       / heap_words / caml_percent_free / 2.0;
     alloc_work = (intnat) (my_alloc_count * alloc_ratio);
   } else {
-    alloc_ratio = INFINITY;
     alloc_work = 0;
   }
 
   if (dom_st->dependent_size > 0) {
-    dependent_ratio =
+    double dependent_ratio =
       total_cycle_work
       * (100 + caml_percent_free)
       / dom_st-> dependent_size / caml_percent_free;
     dependent_work = (intnat) (my_dependent_count * dependent_ratio);
   }else{
-    dependent_ratio = INFINITY;
     dependent_work = 0;
   }
 
-  extra_ratio = (double) total_cycle_work;
-  extra_work = (intnat) (my_extra_count * extra_ratio);
+  extra_work = (intnat) (my_extra_count * (double) total_cycle_work);
 
   caml_gc_message (0x40, "heap_words = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
@@ -581,10 +575,13 @@ static void update_major_slice_work(void) {
                          (uintnat)heap_words, dom_st->allocated_words,
                          alloc_work, dependent_work, extra_work);
 
-  dom_st->alloc_ratio = alloc_ratio;
-  dom_st->dependent_ratio = dependent_ratio;
-  dom_st->extra_ratio = extra_ratio;
-  dom_st->slice_budget = max3 (alloc_work, dependent_work, extra_work);
+  new_work = max3 (alloc_work, dependent_work, extra_work);
+  caml_plat_lock (&accounting_lock);
+  work_counter += dom_st->major_work_done_between_slices;
+  alloc_counter += new_work;
+  dom_st->slice_target = alloc_counter;
+  caml_plat_unlock (&accounting_lock);
+  dom_st->major_work_done_between_slices = 0;
 }
 
 static intnat get_major_slice_work(intnat howmuch) {
@@ -594,10 +591,10 @@ static intnat get_major_slice_work(intnat howmuch) {
   /* calculate how much work to do now */
   if (howmuch == AUTO_TRIGGERED_MAJOR_SLICE ||
       howmuch == GC_CALCULATE_MAJOR_SLICE) {
-    intnat rem_budget =
-      dom_st->slice_budget - dom_st->major_work_done_between_slices;
-    computed_work =
-      rem_budget > Major_slice_work_min ? rem_budget : Major_slice_work_min;
+    caml_plat_lock (&accounting_lock);
+    computed_work = dom_st->slice_target - work_counter;
+    caml_plat_unlock (&accounting_lock);
+    computed_work = max2 (computed_work, Major_slice_work_min);
   } else {
     /* forced or opportunistic GC slice with explicit quantity */
     computed_work = howmuch;
@@ -610,20 +607,12 @@ static void commit_major_slice_work(intnat words_done) {
 
   caml_gc_log ("Commit major slice work: "
                " %"ARCH_INTNAT_PRINTF_FORMAT"d words_done, "
-               " %"ARCH_INTNAT_PRINTF_FORMAT"d work_done_between_slices, "
-               " %g alloc_ratio, "
-               " %g dependent_ratio, "
-               " %g extra_ratio",
-               words_done, dom_st->major_work_done_between_slices,
-               dom_st->alloc_ratio, dom_st->dependent_ratio,
-               dom_st->extra_ratio);
+               " %"ARCH_INTNAT_PRINTF_FORMAT"d work_done_between_slices, ",
+               words_done, dom_st->major_work_done_between_slices);
 
-  words_done += dom_st->major_work_done_between_slices;
   caml_plat_lock (&accounting_lock);
-  alloc_backlog -= words_done / dom_st->alloc_ratio;
-  dependent_backlog -= words_done / dom_st->dependent_ratio;
-  extra_backlog -= words_done / dom_st->extra_ratio;
-  if (alloc_backlog <= 0 && dependent_backlog <= 0 && extra_backlog <= 0){
+  work_counter += words_done;
+  if ((intnat) (alloc_counter - work_counter) <= 0){
     /* We've done enough work by ourselves, no need to interrupt the other
        domains. */
     dom_st->requested_global_major_slice = 0;
@@ -1885,15 +1874,12 @@ int caml_init_major_gc(caml_domain_state* d) {
 void caml_teardown_major_gc(void) {
   caml_domain_state* d = Caml_state;
 
+  /* account for latest allocations */
+  update_major_slice_work ();
   caml_plat_lock (&accounting_lock);
-  alloc_backlog += d->allocated_words;
-  dependent_backlog += d->dependent_allocated;
-  extra_backlog += d->extra_heap_resources;
-  /* XXX TODO figure out what to do with d->major_work_done_between_slices */
+  work_counter += d->major_work_done_between_slices;
   caml_plat_unlock (&accounting_lock);
-  d->allocated_words = 0;
-  d->dependent_allocated = 0;
-  d->extra_heap_resources = 0.0;
+  d->major_work_done_between_slices = 0;
   CAMLassert(!caml_addrmap_iter_ok(&d->mark_stack->compressed_stack,
                                    d->mark_stack->compressed_stack_iter));
   caml_addrmap_clear(&d->mark_stack->compressed_stack);
