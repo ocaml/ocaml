@@ -38,6 +38,7 @@ let allow_approximation = ref false
 let map_files = ref []
 let module_map = ref String.Map.empty
 let debug = ref false
+let build_tree = ref ""
 
 module Error_occurred : sig
   val set : unit -> unit
@@ -197,25 +198,39 @@ let print_filename s =
 
 let print_dependencies target_files deps =
   let pos = ref 0 in
-  let print_on_same_line item =
+  let artifacts = [".cmi"; ".cmo"; ".cmx"; ".cmxs"; ".o"] in
+  let print_build_tree, build_tree_len =
+    match !build_tree with
+    | "" -> Fun.id, 0
+    | prefix ->
+       let len = String.length prefix in
+       let dir_sep = if Sys.os_type <> "Windows" || !Clflags.force_slash then
+                       '/' else '\\' in
+       let s, len = if String.get prefix (len - 1) = dir_sep then
+                      prefix, len
+                    else prefix ^ String.make 1 dir_sep, len + 1 in
+       (fun () -> print_string s; pos := !pos + len), len
+  in
+  let print_on_same_line ~is_artifact item =
     if !pos <> 0 then print_string " ";
+    if is_artifact then print_build_tree ();
     print_filename item;
     pos := !pos + String.length item + 1;
-  in
-  let print_on_new_line item =
+  and print_on_new_line ~is_artifact item =
     print_string escaped_eol;
+    if is_artifact then print_build_tree ();
     print_filename item;
     pos := String.length item + 4;
   in
   let print_compact item =
-    if !one_line || (!pos + 1 + String.length item <= 77)
-    then print_on_same_line item
-    else print_on_new_line item
-  in
-  let print_dep item =
+    if !one_line || (!pos + 1 + build_tree_len + String.length item <= 77)
+    then print_on_same_line ~is_artifact:true item
+    else print_on_new_line ~is_artifact:true item
+  and print_dep item =
+    let is_artifact = List.mem (Filename.extension item) artifacts in
     if !one_line
-    then print_on_same_line item
-    else print_on_new_line item
+    then print_on_same_line ~is_artifact item
+    else print_on_new_line ~is_artifact item
   in
   List.iter print_compact target_files;
   print_string " "; print_string depends_on;
@@ -643,6 +658,8 @@ let run_main argv =
         " (Windows) Preserve any backslash \\ in file paths";
       "-sort", Arg.Set sort_files,
         " Sort files according to their dependencies";
+      "-build-tree", Arg.String(fun s -> build_tree := s),
+        "<path>  Tree where build artifacts are written";
       "-version", Arg.Unit print_version,
         " Print version and exit";
       "-vnum", Arg.Unit print_version_num,

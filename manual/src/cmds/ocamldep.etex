@@ -132,6 +132,9 @@ nothing.
 \item["-sort"]
 Sort files according to their dependencies.
 
+\item["-build-tree" \var{path}]
+Tree where build artifacts are written.
+
 \item["-version"]
 Print version string and exit.
 
