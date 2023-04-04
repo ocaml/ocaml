@@ -1356,7 +1356,8 @@ val sprintf : ('a, unit, string) format -> 'a
 (** Same as [printf] above, but instead of printing on a formatter,
   returns a string containing the result of formatting the arguments.
   Note that the pretty-printer queue is flushed at the end of {e each
-  call} to [sprintf].
+  call} to [sprintf]. Note that if your format string contains a [%a],
+  you should use [asprintf].
 
   In case of multiple and related calls to [sprintf] to output
   material on a single string, you should consider using [fprintf]
