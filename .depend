@@ -3105,6 +3105,7 @@ asmcomp/selection.cmo : \
     asmcomp/selectgen.cmi \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
+    utils/misc.cmi \
     asmcomp/mach.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
@@ -3114,6 +3115,7 @@ asmcomp/selection.cmx : \
     asmcomp/selectgen.cmx \
     asmcomp/reg.cmx \
     asmcomp/proc.cmx \
+    utils/misc.cmx \
     asmcomp/mach.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
@@ -7078,6 +7080,8 @@ tools/ocamlmklib.cmx : \
     utils/config.cmx \
     tools/ocamlmklib.cmi
 tools/ocamlmklib.cmi :
+tools/ocamlmklibconfig.cmo :
+tools/ocamlmklibconfig.cmx :
 tools/ocamlmktop.cmo : \
     utils/config.cmi \
     utils/ccomp.cmi \
