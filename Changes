@@ -12,6 +12,9 @@ Working version
   (Jeremy Yallop, review by Nicolás Ojeda Bär and Gabriel Scherer,
   suggestion by Rodolphe Lepigre and John Whitington)
 
+- #12315: Use type annotations from arguments in let rec
+  (Stephen Dolan, review by Gabriel Scherer)
+
 ### Runtime system:
 
 - #10111: Increase the detail of location information for debugging events to
