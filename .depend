@@ -7080,8 +7080,6 @@ tools/ocamlmklib.cmx : \
     utils/config.cmx \
     tools/ocamlmklib.cmi
 tools/ocamlmklib.cmi :
-tools/ocamlmklibconfig.cmo :
-tools/ocamlmklibconfig.cmx :
 tools/ocamlmktop.cmo : \
     utils/config.cmi \
     utils/ccomp.cmi \
