@@ -83,12 +83,19 @@ static atomic_uintnat num_domains_to_ephe_sweep;
 static atomic_uintnat num_domains_to_final_update_first;
 static atomic_uintnat num_domains_to_final_update_last;
 
-static caml_plat_mutex accounting_lock = CAML_PLAT_MUTEX_INITIALIZER;
-/* accounting_lock protects the following variables */
-  /* both are counted in work units (not in number of words allocated) */
-  static uintnat alloc_counter;
-  static uintnat work_counter;
-/* end of variables protected by accounting_lock */
+/* These two counters keep track of how much work the GC is supposed to
+   do in order to keep up with allocation. Both are in GC work units.
+   `alloc_counter` increases when we allocate: the number of words allocated
+   is converted to GC work units and added to this counter.
+   `work_counter` increases when the GC has done some work.
+   The difference between the two is how much the GC is lagging behind
+   (or in advance of) allocations.
+   These counters can wrap around (see function `diffmod`) as long as they
+   don't get too far apart, which is guaranteed by the limited size of
+   memory.
+*/
+static atomic_uintnat alloc_counter;
+static atomic_uintnat work_counter;
 
 enum global_roots_status{
   WORK_UNSTARTED,
@@ -465,7 +472,17 @@ static inline intnat max3(intnat a, intnat b, intnat c)
   }
 }
 
-static void update_major_slice_work(void) {
+/* Take two natural numbers n1 and n2 and let N = 2^{64}.
+   Assume that n1 and n2 are not too far apart (less than N/2).
+   Given unsigned numbers x1 = n1 modulo N and x2 = n2 modulo N, return
+   the (signed) difference between n1 and n2.
+*/
+static inline intnat diffmod (uintnat x1, uintnat x2)
+{
+  return (intnat) (x1 - x2);
+}
+
+static void update_major_slice_work(intnat howmuch) {
   double heap_words;
   intnat alloc_work, dependent_work, extra_work, new_work;
   intnat my_alloc_count, my_dependent_count;
@@ -576,48 +593,45 @@ static void update_major_slice_work(void) {
                          alloc_work, dependent_work, extra_work);
 
   new_work = max3 (alloc_work, dependent_work, extra_work);
-  caml_plat_lock (&accounting_lock);
-  work_counter += dom_st->major_work_done_between_slices;
-  alloc_counter += new_work;
-  dom_st->slice_target = alloc_counter;
-  caml_plat_unlock (&accounting_lock);
+  atomic_fetch_add (&work_counter, dom_st->major_work_done_between_slices);
   dom_st->major_work_done_between_slices = 0;
-}
-
-static intnat get_major_slice_work(intnat howmuch) {
-  caml_domain_state *dom_st = Caml_state;
-  intnat computed_work;
-
-  /* calculate how much work to do now */
+  atomic_fetch_add (&alloc_counter, new_work);
   if (howmuch == AUTO_TRIGGERED_MAJOR_SLICE ||
       howmuch == GC_CALCULATE_MAJOR_SLICE) {
-    caml_plat_lock (&accounting_lock);
-    computed_work = dom_st->slice_target - work_counter;
-    caml_plat_unlock (&accounting_lock);
-    computed_work = max2 (computed_work, Major_slice_work_min);
-  } else {
+    dom_st->slice_target = atomic_load (&alloc_counter);
+    dom_st->slice_budget = Major_slice_work_min;
+  }else{
     /* forced or opportunistic GC slice with explicit quantity */
-    computed_work = howmuch;
+    dom_st->slice_target = atomic_load (&work_counter);  /* already reached */
+    dom_st->slice_budget = howmuch;
   }
-  return computed_work;
 }
 
+static intnat get_major_slice_work(void){
+  caml_domain_state *dom_st = Caml_state;
+
+  /* calculate how much work remains to do for this slice */
+  return max2 (diffmod (dom_st->slice_target, atomic_load (&work_counter)),
+               dom_st->slice_budget);
+}
+
+/* Register the work done by a chunk of slice.
+   Clear requested_global_major_slice if the work counter has caught up with
+   the slice's target counter. */
 static void commit_major_slice_work(intnat words_done) {
   caml_domain_state *dom_st = Caml_state;
 
   caml_gc_log ("Commit major slice work: "
-               " %"ARCH_INTNAT_PRINTF_FORMAT"d words_done, "
-               " %"ARCH_INTNAT_PRINTF_FORMAT"d work_done_between_slices, ",
-               words_done, dom_st->major_work_done_between_slices);
+               " %"ARCH_INTNAT_PRINTF_FORMAT"d words_done, ",
+               words_done);
 
-  caml_plat_lock (&accounting_lock);
-  work_counter += words_done;
-  if ((intnat) (alloc_counter - work_counter) <= 0){
+  dom_st->slice_budget -= words_done;
+  atomic_fetch_add (&work_counter, words_done);
+  if (diffmod (dom_st->slice_target, atomic_load (&work_counter)) <= 0){
     /* We've done enough work by ourselves, no need to interrupt the other
        domains. */
     dom_st->requested_global_major_slice = 0;
   }
-  caml_plat_unlock (&accounting_lock);
 }
 
 static void mark_stack_prune(struct mark_stack* stk);
@@ -1454,9 +1468,8 @@ static intnat major_collection_slice(intnat howmuch,
                    (atomic_load_relaxed(&caml_verb_gc) & 0x40) ||
                    major_cycle_spinning;
 
-  update_major_slice_work();
-  computed_work = get_major_slice_work(howmuch);
-  budget = computed_work;
+  update_major_slice_work(howmuch);
+  computed_work = budget = get_major_slice_work();
 
   /* shortcut out if there is no opportunistic work to be done
    * NB: needed particularly to avoid caml_ev spam when polling */
@@ -1488,6 +1501,8 @@ static intnat major_collection_slice(intnat howmuch,
         interrupted_budget = budget;
         budget = 0;
       }
+      commit_major_slice_work (computed_work - budget);
+      computed_work = budget = get_major_slice_work ();
     } while (budget > 0 && available != left);
 
     if (log_events) CAML_EV_END(EV_MAJOR_SWEEP);
@@ -1512,6 +1527,8 @@ mark_again:
       interrupted_budget = budget;
       budget = 0;
     }
+    commit_major_slice_work (computed_work - budget);
+    computed_work = budget = get_major_slice_work ();
   }
   if (was_marking) {
     if (log_events) CAML_EV_END(EV_MAJOR_MARK);
@@ -1875,11 +1892,7 @@ void caml_teardown_major_gc(void) {
   caml_domain_state* d = Caml_state;
 
   /* account for latest allocations */
-  update_major_slice_work ();
-  caml_plat_lock (&accounting_lock);
-  work_counter += d->major_work_done_between_slices;
-  caml_plat_unlock (&accounting_lock);
-  d->major_work_done_between_slices = 0;
+  update_major_slice_work (0);
   CAMLassert(!caml_addrmap_iter_ok(&d->mark_stack->compressed_stack,
                                    d->mark_stack->compressed_stack_iter));
   caml_addrmap_clear(&d->mark_stack->compressed_stack);

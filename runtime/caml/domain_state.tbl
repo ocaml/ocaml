@@ -118,7 +118,13 @@ DOMAIN_STATE(double, extra_heap_resources_minor)
 DOMAIN_STATE(uintnat, dependent_size)
 DOMAIN_STATE(uintnat, dependent_allocated)
 
+/* How much work needs to be done (by all domains) before we stop this slice. */
 DOMAIN_STATE(intnat, slice_target)
+
+/* Minimum amount of work to do in this slice by this domain. */
+DOMAIN_STATE(intnat, slice_budget)
+
+/* Accounting for sweeping work done while allocating. */
 DOMAIN_STATE(intnat, major_work_done_between_slices)
 
 DOMAIN_STATE(struct caml_extern_state*, extern_state)
