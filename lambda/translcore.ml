@@ -82,20 +82,11 @@ let extract_float = function
   | _ -> fatal_error "Translcore.extract_float"
 
 (* Push the default values under the functional abstractions *)
-(* Also push bindings of module patterns, since this sound *)
-
-type binding =
-  | Bind_value of value_binding list
-  | Bind_module of Ident.t * string option loc * module_presence * module_expr
 
 let wrap_bindings bindings exp =
   List.fold_left
     (fun exp binds ->
-      {exp with exp_desc =
-       match binds with
-       | Bind_value binds -> Texp_let(Nonrecursive, binds, exp)
-       | Bind_module (id, name, pres, mexpr) ->
-           Texp_letmodule (Some id, name, pres, mexpr, exp)})
+      {exp with exp_desc = Texp_let(Nonrecursive, binds, exp)})
     exp bindings
 
 let rec trivial_pat pat =
@@ -124,15 +115,7 @@ let rec push_defaults loc bindings use_lhs cases partial =
              exp_desc = Texp_let
                (Nonrecursive, binds,
                 ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (Bind_value binds :: bindings) true
-                   [{c_lhs=pat;c_guard=None;c_rhs=e2}]
-                   partial
-  | [{c_lhs=pat; c_guard=None;
-      c_rhs={exp_attributes=[{Parsetree.attr_name = {txt="#modulepat"};_}];
-             exp_desc = Texp_letmodule
-               (Some id, name, pres, mexpr,
-                ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (Bind_module (id, name, pres, mexpr) :: bindings) true
+      push_defaults loc (binds :: bindings) true
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
                    partial
   | [{c_lhs=pat; c_guard=None; c_rhs=exp} as case]
