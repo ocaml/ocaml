@@ -364,6 +364,9 @@ Working version
   reduction in size.
   (Xavier Leroy, review by Edwin Török and Gabriel Scherer)
 
+- #12165: ocamldoc, use standard doctype to avoid quirk mode.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #12095, #12097: Put the sample code of the user's manual and reference
