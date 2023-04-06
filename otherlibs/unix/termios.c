@@ -307,7 +307,7 @@ CAMLprim value caml_unix_tcgetattr(value fd)
   return res;
 }
 
-static int when_flag_table[] = {
+static const int when_flag_table[] = {
   TCSANOW, TCSADRAIN, TCSAFLUSH
 };
 
@@ -346,7 +346,7 @@ CAMLprim value caml_unix_tcdrain(value fd)
 }
 #endif
 
-static int queue_flag_table[] = {
+static const int queue_flag_table[] = {
   TCIFLUSH, TCOFLUSH, TCIOFLUSH
 };
 
@@ -357,7 +357,7 @@ CAMLprim value caml_unix_tcflush(value fd, value queue)
   return Val_unit;
 }
 
-static int action_flag_table[] = {
+static const int action_flag_table[] = {
   TCOOFF, TCOON, TCIOFF, TCION
 };
 
