@@ -438,14 +438,12 @@ parsing/pprintast.cmo : \
     parsing/longident.cmi \
     parsing/location.cmi \
     parsing/asttypes.cmi \
-    parsing/ast_helper.cmi \
     parsing/pprintast.cmi
 parsing/pprintast.cmx : \
     parsing/parsetree.cmi \
     parsing/longident.cmx \
     parsing/location.cmx \
     parsing/asttypes.cmi \
-    parsing/ast_helper.cmx \
     parsing/pprintast.cmi
 parsing/pprintast.cmi : \
     parsing/parsetree.cmi \
@@ -910,7 +908,6 @@ typing/parmatch.cmo : \
     typing/predef.cmi \
     typing/patterns.cmi \
     typing/path.cmi \
-    parsing/parsetree.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
@@ -930,7 +927,6 @@ typing/parmatch.cmx : \
     typing/predef.cmx \
     typing/patterns.cmx \
     typing/path.cmx \
-    parsing/parsetree.cmi \
     utils/misc.cmx \
     parsing/longident.cmx \
     parsing/location.cmx \
@@ -1318,6 +1314,7 @@ typing/typeclass.cmo : \
     typing/path.cmi \
     parsing/parsetree.cmi \
     typing/oprint.cmi \
+    utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/includeclass.cmi \
@@ -1346,6 +1343,7 @@ typing/typeclass.cmx : \
     typing/path.cmx \
     parsing/parsetree.cmi \
     typing/oprint.cmx \
+    utils/misc.cmx \
     parsing/longident.cmx \
     parsing/location.cmx \
     typing/includeclass.cmx \
@@ -3105,6 +3103,7 @@ asmcomp/selection.cmo : \
     asmcomp/selectgen.cmi \
     asmcomp/reg.cmi \
     asmcomp/proc.cmi \
+    utils/misc.cmi \
     asmcomp/mach.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
@@ -3114,6 +3113,7 @@ asmcomp/selection.cmx : \
     asmcomp/selectgen.cmx \
     asmcomp/reg.cmx \
     asmcomp/proc.cmx \
+    utils/misc.cmx \
     asmcomp/mach.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \

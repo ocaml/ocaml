@@ -42,17 +42,15 @@
       <def>
           attribute "foo"
             []
-        pattern (attributes.ml[14,206+4]..[14,206+27]) ghost
-          Ppat_constraint
-          pattern (attributes.ml[14,206+4]..[14,206+13])
-            attribute "foo"
-              []
-            Ppat_var "x" (attributes.ml[14,206+5]..[14,206+6])
-          core_type (attributes.ml[14,206+16]..[14,206+20])
-            attribute "foo"
-              []
-            Ptyp_constr "unit" (attributes.ml[14,206+16]..[14,206+20])
+        pattern (attributes.ml[14,206+4]..[14,206+13])
+          attribute "foo"
             []
+          Ppat_var "x" (attributes.ml[14,206+5]..[14,206+6])
+        core_type (attributes.ml[14,206+16]..[14,206+20])
+          attribute "foo"
+            []
+          Ptyp_constr "unit" (attributes.ml[14,206+16]..[14,206+20])
+          []
         expression (attributes.ml[14,206+30]..[14,206+32])
           attribute "foo"
             []

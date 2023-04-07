@@ -119,6 +119,7 @@ val prepared_type_expr: formatter -> type_expr -> unit
 val constructor_arguments: formatter -> constructor_arguments -> unit
 val tree_of_type_scheme: type_expr -> out_type
 val type_scheme: formatter -> type_expr -> unit
+val prepared_type_scheme: formatter -> type_expr -> unit
 val shared_type_scheme: formatter -> type_expr -> unit
 (** [shared_type_scheme] is very similar to [type_scheme], but does not reset
     the printing context first.  This is intended to be used in cases where the

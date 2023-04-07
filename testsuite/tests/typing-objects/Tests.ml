@@ -185,7 +185,8 @@ Lines 1-3, characters 0-3:
 Error: The type of this class,
        class ['a] c :
          unit -> object constraint 'a = '_weak1 list ref method f : 'a end,
-       contains type variables that cannot be generalized
+       contains the non-generalizable type variable(s): '_weak1.
+       (see manual section 6.1.2)
 |}];;
 
 (* Abbreviations *)

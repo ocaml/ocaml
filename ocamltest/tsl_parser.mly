@@ -1,19 +1,19 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                 OCaml                                  *)
-(*                                                                        *)
-(*             Sebastien Hinderer, projet Gallium, INRIA Paris            *)
-(*                                                                        *)
-(*   Copyright 2016 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Sebastien Hinderer, projet Gallium, INRIA Paris            */
+/*                                                                        */
+/*   Copyright 2016 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
-(* Parser for the Tests Specification Language *)
+/* Parser for the Tests Specification Language */
 
 %{
 
@@ -36,7 +36,7 @@ let mkenvstmt envstmt =
 %token COMMA
 %token <int> TEST_DEPTH
 %token EQUAL PLUSEQUAL
-(* %token COLON *)
+/* %token COLON */
 %token INCLUDE SET UNSET WITH
 %token <string> IDENTIFIER
 %token <string> STRING

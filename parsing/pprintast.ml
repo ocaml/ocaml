@@ -26,7 +26,6 @@ open Format
 open Location
 open Longident
 open Parsetree
-open Ast_helper
 
 let prefix_symbols  = [ '!'; '?'; '~' ]
 let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
@@ -967,6 +966,7 @@ and class_field ctxt f x =
               ppat_loc_stack=[];
               ppat_attributes=[]};
            pvb_expr=e;
+           pvb_constraint=None;
            pvb_attributes=[];
            pvb_loc=Location.none;
           }
@@ -1245,7 +1245,7 @@ and payload ctxt f = function
       pp f " when "; expression ctxt f e
 
 (* transform [f = fun g h -> ..] to [f g h = ... ] could be improved *)
-and binding ctxt f {pvb_pat=p; pvb_expr=x; _} =
+and binding ctxt f {pvb_pat=p; pvb_expr=x; pvb_constraint = ct; _} =
   (* .pvb_attributes have already been printed by the caller, #bindings *)
   let rec pp_print_pexp_function f x =
     if x.pexp_attributes <> [] then pp f "=@;%a" (expression ctxt) x
@@ -1260,62 +1260,17 @@ and binding ctxt f {pvb_pat=p; pvb_expr=x; _} =
           pp f "(type@ %s)@ %a" str.txt pp_print_pexp_function e
       | _ -> pp f "=@;%a" (expression ctxt) x
   in
-  let tyvars_str tyvars = List.map (fun v -> v.txt) tyvars in
-  let is_desugared_gadt p e =
-    let gadt_pattern =
-      match p with
-      | {ppat_desc=Ppat_constraint({ppat_desc=Ppat_var _} as pat,
-                                   {ptyp_desc=Ptyp_poly (args_tyvars, rt)});
-         ppat_attributes=[]}->
-          Some (pat, args_tyvars, rt)
-      | _ -> None in
-    let rec gadt_exp tyvars e =
-      match e with
-      | {pexp_desc=Pexp_newtype (tyvar, e); pexp_attributes=[]} ->
-          gadt_exp (tyvar :: tyvars) e
-      | {pexp_desc=Pexp_constraint (e, ct); pexp_attributes=[]} ->
-          Some (List.rev tyvars, e, ct)
-      | _ -> None in
-    let gadt_exp = gadt_exp [] e in
-    match gadt_pattern, gadt_exp with
-    | Some (p, pt_tyvars, pt_ct), Some (e_tyvars, e, e_ct)
-      when tyvars_str pt_tyvars = tyvars_str e_tyvars ->
-      let ety = Typ.varify_constructors e_tyvars e_ct in
-      if ety = pt_ct then
-      Some (p, pt_tyvars, e_ct, e) else None
-    | _ -> None in
-  if x.pexp_attributes <> []
-  then
-    match p with
-    | {ppat_desc=Ppat_constraint({ppat_desc=Ppat_var _; _} as pat,
-                                 ({ptyp_desc=Ptyp_poly _; _} as typ));
-       ppat_attributes=[]; _} ->
-        pp f "%a@;: %a@;=@;%a"
-          (simple_pattern ctxt) pat (core_type ctxt) typ (expression ctxt) x
-    | _ ->
-        pp f "%a@;=@;%a" (pattern ctxt) p (expression ctxt) x
-  else
-  match is_desugared_gadt p x with
-  | Some (p, [], ct, e) ->
-      pp f "%a@;: %a@;=@;%a"
-        (simple_pattern ctxt) p (core_type ctxt) ct (expression ctxt) e
-  | Some (p, tyvars, ct, e) -> begin
-    pp f "%a@;: type@;%a.@;%a@;=@;%a"
-    (simple_pattern ctxt) p (list pp_print_string ~sep:"@;")
-    (tyvars_str tyvars) (core_type ctxt) ct (expression ctxt) e
-    end
+  match ct with
+  | Some { locally_abstract_univars=[]; typ } ->
+      pp f "%a@;:@;%a@;=@;%a"
+        (simple_pattern ctxt) p (core_type ctxt) typ (expression ctxt) x
+  | Some { locally_abstract_univars; typ } ->
+      pp f "%a@;: type@;%a.@;%a@;=@;%a"
+        (simple_pattern ctxt) p (list pp_print_string ~sep:"@;")
+        (List.map (fun x -> x.txt) locally_abstract_univars)
+        (core_type ctxt) typ (expression ctxt) x
   | None -> begin
       match p with
-      | {ppat_desc=Ppat_constraint(p ,ty);
-         ppat_attributes=[]} -> (* special case for the first*)
-          begin match ty with
-          | {ptyp_desc=Ptyp_poly _; ptyp_attributes=[]} ->
-              pp f "%a@;:@;%a@;=@;%a" (simple_pattern ctxt) p
-                (core_type ctxt) ty (expression ctxt) x
-          | _ ->
-              pp f "(%a@;:@;%a)@;=@;%a" (simple_pattern ctxt) p
-                (core_type ctxt) ty (expression ctxt) x
-          end
       | {ppat_desc=Ppat_var _; ppat_attributes=[]} ->
           pp f "%a@ %a" (simple_pattern ctxt) p pp_print_pexp_function x
       | _ ->

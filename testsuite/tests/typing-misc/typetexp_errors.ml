@@ -31,3 +31,26 @@ Line 1, characters 6-9:
           ^^^
 Error: The type variable name '_a is not allowed in programs
 |}]
+
+(* The next two hit the unification error case at the end of
+   Typetexp.globalize_used_variables. *)
+let f (x: int as 'a) (y: float as 'a) = (x,y)
+[%%expect{|
+Line 1, characters 25-36:
+1 | let f (x: int as 'a) (y: float as 'a) = (x,y)
+                             ^^^^^^^^^^^
+Error: This type float should be an instance of type int
+|}]
+
+type 'a t1 = 'a constraint 'a = 'b list
+type 'a t2 = 'a constraint 'a = 'b option
+
+let f (x : 'a t1) = (assert false : 'a t2)
+[%%expect{|
+type 'a t1 = 'a constraint 'a = 'b list
+type 'a t2 = 'a constraint 'a = 'b option
+Line 4, characters 36-38:
+4 | let f (x : 'a t1) = (assert false : 'a t2)
+                                        ^^
+Error: This type 'a option should be an instance of type 'b list
+|}]

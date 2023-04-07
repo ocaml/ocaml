@@ -1005,13 +1005,22 @@ and structure_item_desc =
   | Pstr_attribute of attribute  (** [[\@\@\@id]] *)
   | Pstr_extension of extension * attributes  (** [[%%id]] *)
 
+and poly_constraint = {
+  locally_abstract_univars:string loc list;
+  typ:core_type
+}
+(** - [{locally_abstract_univars = [x1; ...; xN]; typ }] represents
+        [type x1 ... xN. typ]
+*)
+
 and value_binding =
   {
     pvb_pat: pattern;
     pvb_expr: expression;
+    pvb_constraint: poly_constraint option;
     pvb_attributes: attributes;
     pvb_loc: Location.t;
-  }
+  }(** [let pat : type_constraint = exp] *)
 
 and module_binding =
     {

@@ -94,7 +94,11 @@ type error =
   | Class_match_failure of Ctype.class_match_failure list
   | Unbound_val of string
   | Unbound_type_var of (formatter -> unit) * Ctype.closed_class_failure
-  | Non_generalizable_class of Ident.t * Types.class_declaration
+  | Non_generalizable_class of
+      { id : Ident.t
+      ; clty : Types.class_declaration
+      ; nongen_vars : type_expr list
+      }
   | Cannot_coerce_self of type_expr
   | Non_collapsable_conjunction of
       Ident.t * Types.class_declaration * Errortrace.unification_error
@@ -1171,7 +1175,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
       in
       let partial =
         let dummy = type_exp val_env (Ast_helper.Exp.unreachable ()) in
-        Typecore.check_partial val_env pat.pat_type pat.pat_loc
+        Typecore.check_partial Modules_rejected val_env pat.pat_type pat.pat_loc
           [{c_lhs = pat; c_guard = None; c_rhs = dummy}]
       in
       let cl =
@@ -1716,8 +1720,12 @@ let final_decl env define_class
   List.iter Ctype.generalize cl_abbr.type_params;
   Option.iter  Ctype.generalize cl_abbr.type_manifest;
 
-  if Ctype.nongen_class_declaration clty then
-    raise(Error(cl.pci_loc, env, Non_generalizable_class (id, clty)));
+  Ctype.nongen_vars_in_class_declaration clty
+  |> Option.iter (fun vars ->
+      let nongen_vars = Btype.TypeSet.elements vars in
+      raise(Error(cl.pci_loc, env
+                 , Non_generalizable_class { id; clty; nongen_vars }));
+    );
 
   begin match
     Ctype.closed_class clty.cty_params
@@ -2100,11 +2108,17 @@ let report_error env ppf = function
         "@[<v>@[Some type variables are unbound in this type:@;<1 2>%t@]@ \
               @[%a@]@]"
        printer print_reason reason
-  | Non_generalizable_class (id, clty) ->
+  | Non_generalizable_class {id;  clty; nongen_vars } ->
+      let[@manual.ref "ss:valuerestriction"] manual_ref = [ 6; 1; 2] in
+      Printtyp.prepare_for_printing nongen_vars;
       fprintf ppf
         "@[The type of this class,@ %a,@ \
-           contains type variables that cannot be generalized@]"
+         contains the non-generalizable type variable(s): %a.@ %a@]"
         (Printtyp.class_declaration id) clty
+        (pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ")
+           Printtyp.prepared_type_scheme) nongen_vars
+        Misc.print_see_manual manual_ref
+
   | Cannot_coerce_self ty ->
       fprintf ppf
         "@[The type of self cannot be coerced to@ \

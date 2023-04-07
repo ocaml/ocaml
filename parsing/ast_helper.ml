@@ -483,10 +483,11 @@ end
 
 module Vb = struct
   let mk ?(loc = !default_loc) ?(attrs = []) ?(docs = empty_docs)
-        ?(text = []) pat expr =
+        ?(text = []) ?typ pat expr =
     {
      pvb_pat = pat;
      pvb_expr = expr;
+     pvb_constraint=typ;
      pvb_attributes =
        add_text_attrs text (add_docs_attrs docs attrs);
      pvb_loc = loc;
