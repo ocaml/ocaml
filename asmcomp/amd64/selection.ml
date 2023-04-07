@@ -44,19 +44,15 @@ let rec select_addr exp =
       if Misc.no_overflow_sub n m then (a, n - m) else default
   | Cop(Clsl, [arg; Cconst_int((1|2|3 as shift), _)], _) ->
       begin match select_addr arg with
-      | (Alinear e, n) ->
-          if Misc.no_overflow_lsl n shift
-          then (Ascale(e, 1 lsl shift), n lsl shift)
-          else default
+      | (Alinear e, n) when Misc.no_overflow_lsl n shift ->
+          (Ascale(e, 1 lsl shift), n lsl shift)
       | _ -> default
       end
   | Cop(Cmuli, [arg; Cconst_int((2|4|8 as mult), _)], _)
   | Cop(Cmuli, [Cconst_int((2|4|8 as mult), _); arg], _) ->
       begin match select_addr arg with
-      | (Alinear e, n) ->
-          if Misc.no_overflow_mul n mult
-          then (Ascale(e, mult), n * mult)
-          else default
+      | (Alinear e, n) when Misc.no_overflow_mul n mult ->
+          (Ascale(e, mult), n * mult)
       | _ -> default
       end
   | Cop((Caddi | Caddv | Cadda), [arg1; arg2], _) ->
