@@ -719,6 +719,9 @@ Working version
   (Vincent Laviron, Xavier Leroy, Gabriel Scherer,
    review by Xavier Leroy, report by Nick Roberts)
 
+- #12162: Fix miscompilation on amd64 backends involving integer overflows
+  (Vincent Laviron and Greta Yorsh, review by Stefan Muenzel)
+
 OCaml 5.0.0 (15 December 2022)
 ------------------------------
 

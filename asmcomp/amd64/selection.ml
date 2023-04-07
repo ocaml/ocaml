@@ -31,38 +31,39 @@ type addressing_expr =
   | Ascaledadd of expression * expression * int
 
 let rec select_addr exp =
+  let default = (Alinear exp, 0) in
   match exp with
     Cconst_symbol (s, _) when not !Clflags.dlcode ->
       (Asymbol s, 0)
-  | Cop((Caddi | Caddv | Cadda), [arg; Cconst_int (m, _)], _) ->
-      let (a, n) = select_addr arg in (a, n + m)
-  | Cop(Csubi, [arg; Cconst_int (m, _)], _) ->
-      let (a, n) = select_addr arg in (a, n - m)
+  | Cop((Caddi | Caddv | Cadda), [arg; Cconst_int (m, _)], _)
   | Cop((Caddi | Caddv | Cadda), [Cconst_int (m, _); arg], _) ->
-      let (a, n) = select_addr arg in (a, n + m)
+      let (a, n) = select_addr arg in
+      if Misc.no_overflow_add n m then (a, n + m) else default
+  | Cop(Csubi, [arg; Cconst_int (m, _)], _) ->
+      let (a, n) = select_addr arg in
+      if Misc.no_overflow_sub n m then (a, n - m) else default
   | Cop(Clsl, [arg; Cconst_int((1|2|3 as shift), _)], _) ->
       begin match select_addr arg with
-        (Alinear e, n) -> (Ascale(e, 1 lsl shift), n lsl shift)
-      | _ -> (Alinear exp, 0)
+      | (Alinear e, n) when Misc.no_overflow_lsl n shift ->
+          (Ascale(e, 1 lsl shift), n lsl shift)
+      | _ -> default
       end
-  | Cop(Cmuli, [arg; Cconst_int((2|4|8 as mult), _)], _) ->
-      begin match select_addr arg with
-        (Alinear e, n) -> (Ascale(e, mult), n * mult)
-      | _ -> (Alinear exp, 0)
-      end
+  | Cop(Cmuli, [arg; Cconst_int((2|4|8 as mult), _)], _)
   | Cop(Cmuli, [Cconst_int((2|4|8 as mult), _); arg], _) ->
       begin match select_addr arg with
-        (Alinear e, n) -> (Ascale(e, mult), n * mult)
-      | _ -> (Alinear exp, 0)
+      | (Alinear e, n) when Misc.no_overflow_mul n mult ->
+          (Ascale(e, mult), n * mult)
+      | _ -> default
       end
   | Cop((Caddi | Caddv | Cadda), [arg1; arg2], _) ->
       begin match (select_addr arg1, select_addr arg2) with
-          ((Alinear e1, n1), (Alinear e2, n2)) ->
+          ((Alinear e1, n1), (Alinear e2, n2))
+          when Misc.no_overflow_add n1 n2 ->
               (Aadd(e1, e2), n1 + n2)
-        | ((Alinear e1, n1), (Ascale(e2, scale), n2)) ->
+        | ((Alinear e1, n1), (Ascale(e2, scale), n2))
+        | ((Ascale(e2, scale), n2), (Alinear e1, n1))
+          when Misc.no_overflow_add n1 n2 ->
               (Ascaledadd(e1, e2, scale), n1 + n2)
-        | ((Ascale(e1, scale), n1), (Alinear e2, n2)) ->
-              (Ascaledadd(e2, e1, scale), n1 + n2)
         | (_, (Ascale(e2, scale), n2)) ->
               (Ascaledadd(arg1, e2, scale), n2)
         | ((Ascale(e1, scale), n1), _) ->
@@ -70,8 +71,7 @@ let rec select_addr exp =
         | _ ->
               (Aadd(arg1, arg2), 0)
       end
-  | arg ->
-      (Alinear arg, 0)
+  | _ -> default
 
 (* Special constraints on operand and result registers *)
 
