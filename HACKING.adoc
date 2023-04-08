@@ -27,7 +27,7 @@ not have this which causes some important development things to be disabled
 +
 ----
 ./configure
-make
+make -j 4
 ----
 If you are on a release build and need development options, you can add
 `--enable-ocamltest` (to allow running the testsuite) and `--enable-warn-error`
