@@ -307,6 +307,11 @@ let can_assume_injective () =
   | Expression | Subst -> false
   | Pattern { assume_injective } -> assume_injective
 
+let in_counterexample () =
+  match !umode with
+  | Expression | Subst -> false
+  | Pattern { allow_recursive_equations } -> allow_recursive_equations
+
 let allow_recursive_equations () =
   !Clflags.recursive_types
   || match !umode with
@@ -1210,20 +1215,22 @@ let instance_list schl =
   For_copy.with_scope (fun copy_scope ->
     List.map (fun t -> copy copy_scope t) schl)
 
-let reified_var_counter = ref Vars.empty
-let reset_reified_var_counter () =
-  reified_var_counter := Vars.empty
-
-(* names given to new type constructors.
-   Used for existential types and
-   local constraints *)
-let get_new_abstract_name s =
-  let index =
-    try Vars.find s !reified_var_counter + 1
-    with Not_found -> 0 in
-  reified_var_counter := Vars.add s index !reified_var_counter;
-  if index = 0 && s <> "" && s.[String.length s - 1] <> '$' then s else
-  Printf.sprintf "%s%d" s index
+(* Create unique names to new type constructors.
+   Used for existential types and local constraints. *)
+let get_new_abstract_name env s =
+  (* unique names are needed only for error messages *)
+  if in_counterexample () then s else
+  let name index =
+    if index = 0 && s <> "" && s.[String.length s - 1] <> '$' then s else
+    Printf.sprintf "%s%d" s index
+  in
+  let check index =
+    match Env.find_type_by_name (Longident.Lident (name index)) env with
+    | _ -> false
+    | exception Not_found -> true
+  in
+  let index = Misc.find_first_mono check in
+  name index
 
 let new_local_type ?(loc = Location.none) ?manifest_and_scope () =
   let manifest, expansion_scope =
@@ -1267,7 +1274,7 @@ let instance_constructor existential_treatment cstr =
             let decl = new_local_type () in
             let name = existential_name cstr existential in
             let (id, new_env) =
-              Env.enter_type (get_new_abstract_name name) decl !env
+              Env.enter_type (get_new_abstract_name !env name) decl !env
                 ~scope:fresh_constr_scope in
             env := new_env;
             let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
@@ -2163,7 +2170,7 @@ let reify env t =
     let name = match name with Some s -> "$'"^s | _ -> "$" in
     let decl = new_local_type () in
     let (id, new_env) =
-      Env.enter_type (get_new_abstract_name name) decl !env
+      Env.enter_type (get_new_abstract_name !env name) decl !env
         ~scope:fresh_constr_scope in
     let path = Path.Pident id in
     let t = newty2 ~level:lev (Tconstr (path,[],ref Mnil))  in
