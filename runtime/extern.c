@@ -123,24 +123,23 @@ struct caml_extern_state {
 static struct caml_extern_state* prepare_extern_state (void)
 {
   Caml_check_caml_state();
-  struct caml_extern_state* extern_state;
+  struct caml_extern_state* s;
 
   if (Caml_state->extern_state != NULL)
     return Caml_state->extern_state;
 
-  extern_state =
-    caml_stat_alloc(sizeof(struct caml_extern_state));
+  s = caml_stat_alloc(sizeof(struct caml_extern_state));
 
-  extern_state->extern_flags = 0;
-  extern_state->obj_counter = 0;
-  extern_state->size_32 = 0;
-  extern_state->size_64 = 0;
-  extern_state->extern_stack = extern_state->extern_stack_init;
-  extern_state->extern_stack_limit =
-    extern_state->extern_stack + EXTERN_STACK_INIT_SIZE;
+  s->extern_flags = 0;
+  s->obj_counter = 0;
+  s->size_32 = 0;
+  s->size_64 = 0;
+  s->extern_stack = s->extern_stack_init;
+  s->extern_stack_limit =
+    s->extern_stack + EXTERN_STACK_INIT_SIZE;
 
-  Caml_state->extern_state = extern_state;
-  return extern_state;
+  Caml_state->extern_state = s;
+  return s;
 }
 
 static struct caml_extern_state* get_extern_state (void)
