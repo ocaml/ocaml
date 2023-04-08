@@ -1756,9 +1756,9 @@ void caml_finish_sweeping (void)
   CAML_EV_END(EV_MAJOR_FINISH_SWEEPING);
 }
 
-Caml_inline int add_addr(struct addrmap* amap, value v) {
-  uintnat k = PTR_TO_PAGE(v);
-  uintnat flag = (uintnat)1 << PTR_TO_PAGE_OFFSET(v);
+Caml_inline int add_addr(struct addrmap* amap, value* ptr) {
+  uintnat k = PTR_TO_PAGE(ptr);
+  uintnat flag = (uintnat)1 << PTR_TO_PAGE_OFFSET(ptr);
   int new_entry = 0;
 
   value* amap_pos = caml_addrmap_insert_pos(amap, k);
@@ -1768,7 +1768,7 @@ Caml_inline int add_addr(struct addrmap* amap, value v) {
     *amap_pos = 0;
   }
 
-  CAMLassert(v == (value)((k + PTR_TO_PAGE_OFFSET(v))*sizeof(value)));
+  CAMLassert(ptr == (value*)((k + PTR_TO_PAGE_OFFSET(ptr))*sizeof(value)));
 
   if (!(*amap_pos & flag)) {
     *amap_pos |= flag;
@@ -1813,7 +1813,7 @@ static void mark_stack_prune(struct mark_stack* stk)
     } else {
       while(me.start < me.end) {
         compressed_entries += add_addr(&stk->compressed_stack,
-                                       (uintnat)me.start);
+                                       me.start);
         me.start++;
       }
     }
