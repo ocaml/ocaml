@@ -993,12 +993,7 @@ let o = object
   end;;
 [%%expect {|
 class ['a] c : object ('a) constraint 'a = < .. > end
-Line 4, characters 14-25:
-4 |     inherit [ < m : int > ] c
-                  ^^^^^^^^^^^
-Error: The type parameter < m : int >
-       does not meet its constraint: it should be < .. >
-       Self type cannot be unified with a closed object type
+val o : < m : int > = <obj>
 |}];;
 
 class type [ 'a ] d = object method a : 'a method b : 'a end
@@ -1024,7 +1019,7 @@ class type ['a] ct = object ('a) constraint 'a = < .. > end
 Line 2, characters 10-31:
 2 | class c : [ < a : int; ..> ] ct = object method a = 3 end;;
               ^^^^^^^^^^^^^^^^^^^^^
-Error: This non-virtual class has undeclared virtual methods.
+Error: This non-virtual class type has undeclared virtual methods.
        The following methods were not declared : a
 |}];;
 
@@ -1149,6 +1144,19 @@ class c = [ < foo : int; .. > ] p;;
 class ['a] p :
   object ('a) constraint 'a = < .. > method private foo : int end
 class c : object method foo : int end
+|}];;
+
+class ['a] p = object (_ : 'a) method private foo = 5 end;;
+class c = [ < foo : string; .. > ] p;;
+[%%expect {|
+class ['a] p :
+  object ('a) constraint 'a = < .. > method private foo : int end
+Line 2, characters 12-32:
+2 | class c = [ < foo : string; .. > ] p;;
+                ^^^^^^^^^^^^^^^^^^^^
+Error: The type parameter < foo : string; .. >
+       does not meet its constraint: it should be < foo : int; .. >
+       Types for method foo are incompatible
 |}];;
 
 (* Errors for undefined methods *)

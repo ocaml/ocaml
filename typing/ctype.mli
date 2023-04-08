@@ -117,7 +117,7 @@ val associate_fields:
         (string * field_kind * type_expr) list
 val opened_object: type_expr -> bool
 val set_object_name:
-        Ident.t -> type_expr list -> type_expr -> unit
+        Path.t -> type_expr list -> type_expr -> unit
 val remove_object_name: type_expr -> unit
 val find_cltype_for_path: Env.t -> Path.t -> type_declaration * type_expr
 
@@ -354,6 +354,7 @@ val subtype: Env.t -> type_expr -> type_expr -> unit -> unit
 
 val new_class_signature : unit -> class_signature
 val add_dummy_method : Env.t -> scope:int -> class_signature -> unit
+val remove_dummy_method : class_signature -> unit
 
 type add_method_failure =
   | Unexpected_method
@@ -383,10 +384,14 @@ exception Inherit_class_signature_failed of inherit_class_signature_failure
 val inherit_class_signature : strict:bool -> Env.t ->
   class_signature -> class_signature -> unit
 
-val update_class_signature :
-  Env.t -> class_signature -> label list * label list
+val update_implicitly_public_methods :
+  class_signature -> label list
 
-val hide_private_methods : Env.t -> class_signature -> unit
+val update_implicitly_declared_methods :
+  Env.t -> class_signature -> label list
+
+val hide_private_methods : class_signature -> unit
+val reveal_private_methods : Env.t -> class_signature -> unit
 
 val close_class_signature : Env.t -> class_signature -> bool
 
