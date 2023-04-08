@@ -3167,12 +3167,13 @@ and type_expect_
       assert(is_optional l); (* default allowed only with optional argument *)
       let open Ast_helper in
       let default_loc = default.pexp_loc in
+      let default_ghost = {default.pexp_loc with loc_ghost = true} in
       let scases = [
         Exp.case
-          (Pat.construct ~loc:default_loc
+          (Pat.construct ~loc:default_ghost
              (mknoloc (Longident.(Ldot (Lident "*predef*", "Some"))))
-             (Some ([], Pat.var ~loc:default_loc (mknoloc "*sth*"))))
-          (Exp.ident ~loc:default_loc (mknoloc (Longident.Lident "*sth*")));
+             (Some ([], Pat.var ~loc:default_ghost (mknoloc "*sth*"))))
+          (Exp.ident ~loc:default_ghost (mknoloc (Longident.Lident "*sth*")));
 
         Exp.case
           (Pat.construct ~loc:default_loc

@@ -719,6 +719,10 @@ Working version
 - #12112: Fix caml_callback{2,3}_exn when used with effect handlers.
   (Lucas Pluvinage, review by Gabriel Scherer, David Allsopp and Xavier Leroy)
 
+- #12134: Use ghost location for nodes created when handling defaults in
+  optional arguments.
+  (Paul-Elliot Anglès d'Auriac, review by Gabriel Scherer)
+
 - #12153: Fix segfault in bytecode programs involving recursive value
   definitions of values of size 0
   (Vincent Laviron, Xavier Leroy, Gabriel Scherer,
