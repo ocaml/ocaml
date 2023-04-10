@@ -945,11 +945,16 @@ again:
    integers (uintnat). Each integer represents a "chunk" of addresses
    that may or may not be present in the stack.
  */
-#define CHUNK_MASK (~(uintnat)(BITS_PER_WORD-1))
-#define PTR_TO_CHUNK(v) (((uintnat)(v)/sizeof(value)) & CHUNK_MASK)
-#define PTR_TO_CHUNK_OFFSET(v) ((((uintnat)(v)/sizeof(value)) & ~CHUNK_MASK))
-#define CHUNK_AND_OFFSET_TO_PTR(chunk, offset) \
-  ((value*) ((chunk + offset) * sizeof(value)))
+static const uintnat chunk_mask = ~(uintnat)(BITS_PER_WORD-1);
+static inline uintnat ptr_to_chunk(value *ptr) {
+  return ((uintnat)(ptr) / sizeof(value)) & chunk_mask;
+}
+static inline uintnat ptr_to_chunk_offset(value *ptr) {
+  return ((uintnat)(ptr) / sizeof(value)) & ~chunk_mask;
+}
+static inline value* chunk_and_offset_to_ptr(uintnat chunk, uintnat offset) {
+  return (value*)((chunk + offset) * sizeof(value));
+}
 
 /* mark until the budget runs out or marking is done */
 static intnat mark(intnat budget) {
@@ -971,7 +976,7 @@ static intnat mark(intnat budget) {
 
         for(int ofs=0; ofs<BITS_PER_WORD; ofs++) {
           if(bitset & ((uintnat)1 << ofs)) {
-            value* p = CHUNK_AND_OFFSET_TO_PTR(chunk, ofs);
+            value* p = chunk_and_offset_to_ptr(chunk, ofs);
             mark_slice_darken(domain_state->mark_stack, *p, &budget);
           }
         }
@@ -1763,8 +1768,9 @@ void caml_finish_sweeping (void)
 }
 
 Caml_inline int add_addr(struct addrmap* amap, value* ptr) {
-  uintnat chunk = PTR_TO_CHUNK(ptr);
-  uintnat flag = (uintnat)1 << PTR_TO_CHUNK_OFFSET(ptr);
+  uintnat chunk = ptr_to_chunk(ptr);
+  uintnat offset = ptr_to_chunk_offset(ptr);
+  uintnat flag = (uintnat)1 << offset;
   int new_entry = 0;
 
   value* amap_pos = caml_addrmap_insert_pos(amap, chunk);
@@ -1774,7 +1780,7 @@ Caml_inline int add_addr(struct addrmap* amap, value* ptr) {
     *amap_pos = 0;
   }
 
-  CAMLassert(ptr == CHUNK_AND_OFFSET_TO_PTR(chunk, PTR_TO_CHUNK_OFFSET(ptr)));
+  CAMLassert(ptr == chunk_and_offset_to_ptr(chunk, offset));
 
   if (!(*amap_pos & flag)) {
     *amap_pos |= flag;
