@@ -45,6 +45,72 @@ type is_safe =
   | Safe
   | Unsafe
 
+type block_record_field = {
+  brf_name: string;
+  brf_mut: mutable_flag;
+  brf_pos: int;
+  brf_loc: Location.t;
+  brf_attributes: Parsetree.attributes;
+}
+
+type const_metadata =
+  | Const_variant of { label: label }
+  | Const_construct of {
+      arity: int;
+      attributes: Parsetree.attributes;
+      loc: Location.t;
+      name: string;
+      tag: Types.constructor_tag;
+    }
+
+type block_metadata =
+  | Block_construct of {
+      arity: int;
+      attributes: Parsetree.attributes;
+      loc: Location.t;
+      name: string;
+      tag: Types.constructor_tag;
+    }
+  | Block_record of {
+      fields: block_record_field array;
+      representation: Types.record_representation
+    }
+  | Block_tuple
+  | Block_variant of {
+      label: label
+    }
+
+type field_metadata =
+  | Field_constructor of {
+      attributes: Parsetree.attributes;
+      loc: Location.t;
+      name : string;
+      arity : int;
+    }
+  | Field_record of {
+      attributes: Parsetree.attributes;
+      loc: Location.t;
+      name : string;
+      pos : int;
+    }
+  | Field_module of {
+      address: Env.address
+    }
+  | Field_primitive of {
+      mod_name : string;
+      prim_name : string;
+    }
+
+type constructor_metadata = {
+  cm_kind: [ `block | `const ];
+  cm_name: Ident.t;
+  cm_arity: int;
+}
+
+type switch_metadata = constructor_metadata list
+
+type ifthenelse_metadata = constructor_metadata list
+
 type primitive =
   | Pbytes_to_string
   | Pbytes_of_string
@@ -53,8 +119,8 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pmakeblock of int * mutable_flag * block_shape
-  | Pfield of int
+  | Pmakeblock of int * mutable_flag * block_shape * block_metadata option
+  | Pfield of int * field_metadata option
   | Pfield_computed
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Psetfield_computed of immediate_or_pointer * initialization_or_assignment
@@ -194,8 +260,8 @@ val equal_value_kind : value_kind -> value_kind -> bool
 val equal_boxed_integer : boxed_integer -> boxed_integer -> bool
 
 type structured_constant =
-    Const_base of constant
-  | Const_block of int * structured_constant list
+    Const_base of constant * const_metadata option
+  | Const_block of int * structured_constant list * block_metadata option
   | Const_float_array of string list
   | Const_immstring of string
 
@@ -278,7 +344,7 @@ type lambda =
   | Ltrywith of lambda * Ident.t * lambda
 (* Lifthenelse (e, t, f) evaluates t if e evaluates to 0, and
    evaluates f if e evaluates to any other value *)
-  | Lifthenelse of lambda * lambda * lambda
+  | Lifthenelse of lambda * lambda * lambda * ifthenelse_metadata option
   | Lsequence of lambda * lambda
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
@@ -308,6 +374,7 @@ and lambda_switch =
     sw_consts: (int * lambda) list;     (* Integer cases *)
     sw_numblocks: int;                  (* Number of tag block cases *)
     sw_blocks: (int * lambda) list;     (* Tag block cases *)
+    sw_metadata: switch_metadata option;(* Metadata about the switch *)
     sw_failaction : lambda option}      (* Action to take if failure *)
 and lambda_event =
   { lev_loc: scoped_location;
@@ -344,7 +411,7 @@ type program =
 val make_key: lambda -> lambda option
 
 val const_unit: structured_constant
-val const_int : int -> structured_constant
+val const_int : ?meta:const_metadata option -> int -> structured_constant
 val lambda_unit: lambda
 val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
@@ -372,10 +439,10 @@ val transl_prim: string -> string -> lambda
 
 val free_variables: lambda -> Ident.Set.t
 
-val transl_module_path: scoped_location -> Env.t -> Path.t -> lambda
-val transl_value_path: scoped_location -> Env.t -> Path.t -> lambda
-val transl_extension_path: scoped_location -> Env.t -> Path.t -> lambda
-val transl_class_path: scoped_location -> Env.t -> Path.t -> lambda
+val transl_module_path: scoped_location -> field_metadata option -> Env.t -> Path.t -> lambda
+val transl_value_path: scoped_location -> field_metadata option -> Env.t -> Path.t -> lambda
+val transl_extension_path: scoped_location -> field_metadata option -> Env.t -> Path.t -> lambda
+val transl_class_path: scoped_location -> field_metadata option -> Env.t -> Path.t -> lambda
 
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 

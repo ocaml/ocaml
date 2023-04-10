@@ -75,8 +75,8 @@ let out opcode =
 exception AsInt
 
 let const_as_int = function
-  | Const_base(Const_int i) -> i
-  | Const_base(Const_char c) -> Char.code c
+  | Const_base(Const_int i, _metadata) -> i
+  | Const_base(Const_char c, _metadata) -> Char.code c
   | _ -> raise AsInt
 
 let is_immed i = immed_min <= i && i <= immed_max
@@ -233,13 +233,13 @@ let emit_instr = function
   | Ksetglobal q -> out opSETGLOBAL; slot_for_setglobal q
   | Kconst sc ->
       begin match sc with
-        Const_base(Const_int i) when is_immed i ->
+        Const_base(Const_int i, _metadata) when is_immed i ->
           if i >= 0 && i <= 3
           then out (opCONST0 + i)
           else (out opCONSTINT; out_int i)
-      | Const_base(Const_char c) ->
+      | Const_base(Const_char c, _metadata) ->
           out opCONSTINT; out_int (Char.code c)
-      | Const_block(t, []) ->
+      | Const_block(t, [], _metadata) ->
           if t = 0 then out opATOM0 else (out opATOM; out_int t)
       | _ ->
           out opGETGLOBAL; slot_for_literal sc
@@ -361,13 +361,13 @@ let rec emit = function
       out opPUSHGETGLOBAL; slot_for_getglobal id; emit c
   | Kpush :: Kconst sc :: c ->
       begin match sc with
-        Const_base(Const_int i) when is_immed i ->
+        Const_base(Const_int i, _metadata) when is_immed i ->
           if i >= 0 && i <= 3
           then out (opPUSHCONST0 + i)
           else (out opPUSHCONSTINT; out_int i)
-      | Const_base(Const_char c) ->
+      | Const_base(Const_char c, _metadata) ->
           out opPUSHCONSTINT; out_int(Char.code c)
-      | Const_block(t, []) ->
+      | Const_block(t, [], _metadata) ->
           if t = 0 then out opPUSHATOM0 else (out opPUSHATOM; out_int t)
       | _ ->
           out opPUSHGETGLOBAL; slot_for_literal sc

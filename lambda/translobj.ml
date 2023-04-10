@@ -26,7 +26,7 @@ let consts : (structured_constant, Ident.t) Hashtbl.t = Hashtbl.create 17
 
 let share c =
   match c with
-    Const_block (_n, l) when l <> [] ->
+    Const_block (_n, l, _metadata) when l <> [] ->
       begin try
         Lvar (Hashtbl.find consts c)
       with Not_found ->
@@ -43,12 +43,12 @@ let method_cache = ref lambda_unit
 let method_count = ref 0
 let method_table = ref []
 
-let meth_tag s = Lconst(Const_base(Const_int(Btype.hash_variant s)))
+let meth_tag s = Lconst(Const_base(Const_int(Btype.hash_variant s), None))
 
 let next_cache tag =
   let n = !method_count in
   incr method_count;
-  (tag, [!method_cache; Lconst(Const_base(Const_int n))])
+  (tag, [!method_cache; Lconst(Const_base(Const_int n, None))])
 
 let rec is_path = function
     Lvar _ | Lprim (Pgetglobal _, [], _) | Lconst _ -> true
@@ -81,7 +81,7 @@ let reset_labels () =
 
 (* Insert labels *)
 
-let int n = Lconst (Const_base (Const_int n))
+let int n = Lconst (Const_base (Const_int n, None))
 
 let prim_makearray =
   Primitive.simple ~name:"caml_make_vect" ~arity:2 ~alloc:true
@@ -125,7 +125,7 @@ let transl_label_init_flambda f =
 let transl_store_label_init glob size f arg =
   assert(not Config.flambda);
   assert(!Clflags.native_code);
-  method_cache := Lprim(Pfield size,
+  method_cache := Lprim(Pfield (size, None),
                         [Lprim(Pgetglobal glob, [], Loc_unknown)],
                         Loc_unknown);
   let expr = f arg in
@@ -178,7 +178,7 @@ let oo_wrap env req f x =
            List.fold_left
              (fun lambda id ->
                 Llet(StrictOpt, Pgenval, id,
-                     Lprim(Pmakeblock(0, Mutable, None),
+                     Lprim(Pmakeblock(0, Mutable, None, None),
                            [lambda_unit; lambda_unit; lambda_unit],
                            Loc_unknown),
                      lambda))

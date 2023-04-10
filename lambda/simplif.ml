@@ -42,7 +42,7 @@ let rec eliminate_ref id = function
   | Lletrec(idel, e2) ->
       Lletrec(List.map (fun (v, e) -> (v, eliminate_ref id e)) idel,
               eliminate_ref id e2)
-  | Lprim(Pfield 0, [Lvar v], _) when Ident.same v id ->
+  | Lprim(Pfield (0, _metadata), [Lvar v], _) when Ident.same v id ->
       Lmutvar id
   | Lprim(Psetfield(0, _, _), [Lvar v; e], _) when Ident.same v id ->
       Lassign(id, eliminate_ref id e)
@@ -59,7 +59,8 @@ let rec eliminate_ref id = function
          sw_blocks =
             List.map (fun (n, e) -> (n, eliminate_ref id e)) sw.sw_blocks;
          sw_failaction =
-            Option.map (eliminate_ref id) sw.sw_failaction; },
+            Option.map (eliminate_ref id) sw.sw_failaction;
+         sw_metadata = sw.sw_metadata; },
         loc)
   | Lstringswitch(e, sw, default, loc) ->
       Lstringswitch
@@ -72,10 +73,11 @@ let rec eliminate_ref id = function
       Lstaticcatch(eliminate_ref id e1, i, eliminate_ref id e2)
   | Ltrywith(e1, v, e2) ->
       Ltrywith(eliminate_ref id e1, v, eliminate_ref id e2)
-  | Lifthenelse(e1, e2, e3) ->
+  | Lifthenelse(e1, e2, e3, meta) ->
       Lifthenelse(eliminate_ref id e1,
                   eliminate_ref id e2,
-                  eliminate_ref id e3)
+                  eliminate_ref id e3,
+                  meta)
   | Lsequence(e1, e2) ->
       Lsequence(eliminate_ref id e1, eliminate_ref id e2)
   | Lwhile(e1, e2) ->
@@ -165,7 +167,7 @@ let simplify_exits lam =
   | Ltrywith(l1, _v, l2) ->
       count ~try_depth:(try_depth+1) l1;
       count ~try_depth l2;
-  | Lifthenelse(l1, l2, l3) ->
+  | Lifthenelse(l1, l2, l3, _meta) ->
       count ~try_depth l1;
       count ~try_depth l2;
       count ~try_depth l3
@@ -233,13 +235,13 @@ let simplify_exits lam =
     match p, ll with
         (* Simplify Obj.with_tag *)
       | Pccall { Primitive.prim_name = "caml_obj_with_tag"; _ },
-        [Lconst (Const_base (Const_int tag));
-         Lprim (Pmakeblock (_, mut, shape), fields, loc)] ->
-         Lprim (Pmakeblock(tag, mut, shape), fields, loc)
+        [Lconst (Const_base (Const_int tag, None));
+         Lprim (Pmakeblock (_, mut, shape, metadata), fields, loc)] ->
+         Lprim (Pmakeblock(tag, mut, shape, metadata), fields, loc)
       | Pccall { Primitive.prim_name = "caml_obj_with_tag"; _ },
-        [Lconst (Const_base (Const_int tag));
-         Lconst (Const_block (_, fields))] ->
-         Lconst (Const_block (tag, fields))
+        [Lconst (Const_base (Const_int tag, None));
+         Lconst (Const_block (_, fields, metadata))] ->
+         Lconst (Const_block (tag, fields, metadata))
 
       | _ -> Lprim(p, ll, loc)
      end
@@ -308,8 +310,8 @@ let simplify_exits lam =
   | Ltrywith(l1, v, l2) ->
       let l1 = simplif ~try_depth:(try_depth + 1) l1 in
       Ltrywith(l1, v, simplif ~try_depth l2)
-  | Lifthenelse(l1, l2, l3) -> Lifthenelse(simplif ~try_depth l1,
-    simplif ~try_depth l2, simplif ~try_depth l3)
+  | Lifthenelse(l1, l2, l3, meta) -> Lifthenelse(simplif ~try_depth l1,
+    simplif ~try_depth l2, simplif ~try_depth l3, meta)
   | Lsequence(l1, l2) -> Lsequence(simplif ~try_depth l1, simplif ~try_depth l2)
   | Lwhile(l1, l2) -> Lwhile(simplif ~try_depth l1, simplif ~try_depth l2)
   | Lfor(v, l1, l2, dir, l3) ->
@@ -344,7 +346,7 @@ let exact_application {kind; params; _} args =
           if List.length params <> List.length tupled_args
           then None
           else Some tupled_args
-      | [Lconst(Const_block (_, const_args))] ->
+      | [Lconst(Const_block (_, const_args, _metadata))] ->
           if List.length params <> List.length const_args
           then None
           else Some (List.map (fun cst -> Lconst cst) const_args)
@@ -454,7 +456,7 @@ let simplify_lets lam =
   | Lstaticraise (_i,ls) -> List.iter (count bv) ls
   | Lstaticcatch(l1, _, l2) -> count bv l1; count bv l2
   | Ltrywith(l1, _v, l2) -> count bv l1; count bv l2
-  | Lifthenelse(l1, l2, l3) -> count bv l1; count bv l2; count bv l3
+  | Lifthenelse(l1, l2, l3, _meta) -> count bv l1; count bv l2; count bv l3
   | Lsequence(l1, l2) -> count bv l1; count bv l2
   | Lwhile(l1, l2) -> count Ident.Map.empty l1; count Ident.Map.empty l2
   | Lfor(_, l1, l2, _dir, l3) ->
@@ -543,7 +545,7 @@ let simplify_lets lam =
       Hashtbl.add subst v (simplif (Lvar w));
       simplif l2
   | Llet(Strict, kind, v,
-         Lprim(Pmakeblock(0, Mutable, kind_ref) as prim, [linit], loc), lbody)
+         Lprim(Pmakeblock(0, Mutable, kind_ref, _metadata) as prim, [linit], loc), lbody)
     when optimize ->
       let slinit = simplif linit in
       let slbody = simplif lbody in
@@ -592,7 +594,7 @@ let simplify_lets lam =
   | Lstaticcatch(l1, (i,args), l2) ->
       Lstaticcatch (simplif l1, (i,args), simplif l2)
   | Ltrywith(l1, v, l2) -> Ltrywith(simplif l1, v, simplif l2)
-  | Lifthenelse(l1, l2, l3) -> Lifthenelse(simplif l1, simplif l2, simplif l3)
+  | Lifthenelse(l1, l2, l3, meta) -> Lifthenelse(simplif l1, simplif l2, simplif l3, meta)
   | Lsequence(Lifused(v, l1), l2) ->
       if count_var v > 0
       then Lsequence(simplif l1, simplif l2)
@@ -673,7 +675,7 @@ let rec emit_tail_infos is_tail lambda =
   | Ltrywith (body, _, handler) ->
       emit_tail_infos false body;
       emit_tail_infos is_tail handler
-  | Lifthenelse (cond, ifso, ifno) ->
+  | Lifthenelse (cond, ifso, ifno, _meta) ->
       emit_tail_infos false cond;
       emit_tail_infos is_tail ifso;
       emit_tail_infos is_tail ifno
@@ -712,7 +714,7 @@ and list_emit_tail_infos is_tail =
 
 let split_default_wrapper ~id:fun_id ~kind ~params ~return ~body ~attr ~loc =
   let rec aux map = function
-    | Llet(Strict, k, id, (Lifthenelse(Lvar optparam, _, _) as def), rest) when
+    | Llet(Strict, k, id, (Lifthenelse(Lvar optparam, _, _, _) as def), rest) when
         Ident.name optparam = "*opt*" && List.mem_assoc optparam params
           && not (List.mem_assoc optparam map)
       ->

@@ -21,17 +21,17 @@ open Lambda
 
 
 let rec struct_const ppf = function
-  | Const_base(Const_int n) -> fprintf ppf "%i" n
-  | Const_base(Const_char c) -> fprintf ppf "%C" c
-  | Const_base(Const_string (s, _, _)) -> fprintf ppf "%S" s
+  | Const_base(Const_int n, _metadata) -> fprintf ppf "%i" n
+  | Const_base(Const_char c, _metadata) -> fprintf ppf "%C" c
+  | Const_base(Const_string (s, _, _), _metadata) -> fprintf ppf "%S" s
   | Const_immstring s -> fprintf ppf "#%S" s
-  | Const_base(Const_float f) -> fprintf ppf "%s" f
-  | Const_base(Const_int32 n) -> fprintf ppf "%lil" n
-  | Const_base(Const_int64 n) -> fprintf ppf "%LiL" n
-  | Const_base(Const_nativeint n) -> fprintf ppf "%nin" n
-  | Const_block(tag, []) ->
+  | Const_base(Const_float f, _metadata) -> fprintf ppf "%s" f
+  | Const_base(Const_int32 n, _metadata) -> fprintf ppf "%lil" n
+  | Const_base(Const_int64 n, _metadata) -> fprintf ppf "%LiL" n
+  | Const_base(Const_nativeint n, _metadata) -> fprintf ppf "%nin" n
+  | Const_block(tag, [], _metadata) ->
       fprintf ppf "[%i]" tag
-  | Const_block(tag, sc1::scl) ->
+  | Const_block(tag, sc1::scl, _metadata) ->
       let sconsts ppf scl =
         List.iter (fun sc -> fprintf ppf "@ %a" struct_const sc) scl in
       fprintf ppf "@[<1>[%i:@ @[%a%a@]]@]" tag struct_const sc1 sconsts scl
@@ -152,11 +152,11 @@ let primitive ppf = function
   | Pignore -> fprintf ppf "ignore"
   | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
-  | Pmakeblock(tag, Immutable, shape) ->
+  | Pmakeblock(tag, Immutable, shape, _metadata) ->
       fprintf ppf "makeblock %i%a" tag block_shape shape
-  | Pmakeblock(tag, Mutable, shape) ->
+  | Pmakeblock(tag, Mutable, shape, _metadata) ->
       fprintf ppf "makemutable %i%a" tag block_shape shape
-  | Pfield n -> fprintf ppf "field %i" n
+  | Pfield (n, _metadata) -> fprintf ppf "field %i" n
   | Pfield_computed -> fprintf ppf "field_computed"
   | Psetfield(n, ptr, init) ->
       let instr =
@@ -610,7 +610,7 @@ let rec lam ppf = function
   | Ltrywith(lbody, param, lhandler) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
         lam lbody Ident.print param lam lhandler
-  | Lifthenelse(lcond, lif, lelse) ->
+  | Lifthenelse(lcond, lif, lelse, _meta) ->
       fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" lam lcond lam lif lam lelse
   | Lsequence(l1, l2) ->
       fprintf ppf "@[<2>(seq@ %a@ %a)@]" lam l1 sequence l2

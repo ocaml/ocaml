@@ -112,9 +112,9 @@ let register_const t (constant:Flambda.constant_defining_value) name
 let rec declare_const t (const : Lambda.structured_constant)
     : Flambda.constant_defining_value_block_field * Internal_variable_names.t =
   match const with
-  | Const_base (Const_int c) -> (Const (Int c), Names.const_int)
-  | Const_base (Const_char c) -> (Const (Char c), Names.const_char)
-  | Const_base (Const_string (s, _, _)) ->
+  | Const_base (Const_int c, _metadata) -> (Const (Int c), Names.const_int)
+  | Const_base (Const_char c, _metadata) -> (Const (Char c), Names.const_char)
+  | Const_base (Const_string (s, _, _), _metadata) ->
     let const, name =
       if Config.safe_string then
         (Flambda.Allocated_const (Immutable_string s),
@@ -124,17 +124,17 @@ let rec declare_const t (const : Lambda.structured_constant)
          Names.const_string)
     in
     register_const t const name
-  | Const_base (Const_float c) ->
+  | Const_base (Const_float c, _metadata) ->
     register_const t
       (Allocated_const (Float (float_of_string c)))
       Names.const_float
-  | Const_base (Const_int32 c) ->
+  | Const_base (Const_int32 c, _metadata) ->
     register_const t (Allocated_const (Int32 c))
       Names.const_int32
-  | Const_base (Const_int64 c) ->
+  | Const_base (Const_int64 c, _metadata) ->
     register_const t (Allocated_const (Int64 c))
       Names.const_int64
-  | Const_base (Const_nativeint c) ->
+  | Const_base (Const_nativeint c, _metadata) ->
     register_const t (Allocated_const (Nativeint c)) Names.const_nativeint
   | Const_immstring c ->
     register_const t (Allocated_const (Immutable_string c))
@@ -143,7 +143,7 @@ let rec declare_const t (const : Lambda.structured_constant)
     register_const t
       (Allocated_const (Immutable_float_array (List.map float_of_string c)))
       Names.const_float_array
-  | Const_block (tag, consts) ->
+  | Const_block (tag, consts, _metadata) ->
     let const : Flambda.constant_defining_value =
       Block (Tag.create_exn tag,
              List.map (fun c -> fst (declare_const t c)) consts)
@@ -165,7 +165,7 @@ let lambda_const_bool b : Lambda.structured_constant =
     Lambda.const_int 0
 
 let lambda_const_int i : Lambda.structured_constant =
-  Const_base (Const_int i)
+  Const_base (Const_int i, None)
 
 let rec close t env (lam : Lambda.lambda) : Flambda.t =
   match lam with
@@ -515,7 +515,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Ltrywith (body, id, handler) ->
     let var = Variable.create_with_same_name_as_ident id in
     Try_with (close t env body, var, close t (Env.add_var env id var) handler)
-  | Lifthenelse (cond, ifso, ifnot) ->
+  | Lifthenelse (cond, ifso, ifnot, _meta) ->
     let cond = close t env cond in
     let cond_var = Variable.create Names.cond in
     Flambda.create_let cond_var (Expr cond)

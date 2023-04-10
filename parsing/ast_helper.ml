@@ -228,6 +228,22 @@ module Exp = struct
       pbop_exp = exp;
       pbop_loc = loc;
     }
+
+  let open_description ?(loc = !default_loc) ?(override_flag=Fresh) ?(attrs=[]) expr =
+    {
+      popen_expr = expr;
+      popen_override = override_flag;
+      popen_loc = loc;
+      popen_attributes = attrs;
+    }
+
+  let open_declaration ?(loc = !default_loc) ?(override_flag=Fresh) ?(attrs=[]) expr =
+    {
+      popen_expr = expr;
+      popen_override = override_flag;
+      popen_loc = loc;
+      popen_attributes = attrs;
+    }
 end
 
 module Mty = struct
@@ -257,6 +273,15 @@ let mk ?(loc = !default_loc) ?(attrs = []) d =
   let constraint_ ?loc ?attrs m mty = mk ?loc ?attrs (Pmod_constraint (m, mty))
   let unpack ?loc ?attrs e = mk ?loc ?attrs (Pmod_unpack e)
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pmod_extension a)
+
+
+  let mod_desc_ident loc = Pmod_ident loc
+  let mod_desc_structure s = Pmod_structure s
+  let mod_desc_functor fp mexp = Pmod_functor (fp, mexp)
+  let mod_desc_apply mexp1 mexp2 = Pmod_apply (mexp1, mexp2)
+  let mod_desc_constraint mexp mtyp  = Pmod_constraint (mexp, mtyp)
+  let mod_desc_unpack exp = Pmod_unpack exp
+  let mod_desc_extension exp = Pmod_extension exp
 end
 
 module Sig = struct
@@ -548,6 +573,9 @@ module Type = struct
      pld_attributes = add_info_attrs info attrs;
     }
 
+  let tuple_constructor_argument cts = Pcstr_tuple cts
+
+  let record_constructor_argument lds = Pcstr_record lds
 end
 
 (** Type extensions *)

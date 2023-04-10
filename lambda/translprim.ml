@@ -127,11 +127,11 @@ let primitives_table =
     "%loc_POS", Loc Loc_POS;
     "%loc_MODULE", Loc Loc_MODULE;
     "%loc_FUNCTION", Loc Loc_FUNCTION;
-    "%field0", Primitive ((Pfield 0), 1);
-    "%field1", Primitive ((Pfield 1), 1);
+    "%field0", Primitive (Pfield (0, None), 1);
+    "%field1", Primitive (Pfield (1, None), 1);
     "%setfield0", Primitive ((Psetfield(0, Pointer, Assignment)), 2);
-    "%makeblock", Primitive ((Pmakeblock(0, Immutable, None)), 1);
-    "%makemutable", Primitive ((Pmakeblock(0, Mutable, None)), 1);
+    "%makeblock", Primitive ((Pmakeblock(0, Immutable, None, None)), 1);
+    "%makemutable", Primitive ((Pmakeblock(0, Mutable, None, None)), 1);
     "%raise", Raise Raise_regular;
     "%reraise", Raise Raise_reraise;
     "%raise_notrace", Raise Raise_notrace;
@@ -466,10 +466,10 @@ let specialize_primitive env ty ~has_constant_constructor prim =
       | Pbigarray_unknown, Pbigarray_unknown_layout -> None
       | _, _ -> Some (Primitive (Pbigarrayset(unsafe, n, k, l), arity))
     end
-  | Primitive (Pmakeblock(tag, mut, None), arity), fields -> begin
+  | Primitive (Pmakeblock(tag, mut, None, _metadata), arity), fields -> begin
       let shape = List.map (Typeopt.value_kind env) fields in
       let useful = List.exists (fun knd -> knd <> Pgenval) shape in
-      if useful then Some (Primitive (Pmakeblock(tag, mut, Some shape), arity))
+      if useful then Some (Primitive (Pmakeblock(tag, mut, Some shape, None), arity))
       else None
     end
   | Comparison(comp, Compare_generic), p1 :: _ ->
@@ -614,10 +614,10 @@ let lambda_of_loc kind sloc =
   | Loc_POS ->
     Lconst (Const_block (0, [
           Const_immstring file;
-          Const_base (Const_int lnum);
-          Const_base (Const_int cnum);
-          Const_base (Const_int enum);
-        ]))
+          Const_base (Const_int lnum, None);
+          Const_base (Const_int cnum, None);
+          Const_base (Const_int enum, None);
+        ], None))
   | Loc_FILE -> Lconst (Const_immstring file)
   | Loc_MODULE ->
     let filename = Filename.basename file in
@@ -628,7 +628,7 @@ let lambda_of_loc kind sloc =
     let loc = Printf.sprintf "File %S, line %d, characters %d-%d"
         file lnum cnum enum in
     Lconst (Const_immstring loc)
-  | Loc_LINE -> Lconst (Const_base (Const_int lnum))
+  | Loc_LINE -> Lconst (Const_base (Const_int lnum, None))
   | Loc_FUNCTION ->
     let scope_name = Debuginfo.Scoped_location.string_of_scoped_location sloc in
     Lconst (Const_immstring scope_name)
@@ -689,7 +689,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
       lambda_of_loc kind loc
   | Loc kind, [arg] ->
       let lam = lambda_of_loc kind loc in
-      Lprim(Pmakeblock(0, Immutable, None), [lam; arg], loc)
+      Lprim(Pmakeblock(0, Immutable, None, None), [lam; arg], loc)
   | Send, [obj; meth] ->
       Lsend(Public, meth, obj, [], loc)
   | Send_self, [obj; meth] ->

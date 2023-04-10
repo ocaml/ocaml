@@ -39,6 +39,72 @@ type is_safe =
   | Safe
   | Unsafe
 
+type block_record_field = {
+  brf_name: string;
+  brf_mut: mutable_flag;
+  brf_pos: int;
+  brf_loc: Location.t;
+  brf_attributes: Parsetree.attributes;
+}
+
+type const_metadata =
+  | Const_variant of { label: label }
+  | Const_construct of {
+      arity: int;
+      attributes: Parsetree.attributes;
+      loc: Location.t;
+      name: string;
+      tag: Types.constructor_tag;
+    }
+
+type block_metadata =
+  | Block_construct of {
+      arity: int;
+      attributes: Parsetree.attributes;
+      loc: Location.t;
+      name: string;
+      tag: Types.constructor_tag;
+    }
+  | Block_record of {
+      fields: block_record_field array;
+      representation: Types.record_representation
+    }
+  | Block_tuple
+  | Block_variant of {
+      label: label
+    }
+
+type field_metadata =
+  | Field_constructor of {
+      attributes: Parsetree.attributes;
+      loc: Location.t;
+      name : string;
+      arity : int;
+    }
+  | Field_record of {
+      attributes: Parsetree.attributes;
+      loc: Location.t;
+      name : string;
+      pos : int;
+    }
+  | Field_module of {
+      address: Env.address
+    }
+  | Field_primitive of {
+      mod_name : string;
+      prim_name : string;
+    }
+
+type constructor_metadata = {
+  cm_kind: [ `block | `const ];
+  cm_name: Ident.t;
+  cm_arity: int;
+}
+
+type switch_metadata = constructor_metadata list
+
+type ifthenelse_metadata = constructor_metadata list
+
 type primitive =
   | Pbytes_to_string
   | Pbytes_of_string
@@ -47,8 +113,8 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pmakeblock of int * mutable_flag * block_shape
-  | Pfield of int
+  | Pmakeblock of int * mutable_flag * block_shape * block_metadata option
+  | Pfield of int * field_metadata option
   | Pfield_computed
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Psetfield_computed of immediate_or_pointer * initialization_or_assignment
@@ -196,8 +262,8 @@ let equal_value_kind x y =
 
 
 type structured_constant =
-    Const_base of constant
-  | Const_block of int * structured_constant list
+    Const_base of constant * const_metadata option
+  | Const_block of int * structured_constant list * block_metadata option
   | Const_float_array of string list
   | Const_immstring of string
 
@@ -288,7 +354,7 @@ type lambda =
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * (Ident.t * value_kind) list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
-  | Lifthenelse of lambda * lambda * lambda
+  | Lifthenelse of lambda * lambda * lambda * ifthenelse_metadata option
   | Lsequence of lambda * lambda
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
@@ -318,6 +384,7 @@ and lambda_switch =
     sw_consts: (int * lambda) list;
     sw_numblocks: int;
     sw_blocks: (int * lambda) list;
+    sw_metadata: switch_metadata option;
     sw_failaction : lambda option}
 
 and lambda_event =
@@ -339,7 +406,7 @@ type program =
     required_globals : Ident.Set.t;
     code : lambda }
 
-let const_int n = Const_base (Const_int n)
+let const_int ?(meta=None) n = Const_base (Const_int n, meta)
 
 let const_unit = const_int 0
 
@@ -380,7 +447,7 @@ let make_key e =
         try Ident.find_same id env
         with Not_found -> e
       end
-    | Lconst  (Const_base (Const_string _)) ->
+    | Lconst  (Const_base ((Const_string _), _meta)) ->
         (* Mutable constants are not shared *)
         raise Not_simple
     | Lconst _ -> e
@@ -418,8 +485,8 @@ let make_key e =
         Lstaticcatch (tr_rec env e1,xs,tr_rec env e2)
     | Ltrywith (e1,x,e2) ->
         Ltrywith (tr_rec env e1,x,tr_rec env e2)
-    | Lifthenelse (cond,ifso,ifnot) ->
-        Lifthenelse (tr_rec env cond,tr_rec env ifso,tr_rec env ifnot)
+    | Lifthenelse (cond,ifso,ifnot,meta) ->
+        Lifthenelse (tr_rec env cond,tr_rec env ifso,tr_rec env ifnot, meta)
     | Lsequence (e1,e2) ->
         Lsequence (tr_rec env e1,tr_rec env e2)
     | Lassign (x,e) ->
@@ -509,7 +576,7 @@ let shallow_iter ~tail ~non_tail:f = function
       tail e1; tail e2
   | Ltrywith(e1, _, e2) ->
       f e1; tail e2
-  | Lifthenelse(e1, e2, e3) ->
+  | Lifthenelse(e1, e2, e3, _meta) ->
       f e1; tail e2; tail e3
   | Lsequence(e1, e2) ->
       f e1; tail e2
@@ -582,7 +649,7 @@ let rec free_variables = function
            param
            (free_variables handler))
         (free_variables body)
-  | Lifthenelse(e1, e2, e3) ->
+  | Lifthenelse(e1, e2, e3, _meta) ->
       Ident.Set.union
         (Ident.Set.union (free_variables e1) (free_variables e2))
         (free_variables e3)
@@ -620,14 +687,14 @@ let next_raise_count () =
 let staticfail = Lstaticraise (0,[])
 
 let rec is_guarded = function
-  | Lifthenelse(_cond, _body, Lstaticraise (0,[])) -> true
+  | Lifthenelse(_cond, _body, Lstaticraise (0,[]), _meta) -> true
   | Llet(_str, _k, _id, _lam, body) -> is_guarded body
   | Levent(lam, _ev) -> is_guarded lam
   | _ -> false
 
 let rec patch_guarded patch = function
-  | Lifthenelse (cond, body, Lstaticraise (0,[])) ->
-      Lifthenelse (cond, body, patch)
+  | Lifthenelse (cond, body, Lstaticraise (0,[]), meta) ->
+      Lifthenelse (cond, body, patch, meta)
   | Llet(str, k, id, lam, body) ->
       Llet (str, k, id, lam, patch_guarded patch body)
   | Levent(lam, ev) ->
@@ -636,40 +703,46 @@ let rec patch_guarded patch = function
 
 (* Translate an access path *)
 
-let rec transl_address loc = function
+let rec transl_address loc metadata = function
   | Env.Aident id ->
       if Ident.global id
       then Lprim(Pgetglobal id, [], loc)
       else Lvar id
   | Env.Adot(addr, pos) ->
-      Lprim(Pfield pos, [transl_address loc addr], loc)
+      let metadata' = Some (Field_module {  address = addr; }) in
+      Lprim(Pfield (pos, metadata'), [transl_address loc metadata addr], loc)
 
-let transl_path find loc env path =
+let transl_path find loc metadata env path =
   match find path env with
   | exception Not_found ->
       fatal_error ("Cannot find address for: " ^ (Path.name path))
-  | addr -> transl_address loc addr
+  | addr -> transl_address loc metadata addr
 
 (* Translation of identifiers *)
 
-let transl_module_path loc env path =
-  transl_path Env.find_module_address loc env path
+let transl_module_path loc metadata env path =
+  transl_path Env.find_module_address loc metadata env path
 
-let transl_value_path loc env path =
-  transl_path Env.find_value_address loc env path
+let transl_value_path loc metadata env path =
+  transl_path Env.find_value_address loc metadata env path
 
-let transl_extension_path loc env path =
-  transl_path Env.find_constructor_address loc env path
+let transl_extension_path loc metadata env path =
+  transl_path Env.find_constructor_address loc metadata env path
 
-let transl_class_path loc env path =
-  transl_path Env.find_class_address loc env path
+let transl_class_path loc metadata env path =
+  transl_path Env.find_class_address loc metadata env path
 
 let transl_prim mod_name name =
   let pers = Ident.create_persistent mod_name in
   let env = Env.add_persistent_structure pers Env.empty in
   let lid = Longident.Ldot (Longident.Lident mod_name, name) in
   match Env.find_value_by_name lid env with
-  | path, _ -> transl_value_path Loc_unknown env path
+  | path, _ ->
+      let metadata = Some (Field_primitive {
+        mod_name = mod_name;
+        prim_name = name;
+      }) in
+      transl_value_path Loc_unknown metadata env path
   | exception Not_found ->
       fatal_error ("Primitive " ^ name ^ " not found.")
 
@@ -759,8 +832,8 @@ let subst update_env ?(freshen_bound_variables = false) s input_lam =
     | Ltrywith(body, exn, handler) ->
         let exn, l' = bind exn l in
         Ltrywith(subst s l body, exn, subst s l' handler)
-    | Lifthenelse(e1, e2, e3) ->
-        Lifthenelse(subst s l e1, subst s l e2, subst s l e3)
+    | Lifthenelse(e1, e2, e3, meta) ->
+        Lifthenelse(subst s l e1, subst s l e2, subst s l e3, meta)
     | Lsequence(e1, e2) -> Lsequence(subst s l e1, subst s l e2)
     | Lwhile(e1, e2) -> Lwhile(subst s l e1, subst s l e2)
     | Lfor(v, lo, hi, dir, body) ->
@@ -857,6 +930,7 @@ let shallow_map f = function
                  sw_numblocks = sw.sw_numblocks;
                  sw_blocks = List.map (fun (n, e) -> (n, f e)) sw.sw_blocks;
                  sw_failaction = Option.map f sw.sw_failaction;
+                 sw_metadata = sw.sw_metadata;
                },
                loc)
   | Lstringswitch (e, sw, default, loc) ->
@@ -871,8 +945,8 @@ let shallow_map f = function
       Lstaticcatch (f body, id, f handler)
   | Ltrywith (e1, v, e2) ->
       Ltrywith (f e1, v, f e2)
-  | Lifthenelse (e1, e2, e3) ->
-      Lifthenelse (f e1, f e2, f e3)
+  | Lifthenelse (e1, e2, e3, meta) ->
+      Lifthenelse (f e1, f e2, f e3, meta)
   | Lsequence (e1, e2) ->
       Lsequence (f e1, f e2)
   | Lwhile (e1, e2) ->

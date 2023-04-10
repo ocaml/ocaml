@@ -84,15 +84,15 @@ let print_float f =
 ;;
 
 let rec print_struct_const = function
-    Const_base(Const_int i) -> printf "%d" i
-  | Const_base(Const_float f) -> print_float f
-  | Const_base(Const_string (s, _, _)) -> printf "%S" s
+    Const_base(Const_int i, _metadata) -> printf "%d" i
+  | Const_base(Const_float f, _metadata) -> print_float f
+  | Const_base(Const_string (s, _, _), _metadata) -> printf "%S" s
   | Const_immstring s -> printf "%S" s
-  | Const_base(Const_char c) -> printf "%C" c
-  | Const_base(Const_int32 i) -> printf "%ldl" i
-  | Const_base(Const_nativeint i) -> printf "%ndn" i
-  | Const_base(Const_int64 i) -> printf "%LdL" i
-  | Const_block(tag, args) ->
+  | Const_base(Const_char c, _metadata) -> printf "%C" c
+  | Const_base(Const_int32 i, _metadata) -> printf "%ldl" i
+  | Const_base(Const_nativeint i, _metadata) -> printf "%ndn" i
+  | Const_base(Const_int64 i, _metadata) -> printf "%LdL" i
+  | Const_block(tag, args, _metadata) ->
       printf "<%d>" tag;
       begin match args with
         [] -> ()

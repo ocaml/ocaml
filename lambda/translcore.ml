@@ -62,12 +62,12 @@ let transl_extension_constructor ~scopes env path ext =
   let loc = of_location ~scopes ext.ext_loc in
   match ext.ext_kind with
     Text_decl _ ->
-      Lprim (Pmakeblock (Obj.object_tag, Immutable, None),
-        [Lconst (Const_base (Const_string (name, ext.ext_loc, None)));
+      Lprim (Pmakeblock (Obj.object_tag, Immutable, None, None),
+        [Lconst (Const_base (Const_string (name, ext.ext_loc, None), None));
          Lprim (prim_fresh_oo_id, [Lconst (const_int 0)], loc)],
         loc)
   | Text_rebind(path, _lid) ->
-      transl_extension_path loc env path
+      transl_extension_path loc None env path
 
 (* To propagate structured constants *)
 
@@ -78,7 +78,7 @@ let extract_constant = function
   | _ -> raise Not_constant
 
 let extract_float = function
-    Const_base(Const_float f) -> f
+    Const_base(Const_float f, _metadata) -> f
   | _ -> fatal_error "Translcore.extract_float"
 
 (* Push the default values under the functional abstractions *)
@@ -188,7 +188,7 @@ let event_function ~scopes exp lam =
 
 let assert_failed ~scopes exp =
   let slot =
-    transl_extension_path Loc_unknown
+    transl_extension_path Loc_unknown None
       Env.initial_safe_string Predef.path_assert_failure
   in
   let loc = exp.exp_loc in
@@ -197,12 +197,13 @@ let assert_failed ~scopes exp =
   in
   let loc = of_location ~scopes exp.exp_loc in
   Lprim(Praise Raise_regular, [event_after ~scopes exp
-    (Lprim(Pmakeblock(0, Immutable, None),
+    (Lprim(Pmakeblock(0, Immutable, None, None),
           [slot;
            Lconst(Const_block(0,
-              [Const_base(Const_string (fname, exp.exp_loc, None));
-               Const_base(Const_int line);
-               Const_base(Const_int char)]))], loc))], loc)
+              [Const_base(Const_string (fname, exp.exp_loc, None), None);
+               Const_base(Const_int line, None);
+               Const_base(Const_int char, None)],
+               None))], loc))], loc)
 ;;
 
 let rec cut n l =
@@ -227,7 +228,7 @@ let transl_ident loc env ty path desc =
   | Val_anc _ ->
       raise(Error(to_location loc, Free_super_var))
   | Val_reg | Val_self _ ->
-      transl_value_path loc env path
+      transl_value_path loc None env path
   |  _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
 
 let rec transl_exp ~scopes e =
@@ -255,7 +256,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
       transl_ident (of_location ~scopes e.exp_loc)
         e.exp_env e.exp_type path desc
   | Texp_constant cst ->
-      Lconst(Const_base cst)
+      Lconst(Const_base (cst, None))
   | Texp_let(rec_flag, pat_expr_list, body) ->
       transl_let ~scopes rec_flag pat_expr_list
         (event_before ~scopes body (transl_exp ~scopes body))
@@ -320,49 +321,66 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_tuple el ->
       let ll, shape = transl_list_with_shape ~scopes el in
       begin try
-        Lconst(Const_block(0, List.map extract_constant ll))
+        Lconst(Const_block(0, List.map extract_constant ll, Some Block_tuple))
       with Not_constant ->
-        Lprim(Pmakeblock(0, Immutable, Some shape), ll,
+        Lprim(Pmakeblock(0, Immutable, Some shape, Some Block_tuple), ll,
               (of_location ~scopes e.exp_loc))
       end
   | Texp_construct(_, cstr, args) ->
+      let metadata = Block_construct {
+        name = cstr.cstr_name;
+        arity = cstr.cstr_arity;
+        loc = cstr.cstr_loc;
+        attributes = cstr.cstr_attributes;
+        tag = cstr.cstr_tag;
+      } in
       let ll, shape = transl_list_with_shape ~scopes args in
       if cstr.cstr_inlined <> None then begin match ll with
         | [x] -> x
         | _ -> assert false
       end else begin match cstr.cstr_tag with
         Cstr_constant n ->
-          Lconst(const_int n)
+          let metadata = Const_construct {
+            name = cstr.cstr_name;
+            arity = cstr.cstr_arity;
+            loc = cstr.cstr_loc;
+            attributes = cstr.cstr_attributes;
+            tag = cstr.cstr_tag;
+          } in
+          Lconst(const_int ~meta:(Some metadata) n)
       | Cstr_unboxed ->
           (match ll with [v] -> v | _ -> assert false)
       | Cstr_block n ->
           begin try
-            Lconst(Const_block(n, List.map extract_constant ll))
+            Lconst(Const_block(n, List.map extract_constant ll, Some metadata))
           with Not_constant ->
-            Lprim(Pmakeblock(n, Immutable, Some shape), ll,
+            Lprim(Pmakeblock(n, Immutable, Some shape, Some metadata), ll,
                   of_location ~scopes e.exp_loc)
           end
       | Cstr_extension(path, is_const) ->
           let lam = transl_extension_path
-                      (of_location ~scopes e.exp_loc) e.exp_env path in
+                      (of_location ~scopes e.exp_loc) None e.exp_env path in
           if is_const then lam
           else
-            Lprim(Pmakeblock(0, Immutable, Some (Pgenval :: shape)),
+            Lprim(Pmakeblock(0, Immutable, Some (Pgenval :: shape), Some metadata),
                   lam :: ll, of_location ~scopes e.exp_loc)
       end
   | Texp_extension_constructor (_, path) ->
-      transl_extension_path (of_location ~scopes e.exp_loc) e.exp_env path
+      transl_extension_path (of_location ~scopes e.exp_loc) None e.exp_env path
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
-        None -> Lconst(const_int tag)
+        None ->
+          let metadata = Const_variant { label = l } in
+          Lconst(const_int ~meta:(Some metadata) tag)
       | Some arg ->
+          let metadata = Block_variant { label = l } in
           let lam = transl_exp ~scopes arg in
           try
             Lconst(Const_block(0, [const_int tag;
-                                   extract_constant lam]))
+                                   extract_constant lam], Some metadata))
           with Not_constant ->
-            Lprim(Pmakeblock(0, Immutable, None),
+            Lprim(Pmakeblock(0, Immutable, None, Some metadata),
                   [Lconst(const_int tag); lam],
                   of_location ~scopes e.exp_loc)
       end
@@ -371,16 +389,22 @@ and transl_exp0 ~in_new_scope ~scopes e =
         fields representation extended_expression
   | Texp_field(arg, _, lbl) ->
       let targ = transl_exp ~scopes arg in
+      let metadata = Lambda.Field_record {
+        attributes = lbl.lbl_attributes;
+        loc = lbl.lbl_loc;
+        name = lbl.lbl_name;
+        pos = lbl.lbl_pos;
+      } in
       begin match lbl.lbl_repres with
           Record_regular | Record_inlined _ ->
-          Lprim (Pfield lbl.lbl_pos, [targ],
+          Lprim (Pfield (lbl.lbl_pos, Some metadata), [targ],
                  of_location ~scopes e.exp_loc)
         | Record_unboxed _ -> targ
         | Record_float ->
           Lprim (Pfloatfield lbl.lbl_pos, [targ],
                  of_location ~scopes e.exp_loc)
         | Record_extension _ ->
-          Lprim (Pfield (lbl.lbl_pos + 1), [targ],
+          Lprim (Pfield (lbl.lbl_pos + 1, Some metadata), [targ],
                  of_location ~scopes e.exp_loc)
       end
   | Texp_setfield(arg, _, lbl, newval) ->
@@ -432,7 +456,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
             let imm_array =
               match kind with
               | Paddrarray | Pintarray ->
-                  Lconst(Const_block(0, cl))
+                  Lconst(Const_block(0, cl, None))
               | Pfloatarray ->
                   Lconst(Const_float_array(List.map extract_float cl))
               | Pgenarray ->
@@ -448,11 +472,12 @@ and transl_exp0 ~in_new_scope ~scopes e =
   | Texp_ifthenelse(cond, ifso, Some ifnot) ->
       Lifthenelse(transl_exp ~scopes cond,
                   event_before ~scopes ifso (transl_exp ~scopes ifso),
-                  event_before ~scopes ifnot (transl_exp ~scopes ifnot))
+                  event_before ~scopes ifnot (transl_exp ~scopes ifnot),
+                  None)
   | Texp_ifthenelse(cond, ifso, None) ->
       Lifthenelse(transl_exp ~scopes cond,
                   event_before ~scopes ifso (transl_exp ~scopes ifso),
-                  lambda_unit)
+                  lambda_unit, None)
   | Texp_sequence(expr1, expr2) ->
       Lsequence(transl_exp ~scopes expr1,
                 event_before ~scopes expr2 (transl_exp ~scopes expr2))
@@ -480,7 +505,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
       Lapply{
         ap_loc=loc;
         ap_func=
-          Lprim(Pfield 0, [transl_class_path loc e.exp_env cl], loc);
+          Lprim(Pfield (0, None), [transl_class_path loc None e.exp_env cl], loc);
         ap_args=[lambda_unit];
         ap_tailcall=Default_tailcall;
         ap_inlined=Default_inline;
@@ -488,17 +513,17 @@ and transl_exp0 ~in_new_scope ~scopes e =
       }
   | Texp_instvar(path_self, path, _) ->
       let loc = of_location ~scopes e.exp_loc in
-      let self = transl_value_path loc e.exp_env path_self in
-      let var = transl_value_path loc e.exp_env path in
+      let self = transl_value_path loc None e.exp_env path_self in
+      let var = transl_value_path loc None e.exp_env path in
       Lprim(Pfield_computed, [self; var], loc)
   | Texp_setinstvar(path_self, path, _, expr) ->
       let loc = of_location ~scopes e.exp_loc in
-      let self = transl_value_path loc e.exp_env path_self in
-      let var = transl_value_path loc e.exp_env path in
+      let self = transl_value_path loc None e.exp_env path_self in
+      let var = transl_value_path loc None e.exp_env path in
       transl_setinstvar ~scopes loc self var expr
   | Texp_override(path_self, modifs) ->
       let loc = of_location ~scopes e.exp_loc in
-      let self = transl_value_path loc e.exp_env path_self in
+      let self = transl_value_path loc None e.exp_env path_self in
       let cpy = Ident.create_local "copy" in
       Llet(Strict, Pgenval, cpy,
            Lapply{
@@ -511,7 +536,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
            },
            List.fold_right
              (fun (path, _, expr) rem ->
-               let var = transl_value_path loc e.exp_env path in
+               let var = transl_value_path loc None e.exp_env path in
                 Lsequence(transl_setinstvar ~scopes Loc_unknown
                             (Lvar cpy) var expr, rem))
              modifs
@@ -545,7 +570,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
       if !Clflags.noassert
       then lambda_unit
       else Lifthenelse (transl_exp ~scopes cond, lambda_unit,
-                        assert_failed ~scopes e)
+                        assert_failed ~scopes e, None)
   | Texp_lazy e ->
       (* when e needs no computation (constants, identifiers, ...), we
          optimize the translation just as Lazy.lazy_from_val would
@@ -559,7 +584,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
           (* We don't need to wrap with Popaque: this forward
              block will never be shortcutted since it points to a float
              and Config.flat_float_array is true. *)
-          Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
+          Lprim(Pmakeblock(Obj.forward_tag, Immutable, None, None),
                 [transl_exp ~scopes e], of_location ~scopes e.exp_loc)
       | `Identifier `Forward_value ->
          (* CR-someday mshinwell: Consider adding a new primitive
@@ -569,7 +594,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
             block doesn't really match what is going on here.  This
             value may subsequently turn into an immediate... *)
          Lprim (Popaque,
-                [Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
+                [Lprim(Pmakeblock(Obj.forward_tag, Immutable, None, None),
                        [transl_exp ~scopes e],
                        of_location ~scopes e.exp_loc)],
                 of_location ~scopes e.exp_loc)
@@ -583,7 +608,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
                              attr = default_function_attribute;
                              loc = of_location ~scopes e.exp_loc;
                              body = transl_exp ~scopes e} in
-          Lprim(Pmakeblock(Config.lazy_tag, Mutable, None), [fn],
+          Lprim(Pmakeblock(Config.lazy_tag, Mutable, None, None), [fn],
                 of_location ~scopes e.exp_loc)
       end
   | Texp_object (cs, meths) ->
@@ -614,7 +639,7 @@ and transl_exp0 ~in_new_scope ~scopes e =
           let body, _ =
             List.fold_left (fun (body, pos) id ->
               Llet(Alias, Pgenval, id,
-                   Lprim(Pfield pos, [Lvar oid],
+                   Lprim(Pfield (pos, None), [Lvar oid],
                          of_location ~scopes od.open_loc), body),
               pos + 1
             ) (transl_exp ~scopes e, 0)
@@ -646,7 +671,7 @@ and transl_guard ~scopes guard rhs =
   | None -> expr
   | Some cond ->
       event_before ~scopes cond
-        (Lifthenelse(transl_exp ~scopes cond, expr, staticfail))
+        (Lifthenelse(transl_exp ~scopes cond, expr, staticfail, None))
 
 and transl_case ~scopes {c_lhs; c_guard; c_rhs} =
   c_lhs, transl_guard ~scopes c_guard c_rhs
@@ -947,9 +972,9 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
                let field_kind = value_kind env typ in
                let access =
                  match repres with
-                   Record_regular | Record_inlined _ -> Pfield i
+                   Record_regular | Record_inlined _ -> Pfield (i, None)
                  | Record_unboxed _ -> assert false
-                 | Record_extension _ -> Pfield (i + 1)
+                 | Record_extension _ -> Pfield (i + 1, None)
                  | Record_float -> Pfloatfield i in
                Lprim(access, [Lvar init_id],
                      of_location ~scopes loc),
@@ -965,12 +990,22 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
       then Mutable
       else Immutable in
     let lam =
+      let metadata = Block_record {
+        fields = Array.map (fun (f,_) -> Lambda.{
+         brf_name = f.lbl_name;
+         brf_mut = f.lbl_mut;
+         brf_pos = f.lbl_pos;
+         brf_loc = f.lbl_loc;
+         brf_attributes = f.lbl_attributes;
+        }) fields;
+        representation = repres
+      } in
       try
         if mut = Mutable then raise Not_constant;
         let cl = List.map extract_constant ll in
         match repres with
-        | Record_regular -> Lconst(Const_block(0, cl))
-        | Record_inlined tag -> Lconst(Const_block(tag, cl))
+        | Record_regular -> Lconst(Const_block(0, cl, Some metadata))
+        | Record_inlined tag -> Lconst(Const_block(tag, cl, Some metadata))
         | Record_unboxed _ -> Lconst(match cl with [v] -> v | _ -> assert false)
         | Record_float ->
             Lconst(Const_float_array(List.map extract_float cl))
@@ -980,15 +1015,15 @@ and transl_record ~scopes loc env fields repres opt_init_expr =
         let loc = of_location ~scopes loc in
         match repres with
           Record_regular ->
-            Lprim(Pmakeblock(0, mut, Some shape), ll, loc)
+            Lprim(Pmakeblock(0, mut, Some shape, Some metadata), ll, loc)
         | Record_inlined tag ->
-            Lprim(Pmakeblock(tag, mut, Some shape), ll, loc)
+            Lprim(Pmakeblock(tag, mut, Some shape, Some metadata), ll, loc)
         | Record_unboxed _ -> (match ll with [v] -> v | _ -> assert false)
         | Record_float ->
             Lprim(Pmakearray (Pfloatarray, mut), ll, loc)
         | Record_extension path ->
-            let slot = transl_extension_path loc env path in
-            Lprim(Pmakeblock(0, mut, Some (Pgenval :: shape)), slot :: ll, loc)
+            let slot = transl_extension_path loc None env path in
+            Lprim(Pmakeblock(0, mut, Some (Pgenval :: shape), Some metadata), slot :: ll, loc)
     in
     begin match opt_init_expr with
       None -> lam

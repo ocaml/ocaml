@@ -192,6 +192,15 @@ module Exp:
 
     val case: pattern -> ?guard:expression -> expression -> case
     val binding_op: str -> pattern -> expression -> loc -> binding_op
+
+    val open_description : ?loc:loc -> ?override_flag:override_flag
+                           -> ?attrs:attrs -> Longident.t Asttypes.loc
+                           -> open_description
+
+    val open_declaration : ?loc:loc -> ?override_flag:override_flag
+                           -> ?attrs:attrs -> module_expr
+                           -> open_declaration
+
   end
 
 (** Value declarations *)
@@ -215,6 +224,11 @@ module Type:
       constructor_declaration
     val field: ?loc:loc -> ?attrs:attrs -> ?info:info ->
       ?mut:mutable_flag -> str -> core_type -> label_declaration
+
+
+    val tuple_constructor_argument : core_type list -> constructor_arguments
+
+    val record_constructor_argument : label_declaration list -> constructor_arguments
   end
 
 (** Type extensions *)
@@ -272,6 +286,14 @@ module Mod:
       module_expr
     val unpack: ?loc:loc -> ?attrs:attrs -> expression -> module_expr
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> module_expr
+
+    val mod_desc_ident : Longident.t Asttypes.loc -> module_expr_desc
+    val mod_desc_structure : structure -> module_expr_desc
+    val mod_desc_functor : functor_parameter -> module_expr -> module_expr_desc
+    val mod_desc_apply : module_expr -> module_expr -> module_expr_desc
+    val mod_desc_constraint : module_expr -> module_type -> module_expr_desc
+    val mod_desc_unpack : expression -> module_expr_desc
+    val mod_desc_extension : extension -> module_expr_desc
   end
 
 (** Signature items *)
