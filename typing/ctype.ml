@@ -270,7 +270,7 @@ type unification_environment =
   | Expression of
       { env : Env.t;
         in_subst : bool; }
-    (* unification in expression *)
+    (* normal unification mode *)
   | Pattern of
       { env : Env.t ref;
         equations_generation : equations_generation;
@@ -278,7 +278,10 @@ type unification_environment =
         allow_recursive_equations : bool;
         gadt_equations_level : int;
         unify_eq_set : TypePairs.t; }
-    (* unification in pattern which may add local constraints *)
+    (* GADT constraint unification mode:
+       only used for type indices of GADT constructors
+       during pattern matching.
+       This allows adding local constraints. *)
 
 let get_env = function
   | Expression {env} -> env
@@ -292,6 +295,10 @@ let set_env uenv env' =
 let in_pattern_mode = function
   | Expression _ -> false
   | Pattern _ -> true
+
+let get_gadt_equations_level = function
+  | Expression _ -> invalid_arg "Ctype.get_gadt_equations_level"
+  | Pattern r -> r.gadt_equations_level
 
 let order_type_pair t1 t2 =
   if get_id t1 <= get_id t2 then (t1, t2) else (t2, t1)
@@ -307,8 +314,10 @@ let unify_eq uenv t1 t2 =
   | Expression _ -> false
   | Pattern r -> TypePairs.mem r.unify_eq_set (order_type_pair t1 t2)
 
-(* unification during type constructor expansion; more
-   relaxed than [Expression] in some cases. *)
+(* unification during type constructor expansion:
+   This mode disables the propagation of the level and scope of
+   the row variable to the whole type during the unification.
+   (see unify_{row, fields} and PR #11771) *)
 let in_subst_mode = function
   | Expression {in_subst} -> in_subst
   | Pattern _ -> false
@@ -2154,14 +2163,11 @@ let deep_occur t0 ty =
   with Occur ->
     unmark_type ty; true
 
-let get_gadt_equations_level = function
-  | Expression _ -> invalid_arg "Ctype.get_gadt_equations_level"
-  | Pattern r -> r.gadt_equations_level
 
-
-(* a local constraint can be added only if the rhs
+(* A local constraint can be added only if the rhs
    of the constraint does not contain any Tvars.
-   They need to be removed using this function *)
+   They need to be removed using this function.
+   This function is called only in [Pattern] mode. *)
 let reify uenv t =
   let fresh_constr_scope = get_gadt_equations_level uenv in
   let create_fresh_constr lev name =
@@ -2475,6 +2481,7 @@ let find_lowest_level ty =
     end
   in find ty; unmark_type ty; !lowest
 
+(* This function can be called only in [Pattern] mode. *)
 let add_gadt_equation uenv source destination =
   (* Format.eprintf "@[add_gadt_equation %s %a@]@."
     (Path.name source) !Btype.print_raw destination; *)
