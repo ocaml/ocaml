@@ -275,61 +275,93 @@ CAMLprim value caml_weak_get (value ar, value n)
   return caml_ephe_get_key(ar, n);
 }
 
+/* Copy the contents of an object from `from` to `to` (which is
+ * already allocated and has the necessary header word). Darken
+ * any pointer fields. */
+
+static void ephe_copy_and_darken(value from, value to)
+{
+  mlsize_t i = 0; /* size of non-scannable prefix */
+
+  CAMLassert(Is_block(from));
+  CAMLassert(Is_block(to));
+  CAMLassert(Tag_val(from) == Tag_val(to));
+  CAMLassert(Tag_val(from) != Infix_tag);
+  CAMLassert(Wosize_val(from) == Wosize_val(to));
+
+  if (Tag_val(from) > No_scan_tag) {
+    i = Wosize_val(to);
+  }
+  else if (Tag_val(from) == Closure_tag) {
+    i = Start_env_closinfo(Closinfo_val(from));
+  }
+
+  /* Copy non-scannable prefix */
+  memcpy (Bp_val(to), Bp_val(from), Bsize_wsize(i));
+
+  /* Copy and darken scannable fields */
+  caml_domain_state* domain_state = Caml_state;
+  while (i < Wosize_val(to)) {
+    value field = Field(from, i);
+    caml_darken (domain_state, field, 0);
+    Store_field(to, i, field);
+    ++ i;
+  }
+}
+
 static value ephe_get_field_copy (value e, mlsize_t offset)
 {
   CAMLparam1 (e);
-  CAMLlocal2 (res, elt);
-  mlsize_t i, infix_offs = 0;
-  value v; /* Caution: this is NOT a local root. */
-  value f;
+  CAMLlocal3 (res, val, copy);
+  mlsize_t infix_offs = 0;
 
-  clean_field(e, offset);
-  v = Field(e, offset);
-  if (v == caml_ephe_none) {
-    res = Val_none;
-    goto out;
-  }
-
-  /** Don't copy custom_block #7279 */
-  if (Is_block(v) && Tag_val(v) != Custom_tag) {
-    if (Tag_val(v) == Infix_tag) {
-      infix_offs = Infix_offset_val(v);
-      v -= infix_offs;
-    }
-    elt = caml_alloc (Wosize_val(v), Tag_val(v));
-
+  copy = Val_unit;
+  /* Loop in case allocating the copy triggers a GC which modifies the
+   * ephemeron or the value. In the common case, we go around this
+   * loop 1.5 times. */
+  while(true) {
     clean_field(e, offset);
-    v = Field(e, offset);
-    if (v == caml_ephe_none) CAMLreturn (Val_none);
+    val = Field(e, offset);
 
-    if (Tag_val(v) == Infix_tag) {
-      infix_offs = Infix_offset_val(v);
-      v -= infix_offs;
+    if (val == caml_ephe_none) {
+      res = Val_none;
+      goto out;
+    }
+    infix_offs = 0;
+
+    /* Don't copy immediates or custom blocks #7279 */
+    if (!Is_block(val) || Tag_val(val) == Custom_tag) {
+      copy = val;
+      goto some;
     }
 
-    if (Tag_val(v) < No_scan_tag) {
-      caml_domain_state* domain_state = Caml_state;
-      i = 0;
-      if (Tag_val (v) == Closure_tag) {
-        /* Direct copy of the code pointers and closure info fields */
-        i = Start_env_closinfo(Closinfo_val(v));
-        memcpy (Bp_val (elt), Bp_val (v), Bsize_wsize (i));
-      }
-      /* Field-by-field copy and darkening of the remaining fields */
-      for (/*nothing*/; i < Wosize_val(v); i++) {
-        f = Field(v, i);
-        caml_darken (domain_state, f, 0);
-        Store_field(elt, i, f);
-      }
-    } else {
-      memmove (Bp_val(elt), Bp_val(v), Bosize_val(v));
+    if (Tag_val(val) == Infix_tag) {
+      infix_offs = Infix_offset_val(val);
+      val -= infix_offs;
     }
-  } else {
-    Field(e, offset) = elt = v;
+
+    if (copy != Val_unit &&
+        (Tag_val(val) == Tag_val(copy)) &&
+        (Wosize_val(val) == Wosize_val(copy))) {
+      /* The copy we allocated (on a previous iteration) is large
+       * enough and has the right header bits for us to copy the
+       * contents of val into it. Note that we don't care whether val
+       * has changed since we allocated copy. */
+      break;
+    }
+
+    /* This allocation could provoke a GC, which could change the
+       * header or size of val (e.g. in a finalizer). So we go around
+       * the loop to read val again. */
+    copy = caml_alloc (Wosize_val(val), Tag_val(val));
+    val = Val_unit;
   }
-  res = caml_alloc_small (1, Tag_some);
-  Field(res, 0) = elt + infix_offs;
- out:
+
+  ephe_copy_and_darken(val, copy);
+
+some:
+  res = caml_alloc_some(copy + infix_offs);
+out:
   /* run GC and memprof callbacks */
   caml_process_pending_actions();
   CAMLreturn(res);
