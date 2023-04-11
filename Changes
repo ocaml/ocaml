@@ -734,6 +734,9 @@ Working version
 - #12162: Fix miscompilation on amd64 backends involving integer overflows
   (Vincent Laviron and Greta Yorsh, review by Stefan Muenzel)
 
+- #12178: Fix runtime events consumer poll function returning an invalid value
+  instead of an OCaml integer value. (Lucas Pluvinage)
+
 OCaml 5.0.0 (15 December 2022)
 ------------------------------
 
