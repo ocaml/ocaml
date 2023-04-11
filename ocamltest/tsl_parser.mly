@@ -25,9 +25,7 @@ let mkstring s = make_string ~loc:(symbol_rloc()) s
 let mkidentifier id = make_identifier ~loc:(symbol_rloc()) id
 
 let mkenvstmt envstmt =
-  let located_env_statement =
-    make_environment_statement ~loc:(symbol_rloc()) envstmt in
-  Environment_statement located_env_statement
+  make_environment_statement ~loc:(symbol_rloc()) envstmt
 
 %}
 
@@ -61,19 +59,12 @@ tsl_tree:
 
 env_list:
 | { [] }
-| raw_env_item SEMI env_list { $1 :: $3 }
+| env_item SEMI env_list { $1 :: $3 }
 
 env_list_and_test:
 | identifier with_environment_modifiers SEMI { ([], $1, $2) }
-| raw_env_item SEMI env_list_and_test
+| env_item SEMI env_list_and_test
   { let (env, id, mods) = $3 in ($1 :: env, id, mods) }
-
-raw_env_item:
-  env_item
-  { match $1 with
-    | Environment_statement x -> x
-    | _ -> assert false
-  }
 
 tsl_block:
 | TSL_BEGIN_C_STYLE tsl_script TSL_END_C_STYLE { $2 }
@@ -89,7 +80,7 @@ tsl_items:
 
 tsl_item:
 | test_item { $1 }
-| env_item { $1 }
+| env_item { Environment_statement $1 }
 
 test_item:
   TEST_DEPTH identifier with_environment_modifiers { (Test ($1, $2, $3)) }
