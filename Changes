@@ -5,6 +5,10 @@ Working version
 
 ### Runtime system:
 
+- #12176: Add a ?events_dir parameter to [Runtime_events.start], that has the
+  same effect as OCAML_RUNTIME_EVENTS_DIR. Fixes #12173.
+  (Fabian Hemmer, review by ...)
+
 ### Code generation and optimizations:
 
 ### Standard library:
