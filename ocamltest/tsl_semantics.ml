@@ -175,3 +175,9 @@ let actions_in_tests tests =
   let f test action_set =
     Actions.ActionSet.union (actions_in_test test) action_set in
   Tests.TestSet.fold f tests Actions.ActionSet.empty
+
+
+let test_tree_of_tsl_ast (Tsl_node (_env, _test, _mods, _subs)) =
+  assert false
+
+let test_trees_of_tsl_asts asts = ([], List.map test_tree_of_tsl_ast asts)

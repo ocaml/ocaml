@@ -63,6 +63,9 @@ and token = parse
         | "with" -> WITH
         | _ -> IDENTIFIER s
     }
+  | "{" { OPEN }
+  | "}" { CLOSE }
+  | ";" { SEMI }
   | "(*"
     {
       comment_start_pos := [Lexing.lexeme_start_p lexbuf];

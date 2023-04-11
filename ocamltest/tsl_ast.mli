@@ -26,6 +26,7 @@ type environment_statement =
   | Include of string located (* include named environment *)
   | Unset of string located (* clear environment variable *)
 
+(* old syntax *)
 type tsl_item =
   | Environment_statement of environment_statement located
   | Test of
@@ -33,7 +34,19 @@ type tsl_item =
     string located (* test name *) *
     string located list (* environment modifiers *)
 
-type tsl_block = tsl_item list
+(* New syntax *)
+
+type tsl_ast =
+  | Tsl_node
+      of environment_statement located list
+       * string located
+       * string located list
+       * tsl_ast list
+
+(* old + new *)
+type tsl_block =
+  | Old of tsl_item list
+  | New of tsl_ast list
 
 val make_identifier : ?loc:Location.t -> string -> string located
 val make_string : ?loc:Location.t -> string -> string located

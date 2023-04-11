@@ -33,7 +33,7 @@ let mkenvstmt envstmt =
 
 %token TSL_BEGIN_C_STYLE TSL_END_C_STYLE
 %token TSL_BEGIN_OCAML_STYLE TSL_END_OCAML_STYLE
-%token COMMA
+%token COMMA OPEN CLOSE SEMI
 %token <int> TEST_DEPTH
 %token EQUAL PLUSEQUAL
 /* %token COLON */
@@ -46,9 +46,42 @@ let mkenvstmt envstmt =
 
 %%
 
+tsl_subtree:
+| env_list_and_test tsl_subtree
+  { let (env, id, mods) = $1 in Tsl_node (env, id, mods, [$2]) }
+| env_list tsl_tree_list
+  { Tsl_node ($1, mkidentifier "", [], $2) }
+
+tsl_tree_list:
+| { [] }
+| tsl_tree tsl_tree_list { $1 :: $2 }
+
+tsl_tree:
+| OPEN tsl_subtree CLOSE { $2 }
+
+env_list:
+| { [] }
+| raw_env_item SEMI env_list { $1 :: $3 }
+
+env_list_and_test:
+| identifier with_environment_modifiers SEMI { ([], $1, $2) }
+| raw_env_item SEMI env_list_and_test
+  { let (env, id, mods) = $3 in ($1 :: env, id, mods) }
+
+raw_env_item:
+  env_item
+  { match $1 with
+    | Environment_statement x -> x
+    | _ -> assert false
+  }
+
 tsl_block:
-| TSL_BEGIN_C_STYLE tsl_items TSL_END_C_STYLE { $2 }
-| TSL_BEGIN_OCAML_STYLE tsl_items TSL_END_OCAML_STYLE { $2 }
+| TSL_BEGIN_C_STYLE tsl_script TSL_END_C_STYLE { $2 }
+| TSL_BEGIN_OCAML_STYLE tsl_script TSL_END_OCAML_STYLE { $2 }
+
+tsl_script:
+| tsl_items { Old $1 }
+| tsl_tree { New [$1] }
 
 tsl_items:
 | { [] }

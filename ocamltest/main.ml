@@ -34,6 +34,12 @@ let tsl_block_of_file test_filename =
   let lexbuf = Lexing.from_channel input_channel in
   Location.init lexbuf test_filename;
   match Tsl_parser.tsl_block Tsl_lexer.token lexbuf with
+    | exception Parsing.Parse_error ->
+      let open Lexing in
+      Printf.eprintf "Could not read test block in %s at %d:%d\n%!"
+        test_filename lexbuf.lex_start_p.pos_lnum
+        (lexbuf.lex_start_p.pos_cnum - lexbuf.lex_start_p.pos_bol);
+      raise Parsing.Parse_error
     | exception e -> close_in input_channel; raise e
     | _ as tsl_block -> close_in input_channel; tsl_block
 
@@ -116,7 +122,11 @@ let test_file test_filename =
   let start = if Options.show_timings then Unix.gettimeofday () else 0.0 in
   let skip_test = List.mem test_filename !tests_to_skip in
   let tsl_block = tsl_block_of_file_safe test_filename in
-  let (rootenv_statements, test_trees) = test_trees_of_tsl_block tsl_block in
+  let (rootenv_statements, test_trees) =
+    match tsl_block with
+    | Tsl_ast.Old l -> test_trees_of_tsl_block l
+    | Tsl_ast.New l -> test_trees_of_tsl_asts l
+  in
   let test_trees = match test_trees with
     | [] ->
       let default_tests = Tests.default_tests() in

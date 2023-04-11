@@ -35,8 +35,13 @@ type test_tree =
     (test_tree list)
 
 val test_trees_of_tsl_block :
-  Tsl_ast.tsl_block ->
+  Tsl_ast.tsl_item list ->
   Tsl_ast.environment_statement located list * test_tree list
+
+val test_trees_of_tsl_asts :
+  Tsl_ast.tsl_ast list ->
+  Tsl_ast.environment_statement located list * test_tree list
+
 
 val tests_in_tree : test_tree -> Tests.TestSet.t
 
