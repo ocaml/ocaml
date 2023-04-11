@@ -1219,5 +1219,5 @@ CAMLprim value caml_ml_runtime_events_read_poll(value wrapper,
     }
   }
 
-  CAMLreturn(Int_val(events_consumed));
+  CAMLreturn(Val_int(events_consumed));
 };
