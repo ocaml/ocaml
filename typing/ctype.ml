@@ -2173,7 +2173,7 @@ let reify uenv t =
   let create_fresh_constr lev name =
     let name = match name with Some s -> "$'"^s | _ -> "$" in
     let decl = new_local_type () in
-    let env = get_env uenv in 
+    let env = get_env uenv in
     let new_name =
       (* unique names are needed only for error messages *)
       if in_counterexample uenv then name else get_new_abstract_name env name
