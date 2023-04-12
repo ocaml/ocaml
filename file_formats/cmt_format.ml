@@ -206,25 +206,24 @@ let clear_env binary_annots =
 let shape_index : (index_item * Longident.t Location.loc) list ref =
   Local_store.s_ref []
 
-let add_loc_to_index env shape loc =
-  let shape = Local_reduce.weak_reduce env shape in
-  if not (Shape.is_closed shape) then
-    shape_index := (Unresolved shape, loc) :: !shape_index
-  else Option.iter
-    (fun uid -> shape_index := (Resolved uid, loc) :: !shape_index)
-    shape.Shape.uid
+let add_loc_to_index ~namespace env path loc =
+  try
+    let shape = Env.shape_of_path ~namespace env path in
+    let shape = Local_reduce.weak_reduce env shape in
+    if not (Shape.is_closed shape) then
+      shape_index := (Unresolved shape, loc) :: !shape_index
+    else Option.iter
+      (fun uid -> shape_index := (Resolved uid, loc) :: !shape_index)
+      shape.Shape.uid
+  with Not_found -> ()
 
 let index_decl =
   Tast_iterator.{ default_iterator with
 
   expr = (fun sub ({ exp_desc; exp_env; _ } as e) ->
       (match exp_desc with
-      | Texp_ident (path, ({ loc = { loc_ghost = false; _ }; _ } as lid), _)
-        -> (
-          try
-            let shape = Env.shape_of_path ~namespace:Value exp_env path in
-            add_loc_to_index exp_env shape lid
-          with Not_found -> ())
+      | Texp_ident (path, ({ loc = { loc_ghost = false; _ }; _ } as lid), _) ->
+          add_loc_to_index ~namespace:Value exp_env path lid
       | _ -> ());
       default_iterator.expr sub e);
 
@@ -232,22 +231,16 @@ let index_decl =
     (fun sub ({ ctyp_desc; ctyp_env; _ } as ct) ->
       (match ctyp_desc with
       | Ttyp_constr
-        (path, ({ loc = { loc_ghost = false; _ }; _ } as lid), _ctyps) -> (
-          try
-            let shape = Env.shape_of_path ~namespace:Type ctyp_env path in
-            add_loc_to_index ctyp_env shape lid
-          with Not_found -> ())
+        (path, ({ loc = { loc_ghost = false; _ }; _ } as lid), _ctyps) ->
+          add_loc_to_index ~namespace:Type ctyp_env path lid
       | _ -> ());
       default_iterator.typ sub ct);
 
   module_expr =
     (fun sub ({ mod_desc; mod_env; _ } as me) ->
       (match mod_desc with
-      | Tmod_ident (path, lid) -> (
-          try
-            let shape = Env.shape_of_path ~namespace:Module mod_env path in
-            add_loc_to_index mod_env shape lid
-          with Not_found -> ())
+      | Tmod_ident (path, lid) ->
+          add_loc_to_index ~namespace:Module mod_env path lid
       | _ -> ());
       default_iterator.module_expr sub me);
 }
