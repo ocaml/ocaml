@@ -16,12 +16,19 @@ Compilation flags: /Users/ulysse/tmp/ocaml/ocamlc -use-runtime /Users/ulysse/tmp
 Load path:  /Users/ulysse/tmp/ocaml/runtime /Users/ulysse/tmp/ocaml/stdlib
 cmt interface digest: 00000000000000000000000000000000
 Indexed shapes:
-Index.4: y (File "index.ml", line 23, characters 19-20)
+Index.11: a (File "index.ml", line 41, characters 16-17)
+Index.5: A (File "index.ml", line 40, characters 16-17)
+Index.10: y (File "index.ml", line 38, characters 19-20)
 CU Stdlib . "print_int"[value] :
-  print_int (File "index.ml", line 23, characters 9-18)
-CU Aux . "z"[value] : Aux.z (File "index.ml", line 21, characters 14-19)
-Index.1: A.x (File "index.ml", line 21, characters 8-11)
-CU Stdlib . "+"[value] : (+) (File "index.ml", line 21, characters 12-13)
-Index.2: A (File "index.ml", line 19, characters 11-12)
-Index.0: t (File "index.ml", line 16, characters 11-12)
-<predef:int>: int (File "index.ml", line 15, characters 11-14)
+  print_int (File "index.ml", line 38, characters 9-18)
+CU Aux . "z"[value] : Aux.z (File "index.ml", line 36, characters 14-19)
+Index.4: A.x (File "index.ml", line 36, characters 8-11)
+CU Stdlib . "+"[value] : (+) (File "index.ml", line 36, characters 12-13)
+Index.5: A (File "index.ml", line 34, characters 5-6)
+Index.3: t (File "index.ml", line 28, characters 10-11)
+Index.5: A (File "index.ml", line 27, characters 7-8)
+Index.5: A (File "index.ml", line 30, characters 10-11)
+Index.5: A (File "index.ml", line 24, characters 11-12)
+Index.3: t (File "index.ml", line 21, characters 11-12)
+<predef:int>: int (File "index.ml", line 20, characters 11-14)
+Index.0: t (File "index.ml", line 16, characters 10-11)
