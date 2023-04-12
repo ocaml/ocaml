@@ -1,0 +1,27 @@
+File index.cmt
+Unit name: Index
+Interfaces imported:
+	00000000000000000000000000000000	Index
+	00000000000000000000000000000000	Stdlib
+	00000000000000000000000000000000	CamlinternalFormatBasics
+	00000000000000000000000000000000	Aux
+Cmt unit name: Index
+Cmt interfaces imported:
+	00000000000000000000000000000000	Aux
+	00000000000000000000000000000000	CamlinternalFormatBasics
+	00000000000000000000000000000000	Index
+	00000000000000000000000000000000	Stdlib
+Source file: index.ml
+Compilation flags: /Users/ulysse/tmp/ocaml/ocamlc -use-runtime /Users/ulysse/tmp/ocaml/runtime/ocamlrun -I /Users/ulysse/tmp/ocaml/runtime -nostdlib -I /Users/ulysse/tmp/ocaml/stdlib -bin-annot -c aux.ml index.ml
+Load path:  /Users/ulysse/tmp/ocaml/runtime /Users/ulysse/tmp/ocaml/stdlib
+cmt interface digest: 00000000000000000000000000000000
+Indexed shapes:
+Index.4: y (File "index.ml", line 23, characters 19-20)
+CU Stdlib . "print_int"[value] :
+  print_int (File "index.ml", line 23, characters 9-18)
+CU Aux . "z"[value] : Aux.z (File "index.ml", line 21, characters 14-19)
+Index.1: A.x (File "index.ml", line 21, characters 8-11)
+CU Stdlib . "+"[value] : (+) (File "index.ml", line 21, characters 12-13)
+Index.2: A (File "index.ml", line 19, characters 11-12)
+Index.0: t (File "index.ml", line 16, characters 11-12)
+<predef:int>: int (File "index.ml", line 15, characters 11-14)
