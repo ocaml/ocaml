@@ -110,7 +110,7 @@ let print_cmt_infos cmt =
     | Some shape -> Format.printf "\n%a" Shape.print shape)
   end;
   if !index then begin
-    printf "Indexed shapes: ";
+    printf "Indexed shapes:\n";
     List.iter (fun (item, loc) ->
       let pp_loc fmt { Location.txt; loc } =
         Format.fprintf fmt "%a (%a)"
@@ -118,11 +118,11 @@ let print_cmt_infos cmt =
       in
       match item with
       | Resolved uid ->
-          Format.printf "%a: %a\n"
+          Format.printf "@[<hov 2>%a:@ %a@]@;"
             Shape.Uid.print uid
             pp_loc loc
       | Unresolved shape ->
-        Format.printf "%a: %a\n"
+        Format.printf "@[<hov 2>%a:@ %a@]@;"
           Shape.print shape
           pp_loc loc)
       cmt.cmt_index
