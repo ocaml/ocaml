@@ -16,19 +16,30 @@
 # A set of macros for low-level debugging of OCaml programs and of the
 # OCaml runtime itself (both native and byte-code).
 
+# Advice to future developers: rewrite this in Python which will be
+# faster, more reliable, and more maintainable. See also gdb_ocamlrun.py
+
 # This file should be loaded in gdb with [ source gdb-macros ].
-# It defines one command: [caml]
+# It defines a few related commands:
+#
 # Usage:
 # [caml <value>]
 # If <value> is an OCaml value, this will display it in a low-level
 # but legible format, including the header information.
+#
+# [caml-next]
+# If the most recent value shown with "caml" is a heap block,
+# this will describe the following block.
+#
+# [caml-field <N>]
+# If the most recent value shown with "caml" is a heap block,
+# this will describe the Nth field in that block.
 
-# To do: a [camlsearch] command to find all (gc-traceable) pointers to
-# a given heap block.
+set $caml_word_size = sizeof(char *)
+set $caml_word_bits = 8 * $caml_word_size
+set $caml_pool_size = 4096 * $caml_word_size
 
-set $camlwordsize = sizeof(char *)
-
-if $camlwordsize == 8
+if $caml_word_size == 8
   set $caml_unalloc_mask = 0xFF00FFFFFF00FFFF
   set $caml_unalloc_value = 0xD700D7D7D700D6D7
 else
@@ -36,57 +47,48 @@ else
   set $caml_unalloc_value = 0xD700D6D7
 end
 
-define camlcheckheader
-  if $arg0 >> 10 <= 0 || $arg0 >> 10 >= 0x1000000000000
-    if ($arg0 & $caml_unalloc_mask) == $caml_unalloc_value
-      set $camlcheckheader_result = 2
-    else
-      if $arg0 == (unsigned long) 0
-        set $camlcheckheader_result = 3
-      else
-        set $camlcheckheader_result = 1
-      end
-    end
-  else
-    set $camlcheckheader_result = 0
-  end
-end
+# `caml header item` Displays information about the header of a Caml
+# block `item`, with no new-line.
 
-define camlheader
-  set $hd = * (unsigned long *) ($arg0 - $camlwordsize)
+define caml_header
+  set $hd = * (unsigned long *) ($arg0 - $caml_word_size)
   set $tag = $hd & 0xFF
-  set $color = ($hd >> 8) & 3
+  set $color = $hd & (3 << 8)
   set $size = $hd >> 10
 
-  camlcheckheader $hd
-  if $camlcheckheader_result != 0
-    if $camlcheckheader_result == 2
+  if $size <= 0 || $size >= 0x1000000000000
+    if ($hd & $caml_unalloc_mask) == $caml_unalloc_value
       printf "[UNALLOCATED MEMORY]"
     else
-      if $camlcheckheader_result == 3
-        printf "[** fragment **] 0x%016lu", $hd
+      if !$hd
+        printf "[** fragment **] 0x%lx", $hd
       else
-        printf "[**invalid header**] 0x%016lu", $hd
+        printf "[** invalid header **] 0x%lx", $hd
       end
     end
-    set $size = 0
   else
     printf "["
-    if $color == 0
-      printf "white "
+    if $color == caml_global_heap_state.MARKED
+      printf "marked "
     end
-    if $color == 1
-      printf "gray "
+    if $color == caml_global_heap_state.UNMARKED
+      printf "unmarked "
     end
-    if $color == 2
-      printf "blue "
+    if $color == caml_global_heap_state.GARBAGE
+      printf "garbage "
     end
-    if $color == 3
-      printf "black "
+    if $color == 3 << 8
+      printf "not markable "
     end
 
-    if $tag < 246
-      printf "tag%d ", $tag
+    if $tag < 244
+      printf "tag %d ", $tag
+    end
+    if $tag == 244
+      printf "Forcing "
+    end
+    if $tag == 245
+      printf "Continuation "
     end
     if $tag == 246
       printf "Lazy "
@@ -123,31 +125,144 @@ define camlheader
   end
 end
 
-define camlheap
-  if $arg0 >= Caml_state->young_start && $arg0 < Caml_state->young_end
-    printf "YOUNG"
-    set $camlheap_result = 1
-  else
-    set $chunk = Caml_state->heap_start
-    set $found = 0
-    while $chunk != 0 && ! $found
-      set $chunk_size = * (unsigned long *) ($chunk - 2 * $camlwordsize)
-      if $arg0 > $chunk && $arg0 <= $chunk + $chunk_size
-        printf "OLD"
-        set $found = 1
+# Various caml_search_* functions which understand the layout of the
+# Caml heap. Main driver function is "caml_search". This is slow and
+# would benefit from being rewritten in a faster or more capable
+# language (e.g. Python). To debug the heap searching itself, set
+# $caml_search_debug=1.
+
+# `caml_search_pools name pool item` searches the pool list from
+# `pool` onwards for the block `item`. If found, it outputs `FOUND`
+# and a description of the pool where it was found. If
+# $caml_search_debug is set, it also describes all the pools on the
+# list. `name` is a string describing the pool list.
+
+define caml_search_pools
+  set $pool = $arg1
+  while $pool && ($caml_search_debug || !$found)
+    set $found_here = 0
+    if ($arg2 >= (char*)($pool+1)) && ($arg2 < (char*)$pool + $caml_pool_size)
+      printf "FOUND"
+      set $found_here = 1
+      set $found = 1
+    end
+    if $caml_search_debug || $found_here
+      printf " domain %d %s pool %lx-%lx sizeclass %d(%d)", \
+             $domain_index, $arg0, $pool, ((char*)$pool)+$caml_pool_size, \
+             $pool->sz, wsize_sizeclass[$pool->sz]
+      if $caml_search_debug
+        printf "\n"
       end
-      set $chunk = * (unsigned long *) ($chunk - $camlwordsize)
     end
-    if $found
-      set $camlheap_result = 1
-    else
-      printf "OUT-OF-HEAP"
-      set $camlheap_result = 0
-    end
+    set $pool = $pool->next
   end
 end
 
-define camlint
+# `caml_search_large name large item` searches the large block list
+# from `large` onwards for the block `item`. If found, it outputs
+# `FOUND` and a description of the large block where it was found. If
+# $caml_search_debug is set, it also describes all the large blocks
+# on the list. `name` is a string describing the large object list.
+
+define caml_search_large
+  set $large = $arg1
+  while $large && ($caml_search_debug || !$found)
+    set $large_hd = * (unsigned long *)($large+1)
+    set $large_size = ((($large_hd) >> 10)+1)*sizeof(unsigned long)
+    set $large_end = ((char*)($large+1))+$large_size
+    set $found_here = 0
+    if ($arg2 > (char*)$large) && ($arg2 < $large_end)
+      printf "FOUND"
+      set $found_here = 1
+      set $found = 1
+    end
+    if $caml_search_debug || $found_here
+      printf " domain %d %s large %lx-%lx? (size %d?)", \
+             $domain_index, $arg0, $large, $large_end, $large_size
+      if $caml_search_debug
+        printf "\n"
+      end
+    end
+    set $large = $large->next
+  end
+end
+
+# `caml_search_heap_state state item` searches the pool and large
+# object lists in the caml_heap_state `state` for the block `item`.
+# If found, it outputs `FOUND` and a description of the zone where it
+# was found. If $caml_search_debug is set, it also describes all the
+# areas searched.
+
+define caml_search_heap_state
+  set $heap_state = $arg0
+  set $NUM_SIZECLASSES = sizeof($heap_state->avail_pools)/ \
+                         sizeof($heap_state->avail_pools[0])
+  set $sizeclass = 0
+  while $sizeclass < $NUM_SIZECLASSES && ($caml_search_debug || !$found)
+    caml_search_pools "avail" $heap_state->avail_pools[$sizeclass] $arg1
+    caml_search_pools "full" $heap_state->full_pools[$sizeclass] $arg1
+    caml_search_pools "unswept avail" \
+                      $heap_state->unswept_avail_pools[$sizeclass] $arg1
+    caml_search_pools "unswept full" \
+                      $heap_state->unswept_full_pools[$sizeclass] $arg1
+    set $sizeclass = $sizeclass + 1
+  end
+  caml_search_large "swept" $heap_state->swept_large $arg1
+  caml_search_large "unswept" $heap_state->unswept_large $arg1
+end
+
+# `caml_search item` searches the entire Caml heap for `item` and
+# outputs text describing the location, where it was found, with no
+# new-line.
+
+define caml_search
+  set $Max_domains = sizeof(all_domains)/sizeof(all_domains[0])
+  set $domain_index = 0
+  set $found = 0
+  while $domain_index < $Max_domains && !$found
+    set $domain = all_domains + $domain_index
+    if $domain->state != 0
+        if $caml_search_debug
+            printf "domain %d minor %lx-%lx\n", \
+                   $domain_index, \
+                   $domain->state->young_start, $domain->state->young_end
+        end
+        if $arg0 >= $domain->state->young_start && \
+           $arg0 < $domain->state->young_end
+          printf "FOUND young (domain %d)", $domain_index
+          set $found = 1
+        end
+        if $caml_search_debug || !$found
+           caml_search_heap_state $domain->state->shared_heap $arg0
+        end
+    end
+    set $domain_index = $domain_index + 1
+  end
+  if $caml_search_debug
+    printf "Global (orphaned) heap:\n"
+  end
+  if $caml_search_debug || !$found
+    set $sizeclass = 0
+    set $domain_index = -1
+    while $sizeclass < $NUM_SIZECLASSES && ($caml_search_debug || !$found)
+      caml_search_pools "global avail" \
+                        pool_freelist.global_avail_pools[$sizeclass] $arg0
+      caml_search_pools "global full" \
+                        pool_freelist.global_full_pools[$sizeclass] $arg0
+      set $sizeclass = $sizeclass + 1
+    end
+    caml_search_large "global large" pool_freelist.global_large $arg0
+  end
+  set $caml_search_result = $found
+  if !$caml_search_result
+    printf "not on Caml heap"
+  end
+end
+
+# `caml_int item` describes `item`, with no new line, on the
+# assumption that it's a Caml (tagged) integer.
+
+define caml_int
   if ($arg0 & $caml_unalloc_mask) == $caml_unalloc_value
     printf "UNALLOCATED MEMORY"
   else
@@ -158,164 +273,144 @@ define camlint
   end
 end
 
-define camlblock
-  printf "%#lx: ", $arg0 - $camlwordsize
-  camlheap $arg0
+# `caml_summary item` outputs a short text description of `item`, with
+# no newline.
+
+define caml_summary
+  if ($arg0 & 1) == 1
+    caml_int $arg0
+  end
+  if ($arg0 & 7) == 0
+    # aligned pointer
+    caml_search $arg0
+    printf " "
+    caml_header $arg0
+  end
+  if ($arg0 & 1) == 0 && ($arg0 & 7)
+    printf "UNALIGNED POINTER: %lx\n", $caml_last
+  end
+end
+
+# `caml_block item` describes `item`, which should be a pointer to a
+# Caml block, over several lines.
+
+define caml_block
+  printf "%#lx: ", $arg0 - $caml_word_size
+  set $caml_block_ptr = $arg0
+  caml_search $caml_block_ptr
   printf " "
-  camlheader $arg0
-  set $mysize = $size
-  set $camlnext = $arg0 + $camlwordsize * ($size + 1)
+  caml_header $caml_block_ptr
+  set $caml_block_size = $size
+  set $caml_block_tag = $tag
+  set $caml_next = $caml_block_ptr + $caml_word_size * ($caml_block_size + 1)
   printf "\n"
 
-  if $tag == 252
-    x/s $arg0
+  if $caml_block_tag == 252
+    x/s $caml_block_ptr
   end
-  if $tag == 253
-    x/f $arg0
+  if $caml_block_tag == 253
+    x/f $caml_block_ptr
   end
-  if $tag == 254
-    while $count < $mysize && $count < 10
-      if $count + 1 < $size
-        x/2f $arg0 + $camlwordsize * $count
+  if $caml_block_tag == 254
+    while $count < $caml_block_size && $count < 10
+      if $count + 1 < $caml_block_size
+        x/2f $caml_block_ptr + $caml_word_size * $count
       else
-        x/f $arg0 + $camlwordsize * $count
+        x/f $caml_block_ptr + $caml_word_size * $count
       end
       set $count = $count + 2
     end
-    if $count < $mysize
+    if $count < $caml_block_size
       printf "... truncated ...\n"
     end
   end
 
-  if $tag == 249
+  if $caml_block_tag == 249
     printf "... infix header, displaying enclosing block:\n"
-    set $mybaseaddr = $arg0 - $camlwordsize * $mysize
-    camlblock $mybaseaddr
-    # reset $tag, which was clobbered by the recursive call (yuck)
-    set $tag = 249
+    set $mybaseaddr = $caml_block_ptr - $caml_word_size * $caml_block_size
+    set $save_ptr = $caml_block_ptr
+    set $save_size = $caml_block_size
+    caml_block $mybaseaddr
+    # restore values clobbered by the recursive call (yuck)
+    set $caml_block_tag = 249
+    set $caml_block_ptr = $save_ptr
+    set $caml_block_size = $save_size
   end
 
-  if $tag != 249 && $tag != 252 && $tag != 253 && $tag != 254
-    set $isvalues = $tag < 251
+  if $caml_block_tag != 249 && $caml_block_tag != 252 && \
+     $caml_block_tag != 253 && $caml_block_tag != 254
+    set $isvalues = $caml_block_tag < 251
     set $count = 0
-    while $count < $mysize && $count < 10
-      set $adr = $arg0 + $camlwordsize * $count
+    while $count < $caml_block_size && $count < 10
+      set $adr = $caml_block_ptr + $caml_word_size * $count
       set $field = * (unsigned long *) $adr
       printf "%#lx: [%d] 0x%016lx ", $adr, $count, $field
-      if ($field & 7) == 0 && $isvalues
-        camlheap $field
-        if $camlheap_result
-          printf " "
-          camlheader $field
-        end
+      # If closure, zeroth field is a code address.
+      if $caml_block_tag == 247 && $count == 0
+        printf "code address? "
       end
-      if ($field & 1) == 1
-        camlint $field
+      # Decode closure information field
+      if ($field & 1) == 1 && $caml_block_tag == 247 && $count == 1
+        printf "arity %d non-scannable %d", \
+               $field >> ($caml_word_bits - 8), \
+               ($field & ((1ul << ($caml_word_bits-8))-1)) >> 1
+      else
+        caml_summary $field
       end
       printf "\n"
       set $count = $count + 1
     end
-    if $count < $mysize
+    if $count < $caml_block_size
       printf "... truncated ...\n"
     end
   end
   printf "next block head: %#lx   value: %#lx\n", \
-         $arg0 + $camlwordsize * $mysize, $arg0 + $camlwordsize * ($mysize+1)
+         $caml_block_ptr + $caml_word_size * $caml_block_size, \
+         $caml_block_ptr + $caml_word_size * ($caml_block_size+1)
 end
 
-# displays an OCaml value
+# `caml item` describes the Caml value `item`, over several lines if
+# appropriate. This function is the main point of this file.
+
 define caml
-  set $camllast = (long) $arg0
-  if ($camllast & 1) == 1
-    set $camlnext = 0
-    camlint $camllast
-    printf "\n"
+  set $caml_last = $arg0
+  set $caml_next = 0
+  if ($caml_last & 1) == 1
+    caml_int $caml_last
   end
-  if ($camllast & 7) == 0
-    camlblock $camllast
+  if ($caml_last & 7) == 0
+    caml_block $caml_last
   end
-  if ($camllast & 7) != 0 && ($camllast & 1) != 1
-    set $camlnext = 0
-    printf "invalid pointer: %#016lx\n", $camllast
-  end
+  printf "\n"
+end
+
+document caml
+Output a description of a the Caml value VALUE, in a low-level but legible
+format, including information about where on the heap it is located, and any
+header and fields it contains.
 end
 
 # displays the next OCaml value in memory
-define camlnext
-  caml $camlnext
+define caml_next
+  if $caml_next
+    caml $caml_next
+  else
+    printf "No next block\n"
+  end
+end
+
+document caml_next
+If the most recent value described was a heap block, "caml-next" describes
+the following block on the heap.
 end
 
 # displays the n-th field of the previously displayed value
-define camlfield
-  set $camlfield_addr = ((long *) $camllast)[$arg0]
-  caml $camlfield_addr
+define caml_field
+  set $caml_field = ((long *) $caml_last)[$arg0]
+  caml $caml_field
 end
 
-# displays the list of heap chunks
-define camlchunks
-  set $chunk = * (unsigned long *) &Caml_state->heap_start
-  while $chunk != 0
-    set $chunk_size = * (unsigned long *) ($chunk - 2 * $camlwordsize)
-    set $chunk_alloc = * (unsigned long *) ($chunk - 3 * $camlwordsize)
-    printf "chunk: addr = %#lx .. %#lx", $chunk, $chunk + $chunk_size
-    printf "  (size = %#lx; alloc = %#lx)\n", $chunk_size, $chunk_alloc
-    set $chunk = * (unsigned long *) ($chunk - $camlwordsize)
-  end
-end
-
-# walk the heap and launch command `camlvisitfun` on each block
-# the variables `$hp` `$val` `$hd` `$tag` `$color` and `$size`
-# are set before calling `camlvisitfun`
-# `camlvisitfun` can set `$camlvisitstop` to stop the iteration
-
-define camlvisit
-  set $cvchunk = * (unsigned long *) &Caml_state->heap_start
-  set $camlvisitstop = 0
-  while $cvchunk != 0 && ! $camlvisitstop
-    set $cvchunk_size = * (unsigned long *) ($cvchunk - 2 * $camlwordsize)
-    set $cvhp = $cvchunk
-    while $cvhp < $cvchunk + $cvchunk_size && !$camlvisitstop
-      set $hp = $cvhp
-      set $val = $hp + $camlwordsize
-      set $hd = * (unsigned long *) $hp
-      set $tag = $hd & 0xFF
-      set $color = ($hd >> 8) & 3
-      set $cvsize = $hd >> 10
-      set $size = $cvsize
-      camlvisitfun
-      set $cvhp = $cvhp + (($cvsize + 1) * $camlwordsize)
-    end
-    set $cvchunk = * (unsigned long *) ($cvchunk - $camlwordsize)
-  end
-end
-
-define caml_cv_check_fl0
-  if $hp == * (unsigned long *) &Caml_state->heap_start
-    set $flcheck_prev = ((unsigned long) &sentinels + 16)
-  end
-  if $color == 2 && $size > 5
-    if $val != * (unsigned long *) $flcheck_prev
-      printf "free-list: missing link %#x -> %#x\n", $flcheck_prev, $val
-      set $camlvisitstop = 1
-    end
-    set $flcheck_prev = $val
-  end
-end
-
-define caml_check_fl
-  set $listsize = $arg0
-  set $blueseen = $listsize == 0
-  set $val = * (unsigned long *) ((long) &sentinels + 16 + 32 * $listsize)
-  while $val != 0
-    printf "%#x\n", $val
-    set $hd = * (unsigned long *) ($val - 8)
-    set $color = ($hd >> 8) & 3
-    if $blueseen && $color != 2
-      printf "non-blue block at address %#x\n", $val
-      loop_break
-    else
-      set $blueseen = 1
-    end
-    set $val = * (unsigned long *) $val
-  end
+document caml_field
+If the most recent value described was a heap block, "caml-field N" describes
+the Nth field in that block.
 end
