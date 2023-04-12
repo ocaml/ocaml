@@ -297,7 +297,8 @@ module Callbacks = struct
 
 end
 
-external start : unit -> unit = "caml_runtime_events_start"
+external start : ?events_dir:string -> unit -> unit
+                                        = "caml_runtime_events_start_args"
 external pause : unit -> unit = "caml_runtime_events_pause"
 external resume : unit -> unit = "caml_runtime_events_resume"
 

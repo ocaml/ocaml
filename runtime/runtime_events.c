@@ -128,7 +128,7 @@ static void write_to_ring(ev_category category, ev_message_type type,
                           int word_offset);
 
 static void events_register_write_buffer(int index, value event_name);
-static void runtime_events_create_raw(void);
+static void runtime_events_create_raw(char_os *);
 
 void caml_runtime_events_init(void) {
 
@@ -153,7 +153,7 @@ void caml_runtime_events_init(void) {
     /* since [caml_runtime_events_init] can only be called from the startup code
     and we can be sure there is only a single domain running, it is safe to call
     [runtime_events_create_raw] outside of a stop-the-world section */
-    runtime_events_create_raw();
+    runtime_events_create_raw(NULL);
   }
 }
 
@@ -213,7 +213,7 @@ void caml_runtime_events_post_fork(void) {
     runtime_events_teardown_raw(0 /* don't remove the file */);
 
     /* We still have the path and ring size from our parent */
-    caml_runtime_events_start();
+    caml_runtime_events_start(NULL);
   }
 }
 
@@ -249,7 +249,7 @@ void caml_runtime_events_destroy(void) {
 /* Create the initial runtime_events ring buffers. This must be called from
   within a stop-the-world section if we cannot be sure there is only a single
   domain running. */
-static void runtime_events_create_raw(void) {
+static void runtime_events_create_raw(char_os *events_dir) {
   /* Don't initialise runtime_events twice */
   if (!atomic_load_acq(&runtime_events_enabled)) {
     int ret, ring_headers_length, ring_data_length;
@@ -259,6 +259,10 @@ static void runtime_events_create_raw(void) {
     int ring_fd;
     long int pid = getpid();
 #endif
+
+    if (events_dir) {
+        runtime_events_path = events_dir;
+    }
 
     current_ring_loc = caml_stat_alloc(RUNTIME_EVENTS_MAX_MSG_LENGTH);
 
@@ -413,16 +417,33 @@ stw_create_runtime_events(caml_domain_state *domain_state, void *data,
   /* Everyone must be stopped for starting and stopping runtime_events */
   caml_global_barrier();
 
+  char_os *runtime_events_path = data;
+
   /* Only do this on one domain */
   if (participating_domains[0] == domain_state) {
-    runtime_events_create_raw();
+    runtime_events_create_raw(runtime_events_path);
   }
   caml_global_barrier();
 }
 
-CAMLprim value caml_runtime_events_start(void) {
+CAMLprim value caml_runtime_events_start_args(value events_dir_ml)
+{
+  CAMLparam1(events_dir_ml);
+
+  char_os *events_dir = NULL;
+  if (Is_some(events_dir_ml)) {
+    events_dir = caml_stat_strdup_to_os(String_val(Some_val(events_dir_ml)));
+  }
+
+  caml_runtime_events_start(events_dir);
+
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value caml_runtime_events_start(char_os *events_dir) {
   while (!atomic_load_acq(&runtime_events_enabled)) {
-    caml_try_run_on_all_domains(&stw_create_runtime_events, NULL, NULL);
+    caml_try_run_on_all_domains(&stw_create_runtime_events,
+                                (void*)events_dir, NULL);
   }
 
   return Val_unit;

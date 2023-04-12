@@ -253,9 +253,10 @@ module Callbacks : sig
       with the corresponding event and payload. *)
 end
 
-val start : unit -> unit
-(** [start ()] will start the collection of events in the runtime if not already
-  started.
+val start : ?events_dir:string -> unit -> unit
+(** [start ?events_dir ()] will start the collection of events in the runtime
+    if not already started. If present, [events_dir] overrides the effect of
+    the [OCAML_RUNTIME_EVENTS_DIR] environment variable.
 
   Events can be consumed by creating a cursor with [create_cursor] and providing
   a set of callbacks to be called for each type of event.

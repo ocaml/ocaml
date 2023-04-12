@@ -17,7 +17,7 @@ struct counters {
 };
 
 void start_runtime_events() {
-    caml_runtime_events_start();
+    caml_runtime_events_start(NULL);
 }
 
 int ev_begin(int domain_id, void* callback_data,

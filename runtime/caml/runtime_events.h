@@ -156,7 +156,7 @@ typedef enum {
 /* Starts runtime_events. Needs to be called before
    [caml_runtime_events_create_cursor]. Needs the runtime lock held to call and
    will trigger a stop-the-world pause. Returns Val_unit. */
-CAMLextern value caml_runtime_events_start(void);
+CAMLextern value caml_runtime_events_start(char_os *events_dir);
 
 /* Pauses runtime_events if not currently paused otherwise does nothing.
    No new events (other than the pause itself) will be written to the ring
