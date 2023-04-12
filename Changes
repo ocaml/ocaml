@@ -346,6 +346,9 @@ OCaml 5.1.0
   type
   (Samuel Hym, review by David Allsopp)
 
+- #12072: Document and test that Sys.rename works over directories too
+  (Jan Midtgaard, review by Anil Madhavapeddy and Xavier Leroy)
+
 ### Tools:
 
 - #1172: fix ocamlyacc's handling of raw string literals

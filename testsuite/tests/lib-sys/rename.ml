@@ -18,6 +18,9 @@ let readfile filename =
 let safe_remove filename =
   try Sys.remove filename with Sys_error _ -> ()
 
+let safe_remove_dir dirname =
+  try Sys.rmdir dirname with Sys_error _ -> ()
+
 let testrename f1 f2 contents =
   try
     Sys.rename f1 f2;
@@ -32,6 +35,17 @@ let testfailure f1 f2 =
     Sys.rename f1 f2; print_string "should fail but doesn't!"
   with Sys_error _ ->
     print_string "fails as expected"
+
+let testrenamedir d1 d2 =
+  try
+    Sys.rename d1 d2;
+    try
+      if Sys.is_directory d1 then print_string "source directory still exists!"
+    with Sys_error msg ->
+      if not (Sys.is_directory d2) then print_string "target directory not created!"
+      else print_string "passed"
+  with Sys_error msg ->
+    print_string "Sys_error exception: "; print_string msg
 
 let _ =
   let f1 = "file1.dat" and f2 = "file2.dat" in
@@ -52,4 +66,20 @@ let _ =
   writefile f1 "abc";
   testfailure f1 (Filename.concat "nosuchdir" f2);
   print_newline();
-  safe_remove f1; safe_remove f2
+  safe_remove f1; safe_remove f2;
+  print_string "Rename directory to a nonexisting directory: ";
+  Sys.mkdir "foo" 0o755;
+  testrenamedir "foo" "bar";
+  print_newline();
+  safe_remove_dir "bar";
+  print_string "Rename a nonexisting directory: ";
+  testfailure "foo" "bar";
+  print_newline();
+  print_string "Rename directory to a non-empty directory: ";
+  Sys.mkdir "foo" 0o755;
+  Sys.mkdir "bar" 0o755;
+  let f1 = Filename.concat "bar" "file1.dat" in
+  writefile f1 "abc";
+  testfailure "foo" "bar";
+  print_newline();
+  safe_remove f1; safe_remove_dir "foo"; safe_remove_dir "bar";
