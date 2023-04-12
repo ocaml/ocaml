@@ -84,39 +84,11 @@ type cmt_infos = {
 type error =
     Not_a_typedtree of string
 
-let need_to_clear_env =
-  try ignore (Sys.getenv "OCAML_BINANNOT_WITHENV"); false
-  with Not_found -> true
-
-let keep_only_summary = Env.keep_only_summary
-
-let cenv =
-  {Tast_mapper.default with env = fun _sub env -> keep_only_summary env}
-
-let clear_decl = function
-  | Class_declaration cd -> Class_declaration (cenv.class_declaration cenv cd)
-  | Class_description cd -> Class_description (cenv.class_description cenv cd)
-  | Class_type_declaration ctd ->
-      Class_type_declaration (cenv.class_type_declaration cenv ctd)
-  | Extension_constructor ec ->
-      Extension_constructor (cenv.extension_constructor cenv ec)
-  | Module_binding mb -> Module_binding (cenv.module_binding cenv mb)
-  | Module_declaration md ->
-      Module_declaration (cenv.module_declaration cenv md)
-  | Module_type_declaration mtd ->
-      Module_type_declaration (cenv.module_type_declaration cenv mtd)
-  | Type_declaration td -> Type_declaration (cenv.type_declaration cenv td)
-  | Value_binding vb -> Value_binding (cenv.value_binding cenv vb)
-  | Value_description vd -> Value_description (cenv.value_description cenv vd)
-
 let uid_to_decl : item_declaration Types.Uid.Tbl.t ref =
   Local_store.s_table Types.Uid.Tbl.create 16
 
 let register_uid uid fragment =
-  Types.Uid.Tbl.add !uid_to_decl uid (clear_decl fragment)
-
-let shape_index : (index_item * Longident.t Location.loc) list ref =
-  Local_store.s_ref []
+  Types.Uid.Tbl.add !uid_to_decl uid fragment
 
 module Local_reduce = struct
   let is_open = ref false
@@ -138,15 +110,6 @@ module Local_reduce = struct
     is_open := false;
     weak_reduce env shape, !is_open
 end
-
-let add_loc_to_index env shape loc =
-  let shape, is_open = Local_reduce.weak env shape in
-  if is_open then
-    shape_index := (Unresolved shape, loc) :: !shape_index
-  else Option.iter
-    (fun uid -> shape_index := (Resolved uid, loc) :: !shape_index)
-    shape.Shape.uid
-
 
 let iter_decl =
   Tast_iterator.{ default_iterator with
@@ -197,43 +160,16 @@ let iter_decl =
   class_description =(fun sub cd ->
     register_uid cd.ci_decl.cty_uid (Class_description cd);
     default_iterator.class_description sub cd);
-
-  expr = (fun sub ({ exp_desc; exp_env; _ } as e) ->
-      (match exp_desc with
-      | Texp_ident (path, ({ loc = { loc_ghost = false; _ }; _ } as lid), _)
-        -> (
-          try
-            let shape = Env.shape_of_path ~namespace:Value exp_env path in
-            add_loc_to_index exp_env shape lid
-          with Not_found -> ())
-            (* Log.warn "No shape for expr %a at %a" Path.print path
-              Location.print_loc lid.loc) *)
-      | _ -> ());
-      default_iterator.expr sub e);
-
-  typ =
-    (fun sub ({ ctyp_desc; ctyp_env; _ } as ct) ->
-      (match ctyp_desc with
-      | Ttyp_constr
-        (path, ({ loc = { loc_ghost = false; _ }; _ } as lid), _ctyps) -> (
-          try
-            let shape = Env.shape_of_path ~namespace:Type ctyp_env path in
-            add_loc_to_index ctyp_env shape lid
-          with Not_found -> ())
-      | _ -> ());
-      default_iterator.typ sub ct);
-
-  module_expr =
-    (fun sub ({ mod_desc; mod_env; _ } as me) ->
-      (match mod_desc with
-      | Tmod_ident (path, lid) -> (
-          try
-            let shape = Env.shape_of_path ~namespace:Module mod_env path in
-            add_loc_to_index mod_env shape lid
-          with Not_found -> ())
-      | _ -> ());
-      default_iterator.module_expr sub me);
 }
+
+let need_to_clear_env =
+  try ignore (Sys.getenv "OCAML_BINANNOT_WITHENV"); false
+  with Not_found -> true
+
+let keep_only_summary = Env.keep_only_summary
+
+let cenv =
+  {Tast_mapper.default with env = fun _sub env -> keep_only_summary env}
 
 let clear_part = function
   | Partial_structure s -> Partial_structure (cenv.structure cenv s)
@@ -277,6 +213,74 @@ let gather_declarations binary_annots =
   | Packed _ -> ()
   | Partial_implementation array -> Array.iter gather_declarations_in_part array
   | Partial_interface array -> Array.iter gather_declarations_in_part array
+
+let shape_index : (index_item * Longident.t Location.loc) list ref =
+  Local_store.s_ref []
+
+let add_loc_to_index env shape loc =
+  let shape, is_open = Local_reduce.weak env shape in
+  if is_open then
+    shape_index := (Unresolved shape, loc) :: !shape_index
+  else Option.iter
+    (fun uid -> shape_index := (Resolved uid, loc) :: !shape_index)
+    shape.Shape.uid
+
+let index_decl =
+  Tast_iterator.{ default_iterator with
+
+  expr = (fun sub ({ exp_desc; exp_env; _ } as e) ->
+      (match exp_desc with
+      | Texp_ident (path, ({ loc = { loc_ghost = false; _ }; _ } as lid), _)
+        -> (
+          try
+            let shape = Env.shape_of_path ~namespace:Value exp_env path in
+            add_loc_to_index exp_env shape lid
+          with Not_found -> ())
+            (* Log.warn "No shape for expr %a at %a" Path.print path
+              Location.print_loc lid.loc) *)
+      | _ -> ());
+      default_iterator.expr sub e);
+
+  typ =
+    (fun sub ({ ctyp_desc; ctyp_env; _ } as ct) ->
+      (match ctyp_desc with
+      | Ttyp_constr
+        (path, ({ loc = { loc_ghost = false; _ }; _ } as lid), _ctyps) -> (
+          try
+            let shape = Env.shape_of_path ~namespace:Type ctyp_env path in
+            add_loc_to_index ctyp_env shape lid
+          with Not_found -> ())
+      | _ -> ());
+      default_iterator.typ sub ct);
+
+  module_expr =
+    (fun sub ({ mod_desc; mod_env; _ } as me) ->
+      (match mod_desc with
+      | Tmod_ident (path, lid) -> (
+          try
+            let shape = Env.shape_of_path ~namespace:Module mod_env path in
+            add_loc_to_index mod_env shape lid
+          with Not_found -> ())
+      | _ -> ());
+      default_iterator.module_expr sub me);
+}
+let index_declarations_in_part = function
+  | Partial_structure s -> index_decl.structure index_decl s
+  | Partial_structure_item s -> index_decl.structure_item index_decl s
+  | Partial_expression e -> index_decl.expr index_decl e
+  | Partial_pattern (_category, p) -> index_decl.pat index_decl p
+  | Partial_class_expr ce -> index_decl.class_expr index_decl ce
+  | Partial_signature s -> index_decl.signature index_decl s
+  | Partial_signature_item s -> index_decl.signature_item index_decl s
+  | Partial_module_type s -> index_decl.module_type index_decl s
+
+let index_declarations binary_annots =
+match binary_annots with
+  | Implementation s -> index_decl.structure index_decl s
+  | Interface s -> index_decl.signature index_decl s
+  | Packed _ -> ()
+  | Partial_implementation array -> Array.iter index_declarations_in_part array
+  | Partial_interface array -> Array.iter index_declarations_in_part array
 
 exception Error of error
 
@@ -349,8 +353,9 @@ let save_cmt filename modname binary_annots sourcefile initial_env cmi shape =
            | None -> None
            | Some cmi -> Some (output_cmi temp_file_name oc cmi)
          in
-         gather_declarations binary_annots;
+         index_declarations binary_annots;
          let cmt_annots = clear_env binary_annots in
+         gather_declarations cmt_annots;
          let source_digest = Option.map Digest.file sourcefile in
          let cmt = {
            cmt_modname = modname;
