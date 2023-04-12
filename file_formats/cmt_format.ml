@@ -107,26 +107,16 @@ let uid_to_decl : item_declaration Types.Uid.Tbl.t ref =
 let register_uid uid fragment =
   Types.Uid.Tbl.add !uid_to_decl uid fragment
 
-module Local_reduce = struct
-  let is_open = ref false
-
-  include Shape.Make_reduce(struct
+module Local_reduce = Shape.Make_reduce(struct
     type env = Env.t
     let fuel = 10
 
-    let read_unit_shape ~unit_name:_ =
-      is_open := true;
-      None
+    let read_unit_shape ~unit_name:_ = None
 
     let find_shape env id =
       let namespace = Shape.Sig_component_kind.Module in
       Env.shape_of_path ~namespace env (Pident id)
   end)
-
-  let weak env shape =
-    is_open := false;
-    weak_reduce env shape, !is_open
-end
 
 let iter_decl =
   Tast_iterator.{ default_iterator with
@@ -217,8 +207,8 @@ let shape_index : (index_item * Longident.t Location.loc) list ref =
   Local_store.s_ref []
 
 let add_loc_to_index env shape loc =
-  let shape, is_open = Local_reduce.weak env shape in
-  if is_open then
+  let shape = Local_reduce.weak_reduce env shape in
+  if not (Shape.is_closed shape) then
     shape_index := (Unresolved shape, loc) :: !shape_index
   else Option.iter
     (fun uid -> shape_index := (Resolved uid, loc) :: !shape_index)
