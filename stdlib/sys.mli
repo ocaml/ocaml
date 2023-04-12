@@ -53,10 +53,11 @@ external remove : string -> unit = "caml_sys_remove"
 (** Remove the given file name from the file system. *)
 
 external rename : string -> string -> unit = "caml_sys_rename"
-(** Rename a file.  [rename oldpath newpath] renames the file
-    called [oldpath], giving it [newpath] as its new name,
-    moving it between directories if needed.  If [newpath] already
-    exists, its contents will be replaced with those of [oldpath].
+(** Rename a file or directory.  [rename oldpath newpath] renames the
+    file or directory called [oldpath], giving it [newpath] as its new name,
+    moving it between (parent) directories if needed.  If a file named
+    [newpath] already exists, its contents will be replaced with those of
+    [oldpath].
     Depending on the operating system, the metadata (permissions,
     owner, etc) of [newpath] can either be preserved or be replaced by
     those of [oldpath].
