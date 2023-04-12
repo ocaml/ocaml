@@ -243,6 +243,11 @@ let index_decl =
           add_loc_to_index ~namespace:Module mod_env path lid
       | _ -> ());
       default_iterator.module_expr sub me);
+
+  open_description =
+    (fun sub ({ open_expr = (path, lid); open_env; _ } as od) ->
+      add_loc_to_index ~namespace:Module open_env path lid;
+      default_iterator.open_description sub od)
 }
 
 let gather_declarations binary_annots = iter_on_annots iter_decl binary_annots
