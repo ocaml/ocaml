@@ -187,6 +187,14 @@ let print fmt =
   in
   Format.fprintf fmt"@[%a@]@;" aux
 
+let rec is_closed (t : t) = match t.desc with
+  | Comp_unit _ -> false
+  | Leaf | Var _ -> true
+  | Abs (_ , t) -> is_closed t
+  | App (t, t') -> is_closed t && is_closed t'
+  | Struct map -> Item.Map.for_all (fun _ t -> is_closed t) map
+  | Proj (t, _) -> is_closed t
+
 let fresh_var ?(name="shape-var") uid =
   let var = Ident.create_local name in
   var, { uid = Some uid; desc = Var var }

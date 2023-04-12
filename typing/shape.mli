@@ -77,6 +77,9 @@ and desc =
 
 val print : Format.formatter -> t -> unit
 
+(** A Shape is closed if it does not refer to external compilation units *)
+val is_closed : t -> bool
+
 (* Smart constructors *)
 
 val for_unnamed_functor_param : var
