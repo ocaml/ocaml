@@ -235,8 +235,6 @@ let index_decl =
             let shape = Env.shape_of_path ~namespace:Value exp_env path in
             add_loc_to_index exp_env shape lid
           with Not_found -> ())
-            (* Log.warn "No shape for expr %a at %a" Path.print path
-              Location.print_loc lid.loc) *)
       | _ -> ());
       default_iterator.expr sub e);
 
