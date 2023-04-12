@@ -84,6 +84,23 @@ type cmt_infos = {
 type error =
     Not_a_typedtree of string
 
+let iter_on_parts (it : Tast_iterator.iterator) = function
+  | Partial_structure s -> it.structure it s
+  | Partial_structure_item s -> it.structure_item it s
+  | Partial_expression e -> it.expr it e
+  | Partial_pattern (_category, p) -> it.pat it p
+  | Partial_class_expr ce -> it.class_expr it ce
+  | Partial_signature s -> it.signature it s
+  | Partial_signature_item s -> it.signature_item it s
+  | Partial_module_type s -> it.module_type it s
+
+let iter_on_annots (it : Tast_iterator.iterator) = function
+  | Implementation s -> it.structure it s
+  | Interface s -> it.signature it s
+  | Packed _ -> ()
+  | Partial_implementation array -> Array.iter (iter_on_parts it) array
+  | Partial_interface array -> Array.iter (iter_on_parts it) array
+
 let uid_to_decl : item_declaration Types.Uid.Tbl.t ref =
   Local_store.s_table Types.Uid.Tbl.create 16
 
@@ -196,24 +213,6 @@ let clear_env binary_annots =
 
   else binary_annots
 
-let gather_declarations_in_part = function
-  | Partial_structure s -> iter_decl.structure iter_decl s
-  | Partial_structure_item s -> iter_decl.structure_item iter_decl s
-  | Partial_expression e -> iter_decl.expr iter_decl e
-  | Partial_pattern (_category, p) -> iter_decl.pat iter_decl p
-  | Partial_class_expr ce -> iter_decl.class_expr iter_decl ce
-  | Partial_signature s -> iter_decl.signature iter_decl s
-  | Partial_signature_item s -> iter_decl.signature_item iter_decl s
-  | Partial_module_type s -> iter_decl.module_type iter_decl s
-
-let gather_declarations binary_annots =
-  match binary_annots with
-  | Implementation s -> iter_decl.structure iter_decl s
-  | Interface s -> iter_decl.signature iter_decl s
-  | Packed _ -> ()
-  | Partial_implementation array -> Array.iter gather_declarations_in_part array
-  | Partial_interface array -> Array.iter gather_declarations_in_part array
-
 let shape_index : (index_item * Longident.t Location.loc) list ref =
   Local_store.s_ref []
 
@@ -264,23 +263,9 @@ let index_decl =
       | _ -> ());
       default_iterator.module_expr sub me);
 }
-let index_declarations_in_part = function
-  | Partial_structure s -> index_decl.structure index_decl s
-  | Partial_structure_item s -> index_decl.structure_item index_decl s
-  | Partial_expression e -> index_decl.expr index_decl e
-  | Partial_pattern (_category, p) -> index_decl.pat index_decl p
-  | Partial_class_expr ce -> index_decl.class_expr index_decl ce
-  | Partial_signature s -> index_decl.signature index_decl s
-  | Partial_signature_item s -> index_decl.signature_item index_decl s
-  | Partial_module_type s -> index_decl.module_type index_decl s
 
-let index_declarations binary_annots =
-match binary_annots with
-  | Implementation s -> index_decl.structure index_decl s
-  | Interface s -> index_decl.signature index_decl s
-  | Packed _ -> ()
-  | Partial_implementation array -> Array.iter index_declarations_in_part array
-  | Partial_interface array -> Array.iter index_declarations_in_part array
+let gather_declarations binary_annots = iter_on_annots iter_decl binary_annots
+let index_declarations binary_annots = iter_on_annots index_decl binary_annots
 
 exception Error of error
 
