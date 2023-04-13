@@ -39,3 +39,7 @@ let () = print_int y
 
 let a = (module A : AS) (* FIXME: AS is missing*)
 module _ = (val a)
+
+module F (P : AS) = struct include P end
+module G = F (A)
+type u = F (A).t (* FIXME F and A are missing*)

@@ -16,6 +16,10 @@ Compilation flags: /Users/ulysse/tmp/ocaml/ocamlc -use-runtime /Users/ulysse/tmp
 Load path:  /Users/ulysse/tmp/ocaml/runtime /Users/ulysse/tmp/ocaml/stdlib
 cmt interface digest: 00000000000000000000000000000000
 Indexed shapes:
+Index.3: F(A).t (File "index.ml", line 45, characters 9-16)
+Index.5: A (File "index.ml", line 44, characters 14-15)
+Index.14: F (File "index.ml", line 44, characters 11-12)
+Index.13: P (File "index.ml", line 43, characters 35-36)
 Index.11: a (File "index.ml", line 41, characters 16-17)
 Index.5: A (File "index.ml", line 40, characters 16-17)
 Index.10: y (File "index.ml", line 38, characters 19-20)
