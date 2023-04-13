@@ -7,7 +7,7 @@ let _ = Int32.(add 1 2l);;
 Line 1, characters 19-20:
 1 | let _ = Int32.(add 1 2l);;
                        ^
-Error: This expression has type "int" but an expression was expected of type
+Error: The expression "1" has type "int" but an expression was expected of type
          "int32"
   Hint: Did you mean "1l"?
 |}]
@@ -17,7 +17,7 @@ let _ : int32 * int32 = 42l, 43;;
 Line 1, characters 29-31:
 1 | let _ : int32 * int32 = 42l, 43;;
                                  ^^
-Error: This expression has type "int" but an expression was expected of type
+Error: The expression "43" has type "int" but an expression was expected of type
          "int32"
   Hint: Did you mean "43l"?
 |}]
@@ -27,7 +27,7 @@ let _ : int32 * nativeint = 42l, 43;;
 Line 1, characters 33-35:
 1 | let _ : int32 * nativeint = 42l, 43;;
                                      ^^
-Error: This expression has type "int" but an expression was expected of type
+Error: The expression "43" has type "int" but an expression was expected of type
          "nativeint"
   Hint: Did you mean "43n"?
 |}]
@@ -37,7 +37,7 @@ let _ = min 6L 7;;
 Line 1, characters 15-16:
 1 | let _ = min 6L 7;;
                    ^
-Error: This expression has type "int" but an expression was expected of type
+Error: The expression "7" has type "int" but an expression was expected of type
          "int64"
   Hint: Did you mean "7L"?
 |}]
@@ -47,7 +47,7 @@ let _ : float = 123;;
 Line 1, characters 16-19:
 1 | let _ : float = 123;;
                     ^^^
-Error: This expression has type "int" but an expression was expected of type
+Error: The expression "123" has type "int" but an expression was expected of type
          "float"
   Hint: Did you mean "123."?
 |}]
@@ -60,7 +60,7 @@ val x : int = 0
 Line 2, characters 19-20:
 2 | let _ = Int32.(add x 2l);;
                        ^
-Error: This expression has type "int" but an expression was expected of type
+Error: The expression "x" has type "int" but an expression was expected of type
          "int32"
 |}]
 
@@ -95,8 +95,8 @@ let _ : int32 = 1L;;
 Line 1, characters 16-18:
 1 | let _ : int32 = 1L;;
                     ^^
-Error: This expression has type "int64" but an expression was expected of type
-         "int32"
+Error: The expression "1L" has type "int64"
+       but an expression was expected of type "int32"
   Hint: Did you mean "1l"?
 |}]
 let _ : float = 1L;;
@@ -104,8 +104,8 @@ let _ : float = 1L;;
 Line 1, characters 16-18:
 1 | let _ : float = 1L;;
                     ^^
-Error: This expression has type "int64" but an expression was expected of type
-         "float"
+Error: The expression "1L" has type "int64"
+       but an expression was expected of type "float"
   Hint: Did you mean "1."?
 |}]
 let _ : int64 = 1n;;
@@ -113,7 +113,7 @@ let _ : int64 = 1n;;
 Line 1, characters 16-18:
 1 | let _ : int64 = 1n;;
                     ^^
-Error: This expression has type "nativeint"
+Error: The expression "1n" has type "nativeint"
        but an expression was expected of type "int64"
   Hint: Did you mean "1L"?
 |}]
@@ -122,8 +122,8 @@ let _ : nativeint = 1l;;
 Line 1, characters 20-22:
 1 | let _ : nativeint = 1l;;
                         ^^
-Error: This expression has type "int32" but an expression was expected of type
-         "nativeint"
+Error: The expression "1l" has type "int32"
+       but an expression was expected of type "nativeint"
   Hint: Did you mean "1n"?
 |}]
 
@@ -133,16 +133,16 @@ let _ : int64 = 0.;;
 Line 1, characters 16-18:
 1 | let _ : int64 = 0.;;
                     ^^
-Error: This expression has type "float" but an expression was expected of type
-         "int64"
+Error: The expression "0." has type "float"
+       but an expression was expected of type "int64"
 |}]
 let _ : int = 1L;;
 [%%expect{|
 Line 1, characters 14-16:
 1 | let _ : int = 1L;;
                   ^^
-Error: This expression has type "int64" but an expression was expected of type
-         "int"
+Error: The expression "1L" has type "int64"
+       but an expression was expected of type "int"
 |}]
 
 (* Check that the hint preserves formatting of int, int32, int64 and nativeint
@@ -152,8 +152,8 @@ let _ : int64 = min 0L 1_000;;
 Line 1, characters 23-28:
 1 | let _ : int64 = min 0L 1_000;;
                            ^^^^^
-Error: This expression has type "int" but an expression was expected of type
-         "int64"
+Error: The expression "1_000" has type "int"
+       but an expression was expected of type "int64"
   Hint: Did you mean "1_000L"?
 |}]
 let _ : nativeint * nativeint = 0n, 0xAA_BBL;;
@@ -161,8 +161,8 @@ let _ : nativeint * nativeint = 0n, 0xAA_BBL;;
 Line 1, characters 36-44:
 1 | let _ : nativeint * nativeint = 0n, 0xAA_BBL;;
                                         ^^^^^^^^
-Error: This expression has type "int64" but an expression was expected of type
-         "nativeint"
+Error: The expression "0xAA_BBL" has type "int64"
+       but an expression was expected of type "nativeint"
   Hint: Did you mean "0xAA_BBn"?
 |}]
 let _ : int32 -> int32 = function
@@ -193,7 +193,7 @@ type t1 = { f1 : int32; }
 Line 1, characters 49-55:
 1 | type t1 = {f1: int32};; let _ = fun x -> x.f1 <- 1_000n;;
                                                      ^^^^^^
-Error: This expression has type "nativeint"
+Error: The expression "1_000n" has type "nativeint"
        but an expression was expected of type "int32"
   Hint: Did you mean "1_000l"?
 |}]

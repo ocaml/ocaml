@@ -117,7 +117,7 @@ module type S = sig type t val x : t end
 Line 15, characters 8-10:
 15 |   unify ()
              ^^
-Error: This expression has type "unit" but an expression was expected of type
+Error: The expression "()" has type "unit" but an expression was expected of type
          "M.t"
 |}, Principal{|
 module type S = sig type t val x : t end
@@ -132,6 +132,6 @@ Warning 18 [not-principal]: this module packing is not principal.
 Line 15, characters 8-10:
 15 |   unify ()
              ^^
-Error: This expression has type "unit" but an expression was expected of type
+Error: The expression "()" has type "unit" but an expression was expected of type
          "M.t"
 |}];;

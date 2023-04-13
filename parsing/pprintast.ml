@@ -142,6 +142,7 @@ module Doc = struct
      if they satisfy one of:
      - Similar to an identifier: words separated by '.' or '#'.
      - Do not contain spaces when printed.
+     - Is a constant that is short enough.
   *)
   let nominal_exp t =
     let open Format_doc.Doc in
@@ -151,7 +152,6 @@ module Doc = struct
       | _ when exp.pexp_attributes <> [] -> None
       | Pexp_ident l ->
           Some (longident l doc)
-      | Pexp_constant _ -> assert false
       | Pexp_variant (lbl, None) ->
           Some (printf "`%s" lbl doc)
       | Pexp_construct (l, None) ->
@@ -164,6 +164,17 @@ module Doc = struct
           Option.map
             (printf "#%s" meth.txt)
             (nominal_exp doc parent)
+      (* String constants are syntactically too complex. For example, the
+         quotes conflict with the 'inline_code' style and they might contain
+         spaces. *)
+      | Pexp_constant { pconst_desc = Pconst_string _; _ } -> None
+      (* Char, integer and float constants are nominal. *)
+      | Pexp_constant { pconst_desc = Pconst_char c; _ } ->
+          Some (msg "%C" c)
+      | Pexp_constant
+          { pconst_desc = Pconst_integer (cst, suf) | Pconst_float (cst, suf);
+            _ } ->
+          Some (msg "%s%t" cst (option char suf))
       | _ -> None
     in
     nominal_exp empty t

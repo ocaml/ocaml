@@ -9,7 +9,7 @@ if 3 then ();;
 Line 1, characters 3-4:
 1 | if 3 then ();;
        ^
-Error: This expression has type "int" but an expression was expected of type
+Error: The expression "3" has type "int" but an expression was expected of type
          "bool"
        because it is in the condition of an if-statement
 |}];;
@@ -20,7 +20,7 @@ fun b -> if true then (print_int b) else (if b then ());;
 Line 1, characters 45-46:
 1 | fun b -> if true then (print_int b) else (if b then ());;
                                                  ^
-Error: This expression has type "int" but an expression was expected of type
+Error: The expression "b" has type "int" but an expression was expected of type
          "bool"
        because it is in the condition of an if-statement
 |}];;
@@ -33,7 +33,7 @@ fun b -> if true then (if b then ()) else (print_int b);;
 Line 1, characters 53-54:
 1 | fun b -> if true then (if b then ()) else (print_int b);;
                                                          ^
-Error: This expression has type "bool" but an expression was expected of type
+Error: The expression "b" has type "bool" but an expression was expected of type
          "int"
 |}];;
 
@@ -43,7 +43,7 @@ if (let x = 3 in x) then ();;
 Line 1, characters 17-18:
 1 | if (let x = 3 in x) then ();;
                      ^
-Error: This expression has type "int" but an expression was expected of type
+Error: The expression "x" has type "int" but an expression was expected of type
          "bool"
        because it is in the condition of an if-statement
 |}];;
@@ -54,7 +54,7 @@ if (if true then 3 else 4) then ();;
 Line 1, characters 17-18:
 1 | if (if true then 3 else 4) then ();;
                      ^
-Error: This expression has type "int" but an expression was expected of type
+Error: The expression "3" has type "int" but an expression was expected of type
          "bool"
        because it is in the condition of an if-statement
 |}];;
@@ -65,7 +65,7 @@ if true then 3;;
 Line 1, characters 13-14:
 1 | if true then 3;;
                  ^
-Error: This expression has type "int" but an expression was expected of type
+Error: The expression "3" has type "int" but an expression was expected of type
          "unit"
        because it is in the result of a conditional with no else branch
 |}];;
@@ -86,7 +86,7 @@ while 42 do () done;;
 Line 1, characters 6-8:
 1 | while 42 do () done;;
           ^^
-Error: This expression has type "int" but an expression was expected of type
+Error: The expression "42" has type "int" but an expression was expected of type
          "bool"
        because it is in the condition of a while-loop
 |}];;
@@ -110,8 +110,8 @@ for i = 3. to 4 do () done;;
 Line 1, characters 8-10:
 1 | for i = 3. to 4 do () done;;
             ^^
-Error: This expression has type "float" but an expression was expected of type
-         "int"
+Error: The expression "3." has type "float"
+       but an expression was expected of type "int"
        because it is in a for-loop start index
 |}];;
 
@@ -121,8 +121,8 @@ for i = 3 to 4. do () done;;
 Line 1, characters 13-15:
 1 | for i = 3 to 4. do () done;;
                  ^^
-Error: This expression has type "float" but an expression was expected of type
-         "int"
+Error: The expression "4." has type "float"
+       but an expression was expected of type "int"
        because it is in a for-loop stop index
 |}];;
 
@@ -145,7 +145,7 @@ assert 12;;
 Line 1, characters 7-9:
 1 | assert 12;;
            ^^
-Error: This expression has type "int" but an expression was expected of type
+Error: The expression "12" has type "int" but an expression was expected of type
          "bool"
        because it is in the condition of an assertion
 |}];;

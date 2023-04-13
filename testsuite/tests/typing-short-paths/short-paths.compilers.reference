@@ -69,7 +69,7 @@ val x : 'a Int.Map.t = <abstr>
 Line 1, characters 8-9:
 1 | let y = x + x ;;
             ^
-Error: This expression has type "'a Int.Map.t"
+Error: The expression "x" has type "'a Int.Map.t"
        but an expression was expected of type "int"
 module M : sig type t = A type u = C end
 module N : sig type t = B end

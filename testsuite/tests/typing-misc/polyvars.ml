@@ -180,7 +180,7 @@ type t = private [< `A ]
 Line 2, characters 30-31:
 2 | let f: t -> [ `A ] = fun x -> x
                                   ^
-Error: This expression has type "t" but an expression was expected of type
+Error: The expression "x" has type "t" but an expression was expected of type
          "[ `A ]"
        The first variant type is private, it may not allow the tag(s) "`A"
 |}]
@@ -242,7 +242,7 @@ let f (x:[`X of int]) = (x:[`X])
 Line 5, characters 25-26:
 5 | let f (x:[`X of int]) = (x:[`X])
                              ^
-Error: This expression has type "[ `X of int ]"
+Error: The expression "x" has type "[ `X of int ]"
        but an expression was expected of type "[ `X ]"
        Types for tag "`X" are incompatible
 |}]
@@ -253,7 +253,7 @@ let f (x:[`X of int]) = (x:[<`X of & int])
 Line 1, characters 25-26:
 1 | let f (x:[`X of int]) = (x:[<`X of & int])
                              ^
-Error: This expression has type "[ `X of int ]"
+Error: The expression "x" has type "[ `X of int ]"
        but an expression was expected of type "[< `X of & int ]"
        Types for tag "`X" are incompatible
 |}]
@@ -265,7 +265,7 @@ let f (x:[<`X of & int & float]) = (x:[`X])
 Line 3, characters 36-37:
 3 | let f (x:[<`X of & int & float]) = (x:[`X])
                                         ^
-Error: This expression has type "[< `X of & int & float ]"
+Error: The expression "x" has type "[< `X of & int & float ]"
        but an expression was expected of type "[ `X ]"
        Types for tag "`X" are incompatible
 |}]
@@ -282,7 +282,7 @@ val f : ([< `A | `B of string | `R of 'a ] as 'a) -> int = <fun>
 Line 4, characters 30-31:
 4 | let g (x:[`A | `R of rt]) = f x
                                   ^
-Error: This expression has type "[ `A | `R of rt ]"
+Error: The expression "x" has type "[ `A | `R of rt ]"
        but an expression was expected of type "[< `A | `R of 'a ] as 'a"
        Type "rt" = "[ `A | `B of string | `R of rt ]" is not compatible with type
          "[< `A | `R of 'a ] as 'a"

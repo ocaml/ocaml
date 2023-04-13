@@ -111,7 +111,7 @@ type error =
   | Orpat_vars of Ident.t * Ident.t list
   | Expr_type_clash of
       Errortrace.unification_error * type_forcing_context option
-      * Parsetree.expression_desc option
+      * Parsetree.expression option
   | Function_arity_type_clash of
       { syntactic_arity :  int;
         type_constraint : type_expr;
@@ -3161,14 +3161,14 @@ let name_cases default lst =
 
 (* Typing of expressions *)
 
-(** [sdesc_for_hint] is used by error messages to report literals in their
+(** [sexp_for_hint] is used by error messages to report literals in their
     original formatting *)
-let unify_exp ?sdesc_for_hint env exp expected_ty =
+let unify_exp ~sexp env exp expected_ty =
   let loc = proper_exp_loc exp in
   try
     unify_exp_types loc env exp.exp_type expected_ty
   with Error(loc, env, Expr_type_clash(err, tfc, None)) ->
-    raise (Error(loc, env, Expr_type_clash(err, tfc, sdesc_for_hint)))
+    raise (Error(loc, env, Expr_type_clash(err, tfc, Some sexp)))
 
 (* If [is_inferred e] is true, [e] will be typechecked without using
    the "expected type" provided by the context. *)
@@ -3313,16 +3313,15 @@ and type_expect_
     env sexp ty_expected_explained =
   let { ty = ty_expected; explanation } = ty_expected_explained in
   let loc = sexp.pexp_loc in
-  let desc = sexp.pexp_desc in
   (* Record the expression type before unifying it with the expected type *)
   let with_explanation = with_explanation explanation in
   (* Unify the result with [ty_expected], enforcing the current level *)
   let rue exp =
     with_explanation (fun () ->
-      unify_exp ~sdesc_for_hint:desc env (re exp) (instance ty_expected));
+      unify_exp ~sexp env (re exp) (instance ty_expected));
     exp
   in
-  match desc with
+  match sexp.pexp_desc with
   | Pexp_ident lid ->
       let path, desc = type_ident env ~recarg lid in
       let exp_desc =
@@ -3455,7 +3454,7 @@ and type_expect_
         end
         ~before_generalize:(fun (_pat_exp_list, body, new_env) ->
           (* The "body" component of the scope escape check. *)
-          unify_exp new_env body (newvar ()))
+          unify_exp ~sexp new_env body (newvar ()))
       in
       re {
         exp_desc = Texp_let(rec_flag, pat_exp_list, body);
@@ -3653,7 +3652,7 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_construct(lid, sarg) ->
-      type_construct env loc lid sarg ty_expected_explained sexp.pexp_attributes
+      type_construct env ~sexp lid sarg ty_expected_explained
   | Pexp_variant(l, sarg) ->
       (* Keep sharing *)
       let ty_expected1 = protect_expansion env ty_expected in
@@ -3842,7 +3841,7 @@ and type_expect_
         type_label_access env srecord Env.Projection lid
       in
       let (_, ty_arg, ty_res) = instance_label ~fixed:false label in
-      unify_exp env record ty_res;
+      unify_exp ~sexp env record ty_res;
       rue {
         exp_desc = Texp_field(record, lid, label);
         exp_loc = loc; exp_extra = [];
@@ -3856,7 +3855,7 @@ and type_expect_
         if expected_type = None then newvar () else record.exp_type in
       let (label_loc, label, newval) =
         type_label_exp false env loc ty_record (lid, label, snewval) in
-      unify_exp env record ty_record;
+      unify_exp ~sexp env record ty_record;
       if label.lbl_mut = Immutable then
         raise(Error(loc, env, Label_not_mutable lid.txt));
       rue {
@@ -3895,7 +3894,7 @@ and type_expect_
           let ifso = type_expect env sifso ty_expected_explained in
           let ifnot = type_expect env sifnot ty_expected_explained in
           (* Keep sharing *)
-          unify_exp env ifnot ifso.exp_type;
+          unify_exp ~sexp env ifnot ifso.exp_type;
           re {
             exp_desc = Texp_ifthenelse(cond, ifso, Some ifnot);
             exp_loc = loc; exp_extra = [];
@@ -4228,7 +4227,7 @@ and type_expect_
         | Tvar _ ->
             let exp = type_exp env sbody in
             let exp = {exp with exp_type = newty (Tpoly (exp.exp_type, []))} in
-            unify_exp env exp ty;
+            unify_exp ~sexp env exp ty;
             exp
         | _ -> assert false
       in
@@ -5207,7 +5206,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
       let args, ty_fun', simple_res = make_args [] texp.exp_type
       and texp = {texp with exp_type = instance texp.exp_type} in
       if not (simple_res || safe_expect) then begin
-        unify_exp env texp ty_expected;
+        unify_exp ~sexp:sarg env texp ty_expected;
         texp
       end else begin
       let warn = !Clflags.principal &&
@@ -5218,7 +5217,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
           Tarrow(Nolabel,ty_arg,ty_res,_) -> ty_arg, ty_res
         | _ -> assert false
       in
-      unify_exp env {texp with exp_type = ty_fun} ty_expected;
+      unify_exp ~sexp:sarg env {texp with exp_type = ty_fun} ty_expected;
       if args = [] then texp else
       (* eta-expand to avoid side effects *)
       let var_pair name ty =
@@ -5278,7 +5277,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
   | None ->
       let texp = type_expect ?recarg env sarg
         (mk_expected ?explanation ty_expected') in
-      unify_exp env texp ty_expected;
+      unify_exp ~sexp:sarg env texp ty_expected;
       texp
 
 and type_application env funct sargs =
@@ -5343,7 +5342,7 @@ and type_application env funct sargs =
     let arg () =
       let arg = type_expect env sarg (mk_expected ty_arg) in
       if is_optional lbl then
-        unify_exp env arg (type_option(newvar()));
+        unify_exp ~sexp:sarg env arg (type_option(newvar()));
       arg
     in
     (ty_res, (lbl, Some (arg, Some sarg.pexp_loc)) :: typed_args)
@@ -5486,7 +5485,7 @@ and type_application env funct sargs =
       let ty = funct.exp_type in
       type_args [] ty (instance ty) sargs
 
-and type_construct env loc lid sarg ty_expected_explained attrs =
+and type_construct env ~sexp lid sarg ty_expected_explained =
   let { ty = ty_expected; explanation } = ty_expected_explained in
   let expected_type =
     match extract_concrete_variant env ty_expected with
@@ -5497,7 +5496,7 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
         let srt = wrong_kind_sort_of_constructor lid.txt in
         let ctx = Expression explanation in
         let error = Wrong_expected_kind(srt, ctx, ty_expected) in
-        raise (Error (loc, env, error))
+        raise (Error (sexp.pexp_loc, env, error))
   in
   let constrs =
     Env.lookup_all_constructors ~loc:lid.loc Env.Positive lid.txt env
@@ -5511,12 +5510,14 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
     match sarg with
       None -> []
     | Some {pexp_desc = Pexp_tuple sel} when
-        constr.cstr_arity > 1 || Builtin_attributes.explicit_arity attrs
+        constr.cstr_arity > 1
+        || Builtin_attributes.explicit_arity sexp.pexp_attributes
       -> sel
     | Some se -> [se] in
   if List.length sargs <> constr.cstr_arity then
-    raise(Error(loc, env, Constructor_arity_mismatch
-                            (lid.txt, constr.cstr_arity, List.length sargs)));
+    raise(Error(sexp.pexp_loc, env,
+                Constructor_arity_mismatch
+                  (lid.txt, constr.cstr_arity, List.length sargs)));
   let separate = !Clflags.principal || Env.has_local_constraints env in
   let ty_args, ty_res, texp =
     with_local_level_generalize_structure_if separate begin fun () ->
@@ -5528,15 +5529,15 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
           let texp =
             re {
             exp_desc = Texp_construct(lid, constr, []);
-            exp_loc = loc; exp_extra = [];
+            exp_loc = sexp.pexp_loc; exp_extra = [];
             exp_type = ty_res;
-            exp_attributes = attrs;
+            exp_attributes = sexp.pexp_attributes;
             exp_env = env } in
           (ty_args, ty_res, texp)
         end
       in
       with_explanation explanation (fun () ->
-        unify_exp env {texp with exp_type = instance ty_res}
+        unify_exp ~sexp env {texp with exp_type = instance ty_res}
           (instance ty_expected));
       (ty_args, ty_res, texp)
     end
@@ -5547,7 +5548,7 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
     | _ -> assert false
   in
   let texp = {texp with exp_type = ty_res} in
-  if not separate then unify_exp env texp (instance ty_expected);
+  if not separate then unify_exp ~sexp env texp (instance ty_expected);
   let recarg =
     match constr.cstr_inlined with
     | None -> Rejected
@@ -5558,7 +5559,7 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
             Pexp_record (_, (Some {pexp_desc = Pexp_ident _}| None))}] ->
         Required
       | _ ->
-        raise (Error(loc, env, Inlined_record_expected))
+        raise (Error(sexp.pexp_loc, env, Inlined_record_expected))
       end
   in
   let args =
@@ -5567,9 +5568,9 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
   if constr.cstr_private = Private then
     begin match constr.cstr_tag with
     | Cstr_extension _ ->
-        raise(Error(loc, env, Private_constructor (constr, ty_res)))
+        raise(Error(sexp.pexp_loc, env, Private_constructor (constr, ty_res)))
     | Cstr_constant _ | Cstr_block _ | Cstr_unboxed ->
-        raise (Error(loc, env, Private_type ty_res));
+        raise (Error(sexp.pexp_loc, env, Private_type ty_res));
     end;
   (* NOTE: shouldn't we call "re" on this final expression? -- AF *)
   { texp with
@@ -5606,7 +5607,7 @@ and type_statement ?explanation env sexp =
     if !Clflags.strict_sequence then
       let expected_ty = instance Predef.type_unit in
       with_explanation explanation (fun () ->
-        unify_exp env exp expected_ty)
+        unify_exp ~sexp env exp expected_ty)
     else begin
       check_partial_application ~statement:true exp;
       enforce_current_level env ty
@@ -6421,6 +6422,23 @@ let type_clash_of_trace trace =
     | _ -> None
   ))
 
+(** Implements the "This expression" message, printing the expression if it
+    should be according to {!Parsetree.Doc.nominal_exp}. *)
+let report_this_pexp_has_type denom ppf exp =
+  let denom ppf =
+    match denom with
+    | Some d -> fprintf ppf "%s" d
+    | None -> fprintf ppf "expression"
+  in
+  let nexp = Option.bind exp Pprintast.Doc.nominal_exp in
+  match nexp with
+  | Some nexp ->
+      fprintf ppf "The %t %a has type" denom (Style.as_inline_code pp_doc) nexp
+  | _ -> fprintf ppf "This %t has type" denom
+
+let report_this_texp_has_type denom ppf texp =
+  report_this_pexp_has_type denom ppf (Some (Untypeast.untype_expression texp))
+
 (* Hint on type error on integer literals
    To avoid confusion, it is disabled on float literals
    and when the expected type is `int` *)
@@ -6471,9 +6489,13 @@ let report_partial_application = function
 
 let report_expr_type_clash_hints exp diff =
   match exp with
-  | Some (Pexp_constant const) -> report_literal_type_constraint const diff
-  | Some (Pexp_apply _) -> report_partial_application diff
-  | _ -> []
+  | Some exp -> begin
+      match exp.pexp_desc with
+      | Pexp_constant const -> report_literal_type_constraint const diff
+      | Pexp_apply _ -> report_partial_application diff
+      | _ -> []
+    end
+  | None -> []
 
 let report_pattern_type_clash_hints pat diff =
   match pat with
@@ -6516,14 +6538,6 @@ let report_unification_error ~loc ?sub env err
       ?type_expected_explanation txt1 txt2
   ) ()
 
-let report_this_function ppf funct =
-  let pexp = Untypeast.untype_expression funct in
-  match Pprintast.Doc.nominal_exp pexp with
-  | None -> Fmt.fprintf ppf "This function"
-  | Some name ->
-    Fmt.fprintf ppf "The function %a"
-      (Style.as_inline_code Fmt.pp_doc) name
-
 let report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
     ~extra_arg_loc ~returns_unit loc =
   let open Location in
@@ -6550,9 +6564,10 @@ let report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
     msg ~loc:extra_arg_loc "This extra argument is not expected.";
   ] in
   errorf ~loc:app_loc ~sub
-    "@[<v>@[<2>%a has type@ %a@]\
+    "@[<v>@[<2>%a@ %a@]\
      @ It is applied to too many arguments@]"
-    report_this_function funct Printtyp.type_expr func_ty
+    (report_this_texp_has_type (Some "function")) funct
+    Printtyp.type_expr func_ty
 
 let msg = Fmt.doc_printf
 
@@ -6597,7 +6612,7 @@ let report_error ~loc env = function
       report_unification_error ~loc ~sub env err
         ~type_expected_explanation:
           (report_type_expected_explanation_opt explanation)
-        (msg "This expression has type")
+        (msg "%a" (report_this_pexp_has_type (Some "expression")) exp)
         (msg "but an expression was expected of type");
   | Function_arity_type_clash {
       syntactic_arity; type_constraint; trace = { trace };
