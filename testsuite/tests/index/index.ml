@@ -8,7 +8,11 @@ all_modules = "aux.ml index.ml"
 *** check-ocamlc.byte-output
 **** ocamlobjinfo
 program = "-index index.cmt"
-***** check-program-output
+output = "out_objinfo"
+***** run
+program = "awk '/Indexed/,0' out_objinfo"
+output = "out_awk"
+****** check-program-output
 *)
 
 module type AS = sig
