@@ -46,4 +46,7 @@ module _ = (val a)
 
 module F (P : AS) = struct include P end
 module G = F (A)
-type u = F (A).t (* FIXME F and A are missing*)
+type u = F (A).t;; (* FIXME F and A are missing*)
+
+module type MS = sig  module M : AS type u end
+module type MSA = MS with module M = A and type u = B.t (* M and u are missing *)

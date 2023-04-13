@@ -1,8 +1,13 @@
 Indexed shapes:
+Index.3: B.t (File "index.ml", line 52, characters 52-55)
+Index.19: MS (File "index.ml", line 52, characters 18-20)
+Index.5: A (File "index.ml", line 52, characters 37-38)
+Index.2: AS (File "index.ml", line 51, characters 33-35)
 Index.3: F(A).t (File "index.ml", line 49, characters 9-16)
 Index.5: A (File "index.ml", line 48, characters 14-15)
 Index.14: F (File "index.ml", line 48, characters 11-12)
 Index.13: P (File "index.ml", line 47, characters 35-36)
+Index.2: AS (File "index.ml", line 47, characters 14-16)
 Index.11: a (File "index.ml", line 45, characters 16-17)
 Index.5: A (File "index.ml", line 44, characters 16-17)
 Index.10: y (File "index.ml", line 42, characters 19-20)
