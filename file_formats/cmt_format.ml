@@ -239,6 +239,8 @@ let index_decl =
       (match ctyp_desc with
       | Ttyp_constr (path, lid, _ctyps) when not_ghost lid ->
           add_loc_to_index ~namespace:Type ctyp_env path lid
+      | Ttyp_package {pack_path; pack_txt} ->
+          add_loc_to_index ~namespace:Module_type ctyp_env pack_path pack_txt
       | _ -> ());
       default_iterator.typ sub ct);
 
