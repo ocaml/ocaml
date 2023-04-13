@@ -219,6 +219,12 @@ let add_loc_to_index ~namespace env path loc =
 
 let index_decl =
   let not_ghost { Location.loc = { loc_ghost; _ }; _ } = not loc_ghost in
+  let with_constraint ~env (_path, _lid, with_constraint) =
+    match with_constraint with
+    | Twith_module (path', lid') | Twith_modsubst (path', lid') ->
+        add_loc_to_index ~namespace:Module env path' lid'
+    | _ -> ()
+  in
   Tast_iterator.{ default_iterator with
 
   expr = (fun sub ({ exp_desc; exp_env; _ } as e) ->
@@ -248,7 +254,18 @@ let index_decl =
     (fun sub ({ open_expr = (path, lid); open_env; _ } as od)  ->
       (if not_ghost lid then
         add_loc_to_index ~namespace:Module open_env path lid);
-      default_iterator.open_description sub od)
+      default_iterator.open_description sub od);
+
+  module_type =
+    (fun sub ({ mty_desc; mty_env; _ } as mty)  ->
+      (match mty_desc with
+      | Tmty_ident (path, lid) when not_ghost lid ->
+          add_loc_to_index ~namespace:Module_type mty_env path lid
+      | Tmty_with (_mty, l) ->
+          List.iter (with_constraint ~env:mty_env) l
+      | _ -> ());
+      default_iterator.module_type sub mty)
+
 }
 
 let gather_declarations binary_annots = iter_on_annots iter_decl binary_annots
