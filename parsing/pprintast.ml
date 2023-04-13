@@ -136,6 +136,37 @@ module Doc = struct
 
   let tyvar ppf s =
     Format_doc.fprintf ppf "%s" (tyvar_of_name s)
+
+  (* Expressions are considered nominal if they can be used as the subject of a
+     sentence or action. In practice, we consider that an expression is nominal
+     if they satisfy one of:
+     - Similar to an identifier: words separated by '.' or '#'.
+     - Do not contain spaces when printed.
+  *)
+  let nominal_exp t =
+    let open Format_doc.Doc in
+    let longident l = Format_doc.doc_printer longident l.Location.txt in
+    let rec nominal_exp doc exp =
+      match exp.pexp_desc with
+      | _ when exp.pexp_attributes <> [] -> None
+      | Pexp_ident l ->
+          Some (longident l doc)
+      | Pexp_constant _ -> assert false
+      | Pexp_variant (lbl, None) ->
+          Some (printf "`%s" lbl doc)
+      | Pexp_construct (l, None) ->
+          Some (longident l doc)
+      | Pexp_field (parent, lbl) ->
+          Option.map
+            (printf ".%t" (longident lbl))
+            (nominal_exp doc parent)
+      | Pexp_send (parent, meth) ->
+          Option.map
+            (printf "#%s" meth.txt)
+            (nominal_exp doc parent)
+      | _ -> None
+    in
+    nominal_exp empty t
 end
 
 let longident ppf l = Format_doc.compat Doc.longident ppf l

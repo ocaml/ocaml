@@ -6517,7 +6517,8 @@ let report_unification_error ~loc ?sub env err
   ) ()
 
 let report_this_function ppf funct =
-  match Typedtree.nominal_exp_doc Printtyp.longident funct with
+  let pexp = Untypeast.untype_expression funct in
+  match Pprintast.Doc.nominal_exp pexp with
   | None -> Fmt.fprintf ppf "This function"
   | Some name ->
     Fmt.fprintf ppf "The function %a"
