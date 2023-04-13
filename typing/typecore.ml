@@ -5781,8 +5781,8 @@ let report_unification_error ~loc ?sub env err
   ) ()
 
 let report_this_function ppf funct =
-  if Typedtree.exp_is_nominal funct then
-    let pexp = Untypeast.untype_expression funct in
+  let pexp = Untypeast.untype_expression funct in
+  if Pprintast.exp_is_nominal pexp then
     Format.fprintf ppf "The function '%a'" Pprintast.expression pexp
   else Format.fprintf ppf "This function"
 
