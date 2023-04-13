@@ -218,11 +218,12 @@ let add_loc_to_index ~namespace env path loc =
   with Not_found -> ()
 
 let index_decl =
+  let not_ghost { Location.loc = { loc_ghost; _ }; _ } = not loc_ghost in
   Tast_iterator.{ default_iterator with
 
   expr = (fun sub ({ exp_desc; exp_env; _ } as e) ->
       (match exp_desc with
-      | Texp_ident (path, ({ loc = { loc_ghost = false; _ }; _ } as lid), _) ->
+      | Texp_ident (path, lid, _) when not_ghost lid ->
           add_loc_to_index ~namespace:Value exp_env path lid
       | _ -> ());
       default_iterator.expr sub e);
@@ -230,8 +231,7 @@ let index_decl =
   typ =
     (fun sub ({ ctyp_desc; ctyp_env; _ } as ct) ->
       (match ctyp_desc with
-      | Ttyp_constr
-        (path, ({ loc = { loc_ghost = false; _ }; _ } as lid), _ctyps) ->
+      | Ttyp_constr (path, lid, _ctyps) when not_ghost lid ->
           add_loc_to_index ~namespace:Type ctyp_env path lid
       | _ -> ());
       default_iterator.typ sub ct);
@@ -239,14 +239,15 @@ let index_decl =
   module_expr =
     (fun sub ({ mod_desc; mod_env; _ } as me) ->
       (match mod_desc with
-      | Tmod_ident (path, lid) ->
+      | Tmod_ident (path, lid) when not_ghost lid ->
           add_loc_to_index ~namespace:Module mod_env path lid
       | _ -> ());
       default_iterator.module_expr sub me);
 
   open_description =
-    (fun sub ({ open_expr = (path, lid); open_env; _ } as od) ->
-      add_loc_to_index ~namespace:Module open_env path lid;
+    (fun sub ({ open_expr = (path, lid); open_env; _ } as od)  ->
+      (if not_ghost lid then
+        add_loc_to_index ~namespace:Module open_env path lid);
       default_iterator.open_description sub od)
 }
 
