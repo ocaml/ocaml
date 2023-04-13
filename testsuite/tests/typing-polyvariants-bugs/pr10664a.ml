@@ -122,7 +122,7 @@ let h (x : < m : 'a. <n : 'b. [< `A of 'a * 'b * 'c] > > as 'c) = x#m;;
 Line 1, characters 66-69:
 1 | let h (x : < m : 'a. <n : 'b. [< `A of 'a * 'b * 'c] > > as 'c) = x#m;;
                                                                       ^^^
-Error: The expression 'x#m' has type
+Error: The method 'x#m' has type
          < n : 'b. [< `A of 'a * 'b0 * < m : 'a. < n : 'b0. 'c > > ] as 'c >
        but an expression was expected of type 'd
        The universal variable 'a would escape its scope
@@ -135,7 +135,7 @@ let j (x : < m : 'a. <n : 'b. [< `A of 'a ] -> 'c > > as 'c) = x#m;;
 Line 1, characters 63-66:
 1 | let j (x : < m : 'a. <n : 'b. [< `A of 'a ] -> 'c > > as 'c) = x#m;;
                                                                    ^^^
-Error: The expression 'x#m' has type
+Error: The method 'x#m' has type
          < n : ([< `A of 'a ] as 'b) -> (< m : 'a. < n : 'b -> 'c > > as 'c) >
        but an expression was expected of type 'd
        The universal variable 'a would escape its scope

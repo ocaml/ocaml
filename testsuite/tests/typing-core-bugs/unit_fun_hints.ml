@@ -11,7 +11,7 @@ val g : (unit -> 'a) -> 'a = <fun>
 Line 2, characters 10-11:
 2 | let _ = g 3;;       (* missing `fun () ->' *)
               ^
-Error: The expression '3' has type int but an expression was expected of type
+Error: The constant '3' has type int but an expression was expected of type
          unit -> 'a
        Hint: Did you forget to wrap the expression using `fun () ->'?
 |}];;
@@ -41,7 +41,7 @@ print_int x;;
 Line 2, characters 10-11:
 2 | print_int x;;
               ^
-Error: The expression 'x' has type unit -> int
+Error: The value 'x' has type unit -> int
        but an expression was expected of type int
        Hint: Did you forget to provide `()' as argument?
 |}];;
@@ -54,7 +54,7 @@ let g f =
 Line 3, characters 6-7:
 3 |   f = 3;;
           ^
-Error: The expression '3' has type int but an expression was expected of type
+Error: The constant '3' has type int but an expression was expected of type
          unit -> 'a
        Hint: Did you forget to wrap the expression using `fun () ->'?
 |}];;
@@ -67,7 +67,7 @@ let g f =
 Line 3, characters 6-7:
 3 |   3 = f;;
           ^
-Error: The expression 'f' has type unit -> 'a
+Error: The value 'f' has type unit -> 'a
        but an expression was expected of type int
        Hint: Did you forget to provide `()' as argument?
 |}]

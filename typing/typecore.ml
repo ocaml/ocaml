@@ -5688,19 +5688,34 @@ let type_clash_of_trace trace =
     | _ -> None
   ))
 
-let report_general_this_exp denom ppf =
-  fprintf ppf "This %s" denom
+(** More precise denomination for type errors. Used by messages:
+
+    - "This <denom> ..."
+    - "The <denom> 'foo' ..." *)
+let exp_denom exp =
+  match exp.pexp_desc with
+  | Pexp_constant _ -> "constant"
+  | Pexp_ident _ -> "value"
+  | Pexp_construct _ | Pexp_variant _ -> "constructor"
+  | Pexp_field _ -> "record field"
+  | Pexp_send _ -> "method"
+  | _ -> "expression"
+
+let report_general_this_exp denom ppf = fprintf ppf "This %s" denom
 
 (** Implements the "This expression" message, printing the expression if it
     should be according to {!Typedtree.exp_is_nominal}. *)
 let report_this_exp denom ppf exp =
+  let denom = match denom with Some d -> d | None -> exp_denom exp in
   if Pprintast.exp_is_nominal exp then
     fprintf ppf "The %s '%a'" denom Pprintast.expression exp
   else report_general_this_exp denom ppf
 
 let report_this_exp_opt denom ppf = function
   | Some exp -> report_this_exp denom ppf exp
-  | None -> report_general_this_exp denom ppf
+  | None ->
+      let denom = match denom with Some d -> d | None -> "expression" in
+      report_general_this_exp denom ppf
 
 let report_this_texp denom ppf texp =
   report_this_exp denom ppf (Untypeast.untype_expression texp)
@@ -5826,7 +5841,7 @@ let report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
   errorf ~loc:app_loc ~sub
     "@[<v>@[<2>%a has type@ %a@]\
      @ It is applied to too many arguments@]"
-    (report_this_texp "function") funct
+    (report_this_texp (Some "function")) funct
     Printtyp.type_expr func_ty
 
 let report_error ~loc env = function
@@ -5876,7 +5891,7 @@ let report_error ~loc env = function
         ~type_expected_explanation:
           (report_type_expected_explanation_opt explanation)
         (function ppf ->
-           fprintf ppf "%a has type" (report_this_exp_opt "expression") exp)
+           fprintf ppf "%a has type" (report_this_exp_opt None) exp)
         (function ppf ->
            fprintf ppf "but an expression was expected of type");
   | Apply_non_function {

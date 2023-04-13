@@ -466,7 +466,7 @@ val f : < m : 'a. 'a -> 'a > -> < m : 'b. 'b -> 'b > = <fun>
 Line 9, characters 41-42:
 9 | let f (x : < m : 'a. 'a -> 'a list >) = (x : < m : 'b. 'b -> 'c >)
                                              ^
-Error: The expression 'x' has type < m : 'b. 'b -> 'b list >
+Error: The value 'x' has type < m : 'b. 'b -> 'b list >
        but an expression was expected of type < m : 'b. 'b -> 'c >
        The method m has type 'b. 'b -> 'b list,
        but the expected method type was 'b. 'b -> 'c
@@ -1134,7 +1134,7 @@ let f (x : foo') = (x : bar');;
 Line 2, characters 3-4:
 2 |   (x : <m : 'a. 'a * (<m:'b. 'a * <m:'c. 'c * 'bar> > as 'bar) >);;
        ^
-Error: The expression 'x' has type < m : 'a. 'a * < m : 'a * 'b > > as 'b
+Error: The value 'x' has type < m : 'a. 'a * < m : 'a * 'b > > as 'b
        but an expression was expected of type
          < m : 'a. 'a * (< m : 'a * < m : 'c. 'c * 'd > > as 'd) >
        The method m has type
@@ -1157,7 +1157,7 @@ let f x =
 Line 2, characters 3-4:
 2 |   (x : <m : 'b. 'b * ('b * <m : 'c. 'c * ('c * 'bar)>)> as 'bar);;
        ^
-Error: The expression 'x' has type
+Error: The value 'x' has type
          < m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) >
        but an expression was expected of type
          < m : 'b. 'b * ('b * < m : 'c. 'c * ('c * 'd) >) > as 'd
@@ -1397,7 +1397,7 @@ type t = { f : 'a. [< `Int of int ] as 'a; }
 Line 4, characters 16-22:
 4 | let zero = {f = `Int 0} ;; (* fails *)
                     ^^^^^^
-Error: This expression has type [> `Int of int ]
+Error: This constructor has type [> `Int of int ]
        but an expression was expected of type [< `Int of int ]
        The second variant type is bound to the universal type variable 'a,
        it may not allow the tag(s) `Int
@@ -1573,7 +1573,7 @@ let f (n : < m : 'a 'r. [< `Foo of 'a & int | `Bar] as 'r >) =
 Line 2, characters 3-4:
 2 |   (n : < m : 'b 'r. [< `Foo of int & 'b | `Bar] as 'r >)
        ^
-Error: The expression 'n' has type
+Error: The value 'n' has type
          < m : 'a 'c. [< `Bar | `Foo of 'a & int ] as 'c >
        but an expression was expected of type
          < m : 'b 'd. [< `Bar | `Foo of int & 'b ] as 'd >
@@ -1901,7 +1901,7 @@ let f (x : u) = (x : v)
 Line 1, characters 17-18:
 1 | let f (x : u) = (x : v)
                      ^
-Error: The expression 'x' has type u but an expression was expected of type v
+Error: The value 'x' has type u but an expression was expected of type v
        The method m has type 'a s list * < m : 'b > as 'b,
        but the expected method type was 'a. 'a s list * < m : 'a. 'c > as 'c
        The universal variable 'a would escape its scope
