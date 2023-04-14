@@ -47,6 +47,10 @@ uintnat caml_heap_blocks(struct caml_heap_state*);
 
 struct pool* caml_pool_of_shared_block(value v);
 
+void caml_compact_heap(caml_domain_state* domain_state, void* data,
+                         int participating_count,
+                         caml_domain_state** participants);
+
 void caml_shared_unpin(value v);
 
 /* always readable by all threads

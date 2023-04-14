@@ -41,8 +41,10 @@ void caml_darken(void*, value, volatile value* ignored);
 void caml_darken_cont(value);
 void caml_mark_root(value, value*);
 void caml_empty_mark_stack(void);
-void caml_finish_major_cycle(void);
-
+void caml_finish_major_cycle(int force_compaction);
+#ifdef DEBUG
+int caml_mark_stack_is_empty(void);
+#endif
 /* Ephemerons and finalisers */
 void caml_orphan_allocated_words(void);
 void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info);

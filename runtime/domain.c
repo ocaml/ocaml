@@ -1839,7 +1839,7 @@ static void handover_finalisers(caml_domain_state* domain_state)
     if (caml_gc_phase != Phase_sweep_and_mark_main) {
       /* Force a major GC cycle to simplify constraints for
        * handing over finalisers. */
-      caml_finish_major_cycle();
+      caml_finish_major_cycle(0);
       CAMLassert(caml_gc_phase == Phase_sweep_and_mark_main);
     }
     caml_add_orphaned_finalisers (f);
