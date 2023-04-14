@@ -17,6 +17,13 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #12182: Improve the type clash error message.
+  For example, this message:
+    This expression has type ...
+  is changed into:
+    The constant '42' has type ...
+  (Jules Aguillon, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 ### Build system:
