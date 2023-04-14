@@ -29,17 +29,15 @@ let announce_test_error test_filename error =
   Printf.printf " ... testing '%s' => unexpected error (%s)\n%!"
     (Filename.basename test_filename) error
 
+exception Parse_error of Lexing.position
+
 let tsl_block_of_file test_filename =
   let input_channel = open_in test_filename in
   let lexbuf = Lexing.from_channel input_channel in
   Location.init lexbuf test_filename;
   match Tsl_parser.tsl_block Tsl_lexer.token lexbuf with
     | exception Parsing.Parse_error ->
-      let open Lexing in
-      Printf.eprintf "Could not read test block in %s at %d:%d\n%!"
-        test_filename lexbuf.lex_start_p.pos_lnum
-        (lexbuf.lex_start_p.pos_cnum - lexbuf.lex_start_p.pos_bol);
-      raise Parsing.Parse_error
+      raise (Parse_error lexbuf.Lexing.lex_start_p)
     | exception e -> close_in input_channel; raise e
     | _ as tsl_block -> close_in input_channel; tsl_block
 
@@ -49,8 +47,10 @@ let tsl_block_of_file_safe test_filename =
     Printf.eprintf "%s\n%!" message;
     announce_test_error test_filename message;
     exit 1
-  | Parsing.Parse_error ->
-    Printf.eprintf "Could not read test block in %s\n%!" test_filename;
+  | Parse_error p ->
+      let open Lexing in
+      Printf.eprintf "Could not read test block in %s at line %d, char %d\n%!"
+        test_filename p.pos_lnum (p.pos_cnum - p.pos_bol);
     announce_test_error test_filename "could not read test block";
     exit 1
 
