@@ -398,7 +398,7 @@ static void* large_allocate(struct caml_heap_state* local, mlsize_t sz) {
 }
 
 value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
-                             tag_t tag, reserved_t reserved, int pinned)
+                             tag_t tag, reserved_t reserved)
 {
   mlsize_t whsize = Whsize_wosize(wosize);
   value* p;
@@ -423,7 +423,7 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
     p = large_allocate(local, Bsize_wsize(whsize));
     if (!p) return 0;
   }
-  colour = pinned ? NOT_MARKABLE : caml_global_heap_state.MARKED;
+  colour = caml_global_heap_state.MARKED;
   Hd_hp (p) = Make_header_with_reserved(wosize, tag, colour, reserved);
 #ifdef DEBUG
   {

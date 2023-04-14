@@ -151,7 +151,7 @@ static value alloc_shared(caml_domain_state* d,
                           mlsize_t wosize, tag_t tag, reserved_t reserved)
 {
   void* mem = caml_shared_try_alloc(d->shared_heap, wosize, tag,
-                                    reserved, 0 /* not pinned */);
+                                    reserved);
   d->allocated_words += Whsize_wosize(wosize);
   if (mem == NULL) {
     caml_fatal_error("allocation failure during minor GC");
