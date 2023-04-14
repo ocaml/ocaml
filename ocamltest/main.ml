@@ -125,7 +125,7 @@ let test_file test_filename =
   let (rootenv_statements, test_trees) =
     match tsl_block with
     | Tsl_ast.Old l -> test_trees_of_tsl_block l
-    | Tsl_ast.New l -> test_trees_of_tsl_asts l
+    | Tsl_ast.New asts -> test_trees_of_tsl_asts asts
   in
   let test_trees = match test_trees with
     | [] ->
@@ -222,6 +222,24 @@ let is_test filename =
     Tsl_lexer.is_test lexbuf
   end
 
+let translate_file test_filename =
+  let tsl_block = tsl_block_of_file_safe test_filename in
+  let (rootenv_statements, test_trees) =
+    match tsl_block with
+    | Tsl_ast.Old l -> test_trees_of_tsl_block l
+    | Tsl_ast.New asts -> test_trees_of_tsl_asts asts
+  in
+  let trees =
+    match rootenv_statements, test_trees with
+    | [], _ -> test_trees
+    | _, [Node (env, test, mods, subs)] ->
+      [Node (rootenv_statements @ env, test, mods, subs)]
+    | _ ->
+      [Node (rootenv_statements, Tests.test_of_action Builtin_actions.pass,
+             [], test_trees)]
+  in
+  List.iter (print_test_tree stdout) trees
+
 let ignored s =
   s = "" || s.[0] = '_' || s.[0] = '.'
 
@@ -273,6 +291,7 @@ let () =
   let doit f x = work_done := true; f x in
   List.iter (doit find_test_dirs) Options.find_test_dirs;
   List.iter (doit list_tests) Options.list_tests;
-  List.iter (doit test_file) Options.files_to_test;
+  let do_file = if Options.translate then translate_file else test_file in
+  List.iter (doit do_file) Options.files_to_test;
   if not !work_done then print_usage();
   if !failed || not !work_done then exit 1

@@ -107,6 +107,17 @@ let no_such_test_or_action t =
   Printf.eprintf "%s\nNo such test or action: %s\n%!" locstr t.node;
   exit 2
 
+let lookup_test located_name =
+  let name = located_name.node in
+  match Tests.lookup name with
+  | None ->
+    begin match Actions.lookup name with
+    | None -> no_such_test_or_action located_name
+    | Some action ->
+      Tests.test_of_action action
+    end
+  | Some test -> test
+
 let test_trees_of_tsl_block tsl_block =
   let rec env_of_lines = function
     | [] -> ([], [])
@@ -127,16 +138,8 @@ let test_trees_of_tsl_block tsl_block =
             else
               let (env, rem) = env_of_lines remaining_lines in
               let (trees, rem) = trees_of_lines (depth+1) rem in
-              match Tests.lookup name with
-                | None ->
-                  begin match Actions.lookup name with
-                    | None -> no_such_test_or_action located_name
-                    | Some action ->
-                      let test = Tests.test_of_action action in
-                      (Some (Node (env, test, env_modifiers, trees)), rem)
-                  end
-                | Some test ->
-                  (Some (Node (env, test, env_modifiers, trees)), rem)
+              let test = lookup_test located_name in
+              (Some (Node (env, test, env_modifiers, trees)), rem)
           end
       end
   and trees_of_lines depth lines =
@@ -177,7 +180,54 @@ let actions_in_tests tests =
   Tests.TestSet.fold f tests Actions.ActionSet.empty
 
 
-let test_tree_of_tsl_ast (Tsl_node (_env, _test, _mods, _subs)) =
-  assert false
+let rec test_tree_of_tsl_ast (Tsl_node (env, name, mods, subs)) =
+  let test = lookup_test name in
+  Node (env, test, mods, List.map test_tree_of_tsl_ast subs)
 
 let test_trees_of_tsl_asts asts = ([], List.map test_tree_of_tsl_ast asts)
+
+open Printf
+
+
+let print_test_tree oc tree =
+  let pr fmt (*args*) = fprintf oc fmt (*args*) in
+
+  let rec print_test_tree indent t =
+    pr "{\n";
+    print_test_subtree (indent ^ "  ") t;
+    pr "%s}" indent;
+
+  and print_test_subtree indent t =
+    match t with
+    | Node (env_list, test, with_modifiers, sub) ->
+      List.iter (print_env indent) env_list;
+      pr "%s%s" indent test.Tests.test_name;
+      if with_modifiers <> [] then begin
+        pr " with";
+        List.iter (fun ls -> pr " %s" ls.node) with_modifiers;
+      end;
+      pr ";\n";
+      begin match sub with
+      | [ x ] -> print_test_subtree indent x
+      | [] -> ()
+      | _ ->
+        pr "%s" indent;
+        List.iter (print_test_tree indent) sub;
+        pr "\n";
+      end;
+
+  and print_env indent e =
+    match e.node with
+    | Assignment (set, variable, value) ->
+      pr "%s" indent;
+      if set then pr "SET ";
+      pr "%s = \"%s\";\n" variable.node value.node;
+    | Append (variable, value) ->
+      pr "%s%s += \"%s\";\n" indent variable.node value.node;
+    | Include ls ->
+      pr "%sinclude %s;\n" indent ls.node;
+    | Unset ls ->
+      pr "%sunset %s;\n" indent ls.node;
+  in
+  print_test_tree "" tree;
+  pr "\n"

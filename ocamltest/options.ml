@@ -61,6 +61,8 @@ let list_tests = ref []
 
 let show_timings = ref false
 
+let translate = ref false
+
 let add_to_list r x =
   r := !r @ [x]
 
@@ -85,6 +87,8 @@ let commandline_options =
    " List tests in given directory.");
   ("-keep-test-dir-on-success", Arg.Set keep_test_dir_on_success,
    " Keep the test directory (with the generated test artefacts) on success.");
+  ("-translate-test-script", Arg.Set translate,
+   " Translate the test script from old to new syntax");
 ]
 
 let files_to_test = ref []
@@ -102,3 +106,4 @@ let find_test_dirs = !find_test_dirs
 let list_tests = !list_tests
 let keep_test_dir_on_success = !keep_test_dir_on_success
 let show_timings = !show_timings
+let translate = !translate

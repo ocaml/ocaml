@@ -50,3 +50,6 @@ val tests_in_trees : test_tree list -> Tests.TestSet.t
 val actions_in_test : Tests.t -> Actions.ActionSet.t
 
 val actions_in_tests : Tests.TestSet.t -> Actions.ActionSet.t
+
+
+val print_test_tree : out_channel -> test_tree -> unit

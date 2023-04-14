@@ -27,6 +27,13 @@ let mkidentifier id = make_identifier ~loc:(symbol_rloc()) id
 let mkenvstmt envstmt =
   make_environment_statement ~loc:(symbol_rloc()) envstmt
 
+let ghost_pass = make_identifier ~loc:none "pass"
+
+let wrap l =
+  match l with
+  | [ x ] -> x
+  | _ -> Tsl_node ([], ghost_pass, [], l)
+
 %}
 
 %token TSL_BEGIN_C_STYLE TSL_END_C_STYLE
@@ -44,35 +51,30 @@ let mkenvstmt envstmt =
 
 %%
 
+tsl_tree:
+| OPEN tsl_subtree CLOSE { wrap $2 }
+
 tsl_subtree:
-| env_list_and_test tsl_subtree
-  { let (env, id, mods) = $1 in Tsl_node (env, id, mods, [$2]) }
-| env_list tsl_tree_list
-  { Tsl_node ($1, mkidentifier "", [], $2) }
+| env_item SEMI tsl_subtree {
+    let Tsl_node (env, id, mods, subs) = wrap $3 in
+    [ Tsl_node ($1 :: env, id, mods, subs) ]
+  }
+| identifier with_environment_modifiers SEMI tsl_subtree {
+    [ Tsl_node ([], $1, $2, $4 ) ]
+  }
+| tsl_tree_list { $1 }
 
 tsl_tree_list:
 | { [] }
 | tsl_tree tsl_tree_list { $1 :: $2 }
-
-tsl_tree:
-| OPEN tsl_subtree CLOSE { $2 }
-
-env_list:
-| { [] }
-| env_item SEMI env_list { $1 :: $3 }
-
-env_list_and_test:
-| identifier with_environment_modifiers SEMI { ([], $1, $2) }
-| env_item SEMI env_list_and_test
-  { let (env, id, mods) = $3 in ($1 :: env, id, mods) }
 
 tsl_block:
 | TSL_BEGIN_C_STYLE tsl_script TSL_END_C_STYLE { $2 }
 | TSL_BEGIN_OCAML_STYLE tsl_script TSL_END_OCAML_STYLE { $2 }
 
 tsl_script:
-| tsl_items { Old $1 }
-| tsl_tree { New [$1] }
+| tsl_item tsl_items { Old ($1 :: $2) }
+| tsl_tree_list { New $1 }
 
 tsl_items:
 | { [] }
