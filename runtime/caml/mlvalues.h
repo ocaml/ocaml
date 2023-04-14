@@ -62,6 +62,7 @@ typedef unsigned int tag_t;             /* Actually, an unsigned char */
 typedef uintnat color_t;
 typedef uintnat mark_t;
 typedef atomic_intnat atomic_value;
+typedef volatile value * value_ptr;
 typedef int32_t opcode_t;
 typedef opcode_t * code_t;
 
