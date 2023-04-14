@@ -229,16 +229,8 @@ let translate_file test_filename =
     | Tsl_ast.Old l -> test_trees_of_tsl_block l
     | Tsl_ast.New asts -> test_trees_of_tsl_asts asts
   in
-  let trees =
-    match rootenv_statements, test_trees with
-    | [], _ -> test_trees
-    | _, [Node (env, test, mods, subs)] ->
-      [Node (rootenv_statements @ env, test, mods, subs)]
-    | _ ->
-      [Node (rootenv_statements, Tests.test_of_action Builtin_actions.pass,
-             [], test_trees)]
-  in
-  List.iter (print_test_tree stdout) trees
+  let asts = tsl_asts_of_test_trees (rootenv_statements, test_trees) in
+  List.iter (print_tsl_ast stdout) asts
 
 let ignored s =
   s = "" || s.[0] = '_' || s.[0] = '.'

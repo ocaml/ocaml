@@ -180,41 +180,76 @@ let actions_in_tests tests =
   Tests.TestSet.fold f tests Actions.ActionSet.empty
 
 
-let rec test_tree_of_tsl_ast (Tsl_node (env, name, mods, subs)) =
-  let test = lookup_test name in
-  Node (env, test, mods, List.map test_tree_of_tsl_ast subs)
+let rec split_env l =
+  match l with
+  | Environment_statement env :: tl ->
+    let (env2, rest) = split_env tl in (env :: env2, rest)
+  | _ -> ([], l)
 
-let test_trees_of_tsl_asts asts = ([], List.map test_tree_of_tsl_ast asts)
+let rec test_tree_of_tsl_ast (Ast (seq, subs)) =
+  let (env, rest) = split_env seq in
+  match rest with
+  | [] -> Node (env, Tests.null, [], List.map test_tree_of_tsl_ast subs)
+  | [ Test (_, name, mods) ] ->
+    Node (env, lookup_test name, mods, List.map test_tree_of_tsl_ast subs)
+  | Test (_, name, mods) :: seq1 ->
+    Node (env, lookup_test name, mods, [test_tree_of_tsl_ast (Ast(seq1, subs))])
+  | Environment_statement _ :: _ -> assert false
+
+let test_trees_of_tsl_asts asts =
+  ([], List.map test_tree_of_tsl_ast asts)
+
+let rec ast_of_tree (Node (env, test, mods, subs)) =
+  let env = List.map (fun x -> Environment_statement x) env in
+  let tst =
+    if test = Tests.null then [] else
+      [Test (0, Tsl_ast.make_identifier test.Tests.test_name, mods)]
+  in
+  match subs with
+  | [ tree ] ->
+    let Ast (stmts, subs2) = ast_of_tree tree in
+    Ast (env @ tst @ stmts, subs2)
+  | _ -> Ast (env @ tst, List.map ast_of_tree subs)
+
+let tsl_asts_of_test_trees (env, trees) =
+  let env = List.map (fun x -> Environment_statement x) env in
+  match env, trees with
+  | _, [] -> [ Ast (env, []) ]
+  | _, [ tree ] ->
+    let Ast (stmts, trees2) = ast_of_tree tree in
+    [ Ast (env @ stmts, trees2) ]
+  | [], _ -> List.map ast_of_tree trees
+  | _ -> [ Ast (env, List.map ast_of_tree trees) ]
 
 open Printf
 
-
-let print_test_tree oc tree =
+let print_tsl_ast oc ast =
   let pr fmt (*args*) = fprintf oc fmt (*args*) in
 
-  let rec print_test_tree indent t =
+  let rec print_ast indent (Ast (stmts, subs)) =
+    let indent2 = indent ^ "  " in
     pr "{\n";
-    print_test_subtree (indent ^ "  ") t;
+    List.iter (print_statement indent2) stmts;
+    print_forest indent2 subs;
     pr "%s}" indent;
 
-  and print_test_subtree indent t =
-    match t with
-    | Node (env_list, test, with_modifiers, sub) ->
-      List.iter (print_env indent) env_list;
-      pr "%s%s" indent test.Tests.test_name;
-      if with_modifiers <> [] then begin
+  and print_statement indent s =
+    match s with
+    | Test (_, name, mods) ->
+      pr "%s%s" indent name.node;
+      if mods <> [] then begin
         pr " with";
-        List.iter (fun ls -> pr " %s" ls.node) with_modifiers;
+        List.iter (fun ls -> pr " %s" ls.node) mods;
       end;
       pr ";\n";
-      begin match sub with
-      | [ x ] -> print_test_subtree indent x
-      | [] -> ()
-      | _ ->
-        pr "%s" indent;
-        List.iter (print_test_tree indent) sub;
-        pr "\n";
-      end;
+    | Environment_statement env -> print_env indent env;
+
+  and print_forest indent subs =
+    if subs <> [] then begin
+      pr "%s" indent;
+      List.iter (print_ast indent) subs;
+      pr "\n";
+    end
 
   and print_env indent e =
     match e.node with
@@ -229,5 +264,5 @@ let print_test_tree oc tree =
     | Unset ls ->
       pr "%sunset %s;\n" indent ls.node;
   in
-  print_test_tree "" tree;
+  print_ast "" ast;
   pr "\n"

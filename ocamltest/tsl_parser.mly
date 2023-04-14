@@ -24,15 +24,10 @@ let mkstring s = make_string ~loc:(symbol_rloc()) s
 
 let mkidentifier id = make_identifier ~loc:(symbol_rloc()) id
 
-let mkenvstmt envstmt =
-  make_environment_statement ~loc:(symbol_rloc()) envstmt
-
-let ghost_pass = make_identifier ~loc:none "pass"
-
-let wrap l =
-  match l with
-  | [ x ] -> x
-  | _ -> Tsl_node ([], ghost_pass, [], l)
+ let mkenvstmt envstmt =
+  let located_env_statement =
+    make_environment_statement ~loc:(symbol_rloc()) envstmt in
+  Environment_statement located_env_statement
 
 %}
 
@@ -51,22 +46,24 @@ let wrap l =
 
 %%
 
-tsl_tree:
-| OPEN tsl_subtree CLOSE { wrap $2 }
+tree:
+| OPEN forest CLOSE { $2 }
 
-tsl_subtree:
-| env_item SEMI tsl_subtree {
-    let Tsl_node (env, id, mods, subs) = wrap $3 in
-    [ Tsl_node ($1 :: env, id, mods, subs) ]
-  }
-| identifier with_environment_modifiers SEMI tsl_subtree {
-    [ Tsl_node ([], $1, $2, $4 ) ]
-  }
-| tsl_tree_list { $1 }
-
-tsl_tree_list:
+tree_list:
 | { [] }
-| tsl_tree tsl_tree_list { $1 :: $2 }
+| tree tree_list { $1 :: $2 }
+
+forest:
+| statement_list tree_list { Ast ($1, $2) }
+
+statement:
+| env_item SEMI { $1 }
+| identifier with_environment_modifiers SEMI { Test (0, $1, $2) }
+
+statement_list:
+| { [] }
+| statement statement_list { $1 :: $2 }
+
 
 tsl_block:
 | TSL_BEGIN_C_STYLE tsl_script TSL_END_C_STYLE { $2 }
@@ -74,7 +71,7 @@ tsl_block:
 
 tsl_script:
 | tsl_item tsl_items { Old ($1 :: $2) }
-| tsl_tree_list { New $1 }
+| tree_list { New $1 }
 
 tsl_items:
 | { [] }
@@ -82,7 +79,7 @@ tsl_items:
 
 tsl_item:
 | test_item { $1 }
-| env_item { Environment_statement $1 }
+| env_item { $1 }
 
 test_item:
   TEST_DEPTH identifier with_environment_modifiers { (Test ($1, $2, $3)) }

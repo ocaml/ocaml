@@ -22,6 +22,13 @@ type t = {
   test_description : string
 }
 
+let null = {
+  test_name = "*pass*";
+  test_run_by_default = false;
+  test_actions = [];
+  test_description = "dummy test inserted by parser; always pass"
+}
+
 let compare t1 t2 = String.compare t1.test_name t2.test_name
 
 let (tests: (string, t) Hashtbl.t) = Hashtbl.create 20
