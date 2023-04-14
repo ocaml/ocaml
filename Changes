@@ -265,6 +265,13 @@ _______________
 - #13255: Re-enable warning 34 for unused locally abstract types
   (Nick Roberts, review by Chris Casinghino and Florian Angeletti)
 
+- #12182: Improve the type clash error message.
+  For example, this message:
+    This expression has type ...
+  is changed into:
+    The constant "42" has type ...
+  (Jules Aguillon, review by Gabriel Scherer and Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - #11129, #11148: enforce that ppxs do not produce `parsetree`s with
