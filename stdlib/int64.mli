@@ -198,7 +198,8 @@ val of_string_opt: string -> int64 option
 (** Same as [of_string], but return [None] instead of raising.
     @since 4.05 *)
 
-val to_string : int64 -> string
+external to_string: (int64 [@unboxed]) -> string =
+    "caml_int64_to_string" "unboxed_caml_int64_to_string"
 (** Return the string representation of its argument, in decimal. *)
 
 external bits_of_float : float -> int64

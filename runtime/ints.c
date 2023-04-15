@@ -17,6 +17,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include "caml/alloc.h"
 #include "caml/custom.h"
 #include "caml/fail.h"
@@ -848,4 +849,196 @@ CAMLprim value caml_nativeint_format(value fmt, value arg)
 CAMLprim value caml_nativeint_of_string(value s)
 {
   return caml_copy_nativeint(parse_intnat(s, 8 * sizeof(value), INTNAT_ERRMSG));
+}
+
+#ifdef _MSC_VER
+// https://learn.microsoft.com/en-us/cpp/intrinsics/bitscanreverse-bitscanreverse64
+#include <intrin.h>
+#pragma intrinsic(_BitScanReverse)
+#endif
+
+// Digit counting
+// https://lemire.me/blog/2021/06/03/computing-the-number-of-digits-of-an-integer-even-faster/
+// https://commaok.xyz/post/lookup_tables/
+static inline int u32_fast_log2(uint32_t x) {
+#ifdef _MSC_VER
+// We can use bsr directly
+  unsigned long index;
+  _BitScanReverse(&index, x | 1);
+  return index;
+#else
+  return 31 - __builtin_clz(x | 1);
+#endif
+}
+
+static inline int u32_fast_digit_count(uint32_t x) {
+  static uint64_t table[] = {
+     4294967296,  8589934582,  8589934582,  8589934582, 12884901788,
+    12884901788, 12884901788, 17179868184, 17179868184, 17179868184,
+    21474826480, 21474826480, 21474826480, 21474826480, 25769703776,
+    25769703776, 25769703776, 30063771072, 30063771072, 30063771072,
+    34349738368, 34349738368, 34349738368, 34349738368, 38554705664,
+    38554705664, 38554705664, 41949672960, 41949672960, 41949672960,
+    42949672960, 42949672960};
+  return (x + table[u32_fast_log2(x)]) >> 32;
+}
+
+static inline int u64_fast_log2(uint64_t x) {
+#ifdef _MSC_VER
+  unsigned long index;
+#ifdef ARCH_SIXTYFOUR
+  _BitScanReverse64(&index, x | 1);
+  return index;
+#else // _BitScanReverse64 not available
+  if (x >> 32) {
+    _BitScanReverse(&index, x >> 32);
+    return 32 + index;
+  } else {
+    _BitScanReverse(&index, x | 1);
+    return index;
+  }
+#endif
+#else
+  return 63 - __builtin_clzll(x | 1);
+#endif
+}
+
+static inline int u64_digit_count(uint64_t x) {
+  static const uint64_t table[18] = {10,
+                                     100,
+                                     1000,
+                                     10000,
+                                     100000,
+                                     1000000,
+                                     10000000,
+                                     100000000,
+                                     1000000000,
+                                     10000000000,
+                                     100000000000,
+                                     1000000000000,
+                                     10000000000000,
+                                     100000000000000,
+                                     1000000000000000,
+                                     10000000000000000,
+                                     100000000000000000,
+                                     1000000000000000000};
+  // We do not need to go further as OCaml only consider signed int64
+  //                                 10000000000000000000};
+  int log2 = u64_fast_log2(x);
+  int log10 = (1233 * log2) >> 12; // |log10(2) - 1233/4096| ~= 0.0000046
+  log10 += ((log10 < 18) && (x >= table[log10]));
+  return log10 + 1;
+}
+
+void write_digits(uint64_t val, char* buffer, size_t len) {
+  char* index = buffer + (len - 1); // writing from the end
+  // "00", "01", "02", ...
+  static const char DIGITS[200] = {
+    '0','0', '0','1', '0','2', '0','3', '0','4', '0','5', '0','6', '0','7',
+    '0','8', '0','9', '1','0', '1','1', '1','2', '1','3', '1','4', '1','5',
+    '1','6', '1','7', '1','8', '1','9', '2','0', '2','1', '2','2', '2','3',
+    '2','4', '2','5', '2','6', '2','7', '2','8', '2','9', '3','0', '3','1',
+    '3','2', '3','3', '3','4', '3','5', '3','6', '3','7', '3','8', '3','9',
+    '4','0', '4','1', '4','2', '4','3', '4','4', '4','5', '4','6', '4','7',
+    '4','8', '4','9', '5','0', '5','1', '5','2', '5','3', '5','4', '5','5',
+    '5','6', '5','7', '5','8', '5','9', '6','0', '6','1', '6','2', '6','3',
+    '6','4', '6','5', '6','6', '6','7', '6','8', '6','9', '7','0', '7','1',
+    '7','2', '7','3', '7','4', '7','5', '7','6', '7','7', '7','8', '7','9',
+    '8','0', '8','1', '8','2', '8','3', '8','4', '8','5', '8','6', '8','7',
+    '8','8', '8','9', '9','0', '9','1', '9','2', '9','3', '9','4', '9','5',
+    '9','6', '9','7', '9','8', '9','9'};
+
+  // Decode 4 digits at a time
+  while (val >= 10000) {
+    uint64_t r = val % 10000;
+    val /= 10000;
+    uint64_t r1 = 2 * (r / 100);
+    uint64_t r2 = 2 * (r % 100);
+
+    *index-- = DIGITS[r2 + 1];
+    *index-- = DIGITS[r2];
+    *index-- = DIGITS[r1 + 1];
+    *index-- = DIGITS[r1];
+  }
+
+  // Decode 2 digits at a time
+  while (val >= 100) {
+    uint64_t r = 2 * (val % 100);
+    val /= 100;
+
+    *index-- = DIGITS[r + 1];
+    *index-- = DIGITS[r];
+  }
+
+  // val is in [0..99]
+  // Decode last 2 or 1 digits
+  if (val < 10) {
+    *index-- = '0' + val;
+  } else {
+    val *= 2;
+    *index-- = DIGITS[val + 1];
+    *index-- = DIGITS[val];
+  }
+
+  return;
+}
+
+CAMLprim value unboxed_caml_int32_to_string(int32_t val) {
+  uint32_t x = val < 0 ? (uint32_t) (- val) : (uint32_t) val;
+  int count = u32_fast_digit_count(x);
+  value res = caml_alloc_string(count + (val < 0));
+  char* buf = (char*) String_val(res);
+
+  // caml_alloc_string(n) allocates n + 1 bytes
+  buf[count + (val < 0)] = 0;
+  write_digits((uint64_t)x, buf, count + (val < 0));
+  if (val < 0) { buf[0] = '-'; }
+  return res;
+}
+
+CAMLprim value caml_int32_to_string(value vs) {
+  int32_t val = Int32_val(vs);
+  return unboxed_caml_int32_to_string(val);
+}
+
+CAMLprim value unboxed_caml_int64_to_string(int64_t val) {
+  uint64_t x = val < 0 ? (uint64_t) (- val) : (uint64_t) val;
+  int count = u64_digit_count(x);
+  value res = caml_alloc_string(count + (val < 0));
+  char* buf = (char*) String_val(res);
+
+  // caml_alloc_string(n) allocates n + 1 bytes
+  buf[count + (val < 0)] = 0;
+  write_digits(x, buf, count + (val < 0));
+  if (val < 0) { buf[0] = '-'; }
+  return res;
+}
+
+CAMLprim value caml_int64_to_string(value vs) {
+  int64_t val = Int64_val(vs);
+  return unboxed_caml_int64_to_string(val);
+}
+
+CAMLprim value unboxed_caml_nativeint_to_string(intnat vs) {
+#ifdef ARCH_SIXTYFOUR
+  return unboxed_caml_int64_to_string(vs);
+#else
+  return unboxed_caml_int32_to_string(vs);
+#endif
+}
+
+CAMLprim value caml_nativeint_to_string(value vs) {
+#ifdef ARCH_SIXTYFOUR
+  return caml_int64_to_string(vs);
+#else
+  return caml_int32_to_string(vs);
+#endif
+}
+
+CAMLprim value caml_int_to_string(value vs) {
+#ifdef ARCH_SIXTYFOUR
+  return unboxed_caml_int64_to_string(Long_val(vs));
+#else
+  return unboxed_caml_int32_to_string(Long_val(vs));
+#endif
 }

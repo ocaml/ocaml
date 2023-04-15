@@ -179,7 +179,8 @@ val of_string_opt: string -> int32 option
     @since 4.05 *)
 
 
-val to_string : int32 -> string
+external to_string: (int32 [@unboxed]) -> string =
+    "caml_int32_to_string" "unboxed_caml_int32_to_string"
 (** Return the string representation of its argument, in signed decimal. *)
 
 external bits_of_float : float -> int32
