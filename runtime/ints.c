@@ -989,8 +989,6 @@ CAMLprim value unboxed_caml_int32_to_string(int32_t val) {
   value res = caml_alloc_string(count + (val < 0));
   char* buf = (char*) String_val(res);
 
-  // caml_alloc_string(n) allocates n + 1 bytes
-  buf[count + (val < 0)] = 0;
   write_digits((uint64_t)x, buf, count + (val < 0));
   if (val < 0) { buf[0] = '-'; }
   return res;
@@ -1007,8 +1005,6 @@ CAMLprim value unboxed_caml_int64_to_string(int64_t val) {
   value res = caml_alloc_string(count + (val < 0));
   char* buf = (char*) String_val(res);
 
-  // caml_alloc_string(n) allocates n + 1 bytes
-  buf[count + (val < 0)] = 0;
   write_digits(x, buf, count + (val < 0));
   if (val < 0) { buf[0] = '-'; }
   return res;
