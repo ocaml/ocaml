@@ -62,6 +62,7 @@ let list_tests = ref []
 let show_timings = ref false
 
 let translate = ref false
+let force_below = ref false
 
 let add_to_list r x =
   r := !r @ [x]
@@ -89,6 +90,8 @@ let commandline_options =
    " Keep the test directory (with the generated test artefacts) on success.");
   ("-translate-test-script", Arg.Set translate,
    " Translate the test script from old to new syntax");
+  ("-below", Arg.Set force_below,
+   " When translating, move the test script to the end of the file");
 ]
 
 let files_to_test = ref []
@@ -107,3 +110,4 @@ let list_tests = !list_tests
 let keep_test_dir_on_success = !keep_test_dir_on_success
 let show_timings = !show_timings
 let translate = !translate
+let force_below = !force_below

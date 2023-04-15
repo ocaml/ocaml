@@ -29,7 +29,7 @@ let announce_test_error test_filename error =
   Printf.printf " ... testing '%s' => unexpected error (%s)\n%!"
     (Filename.basename test_filename) error
 
-exception Parse_error of Lexing.position
+exception Syntax_error of Lexing.position
 
 let tsl_block_of_file test_filename =
   let input_channel = open_in test_filename in
@@ -37,7 +37,7 @@ let tsl_block_of_file test_filename =
   Location.init lexbuf test_filename;
   match Tsl_parser.tsl_block Tsl_lexer.token lexbuf with
     | exception Parsing.Parse_error ->
-      raise (Parse_error lexbuf.Lexing.lex_start_p)
+      raise (Syntax_error lexbuf.Lexing.lex_start_p)
     | exception e -> close_in input_channel; raise e
     | _ as tsl_block -> close_in input_channel; tsl_block
 
@@ -47,10 +47,10 @@ let tsl_block_of_file_safe test_filename =
     Printf.eprintf "%s\n%!" message;
     announce_test_error test_filename message;
     exit 1
-  | Parse_error p ->
-      let open Lexing in
-      Printf.eprintf "Could not read test block in %s at line %d, char %d\n%!"
-        test_filename p.pos_lnum (p.pos_cnum - p.pos_bol);
+  | Syntax_error p ->
+    let open Lexing in
+    Printf.eprintf "%s:%d.%d: syntax error in test script\n%!"
+      test_filename p.pos_lnum (p.pos_cnum - p.pos_bol);
     announce_test_error test_filename "could not read test block";
     exit 1
 
@@ -222,16 +222,6 @@ let is_test filename =
     Tsl_lexer.is_test lexbuf
   end
 
-let translate_file test_filename =
-  let tsl_block = tsl_block_of_file_safe test_filename in
-  let (rootenv_statements, test_trees) =
-    match tsl_block with
-    | Tsl_ast.Old l -> test_trees_of_tsl_block l
-    | Tsl_ast.New asts -> test_trees_of_tsl_asts asts
-  in
-  let asts = tsl_asts_of_test_trees (rootenv_statements, test_trees) in
-  List.iter (print_tsl_ast stdout) asts
-
 let ignored s =
   s = "" || s.[0] = '_' || s.[0] = '.'
 
@@ -283,7 +273,12 @@ let () =
   let doit f x = work_done := true; f x in
   List.iter (doit find_test_dirs) Options.find_test_dirs;
   List.iter (doit list_tests) Options.list_tests;
-  let do_file = if Options.translate then translate_file else test_file in
+  let do_file =
+    if Options.translate then
+      Translate.file Options.force_below
+    else
+      test_file
+  in
   List.iter (doit do_file) Options.files_to_test;
   if not !work_done then print_usage();
   if !failed || not !work_done then exit 1

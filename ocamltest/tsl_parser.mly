@@ -31,8 +31,10 @@ let mkidentifier id = make_identifier ~loc:(symbol_rloc()) id
 
 %}
 
-%token TSL_BEGIN_C_STYLE TSL_END_C_STYLE
-%token TSL_BEGIN_OCAML_STYLE TSL_END_OCAML_STYLE
+%token <bool> TSL_BEGIN_C_STYLE
+%token TSL_END_C_STYLE
+%token <bool> TSL_BEGIN_OCAML_STYLE
+%token TSL_END_OCAML_STYLE
 %token COMMA OPEN CLOSE SEMI
 %token <int> TEST_DEPTH
 %token EQUAL PLUSEQUAL
