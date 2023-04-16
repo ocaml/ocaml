@@ -145,6 +145,13 @@ static struct caml_extern_state* prepare_extern_state (void)
 static struct caml_extern_state* get_extern_state (void)
 {
   Caml_check_caml_state();
+
+  if (Caml_state->extern_state == NULL)
+    caml_fatal_error (
+      "extern_state not initialized:"
+      "this function can only be called from a `caml_output_*` entrypoint."
+    );
+
   return Caml_state->extern_state;
 }
 
