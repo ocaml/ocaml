@@ -120,6 +120,13 @@ struct caml_extern_state {
   struct output_block * extern_output_block;
 };
 
+static void extern_init_stack(struct caml_extern_state* s)
+{
+  /* (Re)initialize the globals for next time around */
+  s->extern_stack = s->extern_stack_init;
+  s->extern_stack_limit = s->extern_stack + EXTERN_STACK_INIT_SIZE;
+}
+
 static struct caml_extern_state* prepare_extern_state (void)
 {
   Caml_check_caml_state();
@@ -134,9 +141,7 @@ static struct caml_extern_state* prepare_extern_state (void)
   s->obj_counter = 0;
   s->size_32 = 0;
   s->size_64 = 0;
-  s->extern_stack = s->extern_stack_init;
-  s->extern_stack_limit =
-    s->extern_stack + EXTERN_STACK_INIT_SIZE;
+  extern_init_stack(s);
 
   Caml_state->extern_state = s;
   return s;
@@ -183,17 +188,15 @@ CAMLnoreturn_end;
 
 static void free_extern_output(struct caml_extern_state* s);
 
-/* Free the extern stack if needed */
 static void extern_free_stack(struct caml_extern_state* s)
 {
+  /* Free the extern stack if needed */
   if (s->extern_stack != s->extern_stack_init) {
     caml_stat_free(s->extern_stack);
-    /* Reinitialize the globals for next time around */
-    s->extern_stack = s->extern_stack_init;
-    s->extern_stack_limit = s->extern_stack + EXTERN_STACK_INIT_SIZE;
   }
-}
 
+  extern_init_stack(s);
+}
 
 static struct extern_item * extern_resize_stack(struct caml_extern_state* s,
                                                 struct extern_item * sp)
