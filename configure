@@ -18013,19 +18013,21 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
     conftest$ac_exeext conftest.$ac_ext
 
+PKG_CONFIG=pkg-config
+
 ## ZSTD compression library
 
 zstd_status=""
 if test x"$with_zstd" != "xno"
 then :
   # Try pkg-config first, as it gives the most reliable results
-  if pkg-config libzstd 2>/dev/null
+  if ${PKG_CONFIG} libzstd 2>/dev/null
 then :
   # Now check the version
-    if pkg-config --atleast-version 1.4 libzstd
+    if ${PKG_CONFIG} --atleast-version 1.4 libzstd
 then :
-  zstd_libs=`pkg-config --libs libzstd`
-       zstd_flags=`pkg-config --cflags libzstd`
+  zstd_libs=`${PKG_CONFIG} --libs libzstd`
+       zstd_flags=`${PKG_CONFIG} --cflags libzstd`
        zstd_status="ok"
 else $as_nop
   zstd_status="zstd library too old: version 1.4 or later is needed"
