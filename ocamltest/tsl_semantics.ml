@@ -186,25 +186,31 @@ let rec split_env l =
     let (env2, rest) = split_env tl in (env :: env2, rest)
   | _ -> ([], l)
 
-let rec test_tree_of_tsl_ast (Ast (seq, subs)) =
+let rec test_trees_of_tsl_ast (Ast (seq, subs)) =
   let (env, rest) = split_env seq in
   match rest with
-  | [] -> Node (env, Tests.null, [], List.map test_tree_of_tsl_ast subs)
+  | [] -> (env, List.map test_tree_of_tsl_ast subs)
   | [ Test (_, name, mods) ] ->
-    Node (env, lookup_test name, mods, List.map test_tree_of_tsl_ast subs)
+    ([],
+     [Node (env, lookup_test name, mods, List.map test_tree_of_tsl_ast subs)])
   | Test (_, name, mods) :: seq1 ->
-    Node (env, lookup_test name, mods, [test_tree_of_tsl_ast (Ast(seq1, subs))])
+    let sub = test_tree_of_tsl_ast (Ast (seq1, subs)) in
+    ([], [Node (env, lookup_test name, mods, [sub])])
   | Environment_statement _ :: _ -> assert false
 
+and test_tree_of_tsl_ast ast =
+  match test_trees_of_tsl_ast ast with
+  | ([], [tree]) -> tree
+  | (env, trees) -> Node (env, Tests.null, [], trees)
+
 let test_trees_of_tsl_asts asts =
-  ([], List.map test_tree_of_tsl_ast asts)
+  match asts with
+  | [ ast ] -> test_trees_of_tsl_ast ast
+  | _ -> ([], List.map test_tree_of_tsl_ast asts)
 
 let rec ast_of_tree (Node (env, test, mods, subs)) =
   let env = List.map (fun x -> Environment_statement x) env in
-  let tst =
-    if test = Tests.null then [] else
-      [Test (0, Tsl_ast.make_identifier test.Tests.test_name, mods)]
-  in
+  let tst = [Test (0, Tsl_ast.make_identifier test.Tests.test_name, mods)] in
   match subs with
   | [ tree ] ->
     let Ast (stmts, subs2) = ast_of_tree tree in
