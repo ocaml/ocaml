@@ -262,6 +262,9 @@ Working version
   causing marshaled data to be compressed using ZSTD.
   (Xavier Leroy, review by Edwin Török and Gabriel Scherer)
 
+- #12184: Sys.rename Windows fixes on directory corner cases.
+  (Jan Midtgaard, review by Anil Madhavapeddy)
+
 ### Other libraries:
 
 - #11374: Remove pointer cast to a type with stricter alignment requirements
