@@ -73,12 +73,12 @@ let file force_below f =
     | _ -> seek_to_end ()
   in
   let (style, below) = seek_to_begin () in
-  copy copy_ic stdout lexbuf.Lexing.lex_curr_pos;
+  copy copy_ic stdout Lexing.(lexbuf.lex_curr_p.pos_cnum);
   if below || not force_below then begin
     printf "\n";
     List.iter (Tsl_semantics.print_tsl_ast stdout) asts;
     seek_to_end ();
-    seek_in copy_ic lexbuf.Lexing.lex_start_pos;
+    seek_in copy_ic Lexing.(lexbuf.lex_start_p.pos_cnum);
     copy copy_ic stdout max_int;
   end else begin
     printf "_BELOW";
