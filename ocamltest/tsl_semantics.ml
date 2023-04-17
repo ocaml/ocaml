@@ -235,20 +235,24 @@ let print_tsl_ast oc ast =
   let rec print_ast indent (Ast (stmts, subs)) =
     let indent2 = indent ^ "  " in
     pr "{\n";
-    List.iter (print_statement indent2) stmts;
+    print_statements indent2 stmts;
     print_forest indent2 subs;
     pr "%s}" indent;
 
-  and print_statement indent s =
-    match s with
-    | Test (_, name, mods) ->
+  and print_statements indent stmts =
+    match stmts with
+    | Test (_, name, mods) :: tl ->
       pr "%s%s" indent name.node;
       if mods <> [] then begin
         pr " with";
         List.iter (fun ls -> pr " %s" ls.node) mods;
       end;
-      pr ";\n";
-    | Environment_statement env -> print_env indent env;
+      pr ";\n%s" (if tl = [] then "" else "\n");
+      print_statements indent tl;
+    | Environment_statement env :: tl->
+      print_env indent env;
+      print_statements indent tl;
+    | [] -> ()
 
   and print_forest indent subs =
     if subs <> [] then begin

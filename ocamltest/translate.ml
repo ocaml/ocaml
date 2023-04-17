@@ -39,6 +39,8 @@ let tsl_block_of_file test_filename =
   Location.init lexbuf test_filename;
   let block = Tsl_parser.tsl_block Tsl_lexer.token lexbuf in
   close_in input_channel;
+  if !Tsl_lexer.has_comments then
+    eprintf "%s.bak:1.0: warning: test script has comments\n" test_filename;
   block
 
 

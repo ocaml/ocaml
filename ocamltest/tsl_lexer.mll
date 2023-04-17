@@ -20,6 +20,7 @@
 open Tsl_parser
 
 let comment_start_pos = ref []
+let has_comments = ref false
 
 let lexer_error message =
   failwith (Printf.sprintf "Tsl lexer: %s" message)
@@ -77,6 +78,7 @@ and token = parse
   | "(*"
     {
       comment_start_pos := [Lexing.lexeme_start_p lexbuf];
+      has_comments := true;
       comment lexbuf
     }
   | '"'
