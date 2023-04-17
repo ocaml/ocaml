@@ -145,6 +145,10 @@ OCaml 5.1.0
   (B. Szilvasy, Gabriel Scherer and Xavier Leroy, review by
    Stefan Muenzel, Guillaume Munch-Maccagnoni and Damien Doligez)
 
+- #12037: get_extern_state potential NULL dereference.
+  (Alexander Skvortsov, report by Török Edwin,
+   design by Gabriel Scherer, Xavier Leroy)
+
 ### Type system:
 
 - #6941, #11187: prohibit using classes through recursive modules
