@@ -355,6 +355,9 @@ OCaml 5.1.0
 
 ### Tools:
 
+- #11787: Fix GDB scripts to work with OCaml 5's heap layout. (Nick
+  Barnes)
+
 - #1172: fix ocamlyacc's handling of raw string literals
   (Demi Marie Obenour)
 
