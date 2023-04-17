@@ -791,15 +791,15 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
       (old_attribs & FILE_ATTRIBUTE_SYSTEM) == 0) {
     DWORD new_attribs = GetFileAttributes(newpath);
     if ((new_attribs != INVALID_FILE_ATTRIBUTES) &&
-	(new_attribs & FILE_ATTRIBUTE_HIDDEN) == 0 &&
-	(new_attribs & FILE_ATTRIBUTE_SYSTEM) == 0) {
+        (new_attribs & FILE_ATTRIBUTE_HIDDEN) == 0 &&
+        (new_attribs & FILE_ATTRIBUTE_SYSTEM) == 0) {
       if ((new_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0) {
-	/* Try to delete and fall though.
+        /* Try to delete and fall though.
            RemoveDirectoryW fails on non-empty dirs as intended. */
-	RemoveDirectoryW(newpath);
+        RemoveDirectoryW(newpath);
       } else {
-	errno = ENOTDIR;
-	return -1;
+        errno = ENOTDIR;
+        return -1;
       }
     }
   }
