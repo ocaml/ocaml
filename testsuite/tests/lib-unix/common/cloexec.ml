@@ -1,5 +1,4 @@
 (* TEST
-
 (*
   This test is temporarily disabled on the MinGW and MSVC ports,
   because since fdstatus has been wrapped in an OCaml program,
@@ -13,36 +12,37 @@
   output of msvc and will also duplicate what the OCaml compiler itself
   already does.
 *)
-
-* hasunix
-include unix
-readonly_files = "fdstatus_aux.c fdstatus_main.ml"
-
-** libunix
-*** setup-ocamlc.byte-build-env
-program = "${test_build_directory}/cloexec.byte"
-**** ocamlc.byte
-program = "${test_build_directory}/fdstatus.exe"
-all_modules = "fdstatus_aux.c fdstatus_main.ml"
-***** ocamlc.byte
-program = "${test_build_directory}/cloexec.byte"
-all_modules= "cloexec.ml"
-****** check-ocamlc.byte-output
-******* run
-******** check-program-output
-
-*** setup-ocamlopt.byte-build-env
-program = "${test_build_directory}/cloexec.opt"
-**** ocamlopt.byte
-program = "${test_build_directory}/fdstatus.exe"
-all_modules = "fdstatus_aux.c fdstatus_main.ml"
-***** ocamlopt.byte
-program = "${test_build_directory}/cloexec.opt"
-all_modules= "cloexec.ml"
-****** check-ocamlopt.byte-output
-******* run
-******** check-program-output
-
+{
+  include unix;
+  readonly_files = "fdstatus_aux.c fdstatus_main.ml";
+  hasunix;
+  libunix;
+  {
+    program = "${test_build_directory}/cloexec.byte";
+    setup-ocamlc.byte-build-env;
+    program = "${test_build_directory}/fdstatus.exe";
+    all_modules = "fdstatus_aux.c fdstatus_main.ml";
+    ocamlc.byte;
+    program = "${test_build_directory}/cloexec.byte";
+    all_modules = "cloexec.ml";
+    ocamlc.byte;
+    check-ocamlc.byte-output;
+    run;
+    check-program-output;
+  }{
+    program = "${test_build_directory}/cloexec.opt";
+    setup-ocamlopt.byte-build-env;
+    program = "${test_build_directory}/fdstatus.exe";
+    all_modules = "fdstatus_aux.c fdstatus_main.ml";
+    ocamlopt.byte;
+    program = "${test_build_directory}/cloexec.opt";
+    all_modules = "cloexec.ml";
+    ocamlopt.byte;
+    check-ocamlopt.byte-output;
+    run;
+    check-program-output;
+  }
+}
 *)
 
 (* This is a terrible hack that plays on the internal representation
