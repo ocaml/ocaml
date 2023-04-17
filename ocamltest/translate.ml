@@ -85,7 +85,7 @@ let file force_below f =
   end else begin
     printf "_BELOW";
     seek_to_end ();
-    copy_newlines copy_ic stdout lexbuf.Lexing.lex_start_pos;
+    copy_newlines copy_ic stdout Lexing.(lexbuf.lex_start_p.pos_cnum);
     copy copy_ic stdout max_int;
     printf "\n%s TEST\n" style.opening;
     List.iter (Tsl_semantics.print_tsl_ast stdout) asts;
