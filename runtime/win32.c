@@ -784,10 +784,16 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
   /* First handle corner-cases not handled by MoveFileEx:
      - dir to empty dir - positive - should succeed
      - dir to existing file - should fail */
-  if (GetFileAttributes(oldpath) & FILE_ATTRIBUTE_DIRECTORY) {
-    int new_ret = GetFileAttributes(newpath);
-    if (new_ret != -1) {
-      if (new_ret & FILE_ATTRIBUTE_DIRECTORY) {
+  DWORD old_attribs = GetFileAttributes(oldpath);
+  if ((old_attribs != INVALID_FILE_ATTRIBUTES) &&
+      (old_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0 &&
+      (old_attribs & FILE_ATTRIBUTE_HIDDEN) == 0 &&
+      (old_attribs & FILE_ATTRIBUTE_SYSTEM) == 0) {
+    DWORD new_attribs = GetFileAttributes(newpath);
+    if ((new_attribs != INVALID_FILE_ATTRIBUTES) &&
+	(new_attribs & FILE_ATTRIBUTE_HIDDEN) == 0 &&
+	(new_attribs & FILE_ATTRIBUTE_SYSTEM) == 0) {
+      if ((new_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0) {
 	/* Try to delete and fall though.
            RemoveDirectoryW fails on non-empty dirs as intended. */
 	RemoveDirectoryW(newpath);
