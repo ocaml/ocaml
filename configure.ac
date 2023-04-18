@@ -1950,7 +1950,7 @@ AC_LINK_IFELSE(
     AC_DEFINE([HAS_BSD_GETAFFINITY_NP])],
     [AC_MSG_RESULT([pthread_getaffinity_np not found])])])
 
-PKG_CONFIG=pkg-config
+AC_PATH_TOOL([PKG_CONFIG], [pkg-config], [false])
 
 ## ZSTD compression library
 
