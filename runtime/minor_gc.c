@@ -212,7 +212,7 @@ static int try_update_object_header(value v, volatile value *p, value result,
         /* Success. Now we can write the forwarding pointer. */
         atomic_store_explicit(Op_atomic_val(v), result, memory_order_relaxed);
         /* And update header ('release' ensures after update of fwd pointer) */
-        atomic_store_rel(Hp_atomic_val(v), 0);
+        atomic_store_release(Hp_atomic_val(v), 0);
         /* Let the caller know we were responsible for the update */
         success = 1;
       } else {
