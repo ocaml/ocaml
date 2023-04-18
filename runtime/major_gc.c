@@ -1009,10 +1009,8 @@ void caml_darken_cont(value cont)
         if (Ptr_val(stk) != NULL)
           caml_scan_stack(&caml_darken, darken_scanning_flags, Caml_state,
                           Ptr_val(stk), 0);
-        atomic_store_explicit(
-          Hp_atomic_val(cont),
-          With_status_hd(hd, caml_global_heap_state.MARKED),
-          memory_order_release);
+        atomic_store_release(Hp_atomic_val(cont),
+                             With_status_hd(hd, caml_global_heap_state.MARKED));
       }
     }
   }

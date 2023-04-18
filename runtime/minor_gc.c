@@ -172,7 +172,7 @@ static void spin_on_header(value v) {
 }
 
 Caml_inline header_t get_header_val(value v) {
-  header_t hd = atomic_load_explicit(Hp_atomic_val(v), memory_order_acquire);
+  header_t hd = atomic_load_acquire(Hp_atomic_val(v));
   if (!Is_update_in_progress(hd))
     return hd;
 
@@ -210,7 +210,7 @@ static int try_update_object_header(value v, volatile value *p, value result,
       header_t desired_hd = In_progress_update_val;
       if( atomic_compare_exchange_strong(Hp_atomic_val(v), &hd, desired_hd) ) {
         /* Success. Now we can write the forwarding pointer. */
-        atomic_store_explicit(Op_atomic_val(v), result, memory_order_relaxed);
+        atomic_store_relaxed(Op_atomic_val(v), result);
         /* And update header ('release' ensures after update of fwd pointer) */
         atomic_store_release(Hp_atomic_val(v), 0);
         /* Let the caller know we were responsible for the update */
@@ -675,7 +675,7 @@ void caml_do_opportunistic_major_slice
    if needed.
 */
 void caml_empty_minor_heap_setup(caml_domain_state* domain_unused) {
-  atomic_store_explicit(&domains_finished_minor_gc, 0, memory_order_release);
+  atomic_store_release(&domains_finished_minor_gc, 0);
   /* Increment the total number of minor collections done in the program */
   atomic_fetch_add (&caml_minor_collections_count, 1);
 }
@@ -706,10 +706,8 @@ caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
     CAML_EV_BEGIN(EV_MINOR_LEAVE_BARRIER);
     {
       SPIN_WAIT {
-        if( atomic_load_explicit
-          (&domains_finished_minor_gc, memory_order_acquire)
-          ==
-          participating_count ) {
+        if (atomic_load_acquire(&domains_finished_minor_gc) ==
+            participating_count) {
           break;
         }
 

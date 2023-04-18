@@ -478,10 +478,8 @@ static void write_to_ring(ev_category category, ev_message_type type,
 
   /* the head and tail indexes for the current domain's ring buffer (out of
       the header) */
-  uint64_t ring_head = atomic_load_explicit(&domain_ring_header->ring_head,
-                                            memory_order_acquire);
-  uint64_t ring_tail = atomic_load_explicit(&domain_ring_header->ring_tail,
-                                            memory_order_acquire);
+  uint64_t ring_head = atomic_load_acquire(&domain_ring_header->ring_head);
+  uint64_t ring_tail = atomic_load_acquire(&domain_ring_header->ring_tail);
 
   /* since rings can only be powers of two in size, we use this mask to cheaply
     convert the head and tail indexes in to the physical offset in the ring
@@ -519,8 +517,8 @@ static void write_to_ring(ev_category category, ev_message_type type,
 
     ring_head += RUNTIME_EVENTS_ITEM_LENGTH(head_header);
 
-    atomic_store_explicit(&domain_ring_header->ring_head, ring_head,
-                          memory_order_release); // advance the ring head
+    // advance the ring head
+    atomic_store_release(&domain_ring_header->ring_head, ring_head);
   }
 
   if (padding_required > 0) {
@@ -532,8 +530,7 @@ static void write_to_ring(ev_category category, ev_message_type type,
 
     ring_tail += ring_distance_to_end;
 
-    atomic_store_explicit(&domain_ring_header->ring_tail, ring_tail,
-                          memory_order_release);
+    atomic_store_release(&domain_ring_header->ring_tail, ring_tail);
 
     ring_tail_offset = 0;
   }
@@ -553,17 +550,16 @@ static void write_to_ring(ev_category category, ev_message_type type,
     memcpy(&ring_ptr[ring_tail_offset], content + word_offset,
            event_length * sizeof(uint64_t));
   }
-  atomic_store_explicit(&domain_ring_header->ring_tail,
-                        ring_tail + length_with_header_ts,
-                        memory_order_release);
+  atomic_store_release(&domain_ring_header->ring_tail,
+                       ring_tail + length_with_header_ts);
 }
 
 /* Functions for putting runtime data on to the runtime_events */
 
 static inline int ring_is_active(void) {
     return
-      atomic_load_explicit(&runtime_events_enabled, memory_order_relaxed)
-      && !atomic_load_explicit(&runtime_events_paused, memory_order_relaxed);
+      atomic_load_relaxed(&runtime_events_enabled)
+      && !atomic_load_relaxed(&runtime_events_paused);
 }
 
 void caml_ev_begin(ev_runtime_phase phase) {

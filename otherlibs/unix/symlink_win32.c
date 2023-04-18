@@ -26,6 +26,7 @@
 #include <caml/fail.h>
 #include <caml/signals.h>
 #include <caml/osdeps.h>
+#include <caml/platform.h>
 #include "unixsupport.h"
 
 #ifndef SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
@@ -78,13 +79,11 @@ CAMLprim value caml_unix_symlink(value to_dir, value osource, value odest)
   caml_unix_check_path(osource, "symlink");
   caml_unix_check_path(odest, "symlink");
 
-  additional_flags = atomic_load_explicit(&additional_symlink_flags,
-      memory_order_relaxed);
+  additional_flags = atomic_load_relaxed(&additional_symlink_flags);
   if (additional_flags == -1) {
     additional_flags = IsDeveloperModeEnabled() ?
       SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE : 0;
-    atomic_store_explicit(&additional_symlink_flags, additional_flags,
-        memory_order_relaxed);
+    atomic_store_relaxed(&additional_symlink_flags, additional_flags);
   }
 
   flags =

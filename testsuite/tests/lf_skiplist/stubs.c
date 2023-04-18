@@ -68,8 +68,7 @@ static uintnat count_marks(struct lf_skiplist *sk) {
 
   while (p) {
     for (int k = p->top_level; k >= 0; k--) {
-      succ =
-        (uintptr_t)atomic_load_explicit(&p->forward[k],memory_order_relaxed);
+      succ = (uintptr_t)atomic_load_relaxed(&p->forward[k]);
       if (LF_SK_IS_MARKED(succ)) r++ ;
     }
     p = LF_SK_UNMARK(succ);
