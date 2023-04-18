@@ -25,11 +25,16 @@ let copy ic oc up_to =
     done
   with End_of_file -> ()
 
-let copy_newlines ic oc up_to =
+let copy_newlines ~keep_chars ic oc up_to =
+  let keep = ref keep_chars in
   try
     while pos_in ic < up_to do
       let c = input_char ic in
       if c = '\n' || c = '\r' then output_char oc c
+      else if !keep <= 0 then
+        output_char oc ' '
+      else
+        decr keep
     done
   with End_of_file -> ()
 
@@ -48,7 +53,7 @@ type style = { opening : string; closing : string }
 let c_style = { opening = "/*"; closing = "*/" }
 let ocaml_style = { opening = "(*"; closing = "*)" }
 
-let file force_below f =
+let file force_below keep_chars f =
   let tsl_block = tsl_block_of_file f in
   let (rootenv_statements, test_trees) =
     match tsl_block with
@@ -85,7 +90,9 @@ let file force_below f =
   end else begin
     printf "_BELOW";
     seek_to_end ();
-    copy_newlines copy_ic stdout Lexing.(lexbuf.lex_start_p.pos_cnum);
+    let limit = Lexing.(lexbuf.lex_start_p.pos_cnum) in
+    let keep_chars = if keep_chars then 6 else 0 in
+    copy_newlines ~keep_chars copy_ic stdout limit;
     copy copy_ic stdout max_int;
     printf "\n%s TEST\n" style.opening;
     List.iter (Tsl_semantics.print_tsl_ast stdout) asts;

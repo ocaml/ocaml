@@ -15,4 +15,4 @@
 
 (* Translate a test file from old to new syntax. *)
 
-val file : bool -> string -> unit
+val file : bool -> bool -> string -> unit

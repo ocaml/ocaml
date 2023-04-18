@@ -275,7 +275,7 @@ let () =
   List.iter (doit list_tests) Options.list_tests;
   let do_file =
     if Options.translate then
-      Translate.file Options.force_below
+      Translate.file Options.force_below Options.keep_chars
     else
       test_file
   in

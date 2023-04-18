@@ -63,6 +63,10 @@ let show_timings = ref false
 
 let translate = ref false
 let force_below = ref false
+let keep_chars = ref false
+let set_below_and_chars () =
+  force_below := true;
+  keep_chars := true
 
 let add_to_list r x =
   r := !r @ [x]
@@ -92,6 +96,8 @@ let commandline_options =
    " Translate the test script from old to new syntax");
   ("-below", Arg.Set force_below,
    " When translating, move the test script to the end of the file");
+  ("-below-with-chars", Arg.Unit set_below_and_chars,
+   " When translating, move the test script to the end of the file and preserve the number of chars");
 ]
 
 let files_to_test = ref []
@@ -111,3 +117,4 @@ let keep_test_dir_on_success = !keep_test_dir_on_success
 let show_timings = !show_timings
 let translate = !translate
 let force_below = !force_below
+let keep_chars = !keep_chars

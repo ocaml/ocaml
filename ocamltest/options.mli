@@ -35,3 +35,4 @@ val show_timings : bool
 
 val translate : bool
 val force_below : bool
+val keep_chars : bool
