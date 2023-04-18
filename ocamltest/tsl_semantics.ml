@@ -205,7 +205,11 @@ and test_tree_of_tsl_ast ast =
 
 let test_trees_of_tsl_asts asts =
   match asts with
-  | [ ast ] -> test_trees_of_tsl_ast ast
+  | [ ast ] ->
+    begin match test_trees_of_tsl_ast ast with
+    | (env1, [Node (env2, t, m, s)]) -> (env1 @ env2, [Node ([], t, m, s)])
+    | x -> x
+    end
   | _ -> ([], List.map test_tree_of_tsl_ast asts)
 
 let rec ast_of_tree (Node (env, test, mods, subs)) =
