@@ -638,9 +638,13 @@ let default_iterator =
       (fun this {pvb_pat; pvb_expr; pvb_attributes; pvb_loc; pvb_constraint} ->
          this.pat this pvb_pat;
          this.expr this pvb_expr;
-         Option.iter (fun ct ->
-             List.iter (iter_loc this) ct.locally_abstract_univars;
-             this.typ this ct.Parsetree.typ
+         Option.iter (function
+             | Parsetree.Pvc_constraint {locally_abstract_univars=vars; typ} ->
+                 List.iter (iter_loc this) vars;
+                 this.typ this typ
+             | Pvc_coercion { ground; coercion } ->
+                 Option.iter (this.typ this) ground;
+                 this.typ this coercion;
            ) pvb_constraint;
          this.location this pvb_loc;
          this.attributes this pvb_attributes

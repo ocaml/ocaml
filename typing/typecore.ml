@@ -2951,28 +2951,33 @@ let vb_exp_constraint {pvb_expr=expr; pvb_pat=pat; pvb_constraint=ct; _ } =
   let open Ast_helper in
   match ct with
   | None -> expr
-  | Some {locally_abstract_univars=[]; typ } ->
+  | Some (Pvc_constraint { locally_abstract_univars=[]; typ }) ->
       begin match typ.ptyp_desc with
       | Ptyp_poly _ -> expr
       | _ ->
           let loc = { expr.pexp_loc with Location.loc_ghost = true } in
           Exp.constraint_ ~loc expr typ
       end
-  | Some {locally_abstract_univars;typ} ->
+  | Some (Pvc_coercion { ground; coercion}) ->
+      let loc = { expr.pexp_loc with Location.loc_ghost = true } in
+      Exp.coerce ~loc expr ground coercion
+  | Some (Pvc_constraint { locally_abstract_univars=vars;typ}) ->
       let loc_start = pat.ppat_loc.Location.loc_start in
       let loc = { expr.pexp_loc with loc_start; loc_ghost=true } in
       let expr = Exp.constraint_ ~loc expr typ in
-      List.fold_right (Exp.newtype ~loc) locally_abstract_univars expr
+      List.fold_right (Exp.newtype ~loc) vars expr
 
 let vb_pat_constraint ({pvb_pat=pat; pvb_expr = exp; _ } as vb) =
   vb.pvb_attributes,
   let open Ast_helper in
   match vb.pvb_constraint, pat.ppat_desc, exp.pexp_desc with
-  | Some {locally_abstract_univars=[]; typ }, _, _ ->
+  | Some (Pvc_constraint {locally_abstract_univars=[]; typ}
+         | Pvc_coercion { coercion=typ; _ }),
+    _, _ ->
       Pat.constraint_ ~loc:{pat.ppat_loc with Location.loc_ghost=true} pat typ
-  | Some {locally_abstract_univars; typ }, _, _ ->
-      let varified = Typ.varify_constructors locally_abstract_univars typ in
-      let t = Typ.poly ~loc:typ.ptyp_loc locally_abstract_univars varified in
+  | Some (Pvc_constraint {locally_abstract_univars=vars; typ }), _, _ ->
+      let varified = Typ.varify_constructors vars typ in
+      let t = Typ.poly ~loc:typ.ptyp_loc vars varified in
       let loc_end = typ.ptyp_loc.Location.loc_end in
       let loc =  { pat.ppat_loc with loc_end; loc_ghost=true } in
       Pat.constraint_ ~loc pat t
