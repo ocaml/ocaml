@@ -1,5 +1,7 @@
 (* TEST
-   * expect
+{
+  expect;
+}
 *)
 
 type inkind = [ `Link | `Nonlink ]

@@ -1,5 +1,7 @@
 (* TEST
-   * expect
+{
+  expect;
+}
 *)
 exception Exit
 

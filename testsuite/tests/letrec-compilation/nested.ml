@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 (* Mantis PR7447 *)
 

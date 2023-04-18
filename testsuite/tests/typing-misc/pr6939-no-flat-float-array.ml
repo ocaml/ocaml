@@ -1,6 +1,9 @@
 (* TEST
-   * no-flat-float-array
-   ** expect
+{
+  no-flat-float-array;
+
+  expect;
+}
 *)
 
 let rec x = [| x |]; 1.;;

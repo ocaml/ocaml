@@ -1,5 +1,5 @@
-(* TEST
-   * toplevel
+(* TEST_BELOW
+
 *)
 
 let f = function
@@ -33,3 +33,9 @@ let f = function
 let f = function
   | (module -> ()
 ;;
+
+(* TEST
+{
+  toplevel;
+}
+*)

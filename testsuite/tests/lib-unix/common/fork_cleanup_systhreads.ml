@@ -1,9 +1,15 @@
 (* TEST
-* hassysthreads
-include systhreads
-** not-windows
-*** bytecode
-*** native
+{
+  include systhreads;
+  hassysthreads;
+
+  not-windows;
+  {
+    bytecode;
+  }{
+    native;
+  }
+}
 *)
 
 (* this test checks that the domain lock is properly reinitialized

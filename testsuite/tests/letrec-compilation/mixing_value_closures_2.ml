@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 (* a polymorphic variant of test3.ml; found a real bug once *)
 let test =

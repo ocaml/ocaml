@@ -1,5 +1,7 @@
 (* TEST
-   include testing
+{
+  include testing;
+}
 *)
 
 (*

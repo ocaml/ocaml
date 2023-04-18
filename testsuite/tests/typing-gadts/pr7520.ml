@@ -1,5 +1,7 @@
 (* TEST
-   * expect
+{
+  expect;
+}
 *)
 
 type ('a, 'b) eq = Refl : ('a, 'a) eq

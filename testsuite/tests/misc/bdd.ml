@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 (* Translated to OCaml by Xavier Leroy *)

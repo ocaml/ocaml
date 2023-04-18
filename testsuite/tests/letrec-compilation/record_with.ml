@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 (* A regression test for both PR#4141 and PR#5819: when a recursive
    variable is defined by a { record with ... } expression.

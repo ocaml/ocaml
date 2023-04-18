@@ -1,8 +1,8 @@
-(* TEST
+(* TEST_BELOW
 
-flags = "-w +A-70"
 
-* bytecode
+
+
 
 *)
 
@@ -84,3 +84,10 @@ struct module M = struct end [@@deprecated "FOO"] end
 module MD_OK :
 sig module M : sig end [@@deprecated] end =
 struct module M = struct end [@@deprecated "FOO"] end
+
+(* TEST
+{
+  flags = "-w +A-70";
+  bytecode;
+}
+*)

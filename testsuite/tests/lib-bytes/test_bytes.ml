@@ -1,5 +1,7 @@
 (* TEST
-   include testing
+{
+  include testing;
+}
 *)
 
 let test_raises_invalid_argument f x =

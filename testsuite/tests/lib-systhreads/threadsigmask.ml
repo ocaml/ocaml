@@ -1,10 +1,15 @@
 (* TEST
+{
+  include systhreads;
+  hassysthreads;
 
-* hassysthreads
-include systhreads
-** not-windows
-*** bytecode
-*** native
+  not-windows;
+  {
+    bytecode;
+  }{
+    native;
+  }
+}
 *)
 
 let stopped = ref false

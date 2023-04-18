@@ -1,5 +1,7 @@
 (* TEST
-   * expect
+{
+  expect;
+}
 *)
 module Ext (X : sig type 'a t end) = struct
   type t = T : 'a X.t -> t

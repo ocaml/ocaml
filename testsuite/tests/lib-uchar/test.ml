@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 let assert_raise_invalid_argument f v =

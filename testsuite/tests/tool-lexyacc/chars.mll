@@ -1,5 +1,7 @@
 (* TEST
-  ocamllex_flags = " -q "
+{
+  ocamllex_flags = " -q ";
+}
 *)
 
 {

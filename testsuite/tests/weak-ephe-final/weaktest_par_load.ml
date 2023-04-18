@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 (* Testing unsynchronized, parallel Weak usage *)
 

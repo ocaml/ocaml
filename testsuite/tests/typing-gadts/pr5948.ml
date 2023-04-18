@@ -1,5 +1,7 @@
 (* TEST
-   * expect
+{
+  expect;
+}
 *)
 
 type tag = [`TagA | `TagB | `TagC];;

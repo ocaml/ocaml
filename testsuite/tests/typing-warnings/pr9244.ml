@@ -1,6 +1,8 @@
 (* TEST
-   flags = " -w +A "
-   * expect
+{
+  flags = " -w +A ";
+  expect;
+}
 *)
 
 module type U = sig end

@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 let rec empty_int_array : int array =
   let _ = empty_int_array in [||]

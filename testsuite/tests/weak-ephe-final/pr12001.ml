@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 let [@inline never] foo () =

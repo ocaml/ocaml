@@ -1,6 +1,8 @@
 (* TEST
-   flags = " -short-paths "
-   * toplevel
+{
+  flags = " -short-paths ";
+  toplevel;
+}
 *)
 
 type t = [`A | `B];;

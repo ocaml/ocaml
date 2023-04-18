@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 (* See https://github.com/ocaml/ocaml/issues/9460

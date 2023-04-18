@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 (* Test for "include <module-expr>" inside structures *)
 

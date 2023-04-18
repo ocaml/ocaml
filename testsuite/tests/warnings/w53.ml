@@ -1,11 +1,11 @@
-(* TEST
+(* TEST_BELOW
 
-flags = "-w +A-60-70"
 
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-compile_only = "true"
-*** check-ocamlc.byte-output
+
+
+
+
+
 
 *)
 
@@ -47,3 +47,15 @@ module I' = Set.Make [@ocaml.inlined]
 
 module J = Set.Make [@@inlined]
 module J' = Set.Make [@@ocaml.inlined]
+
+(* TEST
+{
+  flags = "-w +A-60-70";
+  setup-ocamlc.byte-build-env;
+
+  compile_only = "true";
+  ocamlc.byte;
+
+  check-ocamlc.byte-output;
+}
+*)

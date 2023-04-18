@@ -1,6 +1,8 @@
 (* TEST
-   flags = "-strict-sequence"
-   * expect
+{
+  flags = "-strict-sequence";
+  expect;
+}
 *)
 
 let g f = f ()

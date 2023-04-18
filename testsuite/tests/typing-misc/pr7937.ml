@@ -1,5 +1,7 @@
 (* TEST
-   * expect
+{
+  expect;
+}
 *)
 
 type 'a r = [< `X of int & 'a ] as 'a

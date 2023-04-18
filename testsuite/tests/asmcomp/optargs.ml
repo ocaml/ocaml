@@ -1,6 +1,8 @@
 (* TEST
-   flags = "-g"
-   * native
+{
+  flags = "-g";
+  native;
+}
 *)
 
 (* Check the effectiveness of inlining the wrapper which fills in

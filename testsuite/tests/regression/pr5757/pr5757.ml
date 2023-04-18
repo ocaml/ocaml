@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 Random.init 3;;
 for i = 0 to 100_000 do

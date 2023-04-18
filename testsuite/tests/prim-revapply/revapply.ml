@@ -1,5 +1,7 @@
 (* TEST
-   flags="-w +48"
+{
+  flags = "-w +48";
+}
 *)
 
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"

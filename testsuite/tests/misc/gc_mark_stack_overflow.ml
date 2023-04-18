@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 let clear_elements a m =

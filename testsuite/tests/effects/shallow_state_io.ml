@@ -1,5 +1,7 @@
 (* TEST
- *)
+{
+}
+*)
 
 open Effect
 open Effect.Shallow

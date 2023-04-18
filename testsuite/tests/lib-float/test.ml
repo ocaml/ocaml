@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 let is_nan2 (x, y) = Float.is_nan x && Float.is_nan y

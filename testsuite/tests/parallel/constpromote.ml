@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 (* when run with the bytecode debug runtime, this test

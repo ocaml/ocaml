@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 external unsafe_get : 'a array -> int -> 'a = "%array_unsafe_get"
 external caml_bytes_get_16 : bytes -> int -> int = "%caml_bytes_get16"

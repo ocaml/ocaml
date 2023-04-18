@@ -1,5 +1,7 @@
 (* TEST
-   * toplevel
+{
+  toplevel;
+}
 *)
 
 type t = A of {x:int; mutable y:int};;

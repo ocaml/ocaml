@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 let f x y = Printf.printf "%d %d\n" x y
 

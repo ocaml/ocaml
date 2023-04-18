@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 (* Test that inputting bytes from a closed in_channel triggers an exception *)
 

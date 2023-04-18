@@ -1,6 +1,8 @@
 (* TEST
-   flags = "-dshape"
-   * expect
+{
+  flags = "-dshape";
+  expect;
+}
 *)
 
 module type Make = functor (I : sig end) -> sig

@@ -1,5 +1,7 @@
 (* TEST
- *)
+{
+}
+*)
 
 open Printf
 open Effect

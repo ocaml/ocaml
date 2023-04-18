@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 (* Testing the hash function Hashtbl.hash *)

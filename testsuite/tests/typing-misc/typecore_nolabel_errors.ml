@@ -1,6 +1,8 @@
 (* TEST
-   flags="-nolabels"
-   * expect
+{
+  flags = "-nolabels";
+  expect;
+}
 *)
 
 

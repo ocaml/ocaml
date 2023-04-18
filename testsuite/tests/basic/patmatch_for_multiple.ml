@@ -1,6 +1,8 @@
 (* TEST
-   flags = "-drawlambda -dlambda"
-   * expect
+{
+  flags = "-drawlambda -dlambda";
+  expect;
+}
 *)
 
 (* Note: the tests below contain *both* the -drawlambda and

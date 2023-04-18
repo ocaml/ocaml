@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 (* a simple test with mutually recursive functions *)
 let test =

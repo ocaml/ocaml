@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 (* A basic chi-square test to detect simple errors in the Random module. *)

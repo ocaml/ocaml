@@ -1,5 +1,7 @@
 (* TEST
-   * toplevel
+{
+  toplevel;
+}
 *)
 
 (* This is a toplevel test to trigger toplevel specific hints *)

@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 (* UTF codec tests *)

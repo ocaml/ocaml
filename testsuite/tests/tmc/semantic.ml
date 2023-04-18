@@ -1,5 +1,7 @@
 (* TEST
-   * bytecode
+{
+  bytecode;
+}
 *)
 
 (* Test that evaluation order of constructor arguments is preserved.

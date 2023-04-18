@@ -1,10 +1,13 @@
 (* TEST
-
-* hassysthreads
-include systhreads
-** bytecode
-** native
-
+{
+  include systhreads;
+  hassysthreads;
+  {
+    bytecode;
+  }{
+    native;
+  }
+}
 *)
 
 (* The bank account example, using events and channels *)

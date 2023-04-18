@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 let[@inline never][@local never] f n =
   let n = Int64.of_int n in

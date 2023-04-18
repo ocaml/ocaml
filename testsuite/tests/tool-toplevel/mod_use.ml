@@ -1,6 +1,8 @@
 (* TEST
-   readonly_files = "mod.ml"
-   * expect
+{
+  readonly_files = "mod.ml";
+  expect;
+}
 *)
 
 #mod_use "mod.ml"

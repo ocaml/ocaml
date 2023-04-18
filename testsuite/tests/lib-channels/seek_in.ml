@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 let () =
   let oc = open_out_bin "data.txt" in

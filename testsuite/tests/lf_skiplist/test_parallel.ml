@@ -1,5 +1,7 @@
 (* TEST
-   modules = "stubs.c"
+{
+  modules = "stubs.c";
+}
 *)
 
 external init_skiplist : unit -> unit = "init_skiplist"

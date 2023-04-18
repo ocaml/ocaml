@@ -1,10 +1,15 @@
 (* TEST
-   include runtime_events
-   include unix
-   set OCAML_RUNTIME_EVENTS_PRESERVE = "1"
-   * libunix
-   ** bytecode
-   ** native
+{
+  include runtime_events;
+  include unix;
+  SET OCAML_RUNTIME_EVENTS_PRESERVE = "1";
+  libunix;
+  {
+    bytecode;
+  }{
+    native;
+  }
+}
 *)
 open Runtime_events
 

@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 (* Test Mutex.try_lock *)

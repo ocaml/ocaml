@@ -1,5 +1,7 @@
 (* TEST
-   * expect
+{
+  expect;
+}
 *)
 type u = <x:int>
 type t = private <u; ..>

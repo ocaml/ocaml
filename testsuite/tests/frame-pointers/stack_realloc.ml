@@ -1,11 +1,11 @@
 (* TEST
+{
+  frame_pointers;
 
-* frame_pointers
-** native
-
-readonly_files = "fp_backtrace.c stack_realloc_.c"
-all_modules = "${readonly_files} stack_realloc.ml"
-
+  readonly_files = "fp_backtrace.c stack_realloc_.c";
+  all_modules = "${readonly_files} stack_realloc.ml";
+  native;
+}
 *)
 
 open Effect

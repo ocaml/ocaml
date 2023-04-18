@@ -1,6 +1,8 @@
 (* TEST
-  * expect
- *)
+{
+  expect;
+}
+*)
 
 module M :
      sig type t = private [< `A | `B of string] end

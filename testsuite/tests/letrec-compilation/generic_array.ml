@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 let rec x = let _y = [| |] in ();;
 

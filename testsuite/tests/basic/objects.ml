@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 
 (* Non-regression for bug #10763, fixed in #10764 *)

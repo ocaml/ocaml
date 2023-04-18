@@ -1,6 +1,6 @@
-(* TEST
-   flags = "-g"
-   ocamlrunparam += ",b=1"
+(* TEST_BELOW
+
+
 *)
 
 open Effect
@@ -52,3 +52,10 @@ let main () =
       | _ -> None }
 
 let _ = main ()
+
+(* TEST
+{
+  flags = "-g";
+  ocamlrunparam += ",b=1";
+}
+*)

@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 [@@@ocaml.warning "-21-5"]
 

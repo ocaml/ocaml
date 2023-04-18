@@ -1,6 +1,8 @@
 (* TEST
-   flags = "-no-strict-formats"
-   * toplevel
+{
+  flags = "-no-strict-formats";
+  toplevel;
+}
 *)
 
 (* test whether padding modifiers are accepted without any padding

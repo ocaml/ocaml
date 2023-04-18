@@ -1,5 +1,7 @@
 (* TEST
-   * toplevel
+{
+  toplevel;
+}
 *)
 
 (** Test that weak variables keep their names long enough *)

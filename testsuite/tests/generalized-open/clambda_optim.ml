@@ -1,12 +1,14 @@
 (* TEST
+{
+  compile_only = "true";
+  no-flambda;
 
-compile_only = "true"
+  setup-ocamlopt.byte-build-env;
 
-* no-flambda
-** setup-ocamlopt.byte-build-env
-*** ocamlopt.byte
-**** check-ocamlopt.byte-output
+  ocamlopt.byte;
 
+  check-ocamlopt.byte-output;
+}
 *)
 
 module Stable = struct

@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 (* Exotic OCaml syntax constructs found in the manual that are not *)

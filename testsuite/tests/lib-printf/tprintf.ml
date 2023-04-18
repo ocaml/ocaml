@@ -1,6 +1,8 @@
 (* TEST
-   include testing
-   flags = "-no-strict-formats"
+{
+  include testing;
+  flags = "-no-strict-formats";
+}
 *)
 
 (*

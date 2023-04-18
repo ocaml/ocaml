@@ -1,5 +1,7 @@
 (* TEST
-   * toplevel
+{
+  toplevel;
+}
 *)
 
 (* Benoit's patch did not support %_[nlNL]; test their behavior *)

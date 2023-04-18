@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 (** Test that domains stdout and stderr are flushed at domain exit *)
 

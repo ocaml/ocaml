@@ -1,5 +1,7 @@
 (* TEST
-   * toplevel
+{
+  toplevel;
+}
 *)
 
 (* https://github.com/ocaml-multicore/ocaml-multicore/issues/479 *)

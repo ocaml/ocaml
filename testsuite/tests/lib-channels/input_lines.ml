@@ -1,5 +1,6 @@
 (* TEST
-
+{
+}
 *)
 
 open Printf

@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 type t = A|B|C|D

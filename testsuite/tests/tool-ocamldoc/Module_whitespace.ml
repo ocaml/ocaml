@@ -1,5 +1,7 @@
 (* TEST
-   * ocamldoc with html
+{
+  ocamldoc with html;
+}
 *)
 
 module M = Set.Make(struct

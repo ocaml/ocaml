@@ -1,5 +1,7 @@
 (* TEST
-   * expect
+{
+  expect;
+}
 *)
 
 (* The goal of this test is exhaustively cover all spellcheck-style

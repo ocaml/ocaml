@@ -1,10 +1,15 @@
 (* TEST
+{
+  include systhreads;
+  hassysthreads;
 
-* hassysthreads
-include systhreads
-** not-windows
-*** bytecode
-*** native
+  not-windows;
+  {
+    bytecode;
+  }{
+    native;
+  }
+}
 *)
 
 let signals_requested = Atomic.make 0

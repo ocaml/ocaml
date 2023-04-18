@@ -1,5 +1,7 @@
 (* TEST
-   * toplevel
+{
+  toplevel;
+}
 *)
 
 (* %n, %l, %N and %L have a scanf-specific semantics, but are supposed

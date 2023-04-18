@@ -1,6 +1,8 @@
 (* TEST
-   flags = "-strict-sequence"
-   * expect
+{
+  flags = "-strict-sequence";
+  expect;
+}
 *)
 external a : (int [@untagged]) -> unit = "a" "a_nat"
 external b : (int32 [@unboxed]) -> unit = "b" "b_nat"

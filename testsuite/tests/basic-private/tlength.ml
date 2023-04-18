@@ -1,5 +1,7 @@
 (* TEST
-  modules = "length.ml"
+{
+  modules = "length.ml";
+}
 *)
 
 (*

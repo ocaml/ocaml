@@ -1,10 +1,13 @@
 (* TEST
-
-* hassysthreads
-include systhreads
-** bytecode
-** native
-
+{
+  include systhreads;
+  hassysthreads;
+  {
+    bytecode;
+  }{
+    native;
+  }
+}
 *)
 
 (* Test a file copy function *)

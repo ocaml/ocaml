@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 (* PR#5115 - multiple evaluation of bigarray expr *)

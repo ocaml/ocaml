@@ -1,5 +1,5 @@
-(* TEST
-   * toplevel
+(* TEST_BELOW
+
 *)
 
 module type S = struct end
@@ -38,3 +38,9 @@ module type S = sig
   include module type of sig end
 end
 ;;
+
+(* TEST
+{
+  toplevel;
+}
+*)

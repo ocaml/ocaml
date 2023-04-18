@@ -1,48 +1,46 @@
 (* TEST
+{
+  include systhreads;
+  readonly_files = "sigint.c";
+  hassysthreads;
 
-* hassysthreads
-include systhreads
+  libunix; (* excludes mingw32/64 and msvc32/64 *)
+  {
+    program = "${test_build_directory}/signal.byte";
+    setup-ocamlc.byte-build-env;
 
-readonly_files = "sigint.c"
+    program = "sigint";
+    all_modules = "sigint.c";
+    ocamlc.byte;
 
-** libunix (* excludes mingw32/64 and msvc32/64 *)
+    program = "${test_build_directory}/signal.byte";
+    all_modules = "signal.ml";
+    ocamlc.byte;
 
-*** setup-ocamlc.byte-build-env
+    check-ocamlc.byte-output;
 
-program = "${test_build_directory}/signal.byte"
+    run;
 
-**** ocamlc.byte
+    check-program-output;
+  }{
+    program = "${test_build_directory}/signal.opt";
+    setup-ocamlopt.byte-build-env;
 
-program = "sigint"
-all_modules = "sigint.c"
+    program = "sigint";
+    all_modules = "sigint.c";
+    ocamlopt.byte;
 
-***** ocamlc.byte
+    program = "${test_build_directory}/signal.opt";
+    all_modules = "signal.ml";
+    ocamlopt.byte;
 
-program = "${test_build_directory}/signal.byte"
-all_modules = "signal.ml"
+    check-ocamlopt.byte-output;
 
-****** check-ocamlc.byte-output
-******* run
-******** check-program-output
+    run;
 
-*** setup-ocamlopt.byte-build-env
-
-program = "${test_build_directory}/signal.opt"
-
-**** ocamlopt.byte
-
-program = "sigint"
-all_modules = "sigint.c"
-
-***** ocamlopt.byte
-
-program = "${test_build_directory}/signal.opt"
-all_modules = "signal.ml"
-
-****** check-ocamlopt.byte-output
-******* run
-******** check-program-output
-
+    check-program-output;
+  }
+}
 *)
 
 let signaled = ref false

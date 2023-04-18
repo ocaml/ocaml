@@ -1,12 +1,12 @@
-(* TEST
+(* TEST_BELOW
 
-flags = "-w +A-70"
 
-* setup-ocamlopt.byte-build-env
-** ocamlopt.byte
-*** check-ocamlopt.byte-output
-**** run
-***** check-program-output
+
+
+
+
+
+
 *)
 
 type a = { mutable a : int }
@@ -32,3 +32,18 @@ let () =
 
 
 let dont_warn_with_partial_match None x = x
+
+(* TEST
+{
+  flags = "-w +A-70";
+  setup-ocamlopt.byte-build-env;
+
+  ocamlopt.byte;
+
+  check-ocamlopt.byte-output;
+
+  run;
+
+  check-program-output;
+}
+*)

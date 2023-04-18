@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 (* Tests for stack-overflow crashes caused by a combinatorial
    explosition in fragile pattern checking. *)

@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 module S = struct

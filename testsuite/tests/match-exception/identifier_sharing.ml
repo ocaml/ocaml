@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 exception String of string

@@ -1,5 +1,7 @@
 (* TEST
-   flags = "-w +A-70 -warn-error +A"
+{
+  flags = "-w +A-70 -warn-error +A";
+}
 *)
 
 (* Example of algorithm parametrized with modules *)

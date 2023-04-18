@@ -1,5 +1,5 @@
-(* TEST
-   include testing
+(* TEST_BELOW
+
 *)
 
 (**************************************************************)
@@ -1157,3 +1157,9 @@ let pr5758 x str =
 let () =
   test "pr5758" (pr5758 1.) "A" "Matched A"
 ;;
+
+(* TEST
+{
+  include testing;
+}
+*)

@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 (* Test the Sys.rename function *)

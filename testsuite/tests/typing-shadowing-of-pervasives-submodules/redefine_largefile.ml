@@ -1,4 +1,6 @@
 (* TEST
-   modules = "largeFile.ml"
+{
+  modules = "largeFile.ml";
+}
 *)
 print_endline LargeFile.message

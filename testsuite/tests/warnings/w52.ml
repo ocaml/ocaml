@@ -1,6 +1,8 @@
 (* TEST
-   flags = "-w +A"
-   * expect
+{
+  flags = "-w +A";
+  expect;
+}
 *)
 
 let () = try () with Invalid_argument "Any" -> ();;

@@ -1,7 +1,9 @@
 (* TEST
-readonly_files = "main.c"
-arguments = "-DSORT -DFUN=quicksort main.c"
-* asmgen
+{
+  readonly_files = "main.c";
+  arguments = "-DSORT -DFUN=quicksort main.c";
+  asmgen;
+}
 *)
 
 (**************************************************************************)

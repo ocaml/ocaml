@@ -1,5 +1,7 @@
 (* TEST
-   * toplevel
+{
+  toplevel;
+}
 *)
 #0 "use_file: HASH LIDENT TRUE WITH"
 # lident true with

@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 (* Eratosthene's sieve *)

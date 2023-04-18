@@ -1,8 +1,10 @@
 (* TEST
+{
+  include systhreads;
+  hassysthreads;
 
-* hassysthreads
-  include systhreads
-** native
+  native;
+}
 *)
 
 open Printf

@@ -1,8 +1,8 @@
-(* TEST
-   flags = "-g"
-   ocamlrunparam += ",b=1"
-   ocamlopt_flags = "-inline 0"
-   exit_status = "2"
+(* TEST_BELOW
+
+
+
+
 *)
 
 let why : unit -> unit = fun () -> raise Exit [@@inline never]
@@ -15,3 +15,12 @@ let f () =
 
 let () =
   f ()
+
+(* TEST
+{
+  flags = "-g";
+  ocamlrunparam += ",b=1";
+  ocamlopt_flags = "-inline 0";
+  exit_status = "2";
+}
+*)

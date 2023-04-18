@@ -1,9 +1,9 @@
-(* TEST
-flags = " -w -a "
-ocamlc_byte_exit_status = "2"
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-*** check-ocamlc.byte-output
+(* TEST_BELOW
+
+
+
+
+
 *)
 
 module type T = sig
@@ -48,3 +48,15 @@ let () =
   let () = (!M'.r) := [M'.Choice.x] in
   let module N' = (N : S) in
   List.iter (fun x -> print_string (N'.Choice.show x)) !(!N'.r)
+
+(* TEST
+{
+  flags = " -w -a ";
+  ocamlc_byte_exit_status = "2";
+  setup-ocamlc.byte-build-env;
+
+  ocamlc.byte;
+
+  check-ocamlc.byte-output;
+}
+*)

@@ -1,6 +1,8 @@
 (* TEST
-   flags = " -w -a+21 "
-   * expect
+{
+  flags = " -w -a+21 ";
+  expect;
+}
 *)
 
 let () = (let module L = List in raise Exit); () ;;

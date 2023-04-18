@@ -1,9 +1,9 @@
-(* TEST
-   flags = "-dparsetree"
-   ocamlc_byte_exit_status = "2"
-   * setup-ocamlc.byte-build-env
-   ** ocamlc.byte
-   *** check-ocamlc.byte-output
+(* TEST_BELOW
+                  
+                                
+                                
+                 
+                               
 *)
 (* Expressions *)
 let () =
@@ -118,3 +118,15 @@ module type S = sig
   class type%foo[@foo] x = x
 
 end
+
+(* TEST
+{
+  flags = "-dparsetree";
+  ocamlc_byte_exit_status = "2";
+  setup-ocamlc.byte-build-env;
+
+  ocamlc.byte;
+
+  check-ocamlc.byte-output;
+}
+*)

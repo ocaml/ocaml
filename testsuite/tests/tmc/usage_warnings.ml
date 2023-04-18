@@ -1,5 +1,8 @@
 (* TEST
-   * expect *)
+{
+  expect;
+}
+*)
 
 (* build-up *)
 let[@tail_mod_cons] rec append xs ys =

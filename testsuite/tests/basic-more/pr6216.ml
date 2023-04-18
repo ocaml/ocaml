@@ -1,6 +1,8 @@
 (* TEST
-   include testing
-   ocamlopt_flags ="-inline 20"
+{
+  include testing;
+  ocamlopt_flags = "-inline 20";
+}
 *)
 
 (* PR6216: wrong inlining of GADT match *)

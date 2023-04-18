@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 (* filling minor heaps in parallel to trigger

@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 module S = Set.Make(struct type t = int let compare (x:t) y = compare x y end)

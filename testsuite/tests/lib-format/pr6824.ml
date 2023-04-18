@@ -1,5 +1,7 @@
 (* TEST
-   include testing
+{
+  include testing;
+}
 *)
 
 let f = Format.sprintf "[%i]";;

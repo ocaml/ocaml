@@ -1,5 +1,7 @@
 (* TEST
-  modules = "a.ml b.ml"
+{
+  modules = "a.ml b.ml";
+}
 *)
 
 (* PR#7702 *)

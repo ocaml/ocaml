@@ -1,5 +1,7 @@
 (* TEST
-     exit_status= "2"
+{
+  exit_status = "2";
+}
 *)
 
 open Effect

@@ -1,48 +1,46 @@
 (* TEST
+{
+  include systhreads;
+  readonly_files = "sigint.c";
+  hassysthreads;
 
-* hassysthreads
-include systhreads
+  libunix; (* excludes mingw32/64 and msvc32/64 *)
+  {
+    program = "${test_build_directory}/delayintr.byte";
+    setup-ocamlc.byte-build-env;
 
-readonly_files = "sigint.c"
+    program = "sigint";
+    all_modules = "sigint.c";
+    ocamlc.byte;
 
-** libunix (* excludes mingw32/64 and msvc32/64 *)
+    program = "${test_build_directory}/delayintr.byte";
+    all_modules = "delayintr.ml";
+    ocamlc.byte;
 
-*** setup-ocamlc.byte-build-env
+    check-ocamlc.byte-output;
 
-program = "${test_build_directory}/delayintr.byte"
+    run;
 
-**** ocamlc.byte
+    check-program-output;
+  }{
+    program = "${test_build_directory}/delayintr.opt";
+    setup-ocamlopt.byte-build-env;
 
-program = "sigint"
-all_modules = "sigint.c"
+    program = "sigint";
+    all_modules = "sigint.c";
+    ocamlopt.byte;
 
-***** ocamlc.byte
+    program = "${test_build_directory}/delayintr.opt";
+    all_modules = "delayintr.ml";
+    ocamlopt.byte;
 
-program = "${test_build_directory}/delayintr.byte"
-all_modules = "delayintr.ml"
+    check-ocamlopt.byte-output;
 
-****** check-ocamlc.byte-output
-******* run
-******** check-program-output
+    run;
 
-*** setup-ocamlopt.byte-build-env
-
-program = "${test_build_directory}/delayintr.opt"
-
-**** ocamlopt.byte
-
-program = "sigint"
-all_modules = "sigint.c"
-
-***** ocamlopt.byte
-
-program = "${test_build_directory}/delayintr.opt"
-all_modules = "delayintr.ml"
-
-****** check-ocamlopt.byte-output
-******* run
-******** check-program-output
-
+    check-program-output;
+  }
+}
 *)
 
 (* Regression test for MPR#7903 *)

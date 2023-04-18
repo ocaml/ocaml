@@ -1,8 +1,13 @@
 (* TEST
-* hasstr
-include str
-** bytecode
-** native
+{
+  include str;
+  hasstr;
+  {
+    bytecode;
+  }{
+    native;
+  }
+}
 *)
 
 let total = Atomic.make 0

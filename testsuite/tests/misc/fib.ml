@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 let rec fib n =

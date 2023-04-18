@@ -1,7 +1,9 @@
 (* TEST
-readonly_files = "main.c"
-arguments = "-DUNIT_INT -DFUN=solitaire main.c"
-* asmgen
+{
+  readonly_files = "main.c";
+  arguments = "-DUNIT_INT -DFUN=solitaire main.c";
+  asmgen;
+}
 *)
 
 (**************************************************************************)

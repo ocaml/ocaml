@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 (* Check the numbers drawn from a known state against the numbers

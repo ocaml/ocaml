@@ -1,8 +1,8 @@
-(* TEST
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-ocamlc_byte_exit_status = "2"
-** check-ocamlc.byte-output
+(* TEST_BELOW
+
+
+
+
 *)
 
 module type T = sig
@@ -45,3 +45,15 @@ module O = F(M)
 
 let () =
   O.f N.x
+
+(* TEST
+{
+  setup-ocamlc.byte-build-env;
+  {
+    ocamlc_byte_exit_status = "2";
+    ocamlc.byte;
+  }{
+    check-ocamlc.byte-output;
+  }
+}
+*)

@@ -1,8 +1,8 @@
-(* TEST
-flags = "-i -w +63"
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-*** check-ocamlc.byte-output
+(* TEST_BELOW
+
+
+
+
 *)
 
 module M: sig type t val v:t end = struct
@@ -17,3 +17,14 @@ module M = struct
 
   let v = M.v
 end
+
+(* TEST
+{
+  flags = "-i -w +63";
+  setup-ocamlc.byte-build-env;
+
+  ocamlc.byte;
+
+  check-ocamlc.byte-output;
+}
+*)

@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 (* Due to GCs running at non-deterministic places, the output from these tests
  * are unreliable except the bad value checks and as a check for catastrophic

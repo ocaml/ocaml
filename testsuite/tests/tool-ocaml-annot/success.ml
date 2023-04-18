@@ -1,15 +1,21 @@
 (* TEST
+{
+  flags = "-annot";
+  script = "sh ${test_source_directory}/check-annot.sh success";
+  {
+    setup-ocamlc.byte-build-env;
 
-flags = "-annot"
-script = "sh ${test_source_directory}/check-annot.sh success"
+    ocamlc.byte;
 
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-*** script
+    script;
+  }{
+    setup-ocamlopt.byte-build-env;
 
-* setup-ocamlopt.byte-build-env
-** ocamlopt.byte
-*** script
+    ocamlopt.byte;
+
+    script;
+  }
+}
 *)
 
 (* Check that .annot files are emitted in case of regular successful

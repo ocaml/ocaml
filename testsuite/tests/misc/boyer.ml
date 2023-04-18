@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 (* Manipulations over terms *)

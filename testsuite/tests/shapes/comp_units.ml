@@ -1,6 +1,8 @@
 (* TEST
-   flags = "-dshape"
-   * expect
+{
+  flags = "-dshape";
+  expect;
+}
 *)
 
 (* Make sure that shapes of compilation units are never eagerly loaded,

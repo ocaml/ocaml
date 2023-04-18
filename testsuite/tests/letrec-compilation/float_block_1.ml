@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 (* Effect are not named to allow different evaluation orders (flambda
    and clambda differ on this point).

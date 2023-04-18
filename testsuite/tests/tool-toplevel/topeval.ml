@@ -1,6 +1,10 @@
 (* TEST
-   * toplevel
-   * toplevel.opt
+{
+  toplevel;
+}
+{
+  toplevel.opt;
+}
 *)
 
 (* Various test-cases ensuring that the native and bytecode toplevels produce

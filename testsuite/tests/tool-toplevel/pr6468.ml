@@ -1,5 +1,7 @@
 (* TEST
-   * toplevel
+{
+  toplevel;
+}
 *)
 
 (* Make the test reproducible regardless of whether OCAMLRUNPARAM=b or not *)

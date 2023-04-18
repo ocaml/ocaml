@@ -1,8 +1,8 @@
-(* TEST
-   flags = "-stop-after parsing -dparsetree"
-   * setup-ocamlc.byte-build-env
-   ** ocamlc.byte
-   *** check-ocamlc.byte-output
+(* TEST_BELOW
+                                      
+                                
+                 
+                               
 *)
 
 class ['a] list = object end
@@ -15,3 +15,14 @@ type 'a t = int #list as 'a
 type 'a u = A of int #list
 
 type 'a v = A of int * int #list
+
+(* TEST
+{
+  flags = "-stop-after parsing -dparsetree";
+  setup-ocamlc.byte-build-env;
+
+  ocamlc.byte;
+
+  check-ocamlc.byte-output;
+}
+*)

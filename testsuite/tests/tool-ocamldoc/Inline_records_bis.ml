@@ -1,5 +1,7 @@
 (* TEST
-   * ocamldoc with latex
+{
+  ocamldoc with latex;
+}
 *)
 
 (**

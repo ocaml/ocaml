@@ -1,6 +1,8 @@
 (* TEST
-   * expect
- *)
+{
+  expect;
+}
+*)
 type t = A
 let x = A
 module M = struct

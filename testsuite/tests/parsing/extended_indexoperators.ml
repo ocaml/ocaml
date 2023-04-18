@@ -1,6 +1,8 @@
 (* TEST
-   * expect
-   flags = "-dsource"
+{
+  flags = "-dsource";
+  expect;
+}
 *)
 
 let (.?[]) = Hashtbl.find_opt

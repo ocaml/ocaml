@@ -1,13 +1,20 @@
 (* TEST
-  * setup-ocamlopt.byte-build-env
-  ** ocamlopt.byte
-ocamlopt_byte_exit_status = "2"
-  *** check-ocamlopt.byte-output
+{
+  setup-ocamlopt.byte-build-env;
 
-  * setup-ocamlopt.opt-build-env
-  ** ocamlopt.opt
-ocamlopt_opt_exit_status = "2"
-  *** check-ocamlopt.opt-output
+  ocamlopt_byte_exit_status = "2";
+  ocamlopt.byte;
+
+  check-ocamlopt.byte-output;
+}
+{
+  setup-ocamlopt.opt-build-env;
+
+  ocamlopt_opt_exit_status = "2";
+  ocamlopt.opt;
+
+  check-ocamlopt.opt-output;
+}
 *)
 
 let[@poll error] c x =

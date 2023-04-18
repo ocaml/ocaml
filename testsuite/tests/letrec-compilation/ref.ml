@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 (* Test construction of cyclic values where the cycles pass through
    references *)

@@ -1,5 +1,7 @@
 (* TEST
-   * expect
+{
+  expect;
+}
 *)
 
 type (_, _) eq = Eq : ('a, 'a) eq | Neq : int -> ('a, 'b) eq;;

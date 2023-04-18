@@ -1,7 +1,7 @@
-(* TEST
-   modules = "backtrace_c_exn_.c"
-   flags = "-g"
-   ocamlrunparam += ",b=1"
+(* TEST_BELOW
+
+
+
 *)
 
 (* https://github.com/ocaml-multicore/ocaml-multicore/issues/498 *)
@@ -18,3 +18,11 @@ let () =
   | exn ->
     Printexc.to_string exn |> print_endline;
     Printexc.print_backtrace stdout
+
+(* TEST
+{
+  modules = "backtrace_c_exn_.c";
+  flags = "-g";
+  ocamlrunparam += ",b=1";
+}
+*)

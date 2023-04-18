@@ -1,5 +1,7 @@
 (* TEST
-   * expect
+{
+  expect;
+}
 *)
 (** Test type-directed disambiguation and spellchecker hints *)
 

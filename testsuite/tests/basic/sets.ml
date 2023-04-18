@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 module IntSet = Set.Make(struct type t = int let compare x y = x-y end)
 

@@ -1,5 +1,7 @@
 /* TEST
-   ocamlyacc_flags = " -q --strict "
+{
+  ocamlyacc_flags = " -q --strict ";
+}
 */
 %token <unit> SIMPLE
 %type <unit> silly

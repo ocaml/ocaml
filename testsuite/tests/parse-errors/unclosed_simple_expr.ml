@@ -1,5 +1,5 @@
-(* TEST
-   * toplevel
+(* TEST_BELOW
+
 *)
 
 (3; 2;;
@@ -51,3 +51,9 @@ List.(module struct end :;;
 while true do ();;
 
 for _ = e1 to e2 do ();;
+
+(* TEST
+{
+  toplevel;
+}
+*)

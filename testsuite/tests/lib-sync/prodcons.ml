@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 (* Classic producer-consumer *)

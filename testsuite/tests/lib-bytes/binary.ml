@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 let err x =

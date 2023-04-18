@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 (** Test that matching multiple values doesn't allocate a block. *)

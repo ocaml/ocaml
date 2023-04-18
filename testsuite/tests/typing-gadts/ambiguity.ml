@@ -1,5 +1,7 @@
 (* TEST
-   * expect
+{
+  expect;
+}
 *)
 
 [@@@warning "-8-11-12"] (* reduce the noise. *)

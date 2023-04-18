@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 let[@inline never] float_unboxing s f =
   let x = Sys.opaque_identity (s +. 1.) in

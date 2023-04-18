@@ -1,6 +1,8 @@
 (* TEST
- * ocamldoc with html
- *)
+{
+  ocamldoc with html;
+}
+*)
 
 (** Alerts from implementation. *)
 

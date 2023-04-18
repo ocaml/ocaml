@@ -1,35 +1,41 @@
 (* TEST
+{
+  include dynlink;
+  readonly_files = "host.ml plugin.ml";
+  libraries = "";
+  flags += " -g ";
+  ocamldebug_script = "${test_source_directory}/input_script";
+  debugger;
 
-include dynlink
-readonly_files = "host.ml plugin.ml"
-libraries = ""
+  shared-libraries;
 
-flags += " -g "
-ocamldebug_script = "${test_source_directory}/input_script"
+  setup-ocamlc.byte-build-env;
 
-* debugger
-** shared-libraries
-*** setup-ocamlc.byte-build-env
-**** ocamlc.byte
-module = "host.ml"
-***** ocamlc.byte
-module = "plugin.ml"
-****** ocamlc.byte
-module = ""
-all_modules = "host.cmo"
-program = "${test_build_directory}/host.byte"
-libraries = "dynlink"
+  module = "host.ml";
+  ocamlc.byte;
 
-******* run
-output = "host.output"
-******** check-program-output
-reference = "${test_source_directory}/host.reference"
+  module = "plugin.ml";
+  ocamlc.byte;
 
-******** ocamldebug
-output = "host.debug.output"
-********* check-program-output
-reference = "${test_source_directory}/host.debug.reference"
+  module = "";
+  all_modules = "host.cmo";
+  program = "${test_build_directory}/host.byte";
+  libraries = "dynlink";
+  ocamlc.byte;
 
+  output = "host.output";
+  run;
+  {
+    reference = "${test_source_directory}/host.reference";
+    check-program-output;
+  }{
+    output = "host.debug.output";
+    ocamldebug;
+
+    reference = "${test_source_directory}/host.debug.reference";
+    check-program-output;
+  }
+}
 *)
 
 let () = print_endline "hello host"; Dynlink.loadfile "plugin.cmo"

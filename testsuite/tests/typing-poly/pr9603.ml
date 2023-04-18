@@ -1,5 +1,7 @@
 (* TEST
-   * expect
+{
+  expect;
+}
 *)
 
 type 'p pair = 'a * 'b constraint 'p = < left:'a; right:'b>

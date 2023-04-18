@@ -1,6 +1,6 @@
-(* TEST
-   flags = "-g"
-   ocamlrunparam += ",b=1"
+(* TEST_BELOW
+
+
 *)
 
 (* A test for stack backtraces *)
@@ -76,3 +76,10 @@ let _ =
   run test_lazy  [| () |];
   run test_lazy  [| () |];
   ()
+
+(* TEST
+{
+  flags = "-g";
+  ocamlrunparam += ",b=1";
+}
+*)

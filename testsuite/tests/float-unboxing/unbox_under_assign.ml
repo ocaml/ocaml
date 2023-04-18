@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 module Float = struct

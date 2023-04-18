@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 let () =
   let domains = Array.init 7 (fun i ->

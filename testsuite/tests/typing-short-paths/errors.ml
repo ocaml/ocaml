@@ -1,6 +1,8 @@
 (* TEST
-   flags = " -short-paths "
-   * expect
+{
+  flags = " -short-paths ";
+  expect;
+}
 *)
 
 module M = struct type t = T end

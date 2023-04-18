@@ -1,5 +1,7 @@
 (* TEST
-   * native
+{
+  native;
+}
 *)
 
 (** Test that the right message errors are emitted by Arg *)

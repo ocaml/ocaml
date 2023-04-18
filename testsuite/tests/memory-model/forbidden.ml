@@ -1,8 +1,13 @@
 (* TEST
-  modules="opt.ml barrier.ml hist.ml shared.ml run.ml outcome.ml"
-  * not-bsd
-  ** bytecode
-  ** native
+{
+  modules = "opt.ml barrier.ml hist.ml shared.ml run.ml outcome.ml";
+  not-bsd;
+  {
+    bytecode;
+  }{
+    native;
+  }
+}
 *)
 
 (* Memory model test:

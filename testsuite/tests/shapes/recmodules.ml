@@ -1,6 +1,8 @@
 (* TEST
-   flags = "-dshape"
-   * expect
+{
+  flags = "-dshape";
+  expect;
+}
 *)
 
 (**********)

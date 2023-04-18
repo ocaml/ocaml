@@ -1,5 +1,7 @@
 (* TEST
- *)
+{
+}
+*)
 
 let f x =
   let a0 = ref 1 in

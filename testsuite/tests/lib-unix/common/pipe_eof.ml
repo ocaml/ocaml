@@ -1,8 +1,13 @@
 (* TEST
-* hasunix
-include unix
-** bytecode
-** native
+{
+  include unix;
+  hasunix;
+  {
+    bytecode;
+  }{
+    native;
+  }
+}
 *)
 
 let drain pipe =

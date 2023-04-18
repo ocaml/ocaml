@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 [@@@ocaml.warning "@A"]

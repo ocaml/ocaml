@@ -1,5 +1,7 @@
 (* TEST
-   * native
+{
+  native;
+}
 *)
 
 type 'a typ = Int : int typ | Ptr : int list typ | Int2 : int typ

@@ -1,11 +1,15 @@
 (* TEST
+{
+  include unix;
+  libwin32unix;
 
-* libwin32unix
-   include unix
-** has_symlink
-*** bytecode
-*** native
-
+  has_symlink;
+  {
+    bytecode;
+  }{
+    native;
+  }
+}
 *)
 
 let link1 = "link1"

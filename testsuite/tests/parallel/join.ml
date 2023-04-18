@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 let test_size =

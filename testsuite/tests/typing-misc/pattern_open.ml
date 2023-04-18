@@ -1,5 +1,7 @@
 (* TEST
-   * expect
+{
+  expect;
+}
 *)
 
 let pp fmt = Format.printf (fmt^^"@.")

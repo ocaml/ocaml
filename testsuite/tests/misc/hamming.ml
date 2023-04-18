@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 (* We cannot use bignums because we don't do custom runtimes, but

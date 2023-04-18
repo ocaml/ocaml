@@ -1,5 +1,5 @@
-(* TEST
-   * toplevel
+(* TEST_BELOW
+
 *)
 
 module type Rejected1 = sig
@@ -34,3 +34,9 @@ end;;
 module type Rejected0 = sig
   type nonrec t := int
 end;;
+
+(* TEST
+{
+  toplevel;
+}
+*)

@@ -1,59 +1,51 @@
 (* TEST
+{
+  modules = "tscanf2_io.ml";
+  include unix;
+  readonly_files = "tscanf2_worker.ml";
+  reference = "${test_source_directory}/tscanf2.reference";
+  hasunix;
+  {
+    (* The bytecode test *)
 
-modules = "tscanf2_io.ml"
-* hasunix
-include unix
-readonly_files = "tscanf2_worker.ml"
-reference = "${test_source_directory}/tscanf2.reference"
+    program = "${test_build_directory}/master.byte";
+    setup-ocamlc.byte-build-env;
 
-(* The bytcode test *)
+    ocamlc.byte; (* Compiles the master *)
 
-** setup-ocamlc.byte-build-env
+    all_modules = "tscanf2_io.cmo tscanf2_worker.ml";
+    program = "${test_build_directory}/worker.byte";
+    ocamlc.byte; (* Compiles the worker *)
 
-program = "${test_build_directory}/master.byte"
+    check-ocamlc.byte-output;
 
-*** ocamlc.byte (* Compiles the master *)
+    program = "${test_build_directory}/master.byte";
+    arguments = "${test_build_directory}/worker.byte";
+    run;
 
-**** ocamlc.byte (* Compiles the worker *)
+    check-program-output;
+  }{
 
-all_modules = "tscanf2_io.cmo tscanf2_worker.ml"
+    (* The native test *)
 
-program = "${test_build_directory}/worker.byte"
+    program = "${test_build_directory}/master.opt";
+    setup-ocamlopt.byte-build-env;
 
-***** check-ocamlc.byte-output
+    ocamlopt.byte; (* Compiles the master *)
 
-****** run
+    all_modules = "tscanf2_io.cmx tscanf2_worker.ml";
+    program = "${test_build_directory}/worker.opt";
+    ocamlopt.byte; (* Compiles the worker *)
 
-program = "${test_build_directory}/master.byte"
+    check-ocamlopt.byte-output;
 
-arguments = "${test_build_directory}/worker.byte"
+    program = "${test_build_directory}/master.opt";
+    arguments = "${test_build_directory}/worker.opt";
+    run;
 
-******* check-program-output
-
-(* The native test *)
-
-** setup-ocamlopt.byte-build-env
-
-program = "${test_build_directory}/master.opt"
-
-*** ocamlopt.byte (* Compiles the master *)
-
-**** ocamlopt.byte (* Compiles the worker *)
-
-all_modules = "tscanf2_io.cmx tscanf2_worker.ml"
-
-program = "${test_build_directory}/worker.opt"
-
-***** check-ocamlopt.byte-output
-
-****** run
-
-program = "${test_build_directory}/master.opt"
-
-arguments = "${test_build_directory}/worker.opt"
-
-******* check-program-output
-
+    check-program-output;
+  }
+}
 *)
 
 (* A very simple master:

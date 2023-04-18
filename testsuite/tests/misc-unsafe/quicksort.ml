@@ -1,5 +1,7 @@
 (* TEST
-   flags += " -unsafe "
+{
+  flags += " -unsafe ";
+}
 *)
 
 (* Good test for loops. Best compiled with -unsafe. *)

@@ -1,6 +1,10 @@
 (* TEST
-* bytecode
-* native
+{
+  bytecode;
+}
+{
+  native;
+}
 *)
 
 open Effect

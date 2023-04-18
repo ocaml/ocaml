@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 (* ocaml-multicore issues 528 and 468 *)
 

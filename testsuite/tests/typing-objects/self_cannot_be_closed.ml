@@ -1,6 +1,8 @@
 (* TEST
-   * expect
- *)
+{
+  expect;
+}
+*)
 let is_empty (x : < >) = ();;
 [%%expect {|
 val is_empty : <  > -> unit = <fun>

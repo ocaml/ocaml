@@ -1,6 +1,8 @@
 (* TEST
-   ocamlrunparam += ",s=512"
-   * native
+{
+  ocamlrunparam += ",s=512";
+  native;
+}
 *)
 
 let count = ref 0

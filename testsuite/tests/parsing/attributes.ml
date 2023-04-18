@@ -1,8 +1,8 @@
-(* TEST
-   flags = "-dparsetree"
-   * setup-ocamlc.byte-build-env
-   ** ocamlc.byte
-   *** check-ocamlc.byte-output
+(* TEST_BELOW
+                  
+                                
+                 
+                               
 *)
 
 exception Foo [@foo] [@@foo]
@@ -55,3 +55,14 @@ module _ = (Int : T with type t = int [@foo])
 let _ = (module Int : T [@foo])
 
 let _ = (module Int : T with type t = int [@foo])
+
+(* TEST
+{
+  flags = "-dparsetree";
+  setup-ocamlc.byte-build-env;
+
+  ocamlc.byte;
+
+  check-ocamlc.byte-output;
+}
+*)

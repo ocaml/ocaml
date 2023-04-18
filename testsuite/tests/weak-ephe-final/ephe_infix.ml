@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 (* Testing handling of infix_tag by ephemeron *)
 

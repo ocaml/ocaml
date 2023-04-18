@@ -1,10 +1,13 @@
 (* TEST
-
-* hassysthreads
-include systhreads
-** bytecode
-** native
-
+{
+  include systhreads;
+  hassysthreads;
+  {
+    bytecode;
+  }{
+    native;
+  }
+}
 *)
 
 let () = Printexc.record_backtrace true

@@ -1,5 +1,7 @@
 (* TEST
-   modules = "globrootsprim.c"
+{
+  modules = "globrootsprim.c";
+}
 *)
 
 module type GLOBREF = sig

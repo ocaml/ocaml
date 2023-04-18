@@ -1,4 +1,7 @@
-(* TEST *)
+(* TEST
+{
+}
+*)
 
 (* testing backreferences; some compilation scheme may handle
    differently recursive references to a mutually-recursive RHS

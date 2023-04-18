@@ -1,6 +1,8 @@
 (* TEST
-   flags = " -short-paths "
-   * expect
+{
+  flags = " -short-paths ";
+  expect;
+}
 *)
 
 (* This is currently just a regression test for the bug

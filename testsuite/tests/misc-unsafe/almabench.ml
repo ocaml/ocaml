@@ -1,5 +1,7 @@
 (* TEST
-   flags += " -unsafe "
+{
+  flags += " -unsafe ";
+}
 *)
 
 (*

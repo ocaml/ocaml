@@ -1,4 +1,6 @@
 (* TEST
+{
+}
 *)
 
 (** check that custom block are not copied by Weak.get_copy *)

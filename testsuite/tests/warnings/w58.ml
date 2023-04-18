@@ -1,22 +1,29 @@
 (* TEST
+{
+  flags = "-w +A-70";
+  readonly_files = "module_without_cmx.mli";
+  {
+    setup-ocamlc.byte-build-env;
 
-flags = "-w +A-70"
-readonly_files = "module_without_cmx.mli"
+    module = "module_without_cmx.mli";
+    ocamlc.byte;
 
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-module = "module_without_cmx.mli"
-*** ocamlc.byte
-module = "w58.ml"
-**** check-ocamlc.byte-output
+    module = "w58.ml";
+    ocamlc.byte;
 
-* setup-ocamlopt.byte-build-env
-** ocamlopt.byte
-module = "module_without_cmx.mli"
-*** ocamlopt.byte
-module = "w58.ml"
-**** check-ocamlopt.byte-output
+    check-ocamlc.byte-output;
+  }{
+    setup-ocamlopt.byte-build-env;
 
+    module = "module_without_cmx.mli";
+    ocamlopt.byte;
+
+    module = "w58.ml";
+    ocamlopt.byte;
+
+    check-ocamlopt.byte-output;
+  }
+}
 *)
 
 let () = print_endline (Module_without_cmx.id "Hello World")

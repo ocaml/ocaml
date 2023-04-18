@@ -1,10 +1,15 @@
 (* TEST
-   include runtime_events
-   include unix
-   set OCAMLRUNPARAM = "e=6"
-   * libunix
-   ** native
-   ** bytecode
+{
+  include runtime_events;
+  include unix;
+  SET OCAMLRUNPARAM = "e=6";
+  libunix;
+  {
+    native;
+  }{
+    bytecode;
+  }
+}
 *)
 
 type Runtime_events.User.tag += Ev
