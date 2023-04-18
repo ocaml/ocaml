@@ -97,7 +97,8 @@ let commandline_options =
   ("-below", Arg.Set force_below,
    " When translating, move the test script to the end of the file");
   ("-below-with-chars", Arg.Unit set_below_and_chars,
-   " When translating, move the test script to the end of the file and preserve the number of chars");
+   " When translating, move the test script to the end of the file and \
+     preserve the number of chars");
 ]
 
 let files_to_test = ref []

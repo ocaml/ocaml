@@ -25,16 +25,22 @@ let copy ic oc up_to =
     done
   with End_of_file -> ()
 
-let copy_newlines ~keep_chars ic oc up_to =
-  let keep = ref keep_chars in
+let text =
+  "Lorem_ipsum_dolor_sit_amet,consectetur_adipiscing_elit.Sed_non_risus."
+let len = String.length text
+let index = ref (-1)
+let lorem () = incr index; text.[!index mod len]
+
+let copy_newlines ~skip_chars ic oc up_to =
+  let skip = ref skip_chars in
   try
     while pos_in ic < up_to do
       let c = input_char ic in
       if c = '\n' || c = '\r' then output_char oc c
-      else if !keep <= 0 then
-        output_char oc ' '
+      else if !skip <= 0 then
+        output_char oc (lorem ())
       else
-        decr keep
+        decr skip
     done
   with End_of_file -> ()
 
@@ -91,8 +97,8 @@ let file force_below keep_chars f =
     printf "_BELOW";
     seek_to_end ();
     let limit = Lexing.(lexbuf.lex_start_p.pos_cnum) in
-    let keep_chars = if keep_chars then 6 else 0 in
-    copy_newlines ~keep_chars copy_ic stdout limit;
+    let skip_chars = if keep_chars then 6 else max_int in
+    copy_newlines ~skip_chars copy_ic stdout limit;
     copy copy_ic stdout max_int;
     printf "\n%s TEST\n" style.opening;
     List.iter (Tsl_semantics.print_tsl_ast stdout) asts;
