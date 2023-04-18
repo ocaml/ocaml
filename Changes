@@ -773,6 +773,9 @@ OCaml 5.1.0
 - #12162: Fix miscompilation on amd64 backends involving integer overflows
   (Vincent Laviron and Greta Yorsh, review by Stefan Muenzel)
 
+- #12170: fix pthread_geaffinity_np configure check for android
+  (David Allsopp, review by Sébastien Hinderer)
+
 - #12178: Fix runtime events consumer poll function returning an invalid value
   instead of an OCaml integer value. (Lucas Pluvinage)
 
