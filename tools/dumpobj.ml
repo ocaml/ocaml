@@ -47,7 +47,7 @@ let inputs ic =
 (* Global variables *)
 
 type global_table_entry =
-  | Global of Ident.t
+  | Glob of Symtable.Global.t
   | Constant of Obj.t
 
 let start = ref 0                              (* Position of beg. of code *)
@@ -132,13 +132,25 @@ let find_reloc ic =
 
 (* Symbolic printing of global names, etc *)
 
+let print_unexpected_reloc reloc_constr reloc_arg =
+  printf "<unexpected (%s '%s') reloc>" reloc_constr reloc_arg
+
+let print_unexpected_reloc_literal sc =
+  printf "<unexpected (Reloc_literal ";
+  print_obj sc;
+  printf ") reloc>"
+
 let print_getglobal_name ic =
   if !objfile then begin
     begin try
       match find_reloc ic with
-          Reloc_getglobal id -> print_string (Ident.name id)
+        | Reloc_getcompunit (Compunit cu_name) -> print_string cu_name
+        | Reloc_getpredef (Predef_exn predef_exn) -> print_string predef_exn
         | Reloc_literal sc -> print_obj sc
-        | _ -> print_string "<wrong reloc>"
+        | Reloc_setcompunit (Compunit cu_name) ->
+          print_unexpected_reloc "Reloc_setcompunit" cu_name
+        | Reloc_primitive prim ->
+          print_unexpected_reloc "Reloc_primitive" prim
     with Not_found ->
       print_string "<no reloc>"
     end;
@@ -149,7 +161,7 @@ let print_getglobal_name ic =
     if n >= Array.length !globals || n < 0
     then print_string "<global table overflow>"
     else match !globals.(n) with
-           Global id -> print_string(Ident.name id)
+         | Glob glob -> print_string (Symtable.Global.description glob)
          | Constant obj -> print_obj obj
   end
 
@@ -157,8 +169,15 @@ let print_setglobal_name ic =
   if !objfile then begin
     begin try
       match find_reloc ic with
-        Reloc_setglobal id -> print_string (Ident.name id)
-      | _ -> print_string "<wrong reloc>"
+      | Reloc_setcompunit (Compunit cu_name) -> print_string cu_name
+      | Reloc_literal sc ->
+        print_unexpected_reloc_literal sc
+      | Reloc_getcompunit (Compunit cu_name) ->
+        print_unexpected_reloc "Reloc_getcompunit" cu_name
+      | Reloc_getpredef (Predef_exn predef_exn) ->
+        print_unexpected_reloc "Reloc_getpredef" predef_exn
+      | Reloc_primitive prim ->
+        print_unexpected_reloc "Reloc_primitive" prim
     with Not_found ->
       print_string "<no reloc>"
     end;
@@ -169,8 +188,8 @@ let print_setglobal_name ic =
     if n >= Array.length !globals || n < 0
     then print_string "<global table overflow>"
     else match !globals.(n) with
-           Global id -> print_string(Ident.name id)
-         | _ -> print_string "???"
+         | Glob glob -> print_string (Symtable.Global.description glob)
+         | Constant _ -> print_string "<unexpected constant>"
   end
 
 let print_primitive ic =
@@ -178,7 +197,14 @@ let print_primitive ic =
     begin try
       match find_reloc ic with
         Reloc_primitive s -> print_string s
-      | _ -> print_string "<wrong reloc>"
+      | Reloc_literal sc ->
+        print_unexpected_reloc_literal sc
+      | Reloc_getcompunit (Compunit cu_name) ->
+          print_unexpected_reloc "Reloc_getcompunit" cu_name
+      | Reloc_setcompunit (Compunit cu_name) ->
+        print_unexpected_reloc "Reloc_setcompunit" cu_name
+      | Reloc_getpredef (Predef_exn predef_exn) ->
+        print_unexpected_reloc "Reloc_getpredef" predef_exn
     with Not_found ->
       print_string "<no reloc>"
     end;
@@ -448,10 +474,15 @@ let print_code ic len =
 let print_reloc (info, pos) =
   printf "    %d    (%d)    " pos (pos/4);
   match info with
-    Reloc_literal sc -> print_obj sc; printf "\n"
-  | Reloc_getglobal id -> printf "require    %s\n" (Ident.name id)
-  | Reloc_setglobal id -> printf "provide    %s\n" (Ident.name id)
-  | Reloc_primitive s -> printf "prim    %s\n" s
+  | Reloc_literal sc -> print_obj sc; printf "\n"
+  | Reloc_getcompunit (Compunit cu_name) ->
+    printf "require        %s\n" cu_name
+  | Reloc_getpredef (Predef_exn predef_exn) ->
+    printf "require predef %s\n" predef_exn
+  | Reloc_setcompunit (Compunit cu_name) ->
+    printf "provide        %s\n" cu_name
+  | Reloc_primitive s ->
+    printf "prim           %s\n" s
 
 (* Print a .cmo file *)
 
@@ -488,7 +519,7 @@ let dump_exe ic =
   let sym_table : Symtable.global_map =
     Bytesections.read_section_struct toc ic Bytesections.Name.SYMB in
   Symtable.iter_global_map
-    (fun id pos -> !globals.(pos) <- Global id) sym_table;
+    (fun global pos -> !globals.(pos) <- Glob global) sym_table;
   begin
     match Bytesections.seek_section toc ic Bytesections.Name.DBUG with
     | exception Not_found -> ()

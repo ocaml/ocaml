@@ -1978,7 +1978,6 @@ bytecomp/bytelink.cmo : \
     parsing/location.cmi \
     utils/load_path.cmi \
     bytecomp/instruct.cmi \
-    typing/ident.cmi \
     bytecomp/emitcode.cmi \
     bytecomp/dll.cmi \
     utils/consistbl.cmi \
@@ -1995,7 +1994,6 @@ bytecomp/bytelink.cmx : \
     parsing/location.cmx \
     utils/load_path.cmx \
     bytecomp/instruct.cmx \
-    typing/ident.cmx \
     bytecomp/emitcode.cmx \
     bytecomp/dll.cmx \
     utils/consistbl.cmx \
@@ -2012,6 +2010,7 @@ bytecomp/bytelink.cmi : \
 bytecomp/bytepackager.cmo : \
     typing/typemod.cmi \
     lambda/translmod.cmi \
+    bytecomp/symtable.cmi \
     typing/subst.cmi \
     lambda/simplif.cmi \
     lambda/printlambda.cmi \
@@ -2032,6 +2031,7 @@ bytecomp/bytepackager.cmo : \
 bytecomp/bytepackager.cmx : \
     typing/typemod.cmx \
     lambda/translmod.cmx \
+    bytecomp/symtable.cmx \
     typing/subst.cmx \
     lambda/simplif.cmx \
     lambda/printlambda.cmx \
@@ -2050,8 +2050,8 @@ bytecomp/bytepackager.cmx : \
     bytecomp/bytegen.cmx \
     bytecomp/bytepackager.cmi
 bytecomp/bytepackager.cmi : \
-    typing/ident.cmi \
-    typing/env.cmi
+    typing/env.cmi \
+    file_formats/cmo_format.cmi
 bytecomp/bytesections.cmo : \
     utils/config.cmi \
     bytecomp/bytesections.cmi
@@ -3919,8 +3919,7 @@ file_formats/cmi_format.cmi : \
     typing/types.cmi \
     utils/misc.cmi
 file_formats/cmo_format.cmi : \
-    utils/misc.cmi \
-    typing/ident.cmi
+    utils/misc.cmi
 file_formats/cmt_format.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \
@@ -5951,6 +5950,7 @@ driver/compile.cmo : \
     lambda/lambda.cmi \
     bytecomp/emitcode.cmi \
     driver/compile_common.cmi \
+    file_formats/cmo_format.cmi \
     utils/clflags.cmi \
     bytecomp/bytegen.cmi \
     driver/compile.cmi
@@ -5965,6 +5965,7 @@ driver/compile.cmx : \
     lambda/lambda.cmx \
     bytecomp/emitcode.cmx \
     driver/compile_common.cmx \
+    file_formats/cmo_format.cmi \
     utils/clflags.cmx \
     bytecomp/bytegen.cmx \
     driver/compile.cmi
@@ -6263,16 +6264,14 @@ driver/pparse.cmi : \
     parsing/parsetree.cmi
 toplevel/expunge.cmo : \
     bytecomp/symtable.cmi \
-    lambda/runtimedef.cmi \
     utils/misc.cmi \
-    typing/ident.cmi \
+    file_formats/cmo_format.cmi \
     bytecomp/bytesections.cmi \
     toplevel/expunge.cmi
 toplevel/expunge.cmx : \
     bytecomp/symtable.cmx \
-    lambda/runtimedef.cmx \
     utils/misc.cmx \
-    typing/ident.cmx \
+    file_formats/cmo_format.cmi \
     bytecomp/bytesections.cmx \
     toplevel/expunge.cmi
 toplevel/expunge.cmi :
@@ -6341,6 +6340,7 @@ toplevel/topcommon.cmo : \
     utils/config.cmi \
     driver/compmisc.cmi \
     driver/compenv.cmi \
+    file_formats/cmo_format.cmi \
     utils/clflags.cmi \
     parsing/asttypes.cmi \
     parsing/ast_helper.cmi \
@@ -6369,6 +6369,7 @@ toplevel/topcommon.cmx : \
     utils/config.cmx \
     driver/compmisc.cmx \
     driver/compenv.cmx \
+    file_formats/cmo_format.cmi \
     utils/clflags.cmx \
     parsing/asttypes.cmi \
     parsing/ast_helper.cmx \
@@ -6923,7 +6924,6 @@ tools/dumpobj.cmo : \
     utils/misc.cmi \
     parsing/location.cmi \
     bytecomp/instruct.cmi \
-    typing/ident.cmi \
     utils/config.cmi \
     file_formats/cmo_format.cmi \
     bytecomp/bytesections.cmi \
@@ -6935,7 +6935,6 @@ tools/dumpobj.cmx : \
     utils/misc.cmx \
     parsing/location.cmx \
     bytecomp/instruct.cmx \
-    typing/ident.cmx \
     utils/config.cmx \
     file_formats/cmo_format.cmi \
     bytecomp/bytesections.cmx \
@@ -7460,6 +7459,7 @@ debugger/loadprinter.cmo : \
     typing/env.cmi \
     otherlibs/dynlink/dynlink.cmi \
     typing/ctype.cmi \
+    file_formats/cmo_format.cmi \
     debugger/loadprinter.cmi
 debugger/loadprinter.cmx : \
     typing/types.cmx \
@@ -7475,6 +7475,7 @@ debugger/loadprinter.cmx : \
     typing/env.cmx \
     otherlibs/dynlink/dynlink.cmi \
     typing/ctype.cmx \
+    file_formats/cmo_format.cmi \
     debugger/loadprinter.cmi
 debugger/loadprinter.cmi : \
     parsing/longident.cmi \

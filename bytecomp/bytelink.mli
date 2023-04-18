@@ -17,7 +17,8 @@ open Misc
 
 (* Link .cmo files and produce a bytecode executable. *)
 
-module Dep : Set.OrderedType with type t = modname * modname
+module Dep : Set.OrderedType with
+  type t = Cmo_format.compunit * Cmo_format.compunit
 module DepSet : Set.S with type elt = Dep.t
 
 val link : filepath list -> filepath -> unit
@@ -36,10 +37,10 @@ type error =
   | Custom_runtime
   | File_exists of filepath
   | Cannot_open_dll of filepath
-  | Required_module_unavailable of modname * modname
+  | Required_compunit_unavailable of (Cmo_format.compunit * Cmo_format.compunit)
   | Camlheader of string * filepath
   | Wrong_link_order of DepSet.t
-  | Multiple_definition of modname * filepath * filepath
+  | Multiple_definition of Cmo_format.compunit * filepath * filepath
 
 exception Error of error
 

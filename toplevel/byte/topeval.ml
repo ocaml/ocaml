@@ -44,10 +44,16 @@ let implementation_label = ""
 module EvalBase = struct
 
   let eval_ident id =
-    if Ident.persistent id || Ident.global id then begin
+    if Ident.global id then begin
+      let name = Ident.name id in
+      let global =
+        if Ident.persistent id
+        then Symtable.Global.Glob_compunit (Cmo_format.Compunit name)
+        else Symtable.Global.Glob_predef (Cmo_format.Predef_exn name)
+      in
       try
-        Symtable.get_global_value id
-      with Symtable.Error (Undefined_global name) ->
+        Symtable.get_global_value global
+      with Symtable.Error (Undefined_global _) ->
         raise (Undefined_global name)
     end else begin
       let name = Translmod.toplevel_name id in
@@ -263,16 +269,19 @@ and really_load_file recursive ppf name filename ic =
       let cu : compilation_unit = input_value ic in
       if recursive then
         List.iter
-          (function
-            | (Reloc_getglobal id, _)
-              when not (Symtable.is_global_defined id) ->
-                let file = Ident.name id ^ ".cmo" in
+          (fun (reloc, _) -> match reloc with
+            | Reloc_getcompunit cu
+              when not (Symtable.is_global_defined
+                (Symtable.Global.Glob_compunit cu)) ->
+                let file = (Symtable.Compunit.name cu) ^ ".cmo" in
                 begin match Load_path.find_uncap file with
                 | exception Not_found -> ()
                 | file ->
                     if not (load_file recursive ppf file) then raise Load_failed
                 end
-            | _ -> ()
+            | Reloc_getcompunit _
+            | Reloc_literal _ | Reloc_getpredef _ | Reloc_setcompunit _
+            | Reloc_primitive _ -> ()
           )
           cu.cu_reloc;
       load_compunit ic filename ppf cu;
