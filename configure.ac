@@ -1950,16 +1950,18 @@ AC_LINK_IFELSE(
     AC_DEFINE([HAS_BSD_GETAFFINITY_NP])],
     [AC_MSG_RESULT([pthread_getaffinity_np not found])])])
 
+AC_PATH_TOOL([PKG_CONFIG], [pkg-config], [false])
+
 ## ZSTD compression library
 
 zstd_status=""
 AS_IF([test x"$with_zstd" != "xno"],
   # Try pkg-config first, as it gives the most reliable results
-  AS_IF([pkg-config libzstd 2>/dev/null],
+  AS_IF([${PKG_CONFIG} libzstd 2>/dev/null],
     # Now check the version
-    [AS_IF([pkg-config --atleast-version 1.4 libzstd],
-      [zstd_libs=`pkg-config --libs libzstd`
-       zstd_flags=`pkg-config --cflags libzstd`
+    [AS_IF([${PKG_CONFIG} --atleast-version 1.4 libzstd],
+      [zstd_libs=`${PKG_CONFIG} --libs libzstd`
+       zstd_flags=`${PKG_CONFIG} --cflags libzstd`
        zstd_status="ok"],
       [zstd_status="zstd library too old: version 1.4 or later is needed"])],
   # Otherwise, try to find zstd the old way,
