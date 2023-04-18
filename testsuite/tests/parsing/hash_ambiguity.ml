@@ -1,8 +1,8 @@
 (* TEST_BELOW
-                                      
-                                
-                 
-                               
+Lorem_ipsum_dolor_sit_amet,consectetur
+_adipiscing_elit.Sed_non_risus.L
+orem_ipsum_dolor_
+sit_amet,consectetur_adipiscing
 *)
 
 class ['a] list = object end

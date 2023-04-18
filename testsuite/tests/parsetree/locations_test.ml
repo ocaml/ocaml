@@ -1,6 +1,6 @@
 (* TEST_BELOW
-                  
-              *)
+Lorem_ipsum_dolor_
+sit_amet,conse*)
 
 (* Using a toplevel test and not an expect test, because the locs get shifted
    by the expect blocks and the output is therefore not stable. *)

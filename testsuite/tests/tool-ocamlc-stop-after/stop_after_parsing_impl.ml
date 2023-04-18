@@ -1,9 +1,9 @@
 (* TEST_BELOW
-                       
-              
-                                             
-                                 
-                            
+Lorem_ipsum_dolor_sit_a
+met,consectetu
+r_adipiscing_elit.Sed_non_risus.Lorem_ipsum_d
+olor_sit_amet,consectetur_adipisc
+ing_elit.Sed_non_risus.Lorem
 *)
 
 (* we intentionally write ill-typed output;

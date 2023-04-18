@@ -1,9 +1,9 @@
 (* TEST_BELOW
-                  
-                                
-                                
-                 
-                               
+Lorem_ipsum_dolor_
+sit_amet,consectetur_adipiscing_
+elit.Sed_non_risus.Lorem_ipsum_d
+olor_sit_amet,con
+sectetur_adipiscing_elit.Sed_no
 *)
 
 let%foo x = 42

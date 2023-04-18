@@ -1,8 +1,8 @@
 (* TEST_BELOW
-                  
-                                
-                 
-                               
+Lorem_ipsum_dolor_
+sit_amet,consectetur_adipiscing_
+elit.Sed_non_risu
+s.Lorem_ipsum_dolor_sit_amet,co
 *)
 
 exception Foo [@foo] [@@foo]
