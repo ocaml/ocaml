@@ -50,3 +50,6 @@ type u = F (A).t;; (* FIXME F and A are missing*)
 
 module type MS = sig  module M : AS type u end
 module type MSA = MS with module M = A and type u = B.t (* M and u are missing *)
+
+let () = match 4 with
+  | A.(0) | _ -> ()
