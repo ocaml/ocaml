@@ -250,6 +250,8 @@ let index_decl =
         match pat_extra with
         | Tpat_open (path, lid, _) ->
             add_loc_to_index ~namespace:Module pat_env path lid
+        | Tpat_type (path, lid) ->
+            add_loc_to_index ~namespace:Type pat_env path lid
         | _ -> ())
         pat_extra;
       default_iterator.pat sub pat);
