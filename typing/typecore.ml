@@ -5252,7 +5252,9 @@ and type_let ?check ?check_strict
                       {pat with pat_type =
                        snd (instance_poly ~keep_names:true false tl ty)}
                   | _ -> pat
-                in unify_pat (ref env) pat (type_approx env binding.pvb_expr))
+                in
+                let bound_expr = vb_exp_constraint binding in
+                unify_pat (ref env) pat (type_approx env bound_expr))
               pat_list spat_sexp_list;
           (* Polymorphic variant processing *)
           List.iter
