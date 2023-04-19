@@ -61,3 +61,9 @@ module type MSA = MS with
 
 let () = match 4 with
   | A.(0) | _ -> ()
+
+module type MSB = sig
+  type u
+  include AS with type t := u
+  module G := A
+end
