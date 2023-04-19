@@ -244,6 +244,16 @@ let index_decl =
       | _ -> ());
       default_iterator.typ sub ct);
 
+  pat =
+    (fun sub ({ pat_extra; pat_env; _ } as pat) ->
+      List.iter  (fun (pat_extra, _, _) ->
+        match pat_extra with
+        | Tpat_open (path, lid, _) ->
+            add_loc_to_index ~namespace:Module pat_env path lid
+        | _ -> ())
+        pat_extra;
+      default_iterator.pat sub pat);
+
   module_expr =
     (fun sub ({ mod_desc; mod_env; _ } as me) ->
       (match mod_desc with
