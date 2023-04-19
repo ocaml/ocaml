@@ -1,8 +1,9 @@
 Indexed shapes:
 Index.5: A (File "index.ml", line 55, characters 4-5)
 Index.3: B.t (File "index.ml", line 52, characters 52-55)
-Index.19: MS (File "index.ml", line 52, characters 18-20)
+Index.20: MS (File "index.ml", line 52, characters 18-20)
 Index.5: A (File "index.ml", line 52, characters 37-38)
+Index.5: A (File "index.ml", line 51, characters 47-48)
 Index.2: AS (File "index.ml", line 51, characters 33-35)
 Index.3: F(A).t (File "index.ml", line 49, characters 9-16)
 Index.5: A (File "index.ml", line 48, characters 14-15)
