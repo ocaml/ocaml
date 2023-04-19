@@ -280,8 +280,15 @@ let index_decl =
       | Tmty_alias (path, lid) ->
           add_loc_to_index ~namespace:Module mty_env path lid
       | _ -> ());
-      default_iterator.module_type sub mty)
+      default_iterator.module_type sub mty);
 
+  signature_item =
+    (fun sub ({ sig_desc; sig_env; _ } as sig_item) ->
+      (match sig_desc with
+      | Tsig_modsubst { ms_manifest; ms_txt } ->
+        add_loc_to_index ~namespace:Module sig_env ms_manifest ms_txt
+      | _ -> ());
+      default_iterator.signature_item sub sig_item)
 }
 
 let gather_declarations binary_annots = iter_on_annots iter_decl binary_annots
