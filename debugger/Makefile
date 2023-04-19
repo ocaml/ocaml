@@ -22,8 +22,8 @@ DYNLINKDIR=$(ROOTDIR)/otherlibs/dynlink
 UNIXDIR=$(ROOTDIR)/otherlibs/unix
 
 CAMLC=$(BEST_OCAMLC) $(STDLIBFLAGS)
-COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48-70 -warn-error +A \
-          -strict-sequence -strict-formats
+COMPFLAGS=-g $(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error +a \
+          -strict-sequence -strict-formats -principal -bin-annot
 LINKFLAGS=-linkall -I $(UNIXDIR) -I $(DYNLINKDIR)
 OC_OCAMLDEPDIRS = $(DIRECTORIES)
 
@@ -64,7 +64,7 @@ install:
 .PHONY: clean
 clean::
 	rm -f ocamldebug ocamldebug.exe
-	rm -f *.cmo *.cmi
+	rm -f *.cmi *.cmo *.cmt *.cmti
 
 .PHONY: distclean
 distclean: clean

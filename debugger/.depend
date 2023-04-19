@@ -328,7 +328,8 @@ main.cmo : \
     command_line.cmi \
     ../file_formats/cmi_format.cmi \
     ../utils/clflags.cmi \
-    checkpoints.cmi
+    checkpoints.cmi \
+    main.cmi
 main.cmx : \
     unix_tools.cmx \
     ../otherlibs/unix/unix.cmx \
@@ -350,11 +351,16 @@ main.cmx : \
     command_line.cmx \
     ../file_formats/cmi_format.cmx \
     ../utils/clflags.cmx \
-    checkpoints.cmx
+    checkpoints.cmx \
+    main.cmi
+main.cmi :
 ocamldebug_entry.cmo : \
-    ../otherlibs/unix/unix.cmi
+    ../otherlibs/unix/unix.cmi \
+    ocamldebug_entry.cmi
 ocamldebug_entry.cmx : \
-    ../otherlibs/unix/unix.cmx
+    ../otherlibs/unix/unix.cmx \
+    ocamldebug_entry.cmi
+ocamldebug_entry.cmi :
 parameters.cmo : \
     ../utils/load_path.cmi \
     ../typing/envaux.cmi \
