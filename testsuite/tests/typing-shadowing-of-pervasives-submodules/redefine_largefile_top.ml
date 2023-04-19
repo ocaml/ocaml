@@ -1,22 +1,20 @@
 (* TEST
-{
-  readonly_files = "largeFile.ml";
-  setup-ocaml-build-env;
+readonly_files = "largeFile.ml";
+setup-ocaml-build-env;
 
-  compile_only = "true";
-  all_modules = "largeFile.ml";
-  ocamlc.byte;
+compile_only = "true";
+all_modules = "largeFile.ml";
+ocamlc.byte;
 
-  script = "mkdir -p inc";
-  script;
+script = "mkdir -p inc";
+script;
 
-  script = "mv largeFile.cmi largeFile.cmo inc/";
-  script;
+script = "mv largeFile.cmi largeFile.cmo inc/";
+script;
 
-  ocaml;
+ocaml;
 
-  check-ocaml-output;
-}
+check-ocaml-output;
 *)
 #directory "inc";;
 #load "largeFile.cmo";;

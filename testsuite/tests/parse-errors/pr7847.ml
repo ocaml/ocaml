@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -10,12 +10,10 @@
 external x : unit -> (int,int)`A.t = "x"
 
 (* TEST
-{
-  setup-ocamlc.byte-build-env;
+setup-ocamlc.byte-build-env;
 
-  ocamlc_byte_exit_status = "2";
-  ocamlc.byte;
+ocamlc_byte_exit_status = "2";
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)

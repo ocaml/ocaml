@@ -1,8 +1,6 @@
 (* TEST
-{
-  flags += " -w a ";
-  modules = "globrootsprim.c globroots.ml";
-}
+flags += " -w a ";
+modules = "globrootsprim.c globroots.ml";
 *)
 
 open Globroots

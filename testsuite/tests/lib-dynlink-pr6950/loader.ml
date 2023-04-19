@@ -1,55 +1,53 @@
 (* TEST
+include dynlink;
+libraries = "";
+readonly_files = "config.ml b.ml";
+shared-libraries;
 {
-  include dynlink;
-  libraries = "";
-  readonly_files = "config.ml b.ml";
-  shared-libraries;
+  setup-ocamlc.byte-build-env;
   {
-    setup-ocamlc.byte-build-env;
-    {
-      program = "plugin.cma";
-      flags = "-a";
-      all_modules = "config.ml b.ml";
-      ocamlc.byte;
-    }{
-      program = "${test_build_directory}/loader.byte";
-      flags = "-linkall";
-      include ocamlcommon;
-      libraries += "dynlink";
-      all_modules = "loader.ml";
-      ocamlc.byte;
-
-      arguments = "plugin.cma";
-      exit_status = "2";
-      run;
-
-      reference = "${test_source_directory}/byte.reference";
-      check-program-output;
-    }
+    program = "plugin.cma";
+    flags = "-a";
+    all_modules = "config.ml b.ml";
+    ocamlc.byte;
   }{
-    native-dynlink;
+    program = "${test_build_directory}/loader.byte";
+    flags = "-linkall";
+    include ocamlcommon;
+    libraries += "dynlink";
+    all_modules = "loader.ml";
+    ocamlc.byte;
 
-    setup-ocamlopt.byte-build-env;
-    {
-      program = "plugin.cmxs";
-      flags = "-shared";
-      all_modules = "config.ml b.ml";
-      ocamlopt.byte;
-    }{
-      program = "${test_build_directory}/loader.exe";
-      flags = "-linkall";
-      include ocamlcommon;
-      libraries += "dynlink";
-      all_modules = "loader.ml";
-      ocamlopt.byte;
+    arguments = "plugin.cma";
+    exit_status = "2";
+    run;
 
-      arguments = "plugin.cmxs";
-      exit_status = "2";
-      run;
+    reference = "${test_source_directory}/byte.reference";
+    check-program-output;
+  }
+}{
+  native-dynlink;
 
-      reference = "${test_source_directory}/native.reference";
-      check-program-output;
-    }
+  setup-ocamlopt.byte-build-env;
+  {
+    program = "plugin.cmxs";
+    flags = "-shared";
+    all_modules = "config.ml b.ml";
+    ocamlopt.byte;
+  }{
+    program = "${test_build_directory}/loader.exe";
+    flags = "-linkall";
+    include ocamlcommon;
+    libraries += "dynlink";
+    all_modules = "loader.ml";
+    ocamlopt.byte;
+
+    arguments = "plugin.cmxs";
+    exit_status = "2";
+    run;
+
+    reference = "${test_source_directory}/native.reference";
+    check-program-output;
   }
 }
 *)

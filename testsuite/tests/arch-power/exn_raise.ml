@@ -1,14 +1,12 @@
 (* TEST
-{
-  arch_power;
+arch_power;
 
-  native;
+native;
 
-  ocamlopt_flags = "-flarge-toc";
-  ocamlopt.byte;
+ocamlopt_flags = "-flarge-toc";
+ocamlopt.byte;
 
-  run;
-}
+run;
 *)
 
 (* GPR#8506

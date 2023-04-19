@@ -1,7 +1,5 @@
 (* TEST
-{
-  expect;
-}
+expect;
 *)
 
 (* PR#5835 *)

@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 type t =
   { mutable x : int;

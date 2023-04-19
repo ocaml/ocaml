@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -11,13 +11,11 @@ let r = {{x = 0; y = 0} with x = 0}
 let r' : string foo = r
 
 (* TEST
-{
-  flags = " -w -a ";
-  ocamlc_byte_exit_status = "2";
-  setup-ocamlc.byte-build-env;
+flags = " -w -a ";
+ocamlc_byte_exit_status = "2";
+setup-ocamlc.byte-build-env;
 
-  ocamlc.byte;
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)

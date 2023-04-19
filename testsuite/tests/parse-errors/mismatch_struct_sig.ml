@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 *)
 
 module type S = struct end
@@ -40,7 +40,5 @@ end
 ;;
 
 (* TEST
-{
-  toplevel;
-}
+toplevel;
 *)

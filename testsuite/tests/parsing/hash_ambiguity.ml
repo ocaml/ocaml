@@ -1,8 +1,8 @@
 (* TEST_BELOW
-Lorem_ipsum_dolor_sit_amet,consectetur
-_adipiscing_elit.Sed_non_risus.L
-orem_ipsum_dolor_
-sit_amet,consectetur_adipiscing
+Filler_text_added_to_preserve_location
+s_while_translating_from_old_syn
+tax__Filler_text_
+added_to_preserve_locations_whi
 *)
 
 class ['a] list = object end
@@ -17,12 +17,10 @@ type 'a u = A of int #list
 type 'a v = A of int * int #list
 
 (* TEST
-{
-  flags = "-stop-after parsing -dparsetree";
-  setup-ocamlc.byte-build-env;
+flags = "-stop-after parsing -dparsetree";
+setup-ocamlc.byte-build-env;
 
-  ocamlc.byte;
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)

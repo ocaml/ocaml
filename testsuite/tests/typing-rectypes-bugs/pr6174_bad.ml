@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -11,13 +11,11 @@ let f : type a o. ((a -> o) -> o) t -> (a -> o) -> o =
  fun C k -> k (fun x -> x);;
 
 (* TEST
-{
-  flags = " -w -a -rectypes ";
-  ocamlc_byte_exit_status = "2";
-  setup-ocamlc.byte-build-env;
+flags = " -w -a -rectypes ";
+ocamlc_byte_exit_status = "2";
+setup-ocamlc.byte-build-env;
 
-  ocamlc.byte;
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)

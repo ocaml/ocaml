@@ -1,7 +1,5 @@
 (* TEST
-{
-  expect;
-}
+expect;
 *)
 
 type 'a t = [< `Foo | `Bar] as 'a;;

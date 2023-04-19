@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -13,13 +13,11 @@ include struct
 end
 
 (* TEST
-{
-  flags = " -w -a ";
-  ocamlc_byte_exit_status = "2";
-  setup-ocamlc.byte-build-env;
+flags = " -w -a ";
+ocamlc_byte_exit_status = "2";
+setup-ocamlc.byte-build-env;
 
-  ocamlc.byte;
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)

@@ -1,7 +1,5 @@
 (* TEST
-{
-  toplevel;
-}
+toplevel;
 *)
 
 let property (type t) () =

@@ -1,7 +1,5 @@
 (* TEST
-{
-  expect;
-}
+expect;
 *)
 
 module type Printable = sig

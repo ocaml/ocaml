@@ -1,5 +1,5 @@
-(* TEST_BELOW
-
+(* TEST
+toplevel;
 *)
 
 let f = function
@@ -35,9 +35,3 @@ let f = function
 let f = function
   | [| 3; 4;
 ;;
-
-(* TEST
-{
-  toplevel;
-}
-*)

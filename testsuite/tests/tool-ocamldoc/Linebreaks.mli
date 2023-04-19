@@ -1,11 +1,9 @@
 (* TEST
-{
-  ocamldoc with html;
+ocamldoc with html;
 
-  output = "type_Linebreaks.html";
-  reference = "${test_source_directory}/type_Linebreaks.reference";
-  check-program-output;
-}
+output = "type_Linebreaks.html";
+reference = "${test_source_directory}/type_Linebreaks.reference";
+check-program-output;
 *)
 
 (**

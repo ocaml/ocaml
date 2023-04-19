@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -24,13 +24,11 @@ exception C [@deprecated]
 let _ = B [@warning "-53"]
 
 (* TEST
-{
-  flags = "-w +A-70";
-  setup-ocamlc.byte-build-env;
+flags = "-w +A-70";
+setup-ocamlc.byte-build-env;
 
-  compile_only = "true";
-  ocamlc.byte;
+compile_only = "true";
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)

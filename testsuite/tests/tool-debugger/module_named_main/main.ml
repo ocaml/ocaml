@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -30,21 +30,19 @@ let debug () =
 debug ();
 
 (* TEST
-{
-  flags += " -g ";
-  ocamldebug_script = "${test_source_directory}/input_script";
-  debugger;
+flags += " -g ";
+ocamldebug_script = "${test_source_directory}/input_script";
+debugger;
 
-  shared-libraries;
+shared-libraries;
 
-  setup-ocamlc.byte-build-env;
+setup-ocamlc.byte-build-env;
 
-  ocamlc.byte;
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
+check-ocamlc.byte-output;
 
-  ocamldebug;
+ocamldebug;
 
-  check-program-output;
-}
+check-program-output;
 *)

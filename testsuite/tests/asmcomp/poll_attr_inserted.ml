@@ -6,8 +6,7 @@
   ocamlopt.byte;
 
   check-ocamlopt.byte-output;
-}
-{
+}{
   setup-ocamlopt.opt-build-env;
 
   ocamlopt_opt_exit_status = "2";

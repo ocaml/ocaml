@@ -1,14 +1,12 @@
 (* TEST
-{
-  include unix;
-  hasunix;
+include unix;
+hasunix;
 
-  not-windows;
-  {
-    bytecode;
-  }{
-    native;
-  }
+not-windows;
+{
+  bytecode;
+}{
+  native;
 }
 *)
 

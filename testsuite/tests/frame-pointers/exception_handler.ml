@@ -1,11 +1,9 @@
 (* TEST
-{
-  frame_pointers;
+frame_pointers;
 
-  readonly_files = "fp_backtrace.c";
-  all_modules = "${readonly_files} exception_handler.ml";
-  native;
-}
+readonly_files = "fp_backtrace.c";
+all_modules = "${readonly_files} exception_handler.ml";
+native;
 *)
 
 (* https://github.com/ocaml/ocaml/pull/11031 *)

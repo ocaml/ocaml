@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -54,17 +54,15 @@ let () =
     done
 
 (* TEST
+flags = "-g";
+ocamlrunparam += ",b=1";
 {
-  flags = "-g";
-  ocamlrunparam += ",b=1";
-  {
-    bytecode;
-  }{
-    native;
-  }{
-    ocamlopt_flags = "-O3";
-    compiler_directory_suffix = ".O3";
-    native;
-  }
+  bytecode;
+}{
+  native;
+}{
+  ocamlopt_flags = "-O3";
+  compiler_directory_suffix = ".O3";
+  native;
 }
 *)

@@ -1,13 +1,11 @@
 (* TEST
+modules = "fd_of_channel.c";
+include unix;
+libwin32unix;
 {
-  modules = "fd_of_channel.c";
-  include unix;
-  libwin32unix;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

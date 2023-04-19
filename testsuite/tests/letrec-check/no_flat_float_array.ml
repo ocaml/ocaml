@@ -1,9 +1,7 @@
 (* TEST
-{
-  no-flat-float-array;
+no-flat-float-array;
 
-  expect;
-}
+expect;
 *)
 
 (* See float_block_disallowed.ml for explanations.

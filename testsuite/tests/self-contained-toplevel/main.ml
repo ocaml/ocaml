@@ -1,28 +1,26 @@
 (* TEST
-{
-  readonly_files = "foo.ml gen_cached_cmi.ml input.ml";
-  setup-ocamlc.byte-build-env;
+readonly_files = "foo.ml gen_cached_cmi.ml input.ml";
+setup-ocamlc.byte-build-env;
 
-  module = "foo.ml";
-  ocamlc.byte;
+module = "foo.ml";
+ocamlc.byte;
 
-  ocaml_script_as_argument = "true";
-  test_file = "gen_cached_cmi.ml";
-  arguments = "cached_cmi.ml";
-  ocaml with ocamlcommon;
+ocaml_script_as_argument = "true";
+test_file = "gen_cached_cmi.ml";
+arguments = "cached_cmi.ml";
+ocaml with ocamlcommon;
 
-  module = "";
-  program = "${test_build_directory}/main.exe";
-  libraries += "ocamlbytecomp ocamltoplevel";
-  all_modules = "foo.cmo cached_cmi.ml main.ml";
-  ocamlc.byte;
+module = "";
+program = "${test_build_directory}/main.exe";
+libraries += "ocamlbytecomp ocamltoplevel";
+all_modules = "foo.cmo cached_cmi.ml main.ml";
+ocamlc.byte;
 
-  SET OCAMLLIB = "${ocamlsrcdir}/stdlib";
-  arguments = "input.ml";
-  run;
+set OCAMLLIB = "${ocamlsrcdir}/stdlib";
+arguments = "input.ml";
+run;
 
-  check-program-output;
-}
+check-program-output;
 *)
 
 let () =

@@ -1,7 +1,5 @@
 (* TEST
-{
-  expect;
-}
+expect;
 *)
 
 class c = object end

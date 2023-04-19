@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -49,13 +49,11 @@ module J = Set.Make [@@inlined]
 module J' = Set.Make [@@ocaml.inlined]
 
 (* TEST
-{
-  flags = "-w +A-60-70";
-  setup-ocamlc.byte-build-env;
+flags = "-w +A-60-70";
+setup-ocamlc.byte-build-env;
 
-  compile_only = "true";
-  ocamlc.byte;
+compile_only = "true";
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)

@@ -1,20 +1,18 @@
 (* TEST
-{
-  shared-libraries;
+shared-libraries;
 
-  setup-ocamlopt.byte-build-env;
+setup-ocamlopt.byte-build-env;
 
-  flags = "-shared";
-  all_modules = "question.ml";
-  program = "question.cmxs";
-  ocamlopt.byte;
+flags = "-shared";
+all_modules = "question.ml";
+program = "question.cmxs";
+ocamlopt.byte;
 
-  check-ocamlopt.byte-output;
+check-ocamlopt.byte-output;
 
-  ocamlobjinfo;
+ocamlobjinfo;
 
-  check-program-output;
-}
+check-program-output;
 *)
 
 let answer = 42

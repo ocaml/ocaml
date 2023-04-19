@@ -1,7 +1,5 @@
 (* TEST
-{
-  expect;
-}
+expect;
 *)
 
 open Set.Make(String);;

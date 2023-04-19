@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 let f (type t) () =
   let exception E of t in

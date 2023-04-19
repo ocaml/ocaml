@@ -17,8 +17,7 @@
   ocamlc.byte;
 
   check-ocamlc.byte-output;
-}
-{
+}{
   setup-ocamlopt.byte-build-env;
 
   module = "empty.ml";

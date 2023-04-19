@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 *)
@@ -20,9 +20,7 @@ let () =
     Printexc.print_backtrace stdout
 
 (* TEST
-{
-  modules = "backtrace_c_exn_.c";
-  flags = "-g";
-  ocamlrunparam += ",b=1";
-}
+modules = "backtrace_c_exn_.c";
+flags = "-g";
+ocamlrunparam += ",b=1";
 *)

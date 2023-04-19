@@ -1,11 +1,9 @@
 (* TEST
+modules = "test_c_thread_has_lock_cstubs.c";
 {
-  modules = "test_c_thread_has_lock_cstubs.c";
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

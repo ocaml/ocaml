@@ -1,13 +1,11 @@
 (* TEST
+include unix;
+modules = "stack_overflow_.c";
+libunix;
 {
-  include unix;
-  modules = "stack_overflow_.c";
-  libunix;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

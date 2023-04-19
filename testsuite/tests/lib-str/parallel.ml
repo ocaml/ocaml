@@ -1,12 +1,10 @@
 (* TEST
+include str;
+hasstr;
 {
-  include str;
-  hasstr;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

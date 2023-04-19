@@ -1,13 +1,11 @@
 (* TEST
+include unix;
+modules = "nested_fiber_.c";
+libunix;
 {
-  include unix;
-  modules = "nested_fiber_.c";
-  libunix;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

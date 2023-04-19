@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 (* mixing values and closures may exercise interesting code paths *)
 type t = A of (int -> int)

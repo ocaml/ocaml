@@ -1,11 +1,9 @@
 (* TEST
-{
-  include runtime_events;
-  flags = "-runtime-variant=i";
-  instrumented-runtime;
+include runtime_events;
+flags = "-runtime-variant=i";
+instrumented-runtime;
 
-  native;
-}
+native;
 *)
 
 open Runtime_events

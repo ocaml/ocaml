@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 *)
 
 let f = function
@@ -35,7 +35,5 @@ let f = function
 ;;
 
 (* TEST
-{
-  toplevel;
-}
+toplevel;
 *)

@@ -1,13 +1,11 @@
 (* TEST
+unset DOES_NOT_EXIST;
+include systhreads;
+hassysthreads;
 {
-  unset DOES_NOT_EXIST;
-  include systhreads;
-  hassysthreads;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

@@ -1,13 +1,11 @@
 (* TEST
+modules = "test_c_thread_has_lock_cstubs.c";
+include systhreads;
+hassysthreads;
 {
-  modules = "test_c_thread_has_lock_cstubs.c";
-  include systhreads;
-  hassysthreads;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

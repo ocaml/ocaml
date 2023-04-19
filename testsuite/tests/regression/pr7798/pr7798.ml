@@ -1,11 +1,9 @@
 (* TEST
 {
   bytecode;
-}
-{
+}{
   native;
-}
-{
+}{
   ocamlopt_flags = "-compact";
   native;
 }

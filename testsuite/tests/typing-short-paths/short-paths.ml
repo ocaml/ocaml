@@ -1,8 +1,6 @@
 (* TEST
-{
-  flags = " -short-paths ";
-  toplevel;
-}
+flags = " -short-paths ";
+toplevel;
 *)
 
 module Core = struct

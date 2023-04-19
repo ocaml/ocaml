@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -22,27 +22,25 @@ let f x =
 let () = f 3
 
 (* TEST
+flags += " -g ";
+ocamldebug_script = "${test_source_directory}/input_script";
+readonly_files = "printer.ml";
+include debugger;
+debugger;
+
+shared-libraries;
+
+setup-ocamlc.byte-build-env;
 {
-  flags += " -g ";
-  ocamldebug_script = "${test_source_directory}/input_script";
-  readonly_files = "printer.ml";
-  include debugger;
-  debugger;
+  module = "printer.ml";
+  ocamlc.byte;
+}{
+  ocamlc.byte;
 
-  shared-libraries;
+  check-ocamlc.byte-output;
 
-  setup-ocamlc.byte-build-env;
-  {
-    module = "printer.ml";
-    ocamlc.byte;
-  }{
-    ocamlc.byte;
+  ocamldebug;
 
-    check-ocamlc.byte-output;
-
-    ocamldebug;
-
-    check-program-output;
-  }
+  check-program-output;
 }
 *)

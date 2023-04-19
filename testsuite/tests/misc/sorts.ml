@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 (* Test bench for sorting algorithms. *)
 

@@ -1,59 +1,57 @@
 (* TEST
+include dynlink;
+readonly_files = "test4_plugin_a.ml test4_plugin_b.ml";
+libraries = "";
+shared-libraries;
 {
-  include dynlink;
-  readonly_files = "test4_plugin_a.ml test4_plugin_b.ml";
-  libraries = "";
-  shared-libraries;
+  setup-ocamlc.byte-build-env;
   {
-    setup-ocamlc.byte-build-env;
-    {
-      module = "test4_main.ml";
-      ocamlc.byte;
-    }{
-      module = "test4_plugin_b.ml";
-      ocamlc.byte;
-    }{
-      module = "test4_plugin_a.ml";
-      ocamlc.byte;
-    }{
-      program = "test4_plugin.cma";
-      flags = "-a";
-      all_modules = "test4_plugin_a.cmo test4_plugin_b.cmo";
-      ocamlc.byte;
-    }{
-      program = "${test_build_directory}/test4.byte";
-      libraries = "dynlink";
-      all_modules = "test4_main.cmo";
-      ocamlc.byte;
-
-      run;
-    }
+    module = "test4_main.ml";
+    ocamlc.byte;
   }{
-    native-dynlink;
+    module = "test4_plugin_b.ml";
+    ocamlc.byte;
+  }{
+    module = "test4_plugin_a.ml";
+    ocamlc.byte;
+  }{
+    program = "test4_plugin.cma";
+    flags = "-a";
+    all_modules = "test4_plugin_a.cmo test4_plugin_b.cmo";
+    ocamlc.byte;
+  }{
+    program = "${test_build_directory}/test4.byte";
+    libraries = "dynlink";
+    all_modules = "test4_main.cmo";
+    ocamlc.byte;
 
-    setup-ocamlopt.byte-build-env;
-    {
-      module = "test4_main.ml";
-      ocamlopt.byte;
-    }{
-      module = "test4_plugin_b.ml";
-      ocamlopt.byte;
-    }{
-      module = "test4_plugin_a.ml";
-      ocamlopt.byte;
-    }{
-      program = "test4_plugin.cmxs";
-      flags = "-shared";
-      all_modules = "test4_plugin_a.cmx test4_plugin_b.cmx";
-      ocamlopt.byte;
-    }{
-      program = "${test_build_directory}/test4.exe";
-      libraries = "dynlink";
-      all_modules = "test4_main.cmx";
-      ocamlopt.byte;
+    run;
+  }
+}{
+  native-dynlink;
 
-      run;
-    }
+  setup-ocamlopt.byte-build-env;
+  {
+    module = "test4_main.ml";
+    ocamlopt.byte;
+  }{
+    module = "test4_plugin_b.ml";
+    ocamlopt.byte;
+  }{
+    module = "test4_plugin_a.ml";
+    ocamlopt.byte;
+  }{
+    program = "test4_plugin.cmxs";
+    flags = "-shared";
+    all_modules = "test4_plugin_a.cmx test4_plugin_b.cmx";
+    ocamlopt.byte;
+  }{
+    program = "${test_build_directory}/test4.exe";
+    libraries = "dynlink";
+    all_modules = "test4_main.cmx";
+    ocamlopt.byte;
+
+    run;
   }
 }
 *)

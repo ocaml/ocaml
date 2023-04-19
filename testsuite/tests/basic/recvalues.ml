@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 (* Recursive value definitions *)
 

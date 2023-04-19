@@ -1,7 +1,5 @@
 (* TEST
-{
-  toplevel;
-}
+toplevel;
 *)
 
 module type S = sig type 'a t end;;

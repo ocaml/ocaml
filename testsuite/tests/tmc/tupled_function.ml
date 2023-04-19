@@ -1,8 +1,7 @@
 (* TEST
 {
   bytecode;
-}
-{
+}{
   native;
 }
 *)

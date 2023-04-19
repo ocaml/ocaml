@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 *)
 
 let () = (
@@ -7,7 +7,5 @@ let () = (
   )
 
 (* TEST
-{
-  exit_status = "2";
-}
+exit_status = "2";
 *)

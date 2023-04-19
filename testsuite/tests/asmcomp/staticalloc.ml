@@ -1,9 +1,7 @@
 (* TEST
-{
-  include config;
-  flags = "config.cmx";
-  native;
-}
+include config;
+flags = "config.cmx";
+native;
 *)
 
 (* Check the effectiveness of structured constant propagation and

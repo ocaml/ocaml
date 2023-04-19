@@ -1,6 +1,6 @@
-(* TEST_BELOW
-
-
+(* TEST
+flags += "-w +4+8+9+11+12+52+56+57";
+include testing;
 *)
 
 module GPR1493 = struct
@@ -283,10 +283,3 @@ module M12 = struct
     | _, R2, "coucou" -> ()
     | _, R2, "foo" -> ()
 end
-
-(* TEST
-{
-  flags += "-w +4+8+9+11+12+52+56+57";
-  include testing;
-}
-*)

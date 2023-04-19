@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -17,8 +17,6 @@ let _ = M.x
 include M
 
 (* TEST
-{
-  flags = "-w +A";
-  bytecode;
-}
+flags = "-w +A";
+bytecode;
 *)

@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -111,8 +111,6 @@ let x = 1 in ();;
 #use "error_highlighting_use4.ml";;
 
 (* TEST
-{
-  readonly_files = "error_highlighting_use1.ml error_highlighting_use2.ml error_highlighting_use3.ml error_highlighting_use4.ml";
-  toplevel;
-}
+readonly_files = "error_highlighting_use1.ml error_highlighting_use2.ml error_highlighting_use3.ml error_highlighting_use4.ml";
+toplevel;
 *)

@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -40,15 +40,13 @@ let () =
   Thread.join backtrace_thread
 
 (* TEST
+flags = "-g";
+ocamlrunparam += ",b=1";
+include systhreads;
+hassysthreads;
 {
-  flags = "-g";
-  ocamlrunparam += ",b=1";
-  include systhreads;
-  hassysthreads;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)

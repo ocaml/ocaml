@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -23,13 +23,11 @@ module FixId = Fix (struct type 'a f = 'a end)
 *)
 
 (* TEST
-{
-  flags = " -w -a ";
-  ocamlc_byte_exit_status = "2";
-  setup-ocamlc.byte-build-env;
+flags = " -w -a ";
+ocamlc_byte_exit_status = "2";
+setup-ocamlc.byte-build-env;
 
-  ocamlc.byte;
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)

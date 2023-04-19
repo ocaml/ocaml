@@ -1,20 +1,18 @@
 (* TEST
+flags = "-annot";
+script = "sh ${test_source_directory}/check-annot.sh success";
 {
-  flags = "-annot";
-  script = "sh ${test_source_directory}/check-annot.sh success";
-  {
-    setup-ocamlc.byte-build-env;
+  setup-ocamlc.byte-build-env;
 
-    ocamlc.byte;
+  ocamlc.byte;
 
-    script;
-  }{
-    setup-ocamlopt.byte-build-env;
+  script;
+}{
+  setup-ocamlopt.byte-build-env;
 
-    ocamlopt.byte;
+  ocamlopt.byte;
 
-    script;
-  }
+  script;
 }
 *)
 

@@ -1,7 +1,5 @@
 (* TEST
-{
-  expect;
-}
+expect;
 *)
 
 let rec x = let module M = struct let f = x end in ();;

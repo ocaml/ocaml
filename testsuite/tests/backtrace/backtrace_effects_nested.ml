@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -45,19 +45,17 @@ let f () =
 let () = f ()
 
 (* TEST
+flags = "-g";
 {
-  flags = "-g";
-  {
-    bytecode;
-  }{
-    no-flambda;
+  bytecode;
+}{
+  no-flambda;
 
-    native;
-  }{
-    reference = "${test_source_directory}/backtrace_effects_nested.flambda.reference";
-    flambda;
+  native;
+}{
+  reference = "${test_source_directory}/backtrace_effects_nested.flambda.reference";
+  flambda;
 
-    native;
-  }
+  native;
 }
 *)

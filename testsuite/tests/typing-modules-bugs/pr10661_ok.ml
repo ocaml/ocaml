@@ -1,11 +1,9 @@
 (* TEST
-{
-  setup-ocamlc.byte-build-env;
+setup-ocamlc.byte-build-env;
 
-  ocamlc.byte;
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)
 
 module M = struct

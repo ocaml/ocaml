@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 (* Test tail call optimisation with an elided mutable cell *)
 let rec loop n =

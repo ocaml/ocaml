@@ -1,21 +1,19 @@
 (* TEST
+flags = "-i -annot";
+compile_only = "true";
+script = "sh ${test_source_directory}/check-annot.sh typeonly";
 {
-  flags = "-i -annot";
-  compile_only = "true";
-  script = "sh ${test_source_directory}/check-annot.sh typeonly";
-  {
-    setup-ocamlc.byte-build-env;
+  setup-ocamlc.byte-build-env;
 
-    ocamlc.byte;
+  ocamlc.byte;
 
-    script;
-  }{
-    setup-ocamlopt.byte-build-env;
+  script;
+}{
+  setup-ocamlopt.byte-build-env;
 
-    ocamlopt.byte;
+  ocamlopt.byte;
 
-    script;
-  }
+  script;
 }
 *)
 

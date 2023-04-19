@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -13,8 +13,6 @@ let y : t = {x = 5}
 let () = y.x <- 42
 
 (* TEST
-{
-  flags = "-w +A-70";
-  bytecode;
-}
+flags = "-w +A-70";
+bytecode;
 *)

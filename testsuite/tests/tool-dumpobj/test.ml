@@ -1,13 +1,11 @@
 (* TEST
-{
-  flags = "-nopervasives";
-  setup-ocamlc.byte-build-env;
+flags = "-nopervasives";
+setup-ocamlc.byte-build-env;
 
-  ocamlc.byte;
+ocamlc.byte;
 
-  run;
+run;
 
-  check-program-output;
-}
+check-program-output;
 *)
 let x = 42L

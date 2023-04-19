@@ -1,7 +1,5 @@
 (* TEST
-{
-  expect;
-}
+expect;
 *)
 
 (* Ignore OCAMLRUNPARAM=b to be reproducible *)

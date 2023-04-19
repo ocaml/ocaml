@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 (* Slightly modified version of an example from github user @Ngoguey42,
    submitted as issue number 10283. *)

@@ -1,14 +1,12 @@
 (* TEST
+include runtime_events;
+include unix;
+set OCAMLRUNPARAM = "e=6";
+libunix;
 {
-  include runtime_events;
-  include unix;
-  SET OCAMLRUNPARAM = "e=6";
-  libunix;
-  {
-    native;
-  }{
-    bytecode;
-  }
+  native;
+}{
+  bytecode;
 }
 *)
 

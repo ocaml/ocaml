@@ -1,13 +1,11 @@
 (* TEST
+include systhreads;
+readonly_files = "input_all.ml";
+hassysthreads;
 {
-  include systhreads;
-  readonly_files = "input_all.ml";
-  hassysthreads;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

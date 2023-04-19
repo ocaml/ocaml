@@ -1,12 +1,10 @@
 (* TEST
-{
-  setup-ocamlc.byte-build-env;
+setup-ocamlc.byte-build-env;
 
-  flags = "-dlambda -dno-unique-ids";
-  ocamlc.byte;
+flags = "-dlambda -dno-unique-ids";
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)
 
 type 'a custom_rec = { x : unit; mutable y : 'a }

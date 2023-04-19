@@ -1,8 +1,8 @@
 (* TEST_BELOW
-Lorem_ipsum_dolor_
-sit_amet,consectetur_adipiscing_
-elit.Sed_non_risu
-s.Lorem_ipsum_dolor_sit_amet,co
+Filler_text_added_
+to_preserve_locations_while_tran
+slating_from_old_
+syntax__Filler_text_added_to_pr
 *)
 
 exception Foo [@foo] [@@foo]
@@ -57,12 +57,10 @@ let _ = (module Int : T [@foo])
 let _ = (module Int : T with type t = int [@foo])
 
 (* TEST
-{
-  flags = "-dparsetree";
-  setup-ocamlc.byte-build-env;
+flags = "-dparsetree";
+setup-ocamlc.byte-build-env;
 
-  ocamlc.byte;
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)

@@ -1,12 +1,10 @@
 (* TEST
-{
-  readonly_files = "main.c";
-  arguments = "-DINT_FLOAT -DFUN=test main.c";
-  reason = "This test is currently broken";
-  skip;
+readonly_files = "main.c";
+arguments = "-DINT_FLOAT -DFUN=test main.c";
+reason = "This test is currently broken";
+skip;
 
-  asmgen;
-}
+asmgen;
 *)
 
 (**************************************************************************)

@@ -1,12 +1,10 @@
 (* TEST
+include systhreads;
+hassysthreads;
 {
-  include systhreads;
-  hassysthreads;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

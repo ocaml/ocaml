@@ -2,8 +2,7 @@
 {
   include systhreads;
   hassysthreads;
-}
-{
+}{
   reason = "off-by-one error on MacOS+Clang (#408)";
   skip;
   {

@@ -1,12 +1,10 @@
 (* TEST
-{
-  flags = "-i";
-  setup-ocamlc.byte-build-env;
+flags = "-i";
+setup-ocamlc.byte-build-env;
 
-  ocamlc.byte;
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)
 
 (* This test is valid OCaml code.

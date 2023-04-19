@@ -1,31 +1,29 @@
 (* TEST
-{
-  script = "sh ${test_source_directory}/check-linker-version.sh";
-  readonly_files = "mylib.mli mylib.ml stack_walker.c";
-  macos;
+script = "sh ${test_source_directory}/check-linker-version.sh";
+readonly_files = "mylib.mli mylib.ml stack_walker.c";
+macos;
 
-  script;
+script;
 
-  setup-ocamlopt.byte-build-env;
+setup-ocamlopt.byte-build-env;
 
-  flags = "-opaque";
-  module = "mylib.mli";
-  ocamlopt.byte;
+flags = "-opaque";
+module = "mylib.mli";
+ocamlopt.byte;
 
-  module = "";
-  flags = "-cclib -Wl,-keep_dwarf_unwind";
-  all_modules = "mylib.ml driver.ml stack_walker.c";
-  program = "${test_build_directory}/unwind_test";
-  ocamlopt.byte;
+module = "";
+flags = "-cclib -Wl,-keep_dwarf_unwind";
+all_modules = "mylib.ml driver.ml stack_walker.c";
+program = "${test_build_directory}/unwind_test";
+ocamlopt.byte;
 
-  output = "${test_build_directory}/program-output";
-  stdout = "${output}";
-  stderr = "${output}";
-  run;
+output = "${test_build_directory}/program-output";
+stdout = "${output}";
+stderr = "${output}";
+run;
 
-  reference = "${test_source_directory}/unwind_test.reference";
-  check-program-output;
-}
+reference = "${test_source_directory}/unwind_test.reference";
+check-program-output;
 *)
 
 let () =

@@ -1,12 +1,10 @@
 (* TEST
+include unix;
+libunix;
 {
-  include unix;
-  libunix;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 module IntMap = Map.Make(struct type t = int let compare x y = x-y end)
 

@@ -1,7 +1,5 @@
 (* TEST
-{
-  include testing;
-}
+include testing;
 *)
 
 (* Dummy substitute function. *)

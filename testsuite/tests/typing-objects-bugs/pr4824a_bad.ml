@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -14,13 +14,11 @@ class c (x : int) = object inherit M.c x method x : bool = x end
 let r = (new c 2)#x;;
 
 (* TEST
-{
-  flags = " -w -a ";
-  ocamlc_byte_exit_status = "2";
-  setup-ocamlc.byte-build-env;
+flags = " -w -a ";
+ocamlc_byte_exit_status = "2";
+setup-ocamlc.byte-build-env;
 
-  ocamlc.byte;
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)

@@ -1,9 +1,9 @@
 (* TEST_BELOW
-Lorem_ipsum_dolor_
-sit_amet,consectetur_adipiscing_
-elit.Sed_non_risus.Lorem_ipsum_d
-olor_sit_amet,con
-sectetur_adipiscing_elit.Sed_no
+Filler_text_added_
+to_preserve_locations_while_tran
+slating_from_old_syntax__Filler_
+text_added_to_pre
+serve_locations_while_translati
 *)
 
 [%%foo let x = 1 in x]
@@ -25,13 +25,11 @@ let [%foo: include S with type t = t ]
   = [%foo: type t = t ]
 
 (* TEST
-{
-  flags = "-dparsetree";
-  ocamlc_byte_exit_status = "2";
-  setup-ocamlc.byte-build-env;
+flags = "-dparsetree";
+ocamlc_byte_exit_status = "2";
+setup-ocamlc.byte-build-env;
 
-  ocamlc.byte;
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)

@@ -1,51 +1,49 @@
 (* TEST
+include dynlink;
+readonly_files = "test1_inited_second.ml test1_plugin.ml";
+libraries = "";
+shared-libraries;
 {
-  include dynlink;
-  readonly_files = "test1_inited_second.ml test1_plugin.ml";
-  libraries = "";
-  shared-libraries;
+  setup-ocamlc.byte-build-env;
   {
-    setup-ocamlc.byte-build-env;
-    {
-      module = "test1_main.ml";
-      ocamlc.byte;
-    }{
-      module = "test1_inited_second.ml";
-      ocamlc.byte;
-    }{
-      module = "test1_plugin.ml";
-      ocamlc.byte;
-    }{
-      program = "${test_build_directory}/test1.byte";
-      libraries = "dynlink";
-      all_modules = "test1_main.cmo test1_inited_second.cmo";
-      ocamlc.byte;
-
-      run;
-    }
+    module = "test1_main.ml";
+    ocamlc.byte;
   }{
-    native-dynlink;
+    module = "test1_inited_second.ml";
+    ocamlc.byte;
+  }{
+    module = "test1_plugin.ml";
+    ocamlc.byte;
+  }{
+    program = "${test_build_directory}/test1.byte";
+    libraries = "dynlink";
+    all_modules = "test1_main.cmo test1_inited_second.cmo";
+    ocamlc.byte;
 
-    setup-ocamlopt.byte-build-env;
-    {
-      module = "test1_main.ml";
-      ocamlopt.byte;
-    }{
-      module = "test1_inited_second.ml";
-      ocamlopt.byte;
-    }{
-      program = "test1_plugin.cmxs";
-      flags = "-shared";
-      all_modules = "test1_plugin.ml";
-      ocamlopt.byte;
-    }{
-      program = "${test_build_directory}/test1.exe";
-      libraries = "dynlink";
-      all_modules = "test1_main.cmx test1_inited_second.cmx";
-      ocamlopt.byte;
+    run;
+  }
+}{
+  native-dynlink;
 
-      run;
-    }
+  setup-ocamlopt.byte-build-env;
+  {
+    module = "test1_main.ml";
+    ocamlopt.byte;
+  }{
+    module = "test1_inited_second.ml";
+    ocamlopt.byte;
+  }{
+    program = "test1_plugin.cmxs";
+    flags = "-shared";
+    all_modules = "test1_plugin.ml";
+    ocamlopt.byte;
+  }{
+    program = "${test_build_directory}/test1.exe";
+    libraries = "dynlink";
+    all_modules = "test1_main.cmx test1_inited_second.cmx";
+    ocamlopt.byte;
+
+    run;
   }
 }
 *)

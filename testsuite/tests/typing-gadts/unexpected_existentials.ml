@@ -1,7 +1,5 @@
 (* TEST
-{
-  expect;
-}
+expect;
 *)
 (** Test the error message for existential types apparearing
     in unexpected position *)

@@ -1,13 +1,11 @@
 (* TEST
+include unix;
+readonly_files = "utimes.txt";
+hasunix;
 {
-  include unix;
-  readonly_files = "utimes.txt";
-  hasunix;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

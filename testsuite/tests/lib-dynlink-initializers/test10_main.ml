@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -57,56 +57,54 @@ let () =
       Printexc.print_backtrace stderr
 
 (* TEST
+include dynlink;
+readonly_files = "test10_plugin.ml";
+flags += "-g";
+libraries = "";
+no-flambda;
+
+shared-libraries;
 {
-  include dynlink;
-  readonly_files = "test10_plugin.ml";
-  flags += "-g";
-  libraries = "";
-  no-flambda;
-
-  shared-libraries;
+  setup-ocamlc.byte-build-env;
   {
-    setup-ocamlc.byte-build-env;
-    {
-      module = "test10_main.ml";
-      ocamlc.byte;
-    }{
-      module = "test10_plugin.ml";
-      ocamlc.byte;
-    }{
-      program = "${test_build_directory}/test10.byte";
-      libraries = "dynlink";
-      all_modules = "test10_main.cmo";
-      ocamlc.byte;
-
-      run;
-
-      reference = "${test_source_directory}/test10_main.byte.reference";
-      check-program-output;
-    }
+    module = "test10_main.ml";
+    ocamlc.byte;
   }{
-    native-dynlink;
+    module = "test10_plugin.ml";
+    ocamlc.byte;
+  }{
+    program = "${test_build_directory}/test10.byte";
+    libraries = "dynlink";
+    all_modules = "test10_main.cmo";
+    ocamlc.byte;
 
-    setup-ocamlopt.byte-build-env;
-    {
-      module = "test10_main.ml";
-      ocamlopt.byte;
-    }{
-      program = "test10_plugin.cmxs";
-      flags = "-shared";
-      all_modules = "test10_plugin.ml";
-      ocamlopt.byte;
-    }{
-      program = "${test_build_directory}/test10.exe";
-      libraries = "dynlink";
-      all_modules = "test10_main.cmx";
-      ocamlopt.byte;
+    run;
 
-      run;
+    reference = "${test_source_directory}/test10_main.byte.reference";
+    check-program-output;
+  }
+}{
+  native-dynlink;
 
-      reference = "${test_source_directory}/test10_main.native.reference";
-      check-program-output;
-    }
+  setup-ocamlopt.byte-build-env;
+  {
+    module = "test10_main.ml";
+    ocamlopt.byte;
+  }{
+    program = "test10_plugin.cmxs";
+    flags = "-shared";
+    all_modules = "test10_plugin.ml";
+    ocamlopt.byte;
+  }{
+    program = "${test_build_directory}/test10.exe";
+    libraries = "dynlink";
+    all_modules = "test10_main.cmx";
+    ocamlopt.byte;
+
+    run;
+
+    reference = "${test_source_directory}/test10_main.native.reference";
+    check-program-output;
   }
 }
 *)

@@ -1,7 +1,5 @@
 (* TEST
-{
-  unset DOES_NOT_EXIST;
-}
+unset DOES_NOT_EXIST;
 *)
 
 let () =

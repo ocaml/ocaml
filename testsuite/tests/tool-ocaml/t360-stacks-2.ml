@@ -1,13 +1,11 @@
 (* TEST
-{
-  include tool-ocaml-lib;
-  flags = "-w -a";
-  ocaml_script_as_argument = "true";
-  ocamlrunparam = "l=1000000";
-  setup-ocaml-build-env;
+include tool-ocaml-lib;
+flags = "-w -a";
+ocaml_script_as_argument = "true";
+ocamlrunparam = "l=1000000";
+setup-ocaml-build-env;
 
-  ocaml;
-}
+ocaml;
 *)
 
 open Lib;;

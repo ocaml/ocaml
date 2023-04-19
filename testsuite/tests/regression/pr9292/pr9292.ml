@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 let () =
   Gc.set { (Gc.get ()) with allocation_policy = 2 };

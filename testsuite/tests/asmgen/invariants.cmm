@@ -1,12 +1,10 @@
 (* TEST
-{
-  native-compiler;
+native-compiler;
 
-  setup-simple-build-env;
+setup-simple-build-env;
 
-  codegen_exit_status = "2";
-  codegen;
-}
+codegen_exit_status = "2";
+codegen;
 *)
 
 (*

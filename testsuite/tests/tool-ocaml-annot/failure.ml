@@ -1,22 +1,20 @@
 (* TEST
+flags = "-annot";
+script = "sh ${test_source_directory}/check-annot.sh failure";
+ocamlc_byte_exit_status = "2";
+ocamlopt_byte_exit_status = "2";
 {
-  flags = "-annot";
-  script = "sh ${test_source_directory}/check-annot.sh failure";
-  ocamlc_byte_exit_status = "2";
-  ocamlopt_byte_exit_status = "2";
-  {
-    setup-ocamlc.byte-build-env;
+  setup-ocamlc.byte-build-env;
 
-    ocamlc.byte;
+  ocamlc.byte;
 
-    script;
-  }{
-    setup-ocamlopt.byte-build-env;
+  script;
+}{
+  setup-ocamlopt.byte-build-env;
 
-    ocamlopt.byte;
+  ocamlopt.byte;
 
-    script;
-  }
+  script;
 }
 *)
 

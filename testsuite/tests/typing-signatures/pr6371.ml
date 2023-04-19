@@ -1,7 +1,5 @@
 (* TEST
-{
-  toplevel;
-}
+toplevel;
 *)
 
 module M = struct

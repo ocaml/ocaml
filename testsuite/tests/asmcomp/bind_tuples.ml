@@ -1,7 +1,5 @@
 (* TEST
-{
-  native;
-}
+native;
 *)
 
 (* Check the effectiveness of optimized compilation of tuple binding

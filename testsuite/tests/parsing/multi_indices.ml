@@ -1,8 +1,6 @@
 (* TEST
-{
-  flags = "-dsource";
-  expect;
-}
+flags = "-dsource";
+expect;
 *)
 
 module A = Bigarray.Genarray

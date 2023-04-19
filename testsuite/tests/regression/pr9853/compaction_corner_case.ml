@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 (* Compaction crash when there is only one heap chunk and it is fully used. *)
 let c = ref []

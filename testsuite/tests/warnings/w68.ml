@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -34,16 +34,14 @@ let () =
 let dont_warn_with_partial_match None x = x
 
 (* TEST
-{
-  flags = "-w +A-70";
-  setup-ocamlopt.byte-build-env;
+flags = "-w +A-70";
+setup-ocamlopt.byte-build-env;
 
-  ocamlopt.byte;
+ocamlopt.byte;
 
-  check-ocamlopt.byte-output;
+check-ocamlopt.byte-output;
 
-  run;
+run;
 
-  check-program-output;
-}
+check-program-output;
 *)

@@ -1,7 +1,5 @@
 (* TEST
-{
-  toplevel;
-}
+toplevel;
 *)
 
 List.fold_left;;

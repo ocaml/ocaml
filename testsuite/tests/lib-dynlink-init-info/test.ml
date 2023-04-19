@@ -1,7 +1,5 @@
 (* TEST
-{
-  include dynlink;
-}
+include dynlink;
 *)
 
 (* Make sure dynlink state info is accurate before any load

@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 let[@inline never] small_match n x =
   let (left, right) = match x with

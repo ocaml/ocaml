@@ -1,5 +1,5 @@
-(*
-  short description
+(* TEST
+ocamldoc with latex;
 *)
 
 Short global description in text mode

@@ -1,14 +1,12 @@
 (* TEST
-{
-  flags = "-dlive";
-  readonly_files = "main.c";
-  arguments = "-DUNIT_INT -DFUN=catch_rec_deadhandler main.c";
-  asmgen;
+flags = "-dlive";
+readonly_files = "main.c";
+arguments = "-DUNIT_INT -DFUN=catch_rec_deadhandler main.c";
+asmgen;
 
-  run;
+run;
 
-  check-program-output;
-}
+check-program-output;
 *)
 
 (function "catch_rec_deadhandler" ()

@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 *)
 type t = Ret of (unit -> unit) | Next of t
@@ -21,8 +21,7 @@ let () =
 (* TEST
 {
   bytecode;
-}
-{
+}{
   native;
 }
 *)

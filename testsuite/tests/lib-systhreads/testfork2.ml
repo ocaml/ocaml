@@ -1,16 +1,14 @@
 (* TEST
+include systhreads;
+hassysthreads;
+
+not-bsd;
+
+libunix;
 {
-  include systhreads;
-  hassysthreads;
-
-  not-bsd;
-
-  libunix;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

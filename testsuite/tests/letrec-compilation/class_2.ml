@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 (* class expressions may also contain local recursive bindings *)
 class test =

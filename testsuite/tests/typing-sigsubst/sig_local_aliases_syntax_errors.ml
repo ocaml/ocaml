@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 *)
 
 module type Rejected1 = sig
@@ -36,7 +36,5 @@ module type Rejected0 = sig
 end;;
 
 (* TEST
-{
-  toplevel;
-}
+toplevel;
 *)

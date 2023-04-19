@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 let () =
   let small = 0xfffe and large = 0xffff in

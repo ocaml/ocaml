@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 *)
 
 let f n b =
@@ -14,7 +14,5 @@ let () =
     Printexc.print_backtrace stdout
 
 (* TEST
-{
-  flags = "-g";
-}
+flags = "-g";
 *)

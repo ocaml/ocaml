@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 (* This function uses a ref initially holding an immediate (None),
    which is later mutated to hold a pointer (Some ...). Despite

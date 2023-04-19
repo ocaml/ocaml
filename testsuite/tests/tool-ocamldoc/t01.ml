@@ -1,9 +1,7 @@
 (* TEST
-{
-  plugins = "odoc_test.ml";
-  flags = "-I ${ocamlsrcdir}/ocamldoc";
-  ocamldoc;
-}
+plugins = "odoc_test.ml";
+flags = "-I ${ocamlsrcdir}/ocamldoc";
+ocamldoc;
 *)
 
 (** Testing display of types.

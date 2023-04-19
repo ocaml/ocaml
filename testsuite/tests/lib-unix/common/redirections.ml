@@ -1,45 +1,43 @@
 (* TEST
+readonly_files = "reflector.ml";
+unset XVAR;
+hasunix;
 {
-  readonly_files = "reflector.ml";
-  unset XVAR;
-  hasunix;
-  {
-    program = "${test_build_directory}/redirections.byte";
-    setup-ocamlc.byte-build-env;
+  program = "${test_build_directory}/redirections.byte";
+  setup-ocamlc.byte-build-env;
 
-    program = "${test_build_directory}/reflector.exe";
-    all_modules = "reflector.ml";
-    ocamlc.byte;
+  program = "${test_build_directory}/reflector.exe";
+  all_modules = "reflector.ml";
+  ocamlc.byte;
 
-    include unix;
-    program = "${test_build_directory}/redirections.byte";
-    all_modules = "redirections.ml";
-    ocamlc.byte;
+  include unix;
+  program = "${test_build_directory}/redirections.byte";
+  all_modules = "redirections.ml";
+  ocamlc.byte;
 
-    check-ocamlc.byte-output;
+  check-ocamlc.byte-output;
 
-    run;
+  run;
 
-    check-program-output;
-  }{
-    program = "${test_build_directory}/redirections.opt";
-    setup-ocamlopt.byte-build-env;
+  check-program-output;
+}{
+  program = "${test_build_directory}/redirections.opt";
+  setup-ocamlopt.byte-build-env;
 
-    program = "${test_build_directory}/reflector.exe";
-    all_modules = "reflector.ml";
-    ocamlopt.byte;
+  program = "${test_build_directory}/reflector.exe";
+  all_modules = "reflector.ml";
+  ocamlopt.byte;
 
-    include unix;
-    program = "${test_build_directory}/redirections.opt";
-    all_modules = "redirections.ml";
-    ocamlopt.byte;
+  include unix;
+  program = "${test_build_directory}/redirections.opt";
+  all_modules = "redirections.ml";
+  ocamlopt.byte;
 
-    check-ocamlopt.byte-output;
+  check-ocamlopt.byte-output;
 
-    run;
+  run;
 
-    check-program-output;
-  }
+  check-program-output;
 }
 *)
 

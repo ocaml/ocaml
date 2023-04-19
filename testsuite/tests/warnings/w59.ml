@@ -1,33 +1,31 @@
-(* TEST_BELOW
+(* TEST
+flags = "-w +A-70";
+compile_only = "true";
+{
+  setup-ocamlc.byte-build-env;
 
+  ocamlc.byte;
 
+  check-ocamlc.byte-output;
+}{
+  no-flambda;
 
+  setup-ocamlopt.byte-build-env;
 
+  ocamlopt.byte;
 
+  check-ocamlopt.byte-output;
+}{
+  compiler_reference = "${test_source_directory}/w59.flambda.reference";
+  flags = "-w +A-70 -dflambda-invariants";
+  flambda;
 
+  setup-ocamlopt.byte-build-env;
 
+  ocamlopt.byte;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  check-ocamlopt.byte-output;
+}
 *)
 
 (* Check that the warning 59 (assignment to immutable value) does not
@@ -73,35 +71,3 @@ let set_opaque =
     (Obj.repr opaque)
     0
     (Obj.repr 3)
-
-(* TEST
-{
-  flags = "-w +A-70";
-  compile_only = "true";
-  {
-    setup-ocamlc.byte-build-env;
-
-    ocamlc.byte;
-
-    check-ocamlc.byte-output;
-  }{
-    no-flambda;
-
-    setup-ocamlopt.byte-build-env;
-
-    ocamlopt.byte;
-
-    check-ocamlopt.byte-output;
-  }{
-    compiler_reference = "${test_source_directory}/w59.flambda.reference";
-    flags = "-w +A-70 -dflambda-invariants";
-    flambda;
-
-    setup-ocamlopt.byte-build-env;
-
-    ocamlopt.byte;
-
-    check-ocamlopt.byte-output;
-  }
-}
-*)

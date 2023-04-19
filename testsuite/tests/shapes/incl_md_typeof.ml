@@ -1,8 +1,6 @@
 (* TEST
-{
-  flags = "-dshape";
-  expect;
-}
+flags = "-dshape";
+expect;
 *)
 
 module Foo : sig

@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -17,12 +17,10 @@ module DT = struct
 end
 
 (* TEST
-{
-  flags = "-i -w +63";
-  setup-ocamlc.byte-build-env;
+flags = "-i -w +63";
+setup-ocamlc.byte-build-env;
 
-  ocamlc.byte;
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)

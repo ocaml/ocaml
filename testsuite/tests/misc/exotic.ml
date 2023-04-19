@@ -1,8 +1,6 @@
 (* TEST
-{
-  flags = "-I ${ocamlsrcdir}/utils";
-  expect;
-}
+flags = "-I ${ocamlsrcdir}/utils";
+expect;
 *)
 
 (* Strict-sequence can change the behavior of programs *)

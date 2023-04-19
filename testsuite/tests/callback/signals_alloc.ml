@@ -1,13 +1,11 @@
 (* TEST
+include unix;
+modules = "callbackprim.c";
+libunix;
 {
-  include unix;
-  modules = "callbackprim.c";
-  libunix;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 external raise_sigusr1 : unit -> unit = "raise_sigusr1"

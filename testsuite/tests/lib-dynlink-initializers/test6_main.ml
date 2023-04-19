@@ -1,53 +1,51 @@
 (* TEST
+include dynlink;
+readonly_files = "test6_plugin.ml test6_second_plugin.ml";
+libraries = "";
+shared-libraries;
 {
-  include dynlink;
-  readonly_files = "test6_plugin.ml test6_second_plugin.ml";
-  libraries = "";
-  shared-libraries;
+  setup-ocamlc.byte-build-env;
   {
-    setup-ocamlc.byte-build-env;
-    {
-      module = "test6_main.ml";
-      ocamlc.byte;
-    }{
-      module = "test6_plugin.ml";
-      ocamlc.byte;
-    }{
-      module = "test6_second_plugin.ml";
-      ocamlc.byte;
-    }{
-      program = "${test_build_directory}/test6.byte";
-      libraries = "dynlink";
-      all_modules = "test6_main.cmo";
-      ocamlc.byte;
-
-      run;
-    }
+    module = "test6_main.ml";
+    ocamlc.byte;
   }{
-    native-dynlink;
+    module = "test6_plugin.ml";
+    ocamlc.byte;
+  }{
+    module = "test6_second_plugin.ml";
+    ocamlc.byte;
+  }{
+    program = "${test_build_directory}/test6.byte";
+    libraries = "dynlink";
+    all_modules = "test6_main.cmo";
+    ocamlc.byte;
 
-    setup-ocamlopt.byte-build-env;
-    {
-      module = "test6_main.ml";
-      ocamlopt.byte;
-    }{
-      program = "test6_plugin.cmxs";
-      flags = "-shared";
-      all_modules = "test6_plugin.ml";
-      ocamlopt.byte;
-    }{
-      program = "test6_second_plugin.cmxs";
-      flags = "-shared";
-      all_modules = "test6_second_plugin.ml";
-      ocamlopt.byte;
-    }{
-      program = "${test_build_directory}/test6.exe";
-      libraries = "dynlink";
-      all_modules = "test6_main.cmx";
-      ocamlopt.byte;
+    run;
+  }
+}{
+  native-dynlink;
 
-      run;
-    }
+  setup-ocamlopt.byte-build-env;
+  {
+    module = "test6_main.ml";
+    ocamlopt.byte;
+  }{
+    program = "test6_plugin.cmxs";
+    flags = "-shared";
+    all_modules = "test6_plugin.ml";
+    ocamlopt.byte;
+  }{
+    program = "test6_second_plugin.cmxs";
+    flags = "-shared";
+    all_modules = "test6_second_plugin.ml";
+    ocamlopt.byte;
+  }{
+    program = "${test_build_directory}/test6.exe";
+    libraries = "dynlink";
+    all_modules = "test6_main.cmx";
+    ocamlopt.byte;
+
+    run;
   }
 }
 *)

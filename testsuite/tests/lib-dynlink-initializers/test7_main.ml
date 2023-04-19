@@ -1,51 +1,49 @@
 (* TEST
+include dynlink;
+readonly_files = "test7_interface_only.mli test7_plugin.ml";
+libraries = "";
+shared-libraries;
 {
-  include dynlink;
-  readonly_files = "test7_interface_only.mli test7_plugin.ml";
-  libraries = "";
-  shared-libraries;
+  setup-ocamlc.byte-build-env;
   {
-    setup-ocamlc.byte-build-env;
-    {
-      module = "test7_interface_only.mli";
-      ocamlc.byte;
-    }{
-      module = "test7_main.ml";
-      ocamlc.byte;
-    }{
-      module = "test7_plugin.ml";
-      ocamlc.byte;
-    }{
-      program = "${test_build_directory}/test7.byte";
-      libraries = "dynlink";
-      all_modules = "test7_main.cmo";
-      ocamlc.byte;
-
-      run;
-    }
+    module = "test7_interface_only.mli";
+    ocamlc.byte;
   }{
-    native-dynlink;
+    module = "test7_main.ml";
+    ocamlc.byte;
+  }{
+    module = "test7_plugin.ml";
+    ocamlc.byte;
+  }{
+    program = "${test_build_directory}/test7.byte";
+    libraries = "dynlink";
+    all_modules = "test7_main.cmo";
+    ocamlc.byte;
 
-    setup-ocamlopt.byte-build-env;
-    {
-      module = "test7_interface_only.mli";
-      ocamlopt.byte;
-    }{
-      module = "test7_main.ml";
-      ocamlopt.byte;
-    }{
-      program = "test7_plugin.cmxs";
-      flags = "-shared";
-      all_modules = "test7_plugin.ml";
-      ocamlopt.byte;
-    }{
-      program = "${test_build_directory}/test7.exe";
-      libraries = "dynlink";
-      all_modules = "test7_main.cmx";
-      ocamlopt.byte;
+    run;
+  }
+}{
+  native-dynlink;
 
-      run;
-    }
+  setup-ocamlopt.byte-build-env;
+  {
+    module = "test7_interface_only.mli";
+    ocamlopt.byte;
+  }{
+    module = "test7_main.ml";
+    ocamlopt.byte;
+  }{
+    program = "test7_plugin.cmxs";
+    flags = "-shared";
+    all_modules = "test7_plugin.ml";
+    ocamlopt.byte;
+  }{
+    program = "${test_build_directory}/test7.exe";
+    libraries = "dynlink";
+    all_modules = "test7_main.cmx";
+    ocamlopt.byte;
+
+    run;
   }
 }
 *)

@@ -1,104 +1,100 @@
 (* TEST
+include dynlink;
+readonly_files = "entry.c main.cs plugin.ml";
+csharp-compiler;
+
+set csharp_cmd = "${csc} ${csc_flags} /out:main.exe main.cs";
+shared-libraries;
 {
-  include dynlink;
-  readonly_files = "entry.c main.cs plugin.ml";
-  csharp-compiler;
+  setup-ocamlc.byte-build-env;
 
-  SET csharp_cmd = "${csc} ${csc_flags} /out:main.exe main.cs";
-  shared-libraries;
-  {
-    setup-ocamlc.byte-build-env;
+  module = "plugin.ml";
+  ocamlc.byte;
 
-    module = "plugin.ml";
-    ocamlc.byte;
+  module = "";
+  flags = "-output-obj";
+  program = "main.dll";
+  all_modules = "dynlink.cma main.ml entry.c";
+  ocamlc.byte;
 
-    module = "";
-    flags = "-output-obj";
-    program = "main.dll";
-    all_modules = "dynlink.cma main.ml entry.c";
-    ocamlc.byte;
+  script = "${csharp_cmd}";
+  script;
 
-    script = "${csharp_cmd}";
-    script;
+  program = "./main.exe";
+  run;
 
-    program = "./main.exe";
-    run;
+  reference = "${test_source_directory}/main.bytecode.reference";
+  check-program-output;
+}{
+  compiler_directory_suffix = "-dll";
+  setup-ocamlc.byte-build-env;
 
-    reference = "${test_source_directory}/main.bytecode.reference";
-    check-program-output;
-  }{
-    compiler_directory_suffix = "-dll";
-    setup-ocamlc.byte-build-env;
+  module = "plugin.ml";
+  ocamlc.byte;
 
-    module = "plugin.ml";
-    ocamlc.byte;
+  module = "";
+  flags = "-output-obj";
+  program = "main_obj.${objext}";
+  all_modules = "dynlink.cma entry.c main.ml";
+  ocamlc.byte;
 
-    module = "";
-    flags = "-output-obj";
-    program = "main_obj.${objext}";
-    all_modules = "dynlink.cma entry.c main.ml";
-    ocamlc.byte;
+  script = "${mkdll} -maindll -o main.dll main_obj.${objext} entry.${objext} ${ocamlsrcdir}/runtime/libcamlrun.${libext} ${bytecc_libs}";
+  script;
 
-    script = "${mkdll} -maindll -o main.dll main_obj.${objext} \
-entry.${objext} ${ocamlsrcdir}/runtime/libcamlrun.${libext} ${bytecc_libs}";
-    script;
+  script = "${csharp_cmd}";
+  script;
 
-    script = "${csharp_cmd}";
-    script;
+  program = "./main.exe";
+  run;
 
-    program = "./main.exe";
-    run;
+  reference = "${test_source_directory}/main.bytecode.reference";
+  check-program-output;
+}{
+  setup-ocamlopt.byte-build-env;
 
-    reference = "${test_source_directory}/main.bytecode.reference";
-    check-program-output;
-  }{
-    setup-ocamlopt.byte-build-env;
+  program = "plugin.cmxs";
+  flags = "-shared";
+  all_modules = "plugin.ml";
+  ocamlopt.byte;
 
-    program = "plugin.cmxs";
-    flags = "-shared";
-    all_modules = "plugin.ml";
-    ocamlopt.byte;
+  flags = "-output-obj";
+  program = "main.dll";
+  all_modules = "dynlink.cmxa entry.c main.ml";
+  ocamlopt.byte;
 
-    flags = "-output-obj";
-    program = "main.dll";
-    all_modules = "dynlink.cmxa entry.c main.ml";
-    ocamlopt.byte;
+  script = "${csharp_cmd}";
+  script;
 
-    script = "${csharp_cmd}";
-    script;
+  program = "./main.exe";
+  run;
 
-    program = "./main.exe";
-    run;
+  reference = "${test_source_directory}/main.native.reference";
+  check-program-output;
+}{
+  compiler_directory_suffix = "-dll";
+  setup-ocamlopt.byte-build-env;
 
-    reference = "${test_source_directory}/main.native.reference";
-    check-program-output;
-  }{
-    compiler_directory_suffix = "-dll";
-    setup-ocamlopt.byte-build-env;
+  program = "plugin.cmxs";
+  flags = "-shared";
+  all_modules = "plugin.ml";
+  ocamlopt.byte;
 
-    program = "plugin.cmxs";
-    flags = "-shared";
-    all_modules = "plugin.ml";
-    ocamlopt.byte;
+  flags = "-output-obj";
+  program = "main_obj.${objext}";
+  all_modules = "dynlink.cmxa entry.c main.ml";
+  ocamlopt.byte;
 
-    flags = "-output-obj";
-    program = "main_obj.${objext}";
-    all_modules = "dynlink.cmxa entry.c main.ml";
-    ocamlopt.byte;
+  script = "${mkdll} -maindll -o main.dll main_obj.${objext} entry.${objext} ${ocamlsrcdir}/runtime/libasmrun.${libext} ${nativecc_libs}";
+  script;
 
-    script = "${mkdll} -maindll -o main.dll main_obj.${objext} \
-entry.${objext} ${ocamlsrcdir}/runtime/libasmrun.${libext} ${nativecc_libs}";
-    script;
+  script = "${csharp_cmd}";
+  script;
 
-    script = "${csharp_cmd}";
-    script;
+  program = "./main.exe";
+  run;
 
-    program = "./main.exe";
-    run;
-
-    reference = "${test_source_directory}/main.native.reference";
-    check-program-output;
-  }
+  reference = "${test_source_directory}/main.native.reference";
+  check-program-output;
 }
 *)
 

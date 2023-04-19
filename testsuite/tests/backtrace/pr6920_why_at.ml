@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -15,10 +15,8 @@ let () =
   f ()
 
 (* TEST
-{
-  flags = "-g";
-  ocamlrunparam += ",b=1";
-  ocamlopt_flags = "-inline 0";
-  exit_status = "2";
-}
+flags = "-g";
+ocamlrunparam += ",b=1";
+ocamlopt_flags = "-inline 0";
+exit_status = "2";
 *)

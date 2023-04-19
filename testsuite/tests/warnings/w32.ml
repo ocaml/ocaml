@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -71,16 +71,14 @@ module type S = sig
 end
 
 (* TEST
-{
-  flags = "-w +A";
-  setup-ocamlc.byte-build-env;
+flags = "-w +A";
+setup-ocamlc.byte-build-env;
 
-  module = "w32.mli";
-  ocamlc.byte;
+module = "w32.mli";
+ocamlc.byte;
 
-  module = "w32.ml";
-  ocamlc.byte;
+module = "w32.ml";
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)

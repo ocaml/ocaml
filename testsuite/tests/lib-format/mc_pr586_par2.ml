@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 let () =
   let fmt_key = Format.synchronized_formatter_of_out_channel stdout in

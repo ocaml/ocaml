@@ -1,13 +1,11 @@
 (* TEST
+include runtime_events;
+include unix;
+libunix;
 {
-  include runtime_events;
-  include unix;
-  libunix;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

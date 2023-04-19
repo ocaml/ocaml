@@ -1,8 +1,6 @@
 (* TEST
-{
-  flags = "-annot";
-  modules = "a.ml";
-}
+flags = "-annot";
+modules = "a.ml";
 *)
 
 (* Test interference between inline record path

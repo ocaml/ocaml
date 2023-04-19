@@ -1,7 +1,5 @@
 (* TEST
-{
-  toplevel;
-}
+toplevel;
 *)
 
 let () = Format.pp_set_margin Format.std_formatter 20;;

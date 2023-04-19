@@ -1,13 +1,11 @@
 (* TEST
+modules = "fakeclock.c";
+include unix;
+libwin32unix;
 {
-  modules = "fakeclock.c";
-  include unix;
-  libwin32unix;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

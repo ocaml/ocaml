@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 (* closed, inlined *)
 let[@inline always] f () () = print_endline "4"

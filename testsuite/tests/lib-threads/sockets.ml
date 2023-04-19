@@ -1,14 +1,12 @@
 (* TEST
-{
-  include systhreads;
-  hassysthreads;
+include systhreads;
+hassysthreads;
 
-  libunix; (* Broken on Windows (missing join?), needs to be fixed *)
-  {
-    bytecode;
-  }{
-    native;
-  }
+libunix;
+{
+  bytecode;
+}{
+  native;
 }
 *)
 

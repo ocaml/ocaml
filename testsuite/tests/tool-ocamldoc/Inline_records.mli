@@ -1,11 +1,9 @@
 (* TEST
 {
   ocamldoc with html;
-}
-{
+}{
   ocamldoc with latex;
-}
-{
+}{
   ocamldoc with man;
 }
 *)

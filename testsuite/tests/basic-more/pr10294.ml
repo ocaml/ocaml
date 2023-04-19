@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 type import_error = Node of string
 type export_error = Variant of string * string

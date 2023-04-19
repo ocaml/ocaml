@@ -1,5 +1,5 @@
 (* TEST_BELOW
-*)
+(* Blank lines added here to preserve locations. *)*)
 
 (* PR#9494 *)
 
@@ -38,6 +38,4 @@ let _ = try
 with e -> print_endline @@ Printexc.to_string e; false
 
 (* TEST
-{
-}
 *)

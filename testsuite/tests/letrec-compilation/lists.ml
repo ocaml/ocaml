@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 (* a test with lists, because cyclic lists are fun *)
 let test =

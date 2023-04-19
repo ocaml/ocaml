@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 let f n = ((n lsl 1) + 1) / 2
 let g n = (n lsl 1) / 2

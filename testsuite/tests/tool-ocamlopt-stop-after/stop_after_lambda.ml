@@ -1,15 +1,13 @@
 (* TEST
-{
-  no-flambda;
+no-flambda;
 
-  setup-ocamlopt.byte-build-env;
+setup-ocamlopt.byte-build-env;
 
-  flags = "-dlambda -stop-after lambda -nopervasives ";
-  ocamlopt_byte_exit_status = "0";
-  ocamlopt.byte;
+flags = "-dlambda -stop-after lambda -nopervasives ";
+ocamlopt_byte_exit_status = "0";
+ocamlopt.byte;
 
-  check-ocamlopt.byte-output;
-}
+check-ocamlopt.byte-output;
 *)
 
 (* no-flambda: the -lambda output differs with flambda, and

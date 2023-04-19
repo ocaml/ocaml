@@ -1,13 +1,11 @@
 (* TEST
+include unix;
+flags += " -nolabels ";
+hasunix;
 {
-  include unix;
-  flags += " -nolabels ";
-  hasunix;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

@@ -1,7 +1,5 @@
 (* TEST
-{
-  ocamldoc with html;
-}
+ocamldoc with html;
 *)
 
 type ul

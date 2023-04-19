@@ -1,13 +1,11 @@
 (* TEST
+include unix;
+modules = "test3_.c";
+libunix;
 {
-  include unix;
-  modules = "test3_.c";
-  libunix;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

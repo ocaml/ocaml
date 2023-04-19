@@ -1,14 +1,12 @@
 (* TEST
-{
-  include unix;
-  libwin32unix;
+include unix;
+libwin32unix;
 
-  has_symlink;
-  {
-    bytecode;
-  }{
-    native;
-  }
+has_symlink;
+{
+  bytecode;
+}{
+  native;
 }
 *)
 

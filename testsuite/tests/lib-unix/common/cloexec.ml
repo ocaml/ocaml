@@ -1,58 +1,43 @@
 (* TEST
-(*
-  This test is temporarily disabled on the MinGW and MSVC ports,
-  because since fdstatus has been wrapped in an OCaml program,
-  it does not work as well as before.
-  Presumably this is because the OCaml runtime opens files, so that handles
-  that have actually been closed at execution look open and make the
-  test fail.
+include unix;
+readonly_files = "fdstatus_aux.c fdstatus_main.ml";
+hasunix;
 
-  One possible fix for this would be to make it possible for ocamltest to
-  compile C-only programs, which will be a bit of work to handle the
-  output of msvc and will also duplicate what the OCaml compiler itself
-  already does.
-*)
+libunix;
 {
-  include unix;
-  readonly_files = "fdstatus_aux.c fdstatus_main.ml";
-  hasunix;
+  program = "${test_build_directory}/cloexec.byte";
+  setup-ocamlc.byte-build-env;
 
-  libunix;
-  {
-    program = "${test_build_directory}/cloexec.byte";
-    setup-ocamlc.byte-build-env;
+  program = "${test_build_directory}/fdstatus.exe";
+  all_modules = "fdstatus_aux.c fdstatus_main.ml";
+  ocamlc.byte;
 
-    program = "${test_build_directory}/fdstatus.exe";
-    all_modules = "fdstatus_aux.c fdstatus_main.ml";
-    ocamlc.byte;
+  program = "${test_build_directory}/cloexec.byte";
+  all_modules = "cloexec.ml";
+  ocamlc.byte;
 
-    program = "${test_build_directory}/cloexec.byte";
-    all_modules = "cloexec.ml";
-    ocamlc.byte;
+  check-ocamlc.byte-output;
 
-    check-ocamlc.byte-output;
+  run;
 
-    run;
+  check-program-output;
+}{
+  program = "${test_build_directory}/cloexec.opt";
+  setup-ocamlopt.byte-build-env;
 
-    check-program-output;
-  }{
-    program = "${test_build_directory}/cloexec.opt";
-    setup-ocamlopt.byte-build-env;
+  program = "${test_build_directory}/fdstatus.exe";
+  all_modules = "fdstatus_aux.c fdstatus_main.ml";
+  ocamlopt.byte;
 
-    program = "${test_build_directory}/fdstatus.exe";
-    all_modules = "fdstatus_aux.c fdstatus_main.ml";
-    ocamlopt.byte;
+  program = "${test_build_directory}/cloexec.opt";
+  all_modules = "cloexec.ml";
+  ocamlopt.byte;
 
-    program = "${test_build_directory}/cloexec.opt";
-    all_modules = "cloexec.ml";
-    ocamlopt.byte;
+  check-ocamlopt.byte-output;
 
-    check-ocamlopt.byte-output;
+  run;
 
-    run;
-
-    check-program-output;
-  }
+  check-program-output;
 }
 *)
 

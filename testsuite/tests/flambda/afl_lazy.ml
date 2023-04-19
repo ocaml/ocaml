@@ -1,10 +1,8 @@
 (* TEST
-{
-  flambda;
+flambda;
 
-  ocamlopt_flags = "-O3 -afl-instrument";
-  native;
-}
+ocamlopt_flags = "-O3 -afl-instrument";
+native;
 *)
 
 let f l =

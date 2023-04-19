@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 (* Example from PR #10325.
    This triggered a segfault in bytecode, but only if the code was not compiled

@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 (* Note: we do *not* enable -dshapes, as in this example
    shape sizs grow exponentially in the size of the M1..M7 family below. *)

@@ -1,15 +1,13 @@
 (* TEST
-{
-  modules = "test_c_thread_register_cstubs.c";
-  include systhreads;
-  hassysthreads;
+modules = "test_c_thread_register_cstubs.c";
+include systhreads;
+hassysthreads;
 
-  not-bsd;
-  {
-    bytecode;
-  }{
-    native;
-  }
+not-bsd;
+{
+  bytecode;
+}{
+  native;
 }
 *)
 

@@ -1,9 +1,7 @@
 (* TEST
-{
-  flambda;
+flambda;
 
-  native;
-}
+native;
 *)
 
 type t = T of { pos : int }

@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 *)
 
@@ -48,8 +48,6 @@ let _ =
   run trickier
 
 (* TEST
-{
-  flags = "-g";
-  ocamlrunparam += ",b=1";
-}
+flags = "-g";
+ocamlrunparam += ",b=1";
 *)

@@ -1,12 +1,10 @@
 (* TEST
+include unix;
+libwin32unix;
 {
-  include unix;
-  libwin32unix;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

@@ -1,13 +1,11 @@
 (* TEST
+include unix;
+stderr = "/dev/null";
+hasunix;
 {
-  include unix;
-  stderr = "/dev/null";
-  hasunix;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

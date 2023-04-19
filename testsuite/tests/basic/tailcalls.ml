@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 let rec tailcall4 a b c d =
   if a < 0

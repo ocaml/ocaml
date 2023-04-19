@@ -1,19 +1,12 @@
 (* TEST
-{
-  include systhreads;
-  hassysthreads;
+include systhreads;
+hassysthreads;
 
-  (*
-    On Windows, we use Sleep(0) for triggering preemption of threads.
-    However, this does not seem very reliable, so that this test fails
-    on some Windows configurations. See GPR #1533.
-  *)
-  not-windows;
-  {
-    bytecode;
-  }{
-    native;
-  }
+not-windows;
+{
+  bytecode;
+}{
+  native;
 }
 *)
 

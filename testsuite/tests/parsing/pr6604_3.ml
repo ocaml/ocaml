@@ -1,12 +1,10 @@
 (* TEST
-{
-  flags = "-dparsetree";
-  setup-ocamlc.byte-build-env;
+flags = "-dparsetree";
+setup-ocamlc.byte-build-env;
 
-  ocamlc.byte;
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)
 
 # 1 "pr6604.ml"

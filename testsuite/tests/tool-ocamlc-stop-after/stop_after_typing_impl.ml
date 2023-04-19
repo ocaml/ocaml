@@ -1,9 +1,9 @@
 (* TEST_BELOW
-Lorem_ipsum_dolor_sit_a
-met,consectetu
-r_adipiscing_elit.Sed_non_risus.Lorem_ipsum_dolor_sit_amet,c
-onsectetur_adipiscing_elit.Sed_no
-n_risus.Lorem_ipsum_dolor_si
+Filler_text_added_to_pr
+eserve_locatio
+ns_while_translating_from_old_syntax__Filler_text_added_to_p
+reserve_locations_while_translati
+ng_from_old_syntax__Filler_t
 *)
 
 (* we intentionally write an output that is type-correct
@@ -13,13 +13,11 @@ n_risus.Lorem_ipsum_dolor_si
 external apply: int -> int = "%apply"
 
 (* TEST
-{
-  setup-ocamlc.byte-build-env;
+setup-ocamlc.byte-build-env;
 
-  flags = "-stop-after typing -dno-unique-ids -dtypedtree";
-  ocamlc_byte_exit_status = "0";
-  ocamlc.byte;
+flags = "-stop-after typing -dno-unique-ids -dtypedtree";
+ocamlc_byte_exit_status = "0";
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)

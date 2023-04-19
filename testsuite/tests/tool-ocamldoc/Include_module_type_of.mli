@@ -1,8 +1,7 @@
 (* TEST
 {
   ocamldoc with html;
-}
-{
+}{
   ocamldoc with latex;
 }
 *)

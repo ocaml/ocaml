@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 (* A variant of evaluation_order_1.ml where the side-effects
    are inside the blocks.

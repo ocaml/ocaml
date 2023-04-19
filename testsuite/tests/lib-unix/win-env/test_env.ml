@@ -1,16 +1,14 @@
 (* TEST
+unset FOO;
+unset FOO2;
+include unix;
+flags += "-strict-sequence -w +A-70 -warn-error +A";
+modules = "stubs.c";
+libwin32unix;
 {
-  unset FOO;
-  unset FOO2;
-  include unix;
-  flags += "-strict-sequence -w +A-70 -warn-error +A";
-  modules = "stubs.c";
-  libwin32unix;
-  {
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

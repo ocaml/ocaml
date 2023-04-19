@@ -1,13 +1,11 @@
 (* TEST
+flags = "-pp '${c_preprocessor}'";
+ocaml_filetype_flag = "-impl";
 {
-  flags = "-pp '${c_preprocessor}'";
-  ocaml_filetype_flag = "-impl";
-  {
-    compare_programs = "false";
-    bytecode;
-  }{
-    native;
-  }
+  compare_programs = "false";
+  bytecode;
+}{
+  native;
 }
 *)
 

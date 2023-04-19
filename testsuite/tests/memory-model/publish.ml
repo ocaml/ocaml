@@ -1,14 +1,12 @@
 (* TEST
+modules = "opt.ml barrier.ml hist.ml shared.ml run.ml outcome.ml";
+not-bsd;
 {
-  modules = "opt.ml barrier.ml hist.ml shared.ml run.ml outcome.ml";
-  not-bsd;
-  {
-    not-windows;
+  not-windows;
 
-    bytecode;
-  }{
-    native;
-  }
+  bytecode;
+}{
+  native;
 }
 *)
 

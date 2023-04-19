@@ -1,7 +1,5 @@
 (* TEST
-{
-  arguments = "???";
-}
+arguments = "???";
 *)
 
 (* On Windows the runtime expand windows wildcards (asterisks and

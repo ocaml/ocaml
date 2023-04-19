@@ -1,20 +1,18 @@
 (* TEST
+setup-ocamlc.byte-build-env;
+
+flags = "-dlambda -dno-unique-ids";
+ocamlc.byte;
 {
-  setup-ocamlc.byte-build-env;
+  flat-float-array;
 
-  flags = "-dlambda -dno-unique-ids";
-  ocamlc.byte;
-  {
-    flat-float-array;
+  compiler_reference = "${test_source_directory}/module_coercion.compilers.flat.reference";
+  check-ocamlc.byte-output;
+}{
+  no-flat-float-array;
 
-    compiler_reference = "${test_source_directory}/module_coercion.compilers.flat.reference";
-    check-ocamlc.byte-output;
-  }{
-    no-flat-float-array;
-
-    compiler_reference = "${test_source_directory}/module_coercion.compilers.no-flat.reference";
-    check-ocamlc.byte-output;
-  }
+  compiler_reference = "${test_source_directory}/module_coercion.compilers.no-flat.reference";
+  check-ocamlc.byte-output;
 }
 *)
 

@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -52,32 +52,30 @@ let b' x y = (a [@inlined hint]) x y
 let d' x = (c [@inlined hint]) x
 
 (* TEST
+flags = "-w +A-70";
+compile_only = "true";
 {
-  flags = "-w +A-70";
-  compile_only = "true";
-  {
-    setup-ocamlc.byte-build-env;
+  setup-ocamlc.byte-build-env;
 
-    ocamlc.byte;
+  ocamlc.byte;
 
-    check-ocamlc.byte-output;
-  }{
-    no-flambda;
+  check-ocamlc.byte-output;
+}{
+  no-flambda;
 
-    setup-ocamlopt.byte-build-env;
+  setup-ocamlopt.byte-build-env;
 
-    ocamlopt.byte;
+  ocamlopt.byte;
 
-    check-ocamlopt.byte-output;
-  }{
-    compiler_reference = "${test_source_directory}/w55.flambda.reference";
-    flambda;
+  check-ocamlopt.byte-output;
+}{
+  compiler_reference = "${test_source_directory}/w55.flambda.reference";
+  flambda;
 
-    setup-ocamlopt.byte-build-env;
+  setup-ocamlopt.byte-build-env;
 
-    ocamlopt.byte;
+  ocamlopt.byte;
 
-    check-ocamlopt.byte-output;
-  }
+  check-ocamlopt.byte-output;
 }
 *)

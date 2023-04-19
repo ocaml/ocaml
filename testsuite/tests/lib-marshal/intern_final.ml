@@ -1,7 +1,4 @@
-(* TEST
-{
-}
-*)
+(* TEST *)
 
 let t : int array = Array.make 200 42
 let c = open_out_bin "data42"

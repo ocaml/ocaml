@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 *)
 
@@ -12,8 +12,6 @@ end
 ;;
 
 (* TEST
-{
-  flags = " -short-paths ";
-  toplevel;
-}
+flags = " -short-paths ";
+toplevel;
 *)

@@ -1,16 +1,14 @@
 (* TEST
-{
-  include unix;
-  modules = "recvfrom.ml";
-  script = "sh ${test_source_directory}/is-linux.sh";
-  hasunix;
+include unix;
+modules = "recvfrom.ml";
+script = "sh ${test_source_directory}/is-linux.sh";
+hasunix;
 
-  script;
-  {
-    bytecode;
-  }{
-    native;
-  }
+script;
+{
+  bytecode;
+}{
+  native;
 }
 *)
 open Recvfrom

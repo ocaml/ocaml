@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 *)
 
@@ -23,8 +23,7 @@ let[@tail_mod_cons] rec tupled_map_not_direct (f, li) =
 (* TEST
 {
   bytecode;
-}
-{
+}{
   native;
 }
 *)

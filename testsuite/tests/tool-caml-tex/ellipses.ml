@@ -1,19 +1,17 @@
 (* TEST
-{
-  reference = "${test_source_directory}/ellipses.reference";
-  output = "ellipses.output";
-  readonly_files = "${test_source_directory}/ellipses.input";
-  script = "${ocamlrun} ${ocamlsrcdir}/tools/ocamltex -repo-root ${ocamlsrcdir} ${readonly_files} -o ${output}";
-  hasstr;
+reference = "${test_source_directory}/ellipses.reference";
+output = "ellipses.output";
+readonly_files = "${test_source_directory}/ellipses.input";
+script = "${ocamlrun} ${ocamlsrcdir}/tools/ocamltex -repo-root ${ocamlsrcdir} ${readonly_files} -o ${output}";
+hasstr;
 
-  hasunix;
+hasunix;
 
-  native-compiler;
+native-compiler;
 
-  shared-libraries;
+shared-libraries;
 
-  script with unix str;
+script with unix, str;
 
-  check-program-output;
-}
+check-program-output;
 *)

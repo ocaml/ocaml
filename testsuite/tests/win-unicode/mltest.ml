@@ -1,11 +1,9 @@
 (* TEST
-{
-  include unix;
-  flags += "-strict-sequence -w +A -warn-error +A";
-  windows-unicode;
+include unix;
+flags += "-strict-sequence -w +A -warn-error +A";
+windows-unicode;
 
-  toplevel;
-}
+toplevel;
 *)
 
 let foreign_names =

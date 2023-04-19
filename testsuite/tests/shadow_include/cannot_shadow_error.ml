@@ -1,5 +1,5 @@
 (* TEST_BELOW
-
+(* Blank lines added here to preserve locations. *)
 
 
 
@@ -25,13 +25,11 @@ module type PrintableComparable = sig
 end
 
 (* TEST
-{
-  flags = "-nostdlib -nopervasives";
-  setup-ocamlc.byte-build-env;
+flags = "-nostdlib -nopervasives";
+setup-ocamlc.byte-build-env;
 
-  ocamlc_byte_exit_status = "2";
-  ocamlc.byte;
+ocamlc_byte_exit_status = "2";
+ocamlc.byte;
 
-  check-ocamlc.byte-output;
-}
+check-ocamlc.byte-output;
 *)

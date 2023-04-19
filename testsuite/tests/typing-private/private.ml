@@ -1,8 +1,7 @@
 (* TEST
 {
   toplevel;
-}
-{
+}{
   toplevel with principal;
 }
 *)

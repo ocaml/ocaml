@@ -1,18 +1,18 @@
 (* TEST_BELOW
-Lorem_ipsum_d
-olor_sit_amet,consectetur_adi
-piscing_elit.S
-ed_non_risus.Lorem_ipsum_dolor_sit_amet,consectetur_adipiscing_elit.Sed_non_risus.L
-orem_ipsum_dolor_sit_amet,co
-nsectetur_adipiscing
-_elit.Sed_non_risus.Lorem_ipsum_dolor_sit_amet,consectetur_adipiscing_elit
+Filler_text_a
+dded_to_preserve_locations_wh
+ile_translatin
+g_from_old_syntax__Filler_text_added_to_preserve_locations_while_translating_from_o
+ld_syntax__Filler_text_added
+_to_preserve_locatio
+ns_while_translating_from_old_syntax__Filler_text_added_to_preserve_locati
 
-.Sed_non_risus.Lorem_ipsum_do
-lor_sit_amet,c
-onsectetur_adipiscing_elit.Sed_non_risus.Lorem_ipsum_dolor_sit_amet,consectetur_
-adipiscing_elit.Sed_non_risu
-s.Lorem_ipsum_dolor_
-sit_amet,consectetur_adipiscing_elit.Sed_non_risus.Lorem_ipsum_dolor_si
+ons_while_translating_from_ol
+d_syntax__Fill
+er_text_added_to_preserve_locations_while_translating_from_old_syntax__Filler_te
+xt_added_to_preserve_locatio
+ns_while_translating
+_from_old_syntax__Filler_text_added_to_preserve_locations_while_transla
 *)
 let rec fib = function
   | 0 | 1 -> 1
@@ -20,24 +20,22 @@ let rec fib = function
 ;;
 
 (* TEST
+compile_only = "true";
 {
-  compile_only = "true";
-  {
-    setup-ocamlc.byte-build-env;
+  setup-ocamlc.byte-build-env;
 
-    flags = "-g -dno-unique-ids -dno-locations -dsource -dparsetree -dtypedtree -dlambda";
-    ocamlc.byte;
+  flags = "-g -dno-unique-ids -dno-locations -dsource -dparsetree -dtypedtree -dlambda";
+  ocamlc.byte;
 
-    compiler_reference = "${test_source_directory}/test_locations.dno-locations.ocamlc.reference";
-    check-ocamlc.byte-output;
-  }{
-    setup-ocamlc.byte-build-env;
+  compiler_reference = "${test_source_directory}/test_locations.dno-locations.ocamlc.reference";
+  check-ocamlc.byte-output;
+}{
+  setup-ocamlc.byte-build-env;
 
-    flags = "-g -dno-unique-ids -dlocations -dsource -dparsetree -dtypedtree -dlambda";
-    ocamlc.byte;
+  flags = "-g -dno-unique-ids -dlocations -dsource -dparsetree -dtypedtree -dlambda";
+  ocamlc.byte;
 
-    compiler_reference = "${test_source_directory}/test_locations.dlocations.ocamlc.reference";
-    check-ocamlc.byte-output;
-  }
+  compiler_reference = "${test_source_directory}/test_locations.dlocations.ocamlc.reference";
+  check-ocamlc.byte-output;
 }
 *)
