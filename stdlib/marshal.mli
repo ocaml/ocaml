@@ -102,7 +102,7 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
    If [flags] contains [Marshal.Compression], the marshaled data
    representing value [v] is compressed before being written to
    channel [chan].  Decompression takes place automatically in
-   the unmarshaling functions {!input_value}, {!Marshal.from_channel},
+   the unmarshaling functions {!Stdlib.input_value}, {!Marshal.from_channel},
    {!Marshal.from_string}, etc.  For large values [v], compression
    typically reduces the size of marshaled data by a factor 2 to 4,
    but slows down marshaling and, to a lesser extent, unmarshaling.
@@ -203,14 +203,14 @@ val compression_supported : unit -> bool
 (** Indicates whether the compressed data format is supported.
 
     If [Marshal.compression_supported()] is [true], compressed data
-    is unmarshaled safely by {!input_value}, {!Marshal.from_channel},
+    is unmarshaled safely by {!Stdlib.input_value}, {!Marshal.from_channel},
     {!Marshal.from_string} and related functions.  Moreover, the
     [Marshal.Compression] flag is honored by the {!Marshal.to_channel},
     {!Marshal.to_string} and related functions, resulting in the
     production of compressed data.
 
     If [Marshal.compression_supported()] is [false], compressed data
-    causes {!input_value}, {!Marshal.from_channel},
+    causes {!Stdlib.input_value}, {!Marshal.from_channel},
     {!Marshal.from_string} and related functions to fail and a
     [Failure] exception to be raised.  Moreover,
     {!Marshal.to_channel}, {!Marshal.to_string} and related functions

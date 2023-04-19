@@ -921,7 +921,7 @@ val open_process_full :
 val open_process_args : string -> string array -> in_channel * out_channel
 (** [open_process_args prog args] runs the program [prog] with arguments
     [args].  Note that the first argument is by convention the filename of
-    the program being executed, just like {!Sys.argv.(0)}.  The new process
+    the program being executed, just like [Sys.argv.(0)].  The new process
     executes concurrently with the current process.  The standard input and
     output of the new process are redirected to pipes, which can be
     respectively read and written via the returned channels.  The input
