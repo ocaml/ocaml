@@ -211,13 +211,13 @@ END {
         }
         printf("\n");
         printf("Summary:\n");
-        printf("  %3d tests passed\n", passed);
-        printf("  %3d tests skipped\n", skipped);
-        printf("  %3d tests failed\n", failed);
-        printf("  %3d tests not started (parent test skipped or failed)\n",
+        printf("  %4d tests passed\n", passed);
+        printf("  %4d tests skipped\n", skipped);
+        printf("  %4d tests failed\n", failed);
+        printf("  %4d tests not started (parent test skipped or failed)\n",
                ignored);
-        printf("  %3d unexpected errors\n", unexped);
-        printf("  %3d tests considered", nresults);
+        printf("  %4d unexpected errors\n", unexped);
+        printf("  %4d tests considered", nresults);
         if (nresults != passed + skipped + ignored + failed + unexped){
             printf (" (totals don't add up??)");
         }
