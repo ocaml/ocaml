@@ -43,8 +43,9 @@ let mkidentifier id = make_identifier ~loc:(symbol_rloc()) id
 %token <string> IDENTIFIER
 %token <string> STRING
 
-%start tsl_block
-%type <Tsl_ast.tsl_block> tsl_block
+%start tsl_block_old tsl_block
+%type <Tsl_ast.tsl_block> tsl_block_old
+%type <Tsl_ast.t> tsl_block
 
 %%
 
@@ -66,14 +67,14 @@ statement_list:
 | { [] }
 | statement statement_list { $1 :: $2 }
 
-
 tsl_block:
-| TSL_BEGIN_C_STYLE tsl_script TSL_END_C_STYLE { $2 }
-| TSL_BEGIN_OCAML_STYLE tsl_script TSL_END_OCAML_STYLE { $2 }
+| TSL_BEGIN_C_STYLE forest TSL_END_C_STYLE { $2 }
+| TSL_BEGIN_OCAML_STYLE forest TSL_END_OCAML_STYLE { $2 }
 
-tsl_script:
-| tsl_item tsl_items { Old ($1 :: $2) }
-| tree_list { New $1 }
+
+tsl_block_old:
+| TSL_BEGIN_C_STYLE tsl_items TSL_END_C_STYLE { $2 }
+| TSL_BEGIN_OCAML_STYLE tsl_items TSL_END_OCAML_STYLE { $2 }
 
 tsl_items:
 | { [] }

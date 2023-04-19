@@ -34,13 +34,10 @@ type tsl_item =
     string located (* test name *) *
     string located list (* environment modifiers *)
 
+type tsl_block = tsl_item list
+
 (* New syntax *)
 type t = Ast of tsl_item list * t list
-
-(* old + new *)
-type tsl_block =
-  | Old of tsl_item list
-  | New of t list
 
 val make_identifier : ?loc:Location.t -> string -> string located
 val make_string : ?loc:Location.t -> string -> string located

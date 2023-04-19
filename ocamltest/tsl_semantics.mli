@@ -38,13 +38,13 @@ val test_trees_of_tsl_block :
   Tsl_ast.tsl_item list ->
   Tsl_ast.environment_statement located list * test_tree list
 
-val test_trees_of_tsl_asts :
-  Tsl_ast.t list ->
+val test_trees_of_tsl_ast :
+  Tsl_ast.t ->
   Tsl_ast.environment_statement located list * test_tree list
 
-val tsl_asts_of_test_trees :
+val tsl_ast_of_test_trees :
   Tsl_ast.environment_statement located list * test_tree list ->
-  Tsl_ast.t list
+  Tsl_ast.t
 
 
 val tests_in_tree : test_tree -> Tests.TestSet.t
@@ -56,4 +56,4 @@ val actions_in_test : Tests.t -> Actions.ActionSet.t
 val actions_in_tests : Tests.TestSet.t -> Actions.ActionSet.t
 
 
-val print_tsl_ast : out_channel -> Tsl_ast.t -> unit
+val print_tsl_ast : compact:bool -> out_channel -> Tsl_ast.t -> unit

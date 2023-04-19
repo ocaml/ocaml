@@ -121,12 +121,8 @@ let init_tests_to_skip () =
 let test_file test_filename =
   let start = if Options.show_timings then Unix.gettimeofday () else 0.0 in
   let skip_test = List.mem test_filename !tests_to_skip in
-  let tsl_block = tsl_block_of_file_safe test_filename in
-  let (rootenv_statements, test_trees) =
-    match tsl_block with
-    | Tsl_ast.Old l -> test_trees_of_tsl_block l
-    | Tsl_ast.New asts -> test_trees_of_tsl_asts asts
-  in
+  let tsl_ast = tsl_block_of_file_safe test_filename in
+  let (rootenv_statements, test_trees) = test_trees_of_tsl_ast tsl_ast in
   let test_trees = match test_trees with
     | [] ->
       let default_tests = Tests.default_tests() in
@@ -275,7 +271,7 @@ let () =
   List.iter (doit list_tests) Options.list_tests;
   let do_file =
     if Options.translate then
-      Translate.file Options.force_below Options.keep_chars
+      Translate.file ~style:Options.style
     else
       test_file
   in

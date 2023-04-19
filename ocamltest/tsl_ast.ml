@@ -33,11 +33,9 @@ type tsl_item =
     string located (* test name *) *
     string located list (* environment modifiers *)
 
-type t = Ast of tsl_item list * t list
+type tsl_block = tsl_item list
 
-type tsl_block =
-  | Old of tsl_item list
-  | New of t list
+type t = Ast of tsl_item list * t list
 
 let make ?(loc = Location.none) foo = { node = foo; loc = loc }
 

@@ -15,4 +15,10 @@
 
 (* Translate a test file from old to new syntax. *)
 
-val file : bool -> bool -> string -> unit
+type style =
+| Plain
+| Compact
+| Lines
+| Chars
+
+val file : style:style -> string -> unit

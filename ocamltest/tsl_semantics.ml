@@ -188,70 +188,60 @@ let rec split_env l =
 
 let rec test_trees_of_tsl_ast (Ast (seq, subs)) =
   let (env, rest) = split_env seq in
-  match rest with
-  | [] -> (env, List.map test_tree_of_tsl_ast subs)
-  | [ Test (_, name, mods) ] ->
-    ([],
-     [Node (env, lookup_test name, mods, List.map test_tree_of_tsl_ast subs)])
-  | Test (_, name, mods) :: seq1 ->
-    let sub = test_tree_of_tsl_ast (Ast (seq1, subs)) in
-    ([], [Node (env, lookup_test name, mods, [sub])])
-  | Environment_statement _ :: _ -> assert false
+  let trees =
+    match rest with
+    | [] -> List.map test_tree_of_tsl_ast subs
+    | [ Test (_, name, mods) ] ->
+      [Node ([], lookup_test name, mods, List.map test_tree_of_tsl_ast subs)]
+    | Test (_, name, mods) :: seq1 ->
+      let sub = test_tree_of_tsl_ast (Ast (seq1, subs)) in
+      [Node ([], lookup_test name, mods, [sub])]
+    | Environment_statement _ :: _ -> assert false
+  in (env, trees)
 
 and test_tree_of_tsl_ast ast =
   match test_trees_of_tsl_ast ast with
-  | ([], [tree]) -> tree
+  | (env, [Node (env1, t, m, s)]) -> Node (env @ env1, t, m, s)
   | (env, trees) -> Node (env, Tests.null, [], trees)
 
-let test_trees_of_tsl_asts asts =
-  match asts with
-  | [ ast ] ->
-    begin match test_trees_of_tsl_ast ast with
-    | (env1, [Node (env2, t, m, s)]) -> (env1 @ env2, [Node ([], t, m, s)])
-    | x -> x
-    end
-  | _ -> ([], List.map test_tree_of_tsl_ast asts)
-
 let rec ast_of_tree (Node (env, test, mods, subs)) =
-  let env = List.map (fun x -> Environment_statement x) env in
   let tst = [Test (0, Tsl_ast.make_identifier test.Tests.test_name, mods)] in
-  match subs with
-  | [ tree ] ->
-    let Ast (stmts, subs2) = ast_of_tree tree in
-    Ast (env @ tst @ stmts, subs2)
-  | _ -> Ast (env @ tst, List.map ast_of_tree subs)
+  ast_of_tree_aux env tst subs
 
-let tsl_asts_of_test_trees (env, trees) =
+and ast_of_tree_aux env tst subs =
   let env = List.map (fun x -> Environment_statement x) env in
-  match env, trees with
-  | _, [] -> [ Ast (env, []) ]
-  | _, [ tree ] ->
-    let Ast (stmts, trees2) = ast_of_tree tree in
-    [ Ast (env @ stmts, trees2) ]
-  | [], _ -> List.map ast_of_tree trees
-  | _ -> [ Ast (env, List.map ast_of_tree trees) ]
+  match List.map ast_of_tree subs with
+  | [ Ast (stmts, subs) ] -> Ast (env @ tst @ stmts, subs)
+  | asts -> Ast (env @ tst, asts)
+
+let tsl_ast_of_test_trees (env, trees) = ast_of_tree_aux env [] trees
 
 open Printf
 
-let print_tsl_ast oc ast =
+let print_tsl_ast ~compact oc ast =
   let pr fmt (*args*) = fprintf oc fmt (*args*) in
 
   let rec print_ast indent (Ast (stmts, subs)) =
-    let indent2 = indent ^ "  " in
+    print_statements indent stmts;
+    print_forest indent subs;
+
+  and print_sub indent ast =
     pr "{\n";
-    print_statements indent2 stmts;
-    print_forest indent2 subs;
+    print_ast (indent ^ "  ") ast;
     pr "%s}" indent;
 
   and print_statements indent stmts =
     match stmts with
     | Test (_, name, mods) :: tl ->
       pr "%s%s" indent name.node;
-      if mods <> [] then begin
-        pr " with";
-        List.iter (fun ls -> pr " %s" ls.node) mods;
+      begin match mods with
+      | m :: tl ->
+        pr " with %s" m.node;
+        List.iter (fun m -> pr ", %s" m.node) tl;
+      | [] -> ()
       end;
-      pr ";\n%s" (if tl = [] then "" else "\n");
+      pr ";\n";
+      if tl <> [] && not compact then pr "\n";
       print_statements indent tl;
     | Environment_statement env :: tl->
       print_env indent env;
@@ -261,7 +251,7 @@ let print_tsl_ast oc ast =
   and print_forest indent subs =
     if subs <> [] then begin
       pr "%s" indent;
-      List.iter (print_ast indent) subs;
+      List.iter (print_sub indent) subs;
       pr "\n";
     end
 
@@ -269,7 +259,7 @@ let print_tsl_ast oc ast =
     match e.node with
     | Assignment (set, variable, value) ->
       pr "%s" indent;
-      if set then pr "SET ";
+      if set then pr "set ";
       pr "%s = \"%s\";\n" variable.node value.node;
     | Append (variable, value) ->
       pr "%s%s += \"%s\";\n" indent variable.node value.node;
@@ -279,4 +269,3 @@ let print_tsl_ast oc ast =
       pr "%sunset %s;\n" indent ls.node;
   in
   print_ast "" ast;
-  pr "\n"

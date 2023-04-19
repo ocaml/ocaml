@@ -62,11 +62,8 @@ let list_tests = ref []
 let show_timings = ref false
 
 let translate = ref false
-let force_below = ref false
-let keep_chars = ref false
-let set_below_and_chars () =
-  force_below := true;
-  keep_chars := true
+let style = ref Translate.Plain
+
 
 let add_to_list r x =
   r := !r @ [x]
@@ -92,13 +89,14 @@ let commandline_options =
    " List tests in given directory.");
   ("-keep-test-dir-on-success", Arg.Set keep_test_dir_on_success,
    " Keep the test directory (with the generated test artefacts) on success.");
-  ("-translate-test-script", Arg.Set translate,
+  ("-translate", Arg.Set translate,
    " Translate the test script from old to new syntax");
-  ("-below", Arg.Set force_below,
-   " When translating, move the test script to the end of the file");
-  ("-below-with-chars", Arg.Unit set_below_and_chars,
-   " When translating, move the test script to the end of the file and \
-     preserve the number of chars");
+  ("-compact", Arg.Unit (fun () -> style := Translate.Compact),
+   " If translating, output the new script in compact mode.");
+  ("-keep-lines", Arg.Unit (fun () -> style := Translate.Lines),
+   " If translating, preserve line numbers in the output.");
+  ("-keep-chars", Arg.Unit (fun () -> style := Translate.Chars),
+   " If translating, preserve char offsets in the output.");
 ]
 
 let files_to_test = ref []
@@ -117,5 +115,4 @@ let list_tests = !list_tests
 let keep_test_dir_on_success = !keep_test_dir_on_success
 let show_timings = !show_timings
 let translate = !translate
-let force_below = !force_below
-let keep_chars = !keep_chars
+let style = !style
