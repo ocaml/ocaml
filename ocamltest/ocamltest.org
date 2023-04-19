@@ -327,14 +327,12 @@ required steps to achieve this:
 1. We slightly modify the test block in =hello.ml=, as follows:
    #+begin_src
    (* TEST
-   {
      flags = "-w +33";
-   }
    *)
    #+end_src
 
 2. Since we now expect a non-empty output for the compilers, we need to
-   store the expected output in a file, namely =hello.compilers.output=
+   store the expected output in a file, namely =hello.compilers.reference=
    beside =hello.ml= and =hello.reference=. To figure out what
    this file shall contain, we can run ocamltest even before it
    has been created. Of course, the action that checks compiler output
@@ -392,9 +390,7 @@ Our =hello.ml= test program can then be rewritten as follows:
 
 #+begin_src
 (* TEST
-{
   modules = "greet.ml";
-}
 *)
 
 let _ = Greet.greet "world"
@@ -457,10 +453,8 @@ it becomes a test:
 
 #+begin_src
 (* TEST
-{
   directories += " ${ocamlsrcdir}/otherlibs/str ";
   libraries += " str ";
-}
 *)
 #+end_src
 
@@ -506,9 +500,7 @@ test block is actually written as follows:
 
 #+begin_src
 (* TEST
-{
   include str;
-}
 *)
 #+end_src
 
@@ -527,7 +519,6 @@ that it is run only on Unix platforms:
 
 #+begin_src
 (* TEST
-{
   unix;
   {
     bytecode;
@@ -535,7 +526,6 @@ that it is run only on Unix platforms:
   {
     native;
   }
-}
 *)
 #+end_src
 
@@ -555,7 +545,6 @@ block
 is actually equivalent to
 #+begin_src
 (* TEST
-{
   {
     bytecode;
   }
@@ -568,9 +557,7 @@ is actually equivalent to
 One common error when designing tests is to believe that a block like
 #+begin_src
 (* TEST
-{
   unix;
-}
 *)
 #+end_src
 means to execute the =unix= test that verifies that the OS is indeed
@@ -584,7 +571,6 @@ erroneous block above is the use shown at the beginning of this section,
 namely:
 #+begin_src
 (* TEST
-{
   unix;
   {
     bytecode;
@@ -602,7 +588,6 @@ sub-blocks (unless overridden at some point).
 For instance, given the following blocks:
 #+begin_src
 (* TEST
-{
   foo = "abc";
   {
     bar = "def";
@@ -618,7 +603,6 @@ For instance, given the following blocks:
   {
     test2;
   }
-}
 *)
 #+end_src
 - The definition of =foo= is visible in all the tests
@@ -660,9 +644,7 @@ So, here is a toy example of an =expect= test:
 
 #+begin_src
 (* TEST
-{
   expect;
-}
 *)
 
 type point = { x : int; y : int };;
@@ -696,10 +678,8 @@ follows:
 
 #+begin_src
 (* TEST
-{
   script = "${test_source_directory}/faketest.sh";
   script;
-}
 *)
 
 let _ = print_endline "Hello, world!"
