@@ -277,6 +277,8 @@ let index_decl =
           add_loc_to_index ~namespace:Module_type mty_env path lid
       | Tmty_with (_mty, l) ->
           List.iter (with_constraint ~env:mty_env) l
+      | Tmty_alias (path, lid) ->
+          add_loc_to_index ~namespace:Module mty_env path lid
       | _ -> ());
       default_iterator.module_type sub mty)
 
