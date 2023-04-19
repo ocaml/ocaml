@@ -10,6 +10,9 @@ not-windows;
 }
 *)
 
+   (* Test that yielding between busy threads reliably triggers a thread
+      switch. *)
+
 let threads = 4
 
 let are_ready = ref 0

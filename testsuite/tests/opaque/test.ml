@@ -38,22 +38,22 @@ ocamlopt.byte;
 flags = "-I fst";
 all_modules = "test.ml";
 ocamlopt.byte;
-{
+{ (* ordinary compilation *)
   compile_only = "false";
   all_modules = "fst/opaque_intf.cmx fst/opaque_impl.cmx fst/regular.cmx test.cmx";
   program = "${test_build_directory}/p1.exe";
   ocamlopt.byte;
-}{
+}{ (* change to opaque interface *)
   compile_only = "false";
   all_modules = "snd/opaque_intf.cmx fst/opaque_impl.cmx fst/regular.cmx test.cmx";
   program = "${test_build_directory}/p2.exe";
   ocamlopt.byte;
-}{
+}{ (* change to opaque implementation *)
   compile_only = "false";
   all_modules = "fst/opaque_intf.cmx snd/opaque_impl.cmx fst/regular.cmx test.cmx";
   program = "${test_build_directory}/p3.exe";
   ocamlopt.byte;
-}{
+}{ (* change to non-opaque implementation *)
   compile_only = "false";
   all_modules = "fst/opaque_intf.cmx fst/opaque_impl.cmx snd/regular.cmx test.cmx";
   program = "${test_build_directory}/p4.exe";

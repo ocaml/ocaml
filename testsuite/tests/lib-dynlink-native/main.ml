@@ -1,14 +1,17 @@
 (* TEST
-readonly_files = "a.ml api.ml b.ml bug.ml c.ml factorial.c pack_client.ml packed1_client.ml packed1.ml plugin2.ml plugin4.ml plugin_ext.ml plugin_high_arity.ml plugin.ml plugin.mli plugin_ref.ml plugin_simple.ml plugin_thread.ml";
+readonly_files = "a.ml api.ml b.ml bug.ml c.ml factorial.c pack_client.ml \
+  packed1_client.ml packed1.ml plugin2.ml plugin4.ml plugin_ext.ml \
+  plugin_high_arity.ml plugin.ml plugin.mli plugin_ref.ml plugin_simple.ml \
+  plugin_thread.ml";
 subdirectories = "sub";
 include systhreads;
 include dynlink;
 hassysthreads;
 
-libraries = "";
+libraries = ""; (* We will add them manually where appropriated *)
 native-dynlink;
 
-ocamlopt_default_flags = "";
+ocamlopt_default_flags = ""; (* Removes the -ccopt -no-pie on ised on OpenBSD *)
 setup-ocamlopt.byte-build-env;
 
 module = "api.ml";
@@ -226,6 +229,15 @@ ocamlopt.byte;
     flags = "-linkall";
     all_modules = "api.cmx main.cmx";
     ocamlopt.byte;
+(*
+On OpenBSD, the compiler produces warnings like
+/usr/bin/ld: warning: creating a DT_TEXTREL in a shared object.
+So the compiler output is not empty on OpenBSD so an emptiness check
+would fail on this platform.
+
+We thus do not check compiler output. This was not done either before the
+test was ported to ocamltest.
+*)
 
     arguments = "plugin.so plugin2.so plugin_thread.so";
     run;

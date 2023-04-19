@@ -5,14 +5,16 @@ readonly_files = "tscanf2_worker.ml";
 reference = "${test_source_directory}/tscanf2.reference";
 hasunix;
 {
+  (* The bytecode test *)
+
   program = "${test_build_directory}/master.byte";
   setup-ocamlc.byte-build-env;
 
-  ocamlc.byte;
+  ocamlc.byte; (* Compiles the master *)
 
   all_modules = "tscanf2_io.cmo tscanf2_worker.ml";
   program = "${test_build_directory}/worker.byte";
-  ocamlc.byte;
+  ocamlc.byte; (* Compiles the worker *)
 
   check-ocamlc.byte-output;
 
@@ -22,14 +24,16 @@ hasunix;
 
   check-program-output;
 }{
+  (* The native test *)
+
   program = "${test_build_directory}/master.opt";
   setup-ocamlopt.byte-build-env;
 
-  ocamlopt.byte;
+  ocamlopt.byte; (* Compiles the master *)
 
   all_modules = "tscanf2_io.cmx tscanf2_worker.ml";
   program = "${test_build_directory}/worker.opt";
-  ocamlopt.byte;
+  ocamlopt.byte; (* Compiles the worker *)
 
   check-ocamlopt.byte-output;
 

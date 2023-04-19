@@ -19,3 +19,5 @@ ocamlopt.byte;
 
 run;
 *)
+
+(* No code here, this file is a pure test script. *)

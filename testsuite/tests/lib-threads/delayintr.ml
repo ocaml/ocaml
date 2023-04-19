@@ -3,7 +3,7 @@ include systhreads;
 readonly_files = "sigint.c";
 hassysthreads;
 
-libunix;
+libunix; (* excludes mingw32/64 and msvc32/64 *)
 {
   program = "${test_build_directory}/delayintr.byte";
   setup-ocamlc.byte-build-env;

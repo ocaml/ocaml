@@ -1,6 +1,20 @@
 (* TEST
 include unix;
 readonly_files = "fdstatus_aux.c fdstatus_main.ml";
+
+(*
+  This test is temporarily disabled on the MinGW and MSVC ports,
+  because since fdstatus has been wrapped in an OCaml program,
+  it does not work as well as before.
+  Presumably this is because the OCaml runtime opens files, so that handles
+  that have actually been closed at execution look open and make the
+  test fail.
+
+  One possible fix for this would be to make it possible for ocamltest to
+  compile C-only programs, which will be a bit of work to handle the
+  output of msvc and will also duplicate what the OCaml compiler itself
+  already does.
+*)
 hasunix;
 
 libunix;

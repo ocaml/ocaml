@@ -2,7 +2,7 @@
 include systhreads;
 hassysthreads;
 
-libunix;
+libunix; (* Broken on Windows (missing join?), needs to be fixed *)
 {
   bytecode;
 }{

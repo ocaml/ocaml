@@ -1,7 +1,25 @@
 #!/bin/sh
 
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*           Damien Doligez, projet Cambium, INRIA                        *
+#*                                                                        *
+#*   Copyright 2023 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
 # This is the list of tests present in commit
 # cd195d6f4f8696af36efaea82941482e92f85464
+
+# This script assumes that ../trunk contains a check-out of trunk to get
+# the old-syntax test files from.
 
 # There are 1328 test scripts detected by ocamltest
 
@@ -1176,7 +1194,6 @@ warnings/mnemonics.mll \
 warnings/w51.ml \
 warnings/w52.ml \
 warnings/w58.ml \
-warnings/w59.ml \
 weak-ephe-final/ephe_infix.ml \
 weak-ephe-final/ephetest.ml \
 weak-ephe-final/ephetest2.ml \
@@ -1314,6 +1331,7 @@ warnings/w51_bis.ml \
 warnings/w53.ml \
 warnings/w54.ml \
 warnings/w55.ml \
+warnings/w59.ml \
 warnings/w60.ml \
 warnings/w68.ml \
 "
@@ -1389,7 +1407,9 @@ for f in $TESTS_CHARS; do
   ocamltest/ocamltest -translate -keep-chars ../trunk/$ff >$ff
 done
 
-N=$(echo $TESTS_COMMENTS $TESTS_PLAIN $TESTS_COMPACT $TESTS_LINES $TESTS_CHARS $TESTS_SPECIAL | wc -w)
+N=$(echo $TESTS_COMMENTS $TESTS_PLAIN $TESTS_COMPACT $TESTS_LINES \
+         $TESTS_CHARS $TESTS_SPECIAL \
+   | wc -w)
 if [ $N -ne 1328 ]; then
   printf "Error: wrong number of test files (%d should be 1328)\n" $N
   exit 5

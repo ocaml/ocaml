@@ -17,4 +17,7 @@ ocamlc.byte;
 check-ocamlc.byte-output;
 *)
 
+(* Make sure ocamlc prints badly ordered dependencies only once.
+   See issue #12074. We test with ocamlc.byte only. *)
+
 let value = ()

@@ -1,7 +1,15 @@
 (* TEST
+(*
+  This test is currently skipped because there is no proper way to
+  figure out whether Curses is available or not. If it becomes possible
+  to figure that out, it would be nice to be able to check that the test
+  compiles. Executing seems lessrelevant.
+*)
 reason = "curses can not be properly detected at the moment";
 skip;
 *)
+
+(* Tests from manual, section intf-c *)
 
 (* File prog.ml -- main program using curses *)
 open Curses;;
