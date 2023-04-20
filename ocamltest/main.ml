@@ -31,7 +31,7 @@ let announce_test_error test_filename error =
 
 exception Syntax_error of Lexing.position
 
-let tsl_block_of_file test_filename =
+let tsl_parse_file test_filename =
   let input_channel = open_in test_filename in
   let lexbuf = Lexing.from_channel input_channel in
   Location.init lexbuf test_filename;
@@ -41,8 +41,8 @@ let tsl_block_of_file test_filename =
     | exception e -> close_in input_channel; raise e
     | _ as tsl_block -> close_in input_channel; tsl_block
 
-let tsl_block_of_file_safe test_filename =
-  try tsl_block_of_file test_filename with
+let tsl_parse_file_safe test_filename =
+  try tsl_parse_file test_filename with
   | Sys_error message ->
     Printf.eprintf "%s\n%!" message;
     announce_test_error test_filename message;
@@ -51,7 +51,7 @@ let tsl_block_of_file_safe test_filename =
     let open Lexing in
     Printf.eprintf "%s:%d.%d: syntax error in test script\n%!"
       test_filename p.pos_lnum (p.pos_cnum - p.pos_bol);
-    announce_test_error test_filename "could not read test block";
+    announce_test_error test_filename "could not read test script";
     exit 1
 
 let print_usage () =
@@ -121,7 +121,7 @@ let init_tests_to_skip () =
 let test_file test_filename =
   let start = if Options.show_timings then Unix.gettimeofday () else 0.0 in
   let skip_test = List.mem test_filename !tests_to_skip in
-  let tsl_ast = tsl_block_of_file_safe test_filename in
+  let tsl_ast = tsl_parse_file_safe test_filename in
   let (rootenv_statements, test_trees) = test_trees_of_tsl_ast tsl_ast in
   let test_trees = match test_trees with
     | [] ->
