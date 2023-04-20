@@ -22,22 +22,6 @@ type behavior =
   | Skip_all_tests
   | Run of Environments.t
 
-(*
-let first_token filename =
-  let input_channel = open_in filename in
-  let lexbuf = Lexing.from_channel input_channel in
-  Location.init lexbuf filename;
-  let token =
-    try Tsl_lexer.token lexbuf with e -> close_in input_channel; raise e
-  in close_in input_channel; token
-
-let is_test filename =
-  match first_token filename with
-    | exception _ -> false
-    | Tsl_parser.TSL_BEGIN_C_STYLE | TSL_BEGIN_OCAML_STYLE -> true
-    | _ -> false
-*)
-
 (* this primitive announce should be used for tests
    that were aborted on system error before ocamltest
    could parse them *)
@@ -221,10 +205,12 @@ let test_file test_filename =
     Printf.eprintf "Wall clock: %s took %.02fs\n%!"
                    test_filename wall_clock_duration
 
-let is_test s =
-  match tsl_block_of_file s with
-  | _ -> true
-  | exception _ -> false
+let is_test filename =
+  let input_channel = open_in filename in
+  let lexbuf = Lexing.from_channel input_channel in
+  Fun.protect ~finally:(fun () -> close_in input_channel) begin fun () ->
+    Tsl_lexer.is_test lexbuf
+  end
 
 let ignored s =
   s = "" || s.[0] = '_' || s.[0] = '.'
