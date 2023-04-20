@@ -1,1 +1,6 @@
 Indexed shapes:
+Index_types.3: poly (File "index_types.ml", line 29, characters 24-28)
+Index_types.0: t (File "index_types.ml", line 25, characters 9-10)
+Index_types.0: t (File "index_types.ml", line 20, characters 8-9)
+Index_types.0: t (File "index_types.ml", line 20, characters 8-9)
+<predef:int>: int (File "index_types.ml", line 18, characters 9-12)
