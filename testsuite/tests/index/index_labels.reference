@@ -1,0 +1,11 @@
+Indexed shapes:
+Index_labels.2: b (File "index_labels.ml", line 26, characters 14-15)
+Index_labels.1: a (File "index_labels.ml", line 26, characters 6-7)
+Index_labels.3: x (File "index_labels.ml", line 23, characters 2-3)
+Index_labels.1: a (File "index_labels.ml", line 23, characters 4-5)
+Index_labels.3: x (File "index_labels.ml", line 22, characters 2-3)
+Index_labels.1: a (File "index_labels.ml", line 22, characters 4-5)
+Index_labels.2: b (File "index_labels.ml", line 20, characters 18-19)
+Index_labels.1: a (File "index_labels.ml", line 20, characters 10-11)
+<predef:string>: string (File "index_labels.ml", line 18, characters 30-36)
+<predef:int>: int (File "index_labels.ml", line 18, characters 22-25)
