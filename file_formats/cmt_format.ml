@@ -227,6 +227,9 @@ let index_decl =
     | { Types.cstr_uid; _ } ->
       shape_index := (Resolved cstr_uid, lid) :: !shape_index
   in
+  let add_label lid { Types.lbl_uid; _ } =
+      shape_index := (Resolved lbl_uid, lid) :: !shape_index
+  in
   let with_constraint ~env (_path, _lid, with_constraint) =
     match with_constraint with
     | Twith_module (path', lid') | Twith_modsubst (path', lid') ->
@@ -241,6 +244,14 @@ let index_decl =
           add_loc_to_index ~namespace:Value exp_env path lid
       | Texp_construct (lid, constr_desc, _) ->
           add_constructor_description exp_env lid constr_desc
+      | Texp_field (_, lid, label_desc)
+      | Texp_setfield (_, lid, label_desc, _) ->
+          add_label lid label_desc
+      | Texp_record { fields; _ } ->
+        Array.iter (fun (label_descr, record_label_definition) ->
+          match record_label_definition with
+          | Overridden (lid, _) -> add_label lid label_descr
+          | Kept _ -> ()) fields
       | _ -> ());
       default_iterator.expr sub e);
 
@@ -260,7 +271,9 @@ let index_decl =
       (match pat_desc with
       | Tpat_construct (lid, constr_desc, _, _) ->
           add_constructor_description pat_env lid constr_desc
-      | Tpat_value _ -> ()
+      | Tpat_record (fields, _) ->
+          List.iter (fun (lid, label_descr, _) -> add_label lid label_descr)
+          fields
       | _ -> ());
       List.iter  (fun (pat_extra, _, _) ->
         match pat_extra with
