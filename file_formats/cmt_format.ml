@@ -287,8 +287,18 @@ let index_decl =
       (match sig_desc with
       | Tsig_modsubst { ms_manifest; ms_txt } ->
         add_loc_to_index ~namespace:Module sig_env ms_manifest ms_txt
+      | Tsig_typext { tyext_path; tyext_txt } ->
+        add_loc_to_index ~namespace:Type sig_env tyext_path tyext_txt
       | _ -> ());
-      default_iterator.signature_item sub sig_item)
+      default_iterator.signature_item sub sig_item);
+
+  structure_item =
+    (fun sub ({ str_desc; str_env; _ } as str_item) ->
+      (match str_desc with
+      | Tstr_typext { tyext_path; tyext_txt } ->
+        add_loc_to_index ~namespace:Type str_env tyext_path tyext_txt
+      | _ -> ());
+      default_iterator.structure_item sub str_item)
 }
 
 let gather_declarations binary_annots = iter_on_annots iter_decl binary_annots
