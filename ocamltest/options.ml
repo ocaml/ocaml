@@ -63,6 +63,7 @@ let show_timings = ref false
 
 let translate = ref false
 let style = ref Translate.Plain
+let compact = ref false
 
 
 let add_to_list r x =
@@ -91,7 +92,7 @@ let commandline_options =
    " Keep the test directory (with the generated test artefacts) on success.");
   ("-translate", Arg.Set translate,
    " Translate the test script from old to new syntax");
-  ("-compact", Arg.Unit (fun () -> style := Translate.Compact),
+  ("-compact", Arg.Set compact,
    " If translating, output the new script in compact mode.");
   ("-keep-lines", Arg.Unit (fun () -> style := Translate.Lines),
    " If translating, preserve line numbers in the output.");
@@ -116,3 +117,4 @@ let keep_test_dir_on_success = !keep_test_dir_on_success
 let show_timings = !show_timings
 let translate = !translate
 let style = !style
+let compact = !compact

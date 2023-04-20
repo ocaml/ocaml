@@ -17,8 +17,7 @@
 
 type style =
 | Plain
-| Compact
 | Lines
 | Chars
 
-val file : style:style -> string -> unit
+val file : style:style -> compact:bool -> string -> unit

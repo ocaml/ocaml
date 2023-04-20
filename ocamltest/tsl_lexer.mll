@@ -44,18 +44,18 @@ rule is_test = parse
 and token = parse
   | blank * { token lexbuf }
   | newline { Lexing.new_line lexbuf; token lexbuf }
-  | "/*" blank* "TEST" { TSL_BEGIN_C_STYLE false }
+  | "/*" blank* "TEST" { TSL_BEGIN_C_STYLE `Above }
   | "/*" blank* "TEST_BELOW" _ * "/*" blank* "TEST" {
       let s = Lexing.lexeme lexbuf in
       String.iter (fun c -> if c = '\n' then Lexing.new_line lexbuf) s;
-      TSL_BEGIN_C_STYLE true
+      TSL_BEGIN_C_STYLE `Below
     }
   | "*/" { TSL_END_C_STYLE }
-  | "(*" blank* "TEST" { TSL_BEGIN_OCAML_STYLE false }
+  | "(*" blank* "TEST" { TSL_BEGIN_OCAML_STYLE `Above }
   | "(*" blank* "TEST_BELOW" _ * "(*" blank* "TEST" {
       let s = Lexing.lexeme lexbuf in
       String.iter (fun c -> if c = '\n' then Lexing.new_line lexbuf) s;
-      TSL_BEGIN_OCAML_STYLE true
+      TSL_BEGIN_OCAML_STYLE `Below
     }
   | "*)" { TSL_END_OCAML_STYLE }
   | "," { COMMA }
@@ -72,8 +72,8 @@ and token = parse
         | "with" -> WITH
         | _ -> IDENTIFIER s
     }
-  | "{" { OPEN }
-  | "}" { CLOSE }
+  | "{" { OPEN_BRACE }
+  | "}" { CLOSE_BRACE }
   | ";" { SEMI }
   | "(*"
     {

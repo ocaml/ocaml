@@ -1382,17 +1382,22 @@ echo special: $f
 ff="testsuite/tests/$f"
 ocamltest/ocamltest -translate ../trunk/$ff | sed -e '2s/^/ /' >$ff
 
+for f in $TESTS_COMMENTS; do
+  echo comments: $f
+  ff="testsuite/tests/$f"
+  echo "$ff:1.1: warning: contains comments, needs to be done by hand"
+done
 
-for f in $TESTS_COMMENTS $TESTS_PLAIN; do
+for f in $TESTS_PLAIN; do
   echo plain: $f
   ff="testsuite/tests/$f"
-  ocamltest/ocamltest -translate ../trunk/$ff >$ff
+  ocamltest/ocamltest -translate -compact ../trunk/$ff >$ff
 done
 
 for f in $TESTS_LINES; do
   echo lines: $f
   ff="testsuite/tests/$f"
-  ocamltest/ocamltest -translate -keep-lines ../trunk/$ff >$ff
+  ocamltest/ocamltest -translate -compact -keep-lines ../trunk/$ff >$ff
 done
 
 for f in $TESTS_COMPACT; do
@@ -1404,7 +1409,7 @@ done
 for f in $TESTS_CHARS; do
   echo chars: $f
   ff="testsuite/tests/$f"
-  ocamltest/ocamltest -translate -keep-chars ../trunk/$ff >$ff
+  ocamltest/ocamltest -translate -compact -keep-chars ../trunk/$ff >$ff
 done
 
 N=$(echo $TESTS_COMMENTS $TESTS_PLAIN $TESTS_COMPACT $TESTS_LINES \

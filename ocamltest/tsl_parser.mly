@@ -24,18 +24,18 @@ let mkstring s = make_string ~loc:(symbol_rloc()) s
 
 let mkidentifier id = make_identifier ~loc:(symbol_rloc()) id
 
- let mkenvstmt envstmt =
+let mkenvstmt envstmt =
   let located_env_statement =
     make_environment_statement ~loc:(symbol_rloc()) envstmt in
   Environment_statement located_env_statement
 
 %}
 
-%token <bool> TSL_BEGIN_C_STYLE
+%token <[`Above | `Below]> TSL_BEGIN_C_STYLE
 %token TSL_END_C_STYLE
-%token <bool> TSL_BEGIN_OCAML_STYLE
+%token <[`Above | `Below]> TSL_BEGIN_OCAML_STYLE
 %token TSL_END_OCAML_STYLE
-%token COMMA OPEN CLOSE SEMI
+%token COMMA OPEN_BRACE CLOSE_BRACE SEMI
 %token <int> TEST_DEPTH
 %token EQUAL PLUSEQUAL
 /* %token COLON */
@@ -43,20 +43,20 @@ let mkidentifier id = make_identifier ~loc:(symbol_rloc()) id
 %token <string> IDENTIFIER
 %token <string> STRING
 
-%start tsl_block_old tsl_block
-%type <Tsl_ast.tsl_block> tsl_block_old
-%type <Tsl_ast.t> tsl_block
+%start tsl_block tsl_script
+%type <Tsl_ast.tsl_block> tsl_block
+%type <Tsl_ast.t> tsl_script
 
 %%
 
 tree:
-| OPEN forest CLOSE { $2 }
+| OPEN_BRACE node CLOSE_BRACE { $2 }
 
 tree_list:
 | { [] }
 | tree tree_list { $1 :: $2 }
 
-forest:
+node:
 | statement_list tree_list { Ast ($1, $2) }
 
 statement:
@@ -67,12 +67,12 @@ statement_list:
 | { [] }
 | statement statement_list { $1 :: $2 }
 
+tsl_script:
+| TSL_BEGIN_C_STYLE node TSL_END_C_STYLE { $2 }
+| TSL_BEGIN_OCAML_STYLE node TSL_END_OCAML_STYLE { $2 }
+
+
 tsl_block:
-| TSL_BEGIN_C_STYLE forest TSL_END_C_STYLE { $2 }
-| TSL_BEGIN_OCAML_STYLE forest TSL_END_OCAML_STYLE { $2 }
-
-
-tsl_block_old:
 | TSL_BEGIN_C_STYLE tsl_items TSL_END_C_STYLE { $2 }
 | TSL_BEGIN_OCAML_STYLE tsl_items TSL_END_OCAML_STYLE { $2 }
 

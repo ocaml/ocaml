@@ -61,7 +61,7 @@ let tsl_block_of_file test_filename =
   let lexbuf = Lexing.from_channel input_channel in
   Location.init lexbuf test_filename;
   try
-    let block = Tsl_parser.tsl_block_old Tsl_lexer.token lexbuf in
+    let block = Tsl_parser.tsl_block Tsl_lexer.token lexbuf in
     close_in input_channel;
     if !Tsl_lexer.has_comments then
       eprintf "%s:1.0: warning: test script has comments\n" test_filename;
@@ -77,7 +77,6 @@ let tsl_block_of_file test_filename =
 (* In what style to output the translated test file *)
 type style =
 | Plain
-| Compact
 | Lines
 | Chars
 
@@ -86,7 +85,7 @@ type kind = { opening : string; closing : string }
 let c_kind = { opening = "/*"; closing = "*/" }
 let ocaml_kind = { opening = "(*"; closing = "*)" }
 
-let file ~style f =
+let file ~style ~compact f =
   let tsl_block = tsl_block_of_file f in
   let (rootenv_statements, test_trees) =
     Tsl_semantics.test_trees_of_tsl_block tsl_block
@@ -100,8 +99,8 @@ let file ~style f =
   Location.init lexbuf f;
   let rec seek_to_begin () =
     match Tsl_lexer.token lexbuf with
-    | Tsl_parser.TSL_BEGIN_C_STYLE below -> (c_kind, below)
-    | Tsl_parser.TSL_BEGIN_OCAML_STYLE below -> (ocaml_kind, below)
+    | Tsl_parser.TSL_BEGIN_C_STYLE position -> (c_kind, position)
+    | Tsl_parser.TSL_BEGIN_OCAML_STYLE position -> (ocaml_kind, position)
     | _ -> seek_to_begin ()
   in
   let rec seek_to_end () =
@@ -110,11 +109,11 @@ let file ~style f =
     | Tsl_parser.TSL_END_OCAML_STYLE -> ()
     | _ -> seek_to_end ()
   in
-  let (kind, below) = seek_to_begin () in
+  let (kind, position) = seek_to_begin () in
   copy copy_ic stdout Lexing.(lexbuf.lex_curr_p.pos_cnum);
-  if below || style = Plain || style = Compact then begin
+  if position = `Below || style = Plain then begin
     print_string (if ast = Tsl_ast.Ast ([], []) then " " else "\n");
-    Tsl_semantics.print_tsl_ast ~compact:(style = Compact) stdout ast;
+    Tsl_semantics.print_tsl_ast ~compact stdout ast;
     seek_to_end ();
     seek_in copy_ic Lexing.(lexbuf.lex_start_p.pos_cnum);
     copy copy_ic stdout max_int;
@@ -122,11 +121,16 @@ let file ~style f =
     printf "_BELOW";
     seek_to_end ();
     let limit = Lexing.(lexbuf.lex_start_p.pos_cnum) in
-    let mode = if style = Lines then Keep_lines else Keep_chars 6 in
+    let mode =
+      match style with
+      | Lines -> Keep_lines
+      | Chars -> Keep_chars 6
+      | Plain -> assert false
+    in
     copy_newlines ~mode copy_ic stdout limit;
     copy copy_ic stdout max_int;
     printf "\n%s TEST\n" kind.opening;
-    Tsl_semantics.print_tsl_ast ~compact:false stdout ast;
+    Tsl_semantics.print_tsl_ast ~compact stdout ast;
     printf "%s\n" kind.closing;
   end;
   flush stdout;

@@ -35,7 +35,7 @@ let tsl_block_of_file test_filename =
   let input_channel = open_in test_filename in
   let lexbuf = Lexing.from_channel input_channel in
   Location.init lexbuf test_filename;
-  match Tsl_parser.tsl_block Tsl_lexer.token lexbuf with
+  match Tsl_parser.tsl_script Tsl_lexer.token lexbuf with
     | exception Parsing.Parse_error ->
       raise (Syntax_error lexbuf.Lexing.lex_start_p)
     | exception e -> close_in input_channel; raise e
@@ -271,7 +271,7 @@ let () =
   List.iter (doit list_tests) Options.list_tests;
   let do_file =
     if Options.translate then
-      Translate.file ~style:Options.style
+      Translate.file ~style:Options.style ~compact:Options.compact
     else
       test_file
   in
