@@ -13,33 +13,36 @@ confusing names. Such a package is called a {\em structure} and
 is introduced by the "struct"\ldots"end" construct, which contains an
 arbitrary sequence of definitions. The structure is usually given a
 name with the "module" binding. For instance, here is a structure
-packaging together a type of priority queues and their operations:
+packaging together a type of priority queues and their operations:%
+\footnote{The implementation uses leftist heaps and comes from
+Chris Okasaki, \emph{Purely Functional Data Structures}, 1998.}
 \begin{caml_example}{toplevel}
 module PrioQueue =
   struct
     type priority = int
-    type 'a queue = Empty | Node of priority * 'a * 'a queue * 'a queue
-    let empty = Empty
-    let rec insert queue prio elt =
-      match queue with
-        Empty -> Node(prio, elt, Empty, Empty)
-      | Node(p, e, left, right) ->
-          if prio <= p
-          then Node(prio, elt, insert right p e, left)
-          else Node(p, e, insert right prio elt, left)
+    type rank = int
+    type 'a queue =
+      | Leaf
+      | Node of rank * priority * 'a * 'a queue * 'a queue
+    let empty = Leaf
+    let rank = function Leaf -> 0 | Node(rk, _, _, _, _) -> rk
+    let node prio elt a b =
+      let ra = rank a and rb = rank b in
+      if ra >= rb then Node(rb + 1, prio, elt, a, b)
+                  else Node(ra + 1, prio, elt, b, a)
+    let rec merge q1 q2 =
+      match q1, q2 with
+      | Leaf, _ -> q2
+      | _, Leaf -> q1
+      | Node(_, prio1, elt1, a1, b1), Node(_, prio2, elt2, a2, b2) ->
+          if prio1 <= prio2 then node prio1 elt1 a1 (merge b1 q2)
+                            else node prio2 elt2 a2 (merge q1 b2)
+    let insert queue prio elt =
+      merge (Node(1, prio, elt, Leaf, Leaf)) queue
     exception Queue_is_empty
-    let rec remove_top = function
-        Empty -> raise Queue_is_empty
-      | Node(prio, elt, left, Empty) -> left
-      | Node(prio, elt, Empty, right) -> right
-      | Node(prio, elt, (Node(lprio, lelt, _, _) as left),
-                        (Node(rprio, relt, _, _) as right)) ->
-          if lprio <= rprio
-          then Node(lprio, lelt, remove_top left, right)
-          else Node(rprio, relt, left, remove_top right)
     let extract = function
-        Empty -> raise Queue_is_empty
-      | Node(prio, elt, _, _) as queue -> (prio, elt, remove_top queue)
+      | Leaf -> raise Queue_is_empty
+      | Node(_, prio, elt, a, b) -> (prio, elt, merge a b)
   end;;
 \end{caml_example}
 Outside the structure, its components can be referred to using the
@@ -102,7 +105,7 @@ PrioQueue.[insert empty 1 "hello"];;
 This second form also works for patterns:
 \begin{caml_example}{toplevel}
 let at_most_one_element x = match x with
-| PrioQueue.( Empty| Node (_,_, Empty,Empty) ) -> true
+| PrioQueue.( Leaf | Node (_,_,_,Leaf,Leaf) ) -> true
 | _ -> false ;;
 \end{caml_example}
 
@@ -115,9 +118,6 @@ an exception when the priority queue is empty.
 module PrioQueueOpt =
 struct
   include PrioQueue
-
-  let remove_top_opt x =
-    try Some(remove_top x) with Queue_is_empty -> None
 
   let extract_opt x =
     try Some(extract x) with Queue_is_empty -> None
@@ -140,18 +140,18 @@ module type PRIOQUEUE =
     type priority = int         (* still concrete *)
     type 'a queue               (* now abstract *)
     val empty : 'a queue
-    val insert : 'a queue -> int -> 'a -> 'a queue
-    val extract : 'a queue -> int * 'a * 'a queue
+    val insert : 'a queue -> priority -> 'a -> 'a queue
+    val extract : 'a queue -> priority * 'a * 'a queue
     exception Queue_is_empty
   end;;
 \end{caml_example}
 Restricting the "PrioQueue" structure by this signature results in
-another view of the "PrioQueue" structure where the "remove_top"
-function is not accessible and the actual representation of priority
+another view of the "PrioQueue" structure where the "rank", "node" and
+"merge" functions are not accessible and the actual representation of priority
 queues is hidden:
 \begin{caml_example}{toplevel}
 module AbstractPrioQueue = (PrioQueue : PRIOQUEUE);;
-AbstractPrioQueue.remove_top [@@expect error];;
+AbstractPrioQueue.rank [@@expect error];;
 AbstractPrioQueue.insert AbstractPrioQueue.empty 1 "hello";;
 \end{caml_example}
 The restriction can also be performed during the definition of the
@@ -173,7 +173,7 @@ function:
 module type PRIOQUEUE_WITH_OPT =
   sig
     include PRIOQUEUE
-    val extract_opt : 'a queue -> (int * 'a * 'a queue) option
+    val extract_opt : 'a queue -> (priority * 'a * 'a queue) option
   end;;
 \end{caml_example}
 
