@@ -23,6 +23,9 @@ Working version
 
 ### Bug fixes:
 
+- #12195: Lower levels in checked module packages so that remaining weak
+  variables may not be unified with out-of-scope types.
+  (Chris Casinghino and Leo White, review by ???)
 
 OCaml 5.1.0
 ---------------
