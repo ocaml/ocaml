@@ -220,6 +220,13 @@ let add_loc_to_index ~namespace env path lid =
     with Not_found -> ()
 
 let index_decl =
+  let add_constructor_description env lid = function
+    | { Types.cstr_tag = Cstr_extension (path, _); _ } ->
+        add_loc_to_index ~namespace:Extension_constructor env path lid
+    | { Types.cstr_uid = Predef _; _ } -> () (* ignore things like '()' *)
+    | { Types.cstr_uid; _ } ->
+      shape_index := (Resolved cstr_uid, lid) :: !shape_index
+  in
   let with_constraint ~env (_path, _lid, with_constraint) =
     match with_constraint with
     | Twith_module (path', lid') | Twith_modsubst (path', lid') ->
@@ -232,6 +239,8 @@ let index_decl =
       (match exp_desc with
       | Texp_ident (path, lid, _) ->
           add_loc_to_index ~namespace:Value exp_env path lid
+      | Texp_construct (lid, constr_desc, _) ->
+          add_constructor_description exp_env lid constr_desc
       | _ -> ());
       default_iterator.expr sub e);
 
@@ -246,7 +255,13 @@ let index_decl =
       default_iterator.typ sub ct);
 
   pat =
-    (fun sub ({ pat_extra; pat_env; _ } as pat) ->
+    (fun (type a) sub
+      ({ pat_desc; pat_extra; pat_env; _ } as pat : a general_pattern) ->
+      (match pat_desc with
+      | Tpat_construct (lid, constr_desc, _, _) ->
+          add_constructor_description pat_env lid constr_desc
+      | Tpat_value _ -> ()
+      | _ -> ());
       List.iter  (fun (pat_extra, _, _) ->
         match pat_extra with
         | Tpat_open (path, lid, _) ->
