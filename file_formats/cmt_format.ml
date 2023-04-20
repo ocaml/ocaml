@@ -206,19 +206,20 @@ let clear_env binary_annots =
 let shape_index : (index_item * Longident.t Location.loc) list ref =
   Local_store.s_ref []
 
-let add_loc_to_index ~namespace env path loc =
-  try
-    let shape = Env.shape_of_path ~namespace env path in
-    let shape = Local_reduce.weak_reduce env shape in
-    if not (Shape.is_closed shape) then
-      shape_index := (Unresolved shape, loc) :: !shape_index
-    else Option.iter
-      (fun uid -> shape_index := (Resolved uid, loc) :: !shape_index)
-      shape.Shape.uid
-  with Not_found -> ()
+let add_loc_to_index ~namespace env path lid =
+  let not_ghost { Location.loc = { loc_ghost; _ }; _ } = not loc_ghost in
+  if not_ghost lid then
+    try
+      let shape = Env.shape_of_path ~namespace env path in
+      let shape = Local_reduce.weak_reduce env shape in
+      if not (Shape.is_closed shape) then
+        shape_index := (Unresolved shape, lid) :: !shape_index
+      else Option.iter
+        (fun uid -> shape_index := (Resolved uid, lid) :: !shape_index)
+        shape.Shape.uid
+    with Not_found -> ()
 
 let index_decl =
-  let not_ghost { Location.loc = { loc_ghost; _ }; _ } = not loc_ghost in
   let with_constraint ~env (_path, _lid, with_constraint) =
     match with_constraint with
     | Twith_module (path', lid') | Twith_modsubst (path', lid') ->
@@ -229,7 +230,7 @@ let index_decl =
 
   expr = (fun sub ({ exp_desc; exp_env; _ } as e) ->
       (match exp_desc with
-      | Texp_ident (path, lid, _) when not_ghost lid ->
+      | Texp_ident (path, lid, _) ->
           add_loc_to_index ~namespace:Value exp_env path lid
       | _ -> ());
       default_iterator.expr sub e);
@@ -237,7 +238,7 @@ let index_decl =
   typ =
     (fun sub ({ ctyp_desc; ctyp_env; _ } as ct) ->
       (match ctyp_desc with
-      | Ttyp_constr (path, lid, _ctyps) when not_ghost lid ->
+      | Ttyp_constr (path, lid, _ctyps) ->
           add_loc_to_index ~namespace:Type ctyp_env path lid
       | Ttyp_package {pack_path; pack_txt} ->
           add_loc_to_index ~namespace:Module_type ctyp_env pack_path pack_txt
@@ -259,21 +260,20 @@ let index_decl =
   module_expr =
     (fun sub ({ mod_desc; mod_env; _ } as me) ->
       (match mod_desc with
-      | Tmod_ident (path, lid) when not_ghost lid ->
+      | Tmod_ident (path, lid) ->
           add_loc_to_index ~namespace:Module mod_env path lid
       | _ -> ());
       default_iterator.module_expr sub me);
 
   open_description =
     (fun sub ({ open_expr = (path, lid); open_env; _ } as od)  ->
-      (if not_ghost lid then
-        add_loc_to_index ~namespace:Module open_env path lid);
+      add_loc_to_index ~namespace:Module open_env path lid;
       default_iterator.open_description sub od);
 
   module_type =
     (fun sub ({ mty_desc; mty_env; _ } as mty)  ->
       (match mty_desc with
-      | Tmty_ident (path, lid) when not_ghost lid ->
+      | Tmty_ident (path, lid) ->
           add_loc_to_index ~namespace:Module_type mty_env path lid
       | Tmty_with (_mty, l) ->
           List.iter (with_constraint ~env:mty_env) l
