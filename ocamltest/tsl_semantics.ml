@@ -268,4 +268,4 @@ let print_tsl_ast ~compact oc ast =
     | Unset ls ->
       pr "%sunset %s;\n" indent ls.node;
   in
-  print_ast "" ast;
+  print_ast " " ast;

@@ -97,6 +97,7 @@ basic-float/float_literals.ml \
 basic-float/tfloat_hex.ml \
 basic-float/tfloat_record.ml \
 basic-float/zero_sized_float_arrays.ml \
+basic-io/wc.ml \
 basic-io-2/io.ml \
 basic-manyargs/manyargs.ml \
 basic-modules/main.ml \
@@ -1373,15 +1374,6 @@ tool-ocamlc-stop-after/stop_after_parsing_intf.mli \
 tool-ocamlc-stop-after/stop_after_typing_impl.ml \
 "
 
-TESTS_SPECIAL="
-basic-io/wc.ml \
-"
-
-f=basic-io/wc.ml
-echo special: $f
-ff="testsuite/tests/$f"
-ocamltest/ocamltest -translate ../trunk/$ff | sed -e '2s/^/ /' >$ff
-
 for f in $TESTS_COMMENTS; do
   echo comments: $f
   ff="testsuite/tests/$f"
@@ -1412,8 +1404,7 @@ for f in $TESTS_CHARS; do
   ocamltest/ocamltest -translate -compact -keep-chars ../trunk/$ff >$ff
 done
 
-N=$(echo $TESTS_COMMENTS $TESTS_PLAIN $TESTS_COMPACT $TESTS_LINES \
-         $TESTS_CHARS $TESTS_SPECIAL \
+N=$(echo $TESTS_COMMENTS $TESTS_PLAIN $TESTS_COMPACT $TESTS_LINES $TESTS_CHARS \
    | wc -w)
 if [ $N -ne 1328 ]; then
   printf "Error: wrong number of test files (%d should be 1328)\n" $N
