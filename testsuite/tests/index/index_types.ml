@@ -27,3 +27,11 @@ let () = match 4 with
 type poly = [`A|`B]
 
 let () = match `A with #poly -> ()
+
+module type S = sig
+  type t2 = ..
+  type t2 += B
+end
+
+type t1 = ..
+type t1 += B
