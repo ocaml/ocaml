@@ -54,6 +54,6 @@ let main () =
 let _ = main ()
 
 (* TEST
-flags = "-g";
-ocamlrunparam += ",b=1";
+ flags = "-g";
+ ocamlrunparam += ",b=1";
 *)

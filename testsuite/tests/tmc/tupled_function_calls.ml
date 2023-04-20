@@ -21,9 +21,9 @@ let[@tail_mod_cons] rec tupled_map_not_direct (f, li) =
       f x :: (tupled_map_not_direct[@tailcall true]) pair
 
 (* TEST
-{
-  bytecode;
-}{
-  native;
-}
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)

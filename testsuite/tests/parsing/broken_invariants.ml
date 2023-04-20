@@ -20,14 +20,12 @@ module type s = sig
 end;;
 
 (* TEST
-readonly_files = "illegal_ppx.ml";
-setup-ocamlc.byte-build-env;
-
-all_modules = "illegal_ppx.ml";
-program = "ppx.exe";
-ocamlc.byte with ocamlcommon;
-
-all_modules = "broken_invariants.ml";
-flags = "-ppx '${ocamlrun} ${test_build_directory_prefix}/ocamlc.byte/ppx.exe'";
-toplevel;
+ readonly_files = "illegal_ppx.ml";
+ setup-ocamlc.byte-build-env;
+ all_modules = "illegal_ppx.ml";
+ program = "ppx.exe";
+ ocamlc.byte with ocamlcommon;
+ all_modules = "broken_invariants.ml";
+ flags = "-ppx '${ocamlrun} ${test_build_directory_prefix}/ocamlc.byte/ppx.exe'";
+ toplevel;
 *)

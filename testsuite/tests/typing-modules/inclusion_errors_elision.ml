@@ -1,6 +1,6 @@
 (* TEST
-flags = "-keep-original-error-size";
-expect;
+ flags = "-keep-original-error-size";
+ expect;
 *)
 
 

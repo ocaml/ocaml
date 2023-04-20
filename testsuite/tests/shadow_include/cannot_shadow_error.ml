@@ -25,11 +25,9 @@ module type PrintableComparable = sig
 end
 
 (* TEST
-flags = "-nostdlib -nopervasives";
-setup-ocamlc.byte-build-env;
-
-ocamlc_byte_exit_status = "2";
-ocamlc.byte;
-
-check-ocamlc.byte-output;
+ flags = "-nostdlib -nopervasives";
+ setup-ocamlc.byte-build-env;
+ ocamlc_byte_exit_status = "2";
+ ocamlc.byte;
+ check-ocamlc.byte-output;
 *)

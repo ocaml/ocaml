@@ -1,12 +1,12 @@
 (* TEST
-flags = "-pp '${c_preprocessor}'";
-ocaml_filetype_flag = "-impl";
-{
-  compare_programs = "false";
-  bytecode;
-}{
-  native;
-}
+ flags = "-pp '${c_preprocessor}'";
+ ocaml_filetype_flag = "-impl";
+ {
+   compare_programs = "false";
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 (* This file has extension .ml.c because it needs to be preprocessed

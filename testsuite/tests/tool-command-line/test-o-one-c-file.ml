@@ -1,17 +1,14 @@
 (* TEST
-readonly_files = "hello.c";
-setup-ocamlopt.opt-build-env;
-
-script = "mkdir outputdir";
-script;
-
-all_modules = "hello.c";
-compile_only = "true";
-flags = "-o outputdir/hello.${objext}";
-ocamlopt.opt;
-
-file = "outputdir/hello.${objext}";
-file-exists;
+ readonly_files = "hello.c";
+ setup-ocamlopt.opt-build-env;
+ script = "mkdir outputdir";
+ script;
+ all_modules = "hello.c";
+ compile_only = "true";
+ flags = "-o outputdir/hello.${objext}";
+ ocamlopt.opt;
+ file = "outputdir/hello.${objext}";
+ file-exists;
 *)
 
 (*

@@ -1,9 +1,8 @@
 (* TEST
-frame_pointers;
-
-readonly_files = "fp_backtrace.c";
-all_modules = "${readonly_files} effects.ml";
-native;
+ frame_pointers;
+ readonly_files = "fp_backtrace.c";
+ all_modules = "${readonly_files} effects.ml";
+ native;
 *)
 
 open Printf

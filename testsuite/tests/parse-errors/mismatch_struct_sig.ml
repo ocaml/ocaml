@@ -40,5 +40,5 @@ end
 ;;
 
 (* TEST
-toplevel;
+ toplevel;
 *)

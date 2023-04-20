@@ -1,12 +1,12 @@
 (* TEST
-include unix;
-stderr = "/dev/null";
-hasunix;
-{
-  bytecode;
-}{
-  native;
-}
+ include unix;
+ stderr = "/dev/null";
+ hasunix;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 let cat file =

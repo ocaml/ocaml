@@ -14,5 +14,5 @@ let () =
     Printexc.print_backtrace stdout
 
 (* TEST
-flags = "-g";
+ flags = "-g";
 *)

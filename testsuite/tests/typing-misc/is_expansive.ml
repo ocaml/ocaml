@@ -1,5 +1,5 @@
 (* TEST
-expect;
+ expect;
 *)
 
 match [] with x -> (fun x -> x);;

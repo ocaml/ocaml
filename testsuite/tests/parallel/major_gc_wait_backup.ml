@@ -1,11 +1,11 @@
 (* TEST
-include unix;
-hasunix;
-{
-  native;
-}{
-  bytecode;
-}
+ include unix;
+ hasunix;
+ {
+   native;
+ }{
+   bytecode;
+ }
 *)
 
 type 'a tree = Empty | Node of 'a tree * 'a tree

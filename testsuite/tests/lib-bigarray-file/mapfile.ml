@@ -1,8 +1,7 @@
 (* TEST
-include unix;
-hasunix;
-
-native;
+ include unix;
+ hasunix;
+ native;
 *)
 
 open Bigarray

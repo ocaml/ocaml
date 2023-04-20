@@ -1,37 +1,29 @@
 (* TEST
-readonly_files = "bigarrf.f bigarrfstub.c";
-last_flags = "-cclib -lgfortran";
-script = "sh ${test_source_directory}/has-gfortran.sh";
-script;
-{
-  setup-ocamlc.byte-build-env;
-
-  script = "sh ${test_source_directory}/call-gfortran.sh ${cc} -c bigarrf.f";
-  script;
-
-  all_modules = "bigarrf.o bigarrfstub.c bigarrfml.ml";
-  ocamlc.byte;
-
-  output = "${test_build_directory}/program-output";
-  stdout = "${output}";
-  run;
-
-  check-program-output;
-}{
-  setup-ocamlopt.byte-build-env;
-
-  script = "sh ${test_source_directory}/call-gfortran.sh ${cc} -c bigarrf.f";
-  script;
-
-  all_modules = "bigarrf.o bigarrfstub.c bigarrfml.ml";
-  ocamlopt.byte;
-
-  output = "${test_build_directory}/program-output";
-  stdout = "${output}";
-  run;
-
-  check-program-output;
-}
+ readonly_files = "bigarrf.f bigarrfstub.c";
+ last_flags = "-cclib -lgfortran";
+ script = "sh ${test_source_directory}/has-gfortran.sh";
+ script;
+ {
+   setup-ocamlc.byte-build-env;
+   script = "sh ${test_source_directory}/call-gfortran.sh ${cc} -c bigarrf.f";
+   script;
+   all_modules = "bigarrf.o bigarrfstub.c bigarrfml.ml";
+   ocamlc.byte;
+   output = "${test_build_directory}/program-output";
+   stdout = "${output}";
+   run;
+   check-program-output;
+ }{
+   setup-ocamlopt.byte-build-env;
+   script = "sh ${test_source_directory}/call-gfortran.sh ${cc} -c bigarrf.f";
+   script;
+   all_modules = "bigarrf.o bigarrfstub.c bigarrfml.ml";
+   ocamlopt.byte;
+   output = "${test_build_directory}/program-output";
+   stdout = "${output}";
+   run;
+   check-program-output;
+ }
 *)
 
 open Bigarray

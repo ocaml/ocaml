@@ -134,6 +134,6 @@ let g y =
 ;;
 
 (* TEST
-flags = "-dparsetree";
-toplevel;
+ flags = "-dparsetree";
+ toplevel;
 *)

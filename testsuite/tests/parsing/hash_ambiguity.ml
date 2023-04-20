@@ -17,10 +17,8 @@ type 'a u = A of int #list
 type 'a v = A of int * int #list
 
 (* TEST
-flags = "-stop-after parsing -dparsetree";
-setup-ocamlc.byte-build-env;
-
-ocamlc.byte;
-
-check-ocamlc.byte-output;
+ flags = "-stop-after parsing -dparsetree";
+ setup-ocamlc.byte-build-env;
+ ocamlc.byte;
+ check-ocamlc.byte-output;
 *)

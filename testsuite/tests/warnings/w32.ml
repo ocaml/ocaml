@@ -71,14 +71,11 @@ module type S = sig
 end
 
 (* TEST
-flags = "-w +A";
-setup-ocamlc.byte-build-env;
-
-module = "w32.mli";
-ocamlc.byte;
-
-module = "w32.ml";
-ocamlc.byte;
-
-check-ocamlc.byte-output;
+ flags = "-w +A";
+ setup-ocamlc.byte-build-env;
+ module = "w32.mli";
+ ocamlc.byte;
+ module = "w32.ml";
+ ocamlc.byte;
+ check-ocamlc.byte-output;
 *)

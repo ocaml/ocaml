@@ -1,11 +1,11 @@
 (* TEST
-include unix;
-hasunix;
-{
-  bytecode;
-}{
-  native;
-}
+ include unix;
+ hasunix;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 (* Checks that gethostbyaddr supports both IPv4 and IPv6 (see #11461) *)

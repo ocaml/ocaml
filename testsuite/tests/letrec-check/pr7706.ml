@@ -8,5 +8,5 @@ let rec x =
 let () = ignore (x 42);;
 
 (* TEST
-toplevel;
+ toplevel;
 *)

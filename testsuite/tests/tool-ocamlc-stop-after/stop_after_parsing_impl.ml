@@ -12,11 +12,9 @@ while_translating_from_old_s
 let _ = (1 + "true") + x
 
 (* TEST
-setup-ocamlc.byte-build-env;
-
-flags = "-stop-after parsing -dparsetree";
-ocamlc_byte_exit_status = "0";
-ocamlc.byte;
-
-check-ocamlc.byte-output;
+ setup-ocamlc.byte-build-env;
+ flags = "-stop-after parsing -dparsetree";
+ ocamlc_byte_exit_status = "0";
+ ocamlc.byte;
+ check-ocamlc.byte-output;
 *)

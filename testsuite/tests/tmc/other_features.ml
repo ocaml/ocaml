@@ -1,5 +1,5 @@
 (* TEST
-expect;
+ expect;
 *)
 
 module Non_recursive_let_bad = struct

@@ -1,27 +1,23 @@
 (* TEST
-flags = "-S -function-sections";
-function_sections;
-{
-  arch_arm;
-
-  reference = "${test_source_directory}/func_sections.arm.reference";
-  native;
-}{
-  arch_arm64;
-
-  reference = "${test_source_directory}/func_sections.arm.reference";
-  native;
-}{
-  arch_amd64;
-
-  reference = "${test_source_directory}/func_sections.reference";
-  native;
-}{
-  arch_i386;
-
-  reference = "${test_source_directory}/func_sections.reference";
-  native;
-}
+ flags = "-S -function-sections";
+ function_sections;
+ {
+   arch_arm;
+   reference = "${test_source_directory}/func_sections.arm.reference";
+   native;
+ }{
+   arch_arm64;
+   reference = "${test_source_directory}/func_sections.arm.reference";
+   native;
+ }{
+   arch_amd64;
+   reference = "${test_source_directory}/func_sections.reference";
+   native;
+ }{
+   arch_i386;
+   reference = "${test_source_directory}/func_sections.reference";
+   native;
+ }
 *)
 
 (* We have a separate reference output for ARM because

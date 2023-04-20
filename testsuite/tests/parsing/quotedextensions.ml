@@ -42,11 +42,9 @@ let {%M.foo bar| <hello>{|x|} |bar}
 (* {%foo bar|*)|bar} should be valid inside comments *)
 
 (* TEST
-flags = "-dparsetree";
-ocamlc_byte_exit_status = "2";
-setup-ocamlc.byte-build-env;
-
-ocamlc.byte;
-
-check-ocamlc.byte-output;
+ flags = "-dparsetree";
+ ocamlc_byte_exit_status = "2";
+ setup-ocamlc.byte-build-env;
+ ocamlc.byte;
+ check-ocamlc.byte-output;
 *)

@@ -19,9 +19,9 @@ let () =
   | _ -> assert false
 
 (* TEST
-{
-  bytecode;
-}{
-  native;
-}
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)

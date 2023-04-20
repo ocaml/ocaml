@@ -1,13 +1,12 @@
 (* TEST
-include unix;
-libwin32unix;
-
-has_symlink;
-{
-  bytecode;
-}{
-  native;
-}
+ include unix;
+ libwin32unix;
+ has_symlink;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 let create_symlink barrier src dst () =

@@ -55,28 +55,23 @@ let drop _ = ()
 let () = drop s.cell
 
 (* TEST
-flags = "-c -nostdlib -nopervasives -dlambda -dno-unique-ids";
-{
-  setup-ocamlc.byte-build-env;
-
-  ocamlc.byte;
-
-  compiler_reference = "${test_source_directory}/anonymous.ocamlc.reference";
-  check-ocamlc.byte-output;
-}{
-  setup-ocamlopt.byte-build-env;
-
-  ocamlopt.byte;
-  {
-    no-flambda;
-
-    compiler_reference = "${test_source_directory}/anonymous.ocamlopt.reference";
-    check-ocamlopt.byte-output;
-  }{
-    flambda;
-
-    compiler_reference = "${test_source_directory}/anonymous.ocamlopt.flambda.reference";
-    check-ocamlc.byte-output;
-  }
-}
+ flags = "-c -nostdlib -nopervasives -dlambda -dno-unique-ids";
+ {
+   setup-ocamlc.byte-build-env;
+   ocamlc.byte;
+   compiler_reference = "${test_source_directory}/anonymous.ocamlc.reference";
+   check-ocamlc.byte-output;
+ }{
+   setup-ocamlopt.byte-build-env;
+   ocamlopt.byte;
+   {
+     no-flambda;
+     compiler_reference = "${test_source_directory}/anonymous.ocamlopt.reference";
+     check-ocamlopt.byte-output;
+   }{
+     flambda;
+     compiler_reference = "${test_source_directory}/anonymous.ocamlopt.flambda.reference";
+     check-ocamlc.byte-output;
+   }
+ }
 *)

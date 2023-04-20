@@ -1,13 +1,12 @@
 (* TEST
-include unix;
-hasunix;
-
-not-windows;
-{
-  bytecode;
-}{
-  native;
-}
+ include unix;
+ hasunix;
+ not-windows;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 (* this test checks that the domain lock is properly reinitialized

@@ -17,6 +17,6 @@ let _ = M.x
 include M
 
 (* TEST
-flags = "-w +A";
-bytecode;
+ flags = "-w +A";
+ bytecode;
 *)

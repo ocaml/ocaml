@@ -1,12 +1,12 @@
 (* TEST
-{
-  bytecode;
-}{
-  native;
-}{
-  ocamlopt_flags = "-compact";
-  native;
-}
+ {
+   bytecode;
+ }{
+   native;
+ }{
+   ocamlopt_flags = "-compact";
+   native;
+ }
 *)
 
 type mut2 = { mutable p: int; mutable q:int }

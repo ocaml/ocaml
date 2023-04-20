@@ -1,7 +1,7 @@
 (* TEST
-flags = "-I ${ocamlsrcdir}/typing -I ${ocamlsrcdir}/parsing";
-include ocamlcommon;
-expect;
+ flags = "-I ${ocamlsrcdir}/typing -I ${ocamlsrcdir}/parsing";
+ include ocamlcommon;
+ expect;
 *)
 
 let res =

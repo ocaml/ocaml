@@ -11,5 +11,5 @@ let invalid = "\o77" ;;
 let invalid = "\o99" ;;
 
 (* TEST
-toplevel;
+ toplevel;
 *)

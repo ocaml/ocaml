@@ -50,11 +50,9 @@ let () =
   List.iter (fun x -> print_string (N'.Choice.show x)) !(!N'.r)
 
 (* TEST
-flags = " -w -a ";
-ocamlc_byte_exit_status = "2";
-setup-ocamlc.byte-build-env;
-
-ocamlc.byte;
-
-check-ocamlc.byte-output;
+ flags = " -w -a ";
+ ocamlc_byte_exit_status = "2";
+ setup-ocamlc.byte-build-env;
+ ocamlc.byte;
+ check-ocamlc.byte-output;
 *)

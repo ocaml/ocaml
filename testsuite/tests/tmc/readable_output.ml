@@ -1,6 +1,6 @@
 (* TEST
-flags = "-dlambda -dno-unique-ids";
-expect;
+ flags = "-dlambda -dno-unique-ids";
+ expect;
 *)
 
 (* Check that the code produced by TMC reads reasonably well. *)

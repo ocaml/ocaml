@@ -1,11 +1,11 @@
 (* TEST
-include str;
-hasstr;
-{
-  bytecode;
-}{
-  native;
-}
+ include str;
+ hasstr;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 open Printf

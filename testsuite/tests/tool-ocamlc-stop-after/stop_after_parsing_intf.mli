@@ -12,11 +12,9 @@ while_translating_from_old_s
 val x : Module_that_does_not_exists.type_that_does_not_exists
 
 (* TEST
-setup-ocamlc.byte-build-env;
-
-flags = "-stop-after parsing -dparsetree";
-ocamlc_byte_exit_status = "0";
-ocamlc.byte;
-
-check-ocamlc.byte-output;
+ setup-ocamlc.byte-build-env;
+ flags = "-stop-after parsing -dparsetree";
+ ocamlc_byte_exit_status = "0";
+ ocamlc.byte;
+ check-ocamlc.byte-output;
 *)

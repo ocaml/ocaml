@@ -1,17 +1,13 @@
 (* TEST
-readonly_files = "original.ml middle.ml";
-setup-ocamlc.byte-build-env;
-
-module = "original.ml";
-ocamlc.byte;
-
-module = "middle.ml";
-ocamlc.byte;
-
-script = "rm -f original.cmi";
-script;
-
-expect;
+ readonly_files = "original.ml middle.ml";
+ setup-ocamlc.byte-build-env;
+ module = "original.ml";
+ ocamlc.byte;
+ module = "middle.ml";
+ ocamlc.byte;
+ script = "rm -f original.cmi";
+ script;
+ expect;
 *)
 
 

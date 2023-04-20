@@ -40,13 +40,13 @@ let () =
   Thread.join backtrace_thread
 
 (* TEST
-flags = "-g";
-ocamlrunparam += ",b=1";
-include systhreads;
-hassysthreads;
-{
-  bytecode;
-}{
-  native;
-}
+ flags = "-g";
+ ocamlrunparam += ",b=1";
+ include systhreads;
+ hassysthreads;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)

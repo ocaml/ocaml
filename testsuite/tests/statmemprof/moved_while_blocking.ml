@@ -1,16 +1,16 @@
 (* TEST
-{
-  include systhreads;
-  hassysthreads;
-}{
-  reason = "port stat-mem-prof : https://github.com/ocaml/ocaml/pull/8634";
-  skip;
-  {
-    bytecode;
-  }{
-    native;
-  }
-}
+ {
+   include systhreads;
+   hassysthreads;
+ }{
+   reason = "port stat-mem-prof : https://github.com/ocaml/ocaml/pull/8634";
+   skip;
+   {
+     bytecode;
+   }{
+     native;
+   }
+ }
 *)
 
 let t2_begin = Atomic.make false

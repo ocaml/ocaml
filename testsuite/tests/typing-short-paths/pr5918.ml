@@ -12,6 +12,6 @@ end
 ;;
 
 (* TEST
-flags = " -short-paths ";
-toplevel;
+ flags = " -short-paths ";
+ toplevel;
 *)

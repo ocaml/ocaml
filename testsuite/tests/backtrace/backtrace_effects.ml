@@ -41,7 +41,7 @@ let baz () =
 let _ = baz ()
 
 (* TEST
-flags = "-g";
-ocamlrunparam += ",b=1";
-exit_status = "2";
+ flags = "-g";
+ ocamlrunparam += ",b=1";
+ exit_status = "2";
 *)

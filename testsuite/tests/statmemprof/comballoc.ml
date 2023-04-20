@@ -1,14 +1,14 @@
 (* TEST
-flags = "-g";
-reason = "port stat-mem-prof : https://github.com/ocaml/ocaml/pull/8634";
-skip;
-{
-  reference = "${test_source_directory}/comballoc.byte.reference";
-  bytecode;
-}{
-  reference = "${test_source_directory}/comballoc.opt.reference";
-  native;
-}
+ flags = "-g";
+ reason = "port stat-mem-prof : https://github.com/ocaml/ocaml/pull/8634";
+ skip;
+ {
+   reference = "${test_source_directory}/comballoc.byte.reference";
+   bytecode;
+ }{
+   reference = "${test_source_directory}/comballoc.opt.reference";
+   native;
+ }
 *)
 
 open Gc.Memprof

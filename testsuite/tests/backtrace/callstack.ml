@@ -31,14 +31,13 @@ let () = Printf.printf "new thread:\n"
 let () = Thread.join (Thread.create f3 ())
 
 (* TEST
-flags = "-g";
-include systhreads;
-hassysthreads;
-
-no-flambda;
-{
-  native;
-}{
-  bytecode;
-}
+ flags = "-g";
+ include systhreads;
+ hassysthreads;
+ no-flambda;
+ {
+   native;
+ }{
+   bytecode;
+ }
 *)

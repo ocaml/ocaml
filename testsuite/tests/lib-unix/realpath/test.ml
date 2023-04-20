@@ -1,11 +1,11 @@
 (* TEST
-include unix;
-hasunix;
-{
-  bytecode;
-}{
-  native;
-}
+ include unix;
+ hasunix;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 let main () =

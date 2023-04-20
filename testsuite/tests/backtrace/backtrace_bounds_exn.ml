@@ -20,6 +20,6 @@ let _ =
   print_endline "OK"
 
 (* TEST
-flags = "-g";
-ocamlrunparam += ",b=1";
+ flags = "-g";
+ ocamlrunparam += ",b=1";
 *)

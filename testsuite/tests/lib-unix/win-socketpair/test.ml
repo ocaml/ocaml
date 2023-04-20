@@ -1,20 +1,18 @@
 (* TEST
-script = "sh ${test_source_directory}/has-afunix.sh";
-libwin32unix;
-
-include systhreads;
-hassysthreads;
-
-script;
-{
-  output = "${test_build_directory}/program-output";
-  stdout = "${output}";
-  bytecode;
-}{
-  output = "${test_build_directory}/program-output";
-  stdout = "${output}";
-  native;
-}
+ script = "sh ${test_source_directory}/has-afunix.sh";
+ libwin32unix;
+ include systhreads;
+ hassysthreads;
+ script;
+ {
+   output = "${test_build_directory}/program-output";
+   stdout = "${output}";
+   bytecode;
+ }{
+   output = "${test_build_directory}/program-output";
+   stdout = "${output}";
+   native;
+ }
 *)
 
 let peer id fd =

@@ -1,12 +1,12 @@
 (* TEST
-include systhreads;
-readonly_files = "input_all.ml";
-hassysthreads;
-{
-  bytecode;
-}{
-  native;
-}
+ include systhreads;
+ readonly_files = "input_all.ml";
+ hassysthreads;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 let data_file =

@@ -46,11 +46,9 @@ module N'' = N'.M(Int)
 let () = print_endline (Option.get N''.x)
 
 (* TEST
-flags = "-no-app-funct";
-ocamlc_byte_exit_status = "2";
-setup-ocamlc.byte-build-env;
-
-ocamlc.byte;
-
-check-ocamlc.byte-output;
+ flags = "-no-app-funct";
+ ocamlc_byte_exit_status = "2";
+ setup-ocamlc.byte-build-env;
+ ocamlc.byte;
+ check-ocamlc.byte-output;
 *)

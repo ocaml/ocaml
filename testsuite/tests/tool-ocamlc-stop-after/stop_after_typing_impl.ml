@@ -13,11 +13,9 @@ ng_from_old_syntax__Filler_t
 external apply: int -> int = "%apply"
 
 (* TEST
-setup-ocamlc.byte-build-env;
-
-flags = "-stop-after typing -dno-unique-ids -dtypedtree";
-ocamlc_byte_exit_status = "0";
-ocamlc.byte;
-
-check-ocamlc.byte-output;
+ setup-ocamlc.byte-build-env;
+ flags = "-stop-after typing -dno-unique-ids -dtypedtree";
+ ocamlc_byte_exit_status = "0";
+ ocamlc.byte;
+ check-ocamlc.byte-output;
 *)

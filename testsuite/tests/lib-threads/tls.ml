@@ -1,11 +1,11 @@
 (* TEST
-include systhreads;
-hassysthreads;
-{
-  bytecode;
-}{
-  native;
-}
+ include systhreads;
+ hassysthreads;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 let private_data = (Hashtbl.create 17 : (Thread.t, string) Hashtbl.t)

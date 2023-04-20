@@ -11,5 +11,5 @@ Format.printf "%f\n%!" (f (Float 3.1415));;
 try Printexc.print f (Obj.magic (Int 3)) with _ -> 0.;;
 
 (* TEST
-flags += "-safer-matching";
+ flags += "-safer-matching";
 *)

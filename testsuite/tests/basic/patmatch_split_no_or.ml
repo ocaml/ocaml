@@ -1,6 +1,6 @@
 (* TEST
-flags = "-nostdlib -nopervasives -dlambda";
-expect;
+ flags = "-nostdlib -nopervasives -dlambda";
+ expect;
 *)
 
 (******************************************************************************)

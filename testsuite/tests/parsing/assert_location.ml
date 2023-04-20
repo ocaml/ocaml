@@ -7,5 +7,5 @@ let () = (
   )
 
 (* TEST
-exit_status = "2";
+ exit_status = "2";
 *)

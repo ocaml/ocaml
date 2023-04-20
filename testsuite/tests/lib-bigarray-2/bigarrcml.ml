@@ -1,5 +1,5 @@
 (* TEST
-modules = "bigarrcstub.c";
+ modules = "bigarrcstub.c";
 *)
 
 open Bigarray

@@ -1,43 +1,33 @@
 (* TEST
-readonly_files = "reflector.ml";
-hasunix;
-{
-  program = "${test_build_directory}/wait_nohang.byte";
-  setup-ocamlc.byte-build-env;
-
-  program = "${test_build_directory}/reflector.exe";
-  all_modules = "reflector.ml";
-  ocamlc.byte;
-
-  include unix;
-  program = "${test_build_directory}/wait_nohang.byte";
-  all_modules = "wait_nohang.ml";
-  ocamlc.byte;
-
-  check-ocamlc.byte-output;
-
-  run;
-
-  check-program-output;
-}{
-  program = "${test_build_directory}/wait_nohang.opt";
-  setup-ocamlopt.byte-build-env;
-
-  program = "${test_build_directory}/reflector.exe";
-  all_modules = "reflector.ml";
-  ocamlopt.byte;
-
-  include unix;
-  program = "${test_build_directory}/wait_nohang.opt";
-  all_modules = "wait_nohang.ml";
-  ocamlopt.byte;
-
-  check-ocamlopt.byte-output;
-
-  run;
-
-  check-program-output;
-}
+ readonly_files = "reflector.ml";
+ hasunix;
+ {
+   program = "${test_build_directory}/wait_nohang.byte";
+   setup-ocamlc.byte-build-env;
+   program = "${test_build_directory}/reflector.exe";
+   all_modules = "reflector.ml";
+   ocamlc.byte;
+   include unix;
+   program = "${test_build_directory}/wait_nohang.byte";
+   all_modules = "wait_nohang.ml";
+   ocamlc.byte;
+   check-ocamlc.byte-output;
+   run;
+   check-program-output;
+ }{
+   program = "${test_build_directory}/wait_nohang.opt";
+   setup-ocamlopt.byte-build-env;
+   program = "${test_build_directory}/reflector.exe";
+   all_modules = "reflector.ml";
+   ocamlopt.byte;
+   include unix;
+   program = "${test_build_directory}/wait_nohang.opt";
+   all_modules = "wait_nohang.ml";
+   ocamlopt.byte;
+   check-ocamlopt.byte-output;
+   run;
+   check-program-output;
+ }
 *)
 
 let refl =

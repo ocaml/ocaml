@@ -1,222 +1,172 @@
 (* TEST
-include dynlink;
-libraries = "";
-readonly_files = "store.ml main.ml Plugin_0.ml Plugin_0_0.ml Plugin_0_0_0.ml Plugin_0_0_0_0.ml Plugin_0_0_0_1.ml Plugin_0_0_0_2.ml Plugin_1.ml Plugin_1_0.ml Plugin_1_0_0.ml Plugin_1_0_0_0.ml Plugin_1_1.ml Plugin_1_2.ml Plugin_1_2_0.ml Plugin_1_2_0_0.ml Plugin_1_2_1.ml Plugin_1_2_2.ml Plugin_1_2_2_0.ml Plugin_1_2_3.ml Plugin_1_2_3_0.ml";
-not-windows;
-{
-  shared-libraries;
-
-  setup-ocamlc.byte-build-env;
-
-  module = "store.ml";
-  ocamlc.byte;
-
-  module = "Plugin_0.ml";
-  ocamlc.byte;
-
-  module = "Plugin_0_0.ml";
-  ocamlc.byte;
-
-  module = "Plugin_0_0_0.ml";
-  ocamlc.byte;
-
-  module = "Plugin_0_0_0_0.ml";
-  ocamlc.byte;
-
-  module = "Plugin_0_0_0_1.ml";
-  ocamlc.byte;
-
-  module = "Plugin_0_0_0_2.ml";
-  ocamlc.byte;
-
-  module = "Plugin_1.ml";
-  ocamlc.byte;
-
-  module = "Plugin_1_0.ml";
-  ocamlc.byte;
-
-  module = "Plugin_1_0_0.ml";
-  ocamlc.byte;
-
-  module = "Plugin_1_0_0_0.ml";
-  ocamlc.byte;
-
-  module = "Plugin_1_1.ml";
-  ocamlc.byte;
-
-  module = "Plugin_1_2.ml";
-  ocamlc.byte;
-
-  module = "Plugin_1_2_0.ml";
-  ocamlc.byte;
-
-  module = "Plugin_1_2_0_0.ml";
-  ocamlc.byte;
-
-  module = "Plugin_1_2_1.ml";
-  ocamlc.byte;
-
-  module = "Plugin_1_2_2.ml";
-  ocamlc.byte;
-
-  module = "Plugin_1_2_2_0.ml";
-  ocamlc.byte;
-
-  module = "Plugin_1_2_3.ml";
-  ocamlc.byte;
-
-  module = "Plugin_1_2_3_0.ml";
-  ocamlc.byte;
-
-  module = "main.ml";
-  ocamlc.byte;
-
-  program = "./main.byte.exe";
-  libraries = "dynlink";
-  all_modules = "store.cmo main.cmo";
-  module = "";
-  ocamlc.byte;
-
-  run;
-
-  check-program-output;
-}{
-  native-dynlink;
-
-  setup-ocamlopt.byte-build-env;
-
-  flags = "";
-  module = "store.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_0.cmxs";
-  module = "";
-  all_modules = "Plugin_0.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_0_0.cmxs";
-  module = "";
-  all_modules = "Plugin_0_0.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_0_0_0.cmxs";
-  module = "";
-  all_modules = "Plugin_0_0_0.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_0_0_0_0.cmxs";
-  module = "";
-  all_modules = "Plugin_0_0_0_0.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_0_0_0_1.cmxs";
-  module = "";
-  all_modules = "Plugin_0_0_0_1.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_0_0_0_2.cmxs";
-  module = "";
-  all_modules = "Plugin_0_0_0_2.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_1.cmxs";
-  module = "";
-  all_modules = "Plugin_1.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_1_0.cmxs";
-  module = "";
-  all_modules = "Plugin_1_0.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_1_0_0.cmxs";
-  module = "";
-  all_modules = "Plugin_1_0_0.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_1_0_0_0.cmxs";
-  module = "";
-  all_modules = "Plugin_1_0_0_0.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_1_1.cmxs";
-  module = "";
-  all_modules = "Plugin_1_1.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_1_2.cmxs";
-  module = "";
-  all_modules = "Plugin_1_2.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_1_2_0.cmxs";
-  module = "";
-  all_modules = "Plugin_1_2_0.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_1_2_0_0.cmxs";
-  module = "";
-  all_modules = "Plugin_1_2_0_0.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_1_2_1.cmxs";
-  module = "";
-  all_modules = "Plugin_1_2_1.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_1_2_2.cmxs";
-  module = "";
-  all_modules = "Plugin_1_2_2.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_1_2_2_0.cmxs";
-  module = "";
-  all_modules = "Plugin_1_2_2_0.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_1_2_3.cmxs";
-  module = "";
-  all_modules = "Plugin_1_2_3.ml";
-  ocamlopt.byte;
-
-  flags = "-shared";
-  program = "Plugin_1_2_3_0.cmxs";
-  module = "";
-  all_modules = "Plugin_1_2_3_0.ml";
-  ocamlopt.byte;
-
-  flags = "";
-  module = "main.ml";
-  ocamlopt.byte;
-
-  program = "./main.exe";
-  libraries = "dynlink";
-  all_modules = "store.cmx main.cmx";
-  module = "";
-  ocamlopt.byte;
-
-  run;
-
-  check-program-output;
-}
+ include dynlink;
+ libraries = "";
+ readonly_files = "store.ml main.ml Plugin_0.ml Plugin_0_0.ml Plugin_0_0_0.ml Plugin_0_0_0_0.ml Plugin_0_0_0_1.ml Plugin_0_0_0_2.ml Plugin_1.ml Plugin_1_0.ml Plugin_1_0_0.ml Plugin_1_0_0_0.ml Plugin_1_1.ml Plugin_1_2.ml Plugin_1_2_0.ml Plugin_1_2_0_0.ml Plugin_1_2_1.ml Plugin_1_2_2.ml Plugin_1_2_2_0.ml Plugin_1_2_3.ml Plugin_1_2_3_0.ml";
+ not-windows;
+ {
+   shared-libraries;
+   setup-ocamlc.byte-build-env;
+   module = "store.ml";
+   ocamlc.byte;
+   module = "Plugin_0.ml";
+   ocamlc.byte;
+   module = "Plugin_0_0.ml";
+   ocamlc.byte;
+   module = "Plugin_0_0_0.ml";
+   ocamlc.byte;
+   module = "Plugin_0_0_0_0.ml";
+   ocamlc.byte;
+   module = "Plugin_0_0_0_1.ml";
+   ocamlc.byte;
+   module = "Plugin_0_0_0_2.ml";
+   ocamlc.byte;
+   module = "Plugin_1.ml";
+   ocamlc.byte;
+   module = "Plugin_1_0.ml";
+   ocamlc.byte;
+   module = "Plugin_1_0_0.ml";
+   ocamlc.byte;
+   module = "Plugin_1_0_0_0.ml";
+   ocamlc.byte;
+   module = "Plugin_1_1.ml";
+   ocamlc.byte;
+   module = "Plugin_1_2.ml";
+   ocamlc.byte;
+   module = "Plugin_1_2_0.ml";
+   ocamlc.byte;
+   module = "Plugin_1_2_0_0.ml";
+   ocamlc.byte;
+   module = "Plugin_1_2_1.ml";
+   ocamlc.byte;
+   module = "Plugin_1_2_2.ml";
+   ocamlc.byte;
+   module = "Plugin_1_2_2_0.ml";
+   ocamlc.byte;
+   module = "Plugin_1_2_3.ml";
+   ocamlc.byte;
+   module = "Plugin_1_2_3_0.ml";
+   ocamlc.byte;
+   module = "main.ml";
+   ocamlc.byte;
+   program = "./main.byte.exe";
+   libraries = "dynlink";
+   all_modules = "store.cmo main.cmo";
+   module = "";
+   ocamlc.byte;
+   run;
+   check-program-output;
+ }{
+   native-dynlink;
+   setup-ocamlopt.byte-build-env;
+   flags = "";
+   module = "store.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_0.cmxs";
+   module = "";
+   all_modules = "Plugin_0.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_0_0.cmxs";
+   module = "";
+   all_modules = "Plugin_0_0.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_0_0_0.cmxs";
+   module = "";
+   all_modules = "Plugin_0_0_0.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_0_0_0_0.cmxs";
+   module = "";
+   all_modules = "Plugin_0_0_0_0.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_0_0_0_1.cmxs";
+   module = "";
+   all_modules = "Plugin_0_0_0_1.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_0_0_0_2.cmxs";
+   module = "";
+   all_modules = "Plugin_0_0_0_2.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_1.cmxs";
+   module = "";
+   all_modules = "Plugin_1.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_1_0.cmxs";
+   module = "";
+   all_modules = "Plugin_1_0.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_1_0_0.cmxs";
+   module = "";
+   all_modules = "Plugin_1_0_0.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_1_0_0_0.cmxs";
+   module = "";
+   all_modules = "Plugin_1_0_0_0.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_1_1.cmxs";
+   module = "";
+   all_modules = "Plugin_1_1.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_1_2.cmxs";
+   module = "";
+   all_modules = "Plugin_1_2.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_1_2_0.cmxs";
+   module = "";
+   all_modules = "Plugin_1_2_0.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_1_2_0_0.cmxs";
+   module = "";
+   all_modules = "Plugin_1_2_0_0.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_1_2_1.cmxs";
+   module = "";
+   all_modules = "Plugin_1_2_1.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_1_2_2.cmxs";
+   module = "";
+   all_modules = "Plugin_1_2_2.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_1_2_2_0.cmxs";
+   module = "";
+   all_modules = "Plugin_1_2_2_0.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_1_2_3.cmxs";
+   module = "";
+   all_modules = "Plugin_1_2_3.ml";
+   ocamlopt.byte;
+   flags = "-shared";
+   program = "Plugin_1_2_3_0.cmxs";
+   module = "";
+   all_modules = "Plugin_1_2_3_0.ml";
+   ocamlopt.byte;
+   flags = "";
+   module = "main.ml";
+   ocamlopt.byte;
+   program = "./main.exe";
+   libraries = "dynlink";
+   all_modules = "store.cmx main.cmx";
+   module = "";
+   ocamlopt.byte;
+   run;
+   check-program-output;
+ }
 *)
 
 (*  This module and all plugin modules are generated by a call to test_generator.ml with parameters:

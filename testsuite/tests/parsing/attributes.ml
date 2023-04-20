@@ -57,10 +57,8 @@ let _ = (module Int : T [@foo])
 let _ = (module Int : T with type t = int [@foo])
 
 (* TEST
-flags = "-dparsetree";
-setup-ocamlc.byte-build-env;
-
-ocamlc.byte;
-
-check-ocamlc.byte-output;
+ flags = "-dparsetree";
+ setup-ocamlc.byte-build-env;
+ ocamlc.byte;
+ check-ocamlc.byte-output;
 *)

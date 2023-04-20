@@ -1,9 +1,9 @@
 (* TEST
-{
-  flambda;
-}{
-  native;
-}
+ {
+   flambda;
+ }{
+   native;
+ }
 *)
 
 let do_something () =

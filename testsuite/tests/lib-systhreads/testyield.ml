@@ -1,13 +1,12 @@
 (* TEST
-include systhreads;
-hassysthreads;
-
-not-windows;
-{
-  bytecode;
-}{
-  native;
-}
+ include systhreads;
+ hassysthreads;
+ not-windows;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
    (* Test that yielding between busy threads reliably triggers a thread

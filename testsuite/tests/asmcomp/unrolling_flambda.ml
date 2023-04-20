@@ -1,7 +1,6 @@
 (* TEST
-flambda;
-
-native;
+ flambda;
+ native;
 *)
 
 let rec f x =

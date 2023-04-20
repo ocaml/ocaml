@@ -41,11 +41,9 @@ let () =
   ()
 
 (* TEST
-flags = "-w +A-67";
-setup-ocamlc.byte-build-env;
-
-compile_only = "true";
-ocamlc.byte;
-
-check-ocamlc.byte-output;
+ flags = "-w +A-67";
+ setup-ocamlc.byte-build-env;
+ compile_only = "true";
+ ocamlc.byte;
+ check-ocamlc.byte-output;
 *)

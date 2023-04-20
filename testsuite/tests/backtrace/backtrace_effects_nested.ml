@@ -45,17 +45,15 @@ let f () =
 let () = f ()
 
 (* TEST
-flags = "-g";
-{
-  bytecode;
-}{
-  no-flambda;
-
-  native;
-}{
-  reference = "${test_source_directory}/backtrace_effects_nested.flambda.reference";
-  flambda;
-
-  native;
-}
+ flags = "-g";
+ {
+   bytecode;
+ }{
+   no-flambda;
+   native;
+ }{
+   reference = "${test_source_directory}/backtrace_effects_nested.flambda.reference";
+   flambda;
+   native;
+ }
 *)

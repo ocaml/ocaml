@@ -19,11 +19,9 @@ let v = ((fun x -> x) [@inline] [@inlined]) 1 (* accepted *)
 let i = ((fun x -> x) [@inline]) [@@inline]
 
 (* TEST
-flags = "-w +A-70";
-setup-ocamlc.byte-build-env;
-
-compile_only = "true";
-ocamlc.byte;
-
-check-ocamlc.byte-output;
+ flags = "-w +A-70";
+ setup-ocamlc.byte-build-env;
+ compile_only = "true";
+ ocamlc.byte;
+ check-ocamlc.byte-output;
 *)

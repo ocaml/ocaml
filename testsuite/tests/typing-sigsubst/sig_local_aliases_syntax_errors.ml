@@ -36,5 +36,5 @@ module type Rejected0 = sig
 end;;
 
 (* TEST
-toplevel;
+ toplevel;
 *)

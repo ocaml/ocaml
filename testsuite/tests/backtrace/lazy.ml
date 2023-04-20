@@ -24,15 +24,13 @@ let () =
 
 
 (* TEST
-flags = "-g";
-{
-  no-flambda;
-
-  native;
-}{
-  reference = "${test_source_directory}/lazy.flambda.reference";
-  flambda;
-
-  native;
-}
+ flags = "-g";
+ {
+   no-flambda;
+   native;
+ }{
+   reference = "${test_source_directory}/lazy.flambda.reference";
+   flambda;
+   native;
+ }
 *)

@@ -24,11 +24,9 @@ exception C [@deprecated]
 let _ = B [@warning "-53"]
 
 (* TEST
-flags = "-w +A-70";
-setup-ocamlc.byte-build-env;
-
-compile_only = "true";
-ocamlc.byte;
-
-check-ocamlc.byte-output;
+ flags = "-w +A-70";
+ setup-ocamlc.byte-build-env;
+ compile_only = "true";
+ ocamlc.byte;
+ check-ocamlc.byte-output;
 *)

@@ -12,5 +12,5 @@ try foo () with ;;
 (3 :> );;
 
 (* TEST
-toplevel;
+ toplevel;
 *)

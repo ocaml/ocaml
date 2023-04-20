@@ -21,19 +21,15 @@ let[@poll error] c x =
       x2 + !y
 
 (* TEST
-{
-  setup-ocamlopt.byte-build-env;
-
-  ocamlopt_byte_exit_status = "2";
-  ocamlopt.byte;
-
-  check-ocamlopt.byte-output;
-}{
-  setup-ocamlopt.opt-build-env;
-
-  ocamlopt_opt_exit_status = "2";
-  ocamlopt.opt;
-
-  check-ocamlopt.opt-output;
-}
+ {
+   setup-ocamlopt.byte-build-env;
+   ocamlopt_byte_exit_status = "2";
+   ocamlopt.byte;
+   check-ocamlopt.byte-output;
+ }{
+   setup-ocamlopt.opt-build-env;
+   ocamlopt_opt_exit_status = "2";
+   ocamlopt.opt;
+   check-ocamlopt.opt-output;
+ }
 *)
