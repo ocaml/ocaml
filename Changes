@@ -727,6 +727,10 @@ Working version
   leaked for each socket.
   (Romain Beauxis, review by Nicolás Ojeda Bär)
 
+- #12195: Lower levels in checked module packages so that remaining weak
+  variables may not be unified with out-of-scope types.
+  (Chris Casinghino and Leo White, review by ???)
+
 OCaml 5.5.1
 -----------
 

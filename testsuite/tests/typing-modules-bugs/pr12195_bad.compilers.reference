@@ -1,0 +1,19 @@
+File "pr12195_bad.ml", lines 21-25, characters 11-5:
+21 | ...........struct
+22 |     type s = A
+23 | 
+24 |     let created = Foo.create (fun _ -> ())
+25 |   end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type s = A val created : '_weak1 Foo.t end
+       is not included in
+         Bar
+       Values do not match:
+         val created : '_weak1 Foo.t
+       is not included in
+         val created : s Foo.t
+       The type '_weak1 Foo.t is not compatible with the type s Foo.t
+       The type constructor s would escape its scope
+       File "pr12195_bad.ml", line 17, characters 2-23: Expected declaration
+       File "pr12195_bad.ml", line 24, characters 8-15: Actual declaration
