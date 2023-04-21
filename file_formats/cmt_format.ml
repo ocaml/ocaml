@@ -331,6 +331,9 @@ let index_decl =
   signature_item =
     (fun sub ({ sig_desc; sig_env; _ } as sig_item) ->
       (match sig_desc with
+      | Tsig_exception {
+          tyexn_constructor = { ext_kind = Text_rebind (path, lid)}} ->
+          add_loc_to_index ~namespace:Extension_constructor sig_env path lid
       | Tsig_modsubst { ms_manifest; ms_txt } ->
         add_loc_to_index ~namespace:Module sig_env ms_manifest ms_txt
       | Tsig_typext { tyext_path; tyext_txt } ->
@@ -341,6 +344,9 @@ let index_decl =
   structure_item =
     (fun sub ({ str_desc; str_env; _ } as str_item) ->
       (match str_desc with
+      | Tstr_exception {
+          tyexn_constructor = { ext_kind = Text_rebind (path, lid)}} ->
+          add_loc_to_index ~namespace:Extension_constructor str_env path lid
       | Tstr_typext { tyext_path; tyext_txt } ->
         add_loc_to_index ~namespace:Type str_env tyext_path tyext_txt
       | _ -> ());
