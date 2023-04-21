@@ -21,6 +21,7 @@
 
 #ifdef CAML_INTERNALS
 
+#include <stdbool.h>
 #include "config.h"
 
 /* The compiler generates a "frame descriptor" for every potential
