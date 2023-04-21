@@ -32,7 +32,7 @@ let num = ['0'-'9']
 
 rule is_test = parse
   | blank * { is_test lexbuf }
-  | newline { is_test lexbuf }
+  | newline { Lexing.new_line lexbuf; is_test lexbuf }
   | "/*" blank* "TEST" { true }
   | "/*" blank* "TEST_BELOW" { true }
   | "(*" blank* "TEST" { true }
