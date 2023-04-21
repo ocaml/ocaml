@@ -247,6 +247,8 @@ let index_decl =
       | Texp_field (_, lid, label_desc)
       | Texp_setfield (_, lid, label_desc, _) ->
           add_label lid label_desc
+      | Texp_new (path, lid, _) ->
+          add_loc_to_index ~namespace:Class exp_env path lid
       | Texp_record { fields; _ } ->
         Array.iter (fun (label_descr, record_label_definition) ->
           match record_label_definition with
@@ -309,6 +311,22 @@ let index_decl =
           add_loc_to_index ~namespace:Module mty_env path lid
       | _ -> ());
       default_iterator.module_type sub mty);
+
+  class_expr =
+    (fun sub ({ cl_desc; cl_env; _} as ce) ->
+      (match cl_desc with
+      | Tcl_ident (path, lid, _) ->
+          add_loc_to_index ~namespace:Class cl_env path lid
+      | _ -> ());
+      default_iterator.class_expr sub ce);
+
+  class_type =
+    (fun sub ({ cltyp_desc; cltyp_env; _} as ct) ->
+      (match cltyp_desc with
+      | Tcty_constr (path, lid, _) ->
+          add_loc_to_index ~namespace:Class_type cltyp_env path lid
+      | _ -> ());
+      default_iterator.class_type sub ct);
 
   signature_item =
     (fun sub ({ sig_desc; sig_env; _ } as sig_item) ->
