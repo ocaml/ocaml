@@ -16,6 +16,10 @@ output = "out_awk"
 *)
 
 exception E
+module M = struct
+  exception F = E
+end
+
 type t = E
 
 let x_ = E
