@@ -319,7 +319,7 @@ static value ephe_get_field_copy (value e, mlsize_t offset)
   /* Loop in case allocating the copy triggers a GC which modifies the
    * ephemeron or the value. In the common case, we go around this
    * loop 1.5 times. */
-  while(true) {
+  while (1) {
     clean_field(e, offset);
     val = Field(e, offset);
 
