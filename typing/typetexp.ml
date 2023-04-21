@@ -252,6 +252,7 @@ end = struct
     | _ -> ()
 
   let collect_univars f =
+    Misc.protect_refs [R(pre_univars, [])] @@ fun () ->
     pre_univars := [];
     let result = f () in
     let univs =
@@ -378,11 +379,11 @@ let transl_type_param env styp =
   Builtin_attributes.warning_scope styp.ptyp_attributes
     (fun () -> transl_type_param env styp)
 
-let rec transl_type env policy styp =
+let rec transl_type env ~policy ~row_policy styp =
   Builtin_attributes.warning_scope styp.ptyp_attributes
-    (fun () -> transl_type_aux env policy styp)
+    (fun () -> transl_type_aux env ~policy ~row_policy styp)
 
-and transl_type_aux env policy styp =
+and transl_type_aux env ~policy ~row_policy styp =
   let loc = styp.ptyp_loc in
   let ctyp ctyp_desc ctyp_type =
     { ctyp_desc; ctyp_type; ctyp_env = env;
@@ -406,8 +407,8 @@ and transl_type_aux env policy styp =
     in
     ctyp (Ttyp_var name) ty
   | Ptyp_arrow(l, st1, st2) ->
-    let cty1 = transl_type env policy st1 in
-    let cty2 = transl_type env policy st2 in
+    let cty1 = transl_type env ~policy ~row_policy st1 in
+    let cty2 = transl_type env ~policy ~row_policy st2 in
     let ty1 = cty1.ctyp_type in
     let ty1 =
       if Btype.is_optional l
@@ -417,7 +418,7 @@ and transl_type_aux env policy styp =
     ctyp (Ttyp_arrow (l, cty1, cty2)) ty
   | Ptyp_tuple stl ->
     assert (List.length stl >= 2);
-    let ctys = List.map (transl_type env policy) stl in
+    let ctys = List.map (transl_type env ~policy ~row_policy) stl in
     let ty = newty (Ttuple (List.map (fun ctyp -> ctyp.ctyp_type) ctys)) in
     ctyp (Ttyp_tuple ctys) ty
   | Ptyp_constr(lid, stl) ->
@@ -432,7 +433,7 @@ and transl_type_aux env policy styp =
         raise(Error(styp.ptyp_loc, env,
                     Type_arity_mismatch(lid.txt, decl.type_arity,
                                         List.length stl)));
-      let args = List.map (transl_type env policy) stl in
+      let args = List.map (transl_type env ~policy ~row_policy) stl in
       let params = instance_list decl.type_params in
       let unify_param =
         match decl.type_manifest with
@@ -451,7 +452,7 @@ and transl_type_aux env policy styp =
         newconstr path (List.map (fun ctyp -> ctyp.ctyp_type) args) in
       ctyp (Ttyp_constr (path, lid, args)) constr
   | Ptyp_object (fields, o) ->
-      let ty, fields = transl_fields env policy o fields in
+      let ty, fields = transl_fields env ~policy ~row_policy o fields in
       ctyp (Ttyp_object (fields, o)) (newobj ty)
   | Ptyp_class(lid, stl) ->
       let (path, decl) =
@@ -462,7 +463,7 @@ and transl_type_aux env policy styp =
         raise(Error(styp.ptyp_loc, env,
                     Type_arity_mismatch(lid.txt, decl.type_arity,
                                         List.length stl)));
-      let args = List.map (transl_type env policy) stl in
+      let args = List.map (transl_type env ~policy ~row_policy) stl in
       let body = Option.get decl.type_manifest in
       let (params, body) = instance_parameterized_type decl.type_params body in
       List.iter2
@@ -487,7 +488,7 @@ and transl_type_aux env policy styp =
       let cty =
         try
           let t = TyVarEnv.lookup_local alias in
-          let ty = transl_type env policy st in
+          let ty = transl_type env ~policy ~row_policy:policy st in
           begin try unify_var env t ty.ctyp_type with Unify err ->
             let err = Errortrace.swap_unification_error err in
             raise(Error(styp.ptyp_loc, env, Alias_type_mismatch err))
@@ -498,7 +499,7 @@ and transl_type_aux env policy styp =
             with_local_level_if_principal begin fun () ->
               let t = newvar () in
               TyVarEnv.remember_used alias t styp.ptyp_loc;
-              let ty = transl_type env policy st in
+              let ty = transl_type env ~policy ~row_policy st in
               begin try unify_var env t ty.ctyp_type with Unify err ->
                 let err = Errortrace.swap_unification_error err in
                 raise(Error(styp.ptyp_loc, env, Alias_type_mismatch err))
@@ -545,7 +546,7 @@ and transl_type_aux env policy styp =
             name := None;
             let tl =
               Builtin_attributes.warning_scope rf_attributes
-                (fun () -> List.map (transl_type env policy) stl)
+                (fun () -> List.map (transl_type env ~policy ~row_policy) stl)
             in
             let f = match present with
               Some present when not (List.mem l.txt present) ->
@@ -561,7 +562,7 @@ and transl_type_aux env policy styp =
             add_typed_field styp.ptyp_loc l.txt f;
               Ttag (l,c,tl)
         | Rinherit sty ->
-            let cty = transl_type env policy sty in
+            let cty = transl_type env ~policy ~row_policy sty in
             let ty = cty.ctyp_type in
             let nm =
               match get_desc cty.ctyp_type with
@@ -608,24 +609,35 @@ and transl_type_aux env policy styp =
       in
       let more =
         if Btype.static_row (make_row (newvar ())) then newty Tnil else
-           TyVarEnv.new_var policy
+           TyVarEnv.new_var row_policy
       in
       let ty = newty (Tvariant (make_row more)) in
       ctyp (Ttyp_variant (tfields, closed, present)) ty
   | Ptyp_poly(vars, st) ->
       let vars = List.map (fun v -> v.txt) vars in
-      let new_univars, cty =
-        with_local_level begin fun () ->
-          let new_univars = TyVarEnv.make_poly_univars vars in
-          let cty = TyVarEnv.with_univars new_univars begin fun () ->
-            transl_type env policy st
-          end in
-          (new_univars, cty)
+      let (new_univars, cty), implicit_row_univars =
+        let collect = match vars with
+          | [] ->
+              (* empty Ptyp_poly are a typechecker encoding  *)
+              (fun f -> f (), [])
+          | _ :: _ -> TyVarEnv.collect_univars
+        in
+        collect begin fun () ->
+          with_local_level begin fun () ->
+            let new_univars = TyVarEnv.make_poly_univars vars in
+            let cty = TyVarEnv.with_univars new_univars begin fun () ->
+              transl_type env ~policy ~row_policy:TyVarEnv.univars_policy st
+            end in
+            (new_univars, cty)
+          end
+          ~post:(fun (_,cty) -> generalize_ctyp cty)
         end
-        ~post:(fun (_,cty) -> generalize_ctyp cty)
       in
+      let explicit_ty_list =
+        TyVarEnv.check_poly_univars env styp.ptyp_loc new_univars
+      in
+      let ty_list = implicit_row_univars @ explicit_ty_list in
       let ty = cty.ctyp_type in
-      let ty_list = TyVarEnv.check_poly_univars env styp.ptyp_loc new_univars in
       let ty_list = List.filter (fun v -> deep_occur v ty) ty_list in
       let ty' = Btype.newgenty (Tpoly(ty, ty_list)) in
       unify_var env (newvar()) ty';
@@ -637,7 +649,7 @@ and transl_type_aux env policy styp =
       let mty =
         TyVarEnv.with_local_scope (fun () -> !transl_modtype env mty) in
       let ptys = List.map (fun (s, pty) ->
-                             s, transl_type env policy pty
+                             s, transl_type env ~policy ~row_policy pty
                           ) l in
       let path = !transl_modtype_longident loc env p.txt in
       let ty = newty (Tpackage (path,
@@ -652,7 +664,7 @@ and transl_type_aux env policy styp =
   | Ptyp_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
-and transl_fields env policy o fields =
+and transl_fields env ~policy ~row_policy o fields =
   let hfields = Hashtbl.create 17 in
   let add_typed_field loc l ty =
     try
@@ -670,14 +682,15 @@ and transl_fields env policy o fields =
     | Otag (s, ty1) -> begin
         let ty1 =
           Builtin_attributes.warning_scope of_attributes
-            (fun () -> transl_type env policy (Ast_helper.Typ.force_poly ty1))
+            (fun () -> transl_type env ~policy ~row_policy
+                (Ast_helper.Typ.force_poly ty1))
         in
         let field = OTtag (s, ty1) in
         add_typed_field ty1.ctyp_loc s.txt ty1.ctyp_type;
         field
       end
     | Oinherit sty -> begin
-        let cty = transl_type env policy sty in
+        let cty = transl_type env ~policy ~row_policy sty in
         let nm =
           match get_desc cty.ctyp_type with
             Tconstr(p, _, _) -> Some p
@@ -742,6 +755,9 @@ let rec make_fixed_univars ty =
         Btype.iter_type_expr make_fixed_univars ty
     end
 
+let transl_type env policy styp =
+  transl_type env ~policy ~row_policy:policy styp
+
 let make_fixed_univars ty =
   make_fixed_univars ty;
   Btype.unmark_type ty
@@ -767,7 +783,7 @@ let transl_simple_type_univars env styp =
   end in
   make_fixed_univars typ.ctyp_type;
     { typ with ctyp_type =
-        instance (Btype.newgenty (Tpoly (typ.ctyp_type, univs))) }
+        instance (Btype.newgenty (Tpoly(typ.ctyp_type, univs))) }
 
 let transl_simple_type_delayed env styp =
   TyVarEnv.reset_locals ();
