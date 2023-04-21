@@ -161,14 +161,16 @@ let test_trees_of_tsl_block tsl_block =
     | (Environment_statement s)::_ -> unexpected_environment_statement s
     | _ -> assert false
 
-let rec tests_in_tree_aux set = function Node (_, test, _, subtrees) ->
-  let set' = List.fold_left tests_in_tree_aux set subtrees in
-  Tests.TestSet.add test set'
+let tests_in_stmt set stmt =
+  match stmt with
+  | Environment_statement _ -> set
+  | Test (_, name, _) -> Tests.TestSet.add (lookup_test name) set
+
+let rec tests_in_tree_aux set (Tsl_ast.Ast (stmts, subs)) =
+  let set1 = List.fold_left tests_in_stmt set stmts in
+  List.fold_left tests_in_tree_aux set1 subs
 
 let tests_in_tree t = tests_in_tree_aux Tests.TestSet.empty t
-
-let tests_in_trees subtrees =
-  List.fold_left tests_in_tree_aux Tests.TestSet.empty subtrees
 
 let actions_in_test test =
   let add action_set action = Actions.ActionSet.add action action_set in
@@ -178,30 +180,6 @@ let actions_in_tests tests =
   let f test action_set =
     Actions.ActionSet.union (actions_in_test test) action_set in
   Tests.TestSet.fold f tests Actions.ActionSet.empty
-
-let rec split_env l =
-  match l with
-  | Environment_statement env :: tl ->
-    let (env2, rest) = split_env tl in (env :: env2, rest)
-  | _ -> ([], l)
-
-let rec test_trees_of_tsl_ast (Ast (seq, subs)) =
-  let (env, rest) = split_env seq in
-  let trees =
-    match rest with
-    | [] -> List.map test_tree_of_tsl_ast subs
-    | [ Test (_, name, mods) ] ->
-      [Node ([], lookup_test name, mods, List.map test_tree_of_tsl_ast subs)]
-    | Test (_, name, mods) :: seq1 ->
-      let sub = test_tree_of_tsl_ast (Ast (seq1, subs)) in
-      [Node ([], lookup_test name, mods, [sub])]
-    | Environment_statement _ :: _ -> assert false
-  in (env, trees)
-
-and test_tree_of_tsl_ast ast =
-  match test_trees_of_tsl_ast ast with
-  | (env, [Node (env1, t, m, s)]) -> Node (env @ env1, t, m, s)
-  | (env, trees) -> Node (env, Tests.null, [], trees)
 
 let rec ast_of_tree (Node (env, test, mods, subs)) =
   let tst = [Test (0, Tsl_ast.make_identifier test.Tests.test_name, mods)] in
