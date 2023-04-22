@@ -30,6 +30,7 @@ __declspec(noreturn) void __cdecl abort(void);
 #include <stdarg.h>
 #include <stdlib.h>
 #include "caml/config.h"
+#include "caml/fail.h"
 #include "caml/misc.h"
 #include "caml/memory.h"
 #include "caml/osdeps.h"
@@ -143,17 +144,29 @@ void caml_ext_table_init(struct ext_table * tbl, int init_capa)
   tbl->contents = caml_stat_alloc(sizeof(void *) * init_capa);
 }
 
-int caml_ext_table_add(struct ext_table * tbl, caml_stat_block data)
+int caml_ext_table_add_noexc(struct ext_table * tbl, caml_stat_block data)
 {
   int res;
   if (tbl->size >= tbl->capacity) {
-    tbl->capacity *= 2;
-    tbl->contents =
-      caml_stat_resize(tbl->contents, sizeof(void *) * tbl->capacity);
+    if (tbl->capacity > INT_MAX / 2) return -1; /* overflow */
+    asize_t new_capacity = tbl->capacity * 2;
+    if (new_capacity > (asize_t)(-1) / sizeof(void *)) return -1; /* overflow */
+    void ** new_contents =
+      caml_stat_resize_noexc(tbl->contents, sizeof(void *) * new_capacity);
+    if (new_contents == NULL) return -1;
+    tbl->capacity = new_capacity;
+    tbl->contents = new_contents;
   }
   res = tbl->size;
   tbl->contents[res] = data;
   tbl->size++;
+  return res;
+}
+
+int caml_ext_table_add(struct ext_table * tbl, caml_stat_block data)
+{
+  int res = caml_ext_table_add_noexc(tbl, data);
+  if (res == -1) caml_raise_out_of_memory();
   return res;
 }
 
