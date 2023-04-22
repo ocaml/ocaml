@@ -61,6 +61,10 @@ Working version
   (Jacques Garrigue, report by Leo White, review by Gabriel Scherer)
 
 ### Runtime system:
+- #12193: Re-introduce GC compaction for shared pools
+  Adds a compaction algorithm for the shared pools in the major heap. Explicit
+  only for now, on calls to `Gc.compact`.
+  (Sadiq Jaffer, Nick Barnes, review by ??)
 
 - #10111: Increase the detail of location information for debugging events to
   allow the end line number and character offset to be reported.
