@@ -167,7 +167,7 @@ depend-menhir:
 	$(MENHIR) --depend --ocamldep "$(OCAMLDEP_CMD)" \
 	  parsing/parser.mly > .depend.menhir
 
-include .depend.menhir
+include $(SRCDIR)/.depend.menhir
 
 ## interpret-menhir
 

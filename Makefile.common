@@ -16,7 +16,7 @@
 # This makefile contains common definitions and rules shared by
 # other Makefiles
 
-include $(ROOTDIR)/Makefile.config_if_required
+include $(ROOTDIR)/Makefile.build_config
 
 # %(DEPDIR) must be kept in sync with entries in .gitignore
 DEPDIR=.dep
@@ -85,7 +85,7 @@ INSTALL_PROGRAMS_MAN_DIR := $(DESTDIR)$(PROGRAMS_MAN_DIR)
 INSTALL_LIBRARIES_MAN_DIR := $(DESTDIR)$(LIBRARIES_MAN_DIR)
 INSTALL_DOCDIR := $(DESTDIR)$(DOCDIR)
 
-FLEXDLL_SUBMODULE_PRESENT := $(wildcard $(ROOTDIR)/flexdll/Makefile)
+FLEXDLL_SUBMODULE_PRESENT := $(wildcard $(TOPSRCDIR)/flexdll/Makefile)
 
 IN_COREBOOT_CYCLE ?= false
 
@@ -111,7 +111,7 @@ TEST_BOOT_OCAMLC_OPT = $(shell \
 ifeq "$(TEST_BOOT_OCAMLC_OPT)" "0"
   BOOT_OCAMLC = $(ROOTDIR)/boot/ocamlc.opt
 else
-  BOOT_OCAMLC = $(OCAMLRUN) $(ROOTDIR)/boot/ocamlc
+  BOOT_OCAMLC = $(OCAMLRUN) $(TOPSRCDIR)/boot/ocamlc
 endif
 
 BOOT_OCAMLDEP = $(BOOT_OCAMLC) -depend
@@ -195,7 +195,7 @@ OCAMLDEP_CMD = $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) \
 
 # Lexer generation
 
-BOOT_OCAMLLEX ?= $(OCAMLRUN) $(ROOTDIR)/boot/ocamllex
+BOOT_OCAMLLEX ?= $(OCAMLRUN) $(TOPSRCDIR)/boot/ocamllex
 
 # Default value for OCAMLLEX
 # In those directories where this needs to be overridden, the overriding
@@ -206,7 +206,7 @@ OCAMLLEX ?= $(BEST_OCAMLLEX)
 OCAMLLEXFLAGS ?= -q
 
 %.ml: %.mll
-	$(V_OCAMLLEX)$(OCAMLLEX) $(OCAMLLEXFLAGS) $<
+	$(V_OCAMLLEX)$(OCAMLLEX) $(OCAMLLEXFLAGS) -o $@ $<
 
 # Parser generation
 
@@ -215,7 +215,7 @@ OCAMLYACC ?= $(ROOTDIR)/yacc/ocamlyacc$(EXE)
 OCAMLYACCFLAGS ?= --strict -v
 
 %.ml %.mli: %.mly
-	$(V_OCAMLYACC)$(OCAMLYACC) $(OCAMLYACCFLAGS) $<
+	$(V_OCAMLYACC)$(OCAMLYACC) $(OCAMLYACCFLAGS) -b$(basename $@) $<
 
 SAK = $(ROOTDIR)/runtime/sak$(EXE)
 

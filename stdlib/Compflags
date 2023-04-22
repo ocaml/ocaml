@@ -17,7 +17,7 @@
 case $1 in
   stdlib.cm[iox])
       echo ' -nopervasives -no-alias-deps -w -49' \
-           ' -pp "$AWK -f ./expand_module_aliases.awk"';;
+           ' -pp "$AWK -f $SRCDIR/expand_module_aliases.awk"';;
   # stdlib dependencies
   camlinternalFormatBasics*.cm[iox]) echo ' -nopervasives';;
   # end stdlib dependencies
@@ -31,10 +31,11 @@ case $1 in
   stdlib__Printf.cm[io]|stdlib__Format.cm[io]|stdlib__Scanf.cm[io])
       echo ' -w +A -w -fragile-match';;
   stdlib__Scanf.cmx) echo ' -inline 9';;
-  *Labels.cmi) echo ' -pp "$AWK -f ./expand_module_aliases.awk"';;
+  *Labels.cmi) echo ' -pp "$AWK -f $SRCDIR/expand_module_aliases.awk"';;
   *Labels.cm[ox]) echo ' -nolabels -no-alias-deps';;
   stdlib__Float.cm[ox]) echo ' -nolabels -no-alias-deps';;
   stdlib__Oo.cmi) echo ' -no-principal';;
     # preserve structure sharing in Oo.copy (PR#9767)
+  stdlib__Sys.cm[ox]) echo ' -cmi-file stdlib__Sys.cmi';;
   *) echo ' ';;
 esac

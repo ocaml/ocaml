@@ -367,12 +367,11 @@ AC_DEFUN([OCAML_TEST_FLEXLINK], [
 AC_DEFUN([OCAML_TEST_FLEXDLL_H], [
   OCAML_CC_SAVE_VARIABLES
 
-  AS_IF([test -n "$1"],[CPPFLAGS="-I $1 $CPPFLAGS"])
+  CPPFLAGS="-I $1 $CPPFLAGS"
   have_flexdll_h=no
   AC_CHECK_HEADER([flexdll.h],[have_flexdll_h=yes],[have_flexdll_h=no])
   AS_IF([test x"$have_flexdll_h" = 'xno'],
-    [AS_IF([test -n "$1"],
-      [AC_MSG_ERROR([$1/flexdll.h appears unusable])])])
+    [AC_MSG_ERROR([$1/flexdll.h appears unusable])])
 
   OCAML_CC_RESTORE_VARIABLES
 ])

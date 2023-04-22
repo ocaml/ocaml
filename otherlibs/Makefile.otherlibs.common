@@ -117,12 +117,12 @@ endif
 	  "$(INSTALL_LIBDIR_LIBNAME)/"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	  $(CMIFILES:.cmi=.mli) \
+	  $(addprefix $(SRCDIR)/,$(CMIFILES:.cmi=.mli)) \
           $(CMIFILES:.cmi=.cmti) \
 	  "$(INSTALL_LIBDIR_LIBNAME)/"
 endif
 	if test -n "$(HEADERS)"; then \
-	  $(INSTALL_DATA) $(HEADERS) "$(INSTALL_INCDIR)/"; \
+	  $(INSTALL_DATA) $(addprefix $(SRCDIR)/,$(HEADERS)) "$(INSTALL_INCDIR)/"; \
 	fi
 
 installopt:
@@ -152,13 +152,13 @@ distclean:: clean
 	rm -f META
 
 %.cmi: %.mli
-	$(V_OCAMLC)$(CAMLC) -c $(COMPFLAGS) $<
+	$(V_OCAMLC)$(CAMLC) -o $@ -c $(COMPFLAGS) $<
 
 %.cmo: %.ml
-	$(V_OCAMLC)$(CAMLC) -c $(COMPFLAGS) $<
+	$(V_OCAMLC)$(CAMLC) -o $@ -c $(COMPFLAGS) $<
 
 %.cmx: %.ml
-	$(V_OCAMLOPT)$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
+	$(V_OCAMLOPT)$(CAMLOPT) -o $@ -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 %.b.$(O): %.c $(REQUIRED_HEADERS)
 	$(V_CC)$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \

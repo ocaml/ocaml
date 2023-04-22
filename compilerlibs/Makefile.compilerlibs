@@ -392,11 +392,15 @@ TOPLEVEL_SHARED_ARTEFACTS = $(TOPLEVEL_SHARED_MLIS) $(TOPLEVEL_SHARED_CMIS)
 
 $(addprefix toplevel/byte/, $(TOPLEVEL_SHARED_CMIS)):\
 toplevel/byte/%.cmi: toplevel/%.cmi
-	cp $< toplevel/$*.mli $(@D)
+	cp $< $(SRCDIR)/toplevel/$*.mli $(@D)
+
+toplevel/byte/topeval.cmo toplevel/native/topeval.cmx: OC_COMMON_COMPFLAGS += -cmi-file toplevel/byte/topeval.cmi
+toplevel/byte/trace.cmo toplevel/native/trace.cmx: OC_COMMON_COMPFLAGS += -cmi-file toplevel/byte/trace.cmi
+toplevel/byte/topmain.cmo toplevel/native/topmain.cmx: OC_COMMON_COMPFLAGS += -cmi-file toplevel/byte/topmain.cmi
 
 $(addprefix toplevel/native/, $(TOPLEVEL_SHARED_CMIS)):\
 toplevel/native/%.cmi: toplevel/%.cmi
-	cp $< toplevel/$*.mli $(@D)
+	cp $< $(SRCDIR)/toplevel/$*.mli $(@D)
 
 beforedepend::
 	cd toplevel ; cp $(TOPLEVEL_SHARED_MLIS) byte/
@@ -413,6 +417,28 @@ ALL_CONFIG_CMO = utils/config_main.cmo utils/config_boot.cmo
 
 utils/config_%.mli: utils/config.mli
 	cp $^ $@
+
+utils/config.cmo utils/config.cmx: OC_COMMON_COMPFLAGS += -cmi-file utils/config.cmi
+
+parsing/lexer.cmo parsing/lexer.cmx: OC_COMMON_COMPFLAGS += -cmi-file parsing/lexer.cmi
+
+lex/parser.cmo lex/parser.cmx: OC_COMMON_COMPFLAGS += -cmi-file lex/parser.cmi
+
+lex/lexer.cmo lex/lexer.cmx: OC_COMMON_COMPFLAGS += -cmi-file lex/lexer.cmi
+
+lambda/runtimedef.cmo lambda/runtimedef.cmx: OC_COMMON_COMPFLAGS += -cmi-file lambda/runtimedef.cmi
+
+asmcomp/proc.cmo asmcomp/proc.cmx: OC_COMMON_COMPFLAGS += -cmi-file asmcomp/proc.cmi
+
+asmcomp/selection.cmo asmcomp/selection.cmx: OC_COMMON_COMPFLAGS += -cmi-file asmcomp/selection.cmi
+
+asmcomp/CSE.cmo asmcomp/CSE.cmx: OC_COMMON_COMPFLAGS += -cmi-file asmcomp/CSE.cmi
+
+asmcomp/reload.cmo asmcomp/reload.cmx: OC_COMMON_COMPFLAGS += -cmi-file asmcomp/reload.cmi
+
+asmcomp/scheduling.cmo asmcomp/scheduling.cmx: OC_COMMON_COMPFLAGS += -cmi-file asmcomp/scheduling.cmi
+
+asmcomp/emit.cmo asmcomp/emit.cmx: OC_COMMON_COMPFLAGS += -cmi-file asmcomp/emit.cmi
 
 beforedepend:: utils/config_main.mli utils/config_boot.mli
 

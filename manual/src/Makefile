@@ -7,7 +7,7 @@ DIRS = infoman texstuff textman
 
 FILES = allfiles.tex biblio.tex foreword.tex version.tex cmds/warnings-help.etex ifocamldoc.tex
 
-TEXINPUTS = ".:..:../refman:../refman/extensions:../library:../cmds:../tutorials:../../styles:"
+TEXINPUTS = ".:..:../$(SRCDIR):../refman:../refman/extensions:../library:../cmds:../tutorials:../$(SRCDIR)/../styles:"
 RELEASE = $$HOME/release/$${RELEASENAME}
 HEVEA = hevea
 HACHA = hacha
@@ -43,8 +43,8 @@ html_files:
 	mkdir -p htmlman/libref
 	cp -r $(APIDOC)/ocamldoc/build/html/libref htmlman
 	cp -r $(APIDOC)/ocamldoc/build/html/compilerlibref htmlman
-	cp style.css htmlman/libref
-	cp style.css htmlman/compilerlibref
+	cp $(SRCDIR)/style.css htmlman/libref
+	cp $(SRCDIR)/style.css htmlman/compilerlibref
 
 ifocamldoc.tex: $(ROOTDIR)/Makefile.build_config
 	$(MAKE) -C $(APIDOC)/ocamldoc build/latex/ifocamldoc.tex
@@ -56,11 +56,11 @@ $(DIRS):
 
 pdf: files latex_files | texstuff
 	cd texstuff \
-	  && TEXINPUTS=$(TEXINPUTS) pdflatex manual.tex
+	  && TEXINPUTS=$(TEXINPUTS) pdflatex ../$(SRCDIR)/manual.tex
 
 index: | texstuff
 	cd texstuff \
-	  && sh ../../tools/fix_index.sh manual.idx \
+	  && sh ../$(SRCDIR)/../tools/fix_index.sh manual.idx \
 	  && makeindex manual.idx \
 	  && makeindex manual.kwd.idx
 
@@ -69,21 +69,21 @@ index: | texstuff
 html: etex-files html_files
 	cd htmlman \
 	  && $(HEVEA) $(HTML_FLAGS) \
-	    -I .. -I ../cmds -I ../library -I ../refman \
+	    -I .. -I ../$(SRCDIR) -I ../cmds -I ../library -I ../refman \
 	    -I ../refman/extensions -I ../tutorials \
-	    -I ../../styles -I ../texstuff \
-	    manual.hva -e macros.tex ../manual.tex \
+	    -I ../$(SRCDIR)/../styles -I ../texstuff \
+	    ../$(SRCDIR)/manual.hva -e macros.tex ../$(SRCDIR)/manual.tex \
 	  && $(HACHA) -tocter manual.html
 
 info: files latex_files | infoman
 	cd infoman \
 	  && rm -f ocaml.info* \
 	  && $(HEVEA) $(INFO_FLAGS) -o ocaml.info.body \
-	    -I .. -I ../cmds -I ../library -I ../refman \
+	    -I .. -I ../$(SRCDIR) -I ../cmds -I ../library -I ../refman \
 	    -I ../refman/extensions -I ../tutorials \
-	    -I ../../styles -I ../texstuff \
-	    ../manual.inf -e macros.tex ../manual.tex
-	cat manual.info.header infoman/ocaml.info.body > infoman/ocaml.info
+	    -I ../$(SRCDIR)/../styles -I ../texstuff \
+	    ../$(SRCDIR)/manual.inf -e macros.tex ../$(SRCDIR)/manual.tex
+	cat $(SRCDIR)/manual.info.header infoman/ocaml.info.body > infoman/ocaml.info
 	cd infoman \
 	  && rm -f ocaml.info.tmp ocaml.info.body \
 	  && gzip -9 ocaml.info*
@@ -91,10 +91,10 @@ info: files latex_files | infoman
 text: files latex_files | textman
 	cd textman \
 	  && $(HEVEA) $(TEXT_FLAGS) \
-	    -I .. -I ../cmds -I ../library -I ../refman \
+	    -I .. -I ../$(SRCDIR) -I ../cmds -I ../library -I ../refman \
 	    -I ../refman/extensions -I ../tutorials \
-	    -I ../../styles -I ../texstuff \
-	    ../manual.inf -e macros.tex ../manual.tex
+	    -I ../$(SRCDIR)/../styles -I ../texstuff \
+	    ../$(SRCDIR)/manual.inf -e macros.tex ../$(SRCDIR)/manual.tex
 
 .PHONY: all
 all:
@@ -137,7 +137,7 @@ etex-files: $(FILES)
 	$(TEXQUOTE) < $< > $*.texquote_error.tex
 	mv $*.texquote_error.tex $@
 
-cmds/warnings-help.etex: $(ROOTDIR)/utils/warnings.ml $(ROOTDIR)/ocamlc
+cmds/warnings-help.etex: $(TOPSRCDIR)/utils/warnings.ml $(ROOTDIR)/ocamlc
 	(echo "% This file is generated from (ocamlc -warn-help)";\
 	 echo "% according to a rule in manual/src/Makefile.";\
 	 echo "% In particular, the reference to documentation sections";\

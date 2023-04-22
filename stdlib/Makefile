@@ -65,7 +65,7 @@ install::
 	$(INSTALL_DATA) META "$(INSTALL_STDLIB_META_DIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	  *.cmt *.cmti *.mli *.ml *.ml.in \
+	  *.cmt *.cmti $(SRCDIR)/*.mli $(SRCDIR)/*.ml $(SRCDIR)/*.ml.in \
 	  "$(INSTALL_LIBDIR)"
 endif
 	$(INSTALL_DATA) target_camlheader "$(INSTALL_LIBDIR)/camlheader"
@@ -191,32 +191,33 @@ clean::
 	rm -f $(CAMLHEADERS)
 
 export AWK
+export SRCDIR
 
 %.cmi: %.mli
-	$(V_OCAMLC)$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
+	$(V_OCAMLC)$(CAMLC) $(COMPFLAGS) $(shell $(SRCDIR)/Compflags $@) -o $@ -c $<
 
 # The dependency on the .mli file is in .depend (since stdlib__Foo.cmi
 # depends on stdlib__foo.mli)
 stdlib__%.cmi:
-	$(V_OCAMLC)$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) \
+	$(V_OCAMLC)$(CAMLC) $(COMPFLAGS) $(shell $(SRCDIR)/Compflags $@) \
 	         -o $@ -c $(filter %.mli, $^)
 
 %.cmo: %.ml
-	$(V_OCAMLC)$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
+	$(V_OCAMLC)$(CAMLC) $(COMPFLAGS) $(shell $(SRCDIR)/Compflags $@) -o $@ -c $<
 
 # The dependency on the .ml file is in .depend (since stdlib__Foo.cmo
 # depends on stdlib__foo.ml)
 stdlib__%.cmo:
-	$(V_OCAMLC)$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) \
+	$(V_OCAMLC)$(CAMLC) $(COMPFLAGS) $(shell $(SRCDIR)/Compflags $@) \
 	         -o $@ -c $(filter %.ml, $^)
 
 %.cmx: %.ml
-	$(V_OCAMLOPT)$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) -c $<
+	$(V_OCAMLOPT)$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell $(SRCDIR)/Compflags $@) -o $@ -c $<
 
 # The dependency on the .ml file is in .depend (since stdlib__Foo.cmx
 # depends on stdlib__foo.ml)
 stdlib__%.cmx:
-	$(V_OCAMLOPT)$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) \
+	$(V_OCAMLOPT)$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell $(SRCDIR)/Compflags $@) \
 	           -o $@ -c $(filter %.ml, $^)
 
 # Dependencies on the compiler
@@ -236,7 +237,7 @@ clean::
 	rm -f *.cm* *.o *.obj *.a *.lib *.odoc
 	rm -rf flexdll
 
-include .depend
+include $(SRCDIR)/.depend
 
 STDLIB_NAMESPACE_MODULES = $(subst $(SPACE),|,$(STDLIB_PREFIXED_MODULES))
 
@@ -248,7 +249,7 @@ GNUISH_SED = \
 depend:
 	$(V_OCAMLDEP){ \
 	  $(OCAMLDEP_CMD) $(filter-out stdlib.%,$(wildcard *.mli *.ml)); \
-	  $(OCAMLDEP_CMD) -pp "$(AWK) -f ./remove_module_aliases.awk" \
+	  $(OCAMLDEP_CMD) -pp "$(AWK) -f $(SRCDIR)/remove_module_aliases.awk" \
 	  stdlib.ml stdlib.mli; \
 	} | \
 	$(GNUISH_SED) -E \

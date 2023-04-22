@@ -69,14 +69,16 @@ clean::
 .PHONY: distclean
 distclean: clean
 
+debugger_lexer.cmo: COMPFLAGS += -cmi-file debugger_lexer.cmi
+
 ocamldebug_entry.cmo: ocamldebug_entry.ml ocamldebug.cmo
-	$(V_OCAMLC)$(CAMLC) -c $(COMPFLAGS) $<
+	$(V_OCAMLC)$(CAMLC) -o $@ -c $(COMPFLAGS) $<
 
 %.cmo: %.ml
-	$(V_OCAMLC)$(CAMLC) -c $(COMPFLAGS) -for-pack ocamldebug $<
+	$(V_OCAMLC)$(CAMLC) -o $@ -c $(COMPFLAGS) -for-pack ocamldebug $<
 
 %.cmi: %.mli
-	$(V_OCAMLC)$(CAMLC) -c $(COMPFLAGS) -for-pack ocamldebug $<
+	$(V_OCAMLC)$(CAMLC) -o $@ -c $(COMPFLAGS) -for-pack ocamldebug $<
 
 depend: beforedepend
 	$(V_OCAMLDEP)$(OCAMLDEP_CMD) *.mli *.ml > .depend
@@ -89,4 +91,4 @@ clean::
 	rm -f $(addprefix debugger_parser.,ml mli output)
 beforedepend:: debugger_parser.ml debugger_parser.mli
 
-include .depend
+include $(SRCDIR)/.depend

@@ -132,13 +132,18 @@ deps_opt=$(addsuffix .cmxa,$(deps_paths))
 
 $(eval $(call PROGRAM_SYNONYM,ocamltest))
 
-ocamltest_unix.%: flags+=$(ocamltest_unix_include) -opaque
+ocamltest_config.cmo ocamltest_config.cmx: flags+=-cmi-file ocamltest_config.cmi
+
+ocamltest_unix.% ocamltest_stdlib.%: flags+=$(ocamltest_unix_include) -opaque
+ocamltest_unix.cmo ocamltest_unix.cmx: flags+=-cmi-file ocamltest_unix.cmi
+
+tsl_lexer.cmo tsl_lexer.cmx: flags+=-cmi-file tsl_lexer.cmi
 
 ocamltest$(EXE): $(deps_byte) $(bytecode_modules)
 	$(V_LINKC)$(ocamlc_cmd) $(ocamltest_unix_include)-custom -o $@ $^
 
 %.cmo: %.ml $(deps_byte)
-	$(V_OCAMLC)$(ocamlc) -c $<
+	$(V_OCAMLC)$(ocamlc) -o $@ -c $<
 
 $(eval $(call PROGRAM_SYNONYM,ocamltest.opt))
 
@@ -146,10 +151,10 @@ ocamltest.opt$(EXE): $(deps_opt) $(native_modules)
 	$(V_LINKOPT)$(ocamlopt_cmd) $(ocamltest_unix_include)-o $@ $^
 
 %.cmx: %.ml $(deps_opt)
-	$(V_OCAMLOPT)$(ocamlopt) -c $<
+	$(V_OCAMLOPT)$(ocamlopt) -o $@ -c $<
 
 %.cmi: %.mli $(deps_byte)
-	$(V_OCAMLC)$(ocamlc) -c $<
+	$(V_OCAMLC)$(ocamlc) -o $@ -c $<
 
 ocamltest_unix.ml: ocamltest_unix_$(ocamltest_unix_impl).ml
 	$(V_GEN)echo '# 1 "$<"' > $@ && \
@@ -187,4 +192,4 @@ $(DEPDIR)/%.$(D): %.c | $(DEPDIR)
 depend: $(dependencies_generated_prereqs)
 	$(V_OCAMLDEP)$(OCAMLDEP_CMD) $(mli_files) $(ml_files) > .depend
 
--include .depend
+include $(SRCDIR)/.depend

@@ -32,18 +32,19 @@ include stdlib/StdlibModules
 CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) -use-prims runtime/primitives
 CAMLOPT=$(OCAMLRUN) ./ocamlopt$(EXE) $(STDLIBFLAGS) -I otherlibs/dynlink
 ARCHES=amd64 arm64 power s390x riscv
-VPATH = utils parsing typing bytecomp file_formats lambda middle_end \
+OC_OCAMLDEPDIRS = utils parsing typing bytecomp file_formats lambda middle_end \
   middle_end/closure middle_end/flambda middle_end/flambda/base_types \
   asmcomp driver toplevel tools
-INCLUDES = $(addprefix -I ,$(VPATH))
+vpath %.cmo $(OC_OCAMLDEPDIRS)
+vpath %.cmi $(OC_OCAMLDEPDIRS)
+vpath %.cmx $(OC_OCAMLDEPDIRS)
+INCLUDES = $(addprefix -I ,$(OC_OCAMLDEPDIRS))
 
 ifeq "$(strip $(NATDYNLINKOPTS))" ""
 OCAML_NATDYNLINKOPTS=
 else
 OCAML_NATDYNLINKOPTS = -ccopt "$(NATDYNLINKOPTS)"
 endif
-
-OC_OCAMLDEPDIRS = $(VPATH)
 
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 OCAMLTEST_OPT=$(WITH_OCAMLTEST:=.opt)
@@ -85,10 +86,10 @@ reconfigure:
 	ac_read_git_config=true ./configure $(CONFIGURE_ARGS)
 
 utils/domainstate.ml: utils/domainstate.ml.c runtime/caml/domain_state.tbl
-	$(V_GEN)$(CPP) -I runtime/caml $< > $@
+	$(V_GEN)$(CPP) -I $(SRCDIR)/runtime/caml -I runtime/caml $< > $@
 
 utils/domainstate.mli: utils/domainstate.mli.c runtime/caml/domain_state.tbl
-	$(V_GEN)$(CPP) -I runtime/caml $< > $@
+	$(V_GEN)$(CPP) -I $(SRCDIR)/runtime/caml -I runtime/caml $< > $@
 
 configure: tools/autogen configure.ac aclocal.m4 build-aux/ocaml_version.m4
 	$<
@@ -175,7 +176,7 @@ FLEXDLL_OBJECTS = \
   flexdll_$(FLEXDLL_CHAIN).$(O) flexdll_initer_$(FLEXDLL_CHAIN).$(O)
 FLEXLINK_BUILD_ENV = \
   MSVC_DETECT=0 OCAML_CONFIG_FILE=../Makefile.config \
-  CHAINS=$(FLEXDLL_CHAIN) ROOTDIR=..
+  CHAINS=$(FLEXDLL_CHAIN) ROOTDIR=.. TOPSRCDIR=../$(TOPSRCDIR)
 FLEXDLL_SOURCE_FILES = \
   $(wildcard $(FLEXDLL_SOURCES)/*.c) $(wildcard $(FLEXDLL_SOURCES)/*.h) \
   $(wildcard $(FLEXDLL_SOURCES)/*.ml)
@@ -248,8 +249,8 @@ compare:
 	mv lex/ocamllex$(EXE) ocamllex.tmp
 	$(OCAMLRUN) tools/stripdebug -all ocamllex.tmp lex/ocamllex$(EXE)
 	rm -f ocamllex.tmp ocamlc.tmp
-	@if $(CMPCMD) boot/ocamlc ocamlc$(EXE) \
-         && $(CMPCMD) boot/ocamllex lex/ocamllex$(EXE); \
+	@if $(CMPCMD) $(SRCDIR)/boot/ocamlc ocamlc$(EXE) \
+         && $(CMPCMD) $(SRCDIR)/boot/ocamllex lex/ocamllex$(EXE); \
 	then echo "Fixpoint reached, bootstrap succeeded."; \
 	else \
 	  echo "Fixpoint not reached, try one more bootstrapping cycle."; \
@@ -262,9 +263,9 @@ PROMOTE ?= cp
 
 .PHONY: promote-common
 promote-common:
-	$(PROMOTE) ocamlc$(EXE) boot/ocamlc
-	$(PROMOTE) lex/ocamllex$(EXE) boot/ocamllex
-	cd stdlib; cp $(LIBFILES) ../boot
+	$(PROMOTE) ocamlc$(EXE) $(SRCDIR)/boot/ocamlc
+	$(PROMOTE) lex/ocamllex$(EXE) $(SRCDIR)/boot/ocamllex
+	cd stdlib; cp $(LIBFILES) ../$(SRCDIR)/boot
 
 # Promote the newly compiled system to the rank of cross compiler
 # (Runs on the old runtime, produces code for the new runtime)
@@ -560,28 +561,30 @@ beforedepend:: lambda/runtimedef.ml
 # Choose the right machine-dependent files
 
 asmcomp/arch.mli: asmcomp/$(ARCH)/arch.mli
-	cd asmcomp; $(LN) $(ARCH)/arch.mli .
+	cd asmcomp; $(LN) ../$^ .
 
 asmcomp/arch.ml: asmcomp/$(ARCH)/arch.ml
-	cd asmcomp; $(LN) $(ARCH)/arch.ml .
+	cd asmcomp; $(LN) ../$^ .
 
 asmcomp/proc.ml: asmcomp/$(ARCH)/proc.ml
-	cd asmcomp; $(LN) $(ARCH)/proc.ml .
+	cd asmcomp; $(LN) ../$^ .
 
 asmcomp/selection.ml: asmcomp/$(ARCH)/selection.ml
-	cd asmcomp; $(LN) $(ARCH)/selection.ml .
+	cd asmcomp; $(LN) ../$^ .
 
 asmcomp/CSE.ml: asmcomp/$(ARCH)/CSE.ml
-	cd asmcomp; $(LN) $(ARCH)/CSE.ml .
+	cd asmcomp; $(LN) ../$^ .
 
 asmcomp/reload.ml: asmcomp/$(ARCH)/reload.ml
-	cd asmcomp; $(LN) $(ARCH)/reload.ml .
+	cd asmcomp; $(LN) ../$^ .
 
 asmcomp/scheduling.ml: asmcomp/$(ARCH)/scheduling.ml
-	cd asmcomp; $(LN) $(ARCH)/scheduling.ml .
+	cd asmcomp; $(LN) ../$^ .
 
 # Preprocess the code emitters
 cvt_emit = tools/cvt_emit$(EXE)
+
+tools/cvt_emit.cmo tools/cvt_emit.cmx: OC_COMMON_COMPFLAGS += -cmi-file tools/cvt_emit.cmi
 
 beforedepend:: tools/cvt_emit.ml
 
@@ -799,7 +802,7 @@ runtime/ld.conf: $(ROOTDIR)/Makefile.config
 # To speed up builds, we avoid changing "primitives" when files
 # containing primitives change but the primitives table does not
 runtime/primitives: \
-  $(shell runtime/gen_primitives.sh > runtime/primitives.new; \
+  $(shell $(SRCDIR)/runtime/gen_primitives.sh $(SRCDIR) > runtime/primitives.new; \
                     cmp -s runtime/primitives runtime/primitives.new || \
                     echo runtime/primitives.new)
 	$(V_GEN)cp $^ $@
@@ -1197,7 +1200,7 @@ endif
 
 parsing/parser.ml: $(PARSER_DEPS)
 ifeq "$(OCAML_DEVELOPMENT_VERSION)" "true"
-	@-tools/check-parser-uptodate-or-warn.sh
+	@-$(SRCDIR)/tools/check-parser-uptodate-or-warn.sh $(SRCDIR)
 endif
 	$(V_GEN)sed "s/MenhirLib/CamlinternalMenhirLib/g" $< > $@
 parsing/parser.mli: boot/menhir/parser.mli
@@ -1305,7 +1308,7 @@ lintapidiff_LIBRARIES = \
   otherlibs/str/str
 lintapidiff_MODULES = tools/lintapidiff
 
-tools/lintapidiff.opt$(EXE): VPATH += otherlibs/str
+tools/lintapidiff.opt$(EXE): OC_OCAMLDEPDIRS += otherlibs/str
 
 VERSIONS=$(shell git tag|grep '^[0-9]*.[0-9]*.[0-9]*$$'|grep -v '^[12].')
 .PHONY: lintapidiff
@@ -1368,6 +1371,10 @@ ocamldep_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 ocamldep_MODULES = tools/ocamldep
 
 tools/ocamldep$(EXE): OC_BYTECODE_LINKFLAGS += -compat-32
+
+tools/make_opcodes.cmo tools/make_opcodes.cmx: OC_COMMON_COMPFLAGS += -cmi-file tools/make_opcodes.cmi
+
+tools/opnames.cmo tools/opnames.cmx: OC_COMMON_COMPFLAGS += -cmi-file tools/opnames.cmi
 
 # The profiler
 
@@ -1453,14 +1460,14 @@ ocamltex_LIBRARIES = \
 ocamltex_MODULES = tools/ocamltex
 
 # ocamltex uses str.cma and unix.cma and so must be compiled with
-# $(ROOTDIR)/ocamlc rather than with $(ROOTDIR)/boot/ocamlc since the boot
-# compiler does not necessarily have the correct shared library
+# $(ROOTDIR)/ocamlc rather than with $(SRCDIR)/boot/ocamlc since the
+# boot compiler does not necessarily have the correct shared library
 # configuration.
 # Note: the following definitions apply to all the prerequisites
 # of ocamltex.
 $(ocamltex): CAMLC = $(OCAMLRUN) $(ROOTDIR)/ocamlc$(EXE) $(STDLIBFLAGS)
 $(ocamltex): OC_COMMON_LINKFLAGS += -linkall
-$(ocamltex): VPATH += $(addprefix otherlibs/,str unix)
+$(ocamltex): OC_OCAMLDEPDIRS += $(addprefix otherlibs/,str unix)
 
 tools/ocamltex.cmo: OC_COMMON_COMPFLAGS += -no-alias-deps
 
@@ -1542,20 +1549,20 @@ partialclean::
 
 beforedepend:: bytecomp/opcodes.ml bytecomp/opcodes.mli
 
-ifneq "$(wildcard .git)" ""
-include Makefile.dev
+ifneq "$(wildcard $(SRCDIR)/.git)" ""
+include $(SRCDIR)/Makefile.dev
 endif
 
 # Default rules
 
 %.cmo: %.ml
-	$(V_OCAMLC)$(CAMLC) $(OC_COMMON_COMPFLAGS) -I $(@D) $(INCLUDES) -c $<
+	$(V_OCAMLC)$(CAMLC) $(OC_COMMON_COMPFLAGS) -I $(@D) $(INCLUDES) -o $@ -c $<
 
 %.cmi: %.mli
-	$(V_OCAMLC)$(CAMLC) $(OC_COMMON_COMPFLAGS) -I $(@D) $(INCLUDES) -c $<
+	$(V_OCAMLC)$(CAMLC) $(OC_COMMON_COMPFLAGS) -I $(@D) $(INCLUDES) -o $@ -c $<
 
 %.cmx: %.ml
-	$(V_OCAMLOPT)$(COMPILE_NATIVE_MODULE) -c $<
+	$(V_OCAMLOPT)$(COMPILE_NATIVE_MODULE) -o $@ -c $<
 
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end file_formats \
@@ -1617,8 +1624,8 @@ ifneq "$(runtime_BYTECODE_SHARED_LIBRARIES)" ""
 	$(INSTALL_PROG) $(runtime_BYTECODE_SHARED_LIBRARIES) \
 	  "$(INSTALL_LIBDIR)"
 endif
-	$(INSTALL_DATA) runtime/caml/domain_state.tbl runtime/caml/*.h \
-	  "$(INSTALL_INCDIR)"
+	$(INSTALL_DATA) $(SRCDIR)/runtime/caml/domain_state.tbl $(SRCDIR)/runtime/caml/*.h \
+	  runtime/caml/*.h "$(INSTALL_INCDIR)"
 	$(INSTALL_PROG) ocaml$(EXE) "$(INSTALL_BINDIR)"
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	$(call INSTALL_STRIPPED_BYTE_PROG,\
@@ -1667,14 +1674,14 @@ endif
 	   "$(INSTALL_COMPLIBDIR)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	   utils/*.cmt utils/*.cmti utils/*.mli \
-	   parsing/*.cmt parsing/*.cmti parsing/*.mli \
-	   typing/*.cmt typing/*.cmti typing/*.mli \
-	   file_formats/*.cmt file_formats/*.cmti file_formats/*.mli \
-	   lambda/*.cmt lambda/*.cmti lambda/*.mli \
-	   bytecomp/*.cmt bytecomp/*.cmti bytecomp/*.mli \
-	   driver/*.cmt driver/*.cmti driver/*.mli \
-	   toplevel/*.cmt toplevel/*.cmti toplevel/*.mli \
+	   utils/*.cmt utils/*.cmti $(SRCDIR)/utils/*.mli \
+	   parsing/*.cmt parsing/*.cmti $(SRCDIR)/parsing/*.mli \
+	   typing/*.cmt typing/*.cmti $(SRCDIR)/typing/*.mli \
+	   file_formats/*.cmt file_formats/*.cmti $(SRCDIR)/file_formats/*.mli \
+	   lambda/*.cmt lambda/*.cmti $(SRCDIR)/lambda/*.mli \
+	   bytecomp/*.cmt bytecomp/*.cmti $(SRCDIR)/bytecomp/*.mli \
+	   driver/*.cmt driver/*.cmti $(SRCDIR)/driver/*.mli \
+	   toplevel/*.cmt toplevel/*.cmti $(SRCDIR)/toplevel/*.mli \
 	   "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
 	   toplevel/byte/*.cmt \
@@ -1726,7 +1733,7 @@ endif # ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
     "$(INSTALL_FLEXDLLDIR)"
 endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 	$(INSTALL_DATA) Makefile.config "$(INSTALL_LIBDIR)"
-	$(INSTALL_DATA) $(DOC_FILES) "$(INSTALL_DOCDIR)"
+	$(INSTALL_DATA) $(addprefix $(SRCDIR)/,$(DOC_FILES)) "$(INSTALL_DOCDIR)"
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	if test -f ocamlopt$(EXE); then $(MAKE) installopt; else \
 	   cd "$(INSTALL_BINDIR)"; \
@@ -1769,24 +1776,24 @@ endif
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	    middle_end/*.cmt middle_end/*.cmti \
-	    middle_end/*.mli \
+	    $(SRCDIR)/middle_end/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
 	    middle_end/closure/*.cmt middle_end/closure/*.cmti \
-	    middle_end/closure/*.mli \
+	    $(SRCDIR)/middle_end/closure/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
 	    middle_end/flambda/*.cmt middle_end/flambda/*.cmti \
-	    middle_end/flambda/*.mli \
+	    $(SRCDIR)/middle_end/flambda/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
 	    middle_end/flambda/base_types/*.cmt \
             middle_end/flambda/base_types/*.cmti \
-	    middle_end/flambda/base_types/*.mli \
+	    $(SRCDIR)/middle_end/flambda/base_types/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
 	    asmcomp/*.cmt asmcomp/*.cmti \
-	    asmcomp/*.mli \
+	    $(SRCDIR)/asmcomp/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
 endif
 	$(INSTALL_DATA) \
@@ -1856,18 +1863,18 @@ endif
 install-compiler-sources:
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	   utils/*.ml parsing/*.ml typing/*.ml bytecomp/*.ml driver/*.ml \
-           file_formats/*.ml \
-           lambda/*.ml \
-	   toplevel/*.ml toplevel/byte/*.ml \
-	   middle_end/*.ml middle_end/closure/*.ml \
-     middle_end/flambda/*.ml middle_end/flambda/base_types/*.ml \
-	   asmcomp/*.ml \
-	   asmcmp/debug/*.ml \
+	   $(SRCDIR)/utils/*.ml $(SRCDIR)/parsing/*.ml $(SRCDIR)/typing/*.ml $(SRCDIR)/bytecomp/*.ml $(SRCDIR)/driver/*.ml \
+           $(SRCDIR)/file_formats/*.ml \
+           $(SRCDIR)/lambda/*.ml \
+	   $(SRCDIR)/toplevel/*.ml $(SRCDIR)/toplevel/byte/*.ml \
+	   $(SRCDIR)/middle_end/*.ml $(SRCDIR)/middle_end/closure/*.ml \
+     $(SRCDIR)/middle_end/flambda/*.ml $(SRCDIR)/middle_end/flambda/base_types/*.ml \
+	   $(SRCDIR)/asmcomp/*.ml \
+	   $(SRCDIR)/asmcmp/debug/*.ml \
 	   "$(INSTALL_COMPLIBDIR)"
 endif
 
-include .depend
+include $(SRCDIR)/.depend
 
 Makefile.config Makefile.build_config: config.status
 config.status:

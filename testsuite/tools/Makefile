@@ -78,13 +78,13 @@ lexcmm.cmo: lexcmm.cmi
 parsecmm.cmo: parsecmm.cmi
 
 %.cmi: %.mli $(ALL_LIBS:=.cma)
-	$(OCAMLC) $(COMPFLAGS) -c $<
+	$(OCAMLC) $(COMPFLAGS) -o $@ -c $<
 
 %.cmo: %.ml $(ALL_LIBS:=.cma)
-	$(OCAMLC) $(COMPFLAGS) -c $<
+	$(OCAMLC) $(COMPFLAGS) -o $@ -c $<
 
 %.cmx: %.ml $(ALL_LIBS:=.cmxa)
-	$(OCAMLOPT) $(COMPFLAGS) -c $<
+	$(OCAMLOPT) $(COMPFLAGS) -o $@ -c $<
 
 %.$(O): %.S
 	$(ASPP) $(OC_ASPPFLAGS) -o $@ $<

@@ -12,14 +12,14 @@ transf: transf.cmo transfmain.cmo
 
 transfmain.cmo: transf.cmo
 
-texquote2: texquote2.ml
+texquote2: texquote2.cmo
 	$(OCAMLC) $(COMPFLAGS) -o $@ $<
 
 %.cmo: %.ml
-	$(OCAMLC) $(COMPFLAGS) -c $<
+	$(OCAMLC) $(COMPFLAGS) -o $@ -c $<
 
 %.cmi: %.mli
-	$(OCAMLC) $(COMPFLAGS) -c $<
+	$(OCAMLC) $(COMPFLAGS) -o $@ -c $<
 
 .PHONY: clean
 clean:

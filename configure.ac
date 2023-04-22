@@ -216,11 +216,51 @@ AC_SUBST([ocaml_bindir])
 AC_SUBST([ocaml_libdir])
 AC_SUBST([QS])
 AC_SUBST([ar_supports_response_files])
+AC_SUBST([vpath])
 
 ## Generated files
 
+AC_DEFUN([AC_CONFIG_LINK_SELF], [AC_CONFIG_LINKS([$1:$1])])
+
 AC_CONFIG_FILES([Makefile.build_config])
 AC_CONFIG_FILES([Makefile.config])
+AS_IF([test x"$srcdir" != "x."],
+  [vpath='VPATH := $(SRCDIR)'
+   AC_CONFIG_LINK_SELF([Makefile])
+   AC_CONFIG_LINK_SELF([Makefile.common])
+   AC_CONFIG_LINK_SELF([Makefile.best_binaries])
+   AC_CONFIG_LINK_SELF([stdlib/Makefile])
+   AC_CONFIG_LINK_SELF([otherlibs/Makefile])
+   AC_CONFIG_LINK_SELF([otherlibs/Makefile.otherlibs.common])
+   AC_CONFIG_LINK_SELF([otherlibs/str/Makefile])
+   AC_CONFIG_LINK_SELF([otherlibs/unix/Makefile])
+   AC_CONFIG_LINK_SELF([otherlibs/runtime_events/Makefile])
+   AC_CONFIG_LINK_SELF([otherlibs/systhreads/Makefile])
+   AC_CONFIG_LINK_SELF([otherlibs/dynlink/Makefile])
+   AC_CONFIG_LINK_SELF([api_docgen/Makefile])
+   AC_CONFIG_LINK_SELF([api_docgen/Makefile.common])
+   AC_CONFIG_LINK_SELF([api_docgen/odoc/Makefile])
+   AC_CONFIG_LINK_SELF([api_docgen/ocamldoc/Makefile])
+   AC_CONFIG_LINK_SELF([man/Makefile])
+   AC_CONFIG_LINK_SELF([debugger/Makefile])
+   AC_CONFIG_LINK_SELF([ocamldoc/Makefile])
+   AC_CONFIG_LINK_SELF([ocamldoc/Makefile.best_ocamldoc])
+   AC_CONFIG_LINK_SELF([ocamltest/Makefile])
+   AC_CONFIG_LINK_SELF([testsuite/Makefile])
+   AC_CONFIG_LINK_SELF([testsuite/lib/Makefile])
+   AC_CONFIG_LINK_SELF([testsuite/tools/Makefile])
+   AC_CONFIG_LINK_SELF([manual/Makefile])
+   AC_CONFIG_LINK_SELF([manual/tools/Makefile])
+   AC_CONFIG_LINK_SELF([manual/tests/Makefile])
+   AC_CONFIG_LINK_SELF([manual/src/Makefile])
+   AC_CONFIG_LINK_SELF([manual/src/cmds/Makefile])
+   AC_CONFIG_LINK_SELF([manual/src/library/Makefile])
+   AC_CONFIG_LINK_SELF([manual/src/refman/Makefile])
+   AC_CONFIG_LINK_SELF([manual/src/tutorials/Makefile])
+   AC_CONFIG_LINK_SELF([stdlib/StdlibModules])
+   AC_CONFIG_LINK_SELF([Makefile.menhir])
+   AC_CONFIG_LINK_SELF([api_docgen/Makefile.docfiles])
+   AC_CONFIG_LINK_SELF([compilerlibs/Makefile.compilerlibs])])
 AC_CONFIG_FILES([stdlib/sys.ml])
 AC_CONFIG_FILES([manual/src/version.tex])
 AC_CONFIG_FILES([manual/src/html_processing/src/common.ml])
@@ -246,6 +286,30 @@ AC_DEFINE([OCAML_VERSION_STRING], ["][OCAML__VERSION]["])
 
 # Works out how many "o"s are needed in quoted strings
 AC_CONFIG_COMMANDS_PRE(OCAML_QUOTED_STRING_ID)
+
+dirs="yacc \
+  lex \
+  utils \
+  middle_end/flambda/base_types \
+  middle_end/closure \
+  parsing \
+  driver \
+  asmcomp \
+  bytecomp \
+  lambda \
+  file_formats \
+  boot \
+  typing \
+  tools \
+  toplevel/byte \
+  toplevel/native \
+  otherlibs/dynlink/dynlink_compilerlibs \
+  otherlibs/dynlink/byte \
+  otherlibs/dynlink/native \
+  ocamldoc/generators
+  manual/src/refman/extensions"
+
+AC_CONFIG_COMMANDS([mkdir], [mkdir -p $dirs], [dirs="$dirs"])
 
 # Checks for system types
 
@@ -822,8 +886,10 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
       [*-*-cygwin*|*-w64-mingw32*|*-pc-windows],
       [AS_IF([m4_normalize([test x"$with_flexdll" = 'x'
                             || test x"$with_flexdll" = 'xflexdll'])],
-        [AS_IF([test -f 'flexdll/flexdll.h'],
-          [flexdir=flexdll
+        [AS_IF([test -f "$srcdir/flexdll/flexdll.h"],
+          [mkdir -p flexdll
+          test x"$srcdir" = x"." || cp -r "$srcdir/flexdll"/* flexdll/
+          flexdir='flexdll'
           iflexdir='$(ROOTDIR)/flexdll'
           with_flexdll="$iflexdir"],
           [AS_IF([test x"$with_flexdll" != 'x'],
@@ -863,7 +929,7 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
       ])])
   ])
 
-  OCAML_TEST_FLEXDLL_H([$flexdir])
+  AS_IF([test -n "$flexdir"], OCAML_TEST_FLEXDLL_H([$srcdir/$flexdir]))
 
   AS_IF([test -n "$flexlink" && test x"$have_flexdll_h" = 'xno'],
     [OCAML_TEST_FLEXLINK_WHERE([$flexlink])

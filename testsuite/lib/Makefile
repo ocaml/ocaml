@@ -43,13 +43,13 @@ testing.cmxa: testing.cmx
 testing.cmo : testing.cmi
 
 %.cmi: %.mli
-	$(OCAMLC) -c $<
+	$(OCAMLC) -o $@ -c $<
 
 %.cmo: %.ml
-	$(OCAMLC) -c $<
+	$(OCAMLC) -o $@ -c $<
 
 %.cmx: %.ml
-	$(OCAMLOPT) -c $<
+	$(OCAMLOPT) -o $@ -c $<
 
 .PHONY: clean
 clean:

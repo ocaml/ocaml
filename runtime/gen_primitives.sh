@@ -17,6 +17,8 @@
 
 # duplicated from $(ROOTDIR)/runtime/Makefile
 
+srcdir=$1
+
 # #8985: the meaning of character range a-z depends on the locale, so force C
 #        locale throughout.
 export LC_ALL=C
@@ -29,8 +31,8 @@ export LC_ALL=C
       bigarray prng
   do
       sed -n -e 's/^CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p' \
-        "runtime/$prim.c"
+        "$srcdir/runtime/$prim.c"
   done
   sed -n -e 's/^CAMLprim_int64_[0-9](\([a-z0-9_][a-z0-9_]*\)).*/caml_int64_\1\
-caml_int64_\1_native/p' runtime/ints.c
+caml_int64_\1_native/p' "$srcdir/runtime/ints.c"
 ) | sort | uniq

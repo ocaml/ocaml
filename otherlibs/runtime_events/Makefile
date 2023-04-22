@@ -29,4 +29,4 @@ runtime_events.cmx: runtime_events.cmi
 depend:
 	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml > .depend
 
-include .depend
+include $(SRCDIR)/.depend

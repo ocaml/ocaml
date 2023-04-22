@@ -191,19 +191,27 @@ PARSERS = $(addsuffix .mly,odoc_parser  odoc_text_parser)
 DEPEND_PREREQS = $(LEXERS:.mll=.ml) \
   $(PARSERS:.mly=.mli) $(PARSERS:.mly=.ml)
 
+odoc_text_lexer.cmo odoc_text_lexer.cmx: COMPFLAGS += -cmi-file odoc_text_lexer.cmi
+
+odoc_lexer.cmo odoc_lexer.cmx: COMPFLAGS += -cmi-file odoc_lexer.cmi
+
+odoc_see_lexer.cmo odoc_see_lexer.cmx: COMPFLAGS += -cmi-file odoc_see_lexer.cmi
+
+odoc_ocamlhtml.cmo odoc_ocamlhtml.cmx: COMPFLAGS += -cmi-file odoc_ocamlhtml.cmi
+
 # generic rules :
 #################
 
 %.cmo: %.ml
-	$(V_OCAMLC)$(OCAMLC) $(COMPFLAGS) -c $<
+	$(V_OCAMLC)$(OCAMLC) $(COMPFLAGS) -o $@ -c $<
 
 %.cmi: %.mli
-	$(V_OCAMLC)$(OCAMLC) $(COMPFLAGS) -c $<
+	$(V_OCAMLC)$(OCAMLC) $(COMPFLAGS) -o $@ -c $<
 
 %.cmx: %.ml
-	$(V_OCAMLOPT)$(OCAMLOPT) $(COMPFLAGS) -c $<
+	$(V_OCAMLOPT)$(OCAMLOPT) $(COMPFLAGS) -o $@ -c $<
 
-%.cmxs: %.ml
+%.cmxs: %.cmx
 	$(V_OCAMLOPT)$(OCAMLOPT_CMD) -shared -o $@ $(COMPFLAGS) $<
 
 # Installation targets
@@ -218,14 +226,14 @@ install:
 	$(MKDIR) "$(INSTALL_LIBDIR)/ocamldoc"
 	$(INSTALL_PROG) $(OCAMLDOC) "$(INSTALL_BINDIR)"
 	$(INSTALL_DATA) \
-	  ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) META \
+	  $(SRCDIR)/ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) META \
 	  "$(INSTALL_LIBDIR)/ocamldoc"
 	$(INSTALL_DATA) \
 	  $(OCAMLDOC_LIBCMIS) \
 	  "$(INSTALL_LIBDIR)/ocamldoc"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMTS) \
+	  $(addprefix $(SRCDIR)/,$(OCAMLDOC_LIBMLIS)) $(OCAMLDOC_LIBCMTS) \
 	  "$(INSTALL_LIBDIR)/ocamldoc"
 endif
 
@@ -246,11 +254,11 @@ installopt_really:
 	  "$(INSTALL_LIBDIR)/ocamldoc"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMTS) \
+	  $(addprefix $(SRCDIR)/,$(OCAMLDOC_LIBMLIS)) $(OCAMLDOC_LIBCMTS) \
 	  "$(INSTALL_LIBDIR)/ocamldoc"
 endif
 	$(INSTALL_DATA) \
-	  ocamldoc.hva *.cmx $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) \
+	  $(SRCDIR)/ocamldoc.hva *.cmx $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) \
 	  "$(INSTALL_LIBDIR)/ocamldoc"
 
 # TODO: also split into several rules
@@ -344,4 +352,4 @@ depend: $(DEPEND_PREREQS)
 	$(OCAMLDEP_CMD) *.mll *.mly *.ml *.mli > .depend
 	$(OCAMLDEP_CMD) -shared generators/*.ml generators/*.mli >> .depend
 
-include .depend
+include $(SRCDIR)/.depend

@@ -778,6 +778,7 @@ build_os
 build_vendor
 build_cpu
 build
+vpath
 ar_supports_response_files
 QS
 ocaml_libdir
@@ -3402,12 +3403,89 @@ OCAML_VERSION_SHORT=5.2
 
 
 
+
 ## Generated files
+
+
 
 ac_config_files="$ac_config_files Makefile.build_config"
 
 ac_config_files="$ac_config_files Makefile.config"
 
+if test x"$srcdir" != "x."
+then :
+  vpath='VPATH := $(SRCDIR)'
+   ac_config_links="$ac_config_links Makefile:Makefile"
+
+   ac_config_links="$ac_config_links Makefile.common:Makefile.common"
+
+   ac_config_links="$ac_config_links Makefile.best_binaries:Makefile.best_binaries"
+
+   ac_config_links="$ac_config_links stdlib/Makefile:stdlib/Makefile"
+
+   ac_config_links="$ac_config_links otherlibs/Makefile:otherlibs/Makefile"
+
+   ac_config_links="$ac_config_links otherlibs/Makefile.otherlibs.common:otherlibs/Makefile.otherlibs.common"
+
+   ac_config_links="$ac_config_links otherlibs/str/Makefile:otherlibs/str/Makefile"
+
+   ac_config_links="$ac_config_links otherlibs/unix/Makefile:otherlibs/unix/Makefile"
+
+   ac_config_links="$ac_config_links otherlibs/runtime_events/Makefile:otherlibs/runtime_events/Makefile"
+
+   ac_config_links="$ac_config_links otherlibs/systhreads/Makefile:otherlibs/systhreads/Makefile"
+
+   ac_config_links="$ac_config_links otherlibs/dynlink/Makefile:otherlibs/dynlink/Makefile"
+
+   ac_config_links="$ac_config_links api_docgen/Makefile:api_docgen/Makefile"
+
+   ac_config_links="$ac_config_links api_docgen/Makefile.common:api_docgen/Makefile.common"
+
+   ac_config_links="$ac_config_links api_docgen/odoc/Makefile:api_docgen/odoc/Makefile"
+
+   ac_config_links="$ac_config_links api_docgen/ocamldoc/Makefile:api_docgen/ocamldoc/Makefile"
+
+   ac_config_links="$ac_config_links man/Makefile:man/Makefile"
+
+   ac_config_links="$ac_config_links debugger/Makefile:debugger/Makefile"
+
+   ac_config_links="$ac_config_links ocamldoc/Makefile:ocamldoc/Makefile"
+
+   ac_config_links="$ac_config_links ocamldoc/Makefile.best_ocamldoc:ocamldoc/Makefile.best_ocamldoc"
+
+   ac_config_links="$ac_config_links ocamltest/Makefile:ocamltest/Makefile"
+
+   ac_config_links="$ac_config_links testsuite/Makefile:testsuite/Makefile"
+
+   ac_config_links="$ac_config_links testsuite/lib/Makefile:testsuite/lib/Makefile"
+
+   ac_config_links="$ac_config_links testsuite/tools/Makefile:testsuite/tools/Makefile"
+
+   ac_config_links="$ac_config_links manual/Makefile:manual/Makefile"
+
+   ac_config_links="$ac_config_links manual/tools/Makefile:manual/tools/Makefile"
+
+   ac_config_links="$ac_config_links manual/tests/Makefile:manual/tests/Makefile"
+
+   ac_config_links="$ac_config_links manual/src/Makefile:manual/src/Makefile"
+
+   ac_config_links="$ac_config_links manual/src/cmds/Makefile:manual/src/cmds/Makefile"
+
+   ac_config_links="$ac_config_links manual/src/library/Makefile:manual/src/library/Makefile"
+
+   ac_config_links="$ac_config_links manual/src/refman/Makefile:manual/src/refman/Makefile"
+
+   ac_config_links="$ac_config_links manual/src/tutorials/Makefile:manual/src/tutorials/Makefile"
+
+   ac_config_links="$ac_config_links stdlib/StdlibModules:stdlib/StdlibModules"
+
+   ac_config_links="$ac_config_links Makefile.menhir:Makefile.menhir"
+
+   ac_config_links="$ac_config_links api_docgen/Makefile.docfiles:api_docgen/Makefile.docfiles"
+
+   ac_config_links="$ac_config_links compilerlibs/Makefile.compilerlibs:compilerlibs/Makefile.compilerlibs"
+
+fi
 ac_config_files="$ac_config_files stdlib/sys.ml"
 
 ac_config_files="$ac_config_files manual/src/version.tex"
@@ -3450,6 +3528,31 @@ printf "%s\n" "#define OCAML_VERSION_STRING \"5.2.0+dev0-2023-04-11\"" >>confdef
 
 
 # Works out how many "o"s are needed in quoted strings
+
+
+dirs="yacc \
+  lex \
+  utils \
+  middle_end/flambda/base_types \
+  middle_end/closure \
+  parsing \
+  driver \
+  asmcomp \
+  bytecomp \
+  lambda \
+  file_formats \
+  boot \
+  typing \
+  tools \
+  toplevel/byte \
+  toplevel/native \
+  otherlibs/dynlink/dynlink_compilerlibs \
+  otherlibs/dynlink/byte \
+  otherlibs/dynlink/native \
+  ocamldoc/generators
+  manual/src/refman/extensions"
+
+ac_config_commands="$ac_config_commands mkdir"
 
 
 # Checks for system types
@@ -13854,9 +13957,11 @@ else $as_nop
   *-*-cygwin*|*-w64-mingw32*|*-pc-windows) :
     if test x"$with_flexdll" = 'x' || test x"$with_flexdll" = 'xflexdll'
 then :
-  if test -f 'flexdll/flexdll.h'
+  if test -f "$srcdir/flexdll/flexdll.h"
 then :
-  flexdir=flexdll
+  mkdir -p flexdll
+          test x"$srcdir" = x"." || cp -r "$srcdir/flexdll"/* flexdll/
+          flexdir='flexdll'
           iflexdir='$(ROOTDIR)/flexdll'
           with_flexdll="$iflexdir"
 else $as_nop
@@ -14036,6 +14141,8 @@ esac
 
 fi
 
+  if test -n "$flexdir"
+then :
 
 
   saved_CC="$CC"
@@ -14050,10 +14157,7 @@ fi
   touch confdefs.h
 
 
-  if test -n "$flexdir"
-then :
-  CPPFLAGS="-I $flexdir $CPPFLAGS"
-fi
+  CPPFLAGS="-I $srcdir/$flexdir $CPPFLAGS"
   have_flexdll_h=no
   ac_fn_c_check_header_compile "$LINENO" "flexdll.h" "ac_cv_header_flexdll_h" "$ac_includes_default"
 if test "x$ac_cv_header_flexdll_h" = xyes
@@ -14065,10 +14169,7 @@ fi
 
   if test x"$have_flexdll_h" = 'xno'
 then :
-  if test -n "$flexdir"
-then :
-  as_fn_error $? "$flexdir/flexdll.h appears unusable" "$LINENO" 5
-fi
+  as_fn_error $? "$srcdir/$flexdir/flexdll.h appears unusable" "$LINENO" 5
 fi
 
 
@@ -14082,6 +14183,7 @@ fi
   LIBS="$saved_LIBS"
 
 
+fi
 
   if test -n "$flexlink" && test x"$have_flexdll_h" = 'xno'
 then :
@@ -20462,6 +20564,7 @@ cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
 # Files that config.status was made for.
 config_files="$ac_config_files"
 config_headers="$ac_config_headers"
+config_links="$ac_config_links"
 config_commands="$ac_config_commands"
 
 _ACEOF
@@ -20491,6 +20594,9 @@ $config_files
 
 Configuration headers:
 $config_headers
+
+Configuration links:
+$config_links
 
 Configuration commands:
 $config_commands
@@ -20622,6 +20728,7 @@ cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
 #
 # INIT-COMMANDS
 #
+dirs="$dirs"
 
 
 # The HP-UX ksh and POSIX shell print the target directory to stdout
@@ -20916,6 +21023,41 @@ do
   case $ac_config_target in
     "Makefile.build_config") CONFIG_FILES="$CONFIG_FILES Makefile.build_config" ;;
     "Makefile.config") CONFIG_FILES="$CONFIG_FILES Makefile.config" ;;
+    "Makefile") CONFIG_LINKS="$CONFIG_LINKS Makefile:Makefile" ;;
+    "Makefile.common") CONFIG_LINKS="$CONFIG_LINKS Makefile.common:Makefile.common" ;;
+    "Makefile.best_binaries") CONFIG_LINKS="$CONFIG_LINKS Makefile.best_binaries:Makefile.best_binaries" ;;
+    "stdlib/Makefile") CONFIG_LINKS="$CONFIG_LINKS stdlib/Makefile:stdlib/Makefile" ;;
+    "otherlibs/Makefile") CONFIG_LINKS="$CONFIG_LINKS otherlibs/Makefile:otherlibs/Makefile" ;;
+    "otherlibs/Makefile.otherlibs.common") CONFIG_LINKS="$CONFIG_LINKS otherlibs/Makefile.otherlibs.common:otherlibs/Makefile.otherlibs.common" ;;
+    "otherlibs/str/Makefile") CONFIG_LINKS="$CONFIG_LINKS otherlibs/str/Makefile:otherlibs/str/Makefile" ;;
+    "otherlibs/unix/Makefile") CONFIG_LINKS="$CONFIG_LINKS otherlibs/unix/Makefile:otherlibs/unix/Makefile" ;;
+    "otherlibs/runtime_events/Makefile") CONFIG_LINKS="$CONFIG_LINKS otherlibs/runtime_events/Makefile:otherlibs/runtime_events/Makefile" ;;
+    "otherlibs/systhreads/Makefile") CONFIG_LINKS="$CONFIG_LINKS otherlibs/systhreads/Makefile:otherlibs/systhreads/Makefile" ;;
+    "otherlibs/dynlink/Makefile") CONFIG_LINKS="$CONFIG_LINKS otherlibs/dynlink/Makefile:otherlibs/dynlink/Makefile" ;;
+    "api_docgen/Makefile") CONFIG_LINKS="$CONFIG_LINKS api_docgen/Makefile:api_docgen/Makefile" ;;
+    "api_docgen/Makefile.common") CONFIG_LINKS="$CONFIG_LINKS api_docgen/Makefile.common:api_docgen/Makefile.common" ;;
+    "api_docgen/odoc/Makefile") CONFIG_LINKS="$CONFIG_LINKS api_docgen/odoc/Makefile:api_docgen/odoc/Makefile" ;;
+    "api_docgen/ocamldoc/Makefile") CONFIG_LINKS="$CONFIG_LINKS api_docgen/ocamldoc/Makefile:api_docgen/ocamldoc/Makefile" ;;
+    "man/Makefile") CONFIG_LINKS="$CONFIG_LINKS man/Makefile:man/Makefile" ;;
+    "debugger/Makefile") CONFIG_LINKS="$CONFIG_LINKS debugger/Makefile:debugger/Makefile" ;;
+    "ocamldoc/Makefile") CONFIG_LINKS="$CONFIG_LINKS ocamldoc/Makefile:ocamldoc/Makefile" ;;
+    "ocamldoc/Makefile.best_ocamldoc") CONFIG_LINKS="$CONFIG_LINKS ocamldoc/Makefile.best_ocamldoc:ocamldoc/Makefile.best_ocamldoc" ;;
+    "ocamltest/Makefile") CONFIG_LINKS="$CONFIG_LINKS ocamltest/Makefile:ocamltest/Makefile" ;;
+    "testsuite/Makefile") CONFIG_LINKS="$CONFIG_LINKS testsuite/Makefile:testsuite/Makefile" ;;
+    "testsuite/lib/Makefile") CONFIG_LINKS="$CONFIG_LINKS testsuite/lib/Makefile:testsuite/lib/Makefile" ;;
+    "testsuite/tools/Makefile") CONFIG_LINKS="$CONFIG_LINKS testsuite/tools/Makefile:testsuite/tools/Makefile" ;;
+    "manual/Makefile") CONFIG_LINKS="$CONFIG_LINKS manual/Makefile:manual/Makefile" ;;
+    "manual/tools/Makefile") CONFIG_LINKS="$CONFIG_LINKS manual/tools/Makefile:manual/tools/Makefile" ;;
+    "manual/tests/Makefile") CONFIG_LINKS="$CONFIG_LINKS manual/tests/Makefile:manual/tests/Makefile" ;;
+    "manual/src/Makefile") CONFIG_LINKS="$CONFIG_LINKS manual/src/Makefile:manual/src/Makefile" ;;
+    "manual/src/cmds/Makefile") CONFIG_LINKS="$CONFIG_LINKS manual/src/cmds/Makefile:manual/src/cmds/Makefile" ;;
+    "manual/src/library/Makefile") CONFIG_LINKS="$CONFIG_LINKS manual/src/library/Makefile:manual/src/library/Makefile" ;;
+    "manual/src/refman/Makefile") CONFIG_LINKS="$CONFIG_LINKS manual/src/refman/Makefile:manual/src/refman/Makefile" ;;
+    "manual/src/tutorials/Makefile") CONFIG_LINKS="$CONFIG_LINKS manual/src/tutorials/Makefile:manual/src/tutorials/Makefile" ;;
+    "stdlib/StdlibModules") CONFIG_LINKS="$CONFIG_LINKS stdlib/StdlibModules:stdlib/StdlibModules" ;;
+    "Makefile.menhir") CONFIG_LINKS="$CONFIG_LINKS Makefile.menhir:Makefile.menhir" ;;
+    "api_docgen/Makefile.docfiles") CONFIG_LINKS="$CONFIG_LINKS api_docgen/Makefile.docfiles:api_docgen/Makefile.docfiles" ;;
+    "compilerlibs/Makefile.compilerlibs") CONFIG_LINKS="$CONFIG_LINKS compilerlibs/Makefile.compilerlibs:compilerlibs/Makefile.compilerlibs" ;;
     "stdlib/sys.ml") CONFIG_FILES="$CONFIG_FILES stdlib/sys.ml" ;;
     "manual/src/version.tex") CONFIG_FILES="$CONFIG_FILES manual/src/version.tex" ;;
     "manual/src/html_processing/src/common.ml") CONFIG_FILES="$CONFIG_FILES manual/src/html_processing/src/common.ml" ;;
@@ -20928,6 +21070,7 @@ do
     "otherlibs/dynlink/META") CONFIG_FILES="$CONFIG_FILES otherlibs/dynlink/META" ;;
     "otherlibs/runtime_events/META") CONFIG_FILES="$CONFIG_FILES otherlibs/runtime_events/META" ;;
     "stdlib/META") CONFIG_FILES="$CONFIG_FILES stdlib/META" ;;
+    "mkdir") CONFIG_COMMANDS="$CONFIG_COMMANDS mkdir" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "otherlibs/unix/META") CONFIG_FILES="$CONFIG_FILES otherlibs/unix/META" ;;
     "otherlibs/str/META") CONFIG_FILES="$CONFIG_FILES otherlibs/str/META" ;;
@@ -20946,6 +21089,7 @@ done
 if $ac_need_defaults; then
   test ${CONFIG_FILES+y} || CONFIG_FILES=$config_files
   test ${CONFIG_HEADERS+y} || CONFIG_HEADERS=$config_headers
+  test ${CONFIG_LINKS+y} || CONFIG_LINKS=$config_links
   test ${CONFIG_COMMANDS+y} || CONFIG_COMMANDS=$config_commands
 fi
 
@@ -21243,7 +21387,7 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 fi # test -n "$CONFIG_HEADERS"
 
 
-eval set X "  :F $CONFIG_FILES  :H $CONFIG_HEADERS    :C $CONFIG_COMMANDS"
+eval set X "  :F $CONFIG_FILES  :H $CONFIG_HEADERS  :L $CONFIG_LINKS  :C $CONFIG_COMMANDS"
 shift
 for ac_tag
 do
@@ -21480,7 +21624,38 @@ printf "%s\n" "$as_me: $ac_file is unchanged" >&6;}
       || as_fn_error $? "could not create -" "$LINENO" 5
   fi
  ;;
+  :L)
+  #
+  # CONFIG_LINK
+  #
 
+  if test "$ac_source" = "$ac_file" && test "$srcdir" = '.'; then
+    :
+  else
+    # Prefer the file from the source tree if names are identical.
+    if test "$ac_source" = "$ac_file" || test ! -r "$ac_source"; then
+      ac_source=$srcdir/$ac_source
+    fi
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: linking $ac_source to $ac_file" >&5
+printf "%s\n" "$as_me: linking $ac_source to $ac_file" >&6;}
+
+    if test ! -r "$ac_source"; then
+      as_fn_error $? "$ac_source: file not found" "$LINENO" 5
+    fi
+    rm -f "$ac_file"
+
+    # Try a relative symlink, then a hard link, then a copy.
+    case $ac_source in
+    [\\/$]* | ?:[\\/]* ) ac_rel_source=$ac_source ;;
+	*) ac_rel_source=$ac_top_build_prefix$ac_source ;;
+    esac
+    ln -s "$ac_rel_source" "$ac_file" 2>/dev/null ||
+      ln "$ac_source" "$ac_file" 2>/dev/null ||
+      cp -p "$ac_source" "$ac_file" ||
+      as_fn_error $? "cannot link or copy $ac_source to $ac_file" "$LINENO" 5
+  fi
+ ;;
   :C)  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: executing $ac_file commands" >&5
 printf "%s\n" "$as_me: executing $ac_file commands" >&6;}
  ;;
@@ -21488,6 +21663,7 @@ printf "%s\n" "$as_me: executing $ac_file commands" >&6;}
 
 
   case $ac_file$ac_mode in
+    "mkdir":C) mkdir -p $dirs ;;
     "libtool":C)
 
     # See if we are running on zsh, and set the options that allow our

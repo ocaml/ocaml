@@ -58,8 +58,8 @@ endif
 libref_TEXT=Ocaml_operators Format_tutorial
 libref_C=$(call capitalize,$(libref))
 
-PARSING_MLIS := $(notdir $(wildcard $(ROOTDIR)/parsing/*.mli))
-UTILS_MLIS := $(notdir $(wildcard $(ROOTDIR)/utils/*.mli))
+PARSING_MLIS := $(notdir $(wildcard $(TOPSRCDIR)/parsing/*.mli))
+UTILS_MLIS := $(notdir $(wildcard $(TOPSRCDIR)/utils/*.mli))
 DRIVER_MLIS := pparse.mli
 
 compilerlibref_MLIS= \

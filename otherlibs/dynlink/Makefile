@@ -234,6 +234,10 @@ dynlink.cmxa: $(NATOBJS)
 dynlink_platform_intf.mli: dynlink_platform_intf.ml
 	cp $< $@
 
+dynlink_platform_intf.cmo dynlink_platform_intf.cmx: COMPFLAGS += -cmi-file dynlink_platform_intf.cmi
+
+byte/dynlink.cmo native/dynlink.cmx: COMPFLAGS += -cmi-file dynlink.cmi
+
 INSTALL_LIBDIR_DYNLINK = $(INSTALL_LIBDIR)/dynlink
 
 install:
@@ -248,7 +252,7 @@ install:
 	  "$(INSTALL_LIBDIR_DYNLINK)"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
-	  dynlink.cmti dynlink.mli \
+	  dynlink.cmti $(SRCDIR)/dynlink.mli \
 	  "$(INSTALL_LIBDIR_DYNLINK)"
 endif
 
@@ -293,13 +297,13 @@ depend: beforedepend
 	  -I native -native *.ml native/dynlink.ml >> .depend && \
 	rm -f $(DEPEND_DUMMY_FILES)
 
-include .depend
+include $(SRCDIR)/.depend
 
 %.cmi: %.mli
-	$(V_OCAMLC)$(OCAMLC) -c $(COMPFLAGS) $<
+	$(V_OCAMLC)$(OCAMLC) -o $@ -c $(COMPFLAGS) $<
 
 %.cmo: %.ml
-	$(V_OCAMLC)$(OCAMLC) -c $(COMPFLAGS) $<
+	$(V_OCAMLC)$(OCAMLC) -o $@ -c $(COMPFLAGS) $<
 
 %.cmx: %.ml
-	$(V_OCAMLOPT)$(OCAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
+	$(V_OCAMLOPT)$(OCAMLOPT) -o $@ -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<

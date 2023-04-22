@@ -126,9 +126,9 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	  $(CMIFILES:.cmi=.cmti) \
 	  "$(INSTALL_THREADSLIBDIR)"
-	$(INSTALL_DATA) $(MLIFILES) "$(INSTALL_THREADSLIBDIR)"
+	$(INSTALL_DATA) $(addprefix $(SRCDIR)/,$(MLIFILES)) "$(INSTALL_THREADSLIBDIR)"
 endif
-	$(INSTALL_DATA) threads.h "$(INSTALL_INCDIR)"
+	$(INSTALL_DATA) $(SRCDIR)/threads.h "$(INSTALL_INCDIR)"
 
 installopt:
 	$(INSTALL_DATA) libthreadsnat.$(A) "$(INSTALL_LIBDIR)"
@@ -137,13 +137,13 @@ installopt:
 	  "$(INSTALL_THREADSLIBDIR)"
 
 %.cmi: %.mli
-	$(V_OCAMLC)$(CAMLC) -c $(COMPFLAGS) $<
+	$(V_OCAMLC)$(CAMLC) -o $@ -c $(COMPFLAGS) $<
 
 %.cmo: %.ml
-	$(V_OCAMLC)$(CAMLC) -c $(COMPFLAGS) $<
+	$(V_OCAMLC)$(CAMLC) -o $@ -c $(COMPFLAGS) $<
 
 %.cmx: %.ml
-	$(V_OCAMLOPT)$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
+	$(V_OCAMLOPT)$(CAMLOPT) -o $@ -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 DEP_FILES := st_stubs.b.$(D)
 ifeq "$(NATIVE_COMPILER)" "true"
@@ -167,4 +167,4 @@ $(foreach object_type, b n, $(eval $(call GEN_RULE,$(object_type))))
 depend:
 	$(V_GEN)$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash *.mli *.ml > .depend
 
-include .depend
+include $(SRCDIR)/.depend

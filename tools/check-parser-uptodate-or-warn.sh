@@ -30,6 +30,8 @@
 #  BSD/macOS stat -f.
 # Default to 0 if 'stat' is not available.
 
+srcdir=$1
+
 stat . 2>/dev/null 1>/dev/null
 if test $? != 0
 then MTIME=""
@@ -48,8 +50,8 @@ mtime() {
 }
 
 # The check itself
-SOURCE_MTIME=$(mtime parsing/parser.mly)
-GENERATED_MTIME=$(mtime boot/menhir/parser.ml)
+SOURCE_MTIME=$(mtime $srcdir/parsing/parser.mly)
+GENERATED_MTIME=$(mtime $srcdir/boot/menhir/parser.ml)
 if test -z "$SOURCE_MTIME" -o -z "$GENERATED_MTIME"
 then
   echo

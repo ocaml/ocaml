@@ -18,8 +18,8 @@ ROOTDIR = ../..
 
 include ../Makefile.common
 
-vpath %.cmti ../../stdlib $(DOC_COMPILERLIBS_DIRS) $(DOC_STDLIB_DIRS)
-vpath %.cmt ../../stdlib
+vpath %.cmti $(addprefix $(ROOTDIR)/,$(DOC_COMPILERLIBS_DIRS) $(DOC_STDLIB_DIRS))
+vpath %.cmt $(ROOTDIR)/stdlib
 
 ifeq ($(DOCUMENTATION_TOOL),odoc)
   odoc ?= $(DOCUMENTATION_TOOL_CMD)
@@ -209,7 +209,7 @@ install:
 #   build/libref/stdlib__X.odoc: \
 #       build/libref/stdlib__Y.odoc \
 #       stdlib__X.cmti
-build/.depend: ../../stdlib/.depend | build/
+build/.depend: $(ROOTDIR)/stdlib/.depend | build/
 	sed \
     -e ':l; /\\ *$$/ { N; bl }; # Read lines separated by \\' \
     -e '/^\S*\.cmx *:/! d; # Keep only rules to .cmx' \

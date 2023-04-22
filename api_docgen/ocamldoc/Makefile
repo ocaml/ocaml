@@ -15,8 +15,9 @@
 # Used by included Makefiles
 ROOTDIR = ../..
 include ../Makefile.common
-include ../../ocamldoc/Makefile.best_ocamldoc
-vpath %.mli ../../stdlib $(DOC_COMPILERLIBS_DIRS)  $(DOC_STDLIB_DIRS)
+include $(ROOTDIR)/ocamldoc/Makefile.best_ocamldoc
+vpath %.mli $(addprefix $(TOPSRCDIR)/,$(DOC_COMPILERLIBS_DIRS) $(DOC_STDLIB_DIRS)) \
+  $(ROOTDIR)/parsing $(ROOTDIR)/utils
 
 
 man: build/man/Stdlib.3o
@@ -26,11 +27,11 @@ html: \
   build/html/compilerlibref/Compiler_libs.html
 texi: build/texi/stdlib.texi
 
-DOC_STDLIB_INCLUDES= $(addprefix -I , $(DOC_STDLIB_DIRS))
+DOC_STDLIB_INCLUDES= $(addprefix -I $(ROOTDIR)/,$(DOC_STDLIB_DIRS))
 
 DOC_ALL_INCLUDES = \
   $(DOC_STDLIB_INCLUDES) \
-  $(addprefix -I ,$(DOC_COMPILERLIBS_DIRS))
+  $(addprefix -I $(ROOTDIR)/,$(DOC_COMPILERLIBS_DIRS))
 
 libref=$(stdlib_UNPREFIXED) $(otherlibref)
 
@@ -43,7 +44,7 @@ build/latex/ifocamldoc.tex: | build/latex
 $(libref:%=build/libref/%.odoc): build/libref/%.odoc: %.mli | build/libref
 	$(V_OCAMLDOC)$(OCAMLDOC_RUN) -nostdlib -hide Stdlib -lib Stdlib \
 	-pp \
-"$(AWK) -v ocamldoc=true -f ../../stdlib/expand_module_aliases.awk" \
+"$(AWK) -v ocamldoc=true -f $(TOPSRCDIR)/stdlib/expand_module_aliases.awk" \
 	$(DOC_STDLIB_INCLUDES) -hide-warnings -alert -all $< -dump  $@
 
 $(compilerlibref:%=build/compilerlibref/%.odoc):\

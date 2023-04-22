@@ -21,7 +21,7 @@ ROOTDIR = ../..
 # because the UNIX_OR_WIN32 variable must be defined even before
 # we can include Makefile.otherlibs.common
 # This will be fixed later
-include $(ROOTDIR)/Makefile.config_if_required
+include $(ROOTDIR)/Makefile.build_config
 
 LIBNAME=unix
 
@@ -31,8 +31,10 @@ EXTRACAMLFLAGS=-nolabels
 # ensure that they're not accidentally used in the library itself.
 OC_CPPFLAGS += -DCAML_BUILDING_UNIX
 
+unix.cmo unix.cmx: COMPFLAGS += -cmi-file unix.cmi
+
 unixLabels.cmi: \
-  EXTRACAMLFLAGS += -pp "$(AWK) -f $(ROOTDIR)/stdlib/expand_module_aliases.awk"
+  EXTRACAMLFLAGS += -pp "$(AWK) -f $(TOPSRCDIR)/stdlib/expand_module_aliases.awk"
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
 WIN32_LIBS=$(call SYSLIB,ws2_32) $(call SYSLIB,advapi32)
@@ -87,4 +89,4 @@ distclean::
 depend: unix.ml
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
-include .depend
+include $(SRCDIR)/.depend

@@ -1,6 +1,6 @@
 ROOTDIR = ../..
-include $(ROOTDIR)/api_docgen/Makefile.docfiles
 include $(ROOTDIR)/Makefile.common
+include $(ROOTDIR)/api_docgen/Makefile.docfiles
 include $(ROOTDIR)/stdlib/StdlibModules
 include $(ROOTDIR)/Makefile.best_binaries
 OCAMLC ?= $(BEST_OCAMLC) $(STDLIBFLAGS)
@@ -13,27 +13,28 @@ all: check-cross-references check-stdlib check-case-collision
 .PHONY: tools
 tools: cross-reference-checker
 
-cross-reference-checker: cross_reference_checker.ml
-	$(OCAMLC) $(ROOTDIR)/compilerlibs/ocamlcommon.cma \
-	  -I $(ROOTDIR)/parsing -I $(ROOTDIR)/driver \
-	  $< -o $@
+cross_reference_checker.cmo: cross_reference_checker.ml
+	$(OCAMLC) -I $(ROOTDIR)/parsing -I $(ROOTDIR)/driver -o $@ -c $<
+
+cross-reference-checker: cross_reference_checker.cmo
+	$(OCAMLC) $(ROOTDIR)/compilerlibs/ocamlcommon.cma -o $@ $<
 
 # check cross-references between the manual and error messages
 .PHONY: check-cross-references
 check-cross-references: cross-reference-checker
 	$(OCAMLRUN) ./cross-reference-checker \
 	  -auxfile $(MANUAL)/texstuff/manual.aux \
-	  $(ROOTDIR)/utils/warnings.ml \
-	  $(ROOTDIR)/driver/main_args.ml \
-	  $(ROOTDIR)/lambda/translmod.ml \
-	  $(ROOTDIR)/typing/typemod.ml \
-	  $(ROOTDIR)/typing/typeclass.ml
+	  $(TOPSRCDIR)/utils/warnings.ml \
+	  $(TOPSRCDIR)/driver/main_args.ml \
+	  $(TOPSRCDIR)/lambda/translmod.ml \
+	  $(TOPSRCDIR)/typing/typemod.ml \
+	  $(TOPSRCDIR)/typing/typeclass.ml
 
 # check that all standard library modules are referenced by the
 # standard library chapter of the manual
 .PHONY: check-stdlib
 check-stdlib:
-	./check-stdlib-modules $(ROOTDIR)
+	$(SRCDIR)/check-stdlib-modules $(TOPSRCDIR)
 
 
 # check name collision between latex source file and module documentation

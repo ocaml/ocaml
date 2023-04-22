@@ -12,18 +12,17 @@
 #*   special exception on linking described in the file LICENSE.          *
 #*                                                                        *
 #**************************************************************************
-DOCGEN= $(ROOTDIR)/api_docgen
+DOCGEN= $(TOPSRCDIR)/api_docgen
 
 include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/stdlib/StdlibModules
 include $(ROOTDIR)/Makefile.best_binaries
-include $(DOCGEN)/Makefile.docfiles
+include $(ROOTDIR)/api_docgen/Makefile.docfiles
 
-DOC_COMPILERLIBS_DIRS= $(addprefix $(ROOTDIR)/,\
-  parsing utils typing bytecomp driver file_formats lambda)
+DOC_COMPILERLIBS_DIRS= \
+  parsing utils typing bytecomp driver file_formats lambda
 
-DOC_STDLIB_DIRS = $(addprefix $(ROOTDIR)/, stdlib \
-  $(addprefix otherlibs/,$(ALL_OTHERLIBS)))
+DOC_STDLIB_DIRS = stdlib $(addprefix otherlibs/,$(ALL_OTHERLIBS))
 
 .PHONY: all
 all: html pdf man
