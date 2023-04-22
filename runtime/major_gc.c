@@ -1761,9 +1761,11 @@ mark_again:
     while (saved_major_cycle == caml_major_cycles_completed) {
       if (barrier_participants) {
         stw_cycle_all_domains
-              (domain_state, (void*)&params, participant_count, barrier_participants);
+              (domain_state, (void*)&params,
+                participant_count, barrier_participants);
       } else {
-        caml_try_run_on_all_domains(&stw_cycle_all_domains, (void*)&params, 0);
+        caml_try_run_on_all_domains
+              (&stw_cycle_all_domains, (void*)&params, 0);
       }
     }
   }
@@ -1810,7 +1812,9 @@ static void stw_finish_major_cycle (caml_domain_state* domain, void* arg,
                                          int participating_count,
                                          caml_domain_state** participating)
 {
-  struct finish_major_cycle_params* params = (struct finish_major_cycle_params*)arg;
+  struct finish_major_cycle_params* params
+          = (struct finish_major_cycle_params*)arg;
+
   CAMLassert (domain == Caml_state);
 
   /* We are in a STW critical section here. There is no obvious call

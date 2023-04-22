@@ -854,7 +854,8 @@ static inline void compact_update_field(void* ignored,
             CAMLassert(Is_block(fwd));
             /* Update p to point to the first field of v */
             *p = fwd;
-            /* Check the original block and the forwarded block are the same size*/
+            /* Check the original block and the forwarded block
+                are the same size */
             CAMLassert(Whsize_val(*p) == vsize);
           }
         }
@@ -1076,7 +1077,8 @@ void caml_compact_heap(caml_domain_state* domain_state, void* data,
           /* Reminder: since colours have rotated, UNMARKED indicates a MARKED
           (i.e live) block */
           if( Has_status_hd(hd, caml_global_heap_state.UNMARKED) ) {
-            /* live block in an evacuating pool, now we allocate it in to cur_pool */
+            /* live block in an evacuating pool, now we allocate it in
+                to cur_pool */
             value* new_p = cur_pool->next_obj;
             next = (value*)new_p[1];
             cur_pool->next_obj = next;
