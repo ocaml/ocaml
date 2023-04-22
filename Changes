@@ -740,6 +740,14 @@ OCaml 5.1.0
   (Jérôme Vouillon, review by Nicolás Ojeda Bär, Stephen Dolan and
    Hugo Heuzard)
 
+- #11846: Mark rbx as destroyed at C call for Win64 (mingw-w64 and Cygwin64).
+  Reserve the shadow store for the ABI in the c_stack_link struct instead of
+  explictly when calling C functions. This simultaneously reduces the number of
+  stack pointer manipulations and also fixes a bug when calling noalloc
+  functions where the shadow store was not being reserved.
+  (David Allsopp, report by Vesa Karvonen, review by Xavier Leroy and
+   KC Sivaramakrishnan)
+
 - #11850: When stopping before the `emit` phase (using `-stop-after`), an empty
   temporary assembly file is no longer left in the file system.
   (Nicolás Ojeda Bär, review by Gabriel Scherer and Xavier Leroy)
