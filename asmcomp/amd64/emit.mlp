@@ -538,7 +538,7 @@ let emit_instr env fallthrough i =
   | Lop(Iextcall { func; alloc; stack_ofs }) ->
       add_used_symbol func;
       if stack_ofs > 0 then begin
-        I.lea (mem64 QWORD 0 RSP) r13;
+        I.mov rsp r13;
         I.lea (mem64 QWORD stack_ofs RSP) r12;
         load_symbol_addr func rax;
         emit_call "caml_c_call_stack_args";
