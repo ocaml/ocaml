@@ -30,7 +30,17 @@ let blank = [' ' '\009' '\012']
 let identchar = ['A'-'Z' 'a'-'z' '_' '.' '-' '\'' '0'-'9']
 let num = ['0'-'9']
 
-rule token = parse
+rule is_test = parse
+  | blank * { is_test lexbuf }
+  | newline { Lexing.new_line lexbuf; is_test lexbuf }
+  | "/*" blank* "TEST" { true }
+  | "/*" blank* "TEST_BELOW" { true }
+  | "(*" blank* "TEST" { true }
+  | "(*" blank* "TEST_BELOW" { true }
+  | _ { false }
+  | eof { false }
+
+and token = parse
   | blank * { token lexbuf }
   | newline { Lexing.new_line lexbuf; token lexbuf }
   | "/*" blank* "TEST" { TSL_BEGIN_C_STYLE }
