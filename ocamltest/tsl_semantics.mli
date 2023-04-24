@@ -46,7 +46,6 @@ val tsl_ast_of_test_trees :
   Tsl_ast.environment_statement located list * test_tree list ->
   Tsl_ast.t
 
-
 val tests_in_tree : test_tree -> Tests.TestSet.t
 
 val tests_in_trees : test_tree list -> Tests.TestSet.t

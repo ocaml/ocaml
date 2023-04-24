@@ -179,7 +179,6 @@ let actions_in_tests tests =
     Actions.ActionSet.union (actions_in_test test) action_set in
   Tests.TestSet.fold f tests Actions.ActionSet.empty
 
-
 let rec split_env l =
   match l with
   | Environment_statement env :: tl ->

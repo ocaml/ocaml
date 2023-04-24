@@ -72,8 +72,8 @@ and token = parse
         | "with" -> WITH
         | _ -> IDENTIFIER s
     }
-  | "{" { OPEN_BRACE }
-  | "}" { CLOSE_BRACE }
+  | "{" { LEFT_BRACE }
+  | "}" { RIGHT_BRACE }
   | ";" { SEMI }
   | "(*"
     {

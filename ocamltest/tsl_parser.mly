@@ -35,7 +35,7 @@ let mkenvstmt envstmt =
 %token TSL_END_C_STYLE
 %token <[`Above | `Below]> TSL_BEGIN_OCAML_STYLE
 %token TSL_END_OCAML_STYLE
-%token COMMA OPEN_BRACE CLOSE_BRACE SEMI
+%token COMMA LEFT_BRACE RIGHT_BRACE SEMI
 %token <int> TEST_DEPTH
 %token EQUAL PLUSEQUAL
 /* %token COLON */
@@ -49,28 +49,27 @@ let mkenvstmt envstmt =
 
 %%
 
-tree:
-| OPEN_BRACE node CLOSE_BRACE { $2 }
+node:
+| statement_list tree_list { Ast ($1, $2) }
 
 tree_list:
 | { [] }
 | tree tree_list { $1 :: $2 }
 
-node:
-| statement_list tree_list { Ast ($1, $2) }
-
-statement:
-| env_item SEMI { $1 }
-| identifier with_environment_modifiers SEMI { Test (0, $1, $2) }
+tree:
+| LEFT_BRACE node RIGHT_BRACE { $2 }
 
 statement_list:
 | { [] }
 | statement statement_list { $1 :: $2 }
 
+statement:
+| env_item SEMI { $1 }
+| identifier with_environment_modifiers SEMI { Test (0, $1, $2) }
+
 tsl_script:
 | TSL_BEGIN_C_STYLE node TSL_END_C_STYLE { $2 }
 | TSL_BEGIN_OCAML_STYLE node TSL_END_OCAML_STYLE { $2 }
-
 
 tsl_block:
 | TSL_BEGIN_C_STYLE tsl_items TSL_END_C_STYLE { $2 }
