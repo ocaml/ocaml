@@ -2173,8 +2173,11 @@ let report_error env ppf =
         "@[The instance variable is %s;@ it cannot be redefined as %s@]"
         mut1 mut2
   | No_overriding (_, "") ->
-      fprintf ppf "@[This inheritance does not override any methods@ \
-                   or instance variables.@]"
+      fprintf ppf
+        "@[This inheritance does not override any methods@ \
+         or instance variables@ but is explicitly marked as@ \
+         overriding with %a.@]"
+        Style.inline_code "!"
   | No_overriding (kind, name) ->
       fprintf ppf "@[The %s %a@ has no previous definition@]" kind
         Style.inline_code name
