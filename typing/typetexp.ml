@@ -33,7 +33,6 @@ type error =
   | Type_arity_mismatch of Longident.t * int * int
   | Bound_type_variable of string
   | Recursive_type
-  | Unbound_row_variable of Longident.t
   | Type_mismatch of Errortrace.unification_error
   | Alias_type_mismatch of Errortrace.unification_error
   | Present_has_conjunction of string
@@ -837,10 +836,6 @@ let report_error env ppf = function
     fprintf ppf "Already bound type parameter %a" Pprintast.tyvar name
   | Recursive_type ->
     fprintf ppf "This type is recursive"
-  | Unbound_row_variable lid ->
-      (* we don't use "spellcheck" here: this error is not raised
-         anywhere so it's unclear how it should be handled *)
-      fprintf ppf "Unbound row variable in #%a" longident lid
   | Type_mismatch trace ->
       Printtyp.report_unification_error ppf Env.empty trace
         (function ppf ->
