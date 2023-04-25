@@ -405,6 +405,17 @@ val assoc_opt : 'a -> ('a * 'b) list -> 'b option
     @since 4.05
  *)
 
+val assoc_filter : ('a -> bool) -> ('a * 'b) list -> ('a * 'b) list
+(** [assoc_filter f l] returns all the elements of the list [l]
+   where the key of each associative pair satisfies the predicate [f]. The order of the elements
+   in the input list is preserved.
+ *)
+
+val assoc_find_all : ('a -> bool) -> ('a * 'b) list -> ('a * 'b) list
+(** [assoc_find_all] is another name for {!assoc_filter}.
+ *)
+
+
 val assq : 'a -> ('a * 'b) list -> 'b
 (** Same as {!assoc}, but uses physical equality instead of
    structural equality to compare keys.
