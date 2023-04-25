@@ -73,7 +73,6 @@ type error =
   | Type_arity_mismatch of Longident.t * int * int
   | Bound_type_variable of string
   | Recursive_type
-  | Unbound_row_variable of Longident.t
   | Type_mismatch of Errortrace.unification_error
   | Alias_type_mismatch of Errortrace.unification_error
   | Present_has_conjunction of string
