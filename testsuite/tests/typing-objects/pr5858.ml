@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 class type c = object end;;

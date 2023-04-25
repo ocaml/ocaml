@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let () = Random.init 12345
 

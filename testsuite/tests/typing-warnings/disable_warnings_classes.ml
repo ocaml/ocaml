@@ -1,6 +1,6 @@
 (* TEST
-   flags = " -w +A "
-   * expect
+ flags = " -w +A ";
+ expect;
 *)
 
 class c = object

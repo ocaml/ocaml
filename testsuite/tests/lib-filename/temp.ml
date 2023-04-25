@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let () =
  let tmpdir1 = ref "" in

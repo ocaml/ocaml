@@ -107,6 +107,17 @@ let no_such_test_or_action t =
   Printf.eprintf "%s\nNo such test or action: %s\n%!" locstr t.node;
   exit 2
 
+let lookup_test located_name =
+  let name = located_name.node in
+  match Tests.lookup name with
+  | None ->
+    begin match Actions.lookup name with
+    | None -> no_such_test_or_action located_name
+    | Some action ->
+      Tests.test_of_action action
+    end
+  | Some test -> test
+
 let test_trees_of_tsl_block tsl_block =
   let rec env_of_lines = function
     | [] -> ([], [])
@@ -127,16 +138,8 @@ let test_trees_of_tsl_block tsl_block =
             else
               let (env, rem) = env_of_lines remaining_lines in
               let (trees, rem) = trees_of_lines (depth+1) rem in
-              match Tests.lookup name with
-                | None ->
-                  begin match Actions.lookup name with
-                    | None -> no_such_test_or_action located_name
-                    | Some action ->
-                      let test = Tests.test_of_action action in
-                      (Some (Node (env, test, env_modifiers, trees)), rem)
-                  end
-                | Some test ->
-                  (Some (Node (env, test, env_modifiers, trees)), rem)
+              let test = lookup_test located_name in
+              (Some (Node (env, test, env_modifiers, trees)), rem)
           end
       end
   and trees_of_lines depth lines =
@@ -175,3 +178,93 @@ let actions_in_tests tests =
   let f test action_set =
     Actions.ActionSet.union (actions_in_test test) action_set in
   Tests.TestSet.fold f tests Actions.ActionSet.empty
+
+let rec split_env l =
+  match l with
+  | Environment_statement env :: tl ->
+    let (env2, rest) = split_env tl in (env :: env2, rest)
+  | _ -> ([], l)
+
+let rec test_trees_of_tsl_ast (Ast (seq, subs)) =
+  let (env, rest) = split_env seq in
+  let trees =
+    match rest with
+    | [] -> List.map test_tree_of_tsl_ast subs
+    | [ Test (_, name, mods) ] ->
+      [Node ([], lookup_test name, mods, List.map test_tree_of_tsl_ast subs)]
+    | Test (_, name, mods) :: seq1 ->
+      let sub = test_tree_of_tsl_ast (Ast (seq1, subs)) in
+      [Node ([], lookup_test name, mods, [sub])]
+    | Environment_statement _ :: _ -> assert false
+  in (env, trees)
+
+and test_tree_of_tsl_ast ast =
+  match test_trees_of_tsl_ast ast with
+  | (env, [Node (env1, t, m, s)]) -> Node (env @ env1, t, m, s)
+  | (env, trees) -> Node (env, Tests.null, [], trees)
+
+let rec ast_of_tree (Node (env, test, mods, subs)) =
+  let tst = [Test (0, Tsl_ast.make_identifier test.Tests.test_name, mods)] in
+  ast_of_tree_aux env tst subs
+
+and ast_of_tree_aux env tst subs =
+  let env = List.map (fun x -> Environment_statement x) env in
+  match List.map ast_of_tree subs with
+  | [ Ast (stmts, subs) ] -> Ast (env @ tst @ stmts, subs)
+  | asts -> Ast (env @ tst, asts)
+
+let tsl_ast_of_test_trees (env, trees) = ast_of_tree_aux env [] trees
+
+open Printf
+
+let print_tsl_ast ~compact oc ast =
+  let pr fmt (*args*) = fprintf oc fmt (*args*) in
+
+  let rec print_ast indent (Ast (stmts, subs)) =
+    print_statements indent stmts;
+    print_forest indent subs;
+
+  and print_sub indent ast =
+    pr "{\n";
+    print_ast (indent ^ "  ") ast;
+    pr "%s}" indent;
+
+  and print_statements indent stmts =
+    match stmts with
+    | Test (_, name, mods) :: tl ->
+      pr "%s%s" indent name.node;
+      begin match mods with
+      | m :: tl ->
+        pr " with %s" m.node;
+        List.iter (fun m -> pr ", %s" m.node) tl;
+      | [] -> ()
+      end;
+      pr ";\n";
+      if tl <> [] && not compact then pr "\n";
+      print_statements indent tl;
+    | Environment_statement env :: tl->
+      print_env indent env;
+      print_statements indent tl;
+    | [] -> ()
+
+  and print_forest indent subs =
+    if subs <> [] then begin
+      pr "%s" indent;
+      List.iter (print_sub indent) subs;
+      pr "\n";
+    end
+
+  and print_env indent e =
+    match e.node with
+    | Assignment (set, variable, value) ->
+      pr "%s" indent;
+      if set then pr "set ";
+      pr "%s = \"%s\";\n" variable.node value.node;
+    | Append (variable, value) ->
+      pr "%s%s += \"%s\";\n" indent variable.node value.node;
+    | Include ls ->
+      pr "%sinclude %s;\n" indent ls.node;
+    | Unset ls ->
+      pr "%sunset %s;\n" indent ls.node;
+  in
+  print_ast " " ast;

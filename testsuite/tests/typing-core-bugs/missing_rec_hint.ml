@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 let facto n =   (* missing [rec] *)

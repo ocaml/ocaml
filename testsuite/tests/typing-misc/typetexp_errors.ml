@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type ('a,'at,'any,'en) t = A of 'an

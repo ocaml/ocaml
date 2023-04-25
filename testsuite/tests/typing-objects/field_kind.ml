@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type _ t = Int : int t;;

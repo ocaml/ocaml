@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 (*
   Test handling of continuations created by a domain that has since terminated.

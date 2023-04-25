@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 (***
    This test evaluate boolean formula composed by conjunction and

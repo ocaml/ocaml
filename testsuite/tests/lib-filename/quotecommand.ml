@@ -1,31 +1,30 @@
 (* TEST
-
-readonly_files = "myecho.ml"
-
-* setup-ocamlc.byte-build-env
-program = "${test_build_directory}/quotecommand.byte"
-** ocamlc.byte
-program = "${test_build_directory}/myecho.exe"
-all_modules = "myecho.ml"
-*** ocamlc.byte
-program = "${test_build_directory}/quotecommand.byte"
-all_modules= "quotecommand.ml"
-**** check-ocamlc.byte-output
-***** run
-****** check-program-output
-
-* setup-ocamlopt.byte-build-env
-program = "${test_build_directory}/quotecommand.opt"
-** ocamlopt.byte
-program = "${test_build_directory}/myecho.exe"
-all_modules = "myecho.ml"
-*** ocamlopt.byte
-program = "${test_build_directory}/quotecommand.opt"
-all_modules= "quotecommand.ml"
-**** check-ocamlopt.byte-output
-***** run
-****** check-program-output
-
+ readonly_files = "myecho.ml";
+ {
+   program = "${test_build_directory}/quotecommand.byte";
+   setup-ocamlc.byte-build-env;
+   program = "${test_build_directory}/myecho.exe";
+   all_modules = "myecho.ml";
+   ocamlc.byte;
+   program = "${test_build_directory}/quotecommand.byte";
+   all_modules = "quotecommand.ml";
+   ocamlc.byte;
+   check-ocamlc.byte-output;
+   run;
+   check-program-output;
+ }{
+   program = "${test_build_directory}/quotecommand.opt";
+   setup-ocamlopt.byte-build-env;
+   program = "${test_build_directory}/myecho.exe";
+   all_modules = "myecho.ml";
+   ocamlopt.byte;
+   program = "${test_build_directory}/quotecommand.opt";
+   all_modules = "quotecommand.ml";
+   ocamlopt.byte;
+   check-ocamlopt.byte-output;
+   run;
+   check-program-output;
+ }
 *)
 
 open Printf

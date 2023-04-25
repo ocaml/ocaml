@@ -94,6 +94,7 @@ main.cmo : \
     tsl_semantics.cmi \
     tsl_parser.cmi \
     tsl_lexer.cmi \
+    translate.cmi \
     tests.cmi \
     result.cmi \
     options.cmi \
@@ -107,6 +108,7 @@ main.cmx : \
     tsl_semantics.cmx \
     tsl_parser.cmx \
     tsl_lexer.cmx \
+    translate.cmx \
     tests.cmx \
     result.cmx \
     options.cmx \
@@ -364,15 +366,18 @@ ocamltest_unix.cmx : \
 ocamltest_unix.cmi :
 options.cmo : \
     variables.cmi \
+    translate.cmi \
     tests.cmi \
     actions.cmi \
     options.cmi
 options.cmx : \
     variables.cmx \
+    translate.cmx \
     tests.cmx \
     actions.cmx \
     options.cmi
-options.cmi :
+options.cmi : \
+    translate.cmi
 result.cmo : \
     result.cmi
 result.cmx : \
@@ -405,6 +410,19 @@ tests.cmi : \
     result.cmi \
     environments.cmi \
     actions.cmi
+translate.cmo : \
+    tsl_semantics.cmi \
+    tsl_parser.cmi \
+    tsl_lexer.cmi \
+    tsl_ast.cmi \
+    translate.cmi
+translate.cmx : \
+    tsl_semantics.cmx \
+    tsl_parser.cmx \
+    tsl_lexer.cmx \
+    tsl_ast.cmx \
+    translate.cmi
+translate.cmi :
 tsl_ast.cmo : \
     tsl_ast.cmi
 tsl_ast.cmx : \

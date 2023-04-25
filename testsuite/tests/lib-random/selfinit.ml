@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 (* Test that two Random.self_init() in close succession will not result
    in the same PRNG state.

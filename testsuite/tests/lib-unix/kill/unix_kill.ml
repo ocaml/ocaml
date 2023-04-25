@@ -1,8 +1,11 @@
 (* TEST
-include unix
-* libunix
-** bytecode
-** native
+ include unix;
+ libunix;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 let () =

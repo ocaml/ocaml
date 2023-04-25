@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let clear_elements a m =
   for i = 1 to m do

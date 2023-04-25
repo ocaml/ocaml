@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 type u = U of unit
 let () =

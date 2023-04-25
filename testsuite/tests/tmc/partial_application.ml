@@ -1,6 +1,6 @@
-(* TEST
-   * bytecode
-   * native
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
+
 *)
 type t = Ret of (unit -> unit) | Next of t
 
@@ -17,3 +17,11 @@ let () =
   match g ~first:true with
   | Next (Ret f) -> f ()
   | _ -> assert false
+
+(* TEST
+ {
+   bytecode;
+ }{
+   native;
+ }
+*)

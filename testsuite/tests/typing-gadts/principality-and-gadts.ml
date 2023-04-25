@@ -1,5 +1,6 @@
 (* TEST
-   * expect *)
+ expect;
+*)
 
 module M = struct type t = A | B end;;
 [%%expect{|

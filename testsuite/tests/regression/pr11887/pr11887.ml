@@ -1,6 +1,6 @@
 (* TEST
-   * native
-     ocamlopt_flags = "-dcmm-invariants"
+ ocamlopt_flags = "-dcmm-invariants";
+ native;
 *)
 
 module Constant = struct

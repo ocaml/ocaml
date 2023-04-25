@@ -1,6 +1,6 @@
 (* TEST
-   flags = "-w +A-70"
-   * expect
+ flags = "-w +A-70";
+ expect;
 *)
 
 let rec fact = function

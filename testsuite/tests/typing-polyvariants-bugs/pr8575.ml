@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 module A = struct type t = A | B let x = B end;;

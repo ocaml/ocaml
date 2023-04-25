@@ -1,7 +1,7 @@
 (* TEST
-readonly_files = "main.c"
-arguments = "-DINT_INT -DFUN=is_even main.c"
-* asmgen
+ readonly_files = "main.c";
+ arguments = "-DINT_INT -DFUN=is_even main.c";
+ asmgen;
 *)
 
 ("format_odd": string "odd %d\n\000")

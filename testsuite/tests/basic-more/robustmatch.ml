@@ -1,6 +1,6 @@
 (* TEST
-   flags += "-w +4+8+9+11+12+52+56+57"
-   include testing
+ flags += "-w +4+8+9+11+12+52+56+57";
+ include testing;
 *)
 
 module GPR1493 = struct

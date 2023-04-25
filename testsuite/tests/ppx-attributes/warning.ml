@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 [@@@ocaml.warning "@A"]
 [@@@ocaml.alert "++all"]

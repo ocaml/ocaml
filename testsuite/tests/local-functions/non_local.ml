@@ -1,4 +1,4 @@
-(* TEST *)
+(* TEST_BELOW*)
 
 (* Basic case: local optimisation works *)
 let local_direct x =
@@ -20,3 +20,6 @@ let local_inner_scope x =
 let local_in_function x =
   let[@local] f y = x + y in
   List.map (fun x -> f (succ x)) [0]
+
+(* TEST
+*)

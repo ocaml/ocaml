@@ -1,7 +1,7 @@
 (* TEST
-include config
-binary_modules = "config build_path_prefix_map misc"
-* bytecode
+ include config;
+ binary_modules = "config build_path_prefix_map misc";
+ bytecode;
 *)
 
 open Misc

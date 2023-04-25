@@ -1,5 +1,5 @@
 (* TEST
-   modules = "intextaux.c"
+ modules = "intextaux.c";
 *)
 
 (* Test for output_value / input_value *)

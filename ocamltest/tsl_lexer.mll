@@ -20,6 +20,7 @@
 open Tsl_parser
 
 let comment_start_pos = ref []
+let has_comments = ref false
 
 let lexer_error message =
   failwith (Printf.sprintf "Tsl lexer: %s" message)
@@ -43,11 +44,19 @@ rule is_test = parse
 and token = parse
   | blank * { token lexbuf }
   | newline { Lexing.new_line lexbuf; token lexbuf }
-  | "/*" blank* "TEST" { TSL_BEGIN_C_STYLE }
-  | "/*" blank* "TEST_BELOW" _ * "/*" blank* "TEST" { TSL_BEGIN_C_STYLE }
+  | "/*" blank* "TEST" { TSL_BEGIN_C_STYLE `Above }
+  | "/*" blank* "TEST_BELOW" _ * "/*" blank* "TEST" {
+      let s = Lexing.lexeme lexbuf in
+      String.iter (fun c -> if c = '\n' then Lexing.new_line lexbuf) s;
+      TSL_BEGIN_C_STYLE `Below
+    }
   | "*/" { TSL_END_C_STYLE }
-  | "(*" blank* "TEST" { TSL_BEGIN_OCAML_STYLE }
-  | "(*" blank* "TEST_BELOW" _ * "(*" blank* "TEST" { TSL_BEGIN_OCAML_STYLE }
+  | "(*" blank* "TEST" { TSL_BEGIN_OCAML_STYLE `Above }
+  | "(*" blank* "TEST_BELOW" _ * "(*" blank* "TEST" {
+      let s = Lexing.lexeme lexbuf in
+      String.iter (fun c -> if c = '\n' then Lexing.new_line lexbuf) s;
+      TSL_BEGIN_OCAML_STYLE `Below
+    }
   | "*)" { TSL_END_OCAML_STYLE }
   | "," { COMMA }
   | '*'+ { TEST_DEPTH (String.length (Lexing.lexeme lexbuf)) }
@@ -63,9 +72,13 @@ and token = parse
         | "with" -> WITH
         | _ -> IDENTIFIER s
     }
+  | "{" { LEFT_BRACE }
+  | "}" { RIGHT_BRACE }
+  | ";" { SEMI }
   | "(*"
     {
       comment_start_pos := [Lexing.lexeme_start_p lexbuf];
+      has_comments := true;
       comment lexbuf
     }
   | '"'

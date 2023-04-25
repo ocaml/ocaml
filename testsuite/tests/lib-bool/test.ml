@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let test_not () =
   assert (Bool.not false = true);

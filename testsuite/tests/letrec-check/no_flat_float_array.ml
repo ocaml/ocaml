@@ -1,6 +1,6 @@
 (* TEST
-   * no-flat-float-array
-   ** expect
+ no-flat-float-array;
+ expect;
 *)
 
 (* See float_block_disallowed.ml for explanations.

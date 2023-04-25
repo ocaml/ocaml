@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type (_,_) eq = Refl : ('a,'a) eq;;

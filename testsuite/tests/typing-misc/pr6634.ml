@@ -1,6 +1,6 @@
 (* TEST
-   * expect
- *)
+ expect;
+*)
 
 type t = int
 module M : sig type t end with type t = [`T of t] =

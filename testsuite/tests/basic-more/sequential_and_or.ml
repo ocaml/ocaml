@@ -1,5 +1,5 @@
 (* TEST
-   include testing
+ include testing;
 *)
 
 let r = ref 0

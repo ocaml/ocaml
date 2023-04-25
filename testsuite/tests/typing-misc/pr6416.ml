@@ -1,6 +1,6 @@
 (* TEST
-  flags="-no-alias-deps -w +40"
-  * expect
+ flags = "-no-alias-deps -w +40";
+ expect;
 *)
 module M = struct
   type t = A

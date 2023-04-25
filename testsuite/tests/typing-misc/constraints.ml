@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type 'a t = [`A of 'a t t] as 'a;; (* fails *)

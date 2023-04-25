@@ -1,6 +1,7 @@
 (* TEST
-   flags = "-dlambda -dno-unique-ids"
-   * expect *)
+ flags = "-dlambda -dno-unique-ids";
+ expect;
+*)
 
 (* Check that the code produced by TMC reads reasonably well. *)
 let[@tail_mod_cons] rec map f = function

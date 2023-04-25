@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 class point x_init = object

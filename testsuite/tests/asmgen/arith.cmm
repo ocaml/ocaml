@@ -1,7 +1,7 @@
 (* TEST
-readonly_files = "mainarith.c"
-arguments = "mainarith.c"
-* asmgen
+ readonly_files = "mainarith.c";
+ arguments = "mainarith.c";
+ asmgen;
 *)
 
 (**************************************************************************)

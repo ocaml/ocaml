@@ -1,6 +1,6 @@
 (* TEST
-   flags = " -w +A-41-42-18"
-   * expect
+ flags = " -w +A-41-42-18";
+ expect;
 *)
 module T1 : sig end = struct
   module M = struct type t end  (* unused type t *)

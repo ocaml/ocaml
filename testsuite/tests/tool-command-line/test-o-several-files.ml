@@ -1,11 +1,11 @@
 (* TEST
-* setup-ocamlopt.opt-build-env
-** ocamlopt.opt
-all_modules = "foo.c bar.c"
-compile_only = "true"
-flags = "-o outputdir/baz.${objext}"
-ocamlopt_opt_exit_status = "2"
-*** check-ocamlopt.opt-output
+ setup-ocamlopt.opt-build-env;
+ all_modules = "foo.c bar.c";
+ compile_only = "true";
+ flags = "-o outputdir/baz.${objext}";
+ ocamlopt_opt_exit_status = "2";
+ ocamlopt.opt;
+ check-ocamlopt.opt-output;
 *)
 
 (*

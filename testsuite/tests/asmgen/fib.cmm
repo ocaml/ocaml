@@ -1,7 +1,7 @@
 (* TEST
-readonly_files = "main.c"
-arguments = "-DINT_INT -DFUN=fib main.c"
-* asmgen
+ readonly_files = "main.c";
+ arguments = "-DINT_INT -DFUN=fib main.c";
+ asmgen;
 *)
 
 (**************************************************************************)

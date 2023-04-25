@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let m = 1000
 let m' = 100

@@ -1,10 +1,14 @@
 (* TEST
-  include runtime_events
-  include unix
-  set OCAML_RUNTIME_EVENTS_PRESERVE = "1"
-  * libunix
-  ** bytecode
-  ** native *)
+ include runtime_events;
+ include unix;
+ set OCAML_RUNTIME_EVENTS_PRESERVE = "1";
+ libunix;
+ {
+   bytecode;
+ }{
+   native;
+ }
+*)
 
   (* this tests the preservation of ring buffers after termination *)
 

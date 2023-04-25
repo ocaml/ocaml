@@ -13,6 +13,10 @@ Working version
 
 ### Tools:
 
+- #12185: New script language for ocamltest.
+  (Damien Doligez with Florian Angeletti, Sébastien Hinderer, Gabriel Scherer,
+   review by Sébastien Hinderer and Gabriel Scherer)
+
 ### Manual and documentation:
 
 ### Compiler user-interface and warnings:

@@ -1,9 +1,9 @@
-(* TEST
-flags = "-no-app-funct"
-ocamlc_byte_exit_status = "2"
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-*** check-ocamlc.byte-output
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
+
+
+
+
 *)
 module type Dep = sig type t val x : t end
 module String = struct type t = string let x = "Forty Two" end
@@ -44,3 +44,11 @@ module N' = N.M(String)
 module N'' = N'.M(Int)
 
 let () = print_endline (Option.get N''.x)
+
+(* TEST
+ flags = "-no-app-funct";
+ ocamlc_byte_exit_status = "2";
+ setup-ocamlc.byte-build-env;
+ ocamlc.byte;
+ check-ocamlc.byte-output;
+*)

@@ -1,48 +1,47 @@
 (* TEST
+ include unix;
+ readonly_files = "fdstatus_aux.c fdstatus_main.ml";
+ (*
+   This test is temporarily disabled on the MinGW and MSVC ports,
+   because since fdstatus has been wrapped in an OCaml program,
+   it does not work as well as before.
+   Presumably this is because the OCaml runtime opens files, so that handles
+   that have actually been closed at execution look open and make the
+   test fail.
 
-(*
-  This test is temporarily disabled on the MinGW and MSVC ports,
-  because since fdstatus has been wrapped in an OCaml program,
-  it does not work as well as before.
-  Presumably this is because the OCaml runtime opens files, so that handles
-  that have actually been closed at execution look open and make the
-  test fail.
+   One possible fix for this would be to make it possible for ocamltest to
+   compile C-only programs, which will be a bit of work to handle the
+   output of msvc and will also duplicate what the OCaml compiler itself
+   already does.
+ *)
+ hasunix;
 
-  One possible fix for this would be to make it possible for ocamltest to
-  compile C-only programs, which will be a bit of work to handle the
-  output of msvc and will also duplicate what the OCaml compiler itself
-  already does.
-*)
-
-* hasunix
-include unix
-readonly_files = "fdstatus_aux.c fdstatus_main.ml"
-
-** libunix
-*** setup-ocamlc.byte-build-env
-program = "${test_build_directory}/cloexec.byte"
-**** ocamlc.byte
-program = "${test_build_directory}/fdstatus.exe"
-all_modules = "fdstatus_aux.c fdstatus_main.ml"
-***** ocamlc.byte
-program = "${test_build_directory}/cloexec.byte"
-all_modules= "cloexec.ml"
-****** check-ocamlc.byte-output
-******* run
-******** check-program-output
-
-*** setup-ocamlopt.byte-build-env
-program = "${test_build_directory}/cloexec.opt"
-**** ocamlopt.byte
-program = "${test_build_directory}/fdstatus.exe"
-all_modules = "fdstatus_aux.c fdstatus_main.ml"
-***** ocamlopt.byte
-program = "${test_build_directory}/cloexec.opt"
-all_modules= "cloexec.ml"
-****** check-ocamlopt.byte-output
-******* run
-******** check-program-output
-
+ libunix;
+ {
+   program = "${test_build_directory}/cloexec.byte";
+   setup-ocamlc.byte-build-env;
+   program = "${test_build_directory}/fdstatus.exe";
+   all_modules = "fdstatus_aux.c fdstatus_main.ml";
+   ocamlc.byte;
+   program = "${test_build_directory}/cloexec.byte";
+   all_modules = "cloexec.ml";
+   ocamlc.byte;
+   check-ocamlc.byte-output;
+   run;
+   check-program-output;
+ }{
+   program = "${test_build_directory}/cloexec.opt";
+   setup-ocamlopt.byte-build-env;
+   program = "${test_build_directory}/fdstatus.exe";
+   all_modules = "fdstatus_aux.c fdstatus_main.ml";
+   ocamlopt.byte;
+   program = "${test_build_directory}/cloexec.opt";
+   all_modules = "cloexec.ml";
+   ocamlopt.byte;
+   check-ocamlopt.byte-output;
+   run;
+   check-program-output;
+ }
 *)
 
 (* This is a terrible hack that plays on the internal representation

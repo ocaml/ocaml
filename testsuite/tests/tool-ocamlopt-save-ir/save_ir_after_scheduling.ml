@@ -1,11 +1,11 @@
 (* TEST
- * native-compiler
- ** setup-ocamlopt.byte-build-env
- *** ocamlopt.byte
-   flags = "-save-ir-after scheduling -S"
- **** check-ocamlopt.byte-output
- ***** script
-   script = "sh ${test_source_directory}/save_ir_after_scheduling.sh"
+ native-compiler;
+ setup-ocamlopt.byte-build-env;
+ flags = "-save-ir-after scheduling -S";
+ ocamlopt.byte;
+ check-ocamlopt.byte-output;
+ script = "sh ${test_source_directory}/save_ir_after_scheduling.sh";
+ script;
 *)
 
 let foo f x =

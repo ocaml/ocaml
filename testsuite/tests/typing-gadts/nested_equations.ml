@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 (* Tests for nested equations (bind abstract types from other modules) *)

@@ -1,6 +1,9 @@
 (* TEST
-   * flambda
-   * native
+ {
+   flambda;
+ }{
+   native;
+ }
 *)
 
 (* from GPR#1794 *)

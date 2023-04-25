@@ -1,8 +1,8 @@
 (* TEST
-   modules = "polling.c"
-   compare_programs = "false"
-   * arch64
-   ** native
+ modules = "polling.c";
+ compare_programs = "false";
+ arch64;
+ native;
 *)
 
 (* This set of tests examine poll insertion behaviour. We do this by requesting

@@ -1,5 +1,5 @@
 (* TEST
-   modules = "manyargsprim.c"
+ modules = "manyargsprim.c";
 *)
 
 let manyargs a b c d e f g h i j k l m n o =

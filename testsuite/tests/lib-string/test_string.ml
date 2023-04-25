@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 open Printf
 
 let rec build_string f n accu =

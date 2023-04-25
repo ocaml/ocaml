@@ -28,7 +28,7 @@ should be written. It may indeed seem odd to write a test-driver for a
 compiler in the language it compiles, since the compiler itself
 is yet untested and thus not trustworthy.
 
-It can however be observed that the OCaml compiler is /bootstraped/,
+It can however be observed that the OCaml compiler is /bootstrapped/,
 meaning that it is itself written in OCaml. A newer version of the
 compiler can thus be produced from an existing one and the (OCaml)
 source code of that newer version. Practically, this means that the
@@ -50,7 +50,7 @@ For example, the reason why ocamltest has no support for running unit tests
 is that there were no such tests in the OCaml compiler's test suite.
 
 Indeed, the OCaml compiler's test suite is composed mainly of complete
-programs. In this context, the most current meaning of "testing" a program
+programs. In this context, the most usual meaning of "testing" a program
 is that the program needs to be compiled and executed. The test will
 be considered successful if the program compiles as expected and, when run,
 returns the expected value.
@@ -61,7 +61,7 @@ importance to make writing tests of this form as simple as possible.
 However, not all tests fall into the previously described category, so it is
 also necessary to support not only variations on the previous scenario
 (compile but do not run, compile with certain options, etc.) but also
-completely different tests, such as top-level tests, debugger tests,
+completely different tests, such as REPL tests, debugger tests,
 etc.
 
 To fulfill these requirements and make it as easy as possible to turn a
@@ -75,7 +75,7 @@ should be performed.
 The next chapter explains through examples how to write simple tests. We
 then introduce the key concepts used by ocamltest to provide a better
 understanding of how it works and can be used to write more complex
-tests. The two last chapters give an in-depth description of the
+tests. The last two chapters give an in-depth description of the
 built-in tests and actions and of the tests and actions that are specific
 to the OCaml compiler.
 
@@ -96,7 +96,7 @@ with a few other useful tests.
 
 Writing tests requires that the sources of the OCaml compiler for which
 one wants to write them are downloaded and compiled. The compiler
-does not need to be installed, though.
+does not need to be installed.
 
 The sources can be downloaded either as an archive, or directly cloned
 through git, which seems more appropriate in the context of writing ones
@@ -289,7 +289,7 @@ quite similar):
    output, we compare it to the one produced in action 2. Such a check
    may seem strange, because what it requires is that =ocamlc.byte= and
    =ocamlc.opt= produce exactly the same binary and not two binaries
-   than perform similarly when they are run, but it has proven useful in
+   that perform similarly when they are run, but it has proven useful in
    the past and has permitted to detect a subtle bug in the compiler.
 
 ** Customizing the default tests
@@ -327,13 +327,13 @@ required steps to achieve this:
 1. We slightly modify the test block in =hello.ml=, as follows:
    #+begin_src
    (* TEST
-   flags = "-w +33"
+     flags = "-w +33";
    *)
    #+end_src
 
 2. Since we now expect a non-empty output for the compilers, we need to
-   store the expected output in a file, namely =hello.compilers.output=
-   besides to =hello.ml= and =hello.reference=. To figure out what
+   store the expected output in a file, namely =hello.compilers.reference=
+   beside =hello.ml= and =hello.reference=. To figure out what
    this file shall contain, we can run ocamltest even before it
    has been created. Of course, the action that checks compiler output
    will fail, but in this way we will get the compiler's output
@@ -365,7 +365,7 @@ named appropriately. It will indeed first lookup the test source
 directory for a compiler-specific reference file, e.g.
 =hello.ocamlc.byte.reference=. If no such file exists, a
 back-end-specific reference file is searched, e.g.
-=hello.ocamlc.reference= for a compiler common to both =ocamlc.byte= and
+=hello.ocamlc.reference= for a reference common to both =ocamlc.byte= and
 =ocamlc.opt=. If this file does not exist either, ocamltest falls back
 to looking for =hello.compilers.reference= as we have seen in this
 example, the absence of which meaning that the compiler's output is
@@ -390,7 +390,7 @@ Our =hello.ml= test program can then be rewritten as follows:
 
 #+begin_src
 (* TEST
-modules = "greet.ml"
+  modules = "greet.ml";
 *)
 
 let _ = Greet.greet "world"
@@ -398,7 +398,7 @@ let _ = Greet.greet "world"
 
 Provided that the =hello.compilers.reference= file previously used to test
 warnings is deleted, running ocamltest on =hello.ml= should work. It
-will also be worth looking at the two first lines of the log file generated
+will also be worth looking at the first two lines of the log file generated
 while running the test. It says:
 
 #+begin_src
@@ -453,8 +453,8 @@ it becomes a test:
 
 #+begin_src
 (* TEST
-directories += " ${ocamlsrcdir}/otherlibs/str "
-libraries += " str "
+  directories += " ${ocamlsrcdir}/otherlibs/str ";
+  libraries += " str ";
 *)
 #+end_src
 
@@ -500,7 +500,7 @@ test block is actually written as follows:
 
 #+begin_src
 (* TEST
-include str
+  include str;
 *)
 #+end_src
 
@@ -519,23 +519,25 @@ that it is run only on Unix platforms:
 
 #+begin_src
 (* TEST
-:* unix
-:** bytecode
-:** native
+  unix;
+  {
+    bytecode;
+  }
+  {
+    native;
+  }
 *)
 #+end_src
 
-As can be understood from this example, lines starting with an asterisk
-describe which tests should be executed. In addition, the number of
-asterisks allows to specify the nesting level of each test or action.
+As can be understood from this example, tests are organised in a tree
+nested blocks. Each block begins with a brace and a list of tests and
+environment statements that are executed in sequence. Then the block
+contains a set of sub-blocks that are executed independently of each
+other (i.e. their environments are independent and they are run
+regardless of the success or failure of their siblings).
 Here for instance, =bytecode= and =native= are sub-tests that will be
 run only if the =unix= test passes and will not be started if it fails
 or skips.
-
-This way of describing the dependencies between tests has been inspired
-by the syntax of org-mode. Each line starting with asterisks (thus lines
-specifying which tests to run) can also be seen as a title. The whole
-set of lines is like the outline of the test scenario.
 
 With this information in mind, it can be seen that the smallest test
 block
@@ -543,56 +545,64 @@ block
 is actually equivalent to
 #+begin_src
 (* TEST
-:* bytecode
-:* native
+  {
+    bytecode;
+  }
+  {
+    native;
+  }
 *)
 #+end_src
 
 One common error when designing tests is to believe that a block like
 #+begin_src
 (* TEST
-:* unix
+  unix;
 *)
 #+end_src
 means to execute the =unix= test that verifies that the OS is indeed
 Unix and then to execute the default tests. This is actually not the
 case. The only situation in which the default tests are considered is
-when the test block contains absolutely no line starting with an
-asterisk. As soon as there is a line starting with an asterisk, the
+when the test block contains absolutely no test statement.
+As soon as there is a test statement, the
 default tests are ignored completely and one needs to be totally
 explicit about which tests to run. So the correct way to write the
 erroneous block above is the use shown at the beginning of this section,
 namely:
 #+begin_src
 (* TEST
-:* unix
-:** bytecode
-:** native
+  unix;
+  {
+    bytecode;
+  }
+  {
+    native;
+  }
 *)
 #+end_src
 
-The fact that the language is inspired by org-mode should also be
-helpful in understanding the scope of variable assignments. Roughly
-speaking:
+The braces make explicit the scope of variable assignments: an
+assignement modifies a variable for the rest of its block and for all
+sub-blocks (unless overridden at some point).
 
-1. Variables defined at the root level are visible by all the tests and
-   sub-tests that follow their assignment.
-
-2. If a variable is defined just below a test line, then it is visible
-   by that test and all its sub-tests (unless its definition is
-   overridden) but not by tests at a nesting level whose depth is less or
-   equal than the one of the test in which the variable is defined.
-
-For instance, given the following block:
+For instance, given the following blocks:
 #+begin_src
 (* TEST
-foo = "abc"
-:* test1
-bar = "def"
-:** subtest1
-baz = "hij"
-:** subtest2
-:* test2
+  foo = "abc";
+  {
+    bar = "def";
+    test1;
+    {
+      baz = "hij";
+      subtest1;
+    }
+    {
+      subtest2;
+    }
+  }
+  {
+    test2;
+  }
 *)
 #+end_src
 - The definition of =foo= is visible in all the tests
@@ -618,13 +628,13 @@ but they are different in the way one specifies the expected output and
 also in what they can test. The =toplevel= test behaves in a spirit
 similar to the compiler tests described above, meaning that the expected
 output has to be stored in its own, separate file. Since this test
-invokes the real OCaml top-level, it is useful to test advanced features
-like the behavior of the top-level when its input is a file rather than
+invokes the real OCaml toplevel, it is useful to test advanced features
+like the behavior of the toplevel when its input is a file rather than
 a terminal, or similar things. In the expect test, on the contrary,
 the input and the output it is expected to produce can be written in
 the same file, close to each other. However, this test uses the OCaml
-top-level as a library, rather than calling it as an external program.
-So this test is actually not testing the complete real OCaml top-level,
+toplevel as a library, rather than calling it as an external program.
+So this test is actually not testing the complete real OCaml toplevel,
 but for testing language features it remains perfectly valid and is
 actually what is needed in most of the cases. We thus give below an
 example of an expect test and will describe the =toplevel= test in
@@ -634,7 +644,7 @@ So, here is a toy example of an =expect= test:
 
 #+begin_src
 (* TEST
-:* expect
+  expect;
 *)
 
 type point = { x : int; y : int };;
@@ -668,8 +678,8 @@ follows:
 
 #+begin_src
 (* TEST
-script = "${test_source_directory}/faketest.sh"
-:* script
+  script = "${test_source_directory}/faketest.sh";
+  script;
 *)
 
 let _ = print_endline "Hello, world!"
@@ -721,14 +731,14 @@ The list of builtin variables can be obtained by running =ocamltest
 
 Environment variables for a test can be set using:
 #+begin_src
-set VARIABLE_NAME="value"
+set VARIABLE_NAME="value";
 #+end_src
 in the test header (the quotes are mandatory).
 
 On the contrary, you can ensure that an environment variable is not set when
 the test runs with:
 #+begin_src
-unset VARIABLE_NAME
+unset VARIABLE_NAME;
 #+end_src
 
 * Built-in actions and tests
@@ -747,7 +757,6 @@ running =ocamltest -show-actions=.
 
 # Things to document (requested by Leo on caml-devel)
 # - the syntax of the DSL
-# - the precise meaning of the stars
 # - a clear definition of what "test" means in the context of the DSL
 # - a list of the builtin "actions"
 # - a list of which "actions" depend on which "variables"

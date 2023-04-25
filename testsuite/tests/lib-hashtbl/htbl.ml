@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 (* Hashtable operations, using maps as a reference *)
 

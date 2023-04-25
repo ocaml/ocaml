@@ -1,170 +1,169 @@
 (* TEST
-
-include dynlink
-libraries = ""
-readonly_files = "sheep.mli sheep.ml pig.mli"
-subdirectories = "plugin1 plugin2 plugin2b plugin2c plugin3 plugin4 \
-  plugin5 plugin6"
-
-* shared-libraries
-** setup-ocamlc.byte-build-env
-*** ocamlc.byte
-module = "sheep.mli"
-**** ocamlc.byte
-module = "sheep.ml"
-***** ocamlc.byte
-module = "pig.mli"
-****** ocamlc.byte
-module = "test.ml"
-******* ocamlc.byte
-module = "plugin1/sheep.mli"
-******** ocamlc.byte
-flags = "-I plugin1"
-module = "plugin1/sheep.ml"
-********* ocamlc.byte
-flags = ""
-module = "plugin2/cow.mli"
-********** ocamlc.byte
-flags = "-I plugin2"
-module = "plugin2/cow.ml"
-*********** ocamlc.byte
-flags = ""
-module = "plugin2b/cow.mli"
-************ ocamlc.byte
-flags = "-I plugin2b"
-module = "plugin2b/cow.ml"
-************* ocamlc.byte
-flags = ""
-module = "plugin2c/cow.mli"
-************** ocamlc.byte
-flags = "-I plugin2c"
-module = "plugin2c/cow.ml"
-*************** ocamlc.byte
-flags = ""
-module = "plugin3/pig.mli"
-**************** ocamlc.byte
-flags = "-I plugin3"
-module = "plugin3/pig.ml"
-***************** ocamlc.byte
-flags = ""
-module = "plugin4/chicken.mli"
-****************** ocamlc.byte
-flags = "-I plugin4"
-module = "plugin4/chicken.ml"
-******************* ocamlc.byte
-flags = ""
-module = "plugin5/chicken.mli"
-******************** ocamlc.byte
-flags = "-I plugin5"
-module = "plugin5/chicken.ml"
-********************* ocamlc.byte
-flags = ""
-module = "plugin6/pheasant.mli"
-********************** ocamlc.byte
-flags = "-I plugin6"
-module = "plugin6/pheasant.ml"
-*********************** ocamlc.byte
-flags = ""
-module = "plugin6/partridge.mli"
-************************ ocamlc.byte
-flags = "-I plugin6"
-module = "plugin6/partridge.ml"
-************************* ocamlc.byte
-flags = ""
-program = "./test.byte.exe"
-libraries = "dynlink"
-all_modules = "sheep.cmo test.cmo"
-module = ""
-************************** run
-
-** native-dynlink
-*** setup-ocamlopt.byte-build-env
-**** ocamlopt.byte
-module = "sheep.mli"
-***** ocamlopt.byte
-module = "sheep.ml"
-****** ocamlopt.byte
-module = "pig.mli"
-******* ocamlopt.byte
-module = "test.ml"
-******** ocamlopt.byte
-flags = ""
-module = "plugin1/sheep.mli"
-********* ocamlopt.byte
-program = "plugin1/sheep.cmxs"
-flags = "-I plugin1 -shared"
-module = ""
-all_modules = "plugin1/sheep.ml"
-********** ocamlopt.byte
-flags = ""
-module = "plugin2/cow.mli"
-*********** ocamlopt.byte
-program = "plugin2/cow.cmxs"
-flags = "-I plugin2 -shared"
-module = ""
-all_modules = "plugin2/cow.ml"
-************ ocamlopt.byte
-flags = ""
-module = "plugin2b/cow.mli"
-************* ocamlopt.byte
-program = "plugin2b/cow.cmxs"
-flags = "-I plugin2b -shared"
-module = ""
-all_modules = "plugin2b/cow.ml"
-************** ocamlopt.byte
-flags = ""
-module = "plugin2c/cow.mli"
-*************** ocamlopt.byte
-program = "plugin2c/cow.cmxs"
-flags = "-I plugin2c -shared"
-module = ""
-all_modules = "plugin2c/cow.ml"
-**************** ocamlopt.byte
-flags = ""
-module = "plugin3/pig.mli"
-***************** ocamlopt.byte
-program = "plugin3/pig.cmxs"
-flags = "-I plugin3 -shared"
-module = ""
-all_modules = "plugin3/pig.ml"
-****************** ocamlopt.byte
-flags = ""
-module = "plugin4/chicken.mli"
-******************* ocamlopt.byte
-program = "plugin4/chicken.cmxs"
-flags = "-I plugin4 -shared"
-module = ""
-all_modules = "plugin4/chicken.ml"
-******************** ocamlopt.byte
-flags = ""
-module = "plugin5/chicken.mli"
-********************* ocamlopt.byte
-program = "plugin5/chicken.cmxs"
-flags = "-I plugin5 -shared"
-module = ""
-all_modules = "plugin5/chicken.ml"
-********************** ocamlopt.byte
-flags = ""
-module = "plugin6/pheasant.mli"
-*********************** ocamlopt.byte
-program = "plugin6/pheasant.cmxs"
-flags = "-I plugin6 -shared"
-module = ""
-all_modules = "plugin6/pheasant.ml"
-************************ ocamlopt.byte
-flags = ""
-module = "plugin6/partridge.mli"
-************************* ocamlopt.byte
-program = "plugin6/partridge.cmxs"
-flags = "-I plugin6 -shared"
-module = ""
-all_modules = "plugin6/partridge.ml"
-************************** ocamlopt.byte
-flags = ""
-program = "./test.opt.exe"
-libraries = "dynlink"
-all_modules = "sheep.cmx test.cmx"
-*************************** run
+ include dynlink;
+ libraries = "";
+ readonly_files = "sheep.mli sheep.ml pig.mli";
+ subdirectories = "plugin1 plugin2 plugin2b plugin2c plugin3 plugin4 plugin5 plugin6";
+ shared-libraries;
+ {
+   setup-ocamlc.byte-build-env;
+   module = "sheep.mli";
+   ocamlc.byte;
+   module = "sheep.ml";
+   ocamlc.byte;
+   module = "pig.mli";
+   ocamlc.byte;
+   module = "test.ml";
+   ocamlc.byte;
+   module = "plugin1/sheep.mli";
+   ocamlc.byte;
+   flags = "-I plugin1";
+   module = "plugin1/sheep.ml";
+   ocamlc.byte;
+   flags = "";
+   module = "plugin2/cow.mli";
+   ocamlc.byte;
+   flags = "-I plugin2";
+   module = "plugin2/cow.ml";
+   ocamlc.byte;
+   flags = "";
+   module = "plugin2b/cow.mli";
+   ocamlc.byte;
+   flags = "-I plugin2b";
+   module = "plugin2b/cow.ml";
+   ocamlc.byte;
+   flags = "";
+   module = "plugin2c/cow.mli";
+   ocamlc.byte;
+   flags = "-I plugin2c";
+   module = "plugin2c/cow.ml";
+   ocamlc.byte;
+   flags = "";
+   module = "plugin3/pig.mli";
+   ocamlc.byte;
+   flags = "-I plugin3";
+   module = "plugin3/pig.ml";
+   ocamlc.byte;
+   flags = "";
+   module = "plugin4/chicken.mli";
+   ocamlc.byte;
+   flags = "-I plugin4";
+   module = "plugin4/chicken.ml";
+   ocamlc.byte;
+   flags = "";
+   module = "plugin5/chicken.mli";
+   ocamlc.byte;
+   flags = "-I plugin5";
+   module = "plugin5/chicken.ml";
+   ocamlc.byte;
+   flags = "";
+   module = "plugin6/pheasant.mli";
+   ocamlc.byte;
+   flags = "-I plugin6";
+   module = "plugin6/pheasant.ml";
+   ocamlc.byte;
+   flags = "";
+   module = "plugin6/partridge.mli";
+   ocamlc.byte;
+   flags = "-I plugin6";
+   module = "plugin6/partridge.ml";
+   ocamlc.byte;
+   flags = "";
+   program = "./test.byte.exe";
+   libraries = "dynlink";
+   all_modules = "sheep.cmo test.cmo";
+   module = "";
+   ocamlc.byte;
+   run;
+ }{
+   native-dynlink;
+   setup-ocamlopt.byte-build-env;
+   module = "sheep.mli";
+   ocamlopt.byte;
+   module = "sheep.ml";
+   ocamlopt.byte;
+   module = "pig.mli";
+   ocamlopt.byte;
+   module = "test.ml";
+   ocamlopt.byte;
+   flags = "";
+   module = "plugin1/sheep.mli";
+   ocamlopt.byte;
+   program = "plugin1/sheep.cmxs";
+   flags = "-I plugin1 -shared";
+   module = "";
+   all_modules = "plugin1/sheep.ml";
+   ocamlopt.byte;
+   flags = "";
+   module = "plugin2/cow.mli";
+   ocamlopt.byte;
+   program = "plugin2/cow.cmxs";
+   flags = "-I plugin2 -shared";
+   module = "";
+   all_modules = "plugin2/cow.ml";
+   ocamlopt.byte;
+   flags = "";
+   module = "plugin2b/cow.mli";
+   ocamlopt.byte;
+   program = "plugin2b/cow.cmxs";
+   flags = "-I plugin2b -shared";
+   module = "";
+   all_modules = "plugin2b/cow.ml";
+   ocamlopt.byte;
+   flags = "";
+   module = "plugin2c/cow.mli";
+   ocamlopt.byte;
+   program = "plugin2c/cow.cmxs";
+   flags = "-I plugin2c -shared";
+   module = "";
+   all_modules = "plugin2c/cow.ml";
+   ocamlopt.byte;
+   flags = "";
+   module = "plugin3/pig.mli";
+   ocamlopt.byte;
+   program = "plugin3/pig.cmxs";
+   flags = "-I plugin3 -shared";
+   module = "";
+   all_modules = "plugin3/pig.ml";
+   ocamlopt.byte;
+   flags = "";
+   module = "plugin4/chicken.mli";
+   ocamlopt.byte;
+   program = "plugin4/chicken.cmxs";
+   flags = "-I plugin4 -shared";
+   module = "";
+   all_modules = "plugin4/chicken.ml";
+   ocamlopt.byte;
+   flags = "";
+   module = "plugin5/chicken.mli";
+   ocamlopt.byte;
+   program = "plugin5/chicken.cmxs";
+   flags = "-I plugin5 -shared";
+   module = "";
+   all_modules = "plugin5/chicken.ml";
+   ocamlopt.byte;
+   flags = "";
+   module = "plugin6/pheasant.mli";
+   ocamlopt.byte;
+   program = "plugin6/pheasant.cmxs";
+   flags = "-I plugin6 -shared";
+   module = "";
+   all_modules = "plugin6/pheasant.ml";
+   ocamlopt.byte;
+   flags = "";
+   module = "plugin6/partridge.mli";
+   ocamlopt.byte;
+   program = "plugin6/partridge.cmxs";
+   flags = "-I plugin6 -shared";
+   module = "";
+   all_modules = "plugin6/partridge.ml";
+   ocamlopt.byte;
+   flags = "";
+   program = "./test.opt.exe";
+   libraries = "dynlink";
+   all_modules = "sheep.cmx test.cmx";
+   ocamlopt.byte;
+   run;
+ }
 *)
 
 let () = Sheep.baa Sheep.s (* Use Sheep module *)
