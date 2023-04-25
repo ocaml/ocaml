@@ -203,6 +203,12 @@ let rec assoc_opt x = function
     [] -> None
   | (a,b)::l -> if compare a x = 0 then Some b else assoc_opt x l
 
+let[@tail_mod_cons] rec assoc_find_all p = function
+  | [] -> []
+  | x :: l -> if p (fst x) then x :: find_all p l else find_all p l
+
+let assoc_filter = assoc_find_all
+
 let rec assq x = function
     [] -> raise Not_found
   | (a,b)::l -> if a == x then b else assq x l
