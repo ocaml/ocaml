@@ -372,6 +372,10 @@ OCaml 5.2.0
   (Janith Petangoda, reported by Simmo Saan, reviewed by Florian Angeletti,
   Simmo Saan, Josh Berdine and Gabriel Scherer)
 
+- #12133: Expose support for printing substrings in Format
+  (Florian Angeletti, review by Daniel Bünzli, Gabriel Scherer
+   and Nicolás Ojeda Bär)
+
 - #12217: Add `Array.shuffle`.
   (Daniel Bünzli, review by Nicolás Ojeda Bär, David Allsopp and Alain Frisch)
 
@@ -1310,9 +1314,6 @@ Some of those changes will benefit all OCaml packages.
 
 - #11134: Optimise 'include struct' in more cases
   (Stephen Dolan, review by Leo White and Vincent Laviron)
-
-- #?????: Expose support for printing substrings in Format
-  (Florian Angeletti, review by ????)
 
 ### Other libraries:
 
