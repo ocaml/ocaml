@@ -285,7 +285,7 @@ CAMLno_tsan /* When called from [caml_record_signal], these memory
 void caml_set_action_pending(caml_domain_state * dom_st)
 {
   dom_st->action_pending = 1;
-  atomic_store_rel(&dom_st->young_limit, (uintnat)-1);
+  atomic_store_release(&dom_st->young_limit, (uintnat)-1);
 }
 
 CAMLexport int caml_check_pending_actions(void)

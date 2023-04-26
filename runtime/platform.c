@@ -165,7 +165,7 @@ void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)
   if (mmap_blocks.head == NULL) {
     /* The first call to caml_mem_map should be during caml_init_domains, called
        by caml_init_gc during startup - i.e. before any domains have started. */
-    CAMLassert(atomic_load_acq(&caml_num_domains_running) <= 1);
+    CAMLassert(atomic_load_acquire(&caml_num_domains_running) <= 1);
     caml_lf_skiplist_init(&mmap_blocks);
   }
 #endif

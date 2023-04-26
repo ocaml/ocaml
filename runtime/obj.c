@@ -44,7 +44,7 @@ static int obj_tag (value arg)
     /* The acquire load ensures that reading the field of a Forward_tag
        block in stdlib/camlinternalLazy.ml:force_gen has the necessary
        synchronization. */
-    hd = (header_t)atomic_load_acq(Hp_atomic_val(arg));
+    hd = (header_t)atomic_load_acquire(Hp_atomic_val(arg));
     return Tag_hd(hd);
   }
 }

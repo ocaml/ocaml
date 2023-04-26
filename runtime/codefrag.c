@@ -95,7 +95,7 @@ void caml_remove_code_fragment(struct code_fragment *cf) {
     cf_cell->cf = cf;
 
     do {
-      cf_cell->next = atomic_load_explicit(&garbage_head, memory_order_acquire);
+      cf_cell->next = atomic_load_acquire(&garbage_head);
     } while (!atomic_compare_exchange_strong(&garbage_head, &cf_cell->next,
                                              cf_cell));
   }
@@ -167,7 +167,7 @@ void caml_code_fragment_cleanup (void)
   caml_lf_skiplist_free_garbage(&code_fragments_by_pc);
   caml_lf_skiplist_free_garbage(&code_fragments_by_num);
 
-  curr = atomic_load_explicit(&garbage_head, memory_order_acquire);
+  curr = atomic_load_acquire(&garbage_head);
 
   while (curr != NULL) {
     struct code_fragment_garbage *next = curr->next;
@@ -178,5 +178,5 @@ void caml_code_fragment_cleanup (void)
     curr = next;
   }
 
-  atomic_store_explicit(&garbage_head, NULL, memory_order_release);
+  atomic_store_release(&garbage_head, NULL);
 }

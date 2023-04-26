@@ -92,7 +92,7 @@ CAMLextern atomic_uintnat caml_num_domains_running;
 
 Caml_inline intnat caml_domain_alone(void)
 {
-  return atomic_load_acq(&caml_num_domains_running) == 1;
+  return atomic_load_acquire(&caml_num_domains_running) == 1;
 }
 
 #ifdef DEBUG

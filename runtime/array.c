@@ -336,14 +336,12 @@ static void wo_memmove (volatile value* const dst,
     if (dst < src) {
       /* copy ascending */
       for (i = 0; i < nvals; i++)
-        atomic_store_explicit(&((atomic_value*)dst)[i], src[i],
-                              memory_order_release);
+        atomic_store_release(&((atomic_value*)dst)[i], src[i]);
 
     } else {
       /* copy descending */
       for (i = nvals; i > 0; i--)
-        atomic_store_explicit(&((atomic_value*)dst)[i-1], src[i-1],
-                              memory_order_release);
+        atomic_store_release(&((atomic_value*)dst)[i-1], src[i-1]);
     }
   }
 }

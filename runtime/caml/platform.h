@@ -49,27 +49,16 @@ Caml_inline void cpu_relax(void) {
 #endif
 }
 
-/* Loads and stores with acquire and release semantics respectively */
+/* Loads and stores with acquire, release and relaxed semantics */
 
-Caml_inline uintnat atomic_load_acq(atomic_uintnat* p)
-{
-  return atomic_load_explicit(p, memory_order_acquire);
-}
-
-Caml_inline uintnat atomic_load_relaxed(atomic_uintnat* p)
-{
-  return atomic_load_explicit(p, memory_order_relaxed);
-}
-
-Caml_inline void atomic_store_rel(atomic_uintnat* p, uintnat v)
-{
-  atomic_store_explicit(p, v, memory_order_release);
-}
-
-Caml_inline void atomic_store_relaxed(atomic_uintnat* p, uintnat v)
-{
-  atomic_store_explicit(p, v, memory_order_relaxed);
-}
+#define atomic_load_acquire(p)                    \
+  atomic_load_explicit((p), memory_order_acquire)
+#define atomic_load_relaxed(p)                    \
+  atomic_load_explicit((p), memory_order_relaxed)
+#define atomic_store_release(p, v)                      \
+  atomic_store_explicit((p), (v), memory_order_release)
+#define atomic_store_relaxed(p, v)                      \
+  atomic_store_explicit((p), (v), memory_order_relaxed)
 
 /* Spin-wait loops */
 
@@ -94,7 +83,7 @@ CAMLextern unsigned caml_plat_spin_wait(unsigned spins,
 
 Caml_inline uintnat atomic_load_wait_nonzero(atomic_uintnat* p) {
   SPIN_WAIT {
-    uintnat v = atomic_load_acq(p);
+    uintnat v = atomic_load_acquire(p);
     if (v) return v;
   }
 }

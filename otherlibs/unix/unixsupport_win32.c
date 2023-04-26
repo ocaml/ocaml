@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <stddef.h>
 #include <caml/mlvalues.h>
 #include <caml/callback.h>
@@ -20,6 +22,7 @@
 #include <caml/memory.h>
 #include <caml/fail.h>
 #include <caml/custom.h>
+#include <caml/platform.h>
 #include "unixsupport.h"
 #include "cst2constr.h"
 #include <errno.h>
@@ -297,7 +300,7 @@ void caml_unix_error(int errcode, const char *cmdname, value cmdarg)
   value res;
   const value * exn;
 
-  exn = atomic_load_explicit(&caml_unix_error_exn, memory_order_acquire);
+  exn = atomic_load_acquire(&caml_unix_error_exn);
   if (exn == NULL) {
     exn = caml_named_value("Unix.Unix_error");
     if (exn == NULL)
