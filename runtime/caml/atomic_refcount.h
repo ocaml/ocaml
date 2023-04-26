@@ -21,7 +21,7 @@
 #include "camlatomic.h"
 
 Caml_inline void caml_atomic_refcount_init(atomic_uintnat* refc, uintnat n){
-  atomic_store_rel(refc, n);
+  atomic_store_release(refc, n);
 }
 
 Caml_inline uintnat caml_atomic_refcount_decr(atomic_uintnat* refcount){

@@ -294,22 +294,22 @@ CAMLexport caml_domain_state* caml_get_domain_state(void)
 
 Caml_inline void interrupt_domain(struct interruptor* s)
 {
-  atomic_store_rel(s->interrupt_word, (uintnat)(-1));
+  atomic_store_release(s->interrupt_word, (uintnat)(-1));
 }
 
 int caml_incoming_interrupts_queued(void)
 {
-  return atomic_load_acq(&domain_self->interruptor.interrupt_pending);
+  return atomic_load_acquire(&domain_self->interruptor.interrupt_pending);
 }
 
 /* must NOT be called with s->lock held */
 static void stw_handler(caml_domain_state* domain);
 static uintnat handle_incoming(struct interruptor* s)
 {
-  uintnat handled = atomic_load_acq(&s->interrupt_pending);
+  uintnat handled = atomic_load_acquire(&s->interrupt_pending);
   CAMLassert (s->running);
   if (handled) {
-    atomic_store_rel(&s->interrupt_pending, 0);
+    atomic_store_release(&s->interrupt_pending, 0);
 
     stw_handler(domain_self->state);
   }
@@ -330,7 +330,7 @@ void caml_handle_incoming_interrupts(void)
 int caml_send_interrupt(struct interruptor* target)
 {
   /* signal that there is an interrupt pending */
-  atomic_store_rel(&target->interrupt_pending, 1);
+  atomic_store_release(&target->interrupt_pending, 1);
 
   /* Signal the condition variable, in case the target is
      itself waiting for an interrupt to be processed elsewhere */
@@ -349,7 +349,7 @@ static void caml_wait_interrupt_serviced(struct interruptor* target)
 
   /* Often, interrupt handlers are fast, so spin for a bit before waiting */
   for (i=0; i<1000; i++) {
-    if (!atomic_load_acq(&target->interrupt_pending)) {
+    if (!atomic_load_acquire(&target->interrupt_pending)) {
       return;
     }
     cpu_relax();
@@ -357,7 +357,7 @@ static void caml_wait_interrupt_serviced(struct interruptor* target)
 
   {
     SPIN_WAIT {
-      if (!atomic_load_acq(&target->interrupt_pending))
+      if (!atomic_load_acquire(&target->interrupt_pending))
         return;
     }
   }
@@ -453,7 +453,7 @@ static void free_minor_heap(void) {
   domain_state->young_end     = NULL;
   domain_state->young_ptr     = NULL;
   domain_state->young_trigger = NULL;
-  atomic_store_rel(&domain_state->young_limit,
+  atomic_store_release(&domain_state->young_limit,
                    (uintnat) domain_state->young_start);
 }
 
@@ -545,7 +545,7 @@ static void domain_create(uintnat initial_minor_heap_wsize) {
   caml_plat_lock(&all_domains_lock);
 
   /* Wait until any in-progress STW sections end. */
-  while (atomic_load_acq(&stw_leader)) {
+  while (atomic_load_acquire(&stw_leader)) {
     /* [caml_plat_wait] releases [all_domains_lock] until the current
        STW section ends, and then takes the lock again. */
     caml_plat_wait(&all_domains_cond);
@@ -938,7 +938,7 @@ static void* backup_thread_func(void* v)
   domain_self = di;
   caml_state = di->state;
 
-  msg = atomic_load_acq (&di->backup_thread_msg);
+  msg = atomic_load_acquire (&di->backup_thread_msg);
   while (msg != BT_TERMINATE) {
     CAMLassert (msg <= BT_TERMINATE);
     switch (msg) {
@@ -958,7 +958,7 @@ static void* backup_thread_func(void* v)
          * Will be woken from caml_leave_blocking_section
          */
         caml_plat_lock(&s->lock);
-        msg = atomic_load_acq (&di->backup_thread_msg);
+        msg = atomic_load_acquire (&di->backup_thread_msg);
         if (msg == BT_IN_BLOCKING_SECTION &&
             !caml_incoming_interrupts_queued())
           caml_plat_wait(&s->cond);
@@ -970,7 +970,7 @@ static void* backup_thread_func(void* v)
          * or domain_terminate
          */
         caml_plat_lock(&di->domain_lock);
-        msg = atomic_load_acq (&di->backup_thread_msg);
+        msg = atomic_load_acquire (&di->backup_thread_msg);
         if (msg == BT_ENTERING_OCAML)
           caml_plat_wait(&di->domain_cond);
         caml_plat_unlock(&di->domain_lock);
@@ -979,11 +979,11 @@ static void* backup_thread_func(void* v)
         cpu_relax();
         break;
     };
-    msg = atomic_load_acq (&di->backup_thread_msg);
+    msg = atomic_load_acquire (&di->backup_thread_msg);
   }
 
   /* doing terminate */
-  atomic_store_rel(&di->backup_thread_msg, BT_INIT);
+  atomic_store_release(&di->backup_thread_msg, BT_INIT);
 
   return 0;
 }
@@ -999,7 +999,7 @@ static void install_backup_thread (dom_internal* di)
     CAMLassert (di->backup_thread_msg == BT_INIT || /* Using fresh domain */
             di->backup_thread_msg == BT_TERMINATE); /* Reusing domain */
 
-    while (atomic_load_acq(&di->backup_thread_msg) != BT_INIT) {
+    while (atomic_load_acquire(&di->backup_thread_msg) != BT_INIT) {
       /* Give a chance for backup thread on this domain to terminate */
       caml_plat_unlock (&di->domain_lock);
       cpu_relax ();
@@ -1012,7 +1012,7 @@ static void install_backup_thread (dom_internal* di)
     pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
 #endif
 
-    atomic_store_rel(&di->backup_thread_msg, BT_ENTERING_OCAML);
+    atomic_store_release(&di->backup_thread_msg, BT_ENTERING_OCAML);
     err = pthread_create(&di->backup_thread, 0, backup_thread_func, (void*)di);
 
 #ifndef _WIN32
@@ -1227,11 +1227,11 @@ void caml_global_barrier_end(barrier_status b)
   uintnat sense = b & BARRIER_SENSE_BIT;
   if (caml_global_barrier_is_final(b)) {
     /* last domain into the barrier, flip sense */
-    atomic_store_rel(&stw_request.barrier, sense ^ BARRIER_SENSE_BIT);
+    atomic_store_release(&stw_request.barrier, sense ^ BARRIER_SENSE_BIT);
   } else {
     /* wait until another domain flips the sense */
     SPIN_WAIT {
-      uintnat barrier = atomic_load_acq(&stw_request.barrier);
+      uintnat barrier = atomic_load_acquire(&stw_request.barrier);
       if ((barrier & BARRIER_SENSE_BIT) != sense) break;
     }
   }
@@ -1259,7 +1259,7 @@ static void decrement_stw_domains_still_processing(void)
   if( am_last ) {
     /* release the STW lock to allow new STW sections */
     caml_plat_lock(&all_domains_lock);
-    atomic_store_rel(&stw_leader, 0);
+    atomic_store_release(&stw_leader, 0);
     caml_plat_broadcast(&all_domains_cond);
     caml_gc_log("clearing stw leader");
     caml_plat_unlock(&all_domains_lock);
@@ -1272,7 +1272,7 @@ static void stw_handler(caml_domain_state* domain)
   CAML_EV_BEGIN(EV_STW_API_BARRIER);
   {
     SPIN_WAIT {
-      if (atomic_load_acq(&stw_request.domains_still_running) == 0)
+      if (atomic_load_acquire(&stw_request.domains_still_running) == 0)
         break;
 
       if (stw_request.enter_spin_callback)
@@ -1384,21 +1384,21 @@ int caml_try_run_on_all_domains_with_spin_work(
      situations. Without this read, [stw_leader] would be protected by
      [all_domains_lock] and could be a non-atomic variable.
   */
-  if (atomic_load_acq(&stw_leader) ||
+  if (atomic_load_acquire(&stw_leader) ||
       !caml_plat_try_lock(&all_domains_lock)) {
     caml_handle_incoming_interrupts();
     return 0;
   }
 
   /* see if there is a stw_leader already */
-  if (atomic_load_acq(&stw_leader)) {
+  if (atomic_load_acquire(&stw_leader)) {
     caml_plat_unlock(&all_domains_lock);
     caml_handle_incoming_interrupts();
     return 0;
   }
 
   /* we have the lock and can claim the stw_leader */
-  atomic_store_rel(&stw_leader, (uintnat)domain_self);
+  atomic_store_release(&stw_leader, (uintnat)domain_self);
 
   CAML_EV_BEGIN(EV_STW_LEADER);
   caml_gc_log("causing STW");
@@ -1409,10 +1409,10 @@ int caml_try_run_on_all_domains_with_spin_work(
   stw_request.enter_spin_data = enter_spin_data;
   stw_request.callback = handler;
   stw_request.data = data;
-  atomic_store_rel(&stw_request.barrier, 0);
-  atomic_store_rel(&stw_request.domains_still_running, 1);
+  atomic_store_release(&stw_request.barrier, 0);
+  atomic_store_release(&stw_request.domains_still_running, 1);
   stw_request.num_domains = stw_domains.participating_domains;
-  atomic_store_rel(&stw_request.num_domains_still_processing,
+  atomic_store_release(&stw_request.num_domains_still_processing,
                    stw_domains.participating_domains);
 
   if( leader_setup ) {
@@ -1462,7 +1462,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   }
 
   /* release from the enter barrier */
-  atomic_store_rel(&stw_request.domains_still_running, 0);
+  atomic_store_release(&stw_request.domains_still_running, 0);
 
   #ifdef DEBUG
   domain_state->inside_stw_handler = 1;
@@ -1511,7 +1511,7 @@ void caml_reset_young_limit(caml_domain_state * dom_st)
       || dom_st->major_slice_epoch < atomic_load (&caml_major_slice_epoch)
       || atomic_load_relaxed(&dom_st->requested_external_interrupt)
       || dom_st->action_pending) {
-    atomic_store_rel(&dom_st->young_limit, (uintnat)-1);
+    atomic_store_release(&dom_st->young_limit, (uintnat)-1);
     CAMLassert(caml_check_gc_interrupt(dom_st));
   }
 }
@@ -1599,7 +1599,7 @@ void caml_poll_gc_work(void)
     CAML_EV_END(EV_MAJOR);
   }
 
-  if (atomic_load_acq(&d->requested_external_interrupt)) {
+  if (atomic_load_acquire(&d->requested_external_interrupt)) {
     caml_domain_external_interrupt_hook();
   }
   caml_reset_young_limit(d);
@@ -1621,7 +1621,7 @@ void caml_handle_gc_interrupt(void)
 
 CAMLexport int caml_bt_is_in_blocking_section(void)
 {
-  uintnat status = atomic_load_acq(&domain_self->backup_thread_msg);
+  uintnat status = atomic_load_acquire(&domain_self->backup_thread_msg);
   return status == BT_IN_BLOCKING_SECTION;
 }
 
@@ -1650,7 +1650,7 @@ CAMLexport void caml_bt_enter_ocaml(void)
   CAMLassert(caml_domain_alone() || self->backup_thread_running);
 
   if (self->backup_thread_running) {
-    atomic_store_rel(&self->backup_thread_msg, BT_ENTERING_OCAML);
+    atomic_store_release(&self->backup_thread_msg, BT_ENTERING_OCAML);
   }
 }
 
@@ -1668,7 +1668,7 @@ CAMLexport void caml_bt_exit_ocaml(void)
   CAMLassert(caml_domain_alone() || self->backup_thread_running);
 
   if (self->backup_thread_running) {
-    atomic_store_rel(&self->backup_thread_msg, BT_IN_BLOCKING_SECTION);
+    atomic_store_release(&self->backup_thread_msg, BT_IN_BLOCKING_SECTION);
     /* Wakeup backup thread if it is sleeping */
     caml_plat_signal(&self->domain_cond);
   }
@@ -1827,7 +1827,7 @@ static void domain_terminate (void)
   /* signal the domain termination to the backup thread
      NB: for a program with no additional domains, the backup thread
      will not have been started */
-  atomic_store_rel(&domain_self->backup_thread_msg, BT_TERMINATE);
+  atomic_store_release(&domain_self->backup_thread_msg, BT_TERMINATE);
   caml_plat_signal(&domain_self->domain_cond);
   caml_plat_unlock(&domain_self->domain_lock);
 

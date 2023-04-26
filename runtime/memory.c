@@ -152,8 +152,7 @@ CAMLexport CAMLweakdef void caml_modify (volatile value *fp, value val)
 
   /* See Note [MM] above */
   atomic_thread_fence(memory_order_acquire);
-  atomic_store_explicit(&Op_atomic_val((value)fp)[0], val,
-                        memory_order_release);
+  atomic_store_release(&Op_atomic_val((value)fp)[0], val);
 }
 
 /* Dependent memory is all memory blocks allocated out of the heap

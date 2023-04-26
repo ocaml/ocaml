@@ -197,7 +197,7 @@ CAMLexport value caml_raise_if_exception(value res)
 static value array_bound_exn(void)
 {
   static atomic_uintnat exn_cache = ATOMIC_UINTNAT_INIT(0);
-  const value* exn = (const value*)atomic_load_acq(&exn_cache);
+  const value* exn = (const value*)atomic_load_acquire(&exn_cache);
   if (!exn) {
     exn = caml_named_value("Pervasives.array_bound_error");
     if (!exn) {
@@ -205,7 +205,7 @@ static value array_bound_exn(void)
         "Invalid_argument(\"index out of bounds\")\n");
       exit(2);
     }
-    atomic_store_rel(&exn_cache, (uintnat)exn);
+    atomic_store_release(&exn_cache, (uintnat)exn);
   }
   return *exn;
 }

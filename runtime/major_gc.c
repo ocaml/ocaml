@@ -196,8 +196,8 @@ static void ephe_next_cycle (void)
   caml_plat_lock(&ephe_lock);
 
   atomic_fetch_add(&ephe_cycle_info.ephe_cycle, +1);
-  CAMLassert(atomic_load_acq(&ephe_cycle_info.num_domains_done) <=
-             atomic_load_acq(&ephe_cycle_info.num_domains_todo));
+  CAMLassert(atomic_load_acquire(&ephe_cycle_info.num_domains_done) <=
+             atomic_load_acquire(&ephe_cycle_info.num_domains_todo));
   atomic_store(&ephe_cycle_info.num_domains_done, 0);
 
   caml_plat_unlock(&ephe_lock);
@@ -216,8 +216,8 @@ static void ephe_todo_list_emptied (void)
   /* Since the todo list is empty, this domain does not need to participate in
    * further ephemeron cycles. */
   atomic_fetch_add(&ephe_cycle_info.num_domains_todo, -1);
-  CAMLassert(atomic_load_acq(&ephe_cycle_info.num_domains_done) <=
-             atomic_load_acq(&ephe_cycle_info.num_domains_todo));
+  CAMLassert(atomic_load_acquire(&ephe_cycle_info.num_domains_done) <=
+             atomic_load_acquire(&ephe_cycle_info.num_domains_todo));
 
   caml_plat_unlock(&ephe_lock);
 }
@@ -225,18 +225,18 @@ static void ephe_todo_list_emptied (void)
 /* Record that ephemeron marking was done for the given ephemeron cycle. */
 static void record_ephe_marking_done (uintnat ephe_cycle)
 {
-  CAMLassert (ephe_cycle <= atomic_load_acq(&ephe_cycle_info.ephe_cycle));
+  CAMLassert (ephe_cycle <= atomic_load_acquire(&ephe_cycle_info.ephe_cycle));
   CAMLassert (Caml_state->marking_done);
 
-  if (ephe_cycle < atomic_load_acq(&ephe_cycle_info.ephe_cycle))
+  if (ephe_cycle < atomic_load_acquire(&ephe_cycle_info.ephe_cycle))
     return;
 
   caml_plat_lock(&ephe_lock);
   if (ephe_cycle == atomic_load(&ephe_cycle_info.ephe_cycle)) {
     Caml_state->ephe_info->cycle = ephe_cycle;
     atomic_fetch_add(&ephe_cycle_info.num_domains_done, +1);
-    CAMLassert(atomic_load_acq(&ephe_cycle_info.num_domains_done) <=
-               atomic_load_acq(&ephe_cycle_info.num_domains_todo));
+    CAMLassert(atomic_load_acquire(&ephe_cycle_info.num_domains_done) <=
+               atomic_load_acquire(&ephe_cycle_info.num_domains_todo));
   }
   caml_plat_unlock(&ephe_lock);
 }
@@ -1009,10 +1009,8 @@ void caml_darken_cont(value cont)
         if (Ptr_val(stk) != NULL)
           caml_scan_stack(&caml_darken, darken_scanning_flags, Caml_state,
                           Ptr_val(stk), 0);
-        atomic_store_explicit(
-          Hp_atomic_val(cont),
-          With_status_hd(hd, caml_global_heap_state.MARKED),
-          memory_order_release);
+        atomic_store_release(Hp_atomic_val(cont),
+                             With_status_hd(hd, caml_global_heap_state.MARKED));
       }
     }
   }
@@ -1168,8 +1166,8 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
   CAML_EV_BEGIN(EV_MAJOR_GC_CYCLE_DOMAINS);
 
   CAMLassert(domain == Caml_state);
-  CAMLassert(atomic_load_acq(&ephe_cycle_info.num_domains_todo) ==
-             atomic_load_acq(&ephe_cycle_info.num_domains_done));
+  CAMLassert(atomic_load_acquire(&ephe_cycle_info.num_domains_todo) ==
+             atomic_load_acquire(&ephe_cycle_info.num_domains_done));
   CAMLassert(atomic_load(&num_domains_to_mark) == 0);
   CAMLassert(atomic_load(&num_domains_to_sweep) == 0);
   CAMLassert(atomic_load(&num_domains_to_ephe_sweep) == 0);
@@ -1246,20 +1244,22 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
       domain->swept_words = 0;
 
       num_domains_in_stw = (uintnat)caml_global_barrier_num_domains();
-      atomic_store_rel(&num_domains_to_sweep, num_domains_in_stw);
-      atomic_store_rel(&num_domains_to_mark, num_domains_in_stw);
+      atomic_store_release(&num_domains_to_sweep, num_domains_in_stw);
+      atomic_store_release(&num_domains_to_mark, num_domains_in_stw);
 
       caml_gc_phase = Phase_sweep_and_mark_main;
       atomic_store(&ephe_cycle_info.num_domains_todo, num_domains_in_stw);
       atomic_store(&ephe_cycle_info.ephe_cycle, 1);
       atomic_store(&ephe_cycle_info.num_domains_done, 0);
 
-      atomic_store_rel(&num_domains_to_ephe_sweep, 0);
+      atomic_store_release(&num_domains_to_ephe_sweep, 0);
       /* Will be set to the correct number when switching to
          [Phase_sweep_ephe] */
 
-      atomic_store_rel(&num_domains_to_final_update_first, num_domains_in_stw);
-      atomic_store_rel(&num_domains_to_final_update_last, num_domains_in_stw);
+      atomic_store_release(&num_domains_to_final_update_first,
+                           num_domains_in_stw);
+      atomic_store_release(&num_domains_to_final_update_last,
+                           num_domains_in_stw);
 
       atomic_store(&domain_global_roots_started, WORK_UNSTARTED);
 
@@ -1366,11 +1366,11 @@ static int is_complete_phase_sweep_and_mark_main (void)
 {
   return
     caml_gc_phase == Phase_sweep_and_mark_main &&
-    atomic_load_acq (&num_domains_to_sweep) == 0 &&
-    atomic_load_acq (&num_domains_to_mark) == 0 &&
+    atomic_load_acquire (&num_domains_to_sweep) == 0 &&
+    atomic_load_acquire (&num_domains_to_mark) == 0 &&
     /* Marking is done */
-    atomic_load_acq(&ephe_cycle_info.num_domains_todo) ==
-    atomic_load_acq(&ephe_cycle_info.num_domains_done) &&
+    atomic_load_acquire(&ephe_cycle_info.num_domains_todo) ==
+    atomic_load_acquire(&ephe_cycle_info.num_domains_done) &&
     /* Ephemeron marking is done */
     no_orphaned_work();
     /* All orphaned ephemerons have been adopted */
@@ -1380,12 +1380,12 @@ static int is_complete_phase_mark_final (void)
 {
   return
     caml_gc_phase == Phase_mark_final &&
-    atomic_load_acq (&num_domains_to_final_update_first) == 0 &&
+    atomic_load_acquire (&num_domains_to_final_update_first) == 0 &&
     /* updated finalise first values */
-    atomic_load_acq (&num_domains_to_mark) == 0 &&
+    atomic_load_acquire (&num_domains_to_mark) == 0 &&
     /* Marking is done */
-    atomic_load_acq(&ephe_cycle_info.num_domains_todo) ==
-    atomic_load_acq(&ephe_cycle_info.num_domains_done) &&
+    atomic_load_acquire(&ephe_cycle_info.num_domains_todo) ==
+    atomic_load_acquire(&ephe_cycle_info.num_domains_done) &&
     /* Ephemeron marking is done */
     no_orphaned_work();
     /* All orphaned ephemerons have been adopted */
@@ -1395,9 +1395,9 @@ static int is_complete_phase_sweep_ephe (void)
 {
   return
     caml_gc_phase == Phase_sweep_ephe &&
-    atomic_load_acq (&num_domains_to_ephe_sweep) == 0 &&
+    atomic_load_acquire (&num_domains_to_ephe_sweep) == 0 &&
     /* All domains have swept their ephemerons */
-    atomic_load_acq (&num_domains_to_final_update_last) == 0 &&
+    atomic_load_acquire (&num_domains_to_final_update_last) == 0 &&
     /* All domains have updated finalise last values */
     no_orphaned_work();
     /* All orphaned structures have been adopted */
@@ -1416,7 +1416,7 @@ static void try_complete_gc_phase (caml_domain_state* domain, void* unused,
       caml_gc_phase = Phase_mark_final;
     } else if (is_complete_phase_mark_final()) {
       caml_gc_phase = Phase_sweep_ephe;
-      atomic_store_rel(&num_domains_to_ephe_sweep, participant_count);
+      atomic_store_release(&num_domains_to_ephe_sweep, participant_count);
       for (int i = 0; i < participant_count; i++)
         participating[i]->ephe_info->must_sweep_ephe = 1;
     }
@@ -1560,7 +1560,7 @@ mark_again:
     /* Ephemerons */
     if (caml_gc_phase != Phase_sweep_ephe) {
       /* Ephemeron Marking */
-      saved_ephe_cycle = atomic_load_acq(&ephe_cycle_info.ephe_cycle);
+      saved_ephe_cycle = atomic_load_acquire(&ephe_cycle_info.ephe_cycle);
       if (domain_state->ephe_info->todo != (value) NULL &&
           saved_ephe_cycle > domain_state->ephe_info->cycle) {
         CAML_EV_BEGIN(EV_MAJOR_EPHE_MARK);

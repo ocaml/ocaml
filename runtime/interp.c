@@ -1211,8 +1211,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       accu = Val_int(*pc++);
       /* We use relaxed atomic accesses to avoid racing with other domains
          updating the cache */
-      ofs = atomic_load_explicit((_Atomic opcode_t *)pc, memory_order_relaxed)
-            & Field(meths,1);
+      ofs = atomic_load_relaxed((_Atomic opcode_t *)pc) & Field(meths,1);
       if (*(value*)(((char*)&Field(meths,3)) + ofs) == accu) {
 #ifdef CAML_TEST_CACHE
         hits++;
@@ -1227,8 +1226,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
           if (accu < Field(meths,mi)) hi = mi-2;
           else li = mi;
         }
-        atomic_store_explicit((_Atomic opcode_t *)pc, (li-3)*sizeof(value),
-                              memory_order_relaxed);
+        atomic_store_relaxed((_Atomic opcode_t *)pc, (li-3)*sizeof(value));
         accu = Field (meths, li-1);
       }
       pc++;
