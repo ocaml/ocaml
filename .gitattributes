@@ -213,8 +213,6 @@ testsuite/tests/tool-ocamlc-stop-after/stop_after_parsing_intf.mli text eol=lf
 testsuite/tests/tool-ocamlc-stop-after/stop_after_typing_impl.ml text eol=lf
 testsuite/tests/translprim/module_coercion.ml text eol=lf
 
-testsuite/tests/tool-lexyacc/crlf_line_directive.mll text eol=crlf
-
 # This is forced to \n to allow the Cygwin testsuite to pass on a
 # Windows-checkout
 testsuite/tests/parsetree/locations_test.ml text eol=lf
