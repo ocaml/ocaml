@@ -625,15 +625,14 @@ class texi =
 
 
     method string_of_type_parameters t =
-      let f (tp, co, cn) =
+      let f (tp, v) =
         Printf.sprintf "%s%s"
-          (Odoc_info.string_of_variance t (co, cn))
+          (Odoc_info.string_of_variance t v)
           (Odoc_info.string_of_type_expr tp)
       in
       match t.ty_parameters with
       | [] -> ""
-      | [ (tp, co, cn) ] ->
-          (f (tp, co, cn))^" "
+      | [ tv ] -> (f tv)^" "
       | l ->
           Printf.sprintf "(%s) "
             (String.concat ", " (List.map f l))

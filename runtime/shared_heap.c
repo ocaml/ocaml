@@ -34,7 +34,13 @@
 #include "caml/startup_aux.h"
 
 typedef unsigned int sizeclass;
-struct global_heap_state caml_global_heap_state = {0 << 8, 1 << 8, 2 << 8};
+
+/* Initial MARKED, UNMARKED, and GARBAGE values; any permutation would work */
+struct global_heap_state caml_global_heap_state = {
+  0 << HEADER_COLOR_SHIFT,
+  1 << HEADER_COLOR_SHIFT,
+  2 << HEADER_COLOR_SHIFT,
+};
 
 typedef struct pool {
   struct pool* next;
@@ -256,7 +262,7 @@ static intnat pool_sweep(struct caml_heap_state* local,
                          int release_to_global_pool);
 
 /* Adopt pool from the pool_freelist avail and full pools
-   to satisfy an alloction */
+   to satisfy an allocation */
 static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
 {
   pool* r = NULL;
@@ -389,7 +395,7 @@ static void* large_allocate(struct caml_heap_state* local, mlsize_t sz) {
 }
 
 value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
-                             tag_t tag, int pinned)
+                             tag_t tag, reserved_t reserved, int pinned)
 {
   mlsize_t whsize = Whsize_wosize(wosize);
   value* p;
@@ -415,7 +421,7 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
     if (!p) return 0;
   }
   colour = pinned ? NOT_MARKABLE : caml_global_heap_state.MARKED;
-  Hd_hp (p) = Make_header(wosize, tag, colour);
+  Hd_hp (p) = Make_header_with_reserved(wosize, tag, colour, reserved);
 #ifdef DEBUG
   {
     int i;
@@ -474,7 +480,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
         {
           int i;
           mlsize_t wo = Wosize_whsize(wh);
-          for (i = 2; i < wo; i++) {
+          for (i = 1; i < wo; i++) {
             Field(Val_hp(p), i) = Debug_free_major;
           }
         }
@@ -746,10 +752,10 @@ static void verify_object(struct heap_verify_state* st, value v) {
   if (*entry != ADDRMAP_NOT_PRESENT) return;
   *entry = 1;
 
-  if (Has_status_hd(Hd_val(v), NOT_MARKABLE)) return;
+  if (Has_status_val(v, NOT_MARKABLE)) return;
   st->objs++;
 
-  CAMLassert(Has_status_hd(Hd_val(v), caml_global_heap_state.UNMARKED));
+  CAMLassert(Has_status_val(v, caml_global_heap_state.UNMARKED));
 
   if (Tag_val(v) == Cont_tag) {
     struct stack_info* stk = Ptr_val(Field(v, 0));
@@ -832,7 +838,7 @@ static void verify_large(large_alloc* a, struct mem_stats* s) {
 
 static void verify_swept (struct caml_heap_state* local) {
   int i;
-  struct mem_stats pool_stats = {}, large_stats = {};
+  struct mem_stats pool_stats = {0,}, large_stats = {0,};
 
   /* sweeping should be done by this point */
   CAMLassert(local->next_to_sweep == NUM_SIZECLASSES);

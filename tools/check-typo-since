@@ -32,6 +32,6 @@ check_typo_since() {
 
 case $# in
     0) echo "usage: check-typo-since <git reference>"; exit 2;;
-    1) check_typo_since $1; break;;
+    1) check_typo_since $1;;
     *) echo "too many arguments"; exit 2;;
 esac

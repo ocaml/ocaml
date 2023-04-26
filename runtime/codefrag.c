@@ -55,6 +55,7 @@ int caml_register_code_fragment(char *start, char *end,
   case DIGEST_LATER:
     break;
   case DIGEST_NOW:
+    /* no one knows of this code fragment yet, no need to take its lock */
     caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
     digest_kind = DIGEST_PROVIDED;
     break;
@@ -67,10 +68,16 @@ int caml_register_code_fragment(char *start, char *end,
   cf->digest_status = digest_kind;
   cf->fragnum = atomic_fetch_add_explicit
                   (&code_fragments_counter, 1, memory_order_relaxed);
+  caml_plat_mutex_init(&cf->mutex);
   caml_lf_skiplist_insert(&code_fragments_by_pc, (uintnat)start, (uintnat)cf);
   caml_lf_skiplist_insert(&code_fragments_by_num, (uintnat)cf->fragnum,
                           (uintnat)cf);
   return cf->fragnum;
+}
+
+static void caml_free_code_fragment(struct code_fragment *cf) {
+  caml_plat_mutex_free(&cf->mutex);
+  caml_stat_free(cf);
 }
 
 void caml_remove_code_fragment(struct code_fragment *cf) {
@@ -118,13 +125,27 @@ struct code_fragment *caml_find_code_fragment_by_num(int fragnum) {
 }
 
 unsigned char *caml_digest_of_code_fragment(struct code_fragment *cf) {
-  if (cf->digest_status == DIGEST_IGNORE)
-    return NULL;
-  if (cf->digest_status == DIGEST_LATER) {
-    caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
-    cf->digest_status = DIGEST_PROVIDED;
+  unsigned char *digest;
+
+  /* Note: this approach is a bit heavy-handed as we take a lock in
+     all cases. It would be possible to take a lock only in the
+     DIGEST_LATER case, which occurs at most once per fragment, by
+     using double-checked locking -- see #11791. */
+  caml_plat_lock(&cf->mutex);
+  {
+    if (cf->digest_status == DIGEST_IGNORE) {
+      digest = NULL;
+    } else if (cf->digest_status == DIGEST_LATER) {
+      caml_md5_block(cf->digest, cf->code_start, cf->code_end - cf->code_start);
+      cf->digest_status = DIGEST_PROVIDED;
+      digest = cf->digest;
+    } else {
+      digest = cf->digest;
+    }
   }
-  return cf->digest;
+  caml_plat_unlock(&cf->mutex);
+
+  return digest;
 }
 
 struct code_fragment *
@@ -151,7 +172,7 @@ void caml_code_fragment_cleanup (void)
   while (curr != NULL) {
     struct code_fragment_garbage *next = curr->next;
 
-    caml_stat_free(curr->cf);
+    caml_free_code_fragment(curr->cf);
     caml_stat_free(curr);
 
     curr = next;

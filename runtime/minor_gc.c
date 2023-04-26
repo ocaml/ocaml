@@ -43,6 +43,9 @@
 extern value caml_ephe_none; /* See weak.c */
 struct generic_table CAML_TABLE_STRUCT(char);
 
+CAMLexport atomic_uintnat caml_minor_collections_count;
+CAMLexport atomic_uintnat caml_major_slice_epoch;
+
 static atomic_intnat domains_finished_minor_gc;
 
 static atomic_uintnat caml_minor_cycles_started = 0;
@@ -144,10 +147,11 @@ struct oldify_state {
   caml_domain_state* domain;
 };
 
-static value alloc_shared(caml_domain_state* d, mlsize_t wosize, tag_t tag)
+static value alloc_shared(caml_domain_state* d,
+                          mlsize_t wosize, tag_t tag, reserved_t reserved)
 {
   void* mem = caml_shared_try_alloc(d->shared_heap, wosize, tag,
-                                    0 /* not pinned */);
+                                    reserved, 0 /* not pinned */);
   d->allocated_words += Whsize_wosize(wosize);
   if (mem == NULL) {
     caml_fatal_error("allocation failure during minor GC");
@@ -267,7 +271,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
   if (tag == Cont_tag) {
     value stack_value = Field(v, 0);
     CAMLassert(Wosize_hd(hd) == 1 && infix_offset == 0);
-    result = alloc_shared(st->domain, 1, Cont_tag);
+    result = alloc_shared(st->domain, 1, Cont_tag, Reserved_hd(hd));
     if( try_update_object_header(v, p, result, 0) ) {
       struct stack_info* stk = Ptr_val(stack_value);
       Field(result, 0) = Val_ptr(stk);
@@ -289,7 +293,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
     value field0;
     sz = Wosize_hd (hd);
     st->live_bytes += Bhsize_hd(hd);
-    result = alloc_shared(st->domain, sz, tag);
+    result = alloc_shared(st->domain, sz, tag, Reserved_hd(hd));
     field0 = Field(v, 0);
     if( try_update_object_header(v, p, result, infix_offset) ) {
       if (sz > 1){
@@ -319,7 +323,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
   } else if (tag >= No_scan_tag) {
     sz = Wosize_hd (hd);
     st->live_bytes += Bhsize_hd(hd);
-    result = alloc_shared(st->domain, sz, tag);
+    result = alloc_shared(st->domain, sz, tag, Reserved_hd(hd));
     for (i = 0; i < sz; i++) {
       Field(result, i) = Field(v, i);
     }
@@ -352,7 +356,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
       /* Do not short-circuit the pointer.  Copy as a normal block. */
       CAMLassert (Wosize_hd (hd) == 1);
       st->live_bytes += Bhsize_hd(hd);
-      result = alloc_shared(st->domain, 1, Forward_tag);
+      result = alloc_shared(st->domain, 1, Forward_tag, Reserved_hd(hd));
       if( try_update_object_header(v, p, result, 0) ) {
         p = Op_val (result);
         v = f;
@@ -452,8 +456,8 @@ void caml_empty_minor_heap_domain_clear(caml_domain_state* domain)
 }
 
 void caml_empty_minor_heap_promote(caml_domain_state* domain,
-                                    int participating_count,
-                                    caml_domain_state** participating)
+                                   int participating_count,
+                                   caml_domain_state** participating)
 {
   struct caml_minor_tables *self_minor_tables = domain->minor_tables;
   struct caml_custom_elt *elt;
@@ -593,11 +597,6 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   caml_gc_log("promoted %d roots, %" ARCH_INTNAT_PRINTF_FORMAT "u bytes",
               remembered_roots, st.live_bytes);
 
-  CAML_EV_BEGIN(EV_MINOR_FINALIZERS_ADMIN);
-  caml_gc_log("running finalizer data structure book-keeping");
-  caml_final_update_last_minor(domain);
-  CAML_EV_END(EV_MINOR_FINALIZERS_ADMIN);
-
 #ifdef DEBUG
   caml_global_barrier();
   caml_gc_log("ref_base: %p, ref_ptr: %p",
@@ -632,6 +631,10 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS);
 
   domain->young_ptr = domain->young_end;
+  /* Trigger a GC poll when half of the minor heap is filled. At that point, a
+   * major slice is scheduled. */
+  domain->young_trigger = domain->young_start
+    + (domain->young_end - domain->young_start) / 2;
   caml_reset_young_limit(domain);
 
   if( participating_count > 1 ) {
@@ -640,7 +643,6 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   }
 
   domain->stat_minor_words += Wsize_bsize (minor_allocated_bytes);
-  domain->stat_minor_collections++;
   domain->stat_promoted_words += domain->allocated_words - prev_alloc_words;
 
   call_timing_hook(&caml_minor_gc_end_hook);
@@ -662,7 +664,7 @@ void caml_do_opportunistic_major_slice
   /* NB: need to put guard around the ev logs to prevent
     spam when we poll */
   if (caml_opportunistic_major_work_available()) {
-    int log_events = caml_params->verb_gc & 0x40;
+    uintnat log_events = atomic_load_relaxed(&caml_verb_gc) & 0x40;
     if (log_events) CAML_EV_BEGIN(EV_MAJOR_MARK_OPPORTUNISTIC);
     caml_opportunistic_major_collection_slice(0x200);
     if (log_events) CAML_EV_END(EV_MAJOR_MARK_OPPORTUNISTIC);
@@ -674,13 +676,16 @@ void caml_do_opportunistic_major_slice
 */
 void caml_empty_minor_heap_setup(caml_domain_state* domain_unused) {
   atomic_store_explicit(&domains_finished_minor_gc, 0, memory_order_release);
+  /* Increment the total number of minor collections done in the program */
+  atomic_fetch_add (&caml_minor_collections_count, 1);
 }
 
 /* must be called within a STW section */
-static void caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
-                                            void* unused,
-                                            int participating_count,
-                                            caml_domain_state** participating)
+static void
+caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
+                                         void* unused,
+                                         int participating_count,
+                                         caml_domain_state** participating)
 {
 #ifdef DEBUG
   uintnat* initial_young_ptr = (uintnat*)domain->young_ptr;
@@ -714,6 +719,11 @@ static void caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
     CAML_EV_END(EV_MINOR_LEAVE_BARRIER);
   }
 
+  CAML_EV_BEGIN(EV_MINOR_FINALIZERS_ADMIN);
+  caml_gc_log("running finalizer data structure book-keeping");
+  caml_final_update_last_minor(domain);
+  CAML_EV_END(EV_MINOR_FINALIZERS_ADMIN);
+
   CAML_EV_BEGIN(EV_MINOR_CLEAR);
   caml_gc_log("running stw empty_minor_heap_domain_clear");
   caml_empty_minor_heap_domain_clear(domain);
@@ -733,10 +743,7 @@ static void caml_stw_empty_minor_heap (caml_domain_state* domain, void* unused,
                                        caml_domain_state** participating)
 {
   caml_stw_empty_minor_heap_no_major_slice(domain, unused,
-                                            participating_count, participating);
-
-  /* schedule a major collection slice for this domain */
-  caml_request_major_slice();
+                                           participating_count, participating);
 
   /* can change how we account clock in future, here just do raw count */
   domain->major_gc_clock += 1.0;

@@ -18,7 +18,15 @@
 type t = {
   test_name : string;
   test_run_by_default : bool;
-  test_actions : Actions.t list
+  test_actions : Actions.t list;
+  test_description : string
+}
+
+let null = {
+  test_name = "*pass*";
+  test_run_by_default = false;
+  test_actions = [];
+  test_description = "dummy test inserted by parser; always pass"
 }
 
 let compare t1 t2 = String.compare t1.test_name t2.test_name
@@ -45,7 +53,8 @@ let test_of_action action =
 {
   test_name = Actions.name action;
   test_run_by_default = false;
-  test_actions = [action]
+  test_actions = [action];
+  test_description = Actions.description action;
 }
 
 let run_actions log testenv actions =

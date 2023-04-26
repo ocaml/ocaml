@@ -1,6 +1,6 @@
 (* TEST
-   * no-flat-float-array
-   ** expect
+ no-flat-float-array;
+ expect;
 *)
 
 (* This file copies the tests from test_flat.ml,

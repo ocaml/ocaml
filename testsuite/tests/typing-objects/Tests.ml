@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 (* Subtyping is "syntactic" *)
@@ -137,8 +137,8 @@ Lines 1-4, characters 0-3:
 2 |   constraint 'a = int
 3 |   method f x = (x : bool c)
 4 | end..
-Error: The abbreviation c is used with parameters bool c
-       which are incompatible with constraints int c
+Error: The abbreviation c is used with parameter(s) bool
+       which are incompatible with constraint(s) int
 |}];;
 
 (* Different constraints *)
@@ -185,7 +185,8 @@ Lines 1-3, characters 0-3:
 Error: The type of this class,
        class ['a] c :
          unit -> object constraint 'a = '_weak1 list ref method f : 'a end,
-       contains type variables that cannot be generalized
+       contains the non-generalizable type variable(s): '_weak1.
+       (see manual section 6.1.2)
 |}];;
 
 (* Abbreviations *)
@@ -201,7 +202,9 @@ Error: This recursive type is not regular.
        but it is used as
          int c
        after the following expansion(s):
-         'a d = < f : int c >
+         < f : 'a c; g : 'a d > contains 'a d,
+         'a d = < f : int c >,
+         < f : int c > contains int c
        All uses need to match the definition for the recursive type to be regular.
 |}];;
 type 'a c = <f : 'a c; g : 'a d>
@@ -222,8 +225,10 @@ and 'a t = 'a t u;;
 Line 2, characters 0-17:
 2 | and 'a t = 'a t u;;
     ^^^^^^^^^^^^^^^^^
-Error: The definition of t contains a cycle:
-       'a t u
+Error: The type abbreviation t is cyclic:
+         'a t u contains 'a t,
+         'a t = 'a t u,
+         'a t u contains 'a t
 |}];; (* fails since 4.04 *)
 type 'a u = 'a
 and 'a t = 'a t u;;
@@ -231,7 +236,9 @@ and 'a t = 'a t u;;
 Line 2, characters 0-17:
 2 | and 'a t = 'a t u;;
     ^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic
+Error: The type abbreviation t is cyclic:
+         'a t = 'a t u,
+         'a t u = 'a t
 |}];;
 type 'a u = 'a;;
 [%%expect{|
@@ -242,7 +249,10 @@ type t = t u * t u;;
 Line 1, characters 0-18:
 1 | type t = t u * t u;;
     ^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic
+Error: The type abbreviation t is cyclic:
+         t = t u * t u,
+         t u * t u contains t u,
+         t u = t
 |}];;
 
 type t = <x : 'a> as 'a;;
@@ -475,19 +485,23 @@ Line 3, characters 2-13:
       ^^^^^^^^^^^
 Warning 13 [instance-variable-override]: the following instance variables are overridden by the class c :
   x
+
 Line 4, characters 6-7:
 4 |   val y = 3
           ^
 Warning 13 [instance-variable-override]: the instance variable y is overridden.
+
 Line 6, characters 2-13:
 6 |   inherit d 7
       ^^^^^^^^^^^
 Warning 13 [instance-variable-override]: the following instance variables are overridden by the class d :
   t z
+
 Line 7, characters 6-7:
 7 |   val u = 3
           ^
 Warning 13 [instance-variable-override]: the instance variable u is overridden.
+
 class e :
   unit ->
   object
@@ -793,6 +807,7 @@ Line 1, characters 18-26:
 1 | fun (x : 'a t) -> (x : 'a); ();;
                       ^^^^^^^^
 Warning 10 [non-unit-statement]: this expression should have type unit.
+
 - : ('a t as 'a) t -> unit = <fun>
 |}];;
 
@@ -936,7 +951,7 @@ end;;
 Line 2, characters 13-58:
 2 |   method o = object(_ : 'self) method o = assert false end
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Cannot close type of object literal: < o : '_weak3; _.. >
+Error: Cannot close type of object literal: < o : '_weak4; .. > as '_weak3
        it has been unified with the self type of a class that is not yet
        completely defined.
 |}];;
@@ -952,6 +967,7 @@ Line 4, characters 17-23:
 4 |       method n = self#m
                      ^^^^^^
 Warning 17 [undeclared-virtual-method]: the virtual method m is not declared.
+
 class c : object method m : int method n : int end
 |}];;
 
@@ -1118,6 +1134,7 @@ Line 3, characters 10-75:
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 15 [implicit-public-methods]: the following private methods were made public implicitly:
  foo.
+
 class c : object method foo : int end
 |}];;
 
@@ -1405,3 +1422,16 @@ class virtual c = cv
 [%%expect {|
 class virtual c : cv
 |}];;
+
+(** Test classes abbreviations with a recursive type *)
+class ['a] c = object method m: (<x:'a; f:'b> as 'b) -> unit = fun _ -> () end
+class d = ['a] c
+[%%expect {|
+class ['a] c : object method m : (< f : 'b; x : 'a > as 'b) -> unit end
+Line 2, characters 0-16:
+2 | class d = ['a] c
+    ^^^^^^^^^^^^^^^^
+Error: Some type variables are unbound in this type: class d : ['a] c
+       The method m has type (< f : 'b; x : 'a > as 'b) -> unit where 'a
+       is unbound
+|}]

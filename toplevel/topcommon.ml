@@ -284,13 +284,6 @@ let update_search_path_from_env () =
   in
   Clflags.include_dirs := List.rev_append extra_paths !Clflags.include_dirs
 
-let load_topdirs_signature () =
-  let compiler_libs =
-    Filename.concat Config.standard_library "compiler-libs" in
-  let topdirs_cmi = Filename.concat compiler_libs "topdirs.cmi" in
-  if Sys.file_exists topdirs_cmi then
-    ignore (Env.read_signature "Topdirs" topdirs_cmi)
-
 let initialize_toplevel_env () =
   toplevel_env := Compmisc.initial_env()
 
@@ -387,3 +380,39 @@ let try_run_directive ppf dir_name pdir_arg =
             dir_name dir_type arg_type;
           false
   end
+
+(* Overriding exception printers with toplevel-specific ones *)
+
+let loading_hint_printer ppf s =
+  Symtable.report_error ppf (Symtable.Undefined_global s);
+  let find_with_ext ext =
+    try Some (Load_path.find_uncap (s ^ ext)) with Not_found -> None
+  in
+  fprintf ppf
+    "@.Hint: @[\
+     This means that the interface of a module is loaded, \
+     but its implementation is not.@,";
+  (* Filenames don't have to correspond to module names,
+     especially for archives (cmas), which bundle multiple modules.
+     But very often they do. *)
+  begin match List.find_map find_with_ext [".cma"; ".cmo"] with
+  | Some path ->
+    fprintf ppf
+      "Found %s @,in the load paths. \
+       @,Did you mean to load it using @,#load \"%s\" \
+       @,or by passing it as an argument to the toplevel?"
+       path (Filename.basename path)
+  | None ->
+    fprintf ppf
+      "Did you mean to load a compiled implementation of the module \
+       @,using #load or by passing it as an argument to the toplevel?"
+  end;
+  fprintf ppf "@]"
+
+let () =
+  Location.register_error_of_exn
+    (function
+      | Symtable.Error (Symtable.Undefined_global s) ->
+        Some (Location.error_of_printer_file loading_hint_printer s)
+      | _ -> None
+    )

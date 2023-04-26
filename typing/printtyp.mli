@@ -21,6 +21,7 @@ open Outcometree
 
 val longident: formatter -> Longident.t -> unit
 val ident: formatter -> Ident.t -> unit
+val namespaced_ident: Shape.Sig_component_kind.t -> Ident.t -> string
 val tree_of_path: Path.t -> out_ident
 val path: formatter -> Path.t -> unit
 val string_of_path: Path.t -> string
@@ -34,13 +35,7 @@ module Out_name: sig
   val print: out_name -> string
 end
 
-type namespace =
-  | Type
-  | Module
-  | Module_type
-  | Class
-  | Class_type
-  | Other (** Other bypasses the unique name for identifier mechanism *)
+type namespace := Shape.Sig_component_kind.t option
 
 val strings_of_paths: namespace -> Path.t list -> string list
     (** Print a list of paths, using the same naming context to
@@ -58,9 +53,6 @@ module Naming_context: sig
   val enable: bool -> unit
   (** When contextual names are enabled, the mapping between identifiers
       and names is ensured to be one-to-one. *)
-
-  val reset: unit -> unit
-  (** Reset the naming context *)
 end
 
 (** The [Conflicts] module keeps track of conflicts arising when attributing
@@ -72,7 +64,7 @@ module Conflicts: sig
         an identifier to avoid a name collision *)
 
   type explanation =
-    { kind: namespace;
+    { kind: Shape.Sig_component_kind.t;
       name:string;
       root_name:string;
       location:Location.t
@@ -107,6 +99,12 @@ val type_expr: formatter -> type_expr -> unit
     Any type variables that are shared between multiple types in the input list
     will be given the same name when printed with [prepared_type_expr]. *)
 val prepare_for_printing: type_expr list -> unit
+
+(** [add_type_to_preparation ty] extend a previous type expression preparation
+    to the type expression [ty]
+*)
+val add_type_to_preparation: type_expr -> unit
+
 val prepared_type_expr: formatter -> type_expr -> unit
 (** The function [prepared_type_expr] is a less-safe but more-flexible version
     of [type_expr] that should only be called on [type_expr]s that have been
@@ -121,6 +119,7 @@ val prepared_type_expr: formatter -> type_expr -> unit
 val constructor_arguments: formatter -> constructor_arguments -> unit
 val tree_of_type_scheme: type_expr -> out_type
 val type_scheme: formatter -> type_expr -> unit
+val prepared_type_scheme: formatter -> type_expr -> unit
 val shared_type_scheme: formatter -> type_expr -> unit
 (** [shared_type_scheme] is very similar to [type_scheme], but does not reset
     the printing context first.  This is intended to be used in cases where the
@@ -131,12 +130,21 @@ val shared_type_scheme: formatter -> type_expr -> unit
 val tree_of_value_description: Ident.t -> value_description -> out_sig_item
 val value_description: Ident.t -> formatter -> value_description -> unit
 val label : formatter -> label_declaration -> unit
+val add_constructor_to_preparation : constructor_declaration -> unit
+val prepared_constructor : formatter -> constructor_declaration -> unit
 val constructor : formatter -> constructor_declaration -> unit
 val tree_of_type_declaration:
     Ident.t -> type_declaration -> rec_status -> out_sig_item
+val add_type_declaration_to_preparation :
+  Ident.t -> type_declaration -> unit
+val prepared_type_declaration: Ident.t -> formatter -> type_declaration -> unit
 val type_declaration: Ident.t -> formatter -> type_declaration -> unit
 val tree_of_extension_constructor:
     Ident.t -> extension_constructor -> ext_status -> out_sig_item
+val add_extension_constructor_to_preparation :
+    extension_constructor -> unit
+val prepared_extension_constructor:
+    Ident.t -> formatter -> extension_constructor -> unit
 val extension_constructor:
     Ident.t -> formatter -> extension_constructor -> unit
 (* Prints extension constructor with the type signature:

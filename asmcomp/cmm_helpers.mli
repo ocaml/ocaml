@@ -213,9 +213,8 @@ val set_field :
 (** Load a block's header *)
 val get_header : expression -> Debuginfo.t -> expression
 
-(** Same as [get_header], but also set all profiling bits of the header
-    are to 0 (if profiling is enabled) *)
-val get_header_without_profinfo : expression -> Debuginfo.t -> expression
+(** Same as [get_header], but also clear all reserved bits of the result *)
+val get_header_masked : expression -> Debuginfo.t -> expression
 
 (** Load a block's tag *)
 val get_tag : expression -> Debuginfo.t -> expression
@@ -237,8 +236,7 @@ val is_addr_array_ptr : expression -> Debuginfo.t -> expression
     Shifts by one bit less than necessary, keeping one of the GC colour bits,
     to save an operation when returning the length as a caml integer or when
     comparing it to a caml integer.
-    Assumes the header does not have any profiling info
-    (as returned by get_header_without_profinfo) *)
+    Assumes that the reserved bits are clear (see get_header_masked) *)
 val addr_array_length_shifted : expression -> Debuginfo.t -> expression
 val float_array_length_shifted : expression -> Debuginfo.t -> expression
 

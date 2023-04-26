@@ -29,9 +29,6 @@ external size : t -> int = "%obj_size"
 external reachable_words : t -> int = "caml_obj_reachable_words"
 external field : t -> int -> t = "%obj_field"
 external set_field : t -> int -> t -> unit = "%obj_set_field"
-external compare_and_swap_field : t -> int -> t -> t -> bool
-  = "caml_obj_compare_and_swap"
-external is_shared : t -> bool = "caml_obj_is_shared"
 external floatarray_get : floatarray -> int -> float = "caml_floatarray_get"
 external floatarray_set :
     floatarray -> int -> float -> unit = "caml_floatarray_set"

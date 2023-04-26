@@ -4,6 +4,7 @@ Line 1, characters 11-15:
 1 | let g () = f (); 1;;
                ^^^^
 Warning 21 [nonreturning-statement]: this statement never returns (or has an unsound type.)
+
 val g : unit -> int = <fun>
 Exception: Not_found.
 Raised at f in file "//toplevel//", line 2, characters 11-26

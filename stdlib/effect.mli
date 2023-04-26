@@ -12,7 +12,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@alert unstable
+    "The Effect interface may change in incompatible ways in the future."
+]
+
 (** Effects.
+
+    See 'Language extensions/Effect handlers' section in the manual.
 
     @since 5.0 *)
 

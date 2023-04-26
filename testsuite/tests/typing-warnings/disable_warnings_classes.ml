@@ -1,6 +1,6 @@
 (* TEST
-   flags = " -w +A "
-   * expect
+ flags = " -w +A ";
+ expect;
 *)
 
 class c = object
@@ -18,6 +18,7 @@ Line 8, characters 8-9:
 8 |     let y = 5 in ()
             ^
 Warning 26 [unused-var]: unused variable y.
+
 class c : object val a : unit val x : unit end
 |}];;
 
@@ -36,6 +37,7 @@ Line 8, characters 8-9:
 8 |     let y = 5 in ()
             ^
 Warning 26 [unused-var]: unused variable y.
+
 class c : object method a : unit method x : unit end
 |}];;
 
@@ -54,6 +56,7 @@ Line 8, characters 8-9:
 8 |     let y = 5 in ()
             ^
 Warning 26 [unused-var]: unused variable y.
+
 class c : object  end
 |}];;
 
@@ -83,6 +86,7 @@ Line 4, characters 8-9:
 4 |     let b = 5 in ()
             ^
 Warning 26 [unused-var]: unused variable b.
+
 class c : object val a : unit val x : unit end
 |}];;
 
@@ -104,6 +108,7 @@ Line 9, characters 10-13:
               ^^^
 Alert deprecated: dep
 deprecated
+
 class type c = object val a : dep val x : dep end
 |}];;
 
@@ -121,6 +126,7 @@ Line 6, characters 13-16:
                  ^^^
 Alert deprecated: dep
 deprecated
+
 class type c = object method a : dep method x : dep end
 |}];;
 
@@ -148,5 +154,6 @@ Line 3, characters 10-13:
               ^^^
 Alert deprecated: dep
 deprecated
+
 class type c = object val a : dep val x : dep end
 |}];;

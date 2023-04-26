@@ -19,10 +19,6 @@ dynlink_platform_intf.cmi : \
 dynlink_types.cmo : \
     dynlink_types.cmi
 dynlink_types.cmi :
-extract_crc.cmo : \
-    byte/dynlink_compilerlibs.cmi \
-    extract_crc.cmi
-extract_crc.cmi :
 dynlink_common.cmx : \
     dynlink_types.cmx \
     dynlink_platform_intf.cmx \
@@ -33,9 +29,6 @@ dynlink_platform_intf.cmx : \
     dynlink_platform_intf.cmi
 dynlink_types.cmx : \
     dynlink_types.cmi
-extract_crc.cmx : \
-    native/dynlink_compilerlibs.cmx \
-    extract_crc.cmi
 native/dynlink.cmx : \
     dynlink_types.cmx \
     native/dynlink_compilerlibs.cmx \

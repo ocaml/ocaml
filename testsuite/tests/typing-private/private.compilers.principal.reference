@@ -112,6 +112,7 @@ Line 3, characters 40-63:
 3 | module Test2 : module type of Test with type t = private Test.t = Test;;
                                             ^^^^^^^^^^^^^^^^^^^^^^^
 Alert deprecated: spurious use of private
+
 module Test2 : sig type t = Test.t = private A end
 type t = private < x : int; .. >
 type t = private < x : int; .. >

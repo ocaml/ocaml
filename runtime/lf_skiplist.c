@@ -198,8 +198,9 @@ retry:
           thread can ever add the node to the garbage list. This is what the
           compare-and-swap below ensures by swapping garbage_next to a value
           of 1. We don't need to worry about anyone accidentally following this
-          bogus pointer, it is only deferenced in the cleanup function and this
-          is called when no thread can be concurrently modifying the skiplist.
+          bogus pointer, it is only dereferenced in the cleanup function and
+          this is called when no thread can be concurrently modifying the
+          skiplist.
           */
           if (atomic_compare_exchange_strong(&curr->garbage_next, &null_cell,
                                              (struct lf_skipcell *)1)) {

@@ -1,10 +1,11 @@
 (* TEST
-
-* hassysthreads
-include systhreads
-** bytecode
-** native
-
+ include systhreads;
+ hassysthreads;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 (* Torture test - I/O interspersed with lots of GC *)

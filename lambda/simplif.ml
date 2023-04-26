@@ -773,6 +773,7 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~return ~body ~attr ~loc =
 type slot =
   {
     func: lfunction;
+    function_scope: lambda;
     mutable scope: lambda option;
   }
 
@@ -790,6 +791,9 @@ let simplify_local_functions lam =
      by the outermost lambda for which the the current lambda
      is in tail position. *)
   let current_scope = ref lam in
+  (* PR11383: We will only apply the transformation if we don't have to move
+     code across function boundaries *)
+  let current_function_scope = ref lam in
   let check_static lf =
     if lf.attr.local = Always_local then
       Location.prerr_warning (to_location lf.loc)
@@ -807,7 +811,11 @@ let simplify_local_functions lam =
   in
   let rec tail = function
     | Llet (_str, _kind, id, Lfunction lf, cont) when enabled lf.attr ->
-        let r = {func = lf; scope = None} in
+        let r =
+          { func = lf;
+            function_scope = !current_function_scope;
+            scope = None }
+        in
         Hashtbl.add slots id r;
         tail cont;
         begin match Hashtbl.find_opt slots id with
@@ -826,7 +834,7 @@ let simplify_local_functions lam =
         | _ ->
             check_static lf;
             (* note: if scope = None, the function is unused *)
-            non_tail lf.body
+            function_definition lf
         end
     | Lapply {ap_func = Lvar id; ap_args; _} ->
         begin match Hashtbl.find_opt slots id with
@@ -837,6 +845,10 @@ let simplify_local_functions lam =
         | Some {scope = Some scope; _} when scope != !current_scope ->
             (* Different "tail scope" *)
             Hashtbl.remove slots id
+        | Some {function_scope = fscope; _}
+          when fscope != !current_function_scope ->
+            (* Non local function *)
+            Hashtbl.remove slots id
         | Some ({scope = None; _} as slot) ->
             (* First use of the function: remember the current tail scope *)
             slot.scope <- Some !current_scope
@@ -846,13 +858,18 @@ let simplify_local_functions lam =
         List.iter non_tail ap_args
     | Lvar id ->
         Hashtbl.remove slots id
-    | Lfunction lf as lam ->
+    | Lfunction lf ->
         check_static lf;
-        Lambda.shallow_iter ~tail ~non_tail lam
+        function_definition lf
     | lam ->
         Lambda.shallow_iter ~tail ~non_tail lam
   and non_tail lam =
     with_scope ~scope:lam lam
+  and function_definition lf =
+    let old_function_scope = !current_function_scope in
+    current_function_scope := lf.body;
+    non_tail lf.body;
+    current_function_scope := old_function_scope
   and with_scope ~scope lam =
     let old_scope = !current_scope in
     current_scope := scope;

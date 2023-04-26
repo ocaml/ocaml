@@ -23,7 +23,7 @@ type t
 val create : ('a -> 'b) -> 'a -> t
 (** [Thread.create funct arg] creates a new thread of control,
    in which the function application [funct arg]
-   is executed concurrently with the other threads of the program.
+   is executed concurrently with the other threads of the domain.
    The application of [Thread.create]
    returns the handle of the newly created thread.
    The new thread terminates when the application [funct arg]
@@ -32,7 +32,10 @@ val create : ('a -> 'b) -> 'a -> t
    In the last case, the uncaught exception is printed on standard error,
    but not propagated back to the parent thread. Similarly, the
    result of the application [funct arg] is discarded and not
-   directly accessible to the parent thread. *)
+   directly accessible to the parent thread.
+
+   See also {!Domain.spawn} if you want parallel execution instead.
+   *)
 
 val self : unit -> t
 (** Return the handle for the thread currently executing. *)

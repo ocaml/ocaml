@@ -1,6 +1,9 @@
 (* TEST
-   * bytecode
-   * native
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 type 'a t =
   | N of 'a

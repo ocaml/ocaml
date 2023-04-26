@@ -30,6 +30,18 @@
 
 *)
 
+(** {b Unsynchronized accesses} *)
+
+[@@@alert unsynchronized_access
+    "Unsynchronized accesses to buffers are a programming error."
+]
+
+ (**
+    Unsynchronized accesses to a buffer may lead to an invalid buffer state.
+    Thus, concurrent accesses to a buffer must be synchronized (for instance
+    with a {!Mutex.t}).
+*)
+
 type t
 (** The abstract type of buffers. *)
 
@@ -98,7 +110,7 @@ val truncate : t -> int -> unit
 (** [truncate b len] truncates the length of [b] to [len]
   Note: the internal byte sequence is not shortened.
   @raise Invalid_argument if [len < 0] or [len > length b].
-  @since 4.05.0 *)
+  @since 4.05 *)
 
 (** {1 Appending} *)
 
@@ -113,21 +125,21 @@ val add_utf_8_uchar : t -> Uchar.t -> unit
 (** [add_utf_8_uchar b u] appends the {{:https://tools.ietf.org/html/rfc3629}
     UTF-8} encoding of [u] at the end of buffer [b].
 
-    @since 4.06.0 *)
+    @since 4.06 *)
 
 val add_utf_16le_uchar : t -> Uchar.t -> unit
 (** [add_utf_16le_uchar b u] appends the
     {{:https://tools.ietf.org/html/rfc2781}UTF-16LE} encoding of [u]
     at the end of buffer [b].
 
-    @since 4.06.0 *)
+    @since 4.06 *)
 
 val add_utf_16be_uchar : t -> Uchar.t -> unit
 (** [add_utf_16be_uchar b u] appends the
     {{:https://tools.ietf.org/html/rfc2781}UTF-16BE} encoding of [u]
     at the end of buffer [b].
 
-    @since 4.06.0 *)
+    @since 4.06 *)
 
 val add_string : t -> string -> unit
 (** [add_string b s] appends the string [s] at the end of buffer [b]. *)

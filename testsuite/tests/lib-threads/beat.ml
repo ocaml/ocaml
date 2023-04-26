@@ -1,12 +1,16 @@
 (* TEST
-
-* hassysthreads
-include systhreads
-* skip
-reason = "off-by-one error on MacOS+Clang (#408)"
-** bytecode
-** native
-
+ {
+   include systhreads;
+   hassysthreads;
+ }{
+   reason = "off-by-one error on MacOS+Clang (#408)";
+   skip;
+   {
+     bytecode;
+   }{
+     native;
+   }
+ }
 *)
 
 (* Test Thread.delay and its scheduling *)

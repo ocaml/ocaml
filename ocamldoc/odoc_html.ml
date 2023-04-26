@@ -848,7 +848,7 @@ class html =
     inherit info
 
     val mutable doctype =
-      "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n"
+      "<!DOCTYPE html>\n"
     method character_encoding b =
       bp b
         "<meta content=\"text/html; charset=%s\" http-equiv=\"Content-Type\">\n"
@@ -1419,6 +1419,9 @@ class html =
           self#html_of_text b [Code "("];
           self#html_of_module_kind b father k2;
           self#html_of_text b [Code ")"]
+      | Module_apply_unit k1 ->
+          self#html_of_module_kind b father k1;
+          self#html_of_text b [Code "()"]
       | Module_with (k, s) ->
           (* TODO: modify when Module_with will be more detailed *)
           self#html_of_module_type_kind b father ?modu k;

@@ -297,6 +297,21 @@ let rec find_all n = function
       else
         find_all n (if c < 0 then l else r)
 
+let get_all_seq k () =
+  Seq.unfold (Option.map (fun k -> (k.ident, k.data), k.previous))
+    k ()
+
+let rec find_all_seq n tbl () =
+  match tbl with
+  | Empty -> Seq.Nil
+  | Node(l, k, r, _) ->
+      let c = String.compare n (name k.ident) in
+      if c = 0 then
+        Seq.Cons((k.ident, k.data), get_all_seq k.previous)
+      else
+        find_all_seq n (if c < 0 then l else r) ()
+
+
 let rec fold_aux f stack accu = function
     Empty ->
       begin match stack with

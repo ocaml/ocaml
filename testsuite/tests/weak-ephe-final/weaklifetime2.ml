@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let n = 500
 let loop = 2

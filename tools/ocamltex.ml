@@ -209,13 +209,13 @@ module Toplevel = struct
     try
       match mode with
       | Toplevel -> Parse.toplevel_phrase lex
-      | Verbatim -> Ptop_def (Parse.implementation lex)
+      | Verbatim -> Parsetree.Ptop_def (Parse.implementation lex)
       | Signature ->
           let sign = Parse.interface lex in
           let name = Location.mknoloc "wrap" in
           let str =
             Ast_helper.[Str.modtype @@ Mtd.mk ~typ:(Mty.signature sign) name] in
-          Ptop_def str
+          Parsetree.Ptop_def str
     with
     | Lexer.Error _ | Syntaxerr.Error _ ->
         raise (Phrase_parsing s)
@@ -352,7 +352,8 @@ module Output = struct
   let catch_warning =
     function
     | [] -> None
-    | s :: _ when string_match ~!{|Warning \([0-9]+\)\( \[[a-z-]+\]\)?:|} s 0 ->
+    | s :: _ when string_match ~!{|
+*Warning \([0-9]+\)\( \[[a-z-]+\]\)?:|} s 0 ->
         Some (Warning (int_of_string @@ matched_group 1 s))
     | _ -> None
 
@@ -421,8 +422,6 @@ module Text_transform = struct
     | Ellipsis -> Format.fprintf ppf "ellipsis"
 
   let underline start stop = { kind = Underline; start; stop}
-  let ellipsis start stop = { kind = Ellipsis; start; stop }
-
   let escape_specials s =
     s
     |> global_replace ~!{|\$|} {|$\textdollar$|}
@@ -560,7 +559,8 @@ module Ellipsis = struct
           | None -> raise (Unmatched_ellipsis {kind="right"; start; stop})
           | Some (start', stop' ) ->
               let start, stop = min start start', max stop stop' in
-              transforms := {kind=Ellipsis; start ; stop } :: !transforms;
+              let transform = {Text_transform.kind=Ellipsis; start ; stop } in
+              transforms :=  transform :: !transforms;
               left_mark := None
           end
       | _ -> ()
@@ -575,7 +575,7 @@ module Ellipsis = struct
 
   let find = function
     | Parsetree.Ptop_def ast -> extract (fun it -> it.structure it) ast
-    | Ptop_dir _ -> []
+    | Parsetree.Ptop_dir _ -> []
 
 end
 
@@ -680,6 +680,7 @@ let process_file file =
         let implicit_stop, phrase, expected = read_phrase () in
         let ast = Toplevel.parse file mode phrase in
         let ellipses = Ellipsis.find ast in
+        let () = Location.reset () in
         let () = Toplevel.(exec out_fmt) ast in
         let out = Toplevel.read_output () in
         let error_msgs = String.concat "" (out.warnings @ [out.error]) in
@@ -756,7 +757,7 @@ let process_file file =
           "when parsing a caml_example environment in@ \
            %s, line %d:@,\
            the signature mode is only compatible with \"caml_example*\"@ \
-           Hint: did you forget to add \"*\"?"
+           @{<hint>Hint@}: did you forget to add \"*\"?"
           file (line_number-2);
   | Text_transform.Intersection {line;file;left;right} ->
       fatal
@@ -765,7 +766,8 @@ let process_file file =
          spanned the interval %d-%d,@ \
          intersecting with another \"%a\" transform @ \
          on the %d-%d interval.@ \
-         Hind: did you try to elide a code fragment which raised a warning?"
+         @{<hint>Hint@}: did you try to elide a code fragment \
+         which raised a warning?"
         file (line-2)
         Text_transform.pp left.kind left.start left.stop
         Text_transform.pp right.kind right.start right.stop

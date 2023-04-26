@@ -1,10 +1,8 @@
 (* TEST
-
-* frame_pointers
-** native
-readonly_files = "fp_backtrace.c c_call_.c"
-all_modules = "${readonly_files} c_call.ml"
-
+ frame_pointers;
+ readonly_files = "fp_backtrace.c c_call_.c";
+ all_modules = "${readonly_files} c_call.ml";
+ native;
 *)
 
 external fp_backtrace : unit -> unit = "fp_backtrace"
@@ -17,9 +15,9 @@ let[@inline never] f () =
   (* Check backtrace through caml_c_call_stack_args *)
   fp_backtrace_many_args 1 2 3 4 5 6 7 8 9 10 11;
   (* Check backtrace through caml_c_call.
-   * Also check that caml_c_call_stack_args correclty restores rbp register *)
+   * Also check that caml_c_call_stack_args correctly restores rbp register *)
   fp_backtrace ();
-  (* Check caml_c_call correclty restores rbp register *)
+  (* Check caml_c_call correctly restores rbp register *)
   fp_backtrace_no_alloc ();
   42
 

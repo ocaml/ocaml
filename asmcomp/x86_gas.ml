@@ -124,6 +124,8 @@ let print_instr b = function
   | CDQ -> i0 b "cltd"
   | CMOV (c, arg1, arg2) -> i2 b ("cmov" ^ string_of_condition c) arg1 arg2
   | CMP (arg1, arg2) -> i2_s b "cmp" arg1 arg2
+  | CMPSD (c, arg1, arg2) ->
+      i2 b ("cmp" ^ string_of_float_condition c ^ "sd") arg1 arg2
   | COMISD (arg1, arg2) -> i2 b "comisd" arg1 arg2
   | CQO ->  i0 b "cqto"
   | CVTSD2SI (arg1, arg2) -> i2 b "cvtsd2si" arg1 arg2
@@ -189,6 +191,7 @@ let print_instr b = function
       i2 b "movabsq" arg1 arg2
   | MOV (arg1, arg2) -> i2_s b "mov" arg1 arg2
   | MOVAPD (arg1, arg2) -> i2 b "movapd" arg1 arg2
+  | MOVD (arg1, arg2) -> i2 b "movd" arg1 arg2
   | MOVLPD (arg1, arg2) -> i2 b "movlpd" arg1 arg2
   | MOVSD (arg1, arg2) -> i2 b "movsd" arg1 arg2
   | MOVSS (arg1, arg2) -> i2 b "movss" arg1 arg2

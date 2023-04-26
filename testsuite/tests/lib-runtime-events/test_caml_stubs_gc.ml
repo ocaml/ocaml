@@ -1,5 +1,5 @@
 (* TEST
-include runtime_events
+ include runtime_events;
 *)
 open Runtime_events
 

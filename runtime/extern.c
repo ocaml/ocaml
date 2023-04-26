@@ -33,14 +33,18 @@
 #include "caml/mlvalues.h"
 #include "caml/reverse.h"
 #include "caml/shared_heap.h"
+#ifdef HAS_ZSTD
+#include <zstd.h>
+#endif
 
 /* Flags affecting marshaling */
 
 enum {
   NO_SHARING = 1,               /* Flag to ignore sharing */
   CLOSURES = 2,                 /* Flag to allow marshaling code pointers */
-  COMPAT_32 = 4                 /* Flag to ensure that output can safely
+  COMPAT_32 = 4,                /* Flag to ensure that output can safely
                                    be read back on a 32-bit platform */
+  COMPRESSED = 8                /* Flag to request compression if available */
 };
 
 /* Stack for pending values to marshal */
@@ -116,30 +120,44 @@ struct caml_extern_state {
   struct output_block * extern_output_block;
 };
 
-static struct caml_extern_state* get_extern_state (void)
+static void extern_init_stack(struct caml_extern_state* s)
+{
+  /* (Re)initialize the globals for next time around */
+  s->extern_stack = s->extern_stack_init;
+  s->extern_stack_limit = s->extern_stack + EXTERN_STACK_INIT_SIZE;
+}
+
+static struct caml_extern_state* prepare_extern_state (void)
 {
   Caml_check_caml_state();
-  struct caml_extern_state* extern_state;
+  struct caml_extern_state* s;
 
   if (Caml_state->extern_state != NULL)
     return Caml_state->extern_state;
 
-  extern_state =
-    caml_stat_alloc_noexc(sizeof(struct caml_extern_state));
-  if (extern_state == NULL) {
-    return NULL;
-  }
+  s = caml_stat_alloc(sizeof(struct caml_extern_state));
 
-  extern_state->extern_flags = 0;
-  extern_state->obj_counter = 0;
-  extern_state->size_32 = 0;
-  extern_state->size_64 = 0;
-  extern_state->extern_stack = extern_state->extern_stack_init;
-  extern_state->extern_stack_limit =
-    extern_state->extern_stack + EXTERN_STACK_INIT_SIZE;
+  s->extern_flags = 0;
+  s->obj_counter = 0;
+  s->size_32 = 0;
+  s->size_64 = 0;
+  extern_init_stack(s);
 
-  Caml_state->extern_state = extern_state;
-  return extern_state;
+  Caml_state->extern_state = s;
+  return s;
+}
+
+static struct caml_extern_state* get_extern_state (void)
+{
+  Caml_check_caml_state();
+
+  if (Caml_state->extern_state == NULL)
+    caml_fatal_error (
+      "extern_state not initialized:"
+      "this function can only be called from a `caml_output_*` entrypoint."
+    );
+
+  return Caml_state->extern_state;
 }
 
 void caml_free_extern_state (void)
@@ -170,17 +188,15 @@ CAMLnoreturn_end;
 
 static void free_extern_output(struct caml_extern_state* s);
 
-/* Free the extern stack if needed */
 static void extern_free_stack(struct caml_extern_state* s)
 {
+  /* Free the extern stack if needed */
   if (s->extern_stack != s->extern_stack_init) {
     caml_stat_free(s->extern_stack);
-    /* Reinitialize the globals for next time around */
-    s->extern_stack = s->extern_stack_init;
-    s->extern_stack_limit = s->extern_stack + EXTERN_STACK_INIT_SIZE;
   }
-}
 
+  extern_init_stack(s);
+}
 
 static struct extern_item * extern_resize_stack(struct caml_extern_state* s,
                                                 struct extern_item * sp)
@@ -472,9 +488,24 @@ Caml_inline void store64(char * dst, int64_t n)
   dst[4] = n >> 24;  dst[5] = n >> 16;  dst[6] = n >> 8;   dst[7] = n;
 }
 
+#ifdef HAS_ZSTD
+static int storevlq(char * dst, uintnat n)
+{
+  /* Find number of base-128 digits (always at least one) */
+  int ndigits = 1;
+  for (uintnat m = n >> 7; m != 0; m >>= 7) ndigits++;
+  /* Convert number */
+  dst += ndigits - 1;
+  *dst = n & 0x7F;
+  for (n >>= 7; n != 0; n >>= 7) *--dst = 0x80 | (n & 0x7F);
+  /* Return length of number */
+  return ndigits;
+}
+#endif
+
 /* Write characters, integers, and blocks in the output buffer */
 
-Caml_inline void write(struct caml_extern_state* s, int c)
+Caml_inline void writebyte(struct caml_extern_state* s, int c)
 {
   if (s->extern_ptr >= s->extern_limit) grow_extern_output(s, 1);
   *s->extern_ptr++ = c;
@@ -541,7 +572,7 @@ static void writecode64(struct caml_extern_state* s,
 Caml_inline void extern_int(struct caml_extern_state* s, intnat n)
 {
   if (n >= 0 && n < 0x40) {
-    write(s, PREFIX_SMALL_INT + n);
+    writebyte(s, PREFIX_SMALL_INT + n);
   } else if (n >= -(1 << 7) && n < (1 << 7)) {
     writecode8(s, CODE_INT8, n);
   } else if (n >= -(1 << 15) && n < (1 << 15)) {
@@ -582,7 +613,7 @@ Caml_inline void extern_header(struct caml_extern_state* s,
                                mlsize_t sz, tag_t tag)
 {
   if (tag < 16 && sz < 8) {
-    write(s, PREFIX_SMALL_BLOCK + tag + (sz << 4));
+    writebyte(s, PREFIX_SMALL_BLOCK + tag + (sz << 4));
   } else {
     header_t hd = Make_header(sz, tag, NOT_MARKABLE);
 #ifdef ARCH_SIXTYFOUR
@@ -605,7 +636,7 @@ Caml_inline void extern_string(struct caml_extern_state *s,
                                value v, mlsize_t len)
 {
   if (len < 0x20) {
-    write(s, PREFIX_SMALL_STRING + len);
+    writebyte(s, PREFIX_SMALL_STRING + len);
   } else if (len < 0x100) {
     writecode8(s, CODE_STRING8, len);
   } else {
@@ -628,7 +659,7 @@ Caml_inline void extern_string(struct caml_extern_state *s,
 
 Caml_inline void extern_double(struct caml_extern_state* s, value v)
 {
-  write(s, CODE_DOUBLE_NATIVE);
+  writebyte(s, CODE_DOUBLE_NATIVE);
   writeblock_float8(s, (double *) v, 1);
 }
 
@@ -670,7 +701,7 @@ Caml_inline void extern_custom(struct caml_extern_state* s, value v,
   if (serialize == NULL)
     extern_invalid_argument(s, "output_value: abstract value (Custom)");
   if (fixed_length == NULL) {
-    write(s, CODE_CUSTOM_LEN);
+    writebyte(s, CODE_CUSTOM_LEN);
     writeblock(s, ident, strlen(ident) + 1);
     /* Reserve 12 bytes for the lengths (sz_32 and sz_64). */
     if (s->extern_ptr + 12 >= s->extern_limit) grow_extern_output(s, 12);
@@ -681,7 +712,7 @@ Caml_inline void extern_custom(struct caml_extern_state* s, value v,
     store32(size_header, *sz_32);
     store64(size_header + 4, *sz_64);
   } else {
-    write(s, CODE_CUSTOM_FIXED);
+    writebyte(s, CODE_CUSTOM_FIXED);
     writeblock(s, ident, strlen(ident) + 1);
     serialize(v, sz_32, sz_64);
         if (*sz_32 != fixed_length->bsize_32 ||
@@ -786,7 +817,10 @@ static void extern_rec(struct caml_extern_state* s, value v)
     /* Check if object already seen */
     if (! (s->extern_flags & NO_SHARING)) {
       if (extern_lookup_position(s, v, &pos, &h)) {
-        extern_shared_reference(s, s->obj_counter - pos);
+        /* #4056: using absolute references for shared objects improves
+           compressibility. */
+        uintnat d = s->extern_flags & COMPRESSED ? pos : s->obj_counter - pos;
+        extern_shared_reference(s, d);
         goto next_item;
       }
     }
@@ -853,6 +887,9 @@ static void extern_rec(struct caml_extern_state* s, value v)
       v = Field(v, i);
       continue;
     }
+    case Cont_tag:
+      extern_invalid_argument(s, "output_value: continuation value");
+      break;
     default: {
       extern_header(s, sz, tag);
       s->size_32 += 1 + sz;
@@ -886,15 +923,92 @@ static void extern_rec(struct caml_extern_state* s, value v)
   /* Never reached as function leaves with return */
 }
 
-static int extern_flag_values[] = { NO_SHARING, CLOSURES, COMPAT_32 };
+/* Compress the output */
+
+#ifdef HAS_ZSTD
+
+static void extern_compress_output(struct caml_extern_state* s)
+{
+  ZSTD_CCtx * ctx;
+  ZSTD_inBuffer in;
+  ZSTD_outBuffer out;
+  struct output_block * input, * output, * output_head;
+  int rc;
+
+  ctx = ZSTD_createCCtx();
+  if (ctx == NULL) extern_out_of_memory(s);
+  input = s->extern_output_first;
+  output_head = caml_stat_alloc_noexc(sizeof(struct output_block));
+  if (output_head == NULL) goto oom1;
+  output = output_head;
+  output->next = NULL;
+  in.src = input->data; in.size = input->end - input->data; in.pos = 0;
+  out.dst = output->data; out.size = SIZE_EXTERN_OUTPUT_BLOCK; out.pos = 0;
+  do {
+    if (out.pos == out.size) {
+      output->end = output->data + out.pos;
+      /* Allocate fresh output block */
+      struct output_block * next =
+        caml_stat_alloc_noexc(sizeof(struct output_block));
+      if (next == NULL) goto oom2;
+      output->next = next;
+      output = next;
+      output->next = NULL;
+      out.dst = output->data; out.size = SIZE_EXTERN_OUTPUT_BLOCK; out.pos = 0;
+    }
+    if (in.pos == in.size && input != NULL) {
+      /* Move to next input block and free current input block */
+      struct output_block * next = input->next;
+      caml_stat_free(input);
+      input = next;
+      if (input != NULL) {
+        in.src = input->data; in.size = input->end - input->data;
+      } else {
+        in.src = NULL; in.size = 0;
+      }
+      in.pos = 0;
+    }
+    rc = ZSTD_compressStream2(ctx, &out, &in,
+                              input == NULL ? ZSTD_e_end : ZSTD_e_continue);
+  } while (! (input == NULL && rc == 0));
+  output->end = output->data + out.pos;
+  s->extern_output_first = output_head;
+  ZSTD_freeCCtx(ctx);
+  return;
+oom2:
+  /* The old output blocks that remain to be freed */
+  s->extern_output_first = input;
+  /* Free the new output blocks */
+  for (output = output_head; output != NULL; ) {
+    struct output_block * next = output->next;
+    caml_stat_free(output);
+    output = next;
+  }
+oom1:
+  ZSTD_freeCCtx(ctx);
+  extern_out_of_memory(s);
+}
+
+#endif
+
+static int extern_flag_values[] = {
+  NO_SHARING, CLOSURES, COMPAT_32, COMPRESSED
+};
 
 static intnat extern_value(struct caml_extern_state* s, value v, value flags,
-                           /*out*/ char header[32],
+                           /*out*/ char header[MAX_INTEXT_HEADER_SIZE],
                            /*out*/ int * header_len)
 {
   intnat res_len;
   /* Parse flag list */
   s->extern_flags = caml_convert_flag_list(flags, extern_flag_values);
+  /* Turn compression off if Zlib missing or if called from
+     caml_output_value_to_block */
+#ifdef HAS_ZSTD
+  if (s->extern_userprovided_output) s->extern_flags &= ~COMPRESSED;
+#else
+  s->extern_flags &= ~COMPRESSED;
+#endif
   /* Initializations */
   s->obj_counter = 0;
   s->size_32 = 0;
@@ -903,6 +1017,37 @@ static intnat extern_value(struct caml_extern_state* s, value v, value flags,
   extern_rec(s, v);
   /* Record end of output */
   close_extern_output(s);
+  /* Compress if requested */
+#ifdef HAS_ZSTD
+  if (s->extern_flags & COMPRESSED) {
+    uintnat uncompressed_len = extern_output_length(s);
+    extern_compress_output(s);
+    res_len = extern_output_length(s);
+    /* Check lengths if compat32 mode is requested */
+#ifdef ARCH_SIXTYFOUR
+    if (s->extern_flags & COMPAT_32
+        && (uncompressed_len >= (uintnat)1 << 32
+            || res_len >= (uintnat)1 << 32
+            || s->size_32 >= (uintnat)1 << 32
+            || s->size_64 >= (uintnat)1 << 32)) {
+      free_extern_output(s);
+      caml_failwith("output_value: object too big to be read back on "
+                    "32-bit platform");
+    }
+#endif
+    /* Write the header in compressed format */
+    store32(header, Intext_magic_number_compressed);
+    int pos = 5, len;
+    len = storevlq(header + pos, res_len); pos += len;
+    len = storevlq(header + pos, uncompressed_len); pos += len;
+    len = storevlq(header + pos, s->obj_counter); pos += len;
+    len = storevlq(header + pos, s->size_32); pos += len;
+    len = storevlq(header + pos, s->size_64); pos += len;
+    header[4] = pos;
+    *header_len = pos;
+    return res_len;
+  }
+#endif
   /* Write the header */
   res_len = extern_output_length(s);
 #ifdef ARCH_SIXTYFOUR
@@ -936,17 +1081,17 @@ static intnat extern_value(struct caml_extern_state* s, value v, value flags,
 
 void caml_output_val(struct channel *chan, value v, value flags)
 {
-  char header[32];
+  char header[MAX_INTEXT_HEADER_SIZE];
   int header_len;
   struct output_block * blk, * nextblk;
-  struct caml_extern_state* s = get_extern_state ();
+  struct caml_extern_state* s = prepare_extern_state ();
 
   if (! caml_channel_binary_mode(chan))
     caml_failwith("output_value: not a binary channel");
   init_extern_output(s);
   extern_value(s, v, flags, header, &header_len);
   /* During [caml_really_putblock], concurrent [caml_output_val] operations
-     can take place (via signal handlers or context switching in systhreads),
+     can take place (via context switching in systhreads),
      and [extern_output_first] may change. So, save it in a local variable. */
   blk = s->extern_output_first;
   caml_really_putblock(chan, header, header_len);
@@ -972,12 +1117,12 @@ CAMLprim value caml_output_value(value vchan, value v, value flags)
 
 CAMLprim value caml_output_value_to_bytes(value v, value flags)
 {
-  char header[32];
+  char header[MAX_INTEXT_HEADER_SIZE];
   int header_len;
   intnat data_len, ofs;
   value res;
   struct output_block * blk, * nextblk;
-  struct caml_extern_state* s = get_extern_state ();
+  struct caml_extern_state* s = prepare_extern_state ();
 
   init_extern_output(s);
   data_len = extern_value(s, v, flags, header, &header_len);
@@ -1007,10 +1152,10 @@ CAMLprim value caml_output_value_to_string(value v, value flags)
 CAMLexport intnat caml_output_value_to_block(value v, value flags,
                                              char * buf, intnat len)
 {
-  char header[32];
+  char header[MAX_INTEXT_HEADER_SIZE];
   int header_len;
   intnat data_len;
-  struct caml_extern_state* s = get_extern_state ();
+  struct caml_extern_state* s = prepare_extern_state ();
 
   /* At this point we don't know the size of the header.
      Guess that it is small, and fix up later if not. */
@@ -1042,12 +1187,12 @@ CAMLexport void caml_output_value_to_malloc(value v, value flags,
                                             /*out*/ char ** buf,
                                             /*out*/ intnat * len)
 {
-  char header[32];
+  char header[MAX_INTEXT_HEADER_SIZE];
   int header_len;
   intnat data_len;
   char * res;
   struct output_block * blk, * nextblk;
-  struct caml_extern_state* s = get_extern_state ();
+  struct caml_extern_state* s = prepare_extern_state ();
 
   init_extern_output(s);
   data_len = extern_value(s, v, flags, header, &header_len);
@@ -1207,7 +1352,7 @@ CAMLprim value caml_obj_reachable_words(value v)
   struct extern_item * sp;
   uintnat h = 0;
   uintnat pos = 0;
-  struct caml_extern_state *s = get_extern_state ();
+  struct caml_extern_state *s = prepare_extern_state ();
 
   s->obj_counter = 0;
   s->extern_flags = 0;

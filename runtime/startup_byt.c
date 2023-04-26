@@ -281,6 +281,8 @@ static void do_print_help(void)
     "Options are:\n"
     "  -b  Set runtime parameter b (detailed exception backtraces)\n"
     "  -config  Print configuration values and exit\n"
+    "  -events  Trace debug events in bytecode interpreter (ignored \n"
+    "      if not ocamlrund)\n"
     "  -I <dir>  Add <dir> to the list of DLL search directories\n"
     "  -m  Print the magic number of <executable> and exit\n"
     "  -M  Print the magic number expected by this runtime and exit\n"
@@ -316,7 +318,7 @@ static int parse_command_line(char_os **argv)
         params->trace_level += 1; /* ignored unless DEBUG mode */
         break;
       case 'v':
-        params->verb_gc = 0x001+0x004+0x008+0x010+0x020;
+        atomic_store_relaxed(&caml_verb_gc, 0x001+0x004+0x008+0x010+0x020);
         break;
       case 'p':
         for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)
@@ -324,7 +326,7 @@ static int parse_command_line(char_os **argv)
         exit(0);
         break;
       case 'b':
-        caml_record_backtraces(1);
+        params->backtrace_enabled = 1;
         break;
       case 'I':
         if (argv[i + 1] != NULL) {
@@ -352,6 +354,8 @@ static int parse_command_line(char_os **argv)
       } else if (!strcmp_os(argv[i], T("-vnum"))) {
         printf("%s\n", OCAML_VERSION_STRING);
         exit(0);
+      } else if (!strcmp_os(argv[i], T("-events"))) {
+        params->event_trace = 1; /* Ignored unless DEBUG mode */
       } else if (!strcmp_os(argv[i], T("-help")) ||
                  !strcmp_os(argv[i], T("--help"))) {
         do_print_help();
@@ -412,13 +416,13 @@ static void do_print_config(void)
          "false");
 #endif
   printf("no_naked_pointers: true\n");
-  printf("profinfo: %s\n"
-         "profinfo_width: %d\n",
-#ifdef WITH_PROFINFO
-         "true", PROFINFO_WIDTH);
+  printf("compression_supported: %s\n",
+#ifdef HAS_ZSTD
+         "true");
 #else
-         "false", 0);
+         "false");
 #endif
+  printf("reserved header bits: %d\n", HEADER_RESERVED_BITS);
   printf("exec_magic_number: %s\n", EXEC_MAGIC);
 
   /* Parse ld.conf and print the effective search path */
@@ -459,9 +463,6 @@ CAMLexport void caml_main(char_os **argv)
   char * req_prims;
   char_os * shared_lib_path, * shared_libs;
   char_os * exe_name, * proc_self_exe;
-
-  /* Initialize the domain */
-  CAML_INIT_DOMAIN_STATE;
 
   /* Determine options */
   caml_parse_ocamlrunparam();
@@ -603,9 +604,6 @@ CAMLexport value caml_startup_code_exn(
 {
   char_os * exe_name;
   value res;
-
-  /* Initialize the domain */
-  CAML_INIT_DOMAIN_STATE;
 
   /* Determine options */
   caml_parse_ocamlrunparam();

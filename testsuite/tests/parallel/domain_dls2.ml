@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let _ =
   let key_array =

@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let err x =
   match Lazy.force x with

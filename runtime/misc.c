@@ -74,14 +74,18 @@ void caml_alloc_point_here(void)
 }
 #endif /* DEBUG */
 
+#define GC_LOG_LENGTH 512
+
+atomic_uintnat caml_verb_gc = 0;
+
 void caml_gc_log (char *msg, ...)
 {
-  if ((caml_params->verb_gc & 0x800) != 0) {
-    char fmtbuf[512];
+  if ((atomic_load_relaxed(&caml_verb_gc) & 0x800) != 0) {
+    char fmtbuf[GC_LOG_LENGTH];
     va_list args;
     va_start (args, msg);
-    sprintf(fmtbuf, "[%02d] %s\n",
-            (Caml_state_opt != NULL) ? Caml_state->id : -1, msg);
+    snprintf(fmtbuf, GC_LOG_LENGTH, "[%02d] %s\n",
+             (Caml_state_opt != NULL) ? Caml_state->id : -1, msg);
     vfprintf(stderr, fmtbuf, args);
     va_end (args);
     fflush(stderr);
@@ -90,7 +94,7 @@ void caml_gc_log (char *msg, ...)
 
 void caml_gc_message (int level, char *msg, ...)
 {
-  if ((caml_params->verb_gc & level) != 0){
+  if ((atomic_load_relaxed(&caml_verb_gc) & level) != 0){
     va_list ap;
     va_start(ap, msg);
     vfprintf (stderr, msg, ap);

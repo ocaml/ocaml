@@ -192,7 +192,6 @@ val dlcode : bool ref
 val pic_code : bool ref
 val runtime_variant : string ref
 val with_runtime : bool ref
-val force_tmc : bool ref
 val force_slash : bool ref
 val keep_docs : bool ref
 val keep_locs : bool ref
@@ -242,7 +241,7 @@ val insn_sched : bool ref
 val insn_sched_default : bool
 
 module Compiler_pass : sig
-  type t = Parsing | Typing | Scheduling | Emit
+  type t = Parsing | Typing | Lambda | Scheduling | Emit
   val of_string : string -> t option
   val to_string : t -> string
   val is_compilation_pass : t -> bool

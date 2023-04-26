@@ -57,6 +57,8 @@ module type TESTSIG = sig
     val max_int: t
     val to_string: t -> string
     val of_string: string -> t
+    val seeded_hash: int -> t -> int
+    val hash: t -> int
   end
   val testcomp: t -> t -> bool*bool*bool*bool*bool*bool*int*int
   val skip_float_tests: bool
@@ -328,7 +330,17 @@ struct
     test 7 (testcomp max_int min_int)
            (false,true,false,true,false,true,1,-1);
 
-    ()
+    testing_function "Hashing";
+    List.iter (fun (n, a) ->
+        test (2*n) (Hashtbl.hash (of_int a)) (hash (of_int a));
+        test (2*n+1) (Hashtbl.seeded_hash 16 (of_int a)) (seeded_hash 16 (of_int a)))
+      [1, 0;
+       2, 123;
+       3, -456;
+       4, 0x3FFFFFFF;
+       5, -0x40000000];
+
+    ();
 end
 
 (********* Tests on 64-bit arithmetic ***********)
@@ -569,6 +581,16 @@ struct
            (false,true,false,true,false,true,1,-1);
     test 7 (testcomp max_int min_int)
            (false,true,false,true,false,true,1,-1);
+
+    testing_function "Hashing";
+    List.iter (fun (n, a) ->
+        test (2*n) (Hashtbl.hash (of_int a)) (hash (of_int a));
+        test (2*n+1) (Hashtbl.seeded_hash 16 (of_int a)) (seeded_hash 16 (of_int a)))
+      [1, 0;
+       2, 123;
+       3, -456;
+       4, 0x3FFFFFFF;
+       5, -0x40000000];
 
     ()
 end

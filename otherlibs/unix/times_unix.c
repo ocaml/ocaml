@@ -35,11 +35,15 @@ CAMLprim value caml_unix_times(value unit)
   res = caml_alloc_small(4 * Double_wosize, Double_array_tag);
 
   getrusage (RUSAGE_SELF, &ru);
-  Store_double_field (res, 0, ru.ru_utime.tv_sec + ru.ru_utime.tv_usec / 1e6);
-  Store_double_field (res, 1, ru.ru_stime.tv_sec + ru.ru_stime.tv_usec / 1e6);
+  Store_double_flat_field(res, 0,
+                          ru.ru_utime.tv_sec + ru.ru_utime.tv_usec / 1e6);
+  Store_double_flat_field(res, 1,
+                          ru.ru_stime.tv_sec + ru.ru_stime.tv_usec / 1e6);
   getrusage (RUSAGE_CHILDREN, &ru);
-  Store_double_field (res, 2, ru.ru_utime.tv_sec + ru.ru_utime.tv_usec / 1e6);
-  Store_double_field (res, 3, ru.ru_stime.tv_sec + ru.ru_stime.tv_usec / 1e6);
+  Store_double_flat_field(res, 2,
+                          ru.ru_utime.tv_sec + ru.ru_utime.tv_usec / 1e6);
+  Store_double_flat_field(res, 3,
+                          ru.ru_stime.tv_sec + ru.ru_stime.tv_usec / 1e6);
   return res;
 
 #else
@@ -57,10 +61,10 @@ CAMLprim value caml_unix_times(value unit)
 
   times(&buffer);
   res = caml_alloc_small(4 * Double_wosize, Double_array_tag);
-  Store_double_field(res, 0, (double) buffer.tms_utime / CLK_TCK);
-  Store_double_field(res, 1, (double) buffer.tms_stime / CLK_TCK);
-  Store_double_field(res, 2, (double) buffer.tms_cutime / CLK_TCK);
-  Store_double_field(res, 3, (double) buffer.tms_cstime / CLK_TCK);
+  Store_double_flat_field(res, 0, (double) buffer.tms_utime / CLK_TCK);
+  Store_double_flat_field(res, 1, (double) buffer.tms_stime / CLK_TCK);
+  Store_double_flat_field(res, 2, (double) buffer.tms_cutime / CLK_TCK);
+  Store_double_flat_field(res, 3, (double) buffer.tms_cstime / CLK_TCK);
   return res;
 
 #endif

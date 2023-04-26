@@ -23,26 +23,6 @@
  (preprocess
    (per_module
     ((action
-      (progn
-       (run sed -i s/%atomic_load/%identity/ %{input-file})
-       (run sed -i s/%atomic_cas/%obj_set_field/ %{input-file})
-       (run awk -f %{dep:expand_module_aliases.awk} %{input-file})))
+      (run awk -f %{dep:expand_module_aliases.awk} %{input-file}))
       stdlib)
-     ;; AWFUL HACKS: remove once 5.0 is released
-     ;; (this is needed because we're building with a compiler which doesn't
-     ;; know these primitives yet)
-     ;; It's especially ugly because the compiler insists on checking arity...
-     ((action
-        (progn
-          (run sed -i s/%atomic_load/%identity/ %{input-file})
-          (run sed -i s/%atomic_cas/%obj_set_field/ %{input-file})
-          (run sed s/%atomic_[a-z_]*/%addint/ %{input-file})))
-      atomic)
-     ((action (run sed s/%dls_get/%identity/ %{input-file}))
-      domain)
-     ((action
-        (progn
-          (run sed -i s/%perform/%identity/ %{input-file})
-          (run sed s/%r[a-z]*/%obj_set_field/ %{input-file})))
-      effect)
      )))

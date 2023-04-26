@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let r = ref (Some 0)
 

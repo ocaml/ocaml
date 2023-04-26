@@ -15,10 +15,8 @@
 
 (* Disassembler for executable and .cmo object files *)
 
-open Asttypes
 open Config
 open Instruct
-open Lambda
 open Location
 open Opcodes
 open Opnames
@@ -49,7 +47,6 @@ let inputs ic =
 (* Global variables *)
 
 type global_table_entry =
-    Empty
   | Global of Ident.t
   | Constant of Obj.t
 
@@ -75,38 +72,6 @@ let record_events orig evl =
       relocate_event orig ev;
       Hashtbl.add event_table ev.ev_pos ev)
     evl
-
-(* Print a structured constant *)
-
-let print_float f =
-  if String.contains f '.'
-  then printf "%s" f
-  else printf "%s." f
-
-let rec print_struct_const = function
-    Const_base(Const_int i) -> printf "%d" i
-  | Const_base(Const_float f) -> print_float f
-  | Const_base(Const_string (s, _, _)) -> printf "%S" s
-  | Const_immstring s -> printf "%S" s
-  | Const_base(Const_char c) -> printf "%C" c
-  | Const_base(Const_int32 i) -> printf "%ldl" i
-  | Const_base(Const_nativeint i) -> printf "%ndn" i
-  | Const_base(Const_int64 i) -> printf "%LdL" i
-  | Const_block(tag, args) ->
-      printf "<%d>" tag;
-      begin match args with
-        [] -> ()
-      | [a1] ->
-          printf "("; print_struct_const a1; printf ")"
-      | a1::al ->
-          printf "("; print_struct_const a1;
-          List.iter (fun a -> printf ", "; print_struct_const a) al;
-          printf ")"
-      end
-  | Const_float_array a ->
-      printf "[|";
-      List.iter (fun f -> print_float f; printf "; ") a;
-      printf "|]"
 
 (* Print an obj *)
 
@@ -172,7 +137,7 @@ let print_getglobal_name ic =
     begin try
       match find_reloc ic with
           Reloc_getglobal id -> print_string (Ident.name id)
-        | Reloc_literal sc -> print_struct_const sc
+        | Reloc_literal sc -> print_obj sc
         | _ -> print_string "<wrong reloc>"
     with Not_found ->
       print_string "<no reloc>"
@@ -186,7 +151,6 @@ let print_getglobal_name ic =
     else match !globals.(n) with
            Global id -> print_string(Ident.name id)
          | Constant obj -> print_obj obj
-         | _ -> print_string "???"
   end
 
 let print_setglobal_name ic =
@@ -484,7 +448,7 @@ let print_code ic len =
 let print_reloc (info, pos) =
   printf "    %d    (%d)    " pos (pos/4);
   match info with
-    Reloc_literal sc -> print_struct_const sc; printf "\n"
+    Reloc_literal sc -> print_obj sc; printf "\n"
   | Reloc_getglobal id -> printf "require    %s\n" (Ident.name id)
   | Reloc_setglobal id -> printf "provide    %s\n" (Ident.name id)
   | Reloc_primitive s -> printf "prim    %s\n" s
@@ -511,40 +475,34 @@ let dump_obj ic =
   seek_in ic cu.cu_pos;
   print_code ic cu.cu_codesize
 
-(* Read the primitive table from an executable *)
-
-let read_primitive_table ic len =
-  let p = really_input_string ic len in
-  String.split_on_char '\000' p |> List.filter ((<>) "") |> Array.of_list
-
 (* Print an executable file *)
 
 let dump_exe ic =
-  Bytesections.read_toc ic;
-  let prim_size = Bytesections.seek_section ic "PRIM" in
-  primitives := read_primitive_table ic prim_size;
-  ignore(Bytesections.seek_section ic "DATA");
-  let init_data = (input_value ic : Obj.t array) in
-  globals := Array.make (Array.length init_data) Empty;
-  for i = 0 to Array.length init_data - 1 do
-    !globals.(i) <- Constant (init_data.(i))
-  done;
-  ignore(Bytesections.seek_section ic "SYMB");
-  let sym_table = (input_value ic : Symtable.global_map) in
+  let toc = Bytesections.read_toc ic in
+(* Read the primitive table from an executable *)
+  let prims = Bytesections.read_section_string toc ic Bytesections.Name.PRIM in
+  primitives := Array.of_list (Misc.split_null_terminated prims);
+  let init_data : Obj.t array =
+    Bytesections.read_section_struct toc ic Bytesections.Name.DATA in
+  globals := Array.map (fun x -> Constant x) init_data;
+  let sym_table : Symtable.global_map =
+    Bytesections.read_section_struct toc ic Bytesections.Name.SYMB in
   Symtable.iter_global_map
     (fun id pos -> !globals.(pos) <- Global id) sym_table;
-  begin try
-    ignore (Bytesections.seek_section ic "DBUG");
-    let num_eventlists = input_binary_int ic in
-    for _i = 1 to num_eventlists do
-      let orig = input_binary_int ic in
-      let evl = (input_value ic : debug_event list) in
-      ignore (input_value ic); (* Skip the list of absolute directory names *)
-      record_events orig evl
-    done
-  with Not_found -> ()
+  begin
+    match Bytesections.seek_section toc ic Bytesections.Name.DBUG with
+    | exception Not_found -> ()
+    | (_ : int) ->
+        let num_eventlists = input_binary_int ic in
+        for _i = 1 to num_eventlists do
+          let orig = input_binary_int ic in
+          let evl = (input_value ic : debug_event list) in
+          (* Skip the list of absolute directory names *)
+          ignore (input_value ic);
+          record_events orig evl
+        done
   end;
-  let code_size = Bytesections.seek_section ic "CODE" in
+  let code_size = Bytesections.seek_section toc ic Bytesections.Name.CODE in
   print_code ic code_size
 
 let arg_list = [
@@ -577,7 +535,7 @@ let arg_fun filename =
   close_in ic;
   if !print_banners then printf "## end of ocaml dump of %S\n%!" filename
 
-let main() =
+let main () =
   Arg.parse_expand arg_list arg_fun arg_usage;
     exit 0
 

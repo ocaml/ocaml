@@ -17,17 +17,17 @@
 #include <caml/alloc.h>
 #include <time.h>
 
-#include "unixsupport.h"
+#define CAML_INTERNALS
+#include <caml/winsupport.h>
 
-/* Unix epoch as a Windows timestamp in hundreds of ns */
-#define epoch_ft 116444736000000000.0;
+#include "unixsupport.h"
 
 double caml_unix_gettimeofday_unboxed(value unit)
 {
-  FILETIME ft;
+  CAML_ULONGLONG_FILETIME utime;
   double tm;
-  GetSystemTimeAsFileTime(&ft);
-  tm = *(uint64_t *)&ft - epoch_ft; /* shift to Epoch-relative time */
+  GetSystemTimeAsFileTime(&utime.ft);
+  tm = utime.ul - CAML_NT_EPOCH_100ns_TICKS;
   return (tm * 1e-7);  /* tm is in 100ns */
 }
 

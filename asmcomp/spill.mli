@@ -17,4 +17,3 @@
    before register allocation. *)
 
 val fundecl: Mach.fundecl -> Mach.fundecl
-val reset : unit -> unit

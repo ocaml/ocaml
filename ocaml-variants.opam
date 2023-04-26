@@ -1,9 +1,9 @@
 opam-version: "2.0"
-version: "5.1.0+trunk"
+version: "5.2.0+trunk"
 license: "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception"
 synopsis: "OCaml development version"
 depends: [
-  "ocaml" {= "5.1.0" & post}
+  "ocaml" {= "5.2.0" & post}
   "base-unix" {post}
   "base-bigarray" {post}
   "base-threads" {post}

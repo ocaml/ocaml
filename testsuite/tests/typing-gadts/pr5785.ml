@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 module Add (T : sig type two end) =
@@ -20,6 +20,7 @@ Lines 7-9, characters 43-24:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (One, Two)
+
 module Add :
   functor (T : sig type two end) ->
     sig

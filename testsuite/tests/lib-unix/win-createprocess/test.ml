@@ -1,10 +1,11 @@
 (* TEST
-
-* libwin32unix
-  include unix
-** bytecode
-** native
-
+ include unix;
+ libwin32unix;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 (* This test is inspired by [Creating a Child Process with Redirected

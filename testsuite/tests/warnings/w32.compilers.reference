@@ -2,10 +2,12 @@ File "w32.mli", line 12, characters 10-11:
 12 | module F (X : sig val x : int end) : sig end
                ^
 Warning 67 [unused-functor-parameter]: unused functor parameter X.
+
 File "w32.mli", line 14, characters 10-11:
 14 | module G (X : sig val x : int end) : sig end
                ^
 Warning 67 [unused-functor-parameter]: unused functor parameter X.
+
 File "w32.mli", line 16, characters 10-11:
 16 | module H (X : sig val x : int end) : sig val x : int end
                ^
@@ -14,50 +16,62 @@ File "w32.ml", line 40, characters 24-25:
 40 | let[@warning "-32"] rec q x = x
                              ^
 Warning 39 [unused-rec-flag]: unused rec flag.
+
 File "w32.ml", line 43, characters 24-25:
 43 | let[@warning "-32"] rec s x = x
                              ^
 Warning 39 [unused-rec-flag]: unused rec flag.
+
 File "w32.ml", line 20, characters 4-5:
 20 | let h x = x
          ^
 Warning 32 [unused-value-declaration]: unused value h.
+
 File "w32.ml", line 26, characters 4-5:
 26 | and j x = x
          ^
 Warning 32 [unused-value-declaration]: unused value j.
+
 File "w32.ml", line 28, characters 4-5:
 28 | let k x = x
          ^
 Warning 32 [unused-value-declaration]: unused value k.
+
 File "w32.ml", line 41, characters 4-5:
 41 | and r x = x
          ^
 Warning 32 [unused-value-declaration]: unused value r.
+
 File "w32.ml", line 44, characters 20-21:
 44 | and[@warning "-39"] t x = x
                          ^
 Warning 32 [unused-value-declaration]: unused value t.
+
 File "w32.ml", line 46, characters 24-25:
 46 | let[@warning "-39"] rec u x = x
                              ^
 Warning 32 [unused-value-declaration]: unused value u.
+
 File "w32.ml", line 47, characters 4-5:
 47 | and v x = v x
          ^
 Warning 32 [unused-value-declaration]: unused value v.
+
 File "w32.ml", line 55, characters 22-23:
 55 |   let[@warning "+32"] g x = x
                            ^
 Warning 32 [unused-value-declaration]: unused value g.
+
 File "w32.ml", line 56, characters 22-23:
 56 |   let[@warning "+32"] h x = x
                            ^
 Warning 32 [unused-value-declaration]: unused value h.
+
 File "w32.ml", line 59, characters 22-23:
 59 |   and[@warning "+32"] k x = x
                            ^
 Warning 32 [unused-value-declaration]: unused value k.
+
 File "w32.ml", lines 52-60, characters 0-3:
 52 | module M = struct
 53 |   [@@@warning "-32"]
@@ -69,14 +83,17 @@ File "w32.ml", lines 52-60, characters 0-3:
 59 |   and[@warning "+32"] k x = x
 60 | end
 Warning 60 [unused-module]: unused module M.
+
 File "w32.ml", line 63, characters 18-29:
 63 | module F (X : sig val x : int end) = struct end
                        ^^^^^^^^^^^
 Warning 32 [unused-value-declaration]: unused value x.
+
 File "w32.ml", line 63, characters 10-11:
 63 | module F (X : sig val x : int end) = struct end
                ^
 Warning 60 [unused-module]: unused module X.
+
 File "w32.ml", line 65, characters 18-29:
 65 | module G (X : sig val x : int end) = X
                        ^^^^^^^^^^^

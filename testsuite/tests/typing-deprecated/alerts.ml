@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 
@@ -25,6 +25,7 @@ Line 1, characters 8-11:
             ^^^
 Alert foo: X.x
 Foo!
+
 - : int = 0
 |}]
 
@@ -49,6 +50,7 @@ Line 1, characters 8-11:
             ^^^
 Error (alert baz): X.t
 BAZ
+
 Line 1, characters 8-11:
 1 | let _ = X.t;;
             ^^^
@@ -87,6 +89,7 @@ Line 2, characters 2-12:
 2 |   val x: int
       ^^^^^^^^^^
   Expected signature
+
 Line 6, characters 6-7:
 6 | end = X;;
           ^
@@ -100,6 +103,7 @@ Line 4, characters 2-12:
 4 |   val z: int
       ^^^^^^^^^^
   Expected signature
+
 Line 6, characters 6-7:
 6 | end = X;;
           ^
@@ -113,6 +117,7 @@ Line 5, characters 2-12:
 5 |   val t: int
       ^^^^^^^^^^
   Expected signature
+
 Line 6, characters 6-7:
 6 | end = X;;
           ^
@@ -151,6 +156,7 @@ Line 4, characters 2-12:
 4 |   val x: int
       ^^^^^^^^^^
   Expected signature
+
 Line 8, characters 6-7:
 8 | end = X;;
           ^
@@ -164,6 +170,7 @@ Line 6, characters 2-12:
 6 |   val z: int
       ^^^^^^^^^^
   Expected signature
+
 Line 8, characters 6-7:
 8 | end = X;;
           ^
@@ -177,6 +184,7 @@ Line 7, characters 2-12:
 7 |   val t: int
       ^^^^^^^^^^
   Expected signature
+
 Line 8, characters 6-7:
 8 | end = X;;
           ^
@@ -190,6 +198,7 @@ Line 7, characters 2-12:
 7 |   val t: int
       ^^^^^^^^^^
   Expected signature
+
 module Z3 : sig val x : int val y : int val z : int val t : int end
 |}]
 
@@ -229,6 +238,7 @@ Alert bla: X.x
 X1
 X2
 X3
+
 - : int = 0
 Line 10, characters 8-11:
 10 | let _ = X.y
@@ -236,11 +246,13 @@ Line 10, characters 8-11:
 Alert bla: X.y
 X1
 X3
+
 - : int = 0
 Line 11, characters 8-11:
 11 | let _ = X.z
              ^^^
 Alert bla: X.z
+
 - : int = 0
 |}]
 
@@ -259,15 +271,18 @@ Line 2, characters 13-25:
                  ^^^^^^^^^^^^
 Warning 47 [attribute-payload]: illegal payload for attribute 'alert'.
 Invalid payload
+
 Line 3, characters 13-29:
 3 |   val y: int [@@alert bla 42]
                  ^^^^^^^^^^^^^^^^
 Warning 47 [attribute-payload]: illegal payload for attribute 'alert'.
 Invalid payload
+
 Line 4, characters 13-28:
 4 |   val z: int [@@alert "bla"]
                  ^^^^^^^^^^^^^^^
 Warning 47 [attribute-payload]: illegal payload for attribute 'alert'.
 Ill-formed list of alert settings
+
 module X : sig val x : int val y : int val z : int end
 |}]

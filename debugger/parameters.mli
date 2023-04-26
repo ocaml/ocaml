@@ -24,7 +24,6 @@ val breakpoint : bool ref
 val prompt : bool ref
 val time : bool ref
 val version : bool ref
-val topdirs_path : string ref
 
 val add_path : string -> unit
 val add_path_for : string -> string -> unit

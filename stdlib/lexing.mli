@@ -175,7 +175,7 @@ val new_line : lexbuf -> unit
     of a new line.  You can call this function in the semantic action
     of the rule that matches the end-of-line character.  The function
     does nothing when position tracking is disabled.
-    @since 3.11.0
+    @since 3.11
 *)
 
 (** {1 Miscellaneous functions} *)

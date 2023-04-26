@@ -11,10 +11,9 @@ release use the 4.14 release which will continue to be supported and updated
 while 5.0 reaches feature and stability parity. Similarly, if you need one of
 the ports not yet supported in the 5.0 release you must use the 4.14 release.
 
-Only the MinGW-w64 port is supported. On 32-bit systems, only the bytecode
-compiler is supported.  Native-code support for these 32-bit systems is under
-discussion. Support for the MSVC and Cygwin ports will be added back in later
-releases.
+The MSVC port is presently not supported, but will hopefully be added back in
+later releases. On 32-bit systems, only the bytecode compiler is supported.
+Native-code support for these 32-bit systems is under discussion.
 
 = Release notes for the Microsoft Windows ports of OCaml =
 :toc: macro
@@ -81,9 +80,7 @@ Only the `make` Cygwin package is required. `diffutils` is required if you wish
 to be able to run the test suite.
 
 Unless you are also compiling the Cygwin port of OCaml, you do not need the
-`gcc-core` or `flexdll` packages. If you do install them, care may be required
-to ensure that a particular build is using the correct installation of
-`flexlink`.
+`gcc-core` or `flexdll` packages.
 
 [[bmflex]]
 In addition to Cygwin, FlexDLL must also be installed, which is available from
@@ -209,7 +206,7 @@ quickly as it will be unable to link `ocamlrun`.
 
 Now run:
 
-        ./configure --build=i686-pc-cygwin --host=i686-pc-windows
+        ./configure --build=x86_64-pc-cygwin --host=i686-pc-windows
 
 for 32-bit, or:
 
@@ -274,7 +271,7 @@ the WinZip Options Window.)
 
 Now run:
 
-        ./configure --build=i686-pc-cygwin --host=i686-w64-mingw32
+        ./configure --build=x86_64-pc-cygwin --host=i686-w64-mingw32
 
 for 32-bit, or:
 

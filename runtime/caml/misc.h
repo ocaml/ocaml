@@ -25,6 +25,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <limits.h>
 
 #include "camlatomic.h"
 
@@ -202,11 +203,13 @@ extern "C" {
 
 #ifdef CAML_INTERNALS
 
+#ifndef __cplusplus
 Caml_inline void call_timing_hook(_Atomic caml_timing_hook * a)
 {
   caml_timing_hook h = atomic_load_explicit(a, memory_order_relaxed);
   if (h != NULL) (*h)();
 }
+#endif
 
 #endif /* CAML_INTERNALS */
 
@@ -284,7 +287,7 @@ void caml_alloc_point_here(void);
 
 /* This hook is called when a fatal error occurs in the OCaml
    runtime. It is given arguments to be passed to the [vprintf]-like
-   functions in order to synthetize the error message.
+   functions in order to synthesize the error message.
    If it returns, the runtime calls [abort()].
 
    If it is [NULL], the error message is printed on stderr and then
@@ -479,6 +482,8 @@ CAMLextern int caml_read_directory(char_os * dirname,
 
 /* GC flags and messages */
 
+extern atomic_uintnat caml_verb_gc;
+
 void caml_gc_log (char *, ...)
 #ifdef __GNUC__
   __attribute__ ((format (printf, 1, 2)))
@@ -510,7 +515,7 @@ int caml_runtime_warnings_active(void);
   00 -> free words in minor heap
   01 -> fields of free list blocks in major heap
   03 -> heap chunks deallocated by heap shrinking
-  04 -> fields deallocated by [caml_obj_truncate]
+  04 -> fields deallocated by caml_obj_truncate: obsolete
   05 -> unused child pointers in large free blocks
   10 -> uninitialised fields of minor objects
   11 -> uninitialised fields of major objects
@@ -524,7 +529,7 @@ int caml_runtime_warnings_active(void);
 #define Debug_free_minor     Debug_tag (0x00)
 #define Debug_free_major     Debug_tag (0x01)
 #define Debug_free_shrink    Debug_tag (0x03)
-#define Debug_free_truncate  Debug_tag (0x04)
+#define Debug_free_truncate  Debug_tag (0x04) /* obsolete */
 #define Debug_free_unused    Debug_tag (0x05)
 #define Debug_uninit_minor   Debug_tag (0x10)
 #define Debug_uninit_major   Debug_tag (0x11)

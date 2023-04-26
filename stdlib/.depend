@@ -322,6 +322,7 @@ stdlib__Format.cmo : format.ml \
     camlinternalFormat.cmi \
     stdlib__Bytes.cmi \
     stdlib__Buffer.cmi \
+    stdlib__Array.cmi \
     stdlib__Format.cmi
 stdlib__Format.cmx : format.ml \
     stdlib__String.cmx \
@@ -337,6 +338,7 @@ stdlib__Format.cmx : format.ml \
     camlinternalFormat.cmx \
     stdlib__Bytes.cmx \
     stdlib__Buffer.cmx \
+    stdlib__Array.cmx \
     stdlib__Format.cmi
 stdlib__Format.cmi : format.mli \
     stdlib.cmi \
@@ -356,6 +358,7 @@ stdlib__Gc.cmo : gc.ml \
     stdlib__String.cmi \
     stdlib__Printf.cmi \
     stdlib__Printexc.cmi \
+    stdlib__Fun.cmi \
     stdlib__Atomic.cmi \
     stdlib__Gc.cmi
 stdlib__Gc.cmx : gc.ml \
@@ -363,6 +366,7 @@ stdlib__Gc.cmx : gc.ml \
     stdlib__String.cmx \
     stdlib__Printf.cmx \
     stdlib__Printexc.cmx \
+    stdlib__Fun.cmx \
     stdlib__Atomic.cmx \
     stdlib__Gc.cmi
 stdlib__Gc.cmi : gc.mli \
@@ -484,9 +488,11 @@ stdlib__Map.cmx : map.ml \
 stdlib__Map.cmi : map.mli \
     stdlib__Seq.cmi
 stdlib__Marshal.cmo : marshal.ml \
+    stdlib__String.cmi \
     stdlib__Bytes.cmi \
     stdlib__Marshal.cmi
 stdlib__Marshal.cmx : marshal.ml \
+    stdlib__String.cmx \
     stdlib__Bytes.cmx \
     stdlib__Marshal.cmi
 stdlib__Marshal.cmi : marshal.mli
@@ -609,6 +615,7 @@ stdlib__Queue.cmx : queue.ml \
 stdlib__Queue.cmi : queue.mli \
     stdlib__Seq.cmi
 stdlib__Random.cmo : random.ml \
+    stdlib__Sys.cmi \
     stdlib__String.cmi \
     stdlib__Nativeint.cmi \
     stdlib__Int64.cmi \
@@ -620,6 +627,7 @@ stdlib__Random.cmo : random.ml \
     stdlib__Array.cmi \
     stdlib__Random.cmi
 stdlib__Random.cmx : random.ml \
+    stdlib__Sys.cmx \
     stdlib__String.cmx \
     stdlib__Nativeint.cmx \
     stdlib__Int64.cmx \
@@ -752,6 +760,13 @@ stdlib__Sys.cmo : sys.ml \
 stdlib__Sys.cmx : sys.ml \
     stdlib__Sys.cmi
 stdlib__Sys.cmi : sys.mli
+stdlib__Type.cmo : type.ml \
+    stdlib__Obj.cmi \
+    stdlib__Type.cmi
+stdlib__Type.cmx : type.ml \
+    stdlib__Obj.cmx \
+    stdlib__Type.cmi
+stdlib__Type.cmi : type.mli
 stdlib__Uchar.cmo : uchar.ml \
     stdlib.cmi \
     stdlib__Char.cmi \

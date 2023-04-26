@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type _ t = Int : int t;;
@@ -31,6 +31,7 @@ Lines 2-5, characters 2-5:
 5 |   end..
 Warning 15 [implicit-public-methods]: the following private methods were made public implicitly:
  x.
+
 val o' : < m : 'a. 'a t -> 'b -> 'a; x : int > as 'b = <obj>
 val aargh : unit = ()
 |}]
@@ -48,6 +49,7 @@ Lines 2-5, characters 2-5:
 5 |   end..
 Warning 15 [implicit-public-methods]: the following private methods were made public implicitly:
  x.
+
 val o2 : < m : 'a -> int; x : int > as 'a = <obj>
 |}]
 
@@ -68,6 +70,7 @@ Lines 2-6, characters 2-5:
 6 |   end..
 Warning 15 [implicit-public-methods]: the following private methods were made public implicitly:
  x.
+
 val o3 : < m : 'a -> int; x : int > as 'a = <obj>
 val aargh : unit = ()
 |}]

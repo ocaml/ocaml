@@ -144,9 +144,17 @@
 #define Handler_parent          24
 
 /* struct c_stack_link */
+#if defined(SYS_mingw64) || defined (SYS_cygwin)
+#define Cstack_stack            32
+#define Cstack_sp               40
+#define Cstack_prev             48
+#define SIZEOF_C_STACK_LINK     56
+#else
 #define Cstack_stack             0
 #define Cstack_sp                8
 #define Cstack_prev             16
+#define SIZEOF_C_STACK_LINK     24
+#endif
 
 /******************************************************************************/
 /* DWARF */
@@ -369,20 +377,7 @@
 
 #endif
 
-#if defined(SYS_mingw64) || defined (SYS_cygwin)
-   /* Calls from OCaml to C must reserve 32 bytes of extra stack space */
-#  define PREPARE_FOR_C_CALL subq $32, %rsp; CFI_ADJUST(32)
-#  define CLEANUP_AFTER_C_CALL addq $32, %rsp; CFI_ADJUST(-32)
-   /* Stack probing mustn't be larger than the page size */
-#  define STACK_PROBE_SIZE 4096
-#else
-#  define PREPARE_FOR_C_CALL
-#  define CLEANUP_AFTER_C_CALL
-#  define STACK_PROBE_SIZE 4096
-#endif
-
-#define C_call(target) \
-  PREPARE_FOR_C_CALL; CHECK_STACK_ALIGNMENT; call target; CLEANUP_AFTER_C_CALL
+#define C_call(target) CHECK_STACK_ALIGNMENT; call target
 
 /******************************************************************************/
 /* Registers holding arguments of C functions. */
@@ -635,6 +630,9 @@ CFI_STARTPROC
     /* Make the alloc ptr available to the C code */
         movq    %r15, Caml_state(young_ptr)
     /* Copy arguments from OCaml to C stack */
+#if defined(SYS_mingw64) || defined (SYS_cygwin)
+        addq    $32, %rsp
+#endif
 LBL(105):
         subq    $8, %r12
         cmpq    %r13,%r12
@@ -642,6 +640,9 @@ LBL(105):
         push    (%r12); CFI_ADJUST(8)
         jmp     LBL(105)
 LBL(106):
+#if defined(SYS_mingw64) || defined (SYS_cygwin)
+        subq    $32, %rsp
+#endif
     /* Call the function (address in %rax) */
         C_call  (*%rax)
     /* Pop arguments back off the stack */
@@ -680,7 +681,7 @@ LBL(caml_start_program):
     /* Load young_ptr into %r15 */
         movq    Caml_state(young_ptr), %r15
     /* Build struct c_stack_link on the C stack */
-        subq    $24 /* sizeof struct c_stack_link */, %rsp; CFI_ADJUST(24)
+        subq    $SIZEOF_C_STACK_LINK, %rsp; CFI_ADJUST(SIZEOF_C_STACK_LINK)
         movq    $0, Cstack_stack(%rsp)
         movq    $0, Cstack_sp(%rsp)
         movq    Caml_state(c_stack), %r10
@@ -737,7 +738,7 @@ LBL(108):
     /* Pop the struct c_stack_link */
         movq    Cstack_prev(%rsp), %r10
         movq    %r10, Caml_state(c_stack)
-        addq    $24, %rsp; CFI_ADJUST(-24)
+        addq    $SIZEOF_C_STACK_LINK, %rsp; CFI_ADJUST(-SIZEOF_C_STACK_LINK)
     /* Restore callee-save registers. */
         POP_CALLEE_SAVE_REGS
     /* Return to caller. */

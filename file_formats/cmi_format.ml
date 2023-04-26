@@ -84,7 +84,7 @@ let read_cmi filename =
 let output_cmi filename oc cmi =
 (* beware: the provided signature must have been substituted for saving *)
   output_string oc Config.cmi_magic_number;
-  output_value oc ((cmi.cmi_name, cmi.cmi_sign) : header);
+  Marshal.(to_channel oc ((cmi.cmi_name, cmi.cmi_sign) : header) [Compression]);
   flush oc;
   let crc = Digest.file filename in
   let crcs = (cmi.cmi_name, Some crc) :: cmi.cmi_crcs in

@@ -25,19 +25,19 @@ CAMLextern void caml_leave_blocking_section (void);
 #define caml_acquire_runtime_system caml_leave_blocking_section
 #define caml_release_runtime_system caml_enter_blocking_section
 
-/* Manage the master lock around the OCaml run-time system.
+/* Manage the domain lock around the OCaml run-time system.
    Only one thread at a time can execute OCaml compiled code or
-   OCaml run-time system functions.
+   OCaml run-time system functions within a domain.
 
-   When OCaml calls a C function, the current thread holds the master
-   lock.  The C function can release it by calling
+   When OCaml calls a C function, the current thread holds the domain lock.
+   The C function can release it by calling
    [caml_release_runtime_system].  Then, another thread can execute OCaml
    code.  However, the calling thread must not access any OCaml data,
    nor call any runtime system function, nor call back into OCaml.
 
    Before returning to its OCaml caller, or accessing OCaml data,
    or call runtime system functions, the current thread must
-   re-acquire the master lock by calling [caml_acquire_runtime_system].
+   re-acquire the domain lock by calling [caml_acquire_runtime_system].
 
    Symmetrically, if a C function (not called from OCaml) wishes to
    call back into OCaml code, it should invoke [caml_acquire_runtime_system]

@@ -236,6 +236,12 @@ let rec find_opt p = function
   | [] -> None
   | x :: l -> if p x then Some x else find_opt p l
 
+let find_index p =
+  let rec aux i = function
+    [] -> None
+    | a::l -> if p a then Some i else aux (i+1) l in
+  aux 0
+
 let rec find_map f = function
   | [] -> None
   | x :: l ->
@@ -243,6 +249,16 @@ let rec find_map f = function
        | Some _ as result -> result
        | None -> find_map f l
      end
+
+let find_mapi f =
+  let rec aux i = function
+  | [] -> None
+  | x :: l ->
+     begin match f i x with
+       | Some _ as result -> result
+       | None -> aux (i+1) l
+     end in
+  aux 0
 
 let[@tail_mod_cons] rec find_all p = function
   | [] -> []
@@ -265,13 +281,13 @@ let[@tail_mod_cons] rec filter_map f = function
       | None -> filter_map f l
       | Some v -> v :: filter_map f l
 
-let concat_map f l =
-  let rec aux f acc = function
-    | [] -> rev acc
-    | x :: l ->
-       let xs = f x in
-       aux f (rev_append xs acc) l
-  in aux f [] l
+let[@tail_mod_cons] rec concat_map f = function
+  | [] -> []
+  | x::xs -> prepend_concat_map (f x) f xs
+and[@tail_mod_cons] prepend_concat_map ys f xs =
+  match ys with
+  | [] -> concat_map f xs
+  | y :: ys -> y :: prepend_concat_map ys f xs
 
 let fold_left_map f accu l =
   let rec aux accu l_accu = function
@@ -392,38 +408,11 @@ let stable_sort cmp l =
 let sort = stable_sort
 let fast_sort = stable_sort
 
-(* Note: on a list of length between about 100000 (depending on the minor
-   heap size and the type of the list) and Sys.max_array_size, it is
-   actually faster to use the following, but it might also use more memory
-   because the argument list cannot be deallocated incrementally.
-
-   Also, there seems to be a bug in this code or in the
-   implementation of obj_truncate.
-
-external obj_truncate : 'a array -> int -> unit = "caml_obj_truncate"
-
-let array_to_list_in_place a =
-  let l = Array.length a in
-  let rec loop accu n p =
-    if p <= 0 then accu else begin
-      if p = n then begin
-        obj_truncate a p;
-        loop (a.(p-1) :: accu) (n-1000) (p-1)
-      end else begin
-        loop (a.(p-1) :: accu) n (p-1)
-      end
-    end
-  in
-  loop [] (l-1000) l
-
-
-let stable_sort cmp l =
-  let a = Array.of_list l in
-  Array.stable_sort cmp a;
-  array_to_list_in_place a
-
-*)
-
+(* Note: on a very long list (length over about 100000), it used to be
+   faster to convert the list to an array, sort the array, and convert
+   back, truncating the array object after prepending each thousand
+   entries to the resulting list. Impossible now that Obj.truncate has
+   been removed. *)
 
 (** sorting + removing duplicates *)
 
@@ -550,6 +539,10 @@ let rec compare_length_with l n =
   | _ :: l ->
     if n <= 0 then 1 else
       compare_length_with l (n-1)
+
+let is_empty = function
+  | [] -> true
+  | _ :: _ -> false
 
 (** {1 Comparison} *)
 

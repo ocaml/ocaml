@@ -26,10 +26,6 @@ define capitalize
 $(foreach m,$(1),$(call capitalize_one,$m))
 endef
 
-define sort
-$(shell $(OCAMLDEP) -sort $(1))
-endef
-
 runtime_events_MLIS := runtime_events.mli
 str_MLIS := str.mli
 unix_MLIS := unix.mli unixLabels.mli
@@ -62,10 +58,8 @@ endif
 libref_TEXT=Ocaml_operators Format_tutorial
 libref_C=$(call capitalize,$(libref))
 
-PARSING_MLIS := $(call sort, \
-  $(notdir $(wildcard $(ROOTDIR)/parsing/*.mli))\
-)
-UTILS_MLIS := $(call sort,$(notdir $(wildcard $(ROOTDIR)/utils/*.mli)))
+PARSING_MLIS := $(notdir $(wildcard $(ROOTDIR)/parsing/*.mli))
+UTILS_MLIS := $(notdir $(wildcard $(ROOTDIR)/utils/*.mli))
 DRIVER_MLIS := pparse.mli
 
 compilerlibref_MLIS= \
@@ -76,8 +70,20 @@ compilerlibref=$(compilerlibref_MLIS:%.mli=%)
 compilerlibref_TEXT=Compiler_libs
 compilerlibref_C=$(call capitalize,$(compilerlibref))
 
-ALL_LIBREF= $(libref_TEXT:%=libref/%) $(libref:%=libref/%)
+ALL_LIBREF= \
+  $(sort $(libref_TEXT:%=libref/%)) \
+  $(sort $(filter-out libref/camlinternal%, $(libref:%=libref/%))) \
+  $(sort $(filter libref/camlinternal%, $(libref:%=libref/%)))
+
 ALL_COMPILERLIBREF= \
   $(compilerlibref_TEXT:%=compilerlibref/%) \
   $(compilerlibref:%=compilerlibref/%)
+# Note that the output of $(wildcard ...) is sorted alphabetically.
+# The compilerlibs index will be thus be sorted first by category:
+# - text documentation
+# - parsing modules
+# - utils modules
+# - driver modules
+# And then alphabetically inside each category.
+
 ALL_DOC= $(ALL_LIBREF) $(ALL_COMPILERLIBREF)

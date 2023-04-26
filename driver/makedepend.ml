@@ -593,6 +593,8 @@ let run_main argv =
     Clflags.add_arguments __LOC__ [
       "-absname", Arg.Set Clflags.absname,
         " Show absolute filenames in error messages";
+      "-no-absname", Arg.Clear Clflags.absname,
+        " Do not try to show absolute filenames in error messages (default)";
       "-all", Arg.Set all_dependencies,
         " Generate dependencies on all files";
       "-allow-approx", Arg.Set allow_approximation,

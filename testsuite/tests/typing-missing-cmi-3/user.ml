@@ -1,14 +1,13 @@
 (* TEST
-
-readonly_files = "original.ml middle.ml"
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-module = "original.ml"
-*** ocamlc.byte
-module = "middle.ml"
-**** script
-script = "rm -f original.cmi"
-***** expect
+ readonly_files = "original.ml middle.ml";
+ setup-ocamlc.byte-build-env;
+ module = "original.ml";
+ ocamlc.byte;
+ module = "middle.ml";
+ ocamlc.byte;
+ script = "rm -f original.cmi";
+ script;
+ expect;
 *)
 
 
@@ -98,4 +97,21 @@ val t : unit = ()
 let k = match Middle.s with Middle.S -> ()
 [%%expect {|
 val k : unit = ()
+|}]
+
+(* #11560: gadts and missing cmis *)
+
+let  f : type a b. (a Middle.ti -> unit) -> (a,b) Middle.gadt -> b -> unit =
+  fun call Middle.G x -> call x
+[%%expect {|
+val f : ('a Middle.ti -> unit) -> ('a, 'b) Middle.gadt -> 'b -> unit = <fun>
+|}]
+
+(* Check re-exportation of GADTs *)
+
+let f : type a. a Middle.is_int -> a -> int = fun Middle.Is_int x -> x
+let g : bool Middle.is_int -> 'a = function _ -> .
+[%%expect{|
+val f : 'a Middle.is_int -> 'a -> int = <fun>
+val g : bool Middle.is_int -> 'a = <fun>
 |}]

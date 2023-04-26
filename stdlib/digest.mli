@@ -33,18 +33,18 @@ val compare : t -> t -> int
     shared with {!String.compare}. Along with the type [t], this
     function [compare] allows the module [Digest] to be passed as
     argument to the functors {!Set.Make} and {!Map.Make}.
-    @since 4.00.0 *)
+    @since 4.00 *)
 
 val equal : t -> t -> bool
 (** The equal function for 16-character digest.
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 val string : string -> t
 (** Return the digest of the given string. *)
 
 val bytes : bytes -> t
 (** Return the digest of the given byte sequence.
-    @since 4.02.0 *)
+    @since 4.02 *)
 
 val substring : string -> int -> int -> t
 (** [Digest.substring s ofs len] returns the digest of the substring
@@ -53,7 +53,7 @@ val substring : string -> int -> int -> t
 val subbytes : bytes -> int -> int -> t
 (** [Digest.subbytes s ofs len] returns the digest of the subsequence
     of [s] starting at index [ofs] and containing [len] bytes.
-    @since 4.02.0 *)
+    @since 4.02 *)
 
 external channel : in_channel -> int -> t = "caml_md5_chan"
 (** If [len] is nonnegative, [Digest.channel ic len] reads [len]
@@ -81,4 +81,4 @@ val from_hex : string -> t
 (** Convert a hexadecimal representation back into the corresponding digest.
     @raise Invalid_argument if the argument is not exactly 32 hexadecimal
    characters.
-   @since 4.00.0 *)
+   @since 4.00 *)

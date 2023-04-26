@@ -24,8 +24,7 @@
 #include <process.h>
 #include <stdio.h>
 
-CAMLprim value caml_unix_system(cmd)
-     value cmd;
+CAMLprim value caml_unix_system(value cmd)
 {
   int ret;
   value st;

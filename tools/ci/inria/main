@@ -146,6 +146,9 @@ jobs=''
 bootstrap=false
 init_submodule=false
 
+memory_model_tests="tests/memory-model/forbidden.ml \
+tests/memory-model/publish.ml"
+
 case "${OCAML_ARCH}" in
   bsd|solaris)
     make=gmake
@@ -159,10 +162,12 @@ case "${OCAML_ARCH}" in
   cygwin)
     cleanup=true
     check_make_alldepend=true
+    export OCAMLTEST_SKIP_TESTS="$memory_model_tests"
   ;;
   cygwin64)
     cleanup=true
     check_make_alldepend=true
+    export OCAMLTEST_SKIP_TESTS="$memory_model_tests"
   ;;
   mingw)
     build='--build=i686-pc-cygwin'
@@ -170,8 +175,7 @@ case "${OCAML_ARCH}" in
     instdir='C:/ocamlmgw'
     cleanup=true
     check_make_alldepend=true
-    # This is needed until the winpthreads support is implemented directly
-    export PATH="$PATH:/usr/i686-w64-mingw32/sys-root/mingw/bin"
+    init_submodule=true
   ;;
   mingw64)
     build='--build=x86_64-pc-cygwin'
@@ -179,8 +183,7 @@ case "${OCAML_ARCH}" in
     instdir='C:/ocamlmgw64'
     cleanup=true
     check_make_alldepend=true
-    # This is needed until the winpthreads support is implemented directly
-    export PATH="$PATH:/usr/x86_64-w64-mingw32/sys-root/mingw/bin"
+    init_submodule=true
   ;;
   msvc)
     build='--build=i686-pc-cygwin'
@@ -253,7 +256,7 @@ fi
 
 eval ./configure "$CCOMP" $build $host --prefix='$instdir' $confoptions
 
-grep -q '^ARCH=none' Makefile.config && make_native=false
+grep -q '^NATIVE_COMPILER=false' Makefile.config && make_native=false
 
 if test "$flambda" = "true" && test "$make_native" = "false"; then
   echo "No need to test flambda in a bytecode-only system; skipping the test."
@@ -280,8 +283,9 @@ rm -rf "$instdir"
 
 cd testsuite
 if test -n "$jobs" && test -x /usr/bin/parallel
-then PARALLEL="$jobs $PARALLEL" $make --warn-undefined-variables parallel
-else $make --warn-undefined-variables all
+then PARALLEL="$jobs $PARALLEL" $make --warn-undefined-variables \
+                                      SHOW_TIMINGS=1 parallel
+else $make --warn-undefined-variables SHOW_TIMINGS=1 all
 fi
 
 if $bootstrap; then

@@ -112,8 +112,8 @@ static void output_short(int n)
 
 void output_rule_data(void)
 {
-    register int i;
-    register int j;
+    int i;
+    int j;
 
 
     fprintf(output_file, "let yylhs = \"");
@@ -160,7 +160,7 @@ void output_rule_data(void)
 
 void output_yydefred(void)
 {
-    register int i, j;
+    int i, j;
 
     fprintf(output_file, "let yydefred = \"");
     output_short(defred[0] ? defred[0] - 2 : 0);
@@ -215,11 +215,11 @@ void output_actions(void)
 
 void token_actions(void)
 {
-    register int i, j;
-    register int shiftcount, reducecount;
-    register int max, min;
-    register short *actionrow, *r, *s;
-    register action *p;
+    int i, j;
+    int shiftcount, reducecount;
+    int max, min;
+    short *actionrow, *r, *s;
+    action *p;
 
     actionrow = NEW2(2*ntokens, short);
     for (i = 0; i < nstates; ++i)
@@ -299,7 +299,7 @@ void token_actions(void)
 
 void goto_actions(void)
 {
-    register int i, j, k;
+    int i, j, k;
 
     state_count = NEW2(nstates, short);
 
@@ -334,11 +334,11 @@ void goto_actions(void)
 int
 default_goto(int symbol)
 {
-    register int i;
-    register int m;
-    register int n;
-    register int default_state;
-    register int max;
+    int i;
+    int m;
+    int n;
+    int default_state;
+    int max;
 
     m = goto_map[symbol];
     n = goto_map[symbol + 1];
@@ -369,14 +369,14 @@ default_goto(int symbol)
 
 void save_column(int symbol, int default_state)
 {
-    register int i;
-    register int m;
-    register int n;
-    register short *sp;
-    register short *sp1;
-    register short *sp2;
-    register int count;
-    register int symno;
+    int i;
+    int m;
+    int n;
+    short *sp;
+    short *sp1;
+    short *sp2;
+    int count;
+    int symno;
 
     m = goto_map[symbol];
     n = goto_map[symbol + 1];
@@ -409,11 +409,11 @@ void save_column(int symbol, int default_state)
 
 void sort_actions(void)
 {
-  register int i;
-  register int j;
-  register int k;
-  register int t;
-  register int w;
+  int i;
+  int j;
+  int k;
+  int t;
+  int w;
 
   order = NEW2(nvectors, short);
   nentries = 0;
@@ -444,9 +444,9 @@ void sort_actions(void)
 
 void pack_table(void)
 {
-    register int i;
-    register int place;
-    register int state;
+    int i;
+    int place;
+    int state;
 
     base = NEW2(nvectors, short);
     pos = NEW2(nentries, short);
@@ -507,13 +507,13 @@ void pack_table(void)
 int
 matching_vector(int vector)
 {
-    register int i;
-    register int j;
-    register int k;
-    register int t;
-    register int w;
-    register int match;
-    register int prev;
+    int i;
+    int j;
+    int k;
+    int t;
+    int w;
+    int match;
+    int prev;
 
     i = order[vector];
     if (i >= 2*nstates)
@@ -547,12 +547,12 @@ matching_vector(int vector)
 int
 pack_vector(int vector)
 {
-    register int i, j, k, l;
-    register int t;
-    register int loc;
-    register int ok;
-    register short *from;
-    register short *to;
+    int i, j, k, l;
+    int t;
+    int loc;
+    int ok;
+    short *from;
+    short *to;
     int newmax;
 
     i = order[vector];
@@ -623,7 +623,7 @@ pack_vector(int vector)
 
 void output_base(void)
 {
-    register int i, j;
+    int i, j;
 
     fprintf(output_file, "let yysindex = \"");
     output_short(base[0]);
@@ -694,8 +694,8 @@ void output_base(void)
 
 void output_table(void)
 {
-    register int i;
-    register int j;
+    int i;
+    int j;
 
     ++outline;
     fprintf(code_file, "let yytablesize = %d\n", high);
@@ -726,8 +726,8 @@ void output_table(void)
 
 void output_check(void)
 {
-    register int i;
-    register int j;
+    int i;
+    int j;
 
     fprintf(output_file, "let yycheck = \"");
     output_short(check[0]);
@@ -781,8 +781,8 @@ void output_transl(void)
 
 void output_stored_text(void)
 {
-    register int c;
-    register FILE *in, *out;
+    int c;
+    FILE *in, *out;
 
     fclose(text_file);
     text_file = fopen_os(text_file_name, T("r"));
@@ -834,8 +834,8 @@ void output_debug(void)
 
 void output_trailing_text(void)
 {
-    register int c, last;
-    register FILE *in, *out;
+    int c, last;
+    FILE *in, *out;
 
     if (line == 0)
         return;
@@ -896,8 +896,8 @@ void output_trailing_text(void)
 
 void copy_file(FILE **file, char_os *file_name)
 {
-  register int c, last;
-  register FILE *out = code_file;
+  int c, last;
+  FILE *out = code_file;
   int state = 0;
 
   fclose(*file);
@@ -947,7 +947,7 @@ void output_entries(void)
 
 void free_itemsets(void)
 {
-    register core *cp, *next;
+    core *cp, *next;
 
     FREE(state_table);
     for (cp = first_state; cp; cp = next)
@@ -960,7 +960,7 @@ void free_itemsets(void)
 
 void free_shifts(void)
 {
-    register shifts *sp, *next;
+    shifts *sp, *next;
 
     FREE(shift_table);
     for (sp = first_shift; sp; sp = next)
@@ -974,7 +974,7 @@ void free_shifts(void)
 
 void free_reductions(void)
 {
-    register reductions *rp, *next;
+    reductions *rp, *next;
 
     FREE(reduction_table);
     for (rp = first_reduction; rp; rp = next)

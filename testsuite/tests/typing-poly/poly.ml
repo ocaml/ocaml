@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 (*
@@ -55,6 +55,7 @@ Lines 1-4, characters 0-24:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {pv=false::_}
+
 - : string = "OK"
 |}];;
 
@@ -72,6 +73,7 @@ Lines 1-4, characters 0-20:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {pv=0::_}
+
 - : string = "OK"
 |}];;
 
@@ -305,6 +307,7 @@ Line 8, characters 4-16:
 8 |     self#tl#fold ~f ~init:(f self#hd init)
         ^^^^^^^^^^^^
 Warning 18 [not-principal]: this use of a polymorphic method is not principal.
+
 class ['a] ostream1 :
   hd:'a ->
   tl:'b ->
@@ -617,7 +620,9 @@ val app : int * bool = (1, true)
 Line 9, characters 0-25:
 9 | type 'a foo = 'a foo list
     ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation foo is cyclic
+Error: The type abbreviation foo is cyclic:
+         'a foo = 'a foo list,
+         'a foo list contains 'a foo
 |}];;
 
 class ['a] bar (x : 'a) = object end
@@ -909,8 +914,9 @@ type t = u and u = t;;
 Line 1, characters 0-10:
 1 | type t = u and u = t;;
     ^^^^^^^^^^
-Error: The definition of t contains a cycle:
-       u
+Error: The type abbreviation t is cyclic:
+         t = u,
+         u = t
 |}];;
 
 (* PR#8188 *)
@@ -991,6 +997,7 @@ Error: This recursive type is not regular.
        but it is used as
          'a list u
        after the following expansion(s):
+         < m : 'a v > contains 'a v,
          'a v = 'a list u
        All uses need to match the definition for the recursive type to be regular.
 |}];;
@@ -1026,7 +1033,7 @@ Line 1, characters 0-83:
 1 | type ('a1, 'b1) ty1 = 'a1 -> unit constraint 'a1 = [> `V1 of ('a1, 'b1) ty2 as 'b1]
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of ty1 contains a cycle:
-       [> `V1 of ('a, 'b) ty2 as 'b ] as 'a
+         ([> `V1 of 'a ] as 'b, 'a) ty2 as 'a contains 'a
 |}];;
 
 (* PR#8359: expanding may change original in Ctype.unify2 *)
@@ -1105,6 +1112,7 @@ Line 4, characters 11-60:
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 15 [implicit-public-methods]: the following private methods were made public implicitly:
  n.
+
 val f : unit -> < m : int; n : int > = <fun>
 Line 5, characters 27-39:
 5 | let f () = object (self:c) method n = 1 method m = 2 end;;
@@ -1278,18 +1286,21 @@ Line 2, characters 9-16:
 2 | fun x -> (f x)#m;; (* Warning 18 *)
              ^^^^^^^
 Warning 18 [not-principal]: this use of a polymorphic method is not principal.
+
 - : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
 val f : < m : 'a. 'a -> 'a > * 'b -> < m : 'a. 'a -> 'a > = <fun>
 Line 4, characters 9-20:
 4 | fun x -> (f (x,x))#m;; (* Warning 18 *)
              ^^^^^^^^^^^
 Warning 18 [not-principal]: this use of a polymorphic method is not principal.
+
 - : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
 val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > array = <fun>
 Line 6, characters 9-20:
 6 | fun x -> (f x).(0)#m;; (* Warning 18 *)
              ^^^^^^^^^^^
 Warning 18 [not-principal]: this use of a polymorphic method is not principal.
+
 - : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
 |}];;
 
@@ -1319,11 +1330,13 @@ Line 4, characters 42-62:
 4 | let f x = let l = [Some x; (None : u)] in (just(List.hd l))#id;;
                                               ^^^^^^^^^^^^^^^^^^^^
 Warning 18 [not-principal]: this use of a polymorphic method is not principal.
+
 val f : c -> 'a -> 'a = <fun>
 Line 7, characters 36-47:
 7 |   let x = List.hd [Some x; none] in (just x)#id;;
                                         ^^^^^^^^^^^
 Warning 18 [not-principal]: this use of a polymorphic method is not principal.
+
 val g : c -> 'a -> 'a = <fun>
 val h : < id : 'a; .. > -> 'a = <fun>
 |}];;
@@ -1516,30 +1529,33 @@ val n : < m : 'x 'a. ([< `Foo of 'x ] as 'a) -> 'x > = <obj>
 let n =
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 [%%expect {|
-val n : < m : 'x. [< `Foo of 'x ] -> 'x > = <obj>
+Line 2, characters 9-68:
+2 |   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The method m has type 'a -> 'b but is expected to have type
+         [< `Foo of 'x ] -> 'c
+       The universal variable 'x would escape its scope
 |}];;
 (* fail *)
 let (n : < m : 'a. [< `Foo of int] -> 'a >) =
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 [%%expect {|
-Line 2, characters 2-72:
+Line 2, characters 9-68:
 2 |   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type < m : 'x. [< `Foo of 'x ] -> 'x >
-       but an expression was expected of type
-         < m : 'a. [< `Foo of int ] -> 'a >
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The method m has type 'a -> 'b but is expected to have type
+         [< `Foo of 'x ] -> 'c
        The universal variable 'x would escape its scope
 |}];;
 (* fail *)
 let (n : 'b -> < m : 'a . ([< `Foo of int] as 'b) -> 'a >) = fun x ->
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 [%%expect {|
-Line 2, characters 2-72:
+Line 2, characters 9-68:
 2 |   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type < m : 'x. [< `Foo of 'x ] -> 'x >
-       but an expression was expected of type
-         < m : 'a. [< `Foo of int ] -> 'a >
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The method m has type 'a -> 'b but is expected to have type
+         [< `Foo of 'x ] -> 'c
        The universal variable 'x would escape its scope
 |}];;
 (* ok *)
@@ -1805,7 +1821,8 @@ Line 1, characters 0-63:
 Error: The type of this class,
        class ['a] r :
          object constraint 'a = '_weak2 list ref method get : 'a end,
-       contains type variables that cannot be generalized
+       contains the non-generalizable type variable(s): '_weak2.
+       (see manual section 6.1.2)
 |}]
 
 (* #8701 *)

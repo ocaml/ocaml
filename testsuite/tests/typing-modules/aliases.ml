@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 module C = Char;;
@@ -23,6 +23,8 @@ module C' :
     type t = char
     val compare : t -> t -> int
     val equal : t -> t -> bool
+    val seeded_hash : int -> t -> int
+    val hash : t -> int
     external unsafe_chr : int -> char = "%identity"
   end
 - : char = 'B'
@@ -36,6 +38,8 @@ module C3 :
     type t = char
     val compare : t -> t -> int
     val equal : t -> t -> bool
+    val seeded_hash : int -> t -> int
+    val hash : t -> int
     external unsafe_chr : int -> char = "%identity"
   end
 - : char = 'B'
@@ -63,6 +67,8 @@ module F :
       type t = char
       val compare : t -> t -> int
       val equal : t -> t -> bool
+      val seeded_hash : int -> t -> int
+      val hash : t -> int
       external unsafe_chr : int -> char = "%identity"
     end
 module C4 :
@@ -75,6 +81,8 @@ module C4 :
     type t = char
     val compare : t -> t -> int
     val equal : t -> t -> bool
+    val seeded_hash : int -> t -> int
+    val hash : t -> int
     external unsafe_chr : int -> char = "%identity"
   end
 - : char = 'B'
@@ -294,7 +302,7 @@ module StringSet :
     val find_last : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
     val iter : (elt -> unit) -> t -> unit
-    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
     val map : (elt -> elt) -> t -> t
     val filter : (elt -> bool) -> t -> t
     val filter_map : (elt -> elt option) -> t -> t
@@ -342,7 +350,7 @@ module SSet :
     val find_last : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
     val iter : (elt -> unit) -> t -> unit
-    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
     val map : (elt -> elt) -> t -> t
     val filter : (elt -> bool) -> t -> t
     val filter_map : (elt -> elt option) -> t -> t
@@ -422,7 +430,7 @@ module A :
         val find_last : (elt -> bool) -> t -> elt
         val find_last_opt : (elt -> bool) -> t -> elt option
         val iter : (elt -> unit) -> t -> unit
-        val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+        val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
         val map : (elt -> elt) -> t -> t
         val filter : (elt -> bool) -> t -> t
         val filter_map : (elt -> elt option) -> t -> t
@@ -554,7 +562,7 @@ module SInt :
     val find_last : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
     val iter : (elt -> unit) -> t -> unit
-    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
     val map : (elt -> elt) -> t -> t
     val filter : (elt -> bool) -> t -> t
     val filter_map : (elt -> elt option) -> t -> t

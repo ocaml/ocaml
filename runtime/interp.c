@@ -357,6 +357,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     if (caml_params->trace_level>1)
       printf("\n##%" ARCH_INTNAT_PRINTF_FORMAT "d\n", caml_bcodcount);
     if (caml_params->trace_level>0) caml_disasm_instr(pc);
+    if (caml_params->event_trace>0) caml_event_trace(pc);
     if (caml_params->trace_level>1) {
       printf("env=");
       caml_trace_value_file(env,prog,prog_size,stdout);
@@ -1034,34 +1035,34 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     Instruct(C_CALL1):
       Setup_for_c_call;
-      accu = Primitive(*pc)(accu);
+      accu = Primitive1(*pc)(accu);
       Restore_after_c_call;
       pc++;
       Next;
     Instruct(C_CALL2):
       Setup_for_c_call;
-      accu = Primitive(*pc)(accu, sp[2]);
+      accu = Primitive2(*pc)(accu, sp[2]);
       Restore_after_c_call;
       sp += 1;
       pc++;
       Next;
     Instruct(C_CALL3):
       Setup_for_c_call;
-      accu = Primitive(*pc)(accu, sp[2], sp[3]);
+      accu = Primitive3(*pc)(accu, sp[2], sp[3]);
       Restore_after_c_call;
       sp += 2;
       pc++;
       Next;
     Instruct(C_CALL4):
       Setup_for_c_call;
-      accu = Primitive(*pc)(accu, sp[2], sp[3], sp[4]);
+      accu = Primitive4(*pc)(accu, sp[2], sp[3], sp[4]);
       Restore_after_c_call;
       sp += 3;
       pc++;
       Next;
     Instruct(C_CALL5):
       Setup_for_c_call;
-      accu = Primitive(*pc)(accu, sp[2], sp[3], sp[4], sp[5]);
+      accu = Primitive5(*pc)(accu, sp[2], sp[3], sp[4], sp[5]);
       Restore_after_c_call;
       sp += 4;
       pc++;
@@ -1070,7 +1071,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       int nargs = *pc++;
       *--sp = accu;
       Setup_for_c_call;
-      accu = Primitive(*pc)(sp + 2, nargs);
+      accu = PrimitiveN(*pc)(sp + 2, nargs);
       Restore_after_c_call;
       sp += nargs;
       pc++;
@@ -1326,7 +1327,9 @@ do_resume: {
 
       check_trap_barrier_for_effect (domain_state);
       if (parent_stack == NULL) {
+        Setup_for_c_call;
         accu = caml_make_unhandled_effect_exn(accu);
+        Restore_after_c_call;
         goto raise_exception;
       }
 
@@ -1370,9 +1373,12 @@ do_resume: {
       sp[1] = Val_long(extra_args);
 
       if (parent == NULL) {
-        accu = caml_continuation_use(cont);
-        resume_fn = raise_unhandled_effect;
+        Setup_for_c_call;
         resume_arg = caml_make_unhandled_effect_exn(eff);
+        accu = caml_continuation_use(cont);
+        Restore_after_c_call;
+        resume_fn = raise_unhandled_effect;
+
         goto do_resume;
       }
 

@@ -1,5 +1,5 @@
 (* TEST
-* expect
+ expect;
 *)
 class type ct = object end
 module type s = sig type a val one:int type b class two:ct type c type exn+=Three type d end

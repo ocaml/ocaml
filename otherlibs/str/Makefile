@@ -16,15 +16,13 @@
 # Makefile for the str library
 
 LIBNAME=str
-COBJS=strstubs.$(O)
+C_SOURCES=strstubs.c
 CLIBNAME=camlstr
 CAMLOBJS=str.cmo
 
 include ../Makefile.otherlibs.common
 str.cmo: str.cmi
 str.cmx: str.cmi
-
-LDOPTS = $(PTHREAD_LINK)
 
 .PHONY: depend
 depend:

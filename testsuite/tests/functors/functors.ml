@@ -1,8 +1,8 @@
 (* TEST
-   * setup-ocamlc.byte-build-env
-   ** ocamlc.byte
-      flags = "-dlambda -dno-unique-ids"
-   *** check-ocamlc.byte-output
+ setup-ocamlc.byte-build-env;
+ flags = "-dlambda -dno-unique-ids";
+ ocamlc.byte;
+ check-ocamlc.byte-output;
 *)
 
 module type S = sig

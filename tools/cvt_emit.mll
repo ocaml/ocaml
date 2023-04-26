@@ -35,15 +35,15 @@ let print_unescaped_string s =
   done
 }
 
-rule main = parse
+rule lex = parse
     "`" { lexeme_beginning := Lexing.lexeme_start lexbuf;
           first_item := true;
           print_char '(';
           command lexbuf;
           print_char ')';
-          main lexbuf }
+          lex lexbuf }
   | "\\`"
-        { print_string "`"; main lexbuf }
+        { print_string "`"; lex lexbuf }
   | '\t' { prerr_string "Invalid tab at character ";
            prerr_int (Lexing.lexeme_start lexbuf);
            prerr_newline();
@@ -52,7 +52,7 @@ rule main = parse
           print_char '"';
           string lexbuf }
   | eof { () }
-  | _   { print_char(Lexing.lexeme_char lexbuf 0); main lexbuf }
+  | _   { print_char(Lexing.lexeme_char lexbuf 0); lex lexbuf }
 
 and command = parse
     "`" { () }
@@ -88,7 +88,7 @@ and command = parse
 
 and string = parse
   | '"' { print_char '"';
-          main lexbuf }
+          lex lexbuf }
   | '\\' _ | [^ '\\' '"' ]+
         { print_string (Lexing.lexeme lexbuf);
           string lexbuf }
@@ -98,7 +98,9 @@ and string = parse
           exit 2 }
 
 {
-let _ = main(Lexing.from_channel stdin)
+let main () =
+  lex (Lexing.from_channel stdin);
+  exit 0
 
-let _ = exit (0)
+let _ = main ()
 }

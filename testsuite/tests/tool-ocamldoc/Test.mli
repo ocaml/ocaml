@@ -1,5 +1,5 @@
 (* TEST
-   * ocamldoc with latex
+ ocamldoc with latex;
 *)
 
 (** Ten comments for tests *)

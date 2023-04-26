@@ -153,4 +153,4 @@ TODO: I would be curious to know!
 (For the brave there are some scripts in
 link:../tools/ci/inria/sanitizers/script[], but you probably don't
 want to run them directly, in particular they will `git clean -xfd`,
-destroying changed/uncommited files in your development repository!)
+destroying changed/uncommitted files in your development repository!)

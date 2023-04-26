@@ -150,6 +150,14 @@ let rec find p xs =
   | Cons (x, xs) ->
       if p x then Some x else find p xs
 
+let find_index p xs =
+  let rec aux i xs = match xs() with
+    | Nil ->
+        None
+    | Cons (x, xs) ->
+        if p x then Some i else aux (i+1) xs in
+  aux 0 xs
+
 let rec find_map f xs =
   match xs() with
   | Nil ->
@@ -160,6 +168,18 @@ let rec find_map f xs =
           find_map f xs
       | Some _ as result ->
           result
+
+let find_mapi f xs =
+  let rec aux i xs = match xs() with
+    | Nil ->
+        None
+    | Cons (x, xs) ->
+        match f i x with
+        | None ->
+            aux (i+1) xs
+        | Some _ as result ->
+            result in
+  aux 0 xs
 
 (* [iter2], [fold_left2], [for_all2], [exists2], [map2], [zip] work also in
    the case where the two sequences have different lengths. They stop as soon

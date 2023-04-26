@@ -194,7 +194,7 @@ CAMLexport value caml_raise_if_exception(value res)
 /* We use a pre-allocated exception because we can't
    do a GC before the exception is raised (lack of stack descriptors
    for the ccall to [caml_array_bound_error]).  */
-static value array_bound_exn()
+static value array_bound_exn(void)
 {
   static atomic_uintnat exn_cache = ATOMIC_UINTNAT_INIT(0);
   const value* exn = (const value*)atomic_load_acq(&exn_cache);

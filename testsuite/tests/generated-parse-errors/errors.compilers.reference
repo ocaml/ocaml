@@ -756,8 +756,8 @@ File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE COLON 
 Error: Syntax error
 File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE EQUAL UIDENT WITH", line 1, characters 29-33:
 Error: Syntax error
-File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE EQUAL WITH", line 1, characters 22-26:
-Error: Syntax error
+File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE EQUAL WITH", line 1, characters 20-21:
+Error: Syntax error: : expected.
 File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE LPAREN RPAREN WITH", line 1, characters 24-28:
 Error: Syntax error
 File "implementation: LBRACKETPERCENTPERCENT WITH COLON MODULE UNDERSCORE WITH", line 1, characters 20-24:
@@ -1362,8 +1362,8 @@ File "implementation: MODULE UNDERSCORE COLON UIDENT WITH TYPE WITH", line 1, ch
 Error: Syntax error
 File "implementation: MODULE UNDERSCORE COLON UIDENT WITH WITH", line 1, characters 23-27:
 Error: Syntax error
-File "implementation: MODULE UNDERSCORE COLON WITH", line 1, characters 11-15:
-Error: Syntax error
+File "implementation: MODULE UNDERSCORE COLON WITH", line 1, characters 9-10:
+Error: Syntax error: = expected.
 File "implementation: MODULE UNDERSCORE EQUAL QUOTED_STRING_EXPR IN", line 1, characters 27-29:
 Error: Syntax error
 File "implementation: MODULE UNDERSCORE EQUAL UIDENT WITH", line 1, characters 18-22:

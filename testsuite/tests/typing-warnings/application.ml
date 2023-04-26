@@ -1,6 +1,6 @@
 (* TEST
-   flags = " -w +A -strict-sequence "
-   * expect
+ flags = " -w +A -strict-sequence ";
+ expect;
 *)
 
 (* Ignore OCAMLRUNPARAM=b to be reproducible *)
@@ -21,6 +21,7 @@ Line 1, characters 8-22:
             ^^^^^^^^^^^^^^
 Warning 5 [ignored-partial-application]: this function application is partial,
 maybe some arguments are missing.
+
 - : int -> 'a = <fun>
 |}]
 
@@ -50,6 +51,7 @@ Line 1, characters 21-35:
                          ^^^^^^^^^^^^^^
 Warning 5 [ignored-partial-application]: this function application is partial,
 maybe some arguments are missing.
+
 - : int -> int = <fun>
 |}]
 
@@ -73,7 +75,54 @@ Line 1, characters 18-23:
                       ^^^^^
 Warning 5 [ignored-partial-application]: this function application is partial,
 maybe some arguments are missing.
+
 val f : t -> unit = <fun>
+|}]
+
+let f a b = a + b;;
+match f 42 with
+| _ -> ();;
+[%%expect {|
+val f : int -> int -> int = <fun>
+Line 2, characters 6-10:
+2 | match f 42 with
+          ^^^^
+Warning 5 [ignored-partial-application]: this function application is partial,
+maybe some arguments are missing.
+
+- : unit = ()
+|}]
+
+let f a b = a + b;;
+match f 42 with
+| _ -> ()
+| exception _ -> ();;
+[%%expect {|
+val f : int -> int -> int = <fun>
+Line 2, characters 6-10:
+2 | match f 42 with
+          ^^^^
+Warning 5 [ignored-partial-application]: this function application is partial,
+maybe some arguments are missing.
+
+- : unit = ()
+|}]
+
+let f a b = a + b;;
+match f 42 with
+| x -> ignore (x 34);;
+[%%expect {|
+val f : int -> int -> int = <fun>
+- : unit = ()
+|}]
+
+
+let f a b = a + b;;
+match (f 42 : _) with
+| _ -> ();;
+[%%expect {|
+val f : int -> int -> int = <fun>
+- : unit = ()
 |}]
 
 let _ = raise Exit 3;;
@@ -82,6 +131,7 @@ Line 1, characters 19-20:
 1 | let _ = raise Exit 3;;
                        ^
 Warning 20 [ignored-extra-argument]: this argument will not be used by the function.
+
 Exception: Stdlib.Exit.
 |}]
 

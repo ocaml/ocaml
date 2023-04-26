@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let test_size =
   try int_of_string (Sys.getenv "OCAML_TEST_SIZE")

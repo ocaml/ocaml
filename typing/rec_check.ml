@@ -27,7 +27,7 @@ but some other are meaningless
 {[
   let rec x = x
   let rec x = x+1
-|}
+]}
 
 Intuitively, a recursive definition makes sense when the body of the
 definition can be evaluated without fully knowing what the recursive
@@ -249,7 +249,7 @@ let classify_expression : Typedtree.expression -> sd =
             *)
             Dynamic
         end
-    | Path.Pdot _ | Path.Papply _ ->
+    | Path.Pdot _ | Path.Papply _ | Path.Pextra_ty _ ->
         (* local modules could have such paths to local definitions;
             classify_expression could be extend to compute module
             shapes more precisely *)
@@ -860,6 +860,8 @@ and modexp : Typedtree.module_expr -> term_judg =
         modexp f << Dereference;
         modexp p << Dereference;
       ]
+    | Tmod_apply_unit f ->
+      modexp f << Dereference
     | Tmod_constraint (mexp, _, _, coe) ->
       let rec coercion coe k = match coe with
         | Tcoerce_none ->
@@ -909,6 +911,8 @@ and path : Path.t -> term_judg =
           path f << Dereference;
           path p << Dereference;
         ]
+    | Path.Pextra_ty (p, _extra) ->
+        path p
 
 (* G |- struct ... end : m *)
 and structure : Typedtree.structure -> term_judg =

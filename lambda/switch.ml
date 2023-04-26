@@ -188,7 +188,7 @@ end
  1. The code to compute an optimal sequence of tests also makes use of
     an interval check (is the input in the range [m; n]), which
     (as remarked by Bernstein) can be implemented efficiently as
-    a substraction and an unsigned comparison. We don't know of an
+    a subtraction and an unsigned comparison. We don't know of an
     efficient algorithm to compute optimal test sequences using both
     comparison and interval checks, so instead:
     a. on large input intervals, we use the dichotomy
@@ -634,9 +634,9 @@ let rec pkey chan  = function
          else act810
        else act_default
 
-     Our interval check works by substracting the interval lower
+     Our interval check works by subtracting the interval lower
      bound, then checking a range [0; n] using an unsigned
-     comparison. Naively we would generate code with one substraction
+     comparison. Naively we would generate code with one subtraction
      to [a] before each comparison:
 
        let tmp1 = a - 2 in
@@ -650,7 +650,7 @@ let rec pkey chan  = function
        else act_default
 
      but we can avoid some substractions by working with the result
-     of the first substraction, instead of the original index [a],
+     of the first subtraction, instead of the original index [a],
      inside the interval.
 
        let a2 = a - 2 in
@@ -662,7 +662,7 @@ let rec pkey chan  = function
            else act810
        else act_default
 
-     The type [t_ctx] represents an input argumnt "shifted" by a certain
+     The type [t_ctx] represents an input argument "shifted" by a certain
      (negative) offset by repeated substractions.
 
      In the example above, [a5] would be represented with [off = -5].

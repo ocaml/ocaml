@@ -1,4 +1,4 @@
-(* TEST *)
+(* TEST_BELOW*)
 
 let print_loc loc =
   print_endline loc
@@ -159,3 +159,6 @@ let () =
   (new klass)#meth ();
   inline_object ();
   bang ()
+
+(* TEST
+*)

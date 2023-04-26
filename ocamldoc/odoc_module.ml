@@ -57,6 +57,7 @@ and module_kind =
   | Module_alias of module_alias (** complete name and corresponding module if we found it *)
   | Module_functor of module_parameter * module_kind
   | Module_apply of module_kind * module_kind
+  | Module_apply_unit of module_kind
   | Module_with of module_type_kind * string
   | Module_constraint of module_kind * module_type_kind
   | Module_typeof of string (** by now only the code of the module expression *)
@@ -241,6 +242,7 @@ let module_elements ?(trans=true) m =
             []
       | Module_functor (_, k)
       | Module_apply (k, _) -> iter_kind k
+      | Module_apply_unit k -> iter_kind k
       | Module_with (tk,_) ->
           module_type_elements ~trans: trans
             { mt_name = "" ; mt_info = None ; mt_type = None ;
@@ -375,6 +377,7 @@ and module_parameters ?(trans=true) m =
             mt_loc = Odoc_types.dummy_loc }
     | Module_struct _
     | Module_apply _
+    | Module_apply_unit _
     | Module_with _
     | Module_typeof _
     | Module_unpack _ -> []

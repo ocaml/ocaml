@@ -50,6 +50,7 @@ let default_rpath = {@QS@|@rpath@|@QS@}
 let mksharedlibrpath = {@QS@|@mksharedlibrpath@|@QS@}
 let ar = {@QS@|@AR@|@QS@}
 let supports_shared_libraries = @supports_shared_libraries@
+let native_dynlink = @natdynlink@
 let mkdll, mkexe, mkmaindll =
   if Sys.win32 || Sys.cygwin && supports_shared_libraries then
     let flexlink =
@@ -70,18 +71,21 @@ let mkdll, mkexe, mkmaindll =
       ^ {@QS@| @mkexe_extra_flags@|@QS@} ^ {@QS@|@mkexe_ldflags_exp@|@QS@},
     flexlink ^ " -maindll" ^ flags ^ {@QS@|@mkdll_ldflags_exp@|@QS@}
   else
-    {@QS@|@mkdll_exp@|@QS@}, {@QS@|@mkexe_exp@|@QS@}, {@QS@|@mkmaindll@|@QS@}
+    {@QS@|@mkdll_exp@|@QS@},
+    {@QS@|@mkexe_exp@|@QS@},
+    {@QS@|@mkmaindll_exp@|@QS@}
 
 let flambda = @flambda@
 let with_flambda_invariants = @flambda_invariants@
 let with_cmm_invariants = @cmm_invariants@
 let windows_unicode = @windows_unicode@ != 0
-let force_instrumented_runtime = @force_instrumented_runtime@
 
 let flat_float_array = @flat_float_array@
 
 let function_sections = @function_sections@
 let afl_instrument = @afl@
+
+let native_compiler = @native_compiler@
 
 let architecture = {@QS@|@arch@|@QS@}
 let model = {@QS@|@model@|@QS@}
@@ -90,8 +94,7 @@ let system = {@QS@|@system@|@QS@}
 let asm = {@QS@|@AS@|@QS@}
 let asm_cfi_supported = @asm_cfi_supported@
 let with_frame_pointers = @frame_pointers@
-let profinfo = @profinfo@
-let profinfo_width = @profinfo_width@
+let reserved_header_bits = @reserved_header_bits@
 
 let ext_exe = {@QS@|@exeext@|@QS@}
 let ext_obj = "." ^ {@QS@|@OBJEXT@|@QS@}
@@ -105,3 +108,5 @@ let target = {@QS@|@target@|@QS@}
 let systhread_supported = @systhread_support@
 
 let flexdll_dirs = [@flexdll_dir@]
+
+let ar_supports_response_files = @ar_supports_response_files@

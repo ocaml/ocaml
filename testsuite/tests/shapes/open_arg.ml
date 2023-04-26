@@ -1,6 +1,6 @@
 (* TEST
-   flags = "-dshape"
-   * expect
+ flags = "-dshape";
+ expect;
 *)
 
 module type Make = functor (I : sig end) -> sig
@@ -22,7 +22,7 @@ end = struct end
 
 [%%expect{|
 {
- "Make"[module] -> Abs<.3>(I/280, {
+ "Make"[module] -> Abs<.3>(I/281, {
                                    });
  }
 module Make : functor (I : sig end) -> sig end

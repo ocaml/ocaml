@@ -37,6 +37,8 @@ module Native = struct
 
   external ndl_open : string -> bool -> handle * Cmxs_format.dynheader
     = "caml_natdynlink_open"
+  external ndl_register : handle -> string array -> unit
+    = "caml_natdynlink_register"
   external ndl_run : handle -> string -> unit = "caml_natdynlink_run"
   external ndl_getmap : unit -> global_map list = "caml_natdynlink_getmap"
   external ndl_globals_inited : unit -> int = "caml_natdynlink_globals_inited"
@@ -96,6 +98,11 @@ module Native = struct
     if header.dynu_magic <> Config.cmxs_magic_number then begin
       raise (DT.Error (Not_a_bytecode_file filename))
     end;
+    let syms =
+      "_shared_startup" ::
+      List.concat_map Unit_header.defined_symbols header.dynu_units
+    in
+    ndl_register handle (Array.of_list syms);
     handle, header.dynu_units
 
   let unsafe_get_global_value ~bytecode_or_asm_symbol =

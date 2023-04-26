@@ -28,26 +28,26 @@ let standard_library =
   with Not_found ->
     standard_library_default
 
-let exec_magic_number = "Caml1999X032"
+let exec_magic_number = "Caml1999X033"
     (* exec_magic_number is duplicated in runtime/caml/exec.h *)
-and cmi_magic_number = "Caml1999I032"
-and cmo_magic_number = "Caml1999O032"
-and cma_magic_number = "Caml1999A032"
+and cmi_magic_number = "Caml1999I033"
+and cmo_magic_number = "Caml1999O033"
+and cma_magic_number = "Caml1999A033"
 and cmx_magic_number =
   if flambda then
-    "Caml1999y032"
+    "Caml1999y033"
   else
-    "Caml1999Y032"
+    "Caml1999Y033"
 and cmxa_magic_number =
   if flambda then
-    "Caml1999z032"
+    "Caml1999z033"
   else
-    "Caml1999Z032"
-and ast_impl_magic_number = "Caml1999M032"
-and ast_intf_magic_number = "Caml1999N032"
-and cmxs_magic_number = "Caml1999D032"
-and cmt_magic_number = "Caml1999T032"
-and linear_magic_number = "Caml1999L032"
+    "Caml1999Z033"
+and ast_impl_magic_number = "Caml1999M033"
+and ast_intf_magic_number = "Caml1999N033"
+and cmxs_magic_number = "Caml1999D033"
+and cmt_magic_number = "Caml1999T033"
+and linear_magic_number = "Caml1999L033"
 
 let safe_string = true
 let default_safe_string = true
@@ -74,7 +74,7 @@ type configuration_value =
   | Int of int
   | Bool of bool
 
-let configuration_variables =
+let configuration_variables () =
   let p x v = (x, String v) in
   let p_int x v = (x, Int v) in
   let p_bool x v = (x, Bool v) in
@@ -93,6 +93,7 @@ let configuration_variables =
   p "bytecomp_c_libraries" bytecomp_c_libraries;
   p "native_c_libraries" native_c_libraries;
   p "native_pack_linker" native_pack_linker;
+  p_bool "native_compiler" native_compiler;
   p "architecture" architecture;
   p "model" model;
   p_int "int_size" Sys.int_size;
@@ -119,7 +120,9 @@ let configuration_variables =
   p_bool "afl_instrument" afl_instrument;
   p_bool "windows_unicode" windows_unicode;
   p_bool "supports_shared_libraries" supports_shared_libraries;
+  p_bool "native_dynlink" native_dynlink;
   p_bool "naked_pointers" naked_pointers;
+  p_bool "compression_supported" (Marshal.compression_supported());
 
   p "exec_magic_number" exec_magic_number;
   p "cmi_magic_number" cmi_magic_number;
@@ -145,11 +148,11 @@ let print_config_value oc = function
 let print_config oc =
   let print (x, v) =
     Printf.fprintf oc "%s: %a\n" x print_config_value v in
-  List.iter print configuration_variables;
+  List.iter print (configuration_variables ());
   flush oc
 
 let config_var x =
-  match List.assoc_opt x configuration_variables with
+  match List.assoc_opt x (configuration_variables()) with
   | None -> None
   | Some v ->
       let s = match v with

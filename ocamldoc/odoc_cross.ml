@@ -342,6 +342,9 @@ let rec associate_in_module module_list (acc_b_modif, acc_incomplete_top_module_
         let (acc_b2, acc_inc2, acc_names2) = iter_kind (acc_b, acc_inc, acc_names) k1 in
         iter_kind (acc_b2, acc_inc2, acc_names2) k2
 
+    | Module_apply_unit k1 ->
+        iter_kind (acc_b, acc_inc, acc_names) k1
+
     | Module_constraint (k, tk) ->
         let (acc_b2, acc_inc2, acc_names2) = iter_kind (acc_b, acc_inc, acc_names) k in
         associate_in_module_type module_list (acc_b2, acc_inc2, acc_names2)
@@ -936,8 +939,12 @@ and assoc_comments_module_kind parent_name module_list mk =
   | Module_functor _ ->
       mk
   | Module_apply (mk1, mk2) ->
-      Module_apply (assoc_comments_module_kind parent_name module_list mk1,
-                    assoc_comments_module_kind parent_name module_list mk2)
+      Module_apply
+        (assoc_comments_module_kind parent_name module_list mk1,
+         assoc_comments_module_kind parent_name module_list mk2)
+  | Module_apply_unit mk1 ->
+      Module_apply_unit
+        (assoc_comments_module_kind parent_name module_list mk1)
   | Module_with (mtk, s) ->
       Module_with (assoc_comments_module_type_kind parent_name module_list mtk, s)
   | Module_constraint (mk1, mtk) ->

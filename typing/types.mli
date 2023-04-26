@@ -497,6 +497,7 @@ and record_representation =
   | Record_unboxed of bool    (* Unboxed single-field record, inlined or not *)
   | Record_inlined of int               (* Inlined record *)
   | Record_extension of Path.t          (* Inlined record under extension *)
+                             (* The argument is the path of the extension *)
 
 and variant_representation =
     Variant_regular          (* Constant or boxed constructors *)
@@ -565,6 +566,7 @@ type class_type_declaration =
   { clty_params: type_expr list;
     clty_type: class_type;
     clty_path: Path.t;
+    clty_hash_type: type_declaration; (* object type with an open row *)
     clty_variance: Variance.t list;
     clty_loc: Location.t;
     clty_attributes: Parsetree.attributes;

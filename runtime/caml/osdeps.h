@@ -71,15 +71,10 @@ extern char_os * caml_search_dll_in_path(struct ext_table * path,
                                          const char_os * name);
 
 /* Open a shared library and return a handle on it.
-   If [for_execution] is true, perform full symbol resolution and
-   execute initialization code so that functions from the shared library
-   can be called.  If [for_execution] is false, functions from this
-   shared library will not be called, but just checked for presence,
-   so symbol resolution can be skipped.
    If [global] is true, symbols from the shared library can be used
    to resolve for other libraries to be opened later on.
    Return [NULL] on error. */
-extern void * caml_dlopen(char_os * libname, int for_execution, int global);
+extern void * caml_dlopen(char_os * libname, int global);
 
 /* Close a shared library handle */
 extern void caml_dlclose(void * handle);
@@ -107,6 +102,13 @@ extern char_os *caml_secure_getenv(char_os const *var);
    (lines) that it displays.  Otherwise, or if the number of rows
    cannot be determined, return -1. */
 extern int caml_num_rows_fd(int fd);
+
+/* Memory management platform-specific operations */
+
+void *caml_plat_mem_map(uintnat, uintnat, int);
+void *caml_plat_mem_commit(void *, uintnat);
+void caml_plat_mem_decommit(void *, uintnat);
+void caml_plat_mem_unmap(void *, uintnat);
 
 #ifdef _WIN32
 

@@ -52,9 +52,9 @@ void unexpected_EOF(void)
 }
 
 
-void print_pos(char *st_line, char *st_cptr)
+static void print_pos(char *st_line, char *st_cptr)
 {
-    register char *s;
+    char *s;
 
     if (st_line == 0) return;
     for (s = st_line; *s != '\n'; ++s)
@@ -77,48 +77,44 @@ void print_pos(char *st_line, char *st_cptr)
 }
 
 
-void syntax_error(int st_lineno, char *st_line, char *st_cptr)
+static Noreturn void gen_error(int st_lineno, char *st_line, char *st_cptr, char *msg)
 {
-    fprintf(stderr, "File \"%s\", line %d: syntax error\n",
-            virtual_input_file_name, st_lineno);
+    fprintf(stderr, "File \"%s\", line %d: %s\n",
+            virtual_input_file_name, st_lineno, msg);
     print_pos(st_line, st_cptr);
     done(1);
 }
 
 
-void unterminated_comment(int c_lineno, char *c_line, char *c_cptr)
+void syntax_error(int st_lineno, char *st_line, char *st_cptr)
 {
-    fprintf(stderr, "File \"%s\", line %d: unmatched /*\n",
-            virtual_input_file_name, c_lineno);
-    print_pos(c_line, c_cptr);
-    done(1);
+    gen_error(st_lineno, st_line, st_cptr, "syntax error");
+}
+
+
+void unterminated_comment(int c_lineno, char *c_line, char *c_cptr,
+                          char start_char)
+{
+    gen_error(c_lineno, c_line, c_cptr,
+              start_char == '/' ? "unmatched /*" : "unmatched (*");
+}
+
+
+void invalid_literal(int s_lineno, char *s_line, char *s_cptr)
+{
+    gen_error(s_lineno, s_line, s_cptr, "cannot use literal as token name");
 }
 
 
 void unterminated_string(int s_lineno, char *s_line, char *s_cptr)
 {
-    fprintf(stderr, "File \"%s\", line %d: unterminated string\n",
-            virtual_input_file_name, s_lineno);
-    print_pos(s_line, s_cptr);
-    done(1);
+    gen_error(s_lineno, s_line, s_cptr, "unterminated string");
 }
 
 
 void unterminated_text(int t_lineno, char *t_line, char *t_cptr)
 {
-    fprintf(stderr, "File \"%s\", line %d: unmatched %%{\n",
-            virtual_input_file_name, t_lineno);
-    print_pos(t_line, t_cptr);
-    done(1);
-}
-
-
-void illegal_tag(int t_lineno, char *t_line, char *t_cptr)
-{
-    fprintf(stderr, "File \"%s\", line %d: illegal tag\n",
-            virtual_input_file_name, t_lineno);
-    print_pos(t_line, t_cptr);
-    done(1);
+    gen_error(t_lineno, t_line, t_cptr, "unmatched %{");
 }
 
 
@@ -211,38 +207,6 @@ void unterminated_action(int a_lineno, char *a_line, char *a_cptr)
     fprintf(stderr, "File \"%s\", line %d: unterminated action\n",
             virtual_input_file_name, a_lineno);
     print_pos(a_line, a_cptr);
-    done(1);
-}
-
-
-void dollar_warning(int a_lineno, int i)
-{
-    fprintf(stderr, "File \"%s\", line %d: warning: $%d references beyond the \
-end of the current rule\n", virtual_input_file_name, a_lineno, i);
-}
-
-
-void dollar_error(int a_lineno, char *a_line, char *a_cptr)
-{
-    fprintf(stderr, "File \"%s\", line %d: illegal $-name\n",
-            virtual_input_file_name, a_lineno);
-    print_pos(a_line, a_cptr);
-    done(1);
-}
-
-
-void untyped_lhs(void)
-{
-    fprintf(stderr, "File \"%s\", line %d: $$ is untyped\n",
-            virtual_input_file_name, lineno);
-    done(1);
-}
-
-
-void untyped_rhs(int i, char *s)
-{
-    fprintf(stderr, "File \"%s\", line %d: $%d (%s) is untyped\n",
-            virtual_input_file_name, lineno, i, s);
     done(1);
 }
 

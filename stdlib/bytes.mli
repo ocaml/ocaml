@@ -50,7 +50,7 @@
    The labeled version of this module can be used as described in the
    {!StdLabels} module.
 
-   @since 4.02.0
+   @since 4.02
 
    *)
 
@@ -116,7 +116,7 @@ val extend : bytes -> int -> int -> bytes
     the corresponding side of [s].
     @raise Invalid_argument if the result length is negative or
     longer than {!Sys.max_string_length} bytes.
-    @since 4.05.0 in BytesLabels *)
+    @since 4.05 in BytesLabels *)
 
 val fill : bytes -> int -> int -> char -> unit
 (** [fill s pos len c] modifies [s] in place, replacing [len]
@@ -145,7 +145,7 @@ val blit_string :
     @raise Invalid_argument if [src_pos] and [len] do not
     designate a valid range of [src], or if [dst_pos] and [len]
     do not designate a valid range of [dst].
-    @since 4.05.0 in BytesLabels *)
+    @since 4.05 in BytesLabels *)
 
 val concat : bytes -> bytes list -> bytes
 (** [concat sep sl] concatenates the list of byte sequences [sl],
@@ -160,7 +160,7 @@ val cat : bytes -> bytes -> bytes
     as a new byte sequence.
     @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes.
-    @since 4.05.0 in BytesLabels *)
+    @since 4.05 in BytesLabels *)
 
 val iter : (char -> unit) -> bytes -> unit
 (** [iter f s] applies function [f] in turn to all the bytes of [s].
@@ -182,26 +182,26 @@ val mapi : (int -> char -> char) -> bytes -> bytes
     index (in increasing index order) and stores the resulting bytes
     in a new sequence that is returned as the result. *)
 
-val fold_left : ('a -> char -> 'a) -> 'a -> bytes -> 'a
+val fold_left : ('acc -> char -> 'acc) -> 'acc -> bytes -> 'acc
 (** [fold_left f x s] computes
     [f (... (f (f x (get s 0)) (get s 1)) ...) (get s (n-1))],
     where [n] is the length of [s].
-    @since 4.13.0 *)
+    @since 4.13 *)
 
-val fold_right : (char -> 'a -> 'a) -> bytes -> 'a -> 'a
+val fold_right : (char -> 'acc -> 'acc) -> bytes -> 'acc -> 'acc
 (** [fold_right f s x] computes
     [f (get s 0) (f (get s 1) ( ... (f (get s (n-1)) x) ...))],
     where [n] is the length of [s].
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 val for_all : (char -> bool) -> bytes -> bool
 (** [for_all p s] checks if all characters in [s] satisfy the predicate [p].
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 val exists : (char -> bool) -> bytes -> bool
 (** [exists p s] checks if at least one character of [s] satisfies the predicate
     [p].
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 val trim : bytes -> bytes
 (** Return a copy of the argument, without leading and trailing
@@ -284,22 +284,22 @@ val rcontains_from : bytes -> int -> char -> bool
 val uppercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all lowercase letters
    translated to uppercase, using the US-ASCII character set.
-   @since 4.03.0 (4.05.0 in BytesLabels) *)
+   @since 4.03 (4.05 in BytesLabels) *)
 
 val lowercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all uppercase letters
    translated to lowercase, using the US-ASCII character set.
-   @since 4.03.0 (4.05.0 in BytesLabels) *)
+   @since 4.03 (4.05 in BytesLabels) *)
 
 val capitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to uppercase,
    using the US-ASCII character set.
-   @since 4.03.0 (4.05.0 in BytesLabels) *)
+   @since 4.03 (4.05 in BytesLabels) *)
 
 val uncapitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to lowercase,
    using the US-ASCII character set.
-   @since 4.03.0 (4.05.0 in BytesLabels) *)
+   @since 4.03 (4.05 in BytesLabels) *)
 
 type t = bytes
 (** An alias for the type of byte sequences. *)
@@ -312,20 +312,20 @@ val compare: t -> t -> int
 
 val equal: t -> t -> bool
 (** The equality function for byte sequences.
-    @since 4.03.0 (4.05.0 in BytesLabels) *)
+    @since 4.03 (4.05 in BytesLabels) *)
 
 val starts_with :
   prefix (* comment thwarts tools/sync_stdlib_docs *) :bytes -> bytes -> bool
-(** [starts_with ][~][prefix s] is [true] if and only if [s] starts with
+(** [starts_with ][~prefix s] is [true] if and only if [s] starts with
     [prefix].
 
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 val ends_with :
   suffix (* comment thwarts tools/sync_stdlib_docs *) :bytes -> bytes -> bool
-(** [ends_with suffix s] is [true] if and only if [s] ends with [suffix].
+(** [ends_with ][~suffix s] is [true] if and only if [s] ends with [suffix].
 
-    @since 4.13.0 *)
+    @since 4.13 *)
 
 (** {1:unsafe Unsafe conversions (for advanced users)}
 
@@ -469,7 +469,7 @@ val split_on_char: char -> bytes -> bytes list
       (Bytes.split_on_char sep s) = s]).
     - No byte sequence in the result contains the [sep] character.
 
-    @since 4.13.0
+    @since 4.13
 *)
 
 (** {1 Iterators} *)
@@ -738,6 +738,72 @@ val set_int64_le : bytes -> int -> int64 -> unit
     @since 4.08
 *)
 
+
+(** {1:bytes_concurrency Byte sequences and concurrency safety}
+
+    Care must be taken when concurrently accessing byte sequences from
+    multiple domains: accessing a byte sequence will never crash a program,
+    but unsynchronized accesses might yield surprising
+    (non-sequentially-consistent) results.
+
+    {2:byte_atomicity Atomicity}
+
+    Every byte sequence operation that accesses more than one byte is not
+    atomic. This includes iteration and scanning.
+
+    For example, consider the following program:
+{[let size = 100_000_000
+let b = Bytes.make size  ' '
+let update b f ()  =
+  Bytes.iteri (fun i x -> Bytes.set b i (Char.chr (f (Char.code x)))) b
+let d1 = Domain.spawn (update b (fun x -> x + 1))
+let d2 = Domain.spawn (update b (fun x -> 2 * x + 1))
+let () = Domain.join d1; Domain.join d2
+]}
+    the bytes sequence [b] may contain a non-deterministic mixture
+    of ['!'], ['A'], ['B'], and ['C'] values.
+
+
+    After executing this code, each byte of the sequence [b] is either ['!'],
+    ['A'], ['B'], or ['C']. If atomicity is required, then the user must
+    implement their own synchronization (for example, using {!Mutex.t}).
+
+    {2:bytes_data_race Data races}
+
+    If two domains only access disjoint parts of a byte sequence, then the
+    observed behaviour is the equivalent to some sequential interleaving of the
+    operations from the two domains.
+
+    A data race is said to occur when two domains access the same byte
+    without synchronization and at least one of the accesses is a write.
+    In the absence of data races, the observed behaviour is equivalent to some
+    sequential interleaving of the operations from different domains.
+
+    Whenever possible, data races should be avoided by using synchronization
+    to mediate the accesses to the elements of the sequence.
+
+    Indeed, in the presence of data races, programs will not crash but the
+    observed behaviour may not be equivalent to any sequential interleaving of
+    operations from different domains. Nevertheless, even in the presence of
+    data races, a read operation will return the value of some prior write to
+    that location.
+
+    {2:bytes_mixed_access Mixed-size accesses }
+
+    Another subtle point is that if a data race involves mixed-size writes and
+    reads to the same location, the order in which those writes and reads
+    are observed by domains is not specified.
+    For instance, the following code write sequentially a 32-bit integer and a
+    [char] to the same index
+{[
+let b = Bytes.make 10 '\000'
+let d1 = Domain.spawn (fun () -> Bytes.set_int32_ne b 0 100; b.[0] <- 'd' )
+]}
+
+    In this situation, a domain that observes the write of 'd' to b.[0] is not
+    guaranteed to also observe the write to indices [1], [2], or [3].
+
+*)
 
 (**/**)
 

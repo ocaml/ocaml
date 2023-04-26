@@ -13,10 +13,10 @@ Error: This type entity = < destroy_subject : id subject; entity_id : id >
        is not compatible with type
          < add_observer : < destroy_subject : 'c; .. > entity_container -> 'b;
            .. >
-         as 'c 
+         as 'c
        Type (id subject, id) observer = < notify : id subject -> id -> unit >
        is not compatible with type
          (< destroy_subject : < add_observer : 'd -> 'b; .. >; .. > as 'a)
          entity_container as 'd =
-           < add_entity : 'a -> 'b; notify : 'a -> id -> unit > 
+           < add_entity : 'a -> 'b; notify : 'a -> id -> unit >
        Types for method add_observer are incompatible

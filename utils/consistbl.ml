@@ -56,8 +56,6 @@ end) = struct
     with Not_found ->
       raise (Not_available name)
 
-  let set tbl name crc source = Module_name.Tbl.add tbl name (crc, source)
-
   let source tbl name = snd (Module_name.Tbl.find tbl name)
 
   let extract l tbl =

@@ -39,7 +39,7 @@ external is_directory : string -> bool = "caml_sys_is_directory"
 (** Returns [true] if the given name refers to a directory,
     [false] if it refers to another kind of file.
     @raise Sys_error if no file exists with the given name.
-    @since 3.10.0
+    @since 3.10
 *)
 
 external is_regular_file : string -> bool = "caml_sys_is_regular_file"
@@ -53,10 +53,11 @@ external remove : string -> unit = "caml_sys_remove"
 (** Remove the given file name from the file system. *)
 
 external rename : string -> string -> unit = "caml_sys_rename"
-(** Rename a file.  [rename oldpath newpath] renames the file
-    called [oldpath], giving it [newpath] as its new name,
-    moving it between directories if needed.  If [newpath] already
-    exists, its contents will be replaced with those of [oldpath].
+(** Rename a file or directory.  [rename oldpath newpath] renames the
+    file or directory called [oldpath], giving it [newpath] as its new name,
+    moving it between (parent) directories if needed.  If a file named
+    [newpath] already exists, its contents will be replaced with those of
+    [oldpath].
     Depending on the operating system, the metadata (permissions,
     owner, etc) of [newpath] can either be preserved or be replaced by
     those of [oldpath].
@@ -104,13 +105,13 @@ external chdir : string -> unit = "caml_sys_chdir"
 external mkdir : string -> int -> unit = "caml_sys_mkdir"
 (** Create a directory with the given permissions.
 
-    @since 4.12.0
+    @since 4.12
 *)
 
 external rmdir : string -> unit = "caml_sys_rmdir"
 (** Remove an empty directory.
 
-    @since 4.12.0
+    @since 4.12
 *)
 
 external getcwd : unit -> string = "caml_sys_getcwd"
@@ -126,7 +127,10 @@ external readdir : string -> string array = "caml_sys_read_directory"
    appear in alphabetical order. *)
 
 val interactive : bool ref
-(** This reference is initially set to [false] in standalone
+[@@alert unsynchronized_access
+    "The interactive status is a mutable global state."
+]
+ (** This reference is initially set to [false] in standalone
    programs and to [true] if the code is being executed under
    the interactive toplevel system [ocaml]. *)
 
@@ -144,25 +148,25 @@ type backend_type =
     [Bytecode], but it can be other backends with alternative
     compilers, for example, javascript.
 
-    @since 4.04.0
+    @since 4.04
 *)
 
 val backend_type : backend_type
 (** Backend type  currently executing the OCaml program.
-    @since 4.04.0
+    @since 4.04
  *)
 
 val unix : bool
 (** True if [Sys.os_type = "Unix"].
-    @since 4.01.0 *)
+    @since 4.01 *)
 
 val win32 : bool
 (** True if [Sys.os_type = "Win32"].
-    @since 4.01.0 *)
+    @since 4.01 *)
 
 val cygwin : bool
 (** True if [Sys.os_type = "Cygwin"].
-    @since 4.01.0 *)
+    @since 4.01 *)
 
 val word_size : int
 (** Size of one word on the machine currently executing the OCaml
@@ -172,11 +176,11 @@ val int_size : int
 (** Size of [int], in bits. It is 31 (resp. 63) when using OCaml on a
     32-bit (resp. 64-bit) platform. It may differ for other implementations,
     e.g. it can be 32 bits when compiling to JavaScript.
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 val big_endian : bool
 (** Whether the machine currently executing the Caml program is big-endian.
-    @since 4.00.0 *)
+    @since 4.00 *)
 
 val max_string_length : int
 (** Maximum length of strings and byte sequences. *)
@@ -197,12 +201,12 @@ external runtime_variant : unit -> string = "caml_runtime_variant"
 (** Return the name of the runtime variant the program is running on.
     This is normally the argument given to [-runtime-variant] at compile
     time, but for byte-code it can be changed after compilation.
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 external runtime_parameters : unit -> string = "caml_runtime_parameters"
 (** Return the value of the runtime parameters, in the same format
     as the contents of the [OCAMLRUNPARAM] environment variable.
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 
 (** {1 Signal handling} *)
@@ -350,12 +354,14 @@ val ocaml_version : string
 
 val development_version : bool
 (** [true] if this is a development version, [false] otherwise.
-    @since 4.14.0
+    @since 4.14
 *)
 
 type extra_prefix = Plus | Tilde
+(** @since 4.14 *)
 
 type extra_info = extra_prefix * string
+(** @since 4.14 *)
 
 type ocaml_release_info = {
   major : int;
@@ -363,21 +369,31 @@ type ocaml_release_info = {
   patchlevel : int;
   extra : extra_info option
 }
+(** @since 4.14 *)
 
 val ocaml_release : ocaml_release_info
+(** [ocaml_release] is the version of OCaml.
+    @since 4.14
+*)
 
 val enable_runtime_warnings: bool -> unit
+[@@alert unsynchronized_access
+    "The status of runtime warnings is a mutable global state."
+]
 (** Control whether the OCaml runtime system can emit warnings
     on stderr.  Currently, the only supported warning is triggered
     when a channel created by [open_*] functions is finalized without
     being closed.  Runtime warnings are disabled by default.
 
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 val runtime_warnings_enabled: unit -> bool
-(** Return whether runtime warnings are currently enabled.
+[@@alert unsynchronized_access
+    "The status of runtime warnings is a mutable global state."
+]
+ (** Return whether runtime warnings are currently enabled.
 
-    @since 4.03.0 *)
+    @since 4.03 *)
 
 (** {1 Optimization} *)
 
@@ -395,7 +411,7 @@ external opaque_identity : 'a -> 'a = "%opaque"
       done
     ]}
 
-    @since 4.03.0
+    @since 4.03
 *)
 
 module Immediate64 : sig
@@ -404,7 +420,7 @@ module Immediate64 : sig
       bit architectures. On other architectures, it might or might not
       be immediate.
 
-      @since 4.10.0
+      @since 4.10
   *)
 
   module type Non_immediate = sig

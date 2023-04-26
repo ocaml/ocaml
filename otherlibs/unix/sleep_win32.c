@@ -17,8 +17,7 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-CAMLprim value caml_unix_sleep(t)
-     value t;
+CAMLprim value caml_unix_sleep(value t)
 {
   double d = Double_val(t);
   caml_enter_blocking_section();

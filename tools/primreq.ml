@@ -67,7 +67,7 @@ let exclude filename =
   with End_of_file -> close_in ic
      | x -> close_in ic; raise x
 
-let main() =
+let main () =
   Arg.parse_expand
     ["-used", Arg.Unit(fun () -> used := true; defined := false),
         "show primitives referenced in the object files";

@@ -18,6 +18,7 @@
 (** Atomic references.
 
   See {{!examples} the examples} below.
+  See 'Memory model: The hard bits' chapter in the manual.
 
     @since 4.12
 *)

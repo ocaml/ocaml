@@ -136,7 +136,7 @@ CAMLexport void caml_do_exit(int retcode)
   caml_domain_state* domain_state = Caml_state;
   struct gc_stats s;
 
-  if ((caml_params->verb_gc & 0x400) != 0) {
+  if ((atomic_load_relaxed(&caml_verb_gc) & 0x400) != 0) {
     caml_compute_gc_stats(&s);
     {
       /* cf caml_gc_counters */
@@ -169,7 +169,7 @@ CAMLexport void caml_do_exit(int retcode)
                       (intnat) majwords);
       caml_gc_message(0x400,
           "minor_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
-          (intnat) s.alloc_stats.minor_collections);
+          (intnat) atomic_load(&caml_minor_collections_count));
       caml_gc_message(0x400,
           "major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
           caml_major_cycles_completed);

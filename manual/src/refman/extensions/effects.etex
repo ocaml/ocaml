@@ -730,7 +730,7 @@ The "run" function executes the computation "comp" ensuring that it can only
 perform an alternating sequence of "Send" and "Recv" effects. The shallow
 handler uses a different set of primitives compared to the deep handler. The
 primitive "fiber" (on the last line) takes an "'a -> 'b" function and returns a
-"('a,'b) Effects.Shallow.continuation". The expression "continue_with k v h"
+"('a,'b) Effect.Shallow.continuation". The expression "continue_with k v h"
 resumes the continuation "k" with value "v" under the handler "h".
 
 The mutually recursive functions "loop_send" and "loop_recv" resume the given

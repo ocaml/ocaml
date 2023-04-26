@@ -143,6 +143,7 @@ let operation op arg ppf res =
     fprintf ppf "alloc %i" n;
   | Iintop(op) -> fprintf ppf "%a%s%a" reg arg.(0) (intop op) reg arg.(1)
   | Iintop_imm(op, n) -> fprintf ppf "%a%s%i" reg arg.(0) (intop op) n
+  | Icompf cmp -> fprintf ppf "%a%s%a" reg arg.(0) (floatcomp cmp) reg arg.(1)
   | Inegf -> fprintf ppf "-f %a" reg arg.(0)
   | Iabsf -> fprintf ppf "absf %a" reg arg.(0)
   | Iaddf -> fprintf ppf "%a +f %a" reg arg.(0) reg arg.(1)
@@ -251,10 +252,10 @@ let interval ppf i =
       i.ranges in
   fprintf ppf "@[<2>%a:%t@]@." reg i.reg interv
 
-let intervals ppf () =
+let intervals ppf (intervals : Interval.result) =
   fprintf ppf "*** Intervals@.";
-  List.iter (interval ppf) (Interval.all_fixed_intervals());
-  List.iter (interval ppf) (Interval.all_intervals())
+  List.iter (interval ppf) intervals.fixed_intervals;
+  List.iter (interval ppf) intervals.intervals
 
 let preference ppf r =
   let prefs ppf =

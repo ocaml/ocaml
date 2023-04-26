@@ -61,7 +61,7 @@ OCaml 4.11.0  (19 August 2020)
 - A new instrumented runtime that logs runtime statistics in a standard format
 - A native backend for the RISC-V architecture
 - Improved backtraces that refer to function names
-- Suppport for recursive and yet unboxed types
+- Support for recursive and yet unboxed types
 - A quoted extension syntax for ppxs.
 - Many quality of life improvements
 - Many bug fixes.

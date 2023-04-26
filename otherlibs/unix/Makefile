@@ -69,9 +69,7 @@ OS_C_SOURCES += $(addsuffix .c, \
   setgroups setsid setuid signals spawn termios umask wait)
 endif
 
-ALL_C_SOURCES = $(COMMON_C_SOURCES) $(OS_C_SOURCES)
-
-COBJS = $(ALL_C_SOURCES:.c=.$(O))
+C_SOURCES = $(COMMON_C_SOURCES) $(OS_C_SOURCES)
 
 CAMLOBJS=unix.cmo unixLabels.cmo
 

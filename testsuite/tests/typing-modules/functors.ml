@@ -1,5 +1,5 @@
 (* TEST
-  * expect
+ expect;
 *)
 
 
@@ -520,11 +520,11 @@ Error: The functor application is ill-typed.
          functor (X : x) (B : b/2) (Y : y) -> ...
        1. Module $S1 matches the expected module type x
        2. Modules do not match:
-            P.B : b/1
+            P.B : b
           is not included in
             b/2
           Line 5, characters 2-15:
-            Definition of module type b/1
+            Definition of module type b
           Line 2, characters 0-13:
             Definition of module type b/2
        3. Modules do not match: $S3 : sig type w end is not included in y
@@ -543,9 +543,9 @@ module F : functor (X : a) -> sig type t end
 Line 6, characters 13-19:
 6 |     type t = F(X).t
                  ^^^^^^
-Error: Modules do not match: a/1 is not included in a/2
+Error: Modules do not match: a is not included in a/2
      Line 3, characters 2-15:
-       Definition of module type a/1
+       Definition of module type a
      Line 1, characters 0-13:
        Definition of module type a/2
 |}]
@@ -576,16 +576,16 @@ Error: Signature mismatch:
          sig module F : functor (X : a) (Y : a) -> sig end end
        In module F:
        Modules do not match:
-         functor (X : aa) (Y : a/1) -> ...
+         functor (X : aa) (Y : a) -> ...
        is not included in
          functor (X : a/2) (Y : a/2) -> ...
        1. Module types aa and a/2 match
        2. Module types do not match:
-            a/1
+            a
           does not include
             a/2
           Line 4, characters 2-15:
-            Definition of module type a/1
+            Definition of module type a
           Line 1, characters 0-13:
             Definition of module type a/2
 |}]
@@ -1289,18 +1289,13 @@ end
 
 module Add_one = struct type witness include Add_one' end
 
-module Add_three' = struct
+module Add_three = struct
   module M(_:arg)(_:arg)(_:arg) = A
   module type t = module type of M
-end
-
-module Add_three = struct
-  include Add_three'
   type witness
 end
 
 
-module Wrong_intro = F(Add_three')(A)(A)(A)
 [%%expect {|
 module type arg = sig type arg end
 module A : sig type arg end
@@ -1311,30 +1306,12 @@ module Add_one' :
   end
 module Add_one :
   sig type witness module M = Add_one'.M module type t = Add_one'.t end
-module Add_three' :
+module Add_three :
   sig
     module M : arg -> arg -> arg -> sig type arg = A.arg end
     module type t = arg -> arg -> arg -> sig type arg = A.arg end
+    type witness
   end
-module Add_three :
-  sig module M = Add_three'.M module type t = Add_three'.t type witness end
-Line 22, characters 21-43:
-22 | module Wrong_intro = F(Add_three')(A)(A)(A)
-                          ^^^^^^^^^^^^^^^^^^^^^^
-Error: The functor application is ill-typed.
-       These arguments:
-         Add_three' A A A
-       do not match these parameters:
-         functor (X : $T1) arg arg arg -> ...
-       1. Modules do not match:
-            Add_three' :
-            sig module M = Add_three'.M module type t = Add_three'.t end
-          is not included in
-            $T1 = sig type witness module type t module M : t end
-          The type `witness' is required but not provided
-       2. Module A matches the expected module type arg
-       3. Module A matches the expected module type arg
-       4. Module A matches the expected module type arg
 |}]
 
 module Choose_one = F(Add_one')(Add_three)(A)(A)(A)
@@ -1487,8 +1464,8 @@ Error: Signature mismatch:
        1. An extra argument is provided of module type
               $S1 = sig type wrong end
        2. Module types $S2 and $T2 match
-       3. Module types X/3.T and X/2.T match
-       4. Module types X/3.T and X/2.T match
+       3. Module types X.T and X.T match
+       4. Module types X.T and X.T match
 |}]
 
 
@@ -1561,9 +1538,9 @@ Error: Signature mismatch:
             sig end
           The type `wrong' is required but not provided
        2. Module types $S2 and $T2 match
-       3. An extra argument is provided of module type X/2.T
-       4. Module types X/2.T and X/2.T match
-       5. Module types X/2.T and X/2.T match
+       3. An extra argument is provided of module type X.T
+       4. Module types X.T and X.T match
+       5. Module types X.T and X.T match
 |}]
 
 
@@ -1596,7 +1573,7 @@ Error: The functor application is ill-typed.
        3. Modules do not match:
             Y : sig type t = Y.t = Y of int end
           is not included in
-            $T3 = sig type t = Y of X/2.t end
+            $T3 = sig type t = Y of X.t end
           Type declarations do not match:
             type t = Y.t = Y of int
           is not included in
@@ -1609,7 +1586,7 @@ Error: The functor application is ill-typed.
        4. Modules do not match:
             Z : sig type t = Z.t = Z of int end
           is not included in
-            $T4 = sig type t = Z of X/2.t end
+            $T4 = sig type t = Z of X.t end
           Type declarations do not match:
             type t = Z.t = Z of int
           is not included in
@@ -1700,4 +1677,350 @@ Error: The functor application Bar(A)(FiveArgsExt)(TY)(TY)(TY)(TY)(TY) is ill-ty
        7. Module TY matches the expected module type ty
        8. Module TY matches the expected module type ty
        9. Module TY matches the expected module type ty
+|}]
+
+module Shape_arg = struct
+  module M1 (Arg1 : sig end) = struct
+    module type S1 = sig
+      type t
+    end
+  end
+
+  module type S2 = sig
+    module Make (Arg2 : sig end) : M1(Arg2).S1
+  end
+
+  module M2 : S2 = struct
+    module Make (Arg3 : sig end) = struct
+      type t = T
+    end
+  end
+
+  module M3 (Arg4 : sig end) = struct
+    module type S3 = sig
+      type t = M2.Make(Arg4).t
+    end
+  end
+
+  module M4 (Arg5 : sig end) : M3(Arg5).S3 = struct
+    module M5 = M2.Make (Arg5)
+
+    type t = M5.t
+  end
+end
+[%%expect{|
+module Shape_arg :
+  sig
+    module M1 :
+      functor (Arg1 : sig end) -> sig module type S1 = sig type t end end
+    module type S2 =
+      sig module Make : functor (Arg2 : sig end) -> M1(Arg2).S1 end
+    module M2 : S2
+    module M3 :
+      functor (Arg4 : sig end) ->
+        sig module type S3 = sig type t = M2.Make(Arg4).t end end
+    module M4 : functor (Arg5 : sig end) -> M3(Arg5).S3
+  end
+|}]
+
+
+(* Applicative or generative *)
+
+module F(X:A) = struct end
+module R = F(struct end[@warning "-73"]);;
+[%%expect {|
+module F : functor (X : A) -> sig end
+Line 2, characters 11-40:
+2 | module R = F(struct end[@warning "-73"]);;
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Modules do not match: sig end is not included in A
+     The type `a' is required but not provided
+|}]
+
+module F()(X:empty)()(Y:A) = struct end
+module R =
+  F(struct end[@warning "-73"])(struct end)(struct end[@warning "-73"])();;
+[%%expect {|
+module F : functor () (X : empty) () (Y : A) -> sig end
+Line 3, characters 2-73:
+3 |   F(struct end[@warning "-73"])(struct end)(struct end[@warning "-73"])();;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The functor application is ill-typed.
+       These arguments:
+         (struct end) (struct end) (struct end) ()
+       do not match these parameters:
+         functor () (X : empty) () (Y : A) -> ...
+       1. Module (struct end) matches the expected module type
+       2. Module (struct end) matches the expected module type empty
+       3. Module (struct end) matches the expected module type
+       4. The functor was expected to be applicative at this position
+|}]
+
+
+module F(X:empty) = struct end
+module R =
+  F(struct end)();;
+[%%expect {|
+module F : functor (X : empty) -> sig end
+Line 3, characters 2-17:
+3 |   F(struct end)();;
+      ^^^^^^^^^^^^^^^
+Error: The functor application is ill-typed.
+       These arguments:
+         (struct end) ()
+       do not match these parameters:
+         functor (X : empty) -> ...
+       1. Module (struct end) matches the expected module type empty
+       2. The following extra argument is provided ()
+|}]
+
+
+(** Incoherent type views *)
+
+module F
+    (A : sig type 'a t end)
+    (B : sig
+       type 'a t
+       val f : 'a A.t -> 'a t
+     end) =
+struct end
+
+(** The definition of `F` and its application belows disagree on
+    the arity of `t`, we should not equate the two types *)
+
+include
+  F
+    (struct
+      type t = unit   (* this is bogus! *)
+    end)
+    (struct
+      let f x = x   (* this is bogus! *)
+    end)
+[%%expect {|
+module F :
+  functor (A : sig type 'a t end)
+    (B : sig type 'a t val f : 'a A.t -> 'a t end) -> sig end
+Lines 15-21, characters 2-8:
+15 | ..F
+16 |     (struct
+17 |       type t = unit   (* this is bogus! *)
+18 |     end)
+19 |     (struct
+20 |       let f x = x   (* this is bogus! *)
+21 |     end)
+Error: The functor application is ill-typed.
+       These arguments:
+         $S1 $S2
+       do not match these parameters:
+         functor (A : $T1) (B : $T2) -> ...
+       1. Modules do not match:
+            $S1 : sig type t = unit end
+          is not included in
+            $T1 = sig type 'a t end
+          Type declarations do not match:
+            type t = unit
+          is not included in
+            type 'a t
+          They have different arities.
+       2. Modules do not match:
+            $S2 : sig val f : 'a -> 'a end
+          is not included in
+            $T2 = sig type 'a t val f : 'a A.t -> 'a t end
+|}]
+
+
+module G
+    (A : sig type 'a t = 'a * 'a end)
+    (B : sig
+       val f : 'a A.t -> 'a
+     end) =
+struct end
+
+module R = G(struct end)(struct let f (x,_) = x end)
+[%%expect {|
+module G :
+  functor (A : sig type 'a t = 'a * 'a end)
+    (B : sig val f : 'a A.t -> 'a end) -> sig end
+Line 8, characters 11-52:
+8 | module R = G(struct end)(struct let f (x,_) = x end)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The functor application is ill-typed.
+       These arguments:
+         (struct end) $S2
+       do not match these parameters:
+         functor (A : $T1) (B : ...) -> ...
+       1. Modules do not match:
+            (struct end)
+          is not included in
+            $T1 = sig type 'a t = 'a * 'a end
+          The type `t' is required but not provided
+       2. Module $S2 matches the expected module type
+|}]
+
+module With_expansion
+    (A: sig module type t module M:t end)
+    (B:sig module type t = A.t end) = (A.M:B.t)
+
+module R = With_expansion(struct
+    module M()() = struct end
+    module type t = module type of M
+  end)
+    ()
+    ()
+    ()
+[%%expect {|
+module With_expansion :
+  functor (A : sig module type t module M : t end)
+    (B : sig module type t = A.t end) -> B.t
+Lines 5-11, characters 11-6:
+ 5 | ...........With_expansion(struct
+ 6 |     module M()() = struct end
+ 7 |     module type t = module type of M
+ 8 |   end)
+ 9 |     ()
+10 |     ()
+11 |     ()
+Error: The functor application is ill-typed.
+       These arguments:
+         $S1 () () ()
+       do not match these parameters:
+         functor (A : ...) (B : $T2) () () -> ...
+       1. Module $S1 matches the expected module type
+       2. The functor was expected to be applicative at this position
+       3. Module () matches the expected module type
+       4. Module () matches the expected module type
+|}]
+
+
+module R' = With_expansion(struct
+    module M()() = struct end
+    module type t = module type of M
+  end)
+    ()
+    ()
+[%%expect {|
+Lines 1-6, characters 12-6:
+1 | ............With_expansion(struct
+2 |     module M()() = struct end
+3 |     module type t = module type of M
+4 |   end)
+5 |     ()
+6 |     ()
+Error: The functor application is ill-typed.
+       These arguments:
+         $S1 () ()
+       do not match these parameters:
+         functor (A : ...) (B : $T2) () () -> ...
+       1. Module $S1 matches the expected module type
+       2. An argument appears to be missing with module type
+              $T2 = sig module type t = A.t end
+       3. Module () matches the expected module type
+       4. Module () matches the expected module type
+|}]
+
+
+(** The definition of `H` and its application belows still disagree on
+    the arity of `t`. However, they agree on the type constructor s.
+    Currently, we don't add an equality X.s = G($1).s, but we may want
+    to do so in the future. *)
+
+module H
+    (X:sig
+       type 'a t
+       type 'a s
+     end)
+    (Y: sig
+       val f: 'a X.s -> 'a
+     end)
+= struct end
+
+
+module _ =
+  H
+    (struct
+      type t (** this is wrong*)
+      type 'a s = 'a (** this matches the expected type *)
+    end)
+    (struct
+      let f x = x   (* this is fine *)
+    end)
+[%%expect {|
+module H :
+  functor (X : sig type 'a t type 'a s end)
+    (Y : sig val f : 'a X.s -> 'a end) -> sig end
+Lines 18-25, characters 2-8:
+18 | ..H
+19 |     (struct
+20 |       type t (** this is wrong*)
+21 |       type 'a s = 'a (** this matches the expected type *)
+22 |     end)
+23 |     (struct
+24 |       let f x = x   (* this is fine *)
+25 |     end)
+Error: The functor application is ill-typed.
+       These arguments:
+         $S1 $S2
+       do not match these parameters:
+         functor (X : $T1) (Y : $T2) -> ...
+       1. Modules do not match:
+            $S1 : sig type t type 'a s = 'a end
+          is not included in
+            $T1 = sig type 'a t type 'a s end
+          Type declarations do not match: type t is not included in type 'a t
+          They have different arities.
+       2. Modules do not match:
+            $S2 : sig val f : 'a -> 'a end
+          is not included in
+            $T2 = sig val f : 'a X.s -> 'a end
+          Values do not match:
+            val f : 'a -> 'a
+          is not included in
+            val f : 'a X.s -> 'a
+          The type 'a X.s -> 'a X.s is not compatible with the type
+            'a X.s -> 'a
+          Type 'a X.s is not compatible with type 'a
+|}]
+
+
+(* Mixed information: the Y module is fine if we have both version of the
+   abstract parameter Xs in scope *)
+
+module _: sig
+  module F: functor (X: sig type 'a t = 'a * 'a end)(Y: sig type 'a t = 'a X.t * 'a list end) -> sig end
+end = struct
+  module F(X: sig type 'a t = 'a list end)(Y: sig type 'a t = ('a * 'a) * 'a X.t end) = struct end
+end
+[%%expect {|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   module F(X: sig type 'a t = 'a list end)(Y: sig type 'a t = ('a * 'a) * 'a X.t end) = struct end
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           module F :
+             functor (X : sig type 'a t = 'a list end)
+               (Y : sig type 'a t = ('a * 'a) * 'a X.t end) -> sig end
+         end
+       is not included in
+         sig
+           module F :
+             functor (X : sig type 'a t = 'a * 'a end)
+               (Y : sig type 'a t = 'a X.t * 'a list end) -> sig end
+         end
+       In module F:
+       Modules do not match:
+         functor (X : $S1) (Y : $S2) -> ...
+       is not included in
+         functor (X : $T1) (Y : $T2) -> ...
+       1. Module types do not match:
+            $S1 = sig type 'a t = 'a list end
+          does not include
+            $T1 = sig type 'a t = 'a * 'a end
+          Type declarations do not match:
+            type 'a t = 'a * 'a
+          is not included in
+            type 'a t = 'a list
+          The type 'a * 'a is not equal to the type 'a list
+       2. Module types $S2 and $T2 match
 |}]

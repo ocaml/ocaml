@@ -41,8 +41,7 @@ module Bytecode = struct
       let required =
         List.filter
           (fun id ->
-             not (Ident.is_predef id)
-             && not (String.contains (Ident.name id) '.'))
+             not (String.contains (Ident.name id) '.'))
           required
       in
       List.map

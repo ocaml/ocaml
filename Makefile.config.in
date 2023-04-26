@@ -78,13 +78,6 @@ CC=@CC@
 CC_HAS_DEBUG_PREFIX_MAP=@cc_has_debug_prefix_map@
 AS_HAS_DEBUG_PREFIX_MAP=@as_has_debug_prefix_map@
 
-### Additional link-time options
-# To support dynamic loading of shared libraries (they need to look at
-# our own symbols):
-OC_LDFLAGS=@oc_ldflags@
-OC_DLL_LDFLAGS=@oc_dll_ldflags@
-OC_EXE_LDFLAGS=@oc_exe_ldflags@
-
 LDFLAGS?=@LDFLAGS@
 
 ### How to invoke the C preprocessor through the C compiler
@@ -172,18 +165,10 @@ INSTALL_BYTECODE_PROGRAMS=@install_bytecode_programs@
 #       systhreads        Same as threads, requires POSIX threads
 OTHERLIBRARIES=@otherlibraries@
 
-### Link-time options to ocamlc or ocamlopt for linking with POSIX threads
-# Needed for the "systhreads" package
-PTHREAD_LIBS=@PTHREAD_LIBS@
-PTHREAD_CAML_LIBS=$(addprefix -cclib ,$(PTHREAD_LIBS))
-PTHREAD_CFLAGS=@PTHREAD_CFLAGS@
-
 UNIX_OR_WIN32=@unix_or_win32@
 INSTALL_SOURCE_ARTIFACTS=@install_source_artifacts@
 
-OC_CFLAGS=@oc_cflags@
 CFLAGS=@CFLAGS@
-OC_CPPFLAGS=-I$(ROOTDIR)/runtime @oc_cppflags@
 CPPFLAGS=@CPPFLAGS@
 OCAMLC_CFLAGS=@ocamlc_cflags@
 
@@ -211,7 +196,7 @@ CMXS=@cmxs@
 
 # On Windows, MKDLL, MKEXE and MKMAINDLL must ultimately be equivalent to
 #   flexlink $(FLEXLINK_FLAGS) [-exe|-maindll]
-# or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
+# or OCAML_FLEXLINK overriding will not work (see utils/config.generated.ml.in)
 
 FLEXDLL_CHAIN=@flexdll_chain@
 FLEXLINK_FLAGS=@flexlink_flags@
@@ -220,8 +205,6 @@ MKEXE=@mkexe@
 MKDLL=@mkdll@
 MKMAINDLL=@mkmaindll@
 MKEXEDEBUGFLAG=@mkexedebugflag@
-MKEXE_VIA_CC=\
-  $(CC) $(OC_EXE_LDFLAGS) $(OC_CFLAGS) $(CFLAGS) @mkexe_via_cc_ldflags@
 
 RUNTIMED=@debug_runtime@
 INSTRUMENTED_RUNTIME=@instrumented_runtime@
@@ -231,8 +214,7 @@ WITH_OCAMLDOC=@ocamldoc@
 WITH_OCAMLTEST=@ocamltest@
 ASM_CFI_SUPPORTED=@asm_cfi_supported@
 WITH_FRAME_POINTERS=@frame_pointers@
-WITH_PROFINFO=@profinfo@
-PROFINFO_WIDTH=@profinfo_width@
+HEADER_RESERVED_BITS=@reserved_header_bits@
 LIBUNWIND_AVAILABLE=@libunwind_available@
 LIBUNWIND_INCLUDE_FLAGS=@libunwind_include_flags@
 LIBUNWIND_LINK_FLAGS=@libunwind_link_flags@
@@ -241,7 +223,6 @@ TARGET=@target@
 HOST=@host@
 FLAMBDA=@flambda@
 WITH_FLAMBDA_INVARIANTS=@flambda_invariants@
-FORCE_INSTRUMENTED_RUNTIME=@force_instrumented_runtime@
 WITH_CMM_INVARIANTS=@cmm_invariants@
 FORCE_SAFE_STRING=true
 DEFAULT_SAFE_STRING=true
@@ -262,13 +243,3 @@ UNIXLIB=unix
 ## Variables renamed in OCaml 4.13
 
 RUNTIMEI=$(INSTRUMENTED_RUNTIME)
-
-### pthread-related variables
-
-PTHREAD_LINK=$(PTHREAD_LIBS)
-PTHREAD_CAML_LINK=$(PTHREAD_CAML_LIBS)
-
-### It is expected that the value of PTHREAD_LINK changes between OCaml
-### 4.12 and 4.13. Indeed, for OCaml 4.12 most of the time the variable
-### contained -lpthread. From 4.13 onward it will most of the time be
-### empty since we have -pthread in CFLAGS which implies -lpthread.

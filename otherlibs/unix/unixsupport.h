@@ -87,6 +87,12 @@ extern SOCKET caml_win32_socket(int domain, int type, int protocol,
                                 BOOL inherit);
 
 extern void caml_win32_maperr(DWORD errcode);
+
+/* There are 11644473600 seconds between 1 January 1601 (the NT Epoch) and 1
+ * January 1970 (the Unix Epoch). FILETIME is measured in 100ns ticks.
+ */
+#define CAML_NT_EPOCH_100ns_TICKS 116444736000000000ULL
+
 #endif /* _WIN32 */
 
 #define Nothing ((value) 0)

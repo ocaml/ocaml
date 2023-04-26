@@ -20,39 +20,37 @@
     Pstr_value Nonrec
     [
       <def>
-        pattern (extensions.ml[10,176+4]..[10,176+31]) ghost
-          Ppat_constraint
-          pattern (extensions.ml[10,176+4]..[10,176+14])
-            Ppat_extension "foo"
-            [
-              structure_item (extensions.ml[10,176+10]..[10,176+13])
-                Pstr_eval
-                expression (extensions.ml[10,176+10]..[10,176+13])
-                  Pexp_apply
-                  expression (extensions.ml[10,176+11]..[10,176+12])
-                    Pexp_ident "+" (extensions.ml[10,176+11]..[10,176+12])
-                  [
-                    <arg>
-                    Nolabel
-                      expression (extensions.ml[10,176+10]..[10,176+11])
-                        Pexp_constant PConst_int (2,None)
-                    <arg>
-                    Nolabel
-                      expression (extensions.ml[10,176+12]..[10,176+13])
-                        Pexp_constant PConst_int (1,None)
-                  ]
-            ]
-          core_type (extensions.ml[10,176+17]..[10,176+31])
-            Ptyp_extension "foo"
-            [
-              structure_item (extensions.ml[10,176+23]..[10,176+30])
-                Pstr_eval
-                expression (extensions.ml[10,176+23]..[10,176+30])
-                  Pexp_field
-                  expression (extensions.ml[10,176+23]..[10,176+26])
-                    Pexp_ident "bar" (extensions.ml[10,176+23]..[10,176+26])
-                  "baz" (extensions.ml[10,176+27]..[10,176+30])
-            ]
+        pattern (extensions.ml[10,176+4]..[10,176+14])
+          Ppat_extension "foo"
+          [
+            structure_item (extensions.ml[10,176+10]..[10,176+13])
+              Pstr_eval
+              expression (extensions.ml[10,176+10]..[10,176+13])
+                Pexp_apply
+                expression (extensions.ml[10,176+11]..[10,176+12])
+                  Pexp_ident "+" (extensions.ml[10,176+11]..[10,176+12])
+                [
+                  <arg>
+                  Nolabel
+                    expression (extensions.ml[10,176+10]..[10,176+11])
+                      Pexp_constant PConst_int (2,None)
+                  <arg>
+                  Nolabel
+                    expression (extensions.ml[10,176+12]..[10,176+13])
+                      Pexp_constant PConst_int (1,None)
+                ]
+          ]
+        core_type (extensions.ml[10,176+17]..[10,176+31])
+          Ptyp_extension "foo"
+          [
+            structure_item (extensions.ml[10,176+23]..[10,176+30])
+              Pstr_eval
+              expression (extensions.ml[10,176+23]..[10,176+30])
+                Pexp_field
+                expression (extensions.ml[10,176+23]..[10,176+26])
+                  Pexp_ident "bar" (extensions.ml[10,176+23]..[10,176+26])
+                "baz" (extensions.ml[10,176+27]..[10,176+30])
+          ]
         expression (extensions.ml[10,176+34]..[10,176+46])
           Pexp_extension "foo"
           [
@@ -76,44 +74,42 @@
     Pstr_value Nonrec
     [
       <def>
-        pattern (extensions.ml[13,251+4]..[13,251+44]) ghost
-          Ppat_constraint
-          pattern (extensions.ml[13,251+4]..[13,251+23])
-            Ppat_extension "foo"
-            [
-              structure_item (extensions.ml[13,251+10]..[13,251+21])
-                Pstr_value Nonrec
-                [
-                  <def>
-                    pattern (extensions.ml[13,251+14]..[13,251+16])
-                      Ppat_construct "()" (extensions.ml[13,251+14]..[13,251+16])
-                      None
-                    expression (extensions.ml[13,251+19]..[13,251+21])
-                      Pexp_construct "()" (extensions.ml[13,251+19]..[13,251+21])
-                      None
-                ]
-            ]
-          core_type (extensions.ml[13,251+26]..[13,251+44])
-            Ptyp_extension "foo"
-            [
-              structure_item (extensions.ml[13,251+32]..[13,251+42])
-                Pstr_type Rec
-                [
-                  type_declaration "t" (extensions.ml[13,251+37]..[13,251+38]) (extensions.ml[13,251+32]..[13,251+42])
-                    ptype_params =
-                      []
-                    ptype_cstrs =
-                      []
-                    ptype_kind =
-                      Ptype_abstract
-                    ptype_private = Public
-                    ptype_manifest =
-                      Some
-                        core_type (extensions.ml[13,251+41]..[13,251+42])
-                          Ptyp_constr "t" (extensions.ml[13,251+41]..[13,251+42])
-                          []
-                ]
-            ]
+        pattern (extensions.ml[13,251+4]..[13,251+23])
+          Ppat_extension "foo"
+          [
+            structure_item (extensions.ml[13,251+10]..[13,251+21])
+              Pstr_value Nonrec
+              [
+                <def>
+                  pattern (extensions.ml[13,251+14]..[13,251+16])
+                    Ppat_construct "()" (extensions.ml[13,251+14]..[13,251+16])
+                    None
+                  expression (extensions.ml[13,251+19]..[13,251+21])
+                    Pexp_construct "()" (extensions.ml[13,251+19]..[13,251+21])
+                    None
+              ]
+          ]
+        core_type (extensions.ml[13,251+26]..[13,251+44])
+          Ptyp_extension "foo"
+          [
+            structure_item (extensions.ml[13,251+32]..[13,251+42])
+              Pstr_type Rec
+              [
+                type_declaration "t" (extensions.ml[13,251+37]..[13,251+38]) (extensions.ml[13,251+32]..[13,251+42])
+                  ptype_params =
+                    []
+                  ptype_cstrs =
+                    []
+                  ptype_kind =
+                    Ptype_abstract
+                  ptype_private = Public
+                  ptype_manifest =
+                    Some
+                      core_type (extensions.ml[13,251+41]..[13,251+42])
+                        Ptyp_constr "t" (extensions.ml[13,251+41]..[13,251+42])
+                        []
+              ]
+          ]
         expression (extensions.ml[13,251+47]..[13,251+74])
           Pexp_extension "foo"
           [
@@ -147,28 +143,26 @@
     Pstr_value Nonrec
     [
       <def>
-        pattern (extensions.ml[16,344+4]..[16,344+37]) ghost
-          Ppat_constraint
-          pattern (extensions.ml[16,344+4]..[16,344+19])
-            Ppat_extension "foo"
-            core_type (extensions.ml[16,344+11]..[16,344+17])
-              Ptyp_variant closed=Closed
-              [
-                Rtag "Foo" true
-                  []
-              ]
-              None
-          core_type (extensions.ml[16,344+22]..[16,344+37])
-            Ptyp_extension "foo"
-            core_type (extensions.ml[16,344+29]..[16,344+35])
-              Ptyp_arrow
-              Nolabel
-              core_type (extensions.ml[16,344+29]..[16,344+30])
-                Ptyp_constr "t" (extensions.ml[16,344+29]..[16,344+30])
+        pattern (extensions.ml[16,344+4]..[16,344+19])
+          Ppat_extension "foo"
+          core_type (extensions.ml[16,344+11]..[16,344+17])
+            Ptyp_variant closed=Closed
+            [
+              Rtag "Foo" true
                 []
-              core_type (extensions.ml[16,344+34]..[16,344+35])
-                Ptyp_constr "t" (extensions.ml[16,344+34]..[16,344+35])
-                []
+            ]
+            None
+        core_type (extensions.ml[16,344+22]..[16,344+37])
+          Ptyp_extension "foo"
+          core_type (extensions.ml[16,344+29]..[16,344+35])
+            Ptyp_arrow
+            Nolabel
+            core_type (extensions.ml[16,344+29]..[16,344+30])
+              Ptyp_constr "t" (extensions.ml[16,344+29]..[16,344+30])
+              []
+            core_type (extensions.ml[16,344+34]..[16,344+35])
+              Ptyp_constr "t" (extensions.ml[16,344+34]..[16,344+35])
+              []
         expression (extensions.ml[16,344+40]..[16,344+60])
           Pexp_extension "foo"
           core_type (extensions.ml[16,344+47]..[16,344+58])
@@ -209,29 +203,27 @@
     Pstr_value Nonrec
     [
       <def>
-        pattern (extensions.ml[20,445+4]..[20,445+44]) ghost
-          Ppat_constraint
-          pattern (extensions.ml[20,445+4]..[20,445+28])
-            Ppat_extension "foo"
-            pattern (extensions.ml[20,445+11]..[20,445+26])
-              Ppat_or
-              pattern (extensions.ml[20,445+12]..[20,445+17])
-                Ppat_construct "Bar" (extensions.ml[20,445+12]..[20,445+15])
-                Some
-                  []
-                  pattern (extensions.ml[20,445+16]..[20,445+17])
-                    Ppat_var "x" (extensions.ml[20,445+16]..[20,445+17])
-              pattern (extensions.ml[20,445+20]..[20,445+25])
-                Ppat_construct "Baz" (extensions.ml[20,445+20]..[20,445+23])
-                Some
-                  []
-                  pattern (extensions.ml[20,445+24]..[20,445+25])
-                    Ppat_var "x" (extensions.ml[20,445+24]..[20,445+25])
-          core_type (extensions.ml[20,445+31]..[20,445+44])
-            Ptyp_extension "foo"
-            pattern (extensions.ml[20,445+38]..[20,445+42])
-              Ppat_type
-              "bar" (extensions.ml[20,445+39]..[20,445+42])
+        pattern (extensions.ml[20,445+4]..[20,445+28])
+          Ppat_extension "foo"
+          pattern (extensions.ml[20,445+11]..[20,445+26])
+            Ppat_or
+            pattern (extensions.ml[20,445+12]..[20,445+17])
+              Ppat_construct "Bar" (extensions.ml[20,445+12]..[20,445+15])
+              Some
+                []
+                pattern (extensions.ml[20,445+16]..[20,445+17])
+                  Ppat_var "x" (extensions.ml[20,445+16]..[20,445+17])
+            pattern (extensions.ml[20,445+20]..[20,445+25])
+              Ppat_construct "Baz" (extensions.ml[20,445+20]..[20,445+23])
+              Some
+                []
+                pattern (extensions.ml[20,445+24]..[20,445+25])
+                  Ppat_var "x" (extensions.ml[20,445+24]..[20,445+25])
+        core_type (extensions.ml[20,445+31]..[20,445+44])
+          Ptyp_extension "foo"
+          pattern (extensions.ml[20,445+38]..[20,445+42])
+            Ppat_type
+            "bar" (extensions.ml[20,445+39]..[20,445+42])
         expression (extensions.ml[20,445+47]..[20,445+60])
           Pexp_extension "foo"
           pattern (extensions.ml[20,445+54]..[20,445+59])
@@ -255,52 +247,50 @@
     Pstr_value Nonrec
     [
       <def>
-        pattern (extensions.ml[23,534+4]..[24,573+32]) ghost
-          Ppat_constraint
-          pattern (extensions.ml[23,534+4]..[23,534+38])
-            Ppat_extension "foo"
-            [
-              signature_item (extensions.ml[23,534+11]..[23,534+36])
-                Psig_include
-                module_type (extensions.ml[23,534+19]..[23,534+36])
-                  Pmty_with
-                  module_type (extensions.ml[23,534+19]..[23,534+20])
-                    Pmty_ident "S" (extensions.ml[23,534+19]..[23,534+20])
-                  [
-                    Pwith_type "t" (extensions.ml[23,534+31]..[23,534+32])
-                      type_declaration "t" (extensions.ml[23,534+31]..[23,534+32]) (extensions.ml[23,534+26]..[23,534+36])
-                        ptype_params =
-                          []
-                        ptype_cstrs =
-                          []
-                        ptype_kind =
-                          Ptype_abstract
-                        ptype_private = Public
-                        ptype_manifest =
-                          Some
-                            core_type (extensions.ml[23,534+35]..[23,534+36])
-                              Ptyp_constr "t" (extensions.ml[23,534+35]..[23,534+36])
-                              []
-                  ]
-            ]
-          core_type (extensions.ml[24,573+4]..[24,573+32])
-            Ptyp_extension "foo"
-            [
-              signature_item (extensions.ml[24,573+11]..[24,573+20])
-                Psig_value
-                value_description "x" (extensions.ml[24,573+15]..[24,573+16]) (extensions.ml[24,573+11]..[24,573+20])
-                  core_type (extensions.ml[24,573+19]..[24,573+20])
-                    Ptyp_constr "t" (extensions.ml[24,573+19]..[24,573+20])
-                    []
+        pattern (extensions.ml[23,534+4]..[23,534+38])
+          Ppat_extension "foo"
+          [
+            signature_item (extensions.ml[23,534+11]..[23,534+36])
+              Psig_include
+              module_type (extensions.ml[23,534+19]..[23,534+36])
+                Pmty_with
+                module_type (extensions.ml[23,534+19]..[23,534+20])
+                  Pmty_ident "S" (extensions.ml[23,534+19]..[23,534+20])
+                [
+                  Pwith_type "t" (extensions.ml[23,534+31]..[23,534+32])
+                    type_declaration "t" (extensions.ml[23,534+31]..[23,534+32]) (extensions.ml[23,534+26]..[23,534+36])
+                      ptype_params =
+                        []
+                      ptype_cstrs =
+                        []
+                      ptype_kind =
+                        Ptype_abstract
+                      ptype_private = Public
+                      ptype_manifest =
+                        Some
+                          core_type (extensions.ml[23,534+35]..[23,534+36])
+                            Ptyp_constr "t" (extensions.ml[23,534+35]..[23,534+36])
+                            []
+                ]
+          ]
+        core_type (extensions.ml[24,573+4]..[24,573+32])
+          Ptyp_extension "foo"
+          [
+            signature_item (extensions.ml[24,573+11]..[24,573+20])
+              Psig_value
+              value_description "x" (extensions.ml[24,573+15]..[24,573+16]) (extensions.ml[24,573+11]..[24,573+20])
+                core_type (extensions.ml[24,573+19]..[24,573+20])
+                  Ptyp_constr "t" (extensions.ml[24,573+19]..[24,573+20])
                   []
-              signature_item (extensions.ml[24,573+22]..[24,573+31])
-                Psig_value
-                value_description "y" (extensions.ml[24,573+26]..[24,573+27]) (extensions.ml[24,573+22]..[24,573+31])
-                  core_type (extensions.ml[24,573+30]..[24,573+31])
-                    Ptyp_constr "t" (extensions.ml[24,573+30]..[24,573+31])
-                    []
+                []
+            signature_item (extensions.ml[24,573+22]..[24,573+31])
+              Psig_value
+              value_description "y" (extensions.ml[24,573+26]..[24,573+27]) (extensions.ml[24,573+22]..[24,573+31])
+                core_type (extensions.ml[24,573+30]..[24,573+31])
+                  Ptyp_constr "t" (extensions.ml[24,573+30]..[24,573+31])
                   []
-            ]
+                []
+          ]
         expression (extensions.ml[25,606+4]..[25,606+23])
           Pexp_extension "foo"
           [

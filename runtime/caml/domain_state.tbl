@@ -28,6 +28,9 @@ DOMAIN_STATE(value*, young_start)
 DOMAIN_STATE(value*, young_end)
 /* End of the minor heap. always(young_start <= young_ptr <= young_end) */
 
+DOMAIN_STATE(value*, young_trigger)
+/* Input for setting the young_limit */
+
 DOMAIN_STATE(struct stack_info*, current_stack)
 /* Current stack */
 
@@ -78,6 +81,8 @@ DOMAIN_STATE(intnat, major_work_todo)
  */
 
 DOMAIN_STATE(double, major_gc_clock)
+
+DOMAIN_STATE(uintnat, major_slice_epoch)
 
 DOMAIN_STATE(struct caml__roots_block*, local_roots)
 
@@ -134,7 +139,6 @@ DOMAIN_STATE(struct caml_intern_state*, intern_state)
 DOMAIN_STATE(uintnat, stat_minor_words)
 DOMAIN_STATE(uintnat, stat_promoted_words)
 DOMAIN_STATE(uintnat, stat_major_words)
-DOMAIN_STATE(intnat, stat_minor_collections)
 DOMAIN_STATE(intnat, stat_forced_major_collections)
 DOMAIN_STATE(uintnat, stat_blocks_marked)
 

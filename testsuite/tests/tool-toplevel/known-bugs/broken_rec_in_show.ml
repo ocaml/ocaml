@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 (* This is a known-bug file for use of 'rec' by the '#show' command,
@@ -54,8 +54,8 @@ type t = X of u | Y of [ f | `B ]  and u = Y of t;;
 [%%expect{|
 type t
 type f = [ `A of t ]
-type t = X of u | Y of [ `A of t/1 | `B ]
-and u = Y of t/2
+type t = X of u | Y of [ `A of t/2 | `B ]
+and u = Y of t
 |}];;
 
 #show t;;

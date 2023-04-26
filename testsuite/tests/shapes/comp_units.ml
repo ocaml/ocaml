@@ -1,6 +1,6 @@
 (* TEST
-   flags = "-dshape"
-   * expect
+ flags = "-dshape";
+ expect;
 *)
 
 (* Make sure that shapes of compilation units are never eagerly loaded,
@@ -25,7 +25,7 @@ module Mproj = Unit
 module F (X : sig type t end) = X
 [%%expect{|
 {
- "F"[module] -> Abs<.4>(X/278, X/278<.3>);
+ "F"[module] -> Abs<.4>(X/279, X/279<.3>);
  }
 module F : functor (X : sig type t end) -> sig type t = X.t end
 |}]
@@ -97,8 +97,7 @@ module Without_constraint = Set.Make(Int)
 [%%expect{|
 {
  "Without_constraint"[module] ->
-     CU Stdlib . "Set"[module] . "Make"[module](
-     CU Stdlib . "Int"[module])<.9>;
+   CU Stdlib . "Set"[module] . "Make"[module](CU Stdlib . "Int"[module])<.9>;
  }
 module Without_constraint :
   sig
@@ -127,7 +126,7 @@ module Without_constraint :
     val find_last : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
     val iter : (elt -> unit) -> t -> unit
-    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
     val map : (elt -> elt) -> t -> t
     val filter : (elt -> bool) -> t -> t
     val filter_map : (elt -> elt option) -> t -> t
@@ -158,11 +157,11 @@ end
 [%%expect{|
 {
  "With_identity_constraint"[module] ->
-     {<.12>
-      "M"[module] ->
-          CU Stdlib . "Set"[module] . "Make"[module](
-          CU Stdlib . "Int"[module])<.10>;
-      };
+   {<.12>
+    "M"[module] ->
+      CU Stdlib . "Set"[module] . "Make"[module](
+      CU Stdlib . "Int"[module])<.10>;
+    };
  }
 module With_identity_constraint : sig module M : Set.S end
 |}]
@@ -175,14 +174,14 @@ end
 [%%expect{|
 {
  "With_constraining_constraint"[module] ->
-     {<.16>
-      "M"[module] ->
-          {<.13>
-           "t"[type] ->
-               CU Stdlib . "Set"[module] . "Make"[module](
-               CU Stdlib . "Int"[module])<.13> . "t"[type];
-           };
-      };
+   {<.16>
+    "M"[module] ->
+      {<.13>
+       "t"[type] ->
+         CU Stdlib . "Set"[module] . "Make"[module](
+         CU Stdlib . "Int"[module])<.13> . "t"[type];
+       };
+    };
  }
 module With_constraining_constraint : sig module M : sig type t end end
 |}]

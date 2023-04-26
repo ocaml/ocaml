@@ -53,7 +53,7 @@ typedef enum {
     EV_COUNTER,
     EV_ALLOC,
     EV_FLUSH
-} ev_message_type;
+} ev_runtime_message_type;
 
 typedef enum {
     EV_GC
@@ -124,8 +124,19 @@ typedef enum {
     EV_C_REQUEST_MAJOR_ADJUST_GC_SPEED,
     EV_C_REQUEST_MINOR_REALLOC_REF_TABLE,
     EV_C_REQUEST_MINOR_REALLOC_EPHE_REF_TABLE,
-    EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE
+    EV_C_REQUEST_MINOR_REALLOC_CUSTOM_TABLE,
+    EV_C_MAJOR_HEAP_POOL_WORDS,
+    EV_C_MAJOR_HEAP_POOL_LIVE_WORDS,
+    EV_C_MAJOR_HEAP_LARGE_WORDS,
+    EV_C_MAJOR_HEAP_POOL_FRAG_WORDS,
+    EV_C_MAJOR_HEAP_POOL_LIVE_BLOCKS,
+    EV_C_MAJOR_HEAP_LARGE_BLOCKS,
 } ev_runtime_counter;
+
+typedef enum {
+    EV_USER_SPAN_BEGIN,
+    EV_USER_SPAN_END
+} ev_user_span;
 
 /* external C-API for reading from the runtime_events */
 struct caml_runtime_events_cursor;
@@ -145,20 +156,20 @@ typedef enum {
 /* Starts runtime_events. Needs to be called before
    [caml_runtime_events_create_cursor]. Needs the runtime lock held to call and
    will trigger a stop-the-world pause. Returns Val_unit. */
-CAMLextern value caml_runtime_events_start();
+CAMLextern value caml_runtime_events_start(void);
 
 /* Pauses runtime_events if not currently paused otherwise does nothing.
    No new events (other than the pause itself) will be written to the ring
    buffer by this domain immediately and all other domains soon. Needs the
    runtime lock held to call as a pause event is written during this call.
    Returns Val_unit. */
-CAMLextern value caml_runtime_events_pause();
+CAMLextern value caml_runtime_events_pause(void);
 
 /* Resumes runtime_events if currently paused otherwise does nothing. New events
    (as well as a resume event) will be written to this domain immediately and
    all other domains soon. Needs the runtime lock held to call as a resume event
    is written during this call. Returns Val_unit. */
-CAMLextern value caml_runtime_events_resume();
+CAMLextern value caml_runtime_events_resume(void);
 
 #ifdef CAML_INTERNALS
 
@@ -170,6 +181,35 @@ struct runtime_events_buffer_header {
                           cache lines, even for non-aligned allocations. */
 };
 
+#define RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH 128
+
+struct runtime_events_custom_event {
+   char name[RUNTIME_EVENTS_CUSTOM_EVENT_ID_LENGTH];
+};
+
+/* The type for event messages in the ring. Span is separated in two types as an
+   optimization to avoid associating a value with the span event. */
+typedef enum {
+   EV_USER_MSG_TYPE_UNIT,
+   EV_USER_MSG_TYPE_INT,
+   EV_USER_MSG_TYPE_SPAN_BEGIN,
+   EV_USER_MSG_TYPE_SPAN_END,
+   EV_USER_MSG_TYPE_CUSTOM
+} ev_user_message_type;
+
+typedef union {
+   ev_runtime_message_type runtime;
+   ev_user_message_type user;
+} ev_message_type;
+
+/* The type for event messages in OCaml. */
+typedef enum {
+   EV_USER_ML_TYPE_UNIT,
+   EV_USER_ML_TYPE_INT,
+   EV_USER_ML_TYPE_SPAN,
+   EV_USER_ML_TYPE_CUSTOM
+} ev_user_ml_type;
+
 /* For a more detailed explanation of the runtime_events file layout, see
    runtime_events.c */
 struct runtime_events_metadata_header {
@@ -180,9 +220,11 @@ struct runtime_events_metadata_header {
   uint64_t ring_size_elements; /* Ring size in 64-bit elements */
   uint64_t headers_offset; /* Offset from this struct to first header (bytes) */
   uint64_t data_offset; /* Offset from this struct to first data (byte) */
-  uint64_t padding; /* Make the header a multiple of 64 bytes */
+  uint64_t custom_events_offset; /* Offset from this struct to first custom
+                                    event (byte) */
 };
 
+#define RUNTIME_EVENTS_MAX_CUSTOM_EVENTS (1 << 13)
 #define RUNTIME_EVENTS_NUM_ALLOC_BUCKETS 20
 #define RUNTIME_EVENTS_MAX_MSG_LENGTH (1 << 10)
 
@@ -195,8 +237,8 @@ struct runtime_events_metadata_header {
 
 #define RUNTIME_EVENTS_ITEM_LENGTH(header) \
         (((header) >> 54) & ((1UL << 10) - 1))
-#define RUNTIME_EVENTS_ITEM_IS_RUNTIME(header) !((header) & (1UL << 53))
-#define RUNTIME_EVENTS_ITEM_IS_USER(header) ((header) & (1UL << 53))
+#define RUNTIME_EVENTS_ITEM_IS_RUNTIME(header) !((header) & (1ULL << 53))
+#define RUNTIME_EVENTS_ITEM_IS_USER(header) ((header) & (1ULL << 53))
 #define RUNTIME_EVENTS_ITEM_TYPE(header) (((header) >> 49) & ((1UL << 4) - 1))
 #define RUNTIME_EVENTS_ITEM_ID(header) (((header) >> 36) & ((1UL << 13) - 1))
 
@@ -208,25 +250,28 @@ struct runtime_events_metadata_header {
 
 /* Set up runtime_events (and check if we need to start it immediately).
    Called from startup* */
-void caml_runtime_events_init();
+void caml_runtime_events_init(void);
 
 /* Destroy all allocated runtime_events structures and clear up the ring.
    Called from [caml_sys_exit] */
-void caml_runtime_events_destroy();
+void caml_runtime_events_destroy(void);
 
 /* Handle safely re-initialising the runtime_events structures
    in a forked child */
-void caml_runtime_events_post_fork();
+CAMLextern void caml_runtime_events_post_fork(void);
 
 /* Returns the location of the runtime_events for the current process if started
    or NULL otherwise */
-CAMLextern char_os* caml_runtime_events_current_location();
+CAMLextern char_os* caml_runtime_events_current_location(void);
 
-/* Functions for putting runtime data on to the runtime_events */
+/* Functions for putting runtime data on to the runtime_events. These are all
+   internal to the runtime, except for caml_ev_lifecycle which is needed in
+   otherlibs/unix/fork.c so must be declared CAMLextern in order to work on
+   Cygwin. */
 void caml_ev_begin(ev_runtime_phase phase);
 void caml_ev_end(ev_runtime_phase phase);
 void caml_ev_counter(ev_runtime_counter counter, uint64_t val);
-void caml_ev_lifecycle(ev_lifecycle lifecycle, int64_t data);
+CAMLextern void caml_ev_lifecycle(ev_lifecycle lifecycle, int64_t data);
 
 /* caml_ev_alloc records the (bucketed) size of allocations into the major heap.
    It appears only in alloc_shr and caml_shared_try_alloc. These buckets are
@@ -234,7 +279,22 @@ void caml_ev_lifecycle(ev_lifecycle lifecycle, int64_t data);
    function. Until then the buckets are just updated until flushed.
 */
 void caml_ev_alloc(uint64_t sz);
-void caml_ev_alloc_flush();
+void caml_ev_alloc_flush(void);
+
+
+/* Allocate a unique ID for the event and construct its value: there are at
+   most RUNTIME_EVENTS_MAX_CUSTOM_EVENTS of them. */
+CAMLextern value caml_runtime_events_user_register(value event_name,
+   value event_tag, value event_type);
+
+/* Write event data to ring buffer. */
+CAMLextern value caml_runtime_events_user_write(value event,
+   value event_content);
+
+/* Resolve an event name to the associated event value using known registered
+   events. */
+CAMLextern value caml_runtime_events_user_resolve(char* event_name,
+   ev_user_ml_type event_type);
 
 #endif /* CAML_INTERNALS */
 

@@ -1,7 +1,7 @@
 (* TEST
-   flags = "-I ${ocamlsrcdir}/parsing -I ${ocamlsrcdir}/toplevel"
-   include ocamlcommon
-   * expect
+ flags = "-I ${ocamlsrcdir}/parsing -I ${ocamlsrcdir}/toplevel";
+ include ocamlcommon;
+ expect;
 *)
 
 (* Check that [e.pexp_loc :: e.pexp_loc_stack] includes all

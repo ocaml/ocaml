@@ -60,6 +60,9 @@ command line, unless the "-noautolink" option is given.
 \item["-absname"]
 Force error messages to show absolute paths for file names.
 
+\item["-no-absname"]
+Do not try to show absolute filenames in error messages.
+
 \notop{\item["-annot"]
 Deprecated since OCaml 4.11. Please use "-bin-annot" instead.
 }%notop
@@ -97,7 +100,9 @@ compile modules separately.
 \item["-cc" \var{ccomp}]
 Use \var{ccomp} as the C linker \nat{called to build the final executable }
 \comp{when linking in ``custom runtime'' mode (see the "-custom" option)}
-and as the C compiler for compiling ".c" source files.
+and as the C compiler for compiling ".c" source files. When linking object
+files produced by a C++ compiler (such as "g++" or "clang++"), it is recommended
+to use "-cc c++".
 }%notop
 
 \notop{%
@@ -254,6 +259,11 @@ required in order to \comp{be able to debug the program with "ocamldebug"
 (see chapter~\ref{c:debugger}), and to} produce stack backtraces when
 the program terminates on an uncaught exception (see
 section~\ref{s:ocamlrun-options}).
+}%notop
+
+\notop{%
+\item["-no-g"]
+Do not record debugging information (default).
 }%notop
 
 \notop{%
@@ -838,7 +848,7 @@ arguments to "-warn-error"
 in production code, because this can break your build when future versions
 of OCaml add some new warnings.
 
-The default setting is "-warn-error -a+31" (only warning 31 is fatal).
+The default setting is "-warn-error -a" (no warning is fatal).
 
 \item["-warn-help"]
 Show the description of all available warning numbers.

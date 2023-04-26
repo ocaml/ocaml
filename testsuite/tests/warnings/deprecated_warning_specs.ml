@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 (** Deprecated sequences of unsigned letters *)

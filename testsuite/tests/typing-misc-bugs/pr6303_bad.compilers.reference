@@ -3,4 +3,4 @@ File "pr6303_bad.ml", line 11, characters 22-23:
                            ^
 Error: This expression has type int foo
        but an expression was expected of type string foo
-       Type int is not compatible with type string 
+       Type int is not compatible with type string

@@ -1,9 +1,9 @@
-(* TEST
-flags = " -w -a -rectypes "
-ocamlc_byte_exit_status = "2"
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-*** check-ocamlc.byte-output
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
+
+
+
+
 *)
 
 module M : sig
@@ -19,3 +19,11 @@ end = struct
 end;;
 
 let h (x : int) : bool = M.g (M.f x);;
+
+(* TEST
+ flags = " -w -a -rectypes ";
+ ocamlc_byte_exit_status = "2";
+ setup-ocamlc.byte-build-env;
+ ocamlc.byte;
+ check-ocamlc.byte-output;
+*)

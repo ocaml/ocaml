@@ -30,6 +30,10 @@ let mk_alert f =
 let mk_absname f =
   "-absname", Arg.Unit f, " Show absolute filenames in error messages"
 
+let mk_no_absname f =
+    "-no-absname", Arg.Unit f,
+    " Do not try to show absolute filenames in error messages (default)"
+
 let mk_annot f =
   "-annot", Arg.Unit f, " (deprecated) Save information in <filename>.annot"
 
@@ -133,6 +137,10 @@ let mk_g_byt f =
 
 let mk_g_opt f =
   "-g", Arg.Unit f, " Record debugging information for exception backtrace"
+
+let mk_no_g f =
+  "-no-g", Arg.Unit f,
+  " Do not record debugging information (default)"
 
 let mk_i f =
   "-i", Arg.Unit f, " Print inferred interface"
@@ -475,9 +483,6 @@ let mk_no_unboxed_types f =
   "-no-unboxed-types", Arg.Unit f,
   " unannotated unboxable types will not be unboxed (default)"
 
-let mk_force_tmc f =
-  "-force-tmc", Arg.Unit f, " Rewrite all possible TMC calls"
-
 let mk_unsafe f =
   "-unsafe", Arg.Unit f,
   " Do not compile bounds checking on array and string access"
@@ -576,7 +581,7 @@ let mk_nopervasives f =
 
 let mk_match_context_rows f =
   "-match-context-rows", Arg.Int f,
-  let[@manual.ref "s:comp-options"] chapter, section = 11, 2 in
+  let[@manual.ref "s:comp-options"] chapter, section = 13, 2 in
   Printf.sprintf
   "<n>  (advanced, see manual section %d.%d.)" chapter section
 
@@ -747,6 +752,7 @@ let mk__ f =
 
 module type Common_options = sig
   val _absname : unit -> unit
+  val _no_absname : unit -> unit
   val _alert : string -> unit
   val _I : string -> unit
   val _labels : unit -> unit
@@ -770,7 +776,6 @@ module type Common_options = sig
   val _no_strict_sequence : unit -> unit
   val _strict_formats : unit -> unit
   val _no_strict_formats : unit -> unit
-  val _force_tmc : unit -> unit
   val _unboxed_types : unit -> unit
   val _no_unboxed_types : unit -> unit
   val _version : unit -> unit
@@ -815,6 +820,7 @@ module type Compiler_options = sig
   val _config_var : string -> unit
   val _for_pack : string -> unit
   val _g : unit -> unit
+  val _no_g : unit -> unit
   val _stop_after : string -> unit
   val _i : unit -> unit
   val _impl : string -> unit
@@ -846,7 +852,6 @@ module type Compiler_options = sig
   val _where : unit -> unit
   val _color : string -> unit
   val _error_style : string -> unit
-
   val _match_context_rows : int -> unit
   val _dtimings : unit -> unit
   val _dprofile : unit -> unit
@@ -997,6 +1002,7 @@ struct
     mk_a F._a;
     mk_alert F._alert;
     mk_absname F._absname;
+    mk_no_absname F._no_absname;
     mk_annot F._annot;
     mk_binannot F._binannot;
     mk_c F._c;
@@ -1015,6 +1021,7 @@ struct
     mk_dtypes F._annot;
     mk_for_pack_byt F._for_pack;
     mk_g_byt F._g;
+    mk_no_g F._no_g;
     mk_stop_after ~native:false F._stop_after;
     mk_i F._i;
     mk_I F._I;
@@ -1067,7 +1074,6 @@ struct
     mk_strict_formats F._strict_formats;
     mk_no_strict_formats F._no_strict_formats;
     mk_thread F._thread;
-    mk_force_tmc F._force_tmc;
     mk_unboxed_types F._unboxed_types;
     mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe F._unsafe;
@@ -1114,6 +1120,7 @@ module Make_bytetop_options (F : Bytetop_options) =
 struct
   let list = [
     mk_absname F._absname;
+    mk_no_absname F._no_absname;
     mk_alert F._alert;
     mk_I F._I;
     mk_init F._init;
@@ -1183,6 +1190,7 @@ struct
     mk_a F._a;
     mk_alert F._alert;
     mk_absname F._absname;
+    mk_no_absname F._no_absname;
     mk_afl_instrument F._afl_instrument;
     mk_afl_inst_ratio F._afl_inst_ratio;
     mk_annot F._annot;
@@ -1203,6 +1211,7 @@ struct
     mk_dtypes F._annot;
     mk_for_pack_opt F._for_pack;
     mk_g_opt F._g;
+    mk_no_g F._no_g;
     mk_function_sections F._function_sections;
     mk_stop_after ~native:true F._stop_after;
     mk_save_ir_after ~native:true F._save_ir_after;
@@ -1275,7 +1284,6 @@ struct
     mk_strict_formats F._strict_formats;
     mk_no_strict_formats F._no_strict_formats;
     mk_thread F._thread;
-    mk_force_tmc F._force_tmc;
     mk_unbox_closures F._unbox_closures;
     mk_unbox_closures_factor F._unbox_closures_factor;
     mk_inline_max_unroll F._inline_max_unroll;
@@ -1343,6 +1351,7 @@ end;;
 module Make_opttop_options (F : Opttop_options) = struct
   let list = [
     mk_absname F._absname;
+    mk_no_absname F._no_absname;
     mk_alert F._alert;
     mk_compact F._compact;
     mk_I F._I;
@@ -1448,6 +1457,7 @@ module Make_ocamldoc_options (F : Ocamldoc_options) =
 struct
   let list = [
     mk_absname F._absname;
+    mk_no_absname F._no_absname;
     mk_alert F._alert;
     mk_I F._I;
     mk_impl F._impl;
@@ -1478,7 +1488,6 @@ struct
     mk_strict_formats F._strict_formats;
     mk_no_strict_formats F._no_strict_formats;
     mk_thread F._thread;
-    mk_force_tmc F._force_tmc;
     mk_unboxed_types F._unboxed_types;
     mk_no_unboxed_types F._no_unboxed_types;
     mk_unsafe_string;
@@ -1549,6 +1558,7 @@ module Default = struct
     let _alias_deps = clear transparent_modules
     let _app_funct = set applicative_functors
     let _labels = clear classic
+    let _no_absname = clear Clflags.absname
     let _no_alias_deps = set transparent_modules
     let _no_app_funct = clear applicative_functors
     let _no_principal = clear principal
@@ -1721,6 +1731,7 @@ module Default = struct
     let _dump_dir s = dump_dir := Some s
     let _for_pack s = for_package := (Some s)
     let _g = set debug
+    let _no_g = clear debug
     let _i = set print_types
     let _impl = Compenv.impl
     let _intf = Compenv.intf
@@ -1783,7 +1794,6 @@ module Default = struct
     let _noprompt = set noprompt
     let _nopromptcont = set nopromptcont
     let _stdin () = (* placeholder: file_argument ""*) ()
-    let _force_tmc = set force_tmc
     let _version () = print_version ()
     let _vnum () = print_version_num ()
     let _eval (_:string) = ()
@@ -1820,7 +1830,6 @@ module Default = struct
         "Profiling with \"gprof\" (option `-p') is only supported up to \
          OCaml 4.08.0"
     let _shared () = shared := true; dlcode := true
-    let _force_tmc = set force_tmc
     let _v () = Compenv.print_version_and_library "native-code compiler"
   end
 
@@ -1841,7 +1850,6 @@ module Default = struct
     let _pp s = Clflags.preprocessor := (Some s)
     let _ppx s = Clflags.all_ppx := (s :: (!Clflags.all_ppx))
     let _thread = set Clflags.use_threads
-    let _force_tmc = set force_tmc
     let _v () = Compenv.print_version_and_library "documentation generator"
     let _verbose = set Clflags.verbose
     let _version = Compenv.print_version_string
@@ -1875,7 +1883,6 @@ third-party libraries such as Lwt, but with a different API."
     let _output_complete_exe () =
       _output_complete_obj (); output_complete_executable := true
     let _output_obj () = output_c_object := true; custom_runtime := true
-    let _force_tmc = set force_tmc
     let _use_prims s = use_prims := s
     let _use_runtime s = use_runtime := s
     let _v () = Compenv.print_version_and_library "compiler"
