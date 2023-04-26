@@ -692,6 +692,7 @@ module Color = struct
     warning: style list;
     loc: style list;
     hint:style list;
+    inline_code:style list;
   }
 
   let default_styles = {
@@ -699,6 +700,7 @@ module Color = struct
     error = [Bold; FG Red];
     loc = [Bold];
     hint = [Bold; FG Blue];
+    inline_code=[Bold]
   }
 
   let cur_styles = ref default_styles
@@ -712,10 +714,18 @@ module Color = struct
     | Format.String_tag "warning" -> (!cur_styles).warning
     | Format.String_tag "loc" -> (!cur_styles).loc
     | Format.String_tag "hint" -> (!cur_styles).hint
+    | Format.String_tag "inline_code" -> (!cur_styles).inline_code
     | Style s -> s
     | _ -> raise Not_found
 
   let color_enabled = ref true
+
+  let as_inline_code printer ppf x =
+    Format.pp_open_stag ppf (Format.String_tag "inline_code");
+    printer ppf x;
+    Format.pp_close_stag ppf ()
+
+  let inline_code ppf s = as_inline_code Format.pp_print_string ppf s
 
   (* either prints the tag of [s] or delegates to [or_else] *)
   let mark_open_tag ~or_else s =
