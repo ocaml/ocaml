@@ -899,7 +899,7 @@ AS_CASE([$cc_basename,$host],
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
   [*,aarch64-*-darwin*|arm64-*-darwin*],
     AC_DEFINE([HAS_ARCH_CODE32], [1]),
-  [*,*-*-haiku*], 
+  [*,*-*-haiku*],
     [ostype="beos"
      mathlib=""],
   [*,*-*-cygwin*],
