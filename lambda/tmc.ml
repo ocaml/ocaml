@@ -977,6 +977,8 @@ let rewrite t =
   let ctx = { specialized = Ident.Map.empty } in
   traverse ctx t
 
+module Style = Misc.Color
+
 let () =
   Location.register_error_of_exn
     (function
@@ -984,13 +986,16 @@ let () =
                Ambiguous_constructor_arguments
                  { explicit = false; arguments }) ->
           let print_msg ppf =
-            Format.pp_print_text ppf
-              "[@tail_mod_cons]: this constructor application may be \
-               TMC-transformed in several different ways. Please \
-               disambiguate by adding an explicit [@tailcall] \
-               attribute to the call that should be made \
-               tail-recursive, or a [@tailcall false] attribute on \
-               calls that should not be transformed."
+            Format.fprintf ppf
+              "%a:@ this@ constructor@ application@ may@ be@ \
+               TMC-transformed@ in@ several@ different@ ways.@ \
+               Please@ disambiguate@ by@ adding@ an@ explicit@ %a \
+               attribute@ to@ the@ call@ that@ should@ be@ made@ \
+               tail-recursive,@ or@ a@ %a attribute@ on@ \
+               calls@ that@ should@ not@ be@ transformed."
+              Style.inline_code "[@tail_mod_cons]"
+              Style.inline_code "[@tailcall]"
+              Style.inline_code "[@tailcall false]"
           in
           let submgs =
             let sub (info : tmc_call_information) =
@@ -1006,13 +1011,14 @@ let () =
                Ambiguous_constructor_arguments
                  { explicit = true; arguments }) ->
           let print_msg ppf =
-            Format.pp_print_text ppf
-              "[@tail_mod_cons]: this constructor application may be \
-               TMC-transformed in several different ways. Only one of \
-               the arguments may become a TMC call, but several \
-               arguments contain calls that are explicitly marked as \
-               tail-recursive. Please fix the conflict by reviewing \
-               and fixing the conflicting annotations."
+            Format.fprintf ppf
+              "%a:@ this@ constructor@ application@ may@ be@ \
+               TMC-transformed@ in@ several@ different@ ways.@ Only@ one@ of@ \
+               the@ arguments@ may@ become@ a@ TMC@ call,@ but@ several@ \
+               arguments@ contain@ calls@ that@ are@ explicitly@ marked@ as@ \
+               tail-recursive.@ Please@ fix@ the@ conflict@ by@ reviewing@ \
+               and@ fixing@ the@ conflicting@ annotations."
+              Style.inline_code "[@tail_mod_cons]"
           in
           let submgs =
             let sub (info : tmc_call_information) =

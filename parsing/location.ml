@@ -949,13 +949,21 @@ let alert ?(def = none) ?(use = none) ~kind loc message =
 let deprecated ?def ?use loc message =
   alert ?def ?use ~kind:"deprecated" loc message
 
+module Style = Misc.Color
+
 let auto_include_alert lib =
-  let message = Printf.sprintf "\
-    OCaml's lib directory layout changed in 5.0. The %s subdirectory has been \
-    automatically added to the search path, but you should add -I +%s to the \
-    command-line to silence this alert (e.g. by adding %s to the list of \
-    libraries in your dune file, or adding use_%s to your _tags file for \
-    ocamlbuild, or using -package %s for ocamlfind)." lib lib lib lib lib in
+  let message = Format.asprintf "\
+    OCaml's lib directory layout changed in 5.0. The %a subdirectory has been \
+    automatically added to the search path, but you should add %a to the \
+    command-line to silence this alert (e.g. by adding %a to the list of \
+    libraries in your dune file, or adding %a to your %a file for \
+    ocamlbuild, or using %a for ocamlfind)."
+      Style.inline_code lib
+      Style.inline_code ("-I +" ^lib)
+      Style.inline_code lib
+      Style.inline_code ("use_"^lib)
+      Style.inline_code "_tags"
+      Style.inline_code ("-package " ^ lib) in
   let alert =
     {Warnings.kind="ocaml_deprecated_auto_include"; use=none; def=none;
      message = Format.asprintf "@[@\n%a@]" Format.pp_print_text message}
@@ -963,11 +971,14 @@ let auto_include_alert lib =
   prerr_alert none alert
 
 let deprecated_script_alert program =
-  let message = Printf.sprintf "\
-    Running %s where the first argument is an implicit basename with no \
-    extension (e.g. %s script-file) is deprecated. Either rename the script \
-    (%s script-file.ml) or qualify the basename (%s ./script-file)"
-    program program program program
+  let message = Format.asprintf "\
+    Running %a where the first argument is an implicit basename with no \
+    extension (e.g. %a) is deprecated. Either rename the script \
+    (%a) or qualify the basename (%a)"
+      Style.inline_code program
+      Style.inline_code (program ^" script-file")
+      Style.inline_code (program ^ " script-file.ml")
+      Style.inline_code (program ^ " ./script-file")
   in
   let alert =
     {Warnings.kind="ocaml_deprecated_cli"; use=none; def=none;

@@ -217,7 +217,7 @@ Line 3, characters 13-14:
                  ^
 Error: This expression has type int but an expression was expected of type
          float
-  Hint: Did you mean `1.'?
+  Hint: Did you mean 1.?
 |}];;
 
 module Ill_typed_3 = struct

@@ -77,21 +77,22 @@ let restore filename =
 (* Error report *)
 
 open Format
+module Style=Misc.Color
 
 let report_error ppf = function
   | Wrong_format filename ->
       fprintf ppf "Expected Linear format. Incompatible file %a"
-        Location.print_filename filename
+        (Style.as_inline_code Location.print_filename) filename
   | Wrong_version filename ->
       fprintf ppf
         "%a@ is not compatible with this version of OCaml"
-        Location.print_filename filename
+        (Style.as_inline_code Location.print_filename) filename
   | Corrupted filename ->
       fprintf ppf "Corrupted format@ %a"
-        Location.print_filename filename
+        (Style.as_inline_code Location.print_filename) filename
   | Marshal_failed filename ->
       fprintf ppf "Failed to marshal Linear to file@ %a"
-        Location.print_filename filename
+        (Style.as_inline_code Location.print_filename) filename
 
 let () =
   Location.register_error_of_exn

@@ -13,6 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module Style = Misc.Color
 
 module Context = struct
   type pos =
@@ -63,16 +64,20 @@ module Context = struct
   let alt_pp ppf cxt =
     if cxt = [] then () else
     if List.for_all (function Module _ -> true | _ -> false) cxt then
-      Format.fprintf ppf "in module %a," Printtyp.path (path_of_context cxt)
+      Format.fprintf ppf "in module %a,"
+        (Style.as_inline_code Printtyp.path) (path_of_context cxt)
     else
-      Format.fprintf ppf "@[<hv 2>at position@ %a,@]" context cxt
+      Format.fprintf ppf "@[<hv 2>at position@ %a,@]"
+        (Style.as_inline_code context) cxt
 
   let pp ppf cxt =
     if cxt = [] then () else
     if List.for_all (function Module _ -> true | _ -> false) cxt then
-      Format.fprintf ppf "In module %a:@ " Printtyp.path (path_of_context cxt)
+      Format.fprintf ppf "In module %a:@ "
+        (Style.as_inline_code Printtyp.path) (path_of_context cxt)
     else
-      Format.fprintf ppf "@[<hv 2>At position@ %a@]@ " context cxt
+      Format.fprintf ppf "@[<hv 2>At position@ %a@]@ "
+        (Style.as_inline_code context) cxt
 end
 
 module Illegal_permutation = struct
@@ -163,9 +168,9 @@ module Illegal_permutation = struct
   let item mt k = Includemod.item_ident_name (runtime_item k mt)
 
   let pp_item ppf (id,_,kind) =
-    Format.fprintf ppf "%s %S"
+    Format.fprintf ppf "%s %a"
       (Includemod.kind_of_field_desc kind)
-      (Ident.name id)
+      Style.inline_code (Ident.name id)
 
   let pp ctx_printer env ppf (mty,c) =
     try
@@ -662,8 +667,9 @@ let core env id x =
 
 let missing_field ppf item =
   let id, loc, kind =  Includemod.item_ident_name item in
-  Format.fprintf ppf "The %s `%a' is required but not provided%a"
-    (Includemod.kind_of_field_desc kind) Printtyp.ident id
+  Format.fprintf ppf "The %s %a is required but not provided%a"
+    (Includemod.kind_of_field_desc kind)
+    (Style.as_inline_code Printtyp.ident) id
     (show_loc "Expected declaration") loc
 
 let module_types {Err.got=mty1; expected=mty2} =
@@ -689,8 +695,8 @@ let module_type_declarations id {Err.got=d1 ; expected=d2} =
 
 let interface_mismatch ppf (diff: _ Err.diff) =
   Format.fprintf ppf
-    "The implementation %s@ does not match the interface %s:@ "
-    diff.got diff.expected
+    "The implementation %a@ does not match the interface %a:@ "
+    Style.inline_code diff.got Style.inline_code diff.expected
 
 let core_module_type_symptom (x:Err.core_module_type_symptom)  =
   match x with
@@ -700,7 +706,9 @@ let core_module_type_symptom (x:Err.core_module_type_symptom)  =
         Some Printtyp.Conflicts.print_explanations
       else None
   | Unbound_module_path path ->
-      Some(Format.dprintf "Unbound module %a" Printtyp.path path)
+      Some(Format.dprintf "Unbound module %a"
+             (Style.as_inline_code Printtyp.path) path
+          )
 
 (* Construct a linearized error message from the error tree *)
 
@@ -740,7 +748,8 @@ and module_type_symptom ~eqmode ~expansion_token ~env ~before ~ctx = function
       module_type ~eqmode ~expansion_token ~env ~before ~ctx diff
   | Invalid_module_alias path ->
       let printer =
-        Format.dprintf "Module %a cannot be aliased" Printtyp.path path
+        Format.dprintf "Module %a cannot be aliased"
+          (Style.as_inline_code Printtyp.path) path
       in
       dwith_context ctx printer :: before
 

@@ -24,7 +24,7 @@ let () =
 Line 2, characters 6-11:
 2 |   let Any x = Any () and () = () in
           ^^^^^
-Error: Existential types are not allowed in "let ... and ..." bindings,
+Error: Existential types are not allowed in let ... and ... bindings,
        but this pattern introduces the existential type $Any_'a.
 |}]
 
@@ -102,7 +102,7 @@ let () =
 Line 2, characters 6-11:
 2 |   let Any x = Any () and () = () in
           ^^^^^
-Error: Existential types are not allowed in "let ... and ..." bindings,
+Error: Existential types are not allowed in let ... and ... bindings,
        but the constructor Any introduces existential types.
 |}]
 

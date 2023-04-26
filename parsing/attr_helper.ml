@@ -16,6 +16,8 @@
 open Asttypes
 open Parsetree
 
+module Style = Misc.Color
+
 type error =
   | Multiple_attributes of string
   | No_payload_expected of string
@@ -40,9 +42,9 @@ open Format
 
 let report_error ppf = function
   | Multiple_attributes name ->
-    fprintf ppf "Too many `%s' attributes" name
+    fprintf ppf "Too many %a attributes" Style.inline_code name
   | No_payload_expected name ->
-    fprintf ppf "Attribute `%s' does not accept a payload" name
+    fprintf ppf "Attribute %a does not accept a payload" Style.inline_code name
 
 let () =
   Location.register_error_of_exn

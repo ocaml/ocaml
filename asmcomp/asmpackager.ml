@@ -277,22 +277,25 @@ let package_files ~ppf_dump initial_env files targetcmx ~backend =
 (* Error report *)
 
 open Format
+module Style = Misc.Color
 
 let report_error ppf = function
     Illegal_renaming(name, file, id) ->
       fprintf ppf "Wrong file naming: %a@ contains the code for\
-                   @ %s when %s was expected"
-        Location.print_filename file name id
+                   @ %a when %a was expected"
+        (Style.as_inline_code Location.print_filename) file
+        Style.inline_code name Style.inline_code id
   | Forward_reference(file, ident) ->
-      fprintf ppf "Forward reference to %s in file %a" ident
-        Location.print_filename file
+      fprintf ppf "Forward reference to %a in file %a" Style.inline_code ident
+        (Style.as_inline_code Location.print_filename) file
   | Wrong_for_pack(file, path) ->
-      fprintf ppf "File %a@ was not compiled with the `-for-pack %s' option"
-              Location.print_filename file path
+      fprintf ppf "File %a@ was not compiled with the %a option"
+        (Style.as_inline_code Location.print_filename) file
+        Style.inline_code ("-for-pack " ^ path)
   | File_not_found file ->
-      fprintf ppf "File %s not found" file
+      fprintf ppf "File %a not found" Style.inline_code file
   | Assembler_error file ->
-      fprintf ppf "Error while assembling %s" file
+      fprintf ppf "Error while assembling %a" Style.inline_code file
   | Linking_error ->
       fprintf ppf "Error during partial linking"
 

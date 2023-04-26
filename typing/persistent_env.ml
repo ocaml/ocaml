@@ -222,6 +222,7 @@ let find_pers_struct penv val_of_pers_sig check name =
         let ps = acknowledge_pers_struct penv check name psig pm in
         (ps, pm)
 
+module Style = Misc.Color
 (* Emits a warning if there is no valid cmi for name *)
 let check_pers_struct penv f ~loc name =
   try
@@ -240,13 +241,15 @@ let check_pers_struct penv f ~loc name =
         | Illegal_renaming(name, ps_name, filename) ->
             Format.asprintf
               " %a@ contains the compiled interface for @ \
-               %s when %s was expected"
-              Location.print_filename filename ps_name name
+               %a when %a was expected"
+              (Style.as_inline_code Location.print_filename) filename
+              Style.inline_code ps_name
+              Style.inline_code name
         | Inconsistent_import _ -> assert false
         | Need_recursive_types name ->
-            Format.sprintf
-              "%s uses recursive types"
-              name
+            Format.asprintf
+              "%a uses recursive types"
+              Style.inline_code name
       in
       let warn = Warnings.No_cmi_file(name, Some msg) in
         Location.prerr_warning loc warn
@@ -339,16 +342,22 @@ let report_error ppf =
   function
   | Illegal_renaming(modname, ps_name, filename) -> fprintf ppf
       "Wrong file naming: %a@ contains the compiled interface for@ \
-       %s when %s was expected"
-      Location.print_filename filename ps_name modname
+       %a when %a was expected"
+      (Style.as_inline_code Location.print_filename) filename
+      Style.inline_code ps_name
+      Style.inline_code modname
   | Inconsistent_import(name, source1, source2) -> fprintf ppf
       "@[<hov>The files %a@ and %a@ \
-              make inconsistent assumptions@ over interface %s@]"
-      Location.print_filename source1 Location.print_filename source2 name
+              make inconsistent assumptions@ over interface %a@]"
+      (Style.as_inline_code Location.print_filename) source1
+      (Style.as_inline_code Location.print_filename) source2
+      Style.inline_code name
   | Need_recursive_types(import) ->
       fprintf ppf
-        "@[<hov>Invalid import of %s, which uses recursive types.@ %s@]"
-        import "The compilation flag -rectypes is required"
+        "@[<hov>Invalid import of %a, which uses recursive types.@ \
+         The compilation flag %a is required@]"
+        Style.inline_code import
+        Style.inline_code "-rectypes"
 
 let () =
   Location.register_error_of_exn

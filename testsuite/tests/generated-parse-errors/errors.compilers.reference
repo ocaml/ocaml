@@ -1947,7 +1947,7 @@ Error: Syntax error
 File "implementation: TRUE DOT LBRACKET UIDENT RBRACKET LESSMINUS OBJECT END WHILE", line 1, characters 0-31:
 Error: Syntax error: strings are immutable, there is no assignment syntax for them.
 Hint: Mutable sequences of bytes are available in the Bytes module.
-Hint: Did you mean to use 'Bytes.set'?
+Hint: Did you mean to use Bytes.set?
 File "implementation: TRUE DOT LBRACKET UIDENT RBRACKET LESSMINUS WITH", line 1, characters 21-25:
 Error: Syntax error
 File "implementation: TRUE DOT LBRACKET UIDENT RBRACKET WHILE", line 1, characters 18-23:

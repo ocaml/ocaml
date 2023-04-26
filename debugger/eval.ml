@@ -177,24 +177,27 @@ and find_label lbl env ty path tydesc pos = function
 (* Error report *)
 
 open Format
+module Style = Misc.Color
 
 let report_error ppf = function
   | Unbound_identifier id ->
-      fprintf ppf "@[Unbound identifier %s@]@." (Ident.name id)
+      fprintf ppf "@[Unbound identifier %a@]@."
+        Style.inline_code (Ident.name id)
   | Not_initialized_yet path ->
       fprintf ppf
         "@[The module path %a is not yet initialized.@ \
            Please run program forward@ \
            until its initialization code is executed.@]@."
-      Printtyp.path path
+      (Style.as_inline_code Printtyp.path) path
   | Unbound_long_identifier lid ->
-      fprintf ppf "@[Unbound identifier %a@]@." Printtyp.longident lid
+      fprintf ppf "@[Unbound identifier %a@]@."
+        (Style.as_inline_code Printtyp.longident) lid
   | Unknown_name n ->
       fprintf ppf "@[Unknown value name $%i@]@." n
   | Tuple_index(ty, len, pos) ->
       fprintf ppf
         "@[Cannot extract field number %i from a %i-tuple of type@ %a@]@."
-        pos len Printtyp.type_expr ty
+        pos len (Style.as_inline_code Printtyp.type_expr) ty
   | Array_index(len, pos) ->
       fprintf ppf
         "@[Cannot extract element number %i from an array of length %i@]@."
@@ -211,13 +214,15 @@ let report_error ppf = function
   | Wrong_item_type(ty, pos) ->
       fprintf ppf
         "@[Cannot extract item number %i from a value of type@ %a@]@."
-        pos Printtyp.type_expr ty
+        pos (Style.as_inline_code Printtyp.type_expr) ty
   | Wrong_label(ty, lbl) ->
       fprintf ppf
-        "@[The record type@ %a@ has no label named %s@]@."
-        Printtyp.type_expr ty lbl
+        "@[The record type@ %a@ has no label named %a@]@."
+        (Style.as_inline_code Printtyp.type_expr) ty
+        Style.inline_code lbl
   | Not_a_record ty ->
       fprintf ppf
-        "@[The type@ %a@ is not a record type@]@." Printtyp.type_expr ty
+        "@[The type@ %a@ is not a record type@]@."
+        (Style.as_inline_code Printtyp.type_expr) ty
   | No_result ->
       fprintf ppf "@[No result available at current program event@]@."

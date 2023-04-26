@@ -120,7 +120,8 @@ module Bytecode = struct
           let new_error : DT.linking_error =
             match error with
             | Symtable.Undefined_global global ->
-              Undefined_global (Symtable.Global.description global)
+              Undefined_global
+                (Format.asprintf "%a" Symtable.Global.description global)
             | Symtable.Unavailable_primitive s -> Unavailable_primitive s
             | Symtable.Uninitialized_global global ->
               Uninitialized_global (Symtable.Global.name global)

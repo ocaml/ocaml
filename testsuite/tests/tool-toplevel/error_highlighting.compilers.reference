@@ -24,7 +24,7 @@ Line 3, characters 8-9:
             ^
 Error: This expression has type int but an expression was expected of type
          float
-  Hint: Did you mean `1.'?
+  Hint: Did you mean 1.?
 Line 4, characters 2-4:
 4 | 2 in
       ^^

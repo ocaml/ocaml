@@ -19,7 +19,7 @@ external cmp : 'a -> 'b = "%compare"
 Line 1, characters 0-36:
 1 | external cmp : 'a -> 'b = "%compare"
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Wrong arity for builtin primitive "%compare"
+Error: Wrong arity for builtin primitive %compare
 |}]
 
 external apply : 'a -> 'b = "%apply"
@@ -29,5 +29,5 @@ external apply : 'a -> 'b = "%apply"
 Line 1, characters 0-36:
 1 | external apply : 'a -> 'b = "%apply"
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Wrong arity for builtin primitive "%apply"
+Error: Wrong arity for builtin primitive %apply
 |}]

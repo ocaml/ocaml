@@ -464,7 +464,7 @@ end
 
 [%%expect{|
 Line 1:
-Error: The external function `f' is not available
+Error: The external function f is not available
 |}]
 
 (* Bad: mismatched names and native names *)
@@ -639,7 +639,7 @@ Line 1, characters 14-17:
 1 | external h : (int [@unboxed]) -> float = "h" "h_nat";;
                   ^^^
 Error: Don't know how to unbox this type.
-       Only float, int32, int64 and nativeint can be unboxed.
+       Only float, int32, int64, and nativeint can be unboxed.
 |}]
 
 (* Bad: unboxing the function type *)
@@ -649,7 +649,7 @@ Line 1, characters 13-25:
 1 | external i : int -> float [@unboxed] = "i" "i_nat";;
                  ^^^^^^^^^^^^
 Error: Don't know how to unbox this type.
-       Only float, int32, int64 and nativeint can be unboxed.
+       Only float, int32, int64, and nativeint can be unboxed.
 |}]
 
 (* Bad: unboxing a "deep" sub-type. *)
@@ -658,7 +658,7 @@ external j : int -> (float [@unboxed]) * float = "j" "j_nat";;
 Line 1, characters 21-26:
 1 | external j : int -> (float [@unboxed]) * float = "j" "j_nat";;
                          ^^^^^
-Error: The attribute '@unboxed' should be attached to
+Error: The attribute @unboxed should be attached to
        a direct argument or result of the primitive,
        it should not occur deeply into its type.
 |}]
@@ -678,21 +678,21 @@ external l : float -> float = "l" "l_nat" "float" [@@unboxed];;
 Line 1, characters 0-61:
 1 | external l : float -> float = "l" "l_nat" "float" [@@unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Cannot use "float" in conjunction with [@unboxed]/[@untagged].
+Error: Cannot use float in conjunction with [@unboxed]/[@untagged].
 |}]
 external m : (float [@unboxed]) -> float = "m" "m_nat" "float";;
 [%%expect{|
 Line 1, characters 0-62:
 1 | external m : (float [@unboxed]) -> float = "m" "m_nat" "float";;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Cannot use "float" in conjunction with [@unboxed]/[@untagged].
+Error: Cannot use float in conjunction with [@unboxed]/[@untagged].
 |}]
 external n : float -> float = "n" "noalloc" [@@noalloc];;
 [%%expect{|
 Line 1, characters 0-55:
 1 | external n : float -> float = "n" "noalloc" [@@noalloc];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Cannot use "noalloc" in conjunction with [@@noalloc].
+Error: Cannot use noalloc in conjunction with [@@noalloc].
 |}]
 
 (* Warnings: unboxed / untagged without any native implementation *)

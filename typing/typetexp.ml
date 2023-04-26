@@ -855,24 +855,29 @@ let transl_type_scheme env styp =
 
 open Format
 open Printtyp
+module Style = Misc.Color
+let pp_tag ppf t = Format.fprintf ppf "`%s" t
+
 
 let report_error env ppf = function
   | Unbound_type_variable (name, in_scope_names) ->
-    fprintf ppf "The type variable %s is unbound in this type declaration.@ %a"
-      name
+    fprintf ppf "The type variable %a is unbound in this type declaration.@ %a"
+      Style.inline_code name
       did_you_mean (fun () -> Misc.spellcheck in_scope_names name )
   | No_type_wildcards ->
-    fprintf ppf "A type wildcard \"_\" is not allowed in this type declaration."
+      fprintf ppf "A type wildcard %a is not allowed in this type declaration."
+        Style.inline_code "_"
   | Undefined_type_constructor p ->
     fprintf ppf "The type constructor@ %a@ is not yet completely defined"
-      path p
+      (Style.as_inline_code path) p
   | Type_arity_mismatch(lid, expected, provided) ->
     fprintf ppf
       "@[The type constructor %a@ expects %i argument(s),@ \
         but is here applied to %i argument(s)@]"
-      longident lid expected provided
+      (Style.as_inline_code longident) lid expected provided
   | Bound_type_variable name ->
-    fprintf ppf "Already bound type parameter %a" Pprintast.tyvar name
+      fprintf ppf "Already bound type parameter %a"
+        (Style.as_inline_code Pprintast.tyvar) name
   | Recursive_type ->
     fprintf ppf "This type is recursive"
   | Type_mismatch trace ->
@@ -888,27 +893,33 @@ let report_error env ppf = function
         (function ppf ->
            fprintf ppf "but is used as an instance of type")
   | Present_has_conjunction l ->
-      fprintf ppf "The present constructor %s has a conjunctive type" l
+      fprintf ppf "The present constructor %a has a conjunctive type"
+        Style.inline_code l
   | Present_has_no_type l ->
       fprintf ppf
-        "@[<v>@[The constructor %s is missing from the upper bound@ \
-         (between '<'@ and '>')@ of this polymorphic variant@ \
-         but is present in@ its lower bound (after '>').@]@,\
-         @[@{<hint>Hint@}: Either add `%s in the upper bound,@ \
+        "@[<v>@[The constructor %a is missing from the upper bound@ \
+         (between %a@ and %a)@ of this polymorphic variant@ \
+         but is present in@ its lower bound (after %a).@]@,\
+         @[@{<hint>Hint@}: Either add %a in the upper bound,@ \
          or remove it@ from the lower bound.@]@]"
-         l l
+        (Style.as_inline_code pp_tag) l
+        Style.inline_code "<"
+        Style.inline_code ">"
+        Style.inline_code ">"
+        (Style.as_inline_code pp_tag) l
   | Constructor_mismatch (ty, ty') ->
+      let pp_type ppf ty = Style.as_inline_code !Oprint.out_type ppf ty in
       wrap_printing_env ~error:true env (fun ()  ->
         Printtyp.prepare_for_printing [ty; ty'];
         fprintf ppf "@[<hov>%s %a@ %s@ %a@]"
           "This variant type contains a constructor"
-          !Oprint.out_type (tree_of_typexp Type ty)
+          pp_type (tree_of_typexp Type ty)
           "which should be"
-           !Oprint.out_type (tree_of_typexp Type ty'))
+          pp_type (tree_of_typexp Type ty'))
   | Not_a_variant ty ->
       fprintf ppf
         "@[The type %a@ does not expand to a polymorphic variant type@]"
-        Printtyp.type_expr ty;
+        (Style.as_inline_code Printtyp.type_expr) ty;
       begin match get_desc ty with
         | Tvar (Some s) ->
            (* PR#7012: help the user that wrote 'Foo instead of `Foo *)
@@ -917,36 +928,43 @@ let report_error env ppf = function
       end
   | Variant_tags (lab1, lab2) ->
       fprintf ppf
-        "@[Variant tags `%s@ and `%s have the same hash value.@ %s@]"
-        lab1 lab2 "Change one of them."
+        "@[Variant tags %a@ and %a have the same hash value.@ %s@]"
+        (Style.as_inline_code pp_tag) lab1
+        (Style.as_inline_code pp_tag) lab2
+        "Change one of them."
   | Invalid_variable_name name ->
-      fprintf ppf "The type variable name %s is not allowed in programs" name
+      fprintf ppf "The type variable name %a is not allowed in programs"
+        Style.inline_code name
   | Cannot_quantify (name, v) ->
       fprintf ppf
         "@[<hov>The universal type variable %a cannot be generalized:@ "
-        Pprintast.tyvar name;
+        (Style.as_inline_code Pprintast.tyvar) name;
       if Btype.is_Tvar v then
         fprintf ppf "it escapes its scope"
       else if Btype.is_Tunivar v then
         fprintf ppf "it is already bound to another variable"
       else
-        fprintf ppf "it is bound to@ %a" Printtyp.type_expr v;
+        fprintf ppf "it is bound to@ %a"
+          (Style.as_inline_code Printtyp.type_expr) v;
       fprintf ppf ".@]";
   | Multiple_constraints_on_type s ->
-      fprintf ppf "Multiple constraints for type %a" longident s
+      fprintf ppf "Multiple constraints for type %a"
+        (Style.as_inline_code longident) s
   | Method_mismatch (l, ty, ty') ->
       wrap_printing_env ~error:true env (fun ()  ->
-        fprintf ppf "@[<hov>Method '%s' has type %a,@ which should be %a@]"
-          l Printtyp.type_expr ty Printtyp.type_expr ty')
+        fprintf ppf "@[<hov>Method %a has type %a,@ which should be %a@]"
+          Style.inline_code l
+          (Style.as_inline_code Printtyp.type_expr) ty
+          (Style.as_inline_code Printtyp.type_expr) ty')
   | Opened_object nm ->
       fprintf ppf
         "Illegal open object type%a"
         (fun ppf -> function
-             Some p -> fprintf ppf "@ %a" path p
+             Some p -> fprintf ppf "@ %a" (Style.as_inline_code path) p
            | None -> fprintf ppf "") nm
   | Not_an_object ty ->
       fprintf ppf "@[The type %a@ is not an object type@]"
-        Printtyp.type_expr ty
+        (Style.as_inline_code Printtyp.type_expr) ty
 
 let () =
   Location.register_error_of_exn

@@ -346,24 +346,29 @@ let package_files ~ppf_dump initial_env files targetfile =
 (* Error report *)
 
 open Format
+module Style = Misc.Color
 
 let report_error ppf = function
-    Forward_reference(file, (compunit)) ->
-      fprintf ppf "Forward reference to %s in file %a" (Compunit.name compunit)
-        Location.print_filename file
+    Forward_reference(file, compunit) ->
+      fprintf ppf "Forward reference to %a in file %a"
+        Style.inline_code (Compunit.name compunit)
+        (Style.as_inline_code Location.print_filename) file
   | Multiple_definition(file, compunit) ->
-      fprintf ppf "File %a redefines %s"
-        Location.print_filename file
-        (Compunit.name compunit)
+      fprintf ppf "File %a redefines %a"
+        (Style.as_inline_code Location.print_filename) file
+        Style.inline_code (Compunit.name compunit)
   | Not_an_object_file file ->
       fprintf ppf "%a is not a bytecode object file"
-        Location.print_filename file
+        (Style.as_inline_code Location.print_filename) file
   | Illegal_renaming(name, file, id) ->
       fprintf ppf "Wrong file naming: %a@ contains the code for\
-                   @ %s when %s was expected"
-        Location.print_filename file (Compunit.name name) (Compunit.name id)
+                   @ %a when %a was expected"
+        (Style.as_inline_code Location.print_filename) file
+        Style.inline_code (Compunit.name name)
+        Style.inline_code (Compunit.name id)
   | File_not_found file ->
-      fprintf ppf "File %s not found" file
+      fprintf ppf "File %a not found"
+        Style.inline_code file
 
 let () =
   Location.register_error_of_exn

@@ -57,7 +57,7 @@ Error: Signature mismatch:
        At position module type x = <here>
        Illegal permutation of runtime components in a module type.
          For example,
-         the class "two" and the value "one" are not in the same order
+         the class two and the value one are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -78,7 +78,7 @@ Error: Signature mismatch:
        At position module type x = <here>
        Illegal permutation of runtime components in a module type.
          For example,
-         the exception "Three" and the value "one" are not in the same order
+         the exception Three and the value one are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -155,7 +155,7 @@ Error: Signature mismatch:
        At position module type x = <here>
        Illegal permutation of runtime components in a module type.
          For example,
-         the value "e" and the value "c" are not in the same order
+         the value e and the value c are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -190,7 +190,7 @@ Error: Signature mismatch:
        At position module type x = <here>
        Illegal permutation of runtime components in a module type.
          For example,
-         the value "x" and the class "x" are not in the same order
+         the value x and the class x are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -249,7 +249,7 @@ Error: Signature mismatch:
        At position module type a = sig module type b = <here> end
        Illegal permutation of runtime components in a module type.
          For example,
-         the value "y" and the value "x" are not in the same order
+         the value y and the value x are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -286,7 +286,7 @@ Error: Signature mismatch:
        At position module type x = <here>
        Illegal permutation of runtime components in a module type.
          For example,
-         the class "b" and the class "a" are not in the same order
+         the class b and the class a are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -321,7 +321,7 @@ Error: Signature mismatch:
        At position module type x = <here>
        Illegal permutation of runtime components in a module type.
          For example,
-         the exception "B" and the exception "A" are not in the same order
+         the exception B and the exception A are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -361,7 +361,7 @@ Error: Signature mismatch:
        At position module type x = <here>
        Illegal permutation of runtime components in a module type.
          For example,
-         the module "Two" and the module "One" are not in the same order
+         the module Two and the module One are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -382,7 +382,7 @@ Error: Signature mismatch:
        At position module type x = <here>
        Illegal permutation of runtime components in a module type.
          For example, in module One,
-         the class "two" and the value "one" are not in the same order
+         the class two and the value one are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -407,7 +407,7 @@ Error: Signature mismatch:
        At position module type x = <here>
        Illegal permutation of runtime components in a module type.
          For example, at position functor (X : <here>) -> ...,
-         the class "two" and the value "one" are not in the same order
+         the class two and the value one are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -432,7 +432,7 @@ Error: Signature mismatch:
        At position module type x = <here>
        Illegal permutation of runtime components in a module type.
          For example, at position functor (X) -> <here>,
-         the class "two" and the value "one" are not in the same order
+         the class two and the value one are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -625,6 +625,6 @@ Error: Signature mismatch:
                      end) : ...
                  end
              end,
-         the value "two" and the value "one" are not in the same order
+         the value two and the value one are not in the same order
          in the expected and actual module types.
 |}]

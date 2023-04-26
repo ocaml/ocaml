@@ -1809,6 +1809,7 @@ let check_recmod_typedecl env loc recmod_ids path decl =
 (**** Error report ****)
 
 open Format
+module Style = Misc.Color
 
 let explain_unbound_gen ppf tv tl typ kwd pr =
   try
@@ -1818,7 +1819,8 @@ let explain_unbound_gen ppf tv tl typ kwd pr =
     Printtyp.prepare_for_printing [typ ti; ty0];
     fprintf ppf
       ".@ @[<hov2>In %s@ %a@;<1 -2>the variable %a is unbound@]"
-      kwd pr ti Printtyp.prepared_type_expr tv
+      kwd (Style.as_inline_code pr) ti
+      (Style.as_inline_code Printtyp.prepared_type_expr) tv
   with Not_found -> ()
 
 let explain_unbound ppf tv tl typ kwd lab =
@@ -1882,12 +1884,12 @@ module Reaching_path = struct
     let pp_step ppf = function
       | Expands_to (ty, body) ->
           Format.fprintf ppf "%a = %a"
-            Printtyp.prepared_type_expr ty
-            Printtyp.prepared_type_expr body
+            (Style.as_inline_code Printtyp.prepared_type_expr) ty
+            (Style.as_inline_code Printtyp.prepared_type_expr) body
       | Contains (outer, inner) ->
           Format.fprintf ppf "%a contains %a"
-            Printtyp.prepared_type_expr outer
-            Printtyp.prepared_type_expr inner
+            (Style.as_inline_code Printtyp.prepared_type_expr) outer
+            (Style.as_inline_code Printtyp.prepared_type_expr) inner
     in
     let comma ppf () = Format.fprintf ppf ",@ " in
     Format.(pp_print_list ~pp_sep:comma pp_step) ppf reaching_path
@@ -1901,37 +1903,37 @@ let report_error ppf = function
   | Repeated_parameter ->
       fprintf ppf "A type parameter occurs several times"
   | Duplicate_constructor s ->
-      fprintf ppf "Two constructors are named %s" s
+      fprintf ppf "Two constructors are named %a" Style.inline_code s
   | Too_many_constructors ->
       fprintf ppf
         "@[Too many non-constant constructors@ -- maximum is %i %s@]"
         (Config.max_tag + 1) "non-constant constructors"
   | Duplicate_label s ->
-      fprintf ppf "Two labels are named %s" s
+      fprintf ppf "Two labels are named %a" Style.inline_code s
   | Recursive_abbrev (s, env, reaching_path) ->
       let reaching_path = Reaching_path.simplify reaching_path in
       Printtyp.wrap_printing_env ~error:true env @@ fun () ->
       Printtyp.reset ();
       Reaching_path.add_to_preparation reaching_path;
-      fprintf ppf "@[<v>The type abbreviation %s is cyclic%a@]"
-        s
+      fprintf ppf "@[<v>The type abbreviation %a is cyclic%a@]"
+        Style.inline_code s
         Reaching_path.pp_colon reaching_path
   | Cycle_in_def (s, env, reaching_path) ->
       let reaching_path = Reaching_path.simplify reaching_path in
       Printtyp.wrap_printing_env ~error:true env @@ fun () ->
       Printtyp.reset ();
       Reaching_path.add_to_preparation reaching_path;
-      fprintf ppf "@[<v>The definition of %s contains a cycle%a@]"
-        s
+      fprintf ppf "@[<v>The definition of %a contains a cycle%a@]"
+        Style.inline_code s
         Reaching_path.pp_colon reaching_path
   | Definition_mismatch (ty, _env, None) ->
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]@]"
         "This variant or record definition" "does not match that of type"
-        Printtyp.type_expr ty
+        (Style.as_inline_code Printtyp.type_expr) ty
   | Definition_mismatch (ty, env, Some err) ->
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]%a@]"
         "This variant or record definition" "does not match that of type"
-        Printtyp.type_expr ty
+        (Style.as_inline_code Printtyp.type_expr) ty
         (Includecore.report_type_mismatch
            "the original" "this" "definition" env)
         err
@@ -1943,17 +1945,18 @@ let report_error ppf = function
       fprintf ppf "@]"
   | Non_regular { definition; used_as; defined_as; reaching_path } ->
       let reaching_path = Reaching_path.simplify reaching_path in
+      let pp_type ppf ty = Style.as_inline_code !Oprint.out_type ppf ty in
       Printtyp.prepare_for_printing [used_as; defined_as];
       Reaching_path.add_to_preparation reaching_path;
       fprintf ppf
         "@[<hv>This recursive type is not regular.@ \
-         The type constructor %s is defined as@;<1 2>type %a@ \
+         The type constructor %a is defined as@;<1 2>type %a@ \
          but it is used as@;<1 2>%a%t\
          All uses need to match the definition for the recursive type \
          to be regular.@]"
-        (Path.name definition)
-        !Oprint.out_type (Printtyp.tree_of_typexp Type defined_as)
-        !Oprint.out_type (Printtyp.tree_of_typexp Type used_as)
+        Style.inline_code (Path.name definition)
+        pp_type (Printtyp.tree_of_typexp Type defined_as)
+        pp_type (Printtyp.tree_of_typexp Type used_as)
         (fun pp ->
            let is_expansion = function Expands_to _ -> true | _ -> false in
            if List.exists is_expansion reaching_path then
@@ -2010,12 +2013,12 @@ let report_error ppf = function
   | Not_extensible_type path ->
       fprintf ppf "@[%s@ %a@ %s@]"
         "Type definition"
-        Printtyp.path path
+        (Style.as_inline_code Printtyp.path) path
         "is not extensible"
   | Extension_mismatch (path, env, err) ->
-      fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%s@]%a@]"
+      fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]%a@]"
         "This extension" "does not match the definition of type"
-        (Path.name path)
+        Style.inline_code (Path.name path)
         (Includecore.report_type_mismatch
            "the type" "this extension" "definition" env)
         err
@@ -2023,20 +2026,21 @@ let report_error ppf = function
       Printtyp.report_unification_error ppf env err
         (function ppf ->
            fprintf ppf "The constructor %a@ has type"
-             Printtyp.longident lid)
+             (Style.as_inline_code Printtyp.longident) lid)
         (function ppf ->
            fprintf ppf "but was expected to be of type")
   | Rebind_mismatch (lid, p, p') ->
       fprintf ppf
-        "@[%s@ %a@ %s@ %s@ %s@ %s@ %s@]"
-        "The constructor" Printtyp.longident lid
-        "extends type" (Path.name p)
+        "@[%s@ %a@ %s@ %a@ %s@ %s@ %a@]"
+        "The constructor"
+        (Style.as_inline_code Printtyp.longident) lid
+        "extends type" Style.inline_code (Path.name p)
         "whose declaration does not match"
-        "the declaration of type" (Path.name p')
+        "the declaration of type" Style.inline_code (Path.name p')
   | Rebind_private lid ->
       fprintf ppf "@[%s@ %a@ %s@]"
         "The constructor"
-        Printtyp.longident lid
+        (Style.as_inline_code Printtyp.longident) lid
         "is private"
   | Variance (Typedecl_variance.Bad_variance (n, v1, v2)) ->
       let variance (p,n,i) =
@@ -2055,13 +2059,13 @@ let report_error ppf = function
                Printtyp.add_type_declaration_to_preparation id decl;
                fprintf ppf "@[<v>%s@;<1 2>%a@;"
                  "In the definition"
-                 (Printtyp.prepared_type_declaration id)
+                 (Style.as_inline_code @@ Printtyp.prepared_type_declaration id)
                  decl
            | Gadt_constructor c ->
                Printtyp.add_constructor_to_preparation c;
                fprintf ppf "@[<v>%s@;<1 2>%a@;"
                  "In the GADT constructor"
-                 Printtyp.prepared_constructor
+                 (Style.as_inline_code Printtyp.prepared_constructor)
                  c
            | Extension_constructor (id, e) ->
                Printtyp.add_extension_constructor_to_preparation e;
@@ -2074,19 +2078,19 @@ let report_error ppf = function
            | Variance_not_reflected ->
                fprintf ppf "@[%s@ %a@ %s@ %s@ It"
                  "the type variable"
-                 Printtyp.prepared_type_expr variable
+                 (Style.as_inline_code Printtyp.prepared_type_expr) variable
                  "has a variance that"
                  "is not reflected by its occurrence in type parameters."
            | No_variable ->
                fprintf ppf "@[%s@ %a@ %s@ %s@]@]"
                  "the type variable"
-                 Printtyp.prepared_type_expr variable
+                 (Style.as_inline_code Printtyp.prepared_type_expr) variable
                  "cannot be deduced"
                  "from the type parameters."
            | Variance_not_deducible ->
                fprintf ppf "@[%s@ %a@ %s@ %s@ It"
                  "the type variable"
-                 Printtyp.prepared_type_expr variable
+                 (Style.as_inline_code Printtyp.prepared_type_expr) variable
                  "has a variance that"
                  "cannot be deduced from the type parameters."
            end
@@ -2101,7 +2105,8 @@ let report_error ppf = function
            fprintf ppf " was expected to be %s,@ but it is %s.@]@]"
              (variance v2) (variance v1))
   | Unavailable_type_constructor p ->
-      fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p
+      fprintf ppf "The definition of type %a@ is unavailable"
+        (Style.as_inline_code Printtyp.path) p
   | Variance Typedecl_variance.Varying_anonymous ->
       fprintf ppf "@[%s@ %s@ %s@]"
         "In this GADT definition," "the variance of some parameter"
@@ -2109,28 +2114,42 @@ let report_error ppf = function
   | Val_in_structure ->
       fprintf ppf "Value declarations are only allowed in signatures"
   | Multiple_native_repr_attributes ->
-      fprintf ppf "Too many [@@unboxed]/[@@untagged] attributes"
+      fprintf ppf "Too many %a/%a attributes"
+        Style.inline_code "[@@unboxed]"
+        Style.inline_code "[@@untagged]"
   | Cannot_unbox_or_untag_type Unboxed ->
       fprintf ppf "@[Don't know how to unbox this type.@ \
-                   Only float, int32, int64 and nativeint can be unboxed.@]"
+                   Only %a, %a, %a, and %a can be unboxed.@]"
+        Style.inline_code "float"
+        Style.inline_code "int32"
+        Style.inline_code "int64"
+        Style.inline_code "nativeint"
   | Cannot_unbox_or_untag_type Untagged ->
       fprintf ppf "@[Don't know how to untag this type.@ \
-                   Only int can be untagged.@]"
+                   Only %a can be untagged.@]"
+        Style.inline_code "int"
   | Deep_unbox_or_untag_attribute kind ->
       fprintf ppf
-        "@[The attribute '%s' should be attached to@ \
+        "@[The attribute %a should be attached to@ \
          a direct argument or result of the primitive,@ \
          it should not occur deeply into its type.@]"
+        Style.inline_code
         (match kind with Unboxed -> "@unboxed" | Untagged -> "@untagged")
   | Immediacy (Typedecl_immediacy.Bad_immediacy_attribute violation) ->
-      fprintf ppf "@[%a@]" Format.pp_print_text
-        (match violation with
-         | Type_immediacy.Violation.Not_always_immediate ->
-             "Types marked with the immediate attribute must be \
-              non-pointer types like int or bool."
-         | Type_immediacy.Violation.Not_always_immediate_on_64bits ->
-             "Types marked with the immediate64 attribute must be \
-              produced using the Stdlib.Sys.Immediate64.Make functor.")
+      (match violation with
+       | Type_immediacy.Violation.Not_always_immediate ->
+           fprintf ppf
+             "@[Types@ marked@ with@ the@ immediate@ attribute@ must@ be@ \
+              non-pointer@ types@ like@ %a@ or@ %a.@]"
+             Style.inline_code "int"
+             Style.inline_code "bool"
+       | Type_immediacy.Violation.Not_always_immediate_on_64bits ->
+           fprintf ppf
+             "@[Types@ marked@ with@ the@ %a@ attribute@ must@ be@ \
+              produced@ using@ the@ %a@ functor.@]"
+             Style.inline_code "immediate64"
+             Style.inline_code "Stdlib.Sys.Immediate64.Make"
+      )
   | Bad_unboxed_attribute msg ->
       fprintf ppf "@[This type cannot be unboxed because@ %s.@]" msg
   | Separability (Typedecl_separability.Non_separable_evar evar) ->
@@ -2139,26 +2158,30 @@ let report_error ppf = function
             fprintf ppf "an unnamed existential variable"
         | Some str ->
             fprintf ppf "the existential variable %a"
-              Pprintast.tyvar str in
+              (Style.as_inline_code Pprintast.tyvar) str in
       fprintf ppf "@[This type cannot be unboxed because@ \
                    it might contain both float and non-float values,@ \
                    depending on the instantiation of %a.@ \
-                   You should annotate it with [%@%@ocaml.boxed].@]"
+                   You should annotate it with %a.@]"
         pp_evar evar
+        Style.inline_code "[@@ocaml.boxed]"
   | Boxed_and_unboxed ->
       fprintf ppf "@[A type cannot be boxed and unboxed at the same time.@]"
   | Nonrec_gadt ->
       fprintf ppf
-        "@[GADT case syntax cannot be used in a 'nonrec' block.@]"
+        "@[GADT case syntax cannot be used in a %a block.@]"
+        Style.inline_code "nonrec"
   | Invalid_private_row_declaration ty ->
+      let pp_private ppf ty = fprintf ppf "private %a" Printtyp.type_expr ty in
       Format.fprintf ppf
         "@[<hv>This private row type declaration is invalid.@ \
          The type expression on the right-hand side reduces to@;<1 2>%a@ \
          which does not have a free row type variable.@]@,\
          @[<hv>@[@{<hint>Hint@}: If you intended to define a private \
          type abbreviation,@ \
-         write explicitly@]@;<1 2>private %a@]"
-        Printtyp.type_expr ty Printtyp.type_expr ty
+         write explicitly@]@;<1 2>%a@]"
+        (Style.as_inline_code Printtyp.type_expr) ty
+        (Style.as_inline_code pp_private) ty
 
 let () =
   Location.register_error_of_exn

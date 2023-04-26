@@ -17,7 +17,7 @@ type t = { x : int64; } [@@unboxed]
 Line 2, characters 12-19:
 2 | let rec x = {x = y} and y = 3L;;
                 ^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of let rec
 |}];;
 
 type r = A of r [@@unboxed]
@@ -27,7 +27,7 @@ type r = A of r [@@unboxed]
 Line 2, characters 12-15:
 2 | let rec y = A y;;
                 ^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of let rec
 |}];;
 
 (* This test is not allowed if 'a' is unboxed, but should be accepted
@@ -65,7 +65,7 @@ Lines 5-9, characters 2-10:
 7 |        X a
 8 |      else
 9 |        Y)}..
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of let rec
 |}];;
 
 (* This test is not allowed if 'c' is unboxed, but should be accepted
@@ -105,5 +105,5 @@ Lines 5-9, characters 2-9:
 7 |        V d
 8 |      else
 9 |        W)..
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of let rec
 |}];;

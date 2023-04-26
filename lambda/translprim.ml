@@ -869,12 +869,14 @@ let transl_primitive_application loc p env ty path exp args arg_exps =
 (* Error report *)
 
 open Format
+module Style = Misc.Color
 
 let report_error ppf = function
   | Unknown_builtin_primitive prim_name ->
-      fprintf ppf "Unknown builtin primitive \"%s\"" prim_name
+      fprintf ppf "Unknown builtin primitive %a" Style.inline_code prim_name
   | Wrong_arity_builtin_primitive prim_name ->
-      fprintf ppf "Wrong arity for builtin primitive \"%s\"" prim_name
+      fprintf ppf "Wrong arity for builtin primitive %a"
+        Style.inline_code prim_name
 
 let () =
   Location.register_error_of_exn

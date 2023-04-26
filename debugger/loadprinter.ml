@@ -139,6 +139,7 @@ let remove_printer lid =
 (* Error report *)
 
 open Format
+module Style = Misc.Color
 
 let report_error ppf = function
   | Load_failure e ->
@@ -146,15 +147,15 @@ let report_error ppf = function
         (Dynlink.error_message e)
   | Unbound_identifier lid ->
       fprintf ppf "@[Unbound identifier %a@]@."
-      Printtyp.longident lid
+      (Style.as_inline_code Printtyp.longident) lid
   | Unavailable_module(md, lid) ->
       fprintf ppf
         "@[The debugger does not contain the code for@ %a.@ \
            Please load an implementation of %s first.@]@."
-        Printtyp.longident lid md
+        (Style.as_inline_code Printtyp.longident) lid md
   | Wrong_type lid ->
       fprintf ppf "@[%a has the wrong type for a printing function.@]@."
-      Printtyp.longident lid
+      (Style.as_inline_code Printtyp.longident) lid
   | No_active_printer lid ->
       fprintf ppf "@[%a is not currently active as a printing function.@]@."
-      Printtyp.longident lid
+      (Style.as_inline_code Printtyp.longident) lid

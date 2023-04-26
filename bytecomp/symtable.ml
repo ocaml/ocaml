@@ -23,6 +23,7 @@ open Lambda
 open Cmo_format
 
 module String = Misc.Stdlib.String
+module Style = Misc.Color
 
 module Compunit = struct
   type t = compunit
@@ -52,9 +53,12 @@ module Global = struct
 
   let quote s = "`" ^ s ^ "'"
 
-  let description = function
-    | Glob_compunit (Compunit cu) -> "compilation unit " ^ (quote cu)
-    | Glob_predef (Predef_exn exn) -> "predefined exception " ^ (quote exn)
+  let description ppf = function
+    | Glob_compunit (Compunit cu) ->
+        Format.fprintf ppf "compilation unit %a" Style.inline_code (quote cu)
+    | Glob_predef (Predef_exn exn) ->
+        Format.fprintf ppf "predefined exception %a"
+          Style.inline_code (quote exn)
 
   let of_ident id =
     let name = Ident.name id in
@@ -465,14 +469,16 @@ open Format
 
 let report_error ppf = function
   | Undefined_global global ->
-      fprintf ppf "Reference to undefined %s" (Global.description global)
+      fprintf ppf "Reference to undefined %a" Global.description global
   | Unavailable_primitive s ->
-      fprintf ppf "The external function `%s' is not available" s
+      fprintf ppf "The external function %a is not available"
+        Style.inline_code s
   | Wrong_vm s ->
-      fprintf ppf "Cannot find or execute the runtime system %s" s
+      fprintf ppf "Cannot find or execute the runtime system %a"
+      Style.inline_code s
   | Uninitialized_global global ->
-      fprintf ppf "The value of the %s is not yet computed"
-        (Global.description global)
+      fprintf ppf "The value of the %a is not yet computed"
+        Global.description global
 
 let () =
   Location.register_error_of_exn

@@ -308,6 +308,7 @@ let compile_implementation_linear output_prefix ~progname =
       linear_gen_implementation progname)
 
 (* Error report *)
+module Style = Misc.Color
 
 let report_error ppf = function
   | Assembler_error file ->
@@ -315,16 +316,16 @@ let report_error ppf = function
         Location.print_filename file
   | Mismatched_for_pack saved ->
     let msg = function
-       | None -> "without -for-pack"
-       | Some s -> "with -for-pack "^s
+       | None -> Format.dprintf "without %a" Style.inline_code "-for-pack"
+       | Some s -> Format.dprintf "with %a %s " Style.inline_code "-for-pack" s
      in
      fprintf ppf
-       "This input file cannot be compiled %s: it was generated %s."
+       "This input file cannot be compiled %t: it was generated %t."
        (msg !Clflags.for_package) (msg saved)
   | Asm_generation(fn, err) ->
      fprintf ppf
-       "Error producing assembly code for function %s: %a"
-       fn Emitaux.report_error err
+       "Error producing assembly code for function %a: %a"
+       Style.inline_code fn Emitaux.report_error err
 
 let () =
   Location.register_error_of_exn

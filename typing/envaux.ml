@@ -102,10 +102,12 @@ let env_of_only_summary env =
 (* Error report *)
 
 open Format
+module Style = Misc.Color
 
 let report_error ppf = function
   | Module_not_found p ->
-      fprintf ppf "@[Cannot find module %a@].@." Printtyp.path p
+      fprintf ppf "@[Cannot find module %a@].@."
+        (Style.as_inline_code Printtyp.path) p
 
 let () =
   Location.register_error_of_exn

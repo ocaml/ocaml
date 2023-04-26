@@ -373,61 +373,68 @@ let link ~ppf_dump objfiles output_name =
 (* Error report *)
 
 open Format
+module Style = Misc.Color
 
 let report_error ppf = function
   | File_not_found name ->
-      fprintf ppf "Cannot find file %s" name
+      fprintf ppf "Cannot find file %a" Style.inline_code name
   | Not_an_object_file name ->
       fprintf ppf "The file %a is not a compilation unit description"
-        Location.print_filename name
+        (Style.as_inline_code Location.print_filename) name
   | Missing_implementations l ->
      let print_references ppf = function
        | [] -> ()
        | r1 :: rl ->
-           fprintf ppf "%s" r1;
-           List.iter (fun r -> fprintf ppf ",@ %s" r) rl in
+           Style.inline_code ppf r1;
+           List.iter (fun r -> fprintf ppf ",@ %a" Style.inline_code r) rl in
       let print_modules ppf =
         List.iter
          (fun (md, rq) ->
-            fprintf ppf "@ @[<hov 2>%s referenced from %a@]" md
-            print_references rq) in
+           fprintf ppf "@ @[<hov 2>%a referenced from %a@]"
+             Style.inline_code md
+             print_references rq) in
       fprintf ppf
        "@[<v 2>No implementations provided for the following modules:%a@]"
        print_modules l
   | Inconsistent_interface(intf, file1, file2) ->
       fprintf ppf
        "@[<hov>Files %a@ and %a@ make inconsistent assumptions \
-              over interface %s@]"
-       Location.print_filename file1
-       Location.print_filename file2
-       intf
+              over interface %a@]"
+       (Style.as_inline_code Location.print_filename) file1
+       (Style.as_inline_code Location.print_filename) file2
+       Style.inline_code intf
   | Inconsistent_implementation(intf, file1, file2) ->
       fprintf ppf
        "@[<hov>Files %a@ and %a@ make inconsistent assumptions \
-              over implementation %s@]"
-       Location.print_filename file1
-       Location.print_filename file2
-       intf
+              over implementation %a@]"
+       (Style.as_inline_code Location.print_filename) file1
+       (Style.as_inline_code Location.print_filename) file2
+       Style.inline_code intf
   | Assembler_error file ->
-      fprintf ppf "Error while assembling %a" Location.print_filename file
+      fprintf ppf "Error while assembling %a"
+        (Style.as_inline_code Location.print_filename) file
   | Linking_error exitcode ->
       fprintf ppf "Error during linking (exit code %d)" exitcode
   | Multiple_definition(modname, file1, file2) ->
       fprintf ppf
-        "@[<hov>Files %a@ and %a@ both define a module named %s@]"
-        Location.print_filename file1
-        Location.print_filename file2
-        modname
+        "@[<hov>Files %a@ and %a@ both define a module named %a@]"
+        (Style.as_inline_code Location.print_filename) file1
+        (Style.as_inline_code Location.print_filename) file2
+        Style.inline_code modname
   | Missing_cmx(filename, name) ->
       fprintf ppf
         "@[<hov>File %a@ was compiled without access@ \
-         to the .cmx file@ for module %s,@ \
-         which was produced by `ocamlopt -for-pack'.@ \
-         Please recompile %a@ with the correct `-I' option@ \
-         so that %s.cmx@ is found.@]"
-        Location.print_filename filename name
-        Location.print_filename  filename
-        name
+         to the %a file@ for module %a,@ \
+         which was produced by %a.@ \
+         Please recompile %a@ with the correct %a option@ \
+         so that %a@ is found.@]"
+        (Style.as_inline_code Location.print_filename) filename
+        Style.inline_code ".cmx"
+        Style.inline_code name
+        Style.inline_code "ocamlopt -for-pack"
+        (Style.as_inline_code Location.print_filename) filename
+        Style.inline_code "-I"
+        Style.inline_code (name^".cmx")
 
 let () =
   Location.register_error_of_exn

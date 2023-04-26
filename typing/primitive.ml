@@ -228,18 +228,25 @@ let native_name_is_external p =
   let nat_name = native_name p in
   nat_name <> "" && nat_name.[0] <> '%'
 
+module Style = Misc.Color
+
 let report_error ppf err =
   match err with
   | Old_style_float_with_native_repr_attribute ->
-    Format.fprintf ppf "Cannot use \"float\" in conjunction with \
-                        [%@unboxed]/[%@untagged]."
+    Format.fprintf ppf "Cannot use %a in conjunction with %a/%a."
+      Style.inline_code "float"
+      Style.inline_code "[@unboxed]"
+      Style.inline_code  "[@untagged]"
   | Old_style_noalloc_with_noalloc_attribute ->
-    Format.fprintf ppf "Cannot use \"noalloc\" in conjunction with \
-                        [%@%@noalloc]."
+    Format.fprintf ppf "Cannot use %a in conjunction with %a."
+      Style.inline_code "noalloc"
+      Style.inline_code "[@@noalloc]"
   | No_native_primitive_with_repr_attribute ->
     Format.fprintf ppf
       "[@The native code version of the primitive is mandatory@ \
-       when attributes [%@untagged] or [%@unboxed] are present.@]"
+       when attributes %a or %a are present.@]"
+      Style.inline_code "[@untagged]"
+      Style.inline_code "[@unboxed]"
 
 let () =
   Location.register_error_of_exn

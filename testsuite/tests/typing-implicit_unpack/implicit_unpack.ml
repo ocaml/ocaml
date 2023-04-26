@@ -507,5 +507,5 @@ Line 1, characters 23-33:
                            ^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match: sig end is not included in S
-       The type `t' is required but not provided
+       The type t is required but not provided
 |}];;

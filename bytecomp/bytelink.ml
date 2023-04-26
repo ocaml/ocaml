@@ -746,54 +746,62 @@ let link objfiles output_name =
 (* Error report *)
 
 open Format
+module Style = Misc.Color
 
 let report_error ppf = function
   | File_not_found name ->
-      fprintf ppf "Cannot find file %a" Location.print_filename name
+      fprintf ppf "Cannot find file %a"
+        (Style.as_inline_code Location.print_filename) name
   | Not_an_object_file name ->
       fprintf ppf "The file %a is not a bytecode object file"
-        Location.print_filename name
+        (Style.as_inline_code Location.print_filename) name
   | Wrong_object_name name ->
-      fprintf ppf "The output file %s has the wrong name. The extension implies\
-                  \ an object file but the link step was requested" name
+      fprintf ppf "The output file %a has the wrong name. The extension implies\
+                  \ an object file but the link step was requested"
+        Style.inline_code name
   | Symbol_error(name, err) ->
-      fprintf ppf "Error while linking %a:@ %a" Location.print_filename name
-      Symtable.report_error err
+      fprintf ppf "Error while linking %a:@ %a"
+        (Style.as_inline_code Location.print_filename) name
+        Symtable.report_error err
   | Inconsistent_import(intf, file1, file2) ->
       fprintf ppf
         "@[<hov>Files %a@ and %a@ \
-                 make inconsistent assumptions over interface %s@]"
-        Location.print_filename file1
-        Location.print_filename file2
-        intf
+                 make inconsistent assumptions over interface %a@]"
+        (Style.as_inline_code Location.print_filename) file1
+        (Style.as_inline_code Location.print_filename) file2
+        Style.inline_code intf
   | Custom_runtime ->
       fprintf ppf "Error while building custom runtime system"
   | File_exists file ->
       fprintf ppf "Cannot overwrite existing file %a"
-        Location.print_filename file
+        (Style.as_inline_code Location.print_filename) file
   | Cannot_open_dll file ->
       fprintf ppf "Error on dynamically loaded library: %a"
         Location.print_filename file
   | Required_compunit_unavailable
     (Compunit unavailable, Compunit required_by) ->
-      fprintf ppf "Module `%s' is unavailable (required by `%s')"
-        unavailable required_by
+      fprintf ppf "Module %a is unavailable (required by %a)"
+        Style.inline_code unavailable
+        Style.inline_code required_by
   | Camlheader (msg, header) ->
-      fprintf ppf "System error while copying file %s: %s" header msg
+      fprintf ppf "System error while copying file %a: %a"
+        Style.inline_code header
+        Style.inline_code msg
   | Wrong_link_order depset ->
       let l = DepSet.elements depset in
       let depends_on ppf (dep, depending) =
-        fprintf ppf "%s depends on %s" (Compunit.name depending)
-                                       (Compunit.name dep)
+        fprintf ppf "%a depends on %a"
+        Style.inline_code (Compunit.name depending)
+        Style.inline_code (Compunit.name dep)
       in
       fprintf ppf "@[<hov 2>Wrong link order: %a@]"
         (pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ",@ ") depends_on) l
   | Multiple_definition(compunit, file1, file2) ->
       fprintf ppf
-        "@[<hov>Files %a@ and %a@ both define a module named %s@]"
-        Location.print_filename file1
-        Location.print_filename file2
-        (Compunit.name compunit)
+        "@[<hov>Files %a@ and %a@ both define a module named %a@]"
+        (Style.as_inline_code Location.print_filename) file1
+        (Style.as_inline_code Location.print_filename) file2
+        Style.inline_code (Compunit.name compunit)
 
 
 let () =

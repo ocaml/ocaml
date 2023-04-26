@@ -98,7 +98,7 @@ let f x = match x with exception Not_found -> ();;
 Line 3, characters 10-48:
 3 | let f x = match x with exception Not_found -> ();;
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: None of the patterns in this 'match' expression match values.
+Error: None of the patterns in this match expression match values.
 |}]
 
 (** Check duplicate *)
@@ -249,7 +249,7 @@ let x = [%extension_constructor]
 Line 1, characters 8-32:
 1 | let x = [%extension_constructor]
             ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Invalid [%extension_constructor] payload, a constructor is expected.
+Error: Invalid [%%extension_constructor] payload, a constructor is expected.
 |}]
 
 (** Invalid format *)
@@ -304,7 +304,7 @@ type 'a t = A of 'a
 Line 2, characters 8-11:
 2 | let rec A x = A (A ())
             ^^^
-Error: Only variables are allowed as left-hand side of `let rec'
+Error: Only variables are allowed as left-hand side of let rec
 |}]
 
 (** Non-linear pattern *)

@@ -108,6 +108,8 @@ let type_ident = wrap Parser.parse_mty_longident
 (* Error reporting for Syntaxerr *)
 (* The code has been moved here so that one can reuse Pprintast.tyvar *)
 
+module Style = Misc.Color
+
 let prepare_error err =
   let open Syntaxerr in
   match err with
@@ -126,27 +128,31 @@ let prepare_error err =
       Location.errorf ~loc "Syntax error: %s not expected." nonterm
   | Applicative_path loc ->
       Location.errorf ~loc
-        "Syntax error: applicative paths of the form F(X).t \
-         are not supported when the option -no-app-func is set."
+        "Syntax error: applicative paths of the form %a \
+         are not supported when the option %a is set."
+        Style.inline_code "F(X).t"
+        Style.inline_code "-no-app-func"
   | Variable_in_scope (loc, var) ->
       Location.errorf ~loc
         "In this scoped type, variable %a \
-         is reserved for the local type %s."
-        Pprintast.tyvar var var
+         is reserved for the local type %a."
+        (Style.as_inline_code Pprintast.tyvar) var
+        Style.inline_code var
   | Other loc ->
       Location.errorf ~loc "Syntax error"
   | Ill_formed_ast (loc, s) ->
       Location.errorf ~loc
         "broken invariant in parsetree: %s" s
   | Invalid_package_type (loc, s) ->
-      Location.errorf ~loc "invalid package type: %s" s
+      Location.errorf ~loc "invalid package type: %a" Style.inline_code s
   | Removed_string_set loc ->
       Location.errorf ~loc
         "Syntax error: strings are immutable, there is no assignment \
          syntax for them.\n\
          @{<hint>Hint@}: Mutable sequences of bytes are available in \
          the Bytes module.\n\
-         @{<hint>Hint@}: Did you mean to use 'Bytes.set'?"
+         @{<hint>Hint@}: Did you mean to use %a?"
+        Style.inline_code "Bytes.set"
 let () =
   Location.register_error_of_exn
     (function

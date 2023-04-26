@@ -599,7 +599,7 @@ module Int2 : sig type t = int val compare : 'a -> 'a -> int end
 Line 15, characters 10-30:
 15 |   include S with module I := I
                ^^^^^^^^^^^^^^^^^^^^
-Error: In this `with' constraint, the new definition of I
+Error: In this with constraint, the new definition of I
        does not match its original definition in the constrained signature:
        Modules do not match: (module Int2) is not included in (module Int)
 |}];;

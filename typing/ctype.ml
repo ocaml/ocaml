@@ -122,11 +122,14 @@ let () =
   Location.register_error_of_exn
     (function
       | Tags (l, l') ->
+          let pp_tag ppf s = Format.fprintf ppf "`%s" s in
+          let inline_tag = Misc.Color.as_inline_code pp_tag in
           Some
             Location.
               (errorf ~loc:(in_file !input_name)
-                 "In this program,@ variant constructors@ `%s and `%s@ \
-                  have the same hash value.@ Change one of them." l l'
+                 "In this program,@ variant constructors@ %a and %a@ \
+                  have the same hash value.@ Change one of them."
+                 inline_tag l inline_tag l'
               )
       | _ -> None
     )

@@ -135,7 +135,7 @@ module type r =
 Line 4, characters 2-30:
 4 |   u with module type t := base
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this `with' constraint, the new definition of t
+Error: In this with constraint, the new definition of t
        does not match its original definition in the constrained signature:
        At position module type t = <here>
        Module types do not match:
@@ -183,7 +183,7 @@ module type fst_erased = fst with module type t := sig end
 Line 1, characters 25-58:
 1 | module type fst_erased = fst with module type t := sig end
                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This `with' constraint t := sig end makes a packed module ill-formed.
+Error: This with constraint t := sig end makes a packed module ill-formed.
 |}]
 
 module type fst_ok = fst with module type t = sig end
@@ -204,8 +204,7 @@ module type S = sig module M : sig module type T end val x : (module M.T) end
 Line 8, characters 16-49:
 8 | module type R = S with module type M.T := sig end
                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This `with' constraint M.T := sig end
-       makes a packed module ill-formed.
+Error: This with constraint M.T := sig end makes a packed module ill-formed.
 |}]
 
 
@@ -222,7 +221,7 @@ module type S = sig module M : sig module type T val x : (module T) end end
 Line 8, characters 16-49:
 8 | module type R = S with module type M.T := sig end
                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This `with' constraint T := sig end makes a packed module ill-formed.
+Error: This with constraint T := sig end makes a packed module ill-formed.
 |}]
 
 

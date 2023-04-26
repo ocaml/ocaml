@@ -1738,7 +1738,7 @@ type gg = <a:int->float; a:int>
 Line 1, characters 27-30:
 1 | type gg = <a:int->float; a:int>
                                ^^^
-Error: Method 'a' has type int, which should be int -> float
+Error: Method a has type int, which should be int -> float
 |}]
 
 type t = <a:int; b:string>
@@ -1748,7 +1748,7 @@ type t = < a : int; b : string >
 Line 2, characters 19-20:
 2 | type g = <b:float; t;>
                        ^
-Error: Method 'b' has type string, which should be float
+Error: Method b has type string, which should be float
 |}]
 
 module A = struct

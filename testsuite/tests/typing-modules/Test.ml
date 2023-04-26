@@ -183,7 +183,7 @@ Error: Signature mismatch:
          sig type t += E of int end
        is not included in
          sig type t += C of int end
-       The extension constructor `C' is required but not provided
+       The extension constructor C is required but not provided
 |}];;
 
 module M : sig

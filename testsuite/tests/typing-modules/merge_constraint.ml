@@ -339,7 +339,7 @@ type s = [ `Foo of s ]
 Line 10, characters 16-35:
 10 | module type T = S with type M.t = s
                      ^^^^^^^^^^^^^^^^^^^
-Error: In this `with' constraint, the new definition of M.t
+Error: In this with constraint, the new definition of M.t
        does not match its original definition in the constrained signature:
        Type declarations do not match:
          type t = s
@@ -374,7 +374,7 @@ module X : sig type t = [ `Foo of t ] end
 Line 10, characters 16-37:
 10 | module type T = S with module M.N = X
                      ^^^^^^^^^^^^^^^^^^^^^
-Error: In this `with' constraint, the new definition of M.N
+Error: In this with constraint, the new definition of M.N
        does not match its original definition in the constrained signature:
        Modules do not match:
          sig type t = [ `Foo of t ] end
@@ -410,7 +410,7 @@ module X : sig type t type s = t end
 Line 10, characters 16-37:
 10 | module type T = S with module M.N = X
                      ^^^^^^^^^^^^^^^^^^^^^
-Error: In this `with' constraint, the new definition of M.N
+Error: In this with constraint, the new definition of M.N
        does not match its original definition in the constrained signature:
        Modules do not match:
          sig type t = X.t type s = t end
