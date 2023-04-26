@@ -111,12 +111,12 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
    data is written to channel [chan].
 
    If [flags] contains [Marshal.Compat_32], marshaling fails when
-   it encounters an integer value outside the range [[-2{^30}, 2{^30}-1]]
+   it encounters an integer value outside the range [-2]{^[30]}, [2]{^[30]}[-1]
    of integers that are representable on a 32-bit platform.  This
    ensures that marshaled data generated on a 64-bit platform can be
    safely read back on a 32-bit platform.  If [flags] does not
    contain [Marshal.Compat_32], integer values outside the
-   range [[-2{^30}, 2{^30}-1]] are marshaled, and can be read back on
+   range [-2]{^[30]}, [2]{^[30]}[-1] are marshaled, and can be read back on
    a 64-bit platform, but will cause an error at un-marshaling time
    when read back on a 32-bit platform.  The [Mashal.Compat_32] flag
    only matters when marshaling is performed on a 64-bit platform;
