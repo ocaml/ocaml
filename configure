@@ -15376,7 +15376,8 @@ fi; system=elf ;; #(
      has_native_backend=yes; arch=amd64; system=beos ;; #(
   arm64-*-darwin*) :
     has_native_backend=yes; arch=arm64; system=macosx ;; #(
-    arch=amd64; system=openbsd ;; #(
+  arm64-*-openbsd*) :
+    has_native_backend=yes; arch=amd64; system=openbsd ;; #(
   aarch64-*-darwin*) :
     has_native_backend=yes; arch=arm64; system=macosx ;; #(
   x86_64-*-darwin*) :
