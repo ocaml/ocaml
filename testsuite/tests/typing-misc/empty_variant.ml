@@ -55,8 +55,10 @@ type nothing = |
 type ('a, 'b, 'c) t = A of 'a | B of 'b | C of 'c
 module Runner : sig val ac : f:((unit, 'a, unit) t -> unit) -> unit end
 Lines 16-17, characters 8-18:
-16 | ........match abc with
+16 |         match abc with
+             ^^^^^^^^^^^^^^
 17 |         | A _ -> 1
+             ^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 C ()

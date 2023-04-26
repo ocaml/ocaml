@@ -60,11 +60,16 @@ let rec a =
 type a = { a : b; } [@@unboxed]
 and b = X of a | Y
 Lines 5-9, characters 2-10:
-5 | ..{a=
+5 |   {a=
+      ^^^
 6 |     (if Sys.opaque_identity true then
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 7 |        X a
+           ^^^
 8 |      else
-9 |        Y)}..
+         ^^^^
+9 |        Y)};;
+           ^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;
 
@@ -100,10 +105,15 @@ let rec d =
 type d = D of e [@@unboxed]
 and e = V of d | W
 Lines 5-9, characters 2-9:
-5 | ..D
+5 |   D
+      ^
 6 |     (if Sys.opaque_identity true then
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 7 |        V d
+           ^^^
 8 |      else
-9 |        W)..
+         ^^^^
+9 |        W);;
+           ^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;

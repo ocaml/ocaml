@@ -508,10 +508,14 @@ Line 8, characters 2-8:
       ^^^^^^
 Error: Illegal shadowing of included type t/4 by t.
 Lines 2-5, characters 2-5:
-2 | ..include struct
+2 |   include struct
+      ^^^^^^^^^^^^^^
 3 |     type t = A
+        ^^^^^^^^^^
 4 |     let x = A
+        ^^^^^^^^^
 5 |   end
+      ^^^
   Type t/4 came from this include.
 Line 4, characters 8-9:
 4 |     let x = A

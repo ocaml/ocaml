@@ -92,9 +92,12 @@ module M : sig module F: functor (X:sig end) -> sig end end =
   end
 [%%expect {|
 Lines 2-4, characters 2-5:
-2 | ..struct
+2 |   struct
+      ^^^^^^
 3 |     module F(X:sig type t end) = struct end
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 4 |   end
+      ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig module F : functor (X : sig type t end) -> sig end end
@@ -168,9 +171,12 @@ end = struct
 end
 [%%expect {|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |  module F(X:sig type y end) = struct end
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 5 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig module F : functor (X : sig type y end) -> sig end end
@@ -284,10 +290,14 @@ module M =
     (struct type yy = K.y end)
 [%%expect {|
 Lines 2-5, characters 2-30:
-2 | ..F
+2 |   F
+      ^
 3 |     (struct include X include Y end)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 4 |     (struct type x = K.x end)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^
 5 |     (struct type yy = K.y end)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The functor application is ill-typed.
        These arguments:
          $S1 $S2 $S3
@@ -446,9 +456,12 @@ end = struct
 end;;
 [%%expect {|
 Lines 5-7, characters 6-3:
-5 | ......struct
+5 | end = struct
+          ^^^^^^
 6 |   module type S = sig type s type t end
-7 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+7 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig module type S = sig type s type t end end
@@ -475,9 +488,12 @@ end = struct
 end;;
   [%%expect {|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   module type S = sig type t end
-5 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig module type S = sig type t end end
@@ -560,11 +576,16 @@ module M: sig module F: functor(X:a)(Y:a) -> sig end end =
 end
 [%%expect {|
 Lines 2-6, characters 1-3:
-2 | .struct
+2 |  struct
+     ^^^^^^
 3 |   module type aa = a
+      ^^^^^^^^^^^^^^^^^^
 4 |   module type a
+      ^^^^^^^^^^^^^
 5 |   module F(X:aa)(Y:a) = struct end
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 6 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig
@@ -639,16 +660,25 @@ end = struct
 end
 [%%expect {|
 Lines 15-27, characters 6-3:
-15 | ......struct
+15 | end = struct
+           ^^^^^^
 16 |   module F
+       ^^^^^^^^
 17 |       (X:
+           ^^^
 18 |          functor (A: sig type xa end)(B:sig type xz end) -> sig end
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 19 |       )
-...
+           ^
+     ...
 24 |          functor (A: sig type za end)(B:sig type zbb end) -> sig end
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 25 |       )
+           ^
 26 |   = struct end
+       ^^^^^^^^^^^^
 27 | end
+     ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig
@@ -732,16 +762,26 @@ end = struct
 end
 [%%expect {|
 Lines 12-21, characters 6-3:
-12 | ......struct
+12 | end = struct
+           ^^^^^^
 13 |   module F
+       ^^^^^^^^
 14 |       (X:
+           ^^^
 15 |          functor (A: sig type xa end)(B:sig type xz end) -> sig end
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 16 |       )
+           ^
 17 |       (Y:
+           ^^^
 18 |          functor (A: sig type ya end)(B:sig type yb end) -> sig end
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 19 |       )
+           ^
 20 |   = struct end
+       ^^^^^^^^^^^^
 21 | end
+     ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig
@@ -803,16 +843,25 @@ end = struct
 end
 [%%expect {|
 Lines 12-24, characters 6-3:
-12 | ......struct
+12 | end = struct
+           ^^^^^^
 13 |   module F
+       ^^^^^^^^
 14 |       (X:
+           ^^^
 15 |          functor (A: sig type xaa end)(B:sig type xz end) -> sig end
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 16 |       )
-...
+           ^
+     ...
 21 |          functor (A: sig type za end)(B:sig type zbb end) -> sig end
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 22 |       )
+           ^
 23 |   = struct end
+       ^^^^^^^^^^^^
 24 | end
+     ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig
@@ -906,16 +955,25 @@ end = struct
 end
 [%%expect {|
 Lines 12-23, characters 6-3:
-12 | ......struct
+12 | end = struct
+           ^^^^^^
 13 |   module B = struct
+       ^^^^^^^^^^^^^^^^^
 14 |     module C = struct
+         ^^^^^^^^^^^^^^^^^
 15 |       module D = struct
+           ^^^^^^^^^^^^^^^^^
 16 |         module E = struct
-...
+             ^^^^^^^^^^^^^^^^^
+     ...
 20 |       end
+           ^^^
 21 |     end
+         ^^^
 22 |   end
+       ^^^
 23 | end
+     ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig
@@ -1122,14 +1180,22 @@ module type s =
     (S : sig type where type the type place end)
     (R : sig type upon type the type heath end) -> sig end
 Lines 11-18, characters 2-15:
-11 | ..(X: sig type when_ type shall type we type tree type meet type again end)
+11 |   (X: sig type when_ type shall type we type tree type meet type again end)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 12 |   (Y:sig type in_ val thunder:in_ val lightning: in_ type pain end)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 13 |   (Z:sig type when_ type the type hurlyburly's type gone  end)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 14 |   (Z:sig type when_ type the type battle's type last type and_ type won end)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 15 |   (W:sig type that type will type be type the type era type set type of_ type sun end)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 16 |   (S: sig type where type the type lace end)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 17 |   (R: sig type upon type the type heart end)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 18 |   -> struct end
+       ^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
          functor (X : $S1) (Y : $S2) (Z : $S3) (Z : $S4) (W : $S5) (S : $S6)
@@ -1382,9 +1448,12 @@ end
 end
 [%%expect {|
 Lines 14-16, characters 2-3:
-14 | ..struct
+14 | = struct
+       ^^^^^^
 15 |   module F(X:sig type x end)(Z:sig type z end) = struct end
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 16 | end
+     ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig
@@ -1431,13 +1500,20 @@ end = struct
 end
 [%%expect {|
 Lines 8-14, characters 6-3:
- 8 | ......struct
+ 8 | end = struct
+           ^^^^^^
  9 |   module F (Wrong: sig type wrong end)
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 10 |       (X: sig
+           ^^^^^^^
 11 |          module type t
+              ^^^^^^^^^^^^^
 12 |          module M: t
+              ^^^^^^^^^^^
 13 |        end)  = (X.M : X.t)
+            ^^^^^^^^^^^^^^^^^^^
 14 | end
+     ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig
@@ -1492,11 +1568,16 @@ end = struct
 end
 [%%expect {|
 Lines 17-21, characters 6-3:
-17 | ......struct
+17 | end = struct
+           ^^^^^^
 18 |   module F(_:sig type wrong end) (X:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 19 |              sig  module type T end
+                  ^^^^^^^^^^^^^^^^^^^^^^
 20 |           )(Res: X.T)(Res: X.T)(Res: X.T) = Res
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 21 | end
+     ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig
@@ -1801,13 +1882,20 @@ module F :
   functor (A : sig type 'a t end)
     (B : sig type 'a t val f : 'a A.t -> 'a t end) -> sig end
 Lines 15-21, characters 2-8:
-15 | ..F
+15 |   F
+       ^
 16 |     (struct
+         ^^^^^^^
 17 |       type t = unit   (* this is bogus! *)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 18 |     end)
+         ^^^^
 19 |     (struct
+         ^^^^^^^
 20 |       let f x = x   (* this is bogus! *)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 21 |     end)
+         ^^^^
 Error: The functor application is ill-typed.
        These arguments:
          $S1 $S2
@@ -1873,13 +1961,20 @@ module With_expansion :
   functor (A : sig module type t module M : t end)
     (B : sig module type t = A.t end) -> B.t
 Lines 5-11, characters 11-6:
- 5 | ...........With_expansion(struct
+ 5 | module R = With_expansion(struct
+                ^^^^^^^^^^^^^^^^^^^^^
  6 |     module M()() = struct end
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
  7 |     module type t = module type of M
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
  8 |   end)
+       ^^^^
  9 |     ()
+         ^^
 10 |     ()
+         ^^
 11 |     ()
+         ^^
 Error: The functor application is ill-typed.
        These arguments:
          $S1 () () ()
@@ -1900,12 +1995,18 @@ module R' = With_expansion(struct
     ()
 [%%expect {|
 Lines 1-6, characters 12-6:
-1 | ............With_expansion(struct
+1 | module R' = With_expansion(struct
+                ^^^^^^^^^^^^^^^^^^^^^
 2 |     module M()() = struct end
+        ^^^^^^^^^^^^^^^^^^^^^^^^^
 3 |     module type t = module type of M
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 4 |   end)
+      ^^^^
 5 |     ()
+        ^^
 6 |     ()
+        ^^
 Error: The functor application is ill-typed.
        These arguments:
          $S1 () ()
@@ -1949,14 +2050,22 @@ module H :
   functor (X : sig type 'a t type 'a s end)
     (Y : sig val f : 'a X.s -> 'a end) -> sig end
 Lines 18-25, characters 2-8:
-18 | ..H
+18 |   H
+       ^
 19 |     (struct
+         ^^^^^^^
 20 |       type t (** this is wrong*)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
 21 |       type 'a s = 'a (** this matches the expected type *)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 22 |     end)
+         ^^^^
 23 |     (struct
+         ^^^^^^^
 24 |       let f x = x   (* this is fine *)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 25 |     end)
+         ^^^^
 Error: The functor application is ill-typed.
        These arguments:
          $S1 $S2
@@ -1992,9 +2101,12 @@ end = struct
 end
 [%%expect {|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   module F(X: sig type 'a t = 'a list end)(Y: sig type 'a t = ('a * 'a) * 'a X.t end) = struct end
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 5 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig

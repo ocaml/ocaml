@@ -24,9 +24,12 @@ end
 [%%expect{|
 class type ct = object method x : int end
 Lines 5-7, characters 32-3:
-5 | ................................object
+5 | class c (y : 'a * float) : ct = object
+                                    ^^^^^^
 6 |   method x = y
+      ^^^^^^^^^^^^
 7 | end
+    ^^^
 Error: The class type object method x : 'a * float end
        is not matched by the class type ct
        The class type object method x : 'a * float end

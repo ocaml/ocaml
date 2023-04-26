@@ -9,9 +9,12 @@ end = struct
 end
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   let x = false , "not an int"
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 5 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig val x : bool * string end
@@ -32,9 +35,12 @@ end = struct
 end
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   let f x = x + List.length [0.0, Some true]
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 5 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig val f : int -> int end
@@ -57,9 +63,12 @@ end = struct
 end
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   let f : ('c list * 'd option  -> int) = assert false
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 5 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig val f : 'c list * 'd option -> int end
@@ -81,9 +90,12 @@ end = struct
 end
 [%%expect{|
 Lines 3-5, characters 6-3:
-3 | ......struct
+3 | end = struct
+          ^^^^^^
 4 |   type t = bool * float
+      ^^^^^^^^^^^^^^^^^^^^^
 5 | end
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig type t = bool * float end

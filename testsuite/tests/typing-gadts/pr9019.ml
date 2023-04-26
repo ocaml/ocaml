@@ -31,11 +31,16 @@ let f (type x) (t1 : x t) (t2 : x t) (x : x) =
   | _, MAB, B -> 4
 [%%expect{|
 Lines 4-8, characters 2-18:
-4 | ..match t1, t2, x with
+4 |   match t1, t2, x with
+      ^^^^^^^^^^^^^^^^^^^^
 5 |   | AB,  AB, A -> 1
+      ^^^^^^^^^^^^^^^^^
 6 |   | MAB, _, A -> 2
+      ^^^^^^^^^^^^^^^^
 7 |   | _,  AB, B -> 3
+      ^^^^^^^^^^^^^^^^
 8 |   | _, MAB, B -> 4
+      ^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (AB, MAB, A)
@@ -166,9 +171,12 @@ let f (type x) (a : x a) (a_or_b : x a_or_b) (x : x) =
 type _ a_or_b = A_or_B : [< `A of string | `B of int ] a_or_b
 type _ a = A : [> `A of string ] a | Not_A : 'a a
 Lines 9-11, characters 2-37:
- 9 | ..match a, a_or_b, x with
+ 9 |   match a, a_or_b, x with
+       ^^^^^^^^^^^^^^^^^^^^^^^
 10 |   | Not_A, A_or_B, `B i -> print_int i
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 11 |   | _, A_or_B, `A s -> print_string s
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (A, A_or_B, `B _)
@@ -198,9 +206,12 @@ let f (type x) (type y) (b : (x, y ty) b) (x : x) (y : y) =
 type (_, _) b = A : ([< `A ], 'a) b | B : ([< `B of 'a ], 'a) b
 type _ ty = String_option : string option ty
 Lines 9-11, characters 2-18:
- 9 | ..match b, x, y with
+ 9 |   match b, x, y with
+       ^^^^^^^^^^^^^^^^^^
 10 |   | B, `B String_option, Some s -> print_string s
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 11 |   | A, `A, _ -> ()
+       ^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (B, `B String_option, None)

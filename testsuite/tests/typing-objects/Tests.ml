@@ -32,9 +32,12 @@ end and d () = object
 end;;
 [%%expect{|
 Lines 3-5, characters 4-3:
-3 | ....and d () = object
+3 | end and d () = object
+        ^^^^^^^^^^^^^^^^^
 4 |   inherit ['a] c ()
-5 | end..
+      ^^^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: Some type variables are unbound in this type:
          class d : unit -> object method f : 'a -> unit end
        The method f has type 'a -> unit where 'a is unbound
@@ -104,9 +107,12 @@ class x () = object
 end;;
 [%%expect{|
 Lines 1-3, characters 13-3:
-1 | .............object
+1 | class x () = object
+                 ^^^^^^
 2 |   method virtual f : int
-3 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^
+3 | end;;
+    ^^^
 Error: This non-virtual class has virtual methods.
        The following methods are virtual : f
 |}];;
@@ -134,9 +140,13 @@ end;;
 [%%expect{|
 Lines 1-4, characters 0-3:
 1 | class ['a] c () = object
+    ^^^^^^^^^^^^^^^^^^^^^^^^
 2 |   constraint 'a = int
+      ^^^^^^^^^^^^^^^^^^^
 3 |   method f x = (x : bool c)
-4 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
+4 | end;;
+    ^^^
 Error: The abbreviation c is used with parameter(s) bool
        which are incompatible with constraint(s) int
 |}];;
@@ -180,8 +190,11 @@ end;;
 [%%expect{|
 Lines 1-3, characters 0-3:
 1 | class ['a] c () = object
+    ^^^^^^^^^^^^^^^^^^^^^^^^
 2 |   method f = (x : 'a)
-3 | end..
+      ^^^^^^^^^^^^^^^^^^^
+3 | end;;
+    ^^^
 Error: The type of this class,
        class ['a] c :
          unit -> object constraint 'a = '_weak1 list ref method f : 'a end,
@@ -653,9 +666,13 @@ end;;
 [%%expect{|
 Lines 1-4, characters 0-3:
 1 | class virtual ['a] matrix (sz, init : int * 'a) = object
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 2 |   val m = Array.make_matrix sz sz init
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 3 |   method add (mtx : 'a matrix) = (mtx#m.(0).(0) : 'a)
-4 | end..
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+4 | end;;
+    ^^^
 Error: The abbreviation 'a matrix expands to type < add : 'a matrix -> 'a >
        but is used with type < m : 'a array array; .. >
 |}];;
@@ -701,9 +718,12 @@ end : sig
 end);;
 [%%expect{|
 Lines 1-3, characters 12-3:
-1 | ............struct
+1 | module S = (struct
+                ^^^^^^
 2 |   let f (x : #c) = x
-3 | end......
+      ^^^^^^^^^^^^^^^^^^
+3 | end : sig
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig val f : (#c as 'a) -> 'a end
@@ -1040,9 +1060,12 @@ class c : object
 end;;
 [%%expect {|
 Lines 3-5, characters 8-3:
-3 | ........object (self)
+3 |   end = object (self)
+            ^^^^^^^^^^^^^
 4 |   method m = self
-5 | end..
+      ^^^^^^^^^^^^^^^
+5 | end;;
+    ^^^
 Error: The class type object ('a) method m : < m : 'a; .. > as 'a end
        is not matched by the class type
          object method m : < m : 'a > as 'a end
@@ -1060,9 +1083,12 @@ class c :
   end;;
 [%%expect {|
 Lines 5-7, characters 2-5:
-5 | ..object
+5 |   object
+      ^^^^^^
 6 |     method foo : 'a. (< foo : int; .. > as 'a) -> 'a -> unit = assert false
-7 |   end..
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+7 |   end;;
+      ^^^
 Error: The class type
          object method foo : (< foo : int; .. > as 'a) -> 'a -> unit end
        is not matched by the class type
@@ -1370,9 +1396,12 @@ end = object
   end
 [%%expect {|
 Lines 1-3, characters 10-3:
-1 | ..........object
+1 | class c : object
+              ^^^^^^
 2 |     method virtual m : int
-3 | end.........
+        ^^^^^^^^^^^^^^^^^^^^^^
+3 | end = object
+    ^^^
 Error: This non-virtual class type has virtual methods.
        The following methods are virtual : m
 |}];;

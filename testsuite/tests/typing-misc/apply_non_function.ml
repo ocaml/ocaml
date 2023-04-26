@@ -10,13 +10,15 @@ let () =
 [%%expect{|
 val print_lines : string list -> unit = <fun>
 Lines 4-5, characters 2-15:
-4 | ..print_lines (List.map string_of_int [ 1; 2; 3; 4; 5 ])
-5 |   print_endline......
+4 |   print_lines (List.map string_of_int [ 1; 2; 3; 4; 5 ])
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+5 |   print_endline "foo"
+      ^^^^^^^^^^^^^
 Error: The function 'print_lines' has type string list -> unit
        It is applied to too many arguments
 Line 4, characters 55-57:
 4 |   print_lines (List.map string_of_int [ 1; 2; 3; 4; 5 ])
-                                                           ^^
+                                                           ^
   Hint: Did you forget a ';'?
 Line 5, characters 2-15:
 5 |   print_endline "foo"

@@ -567,9 +567,12 @@ let t = function
 ;;
 [%%expect{|
 Lines 1-3, characters 8-10:
-1 | ........function
+1 | let t = function
+            ^^^^^^^^
 2 |   | ({ contents = M.A } : M.t ref) as x ->
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 3 |     x := B
+        ^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {contents=B}
@@ -582,9 +585,12 @@ Line 3, characters 9-10:
 Warning 18 [not-principal]: this type-based constructor disambiguation is not principal.
 
 Lines 1-3, characters 8-10:
-1 | ........function
+1 | let t = function
+            ^^^^^^^^
 2 |   | ({ contents = M.A } : M.t ref) as x ->
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 3 |     x := B
+        ^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 {contents=B}

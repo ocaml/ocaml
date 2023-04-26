@@ -21,6 +21,9 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #11678: Highlight multi-line locations in error messages.
+  (Jules Aguillon, review by ?)
+
 ### Internal/compiler-libs changes:
 
 ### Build system:

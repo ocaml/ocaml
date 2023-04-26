@@ -13,8 +13,10 @@ module F(S : sig type 'a t end) = struct
 end;;
 [%%expect{|
 Lines 7-8, characters 47-21:
-7 | ...............................................match l, r with
+7 |     fun (l : int S.t ab) (r : float S.t ab) -> match l, r with
+                                                   ^^^^^^^^^^^^^^^
 8 |     | A, B -> "f A B"
+        ^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (A, A)
@@ -41,8 +43,10 @@ module F(S : sig type 'a t end) = struct
 end;;
 [%%expect{|
 Lines 10-11, characters 15-21:
-10 | ...............match l, r with
+10 |     fun l r -> match l, r with
+                    ^^^^^^^^^^^^^^^
 11 |     | A, B -> "f A B"
+         ^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (A, A)

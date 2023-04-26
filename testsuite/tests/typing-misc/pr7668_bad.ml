@@ -21,8 +21,10 @@ val partition_map :
   ('a -> [< `Left of 'b | `Right of 'c ]) -> 'a list -> 'b list * 'c list =
   <fun>
 Lines 12-13, characters 35-18:
-12 | ...................................partition_map (fun x -> if x then `Left ()
+12 | let f xs : (int list * int list) = partition_map (fun x -> if x then `Left ()
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 13 | else `Right ()) xs
+     ^^^^^^^^^^^^^^^^^^
 Error: This expression has type unit list * unit list
        but an expression was expected of type int list * int list
        Type unit is not compatible with type int
@@ -58,16 +60,25 @@ end
 ;;
 [%%expect{|
 Lines 8-27, characters 6-3:
- 8 | ......struct
+ 8 | end = struct
+           ^^^^^^
  9 |   type t = [
+       ^^^^^^^^^^
 10 |     | `A of int
+         ^^^^^^^^^^^
 11 |     | `B of [ `BA | `BB of unit list ]
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 12 |     | `C of unit ]
-...
+         ^^^^^^^^^^^^^^
+     ...
 24 |         end
+             ^^^
 25 |       | _ -> assert false)
+           ^^^^^^^^^^^^^^^^^^^^
 26 |
+     ^
 27 | end
+     ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig

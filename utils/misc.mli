@@ -521,22 +521,29 @@ val print_if :
   Format.formatter -> bool ref -> (Format.formatter -> 'a -> unit) -> 'a -> 'a
 (** [print_if ppf flag fmt x] prints [x] with [fmt] on [ppf] if [b] is true. *)
 
+val ellipse : ellipsis:'a -> max_lines:int -> 'a list -> 'a list
+(** [ellipse ~ellipsis ~max_lines lines] returns [lines] if its length is less
+    than [max_lines], otherwise, remove the middle lines until its length is
+    equal to [max_lines]. If a line has been removed, [ellipsis] is inserted in
+    the middle and is counted as a line. *)
+
 val pp_two_columns :
-  ?sep:string -> ?max_lines:int ->
-  Format.formatter -> (string * string) list -> unit
-(** [pp_two_columns ?sep ?max_lines ppf l] prints the lines in [l] as two
-   columns separated by [sep] ("|" by default). [max_lines] can be used to
-   indicate a maximum number of lines to print -- an ellipsis gets inserted at
-   the middle if the input has too many lines.
+  ?sep:string -> Format.formatter ->
+  (string * (Format.formatter -> unit)) list -> unit
+(** [pp_two_columns ?sep ppf l] prints the lines in [l] as two columns
+    separated by [sep] ("|" by default).
 
    Example:
 
-    {v pp_two_columns ~max_lines:3 Format.std_formatter [
-      "abc", "hello";
-      "def", "zzz";
-      "a"  , "bllbl";
-      "bb" , "dddddd";
-    ] v}
+    {v
+    let pp str ppf = Format.pp_print_string ppf str in
+    pp_two_columns Format.std_formatter [
+      "abc", pp "hello";
+      "def", pp "zzz";
+      "a"  , pp "bllbl";
+      "bb" , pp "dddddd";
+    ]
+    v}
 
     prints
 

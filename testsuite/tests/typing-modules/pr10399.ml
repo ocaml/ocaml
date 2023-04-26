@@ -20,13 +20,20 @@ end
 
 [%%expect{|
 Lines 7-13, characters 6-3:
- 7 | ......struct
+ 7 | end = struct
+           ^^^^^^
  8 |   type t = < x : int >
+       ^^^^^^^^^^^^^^^^^^^^
  9 |
+     ^
 10 |   class c = object method x = 3 method y = true end
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 11 |
+     ^
 12 |   let o = new c
+       ^^^^^^^^^^^^^
 13 | end
+     ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig

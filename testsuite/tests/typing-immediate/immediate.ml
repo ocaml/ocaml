@@ -138,9 +138,12 @@ module D : sig type t [@@immediate] end = struct
 end;;
 [%%expect{|
 Lines 1-3, characters 42-3:
-1 | ..........................................struct
+1 | module D : sig type t [@@immediate] end = struct
+                                              ^^^^^^
 2 |   type t = string
-3 | end..
+      ^^^^^^^^^^^^^^^
+3 | end;;
+    ^^^
 Error: Signature mismatch:
        Modules do not match:
          sig type t = string end
