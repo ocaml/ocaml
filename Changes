@@ -386,6 +386,9 @@ OCaml 5.1.0
   used in any context where a character set is expected.
   (Nicolás Ojeda Bär, Martin Jambon, review by Sébastien Hinderer)
 
+- #12147: ocamllex: Allow carriage returns at the end of line directives.
+  (SeungCheol Jung, review by Nicolás Ojeda Bär)
+
 - #11718: ocamlyacc: OCaml-style comments are now supported, in addition to
   the C-style comments already supported.  The syntax is the same as that used
   in OCaml code.
