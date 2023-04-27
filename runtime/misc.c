@@ -137,22 +137,32 @@ CAMLexport void caml_fatal_error_arg2 (const char *fmt1, const char *arg1,
   exit(2);
 }
 
+#ifdef ARCH_SIXTYFOUR
+#define MAX_EXT_TABLE_CAPACITY INT_MAX
+#else
+#define MAX_EXT_TABLE_CAPACITY ((asize_t) (-1) / sizeof(void *))
+#endif
+
 void caml_ext_table_init(struct ext_table * tbl, int init_capa)
 {
+  CAMLassert (init_capa <= MAX_EXT_TABLE_CAPACITY);
   tbl->size = 0;
   tbl->capacity = init_capa;
-  tbl->contents = caml_stat_alloc(sizeof(void *) * init_capa);
+  tbl->contents = caml_stat_alloc(sizeof(void *) * (asize_t) init_capa);
 }
 
 int caml_ext_table_add_noexc(struct ext_table * tbl, caml_stat_block data)
 {
   int res;
   if (tbl->size >= tbl->capacity) {
-    if (tbl->capacity > INT_MAX / 2) return -1; /* overflow */
-    asize_t new_capacity = tbl->capacity * 2;
-    if (new_capacity > (asize_t)(-1) / sizeof(void *)) return -1; /* overflow */
+    if (tbl->capacity == MAX_EXT_TABLE_CAPACITY) return -1; /* overflow */
+    int new_capacity =
+      tbl->capacity <= MAX_EXT_TABLE_CAPACITY / 2
+      ? tbl->capacity * 2
+      : MAX_EXT_TABLE_CAPACITY;
     void ** new_contents =
-      caml_stat_resize_noexc(tbl->contents, sizeof(void *) * new_capacity);
+      caml_stat_resize_noexc(tbl->contents,
+                             sizeof(void *) * (asize_t) new_capacity);
     if (new_contents == NULL) return -1;
     tbl->capacity = new_capacity;
     tbl->contents = new_contents;
