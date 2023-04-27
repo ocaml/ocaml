@@ -5,6 +5,11 @@ Working version
 
 ### Runtime system:
 
+- #10403, #12202: introduce `caml_ext_table_add_noexc` that does not
+  raise `Out_of_memory` exceptions and use it inside the blocking sections
+  of `caml_read_directory`.  Also, check for overflows in ext table sizes.
+  (Xavier Leroy, report by Arseniy Alekseyev, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 ### Standard library:
