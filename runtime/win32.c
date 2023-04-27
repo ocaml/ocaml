@@ -445,7 +445,9 @@ CAMLexport int caml_read_directory(wchar_t * dirname,
   }
   do {
     if (wcscmp(fileinfo.name, L".") != 0 && wcscmp(fileinfo.name, L"..") != 0) {
-      caml_ext_table_add(contents, caml_stat_strdup_of_utf16(fileinfo.name));
+      res = caml_ext_table_add_noexc(contents,
+                                     caml_stat_strdup_of_utf16(fileinfo.name));
+      if (res == -1) { _findclose(h); errno = ENOMEM; return -1; }
     }
   } while (_wfindnext(h, &fileinfo) == 0);
   _findclose(h);

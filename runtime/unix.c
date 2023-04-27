@@ -354,7 +354,8 @@ CAMLexport int caml_read_directory(char * dirname, struct ext_table * contents)
     e = readdir(d);
     if (e == NULL) break;
     if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0) continue;
-    caml_ext_table_add(contents, caml_stat_strdup(e->d_name));
+    int rc = caml_ext_table_add_noexc(contents, caml_stat_strdup(e->d_name));
+    if (rc == -1) { closedir(d); errno = ENOMEM; return -1; }
   }
   closedir(d);
   return 0;
