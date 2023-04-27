@@ -115,7 +115,7 @@ val y :
   <obj>
 |}]
 
-(* Since the row variable is is implicitly bound, 'a and 'b don't leak *)
+(* Since the row variable is implicitly bound, 'a and 'b don't leak *)
 
 let h (x : < m : 'a. <n : 'b. [< `A of 'a * 'b * 'c] > > as 'c) = x#m;;
 [%%expect{|
@@ -139,14 +139,13 @@ val h :
 let j (x : < m : 'a. <n : 'b. [< `A of 'a ] -> 'c > > as 'c) = x#m;;
 [%%expect{|
 val j :
-  (< m : 'a. < n : 'c. ([< `A of 'a ] as 'c) -> 'b > > as 'b) ->
-  < n : 'd. ([< `A of 'e ] as 'd) -> 'b > = <fun>
+  (< m : 'c 'a. < n : ([< `A of 'a ] as 'c) -> 'b > > as 'b) ->
+  < n : [< `A of 'd ] -> 'b > = <fun>
 |}, Principal{|
 val j :
-  (< m : 'a. < n : 'c. ([< `A of 'a ] as 'c) -> 'b > > as 'b) ->
-  < n : 'd.
-          ([< `A of 'e ] as 'd) ->
-          (< m : 'a. < n : 'g. ([< `A of 'a ] as 'g) -> 'f > > as 'f) > =
+  (< m : 'c 'a. < n : ([< `A of 'a ] as 'c) -> 'b > > as 'b) ->
+  < n : [< `A of 'd ] ->
+        (< m : 'f 'a. < n : ([< `A of 'a ] as 'f) -> 'e > > as 'e) > =
   <fun>
 |}]
 

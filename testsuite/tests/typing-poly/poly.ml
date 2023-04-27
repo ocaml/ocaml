@@ -1540,7 +1540,7 @@ Line 2, characters 2-72:
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This expression has type < m : 'b 'x. ([< `Foo of 'x ] as 'b) -> 'x >
        but an expression was expected of type
-         < m : 'c 'a. ([< `Foo of int ] as 'c) -> 'a >
+         < m : 'a. [< `Foo of int ] -> 'a >
        Types for tag `Foo are incompatible
 |}];;
 (* fail *)
@@ -1936,4 +1936,55 @@ Line 2, characters 16-24:
                     ^^^^^^^^
 Error: This field value has type 'b option ref which is less general than
          'a. 'a option ref
+|}]
+
+
+(** #12210: turn row variable into univars under Ptyp_poly: *)
+
+let simple: 'a. 'a -> [> `X of 'a ] -> 'a = fun default ->
+  function
+  | `X x -> x
+  | _ -> default
+[%%expect {|
+val simple : 'a -> [> `X of 'a ] -> 'a = <fun>
+|}]
+
+type 'a w = Int: int w
+let locally_abstract: type a. a w -> [> `X of a ] -> a = fun Int ->
+  function
+  | `X x -> x
+  | _ -> 0
+[%%expect {|
+type 'a w = Int : int w
+val locally_abstract : 'a w -> [> `X of 'a ] -> 'a = <fun>
+|}]
+
+let nested: 'a.
+  <m: 'b.
+        <n:'irr.
+             ('irr -> unit) * ([> `X of 'a | `Y of 'b ] -> 'a)
+        >
+  > -> 'a  =
+  fun o -> (snd o#m#n) (`Y 0)
+[%%expect {|
+val nested :
+  < m : 'c 'b.
+          < n : 'irr.
+                  ('irr -> unit) * (([> `X of 'a | `Y of 'b ] as 'c) -> 'a) > > ->
+  'a = <fun>
+|}]
+
+
+let fail: 'a . 'a -> [> `X of 'a ] -> 'a = fun x y ->
+  match y with
+  | `Y -> x
+  | `X x -> x
+[%%expect {|
+Line 3, characters 4-6:
+3 |   | `Y -> x
+        ^^
+Error: This pattern matches values of type [? `Y ]
+       but a pattern was expected which matches values of type [> `X of 'a ]
+       The second variant type is bound to the universal type variable 'b,
+       it may not allow the tag(s) `Y
 |}]

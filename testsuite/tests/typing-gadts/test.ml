@@ -809,7 +809,7 @@ Error: This definition has type
        which is less general than
          'e 'f 'a 'b.
            ('a, 'b) eq ->
-           ([< `A of 'a | `B ] as 'e) -> ([< `A of 'b | `B ] as 'f)
+           ([< `A of 'a | `B ] as 'f) -> ([< `A of 'b | `B ] as 'e)
 |}];;
 
 let f : type a b. (a,b) eq -> [`A of a | `B] -> [`A of b | `B] =
