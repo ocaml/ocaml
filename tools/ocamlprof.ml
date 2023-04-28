@@ -184,9 +184,6 @@ and rw_exp iflag sexp =
     rewrite_patexp_list iflag spat_sexp_list;
     rewrite_exp iflag sbody
 
-  | Pexp_function _ -> assert false
-  | Pexp_fun _ -> assert false
-
   | Pexp_arityfun (_, _, Pfunction_body e) ->
     if !instr_fun then
       rewrite_function iflag [{ rhs = e; guard = None }]
@@ -329,7 +326,7 @@ and rewrite_annotate_exp_list l =
 
 and rewrite_function iflag = function
   | [{guard=None;
-      rhs={pexp_desc = (Pexp_function _|Pexp_fun _|Pexp_arityfun _)} as sexp}]
+      rhs={pexp_desc = (Pexp_arityfun _)} as sexp}]
     ->
         rewrite_exp iflag sexp
   | l -> rewrite_funmatching l
@@ -348,7 +345,7 @@ and rewrite_class_field iflag cf =
   | Pcf_val (_, _, Cfk_concrete (_, sexp))  -> rewrite_exp iflag sexp
   | Pcf_method (_, _,
        Cfk_concrete (_,
-        ({pexp_desc = (Pexp_function _|Pexp_fun _|Pexp_arityfun _)} as sexp))) ->
+        ({pexp_desc = (Pexp_arityfun _)} as sexp))) ->
       rewrite_exp iflag sexp
   | Pcf_method (_, _, Cfk_concrete(_, sexp)) ->
       let loc = cf.pcf_loc in

@@ -2670,9 +2670,6 @@ let rec type_approx env sexp =
   let loc = sexp.pexp_loc in
   match sexp.pexp_desc with
     Pexp_let (_, _, e) -> type_approx env e
-  | Pexp_fun (p, _, spat, e) -> type_approx_fun env p spat (type_approx env e)
-  | Pexp_function ({pc_rhs=e}::_) ->
-      newty (Tarrow(Nolabel, newvar (), type_approx env e, commu_ok))
   | Pexp_arityfun (params, c, body) ->
       type_approx_arityfun env params c body ~loc
   | Pexp_match (_, {pc_rhs=e}::_) -> type_approx env e
@@ -3335,17 +3332,21 @@ and type_expect_
         exp_type = body.exp_type;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_fun (lab, def, pat, sbody) ->
-      type_function loc sexp.pexp_attributes
-        env ty_expected_explained [ Pparam_val (lab, def, pat) ] None
-        (Pfunction_body sbody)
-  | Pexp_function caselist ->
-      type_function loc sexp.pexp_attributes
-        env ty_expected_explained [] None
-        (Pfunction_cases (caselist, loc, []))
   | Pexp_arityfun (params, body_constraint, body) ->
-      type_function loc sexp.pexp_attributes
-        env ty_expected_explained params body_constraint body
+      let in_function = ty_expected_explained, loc in
+      let exp_type, params, body, newtypes =
+        type_function env params body_constraint body ty_expected ~in_function
+          ~first:true
+      in
+      re
+        { exp_desc = Texp_function (params, body);
+          exp_loc = loc;
+          exp_extra =
+            List.map (fun { txt; loc } -> Texp_newtype txt, loc, []) newtypes;
+          exp_type;
+          exp_attributes = sexp.pexp_attributes;
+          exp_env = env;
+        }
   | Pexp_apply(sfunct, sargs) ->
       assert (sargs <> []);
       let rec lower_args seen ty_fun =
@@ -4383,22 +4384,6 @@ and type_binding_op_ident env s =
   in
   path, desc
 
-and type_function loc attrs env ty_fun params body_constraint body =
-  let in_function = ty_fun, loc in
-  let exp_type, params, body, newtypes =
-    type_rest_of_function env params body_constraint body ty_fun.ty ~in_function
-      ~first:true
-  in
-  re
-    { exp_desc = Texp_function (params, body)
-    ; exp_loc = loc
-    ; exp_extra =
-        List.map (fun { txt; loc } -> Texp_newtype txt, loc, []) newtypes
-    ; exp_type
-    ; exp_attributes = attrs
-    ; exp_env = env
-    }
-
 (* Returns the argument type and then the return type.
 
    [first] is whether the function type is for the [Texp_function] node.
@@ -4450,7 +4435,7 @@ and split_function_ty env ty ~arg_label ~first ~in_function =
    newtypes immediately bound by the prefix of function parameters. These
    should be added to an [exp_extra] node.
 *)
-and type_rest_of_function
+and type_function
       env params_suffix body_constraint body ty_expected ~first ~in_function
   =
   let ty_fun, (loc_function : Location.t) = in_function in
@@ -4479,7 +4464,7 @@ and type_rest_of_function
             (* mimic the typing of Pexp_newtype by minting a new type var,
               like [type_exp].
             *)
-            type_rest_of_function env rest body_constraint body (newvar ())
+            type_function env rest body_constraint body (newvar ())
               ~first:false ~in_function
           in
           (params, body, newtypes), exp_type)
@@ -4517,7 +4502,7 @@ and type_rest_of_function
           [ { pattern = pat; has_guard = false; needs_refute = false }, () ]
           ~type_body:begin fun () pat ~ext_env ~ty_expected ~ty_infer:_ ->
             let _, params, body, newtypes =
-              type_rest_of_function ext_env rest body_constraint body
+              type_function ext_env rest body_constraint body
                 ty_expected ~first:false ~in_function
             in
             (pat, params, body, newtypes)
@@ -5913,7 +5898,7 @@ and type_let_def_wrap_warnings
   in
   let sexp_is_fun { pvb_expr = sexp; _ } =
     match sexp.pexp_desc with
-    | Pexp_fun _ | Pexp_function _ | Pexp_arityfun _ -> true
+    | Pexp_arityfun _ -> true
     | _ -> false
   in
   let exp_env =

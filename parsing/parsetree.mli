@@ -310,9 +310,6 @@ and expression_desc =
       before the arrow, e.g. [fun P1 ... Pn : t1 :> t2 -> ...]
       when [C = Some (Pcoerce (Some t1, t2))].
   *)
-  (* CR nroberts: replace [Pexp_function] and [Pexp_fun] with the above. *)
-  | Pexp_function of case list  (** [function P1 -> E1 | ... | Pn -> En] *)
-  | Pexp_fun of arg_label * expression option * pattern * expression
   | Pexp_apply of expression * (arg_label * expression) list
       (** [Pexp_apply(E0, [(l1, E1) ; ... ; (ln, En)])]
             represents [E0 ~l1:E1 ... ~ln:En]

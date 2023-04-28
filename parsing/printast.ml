@@ -260,15 +260,6 @@ and expression i ppf x =
       line i ppf "Pexp_let %a\n" fmt_rec_flag rf;
       list i value_binding ppf l;
       expression i ppf e;
-  | Pexp_function l ->
-      line i ppf "Pexp_function\n";
-      list i case ppf l;
-  | Pexp_fun (l, eo, p, e) ->
-      line i ppf "Pexp_fun\n";
-      arg_label i ppf l;
-      option i expression ppf eo;
-      pattern i ppf p;
-      expression i ppf e;
   | Pexp_arityfun (params, c, body) ->
       line i ppf "Pexp_arityfun\n";
       list i function_param ppf params;

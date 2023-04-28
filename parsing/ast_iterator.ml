@@ -386,11 +386,6 @@ module E = struct
     | Pexp_let (_r, vbs, e) ->
         List.iter (sub.value_binding sub) vbs;
         sub.expr sub e
-    | Pexp_fun (_lab, def, p, e) ->
-        iter_opt (sub.expr sub) def;
-        sub.pat sub p;
-        sub.expr sub e
-    | Pexp_function pel -> sub.cases sub pel
     | Pexp_arityfun (params, constraint_, body) ->
         List.iter (iter_function_param sub) params;
         iter_opt (iter_constraint sub) constraint_;
