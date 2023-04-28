@@ -2622,16 +2622,46 @@ let type_pattern_approx env spat =
   | Ppat_constraint (_, sty) -> approx_type env sty
   | _ -> newvar ()
 
+let type_approx_fun env label spat ret_ty =
+  let ty = type_pattern_approx env spat in
+  if is_optional label then
+    unify_pat_types spat.ppat_loc env ty (type_option (newvar ()));
+  newty (Tarrow (label, ty, ret_ty, commu_ok))
+
+let type_approx_constraint env ty constraint_ ~loc =
+  match constraint_ with
+  | Pconstraint constrain ->
+      let ty_constrain = approx_type env constrain in
+      begin try unify env ty ty_constrain with Unify err ->
+        raise (Error (loc, env, Expr_type_clash (err, None, None)))
+      end;
+      ty_constrain
+  | Pcoerce (constrain, coerce) ->
+      let approx_ty_opt = function
+        | None -> newvar ()
+        | Some sty -> approx_type env sty
+      in
+      let ty_constrain = approx_ty_opt constrain
+      and ty_coerce = approx_type env coerce in
+      begin try unify env ty ty_constrain with Unify err ->
+        raise (Error (loc, env, Expr_type_clash (err, None, None)))
+      end;
+      ty_coerce
+
+let type_approx_constraint_opt env ty constraint_ ~loc =
+  match constraint_ with
+  | None -> ty
+  | Some constraint_ -> type_approx_constraint env ty constraint_ ~loc
+
 let rec type_approx env sexp =
+  let loc = sexp.pexp_loc in
   match sexp.pexp_desc with
     Pexp_let (_, _, e) -> type_approx env e
-  | Pexp_fun (p, _, spat, e) ->
-      let ty = type_pattern_approx env spat in
-      if is_optional p then
-        unify_pat_types spat.ppat_loc env ty (type_option (newvar ()));
-      newty (Tarrow(p, ty, type_approx env e, commu_ok))
+  | Pexp_fun (p, _, spat, e) -> type_approx_fun env p spat (type_approx env e)
   | Pexp_function ({pc_rhs=e}::_) ->
       newty (Tarrow(Nolabel, newvar (), type_approx env e, commu_ok))
+  | Pexp_arityfun (params, c, body) ->
+      type_approx_arityfun env params c body ~loc
   | Pexp_match (_, {pc_rhs=e}::_) -> type_approx env e
   | Pexp_try (e, _) -> type_approx env e
   | Pexp_tuple l -> newty (Ttuple(List.map (type_approx env) l))
@@ -2639,24 +2669,33 @@ let rec type_approx env sexp =
   | Pexp_sequence (_,e) -> type_approx env e
   | Pexp_constraint (e, sty) ->
       let ty = type_approx env e in
-      let ty1 = approx_type env sty in
-      begin try unify env ty ty1 with Unify err ->
-        raise(Error(sexp.pexp_loc, env, Expr_type_clash (err, None, None)))
-      end;
-      ty1
+      type_approx_constraint env ty (Pconstraint sty) ~loc
   | Pexp_coerce (e, sty1, sty2) ->
-      let approx_ty_opt = function
-        | None -> newvar ()
-        | Some sty -> approx_type env sty
-      in
-      let ty = type_approx env e
-      and ty1 = approx_ty_opt sty1
-      and ty2 = approx_type env sty2 in
-      begin try unify env ty ty1 with Unify err ->
-        raise(Error(sexp.pexp_loc, env, Expr_type_clash (err, None, None)))
-      end;
-      ty2
+      let ty = type_approx env e in
+      type_approx_constraint env ty (Pcoerce (sty1, sty2)) ~loc
   | _ -> newvar ()
+
+and type_approx_arityfun env params c body ~loc =
+  (* We can approximate types up to the first newtype parameter, whereupon
+     we give up.
+  *)
+  match params with
+  | Pparam_val (label, _, pat) :: params ->
+      type_approx_fun env label pat
+        (type_approx_arityfun env params c body ~loc)
+  | Pparam_newtype _ :: _ ->
+      newvar ()
+  | [] ->
+    let body_ty =
+      match body with
+      | Pfunction_body body ->
+          type_approx env body
+      | Pfunction_cases ({pc_rhs = e} :: _, _, _) ->
+          newty (Tarrow (Nolabel, newvar (), type_approx env e, commu_ok))
+      | Pfunction_cases ([], _, _) ->
+          newvar ()
+    in
+    type_approx_constraint_opt env body_ty c ~loc
 
 (* List labels in a function type, and whether return type is a variable *)
 let rec list_labels_aux env visited ls ty_fun =
@@ -3306,6 +3345,36 @@ and type_expect_
   | Pexp_function caselist ->
       type_function ?in_function
         loc sexp.pexp_attributes env ty_expected_explained Nolabel caselist
+  | Pexp_arityfun (params, constraint_, body) ->
+      (* TODO nroberts: in later commit, actually typecheck this. *)
+      let open Ast_helper in
+      let fun_body =
+        match body with
+        | Pfunction_body body -> body
+        | Pfunction_cases (cases, loc, attrs) -> Exp.function_ cases ~attrs ~loc
+      in
+      let constrained_body =
+        let loc = { fun_body.pexp_loc with loc_ghost = true } in
+        match constraint_ with
+        | None -> fun_body
+        | Some Pconstraint constraint_ ->
+            Exp.constraint_ fun_body constraint_ ~loc
+        | Some Pcoerce (ty1, ty2) ->
+            Exp.coerce fun_body ty1 ty2 ~loc
+      in
+      let ast =
+        let loc = { sexp.pexp_loc with loc_ghost = true } in
+        List.fold_right
+          (fun param body ->
+             match param with
+             | Pparam_val (l, o, p) -> Exp.fun_ l o p body ~loc
+             | Pparam_newtype (newtype, _) -> Exp.newtype newtype body ~loc)
+          params
+          constrained_body
+      in
+      let ast = { sexp with pexp_desc = ast.pexp_desc } in
+      type_expect_ ?in_function ~recarg
+        env ast ty_expected_explained
   | Pexp_apply(sfunct, sargs) ->
       assert (sargs <> []);
       let rec lower_args seen ty_fun =
@@ -5528,7 +5597,7 @@ and type_let_def_wrap_warnings
   in
   let sexp_is_fun { pvb_expr = sexp; _ } =
     match sexp.pexp_desc with
-    | Pexp_fun _ | Pexp_function _ -> true
+    | Pexp_fun _ | Pexp_function _ | Pexp_arityfun _ -> true
     | _ -> false
   in
   let exp_env =

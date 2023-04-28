@@ -6,75 +6,78 @@
         pattern 
           Ppat_var "fib" 
         expression 
-          Pexp_function
-          [
-            <case>
-              pattern 
-                Ppat_or
+          Pexp_arityfun
+          []
+          None
+          Pfunction_cases 
+            [
+              <case>
                 pattern 
-                  Ppat_constant PConst_int (0,None)
-                pattern 
-                  Ppat_constant PConst_int (1,None)
-              expression 
-                Pexp_constant PConst_int (1,None)
-            <case>
-              pattern 
-                Ppat_var "n" 
-              expression 
-                Pexp_apply
+                  Ppat_or
+                  pattern 
+                    Ppat_constant PConst_int (0,None)
+                  pattern 
+                    Ppat_constant PConst_int (1,None)
                 expression 
-                  Pexp_ident "+" 
-                [
-                  <arg>
-                  Nolabel
-                    expression 
-                      Pexp_apply
+                  Pexp_constant PConst_int (1,None)
+              <case>
+                pattern 
+                  Ppat_var "n" 
+                expression 
+                  Pexp_apply
+                  expression 
+                    Pexp_ident "+" 
+                  [
+                    <arg>
+                    Nolabel
                       expression 
-                        Pexp_ident "fib" 
-                      [
-                        <arg>
-                        Nolabel
-                          expression 
-                            Pexp_apply
+                        Pexp_apply
+                        expression 
+                          Pexp_ident "fib" 
+                        [
+                          <arg>
+                          Nolabel
                             expression 
-                              Pexp_ident "-" 
-                            [
-                              <arg>
-                              Nolabel
-                                expression 
-                                  Pexp_ident "n" 
-                              <arg>
-                              Nolabel
-                                expression 
-                                  Pexp_constant PConst_int (1,None)
-                            ]
-                      ]
-                  <arg>
-                  Nolabel
-                    expression 
-                      Pexp_apply
+                              Pexp_apply
+                              expression 
+                                Pexp_ident "-" 
+                              [
+                                <arg>
+                                Nolabel
+                                  expression 
+                                    Pexp_ident "n" 
+                                <arg>
+                                Nolabel
+                                  expression 
+                                    Pexp_constant PConst_int (1,None)
+                              ]
+                        ]
+                    <arg>
+                    Nolabel
                       expression 
-                        Pexp_ident "fib" 
-                      [
-                        <arg>
-                        Nolabel
-                          expression 
-                            Pexp_apply
+                        Pexp_apply
+                        expression 
+                          Pexp_ident "fib" 
+                        [
+                          <arg>
+                          Nolabel
                             expression 
-                              Pexp_ident "-" 
-                            [
-                              <arg>
-                              Nolabel
-                                expression 
-                                  Pexp_ident "n" 
-                              <arg>
-                              Nolabel
-                                expression 
-                                  Pexp_constant PConst_int (2,None)
-                            ]
-                      ]
-                ]
-          ]
+                              Pexp_apply
+                              expression 
+                                Pexp_ident "-" 
+                              [
+                                <arg>
+                                Nolabel
+                                  expression 
+                                    Pexp_ident "n" 
+                                <arg>
+                                Nolabel
+                                  expression 
+                                    Pexp_constant PConst_int (2,None)
+                              ]
+                        ]
+                  ]
+            ]
     ]
 ]
 

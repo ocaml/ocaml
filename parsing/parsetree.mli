@@ -297,30 +297,22 @@ and expression_desc =
             - [let rec P1 = E1 and ... and Pn = EN in E]
                when [flag] is {{!Asttypes.rec_flag.Recursive}[Recursive]}.
          *)
+  | Pexp_arityfun of
+      function_param list * type_constraint option * function_body
+  (** [Pexp_function ([P1; ...; Pn], C, body)] represents any construct
+      involving [fun] or [function], including:
+      - [fun P1 ... Pn -> E]
+        when [body = Pfunction_body E]
+      - [fun P1 ... Pn -> function p1 -> e1 | ... | pm -> em]
+        when [body = Pfunction_cases [ p1 -> e1; ...; pm -> em ]]
+
+      [C] represents a type constraint or coercion placed immediately
+      before the arrow, e.g. [fun P1 ... Pn : t1 :> t2 -> ...]
+      when [C = Some (Pcoerce (Some t1, t2))].
+  *)
+  (* CR nroberts: replace [Pexp_function] and [Pexp_fun] with the above. *)
   | Pexp_function of case list  (** [function P1 -> E1 | ... | Pn -> En] *)
   | Pexp_fun of arg_label * expression option * pattern * expression
-      (** [Pexp_fun(lbl, exp0, P, E1)] represents:
-            - [fun P -> E1]
-                      when [lbl] is {{!Asttypes.arg_label.Nolabel}[Nolabel]}
-                       and [exp0] is [None]
-            - [fun ~l:P -> E1]
-                      when [lbl] is {{!Asttypes.arg_label.Labelled}[Labelled l]}
-                       and [exp0] is [None]
-            - [fun ?l:P -> E1]
-                      when [lbl] is {{!Asttypes.arg_label.Optional}[Optional l]}
-                       and [exp0] is [None]
-            - [fun ?l:(P = E0) -> E1]
-                      when [lbl] is {{!Asttypes.arg_label.Optional}[Optional l]}
-                       and [exp0] is [Some E0]
-
-           Notes:
-           - If [E0] is provided, only
-             {{!Asttypes.arg_label.Optional}[Optional]} is allowed.
-           - [fun P1 P2 .. Pn -> E1] is represented as nested
-             {{!expression_desc.Pexp_fun}[Pexp_fun]}.
-           - [let f P = E] is represented using
-             {{!expression_desc.Pexp_fun}[Pexp_fun]}.
-         *)
   | Pexp_apply of expression * (arg_label * expression) list
       (** [Pexp_apply(E0, [(l1, E1) ; ... ; (ln, En)])]
             represents [E0 ~l1:E1 ... ~ln:En]
@@ -440,6 +432,44 @@ and binding_op =
     pbop_exp : expression;
     pbop_loc : Location.t;
   }
+
+and function_param =
+  | Pparam_val of arg_label * expression option * pattern
+  (** [Pparam_val (lbl, exp0, P)] represents the parameter:
+      - [P]
+        when [lbl] is {{!Asttypes.arg_label.Nolabel}[Nolabel]}
+        and [exp0] is [None]
+      - [~l:P]
+        when [lbl] is {{!Asttypes.arg_label.Labelled}[Labelled l]}
+        and [exp0] is [None]
+      - [?l:P]
+        when [lbl] is {{!Asttypes.arg_label.Optional}[Optional l]}
+        and [exp0] is [None]
+      - [?l:(P = E0)]
+        when [lbl] is {{!Asttypes.arg_label.Optional}[Optional l]}
+        and [exp0] is [Some E0]
+
+      Note: If [E0] is provided, only
+      {{!Asttypes.arg_label.Optional}[Optional]} is allowed.
+  *)
+  | Pparam_newtype of string loc * Location.t
+  (** [Pparam_newtype (x, loc)] represents the parameter [(type x)].
+      [x] carries the location of the identifier, whereas [loc] is
+      the location of the [(type x)] as a whole.
+
+      Multiple parameters [(type a b c)] are represented as multiple
+      [Pparam_newtype] nodes.
+  *)
+
+and function_body =
+  | Pfunction_body of expression
+  | Pfunction_cases of case list * Location.t * attributes
+(** See the comment on {{!expression_desc.Pexp_function}[Pexp_function]}. *)
+
+and type_constraint =
+  | Pconstraint of core_type
+  | Pcoerce of core_type option * core_type
+(** See the comment on {{!expression_desc.Pexp_function}[Pexp_function]}. *)
 
 (** {2 Value descriptions} *)
 

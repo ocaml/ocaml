@@ -620,11 +620,41 @@ and sugar_expr ctxt f e =
     end
   | _ -> false
 
+and function_param ctxt f param =
+  match param with
+  | Pparam_val (a, b, c) -> label_exp ctxt f (a, b, c)
+  | Pparam_newtype (ty, _) -> pp f "(type %s)@;" ty.txt
+
+and function_body ctxt f function_body =
+  match function_body with
+  | Pfunction_body body -> expression ctxt f body
+  | Pfunction_cases (cases, _, attrs) ->
+      pp f "@[<hv>function%a%a@]"
+        (item_attributes ctxt) attrs
+        (case_list ctxt) cases
+
+and type_constraint ctxt f constraint_ =
+  match constraint_ with
+  | Pconstraint ty ->
+      pp f ":@;%a" (core_type ctxt) ty
+  | Pcoerce (ty1, ty2) ->
+      pp f "%a:>@;%a"
+        (option ~first:":@;" (core_type ctxt)) ty1
+        (core_type ctxt) ty2
+
+and pp_pexp_arity_fun ctxt f params constraint_ body ~delimiter =
+  pp f "%a%a%s@;%a"
+    (list (function_param ctxt) ~sep:"") params
+    (option (type_constraint ctxt)) constraint_
+    delimiter
+    (function_body ctxt) body
+
 and expression ctxt f x =
   if x.pexp_attributes <> [] then
     pp f "((%a)@,%a)" (expression ctxt) {x with pexp_attributes=[]}
       (attributes ctxt) x.pexp_attributes
   else match x.pexp_desc with
+    | Pexp_arityfun _
     | Pexp_function _ | Pexp_fun _ | Pexp_match _ | Pexp_try _ | Pexp_sequence _
     | Pexp_newtype _
       when ctxt.pipe || ctxt.semi ->
@@ -642,6 +672,20 @@ and expression ctxt f x =
     | Pexp_newtype (lid, e) ->
         pp f "@[<2>fun@;(type@;%a)@;->@;%a@]" ident_of_name lid.txt
           (expression ctxt) e
+    | Pexp_arityfun (params, c, body) ->
+        begin match params, c with
+        (* Omit [fun] if there are no params. *)
+        | [], None -> pp f "@[<2>%a@]" (function_body ctxt) body
+        | [], Some c ->
+            pp f "@[<2>(%a@;%a)@]"
+              (function_body ctxt) body
+              (type_constraint ctxt) c
+        | _ :: _, _ ->
+          pp f "@[<2>fun@;%a@]"
+            (fun f () -> pp_pexp_arity_fun ctxt f params c body ~delimiter:"->")
+            ();
+
+        end
     | Pexp_function l ->
         pp f "@[<hv>function%a@]" (case_list ctxt) l
     | Pexp_match (e, l) ->
@@ -1276,12 +1320,8 @@ and binding ctxt f {pvb_pat=p; pvb_expr=x; pvb_constraint = ct; _} =
   let rec pp_print_pexp_function f x =
     if x.pexp_attributes <> [] then pp f "=@;%a" (expression ctxt) x
     else match x.pexp_desc with
-      | Pexp_fun (label, eo, p, e) ->
-          if label=Nolabel then
-            pp f "%a@ %a" (simple_pattern ctxt) p pp_print_pexp_function e
-          else
-            pp f "%a@ %a"
-              (label_exp ctxt) (label,eo,p) pp_print_pexp_function e
+      | Pexp_arityfun (params, c, body) ->
+          pp_pexp_arity_fun ctxt f params c body ~delimiter:"="
       | Pexp_newtype (str,e) ->
           pp f "(type@ %a)@ %a" ident_of_name str.txt pp_print_pexp_function e
       | _ -> pp f "=@;%a" (expression ctxt) x
