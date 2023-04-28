@@ -16,6 +16,9 @@ Working version
 
 ### Other libraries:
 
+- #12213: Dynlink library, improve legibility of error messages
+  (Samuel Hym, review by Gabriel Scherer and Nicolás Ojeda Bär)
+
 ### Tools:
 
 - #12185: New script language for ocamltest.
