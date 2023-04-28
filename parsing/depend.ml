@@ -207,7 +207,7 @@ let rec add_expr bv exp =
   | Pexp_constant _ -> ()
   | Pexp_let(rf, pel, e) ->
       let bv = add_bindings rf bv pel in add_expr bv e
-  | Pexp_arityfun (params, constraint_, body) ->
+  | Pexp_function (params, constraint_, body) ->
       let bv = List.fold_left add_function_param bv params in
       add_opt add_constraint bv constraint_;
       add_function_body bv body

@@ -427,8 +427,8 @@ module E = struct
     | Pexp_let (r, vbs, e) ->
         let_ ~loc ~attrs r (List.map (sub.value_binding sub) vbs)
           (sub.expr sub e)
-    | Pexp_arityfun (ps, c, b) ->
-      arityfun ~loc ~attrs
+    | Pexp_function (ps, c, b) ->
+      function_ ~loc ~attrs
         (List.map (map_function_param sub) ps)
         (map_opt (map_constraint sub) c)
         (map_function_body sub b)

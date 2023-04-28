@@ -628,14 +628,14 @@ let mkghost_newtype_function_body newtypes body_constraint body =
   in
   expr.pexp_desc
 
-let mkarityfun params body_constraint body =
+let mkfunction params body_constraint body =
   match body with
-  | Pfunction_cases _ -> Pexp_arityfun (params, body_constraint, body)
+  | Pfunction_cases _ -> Pexp_function (params, body_constraint, body)
   | Pfunction_body body_exp ->
     (* If all the params are newtypes, then we don't create a function node;
        we create a newtype node. *)
       match all_params_as_newtypes params with
-      | None -> Pexp_arityfun (params, body_constraint, body)
+      | None -> Pexp_function (params, body_constraint, body)
       | Some newtypes ->
           mkghost_newtype_function_body newtypes body_constraint body_exp
 
@@ -2279,7 +2279,7 @@ class_type_declarations:
   | FUNCTION ext_attributes match_cases
       { let loc = make_loc $sloc in
         let cases = $3 in
-        let desc = mkarityfun [] None (Pfunction_cases (cases, loc, [])) in
+        let desc = mkfunction [] None (Pfunction_cases (cases, loc, [])) in
         mkexp_attrs ~loc:$sloc desc $2
       }
 ;
@@ -2427,7 +2427,7 @@ fun_expr:
   | FUN ext_attributes fun_params preceded(COLON, atomic_type)?
       MINUSGREATER fun_body
       { let body_constraint = Option.map (fun x -> Pconstraint x) $4 in
-        mkarityfun $3 body_constraint $6, $2
+        mkfunction $3 body_constraint $6, $2
       }
   | MATCH ext_attributes seq_expr WITH match_cases
       { Pexp_match($3, $5), $2 }
@@ -2718,7 +2718,7 @@ strict_binding:
     EQUAL seq_expr
       { $2 }
   | fun_params type_constraint? EQUAL fun_body
-      { ghexp ~loc:$sloc (mkarityfun $1 $2 $4)
+      { ghexp ~loc:$sloc (mkfunction $1 $2 $4)
       }
 ;
 fun_body:
@@ -2730,7 +2730,7 @@ fun_body:
           (* function%foo extension nodes interrupt the arity *)
             let cases = Pfunction_cases ($3, make_loc $sloc, []) in
             Pfunction_body
-              (mkexp_attrs ~loc:$sloc (mkarityfun [] None cases) $2)
+              (mkexp_attrs ~loc:$sloc (mkfunction [] None cases) $2)
       }
   | fun_seq_expr
       { Pfunction_body $1 }

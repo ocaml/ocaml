@@ -136,7 +136,7 @@ module Exp:
     val constant: ?loc:loc -> ?attrs:attrs -> constant -> expression
     val let_: ?loc:loc -> ?attrs:attrs -> rec_flag -> value_binding list
               -> expression -> expression
-    val arityfun : ?loc:loc -> ?attrs:attrs -> function_param list
+    val function_ : ?loc:loc -> ?attrs:attrs -> function_param list
                    -> type_constraint option -> function_body
                    -> expression
     val apply: ?loc:loc -> ?attrs:attrs -> expression

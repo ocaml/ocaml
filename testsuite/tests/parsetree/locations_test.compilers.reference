@@ -252,7 +252,7 @@ Ptop_def
               Ptyp_constr "a" (//toplevel//[2,1+21]..[2,1+22])
               []
           expression (//toplevel//[2,1+25]..[2,1+35])
-            Pexp_arityfun
+            Pexp_function
             [
               Pparam_val
                 Nolabel
@@ -293,7 +293,7 @@ Ptop_def
                         expression (//toplevel//[3,16+9]..[4,46+14])
                           Pexp_constraint
                           expression (//toplevel//[4,46+4]..[4,46+14])
-                            Pexp_arityfun
+                            Pexp_function
                             [
                               Pparam_val
                                 Nolabel
@@ -338,7 +338,7 @@ Ptop_def
           pattern (//toplevel//[4,17+4]..[4,17+5])
             Ppat_var "x" (//toplevel//[4,17+4]..[4,17+5])
           expression (//toplevel//[4,17+6]..[4,17+29]) ghost
-            Pexp_arityfun
+            Pexp_function
             [
               Pparam_val
                 Nolabel
@@ -394,7 +394,7 @@ Ptop_def
           pattern (//toplevel//[2,1+4]..[2,1+5])
             Ppat_var "x" (//toplevel//[2,1+4]..[2,1+5])
           expression (//toplevel//[2,1+6]..[2,1+35]) ghost
-            Pexp_arityfun
+            Pexp_function
             [
               Pparam_val
                 Nolabel
@@ -430,7 +430,7 @@ Ptop_def
           pattern (//toplevel//[2,1+4]..[2,1+5])
             Ppat_var "x" (//toplevel//[2,1+4]..[2,1+5])
           expression (//toplevel//[2,1+8]..[2,1+41])
-            Pexp_arityfun
+            Pexp_function
             []
             None
             Pfunction_cases (//toplevel//[2,1+8]..[2,1+41])
@@ -459,7 +459,7 @@ Ptop_def
           pattern (//toplevel//[2,1+4]..[2,1+5])
             Ppat_var "x" (//toplevel//[2,1+4]..[2,1+5])
           expression (//toplevel//[2,1+8]..[2,1+47])
-            Pexp_arityfun
+            Pexp_function
             []
             None
             Pfunction_cases (//toplevel//[2,1+8]..[2,1+47])
@@ -493,7 +493,7 @@ Ptop_def
           pattern (//toplevel//[2,1+4]..[2,1+5])
             Ppat_var "x" (//toplevel//[2,1+4]..[2,1+5])
           expression (//toplevel//[2,1+8]..[2,1+44])
-            Pexp_arityfun
+            Pexp_function
             []
             None
             Pfunction_cases (//toplevel//[2,1+8]..[2,1+44])
@@ -545,7 +545,7 @@ Ptop_def
                     expression (//toplevel//[3,9+31]..[3,9+46]) ghost
                       Pexp_poly
                       expression (//toplevel//[3,9+31]..[3,9+46]) ghost
-                        Pexp_arityfun
+                        Pexp_function
                         [
                           Pparam_val
                             Nolabel
@@ -665,7 +665,7 @@ Ptop_def
           pattern (//toplevel//[6,56+4]..[6,56+12])
             Ppat_var ".@()" (//toplevel//[6,56+4]..[6,56+12])
           expression (//toplevel//[6,56+13]..[6,56+24]) ghost
-            Pexp_arityfun
+            Pexp_function
             [
               Pparam_val
                 Nolabel
@@ -702,7 +702,7 @@ Ptop_def
           pattern (//toplevel//[7,81+4]..[7,81+14])
             Ppat_var ".@()<-" (//toplevel//[7,81+4]..[7,81+14])
           expression (//toplevel//[7,81+15]..[7,81+32]) ghost
-            Pexp_arityfun
+            Pexp_function
             [
               Pparam_val
                 Nolabel
@@ -756,7 +756,7 @@ Ptop_def
           pattern (//toplevel//[8,114+4]..[8,114+13])
             Ppat_var ".%.{}" (//toplevel//[8,114+4]..[8,114+13])
           expression (//toplevel//[8,114+14]..[8,114+25]) ghost
-            Pexp_arityfun
+            Pexp_function
             [
               Pparam_val
                 Nolabel
@@ -793,7 +793,7 @@ Ptop_def
           pattern (//toplevel//[9,140+4]..[9,140+15])
             Ppat_var ".%.{}<-" (//toplevel//[9,140+4]..[9,140+15])
           expression (//toplevel//[9,140+16]..[9,140+33]) ghost
-            Pexp_arityfun
+            Pexp_function
             [
               Pparam_val
                 Nolabel
@@ -847,7 +847,7 @@ Ptop_def
           pattern (//toplevel//[10,174+4]..[10,174+13])
             Ppat_var ".%.[]" (//toplevel//[10,174+4]..[10,174+13])
           expression (//toplevel//[10,174+14]..[10,174+25]) ghost
-            Pexp_arityfun
+            Pexp_function
             [
               Pparam_val
                 Nolabel
@@ -884,7 +884,7 @@ Ptop_def
           pattern (//toplevel//[11,200+4]..[11,200+15])
             Ppat_var ".%.[]<-" (//toplevel//[11,200+4]..[11,200+15])
           expression (//toplevel//[11,200+16]..[11,200+33]) ghost
-            Pexp_arityfun
+            Pexp_function
             [
               Pparam_val
                 Nolabel
@@ -1086,7 +1086,7 @@ Ptop_def
           pattern (//toplevel//[4,28+4]..[4,28+5])
             Ppat_var "f" (//toplevel//[4,28+4]..[4,28+5])
           expression (//toplevel//[4,28+8]..[4,28+37])
-            Pexp_arityfun
+            Pexp_function
             []
             None
             Pfunction_cases (//toplevel//[4,28+8]..[4,28+37])
@@ -1314,7 +1314,7 @@ Ptop_def
             pattern (//toplevel//[2,1+4]..[2,1+5])
               Ppat_var "f" (//toplevel//[2,1+4]..[2,1+5])
             expression (//toplevel//[2,1+6]..[2,1+15]) ghost
-              Pexp_arityfun
+              Pexp_function
               [
                 Pparam_val
                   Nolabel
@@ -1401,7 +1401,7 @@ Ptop_def
           pattern (//toplevel//[3,66+4]..[3,66+5])
             Ppat_var "g" (//toplevel//[3,66+4]..[3,66+5])
           expression (//toplevel//[3,66+6]..[5,98+12]) ghost
-            Pexp_arityfun
+            Pexp_function
             [
               Pparam_val
                 Nolabel
@@ -1418,7 +1418,7 @@ Ptop_def
                     pattern (//toplevel//[4,76+6]..[4,76+7])
                       Ppat_var "f" (//toplevel//[4,76+6]..[4,76+7])
                     expression (//toplevel//[4,76+8]..[4,76+18]) ghost
-                      Pexp_arityfun
+                      Pexp_function
                       [
                         Pparam_val
                           Labelled "y"

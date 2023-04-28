@@ -260,8 +260,8 @@ and expression i ppf x =
       line i ppf "Pexp_let %a\n" fmt_rec_flag rf;
       list i value_binding ppf l;
       expression i ppf e;
-  | Pexp_arityfun (params, c, body) ->
-      line i ppf "Pexp_arityfun\n";
+  | Pexp_function (params, c, body) ->
+      line i ppf "Pexp_function\n";
       list i function_param ppf params;
       option i type_constraint ppf c;
       function_body i ppf body

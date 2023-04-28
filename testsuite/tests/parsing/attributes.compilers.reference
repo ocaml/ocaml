@@ -309,7 +309,7 @@
         pattern (attributes.ml[59,812+4]..[59,812+5])
           Ppat_var "f" (attributes.ml[59,812+4]..[59,812+5])
         expression (attributes.ml[59,812+6]..[60,869+26]) ghost
-          Pexp_arityfun
+          Pexp_function
           [
             Pparam_val
               Nolabel

@@ -6,7 +6,7 @@
         pattern 
           Ppat_var "fib" 
         expression 
-          Pexp_arityfun
+          Pexp_function
           []
           None
           Pfunction_cases 

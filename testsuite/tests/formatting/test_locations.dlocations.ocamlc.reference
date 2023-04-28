@@ -6,7 +6,7 @@
         pattern (test_locations.ml[17,534+8]..[17,534+11])
           Ppat_var "fib" (test_locations.ml[17,534+8]..[17,534+11])
         expression (test_locations.ml[17,534+14]..[19,572+34])
-          Pexp_arityfun
+          Pexp_function
           []
           None
           Pfunction_cases (test_locations.ml[17,534+14]..[19,572+34])

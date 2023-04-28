@@ -73,7 +73,7 @@
                             expression (shortcut_ext_attr.ml[14,294+3]..[14,294+24])
                               attribute "foo"
                                 []
-                              Pexp_arityfun
+                              Pexp_function
                               [
                                 Pparam_val
                                   Nolabel
@@ -97,7 +97,7 @@
                               expression (shortcut_ext_attr.ml[15,322+3]..[15,322+29])
                                 attribute "foo"
                                   []
-                                Pexp_arityfun
+                                Pexp_function
                                 []
                                 None
                                 Pfunction_cases (shortcut_ext_attr.ml[15,322+3]..[15,322+29])

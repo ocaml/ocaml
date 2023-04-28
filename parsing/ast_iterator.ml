@@ -386,7 +386,7 @@ module E = struct
     | Pexp_let (_r, vbs, e) ->
         List.iter (sub.value_binding sub) vbs;
         sub.expr sub e
-    | Pexp_arityfun (params, constraint_, body) ->
+    | Pexp_function (params, constraint_, body) ->
         List.iter (iter_function_param sub) params;
         iter_opt (iter_constraint sub) constraint_;
         iter_body sub body

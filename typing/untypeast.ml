@@ -433,7 +433,7 @@ let expression sub exp =
                Pparam_val (fp.fp_arg_label, default_arg, pat) :: newtypes)
             params
         in
-        Pexp_arityfun (params, constraint_, body)
+        Pexp_function (params, constraint_, body)
     | Texp_apply (exp, list) ->
         Pexp_apply (sub.expr sub exp,
           List.fold_right (fun (label, expo) list ->
