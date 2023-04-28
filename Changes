@@ -30,6 +30,11 @@ Working version
 
 ### Build system:
 
+- #12214: Fix the compilation of camlheader when BINDIR contains escaping
+  characters. This can for example happen when compiling with
+  ./configure '--prefix=C:\some\directory' under Cygwin.
+  (Kate Deplaix, review by Sébastien Hinderer and Nicolás Ojeda Bär)
+
 ### Bug fixes:
 
 

@@ -218,6 +218,7 @@ OCAMLYACCFLAGS ?= --strict -v
 	$(V_OCAMLYACC)$(OCAMLYACC) $(OCAMLYACCFLAGS) $<
 
 SAK = $(ROOTDIR)/runtime/sak$(EXE)
+C_LITERAL = $(shell $(SAK) encode-C-literal '$(1)')
 
 # stdlib/StdlibModules cannot be include'd unless $(SAK) has been built. These
 # two rules add that dependency. They have to be pattern rules since

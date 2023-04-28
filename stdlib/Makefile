@@ -99,6 +99,9 @@ HEADER_PATH =
 HEADER_TARGET_PATH =
 endif
 
+C_RUNTIME_NAME = $(call C_LITERAL,$(HEADER_PATH)$(1))
+C_TARGET_RUNTIME_NAME = $(call C_LITERAL,$(HEADER_TARGET_PATH)$(1))
+
 TARGETHEADERPROGRAM = target_$(HEADERPROGRAM)
 
 # The shebang test in configure.ac will need updating if any runtime is
@@ -147,7 +150,7 @@ ifneq "$(UNIX_OR_WIN32)" "win32"
 endif
 
 $(HEADERPROGRAM)%$(O): \
-  OC_CPPFLAGS += -DRUNTIME_NAME='"$(HEADER_PATH)ocamlrun$(subst .,,$*)"'
+  OC_CPPFLAGS += -DRUNTIME_NAME='$(call C_RUNTIME_NAME,ocamlrun$(subst .,,$*))'
 
 $(HEADERPROGRAM)%$(O): $(HEADERPROGRAM).c
 	$(V_CC)$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
@@ -163,7 +166,7 @@ tmptargetcamlheader%exe: $(TARGETHEADERPROGRAM)%$(O)
 
 $(TARGETHEADERPROGRAM)%$(O): $(HEADERPROGRAM).c
 	$(V_CC)$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
-	      -DRUNTIME_NAME='"$(HEADER_TARGET_PATH)ocamlrun$(subst .,,$*)"' \
+	      -DRUNTIME_NAME='$(call C_TARGET_RUNTIME_NAME,ocamlrun$(subst .,,$*))' \
 	      $(OUTPUTOBJ)$@ $^
 
 target_%: tmptarget%.exe
