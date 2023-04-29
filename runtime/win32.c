@@ -71,11 +71,7 @@ unsigned short caml_win32_minor = 0;
 unsigned short caml_win32_build = 0;
 unsigned short caml_win32_revision = 0;
 
-CAMLnoreturn_start
-static void caml_win32_sys_error (int errnum)
-CAMLnoreturn_end;
-
-static void caml_win32_sys_error(int errnum)
+static _Noreturn void caml_win32_sys_error(int errnum)
 {
   wchar_t buffer[512];
   value msg;
