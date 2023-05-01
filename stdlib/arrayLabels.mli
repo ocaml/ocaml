@@ -287,7 +287,7 @@ val combine : 'a array -> 'b array -> ('a * 'b) array
 
     @since 4.13 *)
 
-(** {1 Sorting} *)
+(** {1:sorting_and_shuffling Sorting and shuffling} *)
 
 val sort : cmp:('a -> 'a -> int) -> 'a array -> unit
 (** Sort an array in increasing order according to a comparison
@@ -328,6 +328,17 @@ val fast_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
 (** Same as {!sort} or {!stable_sort}, whichever is
     faster on typical input. *)
 
+val shuffle :
+  rand: (* thwart tools/sync_stdlib_docs *) (int -> int) -> 'a array -> unit
+(** [shuffle ~rand a] randomly permutes [a]'s elements using [rand]
+    for randomness.
+
+    [rand] must be such that a call to [rand n] returns a uniformly
+    distributed random number in the range \[[0];[n-1]\].
+    {!Random.int} can be used for this (do not forget to
+    {{!Random.self_init}initialize} the generator).
+
+    @since 5.2 *)
 
 (** {1 Arrays and Sequences} *)
 

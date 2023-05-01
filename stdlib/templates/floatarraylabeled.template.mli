@@ -198,7 +198,7 @@ val find_mapi : f:(int -> float -> 'a option) -> t -> 'a option
 
    @since 5.1 *)
 
-(** {1 Sorting} *)
+(** {1:sorting_and_shuffling Sorting and shuffling} *)
 
 val sort : cmp:(float -> float -> int) -> t -> unit
 (** Sort a floatarray in increasing order according to a comparison
@@ -237,6 +237,18 @@ val stable_sort : cmp:(float -> float -> int) -> t -> unit
 val fast_sort : cmp:(float -> float -> int) -> t -> unit
 (** Same as {!sort} or {!stable_sort}, whichever is faster
     on typical input. *)
+
+val shuffle :
+  rand: (* thwart tools/sync_stdlib_docs *) (int -> int) -> t -> unit
+(** [shuffle ~rand a] randomly permutes [a]'s elements using [rand]
+    for randomness.
+
+    [rand] must be such that a call to [rand n] returns a uniformly
+    distributed random number in the range \[[0];[n-1]\].
+    {!Random.int} can be used for this (do not forget to
+    {{!Random.self_init}initialize} the generator).
+
+    @since 5.2 *)
 
 (** {1 Float arrays and Sequences} *)
 
