@@ -96,7 +96,7 @@ val of_list : float list -> t
     @raise Invalid_argument if the length of [l] is greater than
     [Sys.max_floatarray_length].*)
 
-(** {2 Iterators} *)
+(** {1 Iterators} *)
 
 val iter : f:(float -> unit) -> t -> unit
 (** [iter ~f a] applies function [f] in turn to all
@@ -137,7 +137,7 @@ val fold_right : f:(float -> 'acc -> 'acc) -> t -> init:'acc -> 'acc
     [f a.(0) (f a.(1) ( ... (f a.(n-1) init) ...))],
     where [n] is the length of the floatarray [a]. *)
 
-(** {2 Iterators on two arrays} *)
+(** {1 Iterators on two arrays} *)
 
 val iter2 : f:(float -> float -> unit) -> t -> t -> unit
 (** [Array.iter2 ~f a b] applies function [f] to all the elements of [a]
@@ -150,7 +150,7 @@ val map2 : f:(float -> float -> float) -> t -> t -> t
     [[| f a.(0) b.(0); ...; f a.(length a - 1) b.(length b - 1)|]].
     @raise Invalid_argument if the floatarrays are not the same size. *)
 
-(** {2 Array scanning} *)
+(** {1 Array scanning} *)
 
 val for_all : f:(float -> bool) -> t -> bool
 (** [for_all ~f [|a1; ...; an|]] checks if all elements of the floatarray
@@ -170,7 +170,7 @@ val mem : float -> set:t -> bool
 val mem_ieee : float -> set:t -> bool
 (** Same as {!mem}, but uses IEEE equality instead of structural equality. *)
 
-(** {2 Array searching} *)
+(** {1 Array searching} *)
 
 val find_opt : f:(float -> bool) -> t -> float option
 (* [find_opt ~f a] returns the first element of the array [a] that satisfies
@@ -198,7 +198,7 @@ val find_mapi : f:(int -> float -> 'a option) -> t -> 'a option
 
    @since 5.1 *)
 
-(** {2 Sorting} *)
+(** {1 Sorting} *)
 
 val sort : cmp:(float -> float -> int) -> t -> unit
 (** Sort a floatarray in increasing order according to a comparison
@@ -238,7 +238,7 @@ val fast_sort : cmp:(float -> float -> int) -> t -> unit
 (** Same as {!sort} or {!stable_sort}, whichever is faster
     on typical input. *)
 
-(** {2 Float arrays and Sequences} *)
+(** {1 Float arrays and Sequences} *)
 
 val to_seq : t -> float Seq.t
 (** Iterate on the floatarray, in increasing order. Modifications of the
@@ -338,7 +338,7 @@ let () = Domain.join d1; Domain.join d2
 
 (**/**)
 
-(** {2 Undocumented functions} *)
+(** {1 Undocumented functions} *)
 
 (* These functions are for system use only. Do not call directly. *)
 external unsafe_get : t -> int -> float = "%floatarray_unsafe_get"
