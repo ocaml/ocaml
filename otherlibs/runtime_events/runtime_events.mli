@@ -130,6 +130,7 @@ type runtime_phase =
 | EV_MINOR_LOCAL_ROOTS_PROMOTE
 | EV_DOMAIN_CONDITION_WAIT
 | EV_DOMAIN_RESIZE_HEAP_RESERVATION
+| EV_COMPACT
 
 (** Lifecycle events for the ring itself *)
 type lifecycle =

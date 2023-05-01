@@ -72,6 +72,7 @@ type runtime_phase =
 | EV_MINOR_LOCAL_ROOTS_PROMOTE
 | EV_DOMAIN_CONDITION_WAIT
 | EV_DOMAIN_RESIZE_HEAP_RESERVATION
+| EV_COMPACT
 
 type lifecycle =
   EV_RING_START
@@ -153,6 +154,7 @@ let runtime_phase_name phase =
   | EV_DOMAIN_CONDITION_WAIT -> "domain_condition_wait"
   | EV_MAJOR_FINISH_CYCLE -> "major_finish_cycle"
   | EV_DOMAIN_RESIZE_HEAP_RESERVATION -> "domain_resize_heap_reservation"
+  | EV_COMPACT -> "compaction"
 
 let lifecycle_name lifecycle =
   match lifecycle with

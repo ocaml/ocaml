@@ -923,6 +923,8 @@ static void compact_update_ephe_list(value ephe_list) {
 void caml_compact_heap(caml_domain_state* domain_state, void* data,
                          int participating_count,
                          caml_domain_state** participants) {
+  caml_gc_log("Compacting heap start");
+  CAML_EV_BEGIN(EV_COMPACT);
   /* Warning: caml_compact_heap must only be called from
      [cycle_all_domains_callback] in major_gc.c as there are
      very specific conditions the compaction algorithm expects.
@@ -1269,6 +1271,9 @@ void caml_compact_heap(caml_domain_state* domain_state, void* data,
     free_pool_freelist();
   }
   caml_global_barrier_end(b);
+
+  caml_gc_log("Compacting heap complete");
+  CAML_EV_END(EV_COMPACT);
 }
 
 /* Compaction end */
