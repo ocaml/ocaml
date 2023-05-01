@@ -13,14 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* NOTE:
-   If this file is bytesLabels.mli, run tools/sync_stdlib_docs after editing it
-   to generate bytes.mli.
-
-   If this file is bytes.mli, do not edit it directly -- edit
-   bytesLabels.mli instead.
- *)
-
 (** Byte sequence operations.
 
    A byte sequence is a mutable data structure that contains a
@@ -314,16 +306,14 @@ val equal: t -> t -> bool
 (** The equality function for byte sequences.
     @since 4.03 (4.05 in BytesLabels) *)
 
-val starts_with :
-  prefix (* comment thwarts tools/sync_stdlib_docs *) :bytes -> bytes -> bool
-(** [starts_with ][~prefix s] is [true] if and only if [s] starts with
+val starts_with : prefix:bytes -> bytes -> bool
+(** [starts_with ~prefix s] is [true] if and only if [s] starts with
     [prefix].
 
     @since 4.13 *)
 
-val ends_with :
-  suffix (* comment thwarts tools/sync_stdlib_docs *) :bytes -> bytes -> bool
-(** [ends_with ][~suffix s] is [true] if and only if [s] ends with [suffix].
+val ends_with : suffix:bytes -> bytes -> bool
+(** [ends_with ~suffix s] is [true] if and only if [s] ends with [suffix].
 
     @since 4.13 *)
 

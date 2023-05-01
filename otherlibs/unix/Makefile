@@ -31,9 +31,6 @@ EXTRACAMLFLAGS=-nolabels
 # ensure that they're not accidentally used in the library itself.
 OC_CPPFLAGS += -DCAML_BUILDING_UNIX
 
-unixLabels.cmi: \
-  EXTRACAMLFLAGS += -pp "$(AWK) -f $(ROOTDIR)/stdlib/expand_module_aliases.awk"
-
 ifeq "$(UNIX_OR_WIN32)" "win32"
 WIN32_LIBS=$(call SYSLIB,ws2_32) $(call SYSLIB,advapi32)
 LINKOPTS=$(addprefix -cclib ,$(WIN32_LIBS))

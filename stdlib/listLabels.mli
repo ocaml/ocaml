@@ -13,14 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* NOTE:
-   If this file is listLabels.mli, run tools/sync_stdlib_docs after editing it
-   to generate list.mli.
-
-   If this file is list.mli, do not edit it directly -- edit
-   listLabels.mli instead.
- *)
-
 (** List operations.
 
    Some functions are flagged as not tail-recursive.  A tail-recursive
@@ -65,7 +57,7 @@ val is_empty : 'a list -> bool
 
 val cons : 'a -> 'a list -> 'a list
 (** [cons x xs] is [x :: xs]
-    @since 4.03 (4.05 in ListLabels)
+    @since 4.05
  *)
 
 val hd : 'a list -> 'a
@@ -491,7 +483,7 @@ val fast_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
 
 val sort_uniq : cmp:('a -> 'a -> int) -> 'a list -> 'a list
 (** Same as {!sort}, but also remove duplicates.
-    @since 4.02 (4.03 in ListLabels)
+    @since 4.03
  *)
 
 val merge : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> 'a list

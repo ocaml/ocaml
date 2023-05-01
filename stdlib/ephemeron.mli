@@ -119,7 +119,7 @@ module type SeededS = sig
 
   type key
   type !'a t
-  val create : ?random (*thwart tools/sync_stdlib_docs*) : bool -> int -> 'a t
+  val create : ?random:bool -> int -> 'a t
   val clear : 'a t -> unit
   val reset : 'a t -> unit
   val copy : 'a t -> 'a t

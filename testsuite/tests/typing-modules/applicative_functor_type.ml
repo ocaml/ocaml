@@ -23,7 +23,7 @@ Error: Modules do not match:
        sig type t = M.t val equal : 'a -> 'a -> bool end
      is not included in Set.OrderedType
      The value `compare' is required but not provided
-     File "set.mli", line 55, characters 4-31: Expected declaration
+     File "set.mli", line 52, characters 4-31: Expected declaration
 |} ]
 
 

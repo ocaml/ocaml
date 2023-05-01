@@ -14,14 +14,6 @@
 (**************************************************************************)
 
 (* NOTE:
-   If this file is unixLabels.mli, run tools/sync_stdlib_docs after editing it
-   to generate unix.mli.
-
-   If this file is unix.mli, do not edit it directly -- edit unixLabels.mli
-   instead.
-*)
-
-(* NOTE:
    When a new function is added which is not implemented on Windows (or
    partially implemented), or the Windows-status of an existing function is
    changed, remember to update the summary table in
@@ -152,7 +144,7 @@ val unsafe_environment : unit -> string array
     privileges.  See the documentation for {!unsafe_getenv} for more
     details.
 
-    @since 4.06 (4.12 in UnixLabels) *)
+    @since 4.12 *)
 
 val getenv : string -> string
 (** Return the value associated to a variable in the process
@@ -370,7 +362,7 @@ val close : file_descr -> unit
 val fsync : file_descr -> unit
 (** Flush file buffers to disk.
 
-    @since 4.08 (4.12 in UnixLabels) *)
+    @since 4.12 *)
 
 val read : file_descr -> buf:bytes -> pos:int -> len:int -> int
 (** [read fd ~buf ~pos ~len] reads [len] bytes from descriptor [fd],
@@ -574,7 +566,7 @@ module LargeFile :
 
 val map_file :
   file_descr ->
-  ?pos (* thwart tools/sync_stdlib_docs *):int64 ->
+  ?pos:int64 ->
   kind:('a, 'b) Stdlib.Bigarray.kind ->
   layout:'c Stdlib.Bigarray.layout -> shared:bool -> dims:int array ->
   ('a, 'b, 'c) Stdlib.Bigarray.Genarray.t
@@ -646,8 +638,7 @@ val rename : src:string -> dst:string -> unit
     owner, etc) of [dst] can either be preserved or be replaced by
     those of [src].  *)
 
-val link : ?follow (* thwart tools/sync_stdlib_docs *) :bool ->
-           src:string -> dst:string -> unit
+val link : ?follow:bool -> src:string -> dst:string -> unit
 (** [link ?follow ~src ~dst] creates a hard link named [dst] to the file
    named [src].
 
@@ -715,15 +706,13 @@ val access : string -> perm:access_permission list -> unit
 (** {1 Operations on file descriptors} *)
 
 
-val dup : ?cloexec: (* thwart tools/sync_stdlib_docs *) bool ->
-          file_descr -> file_descr
+val dup : ?cloexec:bool -> file_descr -> file_descr
 (** Return a new file descriptor referencing the same file as
    the given descriptor.
    See {!set_close_on_exec} for documentation on the [cloexec]
    optional argument. *)
 
-val dup2 : ?cloexec: (* thwart tools/sync_stdlib_docs *) bool ->
-           src:file_descr -> dst:file_descr -> unit
+val dup2 : ?cloexec:bool -> src:file_descr -> dst:file_descr -> unit
 (** [dup2 ~src ~dst] duplicates [src] to [dst], closing [dst] if already
    opened.
    See {!set_close_on_exec} for documentation on the [cloexec]
@@ -834,8 +823,7 @@ val closedir : dir_handle -> unit
 (** {1 Pipes and redirections} *)
 
 
-val pipe : ?cloexec: (* thwart tools/sync_stdlib_docs *) bool ->
-           unit -> file_descr * file_descr
+val pipe : ?cloexec:bool -> unit -> file_descr * file_descr
 (** Create a pipe. The first component of the result is opened
    for reading, that's the exit to the pipe. The second component is
    opened for writing, that's the entrance to the pipe.
@@ -966,25 +954,25 @@ val process_in_pid : in_channel -> int
 (** Return the pid of a process opened via {!open_process_in} or
    {!open_process_args_in}.
 
-    @since 4.08 (4.12 in UnixLabels) *)
+    @since 4.12 *)
 
 val process_out_pid : out_channel -> int
 (** Return the pid of a process opened via {!open_process_out} or
    {!open_process_args_out}.
 
-    @since 4.08 (4.12 in UnixLabels) *)
+    @since 4.12 *)
 
 val process_pid : in_channel * out_channel -> int
 (** Return the pid of a process opened via {!open_process} or
    {!open_process_args}.
 
-    @since 4.08 (4.12 in UnixLabels) *)
+    @since 4.12 *)
 
 val process_full_pid : in_channel * out_channel * in_channel -> int
 (** Return the pid of a process opened via {!open_process_full} or
    {!open_process_args_full}.
 
-    @since 4.08 (4.12 in UnixLabels) *)
+    @since 4.12 *)
 
 val close_process_in : in_channel -> process_status
 (** Close channels opened by {!open_process_in},
@@ -1011,8 +999,7 @@ val close_process_full :
 (** {1 Symbolic links} *)
 
 
-val symlink : ?to_dir: (* thwart tools/sync_stdlib_docs *) bool ->
-              src:string -> dst:string -> unit
+val symlink : ?to_dir:bool -> src:string -> dst:string -> unit
 (** [symlink ?to_dir ~src ~dst] creates the file [dst] as a symbolic link
    to the file [src]. On Windows, [~to_dir] indicates if the symbolic link
    points to a directory or a file; if omitted, [symlink] examines [src]
@@ -1235,7 +1222,7 @@ val sleepf : float -> unit
 (** Stop execution for the given number of seconds.  Like [sleep],
     but fractions of seconds are supported.
 
-    @since 4.03 (4.12 in UnixLabels) *)
+    @since 4.12 *)
 
 val times : unit -> process_times
 (** Return the execution times of the process.
@@ -1450,9 +1437,8 @@ type sockaddr = Unix.sockaddr =
    domain; [addr] is the Internet address of the machine, and
    [port] is the port number. *)
 
-val socket :
-  ?cloexec: (* thwart tools/sync_stdlib_docs *) bool ->
-    domain:socket_domain -> kind:socket_type -> protocol:int -> file_descr
+val socket : ?cloexec:bool -> domain:socket_domain ->
+             kind:socket_type -> protocol:int -> file_descr
 (** Create a new socket in the given domain, and with the
    given kind. The third argument is the protocol type; 0 selects
    the default protocol for that kind of sockets.
@@ -1462,16 +1448,14 @@ val socket :
 val domain_of_sockaddr: sockaddr -> socket_domain
 (** Return the socket domain adequate for the given socket address. *)
 
-val socketpair :
-  ?cloexec: (* thwart tools/sync_stdlib_docs *) bool ->
-    domain:socket_domain -> kind:socket_type -> protocol:int ->
-    file_descr * file_descr
+val socketpair : ?cloexec:bool ->
+                 domain:socket_domain -> kind:socket_type -> protocol:int ->
+                 file_descr * file_descr
 (** Create a pair of unnamed sockets, connected together.
    See {!set_close_on_exec} for documentation on the [cloexec]
    optional argument. *)
 
-val accept : ?cloexec: (* thwart tools/sync_stdlib_docs *) bool ->
-             file_descr -> file_descr * sockaddr
+val accept : ?cloexec:bool -> file_descr -> file_descr * sockaddr
 (** Accept connections on the given socket. The returned descriptor
    is a socket connected to the client; the returned address is
    the address of the connecting client.

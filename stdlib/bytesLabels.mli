@@ -13,14 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* NOTE:
-   If this file is bytesLabels.mli, run tools/sync_stdlib_docs after editing it
-   to generate bytes.mli.
-
-   If this file is bytes.mli, do not edit it directly -- edit
-   bytesLabels.mli instead.
- *)
-
 (** Byte sequence operations.
 
    A byte sequence is a mutable data structure that contains a
@@ -116,7 +108,7 @@ val extend : bytes -> left:int -> right:int -> bytes
     the corresponding side of [s].
     @raise Invalid_argument if the result length is negative or
     longer than {!Sys.max_string_length} bytes.
-    @since 4.05 in BytesLabels *)
+    @since 4.05 *)
 
 val fill : bytes -> pos:int -> len:int -> char -> unit
 (** [fill s ~pos ~len c] modifies [s] in place, replacing [len]
@@ -145,7 +137,7 @@ val blit_string :
     @raise Invalid_argument if [src_pos] and [len] do not
     designate a valid range of [src], or if [dst_pos] and [len]
     do not designate a valid range of [dst].
-    @since 4.05 in BytesLabels *)
+    @since 4.05 *)
 
 val concat : sep:bytes -> bytes list -> bytes
 (** [concat ~sep sl] concatenates the list of byte sequences [sl],
@@ -160,7 +152,7 @@ val cat : bytes -> bytes -> bytes
     as a new byte sequence.
     @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes.
-    @since 4.05 in BytesLabels *)
+    @since 4.05 *)
 
 val iter : f:(char -> unit) -> bytes -> unit
 (** [iter ~f s] applies function [f] in turn to all the bytes of [s].
@@ -284,22 +276,22 @@ val rcontains_from : bytes -> int -> char -> bool
 val uppercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all lowercase letters
    translated to uppercase, using the US-ASCII character set.
-   @since 4.03 (4.05 in BytesLabels) *)
+   @since 4.05 *)
 
 val lowercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all uppercase letters
    translated to lowercase, using the US-ASCII character set.
-   @since 4.03 (4.05 in BytesLabels) *)
+   @since 4.05 *)
 
 val capitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to uppercase,
    using the US-ASCII character set.
-   @since 4.03 (4.05 in BytesLabels) *)
+   @since 4.05 *)
 
 val uncapitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to lowercase,
    using the US-ASCII character set.
-   @since 4.03 (4.05 in BytesLabels) *)
+   @since 4.05 *)
 
 type t = bytes
 (** An alias for the type of byte sequences. *)
@@ -312,18 +304,16 @@ val compare: t -> t -> int
 
 val equal: t -> t -> bool
 (** The equality function for byte sequences.
-    @since 4.03 (4.05 in BytesLabels) *)
+    @since 4.05 *)
 
-val starts_with :
-  prefix (* comment thwarts tools/sync_stdlib_docs *) :bytes -> bytes -> bool
-(** [starts_with ][~prefix s] is [true] if and only if [s] starts with
+val starts_with : prefix:bytes -> bytes -> bool
+(** [starts_with ~prefix s] is [true] if and only if [s] starts with
     [prefix].
 
     @since 4.13 *)
 
-val ends_with :
-  suffix (* comment thwarts tools/sync_stdlib_docs *) :bytes -> bytes -> bool
-(** [ends_with ][~suffix s] is [true] if and only if [s] ends with [suffix].
+val ends_with : suffix:bytes -> bytes -> bool
+(** [ends_with ~suffix s] is [true] if and only if [s] ends with [suffix].
 
     @since 4.13 *)
 

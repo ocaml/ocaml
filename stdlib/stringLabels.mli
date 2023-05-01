@@ -13,14 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* NOTE:
-   If this file is stringLabels.mli, run tools/sync_stdlib_docs after editing
-   it to generate string.mli.
-
-   If this file is string.mli, do not edit it directly -- edit
-   stringLabels.mli instead.
- *)
-
 (** Strings.
 
     A string [s] of length [n] is an indexable and immutable sequence
@@ -143,22 +135,19 @@ val cat : string -> string -> string
 val equal : t -> t -> bool
 (** [equal s0 s1] is [true] if and only if [s0] and [s1] are character-wise
     equal.
-    @since 4.03 (4.05 in StringLabels) *)
+    @since 4.05 *)
 
 val compare : t -> t -> int
 (** [compare s0 s1] sorts [s0] and [s1] in lexicographical order. [compare]
     behaves like {!Stdlib.compare} on strings but may be more efficient. *)
 
-val starts_with :
-  prefix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
-(** [starts_with ][~prefix s] is [true] if and only if [s] starts with
-    [prefix].
+val starts_with : prefix:string -> string -> bool
+(** [starts_with ~prefix s] is [true] if and only if [s] starts with [prefix].
 
     @since 4.13 *)
 
-val ends_with :
-  suffix (* comment thwarts tools/sync_stdlib_docs *) :string -> string -> bool
-(** [ends_with ][~suffix s] is [true] if and only if [s] ends with [suffix].
+val ends_with : suffix:string -> string -> bool
+(** [ends_with ~suffix s] is [true] if and only if [s] ends with [suffix].
 
     @since 4.13 *)
 
@@ -200,7 +189,7 @@ val split_on_char : sep:char -> string -> string list
       (split_on_char sep s) = s]).}
     {- No string in the result contains the [sep] character.}}
 
-    @since 4.04 (4.05 in StringLabels) *)
+    @since 4.05 *)
 
 (** {1:transforming Transforming} *)
 
@@ -259,25 +248,25 @@ val uppercase_ascii : string -> string
 (** [uppercase_ascii s] is [s] with all lowercase letters
     translated to uppercase, using the US-ASCII character set.
 
-    @since 4.03 (4.05 in StringLabels) *)
+    @since 4.05 *)
 
 val lowercase_ascii : string -> string
 (** [lowercase_ascii s] is [s] with all uppercase letters translated
     to lowercase, using the US-ASCII character set.
 
-    @since 4.03 (4.05 in StringLabels) *)
+    @since 4.05 *)
 
 val capitalize_ascii : string -> string
 (** [capitalize_ascii s] is [s] with the first character set to
     uppercase, using the US-ASCII character set.
 
-    @since 4.03 (4.05 in StringLabels) *)
+    @since 4.05 *)
 
 val uncapitalize_ascii : string -> string
 (** [uncapitalize_ascii s] is [s] with the first character set to lowercase,
     using the US-ASCII character set.
 
-    @since 4.03 (4.05 in StringLabels) *)
+    @since 4.05 *)
 
 (** {1:traversing Traversing} *)
 

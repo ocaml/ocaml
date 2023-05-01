@@ -13,14 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* NOTE:
-   If this file is arrayLabels.mli, run tools/sync_stdlib_docs after editing it
-   to generate array.mli.
-
-   If this file is array.mli, do not edit it directly -- edit
-   arrayLabels.mli instead.
- *)
-
 (** Array operations.
 
     The labeled version of this module can be used as described in the
@@ -199,7 +191,7 @@ val iter2 : f:('a -> 'b -> unit) -> 'a array -> 'b array -> unit
 (** [iter2 ~f a b] applies function [f] to all the elements of [a]
    and [b].
    @raise Invalid_argument if the arrays are not the same size.
-   @since 4.03 (4.05 in ArrayLabels)
+   @since 4.05
    *)
 
 val map2 : f:('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
@@ -207,7 +199,7 @@ val map2 : f:('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
    and [b], and builds an array with the results returned by [f]:
    [[| f a.(0) b.(0); ...; f a.(length a - 1) b.(length b - 1)|]].
    @raise Invalid_argument if the arrays are not the same size.
-   @since 4.03 (4.05 in ArrayLabels) *)
+   @since 4.05 *)
 
 
 (** {1 Array scanning} *)
