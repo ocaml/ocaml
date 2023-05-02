@@ -160,8 +160,9 @@ Working version
 
 ### Standard library:
 
-- #12131: Simplify implementation of weak hash sets. (Nick Barnes,
-  review by ??).
+- #12131: Simplify implementation of weak hash sets, fixing a
+  performance regression. (Nick Barnes, review by François Bobot,
+  Alain Frisch and Damien Doligez).
 
 * #11565: Enable -strict-formats by default. Some incorrect format
   specifications (for `printf`) where silently ignored and now fail.
