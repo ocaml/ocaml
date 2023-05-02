@@ -312,13 +312,13 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     let bucket = t.table.(index) in
     let hashes = t.hashes.(index) in
     let sz = length bucket in
-    let rec loop i acc =
-      if i >= sz then acc
+    let rec loop i accu =
+      if i >= sz then accu
       else if h = hashes.(i) then begin
         match get bucket i with
-        | Some v when H.equal v d -> loop (i + 1) (v :: acc)
-        | _ -> loop (i + 1) acc
-      end else loop (i + 1) acc
+        | Some v when H.equal v d -> loop (i + 1) (v :: accu)
+        | _ -> loop (i + 1) accu
+      end else loop (i + 1) accu
     in
     loop 0 []
 
