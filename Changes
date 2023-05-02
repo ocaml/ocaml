@@ -229,10 +229,6 @@ OCaml 5.1.0
 
 ### Standard library:
 
-- #12131: Simplify implementation of weak hash sets, fixing a
-  performance regression. (Nick Barnes, review by François Bobot,
-  Alain Frisch and Damien Doligez).
-
 * #11565: Enable -strict-formats by default. Some incorrect format
   specifications (for `printf`) where silently ignored and now fail.
   Those new failures occur at compile-time, except if you use advanced
@@ -352,6 +348,10 @@ OCaml 5.1.0
   causing marshaled data to be compressed using ZSTD.
   (Xavier Leroy, review by Edwin Török and Gabriel Scherer, fix by Damien
    Doligez)
+
+- #12131: Simplify implementation of weak hash sets, fixing a
+  performance regression. (Nick Barnes, review by François Bobot,
+  Alain Frisch and Damien Doligez).
 
 ### Other libraries:
 
