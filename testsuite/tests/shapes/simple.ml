@@ -1,6 +1,6 @@
 (* TEST
-   flags = "-dshape"
-   * expect
+ flags = "-dshape";
+ expect;
 *)
 
 let x = ()

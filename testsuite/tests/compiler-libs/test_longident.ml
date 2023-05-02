@@ -1,7 +1,7 @@
 (* TEST
-   flags = "-I ${ocamlsrcdir}/parsing"
-   include ocamlcommon
-   * expect
+ flags = "-I ${ocamlsrcdir}/parsing";
+ include ocamlcommon;
+ expect;
 *)
 [@@@alert "-deprecated"]
 

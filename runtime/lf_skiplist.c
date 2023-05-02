@@ -74,8 +74,7 @@ static int random_level(void) {
    (Knuth vol 2 p. 106, line 15 of table 1), additive = 25173. */
 
   while( 1 ) {
-    uint32_t curr =
-      atomic_load_explicit(&random_seed, memory_order_relaxed);
+    uint32_t curr = atomic_load_relaxed(&random_seed);
 
     r = curr * 69069 + 25173;
 
@@ -97,7 +96,7 @@ static int random_level(void) {
 /* Initialize a skip list */
 
 void caml_lf_skiplist_init(struct lf_skiplist *sk) {
-  atomic_store_explicit(&sk->search_level, 0, memory_order_relaxed);
+  atomic_store_relaxed(&sk->search_level, 0);
 
   /* This concurrent skip list has two sentinel nodes, the first [head] is
   less than any possible key in the data structure and the second [tail] is
@@ -125,11 +124,9 @@ void caml_lf_skiplist_init(struct lf_skiplist *sk) {
 
   /* each level in the skip list starts of being just head pointing to tail */
   for (int j = 0; j < NUM_LEVELS; j++) {
-    atomic_store_explicit
-      (&sk->head->forward[j], sk->tail, memory_order_release);
+    atomic_store_release(&sk->head->forward[j], sk->tail);
 
-    atomic_store_explicit
-      (&sk->tail->forward[j], NULL, memory_order_release);
+    atomic_store_release(&sk->tail->forward[j], NULL);
   }
 }
 
@@ -172,8 +169,7 @@ retry:
     compare-and-swap.
     */
     for (int level = NUM_LEVELS - 1; level >= 0; level--) {
-      curr = LF_SK_UNMARK(
-          atomic_load_explicit(&pred->forward[level], memory_order_acquire));
+      curr = LF_SK_UNMARK(atomic_load_acquire(&pred->forward[level]));
       while (1) {
         int is_marked;
 
@@ -210,10 +206,9 @@ retry:
                This is why we need to a retry loop and yet another CAS. */
             while (1) {
               struct lf_skipcell *_Atomic current_garbage_head =
-                  atomic_load_explicit(&sk->garbage_head, memory_order_acquire);
+                  atomic_load_acquire(&sk->garbage_head);
 
-              atomic_store_explicit(&curr->garbage_next, current_garbage_head,
-                                    memory_order_release);
+              atomic_store_release(&curr->garbage_next, current_garbage_head);
 
               if (atomic_compare_exchange_strong(
                       &sk->garbage_head,
@@ -225,8 +220,7 @@ retry:
 
           /* Now try to load the current node again. We need to check it too
              hasn't been marked. If it has we repeat the process */
-          curr = LF_SK_UNMARK(atomic_load_explicit(&pred->forward[level],
-                                                   memory_order_acquire));
+          curr = LF_SK_UNMARK(atomic_load_acquire(&pred->forward[level]));
           LF_SK_EXTRACT(curr->forward[level], is_marked, succ);
         }
 
@@ -271,11 +265,9 @@ static struct lf_skipcell *lf_skiplist_lookup(struct lf_skiplist *sk,
      level then our only cost is an increased number of nodes searched. If we
      did the same thing in the find function above then we'd also fail to snip
      out marked nodes. If we did that for long enough we might leak memory. */
-  for (int level =
-           atomic_load_explicit(&sk->search_level, memory_order_relaxed);
+  for (int level = atomic_load_relaxed(&sk->search_level);
        level >= 0; level--) {
-    curr = LF_SK_UNMARK(
-        atomic_load_explicit(&pred->forward[level], memory_order_acquire));
+    curr = LF_SK_UNMARK(atomic_load_acquire(&pred->forward[level]));
     while (1) {
       LF_SK_EXTRACT(curr->forward[level], marked, succ);
       while (marked) {
@@ -355,8 +347,7 @@ int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key, uintnat data) {
 
     if (found) {
       /* Already present; update data */
-      atomic_store_explicit((atomic_uintnat*)&succs[0]->data, data,
-                            memory_order_relaxed);
+      atomic_store_relaxed((atomic_uintnat*)&succs[0]->data, data);
       return 1;
     } else {
       /* node does not exist. We need to generate a random top_level and
@@ -374,11 +365,10 @@ int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key, uintnat data) {
       new_cell->top_level = top_level;
       new_cell->key = key;
       new_cell->data = data;
-      atomic_store_explicit(&new_cell->garbage_next,NULL,memory_order_relaxed);
+      atomic_store_relaxed(&new_cell->garbage_next,NULL);
 
       for (int level = 0; level <= top_level; level++) {
-        atomic_store_explicit(&new_cell->forward[level], succs[level],
-                              memory_order_release);
+        atomic_store_release(&new_cell->forward[level], succs[level]);
       }
 
       /* Now we need to actually slip the node in. We start at the bottom-most
@@ -426,10 +416,8 @@ int caml_lf_skiplist_insert(struct lf_skiplist *sk, uintnat key, uintnat data) {
       /* If we put the new node at a higher level than the current
          [search_level] then to speed up searches we need to bump it. We don't
          care too much if this fails though. */
-      if (top_level >
-          atomic_load_explicit(&sk->search_level, memory_order_relaxed)) {
-        atomic_store_explicit(&sk->search_level, top_level,
-                              memory_order_relaxed);
+      if (top_level > atomic_load_relaxed(&sk->search_level)) {
+        atomic_store_relaxed(&sk->search_level, top_level);
       }
 
       return 1;
@@ -500,17 +488,15 @@ int caml_lf_skiplist_remove(struct lf_skiplist *sk, uintnat key) {
    skiplist */
 
 void caml_lf_skiplist_free_garbage(struct lf_skiplist *sk) {
-  struct lf_skipcell *curr =
-      atomic_load_explicit(&sk->garbage_head, memory_order_acquire);
+  struct lf_skipcell *curr = atomic_load_acquire(&sk->garbage_head);
 
   struct lf_skipcell *head = sk->head;
   while (curr != head) {
-    struct lf_skipcell *next = atomic_load_explicit
-                                  (&curr->garbage_next, memory_order_relaxed);
+    struct lf_skipcell *next = atomic_load_relaxed(&curr->garbage_next);
     // acquire not useful, if executed in STW
     caml_stat_free(curr);
     curr = next;
   }
 
-  atomic_store_explicit(&sk->garbage_head, sk->head, memory_order_release);
+  atomic_store_release(&sk->garbage_head, sk->head);
 }

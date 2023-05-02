@@ -27,7 +27,7 @@ not have this which causes some important development things to be disabled
 +
 ----
 ./configure
-make
+make -j 4
 ----
 If you are on a release build and need development options, you can add
 `--enable-ocamltest` (to allow running the testsuite) and `--enable-warn-error`
@@ -392,7 +392,7 @@ You can also run `make install` manually, which will not trigger a
 recompilation, but will not remove the previous version either and can
 mess with `opam`'s tracking of installed files.
 
-=== Useful Makefile targets
+=== Useful Makefile targets and options
 
 Besides the targets listed in link:INSTALL.adoc[] for build and
 installation, the following targets may be of use:
@@ -406,6 +406,10 @@ installation, the following targets may be of use:
 `make depend`:: Regenerate the `.depend` file. Should be used each time new dependencies are added between files.
 
 `make -C testsuite parallel`:: see link:testsuite/HACKING.adoc[]
+
+You can use `make foo V=1` to build the target foo and show full
+commands instead of abbreviated names like OCAMLC, etc. This can be
+useful to know the flags to use to manually rebuild a file.
 
 Additionally, there are some developer specific targets in link:Makefile.dev[].
 These targets are automatically available when working in a Git clone of the

@@ -13,6 +13,13 @@ a specific sub-directory.
 There are many kind of tests already, so the easiest way to start is
 to extend or copy an existing test.
 
+Note: in april 2023, the test scripting language has changed: the
+org-mode-based syntax was replaced by at C-like syntax. ocamltest
+includes options to translate from the old to the new syntax:
+`-translate`, `-compact`, `-keep-lines`, `-keep-chars`. Look at
+`tools/translate-all-tests` for an example using them. These options
+will be removed after a transitional period.
+
 == Sorts of tests
 
 A test is specified in a `.ml` file containing a `TEST` block which is

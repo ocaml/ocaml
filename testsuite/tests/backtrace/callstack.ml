@@ -1,10 +1,10 @@
-(* TEST
-   flags = "-g"
-   * hassysthreads
-   include systhreads
-   ** no-flambda
-   *** native
-   *** bytecode
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
+
+
+
+
+
 *)
 
 let[@inline never] f0 () =
@@ -29,3 +29,15 @@ let () =
    the callstack, which breaks the test. *)
 let () = Printf.printf "new thread:\n"
 let () = Thread.join (Thread.create f3 ())
+
+(* TEST
+ flags = "-g";
+ include systhreads;
+ hassysthreads;
+ no-flambda;
+ {
+   native;
+ }{
+   bytecode;
+ }
+*)

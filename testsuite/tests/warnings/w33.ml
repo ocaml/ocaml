@@ -1,11 +1,11 @@
-(* TEST
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
 
-flags = "-w +A-70"
 
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-compile_only = "true"
-*** check-ocamlc.byte-output
+
+
+
+
 
 *)
 
@@ -25,3 +25,11 @@ let i (A|B) = B
 
 open! M (* useless open! *)
 open M (* useless open *)
+
+(* TEST
+ flags = "-w +A-70";
+ setup-ocamlc.byte-build-env;
+ compile_only = "true";
+ ocamlc.byte;
+ check-ocamlc.byte-output;
+*)

@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 (* MPR 7864 *)

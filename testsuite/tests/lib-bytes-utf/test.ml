@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 (* UTF codec tests *)
 

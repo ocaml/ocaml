@@ -1924,7 +1924,8 @@ AC_CHECK_FUNC([ffs], [AC_DEFINE([HAS_FFS])])
 AC_CHECK_FUNC([_BitScanForward], [AC_DEFINE([HAS_BITSCANFORWARD])])
 
 ## pthread_getaffinity_np, args differ from GNU and BSD
-AC_COMPILE_IFELSE(
+AC_MSG_CHECKING([arguments for pthread_getaffinity_np])
+AC_LINK_IFELSE(
   [AC_LANG_PROGRAM(
     [[#define _GNU_SOURCE
       #include <sched.h>
@@ -1933,8 +1934,9 @@ AC_COMPILE_IFELSE(
       CPU_ZERO(&cs);
       CPU_COUNT(&cs);
       pthread_getaffinity_np(pthread_self(), sizeof(cs), &cs);]])],
-  [AC_DEFINE([HAS_GNU_GETAFFINITY_NP])],
-  [AC_COMPILE_IFELSE(
+  [AC_MSG_RESULT([gnu])
+  AC_DEFINE([HAS_GNU_GETAFFINITY_NP])],
+  [AC_LINK_IFELSE(
     [AC_LANG_PROGRAM(
       [[#include <pthread.h>
         #include <pthread_np.h>
@@ -1944,18 +1946,22 @@ AC_COMPILE_IFELSE(
         CPU_ZERO(&cs);
         CPU_COUNT(&cs);
         pthread_getaffinity_np(pthread_self(), sizeof(cs), &cs);]])],
-    [AC_DEFINE([HAS_BSD_GETAFFINITY_NP])])])
+    [AC_MSG_RESULT([BSD])
+    AC_DEFINE([HAS_BSD_GETAFFINITY_NP])],
+    [AC_MSG_RESULT([pthread_getaffinity_np not found])])])
+
+AC_PATH_TOOL([PKG_CONFIG], [pkg-config], [false])
 
 ## ZSTD compression library
 
 zstd_status=""
 AS_IF([test x"$with_zstd" != "xno"],
   # Try pkg-config first, as it gives the most reliable results
-  AS_IF([pkg-config libzstd 2>/dev/null],
+  AS_IF([${PKG_CONFIG} libzstd 2>/dev/null],
     # Now check the version
-    [AS_IF([pkg-config --atleast-version 1.4 libzstd],
-      [zstd_libs=`pkg-config --libs libzstd`
-       zstd_flags=`pkg-config --cflags libzstd`
+    [AS_IF([${PKG_CONFIG} --atleast-version 1.4 libzstd],
+      [zstd_libs=`${PKG_CONFIG} --libs libzstd`
+       zstd_flags=`${PKG_CONFIG} --cflags libzstd`
        zstd_status="ok"],
       [zstd_status="zstd library too old: version 1.4 or later is needed"])],
   # Otherwise, try to find zstd the old way,

@@ -1,6 +1,6 @@
 (* TEST
-   flags = " -w +A -strict-sequence "
-   * expect
+ flags = " -w +A -strict-sequence ";
+ expect;
 *)
 
 module A = struct type foo end;;

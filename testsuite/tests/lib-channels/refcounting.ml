@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 (* Test the behavior of channel refcounting. *)

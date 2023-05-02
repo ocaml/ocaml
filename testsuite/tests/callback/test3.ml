@@ -1,9 +1,12 @@
 (* TEST
-   include unix
-   modules = "test3_.c"
-   * libunix
-   ** bytecode
-   ** native
+ include unix;
+ modules = "test3_.c";
+ libunix;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 (* Tests nested calls from C (main C) to OCaml (main OCaml) to C (caml_to_c) to

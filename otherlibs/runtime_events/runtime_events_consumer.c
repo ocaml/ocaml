@@ -23,6 +23,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
+#include "caml/platform.h"
 
 #include <fcntl.h>
 #include <stdatomic.h>
@@ -391,10 +392,8 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
     do {
       uint64_t buf[RUNTIME_EVENTS_MAX_MSG_LENGTH];
       uint64_t ring_mask, header, msg_length;
-      ring_head = atomic_load_explicit(&runtime_events_buffer_header->ring_head,
-                                       memory_order_acquire);
-      ring_tail = atomic_load_explicit(&runtime_events_buffer_header->ring_tail,
-                                       memory_order_acquire);
+      ring_head = atomic_load_acquire(&runtime_events_buffer_header->ring_head);
+      ring_tail = atomic_load_acquire(&runtime_events_buffer_header->ring_tail);
 
       if (ring_head > cursor->current_positions[domain_num]) {
         if (cursor->lost_events) {
@@ -427,8 +426,7 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
 
       atomic_thread_fence(memory_order_seq_cst);
 
-      ring_head = atomic_load_explicit(&runtime_events_buffer_header->ring_head,
-                                       memory_order_acquire);
+      ring_head = atomic_load_acquire(&runtime_events_buffer_header->ring_head);
 
       /* Check the message we've read hasn't been overwritten by the writer */
       if (ring_head > cursor->current_positions[domain_num]) {
@@ -1219,5 +1217,5 @@ CAMLprim value caml_ml_runtime_events_read_poll(value wrapper,
     }
   }
 
-  CAMLreturn(Int_val(events_consumed));
+  CAMLreturn(Val_int(events_consumed));
 };

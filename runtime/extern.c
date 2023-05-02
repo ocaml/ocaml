@@ -120,30 +120,44 @@ struct caml_extern_state {
   struct output_block * extern_output_block;
 };
 
-static struct caml_extern_state* get_extern_state (void)
+static void extern_init_stack(struct caml_extern_state* s)
+{
+  /* (Re)initialize the globals for next time around */
+  s->extern_stack = s->extern_stack_init;
+  s->extern_stack_limit = s->extern_stack + EXTERN_STACK_INIT_SIZE;
+}
+
+static struct caml_extern_state* prepare_extern_state (void)
 {
   Caml_check_caml_state();
-  struct caml_extern_state* extern_state;
+  struct caml_extern_state* s;
 
   if (Caml_state->extern_state != NULL)
     return Caml_state->extern_state;
 
-  extern_state =
-    caml_stat_alloc_noexc(sizeof(struct caml_extern_state));
-  if (extern_state == NULL) {
-    return NULL;
-  }
+  s = caml_stat_alloc(sizeof(struct caml_extern_state));
 
-  extern_state->extern_flags = 0;
-  extern_state->obj_counter = 0;
-  extern_state->size_32 = 0;
-  extern_state->size_64 = 0;
-  extern_state->extern_stack = extern_state->extern_stack_init;
-  extern_state->extern_stack_limit =
-    extern_state->extern_stack + EXTERN_STACK_INIT_SIZE;
+  s->extern_flags = 0;
+  s->obj_counter = 0;
+  s->size_32 = 0;
+  s->size_64 = 0;
+  extern_init_stack(s);
 
-  Caml_state->extern_state = extern_state;
-  return extern_state;
+  Caml_state->extern_state = s;
+  return s;
+}
+
+static struct caml_extern_state* get_extern_state (void)
+{
+  Caml_check_caml_state();
+
+  if (Caml_state->extern_state == NULL)
+    caml_fatal_error (
+      "extern_state not initialized:"
+      "this function can only be called from a `caml_output_*` entrypoint."
+    );
+
+  return Caml_state->extern_state;
 }
 
 void caml_free_extern_state (void)
@@ -174,17 +188,15 @@ CAMLnoreturn_end;
 
 static void free_extern_output(struct caml_extern_state* s);
 
-/* Free the extern stack if needed */
 static void extern_free_stack(struct caml_extern_state* s)
 {
+  /* Free the extern stack if needed */
   if (s->extern_stack != s->extern_stack_init) {
     caml_stat_free(s->extern_stack);
-    /* Reinitialize the globals for next time around */
-    s->extern_stack = s->extern_stack_init;
-    s->extern_stack_limit = s->extern_stack + EXTERN_STACK_INIT_SIZE;
   }
-}
 
+  extern_init_stack(s);
+}
 
 static struct extern_item * extern_resize_stack(struct caml_extern_state* s,
                                                 struct extern_item * sp)
@@ -1072,7 +1084,7 @@ void caml_output_val(struct channel *chan, value v, value flags)
   char header[MAX_INTEXT_HEADER_SIZE];
   int header_len;
   struct output_block * blk, * nextblk;
-  struct caml_extern_state* s = get_extern_state ();
+  struct caml_extern_state* s = prepare_extern_state ();
 
   if (! caml_channel_binary_mode(chan))
     caml_failwith("output_value: not a binary channel");
@@ -1110,7 +1122,7 @@ CAMLprim value caml_output_value_to_bytes(value v, value flags)
   intnat data_len, ofs;
   value res;
   struct output_block * blk, * nextblk;
-  struct caml_extern_state* s = get_extern_state ();
+  struct caml_extern_state* s = prepare_extern_state ();
 
   init_extern_output(s);
   data_len = extern_value(s, v, flags, header, &header_len);
@@ -1143,7 +1155,7 @@ CAMLexport intnat caml_output_value_to_block(value v, value flags,
   char header[MAX_INTEXT_HEADER_SIZE];
   int header_len;
   intnat data_len;
-  struct caml_extern_state* s = get_extern_state ();
+  struct caml_extern_state* s = prepare_extern_state ();
 
   /* At this point we don't know the size of the header.
      Guess that it is small, and fix up later if not. */
@@ -1180,7 +1192,7 @@ CAMLexport void caml_output_value_to_malloc(value v, value flags,
   intnat data_len;
   char * res;
   struct output_block * blk, * nextblk;
-  struct caml_extern_state* s = get_extern_state ();
+  struct caml_extern_state* s = prepare_extern_state ();
 
   init_extern_output(s);
   data_len = extern_value(s, v, flags, header, &header_len);
@@ -1340,7 +1352,7 @@ CAMLprim value caml_obj_reachable_words(value v)
   struct extern_item * sp;
   uintnat h = 0;
   uintnat pos = 0;
-  struct caml_extern_state *s = get_extern_state ();
+  struct caml_extern_state *s = prepare_extern_state ();
 
   s->obj_counter = 0;
   s->extern_flags = 0;

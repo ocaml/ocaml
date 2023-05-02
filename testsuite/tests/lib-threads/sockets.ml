@@ -1,12 +1,12 @@
 (* TEST
-
-* hassysthreads
-include systhreads
-
-** libunix (* Broken on Windows (missing join?), needs to be fixed *)
-*** bytecode
-*** native
-
+ include systhreads;
+ hassysthreads;
+ libunix; (* Broken on Windows (missing join?), needs to be fixed *)
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 open Printf

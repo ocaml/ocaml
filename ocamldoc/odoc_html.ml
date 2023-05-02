@@ -848,7 +848,7 @@ class html =
     inherit info
 
     val mutable doctype =
-      "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n"
+      "<!DOCTYPE html>\n"
     method character_encoding b =
       bp b
         "<meta content=\"text/html; charset=%s\" http-equiv=\"Content-Type\">\n"

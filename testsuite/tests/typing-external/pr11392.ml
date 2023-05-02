@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type 'self nat =

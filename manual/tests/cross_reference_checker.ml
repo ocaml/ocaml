@@ -1,10 +1,13 @@
 (** Check reference to manual section in ml files
 
-    [cross-reference-cheker -auxfile tex.aux src.ml ]
+    [cross-reference-checker -auxfile tex.aux src.ml ]
     checks that all expression and let bindings in [src.ml] annotated
-    with [[@manual.ref "tex_label"]] are integer tuple literals, e.g
+    with [[@manual.ref "tex_label"]] are integer tuple literals or
+    lists, e.g
     {[
       let[@manual.ref "sec:major"] ref = 1, 1
+      (* or *)
+      let[@manual.ref "sec:major"] ref = [ 1; 1]
       (* or *)
       let ref = (3 [@manual.ref "ch:pentatonic"])
     ]}
@@ -20,7 +23,7 @@ type error =
   | Reference_mismatch of
       {loc:Location.t; label:string; ocaml:int list; tex:int list}
   | Unknown_label of Location.t * string
-  | Tuple_expected of Location.t
+  | Tuple_or_list_expected of Location.t
   | No_aux_file
   | Wrong_attribute_payload of Location.t
 
@@ -29,9 +32,9 @@ let pp_ref ppf = Format.pp_print_list ~pp_sep:( fun ppf () ->
 
 let print_error error =
   Location.print_report Format.std_formatter @@ match error with
-  | Tuple_expected loc ->
+  | Tuple_or_list_expected loc ->
       Location.errorf ~loc
-        "Integer tuple expected after manual reference annotation@."
+        "Integer tuple or list expected after manual reference annotation@."
   | Unknown_label (loc,label) ->
     Location.errorf ~loc
       "@[<hov>Unknown manual label:@ %s@]@." label
@@ -170,17 +173,33 @@ module OCaml_refs = struct
       | Some l -> ref :: l in
     Refs.add label l refs
 
-  let inner_expr loc e =
-    let tuple_expected () = print_error (Tuple_expected loc) in
+  let rec try_parse_as_list e =
     match e.Parsetree.pexp_desc with
-          | Parsetree.Pexp_tuple l ->
-              begin match int_list l with
-              | None -> tuple_expected (); []
-              | Some pos -> pos
-              end
-          | Parsetree.Pexp_constant Pconst_integer (n,_) ->
-              [int_of_string n]
-          | _ -> tuple_expected (); []
+    | Parsetree.Pexp_construct
+        ({ txt = Lident "::"; _ }, Some { pexp_desc = Pexp_tuple [ x; rest]; _ }) ->
+          ((int x) :: try_parse_as_list rest)
+    | Parsetree.Pexp_construct ({ txt = Lident "[]"; _}, None) ->
+        []
+    | _ -> raise Exit
+
+  let list_expression e =
+    try Some (try_parse_as_list e) with | Exit -> None
+
+  let inner_expr loc e =
+    let tuple_expected () = print_error (Tuple_or_list_expected loc) in
+    match e.Parsetree.pexp_desc with
+    | Parsetree.Pexp_tuple l ->
+        begin match int_list l with
+        | None -> tuple_expected (); []
+        | Some pos -> pos
+        end
+    | Parsetree.Pexp_constant Pconst_integer (n,_) ->
+        [int_of_string n]
+    | _ ->
+        begin match list_expression e  with
+        | Some list -> list
+        | None -> tuple_expected (); []
+        end
 
   (** extract from [let[@manual.ref "label"] x= 1, 2] *)
   let value_binding m iterator vb =

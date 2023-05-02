@@ -1,19 +1,19 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                 OCaml                                  *)
-(*                                                                        *)
-(*             Sebastien Hinderer, projet Gallium, INRIA Paris            *)
-(*                                                                        *)
-(*   Copyright 2016 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
-(*                                                                        *)
-(*   All rights reserved.  This file is distributed under the terms of    *)
-(*   the GNU Lesser General Public License version 2.1, with the          *)
-(*   special exception on linking described in the file LICENSE.          *)
-(*                                                                        *)
-(**************************************************************************)
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Sebastien Hinderer, projet Gallium, INRIA Paris            */
+/*                                                                        */
+/*   Copyright 2016 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
-(* Parser for the Tests Specification Language *)
+/* Parser for the Tests Specification Language */
 
 %{
 
@@ -31,20 +31,45 @@ let mkenvstmt envstmt =
 
 %}
 
-%token TSL_BEGIN_C_STYLE TSL_END_C_STYLE
-%token TSL_BEGIN_OCAML_STYLE TSL_END_OCAML_STYLE
-%token COMMA
+%token <[`Above | `Below]> TSL_BEGIN_C_STYLE
+%token TSL_END_C_STYLE
+%token <[`Above | `Below]> TSL_BEGIN_OCAML_STYLE
+%token TSL_END_OCAML_STYLE
+%token COMMA LEFT_BRACE RIGHT_BRACE SEMI
 %token <int> TEST_DEPTH
 %token EQUAL PLUSEQUAL
-(* %token COLON *)
+/* %token COLON */
 %token INCLUDE SET UNSET WITH
 %token <string> IDENTIFIER
 %token <string> STRING
 
-%start tsl_block
+%start tsl_block tsl_script
 %type <Tsl_ast.tsl_block> tsl_block
+%type <Tsl_ast.t> tsl_script
 
 %%
+
+node:
+| statement_list tree_list { Ast ($1, $2) }
+
+tree_list:
+| { [] }
+| tree tree_list { $1 :: $2 }
+
+tree:
+| LEFT_BRACE node RIGHT_BRACE { $2 }
+
+statement_list:
+| { [] }
+| statement statement_list { $1 :: $2 }
+
+statement:
+| env_item SEMI { $1 }
+| identifier with_environment_modifiers SEMI { Test (0, $1, $2) }
+
+tsl_script:
+| TSL_BEGIN_C_STYLE node TSL_END_C_STYLE { $2 }
+| TSL_BEGIN_OCAML_STYLE node TSL_END_OCAML_STYLE { $2 }
 
 tsl_block:
 | TSL_BEGIN_C_STYLE tsl_items TSL_END_C_STYLE { $2 }

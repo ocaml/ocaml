@@ -1,6 +1,6 @@
 (* TEST
-include runtime_events
-ocamlrunparam += ",e=4"
+ include runtime_events;
+ ocamlrunparam += ",e=4";
 *)
 
 (* We set the ring buffer size smaller and witness that we do indeed

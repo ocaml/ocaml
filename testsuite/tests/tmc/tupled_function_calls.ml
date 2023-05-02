@@ -1,6 +1,6 @@
-(* TEST
-   * bytecode
-   * native
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
+
 *)
 
 (* this works as expected *)
@@ -19,3 +19,11 @@ let[@tail_mod_cons] rec tupled_map_not_direct (f, li) =
   | x :: xs ->
       let pair = (f, xs) in
       f x :: (tupled_map_not_direct[@tailcall true]) pair
+
+(* TEST
+ {
+   bytecode;
+ }{
+   native;
+ }
+*)

@@ -127,7 +127,7 @@ class BlockPrinter:
         else:
             s = 'wosize=%d' % self.length
 
-        markbits = gdb.lookup_symbol("global")[0].value()
+        markbits = gdb.lookup_symbol("caml_global_heap_state")[0].value()
         gc = {
             int(markbits['MARKED']): 'MARKED',
             int(markbits['UNMARKED']): 'UNMARKED',

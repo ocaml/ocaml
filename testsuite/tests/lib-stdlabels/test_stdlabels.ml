@@ -1,5 +1,5 @@
 (* TEST
-   flags += " -nolabels "
+ flags += " -nolabels ";
 *)
 
 module A : module type of Array = ArrayLabels

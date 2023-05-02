@@ -83,7 +83,7 @@ let remove_trailing_blanks s =
 %nonassoc below_Char
 %nonassoc Char
 
-(* Start Symbols *)
+/* Start Symbols */
 %start main located_element_list
 %type <Odoc_types.text> main
 %type <(int * int * Odoc_types.text_element) list> located_element_list

@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 (*
   Test that multiple handlers coexist happily.

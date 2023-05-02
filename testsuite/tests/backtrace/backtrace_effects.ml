@@ -1,7 +1,7 @@
-(* TEST
-   flags = "-g"
-   ocamlrunparam += ",b=1"
-   exit_status = "2"
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
+
+
 *)
 
 open Effect
@@ -39,3 +39,9 @@ let baz () =
       | _ -> None }
 
 let _ = baz ()
+
+(* TEST
+ flags = "-g";
+ ocamlrunparam += ",b=1";
+ exit_status = "2";
+*)

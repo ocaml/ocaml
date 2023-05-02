@@ -46,7 +46,8 @@ core := \
   tsl_semantics.mli tsl_semantics.ml \
   builtin_variables.mli builtin_variables.ml \
   actions_helpers.mli actions_helpers.ml \
-  builtin_actions.mli builtin_actions.ml
+  builtin_actions.mli builtin_actions.ml \
+  translate.mli translate.ml
 
 ocaml_plugin := \
   ocaml_backends.mli ocaml_backends.ml \

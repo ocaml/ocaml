@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let check_dls () =
   let k1 = Domain.DLS.new_key (fun () -> 10) in

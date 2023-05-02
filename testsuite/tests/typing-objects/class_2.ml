@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 (* class expressions may also contain local recursive bindings *)

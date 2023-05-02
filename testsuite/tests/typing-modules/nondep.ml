@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 module F(X : sig type t end) = struct

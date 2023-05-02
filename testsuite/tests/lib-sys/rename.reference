@@ -2,3 +2,6 @@ Rename to nonexisting file: passed
 Rename to existing file: passed
 Renaming a nonexisting file: fails as expected
 Renaming to a nonexisting directory: fails as expected
+Rename directory to a nonexisting directory: passed
+Rename a nonexisting directory: fails as expected
+Rename directory to a non-empty directory: fails as expected

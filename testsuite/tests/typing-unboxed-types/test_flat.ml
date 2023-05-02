@@ -1,6 +1,6 @@
 (* TEST
-   * flat-float-array
-   ** expect
+ flat-float-array;
+ expect;
 *)
 
 (* should fail *)

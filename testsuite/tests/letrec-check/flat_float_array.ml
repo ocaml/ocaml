@@ -1,6 +1,6 @@
 (* TEST
-   * flat-float-array
-   ** expect
+ flat-float-array;
+ expect;
 *)
 
 (* When the -flat-float-array optimization is active (standard in

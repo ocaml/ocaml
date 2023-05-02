@@ -670,14 +670,14 @@ static const value * cache_named_exception(const value * _Atomic * cache,
                                            const char * name)
 {
   const value * exn;
-  exn = atomic_load_explicit(cache, memory_order_acquire);
+  exn = atomic_load_acquire(cache);
   if (exn == NULL) {
     exn = caml_named_value(name);
     if (exn == NULL) {
       fprintf(stderr, "Fatal error: exception %s\n", name);
       exit(2);
     }
-    atomic_store_explicit(cache, exn, memory_order_release);
+    atomic_store_release(cache, exn);
   }
   return exn;
 }

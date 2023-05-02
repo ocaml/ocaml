@@ -307,6 +307,11 @@ let can_assume_injective () =
   | Expression | Subst -> false
   | Pattern { assume_injective } -> assume_injective
 
+let in_counterexample () =
+  match !umode with
+  | Expression | Subst -> false
+  | Pattern { allow_recursive_equations } -> allow_recursive_equations
+
 let allow_recursive_equations () =
   !Clflags.recursive_types
   || match !umode with
@@ -1210,20 +1215,22 @@ let instance_list schl =
   For_copy.with_scope (fun copy_scope ->
     List.map (fun t -> copy copy_scope t) schl)
 
-let reified_var_counter = ref Vars.empty
-let reset_reified_var_counter () =
-  reified_var_counter := Vars.empty
-
-(* names given to new type constructors.
-   Used for existential types and
-   local constraints *)
-let get_new_abstract_name s =
-  let index =
-    try Vars.find s !reified_var_counter + 1
-    with Not_found -> 0 in
-  reified_var_counter := Vars.add s index !reified_var_counter;
-  if index = 0 && s <> "" && s.[String.length s - 1] <> '$' then s else
-  Printf.sprintf "%s%d" s index
+(* Create unique names to new type constructors.
+   Used for existential types and local constraints. *)
+let get_new_abstract_name env s =
+  (* unique names are needed only for error messages *)
+  if in_counterexample () then s else
+  let name index =
+    if index = 0 && s <> "" && s.[String.length s - 1] <> '$' then s else
+    Printf.sprintf "%s%d" s index
+  in
+  let check index =
+    match Env.find_type_by_name (Longident.Lident (name index)) env with
+    | _ -> false
+    | exception Not_found -> true
+  in
+  let index = Misc.find_first_mono check in
+  name index
 
 let new_local_type ?(loc = Location.none) ?manifest_and_scope () =
   let manifest, expansion_scope =
@@ -1267,7 +1274,7 @@ let instance_constructor existential_treatment cstr =
             let decl = new_local_type () in
             let name = existential_name cstr existential in
             let (id, new_env) =
-              Env.enter_type (get_new_abstract_name name) decl !env
+              Env.enter_type (get_new_abstract_name !env name) decl !env
                 ~scope:fresh_constr_scope in
             env := new_env;
             let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
@@ -2163,7 +2170,7 @@ let reify env t =
     let name = match name with Some s -> "$'"^s | _ -> "$" in
     let decl = new_local_type () in
     let (id, new_env) =
-      Env.enter_type (get_new_abstract_name name) decl !env
+      Env.enter_type (get_new_abstract_name !env name) decl !env
         ~scope:fresh_constr_scope in
     let path = Path.Pident id in
     let t = newty2 ~level:lev (Tconstr (path,[],ref Mnil))  in
@@ -5038,69 +5045,108 @@ let rec arity ty =
   | _ -> 0
 
 (* Check for non-generalizable type variables *)
-exception Nongen
-let visited = ref TypeSet.empty
+let add_nongen_vars_in_schema =
+  let rec loop env ((visited, weak_set) as acc) ty =
+    if TypeSet.mem ty visited
+    then acc
+    else begin
+      let visited = TypeSet.add ty visited in
+      match get_desc ty with
+      | Tvar _ when get_level ty <> generic_level ->
+          visited, TypeSet.add ty weak_set
+      | Tconstr _ ->
+          let (_, unexpanded_candidate) as unexpanded_candidate' =
+            fold_type_expr
+              (loop env)
+              (visited, weak_set)
+              ty
+          in
+          (* Using `==` is okay because `loop` will return the original set
+             when it does not change it. Similarly, `TypeSet.add` will return
+             the original set if the element is already present. *)
+          if unexpanded_candidate == weak_set
+          then (visited, weak_set)
+          else begin
+            match
+              loop env (visited, weak_set)
+                (try_expand_head try_expand_safe env ty)
+            with
+            | exception Cannot_expand -> unexpanded_candidate'
+            | expanded_result -> expanded_result
+          end
+      | Tfield(_, kind, t1, t2) ->
+          let visited, weak_set =
+            match field_kind_repr kind with
+            | Fpublic -> loop env (visited, weak_set) t1
+            | _ -> visited, weak_set
+          in
+          loop env (visited, weak_set) t2
+      | Tvariant row ->
+          let visited, weak_set =
+            fold_row (loop env) (visited, weak_set) row
+          in
+          if not (static_row row)
+          then loop env (visited, weak_set) (row_more row)
+          else (visited, weak_set)
+      | _ ->
+          fold_type_expr (loop env) (visited, weak_set) ty
+    end
+  in
+  fun env acc ty ->
+    let _, result = loop env (TypeSet.empty, acc) ty in
+    result
 
-let rec nongen_schema_rec env ty =
-  if TypeSet.mem ty !visited then () else begin
-    visited := TypeSet.add ty !visited;
-    match get_desc ty with
-      Tvar _ when get_level ty <> generic_level ->
-        raise Nongen
-    | Tconstr _ ->
-        let old = !visited in
-        begin try iter_type_expr (nongen_schema_rec env) ty
-        with Nongen -> try
-          visited := old;
-          nongen_schema_rec env (try_expand_head try_expand_safe env ty)
-        with Cannot_expand ->
-          raise Nongen
-        end
-    | Tfield(_, kind, t1, t2) ->
-        if field_kind_repr kind = Fpublic then
-          nongen_schema_rec env t1;
-        nongen_schema_rec env t2
-    | Tvariant row ->
-        iter_row (nongen_schema_rec env) row;
-        if not (static_row row) then nongen_schema_rec env (row_more row)
-    | _ ->
-        iter_type_expr (nongen_schema_rec env) ty
-  end
-
-(* Return whether all variables of type [ty] are generic. *)
-let nongen_schema env ty =
-  visited := TypeSet.empty;
-  try
-    nongen_schema_rec env ty;
-    visited := TypeSet.empty;
-    false
-  with Nongen ->
-    visited := TypeSet.empty;
-    true
+(* Return all non-generic variables of [ty]. *)
+let nongen_vars_in_schema env ty =
+  let result = add_nongen_vars_in_schema env TypeSet.empty ty in
+  if TypeSet.is_empty result
+  then None
+  else Some result
 
 (* Check that all type variables are generalizable *)
 (* Use Env.empty to prevent expansion of recursively defined object types;
    cf. typing-poly/poly.ml *)
-let rec nongen_class_type = function
-  | Cty_constr (_, params, _) ->
-      List.exists (nongen_schema Env.empty) params
-  | Cty_signature sign ->
-      nongen_schema Env.empty sign.csig_self
-      || nongen_schema Env.empty sign.csig_self_row
-      || Meths.exists
-           (fun _ (_, _, ty) -> nongen_schema Env.empty ty)
-           sign.csig_meths
-      || Vars.exists
-           (fun _ (_, _, ty) -> nongen_schema Env.empty ty)
-           sign.csig_vars
-  | Cty_arrow (_, ty, cty) ->
-      nongen_schema Env.empty ty
-      || nongen_class_type cty
+let nongen_class_type =
+  let add_nongen_vars_in_schema' ty weak_set =
+    add_nongen_vars_in_schema Env.empty weak_set ty
+  in
+  let add_nongen_vars_in_schema_fold fold m weak_set =
+    let f _key (_,_,ty) weak_set =
+      add_nongen_vars_in_schema Env.empty weak_set ty
+    in
+    fold f m weak_set
+  in
+  let rec nongen_class_type cty weak_set =
+    match cty with
+    | Cty_constr (_, params, _) ->
+        List.fold_left
+          (add_nongen_vars_in_schema Env.empty)
+          weak_set
+          params
+    | Cty_signature sign ->
+        weak_set
+        |> add_nongen_vars_in_schema' sign.csig_self
+        |> add_nongen_vars_in_schema' sign.csig_self_row
+        |> add_nongen_vars_in_schema_fold Meths.fold sign.csig_meths
+        |> add_nongen_vars_in_schema_fold Vars.fold sign.csig_vars
+    | Cty_arrow (_, ty, cty) ->
+        add_nongen_vars_in_schema' ty weak_set
+        |> nongen_class_type cty
+  in
+  nongen_class_type
 
 let nongen_class_declaration cty =
-  List.exists (nongen_schema Env.empty) cty.cty_params
-  || nongen_class_type cty.cty_type
+  List.fold_left
+    (add_nongen_vars_in_schema Env.empty)
+    TypeSet.empty
+    cty.cty_params
+  |> nongen_class_type cty.cty_type
 
+let nongen_vars_in_class_declaration cty =
+  let result = nongen_class_declaration cty in
+  if TypeSet.is_empty result
+  then None
+  else Some result
 
 (* Normalize a type before printing, saving... *)
 (* Cannot use mark_type because deep_occur uses it too *)

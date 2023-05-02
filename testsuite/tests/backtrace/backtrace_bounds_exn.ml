@@ -1,6 +1,6 @@
-(* TEST
-   flags = "-g"
-   ocamlrunparam += ",b=1"
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
+
 *)
 
 (* #11436: bad backtrace for out-of-bounds exception *)
@@ -18,3 +18,8 @@ let _ =
     Printexc.print_backtrace stdout;
 
   print_endline "OK"
+
+(* TEST
+ flags = "-g";
+ ocamlrunparam += ",b=1";
+*)

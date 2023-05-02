@@ -61,6 +61,11 @@ let list_tests = ref []
 
 let show_timings = ref false
 
+let translate = ref false
+let style = ref Translate.Plain
+let compact = ref false
+
+
 let add_to_list r x =
   r := !r @ [x]
 
@@ -85,6 +90,14 @@ let commandline_options =
    " List tests in given directory.");
   ("-keep-test-dir-on-success", Arg.Set keep_test_dir_on_success,
    " Keep the test directory (with the generated test artefacts) on success.");
+  ("-translate", Arg.Set translate,
+   " Translate the test script from old to new syntax");
+  ("-compact", Arg.Set compact,
+   " If translating, output the new script in compact mode.");
+  ("-keep-lines", Arg.Unit (fun () -> style := Translate.Lines),
+   " If translating, preserve line numbers in the output.");
+  ("-keep-chars", Arg.Unit (fun () -> style := Translate.Chars),
+   " If translating, preserve char offsets in the output.");
 ]
 
 let files_to_test = ref []
@@ -102,3 +115,6 @@ let find_test_dirs = !find_test_dirs
 let list_tests = !list_tests
 let keep_test_dir_on_success = !keep_test_dir_on_success
 let show_timings = !show_timings
+let translate = !translate
+let style = !style
+let compact = !compact

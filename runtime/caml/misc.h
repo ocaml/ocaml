@@ -457,6 +457,7 @@ struct ext_table {
 
 extern void caml_ext_table_init(struct ext_table * tbl, int init_capa);
 extern int caml_ext_table_add(struct ext_table * tbl, void * data);
+extern int caml_ext_table_add_noexc(struct ext_table * tbl, void * data);
 extern void caml_ext_table_remove(struct ext_table * tbl, void * data);
 extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
 extern void caml_ext_table_clear(struct ext_table * tbl, int free_entries);

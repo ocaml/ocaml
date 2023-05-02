@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 (* Report from Jeremy Yallop *)

@@ -1,13 +1,13 @@
 (* TEST
-   * setup-ocamlc.byte-build-env
-   ** ocamlc.byte
-   module = "stack_space.ml"
-   *** ocamlc.byte
-   program = "./test.byte.exe"
-   all_modules = "stack_space.cmo"
-   module = ""
-   **** run
-   ocamlrunparam += ",l=300"
+ setup-ocamlc.byte-build-env;
+ module = "stack_space.ml";
+ ocamlc.byte;
+ program = "./test.byte.exe";
+ all_modules = "stack_space.cmo";
+ module = "";
+ ocamlc.byte;
+ ocamlrunparam += ",l=300";
+ run;
 *)
 
 (* large with respect to the stack-size=300 setting above *)

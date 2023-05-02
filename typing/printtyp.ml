@@ -1123,7 +1123,7 @@ let rec tree_of_typexp mode ty =
           let tpath = tree_of_best_type_path p p' in
           Otyp_constr (tpath, tree_of_typlist mode tyl')
     | Tvariant row ->
-        let Row {fields; name; closed} = row_repr row in
+        let Row {fields; name; closed; _} = row_repr row in
         let fields =
           if closed then
             List.filter (fun (_, f) -> row_field_repr f <> Rabsent)
@@ -1281,9 +1281,11 @@ let shared_type_scheme ppf ty =
   prepare_type ty;
   typexp Type_scheme ppf ty
 
+let prepared_type_scheme ppf ty = typexp Type_scheme ppf ty
+
 let type_scheme ppf ty =
   prepare_for_printing [ty];
-  typexp Type_scheme ppf ty
+  prepared_type_scheme ppf ty
 
 let type_path ppf p =
   let (p', s) = best_type_path p in

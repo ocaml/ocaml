@@ -1,4 +1,4 @@
-(* TEST *)
+(* TEST_BELOW*)
 
 (* exercise push_defaults *)
 
@@ -24,3 +24,6 @@ print_endline (f (module struct exception Ex end) Exit);;
 let f ?(x = assert false) ((module M) : (module E)) () = 1;;
 (* so partial application of the module doesn't raise *)
 let partial = f (module struct exception Ex end);;
+
+(* TEST
+*)

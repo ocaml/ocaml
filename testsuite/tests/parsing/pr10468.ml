@@ -1,6 +1,6 @@
 (* TEST
-    flags = "-dsource"
-    * expect
+ flags = "-dsource";
+ expect;
 *)
 
 module type S = sig

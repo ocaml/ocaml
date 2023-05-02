@@ -3,6 +3,44 @@ Working version
 
 ### Language features:
 
+### Runtime system:
+
+- #10403, #12202: introduce `caml_ext_table_add_noexc` that does not
+  raise `Out_of_memory` exceptions and use it inside the blocking sections
+  of `caml_read_directory`.  Also, check for overflows in ext table sizes.
+  (Xavier Leroy, report by Arseniy Alekseyev, review by Gabriel Scherer)
+
+### Code generation and optimizations:
+
+### Standard library:
+
+### Other libraries:
+
+- #12213: Dynlink library, improve legibility of error messages
+  (Samuel Hym, review by Gabriel Scherer and Nicolás Ojeda Bär)
+
+### Tools:
+
+- #12185: New script language for ocamltest.
+  (Damien Doligez with Florian Angeletti, Sébastien Hinderer, Gabriel Scherer,
+   review by Sébastien Hinderer and Gabriel Scherer)
+
+### Manual and documentation:
+
+### Compiler user-interface and warnings:
+
+### Internal/compiler-libs changes:
+
+### Build system:
+
+### Bug fixes:
+
+
+OCaml 5.1.0
+---------------
+
+### Language features:
+
 - #9975, #11365: Make empty types (`type t = |`) immediate.
   (Antal Spector-Zabusky, review by Gabriel Scherer)
 
@@ -28,6 +66,22 @@ Working version
   (Frederic Bour and Richard Eisenberg, review by Florian Angeletti)
 
 ### Runtime system:
+
+* #11865, #11868, #11876: Clarify that the operations of a custom
+  block must never access the OCaml runtime. The previous
+  documentation only mentioned the main illicit usages. In particular,
+  since OCaml 5.0, it is no longer safe to call
+  `caml_remove_global_root` or `caml_remove_generational_global_root`
+  from within the C finalizer of a custom block, or within the
+  finalization function passed to `caml_alloc_final`. As a workaround,
+  such a finalization operation can be registered with `Gc.finalize`
+  instead, which guarantees to run the finalizer at a safe point.
+  (Report by Timothy Bourke, discussion by Yotam Barnoy, Timothy
+  Bourke, Sadiq Jaffer, Xavier Leroy, Guillaume Munch-Maccagnoni, and
+  Gabriel Scherer)
+
+- #12130: Fix multicore crashes with weak hash sets. Fixes #11934.
+  (Nick Barnes, review by François Bobot)
 
 - #12099: Add ocamlrund option, -events, to produce a trace of
   debug events during bytecode interpretation. Fixes #12098.
@@ -104,6 +158,21 @@ Working version
 
 - #12062: fix runtime events consumer: when events are dropped they shouldn't be
   parsed. (Lucas Pluvinage)
+
+- #12121: unrooted implementations of caml_callback*_exn
+  (Gabriel Scherer, review by KC Sivaramakrishnan and Xavier Leroy)
+
+- #12132: Fix overcounting of minor collections in GC stats.
+  (Damien Doligez, review by Gabriel Scherer)
+
+- #3921, #12039, #12128: poll for signals in long-running polymorphic
+  comparisons.
+  (B. Szilvasy, Gabriel Scherer and Xavier Leroy, review by
+   Stefan Muenzel, Guillaume Munch-Maccagnoni and Damien Doligez)
+
+- #12037: get_extern_state potential NULL dereference.
+  (Alexander Skvortsov, report by Török Edwin,
+   design by Gabriel Scherer, Xavier Leroy)
 
 ### Type system:
 
@@ -310,7 +379,13 @@ Working version
   type
   (Samuel Hym, review by David Allsopp)
 
+- #12072: Document and test that Sys.rename works over directories too
+  (Jan Midtgaard, review by Anil Madhavapeddy and Xavier Leroy)
+
 ### Tools:
+
+- #11787: Fix GDB scripts to work with OCaml 5's heap layout. (Nick
+  Barnes)
 
 - #1172: fix ocamlyacc's handling of raw string literals
   (Demi Marie Obenour)
@@ -322,6 +397,9 @@ Working version
 - #11166: ocamllex: the union of two character sets "cset1 | cset2" can now be
   used in any context where a character set is expected.
   (Nicolás Ojeda Bär, Martin Jambon, review by Sébastien Hinderer)
+
+- #12147: ocamllex: Allow carriage returns at the end of line directives.
+  (SeungCheol Jung, review by Nicolás Ojeda Bär)
 
 - #11718: ocamlyacc: OCaml-style comments are now supported, in addition to
   the C-style comments already supported.  The syntax is the same as that used
@@ -362,6 +440,9 @@ Working version
   reduction in size.
   (Xavier Leroy, review by Edwin Török and Gabriel Scherer)
 
+- #12165: ocamldoc, use standard doctype to avoid quirk mode.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #12095, #12097: Put the sample code of the user's manual and reference
@@ -382,6 +463,9 @@ Working version
   (Florian Angeletti, review by Gabriel Scherer)
 
 ### Compiler user-interface and warnings:
+
+- #12116: Don't suggest to insert a semicolon when the type is not unit
+  (Jules Aguillon, review by Florian Angeletti)
 
 - #11679: Improve the error message about too many arguments to a function
   (Jules Aguillon, review by Gabriel Scherer and Florian Angeletti)
@@ -454,12 +538,22 @@ Working version
 - #12024: insert a blank line between separate compiler messages
   (Gabriel Scherer, review by Florian Angeletti, report by David Wong)
 
+- #12088, #9265, #11949: ocamldebug: fix confusing repeating behavior
+  on blank lines within source scripts
+  (Damien Doligez, review by Gabriel Scherer, report by Gaëtan Gilbert)
+
 - #12107: use aliases to mark weak row variables: `_[< ... ]`, `< _..>`, `_#ct`
   are now rendered as `[< ...] as '_weak1`, `< .. > as '_weak1`,
   and `#ct as '_weak1`.
   (Florian Angeletti, suggestion by Stefan Muenzel, review by Gabriel Scherer)
 
+- #12051: Improve the error messages when type variables cannot be generalized
+  (Stefan Muenzel, review by Florian Angeletti)
+
 ### Internal/compiler-libs changes:
+
+- #12138: Generalize interface for BUILD_PATH_PREFIX_MAP mapping.
+  (Richard L Ford, suggestions and review by Gabriel Scherer)
 
 - #10512: explain the compilation strategy for switches on constructors
   (Gabriel Scherer, review by Vincent Laviron)
@@ -543,6 +637,9 @@ Working version
   (Sébastien Hinderer, review by Xavier Leroy, Nicolás Ojeda Bär and
   Hugo Heuzard)
 
+- #12011: remove Ctype.reified_var_counter
+  (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer)
+
 - #12012: move calls to Typetexp.TyVarEnv.reset inside with_local_level etc.
   (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
 
@@ -552,9 +649,26 @@ Working version
 - #12092: remove Lev_module_definition from lambda
   (Nick Roberts, review by Gabriel Scherer)
 
+- #12117: Remove arity-interrupting elaboration of module unpacks
+  (Nick Roberts, review by Richard Eisenberg and Jacques Garrigue)
+
 - #12118: stop storing names of predefined exceptions in the
   cu_required_globals field of compilation unit descriptors.
   (Sébastien Hinderer, review by Vincent Laviron)
+
+- #12119: mirror type constraints on value binding in the parsetree:
+  the constraint `typ` in `let pat : typ = exp` is now directly stored
+  in the value binding node in the parsetree.
+  (Florian Angeletti, review by  Richard Eisenberg)
+
+- #12125: Add Misc.print_see_manual and modify [@manual_ref] to accept
+  lists for simpler printing of manual references
+  (Stefan Muenzel, review by Florian Angeletti)
+
+* #12094: Trigger warning 5 (ignored-partial-application) when the scrutinee of
+  a pattern matching is of arrow type and all cases match wildcard or exception
+  patterns.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
 ### Build system:
 
@@ -645,6 +759,14 @@ Working version
   (Jérôme Vouillon, review by Nicolás Ojeda Bär, Stephen Dolan and
    Hugo Heuzard)
 
+- #11846: Mark rbx as destroyed at C call for Win64 (mingw-w64 and Cygwin64).
+  Reserve the shadow store for the ABI in the c_stack_link struct instead of
+  explictly when calling C functions. This simultaneously reduces the number of
+  stack pointer manipulations and also fixes a bug when calling noalloc
+  functions where the shadow store was not being reserved.
+  (David Allsopp, report by Vesa Karvonen, review by Xavier Leroy and
+   KC Sivaramakrishnan)
+
 - #11850: When stopping before the `emit` phase (using `-stop-after`), an empty
   temporary assembly file is no longer left in the file system.
   (Nicolás Ojeda Bär, review by Gabriel Scherer and Xavier Leroy)
@@ -678,6 +800,24 @@ Working version
 
 - #12112: Fix caml_callback{2,3}_exn when used with effect handlers.
   (Lucas Pluvinage, review by Gabriel Scherer, David Allsopp and Xavier Leroy)
+
+- #12134: Use ghost location for nodes created when handling defaults in
+  optional arguments.
+  (Paul-Elliot Anglès d'Auriac, review by Gabriel Scherer)
+
+- #12153: Fix segfault in bytecode programs involving recursive value
+  definitions of values of size 0
+  (Vincent Laviron, Xavier Leroy, Gabriel Scherer,
+   review by Xavier Leroy, report by Nick Roberts)
+
+- #12162: Fix miscompilation on amd64 backends involving integer overflows
+  (Vincent Laviron and Greta Yorsh, review by Stefan Muenzel)
+
+- #12170: fix pthread_geaffinity_np configure check for android
+  (David Allsopp, review by Sébastien Hinderer)
+
+- #12178: Fix runtime events consumer poll function returning an invalid value
+  instead of an OCaml integer value. (Lucas Pluvinage)
 
 OCaml 5.0.0 (15 December 2022)
 ------------------------------

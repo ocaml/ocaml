@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 let r = ref None

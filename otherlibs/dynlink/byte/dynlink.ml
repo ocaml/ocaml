@@ -151,10 +151,13 @@ module Bytecode = struct
         (Printexc.get_raw_backtrace ())
 
   let load ~filename:file_name ~priv:_ =
-    let ic = open_in_bin file_name in
-    let file_digest = Digest.channel ic (-1) in
-    seek_in ic 0;
+    let ic =
+      try open_in_bin file_name
+      with exc -> raise (DT.Error (Cannot_open_dynamic_library exc))
+    in
     try
+      let file_digest = Digest.channel ic (-1) in
+      seek_in ic 0;
       let buffer =
         try really_input_string ic (String.length Config.cmo_magic_number)
         with End_of_file -> raise (DT.Error (Not_a_bytecode_file file_name))
@@ -170,19 +173,23 @@ module Bytecode = struct
         let toc_pos = input_binary_int ic in  (* Go to table of contents *)
         seek_in ic toc_pos;
         let lib = (input_value ic : Cmo_format.library) in
-        begin try
-          Dll.open_dlls Dll.For_execution
-            (List.map Dll.extract_dll_name lib.lib_dllibs)
-        with exn ->
-          raise (DT.Error (Cannot_open_dynamic_library exn))
-        end;
+        Dll.open_dlls Dll.For_execution
+          (List.map Dll.extract_dll_name lib.lib_dllibs);
         handle, lib.lib_units
       end else begin
         raise (DT.Error (Not_a_bytecode_file file_name))
       end
-    with exc ->
-      close_in ic;
+    with
+    (* Wrap all exceptions into Cannot_open_dynamic_library errors except
+       Not_a_bytecode_file ones, as they bring all the necessary information
+       already
+       Use close_in_noerr since the exception we really want to raise is exc *)
+    | DT.Error _ as exc ->
+      close_in_noerr ic;
       raise exc
+    | exc ->
+      close_in_noerr ic;
+      raise (DT.Error (Cannot_open_dynamic_library exc))
 
   let unsafe_get_global_value ~bytecode_or_asm_symbol =
     let id = Ident.create_persistent bytecode_or_asm_symbol in

@@ -905,6 +905,12 @@ let print_if ppf flag printer arg =
   if !flag then Format.fprintf ppf "%a@." printer arg;
   arg
 
+let print_see_manual ppf manual_section =
+  let open Format in
+  fprintf ppf "(see manual section %a)"
+    (pp_print_list ~pp_sep:(fun f () -> pp_print_char f '.') pp_print_int)
+    manual_section
+
 
 type filepath = string
 type modname = string

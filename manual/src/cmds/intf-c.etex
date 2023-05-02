@@ -1993,11 +1993,12 @@ the serialized output.
 \end{itemize}
 
 Note: the "finalize", "compare", "hash", "serialize" and "deserialize"
-functions attached to custom block descriptors must never trigger a
-garbage collection.  Within these functions, do not call any of the
-OCaml allocation functions, and do not perform a callback into OCaml
-code.  Do not use "CAMLparam" to register the parameters to these
-functions, and do not use "CAMLreturn" to return the result.
+functions attached to custom block descriptors must never access the
+OCaml runtime. Within these functions, do not call any of the OCaml
+allocation functions, and do not perform a callback into OCaml code.
+Do not use "CAMLparam" to register the parameters to these functions,
+and do not use "CAMLreturn" to return the result. Do not raise
+exceptions, do not remove global roots, etc.
 
 \subsection{ss:c-custom-alloc}{Allocating custom blocks}
 
@@ -2149,17 +2150,19 @@ as identifiers, to minimize the risk of identifier collision.
 \subsection{ss:c-finalized}{Finalized blocks}
 
 Custom blocks generalize the finalized blocks that were present in
-OCaml prior to version 3.00.  For backward compatibility, the
-format of custom blocks is compatible with that of finalized blocks,
-and the "alloc_final" function is still available to allocate a custom
+OCaml prior to version 3.00. For backwards compatibility, the format
+of custom blocks is compatible with that of finalized blocks, and the
+"caml_alloc_final" function is still available to allocate a custom
 block with a given finalization function, but default comparison,
-hashing and serialization functions.  "caml_alloc_final("\var{n}",
-"\var{f}", "\var{used}", "\var{max}")" returns a fresh custom block of
-size \var{n}+1 words, with finalization function \var{f}.  The first
-word is reserved for storing the custom operations; the other
-\var{n} words are available for your data.  The two parameters
-\var{used} and \var{max} are used to control the speed of garbage
-collection, as described for "caml_alloc_custom".
+hashing and serialization functions. (In particular, the finalization
+function must not access the OCaml runtime.)
+
+"caml_alloc_final("\var{n}", "\var{f}", "\var{used}", "\var{max}")"
+returns a fresh custom block of size \var{n}+1 words, with
+finalization function \var{f}. The first word is reserved for storing
+the custom operations; the other \var{n} words are available for your
+data. The two parameters \var{used} and \var{max} are used to control
+the speed of garbage collection, as described for "caml_alloc_custom".
 
 \section{s:C-Bigarrays}{Advanced topic: Bigarrays and the OCaml-C interface}
 

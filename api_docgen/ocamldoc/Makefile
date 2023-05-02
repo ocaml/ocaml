@@ -44,7 +44,7 @@ $(libref:%=build/libref/%.odoc): build/libref/%.odoc: %.mli | build/libref
 	$(V_OCAMLDOC)$(OCAMLDOC_RUN) -nostdlib -hide Stdlib -lib Stdlib \
 	-pp \
 "$(AWK) -v ocamldoc=true -f ../../stdlib/expand_module_aliases.awk" \
-	$(DOC_STDLIB_INCLUDES) -hide-warnings  $< -dump  $@
+	$(DOC_STDLIB_INCLUDES) -hide-warnings -alert -all $< -dump  $@
 
 $(compilerlibref:%=build/compilerlibref/%.odoc):\
 build/compilerlibref/%.odoc: %.mli | build/compilerlibref

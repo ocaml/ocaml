@@ -1,6 +1,6 @@
 (* TEST
-   flags = " -w +A -strict-sequence "
-   * expect
+ flags = " -w +A -strict-sequence ";
+ expect;
 *)
 
 module TypEq = struct

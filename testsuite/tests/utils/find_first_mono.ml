@@ -1,8 +1,8 @@
 (* TEST
-include config
-include testing
-binary_modules = "config build_path_prefix_map misc"
-* bytecode
+ include config;
+ include testing;
+ binary_modules = "config build_path_prefix_map misc";
+ bytecode;
 *)
 
 let check_and_count_calls n =

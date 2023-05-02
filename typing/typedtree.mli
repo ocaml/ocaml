@@ -69,6 +69,8 @@ and pat_extra =
   | Tpat_unpack
         (** (module P)     { pat_desc  = Tpat_var "P"
                            ; pat_extra = (Tpat_unpack, _, _) :: ... }
+            (module _)     { pat_desc  = Tpat_any
+            ; pat_extra = (Tpat_unpack, _, _) :: ... }
          *)
 
 and 'k pattern_desc =

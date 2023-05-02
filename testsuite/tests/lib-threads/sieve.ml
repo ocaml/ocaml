@@ -1,17 +1,17 @@
 (* TEST
-
-script = "sh ${test_source_directory}/test-runtime-cleanup.sh"
-
-* hassysthreads
-include systhreads
-** script
-*** bytecode
-output = "${test_build_directory}/program-output"
-stdout = "${output}"
-*** native
-output = "${test_build_directory}/program-output"
-stdout = "${output}"
-
+ script = "sh ${test_source_directory}/test-runtime-cleanup.sh";
+ include systhreads;
+ hassysthreads;
+ script;
+ {
+   output = "${test_build_directory}/program-output";
+   stdout = "${output}";
+   bytecode;
+ }{
+   output = "${test_build_directory}/program-output";
+   stdout = "${output}";
+   native;
+ }
 *)
 
 (* This test is skipped in "runtime cleanup at exit" mode

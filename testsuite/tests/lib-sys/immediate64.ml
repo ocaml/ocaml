@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 module M : sig
   type t [@@immediate64]

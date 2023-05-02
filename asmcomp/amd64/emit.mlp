@@ -537,13 +537,8 @@ let emit_instr env fallthrough i =
       end
   | Lop(Iextcall { func; alloc; stack_ofs }) ->
       add_used_symbol func;
-      let base_stack_size =
-        if Arch.win64 then
-          32 (* Windows x64 rcx+rdx+r8+r9 shadow stack *)
-        else
-          0 in
-      if stack_ofs > base_stack_size then begin
-        I.lea (mem64 QWORD base_stack_size RSP) r13;
+      if stack_ofs > 0 then begin
+        I.mov rsp r13;
         I.lea (mem64 QWORD stack_ofs RSP) r12;
         load_symbol_addr func rax;
         emit_call "caml_c_call_stack_args";

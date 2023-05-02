@@ -44,14 +44,14 @@
 #define MARK_STACK_INIT_SIZE (1 << 12)
 
 /* The mark stack consists of two parts:
-   1. the stack - consisting of spans of fields that need to be marked, and
-   2. the compressed stack - consisting of entries (k, bitfield)
-      where the bitfield represents word offsets from k that need to
-      be marked.
+   1. the stack - a dynamic array of spans of fields that need to be marked, and
+   2. the compressed stack - a bitset of fields that need to be marked.
 
    The stack is bounded relative to the heap size. When the stack
    overflows the bound, then entries from the stack are compressed and
-   transferred into the compressed stack.
+   transferred into the compressed stack, expect for "large" entries,
+   spans of more than BITS_PER_WORD entries, that are more compactly
+   represented as spans and remain on the uncompressed stack.
 
    When the stack is empty, the compressed stack is processed.
    The compressed stack iterator marks the point up to which
@@ -196,8 +196,8 @@ static void ephe_next_cycle (void)
   caml_plat_lock(&ephe_lock);
 
   atomic_fetch_add(&ephe_cycle_info.ephe_cycle, +1);
-  CAMLassert(atomic_load_acq(&ephe_cycle_info.num_domains_done) <=
-             atomic_load_acq(&ephe_cycle_info.num_domains_todo));
+  CAMLassert(atomic_load_acquire(&ephe_cycle_info.num_domains_done) <=
+             atomic_load_acquire(&ephe_cycle_info.num_domains_todo));
   atomic_store(&ephe_cycle_info.num_domains_done, 0);
 
   caml_plat_unlock(&ephe_lock);
@@ -216,8 +216,8 @@ static void ephe_todo_list_emptied (void)
   /* Since the todo list is empty, this domain does not need to participate in
    * further ephemeron cycles. */
   atomic_fetch_add(&ephe_cycle_info.num_domains_todo, -1);
-  CAMLassert(atomic_load_acq(&ephe_cycle_info.num_domains_done) <=
-             atomic_load_acq(&ephe_cycle_info.num_domains_todo));
+  CAMLassert(atomic_load_acquire(&ephe_cycle_info.num_domains_done) <=
+             atomic_load_acquire(&ephe_cycle_info.num_domains_todo));
 
   caml_plat_unlock(&ephe_lock);
 }
@@ -225,18 +225,18 @@ static void ephe_todo_list_emptied (void)
 /* Record that ephemeron marking was done for the given ephemeron cycle. */
 static void record_ephe_marking_done (uintnat ephe_cycle)
 {
-  CAMLassert (ephe_cycle <= atomic_load_acq(&ephe_cycle_info.ephe_cycle));
+  CAMLassert (ephe_cycle <= atomic_load_acquire(&ephe_cycle_info.ephe_cycle));
   CAMLassert (Caml_state->marking_done);
 
-  if (ephe_cycle < atomic_load_acq(&ephe_cycle_info.ephe_cycle))
+  if (ephe_cycle < atomic_load_acquire(&ephe_cycle_info.ephe_cycle))
     return;
 
   caml_plat_lock(&ephe_lock);
   if (ephe_cycle == atomic_load(&ephe_cycle_info.ephe_cycle)) {
     Caml_state->ephe_info->cycle = ephe_cycle;
     atomic_fetch_add(&ephe_cycle_info.num_domains_done, +1);
-    CAMLassert(atomic_load_acq(&ephe_cycle_info.num_domains_done) <=
-               atomic_load_acq(&ephe_cycle_info.num_domains_todo));
+    CAMLassert(atomic_load_acquire(&ephe_cycle_info.num_domains_done) <=
+               atomic_load_acquire(&ephe_cycle_info.num_domains_todo));
   }
   caml_plat_unlock(&ephe_lock);
 }
@@ -939,10 +939,22 @@ again:
   return budget;
 }
 
-/* compressed mark stack */
-#define PAGE_MASK (~(uintnat)(BITS_PER_WORD-1))
-#define PTR_TO_PAGE(v) (((uintnat)(v)/sizeof(value)) & PAGE_MASK)
-#define PTR_TO_PAGE_OFFSET(v) ((((uintnat)(v)/sizeof(value)) & ~PAGE_MASK))
+/* Compressed mark stack
+
+   We use a bitset, implemented as a hashtable storing word-sized
+   integers (uintnat). Each integer represents a "chunk" of addresses
+   that may or may not be present in the stack.
+ */
+static const uintnat chunk_mask = ~(uintnat)(BITS_PER_WORD-1);
+static inline uintnat ptr_to_chunk(value *ptr) {
+  return ((uintnat)(ptr) / sizeof(value)) & chunk_mask;
+}
+static inline uintnat ptr_to_chunk_offset(value *ptr) {
+  return ((uintnat)(ptr) / sizeof(value)) & ~chunk_mask;
+}
+static inline value* chunk_and_offset_to_ptr(uintnat chunk, uintnat offset) {
+  return (value*)((chunk + offset) * sizeof(value));
+}
 
 /* mark until the budget runs out or marking is done */
 static intnat mark(intnat budget) {
@@ -950,12 +962,11 @@ static intnat mark(intnat budget) {
   while (budget > 0 && !domain_state->marking_done) {
     budget = do_some_marking(domain_state->mark_stack, budget);
     if (budget > 0) {
-      int i;
       struct mark_stack* mstk = domain_state->mark_stack;
       addrmap_iterator it = mstk->compressed_stack_iter;
       if (caml_addrmap_iter_ok(&mstk->compressed_stack, it)) {
-        uintnat k = caml_addrmap_iter_key(&mstk->compressed_stack, it);
-        value v = caml_addrmap_iter_value(&mstk->compressed_stack, it);
+        uintnat chunk = caml_addrmap_iter_key(&mstk->compressed_stack, it);
+        uintnat bitset = caml_addrmap_iter_value(&mstk->compressed_stack, it);
 
         /* NB: must update the iterator here, as possible that
            mark_slice_darken could lead to the mark stack being pruned
@@ -963,9 +974,9 @@ static intnat mark(intnat budget) {
         mstk->compressed_stack_iter =
                       caml_addrmap_next(&mstk->compressed_stack, it);
 
-        for(i=0; i<BITS_PER_WORD; i++) {
-          if(v & ((uintnat)1 << i)) {
-            value* p = (value*)((k + i)*sizeof(value));
+        for(int ofs=0; ofs<BITS_PER_WORD; ofs++) {
+          if(bitset & ((uintnat)1 << ofs)) {
+            value* p = chunk_and_offset_to_ptr(chunk, ofs);
             mark_slice_darken(domain_state->mark_stack, *p, &budget);
           }
         }
@@ -998,10 +1009,8 @@ void caml_darken_cont(value cont)
         if (Ptr_val(stk) != NULL)
           caml_scan_stack(&caml_darken, darken_scanning_flags, Caml_state,
                           Ptr_val(stk), 0);
-        atomic_store_explicit(
-          Hp_atomic_val(cont),
-          With_status_hd(hd, caml_global_heap_state.MARKED),
-          memory_order_release);
+        atomic_store_release(Hp_atomic_val(cont),
+                             With_status_hd(hd, caml_global_heap_state.MARKED));
       }
     }
   }
@@ -1157,8 +1166,8 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
   CAML_EV_BEGIN(EV_MAJOR_GC_CYCLE_DOMAINS);
 
   CAMLassert(domain == Caml_state);
-  CAMLassert(atomic_load_acq(&ephe_cycle_info.num_domains_todo) ==
-             atomic_load_acq(&ephe_cycle_info.num_domains_done));
+  CAMLassert(atomic_load_acquire(&ephe_cycle_info.num_domains_todo) ==
+             atomic_load_acquire(&ephe_cycle_info.num_domains_done));
   CAMLassert(atomic_load(&num_domains_to_mark) == 0);
   CAMLassert(atomic_load(&num_domains_to_sweep) == 0);
   CAMLassert(atomic_load(&num_domains_to_ephe_sweep) == 0);
@@ -1235,20 +1244,22 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
       domain->swept_words = 0;
 
       num_domains_in_stw = (uintnat)caml_global_barrier_num_domains();
-      atomic_store_rel(&num_domains_to_sweep, num_domains_in_stw);
-      atomic_store_rel(&num_domains_to_mark, num_domains_in_stw);
+      atomic_store_release(&num_domains_to_sweep, num_domains_in_stw);
+      atomic_store_release(&num_domains_to_mark, num_domains_in_stw);
 
       caml_gc_phase = Phase_sweep_and_mark_main;
       atomic_store(&ephe_cycle_info.num_domains_todo, num_domains_in_stw);
       atomic_store(&ephe_cycle_info.ephe_cycle, 1);
       atomic_store(&ephe_cycle_info.num_domains_done, 0);
 
-      atomic_store_rel(&num_domains_to_ephe_sweep, 0);
+      atomic_store_release(&num_domains_to_ephe_sweep, 0);
       /* Will be set to the correct number when switching to
          [Phase_sweep_ephe] */
 
-      atomic_store_rel(&num_domains_to_final_update_first, num_domains_in_stw);
-      atomic_store_rel(&num_domains_to_final_update_last, num_domains_in_stw);
+      atomic_store_release(&num_domains_to_final_update_first,
+                           num_domains_in_stw);
+      atomic_store_release(&num_domains_to_final_update_last,
+                           num_domains_in_stw);
 
       atomic_store(&domain_global_roots_started, WORK_UNSTARTED);
 
@@ -1355,11 +1366,11 @@ static int is_complete_phase_sweep_and_mark_main (void)
 {
   return
     caml_gc_phase == Phase_sweep_and_mark_main &&
-    atomic_load_acq (&num_domains_to_sweep) == 0 &&
-    atomic_load_acq (&num_domains_to_mark) == 0 &&
+    atomic_load_acquire (&num_domains_to_sweep) == 0 &&
+    atomic_load_acquire (&num_domains_to_mark) == 0 &&
     /* Marking is done */
-    atomic_load_acq(&ephe_cycle_info.num_domains_todo) ==
-    atomic_load_acq(&ephe_cycle_info.num_domains_done) &&
+    atomic_load_acquire(&ephe_cycle_info.num_domains_todo) ==
+    atomic_load_acquire(&ephe_cycle_info.num_domains_done) &&
     /* Ephemeron marking is done */
     no_orphaned_work();
     /* All orphaned ephemerons have been adopted */
@@ -1369,12 +1380,12 @@ static int is_complete_phase_mark_final (void)
 {
   return
     caml_gc_phase == Phase_mark_final &&
-    atomic_load_acq (&num_domains_to_final_update_first) == 0 &&
+    atomic_load_acquire (&num_domains_to_final_update_first) == 0 &&
     /* updated finalise first values */
-    atomic_load_acq (&num_domains_to_mark) == 0 &&
+    atomic_load_acquire (&num_domains_to_mark) == 0 &&
     /* Marking is done */
-    atomic_load_acq(&ephe_cycle_info.num_domains_todo) ==
-    atomic_load_acq(&ephe_cycle_info.num_domains_done) &&
+    atomic_load_acquire(&ephe_cycle_info.num_domains_todo) ==
+    atomic_load_acquire(&ephe_cycle_info.num_domains_done) &&
     /* Ephemeron marking is done */
     no_orphaned_work();
     /* All orphaned ephemerons have been adopted */
@@ -1384,9 +1395,9 @@ static int is_complete_phase_sweep_ephe (void)
 {
   return
     caml_gc_phase == Phase_sweep_ephe &&
-    atomic_load_acq (&num_domains_to_ephe_sweep) == 0 &&
+    atomic_load_acquire (&num_domains_to_ephe_sweep) == 0 &&
     /* All domains have swept their ephemerons */
-    atomic_load_acq (&num_domains_to_final_update_last) == 0 &&
+    atomic_load_acquire (&num_domains_to_final_update_last) == 0 &&
     /* All domains have updated finalise last values */
     no_orphaned_work();
     /* All orphaned structures have been adopted */
@@ -1405,7 +1416,7 @@ static void try_complete_gc_phase (caml_domain_state* domain, void* unused,
       caml_gc_phase = Phase_mark_final;
     } else if (is_complete_phase_mark_final()) {
       caml_gc_phase = Phase_sweep_ephe;
-      atomic_store_rel(&num_domains_to_ephe_sweep, participant_count);
+      atomic_store_release(&num_domains_to_ephe_sweep, participant_count);
       for (int i = 0; i < participant_count; i++)
         participating[i]->ephe_info->must_sweep_ephe = 1;
     }
@@ -1549,7 +1560,7 @@ mark_again:
     /* Ephemerons */
     if (caml_gc_phase != Phase_sweep_ephe) {
       /* Ephemeron Marking */
-      saved_ephe_cycle = atomic_load_acq(&ephe_cycle_info.ephe_cycle);
+      saved_ephe_cycle = atomic_load_acquire(&ephe_cycle_info.ephe_cycle);
       if (domain_state->ephe_info->todo != (value) NULL &&
           saved_ephe_cycle > domain_state->ephe_info->cycle) {
         CAML_EV_BEGIN(EV_MAJOR_EPHE_MARK);
@@ -1756,19 +1767,20 @@ void caml_finish_sweeping (void)
   CAML_EV_END(EV_MAJOR_FINISH_SWEEPING);
 }
 
-Caml_inline int add_addr(struct addrmap* amap, value v) {
-  uintnat k = PTR_TO_PAGE(v);
-  uintnat flag = (uintnat)1 << PTR_TO_PAGE_OFFSET(v);
+Caml_inline int add_addr(struct addrmap* amap, value* ptr) {
+  uintnat chunk = ptr_to_chunk(ptr);
+  uintnat offset = ptr_to_chunk_offset(ptr);
+  uintnat flag = (uintnat)1 << offset;
   int new_entry = 0;
 
-  value* amap_pos = caml_addrmap_insert_pos(amap, k);
+  value* amap_pos = caml_addrmap_insert_pos(amap, chunk);
 
   if (*amap_pos == ADDRMAP_NOT_PRESENT) {
     new_entry = 1;
     *amap_pos = 0;
   }
 
-  CAMLassert(v == (value)((k + PTR_TO_PAGE_OFFSET(v))*sizeof(value)));
+  CAMLassert(ptr == chunk_and_offset_to_ptr(chunk, offset));
 
   if (!(*amap_pos & flag)) {
     *amap_pos |= flag;
@@ -1813,7 +1825,7 @@ static void mark_stack_prune(struct mark_stack* stk)
     } else {
       while(me.start < me.end) {
         compressed_entries += add_addr(&stk->compressed_stack,
-                                       (uintnat)me.start);
+                                       me.start);
         me.start++;
       }
     }

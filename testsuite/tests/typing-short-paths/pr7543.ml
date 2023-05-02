@@ -1,6 +1,6 @@
 (* TEST
-   flags = " -short-paths "
-   * toplevel
+ flags = " -short-paths ";
+ toplevel;
 *)
 
 (** Test that short-path printtyp does not fail on packed module.

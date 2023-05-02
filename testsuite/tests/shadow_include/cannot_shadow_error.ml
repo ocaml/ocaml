@@ -1,9 +1,9 @@
-(* TEST
-* setup-ocamlc.byte-build-env
-flags = "-nostdlib -nopervasives"
-** ocamlc.byte
-ocamlc_byte_exit_status = "2"
-*** check-ocamlc.byte-output
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
+
+
+
+
 *)
 
 (* Same example as in tests/typing-sigsubst/sigsubst.ml, but not as an
@@ -23,3 +23,11 @@ module type PrintableComparable = sig
   include Printable
   include Comparable with type t = t
 end
+
+(* TEST
+ flags = "-nostdlib -nopervasives";
+ setup-ocamlc.byte-build-env;
+ ocamlc_byte_exit_status = "2";
+ ocamlc.byte;
+ check-ocamlc.byte-output;
+*)

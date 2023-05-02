@@ -480,7 +480,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
         {
           int i;
           mlsize_t wo = Wosize_whsize(wh);
-          for (i = 2; i < wo; i++) {
+          for (i = 1; i < wo; i++) {
             Field(Val_hp(p), i) = Debug_free_major;
           }
         }

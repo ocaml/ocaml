@@ -182,7 +182,7 @@ static void runtime_events_teardown_raw(int remove_file) {
     caml_stat_free(current_ring_loc);
     current_metadata = NULL;
 
-    atomic_store_rel(&runtime_events_enabled, 0);
+    atomic_store_release(&runtime_events_enabled, 0);
 }
 
 /* Stop-the-world which calls the teardown code */
@@ -204,7 +204,7 @@ void caml_runtime_events_post_fork(void) {
      new domain can have run yet. Let's be double sure. */
   CAMLassert(caml_domain_alone());
 
-  if (atomic_load_acq(&runtime_events_enabled)) {
+  if (atomic_load_acquire(&runtime_events_enabled)) {
     /* In the child we need to tear down the various structures used for the
     existing runtime_events from the parent. In doing so we need to make sure we
     don't remove the runtime_events file itself as that may still be used by
@@ -220,7 +220,7 @@ void caml_runtime_events_post_fork(void) {
 /* Return the current location for the ring buffers of this process. This is
   used in the consumer to read the ring buffers of the current process */
 char_os* caml_runtime_events_current_location(void) {
-  if( atomic_load_acq(&runtime_events_enabled) ) {
+  if( atomic_load_acquire(&runtime_events_enabled) ) {
     return current_ring_loc;
   } else {
     return NULL;
@@ -230,7 +230,7 @@ char_os* caml_runtime_events_current_location(void) {
 /* Write a lifecycle event and then trigger a stop the world to tear down the
   ring buffers */
 void caml_runtime_events_destroy(void) {
-  if (atomic_load_acq(&runtime_events_enabled)) {
+  if (atomic_load_acquire(&runtime_events_enabled)) {
     write_to_ring(
       EV_RUNTIME, (ev_message_type){.runtime=EV_LIFECYCLE}, EV_RING_STOP, 0,
       NULL, 0);
@@ -242,7 +242,7 @@ void caml_runtime_events_destroy(void) {
       caml_try_run_on_all_domains(&stw_teardown_runtime_events,
                                   &remove_file, NULL);
     }
-    while( atomic_load_acq(&runtime_events_enabled) );
+    while( atomic_load_acquire(&runtime_events_enabled) );
   }
 }
 
@@ -251,7 +251,7 @@ void caml_runtime_events_destroy(void) {
   domain running. */
 static void runtime_events_create_raw(void) {
   /* Don't initialise runtime_events twice */
-  if (!atomic_load_acq(&runtime_events_enabled)) {
+  if (!atomic_load_acquire(&runtime_events_enabled)) {
     int ret, ring_headers_length, ring_data_length;
 #ifdef _WIN32
     DWORD pid = GetCurrentProcessId();
@@ -386,10 +386,10 @@ static void runtime_events_create_raw(void) {
     // runtime_events_enabled to 1
     caml_plat_lock(&user_events_lock);
     value current_user_event = user_events;
-    atomic_store_rel(&runtime_events_enabled, 1);
+    atomic_store_release(&runtime_events_enabled, 1);
     caml_plat_unlock(&user_events_lock);
 
-    atomic_store_rel(&runtime_events_paused, 0);
+    atomic_store_release(&runtime_events_paused, 0);
 
     caml_ev_lifecycle(EV_RING_START, pid);
 
@@ -421,7 +421,7 @@ stw_create_runtime_events(caml_domain_state *domain_state, void *data,
 }
 
 CAMLprim value caml_runtime_events_start(void) {
-  while (!atomic_load_acq(&runtime_events_enabled)) {
+  while (!atomic_load_acquire(&runtime_events_enabled)) {
     caml_try_run_on_all_domains(&stw_create_runtime_events, NULL, NULL);
   }
 
@@ -429,7 +429,7 @@ CAMLprim value caml_runtime_events_start(void) {
 }
 
 CAMLprim value caml_runtime_events_pause(void) {
-  if (!atomic_load_acq(&runtime_events_enabled)) return Val_unit;
+  if (!atomic_load_acquire(&runtime_events_enabled)) return Val_unit;
 
   uintnat not_paused = 0;
 
@@ -441,7 +441,7 @@ CAMLprim value caml_runtime_events_pause(void) {
 }
 
 CAMLprim value caml_runtime_events_resume(void) {
-  if (!atomic_load_acq(&runtime_events_enabled)) return Val_unit;
+  if (!atomic_load_acquire(&runtime_events_enabled)) return Val_unit;
 
   uintnat paused = 1;
 
@@ -478,10 +478,8 @@ static void write_to_ring(ev_category category, ev_message_type type,
 
   /* the head and tail indexes for the current domain's ring buffer (out of
       the header) */
-  uint64_t ring_head = atomic_load_explicit(&domain_ring_header->ring_head,
-                                            memory_order_acquire);
-  uint64_t ring_tail = atomic_load_explicit(&domain_ring_header->ring_tail,
-                                            memory_order_acquire);
+  uint64_t ring_head = atomic_load_acquire(&domain_ring_header->ring_head);
+  uint64_t ring_tail = atomic_load_acquire(&domain_ring_header->ring_tail);
 
   /* since rings can only be powers of two in size, we use this mask to cheaply
     convert the head and tail indexes in to the physical offset in the ring
@@ -519,8 +517,8 @@ static void write_to_ring(ev_category category, ev_message_type type,
 
     ring_head += RUNTIME_EVENTS_ITEM_LENGTH(head_header);
 
-    atomic_store_explicit(&domain_ring_header->ring_head, ring_head,
-                          memory_order_release); // advance the ring head
+    // advance the ring head
+    atomic_store_release(&domain_ring_header->ring_head, ring_head);
   }
 
   if (padding_required > 0) {
@@ -532,8 +530,7 @@ static void write_to_ring(ev_category category, ev_message_type type,
 
     ring_tail += ring_distance_to_end;
 
-    atomic_store_explicit(&domain_ring_header->ring_tail, ring_tail,
-                          memory_order_release);
+    atomic_store_release(&domain_ring_header->ring_tail, ring_tail);
 
     ring_tail_offset = 0;
   }
@@ -553,17 +550,16 @@ static void write_to_ring(ev_category category, ev_message_type type,
     memcpy(&ring_ptr[ring_tail_offset], content + word_offset,
            event_length * sizeof(uint64_t));
   }
-  atomic_store_explicit(&domain_ring_header->ring_tail,
-                        ring_tail + length_with_header_ts,
-                        memory_order_release);
+  atomic_store_release(&domain_ring_header->ring_tail,
+                       ring_tail + length_with_header_ts);
 }
 
 /* Functions for putting runtime data on to the runtime_events */
 
 static inline int ring_is_active(void) {
     return
-      atomic_load_explicit(&runtime_events_enabled, memory_order_relaxed)
-      && !atomic_load_explicit(&runtime_events_paused, memory_order_relaxed);
+      atomic_load_relaxed(&runtime_events_enabled)
+      && !atomic_load_relaxed(&runtime_events_paused);
 }
 
 void caml_ev_begin(ev_runtime_phase phase) {
@@ -680,7 +676,7 @@ CAMLprim value caml_runtime_events_user_register(value event_name,
   // critical section: when we update the user_events list we need to make sure
   // it is not updated while we construct the pointer to the next element
 
-  if (atomic_load_acq(&runtime_events_enabled)) {
+  if (atomic_load_acquire(&runtime_events_enabled)) {
     // Ring buffer is already available, we register the name
     events_register_write_buffer(index, event_name);
   }

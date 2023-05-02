@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type t = A of {mutable x: int};;

@@ -1,6 +1,6 @@
-(* TEST
-   flags = "-dparsetree"
-   * toplevel *)
+(* TEST_BELOW
+Filler_text_added_
+to_preserve_lo*)
 
 (* Using a toplevel test and not an expect test, because the locs get shifted
    by the expect blocks and the output is therefore not stable. *)
@@ -132,3 +132,8 @@ let g y =
   let f ~y = y + 1 in
   f ~(y:int)
 ;;
+
+(* TEST
+ flags = "-dparsetree";
+ toplevel;
+*)

@@ -1,5 +1,5 @@
 (* TEST
-   flags="-w +48"
+ flags = "-w +48";
 *)
 
 external ( @@ ) :  ('a -> 'b) -> 'a -> 'b = "%apply"

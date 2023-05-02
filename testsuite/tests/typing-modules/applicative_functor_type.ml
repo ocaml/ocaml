@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type t = Set.Make(String).t

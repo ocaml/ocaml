@@ -1,5 +1,6 @@
 (* TEST
-   * expect *)
+ expect;
+*)
 
 module type Endpoint_intf = sig
   type t

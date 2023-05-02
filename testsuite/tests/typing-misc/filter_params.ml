@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type ('a, 'b) t constraint 'a = 'b

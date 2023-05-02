@@ -101,7 +101,7 @@ let () =
       | Corrupted_interface s ->
         Printf.sprintf "Corrupted_interface %S" s
       | Cannot_open_dynamic_library exn ->
-        Printf.sprintf "Cannot_open_dll %S" (Printexc.to_string exn)
+        Printf.sprintf "Cannot_open_dll %s" (Printexc.to_string exn)
       | Inconsistent_implementation s ->
         Printf.sprintf "Inconsistent_implementation %S" s
       | Library's_module_initializers_failed exn ->

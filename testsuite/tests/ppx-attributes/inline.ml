@@ -1,6 +1,6 @@
 (* TEST
-   flags = "-dlambda -dno-unique-ids"
-   * expect
+ flags = "-dlambda -dno-unique-ids";
+ expect;
 *)
 
 (* This checks that function attributes like [@inline] aren't dropped when they

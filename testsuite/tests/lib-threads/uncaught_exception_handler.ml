@@ -1,12 +1,12 @@
-(* TEST
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
 
-flags = "-g"
-ocamlrunparam += ",b=1"
 
-* hassysthreads
-include systhreads
-** bytecode
-** native
+
+
+
+
+
 
 *)
 
@@ -38,3 +38,15 @@ let _ =
   Thread.set_uncaught_exception_handler (handler Thread.Exit);
   let th = Thread.create fn () in
   Thread.join th
+
+(* TEST
+ flags = "-g";
+ ocamlrunparam += ",b=1";
+ include systhreads;
+ hassysthreads;
+ {
+   bytecode;
+ }{
+   native;
+ }
+*)

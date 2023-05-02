@@ -1,18 +1,19 @@
 (* TEST
-
-* libwin32unix
-   script = "sh ${test_source_directory}/has-afunix.sh"
-** hassysthreads
-    include systhreads
-*** script
-**** bytecode
-output = "${test_build_directory}/program-output"
-stdout = "${output}"
-**** native
-output = "${test_build_directory}/program-output"
-stdout = "${output}"
-
- *)
+ script = "sh ${test_source_directory}/has-afunix.sh";
+ libwin32unix;
+ include systhreads;
+ hassysthreads;
+ script;
+ {
+   output = "${test_build_directory}/program-output";
+   stdout = "${output}";
+   bytecode;
+ }{
+   output = "${test_build_directory}/program-output";
+   stdout = "${output}";
+   native;
+ }
+*)
 
 let peer id fd =
   let msg = Bytes.of_string (Printf.sprintf "%d" id) in

@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 module Test (S : sig module type S end) (M : S.S) =

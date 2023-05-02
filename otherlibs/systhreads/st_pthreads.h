@@ -37,7 +37,7 @@ static atomic_uintnat tick_thread_stop[Max_domains];
 
 static int st_initialize(void)
 {
-  atomic_store_rel(&Tick_thread_stop, 0);
+  atomic_store_release(&Tick_thread_stop, 0);
   return 0;
 }
 
@@ -112,14 +112,14 @@ static void st_masterlock_init(st_masterlock * m)
     m->init = 1;
   }
   m->busy = 1;
-  atomic_store_rel(&m->waiters, 0);
+  atomic_store_release(&m->waiters, 0);
 
   return;
 };
 
 static uintnat st_masterlock_waiters(st_masterlock * m)
 {
-  return atomic_load_acq(&m->waiters);
+  return atomic_load_acquire(&m->waiters);
 }
 
 static void st_bt_lock_acquire(st_masterlock *m) {
@@ -295,10 +295,10 @@ static void * caml_thread_tick(void * arg)
   caml_init_domain_self(*domain_id);
   caml_domain_state *domain = Caml_state;
 
-  while(! atomic_load_acq(&Tick_thread_stop)) {
+  while(! atomic_load_acquire(&Tick_thread_stop)) {
     st_msleep(Thread_timeout);
 
-    atomic_store_rel(&domain->requested_external_interrupt, 1);
+    atomic_store_release(&domain->requested_external_interrupt, 1);
     caml_interrupt_self();
   }
   return NULL;
