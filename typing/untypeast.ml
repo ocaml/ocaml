@@ -404,7 +404,7 @@ let expression sub exp =
               (* Unlike function cases, the [exp_extra] is placed on the body
                  itself. *)
               Pfunction_body (sub.expr sub body), None
-          | Tfunction_cases { cases; loc; exp_extra; _ } ->
+          | Tfunction_cases { cases; loc; exp_extra; attributes; _ } ->
               let cases = List.map (sub.case sub) cases in
               let constraint_ =
                 match exp_extra with
@@ -415,7 +415,7 @@ let expression sub exp =
                     Some (Pconstraint (sub.typ sub ty))
                 | Some (Texp_poly _ | Texp_newtype _) | None -> None
               in
-              Pfunction_cases (cases, loc, []), constraint_
+              Pfunction_cases (cases, loc, attributes), constraint_
         in
         let params =
           List.concat_map

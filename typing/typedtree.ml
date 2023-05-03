@@ -180,6 +180,7 @@ and function_body =
         param: Ident.t;
         loc: Location.t;
         exp_extra: exp_extra option;
+        attributes: attributes;
       }
 
 and record_label_definition =

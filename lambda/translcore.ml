@@ -1169,7 +1169,7 @@ and transl_letop ~scopes loc env let_ ands param case partial =
            transl_function_without_attributes ~scopes loc repr []
              (Tfunction_cases
                 { cases = [case]; param; partial; loc = ghost_loc;
-                  exp_extra = None; }))
+                  exp_extra = None; attributes = []; }))
     in
     let attr = default_function_attribute in
     let loc = of_location ~scopes case.c_rhs.exp_loc in

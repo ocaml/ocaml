@@ -330,11 +330,12 @@ let function_body sub body =
   match body with
   | Tfunction_body body ->
       Tfunction_body (sub.expr sub body)
-  | Tfunction_cases { cases; partial; param; loc; exp_extra } ->
+  | Tfunction_cases { cases; partial; param; loc; exp_extra; attributes } ->
       let loc = sub.location sub loc in
       let cases = List.map (sub.case sub) cases in
       let exp_extra = Option.map (extra sub) exp_extra in
-      Tfunction_cases { cases; partial; param; loc; exp_extra }
+      let attributes = sub.attributes sub attributes in
+      Tfunction_cases { cases; partial; param; loc; exp_extra; attributes }
 
 let expr sub x =
   let extra x = extra sub x in

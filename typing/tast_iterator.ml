@@ -268,10 +268,13 @@ let function_body sub body =
   match[@warning "+9"] body with
   | Tfunction_body body ->
       sub.expr sub body
-  | Tfunction_cases  { cases; loc; exp_extra; partial = _; param = _ } ->
+  | Tfunction_cases
+      { cases; loc; exp_extra; attributes; partial = _; param = _ }
+    ->
       List.iter (sub.case sub) cases;
       sub.location sub loc;
-      Option.iter (extra sub) exp_extra
+      Option.iter (extra sub) exp_extra;
+      sub.attributes sub attributes
 
 let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
   let extra x = extra sub x in

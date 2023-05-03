@@ -20,7 +20,8 @@ open Typedtree
 open Types
 
 (** Most checks in this file need not access all information about a case,
-    and just need a few pieces of information (a "case summary").
+    and just need a few pieces of information. [parmatch_case] is those
+    few pieces of information.
 *)
 type 'pattern parmatch_case =
   { pattern : 'pattern;

@@ -330,6 +330,8 @@ and function_body =
         param: Ident.t;
         loc: Location.t;
         exp_extra: exp_extra option;
+        attributes: attributes;
+        (** [attributes] is just used in untypeast. *)
       }
 (** The function body binds a final argument in [Tfunction_cases],
     and this argument is pattern-matched against the cases.

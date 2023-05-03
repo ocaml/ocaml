@@ -4606,7 +4606,8 @@ and type_function
           in
           let param = name_cases "param" cases in
           let body =
-            Tfunction_cases { cases; partial; param; loc; exp_extra }
+            Tfunction_cases
+              { cases; partial; param; loc; exp_extra; attributes }
           in
           exp_type, body
      in
@@ -5046,7 +5047,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
           Texp_function ([],
             Tfunction_cases
               { cases; partial = Total; param; loc = cases_loc;
-                exp_extra = None;
+                exp_extra = None; attributes = [];
               })
         }
       in

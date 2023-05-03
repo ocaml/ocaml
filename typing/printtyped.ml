@@ -291,8 +291,11 @@ and function_body i ppf (body : function_body) =
   | Tfunction_body e ->
       line i ppf "Tfunction_body\n";
       expression (i+1) ppf e
-  | Tfunction_cases { cases; loc; exp_extra; param = _; partial = _ } ->
+  | Tfunction_cases
+      { cases; loc; exp_extra; attributes = attrs; param = _; partial = _ }
+    ->
       line i ppf "Tfunction_cases %a\n" fmt_location loc;
+      attributes (i+1) ppf attrs;
       Option.iter (fun e -> expression_extra (i+1) ppf e []) exp_extra;
       list (i+1) case ppf cases
 
