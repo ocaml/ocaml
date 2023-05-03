@@ -11,9 +11,9 @@
 
 type a = { mutable a : int }
 
-let alloc {a} b = a + b
+let mutable_pat1 {a} b = a + b
 
-let noalloc b {a} = b + a
+let mutable_pat2 b {a} = b + a
 
 let measure name f =
   let a = {a = 1} in
@@ -27,8 +27,8 @@ let measure name f =
   | _ -> Printf.printf "%S allocates\n" name
 
 let () =
-  measure "noalloc" (fun ~a ~b -> noalloc b a);
-  measure "alloc" (fun ~a ~b -> alloc a b)
+  measure "mutable_pat1" (fun ~a ~b -> mutable_pat1 a b);
+  measure "mutable_pat2" (fun ~a ~b -> mutable_pat2 b a)
 
 
 let dont_warn_with_partial_match None x = x

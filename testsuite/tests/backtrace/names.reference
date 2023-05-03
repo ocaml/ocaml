@@ -1,9 +1,11 @@
 Raised at Names.bang in file "names.ml", line 8, characters 29-39
-Called from Names.inline_object.object#othermeth in file "names.ml", line 96, characters 6-10
-Called from Names.inline_object.object#meth in file "names.ml", line 94, characters 6-26
-Called from Names.klass2#othermeth.(fun) in file "names.ml", line 88, characters 18-22
-Called from Names.klass2#othermeth in file "names.ml", line 88, characters 4-30
-Called from Names.klass#meth in file "names.ml", line 84, characters 4-27
+Called from Names.inline_object.object#othermeth in file "names.ml", line 103, characters 6-10
+Called from Names.inline_object.object#meth in file "names.ml", line 101, characters 6-26
+Called from Names.klass2#othermeth.(fun) in file "names.ml", line 95, characters 18-22
+Called from Names.klass2#othermeth in file "names.ml", line 95, characters 4-30
+Called from Names.klass#meth in file "names.ml", line 91, characters 4-27
+Called from Names.nested.(fun) in file "names.ml", line 86, characters 54-57
+Called from Names.flat in file "names.ml", line 85, characters 37-40
 Called from Names.(+@+) in file "names.ml", line 79, characters 31-35
 Called from Names.Rec2.fn in file "names.ml", line 76, characters 28-32
 Called from Names.Rec1.fn in file "names.ml", line 71, characters 28-34
@@ -23,4 +25,4 @@ Called from Names.Mod1.Nested.apply in file "names.ml", line 21, characters 33-3
 Called from Names.fn_poly in file "names.ml", line 17, characters 2-5
 Called from Names.fn_function in file "names.ml", line 14, characters 9-13
 Called from Names.fn_multi in file "names.ml", line 11, characters 36-40
-Called from Names in file "names.ml", line 103, characters 4-445
+Called from Names in file "names.ml", line 110, characters 4-493

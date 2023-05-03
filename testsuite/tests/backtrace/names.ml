@@ -78,6 +78,13 @@ end
 
 let[@inline never] (+@+) n f = f 42 + 1
 
+(* [nested] shows up in the backtrace as [nested.(fun)] because
+   it creates an inner lambda. In contrast, [flat]'s arity is syntactically
+   2 and does not create an inner lambda.
+*)
+let[@inline never] flat = fun x f -> f x + 1
+let[@inline never] nested x = fun[@inline never] f -> f x + 1
+
 class klass = object (self)
   val other = new klass2 "asdf"
   method meth f : int =
@@ -114,6 +121,8 @@ let () =
     Inst.fn @@ fun _ ->
     Rec1.fn @@ fun _ ->
     42 +@+ fun _ ->
+    flat 7 @@ fun _ ->
+    nested 5 @@ fun _ ->
     (new klass)#meth @@ fun _ ->
     inline_object @@ fun _ ->
     bang ()
