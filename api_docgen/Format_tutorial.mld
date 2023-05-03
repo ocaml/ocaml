@@ -291,6 +291,9 @@ vertical box!
 + End your main program by a [print_newline ()] call, that flushes the
 pretty-printer tables (hence the output).  (Note that the top-level loop of the
 interactive system does it as well, just before a new input.)
++ By default, a line is assumed to be 78 columns wide. To set a different width
+you can use ([Format.set_margin]) if you're using ([Format.printf]) or
+([Format.pp_set_margin]) if you wish to set the width for a specific formatter.
 
 {1 Printing to stdout: using printf}
 
