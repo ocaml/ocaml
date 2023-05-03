@@ -369,8 +369,7 @@ let emit_instr env i =
     | Lop(Iextcall {func; alloc; stack_ofs}) ->
         if stack_ofs > 0 then begin
           ` lgr {emit_reg reg_stack_arg_begin}, %r15\n`;
-          ` lgr {emit_reg reg_stack_arg_end}, %r15\n`;
-          ` agfi {emit_reg reg_stack_arg_end}, {emit_int stack_ofs}\n`;
+          ` lay {emit_reg reg_stack_arg_end}, {emit_int stack_ofs}(%r15)\n`;
           emit_load_symbol_addr reg_r7 func;
           emit_call "caml_c_call_stack_args";
           `{record_frame env i.live (Dbg_other i.dbg)}\n`
