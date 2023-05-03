@@ -933,15 +933,6 @@ CFI_STARTPROC
 CFI_ENDPROC
 ENDFUNCTION(G(caml_ml_array_bound_error))
 
-FUNCTION(G(caml_assert_stack_invariants))
-CFI_STARTPROC
-    /* Load address of [caml_array_bound_error_asm] in ADDITIONAL_ARG */
-        LEA_VAR(caml_array_bound_error_asm, ADDITIONAL_ARG)
-    /* Call that function */
-        brcl    15, GCALL(caml_c_call)
-CFI_ENDPROC
-ENDFUNCTION(G(caml_assert_stack_invariants))
-
         .globl  caml_system__code_end
 caml_system__code_end:
 
