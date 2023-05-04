@@ -36,6 +36,9 @@ Working version
 
 ### Build system:
 
+- #12221: Link with -Wl,--no-execute-only on OpenBSD, in order to allow
+  text section readability, which is relied upon by the dynlink code.
+
 ### Bug fixes:
 
 
