@@ -3338,6 +3338,25 @@ and type_expect_
         type_function env params body_constraint body ty_expected ~in_function
           ~first:true
       in
+      (* Require that the n-ary function is known to have at least n arrows
+         in the type. This prevents GADT equations introduced by the parameters
+         from hiding arrows from the resulting type.
+      *)
+      let ty_function =
+        List.fold_right
+          (fun param rest_ty ->
+             newty (Tarrow (param.fp_arg_label, newvar (), rest_ty, commu_ok)))
+          params
+          (match body with
+           | Tfunction_body _ -> newvar ()
+           | Tfunction_cases _ ->
+             newty (Tarrow (Nolabel, newvar (), newvar (), commu_ok)))
+      in
+      begin
+        try unify env ty_function exp_type
+        with Unify err ->
+        raise(Error(loc, env, Expr_type_clash (err, None, Some desc)));
+      end;
       re
         { exp_desc = Texp_function (params, body);
           exp_loc = loc;

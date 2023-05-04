@@ -68,16 +68,3 @@ binding2 ~opt:(module M2) M2.E;;
 match binding2 M2.E with
 | exception Match_failure _ -> ()
 | _ -> assert false;;
-
-(* Weird case where arity is greater than number of arrows in type. *)
-type (_, _) eq = Eq : ('a, 'a) eq
-
-let funny (type a) ?opt:(Eq = (assert false : (a, int -> int) eq)) () : a =
-  function x -> x + 1;;
-
-type ab = A of int | B of int;;
-
-match funny () with
-| A _ -> print_endline "1"
-| B _ -> print_endline "2"
-;;
