@@ -1081,7 +1081,7 @@ void caml_compact_heap(caml_domain_state* domain_state, void* data,
       value *next = NULL;
 
       /* Every pool in the list of evacuating pools must be evacuating */
-      CAMLassert( evac_pool->evacuating == 1 );
+      CAMLassert(evac_pool->evacuating == 1);
 
       while (p + wh <= end) {
         header_t hd = (header_t)atomic_load_relaxed((atomic_uintnat*)p);
@@ -1200,7 +1200,7 @@ void caml_compact_heap(caml_domain_state* domain_state, void* data,
       mlsize_t wh = wsize_sizeclass[sz_class];
 
       while (p + wh <= end) {
-        CAMLassert( *p != 0 );
+        CAMLassert(*p != 0);
         if (Has_status_val(Val_hp(p), caml_global_heap_state.UNMARKED)) {
           compact_update_block(p);
         }
