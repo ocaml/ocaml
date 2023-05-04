@@ -55,6 +55,9 @@ typedef struct pool {
 } pool;
 static_assert(sizeof(pool) == Bsize_wsize(POOL_HEADER_WSIZE), "");
 #define POOL_SLAB_WOFFSET(sz) (POOL_HEADER_WSIZE + wastage_sizeclass[sz])
+#define POOL_FIRST_BLOCK(p, sz) ((value*)(p) + POOL_SLAB_WOFFSET(sz))
+#define POOL_END(p) ((value*)(p) + POOL_WSIZE)
+#define POOL_BLOCKS(p) ((POOL_WSIZE - POOL_HEADER_WSIZE) / wsize_sizeclass[(p)->sz])
 
 typedef struct large_alloc {
   caml_domain_state* owner;
@@ -230,8 +233,8 @@ static void free_pool_freelist(void)
 }
 
 static void calc_pool_stats(pool* a, sizeclass sz, struct heap_stats* s) {
-  value* p = (value*)((char*)a + Bsize_wsize(POOL_SLAB_WOFFSET(sz)));
-  value* end = (value*)a + POOL_WSIZE;
+  value* p = POOL_FIRST_BLOCK(a, sz);
+  value* end = POOL_END(a);
   mlsize_t wh = wsize_sizeclass[sz];
   s->pool_frag_words += POOL_SLAB_WOFFSET(sz);
 
@@ -255,7 +258,7 @@ Caml_inline void pool_initialize(pool* r,
                                  caml_domain_state* owner)
 {
   mlsize_t wh = wsize_sizeclass[sz];
-  value* p = (value*)((char*)r + Bsize_wsize(POOL_SLAB_WOFFSET(sz)));
+  value* p = POOL_FIRST_BLOCK(r, sz);
   value* end = (value*)((char*)r + Bsize_wsize(POOL_WSIZE));
 
   r->next = 0;
@@ -485,8 +488,8 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
   *plist = a->next;
 
   {
-    value* p = (value*)((char*)a + Bsize_wsize(POOL_SLAB_WOFFSET(sz)));
-    value* end = (value*)a + POOL_WSIZE;
+    value* p = POOL_FIRST_BLOCK(a, sz);
+    value* end = POOL_END(a);
     mlsize_t wh = wsize_sizeclass[sz];
     int all_used = 1;
     struct heap_stats* s = &local->stats;
@@ -625,7 +628,7 @@ uintnat caml_heap_blocks(struct caml_heap_state* local) {
 
 void caml_redarken_pool(struct pool* r, scanning_action f, void* fdata) {
   mlsize_t wh = wsize_sizeclass[r->sz];
-  value* p = (value*)((char*)r + Bsize_wsize(POOL_SLAB_WOFFSET(r->sz)));
+  value* p = POOL_FIRST_BLOCK(r, r->sz);
   value* end = (value*)((char*)r + Bsize_wsize(POOL_WSIZE));
 
   while (p + wh <= end) {
@@ -818,18 +821,18 @@ void caml_verify_heap_from_stw(caml_domain_state *domain) {
 
 /* Compaction start */
 
-static inline void compact_update_field(void* ignored,
+static inline void compact_update_value(void* ignored,
                                         value v,
                                         volatile value* p)
 {
   if (Is_block(v)) {
     CAMLassert(!Is_young(v));
 
-    header_t vhd = Hd_val(v);
-    tag_t tag = Tag_hd(vhd);
+    header_t hd = Hd_val(v);
+    tag_t tag = Tag_hd(hd);
 
     /* Block isn't markable and so can't move */
-    if (Has_status_hd(vhd, NOT_MARKABLE)) return;
+    if (Has_status_hd(hd, NOT_MARKABLE)) return;
 
     if (tag == Infix_tag) {
       int infix_offset = Infix_offset_val(v);
@@ -853,22 +856,27 @@ static inline void compact_update_field(void* ignored,
         *p = fwd + infix_offset;
       }
     } else {
-      mlsize_t vsize = Whsize_hd(vhd);
+      mlsize_t vsize = Whsize_hd(hd);
 
       if (vsize <= SIZECLASS_MAX) {
         if (caml_pool_of_shared_block(v)->evacuating) {
           value fwd = Field(v,0);
           CAMLassert(!caml_pool_of_shared_block(fwd)->evacuating);
           CAMLassert(Is_block(fwd));
-          /* Update p to point to the first field of v */
-          *p = fwd;
           /* Check the original block and the forwarded block
               are the same size */
-          CAMLassert(Whsize_val(*p) == vsize);
+          CAMLassert(Whsize_val(fwd) == vsize);
+          /* Update p */
+          *p = fwd;
         }
       }
     }
   }
+}
+
+static inline void compact_update_value_at(volatile value* p)
+{
+  compact_update_value(NULL, *p, p);
 }
 
 static void compact_update_block(value* p)
@@ -881,51 +889,47 @@ static void compact_update_block(value* p)
 
   tag_t tag = Tag_hd(hd);
 
-  mlsize_t wosz = Wosize_hd(hd);
-  mlsize_t i;
-  uintnat offset = 0;
-
   /* We should never encounter an Infix tag iterating over the shared pools or
     large allocations. We could find it in roots but those use
-    [compact_update_field]. */
+    [compact_update_value]. */
   CAMLassert(tag != Infix_tag);
 
   if (tag == Cont_tag) {
     value stk = Field(Val_hp(p), 0);
     if (Ptr_val(stk)) {
-      caml_scan_stack(&compact_update_field, 0, NULL, Ptr_val(stk), 0);
+      caml_scan_stack(&compact_update_value, 0, NULL, Ptr_val(stk), 0);
     }
   } else {
+    uintnat offset = 0;
+
     if (tag == Closure_tag) {
       offset = Start_env_closinfo(Closinfo_val(Val_hp(p)));
     }
 
     if (tag < No_scan_tag) {
-      for (i = offset; i < wosz; i++) {
-        compact_update_field(NULL, Field(Val_hp(p), i), &Field(Val_hp(p), i));
+      mlsize_t wosz = Wosize_hd(hd);
+      for (mlsize_t i = offset; i < wosz; i++) {
+        compact_update_value_at(&Field(Val_hp(p), i));
       }
     }
   }
 }
 
-static void compact_update_ephe_list(value ephe_list)
+static void compact_update_ephe_list(volatile value *ephe_list_p)
 {
-  while (ephe_list) {
+  while (*ephe_list_p) {
+    compact_update_value_at(ephe_list_p);
+
+    value ephe_list = *ephe_list_p;
+
     mlsize_t wosize = Wosize_val(ephe_list);
-
-    if (Ephe_link(ephe_list)) {
-      compact_update_field(NULL, Field(ephe_list, CAML_EPHE_LINK_OFFSET),
-        &Field(ephe_list, CAML_EPHE_LINK_OFFSET));
-    }
-
-    compact_update_field(NULL, Field(ephe_list, CAML_EPHE_DATA_OFFSET),
-      &Field(ephe_list, CAML_EPHE_DATA_OFFSET));
+    compact_update_value_at(&Field(ephe_list, CAML_EPHE_DATA_OFFSET));
 
     for (int i = CAML_EPHE_FIRST_KEY ; i < wosize ; i++) {
-      compact_update_field(NULL, Field(ephe_list, i), &Field(ephe_list, i));
+      compact_update_value_at(&Field(ephe_list, i));
     }
 
-    ephe_list = Ephe_link(ephe_list);
+    ephe_list_p = &Field(ephe_list, CAML_EPHE_LINK_OFFSET);
   }
 }
 
@@ -998,7 +1002,7 @@ void caml_compact_heap(caml_domain_state* domain_state, void* data,
     /* [evac_pool] will eventually point to the first pool in this size class
       that is to be evacuated */
     pool* evac_pool = NULL;
-    int nonempty_blocks = 0;
+    uintnat nonempty_blocks = 0;
 
     if (!cur_pool) {
       /* No partially filled pools for this size, nothing to do */
@@ -1012,8 +1016,8 @@ void caml_compact_heap(caml_domain_state* domain_state, void* data,
        garbage in the allocating pools that isn't cleaned up and which we
        can't use as free space yet. */
     while (cur_pool) {
-      value* p = (value*)((char*)cur_pool + POOL_HEADER_SZ);
-      value* end = (value*)cur_pool + POOL_WSIZE;
+      value* p = POOL_FIRST_BLOCK(cur_pool, sz_class);
+      value* end = POOL_END(cur_pool);
       mlsize_t wh = wsize_sizeclass[sz_class];
 
       while (p + wh <= end) {
@@ -1054,7 +1058,7 @@ void caml_compact_heap(caml_domain_state* domain_state, void* data,
         }
       }
 
-      cur_blocks += (POOL_WSIZE - POOL_HEADER_SZ) / wsize_sizeclass[sz_class];
+      cur_blocks += POOL_BLOCKS(cur_pool);
 
       cur_pool = cur_pool->next;
     }
@@ -1074,8 +1078,8 @@ void caml_compact_heap(caml_domain_state* domain_state, void* data,
 
     /* Now we start from evac_pool and evacuate live blocks to cur_pool */
     while (evac_pool) {
-      value* p = (value*)((char*)evac_pool + POOL_HEADER_SZ);
-      value* end = (value*)evac_pool + POOL_WSIZE;
+      value* p = POOL_FIRST_BLOCK(evac_pool, sz_class);
+      value* end = POOL_END(evac_pool);
       mlsize_t wh = wsize_sizeclass[sz_class];
       value *next = NULL;
 
@@ -1159,11 +1163,11 @@ void caml_compact_heap(caml_domain_state* domain_state, void* data,
     the moved block's forwarding pointer and update accordingly. */
 
   /* First we do roots (locals and finalisers) */
-  caml_do_roots(&compact_update_field, 0, NULL, Caml_state, 1);
+  caml_do_roots(&compact_update_value, 0, NULL, Caml_state, 1);
 
   /* Next, one domain does the global roots */
   if (participants[0] == Caml_state) {
-    caml_scan_global_roots(&compact_update_field, NULL);
+    caml_scan_global_roots(&compact_update_value, NULL);
   }
 
   /* Shared heap pools. */
@@ -1173,8 +1177,8 @@ void caml_compact_heap(caml_domain_state* domain_state, void* data,
     /* Iterate through pools updating the fields in each live block,
       stop once we reach our first evacuating pool. */
     while (cur_pool && !cur_pool->evacuating) {
-      value* p = (value*)((char*)cur_pool + POOL_HEADER_SZ);
-      value* end = (value*)cur_pool + POOL_WSIZE;
+      value* p = POOL_FIRST_BLOCK(cur_pool, sz_class);
+      value* end = POOL_END(cur_pool);
       mlsize_t wh = wsize_sizeclass[sz_class];
 
       while (p + wh <= end) {
@@ -1193,8 +1197,8 @@ void caml_compact_heap(caml_domain_state* domain_state, void* data,
 
     while (cur_pool) {
       CAMLassert(!cur_pool->evacuating);
-      value* p = (value*)((char*)cur_pool + POOL_HEADER_SZ);
-      value* end = (value*)cur_pool + POOL_WSIZE;
+      value* p = POOL_FIRST_BLOCK(cur_pool, sz_class);
+      value* end = POOL_END(cur_pool);
       mlsize_t wh = wsize_sizeclass[sz_class];
 
       while (p + wh <= end) {
@@ -1220,16 +1224,8 @@ void caml_compact_heap(caml_domain_state* domain_state, void* data,
 
   /* Ephemerons */
   struct caml_ephe_info* ephe_info = Caml_state->ephe_info;
-
-  if (ephe_info->todo) {
-    compact_update_field(NULL, ephe_info->todo, &ephe_info->todo);
-    compact_update_ephe_list(ephe_info->todo);
-  }
-
-  if (ephe_info->live) {
-    compact_update_field(NULL, ephe_info->live, &ephe_info->live);
-    compact_update_ephe_list(ephe_info->live);
-  }
+  compact_update_ephe_list(&ephe_info->todo);
+  compact_update_ephe_list(&ephe_info->live);
 
   caml_global_barrier();
 
@@ -1255,8 +1251,8 @@ void caml_compact_heap(caml_domain_state* domain_state, void* data,
         pool* next_pool = cur_pool->next;
 
         #ifdef DEBUG
-        for (int p = POOL_HEADER_WSIZE; p < POOL_WSIZE; p++) {
-          *((value*)cur_pool + p) = Debug_free_major;
+        for (value *p = POOL_FIRST_BLOCK(cur_pool, sz_class); p < POOL_END(cur_pool); p++) {
+          *p = Debug_free_major;
         }
         #endif
 
@@ -1303,8 +1299,8 @@ static void verify_pool(pool* a, sizeclass sz, struct mem_stats* s) {
   }
 
   {
-    value* p = (value*)((char*)a + Bsize_wsize(POOL_SLAB_WOFFSET(sz)));
-    value* end = (value*)a + POOL_WSIZE;
+    value* p = POOL_FIRST_BLOCK(a,sz);
+    value* end = POOL_END(a);
     mlsize_t wh = wsize_sizeclass[sz];
     s->overhead += POOL_SLAB_WOFFSET(sz);
 
