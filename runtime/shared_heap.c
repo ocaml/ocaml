@@ -855,8 +855,7 @@ static inline void compact_update_field(void* ignored,
     } else {
       mlsize_t vsize = Whsize_hd(vhd);
 
-      if (vsize <= SIZECLASS_MAX)
-      {
+      if (vsize <= SIZECLASS_MAX) {
         if (caml_pool_of_shared_block(v)->evacuating) {
           value fwd = Field(v,0);
           CAMLassert(!caml_pool_of_shared_block(fwd)->evacuating);
@@ -891,17 +890,17 @@ static void compact_update_block(value* p)
     [compact_update_field]. */
   CAMLassert(tag != Infix_tag);
 
-  if(tag == Cont_tag) {
+  if (tag == Cont_tag) {
     value stk = Field(Val_hp(p), 0);
     if (Ptr_val(stk)) {
       caml_scan_stack(&compact_update_field, 0, NULL, Ptr_val(stk), 0);
     }
   } else {
-    if(tag == Closure_tag) {
+    if (tag == Closure_tag) {
       offset = Start_env_closinfo(Closinfo_val(Val_hp(p)));
     }
 
-    if(tag < No_scan_tag) {
+    if (tag < No_scan_tag) {
       for (i = offset; i < wosz; i++) {
         compact_update_field(NULL, Field(Val_hp(p), i), &Field(Val_hp(p), i));
       }
@@ -1119,8 +1118,7 @@ void caml_compact_heap(caml_domain_state* domain_state, void* data,
           }
           /* We are implicitly sweeping pools in the evacuation set and thus
              we must remember to call finalisers for Custom blocks. */
-          else if (Has_status_hd(hd, caml_global_heap_state.GARBAGE))
-          {
+          else if (Has_status_hd(hd, caml_global_heap_state.GARBAGE)) {
             /* Deal with custom block finalisers */
             if (Tag_hd (hd) == Custom_tag) {
               void (*final_fun)(value) = Custom_ops_val(Val_hp(p))->finalize;
@@ -1266,9 +1264,7 @@ void caml_compact_heap(caml_domain_state* domain_state, void* data,
 
         last_pool = NULL;
         cur_pool = next_pool;
-      }
-      else
-      {
+      } else {
         last_pool = cur_pool;
         cur_pool = cur_pool->next;
       }
