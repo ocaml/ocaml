@@ -906,10 +906,6 @@ let report_error err =
   Location.errorf ~loc:Location.(in_file !input_name) "%t" main
 
 let report_apply_error ~loc env (lid_app, mty_f, args) =
-  let may_print_app ppf = match lid_app with
-    | None -> ()
-    | Some lid -> Format.fprintf ppf "%a " Printtyp.longident lid
-  in
   let d = Functor_suberror.App.patch env ~f:mty_f ~args in
   match d with
   (* We specialize the one change and one argument case to remove the
@@ -924,18 +920,41 @@ let report_apply_error ~loc env (lid_app, mty_f, args) =
       in
       Location.errorf ~loc "%t" (Functor_suberror.App.single_diff g e more)
   | _ ->
-      let actual = Functor_suberror.App.got d in
-      let expected = Functor_suberror.expected d in
-      let sub =
-        List.rev @@
-        Functor_suberror.params functor_app_diff env ~expansion_token:true d
+      let not_functor =
+        List.for_all (function _, Diffing.Delete _ -> true | _ -> false) d
       in
-      Location.errorf ~loc ~sub
-        "@[<hv>The functor application %tis ill-typed.@ \
-         These arguments:@;<1 2>\
-         @[%t@]@ do not match these parameters:@;<1 2>@[functor@ %t@ -> ...@]@]"
-        may_print_app
-        actual expected
+      if not_functor then
+        match lid_app with
+        | Some lid ->
+            Location.errorf ~loc
+              "@[The module %a is not a functor, it cannot be applied.@]"
+              Printtyp.longident lid
+        |  None ->
+            Location.errorf ~loc
+              "@[This module is not a functor, it cannot be applied.@]"
+      else
+        let intro ppf =
+          match lid_app with
+          | None -> Format.fprintf ppf "This functor application is ill-typed."
+          | Some (Longident.Lapply _ as lid) ->
+              Format.fprintf ppf "The functor application %a is ill-typed."
+                Printtyp.longident lid
+          |  Some lid ->
+              Format.fprintf ppf "This functor application of %a is ill-typed."
+                Printtyp.longident lid
+        in
+        let actual = Functor_suberror.App.got d in
+        let expected = Functor_suberror.expected d in
+        let sub =
+          List.rev @@
+          Functor_suberror.params functor_app_diff env ~expansion_token:true d
+        in
+        Location.errorf ~loc ~sub
+          "@[<hv>%t@ \
+           These arguments:@;<1 2>@[%t@]@ \
+           do not match these parameters:@;<1 2>@[functor@ %t@ -> ...@]@]"
+          intro
+          actual expected
 
 let register () =
   Location.register_error_of_exn
