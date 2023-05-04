@@ -12,6 +12,9 @@ Working version
 
 ### Code generation and optimizations:
 
+- #12221: On arm64, emit floating-point literals in the rodata section
+  instead that in the text section, on all platforms but MacOS X.
+
 ### Standard library:
 
 ### Other libraries:
