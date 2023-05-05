@@ -349,6 +349,9 @@ OCaml 5.1.0
   (Xavier Leroy, review by Edwin Török and Gabriel Scherer, fix by Damien
    Doligez)
 
+- #12184: Sys.rename Windows fixes on directory corner cases.
+  (Jan Midtgaard, review by Anil Madhavapeddy)
+
 ### Other libraries:
 
 - #11374: Remove pointer cast to a type with stricter alignment requirements
