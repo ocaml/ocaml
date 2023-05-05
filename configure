@@ -15162,6 +15162,12 @@ esac ;; #(
   *) :
     mkdll_flags='-shared' ;;
 esac
+       case $host in #(
+  *-*-openbsd*) :
+    mkdll_flags="${mkdll_flags} -Wl,--no-execute-only" ;; #(
+  *) :
+     ;;
+esac
       oc_ldflags="$oc_ldflags -Wl,-E"
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"

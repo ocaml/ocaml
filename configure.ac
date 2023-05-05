@@ -1104,6 +1104,9 @@ AS_IF([test x"$enable_shared" != "xno"],
            # See https://github.com/ocaml/ocaml/issues/9800
            [mkdll_flags='-shared -Wl,-z,notext'],
            [mkdll_flags='-shared'])
+       AS_CASE([$host],
+           [*-*-openbsd*],
+           [mkdll_flags="${mkdll_flags} -Wl,--no-execute-only"])
       oc_ldflags="$oc_ldflags -Wl,-E"
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
