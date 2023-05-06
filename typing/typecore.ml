@@ -629,10 +629,17 @@ and build_as_type_aux ~refine (env : Env.t ref) p =
       ty
   | Tpat_or(p1, p2, row) ->
       begin match row with
-        None ->
-          let ty1 = build_as_type env p1 and ty2 = build_as_type env p2 in
-          unify_pat ~refine env {p2 with pat_type = ty2} ty1;
-          ty1
+        None -> begin
+          let ty1 = build_as_type env p1 in
+          let ty2 = build_as_type env p2 in
+          let snap = Btype.snapshot () in
+          match unify_pat_types ~refine p2.pat_loc env ty2 ty1 with
+          | exception (Error _) ->
+              Btype.backtrack snap;
+              p.pat_type
+          | () ->
+              ty1
+        end
       | Some row ->
           let Row {fields; fixed; name} = row_repr row in
           newty (Tvariant (create_row ~fields ~fixed ~name
