@@ -795,10 +795,10 @@ Error: This expression has type 'a t but an expression was expected of type
 |}];;
 fun ((x : 'a) | (x : 'a t)) -> ();;
 [%%expect{|
-Line 1, characters 21-23:
+Line 1, characters 10-12:
 1 | fun ((x : 'a) | (x : 'a t)) -> ();;
-                         ^^
-Error: This type 'a should be an instance of type 'a t
+              ^^
+Error: This type 'a t should be an instance of type 'a
        The type variable 'a occurs inside 'a t
 |}];;
 type 'a t = < x : 'a >;;
