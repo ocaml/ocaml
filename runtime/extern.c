@@ -991,7 +991,7 @@ oom1:
 
 #endif
 
-static int extern_flag_values[] = {
+static const int extern_flag_values[] = {
   NO_SHARING, CLOSURES, COMPAT_32, COMPRESSED
 };
 

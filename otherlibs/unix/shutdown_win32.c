@@ -16,7 +16,7 @@
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
 
-static int shutdown_command_table[] = {
+static const int shutdown_command_table[] = {
   0, 1, 2
 };
 

@@ -251,7 +251,7 @@ void caml_win32_maperr(DWORD errcode)
 #undef EACCESS
 #define EACCESS EACCES
 
-static int error_table[] = {
+static const int error_table[] = {
   E2BIG, EACCESS, EAGAIN, EBADF, EBUSY, ECHILD, EDEADLK, EDOM,
   EEXIST, EFAULT, EFBIG, EINTR, EINVAL, EIO, EISDIR, EMFILE, EMLINK,
   ENAMETOOLONG, ENFILE, ENODEV, ENOENT, ENOEXEC, ENOLCK, ENOMEM, ENOSPC,
