@@ -16206,18 +16206,15 @@ case $host in #(
   *-apple-darwin*) :
 
 
-  for ac_func in mach_timebase_info mach_absolute_time
+  for ac_func in clock_gettime_nsec_np
 do :
-  as_ac_var=`printf "%s\n" "ac_cv_func_$ac_func" | $as_tr_sh`
-ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
-if eval test \"x\$"$as_ac_var"\" = x"yes"
+  ac_fn_c_check_func "$LINENO" "clock_gettime_nsec_np" "ac_cv_func_clock_gettime_nsec_np"
+if test "x$ac_cv_func_clock_gettime_nsec_np" = xyes
 then :
-  cat >>confdefs.h <<_ACEOF
-#define `printf "%s\n" "HAVE_$ac_func" | $as_tr_cpp` 1
-_ACEOF
+  printf "%s\n" "#define HAVE_CLOCK_GETTIME_NSEC_NP 1" >>confdefs.h
 
         has_monotonic_clock=true
-        printf "%s\n" "#define HAS_MACH_ABSOLUTE_TIME 1" >>confdefs.h
+        printf "%s\n" "#define HAS_CLOCK_GETTIME_NSEC_NP 1" >>confdefs.h
 
 
 else $as_nop

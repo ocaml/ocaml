@@ -1137,12 +1137,12 @@ void caml_init_os_params(void)
   clock_period = (1000000000.0 / frequency.QuadPart);
 }
 
-int64_t caml_time_counter(void)
+uint64_t caml_time_counter(void)
 {
   LARGE_INTEGER now;
 
   QueryPerformanceCounter(&now);
-  return (int64_t)(now.QuadPart * clock_period);
+  return (uint64_t)(now.QuadPart * clock_period);
 }
 
 void *caml_plat_mem_map(uintnat size, uintnat alignment, int reserve_only)

@@ -151,7 +151,7 @@ CAMLextern clock_t caml_win32_clock(void);
    millisecond). This makes it useful for benchmarking and timeouts, but not
    for telling the time. The units are always nanoseconds, but the achieved
    resolution may be less. The starting point is unspecified. */
-extern int64_t caml_time_counter(void);
+extern uint64_t caml_time_counter(void);
 
 extern void caml_init_os_params(void);
 
