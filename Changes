@@ -14,6 +14,10 @@ Working version
   tables will go in the readonly segment, where they belong.
   (Antonin Décimo, review by Gabriel Scherer and Xavier Leroy)
 
+- #12231: Support MinGW-w64 11.0 winpthreads library, where the macro
+  to set up to get flexdll working changed
+  (David Allsopp, Samuel Hym)
+
 ### Code generation and optimizations:
 
 ### Standard library:
