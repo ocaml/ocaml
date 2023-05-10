@@ -330,8 +330,8 @@ val fast_sort : ('a -> 'a -> int) -> 'a array -> unit
 
 val shuffle :
   rand: (* thwart tools/sync_stdlib_docs *) (int -> int) -> 'a array -> unit
-(** [shuffle rand a] randomly permutes [a]'s elements using [rand]
-    for randomness.
+(** [shuffle rand a] randomly permutes [a]'s element using [rand] for
+    randomness. The distribution of permutations is uniform.
 
     [rand] must be such that a call to [rand n] returns a uniformly
     distributed random number in the range \[[0];[n-1]\].
