@@ -532,7 +532,7 @@ module Array = struct
     for i = length a - 1 downto 1 do
       let j = rand (i + 1) in
       let v = unsafe_get a i in
-      unsafe_set a i (unsafe_get a j);
+      unsafe_set a i (get a j);
       unsafe_set a j v
     done
 
