@@ -24,16 +24,14 @@ open Linear
 open Emitaux
 open Emitenv
 
-(* Layout of the stack.  The stack is kept 16-aligned. *)
+(* Layout of the stack.  The C stack must be 16-aligned, but 8-alignment
+   is enough for the OCaml stack. *)
 
 let frame_size env =
-  let size =
-    env.stack_offset +                     (* Trap frame, outgoing parameters *)
-    size_int * env.f.fun_num_stack_slots.(0) +    (* Local int variables *)
-    size_float * env.f.fun_num_stack_slots.(1) +  (* Local float variables *)
-    (if env.f.fun_contains_calls then size_addr else 0) (* Return address *)
-  in
-  Misc.align size 16
+  env.stack_offset +                     (* Trap frame, outgoing parameters *)
+  size_int * env.f.fun_num_stack_slots.(0) +    (* Local int variables *)
+  size_float * env.f.fun_num_stack_slots.(1) +  (* Local float variables *)
+  (if env.f.fun_contains_calls then size_addr else 0) (* Return address *)
 
 let slot_offset env loc cls =
   match loc with
