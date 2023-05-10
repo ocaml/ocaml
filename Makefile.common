@@ -251,10 +251,12 @@ LINK_BYTECODE_PROGRAM =\
 
 define OCAML_BYTECODE_PROGRAM
 $(eval $(call PROGRAM_SYNONYM,$(1)))
-$(1)$(EXE): \
-  $$$$(patsubst %,%.cma, $$$$($(basename $(notdir $(1)))_LIBRARIES)) \
-  $$$$(patsubst %,%.cmo, $$$$($(basename $(notdir $(1)))_MODULES))
-	$$(V_LINKC)$$(LINK_BYTECODE_PROGRAM) -o $$@ $$^
+$(basename $(notdir $(1)))_BCOBJS = \
+  $$(patsubst %,%.cma, $$($(basename $(notdir $(1)))_LIBRARIES)) \
+  $$(patsubst %,%.cmo, $$($(basename $(notdir $(1)))_MODULES))
+$(1)$(EXE): $$$$($(basename $(notdir $(1)))_BCOBJS)
+	$$(V_LINKC)$$(LINK_BYTECODE_PROGRAM) -o $$@ \
+	  $$($(basename $(notdir $(1)))_BCOBJS)
 endef # OCAML_BYTECODE_PROGRAM
 
 LINK_NATIVE_PROGRAM =\
@@ -262,10 +264,12 @@ LINK_NATIVE_PROGRAM =\
 
 define OCAML_NATIVE_PROGRAM
 $(eval $(call PROGRAM_SYNONYM,$(1)))
-$(1)$(EXE): \
-  $$$$(patsubst %,%.cmxa, $$$$($(basename $(notdir $(1)))_LIBRARIES)) \
-  $$$$(patsubst %,%.cmx, $$$$($(basename $(notdir $(1)))_MODULES))
-	$$(V_LINKOPT)$$(LINK_NATIVE_PROGRAM) -o $$@ $$^
+$(basename $(notdir $(1)))_NCOBJS = \
+  $$(patsubst %,%.cmxa, $$($(basename $(notdir $(1)))_LIBRARIES)) \
+  $$(patsubst %,%.cmx, $$($(basename $(notdir $(1)))_MODULES))
+$(1)$(EXE): $$$$($(basename $(notdir $(1)))_NCOBJS)
+	$$(V_LINKOPT)$$(LINK_NATIVE_PROGRAM) -o $$@ \
+	  $$($(basename $(notdir $(1)))_NCOBJS)
 endef # OCAML_NATIVE_PROGRAM
 
 define OCAML_PROGRAM
