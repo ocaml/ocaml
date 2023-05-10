@@ -14,8 +14,8 @@ Working version
 
 ### Standard library:
 
-- #XXXXX: Add `Array.shuffle`.
-(Daniel Bünzli, review by XXX)
+- #12217: Add `Array.shuffle`.
+  (Daniel Bünzli, review by Nicolás Ojeda Bär and David Allsopp)
 
 ### Other libraries:
 
