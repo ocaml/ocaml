@@ -20,7 +20,6 @@ ROOTDIR = .
 # are defined *before* Makefile.common gets included, so that
 # their local definitions here take precedence over their
 # general shared definitions in Makefile.common.
-OCAMLDEP ?= $(BOOT_OCAMLDEP)
 OCAMLLEX ?= $(BOOT_OCAMLLEX)
 include Makefile.common
 include Makefile.best_binaries
