@@ -599,6 +599,9 @@ asmcomp/reload.ml: asmcomp/$(ARCH)/reload.ml
 asmcomp/scheduling.ml: asmcomp/$(ARCH)/scheduling.ml
 	cd asmcomp; $(LN) $(ARCH)/scheduling.ml .
 
+asmcomp/stackframe.ml: asmcomp/$(ARCH)/stackframe.ml
+	cd asmcomp; $(LN) $(ARCH)/stackframe.ml .
+
 # Preprocess the code emitters
 cvt_emit = tools/cvt_emit$(EXE)
 
@@ -1734,7 +1737,8 @@ tools/ocamltex.cmo: OC_COMMON_COMPFLAGS += -no-alias-deps
 
 ARCH_SPECIFIC =\
   asmcomp/arch.mli asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml \
-  asmcomp/selection.ml asmcomp/scheduling.ml asmcomp/reload.ml
+  asmcomp/selection.ml asmcomp/scheduling.ml asmcomp/reload.ml \
+  asmcomp/stackframe.ml
 
 partialclean::
 	rm -f $(ARCH_SPECIFIC)
