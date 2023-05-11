@@ -30,6 +30,32 @@ let announce_test_error test_filename error =
   Printf.printf " ... testing '%s' => unexpected error (%s)\n%!"
     (Filename.basename test_filename) error
 
+let print_exn loc e =
+  let open Printf in
+  let locstring =
+    if loc = Location.none then "" else begin
+      let file = loc.Location.loc_start.Lexing.pos_fname in
+      let line = loc.Location.loc_start.Lexing.pos_lnum in
+      sprintf "%s:%d: " file line
+    end
+  in
+  let msg =
+    match e with
+    | Variables.Variable_already_registered v ->
+      sprintf "Variable \"%s\" is already in the environment." v
+    | Variables.No_such_variable v ->
+      sprintf "Variable \"%s\" is not in the environment." v
+    | Environments.Modifiers_name_not_found name ->
+      sprintf "Environment modifier \"%s\" does not exist." name
+    | Tsl_semantics.No_such_test_or_action name ->
+      sprintf "This is not the name of a test or an action: \"%s\"." name
+    | Ocaml_actions.Cannot_compile_file_type t ->
+      sprintf "Cannot compile files of type %s." t
+    | _ ->
+      sprintf "Unexpected exception: %s" (Printexc.to_string e)
+  in
+  eprintf "\n%s%s\n%!" locstring msg
+
 exception Syntax_error of Lexing.position
 
 let tsl_parse_file test_filename =
@@ -58,6 +84,10 @@ let tsl_parse_file_safe test_filename =
 let print_usage () =
   Printf.printf "%s\n%!" Options.usage
 
+let report_error loc e =
+  print_exn loc e;
+  "=> error in test script"
+
 type result_summary = No_failure | Some_failure | All_skipped
 let join_result summary result =
   let open Result in
@@ -77,8 +107,15 @@ let join_summaries sa sb =
 let rec run_test_tree log common_prefix behavior env summ ast =
   match ast with
   | Ast (Environment_statement s :: stmts, subs) ->
-    let env = interpret_environment_statement env s in
-    run_test_tree log common_prefix behavior env summ (Ast (stmts, subs))
+    begin match interpret_environment_statement env s with
+    | env ->
+      run_test_tree log common_prefix behavior env summ (Ast (stmts, subs))
+    | exception e ->
+      let line = s.loc.Location.loc_start.Lexing.pos_lnum in
+      Printf.printf "%s line %d %!" common_prefix line;
+      Printf.printf "%s\n%!" (report_error s.loc e);
+      Some_failure
+    end
   | Ast (Test (_, name, mods) :: stmts, subs) ->
     let locstr =
       if name.loc = Location.none then
@@ -91,12 +128,15 @@ let rec run_test_tree log common_prefix behavior env summ ast =
       match behavior with
       | Skip_all -> ("=> n/a", Skip_all, env, Result.skip)
       | Run ->
-        let testenv = List.fold_left apply_modifiers env mods in
-        let test = lookup_test name in
-        let (result, newenv) = Tests.run log testenv test in
-        let msg = Result.string_of_result result in
-        let sub_behavior = if Result.is_pass result then Run else Skip_all in
-        (msg, sub_behavior, newenv, result)
+        begin try
+          let testenv = List.fold_left apply_modifiers env mods in
+          let test = lookup_test name in
+          let (result, newenv) = Tests.run log testenv test in
+          let msg = Result.string_of_result result in
+          let sub_behavior = if Result.is_pass result then Run else Skip_all in
+          (msg, sub_behavior, newenv, result)
+        with e -> (report_error name.loc e, Skip_all, env, Result.fail)
+        end
     in
     Printf.printf "%s\n%!" msg;
     let newsumm = join_result summ result in

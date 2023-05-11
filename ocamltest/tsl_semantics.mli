@@ -27,6 +27,7 @@ val interpret_environment_statements :
   Environments.t -> Tsl_ast.environment_statement Tsl_ast.located list ->
   Environments.t
 
+exception No_such_test_or_action of string
 val lookup_test : string located -> Tests.t
 
 type test_tree =
