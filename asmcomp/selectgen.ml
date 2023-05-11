@@ -404,40 +404,6 @@ method virtual select_addressing :
 method select_store is_assign addr arg =
   (Istore(Word_val, addr, is_assign), arg)
 
-(* call marking methods, documented in selectgen.mli *)
-val contains_calls = ref false
-
-method mark_call =
-  contains_calls := true
-
-method mark_tailcall = ()
-
-method mark_c_tailcall =
-  if !Clflags.debug then contains_calls := true
-
-method mark_instr = function
-  | Iop (Icall_ind | Icall_imm _ | Iextcall _) ->
-      self#mark_call
-  | Iop (Itailcall_ind | Itailcall_imm _) ->
-      self#mark_tailcall
-  | Iop (Ialloc _) | Iop (Ipoll _) ->
-      self#mark_call (* caml_alloc*, caml_garbage_collection (incl. polls) *)
-  | Iop (Iintop (Icheckbound) | Iintop_imm(Icheckbound, _)) ->
-      self#mark_c_tailcall (* caml_ml_array_bound_error *)
-  | Iraise raise_kind ->
-    begin match raise_kind with
-      | Lambda.Raise_notrace -> ()
-      | Lambda.Raise_regular
-      | Lambda.Raise_reraise ->
-          (* PR#6239 *)
-        (* caml_stash_backtrace; we #mark_call rather than
-           #mark_c_tailcall to get a good stack backtrace *)
-          self#mark_call
-    end
-  | Itrywith _ ->
-    self#mark_call
-  | _ -> ()
-
 (* Default instruction selection for operators *)
 
 method select_operation op args _dbg =
@@ -1193,7 +1159,6 @@ method emit_fundecl ~future_funcnames f =
       body
     in
   let body_with_prologue = self#extract_onto polled_body in
-  instr_iter (fun instr -> self#mark_instr instr.Mach.desc) body_with_prologue;
   { fun_name = f.Cmm.fun_name;
     fun_args = loc_arg;
     fun_body = body_with_prologue;
@@ -1201,7 +1166,6 @@ method emit_fundecl ~future_funcnames f =
     fun_dbg  = f.Cmm.fun_dbg;
     fun_poll = f.Cmm.fun_poll;
     fun_num_stack_slots = Array.make Proc.num_register_classes 0;
-    fun_contains_calls = !contains_calls;
   }
 
 end

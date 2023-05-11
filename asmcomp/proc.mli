@@ -55,12 +55,6 @@ val destroyed_at_oper: Mach.instruction_desc -> Reg.t array
 val destroyed_at_raise: Reg.t array
 val destroyed_at_reloadretaddr : Reg.t array
 
-(* Info for laying out the stack frame *)
-val frame_required : Mach.fundecl -> bool
-
-(* Function prologues *)
-val prologue_required : Mach.fundecl -> bool
-
 (** For a given register class, the DWARF register numbering for that class.
     Given an allocated register with location [Reg n] and class [reg_class], the
     returned array contains the corresponding DWARF register number at index
