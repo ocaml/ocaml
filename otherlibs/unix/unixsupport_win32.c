@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <stddef.h>
 #include <caml/mlvalues.h>
 #include <caml/callback.h>
@@ -20,6 +22,7 @@
 #include <caml/memory.h>
 #include <caml/fail.h>
 #include <caml/custom.h>
+#include <caml/platform.h>
 #include "unixsupport.h"
 #include "cst2constr.h"
 #include <errno.h>
@@ -93,6 +96,7 @@ static struct error_entry win_error_table[] = {
   { ERROR_FILE_NOT_FOUND, 0, ENOENT},
   { ERROR_PATH_NOT_FOUND, 0, ENOENT},
   { ERROR_TOO_MANY_OPEN_FILES, 0, EMFILE},
+  { ERROR_TOO_MANY_LINKS, 0, EMLINK},
   { ERROR_ACCESS_DENIED, 0, EACCES},
   { ERROR_INVALID_HANDLE, 0, EBADF},
   { ERROR_ARENA_TRASHED, 0, ENOMEM},
@@ -247,7 +251,7 @@ void caml_win32_maperr(DWORD errcode)
 #undef EACCESS
 #define EACCESS EACCES
 
-static int error_table[] = {
+static const int error_table[] = {
   E2BIG, EACCESS, EAGAIN, EBADF, EBUSY, ECHILD, EDEADLK, EDOM,
   EEXIST, EFAULT, EFBIG, EINTR, EINVAL, EIO, EISDIR, EMFILE, EMLINK,
   ENAMETOOLONG, ENFILE, ENODEV, ENOENT, ENOEXEC, ENOLCK, ENOMEM, ENOSPC,
@@ -296,7 +300,7 @@ void caml_unix_error(int errcode, const char *cmdname, value cmdarg)
   value res;
   const value * exn;
 
-  exn = atomic_load_explicit(&caml_unix_error_exn, memory_order_acquire);
+  exn = atomic_load_acquire(&caml_unix_error_exn);
   if (exn == NULL) {
     exn = caml_named_value("Unix.Unix_error");
     if (exn == NULL)

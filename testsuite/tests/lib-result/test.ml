@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let strf = Printf.sprintf
 let assert_raise_invalid_argument f v =

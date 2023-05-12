@@ -69,6 +69,8 @@ and pat_extra =
   | Tpat_unpack
         (** (module P)     { pat_desc  = Tpat_var "P"
                            ; pat_extra = (Tpat_unpack, _, _) :: ... }
+            (module _)     { pat_desc  = Tpat_any
+            ; pat_extra = (Tpat_unpack, _, _) :: ... }
          *)
 
 and 'k pattern_desc =
@@ -390,6 +392,7 @@ and module_expr_desc =
   | Tmod_structure of structure
   | Tmod_functor of functor_parameter * module_expr
   | Tmod_apply of module_expr * module_expr * module_coercion
+  | Tmod_apply_unit of module_expr
   | Tmod_constraint of
       module_expr * Types.module_type * module_type_constraint * module_coercion
     (** ME          (constraint = Tmodtype_implicit)
@@ -823,3 +826,7 @@ val pat_bound_idents_full:
 (** Splits an or pattern into its value (left) and exception (right) parts. *)
 val split_pattern:
   computation general_pattern -> pattern option * pattern option
+
+(** Whether an expression looks nice as the subject of a sentence in a error
+    message. *)
+val exp_is_nominal : expression -> bool

@@ -99,39 +99,66 @@ CAMLprim value caml_natdynlink_open(value filename, value global)
   CAMLreturn(res);
 }
 
+CAMLprim value caml_natdynlink_register(value handle_v, value symbols) {
+  CAMLparam2 (handle_v, symbols);
+  int i;
+  int nsymbols = Wosize_val(symbols);
+  void* handle = Handle_val(handle_v);
+  void** table;
+
+  table = caml_stat_alloc(sizeof(void*) * nsymbols);
+
+  for (i = 0; i < nsymbols; i++) {
+    const char* unit = String_val(Field(symbols, i));
+    table[i] = getsym(handle, unit, "frametable");
+    if (table[i] == NULL) {
+      caml_stat_free(table);
+      caml_invalid_argument_value(
+        caml_alloc_sprintf("Dynlink: Missing frametable for %s", unit));
+    }
+  }
+  caml_register_frametables(table, nsymbols);
+
+  for (i = 0; i < nsymbols; i++) {
+    const char* unit = String_val(Field(symbols, i));
+    table[i] = getsym(handle, unit, "gc_roots");
+    if (table[i] == NULL) {
+      caml_stat_free(table);
+      caml_invalid_argument_value(
+        caml_alloc_sprintf("Dynlink: Missing gc_roots for %s", unit));
+    }
+  }
+  caml_register_dyn_globals(table, nsymbols);
+
+  for (i = 0; i < nsymbols; i++) {
+    const char* unit = String_val(Field(symbols, i));
+    void* sym = getsym(handle, unit, "code_begin");
+    void* sym2 = getsym(handle, unit, "code_end");
+    /* Do not register empty code fragments */
+    if (NULL != sym && NULL != sym2 && sym != sym2) {
+      caml_register_code_fragment((char *) sym, (char *) sym2,
+                                  DIGEST_LATER, NULL);
+    }
+  }
+
+  caml_stat_free(table);
+  CAMLreturn (Val_unit);
+}
+
 CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
   CAMLparam2 (handle_v, symbol);
   CAMLlocal1 (result);
-  void *sym,*sym2;
   void* handle = Handle_val(handle_v);
-
-#define optsym(n) getsym(handle,unit,n)
   const char *unit;
   void (*entrypoint)(void);
 
   unit = String_val(symbol);
 
-  sym = optsym("frametable");
-  if (NULL != sym) caml_register_frametable(sym);
-
-  sym = optsym("gc_roots");
-  if (NULL != sym) caml_register_dyn_global(sym);
-
-  sym = optsym("code_begin");
-  sym2 = optsym("code_end");
-  /* Do not register empty code fragments */
-  if (NULL != sym && NULL != sym2 && sym != sym2) {
-    caml_register_code_fragment((char *) sym, (char *) sym2,
-                                DIGEST_LATER, NULL);
-  }
-
   if( caml_natdynlink_hook != NULL ) caml_natdynlink_hook(handle,unit);
 
-  entrypoint = optsym("entry");
+  entrypoint = getsym(handle, unit, "entry");
   if (NULL != entrypoint) result = caml_callback((value)(&entrypoint), 0);
   else result = Val_unit;
-
-#undef optsym
 
   CAMLreturn (result);
 }

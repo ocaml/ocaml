@@ -1,6 +1,6 @@
-(* TEST
-   flags = "-g"
-   ocamlrunparam += ",b=1"
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
+
 *)
 
 open Effect
@@ -52,3 +52,8 @@ let main () =
       | _ -> None }
 
 let _ = main ()
+
+(* TEST
+ flags = "-g";
+ ocamlrunparam += ",b=1";
+*)

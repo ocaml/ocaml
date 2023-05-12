@@ -1,7 +1,7 @@
 (* TEST
-readonly_files = "main.c"
-arguments = "-DFLOAT_CATCH -DFUN=catch_try_float main.c"
-* asmgen
+ readonly_files = "main.c";
+ arguments = "-DFLOAT_CATCH -DFUN=catch_try_float main.c";
+ asmgen;
 *)
 
 (function "catch_try_float" (b:float)

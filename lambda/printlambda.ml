@@ -672,8 +672,6 @@ let rec lam ppf = function
        | Lev_after _  -> "after"
        | Lev_function -> "funct-body"
        | Lev_pseudo -> "pseudo"
-       | Lev_module_definition ident ->
-         Format.asprintf "module-defn(%a)" Ident.print ident
       in
       (* -dno-locations also hides the placement of debug events;
          this is good for the readability of the resulting output (usually

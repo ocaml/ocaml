@@ -1,6 +1,6 @@
 (* TEST
-  flags="-no-alias-deps -w +40"
-  * expect
+ flags = "-no-alias-deps -w +40";
+ expect;
 *)
 module M = struct
   type t = A
@@ -402,6 +402,7 @@ Line 5, characters 38-41:
 Warning 40 [name-out-of-scope]: doc was selected from type Foo.info.
 It is not visible in the current scope, and will not
 be selected if the type becomes unknown.
+
 val add_extra_info : Foo.t -> unit = <fun>
 |}]
 
@@ -424,5 +425,6 @@ Line 8, characters 38-41:
 Warning 40 [name-out-of-scope]: doc was selected from type Bar/2.info.
 It is not visible in the current scope, and will not
 be selected if the type becomes unknown.
+
 val add_extra_info : Foo.t -> unit = <fun>
 |}]

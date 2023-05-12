@@ -229,7 +229,7 @@ let transl_labels env univars closed lbls =
     Builtin_attributes.warning_scope attrs
       (fun () ->
          let arg = Ast_helper.Typ.force_poly arg in
-         let cty = transl_simple_type env ?univars closed arg in
+         let cty = transl_simple_type env ?univars ~closed arg in
          {ld_id = Ident.create_local name.txt;
           ld_name = name; ld_mutable = mut;
           ld_type = cty; ld_loc = loc; ld_attributes = attrs}
@@ -254,7 +254,7 @@ let transl_labels env univars closed lbls =
 
 let transl_constructor_arguments env univars closed = function
   | Pcstr_tuple l ->
-      let l = List.map (transl_simple_type env ?univars closed) l in
+      let l = List.map (transl_simple_type env ?univars ~closed) l in
       Types.Cstr_tuple (List.map (fun t -> t.ctyp_type) l),
       Cstr_tuple l
   | Pcstr_record l ->
@@ -273,18 +273,19 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
       (* if it's a generalized constructor we must first narrow and
          then widen so as to not introduce any new constraints *)
       (* narrow and widen are now invoked through wrap_type_variable_scope *)
-      with_local_type_variable_scope begin fun () ->
-      reset_type_variables ();
+      TyVarEnv.with_local_scope begin fun () ->
       let closed = svars <> [] in
       let targs, tret_type, args, ret_type, _univars =
         Ctype.with_local_level_if closed begin fun () ->
+          TyVarEnv.reset ();
           let univar_list =
-            make_poly_univars (List.map (fun v -> v.txt) svars) in
+            TyVarEnv.make_poly_univars (List.map (fun v -> v.txt) svars) in
           let univars = if closed then Some univar_list else None in
           let args, targs =
             transl_constructor_arguments env univars closed sargs
           in
-          let tret_type = transl_simple_type env ?univars closed sret_type in
+          let tret_type =
+            transl_simple_type env ?univars ~closed sret_type in
           let ret_type = tret_type.ctyp_type in
           (* TODO add back type_path as a parameter ? *)
           begin match get_desc ret_type with
@@ -307,7 +308,7 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
         ~post: begin fun (_, _, args, ret_type, univars) ->
           Btype.iter_type_expr_cstr_args Ctype.generalize args;
           Ctype.generalize ret_type;
-          let _vars = instance_poly_univars env loc univars in
+          let _vars = TyVarEnv.instance_poly_univars env loc univars in
           let set_level t = Ctype.enforce_current_level env t in
           Btype.iter_type_expr_cstr_args set_level args;
           set_level ret_type;
@@ -318,14 +319,14 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
 
 let transl_declaration env sdecl (id, uid) =
   (* Bind type parameters *)
-  reset_type_variables();
   Ctype.with_local_level begin fun () ->
+  TyVarEnv.reset();
   let tparams = make_params env sdecl.ptype_params in
   let params = List.map (fun (cty, _) -> cty.ctyp_type) tparams in
   let cstrs = List.map
     (fun (sty, sty', loc) ->
-      transl_simple_type env false sty,
-      transl_simple_type env false sty', loc)
+      transl_simple_type env ~closed:false sty,
+      transl_simple_type env ~closed:false sty', loc)
     sdecl.ptype_cstrs
   in
   let unboxed_attr = get_unboxed_from_attributes sdecl in
@@ -440,7 +441,7 @@ let transl_declaration env sdecl (id, uid) =
         None -> None, None
       | Some sty ->
         let no_row = not (is_fixed_type sdecl) in
-        let cty = transl_simple_type env no_row sty in
+        let cty = transl_simple_type env ~closed:no_row sty in
         Some cty, Some cty.ctyp_type
     in
     let arity = List.length params in
@@ -646,7 +647,136 @@ let check_coherence env loc dpath decl =
 let check_abbrev env sdecl (id, decl) =
   check_coherence env sdecl.ptype_loc (Path.Pident id) decl
 
-(* Check that recursion is well-founded:
+
+(* Note: Well-foundedness for OCaml types
+
+   We want to guarantee that all cycles within OCaml types are
+   "guarded".
+
+   More precisly, we consider a reachability relation
+     "[t] is reachable [guarded|unguarded] from [u]"
+   defined as follows:
+
+   - [t1, t2...] are reachable guarded from object types
+       [< m1 : t1; m2 : t2; ... >]
+     or polymorphic variants
+       [[`A of t1 | `B of t2 | ...]].
+
+   - [t1, t2...] are reachable rectypes-guarded from
+     [t1 -> t2], [t1 * t2 * ...], and all other built-in
+     contractive type constructors.
+
+     (By rectypes-guarded we mean: guarded if -rectypes is set,
+      unguarded if it is not set.)
+
+   - If [(t1, t2...) c] is a datatype (variant or record),
+     then [t1, t2...] are reachable rectypes-guarded from it.
+
+   - If [(t1, t2...) c] is an abstract type,
+     then [t1, t2...] are reachable unguarded from it.
+
+   - If [(t1, t2...) c] is an (expandable) abbreviation,
+     then its expansion is reachable unguarded from it.
+     Note that we do not define [t1, t2...] as reachable.
+
+   - The relation is transitive and guardedness of a composition
+     is the disjunction of each guardedness:
+     if t1 is reachable from t2 and t2 is reachable from t3;
+     then t1 is reachable guarded from t3 if t1 is guarded in t2
+     or t2 is guarded in t3, and reachable unguarded otherwise.
+
+   A type [t] is not well-founded if and only if [t] is reachable
+   unguarded in [t].
+
+   Notice that, in the case of datatypes, the arguments of
+   a parametrized datatype are reachable (they must not contain
+   recursive occurrences of the type), but the definition of the
+   datatype is not defined as reachable.
+
+      (* well-founded *)
+      type t = Foo of u
+      and u = t
+
+      (* ill-founded *)
+      type 'a t = Foo of 'a
+      and u = u t
+      > Error: The type abbreviation u is cyclic
+
+   Indeed, in the second example [u] is reachable unguarded in [u t]
+   -- its own definition.
+*)
+
+(* Note: Forms of ill-foundedness
+
+   Several OCaml language constructs could introduce ill-founded
+   types, and there are several distinct checks that forbid different
+   sources of ill-foundedness.
+
+   1. Type aliases.
+
+      (* well-founded *)
+      type t = < x : 'a > as 'a
+
+      (* ill-founded, unless -rectypes is used *)
+      type t = (int * 'a) as 'a
+      > Error: This alias is bound to type int * 'a
+      > but is used as an instance of type 'a
+      > The type variable 'a occurs inside int * 'a
+
+      Ill-foundedness coming from type aliases is detected by the "occur check"
+      used by our type unification algorithm. See typetexp.ml.
+
+   2. Type abbreviations.
+
+      (* well-founded *)
+      type t = < x : t >
+
+      (* ill-founded, unless -rectypes is used *)
+      type t = (int * t)
+      > Error: The type abbreviation t is cyclic
+
+      Ill-foundedness coming from type abbreviations is detected by
+      [check_well_founded] below.
+
+  3. Recursive modules.
+
+     (* well-founded *)
+     module rec M : sig type t = < x : M.t > end = M
+
+     (* ill-founded, unless -rectypes is used *)
+     module rec M : sig type t = int * M.t end = M
+     > Error: The definition of M.t contains a cycle:
+     >        int * M.t
+
+     This is also checked by [check_well_founded] below,
+     as called from [check_recmod_typedecl].
+
+  4. Functor application
+
+     A special case of (3) is that a type can be abstract
+     in a functor definition, and be instantiated with
+     an abbreviation in an application of the functor.
+     This can introduce ill-foundedness, so functor applications
+     must be checked by re-checking the type declarations of their result.
+
+     module type T = sig type t end
+     module Fix(F:(T -> T)) = struct
+       (* this recursive definition is well-founded
+          as F(Fixed).t contains no reachable type expression. *)
+       module rec Fixed : T with type t = F(Fixed).t = F(Fixed)
+     end
+
+     (* well-founded *)
+     Module M = Fix(functor (M:T) -> struct type t = < x : M.t > end)
+
+     (* ill-founded *)
+     module M = Fix(functor (M:T) -> struct type t = int * M.t end);;
+     > Error: In the signature of this functor application:
+     >   The definition of Fixed.t contains a cycle:
+     >   F(Fixed).t
+*)
+
+(* Check that a type expression is well-founded:
    - if -rectypes is used, we must prevent non-contractive fixpoints
      ('a as 'a)
    - if -rectypes is not used, we only allow cycles in the type graph
@@ -721,11 +851,37 @@ let check_well_founded_manifest env loc path decl =
   check_well_founded env loc path (Path.same path) visited
     (Ctype.newconstr path args)
 
+(* Given a new type declaration [type t = ...] (potentially mutually-recursive),
+   we check that accepting the declaration does not introduce ill-founded types.
+
+   Note: we check that the types at the toplevel of the declaration
+   are not reachable unguarded from themselves, that is, we check that
+   there is no cycle going through the "root" of the declaration. But
+   we *also* check that all the type sub-expressions reachable from
+   the root even those that are guarded, are themselves
+   well-founded. (So we check the absence of cycles, even for cycles
+   going through inner type subexpressions but not the root.
+
+   We are not actually sure that this "deep check" is necessary
+   (we don't have an example at hand where it is necessary), but we
+   are doing it anyway out of caution.
+*)
 let check_well_founded_decl env loc path decl to_check =
   let open Btype in
-  let visited = ref TypeMap.empty in
-  let checked = ref TypeSet.empty in
+  (* We iterate on all subexpressions of the declaration to check
+     "in depth" that no ill-founded type exists. *)
   let it =
+    let checked =
+      (* [checked] remembers the types that the iterator already
+         checked, to avoid looping on cyclic types. *)
+      ref TypeSet.empty in
+    let visited =
+      (* [visited] remembers the inner visits performed by
+         [check_well_founded] on each type expression reachable from
+         this declaration. This avoids unnecessary duplication of
+         [check_well_founded] work when invoked on two parts of the
+         type declaration that have common subexpressions. *)
+      ref TypeMap.empty in
     {type_iterators with it_type_expr =
      (fun self ty ->
        if TypeSet.mem ty !checked then () else begin
@@ -1200,10 +1356,10 @@ let transl_type_extension extend env loc styext =
   end;
   let ttype_params, _type_params, constructors =
     (* Note: it would be incorrect to call [create_scope] *after*
-       [reset_type_variables] or after [with_local_level] (see #10010). *)
+       [TyVarEnv.reset] or after [with_local_level] (see #10010). *)
     let scope = Ctype.create_scope () in
-    reset_type_variables();
     Ctype.with_local_level begin fun () ->
+      TyVarEnv.reset();
       let ttype_params = make_params env styext.ptyext_params in
       let type_params = List.map (fun (cty, _) -> cty.ctyp_type) ttype_params in
       List.iter2 (Ctype.unify_var env)
@@ -1272,9 +1428,9 @@ let transl_type_extension extend env loc styext =
 let transl_exception env sext =
   let ext =
     let scope = Ctype.create_scope () in
-    reset_type_variables();
     Ctype.with_local_level
       (fun () ->
+        TyVarEnv.reset();
         transl_extension_constructor ~scope env
           Predef.path_exn [] [] Asttypes.Public sext)
       ~post: begin fun ext ->
@@ -1487,8 +1643,8 @@ let transl_value_decl env loc valdecl =
 let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
     sdecl =
   Env.mark_type_used sig_decl.type_uid;
-  reset_type_variables();
   Ctype.with_local_level begin fun () ->
+  TyVarEnv.reset();
   (* In the first part of this function, we typecheck the syntactic
      declaration [sdecl] in the outer environment [outer_env]. *)
   let env = outer_env in
@@ -1498,8 +1654,8 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
   let arity = List.length params in
   let constraints =
     List.map (fun (ty, ty', loc) ->
-      let cty = transl_simple_type env false ty in
-      let cty' = transl_simple_type env false ty' in
+      let cty = transl_simple_type env ~closed:false ty in
+      let cty' = transl_simple_type env ~closed:false ty' in
       (* Note: We delay the unification of those constraints
          after the unification of parameters, so that clashing
          constraints report an error on the constraint location
@@ -1511,7 +1667,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
   let (tman, man) =  match sdecl.ptype_manifest with
       None -> None, None
     | Some sty ->
-        let cty = transl_simple_type env no_row sty in
+        let cty = transl_simple_type env ~closed:no_row sty in
         Some cty, Some cty.ctyp_type
   in
   (* In the second part, we check the consistency between the two
@@ -1576,7 +1732,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
   let new_type_variance =
     let required = Typedecl_variance.variance_of_sdecl sdecl in
     try
-      Typedecl_variance.compute_decl env ~check:true new_sig_decl required
+      Typedecl_variance.compute_decl env ~check:(Some id) new_sig_decl required
     with Typedecl_variance.Error (loc, err) ->
       raise (Error (loc, Variance err)) in
   let new_type_immediate =
@@ -1911,27 +2067,57 @@ let report_error ppf = function
         | false, false -> if inj = "" then "unrestricted" else inj
       in
       (match n with
-       | Variance_not_reflected ->
-           fprintf ppf "@[%s@ %s@ It"
-             "In this definition, a type variable has a variance that"
-             "is not reflected by its occurrence in type parameters."
-       | No_variable ->
-           fprintf ppf "@[%s@ %s@]"
-             "In this definition, a type variable cannot be deduced"
-             "from the type parameters."
-       | Variance_not_deducible ->
-           fprintf ppf "@[%s@ %s@ It"
-             "In this definition, a type variable has a variance that"
-             "cannot be deduced from the type parameters."
+       | Variance_variable_error { error; variable; context } ->
+           Printtyp.prepare_for_printing [ variable ];
+           begin match context with
+           | Type_declaration (id, decl) ->
+               Printtyp.add_type_declaration_to_preparation id decl;
+               fprintf ppf "@[<v>%s@;<1 2>%a@;"
+                 "In the definition"
+                 (Printtyp.prepared_type_declaration id)
+                 decl
+           | Gadt_constructor c ->
+               Printtyp.add_constructor_to_preparation c;
+               fprintf ppf "@[<v>%s@;<1 2>%a@;"
+                 "In the GADT constructor"
+                 Printtyp.prepared_constructor
+                 c
+           | Extension_constructor (id, e) ->
+               Printtyp.add_extension_constructor_to_preparation e;
+               fprintf ppf "@[<v>%s@;<1 2>%a@;"
+                 "In the extension constructor"
+                 (Printtyp.prepared_extension_constructor id)
+                 e
+           end;
+           begin match error with
+           | Variance_not_reflected ->
+               fprintf ppf "@[%s@ %a@ %s@ %s@ It"
+                 "the type variable"
+                 Printtyp.prepared_type_expr variable
+                 "has a variance that"
+                 "is not reflected by its occurrence in type parameters."
+           | No_variable ->
+               fprintf ppf "@[%s@ %a@ %s@ %s@]@]"
+                 "the type variable"
+                 Printtyp.prepared_type_expr variable
+                 "cannot be deduced"
+                 "from the type parameters."
+           | Variance_not_deducible ->
+               fprintf ppf "@[%s@ %a@ %s@ %s@ It"
+                 "the type variable"
+                 Printtyp.prepared_type_expr variable
+                 "has a variance that"
+                 "cannot be deduced from the type parameters."
+           end
        | Variance_not_satisfied n ->
-           fprintf ppf "@[%s@ %s@ The %d%s type parameter"
+           fprintf ppf "@[@[%s@ %s@ The %d%s type parameter"
              "In this definition, expected parameter"
              "variances are not satisfied."
              n (Misc.ordinal_suffix n));
       (match n with
-       | No_variable -> ()
+       | Variance_variable_error { error = No_variable; _ } -> ()
        | _ ->
-           fprintf ppf " was expected to be %s,@ but it is %s.@]"
+           fprintf ppf " was expected to be %s,@ but it is %s.@]@]"
              (variance v2) (variance v1))
   | Unavailable_type_constructor p ->
       fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p

@@ -17,6 +17,9 @@ open Misc
 
 (* Link .cmo files and produce a bytecode executable. *)
 
+module Dep : Set.OrderedType with type t = modname * modname
+module DepSet : Set.S with type elt = Dep.t
+
 val link : filepath list -> filepath -> unit
 val reset : unit -> unit
 
@@ -35,7 +38,7 @@ type error =
   | Cannot_open_dll of filepath
   | Required_module_unavailable of modname * modname
   | Camlheader of string * filepath
-  | Wrong_link_order of (modname * modname) list
+  | Wrong_link_order of DepSet.t
   | Multiple_definition of modname * filepath * filepath
 
 exception Error of error

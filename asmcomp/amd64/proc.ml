@@ -235,7 +235,7 @@ let win64_float_external_arguments =
 let win64_loc_external_arguments arg =
   let loc = Array.make (Array.length arg) Reg.dummy in
   let reg = ref 0
-  and ofs = ref 32 in
+  and ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i) with
     | Val | Int | Addr as ty ->
@@ -284,10 +284,6 @@ let dwarf_register_numbers ~reg_class =
 
 let stack_ptr_dwarf_register_number = 7
 
-(* Volatile registers: none *)
-
-let regs_are_volatile _rs = false
-
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_call =
@@ -295,12 +291,12 @@ let destroyed_at_c_call =
      by the code sequence used for C calls in emit.mlp, so it
      is marked as destroyed. *)
   if win64 then
-    (* Win64: rbx, rsi, rdi, r12-r15, xmm6-xmm15 preserved *)
+    (* Win64: rsi, rdi, r12-r15, xmm6-xmm15 preserved *)
     Array.of_list(List.map phys_reg
-      [0;4;5;6;7;10;11;12;
+      [0;1;4;5;6;7;10;11;12;
        100;101;102;103;104;105])
   else
-    (* Unix: rbx, r12-r15 preserved *)
+    (* Unix: r12-r15 preserved *)
     Array.of_list(List.map phys_reg
       [0;1;2;3;4;5;6;7;10;11;
        100;101;102;103;104;105;106;107;
@@ -346,22 +342,28 @@ let safe_register_pressure = function
     Iextcall _ -> if win64 then if fp then 7 else 8 else 0
   | _ -> if fp then 10 else 11
 
-let max_register_pressure = function
+let max_register_pressure =
+  let consumes ~int ~float =
+    if fp
+    then [| 12 - int; 16 - float |]
+    else [| 13 - int; 16 - float |]
+  in
+  function
     Iextcall _ ->
-      if win64 then
-        if fp then [| 7; 10 |]  else [| 8; 10 |]
-        else
-        if fp then [| 3; 0 |] else  [| 4; 0 |]
+      if win64
+      then consumes ~int:5 ~float:6
+      else consumes ~int:9 ~float:16
   | Iintop(Idiv | Imod) | Iintop_imm((Idiv | Imod), _) ->
-    if fp then [| 10; 16 |] else [| 11; 16 |]
+      consumes ~int:2 ~float:0
   | Ialloc _ | Ipoll _ ->
-    if fp then [| 11 - num_destroyed_by_plt_stub; 16 |]
-    else [| 12 - num_destroyed_by_plt_stub; 16 |]
+      consumes ~int:(1 + num_destroyed_by_plt_stub) ~float:0
   | Iintop(Icomp _) | Iintop_imm((Icomp _), _) ->
-    if fp then [| 11; 16 |] else [| 12; 16 |]
+      consumes ~int:1 ~float:0
   | Istore(Single, _, _) ->
-    if fp then [| 12; 15 |] else [| 13; 15 |]
-  | _ -> if fp then [| 12; 16 |] else [| 13; 16 |]
+      consumes ~int:0 ~float:1
+  | Icompf _ ->
+      consumes ~int:0 ~float:1
+  | _ -> consumes ~int:0 ~float:0
 
 (* Layout of the stack frame *)
 

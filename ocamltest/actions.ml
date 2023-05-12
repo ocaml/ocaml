@@ -19,15 +19,19 @@ type code = out_channel -> Environments.t -> Result.t * Environments.t
 
 type t = {
   name : string;
+  action_description : string;
   body : code;
   mutable hook : code option
 }
 
 let name a = a.name
 
+let description a = a.action_description
+
 let action_name = Variables.make ("action_name", "Name of the current action")
 
-let make n c = { name = n; body = c; hook = None }
+let make ~name ~description body =
+  { name; body; action_description = description; hook = None }
 
 let update action code = { action with body = code }
 

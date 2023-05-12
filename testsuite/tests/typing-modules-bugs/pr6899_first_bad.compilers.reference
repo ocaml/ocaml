@@ -2,4 +2,5 @@ File "pr6899_first_bad.ml", line 9, characters 4-17:
 9 | let should_reject =
         ^^^^^^^^^^^^^
 Error: The type of this expression, '_weak1 -> '_weak2 -> unit,
-       contains type variables that cannot be generalized
+       contains the non-generalizable type variable(s): '_weak2, '_weak1.
+       (see manual section 6.1.2)

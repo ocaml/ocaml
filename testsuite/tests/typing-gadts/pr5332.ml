@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 type ('env, 'a) var =

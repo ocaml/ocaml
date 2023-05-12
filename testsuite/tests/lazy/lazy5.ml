@@ -1,5 +1,5 @@
 (* TEST
-   ocamlopt_flags += " -O3 "
+ ocamlopt_flags += " -O3 ";
 *)
 let rec safe_force l =
   try Lazy.force l with

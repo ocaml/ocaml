@@ -1,6 +1,6 @@
 (* TEST
-   flags = " -w +A -strict-sequence "
-   * expect
+ flags = " -w +A -strict-sequence ";
+ expect;
 *)
 
 open CamlinternalOO;;
@@ -20,5 +20,6 @@ Line 1, characters 31-52:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Right
+
 val f : CamlinternalOO.label choice -> bool = <fun>
 |}]

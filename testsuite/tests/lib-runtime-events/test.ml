@@ -1,6 +1,6 @@
 (* TEST
-modules = "stubs.c"
-include runtime_events
+ modules = "stubs.c";
+ include runtime_events;
 *)
 
 external start_runtime_events : unit -> unit = "start_runtime_events"

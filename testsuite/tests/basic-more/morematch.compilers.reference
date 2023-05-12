@@ -2,46 +2,57 @@ File "morematch.ml", line 67, characters 2-5:
 67 | | 4|5|7 -> 100
        ^^^
 Warning 12 [redundant-subpat]: this sub-pattern is unused.
+
 File "morematch.ml", line 68, characters 2-3:
 68 | | 7 | 8 -> 6
        ^
 Warning 12 [redundant-subpat]: this sub-pattern is unused.
+
 File "morematch.ml", line 219, characters 33-47:
 219 | let f = function (([]|[_]) as x)|(_::([] as x))|(_::_::x)  -> x
                                        ^^^^^^^^^^^^^^
 Warning 12 [redundant-subpat]: this sub-pattern is unused.
+
 File "morematch.ml", line 388, characters 2-15:
 388 | | A,_,(100|103) -> 5
         ^^^^^^^^^^^^^
 Warning 11 [redundant-case]: this match case is unused.
+
 File "morematch.ml", line 401, characters 2-20:
 401 | | [],_,(100|103|104) -> 5
         ^^^^^^^^^^^^^^^^^^
 Warning 11 [redundant-case]: this match case is unused.
+
 File "morematch.ml", line 402, characters 2-16:
 402 | | [],_,(100|103) -> 6
         ^^^^^^^^^^^^^^
 Warning 11 [redundant-case]: this match case is unused.
+
 File "morematch.ml", line 403, characters 2-29:
 403 | | [],_,(1000|1001|1002|20000) -> 7
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 11 [redundant-case]: this match case is unused.
+
 File "morematch.ml", line 413, characters 5-12:
 413 |   | (100|103|101) -> 2
            ^^^^^^^
 Warning 12 [redundant-subpat]: this sub-pattern is unused.
+
 File "morematch.ml", line 432, characters 43-44:
 432 | | (J,J,((C|D) as x |E x|F (_,x))) | (J,_,((C|J) as x)) -> autre (x,x,x)
                                                  ^
 Warning 12 [redundant-subpat]: this sub-pattern is unused.
+
 File "morematch.ml", line 455, characters 7-8:
 455 | | _,_,(X|U _) -> 8
              ^
 Warning 12 [redundant-subpat]: this sub-pattern is unused.
+
 File "morematch.ml", line 456, characters 2-7:
 456 | | _,_,Y -> 5
         ^^^^^
 Warning 11 [redundant-case]: this match case is unused.
+
 File "morematch.ml", lines 1050-1053, characters 8-10:
 1050 | ........function
 1051 |   | A (`A|`C) -> 0
@@ -50,10 +61,12 @@ File "morematch.ml", lines 1050-1053, characters 8-10:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 A `D
+
 File "morematch.ml", line 1084, characters 5-51:
 1084 |   |  _, _, _, _, _, A, _, _, _, _, B, _, _, _, _, _ -> "11"
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 11 [redundant-case]: this match case is unused.
+
 File "morematch.ml", line 1086, characters 5-51:
 1086 |   |  _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> "13"
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

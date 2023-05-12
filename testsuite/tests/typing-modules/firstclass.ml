@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 module type S = sig type u type t end;;

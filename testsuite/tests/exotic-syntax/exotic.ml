@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 (* Exotic OCaml syntax constructs found in the manual that are not *)
 (* used in the source of the OCaml distribution (even in the tests). *)

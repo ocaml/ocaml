@@ -205,7 +205,7 @@ let line_loop ppf line_buffer =
               !previous_line
           in
             previous_line := "";
-            if interprete_line ppf line then
+            if interprete_line ppf line && !interactif then
               previous_line := line
       done
     with

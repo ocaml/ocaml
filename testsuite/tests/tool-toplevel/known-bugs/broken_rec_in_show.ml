@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 (* This is a known-bug file for use of 'rec' by the '#show' command,

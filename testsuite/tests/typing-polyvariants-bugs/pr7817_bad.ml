@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 let r = ref None
@@ -19,15 +19,18 @@ Lines 5-8, characters 6-3:
 8 | end
 Error: Signature mismatch:
        Modules do not match:
-         sig val write : _[< `A of '_weak2 | `B of '_weak3 ] -> unit end
+         sig
+           val write :
+             ([< `A of '_weak3 | `B of '_weak4 ] as '_weak2) -> unit
+         end
        is not included in
          sig val write : [< `A of string | `B of int ] -> unit end
        Values do not match:
-         val write : _[< `A of '_weak2 | `B of '_weak3 ] -> unit
+         val write : ([< `A of '_weak3 | `B of '_weak4 ] as '_weak2) -> unit
        is not included in
          val write : [< `A of string | `B of int ] -> unit
-       The type _[< `A of '_weak2 | `B of '_weak3 ] -> unit
+       The type ([< `A of '_weak3 | `B of '_weak4 ] as '_weak2) -> unit
        is not compatible with the type [< `A of string | `B of int ] -> unit
-       Type _[< `A of '_weak2 | `B of '_weak3 ] is not compatible with type
-         [< `A of string | `B of int ]
+       Type [< `A of '_weak3 | `B of '_weak4 ] as '_weak2
+       is not compatible with type [< `A of string | `B of int ]
 |}]

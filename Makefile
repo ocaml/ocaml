@@ -31,7 +31,7 @@ include stdlib/StdlibModules
 
 CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) -use-prims runtime/primitives
 CAMLOPT=$(OCAMLRUN) ./ocamlopt$(EXE) $(STDLIBFLAGS) -I otherlibs/dynlink
-ARCHES=amd64 i386 arm arm64 power s390x riscv
+ARCHES=amd64 arm64 power s390x riscv
 VPATH = utils parsing typing bytecomp file_formats lambda middle_end \
   middle_end/closure middle_end/flambda middle_end/flambda/base_types \
   asmcomp driver toplevel tools
@@ -109,11 +109,15 @@ ocamllex_PROGRAMS = $(addprefix lex/,ocamllex ocamllex.opt)
 
 ocamlyacc_PROGRAM = yacc/ocamlyacc
 
-TOOLS_TO_INSTALL = \
-  ocamldep ocamlprof ocamlcp ocamlmklib ocamlmktop ocamlobjinfo
+# Tools to be compiled to native and bytecode, then installed
+TOOLS_TO_INSTALL_NAT = ocamldep ocamlobjinfo
+
+# Tools to be compiled to bytecode only, then installed
+TOOLS_TO_INSTALL_BYT = \
+  ocamlcmt ocamlprof ocamlcp ocamlmklib ocamlmktop
 
 ifeq "$(NATIVE_COMPILER)" "true"
-TOOLS_TO_INSTALL += ocamloptp
+TOOLS_TO_INSTALL_BYT += ocamloptp
 endif
 
 # Clean should remove tools/ocamloptp etc. unconditionally because
@@ -122,9 +126,11 @@ endif
 clean::
 	rm -f $(addprefix tools/ocamlopt,p p.opt p.exe p.opt.exe)
 
-TOOLS = $(TOOLS_TO_INSTALL) ocamlcmt dumpobj primreq stripdebug cmpbyt
+TOOLS_NAT = $(TOOLS_TO_INSTALL_NAT)
+TOOLS_BYT = $(TOOLS_TO_INSTALL_BYT) dumpobj primreq stripdebug cmpbyt
 
-TOOLS_PROGRAMS = $(addprefix tools/,$(TOOLS))
+TOOLS_NAT_PROGRAMS = $(addprefix tools/,$(TOOLS_NAT))
+TOOLS_BYT_PROGRAMS = $(addprefix tools/,$(TOOLS_BYT))
 
 TOOLS_MODULES = tools/profiling
 
@@ -137,7 +143,7 @@ $(foreach PROGRAM, $(C_PROGRAMS),\
 
 # OCaml programs that are compiled in both bytecode and native code
 
-OCAML_PROGRAMS = ocamlc ocamlopt lex/ocamllex $(TOOLS_PROGRAMS)
+OCAML_PROGRAMS = ocamlc ocamlopt lex/ocamllex $(TOOLS_NAT_PROGRAMS)
 
 $(foreach PROGRAM, $(OCAML_PROGRAMS),\
   $(eval $(call OCAML_PROGRAM,$(PROGRAM))))
@@ -149,7 +155,8 @@ $(foreach PROGRAM, $(OCAML_PROGRAMS),\
 # We have to use dedicated rules to build it
 
 OCAML_BYTECODE_PROGRAMS = expunge \
-  $(addprefix tools/,cvt_emit make_opcodes ocamltex)
+  $(TOOLS_BYT_PROGRAMS) \
+  $(addprefix tools/, cvt_emit make_opcodes ocamltex)
 
 $(foreach PROGRAM, $(OCAML_BYTECODE_PROGRAMS),\
   $(eval $(call OCAML_BYTECODE_PROGRAM,$(PROGRAM))))
@@ -237,9 +244,9 @@ compare:
 # The core system has to be rebuilt after bootstrap anyway, so strip ocamlc
 # and ocamllex, which means the artefacts should be identical.
 	mv ocamlc$(EXE) ocamlc.tmp
-	$(OCAMLRUN) tools/stripdebug ocamlc.tmp ocamlc$(EXE)
+	$(OCAMLRUN) tools/stripdebug -all ocamlc.tmp ocamlc$(EXE)
 	mv lex/ocamllex$(EXE) ocamllex.tmp
-	$(OCAMLRUN) tools/stripdebug ocamllex.tmp lex/ocamllex$(EXE)
+	$(OCAMLRUN) tools/stripdebug -all ocamllex.tmp lex/ocamllex$(EXE)
 	rm -f ocamllex.tmp ocamlc.tmp
 	@if $(CMPCMD) boot/ocamlc ocamlc$(EXE) \
          && $(CMPCMD) boot/ocamllex lex/ocamllex$(EXE); \
@@ -267,7 +274,7 @@ promote-cross: promote-common
 # Promote the newly compiled system to the rank of bootstrap compiler
 # (Runs on the new runtime, produces code for the new runtime)
 .PHONY: promote
-promote: PROMOTE = $(OCAMLRUN) tools/stripdebug
+promote: PROMOTE = $(OCAMLRUN) tools/stripdebug -all
 promote: promote-common
 	rm -f boot/ocamlrun$(EXE)
 	cp runtime/ocamlrun$(EXE) boot/ocamlrun$(EXE)
@@ -423,7 +430,7 @@ endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
 
 INSTALL_COMPLIBDIR = $(DESTDIR)$(COMPLIBDIR)
 INSTALL_FLEXDLLDIR = $(INSTALL_LIBDIR)/flexdll
-FLEXDLL_MANIFEST = default$(filter-out _i386,_$(ARCH)).manifest
+FLEXDLL_MANIFEST = default_$(ARCH).manifest
 
 DOC_FILES=\
   Changes \
@@ -467,9 +474,9 @@ ocamlc_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 
 ocamlc_MODULES = driver/main
 
-ocamlc$(EXE): OC_BYTECODE_LDFLAGS += -compat-32
+ocamlc$(EXE): OC_BYTECODE_LINKFLAGS += -compat-32 -g
 
-ocamlc.opt$(EXE): OC_NATIVE_LDFLAGS += $(addprefix -cclib ,$(BYTECCLIBS))
+ocamlc.opt$(EXE): OC_NATIVE_LINKFLAGS += $(addprefix -cclib ,$(BYTECCLIBS))
 
 partialclean::
 	rm -f ocamlc ocamlc.exe ocamlc.opt ocamlc.opt.exe
@@ -479,6 +486,8 @@ partialclean::
 ocamlopt_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamloptcomp)
 
 ocamlopt_MODULES = driver/optmain
+
+ocamlopt$(EXE): OC_BYTECODE_LINKFLAGS += -g
 
 partialclean::
 	rm -f ocamlopt ocamlopt.exe ocamlopt.opt ocamlopt.opt.exe
@@ -491,7 +500,7 @@ ocaml_LIBRARIES = \
 ocaml_MODULES = toplevel/topstart
 
 .INTERMEDIATE: ocaml.tmp
-ocaml.tmp: OC_BYTECODE_LDFLAGS += -I toplevel/byte -linkall
+ocaml.tmp: OC_BYTECODE_LINKFLAGS += -I toplevel/byte -linkall -g
 ocaml.tmp: $(ocaml_LIBRARIES:=.cma) $(ocaml_MODULES:=.cmo)
 	$(V_LINKC)$(LINK_BYTECODE_PROGRAM) -o $@ $^
 
@@ -903,22 +912,24 @@ runtime/%.bi.$(O): OC_CPPFLAGS += $(ocamlruni_CPPFLAGS)
 $(DEPDIR)/runtime/%.bi.$(D): OC_CPPFLAGS += $(ocamlruni_CPPFLAGS)
 
 runtime/%.bpic.$(O): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
-$(DEPDIR)/runtime/%.bpic.$(D): OC_CFLAGS += $(SHAREDLIB_CFLAGS)
 
+runtime/%.n.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS)
 runtime/%.n.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 $(DEPDIR)/runtime/%.n.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 
+runtime/%.nd.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS)
 runtime/%.nd.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlrund_CPPFLAGS)
 $(DEPDIR)/runtime/%.nd.$(D): \
   OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlrund_CPPFLAGS)
 
+runtime/%.ni.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS)
 runtime/%.ni.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
 $(DEPDIR)/runtime/%.ni.$(D): \
   OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(ocamlruni_CPPFLAGS)
 
-runtime/%.npic.$(O): OC_CFLAGS += $(OC_NATIVE_CPPFLAGS) $(SHAREDLIB_CFLAGS)
-$(DEPDIR)/runtime/%.npic.$(D): \
-  OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS) $(SHAREDLIB_CFLAGS)
+runtime/%.npic.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS) $(SHAREDLIB_CFLAGS)
+runtime/%.npic.$(O): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
+$(DEPDIR)/runtime/%.npic.$(D): OC_CPPFLAGS += $(OC_NATIVE_CPPFLAGS)
 
 ## Compilation of runtime C files
 
@@ -981,10 +992,10 @@ runtime/%.o: runtime/%.S
 	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) -o $@ $< || $(ASPP_ERROR)
 
 runtime/%.d.o: runtime/%.S
-	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) $(OC_DEBUG_CPPFLAGS) -o $@ $< || $(ASPP_ERROR)
+	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) $(ocamlrund_CPPFLAGS) -o $@ $< || $(ASPP_ERROR)
 
 runtime/%.i.o: runtime/%.S
-	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) $(OC_INSTR_CPPFLAGS) -o $@ $< || $(ASPP_ERROR)
+	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) $(ocamlruni_CPPFLAGS) -o $@ $< || $(ASPP_ERROR)
 
 runtime/%_libasmrunpic.o: runtime/%.S
 	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) $(SHAREDLIB_CFLAGS) -o $@ $<
@@ -1000,19 +1011,10 @@ runtime/domain_state32.inc: \
 runtime/amd64nt.obj: runtime/amd64nt.asm runtime/domain_state64.inc
 	$(V_ASM)$(ASM)$@ $<
 
-runtime/i386nt.obj: runtime/i386nt.asm runtime/domain_state32.inc
-	$(V_ASM)$(ASM)$@ $<
-
 runtime/amd64nt.d.obj: runtime/amd64nt.asm runtime/domain_state64.inc
 	$(V_ASM)$(ASM)$@ $(ocamlrund_CPPFLAGS) $<
 
-runtime/i386nt.d.obj: runtime/i386nt.asm runtime/domain_state32.inc
-	$(V_ASM)$(ASM)$@ $(ocmalrund_CPPFLAGS) $<
-
 runtime/amd64nt.i.obj: runtime/amd64nt.asm runtime/domain_state64.inc
-	$(V_ASM)$(ASM)$@ $(ocamlruni_CPPFLAGS) $<
-
-runtime/i386nt.i.obj: runtime/i386nt.asm runtime/domain_state32.inc
 	$(V_ASM)$(ASM)$@ $(ocamlruni_CPPFLAGS) $<
 
 runtime/%_libasmrunpic.obj: runtime/%.asm
@@ -1120,7 +1122,7 @@ ocamllex: ocamlyacc
 ocamllex.opt: ocamlopt
 	$(MAKE) lex-allopt
 
-lex/ocamllex$(EXE): OC_BYTECODE_LDFLAGS += -compat-32
+lex/ocamllex$(EXE): OC_BYTECODE_LINKFLAGS += -compat-32
 
 partialclean::
 	rm -f lex/*.cm* lex/*.o lex/*.obj
@@ -1315,11 +1317,11 @@ lintapidiff: tools/lintapidiff.opt$(EXE)
 # Tools
 
 TOOLS_BYTECODE_TARGETS = \
-  $(filter-out tools/ocamloptp,$(TOOLS_PROGRAMS)) $(TOOLS_MODULES:=.cmo)
+  $(TOOLS_NAT_PROGRAMS) $(TOOLS_BYT_PROGRAMS) $(TOOLS_MODULES:=.cmo)
 
-TOOLS_NATIVE_TARGETS = $(TOOLS_MODULES:=.cmx) tools/ocamloptp
+TOOLS_NATIVE_TARGETS = $(TOOLS_MODULES:=.cmx)
 
-TOOLS_OPT_TARGETS = $(TOOLS_PROGRAMS:=.opt)
+TOOLS_OPT_TARGETS = $(TOOLS_NAT_PROGRAMS:=.opt)
 
 .PHONY: ocamltools
 ocamltools: ocamlc ocamllex
@@ -1365,7 +1367,7 @@ partialclean::
 ocamldep_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
 ocamldep_MODULES = tools/ocamldep
 
-tools/ocamldep$(EXE): OC_BYTECODE_LDFLAGS += -compat-32
+tools/ocamldep$(EXE): OC_BYTECODE_LINKFLAGS += -compat-32
 
 # The profiler
 
@@ -1457,10 +1459,10 @@ ocamltex_MODULES = tools/ocamltex
 # Note: the following definitions apply to all the prerequisites
 # of ocamltex.
 $(ocamltex): CAMLC = $(OCAMLRUN) $(ROOTDIR)/ocamlc$(EXE) $(STDLIBFLAGS)
-$(ocamltex): OC_COMMON_LDFLAGS += -linkall
+$(ocamltex): OC_COMMON_LINKFLAGS += -linkall
 $(ocamltex): VPATH += $(addprefix otherlibs/,str unix)
 
-tools/ocamltex.cmo: OC_COMMON_CFLAGS += -no-alias-deps
+tools/ocamltex.cmo: OC_COMMON_COMPFLAGS += -no-alias-deps
 
 # we need str and unix which depend on the bytecode version of other tools
 # thus we use the othertools target
@@ -1507,13 +1509,15 @@ ocamlnat_LIBRARIES = \
 
 ocamlnat_MODULES = $(ocaml_MODULES)
 
-ocamlnat$(EXE): OC_NATIVE_LDFLAGS += -linkall -I toplevel/native
+ocamlnat$(EXE): OC_NATIVE_LINKFLAGS += -linkall -I toplevel/native
 
 COMPILE_NATIVE_MODULE = \
-  $(CAMLOPT_CMD) $(OC_COMMON_CFLAGS) -I $(@D) $(INCLUDES) $(OC_NATIVE_CFLAGS)
+  $(CAMLOPT_CMD) $(OC_COMMON_COMPFLAGS) -I $(@D) $(INCLUDES) \
+  $(OC_NATIVE_COMPFLAGS)
+
 
 toplevel/topdirs.cmx toplevel/toploop.cmx $(ocamlnat_MODULES:=.cmx): \
-  OC_NATIVE_CFLAGS += -I toplevel/native
+  OC_NATIVE_COMPFLAGS += -I toplevel/native
 
 toplevel/toploop.cmx: toplevel/native/topeval.cmx
 
@@ -1545,10 +1549,10 @@ endif
 # Default rules
 
 %.cmo: %.ml
-	$(V_OCAMLC)$(CAMLC) $(OC_COMMON_CFLAGS) -I $(@D) $(INCLUDES) -c $<
+	$(V_OCAMLC)$(CAMLC) $(OC_COMMON_COMPFLAGS) -I $(@D) $(INCLUDES) -c $<
 
 %.cmi: %.mli
-	$(V_OCAMLC)$(CAMLC) $(OC_COMMON_CFLAGS) -I $(@D) $(INCLUDES) -c $<
+	$(V_OCAMLC)$(CAMLC) $(OC_COMMON_COMPFLAGS) -I $(@D) $(INCLUDES) -c $<
 
 %.cmx: %.ml
 	$(V_OCAMLOPT)$(COMPILE_NATIVE_MODULE) -c $<
@@ -1617,13 +1621,14 @@ endif
 	  "$(INSTALL_INCDIR)"
 	$(INSTALL_PROG) ocaml$(EXE) "$(INSTALL_BINDIR)"
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
-	$(INSTALL_PROG) ocamlc$(EXE) "$(INSTALL_BINDIR)/ocamlc.byte$(EXE)"
+	$(call INSTALL_STRIPPED_BYTE_PROG,\
+               ocamlc$(EXE),"$(INSTALL_BINDIR)/ocamlc.byte$(EXE)")
 endif
 	$(MAKE) -C stdlib install
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	$(INSTALL_PROG) lex/ocamllex$(EXE) \
 	  "$(INSTALL_BINDIR)/ocamllex.byte$(EXE)"
-	for i in $(TOOLS_TO_INSTALL); \
+	for i in $(TOOLS_TO_INSTALL_NAT); \
 	do \
 	  $(INSTALL_PROG) "tools/$$i$(EXE)" "$(INSTALL_BINDIR)/$$i.byte$(EXE)";\
 	  if test -f "tools/$$i".opt$(EXE); then \
@@ -1634,7 +1639,7 @@ ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	  fi; \
 	done
 else
-	for i in $(TOOLS_TO_INSTALL); \
+	for i in $(TOOLS_TO_INSTALL_NAT); \
 	do \
 	  if test -f "tools/$$i".opt$(EXE); then \
 	    $(INSTALL_PROG) "tools/$$i.opt$(EXE)" "$(INSTALL_BINDIR)"; \
@@ -1642,13 +1647,11 @@ else
 	  fi; \
 	done
 endif
+	for i in $(TOOLS_TO_INSTALL_BYT); \
+	do \
+	  $(INSTALL_PROG) "tools/$$i$(EXE)" "$(INSTALL_BINDIR)";\
+	done
 	$(INSTALL_PROG) $(ocamlyacc_PROGRAM)$(EXE) "$(INSTALL_BINDIR)"
-	if test -f tools/ocamlcmt.opt$(EXE); then \
-	  $(INSTALL_PROG)\
-	    tools/ocamlcmt.opt$(EXE) "$(INSTALL_BINDIR)/ocamlcmt$(EXE)"; \
-	else \
-	  $(INSTALL_PROG) tools/ocamlcmt$(EXE) "$(INSTALL_BINDIR)"; \
-	fi
 	$(INSTALL_DATA) \
 	   utils/*.cmi \
 	   parsing/*.cmi \
@@ -1744,7 +1747,8 @@ ifneq "$(runtime_NATIVE_SHARED_LIBRARIES)" ""
 	$(INSTALL_PROG) $(runtime_NATIVE_SHARED_LIBRARIES) "$(INSTALL_LIBDIR)"
 endif
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
-	$(INSTALL_PROG) ocamlopt$(EXE) "$(INSTALL_BINDIR)/ocamlopt.byte$(EXE)"
+	$(call INSTALL_STRIPPED_BYTE_PROG,\
+               ocamlopt$(EXE),"$(INSTALL_BINDIR)/ocamlopt.byte$(EXE)")
 endif
 	$(MAKE) -C stdlib installopt
 	$(INSTALL_DATA) \

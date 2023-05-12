@@ -14,7 +14,9 @@
 (**************************************************************************)
 
 let main () =
-  let args = Ccomp.quote_files (List.tl (Array.to_list Sys.argv)) in
+  let args =
+    Ccomp.quote_files ~response_files:true (List.tl (Array.to_list Sys.argv))
+  in
   let ocamlmktop = Sys.executable_name in
   (* On Windows Sys.command calls system() which in turn calls 'cmd.exe /c'.
      cmd.exe has special quoting rules (see 'cmd.exe /?' for details).

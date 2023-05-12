@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 module rec A: sig val x: int end = struct let x = B.x end

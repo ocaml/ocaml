@@ -1,7 +1,7 @@
 (* TEST
-readonly_files = "main.c"
-arguments = "-DUNIT_INT -DFUN=takmain main.c"
-* asmgen
+ readonly_files = "main.c";
+ arguments = "-DUNIT_INT -DFUN=takmain main.c";
+ asmgen;
 *)
 
 (**************************************************************************)

@@ -1,5 +1,5 @@
 (* TEST
-   ocamlopt_flags += " -O3 "
+ ocamlopt_flags += " -O3 ";
 *)
 
 let num_domains = 4

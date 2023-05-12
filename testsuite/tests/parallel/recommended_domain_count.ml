@@ -1,5 +1,5 @@
 (* TEST
-modules = "recommended_domain_count_cstubs.c"
+ modules = "recommended_domain_count_cstubs.c";
 *)
 
 external get_max_domains : unit -> int = "caml_get_max_domains"

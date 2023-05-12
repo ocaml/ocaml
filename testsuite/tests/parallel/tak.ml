@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 (* filling minor heaps in parallel to trigger
    minor heap exhaustion codepath organically *)

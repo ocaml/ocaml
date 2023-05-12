@@ -450,6 +450,8 @@ let module_expr sub {mod_loc; mod_desc; mod_env; mod_attributes; _} =
       sub.module_expr sub mexp1;
       sub.module_expr sub mexp2;
       sub.module_coercion sub c
+  | Tmod_apply_unit mexp1 ->
+      sub.module_expr sub mexp1;
   | Tmod_constraint (mexpr, _, Tmodtype_implicit, c) ->
       sub.module_expr sub mexpr;
       sub.module_coercion sub c

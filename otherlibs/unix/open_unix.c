@@ -38,7 +38,7 @@
 #define O_RSYNC 0
 #endif
 
-static int open_flag_table[15] = {
+static const int open_flag_table[15] = {
   O_RDONLY, O_WRONLY, O_RDWR, O_NONBLOCK, O_APPEND, O_CREAT, O_TRUNC, O_EXCL,
   O_NOCTTY, O_DSYNC, O_SYNC, O_RSYNC,
   0, /* O_SHARE_DELETE, Windows-only */
@@ -48,7 +48,7 @@ static int open_flag_table[15] = {
 
 enum { CLOEXEC = 1, KEEPEXEC = 2 };
 
-static int open_cloexec_table[15] = {
+static const int open_cloexec_table[15] = {
   0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0,
   0,

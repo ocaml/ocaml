@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 (* Ignore OCAMLRUNPARAM=b to be reproducible *)
@@ -572,6 +572,20 @@ Line 1, characters 0-32:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This extension does not match the definition of type bar
        Their variances do not agree.
+|}]
+
+type -'a poly_and_contravariant = .. constraint <x: 'a. 'a -> 'a; ..> = 'a
+type 'a poly_and_contravariant += A | X of 'a
+[%%expect {|
+type -'b poly_and_contravariant = .. constraint 'b = < x : 'a. 'a -> 'a; .. >
+Line 2, characters 0-45:
+2 | type 'a poly_and_contravariant += A | X of 'a
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In the extension constructor
+         type 'a poly_and_contravariant += X of 'a
+       the type variable 'a has a variance that
+       is not reflected by its occurrence in type parameters.
+       It was expected to be contravariant, but it is covariant.
 |}]
 
 (* Exceptions are compatible with extensions *)

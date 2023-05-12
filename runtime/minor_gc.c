@@ -147,10 +147,11 @@ struct oldify_state {
   caml_domain_state* domain;
 };
 
-static value alloc_shared(caml_domain_state* d, mlsize_t wosize, tag_t tag)
+static value alloc_shared(caml_domain_state* d,
+                          mlsize_t wosize, tag_t tag, reserved_t reserved)
 {
   void* mem = caml_shared_try_alloc(d->shared_heap, wosize, tag,
-                                    0 /* not pinned */);
+                                    reserved, 0 /* not pinned */);
   d->allocated_words += Whsize_wosize(wosize);
   if (mem == NULL) {
     caml_fatal_error("allocation failure during minor GC");
@@ -171,7 +172,7 @@ static void spin_on_header(value v) {
 }
 
 Caml_inline header_t get_header_val(value v) {
-  header_t hd = atomic_load_explicit(Hp_atomic_val(v), memory_order_acquire);
+  header_t hd = atomic_load_acquire(Hp_atomic_val(v));
   if (!Is_update_in_progress(hd))
     return hd;
 
@@ -209,9 +210,9 @@ static int try_update_object_header(value v, volatile value *p, value result,
       header_t desired_hd = In_progress_update_val;
       if( atomic_compare_exchange_strong(Hp_atomic_val(v), &hd, desired_hd) ) {
         /* Success. Now we can write the forwarding pointer. */
-        atomic_store_explicit(Op_atomic_val(v), result, memory_order_relaxed);
+        atomic_store_relaxed(Op_atomic_val(v), result);
         /* And update header ('release' ensures after update of fwd pointer) */
-        atomic_store_rel(Hp_atomic_val(v), 0);
+        atomic_store_release(Hp_atomic_val(v), 0);
         /* Let the caller know we were responsible for the update */
         success = 1;
       } else {
@@ -270,7 +271,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
   if (tag == Cont_tag) {
     value stack_value = Field(v, 0);
     CAMLassert(Wosize_hd(hd) == 1 && infix_offset == 0);
-    result = alloc_shared(st->domain, 1, Cont_tag);
+    result = alloc_shared(st->domain, 1, Cont_tag, Reserved_hd(hd));
     if( try_update_object_header(v, p, result, 0) ) {
       struct stack_info* stk = Ptr_val(stack_value);
       Field(result, 0) = Val_ptr(stk);
@@ -292,7 +293,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
     value field0;
     sz = Wosize_hd (hd);
     st->live_bytes += Bhsize_hd(hd);
-    result = alloc_shared(st->domain, sz, tag);
+    result = alloc_shared(st->domain, sz, tag, Reserved_hd(hd));
     field0 = Field(v, 0);
     if( try_update_object_header(v, p, result, infix_offset) ) {
       if (sz > 1){
@@ -322,7 +323,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
   } else if (tag >= No_scan_tag) {
     sz = Wosize_hd (hd);
     st->live_bytes += Bhsize_hd(hd);
-    result = alloc_shared(st->domain, sz, tag);
+    result = alloc_shared(st->domain, sz, tag, Reserved_hd(hd));
     for (i = 0; i < sz; i++) {
       Field(result, i) = Field(v, i);
     }
@@ -355,7 +356,7 @@ static void oldify_one (void* st_v, value v, volatile value *p)
       /* Do not short-circuit the pointer.  Copy as a normal block. */
       CAMLassert (Wosize_hd (hd) == 1);
       st->live_bytes += Bhsize_hd(hd);
-      result = alloc_shared(st->domain, 1, Forward_tag);
+      result = alloc_shared(st->domain, 1, Forward_tag, Reserved_hd(hd));
       if( try_update_object_header(v, p, result, 0) ) {
         p = Op_val (result);
         v = f;
@@ -596,11 +597,6 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   caml_gc_log("promoted %d roots, %" ARCH_INTNAT_PRINTF_FORMAT "u bytes",
               remembered_roots, st.live_bytes);
 
-  CAML_EV_BEGIN(EV_MINOR_FINALIZERS_ADMIN);
-  caml_gc_log("running finalizer data structure book-keeping");
-  caml_final_update_last_minor(domain);
-  CAML_EV_END(EV_MINOR_FINALIZERS_ADMIN);
-
 #ifdef DEBUG
   caml_global_barrier();
   caml_gc_log("ref_base: %p, ref_ptr: %p",
@@ -679,7 +675,7 @@ void caml_do_opportunistic_major_slice
    if needed.
 */
 void caml_empty_minor_heap_setup(caml_domain_state* domain_unused) {
-  atomic_store_explicit(&domains_finished_minor_gc, 0, memory_order_release);
+  atomic_store_release(&domains_finished_minor_gc, 0);
   /* Increment the total number of minor collections done in the program */
   atomic_fetch_add (&caml_minor_collections_count, 1);
 }
@@ -710,10 +706,8 @@ caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
     CAML_EV_BEGIN(EV_MINOR_LEAVE_BARRIER);
     {
       SPIN_WAIT {
-        if( atomic_load_explicit
-          (&domains_finished_minor_gc, memory_order_acquire)
-          ==
-          participating_count ) {
+        if (atomic_load_acquire(&domains_finished_minor_gc) ==
+            participating_count) {
           break;
         }
 
@@ -722,6 +716,11 @@ caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
     }
     CAML_EV_END(EV_MINOR_LEAVE_BARRIER);
   }
+
+  CAML_EV_BEGIN(EV_MINOR_FINALIZERS_ADMIN);
+  caml_gc_log("running finalizer data structure book-keeping");
+  caml_final_update_last_minor(domain);
+  CAML_EV_END(EV_MINOR_FINALIZERS_ADMIN);
 
   CAML_EV_BEGIN(EV_MINOR_CLEAR);
   caml_gc_log("running stw empty_minor_heap_domain_clear");

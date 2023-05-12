@@ -1,5 +1,5 @@
 (* TEST
-  * native
+ native;
 *)
 
 let ( *. ) x y = Sys.opaque_identity (x *. y)

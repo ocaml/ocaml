@@ -151,7 +151,7 @@ let enter info =
   reloc_info := (info, !out_position) :: !reloc_info
 
 let slot_for_literal sc =
-  enter (Reloc_literal sc);
+  enter (Reloc_literal (Symtable.transl_const sc));
   out_int 0
 and slot_for_getglobal id =
   enter (Reloc_getglobal id);
@@ -416,8 +416,9 @@ let to_file outchan unit_name objfile ~required_globals code =
         (Filename.dirname (Location.absolute_path objfile))
         !debug_dirs;
       let p = pos_out outchan in
-      output_value outchan !events;
-      output_value outchan (String.Set.elements !debug_dirs);
+      Marshal.(to_channel outchan !events [Compression]);
+      Marshal.(to_channel outchan (String.Set.elements !debug_dirs)
+                          [Compression]);
       (p, pos_out outchan - p)
     end else
       (0, 0) in

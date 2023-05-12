@@ -52,7 +52,7 @@ int outline;
 char_os *action_file_name;
 char_os *entry_file_name;
 char_os *code_file_name;
-char *code_file_name_disp;
+char *code_file_name_disp, *interface_file_name_disp;
 char_os *interface_file_name;
 char_os *input_file_name = T("");
 char *input_file_name_disp;
@@ -367,7 +367,8 @@ void create_file_names(void)
         no_space();
     strcpy_os(interface_file_name, file_prefix);
     strcpy_os(interface_file_name + len, INTERFACE_SUFFIX);
-
+    interface_file_name_disp = caml_stat_strdup_of_os(interface_file_name);
+    if (!interface_file_name_disp) no_space();
 }
 
 

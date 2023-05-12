@@ -1,9 +1,9 @@
 (* TEST
-   include config
-   flags = "-w -55"
-   ocamlc_flags = "config.cmo"
-   ocamlopt_flags = "-inline 20 config.cmx"
-   * native
+ include config;
+ flags = "-w -55";
+ ocamlc_flags = "config.cmo";
+ ocamlopt_flags = "-inline 20 config.cmx";
+ native;
 *)
 
 let eliminate_intermediate_float_record () =

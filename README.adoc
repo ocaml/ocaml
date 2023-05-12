@@ -14,17 +14,20 @@ The initial release of OCaml 5.0 only supports the native compiler under ARM64
 and x86-64 architectures under Linux, macOS and the BSDs. On Windows, only the
 MinGW-w64 port is supported.  Support for other 64-bit architectures and
 systems will be added back in later releases. On 32-bit systems, only the
-bytecode compiler is supported.  Native-code support for these systems is under
-discussion.
+bytecode compiler will be supported.
 
 |=====
-| Branch `trunk` | Branch `5.0` | Branch `4.14` | Branch `4.13`
+| Branch `trunk` | Branch `5.1` | Branch `5.0` | Branch `4.14`
 
 | image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=trunk["Github CI Build Status (trunk branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
   image:https://github.com/ocaml/ocaml/workflows/Hygiene/badge.svg?branch=trunk["Github CI Hygiene Status (trunk branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3AHygiene"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=trunk&svg=true["AppVeyor Build Status (trunk branch)",
+     link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=5.1["Github CI Build Status (5.1 branch)",
+     link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=5.1&svg=true["AppVeyor Build Status (5.1 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
 | image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=5.0["Github CI Build Status (5.0 branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3ABuild"]
@@ -33,10 +36,6 @@ discussion.
 | image:https://github.com/ocaml/ocaml/workflows/Build/badge.svg?branch=4.14["Github CI Build Status (4.14 branch)",
      link="https://github.com/ocaml/ocaml/actions?query=workflow%3Amain"]
   image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.14&svg=true["AppVeyor Build Status (4.14 branch)",
-     link="https://ci.appveyor.com/project/avsm/ocaml"]
-| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.13["TravisCI Build Status (4.13 branch)",
-     link="https://travis-ci.org/ocaml/ocaml"]
-  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.13&svg=true["AppVeyor Build Status (4.13 branch)",
      link="https://ci.appveyor.com/project/avsm/ocaml"]
 |=====
 
@@ -66,11 +65,8 @@ compiler currently runs on the following platforms:
 |                |  Tier 1 (actively maintained)   | Tier 2 (maintained when possible)
 
 | x86 64 bits    | Linux, macOS, Windows, FreeBSD  |  NetBSD, OpenBSD
-| x86 32 bits    | Linux, Windows                  |  FreeBSD, NetBSD, OpenBSD
 | ARM 64 bits    | Linux, macOS                    |  FreeBSD
-| ARM 32 bits    | Linux                           |  FreeBSD, NetBSD, OpenBSD
 | Power 64 bits  | Linux                           |
-| Power 32 bits  | Linux                           |
 | RISC-V 64 bits | Linux                           |
 | IBM Z (s390x)  | Linux                           |
 |====

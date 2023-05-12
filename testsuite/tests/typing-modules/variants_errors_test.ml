@@ -1,6 +1,6 @@
 (* TEST
-  * expect
- *)
+ expect;
+*)
 
 module M1 : sig
   type t =

@@ -95,8 +95,19 @@ let setup_terminal () =
    input in the terminal. This would not be possible without this information,
    since printing several warnings/errors adds text between the user input and
    the bottom of the terminal.
+
+   We also use for {!is_first_report}, see below.
 *)
 let num_loc_lines = ref 0
+
+(* We use [num_loc_lines] to determine if the report about to be
+   printed is the first or a follow-up report of the current
+   "batch" -- contiguous reports without user input in between, for
+   example for the current toplevel phrase. We use this to print
+   a blank line between messages of the same batch.
+*)
+let is_first_message () =
+  !num_loc_lines = 0
 
 (* This is used by the toplevel to reset [num_loc_lines] before each phrase *)
 let reset () =
@@ -106,6 +117,13 @@ let reset () =
 let echo_eof () =
   print_newline ();
   incr num_loc_lines
+
+(* This is used by the toplevel and the report printers below. *)
+let separate_new_message ppf =
+  if not (is_first_message ()) then begin
+    Format.pp_print_newline ppf ();
+    incr num_loc_lines
+  end
 
 (* Code printing errors and warnings must be wrapped using this function, in
    order to update [num_loc_lines].
@@ -139,12 +157,39 @@ let rewrite_absolute_path path =
   | None -> path
   | Some map -> Build_path_prefix_map.rewrite map path
 
+let rewrite_find_first_existing path =
+  match Misc.get_build_path_prefix_map () with
+  | None ->
+      if Sys.file_exists path then Some path
+      else None
+  | Some prefix_map ->
+    match Build_path_prefix_map.rewrite_all prefix_map path with
+    | [] ->
+      if Sys.file_exists path then Some path
+      else None
+    | matches ->
+      Some (List.find Sys.file_exists matches)
+
+let rewrite_find_all_existing_dirs path =
+  let ok path = Sys.file_exists path && Sys.is_directory path in
+  match Misc.get_build_path_prefix_map () with
+  | None ->
+      if ok path then [path]
+      else []
+  | Some prefix_map ->
+    match Build_path_prefix_map.rewrite_all prefix_map path with
+    | [] ->
+        if ok path then [path]
+        else []
+    | matches ->
+      match (List.filter ok matches) with
+      | [] -> raise Not_found
+      | results -> results
+
 let absolute_path s = (* This function could go into Filename *)
   let open Filename in
-  let s =
-    if not (is_relative s) then s
-    else (rewrite_absolute_path (concat (Sys.getcwd ()) s))
-  in
+  let s = if (is_relative s) then (concat (Sys.getcwd ()) s) else s in
+  let s = rewrite_absolute_path s in
   (* Now simplify . and .. components *)
   let rec aux s =
     let base = basename s in
@@ -459,20 +504,28 @@ let highlight_quote ppf
         (* Single-line error *)
         Format.fprintf ppf "%s | %s@," line_nb line;
         Format.fprintf ppf "%*s   " (String.length line_nb) "";
-        String.iteri (fun i c ->
+        (* Iterate up to [rightmost], which can be larger than the length of
+           the line because we may point to a location after the end of the
+           last token on the line, for instance:
+           {[
+             token
+                       ^
+             Did you forget ...
+           ]} *)
+        for i = 0 to rightmost.pos_cnum - line_start_cnum - 1 do
           let pos = line_start_cnum + i in
           if ISet.is_start iset ~pos <> None then
             Format.fprintf ppf "@{<%s>" highlight_tag;
           if ISet.mem iset ~pos then Format.pp_print_char ppf '^'
-          else if pos < rightmost.pos_cnum then begin
+          else if i < String.length line then begin
             (* For alignment purposes, align using a tab for each tab in the
                source code *)
-            if c = '\t' then Format.pp_print_char ppf '\t'
+            if line.[i] = '\t' then Format.pp_print_char ppf '\t'
             else Format.pp_print_char ppf ' '
           end;
           if ISet.is_end iset ~pos <> None then
             Format.fprintf ppf "@}"
-        ) line;
+        done;
         Format.fprintf ppf "@}@,"
     | _ ->
         (* Multi-line error *)
@@ -722,6 +775,7 @@ let batch_mode_printer : report_printer =
   let pp_txt ppf txt = Format.fprintf ppf "@[%t@]" txt in
   let pp self ppf report =
     setup_colors ();
+    separate_new_message ppf;
     (* Make sure we keep [num_loc_lines] updated.
        The tabulation box is here to give submessage the option
        to be aligned with the main message box

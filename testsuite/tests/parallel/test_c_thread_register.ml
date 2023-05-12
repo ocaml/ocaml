@@ -1,9 +1,12 @@
 (* TEST
-   modules = "test_c_thread_register_cstubs.c"
-   * hassysthreads
-   include systhreads
-   ** bytecode
-   ** native
+ modules = "test_c_thread_register_cstubs.c";
+ include systhreads;
+ hassysthreads;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 (* spins a external thread from C and register it to the OCaml runtime *)

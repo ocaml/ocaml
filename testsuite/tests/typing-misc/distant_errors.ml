@@ -1,5 +1,5 @@
 (* TEST
-  * expect
+ expect;
 *)
 
 (** The aim of this file is to keep track of programs that are "far" from being well-typed *)

@@ -395,7 +395,44 @@ module Int_literal_converter = struct
   let nativeint s = cvt_int_aux s Nativeint.neg Nativeint.of_string
 end
 
+(* [find_first_mono p] assumes that there exists a natural number
+   N such that [p] is false on [0; N[ and true on [N; max_int], and
+   returns this N. (See misc.mli for the detailed specification.) *)
+let find_first_mono =
+  let rec find p ~low ~jump ~high =
+    (* Invariants:
+       [low, jump, high] are non-negative with [low < high],
+       [p low = false],
+       [p high = true]. *)
+    if low + 1 = high then high
+    (* ensure that [low + jump] is in ]low; high[ *)
+    else if jump < 1 then find p ~low ~jump:1 ~high
+    else if jump >= high - low then find p ~low ~jump:((high - low) / 2) ~high
+    else if p (low + jump) then
+      (* We jumped too high: continue with a smaller jump and lower limit *)
+      find p ~low:low ~jump:(jump / 2) ~high:(low + jump)
+    else
+      (* we jumped too low:
+         continue from [low + jump] with a larger jump *)
+      let next_jump = max jump (2 * jump) (* avoid overflows *) in
+      find p ~low:(low + jump) ~jump:next_jump ~high
+  in
+  fun p ->
+    if p 0 then 0
+    else find p ~low:0 ~jump:1 ~high:max_int
+
 (* String operations *)
+
+let split_null_terminated s =
+  let[@tail_mod_cons] rec discard_last_sep = function
+    | [] | [""] -> []
+    | x :: xs -> x :: discard_last_sep xs
+  in
+  discard_last_sep (String.split_on_char '\000' s)
+
+let concat_null_terminated = function
+  | [] -> ""
+  | l -> String.concat "\000" (l @ [""])
 
 let chop_extensions file =
   let dirname = Filename.dirname file and basename = Filename.basename file in
@@ -867,6 +904,12 @@ let debug_prefix_map_flags () =
 let print_if ppf flag printer arg =
   if !flag then Format.fprintf ppf "%a@." printer arg;
   arg
+
+let print_see_manual ppf manual_section =
+  let open Format in
+  fprintf ppf "(see manual section %a)"
+    (pp_print_list ~pp_sep:(fun f () -> pp_print_char f '.') pp_print_int)
+    manual_section
 
 
 type filepath = string

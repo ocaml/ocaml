@@ -1,5 +1,6 @@
 (* TEST
-   * native *)
+ native;
+*)
 type alloc_count = { mutable total: float }
 let allocs = Sys.opaque_identity { total = 0. }
 let[@inline never] set_allocs () =

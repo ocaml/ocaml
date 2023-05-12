@@ -1,5 +1,5 @@
 (* TEST
-   modules = "terms.ml equations.ml orderings.ml kb.ml"
+ modules = "terms.ml equations.ml orderings.ml kb.ml";
 *)
 
 open Terms

@@ -1,5 +1,5 @@
 (* TEST
-  ocamllex_flags = " -q "
+ ocamllex_flags = " -q ";
 *)
 
 let digit = ['0'-'9']

@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 class ['a] c = object constraint 'a = int method m (x: bool #c) = () end;;

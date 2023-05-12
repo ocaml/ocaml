@@ -23,6 +23,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
+#include "caml/platform.h"
 
 #include <fcntl.h>
 #include <stdatomic.h>
@@ -235,6 +236,7 @@ caml_runtime_events_create_cursor(const char_os* runtime_events_path, int pid,
   cursor->lost_events = NULL;
   cursor->user_unit = NULL;
   cursor->user_int = NULL;
+  cursor->user_span = NULL;
   cursor->user_custom = NULL;
 
   *cursor_res = cursor;
@@ -390,10 +392,8 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
     do {
       uint64_t buf[RUNTIME_EVENTS_MAX_MSG_LENGTH];
       uint64_t ring_mask, header, msg_length;
-      ring_head = atomic_load_explicit(&runtime_events_buffer_header->ring_head,
-                                       memory_order_acquire);
-      ring_tail = atomic_load_explicit(&runtime_events_buffer_header->ring_tail,
-                                       memory_order_acquire);
+      ring_head = atomic_load_acquire(&runtime_events_buffer_header->ring_head);
+      ring_tail = atomic_load_acquire(&runtime_events_buffer_header->ring_tail);
 
       if (ring_head > cursor->current_positions[domain_num]) {
         if (cursor->lost_events) {
@@ -426,8 +426,7 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
 
       atomic_thread_fence(memory_order_seq_cst);
 
-      ring_head = atomic_load_explicit(&runtime_events_buffer_header->ring_head,
-                                       memory_order_acquire);
+      ring_head = atomic_load_acquire(&runtime_events_buffer_header->ring_head);
 
       /* Check the message we've read hasn't been overwritten by the writer */
       if (ring_head > cursor->current_positions[domain_num]) {
@@ -439,10 +438,10 @@ caml_runtime_events_read_poll(struct caml_runtime_events_cursor *cursor,
         if (cursor->lost_events) {
           if( !(cursor->lost_events(domain_num, callback_data, lost_words)) ) {
             early_exit = 1;
-            continue;
           }
-
         }
+
+        continue;
       }
 
       if (RUNTIME_EVENTS_ITEM_IS_RUNTIME(header)) {
@@ -618,13 +617,11 @@ static int ml_runtime_begin(int domain_id, void *callback_data,
     if( Is_exception_result(res) ) {
       res = Extract_exception(res);
       *holder->exception = res;
-      CAMLdrop;
-      return 0;
+      CAMLreturnT(int, 0);
     }
   }
 
-  CAMLdrop;
-  return 1;
+  CAMLreturnT(int, 1);
 }
 
 static int ml_runtime_end(int domain_id, void *callback_data,
@@ -646,13 +643,11 @@ static int ml_runtime_end(int domain_id, void *callback_data,
     if( Is_exception_result(res) ) {
       res = Extract_exception(res);
       *holder->exception = res;
-      CAMLdrop;
-      return 0;
+      CAMLreturnT(int, 0);
     }
   }
 
-  CAMLdrop;
-  return 1;
+  CAMLreturnT(int, 1);
 }
 
 static int ml_runtime_counter(int domain_id, void *callback_data,
@@ -677,13 +672,11 @@ static int ml_runtime_counter(int domain_id, void *callback_data,
     if( Is_exception_result(res) ) {
       res = Extract_exception(res);
       *holder->exception = res;
-      CAMLdrop;
-      return 0;
+      CAMLreturnT(int, 0);
     }
   }
 
-  CAMLdrop;
-  return 1;
+  CAMLreturnT(int, 1);
 }
 
 static int ml_alloc(int domain_id, void *callback_data, uint64_t timestamp,
@@ -711,13 +704,11 @@ static int ml_alloc(int domain_id, void *callback_data, uint64_t timestamp,
     if( Is_exception_result(res) ) {
       res = Extract_exception(res);
       *holder->exception = res;
-      CAMLdrop;
-      return 0;
+      CAMLreturnT(int, 0);
     }
   }
 
-  CAMLdrop;
-  return 1;
+  CAMLreturnT(int, 1);
 }
 
 static int ml_lifecycle(int domain_id, void *callback_data, int64_t timestamp,
@@ -746,13 +737,11 @@ static int ml_lifecycle(int domain_id, void *callback_data, int64_t timestamp,
     if( Is_exception_result(res) ) {
       res = Extract_exception(res);
       *holder->exception = res;
-      CAMLdrop;
-      return 0;
+      CAMLreturnT(int, 0);
     }
   }
 
-  CAMLdrop;
-  return 1;
+  CAMLreturnT(int, 1);
 }
 
 static int ml_lost_events(int domain_id, void *callback_data, int lost_words) {
@@ -771,13 +760,11 @@ static int ml_lost_events(int domain_id, void *callback_data, int lost_words) {
     if( Is_exception_result(res) ) {
       res = Extract_exception(res);
       *holder->exception = res;
-      CAMLdrop;
-      return 0;
+      CAMLreturnT(int, 0);
     }
   }
 
-  CAMLdrop;
-  return 1;
+  CAMLreturnT(int, 1);
 }
 
 
@@ -829,21 +816,19 @@ static int user_events_call_callback_list(
 
   while (Is_block(callback_list)) {
       // two indirections as callback is a list item wrapped in a gadt
-    value callback = Field(Field(callback_list, 0), 0);
+    callback = Field(Field(callback_list, 0), 0);
     res = caml_callbackN_exn(callback, 4, params);
 
     if( Is_exception_result(res) ) {
       res = Extract_exception(res);
       *holder->exception = res;
-      CAMLdrop;
-      return 0;
+      CAMLreturnT(int, 0);
     }
 
     callback_list = Field(callback_list, 1);
   }
 
-  CAMLdrop;
-  return 1;
+  CAMLreturnT(int, 1);
 }
 
 static value caml_runtime_events_user_resolve_cached(
@@ -895,13 +880,10 @@ static value caml_runtime_events_user_resolve_cached(
 
     // copy values from the cache to the new array
     for (uintnat i = 0; i < len; i++) {
-      Field(cache_resized, i) = Field(cache, i);
+      caml_initialize(&Field(cache_resized, i), Field(cache, i));
     }
 
-    // write None for the rest of the values
-    for (uintnat i = len; i < new_len; i++) {
-      Field(cache_resized, i) = Val_none;
-    }
+    // the rest of the values is None
 
     // update the wrapper structure
     Store_field(wrapper_root, 2, cache_resized);
@@ -943,12 +925,11 @@ static int ml_user_unit(int domain_id, void *callback_data, int64_t timestamp,
 
     // payload is prepared, we call the callbacks sequentially.
     if (user_events_call_callback_list(holder, callback_list, params) == 0) {
-      return 0;
+      CAMLreturnT(int, 0);
     }
   }
 
-  CAMLdrop;
-  return 1;
+  CAMLreturnT(int, 1);
 }
 
 static int ml_user_span(int domain_id, void *callback_data, int64_t timestamp,
@@ -982,12 +963,11 @@ static int ml_user_span(int domain_id, void *callback_data, int64_t timestamp,
 
     // payload is prepared, we call the callbacks sequentially.
     if (user_events_call_callback_list(holder, callback_list, params) == 0) {
-      return 0;
+      CAMLreturnT(int, 0);
     }
   }
 
-  CAMLdrop;
-  return 1;
+  CAMLreturnT(int, 1);
 }
 
 static int ml_user_int(int domain_id, void *callback_data,
@@ -1020,12 +1000,11 @@ static int ml_user_int(int domain_id, void *callback_data,
 
     // payload is prepared, we call the callbacks sequentially.
     if (user_events_call_callback_list(holder, callback_list, params) == 0) {
-      return 0;
+      CAMLreturnT(int, 0);
     }
   }
 
-  CAMLdrop;
-  return 1;
+  CAMLreturnT(int, 1);
 }
 
 static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
@@ -1036,6 +1015,7 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
   CAMLlocal4(callback_list, event, callbacks_root, event_type);
   CAMLlocalN(params, 4);
   CAMLlocal2(wrapper_root, read_buffer);
+  CAMLlocal3(data, record, deserializer);
 
   struct callbacks_exception_holder* holder = callback_data;
   callbacks_root = *holder->callbacks_val;
@@ -1044,6 +1024,14 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
   event = caml_runtime_events_user_resolve_cached(wrapper_root, event_id,
                                                                 event_name,
                                     EV_USER_ML_TYPE_CUSTOM);
+
+  // the function may return Val_none if the event is unknown
+  // (see caml_runtime_events_user_resolve)
+  if (event == Val_none) {
+    CAMLdrop;
+    return 1;
+  }
+
   event_type = Field(event, 2);
 
   callback_list = user_events_find_callback_list_for_event_type(callbacks_root,
@@ -1052,7 +1040,6 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
   if (Is_block(callback_list)) {
     // at least one callback is listening for this event type, so we
     // deserialize the value and prepare the callback payload
-    CAMLlocal3(data, record, deserializer);
 
     const char* data_str = (const char*) event_data;
     uintnat string_len = event_data_len * sizeof(uint64_t) - 1;
@@ -1083,12 +1070,11 @@ static int ml_user_custom(int domain_id, void *callback_data, int64_t timestamp,
 
     // payload is prepared, we call the callbacks sequentially.
     if (user_events_call_callback_list(holder, callback_list, params) == 0) {
-      return 0;
+      CAMLreturnT(int, 0);
     }
   }
 
-  CAMLdrop;
-  return 1;
+  CAMLreturnT(int, 1);
 }
 
 static struct custom_operations cursor_operations = {
@@ -1231,5 +1217,5 @@ CAMLprim value caml_ml_runtime_events_read_poll(value wrapper,
     }
   }
 
-  CAMLreturn(Int_val(events_consumed));
+  CAMLreturn(Val_int(events_consumed));
 };

@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let () =
   let ic = open_in Filename.null in

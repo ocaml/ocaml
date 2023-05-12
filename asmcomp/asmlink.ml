@@ -235,7 +235,9 @@ let make_startup_file ~ppf_dump units_list ~crc_interfaces =
     List.flatten (List.map (fun (info,_,_) -> info.ui_defines) units_list) in
   compile_phrase (Cmm_helpers.entry_point name_list);
   let units = List.map (fun (info,_,_) -> info) units_list in
-  List.iter compile_phrase (Cmm_helpers.generic_functions false units);
+  List.iter compile_phrase
+    (Cmm_helpers.emit_preallocated_blocks [] (* add gc_roots (for dynlink) *)
+      (Cmm_helpers.generic_functions false units));
   Array.iteri
     (fun i name -> compile_phrase (Cmm_helpers.predef_exception i name))
     Runtimedef.builtin_exceptions;
@@ -260,7 +262,8 @@ let make_shared_startup_file ~ppf_dump units =
   Compilenv.reset "_shared_startup";
   Emit.begin_assembly ();
   List.iter compile_phrase
-    (Cmm_helpers.generic_functions true (List.map fst units));
+    (Cmm_helpers.emit_preallocated_blocks [] (* add gc_roots (for dynlink) *)
+      (Cmm_helpers.generic_functions true (List.map fst units)));
   compile_phrase (Cmm_helpers.plugin_header units);
   compile_phrase
     (Cmm_helpers.global_table

@@ -41,11 +41,17 @@ set -ex
 make=make
 jobs=''
 
+memory_model_tests="tests/memory-model/forbidden.ml \
+tests/memory-model/publish.ml"
+
 case "${OCAML_ARCH}" in
   bsd|solaris)
     make=gmake
   ;;
-  cygwin|cygwin64|mingw|mingw64|msvc|msvc64)
+  cygwin|cygwin64)
+    export OCAMLTEST_SKIP_TESTS="$memory_model_tests"
+  ;;
+  mingw|mingw64|msvc|msvc64)
     error "Unsupported architecture ${OCAML_ARCH}"
   ;;
 esac

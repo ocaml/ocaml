@@ -22,10 +22,6 @@
 
 /* Macros to access the stack frame */
 
-#ifdef TARGET_i386
-#define Saved_return_address(sp) *((intnat *)((sp) - 4))
-#endif
-
 #ifdef TARGET_power
 #if defined(MODEL_ppc)
 #define Saved_return_address(sp) *((intnat *)((sp) - 4))
@@ -44,10 +40,6 @@
 #ifdef TARGET_s390x
 #define Saved_return_address(sp) *((intnat *)((sp) - SIZEOF_PTR))
 #define Trap_frame_size 16
-#endif
-
-#ifdef TARGET_arm
-#define Saved_return_address(sp) *((intnat *)((sp) - 4))
 #endif
 
 #ifdef TARGET_amd64

@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 module rec Foo : sig class type c = object method x : int end end = Foo

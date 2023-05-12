@@ -352,7 +352,8 @@ module Output = struct
   let catch_warning =
     function
     | [] -> None
-    | s :: _ when string_match ~!{|Warning \([0-9]+\)\( \[[a-z-]+\]\)?:|} s 0 ->
+    | s :: _ when string_match ~!{|
+*Warning \([0-9]+\)\( \[[a-z-]+\]\)?:|} s 0 ->
         Some (Warning (int_of_string @@ matched_group 1 s))
     | _ -> None
 
@@ -679,6 +680,7 @@ let process_file file =
         let implicit_stop, phrase, expected = read_phrase () in
         let ast = Toplevel.parse file mode phrase in
         let ellipses = Ellipsis.find ast in
+        let () = Location.reset () in
         let () = Toplevel.(exec out_fmt) ast in
         let out = Toplevel.read_output () in
         let error_msgs = String.concat "" (out.warnings @ [out.error]) in

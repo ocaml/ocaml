@@ -860,6 +860,8 @@ and modexp : Typedtree.module_expr -> term_judg =
         modexp f << Dereference;
         modexp p << Dereference;
       ]
+    | Tmod_apply_unit f ->
+      modexp f << Dereference
     | Tmod_constraint (mexp, _, _, coe) ->
       let rec coercion coe k = match coe with
         | Tcoerce_none ->

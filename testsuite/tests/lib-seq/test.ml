@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 let (!?) = List.to_seq
 let (!!) = List.of_seq

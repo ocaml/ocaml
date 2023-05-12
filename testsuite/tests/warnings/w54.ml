@@ -1,11 +1,11 @@
-(* TEST
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
 
-flags = "-w +A-70"
 
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-compile_only = "true"
-*** check-ocamlc.byte-output
+
+
+
+
 
 *)
 
@@ -17,3 +17,11 @@ let h x = (g [@inlined] [@ocaml.inlined never]) x
 let v = ((fun x -> x) [@inline] [@inlined]) 1 (* accepted *)
 
 let i = ((fun x -> x) [@inline]) [@@inline]
+
+(* TEST
+ flags = "-w +A-70";
+ setup-ocamlc.byte-build-env;
+ compile_only = "true";
+ ocamlc.byte;
+ check-ocamlc.byte-output;
+*)

@@ -108,6 +108,7 @@ type t =
   | Missing_mli                             (* 70 *)
   | Unused_tmc_attribute                    (* 71 *)
   | Tmc_breaks_tailcall                     (* 72 *)
+  | Generative_application_expects_unit     (* 73 *)
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
    the numbers of existing warnings.
@@ -188,12 +189,13 @@ let number = function
   | Missing_mli -> 70
   | Unused_tmc_attribute -> 71
   | Tmc_breaks_tailcall -> 72
+  | Generative_application_expects_unit -> 73
 ;;
 (* DO NOT REMOVE the ;; above: it is used by
    the testsuite/ests/warnings/mnemonics.mll test to determine where
    the  definition of the number function above ends *)
 
-let last_warning_number = 72
+let last_warning_number = 73
 
 type description =
   { number : int;
@@ -527,6 +529,11 @@ let descriptions = [
     description = "A tail call is turned into a non-tail call \
                    by the @tail_mod_cons transformation.";
     since = since 4 14 };
+  { number = 73;
+    names = ["generative-application-expects-unit"];
+    description = "A generative functor is applied to an empty structure \
+                   (struct end) rather than to ().";
+    since = since 5 1 };
 ]
 
 let name_to_number =
@@ -865,12 +872,6 @@ let () = ignore @@ parse_options true defaults_warn_error
 let () =
   List.iter (set_alert ~error:false ~enable:false) default_disabled_alerts
 
-let ref_manual_explanation () =
-  (* manual references are checked a posteriori by the manual
-     cross-reference consistency check in manual/tests*)
-  let[@manual.ref "s:comp-warnings"] chapter, section = 13, 5 in
-  Printf.sprintf "(See manual section %d.%d)" chapter section
-
 let message = function
   | Comment_start ->
       "this `(*' is the start of a comment.\n\
@@ -915,7 +916,11 @@ let message = function
         ("the following instance variables are overridden by the class"
          :: cname  :: ":\n " :: slist)
   | Instance_variable_override [] -> assert false
-  | Illegal_backslash -> "illegal backslash escape in string."
+  | Illegal_backslash ->
+    "illegal backslash escape in string.\n\
+    Hint: Single backslashes \\ are reserved for escape sequences\n\
+    (\\n, \\r, ...). Did you check the list of OCaml escape sequences?\n\
+    To get a backslash character, escape it with a second backslash: \\\\."
   | Implicit_public_methods l ->
       "the following private methods were made public implicitly:\n "
       ^ String.concat " " l ^ "."
@@ -1029,10 +1034,12 @@ let message = function
       Printf.sprintf "expected %s"
         (if b then "tailcall" else "non-tailcall")
   | Fragile_literal_pattern ->
-      Printf.sprintf
+      let[@manual.ref "ss:warn52"] ref_manual = [ 13; 5; 3 ] in
+      Format.asprintf
         "Code should not depend on the actual values of\n\
          this constructor's arguments. They are only for information\n\
-         and may change in future versions. %t" ref_manual_explanation
+         and may change in future versions. %a"
+        Misc.print_see_manual ref_manual
   | Unreachable_case ->
       "this match case is unreachable.\n\
        Consider replacing it with a refutation case '<pat> -> .'"
@@ -1045,6 +1052,7 @@ let message = function
   | Inlining_impossible reason ->
       Printf.sprintf "Cannot inline: %s" reason
   | Ambiguous_var_in_pattern_guard vars ->
+      let[@manual.ref "ss:warn57"] ref_manual = [ 13; 5; 4 ] in
       let vars = List.sort String.compare vars in
       let vars_explanation =
         let in_different_places =
@@ -1057,12 +1065,12 @@ let message = function
             let vars = String.concat ", " vars in
             "variables " ^ vars ^ " appear " ^ in_different_places
       in
-      Printf.sprintf
+      Format.asprintf
         "Ambiguous or-pattern variables under guard;\n\
          %s.\n\
          Only the first match will be used to evaluate the guard expression.\n\
-         %t"
-        vars_explanation ref_manual_explanation
+         %a"
+        vars_explanation Misc.print_see_manual ref_manual
   | No_cmx_file name ->
       Printf.sprintf
         "no cmx file was found in path for module %s, \
@@ -1118,12 +1126,15 @@ let message = function
        but is never applied in TMC position."
   | Tmc_breaks_tailcall ->
       "This call\n\
-       is in tail-modulo-cons positionin a TMC function,\n\
+       is in tail-modulo-cons position in a TMC function,\n\
        but the function called is not itself specialized for TMC,\n\
        so the call will not be transformed into a tail call.\n\
        Please either mark the called function with the [@tail_mod_cons]\n\
        attribute, or mark this call with the [@tailcall false] attribute\n\
        to make its non-tailness explicit."
+  | Generative_application_expects_unit ->
+      "A generative functor\n\
+       should be applied to '()'; using '(struct end)' is deprecated."
 ;;
 
 let nerrors = ref 0

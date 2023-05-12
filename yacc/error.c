@@ -92,9 +92,11 @@ void syntax_error(int st_lineno, char *st_line, char *st_cptr)
 }
 
 
-void unterminated_comment(int c_lineno, char *c_line, char *c_cptr)
+void unterminated_comment(int c_lineno, char *c_line, char *c_cptr,
+                          char start_char)
 {
-    gen_error(c_lineno, c_line, c_cptr, "unmatched /*");
+    gen_error(c_lineno, c_line, c_cptr,
+              start_char == '/' ? "unmatched /*" : "unmatched (*");
 }
 
 

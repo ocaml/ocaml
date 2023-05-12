@@ -281,6 +281,8 @@ static void do_print_help(void)
     "Options are:\n"
     "  -b  Set runtime parameter b (detailed exception backtraces)\n"
     "  -config  Print configuration values and exit\n"
+    "  -events  Trace debug events in bytecode interpreter (ignored \n"
+    "      if not ocamlrund)\n"
     "  -I <dir>  Add <dir> to the list of DLL search directories\n"
     "  -m  Print the magic number of <executable> and exit\n"
     "  -M  Print the magic number expected by this runtime and exit\n"
@@ -352,6 +354,8 @@ static int parse_command_line(char_os **argv)
       } else if (!strcmp_os(argv[i], T("-vnum"))) {
         printf("%s\n", OCAML_VERSION_STRING);
         exit(0);
+      } else if (!strcmp_os(argv[i], T("-events"))) {
+        params->event_trace = 1; /* Ignored unless DEBUG mode */
       } else if (!strcmp_os(argv[i], T("-help")) ||
                  !strcmp_os(argv[i], T("--help"))) {
         do_print_help();
@@ -412,13 +416,13 @@ static void do_print_config(void)
          "false");
 #endif
   printf("no_naked_pointers: true\n");
-  printf("profinfo: %s\n"
-         "profinfo_width: %d\n",
-#ifdef WITH_PROFINFO
-         "true", PROFINFO_WIDTH);
+  printf("compression_supported: %s\n",
+#ifdef HAS_ZSTD
+         "true");
 #else
-         "false", 0);
+         "false");
 #endif
+  printf("reserved header bits: %d\n", HEADER_RESERVED_BITS);
   printf("exec_magic_number: %s\n", EXEC_MAGIC);
 
   /* Parse ld.conf and print the effective search path */

@@ -1,5 +1,5 @@
 (* TEST
-   flags += " -unsafe "
+ flags += " -unsafe ";
 *)
 
 let pi = 3.14159265358979323846

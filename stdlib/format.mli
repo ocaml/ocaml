@@ -407,7 +407,8 @@ val print_newline : unit -> unit
 
   All open pretty-printing boxes are closed, all pending text is printed.
 
-  Equivalent to {!print_flush} followed by a new line.
+  Equivalent to {!print_flush} with a new line emitted on the pretty-printer
+  low-level output device immediately before the device is flushed.
   See corresponding words of caution for {!print_flush}.
 
   Note: this is not the normal way to output a new line;
@@ -1355,7 +1356,8 @@ val sprintf : ('a, unit, string) format -> 'a
 (** Same as [printf] above, but instead of printing on a formatter,
   returns a string containing the result of formatting the arguments.
   Note that the pretty-printer queue is flushed at the end of {e each
-  call} to [sprintf].
+  call} to [sprintf]. Note that if your format string contains a [%a],
+  you should use [asprintf].
 
   In case of multiple and related calls to [sprintf] to output
   material on a single string, you should consider using [fprintf]

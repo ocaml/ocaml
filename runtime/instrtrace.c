@@ -32,6 +32,7 @@
 #include "caml/opnames.h"
 #include "caml/prims.h"
 #include "caml/startup.h"
+#include "caml/backtrace_prim.h"
 
 extern code_t caml_start_code;
 
@@ -42,6 +43,22 @@ void caml_stop_here (void)
 }
 
 char * caml_instr_string (code_t pc);
+
+
+void
+caml_event_trace(code_t pc)
+{
+  struct ev_info *evi = caml_exact_event_for_location(pc);
+  if (evi == NULL)
+    return;
+
+  printf("[%02d] Event at PC:%ld, Def:%s, File: %s, Line: %d, Chars:%d-%d\n",
+     Caml_state->id,
+     (long) (pc - caml_start_code),
+     evi->ev_defname, evi->ev_filename,
+     evi->ev_lnum, evi->ev_startchr, evi->ev_endchr);
+  fflush (stdout);
+}
 
 void caml_disasm_instr(code_t pc)
 {

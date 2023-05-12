@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 module M = struct end

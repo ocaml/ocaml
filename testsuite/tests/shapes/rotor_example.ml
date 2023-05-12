@@ -1,6 +1,6 @@
 (* TEST
-   flags = "-dshape"
-   * expect
+ flags = "-dshape";
+ expect;
 *)
 
 (* We depart slightly from the example in the PLDI'19 paper, which actually

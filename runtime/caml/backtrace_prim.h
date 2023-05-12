@@ -104,6 +104,20 @@ value caml_remove_debug_info(code_t start);
  * explicitly.
  */
 
+/* Runtime representation of the debug information, optimized
+   for quick lookup */
+struct ev_info {
+  code_t ev_pc;
+  char *ev_filename;
+  char *ev_defname;
+  int ev_lnum;
+  int ev_startchr;
+  int ev_endchr;
+};
+
+/* Find the event with the given pc. */
+struct ev_info * caml_exact_event_for_location(code_t pc);
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_BACKTRACE_PRIM_H */

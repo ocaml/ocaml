@@ -1,5 +1,5 @@
 (* TEST
-   include testing
+ include testing;
 *)
 
 let f x = x + 1

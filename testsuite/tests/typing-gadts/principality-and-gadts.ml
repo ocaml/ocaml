@@ -1,5 +1,6 @@
 (* TEST
-   * expect *)
+ expect;
+*)
 
 module M = struct type t = A | B end;;
 [%%expect{|
@@ -24,6 +25,7 @@ Line 1, characters 8-35:
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Sigma (M, B)
+
 val f : dyn -> unit = <fun>
 |}];;
 
@@ -48,11 +50,13 @@ Line 4, characters 4-10:
         ^^^^^^
 Warning 18 [not-principal]: typing this pattern requires considering int and a as equal.
 But the knowledge of these types is not principal.
+
 Line 5, characters 4-11:
 5 |   | BoolLit, b -> 1
         ^^^^^^^
 Warning 18 [not-principal]: typing this pattern requires considering bool and a as equal.
 But the knowledge of these types is not principal.
+
 val f : 'a t -> 'a -> int = <fun>
 |}]
 
@@ -70,6 +74,7 @@ Line 4, characters 4-10:
         ^^^^^^
 Warning 18 [not-principal]: typing this pattern requires considering int and a as equal.
 But the knowledge of these types is not principal.
+
 val f : 'a t -> 'a -> int = <fun>
 |}]
 
@@ -138,6 +143,7 @@ Line 4, characters 4-7:
         ^^^
 Warning 18 [not-principal]: typing this pattern requires considering unit M.mab and unit ab as equal.
 But the knowledge of these types is not principal.
+
 val f1 : unit ab M.t -> bool = <fun>
 |}]
 
@@ -154,11 +160,13 @@ Line 4, characters 4-6:
         ^^
 Warning 18 [not-principal]: typing this pattern requires considering unit ab and x as equal.
 But the knowledge of these types is not principal.
+
 Line 5, characters 4-7:
 5 |   | MAB -> false;;
         ^^^
 Warning 18 [not-principal]: typing this pattern requires considering unit M.mab and x as equal.
 But the knowledge of these types is not principal.
+
 val f2 : 'x M.t -> bool = <fun>
 |}]
 
@@ -176,6 +184,7 @@ Line 5, characters 4-7:
         ^^^
 Warning 18 [not-principal]: typing this pattern requires considering unit M.mab and unit ab as equal.
 But the knowledge of these types is not principal.
+
 val f3 : unit ab M.t -> bool = <fun>
 |}]
 
@@ -203,6 +212,7 @@ Line 3, characters 7-11:
            ^^^^
 Warning 18 [not-principal]: typing this pattern requires considering x and int option as equal.
 But the knowledge of these types is not principal.
+
 val g2 : ('x, int option) eq -> 'x -> int option = <fun>
 |}]
 
@@ -349,6 +359,7 @@ Line 3, characters 18-23:
                       ^^^^^
 Warning 18 [not-principal]: typing this pattern requires considering M.t and N.t as equal.
 But the knowledge of these types is not principal.
+
 val foo : M.t foo -> M.t = <fun>
 |}]
 
@@ -364,6 +375,7 @@ Line 3, characters 26-31:
                               ^^^^^
 Warning 18 [not-principal]: typing this pattern requires considering M.t and N.t as equal.
 But the knowledge of these types is not principal.
+
 val foo : int foo -> int = <fun>
 |}]
 
@@ -385,6 +397,7 @@ Line 3, characters 26-31:
                               ^^^^^
 Warning 18 [not-principal]: typing this pattern requires considering M.t and N.t as equal.
 But the knowledge of these types is not principal.
+
 Line 3, characters 4-33:
 3 |   | { x = (x : N.t); eq = Refl3 } -> x
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -406,6 +419,7 @@ Line 3, characters 29-34:
                                  ^^^^^
 Warning 18 [not-principal]: typing this pattern requires considering M.t and N.t as equal.
 But the knowledge of these types is not principal.
+
 val foo : string foo -> string = <fun>
 |}]
 

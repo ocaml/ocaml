@@ -257,6 +257,14 @@ val protect_writing_to_file
           channel. If the function raises an exception then [filename]
           will be removed. *)
 
+val concat_null_terminated : string list -> string
+(** [concat_null_terminated [x1;x2; ... xn]] is
+    [x1 ^ "\000" ^ x2 ^ "\000" ^ ... ^ xn ^ "\000"] *)
+
+val split_null_terminated : string -> string list
+(** [split_null_terminated s] is similar
+    [String.split_on_char '\000'] but ignores the trailing separator, if any *)
+
 val chop_extensions: string -> string
        (** Return the given file name without its extensions. The extensions
            is the longest suffix starting with a period and not including
@@ -306,6 +314,25 @@ module Int_literal_converter : sig
     (** Likewise, at type [nativeint] *)
 
 end
+
+val find_first_mono : (int -> bool) -> int
+  (**[find_first_mono p] takes an integer predicate [p : int -> bool]
+     that we assume:
+     1. is monotonic on natural numbers:
+        if [a <= b] then [p a] implies [p b],
+     2. is satisfied for some natural numbers in range [0; max_int]
+        (this is equivalent to: [p max_int = true]).
+
+     [find_first_mono p] is the smallest natural number N that satisfies [p],
+     computed in O(log(N)) calls to [p].
+
+     Our implementation supports two cases where the preconditions on [p]
+     are not respected:
+     - If [p] is always [false], we silently return [max_int]
+       instead of looping or crashing.
+     - If [p] is non-monotonic but eventually true,
+       we return some satisfying value.
+  *)
 
 (** {1 String operations} *)
 
@@ -519,6 +546,9 @@ val pp_two_columns :
     bb  | dddddd
     v}
 *)
+
+val print_see_manual : Format.formatter -> int list -> unit
+(** See manual section *)
 
 (** {1 Displaying configuration variables} *)
 

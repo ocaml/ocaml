@@ -1,9 +1,12 @@
 (* TEST
-   include unix
-   modules = "test_signalhandler_.c"
-   * libunix
-   ** bytecode
-   ** native
+ include unix;
+ modules = "test_signalhandler_.c";
+ libunix;
+ {
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 (**************************************************************************)

@@ -1,5 +1,5 @@
 (* TEST
-   * ocamldoc with html
+ ocamldoc with html;
 *)
 
 [@@@alert deprecated "foo"]

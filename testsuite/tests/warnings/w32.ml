@@ -1,13 +1,13 @@
-(* TEST
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
 
-flags = "-w +A"
 
-* setup-ocamlc.byte-build-env
-** ocamlc.byte
-module = "w32.mli"
-*** ocamlc.byte
-module = "w32.ml"
-**** check-ocamlc.byte-output
+
+
+
+
+
+
 
 *)
 
@@ -69,3 +69,13 @@ module H (X : sig val x : int end) = X
 module type S = sig
   module F:  sig val x : int end -> sig end
 end
+
+(* TEST
+ flags = "-w +A";
+ setup-ocamlc.byte-build-env;
+ module = "w32.mli";
+ ocamlc.byte;
+ module = "w32.ml";
+ ocamlc.byte;
+ check-ocamlc.byte-output;
+*)

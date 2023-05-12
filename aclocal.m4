@@ -440,7 +440,7 @@ int main (void) {
     AS_CASE([$enable_imprecise_c99_float_ops,$target],
       [no,*], [hard_error=true],
       [yes,*], [hard_error=false],
-      [*,x86_64-w64-mingw32], [hard_error=false],
+      [*,x86_64-w64-mingw32*], [hard_error=false],
       [hard_error=true])
     AS_IF([test x"$hard_error" = "xtrue"],
       [AC_MSG_ERROR(m4_normalize([
@@ -449,7 +449,7 @@ int main (void) {
       [AC_MSG_WARN(m4_normalize([
         round does not work; emulation enabled]))])],
     [AS_CASE([$target],
-      [x86_64-w64-mingw32],[AC_MSG_RESULT([cross-compiling; assume not])],
+      [x86_64-w64-mingw32*],[AC_MSG_RESULT([cross-compiling; assume not])],
       [AC_MSG_RESULT([cross-compiling; assume yes])
       AC_DEFINE([HAS_WORKING_ROUND])])])
 ])
@@ -492,7 +492,7 @@ int main (void) {
     AS_CASE([$enable_imprecise_c99_float_ops,$target],
       [no,*], [hard_error=true],
       [yes,*], [hard_error=false],
-      [*,x86_64-w64-mingw32|*,x86_64-*-cygwin*], [hard_error=false],
+      [*,x86_64-w64-mingw32*|*,x86_64-*-cygwin*], [hard_error=false],
       [AS_CASE([$ocaml_cv_cc_vendor],
         [msvc-*], [AS_IF([test "${ocaml_cv_cc_vendor#msvc-}" -lt 1920 ],
           [hard_error=false],
@@ -505,7 +505,7 @@ int main (void) {
       [AC_MSG_WARN(m4_normalize([
         fma does not work; emulation enabled]))])],
     [AS_CASE([$target],
-      [x86_64-w64-mingw32|x86_64-*-cygwin*],
+      [x86_64-w64-mingw32*|x86_64-*-cygwin*],
         [AC_MSG_RESULT([cross-compiling; assume not])],
       [AC_MSG_RESULT([cross-compiling; assume yes])
       AC_DEFINE([HAS_WORKING_FMA])])])

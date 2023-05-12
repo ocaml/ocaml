@@ -19,6 +19,7 @@ $\?$ let f <<x>> = () ;;
 \end{camlinput}
 \begin{camlwarn}
 Warning 27 [unused-var-strict]: unused variable x.
+
 val f : 'a -> unit = <fun>
 \end{camlwarn}
 \end{caml}

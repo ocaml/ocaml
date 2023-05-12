@@ -21,6 +21,8 @@ PREFIX=~/local
 MAKE="make $MAKE_ARG"
 SHELL=dash
 
+MAKE_WARN="$MAKE --warn-undefined-variables"
+
 export PATH=$PREFIX/bin:$PATH
 
 Configure () {
@@ -56,9 +58,24 @@ EOF
 }
 
 Build () {
-  $MAKE
+  if [ "$(uname)" = 'Darwin' ]; then
+    script -q build.log $MAKE_WARN
+  else
+    script --return --command "$MAKE_WARN" build.log
+  fi
+  failed=0
+  if grep -Fq ' warning: undefined variable ' build.log; then
+    echo Undefined Makefile variables detected
+    failed=1
+  fi
+  rm build.log
   echo Ensuring that all names are prefixed in the runtime
-  ./tools/check-symbol-names runtime/*.a otherlibs/*/lib*.a
+  if ! ./tools/check-symbol-names runtime/*.a otherlibs/*/lib*.a ; then
+    failed=1
+  fi
+  if ((failed)); then
+    exit 1
+  fi
 }
 
 Test () {

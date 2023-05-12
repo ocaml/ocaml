@@ -1,5 +1,4 @@
-(* TEST
-*)
+(* TEST *)
 
 (* Testing the hash function Hashtbl.hash *)
 (* What is tested:

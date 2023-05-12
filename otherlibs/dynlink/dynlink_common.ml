@@ -346,30 +346,25 @@ module Make (P : Dynlink_platform_intf.S) = struct
   let load priv filename =
     init ();
     let filename = dll_filename filename in
-    match P.load ~filename ~priv with
-    | exception exn -> raise (DT.Error (Cannot_open_dynamic_library exn))
-    | handle, units ->
-      try
-        with_lock (fun ({unsafe_allowed; _ } as global) ->
-            global.state <- check filename units global.state
-                ~unsafe_allowed
-                ~priv;
-            P.run_shared_startup handle;
-          );
-        List.iter
-          (fun unit_header ->
-             (* Linked modules might call Dynlink themselves,
-                we need to release the lock *)
-             P.run Global.lock handle ~unit_header ~priv;
-             if not priv then with_lock (fun global ->
-                 global.state <- set_loaded filename unit_header global.state
-               )
-          )
-          units;
-        P.finish handle
-      with exn ->
-        P.finish handle;
-        raise exn
+    let handle, units = P.load ~filename ~priv in
+    Fun.protect ~finally:(fun () -> P.finish handle) (fun () ->
+      with_lock (fun ({unsafe_allowed; _ } as global) ->
+          global.state <- check filename units global.state
+              ~unsafe_allowed
+              ~priv;
+          P.run_shared_startup handle;
+        );
+      List.iter
+        (fun unit_header ->
+           (* Linked modules might call Dynlink themselves,
+              we need to release the lock *)
+           P.run Global.lock handle ~unit_header ~priv;
+           if not priv then with_lock (fun global ->
+               global.state <- set_loaded filename unit_header global.state
+             )
+        )
+        units
+      )
 
   let loadfile filename = load false filename
   let loadfile_private filename = load true filename

@@ -1,34 +1,33 @@
 (* TEST
-
-readonly_files = "cmdline_prog.ml"
-
-* hasunix
-** setup-ocamlc.byte-build-env
-program = "${test_build_directory}/test_unix_cmdline.byte"
-*** ocamlc.byte
-program = "${test_build_directory}/cmdline_prog.exe"
-all_modules = "cmdline_prog.ml"
-**** ocamlc.byte
-include unix
-program = "${test_build_directory}/test_unix_cmdline.byte"
-all_modules= "test_unix_cmdline.ml"
-***** check-ocamlc.byte-output
-****** run
-******* check-program-output
-
-** setup-ocamlopt.byte-build-env
-program = "${test_build_directory}/test_unix_cmdline.opt"
-*** ocamlc.byte
-program = "${test_build_directory}/cmdline_prog.exe"
-all_modules = "cmdline_prog.ml"
-**** ocamlopt.byte
-include unix
-program = "${test_build_directory}/test_unix_cmdline.opt"
-all_modules= "test_unix_cmdline.ml"
-***** check-ocamlopt.byte-output
-****** run
-******* check-program-output
-
+ readonly_files = "cmdline_prog.ml";
+ hasunix;
+ {
+   program = "${test_build_directory}/test_unix_cmdline.byte";
+   setup-ocamlc.byte-build-env;
+   program = "${test_build_directory}/cmdline_prog.exe";
+   all_modules = "cmdline_prog.ml";
+   ocamlc.byte;
+   include unix;
+   program = "${test_build_directory}/test_unix_cmdline.byte";
+   all_modules = "test_unix_cmdline.ml";
+   ocamlc.byte;
+   check-ocamlc.byte-output;
+   run;
+   check-program-output;
+ }{
+   program = "${test_build_directory}/test_unix_cmdline.opt";
+   setup-ocamlopt.byte-build-env;
+   program = "${test_build_directory}/cmdline_prog.exe";
+   all_modules = "cmdline_prog.ml";
+   ocamlc.byte;
+   include unix;
+   program = "${test_build_directory}/test_unix_cmdline.opt";
+   all_modules = "test_unix_cmdline.ml";
+   ocamlopt.byte;
+   check-ocamlopt.byte-output;
+   run;
+   check-program-output;
+ }
 *)
 
 let prog_name = "cmdline_prog.exe"

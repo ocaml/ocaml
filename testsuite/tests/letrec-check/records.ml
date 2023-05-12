@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 type t = { x : int; self : t };;
 [%%expect {|

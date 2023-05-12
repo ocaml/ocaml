@@ -17,9 +17,7 @@
  (mode    fallback)
  (deps    (:conf ../Makefile.config)
           (glob_files amd64/*.ml)
-          (glob_files arm/*.ml)
           (glob_files arm64/*.ml)
-          (glob_files i386/*.ml)
           (glob_files power/*.ml)
           (glob_files riscv/*.ml)
           (glob_files s390x/*.ml))
@@ -30,9 +28,7 @@
  (mode    fallback)
  (deps    (:conf ../Makefile.config)
           amd64/emit.mlp
-          arm/emit.mlp
           arm64/emit.mlp
-          i386/emit.mlp
           power/emit.mlp
           riscv/emit.mlp
           s390x/emit.mlp)

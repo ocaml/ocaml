@@ -8,7 +8,7 @@
 \begin{document}
 \tableofcontents
 \section{Short\_description : (* TEST
-   * ocamldoc with latex
+ ocamldoc with latex;
 *)}
 \label{Short-underscoredescription}\index{Short-underscoredescription@\verb`Short_description`}
 

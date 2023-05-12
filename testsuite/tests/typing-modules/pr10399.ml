@@ -1,5 +1,5 @@
 (* TEST
- * expect
+ expect;
 *)
 
 (* From jctis: <https://github.com/ocaml/ocaml/issues/10399> *)

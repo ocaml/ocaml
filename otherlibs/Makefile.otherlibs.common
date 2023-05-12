@@ -36,10 +36,6 @@ OPTCOMPFLAGS += -O3
 endif
 MKLIB=$(OCAMLRUN) $(ROOTDIR)/tools/ocamlmklib
 
-# The C stubs for the native backend may be built with specific flags by
-# redefining this variable.
-OC_NATIVE_C_FLAGS =
-
 # Variables that must be defined by individual libraries:
 # LIBNAME
 # CAMLOBJS
@@ -168,8 +164,10 @@ distclean:: clean
 	$(V_CC)$(CC) -c $(OC_CFLAGS) $(CFLAGS) $(OC_CPPFLAGS) $(CPPFLAGS) \
 	  $(OUTPUTOBJ)$@ $<
 
+%.n.$(O): OC_CFLAGS += $(OC_NATIVE_CFLAGS)
+
 %.n.$(O): %.c $(REQUIRED_HEADERS)
-	$(V_CC)$(CC) -c $(OC_CFLAGS) $(OC_NATIVE_C_FLAGS) $(CFLAGS) \
+	$(V_CC)$(CC) -c $(OC_CFLAGS) $(CFLAGS) \
 	  $(OC_CPPFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 ifeq "$(COMPUTE_DEPS)" "true"

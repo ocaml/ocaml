@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+ expect;
 *)
 
 let partition_map f xs =

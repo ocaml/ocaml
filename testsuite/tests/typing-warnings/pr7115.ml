@@ -1,6 +1,6 @@
 (* TEST
-   flags = " -w +A -strict-sequence "
-   * expect
+ flags = " -w +A -strict-sequence ";
+ expect;
 *)
 
 type t = A : t;;
@@ -17,6 +17,7 @@ Line 2, characters 10-11:
 2 |   let _f ~x (* x unused argument *) = function
               ^
 Warning 27 [unused-var-strict]: unused variable x.
+
 module X1 : sig end
 |}]
 
@@ -30,6 +31,7 @@ Line 2, characters 6-7:
 2 |   let x = 42 (* unused value *)
           ^
 Warning 32 [unused-value-declaration]: unused value x.
+
 module X2 : sig end
 |}]
 
@@ -45,9 +47,11 @@ Line 2, characters 24-25:
 2 |   module O = struct let x = 42 (* unused *) end
                             ^
 Warning 32 [unused-value-declaration]: unused value x.
+
 Line 3, characters 2-8:
 3 |   open O (* unused open *)
       ^^^^^^
 Warning 33 [unused-open]: unused open O.
+
 module X3 : sig end
 |}]

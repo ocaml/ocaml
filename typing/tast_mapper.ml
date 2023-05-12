@@ -598,6 +598,8 @@ let module_expr sub x =
           sub.module_expr sub mexp2,
           sub.module_coercion sub c
         )
+    | Tmod_apply_unit mexp1 ->
+        Tmod_apply_unit (sub.module_expr sub mexp1)
     | Tmod_constraint (mexpr, mt, Tmodtype_implicit, c) ->
         Tmod_constraint (sub.module_expr sub mexpr, mt, Tmodtype_implicit,
                          sub.module_coercion sub c)

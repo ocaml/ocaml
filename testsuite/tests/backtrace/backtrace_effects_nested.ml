@@ -1,12 +1,12 @@
-(* TEST
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
 
-flags = "-g"
-* bytecode
-* no-flambda
-** native
-* flambda
-reference = "${test_source_directory}/backtrace_effects_nested.flambda.reference"
-** native
+
+
+
+
+
+
 
 *)
 
@@ -43,3 +43,17 @@ let f () =
           | _ -> None }
 
 let () = f ()
+
+(* TEST
+ flags = "-g";
+ {
+   bytecode;
+ }{
+   no-flambda;
+   native;
+ }{
+   reference = "${test_source_directory}/backtrace_effects_nested.flambda.reference";
+   flambda;
+   native;
+ }
+*)

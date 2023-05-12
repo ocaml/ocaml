@@ -1,5 +1,5 @@
-(* TEST
-   flags = "-g"
+(* TEST_BELOW
+(* Blank lines added here to preserve locations. *)
 *)
 
 let f n b =
@@ -12,3 +12,7 @@ let () =
   | _ -> assert false
   | exception _ ->
     Printexc.print_backtrace stdout
+
+(* TEST
+ flags = "-g";
+*)

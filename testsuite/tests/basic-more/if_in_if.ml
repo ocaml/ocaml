@@ -1,5 +1,5 @@
 (* TEST
-   include testing
+ include testing;
 *)
 
 let sequor b1 b2 =

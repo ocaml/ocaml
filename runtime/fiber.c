@@ -230,7 +230,6 @@ Caml_inline void scan_stack_frames(
   uintnat retaddr;
   value * regs;
   frame_descr * d;
-  uintnat h;
   int n, ofs;
   unsigned short * p;
   value *root;
@@ -247,14 +246,9 @@ next_chunk:
   sp += sizeof(value);
 
   while(1) {
-    /* Find the descriptor corresponding to the return address */
-    h = Hash_retaddr(retaddr, fds.mask);
-    while(1) {
-      d = fds.descriptors[h];
-      if (d->retaddr == retaddr) break;
-      h = (h+1) & fds.mask;
-    }
-    if (d->frame_size != 0xFFFF) {
+    d = caml_find_frame_descr(fds, retaddr);
+    CAMLassert(d);
+    if (!frame_return_to_C(d)) {
       /* Scan the roots in this frame */
       for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
         ofs = *p;
@@ -266,7 +260,7 @@ next_chunk:
         f (fdata, *root, root);
       }
       /* Move to next frame */
-      sp += (d->frame_size & 0xFFFC);
+      sp += frame_size(d);
       retaddr = Saved_return_address(sp);
       /* XXX KC: disabled already scanned optimization. */
     } else {
@@ -676,14 +670,14 @@ static const value * cache_named_exception(const value * _Atomic * cache,
                                            const char * name)
 {
   const value * exn;
-  exn = atomic_load_explicit(cache, memory_order_acquire);
+  exn = atomic_load_acquire(cache);
   if (exn == NULL) {
     exn = caml_named_value(name);
     if (exn == NULL) {
       fprintf(stderr, "Fatal error: exception %s\n", name);
       exit(2);
     }
-    atomic_store_explicit(cache, exn, memory_order_release);
+    atomic_store_release(cache, exn);
   }
   return exn;
 }

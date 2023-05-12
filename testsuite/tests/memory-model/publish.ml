@@ -1,9 +1,12 @@
 (* TEST
-  modules="opt.ml barrier.ml hist.ml shared.ml run.ml outcome.ml"
-  * not-bsd
-  ** not-windows
-  *** bytecode
-  ** native
+ modules = "opt.ml barrier.ml hist.ml shared.ml run.ml outcome.ml";
+ not-bsd;
+ {
+   not-windows;
+   bytecode;
+ }{
+   native;
+ }
 *)
 
 (* Memory model: test the _publish idiom *)
