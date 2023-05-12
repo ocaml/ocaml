@@ -67,9 +67,6 @@ let interpret_environment_statement env statement = match statement.node with
       in
       Environments.unsetenv var env
 
-let interpret_environment_statements env l =
-  List.fold_left interpret_environment_statement env l
-
 type test_tree =
   | Node of
     (Tsl_ast.environment_statement located list) *

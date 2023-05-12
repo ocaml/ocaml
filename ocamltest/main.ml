@@ -238,15 +238,28 @@ let test_file test_filename =
              Builtin_variables.promote, promote;
              Builtin_variables.timeout, default_timeout;
            ] in
-       let rootenv =
-         Environments.initialize Environments.Pre log initial_environment in
-       let rootenv =
-         interpret_environment_statements rootenv rootenv_statements in
-       let rootenv = Environments.initialize Environments.Post log rootenv in
        let common_prefix = " ... testing '" ^ test_basename ^ "' with" in
-       let initial_status =
-         if skip_test then Skip_all else Run
+       let initial_status = if skip_test then Skip_all else Run in
+       let rootenv =
+         Environments.initialize Environments.Pre log initial_environment
        in
+       let rootenv, initial_status =
+         let rec loop env stmts =
+           match stmts with
+           | [] -> (env, initial_status)
+           | s :: t ->
+             begin match interpret_environment_statement env s with
+             | env -> loop env t
+             | exception e ->
+               let line = s.loc.Location.loc_start.Lexing.pos_lnum in
+               Printf.printf "%s line %d %!" common_prefix line;
+               Printf.printf "%s\n%!" (report_error s.loc e);
+               (env, Skip_all)
+             end
+         in
+         loop rootenv rootenv_statements
+       in
+       let rootenv = Environments.initialize Environments.Post log rootenv in
        let summary =
          run_test_tree log common_prefix initial_status rootenv All_skipped
            tsl_ast
