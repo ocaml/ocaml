@@ -28,14 +28,14 @@ CAMLextern char * caml_strerror(int errnum, char * buf, size_t buflen);
 
 #define NO_ARG Val_int(0)
 
-CAMLextern _Noreturn void caml_sys_error (value);
+CAMLextern CAMLnoret void caml_sys_error (value);
 
-CAMLextern _Noreturn void caml_sys_io_error (value);
+CAMLextern CAMLnoret void caml_sys_io_error (value);
 
 CAMLextern double caml_sys_time_unboxed(value);
 CAMLextern void caml_sys_init (char_os * exe_name, char_os ** argv);
 
-CAMLextern _Noreturn void caml_do_exit (int);
+CAMLextern CAMLnoret void caml_do_exit (int);
 
 #ifdef __cplusplus
 }

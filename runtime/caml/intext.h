@@ -195,7 +195,7 @@ CAMLextern void caml_deserialize_block_4(void * data, intnat len);
 CAMLextern void caml_deserialize_block_8(void * data, intnat len);
 CAMLextern void caml_deserialize_block_float_8(void * data, intnat len);
 
-CAMLextern _Noreturn void caml_deserialize_error(char * msg);
+CAMLextern CAMLnoret void caml_deserialize_error(char * msg);
 
 #ifdef __cplusplus
 }

@@ -81,40 +81,40 @@ CAMLextern value caml_raise_if_exception(value res);
 extern "C" {
 #endif
 
-CAMLextern _Noreturn void caml_raise (value bucket);
+CAMLextern CAMLnoret void caml_raise (value bucket);
 
-CAMLextern _Noreturn void caml_raise_constant (value tag);
+CAMLextern CAMLnoret void caml_raise_constant (value tag);
 
-CAMLextern _Noreturn void caml_raise_with_arg (value tag, value arg);
+CAMLextern CAMLnoret void caml_raise_with_arg (value tag, value arg);
 
-CAMLextern _Noreturn
+CAMLextern CAMLnoret
 void caml_raise_with_args (value tag, int nargs, value arg[]);
 
-CAMLextern _Noreturn void caml_raise_with_string (value tag, char const * msg);
+CAMLextern CAMLnoret void caml_raise_with_string (value tag, char const * msg);
 
-CAMLextern _Noreturn void caml_failwith (char const *msg);
+CAMLextern CAMLnoret void caml_failwith (char const *msg);
 
-CAMLextern _Noreturn void caml_failwith_value (value msg);
+CAMLextern CAMLnoret void caml_failwith_value (value msg);
 
-CAMLextern _Noreturn void caml_invalid_argument (char const *msg);
+CAMLextern CAMLnoret void caml_invalid_argument (char const *msg);
 
-CAMLextern _Noreturn void caml_invalid_argument_value (value msg);
+CAMLextern CAMLnoret void caml_invalid_argument_value (value msg);
 
-CAMLextern _Noreturn void caml_raise_out_of_memory (void);
+CAMLextern CAMLnoret void caml_raise_out_of_memory (void);
 
-CAMLextern _Noreturn void caml_raise_stack_overflow (void);
+CAMLextern CAMLnoret void caml_raise_stack_overflow (void);
 
-CAMLextern _Noreturn void caml_raise_sys_error (value);
+CAMLextern CAMLnoret void caml_raise_sys_error (value);
 
-CAMLextern _Noreturn void caml_raise_end_of_file (void);
+CAMLextern CAMLnoret void caml_raise_end_of_file (void);
 
-CAMLextern _Noreturn void caml_raise_zero_divide (void);
+CAMLextern CAMLnoret void caml_raise_zero_divide (void);
 
-CAMLextern _Noreturn void caml_raise_not_found (void);
+CAMLextern CAMLnoret void caml_raise_not_found (void);
 
-CAMLextern _Noreturn void caml_array_bound_error (void);
+CAMLextern CAMLnoret void caml_array_bound_error (void);
 
-CAMLextern _Noreturn void caml_raise_sys_blocked_io (void);
+CAMLextern CAMLnoret void caml_raise_sys_blocked_io (void);
 
 #ifdef __cplusplus
 }

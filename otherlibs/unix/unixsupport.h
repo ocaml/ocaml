@@ -100,10 +100,10 @@ extern void caml_win32_maperr(DWORD errcode);
 extern value caml_unix_error_of_code (int errcode);
 extern int caml_unix_code_of_unix_error (value error);
 
-extern _Noreturn
+extern CAMLnoret
 void caml_unix_error (int errcode, const char * cmdname, value arg);
 
-extern _Noreturn void caml_uerror (const char * cmdname, value arg);
+extern CAMLnoret void caml_uerror (const char * cmdname, value arg);
 
 extern void caml_unix_check_path(value path, const char * cmdname);
 

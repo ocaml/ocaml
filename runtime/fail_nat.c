@@ -52,7 +52,7 @@ extern caml_generated_constant
 
 /* Exception raising */
 
-extern _Noreturn
+extern CAMLnoret
 void caml_raise_exception (caml_domain_state* state, value bucket);
 
 void caml_raise(value v)
