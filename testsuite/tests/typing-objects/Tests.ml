@@ -789,8 +789,7 @@ fun (x : 'a t) -> (x : 'a); ();;
 Line 1, characters 19-20:
 1 | fun (x : 'a t) -> (x : 'a); ();;
                        ^
-Error: This expression has type 'a t but an expression was expected of type
-         'a
+Error: The value 'x' has type 'a t but an expression was expected of type 'a
        The type variable 'a occurs inside 'a t
 |}];;
 type 'a t = < x : 'a >;;
@@ -1118,8 +1117,8 @@ val is_empty : <  > -> unit = <fun>
 Line 2, characters 54-58:
 2 | class c = object (self) method private foo = is_empty self end;;
                                                           ^^^^
-Error: This expression has type < .. > but an expression was expected of type
-         <  >
+Error: The value 'self' has type < .. >
+       but an expression was expected of type <  >
        Self type cannot be unified with a closed object type
 |}];;
 
@@ -1212,7 +1211,7 @@ let o = object(self) initializer has_foo self end;;
 Line 1, characters 41-45:
 1 | let o = object(self) initializer has_foo self end;;
                                              ^^^^
-Error: This expression has type <  > but an expression was expected of type
+Error: The value 'self' has type <  > but an expression was expected of type
          < foo : int; .. >
        The first object type has no method foo
 |}];;

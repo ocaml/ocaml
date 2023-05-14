@@ -180,8 +180,7 @@ type t = private [< `A ]
 Line 2, characters 30-31:
 2 | let f: t -> [ `A ] = fun x -> x
                                   ^
-Error: This expression has type t but an expression was expected of type
-         [ `A ]
+Error: The value 'x' has type t but an expression was expected of type [ `A ]
        The first variant type is private, it may not allow the tag(s) `A
 |}]
 

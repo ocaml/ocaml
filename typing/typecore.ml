@@ -90,14 +90,14 @@ type existential_restriction =
 type error =
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * Errortrace.unification_error
-  | Pattern_type_clash :
-      Errortrace.unification_error * Parsetree.pattern_desc option -> error
+  | Pattern_type_clash of
+      Errortrace.unification_error * Parsetree.pattern option
   | Or_pattern_type_clash of Ident.t * Errortrace.unification_error
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t * Ident.t list
   | Expr_type_clash of
       Errortrace.unification_error * type_forcing_context option
-      * Parsetree.expression_desc option
+      * Parsetree.expression option
   | Apply_non_function of {
       funct : Typedtree.expression;
       func_ty : type_expr;
@@ -392,12 +392,12 @@ let unify_pat_types ?refine loc env ty ty' =
   ignore (unify_pat_types_return_equated_pairs ?refine loc env ty ty')
 
 
-(** [sdesc_for_hint] is used by error messages to report literals in their
+(** [sexp_for_hint] is used by error messages to report literals in their
     original formatting *)
-let unify_pat ?refine ?sdesc_for_hint env pat expected_ty =
+let unify_pat ?refine ?sexp_for_hint env pat expected_ty =
   try unify_pat_types ?refine pat.pat_loc env pat.pat_type expected_ty
   with Error (loc, env, Pattern_type_clash(err, None)) ->
-    raise(Error(loc, env, Pattern_type_clash(err, sdesc_for_hint)))
+    raise(Error(loc, env, Pattern_type_clash(err, sexp_for_hint)))
 
 (* unification of a type with a Tconstr with freshly created arguments *)
 let unify_head_only ~refine loc env ty constr =
@@ -1483,7 +1483,7 @@ and type_pat_aux
   let loc = sp.ppat_loc in
   let refine = None in
   let solve_expected (x : pattern) : pattern =
-    unify_pat ~refine ~sdesc_for_hint:sp.ppat_desc env x (instance expected_ty);
+    unify_pat ~refine ~sexp_for_hint:sp env x (instance expected_ty);
     x
   in
   let crp (x : k general_pattern) : k general_pattern =
@@ -2881,14 +2881,14 @@ let name_cases default lst =
 
 (* Typing of expressions *)
 
-(** [sdesc_for_hint] is used by error messages to report literals in their
+(** [sexp_for_hint] is used by error messages to report literals in their
     original formatting *)
-let unify_exp ?sdesc_for_hint env exp expected_ty =
+let unify_exp ?sexp_for_hint env exp expected_ty =
   let loc = proper_exp_loc exp in
   try
     unify_exp_types loc env exp.exp_type expected_ty
   with Error(loc, env, Expr_type_clash(err, tfc, None)) ->
-    raise (Error(loc, env, Expr_type_clash(err, tfc, sdesc_for_hint)))
+    raise (Error(loc, env, Expr_type_clash(err, tfc, sexp_for_hint)))
 
 (* If [is_inferred e] is true, [e] will be typechecked without using
    the "expected type" provided by the context. *)
@@ -3012,16 +3012,15 @@ and type_expect_
     env sexp ty_expected_explained =
   let { ty = ty_expected; explanation } = ty_expected_explained in
   let loc = sexp.pexp_loc in
-  let desc = sexp.pexp_desc in
   (* Record the expression type before unifying it with the expected type *)
   let with_explanation = with_explanation explanation in
   (* Unify the result with [ty_expected], enforcing the current level *)
   let rue exp =
     with_explanation (fun () ->
-      unify_exp ~sdesc_for_hint:desc env (re exp) (instance ty_expected));
+      unify_exp ~sexp_for_hint:sexp env (re exp) (instance ty_expected));
     exp
   in
-  match desc with
+  match sexp.pexp_desc with
   | Pexp_ident lid ->
       let path, desc = type_ident env ~recarg lid in
       let exp_desc =
@@ -5689,6 +5688,38 @@ let type_clash_of_trace trace =
     | _ -> None
   ))
 
+(** More precise denomination for type errors. Used by messages:
+
+    - "This <denom> ..."
+    - "The <denom> 'foo' ..." *)
+let exp_denom exp =
+  match exp.pexp_desc with
+  | Pexp_constant _ -> "constant"
+  | Pexp_ident _ -> "value"
+  | Pexp_construct _ | Pexp_variant _ -> "constructor"
+  | Pexp_field _ -> "record field"
+  | Pexp_send _ -> "method"
+  | _ -> "expression"
+
+let report_general_this_exp denom ppf = fprintf ppf "This %s" denom
+
+(** Implements the "This expression" message, printing the expression if it
+    should be according to {!Typedtree.exp_is_nominal}. *)
+let report_this_exp denom ppf exp =
+  let denom = match denom with Some d -> d | None -> exp_denom exp in
+  if Pprintast.exp_is_nominal exp then
+    fprintf ppf "The %s '%a'" denom Pprintast.expression exp
+  else report_general_this_exp denom ppf
+
+let report_this_exp_opt denom ppf = function
+  | Some exp -> report_this_exp denom ppf exp
+  | None ->
+      let denom = match denom with Some d -> d | None -> "expression" in
+      report_general_this_exp denom ppf
+
+let report_this_texp denom ppf texp =
+  report_this_exp denom ppf (Untypeast.untype_expression texp)
+
 (* Hint on type error on integer literals
    To avoid confusion, it is disabled on float literals
    and when the expected type is `int` *)
@@ -5735,13 +5766,15 @@ let report_partial_application = function
 
 let report_expr_type_clash_hints exp diff =
   match exp with
-  | Some (Pexp_constant const) -> report_literal_type_constraint const diff
-  | Some (Pexp_apply _) -> report_partial_application diff
+  | Some { pexp_desc = Pexp_constant const; _ } ->
+      report_literal_type_constraint const diff
+  | Some { pexp_desc = Pexp_apply _; _ } -> report_partial_application diff
   | _ -> []
 
 let report_pattern_type_clash_hints pat diff =
   match pat with
-  | Some (Ppat_constant const) -> report_literal_type_constraint const diff
+  | Some { ppat_desc = Ppat_constant const; _ } ->
+      report_literal_type_constraint const diff
   | _ -> []
 
 let report_type_expected_explanation expl ppf =
@@ -5780,12 +5813,6 @@ let report_unification_error ~loc ?sub env err
       ?type_expected_explanation txt1 txt2
   ) ()
 
-let report_this_function ppf funct =
-  if Typedtree.exp_is_nominal funct then
-    let pexp = Untypeast.untype_expression funct in
-    Format.fprintf ppf "The function '%a'" Pprintast.expression pexp
-  else Format.fprintf ppf "This function"
-
 let report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
     ~extra_arg_loc ~returns_unit loc =
   let open Location in
@@ -5814,7 +5841,8 @@ let report_too_many_arg_error ~funct ~func_ty ~previous_arg_loc
   errorf ~loc:app_loc ~sub
     "@[<v>@[<2>%a has type@ %a@]\
      @ It is applied to too many arguments@]"
-    report_this_function funct Printtyp.type_expr func_ty
+    (report_this_texp (Some "function")) funct
+    Printtyp.type_expr func_ty
 
 let report_error ~loc env = function
   | Constructor_arity_mismatch(lid, expected, provided) ->
@@ -5863,7 +5891,7 @@ let report_error ~loc env = function
         ~type_expected_explanation:
           (report_type_expected_explanation_opt explanation)
         (function ppf ->
-           fprintf ppf "This expression has type")
+           fprintf ppf "%a has type" (report_this_exp_opt None) exp)
         (function ppf ->
            fprintf ppf "but an expression was expected of type");
   | Apply_non_function {

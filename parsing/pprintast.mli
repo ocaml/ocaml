@@ -53,3 +53,7 @@ val payload: Format.formatter -> Parsetree.payload -> unit
 val tyvar: Format.formatter -> string -> unit
   (** Print a type variable name, taking care of the special treatment
       required for the single quote character in second position. *)
+
+val exp_is_nominal : Parsetree.expression -> bool
+(** Whether an expression looks nice as the subject of a sentence in an error
+    message. *)

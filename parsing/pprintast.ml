@@ -1666,3 +1666,19 @@ let structure_item = structure_item reset_ctxt
 let signature_item = signature_item reset_ctxt
 let binding = binding reset_ctxt
 let payload = payload reset_ctxt
+
+(* Expressions are considered nominal if they can be used as the subject of a
+   sentence or action. In practice, we consider that an expression is nominal
+   if they satisfy one of:
+   - Similar to an identifier: words separated by '.' or '#'.
+   - Do not contain spaces when printed.
+  *)
+let rec exp_is_nominal exp =
+  match exp.pexp_desc with
+  | _ when exp.pexp_attributes <> [] -> false
+  | Pexp_ident _ | Pexp_constant _
+  | Pexp_variant (_, None)
+  | Pexp_construct (_, None) ->
+      true
+  | Pexp_field (parent, _) | Pexp_send (parent, _) -> exp_is_nominal parent
+  | _ -> false
