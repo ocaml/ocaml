@@ -5,3 +5,5 @@ Renaming to a nonexisting directory: fails as expected
 Rename directory to a nonexisting directory: passed
 Rename a nonexisting directory: fails as expected
 Rename directory to a non-empty directory: fails as expected
+Rename directory to existing empty directory: passed
+Rename directory to existing file: fails as expected

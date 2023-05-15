@@ -10,6 +10,10 @@ Working version
   of `caml_read_directory`.  Also, check for overflows in ext table sizes.
   (Xavier Leroy, report by Arseniy Alekseyev, review by Gabriel Scherer)
 
+- #12223: Constify constructors and flags tables in C code. Now these
+  tables will go in the readonly segment, where they belong.
+  (Antonin Décimo, review by Gabriel Scherer and Xavier Leroy)
+
 ### Code generation and optimizations:
 
 ### Standard library:
@@ -173,6 +177,10 @@ OCaml 5.1.0
 - #12037: get_extern_state potential NULL dereference.
   (Alexander Skvortsov, report by Török Edwin,
    design by Gabriel Scherer, Xavier Leroy)
+
+- #12131: Simplify implementation of weak hash sets, fixing a
+  performance regression. (Nick Barnes, review by François Bobot,
+  Alain Frisch and Damien Doligez).
 
 ### Type system:
 
@@ -349,9 +357,8 @@ OCaml 5.1.0
   (Xavier Leroy, review by Edwin Török and Gabriel Scherer, fix by Damien
    Doligez)
 
-- #12131: Simplify implementation of weak hash sets, fixing a
-  performance regression. (Nick Barnes, review by François Bobot,
-  Alain Frisch and Damien Doligez).
+- #12184: Sys.rename Windows fixes on directory corner cases.
+  (Jan Midtgaard, review by Anil Madhavapeddy)
 
 ### Other libraries:
 

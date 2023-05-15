@@ -159,7 +159,7 @@ type v = private [< t > `A]
 corresponds to private variant types. One cannot create a value of the
 private type [v], except using the constructors that are explicitly
 listed as present, "(`A n)" in this example; yet, when
-patter-matching on a [v], one should assume that any of the
+pattern-matching on a [v], one should assume that any of the
 constructors of [t] could be present.
 
 Similarly to abstract types, the variance of type parameters

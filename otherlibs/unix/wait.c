@@ -83,7 +83,7 @@ CAMLprim value caml_unix_wait(value unit)
 #define waitpid(pid,status,opts) wait4(pid,status,opts,NULL)
 #endif
 
-static int wait_flag_table[] = {
+static const int wait_flag_table[] = {
   WNOHANG, WUNTRACED
 };
 
