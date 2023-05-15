@@ -15,8 +15,6 @@
 #*                                                                        *
 #**************************************************************************
 
-# duplicated from $(ROOTDIR)/runtime/Makefile
-
 # #8985: the meaning of character range a-z depends on the locale, so force C
 #        locale throughout.
 export LC_ALL=C
