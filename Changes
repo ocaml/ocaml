@@ -178,6 +178,10 @@ OCaml 5.1.0
   (Alexander Skvortsov, report by Török Edwin,
    design by Gabriel Scherer, Xavier Leroy)
 
+- #12131: Simplify implementation of weak hash sets, fixing a
+  performance regression. (Nick Barnes, review by François Bobot,
+  Alain Frisch and Damien Doligez).
+
 ### Type system:
 
 - #6941, #11187: prohibit using classes through recursive modules
