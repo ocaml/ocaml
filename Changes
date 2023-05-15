@@ -14,6 +14,9 @@ Working version
   tables will go in the readonly segment, where they belong.
   (Antonin Décimo, review by Gabriel Scherer and Xavier Leroy)
 
+- #12234: make instrumented time calculation more thread-safe on macOS.
+  (Anil Madhavapeddy, review by Daniel Bünzli and Xavier Leroy)
+
 ### Code generation and optimizations:
 
 ### Standard library:
