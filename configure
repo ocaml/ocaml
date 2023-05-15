@@ -13569,6 +13569,8 @@ then :
 
   otherlibraries="$otherlibraries unix"
   lib_unix=true
+  ac_config_links="$ac_config_links otherlibs/unix/unix.ml:otherlibs/unix/unix_${unix_or_win32}.ml"
+
   ocamltest_unix_impl="real"
   ocamltest_unix_name="unix"
   ocamltest_unix_path='$(ROOTDIR)/otherlibs/unix'
@@ -20459,6 +20461,7 @@ cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
 # Files that config.status was made for.
 config_files="$ac_config_files"
 config_headers="$ac_config_headers"
+config_links="$ac_config_links"
 config_commands="$ac_config_commands"
 
 _ACEOF
@@ -20488,6 +20491,9 @@ $config_files
 
 Configuration headers:
 $config_headers
+
+Configuration links:
+$config_links
 
 Configuration commands:
 $config_commands
@@ -20927,6 +20933,7 @@ do
     "stdlib/META") CONFIG_FILES="$CONFIG_FILES stdlib/META" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "otherlibs/unix/META") CONFIG_FILES="$CONFIG_FILES otherlibs/unix/META" ;;
+    "otherlibs/unix/unix.ml") CONFIG_LINKS="$CONFIG_LINKS otherlibs/unix/unix.ml:otherlibs/unix/unix_${unix_or_win32}.ml" ;;
     "otherlibs/str/META") CONFIG_FILES="$CONFIG_FILES otherlibs/str/META" ;;
     "otherlibs/systhreads/META") CONFIG_FILES="$CONFIG_FILES otherlibs/systhreads/META" ;;
     "ocamldoc/META") CONFIG_FILES="$CONFIG_FILES ocamldoc/META" ;;
@@ -20943,6 +20950,7 @@ done
 if $ac_need_defaults; then
   test ${CONFIG_FILES+y} || CONFIG_FILES=$config_files
   test ${CONFIG_HEADERS+y} || CONFIG_HEADERS=$config_headers
+  test ${CONFIG_LINKS+y} || CONFIG_LINKS=$config_links
   test ${CONFIG_COMMANDS+y} || CONFIG_COMMANDS=$config_commands
 fi
 
@@ -21240,7 +21248,7 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 fi # test -n "$CONFIG_HEADERS"
 
 
-eval set X "  :F $CONFIG_FILES  :H $CONFIG_HEADERS    :C $CONFIG_COMMANDS"
+eval set X "  :F $CONFIG_FILES  :H $CONFIG_HEADERS  :L $CONFIG_LINKS  :C $CONFIG_COMMANDS"
 shift
 for ac_tag
 do
@@ -21477,7 +21485,38 @@ printf "%s\n" "$as_me: $ac_file is unchanged" >&6;}
       || as_fn_error $? "could not create -" "$LINENO" 5
   fi
  ;;
+  :L)
+  #
+  # CONFIG_LINK
+  #
 
+  if test "$ac_source" = "$ac_file" && test "$srcdir" = '.'; then
+    :
+  else
+    # Prefer the file from the source tree if names are identical.
+    if test "$ac_source" = "$ac_file" || test ! -r "$ac_source"; then
+      ac_source=$srcdir/$ac_source
+    fi
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: linking $ac_source to $ac_file" >&5
+printf "%s\n" "$as_me: linking $ac_source to $ac_file" >&6;}
+
+    if test ! -r "$ac_source"; then
+      as_fn_error $? "$ac_source: file not found" "$LINENO" 5
+    fi
+    rm -f "$ac_file"
+
+    # Try a relative symlink, then a hard link, then a copy.
+    case $ac_source in
+    [\\/$]* | ?:[\\/]* ) ac_rel_source=$ac_source ;;
+	*) ac_rel_source=$ac_top_build_prefix$ac_source ;;
+    esac
+    ln -s "$ac_rel_source" "$ac_file" 2>/dev/null ||
+      ln "$ac_source" "$ac_file" 2>/dev/null ||
+      cp -p "$ac_source" "$ac_file" ||
+      as_fn_error $? "cannot link or copy $ac_source to $ac_file" "$LINENO" 5
+  fi
+ ;;
   :C)  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: executing $ac_file commands" >&5
 printf "%s\n" "$as_me: executing $ac_file commands" >&6;}
  ;;

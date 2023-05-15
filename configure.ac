@@ -629,6 +629,9 @@ AS_IF([test x"$enable_unix_lib" != "xno"],
   AC_CONFIG_FILES([otherlibs/unix/META])
   otherlibraries="$otherlibraries unix"
   lib_unix=true
+  AC_CONFIG_LINKS([
+    otherlibs/unix/unix.ml:otherlibs/unix/unix_${unix_or_win32}.ml
+  ])
   ocamltest_unix_impl="real"
   ocamltest_unix_name="unix"
   ocamltest_unix_path='$(ROOTDIR)/otherlibs/unix'
