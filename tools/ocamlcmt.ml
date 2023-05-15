@@ -174,7 +174,7 @@ let main () =
           | Some _ as x -> x
         in
         Envaux.reset_cache ();
-        List.iter Load_path.add_dir cmt.cmt_loadpath;
+        List.iter (Load_path.add_dir ~hidden:false) cmt.cmt_loadpath;
         Cmt2annot.gen_annot target_filename
           ~sourcefile:cmt.cmt_sourcefile
           ~use_summaries:cmt.cmt_use_summaries

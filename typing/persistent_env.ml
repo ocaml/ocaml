@@ -36,10 +36,14 @@ module Persistent_signature = struct
     { filename : string;
       cmi : Cmi_format.cmi_infos }
 
-  let load = ref (fun ~unit_name ->
-      match Load_path.find_normalized (unit_name ^ ".cmi") with
-      | filename -> Some { filename; cmi = read_cmi filename }
-      | exception Not_found -> None)
+  let load = ref (fun ~allow_hidden ~unit_name ->
+    let find =
+      Load_path.(if allow_hidden then find_normalized
+                 else find_visible_normalized)
+    in
+    match find (unit_name ^ ".cmi") with
+    | filename -> Some { filename; cmi = read_cmi filename }
+    | exception Not_found -> None)
 end
 
 type can_load_cmis =
@@ -202,7 +206,7 @@ let read_pers_struct penv val_of_pers_sig check cmi =
   let ps = acknowledge_pers_struct penv check modname pers_sig pm in
   (ps, pm)
 
-let find_pers_struct penv val_of_pers_sig check name =
+let find_pers_struct ~allow_hidden penv val_of_pers_sig check name =
   let {persistent_structures; _} = penv in
   if name = "*predef*" then raise Not_found;
   match Hashtbl.find persistent_structures name with
@@ -213,7 +217,7 @@ let find_pers_struct penv val_of_pers_sig check name =
     | Cannot_load_cmis _ -> raise Not_found
     | Can_load_cmis ->
         let psig =
-          match !Persistent_signature.load ~unit_name:name with
+          match !Persistent_signature.load ~allow_hidden ~unit_name:name with
           | Some psig -> psig
           | None ->
             Hashtbl.add persistent_structures name Missing;
@@ -226,9 +230,9 @@ let find_pers_struct penv val_of_pers_sig check name =
 
 module Style = Misc.Style
 (* Emits a warning if there is no valid cmi for name *)
-let check_pers_struct penv f ~loc name =
+let check_pers_struct ~allow_hidden penv f ~loc name =
   try
-    ignore (find_pers_struct penv f false name)
+    ignore (find_pers_struct ~allow_hidden penv f false name)
   with
   | Not_found ->
       let warn = Warnings.No_cmi_file(name, None) in
@@ -259,10 +263,10 @@ let check_pers_struct penv f ~loc name =
 let read penv f a =
   snd (read_pers_struct penv f true a)
 
-let find penv f name =
-  snd (find_pers_struct penv f true name)
+let find ~allow_hidden penv f name =
+  snd (find_pers_struct ~allow_hidden penv f true name)
 
-let check penv f ~loc name =
+let check ~allow_hidden penv f ~loc name =
   let {persistent_structures; _} = penv in
   if not (Hashtbl.mem persistent_structures name) then begin
     (* PR#6843: record the weak dependency ([add_import]) regardless of
@@ -271,11 +275,11 @@ let check penv f ~loc name =
     add_import penv name;
     if (Warnings.is_active (Warnings.No_cmi_file("", None))) then
       !add_delayed_check_forward
-        (fun () -> check_pers_struct penv f ~loc name)
+        (fun () -> check_pers_struct ~allow_hidden penv f ~loc name)
   end
 
 let crc_of_unit penv f name =
-  let (ps, _pm) = find_pers_struct penv f true name in
+  let (ps, _pm) = find_pers_struct ~allow_hidden:true penv f true name in
   let crco =
     try
       List.assoc name ps.ps_crcs

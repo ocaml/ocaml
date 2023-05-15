@@ -31,7 +31,7 @@ let time = ref true
 let version = ref true
 
 let add_path dir =
-  Load_path.add_dir dir;
+  Load_path.add_dir ~hidden:false dir;
   Envaux.reset_cache()
 
 let add_path_for mdl dir =

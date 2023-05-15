@@ -77,6 +77,9 @@ val reraise_preserving_backtrace : exn -> (unit -> unit) -> 'a
 val map_end: ('a -> 'b) -> 'a list -> 'b list -> 'b list
        (** [map_end f l t] is [map f l @ t], just more efficient. *)
 
+val rev_map_end: ('a -> 'b) -> 'a list -> 'b list -> 'b list
+       (** [map_end f l t] is [map f (rev l) @ t], just more efficient. *)
+
 val map_left_right: ('a -> 'b) -> 'a list -> 'b list
        (** Like [List.map], with guaranteed left-to-right evaluation order *)
 

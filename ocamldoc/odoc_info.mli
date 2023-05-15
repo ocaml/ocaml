@@ -1082,12 +1082,13 @@ end
 val analyse_files :
     ?merge_options:Odoc_types.merge_option list ->
       ?include_dirs:string list ->
-        ?labels:bool ->
-          ?sort_modules:bool ->
-            ?no_stop:bool ->
-              ?init: Odoc_module.t_module list ->
-                Odoc_global.source_file list ->
-                  Module.t_module list
+        ?hidden_include_dirs:string list ->
+          ?labels:bool ->
+            ?sort_modules:bool ->
+              ?no_stop:bool ->
+                ?init: Odoc_module.t_module list ->
+                  Odoc_global.source_file list ->
+                    Module.t_module list
 
 (** Dump of a list of modules into a file.
    @raise Failure if an error occurs.*)

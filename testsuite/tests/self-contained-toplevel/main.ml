@@ -23,14 +23,14 @@ let () =
   if Sys.file_exists "foo.cmi" then Sys.remove "foo.cmi";
   let module Persistent_signature = Persistent_env.Persistent_signature in
   let old_loader = !Persistent_signature.load in
-  Persistent_signature.load := (fun ~unit_name ->
+  Persistent_signature.load := (fun ~allow_hidden ~unit_name ->
     match unit_name with
     | "Foo" ->
       Some { Persistent_signature.
              filename = Sys.executable_name
            ; cmi      = Marshal.from_string Cached_cmi.foo 0
            }
-    | _ -> old_loader unit_name);
+    | _ -> old_loader ~allow_hidden ~unit_name);
   Toploop.add_hook (function
       | Toploop.After_setup ->
           Toploop.toplevel_env :=
