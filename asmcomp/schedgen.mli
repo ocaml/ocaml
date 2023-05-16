@@ -40,7 +40,7 @@ class virtual scheduler_generic : object
       (* Says whether the given operation is a memory store
          or an atomic load. *)
   method is_load : Mach.operation -> bool
-      (* Says whether the given operation is a memory load (non-atomic) *)
+      (* Says whether the given operation is a non-atomic memory load *)
   method is_checkbound : Mach.operation -> bool
       (* Says whether the given operation is a checkbound *)
   (* Entry point *)
