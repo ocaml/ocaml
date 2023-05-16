@@ -14,6 +14,9 @@ Working version
   tables will go in the readonly segment, where they belong.
   (Antonin Décimo, review by Gabriel Scherer and Xavier Leroy)
 
+- #12234: make instrumented time calculation more thread-safe on macOS.
+  (Anil Madhavapeddy, review by Daniel Bünzli and Xavier Leroy)
+
 ### Code generation and optimizations:
 
 ### Standard library:
@@ -177,6 +180,10 @@ OCaml 5.1.0
 - #12037: get_extern_state potential NULL dereference.
   (Alexander Skvortsov, report by Török Edwin,
    design by Gabriel Scherer, Xavier Leroy)
+
+- #12131: Simplify implementation of weak hash sets, fixing a
+  performance regression. (Nick Barnes, review by François Bobot,
+  Alain Frisch and Damien Doligez).
 
 ### Type system:
 
