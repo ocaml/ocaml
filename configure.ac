@@ -2015,7 +2015,7 @@ AS_CASE([$enable_ocamldebug],
     build_ocamldebug=false
     AC_MSG_NOTICE([ocamldebug disabled])],
   [AS_IF([$sockets],
-    [with_debugger="ocamldebugger"
+    [with_debugger="ocamldebug"
     build_ocamldebug=true
     AC_MSG_NOTICE([ocamldebug supported])],
     [with_debugger=""

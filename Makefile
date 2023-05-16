@@ -1299,8 +1299,13 @@ debugger/%: OC_BYTECODE_LINKFLAGS = -linkall
 
 debugger/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 
-.PHONY: ocamldebugger
+.PHONY: ocamldebug ocamldebugger
+ocamldebug: debugger/ocamldebug$(EXE)
 ocamldebugger: debugger/ocamldebug$(EXE)
+# the 'ocamldebugger' target is an alias of 'ocamldebug' for
+# backward-compatibility with old ./configure scripts; it can be
+# removed after most contributors have re-run ./configure once, for
+# example after 5.2 is branched
 
 debugger/ocamldebug$(EXE): ocamlc ocamlyacc ocamllex
 
