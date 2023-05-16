@@ -76,7 +76,10 @@ val create : unit -> 'a t
 (** [create ()] is a new, empty array. *)
 
 val make : int -> 'a -> 'a t
-(** [make n x] is a new array of length [n], filled with [x]. *)
+(** [make n x] is a new array of length [n], filled with [x].
+
+    @raise Invalid_argument if [n < 0].
+*)
 
 val init : int -> (int -> 'a) -> 'a t
 (** [init n f] is a new array [a] of length [n],
@@ -85,7 +88,10 @@ val init : int -> (int -> 'a) -> 'a t
     then [f 2]... and [f (n - 1)] last, evaluated
     in that order.
 
-    This is similar to {!Array.init}. *)
+    This is similar to {!Array.init}.
+
+    @raise Invalid_argument if [n < 0].
+*)
 
 val get : 'a t -> int -> 'a
 (** [get a i] is the [i]-th element of [a], starting with index [0].
@@ -177,9 +183,6 @@ val remove_last : 'a t -> unit
 (** [remove_last a] removes the last element of [a], if any.
     It does nothing if [a] is empty. *)
 
-val clear : 'a t -> unit
-(** [clear a] is [truncate a 0], it removes all the elements of [a]. *)
-
 val truncate : 'a t -> int -> unit
 (** [truncate a n] truncates [a] to have at most [n] elements.
 
@@ -188,12 +191,17 @@ val truncate : 'a t -> int -> unit
 
     [truncate a n] is equivalent to:
     {[
+      if n < 0 then invalid_argument "...";
       while length a > n do
         remove_last a
       done
     ]}
+
+    @raise Invalid_argument if [n < 0].
 *)
 
+val clear : 'a t -> unit
+(** [clear a] is [truncate a 0], it removes all the elements of [a]. *)
 
 (** {1:iteration Iteration}
 
@@ -439,6 +447,8 @@ val truncate_capacity : 'a t -> int -> unit
     complexity guarantees provided by the reallocation
     strategy. Calling it repeatedly on an array may have quadratic
     complexity, both in time and in total number of allocations.
+
+    @raise Invalid_argument if [n < 0].
 *)
 
 val reset : 'a t -> unit
