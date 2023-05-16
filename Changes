@@ -38,6 +38,12 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #12216, #12248: Prevent reordering of atomic loads during instruction
+  scheduling.  This is for reference, as instruction scheduling is currently
+  unused in OCaml 5.
+  (Xavier Leroy, report by Luc Maranget and KC Sivaramakrishnan,
+   review by Nicolás Ojeda Bär)
+
 ### Build system:
 
 ### Bug fixes:
