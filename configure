@@ -948,6 +948,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_debug_runtime
+enable_ocamldebug
 enable_debugger
 enable_dependency_generation
 enable_instrumented_runtime
@@ -1633,7 +1634,8 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-debug-runtime do not build runtime with debugging support
-  --enable-debugger       build the debugger [default=auto]
+  --enable-ocamldebug     build ocamldebug [default=auto]
+  --enable-debugger       alias for --enable-ocamldebug
   --disable-dependency-generation
                           do not compute dependency information for C sources
   --enable-instrumented-runtime
@@ -3643,12 +3645,19 @@ then :
 fi
 
 
+# Check whether --enable-ocamldebug was given.
+if test ${enable_ocamldebug+y}
+then :
+  enableval=$enable_ocamldebug;
+else $as_nop
+  enable_ocamldebug=auto
+fi
+
+
 # Check whether --enable-debugger was given.
 if test ${enable_debugger+y}
 then :
-  enableval=$enable_debugger;
-else $as_nop
-  enable_debugger=auto
+  enableval=$enable_debugger; enable_ocamldebug=$enableval
 fi
 
 
@@ -3951,11 +3960,11 @@ fi
 
 if test x"$enable_unix_lib" = "xno"
 then :
-  if test x"$enable_debugger" = "xyes"
+  if test x"$enable_ocamldebug" = "xyes"
 then :
-  as_fn_error $? "replay debugger requires the unix library" "$LINENO" 5
+  as_fn_error $? "ocamldebug requires the unix library" "$LINENO" 5
 else $as_nop
-  enable_debugger="no"
+  enable_ocamldebug="no"
 fi
 fi
 
@@ -18232,24 +18241,24 @@ fi
 
 ## Determine whether the debugger should/can be built
 
-case $enable_debugger in #(
+case $enable_ocamldebug in #(
   no) :
     with_debugger=""
     build_ocamldebug=false
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: replay debugger disabled" >&5
-printf "%s\n" "$as_me: replay debugger disabled" >&6;} ;; #(
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: ocamldebug disabled" >&5
+printf "%s\n" "$as_me: ocamldebug disabled" >&6;} ;; #(
   *) :
     if $sockets
 then :
-  with_debugger="ocamldebugger"
+  with_debugger="ocamldebug"
     build_ocamldebug=true
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: replay debugger supported" >&5
-printf "%s\n" "$as_me: replay debugger supported" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: ocamldebug supported" >&5
+printf "%s\n" "$as_me: ocamldebug supported" >&6;}
 else $as_nop
   with_debugger=""
     build_ocamldebug=false
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: replay debugger not supported" >&5
-printf "%s\n" "$as_me: replay debugger not supported" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: ocamldebug not supported" >&5
+printf "%s\n" "$as_me: ocamldebug not supported" >&6;}
 fi
    ;;
 esac

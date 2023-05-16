@@ -307,11 +307,17 @@ AC_ARG_ENABLE([debug-runtime],
   [AS_HELP_STRING([--disable-debug-runtime],
     [do not build runtime with debugging support])])
 
+AC_ARG_ENABLE([ocamldebug],
+  [AS_HELP_STRING([--enable-ocamldebug],
+    [build ocamldebug @<:@default=auto@:>@])],
+  [],
+  [enable_ocamldebug=auto])
+
 AC_ARG_ENABLE([debugger],
   [AS_HELP_STRING([--enable-debugger],
-    [build the debugger @<:@default=auto@:>@])],
-  [],
-  [enable_debugger=auto])
+    [alias for --enable-ocamldebug])],
+  [enable_ocamldebug=$enableval],
+  [])
 
 AC_ARG_ENABLE([dependency-generation],
   [AS_HELP_STRING([--disable-dependency-generation],
@@ -489,9 +495,9 @@ AC_ARG_WITH([zstd],
     [disable compression of marshaled data])])
 
 AS_IF([test x"$enable_unix_lib" = "xno"],
-  [AS_IF([test x"$enable_debugger" = "xyes"],
-    [AC_MSG_ERROR([replay debugger requires the unix library])],
-    [enable_debugger="no"])])
+  [AS_IF([test x"$enable_ocamldebug" = "xyes"],
+    [AC_MSG_ERROR([ocamldebug requires the unix library])],
+    [enable_ocamldebug="no"])])
 
 AS_IF([test x"$enable_unix_lib" = "xno" || test x"$enable_str_lib" = "xno"],
   [AS_IF([test x"$enable_ocamldoc" = "xyes"],
@@ -2003,18 +2009,18 @@ AS_IF([test x"$zstd_status" = "xok"],
 
 ## Determine whether the debugger should/can be built
 
-AS_CASE([$enable_debugger],
+AS_CASE([$enable_ocamldebug],
   [no],
     [with_debugger=""
     build_ocamldebug=false
-    AC_MSG_NOTICE([replay debugger disabled])],
+    AC_MSG_NOTICE([ocamldebug disabled])],
   [AS_IF([$sockets],
     [with_debugger="ocamldebugger"
     build_ocamldebug=true
-    AC_MSG_NOTICE([replay debugger supported])],
+    AC_MSG_NOTICE([ocamldebug supported])],
     [with_debugger=""
     build_ocamldebug=false
-    AC_MSG_NOTICE([replay debugger not supported])])
+    AC_MSG_NOTICE([ocamldebug not supported])])
   ])
 
 ## Should the runtime with debugging support be built
