@@ -591,16 +591,6 @@ static void update_major_slice_work(intnat howmuch) {
                          ARCH_INTNAT_PRINTF_FORMAT "d\n",
                    extra_work);
 
-  caml_gc_log("Updated major work: [%c] "
-                         " %"ARCH_INTNAT_PRINTF_FORMAT "u heap_words, "
-                         " %"ARCH_INTNAT_PRINTF_FORMAT "u allocated, "
-                         " %"ARCH_INTNAT_PRINTF_FORMAT "d alloc_work, "
-                         " %"ARCH_INTNAT_PRINTF_FORMAT "d dependent_work, "
-                         " %"ARCH_INTNAT_PRINTF_FORMAT "d extra_work",
-                         caml_gc_phase_char(caml_gc_phase),
-                         (uintnat)heap_words, dom_st->allocated_words,
-                         alloc_work, dependent_work, extra_work);
-
   new_work = max3 (alloc_work, dependent_work, extra_work);
   atomic_fetch_add (&work_counter, dom_st->major_work_done_between_slices);
   dom_st->major_work_done_between_slices = 0;
@@ -608,12 +598,32 @@ static void update_major_slice_work(intnat howmuch) {
   if (howmuch == AUTO_TRIGGERED_MAJOR_SLICE ||
       howmuch == GC_CALCULATE_MAJOR_SLICE) {
     dom_st->slice_target = atomic_load (&alloc_counter);
-    dom_st->slice_budget = Major_slice_work_min;
+    dom_st->slice_budget = 0;
   }else{
     /* forced or opportunistic GC slice with explicit quantity */
     dom_st->slice_target = atomic_load (&work_counter);  /* already reached */
     dom_st->slice_budget = howmuch;
   }
+
+  caml_gc_log("Updated major work: [%c] "
+              " %"ARCH_INTNAT_PRINTF_FORMAT "u heap_words, "
+              " %"ARCH_INTNAT_PRINTF_FORMAT "u allocated, "
+              " %"ARCH_INTNAT_PRINTF_FORMAT "d alloc_work, "
+              " %"ARCH_INTNAT_PRINTF_FORMAT "d dependent_work, "
+              " %"ARCH_INTNAT_PRINTF_FORMAT "d extra_work,  "
+              " %"ARCH_INTNAT_PRINTF_FORMAT "u work counter%s,  "
+              " %"ARCH_INTNAT_PRINTF_FORMAT "u alloc counter,  "
+              " %"ARCH_INTNAT_PRINTF_FORMAT "u slice target,  "
+              " %"ARCH_INTNAT_PRINTF_FORMAT "d slice budget"
+              ,
+              caml_gc_phase_char(caml_gc_phase),
+              (uintnat)heap_words, dom_st->allocated_words,
+              alloc_work, dependent_work, extra_work,
+              atomic_load (&work_counter),
+              atomic_load (&work_counter) > atomic_load (&alloc_counter) ? "[ahead]" : "[behind]",
+              atomic_load (&alloc_counter),
+              dom_st->slice_target, dom_st->slice_budget
+              );
 }
 
 #define Chunk_size 0x4000
