@@ -236,8 +236,11 @@ value caml_execute_signal_exn(int signal_number, int in_signal_handler)
 
 void caml_request_major_slice (int global)
 {
-  Caml_state->requested_major_slice = 1;
-  Caml_state->requested_global_major_slice |= global;
+  if (global){
+    Caml_state->requested_global_major_slice = 1;
+  }else{
+    Caml_state->requested_major_slice = 1;
+  }
   caml_interrupt_self();
 }
 

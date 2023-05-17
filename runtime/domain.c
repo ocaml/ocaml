@@ -1625,7 +1625,7 @@ void caml_poll_gc_work(void)
     caml_empty_minor_heaps_once();
   }
 
-  if (d->requested_major_slice) {
+  if (d->requested_major_slice || d->requested_global_major_slice) {
     CAML_EV_BEGIN(EV_MAJOR);
     d->requested_major_slice = 0;
     caml_major_collection_slice(AUTO_TRIGGERED_MAJOR_SLICE);
@@ -1633,9 +1633,12 @@ void caml_poll_gc_work(void)
   }
 
   if (d->requested_global_major_slice) {
-    d->requested_global_major_slice = 0;
-    (void) caml_try_run_on_all_domains_async(
-             &global_major_slice_callback, NULL, NULL);
+    if (caml_try_run_on_all_domains_async(
+          &global_major_slice_callback, NULL, NULL)){
+      d->requested_global_major_slice = 0;
+    }
+    /* If caml_try_run_on_all_domains_async fails, we'll try again next time
+       caml_poll_gc_work is called. */
   }
 
   if (atomic_load_acquire(&d->requested_external_interrupt)) {
