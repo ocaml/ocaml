@@ -320,14 +320,14 @@ let next_capacity n =
 let ensure_capacity a capacity_request =
   let arr = a.arr in
   let cur_capacity = Array.length arr in
-  if cur_capacity >= capacity_request then
+  if capacity_request < 0 then
+    Error.negative_capacity "ensure_capacity" capacity_request
+  else if cur_capacity >= capacity_request then
     (* This is the fast path, the code up to here must do as little as
        possible. (This is why we don't use [let {arr; length} = a] as
        usual, the length is not needed in the fast path.)*)
     ()
   else begin
-    if capacity_request < 0 then
-      Error.negative_capacity "ensure_capacity" capacity_request;
     if capacity_request > Sys.max_array_length then
       Error.requested_length_out_of_bounds "ensure_capacity" capacity_request;
     let new_capacity =
@@ -349,6 +349,7 @@ let ensure_capacity a capacity_request =
     let new_arr = Array.make new_capacity Empty in
     Array.blit arr 0 new_arr 0 a.length;
     a.arr <- new_arr;
+    (* postcondition: *)
     assert (0 <= capacity_request);
     assert (capacity_request <= Array.length new_arr);
   end
@@ -366,12 +367,13 @@ let truncate_capacity a n =
   else if n < 0 then
     Error.negative_capacity "truncate_capacity" n
   else begin
-    a.length <- n;
+    a.length <- min a.length n;
     a.arr <- Array.sub a.arr 0 n;
   end
 
 let reset a =
-  truncate_capacity a 0
+  a.length <- 0;
+  a.arr <- [||]
 
 (** {1:adding Adding elements} *)
 
@@ -381,7 +383,7 @@ let reset a =
    allocation, we add the element at the new end of the dynamic array.
 
    (We do not give the same guarantees in presence of concurrent
-   updates, which are much more expansive to protect against.)
+   updates, which are much more expensive to protect against.)
 *)
 
 (* [add_last_if_room a elem] only writes the slot if there is room, and
@@ -392,17 +394,20 @@ let reset a =
    by any other code during execution of this function.
 *)
 let[@inline] add_last_if_room a elem =
-  (* BEGIN ATOMIC *)
+  (* BEGIN ATOMIC: the code in this section
+     does not contain any poll point (backedge,
+     allocation or function call) in native code,
+     as can be checked when reading the -dcmm output. *)
   let {arr; length} = a in
   (* we know [0 <= length] *)
   if length >= Array.length arr then false
   else begin
     (* we know [0 <= length < Array.length arr] *)
-    Array.unsafe_set arr length elem;
     a.length <- length + 1;
+    Array.unsafe_set arr length elem;
+    (* END ATOMIC *)
     true
   end
-  (* END ATOMIC *)
 
 let add_last a x =
   let elem = Elem {v = x} in
@@ -436,7 +441,12 @@ let append_array_if_room a b =
   if length_a + length_b > Array.length arr then false
   else begin
     a.length <- length_a + length_b;
-    (* END ATOMIC *)
+    (* END ATOMIC
+
+       Notice that, unlike for [add_last], the atomic section here
+       lasts until the length is extended, but stops before the
+       elements are added, so one could observe missing elements if
+       the code yields.  *)
     (* Note: we intentionally update the length *before* filling the
        elements. This "reserve before fill" approach provides better
        behavior than "fill then notify" in presence of reentrant
