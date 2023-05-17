@@ -618,8 +618,17 @@ static void update_major_slice_work(intnat howmuch) {
 
 #define Chunk_size 0x4000
 
-static intnat get_major_slice_work(void){
+typedef enum {
+  Slice_uninterruptible,
+  Slice_interruptible,
+  Slice_opportunistic
+} collection_slice_mode;
+
+static intnat get_major_slice_work(collection_slice_mode mode){
   caml_domain_state *dom_st = Caml_state;
+
+  if (mode == Slice_interruptible && caml_incoming_interrupts_queued())
+    return 0;
 
   /* calculate how much work remains to do for this slice */
   intnat budget =
@@ -1440,12 +1449,6 @@ intnat caml_opportunistic_major_work_available (void)
   return !domain_state->sweeping_done || !domain_state->marking_done;
 }
 
-typedef enum {
-  Slice_uninterruptible,
-  Slice_interruptible,
-  Slice_opportunistic
-} collection_slice_mode;
-
 static char collection_slice_mode_char(collection_slice_mode mode)
 {
   switch(mode) {
@@ -1460,7 +1463,7 @@ static char collection_slice_mode_char(collection_slice_mode mode)
   }
 }
 
-static int major_collection_slice(intnat howmuch,
+static void major_collection_slice(intnat howmuch,
                                      int participant_count,
                                      caml_domain_state** barrier_participants,
                                      collection_slice_mode mode)
@@ -1470,36 +1473,33 @@ static int major_collection_slice(intnat howmuch,
   uintnat blocks_marked_before = domain_state->stat_blocks_marked;
   uintnat saved_ephe_cycle;
   uintnat saved_major_cycle = caml_major_cycles_completed;
+  intnat budget;
 
   int log_events = mode != Slice_opportunistic ||
                    (atomic_load_relaxed(&caml_verb_gc) & 0x40);
 
   update_major_slice_work(howmuch);
 
-  enum { Keep_going = 0, Out_of_budget = 1, Interrupted = 2 }
-    stop_status = Keep_going;
+  /* When a full slice of major GC work is done,
+     or the slice is interrupted (in mode Slice_interruptible),
+     get_major_slice_work(mode) will return a budget <= 0 */
 
   /* shortcut out if there is no opportunistic work to be done
    * NB: needed particularly to avoid caml_ev spam when polling */
   if (mode == Slice_opportunistic &&
       !caml_opportunistic_major_work_available()) {
     commit_major_slice_work (0);
-    return 0;
+    return;
   }
 
   if (log_events) CAML_EV_BEGIN(EV_MAJOR_SLICE);
   call_timing_hook(&caml_major_slice_begin_hook);
 
-  if (!domain_state->sweeping_done && stop_status == Keep_going) {
+  if (!domain_state->sweeping_done) {
     if (log_events) CAML_EV_BEGIN(EV_MAJOR_SWEEP);
 
-    while (!domain_state->sweeping_done && stop_status == Keep_going) {
-      intnat budget = get_major_slice_work();
-      if (budget <= 0) {
-        stop_status = Out_of_budget;
-        break;
-      }
-
+    while (!domain_state->sweeping_done &&
+           (budget = get_major_slice_work(mode)) > 0) {
       intnat left = caml_sweep(domain_state->shared_heap, budget);
       intnat work_done = budget - left;
 
@@ -1509,36 +1509,22 @@ static int major_collection_slice(intnat howmuch,
         domain_state->sweeping_done = 1;
         atomic_fetch_add_verify_ge0(&num_domains_to_sweep, -1);
       }
-
-      if (mode == Slice_interruptible && caml_incoming_interrupts_queued()) {
-        stop_status = Interrupted;
-        break;
-      }
     }
 
     if (log_events) CAML_EV_END(EV_MAJOR_SWEEP);
   }
 
 mark_again:
-  if (!domain_state->marking_done && stop_status == Keep_going) {
+  if (!domain_state->marking_done &&
+      get_major_slice_work(mode) > 0) {
     if (log_events) CAML_EV_BEGIN(EV_MAJOR_MARK);
 
-    while (!domain_state->marking_done && stop_status == Keep_going) {
-      intnat budget = get_major_slice_work();
-      if (budget <= 0) {
-        stop_status = Out_of_budget;
-        break;
-      }
-
+    while (!domain_state->marking_done &&
+           (budget = get_major_slice_work(mode)) > 0) {
       intnat left = mark(budget);
       intnat work_done = budget - left;
       mark_work += work_done;
       commit_major_slice_work(work_done);
-
-      if (mode == Slice_interruptible && caml_incoming_interrupts_queued()) {
-        stop_status = Interrupted;
-        break;
-      }
     }
 
     if (log_events) CAML_EV_END(EV_MAJOR_MARK);
@@ -1547,16 +1533,17 @@ mark_again:
   if (mode != Slice_opportunistic) {
     /* Finalisers */
     if (caml_gc_phase == Phase_mark_final &&
-        stop_status == Keep_going &&
+        get_major_slice_work(mode) > 0 &&
         caml_final_update_first(domain_state)) {
       /* This domain has updated finalise first values */
       atomic_fetch_add_verify_ge0(&num_domains_to_final_update_first, -1);
-      if (!domain_state->marking_done && stop_status == Keep_going)
+      if (!domain_state->marking_done &&
+          get_major_slice_work(mode) > 0)
         goto mark_again;
     }
 
     if (caml_gc_phase == Phase_sweep_ephe &&
-        stop_status == Keep_going &&
+        get_major_slice_work(mode) > 0 &&
         caml_final_update_last(domain_state)) {
       /* This domain has updated finalise last values */
       atomic_fetch_add_verify_ge0(&num_domains_to_final_update_last, -1);
@@ -1574,18 +1561,13 @@ mark_again:
       saved_ephe_cycle = atomic_load_acquire(&ephe_cycle_info.ephe_cycle);
       if (domain_state->ephe_info->todo != (value) NULL &&
           saved_ephe_cycle > domain_state->ephe_info->cycle &&
-          stop_status == Keep_going) {
+          get_major_slice_work(mode) > 0) {
         CAML_EV_BEGIN(EV_MAJOR_EPHE_MARK);
 
         int ephe_completed_marking = 0;
         while (domain_state->ephe_info->todo != (value) NULL &&
                saved_ephe_cycle > domain_state->ephe_info->cycle &&
-               stop_status == Keep_going) {
-          intnat budget = get_major_slice_work();
-          if (budget <= 0) {
-            stop_status = Out_of_budget;
-            break;
-          }
+               (budget = get_major_slice_work(mode)) > 0) {
           intnat left = ephe_mark(budget, saved_ephe_cycle, EPHE_MARK_DEFAULT);
           intnat work_done = budget - left;
           commit_major_slice_work (work_done);
@@ -1593,11 +1575,6 @@ mark_again:
           // FIXME: Can we delete this?
           if (left > 0) {
             ephe_completed_marking = 1;
-            break;
-          }
-
-          if (mode == Slice_interruptible && caml_incoming_interrupts_queued()) {
-            stop_status = Interrupted;
             break;
           }
         }
@@ -1647,20 +1624,10 @@ mark_again:
         CAML_EV_BEGIN(EV_MAJOR_EPHE_SWEEP);
 
         while (domain_state->ephe_info->todo != 0 &&
-               stop_status == Keep_going) {
-          intnat budget = get_major_slice_work();
-          if (budget <= 0) {
-            stop_status = Out_of_budget;
-            break;
-          }
+               (budget = get_major_slice_work(mode)) > 0) {
           intnat left = ephe_sweep (domain_state, budget);
           intnat work_done = budget - left;
           commit_major_slice_work(work_done);
-
-          if (mode == Slice_interruptible && caml_incoming_interrupts_queued()) {
-            stop_status = Interrupted;
-            break;
-          }
         }
 
         CAML_EV_END(EV_MAJOR_EPHE_SWEEP);
@@ -1682,7 +1649,7 @@ mark_again:
       } else {
         caml_try_run_on_all_domains (&try_complete_gc_phase, 0, 0);
       }
-      if (stop_status == Keep_going) goto mark_again;
+      if (get_major_slice_work(mode) > 0) goto mark_again;
     }
   }
 
@@ -1692,7 +1659,7 @@ mark_again:
   caml_gc_log
     ("Major slice [%c%c%c]: %ld sweep, %ld mark (%lu blocks)",
               collection_slice_mode_char(mode),
-              stop_status != Interrupted ? '.' : '*',
+              !caml_incoming_interrupts_queued() ? '.' : '*',
               caml_gc_phase_char(caml_gc_phase),
               (long)sweep_work, (long)mark_work,
               (unsigned long)(domain_state->stat_blocks_marked
@@ -1714,8 +1681,6 @@ mark_again:
       }
     }
   }
-
-  return stop_status == Interrupted;
 }
 
 void caml_opportunistic_major_collection_slice(intnat howmuch)
@@ -1729,13 +1694,13 @@ void caml_major_collection_slice(intnat howmuch)
 
   /* if this is an auto-triggered GC slice, make it interruptible */
   if (howmuch == AUTO_TRIGGERED_MAJOR_SLICE) {
-    int was_interrupted = major_collection_slice(
+    major_collection_slice(
         AUTO_TRIGGERED_MAJOR_SLICE,
         0,
         0,
         Slice_interruptible
         );
-    if (was_interrupted) {
+    if (caml_incoming_interrupts_queued()) {
       caml_gc_log("Major slice interrupted, rescheduling major slice");
       caml_request_major_slice(0);
     }
