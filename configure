@@ -13834,20 +13834,11 @@ case $host in #(
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for a workable solution for ln -sf" >&5
 printf %s "checking for a workable solution for ln -sf... " >&6; }
-  ln -sf configure conftestLink
-  if test -z "$(cmd /c dir conftestLink 2>/dev/null | grep -F SYMLINK)"
+  if MSYS=winsymlinks:nativestrict CYGWIN=winsymlinks:nativestrict ln -sf configure conftestLink 2>/dev/null
 then :
-  rm -f conftestLink
-    CYGWIN=winsymlinks:native ln -sf configure conftestLink
-    if test -z "$(cmd /c dir conftestLink 2>/dev/null | grep -F SYMLINK)"
-then :
-  ln='cp -pf'
-else $as_nop
-  ln='CYGWIN=winsymlinks:native ln -sf'
-
-fi
-else $as_nop
   ln='ln -sf'
+else $as_nop
+  ln='cp -pf'
 
 fi
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ln" >&5
