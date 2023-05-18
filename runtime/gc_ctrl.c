@@ -296,12 +296,11 @@ CAMLprim value caml_gc_major_slice (value v)
 CAMLprim value caml_gc_compaction(value v)
 {
   Caml_check_caml_state();
-  value exn = Val_unit;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_COMPACT);
   CAMLassert (v == Val_unit);
-  caml_raise_if_exception(gc_major_exn(1));
+  value exn = gc_major_exn(1);
   CAML_EV_END(EV_EXPLICIT_GC_COMPACT);
-  return exn;
+  return caml_raise_if_exception(exn);
 }
 
 CAMLprim value caml_gc_stat(value v)
