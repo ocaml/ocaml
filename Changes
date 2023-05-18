@@ -158,7 +158,7 @@ OCaml 5.1.0
   (David Allsopp, review by Xavier Leroy, Guillaume Munch-Maccagnoni,
    Stefan Muenzel and Gabriel Scherer)
 
-- #11827: Restore prefetching for GC marking
+- #11827, #12249: Restore prefetching for GC marking
   (Fabrice Buoro and Stephen Dolan, review by Gabriel Scherer and Sadiq Jaffer)
 
 - #11935: Load frametables of dynlink'd modules in batch
