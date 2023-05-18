@@ -822,9 +822,9 @@ void caml_verify_heap_from_stw(caml_domain_state *domain) {
 
 /* Compaction start */
 
-/* Update a single value `v`, found at `p`, to follow forwarding pointers
+/* Given a single value `v`, found at `p`, check if it points in to an
+ * evacuated pool and if so update it using the forwarding pointer
  * created by the compactor. */
-
 static inline void compact_update_value(void* ignored,
                                         value v,
                                         volatile value* p)
