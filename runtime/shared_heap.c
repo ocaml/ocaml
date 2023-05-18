@@ -823,8 +823,8 @@ void caml_verify_heap_from_stw(caml_domain_state *domain) {
 /* Compaction start */
 
 /* Given a single value `v`, found at `p`, check if it points in to an
- * evacuated pool and if so update it using the forwarding pointer
- * created by the compactor. */
+   evacuated pool and if so update it using the forwarding pointer
+   created by the compactor. */
 static inline void compact_update_value(void* ignored,
                                         value v,
                                         volatile value* p)
@@ -861,16 +861,16 @@ static inline void compact_update_value(void* ignored,
 }
 
 /* Given a value found at `p` check if it points in to an
- * evacuated pool and if so update it using the forwarding pointer
- * created by the compactor. */
+   evacuated pool and if so update it using the forwarding pointer
+   created by the compactor. */
 static inline void compact_update_value_at(volatile value* p)
 {
   compact_update_value(NULL, *p, p);
 }
 
 /* For each pointer in the block pointed to by `p` check if it
- * points in to an evacuated pool and if so update it using the
- * forwarding pointer created by the compactor. */
+   points in to an evacuated pool and if so update it using the
+   forwarding pointer created by the compactor. */
 static void compact_update_block(value* p)
 {
   header_t hd = Hd_hp(p);
@@ -1057,9 +1057,10 @@ void caml_compact_heap(caml_domain_state* domain_state, void* data,
       cur_blocks += POOL_BLOCKS(cur_pool);
       cur_pool = cur_pool->next;
     }
-
-    /* Now we evacuate marked blocks from the evacuating pools
-     * into the avail pools. */
+    /* `cur_pool` now points to the first pool we are evacuating */
+    
+    /* Evacuate marked blocks from the evacuating pools into the
+       avail pools. */
     while (cur_pool) {
       value* p = POOL_FIRST_BLOCK(cur_pool, sz_class);
       value* end = POOL_END(cur_pool);
