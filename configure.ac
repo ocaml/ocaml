@@ -1484,10 +1484,10 @@ AS_CASE([$host],
   [*-*-windows],
     [has_monotonic_clock=true],
   [*-apple-darwin*], [
-    AC_CHECK_FUNCS([mach_timebase_info mach_absolute_time],
+    AC_CHECK_FUNCS([clock_gettime_nsec_np],
       [
         has_monotonic_clock=true
-        AC_DEFINE([HAS_MACH_ABSOLUTE_TIME])
+        AC_DEFINE([HAS_CLOCK_GETTIME_NSEC_NP])
       ],
       [has_monotonic_clock=false])],
   [AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
