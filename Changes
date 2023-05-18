@@ -191,6 +191,10 @@ OCaml 5.1.0
   performance regression. (Nick Barnes, review by François Bobot,
   Alain Frisch and Damien Doligez).
 
+- #12231: Support MinGW-w64 11.0 winpthreads library, where the macro
+  to set up to get flexdll working changed
+  (David Allsopp and Samuel Hym, light review by Xavier Leroy)
+
 ### Type system:
 
 - #6941, #11187: prohibit using classes through recursive modules
