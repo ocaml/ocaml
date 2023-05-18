@@ -950,7 +950,7 @@ static void compact_update_ephe_list(volatile value *ephe_p)
 
 /* Compact the heap for the given domain. Run in parallel for all domains. */
 
-void caml_compact_heap(caml_domain_state* domain_state, void* data,
+void caml_compact_heap(caml_domain_state* domain_state,
                          int participating_count,
                          caml_domain_state** participants)
 {
@@ -1058,7 +1058,7 @@ void caml_compact_heap(caml_domain_state* domain_state, void* data,
       cur_pool = cur_pool->next;
     }
     /* `cur_pool` now points to the first pool we are evacuating */
-    
+
     /* Evacuate marked blocks from the evacuating pools into the
        avail pools. */
     while (cur_pool) {
