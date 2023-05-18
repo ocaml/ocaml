@@ -330,3 +330,7 @@ META
 /yacc/ocamlyacc
 /yacc/version.h
 /yacc/.gdb_history
+
+/asmcomp/loongarch64/CSE.ml
+/asmcomp/loongarch64/reload.ml
+/asmcomp/loongarch64/scheduling.ml
