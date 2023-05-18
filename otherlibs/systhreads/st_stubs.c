@@ -17,7 +17,12 @@
 
 #if defined(_WIN32) && !defined(NATIVE_CODE)
 /* Ensure that pthread.h marks symbols __declspec(dllimport) so that they can be
-   picked up from the runtime (which will have linked winpthreads statically) */
+   picked up from the runtime (which will have linked winpthreads statically).
+   mingw-w64 11.0.0 introduced WINPTHREADS_USE_DLLIMPORT to do this explicitly;
+   prior versions co-opted this on the internal DLL_EXPORT, but this is ignored
+   in 11.0 and later unless IN_WINPTHREAD is also defined, so we can safely
+   define both to support both versions. */
+#define WINPTHREADS_USE_DLLIMPORT
 #define DLL_EXPORT
 #endif
 
