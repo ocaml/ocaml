@@ -851,7 +851,7 @@ Caml_noinline static intnat do_some_marking(struct mark_stack* stk,
 
       if (Tag_hd(hd) == Cont_tag) {
         caml_darken_cont(block);
-        budget -= Wosize_hd(block);
+        budget -= Wosize_hd(hd);
         continue;
       }
 
