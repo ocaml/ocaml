@@ -611,7 +611,7 @@ static void update_major_slice_work(intnat howmuch) {
               " %"ARCH_INTNAT_PRINTF_FORMAT "d alloc_work, "
               " %"ARCH_INTNAT_PRINTF_FORMAT "d dependent_work, "
               " %"ARCH_INTNAT_PRINTF_FORMAT "d extra_work,  "
-              " %"ARCH_INTNAT_PRINTF_FORMAT "u work counter%s,  "
+              " %"ARCH_INTNAT_PRINTF_FORMAT "u work counter %s,  "
               " %"ARCH_INTNAT_PRINTF_FORMAT "u alloc counter,  "
               " %"ARCH_INTNAT_PRINTF_FORMAT "u slice target,  "
               " %"ARCH_INTNAT_PRINTF_FORMAT "d slice budget"
@@ -620,7 +620,8 @@ static void update_major_slice_work(intnat howmuch) {
               (uintnat)heap_words, dom_st->allocated_words,
               alloc_work, dependent_work, extra_work,
               atomic_load (&work_counter),
-              atomic_load (&work_counter) > atomic_load (&alloc_counter) ? "[ahead]" : "[behind]",
+              atomic_load (&work_counter) > atomic_load (&alloc_counter)
+                ? "[ahead]" : "[behind]",
               atomic_load (&alloc_counter),
               dom_st->slice_target, dom_st->slice_budget
               );

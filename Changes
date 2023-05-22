@@ -80,6 +80,11 @@ OCaml 5.1.0
 
 ### Runtime system:
 
+- #11589, #11903: Modify the GC pacing code to make sure the GC keeps
+   up with allocations in the presence of idle domains.
+   (Damien Doligez and Stephen Dolan, report by Florian Angeletti,
+   review by KC Sivaramakrishnan and Sadiq Jaffer)
+
 * #11865, #11868, #11876: Clarify that the operations of a custom
   block must never access the OCaml runtime. The previous
   documentation only mentioned the main illicit usages. In particular,
