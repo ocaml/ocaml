@@ -48,7 +48,6 @@ Working version
 
 ### Bug fixes:
 
-
 OCaml 5.1.0
 ---------------
 
@@ -838,6 +837,10 @@ OCaml 5.1.0
 
 - #12178: Fix runtime events consumer poll function returning an invalid value
   instead of an OCaml integer value. (Lucas Pluvinage)
+
+- #12252: Fix shared library build error on RISC-V.
+  (Edwin Török, review by Nicolás Ojeda Bär and Xavier Leroy)
+
 
 OCaml 5.0.0 (15 December 2022)
 ------------------------------

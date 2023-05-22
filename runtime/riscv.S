@@ -282,7 +282,7 @@ FUNCTION(caml_call_realloc_stack)
         addi    sp, sp, 16
         addi    sp, sp, 16 /* pop argument */
         la      a0, caml_exn_Stack_overflow
-        j       caml_raise_exn
+        j       L(caml_raise_exn)
 END_FUNCTION(caml_call_realloc_stack)
 
 FUNCTION(caml_call_gc)
@@ -337,6 +337,7 @@ END_FUNCTION(caml_allocN)
 /* Function to call is in ADDITIONAL_ARG */
 
 FUNCTION(caml_c_call)
+L(caml_c_call):
         CFI_OFFSET(ra, -8)
         addi    sp, sp, -16
         sd      ra, 8(sp)
@@ -561,6 +562,7 @@ L(trap_handler):
 
 /* Raise an exception from OCaml */
 FUNCTION(caml_raise_exn)
+L(caml_raise_exn):
     /* Test if backtrace is active */
         ld      TMP, Caml_state(backtrace_active)
         bnez    TMP, 2f
@@ -608,7 +610,7 @@ FUNCTION(caml_raise_exception)
     /* Restore frame and link on return to OCaml */
         ld      ra, 8(sp)
         addi    sp, sp, 16
-        j       caml_raise_exn
+        j       L(caml_raise_exn)
 END_FUNCTION(caml_raise_exception)
 
 /* Callback from C to OCaml */
@@ -710,7 +712,7 @@ L(do_perform):
         SWITCH_OCAML_STACKS t3, t4
     /*  No parent stack. Raise Effect.Unhandled. */
         la      ADDITIONAL_ARG, caml_raise_unhandled_effect
-        j       caml_c_call
+        j       L(caml_c_call)
 END_FUNCTION(caml_perform)
 
 FUNCTION(caml_reperform)
@@ -744,7 +746,7 @@ FUNCTION(caml_resume)
         mv      a0, a2
         jr      a3
 2:      la      ADDITIONAL_ARG, caml_raise_continuation_already_resumed
-        j       caml_c_call
+        j       L(caml_c_call)
 END_FUNCTION(caml_resume)
 
 /* Run a function on a new stack, then either
@@ -823,7 +825,7 @@ FUNCTION(caml_ml_array_bound_error)
     /* Load address of [caml_array_bound_error_asm] in ADDITIONAL_ARG */
         la      ADDITIONAL_ARG, caml_array_bound_error_asm
     /* Call that function */
-        j       caml_c_call
+        j       L(caml_c_call)
 END_FUNCTION(caml_ml_array_bound_error)
 
         .globl  caml_system__code_end
