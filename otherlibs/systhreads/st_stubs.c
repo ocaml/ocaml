@@ -83,6 +83,7 @@ struct caml_thread_struct {
   value * gc_regs;           /* saved value of Caml_state->gc_regs */
   value * gc_regs_buckets;   /* saved value of Caml_state->gc_regs_buckets */
   void * exn_handler;        /* saved value of Caml_state->exn_handler */
+  struct memprof_thread *memprof;
 
 #ifndef NATIVE_CODE
   intnat trap_sp_off;      /* saved value of Caml_state->trap_sp_off */
@@ -199,6 +200,7 @@ static void save_runtime_state(void)
   this_thread->trap_barrier_off = Caml_state->trap_barrier_off;
   this_thread->external_raise = Caml_state->external_raise;
 #endif
+  caml_memprof_leave_thread();
 }
 
 static void restore_runtime_state(caml_thread_t th)
@@ -219,6 +221,7 @@ static void restore_runtime_state(caml_thread_t th)
   Caml_state->trap_barrier_off = th->trap_barrier_off;
   Caml_state->external_raise = th->external_raise;
 #endif
+  caml_memprof_enter_thread(th->memprof);
 }
 
 CAMLprim value caml_thread_cleanup(value unit);
@@ -291,6 +294,7 @@ static caml_thread_t caml_thread_new_info(void)
   th->external_raise = NULL;
 #endif
 
+  th->memprof = caml_memprof_new_thread(domain_state);
   return th;
 }
 
@@ -355,7 +359,9 @@ static void caml_thread_remove_and_free(caml_thread_t th)
 }
 
 /* Reinitialize the thread machinery after a fork() (PR#4577) */
-/* TODO(engil): more work on the multicore fork machinery. */
+/* TODO(engil): more work on the multicore fork machinery.
+ * TODO(nick): in particular this only discards thread information for
+ * the current domain, not for all domains. */
 
 static void caml_thread_reinitialize(void)
 {
@@ -364,6 +370,7 @@ static void caml_thread_reinitialize(void)
   th = Active_thread->next;
   while (th != Active_thread) {
     next = th->next;
+    caml_memprof_delete_thread(th->memprof);
     caml_thread_free_info(th);
     th = next;
   }
@@ -428,6 +435,7 @@ static void caml_thread_domain_initialize_hook(void)
   new_thread->next = new_thread;
   new_thread->prev = new_thread;
   new_thread->backtrace_last_exn = Val_unit;
+  new_thread->memprof = caml_memprof_main_thread(Caml_state);
 
   st_tls_set(caml_thread_key, new_thread);
 
@@ -479,7 +487,6 @@ CAMLprim value caml_thread_initialize(value unit)
   caml_domain_external_interrupt_hook = caml_thread_interrupt_hook;
   caml_domain_initialize_hook = caml_thread_domain_initialize_hook;
   caml_domain_stop_hook = caml_thread_domain_stop_hook;
-
   caml_atfork_hook = caml_thread_reinitialize;
 
   return Val_unit;
@@ -508,6 +515,9 @@ static void caml_thread_stop(void)
   /* The main domain thread does not go through [caml_thread_stop]. There is
      always one more thread in the chain at this point in time. */
   CAMLassert(Active_thread->next != Active_thread);
+
+  /* Tell memprof that this thread is terminating */
+  caml_memprof_delete_thread(Active_thread->memprof);
 
   caml_threadstatus_terminate(Terminated(Active_thread->descr));
 
