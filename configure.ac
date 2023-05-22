@@ -253,6 +253,16 @@ AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 
+# Ensure that AC_CONFIG_LINKS will either create symlinks which are compatible
+# with native Windows (i.e. NTFS symlinks, not WSL or Cygwin-emulated ones) or
+# use its fallback mechanisms. Native Windows versions of ocamlc/ocamlopt cannot
+# interpret either WSL or Cygwin-emulated symlinks.
+AS_CASE([$host],
+  [*-pc-windows|*-w64-mingw32*],
+    [AC_CONFIG_COMMANDS([native-symlinks], [],
+      [export CYGWIN="\$CYGWIN\${CYGWIN:+ }winsymlinks:nativestrict"
+      export MSYS="\$MSYS\${MSYS:+ }winsymlinks:nativestrict"])])
+
 # Systems that are known not to work, even in bytecode only.
 
 AS_CASE([$host],
