@@ -29,7 +29,7 @@
  (action
    (with-stdout-to %{targets}
      (bash
-       "`grep '^CPP=' %{conf} | cut -d'=' -f2` -I ../runtime/caml %{c} %{tbl}"
+       "`grep '^CPP=' %{conf} | cut -d'=' -f2` -I ../runtime/caml %{c}"
        ))))
 
 (rule
@@ -41,5 +41,5 @@
  (action
    (with-stdout-to %{targets}
      (bash
-       "`grep '^CPP=' %{conf} | cut -d'=' -f2` -I ../runtime/caml %{c} %{tbl}"
+       "`grep '^CPP=' %{conf} | cut -d'=' -f2` -I ../runtime/caml %{c}"
        ))))
