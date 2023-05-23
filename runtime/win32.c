@@ -814,6 +814,8 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
       (old_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0 &&
       (new_attribs != INVALID_FILE_ATTRIBUTES) &&
       (new_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+    /* Try to delete: RemoveDirectoryW fails on non-empty dirs as intended.
+       Then try again. */
     RemoveDirectoryW(newpath);
     if (MoveFileEx(oldpath, newpath,
                    MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
