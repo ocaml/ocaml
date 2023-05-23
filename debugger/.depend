@@ -540,12 +540,14 @@ show_source.cmi : \
 source.cmo : \
     primitives.cmi \
     ../utils/misc.cmi \
+    ../parsing/location.cmi \
     ../utils/load_path.cmi \
     debugger_config.cmi \
     source.cmi
 source.cmx : \
     primitives.cmx \
     ../utils/misc.cmx \
+    ../parsing/location.cmx \
     ../utils/load_path.cmx \
     debugger_config.cmx \
     source.cmi
@@ -554,6 +556,7 @@ symbols.cmo : \
     ../bytecomp/symtable.cmi \
     program_loading.cmi \
     ../utils/misc.cmi \
+    ../parsing/location.cmi \
     ../bytecomp/instruct.cmi \
     events.cmi \
     debugger_config.cmi \
@@ -565,6 +568,7 @@ symbols.cmx : \
     ../bytecomp/symtable.cmx \
     program_loading.cmx \
     ../utils/misc.cmx \
+    ../parsing/location.cmx \
     ../bytecomp/instruct.cmx \
     events.cmx \
     debugger_config.cmx \

@@ -19,6 +19,9 @@ type value = string
 
 type exporter = value -> string * string
 
+(* The signature of functions that variables support. *)
+type var_fun = (string -> string)
+
 type t
 
 val compare : t -> t -> int
@@ -29,13 +32,16 @@ exception Variable_already_registered of string
 
 exception No_such_variable of string
 
-val make : string * string -> t
+val make : ?variable_function:var_fun -> string * string -> t
 
-val make_with_exporter : exporter -> string * string -> t
+val make_with_exporter :
+  ?variable_function:var_fun -> exporter -> string * string -> t
 
 val name_of_variable : t -> string
 
 val description_of_variable : t -> string
+
+val function_of_variable : t -> var_fun option
 
 val register_variable : t -> unit
 

@@ -146,3 +146,29 @@ let _ = List.iter Variables.register_variable
     test_fail;
     timeout;
   ]
+
+  (* Definition of builtin functions available for use *)
+
+(* The functions are listed in alphabetical order *)
+
+let bppm_decode_fun (arg: string) =
+  match Build_path_prefix_map.decode_prefix arg with
+  | Ok path -> path
+  | Error err -> err
+
+let bppm_decode = Variables.make ~variable_function: bppm_decode_fun
+  ("bppm_decode",
+  "function to do BUILD_PATH_PREFIX_MAP decoding")
+
+let bppm_encode_fun (arg: string) =
+  Build_path_prefix_map.encode_prefix arg
+
+let bppm_encode = Variables.make ~variable_function: bppm_encode_fun
+  ("bppm_encode",
+  "function to do BUILD_PATH_PREFIX_MAP encoding")
+
+  let _ = List.iter Variables.register_variable
+  [
+    bppm_decode;
+    bppm_encode
+  ]

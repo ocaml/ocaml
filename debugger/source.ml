@@ -25,6 +25,14 @@ let source_extensions = [".ml"]
 
 let source_of_module pos mdle =
   let pos_fname = pos.Lexing.pos_fname in
+  let pos_fname =
+    match Location.rewrite_find_first_existing pos_fname with
+    | None -> pos_fname
+    | Some target -> target
+    | exception Not_found ->
+      Printf.printf "DEPLOY_PATH_PREFIX_MAP fails to find %s.\n%!" pos_fname;
+      raise Not_found
+  in
   if Sys.file_exists pos_fname then pos_fname else
   let is_submodule m m' =
     let len' = String.length m' in

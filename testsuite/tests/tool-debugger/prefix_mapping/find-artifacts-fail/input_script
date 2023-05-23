@@ -1,0 +1,6 @@
+show mapping
+break @ Foo 9
+run
+print x
+print y
+quit

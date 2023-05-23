@@ -386,3 +386,23 @@ let check_output kind_of_output output_variable reference_variable log
       let reason = Printf.sprintf "The command %s failed with status %d"
         commandline exitcode in
       (Result.fail_with_reason reason, env)
+
+let is_in_path program =
+  let path_sep = if Sys.win32 then ';' else ':' in
+  let path = Sys.getenv "PATH" in
+  let paths = String.split_on_char path_sep path in
+  let rec loop = function
+    | [] -> false
+    | hd :: tl ->
+      let full_path = hd ^ "/" ^ program in
+      if Sys.file_exists full_path then true else loop tl
+  in
+  loop paths
+
+let available_in_path action_name exec_name = Actions.make
+  ~name:action_name
+  ~description:("Pass if " ^ exec_name
+                ^ " is available in PATH, otherwise skip")
+  (pass_or_skip (is_in_path exec_name)
+      (exec_name ^ " is available")
+      (exec_name ^ " is not available"))

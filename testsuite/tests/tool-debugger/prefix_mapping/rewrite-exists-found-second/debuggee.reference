@@ -1,0 +1,13 @@
+File printer.cmo loaded
+Loading program... done.
+Breakpoint: 1
+35   <|b|>for _i = 0 to x do
+x: int = 3
+DEPLOY_PATH_PREFIX_MAP="abc=/workspace_root:def=/workspace_root"
+{test1_dir, /workspace_root/pack1/lib1 -> #items=2
+  [0]=./def/pack1/lib1
+  [1]=./abc/pack1/lib1
+  }
+
+/workspace_root/pack1/lib1/mod1.ml -> Some ./abc/pack1/lib1/mod1.ml
+

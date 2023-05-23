@@ -79,6 +79,62 @@ file before giving control to the user. The default file is
 ".ocamldebug" in the current directory if it exists, otherwise
 ".ocamldebug" in the user's home directory.
 
+\subsection{ss:debugger-environ}{Environment Variables}
+
+The debugger supports a generalization of the "BUILD_PATH_PREFIX_MAP" 
+environment variable, as defined by the ``BUILD_PATH_PREFIX_MAP specification''
+(see
+\url{https://reproducible-builds.org/specs/build-path-prefix-map}).
+
+The generalization uses a different environment variable,
+"DEPLOY_PATH_PREFIX_MAP" that is the logical inverse of the
+"BUILD_PATH_PREFIX_MAP".
+
+The use of ``DEPLOY_PATH_PREFIX_MAP'' is optional, and not needed
+if the program being debugged was not mapped using
+``BUILD_PATH_PREFIX_MAP'' when it was built.
+
+If ``BUILD_PATH_PREFIX_MAP'' is being used, then
+when the product being debugged was built, ``BUILD_PATH_PREFIX_MAP''
+was set by the build tools so that build-time absolute paths
+where mapped to abstract reproducible paths.
+
+In that case, before ocamldebug is invoked, ``DEPLOY_PATH_PREFIX_MAP``
+must be set to the logical inverse of the
+first mapping. Typically that will be one by a build tool,
+but it may be done manually by a knowledgeable user.
+
+For the deployment mapping, we can have the same source mapping
+to multiple locations. The first one that exists is chosen.
+The mapping are applied from right to left.
+
+For example, with the mapping:
+"/A=/workspace_root:/B=/workspace_root:/C=/workspace_root",
+an abstract path "/workspace_root/afile" will map to the first
+of "/C/afile", "/B/afile", or "/A/afile" that exists.
+This kind of mapping allows for a file to be found first
+in the source directory, but if not there, in the build directory,
+and if not there, in the install directory (usually ~/.opam/switch).
+
+The user (or build tool) can either set the "DEPLOY_PATH_PREFIX_MAP"
+environment variable prior to invoking the debugger, or can use
+debugger commands to set or show it.
+
+To set it within the debugger, for example, use
+
+\begin{verbatim}
+    set mapping target1=src1:target2=src2
+\end{verbatim}
+
+To show the current value, use
+
+\begin{verbatim}
+    show mapping
+\end{verbatim}
+
+Of course, these commands can be used from the user's initialization
+file to set the mapping conveniently.
+
 \subsection{ss:debugger-exut}{Exiting the debugger}
 
 The command "quit" exits the debugger. You can also exit the debugger

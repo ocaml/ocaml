@@ -114,6 +114,38 @@ Note that you can also use the
 .B source file
 command to read commands from a file.
 
+.SH ENVIRONMENT VARIABLES
+
+The following environment variable is also consulted:
+.TP
+.B DEPLOY_PATH_PREFIX_MAP
+ocamldebug(1) uses a generalization of the BUILD_PATH_PREFIX_MAP
+specification. See
+.IR https://reproducible-builds.org/specs/build-path-prefix-map/.
+Whereas BUILD_PATH_PREFIX_MAP is used to map from build-time
+absolute paths to abstract paths, the DEPLOY_PATH_PREFIX_MAP
+environment variable is used to map from abstract paths to
+runtime paths. It is the logical inverse of
+BUILD_PATH_PREFIX_MAP.
+
+The format of these environment variables is a list of pairs, separated by ':'.
+Each pair is of the form "target=source".
+The source and target paths all are encoded in a way that
+avoids occurrences of ':' and '='. In particular,
+':' -> "%.", '=' -> "%+", '%' -> "%#".
+
+For the deployment mapping, we can have the same source mapping
+to multiple locations. The first one that exists is chosen.
+The mapping are applied from right to left.
+
+For example, with the mapping:
+"/A=/workspace_root:/B=/workspace_root:/C=/workspace_root",
+an abstract path "/workspace_root/afile" will map to the first
+of "/C/afile", "/B/afile", or "/A/afile" that exists.
+This kind of mapping allows for a file to be found first
+in the source directory, but if not there, in the build directory,
+and if not there, in the install directory (usually ~/.opam/switch).
+
 .SH SEE ALSO
 .BR ocamlc (1)
 .br

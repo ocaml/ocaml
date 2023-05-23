@@ -1,0 +1,8 @@
+DEPLOY_PATH_PREFIX_MAP is not set.
+Loading program... done.
+No source file for Foo.
+Foo
+Bar(hi)
+Program exit.
+Unbound identifier x
+Unbound identifier y

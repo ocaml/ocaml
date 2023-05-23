@@ -1,0 +1,12 @@
+File printer.cmo loaded
+Loading program... done.
+Breakpoint: 1
+30   <|b|>for _i = 0 to x do
+x: int = 3
+DEPLOY_PATH_PREFIX_MAP="abc=/workspace_root:def=/workspace_root"
+DEPLOY_PATH_PREFIX_MAP fails to map "/workspace_root/pack1/lib1/".
+{t1, /workspace_root/pack1/lib1/ -> #items=0
+  }
+
+Load path length = 14.
+
