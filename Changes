@@ -36,6 +36,10 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- #12247: configure: --disable-ocamldebug can now be used instead
+  of --disable-debugger (which remains available for compatibility)
+  (Gabriel Scherer, review by Damien Doligez and Sébastien Hinderer)
+
 ### Internal/compiler-libs changes:
 
 - #12216, #12248: Prevent reordering of atomic loads during instruction
