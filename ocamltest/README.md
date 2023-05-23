@@ -164,7 +164,7 @@ modules `m1.ml` and `m2.ml`, the test block will look like this:
 
 ```ocaml
 (* TEST
-  modules = "m1.ml m2.ml"
+  modules = "m1.ml m2.ml";
 *)
 ```
 
@@ -173,7 +173,7 @@ under the top-level, then its test block will look like this:
 
 ```ocaml
 (* TEST
-  * toplevel
+  toplevel;
 *)
 ```
 
@@ -184,9 +184,9 @@ expressed as follows:
 
 ```ocaml
 (* TEST
-  * toplevel
-  * toplevel
-    include principal
+  toplevel;
+  include principal;
+  toplevel;
 *)
 ```
 
