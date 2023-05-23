@@ -20,7 +20,7 @@
 
 (** {b Unsynchronized accesses} *)
 
-[@@@alert unsynchronized_accesses
+[@@@alert unsynchronized_access
     "Unsynchronized accesses to stacks are a programming error."
 ]
 
