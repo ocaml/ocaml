@@ -82,7 +82,7 @@ CAMLexport value caml_process_pending_signals_exn(void)
     for (j = 0; j < BITS_PER_WORD; j++) {
       mask = (uintnat)1 << j;
       if ((curr & mask) == 0) goto next_bit;
-      signo = i * 8 + j + 1;
+      signo = i * BITS_PER_WORD + j + 1;
 #ifdef POSIX_SIGNALS
       if (sigismember(&set, signo)) goto next_bit;
 #endif
