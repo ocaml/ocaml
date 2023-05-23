@@ -99,7 +99,8 @@ module TyVarEnv : sig
        a new e.g. type signature. Optionally pass some univars that
        are in scope. *)
 
-  val lookup_local : row_context:type_expr ref list -> string -> type_expr
+  val lookup_local :
+    row_context:type_expr option ref list -> string -> type_expr
     (* look up a local type variable; throws Not_found if it isn't in scope *)
 
   val remember_used : string -> type_expr -> Location.t -> unit
@@ -141,7 +142,7 @@ end = struct
   *)
   type pending_univar = {
     univar: type_expr  (** the univar itself *);
-    mutable associated: type_expr ref list
+    mutable associated: type_expr option ref list
      (** associated references to row variables that we want to generalize
        if possible *)
   }
@@ -233,7 +234,8 @@ end = struct
        row variable.
     *)
     let promote_associated acc (_,v) =
-      promote_generics_to_univars acc @@ List.map (!) v.associated
+      let enclosed_rows = List.filter_map (!) v.associated in
+      promote_generics_to_univars acc enclosed_rows
     in
     List.fold_left promote_associated univars vars
 
@@ -621,9 +623,9 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
         in
         { rf_desc; rf_loc; rf_attributes; }
       in
-      let more_ref = ref (newvar ()) in
+      let more_slot = ref None in
       let row_context =
-        if aliased then row_context else more_ref :: row_context
+        if aliased then row_context else more_slot :: row_context
       in
       let tfields = List.map (add_field row_context) fields in
       let fields = List.rev (Hashtbl.fold (fun _ p l -> p :: l) hfields []) in
@@ -642,7 +644,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
         if Btype.static_row (make_row (newvar ())) then newty Tnil else
            TyVarEnv.new_var policy
       in
-      more_ref := more;
+      more_slot := Some more;
       let ty = newty (Tvariant (make_row more)) in
       ctyp (Ttyp_variant (tfields, closed, present)) ty
   | Ptyp_poly(vars, st) ->
