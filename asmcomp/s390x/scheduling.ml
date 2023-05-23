@@ -18,47 +18,8 @@
 
 (* Instruction scheduling for the Z processor *)
 
-open Arch
-open Mach
+open! Schedgen [@@warning "-66"]
 
-(* The z10 processor is in-order, dual-issue.  It could benefit from some
-   basic-block scheduling, although precise latency information
-   is not available.
-   The z196 and later are out-of-order processors.  Basic-block
-   scheduling probably makes no difference. *)
+(* Scheduling is turned off because it breaks atomics. *)
 
-class scheduler = object
-
-inherit Schedgen.scheduler_generic
-
-(* Latencies (in cycles). Wild guesses.  We multiply all latencies by 2
-   to favor dual-issue. *)
-
-method oper_latency = function
-    Ireload -> 4
-  | Iload _ -> 4
-  | Iconst_float _ -> 4 (* turned into a load *)
-  | Iintop(Imul) -> 10
-  | Iintop_imm(Imul, _) -> 10
-  | Iaddf | Isubf | Imulf -> 8
-  | Idivf -> 40
-  | Ispecific(Imultaddf | Imultsubf) -> 8
-  | _ -> 2
-
-method! reload_retaddr_latency = 4
-
-(* Issue cycles.  Rough approximations. *)
-
-method oper_issue_cycles = function
-  | Ialloc _ | Ipoll _ -> 4
-  | Iintop(Imulh) -> 15
-  | Iintop(Idiv|Imod) -> 20
-  | Iintop(Icomp _) -> 4
-  | Iintop_imm(Icomp _, _) -> 4
-  | _ -> 1
-
-method! reload_retaddr_issue_cycles = 1
-
-end
-
-let fundecl f = (new scheduler)#schedule_fundecl f
+let fundecl f = f

@@ -243,6 +243,12 @@ OCaml 5.1.0
   (Nicolás Ojeda Bär, Gabriel Scherer, Alain Frisch, review by Gabriel Scherer,
   Alain Frisch and Nathanaëlle Courant)
 
+- #11712: s390x / IBM Z multicore support: OCaml & C stack separation;
+  dynamic stack size checks; fiber and effects support.
+  (Aleksei Nikiforov, with help from Vincent Laviron,
+   additional suggestions by Xavier Leroy and Luc Maranget,
+   review by Xavier Leroy and KC Sivaramakrishnan)
+
 - #11904: Remove arm, i386 native-code backends.
   (Nicolás Ojeda Bär, review by Stephen Dolan, Anil Madhavapeddy, and Xavier
   Leroy)
