@@ -48,7 +48,8 @@ Working version
 
 ### Bug fixes:
 
-- #12255: Handle large signal numbers correctly (Nick Barnes, review by ??).
+- #12255, #12256: Handle large signal numbers correctly (Nick Barnes,
+   review by David Allsopp).
 
 OCaml 5.1.0
 ---------------
