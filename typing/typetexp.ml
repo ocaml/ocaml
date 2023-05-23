@@ -228,10 +228,10 @@ end = struct
       end;
       v)
     in
-    (* Since we are checking univars in reverse order of bindings,
-       even if a row variable is associated with multiple univars, we will
-       promote it only when checking the nearest univar associated to this
-       row variable.
+    (* Since we are promoting variables to univars in
+       {!promote_generics_to_univars}, even if a row variable is associated with
+       multiple univars we will promote it once, when checking the nearest
+       univar associated to this row variable.
     *)
     let promote_associated acc (_,v) =
       let enclosed_rows = List.filter_map (!) v.associated in
