@@ -1988,12 +1988,12 @@ Error: This pattern matches values of type [? `Y ]
        it may not allow the tag(s) `Y
 |}]
 
-let fail_example_corrected: 'a . 'a -> [< `X of 'a | `Y > `X ] -> 'a = fun x y ->
+let fail_example_corrected: 'a . 'a -> [< `X of 'a | `Y ] -> 'a = fun x y ->
   match y with
   | `Y -> x
   | `X x -> x
 [%%expect {|
-val fail_example_corrected : 'a -> [< `X of 'a | `Y > `X ] -> 'a = <fun>
+val fail_example_corrected : 'a -> [< `X of 'a | `Y ] -> 'a = <fun>
 |}]
 
 
