@@ -1974,7 +1974,6 @@ val nested :
   'a = <fun>
 |}]
 
-
 let fail: 'a . 'a -> [> `X of 'a ] -> 'a = fun x y ->
   match y with
   | `Y -> x
@@ -1987,4 +1986,54 @@ Error: This pattern matches values of type [? `Y ]
        but a pattern was expected which matches values of type [> `X of 'a ]
        The second variant type is bound to the universal type variable 'b,
        it may not allow the tag(s) `Y
+|}]
+
+let fail_example_corrected: 'a . 'a -> [< `X of 'a | `Y > `X ] -> 'a = fun x y ->
+  match y with
+  | `Y -> x
+  | `X x -> x
+[%%expect {|
+val fail_example_corrected : 'a -> [< `X of 'a | `Y > `X ] -> 'a = <fun>
+|}]
+
+
+
+(** Object comparison *)
+
+let discrepancy: 'a. <x:'a; ..> -> 'a = fun o -> o#y (); o#x
+[%%expect {|
+val discrepancy : < x : 'a; y : unit -> 'b; .. > -> 'a = <fun>
+|}]
+
+
+let explicitly_quantified_row: 'a 'r. (<x:'a; ..> as 'r) -> 'a = fun o -> o#y (); o#x
+[%%expect {|
+Line 1, characters 65-85:
+1 | let explicitly_quantified_row: 'a 'r. (<x:'a; ..> as 'r) -> 'a = fun o -> o#y (); o#x
+                                                                     ^^^^^^^^^^^^^^^^^^^^
+Error: This definition has type 'b. < x : 'b; y : unit -> 'c; .. > -> 'b
+       which is less general than 'a 'd. (< x : 'a; .. > as 'd) -> 'a
+|}]
+
+
+(** Nested object row variables *)
+class type ['a] c = object
+  method m: 'b. <n:'irr. ('irr -> unit) * (<x: 'a; y: 'b; .. > -> 'a) >
+end
+[%%expect {|
+Lines 1-3, characters 0-3:
+1 | class type ['a] c = object
+2 |   method m: 'b. <n:'irr. ('irr -> unit) * (<x: 'a; y: 'b; .. > -> 'a) >
+3 | end
+Error: Some type variables are unbound in this type:
+         class type ['a] c =
+           object
+             method m :
+               < n : 'irr. ('irr -> unit) * (< x : 'a; y : 'b; .. > -> 'a) >
+           end
+       The method m has type
+         'b.
+           < n : 'irr.
+                   ('irr -> unit) * ((< x : 'a; y : 'b; .. > as 'c) -> 'a) >
+       where 'c is unbound
 |}]
