@@ -38,8 +38,9 @@
 #endif
 
 #ifdef TARGET_s390x
+#define Wosize_gc_regs (2 + 9 /* int regs */ + 16 /* float regs */)
 #define Saved_return_address(sp) *((intnat *)((sp) - SIZEOF_PTR))
-#define Trap_frame_size 16
+#define Pop_frame_pointer(sp)
 #endif
 
 #ifdef TARGET_amd64
