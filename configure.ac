@@ -918,7 +918,6 @@ AS_CASE([$cc_basename,$host],
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
   [*,aarch64-*-darwin*|arm64-*-darwin*],
     AC_DEFINE([HAS_ARCH_CODE32], [1]),
-  [*,*-*-haiku*], [mathlib=""],
   [*,*-*-cygwin*],
     [common_cppflags="$common_cppflags -U_WIN32"
     AS_IF([$supports_shared_libraries],
