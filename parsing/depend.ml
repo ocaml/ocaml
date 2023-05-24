@@ -282,9 +282,16 @@ and add_case bv {pc_lhs; pc_guard; pc_rhs} =
 and add_bindings recf bv pel =
   let bv' = List.fold_left (fun bv x -> add_pattern bv x.pvb_pat) bv pel in
   let bv = if recf = Recursive then bv' else bv in
+  let add_constraint = function
+    | Pvc_constraint {locally_abstract_univars=_; typ} ->
+        add_type bv typ
+    | Pvc_coercion { ground; coercion } ->
+        Option.iter (add_type bv) ground;
+        add_type bv coercion
+  in
   let add_one_binding { pvb_pat= _ ; pvb_loc= _ ; pvb_constraint; pvb_expr } =
     add_expr bv pvb_expr;
-    Option.iter (fun ct -> add_type bv ct.typ) pvb_constraint
+    Option.iter add_constraint pvb_constraint
   in
   List.iter add_one_binding pel;
   bv'

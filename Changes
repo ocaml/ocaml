@@ -688,7 +688,8 @@ OCaml 5.1.0
   cu_required_globals field of compilation unit descriptors.
   (Sébastien Hinderer, review by Vincent Laviron)
 
-- #12119: mirror type constraints on value binding in the parsetree:
+- #12119, #12188, #12191: mirror type constraints on value binding in the
+  parsetree:
   the constraint `typ` in `let pat : typ = exp` is now directly stored
   in the value binding node in the parsetree.
   (Florian Angeletti, review by  Richard Eisenberg)

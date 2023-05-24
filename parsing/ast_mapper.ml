@@ -694,16 +694,22 @@ let default_mapper =
 
     value_binding =
       (fun this {pvb_pat; pvb_expr; pvb_constraint; pvb_attributes; pvb_loc} ->
-         let map_ct (ct:Parsetree.poly_constraint) =
-           { Parsetree.typ = this.typ this ct.typ;
-             locally_abstract_univars=
-               List.map (map_loc this) ct.locally_abstract_univars;
-           }
+         let map_ct (ct:Parsetree.value_constraint) = match ct with
+           | Pvc_constraint {locally_abstract_univars=vars; typ} ->
+               Pvc_constraint
+                 { locally_abstract_univars = List.map (map_loc this) vars;
+                   typ = this.typ this typ
+                 }
+           | Pvc_coercion { ground; coercion } ->
+               Pvc_coercion {
+                 ground = Option.map (this.typ this) ground;
+                 coercion = this.typ this coercion
+               }
          in
          Vb.mk
            (this.pat this pvb_pat)
            (this.expr this pvb_expr)
-           ?typ:(Option.map map_ct pvb_constraint)
+           ?value_constraint:(Option.map map_ct pvb_constraint)
            ~loc:(this.location this pvb_loc)
            ~attrs:(this.attributes this pvb_attributes)
       );
