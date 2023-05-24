@@ -23,6 +23,7 @@ ROOTDIR = .
 OCAMLDEP ?= $(BOOT_OCAMLDEP)
 OCAMLLEX ?= $(BOOT_OCAMLLEX)
 include Makefile.common
+include Makefile.best_binaries
 
 .PHONY: defaultentry
 defaultentry: $(DEFAULT_BUILD_TARGET)
@@ -156,7 +157,8 @@ $(foreach PROGRAM, $(OCAML_PROGRAMS),\
 
 OCAML_BYTECODE_PROGRAMS = expunge \
   $(TOOLS_BYT_PROGRAMS) \
-  $(addprefix tools/, cvt_emit make_opcodes ocamltex)
+  $(addprefix tools/, cvt_emit make_opcodes ocamltex) \
+  debugger/ocamldebug
 
 $(foreach PROGRAM, $(OCAML_BYTECODE_PROGRAMS),\
   $(eval $(call OCAML_BYTECODE_PROGRAM,$(PROGRAM))))
@@ -1076,7 +1078,7 @@ clean::
 # Dependencies
 
 subdirs = stdlib $(addprefix otherlibs/, $(ALL_OTHERLIBS)) \
-  debugger ocamldoc ocamltest
+  ocamldoc ocamltest
 
 .PHONY: alldepend
 alldepend: depend
@@ -1264,12 +1266,58 @@ clean::
 
 # The replay debugger
 
-.PHONY: ocamldebugger
-ocamldebugger: ocamlc ocamlyacc ocamllex otherlibraries
-	$(MAKE) -C debugger all
+ocamldebug_LIBRARIES = compilerlibs/ocamlcommon \
+  $(addprefix otherlibs/,unix/unix dynlink/dynlink)
 
-partialclean::
-	$(MAKE) -C debugger clean
+# The following dependencies are necessary at the moment, because the
+# root Makefile does not know yet how to build the other libraries
+# Once their build will happen in this root Makefile, too, it will become
+# possible to get rid of these dependencies
+
+otherlibs/unix/unix.cma: otherlibraries
+otherlibs/dynlink/dynlink.cma: otherlibraries
+
+debugger/%: VPATH += otherlibs/unix otherlibs/dynlink
+
+ocamldebug_COMPILER_MODULES = $(addprefix toplevel/, genprintval topprinters)
+
+# The modules listed in the following variable are packed into ocamldebug.cmo
+
+ocamldebug_DEBUGGER_MODULES = $(addprefix debugger/,\
+  int64ops primitives unix_tools debugger_config parameters debugger_lexer \
+  input_handling question debugcom exec source pos checkpoints events \
+  program_loading symbols breakpoints trap_barrier history printval \
+  show_source time_travel program_management frames eval \
+  show_information loadprinter debugger_parser command_line main)
+
+ocamldebug_DEBUGGER_OBJECTS = $(ocamldebug_DEBUGGER_MODULES:=.cmo)
+
+ocamldebug_MODULES = $(ocamldebug_COMPILER_MODULES) \
+  $(addprefix debugger/, ocamldebug ocamldebug_entry)
+
+debugger/%: OC_BYTECODE_LINKFLAGS = -linkall
+
+debugger/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
+
+.PHONY: ocamldebugger
+ocamldebugger: debugger/ocamldebug$(EXE)
+
+debugger/ocamldebug$(EXE): ocamlc ocamlyacc ocamllex
+
+$(ocamldebug_DEBUGGER_OBJECTS): OC_COMMON_COMPFLAGS += -for-pack ocamldebug
+debugger/ocamldebug.cmo: $(ocamldebug_DEBUGGER_OBJECTS)
+	$(V_OCAMLC)$(CAMLC) $(OC_COMMON_COMPFLAGS) -pack -o $@ $^
+
+debugger/ocamldebug_entry.cmo: debugger/ocamldebug.cmo
+
+clean::
+	rm -f debugger/ocamldebug debugger/ocamldebug.exe
+	rm -f debugger/debugger_lexer.ml
+	rm -f $(addprefix debugger/debugger_parser.,ml mli output)
+
+beforedepend:: debugger/debugger_lexer.ml
+
+beforedepend:: debugger/debugger_parser.ml debugger/debugger_parser.mli
 
 # Check that the native-code compiler is supported
 .PHONY: checknative
@@ -1561,13 +1609,23 @@ partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end file_formats \
            lambda middle_end/closure middle_end/flambda \
            middle_end/flambda/base_types \
-           driver toplevel toplevel/byte toplevel/native tools; do \
+           driver toplevel toplevel/byte toplevel/native tools debugger; do \
 	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.s $$d/*.asm \
 	    $$d/*.o $$d/*.obj $$d/*.so $$d/*.dll; \
 	done
 
+debugger/.depend: OC_OCAMLDEPDIRS = \
+  debugger otherlibs/unix otherlibs/dynlink utils parsing typing bytecomp \
+  toplevel driver file_formats lambda
+
+.INTERMEDIATE: debugger/.depend
+
+debugger/.depend:
+	rm -f $@
+	$(V_OCAMLDEP)$(OCAMLDEP_CMD) debugger/*.mli debugger/*.ml > $@
+
 .PHONY: depend
-depend: beforedepend
+depend: debugger/.depend beforedepend
 	$(V_GEN)(for d in utils parsing typing bytecomp asmcomp middle_end \
          lambda file_formats middle_end/closure middle_end/flambda \
          middle_end/flambda/base_types \
@@ -1576,11 +1634,11 @@ depend: beforedepend
 	   $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $$d $(INCLUDES) \
 	   $(OCAMLDEPFLAGS) $$d/*.mli $$d/*.ml \
 	   || exit; \
-         done) > .depend
+         done; \
+         cat $<) > .depend
 
 .PHONY: distclean
 distclean: clean
-	$(MAKE) -C debugger distclean
 	$(MAKE) -C manual distclean
 	$(MAKE) -C ocamldoc distclean
 	$(MAKE) -C ocamltest distclean
@@ -1710,7 +1768,7 @@ ifeq "$(WITH_OCAMLDOC)-$(STDLIB_MANPAGES)" "ocamldoc-true"
 	$(MAKE) -C api_docgen install
 endif
 	if test -n "$(WITH_DEBUGGER)"; then \
-	  $(MAKE) -C debugger install; \
+	  $(INSTALL_PROG) debugger/ocamldebug$(EXE) "$(INSTALL_BINDIR)"; \
 	fi
 ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 ifeq "$(TOOLCHAIN)" "msvc"
