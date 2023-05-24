@@ -854,8 +854,7 @@ bootstrapping_flexdll
 flexdir
 ocamlc_cppflags
 ocamlc_cflags
-nativecclibs
-bytecclibs
+cclibs
 oc_exe_ldflags
 oc_dll_ldflags
 oc_ldflags
@@ -3291,7 +3290,6 @@ OCAML_VERSION_SHORT=5.2
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
-
 
 
 
@@ -19675,14 +19673,11 @@ cclibs="$cclibs $mathlib"
 
 case $host in #(
   *-*-mingw32*) :
-    bytecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"
-    nativecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh" ;; #(
+    cclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh" ;; #(
   *-pc-windows) :
-    bytecclibs="advapi32.lib ws2_32.lib version.lib"
-    nativecclibs="advapi32.lib ws2_32.lib version.lib" ;; #(
+    cclibs="advapi32.lib ws2_32.lib version.lib" ;; #(
   *) :
-    bytecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"
-  nativecclibs="$cclibs $DLLIBS $PTHREAD_LIBS" ;;
+    cclibs="$cclibs $DLLIBS $PTHREAD_LIBS" ;;
 esac
 
 if test x"$libdir" = x'${exec_prefix}/lib'

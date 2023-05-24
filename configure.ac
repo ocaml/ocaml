@@ -138,8 +138,7 @@ AC_SUBST([oc_cppflags])
 AC_SUBST([oc_ldflags])
 AC_SUBST([oc_dll_ldflags])
 AC_SUBST([oc_exe_ldflags])
-AC_SUBST([bytecclibs])
-AC_SUBST([nativecclibs])
+AC_SUBST([cclibs])
 AC_SUBST([ocamlc_cflags])
 AC_SUBST([ocamlc_cppflags])
 AC_SUBST([flexdir])
@@ -2228,13 +2227,10 @@ cclibs="$cclibs $mathlib"
 
 AS_CASE([$host],
   [*-*-mingw32*],
-    [bytecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"
-    nativecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"],
+    [cclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"],
   [*-pc-windows],
-    [bytecclibs="advapi32.lib ws2_32.lib version.lib"
-    nativecclibs="advapi32.lib ws2_32.lib version.lib"],
-  [bytecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"
-  nativecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"])
+    [cclibs="advapi32.lib ws2_32.lib version.lib"],
+  [cclibs="$cclibs $DLLIBS $PTHREAD_LIBS"])
 
 AS_IF([test x"$libdir" = x'${exec_prefix}/lib'],
   [libdir="$libdir"/ocaml])
