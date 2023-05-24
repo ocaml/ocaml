@@ -747,16 +747,13 @@ let fundecl fundecl =
   | None -> ()
   | Some (overflow,ret) -> begin
       `{emit_label overflow}:\n`;
-      (* Pass the desired frame size on the stack, since all of the
-        argument-passing registers may be in use. *)
       let s = (Config.stack_threshold + max_frame_size / 8) in
-      `  lay  %r15, -16(%r15)\n`;
-      `  stg  %r14, 8(%r15)\n`;
-      `  lgfi %r1, {emit_int s}\n`;
-      `  stg %r1, 0(%r15)\n`;
+      `  lay  %r15, -8(%r15)\n`;
+      `  stg  %r14, 0(%r15)\n`;
+      `  lgfi %r12, {emit_int s}\n`;
       `  brasl %r14, {emit_symbol "caml_call_realloc_stack"}\n`;
-      `  lg   %r14, 8(%r15)\n`;
-      `  la  %r15, 16(%r15)\n`;
+      `  lg   %r14, 0(%r15)\n`;
+      `  la  %r15, 8(%r15)\n`;
       `  brcl 15, {emit_label ret}\n`
     end
   end;

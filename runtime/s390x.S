@@ -295,7 +295,7 @@ CFI_STARTPROC
         stg     %r14, 0(%r15)
         CFI_OFFSET(14, -168)
         SAVE_ALL_REGS
-        lg    C_ARG_1, RETADDR_ENTRY_SIZE(%r15) /* argument */
+        lgr    C_ARG_1, %r12 /* requested size */
         SWITCH_OCAML_TO_C
         PREPARE_FOR_C_CALL
 #ifdef ASM_CFI_SUPPORTED
@@ -317,7 +317,6 @@ LBL(120):
         RESTORE_ALL_REGS
         lg      %r14, 0(%r15)
         CFI_RESTORE(14)
-        la      %r15, 16(%r15) /* %r14 register and pop argument, retaddr */
         LEA_VAR(caml_exn_Stack_overflow, %r2)
         brcl    15, GCALL(caml_raise_exn)
 CFI_ENDPROC
