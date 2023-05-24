@@ -730,9 +730,8 @@ let fundecl fundecl =
     let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
     let f = max_frame_size + threshold_offset in
     let offset = Domainstate.(idx_of_field Domain_current_stack) * 8 in
-    `  lg %r1, {emit_int offset}(%r10)\n`;
-    `  lay %r1, {emit_int f}(%r1)\n`;
-    `  clgr %r15, %r1\n`;
+    `  lay %r1, {emit_int (-f)}(%r15)\n`;
+    `  clg %r1, {emit_int offset}(%r10)\n`;
     `  brcl 4, {emit_label overflow}\n`;
     `{emit_label ret}:\n`;
     handle_overflow := Some (overflow, ret);
