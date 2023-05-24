@@ -93,14 +93,20 @@ CAML_STATIC_ASSERT(sizeof(struct stack_info) ==
  * +------------------------+ <--- Caml_state->current_stack
  */
 
+/* Some ABI reserve space at the bottom of every C stack frame. */
+
+#if defined(TARGET_amd64) && (defined(_WIN32) || defined(__CYGWIN__))
+/* Win64 ABI shadow store for argument registers */
+  #define Reserved_space_c_stack_link 4 * 8
+#endif
+
 /* This structure is used for storing the OCaml return pointer when
  * transitioning from an OCaml stack to a C stack at a C call. When an OCaml
  * stack is reallocated, this linked list is walked to update the OCaml stack
  * pointers. It is also used for DWARF backtraces. */
 struct c_stack_link {
-#if defined(_WIN32) || defined(__CYGWIN__)
-  /* Win64 ABI shadow store for argument registers */
-  void* shadow_store[4];
+#if Reserved_space_c_stack_link > 0
+  char reserved[Reserved_space_c_stack_link];
 #endif
   /* The reference to the OCaml stack */
   struct stack_info* stack;
