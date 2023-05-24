@@ -7170,3 +7170,645 @@ tools/stripdebug.cmx : \
     bytecomp/bytesections.cmx \
     tools/stripdebug.cmi
 tools/stripdebug.cmi :
+debugger/breakpoints.cmo : \
+    debugger/symbols.cmi \
+    debugger/pos.cmi \
+    debugger/parameters.cmi \
+    utils/misc.cmi \
+    bytecomp/instruct.cmi \
+    debugger/exec.cmi \
+    debugger/events.cmi \
+    debugger/debugger_config.cmi \
+    debugger/debugcom.cmi \
+    debugger/checkpoints.cmi \
+    debugger/breakpoints.cmi
+debugger/breakpoints.cmx : \
+    debugger/symbols.cmx \
+    debugger/pos.cmx \
+    debugger/parameters.cmx \
+    utils/misc.cmx \
+    bytecomp/instruct.cmx \
+    debugger/exec.cmx \
+    debugger/events.cmx \
+    debugger/debugger_config.cmx \
+    debugger/debugcom.cmx \
+    debugger/checkpoints.cmx \
+    debugger/breakpoints.cmi
+debugger/breakpoints.cmi : \
+    debugger/events.cmi \
+    debugger/debugcom.cmi
+debugger/checkpoints.cmo : \
+    debugger/primitives.cmi \
+    debugger/int64ops.cmi \
+    debugger/debugcom.cmi \
+    debugger/checkpoints.cmi
+debugger/checkpoints.cmx : \
+    debugger/primitives.cmx \
+    debugger/int64ops.cmx \
+    debugger/debugcom.cmx \
+    debugger/checkpoints.cmi
+debugger/checkpoints.cmi : \
+    debugger/primitives.cmi \
+    debugger/debugcom.cmi
+debugger/command_line.cmo : \
+    debugger/unix_tools.cmi \
+    otherlibs/unix/unix.cmi \
+    typing/types.cmi \
+    debugger/time_travel.cmi \
+    debugger/symbols.cmi \
+    debugger/source.cmi \
+    debugger/show_source.cmi \
+    debugger/show_information.cmi \
+    debugger/question.cmi \
+    debugger/program_management.cmi \
+    debugger/program_loading.cmi \
+    debugger/printval.cmi \
+    debugger/primitives.cmi \
+    debugger/pos.cmi \
+    debugger/parser_aux.cmi \
+    debugger/parameters.cmi \
+    parsing/longident.cmi \
+    parsing/location.cmi \
+    debugger/loadprinter.cmi \
+    utils/load_path.cmi \
+    debugger/int64ops.cmi \
+    bytecomp/instruct.cmi \
+    debugger/input_handling.cmi \
+    debugger/history.cmi \
+    debugger/frames.cmi \
+    debugger/events.cmi \
+    debugger/eval.cmi \
+    typing/envaux.cmi \
+    typing/env.cmi \
+    debugger/debugger_parser.cmi \
+    debugger/debugger_lexer.cmi \
+    debugger/debugger_config.cmi \
+    debugger/debugcom.cmi \
+    driver/compmisc.cmi \
+    debugger/checkpoints.cmi \
+    debugger/breakpoints.cmi \
+    debugger/command_line.cmi
+debugger/command_line.cmx : \
+    debugger/unix_tools.cmx \
+    otherlibs/unix/unix.cmx \
+    typing/types.cmx \
+    debugger/time_travel.cmx \
+    debugger/symbols.cmx \
+    debugger/source.cmx \
+    debugger/show_source.cmx \
+    debugger/show_information.cmx \
+    debugger/question.cmx \
+    debugger/program_management.cmx \
+    debugger/program_loading.cmx \
+    debugger/printval.cmx \
+    debugger/primitives.cmx \
+    debugger/pos.cmx \
+    debugger/parser_aux.cmi \
+    debugger/parameters.cmx \
+    parsing/longident.cmx \
+    parsing/location.cmx \
+    debugger/loadprinter.cmx \
+    utils/load_path.cmx \
+    debugger/int64ops.cmx \
+    bytecomp/instruct.cmx \
+    debugger/input_handling.cmx \
+    debugger/history.cmx \
+    debugger/frames.cmx \
+    debugger/events.cmx \
+    debugger/eval.cmx \
+    typing/envaux.cmx \
+    typing/env.cmx \
+    debugger/debugger_parser.cmx \
+    debugger/debugger_lexer.cmx \
+    debugger/debugger_config.cmx \
+    debugger/debugcom.cmx \
+    driver/compmisc.cmx \
+    debugger/checkpoints.cmx \
+    debugger/breakpoints.cmx \
+    debugger/command_line.cmi
+debugger/command_line.cmi :
+debugger/debugcom.cmo : \
+    debugger/primitives.cmi \
+    utils/misc.cmi \
+    debugger/int64ops.cmi \
+    bytecomp/instruct.cmi \
+    debugger/input_handling.cmi \
+    debugger/debugcom.cmi
+debugger/debugcom.cmx : \
+    debugger/primitives.cmx \
+    utils/misc.cmx \
+    debugger/int64ops.cmx \
+    bytecomp/instruct.cmx \
+    debugger/input_handling.cmx \
+    debugger/debugcom.cmi
+debugger/debugcom.cmi : \
+    debugger/primitives.cmi \
+    bytecomp/instruct.cmi
+debugger/debugger_config.cmo : \
+    debugger/int64ops.cmi \
+    debugger/debugger_config.cmi
+debugger/debugger_config.cmx : \
+    debugger/int64ops.cmx \
+    debugger/debugger_config.cmi
+debugger/debugger_config.cmi :
+debugger/debugger_lexer.cmo : \
+    debugger/debugger_parser.cmi \
+    debugger/debugger_lexer.cmi
+debugger/debugger_lexer.cmx : \
+    debugger/debugger_parser.cmx \
+    debugger/debugger_lexer.cmi
+debugger/debugger_lexer.cmi : \
+    debugger/debugger_parser.cmi
+debugger/debugger_parser.cmo : \
+    debugger/parser_aux.cmi \
+    parsing/longident.cmi \
+    debugger/int64ops.cmi \
+    debugger/input_handling.cmi \
+    debugger/debugcom.cmi \
+    debugger/debugger_parser.cmi
+debugger/debugger_parser.cmx : \
+    debugger/parser_aux.cmi \
+    parsing/longident.cmx \
+    debugger/int64ops.cmx \
+    debugger/input_handling.cmx \
+    debugger/debugcom.cmx \
+    debugger/debugger_parser.cmi
+debugger/debugger_parser.cmi : \
+    debugger/parser_aux.cmi \
+    parsing/longident.cmi
+debugger/eval.cmo : \
+    typing/types.cmi \
+    bytecomp/symtable.cmi \
+    typing/subst.cmi \
+    debugger/printval.cmi \
+    typing/printtyp.cmi \
+    typing/predef.cmi \
+    typing/path.cmi \
+    debugger/parser_aux.cmi \
+    utils/misc.cmi \
+    parsing/longident.cmi \
+    bytecomp/instruct.cmi \
+    typing/ident.cmi \
+    debugger/frames.cmi \
+    debugger/events.cmi \
+    typing/env.cmi \
+    debugger/debugcom.cmi \
+    typing/ctype.cmi \
+    typing/btype.cmi \
+    debugger/eval.cmi
+debugger/eval.cmx : \
+    typing/types.cmx \
+    bytecomp/symtable.cmx \
+    typing/subst.cmx \
+    debugger/printval.cmx \
+    typing/printtyp.cmx \
+    typing/predef.cmx \
+    typing/path.cmx \
+    debugger/parser_aux.cmi \
+    utils/misc.cmx \
+    parsing/longident.cmx \
+    bytecomp/instruct.cmx \
+    typing/ident.cmx \
+    debugger/frames.cmx \
+    debugger/events.cmx \
+    typing/env.cmx \
+    debugger/debugcom.cmx \
+    typing/ctype.cmx \
+    typing/btype.cmx \
+    debugger/eval.cmi
+debugger/eval.cmi : \
+    typing/types.cmi \
+    typing/path.cmi \
+    debugger/parser_aux.cmi \
+    parsing/longident.cmi \
+    typing/ident.cmi \
+    debugger/events.cmi \
+    typing/env.cmi \
+    debugger/debugcom.cmi
+debugger/events.cmo : \
+    parsing/location.cmi \
+    bytecomp/instruct.cmi \
+    debugger/events.cmi
+debugger/events.cmx : \
+    parsing/location.cmx \
+    bytecomp/instruct.cmx \
+    debugger/events.cmi
+debugger/events.cmi : \
+    bytecomp/instruct.cmi
+debugger/exec.cmo : \
+    debugger/exec.cmi
+debugger/exec.cmx : \
+    debugger/exec.cmi
+debugger/exec.cmi :
+debugger/frames.cmo : \
+    debugger/symbols.cmi \
+    utils/misc.cmi \
+    bytecomp/instruct.cmi \
+    debugger/events.cmi \
+    debugger/debugcom.cmi \
+    debugger/frames.cmi
+debugger/frames.cmx : \
+    debugger/symbols.cmx \
+    utils/misc.cmx \
+    bytecomp/instruct.cmx \
+    debugger/events.cmx \
+    debugger/debugcom.cmx \
+    debugger/frames.cmi
+debugger/frames.cmi : \
+    debugger/events.cmi
+debugger/history.cmo : \
+    debugger/primitives.cmi \
+    debugger/int64ops.cmi \
+    debugger/debugger_config.cmi \
+    debugger/checkpoints.cmi \
+    debugger/history.cmi
+debugger/history.cmx : \
+    debugger/primitives.cmx \
+    debugger/int64ops.cmx \
+    debugger/debugger_config.cmx \
+    debugger/checkpoints.cmx \
+    debugger/history.cmi
+debugger/history.cmi :
+debugger/input_handling.cmo : \
+    otherlibs/unix/unix.cmi \
+    debugger/primitives.cmi \
+    debugger/parameters.cmi \
+    debugger/input_handling.cmi
+debugger/input_handling.cmx : \
+    otherlibs/unix/unix.cmx \
+    debugger/primitives.cmx \
+    debugger/parameters.cmx \
+    debugger/input_handling.cmi
+debugger/input_handling.cmi : \
+    debugger/primitives.cmi
+debugger/int64ops.cmo : \
+    debugger/int64ops.cmi
+debugger/int64ops.cmx : \
+    debugger/int64ops.cmi
+debugger/int64ops.cmi :
+debugger/loadprinter.cmo : \
+    typing/types.cmi \
+    toplevel/topprinters.cmi \
+    bytecomp/symtable.cmi \
+    debugger/printval.cmi \
+    typing/printtyp.cmi \
+    typing/path.cmi \
+    utils/misc.cmi \
+    parsing/longident.cmi \
+    utils/load_path.cmi \
+    typing/ident.cmi \
+    typing/env.cmi \
+    otherlibs/dynlink/dynlink.cmi \
+    typing/ctype.cmi \
+    debugger/loadprinter.cmi
+debugger/loadprinter.cmx : \
+    typing/types.cmx \
+    toplevel/topprinters.cmx \
+    bytecomp/symtable.cmx \
+    debugger/printval.cmx \
+    typing/printtyp.cmx \
+    typing/path.cmx \
+    utils/misc.cmx \
+    parsing/longident.cmx \
+    utils/load_path.cmx \
+    typing/ident.cmx \
+    typing/env.cmx \
+    otherlibs/dynlink/dynlink.cmi \
+    typing/ctype.cmx \
+    debugger/loadprinter.cmi
+debugger/loadprinter.cmi : \
+    parsing/longident.cmi \
+    otherlibs/dynlink/dynlink.cmi
+debugger/main.cmo : \
+    debugger/unix_tools.cmi \
+    otherlibs/unix/unix.cmi \
+    debugger/time_travel.cmi \
+    debugger/show_information.cmi \
+    debugger/question.cmi \
+    debugger/program_management.cmi \
+    debugger/primitives.cmi \
+    typing/persistent_env.cmi \
+    debugger/parameters.cmi \
+    utils/misc.cmi \
+    utils/load_path.cmi \
+    debugger/input_handling.cmi \
+    debugger/frames.cmi \
+    debugger/exec.cmi \
+    debugger/debugger_config.cmi \
+    utils/config.cmi \
+    driver/compmisc.cmi \
+    debugger/command_line.cmi \
+    file_formats/cmi_format.cmi \
+    utils/clflags.cmi \
+    debugger/checkpoints.cmi \
+    debugger/main.cmi
+debugger/main.cmx : \
+    debugger/unix_tools.cmx \
+    otherlibs/unix/unix.cmx \
+    debugger/time_travel.cmx \
+    debugger/show_information.cmx \
+    debugger/question.cmx \
+    debugger/program_management.cmx \
+    debugger/primitives.cmx \
+    typing/persistent_env.cmx \
+    debugger/parameters.cmx \
+    utils/misc.cmx \
+    utils/load_path.cmx \
+    debugger/input_handling.cmx \
+    debugger/frames.cmx \
+    debugger/exec.cmx \
+    debugger/debugger_config.cmx \
+    utils/config.cmx \
+    driver/compmisc.cmx \
+    debugger/command_line.cmx \
+    file_formats/cmi_format.cmx \
+    utils/clflags.cmx \
+    debugger/checkpoints.cmx \
+    debugger/main.cmi
+debugger/main.cmi :
+debugger/ocamldebug_entry.cmo : \
+    otherlibs/unix/unix.cmi \
+    debugger/ocamldebug_entry.cmi
+debugger/ocamldebug_entry.cmx : \
+    otherlibs/unix/unix.cmx \
+    debugger/ocamldebug_entry.cmi
+debugger/ocamldebug_entry.cmi :
+debugger/parameters.cmo : \
+    utils/load_path.cmi \
+    typing/envaux.cmi \
+    debugger/debugger_config.cmi \
+    utils/config.cmi \
+    debugger/parameters.cmi
+debugger/parameters.cmx : \
+    utils/load_path.cmx \
+    typing/envaux.cmx \
+    debugger/debugger_config.cmx \
+    utils/config.cmx \
+    debugger/parameters.cmi
+debugger/parameters.cmi :
+debugger/parser_aux.cmi : \
+    parsing/longident.cmi \
+    debugger/debugcom.cmi
+debugger/pos.cmo : \
+    parsing/location.cmi \
+    bytecomp/instruct.cmi \
+    debugger/events.cmi \
+    debugger/pos.cmi
+debugger/pos.cmx : \
+    parsing/location.cmx \
+    bytecomp/instruct.cmx \
+    debugger/events.cmx \
+    debugger/pos.cmi
+debugger/pos.cmi : \
+    debugger/events.cmi
+debugger/primitives.cmo : \
+    otherlibs/unix/unix.cmi \
+    debugger/primitives.cmi
+debugger/primitives.cmx : \
+    otherlibs/unix/unix.cmx \
+    debugger/primitives.cmi
+debugger/primitives.cmi : \
+    otherlibs/unix/unix.cmi
+debugger/printval.cmo : \
+    typing/types.cmi \
+    bytecomp/symtable.cmi \
+    typing/printtyp.cmi \
+    debugger/parser_aux.cmi \
+    typing/outcometree.cmi \
+    typing/oprint.cmi \
+    toplevel/genprintval.cmi \
+    typing/env.cmi \
+    debugger/debugcom.cmi \
+    debugger/printval.cmi
+debugger/printval.cmx : \
+    typing/types.cmx \
+    bytecomp/symtable.cmx \
+    typing/printtyp.cmx \
+    debugger/parser_aux.cmi \
+    typing/outcometree.cmi \
+    typing/oprint.cmx \
+    toplevel/genprintval.cmx \
+    typing/env.cmx \
+    debugger/debugcom.cmx \
+    debugger/printval.cmi
+debugger/printval.cmi : \
+    typing/types.cmi \
+    typing/path.cmi \
+    debugger/parser_aux.cmi \
+    typing/env.cmi \
+    debugger/debugcom.cmi
+debugger/program_loading.cmo : \
+    debugger/unix_tools.cmi \
+    otherlibs/unix/unix.cmi \
+    debugger/primitives.cmi \
+    debugger/parameters.cmi \
+    debugger/input_handling.cmi \
+    debugger/debugger_config.cmi \
+    debugger/program_loading.cmi
+debugger/program_loading.cmx : \
+    debugger/unix_tools.cmx \
+    otherlibs/unix/unix.cmx \
+    debugger/primitives.cmx \
+    debugger/parameters.cmx \
+    debugger/input_handling.cmx \
+    debugger/debugger_config.cmx \
+    debugger/program_loading.cmi
+debugger/program_loading.cmi : \
+    debugger/primitives.cmi
+debugger/program_management.cmo : \
+    debugger/unix_tools.cmi \
+    otherlibs/unix/unix.cmi \
+    debugger/time_travel.cmi \
+    debugger/symbols.cmi \
+    debugger/question.cmi \
+    debugger/program_loading.cmi \
+    debugger/primitives.cmi \
+    debugger/parameters.cmi \
+    utils/load_path.cmi \
+    debugger/int64ops.cmi \
+    debugger/input_handling.cmi \
+    debugger/history.cmi \
+    typing/envaux.cmi \
+    debugger/debugger_config.cmi \
+    debugger/debugcom.cmi \
+    driver/compmisc.cmi \
+    debugger/breakpoints.cmi \
+    debugger/program_management.cmi
+debugger/program_management.cmx : \
+    debugger/unix_tools.cmx \
+    otherlibs/unix/unix.cmx \
+    debugger/time_travel.cmx \
+    debugger/symbols.cmx \
+    debugger/question.cmx \
+    debugger/program_loading.cmx \
+    debugger/primitives.cmx \
+    debugger/parameters.cmx \
+    utils/load_path.cmx \
+    debugger/int64ops.cmx \
+    debugger/input_handling.cmx \
+    debugger/history.cmx \
+    typing/envaux.cmx \
+    debugger/debugger_config.cmx \
+    debugger/debugcom.cmx \
+    driver/compmisc.cmx \
+    debugger/breakpoints.cmx \
+    debugger/program_management.cmi
+debugger/program_management.cmi :
+debugger/question.cmo : \
+    debugger/primitives.cmi \
+    debugger/input_handling.cmi \
+    debugger/debugger_lexer.cmi \
+    debugger/question.cmi
+debugger/question.cmx : \
+    debugger/primitives.cmx \
+    debugger/input_handling.cmx \
+    debugger/debugger_lexer.cmx \
+    debugger/question.cmi
+debugger/question.cmi :
+debugger/show_information.cmo : \
+    debugger/symbols.cmi \
+    debugger/source.cmi \
+    debugger/show_source.cmi \
+    debugger/printval.cmi \
+    debugger/parameters.cmi \
+    utils/misc.cmi \
+    bytecomp/instruct.cmi \
+    debugger/frames.cmi \
+    debugger/events.cmi \
+    debugger/debugcom.cmi \
+    debugger/checkpoints.cmi \
+    debugger/breakpoints.cmi \
+    debugger/show_information.cmi
+debugger/show_information.cmx : \
+    debugger/symbols.cmx \
+    debugger/source.cmx \
+    debugger/show_source.cmx \
+    debugger/printval.cmx \
+    debugger/parameters.cmx \
+    utils/misc.cmx \
+    bytecomp/instruct.cmx \
+    debugger/frames.cmx \
+    debugger/events.cmx \
+    debugger/debugcom.cmx \
+    debugger/checkpoints.cmx \
+    debugger/breakpoints.cmx \
+    debugger/show_information.cmi
+debugger/show_information.cmi : \
+    debugger/events.cmi
+debugger/show_source.cmo : \
+    debugger/source.cmi \
+    debugger/primitives.cmi \
+    debugger/parameters.cmi \
+    parsing/location.cmi \
+    bytecomp/instruct.cmi \
+    debugger/events.cmi \
+    debugger/debugger_config.cmi \
+    debugger/show_source.cmi
+debugger/show_source.cmx : \
+    debugger/source.cmx \
+    debugger/primitives.cmx \
+    debugger/parameters.cmx \
+    parsing/location.cmx \
+    bytecomp/instruct.cmx \
+    debugger/events.cmx \
+    debugger/debugger_config.cmx \
+    debugger/show_source.cmi
+debugger/show_source.cmi : \
+    bytecomp/instruct.cmi
+debugger/source.cmo : \
+    debugger/primitives.cmi \
+    utils/misc.cmi \
+    utils/load_path.cmi \
+    debugger/debugger_config.cmi \
+    debugger/source.cmi
+debugger/source.cmx : \
+    debugger/primitives.cmx \
+    utils/misc.cmx \
+    utils/load_path.cmx \
+    debugger/debugger_config.cmx \
+    debugger/source.cmi
+debugger/source.cmi :
+debugger/symbols.cmo : \
+    bytecomp/symtable.cmi \
+    debugger/program_loading.cmi \
+    utils/misc.cmi \
+    bytecomp/instruct.cmi \
+    debugger/events.cmi \
+    debugger/debugger_config.cmi \
+    debugger/debugcom.cmi \
+    debugger/checkpoints.cmi \
+    bytecomp/bytesections.cmi \
+    debugger/symbols.cmi
+debugger/symbols.cmx : \
+    bytecomp/symtable.cmx \
+    debugger/program_loading.cmx \
+    utils/misc.cmx \
+    bytecomp/instruct.cmx \
+    debugger/events.cmx \
+    debugger/debugger_config.cmx \
+    debugger/debugcom.cmx \
+    debugger/checkpoints.cmx \
+    bytecomp/bytesections.cmx \
+    debugger/symbols.cmi
+debugger/symbols.cmi : \
+    bytecomp/instruct.cmi \
+    debugger/events.cmi \
+    debugger/debugcom.cmi
+debugger/time_travel.cmo : \
+    debugger/trap_barrier.cmi \
+    debugger/symbols.cmi \
+    debugger/question.cmi \
+    debugger/program_loading.cmi \
+    debugger/primitives.cmi \
+    utils/misc.cmi \
+    debugger/int64ops.cmi \
+    bytecomp/instruct.cmi \
+    debugger/input_handling.cmi \
+    debugger/exec.cmi \
+    debugger/events.cmi \
+    debugger/debugger_config.cmi \
+    debugger/debugcom.cmi \
+    debugger/checkpoints.cmi \
+    debugger/breakpoints.cmi \
+    debugger/time_travel.cmi
+debugger/time_travel.cmx : \
+    debugger/trap_barrier.cmx \
+    debugger/symbols.cmx \
+    debugger/question.cmx \
+    debugger/program_loading.cmx \
+    debugger/primitives.cmx \
+    utils/misc.cmx \
+    debugger/int64ops.cmx \
+    bytecomp/instruct.cmx \
+    debugger/input_handling.cmx \
+    debugger/exec.cmx \
+    debugger/events.cmx \
+    debugger/debugger_config.cmx \
+    debugger/debugcom.cmx \
+    debugger/checkpoints.cmx \
+    debugger/breakpoints.cmx \
+    debugger/time_travel.cmi
+debugger/time_travel.cmi : \
+    debugger/primitives.cmi
+debugger/trap_barrier.cmo : \
+    debugger/exec.cmi \
+    debugger/debugcom.cmi \
+    debugger/checkpoints.cmi \
+    debugger/trap_barrier.cmi
+debugger/trap_barrier.cmx : \
+    debugger/exec.cmx \
+    debugger/debugcom.cmx \
+    debugger/checkpoints.cmx \
+    debugger/trap_barrier.cmi
+debugger/trap_barrier.cmi : \
+    debugger/debugcom.cmi
+debugger/unix_tools.cmo : \
+    otherlibs/unix/unix.cmi \
+    utils/misc.cmi \
+    debugger/unix_tools.cmi
+debugger/unix_tools.cmx : \
+    otherlibs/unix/unix.cmx \
+    utils/misc.cmx \
+    debugger/unix_tools.cmi
+debugger/unix_tools.cmi : \
+    otherlibs/unix/unix.cmi

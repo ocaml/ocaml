@@ -46,6 +46,10 @@ Working version
 
 ### Build system:
 
+- #12198: continue the merge of the sub-makefiles into the root Makefile
+  started with #11243, #11248, #11268, #11420 and #11675.
+  (Sébastien Hinderer, review by David Allsopp and Florian Angeletti)
+
 ### Bug fixes:
 
 OCaml 5.1.0
