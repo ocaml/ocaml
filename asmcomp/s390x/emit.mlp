@@ -378,20 +378,18 @@ let emit_instr env i =
           emit_call "caml_c_call";
           `{record_frame env i.live (Dbg_other i.dbg)}\n`
         end else begin
-          ` lgr %r1, %r15\n`;
+          (* Save OCaml SP in C callee-save register *)
+          ` lgr %r12, %r15\n`;
           cfi_remember_state ();
-          cfi_def_cfa_register "%r1";
+          cfi_def_cfa_register "%r12";
           (* NB: gdb has asserts on contiguous stacks that mean it
              will not unwind through this unless we were to tag this
-             calling frame with cfi_signal_frame in it's definition.
-             Also, for some reason ocaml compiler uses %r12, can't use it here.
-             Just save stack pointer to temporary pointer and then to new stack *)
+             calling frame with cfi_signal_frame in it's definition. *)
           let offset = Domainstate.(idx_of_field Domain_c_stack) * 8 in
           ` lg %r15, {emit_int offset}(%r10)\n`;
-          ` lay %r15, -168(%r15)\n`;
-          ` stg %r1, 160(%r15)\n`;
+          ` lay %r15, -160(%r15)\n`;
           emit_call func;
-          ` lg %r15, 160(%r15)\n`;
+          ` lgr %r15, %r12\n`;
           cfi_restore_state ()
         end
 

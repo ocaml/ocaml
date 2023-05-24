@@ -187,10 +187,11 @@ let dwarf_register_numbers ~reg_class =
 let stack_ptr_dwarf_register_number = 15
 
 (* Registers destroyed by operations *)
+(* Mark r12 destroyed by C calls so that it can be used for preserving SP *)
 
 let destroyed_at_c_call =
   Array.of_list(List.map phys_reg
-    [0; 1; 2; 3; 4;
+    [0; 1; 2; 3; 4; 8;
      100; 101; 102; 103; 104; 105; 106; 107])
 
 let destroyed_at_oper = function
