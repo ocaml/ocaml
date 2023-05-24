@@ -7,4 +7,7 @@ val _bar : ('a, 'b) A.t -> 'a option = <fun>
 - : string = ""
 - : char = 'd'
 - : float = 42.
+external foo : int -> int -> int = "%addint"
+module S = String
+val x : int = 42
 
