@@ -180,6 +180,7 @@ OCaml 5.1.0
   annotation, e.g. `'a. [< X of 'a ] -> 'a`, are now implicitly
   universally quantified (in other words, the example above is now read
   as `'a 'r. ([< X of 'a `] as 'r) -> 'a`).
+  (Florian Angeletti and Gabriel Scherer, review by Jacques Garrigue)
 
 ### Code generation and optimizations:
 
