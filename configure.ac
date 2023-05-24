@@ -2225,8 +2225,6 @@ ocamlc_cflags="$common_cflags $sharedlib_cflags $CFLAGS"
 ocamlc_cppflags="$common_cppflags $CPPFLAGS"
 cclibs="$cclibs $mathlib"
 
-AC_CHECK_LIB(execinfo, backtrace, cclibs="$cclibs -lexecinfo",[])
-
 AS_CASE([$host],
   [*-*-mingw32*],
     [bytecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"

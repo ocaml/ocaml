@@ -19659,47 +19659,6 @@ ocamlc_cflags="$common_cflags $sharedlib_cflags $CFLAGS"
 ocamlc_cppflags="$common_cppflags $CPPFLAGS"
 cclibs="$cclibs $mathlib"
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for backtrace in -lexecinfo" >&5
-printf %s "checking for backtrace in -lexecinfo... " >&6; }
-if test ${ac_cv_lib_execinfo_backtrace+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lexecinfo  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char backtrace ();
-int
-main (void)
-{
-return backtrace ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_execinfo_backtrace=yes
-else $as_nop
-  ac_cv_lib_execinfo_backtrace=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_execinfo_backtrace" >&5
-printf "%s\n" "$ac_cv_lib_execinfo_backtrace" >&6; }
-if test "x$ac_cv_lib_execinfo_backtrace" = xyes
-then :
-  cclibs="$cclibs -lexecinfo"
-fi
-
-
 case $host in #(
   *-*-mingw32*) :
     bytecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"

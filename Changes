@@ -747,6 +747,10 @@ OCaml 5.1.0
   exception backtraces for them.
   (Xavier Leroy, review by David Allsopp, report by Fabrice Le Fessant)
 
+- #12265: Stop adding -lexecinfo to cclibs (leftover debugging code from the
+  multicore project).
+  (David Allsopp, review by Sébastien Hinderer)
+
 ### Bug fixes:
 
 - #12017: Re-register finaliser only after calling user alarm in Gc.create_alarm
