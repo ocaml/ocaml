@@ -28,6 +28,9 @@ Working version
 
 ### Tools:
 
+- #12260: Fix invalid_argument on some external or module aliases in ocamlnat
+  (Fabian Hemmer, review by Vincent Laviron)
+
 - #12185: New script language for ocamltest.
   (Damien Doligez with Florian Angeletti, Sébastien Hinderer, Gabriel Scherer,
    review by Sébastien Hinderer and Gabriel Scherer)
