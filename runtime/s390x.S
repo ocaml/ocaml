@@ -324,12 +324,12 @@ ENDFUNCTION(G(caml_call_realloc_stack))
 
 FUNCTION(G(caml_call_gc))
 CFI_STARTPROC
+LBL(caml_call_gc):
         CFI_SIGNAL_FRAME
         lay     %r15, -8(%r15)
         CFI_ADJUST(8)
         stg     %r14, 0(%r15)
         CFI_OFFSET(14, -168)
-LBL(caml_call_gc):
         SAVE_ALL_REGS
         SWITCH_OCAML_TO_C
         PREPARE_FOR_C_CALL
@@ -351,71 +351,35 @@ ENDFUNCTION(G(caml_call_gc))
 
 FUNCTION(G(caml_alloc1))
 CFI_STARTPROC
-        lay     %r15, -8(%r15)
-        CFI_ADJUST(8)
-        stg     %r14, 0(%r15)
-        CFI_OFFSET(14, -168)
-        ENTER_FUNCTION
         lay     ALLOC_PTR, -16(ALLOC_PTR)
         clg     ALLOC_PTR, Caml_state(young_limit)
         jl      LBL(caml_call_gc)
-        LEAVE_FUNCTION
-        lg      %r14, 0(%r15)
-        CFI_RESTORE(14)
-        la      %r15, 8(%r15)
         br      %r14
 CFI_ENDPROC
 ENDFUNCTION(G(caml_alloc1))
 
 FUNCTION(G(caml_alloc2))
 CFI_STARTPROC
-        lay     %r15, -8(%r15)
-        CFI_ADJUST(8)
-        stg     %r14, 0(%r15)
-        CFI_OFFSET(14, -168)
-        ENTER_FUNCTION
         lay     ALLOC_PTR, -24(ALLOC_PTR)
         clg     ALLOC_PTR, Caml_state(young_limit)
         jl      LBL(caml_call_gc)
-        LEAVE_FUNCTION
-        lg      %r14, 0(%r15)
-        CFI_RESTORE(14)
-        la      %r15, 8(%r15)
         br      %r14
 CFI_ENDPROC
 ENDFUNCTION(G(caml_alloc2))
 
 FUNCTION(G(caml_alloc3))
 CFI_STARTPROC
-        lay     %r15, -8(%r15)
-        CFI_ADJUST(8)
-        stg     %r14, 0(%r15)
-        CFI_OFFSET(14, -168)
-        ENTER_FUNCTION
         lay     ALLOC_PTR, -32(ALLOC_PTR)
         clg     ALLOC_PTR, Caml_state(young_limit)
         jl      LBL(caml_call_gc)
-        LEAVE_FUNCTION
-        lg      %r14, 0(%r15)
-        CFI_RESTORE(14)
-        la      %r15, 8(%r15)
         br      %r14
 CFI_ENDPROC
 ENDFUNCTION(G(caml_alloc3))
 
 FUNCTION(G(caml_allocN))
 CFI_STARTPROC
-        lay     %r15, -8(%r15)
-        CFI_ADJUST(8)
-        stg     %r14, 0(%r15)
-        CFI_OFFSET(14, -168)
-        ENTER_FUNCTION
         clg     ALLOC_PTR, Caml_state(young_limit)
         jl      LBL(caml_call_gc)
-        LEAVE_FUNCTION
-        lg      %r14, 0(%r15)
-        CFI_RESTORE(14)
-        la      %r15, 8(%r15)
         br      %r14
 CFI_ENDPROC
 ENDFUNCTION(G(caml_allocN))
