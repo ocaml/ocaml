@@ -357,7 +357,7 @@ CFI_STARTPROC
         CFI_OFFSET(14, -168)
         ENTER_FUNCTION
         lay     ALLOC_PTR, -16(ALLOC_PTR)
-        cg      ALLOC_PTR, Caml_state(young_limit)
+        clg     ALLOC_PTR, Caml_state(young_limit)
         jl      LBL(caml_call_gc)
         LEAVE_FUNCTION
         lg      %r14, 0(%r15)
@@ -375,7 +375,7 @@ CFI_STARTPROC
         CFI_OFFSET(14, -168)
         ENTER_FUNCTION
         lay     ALLOC_PTR, -24(ALLOC_PTR)
-        cg      ALLOC_PTR, Caml_state(young_limit)
+        clg     ALLOC_PTR, Caml_state(young_limit)
         jl      LBL(caml_call_gc)
         LEAVE_FUNCTION
         lg      %r14, 0(%r15)
@@ -393,7 +393,7 @@ CFI_STARTPROC
         CFI_OFFSET(14, -168)
         ENTER_FUNCTION
         lay     ALLOC_PTR, -32(ALLOC_PTR)
-        cg      ALLOC_PTR, Caml_state(young_limit)
+        clg     ALLOC_PTR, Caml_state(young_limit)
         jl      LBL(caml_call_gc)
         LEAVE_FUNCTION
         lg      %r14, 0(%r15)
@@ -410,7 +410,7 @@ CFI_STARTPROC
         stg     %r14, 0(%r15)
         CFI_OFFSET(14, -168)
         ENTER_FUNCTION
-        cg      ALLOC_PTR, Caml_state(young_limit)
+        clg     ALLOC_PTR, Caml_state(young_limit)
         jl      LBL(caml_call_gc)
         LEAVE_FUNCTION
         lg      %r14, 0(%r15)
@@ -487,7 +487,7 @@ CFI_STARTPROC
     /* Copy arguments from OCaml to C stack */
 LBL(105):
         lay     %r8, -8(%r8)
-        cgr     %r8, %r9
+        clgr    %r8, %r9
         jl      LBL(106)
         lg      %r0, 0(%r8)
         lay     %r15, -8(%r15)
