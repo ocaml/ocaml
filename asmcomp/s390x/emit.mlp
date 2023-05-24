@@ -387,7 +387,6 @@ let emit_instr env i =
              calling frame with cfi_signal_frame in it's definition. *)
           let offset = Domainstate.(idx_of_field Domain_c_stack) * 8 in
           ` lg %r15, {emit_int offset}(%r10)\n`;
-          ` lay %r15, -160(%r15)\n`;
           emit_call func;
           ` lgr %r15, %r12\n`;
           cfi_restore_state ()

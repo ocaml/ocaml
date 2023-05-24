@@ -149,9 +149,7 @@ let loc_results res =
 
 (*   C calling conventions under SVR4:
      use GPR 2-6 and FPR 0,2,4,6 just like ML calling conventions.
-     Using a float register does not affect the int registers.
-     Always reserve 160 bytes at bottom of stack, plus whatever is needed
-     to hold the overflow arguments. *)
+     Using a float register does not affect the int registers. *)
 
 let loc_external_arguments ty_args =
   let arg = Cmm.machtype_of_exttype_list ty_args in
