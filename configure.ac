@@ -1587,8 +1587,12 @@ but no proper monotonic clock source was found.])
 sockets=true
 
 AS_CASE([$host],
-  [*-*-mingw32*|*-pc-windows],
+  [*-*-mingw32*],
     [cclibs="$cclibs -lws2_32"
+    AC_SEARCH_LIBS([socket], [ws2_32])
+    AC_CHECK_FUNC([socketpair], [AC_DEFINE([HAS_SOCKETPAIR])])],
+  [*-pc-windows],
+    [cclibs="$cclibs ws2_32.lib"
     AC_SEARCH_LIBS([socket], [ws2_32])
     AC_CHECK_FUNC([socketpair], [AC_DEFINE([HAS_SOCKETPAIR])])],
   [*-*-haiku],
@@ -2031,8 +2035,10 @@ AS_CASE([$enable_debug_runtime],
 ## Determine how to link with the POSIX threads library
 
 AS_CASE([$host],
-  [*-*-mingw32*|*-pc-windows],
-    [PTHREAD_LIBS="-l:libpthread.a"],
+  [*-*-mingw32*],
+    [PTHREAD_LIBS="-l:libpthread.a -lgcc_eh"],
+  [*-pc-windows],
+    [PTHREAD_LIBS="-l:libpthread.lib"],
   [AX_PTHREAD(
     [common_cflags="$common_cflags $PTHREAD_CFLAGS"
     saved_CFLAGS="$CFLAGS"
@@ -2223,14 +2229,16 @@ oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
 ocamlc_cflags="$common_cflags $sharedlib_cflags $CFLAGS"
 ocamlc_cppflags="$common_cppflags $CPPFLAGS"
-cclibs="$cclibs $mathlib"
 
 AS_CASE([$host],
   [*-*-mingw32*],
-    [cclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"],
+    [cclibs="$cclibs -lversion"],
   [*-pc-windows],
-    [cclibs="advapi32.lib ws2_32.lib version.lib"],
-  [cclibs="$cclibs $DLLIBS $PTHREAD_LIBS"])
+    [# For whatever reason, flexlink includes -ladvapi32 for mingw-w64, but
+    # doesn't include advapi32.lib for MSVC
+    cclibs="$cclibs advapi32.lib version.lib"])
+
+AC_CONFIG_COMMANDS_PRE([cclibs="$cclibs $mathlib $DLLIBS $PTHREAD_LIBS"])
 
 AS_IF([test x"$libdir" = x'${exec_prefix}/lib'],
   [libdir="$libdir"/ocaml])

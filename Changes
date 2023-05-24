@@ -749,7 +749,9 @@ OCaml 5.1.0
 
 - #12265: Stop adding -lexecinfo to cclibs (leftover debugging code from the
   multicore project). Harden the feature probe for -lm in configure so -lm is
-  only added if strictly necessary.
+  only added if strictly necessary. configure.ac now correctly propagates
+  library flags for the Windows ports, allowing Windows OCaml to be configured
+  with ZSTD support.
   (David Allsopp, review by Sébastien Hinderer)
 
 ### Bug fixes:
