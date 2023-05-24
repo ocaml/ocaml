@@ -506,7 +506,7 @@ let extra_rhs_core_type ct ~pos =
 type let_binding =
   { lb_pattern: pattern;
     lb_expression: expression;
-    lb_constraint: poly_constraint option;
+    lb_constraint: value_constraint option;
     lb_is_pun: bool;
     lb_attributes: attributes;
     lb_docs: docs Lazy.t;
@@ -550,7 +550,7 @@ let val_of_let_bindings ~loc lbs =
          Vb.mk ~loc:lb.lb_loc ~attrs:lb.lb_attributes
            ~docs:(Lazy.force lb.lb_docs)
            ~text:(Lazy.force lb.lb_text)
-           ?typ:lb.lb_constraint lb.lb_pattern lb.lb_expression)
+           ?value_constraint:lb.lb_constraint lb.lb_pattern lb.lb_expression)
       lbs.lbs_bindings
   in
   let str = mkstr ~loc (Pstr_value(lbs.lbs_rec, List.rev bindings)) in
@@ -563,7 +563,7 @@ let expr_of_let_bindings ~loc lbs body =
     List.map
       (fun lb ->
          Vb.mk ~loc:lb.lb_loc ~attrs:lb.lb_attributes
-          ?typ:lb.lb_constraint  lb.lb_pattern lb.lb_expression)
+          ?value_constraint:lb.lb_constraint  lb.lb_pattern lb.lb_expression)
       lbs.lbs_bindings
   in
     mkexp_attrs ~loc (Pexp_let(lbs.lbs_rec, List.rev bindings, body))
@@ -574,7 +574,7 @@ let class_of_let_bindings ~loc lbs body =
     List.map
       (fun lb ->
          Vb.mk ~loc:lb.lb_loc ~attrs:lb.lb_attributes
-          ?typ:lb.lb_constraint lb.lb_pattern lb.lb_expression)
+          ?value_constraint:lb.lb_constraint lb.lb_pattern lb.lb_expression)
       lbs.lbs_bindings
   in
     (* Our use of let_bindings(no_ext) guarantees the following: *)
@@ -2526,23 +2526,27 @@ let_binding_body_no_punning:
       { let v = $1 in (* PR#7344 *)
         let t =
           match $2 with
-            Some t, None -> t
-          | _, Some t -> t
+            Some t, None ->
+             Pvc_constraint { locally_abstract_univars = []; typ=t }
+          | ground, Some coercion -> Pvc_coercion { ground; coercion}
           | _ -> assert false
         in
-        (v, $4, Some {locally_abstract_univars=[]; typ=t})
+        (v, $4, Some t)
         }
   | let_ident COLON poly(core_type) EQUAL seq_expr
     {
       let t = ghtyp ~loc:($loc($3)) $3 in
-      ($1, $5, Some { locally_abstract_univars = []; typ = t})
+      ($1, $5, Some (Pvc_constraint { locally_abstract_univars = []; typ=t }))
     }
   | let_ident COLON TYPE lident_list DOT core_type EQUAL seq_expr
-      {  ($1, $8, Some { locally_abstract_univars = $4; typ = $6}) }
+    { let constraint' =
+        Pvc_constraint { locally_abstract_univars=$4; typ = $6}
+      in
+      ($1, $8, Some constraint') }
   | pattern_no_exn EQUAL seq_expr
       { ($1, $3, None) }
   | simple_pattern_not_ident COLON core_type EQUAL seq_expr
-      { ($1, $5, Some { locally_abstract_univars = []; typ=$3}) }
+      { ($1, $5, Some(Pvc_constraint { locally_abstract_univars=[]; typ=$3 })) }
 ;
 let_binding_body:
   | let_binding_body_no_punning

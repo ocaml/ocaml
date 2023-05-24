@@ -423,6 +423,13 @@ val ky : 'a -> 'a -> 'a = <fun>
 val test : 'a t -> 'a = <fun>
 |}];;
 
+let rec test : type a. a t -> a =
+  function Int -> (1 : a)
+;;
+[%%expect{|
+val test : 'a t -> 'a = <fun>
+|}];;
+
 let test : type a. a t -> _ =
   function Int -> 1       (* ok *)
 ;;

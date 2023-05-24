@@ -1261,14 +1261,23 @@ and binding ctxt f {pvb_pat=p; pvb_expr=x; pvb_constraint = ct; _} =
       | _ -> pp f "=@;%a" (expression ctxt) x
   in
   match ct with
-  | Some { locally_abstract_univars=[]; typ } ->
+  | Some (Pvc_constraint { locally_abstract_univars = []; typ }) ->
       pp f "%a@;:@;%a@;=@;%a"
         (simple_pattern ctxt) p (core_type ctxt) typ (expression ctxt) x
-  | Some { locally_abstract_univars; typ } ->
+  | Some (Pvc_constraint { locally_abstract_univars = vars; typ }) ->
       pp f "%a@;: type@;%a.@;%a@;=@;%a"
         (simple_pattern ctxt) p (list pp_print_string ~sep:"@;")
-        (List.map (fun x -> x.txt) locally_abstract_univars)
+        (List.map (fun x -> x.txt) vars)
         (core_type ctxt) typ (expression ctxt) x
+  | Some (Pvc_coercion {ground=None; coercion }) ->
+      pp f "%a@;:>@;%a@;=@;%a"
+        (simple_pattern ctxt) p (core_type ctxt) coercion (expression ctxt) x
+  | Some (Pvc_coercion {ground=Some ground; coercion }) ->
+      pp f "%a@;:%a@;:>@;%a@;=@;%a"
+        (simple_pattern ctxt) p
+        (core_type ctxt) ground
+        (core_type ctxt) coercion
+        (expression ctxt) x
   | None -> begin
       match p with
       | {ppat_desc=Ppat_var _; ppat_attributes=[]} ->
