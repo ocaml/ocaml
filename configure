@@ -14362,14 +14362,13 @@ test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 # Checks for libraries
 
 ## Mathematical library
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for cos in -lm" >&5
-printf %s "checking for cos in -lm... " >&6; }
-if test ${ac_cv_lib_m_cos+y}
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing cos" >&5
+printf %s "checking for library containing cos... " >&6; }
+if test ${ac_cv_search_cos+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lm  $LIBS"
+  ac_func_search_save_LIBS=$LIBS
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -14385,33 +14384,50 @@ return cos ();
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_link "$LINENO"
+for ac_lib in '' m
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
 then :
-  ac_cv_lib_m_cos=yes
-else $as_nop
-  ac_cv_lib_m_cos=no
+  ac_cv_search_cos=$ac_res
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_m_cos" >&5
-printf "%s\n" "$ac_cv_lib_m_cos" >&6; }
-if test "x$ac_cv_lib_m_cos" = xyes
+    conftest$ac_exeext
+  if test ${ac_cv_search_cos+y}
 then :
-  printf "%s\n" "#define HAVE_LIBM 1" >>confdefs.h
-
-  LIBS="-lm $LIBS"
-
+  break
 fi
-
-
-if test "x$ac_cv_lib_m_cos" = xyes
+done
+if test ${ac_cv_search_cos+y}
 then :
-  mathlib="-lm"
+
 else $as_nop
-  mathlib=""
+  ac_cv_search_cos=no
 fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_cos" >&5
+printf "%s\n" "$ac_cv_search_cos" >&6; }
+ac_res=$ac_cv_search_cos
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  case $ac_cv_search_cos in #(
+  no) :
+    as_fn_error $? "Could not locate C math functions" "$LINENO" 5 ;; #(
+  'none required') :
+    mathlib="" ;; #(
+  *) :
+    mathlib="$ac_cv_search_cos" ;;
+esac
+fi
+
 
 # Checks for header files
 

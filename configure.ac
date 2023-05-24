@@ -966,9 +966,11 @@ AC_PROG_INSTALL
 # Checks for libraries
 
 ## Mathematical library
-AC_CHECK_LIB([m],[cos])
-
-AS_IF([test "x$ac_cv_lib_m_cos" = xyes ], [mathlib="-lm"], [mathlib=""])
+AC_SEARCH_LIBS([cos], [m],
+  [AS_CASE([$ac_cv_search_cos],
+    [no], [AC_MSG_ERROR([Could not locate C math functions])],
+    ['none required'], [mathlib=""],
+    [mathlib="$ac_cv_search_cos"])])
 
 # Checks for header files
 

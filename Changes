@@ -748,7 +748,8 @@ OCaml 5.1.0
   (Xavier Leroy, review by David Allsopp, report by Fabrice Le Fessant)
 
 - #12265: Stop adding -lexecinfo to cclibs (leftover debugging code from the
-  multicore project).
+  multicore project). Harden the feature probe for -lm in configure so -lm is
+  only added if strictly necessary.
   (David Allsopp, review by Sébastien Hinderer)
 
 ### Bug fixes:
