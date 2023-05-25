@@ -19,6 +19,7 @@
 
 #undef OCAML_OS_TYPE
 /* #define OCAML_OS_TYPE "Unix" */
+/* #define OCAML_OS_TYPE "BeOS" */
 /* #define OCAML_OS_TYPE "Win32" */
 /* #define OCAML_OS_TYPE "MacOS" */
 

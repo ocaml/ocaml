@@ -24,6 +24,7 @@ not have this which causes some important development things to be disabled
 (ocamltest and converting C compiler warnings to errors).
 
 2. Consult link:INSTALL.adoc[] for build instructions. Here is the gist of it:
+(In case you had to modify `configure.ac`, you should rebuild `configure` by running `make -B configure`)
 +
 ----
 ./configure
