@@ -316,7 +316,7 @@ static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
   caml_plat_unlock(&pool_freelist.lock);
 
   if( !r && adopted_pool ) {
-    local->owner->major_work_todo -=
+    Caml_state->major_work_done_between_slices +=
       pool_sweep(local, &local->full_pools[sz], sz, 0);
     r = local->avail_pools[sz];
   }
@@ -333,7 +333,7 @@ static pool* pool_find(struct caml_heap_state* local, sizeclass sz) {
 
   /* Otherwise, try to sweep until we find one */
   while (!local->avail_pools[sz] && local->unswept_avail_pools[sz]) {
-    local->owner->major_work_todo -=
+    Caml_state->major_work_done_between_slices +=
       pool_sweep(local, &local->unswept_avail_pools[sz], sz, 0);
   }
 
