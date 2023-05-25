@@ -21,6 +21,9 @@ Working version
 
 ### Standard library:
 
+- #12217: Add `Array.shuffle`.
+  (Daniel Bünzli, review by Nicolás Ojeda Bär, David Allsopp and Alain Frisch)
+
 ### Other libraries:
 
 - #12213: Dynlink library, improve legibility of error messages
