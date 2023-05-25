@@ -115,30 +115,38 @@ val y :
   <obj>
 |}]
 
-(* Since the row variable is not explicitly bound, 'a and 'b leak *)
+(* Since the row variable is implicitly bound, 'a and 'b don't leak *)
 
 let h (x : < m : 'a. <n : 'b. [< `A of 'a * 'b * 'c] > > as 'c) = x#m;;
 [%%expect{|
-Line 1, characters 66-69:
-1 | let h (x : < m : 'a. <n : 'b. [< `A of 'a * 'b * 'c] > > as 'c) = x#m;;
-                                                                      ^^^
-Error: This expression has type
-         < n : 'b. [< `A of 'a * 'b0 * < m : 'a. < n : 'b0. 'c > > ] as 'c >
-       but an expression was expected of type 'd
-       The universal variable 'a would escape its scope
+val h :
+  (< m : 'a. < n : 'd 'b. [< `A of 'a * 'b * 'c ] as 'd > > as 'c) ->
+  < n : 'e 'b. [< `A of 'f * 'b * 'c ] as 'e > = <fun>
+|}, Principal{|
+val h :
+  (< m : 'a. < n : 'd 'b. [< `A of 'a * 'b * 'c ] as 'd > > as 'c) ->
+  < n : 'e 'b.
+          [< `A of
+               'f * 'b *
+               (< m : 'a. < n : 'h 'b0. [< `A of 'a * 'b0 * 'g ] as 'h > >
+                as 'g) ]
+          as 'e > =
+  <fun>
 |}]
 
-(* Since the row variable is not bound, 'a leaks *)
+(* Since the row variable is implicitly bound, 'a doesn't leak *)
 
 let j (x : < m : 'a. <n : 'b. [< `A of 'a ] -> 'c > > as 'c) = x#m;;
 [%%expect{|
-Line 1, characters 63-66:
-1 | let j (x : < m : 'a. <n : 'b. [< `A of 'a ] -> 'c > > as 'c) = x#m;;
-                                                                   ^^^
-Error: This expression has type
-         < n : ([< `A of 'a ] as 'b) -> (< m : 'a. < n : 'b -> 'c > > as 'c) >
-       but an expression was expected of type 'd
-       The universal variable 'a would escape its scope
+val j :
+  (< m : 'c 'a. < n : ([< `A of 'a ] as 'c) -> 'b > > as 'b) ->
+  < n : [< `A of 'd ] -> 'b > = <fun>
+|}, Principal{|
+val j :
+  (< m : 'c 'a. < n : ([< `A of 'a ] as 'c) -> 'b > > as 'b) ->
+  < n : [< `A of 'd ] ->
+        (< m : 'f 'a. < n : ([< `A of 'a ] as 'f) -> 'e > > as 'e) > =
+  <fun>
 |}]
 
 let o =
@@ -147,11 +155,5 @@ let o =
       object method n _ = self end
   end;;
 [%%expect{|
-Lines 3-4, characters 4-34:
-3 | ....method m : 'a. < n : [< `A of 'a] -> 'b > =
-4 |       object method n _ = self end
-Error: The method m has type 'b but is expected to have type
-         < n : ([< `A of 'a ] as 'c) ->
-               (< m : 'a. < n : 'c -> 'd >; .. > as 'd) >
-       The universal variable 'a would escape its scope
+val o : < m : 'c 'a. < n : ([< `A of 'a ] as 'c) -> 'b > > as 'b = <obj>
 |}]
