@@ -602,6 +602,8 @@ static void domain_create(uintnat initial_minor_heap_wsize) {
   domain_state->dependent_size = 0;
   domain_state->dependent_allocated = 0;
 
+  domain_state->major_work_done_between_slices = 0;
+
   /* the minor heap will be initialized by
      [caml_reallocate_minor_heap] below. */
   domain_state->young_start = NULL;
@@ -1363,8 +1365,16 @@ int caml_domain_is_in_stw(void) {
       finishes.
    The same logic would apply for any other situations in which a domain
    wants to join or leave the set of STW participants.
+
+  The explanation above applies if [sync] = 1. When [sync] = 0, no
+  synchronization happens, and we simply run the handler asynchronously on
+  all domains. We still hold the stw_leader field until we know that
+  every domain has run the handler, so another STW section cannot
+  interfere with this one.
+
 */
 int caml_try_run_on_all_domains_with_spin_work(
+  int sync,
   void (*handler)(caml_domain_state*, void*, int, caml_domain_state**),
   void* data,
   void (*leader_setup)(caml_domain_state*),
@@ -1374,7 +1384,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   int i;
   caml_domain_state* domain_state = domain_self->state;
 
-  caml_gc_log("requesting STW");
+  caml_gc_log("requesting STW, sync=%d", sync);
 
   /* Don't touch the lock if there's already a stw leader
      OR we can't get the lock.
@@ -1410,7 +1420,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   stw_request.callback = handler;
   stw_request.data = data;
   atomic_store_release(&stw_request.barrier, 0);
-  atomic_store_release(&stw_request.domains_still_running, 1);
+  atomic_store_release(&stw_request.domains_still_running, sync);
   stw_request.num_domains = stw_domains.participating_domains;
   atomic_store_release(&stw_request.num_domains_still_processing,
                    stw_domains.participating_domains);
@@ -1489,7 +1499,20 @@ int caml_try_run_on_all_domains(
   void (*leader_setup)(caml_domain_state*))
 {
   return
-      caml_try_run_on_all_domains_with_spin_work(handler,
+      caml_try_run_on_all_domains_with_spin_work(1,
+                                                 handler,
+                                                 data,
+                                                 leader_setup, 0, 0);
+}
+
+int caml_try_run_on_all_domains_async(
+  void (*handler)(caml_domain_state*, void*, int, caml_domain_state**),
+  void* data,
+  void (*leader_setup)(caml_domain_state*))
+{
+  return
+      caml_try_run_on_all_domains_with_spin_work(0,
+                                                 handler,
                                                  data,
                                                  leader_setup, 0, 0);
 }
@@ -1553,6 +1576,16 @@ Caml_inline void advance_global_major_slice_epoch (caml_domain_state* d)
   }
 }
 
+static void global_major_slice_callback (caml_domain_state *domain,
+                                         void *unused,
+                                         int participating_count,
+                                         caml_domain_state **participating)
+{
+  domain->requested_major_slice = 1;
+  /* Nothing else to do, as [stw_hander] will call [caml_poll_gc_work]
+     right after the callback. */
+}
+
 void caml_poll_gc_work(void)
 {
   CAMLalloc_point_here;
@@ -1592,11 +1625,20 @@ void caml_poll_gc_work(void)
     caml_empty_minor_heaps_once();
   }
 
-  if (d->requested_major_slice) {
+  if (d->requested_major_slice || d->requested_global_major_slice) {
     CAML_EV_BEGIN(EV_MAJOR);
     d->requested_major_slice = 0;
     caml_major_collection_slice(AUTO_TRIGGERED_MAJOR_SLICE);
     CAML_EV_END(EV_MAJOR);
+  }
+
+  if (d->requested_global_major_slice) {
+    if (caml_try_run_on_all_domains_async(
+          &global_major_slice_callback, NULL, NULL)){
+      d->requested_global_major_slice = 0;
+    }
+    /* If caml_try_run_on_all_domains_async fails, we'll try again next time
+       caml_poll_gc_work is called. */
   }
 
   if (atomic_load_acquire(&d->requested_external_interrupt)) {
@@ -1744,7 +1786,6 @@ static void domain_terminate (void)
   call_timing_hook(&caml_domain_terminated_hook);
 
   while (!finished) {
-    caml_orphan_allocated_words();
     caml_finish_sweeping();
 
     caml_empty_minor_heaps_once();
