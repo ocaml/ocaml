@@ -223,6 +223,12 @@ OCaml 5.1.0
 - #11912: Refactoring handling of scoped type variables
   (Richard Eisenberg, review by Gabriel Scherer and Florian Angeletti)
 
+* #12189, #12211: anonymous row variables in explicitly polymorphic type
+  annotation, e.g. `'a. [< X of 'a ] -> 'a`, are now implicitly
+  universally quantified (in other words, the example above is now read
+  as `'a 'r. ([< X of 'a `] as 'r) -> 'a`).
+  (Florian Angeletti and Gabriel Scherer, review by Jacques Garrigue)
+
 ### Code generation and optimizations:
 
 - #11967: Remove traces of Obj.truncate, which allows some mutable
