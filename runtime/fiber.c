@@ -216,10 +216,9 @@ void caml_get_stack_sp_pc (struct stack_info* stack,
                            char** sp /* out */, uintnat* pc /* out */)
 {
   char* p = (char*)stack->sp;
-
-  Pop_frame_pointer(p);
-  *pc = *(uintnat*)p; /* ret addr */
-  *sp = p + sizeof(value);
+  p = First_frame(p);
+  *pc = Saved_return_address(p); /* ret addr */
+  *sp = p;                       /* pointer to first frame */
 }
 
 Caml_inline void scan_stack_frames(
@@ -240,10 +239,8 @@ Caml_inline void scan_stack_frames(
 
 next_chunk:
   if (sp == (char*)Stack_high(stack)) return;
-
-  Pop_frame_pointer(sp);
-  retaddr = *(uintnat*)sp;
-  sp += sizeof(value);
+  sp = First_frame(sp);
+  retaddr = Saved_return_address(sp);
 
   while(1) {
     d = caml_find_frame_descr(fds, retaddr);
@@ -266,9 +263,8 @@ next_chunk:
     } else {
       /* This marks the top of an ML stack chunk. Move sp to the previous
        * stack chunk.  */
-      sp += 3 * sizeof(value); /* trap frame & DWARF pointer */
-      regs = *(value**)sp;     /* update gc_regs */
-      sp += 1 * sizeof(value); /* gc_regs */
+      regs = Saved_gc_regs(sp); /* update gc_regs */
+      sp += Stack_header_size;  /* skip trap frame, gc_regs, DWARF pointer */
       goto next_chunk;
     }
   }
