@@ -702,6 +702,9 @@ OCaml 5.1.0
 - #12092: remove Lev_module_definition from lambda
   (Nick Roberts, review by Gabriel Scherer)
 
+- #12109: Pack parameters to unification in unification_environment
+  (Takafumi Saikawa and Jacques Garrigue, review by Richard Eisenberg)
+
 - #12117: Remove arity-interrupting elaboration of module unpacks
   (Nick Roberts, review by Richard Eisenberg and Jacques Garrigue)
 
