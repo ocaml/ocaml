@@ -57,7 +57,8 @@ let mutex_unlock_other_thread () =
     mutex_unlock_must_fail m;
     log "Releasing mutex from another thread (again)";
     mutex_unlock_must_fail m in
-  Thread.join (Thread.create f ())
+  Thread.join (Thread.create f ());
+  Mutex.unlock m
 
 let _ =
   log "---- Self deadlock";

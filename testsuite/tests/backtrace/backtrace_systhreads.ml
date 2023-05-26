@@ -22,7 +22,7 @@ let thread_backtrace (cond, mut) =
   try throw_exn "backtrace" with
   | exn ->
      Mutex.lock mut;
-     Condition.wait cond mut;
+     Condition.wait cond mut; Mutex.unlock mut;
      raise exn
 
 let () =
