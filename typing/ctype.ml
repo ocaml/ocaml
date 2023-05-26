@@ -346,6 +346,8 @@ let in_counterexample uenv =
 let allow_recursive_equations uenv =
   !Clflags.recursive_types || in_counterexample uenv
 
+(* Though without_* functions can be in a direct style,
+   CPS clarifies the structure of the code better. *)
 let without_assume_injective uenv f =
   match uenv with
   | Expression _ as uenv -> f uenv
@@ -2580,7 +2582,9 @@ let unify_package env unify_list lv1 p1 fl1 lv2 p2 fl2 =
 
 
 (* force unification in Reither when one side has a non-conjunctive type *)
-(* TODO: this could also be put in unification_environment? *)
+(* Code smell: this could also be put in unification_environment.
+   Only modified by expand_head_rigid, but the corresponding unification
+   environment is built in subst. *)
 let rigid_variants = ref false
 
 let unify1_var uenv t1 t2 =
