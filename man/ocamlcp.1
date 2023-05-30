@@ -24,7 +24,7 @@ ocamlcp, ocamloptp \- The OCaml profiling compilers
 .I ocamlc options
 ]
 [
-.BI \-P \ flags
+.BI \-P " flags"
 ]
 .I filename ...
 
@@ -33,7 +33,7 @@ ocamlcp, ocamloptp \- The OCaml profiling compilers
 .I ocamlopt options
 ]
 [
-.BI \-P \ flags
+.BI \-P " flags"
 ]
 .I filename ...
 
@@ -78,7 +78,7 @@ options,
 and
 .B ocamloptp
 accept one option to control the kind of profiling information, the
-.BI \-P \ letters
+.BI \-P " letters"
 option. The
 .I letters
 indicate which parts of the program should be profiled:
@@ -87,16 +87,16 @@ indicate which parts of the program should be profiled:
 all options
 .TP
 .B f
-function calls : a count point is set at the beginning of each function body
+function calls: a count point is set at the beginning of each function body
 .TP
 .B i
-.BR if \ ... \ then \ ... \ else :
-count points are set in both
-.BR then \ and \ else
+.BR if " ... " then " ... " else\c
+: count points are set in both
+.BR then " and " else
 branches
 .TP
 .B l
-.BR while , \ for
+.BR while ", " for
 loops: a count point is set at the beginning of the loop body
 .TP
 .B m
@@ -105,7 +105,7 @@ branches: a count point is set at the beginning of the
 body of each branch of a pattern-matching
 .TP
 .B t
-.BR try \ ... \ with
+.BR try " ... " with
 branches: a count point is set at the beginning of the body of each
 branch of an exception catcher
 
@@ -113,7 +113,7 @@ branch of an exception catcher
 For instance, compiling with
 .B ocamlcp \-P film
 profiles function calls,
-.BR if \ ... \ then \ ... \ else \ ...,
+.BR if " ... " then " ... " else " ...,"
 loops, and pattern matching.
 
 Calling
@@ -123,7 +123,7 @@ or
 without the
 .B \-P
 option defaults to
-.BR \-P\ fm ,
+.BR \-P " fm" ,
 meaning that only function calls and pattern matching are profiled.
 
 Note: for compatibility with previous versions,
@@ -134,9 +134,7 @@ with the same argument and meaning as
 .BR \-P .
 
 .SH SEE ALSO
-.BR ocamlc (1),
-.BR ocamlopt (1),
-.BR ocamlprof (1).
+.BR ocamlc "(1), " ocamlopt "(1), " ocamlprof (1).
 .br
-.IR "The OCaml user's manual" ,
+.IR The\ OCaml\ user's\ manual ,
 chapter "Profiling".
