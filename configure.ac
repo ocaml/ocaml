@@ -138,8 +138,7 @@ AC_SUBST([oc_cppflags])
 AC_SUBST([oc_ldflags])
 AC_SUBST([oc_dll_ldflags])
 AC_SUBST([oc_exe_ldflags])
-AC_SUBST([bytecclibs])
-AC_SUBST([nativecclibs])
+AC_SUBST([cclibs])
 AC_SUBST([ocamlc_cflags])
 AC_SUBST([ocamlc_cppflags])
 AC_SUBST([flexdir])
@@ -918,7 +917,6 @@ AS_CASE([$cc_basename,$host],
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
   [*,aarch64-*-darwin*|arm64-*-darwin*],
     AC_DEFINE([HAS_ARCH_CODE32], [1]),
-  [*,*-*-haiku*], [mathlib=""],
   [*,*-*-cygwin*],
     [common_cppflags="$common_cppflags -U_WIN32"
     AS_IF([$supports_shared_libraries],
@@ -967,9 +965,11 @@ AC_PROG_INSTALL
 # Checks for libraries
 
 ## Mathematical library
-AC_CHECK_LIB([m],[cos])
-
-AS_IF([test "x$ac_cv_lib_m_cos" = xyes ], [mathlib="-lm"], [mathlib=""])
+AC_SEARCH_LIBS([cos], [m],
+  [AS_CASE([$ac_cv_search_cos],
+    [no], [AC_MSG_ERROR([Could not locate C math functions])],
+    ['none required'], [mathlib=""],
+    [mathlib="$ac_cv_search_cos"])])
 
 # Checks for header files
 
@@ -1587,8 +1587,12 @@ but no proper monotonic clock source was found.])
 sockets=true
 
 AS_CASE([$host],
-  [*-*-mingw32*|*-pc-windows],
+  [*-*-mingw32*],
     [cclibs="$cclibs -lws2_32"
+    AC_SEARCH_LIBS([socket], [ws2_32])
+    AC_CHECK_FUNC([socketpair], [AC_DEFINE([HAS_SOCKETPAIR])])],
+  [*-pc-windows],
+    [cclibs="$cclibs ws2_32.lib"
     AC_SEARCH_LIBS([socket], [ws2_32])
     AC_CHECK_FUNC([socketpair], [AC_DEFINE([HAS_SOCKETPAIR])])],
   [*-*-haiku],
@@ -2031,8 +2035,10 @@ AS_CASE([$enable_debug_runtime],
 ## Determine how to link with the POSIX threads library
 
 AS_CASE([$host],
-  [*-*-mingw32*|*-pc-windows],
-    [PTHREAD_LIBS="-l:libpthread.a"],
+  [*-*-mingw32*],
+    [PTHREAD_LIBS="-l:libpthread.a -lgcc_eh"],
+  [*-pc-windows],
+    [PTHREAD_LIBS="-l:libpthread.lib"],
   [AX_PTHREAD(
     [common_cflags="$common_cflags $PTHREAD_CFLAGS"
     saved_CFLAGS="$CFLAGS"
@@ -2223,19 +2229,16 @@ oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
 ocamlc_cflags="$common_cflags $sharedlib_cflags $CFLAGS"
 ocamlc_cppflags="$common_cppflags $CPPFLAGS"
-cclibs="$cclibs $mathlib"
-
-AC_CHECK_LIB(execinfo, backtrace, cclibs="$cclibs -lexecinfo",[])
 
 AS_CASE([$host],
   [*-*-mingw32*],
-    [bytecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"
-    nativecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"],
+    [cclibs="$cclibs -lversion"],
   [*-pc-windows],
-    [bytecclibs="advapi32.lib ws2_32.lib version.lib"
-    nativecclibs="advapi32.lib ws2_32.lib version.lib"],
-  [bytecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"
-  nativecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"])
+    [# For whatever reason, flexlink includes -ladvapi32 for mingw-w64, but
+    # doesn't include advapi32.lib for MSVC
+    cclibs="$cclibs advapi32.lib version.lib"])
+
+AC_CONFIG_COMMANDS_PRE([cclibs="$cclibs $mathlib $DLLIBS $PTHREAD_LIBS"])
 
 AS_IF([test x"$libdir" = x'${exec_prefix}/lib'],
   [libdir="$libdir"/ocaml])

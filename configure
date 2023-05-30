@@ -854,8 +854,7 @@ bootstrapping_flexdll
 flexdir
 ocamlc_cppflags
 ocamlc_cflags
-nativecclibs
-bytecclibs
+cclibs
 oc_exe_ldflags
 oc_dll_ldflags
 oc_ldflags
@@ -3291,7 +3290,6 @@ OCAML_VERSION_SHORT=5.2
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
-
 
 
 
@@ -14204,8 +14202,6 @@ case $cc_basename,$host in #(
   *,aarch64-*-darwin*|arm64-*-darwin*) :
     printf "%s\n" "#define HAS_ARCH_CODE32 1" >>confdefs.h
  ;; #(
-  *,*-*-haiku*) :
-    mathlib="" ;; #(
   *,*-*-cygwin*) :
     common_cppflags="$common_cppflags -U_WIN32"
     if $supports_shared_libraries
@@ -14364,14 +14360,13 @@ test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 # Checks for libraries
 
 ## Mathematical library
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for cos in -lm" >&5
-printf %s "checking for cos in -lm... " >&6; }
-if test ${ac_cv_lib_m_cos+y}
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing cos" >&5
+printf %s "checking for library containing cos... " >&6; }
+if test ${ac_cv_search_cos+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lm  $LIBS"
+  ac_func_search_save_LIBS=$LIBS
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -14387,33 +14382,50 @@ return cos ();
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_link "$LINENO"
+for ac_lib in '' m
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
 then :
-  ac_cv_lib_m_cos=yes
-else $as_nop
-  ac_cv_lib_m_cos=no
+  ac_cv_search_cos=$ac_res
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_m_cos" >&5
-printf "%s\n" "$ac_cv_lib_m_cos" >&6; }
-if test "x$ac_cv_lib_m_cos" = xyes
+    conftest$ac_exeext
+  if test ${ac_cv_search_cos+y}
 then :
-  printf "%s\n" "#define HAVE_LIBM 1" >>confdefs.h
-
-  LIBS="-lm $LIBS"
-
+  break
 fi
-
-
-if test "x$ac_cv_lib_m_cos" = xyes
+done
+if test ${ac_cv_search_cos+y}
 then :
-  mathlib="-lm"
+
 else $as_nop
-  mathlib=""
+  ac_cv_search_cos=no
 fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_cos" >&5
+printf "%s\n" "$ac_cv_search_cos" >&6; }
+ac_res=$ac_cv_search_cos
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  case $ac_cv_search_cos in #(
+  no) :
+    as_fn_error $? "Could not locate C math functions" "$LINENO" 5 ;; #(
+  'none required') :
+    mathlib="" ;; #(
+  *) :
+    mathlib="$ac_cv_search_cos" ;;
+esac
+fi
+
 
 # Checks for header files
 
@@ -16408,8 +16420,76 @@ fi
 sockets=true
 
 case $host in #(
-  *-*-mingw32*|*-pc-windows) :
+  *-*-mingw32*) :
     cclibs="$cclibs -lws2_32"
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing socket" >&5
+printf %s "checking for library containing socket... " >&6; }
+if test ${ac_cv_search_socket+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char socket ();
+int
+main (void)
+{
+return socket ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ws2_32
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_socket=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_socket+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_socket+y}
+then :
+
+else $as_nop
+  ac_cv_search_socket=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_socket" >&5
+printf "%s\n" "$ac_cv_search_socket" >&6; }
+ac_res=$ac_cv_search_socket
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+    ac_fn_c_check_func "$LINENO" "socketpair" "ac_cv_func_socketpair"
+if test "x$ac_cv_func_socketpair" = xyes
+then :
+  printf "%s\n" "#define HAS_SOCKETPAIR 1" >>confdefs.h
+
+fi
+ ;; #(
+  *-pc-windows) :
+    cclibs="$cclibs ws2_32.lib"
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing socket" >&5
 printf %s "checking for library containing socket... " >&6; }
 if test ${ac_cv_search_socket+y}
@@ -18274,8 +18354,10 @@ esac
 ## Determine how to link with the POSIX threads library
 
 case $host in #(
-  *-*-mingw32*|*-pc-windows) :
-    PTHREAD_LIBS="-l:libpthread.a" ;; #(
+  *-*-mingw32*) :
+    PTHREAD_LIBS="-l:libpthread.a -lgcc_eh" ;; #(
+  *-pc-windows) :
+    PTHREAD_LIBS="-l:libpthread.lib" ;; #(
   *) :
 
 
@@ -19657,60 +19739,19 @@ oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
 ocamlc_cflags="$common_cflags $sharedlib_cflags $CFLAGS"
 ocamlc_cppflags="$common_cppflags $CPPFLAGS"
-cclibs="$cclibs $mathlib"
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for backtrace in -lexecinfo" >&5
-printf %s "checking for backtrace in -lexecinfo... " >&6; }
-if test ${ac_cv_lib_execinfo_backtrace+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lexecinfo  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char backtrace ();
-int
-main (void)
-{
-return backtrace ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_execinfo_backtrace=yes
-else $as_nop
-  ac_cv_lib_execinfo_backtrace=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_execinfo_backtrace" >&5
-printf "%s\n" "$ac_cv_lib_execinfo_backtrace" >&6; }
-if test "x$ac_cv_lib_execinfo_backtrace" = xyes
-then :
-  cclibs="$cclibs -lexecinfo"
-fi
-
 
 case $host in #(
   *-*-mingw32*) :
-    bytecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"
-    nativecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh" ;; #(
+    cclibs="$cclibs -lversion" ;; #(
   *-pc-windows) :
-    bytecclibs="advapi32.lib ws2_32.lib version.lib"
-    nativecclibs="advapi32.lib ws2_32.lib version.lib" ;; #(
+    # For whatever reason, flexlink includes -ladvapi32 for mingw-w64, but
+    # doesn't include advapi32.lib for MSVC
+    cclibs="$cclibs advapi32.lib version.lib" ;; #(
   *) :
-    bytecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"
-  nativecclibs="$cclibs $DLLIBS $PTHREAD_LIBS" ;;
+     ;;
 esac
+
+
 
 if test x"$libdir" = x'${exec_prefix}/lib'
 then :
@@ -19949,6 +19990,7 @@ LTLIBOBJS=$ac_ltlibobjs
     fi
   done
 
+cclibs="$cclibs $mathlib $DLLIBS $PTHREAD_LIBS"
 
   saved_exec_prefix="$exec_prefix"
   saved_prefix="$prefix"
