@@ -1127,13 +1127,12 @@ ocamllex.opt: ocamlopt
 lex/ocamllex$(EXE): OC_BYTECODE_LINKFLAGS += -compat-32
 
 partialclean::
-	rm -f lex/*.cm* lex/*.o lex/*.obj
+	rm -f lex/*.cm* lex/*.o lex/*.obj \
+        $(ocamllex_PROGRAMS) $(ocamllex_PROGRAMS:=.exe) \
+        lex/parser.ml lex/parser.mli lex/parser.output \
+        lex/lexer.ml
 
 beforedepend:: lex/parser.ml lex/parser.mli lex/lexer.ml
-
-clean::
-	rm -f lex/parser.ml lex/parser.mli lex/parser.output
-	rm -f lex/lexer.ml
 
 # The ocamlyacc parser generator
 
