@@ -156,6 +156,13 @@ Working version
 
 ### Standard library:
 
+- #11563: Add the Dynarray module to the stdlib. Dynamic arrays are
+  arrays whose length can be changed by adding or removing elements at
+  the end, similar to 'vectors' in C++ or Rust.
+  (Gabriel Scherer, Simon Cruanes and Florian Angeletti, review by
+   Daniel Bünzli, Guillaume Munch-Maccagnoni, Clément Allain,
+   Damien Doligez, Wiktor Kuchta and Pieter Goetschalckx)
+
 * #10775, #12499: Half-precision floating-point elements in Bigarray.
   (Anton Yabchinskiy, review by Xavier Leroy and Nicolás Ojeda Bär)
 
