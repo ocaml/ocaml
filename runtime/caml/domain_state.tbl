@@ -15,9 +15,10 @@
 /**************************************************************************/
 
 DOMAIN_STATE(atomic_uintnat, young_limit)
-/* Minor heap limit. Typically young_limit == young_start, but this field is set
- * by other domains to signal this domain by causing a spurious allocation
- * failure. */
+
+/* Minor heap limit. Typically young_limit == young_start, but this
+ * field is set by other domains, or by the memory profiler, to signal
+ * this domain by causing a spurious allocation failure. */
 
 DOMAIN_STATE(value*, young_ptr)
 /* Minor heap pointer */
@@ -152,6 +153,9 @@ DOMAIN_STATE(intnat, trap_barrier_off)
 DOMAIN_STATE(int64_t, trap_barrier_block)
 DOMAIN_STATE(struct caml_exception_context*, external_raise)
 /* Bytecode TLS vars, not used for native code */
+
+DOMAIN_STATE(struct memprof_domain_s *, memprof)
+DOMAIN_STATE(value *, memprof_young_trigger)
 
 DOMAIN_STATE(extra_params_area, extra_params)
 /* This member must occur last, because it is an array, not a scalar */

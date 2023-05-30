@@ -143,6 +143,12 @@ void caml_fatal_uncaught_exception(value exn)
   handle_uncaught_exception =
     caml_named_value("Printexc.handle_uncaught_exception");
 
+  /* If the callback allocates, memprof could be called, in which case
+     a memprof callback could raise an exception while
+     [handle_uncaught_exception] is running, and the printing of
+     the exception could fail. */
+  caml_memprof_update_suspended(1);
+
   if (handle_uncaught_exception != NULL)
     /* [Printexc.handle_uncaught_exception] does not raise exception. */
     caml_callback2(*handle_uncaught_exception, exn, Val_bool(DEBUGGER_IN_USE));
