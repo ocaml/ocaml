@@ -370,10 +370,17 @@ let get_gadt_equations_level () =
     Some y -> y
   | None -> assert false
 
-let nothing_equated = TypePairs.create 0
+(* Unification inside type_pat *)
+let unify_pat_types loc env ty ty' =
+  try unify env ty ty' with
+  | Unify err ->
+      raise(Error(loc, env, Pattern_type_clash(err, None)))
+  | Tags(l1,l2) ->
+      raise(Typetexp.Error(loc, env, Typetexp.Variant_tags (l1, l2)))
 
-(* unification inside type_pat*)
-let unify_pat_types_return_equated_pairs ?(refine = None) loc env ty ty' =
+(* GADT unification inside solve_Ppat_construct and check_counter_example_pat *)
+let nothing_equated = TypePairs.create 0
+let unify_pat_types_return_equated_pairs ~refine loc env ty ty' =
   try
     match refine with
     | Some allow_recursive_equations ->
@@ -388,14 +395,13 @@ let unify_pat_types_return_equated_pairs ?(refine = None) loc env ty ty' =
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, !env, Typetexp.Variant_tags (l1, l2)))
 
-let unify_pat_types ?refine loc env ty ty' =
-  ignore (unify_pat_types_return_equated_pairs ?refine loc env ty ty')
-
+let unify_pat_types_refine ~refine loc env ty ty' =
+  ignore (unify_pat_types_return_equated_pairs ~refine loc env ty ty')
 
 (** [sdesc_for_hint] is used by error messages to report literals in their
     original formatting *)
-let unify_pat ?refine ?sdesc_for_hint env pat expected_ty =
-  try unify_pat_types ?refine pat.pat_loc env pat.pat_type expected_ty
+let unify_pat ?sdesc_for_hint env pat expected_ty =
+  try unify_pat_types pat.pat_loc env pat.pat_type expected_ty
   with Error (loc, env, Pattern_type_clash(err, None)) ->
     raise(Error(loc, env, Pattern_type_clash(err, sdesc_for_hint)))
 
@@ -404,7 +410,7 @@ let unify_head_only ~refine loc env ty constr =
   let path = cstr_type_path constr in
   let decl = Env.find_type path !env in
   let ty' = Ctype.newconstr path (Ctype.instance_list decl.type_params) in
-  unify_pat_types ~refine loc env ty' ty
+  unify_pat_types_refine ~refine loc env ty' ty
 
 (* Creating new conjunctive types is not allowed when typing patterns *)
 (* make all Reither present in open variants *)
@@ -422,8 +428,7 @@ let finalize_variant pat tag opat r =
   | Reither (false, ty::tl, _) when not (row_closed row) ->
       link_row_field_ext ~inside:f (rf_present (Some ty));
       begin match opat with None -> assert false
-      | Some pat ->
-          let env = ref pat.pat_env in List.iter (unify_pat env pat) (ty::tl)
+      | Some pat -> List.iter (unify_pat pat.pat_env pat) (ty::tl)
       end
   | Reither (c, _l, true) when not (has_fixed_explanation row) ->
       link_row_field_ext ~inside:f (rf_either [] ~no_arg:c ~matched:false)
@@ -560,8 +565,8 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
           raise (Error (loc, env, err)) in
   unify_vars p1_vs p2_vs
 
-let rec build_as_type ~refine (env : Env.t ref) p =
-  let as_ty = build_as_type_aux ~refine env p in
+let rec build_as_type (env : Env.t) p =
+  let as_ty = build_as_type_aux env p in
   (* Cf. #1655 *)
   List.fold_left (fun as_ty (extra, _loc, _attrs) ->
     match extra with
@@ -577,12 +582,11 @@ let rec build_as_type ~refine (env : Env.t ref) p =
           (fun () -> instance cty.ctyp_type)
       in
       (* This call to unify can't fail since the pattern is well typed. *)
-      unify_pat_types ~refine p.pat_loc env (instance as_ty) (instance ty);
+      unify_pat_types p.pat_loc env (instance as_ty) (instance ty);
       ty
   ) as_ty p.pat_extra
 
-and build_as_type_aux ~refine (env : Env.t ref) p =
-  let build_as_type = build_as_type ~refine in
+and build_as_type_aux (env : Env.t) p =
   match p.pat_desc with
     Tpat_alias(p1,_, _) -> build_as_type env p1
   | Tpat_tuple pl ->
@@ -597,7 +601,7 @@ and build_as_type_aux ~refine (env : Env.t ref) p =
       let ty_args, ty_res, _ =
         instance_constructor Keep_existentials_flexible cstr
       in
-      List.iter2 (fun (p,ty) -> unify_pat ~refine env {p with pat_type = ty})
+      List.iter2 (fun (p,ty) -> unify_pat env {p with pat_type = ty})
         (List.combine pl tyl) ty_args;
       ty_res
   | Tpat_variant(l, p', _) ->
@@ -612,18 +616,17 @@ and build_as_type_aux ~refine (env : Env.t ref) p =
       let ppl = List.map (fun (_, l, p) -> l.lbl_pos, p) lpl in
       let do_label lbl =
         let _, ty_arg, ty_res = instance_label false lbl in
-        unify_pat ~refine env {p with pat_type = ty} ty_res;
+        unify_pat env {p with pat_type = ty} ty_res;
         let refinable =
           lbl.lbl_mut = Immutable && List.mem_assoc lbl.lbl_pos ppl &&
           match get_desc lbl.lbl_arg with Tpoly _ -> false | _ -> true in
         if refinable then begin
           let arg = List.assoc lbl.lbl_pos ppl in
-          unify_pat ~refine env
-            {arg with pat_type = build_as_type env arg} ty_arg
+          unify_pat env {arg with pat_type = build_as_type env arg} ty_arg
         end else begin
           let _, ty_arg', ty_res' = instance_label false lbl in
-          unify_pat_types ~refine p.pat_loc env ty_arg ty_arg';
-          unify_pat ~refine env p ty_res'
+          unify_pat_types p.pat_loc env ty_arg ty_arg';
+          unify_pat env p ty_res'
         end in
       Array.iter do_label lbl.lbl_all;
       ty
@@ -631,7 +634,7 @@ and build_as_type_aux ~refine (env : Env.t ref) p =
       begin match row with
         None ->
           let ty1 = build_as_type env p1 and ty2 = build_as_type env p2 in
-          unify_pat ~refine env {p2 with pat_type = ty2} ty1;
+          unify_pat env {p2 with pat_type = ty2} ty1;
           ty1
       | Some row ->
           let Row {fields; fixed; name} = row_repr row in
@@ -643,9 +646,9 @@ and build_as_type_aux ~refine (env : Env.t ref) p =
 
 (* Constraint solving during typing of patterns *)
 
-let solve_Ppat_poly_constraint ~refine env loc sty expected_ty =
-  let cty, ty, force = Typetexp.transl_simple_type_delayed !env sty in
-  unify_pat_types ~refine loc env ty (instance expected_ty);
+let solve_Ppat_poly_constraint env loc sty expected_ty =
+  let cty, ty, force = Typetexp.transl_simple_type_delayed env sty in
+  unify_pat_types loc env ty (instance expected_ty);
   pattern_force := force :: !pattern_force;
   match get_desc ty with
   | Tpoly (body, tyl) ->
@@ -656,18 +659,19 @@ let solve_Ppat_poly_constraint ~refine env loc sty expected_ty =
       (cty, ty, ty')
   | _ -> assert false
 
-let solve_Ppat_alias ~refine env pat =
-  with_local_level ~post:generalize (fun () -> build_as_type ~refine env pat)
+let solve_Ppat_alias env pat =
+  with_local_level ~post:generalize (fun () -> build_as_type env pat)
 
 let solve_Ppat_tuple (type a) ~refine loc env (args : a list) expected_ty =
   let vars = List.map (fun _ -> newgenvar ()) args in
   let ty = newgenty (Ttuple vars) in
   let expected_ty = generic_instance expected_ty in
-  unify_pat_types ~refine loc env ty expected_ty;
+  unify_pat_types_refine ~refine loc env ty expected_ty;
   vars
 
 let solve_constructor_annotation env name_list sty ty_args ty_ex =
   let expansion_scope = get_gadt_equations_level () in
+  (* XXX: should use fold and return the updated environment *)
   let ids =
     List.map
       (fun name ->
@@ -688,10 +692,10 @@ let solve_constructor_annotation env name_list sty ty_args ty_ex =
     match ty_args with
       [] -> assert false
     | [ty_arg] ->
-        unify_pat_types cty.ctyp_loc env ty1 ty_arg;
+        unify_pat_types cty.ctyp_loc !env ty1 ty_arg;
         [ty2]
     | _ ->
-        unify_pat_types cty.ctyp_loc env ty1 (newty (Ttuple ty_args));
+        unify_pat_types cty.ctyp_loc !env ty1 (newty (Ttuple ty_args));
         match get_desc (expand_head !env ty2) with
           Ttuple tyl -> tyl
         | _ -> assert false
@@ -796,7 +800,7 @@ let solve_Ppat_record_field ~refine loc env label label_lid record_ty =
   with_local_level_iter ~post:generalize_structure begin fun () ->
     let (_, ty_arg, ty_res) = instance_label false label in
     begin try
-      unify_pat_types ~refine loc env ty_res (instance record_ty)
+      unify_pat_types_refine ~refine loc env ty_res (instance record_ty)
     with Error(_loc, _env, Pattern_type_clash(err, _)) ->
       raise(Error(label_lid.loc, !env,
                   Label_mismatch(label_lid.txt, err)))
@@ -807,24 +811,24 @@ let solve_Ppat_record_field ~refine loc env label label_lid record_ty =
 let solve_Ppat_array ~refine loc env expected_ty =
   let ty_elt = newgenvar() in
   let expected_ty = generic_instance expected_ty in
-  unify_pat_types ~refine
+  unify_pat_types_refine ~refine
     loc env (Predef.type_array ty_elt) expected_ty;
   ty_elt
 
-let solve_Ppat_lazy  ~refine loc env expected_ty =
+let solve_Ppat_lazy ~refine loc env expected_ty =
   let nv = newgenvar () in
-  unify_pat_types ~refine loc env (Predef.type_lazy_t nv)
+  unify_pat_types_refine ~refine loc env (Predef.type_lazy_t nv)
     (generic_instance expected_ty);
   nv
 
-let solve_Ppat_constraint ~refine loc env sty expected_ty =
+let solve_Ppat_constraint loc env sty expected_ty =
   let cty, ty, force =
     with_local_level ~post:(fun (_, ty, _) -> generalize_structure ty)
-      (fun () -> Typetexp.transl_simple_type_delayed !env sty)
+      (fun () -> Typetexp.transl_simple_type_delayed env sty)
   in
   pattern_force := force :: !pattern_force;
   let ty, expected_ty' = instance ty, ty in
-  unify_pat_types ~refine loc env ty (instance expected_ty);
+  unify_pat_types loc env ty (instance expected_ty);
   (cty, ty, expected_ty')
 
 let solve_Ppat_variant ~refine loc env tag no_arg expected_ty =
@@ -838,7 +842,7 @@ let solve_Ppat_variant ~refine loc env tag no_arg expected_ty =
   (* PR#7404: allow some_private_tag blindly, as it would not unify with
      the abstract row variable *)
   if tag <> Parmatch.some_private_tag then
-    unify_pat_types ~refine loc env (newgenty(Tvariant row)) expected_ty;
+    unify_pat_types_refine ~refine loc env (newgenty(Tvariant row)) expected_ty;
   (arg_type, make_row (newvar ()), instance expected_ty)
 
 (* Building the or-pattern corresponding to a polymorphic variant type *)
@@ -1481,9 +1485,8 @@ and type_pat_aux
     type_pat category ~no_existentials ~env
   in
   let loc = sp.ppat_loc in
-  let refine = None in
   let solve_expected (x : pattern) : pattern =
-    unify_pat ~refine ~sdesc_for_hint:sp.ppat_desc env x (instance expected_ty);
+    unify_pat ~sdesc_for_hint:sp.ppat_desc !env x (instance expected_ty);
     x
   in
   let crp (x : k general_pattern) : k general_pattern =
@@ -1542,7 +1545,7 @@ and type_pat_aux
       ({ptyp_desc=Ptyp_poly _} as sty)) ->
       (* explicitly polymorphic type *)
       let cty, ty, ty' =
-        solve_Ppat_poly_constraint ~refine env lloc sty expected_ty in
+        solve_Ppat_poly_constraint !env lloc sty expected_ty in
       let id = enter_variable lloc name ty' attrs in
       rvp { pat_desc = Tpat_var (id, name);
             pat_loc = lloc;
@@ -1552,7 +1555,7 @@ and type_pat_aux
             pat_env = !env }
   | Ppat_alias(sq, name) ->
       let q = type_pat Value sq expected_ty in
-      let ty_var = solve_Ppat_alias ~refine env q in
+      let ty_var = solve_Ppat_alias !env q in
       let id =
         enter_variable ~is_as_variable:true loc name ty_var sp.ppat_attributes
       in
@@ -1587,7 +1590,8 @@ and type_pat_aux
       raise (Error (loc, !env, Invalid_interval))
   | Ppat_tuple spl ->
       assert (List.length spl >= 2);
-      let expected_tys = solve_Ppat_tuple ~refine loc env spl expected_ty in
+      let expected_tys =
+        solve_Ppat_tuple ~refine:None loc env spl expected_ty in
       let pl = List.map2 (type_pat Value) spl expected_tys in
       rvp {
         pat_desc = Tpat_tuple pl;
@@ -1659,7 +1663,7 @@ and type_pat_aux
                                      constr.cstr_arity, List.length sargs)));
 
       let (ty_args, existential_ctyp) =
-        solve_Ppat_construct ~refine env loc constr no_existentials
+        solve_Ppat_construct ~refine:None env loc constr no_existentials
           existential_styp expected_ty
       in
 
@@ -1690,7 +1694,7 @@ and type_pat_aux
       assert (tag <> Parmatch.some_private_tag);
       let constant = (sarg = None) in
       let arg_type, row, pat_type =
-        solve_Ppat_variant ~refine loc env tag constant expected_ty in
+        solve_Ppat_variant ~refine:None loc env tag constant expected_ty in
       let arg =
         (* PR#6235: propagate type information *)
         match sarg, arg_type with
@@ -1717,7 +1721,8 @@ and type_pat_aux
       in
       let type_label_pat (label_lid, label, sarg) =
         let ty_arg =
-          solve_Ppat_record_field ~refine loc env label label_lid record_ty in
+          solve_Ppat_record_field ~refine:None loc env label label_lid
+            record_ty in
         (label_lid, label, type_pat Value sarg ty_arg)
       in
       let make_record_pat lbl_pat_list =
@@ -1739,7 +1744,7 @@ and type_pat_aux
       in
       rvp @@ solve_expected (make_record_pat lbl_a_list)
   | Ppat_array spl ->
-      let ty_elt = solve_Ppat_array ~refine loc env expected_ty in
+      let ty_elt = solve_Ppat_array ~refine:None loc env expected_ty in
       let pl = List.map (fun p -> type_pat Value p ty_elt) spl in
       rvp {
         pat_desc = Tpat_array pl;
@@ -1790,7 +1795,7 @@ and type_pat_aux
            pat_attributes = sp.ppat_attributes;
            pat_env = !env }
   | Ppat_lazy sp1 ->
-      let nv = solve_Ppat_lazy ~refine loc env expected_ty in
+      let nv = solve_Ppat_lazy ~refine:None loc env expected_ty in
       let p1 = type_pat Value sp1 nv in
       rvp {
         pat_desc = Tpat_lazy p1;
@@ -1801,7 +1806,7 @@ and type_pat_aux
   | Ppat_constraint(sp, sty) ->
       (* Pretend separate = true *)
       let cty, ty, expected_ty' =
-        solve_Ppat_constraint ~refine loc env sty expected_ty in
+        solve_Ppat_constraint loc !env sty expected_ty in
       let p = type_pat category sp expected_ty' in
       let extra = (Tpat_constraint cty, loc, sp.ppat_attributes) in
       begin match category, (p : k general_pattern) with
@@ -1932,7 +1937,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
     finalize_variants pat;
   end;
   List.iter (fun f -> f()) (get_ref pattern_force);
-  if is_optional l then unify_pat (ref val_env) pat (type_option (newvar ()));
+  if is_optional l then unify_pat val_env pat (type_option (newvar ()));
   let (pv, val_env, met_env) =
     List.fold_right
       (fun {pv_id; pv_type; pv_loc; pv_as_var; pv_attributes}
@@ -2141,7 +2146,8 @@ let rec check_counter_example_pat ~info ~env tp expected_ty k =
   let loc = tp.pat_loc in
   let refine = Some true in
   let solve_expected (x : pattern) : pattern =
-    unify_pat ~refine env x (instance expected_ty);
+    unify_pat_types_refine ~refine x.pat_loc env x.pat_type
+      (instance expected_ty);
     x
   in
   (* "make pattern" and "make pattern then continue" *)
@@ -2841,8 +2847,8 @@ let check_absent_variant env =
         create_row ~fields
           ~more:(newvar ()) ~closed:false ~fixed:None ~name:None in
       (* Should fail *)
-      unify_pat (ref env) {pat with pat_type = newty (Tvariant row')}
-                          (correct_levels pat.pat_type)
+      unify_pat env {pat with pat_type = newty (Tvariant row')}
+                     (correct_levels pat.pat_type)
     | _ -> () }
 
 (* Getting proper location of already typed expressions.
@@ -5111,7 +5117,7 @@ and type_cases
       let ty_arg' = newvar () in
       let unify_pats ty =
         List.iter (fun { typed_pat = pat; pat_type_for_unif = pat_ty; _ } ->
-          unify_pat_types pat.pat_loc (ref env) pat_ty ty
+          unify_pat_types pat.pat_loc env pat_ty ty
         ) half_typed_cases
       in
       unify_pats ty_arg';
@@ -5254,7 +5260,7 @@ and type_let ?check ?check_strict
                   | _ -> pat
                 in
                 let bound_expr = vb_exp_constraint binding in
-                unify_pat (ref env) pat (type_approx env bound_expr))
+                unify_pat env pat (type_approx env bound_expr))
               pat_list spat_sexp_list;
           (* Polymorphic variant processing *)
           List.iter

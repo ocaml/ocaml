@@ -696,6 +696,10 @@ OCaml 5.1.0
 - #12012: move calls to Typetexp.TyVarEnv.reset inside with_local_level etc.
   (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
 
+- #12025: Split Typecore.unify_pat_types into two
+  to avoid unnecessary references to the environment in type_pat
+  (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
+
 - #12034: a logarithmic algorithm to find the next free variable
   (Gabriel Scherer, review by Stefan Muenzel)
 
