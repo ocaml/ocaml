@@ -1069,13 +1069,6 @@ let fundecl fundecl =
   `	.align	3\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   emit_symbol_type emit_symbol fundecl.fun_name "function";
-  `{emit_symbol fundecl.fun_name}:\n`;
-  emit_debug_info fundecl.fun_dbg;
-  cfi_startproc();
-  let num_call_gc, num_check_bound =
-    num_call_gc_and_check_bound_points env
-  in
-
   (* Dynamic stack checking *)
   let stack_threshold_size = Config.stack_threshold * 8 in (* bytes *)
   let { max_frame_size; contains_nontail_calls} =
@@ -1084,23 +1077,39 @@ let fundecl fundecl =
   in
   let handle_overflow, stack_check_size =
     if contains_nontail_calls || max_frame_size >= stack_threshold_size then begin
-      let overflow = new_label () and ret = new_label () in
+      let overflow = new_label () in
+      `{emit_label overflow}:\n`;
+      (* Pass the desired frame size on the stack, since all of the
+        argument-passing registers may be in use. *)
+      let s = (Config.stack_threshold + max_frame_size / 8) in
+      `	mov	{emit_reg reg_tmp1}, #{emit_int s}\n`;
+      `	stp	{emit_reg reg_tmp1}, x30, [sp, #-16]!\n`;
+      `	bl	{emit_symbol "caml_call_realloc_stack"}\n`;
+      `	ldp	{emit_reg reg_tmp1}, x30, [sp], #16\n`;
+      (* fall through function entry point *)
+      Some overflow, 5
+    end else
+      None, 0 in
+  `{emit_symbol fundecl.fun_name}:\n`;
+  emit_debug_info fundecl.fun_dbg;
+  cfi_startproc();
+  begin match handle_overflow with
+  | None -> ()
+  | Some overflow ->
       let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
       let f = max_frame_size + threshold_offset in
       let offset = Domainstate.(idx_of_field Domain_current_stack) * 8 in
       `	ldr	{emit_reg reg_tmp1}, [{emit_reg reg_domain_state_ptr}, #{emit_int offset}]\n`;
       emit_addimm reg_tmp1 reg_tmp1 f;
       `	cmp	sp, {emit_reg reg_tmp1}\n`;
-      `	bcc	{emit_label overflow}\n`;
-      `{emit_label ret}:\n`;
-      Some (overflow, ret), 5
-    end else None, 0
+      `	bcc	{emit_label overflow}\n`
+  end;
+  let num_call_gc, num_check_bound =
+    num_call_gc_and_check_bound_points env
   in
-
   let max_out_of_line_code_offset =
     stack_check_size +
-    max_out_of_line_code_offset ~num_call_gc
-      ~num_check_bound
+    max_out_of_line_code_offset ~num_call_gc ~num_check_bound
   in
 
   BR.relax fundecl ~max_out_of_line_code_offset;
@@ -1110,21 +1119,6 @@ let fundecl fundecl =
   List.iter emit_call_bound_error env.bound_error_sites;
   assert (List.length env.call_gc_sites = num_call_gc);
   assert (List.length env.bound_error_sites = num_check_bound);
-
-  begin match handle_overflow with
-  | None -> ()
-  | Some (overflow,ret) -> begin
-      `{emit_label overflow}:\n`;
-      (* Pass the desired frame size on the stack, since all of the
-        argument-passing registers may be in use. *)
-      let s = (Config.stack_threshold + max_frame_size / 8) in
-      `	mov	{emit_reg reg_tmp1}, #{emit_int s}\n`;
-      `	stp	{emit_reg reg_tmp1}, x30, [sp, #-16]!\n`;
-      `	bl	{emit_symbol "caml_call_realloc_stack"}\n`;
-      `	ldp	{emit_reg reg_tmp1}, x30, [sp], #16\n`;
-      `	b	{emit_label ret}\n`
-    end
-  end;
 
   cfi_endproc();
   emit_symbol_type emit_symbol fundecl.fun_name "function";
