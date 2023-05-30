@@ -79,6 +79,10 @@ void caml_terminate_signals(void);
 CAMLextern void * caml_init_signal_stack(void);
 CAMLextern void caml_free_signal_stack(void *);
 
+#if defined(NATIVE_CODE) && defined(TARGET_power)
+void caml_sigtrap_handler(int, siginfo_t *, void *);
+#endif
+
 /* These hooks are not modified after other threads are spawned. */
 CAMLextern void (*caml_enter_blocking_section_hook)(void);
 CAMLextern void (*caml_leave_blocking_section_hook)(void);

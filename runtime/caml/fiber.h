@@ -100,6 +100,9 @@ CAML_STATIC_ASSERT(sizeof(struct stack_info) ==
   #define Reserved_space_c_stack_link 4 * 8
 #elif defined(TARGET_s390x)
   #define Reserved_space_c_stack_link 160
+#elif defined(TARGET_power)
+/* ELF ABI: 4 reserved words at bottom of C stack */
+  #define Reserved_space_c_stack_link 4 * 8
 #endif
 
 /* This structure is used for storing the OCaml return pointer when

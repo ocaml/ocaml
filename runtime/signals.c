@@ -540,8 +540,6 @@ static void * caml_signal_stack_0 = NULL;
 
 void caml_init_signals(void)
 {
-  /* Bound-check trap handling for Power and S390x will go here eventually. */
-
   /* Set up alternate signal stack for domain 0 */
 #ifdef POSIX_SIGNALS
   caml_signal_stack_0 = caml_init_signal_stack();
@@ -562,6 +560,16 @@ void caml_init_signals(void)
         sigaction(SIGPROF, &act, NULL);
       }
     }
+  }
+#endif
+  /* Bound-check trap handling for Power */
+#if defined(NATIVE_CODE) && defined(TARGET_power)
+  {
+    struct sigaction act;
+    act.sa_sigaction = caml_sigtrap_handler;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = SA_SIGINFO | SA_NODEFER;
+    sigaction(SIGTRAP, &act, NULL);
   }
 #endif
 }
