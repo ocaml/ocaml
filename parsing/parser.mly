@@ -586,21 +586,24 @@ let class_of_let_bindings ~loc lbs body =
     assert (lbs.lbs_extension = None);
     mkclass ~loc (Pcl_let (lbs.lbs_rec, List.rev bindings, body))
 
+(* If all the parameters are [Pparam_newtype x], then return [Some xs] where
+   [xs] is the corresponding list of values [x]. This function is optimized for
+   the common case, where a list of parameters contains at least one value
+   parameter.
+*)
 let all_params_as_newtypes =
-  let exception Found_val in
+  let is_newtype = function
+    | Pparam_newtype _ -> true
+    | Pparam_val _ -> false
+  in
+  let as_newtype = function
+    | Pparam_newtype (x, loc) -> Some (x, loc)
+    | Pparam_val _ -> None
+  in
   fun params ->
-    match params with
-    (* The common case: all value parameters, no newtype parameters. *)
-    | Pparam_val _ :: _ -> None
-    | Pparam_newtype _ :: _ | [] ->
-        try
-          Some (
-            List.map (function
-                | Pparam_val _ -> raise_notrace Found_val
-                | Pparam_newtype (x, loc) -> (x, loc))
-              params)
-        with
-        | Found_val -> None
+    if List.for_all is_newtype params
+    then Some (List.filter_map as_newtype params)
+    else None
 
 (* Given a construct [fun (type a b c) : t -> e], we construct
    [Pexp_newtype(a, Pexp_newtype(b, Pexp_newtype(c, Pexp_constraint(e, t))))]
@@ -633,7 +636,7 @@ let mkfunction params body_constraint body =
   | Pfunction_cases _ -> Pexp_function (params, body_constraint, body)
   | Pfunction_body body_exp ->
     (* If all the params are newtypes, then we don't create a function node;
-       we create a newtype node. *)
+       we create nested newtype nodes. *)
       match all_params_as_newtypes params with
       | None -> Pexp_function (params, body_constraint, body)
       | Some newtypes ->
@@ -2279,6 +2282,13 @@ class_type_declarations:
   | FUNCTION ext_attributes match_cases
       { let loc = make_loc $sloc in
         let cases = $3 in
+        (* There are two choices of where to put attributes: on the
+           Pexp_function node; on the Pfunction_cases body. We put them on the
+           Pexp_function node here because the compiler only uses
+           Pfunction_cases attributes for enabling/disabling warnings in
+           typechecking. For standalone function cases, we want the compiler to
+           respect, e.g., [@inline] attributes.
+        *)
         let desc = mkfunction [] None (Pfunction_cases (cases, loc, [])) in
         mkexp_attrs ~loc:$sloc desc $2
       }
@@ -2381,7 +2391,7 @@ let_pattern:
 fun_expr:
     simple_expr %prec below_HASH
       { $1 }
-  | expr_attrs
+  | fun_expr_attrs
       { let desc, attrs = $1 in
         mkexp_attrs ~loc:$sloc desc attrs }
   | mkexp(expr_)
@@ -2414,7 +2424,7 @@ fun_expr:
 %inline expr:
   | or_function(fun_expr) { $1 }
 ;
-%inline expr_attrs:
+%inline fun_expr_attrs:
   | LET MODULE ext_attributes mkrhs(module_name) module_binding_body IN seq_expr
       { Pexp_letmodule($4, $5, $7), $3 }
   | LET EXCEPTION ext_attributes let_exception_declaration IN seq_expr
@@ -2754,7 +2764,8 @@ fun_param_as_list:
         *)
         let loc =
           match ty_params with
-          | [] | [_] -> make_loc $sloc
+          | [] -> assert false (* lident_list is non-empty *)
+          | [_] -> make_loc $sloc
           | _ :: _ :: _ -> ghost_loc $sloc
         in
         List.map (fun x -> Pparam_newtype (x, loc)) ty_params

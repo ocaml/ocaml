@@ -306,9 +306,11 @@ and expression_desc =
       - [fun P1 ... Pn -> function p1 -> e1 | ... | pm -> em]
         when [body = Pfunction_cases [ p1 -> e1; ...; pm -> em ]]
 
-      [C] represents a type constraint or coercion placed immediately
-      before the arrow, e.g. [fun P1 ... Pn : t1 :> t2 -> ...]
-      when [C = Some (Pcoerce (Some t1, t2))].
+      [C] represents a type constraint or coercion placed immediately before the
+      arrow, e.g. [fun P1 ... Pn : ty -> ...] when [C = Some (Pconstraint ty)].
+
+      A function must have parameters. [Pexp_function (params, _, body)] must
+      have non-empty [params] or a [Pfunction_cases _] body.
   *)
   | Pexp_apply of expression * (arg_label * expression) list
       (** [Pexp_apply(E0, [(l1, E1) ; ... ; (ln, En)])]
@@ -455,12 +457,28 @@ and function_param =
       the location of the [(type x)] as a whole.
 
       Multiple parameters [(type a b c)] are represented as multiple
-      [Pparam_newtype] nodes.
+      [Pparam_newtype] nodes, let's say:
+
+      {[ [ Pparam_newtype (a, loc1);
+           Pparam_newtype (b, loc2);
+           Pparam_newtype (c, loc3);
+         ]
+      ]}
+
+      Here, the first loc [loc1] is the location of [(type a b c)], and the
+      subsequent locs [loc2] and [loc3] are the same as [loc1], except marked as
+      ghost locations. The locations on [a], [b], [c], correspond to the
+      variables [a], [b], and [c] in the source code.
   *)
 
 and function_body =
   | Pfunction_body of expression
   | Pfunction_cases of case list * Location.t * attributes
+  (** In [Pfunction_cases (_, loc, attrs)], the location extends from the
+      start of the [function] keyword to the end of the last case. The compiler
+      will only use typechecking-related attributes from [attrs], e.g. enabling
+      or disabling a warning.
+  *)
 (** See the comment on {{!expression_desc.Pexp_function}[Pexp_function]}. *)
 
 and type_constraint =

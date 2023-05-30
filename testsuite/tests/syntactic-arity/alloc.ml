@@ -30,14 +30,10 @@ let () =
   measure "mutable_pat1" (fun ~a ~b -> mutable_pat1 a b);
   measure "mutable_pat2" (fun ~a ~b -> mutable_pat2 b a)
 
-
-let dont_warn_with_partial_match None x = x
-
 (* TEST
  flags = "-w +A-70";
  setup-ocamlopt.byte-build-env;
  ocamlopt.byte;
- check-ocamlopt.byte-output;
  run;
  check-program-output;
 *)

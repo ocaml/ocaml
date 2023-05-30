@@ -831,6 +831,9 @@ and is_self_pat = function
       string_is_prefix "self-" (Ident.name id)
   | _ -> false
 
+(* [Typeclass] adds a [self] parameter to initializers and methods that isn't
+   present in the source program.
+*)
 let remove_fun_self exp =
   match exp with
   | { exp_desc =

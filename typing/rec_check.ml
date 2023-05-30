@@ -776,28 +776,12 @@ let rec expression : Typedtree.expression -> term_judg =
       ]
     | Texp_function (params, body) ->
       (*
-         Function_cases:
-
-         (Gi; _ |- pi -> ei : m[Delay])^i
+         G      |-{body} b  : m[Delay]
          (Hj    |-{def}  Pj : m[Delay])^j
-         G  := sum(Gi)^i
          H  := sum(Hj)^j
          ps := sum(pat(Pj))^j
-         ---------------------------------------------------------
-         sum(G, H) - ps |- fun (Pj)^j -> function (pi -> ei)^i : m
-
-         Function_body:
-
-         G |- e : m[Delay]
-         (Hj |-{def}  Pj : m[Delay])^j
-         H  := sum(Hj)^j
-         ps := sum(pat(Pj))^j
-         -------------------------------------
-         sum(G, H) - ps |- fun (Pj)^j -> e : m
-
-         Contrarily to match, the values that are pattern-matched
-         are bound locally, so the pattern modes do not influence
-         the final environment.
+         -----------------------------------
+         G + H - ps |- fun (Pj)^j -> b : m
       *)
       let param_pat param =
         (* param P ::=
@@ -814,33 +798,27 @@ let rec expression : Typedtree.expression -> term_judg =
       in
       (* Optional argument defaults.
 
-         G |-{def} P : m
+          G |-{def} P : m
       *)
       let param_default param =
         match param.fp_kind with
         | Tparam_optional_default (_, default) ->
           (*
-             G |- e : m
-             ------------------
-             G |-{def} ?(p=e) : m
+              G |- e : m
+              ------------------
+              G |-{def} ?(p=e) : m
           *)
             expression default
         | Tparam_pat _ ->
           (*
-             ------------------
-             . |-{def} p : m
+              ------------------
+              . |-{def} p : m
           *)
             empty
       in
       let patterns = List.map param_pat params in
       let defaults = List.map param_default params in
-      let body =
-        match body with
-        | Tfunction_body body -> expression body
-        | Tfunction_cases { cases; _ } ->
-            List.map (fun c mode -> fst (case c mode)) cases
-            |> join
-      in
+      let body = function_body body in
       let f = join (body :: defaults) << Delay in
       (fun m ->
          let env = f m in
@@ -876,6 +854,35 @@ let rec expression : Typedtree.expression -> term_judg =
       path pth << Dereference
     | Texp_open (od, e) ->
       open_declaration od >> expression e
+
+(* Function bodies.
+
+    G |-{body} b : m
+*)
+and function_body body =
+  match body with
+  | Tfunction_body body ->
+    (*
+        G |- e : m
+        ------------------
+        G |-{body} e : m (**)
+
+      (**) The "e" here stands for [Tfunction_body] as opposed to
+           [Tfunction_cases].
+    *)
+      expression body
+  | Tfunction_cases { cases; _ } ->
+    (*
+        (Gi; _ |- pi -> ei : m)^i    (**)
+        ------------------
+        sum(Gi)^i |-{body} function (pi -> ei)^i : m
+
+      (**) Contrarily to match, the values that are pattern-matched
+           are bound locally, so the pattern modes do not influence
+           the final environment.
+    *)
+      List.map (fun c mode -> fst (case c mode)) cases
+      |> join
 
 and binding_op : Typedtree.binding_op -> term_judg =
   fun bop ->

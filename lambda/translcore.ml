@@ -824,7 +824,8 @@ and transl_curried_function ~scopes loc return repr params body =
   *)
   let params, return, body =
     match Misc.Stdlib.List.chunks_of (Lambda.max_arity ()) params with
-    | [] -> [], return, body
+    | [] ->
+        Misc.fatal_error "attempted to translate a function with zero arguments"
     | first_chunk :: rest_of_chunks ->
       let body, return =
         List.fold_right

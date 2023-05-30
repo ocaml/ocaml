@@ -176,12 +176,14 @@ type ctxt = {
   pipe : bool;
   semi : bool;
   ifthenelse : bool;
+  functionrhs : bool;
 }
 
-let reset_ctxt = { pipe=false; semi=false; ifthenelse=false }
+let reset_ctxt = { pipe=false; semi=false; ifthenelse=false; functionrhs=false }
 let under_pipe ctxt = { ctxt with pipe=true }
 let under_semi ctxt = { ctxt with semi=true }
 let under_ifthenelse ctxt = { ctxt with ifthenelse=true }
+let under_functionrhs ctxt = { ctxt with functionrhs = true }
 (*
 let reset_semi ctxt = { ctxt with semi=false }
 let reset_ifthenelse ctxt = { ctxt with ifthenelse=false }
@@ -647,7 +649,7 @@ and function_params_then_body ctxt f params constraint_ body ~delimiter =
     (list (function_param ctxt) ~sep:"") params
     (option (type_constraint ctxt)) constraint_
     delimiter
-    (function_body ctxt) body
+    (function_body (under_functionrhs ctxt)) body
 
 and expression ctxt f x =
   if x.pexp_attributes <> [] then
@@ -670,7 +672,17 @@ and expression ctxt f x =
     | Pexp_function (params, c, body) ->
         begin match params, c with
         (* Omit [fun] if there are no params. *)
-        | [], None -> pp f "@[<2>%a@]" (function_body ctxt) body
+        | [], None ->
+            (* If function cases are a direct body of a function,
+               the function node should be wrapped in parens so
+               it doesn't become part of the enclosing function. *)
+            let should_paren =
+              match body with
+              | Pfunction_cases _ -> ctxt.functionrhs
+              | Pfunction_body _ -> false
+            in
+            let ctxt' = if should_paren then reset_ctxt else ctxt in
+            pp f "@[<2>%a@]" (paren should_paren (function_body ctxt')) body
         | [], Some c ->
             pp f "@[<2>(%a@;%a)@]"
               (function_body ctxt) body

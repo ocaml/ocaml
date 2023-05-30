@@ -75,6 +75,10 @@ type wrong_kind_sort =
   | List
   | Unit
 
+type contains_gadt =
+  | Contains_gadt
+  | No_gadt
+
 let wrong_kind_sort_of_constructor (lid : Longident.t) =
   match lid with
   | Lident "true" | Lident "false" | Ldot(_, "true") | Ldot(_, "false") ->
@@ -949,28 +953,6 @@ let build_or_pat env loc lid =
           pat pats in
       (path, rp { r with pat_loc = loc })
 
-(* Used to split patterns into value cases and exception cases. *)
-let split_cases
-      (type c ret)
-      env
-      (cases : c list)
-      ~(case_to_pattern : c -> computation general_pattern)
-      ~(case_has_guard : c -> bool)
-      (f : c -> pattern -> ret)
-  : ret list * ret list =
-  let add_case lst case = function
-    | None -> lst
-    | Some pat -> f case pat :: lst
-  in
-  List.fold_right (fun case (vals, exns) ->
-    let pat = case_to_pattern case in
-    match split_pattern pat with
-    | Some _, Some _ when case_has_guard case ->
-      raise (Error (pat.pat_loc, env,
-                    Mixed_value_and_exception_patterns_under_guard))
-    | vp, ep -> add_case vals case vp, add_case exns case ep
-  ) cases ([], [])
-
 (* Type paths *)
 
 let rec expand_path env p =
@@ -1440,6 +1422,22 @@ type ('case_pattern, 'case_data) half_typed_case =
     pat_vars: pattern_variable list;
     module_vars: module_variables;
     contains_gadt: bool; }
+
+(* Used to split patterns into value cases and exception cases. *)
+let split_half_typed_cases env zipped_cases =
+  let add_case lst htc data = function
+    | None -> lst
+    | Some split_pat ->
+        ({ htc.untyped_case with pattern = split_pat }, data) :: lst
+  in
+  List.fold_right (fun (htc, data) (vals, exns) ->
+      let pat = htc.typed_pat in
+      match split_pattern pat with
+      | Some _, Some _ when htc.untyped_case.has_guard ->
+          raise (Error (pat.pat_loc, env,
+                        Mixed_value_and_exception_patterns_under_guard))
+      | vp, ep -> add_case vals htc data vp, add_case exns htc data ep
+    ) zipped_cases ([], [])
 
 let rec has_literal_pattern p = match p.ppat_desc with
   | Ppat_constant _
@@ -3138,20 +3136,18 @@ let vb_pat_constraint ({pvb_pat=pat; pvb_expr = exp; _ } as vb) =
     out of typing so that typing an expression body can return an expression
     and typing a function cases body can return the cases.
 *)
-module Constraint_arg = struct
-  type 'ret t =
-    { type_without_constraint: Env.t -> 'ret * type_expr;
-      (** [type_without_constraint] types a body (e :> t) where there is no
-          constraint.
-      *)
-      type_with_constraint: Env.t -> type_expr -> 'ret;
-      (** [type_with_constraint] types a body (e : t) or (e : t :> t') in
-          the presence of a constraint.
-      *)
-      is_self: 'ret -> bool;
-      (** Whether the thing being constrained is a [Val_self] ident. *)
-    }
-end
+type 'ret constraint_arg =
+  { type_without_constraint: Env.t -> 'ret * type_expr;
+    (** [type_without_constraint] types a body (e :> t) where there is no
+        constraint.
+    *)
+    type_with_constraint: Env.t -> type_expr -> 'ret;
+    (** [type_with_constraint] types a body (e : t) or (e : t :> t') in
+        the presence of a constraint.
+    *)
+    is_self: 'ret -> bool;
+    (** Whether the thing being constrained is a [Val_self] ident. *)
+  }
 
 let rec type_exp ?recarg env sexp =
   (* We now delegate everything to type_expect *)
@@ -3334,28 +3330,35 @@ and type_expect_
         exp_env = env }
   | Pexp_function (params, body_constraint, body) ->
       let in_function = ty_expected_explained, loc in
-      let exp_type, params, body, newtypes =
+      let exp_type, params, body, newtypes, contains_gadt =
         type_function env params body_constraint body ty_expected ~in_function
           ~first:true
       in
       (* Require that the n-ary function is known to have at least n arrows
          in the type. This prevents GADT equations introduced by the parameters
          from hiding arrows from the resulting type.
+
+         Performance hack: Only do this check when any of [params] contains a
+         GADT, as this is the only opportunity for arrows to be hidden from the
+         resulting type.
       *)
-      let ty_function =
-        List.fold_right
-          (fun param rest_ty ->
-             newty (Tarrow (param.fp_arg_label, newvar (), rest_ty, commu_ok)))
-          params
-          (match body with
-           | Tfunction_body _ -> newvar ()
-           | Tfunction_cases _ ->
-             newty (Tarrow (Nolabel, newvar (), newvar (), commu_ok)))
-      in
-      begin
-        try unify env ty_function exp_type
-        with Unify err ->
-        raise(Error(loc, env, Expr_type_clash (err, None, Some desc)));
+      begin match contains_gadt with
+      | No_gadt -> ()
+      | Contains_gadt ->
+          let ty_function =
+            List.fold_right
+              (fun param rest_ty ->
+                newty
+                  (Tarrow (param.fp_arg_label, newvar (), rest_ty, commu_ok)))
+              params
+              (match body with
+              | Tfunction_body _ -> newvar ()
+              | Tfunction_cases _ ->
+                newty (Tarrow (Nolabel, newvar (), newvar (), commu_ok)))
+          in
+          try unify env ty_function exp_type
+          with Unify err ->
+          raise(Error(loc, env, Expr_type_clash (err, None, Some desc)));
       end;
       re
         { exp_desc = Texp_function (params, body);
@@ -4198,7 +4201,7 @@ and type_expect_
            exp_attributes = sexp.pexp_attributes;
            exp_env = env }
 
-and expression_constraint pexp : _ Constraint_arg.t =
+and expression_constraint pexp =
   { type_without_constraint = (fun env ->
       let expr = type_exp env pexp in
       expr, expr.exp_type);
@@ -4212,18 +4215,19 @@ and expression_constraint pexp : _ Constraint_arg.t =
   }
 
 (** Types a body in the scope of a coercion (with an optional constraint)
-    and returns the inferred type. See the comment on {!Constraint_arg} for
+    and returns the inferred type. See the comment on {!constraint_arg} for
     an explanation of how this typechecking is polymorphic in the body.
 *)
 and type_coerce
-  : type a. a Constraint_arg.t -> _ -> _ -> _ -> _ -> loc_arg:_
+  : type a. a constraint_arg -> _ -> _ -> _ -> _ -> loc_arg:_
          -> a * type_expr * exp_extra =
   fun constraint_arg env loc sty sty' ~loc_arg ->
   (* Pretend separate = true, 1% slowdown for lablgtk *)
   (* Also see PR#7199 for a problem with the following:
       let separate = !Clflags.principal || Env.has_local_constraints env in*)
-  let { Constraint_arg.is_self; type_with_constraint; type_without_constraint }
-    = constraint_arg in
+  let { is_self; type_with_constraint; type_without_constraint } =
+    constraint_arg
+  in
   match sty with
   | None ->
     let (cty', ty', force) =
@@ -4311,7 +4315,7 @@ and type_constraint env sty =
     @param loc_arg the location of the thing being constrained
 *)
 and type_constraint_expect
-  : type a. a Constraint_arg.t -> _ -> _ -> loc_arg:_ -> _ -> _ -> a * _ * _ =
+  : type a. a constraint_arg -> _ -> _ -> loc_arg:_ -> _ -> _ -> a * _ * _ =
   fun constraint_arg env loc ~loc_arg constraint_ ty_expected ->
   let ret, ty, exp_extra =
     match constraint_ with
@@ -4403,18 +4407,21 @@ and type_binding_op_ident env s =
   in
   path, desc
 
-(* Returns the argument type and then the return type.
+(** Returns the argument type and then the return type.
 
-   [first] is whether the function type is for the [Texp_function] node.
-   It's used to generate better error messages. ([in_function] has
-   some information about this node, again for error messages.)
+    @param first Whether the parameter corresponding to the argument of
+      [ty_expected] is the first parameter to the (n-ary) function. This only
+      affects error messages.
+    @param in_function Information about the [Pexp_function] node that's in the
+      process of being typechecked (its overall type and its location). Again,
+      this is only used to improve error messages.
 *)
-and split_function_ty env ty ~arg_label ~first ~in_function =
+and split_function_ty env ty_expected ~arg_label ~first ~in_function =
   let { ty = ty_fun; explanation }, loc = in_function in
   let separate = !Clflags.principal || Env.has_local_constraints env in
   with_local_level_iter_if separate ~post:generalize_structure begin fun () ->
     let ty_arg, ty_res =
-      try filter_arrow env (instance ty) arg_label
+      try filter_arrow env (instance ty_expected) arg_label
       with Filter_arrow_failed err ->
         let err = match err with
         | Unification_error unif_err ->
@@ -4450,9 +4457,14 @@ and split_function_ty env ty ~arg_label ~first ~in_function =
    function params + body" with [ty_expected], and returns out the inferred
    type.
 
-   Returns (inferred_ty, params, body, newtypes), where [newtypes] are the
-   newtypes immediately bound by the prefix of function parameters. These
-   should be added to an [exp_extra] node.
+   See [split_function_ty] for the meaning of [first] and [in_function].
+
+   Returns (inferred_ty, params, body, newtypes, contains_gadt), where:
+     - [newtypes] are the newtypes immediately bound by the prefix of function
+       parameters. These should be added to an [exp_extra] node.
+     - [contains_gadt] is whether any of [params] contains a GADT. Note
+       this does not indicate whether [body] contains a GADT (if it's
+       [Tfunction_cases]).
 *)
 and type_function
       env params_suffix body_constraint body ty_expected ~first ~in_function
@@ -4477,20 +4489,20 @@ and type_function
   match params_suffix with
   | Pparam_newtype (newtype, _) :: rest ->
       (* Check everything else in the scope of (type a). *)
-      let (params, body, newtypes), exp_type =
+      let (params, body, newtypes, contains_gadt), exp_type =
         type_newtype loc env newtype.txt (fun env ->
-          let exp_type, params, body, newtypes =
+          let exp_type, params, body, newtypes, contains_gadt =
             (* mimic the typing of Pexp_newtype by minting a new type var,
               like [type_exp].
             *)
             type_function env rest body_constraint body (newvar ())
               ~first:false ~in_function
           in
-          (params, body, newtypes), exp_type)
+          (params, body, newtypes, contains_gadt), exp_type)
       in
       with_explanation ty_fun.explanation (fun () ->
         unify_exp_types loc env exp_type (instance ty_expected));
-      exp_type, params, body, newtype :: newtypes
+      exp_type, params, body, newtype :: newtypes, contains_gadt
   | Pparam_val (arg_label, default_arg, pat) :: rest ->
       let ty_arg, ty_res =
         split_function_ty env ty_expected ~arg_label ~first ~in_function
@@ -4513,18 +4525,26 @@ and type_function
             let default = type_expect env default (mk_expected ty_default) in
             ty_default, Some default
       in
-      let (pat, params, body, newtypes), partial =
+      let (pat, params, body, newtypes, contains_gadt), partial =
         (* Check everything else in the scope of the parameter. *)
         map_half_typed_cases Value env ty_arg_internal ty_res pat.ppat_loc
           ~partial_flag:true
           (* We don't make use of [case_data] here so we pass unit. *)
           [ { pattern = pat; has_guard = false; needs_refute = false }, () ]
-          ~type_body:begin fun () pat ~ext_env ~ty_expected ~ty_infer:_ ->
-            let _, params, body, newtypes =
-              type_function ext_env rest body_constraint body
-                ty_expected ~first:false ~in_function
-            in
-            (pat, params, body, newtypes)
+          ~type_body:begin
+            fun () pat ~ext_env ~ty_expected ~ty_infer:_
+              ~contains_gadt:param_contains_gadt ->
+              let _, params, body, newtypes, suffix_contains_gadt =
+                type_function ext_env rest body_constraint body
+                  ty_expected ~first:false ~in_function
+              in
+              let contains_gadt =
+                if param_contains_gadt then
+                  Contains_gadt
+                else
+                  suffix_contains_gadt
+              in
+              (pat, params, body, newtypes, contains_gadt)
           end
         |> function
           (* The result must be a singleton because we passed a singleton
@@ -4535,8 +4555,16 @@ and type_function
       let exp_type =
         instance (newgenty (Tarrow (arg_label, ty_arg, ty_res, commu_ok)))
       in
+      (* This is quadratic, as it operates over the entire tail of the
+         type for each new parameter. Now that functions are n-ary, we
+         could possibly run this once.
+      *)
       with_explanation ty_fun.explanation (fun () ->
         unify_exp_types loc env exp_type (instance ty_expected));
+      (* This is quadratic, as it extracts all of the parameters from an arrow
+         type for each parameter that's added. Now that functions are n-ary,
+         there might be an opportunity to improve this.
+      *)
       let not_nolabel_function ty =
         let ls, tvar = list_labels env ty in
         List.for_all (( <> ) Nolabel) ls && not tvar
@@ -4563,7 +4591,7 @@ and type_function
           fp_newtypes = newtypes;
         }
       in
-      exp_type, param :: params, body, []
+      exp_type, param :: params, body, [], contains_gadt
   | [] ->
     let exp_type, body =
       match body with
@@ -4603,11 +4631,10 @@ and type_function
                   - [type_without_constraint]: If there is just a coercion and
                     no constraint, call [type_exp] on the cases and surface the
                     cases' inferred type to [type_constraint_expect]. *)
-              let function_cases_constraint_arg : _ Constraint_arg.t =
+              let function_cases_constraint_arg =
                 { is_self = (fun _ -> false);
                   type_with_constraint = (fun env ty ->
-                    let cases, partial, ty_out = type_cases_expect env ty in
-                    enforce_current_level env ty_out;
+                    let cases, partial, _ = type_cases_expect env ty in
                     cases, partial);
                   type_without_constraint = (fun env ->
                     let cases, partial, ty_fun =
@@ -4630,7 +4657,11 @@ and type_function
           in
           exp_type, body
      in
-    exp_type, [], body, []
+     (* [No_gadt] is fine because this return value is only meant to indicate
+        whether [params] (here, the empty list) contains any GADT, not whether
+        the body is a [Tfunction_cases] whose patterns include a GADT.
+     *)
+    exp_type, [], body, [], No_gadt
 
 
 and type_label_access env srecord usage lid =
@@ -5429,7 +5460,7 @@ and type_statement ?explanation env sexp =
 
 (* Most of the arguments are the same as [type_cases].
 
-   Takes a callback which is responsible for checking the body of the case.
+   Takes a callback which is responsible for typing the body of the case.
    The arguments are documented inline in the type signature.
 
    It takes a callback rather than returning the half-typed cases directly
@@ -5441,7 +5472,8 @@ and type_statement ?explanation env sexp =
 *)
 and map_half_typed_cases
   : type k ret case_data.
-    k pattern_category -> _ -> _ -> _ -> _
+    ?additional_checks_for_split_cases:((_ * ret) list -> unit)
+    -> k pattern_category -> _ -> _ -> _ -> _
     -> (untyped_case * case_data) list
     -> type_body:(
         case_data
@@ -5449,10 +5481,12 @@ and map_half_typed_cases
         -> ext_env:_ (* environment with module variables / pattern variables *)
         -> ty_expected:_ (* type to check body in scope of *)
         -> ty_infer:_ (* type to infer for body *)
+        -> contains_gadt:_ (* whether the pattern contains a GADT *)
         -> ret)
     -> partial_flag:bool
     -> ret list * partial
-  = fun category env ty_arg ty_res loc caselist ~type_body ~partial_flag ->
+  = fun ?additional_checks_for_split_cases
+    category env ty_arg ty_res loc caselist ~type_body ~partial_flag ->
   (* ty_arg is _fully_ generalized *)
   let patterns = List.map (fun ((x : untyped_case), _) -> x.pattern) caselist in
   let contains_polyvars = List.exists contains_polymorphic_variant patterns in
@@ -5603,7 +5637,8 @@ and map_half_typed_cases
                 type information from preceding branches *)
             correct_levels ty_res
           else ty_res in
-        type_body case_data pat ~ext_env ~ty_expected ~ty_infer:ty_res')
+        type_body case_data pat ~ext_env ~ty_expected ~ty_infer:ty_res'
+          ~contains_gadt)
     half_typed_cases
   end in
   let do_init = may_contain_gadts || needs_exhaust_check in
@@ -5613,21 +5648,32 @@ and map_half_typed_cases
       Subst.type_expr (Subst.for_saving Subst.identity) ty_arg'
     else ty_arg'
   in
-  let val_cases, exn_cases =
+  (* Split the cases into val and exn cases so we can do the appropriate checks
+     for exhaustivity and unused variables.
+
+     The caller of this function can define custom checks. For some of these
+     checks, the half-typed case doesn't provide enough info on its own -- for
+     instance, the check for ambiguous bindings in when guards needs to know the
+     case body's expression -- so the code pairs each case with its
+     corresponding element in [result] before handing it off to the caller's
+     custom checks.
+  *)
+  let val_cases_with_result, exn_cases_with_result =
     match category with
     | Value ->
         let val_cases =
-          List.map
-            (fun htc -> { htc.untyped_case with pattern = htc.typed_pat })
+          List.map2
+            (fun htc res ->
+               { htc.untyped_case with pattern = htc.typed_pat }, res)
             half_typed_cases
+            result
         in
-        (val_cases : pattern Parmatch.parmatch_case list), []
+        (val_cases : (pattern Parmatch.parmatch_case * ret) list), []
     | Computation ->
-        split_cases env half_typed_cases
-          ~case_to_pattern:(fun htc -> htc.typed_pat)
-          ~case_has_guard:(fun htc -> htc.untyped_case.has_guard)
-          (fun htc split_pat -> { htc.untyped_case with pattern = split_pat })
+        split_half_typed_cases env (List.combine half_typed_cases result)
   in
+  let val_cases = List.map fst val_cases_with_result in
+  let exn_cases = List.map fst exn_cases_with_result in
   if val_cases = [] && exn_cases <> [] then
     raise (Error (loc, env, No_value_clauses));
   let partial =
@@ -5650,6 +5696,13 @@ and map_half_typed_cases
   else
     (* Check for unused cases, do not delay because of gadts *)
     unused_check false;
+  begin
+    match additional_checks_for_split_cases with
+    | None -> ()
+    | Some check ->
+        check val_cases_with_result;
+        check exn_cases_with_result;
+  end;
   (result, partial), [ty_res']
   end
   (* Ensure that existential types do not escape *)
@@ -5670,40 +5723,34 @@ and type_cases
      is to typecheck the guards and the cases, and then to check for some
      warnings that can fire in the presence of guards.
   *)
-  let cases, partial =
-    map_half_typed_cases category env ty_arg ty_res loc caselist ~partial_flag
-      ~type_body:begin
-        fun { pc_guard; pc_rhs } pat ~ext_env ~ty_expected ~ty_infer ->
-          let guard =
-            match pc_guard with
-            | None -> None
-            | Some scond ->
-              Some
-                (type_expect ext_env scond
-                  (mk_expected ~explanation:When_guard Predef.type_bool))
-          in
-          let exp =
-            type_expect ext_env pc_rhs (mk_expected ?explanation ty_expected)
-          in
-          {
-            c_lhs = pat;
-            c_guard = guard;
-            c_rhs = {exp with exp_type = ty_infer}
-          }
-      end
-  in
-  let val_cases, exn_cases =
-    match category with
-    | Value -> (cases : value case list), []
-    | Computation ->
-        split_cases env cases
-          ~case_to_pattern:(fun { c_lhs } -> c_lhs)
-          ~case_has_guard:(fun { c_guard } -> Option.is_some c_guard)
-          (fun case pattern -> { case with c_lhs = pattern })
-  in
-  Parmatch.check_ambiguous_bindings val_cases;
-  Parmatch.check_ambiguous_bindings exn_cases;
-  cases, partial
+  map_half_typed_cases category env ty_arg ty_res loc caselist ~partial_flag
+    ~type_body:begin
+      fun { pc_guard; pc_rhs } pat ~ext_env ~ty_expected ~ty_infer
+          ~contains_gadt:_ ->
+        let guard =
+          match pc_guard with
+          | None -> None
+          | Some scond ->
+            Some
+              (type_expect ext_env scond
+                (mk_expected ~explanation:When_guard Predef.type_bool))
+        in
+        let exp =
+          type_expect ext_env pc_rhs (mk_expected ?explanation ty_expected)
+        in
+        {
+          c_lhs = pat;
+          c_guard = guard;
+          c_rhs = {exp with exp_type = ty_infer}
+        }
+    end
+    ~additional_checks_for_split_cases:(fun cases ->
+      let cases =
+        List.map
+          (fun (case_with_pat, case) ->
+             { case with c_lhs = case_with_pat.Parmatch.pattern }) cases
+      in
+      Parmatch.check_ambiguous_bindings cases)
 
 
 (** A version of [type_expect], but that operates over function cases instead
@@ -5711,8 +5758,8 @@ and type_cases
     [type_expect], and the returned type is like the [exp_type] of the
     expression returned by [type_expect].
 
-    @param first Whether the parameter bound by the function cases is the first
-    parameter to the (n-ary) function. This only affects error messages. *)
+    See [split_function_ty] for the meaning of [first] and [in_function].
+*)
 and type_function_cases_expect
       env ty_expected loc cases attrs ~first ~in_function =
   Builtin_attributes.warning_scope attrs begin fun () ->
