@@ -260,6 +260,9 @@ typedef uint64_t uintnat;
    Documented in gc.mli */
 #define Custom_minor_max_bsz_def 8192
 
+/* Minimum amount of work to do in a major GC slice. */
+#define Major_slice_work_min 512
+
 /* Default allocation policy. */
 #define Allocation_policy_def caml_policy_best_fit
 

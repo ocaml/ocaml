@@ -77,14 +77,11 @@ HEADERS=unixsupport.h socketaddr.h
 
 include ../Makefile.otherlibs.common
 
-unix.ml: unix_$(UNIX_OR_WIN32).ml
-	cp $< $@
-
 distclean::
 	rm -f unix.ml
 
 .PHONY: depend
-depend: unix.ml
+depend:
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 include .depend

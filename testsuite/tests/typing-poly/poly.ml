@@ -1525,38 +1525,35 @@ end;;
 [%%expect {|
 val n : < m : 'x 'a. ([< `Foo of 'x ] as 'a) -> 'x > = <obj>
 |}];;
-(* ok *)
+(* ok, due to implicit `'o. [< `Foo of _ ] as 'o`  *)
 let n =
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 [%%expect {|
-Line 2, characters 9-68:
-2 |   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The method m has type 'a -> 'b but is expected to have type
-         [< `Foo of 'x ] -> 'c
-       The universal variable 'x would escape its scope
+val n : < m : 'a 'x. ([< `Foo of 'x ] as 'a) -> 'x > = <obj>
 |}];;
 (* fail *)
 let (n : < m : 'a. [< `Foo of int] -> 'a >) =
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 [%%expect {|
-Line 2, characters 9-68:
+Line 2, characters 2-72:
 2 |   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The method m has type 'a -> 'b but is expected to have type
-         [< `Foo of 'x ] -> 'c
-       The universal variable 'x would escape its scope
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression has type < m : 'b 'x. ([< `Foo of 'x ] as 'b) -> 'x >
+       but an expression was expected of type
+         < m : 'a. [< `Foo of int ] -> 'a >
+       Types for tag `Foo are incompatible
 |}];;
 (* fail *)
 let (n : 'b -> < m : 'a . ([< `Foo of int] as 'b) -> 'a >) = fun x ->
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 [%%expect {|
-Line 2, characters 9-68:
+Line 2, characters 2-72:
 2 |   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The method m has type 'a -> 'b but is expected to have type
-         [< `Foo of 'x ] -> 'c
-       The universal variable 'x would escape its scope
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression has type < m : 'b 'x. ([< `Foo of 'x ] as 'b) -> 'x >
+       but an expression was expected of type
+         < m : 'a. [< `Foo of int ] -> 'a >
+       Types for tag `Foo are incompatible
 |}];;
 (* ok *)
 let f (n : < m : 'a 'r. [< `Foo of 'a & int | `Bar] as 'r >) =
@@ -1579,22 +1576,13 @@ Error: This expression has type
          < m : 'b 'd. [< `Bar | `Foo of int & 'b ] as 'd >
        Types for tag `Foo are incompatible
 |}]
-(* fail? *)
+(* ok (with implicit universal quantification) *)
 let f (n : < m : 'a. [< `Foo of 'a & int | `Bar] >) =
   (n : < m : 'b. [< `Foo of 'b & int | `Bar] >)
 [%%expect{|
-Line 1:
-Error: Values do not match:
-         val f :
-           < m : 'a. [< `Bar | `Foo of 'a & int ] as 'c > -> < m : 'b. 'c >
-       is not included in
-         val f :
-           < m : 'a. [< `Bar | `Foo of 'b & int ] as 'c > -> < m : 'b. 'c >
-       The type
-         < m : 'a. [< `Bar | `Foo of 'b & int ] as 'c > -> < m : 'b. 'c >
-       is not compatible with the type
-         < m : 'a. [< `Bar | `Foo of 'b & int ] as 'd > -> < m : 'b. 'd >
-       Types for tag `Foo are incompatible
+val f :
+  < m : 'c 'a. [< `Bar | `Foo of 'a & int ] as 'c > ->
+  < m : 'd 'b. [< `Bar | `Foo of 'b & int ] as 'd > = <fun>
 |}]
 
 (* PR#6171 *)
@@ -1948,4 +1936,104 @@ Line 2, characters 16-24:
                     ^^^^^^^^
 Error: This field value has type 'b option ref which is less general than
          'a. 'a option ref
+|}]
+
+
+(** #12210: turn row variable into univars under Ptyp_poly: *)
+
+let simple: 'a. 'a -> [> `X of 'a ] -> 'a = fun default ->
+  function
+  | `X x -> x
+  | _ -> default
+[%%expect {|
+val simple : 'a -> [> `X of 'a ] -> 'a = <fun>
+|}]
+
+type 'a w = Int: int w
+let locally_abstract: type a. a w -> [> `X of a ] -> a = fun Int ->
+  function
+  | `X x -> x
+  | _ -> 0
+[%%expect {|
+type 'a w = Int : int w
+val locally_abstract : 'a w -> [> `X of 'a ] -> 'a = <fun>
+|}]
+
+let nested: 'a.
+  <m: 'b.
+        <n:'irr.
+             ('irr -> unit) * ([> `X of 'a | `Y of 'b ] -> 'a)
+        >
+  > -> 'a  =
+  fun o -> (snd o#m#n) (`Y 0)
+[%%expect {|
+val nested :
+  < m : 'c 'b.
+          < n : 'irr.
+                  ('irr -> unit) * (([> `X of 'a | `Y of 'b ] as 'c) -> 'a) > > ->
+  'a = <fun>
+|}]
+
+let fail: 'a . 'a -> [> `X of 'a ] -> 'a = fun x y ->
+  match y with
+  | `Y -> x
+  | `X x -> x
+[%%expect {|
+Line 3, characters 4-6:
+3 |   | `Y -> x
+        ^^
+Error: This pattern matches values of type [? `Y ]
+       but a pattern was expected which matches values of type [> `X of 'a ]
+       The second variant type is bound to the universal type variable 'b,
+       it may not allow the tag(s) `Y
+|}]
+
+let fail_example_corrected: 'a . 'a -> [< `X of 'a | `Y ] -> 'a = fun x y ->
+  match y with
+  | `Y -> x
+  | `X x -> x
+[%%expect {|
+val fail_example_corrected : 'a -> [< `X of 'a | `Y ] -> 'a = <fun>
+|}]
+
+
+
+(** Object comparison *)
+
+let discrepancy: 'a. <x:'a; ..> -> 'a = fun o -> o#y (); o#x
+[%%expect {|
+val discrepancy : < x : 'a; y : unit -> 'b; .. > -> 'a = <fun>
+|}]
+
+
+let explicitly_quantified_row: 'a 'r. (<x:'a; ..> as 'r) -> 'a = fun o -> o#y (); o#x
+[%%expect {|
+Line 1, characters 65-85:
+1 | let explicitly_quantified_row: 'a 'r. (<x:'a; ..> as 'r) -> 'a = fun o -> o#y (); o#x
+                                                                     ^^^^^^^^^^^^^^^^^^^^
+Error: This definition has type 'b. < x : 'b; y : unit -> 'c; .. > -> 'b
+       which is less general than 'a 'd. (< x : 'a; .. > as 'd) -> 'a
+|}]
+
+
+(** Nested object row variables *)
+class type ['a] c = object
+  method m: 'b. <n:'irr. ('irr -> unit) * (<x: 'a; y: 'b; .. > -> 'a) >
+end
+[%%expect {|
+Lines 1-3, characters 0-3:
+1 | class type ['a] c = object
+2 |   method m: 'b. <n:'irr. ('irr -> unit) * (<x: 'a; y: 'b; .. > -> 'a) >
+3 | end
+Error: Some type variables are unbound in this type:
+         class type ['a] c =
+           object
+             method m :
+               < n : 'irr. ('irr -> unit) * (< x : 'a; y : 'b; .. > -> 'a) >
+           end
+       The method m has type
+         'b.
+           < n : 'irr.
+                   ('irr -> unit) * ((< x : 'a; y : 'b; .. > as 'c) -> 'a) >
+       where 'c is unbound
 |}]
