@@ -33,7 +33,7 @@ let ocamlc_cppflags = {@QS@|@ocamlc_cppflags@|@QS@}
           the two drivers should be identical. *)
 let ocamlopt_cflags = {@QS@|@ocamlc_cflags@|@QS@}
 let ocamlopt_cppflags = {@QS@|@ocamlc_cppflags@|@QS@}
-let bytecomp_c_libraries = {@QS@|@bytecclibs@|@QS@}
+let bytecomp_c_libraries = {@QS@|@cclibs@|@QS@}
 (* bytecomp_c_compiler and native_c_compiler have been supported for a
    long time and are retained for backwards compatibility.
    For programs that don't need compatibility with older OCaml releases
@@ -44,7 +44,7 @@ let bytecomp_c_compiler =
   c_compiler ^ " " ^ ocamlc_cflags ^ " " ^ ocamlc_cppflags
 let native_c_compiler =
   c_compiler ^ " " ^ ocamlopt_cflags ^ " " ^ ocamlopt_cppflags
-let native_c_libraries = {@QS@|@nativecclibs@|@QS@}
+let native_c_libraries = {@QS@|@cclibs@|@QS@}
 let native_pack_linker = {@QS@|@PACKLD@|@QS@}
 let default_rpath = {@QS@|@rpath@|@QS@}
 let mksharedlibrpath = {@QS@|@mksharedlibrpath@|@QS@}
