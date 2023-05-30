@@ -733,6 +733,9 @@ OCaml 5.1.0
 
 ### Build system:
 
+- #12127: ocamltest additions: expanded scripts, built-in functions
+   (Richard L Ford, review by Sébastien Hinderer)
+
 - #11590: Allow installing to a destination path containing spaces.
    (Élie Brami, review by Sébastien Hinderer and David Allsopp)
 
