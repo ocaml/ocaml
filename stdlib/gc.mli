@@ -483,7 +483,7 @@ module Memprof :
        The member functions in a [tracker] are called callbacks.
 
        If an allocation or promotion callback raises an exception or
-       returns [None], memprof stops tracking the corresponding value.
+       returns [None], memprof stops tracking the corresponding block.
        *)
 
     val null_tracker: ('minor, 'major) tracker
@@ -543,8 +543,8 @@ module Memprof :
     val stop : unit -> unit
 
     (** Stop sampling for the current profile. Fails if no profile is
-       active in the current domain. Stops sampling in all threads and
-       domains sharing the profile.
+       sampling in the current domain. Stops sampling in all threads
+       and domains sharing the profile.
 
        Callbacks from a profile may run after [stop] is called, until
        [discard] is called on the return value of [start].
