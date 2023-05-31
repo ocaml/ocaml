@@ -80,9 +80,9 @@ let exe = {@QS@|@exeext@|@QS@}
 let mkdll = {@QS@|@mkdll_exp@|@QS@}
 let mkexe = {@QS@|@mkexe_exp@|@QS@}
 
-let bytecc_libs = {@QS@|@bytecclibs@|@QS@}
+let bytecc_libs = {@QS@|@cclibs@|@QS@}
 
-let nativecc_libs = {@QS@|@nativecclibs@|@QS@}
+let nativecc_libs = {@QS@|@cclibs@|@QS@}
 
 let windows_unicode = @windows_unicode@ != 0
 

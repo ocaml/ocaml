@@ -173,7 +173,7 @@ CPPFLAGS=@CPPFLAGS@
 OCAMLC_CFLAGS=@ocamlc_cflags@
 
 OCAMLC_CPPFLAGS=@ocamlc_cppflags@
-BYTECCLIBS=@bytecclibs@
+BYTECCLIBS=@cclibs@
 EXE=@exeext@
 OUTPUTEXE=@outputexe@$(EMPTY)
 SUPPORTS_SHARED_LIBRARIES=@supports_shared_libraries@
@@ -187,7 +187,7 @@ MKLIB=@mklib@
 #        two drivers should be identical.
 OCAMLOPT_CFLAGS=@ocamlc_cflags@
 OCAMLOPT_CPPFLAGS=@ocamlc_cppflags@
-NATIVECCLIBS=@nativecclibs@
+NATIVECCLIBS=@cclibs@
 SYSTHREAD_SUPPORT=@systhread_support@
 PACKLD=@PACKLD@$(EMPTY)
 CCOMPTYPE=@ccomptype@
