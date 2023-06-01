@@ -89,8 +89,8 @@
 #define LEAVE_FUNCTION
 
 #define CHECK_STACK_ALIGNMENT
-#define PREPARE_FOR_C_CALL      lay     %r15, -160(%r15); CFI_REMEMBER_STATE
-#define CLEANUP_AFTER_C_CALL    la      %r15,  160(%r15); CFI_RESTORE_STATE
+#define PREPARE_FOR_C_CALL      CFI_REMEMBER_STATE
+#define CLEANUP_AFTER_C_CALL    CFI_RESTORE_STATE
 
 /* struct stack_info */
 #define Stack_sp                 0
@@ -104,9 +104,10 @@
 #define Handler_parent          24
 
 /* struct c_stack_link */
-#define Cstack_stack             0
-#define Cstack_sp                8
-#define Cstack_prev             16
+#define Cstack_stack           160
+#define Cstack_sp              168
+#define Cstack_prev            176
+#define SIZEOF_C_STACK_LINK    184
 
 /******************************************************************************/
 /* DWARF */
@@ -294,7 +295,7 @@ CFI_STARTPROC
         stg     %r14, 0(%r15)
         CFI_OFFSET(14, -168)
         SAVE_ALL_REGS
-        lg    C_ARG_1, RETADDR_ENTRY_SIZE(%r15) /* argument */
+        lgr    C_ARG_1, %r12 /* requested size */
         SWITCH_OCAML_TO_C
         PREPARE_FOR_C_CALL
 #ifdef ASM_CFI_SUPPORTED
@@ -316,7 +317,6 @@ LBL(120):
         RESTORE_ALL_REGS
         lg      %r14, 0(%r15)
         CFI_RESTORE(14)
-        la      %r15, 16(%r15) /* %r14 register and pop argument, retaddr */
         LEA_VAR(caml_exn_Stack_overflow, %r2)
         brcl    15, GCALL(caml_raise_exn)
 CFI_ENDPROC
@@ -324,12 +324,12 @@ ENDFUNCTION(G(caml_call_realloc_stack))
 
 FUNCTION(G(caml_call_gc))
 CFI_STARTPROC
+LBL(caml_call_gc):
         CFI_SIGNAL_FRAME
         lay     %r15, -8(%r15)
         CFI_ADJUST(8)
         stg     %r14, 0(%r15)
         CFI_OFFSET(14, -168)
-LBL(caml_call_gc):
         SAVE_ALL_REGS
         SWITCH_OCAML_TO_C
         PREPARE_FOR_C_CALL
@@ -351,71 +351,35 @@ ENDFUNCTION(G(caml_call_gc))
 
 FUNCTION(G(caml_alloc1))
 CFI_STARTPROC
-        lay     %r15, -8(%r15)
-        CFI_ADJUST(8)
-        stg     %r14, 0(%r15)
-        CFI_OFFSET(14, -168)
-        ENTER_FUNCTION
         lay     ALLOC_PTR, -16(ALLOC_PTR)
         clg     ALLOC_PTR, Caml_state(young_limit)
         jl      LBL(caml_call_gc)
-        LEAVE_FUNCTION
-        lg      %r14, 0(%r15)
-        CFI_RESTORE(14)
-        la      %r15, 8(%r15)
         br      %r14
 CFI_ENDPROC
 ENDFUNCTION(G(caml_alloc1))
 
 FUNCTION(G(caml_alloc2))
 CFI_STARTPROC
-        lay     %r15, -8(%r15)
-        CFI_ADJUST(8)
-        stg     %r14, 0(%r15)
-        CFI_OFFSET(14, -168)
-        ENTER_FUNCTION
         lay     ALLOC_PTR, -24(ALLOC_PTR)
         clg     ALLOC_PTR, Caml_state(young_limit)
         jl      LBL(caml_call_gc)
-        LEAVE_FUNCTION
-        lg      %r14, 0(%r15)
-        CFI_RESTORE(14)
-        la      %r15, 8(%r15)
         br      %r14
 CFI_ENDPROC
 ENDFUNCTION(G(caml_alloc2))
 
 FUNCTION(G(caml_alloc3))
 CFI_STARTPROC
-        lay     %r15, -8(%r15)
-        CFI_ADJUST(8)
-        stg     %r14, 0(%r15)
-        CFI_OFFSET(14, -168)
-        ENTER_FUNCTION
         lay     ALLOC_PTR, -32(ALLOC_PTR)
         clg     ALLOC_PTR, Caml_state(young_limit)
         jl      LBL(caml_call_gc)
-        LEAVE_FUNCTION
-        lg      %r14, 0(%r15)
-        CFI_RESTORE(14)
-        la      %r15, 8(%r15)
         br      %r14
 CFI_ENDPROC
 ENDFUNCTION(G(caml_alloc3))
 
 FUNCTION(G(caml_allocN))
 CFI_STARTPROC
-        lay     %r15, -8(%r15)
-        CFI_ADJUST(8)
-        stg     %r14, 0(%r15)
-        CFI_OFFSET(14, -168)
-        ENTER_FUNCTION
         clg     ALLOC_PTR, Caml_state(young_limit)
         jl      LBL(caml_call_gc)
-        LEAVE_FUNCTION
-        lg      %r14, 0(%r15)
-        CFI_RESTORE(14)
-        la      %r15, 8(%r15)
         br      %r14
 CFI_ENDPROC
 ENDFUNCTION(G(caml_allocN))
@@ -484,14 +448,15 @@ CFI_STARTPROC
           /* %r12 points to the c_stack_link structure */   \
           DW_OP_breg + DW_REG_r12, Cstack_sp, DW_OP_deref
 #endif
-    /* Copy arguments from OCaml to C stack */
+    /* Copy arguments from OCaml to C stack, always reserving
+       the 160 bytes at the bottom of the C stack. */
 LBL(105):
         lay     %r8, -8(%r8)
         clgr    %r8, %r9
         jl      LBL(106)
         lg      %r0, 0(%r8)
         lay     %r15, -8(%r15)
-        stg     %r0, 0(%r15)
+        stg     %r0, 160(%r15)
         CFI_ADJUST(8)
         brcl    15, LBL(105)
 LBL(106):
@@ -546,7 +511,8 @@ LBL(caml_start_program):
     /* Reload allocation pointer */
         lg      ALLOC_PTR, Caml_state(young_ptr)
     /* Build struct c_stack_link on the C stack */
-        lay     %r15, -24(%r15); /* sizeof struct c_stack_link */ CFI_ADJUST(24)
+        lay     %r15, -SIZEOF_C_STACK_LINK(%r15)
+        CFI_ADJUST(SIZEOF_C_STACK_LINK)
         lg      TMP3,  Caml_state(c_stack)
         lgfi    TMP2,  0
         stg     TMP2,  Cstack_stack(%r15)
@@ -602,7 +568,8 @@ LBL(return_result):  /* restore GC regs */
     /* Pop the struct c_stack_link */
         lg      %r8, Cstack_prev(%r15)
         stg     %r8, Caml_state(c_stack)
-        la      %r15, 24(%r15); CFI_ADJUST(-24)
+        la      %r15, SIZEOF_C_STACK_LINK(%r15)
+        CFI_ADJUST(SIZEOF_C_STACK_LINK)
     /* Restore callee-save registers. */
         lmg     %r6,%r14, 0(%r15)
         CFI_RESTORE(14)
