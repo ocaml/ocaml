@@ -278,19 +278,17 @@ let rec lexical_approximation lexbuf =
 
 let read_and_approximate inputfile =
   Depend.free_structure_names := String.Set.empty;
-  let ic = open_in_bin inputfile in
-  try
+  begin try
+    In_channel.with_open_bin inputfile @@ fun ic ->
     seek_in ic 0;
     Location.input_name := inputfile;
     let lexbuf = Lexing.from_channel ic in
     Location.init lexbuf inputfile;
-    lexical_approximation lexbuf;
-    close_in ic;
-    !Depend.free_structure_names
+    lexical_approximation lexbuf
   with exn ->
-    close_in ic;
-    report_err exn;
-    !Depend.free_structure_names
+    report_err exn
+  end;
+  !Depend.free_structure_names
 
 let read_parse_and_extract parse_function extract_function def ast_kind
     source_file =
