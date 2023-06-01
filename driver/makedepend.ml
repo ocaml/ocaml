@@ -21,8 +21,6 @@ let ppf = Format.err_formatter
 
 type file_kind = ML | MLI
 
-(* [(dir, contents)] where [contents] is returned by [Sys.readdir dir]. *)
-let load_path = ref ([] : (string * string array) list)
 let ml_synonyms = ref [".ml"]
 let mli_synonyms = ref [".mli"]
 let shared = ref false
@@ -33,11 +31,14 @@ let sort_files = ref false
 let all_dependencies = ref false
 let nocwd = ref false
 let one_line = ref false
+let allow_approximation = ref false
+let debug = ref false
+
+(* [(dir, contents)] where [contents] is returned by [Sys.readdir dir]. *)
+let load_path = ref ([] : (string * string array) list)
 let files =
   ref ([] : (string * file_kind * String.Set.t * string list) list)
-let allow_approximation = ref false
 let module_map = ref String.Map.empty
-let debug = ref false
 
 module Error_occurred : sig
   val set : unit -> unit
