@@ -890,6 +890,9 @@ OCaml 5.1.0
 - #12252: Fix shared library build error on RISC-V.
   (Edwin Török, review by Nicolás Ojeda Bär and Xavier Leroy)
 
+- #12277: ARM64, fix a potential assembler error for very large functions by
+  emitting stack reallocation code before the body of the function.
+  (Xavier Leroy, review by KC Sivaramakrishnan)
 
 OCaml 5.0.0 (15 December 2022)
 ------------------------------
