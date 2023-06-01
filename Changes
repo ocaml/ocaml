@@ -796,6 +796,10 @@ OCaml 5.1.0
 - #12255, #12256: Handle large signal numbers correctly (Nick Barnes,
    review by David Allsopp).
 
+- #12277: ARM64, fix a potential assembler error for very large functions by
+  emitting stack reallocation code before the body of the function.
+  (Xavier Leroy, review by KC Sivaramakrishnan)
+
 OCaml 5.0.0 (15 December 2022)
 ------------------------------
 
