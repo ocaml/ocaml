@@ -52,6 +52,8 @@ end = struct
   let set () = error_occurred := true
 end
 
+let prepend_to_list l e = l := e :: !l
+
 (* Fix path to use '/' as directory separator instead of '\'.
    Only under Windows. *)
 let fix_slash s =
@@ -77,21 +79,18 @@ let readdir dir =
     dirs := String.Map.add dir contents !dirs;
     contents
 
-let add_to_list li s =
-  li := s :: !li
-
 let add_to_load_path dir =
   try
     let dir = Misc.expand_directory Config.standard_library dir in
     let contents = readdir dir in
-    add_to_list load_path (dir, contents)
+    prepend_to_list load_path (dir, contents)
   with Sys_error msg ->
     Format.eprintf "@[Bad -I option: %s@]@." msg;
     Error_occurred.set ()
 
 let add_to_synonym_list synonyms suffix =
   if (String.length suffix) > 1 && suffix.[0] = '.' then
-    add_to_list synonyms suffix
+    prepend_to_list synonyms suffix
   else begin
     Format.eprintf "@[Bad suffix: '%s'@]@." suffix;
     Error_occurred.set ()
@@ -388,14 +387,14 @@ let ml_file_dependencies source_file =
     read_parse_and_extract parse_use_file_as_impl Depend.add_implementation ()
                            Pparse.Structure source_file
   in
-  files := (source_file, ML, extracted_deps, !Depend.pp_deps) :: !files
+  prepend_to_list files (source_file, ML, extracted_deps, !Depend.pp_deps)
 
 let mli_file_dependencies source_file =
   let (extracted_deps, ()) =
     read_parse_and_extract Parse.interface Depend.add_signature ()
                            Pparse.Signature source_file
   in
-  files := (source_file, MLI, extracted_deps, !Depend.pp_deps) :: !files
+  prepend_to_list files (source_file, MLI, extracted_deps, !Depend.pp_deps)
 
 let process_file_as process_fun def source_file =
   Compenv.readenv stderr (Before_compile source_file);
@@ -439,15 +438,13 @@ let sort_files_by_dependencies files =
     let key = (modname, file_kind) in
     let new_deps = ref [] in
     Hashtbl.add h key (file, new_deps);
-    worklist := key :: !worklist;
+    prepend_to_list worklist key;
     (modname, file_kind, deps, new_deps, pp_deps)
   ) files in
 
 (* Keep only dependencies to defined modules *)
   List.iter (fun (modname, file_kind, deps, new_deps, _pp_deps) ->
-    let add_dep modname kind =
-      new_deps := (modname, kind) :: !new_deps;
-    in
+    let add_dep modname kind = prepend_to_list new_deps (modname, kind) in
     String.Set.iter (fun modname ->
       match file_kind with
           ML -> (* ML depends both on ML and MLI *)
@@ -474,14 +471,14 @@ let sort_files_by_dependencies files =
       let set = !deps in
       deps := [];
       List.iter (fun key ->
-        if Hashtbl.mem h key then deps := key :: !deps
+        if Hashtbl.mem h key then prepend_to_list deps key
       ) set;
       if !deps = [] then begin
         printed := true;
         Printf.printf "%s " file;
         Hashtbl.remove h key;
       end else
-        worklist := key :: !worklist
+        prepend_to_list worklist key
     ) files
   done;
 
@@ -490,7 +487,7 @@ let sort_files_by_dependencies files =
     |> Location.print_report stderr;
     let sorted_deps =
       let li = ref [] in
-      Hashtbl.iter (fun _ file_deps -> li := file_deps :: !li) h;
+      Hashtbl.iter (fun _ file_deps -> prepend_to_list li file_deps) h;
       List.sort (fun (file1, _) (file2, _) -> String.compare file1 file2) !li
     in
     List.iter (fun (file, deps) ->
@@ -574,7 +571,7 @@ let print_version_num () =
 
 let run_main argv =
   let dep_args_rev : dep_arg list ref = ref [] in
-  let add_dep_arg f s = dep_args_rev := (f s) :: !dep_args_rev in
+  let add_dep_arg f s = prepend_to_list dep_args_rev (f s) in
   Clflags.classic := false;
   try
     Compenv.readenv stderr Before_args;
@@ -593,7 +590,7 @@ let run_main argv =
         (* "compiler uses -no-alias-deps, and no module is coerced"; *)
       "-debug-map", Arg.Set debug,
         " Dump the delayed dependency map for each map file";
-      "-I", Arg.String (add_to_list Clflags.include_dirs),
+      "-I", Arg.String (prepend_to_list Clflags.include_dirs),
         "<dir>  Add <dir> to the list of include directories";
       "-nocwd", Arg.Set nocwd,
         " Do not add current working directory to \
@@ -616,13 +613,13 @@ let run_main argv =
         " Generate dependencies for bytecode-code only (no .cmx files)";
       "-one-line", Arg.Set one_line,
         " Output one line per file, regardless of the length";
-      "-open", Arg.String (add_to_list Clflags.open_modules),
+      "-open", Arg.String (prepend_to_list Clflags.open_modules),
         "<module>  Opens the module <module> before typing";
       "-plugin", Arg.String(fun _p -> Clflags.plugin := true),
         "<plugin>  (no longer supported)";
       "-pp", Arg.String(fun s -> Clflags.preprocessor := Some s),
         "<cmd>  Pipe sources through preprocessor <cmd>";
-      "-ppx", Arg.String (add_to_list Compenv.first_ppx),
+      "-ppx", Arg.String (prepend_to_list Compenv.first_ppx),
         "<cmd>  Pipe abstract syntax trees through preprocessor <cmd>";
       "-shared", Arg.Set shared,
         " Generate dependencies for native plugin files (.cmxs targets)";
