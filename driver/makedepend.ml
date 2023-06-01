@@ -36,7 +36,6 @@ let one_line = ref false
 let files =
   ref ([] : (string * file_kind * String.Set.t * string list) list)
 let allow_approximation = ref false
-let map_files = ref []
 let module_map = ref String.Map.empty
 let debug = ref false
 
@@ -53,7 +52,6 @@ end
 
 (* Fix path to use '/' as directory separator instead of '\'.
    Only under Windows. *)
-
 let fix_slash s =
   if Sys.os_type = "Unix" then s else begin
     String.map (function '\\' -> '/' | c -> c) s
@@ -529,7 +527,6 @@ let process_mli_map =
                          String.Map.empty Pparse.Signature
 
 let parse_map fname =
-  map_files := fname :: !map_files ;
   let old_transp = !Clflags.transparent_modules in
   Clflags.transparent_modules := true;
   let (deps, m) =
