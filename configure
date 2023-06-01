@@ -15471,7 +15471,12 @@ fi; system=elf ;; #(
   x86_64-*-mingw32*) :
     has_native_backend=yes; arch=amd64; system=mingw64 ;; #(
   aarch64-*-linux*) :
-    has_native_backend=yes; arch=arm64; system=linux ;; #(
+    if $arch64
+then :
+  has_native_backend=yes; arch=arm64; system=linux
+else $as_nop
+  arch=arm; model=armv8; system=linux
+fi ;; #(
   aarch64-*-freebsd*) :
     has_native_backend=yes; arch=arm64; system=freebsd ;; #(
   aarch64-*-openbsd*) :
