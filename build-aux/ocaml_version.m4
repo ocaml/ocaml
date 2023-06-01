@@ -25,7 +25,7 @@
 # The following macro, OCAML__DEVELOPMENT_VERSION, should be either
 # [true] of [false].
 
-m4_define([OCAML__DEVELOPMENT_VERSION], [false])
+m4_define([OCAML__DEVELOPMENT_VERSION], [true])
 
 # The three following components (major, minor and patch level) MUST be
 # integers. They MUST NOT be left-padded with zeros and all of them,
@@ -36,7 +36,7 @@ m4_define([OCAML__VERSION_MINOR], [1])
 m4_define([OCAML__VERSION_PATCHLEVEL], [0])
 # Note that the OCAML__VERSION_EXTRA string defined below is always empty
 # for officially-released versions of OCaml.
-m4_define([OCAML__VERSION_EXTRA], [alpha2])
+m4_define([OCAML__VERSION_EXTRA], [dev7-2023-06-01])
 
 # The OCAML__VERSION_EXTRA_PREFIX macro defined below should be a
 # single character:
@@ -45,7 +45,7 @@ m4_define([OCAML__VERSION_EXTRA], [alpha2])
 # and with an empty OCAML__VERSION_EXTRA string;
 # Or [+] to give more info about this specific version.
 # Development releases, for instance, should use a [+] prefix.
-m4_define([OCAML__VERSION_EXTRA_PREFIX], [~])
+m4_define([OCAML__VERSION_EXTRA_PREFIX], [+])
 m4_define([OCAML__VERSION_SHORT], [OCAML__VERSION_MAJOR.OCAML__VERSION_MINOR])
 # The OCAML__VERSION below must be in the format specified in stdlib/sys.mli
 m4_define([OCAML__VERSION],
