@@ -66,7 +66,7 @@ val abs : int -> int
 
 val max_int : int
 (** [max_int] is the greatest representable integer,
-    [2]{^[Sys.int_size - 1]}[ - 1]. *)
+    [2]{^[Sys.int_size - 1]}[-1]. *)
 
 val min_int : int
 (** [min_int] is the smallest representable integer,
