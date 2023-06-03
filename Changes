@@ -17,6 +17,10 @@ Working version
 - #12234: make instrumented time calculation more thread-safe on macOS.
   (Anil Madhavapeddy, review by Daniel Bünzli and Xavier Leroy)
 
+- #12275: caml/stack.h: more abstract macros to describe OCaml stacks and
+  how to traverse them, supporting more stack layouts.
+  (Xavier Leroy, review by KC Sivaramakrishnan and Fabrice Buoro)
+
 ### Code generation and optimizations:
 
 ### Standard library:
