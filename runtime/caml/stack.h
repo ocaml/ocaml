@@ -35,7 +35,7 @@
    If [sp] points to the bottom of an OCaml stack,
    [First_frame(sp)] is the first stack frame of the first chunk of this stack.
 
-   If [sp] points to the special frame for [caml_start_program] and
+   If [sp] points to the special frame for [caml_start_program] or
    [caml_callback_*], this marks the end of the current chunk.
    The saved value of [gc_regs] for the previous chunk is in
    [Saved_gc_regs(sp)], and [Stack_header_size] bytes must be skipped
