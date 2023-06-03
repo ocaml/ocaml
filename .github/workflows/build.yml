@@ -18,7 +18,7 @@ jobs:
       manual_changed: ${{ steps.manual.outputs.manual_changed }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Check for manual changes
         id: manual
         run: >-
@@ -45,7 +45,7 @@ jobs:
           git config --local --unset http.https://github.com/.extraheader
           tar --zstd -cf /tmp/sources.tar.zstd .
       - name: Upload Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: compiler
           path: /tmp/sources.tar.zstd
@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download Artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: compiler
       - name: Unpack Artifact
@@ -137,7 +137,7 @@ jobs:
           - debug-s4096
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: compiler
       - name: Unpack Artifact
