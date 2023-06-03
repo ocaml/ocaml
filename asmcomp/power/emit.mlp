@@ -900,7 +900,7 @@ let fundecl fundecl =
   let stack_threshold_size = Config.stack_threshold * 8 in (* bytes *)
   let { max_frame_size; contains_nontail_calls} =
     preproc_stack_check
-      ~fun_body:fundecl.fun_body ~frame_size:(frame_size env) ~trap_size:32
+      ~fun_body:fundecl.fun_body ~frame_size:(frame_size env) ~trap_size:16
   in
   let handle_overflow = ref None in
   if contains_nontail_calls || max_frame_size >= stack_threshold_size then begin
