@@ -475,12 +475,12 @@ let emit_alloc env i bytes dbginfo far =
   `	addi    31, 31, {emit_int(-bytes)}\n`;
   `	cmpld	31, 0\n`;
   if not far then begin
-    `	bltl	{emit_label env.call_gc_label}\n`;
+    `	bltl-	{emit_label env.call_gc_label}\n`;
     record_frame env i.live (Dbg_alloc dbginfo);
     `	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
   end else begin
     let lbl = new_label() in
-    `	bge	{emit_label lbl}\n`;
+    `	bge+	{emit_label lbl}\n`;
     `	bl	{emit_label env.call_gc_label}\n`;
     record_frame env i.live (Dbg_alloc dbginfo);
     `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, 31, {emit_int size_addr}\n`
@@ -495,19 +495,19 @@ let emit_poll env i return_label far =
     begin match return_label with
     | None ->
     begin
-      `	bltl	{emit_label env.call_gc_label}\n`;
+      `	bltl-	{emit_label env.call_gc_label}\n`;
       record_frame env i.live (Dbg_alloc [])
     end
     | Some return_label ->
       begin
-        ` bltl  {emit_label env.call_gc_label}\n`;
+        ` bltl-  {emit_label env.call_gc_label}\n`;
         record_frame env i.live (Dbg_alloc []);
         ` b   {emit_label return_label}\n`
       end
     end;
   end else begin
     let lbl = new_label () in
-    `	bge	{emit_label lbl}\n`;
+    `	bge+	{emit_label lbl}\n`;
     `	bl	{emit_label env.call_gc_label}\n`;
     record_frame env i.live (Dbg_alloc []);
     ` {emit_label lbl}:	\n`;
