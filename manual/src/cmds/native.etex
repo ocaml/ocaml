@@ -127,22 +127,6 @@ The options "-pack", "-a", "-shared", "-c", "-output-obj" and
 % compilers and toplevel
 \input{unified-options.tex}
 
-\paragraph{Options for the 32-bit x86 architecture}
-The 32-bit code generator for Intel/AMD x86 processors ("i386"
-architecture) supports the
-following additional option:
-
-\begin{options}
-\item["-ffast-math"] Use the processor instructions to compute
-trigonometric and exponential functions, instead of calling the
-corresponding library routines.  The functions affected are:
-"atan", "atan2", "cos", "log", "log10", "sin", "sqrt" and "tan".
-The resulting code runs faster, but the range of supported arguments
-and the precision of the result can be reduced.  In particular,
-trigonometric operations "cos", "sin", "tan" have their range reduced to
-$[-2^{64}, 2^{64}]$.
-\end{options}
-
 \paragraph{Options for the 64-bit x86 architecture}
 The 64-bit code generator for Intel/AMD x86 processors ("amd64"
 architecture) supports the following additional options:
@@ -233,12 +217,6 @@ until the next heap allocation.
   rounding the intermediate result "x *. y", which is generally
   beneficial, but produces floating-point results that differ slightly
   from those produced by the bytecode interpreter.
-
-\item On Intel/AMD x86 processors in 32-bit mode,
-some intermediate results in floating-point computations are
-kept in extended precision rather than being rounded to double
-precision like the bytecode compiler always does.  Floating-point
-results can therefore differ slightly between bytecode and native code.
 
 \item The native-code compiler performs a number of optimizations that
 the bytecode compiler does not perform, especially when the Flambda
