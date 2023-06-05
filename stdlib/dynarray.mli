@@ -43,12 +43,12 @@
     of dynamic arrays differs from the one of {!Array}s. See the
     {{!section:memory_layout} Memory Layout} section for more information.
 
-    @since 5.1
+    @since 5.2
 *)
 
 (** {b Unsynchronized accesses} *)
 
-[@@@alert unsynchronized_accesses
+[@@@alert unsynchronized_access
     "Unsynchronized accesses to dynamic arrays are a programming error."
 ]
 
@@ -106,7 +106,7 @@ val set : 'a t -> int -> 'a -> unit
 
     @raise Invalid_argument if the index is invalid. *)
 
-val length : _ t -> int
+val length : 'a t -> int
 (** [length a] is the number of elements in the array. *)
 
 val is_empty : 'a t -> bool
@@ -132,7 +132,7 @@ val append_array : 'a t -> 'a array -> unit
     For example:
     {[
       let a = Dynarray.of_list [1;2]
-      let () = Dynarray.append a [|3; 4|]
+      let () = Dynarray.append_array a [|3; 4|]
       let () = assert (Dynarray.to_list a = [1; 2; 3; 4])
     ]}
 *)
@@ -388,7 +388,7 @@ val ensure_capacity : 'a t -> int -> unit
     @raise Invalid_argument if the requested capacity is
       outside the range [0 .. Sys.max_array_length].
 
-    A use case would be to implement {!of_array} (without using {!init} directly):
+    An example would be to reimplement {!of_array} without using {!init}:
     {[
     let of_array arr =
       let a = Dynarray.create () in
@@ -546,7 +546,7 @@ end = struct
      The auxiliary functions [heap_up] and [heap_down] take
      such a misplaced value, and move it "up" (respectively: "down")
      the tree by permuting it with its parent value (respectively:
-     a children's value) until the heap ordering is restored. *)
+     a child value) until the heap ordering is restored. *)
 
   let rec heap_up h i =
     if i = 0 then () else
@@ -594,7 +594,7 @@ done by calling the following function from [pop]:
 {[
 let shrink h =
   if Dynarray.length h = 0 && Dynarray.capacity h > 1 lsl 18 then
-    Dynarray.truncate_capacity h 0
+    Dynarray.reset h
 ]}
 
 The [Heap] functor can be used to implement a sorting function, by

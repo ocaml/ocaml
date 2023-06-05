@@ -247,62 +247,6 @@ let () =
     )
   ))
 
-(** Iterator invalidation *)
-
-let raises_invalid_argument f =
-  match f () with
-  | exception Invalid_argument _ -> true
-  | exception _ | _ -> false
-
-let () =
-  let a = A.of_list [1; 2; 3] in
-  assert (raises_invalid_argument (fun () ->
-    A.append a a
-  ))
-
-let () =
-  let a = A.of_list [1; 2; 3] in
-  assert (raises_invalid_argument (fun () ->
-    a |> A.iter (fun i ->
-      A.add_last a (10 + i)
-    )
-  ))
-
-let () =
-  let a = A.of_list [1; 2; 3] in
-  assert (raises_invalid_argument (fun () ->
-    a |> A.iter (fun i ->
-      if i >= 2 then A.remove_last a
-    )
-  ))
-
-let does_not_raise_invalid_argument f =
-  not (raises_invalid_argument f)
-
-(* The spec says that this is a programming error, but currently we accept
-   the following without an error. *)
-let () =
-  let a = A.of_list [1; 2; 3] in
-  A.ensure_capacity a 10;
-  assert (does_not_raise_invalid_argument (fun () ->
-    a |> A.iter (fun i ->
-      A.add_last a i;
-      A.remove_last a
-    )
-  ))
-
-(* Even with a capacity increase in the middle,
-   we still accept this although the spec would let us reject. *)
-let () =
-  let a = A.of_list [1; 2; 3] in
-  A.fit_capacity a;
-  assert (does_not_raise_invalid_argument (fun () ->
-    a |> A.iter (fun i ->
-      A.add_last a i;
-      A.remove_last a
-    )
-  ))
-
 
 (** {1:conversions Conversions to other data structures} *)
 

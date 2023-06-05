@@ -117,8 +117,8 @@ module Error = struct
   let index_out_of_bounds f ~i ~length =
     if length = 0 then
       Printf.ksprintf invalid_arg
-        "Dynarray.%s: empty dynarray"
-        f
+        "Dynarray.%s: index %d out of bounds (empty dynarray)"
+        f i
     else
       Printf.ksprintf invalid_arg
         "Dynarray.%s: index %d out of bounds (0..%d)"
@@ -221,7 +221,7 @@ let init n f =
   }
 
 let get a i =
-  (* This implementation will propagate an [Invalid_arg] exception
+  (* This implementation will propagate an [Invalid_argument] exception
      from array lookup if the index is out of the backing array,
      instead of using our own [Error.index_out_of_bounds]. This is
      allowed by our specification, and more efficient -- no need to
@@ -378,12 +378,14 @@ let reset a =
 (** {1:adding Adding elements} *)
 
 (* We chose an implementation of [add_last a x] that behaves correctly
-   in presence of aynchronous code execution around allocations and
-   poll points: if another thread or a callback gets executed on
-   allocation, we add the element at the new end of the dynamic array.
+   in presence of aynchronous / re-entrant code execution around
+   allocations and poll points: if another thread or a callback gets
+   executed on allocation, we add the element at the new end of the
+   dynamic array.
 
    (We do not give the same guarantees in presence of concurrent
-   updates, which are much more expensive to protect against.)
+   parallel updates, which are much more expensive to protect
+   against.)
 *)
 
 (* [add_last_if_room a elem] only writes the slot if there is room, and
@@ -568,9 +570,9 @@ let iter_ f k a =
      the loop (before or after, or both). However, notice that this is
      not necessary to detect the removal of elements from [a]: if
      elements have been removed by the time the [for] loop reaches
-     them, then [unsafe_get] will itself fail with an [Invalid_arg]
+     them, then [unsafe_get] will itself fail with an [Invalid_argument]
      exception. We only need to detect the addition of new elements to
-     [a] during iteration, and for this it suffics to call
+     [a] during iteration, and for this it is enough to call
      [check_same_length] once at the end.
 
      Calling [check_same_length] more often could catch more
@@ -720,7 +722,8 @@ let to_seq a =
   let rec aux i () =
     if i >= length a then Seq.Nil
     else begin
-      Seq.Cons (get a i, aux (i + 1))
+      let v = get a i in
+      Seq.Cons (v, aux (i + 1))
     end
   in
   aux 0
@@ -732,6 +735,9 @@ let to_seq_rev a =
       (* If some elements have been removed in the meantime, we skip
          those elements and continue with the new end of the array. *)
       aux (length a - 1) ()
-    else Seq.Cons (get a i, aux (i - 1))
+    else begin
+      let v = get a i in
+      Seq.Cons (v, aux (i - 1))
+    end
   in
   aux (length a - 1)
