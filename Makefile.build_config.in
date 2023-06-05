@@ -103,7 +103,6 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 datarootdir = @datarootdir@
 DOCDIR=@docdir@
 
-ocamltest_unix_impl = @ocamltest_unix_impl@
 ocamltest_unix_name = @ocamltest_unix_name@
 ocamltest_unix_path = @ocamltest_unix_path@
 ocamltest_unix_include = @ocamltest_unix_include@$(EMPTY)

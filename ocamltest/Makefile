@@ -94,7 +94,6 @@ lexers := $(filter %.mll,$(sources))
 parsers := $(filter %.mly,$(sources))
 
 dependencies_generated_prereqs := \
-  ocamltest_unix.ml \
   $(lexers:.mll=.ml) \
   $(parsers:.mly=.mli) $(parsers:.mly=.ml)
 
@@ -152,10 +151,6 @@ ocamltest.opt$(EXE): $(deps_opt) $(native_modules)
 %.cmi: %.mli $(deps_byte)
 	$(V_OCAMLC)$(ocamlc) -c $<
 
-ocamltest_unix.ml: ocamltest_unix_$(ocamltest_unix_impl).ml
-	$(V_GEN)echo '# 1 "$<"' > $@ && \
-	cat $< >> $@
-
 # Manual
 
 .PHONY: doc
@@ -179,7 +174,7 @@ endif
 
 .PHONY: distclean
 distclean: clean
-	rm -f ocamltest_config.ml
+	rm -f ocamltest_config.ml ocamltest_unix.ml
 
 $(DEPDIR)/%.$(D): %.c | $(DEPDIR)
 	$(V_CCDEPS)$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@
