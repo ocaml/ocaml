@@ -83,7 +83,7 @@ the aliases it contains.
 .B \-debug\-map
 Dump the delayed dependency map for each map file.
 .TP
-.BI \-I \ directory
+.BI \-I " directory"
 Add the given directory to the list of directories searched for
 source files. If a source file foo.ml mentions an external
 compilation unit Bar, a dependency on that unit's interface
@@ -101,33 +101,33 @@ options that are passed to the compiler.
 .B \-nocwd
 Do not add current working directory to the list of include directories.
 .TP
-.BI \-impl \ file
+.BI \-impl " file"
 Process
 .IR file
 as a .ml file.
 .TP
-.BI \-intf \ file
+.BI \-intf " file"
 Process
 .IR file
 as a .mli file.
 .TP
-.BI \-map \ file
+.BI \-map " file"
 Read an propagate the delayed dependencies for module aliases in
 .IR file ,
 so that the following files will depend on the
 exported aliased modules if they use them.
 .TP
-.BI \-ml\-synonym \ .ext
+.BI \-ml\-synonym " .ext"
 Consider the given extension (with leading dot) to be a synonym for .ml.
 .TP
-.BI \-mli\-synonym \ .ext
+.BI \-mli\-synonym " .ext"
 Consider the given extension (with leading dot) to be a synonym for .mli.
 .TP
 .B \-modules
 Output raw dependencies of the form
-.IR filename : \ Module1\ Module2 \ ... \ ModuleN
+.IR filename : " Module1 Module2" " ... " ModuleN
 where
-.IR Module1 ,\ ..., \ ModuleN
+.IR Module1 ", ...," " ModuleN"
 are the names of the compilation
 units referenced within the file
 .IR filename ,
@@ -155,20 +155,20 @@ have explicit .mli interface files.)
 .B \-one-line
 Output one line per file, regardless of the length.
 .TP
-.BI \-open \ module
+.BI \-open " module"
 Assume that module
 .IR module
 is opened before parsing each of the
 following files.
 .TP
-.BI \-pp \ command
+.BI \-pp " command"
 Cause
 .BR ocamldep (1)
 to call the given
 .I command
 as a preprocessor for each source file.
 .TP
-.BI \-ppx \ command
+.BI \-ppx " command"
 Pipe abstract syntax tree through preprocessor
 .IR command .
 .TP
@@ -188,12 +188,11 @@ Print version string and exit.
 .B \-vnum
 Print short version number and exit.
 .TP
-.BR \-help \ or \ \-\-help
+.BR \-help " or " \-\-help
 Display a short usage summary and exit.
 
 .SH SEE ALSO
-.BR ocamlc (1),
-.BR ocamlopt (1).
+.BR ocamlc "(1), " ocamlopt (1).
 .br
 .IR The\ OCaml\ user's\ manual ,
 chapter "Dependency generator".

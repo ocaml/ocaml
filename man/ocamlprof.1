@@ -45,28 +45,28 @@ since the profiling execution took place.
 .SH OPTIONS
 
 .TP
-.BI \-f \ dumpfile
+.BI \-f " dumpfile"
 Specifies an alternate dump file of profiling information.
 .TP
-.BI \-F \ string
+.BI \-F " string"
 Specifies an additional string to be output with profiling information.
 By default,
 .BR ocamlprof (1)
 will annotate programs with comments of the form
-.BI (* \ n \ *)
+.BI (* " n " *)
 where
 .I n
 is the counter value for a profiling point. With option
-.BI \-F \ s
+.BI \-F " s"
 the annotation will be
-.BI (* \ sn \ *)
+.BI (* " sn " *)
 .TP
-.BI \-impl \ filename
+.BI \-impl " filename"
 Compile the file
 .I filename
 as an implementation file, even if its extension is not .ml.
 .TP
-.BI \-intf \ filename
+.BI \-intf " filename"
 Compile the file
 .I filename
 as an interface file, even if its extension is not .mli.
@@ -77,11 +77,11 @@ Print version string and exit.
 .B \-vnum
 Print short version number and exit.
 .TP
-.BR \-help \ or \ \-\-help
+.BR \-help " or " \-\-help
 Display a short usage summary and exit.
 
 .SH SEE ALSO
 .BR ocamlcp (1).
 .br
-.IR "The OCaml user's manual" ,
+.IR The\ OCaml\ user's\ manual ,
 chapter "Profiling".
