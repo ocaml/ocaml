@@ -166,14 +166,11 @@ let emit_toctable () =
    The [dest] should not be r0, since [dest] is used as the index register for a
    ld instruction, but r0 reads as zero when used as an index register.
 *)
+
 let emit_tocload emit_dest dest entry =
   let lbl = label_for_tocref entry in
-  if !big_toc || !Clflags.for_package <> None then begin
-    `	addis	{emit_dest dest}, 2, {emit_label lbl}@toc@ha\n`;
-    `	ld	{emit_dest dest}, {emit_label lbl}@toc@l({emit_dest dest}) # {emit_tocentry entry}\n`
-  end else begin
-    `	ld	{emit_dest dest}, {emit_label lbl}@toc(2) # {emit_tocentry entry}\n`
-  end
+  `	addis	{emit_dest dest}, 2, {emit_label lbl}@toc@ha\n`;
+  `	ld	{emit_dest dest}, {emit_label lbl}@toc@l({emit_dest dest}) # {emit_tocentry entry}\n`
 
 (* Output a load or store operation *)
 
@@ -378,13 +375,12 @@ module BR = Branch_relaxation.Make (struct
       + (if initial_stack_offset f > 0 then 1 else 0)
       + (if f.fun_contains_calls then 3 else 0)
 
-  let tocload_size() =
-    if !big_toc || !Clflags.for_package <> None then 2 else 1
+  let tocload_size = 2
 
   let load_store_size = function
     | Ibased(_s, d) ->
         let (_lo, hi) = low_high_s d in
-        tocload_size() + (if hi = 0 then 1 else 2)
+        tocload_size + (if hi = 0 then 1 else 2)
     | Iindexed ofs -> if is_immediate ofs then 1 else 3
     | Iindexed2 -> 1
 
@@ -398,19 +394,19 @@ module BR = Branch_relaxation.Make (struct
                hi >= -0x8000 && hi <= 0x7FFF) then 2
       else if (let (_lo, hi) = native_low_high_u n in
                hi >= -0x8000 && hi <= 0x7FFF) then 2
-      else tocload_size()
-    | Lop(Iconst_float _) -> tocload_size()
-    | Lop(Iconst_symbol _) -> tocload_size()
+      else tocload_size
+    | Lop(Iconst_float _) -> tocload_size
+    | Lop(Iconst_symbol _) -> tocload_size
     | Lop(Icall_ind) -> 4
     | Lop(Icall_imm _) -> 3
     | Lop(Itailcall_ind) -> 6
     | Lop(Itailcall_imm { func; _ }) ->
         if func = f.fun_name
         then 1
-        else 6 + tocload_size()
+        else 6 + tocload_size
     | Lop(Iextcall { alloc; stack_ofs; _}) ->
-        if stack_ofs > 0 then tocload_size() + 4
-        else if alloc then tocload_size() + 2
+        if stack_ofs > 0 then tocload_size + 4
+        else if alloc then tocload_size + 2
         else 5
     | Lop(Istackoffset _) -> 1
     | Lop(Iload {memory_chunk; addressing_mode; _ }) ->
@@ -445,10 +441,10 @@ module BR = Branch_relaxation.Make (struct
       1 + (if lbl0 = None then 0 else 1)
         + (if lbl1 = None then 0 else 1)
         + (if lbl2 = None then 0 else 1)
-    | Lswitch _ -> 5 + tocload_size()
-    | Lentertrap -> tocload_size()
+    | Lswitch _ -> 5 + tocload_size
+    | Lentertrap -> 1
     | Ladjust_trap_depth _ -> 0
-    | Lpushtrap _ -> 4 + tocload_size()
+    | Lpushtrap _ -> 4 + tocload_size
     | Lpoptrap -> 2
     | Lraise (Lambda.Raise_regular | Lambda.Raise_reraise) -> 2
     | Lraise Lambda.Raise_notrace -> 5
@@ -579,12 +575,8 @@ let emit_instr env i =
     | Lop(Iconst_float f) ->
         let entry = TocFloat f in
         let lbl = label_for_tocref entry in
-        if !big_toc || !Clflags.for_package <> None then begin
-          `	addis	11, 2, {emit_label lbl}@toc@ha\n`;
-          `	lfd	{emit_reg i.res.(0)}, {emit_label lbl}@toc@l(11) # {emit_tocentry entry}\n`
-        end else begin
-          `	lfd	{emit_reg i.res.(0)}, {emit_label lbl}@toc(2) # {emit_tocentry entry}\n`
-        end
+        `	addis	11, 2, {emit_label lbl}@toc@ha\n`;
+        `	lfd	{emit_reg i.res.(0)}, {emit_label lbl}@toc@l(11) # {emit_tocentry entry}\n`
     | Lop(Iconst_symbol s) ->
         emit_tocload emit_reg i.res.(0) (TocSym s)
     | Lop(Icall_ind) ->

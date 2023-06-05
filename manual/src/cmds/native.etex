@@ -153,17 +153,6 @@ the default.
 \item["-fno-PIC"] Generate position-dependent machine code.
 \end{options}
 
-\paragraph{Options for the PowerPC architecture}
-The PowerPC code generator supports the following additional options:
-
-\begin{options}
-\item["-flarge-toc"] Enables the PowerPC large model allowing the TOC (table of
-contents) to be arbitrarily large.  This is the default since 4.11.
-\item["-fsmall-toc"] Enables the PowerPC small model allowing the TOC to be up
-to 64 kbytes per compilation unit.  Prior to 4.11 this was the default
-behaviour.
-\end{options}
-
 \paragraph{Contextual control of command-line options}
 
 The compiler command line can be modified ``from the outside''

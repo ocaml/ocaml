@@ -21,8 +21,6 @@ type cmm_label = int
 
 (* Machine-specific command-line options *)
 
-val big_toc : bool ref
-
 val command_line_options : (string * Arg.spec * string) list
 
 (* Specific operations *)
