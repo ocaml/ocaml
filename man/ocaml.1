@@ -73,7 +73,7 @@ Show absolute filenames in error messages.
 .B \-no-absname
 Do not try to show absolute filenames in error messages.
 .TP
-.BI \-I \ directory
+.BI \-I " directory"
 Add the given directory to the list of directories searched for
 source and compiled files. By default, the current directory is
 searched first, then the standard library directory. Directories added
@@ -97,7 +97,7 @@ is running with the
 .B #directory
 directive.
 .TP
-.BI \-init \ file
+.BI \-init " file"
 Load the given file instead of the default initialization file.
 See the "Initialization file" section below.
 .TP
@@ -139,13 +139,13 @@ window.
 Do not include the standard library directory in the list of
 directories searched for source and compiled files.
 .TP
-.BI \-open \ module
+.BI \-open " module"
 Opens the given module before starting the toplevel. If several
 .B \-open
 options are given, they are processed in order, just as if
 the statements open! module1;; ... open! moduleN;; were input.
 .TP
-.BI \-ppx \ command
+.BI \-ppx " command"
 After parsing, pipe the abstract syntax tree through the preprocessor
 .IR command .
 The module
@@ -180,7 +180,7 @@ This is the default.
 .TP
 .B \-safe\-string
 Enforce the separation between types
-.BR string \ and\  bytes ,
+.BR string " and " bytes ,
 thereby making strings read-only. This is the default.
 .TP
 .B \-safer\-matching
@@ -218,7 +218,7 @@ This is the default.
 .TP
 .B \-unsafe
 Turn bound checking off on array and string accesses (the
-.BR v.(i) and s.[i]
+.BR v.(i) " and " s.[i]
 constructs). Programs compiled with
 .B \-unsafe
 are therefore slightly faster, but unsafe: anything can happen if the program
@@ -226,7 +226,7 @@ accesses an array or string outside of its bounds.
 .TP
 .B \-unsafe\-string
 Identify the types
-.BR string \ and\  bytes ,
+.BR string " and " bytes ,
 thereby making strings writable.
 This is intended for compatibility with old source code and should not
 be used with new software.
@@ -240,7 +240,7 @@ Print short version number and exit.
 .B \-no\-version
 Do not print the version banner at startup.
 .TP
-.BI \-w \ warning\-list
+.BI \-w " warning\-list"
 Enable or disable warnings according to the argument
 .IR warning-list .
 See
@@ -249,7 +249,7 @@ for the syntax of the
 .I warning\-list
 argument.
 .TP
-.BI \-warn\-error \ warning\-list
+.BI \-warn\-error " warning\-list"
 Mark as fatal the warnings described by the argument
 .IR warning\-list .
 Note that a warning is not triggered (and does not trigger an error) if
@@ -261,7 +261,7 @@ for the syntax of the
 .I warning\-list
 argument.
 .TP
-.BI \-color \ mode
+.BI \-color " mode"
 Enable or disable colors in compiler messages (especially warnings and errors).
 The following modes are supported:
 
@@ -287,7 +287,7 @@ checks that the "TERM" environment variable exists and is
 not empty or "dumb", and that isatty(stderr) holds.
 
 .TP
-.BI \-error\-style \ mode
+.BI \-error\-style " mode"
 Control the way error messages and warnings are printed.
 The following modes are supported:
 
@@ -309,12 +309,12 @@ above.
 .B \-warn\-help
 Show the description of all available warning numbers.
 .TP
-.BI \- \ file
+.BI \- " file"
 Use
 .I file
 as a script file name, even when it starts with a hyphen (-).
 .TP
-.BR \-help \ or \ \-\-help
+.BR \-help " or " \-\-help
 Display a short usage summary and exit.
 
 .SH INITIALIZATION FILE
@@ -329,12 +329,11 @@ in the current directory if it exists, otherwise
 according to the XDG base directory specification lookup if it exists (on
 Windows this is skipped), otherwise
 .B .ocamlinit
-in the user's home directory (
-.B HOME
-variable).
+in the user's home directory
+.RB ( HOME " variable)."
 You can specify a different initialization file
 by using the
-.BI \-init \ file
+.BI \-init " file"
 option, and disable initialization files by using the
 .B \-noinit
 option.
@@ -361,7 +360,7 @@ and look up its capabilities in the terminal database.
 .B .ocamlinit
 lookup procedure (see above).
 .SH SEE ALSO
-.BR ocamlc (1), \ ocamlopt (1), \ ocamlrun (1).
+.BR ocamlc "(1), " ocamlopt "(1), " ocamlrun (1).
 .br
 .IR The\ OCaml\ user's\ manual ,
 chapter "The toplevel system".

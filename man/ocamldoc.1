@@ -15,15 +15,6 @@
 .\"
 .TH OCAMLDOC 1
 
-\" .de Sh \" Subsection heading
-\" .br
-\" .if t .Sp
-\" .ne 5
-\" .PP
-\" \fB\\$1\fR
-\" .PP
-\" ..
-
 .SH NAME
 ocamldoc \- The OCaml documentation generator
 
@@ -33,7 +24,7 @@ ocamldoc \- The OCaml documentation generator
 [
 .I options
 ]
-.IR filename \ ...
+.IR filename " ..."
 
 .SH DESCRIPTION
 
@@ -45,7 +36,7 @@ comments used by
 are of the form
 .I (** ... *)
 and follow the format described in the
-.IR "The OCaml user's manual" .
+.IR The\ OCaml\ user's\ manual .
 
 .B ocamldoc
 can produce documentation in various formats: HTML, LaTeX, TeXinfo,
@@ -111,9 +102,9 @@ option.
 .B \-dot
 Generate a dependency graph for the toplevel modules, in a format suitable for
 displaying and processing by
-.IR dot (1).
+.BR dot (1).
 The
-.IR dot (1)
+.BR dot (1)
 tool is available from
 .IR https://graphviz.org/ .
 The textual representation of the graph is written to the file
@@ -121,10 +112,10 @@ The textual representation of the graph is written to the file
 or to the file specified with the
 .B -o
 option. Use
-.BI dot \ ocamldoc.out
+.BI dot " ocamldoc.out"
 to display it.
 .TP
-.BI \-g \ file
+.BI \-g " file"
 Dynamically load the given file (which extension usually is .cmo or .cma),
 which defines a custom documentation generator.
 If the given file is a simple one and does not exist in
@@ -138,16 +129,16 @@ option.
 .BI \-customdir
 Display the custom generators default directory.
 .TP
-.BI \-i \ directory
+.BI \-i " directory"
 Add the given directory to the path where to look for custom generators.
 .SS "General options"
 .TP
-.BI \-d \ dir
+.BI \-d " dir"
 Generate files in directory
 .IR dir ,
 rather than the current directory.
 .TP
-.BI \-dump \ file
+.BI \-dump " file"
 Dump collected information into
 .IR file .
 This information can be read with the
@@ -155,7 +146,7 @@ This information can be read with the
 option in a subsequent invocation of
 .BR ocamldoc (1).
 .TP
-.BI \-hide \ modules
+.BI \-hide " modules"
 Hide the given complete module names in the generated documentation.
 .I modules
 is a list of complete module names are separated by commas (,),
@@ -175,16 +166,16 @@ available. The source code is always kept when a .ml
 file is given, but is by default discarded when a .mli
 is given. This option allows the source code to be always kept.
 .TP
-.BI \-load \ file
+.BI \-load " file"
 Load information from
 .IR file ,
 which has been produced by
-.BR ocamldoc\ \-dump .
+.BR ocamldoc " \-dump" .
 Several
 .B -load
 options can be given.
 .TP
-.BI \-m \ flags
+.BI \-m " flags"
 Specify merge options between interfaces and implementations.
 .I flags
 can be one or several of the following characters:
@@ -227,25 +218,25 @@ Keep elements placed after the
 .B (**/**)
 special comment.
 .TP
-.BI \-o \ file
+.BI \-o " file"
 Output the generated documentation to
 .I file
 instead of
 .IR ocamldoc.out .
 This option is meaningful only in conjunction with the
-.BR \-latex , \ \-texi ,\ or \ \-dot
+.BR \-latex ", " \-texi ", or " \-dot
 options.
 .TP
-.BI \-open \ module
+.BI \-open " module"
 Opens
 .I module
 before typing.
 .TP
-.BI \-pp \ command
+.BI \-pp " command"
 Pipe sources through preprocessor
 .IR command .
 .TP
-.BI \-ppx \ command
+.BI \-ppx " command"
 Pipe abstract syntax tree through preprocessor
 .IR command .
 .TP
@@ -258,15 +249,15 @@ Sort the list of top-level modules before generating the documentation.
 .B \-stars
 Remove blank characters until the first asterisk ('*') in each line of comments.
 .TP
-.BI \-t \ title
+.BI \-t " title"
 Use
 .I title
 as the title for the generated documentation.
 .TP
-.BI \-text \ file
+.BI \-text " file"
 Consider \fIfile\fR as a .txt file.
 .TP
-.BI \-intro \ file
+.BI \-intro " file"
 Use content of
 .I file
 as
@@ -293,17 +284,17 @@ Do not print
 .B ocamldoc
 warnings.
 .TP
-.BR \-help \ or \ \-\-help
+.BR \-help " or " \-\-help
 Display a short usage summary and exit.
 .SS "Type-checking options"
 .BR ocamldoc (1)
 calls the OCaml type-checker to obtain type information. The
 following options impact the type-checking phase. They have the same meaning
 as for the
-.BR ocamlc (1)\ and \ ocamlopt (1)
+.BR ocamlc (1) " and " ocamlopt "(1)"
 commands.
 .TP
-.BI \-I \ directory
+.BI \-I " directory"
 Add
 .I directory
 to the list of directories search for compiled interface files (.cmi files).
@@ -324,11 +315,11 @@ option:
 .B \-all\-params
 Display the complete list of parameters for functions and methods.
 .TP
-.BI \-charset \ s
+.BI \-charset " s"
 Add information about character encoding being \fIs\fR
 (default is \fBiso-8859-1\fR).
 .TP
-.BI \-css\-style \ filename
+.BI \-css\-style " filename"
 Use
 .I filename
 as the Cascading Style Sheet file.
@@ -360,14 +351,14 @@ document. The default prefix is the empty string. You can also use the options
 .BR -latex-module-type-prefix ,
 .BR -latex-class-prefix ,
 .BR -latex-class-type-prefix ,
-.BR -latex-attribute-prefix ,\ and
+.BR -latex-attribute-prefix ", and"
 .BR -latex-method-prefix .
 
 These options are useful when you have, for example, a type and a value
 with the same name. If you do not specify prefixes, LaTeX will complain about
 multiply defined labels.
 .TP
-.BI \-latextitle \ n,style
+.BI \-latextitle " n,style"
 Associate style number
 .I n
 to the given LaTeX sectioning command
@@ -420,7 +411,7 @@ The following options apply in conjunction with the
 .B \-dot
 option:
 .TP
-.BI \-dot\-colors \ colors
+.BI \-dot\-colors " colors"
 Specify the colors to use in the generated dot code. When generating module
 dependencies,
 .BR ocamldoc (1)
@@ -460,18 +451,16 @@ option:
 Generate man pages only for modules, module types, classes and class types,
 instead of pages for all elements.
 .TP
-.BI \-man\-suffix \ suffix
+.BI \-man\-suffix " suffix"
 Set the suffix used for generated man filenames. Default is o, as in
 .IR List.o .
 .TP
-.BI \-man\-section \ section
+.BI \-man\-section " section"
 Set the section number used for generated man filenames. Default is 3.
 
 
 .SH SEE ALSO
-.BR ocaml (1),
-.BR ocamlc (1),
-.BR ocamlopt (1).
+.BR ocaml "(1), " ocamlc "(1), " ocamlopt (1).
 .br
-.IR "The OCaml user's manual",
+.IR The\ OCaml\ user's\ manual ,
 chapter "The documentation generator".

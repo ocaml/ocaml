@@ -24,18 +24,19 @@ ocamlmktop \- Building custom toplevel systems
 .BR \-v | \-version | \-vnum
 ]
 [
-.BI \-cclib \ libname
+.BI \-cclib " libname"
 ]
 [
-.BI \-ccopt \ option
+.BI \-ccopt " option"
 ]
 [
 .B \-custom
-[
-.BI \-o \ exec-file
 ]
 [
-.BI \-I \ lib-dir
+.BI \-o " exec-file"
+]
+[
+.BI \-I " lib-dir"
 ]
 .I filename ...
 
@@ -65,7 +66,7 @@ The following command-line options are recognized by
 .B \-v
 Print the version string of the compiler and exit.
 .TP
-.BR \-vnum \ or\  \-version
+.BR \-vnum " or " \-version
 Print the version number of the compiler in short form and exit.
 .TP
 .BI \-cclib\ \-l libname
@@ -84,11 +85,11 @@ Pass the given option to the C compiler and linker, when linking in
 Link in ``custom runtime'' mode. See the corresponding option for
 .BR ocamlc (1).
 .TP
-.BI \-I \ directory
+.BI \-I " directory"
 Add the given directory to the list of directories searched for
 compiled interface files (.cmo and .cma).
 .TP
-.BI \-o \ exec\-file
+.BI \-o " exec\-file"
 Specify the name of the toplevel file produced by the linker.
 The default is is
 .BR a.out .
