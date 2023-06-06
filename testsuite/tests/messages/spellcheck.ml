@@ -9,7 +9,7 @@
 
 #directery "foo/";;
 [%%expect {|
-Unknown directive `directery'.
+Unknown directive directery.
 Hint: Did you mean directory?
 |}];;
 
