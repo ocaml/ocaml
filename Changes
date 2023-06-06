@@ -67,8 +67,9 @@ Working version
   `Typedecl.transl_type_decl`, as the expansion is already checked by
   `check_regularity`. As a result, recursion is more polymorphic,
   which may cause some (essentialy wrong) type declarations to have
-  unbound type variables.
-  (Jacques Garrigue, report by Richard Esenberg, review by Gabriel Scherer)
+  unbound type variables, and some constraints unrelated to the concrete
+  type to be ignored (see tests/typing-misc/constraints.ml).
+  (Jacques Garrigue, report by Richard Eisenberg, review by Leo White)
 
 - #12255, #12256: Handle large signal numbers correctly (Nick Barnes,
    review by David Allsopp).
