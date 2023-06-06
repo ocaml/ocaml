@@ -976,7 +976,7 @@ let deprecated_script_alert program =
     extension (e.g. %a) is deprecated. Either rename the script \
     (%a) or qualify the basename (%a)"
       Style.inline_code program
-      Style.inline_code (program ^" script-file")
+      Style.inline_code (program ^ " script-file")
       Style.inline_code (program ^ " script-file.ml")
       Style.inline_code (program ^ " ./script-file")
   in
