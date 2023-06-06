@@ -687,21 +687,30 @@ module Color = struct
 
 
   type Format.stag += Style of style list
-  type styles = {
-    error: style list;
-    warning: style list;
-    loc: style list;
-    hint:style list;
-    inline_code:style list;
+
+  type tag_style ={
+    ansi: style list;
+    text_open:string;
+    text_close:string
   }
 
-  let default_styles = {
-    warning = [Bold; FG Magenta];
-    error = [Bold; FG Red];
-    loc = [Bold];
-    hint = [Bold; FG Blue];
-    inline_code=[Bold]
+  type styles = {
+    error: tag_style;
+    warning: tag_style;
+    loc: tag_style;
+    hint: tag_style;
+    inline_code: tag_style;
   }
+
+  let no_markup stl = { ansi = stl; text_close = ""; text_open = "" }
+
+  let default_styles = {
+      warning = no_markup [Bold; FG Magenta];
+      error = no_markup [Bold; FG Red];
+      loc = no_markup [Bold];
+      hint = no_markup [Bold; FG Blue];
+      inline_code= { ansi=[Bold]; text_open = "["; text_close = "]" }
+    }
 
   let cur_styles = ref default_styles
   let get_styles () = !cur_styles
@@ -710,12 +719,12 @@ module Color = struct
   (* map a tag to a style, if the tag is known.
      @raise Not_found otherwise *)
   let style_of_tag s = match s with
-    | Format.String_tag "error" -> (!cur_styles).error
-    | Format.String_tag "warning" -> (!cur_styles).warning
+    | Format.String_tag "error" ->  (!cur_styles).error
+    | Format.String_tag "warning" ->(!cur_styles).warning
     | Format.String_tag "loc" -> (!cur_styles).loc
     | Format.String_tag "hint" -> (!cur_styles).hint
     | Format.String_tag "inline_code" -> (!cur_styles).inline_code
-    | Style s -> s
+    | Style s -> no_markup s
     | _ -> raise Not_found
 
   let color_enabled = ref true
@@ -731,13 +740,13 @@ module Color = struct
   let mark_open_tag ~or_else s =
     try
       let style = style_of_tag s in
-      if !color_enabled then ansi_of_style_l style else ""
+      if !color_enabled then ansi_of_style_l style.ansi else style.text_open
     with Not_found -> or_else s
 
   let mark_close_tag ~or_else s =
     try
-      let _ = style_of_tag s in
-      if !color_enabled then ansi_of_style_l [Reset] else ""
+      let style = style_of_tag s in
+      if !color_enabled then ansi_of_style_l [Reset] else style.text_close
     with Not_found -> or_else s
 
   (* add color handling to formatter [ppf] *)

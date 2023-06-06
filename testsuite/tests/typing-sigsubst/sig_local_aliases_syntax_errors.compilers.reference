@@ -1,11 +1,11 @@
 Line 6, characters 2-14:
 6 |   type t1 := A
       ^^^^^^^^^^^^
-Error: Only type synonyms are allowed on the right of :=
+Error: Only type synonyms are allowed on the right of [:=]
 Line 3, characters 2-24:
 3 |   type t2 := { x : int }
       ^^^^^^^^^^^^^^^^^^^^^^
-Error: Only type synonyms are allowed on the right of :=
+Error: Only type synonyms are allowed on the right of [:=]
 Line 3, characters 15-18:
 3 |   module M1 := sig end
                    ^^^

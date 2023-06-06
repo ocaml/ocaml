@@ -3,8 +3,8 @@ module F0 : sig type t = private int end
 Line 2, characters 20-21:
 2 | let f (x : F0.t) = (x : Foobar.t);; (* fails *)
                         ^
-Error: This expression has type F0.t but an expression was expected of type
-         Foobar.t
+Error: This expression has type [F0.t] but an expression was expected of type
+         [Foobar.t]
 module F = Foobar
 val f : F.t -> Foobar.t = <fun>
 module M : sig type t = < m : int > end
@@ -13,8 +13,8 @@ module M2 : sig type t = private < m : int; .. > end
 Line 1, characters 19-20:
 1 | fun (x : M1.t) -> (x : M2.t);; (* fails *)
                        ^
-Error: This expression has type M1.t but an expression was expected of type
-         M2.t
+Error: This expression has type [M1.t] but an expression was expected of type
+         [M2.t]
 module M3 : sig type t = private M1.t end
 - : M3.t -> M1.t = <fun>
 - : M3.t -> M.t = <fun>
@@ -30,7 +30,7 @@ Error: Signature mismatch:
          type t = M2.t
        is not included in
          type t = private M3.t
-       The type M2.t is not equal to the type M3.t
+       The type [M2.t] is not equal to the type [M3.t]
 Line 1, characters 44-45:
 1 | module M4 : sig type t = private M3.t end = M;; (* fails *)
                                                 ^
@@ -43,7 +43,7 @@ Error: Signature mismatch:
          type t = < m : int >
        is not included in
          type t = private M3.t
-       The type < m : int > is not equal to the type M3.t
+       The type [< m : int >] is not equal to the type [M3.t]
 Line 1, characters 44-46:
 1 | module M4 : sig type t = private M3.t end = M1;; (* might be ok *)
                                                 ^^
@@ -56,7 +56,7 @@ Error: Signature mismatch:
          type t = M1.t
        is not included in
          type t = private M3.t
-       The type M1.t is not equal to the type M3.t
+       The type [M1.t] is not equal to the type [M3.t]
 module M5 : sig type t = private M1.t end
 Line 1, characters 53-55:
 1 | module M6 : sig type t = private < n:int; .. > end = M1;; (* fails *)
@@ -70,7 +70,7 @@ Error: Signature mismatch:
          type t = M1.t
        is not included in
          type t = private < n : int; .. >
-       The implementation is missing the method n
+       The implementation is missing the method [n]
 Line 3, characters 2-51:
 3 |   struct type t = int let f (x : int) = (x : t) end;; (* must fail *)
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -83,7 +83,7 @@ Error: Signature mismatch:
          type t = int
        is not included in
          type t = private Foobar.t
-       The type int is not equal to the type Foobar.t
+       The type [int] is not equal to the type [Foobar.t]
 module M : sig type t = private T of int val mk : int -> t end
 module M1 : sig type t = M.t val mk : int -> t end
 module M2 : sig type t = M.t val mk : int -> t end
@@ -91,7 +91,7 @@ module M3 : sig type t = M.t val mk : int -> t end
 Line 3, characters 4-27:
 3 |     type t = M.t = T of int
         ^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type M.t
+Error: This variant or record definition does not match that of type [M.t]
        Private variant constructor(s) would be revealed.
 module M5 : sig type t = M.t = private T of int val mk : int -> t end
 module M6 : sig type t = private T of int val mk : int -> t end
@@ -107,7 +107,7 @@ val f : Test2.t -> unit = <fun>
 Line 1, characters 8-15:
 1 | let a = Test2.A;; (* fail *)
             ^^^^^^^
-Error: Cannot create values of the private type Test2.t
+Error: Cannot create values of the private type [Test2.t]
 Line 3, characters 40-63:
 3 | module Test2 : module type of Test with type t = private Test.t = Test;;
                                             ^^^^^^^^^^^^^^^^^^^^^^^
@@ -124,7 +124,7 @@ Error: Type declarations do not match:
        is not included in
          type 'a t
        Their parameters differ
-       The type < x : int; .. > is not equal to the type 'a
+       The type [< x : int; .. >] is not equal to the type ['a]
 type 'a t = private 'a constraint 'a = < x : int; .. >
 type t = [ `Closed ]
 type nonrec t = private [> t ]

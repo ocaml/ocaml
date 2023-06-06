@@ -6,7 +6,7 @@ Error: Signature mismatch:
          sig val x : 'a option module M : Dep -> S end
        is not included in
          S
-       In module M:
+       In module [M]:
        Modules do not match:
          Dep -> S
        is not included in
@@ -15,7 +15,7 @@ Error: Signature mismatch:
              val x : X.t option
              module M : functor (Y : Dep) -> sig val x : X.t option end
            end
-       In module M:
+       In module [M]:
        Modules do not match:
          S
        is not included in
@@ -23,7 +23,7 @@ Error: Signature mismatch:
            val x : X.t option
            module M : functor (Y : Dep) -> sig val x : X.t option end
          end
-       In module M.M:
+       In module [M.M]:
        Modules do not match:
          functor (X : Dep) ->
            sig
@@ -32,7 +32,7 @@ Error: Signature mismatch:
            end
        is not included in
          functor (Y : Dep) -> sig val x : X.t option end
-       In module M.M:
+       In module [M.M]:
        Modules do not match:
          sig
            val x : X.t option
@@ -40,16 +40,16 @@ Error: Signature mismatch:
          end
        is not included in
          sig val x : X.t option end
-       In module M.M:
+       In module [M.M]:
        Values do not match:
          val x : X.t option
        is not included in
          val x : X/2.t option
-       The type X.t option is not compatible with the type X/2.t option
-       Type X.t is not compatible with type X/2.t
+       The type [X.t option] is not compatible with the type [X/2.t option]
+       Type [X.t] is not compatible with type [X/2.t]
        File "_none_", line 1:
-         Definition of module X
+         Definition of module [X]
        File "_none_", line 1:
-         Definition of module X/2
+         Definition of module [X/2]
        File "pr10693_bad.ml", line 17, characters 6-24: Expected declaration
        File "pr10693_bad.ml", line 15, characters 4-22: Actual declaration

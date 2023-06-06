@@ -482,12 +482,18 @@ module Color : sig
   val ansi_of_style_l : style list -> string
   (* ANSI escape sequence for the given style *)
 
+  type tag_style ={
+    ansi: style list;
+    text_open:string;
+    text_close:string
+  }
+
   type styles = {
-    error: style list;
-    warning: style list;
-    loc: style list;
-    hint: style list;
-    inline_code: style list;
+    error: tag_style;
+    warning: tag_style;
+    loc: tag_style;
+    hint: tag_style;
+    inline_code: tag_style;
   }
 
   val as_inline_code: (Format.formatter -> 'a -> unit as 'printer) -> 'printer
