@@ -253,25 +253,25 @@ let rec lexical_approximation lexbuf =
        lower-case identifier
      - always skip the token after a backquote
   *)
-  let rec process after_lident lexbuf =
+  let rec process ~after_lident lexbuf =
     match Lexer.token lexbuf with
     | Parser.UIDENT name ->
         Depend.free_structure_names :=
           String.Set.add name !Depend.free_structure_names;
-        process false lexbuf
-    | Parser.LIDENT _ -> process true lexbuf
-    | Parser.DOT when after_lident -> process false lexbuf
+        process ~after_lident:false lexbuf
+    | Parser.LIDENT _ -> process ~after_lident:true lexbuf
+    | Parser.DOT when after_lident -> process ~after_lident:false lexbuf
     | Parser.DOT | Parser.BACKQUOTE -> skip_one lexbuf
     | Parser.EOF -> ()
-    | _ -> process false lexbuf
+    | _ -> process ~after_lident:false lexbuf
   and skip_one lexbuf =
     match Lexer.token lexbuf with
     | Parser.DOT | Parser.BACKQUOTE -> skip_one lexbuf
     | Parser.EOF -> ()
-    | _ -> process false lexbuf
+    | _ -> process ~after_lident:false lexbuf
 
   in
-  try process false lexbuf
+  try process ~after_lident:false lexbuf
   with Lexer.Error _ -> lexical_approximation lexbuf
 
 let read_and_approximate inputfile =
