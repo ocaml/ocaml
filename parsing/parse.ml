@@ -118,14 +118,16 @@ let prepare_error err =
         ~loc:closing_loc
         ~sub:[
           Location.msg ~loc:opening_loc
-            "This '%s' might be unmatched" opening
+            "This %a might be unmatched" Style.inline_code opening
         ]
-        "Syntax error: '%s' expected" closing
+        "Syntax error: %a expected" Style.inline_code closing
 
   | Expecting (loc, nonterm) ->
-      Location.errorf ~loc "Syntax error: %s expected." nonterm
+      Location.errorf ~loc "Syntax error: %a expected."
+        Style.inline_code nonterm
   | Not_expecting (loc, nonterm) ->
-      Location.errorf ~loc "Syntax error: %s not expected." nonterm
+      Location.errorf ~loc "Syntax error: %a not expected."
+        Style.inline_code nonterm
   | Applicative_path loc ->
       Location.errorf ~loc
         "Syntax error: applicative paths of the form %a \
