@@ -29,8 +29,8 @@ let x: t = Alph;;
 Line 1, characters 11-15:
 1 | let x: t = Alph;;
                ^^^^
-Error: This variant expression is expected to have type t
-       There is no constructor Alph within type t
+Error: This variant expression is expected to have type [t]
+       There is no constructor [Alph] within type [t]
 Hint: Did you mean Aleph or Alpha?
 |}]
 
@@ -40,8 +40,8 @@ let y : w = Alha;;
 Line 2, characters 12-16:
 2 | let y : w = Alha;;
                 ^^^^
-Error: This variant expression is expected to have type M.w
-       There is no constructor Alha within type M.w
+Error: This variant expression is expected to have type [M.w]
+       There is no constructor [Alha] within type [M.w]
 Hint: Did you mean Alpha?
 |}]
 
@@ -50,8 +50,8 @@ let z: t = Bet;;
 Line 1, characters 11-14:
 1 | let z: t = Bet;;
                ^^^
-Error: This variant expression is expected to have type t
-       There is no constructor Bet within type t
+Error: This variant expression is expected to have type [t]
+       There is no constructor [Bet] within type [t]
 Hint: Did you mean Beth?
 |}]
 
@@ -64,8 +64,8 @@ module N : sig type u = F(X).u = .. type t += Gamma type u += Gamme end
 Line 3, characters 9-13:
 3 | let g = (Gamm:t);;
              ^^^^
-Error: This variant expression is expected to have type t
-       There is no constructor Gamm within type t
+Error: This variant expression is expected to have type [t]
+       There is no constructor [Gamm] within type [t]
 Hint: Did you mean Gamma?
 |}];;
 
@@ -74,8 +74,8 @@ raise Not_Found;;
 Line 1, characters 6-15:
 1 | raise Not_Found;;
           ^^^^^^^^^
-Error: This variant expression is expected to have type exn
-       There is no constructor Not_Found within type exn
+Error: This variant expression is expected to have type [exn]
+       There is no constructor [Not_Found] within type [exn]
 Hint: Did you mean Not_found?
 |}]
 
@@ -155,8 +155,8 @@ module P : sig type p = x end
 Line 7, characters 13-17:
 7 | let x: P.p = Alha;;
                  ^^^^
-Error: This variant expression is expected to have type P.p
-       There is no constructor Alha within type x
+Error: This variant expression is expected to have type [P.p]
+       There is no constructor [Alha] within type [x]
 Hint: Did you mean Alpha?
 |}]
 
@@ -169,8 +169,8 @@ module N : sig type s = M.t end
 Line 3, characters 13-14:
 3 | let y: N.s = T ;;
                  ^
-Error: This variant expression is expected to have type N.s
-       There is no constructor T within type M.t
+Error: This variant expression is expected to have type [N.s]
+       There is no constructor [T] within type [M.t]
 |}]
 
 (** Pattern matching *)
@@ -196,8 +196,8 @@ let x =
 Line 3, characters 8-12:
 3 |   raise Locl;;
             ^^^^
-Error: This variant expression is expected to have type exn
-       There is no constructor Locl within type exn
+Error: This variant expression is expected to have type [exn]
+       There is no constructor [Locl] within type [exn]
 Hint: Did you mean Local?
 |}]
 

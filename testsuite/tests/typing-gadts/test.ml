@@ -293,9 +293,9 @@ module Existential_escape =
 Line 5, characters 21-22:
 5 |     let eval (D x) = x
                          ^
-Error: This expression has type $D_'a t
-       but an expression was expected of type 'a
-       The type constructor $D_'a would escape its scope
+Error: This expression has type [$D_'a t]
+       but an expression was expected of type ['a]
+       The type constructor [$D_'a] would escape its scope
 |}];;
 
 module Rectype =
@@ -376,9 +376,9 @@ module Propagation :
 Line 13, characters 19-20:
 13 |     | BoolLit b -> b
                         ^
-Error: This expression has type bool but an expression was expected of type
-         s = bool
-       This instance of bool is ambiguous:
+Error: This expression has type [bool] but an expression was expected of type
+         [s] = [bool]
+       This instance of [bool] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -392,8 +392,8 @@ end;;
 Line 5, characters 28-29:
 5 |   let f = function A -> 1 | B -> 2
                                 ^
-Error: This variant pattern is expected to have type a
-       There is no constructor B within type a
+Error: This variant pattern is expected to have type [a]
+       There is no constructor [B] within type [a]
 |}];;
 
 module PR6849 = struct
@@ -406,8 +406,8 @@ end;;
 Line 5, characters 6-9:
 5 |       Foo -> 5
           ^^^
-Error: This pattern matches values of type 'a t
-       but a pattern was expected which matches values of type int
+Error: This pattern matches values of type ['a t]
+       but a pattern was expected which matches values of type [int]
 |}];;
 
 type _ t = Int : int t ;;
@@ -444,9 +444,9 @@ let test : type a. a t -> _ =
 Line 2, characters 18-30:
 2 |   function Int -> ky (1 : a) 1  (* fails *)
                       ^^^^^^^^^^^^
-Error: This expression has type a = int
-       but an expression was expected of type 'a
-       This instance of int is ambiguous:
+Error: This expression has type [a] = [int]
+       but an expression was expected of type ['a]
+       This instance of [int] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -458,9 +458,9 @@ let test : type a. a t -> a = fun x ->
 Line 2, characters 30-42:
 2 |   let r = match x with Int -> ky (1 : a) 1  (* fails *)
                                   ^^^^^^^^^^^^
-Error: This expression has type a = int
-       but an expression was expected of type 'a
-       This instance of int is ambiguous:
+Error: This expression has type [a] = [int]
+       but an expression was expected of type ['a]
+       This instance of [int] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -472,8 +472,8 @@ let test : type a. a t -> a = fun x ->
 Line 2, characters 30-42:
 2 |   let r = match x with Int -> ky 1 (1 : a)  (* fails *)
                                   ^^^^^^^^^^^^
-Error: This expression has type int but an expression was expected of type 'a
-       This instance of int is ambiguous:
+Error: This expression has type [int] but an expression was expected of type ['a]
+       This instance of [int] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -547,10 +547,10 @@ let test2 : type a. a t -> a option = fun x ->
 Line 4, characters 46-48:
 4 |   begin match x with Int -> u := Some 1; r := !u end;
                                                   ^^
-Error: This expression has type int option
-       but an expression was expected of type a option
-       Type int is not compatible with type a = int
-       This instance of int is ambiguous:
+Error: This expression has type [int option]
+       but an expression was expected of type [a option]
+       Type [int] is not compatible with type [a] = [int]
+       This instance of [int] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -585,8 +585,8 @@ val either : 'a -> 'a -> 'a = <fun>
 Line 3, characters 44-45:
 3 |   match v with Int -> let y = either 1 x in y
                                                 ^
-Error: This expression has type int but an expression was expected of type 'a
-       This instance of int is ambiguous:
+Error: This expression has type [int] but an expression was expected of type ['a]
+       This instance of [int] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -692,7 +692,7 @@ type (_, _) eq = Eq : ('a, 'a) eq
 Line 3, characters 18-72:
 3 | let f : type a b. (a,b) eq -> (<m : a; ..> as 'c) -> (<m : b; ..> as 'c) =
                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The universal type variable 'b cannot be generalized:
+Error: The universal type variable ['b] cannot be generalized:
        it is already bound to another variable.
 |}];;
 
@@ -703,10 +703,10 @@ let f : type a b. (a,b) eq -> <m : a; ..> -> <m : b; ..> =
 Line 2, characters 14-15:
 2 |   fun Eq o -> o
                   ^
-Error: This expression has type < m : a; .. >
-       but an expression was expected of type < m : b; .. >
-       Type a is not compatible with type b = a
-       This instance of a is ambiguous:
+Error: This expression has type [< m : a; .. >]
+       but an expression was expected of type [< m : b; .. >]
+       Type [a] is not compatible with type [b] = [a]
+       This instance of [a] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -716,10 +716,10 @@ let f (type a) (type b) (eq : (a,b) eq) (o : <m : a; ..>) : <m : b; ..> =
 Line 2, characters 22-23:
 2 |   match eq with Eq -> o ;; (* should fail *)
                           ^
-Error: This expression has type < m : a; .. >
-       but an expression was expected of type < m : b; .. >
-       Type a is not compatible with type b = a
-       This instance of a is ambiguous:
+Error: This expression has type [< m : a; .. >]
+       but an expression was expected of type [< m : b; .. >]
+       Type [a] is not compatible with type [b] = [a]
+       This instance of [a] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -756,10 +756,10 @@ val f : ('a, 'b) eq -> < m : 'a > -> < m : 'b > = <fun>
 Line 4, characters 44-45:
 4 |     let r : < m : b > = match eq with Eq -> o in (* fail with principal *)
                                                 ^
-Error: This expression has type < m : a >
-       but an expression was expected of type < m : b >
-       Type a is not compatible with type b = a
-       This instance of a is ambiguous:
+Error: This expression has type [< m : a >]
+       but an expression was expected of type [< m : b >]
+       Type [a] is not compatible with type [b] = [a]
+       This instance of [a] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -772,10 +772,10 @@ let f : type a b. (a,b) eq -> < m : a; .. > -> < m : b > =
 Line 3, characters 44-45:
 3 |     let r : < m : b > = match eq with Eq -> o in (* fail *)
                                                 ^
-Error: This expression has type < m : a; .. >
-       but an expression was expected of type < m : b >
-       Type a is not compatible with type b = a
-       This instance of a is ambiguous:
+Error: This expression has type [< m : a; .. >]
+       but an expression was expected of type [< m : b >]
+       Type [a] is not compatible with type [b] = [a]
+       This instance of [a] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -785,10 +785,10 @@ let f : type a b. (a,b) eq -> [> `A of a] -> [> `A of b] =
 Line 2, characters 14-15:
 2 |   fun Eq o -> o ;; (* fail *)
                   ^
-Error: This expression has type [> `A of a ]
-       but an expression was expected of type [> `A of b ]
-       Type a is not compatible with type b = a
-       This instance of a is ambiguous:
+Error: This expression has type [[> `A of a ]]
+       but an expression was expected of type [[> `A of b ]]
+       Type [a] is not compatible with type [b] = [a]
+       This instance of [a] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -798,10 +798,10 @@ let f (type a b) (eq : (a,b) eq) (v : [> `A of a]) : [> `A of b] =
 Line 2, characters 22-23:
 2 |   match eq with Eq -> v ;; (* should fail *)
                           ^
-Error: This expression has type [> `A of a ]
-       but an expression was expected of type [> `A of b ]
-       Type a is not compatible with type b = a
-       This instance of a is ambiguous:
+Error: This expression has type [[> `A of a ]]
+       but an expression was expected of type [[> `A of b ]]
+       Type [a] is not compatible with type [b] = [a]
+       This instance of [a] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -812,11 +812,11 @@ Lines 1-2, characters 4-15:
 1 | ....f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
 2 |   fun Eq o -> o..............
 Error: This definition has type
-         'c 'd. ('d, 'd) eq -> ([< `A of 'd | `B ] as 'c) -> 'c
+         ['c 'd. ('d, 'd) eq -> ([< `A of 'd | `B ] as 'c) -> 'c]
        which is less general than
-         'e 'f 'a 'b.
+         ['e 'f 'a 'b.
            ('a, 'b) eq ->
-           ([< `A of 'a | `B ] as 'f) -> ([< `A of 'b | `B ] as 'e)
+           ([< `A of 'a | `B ] as 'f) -> ([< `A of 'b | `B ] as 'e)]
 |}];;
 
 let f : type a b. (a,b) eq -> [`A of a | `B] -> [`A of b | `B] =
@@ -845,19 +845,19 @@ Lines 1-5, characters 4-5:
 4 |     let r : [`A of b | `B] = match eq with Eq -> o in (* fail with principal *)
 5 |     r..
 Error: This expression has type
-         ('a, 'b) eq -> [ `A of 'a | `B ] -> [ `A of 'b | `B ]
+         [('a, 'b) eq -> [ `A of 'a | `B ] -> [ `A of 'b | `B ]]
        but an expression was expected of type
-         ('a, 'b) eq -> [> `A of 'a | `B ] -> [ `A of 'b | `B ]
-       The second variant type is bound to the universal type variable 'c,
+         [('a, 'b) eq -> [> `A of 'a | `B ] -> [ `A of 'b | `B ]]
+       The second variant type is bound to the universal type variable ['c],
        it cannot be closed
 |}, Principal{|
 Line 4, characters 49-50:
 4 |     let r : [`A of b | `B] = match eq with Eq -> o in (* fail with principal *)
                                                      ^
-Error: This expression has type [ `A of a | `B ]
-       but an expression was expected of type [ `A of b | `B ]
-       Type a is not compatible with type b = a
-       This instance of a is ambiguous:
+Error: This expression has type [[ `A of a | `B ]]
+       but an expression was expected of type [[ `A of b | `B ]]
+       Type [a] is not compatible with type [b] = [a]
+       This instance of [a] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -870,10 +870,10 @@ let f : type a b. (a,b) eq -> [> `A of a | `B] -> [`A of b | `B] =
 Line 3, characters 49-50:
 3 |     let r : [`A of b | `B] = match eq with Eq -> o in (* fail *)
                                                      ^
-Error: This expression has type [> `A of a | `B ]
-       but an expression was expected of type [ `A of b | `B ]
-       Type a is not compatible with type b = a
-       This instance of a is ambiguous:
+Error: This expression has type [[> `A of a | `B ]]
+       but an expression was expected of type [[ `A of b | `B ]]
+       Type [a] is not compatible with type [b] = [a]
+       This instance of [a] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -952,8 +952,8 @@ let f : type a. a ty -> a t -> int = fun x y ->
 Line 6, characters 6-13:
 6 |   | D [|1.0|], TE TC -> 14
           ^^^^^^^
-Error: This pattern matches values of type 'a array
-       but a pattern was expected which matches values of type a
+Error: This pattern matches values of type ['a array]
+       but a pattern was expected which matches values of type [a]
 |}];;
 
 type ('a,'b) pair = {right:'a; left:'b}
@@ -972,8 +972,8 @@ type ('a, 'b) pair = { right : 'a; left : 'b; }
 Line 8, characters 25-32:
 8 |   | {left=TE TC; right=D [|1.0|]} -> 14
                              ^^^^^^^
-Error: This pattern matches values of type 'a array
-       but a pattern was expected which matches values of type a
+Error: This pattern matches values of type ['a array]
+       but a pattern was expected which matches values of type [a]
 |}];;
 
 type ('a,'b) pair = {left:'a; right:'b}
@@ -1018,9 +1018,9 @@ module M : sig type 'a t val eq : ('a t, 'b t) eq end
 Line 6, characters 17-19:
 6 |   function Eq -> Eq (* fail *)
                      ^^
-Error: This expression has type (a, a) eq
-       but an expression was expected of type (a, b) eq
-       Type a is not compatible with type b
+Error: This expression has type [(a, a) eq]
+       but an expression was expected of type [(a, b) eq]
+       Type [a] is not compatible with type [b]
 |}];;
 
 let f : type a b. (a M.t * a, b M.t * b) eq -> (a, b) eq =
@@ -1074,10 +1074,10 @@ type _ int_bar = IB_constr : < bar : int; .. > int_bar
 Line 10, characters 3-4:
 10 |   (x:<foo:int>)
         ^
-Error: This expression has type t = < foo : int; .. >
-       but an expression was expected of type < foo : int >
-       Type $0 = < bar : int; .. > is not compatible with type <  >
-       The second object type has no method bar
+Error: This expression has type [t] = [< foo : int; .. >]
+       but an expression was expected of type [< foo : int >]
+       Type [$0] = [< bar : int; .. >] is not compatible with type [<  >]
+       The second object type has no method [bar]
 |}];;
 
 let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
@@ -1088,9 +1088,9 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
 Line 3, characters 3-4:
 3 |   (x:<foo:int;bar:int>)
        ^
-Error: This expression has type t = < foo : int; .. >
-       but an expression was expected of type < bar : int; foo : int >
-       Type $0 = < bar : int; .. > is not compatible with type < bar : int >
+Error: This expression has type [t] = [< foo : int; .. >]
+       but an expression was expected of type [< bar : int; foo : int >]
+       Type [$0] = [< bar : int; .. >] is not compatible with type [< bar : int >]
        The first object type has an abstract row, it cannot be closed
 |}];;
 
@@ -1102,16 +1102,16 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
 Line 3, characters 2-26:
 3 |   (x:<foo:int;bar:int;..>)
       ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type < bar : int; foo : int; .. >
-       but an expression was expected of type 'a
-       The type constructor $1 would escape its scope
+Error: This expression has type [< bar : int; foo : int; .. >]
+       but an expression was expected of type ['a]
+       The type constructor [$1] would escape its scope
 |}, Principal{|
 Line 3, characters 2-26:
 3 |   (x:<foo:int;bar:int;..>)
       ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type < bar : int; foo : int; .. >
-       but an expression was expected of type 'a
-       This instance of $1 is ambiguous:
+Error: This expression has type [< bar : int; foo : int; .. >]
+       but an expression was expected of type ['a]
+       This instance of [$1] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -1133,8 +1133,8 @@ val g : 't -> 't int_foo -> 't int_bar -> 't * int * int = <fun>
 Line 3, characters 5-10:
 3 |   x, x#foo, x#bar
          ^^^^^
-Error: This expression has type int but an expression was expected of type 'a
-       This instance of int is ambiguous:
+Error: This expression has type [int] but an expression was expected of type ['a]
+       This instance of [int] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -1201,9 +1201,9 @@ let f : type a b. (a,b) eq -> (a,int) eq -> a -> b -> _ = fun ab aint a b ->
 Line 5, characters 24-25:
 5 |     if true then a else b
                             ^
-Error: This expression has type b = int
-       but an expression was expected of type a = int
-       This instance of int is ambiguous:
+Error: This expression has type [b] = [int]
+       but an expression was expected of type [a] = [int]
+       This instance of [int] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -1218,9 +1218,9 @@ let f : type a b. (a,b) eq -> (b,int) eq -> a -> b -> _ = fun ab bint a b ->
 Line 5, characters 24-25:
 5 |     if true then a else b
                             ^
-Error: This expression has type b = int
-       but an expression was expected of type a = int
-       This instance of int is ambiguous:
+Error: This expression has type [b] = [int]
+       but an expression was expected of type [a] = [int]
+       This instance of [int] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -1233,9 +1233,9 @@ let f (type a b c) (b : bool) (w1 : (a,b) eq) (w2 : (a,int) eq) (x : a) (y : b) 
 Line 4, characters 19-20:
 4 |   if b then x else y
                        ^
-Error: This expression has type b = int
-       but an expression was expected of type a = int
-       This instance of int is ambiguous:
+Error: This expression has type [b] = [int]
+       but an expression was expected of type [a] = [int]
+       This instance of [int] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -1247,9 +1247,9 @@ let f (type a b c) (b : bool) (w1 : (a,b) eq) (w2 : (a,int) eq) (x : a) (y : b) 
 Line 4, characters 19-20:
 4 |   if b then y else x
                        ^
-Error: This expression has type a = int
-       but an expression was expected of type b = int
-       This instance of int is ambiguous:
+Error: This expression has type [a] = [int]
+       but an expression was expected of type [b] = [int]
+       This instance of [int] is ambiguous:
        it would escape the scope of its equation
 |}];;
 
@@ -1266,9 +1266,9 @@ type (_, _) eq = Refl : ('a, 'a) eq
 Line 7, characters 22-36:
 7 |   if true then x else fun x -> x + 1
                           ^^^^^^^^^^^^^^
-Error: This expression has type 'a -> 'b
-       but an expression was expected of type M.t = int -> int
-       This instance of int -> int is ambiguous:
+Error: This expression has type ['a -> 'b]
+       but an expression was expected of type [M.t] = [int -> int]
+       This instance of [int -> int] is ambiguous:
        it would escape the scope of its equation
 |}]
 
@@ -1286,9 +1286,9 @@ type (_, _) eq = Refl : ('a, 'a) eq
 Line 7, characters 35-36:
 7 |   if true then fun x -> x + 1 else x
                                        ^
-Error: This expression has type M.t = int -> int
-       but an expression was expected of type int -> int
-       This instance of int -> int is ambiguous:
+Error: This expression has type [M.t] = [int -> int]
+       but an expression was expected of type [int -> int]
+       This instance of [int -> int] is ambiguous:
        it would escape the scope of its equation
 |}]
 
@@ -1306,9 +1306,9 @@ type (_, _) eq = Refl : ('a, 'a) eq
 Line 8, characters 2-3:
 8 |   z#m
       ^
-Error: This expression has type M.t but an expression was expected of type
-         < m : 'a; .. >
-       This instance of < m : int > is ambiguous:
+Error: This expression has type [M.t] but an expression was expected of type
+         [< m : 'a; .. >]
+       This instance of [< m : int >] is ambiguous:
        it would escape the scope of its equation
 |}]
 
@@ -1327,9 +1327,9 @@ type (_, _) eq = Refl : ('a, 'a) eq
 Line 8, characters 2-3:
 8 |   z#m
       ^
-Error: This expression has type M.t but an expression was expected of type
-         < m : 'a; .. >
-       This instance of < m : int > is ambiguous:
+Error: This expression has type [M.t] but an expression was expected of type
+         [< m : 'a; .. >]
+       This instance of [< m : int >] is ambiguous:
        it would escape the scope of its equation
 |}]
 
@@ -1353,9 +1353,9 @@ module M :
 Line 9, characters 4-5:
 9 |     z#b
         ^
-Error: This expression has type $C_'a = < b : bool >
-       but an expression was expected of type < b : 'a; .. >
-       This instance of < b : bool > is ambiguous:
+Error: This expression has type [$C_'a] = [< b : bool >]
+       but an expression was expected of type [< b : 'a; .. >]
+       This instance of [< b : bool >] is ambiguous:
        it would escape the scope of its equation
 |}]
 
@@ -1380,8 +1380,8 @@ module M :
 Line 9, characters 4-5:
 9 |     z#b
         ^
-Error: This expression has type $C_'a = < b : bool >
-       but an expression was expected of type < b : 'a; .. >
-       This instance of < b : bool > is ambiguous:
+Error: This expression has type [$C_'a] = [< b : bool >]
+       but an expression was expected of type [< b : 'a; .. >]
+       This instance of [< b : bool >] is ambiguous:
        it would escape the scope of its equation
 |}]

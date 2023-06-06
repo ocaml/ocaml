@@ -24,15 +24,15 @@ end
 Line 3, characters 2-36:
 3 |   include Comparable with type t = t
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Illegal shadowing of included type t/2 by t.
+Error: Illegal shadowing of included type [t/2] by [t].
 Line 2, characters 2-19:
 2 |   include Printable
       ^^^^^^^^^^^^^^^^^
-  Type t/2 came from this include.
+  Type [t/2] came from this include.
 Line 3, characters 2-23:
 3 |   val print : t -> unit
       ^^^^^^^^^^^^^^^^^^^^^
-  The value print has no valid type if t/2 is shadowed.
+  The value [print] has no valid type if [t/2] is shadowed.
 |}]
 
 module type Sunderscore = sig
@@ -208,7 +208,7 @@ type (_, _) eq = Refl : ('a, 'a) eq
 Line 11, characters 18-58:
 11 |   module type T = S with type N.t = M.t with module N := N;;
                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: In this with constraint, the new definition of N
+Error: In this [with] constraint, the new definition of [N]
        does not match its original definition in the constrained signature:
        Modules do not match:
          sig type t = M.t val compare : t -> t -> int end
@@ -266,8 +266,8 @@ Lines 1-4, characters 16-26:
 2 |   module M : sig type t end
 3 |   module A = M
 4 | end with type M.t := float
-Error: This with constraint on M.t changes M, which is aliased
-       in the constrained signature (as A).
+Error: This [with] constraint on [M.t] changes [M], which is aliased
+       in the constrained signature (as [A]).
 |}]
 
 (* And more corner cases with applicative functors: *)
@@ -292,13 +292,13 @@ module type S2 = S with type M.t := float
 Line 1, characters 17-41:
 1 | module type S2 = S with type M.t := float
                      ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This with constraint on M.t makes the applicative functor
-       type F(M).t ill-typed in the constrained signature:
+Error: This [with] constraint on [M.t] makes the applicative functor
+       type [F(M).t] ill-typed in the constrained signature:
        Modules do not match:
          sig type u = M.u end
        is not included in
          sig type t end
-       The type t is required but not provided
+       The type [t] is required but not provided
 |}]
 
 (* However if the applicative functor doesn't care about the type
@@ -328,10 +328,10 @@ Lines 2-5, characters 17-25:
 3 |   module rec M : sig type t = A of Id(M2).t end
 4 |   and M2 : sig type t end
 5 | end with type M2.t := int
-Error: This with constraint on M2.t makes the applicative functor
-       type Id(M2).t ill-typed in the constrained signature:
+Error: This [with] constraint on [M2.t] makes the applicative functor
+       type [Id(M2).t] ill-typed in the constrained signature:
        Modules do not match: sig end is not included in sig type t end
-       The type t is required but not provided
+       The type [t] is required but not provided
 |}]
 
 
@@ -377,6 +377,6 @@ Lines 1-10, characters 16-24:
  8 |   end
  9 |   module Alias = M
 10 | end with module M.N := A
-Error: This with constraint on M.N changes M, which is aliased
-       in the constrained signature (as Alias).
+Error: This [with] constraint on [M.N] changes [M], which is aliased
+       in the constrained signature (as [Alias]).
 |}]

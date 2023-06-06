@@ -37,7 +37,7 @@ Lines 3-5, characters 4-3:
 5 | end..
 Error: Some type variables are unbound in this type:
          class d : unit -> object method f : 'a -> unit end
-       The method f has type 'a -> unit where 'a is unbound
+       The method [f] has type ['a -> unit] where ['a] is unbound
 |}];;
 
 (* Create instance #c *)
@@ -108,7 +108,7 @@ Lines 1-3, characters 13-3:
 2 |   method virtual f : int
 3 | end..
 Error: This non-virtual class has virtual methods.
-       The following methods are virtual : f
+       The following methods are virtual : [f]
 |}];;
 (* The class x should be virtual:  its methods f is undefined *)
 
@@ -123,7 +123,7 @@ Line 1, characters 49-57:
 1 | class virtual c ((x : 'a): < f : int >) = object (_ : 'a) end
                                                      ^^^^^^^^
 Error: This pattern cannot match self: it only matches values of type
-       < f : int >
+       [< f : int >]
 |}];;
 
 (* Constraint not respected *)
@@ -137,7 +137,7 @@ Lines 1-4, characters 0-3:
 2 |   constraint 'a = int
 3 |   method f x = (x : bool c)
 4 | end..
-Error: The abbreviation c is used with parameter(s) bool
+Error: The abbreviation [c] is used with parameter(s) bool
        which are incompatible with constraint(s) int
 |}];;
 
@@ -183,9 +183,9 @@ Lines 1-3, characters 0-3:
 2 |   method f = (x : 'a)
 3 | end..
 Error: The type of this class,
-       class ['a] c :
-         unit -> object constraint 'a = '_weak1 list ref method f : 'a end,
-       contains the non-generalizable type variable(s): '_weak1.
+       [class ['a] c :
+         unit -> object constraint 'a = '_weak1 list ref method f : 'a end],
+       contains the non-generalizable type variable(s): ['_weak1].
        (see manual section 6.1.2)
 |}];;
 
@@ -197,14 +197,14 @@ Line 1, characters 0-32:
 1 | type 'a c = <f : 'a c; g : 'a d>
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This recursive type is not regular.
-       The type constructor c is defined as
-         type 'a c
+       The type constructor [c] is defined as
+         type ['a c]
        but it is used as
-         int c
+         [int c]
        after the following expansion(s):
-         < f : 'a c; g : 'a d > contains 'a d,
-         'a d = < f : int c >,
-         < f : int c > contains int c
+         [< f : 'a c; g : 'a d >] contains ['a d],
+         ['a d] = [< f : int c >],
+         [< f : int c >] contains [int c]
        All uses need to match the definition for the recursive type to be regular.
 |}];;
 type 'a c = <f : 'a c; g : 'a d>
@@ -225,10 +225,10 @@ and 'a t = 'a t u;;
 Line 2, characters 0-17:
 2 | and 'a t = 'a t u;;
     ^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic:
-         'a t u contains 'a t,
-         'a t = 'a t u,
-         'a t u contains 'a t
+Error: The type abbreviation [t] is cyclic:
+         ['a t u] contains ['a t],
+         ['a t] = ['a t u],
+         ['a t u] contains ['a t]
 |}];; (* fails since 4.04 *)
 type 'a u = 'a
 and 'a t = 'a t u;;
@@ -236,9 +236,9 @@ and 'a t = 'a t u;;
 Line 2, characters 0-17:
 2 | and 'a t = 'a t u;;
     ^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic:
-         'a t = 'a t u,
-         'a t u = 'a t
+Error: The type abbreviation [t] is cyclic:
+         ['a t] = ['a t u],
+         ['a t u] = ['a t]
 |}];;
 type 'a u = 'a;;
 [%%expect{|
@@ -249,10 +249,10 @@ type t = t u * t u;;
 Line 1, characters 0-18:
 1 | type t = t u * t u;;
     ^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic:
-         t = t u * t u,
-         t u * t u contains t u,
-         t u = t
+Error: The type abbreviation [t] is cyclic:
+         [t] = [t u * t u],
+         [t u * t u] contains [t u],
+         [t u] = [t]
 |}];;
 
 type t = <x : 'a> as 'a;;
@@ -416,8 +416,8 @@ class c () = object val x = - true val y = -. () end;;
 Line 1, characters 30-34:
 1 | class c () = object val x = - true val y = -. () end;;
                                   ^^^^
-Error: This expression has type bool but an expression was expected of type
-         int
+Error: This expression has type [bool] but an expression was expected of type
+         [int]
 |}];;
 
 class c () = object method f = 1 method g = 1 method h = 1 end;;
@@ -656,8 +656,8 @@ Lines 1-4, characters 0-3:
 2 |   val m = Array.make_matrix sz sz init
 3 |   method add (mtx : 'a matrix) = (mtx#m.(0).(0) : 'a)
 4 | end..
-Error: The abbreviation 'a matrix expands to type < add : 'a matrix -> 'a >
-       but is used with type < m : 'a array array; .. >
+Error: The abbreviation ['a matrix] expands to type [< add : 'a matrix -> 'a >]
+       but is used with type [< m : 'a array array; .. >]
 |}];;
 
 class c () = object method m = new c () end;;
@@ -713,10 +713,10 @@ Error: Signature mismatch:
          val f : (#c as 'a) -> 'a
        is not included in
          val f : #c -> #c
-       The type (#c as 'a) -> 'a is not compatible with the type #c -> #c
-       Type #c as 'a = < m : 'a; .. > is not compatible with type
-         #c as 'b = < m : 'b; .. >
-       Type 'a is not compatible with type 'b
+       The type [(#c as 'a) -> 'a] is not compatible with the type [#c -> #c]
+       Type [#c as 'a] = [< m : 'a; .. >] is not compatible with type
+         [#c as 'b] = [< m : 'b; .. >]
+       Type ['a] is not compatible with type ['b]
 |}];;
 
 module M = struct type t = int class t () = object end end;;
@@ -724,7 +724,7 @@ module M = struct type t = int class t () = object end end;;
 Line 1, characters 37-38:
 1 | module M = struct type t = int class t () = object end end;;
                                          ^
-Error: Multiple definition of the type name t.
+Error: Multiple definition of the type name [t].
        Names must be unique in a given structure or signature.
 |}];;
 
@@ -738,16 +738,16 @@ fun x -> (x : int -> bool :> 'a -> 'a);;
 Line 1, characters 9-38:
 1 | fun x -> (x : int -> bool :> 'a -> 'a);;
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type int -> bool is not a subtype of int -> int
-       Type bool is not a subtype of int
+Error: Type [int -> bool] is not a subtype of [int -> int]
+       Type [bool] is not a subtype of [int]
 |}];;
 fun x -> (x : int -> bool :> int -> int);;
 [%%expect{|
 Line 1, characters 9-40:
 1 | fun x -> (x : int -> bool :> int -> int);;
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type int -> bool is not a subtype of int -> int
-       Type bool is not a subtype of int
+Error: Type [int -> bool] is not a subtype of [int -> int]
+       Type [bool] is not a subtype of [int]
 |}];;
 fun x -> (x : < > :> < .. >);;
 [%%expect{|
@@ -781,17 +781,17 @@ fun (x : 'a t as 'a) -> ();;
 Line 1, characters 9-19:
 1 | fun (x : 'a t as 'a) -> ();;
              ^^^^^^^^^^
-Error: This alias is bound to type 'a t but is used as an instance of type 'a
-       The type variable 'a occurs inside 'a t
+Error: This alias is bound to type ['a t] but is used as an instance of type ['a]
+       The type variable ['a] occurs inside ['a t]
 |}];;
 fun (x : 'a t) -> (x : 'a); ();;
 [%%expect{|
 Line 1, characters 19-20:
 1 | fun (x : 'a t) -> (x : 'a); ();;
                        ^
-Error: This expression has type 'a t but an expression was expected of type
-         'a
-       The type variable 'a occurs inside 'a t
+Error: This expression has type ['a t] but an expression was expected of type
+         ['a]
+       The type variable ['a] occurs inside ['a t]
 |}];;
 type 'a t = < x : 'a >;;
 [%%expect{|
@@ -911,7 +911,7 @@ class a = object val x = 3 val y = x + 2 end;;
 Line 1, characters 35-36:
 1 | class a = object val x = 3 val y = x + 2 end;;
                                        ^
-Error: The instance variable x
+Error: The instance variable [x]
        cannot be accessed from the definition of another instance variable
 |}];;
 
@@ -920,7 +920,7 @@ class a = object (self) val x = self#m method m = 3 end;;
 Line 1, characters 32-36:
 1 | class a = object (self) val x = self#m method m = 3 end;;
                                     ^^^^
-Error: The self variable self
+Error: The self variable [self]
        cannot be accessed from the definition of an instance variable
 |}];;
 
@@ -931,7 +931,7 @@ class a : object method m : int end
 Line 2, characters 44-49:
 2 | class b = object inherit a as super val x = super#m end;;
                                                 ^^^^^
-Error: The ancestor variable super
+Error: The ancestor variable [super]
        cannot be accessed from the definition of an instance variable
 |}];;
 
@@ -951,7 +951,7 @@ end;;
 Line 2, characters 13-58:
 2 |   method o = object(_ : 'self) method o = assert false end
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Cannot close type of object literal: < o : '_weak4; .. > as '_weak3
+Error: Cannot close type of object literal: [< o : '_weak4; .. > as '_weak3]
        it has been unified with the self type of a class that is not yet
        completely defined.
 |}];;
@@ -996,8 +996,8 @@ class ['a] c : object ('a) constraint 'a = < .. > end
 Line 4, characters 14-25:
 4 |     inherit [ < m : int > ] c
                   ^^^^^^^^^^^
-Error: The type parameter < m : int >
-       does not meet its constraint: it should be < .. >
+Error: The type parameter [< m : int >]
+       does not meet its constraint: it should be [< .. >]
        Self type cannot be unified with a closed object type
 |}];;
 
@@ -1013,8 +1013,8 @@ Error: The class type object method a : int method b : 'a end
        The class type object method a : int method b : 'a end
        is not matched by the class type
          object method a : 'a method b : 'a end
-       The method a has type int but is expected to have type 'a
-       Type int is not compatible with type 'a
+       The method a has type [int] but is expected to have type ['a]
+       Type [int] is not compatible with type ['a]
 |}];;
 
 class type ['a] ct = object ('a) end
@@ -1025,7 +1025,7 @@ Line 2, characters 10-31:
 2 | class c : [ < a : int; ..> ] ct = object method a = 3 end;;
               ^^^^^^^^^^^^^^^^^^^^^
 Error: This non-virtual class has undeclared virtual methods.
-       The following methods were not declared : a
+       The following methods were not declared : [a]
 |}];;
 
 class virtual c : [ < a : int; ..> ] ct = object method a = 3 end;;
@@ -1046,9 +1046,9 @@ Lines 3-5, characters 8-3:
 Error: The class type object ('a) method m : < m : 'a; .. > as 'a end
        is not matched by the class type
          object method m : < m : 'a > as 'a end
-       The method m has type < m : 'a; .. > as 'a
-       but is expected to have type < m : 'b > as 'b
-       Type 'a is not compatible with type <  >
+       The method m has type [< m : 'a; .. > as 'a]
+       but is expected to have type [< m : 'b > as 'b]
+       Type ['a] is not compatible with type [<  >]
 |}];;
 
 class c :
@@ -1067,10 +1067,10 @@ Error: The class type
          object method foo : (< foo : int; .. > as 'a) -> 'a -> unit end
        is not matched by the class type
          object method foo : < foo : int; .. > -> < foo : int > -> unit end
-       The method foo has type 'a. (< foo : int; .. > as 'a) -> 'a -> unit
+       The method foo has type ['a. (< foo : int; .. > as 'a) -> 'a -> unit]
        but is expected to have type
-         'b. (< foo : int; .. > as 'b) -> < foo : int > -> unit
-       Type 'c is not compatible with type <  >
+         ['b. (< foo : int; .. > as 'b) -> < foo : int > -> unit]
+       Type ['c] is not compatible with type [<  >]
 |}];;
 
 
@@ -1105,10 +1105,10 @@ Error: The class type
          object ('a) method m : (< m : 'a -> unit; .. > as 'a) -> unit end
        is not matched by the class type
          object method m : < m : 'a; x : int; .. > -> unit as 'a end
-       The method m has type (< m : 'a -> unit; .. > as 'a) -> unit
+       The method m has type [(< m : 'a -> unit; .. > as 'a) -> unit]
        but is expected to have type
-         'b. (< m : 'c; x : int; .. > as 'b) -> unit as 'c
-       Type 'a is not compatible with type < x : int; .. >
+         ['b. (< m : 'c; x : int; .. > as 'b) -> unit as 'c]
+       Type ['a] is not compatible with type [< x : int; .. >]
 |}];;
 
 let is_empty (x : < >) = ()
@@ -1118,8 +1118,8 @@ val is_empty : <  > -> unit = <fun>
 Line 2, characters 54-58:
 2 | class c = object (self) method private foo = is_empty self end;;
                                                           ^^^^
-Error: This expression has type < .. > but an expression was expected of type
-         <  >
+Error: This expression has type [< .. >] but an expression was expected of type
+         [<  >]
        Self type cannot be unified with a closed object type
 |}];;
 
@@ -1159,7 +1159,7 @@ Line 1, characters 10-45:
 1 | class c = object method virtual foo : int end;;
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This non-virtual class has virtual methods.
-       The following methods are virtual : foo
+       The following methods are virtual : [foo]
 |}];;
 
 class type ct = object method virtual foo : int end;;
@@ -1168,7 +1168,7 @@ Line 1, characters 16-51:
 1 | class type ct = object method virtual foo : int end;;
                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This non-virtual class type has virtual methods.
-       The following methods are virtual : foo
+       The following methods are virtual : [foo]
 |}];;
 
 let o = object method virtual foo : int end;;
@@ -1177,7 +1177,7 @@ Line 1, characters 8-43:
 1 | let o = object method virtual foo : int end;;
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This object has virtual methods.
-       The following methods are virtual : foo
+       The following methods are virtual : [foo]
 |}];;
 
 class c = object(self) initializer self#foo end;;
@@ -1185,7 +1185,7 @@ class c = object(self) initializer self#foo end;;
 Line 1, characters 35-39:
 1 | class c = object(self) initializer self#foo end;;
                                        ^^^^
-Error: This expression has no method foo
+Error: This expression has no method [foo]
 |}];;
 
 let o = object(self) initializer self#foo end;;
@@ -1193,7 +1193,7 @@ let o = object(self) initializer self#foo end;;
 Line 1, characters 33-37:
 1 | let o = object(self) initializer self#foo end;;
                                      ^^^^
-Error: This expression has no method foo
+Error: This expression has no method [foo]
 |}];;
 
 let has_foo (x : < foo : int; ..>) = ()
@@ -1204,7 +1204,7 @@ Line 2, characters 10-51:
 2 | class c = object(self) initializer has_foo self end;;
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This non-virtual class has undeclared virtual methods.
-       The following methods were not declared : foo
+       The following methods were not declared : [foo]
 |}];;
 
 let o = object(self) initializer has_foo self end;;
@@ -1212,9 +1212,9 @@ let o = object(self) initializer has_foo self end;;
 Line 1, characters 41-45:
 1 | let o = object(self) initializer has_foo self end;;
                                              ^^^^
-Error: This expression has type <  > but an expression was expected of type
-         < foo : int; .. >
-       The first object type has no method foo
+Error: This expression has type [<  >] but an expression was expected of type
+         [< foo : int; .. >]
+       The first object type has no method [foo]
 |}];;
 
 class c = object(_ : < foo : int; ..>) end;;
@@ -1223,7 +1223,7 @@ Line 1, characters 10-42:
 1 | class c = object(_ : < foo : int; ..>) end;;
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This non-virtual class has undeclared virtual methods.
-       The following methods were not declared : foo
+       The following methods were not declared : [foo]
 |}];;
 
 class type ct = object(< foo : int; ..>) end;;
@@ -1232,7 +1232,7 @@ Line 1, characters 16-44:
 1 | class type ct = object(< foo : int; ..>) end;;
                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This non-virtual class type has undeclared virtual methods.
-       The following methods were not declared : foo
+       The following methods were not declared : [foo]
 |}];;
 
 let o = object(_ : < foo : int; ..>) end;;
@@ -1241,7 +1241,7 @@ Line 1, characters 8-40:
 1 | let o = object(_ : < foo : int; ..>) end;;
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This object has undeclared virtual methods.
-       The following methods were not declared : foo
+       The following methods were not declared : [foo]
 |}];;
 
 (* Shadowing/overriding methods in class types *)
@@ -1305,8 +1305,8 @@ class c : object method private test : unit end
 Line 6, characters 9-16:
 6 | let () = (new c)#test
              ^^^^^^^
-Error: This expression has type c
-       It has no method test
+Error: This expression has type [c]
+       It has no method [test]
 |}];;
 
 class c = object
@@ -1335,8 +1335,8 @@ class c : object method private test : unit end
 Line 10, characters 9-16:
 10 | let () = (new c)#test
               ^^^^^^^
-Error: This expression has type c
-       It has no method test
+Error: This expression has type [c]
+       It has no method [test]
 |}];;
 
 class c = object
@@ -1374,7 +1374,7 @@ Lines 1-3, characters 10-3:
 2 |     method virtual m : int
 3 | end.........
 Error: This non-virtual class type has virtual methods.
-       The following methods are virtual : m
+       The following methods are virtual : [m]
 |}];;
 
 class virtual c : object
@@ -1399,7 +1399,7 @@ Line 5, characters 10-12:
 5 | class c : cv = object
               ^^
 Error: This non-virtual class type has virtual methods.
-       The following methods are virtual : m
+       The following methods are virtual : [m]
 |}];;
 
 class virtual c : cv = object
@@ -1415,7 +1415,7 @@ Line 1, characters 10-12:
 1 | class c = cv
               ^^
 Error: This non-virtual class has virtual methods.
-       The following methods are virtual : m
+       The following methods are virtual : [m]
 |}];;
 
 class virtual c = cv
@@ -1432,6 +1432,6 @@ Line 2, characters 0-16:
 2 | class d = ['a] c
     ^^^^^^^^^^^^^^^^
 Error: Some type variables are unbound in this type: class d : ['a] c
-       The method m has type (< f : 'b; x : 'a > as 'b) -> unit where 'a
+       The method [m] has type [(< f : 'b; x : 'a > as 'b) -> unit] where ['a]
        is unbound
 |}]

@@ -21,9 +21,9 @@ let trivial t =
 Line 4, characters 4-11:
 4 |   | BoolLit -> ()
         ^^^^^^^
-Error: This pattern matches values of type bool t
-       but a pattern was expected which matches values of type int t
-       Type bool is not compatible with type int
+Error: This pattern matches values of type [bool t]
+       but a pattern was expected which matches values of type [int t]
+       Type [bool] is not compatible with type [int]
 |}]
 
 let trivial_annotated (type a) (t : a t) =
@@ -46,9 +46,9 @@ let trivial_merged t =
 Line 4, characters 4-11:
 4 |   | BoolLit -> ()
         ^^^^^^^
-Error: This pattern matches values of type bool t
-       but a pattern was expected which matches values of type int t
-       Type bool is not compatible with type int
+Error: This pattern matches values of type [bool t]
+       but a pattern was expected which matches values of type [int t]
+       Type [bool] is not compatible with type [int]
 |}]
 
 let trivial_merged_annotated (type a) (t : a t) =
@@ -81,9 +81,9 @@ let trivial_merged_annotated_under_tuple2 (type a) (tt : a t * a t) =
 Line 3, characters 22-29:
 3 |   | IntLit, (IntLit | BoolLit) -> ()
                           ^^^^^^^
-Error: This pattern matches values of type bool t
-       but a pattern was expected which matches values of type a t
-       Type bool is not compatible with type a = int
+Error: This pattern matches values of type [bool t]
+       but a pattern was expected which matches values of type [a t]
+       Type [bool] is not compatible with type [a] = [int]
 |}]
 
 let trivial_merged_annotated_under_tuple2 (type a) (tt : a t * a t) =
@@ -121,9 +121,9 @@ let simple t a =
 Line 4, characters 4-11:
 4 |   | BoolLit, true -> ()
         ^^^^^^^
-Error: This pattern matches values of type bool t
-       but a pattern was expected which matches values of type int t
-       Type bool is not compatible with type int
+Error: This pattern matches values of type [bool t]
+       but a pattern was expected which matches values of type [int t]
+       Type [bool] is not compatible with type [int]
 |}]
 
 let simple_annotated (type a) (t : a t) (a : a) =
@@ -148,9 +148,9 @@ let simple_merged t a =
 Line 4, characters 4-11:
 4 |   | BoolLit, true -> ()
         ^^^^^^^
-Error: This pattern matches values of type bool t
-       but a pattern was expected which matches values of type int t
-       Type bool is not compatible with type int
+Error: This pattern matches values of type [bool t]
+       but a pattern was expected which matches values of type [int t]
+       Type [bool] is not compatible with type [int]
 |}]
 
 let simple_merged_ambi (type a) (t : a t) a =
@@ -164,9 +164,9 @@ let simple_merged_ambi (type a) (t : a t) a =
 Line 4, characters 13-17:
 4 |   | BoolLit, true -> ()
                  ^^^^
-Error: This pattern matches values of type bool
-       but a pattern was expected which matches values of type a = bool
-       This instance of bool is ambiguous:
+Error: This pattern matches values of type [bool]
+       but a pattern was expected which matches values of type [a] = [bool]
+       This instance of [bool] is ambiguous:
        it would escape the scope of its equation
 |}]
 
@@ -182,8 +182,8 @@ let simple_merged_not_annotated_enough (type a) (t : a t) a =
 Line 4, characters 13-17:
 4 |   | BoolLit, true -> ()
                  ^^^^
-Error: This pattern matches values of type bool
-       but a pattern was expected which matches values of type int
+Error: This pattern matches values of type [bool]
+       but a pattern was expected which matches values of type [int]
 |}]
 
 
@@ -220,8 +220,8 @@ let simple_merged_annotated_return (type a) (t : a t) (a : a) =
 Line 3, characters 12-20:
 3 |   | IntLit, (3 as x)
                 ^^^^^^^^
-Error: This pattern matches values of type int
-       This instance of int is ambiguous:
+Error: This pattern matches values of type [int]
+       This instance of [int] is ambiguous:
        it would escape the scope of its equation
 |}]
 
@@ -378,9 +378,9 @@ let noop t a =
 Line 4, characters 4-11:
 4 |   | BoolLit, x -> x
         ^^^^^^^
-Error: This pattern matches values of type bool t
-       but a pattern was expected which matches values of type int t
-       Type bool is not compatible with type int
+Error: This pattern matches values of type [bool t]
+       but a pattern was expected which matches values of type [int t]
+       Type [bool] is not compatible with type [int]
 |}]
 
 let noop_annotated (type a) (t : a t) (a : a) : a =
@@ -403,9 +403,9 @@ let noop_merged t a =
 Line 4, characters 4-11:
 4 |   | BoolLit, x -> x
         ^^^^^^^
-Error: This pattern matches values of type bool t
-       but a pattern was expected which matches values of type int t
-       Type bool is not compatible with type int
+Error: This pattern matches values of type [bool t]
+       but a pattern was expected which matches values of type [int t]
+       Type [bool] is not compatible with type [int]
 |}]
 
 let noop_merged_annotated (type a) (t : a t) (a : a) : a =
@@ -438,9 +438,9 @@ let trivial2 t2 =
 Line 4, characters 4-10:
 4 |   | Bool _ -> ()
         ^^^^^^
-Error: This pattern matches values of type bool t2
-       but a pattern was expected which matches values of type int t2
-       Type bool is not compatible with type int
+Error: This pattern matches values of type [bool t2]
+       but a pattern was expected which matches values of type [int t2]
+       Type [bool] is not compatible with type [int]
 |}]
 
 let trivial2_annotated (type a) (t2 : a t2) =
@@ -463,9 +463,9 @@ let trivial2_merged t2 =
 Line 4, characters 4-10:
 4 |   | Bool _ -> ()
         ^^^^^^
-Error: This pattern matches values of type bool t2
-       but a pattern was expected which matches values of type int t2
-       Type bool is not compatible with type int
+Error: This pattern matches values of type [bool t2]
+       but a pattern was expected which matches values of type [int t2]
+       Type [bool] is not compatible with type [int]
 |}]
 
 let trivial2_merged_annotated (type a) (t2 : a t2) =
@@ -489,9 +489,9 @@ let extract t2 =
 Line 4, characters 4-10:
 4 |   | Bool _ -> x
         ^^^^^^
-Error: This pattern matches values of type bool t2
-       but a pattern was expected which matches values of type int t2
-       Type bool is not compatible with type int
+Error: This pattern matches values of type [bool t2]
+       but a pattern was expected which matches values of type [int t2]
+       Type [bool] is not compatible with type [int]
 |}]
 
 let extract_annotated (type a) (t2 : a t2) : a =
@@ -514,9 +514,9 @@ let extract_merged t2 =
 Line 4, characters 4-10:
 4 |   | Bool x -> x
         ^^^^^^
-Error: This pattern matches values of type bool t2
-       but a pattern was expected which matches values of type int t2
-       Type bool is not compatible with type int
+Error: This pattern matches values of type [bool t2]
+       but a pattern was expected which matches values of type [int t2]
+       Type [bool] is not compatible with type [int]
 |}]
 
 let extract_merged_annotated (type a) (t2 : a t2) : a =
@@ -530,8 +530,8 @@ let extract_merged_annotated (type a) (t2 : a t2) : a =
 Lines 3-4, characters 4-10:
 3 | ....Int x
 4 |   | Bool x.....
-Error: The variable x on the left-hand side of this or-pattern has type
-       int but on the right-hand side it has type bool
+Error: The variable [x] on the left-hand side of this or-pattern has type [
+       int] but on the right-hand side it has type [bool]
 |}]
 
 let extract_merged_super_annotated (type a) (t2 : a t2) : a =
@@ -554,8 +554,8 @@ let extract_merged_too_lightly_annotated (type a) (t2 : a t2) : a =
 Lines 3-4, characters 4-10:
 3 | ....Int (x : a)
 4 |   | Bool x.....
-Error: The variable x on the left-hand side of this or-pattern has type
-       a but on the right-hand side it has type bool
+Error: The variable [x] on the left-hand side of this or-pattern has type [
+       a] but on the right-hand side it has type [bool]
 |}]
 
 let extract_merged_super_lightly_annotated (type a) (t2 : a t2) =
@@ -588,8 +588,8 @@ let rambiguity (type a) (t2 : a t2) =
 Lines 3-4, characters 4-23:
 3 | ....Int (_ as x)
 4 |   | Bool ((_ : a) as x).....
-Error: The variable x on the left-hand side of this or-pattern has type
-       int but on the right-hand side it has type a
+Error: The variable [x] on the left-hand side of this or-pattern has type [
+       int] but on the right-hand side it has type [a]
 |}]
 
 
@@ -632,7 +632,7 @@ let return_a (type a) (x : a t3) : a =
 Line 3, characters 13-14:
 3 |   | A | B -> 3 (* fails because the equation [a = int] doesn't escape any of
                  ^
-Error: This expression has type int but an expression was expected of type a
+Error: This expression has type [int] but an expression was expected of type [a]
 |}]
 
 (* Making sure we don't break a frequent pattern of GADTs indexed by polymorphic
@@ -704,10 +704,10 @@ let f_amb (type a) (t : a t) (a : bool ref) (b : a ref) =
 Lines 3-4, characters 4-65:
 3 | ....IntLit,  ({ contents = true } as x), _
 4 |   | BoolLit,  _,                        ({ contents = true} as x)............
-Error: The variable x on the left-hand side of this or-pattern has type
-         bool ref
-       but on the right-hand side it has type a ref
-       Type bool is not compatible with type a
+Error: The variable [x] on the left-hand side of this or-pattern has type
+         [bool ref]
+       but on the right-hand side it has type [a ref]
+       Type [bool] is not compatible with type [a]
 |}]
 
 (********************************************)
@@ -728,6 +728,6 @@ let f = function
 Line 2, characters 6-7:
 2 |   | A x
           ^
-Error: This pattern matches values of type $A_'a
-       The type constructor $A_'a would escape its scope
+Error: This pattern matches values of type [$A_'a]
+       The type constructor [$A_'a] would escape its scope
 |}]

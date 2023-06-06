@@ -54,10 +54,10 @@ Error: Signature mismatch:
          module type x = c12
        does not match
          module type x = s
-       At position module type x = <here>
+       At position [module type x = <here>]
        Illegal permutation of runtime components in a module type.
          For example,
-         the class two and the value one are not in the same order
+         the class [two] and the value [one] are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -75,10 +75,10 @@ Error: Signature mismatch:
          module type x = c123
        does not match
          module type x = s
-       At position module type x = <here>
+       At position [module type x = <here>]
        Illegal permutation of runtime components in a module type.
          For example,
-         the exception Three and the value one are not in the same order
+         the exception [Three] and the value [one] are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -152,10 +152,10 @@ Error: Signature mismatch:
              val d : int
              val e : int
            end
-       At position module type x = <here>
+       At position [module type x = <here>]
        Illegal permutation of runtime components in a module type.
          For example,
-         the value e and the value c are not in the same order
+         the value [e] and the value [c] are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -187,10 +187,10 @@ Error: Signature mismatch:
          module type x = sig val x : int class x : ct end
        does not match
          module type x = sig class x : ct val x : int end
-       At position module type x = <here>
+       At position [module type x = <here>]
        Illegal permutation of runtime components in a module type.
          For example,
-         the value x and the class x are not in the same order
+         the value [x] and the class [x] are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -236,20 +236,20 @@ Error: Signature mismatch:
        does not match
          module type a =
            sig module type b = sig val x : int val y : int end end
-       At position module type a = <here>
+       At position [module type a = <here>]
        Module types do not match:
          sig module type b = sig val y : int val x : int end end
        is not equal to
          sig module type b = sig val x : int val y : int end end
-       At position module type a = <here>
+       At position [module type a = <here>]
        Module type declarations do not match:
          module type b = sig val y : int val x : int end
        does not match
          module type b = sig val x : int val y : int end
-       At position module type a = sig module type b = <here> end
+       At position [module type a = sig module type b = <here> end]
        Illegal permutation of runtime components in a module type.
          For example,
-         the value y and the value x are not in the same order
+         the value [y] and the value [x] are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -283,10 +283,10 @@ Error: Signature mismatch:
          module type x = sig class b : ct class a : ct end
        does not match
          module type x = sig class a : ct class b : ct end
-       At position module type x = <here>
+       At position [module type x = <here>]
        Illegal permutation of runtime components in a module type.
          For example,
-         the class b and the class a are not in the same order
+         the class [b] and the class [a] are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -318,10 +318,10 @@ Error: Signature mismatch:
          module type x = sig type exn += B type exn += A end
        does not match
          module type x = sig type exn += A type exn += B end
-       At position module type x = <here>
+       At position [module type x = <here>]
        Illegal permutation of runtime components in a module type.
          For example,
-         the exception B and the exception A are not in the same order
+         the exception [B] and the exception [A] are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -358,10 +358,10 @@ Error: Signature mismatch:
          module type x = w21
        does not match
          module type x = w
-       At position module type x = <here>
+       At position [module type x = <here>]
        Illegal permutation of runtime components in a module type.
          For example,
-         the module Two and the module One are not in the same order
+         the module [Two] and the module [One] are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -379,10 +379,10 @@ Error: Signature mismatch:
          module type x = wOne21
        does not match
          module type x = w
-       At position module type x = <here>
+       At position [module type x = <here>]
        Illegal permutation of runtime components in a module type.
-         For example, in module One,
-         the class two and the value one are not in the same order
+         For example, in module [One],
+         the class [two] and the value [one] are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -404,10 +404,10 @@ Error: Signature mismatch:
          module type x = functor (X : c12) -> s
        does not match
          module type x = functor (X : s) -> s
-       At position module type x = <here>
+       At position [module type x = <here>]
        Illegal permutation of runtime components in a module type.
-         For example, at position functor (X : <here>) -> ...,
-         the class two and the value one are not in the same order
+         For example, at position [functor (X : <here>) -> ...],
+         the class [two] and the value [one] are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -429,10 +429,10 @@ Error: Signature mismatch:
          module type x = functor (X : s) -> c12
        does not match
          module type x = functor (X : s) -> s
-       At position module type x = <here>
+       At position [module type x = <here>]
        Illegal permutation of runtime components in a module type.
-         For example, at position functor (X) -> <here>,
-         the class two and the value one are not in the same order
+         For example, at position [functor (X) -> <here>],
+         the class [two] and the value [one] are not in the same order
          in the expected and actual module types.
 |}]
 
@@ -608,11 +608,11 @@ Error: Signature mismatch:
                    end
                end
            end
-       At position module type x = <here>
+       At position [module type x = <here>]
        Illegal permutation of runtime components in a module type.
          For example,
          at position
-           module A :
+           [module A :
              sig
                module B :
                  sig
@@ -624,7 +624,7 @@ Error: Signature mismatch:
                          end
                      end) : ...
                  end
-             end,
-         the value two and the value one are not in the same order
+             end],
+         the value [two] and the value [one] are not in the same order
          in the expected and actual module types.
 |}]

@@ -8,10 +8,10 @@ Line 1, characters 0-75:
 1 | class type virtual ['a] c = object constraint 'a = [<`A of int & float] end
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The type of this class,
-       class virtual ['a] c :
-         object constraint '_a = [< `A of int & float ] as '_weak1 end,
+       [class virtual ['a] c :
+         object constraint '_a = [< `A of int & float ] as '_weak1 end],
        contains non-collapsible conjunctive types in constraints.
-       Type int is not compatible with type float
+       Type [int] is not compatible with type [float]
 |}]
 
 class type ct = object
@@ -31,8 +31,8 @@ Error: The class type object method x : 'a * float end
        is not matched by the class type ct
        The class type object method x : 'a * float end
        is not matched by the class type object method x : int end
-       The method x has type 'a * float but is expected to have type int
-       Type 'a * float is not compatible with type int
+       The method x has type ['a * float] but is expected to have type [int]
+       Type ['a * float] is not compatible with type [int]
 |}]
 
 let foo = 42#m;;
@@ -40,7 +40,7 @@ let foo = 42#m;;
 Line 1, characters 10-12:
 1 | let foo = 42#m;;
               ^^
-Error: This expression is not an object; it has type int
+Error: This expression is not an object; it has type [int]
 |}]
 
 let foo = object (self) method foo = self#bar end;;
@@ -48,5 +48,5 @@ let foo = object (self) method foo = self#bar end;;
 Line 1, characters 37-41:
 1 | let foo = object (self) method foo = self#bar end;;
                                          ^^^^
-Error: This expression has no method bar
+Error: This expression has no method [bar]
 |}]

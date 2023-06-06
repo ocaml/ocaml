@@ -14,8 +14,8 @@ type t = M.t
 Line 5, characters 14-15:
 5 | let x : M.t = S
                   ^
-Error: This variant expression is expected to have type t
-       There is no constructor S within type t
+Error: This variant expression is expected to have type [t]
+       There is no constructor [S] within type [t]
 |}]
 
 module M = struct
@@ -31,6 +31,6 @@ type c = M.c
 Line 7, characters 9-18:
 7 | let () = (new M.c)#bar
              ^^^^^^^^^
-Error: This expression has type c
-       It has no method bar
+Error: This expression has type [c]
+       It has no method [bar]
 |}]

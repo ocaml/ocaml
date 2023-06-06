@@ -72,7 +72,7 @@ type bar += Bar of int
 Line 1, characters 0-22:
 1 | type bar += Bar of int
     ^^^^^^^^^^^^^^^^^^^^^^
-Error: Type definition bar is not extensible
+Error: Type definition [bar] is not extensible
 |}]
 
 type baz = bar = ..
@@ -81,7 +81,7 @@ type baz = bar = ..
 Line 1, characters 0-19:
 1 | type baz = bar = ..
     ^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type bar
+Error: This variant or record definition does not match that of type [bar]
        The original is abstract, but this is an extensible variant.
 |}]
 
@@ -99,7 +99,7 @@ type ('a, 'b) bar = 'a foo = ..
 Line 1, characters 0-31:
 1 | type ('a, 'b) bar = 'a foo = ..
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type 'a foo
+Error: This variant or record definition does not match that of type ['a foo]
        They have different arities.
 |}]
 
@@ -116,9 +116,9 @@ Line 1, characters 0-37:
 1 | type ('a, 'b) bar = ('a, 'a) foo = ..
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This variant or record definition does not match that of type
-         ('a, 'a) foo
+         [('a, 'a) foo]
        Their parameters differ
-       The type 'a is not equal to the type 'b
+       The type ['a] is not equal to the type ['b]
 |}]
 
 (* Check that signatures can hide exstensibility *)
@@ -147,7 +147,7 @@ type M_S.foo += Foo
 Line 1, characters 0-19:
 1 | type M_S.foo += Foo
     ^^^^^^^^^^^^^^^^^^^
-Error: Type definition M_S.foo is not extensible
+Error: Type definition [M_S.foo] is not extensible
 |}]
 
 (* Check that signatures cannot add extensibility *)
@@ -291,7 +291,7 @@ type exn += private Foobar
 Line 2, characters 14-20:
 2 | let _ = raise Foobar
                   ^^^^^^
-Error: Cannot use private constructor Foobar to create values of type exn
+Error: Cannot use private constructor [Foobar] to create values of type [exn]
 |}]
 
 

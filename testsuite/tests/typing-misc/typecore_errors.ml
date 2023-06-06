@@ -25,7 +25,7 @@ let f = function None None -> 0
 Line 1, characters 17-26:
 1 | let f = function None None -> 0
                      ^^^^^^^^^
-Error: The constructor None expects 0 argument(s),
+Error: The constructor [None] expects 0 argument(s),
        but is applied here to 1 argument(s)
 |}]
 
@@ -34,7 +34,7 @@ let x = None None
 Line 1, characters 8-17:
 1 | let x = None None
             ^^^^^^^^^
-Error: The constructor None expects 0 argument(s),
+Error: The constructor [None] expects 0 argument(s),
        but is applied here to 1 argument(s)
 |}]
 
@@ -77,8 +77,8 @@ let rec f x = ( (), () : _ -> _ -> _ )
 Line 3, characters 14-38:
 3 | let rec f x = ( (), () : _ -> _ -> _ )
                   ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type 'a * 'b
-       but an expression was expected of type 'c -> 'd -> 'e
+Error: This expression has type ['a * 'b]
+       but an expression was expected of type ['c -> 'd -> 'e]
 |}]
 
 let rec g x = ( ((), ()) : _ -> _ :> _ )
@@ -86,8 +86,8 @@ let rec g x = ( ((), ()) : _ -> _ :> _ )
 Line 1, characters 14-40:
 1 | let rec g x = ( ((), ()) : _ -> _ :> _ )
                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type 'a * 'b
-       but an expression was expected of type 'c -> 'd
+Error: This expression has type ['a * 'b]
+       but an expression was expected of type ['c -> 'd]
 |}]
 
 
@@ -98,7 +98,7 @@ let f x = match x with exception Not_found -> ();;
 Line 3, characters 10-48:
 3 | let f x = match x with exception Not_found -> ();;
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: None of the patterns in this match expression match values.
+Error: None of the patterns in this [match] expression match values.
 |}]
 
 (** Check duplicate *)
@@ -120,7 +120,7 @@ let () = { x = 1 }.x <- 2
 Line 1, characters 9-25:
 1 | let () = { x = 1 }.x <- 2
              ^^^^^^^^^^^^^^^^
-Error: The record field x is not mutable
+Error: The record field [x] is not mutable
 |}]
 
 
@@ -131,7 +131,7 @@ let () = for Some i = 3 to 4 do () done;
 Line 3, characters 13-19:
 3 | let () = for Some i = 3 to 4 do () done;
                  ^^^^^^
-Error: Invalid for-loop index: only variables and _ are allowed.
+Error: Invalid for-loop index: only variables and [_] are allowed.
 |}]
 
 
@@ -149,7 +149,7 @@ class virtual v : object method virtual m : int end
 Line 7, characters 18-23:
 7 |   method x: int = super#m
                       ^^^^^
-Error: This expression has no method m
+Error: This expression has no method [m]
 |}]
 
 (** New virtual class *)
@@ -160,7 +160,7 @@ let x = new v
 Line 3, characters 8-13:
 3 | let x = new v
             ^^^^^
-Error: Cannot instantiate the virtual class v
+Error: Cannot instantiate the virtual class [v]
 |}]
 
 
@@ -171,7 +171,7 @@ let x = object val x = 1 method m = x<-0 end
 Line 1, characters 36-40:
 1 | let x = object val x = 1 method m = x<-0 end
                                         ^^^^
-Error: The instance variable x is not mutable
+Error: The instance variable [x] is not mutable
 |}]
 
 (** Self variables cannot be mutated *)
@@ -181,7 +181,7 @@ let x = object(self) method m = self <-0 end
 Line 1, characters 32-40:
 1 | let x = object(self) method m = self <-0 end
                                     ^^^^^^^^
-Error: The value self is not an instance variable
+Error: The value [self] is not an instance variable
 |}]
 
 (** Multiply override *)
@@ -192,7 +192,7 @@ class c = object val x = 0 method m: c = {< x=0; x=1 >} end
 Line 3, characters 41-55:
 3 | class c = object val x = 0 method m: c = {< x=0; x=1 >} end
                                              ^^^^^^^^^^^^^^
-Error: The instance variable x is overridden several times
+Error: The instance variable [x] is overridden several times
 |}]
 
 (** Override outside of classes *)
@@ -215,7 +215,7 @@ class c = object val x = 0 method m: c = {< y=1 >} end
 Line 3, characters 41-50:
 3 | class c = object val x = 0 method m: c = {< y=1 >} end
                                              ^^^^^^^^^
-Error: Unbound instance variable y
+Error: Unbound instance variable [y]
 |}]
 
 
@@ -229,7 +229,7 @@ val f : int -> unit = <fun>
 Line 3, characters 10-29:
 3 | let x = f (module struct end)
               ^^^^^^^^^^^^^^^^^^^
-Error: This expression is packed module, but the expected type is int
+Error: This expression is packed module, but the expected type is [int]
 |}]
 
 
@@ -249,7 +249,7 @@ let x = [%extension_constructor]
 Line 1, characters 8-32:
 1 | let x = [%extension_constructor]
             ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Invalid [%%extension_constructor] payload, a constructor is expected.
+Error: Invalid [[%%extension_constructor]] payload, a constructor is expected.
 |}]
 
 (** Invalid format *)
@@ -271,7 +271,7 @@ Line 4, characters 13-14:
 4 | let y = f ~y:1
                  ^
 Error: The function applied to this argument has type x:int -> int
-This argument cannot be applied with label ~y
+This argument cannot be applied with label [~y]
 |}]
 
 let g f = f ~x:0 ~y:0; f ~y:0 ~x:0
@@ -304,7 +304,7 @@ type 'a t = A of 'a
 Line 2, characters 8-11:
 2 | let rec A x = A (A ())
             ^^^
-Error: Only variables are allowed as left-hand side of let rec
+Error: Only variables are allowed as left-hand side of [let rec]
 |}]
 
 (** Non-linear pattern *)
@@ -314,7 +314,7 @@ let quadratic (x,x) = x * x
 Line 3, characters 17-18:
 3 | let quadratic (x,x) = x * x
                      ^
-Error: Variable x is bound several times in this matching
+Error: Variable [x] is bound several times in this matching
 |}]
 
 (** Or-patter clash *)
@@ -325,8 +325,8 @@ type t = A of int | B of float | C
 Line 2, characters 6-15:
 2 | let f (A x|B x) = 0
           ^^^^^^^^^
-Error: The variable x on the left-hand side of this or-pattern has type
-       int but on the right-hand side it has type float
+Error: The variable [x] on the left-hand side of this or-pattern has type [
+       int] but on the right-hand side it has type [float]
 |}]
 
 (** Orphan pattern variable *)
@@ -336,7 +336,7 @@ let f (A x|C) = 0
 Line 3, characters 6-13:
 3 | let f (A x|C) = 0
           ^^^^^^^
-Error: Variable x must occur on both sides of this | pattern
+Error: Variable [x] must occur on both sides of this [|] pattern
 |}]
 
 
@@ -345,7 +345,7 @@ let f (A x|B y) = 0
 Line 1, characters 6-15:
 1 | let f (A x|B y) = 0
           ^^^^^^^^^
-Error: Variable x must occur on both sides of this | pattern
+Error: Variable [x] must occur on both sides of this [|] pattern
 |}]
 
 (** #t *)
@@ -356,7 +356,7 @@ type t = []
 Line 2, characters 18-19:
 2 | let f = function #t -> ()
                       ^
-Error: The type t is not a variant type
+Error: The type [t] is not a variant type
 |}]
 
 let f {x;x=y;x=z} = x
@@ -374,9 +374,9 @@ let x = ([`B]:>[`A])
 Line 3, characters 9-13:
 3 | let x = ([`B]:>[`A])
              ^^^^
-Error: This expression cannot be coerced to type [ `A ]; it has type
-         [> `B ] list
-       but is here used with type [< `A ]
+Error: This expression cannot be coerced to type [[[ `A ]]]; it has type
+         [[> `B ] list]
+       but is here used with type [[< `A ]]
 |}]
 
 (** Unbound instance variable *)
@@ -387,7 +387,7 @@ let o = object method m = instance <- 0 end
 Line 3, characters 26-39:
 3 | let o = object method m = instance <- 0 end
                               ^^^^^^^^^^^^^
-Error: Unbound instance variable instance
+Error: Unbound instance variable [instance]
 |}]
 
 
@@ -399,7 +399,7 @@ let x = function
 Line 3, characters 4-12:
 3 |   | `c7diagq -> ()
         ^^^^^^^^
-Error: Variant tags `azdwbie and `c7diagq have the same hash value.
+Error: Variant tags [`azdwbie] and [`c7diagq] have the same hash value.
        Change one of them.
 |}]
 
@@ -409,7 +409,7 @@ let x =  `azdwbie = `c7diagq
 Line 1, characters 20-28:
 1 | let x =  `azdwbie = `c7diagq
                         ^^^^^^^^
-Error: Variant tags `azdwbie and `c7diagq have the same hash value.
+Error: Variant tags [`azdwbie] and [`c7diagq] have the same hash value.
        Change one of them.
 |}]
 
@@ -426,7 +426,7 @@ type 'a x = X : [> `azdwbie ] x | Y : [> `c7diagq ] x
 Line 7, characters 4-5:
 7 |   | Y  -> ()
         ^
-Error: Variant tags `azdwbie and `c7diagq have the same hash value.
+Error: Variant tags [`azdwbie] and [`c7diagq] have the same hash value.
        Change one of them.
 |}]
 
@@ -440,8 +440,8 @@ type s = { y : unit; }
 Line 3, characters 21-22:
 3 | let f = function {x; y} -> x
                          ^
-Error: The record field y belongs to the type s
-       but is mixed here with fields of type t
+Error: The record field [y] belongs to the type [s]
+       but is mixed here with fields of type [t]
 |}]
 
 

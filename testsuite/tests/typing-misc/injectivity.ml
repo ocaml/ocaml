@@ -55,8 +55,8 @@ Line 1, characters 0-29:
 1 | type _ t = N : 'a -> 'a N.t t (* KO *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the GADT constructor
-         N : 'a -> 'a N.t t
-       the type variable 'a cannot be deduced from the type parameters.
+         [N : 'a -> 'a N.t t]
+       the type variable ['a] cannot be deduced from the type parameters.
 |}]
 type 'a u = 'b constraint 'a = 'b N.t
 [%%expect{|
@@ -64,8 +64,8 @@ Line 1, characters 0-37:
 1 | type 'a u = 'b constraint 'a = 'b N.t
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the definition
-         type 'a u = 'b constraint 'a = 'b N.t
-       the type variable 'b cannot be deduced from the type parameters.
+         [type 'a u = 'b constraint 'a = 'b N.t]
+       the type variable ['b] cannot be deduced from the type parameters.
 |}]
 
 (* Of course, the internal type should be injective in this parameter *)
@@ -127,8 +127,8 @@ Line 3, characters 0-30:
 3 | type 'a u = M : 'a -> 'a M.t u
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the GADT constructor
-         M : 'a -> 'a M.t u
-       the type variable 'a cannot be deduced from the type parameters.
+         [M : 'a -> 'a M.t u]
+       the type variable ['a] cannot be deduced from the type parameters.
 |}]
 module M : sig type !'a t = private < m : int ; .. > end =
   struct type 'a t = < m : int > end
@@ -196,8 +196,8 @@ Line 3, characters 2-29:
 3 |   type _ x = G : 'a -> 'a u x
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the GADT constructor
-         G : 'a X.t -> 'a X.t u x
-       the type variable 'a cannot be deduced from the type parameters.
+         [G : 'a X.t -> 'a X.t u x]
+       the type variable ['a] cannot be deduced from the type parameters.
 |}]
 
 (* Try to be clever *)
@@ -377,8 +377,8 @@ Line 2, characters 0-27:
 2 | type _ u = M : 'a -> 'a t u (* KO *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the GADT constructor
-         M : < b : 'a; c : 'b > -> < b : 'a; c : 'b > t u
-       the type variable 'b cannot be deduced from the type parameters.
+         [M : < b : 'a; c : 'b > -> < b : 'a; c : 'b > t u]
+       the type variable ['b] cannot be deduced from the type parameters.
 |}]
 
 
@@ -428,7 +428,7 @@ let boom = let module U = Uninj(R) in print_endline (coerce (U.uninj x_eq_y) 0)
 Line 1, characters 18-21:
 1 | let x_eq_y : (int R.t, string R.t) eql = Refl
                       ^^^
-Error: Unbound module R
+Error: Unbound module [R]
 |}]
 
 (* #10028 by Stephen Dolan *)

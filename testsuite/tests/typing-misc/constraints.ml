@@ -7,17 +7,17 @@ type 'a t = [`A of 'a t t] as 'a;; (* fails *)
 Line 1, characters 0-32:
 1 | type 'a t = [`A of 'a t t] as 'a;; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic:
-         ('a t as 'b) t as 'a contains 'b
+Error: The type abbreviation [t] is cyclic:
+         [('a t as 'b) t as 'a] contains ['b]
 |}, Principal{|
 Line 1, characters 0-32:
 1 | type 'a t = [`A of 'a t t] as 'a;; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This recursive type is not regular.
-       The type constructor t is defined as
-         type 'b t
+       The type constructor [t] is defined as
+         type ['b t]
        but it is used as
-         ([ `A of 'a ] as 'b) t t as 'a.
+         [([ `A of 'a ] as 'b) t t as 'a].
        All uses need to match the definition for the recursive type to be regular.
 |}];;
 type 'a t = [`A of 'a t t];; (* fails *)
@@ -26,10 +26,10 @@ Line 1, characters 0-26:
 1 | type 'a t = [`A of 'a t t];; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This recursive type is not regular.
-       The type constructor t is defined as
-         type 'a t
+       The type constructor [t] is defined as
+         type ['a t]
        but it is used as
-         'a t t.
+         ['a t t].
        All uses need to match the definition for the recursive type to be regular.
 |}];;
 type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
@@ -37,16 +37,16 @@ type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
 Line 1, characters 0-47:
 1 | type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The definition of t contains a cycle:
-         'a t as 'a contains 'a
+Error: The definition of [t] contains a cycle:
+         ['a t as 'a] contains ['a]
 |}];;
 type 'a t = [`A of 'a t] constraint 'a = 'a t;; (* fails since 4.04 *)
 [%%expect{|
 Line 1, characters 0-45:
 1 | type 'a t = [`A of 'a t] constraint 'a = 'a t;; (* fails since 4.04 *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The definition of t contains a cycle:
-         'a t as 'a contains 'a
+Error: The definition of [t] contains a cycle:
+         ['a t as 'a] contains ['a]
 |}];;
 type 'a t = [`A of 'a] as 'a;;
 [%%expect{|
@@ -59,9 +59,9 @@ type 'a v = [`A of u v] constraint 'a = t and t = u and u = t;; (* fails *)
 Line 1, characters 42-51:
 1 | type 'a v = [`A of u v] constraint 'a = t and t = u and u = t;; (* fails *)
                                               ^^^^^^^^^
-Error: The type abbreviation t is cyclic:
-         t = u,
-         u = t
+Error: The type abbreviation [t] is cyclic:
+         [t] = [u],
+         [u] = [t]
 |}];;
 
 type 'a t = 'a;;
@@ -88,8 +88,8 @@ end
 Line 3, characters 2-44:
 3 |   and 'o abs constraint 'o = 'o is_an_object
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The definition of abs contains a cycle:
-         'a is_an_object as 'a contains 'a
+Error: The definition of [abs] contains a cycle:
+         ['a is_an_object as 'a] contains ['a]
 |}];;
 
 module PR6505a_old = struct
@@ -102,7 +102,7 @@ Line 3, characters 7-9:
 3 |   and ('k,'l) abs = 'l constraint 'k = 'l is_an_object
            ^^
 Error: Constraints are not satisfied in this type.
-       Type 'l is_an_object should be an instance of < .. > is_an_object
+       Type ['l is_an_object] should be an instance of [< .. > is_an_object]
 |}]
 
 module PR6505a = struct
@@ -123,8 +123,8 @@ Line 6, characters 8-17:
 6 | let _ = PR6505a.y#bang;; (* fails *)
             ^^^^^^^^^
 Error: This expression has type
-         (<  > PR6505a.is_an_object, <  > PR6505a.is_an_object) PR6505a.abs
-       It has no method bang
+         [(<  > PR6505a.is_an_object, <  > PR6505a.is_an_object) PR6505a.abs]
+       It has no method [bang]
 |}, Principal{|
 module PR6505a :
   sig
@@ -136,8 +136,8 @@ module PR6505a :
 Line 6, characters 8-17:
 6 | let _ = PR6505a.y#bang;; (* fails *)
             ^^^^^^^^^
-Error: This expression has type (<  >, <  >) PR6505a.abs
-       It has no method bang
+Error: This expression has type [(<  >, <  >) PR6505a.abs]
+       It has no method [bang]
 |}]
 
 module PR6505b = struct
@@ -172,10 +172,10 @@ Line 1, characters 0-36:
 1 | type 'a t = 'b  constraint 'a = 'b t;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This recursive type is not regular.
-       The type constructor t is defined as
-         type 'b t t
+       The type constructor [t] is defined as
+         type ['b t t]
        but it is used as
-         'b t.
+         ['b t].
        All uses need to match the definition for the recursive type to be regular.
 |}]
 
@@ -185,10 +185,10 @@ Line 1, characters 0-42:
 1 | type 'a t = 'b constraint 'a = ('b * 'b) t;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This recursive type is not regular.
-       The type constructor t is defined as
-         type ('b * 'b) t t
+       The type constructor [t] is defined as
+         type [('b * 'b) t t]
        but it is used as
-         ('b * 'b) t.
+         [('b * 'b) t].
        All uses need to match the definition for the recursive type to be regular.
 |}]
 
@@ -198,16 +198,16 @@ Line 1, characters 0-44:
 1 | type 'a t = 'a * 'b constraint _ * 'a = 'b t;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: A type variable is unbound in this type declaration.
-       In type 'a * 'b the variable 'b is unbound
+       In type ['a * 'b] the variable ['b] is unbound
 |}]
 type 'a t = 'a * 'b constraint 'a = 'b t;;
 [%%expect{|
 Line 1, characters 0-40:
 1 | type 'a t = 'a * 'b constraint 'a = 'b t;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation t is cyclic:
-         'a t t = 'a t * 'a,
-         'a t * 'a contains 'a t
+Error: The type abbreviation [t] is cyclic:
+         ['a t t] = ['a t * 'a],
+         ['a t * 'a] contains ['a t]
 |}]
 
 type 'a t = <a : 'a; b : 'b> constraint 'a = 'b t;;
@@ -216,10 +216,10 @@ Line 1, characters 0-49:
 1 | type 'a t = <a : 'a; b : 'b> constraint 'a = 'b t;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This recursive type is not regular.
-       The type constructor t is defined as
-         type 'b t t
+       The type constructor [t] is defined as
+         type ['b t t]
        but it is used as
-         'b t.
+         ['b t].
        All uses need to match the definition for the recursive type to be regular.
 |}]
 
@@ -229,7 +229,7 @@ Line 1, characters 0-59:
 1 | type 'a t = <a : 'a; b : 'b> constraint <a : 'a; ..> = 'b t;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: A type variable is unbound in this type declaration.
-       In method b: 'b the variable 'b is unbound
+       In method [b: 'b] the variable ['b] is unbound
 |}]
 
 module rec M : sig type 'a t = 'b constraint 'a = 'b t end = M;;
@@ -238,10 +238,10 @@ Line 1, characters 19-54:
 1 | module rec M : sig type 'a t = 'b constraint 'a = 'b t end = M;;
                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This recursive type is not regular.
-       The type constructor t is defined as
-         type 'b t t
+       The type constructor [t] is defined as
+         type ['b t t]
        but it is used as
-         'b t.
+         ['b t].
        All uses need to match the definition for the recursive type to be regular.
 |}]
 module rec M : sig type 'a t = 'b constraint 'a = ('b * 'b) t end = M;;
@@ -250,10 +250,10 @@ Line 1, characters 19-61:
 1 | module rec M : sig type 'a t = 'b constraint 'a = ('b * 'b) t end = M;;
                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This recursive type is not regular.
-       The type constructor t is defined as
-         type ('b * 'b) t t
+       The type constructor [t] is defined as
+         type [('b * 'b) t t]
        but it is used as
-         ('b * 'b) t.
+         [('b * 'b) t].
        All uses need to match the definition for the recursive type to be regular.
 |}]
 
@@ -283,7 +283,7 @@ Line 3, characters 13-23:
 3 |   constraint 'a = float
                  ^^^^^^^^^^
 Error: The type constraints are not consistent.
-       Type int is not compatible with type float
+       Type [int] is not compatible with type [float]
 |}]
 
 type ('a,'b) t = T
@@ -295,8 +295,8 @@ Line 4, characters 13-20:
 4 |   constraint 'a = 'b
                  ^^^^^^^
 Error: The type constraints are not consistent.
-       Type int -> float is not compatible with type bool -> char
-       Type int is not compatible with type bool
+       Type [int -> float] is not compatible with type [bool -> char]
+       Type [int] is not compatible with type [bool]
 |}]
 
 class type ['a, 'b] a = object
@@ -309,8 +309,8 @@ Line 4, characters 2-31:
 4 |   constraint 'b = float * float
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The class constraints are not consistent.
-       Type int * int is not compatible with type float * float
-       Type int is not compatible with type float
+       Type [int * int] is not compatible with type [float * float]
+       Type [int] is not compatible with type [float]
 |}]
 
 (* #11101 *)
@@ -356,9 +356,9 @@ type 'a t = 'b constraint 'a = < x : 'b >
 Line 2, characters 0-20:
 2 | type u = < x : u > t
     ^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation u is cyclic:
-         u = < x : u > t,
-         < x : u > t = u
+Error: The type abbreviation [u] is cyclic:
+         [u] = [< x : u > t],
+         [< x : u > t] = [u]
 |}]
 
 (* PR#11771 -- Constraints making expansion affect typeability *)
@@ -414,9 +414,9 @@ type 'a t constraint 'a = 'b * 'c
 Line 2, characters 0-21:
 2 | type cycle = cycle id
     ^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation cycle is cyclic:
-         cycle = cycle id,
-         cycle id = cycle
+Error: The type abbreviation [cycle] is cyclic:
+         [cycle] = [cycle id],
+         [cycle id] = [cycle]
 |}]
 
 (* Vanishing constraints may be discarded during the translation *)

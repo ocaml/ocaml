@@ -24,8 +24,8 @@ val it : [< `Bar | `Foo > `Bar ] = `Bar
 Line 11, characters 27-29:
 11 | let g (Aux(Second, f)) = f it;;
                                 ^^
-Error: This expression has type [< `Bar | `Foo > `Bar ]
-       but an expression was expected of type [< `Bar | `Foo ]
-       The second variant type is bound to $Aux_'a,
-       it may not allow the tag(s) `Bar
+Error: This expression has type [[< `Bar | `Foo > `Bar ]]
+       but an expression was expected of type [[< `Bar | `Foo ]]
+       The second variant type is bound to [$Aux_'a],
+       it may not allow the tag(s) [`Bar]
 |}];;
