@@ -143,8 +143,23 @@ let prepare_error err =
   | Ill_formed_ast (loc, s) ->
       Location.errorf ~loc
         "broken invariant in parsetree: %s" s
-  | Invalid_package_type (loc, s) ->
-      Location.errorf ~loc "invalid package type: %a" Style.inline_code s
+  | Invalid_package_type (loc, ipt) ->
+      let invalid ppf ipt = match ipt with
+        | Syntaxerr.Parameterized_types ->
+            Format.fprintf ppf "parametrized types are not supported"
+        | Constrained_types ->
+            Format.fprintf ppf "constrained types are not supported"
+        | Private_types ->
+            Format.fprintf ppf  "private types are not supported"
+        | Not_with_type ->
+            Format.fprintf ppf "only %a constraints are supported"
+              Style.inline_code "with type t ="
+        | Neither_identifier_nor_with_type ->
+            Format.fprintf ppf
+              "only module type identifier and %a constraints are supported"
+              Style.inline_code "with type"
+      in
+      Location.errorf ~loc "invalid package type: %a" invalid ipt
   | Removed_string_set loc ->
       Location.errorf ~loc
         "Syntax error: strings are immutable, there is no assignment \
