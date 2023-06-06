@@ -139,8 +139,8 @@ val blit :
 val blit_string :
   string -> int -> bytes -> int -> int
   -> unit
-(** [blit src src_pos dst dst_pos len] copies [len] bytes from string
-    [src], starting at index [src_pos], to byte sequence [dst],
+(** [blit_string src src_pos dst dst_pos len] copies [len] bytes from
+    string [src], starting at index [src_pos], to byte sequence [dst],
     starting at index [dst_pos].
     @raise Invalid_argument if [src_pos] and [len] do not
     designate a valid range of [src], or if [dst_pos] and [len]
