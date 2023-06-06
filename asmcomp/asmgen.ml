@@ -317,7 +317,7 @@ let report_error ppf = function
   | Mismatched_for_pack saved ->
     let msg = function
        | None -> Format.dprintf "without %a" Style.inline_code "-for-pack"
-       | Some s -> Format.dprintf "with %a %s " Style.inline_code "-for-pack" s
+       | Some s -> Format.dprintf "with %a %s" Style.inline_code "-for-pack" s
      in
      fprintf ppf
        "This input file cannot be compiled %t: it was generated %t."
