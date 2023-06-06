@@ -127,10 +127,10 @@ val fill : bytes -> int -> int -> char -> unit
 val blit :
   bytes -> int -> bytes -> int -> int
   -> unit
-(** [blit src src_pos dst dst_pos len] copies [len] bytes from sequence
-    [src], starting at index [src_pos], to sequence [dst], starting at
-    index [dst_pos]. It works correctly even if [src] and [dst] are the
-    same byte sequence, and the source and destination intervals
+(** [blit src src_pos dst dst_pos len] copies [len] bytes from byte
+    sequence [src], starting at index [src_pos], to byte sequence [dst],
+    starting at index [dst_pos]. It works correctly even if [src] and [dst] are
+    the same byte sequence, and the source and destination intervals
     overlap.
     @raise Invalid_argument if [src_pos] and [len] do not
     designate a valid range of [src], or if [dst_pos] and [len]
