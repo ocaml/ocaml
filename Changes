@@ -17,6 +17,10 @@ Working version
 - #12234: make instrumented time calculation more thread-safe on macOS.
   (Anil Madhavapeddy, review by Daniel Bünzli and Xavier Leroy)
 
+- #12275: caml/stack.h: more abstract macros to describe OCaml stacks and
+  how to traverse them, supporting more stack layouts.
+  (Xavier Leroy, review by KC Sivaramakrishnan and Fabrice Buoro)
+
 ### Code generation and optimizations:
 
 ### Standard library:
@@ -271,11 +275,12 @@ OCaml 5.1.0
   (Nicolás Ojeda Bär, Gabriel Scherer, Alain Frisch, review by Gabriel Scherer,
   Alain Frisch and Nathanaëlle Courant)
 
-- #11712: s390x / IBM Z multicore support: OCaml & C stack separation;
-  dynamic stack size checks; fiber and effects support.
-  (Aleksei Nikiforov, with help from Vincent Laviron,
-   additional suggestions by Xavier Leroy and Luc Maranget,
-   review by Xavier Leroy and KC Sivaramakrishnan)
+- #11712, #12258, #12261: s390x / IBM Z multicore support:
+  OCaml & C stack separation; dynamic stack size checks; fiber and
+  effects support.
+  (Aleksei Nikiforov, with help from Vincent Laviron and Xavier Leroy,
+   additional suggestions by Luc Maranget,
+   review by the same and KC Sivaramakrishnan)
 
 - #11904: Remove arm, i386 native-code backends.
   (Nicolás Ojeda Bär, review by Stephen Dolan, Anil Madhavapeddy, and Xavier
@@ -890,6 +895,9 @@ OCaml 5.1.0
 - #12252: Fix shared library build error on RISC-V.
   (Edwin Török, review by Nicolás Ojeda Bär and Xavier Leroy)
 
+- #12277: ARM64, fix a potential assembler error for very large functions by
+  emitting stack reallocation code before the body of the function.
+  (Xavier Leroy, review by KC Sivaramakrishnan)
 
 OCaml 5.0.0 (15 December 2022)
 ------------------------------

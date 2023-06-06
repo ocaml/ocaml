@@ -56,15 +56,14 @@ frame_descr * caml_next_frame_descriptor
       /* This marks the top of an ML stack chunk. Move sp to the previous stack
        chunk. This includes skipping over the DWARF link & trap frame
        (4 words). */
-      *sp += 4 * sizeof(value);
+      *sp += Stack_header_size;
       if (*sp == (char*)Stack_high(stack)) {
         /* We've reached the top of stack. No more frames. */
         *pc = 0;
         return NULL;
       }
-      Pop_frame_pointer(*sp);
-      *pc = **(uintnat**)sp;
-      *sp += sizeof(value); /* return address */
+      *sp = First_frame(*sp);
+      *pc = Saved_return_address(*sp);
     }
   }
 }

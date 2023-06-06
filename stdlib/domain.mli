@@ -32,7 +32,10 @@ type !'a t
 
 val spawn : (unit -> 'a) -> 'a t
 (** [spawn f] creates a new domain that runs in parallel with the
-    current domain. *)
+    current domain.
+
+    @raise Failure if the program has insufficient resources to create another
+    domain. *)
 
 val join : 'a t -> 'a
 (** [join d] blocks until domain [d] runs to completion. If [d] results in a
