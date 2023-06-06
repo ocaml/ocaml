@@ -869,7 +869,7 @@ let transl_primitive_application loc p env ty path exp args arg_exps =
 (* Error report *)
 
 open Format
-module Style = Misc.Color
+module Style = Misc.Style
 
 let report_error ppf = function
   | Unknown_builtin_primitive prim_name ->

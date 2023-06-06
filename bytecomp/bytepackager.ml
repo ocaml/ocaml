@@ -346,7 +346,7 @@ let package_files ~ppf_dump initial_env files targetfile =
 (* Error report *)
 
 open Format
-module Style = Misc.Color
+module Style = Misc.Style
 
 let report_error ppf = function
     Forward_reference(file, compunit) ->

@@ -228,7 +228,7 @@ let native_name_is_external p =
   let nat_name = native_name p in
   nat_name <> "" && nat_name.[0] <> '%'
 
-module Style = Misc.Color
+module Style = Misc.Style
 
 let report_error ppf err =
   match err with

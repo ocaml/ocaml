@@ -102,7 +102,7 @@ let env_of_only_summary env =
 (* Error report *)
 
 open Format
-module Style = Misc.Color
+module Style = Misc.Style
 
 let report_error ppf = function
   | Module_not_found p ->

@@ -308,7 +308,7 @@ let compile_implementation_linear output_prefix ~progname =
       linear_gen_implementation progname)
 
 (* Error report *)
-module Style = Misc.Color
+module Style = Misc.Style
 
 let report_error ppf = function
   | Assembler_error file ->

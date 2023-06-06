@@ -642,8 +642,26 @@ let ordinal_suffix n =
   | 3 when not teen -> "rd"
   | _ -> "th"
 
-(* Color handling *)
+(* Color support handling *)
 module Color = struct
+  external isatty : out_channel -> bool = "caml_sys_isatty"
+
+  (* reasonable heuristic on whether colors should be enabled *)
+  let should_enable_color () =
+    let term = try Sys.getenv "TERM" with Not_found -> "" in
+    term <> "dumb"
+    && term <> ""
+    && isatty stderr
+
+  type setting = Auto | Always | Never
+
+  let default_setting = Auto
+  let enabled = ref true
+
+end
+
+(* Terminal styling handling *)
+module Style = struct
   (* use ANSI color codes, see https://en.wikipedia.org/wiki/ANSI_escape_code *)
   type color =
     | Black
@@ -727,7 +745,6 @@ module Color = struct
     | Style s -> no_markup s
     | _ -> raise Not_found
 
-  let color_enabled = ref true
 
   let as_inline_code printer ppf x =
     Format.pp_open_stag ppf (Format.String_tag "inline_code");
@@ -740,17 +757,17 @@ module Color = struct
   let mark_open_tag ~or_else s =
     try
       let style = style_of_tag s in
-      if !color_enabled then ansi_of_style_l style.ansi else style.text_open
+      if !Color.enabled then ansi_of_style_l style.ansi else style.text_open
     with Not_found -> or_else s
 
   let mark_close_tag ~or_else s =
     try
       let style = style_of_tag s in
-      if !color_enabled then ansi_of_style_l [Reset] else style.text_close
+      if !Color.enabled then ansi_of_style_l [Reset] else style.text_close
     with Not_found -> or_else s
 
-  (* add color handling to formatter [ppf] *)
-  let set_color_tag_handling ppf =
+  (* add tag handling to formatter [ppf] *)
+  let set_tag_handling ppf =
     let open Format in
     let functions = pp_get_formatter_stag_functions ppf () in
     let functions' = {functions with
@@ -761,37 +778,24 @@ module Color = struct
     pp_set_formatter_stag_functions ppf functions';
     ()
 
-  external isatty : out_channel -> bool = "caml_sys_isatty"
-
-  (* reasonable heuristic on whether colors should be enabled *)
-  let should_enable_color () =
-    let term = try Sys.getenv "TERM" with Not_found -> "" in
-    term <> "dumb"
-    && term <> ""
-    && isatty stderr
-
-  type setting = Auto | Always | Never
-
-  let default_setting = Auto
-
   let setup =
     let first = ref true in (* initialize only once *)
     let formatter_l =
       [Format.std_formatter; Format.err_formatter; Format.str_formatter]
     in
     let enable_color = function
-      | Auto -> should_enable_color ()
-      | Always -> true
-      | Never -> false
+      | Color.Auto -> Color.should_enable_color ()
+      | Color.Always -> true
+      | Color.Never -> false
     in
     fun o ->
       if !first then (
         first := false;
         Format.set_mark_tags true;
-        List.iter set_color_tag_handling formatter_l;
-        color_enabled := (match o with
+        List.iter set_tag_handling formatter_l;
+        Color.enabled := (match o with
           | Some s -> enable_color s
-          | None -> enable_color default_setting)
+          | None -> enable_color Color.default_setting)
       );
       ()
 end

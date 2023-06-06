@@ -21,7 +21,7 @@ open Parsetree
 open Types
 open Format
 
-module Style = Misc.Color
+module Style = Misc.Style
 
 let () = Includemod_errorprinter.register ()
 

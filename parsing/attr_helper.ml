@@ -16,7 +16,7 @@
 open Asttypes
 open Parsetree
 
-module Style = Misc.Color
+module Style = Misc.Style
 
 type error =
   | Multiple_attributes of string

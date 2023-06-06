@@ -336,7 +336,7 @@ let get_directive_info name =
 let all_directive_names () =
   Hashtbl.fold (fun dir _ acc -> dir::acc) directive_table []
 
-module Style = Misc.Color
+module Style = Misc.Style
 
 let try_run_directive ppf dir_name pdir_arg =
   begin match get_directive dir_name with
@@ -357,7 +357,7 @@ let try_run_directive ppf dir_name pdir_arg =
          | exception _ ->
            fprintf ppf "Integer literal exceeds the range of \
                         representable integers for directive %a.@."
-                   Misc.Color.inline_code dir_name;
+                   Style.inline_code dir_name;
            false
          end
       | Directive_int _, Some {pdira_desc = Pdir_int (_, Some _)} ->

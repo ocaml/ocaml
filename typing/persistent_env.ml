@@ -222,7 +222,7 @@ let find_pers_struct penv val_of_pers_sig check name =
         let ps = acknowledge_pers_struct penv check name psig pm in
         (ps, pm)
 
-module Style = Misc.Color
+module Style = Misc.Style
 (* Emits a warning if there is no valid cmi for name *)
 let check_pers_struct penv f ~loc name =
   try

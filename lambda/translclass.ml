@@ -957,7 +957,7 @@ let () =
 (* Error report *)
 
 open Format
-module Style = Misc.Color
+module Style = Misc.Style
 
 let report_error ppf = function
   | Tags (lab1, lab2) ->

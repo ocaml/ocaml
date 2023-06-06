@@ -26,7 +26,7 @@ open Typedtree
 open Btype
 open Ctype
 
-module Style = Misc.Color
+module Style = Misc.Style
 
 type type_forcing_context =
   | If_conditional

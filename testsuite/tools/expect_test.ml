@@ -222,7 +222,7 @@ let eval_expect_file _fname ~file_contents =
   in
   let buf = Buffer.create 1024 in
   let ppf = Format.formatter_of_buffer buf in
-  let () = Misc.Color.set_color_tag_handling ppf in
+  let () = Misc.Style.set_tag_handling ppf in
   let exec_phrases phrases =
     let phrases =
       match min_line_number phrases with
@@ -368,7 +368,7 @@ let () =
 (* Early disabling of colors in any output *)
   let () =
     Clflags.color := Some Misc.Color.Never;
-    Misc.Color.(setup @@ Some Never)
+    Misc.Style.(setup @@ Some Never)
   in
   try
     Arg.parse args main usage;

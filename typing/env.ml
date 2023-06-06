@@ -3551,7 +3551,7 @@ let extract_instance_variables env =
        | Val_ivar _ -> name :: acc
        | _ -> acc) None env []
 
-module Style = Misc.Color
+module Style = Misc.Style
 
 let report_lookup_error _loc env ppf = function
   | Unbound_value(lid, hint) -> begin

@@ -1980,7 +1980,7 @@ let non_virtual_string_of_kind = function
   | Class -> "non-virtual class"
   | Class_type -> "non-virtual class type"
 
-module Style=Misc.Color
+module Style=Misc.Style
 
 let report_error env ppf = function
   | Repeated_parameter ->

@@ -202,7 +202,7 @@ type type_mismatch =
   | Unboxed_representation of position
   | Immediate of Type_immediacy.Violation.t
 
-module Style = Misc.Color
+module Style = Misc.Style
 
 let report_primitive_mismatch first second ppf err =
   let pr fmt = Format.fprintf ppf fmt in

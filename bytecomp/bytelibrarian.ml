@@ -114,7 +114,7 @@ let create_archive file_list lib_name =
     )
 
 open Format
-module Style = Misc.Color
+module Style = Misc.Style
 
 let report_error ppf = function
   | File_not_found name ->

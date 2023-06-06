@@ -108,7 +108,7 @@ let type_ident = wrap Parser.parse_mty_longident
 (* Error reporting for Syntaxerr *)
 (* The code has been moved here so that one can reuse Pprintast.tyvar *)
 
-module Style = Misc.Color
+module Style = Misc.Style
 
 let prepare_error err =
   let open Syntaxerr in

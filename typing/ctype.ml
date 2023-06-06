@@ -123,7 +123,7 @@ let () =
     (function
       | Tags (l, l') ->
           let pp_tag ppf s = Format.fprintf ppf "`%s" s in
-          let inline_tag = Misc.Color.as_inline_code pp_tag in
+          let inline_tag = Misc.Style.as_inline_code pp_tag in
           Some
             Location.
               (errorf ~loc:(in_file !input_name)

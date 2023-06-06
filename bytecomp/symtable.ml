@@ -23,7 +23,7 @@ open Lambda
 open Cmo_format
 
 module String = Misc.Stdlib.String
-module Style = Misc.Color
+module Style = Misc.Style
 
 module Compunit = struct
   type t = compunit

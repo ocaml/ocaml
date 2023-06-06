@@ -1678,7 +1678,7 @@ let transl_store_package component_names target_name coercion =
 (* Error report *)
 
 open Format
-module Style = Misc.Color
+module Style = Misc.Style
 
 let print_cycle ppf cycle =
   let print_ident ppf (x,_) = Format.pp_print_string ppf (Ident.name x) in

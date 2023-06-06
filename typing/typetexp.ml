@@ -855,7 +855,7 @@ let transl_type_scheme env styp =
 
 open Format
 open Printtyp
-module Style = Misc.Color
+module Style = Misc.Style
 let pp_tag ppf t = Format.fprintf ppf "`%s" t
 
 

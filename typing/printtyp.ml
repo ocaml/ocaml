@@ -27,7 +27,7 @@ open Outcometree
 
 module String = Misc.Stdlib.String
 module Sig_component_kind = Shape.Sig_component_kind
-module Style = Misc.Color
+module Style = Misc.Style
 
 (* Print a long identifier *)
 

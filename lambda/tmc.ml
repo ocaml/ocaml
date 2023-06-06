@@ -977,7 +977,7 @@ let rewrite t =
   let ctx = { specialized = Ident.Map.empty } in
   traverse ctx t
 
-module Style = Misc.Color
+module Style = Misc.Style
 
 let () =
   Location.register_error_of_exn

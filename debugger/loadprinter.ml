@@ -139,7 +139,7 @@ let remove_printer lid =
 (* Error report *)
 
 open Format
-module Style = Misc.Color
+module Style = Misc.Style
 
 let report_error ppf = function
   | Load_failure e ->

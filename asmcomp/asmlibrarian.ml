@@ -69,7 +69,7 @@ let create_archive file_list lib_name =
        then raise(Error(Archiver_error archive_name));
     )
 
-module Style = Misc.Color
+module Style = Misc.Style
 open Format
 
 let report_error ppf = function
