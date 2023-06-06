@@ -21,6 +21,7 @@ let ppf = Format.err_formatter
 
 type file_kind = ML | MLI
 
+(* [(dir, contents)] where [contents] is returned by [Sys.readdir dir]. *)
 let load_path = ref ([] : (string * string array) list)
 let ml_synonyms = ref [".ml"]
 let mli_synonyms = ref [".mli"]
@@ -381,7 +382,7 @@ let ml_file_dependencies source_file =
       | Ptop_def s -> s
       | Ptop_dir _ -> []
     in
-    List.flatten (List.map f (Parse.use_file lexbuf))
+    List.concat_map f (Parse.use_file lexbuf)
   in
   let (extracted_deps, ()) =
     read_parse_and_extract parse_use_file_as_impl Depend.add_implementation ()
@@ -546,7 +547,7 @@ let parse_map fname =
       (fun ppf -> String.Set.iter (Format.fprintf ppf " %s") deps)
       (dump_map deps) (String.Map.add modname mm String.Map.empty)
   end;
-  let mm = Depend.(weaken_map (String.Set.singleton modname) mm) in
+  let mm = Depend.weaken_map (String.Set.singleton modname) mm in
   module_map := String.Map.add modname mm !module_map
 
 (* Dependency processing *)
