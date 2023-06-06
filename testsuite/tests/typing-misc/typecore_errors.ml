@@ -249,7 +249,7 @@ let x = [%extension_constructor]
 Line 1, characters 8-32:
 1 | let x = [%extension_constructor]
             ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Invalid [[%%extension_constructor]] payload, a constructor is expected.
+Error: Invalid [[%extension_constructor]] payload, a constructor is expected.
 |}]
 
 (** Invalid format *)

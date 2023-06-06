@@ -6179,7 +6179,7 @@ let report_error ~loc env = function
   | Invalid_extension_constructor_payload ->
       Location.errorf ~loc
         "Invalid %a payload, a constructor is expected."
-        Style.inline_code "[%%extension_constructor]"
+        Style.inline_code "[%extension_constructor]"
   | Not_an_extension_constructor ->
       Location.errorf ~loc
         "This constructor is not an extension constructor."
