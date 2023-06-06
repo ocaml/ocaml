@@ -66,6 +66,9 @@ Working version
   of --disable-debugger (which remains available for compatibility)
   (Gabriel Scherer, review by Damien Doligez and Sébastien Hinderer)
 
+- #12210: uniform style for inline code in compiler messages
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #12216, #12248: Prevent reordering of atomic loads during instruction
