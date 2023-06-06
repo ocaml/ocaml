@@ -115,8 +115,9 @@ let find_module_in_load_path name =
   find_in_path !load_path
 
 let find_dependency target_kind modname (byt_deps, opt_deps) =
-  try
-    let filename = find_module_in_load_path modname in
+  match find_module_in_load_path modname with
+  | exception Not_found -> (byt_deps, opt_deps)
+  | filename ->
     let basename = Filename.chop_extension filename in
     let cmi_file = basename ^ ".cmi" in
     let cmx_file = basename ^ ".cmx" in
@@ -157,8 +158,6 @@ let find_dependency target_kind modname (byt_deps, opt_deps) =
         else [ cmx_file ]
       in
       (bytenames @ byt_deps, optnames @  opt_deps)
-  with Not_found ->
-    (byt_deps, opt_deps)
 
 let (depends_on, escaped_eol) = (":", " \\\n    ")
 
@@ -254,26 +253,25 @@ let rec lexical_approximation lexbuf =
        lower-case identifier
      - always skip the token after a backquote
   *)
-  try
-    let rec process after_lident lexbuf =
-      match Lexer.token lexbuf with
-      | Parser.UIDENT name ->
-          Depend.free_structure_names :=
-            String.Set.add name !Depend.free_structure_names;
-          process false lexbuf
-      | Parser.LIDENT _ -> process true lexbuf
-      | Parser.DOT when after_lident -> process false lexbuf
-      | Parser.DOT | Parser.BACKQUOTE -> skip_one lexbuf
-      | Parser.EOF -> ()
-      | _ -> process false lexbuf
-    and skip_one lexbuf =
-      match Lexer.token lexbuf with
-      | Parser.DOT | Parser.BACKQUOTE -> skip_one lexbuf
-      | Parser.EOF -> ()
-      | _ -> process false lexbuf
+  let rec process after_lident lexbuf =
+    match Lexer.token lexbuf with
+    | Parser.UIDENT name ->
+        Depend.free_structure_names :=
+          String.Set.add name !Depend.free_structure_names;
+        process false lexbuf
+    | Parser.LIDENT _ -> process true lexbuf
+    | Parser.DOT when after_lident -> process false lexbuf
+    | Parser.DOT | Parser.BACKQUOTE -> skip_one lexbuf
+    | Parser.EOF -> ()
+    | _ -> process false lexbuf
+  and skip_one lexbuf =
+    match Lexer.token lexbuf with
+    | Parser.DOT | Parser.BACKQUOTE -> skip_one lexbuf
+    | Parser.EOF -> ()
+    | _ -> process false lexbuf
 
-    in
-    process false lexbuf
+  in
+  try process false lexbuf
   with Lexer.Error _ -> lexical_approximation lexbuf
 
 let read_and_approximate inputfile =
@@ -296,7 +294,8 @@ let read_parse_and_extract parse_function extract_function def ast_kind
   Depend.free_structure_names := String.Set.empty;
   try
     let input_file = Pparse.preprocess source_file in
-    begin try
+    Fun.protect ~finally:(fun () -> Pparse.remove_preprocessed input_file)
+    @@ fun () ->
       let ast = Pparse.file ~tool_name input_file parse_function ast_kind in
       let bound_vars =
         List.fold_left
@@ -310,12 +309,7 @@ let read_parse_and_extract parse_function extract_function def ast_kind
           !module_map ((* PR#7248 *) List.rev !Clflags.open_modules)
       in
       let r = extract_function bound_vars ast in
-      Pparse.remove_preprocessed input_file;
       (!Depend.free_structure_names, r)
-    with x ->
-      Pparse.remove_preprocessed input_file;
-      raise x
-    end
   with x -> begin
     print_exception x;
     if not !allow_approximation then begin
