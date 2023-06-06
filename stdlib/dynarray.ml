@@ -624,15 +624,24 @@ let mapi f a =
 let fold_left f acc a =
   let {arr; length} = a in
   check_valid_length length arr;
-  let rec fold acc arr i length =
-    if i = length then acc
-    else
-      let v = unsafe_get arr ~i ~length in
-      fold (f acc v) arr (i+1) length
-  in
-  let res = fold acc arr 0 length in
+  let r = ref acc in
+  for i = 0 to length - 1 do
+    let v = unsafe_get arr ~i ~length in
+    r := f !r v;
+  done;
   check_same_length "fold_left" a ~length;
-  res
+  !r
+
+let fold_right f a acc =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  let r = ref acc in
+  for i = length - 1 downto 0 do
+    let v = unsafe_get arr ~i ~length in
+    r := f v !r;
+  done;
+  check_same_length "fold_right" a ~length;
+  !r
 
 let exists p a =
   let {arr; length} = a in

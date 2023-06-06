@@ -68,6 +68,9 @@ let () =
   assert (A.fold_left (+) 0 a = (1 + 2 + 3));
   assert (A.fold_left (+) 0 b = (1024 * 1025) / 2);;
 
+let () =
+  let a = A.of_list [1; 2; 3] in
+  assert (A.fold_right List.cons a [] = [1; 2; 3]);;
 
 (** {1:adding Adding elements} *)
 

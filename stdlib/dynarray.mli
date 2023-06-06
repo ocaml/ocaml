@@ -250,6 +250,12 @@ val fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
     ]}
 *)
 
+val fold_right : ('a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
+(** [fold_right f a acc] computes
+    [f x0 (f x1 (... (f xn acc) ...))]
+    where [x0, x1, ..., xn] are the elements of [a].
+*)
+
 val exists : ('a -> bool) -> 'a t -> bool
 (** [exists f a] is [true] if some element of [a] satisfies [f].
 
