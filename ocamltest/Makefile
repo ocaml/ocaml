@@ -110,7 +110,8 @@ include_directories := $(addprefix -I , $(directories))
 
 flags := $(STDLIBFLAGS) -g $(include_directories) \
   -strict-sequence -strict-formats \
-  -w +a-4-9-41-42-44-45-48 -warn-error +A
+  -principal -absname -bin-annot \
+  -w +a-4-9-40-41-42-44-45-48 -warn-error +A
 
 ocamlc = $(BEST_OCAMLC) $(flags)
 
