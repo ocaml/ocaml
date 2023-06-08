@@ -34,6 +34,15 @@ type error =
 
 exception Error of error * Location.t
 
+(* Hash-consing of identifiers *)
+
+module WeakString = Weak.Make(String)
+let hashcons = WeakString.merge (WeakString.create 512)
+let lident s = LIDENT (hashcons s)
+let uident s = UIDENT (hashcons s)
+let label s = LABEL (hashcons s)
+let optlabel s = OPTLABEL (hashcons s)
+
 (* The table of keywords *)
 
 let keyword_table =
@@ -392,27 +401,27 @@ rule token = parse
           (Reserved_sequence (".~", Some "is reserved for use in MetaOCaml")) }
   | "~" (lowercase identchar * as name) ':'
       { check_label_name lexbuf name;
-        LABEL name }
+        label name }
   | "~" (lowercase_latin1 identchar_latin1 * as name) ':'
       { warn_latin1 lexbuf;
-        LABEL name }
+        label name }
   | "?"
       { QUESTION }
   | "?" (lowercase identchar * as name) ':'
       { check_label_name lexbuf name;
-        OPTLABEL name }
+        optlabel name }
   | "?" (lowercase_latin1 identchar_latin1 * as name) ':'
       { warn_latin1 lexbuf;
-        OPTLABEL name }
+        optlabel name }
   | lowercase identchar * as name
       { try Hashtbl.find keyword_table name
-        with Not_found -> LIDENT name }
+        with Not_found -> lident name }
   | lowercase_latin1 identchar_latin1 * as name
-      { warn_latin1 lexbuf; LIDENT name }
+      { warn_latin1 lexbuf; lident name }
   | uppercase identchar * as name
-      { UIDENT name } (* No capitalized keywords *)
+      { uident name } (* No capitalized keywords *)
   | uppercase_latin1 identchar_latin1 * as name
-      { warn_latin1 lexbuf; UIDENT name }
+      { warn_latin1 lexbuf; uident name }
   | int_literal as lit { INT (lit, None) }
   | (int_literal as lit) (literal_modifier as modif)
       { INT (lit, Some modif) }
