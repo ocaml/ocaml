@@ -233,8 +233,7 @@ let read_input_default prompt buffer len =
       Buffer.add_char phrase_buffer c;
       incr i;
       if c = '\n' then raise Exit;
-    done;
-    (!i, false)
+    done
   with
   | End_of_file ->
       (!i, true)
