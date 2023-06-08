@@ -179,7 +179,7 @@ ocamltest/OCAMLTEST.org typo.long-line=may typo.missing-header
 stdlib/Compflags text eol=lf
 stdlib/hashbang -text
 tools/autogen text eol=lf
-tools/ci/inria/remove-sinh-primitive.patch text eol=lf
+tools/ci/inria/bootstrap/remove-sinh-primitive.patch -text
 tools/check-typo text eol=lf
 tools/check-symbol-names text eol=lf
 tools/ci-build text eol=lf
