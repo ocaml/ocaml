@@ -23,14 +23,14 @@ module Fifo =
       | [] -> { front = List.rev rear; rear = [] }
       | _  -> { front; rear }
     let empty = { front = []; rear = [] }
-    let is_empty = function { front = [] } -> true | _ -> false
+    let is_empty = function { front = []; _ } -> true | _ -> false
     let add x q = make_queue q.front (x :: q.rear)
     exception Empty
     let top = function
-      | { front = [] } -> raise Empty
-      | { front = x :: _ } -> x
+      | { front = []; _ } -> raise Empty
+      | { front = x :: _; _ } -> x
     let pop = function
-      | { front = [] } -> raise Empty
+      | { front = []; _ } -> raise Empty
       | { front = _ :: f; rear = r } -> make_queue f r
   end;;
 \end{caml_example}
