@@ -132,7 +132,7 @@ with which type. It can be used to hide some components of a structure
 (e.g. local function definitions) or export some components with a
 restricted type. For instance, the signature below specifies the three
 priority queue operations "empty", "insert" and "extract", but not the
-auxiliary function "remove_top". Similarly, it makes the "queue" type
+auxiliary function "merge". Similarly, it makes the "queue" type
 abstract (by not providing its actual representation as a concrete type).
 \begin{caml_example}{toplevel}
 module type PRIOQUEUE =
@@ -150,9 +150,9 @@ another view of the "PrioQueue" structure where the "rank", "node" and
 "merge" functions are not accessible and the actual representation of priority
 queues is hidden:
 \begin{caml_example}{toplevel}
-module AbstractPrioQueue = (PrioQueue : PRIOQUEUE);;
-AbstractPrioQueue.rank [@@expect error];;
-AbstractPrioQueue.insert AbstractPrioQueue.empty 1 "hello";;
+module AbsPrioQueue = (PrioQueue : PRIOQUEUE);;
+AbsPrioQueue.rank [@@expect error];;
+AbsPrioQueue.insert AbsPrioQueue.empty 1 "hello";;
 \end{caml_example}
 The restriction can also be performed during the definition of the
 structure, as in
@@ -182,141 +182,165 @@ module type PRIOQUEUE_WITH_OPT =
 
 Functors are ``functions'' from modules to modules. Functors let you create
 parameterized modules and then provide other modules as parameter(s) to get
-a specific implementation.  For instance, a "Set" module implementing sets
-as sorted lists could be parameterized to work with any module that provides
-an element type and a comparison function "compare" (such as "OrderedString"):
-
+a specific implementation.  For instance, we can make our priority
+queues more generally useful by parameterizing them over a type of
+priorities and a ``higher priority'' comparison over priorities.
 \begin{caml_example}{toplevel}
-type comparison = Less | Equal | Greater;;
-module type ORDERED_TYPE =
+module type PRIORITY =
   sig
     type t
-    val compare: t -> t -> comparison
+    val higher: t -> t -> bool
   end;;
-module Set =
-  functor (Elt: ORDERED_TYPE) ->
+module PrioQueue =
+  functor (Prio: PRIORITY) ->
     struct
-      type element = Elt.t
-      type set = element list
-      let empty = []
-      let rec add x s =
-        match s with
-          [] -> [x]
-        | hd::tl ->
-           match Elt.compare x hd with
-             Equal   -> s         (* x is already in s *)
-           | Less    -> x :: s    (* x is smaller than all elements of s *)
-           | Greater -> hd :: add x tl
-      let rec member x s =
-        match s with
-          [] -> false
-        | hd::tl ->
-            match Elt.compare x hd with
-              Equal   -> true     (* x belongs to s *)
-            | Less    -> false    (* x is smaller than all elements of s *)
-            | Greater -> member x tl
+      type priority = Prio.t
+      type rank = int
+      type 'a queue =
+        | Leaf
+        | Node of rank * priority * 'a * 'a queue * 'a queue
+      let empty = Leaf
+      let rank = function Leaf -> 0 | Node(rk, _, _, _, _) -> rk
+      let node prio elt a b =
+        let ra = rank a and rb = rank b in
+        if ra >= rb then Node(rb + 1, prio, elt, a, b)
+                    else Node(ra + 1, prio, elt, b, a)
+      let rec merge q1 q2 =
+        match q1, q2 with
+        | Leaf, _ -> q2
+        | _, Leaf -> q1
+        | Node(_, prio1, elt1, a1, b1), Node(_, prio2, elt2, a2, b2) ->
+            if Prio.higher prio1 prio2
+            then node prio1 elt1 a1 (merge b1 q2)
+            else node prio2 elt2 a2 (merge q1 b2)
+      let insert queue prio elt =
+        merge (Node(1, prio, elt, Leaf, Leaf)) queue
+      exception Queue_is_empty
+      let extract = function
+        | Leaf -> raise Queue_is_empty
+        | Node(_, prio, elt, a, b) -> (prio, elt, merge a b)
     end;;
 \end{caml_example}
-By applying the "Set" functor to a structure implementing an ordered
-type, we obtain set operations for this type:
+By applying the "PrioQueue" functor to a structure implementing an ordered
+type, we obtain priority queue operations for this type.  Here, we use
+floating-point numbers as priorities, with smaller numbers having
+higher priority.
 \begin{caml_example}{toplevel}
-module OrderedString =
+module FloatMinPrio =
   struct
-    type t = string
-    let compare x y = if x = y then Equal else if x < y then Less else Greater
+    type t = float
+    let higher p1 p2 = p1 <= p2
   end;;
-module StringSet = Set(OrderedString);;
-StringSet.member "bar" (StringSet.add "foo" StringSet.empty);;
+module FloatMinQueue = PrioQueue(FloatMinPrio);;
+FloatMinQueue.(extract (insert (insert empty 2.5 "a") 1.0 "b"));;
+\end{caml_example}
+Then, we use integer as priorities, with higher numbers having higher priority.
+\begin{caml_example}{toplevel}
+module IntMaxPrio =
+  struct
+    type t = int
+    let higher p1 p2 = p1 >= p2
+  end;;
+module IntMaxQueue = PrioQueue(IntMaxPrio);;
+IntMaxQueue.(extract (insert (insert empty 7 "a") 2 "b"));;
 \end{caml_example}
 
 \section{s:functors-and-abstraction}{Functors and type abstraction}
 
-As in the "PrioQueue" example, it would be good style to hide the
-actual implementation of the type "set", so that users of the
-structure will not rely on sets being lists, and we can switch later
-to another, more efficient representation of sets without breaking
-their code. This can be achieved by restricting "Set" by a suitable
-functor signature:
+As in the non-functorized "PrioQueue" example, it would be good style
+to hide auxiliary functions such as "merge", as well as the
+actual definition of the type "queue".  This can be achieved by
+restricting "PrioQueue" by a suitable functor signature:
 \begin{caml_example}{toplevel}
-module type SETFUNCTOR =
-  functor (Elt: ORDERED_TYPE) ->
+module type PRIOQUEUE_FUNCTOR =
+  functor (Prio: PRIORITY) ->
     sig
-      type element = Elt.t      (* concrete *)
-      type set                  (* abstract *)
-      val empty : set
-      val add : element -> set -> set
-      val member : element -> set -> bool
+      type priority = Prio.t      (* still concrete *)
+      type 'a queue               (* now abstract *)
+      val empty : 'a queue
+      val insert : 'a queue -> priority -> 'a -> 'a queue
+      val extract : 'a queue -> priority * 'a * 'a queue
+      exception Queue_is_empty
     end;;
-module AbstractSet = (Set : SETFUNCTOR);;
-module AbstractStringSet = AbstractSet(OrderedString);;
-AbstractStringSet.add "gee" AbstractStringSet.empty;;
+module AbsPrioQueue = (PrioQueue : PRIOQUEUE_FUNCTOR);;
+module AbsIntMaxQueue = AbsPrioQueue(IntMaxPrio);;
+AbsIntMaxQueue.(insert empty 7 "a");;
 \end{caml_example}
 
 In an attempt to write the type constraint above more elegantly,
 one may wish to name the signature of the structure
 returned by the functor, then use that signature in the constraint:
 \begin{caml_example}{toplevel}
-module type SET =
+module type PRIOQUEUE_GENERIC =
   sig
-    type element
-    type set
-    val empty : set
-    val add : element -> set -> set
-    val member : element -> set -> bool
+    type priority        (* still concrete *)
+    type 'a queue
+    val empty : 'a queue
+    val insert : 'a queue -> priority -> 'a -> 'a queue
+    val extract : 'a queue -> priority * 'a * 'a queue
+    exception Queue_is_empty
   end;;
-module WrongSet = (Set : functor(Elt: ORDERED_TYPE) -> SET);;
-module WrongStringSet = WrongSet(OrderedString);;
-WrongStringSet.add "gee" WrongStringSet.empty [@@expect error];;
+module WrongPrioQueue =
+  (PrioQueue : functor (Prio: PRIORITY) -> PRIOQUEUE_GENERIC);;
+module WrongIntMaxQueue = WrongPrioQueue(IntMaxPrio);;
+WrongIntMaxQueue.(insert empty 7 "a") [@@expect error];;
 \end{caml_example}
-The problem here is that "SET" specifies the type "element"
-abstractly, so that the type equality between "element" in the result
+The problem here is that "PRIOQUEUE_GENERIC" specifies the type "priority"
+abstractly, so that the type equality between "priority" in the result
 of the functor and "t" in its argument is forgotten. Consequently,
-"WrongStringSet.element" is not the same type as "string", and the
-operations of "WrongStringSet" cannot be applied to strings.
-As demonstrated above, it is important that the type "element" in the
-signature "SET" be declared equal to "Elt.t"; unfortunately, this is
-impossible above since "SET" is defined in a context where "Elt" does
-not exist. To overcome this difficulty, OCaml provides a
-"with type" construct over signatures that allows enriching a signature
-with extra type equalities:
+"WrongPrioQueue.priority" is not the same type as "int", and the
+operations of "WrongPrioQueue" cannot be applied to integers.  As
+demonstrated above, it is important that the type "priority" in the
+signature "PRIOQUEUE_GENERIC" be declared equal to "Prio.t";
+unfortunately, this is impossible above since "PRIOQUEUE_GENERIC" is
+defined in a context where "Prio" does not exist. To overcome this
+difficulty, OCaml provides a "with type" construct over signatures
+that allows enriching a signature with extra type equalities:
 \begin{caml_example}{toplevel}
-module AbstractSet2 =
-  (Set : functor(Elt: ORDERED_TYPE) -> (SET with type element = Elt.t));;
+module AbsPrioQueue2 =
+  (PrioQueue :
+     functor (Prio: PRIORITY) ->
+             (PRIOQUEUE_GENERIC with type priority = Prio.t));;
 \end{caml_example}
 
 As in the case of simple structures, an alternate syntax is provided
 for defining functors and restricting their result:
 \begin{verbatim}
-module AbstractSet2(Elt: ORDERED_TYPE) : (SET with type element = Elt.t) =
+module AbsPrioQueue (Prio: PRIORITY) :
+    (PRIOQUEUE_GENERIC with type priority = Prio.t) =
   struct ... end;;
 \end{verbatim}
 
-Abstracting a type component in a functor result is a powerful
+Absing a type component in a functor result is a powerful
 technique that provides a high degree of type safety, as we now
-illustrate. Consider an ordering over character strings that is
-different from the standard ordering implemented in the
-"OrderedString" structure. For instance, we compare strings without
-distinguishing upper and lower case.
+illustrate. Consider two different ways to use integers as priorities:
+either with higher numbers having higher priority (module "IntMaxPrio"
+above) or with lower numbers having higher priority (module "IntMinPrio" below).
 \begin{caml_example}{toplevel}
-module NoCaseString =
+module IntMinPrio =
   struct
-    type t = string
-    let compare s1 s2 =
-      OrderedString.compare (String.lowercase_ascii s1) (String.lowercase_ascii s2)
+    type t = int
+    let higher p1 p2 = p1 >= p2
   end;;
-module NoCaseStringSet = AbstractSet(NoCaseString);;
-NoCaseStringSet.add "FOO" AbstractStringSet.empty [@@expect error];;
 \end{caml_example}
-Note that the two types "AbstractStringSet.set" and
-"NoCaseStringSet.set" are not compatible, and values of these
+Now, let's build abstract priority queues that use these two integer
+priority modules.
+\begin{caml_example}{toplevel}
+module AbsIntMinQueue = AbsPrioQueue(IntMinPrio);;
+module AbsIntMaxQueue = AbsPrioQueue(IntMaxPrio);;
+AbsIntMaxQueue.insert AbsIntMinQueue.empty 1 "a" [@@expect error];;
+\end{caml_example}
+Note that the two types "AbsIntMinQueue.queue" and
+"AbsIntMaxQueue.queue" are not compatible, and values of these
 two types do not match. This is the correct behavior: even though both
-set types contain elements of the same type (strings), they are built
+queue types contain priorities of the same type (integer), they are built
 upon different orderings of that type, and different invariants need
-to be maintained by the operations (being strictly increasing for the
-standard ordering and for the case-insensitive ordering). Applying
-operations from "AbstractStringSet" to values of type
-"NoCaseStringSet.set" could give incorrect results, or build
-lists that violate the invariants of "NoCaseStringSet".
+to be maintained by the operations: for "AbsIntMinQueue.queue",
+integer priorities increase from root to leaves, while for
+"AbsIntMaxQueue.queue", they decrease.  Applying
+operations from "AbsIntMaxQueue" to values of type
+"AbsIntMinQueue.queue" could give incorrect results, or build
+trees that violate the invariants of "AbsIntMinQueue.queue".
 
 \section{s:separate-compilation}{Modules and separate compilation}
 
