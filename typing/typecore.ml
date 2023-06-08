@@ -3580,11 +3580,16 @@ and type_expect_
   | Pexp_while(scond, sbody) ->
       let cond = type_expect env scond
           (mk_expected ~explanation:While_loop_conditional Predef.type_bool) in
+      let exp_type =
+        match cond.exp_desc with
+        | Texp_construct(_, {cstr_name="true"}, _) -> instance ty_expected
+        | _ -> instance Predef.type_unit
+      in
       let body = type_statement ~explanation:While_loop_body env sbody in
       rue {
         exp_desc = Texp_while(cond, body);
         exp_loc = loc; exp_extra = [];
-        exp_type = instance Predef.type_unit;
+        exp_type;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_for(param, slow, shigh, dir, sbody) ->
@@ -5002,10 +5007,26 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
 (* Typing of statements (expressions whose values are discarded) *)
 
 and type_statement ?explanation env sexp =
+  (* OCaml 5.2.0 changed the type of 'while' to give 'while true do e done'
+     a polymorphic type.  The change has the potential to trigger a
+     nonreturning-statement warning in existing code that follows
+     'while true' with some other statement, e.g.
+
+         while true do e done; assert false
+
+    To avoid this issue, we disable the warning in this particular case.
+    We might consider re-enabling it at a point when most users have
+    migrated to OCaml 5.2.0 or later. *)
+  let allow_polymorphic e = match e.pexp_desc with
+    | Pexp_while _ -> true
+    | _ -> false
+  in
   (* Raise the current level to detect non-returning functions *)
   let exp = with_local_level (fun () -> type_exp env sexp) in
   let ty = expand_head env exp.exp_type in
-  if is_Tvar ty && get_level ty > get_current_level () then
+  if is_Tvar ty
+     && get_level ty > get_current_level ()
+     && not (allow_polymorphic sexp) then
     Location.prerr_warning
       (final_subexpression exp).exp_loc
       Warnings.Nonreturning_statement;
