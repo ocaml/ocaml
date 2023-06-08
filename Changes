@@ -8,6 +8,10 @@ Working version
 
 ### Language features:
 
+- #12295: Give `while true' a polymorphic type, similarly to `assert false'
+  (Jeremy Yallop, review by Nicolás Ojeda Bär and Gabriel Scherer,
+  suggestion by Rodolphe Lepigre and John Whitington)
+
 ### Runtime system:
 
 - #10111: Increase the detail of location information for debugging events to
