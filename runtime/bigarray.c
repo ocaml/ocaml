@@ -36,15 +36,33 @@
 
 /* Half-precision floating point numbers */
 
-#if defined(__GNUC__) && defined(__F16C__)
+#if defined(__GNUC__) && defined(__aarch64__)
+
+union float16_bits { uint16_t i; _Float16 f; };
+
+Caml_inline float caml_float16_to_float(uint16 d)
+{
+  union float16_bits u;
+  u.i = d; return u.f;
+}
+
+Caml_inline uint16 caml_float_to_float16(float d)
+{
+  union float16_bits u;
+  u.f = d; return u.i;
+}
+
+#elif defined(__GNUC__) && defined(__F16C__)
 
 #include <immintrin.h>
 
-#define caml_float16_to_float(d) _cvtsh_ss(d)
-#define caml_float_to_float16(d) \
-  _cvtss_sh(d, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC))
+Caml_inline float caml_float16_to_float(uint16 d)
+{ return _cvtsh_ss(d); }
 
-#else  /* defined(__GNUC__) && defined(__F16C__) */
+Caml_inline uint16 caml_float_to_float16(float d)
+{ return _cvtss_sh(d, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)); }
+
+#else
 
 union float_bits {
   uint32_t i;
@@ -127,6 +145,16 @@ static uint16 caml_float_to_float16(float d)
 }
 
 #endif  /* defined(__GNUC__) && defined(__F16C__) */
+
+CAMLexport double caml_double_of_float16(intnat x)
+{
+  return (double) caml_float16_to_float((uint16) x);
+}
+
+CAMLexport intnat caml_float16_of_double(double x)
+{
+  return (intnat) caml_float_to_float16((float) x);
+}
 
 Caml_inline uint32_t caml_hash_mix_float16(uint32_t hash, uint16 d)
 {

@@ -585,6 +585,13 @@ let unbox_float dbg =
       | cmm -> Cop(mk_load_immut Double, [cmm], dbg)
     )
 
+(* Conversions for 16-bit floats *)
+
+let float_of_float16 dbg c =
+  Cop(Cextcall("caml_double_of_float16", typ_float, [XInt], false), [c], dbg)
+let float16_of_float dbg c =
+  Cop(Cextcall("caml_float16_of_double", typ_int, [XFloat], false), [c], dbg)
+
 (* Complex *)
 
 let box_complex dbg c_re c_im =
@@ -1344,9 +1351,9 @@ let simplif_primitive p : Clambda_primitives.primitive =
   match (p : Clambda_primitives.primitive) with
   | Pduprecord _ ->
       Pccall (default_prim "caml_obj_dup")
-  | Pbigarrayref(_unsafe, n, (Pbigarray_unknown|Pbigarray_float16), _layout) ->
+  | Pbigarrayref(_unsafe, n, Pbigarray_unknown, _layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
-  | Pbigarrayset(_unsafe, n, (Pbigarray_unknown|Pbigarray_float16), _layout) ->
+  | Pbigarrayset(_unsafe, n, Pbigarray_unknown, _layout) ->
       Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
   | Pbigarrayref(_unsafe, n, _kind, Pbigarray_unknown_layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))

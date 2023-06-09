@@ -486,7 +486,8 @@ let rec transl env e =
             bigarray_get unsafe elt_kind layout
               (transl env arg1) (List.map (transl env) argl) dbg in
           begin match elt_kind with
-            Pbigarray_float32 | Pbigarray_float64 -> box_float dbg elt
+          | Pbigarray_float16 -> box_float dbg (float_of_float16 dbg elt)
+          | Pbigarray_float32 | Pbigarray_float64 -> box_float dbg elt
           | Pbigarray_complex32 | Pbigarray_complex64 -> elt
           | Pbigarray_int32 -> box_int dbg Pint32 elt
           | Pbigarray_int64 -> box_int dbg Pint64 elt
@@ -494,7 +495,7 @@ let rec transl env e =
           | Pbigarray_caml_int -> tag_int elt dbg
           | Pbigarray_sint8 | Pbigarray_uint8
           | Pbigarray_sint16 | Pbigarray_uint16 -> tag_int elt dbg
-          | Pbigarray_float16 | Pbigarray_unknown -> assert false
+          | Pbigarray_unknown -> assert false
           end
       | (Pbigarrayset(unsafe, _num_dims, elt_kind, layout), arg1 :: argl) ->
           let (argidx, argnewval) = split_last argl in
@@ -502,7 +503,9 @@ let rec transl env e =
             (transl env arg1)
             (List.map (transl env) argidx)
             (match elt_kind with
-              Pbigarray_float32 | Pbigarray_float64 ->
+            | Pbigarray_float16 ->
+                float16_of_float dbg (transl_unbox_float dbg env argnewval)
+            | Pbigarray_float32 | Pbigarray_float64 ->
                 transl_unbox_float dbg env argnewval
             | Pbigarray_complex32 | Pbigarray_complex64 -> transl env argnewval
             | Pbigarray_int32 -> transl_unbox_int dbg env Pint32 argnewval
@@ -514,7 +517,7 @@ let rec transl env e =
             | Pbigarray_sint8 | Pbigarray_uint8
             | Pbigarray_sint16 | Pbigarray_uint16 ->
                 ignore_high_bit_int (untag_int (transl env argnewval) dbg)
-            | Pbigarray_float16 | Pbigarray_unknown -> assert false)
+            | Pbigarray_unknown -> assert false)
             dbg)
       | (Pbigarraydim(n), [b]) ->
           let dim_ofs = 4 + n in
