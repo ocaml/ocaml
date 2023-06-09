@@ -5,6 +5,10 @@ Working version
 
 ### Runtime system:
 
+- #10111: Increase the detail of location information for debugging events to
+  allow the end line number and character offset to be reported.
+  (David Allsopp, review by Nick Barnes, Enguerrand Decorne and Stephen Dolan)
+
 - #10403, #12202: introduce `caml_ext_table_add_noexc` that does not
   raise `Out_of_memory` exceptions and use it inside the blocking sections
   of `caml_read_directory`.  Also, check for overflows in ext table sizes.
@@ -65,6 +69,15 @@ Working version
   (Sébastien Hinderer, review by David Allsopp and Florian Angeletti)
 
 ### Bug fixes:
+
+* #12145: Loopy constraints cause ocamlc to loop.
+  Fixed by completely removing the call to `update_type` in
+  `Typedecl.transl_type_decl`, as the expansion is already checked by
+  `check_regularity`. As a result, recursion is more polymorphic,
+  which may cause some (essentialy wrong) type declarations to have
+  unbound type variables, and some constraints unrelated to the concrete
+  type to be ignored (see tests/typing-misc/constraints.ml).
+  (Jacques Garrigue, report by Richard Eisenberg, review by Leo White)
 
 - #12255, #12256: Handle large signal numbers correctly (Nick Barnes,
    review by David Allsopp).
