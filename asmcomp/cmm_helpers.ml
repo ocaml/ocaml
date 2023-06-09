@@ -1344,9 +1344,9 @@ let simplif_primitive p : Clambda_primitives.primitive =
   match (p : Clambda_primitives.primitive) with
   | Pduprecord _ ->
       Pccall (default_prim "caml_obj_dup")
-  | Pbigarrayref(_unsafe, n, Pbigarray_unknown, _layout) ->
+  | Pbigarrayref(_unsafe, n, (Pbigarray_unknown|Pbigarray_float16), _layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
-  | Pbigarrayset(_unsafe, n, Pbigarray_unknown, _layout) ->
+  | Pbigarrayset(_unsafe, n, (Pbigarray_unknown|Pbigarray_float16), _layout) ->
       Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
   | Pbigarrayref(_unsafe, n, _kind, Pbigarray_unknown_layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
