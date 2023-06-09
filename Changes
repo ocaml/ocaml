@@ -33,7 +33,7 @@ Working version
   (Daniel Bünzli, review by Nicolás Ojeda Bär, David Allsopp and Alain Frisch)
 
 * #10775: Half-precision floating-point elements in Bigarray.
-  (Anton Yabchinskiy, review by )
+  (Anton Yabchinskiy, review by Xavier Leroy)
 
 ### Other libraries:
 
