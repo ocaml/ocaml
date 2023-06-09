@@ -88,17 +88,21 @@ void caml_free_backtrace_buffer(backtrace_slot *backtrace_buffer) {
 
 #define MIN_CALLSTACK_SIZE 16
 
-/* Stores upto [max_frames] frames of the current call stack. Stop when
-   we reach that frame count, or when the SP exceeds [trap_sp], if given.
-*/
+/* Stores up to [max_frames] frame descriptors of a stack in a buffer
+   [*trace_p] of length [*allocated_size_p], allocated in the C
+   heap. Resize the buffer as required. Start at [sp]/[pc] on [stack],
+   and at offfset [frames] in the buffer. Stop when we reach
+   [max_frames], or at the top of this fiber (unless [with_parents] is
+   set, or when the stack pointer exceeds [trap_sp], if given.
+ */
 static size_t get_callstack(struct stack_info *stack, char *sp, uintnat pc,
-                            char *trap_sp, size_t max_frames,
+                            char *trap_sp, bool with_parents,
+                            size_t max_frames, size_t frames,
                             frame_descr*** trace_p, size_t *allocated_size_p)
 {
   caml_frame_descrs fds;
   size_t size = *allocated_size_p;
   frame_descr **trace = *trace_p;
-  size_t frames = 0;
 
   CAMLnoalloc;
 
@@ -108,7 +112,7 @@ static size_t get_callstack(struct stack_info *stack, char *sp, uintnat pc,
     frame_descr *descr = next_frame_descriptor(fds, &pc, &sp, stack);
     if (!descr) { /* end of current stack fragment */
       stack = Stack_parent(stack);
-      if (stack == NULL) break;
+      if (stack == NULL || !with_parents) break;
       caml_get_stack_sp_pc(stack, &sp, &pc);
     } else {
       if (frames == size) {
@@ -123,7 +127,7 @@ static size_t get_callstack(struct stack_info *stack, char *sp, uintnat pc,
       }
       trace[frames] = descr;
       ++frames;
-      if (trap_sp && sp > trap_sp)
+      if (trap_sp && (sp > trap_sp))
         break;
     }
   }
@@ -134,7 +138,9 @@ static size_t get_callstack(struct stack_info *stack, char *sp, uintnat pc,
 }
 
 /* Get the current backtrace for an exception, into a per-domain
-   statically-sized buffer. */
+   buffer. If the exception is the same as the last exception, add
+   frames to the existing buffer (thus allowing re-raise stack regions
+   to be appended). */
 
 void caml_stash_backtrace(value exn, uintnat pc, char * sp, char* trapsp)
 {
@@ -155,15 +161,21 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char* trapsp)
           (frame_descr**)domain_state->backtrace_buffer;
   domain_state->backtrace_pos = get_callstack(domain_state->current_stack,
                                               sp, pc, trapsp,
+                                              false,
                                               BACKTRACE_BUFFER_SIZE,
+                                              domain_state->backtrace_pos,
                                               &backtrace_buffer,
                                               &allocated_size);
-  domain_state->backtrace_buffer = (void**)backtrace_buffer;
   CAMLassert(domain_state->backtrace_pos <= BACKTRACE_BUFFER_SIZE);
   CAMLassert(allocated_size == BACKTRACE_BUFFER_SIZE);
+  CAMLassert(backtrace_buffer == (void*)domain_state->backtrace_buffer);
+  domain_state->backtrace_buffer = (void**)backtrace_buffer;
 }
 
-/* Get the current backtrace from the current stack_info. */
+/* Stores up to [max_frames] frame descriptors of [stack] in a buffer
+   [*trace_p] of length [*allocated_size_p], allocated in the C
+   heap. Resize the buffer as required. Include parent fibers.
+ */
 
 static size_t user_get_callstack(struct stack_info *stack,
                                  size_t max_frames,
@@ -174,22 +186,31 @@ static size_t user_get_callstack(struct stack_info *stack,
   uintnat pc;
 
   caml_get_stack_sp_pc(stack, &sp, &pc);
-  return get_callstack(stack, sp, pc, NULL,
-                       max_frames, trace_p, allocated_size_p);
+  return get_callstack(stack, sp, pc, NULL, true,
+                       max_frames, 0, trace_p, allocated_size_p);
 }
 
-/* Get the current raw callstack into a caller-provided buffer. */
+/* Stores up to [max_frames] frame descriptors of the current call
+   stack, in a buffer [*buffer] of size [*alloc_size_p] bytes,
+   allocated in the C heap. Resize the buffer as required. Include
+   parent fibers. Returns the number of frames.
+ */
 
-size_t caml_get_callstack (size_t max_frames, void **buffer, size_t *alloc_size)
+size_t caml_get_callstack (size_t max_frames, void **buffer,
+                           size_t *alloc_size_p)
 {
   frame_descr **buf = (frame_descr**)*buffer;
-  size_t alloc_frames = (*alloc_size) / sizeof(frame_descr *);
+  size_t alloc_frames = (*alloc_size_p) / sizeof(frame_descr *);
   size_t frames = user_get_callstack(Caml_state->current_stack, max_frames,
                                      &buf, &alloc_frames);
   *buffer = buf;
-  *alloc_size = alloc_frames * sizeof(frame_descr *);
+  *alloc_size_p = alloc_frames * sizeof(frame_descr *);
   return frames;
 }
+
+/* Create and return a Caml [Printexc.raw_backtrace] (an array of
+ * [raw_backtrace_slot] values), from [frames] entries of [trace].
+ */
 
 static value alloc_callstack(frame_descr** trace, size_t frames)
 {
@@ -203,6 +224,11 @@ static value alloc_callstack(frame_descr** trace, size_t frames)
   CAMLreturn(callstack);
 }
 
+/* Create and return a [Printexc.raw_backtrace] of the current
+ * callstack, of up to [max_frames_value] entries. Includes parent
+ * fibers.
+ */
+
 CAMLprim value caml_get_current_callstack (value max_frames_value)
 {
   frame_descr** trace = NULL;
@@ -212,6 +238,11 @@ CAMLprim value caml_get_current_callstack (value max_frames_value)
                                      &trace, &alloc_size);
   return alloc_callstack(trace, frames);
 }
+
+/* Create and return a [Printexc.raw_backtrace] of the callstack of
+ * the continuation [cont], of up to [max_frames_value]
+ * entries. Includes parent fibers.
+ */
 
 CAMLprim value caml_get_continuation_callstack(value cont,
                                                value max_frames_value)

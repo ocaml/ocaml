@@ -316,8 +316,11 @@ code_t caml_next_frame_pointer(value* stack_high, value ** sp,
 
 #define MIN_CALLSTACK_SIZE 16
 
-/* Stores upto [max_frames] frames of the current call stack. */
-
+/* Stores up to [max_frames] frame descriptors of a stack in a buffer
+   [*trace_p] of length [*allocated_size_p], allocated in the C
+   heap. Resize the buffer as required. Start at [sp] on [stack]. Stop
+   when we reach [max_frames], or on reaching [trap_spoff],
+ */
 static size_t get_callstack(struct stack_info* stack,
                             value* sp, intnat trap_spoff,
                             size_t max_frames,
@@ -333,11 +336,11 @@ static size_t get_callstack(struct stack_info* stack,
   while (frames < max_frames) {
     code_t p = caml_next_frame_pointer(stack_high, &sp, &trap_spoff);
     if (p == NULL) {
-      struct stack_info *parent = Stack_parent(stack);
-      if (parent == NULL) break;
-      sp = parent->sp;
+      stack = Stack_parent(stack);
+      if (stack == NULL) break;
+      sp = stack->sp;
       trap_spoff = Long_val(sp[0]);
-      stack_high = Stack_high(parent);
+      stack_high = Stack_high(stack);
     } else {
       if (frames == size) {
         size_t new_size = size ? size * 2 : MIN_CALLSTACK_SIZE;
@@ -359,6 +362,10 @@ static size_t get_callstack(struct stack_info* stack,
   return frames;
 }
 
+/* Create and return a Caml [Printexc.raw_backtrace] (an array of
+ * [raw_backtrace_slot] values), from [frames] entries of [trace].
+ */
+
 static value alloc_callstack(code_t* trace, size_t frames)
 {
   CAMLparam0();
@@ -371,17 +378,11 @@ static value alloc_callstack(code_t* trace, size_t frames)
   CAMLreturn(callstack);
 }
 
-CAMLprim value caml_get_current_callstack (value max_frames_value)
-{
-  code_t* trace = NULL;
-  size_t allocated = 0;
-  size_t frames = get_callstack(Caml_state->current_stack,
-                                Caml_state->current_stack->sp,
-                                Caml_state->trap_sp_off,
-                                Long_val(max_frames_value),
-                                &trace, &allocated);
-  return alloc_callstack(trace, frames);
-}
+/* Stores up to [max_frames] [Printexc.raw_backtrace_slot] entries of
+   the current call stack, in a buffer [*buffer] of size
+   [*alloc_size_p] bytes, allocated in the C heap. Resize the buffer
+   as required. Returns the number of frames.
+ */
 
 size_t caml_get_callstack(size_t max_frames,
                           void **buffer,
@@ -398,6 +399,27 @@ size_t caml_get_callstack(size_t max_frames,
   *alloc_size_p = allocated * sizeof(code_t);
   return frames;
 }
+
+/* Create and return a [Printexc.raw_backtrace] of the current
+ * callstack, of up to [max_frames_value] entries.
+ */
+
+CAMLprim value caml_get_current_callstack (value max_frames_value)
+{
+  code_t* trace = NULL;
+  size_t allocated = 0;
+  size_t frames = get_callstack(Caml_state->current_stack,
+                                Caml_state->current_stack->sp,
+                                Caml_state->trap_sp_off,
+                                Long_val(max_frames_value),
+                                &trace, &allocated);
+  return alloc_callstack(trace, frames);
+}
+
+/* Create and return a [Printexc.raw_backtrace] of the callstack of
+ * the continuation [cont], of up to [max_frames_value]
+ * entries.
+ */
 
 CAMLprim value caml_get_continuation_callstack(value cont,
                                                value max_frames_value)
