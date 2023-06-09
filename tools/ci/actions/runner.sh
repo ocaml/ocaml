@@ -155,7 +155,7 @@ ReportBuildStatus () {
   else
     STATUS='success'
   fi
-  echo "::set-output name=build-status::$STATUS"
+  echo "build-status=$STATUS" >>"$GITHUB_OUTPUT"
   exit $CODE
 }
 
