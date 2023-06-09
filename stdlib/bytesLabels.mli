@@ -127,10 +127,10 @@ val fill : bytes -> pos:int -> len:int -> char -> unit
 val blit :
   src:bytes -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int
   -> unit
-(** [blit ~src ~src_pos ~dst ~dst_pos ~len] copies [len] bytes from sequence
-    [src], starting at index [src_pos], to sequence [dst], starting at
-    index [dst_pos]. It works correctly even if [src] and [dst] are the
-    same byte sequence, and the source and destination intervals
+(** [blit ~src ~src_pos ~dst ~dst_pos ~len] copies [len] bytes from byte
+    sequence [src], starting at index [src_pos], to byte sequence [dst],
+    starting at index [dst_pos]. It works correctly even if [src] and [dst] are
+    the same byte sequence, and the source and destination intervals
     overlap.
     @raise Invalid_argument if [src_pos] and [len] do not
     designate a valid range of [src], or if [dst_pos] and [len]
@@ -139,8 +139,8 @@ val blit :
 val blit_string :
   src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int
   -> unit
-(** [blit ~src ~src_pos ~dst ~dst_pos ~len] copies [len] bytes from string
-    [src], starting at index [src_pos], to byte sequence [dst],
+(** [blit_string ~src ~src_pos ~dst ~dst_pos ~len] copies [len] bytes from
+    string [src], starting at index [src_pos], to byte sequence [dst],
     starting at index [dst_pos].
     @raise Invalid_argument if [src_pos] and [len] do not
     designate a valid range of [src], or if [dst_pos] and [len]
