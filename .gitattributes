@@ -22,7 +22,6 @@
 # Binary files
 /boot/ocamlc binary
 /boot/ocamllex binary
-/boot/ocamldep binary
 *.gif binary
 *.png binary
 *.tfm binary
@@ -63,10 +62,8 @@ META.in                  typo.missing-header
 /CONTRIBUTING.md         typo.non-ascii=may
 /README.adoc             typo.non-ascii=may
 /README.win32.adoc       typo.non-ascii=may
-/.merlin                 typo.missing-header
 /Changes                 typo.utf8 typo.missing-header
 /release-info/News       typo.utf8 typo.missing-header
-/INSTALL                 typo.missing-header
 /LICENSE                 typo.very-long-line typo.missing-header
 # tools/ci/appveyor/appveyor_build.cmd only has missing-header because
 # dra27 too lazy to update check-typo to interpret Cmd-style comments!
@@ -97,11 +94,6 @@ configure                typo.prune
 
 ocaml-variants.opam      typo.prune
 
-emacs/*.el               typo.long-line=may
-emacs/caml.el            typo.long-line=may typo.missing-header
-emacs/COPYING            typo.prune
-emacs/ocamltags.in       typo.non-printing
-
 ocamldoc/**              typo.long-line=may
 ocamldoc/Changes.txt     typo.missing-header
 ocamldoc/ocamldoc.sty    typo.missing-header
@@ -125,7 +117,6 @@ testsuite/tests/asmgen/immediates.cmm                   typo.very-long-line
 testsuite/tests/generated-parse-errors/errors.*         typo.very-long-line
 testsuite/tools/*.S                                     typo.missing-header
 testsuite/tools/*.asm                                   typo.missing-header
-testsuite/typing                                        typo.missing-header
 testsuite/tests/messages/highlight_tabs.ml              typo.tab
 
 # prune testsuite reference files
@@ -145,8 +136,6 @@ tools/magic                       typo.missing-header
 
 # TODO we should fix the long-line errors in yacc/*.c
 /yacc/*.[ch]         typo.very-long-line=may
-
-menhir-bench.bash typo.missing-header typo.utf8
 
 # bootstrap files produced by Menhir
 /boot/menhir/** typo.long-line=may typo.very-long-line=may
@@ -171,27 +160,20 @@ configure.ac text eol=lf
 build-aux/compile text eol=lf
 build-aux/config.guess text eol=lf
 build-aux/config.sub text eol=lf
-build-aux/install text eol=lf
+build-aux/install-sh text eol=lf
 build-aux/missing text eol=lf
-ocamldoc/remove_DEBUG text eol=lf
-ocamltest/getocamloptdefaultflags text eol=lf
 ocamltest/OCAMLTEST.org typo.long-line=may typo.missing-header
 stdlib/Compflags text eol=lf
-stdlib/sharpbang text eol=lf
+stdlib/hashbang -text
 tools/autogen text eol=lf
-tools/ci/inria/remove-sinh-primitive.patch text eol=lf
+tools/ci/inria/bootstrap/remove-sinh-primitive.patch -text
 tools/check-typo text eol=lf
 tools/check-symbol-names text eol=lf
-tools/ci-build text eol=lf
 tools/msvs-promote-path text eol=lf
 tools/gdb-macros text eol=lf
 tools/magic text eol=lf
-tools/make-opcodes text eol=lf
-tools/make-package-macosx text eol=lf
-tools/ocaml-objcopy-macosx text eol=lf
 tools/ocamlsize text eol=lf
 tools/pre-commit-githook text eol=lf
-tools/markdown-add-pr-links.sh text eol=lf
 runtime/caml/sizeclasses.h typo.missing-header typo.white-at-eol
 
 # Tests which include references spanning multiple lines fail with \r\n
