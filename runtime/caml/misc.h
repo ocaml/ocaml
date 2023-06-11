@@ -89,8 +89,6 @@ CAMLdeprecated_typedef(addr, char *);
   #define CAMLnoret _Noreturn
 #elif defined(__GNUC__)
   #define CAMLnoret  __attribute__ ((noreturn))
-#elif defined(_MSC_VER)
-  #define CAMLnoret __declspec(noreturn)
 #else
   #define CAMLnoret
 #endif
