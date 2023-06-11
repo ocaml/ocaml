@@ -174,7 +174,9 @@ val int16_unsigned : (int, int16_unsigned_elt) kind
 (** See {!Bigarray.char}. *)
 
 val int : (int, int_elt) kind
-(** See {!Bigarray.char} and {!section:elementkinds}. *)
+(** See {!Bigarray.char} and {!section:1_Elementkinds}.
+    The element size matches the OCaml [int] type, and not the C [int] type.
+ *)
 
 val int32 : (int32, int32_elt) kind
 (** See {!Bigarray.char}. *)
