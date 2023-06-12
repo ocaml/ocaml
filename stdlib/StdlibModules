@@ -78,6 +78,8 @@ STDLIB_MODULE_BASENAMES = \
   printexc \
   fun \
   gc \
+  in_channel \
+  out_channel \
   digest \
   bigarray \
   random \
@@ -98,8 +100,6 @@ STDLIB_MODULE_BASENAMES = \
   stringLabels \
   moreLabels \
   stdLabels \
-  in_channel \
-  out_channel \
   effect
 
 STDLIB_PREFIXED_MODULES = \

@@ -13,16 +13,18 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** MD5 message digest.
+(** Message digest.
 
-   This module provides functions to compute 128-bit 'digests' of
-   arbitrary-length strings or files. The algorithm used is MD5.
+   This module provides functions to compute 'digests', also known as
+   'hashes', of arbitrary-length strings or files.
+   The supported hashing algorithm is MD5. *)
 
-   The MD5 hash function is not cryptographically secure.
-   Hence, this module should not be used for security-sensitive
-   applications.  More recent, stronger cryptographic primitives
-   should be used instead.
-*)
+(** {1 Basic functions} *)
+
+(** The functions in this section use the MD5 hash function to produce
+   128-bit digests (16 bytes).  MD5 is not cryptographically secure.
+   Hence, these functions should not be used for security-sensitive
+   applications.  *)
 
 type t = string
 (** The type of digests: 16-character strings. *)
@@ -82,3 +84,69 @@ val from_hex : string -> t
     @raise Invalid_argument if the argument is not exactly 32 hexadecimal
    characters.
    @since 4.00 *)
+
+(** {1 Generic interface} *)
+
+module type S = sig
+
+  type t = string
+    (** The type of digests. *)
+
+  val hash_size : int
+    (** The length of digests, in bytes. *)
+
+  val compare : t -> t -> int
+    (** Compare two digests, , with the same specification as
+        {!Stdlib.compare}. *)
+        
+  val equal : t -> t -> bool
+    (** Test two digests for equality. *)
+
+  val string : string -> t
+    (** Return the digest of the given string. *)
+
+  val bytes : bytes -> t
+    (** Return the digest of the given byte sequence. *)
+
+  val substring : string -> int -> int -> t
+    (** [substring s ofs len] returns the digest of the substring
+        of [s] starting at index [ofs] and containing [len] characters. *)
+
+  val subbytes : bytes -> int -> int -> t
+    (** [subbytes s ofs len] returns the digest of the subsequence
+        of [s] starting at index [ofs] and containing [len] bytes. *)
+
+  val channel : in_channel -> int -> t
+    (** Read characters from the channel and return their digest.
+        See {!Digest.channel} for the full specification. *)
+
+  val file : string -> t
+    (** Return the digest of the file whose name is given. *)
+
+  val output : out_channel -> t -> unit
+    (** Write a digest on the given output channel. *)
+
+  val input : in_channel -> t
+    (** Read a digest from the given input channel. *)
+
+  val to_hex : t -> string
+    (** Return the printable hexadecimal representation of the given digest.
+        @raise Invalid_argument if the length of the argument
+        is not [hash_size], *)
+
+  val from_hex : string -> t
+    (** Convert a hexadecimal representation back into the corresponding digest.
+        @raise Invalid_argument if the length of the argument
+        is not [2 * hash_size], or if the arguments contains non-hexadecimal
+        characters. *)
+end
+   (** The signature for a hash function that produces digests of length
+       [hash_size] from character strings, byte arrays, and files.
+       @since 5.2 *)
+
+(** {1 Specific hash functions} *)
+
+module MD5 : S
+  (** [MD5] is the MD5 hash function.  It produces 128-bit (16-byte) digests
+      and is not cryptographically secure at all.
+      @since 5.2 *)
