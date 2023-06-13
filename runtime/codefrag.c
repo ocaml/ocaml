@@ -31,7 +31,7 @@ struct code_fragment_garbage {
   struct code_fragment_garbage *next;
 };
 
-static struct code_fragment_garbage *_Atomic garbage_head = NULL;
+static _Atomic uintnat garbage_head = NULL;
 
 static struct lf_skiplist code_fragments_by_pc;
 
