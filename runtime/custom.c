@@ -116,7 +116,7 @@ struct custom_operations_list {
   struct custom_operations_list * next;
 };
 
-typedef _Atomic(struct custom_operations_list *) custom_operations_table;
+typedef _Atomic uintnat custom_operations_table;
 
 /* Thread-safety: the tables are append-only lists, hence we only need
    a CAS loop update them. */
