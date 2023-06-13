@@ -177,6 +177,11 @@ Generate dependencies for native plugin files (.cmxs) in addition to
 native compiled files (.cmx).
 .TP
 .B \-slash
+(Windows) Use forward slash / instead of backslash \\ in file paths.
+Under Unix, this option does nothing.
+.TP
+.B \-no\-slash
+(Windows) Preserve any backslash \\ in file paths.
 Under Unix, this option does nothing.
 .TP
 .B \-sort
@@ -187,6 +192,14 @@ Print version string and exit.
 .TP
 .B \-vnum
 Print short version number and exit.
+.TP
+.BI \-args " file"
+Read additional newline separated command line arguments from
+.IR file .
+.TP
+.BI \-args0 " file"
+Read additional NUL separated command line arguments from
+.IR file .
 .TP
 .BR \-help " or " \-\-help
 Display a short usage summary and exit.
