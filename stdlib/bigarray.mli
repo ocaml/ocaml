@@ -90,6 +90,7 @@
    of abstract types for technical injectivity reasons).
 
    @since 4.07 Moved from otherlibs to stdlib.
+   @since 5.2 Added float16_elt element kind.
 *)
 
 type float16_elt = Float16_elt
@@ -152,10 +153,13 @@ type ('a, 'b) kind =
     | Int -> 0 | Nativeint -> 0n
     | Char -> '\000'
 ]}
+
+   @since 5.2 Constructor Float16 for the GADT.
 *)
 
 val float16 : (float, float16_elt) kind
-(** See {!Bigarray.char}. *)
+(** See {!Bigarray.char}.
+   @since 5.2 *)
 
 val float32 : (float, float32_elt) kind
 (** See {!Bigarray.char}. *)
