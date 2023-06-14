@@ -111,6 +111,15 @@ CAMLextern char_os * caml_cds_file;
  * different prototype. */
 extern void caml_stash_backtrace(value exn, value * sp, int reraise);
 
+/* Obtain up to [max_frames] of the callstack of the current domain,
+ * into [*buffer], current size [*alloc_size_p], which should be
+ * reallocated if required.
+ */
+
+extern size_t caml_get_callstack(size_t max_frames,
+                                 void **buffer,
+                                 size_t *alloc_size_p);
+
 CAMLextern void caml_load_main_debug_info(void);
 #endif
 

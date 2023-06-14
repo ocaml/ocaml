@@ -102,25 +102,27 @@ static int cmp_ev_info(const void *a, const void *b)
   int num_b;
 
   /* Perform a full lexicographic comparison to make sure the resulting order is
-     the same under all implementations of qsort (which is not stable). */
+     the same under all implementations of qsort (which is not stable).
+     NB a->ev_end_offset == b->ev_end_offset =>
+           a->ev_end_lnum == b->ev_end_lnum && a->ev_end_chr == b->ev_end_chr */
 
   if (pc_a > pc_b) return 1;
   if (pc_a < pc_b) return -1;
 
-  num_a = ev_a->ev_lnum;
-  num_b = ev_b->ev_lnum;
+  num_a = ev_a->ev_start_lnum;
+  num_b = ev_b->ev_start_lnum;
 
   if (num_a > num_b) return 1;
   if (num_a < num_b) return -1;
 
-  num_a = ev_a->ev_startchr;
-  num_b = ev_b->ev_startchr;
+  num_a = ev_a->ev_start_chr;
+  num_b = ev_b->ev_start_chr;
 
   if (num_a > num_b) return 1;
   if (num_a < num_b) return -1;
 
-  num_a = ev_a->ev_endchr;
-  num_b = ev_b->ev_endchr;
+  num_a = ev_a->ev_end_offset;
+  num_b = ev_b->ev_end_offset;
 
   if (num_a > num_b) return 1;
   if (num_a < num_b) return -1;
@@ -133,7 +135,7 @@ static struct ev_info *process_debug_events(code_t code_start,
                                             mlsize_t *num_events)
 {
   CAMLparam1(events_heap);
-  CAMLlocal3(l, ev, ev_start);
+  CAMLlocal4(l, ev, ev_start, ev_end);
   mlsize_t i, j;
   struct ev_info *events;
 
@@ -159,6 +161,7 @@ static struct ev_info *process_debug_events(code_t code_start,
                                  + Long_val(Field(ev, EV_POS)));
 
       ev_start = Field(Field(ev, EV_LOC), LOC_START);
+      ev_end = Field(Field(ev, EV_LOC), LOC_END);
 
       {
         const char *fname = String_val(Field(ev_start, POS_FNAME));
@@ -177,13 +180,14 @@ static struct ev_info *process_debug_events(code_t code_start,
         events[j].ev_defname = "<old bytecode>";
       }
 
-      events[j].ev_lnum = Int_val(Field(ev_start, POS_LNUM));
-      events[j].ev_startchr =
-        Int_val(Field(ev_start, POS_CNUM))
-        - Int_val(Field(ev_start, POS_BOL));
-      events[j].ev_endchr =
-        Int_val(Field(Field(Field(ev, EV_LOC), LOC_END), POS_CNUM))
-        - Int_val(Field(ev_start, POS_BOL));
+      events[j].ev_start_lnum = Int_val(Field(ev_start, POS_LNUM));
+      events[j].ev_start_chr =
+        Int_val(Field(ev_start, POS_CNUM)) - Int_val(Field(ev_start, POS_BOL));
+      events[j].ev_end_lnum = Int_val(Field(ev_end, POS_LNUM));
+      events[j].ev_end_chr =
+        Int_val(Field(ev_end, POS_CNUM)) - Int_val(Field(ev_end, POS_BOL));
+      events[j].ev_end_offset =
+        Int_val(Field(ev_end, POS_CNUM)) - Int_val(Field(ev_start, POS_BOL));
 
       j++;
     }
@@ -312,107 +316,134 @@ code_t caml_next_frame_pointer(value* stack_high, value ** sp,
   return NULL;
 }
 
-/* Stores upto [max_frames_value] frames of the current call stack to
-   return to the user. This is used not in an exception-raising context, but
-   only when the user requests to save the trace (hopefully less often).
-   Instead of using a bounded buffer as [Caml_state->stash_backtrace], we first
-   traverse the stack to compute the right size, then allocate space for the
-   trace. */
+/* initial size of a callstack buffer, in entries */
 
-static void get_callstack(value* sp, intnat trap_spoff,
-                          struct stack_info* stack,
-                          intnat max_frames,
-                          code_t** trace, intnat* trace_size)
+#define MIN_CALLSTACK_SIZE 16
+
+/* Stores up to [max_frames] frame descriptors of a stack in a buffer
+   [*trace_p] of length [*allocated_size_p], allocated in the C
+   heap. Resize the buffer as required. Start at [sp] on [stack]. Stop
+   when we reach [max_frames], or on reaching [trap_spoff],
+ */
+static size_t get_callstack(struct stack_info* stack,
+                            value* sp, intnat trap_spoff,
+                            size_t max_frames,
+                            code_t** trace_p, size_t *allocated_size_p)
 {
-  struct stack_info* parent = Stack_parent(stack);
-  value *stack_high = Stack_high(stack);
-  value* saved_sp = sp;
-  intnat saved_trap_spoff = trap_spoff;
-
   CAMLnoalloc;
 
-  /* first compute the size of the trace */
-  {
-    *trace_size = 0;
-    while (*trace_size < max_frames) {
-      code_t p = caml_next_frame_pointer(stack_high, &sp, &trap_spoff);
-      if (p == NULL) {
-        if (parent == NULL) break;
-        sp = parent->sp;
-        trap_spoff = Long_val(sp[0]);
-        stack_high = Stack_high(parent);
-        parent = Stack_parent(parent);
-      } else {
-        ++*trace_size;
+  value *stack_high = Stack_high(stack);
+  size_t frames = 0;
+  size_t size = *allocated_size_p;
+  code_t *trace = *trace_p;
+
+  while (frames < max_frames) {
+    code_t p = caml_next_frame_pointer(stack_high, &sp, &trap_spoff);
+    if (p == NULL) {
+      stack = Stack_parent(stack);
+      if (stack == NULL) break;
+      sp = stack->sp;
+      trap_spoff = Long_val(sp[0]);
+      stack_high = Stack_high(stack);
+    } else {
+      if (frames == size) {
+        size_t new_size = size ? size * 2 : MIN_CALLSTACK_SIZE;
+        trace = caml_stat_resize_noexc(trace, sizeof(code_t) * new_size);
+        if (!trace) {
+          *trace_p = NULL;
+          *allocated_size_p = 0;
+          return 0;
+        }
+        size = new_size;
       }
+      trace[frames] = p;
+      ++frames;
     }
   }
 
-  *trace = caml_stat_alloc(sizeof(code_t*) * *trace_size);
-
-  sp = saved_sp;
-  parent = Stack_parent(stack);
-  stack_high = Stack_high(stack);
-  trap_spoff = saved_trap_spoff;
-
-  /* then collect the trace */
-  {
-    uintnat trace_pos = 0;
-
-    while (trace_pos < *trace_size) {
-      code_t p = caml_next_frame_pointer(stack_high, &sp, &trap_spoff);
-      if (p == NULL) {
-        sp = parent->sp;
-        trap_spoff = Long_val(sp[0]);
-        stack_high = Stack_high(parent);
-        parent = Stack_parent(parent);
-      } else {
-        (*trace)[trace_pos] = p;
-        ++trace_pos;
-      }
-    }
-  }
+  *trace_p = trace;
+  *allocated_size_p = size;
+  return frames;
 }
 
-static value alloc_callstack(code_t* trace, intnat trace_len)
+/* Create and return a Caml [Printexc.raw_backtrace] (an array of
+ * [raw_backtrace_slot] values), from [frames] entries of [trace].
+ */
+
+static value alloc_callstack(code_t* trace, size_t frames)
 {
   CAMLparam0();
   CAMLlocal1(callstack);
   int i;
-  callstack = caml_alloc(trace_len, 0);
-  for (i = 0; i < trace_len; i++)
+  callstack = caml_alloc(frames, 0);
+  for (i = 0; i < frames; i++)
     Store_field(callstack, i, Val_backtrace_slot(trace[i]));
   caml_stat_free(trace);
   CAMLreturn(callstack);
 }
 
-CAMLprim value caml_get_current_callstack (value max_frames_value)
+/* Stores up to [max_frames] [Printexc.raw_backtrace_slot] entries of
+   the current call stack, in a buffer [*buffer] of size
+   [*alloc_size_p] bytes, allocated in the C heap. Resize the buffer
+   as required. Returns the number of frames.
+ */
+
+size_t caml_get_callstack(size_t max_frames,
+                          void **buffer,
+                          size_t *alloc_size_p)
 {
-  code_t* trace;
-  intnat trace_len;
-  get_callstack(Caml_state->current_stack->sp, Caml_state->trap_sp_off,
-                Caml_state->current_stack, Long_val(max_frames_value),
-                &trace, &trace_len);
-  return alloc_callstack(trace, trace_len);
+  code_t *trace = *buffer;
+  size_t allocated = *alloc_size_p / sizeof(code_t);
+  size_t frames = get_callstack(Caml_state->current_stack,
+                                Caml_state->current_stack->sp,
+                                Caml_state->trap_sp_off,
+                                max_frames,
+                                &trace, &allocated);
+  *buffer = trace;
+  *alloc_size_p = allocated * sizeof(code_t);
+  return frames;
 }
 
-CAMLprim value caml_get_continuation_callstack (value cont, value max_frames)
-{
-  code_t* trace;
-  intnat trace_len;
-  struct stack_info *stack;
-  value *sp;
+/* Create and return a [Printexc.raw_backtrace] of the current
+ * callstack, of up to [max_frames_value] entries.
+ */
 
-  stack = Ptr_val(caml_continuation_use(cont));
+CAMLprim value caml_get_current_callstack (value max_frames_value)
+{
+  code_t* trace = NULL;
+  size_t allocated = 0;
+  size_t frames = get_callstack(Caml_state->current_stack,
+                                Caml_state->current_stack->sp,
+                                Caml_state->trap_sp_off,
+                                Long_val(max_frames_value),
+                                &trace, &allocated);
+  return alloc_callstack(trace, frames);
+}
+
+/* Create and return a [Printexc.raw_backtrace] of the callstack of
+ * the continuation [cont], of up to [max_frames_value]
+ * entries.
+ */
+
+CAMLprim value caml_get_continuation_callstack(value cont,
+                                               value max_frames_value)
+{
+  code_t* trace = NULL;
+  size_t allocated = 0;
+  size_t frames;
+  struct stack_info *stack = Ptr_val(caml_continuation_use(cont));
+
   {
+    value *sp;
     CAMLnoalloc; /* GC must not see the stack outside the cont */
     sp = stack->sp;
-    get_callstack(sp, Long_val(sp[0]), stack, Long_val(max_frames),
-                  &trace, &trace_len);
+    frames = get_callstack(stack, sp, Long_val(sp[0]),
+                           Long_val(max_frames_value),
+                           &trace, &allocated);
     caml_continuation_replace(cont, stack);
   }
 
-  return alloc_callstack(trace, trace_len);
+  return alloc_callstack(trace, frames);
 }
 
 
@@ -571,9 +602,11 @@ void caml_debuginfo_location(debuginfo dbg,
   li->loc_is_inlined = 0;
   li->loc_filename = event->ev_filename;
   li->loc_defname = event->ev_defname;
-  li->loc_lnum = event->ev_lnum;
-  li->loc_startchr = event->ev_startchr;
-  li->loc_endchr = event->ev_endchr;
+  li->loc_start_lnum = event->ev_start_lnum;
+  li->loc_start_chr = event->ev_start_chr;
+  li->loc_end_lnum = event->ev_end_lnum;
+  li->loc_end_chr = event->ev_end_chr;
+  li->loc_end_offset = event->ev_end_offset;
 }
 
 debuginfo caml_debuginfo_extract(backtrace_slot slot)

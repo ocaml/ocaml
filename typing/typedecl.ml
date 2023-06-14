@@ -119,7 +119,7 @@ let enter_type rec_flag env sdecl (id, uid) =
       type_private = sdecl.ptype_private;
       type_manifest =
         begin match sdecl.ptype_manifest with None -> None
-        | Some _ -> Some(Ctype.newvar ()) end;
+        | Some _ -> Some(Btype.newgenvar ()) end;
       type_variance = Variance.unknown_signature ~injective:false ~arity;
       type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
@@ -132,16 +132,6 @@ let enter_type rec_flag env sdecl (id, uid) =
     }
   in
   add_type ~check:true id decl env
-
-let update_type temp_env env id loc =
-  let path = Path.Pident id in
-  let decl = Env.find_type path temp_env in
-  match decl.type_manifest with None -> ()
-  | Some ty ->
-      let params = List.map (fun _ -> Ctype.newvar ()) decl.type_params in
-      try Ctype.unify env (Ctype.newconstr path params) ty
-      with Ctype.Unify err ->
-        raise (Error(loc, Type_clash (env, err)))
 
 (* Determine if a type's values are represented by floats at run-time. *)
 let is_float env ty =
@@ -1113,15 +1103,6 @@ let transl_type_decl env rec_flag sdecl_list =
       check_duplicates sdecl_list;
       (* Build the final env. *)
       let new_env = add_types_to_env decls env in
-      (* Update stubs *)
-      begin match rec_flag with
-      | Asttypes.Nonrecursive -> ()
-      | Asttypes.Recursive ->
-          List.iter2
-            (fun (id, _) sdecl ->
-              update_type temp_env new_env id sdecl.ptype_loc)
-            ids_list sdecl_list
-      end;
       ((tdecls, decls, new_env), List.map snd decls)
     end
   in

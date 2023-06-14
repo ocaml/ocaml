@@ -149,9 +149,6 @@ caml_frame_descrs caml_get_frame_descrs(void);
 frame_descr* caml_find_frame_descr(caml_frame_descrs fds, uintnat pc);
 
 
-frame_descr * caml_next_frame_descriptor
-    (caml_frame_descrs fds, uintnat * pc, char ** sp, struct stack_info* stack);
-
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_FRAME_DESCRIPTORS_H */

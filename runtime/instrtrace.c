@@ -56,7 +56,7 @@ caml_event_trace(code_t pc)
      Caml_state->id,
      (long) (pc - caml_start_code),
      evi->ev_defname, evi->ev_filename,
-     evi->ev_lnum, evi->ev_startchr, evi->ev_endchr);
+     evi->ev_start_lnum, evi->ev_start_chr, evi->ev_end_offset);
   fflush (stdout);
 }
 

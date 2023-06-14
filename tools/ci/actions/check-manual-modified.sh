@@ -32,4 +32,4 @@ else
 fi
 
 echo "Manual altered: $result"
-echo "::set-output name=manual_changed::$result"
+echo "manual_changed=$result" >>"$GITHUB_OUTPUT"
