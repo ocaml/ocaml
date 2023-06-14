@@ -112,7 +112,7 @@ CAMLextern char_os * caml_cds_file;
 extern void caml_stash_backtrace(value exn, value * sp, int reraise);
 
 /* Obtain up to [max_frames] of the callstack of the current domain,
- * into [buffer], current size [alloc_size], which should be
+ * into [*buffer], current size [*alloc_size_p], which should be
  * reallocated if required.
  */
 
