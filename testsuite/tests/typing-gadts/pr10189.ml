@@ -172,5 +172,5 @@ Line 7, characters 33-34:
 7 | let f (y : M.j t) = match y with _ -> .;;
                                      ^
 Error: This match case could not be refuted.
-       Here is an example of a value that would reach it: [A
+       Here is an example of a value that would reach it: [A]
 |}]

@@ -286,7 +286,7 @@ Line 1, characters 27-28:
 1 | let f () = match None with _ -> .;; (* error *)
                                ^
 Error: This match case could not be refuted.
-       Here is an example of a value that would reach it: [_
+       Here is an example of a value that would reach it: [_]
 |}]
 
 let g () = match None with _ -> () | exception _ -> .;; (* error *)
@@ -295,7 +295,7 @@ Line 1, characters 47-48:
 1 | let g () = match None with _ -> () | exception _ -> .;; (* error *)
                                                    ^
 Error: This match case could not be refuted.
-       Here is an example of a value that would reach it: [_
+       Here is an example of a value that would reach it: [_]
 |}]
 
 let h () = match None with _ -> .  | exception _ -> .;; (* error *)
@@ -304,7 +304,7 @@ Line 1, characters 27-28:
 1 | let h () = match None with _ -> .  | exception _ -> .;; (* error *)
                                ^
 Error: This match case could not be refuted.
-       Here is an example of a value that would reach it: [_
+       Here is an example of a value that would reach it: [_]
 |}]
 
 let f x = match x with _ -> () | None -> .;; (* do not warn *)
