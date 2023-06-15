@@ -50,7 +50,7 @@ Line 2, characters 14-22:
 2 |   module M := Funct(M)
                   ^^^^^^^^
 Error: Unbound module [Funct]
-Hint: Did you mean Fun?
+Hint: Did you mean [Fun]?
 |}]
 
 module type Reject2 = sig

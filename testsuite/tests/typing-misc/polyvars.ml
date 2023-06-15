@@ -127,7 +127,7 @@ Line 1, characters 61-63:
 1 | let f : ([`A | `B ] as 'a) -> [> 'a] -> unit = fun x (y : [> 'a]) -> ();;
                                                                  ^^
 Error: The type ['a] does not expand to a polymorphic variant type
-Hint: Did you mean `a?
+Hint: Did you mean [`a]?
 |}]
 
 (* PR#5927 *)

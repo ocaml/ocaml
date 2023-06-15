@@ -298,5 +298,5 @@ Line 6, characters 13-23:
 6 |            ; Coq__10.f2 = 0
                  ^^^^^^^^^^
 Error: Unbound module [Coq__10]
-Hint: Did you mean Coq__11?
+Hint: Did you mean [Coq__11]?
 |}]

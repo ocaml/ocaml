@@ -521,7 +521,7 @@ Line 3, characters 19-22:
                        ^^^
 Error: This record expression is expected to have type [t]
        There is no field [yyz] within type [t]
-Hint: Did you mean yyy?
+Hint: Did you mean [yyy]?
 |}]
 
 (* PR#6004 *)

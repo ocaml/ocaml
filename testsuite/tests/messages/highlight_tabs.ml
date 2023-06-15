@@ -9,5 +9,5 @@ Line 1, characters 10-13:
 1 | 		let x = abc
     		        ^^^
 Error: Unbound value [abc]
-Hint: Did you mean abs?
+Hint: Did you mean [abs]?
 |}];;

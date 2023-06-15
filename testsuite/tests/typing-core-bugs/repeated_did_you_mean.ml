@@ -18,5 +18,5 @@ Line 7, characters 8-11:
 7 | let _ = fox;;
             ^^^
 Error: Unbound value [fox]
-Hint: Did you mean foo?
+Hint: Did you mean [foo]?
 |}]

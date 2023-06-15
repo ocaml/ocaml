@@ -49,7 +49,7 @@ Line 2, characters 13-19:
 2 | let value2 = value2 (* typo: should be value1 *) + 1 in
                  ^^^^^^
 Error: Unbound value [value2]
-Hint: Did you mean value1?
+Hint: Did you mean [value1]?
 |}];;
 
 let foobar1 () = () in
@@ -61,7 +61,7 @@ Line 2, characters 17-24:
 2 | let foobar2 () = foobar2 () (* typo? or missing "rec"? *) in
                      ^^^^^^^
 Error: Unbound value [foobar2]
-Hint: Did you mean foobar1?
+Hint: Did you mean [foobar1]?
 Hint: If this is a recursive definition,
 you should add the [rec] keyword on line 2
 |}];;

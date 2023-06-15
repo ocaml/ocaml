@@ -10,7 +10,7 @@ Line 1, characters 11-18:
 1 | type t = [ 'A_name | `Hi ];;
                ^^^^^^^
 Error: The type ['A_name] does not expand to a polymorphic variant type
-Hint: Did you mean `A_name?
+Hint: Did you mean [`A_name]?
 |}];;
 
 let f (x:'id_arg) = x;;

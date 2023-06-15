@@ -26,7 +26,7 @@ Line 2, characters 26-32:
 2 | module Foo = functor (E : EqualF) -> struct end;;
                               ^^^^^^
 Error: Unbound module type [EqualF]
-Hint: Did you mean Equals?
+Hint: Did you mean [Equals]?
 |}]
 
 (* If a module is used as a module type it should trigger the hint
