@@ -803,7 +803,6 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
                  MOVEFILE_COPY_ALLOWED)) {
     return 0;
   }
-
   /* Another cornercase not handled by MoveFileEx:
      - dir to empty dir - positive - should succeed */
   if ((old_attribs != INVALID_FILE_ATTRIBUTES) &&
@@ -820,23 +819,8 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
     }
   }
 
-  /* Modest attempt at mapping Win32 error codes to POSIX error codes.
-     The __dosmaperr() function from the CRT does a better job but is
-     generally not accessible. */
-  switch (GetLastError()) {
-  case ERROR_FILE_NOT_FOUND: case ERROR_PATH_NOT_FOUND:
-    errno = ENOENT; break;
-  case ERROR_ACCESS_DENIED: case ERROR_WRITE_PROTECT: case ERROR_CANNOT_MAKE:
-    errno = EACCES; break;
-  case ERROR_CURRENT_DIRECTORY: case ERROR_BUSY:
-    errno = EBUSY; break;
-  case ERROR_NOT_SAME_DEVICE:
-    errno = EXDEV; break;
-  case ERROR_ALREADY_EXISTS:
-    errno = EEXIST; break;
-  default:
-    errno = EINVAL;
-  }
+  errno = caml_posixerr_of_win32err(GetLastError());
+  if (errno == 0) errno = EINVAL;
   return -1;
 }
 
@@ -1176,4 +1160,86 @@ void caml_plat_mem_unmap(void* mem, uintnat size)
 {
   if (!VirtualFree(mem, 0, MEM_RELEASE))
     CAMLassert(0);
+}
+
+/* Mapping Win32 error codes to POSIX error codes */
+
+struct error_entry { DWORD win_code; int range; int posix_code; };
+
+static struct error_entry win_error_table[] = {
+  { ERROR_INVALID_FUNCTION, 0, EINVAL},
+  { ERROR_FILE_NOT_FOUND, 0, ENOENT},
+  { ERROR_PATH_NOT_FOUND, 0, ENOENT},
+  { ERROR_TOO_MANY_OPEN_FILES, 0, EMFILE},
+  { ERROR_TOO_MANY_LINKS, 0, EMLINK},
+  { ERROR_ACCESS_DENIED, 0, EACCES},
+  { ERROR_INVALID_HANDLE, 0, EBADF},
+  { ERROR_ARENA_TRASHED, 0, ENOMEM},
+  { ERROR_NOT_ENOUGH_MEMORY, 0, ENOMEM},
+  { ERROR_INVALID_BLOCK, 0, ENOMEM},
+  { ERROR_BAD_ENVIRONMENT, 0, E2BIG},
+  { ERROR_BAD_FORMAT, 0, ENOEXEC},
+  { ERROR_INVALID_ACCESS, 0, EINVAL},
+  { ERROR_INVALID_DATA, 0, EINVAL},
+  { ERROR_INVALID_DRIVE, 0, ENOENT},
+  { ERROR_CURRENT_DIRECTORY, 0, EACCES},
+  { ERROR_NOT_SAME_DEVICE, 0, EXDEV},
+  { ERROR_NO_MORE_FILES, 0, ENOENT},
+  { ERROR_LOCK_VIOLATION, 0, EACCES},
+  { ERROR_BAD_NETPATH, 0, ENOENT},
+  { ERROR_NETWORK_ACCESS_DENIED, 0, EACCES},
+  { ERROR_BAD_NET_NAME, 0, ENOENT},
+  { ERROR_FILE_EXISTS, 0, EEXIST},
+  { ERROR_CANNOT_MAKE, 0, EACCES},
+  { ERROR_FAIL_I24, 0, EACCES},
+  { ERROR_INVALID_PARAMETER, 0, EINVAL},
+  { ERROR_NO_PROC_SLOTS, 0, EAGAIN},
+  { ERROR_DRIVE_LOCKED, 0, EACCES},
+  { ERROR_BROKEN_PIPE, 0, EPIPE},
+  { ERROR_NO_DATA, 0, EPIPE},
+  { ERROR_DISK_FULL, 0, ENOSPC},
+  { ERROR_INVALID_TARGET_HANDLE, 0, EBADF},
+  { ERROR_INVALID_HANDLE, 0, EINVAL},
+  { ERROR_WAIT_NO_CHILDREN, 0, ECHILD},
+  { ERROR_CHILD_NOT_COMPLETE, 0, ECHILD},
+  { ERROR_DIRECT_ACCESS_HANDLE, 0, EBADF},
+  { ERROR_NEGATIVE_SEEK, 0, EINVAL},
+  { ERROR_SEEK_ON_DEVICE, 0, EACCES},
+  { ERROR_DIR_NOT_EMPTY, 0, ENOTEMPTY},
+  { ERROR_NOT_LOCKED, 0, EACCES},
+  { ERROR_BAD_PATHNAME, 0, ENOENT},
+  { ERROR_MAX_THRDS_REACHED, 0, EAGAIN},
+  { ERROR_LOCK_FAILED, 0, EACCES},
+  { ERROR_ALREADY_EXISTS, 0, EEXIST},
+  { ERROR_FILENAME_EXCED_RANGE, 0, ENOENT},
+  { ERROR_NESTING_NOT_ALLOWED, 0, EAGAIN},
+  { ERROR_NOT_ENOUGH_QUOTA, 0, ENOMEM},
+  { ERROR_INVALID_STARTING_CODESEG,
+    ERROR_INFLOOP_IN_RELOC_CHAIN - ERROR_INVALID_STARTING_CODESEG,
+    ENOEXEC },
+  { ERROR_WRITE_PROTECT,
+    ERROR_SHARING_BUFFER_EXCEEDED - ERROR_WRITE_PROTECT,
+    EACCES },
+  { ERROR_PRIVILEGE_NOT_HELD, 0, EPERM},
+  { WSAEINVAL, 0, EINVAL },
+  { WSAEACCES, 0, EACCES },
+  { WSAEBADF, 0, EBADF },
+  { WSAEFAULT, 0, EFAULT },
+  { WSAEINTR, 0, EINTR },
+  { WSAEINVAL, 0, EINVAL },
+  { WSAEMFILE, 0, EMFILE },
+  { WSAENAMETOOLONG, 0, ENAMETOOLONG },
+  { WSAENOTEMPTY, 0, ENOTEMPTY },
+  { 0, -1, 0 }
+};
+
+int caml_posixerr_of_win32err(unsigned int errcode)
+{
+  for (int i = 0; win_error_table[i].range >= 0; i++) {
+    if (errcode >= win_error_table[i].win_code &&
+        errcode <= win_error_table[i].win_code + win_error_table[i].range) {
+      return win_error_table[i].posix_code;
+    }
+  }
+  return 0;
 }

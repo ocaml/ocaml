@@ -23,6 +23,7 @@
 #include <caml/fail.h>
 #include <caml/custom.h>
 #include <caml/platform.h>
+#include <caml/osdeps.h>
 #include "unixsupport.h"
 #include "cst2constr.h"
 #include <errno.h>
@@ -89,89 +90,16 @@ value win_alloc_handle_or_socket(HANDLE h)
 
 /* Mapping of Windows error codes to POSIX error codes */
 
-struct error_entry { DWORD win_code; int range; int posix_code; };
-
-static struct error_entry win_error_table[] = {
-  { ERROR_INVALID_FUNCTION, 0, EINVAL},
-  { ERROR_FILE_NOT_FOUND, 0, ENOENT},
-  { ERROR_PATH_NOT_FOUND, 0, ENOENT},
-  { ERROR_TOO_MANY_OPEN_FILES, 0, EMFILE},
-  { ERROR_TOO_MANY_LINKS, 0, EMLINK},
-  { ERROR_ACCESS_DENIED, 0, EACCES},
-  { ERROR_INVALID_HANDLE, 0, EBADF},
-  { ERROR_ARENA_TRASHED, 0, ENOMEM},
-  { ERROR_NOT_ENOUGH_MEMORY, 0, ENOMEM},
-  { ERROR_INVALID_BLOCK, 0, ENOMEM},
-  { ERROR_BAD_ENVIRONMENT, 0, E2BIG},
-  { ERROR_BAD_FORMAT, 0, ENOEXEC},
-  { ERROR_INVALID_ACCESS, 0, EINVAL},
-  { ERROR_INVALID_DATA, 0, EINVAL},
-  { ERROR_INVALID_DRIVE, 0, ENOENT},
-  { ERROR_CURRENT_DIRECTORY, 0, EACCES},
-  { ERROR_NOT_SAME_DEVICE, 0, EXDEV},
-  { ERROR_NO_MORE_FILES, 0, ENOENT},
-  { ERROR_LOCK_VIOLATION, 0, EACCES},
-  { ERROR_BAD_NETPATH, 0, ENOENT},
-  { ERROR_NETWORK_ACCESS_DENIED, 0, EACCES},
-  { ERROR_BAD_NET_NAME, 0, ENOENT},
-  { ERROR_FILE_EXISTS, 0, EEXIST},
-  { ERROR_CANNOT_MAKE, 0, EACCES},
-  { ERROR_FAIL_I24, 0, EACCES},
-  { ERROR_INVALID_PARAMETER, 0, EINVAL},
-  { ERROR_NO_PROC_SLOTS, 0, EAGAIN},
-  { ERROR_DRIVE_LOCKED, 0, EACCES},
-  { ERROR_BROKEN_PIPE, 0, EPIPE},
-  { ERROR_NO_DATA, 0, EPIPE},
-  { ERROR_DISK_FULL, 0, ENOSPC},
-  { ERROR_INVALID_TARGET_HANDLE, 0, EBADF},
-  { ERROR_INVALID_HANDLE, 0, EINVAL},
-  { ERROR_WAIT_NO_CHILDREN, 0, ECHILD},
-  { ERROR_CHILD_NOT_COMPLETE, 0, ECHILD},
-  { ERROR_DIRECT_ACCESS_HANDLE, 0, EBADF},
-  { ERROR_NEGATIVE_SEEK, 0, EINVAL},
-  { ERROR_SEEK_ON_DEVICE, 0, EACCES},
-  { ERROR_DIR_NOT_EMPTY, 0, ENOTEMPTY},
-  { ERROR_NOT_LOCKED, 0, EACCES},
-  { ERROR_BAD_PATHNAME, 0, ENOENT},
-  { ERROR_MAX_THRDS_REACHED, 0, EAGAIN},
-  { ERROR_LOCK_FAILED, 0, EACCES},
-  { ERROR_ALREADY_EXISTS, 0, EEXIST},
-  { ERROR_FILENAME_EXCED_RANGE, 0, ENOENT},
-  { ERROR_NESTING_NOT_ALLOWED, 0, EAGAIN},
-  { ERROR_NOT_ENOUGH_QUOTA, 0, ENOMEM},
-  { ERROR_INVALID_STARTING_CODESEG,
-    ERROR_INFLOOP_IN_RELOC_CHAIN - ERROR_INVALID_STARTING_CODESEG,
-    ENOEXEC },
-  { ERROR_WRITE_PROTECT,
-    ERROR_SHARING_BUFFER_EXCEEDED - ERROR_WRITE_PROTECT,
-    EACCES },
-  { ERROR_PRIVILEGE_NOT_HELD, 0, EPERM},
-  { WSAEINVAL, 0, EINVAL },
-  { WSAEACCES, 0, EACCES },
-  { WSAEBADF, 0, EBADF },
-  { WSAEFAULT, 0, EFAULT },
-  { WSAEINTR, 0, EINTR },
-  { WSAEINVAL, 0, EINVAL },
-  { WSAEMFILE, 0, EMFILE },
-  { WSAENAMETOOLONG, 0, ENAMETOOLONG },
-  { WSAENOTEMPTY, 0, ENOTEMPTY },
-  { 0, -1, 0 }
-};
-
-void caml_win32_maperr(DWORD errcode)
+void caml_win32_maperr(DWORD win32err)
 {
-  int i;
-
-  for (i = 0; win_error_table[i].range >= 0; i++) {
-    if (errcode >= win_error_table[i].win_code &&
-        errcode <= win_error_table[i].win_code + win_error_table[i].range) {
-      errno = win_error_table[i].posix_code;
-      return;
-    }
+  int posixerr = caml_posixerr_of_win32err(win32err);
+  if (posixerr != 0) {
+    errno = posixerr;
+  } else {
+    /* Not found: save original error code, negated so that we can
+       recognize it in caml_unix_error_message */
+    errno = -win32err;
   }
-  /* Not found: save original error code, negated so that we can
-     recognize it in caml_unix_error_message */
-  errno = -errcode;
 }
 
 /* Windows socket errors */
