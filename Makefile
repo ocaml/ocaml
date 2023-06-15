@@ -1617,28 +1617,17 @@ partialclean::
 	    $$d/*.o $$d/*.obj $$d/*.so $$d/*.dll; \
 	done
 
-debugger/.depend: OC_OCAMLDEPDIRS = \
-  debugger otherlibs/unix otherlibs/dynlink utils parsing typing bytecomp \
-  toplevel driver file_formats lambda
-
-.INTERMEDIATE: debugger/.depend
-
-debugger/.depend:
-	rm -f $@
-	$(V_OCAMLDEP)$(OCAMLDEP_CMD) debugger/*.mli debugger/*.ml > $@
-
 .PHONY: depend
-depend: debugger/.depend beforedepend
-	$(V_GEN)(for d in utils parsing typing bytecomp asmcomp middle_end \
+depend: beforedepend
+	$(V_GEN)for d in utils parsing typing bytecomp asmcomp middle_end \
          lambda file_formats middle_end/closure middle_end/flambda \
          middle_end/flambda/base_types \
-         driver toplevel toplevel/byte toplevel/native lex tools; \
+         driver toplevel toplevel/byte toplevel/native lex tools debugger; \
 	 do \
 	   $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $$d $(INCLUDES) \
 	   $(OCAMLDEPFLAGS) $$d/*.mli $$d/*.ml \
 	   || exit; \
-         done; \
-         cat $<) > .depend
+         done > .depend
 
 .PHONY: distclean
 distclean: clean
