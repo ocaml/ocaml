@@ -647,7 +647,7 @@ module Style = struct
       error = no_markup [Bold; FG Red];
       loc = no_markup [Bold];
       hint = no_markup [Bold; FG Blue];
-      inline_code= { ansi=[Bold]; text_open = "["; text_close = "]" }
+      inline_code= { ansi=[Bold]; text_open = {|"|}; text_close = {|"|} }
     }
 
   let cur_styles = ref default_styles
