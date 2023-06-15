@@ -248,7 +248,14 @@ CAMLexport int caml_flush_partial(struct channel *channel)
     written = caml_write_fd(channel->fd, channel->flags,
                             channel->buff, towrite);
     if (written == -1) {
-      if (errno == EINTR) goto again; else caml_sys_io_error(NO_ARG);
+      if (errno == EINTR) goto again;
+      if (errno == EBADF || errno == EPIPE || errno == ECONNRESET) {
+        /* This is a permanent failure: retrying the flush later will not
+           make it go away.  Just discard the buffered data, so that
+           the finalizer can reclaim the channel. */
+        channel->curr = channel->buff;
+      }
+      caml_sys_io_error(NO_ARG);
     }
     channel->offset += written;
     if (written < towrite)
