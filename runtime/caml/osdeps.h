@@ -112,6 +112,10 @@ void caml_plat_mem_unmap(void *, uintnat);
 
 #ifdef _WIN32
 
+/* Map a Win32 error code (as returned by GetLastError) to a POSIX error code
+   (from <errno.h>).  Return 0 if no POSIX error code matches. */
+CAMLextern int caml_posixerr_of_win32err(unsigned int win32err);
+
 extern int caml_win32_rename(const wchar_t *, const wchar_t *);
 CAMLextern int caml_win32_unlink(const wchar_t *);
 
