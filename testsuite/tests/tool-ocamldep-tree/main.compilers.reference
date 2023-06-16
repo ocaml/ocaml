@@ -1,0 +1,11 @@
+$(OD)/lib.cmo $(OD)/lib.cmi : \
+    $(srcdir)/lib.ml
+$(OD)/lib.cmx $(OD)/lib.o $(OD)/lib.cmi : \
+    $(srcdir)/lib.ml
+$(OD)/main.cmo $(OD)/main.cmi : \
+    $(OD)/lib.cmi \
+    $(srcdir)/main.ml
+$(OD)/main.cmx $(OD)/main.o $(OD)/main.cmi : \
+    $(OD)/lib.cmi \
+    $(OD)/lib.cmx \
+    $(srcdir)/main.ml
