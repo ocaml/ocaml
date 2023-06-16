@@ -135,6 +135,9 @@ Sort files according to their dependencies.
 \item["-build-tree" \var{path}]
 Tree where build artifacts are written.
 
+\item["-source-tree" \var{path}]
+Tree where dependencies are found.
+
 \item["-version"]
 Print version string and exit.
 

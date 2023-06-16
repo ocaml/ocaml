@@ -38,6 +38,7 @@ let allow_approximation = ref false
 let map_files = ref []
 let module_map = ref String.Map.empty
 let debug = ref false
+let source_tree = ref ""
 let build_tree = ref ""
 
 module Error_occurred : sig
@@ -199,8 +200,8 @@ let print_filename s =
 let print_dependencies target_files deps =
   let pos = ref 0 in
   let artifacts = [".cmi"; ".cmo"; ".cmx"; ".cmxs"; ".o"] in
-  let print_build_tree, build_tree_len =
-    match !build_tree with
+  let print_prefix prefix =
+    match !prefix with
     | "" -> Fun.id, 0
     | prefix ->
        let len = String.length prefix in
@@ -211,14 +212,19 @@ let print_dependencies target_files deps =
                     else prefix ^ String.make 1 dir_sep, len + 1 in
        (fun () -> print_string s; pos := !pos + len), len
   in
+  let print_build_tree, build_tree_len = print_prefix build_tree
+  and print_source_tree, _ = print_prefix source_tree
+  in
   let print_on_same_line ~is_artifact item =
     if !pos <> 0 then print_string " ";
-    if is_artifact then print_build_tree ();
+    if is_artifact then print_build_tree ()
+    else print_source_tree ();
     print_filename item;
     pos := !pos + String.length item + 1;
   and print_on_new_line ~is_artifact item =
     print_string escaped_eol;
-    if is_artifact then print_build_tree ();
+    if is_artifact then print_build_tree ()
+    else print_source_tree ();
     print_filename item;
     pos := String.length item + 4;
   in
@@ -660,6 +666,8 @@ let run_main argv =
         " Sort files according to their dependencies";
       "-build-tree", Arg.String(fun s -> build_tree := s),
         "<path>  Tree where build artifacts are written";
+      "-source-tree", Arg.String(fun s -> source_tree := s),
+        "<path>  Tree where dependencies are found";
       "-version", Arg.Unit print_version,
         " Print version and exit";
       "-vnum", Arg.Unit print_version_num,
