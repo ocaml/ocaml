@@ -26,9 +26,10 @@ let exclude_file = ref ""
 
 let primitives = ref String.Set.empty
 
-let scan_reloc = function
-    (Reloc_primitive s, _) -> primitives := String.Set.add s !primitives
-  | _ -> ()
+let scan_reloc (rel, _) = match rel with
+    Reloc_primitive s -> primitives := String.Set.add s !primitives
+  | Reloc_literal _ | Reloc_getcompunit _ | Reloc_setcompunit _
+  | Reloc_getpredef _ -> ()
 
 let scan_prim s =
   primitives := String.Set.add s !primitives

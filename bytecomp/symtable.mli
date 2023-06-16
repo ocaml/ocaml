@@ -17,6 +17,32 @@
 
 open Cmo_format
 
+module Compunit : sig
+  type t = compunit
+  val name : t -> string
+  val is_packed : compunit -> bool
+  val to_ident : compunit -> Ident.t
+  module Set : Set.S with type elt = t
+  module Map : Map.S with type key = t
+end
+
+module Predef : sig
+  type t = predef
+  module Set : Set.S with type elt = t
+  module Map : Map.S with type key = t
+end
+
+module Global : sig
+  type t =
+    | Glob_compunit of compunit
+    | Glob_predef of predef
+  val name: t -> string
+  val description: t -> string
+  val of_ident: Ident.t -> t option
+  module Set : Set.S with type elt = t
+  module Map : Map.S with type key = t
+end
+
 (* Functions for batch linking *)
 
 val init: unit -> unit
@@ -34,13 +60,13 @@ val transl_const: Lambda.structured_constant -> Obj.t
 
 val init_toplevel: unit -> (string * Digest.t option) list
 val update_global_table: unit -> unit
-val get_global_value: Ident.t -> Obj.t
-val is_global_defined: Ident.t -> bool
-val assign_global_value: Ident.t -> Obj.t -> unit
-val get_global_position: Ident.t -> int
+val get_global_value: Global.t -> Obj.t
+val is_global_defined: Global.t -> bool
+val assign_global_value: Global.t -> Obj.t -> unit
+val get_global_position: Global.t -> int
 val check_global_initialized: (reloc_info * int) list -> unit
-val defined_globals: (reloc_info * int) list -> Ident.t list
-val required_globals: (reloc_info * int) list -> Ident.t list
+val initialized_compunits: (reloc_info * int) list -> compunit list
+val required_compunits: (reloc_info * int) list -> compunit list
 
 type global_map
 
@@ -48,17 +74,17 @@ val empty_global_map: global_map
 val current_state: unit -> global_map
 val restore_state: global_map -> unit
 val hide_additions: global_map -> unit
-val filter_global_map: (Ident.t -> bool) -> global_map -> global_map
-val iter_global_map : (Ident.t -> int -> unit) -> global_map -> unit
-val is_defined_in_global_map: global_map -> Ident.t -> bool
+val filter_global_map: (Global.t -> bool) -> global_map -> global_map
+val iter_global_map : (Global.t -> int -> unit) -> global_map -> unit
+val is_defined_in_global_map: global_map -> Global.t -> bool
 
 (* Error report *)
 
 type error =
-    Undefined_global of string
+    Undefined_global of Global.t
   | Unavailable_primitive of string
   | Wrong_vm of string
-  | Uninitialized_global of string
+  | Uninitialized_global of Global.t
 
 exception Error of error
 

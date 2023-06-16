@@ -48,7 +48,7 @@ module type S = sig
   val fold_initial_units
      : init:'a
     -> f:('a
-      -> comp_unit:string
+      -> compunit:string
       -> interface:Digest.t option
       -> implementation:(Digest.t option * Dynlink_types.implem_state) option
       -> defined_symbols:string list

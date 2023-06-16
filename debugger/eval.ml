@@ -42,11 +42,15 @@ let abstract_type =
 
 let rec address path event = function
   | Env.Aident id ->
-      if Ident.global id then
-        try
-          Debugcom.Remote_value.global (Symtable.get_global_position id)
-        with Symtable.Error _ -> raise(Error(Unbound_identifier id))
-      else
+    begin
+      match Symtable.Global.of_ident id with
+        | Some global ->
+          begin
+            try Debugcom.Remote_value.global (Symtable.get_global_position
+              global)
+            with Symtable.Error _ -> raise(Error(Unbound_identifier id))
+          end
+      | None ->
         begin match event with
           Some {ev_ev = ev} ->
             begin try
@@ -62,6 +66,7 @@ let rec address path event = function
         | None ->
             raise(Error(Unbound_identifier id))
         end
+    end
   | Env.Adot(root, pos) ->
       let v = address path event root in
       if not (Debugcom.Remote_value.is_block v) then

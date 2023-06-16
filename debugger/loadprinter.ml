@@ -76,7 +76,9 @@ let rec eval_address = function
     let bytecode_or_asm_symbol = Ident.name id in
     begin match Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol with
     | None ->
-      raise (Symtable.Error (Symtable.Undefined_global bytecode_or_asm_symbol))
+      raise (Symtable.Error (Symtable.Undefined_global
+        (Symtable.Global.Glob_compunit (Cmo_format.Compunit
+          bytecode_or_asm_symbol))))
     | Some obj -> obj
     end
   | Env.Adot(addr, pos) -> Obj.field (eval_address addr) pos
@@ -117,7 +119,8 @@ let install_printer ppf lid =
   let v =
     try
       eval_value_path Env.empty path
-    with Symtable.Error(Symtable.Undefined_global s) ->
+    with Symtable.Error(Symtable.Undefined_global global) ->
+      let s = Symtable.Global.name global in
       raise(Error(Unavailable_module(s, lid))) in
   let print_function =
     if is_old_style then

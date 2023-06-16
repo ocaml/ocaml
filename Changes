@@ -69,6 +69,12 @@ Working version
   to avoid unnecessary references to the environment in type_pat
   (Jacques Garrigue and Takafumi Saikawa, review by Gabriel Scherer)
 
+- #12031: Use dedicated types to represent names of compilation units
+  and predefined exceptions in CMO files.
+  (Sébastien Hinderer, review by Florian Angeletti, Thomas Refis,
+  Gabriel Scherer, Vincent Laviron, Pierre Chambart, Luke Maurer,
+  Hugo Heuzard, Xavier Leroy and Damien Doligez)
+
 - #12109: Pack parameters to unification in unification_environment
   (Takafumi Saikawa and Jacques Garrigue, review by Richard Eisenberg)
 

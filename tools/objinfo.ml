@@ -47,15 +47,15 @@ let print_name_crc (name, crco) =
 let print_line name =
   printf "\t%s\n" name
 
-let print_required_global id =
-  printf "\t%s\n" (Ident.name id)
+let print_required_compunit (Compunit cu_name) =
+  printf "\t%s\n" cu_name
 
 let print_cmo_infos cu =
-  printf "Unit name: %s\n" cu.cu_name;
+  printf "Unit name: %s\n" (Symtable.Compunit.name cu.cu_name);
   print_string "Interfaces imported:\n";
   List.iter print_name_crc cu.cu_imports;
   print_string "Required globals:\n";
-  List.iter print_required_global cu.cu_required_globals;
+  List.iter print_required_compunit cu.cu_required_compunits;
   printf "Uses unsafe features: ";
   (match cu.cu_primitives with
     | [] -> printf "no\n"
@@ -122,7 +122,7 @@ let print_general_infos name crc defines cmi cmx =
 let print_global_table table =
   printf "Globals defined:\n";
   Symtable.iter_global_map
-    (fun id _ -> print_line (Ident.name id))
+    (fun global _ -> print_line (Symtable.Global.description global))
     table
 
 open Cmx_format

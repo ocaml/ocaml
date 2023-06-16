@@ -126,18 +126,18 @@ module Make (P : Dynlink_platform_intf.S) = struct
       P.fold_initial_units
         ~init:(String.Map.empty, String.Map.empty, String.Set.empty)
         ~f:(fun (ifaces, implems, defined_symbols)
-                ~comp_unit ~interface ~implementation
+                ~compunit ~interface ~implementation
                 ~defined_symbols:defined_symbols_this_unit ->
           let ifaces =
             match interface with
-            | None -> String.Map.add comp_unit (Name, exe) ifaces
-            | Some crc -> String.Map.add comp_unit (Contents crc, exe) ifaces
+            | None -> String.Map.add compunit (Name, exe) ifaces
+            | Some crc -> String.Map.add compunit (Contents crc, exe) ifaces
           in
           let implems =
             match implementation with
             | None -> implems
             | Some (crc, state) ->
-              String.Map.add comp_unit (crc, exe, state) implems
+              String.Map.add compunit (crc, exe, state) implems
           in
           let defined_symbols_this_unit =
             String.Set.of_list defined_symbols_this_unit
