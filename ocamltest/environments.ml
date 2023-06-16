@@ -29,17 +29,17 @@ let to_bindings env =
   in
   VariableMap.fold f env []
 
-let expand_aux env value =
+let rec expand env value =
   let bindings = to_bindings env in
   let f (variable, value) = ((Variables.name_of_variable variable), value) in
   let simple_bindings = List.map f bindings in
-  let subst s = try (List.assoc s simple_bindings) with Not_found -> "" in
+  let fixpoint = ref true in
+  let subst s = try let v = List.assoc s simple_bindings in fixpoint := false; v
+                with Not_found -> "" in
   let b = Buffer.create 100 in
-  try Buffer.add_substitute b subst value; Buffer.contents b with _ -> value
-
-let rec expand env value =
-  let expanded = expand_aux env value in
-  if expanded=value then value else expand env expanded
+  let expanded = try Buffer.add_substitute b subst value; Buffer.contents b
+                 with _ -> value in
+  if !fixpoint then value else expand env expanded
 
 let expand env = function
   | None -> raise Not_found
