@@ -30,6 +30,14 @@ SPACE := $(EMPTY) $(EMPTY)
 # $( ) suppresses warning from the alignments in the V_ macros below
 $(SPACE) :=
 
+ifeq "$(UNIX_OR_WIN32)" "win32"
+DIR_SEP := \$ # There must a space following the $
+CONVERT_PATH = $(subst /,$(DIR_SEP),$(strip $(1)))
+else
+DIR_SEP = /
+CONVERT_PATH = $(strip $(1))
+endif
+
 V ?= 0
 
 ifeq "$(V)" "0"
