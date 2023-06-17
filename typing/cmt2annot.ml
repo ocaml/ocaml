@@ -95,11 +95,14 @@ let rec iterator ~scope rebuild_env =
         bind_bindings exp.exp_loc bindings
     | Texp_let (Nonrecursive, bindings, body) ->
         bind_bindings body.exp_loc bindings
-    | Texp_match (_, f1, _) ->
-        bind_cases f1
-    | Texp_function { cases = f; }
-    | Texp_try (_, f) ->
+    | Texp_match (_, f1, f2, _) ->
+        bind_cases f1;
+        bind_cases f2
+    | Texp_function { cases = f; } ->
         bind_cases f
+    | Texp_try (_, f1, f2) ->
+        bind_cases f1;
+        bind_cases f2
     | Texp_letmodule (_, modname, _, _, body ) ->
         Stypes.record (Stypes.An_ident
                          (modname.loc,Option.value ~default:"_" modname.txt,

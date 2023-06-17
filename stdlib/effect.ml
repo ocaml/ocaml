@@ -12,7 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type 'a t = ..
+type 'a t = 'a eff = ..
 external perform : 'a t -> 'a = "%perform"
 
 type exn += Unhandled: 'a t -> exn
@@ -43,7 +43,7 @@ external runstack : ('a, 'b) stack -> ('c -> 'a) -> 'c -> 'b = "%runstack"
 
 module Deep = struct
 
-  type ('a,'b) continuation
+  type nonrec ('a,'b) continuation = ('a,'b) continuation
   type last_fiber
 
   external take_cont_noexc : ('a, 'b) continuation -> ('a, 'b) stack =

@@ -563,6 +563,7 @@ module Analyser =
         | Parsetree.Psig_extension _
         | Parsetree.Psig_value _
         | Parsetree.Psig_typext _
+        | Parsetree.Psig_effect _
         | Parsetree.Psig_exception _
         | Parsetree.Psig_open _
         | Parsetree.Psig_include _
@@ -956,6 +957,8 @@ module Analyser =
           in
           new_te.te_info <- comment_opt;
           (maybe_more + maybe_more2, new_env, [ Element_type_extension new_te ])
+
+        | Parsetree.Psig_effect _ext -> failwith "Not implemented" (* XXX avsm TODO *)
 
         | Parsetree.Psig_exception {Parsetree.ptyexn_constructor;ptyexn_attributes;_} ->
             let {Parsetree.pext_name;pext_attributes;_} = ptyexn_constructor in

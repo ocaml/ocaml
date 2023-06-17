@@ -492,6 +492,8 @@ and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
         pp f "@[<2>(lazy@;%a)@]" (simple_pattern ctxt) p
     | Ppat_exception p ->
         pp f "@[<2>exception@;%a@]" (pattern1 ctxt) p
+    | Ppat_effect(p1, p2) ->
+        pp f "@[<2>effect@;%a@;%a@]" (pattern1 ctxt) p1 (pattern1 ctxt) p2
     | Ppat_extension e -> extension ctxt f e
     | Ppat_open (lid, p) ->
         let with_paren =
@@ -861,6 +863,9 @@ and exception_declaration ctxt f x =
     (extension_constructor ctxt) x.ptyexn_constructor
     (item_attributes ctxt) x.ptyexn_attributes
 
+and effect_declaration ctxt f ext =
+    pp f "@[<hov2>effect@ %a@]" (effect_constructor ctxt) ext
+
 and class_type_field ctxt f x =
   match x.pctf_desc with
   | Pctf_inherit (ct) ->
@@ -1117,6 +1122,8 @@ and signature_item ctxt f x : unit =
         (item_attributes ctxt) vd.pval_attributes
   | Psig_typext te ->
       type_extension ctxt f te
+  | Psig_effect ed ->
+      effect_declaration ctxt f ed
   | Psig_exception ed ->
       exception_declaration ctxt f ed
   | Psig_class l ->
@@ -1322,6 +1329,7 @@ and structure_item ctxt f x =
       (* pp f "@[<hov2>let %a%a@]"  rec_flag rf bindings l *)
       pp f "@[<2>%a@]" (bindings ctxt) (rf,l)
   | Pstr_typext te -> type_extension ctxt f te
+  | Pstr_effect ed -> effect_declaration ctxt f ed
   | Pstr_exception ed -> exception_declaration ctxt f ed
   | Pstr_module x ->
       let rec module_helper = function
@@ -1594,6 +1602,19 @@ and extension_constructor ctxt f x =
       pp f "%s@;=@;%a%a" x.pext_name.txt
         longident_loc li
         (attributes ctxt) x.pext_attributes
+
+and effect_constructor ctxt f x =
+  match x.peff_kind with
+  | Peff_decl(l, r) ->
+      pp f "%s%a:@;%a" x.peff_name.txt (attributes ctxt) x.peff_attributes
+        (fun f -> function
+         | [] -> (core_type1 ctxt) f r
+         | l -> pp f "%a@;->@;%a" (list (core_type1 ctxt) ~sep:"*@;") l
+                   (core_type1 ctxt) r)
+        l
+  | Peff_rebind li ->
+      pp f "%s%a@;=@;%a" x.peff_name.txt (attributes ctxt)
+        x.peff_attributes longident_loc li
 
 and case_list ctxt f l : unit =
   let aux f {pc_lhs; pc_guard; pc_rhs} =

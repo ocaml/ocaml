@@ -40,6 +40,7 @@ type iterator = {
   class_type_declaration: iterator -> class_type_declaration -> unit;
   class_type_field: iterator -> class_type_field -> unit;
   constructor_declaration: iterator -> constructor_declaration -> unit;
+  effect_constructor: iterator -> effect_constructor -> unit;
   expr: iterator -> expression -> unit;
   extension: iterator -> extension -> unit;
   extension_constructor: iterator -> extension_constructor -> unit;
@@ -181,6 +182,22 @@ module T = struct
     sub.location sub ptyexn_loc;
     sub.attributes sub ptyexn_attributes
 
+  let iter_effect_constructor_kind sub = function
+      Peff_decl(ctl, cto) ->
+        List.iter (sub.typ sub) ctl; sub.typ sub cto
+    | Peff_rebind li ->
+        iter_loc sub li
+
+  let iter_effect_constructor sub
+      {peff_name;
+       peff_kind;
+       peff_loc;
+       peff_attributes} =
+    iter_loc sub peff_name;
+    iter_effect_constructor_kind sub peff_kind;
+    sub.location sub peff_loc;
+    sub.attributes sub peff_attributes
+
   let iter_extension_constructor_kind sub = function
       Pext_decl(vars, ctl, cto) ->
         List.iter (iter_loc sub) vars;
@@ -282,6 +299,7 @@ module MT = struct
     | Psig_typesubst l ->
       List.iter (sub.type_declaration sub) l
     | Psig_typext te -> sub.type_extension sub te
+    | Psig_effect ed -> sub.effect_constructor sub ed
     | Psig_exception ed -> sub.type_exception sub ed
     | Psig_module x -> sub.module_declaration sub x
     | Psig_modsubst x -> sub.module_substitution sub x
@@ -331,6 +349,7 @@ module M = struct
     | Pstr_primitive vd -> sub.value_description sub vd
     | Pstr_type (_rf, l) -> List.iter (sub.type_declaration sub) l
     | Pstr_typext te -> sub.type_extension sub te
+    | Pstr_effect ed -> sub.effect_constructor sub ed
     | Pstr_exception ed -> sub.type_exception sub ed
     | Pstr_module x -> sub.module_binding sub x
     | Pstr_recmodule l -> List.iter (sub.module_binding sub) l
@@ -462,6 +481,7 @@ module P = struct
     | Ppat_type s -> iter_loc sub s
     | Ppat_lazy p -> sub.pat sub p
     | Ppat_unpack s -> iter_loc sub s
+    | Ppat_effect (p1,p2) -> sub.pat sub p1; sub.pat sub p2
     | Ppat_exception p -> sub.pat sub p
     | Ppat_extension x -> sub.extension sub x
     | Ppat_open (lid, p) ->
@@ -559,6 +579,7 @@ let default_iterator =
     object_field = T.object_field;
     type_extension = T.iter_type_extension;
     type_exception = T.iter_type_exception;
+    effect_constructor = T.iter_effect_constructor;
     extension_constructor = T.iter_extension_constructor;
     value_description =
       (fun this {pval_name; pval_type; pval_prim = _; pval_loc;

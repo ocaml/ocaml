@@ -413,6 +413,7 @@ module Variance : sig
   val null : t               (* no occurrence *)
   val full : t               (* strictly invariant (all flags) *)
   val covariant : t          (* strictly covariant (May_pos, Pos and Inj) *)
+  val contravariant : t      (* strictly contravariant *)
   val unknown : t            (* allow everything, guarantee nothing *)
   val union  : t -> t -> t
   val inter  : t -> t -> t
@@ -630,6 +631,7 @@ and ext_status =
     Text_first                     (* first constructor in an extension *)
   | Text_next                      (* not first constructor in an extension *)
   | Text_exception
+  | Text_effect
 
 val item_visibility : signature_item -> visibility
 

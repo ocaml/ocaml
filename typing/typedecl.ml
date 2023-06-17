@@ -324,6 +324,25 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
       targs, Some tret_type, args, Some ret_type
       end
 
+let make_effect_constructor env type_param sargs sret =
+  let type_path = Predef.path_eff in
+  let type_lid = Location.mknoloc (Longident.Lident "eff") in
+  TyVarEnv.with_local_scope (fun () ->
+    Ctype.with_local_level (fun () ->
+      TyVarEnv.reset ();
+      let targs = List.map (transl_simple_type env ~closed:false) sargs in
+      let args = List.map (fun cty -> cty.ctyp_type) targs in
+      let tret = transl_simple_type env ~closed:false sret in
+      Ctype.unify_var env (Ctype.instance type_param) tret.ctyp_type;
+      let ret_type = Ctype.newconstr type_path [tret.ctyp_type] in
+      let tret_type =
+        { ctyp_desc = Ttyp_constr (type_path, type_lid, targs);
+          ctyp_type = ret_type; ctyp_env = env;
+          ctyp_loc = {sret.ptyp_loc with Location.loc_ghost = true};
+          ctyp_attributes = [] } in
+      (targs, Some tret_type, args, Some ret_type)
+  ))
+
 let transl_declaration env sdecl (id, uid) =
   (* Bind type parameters *)
   Ctype.with_local_level begin fun () ->
@@ -1201,6 +1220,63 @@ let transl_type_decl env rec_flag sdecl_list =
 
 (* Translating type extensions *)
 
+let transl_extension_rebind env type_path type_params typext_params priv lid =
+  (* XXX avsm: combine with transl_extension_constructor *)
+  let usage : Env.constructor_usage =
+    if priv = Public then Env.Exported else Env.Exported_private
+  in
+  let cdescr = Env.lookup_constructor ~loc:lid.loc usage lid.txt env in
+  let (args, cstr_res, _ex) =
+    Ctype.instance_constructor Keep_existentials_flexible cdescr
+  in
+  let res, ret_type =
+    if cdescr.cstr_generalized then
+      let params = Ctype.instance_list type_params in
+      let res = Ctype.newconstr type_path params in
+      let ret_type = Some (Ctype.newconstr type_path params) in
+        res, ret_type
+      else (Ctype.newconstr type_path typext_params), None
+    in
+    begin
+      try
+        Ctype.unify env cstr_res res
+      with Ctype.Unify err ->
+        raise (Error(lid.loc,
+          Rebind_wrong_type(lid.txt, env, err)))
+    end;
+    (* Remove "_" names from parameters used in the constructor *)
+    if not cdescr.cstr_generalized then begin
+      let vars = Ctype.free_variables (Btype.newgenty (Ttuple args)) in
+      List.iter (fun ty ->
+        if get_desc ty = Tvar (Some "_") && List.exists (eq_type ty) vars
+        then set_type_desc ty (Tvar None)) typext_params
+    end;
+    (* Ensure that constructor's type matches the type being extended *)
+    let cstr_type_path = Btype.cstr_type_path cdescr in
+    let cstr_type_params = (Env.find_type cstr_type_path env).type_params in
+    let cstr_types =
+      (Btype.newgenty
+        (Tconstr(cstr_type_path, cstr_type_params, ref Mnil))) :: cstr_type_params
+    in
+    let ext_types =
+      (Btype.newgenty
+         (Tconstr(type_path, type_params, ref Mnil))) :: type_params
+    in
+    if not (Ctype.is_equal env true cstr_types ext_types) then
+      raise (Error(lid.loc, Rebind_mismatch(lid.txt, cstr_type_path, type_path)));
+    (* Disallow rebinding private constructors to non-private *)
+    begin
+      match cdescr.cstr_private, priv with
+      | Private, Public -> raise (Error(lid.loc, Rebind_private lid.txt))
+      | _ -> ()
+    end;
+    let path =
+      match cdescr.cstr_tag with
+      | Cstr_extension(path, _) -> path
+      | _ -> assert false
+    in
+    args, ret_type, Text_rebind(path, lid)
+
 let transl_extension_constructor ~scope env type_path type_params
                                  typext_params priv sext =
   let id = Ident.create_scoped ~scope sext.pext_name.txt in
@@ -1479,6 +1555,62 @@ let transl_type_exception env t =
    tyexn_loc = t.ptyexn_loc;
    tyexn_attributes = t.ptyexn_attributes}, newenv
 
+
+(* Translate an effect declaration *)
+let transl_effect env seff =
+  TyVarEnv.reset ();
+  let text, ext = Ctype.with_local_level (fun () ->
+  let type_decl = Env.find_type Predef.path_eff env in
+  let type_param =
+    match type_decl.type_params with
+    | [type_param] -> type_param
+    | _ -> assert false
+  in
+  let typext_param = Ctype.new_global_var () in
+  let id = Ident.create_local seff.peff_name.txt in
+  let args, ret_type, kind =
+    match seff.peff_kind with
+    | Peff_decl(sargs, sret) ->
+        let targs, tret_type, args, ret_type =
+          make_effect_constructor env type_param sargs sret
+        in
+          args, ret_type, Text_decl([], Cstr_tuple targs, tret_type)
+    | Peff_rebind lid ->
+        transl_extension_rebind env Predef.path_eff
+          type_decl.type_params [typext_param] Asttypes.Public lid
+  in
+  let ext =
+    { ext_type_path = Predef.path_eff;
+      ext_type_params = [typext_param];
+      ext_args = Cstr_tuple args;
+      ext_ret_type = ret_type;
+      ext_private = Asttypes.Public;
+      Types.ext_loc = seff.peff_loc;
+      Types.ext_attributes = seff.peff_attributes;
+      ext_uid = Uid.mk ~current_unit:(Env.get_unit_name ()); }
+  in
+  let text = { ext_id = id;
+      ext_name = seff.peff_name;
+      ext_type = ext;
+      ext_kind = kind;
+      Typedtree.ext_loc = seff.peff_loc;
+      Typedtree.ext_attributes = seff.peff_attributes; } in
+  text, ext
+  ) in
+  (* Generalize types *)
+  Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_args;
+  Option.iter Ctype.generalize ext.ext_ret_type;
+  (* Check that all type variable are closed *)
+  begin match Ctype.closed_extension_constructor ext with
+    Some ty ->
+      raise (Error(ext.ext_loc, Unbound_type_var_ext(ty, ext)))
+  | None -> ()
+  end;
+  let rebind = is_rebind text in
+  let newenv =
+    Env.add_extension ~check:true ~rebind text.ext_id text.ext_type env
+  in
+  text, newenv
 
 type native_repr_attribute =
   | Native_repr_attr_absent

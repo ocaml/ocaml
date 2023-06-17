@@ -28,6 +28,10 @@ val for_trywith:
         scopes:scopes -> Location.t ->
         lambda -> (pattern * lambda) list ->
         lambda
+val for_handler:
+        scopes:scopes -> Location.t ->
+        lambda -> lambda -> lambda -> (pattern * lambda) list ->
+        lambda
 val for_let:
         scopes:scopes -> Location.t ->
         lambda -> pattern -> lambda ->
