@@ -12,6 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* XXX type 'a t = 'a eff = .. *)
 type 'a t = ..
 external perform : 'a t -> 'a = "%perform"
 
@@ -45,6 +46,7 @@ external runstack : ('a, 'b) stack -> ('c -> 'a) -> 'c -> 'b = "%runstack"
 
 module Deep = struct
 
+(*   XXX type nonrec ('a,'b) continuation = ('a,'b) continuation *)
   type ('a,'b) continuation
 
   external take_cont_noexc : ('a, 'b) continuation -> ('a, 'b) stack =
@@ -55,8 +57,6 @@ module Deep = struct
     ('c t -> ('c, 'b) continuation -> last_fiber -> 'b) ->
     ('a, 'b) stack = "caml_alloc_stack"
   external cont_last_fiber : ('a, 'b) continuation -> last_fiber = "%field1"
-  external cont_set_last_fiber :
-    ('a, 'b) continuation -> last_fiber -> unit = "%setfield1"
 
   let continue k v =
     resume (take_cont_noexc k) (fun x -> x) v (cont_last_fiber k)
@@ -79,9 +79,7 @@ module Deep = struct
   let match_with comp arg handler =
     let effc eff k last_fiber =
       match handler.effc eff with
-      | Some f ->
-          cont_set_last_fiber k last_fiber;
-          f k
+      | Some f -> f k
       | None -> reperform eff k last_fiber
     in
     let s = alloc_stack handler.retc handler.exnc effc in
@@ -93,9 +91,7 @@ module Deep = struct
   let try_with comp arg handler =
     let effc' eff k last_fiber =
       match handler.effc eff with
-      | Some f ->
-          cont_set_last_fiber k last_fiber;
-          f k
+      | Some f -> f k
       | None -> reperform eff k last_fiber
     in
     let s = alloc_stack (fun x -> x) (fun e -> raise e) effc' in
@@ -117,19 +113,15 @@ module Shallow = struct
     ('a, 'b) stack = "caml_alloc_stack"
 
   external cont_last_fiber : ('a, 'b) continuation -> last_fiber = "%field1"
-  external cont_set_last_fiber :
-    ('a, 'b) continuation -> last_fiber -> unit = "%setfield1"
 
   let fiber : type a b. (a -> b) -> (a, b) continuation = fun f ->
     let module M = struct type _ t += Initial_setup__ : a t end in
     let exception E of (a,b) continuation in
     let f' () = f (perform M.Initial_setup__) in
     let error _ = failwith "impossible" in
-    let effc eff k last_fiber =
+    let effc eff k _last_fiber =
       match eff with
-      | M.Initial_setup__ ->
-          cont_set_last_fiber k last_fiber;
-          raise_notrace (E k)
+      | M.Initial_setup__ -> raise_notrace (E k)
       | _ -> error ()
     in
     let s = alloc_stack error error effc in
@@ -155,9 +147,7 @@ module Shallow = struct
   let continue_gen k resume_fun v handler =
     let effc eff k last_fiber =
       match handler.effc eff with
-      | Some f ->
-          cont_set_last_fiber k last_fiber;
-          f k
+      | Some f -> f k
       | None -> reperform eff k last_fiber
     in
     let last_fiber = cont_last_fiber k in

@@ -275,6 +275,7 @@ and pattern_desc =
            [Ppat_constraint(Ppat_unpack(Some "P"), Ptyp_package S)]
          *)
   | Ppat_exception of pattern  (** Pattern [exception P] *)
+  | Ppat_effect of pattern * pattern (* Pattern [effect P P] *)
   | Ppat_extension of extension  (** Pattern [[%id]] *)
   | Ppat_open of Longident.t loc * pattern  (** Pattern [M.(P)] *)
 

@@ -553,6 +553,8 @@ module P = struct
     | Ppat_unpack s -> unpack ~loc ~attrs (map_loc sub s)
     | Ppat_open (lid,p) -> open_ ~loc ~attrs (map_loc sub lid) (sub.pat sub p)
     | Ppat_exception p -> exception_ ~loc ~attrs (sub.pat sub p)
+    | Ppat_effect(p1, p2) ->
+        effect_ ~loc ~attrs (sub.pat sub p1) (sub.pat sub p2)
     | Ppat_extension x -> extension ~loc ~attrs (sub.extension sub x)
 end
 

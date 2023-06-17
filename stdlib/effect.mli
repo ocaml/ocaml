@@ -22,7 +22,8 @@
 
     @since 5.0 *)
 
-type _ t = ..
+(* type 'a t = 'a eff = .. *)
+type 'a t = ..
 (** The type of effects. *)
 
 exception Unhandled : 'a t -> exn
@@ -41,6 +42,7 @@ external perform : 'a t -> 'a = "%perform"
 module Deep : sig
   (** Deep handlers *)
 
+(*   type nonrec ('a,'b) continuation = ('a,'b) continuation *)
   type ('a,'b) continuation
   (** [('a,'b) continuation] is a delimited continuation that expects a ['a]
       value and returns a ['b] value. *)

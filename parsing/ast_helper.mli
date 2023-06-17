@@ -125,6 +125,7 @@ module Pat:
     val unpack: ?loc:loc -> ?attrs:attrs -> str_opt -> pattern
     val open_: ?loc:loc -> ?attrs:attrs  -> lid -> pattern -> pattern
     val exception_: ?loc:loc -> ?attrs:attrs -> pattern -> pattern
+    val effect_: ?loc:loc -> ?attrs:attrs -> pattern -> pattern -> pattern
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> pattern
   end
 

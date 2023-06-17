@@ -533,10 +533,14 @@ caml_perform:
         lea     rdi, [rsi + 1] ; %rdi (last_fiber) := Val_ptr(old stack)
         mov     qword ptr [rbx], rdi ; Initialise continuation
 do_perform:
+    ;  %rax: effect to perform
+    ;  %rbx: continuation
+    ;  %rdi: last_fiber
     ;  %rsi: old stack *;
-        mov     r11, qword ptr [rsi+16]  ; %r11 := old stack -> handler
+		    mov     qword ptr [rbx+8], rdi  ; Set last fiber field in continuation
+        mov     r11, qword ptr [rsi+16] ; %r11 := old stack -> handler
         mov     r10, qword ptr [r11+24] ; %r10 := parent stack
-        cmp     r10, 0                   ; parent is NULL?
+        cmp     r10, 0                  ; parent is NULL?
         je      L112
         SWITCH_OCAML_STACKS ; preserves r11 and rsi
      ; We have to null the Handler_parent after the switch because the

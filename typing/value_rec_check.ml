@@ -592,8 +592,8 @@ let rec expression : Typedtree.expression -> term_judg =
       value_bindings rec_flag bindings >> expression body
     | Texp_letmodule (x, _, _, mexp, e) ->
       module_binding (x, mexp) >> expression e
-    | Texp_match (e, cases, _) ->
-      (*
+    | Texp_match (e, cases, eff_cases, _) ->
+      (* TODO: update comment below for eff_cases
          (Gi; mi |- pi -> ei : m)^i
          G |- e : sum(mi)^i
          ----------------------------------------------
@@ -603,7 +603,10 @@ let rec expression : Typedtree.expression -> term_judg =
         let pat_envs, pat_modes =
           List.split (List.map (fun c -> case c mode) cases) in
         let env_e = expression e (List.fold_left Mode.join Ignore pat_modes) in
-        Env.join_list (env_e :: pat_envs))
+        let eff_envs, eff_modes =
+          List.split (List.map (fun c -> case c mode) eff_cases) in
+        let eff_e = expression e (List.fold_left Mode.join Ignore eff_modes) in
+        Env.join_list ((Env.join_list (env_e :: pat_envs)) :: (eff_e :: eff_envs)))
     | Texp_for (_, _, low, high, _, body) ->
       (*
         G1 |- low: m[Dereference]
@@ -825,7 +828,7 @@ let rec expression : Typedtree.expression -> term_judg =
       modexp mexp
     | Texp_object (clsstrct, _) ->
       class_structure clsstrct
-    | Texp_try (e, cases) ->
+    | Texp_try (e, cases, eff_cases) ->
       (*
         G |- e: m      (Gi; _ |- pi -> ei : m)^i
         --------------------------------------------
@@ -839,6 +842,7 @@ let rec expression : Typedtree.expression -> term_judg =
       join [
         expression e;
         list case_env cases;
+        list case_env eff_cases;
       ]
     | Texp_override (pth, fields) ->
       (*

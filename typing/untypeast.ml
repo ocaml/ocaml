@@ -450,10 +450,32 @@ let expression sub exp =
                 None -> list
               | Some exp -> (label, sub.expr sub exp) :: list
           ) list [])
-    | Texp_match (exp, cases, _) ->
-      Pexp_match (sub.expr sub exp, List.map (sub.case sub) cases)
-    | Texp_try (exp, cases) ->
-        Pexp_try (sub.expr sub exp, List.map (sub.case sub) cases)
+    | Texp_match (exp, cases, eff_cases, _) ->
+      let merged_cases = List.map (sub.case sub) cases
+        @ List.map
+          (fun c ->
+            let uc = sub.case sub c in
+            let pat = { uc.pc_lhs
+                        (* XXX KC: The 2nd argument of Ppat_effect is wrong *)
+                        with ppat_desc = Ppat_effect (uc.pc_lhs, uc.pc_lhs) }
+            in
+            { uc with pc_lhs = pat })
+          eff_cases
+      in
+      Pexp_match (sub.expr sub exp, merged_cases)
+    | Texp_try (exp, exn_cases, eff_cases) ->
+        let merged_cases = List.map (sub.case sub) exn_cases
+        @ List.map
+          (fun c ->
+            let uc = sub.case sub c in
+            let pat = { uc.pc_lhs
+                        (* XXX KC: The 2nd argument of Ppat_effect is wrong *)
+                        with ppat_desc = Ppat_effect (uc.pc_lhs, uc.pc_lhs) }
+            in
+            { uc with pc_lhs = pat })
+          eff_cases
+        in
+        Pexp_try (sub.expr sub exp, merged_cases)
     | Texp_tuple list ->
         Pexp_tuple (List.map (sub.expr sub) list)
     | Texp_construct (lid, _, args) ->

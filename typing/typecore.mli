@@ -215,6 +215,8 @@ type error =
   | No_value_clauses
   | Exception_pattern_disallowed
   | Mixed_value_and_exception_patterns_under_guard
+  | Effect_pattern_below_toplevel
+  | Invalid_continuation_pattern
   | Inlined_record_escape
   | Inlined_record_expected
   | Unrefuted_pattern of Typedtree.pattern
