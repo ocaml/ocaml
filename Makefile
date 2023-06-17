@@ -893,7 +893,7 @@ endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 
 INSTALL_COMPLIBDIR = $(DESTDIR)$(COMPLIBDIR)
 INSTALL_FLEXDLLDIR = $(INSTALL_LIBDIR)/flexdll
-FLEXDLL_MANIFEST = default_$(ARCH).manifest
+FLEXDLL_MANIFEST = default$(filter-out _i386,_$(ARCH)).manifest
 
 DOC_FILES=\
   Changes \
