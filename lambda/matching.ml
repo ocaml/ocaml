@@ -3630,9 +3630,12 @@ let check_partial pat_act_list =
 type failer_kind =
   | Raise_match_failure
   | Reraise_noloc of lambda
+  | Reperform_noloc of lambda list
 
 let failure_handler ~scopes loc ~failer () =
   match failer with
+  | Reperform_noloc reperform_lst ->
+    Lprim (Preperform, reperform_lst, Loc_unknown)
   | Reraise_noloc exn_lam ->
     Lprim (Praise Raise_reraise, [ exn_lam ], Scoped_location.Loc_unknown)
   | Raise_match_failure ->
@@ -3714,6 +3717,11 @@ let for_trywith ~scopes loc param pat_act_list =
      the reraise (hence the [_noloc]) to avoid seeing this
      silent reraise in exception backtraces. *)
   compile_matching ~scopes loc ~failer:(Reraise_noloc param)
+    None param pat_act_list Partial
+
+let for_handler ~scopes loc param cont cont_tail pat_act_list =
+  compile_matching ~scopes loc
+    ~failer:(Reperform_noloc [param; cont; cont_tail])
     None param pat_act_list Partial
 
 let simple_for_let ~scopes loc param pat body =

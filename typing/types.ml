@@ -182,6 +182,7 @@ module Variance = struct
   let unknown = 7
   let full = single Inv
   let covariant = single Pos
+  let contravariant = single May_neg lor single Neg lor single Inj
   let swap f1 f2 v v' =
     set_if (mem f2 v) f1 (set_if (mem f1 v) f2 v')
   let conjugate v =
@@ -403,6 +404,7 @@ and ext_status =
     Text_first                     (* first constructor of an extension *)
   | Text_next                      (* not first constructor of an extension *)
   | Text_exception                 (* an exception *)
+  | Text_effect
 
 
 (* Constructor and record label descriptions inserted held in typing

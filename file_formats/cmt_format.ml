@@ -335,9 +335,9 @@ let iter_on_occurrences
       | Tsig_typext { tyext_path; tyext_txt } ->
           f ~namespace:Type sig_env tyext_path tyext_txt
       | Tsig_value _ | Tsig_type _ | Tsig_typesubst _ | Tsig_exception _
-      | Tsig_module _ | Tsig_recmodule _ | Tsig_modtype _ | Tsig_modtypesubst _
-      | Tsig_open _ | Tsig_include _ | Tsig_class _ | Tsig_class_type _
-      | Tsig_attribute _ -> ());
+      | Tsig_effect _ | Tsig_module _ | Tsig_recmodule _ | Tsig_modtype _
+      | Tsig_modtypesubst _ | Tsig_open _ | Tsig_include _ | Tsig_class _
+      | Tsig_class_type _ | Tsig_attribute _ -> ());
       default_iterator.signature_item sub sig_item);
 
   structure_item =
@@ -349,7 +349,7 @@ let iter_on_occurrences
       | Tstr_typext { tyext_path; tyext_txt } ->
           f ~namespace:Type str_env tyext_path tyext_txt
       | Tstr_eval _ | Tstr_value _ | Tstr_primitive _ | Tstr_type _
-      | Tstr_exception _ | Tstr_module _ | Tstr_recmodule _
+      | Tstr_exception _ | Tstr_effect _ | Tstr_module _ | Tstr_recmodule _
       | Tstr_modtype _ | Tstr_open _ | Tstr_class _ | Tstr_class_type _
       | Tstr_include _ | Tstr_attribute _ -> ());
       default_iterator.structure_item sub str_item)

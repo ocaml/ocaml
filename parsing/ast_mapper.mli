@@ -75,6 +75,7 @@ type mapper = {
   constructor_declaration: mapper -> constructor_declaration
                            -> constructor_declaration;
   directive_argument: mapper -> directive_argument -> directive_argument;
+  effect_constructor: mapper -> effect_constructor -> effect_constructor;
   expr: mapper -> expression -> expression;
   extension: mapper -> extension -> extension;
   extension_constructor: mapper -> extension_constructor

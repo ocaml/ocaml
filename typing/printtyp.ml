@@ -1680,6 +1680,7 @@ let prepared_tree_of_extension_constructor
         Text_first -> Oext_first
       | Text_next -> Oext_next
       | Text_exception -> Oext_exception
+      | Text_effect -> Oext_effect
   in
     Osig_typext (ext, es)
 

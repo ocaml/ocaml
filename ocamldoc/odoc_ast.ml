@@ -76,6 +76,7 @@ module Typedtree_search =
             [] -> assert false
           | ext :: _ -> Hashtbl.add table (X (Name.from_ident ext.ext_id)) tt
         end
+      | Typedtree.Tstr_effect _ext -> failwith "Not implemented" (* XXX avsm TODO *)
       | Typedtree.Tstr_exception ext ->
           Hashtbl.add table (E (Name.from_ident ext.tyexn_constructor.ext_id)) tt
       | Typedtree.Tstr_type (rf, ident_type_decl_list) ->
@@ -1349,6 +1350,8 @@ module Analyser =
                 }
           in
             (0, new_env, [ Element_exception new_ext ])
+
+      | Parsetree.Pstr_effect _ext -> failwith "Not implemented" (* XXX avsm TODO *)
 
       | Parsetree.Pstr_module {Parsetree.pmb_name={txt=None}} ->
           (0, env, [])
