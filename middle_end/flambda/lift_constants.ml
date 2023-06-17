@@ -996,7 +996,7 @@ let lift_constants (program : Flambda.program) ~backend =
     constant_definitions
   in
   let effect_tbl =
-    Symbol.Tbl.map effect_tbl (fun (effect, dep) -> rewrite_expr effect, dep)
+    Symbol.Tbl.map effect_tbl (fun (eff, dep) -> rewrite_expr eff, dep)
   in
   let initialize_symbol_tbl =
     Symbol.Tbl.map initialize_symbol_tbl (fun (tag, fields, dep) ->
