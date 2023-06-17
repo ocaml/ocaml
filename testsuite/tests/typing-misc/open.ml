@@ -5,7 +5,7 @@
 module A = struct
   type r = int
   type s = string
-  type t = unit 
+  type t = unit
 end;;
 
 (* parens *)
@@ -35,5 +35,3 @@ module Comparable :
   sig module type S = sig type t val compare : t -> t -> int end end
 type t = (module Comparable.S)
 |}];;
-
-

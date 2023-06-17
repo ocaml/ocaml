@@ -694,8 +694,8 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
             pack_fields = ptys;
             pack_txt = p;
            }) ty
-  | Ptyp_open (mod_ident, t) -> 
-      let path, new_env = 
+  | Ptyp_open (mod_ident, t) ->
+      let path, new_env =
         !type_open Asttypes.Fresh env loc mod_ident
       in
       let cty = transl_type new_env ~policy ~row_context t in

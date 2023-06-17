@@ -631,7 +631,7 @@ let mk_directive ~loc name arg =
       pdir_arg = arg;
       pdir_loc = make_loc loc;
     }
- 
+
 %}
 
 /* Tokens */
@@ -3408,13 +3408,13 @@ tuple_type:
     - first-class module types
     - variant types
 
-  Object types are not support for local opens due to a potential 
+  Object types are not support for local opens due to a potential
   conflict with MetaOCaml syntax:
     M.< x: t, y: t >
   and quoted expressions:
     .< e >.
-  
-  Extension types are not support for local opens merely as a precaution. 
+
+  Extension types are not support for local opens merely as a precaution.
 *)
 delimited_type_supporting_local_open:
   | LPAREN type_ = core_type RPAREN
@@ -3434,7 +3434,10 @@ delimited_type_supporting_local_open:
         { Ptyp_variant([], Open, None) }
     | LBRACKETLESS BAR? fields = row_field_list RBRACKET
         { Ptyp_variant(fields, Closed, Some []) }
-    | LBRACKETLESS BAR? fields = row_field_list GREATER tags = name_tag_list RBRACKET
+    | LBRACKETLESS BAR? fields = row_field_list
+      GREATER
+      tags = name_tag_list
+      RBRACKET
         { Ptyp_variant(fields, Closed, Some tags) }
   )
   { $1 }
@@ -3466,7 +3469,7 @@ delimited_type:
 ;
 
 atomic_type:
-  | type_ = delimited_type 
+  | type_ = delimited_type
       { type_ }
   | mktyp( /* begin mktyp group */
       tys = actual_type_parameters
@@ -3476,7 +3479,9 @@ atomic_type:
       HASH
       cid = mkrhs(clty_longident)
         { Ptyp_class (cid, tys) }
-    | mod_ident = mkrhs(mod_ext_longident) DOT type_ = delimited_type_supporting_local_open 
+    | mod_ident = mkrhs(mod_ext_longident)
+      DOT
+      type_ = delimited_type_supporting_local_open
         { Ptyp_open (mod_ident, type_) }
     | QUOTE ident = ident
         { Ptyp_var ident }
