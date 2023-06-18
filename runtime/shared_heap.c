@@ -628,7 +628,7 @@ uintnat caml_heap_blocks(struct caml_heap_state* local) {
 void caml_redarken_pool(struct pool* r, scanning_action f, void* fdata) {
   mlsize_t wh = wsize_sizeclass[r->sz];
   value* p = POOL_FIRST_BLOCK(r, r->sz);
-  value* end = (value*)((char*)r + Bsize_wsize(POOL_WSIZE));
+  value* end = POOL_END(r);
 
   while (p + wh <= end) {
     header_t hd = p[0];
