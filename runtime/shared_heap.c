@@ -1088,7 +1088,7 @@ void caml_compact_heap(caml_domain_state* domain_state,
               /* This pool is full. Move it to unswept_full_pools */
               heap->unswept_avail_pools[sz_class] = to_pool->next;
               to_pool->next = heap->unswept_full_pools[sz_class];
-             heap->unswept_full_pools[sz_class] = to_pool;
+              heap->unswept_full_pools[sz_class] = to_pool;
             }
 
             /* Copy the block to the new location */
