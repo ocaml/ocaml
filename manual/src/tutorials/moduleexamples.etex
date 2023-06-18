@@ -18,20 +18,20 @@ packaging together a type of FIFO queues and their operations:
 module Fifo =
   struct
     type 'a queue = { front: 'a list; rear: 'a list }
-    let make_queue front rear =
+    let make front rear =
       match front with
       | [] -> { front = List.rev rear; rear = [] }
       | _  -> { front; rear }
     let empty = { front = []; rear = [] }
     let is_empty = function { front = []; _ } -> true | _ -> false
-    let add x q = make_queue q.front (x :: q.rear)
+    let add x q = make q.front (x :: q.rear)
     exception Empty
     let top = function
       | { front = []; _ } -> raise Empty
       | { front = x :: _; _ } -> x
     let pop = function
       | { front = []; _ } -> raise Empty
-      | { front = _ :: f; rear = r } -> make_queue f r
+      | { front = _ :: f; rear = r } -> make f r
   end;;
 \end{caml_example}
 Outside the structure, its components can be referred to using the
