@@ -1109,16 +1109,16 @@ void caml_compact_heap(caml_domain_state* domain_state,
               void (*final_fun)(value) = Custom_ops_val(Val_hp(p))->finalize;
               if (final_fun) final_fun(Val_hp(p));
             }
+
+            /* In the DEBUG runtime, we should overwrite the fields of swept
+               blocks. Note: this pool can't be allocated in to again and so
+               we overwrite the header and first fields too. */
+            #ifdef DEBUG
+            for (int w = 0 ; w < wh ; w++) {
+              Field(p, w) = Debug_free_major;
+            }
+            #endif
           }
-        } else {
-          /* In the DEBUG runtime, we should overwrite the fields of empty
-              blocks from the 2nd field onwards (the 1st field is used for
-              the free list). */
-          #ifdef DEBUG
-          for (int w = 1 ; w < wh-1 ; w++) {
-            Field(Val_hp(p), w) = Debug_free_major;
-          }
-          #endif
         }
 
         p += wh;
