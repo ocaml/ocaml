@@ -218,7 +218,7 @@ static void free_pool_freelist(void)
   /* free all but the first item on the freelist */
   pool* o = pool_freelist.free;
 
-  if (o && o->next) {
+  if (o) {
     pool* p = o->next;
     while (p) {
       pool* next = p->next;
