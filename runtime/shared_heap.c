@@ -1096,8 +1096,7 @@ void caml_compact_heap(caml_domain_state* domain_state,
 
             /* Set first field of p to a forwarding pointer */
             Field(Val_hp(p), 0) = Val_hp(new_p);
-          } else if (Has_status_hd(hd, caml_global_heap_state.GARBAGE)
-                  || Has_status_hd(hd, caml_global_heap_state.MARKED)) {
+          } else if (Has_status_hd(hd, caml_global_heap_state.GARBAGE)) {
             /* We are implicitly sweeping pools in the evacuation set and thus
                we must remember to call finalisers for Custom blocks that would
                have been swept in a subsequent major cycle. */
