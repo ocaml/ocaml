@@ -258,7 +258,7 @@ Caml_inline void pool_initialize(pool* r,
 {
   mlsize_t wh = wsize_sizeclass[sz];
   value* p = POOL_FIRST_BLOCK(r, sz);
-  value* end = (value*)((char*)r + Bsize_wsize(POOL_WSIZE));
+  value* end = POOL_END(r);
 
   r->next = 0;
   r->owner = owner;
