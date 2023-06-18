@@ -869,7 +869,7 @@ static inline void compact_update_value_at(volatile value* p)
 /* For each pointer in the block pointed to by `p` check if it
    points in to an evacuated pool and if so update it using the
    forwarding pointer created by the compactor. */
-static void compact_update_block(value* p)
+static void compact_update_block(header_t* p)
 {
   header_t hd = Hd_hp(p);
 
