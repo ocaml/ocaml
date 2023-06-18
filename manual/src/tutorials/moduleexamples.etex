@@ -153,7 +153,7 @@ module Fifo : FIFO = struct ... end;;
 
 Like for modules, it is possible to include a signature to copy
 its components inside the current signature. For instance, we
-can extend the FIFO signature with the "top_opt" and "pop_opt"
+can extend the "FIFO" signature with the "top_opt" and "pop_opt"
 functions:
 
 \begin{caml_example}{toplevel}
