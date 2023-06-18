@@ -132,7 +132,7 @@ module type FIFO =
     exception Empty
   end;;
 \end{caml_example}
-Restricting the "Fifo" structure by this signature results in
+Restricting the "Fifo" structure to this signature results in
 another view of the "Fifo" structure where the "make"
 function is not accessible and the actual representation of
 queues is hidden:
