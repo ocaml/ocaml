@@ -79,11 +79,15 @@ val to_hex : t -> string
     @raise Invalid_argument if the argument is not exactly 16 bytes.
  *)
 
-val from_hex : string -> t
+val of_hex : string -> t
 (** Convert a hexadecimal representation back into the corresponding digest.
     @raise Invalid_argument if the argument is not exactly 32 hexadecimal
-   characters.
-   @since 4.00 *)
+           characters.
+    @since 5.2 *)
+
+val from_hex : string -> t
+(** Same function as {!Digest.of_hex}.
+    @since 4.00 *)
 
 (** {1 Generic interface} *)
 
@@ -134,7 +138,7 @@ module type S = sig
         @raise Invalid_argument if the length of the argument
         is not [hash_size], *)
 
-  val from_hex : string -> t
+  val of_hex : string -> t
     (** Convert a hexadecimal representation back into the corresponding digest.
         @raise Invalid_argument if the length of the argument
         is not [2 * hash_size], or if the arguments contains non-hexadecimal

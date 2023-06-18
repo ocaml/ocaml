@@ -34,7 +34,7 @@ let string_of_hex s =
     | '0'..'9' -> Char.code c - Char.code '0'
     | 'A'..'F' -> Char.code c - Char.code 'A' + 10
     | 'a'..'f' -> Char.code c - Char.code 'a' + 10
-    | _ -> invalid_arg "Digest.from_hex" in
+    | _ -> invalid_arg "Digest.of_hex" in
   let byte i = digit s.[i] lsl 4 + digit s.[i+1] in
   String.init (String.length s / 2) (fun i -> Char.chr (byte (2 * i)))
 
@@ -54,7 +54,7 @@ module type S = sig
   val output : out_channel -> t -> unit
   val input : in_channel -> t
   val to_hex : t -> string
-  val from_hex : string -> t
+  val of_hex : string -> t
 end
 
 (* BLAKE2 hashing, parameterized by hash size *)
@@ -128,8 +128,8 @@ let to_hex d =
   if String.length d <> hash_size then invalid_arg "Digest.to_hex";
   hex_of_string d
 
-let from_hex s =
-  if String.length s <> hash_size * 2 then invalid_arg "Digest.from_hex";
+let of_hex s =
+  if String.length s <> hash_size * 2 then invalid_arg "Digest.of_hex";
   string_of_hex s
 
 end
@@ -175,7 +175,7 @@ let to_hex d =
   if String.length d <> 16 then invalid_arg "Digest.to_hex";
   hex_of_string d
 
-let from_hex s =
+let of_hex s =
   if String.length s <> 32 then invalid_arg "Digest.from_hex";
   string_of_hex s
 
@@ -184,3 +184,5 @@ end
 (* Default exported implementation is MD5 *)
 
 include MD5
+
+let from_hex = of_hex
