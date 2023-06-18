@@ -44,7 +44,7 @@ Fifo.add "hello" Fifo.empty;;
 \end{caml_example}
 
 Another possibility is to open the module, which brings all
-identifiers defined inside the module in the scope of the current
+identifiers defined inside the module into the scope of the current
 structure.
 
 \begin{caml_example}{toplevel}
