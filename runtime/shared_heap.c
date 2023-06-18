@@ -1019,11 +1019,16 @@ void caml_compact_heap(caml_domain_state* domain_state,
       continue;
     }
 
-    /* count the number of non-empty blocks in the pools. This is an
+    /* Count the number of non-empty blocks in the pools. This is an
        over-approximation of the amount of space we'll need, as we
-       only move _live_ blocks. There will be garbage in the
-       allocating pools that isn't cleaned up and which we can't use
-       as free space yet. */
+       only move UNMARKED (MARKED in the previous cycle) blocks. In other words,
+       after compaction the shared pools will contain UNMARKED and GARBAGE from
+       the "to" pools and UNMARKED from the "from" pools which were evacuated.
+
+       At the cost of some complexity or an additional pass we could compute the
+       exact amount of space needed or even sweep all pools in this counting
+       pass.
+    */
     uintnat nonempty_blocks = 0;
     while (cur_pool) {
       header_t* p = POOL_FIRST_BLOCK(cur_pool, sz_class);
