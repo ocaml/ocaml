@@ -35,8 +35,6 @@
 #include "caml/startup_aux.h"
 #include "caml/weak.h"
 
-#include <unistd.h>
-
 typedef unsigned int sizeclass;
 
 /* Initial MARKED, UNMARKED, and GARBAGE values; any permutation would work */
