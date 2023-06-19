@@ -1,6 +1,11 @@
 Working version
 ---------------
 
+### Restored backends:
+
+- #12276: native-code compilation for POWER (64 bits, little-endian)
+  (Xavier Leroy, review by KC Sivaramakrishnan and Anil Madhavapeddy)
+
 ### Language features:
 
 ### Runtime system:
