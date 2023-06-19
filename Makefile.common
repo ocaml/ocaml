@@ -227,18 +227,6 @@ OCAMLYACCFLAGS ?= --strict -v
 
 SAK = $(ROOTDIR)/runtime/sak$(EXE)
 
-# stdlib/StdlibModules cannot be include'd unless $(SAK) has been built. These
-# two rules add that dependency. They have to be pattern rules since
-# Makefile.common is included before default targets.
-$(ROOTDIR)/%/sak$(EXE):
-	$(MAKE) -C $(ROOTDIR)/$* sak$(EXE)
-
-ifneq "$(REQUIRES_CONFIGURATION)" ""
-ifneq "$(wildcard $(ROOTDIR)/Makefile.config)" ""
-$(ROOTDIR)/%/StdlibModules: $(SAK) ;
-endif
-endif
-
 # Used with the Microsoft toolchain to merge generated manifest files into
 # executables
 if_file_exists = ( test ! -f $(1) || $(2) && rm -f $(1) )
