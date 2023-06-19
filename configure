@@ -15403,14 +15403,7 @@ case $host in #(
   x86_64-pc-windows) :
     arch=amd64; system=win64 ;; #(
   powerpc64le*-*-linux*) :
-    arch=power; model=ppc64le; system=elf ;; #(
-  powerpc*-*-linux*) :
-    arch=power; if $arch64
-then :
-  model=ppc64
-else $as_nop
-  model=ppc
-fi; system=elf ;; #(
+    has_native_backend=yes; arch=power; model=ppc64le; system=elf ;; #(
   s390x*-*-linux*) :
     has_native_backend=yes; arch=s390x; model=z10; system=elf ;; #(
   # expected to match "gnueabihf" as well as "musleabihf"
