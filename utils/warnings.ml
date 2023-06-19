@@ -15,7 +15,7 @@
 
 (* When you change this, you need to update:
    - the list 'description' at the bottom of this file
-   - man/ocamlc.m
+   - man/ocamlc.1
 *)
 
 type loc = {
