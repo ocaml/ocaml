@@ -12,9 +12,11 @@ the ports not yet supported in the 5.0 release you must use the 4.14 release.
 
 The initial release of OCaml 5.0 only supports the native compiler under ARM64
 and x86-64 architectures under Linux, macOS and the BSDs. On Windows, only the
-MinGW-w64 port is supported.  Support for other 64-bit architectures and
-systems will be added back in later releases. On 32-bit systems, only the
-bytecode compiler will be supported.
+MinGW-w64 port is supported in OCaml 5.0 and the Cygwin port is restored in 5.1.
+On Linux, native code support for RISC-V and s390x/IBM Z will be available in
+OCaml 5.1 and on Power in 5.2.
+
+On 32-bit systems, only the bytecode compiler will be supported.
 
 |=====
 | Branch `trunk` | Branch `5.1` | Branch `5.0` | Branch `4.14`

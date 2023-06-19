@@ -124,6 +124,11 @@ OCaml 5.1.0
    additional suggestions by Luc Maranget,
    review by the same and KC Sivaramakrishnan)
 
+- #11642: Restore Cygwin port. Add GC messages for address space reservations
+  when OCAMLRUNPARAM option v includes 0x1000.
+  (David Allsopp, review by Xavier Leroy, Guillaume Munch-Maccagnoni
+  and Gabriel Scherer)
+
 ### Standard library:
 
 - #12006, #12064: Add `Marshal.Compression` flag to `Marshal.to_*` functions.
@@ -274,11 +279,6 @@ Some of those changes will benefit all OCaml packages.
    up with allocations in the presence of idle domains.
    (Damien Doligez and Stephen Dolan, report by Florian Angeletti,
    review by KC Sivaramakrishnan and Sadiq Jaffer)
-
-- #11642: Restore Cygwin port. Add GC messages for address space reservations
-  when OCAMLRUNPARAM option v includes 0x1000.
-  (David Allsopp, review by Xavier Leroy, Guillaume Munch-Maccagnoni
-  and Gabriel Scherer)
 
 - #11743: Speed up weak array operations
   (KC Sivaramakrishnan, review by François Bobot and Sadiq Jaffer)
