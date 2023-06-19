@@ -16,6 +16,9 @@
 (* Definitions for the interactive toplevel loop that are common between
    bytecode and native *)
 
+[@@@ocaml.warning "-60"] module Str = Ast_helper.Str (* For ocamldep *)
+[@@@ocaml.warning "+60"]
+
 open Format
 open Parsetree
 open Outcometree

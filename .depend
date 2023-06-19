@@ -6678,6 +6678,7 @@ toplevel/native/topeval.cmo : \
     typing/includemod.cmi \
     typing/ident.cmi \
     typing/env.cmi \
+    otherlibs/dynlink/dynlink.cmi \
     utils/config.cmi \
     driver/compmisc.cmi \
     middle_end/compilenv.cmi \
@@ -6708,6 +6709,7 @@ toplevel/native/topeval.cmx : \
     typing/includemod.cmx \
     typing/ident.cmx \
     typing/env.cmx \
+    otherlibs/dynlink/dynlink.cmi \
     utils/config.cmx \
     driver/compmisc.cmx \
     middle_end/compilenv.cmx \
@@ -6724,6 +6726,7 @@ toplevel/native/tophooks.cmo : \
     lambda/lambda.cmi \
     middle_end/flambda/import_approx.cmi \
     middle_end/flambda/flambda_middle_end.cmi \
+    otherlibs/dynlink/dynlink.cmi \
     utils/config.cmi \
     middle_end/compilenv.cmi \
     middle_end/closure/closure_middle_end.cmi \
@@ -6740,6 +6743,7 @@ toplevel/native/tophooks.cmx : \
     lambda/lambda.cmx \
     middle_end/flambda/import_approx.cmx \
     middle_end/flambda/flambda_middle_end.cmx \
+    otherlibs/dynlink/dynlink.cmi \
     utils/config.cmx \
     middle_end/compilenv.cmx \
     middle_end/closure/closure_middle_end.cmx \
@@ -6953,6 +6957,7 @@ tools/eqparsetree.cmx : \
 tools/gen_sizeclasses.cmo :
 tools/gen_sizeclasses.cmx :
 tools/lintapidiff.cmo : \
+    otherlibs/str/str.cmi \
     typing/printtyp.cmi \
     driver/pparse.cmi \
     typing/path.cmi \
@@ -6963,6 +6968,7 @@ tools/lintapidiff.cmo : \
     typing/ident.cmi \
     tools/lintapidiff.cmi
 tools/lintapidiff.cmx : \
+    otherlibs/str/str.cmx \
     typing/printtyp.cmx \
     driver/pparse.cmx \
     typing/path.cmx \
@@ -7109,8 +7115,10 @@ tools/ocamlprof.cmx : \
     tools/ocamlprof.cmi
 tools/ocamlprof.cmi :
 tools/ocamltex.cmo : \
+    otherlibs/unix/unix.cmi \
     toplevel/toploop.cmi \
     parsing/syntaxerr.cmi \
+    otherlibs/str/str.cmi \
     parsing/parsetree.cmi \
     parsing/parse.cmi \
     utils/misc.cmi \
@@ -7124,8 +7132,10 @@ tools/ocamltex.cmo : \
     parsing/ast_helper.cmi \
     tools/ocamltex.cmi
 tools/ocamltex.cmx : \
+    otherlibs/unix/unix.cmx \
     toplevel/toploop.cmx \
     parsing/syntaxerr.cmx \
+    otherlibs/str/str.cmx \
     parsing/parsetree.cmi \
     parsing/parse.cmx \
     utils/misc.cmx \
