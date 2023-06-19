@@ -96,6 +96,7 @@ Right value K.x
 module Exterior = struct
   module Gadt = struct
     module Boolean = struct
+      [@@@ocaml.warning "-74"]
       type t = { b : bool }
       type wrong = false | true
       let print () = pp "Wrong function: Exterior.Gadt.Boolean.print"
