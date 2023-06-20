@@ -571,7 +571,14 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
   unify_vars p1_vs p2_vs
 
 let rec build_as_type (env : Env.t) p =
-  let as_ty = build_as_type_aux env p in
+  let has_ground_constraint =
+    List.exists
+      (function Tpat_constraint cty, _, _ -> free_variables cty.ctyp_type = []
+        | _ -> false)
+      p.pat_extra
+  in
+  let as_ty =
+    if has_ground_constraint then newgenvar () else build_as_type_aux env p in
   (* Cf. #1655 *)
   List.fold_left (fun as_ty (extra, _loc, _attrs) ->
     match extra with
