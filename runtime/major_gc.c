@@ -105,6 +105,39 @@ static atomic_uintnat domain_global_roots_started;
 
 gc_phase_t caml_gc_phase;
 
+/* The caml_gc_phase global is only ever updated at the end of the STW
+   section, by the last domain leaving a barrier. This means that no
+   synchronization is required on most accesses.
+
+   We know of two situations in the runtime that could run in parallel
+   with a phase update, and cannot safely access the gc phase:
+
+   - The domain_terminate logic runs after the thread has un-registered
+     itself as a STW participant, so it may race with a STW section.
+
+   - Opportunistic collections may happen while a domain is waiting on
+     a STW barrier, so it might race with the code running inside
+     anoter in-STW barrier. (It is possible that a deeper analysis of
+     the current runtime code would in fact rule out such a race, but
+     it is simpler to avoid phase accesses during opportunistic
+     collections.)
+ */
+
+Caml_inline char caml_gc_phase_char(int may_access_gc_phase) {
+  if (!may_access_gc_phase)
+    return 'U';
+  switch (caml_gc_phase) {
+    case Phase_sweep_and_mark_main:
+      return 'M';
+    case Phase_mark_final:
+      return 'F';
+    case Phase_sweep_ephe:
+      return 'E';
+    default:
+      return 'U';
+  }
+}
+
 extern value caml_ephe_none; /* See weak.c */
 
 static struct ephe_cycle_info_t {
@@ -491,7 +524,9 @@ static inline intnat diffmod (uintnat x1, uintnat x2)
   return (intnat) (x1 - x2);
 }
 
-static void update_major_slice_work(intnat howmuch) {
+static void update_major_slice_work(intnat howmuch,
+                                    int may_access_gc_phase)
+{
   double heap_words;
   intnat alloc_work, dependent_work, extra_work, new_work;
   intnat my_alloc_count, my_dependent_count;
@@ -616,7 +651,7 @@ static void update_major_slice_work(intnat howmuch) {
               " %"ARCH_INTNAT_PRINTF_FORMAT "u slice target,  "
               " %"ARCH_INTNAT_PRINTF_FORMAT "d slice budget"
               ,
-              caml_gc_phase_char(caml_gc_phase),
+              caml_gc_phase_char(may_access_gc_phase),
               (uintnat)heap_words, dom_st->allocated_words,
               alloc_work, dependent_work, extra_work,
               atomic_load (&work_counter),
@@ -1486,10 +1521,13 @@ static void major_collection_slice(intnat howmuch,
   uintnat saved_major_cycle = caml_major_cycles_completed;
   intnat budget;
 
+  /* Opportunistic slices may run concurrently with gc phase updates. */
+  int may_access_gc_phase = (mode != Slice_opportunistic);
+
   int log_events = mode != Slice_opportunistic ||
                    (atomic_load_relaxed(&caml_verb_gc) & 0x40);
 
-  update_major_slice_work(howmuch);
+  update_major_slice_work(howmuch, may_access_gc_phase);
 
   /* When a full slice of major GC work is done,
      or the slice is interrupted (in mode Slice_interruptible),
@@ -1671,7 +1709,7 @@ mark_again:
     ("Major slice [%c%c%c]: %ld sweep, %ld mark (%lu blocks)",
               collection_slice_mode_char(mode),
               !caml_incoming_interrupts_queued() ? '.' : '*',
-              caml_gc_phase_char(caml_gc_phase),
+              caml_gc_phase_char(may_access_gc_phase),
               (long)sweep_work, (long)mark_work,
               (unsigned long)(domain_state->stat_blocks_marked
                                                       - blocks_marked_before));
@@ -1918,8 +1956,12 @@ int caml_init_major_gc(caml_domain_state* d) {
 void caml_teardown_major_gc(void) {
   caml_domain_state* d = Caml_state;
 
+/* At this point we have been removed from the STW participant set,
+   so we may not access the gc phase. */
+  int may_access_gc_phase = 0;
+
   /* account for latest allocations */
-  update_major_slice_work (0);
+  update_major_slice_work (0, may_access_gc_phase);
   CAMLassert(!caml_addrmap_iter_ok(&d->mark_stack->compressed_stack,
                                    d->mark_stack->compressed_stack_iter));
   caml_addrmap_clear(&d->mark_stack->compressed_stack);

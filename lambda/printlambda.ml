@@ -87,6 +87,7 @@ let print_bigarray name unsafe kind ppf layout =
     (if unsafe then "unsafe_"^ name else name)
     (match kind with
      | Pbigarray_unknown -> "generic"
+     | Pbigarray_float16 -> "float16"
      | Pbigarray_float32 -> "float32"
      | Pbigarray_float64 -> "float64"
      | Pbigarray_sint8 -> "sint8"

@@ -81,7 +81,6 @@ META
 /bytecomp/opcodes.ml
 /bytecomp/opcodes.mli
 
-/debugger/.depend
 /debugger/debugger_lexer.ml
 /debugger/debugger_parser.ml
 /debugger/debugger_parser.mli

@@ -16,6 +16,9 @@
 (* Definitions for the interactive toplevel loop that are common between
    bytecode and native *)
 
+[@@@ocaml.warning "-60"] module Str = Ast_helper.Str (* For ocamldep *)
+[@@@ocaml.warning "+60"]
+
 open Format
 open Parsetree
 open Outcometree
@@ -383,10 +386,11 @@ let try_run_directive ppf dir_name pdir_arg =
 
 (* Overriding exception printers with toplevel-specific ones *)
 
-let loading_hint_printer ppf s =
-  Symtable.report_error ppf (Symtable.Undefined_global s);
+let loading_hint_printer ppf cu =
+  let global = Symtable.Global.Glob_compunit (Cmo_format.Compunit cu) in
+  Symtable.report_error ppf (Symtable.Undefined_global global);
   let find_with_ext ext =
-    try Some (Load_path.find_uncap (s ^ ext)) with Not_found -> None
+    try Some (Load_path.find_uncap (cu ^ ext)) with Not_found -> None
   in
   fprintf ppf
     "@.Hint: @[\
@@ -412,7 +416,9 @@ let loading_hint_printer ppf s =
 let () =
   Location.register_error_of_exn
     (function
-      | Symtable.Error (Symtable.Undefined_global s) ->
-        Some (Location.error_of_printer_file loading_hint_printer s)
+      | Symtable.Error
+        (Symtable.Undefined_global (Symtable.Global.Glob_compunit
+          (Cmo_format.Compunit cu))) ->
+          Some (Location.error_of_printer_file loading_hint_printer cu)
       | _ -> None
     )

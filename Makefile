@@ -20,7 +20,6 @@ ROOTDIR = .
 # are defined *before* Makefile.common gets included, so that
 # their local definitions here take precedence over their
 # general shared definitions in Makefile.common.
-OCAMLDEP ?= $(BOOT_OCAMLDEP)
 OCAMLLEX ?= $(BOOT_OCAMLLEX)
 include Makefile.common
 include Makefile.best_binaries
@@ -35,7 +34,7 @@ CAMLOPT=$(OCAMLRUN) ./ocamlopt$(EXE) $(STDLIBFLAGS) -I otherlibs/dynlink
 ARCHES=amd64 arm64 power s390x riscv
 VPATH = utils parsing typing bytecomp file_formats lambda middle_end \
   middle_end/closure middle_end/flambda middle_end/flambda/base_types \
-  asmcomp driver toplevel tools
+  asmcomp driver toplevel tools $(addprefix otherlibs/, $(ALL_OTHERLIBS))
 INCLUDES = $(addprefix -I ,$(VPATH))
 
 ifeq "$(strip $(NATDYNLINKOPTS))" ""
@@ -1618,28 +1617,17 @@ partialclean::
 	    $$d/*.o $$d/*.obj $$d/*.so $$d/*.dll; \
 	done
 
-debugger/.depend: OC_OCAMLDEPDIRS = \
-  debugger otherlibs/unix otherlibs/dynlink utils parsing typing bytecomp \
-  toplevel driver file_formats lambda
-
-.INTERMEDIATE: debugger/.depend
-
-debugger/.depend:
-	rm -f $@
-	$(V_OCAMLDEP)$(OCAMLDEP_CMD) debugger/*.mli debugger/*.ml > $@
-
 .PHONY: depend
-depend: debugger/.depend beforedepend
-	$(V_GEN)(for d in utils parsing typing bytecomp asmcomp middle_end \
+depend: beforedepend
+	$(V_GEN)for d in utils parsing typing bytecomp asmcomp middle_end \
          lambda file_formats middle_end/closure middle_end/flambda \
          middle_end/flambda/base_types \
-         driver toplevel toplevel/byte toplevel/native lex tools; \
+         driver toplevel toplevel/byte toplevel/native lex tools debugger; \
 	 do \
 	   $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $$d $(INCLUDES) \
 	   $(OCAMLDEPFLAGS) $$d/*.mli $$d/*.ml \
 	   || exit; \
-         done; \
-         cat $<) > .depend
+         done > .depend
 
 .PHONY: distclean
 distclean: clean

@@ -18,34 +18,12 @@
 
 open Format
 
-let ppc64 =
-  match Config.model with
-  | "ppc" -> false
-  | "ppc64" | "ppc64le" -> true
-  | _ -> assert false
-
-type abi = ELF32 | ELF64v1 | ELF64v2
-
-let abi =
-  match Config.model with
-  | "ppc" -> ELF32
-  | "ppc64" -> ELF64v1
-  | "ppc64le" -> ELF64v2
-  | _ -> assert false
-
 type cmm_label = int
 (* Do not introduce a dependency to Cmm *)
 
 (* Machine-specific command-line options *)
 
-let big_toc = ref true
-
-let command_line_options = [
-  "-flarge-toc", Arg.Set big_toc,
-     " Support TOC (table of contents) greater than 64 kbytes (default)";
-  "-fsmall-toc", Arg.Clear big_toc,
-     " TOC (table of contents) is limited to 64 kbytes"
-]
+let command_line_options = []
 
 (* Specific operations *)
 
@@ -65,14 +43,8 @@ type addressing_mode =
 
 (* Sizes, endianness *)
 
-let big_endian =
-  match Config.model with
-  | "ppc" -> true
-  | "ppc64" -> true
-  | "ppc64le" -> false
-  | _ -> assert false
-
-let size_addr = if ppc64 then 8 else 4
+let big_endian = false (* ppc64le only *)
+let size_addr = 8
 let size_int = size_addr
 let size_float = 8
 

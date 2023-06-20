@@ -585,6 +585,13 @@ let unbox_float dbg =
       | cmm -> Cop(mk_load_immut Double, [cmm], dbg)
     )
 
+(* Conversions for 16-bit floats *)
+
+let float_of_float16 dbg c =
+  Cop(Cextcall("caml_double_of_float16", typ_float, [XInt], false), [c], dbg)
+let float16_of_float dbg c =
+  Cop(Cextcall("caml_float16_of_double", typ_int, [XFloat], false), [c], dbg)
+
 (* Complex *)
 
 let box_complex dbg c_re c_im =
@@ -852,6 +859,7 @@ let curry_function_sym n =
 
 let bigarray_elt_size : Lambda.bigarray_kind -> int = function
     Pbigarray_unknown -> assert false
+  | Pbigarray_float16 -> 2
   | Pbigarray_float32 -> 4
   | Pbigarray_float64 -> 8
   | Pbigarray_sint8 -> 1
@@ -925,6 +933,7 @@ let bigarray_indexing unsafe elt_kind layout b args dbg =
 
 let bigarray_word_kind : Lambda.bigarray_kind -> memory_chunk = function
     Pbigarray_unknown -> assert false
+  | Pbigarray_float16 -> Sixteen_unsigned
   | Pbigarray_float32 -> Single
   | Pbigarray_float64 -> Double
   | Pbigarray_sint8 -> Byte_signed

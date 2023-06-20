@@ -20,6 +20,7 @@ open Misc
 open Instruct
 open Cmo_format
 module String = Misc.Stdlib.String
+module Compunit = Symtable.Compunit
 
 let rec rev_append_map f l rest =
   match l with
@@ -27,13 +28,25 @@ let rec rev_append_map f l rest =
   | x :: xs -> rev_append_map f xs (f x :: rest)
 
 type error =
-    Forward_reference of string * Ident.t
-  | Multiple_definition of string * Ident.t
+    Forward_reference of string * compunit
+  | Multiple_definition of string * compunit
   | Not_an_object_file of string
-  | Illegal_renaming of string * string * string
+  | Illegal_renaming of compunit * string * compunit
   | File_not_found of string
 
 exception Error of error
+
+type mapped_compunit = {
+  packed_modname : compunit; (** qualified name of the compilation unit *)
+  processed : bool
+}
+
+let record_as_processed mapping id =
+  let update_processed = function
+    | Some ({ processed = false; _} as r) -> Some {r with processed=true}
+    | Some {processed = true;_} | None -> assert false
+  in
+  Compunit.Map.update id update_processed mapping
 
 type state = {
   relocs : (reloc_info * int) list; (** accumulated reloc info *)
@@ -42,9 +55,8 @@ type state = {
   primitives : string list;         (** accumulated primitives *)
   offset : int;                     (** offset of the current unit *)
   subst : Subst.t;                  (** Substitution for debug event *)
-  mapping : (Ident.t * bool) Ident.Map.t;
-  (** Mapping from module to packed-module idents.
-      The boolean tells whether we've processed the compilation unit already. *)
+  mapping : mapped_compunit Compunit.Map.t;
+  (** Mapping from module to packed-module idents. *)
 }
 
 let empty_state = {
@@ -53,7 +65,7 @@ let empty_state = {
   debug_dirs = String.Set.empty;
   primitives = [];
   offset = 0;
-  mapping = Ident.Map.empty;
+  mapping = Compunit.Map.empty;
   subst = Subst.identity;
 }
 
@@ -62,39 +74,32 @@ let empty_state = {
    consolidated. *)
 
 let rename_relocation packagename objfile mapping base (rel, ofs) =
+  (* PR#5276: unique-ize dotted global names, which appear if one of
+    the units being consolidated is itself a packed module. *)
+  let make_compunit_name_unique cu =
+    if Compunit.is_packed cu
+    then Compunit (packagename ^ "." ^ (Compunit.name cu))
+    else cu
+  in
   let rel' =
     match rel with
-      Reloc_getglobal id ->
+      | Reloc_getcompunit cu ->
         begin try
-          let id', defined = Ident.Map.find id mapping in
-          if defined
-          then Reloc_getglobal id'
-          else raise(Error(Forward_reference(objfile, id)))
-        with Not_found ->
-          (* PR#5276: unique-ize dotted global names, which appear
-             if one of the units being consolidated is itself a packed
-             module. *)
-          let name = Ident.name id in
-          if String.contains name '.' then
-            Reloc_getglobal (Ident.create_persistent (packagename ^ "." ^ name))
-          else
-            rel
-        end
-    | Reloc_setglobal id ->
-        begin try
-          let id', defined = Ident.Map.find id mapping in
-          if defined
-          then raise(Error(Multiple_definition(objfile, id)))
-          else Reloc_setglobal id'
-        with Not_found ->
-          (* PR#5276, as above *)
-          let name = Ident.name id in
-          if String.contains name '.' then
-            Reloc_setglobal (Ident.create_persistent (packagename ^ "." ^ name))
-          else
-            rel
-        end
-    | _ ->
+          let mapped_modname = Compunit.Map.find cu mapping in
+          if mapped_modname.processed
+          then Reloc_getcompunit mapped_modname.packed_modname
+          else raise(Error(Forward_reference(objfile, cu)))
+        with Not_found -> Reloc_getcompunit (make_compunit_name_unique cu)
+      end
+    | Reloc_setcompunit cu ->
+      begin try
+          let mapped_modname = Compunit.Map.find cu mapping in
+          if mapped_modname.processed
+          then raise(Error(Multiple_definition(objfile, cu)))
+          else Reloc_setcompunit mapped_modname.packed_modname
+        with Not_found -> Reloc_setcompunit (make_compunit_name_unique cu)
+      end
+    | Reloc_literal _ | Reloc_getpredef _ | Reloc_primitive _ ->
         rel in
   (rel', base + ofs)
 
@@ -112,12 +117,15 @@ type pack_member_kind = PM_intf | PM_impl of compilation_unit
 type pack_member =
   { pm_file: string;
     pm_name: string;
-    pm_ident: Ident.t;
-    pm_packed_ident: Ident.t;
+    pm_ident: compunit;
+    pm_packed_ident: compunit;
     pm_kind: pack_member_kind }
 
 let read_member_info targetname file =
-  let name = String.capitalize_ascii(Filename.basename(chop_extensions file)) in
+  let member_name =
+    String.capitalize_ascii(Filename.basename(chop_extensions file))
+  in
+  let member_compunit = Compunit member_name in
   let kind =
     (* PR#7479: make sure it is either a .cmi or a .cmo *)
     if Filename.check_suffix file ".cmi" then
@@ -133,17 +141,20 @@ let read_member_info targetname file =
         let compunit_pos = input_binary_int ic in
         seek_in ic compunit_pos;
         let compunit = (input_value ic : compilation_unit) in
-        if compunit.cu_name <> name
-        then raise(Error(Illegal_renaming(name, file, compunit.cu_name)));
+        if compunit.cu_name <> member_compunit
+        then begin
+          raise(Error(Illegal_renaming
+            (member_compunit, file, compunit.cu_name)))
+        end;
         PM_impl compunit)
     end in
-  let pm_ident = Ident.create_persistent name in
-  let pm_packed_ident = Ident.create_persistent(targetname ^ "." ^ name) in
-  { pm_file = file; pm_name = name; pm_kind = kind; pm_ident; pm_packed_ident }
+  let pm_packed_ident = Compunit (targetname ^ "." ^ member_name) in
+  { pm_file = file; pm_name = member_name; pm_kind = kind;
+    pm_ident = member_compunit; pm_packed_ident }
 
 (* Read the bytecode from a .cmo file.
    Write bytecode to channel [oc].
-   Rename globals as indicated by [mapping] in reloc info.
+   Rename compunits as indicated by [mapping] in reloc info.
    Accumulate relocs, debug info, etc.
    Return the accumulated state. *)
 
@@ -196,16 +207,19 @@ let rename_append_pack_member packagename oc state m =
         rename_append_bytecode packagename oc state m.pm_file compunit in
       let id = m.pm_ident in
       let root = Path.Pident (Ident.create_persistent packagename) in
-      let mapping = Ident.Map.update id (function
-          | Some (p,false) -> Some (p,true)
-          | Some (_, true) | None -> assert false) state.mapping in
+      let mapping = record_as_processed state.mapping id in
       let subst =
-        Subst.add_module id (Path.Pdot (root, Ident.name id)) state.subst in
+        let id' = Compunit.to_ident id in
+        Subst.add_module id' (Path.Pdot (root, Ident.name id')) state.subst
+      in
       { state with subst; mapping }
 
 (* Generate the code that builds the tuple representing the package module *)
 
 let build_global_target ~ppf_dump oc target_name state components coercion =
+  let components =
+    List.map (Option.map Compunit.to_ident) components
+  in
   let lam =
     Translmod.transl_package
       components (Ident.create_persistent target_name) coercion in
@@ -228,23 +242,25 @@ let build_global_target ~ppf_dump oc target_name state components coercion =
 
 let package_object_files ~ppf_dump files targetfile targetname coercion =
   let members = map_left_right (read_member_info targetname) files in
-  let required_globals =
-    List.fold_right (fun compunit required_globals -> match compunit with
+  let required_compunits =
+    List.fold_right (fun compunit required_compunits -> match compunit with
         | { pm_kind = PM_intf } ->
-            required_globals
-        | { pm_kind = PM_impl { cu_required_globals; cu_reloc } } ->
-            let remove_required (rel, _pos) required_globals =
+            required_compunits
+        | { pm_kind = PM_impl { cu_required_compunits; cu_reloc } } ->
+            let remove_required (rel, _pos) required_compunits =
               match rel with
-                Reloc_setglobal id ->
-                  Ident.Set.remove id required_globals
-              | _ ->
-                  required_globals
+                Reloc_setcompunit cu ->
+                  Compunit.Set.remove cu required_compunits
+              | Reloc_literal _ | Reloc_getcompunit _ | Reloc_getpredef _
+              | Reloc_primitive _ ->
+                  required_compunits
             in
-            let required_globals =
-              List.fold_right remove_required cu_reloc required_globals
+            let required_compunits =
+              List.fold_right remove_required cu_reloc required_compunits
             in
-            List.fold_right Ident.Set.add cu_required_globals required_globals)
-      members Ident.Set.empty
+            List.fold_right
+              Compunit.Set.add cu_required_compunits required_compunits)
+      members Compunit.Set.empty
   in
   let oc = open_out_bin targetfile in
   Fun.protect ~finally:(fun () -> close_out oc) (fun () ->
@@ -255,9 +271,11 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
     let state =
       let mapping =
         List.map
-          (fun m -> m.pm_ident, (m.pm_packed_ident, false))
+          (fun m -> m.pm_ident,
+            { packed_modname = m.pm_packed_ident; processed = false }
+          )
           members
-        |> Ident.Map.of_list in
+        |> Compunit.Map.of_list in
       { empty_state with mapping } in
     let state =
       List.fold_left (rename_append_pack_member targetname oc) state members in
@@ -288,14 +306,15 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
         (fun (name, _crc) -> not (List.mem name unit_names))
         (Bytelink.extract_crc_interfaces()) in
     let compunit =
-      { cu_name = targetname;
+      { cu_name = Compunit targetname;
         cu_pos = pos_code;
         cu_codesize = pos_debug - pos_code;
         cu_reloc = List.rev state.relocs;
         cu_imports =
           (targetname, Some (Env.crc_of_unit targetname)) :: imports;
         cu_primitives = List.rev state.primitives;
-        cu_required_globals = Ident.Set.elements required_globals;
+        cu_required_compunits =
+          (Compunit.Set.elements required_compunits);
         cu_force_link = force_link;
         cu_debug = if pos_final > pos_debug then pos_debug else 0;
         cu_debugsize = pos_final - pos_debug } in
@@ -329,20 +348,20 @@ let package_files ~ppf_dump initial_env files targetfile =
 open Format
 
 let report_error ppf = function
-    Forward_reference(file, ident) ->
-      fprintf ppf "Forward reference to %s in file %a" (Ident.name ident)
+    Forward_reference(file, (compunit)) ->
+      fprintf ppf "Forward reference to %s in file %a" (Compunit.name compunit)
         Location.print_filename file
-  | Multiple_definition(file, ident) ->
+  | Multiple_definition(file, compunit) ->
       fprintf ppf "File %a redefines %s"
         Location.print_filename file
-        (Ident.name ident)
+        (Compunit.name compunit)
   | Not_an_object_file file ->
       fprintf ppf "%a is not a bytecode object file"
         Location.print_filename file
   | Illegal_renaming(name, file, id) ->
       fprintf ppf "Wrong file naming: %a@ contains the code for\
                    @ %s when %s was expected"
-        Location.print_filename file name id
+        Location.print_filename file (Compunit.name name) (Compunit.name id)
   | File_not_found file ->
       fprintf ppf "File %s not found" file
 

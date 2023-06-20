@@ -2,5 +2,5 @@
        2  PUSHACC0
        3  MAKEBLOCK1 0
        5  POP 1
-       7  SETGLOBAL Test
+       7  SETGLOBAL compilation unit `Test'
        9  STOP

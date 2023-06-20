@@ -19,8 +19,10 @@ open Misc
 open Config
 open Cmo_format
 
+module Compunit = Symtable.Compunit
+
 module Dep = struct
-  type t = string * string
+  type t = compunit * compunit
   let compare = compare
 end
 
@@ -35,10 +37,10 @@ type error =
   | Custom_runtime
   | File_exists of filepath
   | Cannot_open_dll of filepath
-  | Required_module_unavailable of modname * modname
+  | Required_compunit_unavailable of (compunit * compunit)
   | Camlheader of string * filepath
   | Wrong_link_order of DepSet.t
-  | Multiple_definition of modname * filepath * filepath
+  | Multiple_definition of compunit * filepath * filepath
 
 exception Error of error
 
@@ -95,34 +97,34 @@ let add_ccobjs origin l =
 
 (* First pass: determine which units are needed *)
 
-let missing_globals = ref Ident.Map.empty
-let provided_globals = ref Ident.Set.empty
+let missing_compunits = ref Compunit.Map.empty
+let provided_compunits = ref Compunit.Set.empty
 let badly_ordered_dependencies : DepSet.t ref = ref DepSet.empty
 
-let record_badly_ordered_dependency (id, compunit) =
-  let dep = ((Ident.name id), compunit.cu_name) in
+let record_badly_ordered_dependency dep =
   badly_ordered_dependencies := DepSet.add dep !badly_ordered_dependencies
 
 let is_required (rel, _pos) =
   match rel with
-    Reloc_setglobal id ->
-      Ident.Map.mem id !missing_globals
-  | _ -> false
+    | Reloc_setcompunit cu ->
+      Compunit.Map.mem cu !missing_compunits
+    | _ -> false
 
 let add_required compunit =
-  let add id =
-    if Ident.Set.mem id !provided_globals then
-      record_badly_ordered_dependency (id, compunit);
-    missing_globals := Ident.Map.add id compunit.cu_name !missing_globals
+  let add cu =
+    if Compunit.Set.mem cu !provided_compunits then
+      record_badly_ordered_dependency (cu, compunit.cu_name);
+    missing_compunits :=
+      Compunit.Map.add cu compunit.cu_name !missing_compunits
   in
-  List.iter add (Symtable.required_globals compunit.cu_reloc);
-  List.iter add compunit.cu_required_globals
+  List.iter add (Symtable.required_compunits compunit.cu_reloc);
+  List.iter add compunit.cu_required_compunits
 
 let remove_required (rel, _pos) =
   match rel with
-    Reloc_setglobal id ->
-      missing_globals := Ident.Map.remove id !missing_globals;
-      provided_globals := Ident.Set.add id !provided_globals;
+    Reloc_setcompunit cu ->
+      missing_compunits := Compunit.Map.remove cu !missing_compunits;
+      provided_compunits := Compunit.Set.add cu !provided_compunits;
   | _ -> ()
 
 let scan_file obj_name tolink =
@@ -182,7 +184,7 @@ module Consistbl = Consistbl.Make (Misc.Stdlib.String)
 
 let crc_interfaces = Consistbl.create ()
 let interfaces = ref ([] : string list)
-let implementations_defined = ref ([] : (string * string) list)
+let implementations_defined = ref ([] : (compunit * string) list)
 
 let check_consistency file_name cu =
   begin try
@@ -261,7 +263,8 @@ let link_archive output_fun currpos_fun file_name units_required =
   try
     List.iter
       (fun cu ->
-         let name = file_name ^ "(" ^ cu.cu_name ^ ")" in
+         let n = Compunit.name cu.cu_name in
+         let name = file_name ^ "(" ^ n ^ ")" in
          try
            link_compunit output_fun currpos_fun inchan name cu
          with Symtable.Error msg ->
@@ -632,12 +635,12 @@ let link objfiles output_name =
   in
   let tolink = List.fold_right scan_file objfiles [] in
   begin
-    match Ident.Map.bindings !missing_globals with
+    match Compunit.Map.bindings !missing_compunits with
     | [] -> ()
-    | (id, cu_name) :: _ ->
+    | missing_dependency :: _ ->
         if DepSet.is_empty !badly_ordered_dependencies
         then
-            raise (Error (Required_module_unavailable (Ident.name id, cu_name)))
+            raise (Error (Required_compunit_unavailable missing_dependency))
         else
             raise (Error (Wrong_link_order !badly_ordered_dependencies))
   end;
@@ -771,23 +774,26 @@ let report_error ppf = function
   | Cannot_open_dll file ->
       fprintf ppf "Error on dynamically loaded library: %a"
         Location.print_filename file
-  | Required_module_unavailable (s, m) ->
-      fprintf ppf "Module `%s' is unavailable (required by `%s')" s m
+  | Required_compunit_unavailable
+    (Compunit unavailable, Compunit required_by) ->
+      fprintf ppf "Module `%s' is unavailable (required by `%s')"
+        unavailable required_by
   | Camlheader (msg, header) ->
       fprintf ppf "System error while copying file %s: %s" header msg
   | Wrong_link_order depset ->
       let l = DepSet.elements depset in
       let depends_on ppf (dep, depending) =
-        fprintf ppf "%s depends on %s" depending dep
+        fprintf ppf "%s depends on %s" (Compunit.name depending)
+                                       (Compunit.name dep)
       in
       fprintf ppf "@[<hov 2>Wrong link order: %a@]"
         (pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ",@ ") depends_on) l
-  | Multiple_definition(modname, file1, file2) ->
+  | Multiple_definition(compunit, file1, file2) ->
       fprintf ppf
         "@[<hov>Files %a@ and %a@ both define a module named %s@]"
         Location.print_filename file1
         Location.print_filename file2
-        modname
+        (Compunit.name compunit)
 
 
 let () =
@@ -801,7 +807,7 @@ let reset () =
   lib_ccobjs := [];
   lib_ccopts := [];
   lib_dllibs := [];
-  missing_globals := Ident.Map.empty;
+  missing_compunits := Compunit.Map.empty;
   Consistbl.clear crc_interfaces;
   implementations_defined := [];
   debug_info := [];

@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@ocaml.warning "-60"] module Str = Ast_helper.Str (* For ocamldep *)
+[@@@ocaml.warning "+60"]
+
 open Longident
 open Asttypes
 open Parsetree

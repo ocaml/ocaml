@@ -16,18 +16,10 @@
 
 (* Specific operations for the PowerPC processor *)
 
-val ppc64 : bool
-
-type abi = ELF32 | ELF64v1 | ELF64v2
-
-val abi : abi
-
 type cmm_label = int
 (* Do not introduce a dependency to Cmm *)
 
 (* Machine-specific command-line options *)
-
-val big_toc : bool ref
 
 val command_line_options : (string * Arg.spec * string) list
 
