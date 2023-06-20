@@ -21,6 +21,11 @@ OCaml 4.14 maintenance version
 - #11332, #12702: make sure `Bool_val(v)` has type `bool` in C++
   (Xavier Leroy, report by ygrek, review by Gabriel Scherer)
 
+- #12322: GC: simplify the meaning of custom_minor_max_size: blocks with
+  out-of-heap memory above this limit are now allocated directly in
+  the major heap.
+  (Damien Doligez, report by Stephen Dolan, review by ?)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.
