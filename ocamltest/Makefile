@@ -182,6 +182,6 @@ $(DEPDIR)/%.$(D): %.c | $(DEPDIR)
 
 .PHONY: depend
 depend: $(dependencies_generated_prereqs)
-	$(V_OCAMLDEP)$(OCAMLDEP_CMD) $(mli_files) $(ml_files) > .depend
+	$(V_OCAMLDEP)$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 -include .depend

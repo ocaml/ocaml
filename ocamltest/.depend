@@ -364,6 +364,10 @@ ocamltest_unix.cmo : \
 ocamltest_unix.cmx : \
     ocamltest_unix.cmi
 ocamltest_unix.cmi :
+ocamltest_unix_dummy.cmo :
+ocamltest_unix_dummy.cmx :
+ocamltest_unix_real.cmo :
+ocamltest_unix_real.cmx :
 options.cmo : \
     variables.cmi \
     translate.cmi \
