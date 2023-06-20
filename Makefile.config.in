@@ -194,12 +194,7 @@ CCOMPTYPE=@ccomptype@
 TOOLCHAIN=@toolchain@
 CMXS=@cmxs@
 
-# On Windows, MKDLL, MKEXE and MKMAINDLL must ultimately be equivalent to
-#   flexlink $(FLEXLINK_FLAGS) [-exe|-maindll]
-# or OCAML_FLEXLINK overriding will not work (see utils/config.generated.ml.in)
-
 FLEXDLL_CHAIN=@flexdll_chain@
-FLEXLINK_FLAGS=@flexlink_flags@
 
 MKEXE=@mkexe@
 MKDLL=@mkdll@
