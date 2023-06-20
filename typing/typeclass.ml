@@ -1982,7 +1982,12 @@ let non_virtual_string_of_kind = function
 
 module Style=Misc.Style
 
-let report_error env ppf = function
+let report_error env ppf =
+  let pp_args ppf args =
+    let args = List.map (Printtyp.tree_of_typexp Type) args in
+    Style.as_inline_code !Oprint.out_type_args ppf args
+  in
+  function
   | Repeated_parameter ->
       fprintf ppf "A type parameter occurs several times"
   | Unconsistent_constraint err ->
@@ -2084,17 +2089,18 @@ let report_error env ppf = function
         "@[The abbreviation %a@ is used with parameter(s)@ %a@ \
            which are incompatible with constraint(s)@ %a@]"
         (Style.as_inline_code Printtyp.ident) id
-        !Oprint.out_type_args (List.map (Printtyp.tree_of_typexp Type) params)
-        !Oprint.out_type_args (List.map (Printtyp.tree_of_typexp Type) cstrs)
+        pp_args params
+        pp_args cstrs
   | Bad_class_type_parameters (id, params, cstrs) ->
+      let pp_hash ppf id = fprintf ppf "#%a" Printtyp.ident id in
       Printtyp.prepare_for_printing (params @ cstrs);
       fprintf ppf
-        "@[The class type #%a@ is used with parameter(s)@ %a,@ \
+        "@[The class type %a@ is used with parameter(s)@ %a,@ \
            whereas the class type definition@ constrains@ \
            those parameters to be@ %a@]"
-        (Style.as_inline_code Printtyp.ident) id
-        !Oprint.out_type_args (List.map (Printtyp.tree_of_typexp Type) params)
-        !Oprint.out_type_args (List.map (Printtyp.tree_of_typexp Type) cstrs)
+        (Style.as_inline_code pp_hash) id
+       pp_args params
+       pp_args cstrs
   | Class_match_failure error ->
       Includeclass.report_error Type ppf error
   | Unbound_val lab ->

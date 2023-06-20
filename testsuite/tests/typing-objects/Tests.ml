@@ -137,8 +137,8 @@ Lines 1-4, characters 0-3:
 2 |   constraint 'a = int
 3 |   method f x = (x : bool c)
 4 | end..
-Error: The abbreviation "c" is used with parameter(s) bool
-       which are incompatible with constraint(s) int
+Error: The abbreviation "c" is used with parameter(s) "bool "
+       which are incompatible with constraint(s) "int "
 |}];;
 
 (* Different constraints *)
