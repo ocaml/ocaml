@@ -6222,12 +6222,16 @@ let report_error ~loc env = function
         (function ppf ->
           fprintf ppf "but bindings were expected of type")
   | Unbound_existential (ids, ty) ->
-      let pp_ident ppf id = Style.inline_code ppf (Ident.name id) in
+      let pp_ident ppf id = pp_print_string ppf (Ident.name id) in
+      let pp_type ppf (ids,ty)=
+        fprintf ppf "@[type %a.@ %a@]@]"
+          (pp_print_list ~pp_sep:pp_print_space pp_ident) ids
+          Printtyp.type_expr ty
+      in
       Location.errorf ~loc
-        "@[<2>%s:@ @[type %a.@ %a@]@]"
+        "@[<2>%s:@ %a@]"
         "This type does not bind all existentials in the constructor"
-        (pp_print_list ~pp_sep:pp_print_space pp_ident) ids
-        (Style.as_inline_code Printtyp.type_expr) ty
+        (Style.as_inline_code pp_type) (ids, ty)
   | Missing_type_constraint ->
       Location.errorf ~loc
         "@[%s@ %s@]"

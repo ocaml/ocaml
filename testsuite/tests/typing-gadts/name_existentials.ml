@@ -30,7 +30,7 @@ Line 1, characters 40-41:
 1 | let ko1 = function Dyn (type a) (w, x : _) -> ()
                                             ^
 Error: This type does not bind all existentials in the constructor:
-         type "a". "'a ty * 'a"
+         "type a. 'a ty * 'a"
 |}]
 let ko2 = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
 [%%expect{|
@@ -55,7 +55,7 @@ Line 1, characters 36-53:
 1 | let f = function C (type a) (x, f : a * (a -> a list)) -> ignore (x : a)
                                         ^^^^^^^^^^^^^^^^^
 Error: This type does not bind all existentials in the constructor:
-         type "a". "a * (a -> a list)"
+         "type a. a * (a -> a list)"
 |}]
 
 (* with GADT unification *)
@@ -84,7 +84,7 @@ let rec test : type a. a expr -> a = function
 Line 2, characters 22-23:
 2 |   | Int (type b) (n : a) -> n
                           ^
-Error: This type does not bind all existentials in the constructor: type "b". "a"
+Error: This type does not bind all existentials in the constructor: "type b. a"
 |}]
 
 (* Strange wildcard *)
