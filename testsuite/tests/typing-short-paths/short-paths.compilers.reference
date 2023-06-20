@@ -69,8 +69,8 @@ val x : 'a Int.Map.t = <abstr>
 Line 1, characters 8-9:
 1 | let y = x + x ;;
             ^
-Error: This expression has type 'a Int.Map.t
-       but an expression was expected of type int
+Error: This expression has type "'a Int.Map.t"
+       but an expression was expected of type "int"
 module M : sig type t = A type u = C end
 module N : sig type t = B end
 - : M.t = A
@@ -99,7 +99,7 @@ Error: Signature mismatch:
          type t = int
        is not included in
          type t = string
-       The type t is not equal to the type string
+       The type "t" is not equal to the type "string"
 module A : sig module B : sig type t = T end end
 module M2 : sig type u = A.B.t type foo = int type v = u end
 

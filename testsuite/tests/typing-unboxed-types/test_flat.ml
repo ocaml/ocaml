@@ -13,8 +13,8 @@ Line 2, characters 0-46:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        it might contain both float and non-float values,
-       depending on the instantiation of the existential variable 'a.
-       You should annotate it with [@@ocaml.boxed].
+       depending on the instantiation of the existential variable "'a".
+       You should annotate it with "[@@ocaml.boxed]".
 |}];;
 
 (* should fail (the existential _ still occurs in an abstract type) *)
@@ -26,7 +26,7 @@ Line 1, characters 0-50:
 Error: This type cannot be unboxed because
        it might contain both float and non-float values,
        depending on the instantiation of an unnamed existential variable.
-       You should annotate it with [@@ocaml.boxed].
+       You should annotate it with "[@@ocaml.boxed]".
 |}];;
 
 (* regression test for PR#7511 (wrong determination of unboxability for GADTs)
@@ -40,8 +40,8 @@ Line 2, characters 0-34:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        it might contain both float and non-float values,
-       depending on the instantiation of the existential variable 'a.
-       You should annotate it with [@@ocaml.boxed].
+       depending on the instantiation of the existential variable "'a".
+       You should annotate it with "[@@ocaml.boxed]".
 |}];;
 
 (* regression test for GPR#1133 (follow-up to PR#7511) *)
@@ -54,8 +54,8 @@ Line 2, characters 0-34:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        it might contain both float and non-float values,
-       depending on the instantiation of the existential variable 'a.
-       You should annotate it with [@@ocaml.boxed].
+       depending on the instantiation of the existential variable "'a".
+       You should annotate it with "[@@ocaml.boxed]".
 |}];;
 
 (* Another test for GPR#1133: abstract types *)
@@ -80,7 +80,7 @@ Line 1, characters 0-45:
 Error: This type cannot be unboxed because
        it might contain both float and non-float values,
        depending on the instantiation of an unnamed existential variable.
-       You should annotate it with [@@ocaml.boxed].
+       You should annotate it with "[@@ocaml.boxed]".
 |}];;
 
 (* accept *)
@@ -97,8 +97,8 @@ Line 1, characters 0-34:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        it might contain both float and non-float values,
-       depending on the instantiation of the existential variable 'a.
-       You should annotate it with [@@ocaml.boxed].
+       depending on the instantiation of the existential variable "'a".
+       You should annotate it with "[@@ocaml.boxed]".
 |}];;
 
 (* accept *)
@@ -130,7 +130,7 @@ Line 1, characters 0-45:
 Error: This type cannot be unboxed because
        it might contain both float and non-float values,
        depending on the instantiation of an unnamed existential variable.
-       You should annotate it with [@@ocaml.boxed].
+       You should annotate it with "[@@ocaml.boxed]".
 |}];;
 
 (* accept *)
@@ -159,8 +159,8 @@ Line 2, characters 0-34:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        it might contain both float and non-float values,
-       depending on the instantiation of the existential variable 'a.
-       You should annotate it with [@@ocaml.boxed].
+       depending on the instantiation of the existential variable "'a".
+       You should annotate it with "[@@ocaml.boxed]".
 |}];;
 
 (* regression test for GPR#1133 (follow-up to PR#7511) *)
@@ -173,8 +173,8 @@ Line 2, characters 0-34:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        it might contain both float and non-float values,
-       depending on the instantiation of the existential variable 'a.
-       You should annotate it with [@@ocaml.boxed].
+       depending on the instantiation of the existential variable "'a".
+       You should annotate it with "[@@ocaml.boxed]".
 |}];;
 
 (* Another test for GPR#1133: abstract types *)
@@ -199,7 +199,7 @@ Line 1, characters 0-45:
 Error: This type cannot be unboxed because
        it might contain both float and non-float values,
        depending on the instantiation of an unnamed existential variable.
-       You should annotate it with [@@ocaml.boxed].
+       You should annotate it with "[@@ocaml.boxed]".
 |}];;
 
 type 'a s = S : (unit -> 'a) M.r -> 'a option s [@@unboxed];;
@@ -215,8 +215,8 @@ Line 1, characters 0-34:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        it might contain both float and non-float values,
-       depending on the instantiation of the existential variable 'a.
-       You should annotate it with [@@ocaml.boxed].
+       depending on the instantiation of the existential variable "'a".
+       You should annotate it with "[@@ocaml.boxed]".
 |}];;
 
 (* accept *)
@@ -264,8 +264,8 @@ Line 1, characters 0-61:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        it might contain both float and non-float values,
-       depending on the instantiation of the existential variable 'a.
-       You should annotate it with [@@ocaml.boxed].
+       depending on the instantiation of the existential variable "'a".
+       You should annotate it with "[@@ocaml.boxed]".
 |}];;
 type valid2 = Any : (int, 'a) almost_eq -> valid2 [@@unboxed];;
 [%%expect{|
@@ -280,8 +280,8 @@ Line 1, characters 0-60:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This type cannot be unboxed because
        it might contain both float and non-float values,
-       depending on the instantiation of the existential variable 'a.
-       You should annotate it with [@@ocaml.boxed].
+       depending on the instantiation of the existential variable "'a".
+       You should annotate it with "[@@ocaml.boxed]".
 |}];;
 
 
@@ -311,7 +311,7 @@ type 'a id = Id of 'a [@@unboxed]
 Line 2, characters 0-21:
 2 | type cycle = cycle id
     ^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation cycle is cyclic:
-         cycle = cycle id,
-         cycle id contains cycle
+Error: The type abbreviation "cycle" is cyclic:
+         "cycle" = "cycle id",
+         "cycle id" contains "cycle"
 |}];;

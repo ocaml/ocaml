@@ -36,14 +36,14 @@ type change_kind =
   | Preservation
 
 let style = function
-  | Preservation -> Misc.Color.[ FG Green ]
-  | Deletion -> Misc.Color.[ FG Red; Bold]
-  | Insertion -> Misc.Color.[ FG Red; Bold]
-  | Modification -> Misc.Color.[ FG Magenta; Bold]
+  | Preservation -> Misc.Style.[ FG Green ]
+  | Deletion -> Misc.Style.[ FG Red; Bold]
+  | Insertion -> Misc.Style.[ FG Red; Bold]
+  | Modification -> Misc.Style.[ FG Magenta; Bold]
 
 let prefix ppf (pos, p) =
   let sty = style p in
-  Format.pp_open_stag ppf (Misc.Color.Style sty);
+  Format.pp_open_stag ppf (Misc.Style.Style sty);
   Format.fprintf ppf "%i. " pos;
   Format.pp_close_stag ppf ()
 

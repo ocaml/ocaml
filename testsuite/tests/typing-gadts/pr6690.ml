@@ -30,10 +30,10 @@ Line 15, characters 4-9:
 15 |   | Local -> fun _ -> raise Exit
          ^^^^^
 Error: This pattern matches values of type
-         ($0, $0 * insert, $0 local_visit_action) context
+         "($0, $0 * insert, $0 local_visit_action) context"
        but a pattern was expected which matches values of type
-         ($0, $0 * insert, visit_action) context
-       The type constructor $0 would escape its scope
+         "($0, $0 * insert, visit_action) context"
+       The type constructor "$0" would escape its scope
 |}];;
 
 let vexpr (type visit_action)
@@ -47,10 +47,10 @@ Line 4, characters 4-9:
 4 |   | Local -> fun _ -> raise Exit
         ^^^^^
 Error: This pattern matches values of type
-         ($'a, $'a * insert, $'a local_visit_action) context
+         "($'a, $'a * insert, $'a local_visit_action) context"
        but a pattern was expected which matches values of type
-         ($'a, $'a * insert, visit_action) context
-       The type constructor $'a would escape its scope
+         "($'a, $'a * insert, visit_action) context"
+       The type constructor "$'a" would escape its scope
 |}];;
 
 let vexpr (type result) (type visit_action)

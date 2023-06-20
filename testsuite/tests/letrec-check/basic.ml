@@ -27,7 +27,7 @@ let rec x = let y = () in x;;
 Line 1, characters 12-27:
 1 | let rec x = let y = () in x;;
                 ^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let rec x = [y]
@@ -81,7 +81,7 @@ let rec x = ignore x;;
 Line 1, characters 12-20:
 1 | let rec x = ignore x;;
                 ^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let rec x = y 0 and y _ = ();;
@@ -89,7 +89,7 @@ let rec x = y 0 and y _ = ();;
 Line 1, characters 12-15:
 1 | let rec x = y 0 and y _ = ();;
                 ^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let rec b = if b then true else false;;
@@ -97,7 +97,7 @@ let rec b = if b then true else false;;
 Line 1, characters 12-37:
 1 | let rec b = if b then true else false;;
                 ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let rec x = function
@@ -118,7 +118,7 @@ let rec x = { x with contents = 3 }  [@ocaml.warning "-23"];;
 Line 1, characters 12-35:
 1 | let rec x = { x with contents = 3 }  [@ocaml.warning "-23"];;
                 ^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 (* this is rejected as `c` will be dereferenced during the copy,
@@ -128,7 +128,7 @@ let rec c = { c with Complex.re = 1.0 };;
 Line 1, characters 12-39:
 1 | let rec c = { c with Complex.re = 1.0 };;
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let rec x = `A y
@@ -166,7 +166,7 @@ val r : unit ref = {contents = ()}
 Line 2, characters 12-18:
 2 | let rec x = r := x;;
                 ^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let rec x =
@@ -179,7 +179,7 @@ Lines 2-4, characters 2-6:
 2 | ..for i = 0 to 1 do
 3 |     let z = y in ignore z
 4 |   done
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let rec x =
@@ -192,7 +192,7 @@ Lines 2-4, characters 2-6:
 2 | ..for i = 0 to y do
 3 |     ()
 4 |   done
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let rec x =
@@ -205,7 +205,7 @@ Lines 2-4, characters 2-6:
 2 | ..for i = y to 10 do
 3 |     ()
 4 |   done
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let rec x =
@@ -218,7 +218,7 @@ Lines 2-4, characters 2-6:
 2 | ..while false do
 3 |     let y = x in ignore y
 4 |   done
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let rec x =
@@ -231,7 +231,7 @@ Lines 2-4, characters 2-6:
 2 | ..while y do
 3 |     ()
 4 |   done
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let rec x =
@@ -244,7 +244,7 @@ Lines 2-4, characters 2-6:
 2 | ..while y do
 3 |     let y = x in ignore y
 4 |   done
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 
@@ -254,7 +254,7 @@ let rec x = y.contents and y = { contents = 3 };;
 Line 1, characters 12-22:
 1 | let rec x = y.contents and y = { contents = 3 };;
                 ^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let rec x = assert y and y = true;;
@@ -262,7 +262,7 @@ let rec x = assert y and y = true;;
 Line 1, characters 12-20:
 1 | let rec x = assert y and y = true;;
                 ^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 (* Recursively constructing arrays of known non-float type is permitted *)
@@ -296,7 +296,7 @@ let _ =
 Line 6, characters 14-26:
 6 |   let rec x = Stdlib.ref y
                   ^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 (* An example, from Leo White, of let rec bindings that allocate
@@ -313,7 +313,7 @@ let foo p x =
 Line 3, characters 4-52:
 3 |     if p then (fun y -> x + g y) else (fun y -> g y)
         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let rec x =
@@ -327,7 +327,7 @@ Lines 2-4, characters 2-30:
 2 | ..match let _ = y in raise Not_found with
 3 |     _ -> "x"
 4 |   | exception Not_found -> "z"
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 
@@ -353,7 +353,7 @@ Lines 10-12, characters 2-25:
 10 | ..let rec x = ref y
 11 |   and y = ref wrong
 12 |   in ref ("foo" ^ ! ! !x)..
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}]
 
 (* in this case, x does not depend on y, so everything is fine *)

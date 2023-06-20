@@ -33,8 +33,8 @@ Line 5, characters 3-4:
 5 |   (x : (module S'));; (* fail *)
        ^
 Error: This expression has type
-         (module S2 with type t = int and type u = bool)
-       but an expression was expected of type (module S')
+         "(module S2 with type t = int and type u = bool)"
+       but an expression was expected of type "(module S')"
 |}];;
 
 (* but you cannot forget values (no physical coercions) *)
@@ -46,6 +46,6 @@ module type S3 = sig type u type t val x : int end
 Line 3, characters 2-67:
 3 |   (x : (module S3 with type t = 'a and type u = 'b) :> (module S'));; (* fail *)
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Type (module S3 with type t = int and type u = bool)
-       is not a subtype of (module S')
+Error: Type "(module S3 with type t = int and type u = bool)"
+       is not a subtype of "(module S')"
 |}];;
