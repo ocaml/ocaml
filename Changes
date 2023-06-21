@@ -78,6 +78,10 @@ Working version
 
 ### Build system:
 
+- #10837: Build native-code compilers on FreeBSD/powerpc64le and
+  FreeBSD/powerpc64 (big-endian, ELFv2 ABI).
+  (Piotr Kubaj, review by Anil Madhavapeddy)
+
 ### Bug fixes:
 
 - #14602: on Windows, Sys.rename and Unix.rename now succeed when the
