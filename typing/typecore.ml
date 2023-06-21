@@ -571,6 +571,7 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
   unify_vars p1_vs p2_vs
 
 let rec build_as_type (env : Env.t) p =
+  (* Special handling of ground type annotations (#12313) *)
   let has_ground_constraint =
     List.exists
       (function Tpat_constraint cty, _, _ -> free_variables cty.ctyp_type = []
@@ -578,6 +579,8 @@ let rec build_as_type (env : Env.t) p =
       p.pat_extra
   in
   let as_ty =
+    (* If there is a ground constraint, the [fold_left] below is going to
+       return it, so we can just use a fesh type variable here. *)
     if has_ground_constraint then newgenvar () else build_as_type_aux env p in
   (* Cf. #1655 *)
   List.fold_left (fun as_ty (extra, _loc, _attrs) ->
@@ -593,7 +596,7 @@ let rec build_as_type (env : Env.t) p =
         with_local_level ~post:generalize_structure
           (fun () -> instance cty.ctyp_type)
       in
-      (* This call to unify can't fail since the pattern is well typed. *)
+      (* This call to unify may only fail due to missing GADT equations *)
       unify_pat_types p.pat_loc env (instance as_ty) (instance ty);
       ty
   ) as_ty p.pat_extra

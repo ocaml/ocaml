@@ -18,10 +18,6 @@ type (_, _) eq = Refl : ('a, 'a) eq
 |}]
 
 let () =
-  let (Refl : (bool X.t, bool t) eq) as t = Obj.magic  () in ()
+  let (Refl : (bool X.t, bool t) eq) as t = Obj.magic  () in ignore t
 [%%expect{|
-Line 2, characters 6-41:
-2 |   let (Refl : (bool X.t, bool t) eq) as t = Obj.magic  () in ()
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 26 [unused-var]: unused variable t.
 |}]
