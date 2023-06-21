@@ -2540,11 +2540,18 @@ let rec approx_type env sty =
       approx_type env sty
   | _ -> newvar ()
 
+let type_pattern_approx env spat =
+  match spat.ppat_desc with
+  | Ppat_constraint (_, sty) -> approx_type env sty
+  | _ -> newvar ()
+
 let rec type_approx env sexp =
   match sexp.pexp_desc with
     Pexp_let (_, _, e) -> type_approx env e
-  | Pexp_fun (p, _, _, e) ->
-      let ty = if is_optional p then type_option (newvar ()) else newvar () in
+  | Pexp_fun (p, _, spat, e) ->
+      let ty = type_pattern_approx env spat in
+      if is_optional p then
+        unify_pat_types spat.ppat_loc env ty (type_option (newvar ()));
       newty (Tarrow(p, ty, type_approx env e, commu_ok))
   | Pexp_function ({pc_rhs=e}::_) ->
       newty (Tarrow(Nolabel, newvar (), type_approx env e, commu_ok))
