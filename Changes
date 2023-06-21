@@ -50,6 +50,10 @@ Working version
 
 ### Build system:
 
+- #10837: Build native-code compilers on FreeBSD/powerpc64le and
+  FreeBSD/powerpc64 (big-endian, ELFv2 ABI).
+  (Piotr Kubaj)
+
 ### Bug fixes:
 
 - #15185, #15187: fix a pattern-matching miscompilation on certain
