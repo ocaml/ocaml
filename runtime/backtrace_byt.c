@@ -328,7 +328,7 @@ code_t caml_next_frame_pointer(value* stack_high, value ** sp,
 static size_t get_callstack(struct stack_info* stack,
                             value* sp, intnat trap_spoff,
                             size_t max_frames,
-                            code_t** trace_p, size_t *allocated_size_p)
+                            code_t **trace_p, size_t *allocated_size_p)
 {
   CAMLnoalloc;
 
@@ -389,18 +389,18 @@ static value alloc_callstack(code_t* trace, size_t frames)
  */
 
 size_t caml_get_callstack(size_t max_frames,
-                          void **buffer,
-                          size_t *alloc_size_p)
+                          backtrace_slot **buffer_p,
+                          size_t *alloc_size_p,
+                          ssize_t alloc_idx)
 {
-  code_t *trace = *buffer;
-  size_t allocated = *alloc_size_p / sizeof(code_t);
+  CAMLassert(alloc_idx < 1); /* allocation indexes not used in bytecode */
+  code_t *trace = (code_t *)*buffer_p;
   size_t frames = get_callstack(Caml_state->current_stack,
                                 Caml_state->current_stack->sp,
                                 Caml_state->trap_sp_off,
                                 max_frames,
-                                &trace, &allocated);
-  *buffer = trace;
-  *alloc_size_p = allocated * sizeof(code_t);
+                                &trace, alloc_size_p);
+  *buffer_p = (backtrace_slot *)trace;
   return frames;
 }
 
