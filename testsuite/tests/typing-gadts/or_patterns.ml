@@ -697,17 +697,50 @@ val f_ok : 'a t -> bool iref -> 'a iref -> unit = <fun>
 let f_amb (type a) (t : a t) (a : bool ref) (b : a ref) =
   match t, a, b with
   | IntLit,  ({ contents = true } as x), _
-  | BoolLit,  _,                        ({ contents = true} as x) -> ignore x
+  | BoolLit,  _, ({ contents = true} as x) -> ignore x
   | _, _, _ -> ()
 ;;
 [%%expect{|
-Lines 3-4, characters 4-65:
+Lines 3-4, characters 4-42:
 3 | ....IntLit,  ({ contents = true } as x), _
-4 |   | BoolLit,  _,                        ({ contents = true} as x)............
+4 |   | BoolLit,  _, ({ contents = true} as x)............
 Error: The variable "x" on the left-hand side of this or-pattern has type
          "bool ref"
        but on the right-hand side it has type "a ref"
        Type "bool" is not compatible with type "a"
+|}]
+
+let f_disamb (type a) (t : a t) (a : bool ref) (b : a ref) =
+  match t, a, b with
+  | IntLit,  ({ contents = true } as x), _
+  | BoolLit,  _, (({ contents = true} : bool ref) as x) -> ignore x
+  | _, _, _ -> ()
+;;
+[%%expect{|
+val f_disamb : 'a t -> bool ref -> 'a ref -> unit = <fun>
+|}]
+
+(* #11799, #12313 *)
+type _ t =
+      | A : [ `A ] t
+      | B : [ `B ] t
+
+let foo : type a. a t -> a t =
+  function (A | B) as t -> t
+[%%expect{|
+type _ t = A : [ `A ] t | B : [ `B ] t
+Line 6, characters 16-17:
+6 |   function (A | B) as t -> t
+                    ^
+Error: This pattern matches values of type "[ `B ] t"
+       but a pattern was expected which matches values of type "[ `A ] t"
+       These two variant types have no intersection
+|}]
+
+let foo : type a. a t -> a t =
+  function (A | B : a t) as t -> t
+[%%expect{|
+val foo : 'a t -> 'a t = <fun>
 |}]
 
 (********************************************)
