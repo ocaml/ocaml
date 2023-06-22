@@ -17,9 +17,9 @@ Working version
 
 ### Type system:
 
-- #???, #11799: Do not re-build as-pattern type when a ground type annotation
+- #12313, #11799: Do not re-build as-pattern type when a ground type annotation
   is given. This allows to work around problems with GADTs in as-patterns.
-  (Jacques Garrigue, report by Leo White, review by ???)
+  (Jacques Garrigue, report by Leo White, review by Gabriel Scherer)
 
 ### Runtime system:
 

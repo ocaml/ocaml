@@ -571,35 +571,30 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
   unify_vars p1_vs p2_vs
 
 let rec build_as_type (env : Env.t) p =
-  (* Special handling of ground type annotations (#12313) *)
-  let has_ground_constraint =
-    List.exists
-      (function Tpat_constraint cty, _, _ -> free_variables cty.ctyp_type = []
-        | _ -> false)
-      p.pat_extra
-  in
-  let as_ty =
-    (* If there is a ground constraint, the [fold_left] below is going to
-       return it, so we can just use a fesh type variable here. *)
-    if has_ground_constraint then newgenvar () else build_as_type_aux env p in
-  (* Cf. #1655 *)
-  List.fold_left (fun as_ty (extra, _loc, _attrs) ->
-    match extra with
-    | Tpat_type _ | Tpat_open _ | Tpat_unpack -> as_ty
-    | Tpat_constraint cty ->
+  build_as_type_extra env p p.pat_extra
+
+and build_as_type_extra env p = function
+  | [] -> build_as_type_aux env p
+  | ((Tpat_type _ | Tpat_open _ | Tpat_unpack), _, _) :: rest ->
+      build_as_type_extra env p rest
+  | (Tpat_constraint {ctyp_type = ty; _}, _, _) :: rest ->
+      (* If the type constraint is ground, then this is the best type
+         we can return, so just return an instance (cf. #12313) *)
+      if free_variables ty = [] then instance ty else
+      (* Otherwise we combine the inferred type for the pattern with
+         then non-ground constraint in a non-ambivalent way *)
+      let as_ty = build_as_type_extra env p rest in
       (* [generic_instance] can only be used if the variables of the original
          type ([cty.ctyp_type] here) are not at [generic_level], which they are
          here.
          If we used [generic_instance] we would lose the sharing between
          [instance ty] and [ty].  *)
       let ty =
-        with_local_level ~post:generalize_structure
-          (fun () -> instance cty.ctyp_type)
+        with_local_level ~post:generalize_structure (fun () -> instance ty)
       in
       (* This call to unify may only fail due to missing GADT equations *)
       unify_pat_types p.pat_loc env (instance as_ty) (instance ty);
       ty
-  ) as_ty p.pat_extra
 
 and build_as_type_aux (env : Env.t) p =
   match p.pat_desc with
