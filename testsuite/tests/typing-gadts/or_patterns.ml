@@ -720,7 +720,7 @@ let f_disamb (type a) (t : a t) (a : bool ref) (b : a ref) =
 val f_disamb : 'a t -> bool ref -> 'a ref -> unit = <fun>
 |}]
 
-(* #11799 *)
+(* #11799, #12313 *)
 type _ t =
       | A : [ `A ] t
       | B : [ `B ] t
