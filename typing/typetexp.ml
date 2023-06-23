@@ -187,7 +187,7 @@ end = struct
 
   let get_in_scope_names () =
     let add_name name _ l =
-      if name = "_" then l else Pprintast.tyvar_name name :: l
+      if name = "_" then l else Pprintast.tyvar_of_name name :: l
     in
     TyVarMap.fold add_name !type_variables []
 
@@ -319,7 +319,7 @@ end = struct
           with Not_found ->
             if extensibility = Fixed && Btype.is_Tvar ty then
               raise(Error(loc, env,
-                          Unbound_type_variable (Pprintast.tyvar_name name,
+                          Unbound_type_variable (Pprintast.tyvar_of_name name,
                                                  get_in_scope_names ())));
             let v2 = new_global_var () in
             r := (loc, v, v2) :: !r;

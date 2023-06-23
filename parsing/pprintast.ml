@@ -94,8 +94,10 @@ let needs_parens txt =
 let needs_spaces txt =
   first_is '*' txt || last_is '*' txt
 
-(* add parentheses to binders when they are in fact infix or prefix operators *)
-let protect_ident ppf txt =
+(* Turn an arbitrary variable name into a valid OCaml identifier by adding \#
+  in case it is a keyword, or parenthesis when it is an infix or prefix
+  operator. *)
+let ident_of_name ppf txt =
   let format : (_, _, _) format =
     if Lexer.is_keyword txt then "\\#%s"
     else if not (needs_parens txt) then "%s"
@@ -103,7 +105,7 @@ let protect_ident ppf txt =
     else "(%s)"
   in fprintf ppf format txt
 
-let protect_ident_loc ppf s = protect_ident ppf s.txt
+let ident_of_name_loc ppf s = ident_of_name ppf s.txt
 
 let protect_longident ppf print_longident longprefix txt =
   let format : (_, _, _) format =
@@ -221,7 +223,7 @@ let paren: 'a . ?first:space_formatter -> ?last:space_formatter ->
     else fu f x
 
 let rec longident f = function
-  | Lident s -> protect_ident f s
+  | Lident s -> ident_of_name f s
   | Ldot(y,s) -> protect_longident f longident y s
   | Lapply (y,s) ->
       pp f "%a(%a)" longident y longident s
@@ -272,21 +274,23 @@ let iter_loc f ctxt {txt; loc = _} = f ctxt txt
 
 let constant_string f s = pp f "%S" s
 
-let tyvar_name s =
+let tyvar_of_name s =
   if String.length s >= 2 && s.[1] = '\'' then
     (* without the space, this would be parsed as
        a character literal *)
     "' " ^ s
   else if Lexer.is_keyword s then
     "'\\#" ^ s
+  else if String.equal s "_" then
+    s
   else
     "'" ^ s
 
 let tyvar ppf s =
-  Format.fprintf ppf "%s" (tyvar_name s)
+  Format.fprintf ppf "%s" (tyvar_of_name s)
 
 let tyvar_loc f str = tyvar f str.txt
-let string_quot f x = pp f "`%a" protect_ident x
+let string_quot f x = pp f "`%a" ident_of_name x
 
 (* c ['a,'b] *)
 let rec class_params_def ctxt f =  function
@@ -298,8 +302,8 @@ let rec class_params_def ctxt f =  function
 and type_with_label ctxt f (label, c) =
   match label with
   | Nolabel    -> core_type1 ctxt f c (* otherwise parenthesize *)
-  | Labelled s -> pp f "%a:%a" protect_ident s (core_type1 ctxt) c
-  | Optional s -> pp f "?%a:%a" protect_ident s (core_type1 ctxt) c
+  | Labelled s -> pp f "%a:%a" ident_of_name s (core_type1 ctxt) c
+  | Optional s -> pp f "?%a:%a" ident_of_name s (core_type1 ctxt) c
 
 and core_type ctxt f x =
   if x.ptyp_attributes <> [] then begin
@@ -372,7 +376,7 @@ and core_type1 ctxt f x =
         let core_field_type f x = match x.pof_desc with
           | Otag (l, ct) ->
             (* Cf #7200 *)
-            pp f "@[<hov2>%a: %a@ %a@ @]" protect_ident l.txt
+            pp f "@[<hov2>%a: %a@ %a@ @]" ident_of_name l.txt
               (core_type ctxt) ct (attributes ctxt) x.pof_attributes
           | Oinherit ct ->
             pp f "@[<hov2>%a@ @]" (core_type ctxt) ct
@@ -411,7 +415,7 @@ and pattern ctxt f x =
   end
   else match x.ppat_desc with
     | Ppat_alias (p, s) ->
-        pp f "@[<2>%a@;as@;%a@]" (pattern ctxt) p protect_ident s.txt
+        pp f "@[<2>%a@;as@;%a@]" (pattern ctxt) p ident_of_name s.txt
     | _ -> pattern_or ctxt f x
 
 and pattern_or ctxt f x =
@@ -441,7 +445,7 @@ and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
   if x.ppat_attributes <> [] then pattern ctxt f x
   else match x.ppat_desc with
     | Ppat_variant (l, Some p) ->
-        pp f "@[<2>`%a@;%a@]" protect_ident l (simple_pattern ctxt) p
+        pp f "@[<2>`%a@;%a@]" ident_of_name l (simple_pattern ctxt) p
     | Ppat_construct (({txt=Lident("()"|"[]"|"true"|"false");_}), _) ->
         simple_pattern ctxt f x
     | Ppat_construct (({txt;_} as li), po) ->
@@ -454,7 +458,7 @@ and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
                pp f "%a@;%a"  longident_loc li (simple_pattern ctxt) x
            | Some (vl, x) ->
                pp f "%a@ (type %a)@;%a" longident_loc li
-                 (list ~sep:"@ " protect_ident_loc) vl
+                 (list ~sep:"@ " ident_of_name_loc) vl
                  (simple_pattern ctxt) x
            | None -> pp f "%a" longident_loc li)
     | _ -> simple_pattern ctxt f x
@@ -465,7 +469,7 @@ and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
     | Ppat_construct (({txt=Lident ("()"|"[]"|"true"|"false" as x);_}), None) ->
         pp f  "%s" x
     | Ppat_any -> pp f "_";
-    | Ppat_var ({txt = txt;_}) -> protect_ident f txt
+    | Ppat_var ({txt = txt;_}) -> ident_of_name f txt
     | Ppat_array l ->
         pp f "@[<2>[|%a|]@]"  (list (pattern1 ctxt) ~sep:";") l
     | Ppat_unpack { txt = None } ->
@@ -495,7 +499,7 @@ and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
         pp f "@[<1>(%a)@]" (list  ~sep:",@;" (pattern1 ctxt))  l (* level1*)
     | Ppat_constant (c) -> pp f "%a" constant c
     | Ppat_interval (c1, c2) -> pp f "%a..%a" constant c1 constant c2
-    | Ppat_variant (l,None) ->  pp f "`%a" protect_ident l
+    | Ppat_variant (l,None) ->  pp f "`%a" ident_of_name l
     | Ppat_constraint (p, ct) ->
         pp f "@[<2>(%a@;:@;%a)@]" (pattern1 ctxt) p (core_type ctxt) ct
     | Ppat_lazy p ->
@@ -525,20 +529,20 @@ and label_exp ctxt f (l,opt,p) =
         when txt = rest ->
           (match opt with
            | Some o ->
-              pp f "?(%a=@;%a)@;" protect_ident rest  (expression ctxt) o
-           | None -> pp f "?%a@ " protect_ident rest)
+              pp f "?(%a=@;%a)@;" ident_of_name rest  (expression ctxt) o
+           | None -> pp f "?%a@ " ident_of_name rest)
       | _ ->
           (match opt with
            | Some o ->
                pp f "?%a:(%a=@;%a)@;"
-                 protect_ident rest (pattern1 ctxt) p (expression ctxt) o
-           | None -> pp f "?%a:%a@;" protect_ident rest (simple_pattern ctxt) p)
+                 ident_of_name rest (pattern1 ctxt) p (expression ctxt) o
+           | None -> pp f "?%a:%a@;" ident_of_name rest (simple_pattern ctxt) p)
       end
   | Labelled l -> match p with
     | {ppat_desc  = Ppat_var {txt;_}; ppat_attributes = []}
       when txt = l ->
-        pp f "~%a@;" protect_ident l
-    | _ ->  pp f "~%a:%a@;" protect_ident l (simple_pattern ctxt) p
+        pp f "~%a@;" ident_of_name l
+    | _ ->  pp f "~%a:%a@;" ident_of_name l (simple_pattern ctxt) p
 
 and sugar_expr ctxt f e =
   if e.pexp_attributes <> [] then false
@@ -636,7 +640,7 @@ and expression ctxt f x =
           (label_exp ctxt) (l, e0, p)
           (expression ctxt) e
     | Pexp_newtype (lid, e) ->
-        pp f "@[<2>fun@;(type@;%a)@;->@;%a@]" protect_ident lid.txt
+        pp f "@[<2>fun@;(type@;%a)@;->@;%a@]" ident_of_name lid.txt
           (expression ctxt) e
     | Pexp_function l ->
         pp f "@[<hv>function%a@]" (case_list ctxt) l
@@ -727,10 +731,10 @@ and expression ctxt f x =
     | Pexp_new (li) ->
         pp f "@[<hov2>new@ %a@]" longident_loc li;
     | Pexp_setinstvar (s, e) ->
-        pp f "@[<hov2>%a@ <-@ %a@]" protect_ident s.txt (expression ctxt) e
+        pp f "@[<hov2>%a@ <-@ %a@]" ident_of_name s.txt (expression ctxt) e
     | Pexp_override l -> (* FIXME *)
         let string_x_expression f (s, e) =
-          pp f "@[<hov2>%a@ =@ %a@]" protect_ident s.txt (expression ctxt) e in
+          pp f "@[<hov2>%a@ =@ %a@]" ident_of_name s.txt (expression ctxt) e in
         pp f "@[<hov2>{<%a>}@]"
           (list string_x_expression  ~sep:";"  )  l;
     | Pexp_letmodule (s, me, e) ->
@@ -757,7 +761,7 @@ and expression ctxt f x =
           (override o.popen_override) (module_expr ctxt) o.popen_expr
           (expression ctxt) e
     | Pexp_variant (l,Some eo) ->
-        pp f "@[<2>`%a@;%a@]" protect_ident l (simple_expr ctxt) eo
+        pp f "@[<2>`%a@;%a@]" ident_of_name l (simple_expr ctxt) eo
     | Pexp_letop {let_; ands; body} ->
         pp f "@[<2>@[<v>%a@,%a@] in@;<1 -2>%a@]"
           (binding_op ctxt) let_
@@ -780,7 +784,7 @@ and expression2 ctxt f x =
     | Pexp_field (e, li) ->
         pp f "@[<hov2>%a.%a@]" (simple_expr ctxt) e longident_loc li
     | Pexp_send (e, s) ->
-        pp f "@[<hov2>%a#%a@]" (simple_expr ctxt) e protect_ident s.txt
+        pp f "@[<hov2>%a#%a@]" (simple_expr ctxt) e ident_of_name s.txt
 
     | _ -> simple_expr ctxt f x
 
@@ -814,7 +818,7 @@ and simple_expr ctxt f x =
         pp f "(%a%a :> %a)" (expression ctxt) e
           (option (core_type ctxt) ~first:" : " ~last:" ") cto1 (* no sep hint*)
           (core_type ctxt) ct
-    | Pexp_variant (l, None) -> pp f "`%a" protect_ident l
+    | Pexp_variant (l, None) -> pp f "`%a" ident_of_name l
     | Pexp_record (l, eo) ->
         let longident_x_expression f ( li, e) =
           match e with
@@ -884,12 +888,12 @@ and class_type_field ctxt f x =
   | Pctf_val (s, mf, vf, ct) ->
       pp f "@[<2>val @ %a%a%a@ :@ %a@]%a"
         mutable_flag mf virtual_flag vf
-        protect_ident s.txt (core_type ctxt) ct
+        ident_of_name s.txt (core_type ctxt) ct
         (item_attributes ctxt) x.pctf_attributes
   | Pctf_method (s, pf, vf, ct) ->
       pp f "@[<2>method %a %a%a :@;%a@]%a"
         private_flag pf virtual_flag vf
-        protect_ident s.txt (core_type ctxt) ct
+        ident_of_name s.txt (core_type ctxt) ct
         (item_attributes ctxt) x.pctf_attributes
   | Pctf_constraint (ct1, ct2) ->
       pp f "@[<2>constraint@ %a@ =@ %a@]%a"
@@ -939,7 +943,7 @@ and class_type_declaration_list ctxt f l =
     pp f "@[<2>%s %a%a%a@ =@ %a@]%a" kwd
       virtual_flag x.pci_virt
       (class_params_def ctxt) ls
-      protect_ident txt
+      ident_of_name txt
       (class_type ctxt) x.pci_expr
       (item_attributes ctxt) x.pci_attributes
   in
@@ -958,24 +962,24 @@ and class_field ctxt f x =
         (class_expr ctxt) ce
         (fun f so -> match so with
            | None -> ();
-           | Some (s) -> pp f "@ as %a" protect_ident s.txt ) so
+           | Some (s) -> pp f "@ as %a" ident_of_name s.txt ) so
         (item_attributes ctxt) x.pcf_attributes
   | Pcf_val (s, mf, Cfk_concrete (ovf, e)) ->
       pp f "@[<2>val%s %a%a =@;%a@]%a" (override ovf)
         mutable_flag mf
-        protect_ident s.txt
+        ident_of_name s.txt
         (expression ctxt) e
         (item_attributes ctxt) x.pcf_attributes
   | Pcf_method (s, pf, Cfk_virtual ct) ->
       pp f "@[<2>method virtual %a %a :@;%a@]%a"
         private_flag pf
-        protect_ident s.txt
+        ident_of_name s.txt
         (core_type ctxt) ct
         (item_attributes ctxt) x.pcf_attributes
   | Pcf_val (s, mf, Cfk_virtual ct) ->
       pp f "@[<2>val virtual %a%a :@ %a@]%a"
         mutable_flag mf
-        protect_ident s.txt
+        ident_of_name s.txt
         (core_type ctxt) ct
         (item_attributes ctxt) x.pcf_attributes
   | Pcf_method (s, pf, Cfk_concrete (ovf, e)) ->
@@ -998,7 +1002,7 @@ and class_field ctxt f x =
         (fun f -> function
            | {pexp_desc=Pexp_poly (e, Some ct); pexp_attributes=[]; _} ->
                pp f "%a :@;%a=@;%a"
-                 protect_ident s.txt (core_type ctxt) ct (expression ctxt) e
+                 ident_of_name s.txt (core_type ctxt) ct (expression ctxt) e
            | {pexp_desc=Pexp_poly (e, None); pexp_attributes=[]; _} ->
                bind e
            | _ -> bind e) e
@@ -1133,7 +1137,7 @@ and signature_item ctxt f x : unit =
   | Psig_value vd ->
       let intro = if vd.pval_prim = [] then "val" else "external" in
       pp f "@[<2>%s@ %a@ :@ %a@]%a" intro
-        protect_ident vd.pval_name.txt
+        ident_of_name vd.pval_name.txt
         (value_description ctxt) vd
         (item_attributes ctxt) vd.pval_attributes
   | Psig_typext te ->
@@ -1145,7 +1149,7 @@ and signature_item ctxt f x : unit =
         pp f "@[<2>%s %a%a%a@;:@;%a@]%a" kwd
           virtual_flag x.pci_virt
           (class_params_def ctxt) ls
-          protect_ident txt
+          ident_of_name txt
           (class_type ctxt) x.pci_expr
           (item_attributes ctxt) x.pci_attributes
       in begin
@@ -1279,7 +1283,7 @@ and binding ctxt f {pvb_pat=p; pvb_expr=x; pvb_constraint = ct; _} =
             pp f "%a@ %a"
               (label_exp ctxt) (label,eo,p) pp_print_pexp_function e
       | Pexp_newtype (str,e) ->
-          pp f "(type@ %a)@ %a" protect_ident str.txt pp_print_pexp_function e
+          pp f "(type@ %a)@ %a" ident_of_name str.txt pp_print_pexp_function e
       | _ -> pp f "=@;%a" (expression ctxt) x
   in
   match ct with
@@ -1411,7 +1415,7 @@ and structure_item ctxt f x =
         pp f "@[<2>%s %a%a%a %a%a=@;%a@]%a" kwd
           virtual_flag x.pci_virt
           (class_params_def ctxt) ls
-          protect_ident txt
+          ident_of_name txt
           (list (label_exp ctxt)) args
           (option class_constraint) constr
           (class_expr ctxt) cl
@@ -1428,7 +1432,7 @@ and structure_item ctxt f x =
   | Pstr_class_type l -> class_type_declaration_list ctxt f l
   | Pstr_primitive vd ->
       pp f "@[<hov2>external@ %a@ :@ %a@]%a"
-        protect_ident vd.pval_name.txt
+        ident_of_name vd.pval_name.txt
         (value_description ctxt) vd
         (item_attributes ctxt) vd.pval_attributes
   | Pstr_include incl ->
@@ -1488,7 +1492,7 @@ and type_def_list ctxt f (rf, exported, l) =
     pp f "@[<2>%s %a%a%a%s%a@]%a" kwd
       nonrec_flag rf
       (type_params ctxt) x.ptype_params
-      protect_ident x.ptype_name.txt
+      ident_of_name x.ptype_name.txt
       eq
       (type_declaration ctxt) x
       (item_attributes ctxt) x.ptype_attributes
@@ -1504,7 +1508,7 @@ and record_declaration ctxt f lbls =
   let type_record_field f pld =
     pp f "@[<2>%a%a:@;%a@;%a@]"
       mutable_flag pld.pld_mutable
-      protect_ident pld.pld_name.txt
+      ident_of_name pld.pld_name.txt
       (core_type ctxt) pld.pld_type
       (attributes ctxt) pld.pld_attributes
   in
@@ -1636,14 +1640,14 @@ and label_x_expression_param ctxt f (l,e) =
   | Nolabel  -> expression2 ctxt f e (* level 2*)
   | Optional str ->
       if Some str = simple_name then
-        pp f "?%a" protect_ident str
+        pp f "?%a" ident_of_name str
       else
-        pp f "?%a:%a" protect_ident str (simple_expr ctxt) e
+        pp f "?%a:%a" ident_of_name str (simple_expr ctxt) e
   | Labelled lbl ->
       if Some lbl = simple_name then
-        pp f "~%a" protect_ident lbl
+        pp f "~%a" ident_of_name lbl
       else
-        pp f "~%a:%a" protect_ident lbl (simple_expr ctxt) e
+        pp f "~%a:%a" ident_of_name lbl (simple_expr ctxt) e
 
 and directive_argument f x =
   match x.pdira_desc with
