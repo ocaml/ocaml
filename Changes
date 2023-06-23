@@ -16,7 +16,7 @@ Working version
   (Stephen Dolan, review by Gabriel Scherer)
 
 - #11252, RFC 27: Support raw identifier syntax \#foo
-  (Stephen Dolan, review by David Allsopp)
+  (Stephen Dolan, review by David Allsopp, Gabriel Scherer and Olivier Nicole)
 
 ### Type system:
 
