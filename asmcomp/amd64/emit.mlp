@@ -79,14 +79,12 @@ let fp = Config.with_frame_pointers
 let stack_threshold_size = Config.stack_threshold * 8 (* bytes *)
 
 let frame_size env =                     (* includes return address *)
-  if env.f.fun_frame_required then begin
-    let sz =
-      (env.stack_offset
-       + 8 * (env.f.fun_num_stack_slots.(0) + env.f.fun_num_stack_slots.(1))
-       + 8
-       + (if fp then 8 else 0))
-    in Misc.align sz 16
-  end else
+  if env.f.fun_frame_required then
+    env.stack_offset
+    + 8 * (env.f.fun_num_stack_slots.(0) + env.f.fun_num_stack_slots.(1))
+    + 8
+    + (if fp then 8 else 0)
+  else
     env.stack_offset + 8
 
 let slot_offset env loc cl =

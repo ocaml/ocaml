@@ -45,6 +45,10 @@ Working version
 
 ### Code generation and optimizations:
 
+- #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.
+  This reduces stack usage.  It's only C stacks that require 16-alignment.
+  (Xavier Leroy, review by Gabriel Scherer and Stephen Dolan)
+
 ### Standard library:
 
 * #10775: Half-precision floating-point elements in Bigarray.

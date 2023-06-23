@@ -88,7 +88,6 @@
 #define ENTER_FUNCTION
 #define LEAVE_FUNCTION
 
-#define CHECK_STACK_ALIGNMENT
 #define PREPARE_FOR_C_CALL      CFI_REMEMBER_STATE
 #define CLEANUP_AFTER_C_CALL    CFI_RESTORE_STATE
 
@@ -302,7 +301,6 @@ CFI_STARTPROC
         .cfi_escape DW_CFA_def_cfa_expression, 4, DW_OP_breg + DW_REG_r15, \
           Cstack_sp_plus_160_sleb128_2byte, DW_OP_deref
 #endif
-        CHECK_STACK_ALIGNMENT
         brasl %r14, GCALL(caml_try_realloc_stack)
         CLEANUP_AFTER_C_CALL
         SWITCH_C_TO_OCAML
@@ -337,7 +335,6 @@ LBL(caml_call_gc):
         .cfi_escape DW_CFA_def_cfa_expression, 4, DW_OP_breg + DW_REG_r15, \
           Cstack_sp_plus_160_sleb128_2byte, DW_OP_deref
 #endif
-        CHECK_STACK_ALIGNMENT
         brasl %r14, GCALL(caml_garbage_collection)
         CLEANUP_AFTER_C_CALL
         SWITCH_C_TO_OCAML
@@ -629,7 +626,6 @@ LBL(caml_reraise_exn_stash):
         lg      %r15, Caml_state(c_stack)
         PREPARE_FOR_C_CALL
         CFI_ADJUST(160)
-        CHECK_STACK_ALIGNMENT
         brasl %r14, GCALL(caml_stash_backtrace)
         CLEANUP_AFTER_C_CALL
     /* Restore exception bucket and raise */
@@ -867,7 +863,6 @@ LBL(caml_runstack_1):
         lg      %r15, Caml_state(c_stack)
         PREPARE_FOR_C_CALL
         CFI_ADJUST(160)
-        CHECK_STACK_ALIGNMENT
         brasl %r14, GCALL(caml_free_stack)
         CLEANUP_AFTER_C_CALL
     /* switch directly to parent stack with correct return */

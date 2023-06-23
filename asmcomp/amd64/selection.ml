@@ -278,9 +278,6 @@ method select_floatarith commutative regular_op mem_op args =
   | _ ->
       assert false
 
-method! mark_c_tailcall =
-  contains_calls := true
-
 (* Deal with register constraints *)
 
 method! insert_op_debug env op dbg rs rd =
