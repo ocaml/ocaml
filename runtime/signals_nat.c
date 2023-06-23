@@ -91,6 +91,18 @@ void caml_garbage_collection(void)
 
 #if defined(TARGET_power)
 
+#if defined(SYS_bsd_elf)
+#define UCONTEXT_PC(ctx)        ctx->uc_mcontext.mc_srr0
+#define UCONTEXT_SP(ctx)        ctx->uc_mcontext.mc_gpr[1]
+#define UCONTEXT_EXN_PTR(ctx)   ctx->uc_mcontext.mc_gpr[29]
+#define UCONTEXT_YOUNG_PTR(ctx) ctx->uc_mcontext.mc_gpr[31]
+#else
+#define UCONTEXT_PC(ctx)        ctx->uc_mcontext.gp_regs[32]
+#define UCONTEXT_SP(ctx)        ctx->uc_mcontext.gp_regs[1]
+#define UCONTEXT_EXN_PTR(ctx)   ctx->uc_mcontext.gp_regs[29]
+#define UCONTEXT_YOUNG_PTR(ctx) ctx->uc_mcontext.gp_regs[31]
+#endif
+
 extern void caml_array_bound_error_asm(void);
 
 void caml_sigtrap_handler(int signo, siginfo_t * info, void * context)
@@ -102,10 +114,10 @@ void caml_sigtrap_handler(int signo, siginfo_t * info, void * context)
   caml_domain_state * dom_st = Caml_state;
   /* Recover the values of interesting registers. */
   ucontext_t * ctx = context;
-  uint64_t ctx_pc = ctx->uc_mcontext.gp_regs[32];
-  uint64_t ctx_sp = ctx->uc_mcontext.gp_regs[1];
-  uint64_t ctx_exn_ptr = ctx->uc_mcontext.gp_regs[29];
-  uint64_t ctx_young_ptr = ctx->uc_mcontext.gp_regs[31];
+  uint64_t ctx_pc = UCONTEXT_PC(ctx);
+  uint64_t ctx_sp = UCONTEXT_SP(ctx);
+  uint64_t ctx_exn_ptr = UCONTEXT_EXN_PTR(ctx);
+  uint64_t ctx_young_ptr = UCONTEXT_YOUNG_PTR(ctx);
   /* Save address of trap as the return address in the standard stack frame
      location, so that it will be recorded in the stack backtrace. */
   ((uint64_t *) ctx_sp)[2] = ctx_pc;
