@@ -89,10 +89,10 @@ Working version
 - #12210: uniform style for inline code in compiler messages
   (Florian Angeletti, review by Gabriel Scherer)
 
-* #12278: Remove the OCAML_FLEXLINK environment variable from the compiler
-  drivers. This environment variable was previously used as part of the FlexDLL
-  bootstrap procedure and existed solely for that purpose. Its removal greatly
-  simplifies both the build system and testsuite machinery.
+* #12278, #:12325: Remove the OCAML_FLEXLINK environment variable from the
+  compiler drivers. This environment variable was previously used as part of the
+  FlexDLL bootstrap procedure and existed solely for that purpose. Its removal
+  greatly simplifies both the build system and testsuite machinery.
   (David Allsopp, review by Sébastien Hinderer)
 
 ### Internal/compiler-libs changes:

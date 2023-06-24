@@ -206,6 +206,8 @@ boot/ocamlrun$(EXE): runtime/ocamlruns$(EXE)
 
 $(foreach runtime, ocamlrun ocamlrund ocamlruni, \
   $(eval runtime/$(runtime)$(EXE): | $(BYTE_BINDIR)/flexlink$(EXE)))
+
+tools/checkstack$(EXE): | $(BYTE_BINDIR)/flexlink$(EXE)
 else
 boot/ocamlrun$(EXE): runtime/ocamlrun$(EXE) runtime/primitives
 endif
