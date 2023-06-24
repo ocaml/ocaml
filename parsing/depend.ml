@@ -117,6 +117,9 @@ let rec add_type bv ty =
         fl
   | Ptyp_poly(_, t) -> add_type bv t
   | Ptyp_package pt -> add_package_type bv pt
+  | Ptyp_open (mod_ident, t) ->
+    let bv = open_module bv mod_ident.txt in
+    add_type bv t
   | Ptyp_extension e -> handle_extension e
 
 and add_package_type bv (lid, l) =

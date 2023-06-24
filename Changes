@@ -18,6 +18,19 @@ Working version
 - #11252, RFC 27: Support raw identifier syntax \#foo
   (Stephen Dolan, review by David Allsopp, Gabriel Scherer and Olivier Nicole)
 
+- #12044: Add local module open syntax for types.
+  ```
+    module A = struct
+      type t = int
+      type r = unit
+      type s = string
+    end
+
+    type example = A.(t * r * s)
+  ```
+  (Alistair O'Brien, review by Gabriel Scherer, Nicolás Ojeda Bär
+   and Florian Angeletti)
+
 ### Type system:
 
 - #12313, #11799: Do not re-build as-pattern type when a ground type annotation

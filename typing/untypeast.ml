@@ -783,6 +783,7 @@ let core_type sub ct =
         let list = List.map (fun v -> mkloc v loc) list in
         Ptyp_poly (list, sub.typ sub ct)
     | Ttyp_package pack -> Ptyp_package (sub.package_type sub pack)
+    | Ttyp_open (_path, mod_ident, t) -> Ptyp_open (mod_ident, sub.typ sub t)
   in
   Typ.mk ~loc ~attrs desc
 

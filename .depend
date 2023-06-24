@@ -1897,7 +1897,8 @@ typing/typetexp.cmi : \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/errortrace.cmi \
-    typing/env.cmi
+    typing/env.cmi \
+    parsing/asttypes.cmi
 typing/untypeast.cmo : \
     typing/typedtree.cmi \
     typing/path.cmi \

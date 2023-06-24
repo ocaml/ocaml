@@ -410,6 +410,14 @@ let transl_type_param env styp =
   Builtin_attributes.warning_scope styp.ptyp_attributes
     (fun () -> transl_type_param env styp)
 
+(* Forward declaration (set in Typemod.type_open) *)
+
+let type_open :
+  (?used_slot:bool ref -> override_flag -> Env.t -> Location.t ->
+   Longident.t loc -> Path.t * Env.t)
+    ref =
+  ref (fun ?used_slot:_ _ -> assert false)
+
 let rec transl_type env ~policy ?(aliased=false) ~row_context styp =
   Builtin_attributes.warning_scope styp.ptyp_attributes
     (fun () -> transl_type_aux env ~policy ~aliased ~row_context styp)
@@ -686,6 +694,12 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
             pack_fields = ptys;
             pack_txt = p;
            }) ty
+  | Ptyp_open (mod_ident, t) ->
+      let path, new_env =
+        !type_open Asttypes.Fresh env loc mod_ident
+      in
+      let cty = transl_type new_env ~policy ~row_context t in
+      ctyp (Ttyp_open (path, mod_ident, cty)) cty.ctyp_type
   | Ptyp_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 

@@ -166,6 +166,7 @@ and core_type_desc =
            {!value_description}.
          *)
   | Ptyp_package of package_type  (** [(module S)]. *)
+  | Ptyp_open of Longident.t loc * core_type (** [M.(T)] *)
   | Ptyp_extension of extension  (** [[%id]]. *)
 
 and package_type = Longident.t loc * (Longident.t loc * core_type) list

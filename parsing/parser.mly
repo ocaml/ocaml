@@ -3393,44 +3393,100 @@ tuple_type:
    - applications of type constructors:   int, int list, int option list
    - variant types:                       [`A]
  *)
-atomic_type:
-  | LPAREN core_type RPAREN
-      { $2 }
-  | LPAREN MODULE ext_attributes package_type RPAREN
-      { wrap_typ_attrs ~loc:$sloc (reloc_typ ~loc:$sloc $4) $3 }
-  | mktyp( /* begin mktyp group */
-      QUOTE ident
-        { Ptyp_var $2 }
-    | UNDERSCORE
-        { Ptyp_any }
-    | tys = actual_type_parameters
-      tid = mkrhs(type_longident)
-        { Ptyp_constr(tid, tys) }
-    | LESS meth_list GREATER
-        { let (f, c) = $2 in Ptyp_object (f, c) }
+
+
+(*
+  Delimited types:
+    - parenthesised type          (type)
+    - first-class module types    (module S)
+    - object types                < x: t; ... >
+    - variant types               [ `A ]
+    - extension                   [%foo ...]
+
+  We support local opens on the following classes of types:
+    - parenthesised
+    - first-class module types
+    - variant types
+
+  Object types are not support for local opens due to a potential
+  conflict with MetaOCaml syntax:
+    M.< x: t, y: t >
+  and quoted expressions:
+    .< e >.
+
+  Extension types are not support for local opens merely as a precaution.
+*)
+delimited_type_supporting_local_open:
+  | LPAREN type_ = core_type RPAREN
+      { type_ }
+  | LPAREN MODULE attrs = ext_attributes package_type = package_type RPAREN
+      { wrap_typ_attrs ~loc:$sloc (reloc_typ ~loc:$sloc package_type) attrs }
+  | mktyp(
+      LBRACKET field = tag_field RBRACKET
+        { Ptyp_variant([ field ], Closed, None) }
+    | LBRACKET BAR fields = row_field_list RBRACKET
+        { Ptyp_variant(fields, Closed, None) }
+    | LBRACKET field = row_field BAR fields = row_field_list RBRACKET
+        { Ptyp_variant(field :: fields, Closed, None) }
+    | LBRACKETGREATER BAR? fields = row_field_list RBRACKET
+        { Ptyp_variant(fields, Open, None) }
+    | LBRACKETGREATER RBRACKET
+        { Ptyp_variant([], Open, None) }
+    | LBRACKETLESS BAR? fields = row_field_list RBRACKET
+        { Ptyp_variant(fields, Closed, Some []) }
+    | LBRACKETLESS BAR? fields = row_field_list
+      GREATER
+      tags = name_tag_list
+      RBRACKET
+        { Ptyp_variant(fields, Closed, Some tags) }
+  )
+  { $1 }
+;
+
+object_type:
+  | mktyp(
+      LESS meth_list = meth_list GREATER
+        { let (f, c) = meth_list in Ptyp_object (f, c) }
     | LESS GREATER
         { Ptyp_object ([], Closed) }
+  )
+  { $1 }
+;
+
+extension_type:
+  | mktyp (
+      ext = extension
+        { Ptyp_extension ext }
+  )
+  { $1 }
+;
+
+delimited_type:
+  | object_type
+  | extension_type
+  | delimited_type_supporting_local_open
+    { $1 }
+;
+
+atomic_type:
+  | type_ = delimited_type
+      { type_ }
+  | mktyp( /* begin mktyp group */
+      tys = actual_type_parameters
+      tid = mkrhs(type_longident)
+        { Ptyp_constr (tid, tys) }
     | tys = actual_type_parameters
       HASH
       cid = mkrhs(clty_longident)
-        { Ptyp_class(cid, tys) }
-    | LBRACKET tag_field RBRACKET
-        (* not row_field; see CONFLICTS *)
-        { Ptyp_variant([$2], Closed, None) }
-    | LBRACKET BAR row_field_list RBRACKET
-        { Ptyp_variant($3, Closed, None) }
-    | LBRACKET row_field BAR row_field_list RBRACKET
-        { Ptyp_variant($2 :: $4, Closed, None) }
-    | LBRACKETGREATER BAR? row_field_list RBRACKET
-        { Ptyp_variant($3, Open, None) }
-    | LBRACKETGREATER RBRACKET
-        { Ptyp_variant([], Open, None) }
-    | LBRACKETLESS BAR? row_field_list RBRACKET
-        { Ptyp_variant($3, Closed, Some []) }
-    | LBRACKETLESS BAR? row_field_list GREATER name_tag_list RBRACKET
-        { Ptyp_variant($3, Closed, Some $5) }
-    | extension
-        { Ptyp_extension $1 }
+        { Ptyp_class (cid, tys) }
+    | mod_ident = mkrhs(mod_ext_longident)
+      DOT
+      type_ = delimited_type_supporting_local_open
+        { Ptyp_open (mod_ident, type_) }
+    | QUOTE ident = ident
+        { Ptyp_var ident }
+    | UNDERSCORE
+        { Ptyp_any }
   )
   { $1 } /* end mktyp group */
 ;
@@ -3449,7 +3505,7 @@ atomic_type:
   | /* empty */
       { [] }
   | ty = atomic_type
-      { [ty] }
+      { [ ty ] }
   | LPAREN tys = separated_nontrivial_llist(COMMA, core_type) RPAREN
       { tys }
 ;

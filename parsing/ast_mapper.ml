@@ -155,6 +155,8 @@ module T = struct
     | Ptyp_package (lid, l) ->
         package ~loc ~attrs (map_loc sub lid)
           (List.map (map_tuple (map_loc sub) (sub.typ sub)) l)
+    | Ptyp_open (mod_ident, t) ->
+        open_ ~loc ~attrs (map_loc sub mod_ident) (sub.typ sub t)
     | Ptyp_extension x -> extension ~loc ~attrs (sub.extension sub x)
 
   let map_type_declaration sub
