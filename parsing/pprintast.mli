@@ -50,6 +50,12 @@ val signature_item: Format.formatter -> Parsetree.signature_item -> unit
 val binding: Format.formatter -> Parsetree.value_binding -> unit
 val payload: Format.formatter -> Parsetree.payload -> unit
 
+val tyvar_of_name : string -> string
+  (** Turn a type variable name into a valid identifier, taking care of the
+      special treatment required for the single quote character in second
+      position, or for keywords by escaping them with \#. No-op on "_". *)
+
 val tyvar: Format.formatter -> string -> unit
-  (** Print a type variable name, taking care of the special treatment
-      required for the single quote character in second position. *)
+  (** Print a type variable name as a valid identifier, taking care of the
+      special treatment required for the single quote character in second
+      position, or for keywords by escaping them with \#. No-op on "_". *)

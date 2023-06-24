@@ -30,11 +30,7 @@ module Sig_component_kind = Shape.Sig_component_kind
 module Style = Misc.Style
 
 (* Print a long identifier *)
-
-let rec longident ppf = function
-  | Lident s -> pp_print_string ppf s
-  | Ldot(p, s) -> fprintf ppf "%a.%s" longident p s
-  | Lapply(p1, p2) -> fprintf ppf "%a(%a)" longident p1 longident p2
+let longident = Pprintast.longident
 
 let () = Env.print_longident := longident
 
@@ -1105,7 +1101,7 @@ let rec tree_of_typexp mode ty =
         Otyp_var (non_gen, Names.name_of_type name_gen tty)
     | Tarrow(l, ty1, ty2, _) ->
         let lab =
-          if !print_labels || is_optional l then string_of_label l else ""
+          if !print_labels || is_optional l then l else Nolabel
         in
         let t1 =
           if is_optional l then
@@ -1757,7 +1753,7 @@ let rec tree_of_class_type mode params =
       Octy_signature (self_ty, List.rev csil)
   | Cty_arrow (l, ty, cty) ->
       let lab =
-        if !print_labels || is_optional l then string_of_label l else ""
+        if !print_labels || is_optional l then l else Nolabel
       in
       let tr =
        if is_optional l then

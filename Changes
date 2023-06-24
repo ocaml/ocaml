@@ -15,6 +15,9 @@ Working version
 - #12315: Use type annotations from arguments in let rec
   (Stephen Dolan, review by Gabriel Scherer)
 
+- #11252, RFC 27: Support raw identifier syntax \#foo
+  (Stephen Dolan, review by David Allsopp, Gabriel Scherer and Olivier Nicole)
+
 ### Type system:
 
 - #12313, #11799: Do not re-build as-pattern type when a ground type annotation
