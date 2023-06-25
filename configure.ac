@@ -247,6 +247,25 @@ AC_CONFIG_COMMANDS_PRE(OCAML_QUOTED_STRING_ID)
 
 # Checks for system types
 
+AC_PROG_CC
+
+# If no --build, --host or --target were passed,
+# infer host from compiler when possible
+if test "x$build_alias" = x && test "x$host_alias" = x &&
+   test "x$target_alias" = x; then
+  ocaml_allow_build_guess=1
+fi
+
+AS_CASE([$CC],
+  [gcc*],
+    [if test "x$ocaml_allow_build_guess" = x1; then
+      build_alias=`$CC -dumpmachine`
+    fi],
+  [clang*],
+    [if test "x$ocaml_allow_build_guess" = x1; then
+      build_aliad=`$CC -dumpmachine`
+    fi])
+
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
