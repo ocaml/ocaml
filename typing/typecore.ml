@@ -1764,7 +1764,6 @@ and type_pat_aux
   | Ppat_or(sp1, sp2) ->
       let initial_pattern_variables = !pattern_variables in
       let initial_module_variables = !module_variables in
-      let equation_level = get_gadt_equations_level env in
       (* Introduce a new scope using with_local_level without generalizations *)
       let env1, p1, p1_variables, p1_module_variables, env2, p2 =
         with_local_level begin fun () ->
@@ -2127,10 +2126,10 @@ type unification_state =
    env: Env.t; }
 let save_state env =
   { snapshot = Btype.snapshot ();
-    env = !env; }
+    env = !!env; }
 let set_state s env =
   Btype.backtrack s.snapshot;
-  env := s.env
+  set_env env s.env
 
 (** Find the first alternative in the tree of or-patterns for which
     [f] does not raise an error. If all fail, the last error is
@@ -2154,11 +2153,12 @@ let enter_nonsplit_or info =
       Refine_or {inside_nonsplit_or = true}
   in { info with splitting_mode }
 
-let rec check_counter_example_pat ~info ~env tp expected_ty k =
+let rec check_counter_example_pat
+    ~info ~(env : pattern_environment) tp expected_ty k =
   let check_rec ?(info=info) ?(env=env) =
     check_counter_example_pat ~info ~env in
   let loc = tp.pat_loc in
-  let refine = Some true in
+  let refine = true in
   let solve_expected (x : pattern) : pattern =
     unify_pat_types_refine ~refine x.pat_loc env x.pat_type
       (instance expected_ty);
@@ -2167,7 +2167,7 @@ let rec check_counter_example_pat ~info ~env tp expected_ty k =
   (* "make pattern" and "make pattern then continue" *)
   let mp ?(pat_type = expected_ty) desc =
     { pat_desc = desc; pat_loc = loc; pat_extra=[];
-      pat_type = instance pat_type; pat_attributes = []; pat_env = !env } in
+      pat_type = instance pat_type; pat_attributes = []; pat_env = !!env } in
   let mkp k ?pat_type desc = k (mp ?pat_type desc) in
   let must_backtrack_on_gadt =
     match info.splitting_mode with
@@ -2179,7 +2179,7 @@ let rec check_counter_example_pat ~info ~env tp expected_ty k =
       let k' () = mkp k tp.pat_desc in
       if info.explosion_fuel <= 0 then k' () else
       let decrease n = {info with explosion_fuel = info.explosion_fuel - n} in
-      begin match Parmatch.pats_of_type !env expected_ty with
+      begin match Parmatch.pats_of_type !!env expected_ty with
       | [] -> raise Empty_branch
       | [{pat_desc = Tpat_any}] -> k' ()
       | [tp] -> check_rec ~info:(decrease 1) tp expected_ty k
@@ -2194,7 +2194,7 @@ let rec check_counter_example_pat ~info ~env tp expected_ty k =
       end
   | Tpat_alias (p, _, _) -> check_rec ~info p expected_ty k
   | Tpat_constant cst ->
-      let cst = constant_or_raise !env loc (Untypeast.constant cst) in
+      let cst = constant_or_raise !!env loc (Untypeast.constant cst) in
       k @@ solve_expected (mp (Tpat_constant cst) ~pat_type:(type_constant cst))
   | Tpat_tuple tpl ->
       assert (List.length tpl >= 2);
@@ -2259,8 +2259,8 @@ let rec check_counter_example_pat ~info ~env tp expected_ty k =
         | exception Need_backtrack -> Error Adds_constraints
         | exception Empty_branch -> Error Empty
       in
-      let p1 = check_rec_result (ref !env) tp1 in
-      let p2 = check_rec_result (ref !env) tp2 in
+      let p1 = check_rec_result {env with env = ref !!env} tp1 in
+      let p2 = check_rec_result {env with env = ref !!env} tp2 in
       begin match p1, p2 with
       | Error Empty, Error Empty ->
           raise Empty_branch
@@ -2285,18 +2285,15 @@ let rec check_counter_example_pat ~info ~env tp expected_ty k =
       check_rec ~info:(no_explosion info) tp1 nv
         (fun p1 -> mkp k (Tpat_lazy p1))
 
-let check_counter_example_pat ~counter_example_args
-    ?(lev=get_current_level()) env tp expected_ty =
-  Misc.protect_refs [Misc.R (gadt_equations_level, Some lev)] (fun () ->
-    check_counter_example_pat
-      ~info:counter_example_args ~env tp expected_ty (fun x -> x)
-    )
+let check_counter_example_pat ~counter_example_args env tp expected_ty =
+  check_counter_example_pat
+    ~info:counter_example_args ~env tp expected_ty (fun x -> x)
 
 (* this function is passed to Partial.parmatch
    to type check gadt nonexhaustiveness *)
 let partial_pred ~lev ~allow_modules ~splitting_mode ?(explode=0)
       env expected_ty p =
-  let env = ref env in (* TODO: create uenv instead of ref env *)
+  let env = make_pattern_environment env ~lev true in
   let state = save_state env in
   let counter_example_args =
       {
@@ -2306,7 +2303,7 @@ let partial_pred ~lev ~allow_modules ~splitting_mode ?(explode=0)
   try
     reset_pattern allow_modules;
     let typed_p =
-      check_counter_example_pat ~lev ~counter_example_args env p expected_ty in
+      check_counter_example_pat ~counter_example_args env p expected_ty in
     set_state state env;
     (* types are invalidated but we don't need them here *)
     Some typed_p
