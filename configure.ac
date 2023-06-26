@@ -252,18 +252,10 @@ OCAML_CC_VENDOR
 
 # If no --build, --host or --target were passed,
 # infer host from compiler when possible
-if test "x$build_alias" = x && test "x$host_alias" = x &&
-   test "x$target_alias" = x; then
-  ocaml_allow_build_guess=1
-fi
-
 AS_CASE([$CC],
-  [gcc*],
-    [if test "x$ocaml_allow_build_guess" = x1; then
-      build_alias=`$CC -dumpmachine`
-    fi],
-  [clang*],
-    [if test "x$ocaml_allow_build_guess" = x1; then
+  [gcc*|clang*],
+    [if test "x$build_alias" = x && test "x$host_alias" = x &&
+        test "x$target_alias" = x; then
       build_alias=`$CC -dumpmachine`
     fi])
 
