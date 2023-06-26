@@ -269,6 +269,11 @@ type equations_generation =
   | Forbidden
   | Allowed of { equated_types : TypePairs.t }
 
+type pattern_environment =
+    { env : Env.t ref;
+      allow_recursive_equations : bool;
+      gadt_equations_level : int; }
+
 type unification_environment =
   | Expression of
       { env : Env.t;
@@ -1278,15 +1283,17 @@ let existential_name cstr ty =
 
 type existential_treatment =
   | Keep_existentials_flexible
-  | Make_existentials_abstract of { env: Env.t ref; scope: int }
+  | Make_existentials_abstract of pattern_environment
 
 let instance_constructor existential_treatment cstr =
   For_copy.with_scope (fun copy_scope ->
     let copy_existential =
       match existential_treatment with
       | Keep_existentials_flexible -> copy copy_scope
-      | Make_existentials_abstract {env; scope = fresh_constr_scope} ->
+      | Make_existentials_abstract penv ->
           fun existential ->
+            let env = penv.env in
+            let fresh_constr_scope = penv.gadt_equations_level in
             let decl = new_local_type () in
             let name = existential_name cstr existential in
             let (id, new_env) =
@@ -3199,17 +3206,16 @@ let unify uenv ty1 ty2 =
       undo_compress snap;
       raise (Unify (expand_to_unification_error (get_env uenv) trace))
 
-let unify_gadt ~equations_level:lev ~allow_recursive_equations
-      (env:Env.t ref) ty1 ty2 =
+let unify_gadt (penv : pattern_environment) ty1 ty2 =
   univar_pairs := [];
   let equated_types = TypePairs.create 0 in
   let equations_generation = Allowed { equated_types } in
   let uenv = Pattern
-      { env;
+      { env = penv.env;
         equations_generation;
         assume_injective = true;
-        allow_recursive_equations;
-        gadt_equations_level = lev;
+        allow_recursive_equations = penv.allow_recursive_equations;
+        gadt_equations_level = penv.gadt_equations_level;
         unify_eq_set = TypePairs.create 11; }
   in
   unify uenv ty1 ty2;

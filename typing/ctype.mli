@@ -176,9 +176,15 @@ val new_local_type:
         ?manifest_and_scope:(type_expr * int) -> unit -> type_declaration
 val existential_name: constructor_description -> type_expr -> string
 
+type pattern_environment =
+    { env : Env.t ref;
+      allow_recursive_equations : bool;
+      (* level at which to create the local type declarations *)
+      gadt_equations_level : int; }
+
 type existential_treatment =
   | Keep_existentials_flexible
-  | Make_existentials_abstract of { env: Env.t ref; scope: int }
+  | Make_existentials_abstract of pattern_environment
 
 val instance_constructor: existential_treatment ->
         constructor_description -> type_expr list * type_expr * type_expr list
@@ -250,8 +256,7 @@ val extract_concrete_typedecl:
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
 val unify_gadt:
-        equations_level:int -> allow_recursive_equations:bool ->
-        Env.t ref -> type_expr -> type_expr -> Btype.TypePairs.t
+        pattern_environment -> type_expr -> type_expr -> Btype.TypePairs.t
         (* Unify the two types given and update the environment with the
            local constraints. Raise [Unify] if not possible.
            Returns the pairs of types that have been equated.  *)
