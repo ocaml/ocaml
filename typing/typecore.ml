@@ -26,13 +26,6 @@ open Typedtree
 open Btype
 open Ctype
 
-let (!!) (penv : pattern_environment) = !(penv.env)
-let set_env (penv : pattern_environment) env = penv.env := env
-let get_gadt_equations_level (penv : pattern_environment) =
-  let l = penv.gadt_equations_level in
-  if l = lowest_level then invalid_arg "Typecore.get_gadt_equations_level"
-  else l
-
 module Style = Misc.Style
 
 type type_forcing_context =
@@ -375,14 +368,13 @@ let unify_exp_types loc env ty expected_ty =
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, env, Typetexp.Variant_tags (l1, l2)))
 
-(* TODO: REMOVE THIS PART
-(* level at which to create the local type declarations *)
-let gadt_equations_level = ref None
-let get_gadt_equations_level () =
-  match !gadt_equations_level with
-    Some y -> y
-  | None -> assert false
-*)
+(* helper functions for pattern environments *)
+let (!!) (penv : pattern_environment) = !(penv.env)
+let set_env (penv : pattern_environment) env = penv.env := env
+let get_gadt_equations_level (penv : pattern_environment) =
+  let l = penv.gadt_equations_level in
+  if l = lowest_level then invalid_arg "Typecore.get_gadt_equations_level"
+  else l
 
 (* Unification inside type_pat *)
 let unify_pat_types loc env ty ty' =
