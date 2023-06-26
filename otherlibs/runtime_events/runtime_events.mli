@@ -131,6 +131,9 @@ type runtime_phase =
 | EV_DOMAIN_CONDITION_WAIT
 | EV_DOMAIN_RESIZE_HEAP_RESERVATION
 | EV_COMPACT
+| EV_COMPACT_EVACUATE
+| EV_COMPACT_FORWARD
+| EV_COMPACT_RELEASE
 
 (** Lifecycle events for the ring itself *)
 type lifecycle =

@@ -987,6 +987,7 @@ void caml_compact_heap(caml_domain_state* domain_state,
   For the first phase we need not consider full pools, they
   cannot be evacuated to or from. */
   caml_global_barrier();
+  CAML_EV_BEGIN(EV_COMPACT_EVACUATE);
 
   struct caml_heap_state* heap = Caml_state->shared_heap;
 
@@ -1127,7 +1128,9 @@ void caml_compact_heap(caml_domain_state* domain_state,
     }
   }
 
+  CAML_EV_END(EV_COMPACT_EVACUATE);
   caml_global_barrier();
+  CAML_EV_BEGIN(EV_COMPACT_FORWARD);
 
   /* Second phase: at this point all live blocks in evacuated pools
     have been moved and their old locations' first fields now point to
@@ -1165,7 +1168,9 @@ void caml_compact_heap(caml_domain_state* domain_state,
   compact_update_ephe_list(&ephe_info->todo);
   compact_update_ephe_list(&ephe_info->live);
 
+  CAML_EV_END(EV_COMPACT_FORWARD);
   caml_global_barrier();
+  CAML_EV_BEGIN(EV_COMPACT_RELEASE);
 
   /* Third phase: each evacuating page needs to have its flag reset
       and be moved to the free list. Unfortunately this means a lot of
@@ -1211,6 +1216,7 @@ void caml_compact_heap(caml_domain_state* domain_state,
     }
   }
 
+  CAML_EV_END(EV_COMPACT_RELEASE);
   caml_global_barrier();
 
   /* Fourth and final phase: clean up the pools we released */
