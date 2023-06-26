@@ -263,7 +263,7 @@ AS_CASE([$CC],
     fi],
   [clang*],
     [if test "x$ocaml_allow_build_guess" = x1; then
-      build_aliad=`$CC -dumpmachine`
+      build_alias=`$CC -dumpmachine`
     fi])
 
 AC_CANONICAL_BUILD
