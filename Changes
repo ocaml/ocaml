@@ -62,8 +62,9 @@ Working version
 
 ### Runtime system:
 - #12193: Re-introduce GC compaction for shared pools
-  Adds a compaction algorithm for the shared pools in the major heap. Explicit
-  only for now, on calls to `Gc.compact`.
+  Adds a parallel compactor for the shared pools (which contain major heap
+  blocks sized less than 128 words). Explicit only for now, on calls to
+  `Gc.compact`.
   (Sadiq Jaffer, Nick Barnes, review by Anil Madhavapeddy, Damien Doligez and
    KC Sivaramakrishnan)
 
