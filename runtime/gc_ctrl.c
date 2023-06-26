@@ -299,6 +299,7 @@ CAMLprim value caml_gc_compaction(value v)
   CAML_EV_BEGIN(EV_EXPLICIT_GC_COMPACT);
   CAMLassert (v == Val_unit);
   value exn = gc_major_exn(1);
+  ++ Caml_state->stat_forced_major_collections;
   CAML_EV_END(EV_EXPLICIT_GC_COMPACT);
   return caml_raise_if_exception(exn);
 }
