@@ -247,7 +247,8 @@ AC_CONFIG_COMMANDS_PRE(OCAML_QUOTED_STRING_ID)
 
 # Checks for system types
 
-AC_PROG_CC
+## Find vendor of the C compiler
+OCAML_CC_VENDOR
 
 # If no --build, --host or --target were passed,
 # infer host from compiler when possible
@@ -581,9 +582,6 @@ AS_CASE([$host],
   [
     mklib="rm -f \$(1) && ${AR} rc \$(1) \$(2)"
   ])
-
-## Find vendor of the C compiler
-OCAML_CC_VENDOR
 
 ## In cross-compilation mode, can we run executables produced?
 # At the moment, it's required, but the fact is used in C99 function detection
