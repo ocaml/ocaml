@@ -267,7 +267,8 @@ let safe_register_pressure = function
 
 let max_register_pressure = function
     Iextcall _ -> [| 13; 18 |]
-  | _ -> [| 23; 31 |]
+  | Iintoffloat | Istore(Single, _, _) -> [| 23; 31 |]
+  | _ -> [| 23; 32 |]
 
 (* Layout of the stack *)
 
