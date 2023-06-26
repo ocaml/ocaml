@@ -199,9 +199,11 @@ static pool* pool_acquire(struct caml_heap_state* local) {
   return r;
 }
 
+/* release [pool] to the current free list of pools */
 static void pool_release(struct caml_heap_state* local,
                          pool* pool,
-                         sizeclass sz) {
+                         sizeclass sz)
+{
   pool->owner = NULL;
   CAMLassert(pool->sz == sz);
   local->stats.pool_words -= POOL_WSIZE;
@@ -212,26 +214,19 @@ static void pool_release(struct caml_heap_state* local,
   caml_plat_unlock(&pool_freelist.lock);
 }
 
-static void free_pool_freelist(void)
+/* free the memory of [pool], giving it back to the OS */
+static void pool_free(struct caml_heap_state* local,
+                         pool* pool,
+                         sizeclass sz)
 {
-  caml_plat_lock(&pool_freelist.lock);
-  /* free all but the first item on the freelist */
-  pool* o = pool_freelist.free;
-
-  if (o) {
-    pool* p = o->next;
-    while (p) {
-      pool* next = p->next;
-      caml_mem_unmap(p, Bsize_wsize(POOL_WSIZE));
-      p = next;
-    }
-
-    o->next = NULL;
-  }
-  caml_plat_unlock(&pool_freelist.lock);
+    CAMLassert(pool->sz == sz);
+    local->stats.pool_words -= POOL_WSIZE;
+    local->stats.pool_frag_words -= POOL_HEADER_WSIZE + wastage_sizeclass[sz];
+    caml_mem_unmap(pool, Bsize_wsize(POOL_WSIZE));
 }
 
-static void calc_pool_stats(pool* a, sizeclass sz, struct heap_stats* s) {
+static void calc_pool_stats(pool* a, sizeclass sz, struct heap_stats* s)
+{
   header_t* p = POOL_FIRST_BLOCK(a, sz);
   header_t* end = POOL_END(a);
   mlsize_t wh = wsize_sizeclass[sz];
@@ -1172,13 +1167,8 @@ void caml_compact_heap(caml_domain_state* domain_state,
   caml_global_barrier();
   CAML_EV_BEGIN(EV_COMPACT_RELEASE);
 
-  /* Third phase: each evacuating page needs to have its flag reset
-      and be moved to the free list. Unfortunately this means a lot of
-      contention on the pool freelist lock for now. Possible
-      improvement: gather all of this domain's evacuated pools into
-      one list, combine those per-domain lists (one lock cycle per
-      domain), then have a single domain move the whole list back to
-      the free list.
+  /* Third phase: free all evacuated pools and release the mappings back to
+      the OS.
 
       Note that we may have no "available" pools left, if all
       remaining pools have been filled up by evacuated blocks. */
@@ -1207,7 +1197,7 @@ void caml_compact_heap(caml_domain_state* domain_state,
         }
         #endif
 
-        pool_release(heap, cur_pool, sz_class);
+        pool_free(heap, cur_pool, sz_class);
         last_pool_p = NULL;
       } else {
         last_pool_p = &cur_pool->next;
@@ -1218,13 +1208,6 @@ void caml_compact_heap(caml_domain_state* domain_state,
 
   CAML_EV_END(EV_COMPACT_RELEASE);
   caml_global_barrier();
-
-  /* Fourth and final phase: clean up the pools we released */
-  barrier_status b = caml_global_barrier_begin();
-  if (caml_global_barrier_is_final(b)) {
-    free_pool_freelist();
-  }
-  caml_global_barrier_end(b);
 
   caml_gc_log("Compacting heap complete");
   CAML_EV_END(EV_COMPACT);
