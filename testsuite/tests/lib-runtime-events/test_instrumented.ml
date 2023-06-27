@@ -29,6 +29,7 @@ let lost_events domain_id words =
 let () =
     Gc.full_major ();
     start ();
+    let minors_at_start = (Gc.quick_stat ()).Gc.minor_collections in
     let cursor = create_cursor None in
     for a = 0 to 1_000_000 do
       list_ref := (Sys.opaque_identity(ref 42)) :: !list_ref
@@ -36,5 +37,8 @@ let () =
     Gc.full_major ();
     let callbacks = Callbacks.create ~runtime_end ~alloc ~lost_events () in
     ignore(read_poll cursor callbacks None);
-    Printf.printf "lost_event_words: %d, total_sizes: %d, total_minors: %d\n"
-      !lost_event_words !total_sizes !total_minors
+    let self_minors =
+      (Gc.quick_stat ()).Gc.minor_collections - minors_at_start
+    in
+    Printf.printf "lost_event_words: %d, total_sizes: %d, diff_minors: %d\n"
+      !lost_event_words !total_sizes (!total_minors - self_minors)
