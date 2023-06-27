@@ -371,9 +371,9 @@ let unify_exp_types loc env ty expected_ty =
 (* helper functions for pattern environments *)
 let (!!) (penv : pattern_environment) = !(penv.env)
 let set_env (penv : pattern_environment) env = penv.env := env
-let get_gadt_equations_level (penv : pattern_environment) =
-  let l = penv.gadt_equations_level in
-  if l = lowest_level then invalid_arg "Typecore.get_gadt_equations_level"
+let get_equations_scope (penv : pattern_environment) =
+  let l = penv.equations_scope in
+  if l = lowest_level then invalid_arg "Typecore.get_equations_scope"
   else l
 
 (* Unification inside type_pat *)
@@ -676,7 +676,7 @@ let solve_Ppat_tuple (type a) ~refine loc env (args : a list) expected_ty =
   vars
 
 let solve_constructor_annotation penv name_list sty ty_args ty_ex =
-  let expansion_scope = get_gadt_equations_level penv in
+  let expansion_scope = get_equations_scope penv in
   (* XXX: should use fold and return the updated environment *)
   let ids =
     List.map
@@ -767,7 +767,7 @@ let solve_Ppat_construct ~refine penv loc constr no_existentials
             ty_args, ty_res, equated_types, existential_ctyp
       in
       if constr.cstr_existentials <> [] then
-        lower_variables_only !!penv (get_gadt_equations_level penv) ty_res;
+        lower_variables_only !!penv (get_equations_scope penv) ty_res;
       ((ty_args, equated_types, existential_ctyp),
        expected_ty :: ty_res :: ty_args)
     end
@@ -1759,16 +1759,15 @@ and type_pat_aux
       (* Introduce a new scope using with_local_level without generalizations *)
       let env1, p1, p1_variables, p1_module_variables, env2, p2 =
         with_local_level begin fun () ->
-          let lev = get_current_level () in
-          let env = {env with gadt_equations_level = lev} in
+          let env = set_equations_scope (get_current_level ()) env in
           let type_pat_rec env sp = type_pat category sp expected_ty ~env in
-          let env1 = {env with env = ref !!env} in
+          let env1 = copy_pattern_environment env
+          and env2 = copy_pattern_environment env in
           let p1 = type_pat_rec env1 sp1 in
           let p1_variables = !pattern_variables in
           let p1_module_variables = !module_variables in
           pattern_variables := initial_pattern_variables;
           module_variables := initial_module_variables;
-          let env2 = {env with env = ref !!env} in
           let p2 = type_pat_rec env2 sp2 in
           (env1, p1, p1_variables, p1_module_variables, env2, p2)
         end
@@ -1897,18 +1896,13 @@ let add_module_variables env module_variables =
     end
   ) env module_variables
 
-let make_pattern_environment ?(lev=get_current_level ())
-    env allow_recursive_equations =
-  {env = ref env;
-   allow_recursive_equations;
-   gadt_equations_level = lev}
-
 let type_pat category ?no_existentials env =
   type_pat category ~no_existentials ~env
 
 let type_pattern category ~lev env spat expected_ty allow_modules =
   reset_pattern allow_modules;
-  let new_env = make_pattern_environment ~lev env false in
+  let new_env = make_pattern_environment env
+      ~equations_scope:lev ~allow_recursive_equations:false in
   let pat = type_pat category new_env spat expected_ty in
   let pvs = get_ref pattern_variables in
   let mvs = get_ref module_variables in
@@ -1918,7 +1912,9 @@ let type_pattern_list
     category no_existentials env spatl expected_tys allow_modules
   =
   reset_pattern allow_modules;
-  let new_env = make_pattern_environment env false in
+  let equations_scope = get_current_level () in
+  let new_env = make_pattern_environment env
+      ~equations_scope ~allow_recursive_equations:false in
   let type_pat (attrs, pat) ty =
     Builtin_attributes.warning_scope ~ppwarning:false attrs
       (fun () ->
@@ -1933,7 +1929,9 @@ let type_pattern_list
 let type_class_arg_pattern cl_num val_env met_env l spat =
   reset_pattern Modules_rejected;
   let nv = newvar () in
-  let new_env = make_pattern_environment val_env false in
+  let equations_scope = get_current_level () in
+  let new_env = make_pattern_environment val_env
+      ~equations_scope ~allow_recursive_equations:false in
   let pat =
     type_pat Value ~no_existentials:In_class_args new_env spat nv in
   if has_variants pat then begin
@@ -1981,7 +1979,9 @@ let type_self_pattern env spat =
   let spat = Pat.mk(Ppat_alias (spat, mknoloc "selfpat-*")) in
   reset_pattern Modules_rejected;
   let nv = newvar() in
-  let new_env = make_pattern_environment env false in
+  let equations_scope = get_current_level () in
+  let new_env = make_pattern_environment env
+      ~equations_scope ~allow_recursive_equations:false in
   let pat =
     type_pat Value ~no_existentials:In_self_pattern new_env spat nv in
   List.iter (fun f -> f()) (get_ref pattern_force);
@@ -2251,8 +2251,8 @@ let rec check_counter_example_pat
         | exception Need_backtrack -> Error Adds_constraints
         | exception Empty_branch -> Error Empty
       in
-      let p1 = check_rec_result {env with env = ref !!env} tp1 in
-      let p2 = check_rec_result {env with env = ref !!env} tp2 in
+      let p1 = check_rec_result (copy_pattern_environment env) tp1 in
+      let p2 = check_rec_result (copy_pattern_environment env) tp2 in
       begin match p1, p2 with
       | Error Empty, Error Empty ->
           raise Empty_branch
@@ -2285,7 +2285,8 @@ let check_counter_example_pat ~counter_example_args env tp expected_ty =
    to type check gadt nonexhaustiveness *)
 let partial_pred ~lev ~allow_modules ~splitting_mode ?(explode=0)
       env expected_ty p =
-  let env = make_pattern_environment env ~lev true in
+  let env = make_pattern_environment env
+      ~equations_scope:lev ~allow_recursive_equations:true in
   let state = save_state env in
   let counter_example_args =
       {

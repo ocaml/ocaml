@@ -176,11 +176,18 @@ val new_local_type:
         ?manifest_and_scope:(type_expr * int) -> unit -> type_declaration
 val existential_name: constructor_description -> type_expr -> string
 
-type pattern_environment =
+type pattern_environment = private
     { env : Env.t ref;
-      allow_recursive_equations : bool;
-      (* level at which to create the local type declarations *)
-      gadt_equations_level : int; }
+      equations_scope : int; (* scope for local type declarations *)
+      allow_recursive_equations : bool; (* true iff checking counter examples *)
+    }
+
+val make_pattern_environment: Env.t -> equations_scope:int ->
+        allow_recursive_equations:bool -> pattern_environment
+val copy_pattern_environment: pattern_environment -> pattern_environment
+        (* replace the [env] reference with a cloned one *)
+val set_equations_scope: int -> pattern_environment -> pattern_environment
+        (* keep the same [env] reference *)
 
 type existential_treatment =
   | Keep_existentials_flexible
