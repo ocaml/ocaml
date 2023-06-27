@@ -1,12 +1,12 @@
 (Introduced in 5.0)
 
 \textit{Note: Effect handlers in OCaml 5.0 should be considered experimental.
-Effect handlers are exposed in the standard library as a thin wrapper
-around their implementations in the runtime. They are not supported as a
-language feature with new syntax. You can rely on them to build non-local
-control-flow abstractions such as user-level threading that do not expose
-the effect handler primitives to the user. Expect breaking changes in the
-future.}
+Effect handlers are exposed in the standard library's \stdmoduleref{Effect}
+module as a thin wrapper around their implementation in the runtime. They are
+not supported as a language feature with new syntax. You can rely on them to
+build non-local control-flow abstractions such as user-level threading that do
+not expose the effect handler primitives to the user. Expect breaking changes
+in the future.}
 
 Effect handlers are a mechanism for modular programming with user-defined
 effects. Effect handlers allow the programmers to describe
