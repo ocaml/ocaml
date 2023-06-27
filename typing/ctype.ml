@@ -263,7 +263,7 @@ let newconstr path tyl = newty (Tconstr (path, tyl, ref Mnil))
 
 let none = newty (Ttuple [])                (* Clearly ill-formed type *)
 
-(**** unification mode ****)
+(**** information for [Typecore.unify_pat_*] ****)
 
 type pattern_environment =
     { env : Env.t ref;
@@ -280,6 +280,8 @@ let copy_pattern_environment penv =
 
 let set_equations_scope equations_scope penv =
   { penv with equations_scope }
+
+(**** unification mode ****)
 
 type equations_generation =
   | Forbidden
