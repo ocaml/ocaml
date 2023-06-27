@@ -24,6 +24,7 @@
 #include "caml/misc.h"
 #include "caml/fail.h"
 #include "caml/memory.h"
+#include "caml/memprof.h"
 #include "caml/major_gc.h"
 #include "caml/signals.h"
 #include "caml/shared_heap.h"
@@ -353,6 +354,8 @@ Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, reserved_t reserved,
       Op_hp(v)[i] = Debug_uninit_major;
   }
 #endif
+  caml_memprof_track_alloc_shr(Val_hp(v));
+
   return Val_hp(v);
 }
 

@@ -111,6 +111,9 @@ CAMLextern char_os * caml_cds_file;
  * different prototype. */
 extern void caml_stash_backtrace(value exn, value * sp, int reraise);
 
+CAMLextern void caml_load_main_debug_info(void);
+#endif
+
 /* Obtain up to [max_frames] of the callstack of the current domain,
  * into [*buffer], current size [*alloc_size_p], which should be
  * reallocated if required. Returns the number of frames.
@@ -124,9 +127,6 @@ extern size_t caml_get_callstack(size_t max_frames,
                                  backtrace_slot **buffer_p,
                                  size_t *alloc_size_p,
                                  ssize_t alloc_idx);
-
-CAMLextern void caml_load_main_debug_info(void);
-#endif
 
 
 /* Default (C-level) printer for backtraces.  It is called if an

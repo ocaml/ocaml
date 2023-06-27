@@ -88,7 +88,7 @@ struct caml_thread_struct {
   value * gc_regs;           /* saved value of Caml_state->gc_regs */
   value * gc_regs_buckets;   /* saved value of Caml_state->gc_regs_buckets */
   void * exn_handler;        /* saved value of Caml_state->exn_handler */
-  struct memprof_thread *memprof;
+  memprof_thread_t memprof;  /* memprof's internal thread data structure */
 
 #ifndef NATIVE_CODE
   intnat trap_sp_off;      /* saved value of Caml_state->trap_sp_off */

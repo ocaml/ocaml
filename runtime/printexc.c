@@ -147,7 +147,7 @@ void caml_fatal_uncaught_exception(value exn)
      a memprof callback could raise an exception while
      [handle_uncaught_exception] is running, and the printing of
      the exception could fail. */
-  caml_memprof_update_suspended(1);
+  caml_memprof_update_suspended((_Bool)1);
 
   if (handle_uncaught_exception != NULL)
     /* [Printexc.handle_uncaught_exception] does not raise exception. */

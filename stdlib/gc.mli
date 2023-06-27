@@ -448,6 +448,7 @@ module Memprof :
   sig
     type t
         (** the type of a profile *)
+
     type allocation_source = Normal | Marshal | Custom
     type allocation = private
       { n_samples : int;
@@ -457,7 +458,8 @@ module Memprof :
         (** The size of the block, in words, excluding the header. *)
 
         source : allocation_source;
-        (** The type of the allocation. *)
+        (** The type of the allocation; [Marshal] cannot be produced
+          since OCaml 5. *)
 
         callstack : Printexc.raw_backtrace
         (** The callstack for the allocation. *)

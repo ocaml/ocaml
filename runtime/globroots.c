@@ -258,5 +258,4 @@ void caml_scan_global_young_roots(scanning_action f, void* fdata)
   caml_skiplist_empty(&caml_global_roots_young);
 
   caml_plat_unlock(&roots_mutex);
-  caml_memprof_scan_global_young_roots(f, fdata);
 }

@@ -22,32 +22,40 @@
 #include "mlvalues.h"
 #include "roots.h"
 
-extern void caml_memprof_update_suspended(_Bool);
-
-extern value caml_memprof_handle_postponed_exn(void);
-
+/* Track allocations */
 extern void caml_memprof_track_alloc_shr(value block);
 extern void caml_memprof_track_custom(value block, mlsize_t bytes);
 extern void caml_memprof_track_young(uintnat wosize, int from_caml,
                                      int nallocs, unsigned char* alloc_lens);
-extern void caml_memprof_track_interned(header_t* block, header_t* blockend);
+/* Suspend or unsuspend profiling */
+extern void caml_memprof_update_suspended(_Bool);
 
+/* Run any pending callbacks */
+extern value caml_memprof_run_callbacks_exn(void);
+
+/* Freshly set sampling point on minor heap */
 extern void caml_memprof_renew_minor_sample(caml_domain_state *state);
 
-extern void caml_memprof_after_minor_gc(caml_domain_state *state);
-extern void caml_memprof_after_minor_gc_global(void);
+/* GC interface */
 
-extern void caml_memprof_after_major_gc(caml_domain_state *state);
+extern void caml_memprof_scan_roots(scanning_action f,
+                                    scanning_action_flags fflags,
+                                    void* fdata,
+                                    caml_domain_state *domain,
+                                    _Bool young,
+                                    _Bool global);
 
-extern void caml_memprof_oldify_young_roots(void);
-extern void caml_memprof_do_roots(scanning_action f);
-extern void caml_memprof_update_clean_phase(void);
+extern void caml_memprof_after_minor_gc(caml_domain_state *state, _Bool global);
+
+extern void caml_memprof_after_major_gc(caml_domain_state *state, _Bool global);
 
 /* Multi-domain support. */
 
 extern void caml_memprof_new_domain(caml_domain_state *parent,
                                     caml_domain_state *domain);
 extern void caml_memprof_delete_domain(caml_domain_state *domain);
+
+/* Multi-thread support */
 
 typedef struct memprof_thread_s *memprof_thread_t;
 

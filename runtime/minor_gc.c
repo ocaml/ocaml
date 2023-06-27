@@ -1,4 +1,4 @@
-**************************************************************************/
+/**************************************************************************/
 /*                                                                        */
 /*                                 OCaml                                  */
 /*                                                                        */
@@ -30,6 +30,7 @@
 #include "caml/globroots.h"
 #include "caml/major_gc.h"
 #include "caml/memory.h"
+#include "caml/memprof.h"
 #include "caml/minor_gc.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
@@ -137,7 +138,7 @@ void caml_set_minor_heap_size (asize_t wsize)
   }
 
   reset_minor_tables(r);
-  caml_memprof_renew_minor_sample();
+  caml_memprof_renew_minor_sample(domain_state);
 }
 
 /*****************************************************************************/
@@ -591,6 +592,11 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
                              domain, 0);
   CAML_EV_END(EV_MINOR_FINALIZERS_OLDIFY);
 
+  CAML_EV_BEGIN(EV_MINOR_MEMPROF_ROOTS);
+  caml_memprof_scan_roots(&oldify_one, oldify_scanning_flags, &st,
+                          domain, 1, participating[0] == domain);
+  CAML_EV_END(EV_MINOR_MEMPROF_ROOTS);
+
   CAML_EV_BEGIN(EV_MINOR_REMEMBERED_SET_PROMOTE);
   oldify_mopup (&st, 1); /* ephemerons promoted here */
   CAML_EV_END(EV_MINOR_REMEMBERED_SET_PROMOTE);
@@ -631,7 +637,7 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS_PROMOTE);
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS);
 
-  caml_memprof_after_minor_gc(domain);
+  caml_memprof_after_minor_gc(domain, participating[0] == domain);
 
   domain->young_ptr = domain->young_end;
   /* Trigger a GC poll when half of the minor heap is filled. At that point, a
@@ -724,8 +730,6 @@ caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
   caml_gc_log("running finalizer data structure book-keeping");
   caml_final_update_last_minor(domain);
   CAML_EV_END(EV_MINOR_FINALIZERS_ADMIN);
-
-  caml_memprof_after_minor_gc_global();
 
   CAML_EV_BEGIN(EV_MINOR_CLEAR);
   caml_gc_log("running stw empty_minor_heap_domain_clear");

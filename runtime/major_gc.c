@@ -31,6 +31,7 @@
 #include "caml/globroots.h"
 #include "caml/gc_stats.h"
 #include "caml/memory.h"
+#include "caml/memprof.h"
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
 #include "caml/roots.h"
@@ -1383,6 +1384,11 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
   }
   CAML_EV_END(EV_MAJOR_MARK_ROOTS);
 
+  CAML_EV_BEGIN(EV_MAJOR_MEMPROF_ROOTS);
+  caml_memprof_scan_roots(caml_darken, darken_scanning_flags, domain,
+                          domain, 0, participating[0] == Caml_state);
+  CAML_EV_END(EV_MAJOR_MEMPROF_ROOTS);
+
   if (domain->mark_stack->count == 0 &&
       !caml_addrmap_iter_ok(&domain->mark_stack->compressed_stack,
                             domain->mark_stack->compressed_stack_iter)
@@ -1678,6 +1684,11 @@ mark_again:
           intnat work_done = budget - left;
           commit_major_slice_work(work_done);
         }
+
+        /* TODO: find a better home for this, and fix the second parameter! */
+        caml_memprof_after_major_gc(domain_state,
+                                    barrier_participants
+                                    && domain_state == barrier_participants[0]);
 
         CAML_EV_END(EV_MAJOR_EPHE_SWEEP);
         if (domain_state->ephe_info->todo == 0) {
