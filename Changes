@@ -59,6 +59,10 @@ Working version
   how to traverse them, supporting more stack layouts.
   (Xavier Leroy, review by KC Sivaramakrishnan and Fabrice Buoro)
 
+- #12268: deliver `Out_of_memory` exception if domain creation fails
+  due to memory resource exhaustion.  It was previous always a `Failure`.
+  (Anil Madhavapeddy, review by David Allsopp)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.
