@@ -60,7 +60,7 @@ module M = F(U);; (* fail *)
 Line 1, characters 11-12:
 1 | module M = F(U);; (* fail *)
                ^
-Error: This is a generative functor. It can only be applied to ()
+Error: This is a generative functor. It can only be applied to "()"
 |}];;
 
 (* Cannot coerce between applicative and generative *)

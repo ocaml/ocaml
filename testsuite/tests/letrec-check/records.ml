@@ -27,5 +27,5 @@ let () = match u with
 Line 2, characters 8-29:
 2 | and u = Some { t with x = 2 }
             ^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;

@@ -124,11 +124,8 @@
 
 
 #ifdef DEBUG
-#define CHECK_STACK_ALIGNMENT \
-        test $0xf, %rsp; jz 9f; int3; 9:
 #define IF_DEBUG(...) __VA_ARGS__
 #else
-#define CHECK_STACK_ALIGNMENT
 #define IF_DEBUG(...)
 #endif
 
@@ -377,7 +374,7 @@
 
 #endif
 
-#define C_call(target) CHECK_STACK_ALIGNMENT; call target
+#define C_call(target) call target
 
 /******************************************************************************/
 /* Registers holding arguments of C functions. */
@@ -687,7 +684,6 @@ LBL(caml_start_program):
         movq    Caml_state(c_stack), %r10
         movq    %r10, Cstack_prev(%rsp)
         movq    %rsp, Caml_state(c_stack)
-        CHECK_STACK_ALIGNMENT
     /* Load the OCaml stack. */
         movq    Caml_state(current_stack), %r11
         movq    Stack_sp(%r11), %r10
@@ -1034,7 +1030,6 @@ ENDFUNCTION(G(caml_ml_array_bound_error))
 
 FUNCTION(G(caml_assert_stack_invariants))
 CFI_STARTPROC
-/*      CHECK_STACK_ALIGNMENT */
         movq    Caml_state(current_stack), %r11
         movq    %rsp, %r10
         subq    %r11, %r10      /* %r10: number of bytes left on stack */

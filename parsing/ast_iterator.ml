@@ -132,6 +132,9 @@ module T = struct
     | Ptyp_package (lid, l) ->
         iter_loc sub lid;
         List.iter (iter_tuple (iter_loc sub) (sub.typ sub)) l
+    | Ptyp_open (mod_ident, t) ->
+        iter_loc sub mod_ident;
+        sub.typ sub t
     | Ptyp_extension x -> sub.extension sub x
 
   let iter_type_declaration sub

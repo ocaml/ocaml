@@ -16,9 +16,9 @@ let act : [ `A | `B ] -> [`A] =
 Line 2, characters 10-27:
 2 |  fun x -> (new idfunc)#id x
               ^^^^^^^^^^^^^^^^^
-Error: This expression has type [ `A | `B ]
-       but an expression was expected of type [ `A ]
-       The second variant type does not allow tag(s) `B
+Error: This expression has type "[ `A | `B ]"
+       but an expression was expected of type "[ `A ]"
+       The second variant type does not allow tag(s) "`B"
 |}]
 
 

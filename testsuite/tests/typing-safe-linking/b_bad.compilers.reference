@@ -8,4 +8,4 @@ Y
 File "b_bad.ml", line 18, characters 11-14:
 18 | let () = f A.y
                 ^^^
-Error: Unbound value A.y
+Error: Unbound value "A.y"

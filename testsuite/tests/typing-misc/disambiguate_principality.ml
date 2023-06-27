@@ -82,7 +82,7 @@ let e =
 Line 3, characters 24-27:
 3 |   { x with contents = { lbl = 4 } }
                             ^^^
-Error: Unbound record field lbl
+Error: Unbound record field "lbl"
 |}]
 
 let f =
@@ -138,7 +138,7 @@ let i x =
 Line 3, characters 6-9:
 3 |   | { lbl = _ } -> ()
           ^^^
-Error: Unbound record field lbl
+Error: Unbound record field "lbl"
 |}]
 
 let j x =
@@ -176,7 +176,7 @@ let k x =
 Line 3, characters 6-9:
 3 |   | { lbl = _ }
           ^^^
-Error: Unbound record field lbl
+Error: Unbound record field "lbl"
 |}]
 
 let l (x : M.r ref) =
@@ -195,7 +195,7 @@ let m x =
 Line 3, characters 19-22:
 3 |   | { contents = { lbl = _ } } -> ()
                        ^^^
-Error: Unbound record field lbl
+Error: Unbound record field "lbl"
 |}]
 
 let n x =
@@ -233,7 +233,7 @@ let o x =
 Line 3, characters 19-22:
 3 |   | { contents = { lbl = _ } } -> ()
                        ^^^
-Error: Unbound record field lbl
+Error: Unbound record field "lbl"
 |}]
 
 let p x =
@@ -271,7 +271,7 @@ let q x =
 Line 3, characters 19-22:
 3 |   | { contents = { lbl = _ } }
                        ^^^
-Error: Unbound record field lbl
+Error: Unbound record field "lbl"
 |}]
 
 let r arg =
@@ -381,7 +381,7 @@ let e =
 Line 3, characters 22-23:
 3 |   { x with contents = B }
                           ^
-Error: Unbound constructor B
+Error: Unbound constructor "B"
 |}]
 
 (* Patterns *)
@@ -419,7 +419,7 @@ let i x =
 Line 3, characters 4-5:
 3 |   | A -> ()
         ^
-Error: Unbound constructor A
+Error: Unbound constructor "A"
 |}]
 
 let j x =
@@ -447,7 +447,7 @@ let k x =
 Line 3, characters 4-5:
 3 |   | A
         ^
-Error: Unbound constructor A
+Error: Unbound constructor "A"
 |}]
 
 let l (x : M.t ref) =
@@ -466,7 +466,7 @@ let m x =
 Line 3, characters 18-19:
 3 |   | { contents = (A | B) } -> ()
                       ^
-Error: Unbound constructor A
+Error: Unbound constructor "A"
 |}]
 
 let n x =
@@ -504,7 +504,7 @@ let o x =
 Line 3, characters 17-18:
 3 |   | { contents = A } -> ()
                      ^
-Error: Unbound constructor A
+Error: Unbound constructor "A"
 |}]
 
 let p x =
@@ -542,7 +542,7 @@ let q x =
 Line 3, characters 17-18:
 3 |   | { contents = A }
                      ^
-Error: Unbound constructor A
+Error: Unbound constructor "A"
 |}]
 
 let s arg =

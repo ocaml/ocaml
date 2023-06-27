@@ -15,5 +15,5 @@ Line 1, characters 17-20:
 1 | type bar = Bar : foo;;
                      ^^^
 Error: Constraints are not satisfied in this type.
-       Type foo should be an instance of bar
+       Type "foo" should be an instance of "bar"
 |}];;

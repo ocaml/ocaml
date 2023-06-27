@@ -25,7 +25,7 @@ let f x = match N.eq with Refl -> (x : M.t :> N.t);;
 Line 1, characters 34-50:
 1 | let f x = match N.eq with Refl -> (x : M.t :> N.t);;
                                       ^^^^^^^^^^^^^^^^
-Error: Type M.t is not a subtype of N.t
+Error: Type "M.t" is not a subtype of "N.t"
 |}]
 
 (*

@@ -77,7 +77,7 @@ Line 3, characters 7-20:
 3 |   open M(struct end)
            ^^^^^^^^^^^^^
 Error: This module is not a structure; it has type
-       functor (X : sig end) -> sig end
+       "functor (X : sig end) -> sig end"
 |}]
 
 open struct
@@ -103,11 +103,11 @@ include struct open struct type t = T end let x = T end
 Line 1, characters 15-41:
 1 | include struct open struct type t = T end let x = T end
                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type t introduced by this open appears in the signature.
+Error: The type "t" introduced by this open appears in the signature.
 Line 1, characters 46-47:
 1 | include struct open struct type t = T end let x = T end
                                                   ^
-  The value x has no valid type if t is hidden.
+  The value "x" has no valid type if "t" is hidden.
 |}];;
 
 module A = struct
@@ -125,11 +125,11 @@ Lines 3-6, characters 4-7:
 4 |       type t = T
 5 |       let x = T
 6 |     end
-Error: The type t introduced by this open appears in the signature.
+Error: The type "t" introduced by this open appears in the signature.
 Line 7, characters 8-9:
 7 |     let y = x
             ^
-  The value y has no valid type if t is hidden.
+  The value "y" has no valid type if "t" is hidden.
 |}];;
 
 module A = struct
@@ -146,11 +146,11 @@ Lines 3-5, characters 4-7:
 3 | ....open struct
 4 |       type t = T
 5 |     end
-Error: The type t introduced by this open appears in the signature.
+Error: The type "t" introduced by this open appears in the signature.
 Line 6, characters 8-9:
 6 |     let y = T
             ^
-  The value y has no valid type if t is hidden.
+  The value "y" has no valid type if "t" is hidden.
 |}]
 
 (* It was decided to not allow this anymore. *)
@@ -361,8 +361,8 @@ let x = let open struct type t = T end in T
 Line 1, characters 42-43:
 1 | let x = let open struct type t = T end in T
                                               ^
-Error: This expression has type t but an expression was expected of type 'a
-       The type constructor t would escape its scope
+Error: This expression has type "t" but an expression was expected of type "'a"
+       The type constructor "t" would escape its scope
 |}]
 
 module type Print = sig
@@ -394,5 +394,5 @@ Line 1, characters 27-53:
 1 | let f () = let open functor(X: sig end) -> struct end in ();;
                                ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This module is not a structure; it has type
-       functor (X : sig end) -> sig end
+       "functor (X : sig end) -> sig end"
 |}]

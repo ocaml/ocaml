@@ -19,9 +19,9 @@ val w_bool : bool t = Int
 Line 2, characters 34-37:
 2 | let f_bool (x : bool) : int = let Int = w_bool in x;; (* fail *)
                                       ^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type bool t
-       Type int is not compatible with type bool
+Error: This pattern matches values of type "int t"
+       but a pattern was expected which matches values of type "bool t"
+       Type "int" is not compatible with type "bool"
 |}];;
 
 let w_buffer : Buffer.t t = Obj.magic 0;;
@@ -38,9 +38,9 @@ val w_spec : Arg.spec t = Int
 Line 2, characters 38-41:
 2 | let f_spec (x : Arg.spec) : int = let Int = w_spec in x;; (* fail *)
                                           ^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type Arg.spec t
-       Type int is not compatible with type Arg.spec
+Error: This pattern matches values of type "int t"
+       but a pattern was expected which matches values of type "Arg.spec t"
+       Type "int" is not compatible with type "Arg.spec"
 |}];;
 
 module M : sig type u val w : u t val x : u end =

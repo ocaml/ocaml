@@ -124,28 +124,26 @@ endif
 
 BOOT_OCAMLDEP = $(BOOT_OCAMLC) -depend
 
-ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
-  FLEXLINK_ENV =
-  CAMLOPT_CMD = $(CAMLOPT)
-  OCAMLOPT_CMD = $(OCAMLOPT)
-  MKLIB_CMD = $(MKLIB)
-  ocamlc_cmd = $(ocamlc)
-  ocamlopt_cmd = $(ocamlopt)
-else
-ifeq "$(wildcard $(ROOTDIR)/flexlink.opt$(EXE))" ""
-  FLEXLINK_ENV = \
-    OCAML_FLEXLINK="$(ROOTDIR)/boot/ocamlrun$(EXE) \
-                    $(ROOTDIR)/boot/flexlink.byte$(EXE)"
-else
-  FLEXLINK_ENV = \
-    OCAML_FLEXLINK="$(ROOTDIR)/flexlink.opt$(EXE) -I $(ROOTDIR)/stdlib/flexdll"
-endif # ifeq "$(wildcard $(ROOTDIR)/flexlink.opt$(EXE))" ""
-  CAMLOPT_CMD = $(FLEXLINK_ENV) $(CAMLOPT)
-  OCAMLOPT_CMD = $(FLEXLINK_ENV) $(OCAMLOPT)
-  MKLIB_CMD = $(FLEXLINK_ENV) $(MKLIB)
-  ocamlc_cmd = $(FLEXLINK_ENV) $(ocamlc)
-  ocamlopt_cmd = $(FLEXLINK_ENV) $(ocamlopt)
-endif # ifeq "$(BOOTSTRAPPING_FLEXDLL)" "false"
+# Takes an implicit path and converts it to a path expression which returns to
+# the current directory. e.g. $(call ROOT_FROM, foo/bar/) expands to ../..
+REMOVE_SLASH = $(strip $(patsubst %/,%, $(1)))
+ROOT_FROM = \
+  $(subst $(SPACE),/,$(patsubst %,..,$(subst /, ,$(call REMOVE_SLASH, $(1)))))
+
+BYTE_BUILD_TREE = byte
+OPT_BUILD_TREE = opt
+
+BYTE_BINDIR = $(BYTE_BUILD_TREE)/bin
+OPT_BINDIR = $(OPT_BUILD_TREE)/bin
+
+ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
+  override REAL_ROOT_DIR := $(realpath $(ROOTDIR))
+ifeq "$(filter $(REAL_ROOT_DIR)/$(BYTE_BINDIR), $(subst :, ,$(PATH)))" ""
+  export PATH := \
+    $(REAL_ROOT_DIR)/$(OPT_BINDIR):$(REAL_ROOT_DIR)/$(BYTE_BINDIR):$(PATH)
+endif
+  undefine REAL_ROOT_DIR
+endif
 
 # List of other libraries
 ALL_OTHERLIBS = dynlink str systhreads unix runtime_events
@@ -256,7 +254,7 @@ $(1)$(EXE): $$$$($(basename $(notdir $(1)))_BCOBJS)
 endef # OCAML_BYTECODE_PROGRAM
 
 LINK_NATIVE_PROGRAM =\
-  $(CAMLOPT_CMD) $(OC_COMMON_LINKFLAGS) $(OC_NATIVE_LINKFLAGS)
+  $(CAMLOPT) $(OC_COMMON_LINKFLAGS) $(OC_NATIVE_LINKFLAGS)
 
 define OCAML_NATIVE_PROGRAM
 $(eval $(call PROGRAM_SYNONYM,$(1)))

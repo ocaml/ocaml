@@ -193,7 +193,7 @@ let test_separation = function
 Line 2, characters 27-30:
 2 |   | S.(Sep), (S.(Sep,Sep), Sep) -> ();;
                                ^^^
-Error: Unbound constructor Sep
+Error: Unbound constructor "Sep"
 |}]
 let test_separation_2 = function
   | S.(Ex(a,b)), Ex(c,d) -> ();;
@@ -201,7 +201,7 @@ let test_separation_2 = function
 Line 2, characters 17-19:
 2 |   | S.(Ex(a,b)), Ex(c,d) -> ();;
                      ^^
-Error: Unbound constructor Ex
+Error: Unbound constructor "Ex"
 |}]
 let test_separation_3 = function
   | S.(Sep) -> s;;
@@ -209,7 +209,7 @@ let test_separation_3 = function
 Line 2, characters 15-16:
 2 |   | S.(Sep) -> s;;
                    ^
-Error: Unbound value s
+Error: Unbound value "s"
 |}]
 
 (* Testing interaction of local open in pattern and backtracking *)

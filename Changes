@@ -8,6 +8,35 @@ Working version
 
 ### Language features:
 
+- #12295: Give `while true' a polymorphic type, similarly to `assert false'
+  (Jeremy Yallop, review by Nicolás Ojeda Bär and Gabriel Scherer,
+  suggestion by Rodolphe Lepigre and John Whitington)
+
+- #12315: Use type annotations from arguments in let rec
+  (Stephen Dolan, review by Gabriel Scherer)
+
+- #11252, RFC 27: Support raw identifier syntax \#foo
+  (Stephen Dolan, review by David Allsopp, Gabriel Scherer and Olivier Nicole)
+
+- #12044: Add local module open syntax for types.
+  ```
+    module A = struct
+      type t = int
+      type r = unit
+      type s = string
+    end
+
+    type example = A.(t * r * s)
+  ```
+  (Alistair O'Brien, review by Gabriel Scherer, Nicolás Ojeda Bär
+   and Florian Angeletti)
+
+### Type system:
+
+- #12313, #11799: Do not re-build as-pattern type when a ground type annotation
+  is given. This allows to work around problems with GADTs in as-patterns.
+  (Jacques Garrigue, report by Leo White, review by Gabriel Scherer)
+
 ### Runtime system:
 
 - #10111: Increase the detail of location information for debugging events to
@@ -30,7 +59,15 @@ Working version
   how to traverse them, supporting more stack layouts.
   (Xavier Leroy, review by KC Sivaramakrishnan and Fabrice Buoro)
 
+- #12268: deliver `Out_of_memory` exception if domain creation fails
+  due to memory resource exhaustion.  It was previous always a `Failure`.
+  (Anil Madhavapeddy, review by David Allsopp)
+
 ### Code generation and optimizations:
+
+- #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.
+  This reduces stack usage.  It's only C stacks that require 16-alignment.
+  (Xavier Leroy, review by Gabriel Scherer and Stephen Dolan)
 
 ### Standard library:
 
@@ -65,6 +102,15 @@ Working version
 - #12247: configure: --disable-ocamldebug can now be used instead
   of --disable-debugger (which remains available for compatibility)
   (Gabriel Scherer, review by Damien Doligez and Sébastien Hinderer)
+
+- #12210: uniform style for inline code in compiler messages
+  (Florian Angeletti, review by Gabriel Scherer)
+
+* #12278, #:12325: Remove the OCAML_FLEXLINK environment variable from the
+  compiler drivers. This environment variable was previously used as part of the
+  FlexDLL bootstrap procedure and existed solely for that purpose. Its removal
+  greatly simplifies both the build system and testsuite machinery.
+  (David Allsopp, review by Sébastien Hinderer)
 
 ### Internal/compiler-libs changes:
 

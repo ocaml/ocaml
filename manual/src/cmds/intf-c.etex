@@ -2754,14 +2754,6 @@ libraries are supported) and "lib"\var{outputc}".a".
 If not specified, defaults to the output name given with "-o".
 \end{options}
 
-\noindent
-On native Windows, the following environment variable is also consulted:
-
-\begin{options}
-\item["OCAML_FLEXLINK"]  Alternative executable to use instead of the
-configured value. Primarily used for bootstrapping.
-\end{options}
-
 \paragraph{Example} Consider an OCaml interface to the standard "libz"
 C library for reading and writing compressed files.  Assume this
 library resides in "/usr/local/zlib".  This interface is

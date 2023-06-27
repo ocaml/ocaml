@@ -156,10 +156,6 @@ first character of the string, within the set ":|; ,".
 \item["ocaml_compiler_internal_params" \rm(file in the stdlib directory)]
 A mapping of file names to lists of arguments that
 will be added to the command line (and "OCAMLPARAM") arguments.
-\item["OCAML_FLEXLINK" \rm(environment variable)]
-Alternative executable to use on native
-Windows for "flexlink" instead of the
-configured value. Primarily used for bootstrapping.
 \end{options}
 
 \section{s:native-common-errors}{Common errors}

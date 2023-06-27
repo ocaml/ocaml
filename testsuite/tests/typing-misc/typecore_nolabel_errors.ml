@@ -24,7 +24,7 @@ Line 1, characters 14-15:
 1 | let () = f ~y:1
                   ^
 Error: The function applied to this argument has type x:'a -> unit
-This argument cannot be applied with label ~y
+This argument cannot be applied with label "~y"
 |}]
 
 let f ?x ~a ?y ~z () = ()
@@ -36,7 +36,7 @@ Line 2, characters 13-17:
                  ^^^^
 Error: The function applied to this argument has type
          ?x:'a -> a:'b -> ?y:'c -> z:'d -> unit -> unit
-This argument cannot be applied with label ?y
+This argument cannot be applied with label "?y"
   Since OCaml 4.11, optional arguments do not commute when -nolabels is given
 |}]
 
@@ -47,7 +47,7 @@ Line 1, characters 28-32:
 1 | let f (g: ?x:_ -> _) = g ~y:None ?x:None; g ?x:None ()
                                 ^^^^
 Error: The function applied to this argument has type ?x:'a -> 'b
-This argument cannot be applied with label ~y
+This argument cannot be applied with label "~y"
   Since OCaml 4.11, optional arguments do not commute when -nolabels is given
 |}]
 
@@ -70,7 +70,7 @@ Line 1, characters 7-8:
            ^
 Error: The function applied to this argument has type
          ?a:int -> ?b:int -> ?c:int -> x:int -> int -> int
-This argument cannot be applied with label ~c
+This argument cannot be applied with label "~c"
   Since OCaml 4.11, optional arguments do not commute when -nolabels is given
 |}]
 ;;
@@ -97,7 +97,7 @@ Line 1, characters 12-13:
                 ^
 Error: The function applied to this argument has type
          ?b:int -> ?c:int -> x:int -> int -> int
-This argument cannot be applied with label ~c
+This argument cannot be applied with label "~c"
   Since OCaml 4.11, optional arguments do not commute when -nolabels is given
 |}]
 ;;
@@ -109,7 +109,7 @@ Line 1, characters 7-8:
            ^
 Error: The function applied to this argument has type
          ?a:int -> ?b:int -> ?c:int -> x:int -> int -> int
-This argument cannot be applied with label ~b
+This argument cannot be applied with label "~b"
   Since OCaml 4.11, optional arguments do not commute when -nolabels is given
 |}]
 ;;
@@ -130,7 +130,7 @@ Line 1, characters 5-6:
          ^
 Error: The function applied to this argument has type
          ?x:'a -> ?y:'b -> unit -> unit
-This argument cannot be applied with label ~y
+This argument cannot be applied with label "~y"
   Since OCaml 4.11, optional arguments do not commute when -nolabels is given
 |}]
 ;;

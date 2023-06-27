@@ -9,7 +9,7 @@ type t = (unit, unit, unit, unit) bar
 Line 1, characters 34-37:
 1 | type t = (unit, unit, unit, unit) bar
                                       ^^^
-Error: Unbound type constructor bar
+Error: Unbound type constructor "bar"
 |}];;
 
 function (x :
@@ -19,7 +19,7 @@ function (x :
 Line 2, characters 1-4:
 2 | #bar) -> ();;
      ^^^
-Error: Unbound class type bar
+Error: Unbound class type "bar"
 |}];;
 
 function
@@ -30,7 +30,7 @@ function
 Line 2, characters 1-4:
 2 | #bar -> ()
      ^^^
-Error: Unbound type constructor bar
+Error: Unbound type constructor "bar"
 |}];;
 
 new bar;;
@@ -39,7 +39,7 @@ new bar;;
 Line 1, characters 4-7:
 1 | new bar;;
         ^^^
-Error: Unbound class bar
+Error: Unbound class "bar"
 |}];;
 
 type t =
@@ -73,7 +73,7 @@ open Foo;;
 Line 1, characters 5-8:
 1 | open Foo;;
          ^^^
-Error: Unbound module Foo
+Error: Unbound module "Foo"
 |}];;
 
 #warnings "@33";; (* unused open statement *)
@@ -95,7 +95,7 @@ type unknown += Foo;;
 Line 1, characters 5-12:
 1 | type unknown += Foo;;
          ^^^^^^^
-Error: Unbound type constructor unknown
+Error: Unbound type constructor "unknown"
 |}];;
 
 type t = ..;;
@@ -107,5 +107,5 @@ type t = ..
 Line 3, characters 6-12:
 3 | Foo = Foobar;;
           ^^^^^^
-Error: Unbound constructor Foobar
+Error: Unbound constructor "Foobar"
 |}];;

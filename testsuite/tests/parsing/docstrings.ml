@@ -315,7 +315,7 @@ module Manual :
 Line 141, characters 12-14:
 141 |     inherit cl
                   ^^
-Error: Unbound class cl
+Error: Unbound class "cl"
 |}]
 
 (***********************************************************************)
