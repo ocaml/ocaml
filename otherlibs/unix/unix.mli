@@ -227,6 +227,14 @@ val execv : string -> string array -> 'a
    Using {!create_process} or one of the [open_process_*] functions
    instead is recommended.
 
+   The first element of the array [args] will often be [argv[0]] or
+   [Sys.argv.(0)] in the new process [prog]. This is plateform
+   dependant and you should refer to the man page of execv, which for
+   instance give for linux : 
+   
+   "The first argument, by convention, should point to the filename 
+    associated with the file being executed"
+   
    @raise Unix_error on failure *)
 
 val execve : string -> string array -> string array -> 'a
@@ -865,7 +873,9 @@ val create_process :
    and causes the new process to have the same standard output
    as the current process.
    The executable file [prog] is searched in the path.
-   The new process has the same environment as the current process. *)
+   The new process has the same environment as the current process. 
+   The first element of the array [args] may or may not be required to
+   be equal to [prog] (see {!execv} above) *)
 
 val create_process_env :
   string -> string array -> string array -> file_descr ->
