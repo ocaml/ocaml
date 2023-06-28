@@ -1225,6 +1225,15 @@ static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
   return budget;
 }
 
+static void memprof_clean_callback(caml_domain_state* domain, void* unused,
+                                   int participating_count,
+                                   caml_domain_state** participating)
+{
+  (void)unused;
+  (void)participating_count;
+  caml_memprof_after_major_gc(domain, domain == participating[0]);
+}
+
 static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
                                        int participating_count,
                                        caml_domain_state** participating)
@@ -1495,6 +1504,26 @@ static void try_complete_gc_phase (caml_domain_state* domain, void* unused,
   CAML_EV_END(EV_MAJOR_GC_PHASE_CHANGE);
 }
 
+/* Run `handler` on all domains participating in the barrier,
+ * or on all domains. */
+
+void run_all_participants(void (*handler)(caml_domain_state *,
+                                          void *, int,
+                                          caml_domain_state**),
+                          int participant_count,
+                          caml_domain_state **barrier_participants,
+                          caml_domain_state *domain_state)
+{
+  if (barrier_participants) {
+     handler(domain_state,
+             (void*)0,
+             participant_count,
+             barrier_participants);
+  } else {
+     caml_try_run_on_all_domains (handler, 0, 0);
+  }
+}
+
 intnat caml_opportunistic_major_work_available (void)
 {
   caml_domain_state* domain_state = Caml_state;
@@ -1685,11 +1714,6 @@ mark_again:
           commit_major_slice_work(work_done);
         }
 
-        /* TODO: find a better home for this, and fix the second parameter! */
-        caml_memprof_after_major_gc(domain_state,
-                                    barrier_participants
-                                    && domain_state == barrier_participants[0]);
-
         CAML_EV_END(EV_MAJOR_EPHE_SWEEP);
         if (domain_state->ephe_info->todo == 0) {
           atomic_fetch_add_verify_ge0(&num_domains_to_ephe_sweep, -1);
@@ -1701,14 +1725,9 @@ mark_again:
     if (is_complete_phase_sweep_and_mark_main() ||
         is_complete_phase_mark_final ()) {
       CAMLassert (caml_gc_phase != Phase_sweep_ephe);
-      if (barrier_participants) {
-        try_complete_gc_phase (domain_state,
-                              (void*)0,
-                              participant_count,
-                              barrier_participants);
-      } else {
-        caml_try_run_on_all_domains (&try_complete_gc_phase, 0, 0);
-      }
+      run_all_participants(try_complete_gc_phase,
+                           participant_count, barrier_participants,
+                           domain_state);
       if (get_major_slice_work(mode) > 0) goto mark_again;
     }
   }
@@ -1726,19 +1745,19 @@ mark_again:
                                                       - blocks_marked_before));
 
   if (mode != Slice_opportunistic && is_complete_phase_sweep_ephe()) {
+    run_all_participants(memprof_clean_callback,
+                         participant_count, barrier_participants,
+                         domain_state);
+
     saved_major_cycle = caml_major_cycles_completed;
     /* To handle the case where multiple domains try to finish the major
       cycle simultaneously, we loop until the current cycle has ended,
       ignoring whether caml_try_run_on_all_domains succeeds. */
 
-
     while (saved_major_cycle == caml_major_cycles_completed) {
-      if (barrier_participants) {
-        cycle_all_domains_callback
-              (domain_state, (void*)0, participant_count, barrier_participants);
-      } else {
-        caml_try_run_on_all_domains(&cycle_all_domains_callback, 0, 0);
-      }
+      run_all_participants(cycle_all_domains_callback,
+                           participant_count, barrier_participants,
+                           domain_state);
     }
   }
 }
