@@ -100,6 +100,11 @@ Working version
   (Guillaume Munch-Maccagnoni, review by Anil Madhavapeddy and KC
    Sivaramakrishnan)
 
+- #12318: GC: simplify the meaning of custom_minor_max_size: blocks with
+  out-of-heap memory above this limit are now allocated directly in
+  the major heap.
+  (Damien Doligez, report by Stephen Dolan, review by Gabriel Scherer)
+
 - #12408: `Domain.spawn` no longer leaks its functional argument for
   the whole duration of the children domain lifetime.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
