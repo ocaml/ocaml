@@ -793,13 +793,16 @@ Some of those changes will benefit all OCaml packages.
 * #11745: Debugger and toplevels: embed printer types rather than
   reading their representations from topdirs.cmi at runtime.
   This change breaks toplevel scripts relying on the visibility of `Topdirs`
-  in the initial toplevel environment without using `topfind`.
-  Accessing `Topdirs` now require to add the compiler-libs directory to the
-  toplevel search path with
-     `#directory "+compiler-libs";;``.
-  like this was already the case for other toplevel modules.
-  Note that `topfind` loads the `Topdirs` module to add new toplevel
-  directives. Scripts using `topfind` are thus not affected.
+  in the initial toplevel environment without loading `topfind`.
+  Since the opam default `.ocamlinit` file loads `topfind`, it is expected
+  that only scripts run with `ocaml -noinit` are affected.
+  For those scripts, accessing `Topdirs` now requires to add the compiler-libs
+  directory to the toplevel search path with
+  ```
+    #directory "+compiler-libs";;
+  ````
+  as this was already the case for the other modules in the toplevel programming
+  interface library.
   (Sébastien Hinderer, review by Florian Angeletti, Nicolás Ojeda Bär and
   Gabriel Scherer)
 
