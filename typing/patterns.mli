@@ -65,8 +65,8 @@ end
 module General : sig
   type view = [
     | Half_simple.view
-    | `Var of Ident.t * string loc
-    | `Alias of pattern * Ident.t * string loc
+    | `Var of Ident.t * string loc * Uid.t
+    | `Alias of pattern * Ident.t * string loc * Uid.t
   ]
   type pattern = view pattern_data
 

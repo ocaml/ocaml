@@ -230,7 +230,9 @@ let transl_labels env univars closed lbls =
          let arg = Ast_helper.Typ.force_poly arg in
          let cty = transl_simple_type env ?univars ~closed arg in
          {ld_id = Ident.create_local name.txt;
-          ld_name = name; ld_mutable = mut;
+          ld_name = name;
+          ld_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+          ld_mutable = mut;
           ld_type = cty; ld_loc = loc; ld_attributes = attrs}
       )
   in
@@ -245,7 +247,7 @@ let transl_labels env univars closed lbls =
           ld_type = ty;
           ld_loc = ld.ld_loc;
           ld_attributes = ld.ld_attributes;
-          ld_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+          ld_uid = ld.ld_uid;
          }
       )
       lbls in
@@ -402,6 +404,7 @@ let transl_declaration env sdecl (id, uid) =
           let tcstr =
             { cd_id = name;
               cd_name = scstr.pcd_name;
+              cd_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
               cd_vars = scstr.pcd_vars;
               cd_args = targs;
               cd_res = tret_type;
@@ -414,7 +417,7 @@ let transl_declaration env sdecl (id, uid) =
               cd_res = ret_type;
               cd_loc = scstr.pcd_loc;
               cd_attributes = scstr.pcd_attributes;
-              cd_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) }
+              cd_uid = tcstr.cd_uid }
           in
             tcstr, cstr
         in
