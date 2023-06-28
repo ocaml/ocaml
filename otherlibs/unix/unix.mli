@@ -230,7 +230,7 @@ val execv : string -> string array -> 'a
    The first element of the array [args] will often be [argv[0]] or
    [Sys.argv.(0)] in the new process [prog]. This is plateform
    dependant and you should refer to the man page of execv, which for
-   instance give for linux : 
+   instance gives for linux : 
    
    "The first argument, by convention, should point to the filename 
     associated with the file being executed"
