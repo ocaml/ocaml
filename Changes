@@ -69,6 +69,10 @@ Working version
   This reduces stack usage.  It's only C stacks that require 16-alignment.
   (Xavier Leroy, review by Gabriel Scherer and Stephen Dolan)
 
+- #12311: on POWER, 32-bit FP numbers stored in memory (e.g. in bigarrays)
+  were not correctly rounded sometimes.
+  (Xavier Leroy, review by Anil Madhavapeddy and Tim McGilchrist)
+
 ### Standard library:
 
 * #10775: Half-precision floating-point elements in Bigarray.
