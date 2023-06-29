@@ -48,6 +48,6 @@ let unsound_cast : 'a 'b. 'a -> 'b = fun x ->
 Lines 1-2, characters 37-36:
 1 | .....................................fun x ->
 2 |   match t with Iso (g, h) -> h (g x)
-Error: This definition has type 'c. 'c -> 'c which is less general than
-         'a 'b. 'a -> 'b
+Error: This definition has type "'c. 'c -> 'c" which is less general than
+         "'a 'b. 'a -> 'b"
 |}]

@@ -141,7 +141,7 @@ AC_SUBST([oc_exe_ldflags])
 AC_SUBST([cclibs])
 AC_SUBST([ocamlc_cflags])
 AC_SUBST([ocamlc_cppflags])
-AC_SUBST([flexdir])
+AC_SUBST([flexdll_source_dir])
 AC_SUBST([bootstrapping_flexdll])
 AC_SUBST([flexdll_dir])
 AC_SUBST([flexlink_flags])
@@ -204,7 +204,6 @@ AC_SUBST([flat_float_array])
 AC_SUBST([function_sections])
 AC_SUBST([oc_native_compflags])
 AC_SUBST([afl])
-AC_SUBST([flexlink_cmd])
 AC_SUBST([flexdll_chain])
 AC_SUBST([mkdll_ldflags_exp])
 AC_SUBST([mkexe_ldflags_exp])
@@ -833,15 +832,21 @@ AS_CASE([$host],
 AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
   AC_MSG_CHECKING([for flexdll sources])
   AS_IF([test x"$with_flexdll" = "xno"],
-    [flexdir=''
+    [flexdll_source_dir=''
     AC_MSG_RESULT([disabled])],
     [flexmsg=''
     AS_CASE([$target],
       [*-*-cygwin*|*-w64-mingw32*|*-pc-windows],
-      [AS_IF([m4_normalize([test x"$with_flexdll" = 'x'
+      [dnl When bootstrapping from the git submodule (flexdll directory), just
+       dnl use that, however if another directory has been specified with
+       dnl --with-flexdll=<path> then copy the contents of <path> to
+       dnl flexdll-sources. This allows us to guarantee that flexdll is always
+       dnl built at one directory level below the root, so we can specify
+       dnl ROOTDIR=..
+      AS_IF([m4_normalize([test x"$with_flexdll" = 'x'
                             || test x"$with_flexdll" = 'xflexdll'])],
         [AS_IF([test -f 'flexdll/flexdll.h'],
-          [flexdir=flexdll
+          [flexdll_source_dir=flexdll
           iflexdir='$(ROOTDIR)/flexdll'
           with_flexdll="$iflexdir"],
           [AS_IF([test x"$with_flexdll" != 'x'],
@@ -851,12 +856,12 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
         AS_IF([test -f "$with_flexdll/flexdll.h"],
           [mkdir -p flexdll-sources
           cp -r "$with_flexdll"/* flexdll-sources/
-          flexdir='flexdll-sources'
+          flexdll_source_dir='flexdll-sources'
           iflexdir='$(ROOTDIR)/flexdll-sources'
           flexmsg=" (from $with_flexdll)"],
           [AC_MSG_RESULT([requested but not available])
           AC_MSG_ERROR([exiting])])])
-      AS_IF([test x"$flexdir" = 'x'],
+      AS_IF([test x"$flexdll_source_dir" = 'x'],
         [AC_MSG_RESULT([no])],
         [AC_MSG_RESULT([$iflexdir$flexmsg])
         bootstrapping_flexdll=true
@@ -869,7 +874,7 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
 
   AC_CHECK_PROG([flexlink],[flexlink],[flexlink])
 
-  AS_IF([test -n "$flexlink" && test -z "$flexdir"],[
+  AS_IF([test -n "$flexlink" && test -z "$flexdll_source_dir"],[
     OCAML_TEST_FLEXLINK([$flexlink], [$flexdll_chain],
                         [$internal_cppflags], [$host])
 
@@ -881,7 +886,7 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
       ])])
   ])
 
-  OCAML_TEST_FLEXDLL_H([$flexdir])
+  OCAML_TEST_FLEXDLL_H([$flexdll_source_dir])
 
   AS_IF([test -n "$flexlink" && test x"$have_flexdll_h" = 'xno'],
     [OCAML_TEST_FLEXLINK_WHERE([$flexlink])
@@ -897,7 +902,7 @@ AS_CASE([$have_flexdll_h,$supports_shared_libraries,$host],
  [no,*,*-w64-mingw32*|no,*,*-pc-windows],
    [AC_MSG_ERROR([flexdll.h is required for native Win32])])
 
-AS_CASE([$flexdir,$supports_shared_libraries,$flexlink,$host],
+AS_CASE([$flexdll_source_dir,$supports_shared_libraries,$flexlink,$host],
   [,true,,*-*-cygwin*],
     [supports_shared_libraries=false
     AC_MSG_WARN([flexlink not found: shared library support disabled.])],
@@ -905,11 +910,6 @@ AS_CASE([$flexdir,$supports_shared_libraries,$flexlink,$host],
     [AC_MSG_ERROR([flexlink is required for native Win32])])
 
 mkexe_cmd_exp="$CC"
-
-AS_IF([$bootstrapping_flexdll],
-  [flexlink_cmd=\
-'$(ROOTDIR)/boot/ocamlruns.exe $(ROOTDIR)/boot/flexlink.byte.exe'],
-  [flexlink_cmd=flexlink])
 
 AS_CASE([$cc_basename,$host],
   [*,x86_64-*-darwin*],
@@ -921,7 +921,7 @@ AS_CASE([$cc_basename,$host],
     [common_cppflags="$common_cppflags -U_WIN32"
     AS_IF([$supports_shared_libraries],
       [mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-      mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
+      mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
       mkexe_cflags=''
       mkexe_ldflags_prefix='-link '],
       [mkexe_extra_flags=''
@@ -934,7 +934,7 @@ AS_CASE([$cc_basename,$host],
     ostype="Win32"
     toolchain="mingw"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-    mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
+    mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     oc_exe_ldflags='-municode'
@@ -944,7 +944,7 @@ AS_CASE([$cc_basename,$host],
     [toolchain=msvc
     ostype="Win32"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-    mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
+    mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     mkexe_via_cc_ldflags_prefix='/link '
@@ -1096,9 +1096,9 @@ AS_IF([test x"$enable_shared" != "xno"],
     [*-*-mingw32*|*-pc-windows|*-*-cygwin*],
       [mkdll_flags="-chain ${flexdll_chain} ${flexlink_flags}"
       mkdll_exp="flexlink ${mkdll_flags}"
-      mkdll="${flexlink_cmd} ${mkdll_flags}"
+      mkdll="flexlink ${mkdll_flags}"
       mkmaindll_exp="flexlink -maindll ${mkdll_flags}"
-      mkmaindll="${flexlink_cmd} -maindll ${mkdll_flags}"],
+      mkmaindll="flexlink -maindll ${mkdll_flags}"],
     [powerpc-ibm-aix*],
       [AS_CASE([$ocaml_cv_cc_vendor],
                [xlc*],
@@ -2369,6 +2369,7 @@ ${mkdll_ldflags}"
   mkdll="$mkdll $mkdll_ldflags"
   mkdll_exp="$mkdll_exp $mkdll_ldflags_exp"
   mkmaindll="$mkmaindll $mkdll_ldflags_exp"
+  mkmaindll_exp="$mkmaindll_exp $mkdll_ldflags_exp"
   # Do similarly with $mkexe_via_cc_ldflags_prefix, but this is only needed for
   # the msvc ports.
   AS_IF([test -n "$mkexe_via_cc_ldflags_prefix"],[

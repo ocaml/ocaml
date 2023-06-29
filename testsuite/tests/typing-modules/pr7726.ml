@@ -19,11 +19,11 @@ Line 1, characters 12-77:
 1 | module T1 = Fix(functor (X:sig type t end) -> struct type t = X.t option end);;
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the signature of this functor application:
-       The definition of Fixed.t contains a cycle:
-         F(Fixed).t = Fixed.t option,
-         Fixed.t option contains Fixed.t,
-         Fixed.t = F(Fixed).t,
-         F(Fixed).t = Fixed.t option
+       The definition of "Fixed.t" contains a cycle:
+         "F(Fixed).t" = "Fixed.t option",
+         "Fixed.t option" contains "Fixed.t",
+         "Fixed.t" = "F(Fixed).t",
+         "F(Fixed).t" = "Fixed.t option"
 |}]
 module T2 = Fix(functor (X:sig type t end) -> struct type t = X.t end);;
 [%%expect{|
@@ -31,10 +31,10 @@ Line 1, characters 12-70:
 1 | module T2 = Fix(functor (X:sig type t end) -> struct type t = X.t end);;
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the signature of this functor application:
-       The definition of Fixed.t contains a cycle:
-         F(Fixed).t = Fixed.t,
-         Fixed.t = F(Fixed).t,
-         F(Fixed).t = Fixed.t
+       The definition of "Fixed.t" contains a cycle:
+         "F(Fixed).t" = "Fixed.t",
+         "Fixed.t" = "F(Fixed).t",
+         "F(Fixed).t" = "Fixed.t"
 |}]
 
 (* Positive example *)
@@ -74,10 +74,10 @@ Line 1, characters 18-38:
 1 | module type Bad = S with module F = Id;;
                       ^^^^^^^^^^^^^^^^^^^^
 Error: In this instantiated signature:
-       The definition of Fixed.t contains a cycle:
-         F(Fixed).t = Fixed.t,
-         Fixed.t = F(Fixed).t,
-         F(Fixed).t = Fixed.t
+       The definition of "Fixed.t" contains a cycle:
+         "F(Fixed).t" = "Fixed.t",
+         "Fixed.t" = "F(Fixed).t",
+         "F(Fixed).t" = "Fixed.t"
 |}]
 
 (* More examples by lpw25 *)
@@ -87,10 +87,10 @@ Line 1, characters 11-18:
 1 | module M = Fix(Id);;
                ^^^^^^^
 Error: In the signature of this functor application:
-       The definition of Fixed.t contains a cycle:
-         Id(Fixed).t = Fixed.t,
-         Fixed.t = Id(Fixed).t,
-         Id(Fixed).t = Fixed.t
+       The definition of "Fixed.t" contains a cycle:
+         "Id(Fixed).t" = "Fixed.t",
+         "Fixed.t" = "Id(Fixed).t",
+         "Id(Fixed).t" = "Fixed.t"
 |}]
 type t = Fix(Id).Fixed.t;;
 [%%expect{|
@@ -98,10 +98,10 @@ Line 1, characters 9-24:
 1 | type t = Fix(Id).Fixed.t;;
              ^^^^^^^^^^^^^^^
 Error: In the signature of Fix(Id):
-       The definition of Fixed.t contains a cycle:
-         Id(Fixed).t = Fixed.t,
-         Fixed.t = Id(Fixed).t,
-         Id(Fixed).t = Fixed.t
+       The definition of "Fixed.t" contains a cycle:
+         "Id(Fixed).t" = "Fixed.t",
+         "Fixed.t" = "Id(Fixed).t",
+         "Id(Fixed).t" = "Fixed.t"
 |}]
 let f (x : Fix(Id).Fixed.t) = x;;
 [%%expect{|
@@ -109,10 +109,10 @@ Line 1, characters 11-26:
 1 | let f (x : Fix(Id).Fixed.t) = x;;
                ^^^^^^^^^^^^^^^
 Error: In the signature of Fix(Id):
-       The definition of Fixed.t contains a cycle:
-         Id(Fixed).t = Fixed.t,
-         Fixed.t = Id(Fixed).t,
-         Id(Fixed).t = Fixed.t
+       The definition of "Fixed.t" contains a cycle:
+         "Id(Fixed).t" = "Fixed.t",
+         "Fixed.t" = "Id(Fixed).t",
+         "Id(Fixed).t" = "Fixed.t"
 |}]
 
 module Foo (F : T -> T) = struct
@@ -126,10 +126,10 @@ module Foo :
 module M : sig val f : Fix(Id).Fixed.t -> Fix(Id).Fixed.t end
 Line 1:
 Error: In the signature of Fix(Id):
-       The definition of Fixed.t contains a cycle:
-         Id(Fixed).t = Fixed.t,
-         Fixed.t = Id(Fixed).t,
-         Id(Fixed).t = Fixed.t
+       The definition of "Fixed.t" contains a cycle:
+         "Id(Fixed).t" = "Fixed.t",
+         "Fixed.t" = "Id(Fixed).t",
+         "Id(Fixed).t" = "Fixed.t"
 |}]
 
 (* Extra tests for GPR#1676 *)
@@ -142,7 +142,7 @@ module M : sig end
 Line 3, characters 9-15:
 3 | type t = F(M).t;;
              ^^^^^^
-Error: The functor F is generative, it cannot be applied in type expressions
+Error: The functor "F" is generative, it cannot be applied in type expressions
 |}]
 
 module Fix2(F:(T -> T)) = struct
@@ -161,8 +161,8 @@ Line 5, characters 11-26:
 5 | let f (x : Fix2(Id).R(M).t) = x;;
                ^^^^^^^^^^^^^^^
 Error: In the signature of Fix2(Id):
-       The definition of Fixed.t contains a cycle:
-         Id(Fixed).t = Fixed.t,
-         Fixed.t = Id(Fixed).t,
-         Id(Fixed).t = Fixed.t
+       The definition of "Fixed.t" contains a cycle:
+         "Id(Fixed).t" = "Fixed.t",
+         "Fixed.t" = "Id(Fixed).t",
+         "Id(Fixed).t" = "Fixed.t"
 |}]

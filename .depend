@@ -270,11 +270,13 @@ parsing/asttypes.cmi : \
     parsing/location.cmi
 parsing/attr_helper.cmo : \
     parsing/parsetree.cmi \
+    utils/misc.cmi \
     parsing/location.cmi \
     parsing/asttypes.cmi \
     parsing/attr_helper.cmi
 parsing/attr_helper.cmx : \
     parsing/parsetree.cmi \
+    utils/misc.cmx \
     parsing/location.cmx \
     parsing/asttypes.cmi \
     parsing/attr_helper.cmi
@@ -386,6 +388,7 @@ parsing/parse.cmo : \
     parsing/syntaxerr.cmi \
     parsing/pprintast.cmi \
     parsing/parser.cmi \
+    utils/misc.cmi \
     parsing/location.cmi \
     parsing/lexer.cmi \
     parsing/docstrings.cmi \
@@ -394,6 +397,7 @@ parsing/parse.cmx : \
     parsing/syntaxerr.cmx \
     parsing/pprintast.cmx \
     parsing/parser.cmx \
+    utils/misc.cmx \
     parsing/location.cmx \
     parsing/lexer.cmx \
     parsing/docstrings.cmx \
@@ -437,12 +441,14 @@ parsing/pprintast.cmo : \
     parsing/parsetree.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
+    parsing/lexer.cmi \
     parsing/asttypes.cmi \
     parsing/pprintast.cmi
 parsing/pprintast.cmx : \
     parsing/parsetree.cmi \
     parsing/longident.cmx \
     parsing/location.cmx \
+    parsing/lexer.cmx \
     parsing/asttypes.cmi \
     parsing/pprintast.cmi
 parsing/pprintast.cmi : \
@@ -652,6 +658,7 @@ typing/envaux.cmo : \
     typing/subst.cmi \
     typing/printtyp.cmi \
     typing/path.cmi \
+    utils/misc.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
     typing/env.cmi \
@@ -661,6 +668,7 @@ typing/envaux.cmx : \
     typing/subst.cmx \
     typing/printtyp.cmx \
     typing/path.cmx \
+    utils/misc.cmx \
     parsing/location.cmx \
     typing/ident.cmx \
     typing/env.cmx \
@@ -886,11 +894,13 @@ typing/mtype.cmi : \
 typing/oprint.cmo : \
     parsing/pprintast.cmi \
     typing/outcometree.cmi \
+    parsing/lexer.cmi \
     parsing/asttypes.cmi \
     typing/oprint.cmi
 typing/oprint.cmx : \
     parsing/pprintast.cmx \
     typing/outcometree.cmi \
+    parsing/lexer.cmx \
     parsing/asttypes.cmi \
     typing/oprint.cmi
 typing/oprint.cmi : \
@@ -943,9 +953,11 @@ typing/parmatch.cmi : \
     typing/env.cmi \
     parsing/asttypes.cmi
 typing/path.cmo : \
+    parsing/lexer.cmi \
     typing/ident.cmi \
     typing/path.cmi
 typing/path.cmx : \
+    parsing/lexer.cmx \
     typing/ident.cmx \
     typing/path.cmi
 typing/path.cmi : \
@@ -1070,6 +1082,7 @@ typing/printtyp.cmo : \
     typing/shape.cmi \
     typing/primitive.cmi \
     typing/predef.cmi \
+    parsing/pprintast.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
@@ -1093,6 +1106,7 @@ typing/printtyp.cmx : \
     typing/shape.cmx \
     typing/primitive.cmx \
     typing/predef.cmx \
+    parsing/pprintast.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
@@ -1883,7 +1897,8 @@ typing/typetexp.cmi : \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/errortrace.cmi \
-    typing/env.cmi
+    typing/env.cmi \
+    parsing/asttypes.cmi
 typing/untypeast.cmo : \
     typing/typedtree.cmi \
     typing/path.cmi \
@@ -3637,6 +3652,7 @@ lambda/switch.cmx : \
 lambda/switch.cmi :
 lambda/tmc.cmo : \
     utils/warnings.cmi \
+    utils/misc.cmi \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
@@ -3645,6 +3661,7 @@ lambda/tmc.cmo : \
     lambda/tmc.cmi
 lambda/tmc.cmx : \
     utils/warnings.cmx \
+    utils/misc.cmx \
     parsing/location.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \
@@ -3685,6 +3702,7 @@ lambda/translclass.cmo : \
     lambda/translobj.cmi \
     lambda/translcore.cmi \
     typing/path.cmi \
+    utils/misc.cmi \
     lambda/matching.cmi \
     parsing/location.cmi \
     lambda/lambda.cmi \
@@ -3702,6 +3720,7 @@ lambda/translclass.cmx : \
     lambda/translobj.cmx \
     lambda/translcore.cmx \
     typing/path.cmx \
+    utils/misc.cmx \
     lambda/matching.cmx \
     parsing/location.cmx \
     lambda/lambda.cmx \

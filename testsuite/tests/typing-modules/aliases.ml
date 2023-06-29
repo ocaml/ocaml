@@ -599,7 +599,7 @@ module Int2 : sig type t = int val compare : 'a -> 'a -> int end
 Line 15, characters 10-30:
 15 |   include S with module I := I
                ^^^^^^^^^^^^^^^^^^^^
-Error: In this `with' constraint, the new definition of I
+Error: In this "with" constraint, the new definition of "I"
        does not match its original definition in the constrained signature:
        Modules do not match: (module Int2) is not included in (module Int)
 |}];;
@@ -694,13 +694,13 @@ Error: Module type declarations do not match:
          module type A = sig module M = F(List) end
        does not match
          module type A = sig module M = F(List) end
-       At position module type A = <here>
+       At position "module type A = <here>"
        Module types do not match:
          sig module M = F(List) end
        is not equal to
          sig module M = F(List) end
-       At position module type A = sig module M : <here> end
-       Module F(List) cannot be aliased
+       At position "module type A = sig module M : <here> end"
+       Module "F(List)" cannot be aliased
 |}];;
 
 (* Shinwell 2014-04-23 *)

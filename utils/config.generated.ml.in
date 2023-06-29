@@ -51,29 +51,9 @@ let mksharedlibrpath = {@QS@|@mksharedlibrpath@|@QS@}
 let ar = {@QS@|@AR@|@QS@}
 let supports_shared_libraries = @supports_shared_libraries@
 let native_dynlink = @natdynlink@
-let mkdll, mkexe, mkmaindll =
-  if Sys.win32 || Sys.cygwin && supports_shared_libraries then
-    let flexlink =
-      let flexlink =
-        Option.value ~default:"flexlink" (Sys.getenv_opt "OCAML_FLEXLINK")
-      in
-      let f i =
-        let c = flexlink.[i] in
-        if c = '/' && Sys.win32 then '\\' else c
-      in
-      String.init (String.length flexlink) f
-    in
-    let flexdll_chain = {@QS@|@flexdll_chain@|@QS@} in
-    let flexlink_flags = {@QS@|@flexlink_flags@|@QS@} in
-    let flags = " -chain " ^ flexdll_chain ^ " " ^ flexlink_flags in
-    flexlink ^ flags ^ {@QS@|@mkdll_ldflags_exp@|@QS@},
-    flexlink ^ " -exe" ^ flags
-      ^ {@QS@| @mkexe_extra_flags@|@QS@} ^ {@QS@|@mkexe_ldflags_exp@|@QS@},
-    flexlink ^ " -maindll" ^ flags ^ {@QS@|@mkdll_ldflags_exp@|@QS@}
-  else
-    {@QS@|@mkdll_exp@|@QS@},
-    {@QS@|@mkexe_exp@|@QS@},
-    {@QS@|@mkmaindll_exp@|@QS@}
+let mkdll = {@QS@|@mkdll_exp@|@QS@}
+let mkexe = {@QS@|@mkexe_exp@|@QS@}
+let mkmaindll = {@QS@|@mkmaindll_exp@|@QS@}
 
 let flambda = @flambda@
 let with_flambda_invariants = @flambda_invariants@

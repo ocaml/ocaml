@@ -45,7 +45,7 @@ type foo += A of int
 Line 1, characters 0-20:
 1 | type foo += A of int
     ^^^^^^^^^^^^^^^^^^^^
-Error: Type definition foo is not extensible
+Error: Type definition "foo" is not extensible
 |}]
 
 (* The type must be public to create extension *)
@@ -79,7 +79,7 @@ type ('a, 'b) foo += A of int
 Line 1, characters 0-29:
 1 | type ('a, 'b) foo += A of int
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This extension does not match the definition of type foo
+Error: This extension does not match the definition of type "foo"
        They have different arities.
 |}]
 
@@ -107,7 +107,7 @@ end
 Line 4, characters 2-24:
 4 |   type foo += B of float
       ^^^^^^^^^^^^^^^^^^^^^^
-Error: Type definition foo is not extensible
+Error: Type definition "foo" is not extensible
 |}]
 
 (* Signatures can change the grouping of extensions *)
@@ -231,8 +231,8 @@ let a = A 9
 Line 1, characters 10-11:
 1 | let a = A 9
               ^
-Error: This expression has type int but an expression was expected of type
-         [> `Var ]
+Error: This expression has type "int" but an expression was expected of type
+         "[> `Var ]"
 |}]
 
 type 'a foo += B : int foo
@@ -241,7 +241,7 @@ type 'a foo += B : int foo
 Line 1, characters 19-22:
 1 | type 'a foo += B : int foo
                        ^^^
-Error: This type int should be an instance of type [> `Var ]
+Error: This type "int" should be an instance of type "[> `Var ]"
 |}]
 
 (* Signatures can make an extension private *)
@@ -291,7 +291,7 @@ let a2 = M_S.A 20
 Line 1, characters 9-17:
 1 | let a2 = M_S.A 20
              ^^^^^^^^
-Error: Cannot use private constructor A to create values of type foo
+Error: Cannot use private constructor "A" to create values of type "foo"
 |}]
 
 (* Signatures must respect the type of the constructor *)
@@ -321,10 +321,10 @@ Error: Signature mismatch:
        is not included in
          type ('a, 'b) bar += A of int
        Constructors do not match:
-         A of float
+         "A of float"
        is not the same as:
-         A of int
-       The type float is not equal to the type int
+         "A of int"
+       The type "float" is not equal to the type "int"
 |}]
 
 module M : sig
@@ -347,10 +347,10 @@ Error: Signature mismatch:
        is not included in
          type ('a, 'b) bar += A of 'a
        Constructors do not match:
-         A of 'b
+         "A of 'b"
        is not the same as:
-         A of 'a
-       The type 'b is not equal to the type 'a
+         "A of 'a"
+       The type "'b" is not equal to the type "'a"
 |}]
 
 module M : sig
@@ -373,10 +373,10 @@ Error: Signature mismatch:
        is not included in
          type ('a, 'b) bar = A of 'a
        Constructors do not match:
-         A of 'a
+         "A of 'a"
        is not the same as:
-         A of 'a
-       The type 'a is not equal to the type 'b
+         "A of 'a"
+       The type "'a" is not equal to the type "'b"
 |}];;
 
 
@@ -400,10 +400,10 @@ Error: Signature mismatch:
        is not included in
          type ('a, 'b) bar += A : 'c -> ('c, 'd) bar
        Constructors do not match:
-         A : 'd -> ('c, 'd) bar
+         "A : 'd -> ('c, 'd) bar"
        is not the same as:
-         A : 'c -> ('c, 'd) bar
-       The type 'd is not equal to the type 'c
+         "A : 'c -> ('c, 'd) bar"
+       The type "'d" is not equal to the type "'c"
 |}]
 
 (* Extensions can be rebound *)
@@ -438,7 +438,7 @@ type bar += A3 = M.A1
 Line 1, characters 17-21:
 1 | type bar += A3 = M.A1
                      ^^^^
-Error: The constructor M.A1 has type foo but was expected to be of type bar
+Error: The constructor "M.A1" has type "foo" but was expected to be of type "bar"
 |}]
 
 module M = struct type foo += private B1 of int end
@@ -459,7 +459,7 @@ type foo += B3 = M.B1
 Line 1, characters 17-21:
 1 | type foo += B3 = M.B1
                      ^^^^
-Error: The constructor M.B1 is private
+Error: The constructor "M.B1" is private
 |}]
 
 type foo += C = Unknown
@@ -468,7 +468,7 @@ type foo += C = Unknown
 Line 1, characters 16-23:
 1 | type foo += C = Unknown
                     ^^^^^^^
-Error: Unbound constructor Unknown
+Error: Unbound constructor "Unknown"
 |}]
 
 (* Extensions can be rebound even if type is private *)
@@ -570,7 +570,7 @@ type +'a bar += D of (int -> 'a)
 Line 1, characters 0-32:
 1 | type +'a bar += D of (int -> 'a)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This extension does not match the definition of type bar
+Error: This extension does not match the definition of type "bar"
        Their variances do not agree.
 |}]
 
@@ -583,7 +583,7 @@ Line 2, characters 0-45:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the extension constructor
          type 'a poly_and_contravariant += X of 'a
-       the type variable 'a has a variance that
+       the type variable "'a" has a variance that
        is not reflected by its occurrence in type parameters.
        It was expected to be contravariant, but it is covariant.
 |}]

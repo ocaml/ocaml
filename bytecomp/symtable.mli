@@ -37,7 +37,7 @@ module Global : sig
     | Glob_compunit of compunit
     | Glob_predef of predef
   val name: t -> string
-  val description: t -> string
+  val description: Format.formatter -> t -> unit
   val of_ident: Ident.t -> t option
   module Set : Set.S with type elt = t
   module Map : Map.S with type key = t

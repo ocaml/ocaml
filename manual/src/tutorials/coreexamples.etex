@@ -572,7 +572,7 @@ let fixpoint f x =
   try while true do
       let y = f !x in
       if !x = y then raise Done else x := y
-    done; assert false
+    done
   with Done -> !x;;
 \end{caml_example}
 the function "f" cannot raise a "Done" exception, which removes an

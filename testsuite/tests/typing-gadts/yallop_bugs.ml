@@ -21,7 +21,7 @@ type (_, _) eq = Refl : ('a, 'a) eq
 Line 8, characters 44-52:
 8 |          let f (Refl : (a T.t, b T.t) eq) = (x :> b)
                                                 ^^^^^^^^
-Error: Type a is not a subtype of b
+Error: Type "a" is not a subtype of "b"
 |}];;
 
 (* Variance and subtyping *)
