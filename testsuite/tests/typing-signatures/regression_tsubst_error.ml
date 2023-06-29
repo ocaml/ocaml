@@ -1,5 +1,5 @@
 (* TEST
-   * expect
+   expect;
 *)
 type t = bool
 module type Subst = sig
