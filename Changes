@@ -796,13 +796,13 @@ Some of those changes will benefit all OCaml packages.
   in the initial toplevel environment without loading `topfind`.
   Since the opam default `.ocamlinit` file loads `topfind`, it is expected
   that only scripts run with `ocaml -noinit` are affected.
-  For those scripts, accessing `Topdirs` now requires to add the compiler-libs
-  directory to the toplevel search path with
+  For those scripts, accessing `Topdirs` now requires the `compiler-libs`
+  directory to be added to the toplevel search path with
   ```
     #directory "+compiler-libs";;
   ````
-  as this was already the case for the other modules in the toplevel programming
-  interface library.
+  as was already the case for the other modules in the toplevel interface
+  library.
   (Sébastien Hinderer, review by Florian Angeletti, Nicolás Ojeda Bär and
   Gabriel Scherer)
 
