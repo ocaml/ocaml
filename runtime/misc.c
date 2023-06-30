@@ -50,7 +50,7 @@ void caml_failed_assert (char * expr, char_os * file_os, int line)
 {
   char* file = caml_stat_strdup_of_os(file_os);
   fprintf(stderr, "[%02d] file %s; line %d ### Assertion failed: %s\n",
-          (Caml_state_opt != NULL) ? Caml_state->id : -1, file, line, expr);
+          (Caml_state_opt != NULL) ? Caml_state_opt->id : -1, file, line, expr);
   fflush(stderr);
   caml_stat_free(file);
   abort();
@@ -85,7 +85,7 @@ void caml_gc_log (char *msg, ...)
     va_list args;
     va_start (args, msg);
     snprintf(fmtbuf, GC_LOG_LENGTH, "[%02d] %s\n",
-             (Caml_state_opt != NULL) ? Caml_state->id : -1, msg);
+             (Caml_state_opt != NULL) ? Caml_state_opt->id : -1, msg);
     vfprintf(stderr, fmtbuf, args);
     va_end (args);
     fflush(stderr);
