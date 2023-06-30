@@ -1,7 +1,19 @@
 module A : sig type r type s type t end
-type this_is_accepted = Foo of (A.r * A.s * A.t)
-Line 2, characters 44-46:
-2 | type this_is_rejected = Foo of A.(r * s * t);;
+Line 5, characters 44-46:
+5 | type this_is_rejected = Foo of A.(r * s * t);;
                                                 ^^
+Error: Syntax error
+Line 2, characters 57-59:
+2 | type as_a_consquence_this_is_also_rejected = Foo of A.(r);;
+                                                             ^^
+Error: Syntax error
+Line 5, characters 45-46:
+5 | type rejected_for_consistency = Foo of A.(r) * A.(s);;
+                                                 ^
+Error: Syntax error
+type this_is_accepted = Foo of (A.r * A.s * A.t)
+Line 4, characters 36-38:
+4 | type this_is_not_supported = A.(Foo of r * s * t);;
+                                        ^^
 Error: Syntax error
 

@@ -3163,12 +3163,9 @@ generalized_constructor_arguments:
                                   { ($2,Pcstr_tuple [],Some $4) }
 ;
  constructor_arguments:
-  | atomic_type_without_open
+  | tys = inline_separated_nonempty_llist(STAR, atomic_type_without_open)
     %prec below_HASH
-      { Pcstr_tuple [$1] }
-  | ty = atomic_type STAR tys = inline_separated_nonempty_llist(STAR, atomic_type)
-    %prec below_HASH
-      { Pcstr_tuple (ty :: tys) }
+      { Pcstr_tuple tys }
   | LBRACE label_declarations RBRACE
       { Pcstr_record $2 }
 ;
