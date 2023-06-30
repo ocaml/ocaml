@@ -3162,11 +3162,13 @@ generalized_constructor_arguments:
   | COLON typevar_list DOT atomic_type %prec below_HASH
                                   { ($2,Pcstr_tuple [],Some $4) }
 ;
-
-constructor_arguments:
-  | tys = inline_separated_nonempty_llist(STAR, atomic_type)
+ constructor_arguments:
+  | atomic_type_without_open
     %prec below_HASH
-      { Pcstr_tuple tys }
+      { Pcstr_tuple [$1] }
+  | ty = atomic_type STAR tys = inline_separated_nonempty_llist(STAR, atomic_type)
+    %prec below_HASH
+      { Pcstr_tuple (ty :: tys) }
   | LBRACE label_declarations RBRACE
       { Pcstr_record $2 }
 ;
@@ -3468,7 +3470,7 @@ delimited_type:
     { $1 }
 ;
 
-atomic_type:
+atomic_type_without_open:
   | type_ = delimited_type
       { type_ }
   | mktyp( /* begin mktyp group */
@@ -3479,10 +3481,6 @@ atomic_type:
       HASH
       cid = mkrhs(clty_longident)
         { Ptyp_class (cid, tys) }
-    | mod_ident = mkrhs(mod_ext_longident)
-      DOT
-      type_ = delimited_type_supporting_local_open
-        { Ptyp_open (mod_ident, type_) }
     | QUOTE ident = ident
         { Ptyp_var ident }
     | UNDERSCORE
@@ -3490,6 +3488,18 @@ atomic_type:
   )
   { $1 } /* end mktyp group */
 ;
+
+%inline atomic_type:
+  | atomic_type_without_open
+  | mktyp(
+      mod_ident = mkrhs(mod_ext_longident)
+      DOT
+      type_ = delimited_type_supporting_local_open
+        { Ptyp_open (mod_ident, type_) }
+    )
+  { $1 }
+;
+
 
 (* This is the syntax of the actual type parameters in an application of
    a type constructor, such as int, int list, or (int, bool) Hashtbl.t.
