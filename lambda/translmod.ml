@@ -608,16 +608,22 @@ and transl_structure ~scopes loc fields cc rootpath final_env = function
           in
           Lsequence(transl_exp ~scopes expr, body), size
       | Tstr_value(rec_flag, pat_expr_list) ->
-          (* Translate bindings first *)
-          let mk_lam_let =
-            transl_let ~scopes ~in_structure:true rec_flag pat_expr_list in
-          let ext_fields =
-            List.rev_append (let_bound_idents pat_expr_list) fields in
-          (* Then, translate remainder of struct *)
-          let body, size =
-            transl_structure ~scopes loc ext_fields cc rootpath final_env rem
+          let (body, size), wrap =
+            Translobj.oo_wrap_gen item.str_env true (fun () ->
+              (* Translate bindings first *)
+              let mk_lam_let =
+                transl_let ~scopes ~in_structure:true rec_flag pat_expr_list in
+              let ext_fields =
+                List.rev_append (let_bound_idents pat_expr_list) fields in
+              (* Then, translate remainder of struct *)
+              let body, size =
+                transl_structure ~scopes loc ext_fields cc rootpath final_env
+                  rem
+              in
+              mk_lam_let body, size)
+              ()
           in
-          mk_lam_let body, size
+          wrap body, size
       | Tstr_primitive descr ->
           record_primitive descr.val_val;
           transl_structure ~scopes loc fields cc rootpath final_env rem
@@ -648,14 +654,17 @@ and transl_structure ~scopes loc fields cc rootpath final_env = function
           let subscopes = match id with
             | None -> scopes
             | Some id -> enter_module_definition ~scopes id in
-          let module_body =
-            transl_module ~scopes:subscopes Tcoerce_none
-              (Option.bind id (field_path rootpath)) mb.mb_expr
+          let module_body, oo_wrapper =
+            Translobj.oo_wrap_gen item.str_env true (fun () ->
+                transl_module ~scopes:subscopes Tcoerce_none
+                  (Option.bind id (field_path rootpath)) mb.mb_expr)
+              ()
           in
           let module_body =
             Translattribute.add_inline_attribute module_body mb.mb_loc
                                                  mb.mb_attributes
           in
+          let module_body = oo_wrapper module_body in
           (* Translate remainder second *)
           let body, size =
             transl_structure ~scopes loc (cons_opt id fields)
@@ -997,8 +1006,10 @@ let transl_store_structure ~scopes glob map prims aliases str =
         | Tstr_value(rec_flag, pat_expr_list) ->
             let ids = let_bound_idents pat_expr_list in
             let lam =
-              transl_let ~scopes ~in_structure:true rec_flag pat_expr_list
-                (store_idents Loc_unknown ids)
+              Translobj.oo_wrap item.str_env true (fun () ->
+                  transl_let ~scopes ~in_structure:true rec_flag pat_expr_list
+                    (store_idents Loc_unknown ids))
+                ()
             in
             Lsequence(Lambda.subst no_env_update subst lam,
                       transl_store ~scopes rootpath
@@ -1037,11 +1048,16 @@ let transl_store_structure ~scopes glob map prims aliases str =
         | Tstr_module
             {mb_id=None; mb_name; mb_presence=Mp_present; mb_expr=modl;
              mb_loc=loc; mb_attributes} ->
+            let module_body, oo_wrapper =
+              Translobj.oo_wrap_gen item.str_env true (fun () ->
+                  transl_module ~scopes Tcoerce_none None modl)
+                ()
+            in
             let lam =
-              Translattribute.add_inline_attribute
-                (transl_module ~scopes Tcoerce_none None modl)
+              Translattribute.add_inline_attribute module_body
                 loc mb_attributes
             in
+            let lam = oo_wrapper lam in
             Lsequence(
               Lprim(Pignore,[Lambda.subst no_env_update subst lam],
                     of_location ~scopes mb_name.loc),
@@ -1105,13 +1121,18 @@ let transl_store_structure ~scopes glob map prims aliases str =
         | Tstr_module
             {mb_id=Some id; mb_presence=Mp_present; mb_expr=modl;
              mb_loc=loc; mb_attributes} ->
+            let module_body, oo_wrapper =
+              Translobj.oo_wrap_gen item.str_env true (fun () ->
+                  transl_module
+                    ~scopes:(enter_module_definition ~scopes id)
+                    Tcoerce_none (field_path rootpath id) modl)
+                ()
+            in
             let lam =
-              Translattribute.add_inline_attribute
-                (transl_module
-                   ~scopes:(enter_module_definition ~scopes id)
-                   Tcoerce_none (field_path rootpath id) modl)
+              Translattribute.add_inline_attribute module_body
                 loc mb_attributes
             in
+            let lam = oo_wrapper lam in
             (* Careful: the module value stored in the global may be different
                from the local module value, in case a coercion is applied.
                If so, keep using the local module value (id) in the remainder of
@@ -1476,8 +1497,9 @@ let transl_toplevel_item ~scopes item =
       transl_exp ~scopes expr
   | Tstr_value(rec_flag, pat_expr_list) ->
       let idents = let_bound_idents pat_expr_list in
-      transl_let ~scopes ~in_structure:true rec_flag pat_expr_list
-        (make_sequence toploop_setvalue_id idents)
+      Translobj.oo_wrap item.str_env true
+        (fun () -> transl_let ~scopes ~in_structure:true rec_flag pat_expr_list
+            (make_sequence toploop_setvalue_id idents)) ()
   | Tstr_typext(tyext) ->
       let idents =
         List.map (fun ext -> ext.ext_id) tyext.tyext_constructors
