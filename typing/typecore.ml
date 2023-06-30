@@ -368,15 +368,8 @@ let unify_exp_types loc env ty expected_ty =
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, env, Typetexp.Variant_tags (l1, l2)))
 
-(* helper functions for pattern environments *)
+(* helper notation for pattern environments *)
 let (!!) penv = Pattern_env.get_env penv
-(*
-let set_env (penv : pattern_environment) env = penv.env := env
-let get_equations_scope (penv : pattern_environment) =
-  let l = penv.equations_scope in
-  if l = lowest_level then invalid_arg "Typecore.get_equations_scope"
-  else l
-*)
 
 (* Unification inside type_pat *)
 let unify_pat_types loc env ty ty' =
