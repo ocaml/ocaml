@@ -48,6 +48,11 @@ module I' = Set.Make [@ocaml.inlined]
 module J = Set.Make [@@inlined]
 module J' = Set.Make [@@ocaml.inlined]
 
+(* Issue #12232 *)
+module K(E:E) = struct class c = object end end [@@inline]
+module L(E:E) = struct let o = object end end [@@inline]
+let r x = object method m = x end [@@inline]
+
 (* TEST
  flags = "-w +A-60-70";
  setup-ocamlc.byte-build-env;
