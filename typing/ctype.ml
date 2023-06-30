@@ -265,21 +265,33 @@ let none = newty (Ttuple [])                (* Clearly ill-formed type *)
 
 (**** information for [Typecore.unify_pat_*] ****)
 
-type pattern_environment =
-    { env : Env.t ref;
+module Pattern_env : sig
+  type env_ref
+  type t = private
+    { renv : env_ref;
       equations_scope : int;
       allow_recursive_equations : bool; }
-
-let make_pattern_environment env ~equations_scope ~allow_recursive_equations =
-  { env = ref env;
-    equations_scope;
-    allow_recursive_equations; }
-
-let copy_pattern_environment penv =
-  { penv with env = ref !(penv.env) }
-
-let set_equations_scope equations_scope penv =
-  { penv with equations_scope }
+  val make: Env.t -> equations_scope:int -> allow_recursive_equations:bool -> t
+  val copy: t -> t
+  val get_env: t -> Env.t
+  val set_env: t -> Env.t -> unit
+  val set_equations_scope: int -> t -> t
+end = struct
+  type env_ref = Env.t ref
+  type t =
+    { renv : env_ref;
+      equations_scope : int;
+      allow_recursive_equations : bool; }
+  let make env ~equations_scope ~allow_recursive_equations =
+    { renv = ref env;
+      equations_scope;
+      allow_recursive_equations; }
+  let copy penv = { penv with renv = ref !(penv.renv) }
+  let get_env penv = !(penv.renv)
+  let set_env penv env = penv.renv := env
+  let set_equations_scope equations_scope penv =
+    { penv with equations_scope }
+end
 
 (**** unification mode ****)
 
@@ -293,11 +305,9 @@ type unification_environment =
         in_subst : bool; }
     (* normal unification mode *)
   | Pattern of
-      { env : Env.t ref;
+      { penv : Pattern_env.t;
         equations_generation : equations_generation;
         assume_injective : bool;
-        allow_recursive_equations : bool;
-        equations_scope : int;
         unify_eq_set : TypePairs.t; }
     (* GADT constraint unification mode:
        only used for type indices of GADT constructors
@@ -306,12 +316,12 @@ type unification_environment =
 
 let get_env = function
   | Expression {env} -> env
-  | Pattern {env} -> !env
+  | Pattern {penv} -> Pattern_env.get_env penv
 
-let set_env uenv env' =
+let set_env uenv env =
   match uenv with
   | Expression _ -> invalid_arg "Ctype.set_env"
-  | Pattern {env} -> env := env'
+  | Pattern {penv} -> Pattern_env.set_env penv env
 
 let in_pattern_mode = function
   | Expression _ -> false
@@ -319,7 +329,7 @@ let in_pattern_mode = function
 
 let get_equations_scope = function
   | Expression _ -> invalid_arg "Ctype.get_equations_scope"
-  | Pattern r -> r.equations_scope
+  | Pattern r -> r.penv.equations_scope
 
 let order_type_pair t1 t2 =
   if get_id t1 <= get_id t2 then (t1, t2) else (t2, t1)
@@ -362,7 +372,7 @@ let can_assume_injective = function
 let in_counterexample uenv =
   match uenv with
   | Expression _ -> false
-  | Pattern { allow_recursive_equations } -> allow_recursive_equations
+  | Pattern { penv } -> penv.allow_recursive_equations
 
 let allow_recursive_equations uenv =
   !Clflags.recursive_types || in_counterexample uenv
@@ -1296,7 +1306,7 @@ let existential_name cstr ty =
 
 type existential_treatment =
   | Keep_existentials_flexible
-  | Make_existentials_abstract of pattern_environment
+  | Make_existentials_abstract of Pattern_env.t
 
 let instance_constructor existential_treatment cstr =
   For_copy.with_scope (fun copy_scope ->
@@ -1305,14 +1315,14 @@ let instance_constructor existential_treatment cstr =
       | Keep_existentials_flexible -> copy copy_scope
       | Make_existentials_abstract penv ->
           fun existential ->
-            let env = penv.env in
+            let env = Pattern_env.get_env penv in
             let fresh_constr_scope = penv.equations_scope in
             let decl = new_local_type () in
             let name = existential_name cstr existential in
             let (id, new_env) =
-              Env.enter_type (get_new_abstract_name !env name) decl !env
+              Env.enter_type (get_new_abstract_name env name) decl env
                 ~scope:fresh_constr_scope in
-            env := new_env;
+            Pattern_env.set_env penv new_env;
             let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
             let tv = copy copy_scope existential in
             assert (is_Tvar tv);
@@ -3219,16 +3229,14 @@ let unify uenv ty1 ty2 =
       undo_compress snap;
       raise (Unify (expand_to_unification_error (get_env uenv) trace))
 
-let unify_gadt (penv : pattern_environment) ty1 ty2 =
+let unify_gadt (penv : Pattern_env.t) ty1 ty2 =
   univar_pairs := [];
   let equated_types = TypePairs.create 0 in
   let equations_generation = Allowed { equated_types } in
   let uenv = Pattern
-      { env = penv.env;
+      { penv;
         equations_generation;
         assume_injective = true;
-        allow_recursive_equations = penv.allow_recursive_equations;
-        equations_scope = penv.equations_scope;
         unify_eq_set = TypePairs.create 11; }
   in
   unify uenv ty1 ty2;

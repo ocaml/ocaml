@@ -176,22 +176,27 @@ val new_local_type:
         ?manifest_and_scope:(type_expr * int) -> unit -> type_declaration
 val existential_name: constructor_description -> type_expr -> string
 
-type pattern_environment = private
-    { env : Env.t ref;
-      equations_scope : int; (* scope for local type declarations *)
-      allow_recursive_equations : bool; (* true iff checking counter examples *)
+module Pattern_env : sig
+  type env_ref
+  type t = private
+    { renv : env_ref;
+      equations_scope : int;
+      (* scope for local type declarations *)
+      allow_recursive_equations : bool;
+      (* true iff checking counter examples *)
     }
-
-val make_pattern_environment: Env.t -> equations_scope:int ->
-        allow_recursive_equations:bool -> pattern_environment
-val copy_pattern_environment: pattern_environment -> pattern_environment
+  val make: Env.t -> equations_scope:int -> allow_recursive_equations:bool -> t
+  val copy: t -> t
         (* replace the [env] reference with a cloned one *)
-val set_equations_scope: int -> pattern_environment -> pattern_environment
+  val get_env: t -> Env.t
+  val set_env: t -> Env.t -> unit
+  val set_equations_scope: int -> t -> t
         (* keep the same [env] reference *)
+end
 
 type existential_treatment =
   | Keep_existentials_flexible
-  | Make_existentials_abstract of pattern_environment
+  | Make_existentials_abstract of Pattern_env.t
 
 val instance_constructor: existential_treatment ->
         constructor_description -> type_expr list * type_expr * type_expr list
@@ -263,7 +268,7 @@ val extract_concrete_typedecl:
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
 val unify_gadt:
-        pattern_environment -> type_expr -> type_expr -> Btype.TypePairs.t
+        Pattern_env.t -> type_expr -> type_expr -> Btype.TypePairs.t
         (* Unify the two types given and update the environment with the
            local constraints. Raise [Unify] if not possible.
            Returns the pairs of types that have been equated.  *)
