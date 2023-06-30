@@ -292,7 +292,7 @@ OCaml 5.1.0
   (Daniel Bünzli, review by Jeremy Yallop, Gabriel Scherer, Wiktor Kuchta,
    Nicolás Ojeda Bär)
 
-- #12184: Sys.rename Windows fixes on directory corner cases.
+- #12184, #12320: Sys.rename Windows fixes on directory corner cases.
   (Jan Midtgaard, review by Anil Madhavapeddy)
 
 * #11565: Enable -strict-formats by default. Some incorrect format
