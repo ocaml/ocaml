@@ -281,13 +281,9 @@ value caml_continuation_use (value cont);
    Used for cloning continuations and continuation backtraces. */
 void caml_continuation_replace(value cont, struct stack_info* stack);
 
-CAMLnoreturn_start
-CAMLextern void caml_raise_continuation_already_resumed (void)
-CAMLnoreturn_end;
+CAMLextern CAMLnoret void caml_raise_continuation_already_resumed (void);
 
-CAMLnoreturn_start
-CAMLextern void caml_raise_unhandled_effect (value effect)
-CAMLnoreturn_end;
+CAMLextern CAMLnoret void caml_raise_unhandled_effect (value effect);
 
 value caml_make_unhandled_effect_exn (value effect);
 

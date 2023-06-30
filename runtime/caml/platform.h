@@ -138,9 +138,7 @@ void caml_mem_decommit(void* mem, uintnat size);
 void caml_mem_unmap(void* mem, uintnat size);
 
 
-CAMLnoreturn_start
-void caml_plat_fatal_error(const char * action, int err)
-CAMLnoreturn_end;
+CAMLnoret void caml_plat_fatal_error(const char * action, int err);
 
 Caml_inline void check_err(const char* action, int err)
 {
