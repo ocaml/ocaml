@@ -232,3 +232,21 @@ let x = let rec x = `X (`Y (fun y -> x = y)) in Fun.id x
 val x : [> `X of [> `Y of '_weak2 -> bool ] as '_weak3 ] as '_weak2 =
   `X (`Y <fun>)
 |}]
+
+(** Missing tag correctly attributed *)
+type rt = [ `A | `B of string | `R of rt ]
+let rec f = function `A -> 0 | `B s -> int_of_string s | `R x -> f x
+
+let g (x:[`A | `R of rt]) = f x
+[%%expect{|
+type rt = [ `A | `B of string | `R of rt ]
+val f : ([< `A | `B of string | `R of 'a ] as 'a) -> int = <fun>
+Line 4, characters 30-31:
+4 | let g (x:[`A | `R of rt]) = f x
+                                  ^
+Error: This expression has type "[ `A | `R of rt ]"
+       but an expression was expected of type "[< `A | `R of 'a ] as 'a"
+       Type "rt" = "[ `A | `B of string | `R of rt ]" is not compatible with type
+         "[< `A | `R of 'a ] as 'a"
+       The second variant type does not allow tag(s) "`B"
+|}]

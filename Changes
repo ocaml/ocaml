@@ -131,6 +131,9 @@ Working version
   greatly simplifies both the build system and testsuite machinery.
   (David Allsopp, review by Sébastien Hinderer)
 
+- #12347: error messages: always report missing polyvariant tags
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #12216, #12248: Prevent reordering of atomic loads during instruction
