@@ -1,0 +1,7 @@
+module A : sig type r type s type t end
+type this_is_accepted = Foo of (A.r * A.s * A.t)
+Line 2, characters 44-46:
+2 | type this_is_rejected = Foo of A.(r * s * t);;
+                                                ^^
+Error: Syntax error
+

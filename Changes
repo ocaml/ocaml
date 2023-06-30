@@ -18,7 +18,7 @@ Working version
 - #11252, RFC 27: Support raw identifier syntax \#foo
   (Stephen Dolan, review by David Allsopp, Gabriel Scherer and Olivier Nicole)
 
-- #12044: Add local module open syntax for types.
+- #12044, ????: Add local open syntax for types.
   ```
     module A = struct
       type t = int
@@ -28,6 +28,8 @@ Working version
 
     type example = A.(t * r * s)
   ```
+  The constructor syntax `type t = Foo of A.(r * s * t)` is rejected
+  as ambiguous -- one argument or several?
   (Alistair O'Brien, review by Gabriel Scherer, Nicolás Ojeda Bär
    and Florian Angeletti)
 
