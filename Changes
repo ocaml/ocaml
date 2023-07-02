@@ -863,6 +863,10 @@ Some of those changes will benefit all OCaml packages.
   emitting stack reallocation code before the body of the function.
   (Xavier Leroy, review by KC Sivaramakrishnan)
 
+- #12253, #12342: Fix infinite loop in signal handling.
+  (Guillaume Munch-Maccagnoni, report by Thomas Leonard, review by
+   KC Sivaramakrishnan and Sadiq Jaffer)
+
 OCaml 5.0.0 (15 December 2022)
 ------------------------------
 
