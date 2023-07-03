@@ -816,6 +816,10 @@ Some of those changes will benefit all OCaml packages.
   types.
   (Chris Casinghino, review by Gabriel Scherer)
 
+- #12037: Fix some data races by using volatile when necessary
+  (Fabrice Buoro and Olivier Nicole, review by Guillaume Munch-Maccagnoni,
+  Gabriel Scherer and Luc Maranget)
+
 - #12046: Flush stderr when tracing the parser
   (Hugo Heuzard, review by David Allsopp and Nicolás Ojeda Bär)
 
