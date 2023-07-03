@@ -125,6 +125,14 @@ type rhs_kind =
   | RHS_infix of { blocksize : int; offset : int }
   | RHS_floatblock of int
   | RHS_nonrec
+  | RHS_unreachable
+
+ (* We expect Rec_check to associate Dynamic mode to branches with multiple
+    returning paths, which translates to RHS_nonrec. *)
+let join_rhs_kind k1 k2 =
+  match k1, k2 with
+  | RHS_unreachable, k | k, RHS_unreachable -> k
+  | _, _ -> RHS_nonrec
 
 let rec expr_size env = function
   | Uvar id ->
@@ -133,6 +141,8 @@ let rec expr_size env = function
       RHS_block (fundecls_size fundecls + List.length clos_vars)
   | Ulet(_str, _kind, id, exp, body) ->
       expr_size (V.add (VP.var id) (expr_size env exp) env) body
+  | Uphantom_let (_id, _def, body) ->
+      expr_size env body
   | Uletrec(bindings, body) ->
       let env =
         List.fold_right
@@ -162,6 +172,8 @@ let rec expr_size env = function
         when prim_name = "caml_check_value_is_closure" ->
       (* Used for "-clambda-checks". *)
       expr_size env closure
+  | Uprim (Praise _, _args, _dbg) -> RHS_unreachable
+  | Uprim (_prim, _args, _dbg) -> RHS_nonrec
   | Usequence(_exp, exp') ->
       expr_size env exp'
   | Uoffset (exp, offset) ->
@@ -169,7 +181,40 @@ let rec expr_size env = function
       | RHS_block blocksize -> RHS_infix { blocksize; offset }
       | RHS_nonrec -> RHS_nonrec
       | _ -> assert false)
-  | _ -> RHS_nonrec
+  | Uswitch (_arg, switch, _dbg) ->
+      let size_consts =
+        Array.fold_left (fun acc expr ->
+            join_rhs_kind acc (expr_size env expr))
+          RHS_unreachable
+          switch.us_actions_consts
+      in
+      let size_blocks =
+        Array.fold_left (fun acc expr ->
+            join_rhs_kind acc (expr_size env expr))
+          RHS_unreachable
+          switch.us_actions_blocks
+      in
+      join_rhs_kind size_consts size_blocks
+  | Ustringswitch (_arg, cases, default) ->
+      List.fold_left (fun acc (_string, act) ->
+          join_rhs_kind acc (expr_size env act))
+        (match default with
+         | None -> RHS_unreachable
+         | Some act -> expr_size env act)
+        cases
+  | Ucatch (_, _, body, handler)
+  | Utrywith (body, _, handler) ->
+      let size_body = expr_size env body in
+      let size_handler = expr_size env handler in
+      join_rhs_kind size_body size_handler
+  | Uifthenelse (_cond, ifso, ifnot) ->
+      let size_ifso = expr_size env ifso in
+      let size_ifnot = expr_size env ifnot in
+      join_rhs_kind size_ifso size_ifnot
+  | Ustaticfail (_nfail, _args) -> RHS_unreachable
+  | Uconst _ | Udirect_apply _ | Ugeneric_apply _ | Uwhile _ | Ufor _
+  | Uassign _ | Usend _ -> RHS_nonrec
+  | Uunreachable -> RHS_unreachable
 
 (* Translate structured constants to Cmm data items *)
 
@@ -1391,14 +1436,14 @@ and transl_letrec env bindings cont =
     | (id, _exp, RHS_floatblock sz) :: rem ->
         Clet(id, op_alloc "caml_alloc_dummy_float" [int_const dbg sz],
           init_blocks rem)
-    | (id, _exp, RHS_nonrec) :: rem ->
+    | (id, _exp, (RHS_nonrec | RHS_unreachable)) :: rem ->
         Clet (id, Cconst_int (1, dbg), init_blocks rem)
   and fill_nonrec = function
     | [] -> fill_blocks bsz
     | (_id, _exp,
        (RHS_block _ | RHS_infix _ | RHS_floatblock _)) :: rem ->
         fill_nonrec rem
-    | (id, exp, RHS_nonrec) :: rem ->
+    | (id, exp, (RHS_nonrec | RHS_unreachable)) :: rem ->
         Clet(id, transl env exp, fill_nonrec rem)
   and fill_blocks = function
     | [] -> cont
@@ -1407,7 +1452,7 @@ and transl_letrec env bindings cont =
           Cop(Cextcall("caml_update_dummy", typ_void, [], false),
               [Cvar (VP.var id); transl env exp], dbg) in
         Csequence(op, fill_blocks rem)
-    | (_id, _exp, RHS_nonrec) :: rem ->
+    | (_id, _exp, (RHS_nonrec | RHS_unreachable)) :: rem ->
         fill_blocks rem
   in init_blocks bsz
 

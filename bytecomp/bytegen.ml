@@ -198,6 +198,14 @@ type rhs_kind =
   | RHS_floatblock of int
   | RHS_nonrec
   | RHS_function of int * int
+  | RHS_unreachable
+
+ (* We expect Rec_check to associate Dynamic mode to branches with multiple
+    returning paths, which translates to RHS_nonrec. *)
+let join_rhs_kind k1 k2 =
+  match k1, k2 with
+  | RHS_unreachable, k | k, RHS_unreachable -> k
+  | _, _ -> RHS_nonrec
 
 let rec check_recordwith_updates id e =
   match e with
@@ -209,6 +217,12 @@ let rec check_recordwith_updates id e =
 let rec size_of_lambda env = function
   | Lvar id ->
       begin try Ident.find_same id env with Not_found -> RHS_nonrec end
+  | Lconst _ ->
+      (* This is a constant, so obviously not recursive. But Rec_check might
+         have treated it as Static. We rely on the fact that the compilation
+         of non-recursive values (RHS_nonrec) already handles that case
+         correctly, and return RHS_nonrec. *)
+      RHS_nonrec
   | Lfunction{params} as funct ->
       RHS_function (2 + Ident.Set.cardinal(free_variables funct),
                     List.length params)
@@ -222,6 +236,8 @@ let rec size_of_lambda env = function
       end
   | Llet(_str, _k, id, arg, body) ->
       size_of_lambda (Ident.add id (size_of_lambda env arg) env) body
+  | Lmutlet (_kind, _id, _def, body) ->
+      size_of_lambda env body
   (* See the Lletrec case of comp_expr *)
   | Lletrec(bindings, body) when
       List.for_all (function (_, Lfunction _) -> true | _ -> false) bindings ->
@@ -256,9 +272,41 @@ let rec size_of_lambda env = function
   | Lprim (Pduprecord (Record_extension _, size), _, _) ->
       RHS_block (size + 1)
   | Lprim (Pduprecord (Record_float, size), _, _) -> RHS_floatblock size
+  | Lprim (Praise _, _, _) -> RHS_unreachable
+  | Lprim (_, _, _) -> RHS_nonrec
   | Levent (lam, _) -> size_of_lambda env lam
   | Lsequence (_lam, lam') -> size_of_lambda env lam'
-  | _ -> RHS_nonrec
+  | Lifthenelse (_cond, ifso, ifnot) ->
+      let size_ifso = size_of_lambda env ifso in
+      let size_ifnot = size_of_lambda env ifnot in
+      join_rhs_kind size_ifso size_ifnot
+  | Lstaticraise (_, _) -> RHS_unreachable
+  | Lstaticcatch (body, _, handler)
+  | Ltrywith (body, _, handler) ->
+      (* For Lstaticcatch, we could refine the sizes of the parameters by
+         propagating the sizes from the Lstaticraise sites. *)
+      let size_body = size_of_lambda env body in
+      let size_handler = size_of_lambda env handler in
+      join_rhs_kind size_body size_handler
+  | Lswitch (_arg, sw, _loc) ->
+      List.fold_left (fun acc (_const, act) ->
+          join_rhs_kind acc (size_of_lambda env act))
+        (List.fold_left (fun acc (_tag, act) ->
+             join_rhs_kind acc (size_of_lambda env act))
+           (match sw.sw_failaction with
+            | None -> RHS_unreachable
+            | Some act -> size_of_lambda env act)
+           sw.sw_blocks)
+        sw.sw_consts
+  | Lstringswitch (_arg, cases, default, _loc) ->
+      List.fold_left (fun acc (_string, act) ->
+          join_rhs_kind acc (size_of_lambda env act))
+        (match default with
+         | None -> RHS_unreachable
+         | Some act -> size_of_lambda env act)
+        cases
+  | Lmutvar _ | Lapply _ | Lwhile _ | Lfor _ | Lassign _ | Lsend _
+  | Lifused _ -> RHS_nonrec
 
 (**** Merging consecutive events ****)
 
@@ -727,7 +775,7 @@ let rec comp_expr stack_info env exp sz cont =
               Kconst(Const_base(Const_int blocksize)) ::
               Kccall("caml_alloc_dummy_function", 2) :: Kpush ::
               comp_init (add_var id (sz+1) new_env) (sz+1) rem
-          | (id, _exp, RHS_nonrec) :: rem ->
+          | (id, _exp, (RHS_nonrec | RHS_unreachable)) :: rem ->
               Kconst(Const_base(Const_int 0)) :: Kpush ::
               comp_init (add_var id (sz+1) new_env) (sz+1) rem
         and comp_nonrec new_env sz i = function
@@ -736,7 +784,7 @@ let rec comp_expr stack_info env exp sz cont =
                          RHS_floatblock _ | RHS_function _))
             :: rem ->
               comp_nonrec new_env sz (i-1) rem
-          | (_id, exp, RHS_nonrec) :: rem ->
+          | (_id, exp, (RHS_nonrec | RHS_unreachable)) :: rem ->
               comp_expr stack_info new_env exp sz
                 (Kassign (i-1) :: comp_nonrec new_env sz (i-1) rem)
         and comp_rec new_env sz i = function
@@ -747,7 +795,7 @@ let rec comp_expr stack_info env exp sz cont =
               comp_expr stack_info new_env exp sz
                 (Kpush :: Kacc i :: Kccall("caml_update_dummy", 2) ::
                  comp_rec new_env sz (i-1) rem)
-          | (_id, _exp, RHS_nonrec) :: rem ->
+          | (_id, _exp, (RHS_nonrec | RHS_unreachable)) :: rem ->
               comp_rec new_env sz (i-1) rem
         in
         comp_init env sz decl_size
