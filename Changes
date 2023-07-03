@@ -90,6 +90,12 @@ Working version
 - #12217: Add `Array.shuffle`.
   (Daniel Bünzli, review by Nicolás Ojeda Bär, David Allsopp and Alain Frisch)
 
+- #12212: Add cache-aligned constructor for atomics. The patch ensures that
+  all allocations (of the right size) in the shared heap are aligned.
+  (Bartosz Modelski with Gabriel Scherer, Guillaume Munch-Maccagnoni,
+   Xavier Leroy, review by Alain Frisch, Anil Madhavapeddy, Gabriel Scherer,
+   Guillaume Munch-Maccagnoni, KC Sivaramakrishnan, Stefan Muenzel,
+   Xavier Leroy)
 
 ### Other libraries:
 
