@@ -775,19 +775,16 @@ let rec comp_expr stack_info env exp sz cont =
               Kconst(Const_base(Const_int blocksize)) ::
               Kccall("caml_alloc_dummy_function", 2) :: Kpush ::
               comp_init (add_var id (sz+1) new_env) (sz+1) rem
-          | (id, _exp, RHS_nonrec) :: rem ->
-              Kconst(Const_base(Const_int 0)) :: Kpush ::
-              comp_init (add_var id (sz+1) new_env) (sz+1) rem
-          | (id, _exp, RHS_unreachable) :: rem ->
+          | (id, _exp, (RHS_nonrec | RHS_unreachable)) :: rem ->
               Kconst(Const_base(Const_int 0)) :: Kpush ::
               comp_init (add_var id (sz+1) new_env) (sz+1) rem
         and comp_nonrec new_env sz i = function
           | [] -> comp_rec new_env sz ndecl decl_size
           | (_id, _exp, (RHS_block _ | RHS_infix _ |
-                         RHS_floatblock _ | RHS_function _ | RHS_unreachable))
+                         RHS_floatblock _ | RHS_function _))
             :: rem ->
               comp_nonrec new_env sz (i-1) rem
-          | (_id, exp, RHS_nonrec) :: rem ->
+          | (_id, exp, (RHS_nonrec | RHS_unreachable)) :: rem ->
               comp_expr stack_info new_env exp sz
                 (Kassign (i-1) :: comp_nonrec new_env sz (i-1) rem)
         and comp_rec new_env sz i = function
@@ -798,11 +795,7 @@ let rec comp_expr stack_info env exp sz cont =
               comp_expr stack_info new_env exp sz
                 (Kpush :: Kacc i :: Kccall("caml_update_dummy", 2) ::
                  comp_rec new_env sz (i-1) rem)
-          | (_id, exp, RHS_unreachable)
-            :: rem ->
-              comp_expr stack_info new_env exp sz
-                (discard_dead_code (comp_rec new_env sz (i-1) rem))
-          | (_id, _exp, RHS_nonrec) :: rem ->
+          | (_id, _exp, (RHS_nonrec | RHS_unreachable)) :: rem ->
               comp_rec new_env sz (i-1) rem
         in
         comp_init env sz decl_size
