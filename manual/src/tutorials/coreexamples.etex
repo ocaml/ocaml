@@ -297,6 +297,41 @@ let rec insert x btree =
                 else Node(y, left, insert x right);;
 \end{caml_example}
 
+\subsection{ss:several-arguments-or-tuple-argument}{Several arguments or a tuple of arguments?}
+
+A constructor declared as "A of int * string" takes two arguments of
+type "int" and "string". In contrast, a constructor declared as "B of
+(int * string)" takes a single argument, a tuple of type "int *
+string". The difference is subtle and this can be a source of
+confusion.
+
+\begin{caml_example}{toplevel}
+type t =
+  | A of int * string
+  | B of (int * string)
+;;
+\end{caml_example}
+
+Passing the arguments separately, when constructing a value or
+pattern-matching, works with both definitions.
+
+\begin{caml_example}{toplevel}
+let a = A (3, "haha");;
+let b = B (3, "haha");;
+\end{caml_example}
+
+On the other hand, passing a tuple as single argument is only allowed
+with constructor "B".
+\begin{caml_example}{toplevel}
+let tup = (3, "haha");;
+
+let fails = A tup[@@expect error];;
+let works = B tup;;
+\end{caml_example}
+
+When in doubt, it is better to use the first form with separate
+arguments ("A of int * string"), which has a more compact memory
+representation.
 
 \subsection{ss:record-and-variant-disambiguation}{Record and variant disambiguation}
 ( This subsection can be skipped on the first reading )
