@@ -173,6 +173,9 @@ Working version
   type to be ignored (see tests/typing-misc/constraints.ml).
   (Jacques Garrigue, report by Richard Eisenberg, review by Leo White)
 
+- #12232, #12344: Fix issues around function attributes and objects.
+  (Vincent Laviron, report by Thomas Leonard)
+
 
 OCaml 5.1.0
 ---------------
