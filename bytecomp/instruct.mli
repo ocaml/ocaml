@@ -19,21 +19,35 @@ open Lambda
 
 (* Structure of compilation environments *)
 
+type closure_entry =
+  | Free_variable of int
+  | Function of int
+
+type closure_env =
+  | Not_in_closure
+  | In_closure of {
+      entries: closure_entry Ident.tbl; (* Offsets of the free variables and
+                                           recursive functions from the start of
+                                           the block *)
+      env_pos: int;                     (* Offset of the current function from
+                                           the start of the block *)
+    }
+
 type compilation_env =
-  { ce_stack: int Ident.tbl; (* Positions of variables in the stack *)
-    ce_heap: int Ident.tbl;  (* Structure of the heap-allocated env *)
-    ce_rec: int Ident.tbl }  (* Functions bound by the same let rec *)
+  { ce_stack: int Ident.tbl;  (* Positions of variables in the stack *)
+    ce_closure: closure_env } (* Structure of the heap-allocated env *)
 
 (* The ce_stack component gives locations of variables residing
    in the stack. The locations are offsets w.r.t. the origin of the
    stack frame.
-   The ce_heap component gives the positions of variables residing in the
-   heap-allocated environment.
-   The ce_rec component associates offsets to identifiers for functions
-   bound by the same let rec as the current function.  The offsets
-   are used by the OFFSETCLOSURE instruction to recover the closure
-   pointer of the desired function from the env register (which
-   points to the closure for the current function). *)
+   The ce_closure component gives the positions of variables residing in the
+   heap-allocated environment. The env_pos component gives the position of
+   the current function from the start of the closure block, and the entries
+   component gives the positions of free variables and functions bound by the
+   same let rec as the current function, from the start of the closure block.
+   These are used by the ENVACC and OFFSETCLOSURE instructions to recover the
+   relevant value from the env register (which points to the current function).
+*)
 
 (* Debugging events *)
 

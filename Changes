@@ -173,6 +173,11 @@ Working version
   type to be ignored (see tests/typing-misc/constraints.ml).
   (Jacques Garrigue, report by Richard Eisenberg, review by Leo White)
 
+- #12207, #12222: Make closure computation linear in the number of recursive
+  functions instead of quadratic
+  (Vincent Laviron, report by François Pottier, review by Nathanaëlle Courant
+  and Gabriel Scherer)
+
 
 OCaml 5.1.0
 ---------------
