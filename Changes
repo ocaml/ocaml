@@ -178,6 +178,9 @@ Working version
   (Vincent Laviron, report by François Pottier, review by Nathanaëlle Courant
   and Gabriel Scherer)
 
+- #12037: Fix some data races by using volatile when necessary
+  (Fabrice Buoro and Olivier Nicole, review by Guillaume Munch-Maccagnoni,
+  Gabriel Scherer and Luc Maranget)
 
 OCaml 5.1.0
 ---------------
