@@ -3175,7 +3175,20 @@ and unify_row_field uenv fixed1 fixed2 rm1 rm2 l f1 f2 =
       if_not_fixed first (fun () -> link_row_field_ext ~inside:f1 f2)
   | Rpresent None, Reither(true, [], _) ->
       if_not_fixed second (fun () -> link_row_field_ext ~inside:f2 f1)
-  | _ -> raise_unexplained_for Unify
+  | Rabsent, (Rpresent _ | Reither(_,_,true)) ->
+      raise_trace_for Unify [Variant(No_tags(First, [l,f1]))]
+  | (Rpresent _ | Reither (_,_,true)), Rabsent ->
+      raise_trace_for Unify [Variant(No_tags(Second, [l,f2]))]
+  | (Rpresent (Some _) | Reither(false,_,_)),
+    (Rpresent None | Reither(true,_,_))
+  | (Rpresent None | Reither(true,_,_)),
+    (Rpresent (Some _) | Reither(false,_,_)) ->
+      (* constructor arity mismatch: 0 <> 1 *)
+      raise_unexplained_for Unify
+  | Reither(true, _ :: _, _ ), Rpresent _
+  | Rpresent _ , Reither(true, _ :: _, _ ) ->
+      (* inconsistent conjunction on a non-absent field *)
+      raise_unexplained_for Unify
 
 let unify uenv ty1 ty2 =
   let snap = Btype.snapshot () in
