@@ -64,7 +64,7 @@ static int get_len(struct  lf_skipcell *p, struct lf_skipcell *end) {
 static uintnat count_marks(struct lf_skiplist *sk) {
   uintnat r = 0;
   struct lf_skipcell *p = sk->head;
-  uintptr_t succ;
+  uintptr_t succ = 0;
 
   while (p) {
     for (int k = p->top_level; k >= 0; k--) {
