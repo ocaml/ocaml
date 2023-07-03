@@ -61,9 +61,7 @@ CAML_STATIC_ASSERT(
 
 #define Caml_state (CAMLassert(Caml_state_opt != NULL), Caml_state_opt)
 
-CAMLnoreturn_start
-CAMLextern void caml_bad_caml_state(void)
-CAMLnoreturn_end;
+CAMLextern CAMLnoret void caml_bad_caml_state(void);
 
 /* This check is performed regardless of debug mode. It is placed once
    at every code path starting from entry points of the public C API,

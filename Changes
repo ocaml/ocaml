@@ -55,15 +55,32 @@ Working version
 - #12234: make instrumented time calculation more thread-safe on macOS.
   (Anil Madhavapeddy, review by Daniel Bünzli and Xavier Leroy)
 
+- #12235: introduce and use the `CAMLnoret` macro as a lighter alternative
+  to `CAMLnoreturn_start` / `CAMLnoreturn_end`
+  (Xavier Leroy, with help from Antonin Décimo, review by
+   Gabriel Scherer and David Allsopp)
+
 - #12275: caml/stack.h: more abstract macros to describe OCaml stacks and
   how to traverse them, supporting more stack layouts.
   (Xavier Leroy, review by KC Sivaramakrishnan and Fabrice Buoro)
+
+- #12268: deliver `Out_of_memory` exception if domain creation fails
+  due to memory resource exhaustion.  It was previous always a `Failure`.
+  (Anil Madhavapeddy, review by David Allsopp)
+
+- #12253, #12342: Fix infinite loop in signal handling.
+  (Guillaume Munch-Maccagnoni, report by Thomas Leonard, review by
+   KC Sivaramakrishnan and Sadiq Jaffer)
 
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.
   This reduces stack usage.  It's only C stacks that require 16-alignment.
   (Xavier Leroy, review by Gabriel Scherer and Stephen Dolan)
+
+- #12311: on POWER, 32-bit FP numbers stored in memory (e.g. in bigarrays)
+  were not correctly rounded sometimes.
+  (Xavier Leroy, review by Anil Madhavapeddy and Tim McGilchrist)
 
 ### Standard library:
 
@@ -73,6 +90,12 @@ Working version
 - #12217: Add `Array.shuffle`.
   (Daniel Bünzli, review by Nicolás Ojeda Bär, David Allsopp and Alain Frisch)
 
+- #12212: Add cache-aligned constructor for atomics. The patch ensures that
+  all allocations (of the right size) in the shared heap are aligned.
+  (Bartosz Modelski with Gabriel Scherer, Guillaume Munch-Maccagnoni,
+   Xavier Leroy, review by Alain Frisch, Anil Madhavapeddy, Gabriel Scherer,
+   Guillaume Munch-Maccagnoni, KC Sivaramakrishnan, Stefan Muenzel,
+   Xavier Leroy)
 
 ### Other libraries:
 
@@ -149,6 +172,11 @@ Working version
   unbound type variables, and some constraints unrelated to the concrete
   type to be ignored (see tests/typing-misc/constraints.ml).
   (Jacques Garrigue, report by Richard Eisenberg, review by Leo White)
+
+- #12207, #12222: Make closure computation linear in the number of recursive
+  functions instead of quadratic
+  (Vincent Laviron, report by François Pottier, review by Nathanaëlle Courant
+  and Gabriel Scherer)
 
 - #12037: Fix some data races by using volatile when necessary
   (Fabrice Buoro and Olivier Nicole, review by Guillaume Munch-Maccagnoni,
@@ -282,7 +310,7 @@ OCaml 5.1.0
   (Daniel Bünzli, review by Jeremy Yallop, Gabriel Scherer, Wiktor Kuchta,
    Nicolás Ojeda Bär)
 
-- #12184: Sys.rename Windows fixes on directory corner cases.
+- #12184, #12320: Sys.rename Windows fixes on directory corner cases.
   (Jan Midtgaard, review by Anil Madhavapeddy)
 
 * #11565: Enable -strict-formats by default. Some incorrect format
@@ -791,6 +819,17 @@ Some of those changes will benefit all OCaml packages.
 
 * #11745: Debugger and toplevels: embed printer types rather than
   reading their representations from topdirs.cmi at runtime.
+  This change breaks toplevel scripts relying on the visibility of `Topdirs`
+  in the initial toplevel environment without loading `topfind`.
+  Since the opam default `.ocamlinit` file loads `topfind`, it is expected
+  that only scripts run with `ocaml -noinit` are affected.
+  For those scripts, accessing `Topdirs` now requires the `compiler-libs`
+  directory to be added to the toplevel search path with
+  ```
+    #directory "+compiler-libs";;
+  ````
+  as was already the case for the other modules in the toplevel interface
+  library.
   (Sébastien Hinderer, review by Florian Angeletti, Nicolás Ojeda Bär and
   Gabriel Scherer)
 
@@ -956,6 +995,9 @@ Some of those changes will benefit all OCaml packages.
 
 - #11879: Bugfix for Ctype.nondep_type
   (Stephen Dolan, review by Gabriel Scherer)
+
+- #11931: Fix tricky typing bug with type substitutions
+  (Stephen Dolan, review by Leo White and Jacques Garrigue)
 
 - #12004: Don't ignore function attributes on lambdas with locally abstract
   types.

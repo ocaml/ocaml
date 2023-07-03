@@ -1141,11 +1141,8 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
   p.status = Dom_starting;
 
   p.ml_values =
-      (struct domain_ml_values*) caml_stat_alloc_noexc(
+      (struct domain_ml_values*) caml_stat_alloc(
                                     sizeof(struct domain_ml_values));
-  if (!p.ml_values) {
-    caml_failwith("failed to create ml values for domain thread");
-  }
   init_domain_ml_values(p.ml_values, callback, mutex);
 
 /* We block all signals while we spawn the new domain. This is because

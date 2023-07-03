@@ -34,19 +34,52 @@ let new_label () =
 (**** Operations on compilation environments. ****)
 
 let empty_env =
-  { ce_stack = Ident.empty; ce_heap = Ident.empty; ce_rec = Ident.empty }
+  { ce_stack = Ident.empty; ce_closure = Not_in_closure }
 
 (* Add a stack-allocated variable *)
 
 let add_var id pos env =
   { ce_stack = Ident.add id pos env.ce_stack;
-    ce_heap = env.ce_heap;
-    ce_rec = env.ce_rec }
+    ce_closure = env.ce_closure }
 
 let rec add_vars idlist pos env =
   match idlist with
     [] -> env
   | id :: rem -> add_vars rem (pos + 1) (add_var id pos env)
+
+(* Compute the closure environment *)
+
+let rec add_positions entries pos_to_entry ~pos ~delta = function
+  | [] -> entries, pos
+  | id :: rem ->
+    let entries =
+      Ident.add id (pos_to_entry pos) entries
+    in
+    add_positions entries pos_to_entry ~pos:(pos + delta) ~delta rem
+
+type function_definition =
+  | Single_non_recursive
+  | Multiple_recursive of Ident.t list
+
+let closure_entries fun_defs fvs =
+  let funct_entries, pos_end_functs =
+    match fun_defs with
+    | Single_non_recursive ->
+      (* No need to store the function in the environment, but we still need to
+         reserve a slot in the closure block *)
+      Ident.empty, 3
+    | Multiple_recursive functs ->
+      add_positions Ident.empty (fun pos -> Function pos) ~pos:0 ~delta:3 functs
+  in
+  (* Note: [pos_end_functs] is the position where we would store the next
+     function if there was one, and points after an eventual infix tag.
+     Since that was the last function, we don't need the last infix tag
+     and start storing free variables at [pos_end_functs - 1]. *)
+  let all_entries, _end_pos =
+    add_positions funct_entries (fun pos -> Free_variable pos)
+      ~pos:(pos_end_functs - 1) ~delta:1 fvs
+  in
+  all_entries
 
 (**** Examination of the continuation ****)
 
@@ -370,9 +403,8 @@ type function_to_compile =
   { params: Ident.t list;               (* function parameters *)
     body: lambda;                       (* the function body *)
     label: label;                       (* the label of the function entry *)
-    free_vars: Ident.t list;            (* free variables of the function *)
-    num_defs: int;            (* number of mutually recursive definitions *)
-    rec_vars: Ident.t list;             (* mutually recursive fn names *)
+    entries: closure_entry Ident.tbl;   (* the offsets for the free variables
+                                           and mutually recursive functions *)
     rec_pos: int }                      (* rank in recursive definition *)
 
 let functions_to_compile  = (Stack.create () : function_to_compile Stack.t)
@@ -570,15 +602,18 @@ let rec comp_expr stack_info env exp sz cont =
         let pos = Ident.find_same id env.ce_stack in
         Kacc(sz - pos) :: cont
       with Not_found ->
-      try
-        let pos = Ident.find_same id env.ce_heap in
-        Kenvacc(pos) :: cont
-      with Not_found ->
-      try
-        let ofs = Ident.find_same id env.ce_rec in
-        Koffsetclosure(ofs) :: cont
-      with Not_found ->
+      let not_found () =
         fatal_error ("Bytegen.comp_expr: var " ^ Ident.unique_name id)
+      in
+      match env.ce_closure with
+      | Not_in_closure -> not_found ()
+      | In_closure { entries; env_pos } ->
+        match Ident.find_same id entries with
+        | Free_variable pos ->
+          Kenvacc(pos - env_pos) :: cont
+        | Function pos ->
+          Koffsetclosure(pos - env_pos) :: cont
+        | exception Not_found -> not_found ()
       end
   | Lconst cst ->
       Kconst cst :: cont
@@ -627,9 +662,10 @@ let rec comp_expr stack_info env exp sz cont =
       let cont = add_pseudo_event loc !compunit_name cont in
       let lbl = new_label() in
       let fv = Ident.Set.elements(free_variables exp) in
+      let entries = closure_entries Single_non_recursive fv in
       let to_compile =
         { params = List.map fst params; body = body; label = lbl;
-          free_vars = fv; num_defs = 1; rec_vars = []; rec_pos = 0 } in
+          entries = entries; rec_pos = 0 } in
       Stack.push to_compile functions_to_compile;
       comp_args stack_info env (List.map (fun n -> Lvar n) fv) sz
         (Kclosure(lbl, List.length fv) :: cont)
@@ -646,14 +682,16 @@ let rec comp_expr stack_info env exp sz cont =
         let fv =
           Ident.Set.elements (free_variables (Lletrec(decl, lambda_unit))) in
         let rec_idents = List.map (fun (id, _lam) -> id) decl in
+        let entries =
+          closure_entries (Multiple_recursive rec_idents) fv
+        in
         let rec comp_fun pos = function
             [] -> []
           | (_id, Lfunction{params; body}) :: rem ->
               let lbl = new_label() in
               let to_compile =
                 { params = List.map fst params; body = body; label = lbl;
-                  free_vars = fv; num_defs = ndecl; rec_vars = rec_idents;
-                  rec_pos = pos} in
+                  entries = entries; rec_pos = pos} in
               Stack.push to_compile functions_to_compile;
               lbl :: comp_fun (pos + 1) rem
           | _ -> assert false in
@@ -1119,13 +1157,15 @@ let comp_block env exp sz cont =
 
 let comp_function tc cont =
   let arity = List.length tc.params in
-  let rec positions pos delta = function
-      [] -> Ident.empty
-    | id :: rem -> Ident.add id pos (positions (pos + delta) delta rem) in
+  let ce_stack, _last_pos =
+    add_positions Ident.empty Fun.id ~pos:arity ~delta:(-1) tc.params
+  in
   let env =
-    { ce_stack = positions arity (-1) tc.params;
-      ce_heap = positions (3 * (tc.num_defs - tc.rec_pos) - 1) 1 tc.free_vars;
-      ce_rec = positions (-3 * tc.rec_pos) 3 tc.rec_vars } in
+    { ce_stack;
+      ce_closure =
+        In_closure { entries = tc.entries; env_pos = 3 * tc.rec_pos }
+    }
+  in
   let cont =
     comp_block env tc.body arity (Kreturn arity :: cont) in
   if arity > 1 then

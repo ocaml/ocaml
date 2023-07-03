@@ -1,12 +1,12 @@
 (Introduced in 5.0)
 
 \textit{Note: Effect handlers in OCaml 5.0 should be considered experimental.
-Effect handlers are exposed in the standard library as a thin wrapper
-around their implementations in the runtime. They are not supported as a
-language feature with new syntax. You can rely on them to build non-local
-control-flow abstractions such as user-level threading that do not expose
-the effect handler primitives to the user. Expect breaking changes in the
-future.}
+Effect handlers are exposed in the standard library's \stdmoduleref{Effect}
+module as a thin wrapper around their implementation in the runtime. They are
+not supported as a language feature with new syntax. You can rely on them to
+build non-local control-flow abstractions such as user-level threading that do
+not expose the effect handler primitives to the user. Expect breaking changes
+in the future.}
 
 Effect handlers are a mechanism for modular programming with user-defined
 effects. Effect handlers allow the programmers to describe
@@ -64,7 +64,7 @@ with the successor of the offered value. In this example, the computation
 "comp1" performs "Xchg 0" and "Xchg 1" and receives the values "1" and "2"
 from the handler respectively. Hence, the whole expression evaluates to "3".
 
-It is useful to note that the we must use locally abstract type "(type a)" in
+It is useful to note that we must use a locally abstract type "(type a)" in
 the effect handler. The type "Effect.t" is a GADT, and the effect declarations
 may have different type parameters for different effects. The type parameter
 "a" in the type "a Effect.t" represents the type of the value returned when
@@ -145,7 +145,7 @@ In the "step" function,
     raises the same exception.
   \item Case "effc": If the computation performs the effect "Xchg msg" with the
     continuation "cont", then we return "Suspended{msg;cont}". Thus, in this
-    case, the continuation cont is not immediately invoked by the handler;
+    case, the continuation "cont" is not immediately invoked by the handler;
     instead, it is stored in a data structure for later use.
 \end{itemize}
 
