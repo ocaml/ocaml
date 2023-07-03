@@ -233,6 +233,44 @@ val x : [> `X of [> `Y of '_weak2 -> bool ] as '_weak3 ] as '_weak2 =
   `X (`Y <fun>)
 |}]
 
+(** Code coverage for [unify_row_field] erros *)
+
+(** Arity mismatch *)
+
+let f (x:[`X of int]) = (x:[`X])
+[%%expect{|
+Line 5, characters 25-26:
+5 | let f (x:[`X of int]) = (x:[`X])
+                             ^
+Error: This expression has type "[ `X of int ]"
+       but an expression was expected of type "[ `X ]"
+       Types for tag "`X" are incompatible
+|}]
+
+
+let f (x:[`X of int]) = (x:[<`X of & int])
+[%%expect{|
+Line 1, characters 25-26:
+1 | let f (x:[`X of int]) = (x:[<`X of & int])
+                             ^
+Error: This expression has type "[ `X of int ]"
+       but an expression was expected of type "[< `X of & int ]"
+       Types for tag "`X" are incompatible
+|}]
+
+(** Inconsistent type *)
+
+let f (x:[<`X of & int & float]) = (x:[`X])
+[%%expect{|
+Line 3, characters 36-37:
+3 | let f (x:[<`X of & int & float]) = (x:[`X])
+                                        ^
+Error: This expression has type "[< `X of & int & float ]"
+       but an expression was expected of type "[ `X ]"
+       Types for tag "`X" are incompatible
+|}]
+
+
 (** Missing tag correctly attributed *)
 type rt = [ `A | `B of string | `R of rt ]
 let rec f = function `A -> 0 | `B s -> int_of_string s | `R x -> f x
