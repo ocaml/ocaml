@@ -25,21 +25,34 @@ let runtime_end domain_id ts phase =
 let lost_events domain_id words =
   lost_event_words := !lost_event_words + words
 
+let callbacks = Callbacks.create ~runtime_end ~alloc ~lost_events ()
+
+let reset cursor =
+  ignore (read_poll cursor callbacks None);
+  total_blocks := 0;
+  total_minors := 0
+
+let loop n cursor =
+  Gc.full_major ();
+  reset cursor;
+  let minors_before = Gc.((quick_stat ()).minor_collections) in
+  for a = 1 to n do
+    list_ref := (Sys.opaque_identity(ref 42)) :: !list_ref
+  done;
+  Gc.full_major ();
+  ignore(read_poll cursor callbacks None);
+  let minors_after = Gc.((quick_stat ()).minor_collections) in
+  minors_after - minors_before
+
 let () =
-    Gc.full_major ();
-    let stat1 = Gc.quick_stat () in
-    start ();
-    let cursor = create_cursor None in
-    for a = 0 to 1_000_000 do
-      list_ref := (Sys.opaque_identity(ref 42)) :: !list_ref
-    done;
-    Gc.full_major ();
-    let callbacks = Callbacks.create ~runtime_end ~alloc ~lost_events () in
-    ignore(read_poll cursor callbacks None);
-    let stat2 = Gc.quick_stat () in
-    let self_minors =
-      Sys.opaque_identity (stat2).Gc.minor_collections
-      - Sys.opaque_identity (stat1).Gc.minor_collections
-    in
-    Printf.printf "lost_event_words: %d, total_blocks: %d, diff_minors: %d\n"
-      !lost_event_words !total_blocks (!total_minors - self_minors)
+  start ();
+  let cursor = create_cursor None in
+  let self_minors_base = loop 0 cursor in
+  let blocks_base = !total_blocks in
+  let minors_base = !total_minors in
+  let self_minors = loop 1_000_000 cursor - self_minors_base in
+  let blocks = !total_blocks in
+  let minors = !total_minors in
+  Printf.printf "lost_event_words: %d, total_blocks: %d, diff_minors: %d\n"
+    !lost_event_words (blocks - blocks_base)
+    (minors - minors_base - self_minors)
