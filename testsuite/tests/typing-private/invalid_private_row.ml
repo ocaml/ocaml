@@ -16,11 +16,11 @@ Line 6, characters 0-43:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This private row type declaration is invalid.
        The type expression on the right-hand side reduces to
-         [ `A | `B | `C | `D | `E ]
+         "[ `A | `B | `C | `D | `E ]"
        which does not have a free row type variable.
        Hint: If you intended to define a private type abbreviation,
        write explicitly
-         private [ `A | `B | `C | `D | `E ]
+         "private [ `A | `B | `C | `D | `E ]"
 |}]
 
 type u = private < x:int; .. > as 'a constraint 'a = < x: int > ;;
@@ -30,11 +30,11 @@ Line 1, characters 0-63:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This private row type declaration is invalid.
        The type expression on the right-hand side reduces to
-         < x : int >
+         "< x : int >"
        which does not have a free row type variable.
        Hint: If you intended to define a private type abbreviation,
        write explicitly
-         private < x : int >
+         "private < x : int >"
 |}]
 
 type u = private [> `A ] as 'a constraint 'a = [< `A ] ;;
@@ -44,9 +44,9 @@ Line 1, characters 0-54:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This private row type declaration is invalid.
        The type expression on the right-hand side reduces to
-         [ `A ]
+         "[ `A ]"
        which does not have a free row type variable.
        Hint: If you intended to define a private type abbreviation,
        write explicitly
-         private [ `A ]
+         "private [ `A ]"
 |}]

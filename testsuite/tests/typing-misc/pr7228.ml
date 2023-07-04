@@ -17,5 +17,5 @@ type t = private A of { mutable x : int; }
 Line 2, characters 15-16:
 2 | fun (A r) -> r.x <- 42;;
                    ^
-Error: Cannot assign field x of the private type t.A
+Error: Cannot assign field "x" of the private type "t.A"
 |}];;

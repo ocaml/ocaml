@@ -85,3 +85,37 @@ void caml_garbage_collection(void)
                               nallocs, alloc_len);
   }
 }
+
+/* Trap handling for the POWER architecture.  Convert the trap into
+   an out-of-bounds exception. */
+
+#if defined(TARGET_power)
+
+extern void caml_array_bound_error_asm(void);
+
+void caml_sigtrap_handler(int signo, siginfo_t * info, void * context)
+{
+  /* The trap occurs in ocamlopt-generated code. */
+  /* The purpose of this function is to simulate a [caml_c_call]
+     to [caml_array_bound_error_asm]. */
+
+  caml_domain_state * dom_st = Caml_state;
+  /* Recover the values of interesting registers. */
+  ucontext_t * ctx = context;
+  uint64_t ctx_pc = ctx->uc_mcontext.gp_regs[32];
+  uint64_t ctx_sp = ctx->uc_mcontext.gp_regs[1];
+  uint64_t ctx_exn_ptr = ctx->uc_mcontext.gp_regs[29];
+  uint64_t ctx_young_ptr = ctx->uc_mcontext.gp_regs[31];
+  /* Save address of trap as the return address in the standard stack frame
+     location, so that it will be recorded in the stack backtrace. */
+  ((uint64_t *) ctx_sp)[2] = ctx_pc;
+  /* Record the OCaml stack pointer (for backtraces) */
+  /* Update the exception handler pointer and the allocation pointer */
+  dom_st->current_stack-> sp = (void *) ctx_sp;
+  dom_st->young_ptr = (value *) ctx_young_ptr;
+  dom_st->exn_handler = (void *) ctx_exn_ptr;
+  /* Raise the exception */
+  caml_array_bound_error_asm();
+}
+
+#endif

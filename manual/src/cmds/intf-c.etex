@@ -2191,6 +2191,7 @@ as follows:
 \end{tableau}
 The kind of array elements is one of the following constants:
 \begin{tableau}{|l|l|}{Constant}{Element kind}
+\entree{"CAML_BA_FLOAT16"}{16-bit half-precision floats}
 \entree{"CAML_BA_FLOAT32"}{32-bit single-precision floats}
 \entree{"CAML_BA_FLOAT64"}{64-bit double-precision floats}
 \entree{"CAML_BA_SINT8"}{8-bit signed integers}
@@ -2751,14 +2752,6 @@ If not specified, defaults to "a".
 "ocamlmklib" will generate "lib"\var{outputc}".so" (if shared
 libraries are supported) and "lib"\var{outputc}".a".
 If not specified, defaults to the output name given with "-o".
-\end{options}
-
-\noindent
-On native Windows, the following environment variable is also consulted:
-
-\begin{options}
-\item["OCAML_FLEXLINK"]  Alternative executable to use instead of the
-configured value. Primarily used for bootstrapping.
 \end{options}
 
 \paragraph{Example} Consider an OCaml interface to the standard "libz"

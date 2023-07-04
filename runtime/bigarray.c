@@ -34,6 +34,141 @@
 #define int16 caml_ba_int16
 #define uint16 caml_ba_uint16
 
+/* Half-precision floating point numbers */
+
+#if defined(__GNUC__) && defined(__aarch64__)
+
+union float16_bits { uint16_t i; _Float16 f; };
+
+Caml_inline float caml_float16_to_float(uint16 d)
+{
+  union float16_bits u;
+  u.i = d; return u.f;
+}
+
+Caml_inline uint16 caml_float_to_float16(float d)
+{
+  union float16_bits u;
+  u.f = d; return u.i;
+}
+
+#elif defined(__GNUC__) && defined(__F16C__)
+
+#include <immintrin.h>
+
+Caml_inline float caml_float16_to_float(uint16 d)
+{ return _cvtsh_ss(d); }
+
+Caml_inline uint16 caml_float_to_float16(float d)
+{ return _cvtss_sh(d, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)); }
+
+#else
+
+union float_bits {
+  uint32_t i;
+  float f;
+};
+
+/*
+ * half_to_float_fast5
+ * https://gist.github.com/rygorous/2144712
+ */
+static float caml_float16_to_float(uint16 d)
+{
+  static const union float_bits magic = { (254 - 15) << 23 };
+  static const union float_bits was_infnan = { (127 + 16) << 23 };
+
+  union float_bits o;
+
+  o.i = (d & 0x7fff) << 13;     /* exponent/mantissa bits */
+  o.f *= magic.f;               /* exponent adjust */
+  if (o.f >= was_infnan.f)      /* make sure Inf/NaN survive */
+    o.i |= 255 << 23;
+  o.i |= (d & 0x8000) << 16;    /* sign bit */
+  return o.f;
+}
+
+/*
+ * float_to_half_fast3_rtne
+ * https://gist.github.com/rygorous/2156668
+ */
+static uint16 caml_float_to_float16(float d)
+{
+  static const union float_bits f32infty = { 255 << 23 };
+  static const union float_bits f16max = { (127 + 16) << 23 };
+  static const union float_bits denorm_magic =
+    { ((127 - 15) + (23 - 10) + 1) << 23 };
+  static const uint32_t sign_mask = 0x80000000u;
+
+  union float_bits f;
+  uint16 o = 0;
+  uint32_t sign;
+
+  f.f = d;
+  sign = f.i & sign_mask;
+  f.i ^= sign;
+
+  // NOTE all the integer compares in this function can be safely
+  // compiled into signed compares since all operands are below
+  // 0x80000000. Important if you want fast straight SSE2 code
+  // (since there's no unsigned PCMPGTD).
+
+  if (f.i >= f16max.i) // result is Inf or NaN (all exponent bits set)
+    o = (f.i > f32infty.i) ? 0x7e00 : 0x7c00; // NaN->qNaN and Inf->Inf
+  else // (De)normalized number or zero
+  {
+    if (f.i < (113 << 23)) // resulting FP16 is subnormal or zero
+    {
+      // use a magic value to align our 10 mantissa bits at the bottom of
+      // the float. as long as FP addition is round-to-nearest-even this
+      // just works.
+      f.f += denorm_magic.f;
+
+      // and one integer subtract of the bias later, we have our final float!
+      o = f.i - denorm_magic.i;
+    }
+    else
+    {
+      uint32_t mant_odd = (f.i >> 13) & 1; // resulting mantissa is odd
+
+      // update exponent, rounding bias part 1
+      f.i += ((15 - 127) << 23) + 0xfff;
+      // rounding bias part 2
+      f.i += mant_odd;
+      // take the bits!
+      o = f.i >> 13;
+    }
+  }
+
+  o |= sign >> 16;
+  return o;
+}
+
+#endif  /* defined(__GNUC__) && defined(__F16C__) */
+
+CAMLexport double caml_double_of_float16(intnat x)
+{
+  return (double) caml_float16_to_float((uint16) x);
+}
+
+CAMLexport intnat caml_float16_of_double(double x)
+{
+  return (intnat) caml_float_to_float16((float) x);
+}
+
+Caml_inline uint32_t caml_hash_mix_float16(uint32_t hash, uint16 d)
+{
+  /* Normalize NaNs */
+  if ((d & 0x7c00) == 0x7c00 && (d & 0x03ff) != 0) {
+    d = 0x7c01;
+  }
+  /* Normalize -0 into +0 */
+  else if (d == 0x8000) {
+    d = 0;
+  }
+  return caml_hash_mix_uint32(hash, d);
+}
+
 /* Compute the number of elements of a big array */
 
 CAMLexport uintnat caml_ba_num_elts(struct caml_ba_array * b)
@@ -48,7 +183,7 @@ CAMLexport uintnat caml_ba_num_elts(struct caml_ba_array * b)
 /* Size in bytes of a bigarray element, indexed by bigarray kind */
 
 CAMLexport int caml_ba_element_size[] =
-{ 4 /*FLOAT32*/, 8 /*FLOAT64*/,
+{ 2 /*FLOAT16*/, 4 /*FLOAT32*/, 8 /*FLOAT64*/,
   1 /*SINT8*/, 1 /*UINT8*/,
   2 /*SINT16*/, 2 /*UINT16*/,
   4 /*INT32*/, 8 /*INT64*/,
@@ -203,10 +338,10 @@ CAMLexport int caml_ba_compare(value v1, value v2)
     } \
     return 0; \
   }
-#define DO_FLOAT_COMPARISON(type) \
-  { type * p1 = b1->data; type * p2 = b2->data; \
+#define DO_GENERIC_UNORDERED_COMPARISON(ptype, etype, conv) \
+  { ptype * p1 = b1->data; ptype * p2 = b2->data; \
     for (n = 0; n < num_elts; n++) { \
-      type e1 = *p1++; type e2 = *p2++; \
+      etype e1 = conv(*p1++); etype e2 = conv(*p2++); \
       if (e1 < e2) return -1; \
       if (e1 > e2) return 1; \
       if (e1 != e2) { \
@@ -217,8 +352,12 @@ CAMLexport int caml_ba_compare(value v1, value v2)
     } \
     return 0; \
   }
+#define DO_FLOAT_COMPARISON(type) \
+  DO_GENERIC_UNORDERED_COMPARISON(type, type, )
 
   switch (b1->flags & CAML_BA_KIND_MASK) {
+  case CAML_BA_FLOAT16:
+    DO_GENERIC_UNORDERED_COMPARISON(uint16, float, caml_float16_to_float);
   case CAML_BA_COMPLEX32:
     num_elts *= 2; /*fallthrough*/
   case CAML_BA_FLOAT32:
@@ -318,6 +457,13 @@ CAMLexport intnat caml_ba_hash(value v)
     for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_int64(h, *p);
     break;
   }
+  case CAML_BA_FLOAT16:
+  {
+    uint16 * p = b->data;
+    if (num_elts > 128) num_elts = 128;
+    for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_float16(h, *p);
+    break;
+  }
   case CAML_BA_COMPLEX32:
     num_elts *= 2;              /* fallthrough */
   case CAML_BA_FLOAT32:
@@ -395,6 +541,7 @@ CAMLexport void caml_ba_serialize(value v,
     caml_serialize_block_1(b->data, num_elts); break;
   case CAML_BA_SINT16:
   case CAML_BA_UINT16:
+  case CAML_BA_FLOAT16:
     caml_serialize_block_2(b->data, num_elts); break;
   case CAML_BA_FLOAT32:
   case CAML_BA_INT32:
@@ -481,6 +628,7 @@ CAMLexport uintnat caml_ba_deserialize(void * dst)
     caml_deserialize_block_1(b->data, num_elts); break;
   case CAML_BA_SINT16:
   case CAML_BA_UINT16:
+  case CAML_BA_FLOAT16:
     caml_deserialize_block_2(b->data, num_elts); break;
   case CAML_BA_FLOAT32:
   case CAML_BA_INT32:
@@ -579,6 +727,9 @@ value caml_ba_get_N(value vb, volatile value * vind, int nind)
   switch ((b->flags) & CAML_BA_KIND_MASK) {
   default:
     CAMLassert(0);
+  case CAML_BA_FLOAT16:
+    return caml_copy_double(
+      (double) caml_float16_to_float(((uint16 *) b->data)[offset]));
   case CAML_BA_FLOAT32:
     return caml_copy_double((double) ((float *) b->data)[offset]);
   case CAML_BA_FLOAT64:
@@ -721,6 +872,9 @@ static value caml_ba_set_aux(value vb, volatile value * vind,
   switch (b->flags & CAML_BA_KIND_MASK) {
   default:
     CAMLassert(0);
+  case CAML_BA_FLOAT16:
+    ((uint16 *) b->data)[offset] =
+      caml_float_to_float16(Double_val(newval)); break;
   case CAML_BA_FLOAT32:
     ((float *) b->data)[offset] = Double_val(newval); break;
   case CAML_BA_FLOAT64:
@@ -1131,6 +1285,12 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
   switch (b->flags & CAML_BA_KIND_MASK) {
   default:
     CAMLassert(0);
+  case CAML_BA_FLOAT16: {
+    uint16 init = caml_float_to_float16(Double_val(vinit));
+    uint16 * p;
+    FILL_SCALAR_LOOP;
+    break;
+  }
   case CAML_BA_FLOAT32: {
     float init = Double_val(vinit);
     float * p;

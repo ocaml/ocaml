@@ -95,7 +95,7 @@ DOCUMENTATION_TOOL_CMD=@documentation_tool_cmd@
 
 # The location of the FlexDLL sources to use (usually provided as the flexdll
 # Git submodule)
-FLEXDLL_SOURCES=@flexdir@
+FLEXDLL_SOURCE_DIR=@flexdll_source_dir@
 BOOTSTRAPPING_FLEXDLL=@bootstrapping_flexdll@
 
 ### Where to install documentation

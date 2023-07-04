@@ -724,6 +724,10 @@ let chars_of_string s =
     List.rev !chars;;
 \end{caml_example}
 
+As a special case, @'while' 'true' 'do' expr 'done'@ is given a
+polymorphic type, allowing it to be used in place of any expression
+(for example as a branch of any pattern-matching).
+
 \ikwd{for\@\texttt{for}}
 The expression @'for' name '=' expr_1 'to' expr_2 'do' expr_3 'done'@
 first evaluates the expressions @expr_1@ and @expr_2@ (the boundaries)

@@ -36,7 +36,7 @@ let f z = let rec x = [| y; z |] and y = z in x;;
 Line 1, characters 22-32:
 1 | let f z = let rec x = [| y; z |] and y = z in x;;
                           ^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}]
 
 (* In this test, `z` is known to be a float, so a float array will be
@@ -48,5 +48,5 @@ let f (z: float) = let rec x = [| y; z |] and y = z in x;;
 Line 1, characters 31-41:
 1 | let f (z: float) = let rec x = [| y; z |] and y = z in x;;
                                    ^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}]

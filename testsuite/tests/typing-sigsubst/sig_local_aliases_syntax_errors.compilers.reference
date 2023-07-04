@@ -1,20 +1,20 @@
 Line 6, characters 2-14:
 6 |   type t1 := A
       ^^^^^^^^^^^^
-Error: Only type synonyms are allowed on the right of :=
+Error: Only type synonyms are allowed on the right of ":="
 Line 3, characters 2-24:
 3 |   type t2 := { x : int }
       ^^^^^^^^^^^^^^^^^^^^^^
-Error: Only type synonyms are allowed on the right of :=
+Error: Only type synonyms are allowed on the right of ":="
 Line 3, characters 15-18:
 3 |   module M1 := sig end
                    ^^^
-Error: Syntax error: module path expected.
+Error: Syntax error: "module path" expected.
 module F : functor (X : sig type t end) -> sig type t = X.t end
 Line 3, characters 17-23:
 3 |   module M2 := F(struct type t = int end)
                      ^^^^^^
-Error: Syntax error: module path expected.
+Error: Syntax error: "module path" expected.
 Line 2, characters 7-9:
 2 | type t := int;;
            ^^
@@ -30,5 +30,5 @@ Error: Syntax error
 Line 3, characters 7-13:
 3 |   type nonrec t := int
            ^^^^^^
-Error: Syntax error: nonrec flag not expected.
+Error: Syntax error: "nonrec flag" not expected.
 

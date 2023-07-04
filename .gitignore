@@ -73,15 +73,14 @@ META
 /asmcomp/CSE.ml
 
 /boot/ocamlrun
-/boot/ocamlruns
 /boot/camlheader
 /boot/ocamlc.opt
-/boot/flexlink.byte
+
+/byte/**
 
 /bytecomp/opcodes.ml
 /bytecomp/opcodes.mli
 
-/debugger/.depend
 /debugger/debugger_lexer.ml
 /debugger/debugger_parser.ml
 /debugger/debugger_parser.mli
@@ -209,6 +208,8 @@ META
 /ocamltest/tsl_parser.mli
 /ocamltest/tsl_parser.output
 /ocamltest/ocamltest.html
+
+/opt/**
 
 /otherlibs/*/.dep
 /otherlibs/dynlink/dynlink_platform_intf.mli

@@ -47,5 +47,5 @@ Line 3, characters 30-31:
 3 |   let g : t -> int = function _ -> .
                                   ^
 Error: This match case could not be refuted.
-       Here is an example of a value that would reach it: T (Is Eq)
+       Here is an example of a value that would reach it: "T (Is Eq)"
 |}]

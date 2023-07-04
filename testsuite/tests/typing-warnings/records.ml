@@ -106,8 +106,8 @@ The first one was selected. Please disambiguate if this is wrong.
 Line 3, characters 35-36:
 3 |   let f r = match r with {x; y} -> y + y
                                        ^
-Error: This expression has type bool but an expression was expected of type
-         int
+Error: This expression has type "bool" but an expression was expected of type
+         "int"
 |}]
 
 module F2 = struct
@@ -314,7 +314,7 @@ it will not compile with OCaml 4.00 or earlier.
 Line 3, characters 10-24:
 3 |   let r = {x=true;z='z'}
               ^^^^^^^^^^^^^^
-Error: Some record fields are undefined: y
+Error: Some record fields are undefined: "y"
 |}]
 
 module OK = struct
@@ -354,8 +354,8 @@ end;; (* fail but don't warn *)
 Line 4, characters 22-23:
 4 |   let b : bar = {x=3; y=4}
                           ^
-Error: This record expression is expected to have type bar
-       There is no field y within type bar
+Error: This record expression is expected to have type "bar"
+       There is no field "y" within type "bar"
 |}]
 
 module M = struct type foo = {x:int;y:int} end;;
@@ -371,8 +371,8 @@ let r = { M.x = 3; N.y = 4; };; (* error: different definitions *)
 Line 1, characters 19-22:
 1 | let r = { M.x = 3; N.y = 4; };; (* error: different definitions *)
                        ^^^
-Error: The record field N.y belongs to the type N.bar
-       but is mixed here with fields of type M.foo
+Error: The record field "N.y" belongs to the type "N.bar"
+       but is mixed here with fields of type "M.foo"
 |}]
 
 module MN = struct include M include N end
@@ -406,8 +406,8 @@ The first one was selected. Please disambiguate if this is wrong.
 Line 1, characters 19-23:
 1 | let r = {MN.x = 3; NM.y = 4};; (* error: type would change with order *)
                        ^^^^
-Error: The record field NM.y belongs to the type NM.foo = M.foo
-       but is mixed here with fields of type MN.bar = N.bar
+Error: The record field "NM.y" belongs to the type "NM.foo" = "M.foo"
+       but is mixed here with fields of type "MN.bar" = "N.bar"
 |}]
 
 (* Lpw25 *)
@@ -437,8 +437,8 @@ it will not compile with OCaml 4.00 or earlier.
 Line 3, characters 44-45:
 3 |   let f r = ignore (r: foo); {r with x = 2; z = 3}
                                                 ^
-Error: This record expression is expected to have type M.foo
-       There is no field z within type M.foo
+Error: This record expression is expected to have type "M.foo"
+       There is no field "z" within type "M.foo"
 |}]
 module M = struct
   include M
@@ -466,8 +466,8 @@ it will not compile with OCaml 4.00 or earlier.
 Line 3, characters 45-46:
 3 |   let f r = ignore (r: foo); { r with x = 3; a = 4 }
                                                  ^
-Error: This record expression is expected to have type M.foo
-       There is no field a within type M.foo
+Error: This record expression is expected to have type "M.foo"
+       There is no field "a" within type "M.foo"
 |}]
 module F7 = struct
   open M
@@ -490,8 +490,8 @@ it will not compile with OCaml 4.00 or earlier.
 Line 4, characters 18-19:
 4 |   let r: other = {x=1; y=2}
                       ^
-Error: This record expression is expected to have type M.other
-       There is no field x within type M.other
+Error: This record expression is expected to have type "M.other"
+       There is no field "x" within type "M.other"
 |}]
 
 module A = struct type t = {x: int} end
@@ -505,8 +505,8 @@ let f (r : B.t) = r.A.x;; (* fail *)
 Line 1, characters 20-23:
 1 | let f (r : B.t) = r.A.x;; (* fail *)
                         ^^^
-Error: The field A.x belongs to the record type A.t
-       but a field was expected belonging to the record type B.t
+Error: The field "A.x" belongs to the record type "A.t"
+       but a field was expected belonging to the record type "B.t"
 |}]
 
 (* Spellchecking *)
@@ -519,9 +519,9 @@ end;;
 Line 3, characters 19-22:
 3 |   let a : t = {x=1;yyz=2}
                        ^^^
-Error: This record expression is expected to have type t
-       There is no field yyz within type t
-Hint: Did you mean yyy?
+Error: This record expression is expected to have type "t"
+       There is no field "yyz" within type "t"
+Hint: Did you mean "yyy"?
 |}]
 
 (* PR#6004 *)
@@ -726,8 +726,8 @@ type u = { a : int; }
 Line 5, characters 12-15:
 5 | let _ = ( { M.x=0 } : u );;
                 ^^^
-Error: The field M.x belongs to the record type M.t
-       but a field was expected belonging to the record type u
+Error: The field "M.x" belongs to the record type "M.t"
+       but a field was expected belonging to the record type "u"
 |}]
 
 (* PR#8747 *)

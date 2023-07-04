@@ -377,7 +377,7 @@ FUNCTION(caml_c_call_stack_args)
     /* Store sp to restore after call */
         mv      s2, sp
     /* Copy arguments from OCaml to C stack
-       NB: STACK_ARG_{BEGIN,END} are 16-byte aligned */
+       NB: STACK_ARG_END - STACK_ARG_BEGIN is a multiple of 16 */
 1:      addi    STACK_ARG_END, STACK_ARG_END, -16
         bltu    STACK_ARG_END, STACK_ARG_BEGIN, 2f
         ld      TMP, 0(STACK_ARG_END)

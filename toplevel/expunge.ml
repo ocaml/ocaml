@@ -19,24 +19,22 @@
 open Misc
 module String = Misc.Stdlib.String
 
-let is_exn =
-  let h = Hashtbl.create 64 in
-  Array.iter (fun n -> Hashtbl.add h n ()) Runtimedef.builtin_exceptions;
-  Hashtbl.mem h
-
 let to_keep = ref String.Set.empty
 
 let negate = Sys.argv.(3) = "-v"
 
-let keep =
-  if negate then fun name -> is_exn name || not (String.Set.mem name !to_keep)
-  else fun name -> is_exn name || (String.Set.mem name !to_keep)
+let keep = function
+  | Symtable.Global.Glob_predef _ -> true
+  | Symtable.Global.Glob_compunit (Cmo_format.Compunit name) ->
+    if negate then not (String.Set.mem name !to_keep)
+    else (String.Set.mem name !to_keep)
 
 let expunge_map tbl =
-  Symtable.filter_global_map (fun id -> keep (Ident.name id)) tbl
+  Symtable.filter_global_map keep tbl
 
 let expunge_crcs tbl =
-  List.filter (fun (unit, _crc) -> keep unit) tbl
+  List.filter (fun (compunit, _crc) ->
+    keep (Symtable.Global.Glob_compunit (Cmo_format.Compunit compunit))) tbl
 
 let main () =
   let input_name = Sys.argv.(1) in

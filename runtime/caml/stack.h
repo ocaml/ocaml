@@ -42,6 +42,16 @@
    to find the first frame of the next chunk, or to reach the top of the stack.
 */
 
+#ifdef TARGET_power
+/* Size of the gc_regs structure, in words.
+   See power.S and power/proc.ml for the indices */
+#define Wosize_gc_regs (23 /* int regs */ + 14 /* caller-save float regs */)
+#define Saved_return_address(sp) *((intnat *)((sp) + 16))
+#define First_frame(sp) (sp)
+#define Saved_gc_regs(sp) (*(value **)((sp) + 32 + 16 + 8))
+#define Stack_header_size (32 + 16 + 16)
+#endif
+
 #ifdef TARGET_s390x
 #define Wosize_gc_regs (2 + 9 /* int regs */ + 16 /* float regs */)
 #define Saved_return_address(sp) *((intnat *)((sp) - 8))

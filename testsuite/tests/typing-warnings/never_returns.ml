@@ -3,6 +3,13 @@
  expect;
 *)
 
+(** For now, we don't warn for non-terminating while loops, for backwards compatibility. *)
+fun () -> while true do () done; 3;;
+
+[%%expect{|
+- : unit -> int = <fun>
+|}];;
+
 let () = (let module L = List in raise Exit); () ;;
 [%%expect {|
 Line 1, characters 33-43:

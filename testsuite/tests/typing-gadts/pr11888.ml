@@ -19,8 +19,8 @@ Lines 3-6, characters 0-27:
 5 |   | Nss : 'd nat -> 'd s s nat
 6 |   | Ns : 'a nat -> 'a s nat
 Error: In the GADT constructor
-         Nss : 'd nat -> 'd s s nat
-       the type variable 'd cannot be deduced from the type parameters.
+         "Nss : 'd nat -> 'd s s nat"
+       the type variable "'d" cannot be deduced from the type parameters.
 |}];;
 
 type z
@@ -40,7 +40,7 @@ Line 5, characters 0-40:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the extension constructor
          type _ nat += Nss : 'd nat -> 'd s s nat
-       the type variable 'd cannot be deduced from the type parameters.
+       the type variable "'d" cannot be deduced from the type parameters.
 |}];;
 
 type 'any any = int
@@ -55,5 +55,5 @@ Line 3, characters 0-30:
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the extension constructor
          type 'b t += A : 'b -> 'b any t
-       the type variable 'b cannot be deduced from the type parameters.
+       the type variable "'b" cannot be deduced from the type parameters.
 |}]

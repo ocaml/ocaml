@@ -12,7 +12,7 @@ let rec x = f ~x;;
 Line 1, characters 12-16:
 1 | let rec x = f ~x;;
                 ^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let f x ~y = x + y
@@ -29,5 +29,5 @@ val f : int -> y:int -> int = <fun>
 Line 6, characters 12-38:
 6 | let rec g = f ~y:(print_endline !y; 0)
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}]

@@ -18,5 +18,5 @@ Line 2, characters 2-27:
       ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Some type variables are unbound in this type:
          class base : 'e -> ['e] t
-       The method update has type 'e -> #base where 'e is unbound
+       The method "update" has type "'e -> #base" where "'e" is unbound
 |}];;

@@ -76,7 +76,7 @@ MENHIRBASICFLAGS := \
 MENHIRFLAGS := \
   $(MENHIRBASICFLAGS) \
   --infer \
-  --ocamlc "$(CAMLC) $(OC_COMMON_COMPFLAGS) $(INCLUDES)" \
+  --ocamlc "$(call CONVERT_PATH, $(CAMLC)) $(OC_COMMON_COMPFLAGS) $(INCLUDES)" \
   --fixed-exception \
   --table \
   --strategy simplified \
@@ -105,12 +105,12 @@ promote-menhir: parsing/parser.mly
 # an incompatible version of menhirLib, which would fail at
 # compile-time.
 
+boot/menhir:
+	@$(MKDIR) $@
+
 .PHONY: import-menhirLib
-import-menhirLib:
-	@ mkdir -p boot/menhir
-	@ cp \
-           $(addprefix `$(MENHIR) --suggest-menhirLib`/menhirLib.,ml mli) \
-           boot/menhir
+import-menhirLib: | boot/menhir
+	@cp $(addprefix $(shell $(MENHIR) --suggest-menhirLib)/menhirLib.,ml mli) $|
 
 
 ## demote-menhir

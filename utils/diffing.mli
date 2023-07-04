@@ -80,7 +80,7 @@ type change_kind =
   | Modification
   | Preservation
 val prefix: Format.formatter -> (int * change_kind) -> unit
-val style: change_kind -> Misc.Color.style list
+val style: change_kind -> Misc.Style.style list
 
 
 type ('left,'right,'eq,'diff) change =

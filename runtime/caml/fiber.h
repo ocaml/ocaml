@@ -100,6 +100,9 @@ CAML_STATIC_ASSERT(sizeof(struct stack_info) ==
   #define Reserved_space_c_stack_link 4 * 8
 #elif defined(TARGET_s390x)
   #define Reserved_space_c_stack_link 160
+#elif defined(TARGET_power)
+/* ELF ABI: 4 reserved words at bottom of C stack */
+  #define Reserved_space_c_stack_link 4 * 8
 #endif
 
 /* This structure is used for storing the OCaml return pointer when
@@ -278,13 +281,9 @@ value caml_continuation_use (value cont);
    Used for cloning continuations and continuation backtraces. */
 void caml_continuation_replace(value cont, struct stack_info* stack);
 
-CAMLnoreturn_start
-CAMLextern void caml_raise_continuation_already_resumed (void)
-CAMLnoreturn_end;
+CAMLextern CAMLnoret void caml_raise_continuation_already_resumed (void);
 
-CAMLnoreturn_start
-CAMLextern void caml_raise_unhandled_effect (value effect)
-CAMLnoreturn_end;
+CAMLextern CAMLnoret void caml_raise_unhandled_effect (value effect);
 
 value caml_make_unhandled_effect_exn (value effect);
 

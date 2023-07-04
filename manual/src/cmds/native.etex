@@ -137,17 +137,6 @@ the default.
 \item["-fno-PIC"] Generate position-dependent machine code.
 \end{options}
 
-\paragraph{Options for the PowerPC architecture}
-The PowerPC code generator supports the following additional options:
-
-\begin{options}
-\item["-flarge-toc"] Enables the PowerPC large model allowing the TOC (table of
-contents) to be arbitrarily large.  This is the default since 4.11.
-\item["-fsmall-toc"] Enables the PowerPC small model allowing the TOC to be up
-to 64 kbytes per compilation unit.  Prior to 4.11 this was the default
-behaviour.
-\end{options}
-
 \paragraph{Contextual control of command-line options}
 
 The compiler command line can be modified ``from the outside''
@@ -167,10 +156,6 @@ first character of the string, within the set ":|; ,".
 \item["ocaml_compiler_internal_params" \rm(file in the stdlib directory)]
 A mapping of file names to lists of arguments that
 will be added to the command line (and "OCAMLPARAM") arguments.
-\item["OCAML_FLEXLINK" \rm(environment variable)]
-Alternative executable to use on native
-Windows for "flexlink" instead of the
-configured value. Primarily used for bootstrapping.
 \end{options}
 
 \section{s:native-common-errors}{Common errors}

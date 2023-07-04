@@ -15,12 +15,28 @@
 let overhead block slot obj =
   1. -. float_of_int((block / slot) * obj) /. float_of_int block
 
-let max_overhead = 0.10
+let max_overhead = 0.101
+
+(*
+  Prevention of false sharing requires certain sizeclasses to be present. This
+  ensures they are generated.
+
+  Runtime has a constructor for atomics (`caml_atomic_make_contended`), which
+  aligns them with cache lines to avoid false sharing. The implementation
+  relies on the fact that pools are cache-aligned by design and slots of
+  appropriate size maintain this property. To be precise, slots whose size is a
+  multiple of cache line are laid out in such a way, that their boundaries
+  coincide with boundaries between cache lines.
+*)
+let required_for_contended_atomic = function
+  | 16 | 32 -> true
+  | _ -> false
 
 let rec blocksizes block slot = function
   | 0 -> []
   | obj ->
     if overhead block slot obj > max_overhead
+      || required_for_contended_atomic obj
     then
       if overhead block obj obj < max_overhead then
         obj :: blocksizes block obj (obj - 1)
