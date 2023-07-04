@@ -123,15 +123,13 @@ static void init_compact_allocate (void)
   compact_fl_small = compact_fl_large = caml_heap_start;
 }
 
-#define Chunk_free(c) (Chunk_size(c) - Chunk_alloc(c))
-
 /* [size] is a number of bytes and includes the header size */
 static char *compact_allocate (mlsize_t size)
 {
   char *chunk, *adr;
 
   chunk = size > COMPACT_FL_CUTOFF_SIZE ? compact_fl_large : compact_fl_small;
-  while (Chunk_free (chunk) < size){
+  while (Chunk_size(chunk) - Chunk_alloc(chunk) < size){
     chunk = Chunk_next (chunk);
     CAMLassert (chunk != NULL);
   }
