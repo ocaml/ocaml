@@ -225,8 +225,17 @@ struct runtime_events_metadata_header {
 };
 
 #define RUNTIME_EVENTS_MAX_CUSTOM_EVENTS (1 << 13)
-#define RUNTIME_EVENTS_NUM_ALLOC_BUCKETS 20
 #define RUNTIME_EVENTS_MAX_MSG_LENGTH (1 << 10)
+
+/* Number of tens of single-size buckets */
+#define RUNTIME_EVENTS_NUM_ALLOC_BUCKETS_SINGLE 1
+/* Number of buckets of 10 sizes */
+#define RUNTIME_EVENTS_NUM_ALLOC_BUCKETS_DECADE 9
+/* Total number of buckets */
+#define RUNTIME_EVENTS_NUM_ALLOC_BUCKETS \
+  (10 * RUNTIME_EVENTS_NUM_ALLOC_BUCKETS_SINGLE \
+   + RUNTIME_EVENTS_NUM_ALLOC_BUCKETS_DECADE \
+   + 1)
 
 /* event header fields (for runtime events):
 - length (10 bits)
