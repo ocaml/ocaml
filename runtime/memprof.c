@@ -13,19 +13,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-/* Open questions on the multicore memprof design:
- *
- * 1. Would it be better to adopt whole entries arrays, rather than
- * individual entries? Domains and configs would have linked lists of
- * entries arrays. This would mean that individual entries are only
- * ever moved by a particular domain, and never when a callback on
- * them is running. This would reduce possible race conditions and the
- * tricky control flow around thread suspension. A thread running a
- * callback could have a pointer to the entry (just as the entry has a
- * pointer to the thread), rather than the slightly twisty
- * flags-and-index system.
- */
-
 /* General Design
  *
  * Data Structures
@@ -34,7 +21,7 @@
  * "entry" structure (entry_s, *entry_t). It tracks the state of the
  * block of memory, and its progress through the various callbacks.
  *
- * A resizable table of entry structures is called an "entries"
+ * A resizable table of entry structures is called an "entries" table
  * (entries_s, *entries_t). It uses indexes to track parts of the
  * table which may need particular actions taken.
  *
@@ -57,11 +44,42 @@
  * Memprof in any given domain has a "configuration"
  * (memprof_config_s, *memprof_config_t). This structure is only
  * created when a profile is started, and survives until the profile
- * is discarded. It has an entries table, for blocks allocated in any
- * domain using the profile which has since terminated, or to which
- * entries are transferred when the profile is stopped. It has a
- * linked list of domain states for all the domains using this
- * profile.
+ * is discarded. It has an entries table, to which entries are
+ * transferred when the profile is stopped (so that domains can run a
+ * fresh profile), and to which entries are also transferred if a
+ * domain using this profile is terminated. It has a linked list of
+ * domain states for all the domains using this profile.
+ *
+ */
+
+/*
+ * TODO: Address data races.
+ *
+ * 1. Updates to thread->callback_table and thread->callback_index,
+ * when a profile is stopped by another domain. The other domain tries
+ * to transfer entries to the config object. This can race against:
+ *
+ *    - a thread which is running a callback;
+ *    - adding a block (although this can't happen if ;
+ *    -
+ *
+ * 2. Updates to the entries table of a thread or domain when another
+ * domain stops the profile.
+
+an entry is transferred to . This is OK when being done
+ * by another thread in the same domain, as switching systhreads is
+ * cooperative. But this will also be done by another domain when
+ * stopping a profile - all the entries are transferred to the config
+ * object.
+ *
+ * 1. What if domain->config is stopped and/or discarded by another
+ * domain? It's accessed by each domain. Initial plan for this: keep
+ * the actual configuration values (callstack depth, lambda, tracker)
+ * in the memprof_domain_s.
+
+(the callstack depth, tracker, and lambda) as an object on the Caml
+ * heap. That way we don't have to explicitly manage its liveness. We
+ * can atomically set the 'stopped' field in it.
  */
 
 #define CAML_INTERNALS
@@ -96,8 +114,7 @@ typedef struct memprof_thread_s memprof_thread_s, *memprof_thread_t;
 /* [Gc.Memprof.allocation_source] */
 
 /* At present (since OCaml 5), SRC_MARSHAL can't be produced, because
- * unmarshalling uses the regular allocation functions. TODO: Work out
- * whether this type is needed at all. */
+ * unmarshalling uses the regular allocation functions. */
 
 enum { SRC_NORMAL = 0, SRC_MARSHAL = 1, SRC_CUSTOM = 2 };
 
@@ -117,12 +134,15 @@ enum { SRC_NORMAL = 0, SRC_MARSHAL = 1, SRC_CUSTOM = 2 };
 /* the mask for a given callback index */
 #define CB_MASK(cb) (1 << ((cb) - 1))
 
-/* TODO: figure out what this Placeholder stuff is actually doing on trunk.
- *
- * During the alloc callback for a minor allocation made from C, the
- * block being sampled has not yet been allocated. Instead, we use an
- * int-tagged value in the block field, distinguished both by the int
- * tag and some magic higher bits. */
+/* When we are creating tracking entries for a minor allocation made
+ * from OCaml, the block being sampled has not yet been allocated
+ * (because we have to create each entry when capturing the callstack,
+ * which has to be done before the allocation itself in case the
+ * allocation triggers a GC, runs finalizers, etc, disturbing the call
+ * stack). So for the block pointer in such a tracking entry, we use
+ * an int-tagged value giving the offset within the Comballoc
+ * allocation, distinguished both by the int tag and some magic higher
+ * bits. */
 
 #define Placeholder_magic 0x04200000
 #define Placeholder_offs(offset) (Val_long((offset & 0xFFFF) \
@@ -136,7 +156,7 @@ enum { SRC_NORMAL = 0, SRC_MARSHAL = 1, SRC_CUSTOM = 2 };
 typedef struct {
   /* Memory block being sampled. This is a weak GC root. Note that
    * this may be a placeholder during the allocation callback. (see
-   * placeholder macros above). */
+   * comment on placeholder macros above). */
   value block;
 
   /* The value returned by the previous callback for this block, or
@@ -155,16 +175,16 @@ typedef struct {
      or NULL if there is none */
   memprof_thread_t running;
 
-  /* Whether this block has been initially allocated in the minor heap. */
+  /* Was this block initially allocated in the minor heap? */
   unsigned int alloc_young : 1;
 
-  /* The source of the allocation: normal allocations, marshal or custom_mem. */
+  /* The source of the allocation: normal allocations or custom_mem (SRC_*). */
   unsigned int source : 2;
 
-  /* Whether this block has been promoted. Implies [alloc_young]. */
+  /* Has this block been promoted? Implies [alloc_young]. */
   unsigned int promoted : 1;
 
-  /* Whether this block has been deallocated. */
+  /* Has this block been deallocated? */
   unsigned int deallocated : 1;
 
   /* Which callback (CB_*) is currently running for this entry. */
@@ -174,7 +194,7 @@ typedef struct {
    * necessarily completed) for this entry. */
   unsigned int callbacks : CB_MAX;
 
-  /* Whether this entry is deleted. */
+  /* Has this entry been marked for deletion. */
   unsigned int deleted : 1;
 } entry_s, *entry_t;
 
@@ -195,6 +215,10 @@ typedef struct {
   /* There are no pending callbacks before this position
    * ([next <= live]). */
   uintnat next;
+
+  /* Lock to control access to the 'running' entries of all entries in
+   * this table. */
+  caml_plat_mutex running_lock;
 
 } entries_s, *entries_t;
 
@@ -224,8 +248,10 @@ struct memprof_thread_s {
 
   /* Pointer to entries table for the current callback, or NULL if not
    * currently running a callback. */
-
   entries_t callback_table;
+
+  /* lock controlling access to the callback_index and callback_table fields */
+  caml_plat_mutex callback_lock;
 
   /* Entries for blocks allocated in this thread whose alloc callback
    * has not yet been called. */
@@ -249,11 +275,8 @@ struct memprof_domain_s {
    * entries allocated by a thread in this domain for which the
    * allocation callback has returned: the entry is then transferred
    * to this per-domain table. However, this table will also include
-   * (a) entries for threads in this domain which terminated before
-   * calling the allocation callback, and (b) entries from other
-   * domains which share this domains memprof config but which have
-   * terminated (for example, a short-lived domain spawned by this
-   * domain after memprof was started). */
+   * entries for threads in this domain which terminated before
+   * calling the allocation callback. */
   entries_s entries;
 
   /* Linked list of threads in this domain */
@@ -281,7 +304,6 @@ struct memprof_domain_s {
   uint32_t xoshiro_state[4][RAND_BLOCK_SIZE];
 
   /* Array of computed geometric random variables */
-
   uintnat rand_geom_buff[RAND_BLOCK_SIZE];
   uint32_t rand_pos;
 
@@ -289,7 +311,6 @@ struct memprof_domain_s {
    * previous allocations. Still a legitimate sample of a geometric
    * random variable. */
   uintnat next_rand_geom;
-
 };
 
 /* Memprof configuration. May be shared between domains. Retains a
@@ -318,6 +339,9 @@ struct memprof_config_s {
    * [Gc.Memprof.tracker]. This is a strong GC root. */
   value tracker;
 
+  /* lock governing access to `domains` and `next` fields */
+  caml_plat_mutex lock;
+
   /* Linked list of domains using this configuration. */
   memprof_domain_t domains;
 
@@ -330,7 +354,11 @@ struct memprof_config_s {
   entries_s entries;
 };
 
+/* List of all the active statmemprof configurations. */
 memprof_config_t configs = NULL;
+
+/* lock controlling access to `configs` variable */
+caml_plat_mutex configs_lock = CAML_PLAT_MUTEX_INITIALIZER;
 
 /**** Initializing and clearing entries tables ****/
 
@@ -343,6 +371,7 @@ static void entries_init(entries_t entries, uintnat min_size)
   entries->young = 0;
   entries->evict = 0;
   entries->next = 0;
+  caml_plat_mutex_init(&entries->running_lock);
 }
 
 static void entries_clear(entries_t entries)
@@ -354,6 +383,160 @@ static void entries_clear(entries_t entries)
     caml_stat_free(entries->t);
     entries->t = NULL;
   }
+  caml_plat_mutex_free(&entries->running_lock);
+}
+
+/**** Managing entries. ****/
+
+/* Reallocate the [es] entries table if it is either too small or too
+   large.
+   [grow] is the number of free cells needed.
+   Returns true if reallocation succeeded --[es->size] is at
+   least [es->live+grow]--, and false otherwise. */
+static bool ensure_entries(entries_t es, uintnat grow)
+{
+  uintnat new_size, new_live = es->live + grow;
+  entry_t new_t;
+  if (new_live <= es->size &&
+     (4*new_live >= es->size || es->size == es->min_size)) {
+    /* No need to grow or shrink */
+    return true;
+  }
+  new_size = new_live * 2;
+  if (new_size < es->min_size)
+    new_size = es->min_size;
+  new_t = caml_stat_resize_noexc(es->t, new_size * sizeof(entry_s));
+  if (new_t == NULL) return false;
+  es->t = new_t;
+  es->size = new_size;
+  return true;
+}
+
+#define Invalid_index (~(uintnat)0)
+
+/* Create and initialize a new entry in an entries table, and return
+ * its index (or Invalid_index if allocation fails). */
+
+Caml_inline uintnat new_tracked(entries_t es,
+                                uintnat samples, uintnat wosize,
+                                int source, int is_young,
+                                value block, value user_data)
+{
+  if (!ensure_entries(es, 1))
+    return Invalid_index;
+  uintnat i = es->live ++;
+  entry_t e = es->t + i;
+  e->block = block;
+  e->user_data = user_data;
+  e->samples = samples;
+  e->wosize = wosize;
+  e->running = NULL;
+  e->alloc_young = is_young;
+  e->source = source;
+  e->promoted = 0;
+  e->deallocated = 0;
+  e->callback = CB_NONE;
+  e->callbacks = 0;
+  e->deleted = 0;
+  return i;
+}
+
+/* Mark a given entry in an entries table as "deleted" */
+
+static void mark_deleted(entries_t es, uintnat i)
+{
+  entry_t e = &es->t[i];
+  e->deleted = 1;
+  e->user_data = Val_unit;
+  e->block = Val_unit;
+  e->running = NULL;
+  if (i < es->evict) es->evict = i;
+}
+
+/* Transfer all entries from one entries table to another. Return the
+ * previous size of the destination table (which is now the offset of
+ * the transferred entries). */
+
+static void entries_transfer(entries_t from, entries_t to)
+{
+  uintnat offset = to->live;
+
+  if (from->live == 0) {
+    return;
+  }
+
+  ensure_entries(to, from->live);
+  to->live += from->live;
+
+  caml_plat_lock(&from->running_lock);
+  for (uintnat j = 0; j < from->live; ++j) {
+    to->t[offset + j] = from->t[j];
+    memprof_thread_t thread = from->t[j].running;
+    if (thread) { /* unusual */
+      caml_plat_lock(&thread->callback_lock);
+      if (thread->callback_table == from) { /* expected */
+        thread->callback_table = to;
+        thread->callback_index = offset+j;
+      }
+      caml_plat_lock(&thread->callback_lock);
+    }
+  }
+  caml_plat_unlock(&from->running_lock);
+
+  if (to->young == offset) {
+    to->young = offset + from->young;
+  }
+  if (to->evict == offset) {
+    to->evict = offset + from->evict;
+  }
+  if (to->next == offset) {
+    to->next = offset + from->next;
+  }
+  ensure_entries(from, -from->live);
+  from->young = from->evict = from->next = from->live = 0;
+}
+
+/* Remove any deleted entries from [es], updating [es->young] and
+   [es->next] if necessary */
+static void evict_deleted(entries_t es)
+{
+  uintnat i, j;
+
+  caml_plat_lock(&es->running_lock);
+  /* Two-finger algorithm */
+  j = i = es->evict;
+  while (i < es->live) {
+    if (!es->t[i].deleted) { /* preserve this entry */
+      if (i != j) {
+        es->t[j] = es->t[i];
+        /* if a callback is currently being run on this entry,
+         * make sure its index is updated */
+        /* TODO: ATOMIC. What if runner changes here?
+         * Could have a global "runners_lock" ?? */
+        memprof_thread_t runner = es->t[i].running;
+        if (runner != NULL) {
+          caml_plat_lock(&runner->callback_lock);
+          if (runner->callback_table == es &&
+              runner->callback_index == i) {
+            runner->callback_index = j;
+          }
+          caml_plat_unlock(&runner->callback_lock);
+        }
+      }
+      ++ j;
+    }
+    ++ i;
+    if (es->young == i) es->young = j;
+    if (es->next == i) es->next = j;
+  }
+  if (es->young == es->live) es->young = j;
+  if (es->next == es->live) es->next = j;
+  es->evict = es->live = j;
+  CAMLassert(es->next <= es->live);
+  CAMLassert(es->young <= es->live);
+  caml_plat_unlock(&es->running_lock);
+
+  ensure_entries(es, 0);
 }
 
 /**** Statistical sampling ****/
@@ -544,138 +727,6 @@ static uintnat rand_binom(memprof_domain_t domain, uintnat len)
   return res;
 }
 
-/**** Managing data structures for tracked blocks. ****/
-
-/* Reallocate the [es] entry array if it is either too small or too
-   large.
-   [grow] is the number of free cells needed.
-   Returns true if reallocation succeeded --[es->size] is at
-   least [es->live+grow]--, and false otherwise. */
-static bool ensure_entries(entries_t es, uintnat grow)
-{
-  uintnat new_size, new_live = es->live + grow;
-  entry_t new_t;
-  if (new_live <= es->size &&
-     (4*new_live >= es->size || es->size == es->min_size)) {
-    /* No need to grow or shrink */
-    return true;
-  }
-  new_size = new_live * 2;
-  if (new_size < es->min_size)
-    new_size = es->min_size;
-  new_t = caml_stat_resize_noexc(es->t, new_size * sizeof(entry_s));
-  if (new_t == NULL) return false;
-  es->t = new_t;
-  es->size = new_size;
-  return true;
-}
-
-#define Invalid_index (~(uintnat)0)
-
-/* Create and initialize a new entry in an entries table, and return
- * its index (or Invalid_index if allocation fails). */
-
-Caml_inline uintnat new_tracked(entries_t es,
-                                uintnat samples, uintnat wosize,
-                                int source, int is_young,
-                                value block, value user_data)
-{
-  if (!ensure_entries(es, 1))
-    return Invalid_index;
-  uintnat i = es->live ++;
-  entry_t e = es->t + i;
-  e->block = block;
-  e->user_data = user_data;
-  e->samples = samples;
-  e->wosize = wosize;
-  e->running = NULL;
-  e->alloc_young = is_young;
-  e->source = source;
-  e->promoted = 0;
-  e->deallocated = 0;
-  e->callback = CB_NONE;
-  e->callbacks = 0;
-  e->deleted = 0;
-  return i;
-}
-
-/* Mark a given entry in an entries table as "deleted" */
-
-static void mark_deleted(entries_t es, uintnat i)
-{
-  entry_t e = &es->t[i];
-  e->deleted = 1;
-  e->user_data = Val_unit;
-  e->block = Val_unit;
-  if (i < es->evict) es->evict = i;
-}
-
-/* Transfer all entries from one entries table to another. Return the
- * previous size of the destination table (which is now the offset of
- * the transferred entries). */
-
-static void entries_transfer(entries_t from, entries_t to)
-{
-  uintnat offset = to->live;
-
-  if (from->live == 0) {
-    return;
-  }
-  ensure_entries(to, from->live);
-  for (uintnat j = 0; j < from->live; ++j) {
-    to->t[offset + j] = from->t[j];
-    if (from->t[j].running) { /* TODO: ATOMIC */
-      from->t[j].running->callback_table = to;
-      from->t[j].running->callback_index = offset+j;
-    }
-  }
-  if (to->young == offset) {
-    to->young = offset + from->young;
-  }
-  if (to->evict == offset) {
-    to->evict = offset + from->evict;
-  }
-  if (to->next == offset) {
-    to->next = offset + from->next;
-  }
-  ensure_entries(from, -from->live);
-  from->young = from->evict = from->next = from->live = 0;
-}
-
-/* Remove any deleted entries from [es], updating [es->young] and
-   [es->next] if necessary */
-static void evict_deleted(entries_t es)
-{
-  uintnat i, j;
-
-  /* Two-finger algorithm */
-  j = i = es->evict;
-  while (i < es->live) {
-    if (!es->t[i].deleted) { /* preserve this entry */
-      if (i != j) {
-        es->t[j] = es->t[i];
-        /* if a callback is currently being run on this entry,
-         * make sure its index is updated */
-        /* TODO: ATOMIC */
-        memprof_thread_t runner = es->t[i].running;
-        if (runner != NULL) {
-          CAMLassert(runner->callback_table == es);
-          CAMLassert(runner->callback_index == i);
-          runner->callback_index = j;
-        }
-      }
-      ++ j;
-    }
-    ++ i;
-    if (es->young == i) es->young = j;
-    if (es->next == i) es->next = j;
-  }
-  es->evict = es->live = j;
-  CAMLassert(es->next <= es->live);
-  CAMLassert(es->young <= es->live);
-  ensure_entries(es, 0);
-}
-
 /**** Create and destroy thread state structures ****/
 
 static memprof_thread_t thread_create(memprof_domain_t domain)
@@ -687,6 +738,7 @@ static memprof_thread_t thread_create(memprof_domain_t domain)
   thread->suspended = false;
   thread->callback_index = 0;
   thread->callback_table = NULL;
+  caml_plat_mutex_init(&thread->callback_lock);
   entries_init(&thread->entries, MIN_ENTRIES_THREAD_SIZE);
 
   /* attach to domain record */
@@ -701,10 +753,13 @@ static void thread_destroy(memprof_thread_t thread)
 {
   memprof_domain_t domain = thread->domain;
 
+  caml_plat_lock(&thread->callback_lock);
   /* If the thread is running a callback, delete that callback entry. */
   if (thread->callback_table) {
     mark_deleted(thread->callback_table, thread->callback_index);
   }
+  thread->callback_table = NULL;
+  caml_plat_unlock(&thread->callback_lock);
 
   if (domain->current == thread) {
     domain->current = NULL;
@@ -722,6 +777,7 @@ static void thread_destroy(memprof_thread_t thread)
   /* transfer any surviving entries to the domain's table */
   entries_transfer(&thread->entries, &domain->entries);
   entries_clear(&thread->entries);
+  caml_plat_mutex_free(&thread->callback_lock);
   caml_stat_free(thread);
 }
 
@@ -738,6 +794,7 @@ static void domain_destroy(memprof_domain_t domain)
 
   memprof_config_t config = domain->config;
   if (config) {
+    caml_plat_lock(&config->lock);
     /* remove domain from the per-config list. Could go faster if we
      * used a doubly-linked list, but that's premature optimisation
      * at this point. */
@@ -749,6 +806,7 @@ static void domain_destroy(memprof_domain_t domain)
 
     /* transfer any surviving entries to the config's table */
     entries_transfer(&domain->entries, &config->entries);
+    caml_plat_unlock(&config->lock);
   }
   entries_clear(&domain->entries);
   caml_stat_free(domain);
@@ -818,13 +876,15 @@ static memprof_config_t config_create(double lambda, intnat callstack_size,
   config->tracker = tracker;
   config->domains = domain;
   entries_init(&config->entries, MIN_ENTRIES_CONFIG_SIZE);
+  caml_plat_mutex_init(&config->lock);
 
   domain->config = config;
   domain->next = NULL;
 
-  /* MAKE ATOMIC */
+  caml_plat_lock(&configs_lock);
   config->next = configs;
   configs = config;
+  caml_plat_unlock(&configs_lock);
   return config;
 }
 
@@ -833,14 +893,32 @@ static void config_destroy(memprof_config_t config)
   memprof_domain_t domain = config->domains;
   (void)domain;
   CAMLassert(!domain);
-  /* remove from linked list of configs: MAKE ATOMIC */
-  memprof_config_t *p = &configs;
-  while (*p != config) {
-    p = &(*p)->next;
+
+  /* remove config from list and take its lock */
+
+  caml_plat_mutex *lock_p = &configs_lock;
+  caml_plat_lock(lock_p);
+  memprof_config_t *config_p = &configs;
+
+  bool found = false;
+  while(*config_p && !found) {
+    memprof_config_t next = *config_p;
+    caml_plat_lock(&next->lock);
+    if (next == config) { /* found it, and we have its lock */
+      /* remove from linked list */
+      *config_p = config->next;
+      found = true;
+    }
+    caml_plat_unlock(lock_p);
+    lock_p = &next->lock;
+    config_p = &next->next;
   }
-  *p = config->next;
+  CAMLassert(found);
+
   entries_clear(&config->entries);
 
+  caml_plat_unlock(&config->lock);
+  caml_plat_mutex_free(&config->lock);
   caml_stat_free(config);
 }
 
@@ -855,10 +933,11 @@ void caml_memprof_new_domain(caml_domain_state *parent,
   /* if parent domain is profiling, child domain should also be profiling */
   if (domain && parent && parent->memprof->config) {
     memprof_config_t config = parent->memprof->config;
-    /* MAKE ATOMIC */
+    caml_plat_lock(&config->lock);
     domain->config = config;
     domain->next = config->domains;
     config->domains = domain;
+    caml_plat_unlock(&config->lock);
 
     domain_prepare_to_sample(domain);
   }
@@ -989,18 +1068,19 @@ CAMLprim value caml_memprof_stop(value unit)
     caml_failwith("Gc.Memprof.stop: not started.");
   }
 
+  caml_plat_lock(&config->lock);
+  /* Nobody else can be changing this config or any pointers to it */
+
   config->stopped = true;
 
-  /* ATOMIC: Possibly we need to do a minor GC and then do this next
-   * part with the world stopped, as we need there to be no pointers
-   * to the young heap from the config entries table? */
+  /* TODO: ATOMIC. This is a hard one! */
 
   /* stop memprof for all domains using this config */
   memprof_domain_t d = config->domains;
   while (d) {
     CAMLassert(d->config == config);
     /* Turn off profiling in this domain */
-    d->config = NULL; /* MAKE ATOMIC */
+    d->config = NULL;
 
     /* Transfer all entries from the domain and threads to the config. */
     entries_transfer(&d->entries, &config->entries);
@@ -1017,6 +1097,9 @@ CAMLprim value caml_memprof_stop(value unit)
     d->callstack_buffer_len = 0;
     d = d->next;
   }
+
+  CAMLassert(!config->domains);
+  caml_plat_unlock(&config->lock);
   return Val_unit;
 }
 
@@ -1026,22 +1109,27 @@ CAMLprim value caml_memprof_discard(value v)
   if (!config) {
     caml_invalid_argument("Gc.Memprof.discard");
   }
+
+  caml_plat_lock(&config->lock);
   if (!config->stopped) {
     caml_failwith("Gc.Memprof.discard: profile has not been stopped.");
   }
   CAMLassert(!config->domains);
 
   /* tell any thread still running a callback for this profile that it
-   * has been discarded. This can happen, for example, if a callback
-   * calls a thread-suspension function such as Thread.delay 1000000.0. */
+   * has been discarded. */
 
+  caml_plat_lock(config->entries.running_lock);
   for (uintnat i = 0; i < config->entries.live; ++i) {
     entry_t e = &config->entries.t[i];
     if (e->running) {
-      memprof_thread_t thread = e->running;
-      thread->callback_table = NULL;
+      caml_plat_lock(&e->running->callback_lock);
+      e->running->callback_table = NULL;
+      caml_plat_unlock(&e->running->callback_lock);
     }
   }
+  caml_plat_unlock(&config->entries.running_lock);
+  caml_plat_unlock(&config->lock);
   config_destroy(config);
   return Val_unit;
 }
@@ -1113,7 +1201,8 @@ static value capture_callstack(memprof_domain_t domain, int alloc_idx)
 /* Run a single callback, in thread `thread`, with configuration
  * `config`, for entry number `i` in table `es`. The callback closure
  * is `cb`, the parameter is `param`, and the "callback index" is
- * `cb_index`. */
+ * `cb_index`.
+ */
 
 Caml_inline value run_callback_exn(memprof_thread_t thread,
                                    memprof_config_t config,
@@ -1123,11 +1212,16 @@ Caml_inline value run_callback_exn(memprof_thread_t thread,
 {
   entry_t e = &es->t[i];
   value res;
-  CAMLassert(e->running == NULL);
-
+  caml_plat_lock(&es->running_lock);
+  if (e->running) { /* some other thread has got to this callback first */
+    return Val_unit;
+  }
+  caml_plat_lock(&thread->callback_lock);
   thread->callback_table = es;
   thread->callback_index = i;
   e->running = thread;
+  caml_plat_unlock(&thread->callback_lock);
+  caml_plat_unlock(&es->running_lock);
 
   e->callback = cb_index;
   e->callbacks |= CB_MASK(cb_index);
@@ -1135,21 +1229,26 @@ Caml_inline value run_callback_exn(memprof_thread_t thread,
 
   res = caml_callback_exn(cb, param);
 
+  caml_plat_lock(&thread->callback_lock);
   if (thread->callback_table == NULL) {
     /* caml_memprof_discard was called during the callback; there are
      * no entries to update etc. */
+    caml_plat_unlock(&thread->callback_lock);
     return Is_exception_result(res) ? res : Val_unit;
   }
-  /* The tracked entry can move during the callback (e.g. by another thread
-   * evicting deleted entries). If so, thread->callback_index is updated. */
-  /* TODO: ATOMIC */
+  /* The tracked entry might have moved during the callback (e.g. by
+   * another thread evicting deleted entries). If so,
+   * thread->callback_index will have been updated. */
   i = thread->callback_index;
   es = thread->callback_table;
   e = &es->t[i];
-
   thread->callback_table = NULL;
   CAMLassert(e->running == thread);
+  caml_plat_unlock(&thread->callback_lock);
+
+  caml_plat_lock(&es->running_lock);
   e->running = NULL;
+
   e->callback = CB_NONE;
   if (Is_exception_result(res) || res == Val_unit) {
     /* Callback raised an exception or returned None or (), discard
@@ -1232,9 +1331,14 @@ static value entries_run_callbacks_exn(memprof_thread_t thread,
   while (es->next < es->live) {
     entry_t e = &es->t[es->next];
 
+    caml_plat_lock(&es->running_lock);
+    bool busy = e->deleted || e->running;
     if (e->deleted || e->running) {
       /* This entry is already deleted, or is running a callback. Ignore it. */
       ++ es->next;
+      continue;
+    }
+    caml_plat_unlock(&es->running_lock);
     } else if (!(e->callbacks & CB_MASK(CB_ALLOC))) {
       /* allocation callback hasn't been run */
       res = run_alloc_callback_exn(thread, config, es, es->next);
@@ -1284,16 +1388,25 @@ value caml_memprof_run_callbacks_exn(void)
   res = entries_run_callbacks_exn(thread, domain->config, &domain->entries);
   if (Is_exception_result(res)) goto end;
 
-  /* run orphaned per-config callbacks */
+  /* run orphaned per-config callbacks. TODO: drop the per-config
+   * lock. */
+  caml_plat_mutex *lock_p = &configs_lock;
+  caml_plat_lock(lock_p);
   memprof_config_t config = configs;
-  /* TODO: ATOMIC */
-  while(config) {
+
+  while (config) {
+    caml_plat_lock(&config->lock);
+    caml_plat_unlock(lock_p);
+    lock_p = &config->lock;
+
     res = entries_run_callbacks_exn(thread, config, &config->entries);
-    if (Is_exception_result(res)) goto end;
+    if (Is_exception_result(res))
+      goto end;
+
     config = config->next;
   }
-
 end:
+  caml_plat_unlock(lock_p);
   update_suspended(domain, false);
   return res;
 }
@@ -1584,20 +1697,28 @@ static void domain_apply_actions(memprof_domain_t domain, bool young,
 }
 
 /* Iterate entry_action/entries_action/config_action over any entries
- * shared between all domains, */
+ * shared between all domains. We take the config locks for this, so
+ * the actions must not require them. */
 
 static void shared_apply_actions(bool young, entry_action f, void *data,
                                  entries_action after,
                                  config_action config_act)
 {
+  caml_plat_mutex *lock_p = &configs_lock;
+  caml_plat_lock(lock_p);
   memprof_config_t config = configs;
   while (config) {
+    caml_plat_lock(&config->lock);
+    caml_plat_unlock(lock_p);
+    lock_p = &config->lock;
+
     entries_apply_actions(&config->entries, young, f, data, after);
     if (config_act) {
       config_act(config, young, data);
     }
     config = config->next;
   }
+  caml_plat_unlock(lock_p);
 }
 
 /* Root scanning */
