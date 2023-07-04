@@ -106,7 +106,12 @@ void caml_invert_root (value v, value *p)
   invert_pointer_at ((word *) p);
 }
 
-static char *compact_fl;
+static char *compact_fl_small, *compact_fl_large;
+#define COMPACT_FL_CUTOFF_SIZE Bhsize_wosize(10)
+/* COMPACT_FL_CUTOFF_SIZE should be "small" (at most 4096), as it is the
+   maximum size of "wasted" free space at the end of each chunk, and it
+   should be "large" (at least Bhsize_wosize(5)) so that the compactor
+   finds enough live blocks to fill those spaces. */
 
 static void init_compact_allocate (void)
 {
@@ -115,7 +120,7 @@ static void init_compact_allocate (void)
     Chunk_alloc (ch) = 0;
     ch = Chunk_next (ch);
   }
-  compact_fl = caml_heap_start;
+  compact_fl_small = compact_fl_large = caml_heap_start;
 }
 
 /* [size] is a number of bytes and includes the header size */
@@ -123,15 +128,13 @@ static char *compact_allocate (mlsize_t size)
 {
   char *chunk, *adr;
 
-  while (Chunk_size(compact_fl) - Chunk_alloc(compact_fl) < Bhsize_wosize(1)){
-    compact_fl = Chunk_next (compact_fl);
-    CAMLassert (compact_fl != NULL);
-  }
-  chunk = compact_fl;
-  while (Chunk_size (chunk) - Chunk_alloc (chunk) < size){
+  chunk = size > COMPACT_FL_CUTOFF_SIZE ? compact_fl_large : compact_fl_small;
+  while (Chunk_size(chunk) - Chunk_alloc(chunk) < size){
     chunk = Chunk_next (chunk);
     CAMLassert (chunk != NULL);
   }
+  *(size > COMPACT_FL_CUTOFF_SIZE ? &compact_fl_large : &compact_fl_small)
+    = chunk;
   adr = chunk + Chunk_alloc (chunk);
   Chunk_alloc (chunk) += size;
   return adr;
