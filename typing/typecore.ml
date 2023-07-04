@@ -1754,11 +1754,10 @@ and type_pat_aux
       (* Introduce a new scope using with_local_level without generalizations *)
       let penv1, p1, p1_variables, p1_module_variables, penv2, p2 =
         with_local_level begin fun () ->
-          let penv =
-            Pattern_env.set_equations_scope (get_current_level ()) penv in
           let type_pat_rec penv sp = type_pat category sp expected_ty ~penv in
-          let penv1 = Pattern_env.copy penv
-          and penv2 = Pattern_env.copy penv in
+          let penv1 =
+            Pattern_env.copy ~equations_scope:(get_current_level ()) penv in
+          let penv2 = Pattern_env.copy penv1 in
           let p1 = type_pat_rec penv1 sp1 in
           let p1_variables = !pattern_variables in
           let p1_module_variables = !module_variables in

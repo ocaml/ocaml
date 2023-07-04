@@ -266,31 +266,31 @@ let none = newty (Ttuple [])                (* Clearly ill-formed type *)
 (**** information for [Typecore.unify_pat_*] ****)
 
 module Pattern_env : sig
-  type env_ref
+  type hidden_env
   type t = private
-    { renv : env_ref;
+    { mutable env : hidden_env;
       equations_scope : int;
       allow_recursive_equations : bool; }
   val make: Env.t -> equations_scope:int -> allow_recursive_equations:bool -> t
-  val copy: t -> t
+  val copy: ?equations_scope:int -> t -> t
   val get_env: t -> Env.t
   val set_env: t -> Env.t -> unit
-  val set_equations_scope: int -> t -> t
 end = struct
-  type env_ref = Env.t ref
+  type hidden_env = Env.t
   type t =
-    { renv : env_ref;
+    { mutable env : hidden_env;
       equations_scope : int;
       allow_recursive_equations : bool; }
   let make env ~equations_scope ~allow_recursive_equations =
-    { renv = ref env;
+    { env;
       equations_scope;
       allow_recursive_equations; }
-  let copy penv = { penv with renv = ref !(penv.renv) }
-  let get_env penv = !(penv.renv)
-  let set_env penv env = penv.renv := env
-  let set_equations_scope equations_scope penv =
+  let copy ?equations_scope penv =
+    let equations_scope =
+      match equations_scope with None -> penv.equations_scope | Some s -> s in
     { penv with equations_scope }
+  let get_env penv = penv.env
+  let set_env penv env = penv.env <- env
 end
 
 (**** unification mode ****)

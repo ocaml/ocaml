@@ -177,21 +177,18 @@ val new_local_type:
 val existential_name: constructor_description -> type_expr -> string
 
 module Pattern_env : sig
-  type env_ref
+  type hidden_env
   type t = private
-    { renv : env_ref;
+    { mutable env : hidden_env;
       equations_scope : int;
       (* scope for local type declarations *)
       allow_recursive_equations : bool;
       (* true iff checking counter examples *)
     }
   val make: Env.t -> equations_scope:int -> allow_recursive_equations:bool -> t
-  val copy: t -> t
-        (* replace the [env] reference with a cloned one *)
+  val copy: ?equations_scope:int -> t -> t
   val get_env: t -> Env.t
   val set_env: t -> Env.t -> unit
-  val set_equations_scope: int -> t -> t
-        (* keep the same [env] reference *)
 end
 
 type existential_treatment =
