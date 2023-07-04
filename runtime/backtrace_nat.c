@@ -175,7 +175,7 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char* trapsp)
       caml_alloc_backtrace_buffer() == -1)
     return;
 
-  size_t allocated_size = 0;
+  size_t allocated_size = BACKTRACE_BUFFER_SIZE;
   backtrace_slot *backtrace_buffer = domain_state->backtrace_buffer;
   domain_state->backtrace_pos = get_callstack(domain_state->current_stack,
                                               sp, pc, trapsp,
@@ -184,9 +184,13 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char* trapsp)
                                               domain_state->backtrace_pos,
                                               &backtrace_buffer,
                                               &allocated_size);
-  CAMLassert(domain_state->backtrace_pos <= BACKTRACE_BUFFER_SIZE);
+  /* Because domain_state->backtrace_buffer is originally allocated with
+   * size BACKTRACE_BUFFER_SIZE, and we ask for no more than that many frames,
+   * get_callstack() should never resize it. */
   CAMLassert(allocated_size == BACKTRACE_BUFFER_SIZE);
   CAMLassert(backtrace_buffer == domain_state->backtrace_buffer);
+  CAMLassert(domain_state->backtrace_pos <= BACKTRACE_BUFFER_SIZE);
+
   domain_state->backtrace_buffer = backtrace_buffer;
 }
 
