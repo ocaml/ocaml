@@ -168,7 +168,7 @@ Working version
    design by Gabriel Scherer, Xavier Leroy)
 
 - #12032, #12059: Bug fixes related to compilation of recursive definitions
-  (Vincent Laviron, report by Louis Noizet, review by Gabriel Scherer)
+  (Vincent Laviron, report by Victoire Noizet, review by Gabriel Scherer)
 
 * #12145: Loopy constraints cause ocamlc to loop.
   Fixed by completely removing the call to `update_type` in
