@@ -369,7 +369,7 @@ let unify_exp_types loc env ty expected_ty =
       raise(Typetexp.Error(loc, env, Typetexp.Variant_tags (l1, l2)))
 
 (* helper notation for pattern environments *)
-let (!!) penv = Pattern_env.get_env penv
+let (!!) (penv : Pattern_env.t) = penv.env
 
 (* Unification inside type_pat *)
 let unify_pat_types loc env ty ty' =
@@ -670,8 +670,9 @@ let solve_Ppat_tuple (type a) ~refine loc env (args : a list) expected_ty =
   unify_pat_types_refine ~refine loc env ty expected_ty;
   vars
 
-let solve_constructor_annotation penv name_list sty ty_args ty_ex =
-  let expansion_scope = penv.Pattern_env.equations_scope in
+let solve_constructor_annotation
+    (penv : Pattern_env.t) name_list sty ty_args ty_ex =
+  let expansion_scope = penv.equations_scope in
   (* XXX: should use fold and return the updated environment *)
   let ids =
     List.map
@@ -679,7 +680,7 @@ let solve_constructor_annotation penv name_list sty ty_args ty_ex =
         let decl = new_local_type ~loc:name.loc () in
         let (id, new_env) =
           Env.enter_type ~scope:expansion_scope name.txt decl !!penv in
-        Pattern_env.set_env penv new_env;
+        penv.env <- new_env;
         {name with txt = id})
       name_list
   in
@@ -1475,7 +1476,7 @@ let rec type_pat
 
 and type_pat_aux
   : type k . k pattern_category -> no_existentials:_ ->
-         penv:_ -> _ -> _ -> k general_pattern
+         penv:Pattern_env.t -> _ -> _ -> k general_pattern
   = fun category ~no_existentials ~penv sp expected_ty ->
   let type_pat category ?(penv=penv) =
     type_pat category ~no_existentials ~penv
@@ -1822,12 +1823,12 @@ and type_pat_aux
   | Ppat_open (lid,p) ->
       let path, new_env =
         !type_open Asttypes.Fresh !!penv sp.ppat_loc lid in
-     Pattern_env.set_env penv new_env;
+      penv.env <- new_env;
       let p = type_pat category ~penv p expected_ty in
       let new_env = !!penv in
       begin match Env.remove_last_open path new_env with
       | None -> assert false
-      | Some closed_env -> Pattern_env.set_env penv closed_env
+      | Some closed_env -> penv.env <- closed_env
       end;
       { p with pat_extra = (Tpat_open (path,lid,new_env),
                                 loc, sp.ppat_attributes) :: p.pat_extra }
@@ -2116,7 +2117,7 @@ let save_state penv =
     env = !!penv; }
 let set_state s penv =
   Btype.backtrack s.snapshot;
-  Pattern_env.set_env penv s.env
+  penv.Pattern_env.env <- s.env
 
 (** Find the first alternative in the tree of or-patterns for which
     [f] does not raise an error. If all fail, the last error is

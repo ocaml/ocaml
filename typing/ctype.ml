@@ -266,19 +266,15 @@ let none = newty (Ttuple [])                (* Clearly ill-formed type *)
 (**** information for [Typecore.unify_pat_*] ****)
 
 module Pattern_env : sig
-  type hidden_env
-  type t = private
-    { mutable env : hidden_env;
+  type t =
+    { mutable env : Env.t;
       equations_scope : int;
       allow_recursive_equations : bool; }
   val make: Env.t -> equations_scope:int -> allow_recursive_equations:bool -> t
   val copy: ?equations_scope:int -> t -> t
-  val get_env: t -> Env.t
-  val set_env: t -> Env.t -> unit
 end = struct
-  type hidden_env = Env.t
   type t =
-    { mutable env : hidden_env;
+    { mutable env : Env.t;
       equations_scope : int;
       allow_recursive_equations : bool; }
   let make env ~equations_scope ~allow_recursive_equations =
@@ -289,8 +285,6 @@ end = struct
     let equations_scope =
       match equations_scope with None -> penv.equations_scope | Some s -> s in
     { penv with equations_scope }
-  let get_env penv = penv.env
-  let set_env penv env = penv.env <- env
 end
 
 (**** unification mode ****)
@@ -316,12 +310,12 @@ type unification_environment =
 
 let get_env = function
   | Expression {env} -> env
-  | Pattern {penv} -> Pattern_env.get_env penv
+  | Pattern {penv} -> penv.env
 
 let set_env uenv env =
   match uenv with
   | Expression _ -> invalid_arg "Ctype.set_env"
-  | Pattern {penv} -> Pattern_env.set_env penv env
+  | Pattern {penv} -> penv.env <- env
 
 let in_pattern_mode = function
   | Expression _ -> false
@@ -1315,14 +1309,14 @@ let instance_constructor existential_treatment cstr =
       | Keep_existentials_flexible -> copy copy_scope
       | Make_existentials_abstract penv ->
           fun existential ->
-            let env = Pattern_env.get_env penv in
+            let env = penv.env in
             let fresh_constr_scope = penv.equations_scope in
             let decl = new_local_type () in
             let name = existential_name cstr existential in
             let (id, new_env) =
               Env.enter_type (get_new_abstract_name env name) decl env
                 ~scope:fresh_constr_scope in
-            Pattern_env.set_env penv new_env;
+            penv.env <- new_env;
             let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
             let tv = copy copy_scope existential in
             assert (is_Tvar tv);
