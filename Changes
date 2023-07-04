@@ -10,7 +10,7 @@ OCaml 4.14 maintenance version
 
 - #12264, #12289: Fix compact_allocate to avoid a pathological case
   that causes very slow compaction.
-  (Damien Doligez, report by Arseniy Alekseyev, review by ???)
+  (Damien Doligez, report by Arseniy Alekseyev, review by Sadiq Jaffer)
 
 OCaml 4.14.1 (20 December 2022)
 ------------------------------
