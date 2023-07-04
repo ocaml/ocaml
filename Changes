@@ -156,7 +156,8 @@ Working version
   (Takafumi Saikawa and Jacques Garrigue, review by Richard Eisenberg)
 
 - #12331: Pack the unification data for pattern checking in Typecore
-  (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer)
+  (Takafumi Saikawa and Jacques Garrigue,
+   review by Gabriel Scherer and Thomas Refis)
 
 ### Build system:
 
