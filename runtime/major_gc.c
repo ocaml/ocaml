@@ -60,8 +60,8 @@
 */
 
 typedef struct {
-  value* start;
-  value* end;
+  value_ptr start;
+  value_ptr end;
 } mark_entry; /* represents fields in the span [start, end) */
 
 struct mark_stack {
@@ -759,7 +759,7 @@ static void realloc_mark_stack (struct mark_stack* stk)
 }
 
 Caml_inline void mark_stack_push_range(struct mark_stack* stk,
-                                       value* start, value* end)
+                                       value_ptr start, value_ptr end)
 {
   mark_entry* me;
 
@@ -970,7 +970,7 @@ again:
       me = stk->stack[--stk->count];
     }
 
-    value* scan_end = me.end;
+    value_ptr scan_end = me.end;
     if (scan_end - me.start > budget) {
       intnat scan_len = budget < 0 ? 0 : budget;
       scan_end = me.start + scan_len;
@@ -993,7 +993,7 @@ again:
       /* Didn't finish scanning this object, either because budget <= 0,
          or the prefetch buffer filled up. Leave the rest on the stack. */
       mark_stack_push_range(stk, me.start, me.end);
-      caml_prefetch(me.start+1);
+      caml_prefetch((void*)(me.start + 1));
 
       if (pb_size(&pb) > PREFETCH_BUFFER_MIN) {
         /* We may have just discovered more work when we were about to run out.
@@ -1015,14 +1015,14 @@ again:
    that may or may not be present in the stack.
  */
 static const uintnat chunk_mask = ~(uintnat)(BITS_PER_WORD-1);
-static inline uintnat ptr_to_chunk(value *ptr) {
+static inline uintnat ptr_to_chunk(value_ptr ptr) {
   return ((uintnat)(ptr) / sizeof(value)) & chunk_mask;
 }
-static inline uintnat ptr_to_chunk_offset(value *ptr) {
+static inline uintnat ptr_to_chunk_offset(value_ptr ptr) {
   return ((uintnat)(ptr) / sizeof(value)) & ~chunk_mask;
 }
-static inline value* chunk_and_offset_to_ptr(uintnat chunk, uintnat offset) {
-  return (value*)((chunk + offset) * sizeof(value));
+static inline value_ptr chunk_and_offset_to_ptr(uintnat chunk, uintnat offset) {
+  return (value_ptr)((chunk + offset) * sizeof(value));
 }
 
 /* mark until the budget runs out or marking is done */
@@ -1045,7 +1045,7 @@ static intnat mark(intnat budget) {
 
         for(int ofs=0; ofs<BITS_PER_WORD; ofs++) {
           if(bitset & ((uintnat)1 << ofs)) {
-            value* p = chunk_and_offset_to_ptr(chunk, ofs);
+            value_ptr p = chunk_and_offset_to_ptr(chunk, ofs);
             mark_slice_darken(domain_state->mark_stack, *p, &budget);
           }
         }
@@ -1856,7 +1856,7 @@ void caml_finish_sweeping (void)
   CAML_EV_END(EV_MAJOR_FINISH_SWEEPING);
 }
 
-Caml_inline int add_addr(struct addrmap* amap, value* ptr) {
+Caml_inline int add_addr(struct addrmap* amap, value_ptr ptr) {
   uintnat chunk = ptr_to_chunk(ptr);
   uintnat offset = ptr_to_chunk_offset(ptr);
   uintnat flag = (uintnat)1 << offset;

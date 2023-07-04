@@ -51,10 +51,10 @@ let int_reg_name =
      "22"; "23"; "24"; "25"; "26"; "27"; "28" |]        (* 16 - 22 *)
 
 let float_reg_name =
-  [| "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8";
-     "9"; "10"; "11"; "12"; "13"; "14"; "15"; "16";
-     "17"; "18"; "19"; "20"; "21"; "22"; "23"; "24";
-     "25"; "26"; "27"; "28"; "29"; "30"; "31" |]
+  [| "0"; "1"; "2"; "3"; "4"; "5"; "6"; "7";
+     "8"; "9"; "10"; "11"; "12"; "13"; "14"; "15";
+     "16"; "17"; "18"; "19"; "20"; "21"; "22"; "23";
+     "24"; "25"; "26"; "27"; "28"; "29"; "30"; "31" |]
 
 let num_register_classes = 2
 
@@ -63,7 +63,7 @@ let register_class r =
   | Val | Int | Addr -> 0
   | Float -> 1
 
-let num_available_registers = [| 23; 31 |]
+let num_available_registers = [| 23; 32 |]
 
 let first_available_register = [| 0; 100 |]
 
@@ -79,8 +79,8 @@ let hard_int_reg =
   for i = 0 to 22 do v.(i) <- Reg.at_location Int (Reg i) done; v
 
 let hard_float_reg =
-  let v = Array.make 31 Reg.dummy in
-  for i = 0 to 30 do v.(i) <- Reg.at_location Float (Reg(100 + i)) done; v
+  let v = Array.make 32 Reg.dummy in
+  for i = 0 to 31 do v.(i) <- Reg.at_location Float (Reg(100 + i)) done; v
 
 let all_phys_regs =
   Array.append hard_int_reg hard_float_reg
@@ -148,15 +148,15 @@ let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 let max_arguments_for_tailcalls = 16 (* in regs *) + 64 (* in domain state *)
 
 let loc_arguments arg =
-    calling_conventions 0 15 100 112 outgoing (- size_domainstate_args) arg
+    calling_conventions 0 15 101 113 outgoing (- size_domainstate_args) arg
 
 let loc_parameters arg =
   let (loc, _ofs) =
-    calling_conventions 0 15 100 112 incoming (- size_domainstate_args) arg
+    calling_conventions 0 15 101 113 incoming (- size_domainstate_args) arg
   in loc
 
 let loc_results res =
-  let (loc, _ofs) = calling_conventions 0 15 100 112 not_supported 0 res
+  let (loc, _ofs) = calling_conventions 0 15 101 113 not_supported 0 res
   in loc
 
 (* C calling conventions for ELF64v2:
@@ -191,7 +191,7 @@ let external_calling_conventions
 
 let loc_external_arguments ty_args =
   let (loc, ofs) =
-    external_calling_conventions 0 7 100 112 outgoing 0 true ty_args in
+    external_calling_conventions 0 7 101 113 outgoing 0 true ty_args in
   if Array.exists
        (fun r ->
           assert (Array.length r = 1);
@@ -203,7 +203,7 @@ let loc_external_arguments ty_args =
 (* Results are in GPR 3 and FPR 1 *)
 
 let loc_external_results res =
-  let (loc, _ofs) = calling_conventions 0 1 100 100 not_supported 0 res
+  let (loc, _ofs) = calling_conventions 0 1 101 101 not_supported 0 res
   in loc
 
 (* Exceptions are in GPR 3 *)
@@ -223,7 +223,7 @@ let int_dwarf_reg_numbers =
   |]
 
 let float_dwarf_reg_numbers =
-  [| 33; 34; 35; 36; 37; 38; 39;
+  [| 32; 33; 34; 35; 36; 37; 38; 39;
      40; 41; 42; 43; 44; 45; 46; 47;
      48; 49; 50; 51; 52; 53; 54; 55;
      56; 57; 58; 59; 60; 61; 62; 63;
@@ -244,12 +244,15 @@ let stack_ptr_dwarf_register_number = 1
 let destroyed_at_c_call =
   Array.of_list(List.map phys_reg
     [0; 1; 2; 3; 4; 5; 6; 7; 22;
-     100; 101; 102; 103; 104; 105; 106; 107; 108; 109; 110; 111; 112])
+     100; 101; 102; 103; 104; 105; 106; 107; 108; 109; 110; 111; 112; 113])
 
 let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _ | Iextcall { alloc = true; _ }) ->
-    all_phys_regs
-  | Iop(Iextcall { alloc = false; _ }) -> destroyed_at_c_call
+      all_phys_regs
+  | Iop(Iextcall { alloc = false; _ }) ->
+      destroyed_at_c_call
+  | Iop(Iintoffloat | Istore(Single, _, _)) ->
+      [| phys_reg 100 |] (* FPR0 destroyed *)
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
@@ -264,7 +267,8 @@ let safe_register_pressure = function
 
 let max_register_pressure = function
     Iextcall _ -> [| 13; 18 |]
-  | _ -> [| 23; 30 |]
+  | Iintoffloat | Istore(Single, _, _) -> [| 23; 31 |]
+  | _ -> [| 23; 32 |]
 
 (* Layout of the stack *)
 

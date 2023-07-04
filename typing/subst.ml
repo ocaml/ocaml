@@ -157,7 +157,68 @@ let norm = function
   | Tunivar None -> tunivar_none
   | d -> d
 
-let ctype_apply_env_empty = ref (fun _ -> assert false)
+let apply_type_function params args body =
+  For_copy.with_scope (fun copy_scope ->
+    List.iter2
+      (fun param arg ->
+        For_copy.redirect_desc copy_scope param (Tsubst (arg, None)))
+      params args;
+    let rec copy ty =
+      assert (get_level ty = generic_level);
+      match get_desc ty with
+      | Tsubst (ty, _) -> ty
+      | Tvariant row ->
+          let t = newgenstub ~scope:(get_scope ty) in
+          For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
+          let more = row_more row in
+          assert (get_level more = generic_level);
+          let mored = get_desc more in
+          (* We must substitute in a subtle way *)
+          (* Tsubst takes a tuple containing the row var and the variant *)
+          let desc' =
+            match mored with
+            | Tsubst (_, Some ty2) ->
+                (* This variant type has been already copied *)
+                (* Change the stub to avoid Tlink in the new type *)
+                For_copy.redirect_desc copy_scope ty (Tsubst (ty2, None));
+                Tlink ty2
+            | _ ->
+                let more' =
+                  match mored with
+                    Tsubst (ty, None) -> ty
+                    (* TODO: is this case possible?
+                       possibly an interaction with (copy more) below? *)
+                  | Tconstr _ | Tnil ->
+                      copy more
+                  | Tvar _ | Tunivar _ ->
+                      newgenty mored
+                  |  _ -> assert false
+                in
+                let row =
+                  match get_desc more' with (* PR#6163 *)
+                    Tconstr (x,_,_) when not (is_fixed row) ->
+                      let Row {fields; more; closed; name} = row_repr row in
+                      create_row ~fields ~more ~closed ~name
+                        ~fixed:(Some (Reified x))
+                  | _ -> row
+                in
+                (* Register new type first for recursion *)
+                For_copy.redirect_desc copy_scope more
+                  (Tsubst(more', Some t));
+                (* Return a new copy *)
+                Tvariant (copy_row copy true row false more')
+          in
+          Transient_expr.set_stub_desc t desc';
+          t
+      | desc ->
+          let t = newgenstub ~scope:(get_scope ty) in
+          For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
+          let desc' = copy_type_desc copy desc in
+          Transient_expr.set_stub_desc t desc';
+          t
+    in
+    copy body)
+
 
 (* Similar to [Ctype.nondep_type_rec]. *)
 let rec typexp copy_scope s ty =
@@ -206,7 +267,7 @@ let rec typexp copy_scope s ty =
          | exception Not_found -> Tconstr(type_path s p, args, ref Mnil)
          | Path _ -> Tconstr(type_path s p, args, ref Mnil)
          | Type_function { params; body } ->
-            Tlink (!ctype_apply_env_empty params body args)
+            Tlink (apply_type_function params args body)
          end
       | Tpackage(p, fl) ->
           Tpackage(modtype_path s p,
