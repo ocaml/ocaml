@@ -97,6 +97,10 @@ Working version
 
 ### Manual and documentation:
 
+- #12338: clarification of the documentation of process related function in
+  the unix module regarding the first element of args and shell's pid.
+  (Christophe Raffalli review by Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 - #12247: configure: --disable-ocamldebug can now be used instead
