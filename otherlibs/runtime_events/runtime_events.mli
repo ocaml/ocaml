@@ -46,7 +46,7 @@
     very short running programs.
 *)
 
-(** The type for counter events emitted by the runtime *)
+(** The type for counter events emitted by the runtime. *)
 type runtime_counter =
 | EV_C_FORCE_MINOR_ALLOC_SMALL
 | EV_C_FORCE_MINOR_MAKE_VECT
@@ -88,7 +88,7 @@ Live blocks of a Domain's major heap pools.
 Live blocks of a Domain's major heap large allocations.
 @since 5.1 *)
 
-(** The type for span events emitted by the runtime *)
+(** The type for span events emitted by the runtime. *)
 type runtime_phase =
 | EV_EXPLICIT_GC_SET
 | EV_EXPLICIT_GC_STAT
@@ -131,7 +131,7 @@ type runtime_phase =
 | EV_DOMAIN_CONDITION_WAIT
 | EV_DOMAIN_RESIZE_HEAP_RESERVATION
 
-(** Lifecycle events for the ring itself *)
+(** Lifecycle events for the ring itself. *)
 type lifecycle =
   EV_RING_START
 | EV_RING_STOP
@@ -143,38 +143,38 @@ type lifecycle =
 | EV_DOMAIN_TERMINATE
 
 val lifecycle_name : lifecycle -> string
-(** Return a string representation of a given lifecycle event type *)
+(** Return a string representation of a given lifecycle event type. *)
 
 val runtime_phase_name : runtime_phase -> string
-(** Return a string representation of a given runtime phase event type *)
+(** Return a string representation of a given runtime phase event type. *)
 
 val runtime_counter_name : runtime_counter -> string
-(** Return a string representation of a given runtime counter type *)
+(** Return a string representation of a given runtime counter type. *)
 
 type cursor
-(** Type of the cursor used when consuming *)
+(** Type of the cursor used when consuming. *)
 
 module Timestamp : sig
     type t
-    (** Type for the int64 timestamp to allow for future changes *)
+    (** Type for the int64 timestamp to allow for future changes. *)
 
     val to_int64 : t -> int64
 end
 
 module Type : sig
   type 'a t
-  (** The type for a user event content type *)
+  (** The type for a user event content type. *)
 
   val unit : unit t
-  (** An event that has no data associated with it *)
+  (** An event that has no data associated with it. *)
 
   type span = Begin | End
 
   val span : span t
-  (** An event that has a beginning and an end *)
+  (** An event that has a beginning and an end. *)
 
   val int : int t
-  (** An event containing an integer value *)
+  (** An event containing an integer value. *)
 
   val register : encode:(bytes -> 'a -> int) -> decode:(bytes -> int -> 'a)
                                                                         -> 'a t
@@ -193,21 +193,21 @@ module User : sig
 
   type tag = ..
   (** The type for a user event tag. Tags are used to discriminate between
-      user events of the same type *)
+      user events of the same type. *)
 
   type 'value t
   (** The type for a user event. User events describe their tag, carried data
-      type and an unique string-based name *)
+      type and an unique string-based name. *)
 
   val register : string -> tag -> 'value Type.t -> 'value t
   (** [register name tag ty] registers a new event with an unique [name],
-      carrying a [tag] and values of type [ty] *)
+      carrying a [tag] and values of type [ty]. *)
 
   val write : 'value t -> 'value -> unit
-  (** [write t v] records a new event [t] with value [v] *)
+  (** [write t v] emits value [v] for event [t]. *)
 
   val name : _ t -> string
-  (** [name t] is the uniquely identifying name of event [t] *)
+  (** [name t] is the uniquely identifying name of event [t]. *)
 
   val tag : 'a t -> tag
   (** [tag t] is the associated tag of event [t], when it is known.
@@ -218,7 +218,7 @@ end
 
 module Callbacks : sig
   type t
-  (** Type of callbacks *)
+  (** Type of callbacks. *)
 
   val create : ?runtime_begin:(int -> Timestamp.t -> runtime_phase
                                 -> unit) ->
@@ -285,7 +285,7 @@ val create_cursor : (string * int) option -> cursor
    external process to monitor. *)
 
 val free_cursor : cursor -> unit
-(** Free a previously created runtime_events cursor *)
+(** Free a previously created runtime_events cursor. *)
 
 val read_poll : cursor -> Callbacks.t -> int option -> int
 (** [read_poll cursor callbacks max_option] calls the corresponding functions

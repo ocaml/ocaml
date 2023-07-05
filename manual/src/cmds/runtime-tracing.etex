@@ -58,9 +58,7 @@ which emit events and 2) the events transport that ingests and transports
 these events.
 
 \subsection{s:runtime-tracing-probes}{Probes}
-
-\begin{description}
-\item[Runtime probes] collect events from the OCaml runtime system. These are further
+Probes collect events from the OCaml runtime system. These are further
 split in to two sets: 1) probes that are always available and 2) probes
 that are only available in the instrumented runtime.
 Probes in the instrumented runtime are primarily of
@@ -74,22 +72,24 @@ The full set of events emitted by probes and their documentation can be found in
  section~\ref{Runtime_events}.
 \fi
 
-\item[Custom probes] are defined using the
-\texttt{Runtime_events.User} module.
-Identified by a globally unique name, they record events and provide payloads of
-built-in (\texttt{unit}, \texttt{int}, \texttt{span}) and user-defined types.
-Consumers and producers are not compiled together, so they don't usually have
-the same set of registered events. The event name is used by the consumer to
-identify producer's events, with a fallback mechanism for unknown events of
-built-in types. Unknown events for user-defined types are currently ignored,
-even if the type is defined both in the producer and consumer side.
+\subsection{s:runtime-tracing-custom-events}{Custom events}
+The runtime events system supports defining custom events. Identified by a
+globally unique name, they are emitted with payloads of built-in (\texttt{unit},
+\texttt{int}, \texttt{span}) and user-defined types. They are registered using
+the \texttt{Runtime_events.User.register} function. Once an event is registered,
+values for that event are emitted using \texttt{Runtime_events.User.write}.
+
+As consumer and producer can be different programs, they might not have the same
+set of registered events. The event name is used by the consumer to identify
+producer events, with a fallback mechanism for unknown events of built-in types.
+Unknown events for user-defined types are currently ignored, even if the type is
+defined both in the producer and consumer side.
 
 An extensible variant \texttt{tag} provides a way to attach additional data to
-events, which can be used to provide additional information about the event's
-origin. The tag is not serialized, so it is only available for \textit{known}
+events. The tag is not serialized, so it is only available for \textit{known}
 events.
 
-In summary, the are three cases for the consumer when an event is received:
+In summary, there are three cases for the consumer when an event is received:
 \begin{itemize}
 \item event is registered: payload and tag are available.
 \item event is not registered and has a built-in event type (unit, int, span):
@@ -98,7 +98,7 @@ In summary, the are three cases for the consumer when an event is received:
 \end{itemize}
 The \texttt{Runtime_events.Type} module provides a way to use built-in event
 types and define new ones using an encoder-decoder pair.
-\end{description}
+
 \subsection{s:runtime-tracing-ingestion}{Events transport}
 
 The events transport part of the system ingests events emitted by the probes
@@ -236,8 +236,8 @@ OCAML_RUNTIME_EVENTS_START=1 ./example
 
 \subsubsection{s-runtime-tracing-custom-events}{Tracing custom events}
 
-The following program make use of the \texttt{Runtime_events.User} and
-\texttt{Runtime_events.Type} modules to declare a custom event providing
+The following program uses the \texttt{Runtime_events.User} and
+\texttt{Runtime_events.Type} modules to declare two custom events providing
 \texttt{span} and \texttt{int} values. The \texttt{tag} extensible variant is
 extended with \texttt{CustomSpan} and \texttt{CustomInt}.
 
