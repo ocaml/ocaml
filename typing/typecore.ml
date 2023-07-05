@@ -1811,7 +1811,7 @@ and type_pat_aux
       let tps1 = copy_type_pat_state tps in
       let tps2 = {(copy_type_pat_state tps) with tps_pattern_force = []} in
       (* Introduce a new scope using with_local_level without generalizations *)
-      let penv1, p1, penv2, p2 =
+      let env1, p1, env2, p2 =
         with_local_level begin fun () ->
           let type_pat_rec tps penv sp =
             type_pat tps category sp expected_ty ~penv
@@ -1821,7 +1821,7 @@ and type_pat_aux
           let penv2 = Pattern_env.copy penv1 in
           let p1 = type_pat_rec tps1 penv1 sp1 in
           let p2 = type_pat_rec tps2 penv2 sp2 in
-          (penv1, p1, penv2, p2)
+          (penv1.env, p1, penv2.env, p2)
         end
       in
       let p1_variables = tps1.tps_pattern_variables in
@@ -1830,10 +1830,10 @@ and type_pat_aux
          environment. *)
       let outer_lev = get_current_level () in
       List.iter (fun { pv_type; pv_loc; _ } ->
-        check_scope_escape pv_loc !!penv1 outer_lev pv_type
+        check_scope_escape pv_loc env1 outer_lev pv_type
       ) p1_variables;
       List.iter (fun { pv_type; pv_loc; _ } ->
-        check_scope_escape pv_loc !!penv2 outer_lev pv_type
+        check_scope_escape pv_loc env2 outer_lev pv_type
       ) p2_variables;
       let alpha_env =
         enter_orpat_variables loc !!penv p1_variables p2_variables in
