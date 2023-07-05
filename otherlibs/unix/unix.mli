@@ -216,12 +216,11 @@ type wait_flag =
 (** Flags for {!waitpid}. *)
 
 val execv : string -> string array -> 'a
-(** [execv prog args] execute the program in file [prog], with
-   the arguments [args], and the current process environment.  
-   Note that the first argument is by convention the filename of
-   the program being executed, just like [Sys.argv.(0)]
-   These [execv*] functions never return: on success, the current
-   program is replaced by the new one.
+(** [execv prog args] execute the program in file [prog], with the arguments
+   [args], and the current process environment.  Note that the first
+   argument, [args.(0)], is by convention the filename of the program being
+   executed, just like [Sys.argv.(0)] These [execv*] functions never return:
+   on success, the current program is replaced by the new one.
 
    On Windows: the CRT simply spawns a new process and exits the
    current one. This will have unwanted consequences if e.g.
@@ -856,20 +855,19 @@ val mkfifo : string -> file_perm -> unit
 val create_process :
   string -> string array -> file_descr -> file_descr ->
     file_descr -> int
-(** [create_process prog args stdin stdout stderr]
-   creates a new process that executes the program
-   in file [prog], with arguments [args]. Note that the 
-   first argument is by convention the filename of
-   the program being executed, just like [Sys.argv.(0)]. 
-   The pid of the new process is returned immediately; 
-   the new process executes concurrently with the current process.
-   The standard input and outputs of the new process are connected
-   to the descriptors [stdin], [stdout] and [stderr].
-   Passing e.g. {!Unix.stdout} for [stdout] prevents the redirection
-   and causes the new process to have the same standard output
-   as the current process.
-   The executable file [prog] is searched in the path.
-   The new process has the same environment as the current process. *)
+(** [create_process prog args stdin stdout stderr] creates a new process
+    that executes the program in file [prog], with arguments [args]. Note that
+    the first argument, [args.(0)], is by convention the filename of the
+    program being executed, just like [Sys.argv.(0)].
+
+    The pid of the new process is returned immediately; the new process
+    executes concurrently with the current process.  The standard input and
+    outputs of the new process are connected to the descriptors [stdin],
+    [stdout] and [stderr].  Passing e.g. {!Unix.stdout} for [stdout] prevents
+    the redirection and causes the new process to have the same standard
+    output as the current process.  The executable file [prog] is searched in
+    the path.  The new process has the same environment as the current
+    process. *)
 
 val create_process_env :
   string -> string array -> string array -> file_descr ->
@@ -924,13 +922,13 @@ val open_process_full :
 
 val open_process_args : string -> string array -> in_channel * out_channel
 (** [open_process_args prog args] runs the program [prog] with arguments
-    [args].  Note that the first argument is by convention the filename of
-    the program being executed, just like [Sys.argv.(0)].  The new process
-    executes concurrently with the current process.  The standard input and
-    output of the new process are redirected to pipes, which can be
+    [args].  Note that the first argument, [args.(0)], is by convention the
+    filename of the program being executed, just like [Sys.argv.(0)].  The new
+    process executes concurrently with the current process.  The standard
+    input and output of the new process are redirected to pipes, which can be
     respectively read and written via the returned channels.  The input
-    channel is connected to the output of the program, and the output
-    channel to the input of the program.
+    channel is connected to the output of the program, and the output channel
+    to the input of the program.
 
     Warning: writes on output channels are buffered, hence be careful to
     call {!Stdlib.flush} at the right times to ensure correct
