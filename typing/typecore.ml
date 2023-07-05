@@ -358,7 +358,7 @@ let unify_exp_types loc env ty expected_ty =
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, env, Typetexp.Variant_tags (l1, l2)))
 
-(* helper notation for pattern environments *)
+(* helper notation for Pattern_env.t *)
 let (!!) (penv : Pattern_env.t) = penv.env
 
 (* Unification inside type_pat *)
@@ -438,7 +438,9 @@ let finalize_variants p =
         finalize_variant p tag opat r
      | _ -> () } p
 
-(* pattern environment *)
+(* [type_pat_state] and related types for pattern environment;
+   these should not be confused with Pattern_env.t, which is a part of the
+   interface to unification functions in [Ctype] *)
 type pattern_variable =
   {
     pv_id: Ident.t;
