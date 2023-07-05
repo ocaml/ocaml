@@ -117,3 +117,24 @@ end = struct
   end
 end
 \end{caml_example*}
+
+Extensible variant types can be reexported in another module, 
+for instance to make the type appear in the most natural module 
+for the end user of a library.
+\begin{caml_example*}{verbatim}
+module Expr2 : sig
+  type t = ..
+  type t += 
+    | Str of string 
+    | Int of int
+    | Float of float
+end = struct
+  type t = Expr.attrt = ..
+  type t += 
+    | Str   = Expr.Str
+    | Int   = Expr.Int
+    | Float = Expr.Float
+end
+\end{caml_example*}
+This example make the type "Expr2.t" and its constructors equal to the type
+"Expr.attr" but hides this equality.
