@@ -13838,7 +13838,18 @@ launch_method='exe'
 if test "x$interpval" = "xyes"
 then :
   case $host in #(
-  *-cygwin|*-*-mingw32*|*-pc-windows) :
+  *-cygwin) :
+    # Cygwin supports shebangs, which we use for the compiler itself, but
+      # partially for legacy, and partially so that executables can be easily
+      # run from outside Cygwin, the executables ocamlc and ocamlopt produce do
+      # not use shebang scripts
+      shebangscripts=true
+      launch_method='sh'
+      if test x"$target_launch_method" = 'x'
+then :
+  target_launch_method='exe'
+fi ;; #(
+  *-*-mingw32*|*-pc-windows) :
      ;; #(
   *) :
     shebangscripts=true
