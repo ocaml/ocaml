@@ -163,13 +163,13 @@ Caml_inline header_t Hd_val(value val)
 
 #define Color_val(val) (Color_hd (Hd_val (val)))
 
-#define Hd_hp(hp) (* ((header_t *) (hp)))              /* Also an l-value. */
-#define Hp_val(val) (((header_t *) (val)) - 1)
+#define Hd_hp(hp) (* ((volatile header_t *) (hp)))      /* Also an l-value. */
+#define Hp_val(val) (((volatile header_t *) (val)) - 1)
 #define Hp_op(op) (Hp_val (op))
 #define Hp_bp(bp) (Hp_val (bp))
 #define Val_op(op) ((value) (op))
 #define Val_hp(hp) ((value) (((header_t *) (hp)) + 1))
-#define Op_hp(hp) ((value *) Val_hp (hp))
+#define Op_hp(hp) ((volatile value *) Val_hp (hp))
 #define Bp_hp(hp) ((char *) Val_hp (hp))
 
 #define Num_tags (1ull << HEADER_TAG_BITS)
@@ -354,7 +354,7 @@ CAMLextern void caml_Store_double_val (value,double);
 
 /* The [_flat_field] macros are for [floatarray] values and float-only records.
 */
-#define Double_flat_field(v,i) Double_val((value)((double *)(v) + (i)))
+#define Double_flat_field(v,i) Double_val((value)((volatile double *)(v) + (i)))
 #define Store_double_flat_field(v,i,d) do{ \
   mlsize_t caml__temp_i = (i); \
   double caml__temp_d = (d); \
