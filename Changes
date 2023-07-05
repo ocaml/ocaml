@@ -157,7 +157,7 @@ Working version
 
 - #12331: Pack the unification data for pattern checking in Typecore
   (Takafumi Saikawa and Jacques Garrigue,
-   review by Gabriel Scherer and Thomas Refis)
+   review by Gabriel Scherer, Thomas Refis and Florian Angeletti)
 
 ### Build system:
 
