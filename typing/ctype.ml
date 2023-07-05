@@ -263,6 +263,30 @@ let newconstr path tyl = newty (Tconstr (path, tyl, ref Mnil))
 
 let none = newty (Ttuple [])                (* Clearly ill-formed type *)
 
+(**** information for [Typecore.unify_pat_*] ****)
+
+module Pattern_env : sig
+  type t =
+    { mutable env : Env.t;
+      equations_scope : int;
+      allow_recursive_equations : bool; }
+  val make: Env.t -> equations_scope:int -> allow_recursive_equations:bool -> t
+  val copy: ?equations_scope:int -> t -> t
+end = struct
+  type t =
+    { mutable env : Env.t;
+      equations_scope : int;
+      allow_recursive_equations : bool; }
+  let make env ~equations_scope ~allow_recursive_equations =
+    { env;
+      equations_scope;
+      allow_recursive_equations; }
+  let copy ?equations_scope penv =
+    let equations_scope =
+      match equations_scope with None -> penv.equations_scope | Some s -> s in
+    { penv with equations_scope }
+end
+
 (**** unification mode ****)
 
 type equations_generation =
@@ -275,11 +299,9 @@ type unification_environment =
         in_subst : bool; }
     (* normal unification mode *)
   | Pattern of
-      { env : Env.t ref;
+      { penv : Pattern_env.t;
         equations_generation : equations_generation;
         assume_injective : bool;
-        allow_recursive_equations : bool;
-        gadt_equations_level : int;
         unify_eq_set : TypePairs.t; }
     (* GADT constraint unification mode:
        only used for type indices of GADT constructors
@@ -288,20 +310,20 @@ type unification_environment =
 
 let get_env = function
   | Expression {env} -> env
-  | Pattern {env} -> !env
+  | Pattern {penv} -> penv.env
 
-let set_env uenv env' =
+let set_env uenv env =
   match uenv with
   | Expression _ -> invalid_arg "Ctype.set_env"
-  | Pattern {env} -> env := env'
+  | Pattern {penv} -> penv.env <- env
 
 let in_pattern_mode = function
   | Expression _ -> false
   | Pattern _ -> true
 
-let get_gadt_equations_level = function
-  | Expression _ -> invalid_arg "Ctype.get_gadt_equations_level"
-  | Pattern r -> r.gadt_equations_level
+let get_equations_scope = function
+  | Expression _ -> invalid_arg "Ctype.get_equations_scope"
+  | Pattern r -> r.penv.equations_scope
 
 let order_type_pair t1 t2 =
   if get_id t1 <= get_id t2 then (t1, t2) else (t2, t1)
@@ -344,7 +366,7 @@ let can_assume_injective = function
 let in_counterexample uenv =
   match uenv with
   | Expression _ -> false
-  | Pattern { allow_recursive_equations } -> allow_recursive_equations
+  | Pattern { penv } -> penv.allow_recursive_equations
 
 let allow_recursive_equations uenv =
   !Clflags.recursive_types || in_counterexample uenv
@@ -1278,21 +1300,23 @@ let existential_name cstr ty =
 
 type existential_treatment =
   | Keep_existentials_flexible
-  | Make_existentials_abstract of { env: Env.t ref; scope: int }
+  | Make_existentials_abstract of Pattern_env.t
 
 let instance_constructor existential_treatment cstr =
   For_copy.with_scope (fun copy_scope ->
     let copy_existential =
       match existential_treatment with
       | Keep_existentials_flexible -> copy copy_scope
-      | Make_existentials_abstract {env; scope = fresh_constr_scope} ->
+      | Make_existentials_abstract penv ->
           fun existential ->
+            let env = penv.env in
+            let fresh_constr_scope = penv.equations_scope in
             let decl = new_local_type () in
             let name = existential_name cstr existential in
             let (id, new_env) =
-              Env.enter_type (get_new_abstract_name !env name) decl !env
+              Env.enter_type (get_new_abstract_name env name) decl env
                 ~scope:fresh_constr_scope in
-            env := new_env;
+            penv.env <- new_env;
             let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
             let tv = copy copy_scope existential in
             assert (is_Tvar tv);
@@ -2173,7 +2197,7 @@ let deep_occur t0 ty =
    They need to be removed using this function.
    This function is called only in [Pattern] mode. *)
 let reify uenv t =
-  let fresh_constr_scope = get_gadt_equations_level uenv in
+  let fresh_constr_scope = get_equations_scope uenv in
   let create_fresh_constr lev name =
     let name = match name with Some s -> "$'"^s | _ -> "$" in
     let decl = new_local_type () in
@@ -2495,7 +2519,7 @@ let add_gadt_equation uenv source destination =
   else if local_non_recursive_abbrev uenv source destination then begin
     let destination = duplicate_type destination in
     let expansion_scope =
-      Int.max (Path.scope source) (get_gadt_equations_level uenv)
+      Int.max (Path.scope source) (get_equations_scope uenv)
     in
     let decl =
       new_local_type ~manifest_and_scope:(destination, expansion_scope) () in
@@ -3199,17 +3223,14 @@ let unify uenv ty1 ty2 =
       undo_compress snap;
       raise (Unify (expand_to_unification_error (get_env uenv) trace))
 
-let unify_gadt ~equations_level:lev ~allow_recursive_equations
-      (env:Env.t ref) ty1 ty2 =
+let unify_gadt (penv : Pattern_env.t) ty1 ty2 =
   univar_pairs := [];
   let equated_types = TypePairs.create 0 in
   let equations_generation = Allowed { equated_types } in
   let uenv = Pattern
-      { env;
+      { penv;
         equations_generation;
         assume_injective = true;
-        allow_recursive_equations;
-        gadt_equations_level = lev;
         unify_eq_set = TypePairs.create 11; }
   in
   unify uenv ty1 ty2;

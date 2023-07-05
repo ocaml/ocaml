@@ -155,6 +155,10 @@ Working version
 - #12109: Pack parameters to unification in unification_environment
   (Takafumi Saikawa and Jacques Garrigue, review by Richard Eisenberg)
 
+- #12331: Pack the unification data for pattern checking in Typecore
+  (Takafumi Saikawa and Jacques Garrigue,
+   review by Gabriel Scherer, Thomas Refis and Florian Angeletti)
+
 ### Build system:
 
 - #12198: continue the merge of the sub-makefiles into the root Makefile
