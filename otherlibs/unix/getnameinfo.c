@@ -29,7 +29,7 @@
 #include <netdb.h>
 #endif
 
-static int getnameinfo_flag_table[] = {
+static const int getnameinfo_flag_table[] = {
   NI_NOFQDN, NI_NUMERICHOST, NI_NAMEREQD, NI_NUMERICSERV, NI_DGRAM
 };
 

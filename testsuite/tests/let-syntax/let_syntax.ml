@@ -146,7 +146,7 @@ let let_unbound =
 Line 3, characters 4-8:
 3 |     let+ x = 1 in
         ^^^^
-Error: Unbound value let+
+Error: Unbound value "(let+)"
 |}];;
 
 module And_unbound = struct
@@ -166,7 +166,7 @@ let and_unbound =
 Line 4, characters 4-8:
 4 |     and+ y = 2 in
         ^^^^
-Error: Unbound value and+
+Error: Unbound value "(and+)"
 |}];;
 
 module Ill_typed_1 = struct
@@ -187,8 +187,8 @@ let ill_typed_1 =
 Line 3, characters 13-14:
 3 |     let+ x = 1 in
                  ^
-Error: This expression has type int but an expression was expected of type
-         bool
+Error: This expression has type "int" but an expression was expected of type
+         "bool"
 |}];;
 
 module Ill_typed_2 = struct
@@ -215,9 +215,9 @@ let ill_typed_2 =
 Line 3, characters 13-14:
 3 |     let+ x = 1
                  ^
-Error: This expression has type int but an expression was expected of type
-         float
-  Hint: Did you mean `1.'?
+Error: This expression has type "int" but an expression was expected of type
+         "float"
+  Hint: Did you mean "1."?
 |}];;
 
 module Ill_typed_3 = struct
@@ -238,8 +238,8 @@ let ill_typed_3 =
 Line 3, characters 4-8:
 3 |     let+ x = 1 in
         ^^^^
-Error: The operator let+ has type int but it was expected to have type
-         'a -> ('b -> 'c) -> 'd
+Error: The operator "let+" has type "int" but it was expected to have type
+         "'a -> ('b -> 'c) -> 'd"
 |}];;
 
 module Ill_typed_4 = struct
@@ -263,9 +263,9 @@ let ill_typed_4 =
 Line 4, characters 4-8:
 4 |     and+ y = 2 in
         ^^^^
-Error: The operator and+ has type bool -> bool
-       but it was expected to have type bool -> 'a -> 'b
-       Type bool is not compatible with type 'a -> 'b
+Error: The operator "and+" has type "bool -> bool"
+       but it was expected to have type "bool -> 'a -> 'b"
+       Type "bool" is not compatible with type "'a -> 'b"
 |}];;
 
 module Ill_typed_5 = struct
@@ -294,8 +294,8 @@ Lines 3-5, characters 9-14:
 3 | .........x = 1
 4 |     and+ y = 2
 5 |     and+ z = 3...
-Error: These bindings have type (int * int) * int
-       but bindings were expected of type bool
+Error: These bindings have type "(int * int) * int"
+       but bindings were expected of type "bool"
 |}];;
 
 module Ill_typed_6 = struct
@@ -323,8 +323,8 @@ let ill_typed_6 =
 Lines 3-4, characters 9-14:
 3 | .........x = 1
 4 |     and+ y = 2
-Error: These bindings have type int * int but bindings were expected of type
-         int
+Error: These bindings have type "int * int" but bindings were expected of type
+         "int"
 |}];;
 
 
@@ -352,9 +352,9 @@ let ill_typed_7 =
 Line 3, characters 4-8:
 3 |     let+ x = 1
         ^^^^
-Error: The operator let+ has type (int -> 'a) -> int -> 'a
-       but it was expected to have type (int -> 'a) -> ('b * 'c -> 'd) -> 'e
-       Type int is not compatible with type 'b * 'c -> 'd
+Error: The operator "let+" has type "(int -> 'a) -> int -> 'a"
+       but it was expected to have type "(int -> 'a) -> ('b * 'c -> 'd) -> 'e"
+       Type "int" is not compatible with type "'b * 'c -> 'd"
 |}];;
 
 module Indexed_monad = struct
@@ -496,11 +496,11 @@ Line 4, characters 14-25:
 4 |     and+ () = open_ "foo"
                   ^^^^^^^^^^^
 Error: This expression has type
-         (Indexed_monad.closed, Indexed_monad.opened, unit) Indexed_monad.t
+         "(Indexed_monad.closed, Indexed_monad.opened, unit) Indexed_monad.t"
        but an expression was expected of type
-         (Indexed_monad.opened, 'a, 'b) Indexed_monad.t
-       Type Indexed_monad.closed is not compatible with type
-         Indexed_monad.opened
+         "(Indexed_monad.opened, 'a, 'b) Indexed_monad.t"
+       Type "Indexed_monad.closed" is not compatible with type
+         "Indexed_monad.opened"
 |}];;
 
 let indexed_monad4 =
@@ -516,11 +516,11 @@ Lines 6-7, characters 4-29:
 6 | ....let* second = read in
 7 |       return (first ^ second)
 Error: This expression has type
-         (Indexed_monad.opened, Indexed_monad.opened, string) Indexed_monad.t
+         "(Indexed_monad.opened, Indexed_monad.opened, string) Indexed_monad.t"
        but an expression was expected of type
-         (Indexed_monad.closed, 'a, 'b) Indexed_monad.t
-       Type Indexed_monad.opened is not compatible with type
-         Indexed_monad.closed
+         "(Indexed_monad.closed, 'a, 'b) Indexed_monad.t"
+       Type "Indexed_monad.opened" is not compatible with type
+         "Indexed_monad.closed"
 |}];;
 
 (* Test principality using constructor disambiguation *)
@@ -638,7 +638,7 @@ let let_not_propagated : A.t =
 Line 4, characters 4-5:
 4 |     A
         ^
-Error: Unbound constructor A
+Error: Unbound constructor "A"
 |}];;
 
 module Side_effects_ordering = struct
@@ -726,9 +726,9 @@ But the knowledge of these types is not principal.
 Line 5, characters 11-19:
 5 |       and+ { x; y } = a in
                ^^^^^^^^
-Error: This pattern matches values of type GADT_ordering.point
+Error: This pattern matches values of type "GADT_ordering.point"
        but a pattern was expected which matches values of type
-         a = GADT_ordering.point
-       This instance of GADT_ordering.point is ambiguous:
+         "a" = "GADT_ordering.point"
+       This instance of "GADT_ordering.point" is ambiguous:
        it would escape the scope of its equation
 |}];;

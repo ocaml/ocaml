@@ -20,7 +20,7 @@
 #include "unixsupport.h"
 #include "socketaddr.h"
 
-static int msg_flag_table[] = {
+static const int msg_flag_table[] = {
   MSG_OOB, MSG_DONTROUTE, MSG_PEEK
 };
 

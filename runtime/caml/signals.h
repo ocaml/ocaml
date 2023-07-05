@@ -61,7 +61,7 @@ CAMLextern atomic_uintnat caml_pending_signals[NSIG_WORDS];
 #define caml_requested_minor_gc (Caml_state_field(requested_minor_gc))
 
 int caml_check_pending_signals(void);
-void caml_request_major_slice (void);
+void caml_request_major_slice (int global);
 void caml_request_minor_gc (void);
 CAMLextern int caml_convert_signal_number (int);
 CAMLextern int caml_rev_convert_signal_number (int);
@@ -78,6 +78,10 @@ void caml_init_signals(void);
 void caml_terminate_signals(void);
 CAMLextern void * caml_init_signal_stack(void);
 CAMLextern void caml_free_signal_stack(void *);
+
+#if defined(NATIVE_CODE) && defined(TARGET_power)
+void caml_sigtrap_handler(int, siginfo_t *, void *);
+#endif
 
 /* These hooks are not modified after other threads are spawned. */
 CAMLextern void (*caml_enter_blocking_section_hook)(void);

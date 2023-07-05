@@ -1,4 +1,3 @@
-#3 "otherlibs/dynlink/native/dynlink.ml"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -73,7 +72,7 @@ module Native = struct
           | None -> None
           | Some _ as crco -> Some (crco, DT.Check_inited !rank)
         in
-        f acc ~comp_unit:name ~interface:crc_intf
+        f acc ~compunit:name ~interface:crc_intf
             ~implementation ~defined_symbols:syms)
       init
       (ndl_getmap ())
@@ -102,8 +101,10 @@ module Native = struct
       "_shared_startup" ::
       List.concat_map Unit_header.defined_symbols header.dynu_units
     in
-    ndl_register handle (Array.of_list syms);
-    handle, header.dynu_units
+    try
+      ndl_register handle (Array.of_list syms);
+      handle, header.dynu_units
+    with exn -> raise (DT.Error (Cannot_open_dynamic_library exn))
 
   let unsafe_get_global_value ~bytecode_or_asm_symbol =
     match ndl_loadsym bytecode_or_asm_symbol with

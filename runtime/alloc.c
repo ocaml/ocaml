@@ -371,3 +371,13 @@ CAMLexport value caml_alloc_some(value v)
   Field(some, 0) = v;
   CAMLreturn(some);
 }
+
+CAMLprim value caml_atomic_make_contended(value v)
+{
+  CAMLparam1(v);
+  const mlsize_t sz = Wosize_bhsize(Cache_line_bsize);
+  value res = caml_alloc_shr(sz, 0);
+  caml_initialize(&Field(res, 0), v);
+  for (mlsize_t i = 1; i < sz; i++) Field(res, i) = Val_unit;
+  CAMLreturn(res);
+}

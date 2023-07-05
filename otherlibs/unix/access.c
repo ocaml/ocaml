@@ -35,7 +35,7 @@
 # endif
 #endif
 
-static int access_permission_table[] = {
+static const int access_permission_table[] = {
   R_OK,
   W_OK,
 #ifdef _WIN32

@@ -7,7 +7,7 @@ let rec a = lazy b and b = 3;;
 Line 1, characters 12-18:
 1 | let rec a = lazy b and b = 3;;
                 ^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let rec e = lazy (fun _ -> f) and f = ();;

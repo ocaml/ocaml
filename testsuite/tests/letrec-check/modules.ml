@@ -12,7 +12,7 @@ let rec x = let module M = struct let f = x let g = x () end in fun () -> ();;
 Line 1, characters 12-76:
 1 | let rec x = let module M = struct let f = x let g = x () end in fun () -> ();;
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let rec x = let module _ = struct let _ = x () end in fun () -> ();;
@@ -20,7 +20,7 @@ let rec x = let module _ = struct let _ = x () end in fun () -> ();;
 Line 1, characters 12-66:
 1 | let rec x = let module _ = struct let _ = x () end in fun () -> ();;
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let rec x = let module M = struct let f = x () let g = x end in fun () -> ();;
@@ -28,7 +28,7 @@ let rec x = let module M = struct let f = x () let g = x end in fun () -> ();;
 Line 1, characters 12-76:
 1 | let rec x = let module M = struct let f = x () let g = x end in fun () -> ();;
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let rec x = (let module M = struct let f = y 0 let g = () end in fun () -> ())
@@ -37,7 +37,7 @@ let rec x = (let module M = struct let f = y 0 let g = () end in fun () -> ())
 Line 1, characters 12-78:
 1 | let rec x = (let module M = struct let f = y 0 let g = () end in fun () -> ())
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 let rec x =
@@ -49,7 +49,7 @@ Lines 2-4, characters 2-14:
 2 | ..let module M = struct
 3 |     module N = struct let y = x end
 4 |   end in M.N.y..
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 module type T = sig val y: int end
@@ -72,7 +72,7 @@ let rec x = let module M = struct let f = x () and g = x end in fun () -> ();;
 Line 1, characters 12-76:
 1 | let rec x = let module M = struct let f = x () and g = x end in fun () -> ();;
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 module type T = sig end
@@ -84,7 +84,7 @@ module type T = sig end
 Line 2, characters 12-36:
 2 | let rec x = (module (val y : T) : T)
                 ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;
 
 (* module constraints *)
@@ -101,5 +101,5 @@ type t = T : (module S) -> t
 Line 5, characters 12-50:
 5 | let rec x = let module M = (val m) in T (module M)
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This kind of expression is not allowed as right-hand side of `let rec'
+Error: This kind of expression is not allowed as right-hand side of "let rec"
 |}];;

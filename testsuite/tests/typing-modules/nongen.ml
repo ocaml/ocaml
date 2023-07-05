@@ -18,6 +18,6 @@ Error: The type of this module, sig val t : '_weak1 option ref end,
 Line 2, characters 6-7:
 2 |   let t = ref None
           ^
-  The type of this value, '_weak1 option ref,
-  contains the non-generalizable type variable(s) '_weak1.
+  The type of this value, "'_weak1 option ref",
+  contains the non-generalizable type variable(s) "'_weak1".
 |}]

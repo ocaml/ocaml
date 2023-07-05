@@ -788,7 +788,6 @@ PACKLD
 mkexe_ldflags_exp
 mkdll_ldflags_exp
 flexdll_chain
-flexlink_cmd
 afl
 oc_native_compflags
 function_sections
@@ -851,11 +850,10 @@ long_shebang
 flexlink_flags
 flexdll_dir
 bootstrapping_flexdll
-flexdir
+flexdll_source_dir
 ocamlc_cppflags
 ocamlc_cflags
-nativecclibs
-bytecclibs
+cclibs
 oc_exe_ldflags
 oc_dll_ldflags
 oc_ldflags
@@ -948,6 +946,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_debug_runtime
+enable_ocamldebug
 enable_debugger
 enable_dependency_generation
 enable_instrumented_runtime
@@ -1633,7 +1632,8 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-debug-runtime do not build runtime with debugging support
-  --enable-debugger       build the debugger [default=auto]
+  --enable-ocamldebug     build ocamldebug [default=auto]
+  --enable-debugger       alias for --enable-ocamldebug
   --disable-dependency-generation
                           do not compute dependency information for C sources
   --enable-instrumented-runtime
@@ -3357,9 +3357,7 @@ OCAML_VERSION_SHORT=5.2
 
 
 
-
  # TODO: rename this variable
-
 
 
 
@@ -3571,6 +3569,18 @@ test -n "$target_alias" &&
     NONENONEs,x,x, &&
   program_prefix=${target_alias}-
 
+# Ensure that AC_CONFIG_LINKS will either create symlinks which are compatible
+# with native Windows (i.e. NTFS symlinks, not WSL or Cygwin-emulated ones) or
+# use its fallback mechanisms. Native Windows versions of ocamlc/ocamlopt cannot
+# interpret either WSL or Cygwin-emulated symlinks.
+case $host in #(
+  *-pc-windows|*-w64-mingw32*) :
+    ac_config_commands="$ac_config_commands native-symlinks"
+ ;; #(
+  *) :
+     ;;
+esac
+
 # Systems that are known not to work, even in bytecode only.
 
 case $host in #(
@@ -3631,12 +3641,19 @@ then :
 fi
 
 
+# Check whether --enable-ocamldebug was given.
+if test ${enable_ocamldebug+y}
+then :
+  enableval=$enable_ocamldebug;
+else $as_nop
+  enable_ocamldebug=auto
+fi
+
+
 # Check whether --enable-debugger was given.
 if test ${enable_debugger+y}
 then :
-  enableval=$enable_debugger;
-else $as_nop
-  enable_debugger=auto
+  enableval=$enable_debugger; enable_ocamldebug=$enableval
 fi
 
 
@@ -3939,11 +3956,11 @@ fi
 
 if test x"$enable_unix_lib" = "xno"
 then :
-  if test x"$enable_debugger" = "xyes"
+  if test x"$enable_ocamldebug" = "xyes"
 then :
-  as_fn_error $? "replay debugger requires the unix library" "$LINENO" 5
+  as_fn_error $? "ocamldebug requires the unix library" "$LINENO" 5
 else $as_nop
-  enable_debugger="no"
+  enable_ocamldebug="no"
 fi
 fi
 
@@ -13569,6 +13586,8 @@ then :
 
   otherlibraries="$otherlibraries unix"
   lib_unix=true
+  ac_config_links="$ac_config_links otherlibs/unix/unix.ml:otherlibs/unix/unix_${unix_or_win32}.ml"
+
   ocamltest_unix_impl="real"
   ocamltest_unix_name="unix"
   ocamltest_unix_path='$(ROOTDIR)/otherlibs/unix'
@@ -13845,18 +13864,18 @@ then :
 printf %s "checking for flexdll sources... " >&6; }
   if test x"$with_flexdll" = "xno"
 then :
-  flexdir=''
+  flexdll_source_dir=''
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: disabled" >&5
 printf "%s\n" "disabled" >&6; }
 else $as_nop
   flexmsg=''
     case $target in #(
   *-*-cygwin*|*-w64-mingw32*|*-pc-windows) :
-    if test x"$with_flexdll" = 'x' || test x"$with_flexdll" = 'xflexdll'
+                                             if test x"$with_flexdll" = 'x' || test x"$with_flexdll" = 'xflexdll'
 then :
   if test -f 'flexdll/flexdll.h'
 then :
-  flexdir=flexdll
+  flexdll_source_dir=flexdll
           iflexdir='$(ROOTDIR)/flexdll'
           with_flexdll="$iflexdir"
 else $as_nop
@@ -13873,7 +13892,7 @@ else $as_nop
 then :
   mkdir -p flexdll-sources
           cp -r "$with_flexdll"/* flexdll-sources/
-          flexdir='flexdll-sources'
+          flexdll_source_dir='flexdll-sources'
           iflexdir='$(ROOTDIR)/flexdll-sources'
           flexmsg=" (from $with_flexdll)"
 else $as_nop
@@ -13882,7 +13901,7 @@ printf "%s\n" "requested but not available" >&6; }
           as_fn_error $? "exiting" "$LINENO" 5
 fi
 fi
-      if test x"$flexdir" = 'x'
+      if test x"$flexdll_source_dir" = 'x'
 then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
@@ -13947,7 +13966,7 @@ fi
 
 
 
-  if test -n "$flexlink" && test -z "$flexdir"
+  if test -n "$flexlink" && test -z "$flexdll_source_dir"
 then :
 
 
@@ -14050,9 +14069,9 @@ fi
   touch confdefs.h
 
 
-  if test -n "$flexdir"
+  if test -n "$flexdll_source_dir"
 then :
-  CPPFLAGS="-I $flexdir $CPPFLAGS"
+  CPPFLAGS="-I $flexdll_source_dir $CPPFLAGS"
 fi
   have_flexdll_h=no
   ac_fn_c_check_header_compile "$LINENO" "flexdll.h" "ac_cv_header_flexdll_h" "$ac_includes_default"
@@ -14065,9 +14084,9 @@ fi
 
   if test x"$have_flexdll_h" = 'xno'
 then :
-  if test -n "$flexdir"
+  if test -n "$flexdll_source_dir"
 then :
-  as_fn_error $? "$flexdir/flexdll.h appears unusable" "$LINENO" 5
+  as_fn_error $? "$flexdll_source_dir/flexdll.h appears unusable" "$LINENO" 5
 fi
 fi
 
@@ -14152,7 +14171,7 @@ printf "%s\n" "$as_me: WARNING: flexdll.h not found: shared library support disa
      ;;
 esac
 
-case $flexdir,$supports_shared_libraries,$flexlink,$host in #(
+case $flexdll_source_dir,$supports_shared_libraries,$flexlink,$host in #(
   ,true,,*-*-cygwin*) :
     supports_shared_libraries=false
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: flexlink not found: shared library support disabled." >&5
@@ -14165,14 +14184,6 @@ esac
 
 mkexe_cmd_exp="$CC"
 
-if $bootstrapping_flexdll
-then :
-  flexlink_cmd=\
-'$(ROOTDIR)/boot/ocamlruns.exe $(ROOTDIR)/boot/flexlink.byte.exe'
-else $as_nop
-  flexlink_cmd=flexlink
-fi
-
 case $cc_basename,$host in #(
   *,x86_64-*-darwin*) :
     oc_ldflags='-Wl,-no_compact_unwind';
@@ -14181,14 +14192,12 @@ case $cc_basename,$host in #(
   *,aarch64-*-darwin*|arm64-*-darwin*) :
     printf "%s\n" "#define HAS_ARCH_CODE32 1" >>confdefs.h
  ;; #(
-  *,*-*-haiku*) :
-    mathlib="" ;; #(
   *,*-*-cygwin*) :
     common_cppflags="$common_cppflags -U_WIN32"
     if $supports_shared_libraries
 then :
   mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-      mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
+      mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
       mkexe_cflags=''
       mkexe_ldflags_prefix='-link '
 else $as_nop
@@ -14207,7 +14216,7 @@ esac
     ostype="Win32"
     toolchain="mingw"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-    mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
+    mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     oc_exe_ldflags='-municode'
@@ -14217,7 +14226,7 @@ esac
     toolchain=msvc
     ostype="Win32"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-    mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
+    mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     mkexe_via_cc_ldflags_prefix='/link '
@@ -14341,14 +14350,13 @@ test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 # Checks for libraries
 
 ## Mathematical library
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for cos in -lm" >&5
-printf %s "checking for cos in -lm... " >&6; }
-if test ${ac_cv_lib_m_cos+y}
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing cos" >&5
+printf %s "checking for library containing cos... " >&6; }
+if test ${ac_cv_search_cos+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lm  $LIBS"
+  ac_func_search_save_LIBS=$LIBS
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -14364,33 +14372,50 @@ return cos ();
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_link "$LINENO"
+for ac_lib in '' m
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
 then :
-  ac_cv_lib_m_cos=yes
-else $as_nop
-  ac_cv_lib_m_cos=no
+  ac_cv_search_cos=$ac_res
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_m_cos" >&5
-printf "%s\n" "$ac_cv_lib_m_cos" >&6; }
-if test "x$ac_cv_lib_m_cos" = xyes
+    conftest$ac_exeext
+  if test ${ac_cv_search_cos+y}
 then :
-  printf "%s\n" "#define HAVE_LIBM 1" >>confdefs.h
-
-  LIBS="-lm $LIBS"
-
+  break
 fi
-
-
-if test "x$ac_cv_lib_m_cos" = xyes
+done
+if test ${ac_cv_search_cos+y}
 then :
-  mathlib="-lm"
+
 else $as_nop
-  mathlib=""
+  ac_cv_search_cos=no
 fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_cos" >&5
+printf "%s\n" "$ac_cv_search_cos" >&6; }
+ac_res=$ac_cv_search_cos
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  case $ac_cv_search_cos in #(
+  no) :
+    as_fn_error $? "Could not locate C math functions" "$LINENO" 5 ;; #(
+  'none required') :
+    mathlib="" ;; #(
+  *) :
+    mathlib="$ac_cv_search_cos" ;;
+esac
+fi
+
 
 # Checks for header files
 
@@ -15130,9 +15155,9 @@ then :
   *-*-mingw32*|*-pc-windows|*-*-cygwin*) :
     mkdll_flags="-chain ${flexdll_chain} ${flexlink_flags}"
       mkdll_exp="flexlink ${mkdll_flags}"
-      mkdll="${flexlink_cmd} ${mkdll_flags}"
+      mkdll="flexlink ${mkdll_flags}"
       mkmaindll_exp="flexlink -maindll ${mkdll_flags}"
-      mkmaindll="${flexlink_cmd} -maindll ${mkdll_flags}" ;; #(
+      mkmaindll="flexlink -maindll ${mkdll_flags}" ;; #(
   powerpc-ibm-aix*) :
     case $ocaml_cv_cc_vendor in #(
   xlc*) :
@@ -15368,16 +15393,9 @@ case $host in #(
   x86_64-pc-windows) :
     arch=amd64; system=win64 ;; #(
   powerpc64le*-*-linux*) :
-    arch=power; model=ppc64le; system=elf ;; #(
-  powerpc*-*-linux*) :
-    arch=power; if $arch64
-then :
-  model=ppc64
-else $as_nop
-  model=ppc
-fi; system=elf ;; #(
+    has_native_backend=yes; arch=power; model=ppc64le; system=elf ;; #(
   s390x*-*-linux*) :
-    arch=s390x; model=z10; system=elf ;; #(
+    has_native_backend=yes; arch=s390x; model=z10; system=elf ;; #(
   # expected to match "gnueabihf" as well as "musleabihf"
   armv6*-*-linux-*eabihf) :
     arch=arm; model=armv6; system=linux_eabihf ;; #(
@@ -15436,7 +15454,12 @@ fi; system=elf ;; #(
   x86_64-*-mingw32*) :
     has_native_backend=yes; arch=amd64; system=mingw64 ;; #(
   aarch64-*-linux*) :
-    has_native_backend=yes; arch=arm64; system=linux ;; #(
+    if $arch64
+then :
+  has_native_backend=yes; arch=arm64; system=linux
+else $as_nop
+  arch=arm; model=armv8; system=linux
+fi ;; #(
   aarch64-*-freebsd*) :
     has_native_backend=yes; arch=arm64; system=freebsd ;; #(
   aarch64-*-openbsd*) :
@@ -16206,18 +16229,15 @@ case $host in #(
   *-apple-darwin*) :
 
 
-  for ac_func in mach_timebase_info mach_absolute_time
+  for ac_func in clock_gettime_nsec_np
 do :
-  as_ac_var=`printf "%s\n" "ac_cv_func_$ac_func" | $as_tr_sh`
-ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
-if eval test \"x\$"$as_ac_var"\" = x"yes"
+  ac_fn_c_check_func "$LINENO" "clock_gettime_nsec_np" "ac_cv_func_clock_gettime_nsec_np"
+if test "x$ac_cv_func_clock_gettime_nsec_np" = xyes
 then :
-  cat >>confdefs.h <<_ACEOF
-#define `printf "%s\n" "HAVE_$ac_func" | $as_tr_cpp` 1
-_ACEOF
+  printf "%s\n" "#define HAVE_CLOCK_GETTIME_NSEC_NP 1" >>confdefs.h
 
         has_monotonic_clock=true
-        printf "%s\n" "#define HAS_MACH_ABSOLUTE_TIME 1" >>confdefs.h
+        printf "%s\n" "#define HAS_CLOCK_GETTIME_NSEC_NP 1" >>confdefs.h
 
 
 else $as_nop
@@ -16388,8 +16408,76 @@ fi
 sockets=true
 
 case $host in #(
-  *-*-mingw32*|*-pc-windows) :
+  *-*-mingw32*) :
     cclibs="$cclibs -lws2_32"
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing socket" >&5
+printf %s "checking for library containing socket... " >&6; }
+if test ${ac_cv_search_socket+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char socket ();
+int
+main (void)
+{
+return socket ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ws2_32
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_socket=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_socket+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_socket+y}
+then :
+
+else $as_nop
+  ac_cv_search_socket=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_socket" >&5
+printf "%s\n" "$ac_cv_search_socket" >&6; }
+ac_res=$ac_cv_search_socket
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+    ac_fn_c_check_func "$LINENO" "socketpair" "ac_cv_func_socketpair"
+if test "x$ac_cv_func_socketpair" = xyes
+then :
+  printf "%s\n" "#define HAS_SOCKETPAIR 1" >>confdefs.h
+
+fi
+ ;; #(
+  *-pc-windows) :
+    cclibs="$cclibs ws2_32.lib"
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing socket" >&5
 printf %s "checking for library containing socket... " >&6; }
 if test ${ac_cv_search_socket+y}
@@ -18221,24 +18309,24 @@ fi
 
 ## Determine whether the debugger should/can be built
 
-case $enable_debugger in #(
+case $enable_ocamldebug in #(
   no) :
     with_debugger=""
     build_ocamldebug=false
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: replay debugger disabled" >&5
-printf "%s\n" "$as_me: replay debugger disabled" >&6;} ;; #(
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: ocamldebug disabled" >&5
+printf "%s\n" "$as_me: ocamldebug disabled" >&6;} ;; #(
   *) :
     if $sockets
 then :
-  with_debugger="ocamldebugger"
+  with_debugger="ocamldebug"
     build_ocamldebug=true
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: replay debugger supported" >&5
-printf "%s\n" "$as_me: replay debugger supported" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: ocamldebug supported" >&5
+printf "%s\n" "$as_me: ocamldebug supported" >&6;}
 else $as_nop
   with_debugger=""
     build_ocamldebug=false
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: replay debugger not supported" >&5
-printf "%s\n" "$as_me: replay debugger not supported" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: ocamldebug not supported" >&5
+printf "%s\n" "$as_me: ocamldebug not supported" >&6;}
 fi
    ;;
 esac
@@ -18254,8 +18342,10 @@ esac
 ## Determine how to link with the POSIX threads library
 
 case $host in #(
-  *-*-mingw32*|*-pc-windows) :
-    PTHREAD_LIBS="-l:libpthread.a" ;; #(
+  *-*-mingw32*) :
+    PTHREAD_LIBS="-l:libpthread.a -lgcc_eh" ;; #(
+  *-pc-windows) :
+    PTHREAD_LIBS="-l:libpthread.lib" ;; #(
   *) :
 
 
@@ -19637,60 +19727,19 @@ oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
 ocamlc_cflags="$common_cflags $sharedlib_cflags $CFLAGS"
 ocamlc_cppflags="$common_cppflags $CPPFLAGS"
-cclibs="$cclibs $mathlib"
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for backtrace in -lexecinfo" >&5
-printf %s "checking for backtrace in -lexecinfo... " >&6; }
-if test ${ac_cv_lib_execinfo_backtrace+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lexecinfo  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char backtrace ();
-int
-main (void)
-{
-return backtrace ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_execinfo_backtrace=yes
-else $as_nop
-  ac_cv_lib_execinfo_backtrace=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_execinfo_backtrace" >&5
-printf "%s\n" "$ac_cv_lib_execinfo_backtrace" >&6; }
-if test "x$ac_cv_lib_execinfo_backtrace" = xyes
-then :
-  cclibs="$cclibs -lexecinfo"
-fi
-
 
 case $host in #(
   *-*-mingw32*) :
-    bytecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"
-    nativecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh" ;; #(
+    cclibs="$cclibs -lversion" ;; #(
   *-pc-windows) :
-    bytecclibs="advapi32.lib ws2_32.lib version.lib"
-    nativecclibs="advapi32.lib ws2_32.lib version.lib" ;; #(
+    # For whatever reason, flexlink includes -ladvapi32 for mingw-w64, but
+    # doesn't include advapi32.lib for MSVC
+    cclibs="$cclibs advapi32.lib version.lib" ;; #(
   *) :
-    bytecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"
-  nativecclibs="$cclibs $DLLIBS $PTHREAD_LIBS" ;;
+     ;;
 esac
+
+
 
 if test x"$libdir" = x'${exec_prefix}/lib'
 then :
@@ -19929,6 +19978,7 @@ LTLIBOBJS=$ac_ltlibobjs
     fi
   done
 
+cclibs="$cclibs $mathlib $DLLIBS $PTHREAD_LIBS"
 
   saved_exec_prefix="$exec_prefix"
   saved_prefix="$prefix"
@@ -20018,6 +20068,7 @@ fi
   mkdll="$mkdll $mkdll_ldflags"
   mkdll_exp="$mkdll_exp $mkdll_ldflags_exp"
   mkmaindll="$mkmaindll $mkdll_ldflags_exp"
+  mkmaindll_exp="$mkmaindll_exp $mkdll_ldflags_exp"
   # Do similarly with $mkexe_via_cc_ldflags_prefix, but this is only needed for
   # the msvc ports.
   if test -n "$mkexe_via_cc_ldflags_prefix"
@@ -20462,6 +20513,7 @@ cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
 # Files that config.status was made for.
 config_files="$ac_config_files"
 config_headers="$ac_config_headers"
+config_links="$ac_config_links"
 config_commands="$ac_config_commands"
 
 _ACEOF
@@ -20491,6 +20543,9 @@ $config_files
 
 Configuration headers:
 $config_headers
+
+Configuration links:
+$config_links
 
 Configuration commands:
 $config_commands
@@ -20622,6 +20677,8 @@ cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
 #
 # INIT-COMMANDS
 #
+export CYGWIN="\$CYGWIN\${CYGWIN:+ }winsymlinks:nativestrict"
+      export MSYS="\$MSYS\${MSYS:+ }winsymlinks:nativestrict"
 
 
 # The HP-UX ksh and POSIX shell print the target directory to stdout
@@ -20928,8 +20985,10 @@ do
     "otherlibs/dynlink/META") CONFIG_FILES="$CONFIG_FILES otherlibs/dynlink/META" ;;
     "otherlibs/runtime_events/META") CONFIG_FILES="$CONFIG_FILES otherlibs/runtime_events/META" ;;
     "stdlib/META") CONFIG_FILES="$CONFIG_FILES stdlib/META" ;;
+    "native-symlinks") CONFIG_COMMANDS="$CONFIG_COMMANDS native-symlinks" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "otherlibs/unix/META") CONFIG_FILES="$CONFIG_FILES otherlibs/unix/META" ;;
+    "otherlibs/unix/unix.ml") CONFIG_LINKS="$CONFIG_LINKS otherlibs/unix/unix.ml:otherlibs/unix/unix_${unix_or_win32}.ml" ;;
     "otherlibs/str/META") CONFIG_FILES="$CONFIG_FILES otherlibs/str/META" ;;
     "otherlibs/systhreads/META") CONFIG_FILES="$CONFIG_FILES otherlibs/systhreads/META" ;;
     "ocamldoc/META") CONFIG_FILES="$CONFIG_FILES ocamldoc/META" ;;
@@ -20946,6 +21005,7 @@ done
 if $ac_need_defaults; then
   test ${CONFIG_FILES+y} || CONFIG_FILES=$config_files
   test ${CONFIG_HEADERS+y} || CONFIG_HEADERS=$config_headers
+  test ${CONFIG_LINKS+y} || CONFIG_LINKS=$config_links
   test ${CONFIG_COMMANDS+y} || CONFIG_COMMANDS=$config_commands
 fi
 
@@ -21243,7 +21303,7 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 fi # test -n "$CONFIG_HEADERS"
 
 
-eval set X "  :F $CONFIG_FILES  :H $CONFIG_HEADERS    :C $CONFIG_COMMANDS"
+eval set X "  :F $CONFIG_FILES  :H $CONFIG_HEADERS  :L $CONFIG_LINKS  :C $CONFIG_COMMANDS"
 shift
 for ac_tag
 do
@@ -21480,7 +21540,38 @@ printf "%s\n" "$as_me: $ac_file is unchanged" >&6;}
       || as_fn_error $? "could not create -" "$LINENO" 5
   fi
  ;;
+  :L)
+  #
+  # CONFIG_LINK
+  #
 
+  if test "$ac_source" = "$ac_file" && test "$srcdir" = '.'; then
+    :
+  else
+    # Prefer the file from the source tree if names are identical.
+    if test "$ac_source" = "$ac_file" || test ! -r "$ac_source"; then
+      ac_source=$srcdir/$ac_source
+    fi
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: linking $ac_source to $ac_file" >&5
+printf "%s\n" "$as_me: linking $ac_source to $ac_file" >&6;}
+
+    if test ! -r "$ac_source"; then
+      as_fn_error $? "$ac_source: file not found" "$LINENO" 5
+    fi
+    rm -f "$ac_file"
+
+    # Try a relative symlink, then a hard link, then a copy.
+    case $ac_source in
+    [\\/$]* | ?:[\\/]* ) ac_rel_source=$ac_source ;;
+	*) ac_rel_source=$ac_top_build_prefix$ac_source ;;
+    esac
+    ln -s "$ac_rel_source" "$ac_file" 2>/dev/null ||
+      ln "$ac_source" "$ac_file" 2>/dev/null ||
+      cp -p "$ac_source" "$ac_file" ||
+      as_fn_error $? "cannot link or copy $ac_source to $ac_file" "$LINENO" 5
+  fi
+ ;;
   :C)  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: executing $ac_file commands" >&5
 printf "%s\n" "$as_me: executing $ac_file commands" >&6;}
  ;;

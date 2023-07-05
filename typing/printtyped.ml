@@ -210,6 +210,9 @@ let rec core_type i ppf x =
   | Ttyp_package { pack_path = s; pack_fields = l } ->
       line i ppf "Ttyp_package %a\n" fmt_path s;
       list i package_with ppf l;
+  | Ttyp_open (path, _mod_ident, t) ->
+      line i ppf "Ttyp_open %a\n" fmt_path path;
+      core_type i ppf t
 
 and package_with i ppf (s, t) =
   line i ppf "with type %a\n" fmt_longident s;

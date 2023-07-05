@@ -7450,3 +7450,26 @@ let goober a = match a with C (type a b) y -> y
 module type s = sig type ('a,'b) t end with type (-!'a, !+'b) t = 'b -> 'a list
 module type s = sig type ('a,'b) t end with type (!-'a, +!'b) t := 'b -> 'a list
 module type s = sig type ('a,'b) t end with type ('a,'b) t := 'b -> 'a list
+
+(* Coercion in value constraint *)
+
+let x: [`A] :> [> `A | `B ] = `A
+let x :> [> `A | `B ] = `A
+
+(* Raw identifiers *)
+
+module type A = sig
+  type ('\#let, '\#a) \#virtual = ('\#let * '\#a) as '\#mutable
+  val foo : '\#let '\#a . '\#a -> '\#let -> unit
+  type \#foo = { \#let : int }
+end
+
+module M = struct
+  let (\#let,\#foo) as \#val = (\#mutable,\#baz)
+  let _ = fun (type \#let) (type \#foo) -> 1
+  let f g ~\#let ?\#and ?(\#for = \#and) () =
+    g ~\#let ?\#and ()
+  class \#let = object
+    inherit \#val \#let as \#mutable
+  end
+end

@@ -181,12 +181,17 @@ method private instr_in_basic_block instr try_nesting =
    Can be overridden for some processors to signal specific
    load or store instructions (e.g. on the I386). *)
 
+(* Stores are not reordered with other stores nor with loads.
+   Loads can be reordered with other loads, but not with stores.
+   Atomic loads must not be reordered, so we treat them like stores. *)
+
 method is_store = function
     Istore(_, _, _) -> true
+  | Iload {is_atomic = true} -> true
   | _ -> false
 
 method is_load = function
-    Iload _ -> true
+    Iload {is_atomic = false} -> true
   | _ -> false
 
 method is_checkbound = function

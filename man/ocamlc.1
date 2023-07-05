@@ -144,7 +144,7 @@ If
 .B caml.out
 is the name of the file produced by the linking phase, the command
 .B ocamlrun caml.out
-.IR arg1 \  \ arg2 \ ... \ argn
+.IR arg1 " " arg2 " ... " argn
 executes the compiled code contained in
 .BR caml.out ,
 passing it as arguments the character strings
@@ -158,7 +158,7 @@ for more details.)
 On most systems, the file produced by the linking
 phase can be run directly, as in:
 .B ./caml.out
-.IR arg1 \  \ arg2 \ ... \ argn .
+.IR arg1 " " arg2 " ... " argn .
 The produced file has the executable bit set, and it manages to launch
 the bytecode interpreter by itself.
 
@@ -186,20 +186,21 @@ file. The name of the library must be set with the
 option.
 .IP
 If
-.BR \-custom , \ \-cclib \ or \ \-ccopt
+.BR \-custom ", " \-cclib " or " \-ccopt
 options are passed on the command
 line, these options are stored in the resulting .cma library.  Then,
 linking with this library automatically adds back the
-.BR \-custom , \ \-cclib \ and \ \-ccopt
+.BR \-custom ", " \-cclib " and " \-ccopt
 options as if they had been provided on the
 command line, unless the
 .B \-noautolink
 option is given. Additionally, a substring
 .B $CAMLORIGIN
 inside a
-.BR \ \-ccopt
+.B \-ccopt
 options will be replaced by the full path to the .cma library,
 excluding the filename.
+.TP
 .B \-absname
 Show absolute filenames in error messages.
 .TP
@@ -231,7 +232,7 @@ compilation. Source code files are turned into compiled files, but no
 executable file is produced. This option is useful to
 compile modules separately.
 .TP
-.BI \-cc \ ccomp
+.BI \-cc " ccomp"
 Use
 .I ccomp
 as the C linker when linking in "custom runtime" mode (see the
@@ -245,7 +246,7 @@ option to the C linker when linking in "custom runtime" mode (see the
 .B \-custom
 option). This causes the given C library to be linked with the program.
 .TP
-.BI \-ccopt \ option
+.BI \-ccopt " option"
 Pass the given
 .I option
 to the C compiler and linker, when linking in
@@ -257,7 +258,7 @@ causes the C linker to search for C libraries in
 directory
 .IR dir .
 .TP
-.BI \-color \ mode
+.BI \-color " mode"
 Enable or disable colors in compiler messages (especially warnings and errors).
 The following modes are supported:
 
@@ -283,7 +284,7 @@ checks that the "TERM" environment variable exists and is
 not empty or "dumb", and that isatty(stderr) holds.
 
 .TP
-.BI \-error\-style \ mode
+.BI \-error\-style " mode"
 Control the way error messages and warnings are printed.
 The following modes are supported:
 
@@ -336,15 +337,15 @@ code with user-defined C functions.
 Never use the
 .BR strip (1)
 command on executables produced by
-.BR ocamlc\ \-custom ,
+.BR ocamlc " \-custom" ,
 this would remove the bytecode part of the executable.
 
 Security warning: never set the "setuid" or "setgid" bits on
 executables produced by
-.BR ocamlc\ \-custom ,
+.BR ocamlc " \-custom" ,
 this would make them vulnerable to attacks.
 .TP
-.BI \-depend\ ocamldep-args
+.BI \-depend " ocamldep-args"
 Compute dependencies, as ocamldep would do.
 .TP
 .BI \-dllib\ \-l libname
@@ -354,7 +355,7 @@ to be loaded dynamically by the run-time system
 .BR ocamlrun (1)
 at program start-up time.
 .TP
-.BI \-dllpath \ dir
+.BI \-dllpath " dir"
 Adds the directory
 .I dir
 to the run-time search path for shared
@@ -371,7 +372,7 @@ executable file, where
 .BR ocamlrun (1)
 can find it and use it.
 .TP
-.BI \-for\-pack \ module\-path
+.BI \-for\-pack " module\-path"
 Generate an object file (.cmo file) that can later be included
 as a sub-module (with the given access path) of a compilation unit
 constructed with
@@ -404,16 +405,16 @@ can help in writing an explicit interface (.mli file) for a file: just
 redirect the standard output of the compiler to a .mli file, and edit
 that file to remove all declarations of unexported names.
 .TP
-.B \-cmi-file \ filename
+.BI \-cmi-file " filename"
 Type-check the source implementation to be compiled against the
 specified interface file (by-passes the normal lookup for .mli and .cmi files).
 .TP
-.BI \-I \ directory
+.BI \-I " directory"
 Add the given directory to the list of directories searched for
 compiled interface files (.cmi), compiled object code files
 (.cmo), libraries (.cma), and C libraries specified with
-.BI \-cclib\ \-l xxx
-.RB .
+.BI \-cclib\ \-l xxx\c
+\[char46]
 By default, the current directory is searched first, then the
 standard library directory. Directories added with
 .B \-I
@@ -432,17 +433,17 @@ adds the subdirectory
 .B compiler-libs
 of the standard library to the search path.
 .TP
-.BI \-impl \ filename
+.BI \-impl " filename"
 Compile the file
 .I filename
 as an implementation file, even if its extension is not .ml.
 .TP
-.BI \-intf \ filename
+.BI \-intf " filename"
 Compile the file
 .I filename
 as an interface file, even if its extension is not .mli.
 .TP
-.BI \-intf\-suffix \ string
+.BI \-intf\-suffix " string"
 Recognize file names ending with
 .I string
 as interface files (instead of the default .mli).
@@ -479,7 +480,7 @@ Build a custom runtime system (in the file specified by option
 incorporating the C object files and libraries given on the command
 line.  This custom runtime system can be used later to execute
 bytecode executables produced with the option
-.B ocamlc\ \-use\-runtime
+.B ocamlc " \-use\-runtime"
 .IR runtime-name .
 .TP
 .B \-match\-context\-rows
@@ -504,7 +505,7 @@ This flag has no effect when linking already-compiled files.
 .TP
 .B \-noautolink
 When linking .cma libraries, ignore
-.BR \-custom , \ \-cclib \ and \ \-ccopt
+.BR \-custom ", " \-cclib " and " \-ccopt
 options potentially contained in the libraries (if these options were
 given when building the libraries).  This can be useful if a library
 contains incorrect specifications of C libraries or C options; in this
@@ -521,12 +522,12 @@ Do not automatically add the standard library directory to the list of
 directories searched for compiled interface files (.cmi), compiled
 object code files (.cmo), libraries (.cma), and C libraries specified
 with
-.BI \-cclib\ \-l xxx
-.RB .
+.BI \-cclib\ \-l xxx\c
+\[char46]
 See also option
 .BR \-I .
 .TP
-.BI \-o \ exec\-file
+.BI \-o " exec\-file"
 Specify the name of the output file produced by the linker. The
 default output name is
 .BR a.out ,
@@ -555,7 +556,7 @@ access the .cmx file of this unit -- nor warn if it is absent. This can
 improve speed of compilation, for both initial and incremental builds,
 at the expense of performance of the generated code.
 .TP
-.BI \-open \ module
+.BI \-open " module"
 Opens the given module before processing the interface or
 implementation files. If several
 .B \-open
@@ -594,7 +595,7 @@ contents of the object files a.cmo, b.cmo and c.cmo.  These
 contents can be referenced as P.A, P.B and P.C in the remainder
 of the program.
 .TP
-.BI \-pp \ command
+.BI \-pp " command"
 Cause the compiler to call the given
 .I command
 as a preprocessor for each source file. The output of
@@ -606,7 +607,7 @@ file is built from the basename of the source file with the
 extension .ppi for an interface (.mli) file and .ppo for an
 implementation (.ml) file.
 .TP
-.BI \-ppx \ command
+.BI \-ppx " command"
 After parsing, pipe the abstract syntax tree through the preprocessor
 .IR command .
 The module
@@ -640,7 +641,7 @@ flag, you must use it again for all dependencies.
 Do no allow arbitrary recursive types during type-checking.
 This is the default.
 .TP
-.BI \-runtime\-variant \ suffix
+.BI \-runtime\-variant " suffix"
 Add
 .I suffix
 to the name of the runtime library that will be used by the program.
@@ -652,7 +653,7 @@ suffix is supported and gives a debug version of the runtime.
 .TP
 .B \-safe\-string
 Enforce the separation between types
-.BR string \ and\  bytes ,
+.BR string " and " bytes " ,"
 thereby making strings read-only. This is the default.
 .TP
 .B \-safer\-matching
@@ -666,7 +667,7 @@ When a type is visible under several module-paths, use the shortest
 one when printing the type's name in inferred interfaces and error and
 warning messages.
 .TP
-.BI \-stop\-after \ pass
+.BI \-stop\-after " pass"
 Stop compilation after the given compilation pass. The currently
 supported passes are:
 .BR parsing ,
@@ -692,7 +693,7 @@ This is the default.
 .TP
 .B \-unsafe
 Turn bound checking off for array and string accesses (the
-.BR v.(i) and s.[i]
+.BR v.(i) " and " s.[i]
 constructs). Programs compiled with
 .B \-unsafe
 are therefore
@@ -701,12 +702,12 @@ accesses an array or string outside of its bounds.
 .TP
 .B \-unsafe\-string
 Identify the types
-.BR string \ and\  bytes ,
+.BR string " and " bytes " ,"
 thereby making strings writable.
 This is intended for compatibility with old source code and should not
 be used with new software.
 .TP
-.BI \-use\-runtime \ runtime\-name
+.BI \-use\-runtime " runtime\-name"
 Generate a bytecode executable file that can be executed on the custom
 runtime system
 .IR runtime\-name ,
@@ -724,19 +725,18 @@ invocations of the C compiler and linker in
 .B \-custom
 mode.  Useful to debug C library problems.
 .TP
-.BR \-vnum \ or\  \-version
+.BR \-vnum " or " \-version
 Print the version number of the compiler in short form (e.g. "3.11.0"),
 then exit.
 .TP
-.BI \-w \ warning\-list
+.BI \-w " warning\-list"
 Enable, disable, or mark as fatal the warnings specified by the argument
 .IR warning\-list .
 
 Each warning can be
-.IR enabled \ or\  disabled ,
+.IR enabled " or " disabled " ,"
 and each warning can be
-.IR fatal \ or
-.IR non-fatal .
+.IR fatal " or " non-fatal .
 If a warning is disabled, it isn't displayed and doesn't affect
 compilation in any way (even if it is fatal).  If a warning is enabled,
 it is displayed normally by the compiler whenever the source code
@@ -932,13 +932,13 @@ Deprecated: now part of warning 8.
 .B 26 [unused-var]
 .br
 Suspicious unused variable: unused variable that is bound with
-.BR let \ or \ as ,
+.BR let " or " as " ,"
 and doesn't start with an underscore (_) character.
 
 .B 27 [unused-var-strict]
 .br
 Innocuous unused variable: unused variable that is not bound with
-.BR let \ nor \ as ,
+.BR let " nor " as " ,"
 and doesn't start with an underscore (_) character.
 
 .B 28 [wildcard-arg-to-constant-constr]
@@ -1188,10 +1188,10 @@ mentioned here corresponds to the empty set.
 The default setting is
 .BR \-w\ +a\-4\-7\-9\-27\-29\-30\-32..42\-44\-45\-48\-50\-60\-66..70 .
 Note that warnings
-.BR 5 \ and \ 10
+.BR 5 " and " 10
 are not always triggered, depending on the internals of the type checker.
 .TP
-.BI \-warn\-error \ warning\-list
+.BI \-warn\-error " warning\-list"
 Mark as errors the warnings specified in the argument
 .IR warning\-list .
 The compiler will stop with an error when one of these
@@ -1231,16 +1231,16 @@ Include the runtime system in the generated program. This is the default.
 The compiler does not include the runtime system (nor a reference to it) in the
 generated program; it must be supplied separately.
 .TP
-.BI \- \ file
+.BI \- " file"
 Process
 .I file
 as a file name, even if it starts with a dash (-) character.
 .TP
-.BR \-help \ or \ \-\-help
+.BR \-help " or " \-\-help
 Display a short usage summary and exit.
 
 .SH SEE ALSO
-.BR ocamlopt (1), \ ocamlrun (1), \ ocaml (1).
+.BR ocamlopt "(1), " ocamlrun "(1), " ocaml (1).
 .br
-.IR "The OCaml user's manual" ,
+.IR The\ OCaml\ user's\ manual ,
 chapter "Batch compilation".

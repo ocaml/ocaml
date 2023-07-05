@@ -41,6 +41,6 @@ Error: Signature mismatch:
            val o : t
          end
        Values do not match: val o : c is not included in val o : t
-       The type c is not compatible with the type t
-       The second object type has no method y
+       The type "c" is not compatible with the type "t"
+       The second object type has no method "y"
 |}]

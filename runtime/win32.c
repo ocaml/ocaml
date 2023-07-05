@@ -71,11 +71,7 @@ unsigned short caml_win32_minor = 0;
 unsigned short caml_win32_build = 0;
 unsigned short caml_win32_revision = 0;
 
-CAMLnoreturn_start
-static void caml_win32_sys_error (int errnum)
-CAMLnoreturn_end;
-
-static void caml_win32_sys_error(int errnum)
+static CAMLnoret void caml_win32_sys_error(int errnum)
 {
   wchar_t buffer[512];
   value msg;
@@ -783,6 +779,19 @@ CAMLexport wchar_t *caml_win32_getenv(wchar_t const *lpName)
 
 int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
 {
+  /* First handle corner-case not handled by MoveFileEx:
+     - dir to existing file - should fail */
+  DWORD new_attribs;
+  DWORD old_attribs = GetFileAttributes(oldpath);
+  if ((old_attribs != INVALID_FILE_ATTRIBUTES) &&
+      (old_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+    new_attribs = GetFileAttributes(newpath);
+    if ((new_attribs != INVALID_FILE_ATTRIBUTES) &&
+        (new_attribs & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+        errno = ENOTDIR;
+        return -1;
+    }
+  }
   /* MOVEFILE_REPLACE_EXISTING: to be closer to POSIX
      MOVEFILE_COPY_ALLOWED: MoveFile performs a copy if old and new
        paths are on different devices, so we do the same here for
@@ -794,6 +803,23 @@ int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
                  MOVEFILE_COPY_ALLOWED)) {
     return 0;
   }
+
+  /* Another cornercase not handled by MoveFileEx:
+     - dir to empty dir - positive - should succeed */
+  if ((old_attribs != INVALID_FILE_ATTRIBUTES) &&
+      (old_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0 &&
+      (new_attribs != INVALID_FILE_ATTRIBUTES) &&
+      (new_attribs & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+    /* Try to delete: RemoveDirectoryW fails on non-empty dirs as intended.
+       Then try again. */
+    RemoveDirectoryW(newpath);
+    if (MoveFileEx(oldpath, newpath,
+                   MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
+                   MOVEFILE_COPY_ALLOWED)) {
+      return 0;
+    }
+  }
+
   /* Modest attempt at mapping Win32 error codes to POSIX error codes.
      The __dosmaperr() function from the CRT does a better job but is
      generally not accessible. */
@@ -1115,12 +1141,12 @@ void caml_init_os_params(void)
   clock_period = (1000000000.0 / frequency.QuadPart);
 }
 
-int64_t caml_time_counter(void)
+uint64_t caml_time_counter(void)
 {
   LARGE_INTEGER now;
 
   QueryPerformanceCounter(&now);
-  return (int64_t)(now.QuadPart * clock_period);
+  return (uint64_t)(now.QuadPart * clock_period);
 }
 
 void *caml_plat_mem_map(uintnat size, uintnat alignment, int reserve_only)

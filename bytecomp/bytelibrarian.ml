@@ -114,13 +114,14 @@ let create_archive file_list lib_name =
     )
 
 open Format
+module Style = Misc.Style
 
 let report_error ppf = function
   | File_not_found name ->
-      fprintf ppf "Cannot find file %s" name
+      fprintf ppf "Cannot find file %a" Style.inline_code name
   | Not_an_object_file name ->
       fprintf ppf "The file %a is not a bytecode object file"
-        Location.print_filename name
+        (Style.as_inline_code Location.print_filename) name
 
 let () =
   Location.register_error_of_exn

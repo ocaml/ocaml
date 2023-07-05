@@ -49,11 +49,7 @@ static void compare_free_stack(struct compare_stack* stk)
 }
 
 /* Same, then raise Out_of_memory */
-CAMLnoreturn_start
-static void compare_stack_overflow(struct compare_stack* stk)
-CAMLnoreturn_end;
-
-static void compare_stack_overflow(struct compare_stack* stk)
+static CAMLnoret void compare_stack_overflow(struct compare_stack* stk)
 {
   caml_gc_message (0x04, "Stack overflow in structural comparison\n");
   compare_free_stack(stk);

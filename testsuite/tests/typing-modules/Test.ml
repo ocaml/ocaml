@@ -94,12 +94,12 @@ type u = X of bool
 Line 3, characters 23-33:
 3 | module type B = A with type t = u;; (* fail *)
                            ^^^^^^^^^^
-Error: This variant or record definition does not match that of type u
+Error: This variant or record definition does not match that of type "u"
        Constructors do not match:
-         X of bool
+         "X of bool"
        is not the same as:
-         X of int
-       The type bool is not equal to the type int
+         "X of int"
+       The type "bool" is not equal to the type "int"
 |}];;
 
 (* PR#5815 *)
@@ -110,7 +110,7 @@ module type S = sig exception Foo of int  exception Foo of bool end;;
 Line 1, characters 42-63:
 1 | module type S = sig exception Foo of int  exception Foo of bool end;;
                                               ^^^^^^^^^^^^^^^^^^^^^
-Error: Multiple definition of the extension constructor name Foo.
+Error: Multiple definition of the extension constructor name "Foo".
        Names must be unique in a given structure or signature.
 |}];;
 
@@ -146,9 +146,9 @@ Error: Signature mismatch:
        is not included in
          type t += E
        Constructors do not match:
-         E of int
+         "E of int"
        is not the same as:
-         E
+         "E"
        They have different arities.
 |}];;
 
@@ -167,10 +167,10 @@ Error: Signature mismatch:
        is not included in
          type t += E of char
        Constructors do not match:
-         E of int
+         "E of int"
        is not the same as:
-         E of char
-       The type int is not equal to the type char
+         "E of char"
+       The type "int" is not equal to the type "char"
 |}];;
 
 module M : sig type t += C of int end = struct type t += E of int end;;
@@ -183,7 +183,7 @@ Error: Signature mismatch:
          sig type t += E of int end
        is not included in
          sig type t += C of int end
-       The extension constructor `C' is required but not provided
+       The extension constructor "C" is required but not provided
 |}];;
 
 module M : sig
@@ -206,8 +206,8 @@ Error: Signature mismatch:
        is not included in
          type t += E of { x : int; }
        Constructors do not match:
-         E of int
+         "E of int"
        is not the same as:
-         E of { x : int; }
+         "E of { x : int; }"
        The second uses inline records and the first doesn't.
 |}];;

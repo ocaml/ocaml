@@ -37,9 +37,11 @@ struct caml_loc_info {
   int loc_is_raise;
   char * loc_filename;
   char * loc_defname;
-  int loc_lnum;
-  int loc_startchr;
-  int loc_endchr;
+  int loc_start_lnum;
+  int loc_start_chr;
+  int loc_end_lnum;
+  int loc_end_chr;
+  int loc_end_offset;
   int loc_is_inlined;
 };
 
@@ -110,9 +112,11 @@ struct ev_info {
   code_t ev_pc;
   char *ev_filename;
   char *ev_defname;
-  int ev_lnum;
-  int ev_startchr;
-  int ev_endchr;
+  int ev_start_lnum;
+  int ev_start_chr;  /* Relative to ev_start_lnum */
+  int ev_end_lnum;
+  int ev_end_chr;    /* Relative to ev_end_lnum */
+  int ev_end_offset; /* Relative to ev_start_lnum */
 };
 
 /* Find the event with the given pc. */

@@ -45,8 +45,8 @@ end;;
 Line 16, characters 22-26:
 16 |       inherit child1' self
                            ^^^^
-Error: This expression has type < child : 'a; previous : 'b option; .. >
-       but an expression was expected of type 'c
+Error: This expression has type "< child : 'a; previous : 'b option; .. >"
+       but an expression was expected of type "'c"
        Self type cannot escape its class
 |}]
 
@@ -145,7 +145,7 @@ Lines 4-7, characters 4-7:
 6 |       inherit child2
 7 |     end
 Error: This object has undeclared virtual methods.
-       The following methods were not declared : previous child
+       The following methods were not declared : "previous" "child"
 |}]
 
 class assertion_failure = object(self : 'a)
@@ -169,7 +169,7 @@ Lines 4-10, characters 4-7:
  9 |       method child = assert false
 10 |     end
 Error: Cannot close type of object literal:
-       < child : '_weak2; previous : '_weak1 option; .. > as '_weak1
+       "< child : '_weak2; previous : '_weak1 option; .. > as '_weak1"
        it has been unified with the self type of a class that is not yet
        completely defined.
 |}]
@@ -194,11 +194,11 @@ Line 3, characters 36-41:
 3 |     inherit parameter_contains_self param
                                         ^^^^^
 Error: This expression has type
-         < redrawWidget : parameter_contains_self -> unit; .. >
+         "< redrawWidget : parameter_contains_self -> unit; .. >"
        but an expression was expected of type
-         < redrawWidget : < invalidate : unit; .. > -> unit; .. >
-       Type parameter_contains_self = < invalidate : unit >
-       is not compatible with type < invalidate : unit; .. >
+         "< redrawWidget : < invalidate : unit; .. > -> unit; .. >"
+       Type "parameter_contains_self" = "< invalidate : unit >"
+       is not compatible with type "< invalidate : unit; .. >"
        Self type cannot be unified with a closed object type
 |}]
 
@@ -210,11 +210,11 @@ Line 3, characters 26-31:
 3 |   parameter_contains_self param;;
                               ^^^^^
 Error: This expression has type
-         < redrawWidget : parameter_contains_self -> unit; .. >
+         "< redrawWidget : parameter_contains_self -> unit; .. >"
        but an expression was expected of type
-         < redrawWidget : < invalidate : unit; .. > -> unit; .. >
-       Type parameter_contains_self = < invalidate : unit >
-       is not compatible with type < invalidate : unit; .. >
+         "< redrawWidget : < invalidate : unit; .. > -> unit; .. >"
+       Type "parameter_contains_self" = "< invalidate : unit >"
+       is not compatible with type "< invalidate : unit; .. >"
        Self type cannot be unified with a closed object type
 |}]
 
@@ -229,8 +229,8 @@ let escapes_via_inheritance param =
 Line 4, characters 38-43:
 4 |       inherit parameter_contains_self param
                                           ^^^^^
-Error: This expression has type 'a but an expression was expected of type
-         < redrawWidget : < invalidate : unit; .. > -> unit; .. >
+Error: This expression has type "'a" but an expression was expected of type
+         "< redrawWidget : < invalidate : unit; .. > -> unit; .. >"
        Self type cannot escape its class
 |}]
 
@@ -243,8 +243,8 @@ let escapes_via_application param =
 Line 3, characters 38-43:
 3 |     class c = parameter_contains_self param
                                           ^^^^^
-Error: This expression has type 'a but an expression was expected of type
-         < redrawWidget : < invalidate : unit; .. > -> unit; .. >
+Error: This expression has type "'a" but an expression was expected of type
+         "< redrawWidget : < invalidate : unit; .. > -> unit; .. >"
        Self type cannot escape its class
 |}]
 
@@ -257,11 +257,11 @@ Line 3, characters 36-41:
 3 |     inherit parameter_contains_self param
                                         ^^^^^
 Error: This expression has type
-         < redrawWidget : parameter_contains_self -> unit; .. >
+         "< redrawWidget : parameter_contains_self -> unit; .. >"
        but an expression was expected of type
-         < redrawWidget : < invalidate : unit; .. > -> unit; .. >
-       Type parameter_contains_self = < invalidate : unit >
-       is not compatible with type < invalidate : unit; .. >
+         "< redrawWidget : < invalidate : unit; .. > -> unit; .. >"
+       Type "parameter_contains_self" = "< invalidate : unit >"
+       is not compatible with type "< invalidate : unit; .. >"
        Self type cannot be unified with a closed object type
 |}]
 
@@ -291,7 +291,7 @@ Line 2, characters 17-34:
 2 |   inherit object (_ : < i : int >)
                      ^^^^^^^^^^^^^^^^^
 Error: This pattern cannot match self: it only matches values of type
-       < i : int >
+       "< i : int >"
 |}]
 
 class closes_after_constraint =
@@ -300,8 +300,8 @@ class closes_after_constraint =
 Line 2, characters 63-75:
 2 |   ((fun (x : 'a) -> object (_:'a) end) : 'a -> object('a) end) (object end);;
                                                                    ^^^^^^^^^^^^
-Error: This expression has type <  > but an expression was expected of type
-         < .. >
+Error: This expression has type "<  >" but an expression was expected of type
+         "< .. >"
        Self type cannot be unified with a closed object type
 |}];;
 
@@ -312,7 +312,7 @@ class type ['a] ct = object ('a) constraint 'a = < .. > end
 Line 2, characters 38-47:
 2 | class type closes_via_application = [ <m : int> ] ct;;
                                           ^^^^^^^^^
-Error: The type parameter < m : int >
-       does not meet its constraint: it should be < .. >
+Error: The type parameter "< m : int >"
+       does not meet its constraint: it should be "< .. >"
        Self type cannot be unified with a closed object type
 |}];;

@@ -173,7 +173,7 @@ CPPFLAGS=@CPPFLAGS@
 OCAMLC_CFLAGS=@ocamlc_cflags@
 
 OCAMLC_CPPFLAGS=@ocamlc_cppflags@
-BYTECCLIBS=@bytecclibs@
+BYTECCLIBS=@cclibs@
 EXE=@exeext@
 OUTPUTEXE=@outputexe@$(EMPTY)
 SUPPORTS_SHARED_LIBRARIES=@supports_shared_libraries@
@@ -187,19 +187,14 @@ MKLIB=@mklib@
 #        two drivers should be identical.
 OCAMLOPT_CFLAGS=@ocamlc_cflags@
 OCAMLOPT_CPPFLAGS=@ocamlc_cppflags@
-NATIVECCLIBS=@nativecclibs@
+NATIVECCLIBS=@cclibs@
 SYSTHREAD_SUPPORT=@systhread_support@
 PACKLD=@PACKLD@$(EMPTY)
 CCOMPTYPE=@ccomptype@
 TOOLCHAIN=@toolchain@
 CMXS=@cmxs@
 
-# On Windows, MKDLL, MKEXE and MKMAINDLL must ultimately be equivalent to
-#   flexlink $(FLEXLINK_FLAGS) [-exe|-maindll]
-# or OCAML_FLEXLINK overriding will not work (see utils/config.generated.ml.in)
-
 FLEXDLL_CHAIN=@flexdll_chain@
-FLEXLINK_FLAGS=@flexlink_flags@
 
 MKEXE=@mkexe@
 MKDLL=@mkdll@

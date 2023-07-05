@@ -37,6 +37,6 @@ let _ =
   ) in
   Gc.full_major ();
   let n = major_collections () in
-  ignore (make 22);
+  ignore (make 24);
   assert ((major_collections ()) > n);
   print_endline "sleep OK"

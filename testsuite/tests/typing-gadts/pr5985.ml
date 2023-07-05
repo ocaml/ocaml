@@ -12,8 +12,8 @@ Line 3, characters 2-29:
 3 |   type _ t = T : 'a -> 'a s t
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the GADT constructor
-         T : 'a -> 'a s t
-       the type variable 'a cannot be deduced from the type parameters.
+         "T : 'a -> 'a s t"
+       the type variable "'a" cannot be deduced from the type parameters.
 |}];;
 (*
 module M = F (struct type 'a s = int end) ;;
@@ -42,8 +42,8 @@ Lines 2-3, characters 2-67:
 2 | ..class ['a] c x =
 3 |     object constraint 'a = 'b T.t val x' : 'b = x method x = x' end
 Error: In the definition
-         type 'a c = < x : 'b > constraint 'a = 'b T.t
-       the type variable 'b cannot be deduced from the type parameters.
+         "type 'a c = < x : 'b > constraint 'a = 'b T.t"
+       the type variable "'b" cannot be deduced from the type parameters.
 |}];;
 
 (* Another (more direct) instance using polymorphic variants *)
@@ -57,8 +57,8 @@ Line 1, characters 0-49:
 1 | type 'x t = A of 'a constraint 'x = [< `X of 'a ] ;; (* fail *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the definition
-         type 'b t = A of 'a constraint 'b = [< `X of 'a ]
-       the type variable 'a cannot be deduced from the type parameters.
+         "type 'b t = A of 'a constraint 'b = [< `X of 'a ]"
+       the type variable "'a" cannot be deduced from the type parameters.
 |}];;
 
 type 'a t = A : 'a -> [< `X of 'a ] t;; (* fail *)
@@ -67,8 +67,8 @@ Line 1, characters 0-37:
 1 | type 'a t = A : 'a -> [< `X of 'a ] t;; (* fail *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the GADT constructor
-         A : 'a -> [< `X of 'a ] t
-       the type variable 'a cannot be deduced from the type parameters.
+         "A : 'a -> [< `X of 'a ] t"
+       the type variable "'a" cannot be deduced from the type parameters.
 |}];;
 
 (* It is not OK to allow modules exported by other compilation units *)
@@ -84,8 +84,8 @@ Line 4, characters 0-46:
 4 | type _ t = T : 'a -> ('a, 'b) Ephemeron.K1.t t;; (* fail *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the GADT constructor
-         T : 'a -> ('a, 'b) Ephemeron.K1.t t
-       the type variable 'a cannot be deduced from the type parameters.
+         "T : 'a -> ('a, 'b) Ephemeron.K1.t t"
+       the type variable "'a" cannot be deduced from the type parameters.
 |}];;
 (*
 let castT (type a) (type b) (x : a t) (e: (a, b) eq) : b t =
@@ -103,8 +103,8 @@ Line 3, characters 2-29:
 3 |   type _ t = T : 'a -> 'a s t
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the GADT constructor
-         T : 'a -> 'a s t
-       the type variable 'a cannot be deduced from the type parameters.
+         "T : 'a -> 'a s t"
+       the type variable "'a" cannot be deduced from the type parameters.
 |}];;
 (* Otherwise we can write the following *)
 module rec M : (S with type 'a s = unit) = M;;
@@ -112,7 +112,7 @@ module rec M : (S with type 'a s = unit) = M;;
 Line 1, characters 16-17:
 1 | module rec M : (S with type 'a s = unit) = M;;
                     ^
-Error: Unbound module type S
+Error: Unbound module type "S"
 |}];;
 (* For the above reason, we cannot allow the abstract declaration
    of s and the definition of t to be in the same module, as
@@ -138,8 +138,8 @@ Line 2, characters 0-36:
 2 | type +'a t = 'b constraint 'a = 'b q;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the definition
-         type +'a t = 'b constraint 'a = 'b q
-       the type variable 'b has a variance that
+         "type +'a t = 'b constraint 'a = 'b q"
+       the type variable "'b" has a variance that
        cannot be deduced from the type parameters.
        It was expected to be unrestricted, but it is covariant.
 |}];;
@@ -157,8 +157,8 @@ Line 1, characters 0-36:
 1 | type -'a s = 'b constraint 'a = 'b t;; (* fail *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the definition
-         type -'a s = 'b constraint 'a = 'b t
-       the type variable 'b has a variance that
+         "type -'a s = 'b constraint 'a = 'b t"
+       the type variable "'b" has a variance that
        is not reflected by its occurrence in type parameters.
        It was expected to be contravariant, but it is covariant.
 |}];;
@@ -180,8 +180,8 @@ Line 1, characters 0-38:
 1 | type +'a s = 'b constraint 'a = 'b t q;; (* fail *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the definition
-         type +'a s = 'b constraint 'a = 'b t q
-       the type variable 'b has a variance that
+         "type +'a s = 'b constraint 'a = 'b t q"
+       the type variable "'b" has a variance that
        cannot be deduced from the type parameters.
        It was expected to be unrestricted, but it is covariant.
 |}];;
@@ -210,6 +210,6 @@ Line 2, characters 0-27:
 2 | type _ g = G : 'a -> 'a t g;; (* fail *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the GADT constructor
-         G : 'a list -> 'a list t g
-       the type variable 'a cannot be deduced from the type parameters.
+         "G : 'a list -> 'a list t g"
+       the type variable "'a" cannot be deduced from the type parameters.
 |}];;

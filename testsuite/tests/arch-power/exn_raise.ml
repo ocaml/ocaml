@@ -1,7 +1,6 @@
 (* TEST
  arch_power;
  native;
- ocamlopt_flags = "-flarge-toc";
  ocamlopt.byte;
  run;
 *)

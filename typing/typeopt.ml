@@ -144,7 +144,8 @@ let bigarray_decode_type env ty tbl dfl =
       dfl
 
 let kind_table =
-  ["float32_elt", Pbigarray_float32;
+  ["float16_elt", Pbigarray_float16;
+   "float32_elt", Pbigarray_float32;
    "float64_elt", Pbigarray_float64;
    "int8_signed_elt", Pbigarray_sint8;
    "int8_unsigned_elt", Pbigarray_uint8;
