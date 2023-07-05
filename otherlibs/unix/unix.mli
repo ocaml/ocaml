@@ -217,7 +217,9 @@ type wait_flag =
 
 val execv : string -> string array -> 'a
 (** [execv prog args] execute the program in file [prog], with
-   the arguments [args], and the current process environment.
+   the arguments [args], and the current process environment.  
+   Note that the first argument is by convention the filename of
+   the program being executed, just like [Sys.argv.(0)]
    These [execv*] functions never return: on success, the current
    program is replaced by the new one.
 
@@ -227,14 +229,6 @@ val execv : string -> string array -> 'a
    Using {!create_process} or one of the [open_process_*] functions
    instead is recommended.
 
-   The first element of the array [args] will often be [argv[0]] or
-   [Sys.argv.(0)] in the new process [prog]. This is plateform
-   dependant and you should refer to the man page of execv, which for
-   instance gives for linux : 
-   
-   "The first argument, by convention, should point to the filename 
-    associated with the file being executed"
-   
    @raise Unix_error on failure *)
 
 val execve : string -> string array -> string array -> 'a
@@ -864,18 +858,18 @@ val create_process :
     file_descr -> int
 (** [create_process prog args stdin stdout stderr]
    creates a new process that executes the program
-   in file [prog], with arguments [args]. The pid of the new
-   process is returned immediately; the new process executes
-   concurrently with the current process.
+   in file [prog], with arguments [args]. Note that the 
+   first argument is by convention the filename of
+   the program being executed, just like [Sys.argv.(0)]. 
+   The pid of the new process is returned immediately; 
+   the new process executes concurrently with the current process.
    The standard input and outputs of the new process are connected
    to the descriptors [stdin], [stdout] and [stderr].
    Passing e.g. {!Unix.stdout} for [stdout] prevents the redirection
    and causes the new process to have the same standard output
    as the current process.
    The executable file [prog] is searched in the path.
-   The new process has the same environment as the current process. 
-   The first element of the array [args] may or may not be required to
-   be equal to [prog] (see {!execv} above) *)
+   The new process has the same environment as the current process. *)
 
 val create_process_env :
   string -> string array -> string array -> file_descr ->
@@ -973,26 +967,26 @@ val open_process_args_full :
     @since 4.08 *)
 
 val process_in_pid : in_channel -> int
-(** Return the pid of a process opened via {!open_process_in} or
-   {!open_process_args_in}.
+(** Return the pid of a process opened via {!open_process_args_in} or
+   the pid of the shell opened via {!open_process_in}.
 
     @since 4.08 (4.12 in UnixLabels) *)
 
 val process_out_pid : out_channel -> int
-(** Return the pid of a process opened via {!open_process_out} or
-   {!open_process_args_out}.
+(** Return the pid of a process opened via {!open_process_args_out} or
+   the pid of the shell opened via {!open_process_out}.
 
     @since 4.08 (4.12 in UnixLabels) *)
 
 val process_pid : in_channel * out_channel -> int
-(** Return the pid of a process opened via {!open_process} or
-   {!open_process_args}.
+(** Return the pid of a process opened via {!open_process_args} or
+   the pid of the shell opened via {!open_process_args}.
 
     @since 4.08 (4.12 in UnixLabels) *)
 
 val process_full_pid : in_channel * out_channel * in_channel -> int
-(** Return the pid of a process opened via {!open_process_full} or
-   {!open_process_args_full}.
+(** Return the pid of a process opened via {!open_process_args_full} or
+   the pid of the shell opened via {!open_process_full}.
 
     @since 4.08 (4.12 in UnixLabels) *)
 
