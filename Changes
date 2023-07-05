@@ -112,6 +112,10 @@ Working version
 
 ### Manual and documentation:
 
+- #12359: Add an example of reexporting an extensible variant types in
+  another module.
+  (Christophe Raffalli, review by ...)
+
 ### Compiler user-interface and warnings:
 
 - #12247: configure: --disable-ocamldebug can now be used instead
