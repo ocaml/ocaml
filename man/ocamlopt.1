@@ -25,7 +25,7 @@ ocamlopt \- The OCaml native-code compiler
 [
 .I options
 ]
-.IR filename \ ...
+.IR filename " ..."
 
 .B ocamlopt.opt
 (same options)
@@ -148,18 +148,18 @@ executable file. The name of the library must be set with the
 option.
 
 If
-.BR \-cclib \ or \ \-ccopt
+.BR \-cclib " or " \-ccopt
 options are passed on the command
 line, these options are stored in the resulting .cmxa library.  Then,
 linking with this library automatically adds back the
-.BR \-cclib \ and \ \-ccopt
+.BR \-cclib " and " \-ccopt
 options as if they had been provided on the
 command line, unless the
 .B \-noautolink
 option is given. Additionally, a substring
 .B $CAMLORIGIN
 inside a
-.BR \ \-ccopt
+.B " \-ccopt"
 options will be replaced by the full path to the .cma library,
 excluding the filename.
 .TP
@@ -194,7 +194,7 @@ compilation. Source code files are turned into compiled files, but no
 executable file is produced. This option is useful to
 compile modules separately.
 .TP
-.BI \-cc \ ccomp
+.BI \-cc " ccomp"
 Use
 .I ccomp
 as the C linker called to build the final executable and as the C
@@ -206,14 +206,14 @@ Pass the
 option to the linker. This causes the given C library to be linked
 with the program.
 .TP
-.BI \-ccopt \ option
+.BI \-ccopt " option"
 Pass the given option to the C compiler and linker. For instance,
 .BI \-ccopt\ \-L dir
 causes the C linker to search for C libraries in
 directory
 .IR dir .
 .TP
-.BI \-color \ mode
+.BI \-color " mode"
 Enable or disable colors in compiler messages (especially warnings and errors).
 The following modes are supported:
 
@@ -239,7 +239,7 @@ checks that the "TERM" environment variable exists and is
 not empty or "dumb", and that isatty(stderr) holds.
 
 .TP
-.BI \-error\-style \ mode
+.BI \-error\-style " mode"
 Control the way error messages and warnings are printed.
 The following modes are supported:
 
@@ -275,10 +275,10 @@ from the
 output, then exit. If the variable does not exist,
 the exit code is non-zero.
 .TP
-.BI \-depend\ ocamldep-args
+.BI \-depend " ocamldep-args"
 Compute dependencies, as ocamldep would do.
 .TP
-.BI \-for\-pack \ module\-path
+.BI \-for\-pack " module\-path"
 Generate an object file (.cmx and .o files) that can later be included
 as a sub-module (with the given access path) of a compilation unit
 constructed with
@@ -307,11 +307,11 @@ can help in writing an explicit interface (.mli file) for a file:
 just redirect the standard output of the compiler to a .mli file,
 and edit that file to remove all declarations of unexported names.
 .TP
-.B \-cmi-file \ filename
+.BI \-cmi\-file " filename"
 Type-check the source implementation to be compiled against the
 specified interface file (by-passes the normal lookup for .mli and .cmi files).
 .TP
-.BI \-I \ directory
+.BI \-I " directory"
 Add the given directory to the list of directories searched for
 compiled interface files (.cmi), compiled object code files (.cmx),
 and libraries (.cmxa). By default, the current directory is searched
@@ -330,12 +330,12 @@ adds the subdirectory
 .B compiler-libs
 of the standard library to the search path.
 .TP
-.BI \-impl \ filename
+.BI \-impl " filename"
 Compile the file
 .I filename
 as an implementation file, even if its extension is not .ml.
 .TP
-.BI \-inline \ n
+.BI \-inline " n"
 Set aggressiveness of inlining to
 .IR n ,
 where
@@ -346,7 +346,7 @@ integer. Specifying
 prevents all functions from being
 inlined, except those whose body is smaller than the call site. Thus,
 inlining causes no expansion in code size. The default aggressiveness,
-.BR \-inline\ 1 ,
+.BR \-inline " 1" ,
 allows slightly larger functions to be inlined, resulting
 in a slight expansion in code size. Higher values for the
 .B \-inline
@@ -356,12 +356,12 @@ inlining, but can result in a serious increase in code size.
 .B \-insn\-sched
 Enables the instruction scheduling pass in the compiler backend.
 .TP
-.BI \-intf \ filename
+.BI \-intf " filename"
 Compile the file
 .I filename
 as an interface file, even if its extension is not .mli.
 .TP
-.BI \-intf\-suffix \ string
+.BI \-intf\-suffix " string"
 Recognize file names ending with
 .I string
 as interface files (instead of the default .mli).
@@ -421,7 +421,7 @@ This flag has no effect when linking already-compiled files.
 .TP
 .B \-noautolink
 When linking .cmxa libraries, ignore
-.BR \-cclib \ and \ \-ccopt
+.BR \-cclib " and " \-ccopt
 options potentially contained in the libraries (if these options were
 given when building the libraries).  This can be useful if a library
 contains incorrect specifications of C libraries or C options; in this
@@ -446,7 +446,7 @@ object code files (.cmx), and libraries (.cmxa). See also option
 Ignore non-optional labels in types. Labels cannot be used in
 applications, and parameter order becomes strict.
 .TP
-.BI \-o \ exec\-file
+.BI \-o " exec\-file"
 Specify the name of the output file produced by the linker. The
 default output name is a.out, in keeping with the Unix tradition. If the
 .B \-a
@@ -470,7 +470,7 @@ option of the bytecode compiler. When compiling a .ml implementation
 file, this produces a .cmx file without cross-module optimization
 information, which reduces recompilation on module change.
 .TP
-.BI \-open \ module
+.BI \-open " module"
 Opens the given module before processing the interface or
 implementation files. If several
 .B \-open
@@ -524,7 +524,7 @@ See
 .IR "The OCaml user's manual" ,
 chapter "Native-code compilation" for more details.
 .TP
-.BI \-pp \ command
+.BI \-pp " command"
 Cause the compiler to call the given
 .I command
 as a preprocessor for each source file. The output of
@@ -533,7 +533,7 @@ is redirected to
 an intermediate file, which is compiled. If there are no compilation
 errors, the intermediate file is deleted afterwards.
 .TP
-.BI \-ppx \ command
+.BI \-ppx " command"
 After parsing, pipe the abstract syntax tree through the preprocessor
 .IR command .
 The module
@@ -561,7 +561,7 @@ flag, you must use it again for all dependencies.
 Do no allow arbitrary recursive types during type-checking.
 This is the default.
 .TP
-.BI \-runtime\-variant \ suffix
+.BI \-runtime\-variant " suffix"
 Add
 .I suffix
 to the name of the runtime library that will be used by the program.
@@ -580,7 +580,7 @@ is saved in the file
 .TP
 .B \-safe\-string
 Enforce the separation between types
-.BR string \ and\  bytes ,
+.BR string " and " bytes ,
 thereby making strings read-only. This is the default.
 .TP
 .B \-safer\-matching
@@ -589,7 +589,7 @@ This allows to detect match failures even if a pattern-matching was
 wrongly assumed to be exhaustive. This only impacts GADT and
 polymorphic variant compilation.
 .TP
-.BI \-save\-ir\-after \ pass
+.BI \-save\-ir\-after " pass"
 Save intermediate representation after the given compilation pass. The currently
 supported passes are:
 .BR scheduling .
@@ -617,7 +617,7 @@ When a type is visible under several module-paths, use the shortest
 one when printing the type's name in inferred interfaces and error and
 warning messages.
 .TP
-.BI \-stop\-after \ pass
+.BI \-stop\-after " pass"
 Stop compilation after the given compilation pass. The currently
 supported passes are:
 .BR parsing ,
@@ -645,7 +645,7 @@ This is the default.
 .TP
 .B \-unsafe
 Turn bound checking off for array and string accesses (the
-.BR v.(i) and s.[i]
+.BR v.(i) " and " s.[i]
 constructs). Programs compiled with
 .B \-unsafe
 are therefore
@@ -661,7 +661,7 @@ exception.
 .TP
 .B \-unsafe\-string
 Identify the types
-.BR string \ and\  bytes ,
+.BR string " and " bytes ,
 thereby making strings writable.
 This is intended for compatibility with old source code and should not
 be used with new software.
@@ -674,11 +674,11 @@ standard library directory, then exit.
 Print all external commands before they are executed, in particular
 invocations of the assembler, C compiler, and linker.
 .TP
-.BR \-version \ or\  \-vnum
+.BR \-version " or " \-vnum
 Print the version number of the compiler in short form (e.g. "3.11.0"),
 then exit.
 .TP
-.BI \-w \ warning\-list
+.BI \-w " warning\-list"
 Enable, disable, or mark as fatal the warnings specified by the argument
 .IR warning\-list .
 See
@@ -686,7 +686,7 @@ See
 for the syntax of
 .IR warning-list .
 .TP
-.BI \-warn\-error \ warning\-list
+.BI \-warn\-error " warning\-list"
 Mark as fatal the warnings specified in the argument
 .IR warning\-list .
 The compiler will stop with an error when one of these
@@ -726,12 +726,12 @@ Include the runtime system in the generated program. This is the default.
 The compiler does not include the runtime system (nor a reference to it) in the
 generated program; it must be supplied separately.
 .TP
-.BI \- \ file
+.BI \- " file"
 Process
 .I file
 as a file name, even if it starts with a dash (-) character.
 .TP
-.BR \-help \ or \ \-\-help
+.BR \-help " or " \-\-help
 Display a short usage summary and exit.
 
 .SH OPTIONS FOR THE FLAMBDA MIDDLE-END
@@ -835,11 +835,11 @@ itself. This configuration can be inspected using
 .BR ocamlopt\ \-config .
 Target architecture depends on the "model" setting, while
 floating-point hardware and thumb support are determined from the ABI
-setting in "system" (
-.BR linux_eabi or linux_eabihf ).
+setting in "system"
+.RB ( linux_eabi " or " linux_eabihf ).
 
 .SH SEE ALSO
 .BR ocamlc (1).
 .br
-.IR "The OCaml user's manual" ,
+.IR The\ OCaml\ user's\ manual ,
 chapter "Native-code compilation".

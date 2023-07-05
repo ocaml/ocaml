@@ -124,9 +124,7 @@ void caml_free_intern_state (void)
 static char * intern_resolve_code_pointer(unsigned char digest[16],
                                           asize_t offset);
 
-CAMLnoreturn_start
-static void intern_bad_code_pointer(unsigned char digest[16])
-CAMLnoreturn_end;
+static CAMLnoret void intern_bad_code_pointer(unsigned char digest[16]);
 
 Caml_inline unsigned char read8u(struct caml_intern_state* s)
 { return *s->intern_src++; }
@@ -303,11 +301,7 @@ static void readfloats(struct caml_intern_state* s,
 #endif
 }
 
-CAMLnoreturn_start
-static void intern_stack_overflow(struct caml_intern_state*)
-CAMLnoreturn_end;
-
-static void intern_stack_overflow(struct caml_intern_state* s)
+static CAMLnoret void intern_stack_overflow(struct caml_intern_state* s)
 {
   caml_gc_message (0x04, "Stack overflow in un-marshaling value\n");
   intern_cleanup(s);

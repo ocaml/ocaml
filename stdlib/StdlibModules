@@ -104,9 +104,23 @@ STDLIB_MODULE_BASENAMES = \
 STDLIB_PREFIXED_MODULES = \
   $(filter-out stdlib camlinternal%, $(STDLIB_MODULE_BASENAMES))
 
-# The pattern FOO = $(eval FOO := $$(shell <cmd>)$(FOO) ensures that <cmd> is
-# executed either once or not at all, giving us GNU make's equivalent of a
-# string lazy_t.
-STDLIB_MODULES = \
-  $(eval STDLIB_MODULES := $$(shell \
-          $(SAK) add-stdlib-prefix $(STDLIB_MODULE_BASENAMES)))$(STDLIB_MODULES)
+# $(STDLIB_MODULES) applies the PREFIX_MODULE macro to each item in
+# $(STDLIB_MODULE_BASENAMES). For the names which require prefixing, this is
+# done using CAPITALIZE. CAPITALIZE is a recursive macro taking the name to
+# transform and a list of transformations to apply to the beginning of the name,
+# thus $(call CAPITALIZE, string, ... r R s S t T ...) expands to String.
+CAPITALIZE = \
+  $(strip $(if $(firstword $(2)), \
+    $(call CAPITALIZE, $(patsubst $(word 1, $(2))%, $(word 2, $(2))%, $(1)), \
+      $(wordlist 3, $(words $(2)), $(2))), \
+    $(1)))
+
+PREFIX_MODULE = \
+  $(if $(filter stdlib camlinternal%, $(1)), \
+    $(1), \
+    stdlib__$(call CAPITALIZE, $(1), \
+                         a A b B c C d D e E f F g G h H i I j J k K l L m M \
+                         n N o O p P q Q r R s S t T u U v V w W x X y Y z Z))
+
+STDLIB_MODULES = $(strip \
+  $(foreach name, $(STDLIB_MODULE_BASENAMES), $(call PREFIX_MODULE, $(name))))

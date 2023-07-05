@@ -50,14 +50,6 @@ let rec split_list n l =
     | a::l -> let (l1, l2) = split_list (n-1) l in (a::l1, l2)
   end
 
-let rec build_closure_env env_param pos = function
-    [] -> V.Map.empty
-  | id :: rem ->
-      V.Map.add id
-        (Uprim(P.Pfield(pos, Pointer, Immutable),
-              [Uvar env_param], Debuginfo.none))
-          (build_closure_env env_param (pos+1) rem)
-
 (* Auxiliary for accessing globals.  We change the name of the global
    to the name of the corresponding asm symbol.  This is done here
    and no longer in Cmmgen so that approximations stored in .cmx files
@@ -703,9 +695,21 @@ let rec substitute loc ((backend, fpc) as st) sb rn ulam =
   | Uunreachable ->
       Uunreachable
 
+type closure_entry =
+  | Free_variable of int
+  | Function of int
+
+type closure_env =
+  | Not_in_closure
+  | In_closure of {
+      entries: closure_entry V.Map.t;
+      env_param: V.t;
+      env_pos: int;
+    }
+
 type env = {
   backend : (module Backend_intf.S);
-  cenv : ulambda V.Map.t;
+  cenv : closure_env;
   fenv : value_approximation V.Map.t;
   mutable_vars : V.Set.t;
 }
@@ -884,8 +888,19 @@ let close_approx_var { fenv; cenv } id =
   match approx with
     Value_const c -> make_const c
   | approx ->
-      let subst = try V.Map.find id cenv with Not_found -> Uvar id in
-      (subst, approx)
+      match cenv with
+      | Not_in_closure -> Uvar id, approx
+      | In_closure { entries; env_param; env_pos } ->
+        let subst =
+          match V.Map.find id entries with
+          | Free_variable fv_pos ->
+            Uprim(P.Pfield(fv_pos - env_pos, Pointer, Immutable),
+                  [Uvar env_param], Debuginfo.none)
+          | Function fun_pos ->
+            Uoffset(Uvar env_param, fun_pos - env_pos)
+          | exception Not_found -> Uvar id
+        in
+        (subst, approx)
 
 let close_var env id =
   let (ulam, _app) = close_approx_var env id in ulam
@@ -1292,16 +1307,29 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
   (* This reference will be set to false if the hypothesis that a function
      does not use its environment parameter is invalidated. *)
   let useless_env = ref initially_closed in
+  let cenv_entries =
+    let rec free_variables_entries fv_pos = function
+        [] -> V.Map.empty
+      | id :: rem ->
+          V.Map.add id (Free_variable fv_pos)
+            (free_variables_entries (fv_pos+1) rem)
+    in
+    let entries_fv = free_variables_entries fv_pos fv in
+    List.fold_right2
+      (fun (id, _params, _return, _body, _fundesc, _dbg) pos env ->
+         V.Map.add id (Function pos) env)
+      uncurried_defs clos_offsets entries_fv
+  in
   (* Translate each function definition *)
   let clos_fundef (id, params, return, body, fundesc, dbg) env_pos =
     let env_param = V.create_local "env" in
-    let cenv_fv =
-      build_closure_env env_param (fv_pos - env_pos) fv in
     let cenv_body =
-      List.fold_right2
-        (fun (id, _params, _return, _body, _fundesc, _dbg) pos env ->
-          V.Map.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
-        uncurried_defs clos_offsets cenv_fv in
+      In_closure {
+        entries = cenv_entries;
+        env_param;
+        env_pos;
+      }
+    in
     let (ubody, approx) =
       close { backend; fenv = fenv_rec; cenv = cenv_body; mutable_vars } body
     in
@@ -1510,7 +1538,7 @@ let intro ~backend ~size lam =
   Compilenv.set_global_approx(Value_tuple !global_approx);
   let (ulam, _approx) =
     close { backend; fenv = V.Map.empty;
-            cenv = V.Map.empty; mutable_vars = V.Set.empty } lam
+            cenv = Not_in_closure; mutable_vars = V.Set.empty } lam
   in
   let opaque =
     !Clflags.opaque

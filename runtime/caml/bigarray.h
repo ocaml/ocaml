@@ -34,6 +34,7 @@ typedef unsigned short caml_ba_uint16;
 #define CAML_BA_MAX_NUM_DIMS 16
 
 enum caml_ba_kind {
+  CAML_BA_FLOAT16,             /* Half-precision floats */
   CAML_BA_FLOAT32,             /* Single-precision floats */
   CAML_BA_FLOAT64,             /* Double-precision floats */
   CAML_BA_SINT8,               /* Signed 8-bit integers */

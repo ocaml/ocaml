@@ -23,8 +23,8 @@ open Effect.Deep
 type _ t += E : unit t
 
 let () =
-  Printf.printf "%d\n%d\n%!"
-    (!(deep 1000))
+  Printf.printf "%d\n%!" (!(deep 1000));
+  Printf.printf "%d\n%!"
     (match_with deep 1000
      { retc = (fun x -> !x);
        exnc = (fun e -> raise e);

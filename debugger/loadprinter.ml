@@ -76,7 +76,9 @@ let rec eval_address = function
     let bytecode_or_asm_symbol = Ident.name id in
     begin match Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol with
     | None ->
-      raise (Symtable.Error (Symtable.Undefined_global bytecode_or_asm_symbol))
+      raise (Symtable.Error (Symtable.Undefined_global
+        (Symtable.Global.Glob_compunit (Cmo_format.Compunit
+          bytecode_or_asm_symbol))))
     | Some obj -> obj
     end
   | Env.Adot(addr, pos) -> Obj.field (eval_address addr) pos
@@ -117,7 +119,8 @@ let install_printer ppf lid =
   let v =
     try
       eval_value_path Env.empty path
-    with Symtable.Error(Symtable.Undefined_global s) ->
+    with Symtable.Error(Symtable.Undefined_global global) ->
+      let s = Symtable.Global.name global in
       raise(Error(Unavailable_module(s, lid))) in
   let print_function =
     if is_old_style then
@@ -136,6 +139,7 @@ let remove_printer lid =
 (* Error report *)
 
 open Format
+module Style = Misc.Style
 
 let report_error ppf = function
   | Load_failure e ->
@@ -143,15 +147,15 @@ let report_error ppf = function
         (Dynlink.error_message e)
   | Unbound_identifier lid ->
       fprintf ppf "@[Unbound identifier %a@]@."
-      Printtyp.longident lid
+      (Style.as_inline_code Printtyp.longident) lid
   | Unavailable_module(md, lid) ->
       fprintf ppf
         "@[The debugger does not contain the code for@ %a.@ \
            Please load an implementation of %s first.@]@."
-        Printtyp.longident lid md
+        (Style.as_inline_code Printtyp.longident) lid md
   | Wrong_type lid ->
       fprintf ppf "@[%a has the wrong type for a printing function.@]@."
-      Printtyp.longident lid
+      (Style.as_inline_code Printtyp.longident) lid
   | No_active_printer lid ->
       fprintf ppf "@[%a is not currently active as a printing function.@]@."
-      Printtyp.longident lid
+      (Style.as_inline_code Printtyp.longident) lid

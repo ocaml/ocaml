@@ -64,6 +64,8 @@
 (** {1 Element kinds} *)
 
 (** Bigarrays can contain elements of the following kinds:
+- IEEE half precision (16 bits) floating-point numbers
+   ({!Bigarray.float16_elt}),
 - IEEE single precision (32 bits) floating-point numbers
    ({!Bigarray.float32_elt}),
 - IEEE double precision (64 bits) floating-point numbers
@@ -88,8 +90,10 @@
    of abstract types for technical injectivity reasons).
 
    @since 4.07 Moved from otherlibs to stdlib.
+   @since 5.2 Added float16_elt element kind.
 *)
 
+type float16_elt = Float16_elt
 type float32_elt = Float32_elt
 type float64_elt = Float64_elt
 type int8_signed_elt = Int8_signed_elt
@@ -104,7 +108,8 @@ type complex32_elt = Complex32_elt
 type complex64_elt = Complex64_elt
 
 type ('a, 'b) kind =
-    Float32 : (float, float32_elt) kind
+    Float16 : (float, float16_elt) kind
+  | Float32 : (float, float32_elt) kind
   | Float64 : (float, float64_elt) kind
   | Int8_signed : (int, int8_signed_elt) kind
   | Int8_unsigned : (int, int8_unsigned_elt) kind
@@ -141,13 +146,20 @@ type ('a, 'b) kind =
   let zero : type a b. (a, b) kind -> a = function
     | Float32 -> 0.0 | Complex32 -> Complex.zero
     | Float64 -> 0.0 | Complex64 -> Complex.zero
+    | Float16 -> 0.0
     | Int8_signed -> 0 | Int8_unsigned -> 0
     | Int16_signed -> 0 | Int16_unsigned -> 0
     | Int32 -> 0l | Int64 -> 0L
     | Int -> 0 | Nativeint -> 0n
     | Char -> '\000'
 ]}
+
+   @since 5.2 Constructor Float16 for the GADT.
 *)
+
+val float16 : (float, float16_elt) kind
+(** See {!Bigarray.char}.
+   @since 5.2 *)
 
 val float32 : (float, float32_elt) kind
 (** See {!Bigarray.char}. *)
@@ -187,7 +199,7 @@ val nativeint : (nativeint, nativeint_elt) kind
 
 val char : (char, int8_unsigned_elt) kind
 (** As shown by the types of the values above,
-   Bigarrays of kind [float32_elt] and [float64_elt] are
+   Bigarrays of kind [float16_elt], [float32_elt] and [float64_elt] are
    accessed using the OCaml type [float].  Bigarrays of complex kinds
    [complex32_elt], [complex64_elt] are accessed with the OCaml type
    {!Complex.t}. Bigarrays of

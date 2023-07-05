@@ -592,6 +592,7 @@ and core_type_desc =
   | Ttyp_variant of row_field list * closed_flag * label list option
   | Ttyp_poly of string list * core_type
   | Ttyp_package of package_type
+  | Ttyp_open of Path.t * Longident.t loc * core_type
 
 and package_type = {
   pack_path : Path.t;

@@ -21,7 +21,7 @@ ocamlyacc \- The OCaml parser generator
 .SH SYNOPSIS
 .B ocamlyacc
 [
-.BI \-b prefix
+.BI \-b " prefix"
 ] [
 .B \-q
 ] [
@@ -69,7 +69,7 @@ The
 .BR ocamlyacc (1)
 command recognizes the following options:
 .TP
-.BI \-b prefix
+.BI \-b " prefix"
 Name the output files
 .IR prefix \&.ml,
 .IR prefix \&.mli,
@@ -79,7 +79,7 @@ instead of the default naming convention.
 .B \-q
 This option has no effect.
 .TP
-.B \--strict
+.B \-\-strict
 Reject grammars with conflicts.
 .TP
 .B \-v
@@ -96,9 +96,10 @@ Print short version number and exit.
 .TP
 .B \-
 Read the grammar specification from standard input.  The default
-output file names are stdin.ml and stdin.mli.
+output file names are
+.IR stdin.ml " and " stdin.mli .
 .TP
-.BI \-\- \ file
+.BI \-\- " file"
 Process
 .I file
 as the grammar specification, even if its name
@@ -108,5 +109,5 @@ command line.
 .SH SEE ALSO
 .BR ocamllex (1).
 .br
-.IR "The OCaml user's manual" ,
+.IR The\ OCaml\ user's\ manual ,
 chapter "Lexer and parser generators".

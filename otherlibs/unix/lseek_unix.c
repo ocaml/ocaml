@@ -35,7 +35,7 @@
 #define EOVERFLOW ERANGE
 #endif
 
-static int seek_command_table[] = {
+static const int seek_command_table[] = {
   SEEK_SET, SEEK_CUR, SEEK_END
 };
 

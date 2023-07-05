@@ -30,7 +30,13 @@
 #include "caml/mlvalues.h"
 #include "caml/exec.h"
 
-char * default_runtime_path = RUNTIME_NAME;
+/* Two macros are required so that QUOTE(foo) stringizes the _expansion_ of foo
+   rather than foo itself. cf. the Stringizing chapter in the cpp manual
+   (https://gcc.gnu.org/onlinedocs/gcc-13.1.0/cpp/Stringizing.html). */
+#define Q(x) #x
+#define QUOTE(x) Q(x)
+
+char * default_runtime_path = QUOTE(RUNTIME_NAME);
 
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 1024

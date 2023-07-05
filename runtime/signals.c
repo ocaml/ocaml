@@ -82,7 +82,7 @@ CAMLexport value caml_process_pending_signals_exn(void)
     for (j = 0; j < BITS_PER_WORD; j++) {
       mask = (uintnat)1 << j;
       if ((curr & mask) == 0) goto next_bit;
-      signo = i * 8 + j + 1;
+      signo = i * BITS_PER_WORD + j + 1;
 #ifdef POSIX_SIGNALS
       if (sigismember(&set, signo)) goto next_bit;
 #endif
@@ -144,16 +144,16 @@ CAMLexport void (*caml_leave_blocking_section_hook)(void) =
 
 CAMLexport void caml_enter_blocking_section(void)
 {
+  caml_domain_state * domain = Caml_state;
   while (1){
     /* Process all pending signals now */
-    caml_raise_if_exception(caml_process_pending_signals_exn());
+    caml_process_pending_actions();
     caml_enter_blocking_section_hook ();
-    /* Check again for pending signals.
-       If none, done; otherwise, try again */
-    // FIXME: does this become very slow if a signal is recorded but
-    // is masked for everybody in capacity of running signals at this
-    // point?
-    if (!caml_check_pending_signals()) break;
+    /* Check again if a signal arrived in the meanwhile. If none,
+       done; otherwise, try again. Since we do not hold the domain
+       lock, we cannot read [young_ptr] and we cannot call
+       [Caml_check_gc_interrupt]. */
+    if (atomic_load_relaxed(&domain->young_limit) != UINTNAT_MAX) break;
     caml_leave_blocking_section_hook ();
   }
 }
@@ -234,9 +234,13 @@ value caml_execute_signal_exn(int signal_number, int in_signal_handler)
 
 /* Arrange for a garbage collection to be performed as soon as possible */
 
-void caml_request_major_slice (void)
+void caml_request_major_slice (int global)
 {
-  Caml_state->requested_major_slice = 1;
+  if (global){
+    Caml_state->requested_global_major_slice = 1;
+  }else{
+    Caml_state->requested_major_slice = 1;
+  }
   caml_interrupt_self();
 }
 
@@ -445,7 +449,7 @@ CAMLexport void caml_process_pending_actions(void)
 #define SIGXFSZ -1
 #endif
 
-static int posix_signals[] = {
+static const int posix_signals[] = {
   SIGABRT, SIGALRM, SIGFPE, SIGHUP, SIGILL, SIGINT, SIGKILL, SIGPIPE,
   SIGQUIT, SIGSEGV, SIGTERM, SIGUSR1, SIGUSR2, SIGCHLD, SIGCONT,
   SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU, SIGVTALRM, SIGPROF, SIGBUS,
@@ -536,8 +540,6 @@ static void * caml_signal_stack_0 = NULL;
 
 void caml_init_signals(void)
 {
-  /* Bound-check trap handling for Power and S390x will go here eventually. */
-
   /* Set up alternate signal stack for domain 0 */
 #ifdef POSIX_SIGNALS
   caml_signal_stack_0 = caml_init_signal_stack();
@@ -558,6 +560,16 @@ void caml_init_signals(void)
         sigaction(SIGPROF, &act, NULL);
       }
     }
+  }
+#endif
+  /* Bound-check trap handling for Power */
+#if defined(NATIVE_CODE) && defined(TARGET_power)
+  {
+    struct sigaction act;
+    act.sa_sigaction = caml_sigtrap_handler;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = SA_SIGINFO | SA_NODEFER;
+    sigaction(SIGTRAP, &act, NULL);
   }
 #endif
 }

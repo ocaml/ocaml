@@ -21,7 +21,7 @@
 
 #include <sys/socket.h>
 
-static int shutdown_command_table[] = {
+static const int shutdown_command_table[] = {
   0, 1, 2
 };
 

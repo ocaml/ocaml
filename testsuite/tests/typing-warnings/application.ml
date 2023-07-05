@@ -146,8 +146,8 @@ val g : int -> int = <fun>
 Line 2, characters 10-15:
 2 | let _ = g (f 1);;
               ^^^^^
-Error: This expression has type int -> int
-       but an expression was expected of type int
+Error: This expression has type "int -> int"
+       but an expression was expected of type "int"
   Hint: This function application is partial,
   maybe some arguments are missing.
 |}]

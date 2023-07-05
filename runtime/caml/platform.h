@@ -42,6 +42,10 @@ Caml_inline void cpu_relax(void) {
 #elif defined(__riscv)
   /* Encoding of the pause instruction */
   __asm__ volatile (".4byte 0x100000F");
+#elif defined(__ppc64__)
+  __asm__ volatile ("or 1, 1, 1 # low priority");
+  __asm__ volatile ("or 2, 2, 2 # medium priority");
+  __asm__ volatile ("" ::: "memory");
 #else
   /* Just a compiler barrier */
   __asm__ volatile ("" ::: "memory");
@@ -134,9 +138,7 @@ void caml_mem_decommit(void* mem, uintnat size);
 void caml_mem_unmap(void* mem, uintnat size);
 
 
-CAMLnoreturn_start
-void caml_plat_fatal_error(const char * action, int err)
-CAMLnoreturn_end;
+CAMLnoret void caml_plat_fatal_error(const char * action, int err);
 
 Caml_inline void check_err(const char* action, int err)
 {

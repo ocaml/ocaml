@@ -25,10 +25,10 @@ Error: Signature mismatch:
        is not included in
          type t = Foo of int * int
        Constructors do not match:
-         Foo of float * int
+         "Foo of float * int"
        is not the same as:
-         Foo of int * int
-       The type float is not equal to the type int
+         "Foo of int * int"
+       The type "float" is not equal to the type "int"
 |}];;
 
 module M2 : sig
@@ -54,9 +54,9 @@ Error: Signature mismatch:
        is not included in
          type t = Foo of int * int
        Constructors do not match:
-         Foo of float
+         "Foo of float"
        is not the same as:
-         Foo of int * int
+         "Foo of int * int"
        They have different arities.
 |}];;
 
@@ -83,14 +83,14 @@ Error: Signature mismatch:
        is not included in
          type t = Foo of { x : int; y : int; }
        Constructors do not match:
-         Foo of { x : float; y : int; }
+         "Foo of { x : float; y : int; }"
        is not the same as:
-         Foo of { x : int; y : int; }
+         "Foo of { x : int; y : int; }"
        Fields do not match:
-         x : float;
+         "x : float;"
        is not the same as:
-         x : int;
-       The type float is not equal to the type int
+         "x : int;"
+       The type "float" is not equal to the type "int"
 |}];;
 
 module M4 : sig
@@ -116,9 +116,9 @@ Error: Signature mismatch:
        is not included in
          type t = Foo of { x : int; y : int; }
        Constructors do not match:
-         Foo of float
+         "Foo of float"
        is not the same as:
-         Foo of { x : int; y : int; }
+         "Foo of { x : int; y : int; }"
        The second uses inline records and the first doesn't.
 |}];;
 
@@ -145,9 +145,9 @@ Error: Signature mismatch:
        is not included in
          type 'a t = Foo : int -> int t
        Constructors do not match:
-         Foo of 'a
+         "Foo of 'a"
        is not the same as:
-         Foo : int -> int t
+         "Foo : int -> int t"
        The second has explicit return type and the first doesn't.
 |}];;
 
@@ -171,10 +171,10 @@ Error: Signature mismatch:
        is not included in
          type ('a, 'b) t = A of 'a
        Constructors do not match:
-         A of 'b
+         "A of 'b"
        is not the same as:
-         A of 'a
-       The type 'b is not equal to the type 'a
+         "A of 'a"
+       The type "'b" is not equal to the type "'a"
 |}];;
 
 module M : sig
@@ -197,10 +197,10 @@ Error: Signature mismatch:
        is not included in
          type ('a, 'b) t = A of 'a
        Constructors do not match:
-         A of 'a
+         "A of 'a"
        is not the same as:
-         A of 'a
-       The type 'a is not equal to the type 'b
+         "A of 'a"
+       The type "'a" is not equal to the type "'b"
 |}];;
 
 
@@ -240,7 +240,7 @@ Error: Signature mismatch:
          type t = A | B | Beta | C | D
        is not included in
          type t = A | B | C | D
-       An extra constructor, Beta, is provided in the first declaration.
+       An extra constructor, "Beta", is provided in the first declaration.
 |}]
 
 
@@ -273,7 +273,7 @@ Error: Signature mismatch:
          type t = A | B | D
        is not included in
          type t = A | B | C | D
-       A constructor, C, is missing in the first declaration.
+       A constructor, "C", is missing in the first declaration.
 |}]
 
 
@@ -319,9 +319,9 @@ Error: Signature mismatch:
          type t = A | B | Beta | C | D | F | G | Phi
        is not included in
          type t = A | B | C | D | E | F | G
-       3. An extra constructor, Beta, is provided in the first declaration.
-       5. A constructor, E, is missing in the first declaration.
-       8. An extra constructor, Phi, is provided in the first declaration.
+       3. An extra constructor, "Beta", is provided in the first declaration.
+       5. A constructor, "E", is missing in the first declaration.
+       8. An extra constructor, "Phi", is provided in the first declaration.
 |}]
 
 
@@ -361,8 +361,8 @@ Error: Signature mismatch:
          type t = Alpha | B | C | D | E
        is not included in
          type t = A | E | C | D | B
-       1. Constructors have different names, Alpha and A.
-       2<->5. Constructors B and E have been swapped.
+       1. Constructors have different names, "Alpha" and "A".
+       2<->5. Constructors "B" and "E" have been swapped.
 |}]
 
 
@@ -404,9 +404,9 @@ Error: Signature mismatch:
        is not included in
          type t = A of int | B | C | D | E | F
        1. Constructors do not match:
-         A of float
+         "A of float"
        is not the same as:
-         A of int
-       The type float is not equal to the type int
-       3->6. Constructor C has been moved from position 3 to 6.
+         "A of int"
+       The type "float" is not equal to the type "int"
+       3->6. Constructor "C" has been moved from position 3 to 6.
 |}]

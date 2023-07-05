@@ -16,6 +16,9 @@
 (* Definitions for the interactive toplevel loop that are common between
    bytecode and native *)
 
+[@@@ocaml.warning "-60"] module Str = Ast_helper.Str (* For ocamldep *)
+[@@@ocaml.warning "+60"]
+
 open Format
 open Parsetree
 open Outcometree
@@ -230,8 +233,7 @@ let read_input_default prompt buffer len =
       Buffer.add_char phrase_buffer c;
       incr i;
       if c = '\n' then raise Exit;
-    done;
-    (!i, false)
+    done
   with
   | End_of_file ->
       (!i, true)
@@ -333,10 +335,12 @@ let get_directive_info name =
 let all_directive_names () =
   Hashtbl.fold (fun dir _ acc -> dir::acc) directive_table []
 
+module Style = Misc.Style
+
 let try_run_directive ppf dir_name pdir_arg =
   begin match get_directive dir_name with
   | None ->
-      fprintf ppf "Unknown directive `%s'." dir_name;
+      fprintf ppf "Unknown directive %a." Style.inline_code dir_name;
       let directives = all_directive_names () in
       Misc.did_you_mean ppf
         (fun () -> Misc.spellcheck directives dir_name);
@@ -351,42 +355,54 @@ let try_run_directive ppf dir_name pdir_arg =
          | n -> f n; true
          | exception _ ->
            fprintf ppf "Integer literal exceeds the range of \
-                        representable integers for directive `%s'.@."
-                   dir_name;
+                        representable integers for directive %a.@."
+                   Style.inline_code dir_name;
            false
          end
       | Directive_int _, Some {pdira_desc = Pdir_int (_, Some _)} ->
-          fprintf ppf "Wrong integer literal for directive `%s'.@."
-            dir_name;
+          fprintf ppf "Wrong integer literal for directive %a.@."
+            Style.inline_code dir_name;
           false
       | Directive_ident f, Some {pdira_desc = Pdir_ident lid} -> f lid; true
       | Directive_bool f, Some {pdira_desc = Pdir_bool b} -> f b; true
       | _ ->
-          let dir_type = match d with
-          | Directive_none _   -> "no argument"
-          | Directive_string _ -> "a `string' literal"
-          | Directive_int _    -> "an `int' literal"
-          | Directive_ident _  -> "an identifier"
-          | Directive_bool _   -> "a `bool' literal"
+          let dir_type  = match d with
+          | Directive_none _   -> `None
+          | Directive_string _ -> `String
+          | Directive_int _    -> `Int
+          | Directive_ident _  -> `Ident
+          | Directive_bool _   -> `Bool
           in
           let arg_type = match pdir_arg with
-          | None                              -> "no argument"
-          | Some {pdira_desc = Pdir_string _} -> "a `string' literal"
-          | Some {pdira_desc = Pdir_int _}    -> "an `int' literal"
-          | Some {pdira_desc = Pdir_ident _}  -> "an identifier"
-          | Some {pdira_desc = Pdir_bool _}   -> "a `bool' literal"
+          | None                              -> `None
+          | Some {pdira_desc = Pdir_string _} -> `String
+          | Some {pdira_desc = Pdir_int _}    -> `Int
+          | Some {pdira_desc = Pdir_ident _}  -> `Ident
+          | Some {pdira_desc = Pdir_bool _}   -> `Bool
           in
-          fprintf ppf "Directive `%s' expects %s, got %s.@."
-            dir_name dir_type arg_type;
+          let pp_type ppf = function
+          | `None -> Format.fprintf ppf "no argument"
+          | `String ->
+              Format.fprintf ppf "a %a literal" Style.inline_code "string"
+          | `Int ->
+              Format.fprintf ppf "an %a literal" Style.inline_code "string"
+          | `Ident ->
+              Format.fprintf ppf "an identifier"
+          | `Bool ->
+              Format.fprintf ppf "a %a literal" Style.inline_code "bool"
+          in
+          fprintf ppf "Directive %a expects %a, got %a.@."
+            Style.inline_code dir_name pp_type dir_type pp_type arg_type;
           false
   end
 
 (* Overriding exception printers with toplevel-specific ones *)
 
-let loading_hint_printer ppf s =
-  Symtable.report_error ppf (Symtable.Undefined_global s);
+let loading_hint_printer ppf cu =
+  let global = Symtable.Global.Glob_compunit (Cmo_format.Compunit cu) in
+  Symtable.report_error ppf (Symtable.Undefined_global global);
   let find_with_ext ext =
-    try Some (Load_path.find_uncap (s ^ ext)) with Not_found -> None
+    try Some (Load_path.find_uncap (cu ^ ext)) with Not_found -> None
   in
   fprintf ppf
     "@.Hint: @[\
@@ -397,22 +413,27 @@ let loading_hint_printer ppf s =
      But very often they do. *)
   begin match List.find_map find_with_ext [".cma"; ".cmo"] with
   | Some path ->
+    let load ppf path = Format.fprintf ppf "#load \"%s\"" path in
     fprintf ppf
-      "Found %s @,in the load paths. \
-       @,Did you mean to load it using @,#load \"%s\" \
+      "Found %a @,in the load paths. \
+       @,Did you mean to load it using @,%a \
        @,or by passing it as an argument to the toplevel?"
-       path (Filename.basename path)
+      Style.inline_code path
+      (Style.as_inline_code load) (Filename.basename path)
   | None ->
     fprintf ppf
       "Did you mean to load a compiled implementation of the module \
-       @,using #load or by passing it as an argument to the toplevel?"
+       @,using %a or by passing it as an argument to the toplevel?"
+      Style.inline_code "#load"
   end;
   fprintf ppf "@]"
 
 let () =
   Location.register_error_of_exn
     (function
-      | Symtable.Error (Symtable.Undefined_global s) ->
-        Some (Location.error_of_printer_file loading_hint_printer s)
+      | Symtable.Error
+        (Symtable.Undefined_global (Symtable.Global.Glob_compunit
+          (Cmo_format.Compunit cu))) ->
+          Some (Location.error_of_printer_file loading_hint_printer cu)
       | _ -> None
     )

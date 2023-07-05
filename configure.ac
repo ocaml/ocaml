@@ -138,11 +138,10 @@ AC_SUBST([oc_cppflags])
 AC_SUBST([oc_ldflags])
 AC_SUBST([oc_dll_ldflags])
 AC_SUBST([oc_exe_ldflags])
-AC_SUBST([bytecclibs])
-AC_SUBST([nativecclibs])
+AC_SUBST([cclibs])
 AC_SUBST([ocamlc_cflags])
 AC_SUBST([ocamlc_cppflags])
-AC_SUBST([flexdir])
+AC_SUBST([flexdll_source_dir])
 AC_SUBST([bootstrapping_flexdll])
 AC_SUBST([flexdll_dir])
 AC_SUBST([flexlink_flags])
@@ -205,7 +204,6 @@ AC_SUBST([flat_float_array])
 AC_SUBST([function_sections])
 AC_SUBST([oc_native_compflags])
 AC_SUBST([afl])
-AC_SUBST([flexlink_cmd])
 AC_SUBST([flexdll_chain])
 AC_SUBST([mkdll_ldflags_exp])
 AC_SUBST([mkexe_ldflags_exp])
@@ -253,6 +251,16 @@ AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 
+# Ensure that AC_CONFIG_LINKS will either create symlinks which are compatible
+# with native Windows (i.e. NTFS symlinks, not WSL or Cygwin-emulated ones) or
+# use its fallback mechanisms. Native Windows versions of ocamlc/ocamlopt cannot
+# interpret either WSL or Cygwin-emulated symlinks.
+AS_CASE([$host],
+  [*-pc-windows|*-w64-mingw32*],
+    [AC_CONFIG_COMMANDS([native-symlinks], [],
+      [export CYGWIN="\$CYGWIN\${CYGWIN:+ }winsymlinks:nativestrict"
+      export MSYS="\$MSYS\${MSYS:+ }winsymlinks:nativestrict"])])
+
 # Systems that are known not to work, even in bytecode only.
 
 AS_CASE([$host],
@@ -297,11 +305,17 @@ AC_ARG_ENABLE([debug-runtime],
   [AS_HELP_STRING([--disable-debug-runtime],
     [do not build runtime with debugging support])])
 
+AC_ARG_ENABLE([ocamldebug],
+  [AS_HELP_STRING([--enable-ocamldebug],
+    [build ocamldebug @<:@default=auto@:>@])],
+  [],
+  [enable_ocamldebug=auto])
+
 AC_ARG_ENABLE([debugger],
   [AS_HELP_STRING([--enable-debugger],
-    [build the debugger @<:@default=auto@:>@])],
-  [],
-  [enable_debugger=auto])
+    [alias for --enable-ocamldebug])],
+  [enable_ocamldebug=$enableval],
+  [])
 
 AC_ARG_ENABLE([dependency-generation],
   [AS_HELP_STRING([--disable-dependency-generation],
@@ -479,9 +493,9 @@ AC_ARG_WITH([zstd],
     [disable compression of marshaled data])])
 
 AS_IF([test x"$enable_unix_lib" = "xno"],
-  [AS_IF([test x"$enable_debugger" = "xyes"],
-    [AC_MSG_ERROR([replay debugger requires the unix library])],
-    [enable_debugger="no"])])
+  [AS_IF([test x"$enable_ocamldebug" = "xyes"],
+    [AC_MSG_ERROR([ocamldebug requires the unix library])],
+    [enable_ocamldebug="no"])])
 
 AS_IF([test x"$enable_unix_lib" = "xno" || test x"$enable_str_lib" = "xno"],
   [AS_IF([test x"$enable_ocamldoc" = "xyes"],
@@ -629,6 +643,9 @@ AS_IF([test x"$enable_unix_lib" != "xno"],
   AC_CONFIG_FILES([otherlibs/unix/META])
   otherlibraries="$otherlibraries unix"
   lib_unix=true
+  AC_CONFIG_LINKS([
+    otherlibs/unix/unix.ml:otherlibs/unix/unix_${unix_or_win32}.ml
+  ])
   ocamltest_unix_impl="real"
   ocamltest_unix_name="unix"
   ocamltest_unix_path='$(ROOTDIR)/otherlibs/unix'
@@ -815,15 +832,21 @@ AS_CASE([$host],
 AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
   AC_MSG_CHECKING([for flexdll sources])
   AS_IF([test x"$with_flexdll" = "xno"],
-    [flexdir=''
+    [flexdll_source_dir=''
     AC_MSG_RESULT([disabled])],
     [flexmsg=''
     AS_CASE([$target],
       [*-*-cygwin*|*-w64-mingw32*|*-pc-windows],
-      [AS_IF([m4_normalize([test x"$with_flexdll" = 'x'
+      [dnl When bootstrapping from the git submodule (flexdll directory), just
+       dnl use that, however if another directory has been specified with
+       dnl --with-flexdll=<path> then copy the contents of <path> to
+       dnl flexdll-sources. This allows us to guarantee that flexdll is always
+       dnl built at one directory level below the root, so we can specify
+       dnl ROOTDIR=..
+      AS_IF([m4_normalize([test x"$with_flexdll" = 'x'
                             || test x"$with_flexdll" = 'xflexdll'])],
         [AS_IF([test -f 'flexdll/flexdll.h'],
-          [flexdir=flexdll
+          [flexdll_source_dir=flexdll
           iflexdir='$(ROOTDIR)/flexdll'
           with_flexdll="$iflexdir"],
           [AS_IF([test x"$with_flexdll" != 'x'],
@@ -833,12 +856,12 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
         AS_IF([test -f "$with_flexdll/flexdll.h"],
           [mkdir -p flexdll-sources
           cp -r "$with_flexdll"/* flexdll-sources/
-          flexdir='flexdll-sources'
+          flexdll_source_dir='flexdll-sources'
           iflexdir='$(ROOTDIR)/flexdll-sources'
           flexmsg=" (from $with_flexdll)"],
           [AC_MSG_RESULT([requested but not available])
           AC_MSG_ERROR([exiting])])])
-      AS_IF([test x"$flexdir" = 'x'],
+      AS_IF([test x"$flexdll_source_dir" = 'x'],
         [AC_MSG_RESULT([no])],
         [AC_MSG_RESULT([$iflexdir$flexmsg])
         bootstrapping_flexdll=true
@@ -851,7 +874,7 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
 
   AC_CHECK_PROG([flexlink],[flexlink],[flexlink])
 
-  AS_IF([test -n "$flexlink" && test -z "$flexdir"],[
+  AS_IF([test -n "$flexlink" && test -z "$flexdll_source_dir"],[
     OCAML_TEST_FLEXLINK([$flexlink], [$flexdll_chain],
                         [$internal_cppflags], [$host])
 
@@ -863,7 +886,7 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
       ])])
   ])
 
-  OCAML_TEST_FLEXDLL_H([$flexdir])
+  OCAML_TEST_FLEXDLL_H([$flexdll_source_dir])
 
   AS_IF([test -n "$flexlink" && test x"$have_flexdll_h" = 'xno'],
     [OCAML_TEST_FLEXLINK_WHERE([$flexlink])
@@ -879,7 +902,7 @@ AS_CASE([$have_flexdll_h,$supports_shared_libraries,$host],
  [no,*,*-w64-mingw32*|no,*,*-pc-windows],
    [AC_MSG_ERROR([flexdll.h is required for native Win32])])
 
-AS_CASE([$flexdir,$supports_shared_libraries,$flexlink,$host],
+AS_CASE([$flexdll_source_dir,$supports_shared_libraries,$flexlink,$host],
   [,true,,*-*-cygwin*],
     [supports_shared_libraries=false
     AC_MSG_WARN([flexlink not found: shared library support disabled.])],
@@ -888,23 +911,17 @@ AS_CASE([$flexdir,$supports_shared_libraries,$flexlink,$host],
 
 mkexe_cmd_exp="$CC"
 
-AS_IF([$bootstrapping_flexdll],
-  [flexlink_cmd=\
-'$(ROOTDIR)/boot/ocamlruns.exe $(ROOTDIR)/boot/flexlink.byte.exe'],
-  [flexlink_cmd=flexlink])
-
 AS_CASE([$cc_basename,$host],
   [*,x86_64-*-darwin*],
     [oc_ldflags='-Wl,-no_compact_unwind';
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
   [*,aarch64-*-darwin*|arm64-*-darwin*],
     AC_DEFINE([HAS_ARCH_CODE32], [1]),
-  [*,*-*-haiku*], [mathlib=""],
   [*,*-*-cygwin*],
     [common_cppflags="$common_cppflags -U_WIN32"
     AS_IF([$supports_shared_libraries],
       [mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-      mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
+      mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
       mkexe_cflags=''
       mkexe_ldflags_prefix='-link '],
       [mkexe_extra_flags=''
@@ -917,7 +934,7 @@ AS_CASE([$cc_basename,$host],
     ostype="Win32"
     toolchain="mingw"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-    mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
+    mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     oc_exe_ldflags='-municode'
@@ -927,7 +944,7 @@ AS_CASE([$cc_basename,$host],
     [toolchain=msvc
     ostype="Win32"
     mkexe_cmd_exp="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
-    mkexe_cmd="${flexlink_cmd} -exe -chain ${flexdll_chain} ${flexlink_flags}"
+    mkexe_cmd="flexlink -exe -chain ${flexdll_chain} ${flexlink_flags}"
     mkexe_cflags=''
     mkexe_ldflags_prefix='-link '
     mkexe_via_cc_ldflags_prefix='/link '
@@ -948,9 +965,11 @@ AC_PROG_INSTALL
 # Checks for libraries
 
 ## Mathematical library
-AC_CHECK_LIB([m],[cos])
-
-AS_IF([test "x$ac_cv_lib_m_cos" = xyes ], [mathlib="-lm"], [mathlib=""])
+AC_SEARCH_LIBS([cos], [m],
+  [AS_CASE([$ac_cv_search_cos],
+    [no], [AC_MSG_ERROR([Could not locate C math functions])],
+    ['none required'], [mathlib=""],
+    [mathlib="$ac_cv_search_cos"])])
 
 # Checks for header files
 
@@ -1077,9 +1096,9 @@ AS_IF([test x"$enable_shared" != "xno"],
     [*-*-mingw32*|*-pc-windows|*-*-cygwin*],
       [mkdll_flags="-chain ${flexdll_chain} ${flexlink_flags}"
       mkdll_exp="flexlink ${mkdll_flags}"
-      mkdll="${flexlink_cmd} ${mkdll_flags}"
+      mkdll="flexlink ${mkdll_flags}"
       mkmaindll_exp="flexlink -maindll ${mkdll_flags}"
-      mkmaindll="${flexlink_cmd} -maindll ${mkdll_flags}"],
+      mkmaindll="flexlink -maindll ${mkdll_flags}"],
     [powerpc-ibm-aix*],
       [AS_CASE([$ocaml_cv_cc_vendor],
                [xlc*],
@@ -1199,11 +1218,9 @@ AS_CASE([$host],
   [x86_64-pc-windows],
     [arch=amd64; system=win64],
   [[powerpc64le*-*-linux*]],
-    [arch=power; model=ppc64le; system=elf],
-  [[powerpc*-*-linux*]],
-    [arch=power; AS_IF([$arch64],[model=ppc64],[model=ppc]); system=elf],
+    [has_native_backend=yes; arch=power; model=ppc64le; system=elf],
   [[s390x*-*-linux*]],
-    [arch=s390x; model=z10; system=elf],
+    [has_native_backend=yes; arch=s390x; model=z10; system=elf],
   # expected to match "gnueabihf" as well as "musleabihf"
   [armv6*-*-linux-*eabihf],
     [arch=arm; model=armv6; system=linux_eabihf],
@@ -1262,7 +1279,9 @@ AS_CASE([$host],
   [x86_64-*-mingw32*],
     [has_native_backend=yes; arch=amd64; system=mingw64],
   [aarch64-*-linux*],
-    [has_native_backend=yes; arch=arm64; system=linux],
+    [AS_IF([$arch64],
+       [has_native_backend=yes; arch=arm64; system=linux],
+       [arch=arm; model=armv8; system=linux])],
   [aarch64-*-freebsd*],
     [has_native_backend=yes; arch=arm64; system=freebsd],
   [aarch64-*-openbsd*],
@@ -1484,10 +1503,10 @@ AS_CASE([$host],
   [*-*-windows],
     [has_monotonic_clock=true],
   [*-apple-darwin*], [
-    AC_CHECK_FUNCS([mach_timebase_info mach_absolute_time],
+    AC_CHECK_FUNCS([clock_gettime_nsec_np],
       [
         has_monotonic_clock=true
-        AC_DEFINE([HAS_MACH_ABSOLUTE_TIME])
+        AC_DEFINE([HAS_CLOCK_GETTIME_NSEC_NP])
       ],
       [has_monotonic_clock=false])],
   [AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
@@ -1568,8 +1587,12 @@ but no proper monotonic clock source was found.])
 sockets=true
 
 AS_CASE([$host],
-  [*-*-mingw32*|*-pc-windows],
+  [*-*-mingw32*],
     [cclibs="$cclibs -lws2_32"
+    AC_SEARCH_LIBS([socket], [ws2_32])
+    AC_CHECK_FUNC([socketpair], [AC_DEFINE([HAS_SOCKETPAIR])])],
+  [*-pc-windows],
+    [cclibs="$cclibs ws2_32.lib"
     AC_SEARCH_LIBS([socket], [ws2_32])
     AC_CHECK_FUNC([socketpair], [AC_DEFINE([HAS_SOCKETPAIR])])],
   [*-*-haiku],
@@ -1990,18 +2013,18 @@ AS_IF([test x"$zstd_status" = "xok"],
 
 ## Determine whether the debugger should/can be built
 
-AS_CASE([$enable_debugger],
+AS_CASE([$enable_ocamldebug],
   [no],
     [with_debugger=""
     build_ocamldebug=false
-    AC_MSG_NOTICE([replay debugger disabled])],
+    AC_MSG_NOTICE([ocamldebug disabled])],
   [AS_IF([$sockets],
-    [with_debugger="ocamldebugger"
+    [with_debugger="ocamldebug"
     build_ocamldebug=true
-    AC_MSG_NOTICE([replay debugger supported])],
+    AC_MSG_NOTICE([ocamldebug supported])],
     [with_debugger=""
     build_ocamldebug=false
-    AC_MSG_NOTICE([replay debugger not supported])])
+    AC_MSG_NOTICE([ocamldebug not supported])])
   ])
 
 ## Should the runtime with debugging support be built
@@ -2012,8 +2035,10 @@ AS_CASE([$enable_debug_runtime],
 ## Determine how to link with the POSIX threads library
 
 AS_CASE([$host],
-  [*-*-mingw32*|*-pc-windows],
-    [PTHREAD_LIBS="-l:libpthread.a"],
+  [*-*-mingw32*],
+    [PTHREAD_LIBS="-l:libpthread.a -lgcc_eh"],
+  [*-pc-windows],
+    [PTHREAD_LIBS="-l:libpthread.lib"],
   [AX_PTHREAD(
     [common_cflags="$common_cflags $PTHREAD_CFLAGS"
     saved_CFLAGS="$CFLAGS"
@@ -2204,19 +2229,16 @@ oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
 ocamlc_cflags="$common_cflags $sharedlib_cflags $CFLAGS"
 ocamlc_cppflags="$common_cppflags $CPPFLAGS"
-cclibs="$cclibs $mathlib"
-
-AC_CHECK_LIB(execinfo, backtrace, cclibs="$cclibs -lexecinfo",[])
 
 AS_CASE([$host],
   [*-*-mingw32*],
-    [bytecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"
-    nativecclibs="-lws2_32 -lversion -l:libpthread.a -lgcc_eh"],
+    [cclibs="$cclibs -lversion"],
   [*-pc-windows],
-    [bytecclibs="advapi32.lib ws2_32.lib version.lib"
-    nativecclibs="advapi32.lib ws2_32.lib version.lib"],
-  [bytecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"
-  nativecclibs="$cclibs $DLLIBS $PTHREAD_LIBS"])
+    [# For whatever reason, flexlink includes -ladvapi32 for mingw-w64, but
+    # doesn't include advapi32.lib for MSVC
+    cclibs="$cclibs advapi32.lib version.lib"])
+
+AC_CONFIG_COMMANDS_PRE([cclibs="$cclibs $mathlib $DLLIBS $PTHREAD_LIBS"])
 
 AS_IF([test x"$libdir" = x'${exec_prefix}/lib'],
   [libdir="$libdir"/ocaml])
@@ -2347,6 +2369,7 @@ ${mkdll_ldflags}"
   mkdll="$mkdll $mkdll_ldflags"
   mkdll_exp="$mkdll_exp $mkdll_ldflags_exp"
   mkmaindll="$mkmaindll $mkdll_ldflags_exp"
+  mkmaindll_exp="$mkmaindll_exp $mkdll_ldflags_exp"
   # Do similarly with $mkexe_via_cc_ldflags_prefix, but this is only needed for
   # the msvc ports.
   AS_IF([test -n "$mkexe_via_cc_ldflags_prefix"],[

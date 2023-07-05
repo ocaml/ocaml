@@ -154,10 +154,21 @@ let slot_for_literal sc =
   enter (Reloc_literal (Symtable.transl_const sc));
   out_int 0
 and slot_for_getglobal id =
-  enter (Reloc_getglobal id);
+  let name = Ident.name id in
+  let reloc_info =
+    if Ident.is_predef id then (Reloc_getpredef (Predef_exn name))
+    else if Ident.global id then (Reloc_getcompunit (Compunit name))
+    else assert false
+  in
+  enter reloc_info;
   out_int 0
 and slot_for_setglobal id =
-  enter (Reloc_setglobal id);
+  let name = Ident.name id in
+  let reloc_info =
+    if Ident.persistent id then (Reloc_setcompunit (Compunit name))
+    else assert false
+  in
+  enter reloc_info;
   out_int 0
 and slot_for_c_prim name =
   enter (Reloc_primitive name);
@@ -430,7 +441,8 @@ let to_file outchan unit_name objfile ~required_globals code =
       cu_imports = Env.imports();
       cu_primitives = List.map Primitive.byte_name
                                !Translmod.primitive_declarations;
-      cu_required_globals = Ident.Set.elements required_globals;
+      cu_required_compunits = List.map (fun id -> Compunit (Ident.name id))
+        (Ident.Set.elements required_globals);
       cu_force_link = !Clflags.link_everything;
       cu_debug = pos_debug;
       cu_debugsize = size_debug } in

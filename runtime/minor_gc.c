@@ -666,7 +666,7 @@ void caml_do_opportunistic_major_slice
   if (caml_opportunistic_major_work_available()) {
     uintnat log_events = atomic_load_relaxed(&caml_verb_gc) & 0x40;
     if (log_events) CAML_EV_BEGIN(EV_MAJOR_MARK_OPPORTUNISTIC);
-    caml_opportunistic_major_collection_slice(0x200);
+    caml_opportunistic_major_collection_slice(Major_slice_work_min);
     if (log_events) CAML_EV_END(EV_MAJOR_MARK_OPPORTUNISTIC);
   }
 }
@@ -742,9 +742,6 @@ static void caml_stw_empty_minor_heap (caml_domain_state* domain, void* unused,
 {
   caml_stw_empty_minor_heap_no_major_slice(domain, unused,
                                            participating_count, participating);
-
-  /* can change how we account clock in future, here just do raw count */
-  domain->major_gc_clock += 1.0;
 }
 
 /* must be called within a STW section  */
@@ -774,6 +771,7 @@ int caml_try_stw_empty_minor_heap_on_all_domains (void)
 
   caml_gc_log("requesting stw empty_minor_heap");
   return caml_try_run_on_all_domains_with_spin_work(
+    1, /* synchronous */
     &caml_stw_empty_minor_heap, 0, /* stw handler */
     &caml_empty_minor_heap_setup, /* leader setup */
     &caml_do_opportunistic_major_slice, 0 /* enter spin work */);

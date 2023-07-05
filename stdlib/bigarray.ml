@@ -18,6 +18,7 @@
 (* These types in must be kept in sync with the tables in
    ../typing/typeopt.ml *)
 
+type float16_elt = Float16_elt
 type float32_elt = Float32_elt
 type float64_elt = Float64_elt
 type int8_signed_elt = Int8_signed_elt
@@ -32,7 +33,8 @@ type complex32_elt = Complex32_elt
 type complex64_elt = Complex64_elt
 
 type ('a, 'b) kind =
-    Float32 : (float, float32_elt) kind
+    Float16 : (float, float16_elt) kind
+  | Float32 : (float, float32_elt) kind
   | Float64 : (float, float64_elt) kind
   | Int8_signed : (int, int8_signed_elt) kind
   | Int8_unsigned : (int, int8_unsigned_elt) kind
@@ -56,6 +58,7 @@ type 'a layout =
 (* Keep those constants in sync with the caml_ba_kind enumeration
    in bigarray.h *)
 
+let float16 = Float16
 let float32 = Float32
 let float64 = Float64
 let int8_signed = Int8_signed
@@ -71,6 +74,7 @@ let complex64 = Complex64
 let char = Char
 
 let kind_size_in_bytes : type a b. (a, b) kind -> int = function
+  | Float16 -> 2
   | Float32 -> 4
   | Float64 -> 8
   | Int8_signed -> 1
