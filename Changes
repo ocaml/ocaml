@@ -266,7 +266,7 @@ OCaml 5.1.0
   (Jeremy Yallop, review by Daniel Bünzli, Anil Madhavapeddy, Nicolás Ojeda Bär,
    Gabriel Scherer, and Bannerets)
 
-- #11362, #11402: Using TRMC, rhe following `Stdlib` functions are now
+- #11362, #11402: Using TRMC, the following `Stdlib` functions are now
   tail-recursive:
     List.map, List.mapi, List.map2,
     List.filter, List.filteri, List.filter_map,
