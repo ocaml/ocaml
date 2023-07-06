@@ -826,8 +826,10 @@ Some of those changes will benefit all OCaml packages.
   opened for checking
   (Hugo Heuzard, review by Nicolás Ojeda Bär)
 
-* #11745: Debugger and toplevels: embed printer types rather than
+* #11745, #12358: Debugger and toplevels: embed printer types rather than
   reading their representations from topdirs.cmi at runtime.
+  This change also removes the ocamlmktop initialization module introduced
+  in #11382 which was no longer useful.
   This change breaks toplevel scripts relying on the visibility of `Topdirs`
   in the initial toplevel environment without loading `topfind`.
   Since the opam default `.ocamlinit` file loads `topfind`, it is expected
