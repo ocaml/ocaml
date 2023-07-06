@@ -916,70 +916,55 @@ FUNCTION(G(caml_raise_exn))
 CFI_STARTPROC
         ENTER_FUNCTION
 LBL(caml_raise_exn):
-#if !defined(WITH_THREAD_SANITIZER)
         testq   $1, Caml_state(backtrace_active)
         jne   LBL(116)
         RESTORE_EXN_HANDLER_OCAML
         ret
-#endif
 LBL(116):
         movq    $0, Caml_state(backtrace_pos)
 LBL(117):
         movq    %rsp, %r13        /* Save OCaml stack pointer */
         movq    %rax, %r12        /* Save exception bucket */
         movq    Caml_state(c_stack), %rsp
-#if defined(WITH_THREAD_SANITIZER)
-        testq   $1, Caml_state(backtrace_active)
-        je    LBL(118)
-#endif
         movq    %rax, C_ARG_1                    /* arg 1: exception bucket */
         movq    STACK_RETADDR(%r13), C_ARG_2     /* arg 2: pc of raise */
         leaq    STACK_ARG_1(%r13), C_ARG_3       /* arg 3: sp at raise */
         movq    Caml_state(exn_handler), C_ARG_4 /* arg 4: sp of handler */
         C_call  (GCALL(caml_stash_backtrace))
-#if defined(WITH_THREAD_SANITIZER)
-LBL(118):
-    /* Signal to TSan all stack frames exited by the exception. No need to save
-       any registers here. */
-        movq    STACK_RETADDR(%r13), C_ARG_1     /* arg 1: pc of raise */
-        leaq    STACK_ARG_1(%r13), C_ARG_2       /* arg 2: sp at raise */
-        movq    Caml_state(exn_handler), C_ARG_3 /* arg 3: sp of handler */
-        C_call  (GCALL(caml_tsan_exit_on_raise))
-#endif
         movq    %r12, %rax        /* Recover exception bucket */
         RESTORE_EXN_HANDLER_OCAML
         ret
 CFI_ENDPROC
 ENDFUNCTION(G(caml_raise_exn))
 
-/* Exception raising routine called in case of Raise_notrace when TSan
-   is enabled. Does not store a backtrace but still signals function
-   exits to TSan. */
 #if defined(WITH_THREAD_SANITIZER)
-FUNCTION(G(caml_tsan_raise_notrace_exn))
+/* When TSan support is enabled, this routine should be called just before
+   raising an exception. It calls __tsan_func_exit for every OCaml frame about
+   to be exited due to the exception.
+   Takes no arguments, clobbers C_ARG_1, C_ARG_2, C_ARG_3 and potentially all
+   caller-saved registers of the C calling convention. */
+FUNCTION(G(caml_tsan_exit_on_raise_asm))
 CFI_STARTPROC
         ENTER_FUNCTION
-        movq    %rsp, %r13        /* Save OCaml stack pointer */
-        movq    %rax, %r12        /* Save exception bucket */
-        movq    Caml_state(c_stack), %rsp
-        jmp   LBL(118)
+        movq    STACK_RETADDR(%rsp), C_ARG_1   /* arg 1: pc of raise */
+        leaq    STACK_ARG_1(%rsp), C_ARG_2  /* arg 2: sp at raise */
+        movq    Caml_state(exn_handler), C_ARG_3 /* arg 3: sp of handler */
+        SWITCH_OCAML_TO_C
+        C_call  (GCALL(caml_tsan_exit_on_raise))
+        SWITCH_C_TO_OCAML
+        LEAVE_FUNCTION
+        ret
 CFI_ENDPROC
-ENDFUNCTION(G(caml_tsan_raise_notrace_exn))
+ENDFUNCTION(G(caml_tsan_exit_on_raise_asm))
 #endif
 
 FUNCTION(G(caml_reraise_exn))
 CFI_STARTPROC
         ENTER_FUNCTION
-#if defined(WITH_THREAD_SANITIZER)
-        /* Signals function exits to TSan (implemented in caml_raise_exn) even
-           if backtraces are not enabled */
-        jmp   LBL(117)
-#else
         testq   $1, Caml_state(backtrace_active)
         jne   LBL(117)
         RESTORE_EXN_HANDLER_OCAML
         ret
-#endif
 CFI_ENDPROC
 ENDFUNCTION(G(caml_reraise_exn))
 
@@ -995,6 +980,18 @@ CFI_STARTPROC
     /* Discard the C stack pointer and reset to ocaml stack */
         movq    Caml_state(current_stack), %r10
         movq    Stack_sp(%r10), %rsp         /* FIXME: CFI */
+#if defined(WITH_THREAD_SANITIZER)
+    /* Call __tsan_func_exit for every OCaml stack frame exited due to the
+       exception */
+        movq    STACK_RETADDR(%rsp), C_ARG_1   /* arg 1: pc of raise */
+        leaq    STACK_ARG_1(%rsp), C_ARG_2  /* arg 2: sp at raise */
+        movq    Caml_state(exn_handler), C_ARG_3 /* arg 3: sp of handler */
+        pushq   %rax
+        SWITCH_OCAML_TO_C
+        C_call  (GCALL(caml_tsan_exit_on_raise))
+        SWITCH_C_TO_OCAML
+        popq    %rax
+#endif
         jmp LBL(caml_raise_exn)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_raise_exception))
