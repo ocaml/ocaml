@@ -128,7 +128,7 @@ Working version
   (David Allsopp, review by Sébastien Hinderer)
 
 - #12347: error messages: always report missing polyvariant tags
-  (Florian Angeletti, review by Gabriel Scherer)
+  (Florian Angeletti, report by Tianbo Hao, review by Gabriel Scherer)
 
 ### Internal/compiler-libs changes:
 
