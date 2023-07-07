@@ -266,12 +266,13 @@ let none = newty (Ttuple [])                (* Clearly ill-formed type *)
 (**** information for [Typecore.unify_pat_*] ****)
 
 module Pattern_env : sig
-  type t =
+  type t = private
     { mutable env : Env.t;
       equations_scope : int;
       allow_recursive_equations : bool; }
   val make: Env.t -> equations_scope:int -> allow_recursive_equations:bool -> t
   val copy: ?equations_scope:int -> t -> t
+  val set_env: t -> Env.t -> unit
 end = struct
   type t =
     { mutable env : Env.t;
@@ -285,6 +286,7 @@ end = struct
     let equations_scope =
       match equations_scope with None -> penv.equations_scope | Some s -> s in
     { penv with equations_scope }
+  let set_env penv env = penv.env <- env
 end
 
 (**** unification mode ****)
@@ -315,7 +317,7 @@ let get_env = function
 let set_env uenv env =
   match uenv with
   | Expression _ -> invalid_arg "Ctype.set_env"
-  | Pattern {penv} -> penv.env <- env
+  | Pattern {penv} -> Pattern_env.set_env penv env
 
 let in_pattern_mode = function
   | Expression _ -> false
@@ -1316,7 +1318,7 @@ let instance_constructor existential_treatment cstr =
             let (id, new_env) =
               Env.enter_type (get_new_abstract_name env name) decl env
                 ~scope:fresh_constr_scope in
-            penv.env <- new_env;
+            Pattern_env.set_env penv new_env;
             let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
             let tv = copy copy_scope existential in
             assert (is_Tvar tv);
