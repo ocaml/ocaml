@@ -443,6 +443,10 @@ OCaml 5.1.0
   `pp_print_newline` flushes its newline
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #12201: in the tutorial on modules, replace priority queue example by
+  a simpler example based on FIFO queues.
+  (Xavier Leroy, review by Anil Madhavapeddy and Nicolás Ojeda Bär).
+
 ### Compiler user-interface and warnings:
 
 - #12116: Don't suggest to insert a semicolon when the type is not unit
