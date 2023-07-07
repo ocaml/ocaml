@@ -7,7 +7,7 @@ external test_skiplist_serial : unit -> unit = "test_skiplist_serial"
 let () = test_skiplist_serial ()
 
 external init_skiplist : unit -> unit = "init_skiplist"
-external insert_skiplist : int -> int -> unit = "insert_skiplist"
+external insert_skiplist : int -> int -> int -> unit = "insert_skiplist"
 external find_skiplist : int -> int -> int -> bool = "find_skiplist"
 external clean_skiplist : int -> unit = "clean_skiplist"
 external cardinal_skiplist : unit -> int = "cardinal_skiplist"
@@ -19,7 +19,7 @@ let () =
   init_skiplist ();
   for i=1 to nseq do
     for k = 1 to nturns do
-      insert_skiplist k 0
+      insert_skiplist k 1 0
     done ;
     assert(cardinal_skiplist () = nturns) ;
     for k = 1 to nturns do

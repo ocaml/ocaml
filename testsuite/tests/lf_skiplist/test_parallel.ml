@@ -11,7 +11,7 @@ let () =
       ignore(List.iter Domain.join domains_list)
 
 (* Concurrent versions of the memory test in tests.ml, see there first *)
-external insert_skiplist : int -> int -> unit = "insert_skiplist"
+external insert_skiplist : int -> int -> int -> unit = "insert_skiplist"
 external find_skiplist : int -> int -> int -> bool = "find_skiplist"
 external clean_skiplist : int -> unit = "clean_skiplist"
 external cardinal_skiplist : unit -> int = "cardinal_skiplist"
@@ -32,7 +32,7 @@ let () =
         (fun i ->
           Domain.spawn
             (fun () ->
-              for k = 1 to nturns do insert_skiplist k i done)) in
+              for k = 1 to nturns do insert_skiplist k npar i done)) in
     ignore (List.iter Domain.join d_list) ;
     assert (cardinal_skiplist() = npar*nturns) ;
     let d_list =
@@ -54,7 +54,7 @@ let () =
             (fun () ->
               let j = i/2 in
               if i mod 2 = 0 then
-                for k = 1 to nturns do insert_skiplist k j done
+                for k = 1 to nturns do insert_skiplist k npar j done
               else
                 for k = 1 to nturns do
                   while not (find_skiplist k npar j) do
@@ -74,7 +74,7 @@ let () =
             (fun () ->
               let j = i/2 in
               if i mod 2 = 0 then
-                for k = 1 to nturns do insert_skiplist k j done
+                for k = 1 to nturns do insert_skiplist k npar j done
               else if j mod 2 = 0 then
                 for k = 1 to nturns do
                   while not (find_skiplist k npar j) do
