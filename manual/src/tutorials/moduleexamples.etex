@@ -13,51 +13,43 @@ confusing names. Such a package is called a {\em structure} and
 is introduced by the "struct"\ldots"end" construct, which contains an
 arbitrary sequence of definitions. The structure is usually given a
 name with the "module" binding. For instance, here is a structure
-packaging together a type of priority queues and their operations:
+packaging together a type of FIFO queues and their operations:
 \begin{caml_example}{toplevel}
-module PrioQueue =
+module Fifo =
   struct
-    type priority = int
-    type 'a queue = Empty | Node of priority * 'a * 'a queue * 'a queue
-    let empty = Empty
-    let rec insert queue prio elt =
-      match queue with
-        Empty -> Node(prio, elt, Empty, Empty)
-      | Node(p, e, left, right) ->
-          if prio <= p
-          then Node(prio, elt, insert right p e, left)
-          else Node(p, e, insert right prio elt, left)
-    exception Queue_is_empty
-    let rec remove_top = function
-        Empty -> raise Queue_is_empty
-      | Node(prio, elt, left, Empty) -> left
-      | Node(prio, elt, Empty, right) -> right
-      | Node(prio, elt, (Node(lprio, lelt, _, _) as left),
-                        (Node(rprio, relt, _, _) as right)) ->
-          if lprio <= rprio
-          then Node(lprio, lelt, remove_top left, right)
-          else Node(rprio, relt, left, remove_top right)
-    let extract = function
-        Empty -> raise Queue_is_empty
-      | Node(prio, elt, _, _) as queue -> (prio, elt, remove_top queue)
+    type 'a queue = { front: 'a list; rear: 'a list }
+    let make front rear =
+      match front with
+      | [] -> { front = List.rev rear; rear = [] }
+      | _  -> { front; rear }
+    let empty = { front = []; rear = [] }
+    let is_empty = function { front = []; _ } -> true | _ -> false
+    let add x q = make q.front (x :: q.rear)
+    exception Empty
+    let top = function
+      | { front = []; _ } -> raise Empty
+      | { front = x :: _; _ } -> x
+    let pop = function
+      | { front = []; _ } -> raise Empty
+      | { front = _ :: f; rear = r } -> make f r
   end;;
 \end{caml_example}
 Outside the structure, its components can be referred to using the
 ``dot notation'', that is, identifiers qualified by a structure name.
-For instance, "PrioQueue.insert" is the function "insert" defined
-inside the structure "PrioQueue" and "PrioQueue.queue" is the type
-"queue" defined in "PrioQueue".
+For instance, "Fifo.add" is the function "add" defined
+inside the structure "Fifo" and "Fifo.queue" is the type
+"queue" defined in "Fifo".
 \begin{caml_example}{toplevel}
-PrioQueue.insert PrioQueue.empty 1 "hello";;
+Fifo.add "hello" Fifo.empty;;
 \end{caml_example}
 
 Another possibility is to open the module, which brings all
-identifiers defined inside the module in the scope of the current
+identifiers defined inside the module into the scope of the current
 structure.
 
 \begin{caml_example}{toplevel}
-open PrioQueue;;
-insert empty 1 "hello";;
+open Fifo;;
+add "hello" empty;;
 \end{caml_example}
 
 Opening a module enables lighter access to its components, at the
@@ -68,7 +60,7 @@ to confusing errors:
 
 \begin{caml_example}{toplevel}
 let empty = []
-open PrioQueue;;
+open Fifo;;
 let x = 1 :: empty [@@expect error];;
 \end{caml_example}
 
@@ -80,29 +72,25 @@ concerned expression. This can also make the code both easier to read
 (since the code fragment is more self-contained).
 Two constructions are available for this purpose:
 \begin{caml_example}{toplevel}
-let open PrioQueue in
-insert empty 1 "hello";;
+let open Fifo in
+add "hello" empty;;
 \end{caml_example}
 and
 \begin{caml_example}{toplevel}
-PrioQueue.(insert empty 1 "hello");;
+Fifo.(add "hello" empty);;
 \end{caml_example}
 In the second form, when the body of a local open is itself delimited
 by parentheses, braces or bracket, the parentheses of the local open
 can be omitted. For instance,
 \begin{caml_example}{toplevel}
-PrioQueue.[empty] = PrioQueue.([empty]);;
-PrioQueue.[|empty|] = PrioQueue.([|empty|]);;
-PrioQueue.{ contents = empty } = PrioQueue.({ contents = empty });;
-\end{caml_example}
-becomes
-\begin{caml_example}{toplevel}
-PrioQueue.[insert empty 1 "hello"];;
+Fifo.[empty] = Fifo.([empty]);;
+Fifo.[|empty|] = Fifo.([|empty|]);;
+Fifo.{ contents = empty } = Fifo.({ contents = empty });;
 \end{caml_example}
 This second form also works for patterns:
 \begin{caml_example}{toplevel}
 let at_most_one_element x = match x with
-| PrioQueue.( Empty| Node (_,_, Empty,Empty) ) -> true
+| Fifo.{ front = ([] | [_]); rear = [] } -> true
 | _ -> false ;;
 \end{caml_example}
 
@@ -110,17 +98,13 @@ It is also possible to copy the components of a module inside
 another module by using an "include" statement. This can be
 particularly useful to extend existing modules. As an illustration,
 we could add functions that return an optional value rather than
-an exception when the priority queue is empty.
+an exception when the queue is empty.
 \begin{caml_example}{toplevel}
-module PrioQueueOpt =
+module FifoOpt =
 struct
-  include PrioQueue
-
-  let remove_top_opt x =
-    try Some(remove_top x) with Queue_is_empty -> None
-
-  let extract_opt x =
-    try Some(extract x) with Queue_is_empty -> None
+  include Fifo
+  let top_opt q = if is_empty q then None else Some(top q)
+  let pop_opt q = if is_empty q then None else Some(pop q)
 end;;
 \end{caml_example}
 
@@ -130,50 +114,54 @@ Signatures are interfaces for structures. A signature specifies
 which components of a structure are accessible from the outside, and
 with which type. It can be used to hide some components of a structure
 (e.g. local function definitions) or export some components with a
-restricted type. For instance, the signature below specifies the three
-priority queue operations "empty", "insert" and "extract", but not the
-auxiliary function "remove_top". Similarly, it makes the "queue" type
+restricted type. For instance, the signature below specifies the
+queue operations "empty", "add", "top" and "pop", but not the
+auxiliary function "make". Similarly, it makes the "queue" type
 abstract (by not providing its actual representation as a concrete type).
+This ensures that users of the "Fifo" module cannot violate data
+structure invariants that operations rely on, such as ``if the front list
+is empty, the rear list must also be empty''.
 \begin{caml_example}{toplevel}
-module type PRIOQUEUE =
+module type FIFO =
   sig
-    type priority = int         (* still concrete *)
-    type 'a queue               (* now abstract *)
+    type 'a queue               (* now an abstract type *)
     val empty : 'a queue
-    val insert : 'a queue -> int -> 'a -> 'a queue
-    val extract : 'a queue -> int * 'a * 'a queue
-    exception Queue_is_empty
+    val add : 'a -> 'a queue -> 'a queue
+    val top : 'a queue -> 'a
+    val pop : 'a queue -> 'a queue
+    exception Empty
   end;;
 \end{caml_example}
-Restricting the "PrioQueue" structure by this signature results in
-another view of the "PrioQueue" structure where the "remove_top"
-function is not accessible and the actual representation of priority
+Restricting the "Fifo" structure to this signature results in
+another view of the "Fifo" structure where the "make"
+function is not accessible and the actual representation of
 queues is hidden:
 \begin{caml_example}{toplevel}
-module AbstractPrioQueue = (PrioQueue : PRIOQUEUE);;
-AbstractPrioQueue.remove_top [@@expect error];;
-AbstractPrioQueue.insert AbstractPrioQueue.empty 1 "hello";;
+module AbstractQueue = (Fifo : FIFO);;
+AbstractQueue.make [1] [2;3] [@@expect error];;
+AbstractQueue.add "hello" AbstractQueue.empty;;
 \end{caml_example}
 The restriction can also be performed during the definition of the
 structure, as in
 \begin{verbatim}
-module PrioQueue = (struct ... end : PRIOQUEUE);;
+module Fifo = (struct ... end : FIFO);;
 \end{verbatim}
 An alternate syntax is provided for the above:
 \begin{verbatim}
-module PrioQueue : PRIOQUEUE = struct ... end;;
+module Fifo : FIFO = struct ... end;;
 \end{verbatim}
 
 Like for modules, it is possible to include a signature to copy
 its components inside the current signature. For instance, we
-can extend the PRIOQUEUE signature with the "extract_opt"
-function:
+can extend the "FIFO" signature with the "top_opt" and "pop_opt"
+functions:
 
 \begin{caml_example}{toplevel}
-module type PRIOQUEUE_WITH_OPT =
+module type FIFO_WITH_OPT =
   sig
-    include PRIOQUEUE
-    val extract_opt : 'a queue -> (int * 'a * 'a queue) option
+    include FIFO
+    val top_opt: 'a queue -> 'a option
+    val pop_opt: 'a queue -> 'a queue option
   end;;
 \end{caml_example}
 
@@ -231,7 +219,7 @@ StringSet.member "bar" (StringSet.add "foo" StringSet.empty);;
 
 \section{s:functors-and-abstraction}{Functors and type abstraction}
 
-As in the "PrioQueue" example, it would be good style to hide the
+As in the "Fifo" example, it would be good style to hide the
 actual implementation of the type "set", so that users of the
 structure will not rely on sets being lists, and we can switch later
 to another, more efficient representation of sets without breaking

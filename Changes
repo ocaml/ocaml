@@ -640,6 +640,10 @@ Some of those changes will benefit all OCaml packages.
   `pp_print_newline` flushes its newline
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #12201: in the tutorial on modules, replace priority queue example by
+  a simpler example based on FIFO queues.
+  (Xavier Leroy, review by Anil Madhavapeddy and Nicolás Ojeda Bär).
+
 ### Compiler user-interface and warnings:
 
 - #10647: Show hints for the "undefined global" error in the toplevel
