@@ -100,6 +100,10 @@ Working version
 
 ### Tools:
 
+- #12340: testsuite: collect known issues with current -short-paths
+  implementation for existential types
+  (Florian Angeletti, Samuel Hym, review by Florian Angeletti and Thomas Refis)
+
 - #12147: ocamllex: Allow carriage returns at the end of line directives.
   (SeungCheol Jung, review by Nicolás Ojeda Bär)
 
