@@ -120,7 +120,7 @@ auxiliary function "make". Similarly, it makes the "queue" type
 abstract (by not providing its actual representation as a concrete type).
 This ensures that users of the "Fifo" module cannot violate data
 structure invariants that operations rely on, such as ``if the front list
-is empty, the rear list is empty too''.
+is empty, the rear list must also be empty''.
 \begin{caml_example}{toplevel}
 module type FIFO =
   sig
