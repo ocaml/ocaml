@@ -117,7 +117,7 @@ Working version
 ### Manual and documentation:
 
 - #12352: Fix a typo in the documentation of Arg.write_arg
-  (Christophe Raffalli)
+  (Christophe Raffalli, review by Florian Angeletti)
 
 ### Compiler user-interface and warnings:
 
