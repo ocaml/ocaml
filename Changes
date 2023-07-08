@@ -114,7 +114,7 @@ Working version
 
 - #12359: Add an example of reexporting an extensible variant types in
   another module.
-  (Christophe Raffalli, review by ...)
+  (Christophe Raffalli, review by Florian Angeletti)
 
 ### Compiler user-interface and warnings:
 
