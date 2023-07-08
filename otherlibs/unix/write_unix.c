@@ -18,6 +18,7 @@
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
+#include <caml/bigarray.h>
 #include "unixsupport.h"
 
 #ifndef EAGAIN
@@ -54,6 +55,34 @@ CAMLprim value caml_unix_write(value fd, value buf, value vofs, value vlen)
   CAMLreturn(Val_long(written));
 }
 
+CAMLprim value caml_unix_write_bigarray(value fd, value vbuf,
+                                        value vofs, value vlen)
+{
+  CAMLparam4(fd, vbuf, vofs, vlen);
+  long ofs, len, written;
+  void *buf;
+  int ret;
+
+  buf = Caml_ba_data_val(vbuf);
+  ofs = Long_val(vofs);
+  len = Long_val(vlen);
+  written = 0;
+  caml_enter_blocking_section();
+  while (len > 0) {
+    ret = write(Int_val(fd), buf + ofs, len);
+    if (ret == -1) {
+      if ((errno == EAGAIN || errno == EWOULDBLOCK) && written > 0) break;
+      caml_leave_blocking_section();
+      caml_uerror("write_bigarray", Nothing);
+    }
+    written += ret;
+    ofs += ret;
+    len -= ret;
+  }
+  caml_leave_blocking_section();
+  CAMLreturn(Val_long(written));
+}
+
 /* When an error occurs after the first loop, caml_unix_write reports the
    error and discards the number of already written characters.
    In this case, it would be better to discard the error and return the
@@ -80,6 +109,27 @@ CAMLprim value caml_unix_single_write(value fd, value buf, value vofs,
     ret = write(Int_val(fd), iobuf, numbytes);
     caml_leave_blocking_section();
     if (ret == -1) caml_uerror("single_write", Nothing);
+  }
+  CAMLreturn(Val_int(ret));
+}
+
+CAMLprim value caml_unix_single_write_bigarray(value fd, value vbuf, value vofs,
+                                               value vlen)
+{
+  CAMLparam4(fd, vbuf, vofs, vlen);
+  intnat ofs, len;
+  void *buf;
+  int ret;
+
+  buf = Caml_ba_data_val(vbuf);
+  ofs = Long_val(vofs);
+  len = Long_val(vlen);
+  ret = 0;
+  if (len > 0) {
+    caml_enter_blocking_section();
+    ret = write(Int_val(fd), buf + ofs, len);
+    caml_leave_blocking_section();
+    if (ret == -1) caml_uerror("single_write_bigarray", Nothing);
   }
   CAMLreturn(Val_int(ret));
 }
