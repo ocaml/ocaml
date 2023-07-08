@@ -154,20 +154,21 @@ let find_ocamlinit () =
         let file = Filename.concat dir file in
         if Sys.file_exists file then Some file else None
   in
-  let home_dir () = getenv "HOME" in
   let config_dir () =
-    if Sys.win32 then None else
     match getenv "XDG_CONFIG_HOME" with
     | Some _ as v -> v
     | None ->
-        match home_dir () with
-        | None -> None
-        | Some dir -> Some (Filename.concat dir ".config")
+        if Sys.win32 then
+          getenv "LOCALAPPDATA"
+        else
+          match getenv "HOME" with
+          | None -> None
+          | Some dir -> Some (Filename.concat dir ".config")
   in
   let init_ml = Filename.concat "ocaml" "init.ml" in
   match exists_in_dir (config_dir ()) init_ml with
   | Some _ as v -> v
-  | None -> exists_in_dir (home_dir ()) ocamlinit
+  | None -> exists_in_dir (getenv (if Sys.win32 then "USERPROFILE" else "HOME")) ocamlinit
 
 let load_ocamlinit ppf =
   if !Clflags.noinit then ()

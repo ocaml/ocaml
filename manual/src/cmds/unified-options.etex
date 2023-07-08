@@ -304,8 +304,10 @@ the toplevel is running with the "#directory" directive
 \item["-init" \var{file}]
 Load the given file instead of the default initialization file.
 The default file is ".ocamlinit" in the current directory if it
-exists, otherwise "XDG_CONFIG_HOME/ocaml/init.ml" or
-".ocamlinit" in the user's home directory.
+exists, otherwise "XDG_CONFIG_HOME/ocaml/init.ml"
+(on Windows, if "XDG_CONFIG_HOME" is not set then "LOCALAPPDATA" is
+used in its place) or "HOME/.ocamlinit" (on Windows, "USERPROFILE/.ocamlinit"
+is used instead).
 }%top
 
 \notop{%

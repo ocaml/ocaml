@@ -326,11 +326,17 @@ giving control to the user. The default file is
 .B .ocamlinit
 in the current directory if it exists, otherwise
 .B XDG_CONFIG_HOME/ocaml/init.ml
-according to the XDG base directory specification lookup if it exists (on
-Windows this is skipped), otherwise
-.B .ocamlinit
-in the user's home directory
-.RB ( HOME " variable)."
+according to the XDG base directory specification lookup if it exists
+(on Windows, if
+.B XDG_CONFIG_HOME
+is not set then
+.B LOCALAPPDATA
+is used in its place),
+otherwise
+.B HOME/.ocamlinit
+(on Windows,
+.B USERPROFILE/.ocamlinit
+is used instead).
 You can specify a different initialization file
 by using the
 .BI \-init " file"
@@ -359,6 +365,16 @@ and look up its capabilities in the terminal database.
 .B XDG_CONFIG_HOME HOME
 .B .ocamlinit
 lookup procedure (see above).
+.TP
+.B LOCALAPPDATA
+used if
+.B XDG_CONFIG_HOME
+is not set (Windows only).
+.TP
+.B USERPROFILE
+used instead of
+.B HOME
+(Windows only).
 .SH SEE ALSO
 .BR ocamlc "(1), " ocamlopt "(1), " ocamlrun (1).
 .br

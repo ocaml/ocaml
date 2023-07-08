@@ -68,10 +68,10 @@ described in section~\ref{s:toplevel-directives}.
 The evaluation outcode for each phrase are not displayed.
 If the current directory does not contain an ".ocamlinit" file,
 the file "XDG_CONFIG_HOME/ocaml/init.ml" is looked up according
-to the XDG base directory specification and used instead (on Windows
-this is skipped). If that file doesn't exist then an [.ocamlinit] file
-in the users' home directory (determined via environment variable "HOME") is
-used if existing.
+to the XDG base directory specification and used instead (on Windows,
+if "XDG_CONFIG_HOME" is not set then "LOCALAPPDATA" is used in its place).
+If that file does not exist then "HOME/.ocamlinit" is used
+if it exists (on Windows, "USERPROFILE/.ocamlinit" is used instead).
 
 The toplevel system does not perform line editing, but it can
 easily be used in conjunction with an external line editor such as
