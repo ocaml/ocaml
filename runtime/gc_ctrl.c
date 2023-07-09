@@ -56,11 +56,12 @@ CAMLprim value caml_gc_quick_stat(value v)
   CAMLlocal1 (res);
 
   /* get a copy of these before allocating anything... */
-  intnat majcoll, mincoll;
+  intnat majcoll, mincoll, compactions;
   struct gc_stats s;
   caml_compute_gc_stats(&s);
   majcoll = caml_major_cycles_completed;
   mincoll = atomic_load(&caml_minor_collections_count);
+  compactions = atomic_load(&caml_compactions_count);
 
   res = caml_alloc_tuple (17);
   Store_field (res, 0, caml_copy_double ((double)s.alloc_stats.minor_words));
@@ -81,7 +82,7 @@ CAMLprim value caml_gc_quick_stat(value v)
   Store_field (res, 10, Val_long (0));
   Store_field (res, 11, Val_long (0));
   Store_field (res, 12, Val_long (s.heap_stats.pool_frag_words));
-  Store_field (res, 13, Val_long (0));
+  Store_field (res, 13, Val_long (compactions));
   Store_field (res, 14, Val_long (
     s.heap_stats.pool_max_words + s.heap_stats.large_max_words));
   Store_field (res, 15, Val_long (0));

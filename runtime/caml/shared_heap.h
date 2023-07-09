@@ -24,6 +24,8 @@
 #include "misc.h"
 #include "gc_stats.h"
 
+CAMLextern atomic_uintnat caml_compactions_count;
+
 struct caml_heap_state;
 struct pool;
 

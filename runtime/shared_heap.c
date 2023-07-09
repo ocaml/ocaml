@@ -35,6 +35,8 @@
 #include "caml/startup_aux.h"
 #include "caml/weak.h"
 
+CAMLexport atomic_uintnat caml_compactions_count;
+
 typedef unsigned int sizeclass;
 
 /* Initial MARKED, UNMARKED, and GARBAGE values; any permutation would work */
@@ -1225,6 +1227,9 @@ void caml_compact_heap(caml_domain_state* domain_state,
     }
 
     caml_plat_unlock(&pool_freelist.lock);
+
+    /* We are done, increment our compaction count */
+    atomic_fetch_add(&caml_compactions_count, 1);
   }
 
   caml_gc_log("Compacting heap complete");
