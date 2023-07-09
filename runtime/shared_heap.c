@@ -1209,6 +1209,24 @@ void caml_compact_heap(caml_domain_state* domain_state,
   CAML_EV_END(EV_COMPACT_RELEASE);
   caml_global_barrier();
 
+  /* Fourth phase: one domain also needs to release the free list */
+  if( participants[0] == Caml_state ) {
+    pool* cur_pool;
+    pool* next_pool;
+
+    caml_plat_lock(&pool_freelist.lock);
+    cur_pool = pool_freelist.free;
+
+    while( cur_pool ) {
+      next_pool = cur_pool->next;
+      /* No stats to update so just unmap */
+      caml_mem_unmap(cur_pool, Bsize_wsize(POOL_WSIZE));
+      cur_pool = next_pool;
+    }
+
+    caml_plat_unlock(&pool_freelist.lock);
+  }
+
   caml_gc_log("Compacting heap complete");
   CAML_EV_END(EV_COMPACT);
 }
