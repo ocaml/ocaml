@@ -56,7 +56,7 @@ end;;
 Line 11, characters 2-71:
 11 |   external f : (int32 [@unboxed]) -> (int32 [@unboxed]) = "f" "noalloc"
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: [@The native code version of the primitive is mandatory
+Error: The native code version of the primitive is mandatory
        when attributes "[@untagged]" or "[@unboxed]" are present.
 |}]
 
@@ -701,7 +701,7 @@ external o : (float[@unboxed]) -> float = "o";;
 Line 1, characters 0-45:
 1 | external o : (float[@unboxed]) -> float = "o";;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: [@The native code version of the primitive is mandatory
+Error: The native code version of the primitive is mandatory
        when attributes "[@untagged]" or "[@unboxed]" are present.
 |}]
 external p : float -> (float[@unboxed]) = "p";;
@@ -709,7 +709,7 @@ external p : float -> (float[@unboxed]) = "p";;
 Line 1, characters 0-45:
 1 | external p : float -> (float[@unboxed]) = "p";;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: [@The native code version of the primitive is mandatory
+Error: The native code version of the primitive is mandatory
        when attributes "[@untagged]" or "[@unboxed]" are present.
 |}]
 external q : (int[@untagged]) -> float = "q";;
@@ -717,7 +717,7 @@ external q : (int[@untagged]) -> float = "q";;
 Line 1, characters 0-44:
 1 | external q : (int[@untagged]) -> float = "q";;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: [@The native code version of the primitive is mandatory
+Error: The native code version of the primitive is mandatory
        when attributes "[@untagged]" or "[@unboxed]" are present.
 |}]
 external r : int -> (int[@untagged]) = "r";;
@@ -725,7 +725,7 @@ external r : int -> (int[@untagged]) = "r";;
 Line 1, characters 0-42:
 1 | external r : int -> (int[@untagged]) = "r";;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: [@The native code version of the primitive is mandatory
+Error: The native code version of the primitive is mandatory
        when attributes "[@untagged]" or "[@unboxed]" are present.
 |}]
 external s : int -> int = "s" [@@untagged];;
@@ -733,7 +733,7 @@ external s : int -> int = "s" [@@untagged];;
 Line 1, characters 0-42:
 1 | external s : int -> int = "s" [@@untagged];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: [@The native code version of the primitive is mandatory
+Error: The native code version of the primitive is mandatory
        when attributes "[@untagged]" or "[@unboxed]" are present.
 |}]
 external t : float -> float = "t" [@@unboxed];;
@@ -741,7 +741,7 @@ external t : float -> float = "t" [@@unboxed];;
 Line 1, characters 0-45:
 1 | external t : float -> float = "t" [@@unboxed];;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: [@The native code version of the primitive is mandatory
+Error: The native code version of the primitive is mandatory
        when attributes "[@untagged]" or "[@unboxed]" are present.
 |}]
 

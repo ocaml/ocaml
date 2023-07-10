@@ -243,7 +243,7 @@ let report_error ppf err =
       Style.inline_code "[@@noalloc]"
   | No_native_primitive_with_repr_attribute ->
     Format.fprintf ppf
-      "[@The native code version of the primitive is mandatory@ \
+      "@[The native code version of the primitive is mandatory@ \
        when attributes %a or %a are present.@]"
       Style.inline_code "[@untagged]"
       Style.inline_code "[@unboxed]"
