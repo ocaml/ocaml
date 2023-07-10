@@ -219,7 +219,7 @@ val execv : prog:string -> args:string array -> 'a
 (** [execv prog args] execute the program in file [prog], with the arguments
    [args], and the current process environment.  Note that the first
    argument, [args.(0)], is by convention the filename of the program being
-   executed, just like [Sys.argv.(0)] These [execv*] functions never return:
+   executed, just like [Sys.argv.(0)]. These [execv*] functions never return:
    on success, the current program is replaced by the new one.
 
    On Windows: the CRT simply spawns a new process and exits the
@@ -859,7 +859,6 @@ val create_process :
     that executes the program in file [prog], with arguments [args]. Note that
     the first argument, [args.(0)], is by convention the filename of the
     program being executed, just like [Sys.argv.(0)].
-
     The pid of the new process is returned immediately; the new process
     executes concurrently with the current process.  The standard input and
     outputs of the new process are connected to the descriptors [stdin],
