@@ -451,6 +451,9 @@ Some of those changes will benefit all OCaml packages.
   a simpler example based on FIFO queues.
   (Xavier Leroy, review by Anil Madhavapeddy and Nicolás Ojeda Bär).
 
+- #12352: Fix a typo in the documentation of Arg.write_arg
+  (Christophe Raffalli, review by Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 - #10647: Show hints for the "undefined global" error in the toplevel
