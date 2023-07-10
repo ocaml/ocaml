@@ -116,6 +116,9 @@ Working version
 
 ### Manual and documentation:
 
+- #12352: Fix a typo in the documentation of Arg.write_arg
+  (Christophe Raffalli, review by Florian Angeletti)
+
 ### Compiler user-interface and warnings:
 
 - #12247: configure: --disable-ocamldebug can now be used instead

@@ -234,7 +234,7 @@ val read_arg0: string -> string array
 
 val write_arg: string -> string array -> unit
 (** [Arg.write_arg file args] writes the arguments [args] newline-terminated
-    into the file [file]. If the any of the arguments in [args] contains a
+    into the file [file]. If any of the arguments in [args] contains a
     newline, use {!Arg.write_arg0} instead.
     @since 4.05 *)
 
