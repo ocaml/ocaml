@@ -433,3 +433,16 @@ and r = [s cstr t | `Bar]
 type s = int
 and r = [ `Bar | `Foo ]
 |}]
+
+
+(* PR #12334 *)
+
+type 'a t = 'a foo foo
+and 'a foo = int constraint 'a = int
+[%%expect{|
+Line 1, characters 12-22:
+1 | type 'a t = 'a foo foo
+                ^^^^^^^^^^
+Error: Constraints are not satisfied in this type.
+       Type "'a foo foo" should be an instance of "int foo"
+|}]

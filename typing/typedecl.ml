@@ -95,7 +95,7 @@ let add_type ~check id decl env =
   Builtin_attributes.warning_scope ~ppwarning:false decl.type_attributes
     (fun () -> Env.add_type ~check id decl env)
 
-let enter_type rec_flag env sdecl (id, uid) =
+let enter_type ~abstract_abbrevs rec_flag env sdecl (id, uid) =
   let needed =
     match rec_flag with
     | Asttypes.Nonrecursive ->
@@ -118,8 +118,10 @@ let enter_type rec_flag env sdecl (id, uid) =
       type_kind = Type_abstract;
       type_private = sdecl.ptype_private;
       type_manifest =
-        begin match sdecl.ptype_manifest with None -> None
-        | Some _ -> Some(Btype.newgenvar ()) end;
+        begin match sdecl.ptype_manifest with
+        | Some _ when not abstract_abbrevs -> Some(Btype.newgenvar ())
+        | _ -> None
+        end;
       type_variance = Variance.unknown_signature ~injective:false ~arity;
       type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
@@ -926,7 +928,7 @@ let check_regularity ~orig_env env loc path decl to_check =
               let (params, body) =
                 Ctype.instance_parameterized_type params0 body0 in
               begin
-                try List.iter2 (Ctype.unify orig_env) params args'
+                try List.iter2 (Ctype.unify orig_env) args' params
                 with Ctype.Unify err ->
                   raise (Error(loc, Constraint_failed (orig_env, err)));
               end;
@@ -1063,7 +1065,8 @@ let transl_type_decl env rec_flag sdecl_list =
     Ctype.with_local_level_iter ~post:generalize_decl begin fun () ->
       (* Enter types. *)
       let temp_env =
-        List.fold_left2 (enter_type rec_flag) env sdecl_list ids_list in
+        List.fold_left2 (enter_type ~abstract_abbrevs:false rec_flag)
+          env sdecl_list ids_list in
       (* Translate each declaration. *)
       let current_slot = ref None in
       let warn_unused =
@@ -1121,8 +1124,14 @@ let transl_type_decl env rec_flag sdecl_list =
     check_well_founded_decl new_env (List.assoc id id_loc_list) (Path.Pident id)
       decl to_check)
     decls;
+  (* Add abstract declarations to the environment to avoid strange error
+     messages (#12334) *)
+  let abs_env =
+    List.fold_left2 (enter_type ~abstract_abbrevs:false rec_flag)
+      env sdecl_list ids_list in
   List.iter
-    (check_abbrev_regularity ~orig_env:env new_env id_loc_list to_check) tdecls;
+    (check_abbrev_regularity ~orig_env:abs_env new_env id_loc_list to_check)
+    tdecls;
   (* Check that all type variables are closed *)
   List.iter2
     (fun sdecl tdecl ->
