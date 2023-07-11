@@ -17,7 +17,7 @@ On Linux, native code support for RISC-V and s390x/IBM Z will be available in
 OCaml 5.1 and on Power in 5.2.
 
 ❗ From OCaml 5.0 onwards, native compilation is available only on 64-bit
-systems.  Native compilation on 32-bit systems **is no longer available,** nor
+systems.  Native compilation on 32-bit systems is no longer available, nor
 are there plans to bring it back. The bytecode compiler will continue to work on
 all architectures.
 
