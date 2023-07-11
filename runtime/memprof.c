@@ -41,14 +41,14 @@
  * a linked list of thread states for all the threads in the domain,
  * and a pointer to the current thread state.
  *
- * Memprof in any given domain has a "configuration"
- * (memprof_config_s, *memprof_config_t). This structure is only
- * created when a profile is started, and survives until the profile
- * is discarded. It has an entries table, to which entries are
- * transferred when the profile is stopped (so that domains can run a
- * fresh profile), and to which entries are also transferred if a
- * domain using this profile is terminated. It has a linked list of
- * domain states for all the domains using this profile.
+ * Any given profile has a "profile state" (memprof_profile_s,
+ * *memprof_profile_t). This structure is only created when a profile
+ * is started, and survives until the profile is discarded. It has an
+ * entries table, to which entries are transferred when the profile is
+ * stopped (so that domains can run a fresh profile), and to which
+ * entries are also transferred if a domain using this profile is
+ * terminated. It has a linked list of domain states for all the
+ * domains using this profile.
  *
  */
 
@@ -108,6 +108,8 @@ an entry is transferred to . This is OK when being done
 /* type aliases for the hierarchy of structures for managing memprof status. */
 
 typedef struct memprof_config_s memprof_config_s, *memprof_config_t;
+
+typedef struct memprof_profile_s memprof_profile_s, *memprof_profile_t;
 typedef struct memprof_domain_s memprof_domain_s, *memprof_domain_t;
 typedef struct memprof_thread_s memprof_thread_s, *memprof_thread_t;
 
@@ -228,8 +230,8 @@ typedef struct {
 /* Minimum size of a per-domain entries array */
 #define MIN_ENTRIES_DOMAIN_SIZE 128
 
-/* Minimum size of a per-config entries array */
-#define MIN_ENTRIES_CONFIG_SIZE 128
+/* Minimum size of a per-profile entries array */
+#define MIN_ENTRIES_PROFILE_SIZE 128
 
 /* number of random variables in a batch */
 #define RAND_BLOCK_SIZE 64
@@ -265,6 +267,31 @@ struct memprof_thread_s {
   memprof_thread_t next;
 };
 
+/* Memprof configuration. */
+
+struct memprof_config_s {
+  /* Whether memprof has been stopped. */
+  bool _Atomic stopped;
+
+  /* [lambda] is the mean number of samples for each allocated word
+   * (including block headers). Non-negative. Usually a very small value
+   * such as 1e-4 or 1e-5. */
+  double lambda;
+
+  /* Precomputed value of [1/log(1-lambda)], for fast sampling of
+   * geometric distribution. For small lambda this is like [-1/lambda].
+   * Dummy if [lambda = 0]. */
+  float one_log1m_lambda;
+
+  /* [callstack_size] is the maximum number of stack frames to provide
+   * to the tracker callback for each sampled event. */
+  intnat callstack_size;
+
+  /* [tracker] is a tuple of callbacks to call for various events: See
+   * [Gc.Memprof.tracker]. This is a strong GC root. */
+  value tracker;
+};
+
 /* Per-domain memprof state */
 
 struct memprof_domain_s {
@@ -285,11 +312,14 @@ struct memprof_domain_s {
   /* The current thread's memprof state */
   memprof_thread_t current;
 
-  /* The current configuration for this domain. NULL when not profiling. */
-  memprof_config_t config;
+  /* The current profile for this domain. NULL when not profiling. */
+  memprof_profile_t profile;
 
-  /* The next domain in a linked list of domains using this
-   * configuration */
+  /* The current profiling configuration for this domain. */
+  memprof_config_s config;
+
+  /* The next domain in a linked list of domains running this
+   * profile */
   memprof_domain_t next;
 
   /* Buffer used to compute backtraces */
@@ -313,52 +343,40 @@ struct memprof_domain_s {
   uintnat next_rand_geom;
 };
 
-/* Memprof configuration. May be shared between domains. Retains a
- * table of entries, for callbacks remaining after a profile has been
- * stopped, or orphaned when a domain has been terminated. */
+/* Memprof profile. May be shared between domains. Retains a table of
+ * entries, for callbacks remaining after a profile has been stopped,
+ * or orphaned when a domain has been terminated. */
 
-struct memprof_config_s {
-  /* Whether memprof has been stopped. */
-  bool stopped;
+struct memprof_profile_s {
+  /* Configuration of this profile. */
+  memprof_config_s config;
 
-  /* [lambda] is the mean number of samples for each allocated word
-   * (including block headers). Non-negative. Usually a very small value
-   * such as 1e-4 or 1e-5. */
-  double lambda;
+  /* Unique identifier of this profile */
+  uintnat id;
 
-  /* Precomputed value of [1/log(1-lambda)], for fast sampling of
-   * geometric distribution. For small lambda this is like [-1/lambda].
-   * Dummy if [lambda = 0]. */
-  float one_log1m_lambda;
-
-  /* [callstack_size] is the maximum number of stack frames to provide
-   * to the tracker callback for each sampled event. */
-  intnat callstack_size;
-
-  /* [tracker] is a tuple of callbacks to call for various events: See
-   * [Gc.Memprof.tracker]. This is a strong GC root. */
-  value tracker;
-
-  /* lock governing access to `domains` and `next` fields */
+  /* Lock governing access to `domains` and `next` fields */
   caml_plat_mutex lock;
 
-  /* Linked list of domains using this configuration. */
+  /* Linked list of domains running this profile. */
   memprof_domain_t domains;
 
-  /* next configuration in a linked list. */
-  memprof_config_t next;
+  /* next profile in a linked list of all non-discarded profiles. */
+  memprof_profile_t next;
 
-  /* Entries for blocks allocated with this configuration, after the
+  /* Entries for blocks allocated for this profile, after the
    * profile has been stopped, or for which the allocating domains
    * have terminated. */
   entries_s entries;
 };
 
-/* List of all the active statmemprof configurations. */
-memprof_config_t configs = NULL;
+/* List of all the non-discarded statmemprof profiles. */
+memprof_profile_t profiles = NULL;
 
-/* lock controlling access to `configs` variable */
-caml_plat_mutex configs_lock = CAML_PLAT_MUTEX_INITIALIZER;
+/* lock controlling access to `profiles` variable */
+caml_plat_mutex profiles_lock = CAML_PLAT_MUTEX_INITIALIZER;
+
+/* The ID of the next profile to be created */
+atomic_uintnat next_profile_id = 0;
 
 /**** Initializing and clearing entries tables ****/
 
@@ -544,7 +562,7 @@ static void evict_deleted(entries_t es)
 /* We use a low-quality SplitMix64 PRNG to initialize state vectors
  * for a high-quality high-performance 32-bit PRNG (xoshiro128+). That
  * PRNG generates uniform random 32-bit numbers, which we use in turn
- * to generate geometric random numbers parameterized by [config->lambda].
+ * to generate geometric random numbers parameterized by [lambda].
  * This is all coded in such a way that compilers can readily use SIMD
  * optimisations.
  */
@@ -661,7 +679,7 @@ __attribute__((optimize("tree-vectorize")))
 static void rand_batch(memprof_domain_t domain)
 {
   int i;
-  float one_log1m_lambda = domain->config->one_log1m_lambda;
+  float one_log1m_lambda = domain->config.one_log1m_lambda;
 
   /* Instead of using temporary buffers, we could use one big loop,
      but it turns out SIMD optimizations of compilers are more fragile
@@ -698,7 +716,7 @@ static void rand_batch(memprof_domain_t domain)
 static uintnat rand_geom(memprof_domain_t domain)
 {
   uintnat res;
-  CAMLassert(domain->config->lambda > 0.);
+  CAMLassert(domain->config.lambda > 0.);
   if (domain->rand_pos == RAND_BLOCK_SIZE) rand_batch(domain);
   res = domain->rand_geom_buff[domain->rand_pos++];
   CAMLassert(1 <= res && res <= Max_long);
@@ -720,7 +738,7 @@ static uintnat rand_geom(memprof_domain_t domain)
 static uintnat rand_binom(memprof_domain_t domain, uintnat len)
 {
   uintnat res;
-  CAMLassert(domain->config->lambda > 0. && len < Max_long);
+  CAMLassert(domain->config.lambda > 0. && len < Max_long);
   for (res = 0; domain->next_rand_geom < len; res++)
     domain->next_rand_geom += rand_geom(domain);
   domain->next_rand_geom -= len;
@@ -792,21 +810,21 @@ static void domain_destroy(memprof_domain_t domain)
     thread = next;
   }
 
-  memprof_config_t config = domain->config;
-  if (config) {
-    caml_plat_lock(&config->lock);
-    /* remove domain from the per-config list. Could go faster if we
+  memprof_profile_t profile = domain->profile;
+  if (profile) {
+    caml_plat_lock(&profile->lock);
+    /* remove domain from the per-profile list. Could go faster if we
      * used a doubly-linked list, but that's premature optimisation
      * at this point. */
-    memprof_domain_t *p = &config->domains;
+    memprof_domain_t *p = &profile->domains;
     while (*p != domain) {
       p = &(*p)->next;
     }
     *p = domain->next;
 
     /* transfer any surviving entries to the config's table */
-    entries_transfer(&domain->entries, &config->entries);
-    caml_plat_unlock(&config->lock);
+    entries_transfer(&domain->entries, &profile->entries);
+    caml_plat_unlock(&profile->lock);
   }
   entries_clear(&domain->entries);
   caml_stat_free(domain);
@@ -823,7 +841,12 @@ static memprof_domain_t domain_create(caml_domain_state *caml_state)
   entries_init(&domain->entries, MIN_ENTRIES_DOMAIN_SIZE);
   domain->threads = NULL;
   domain->current = NULL;
-  domain->config = NULL;
+  domain->profile = NULL;
+  atomic_store(&domain->config.stopped, false);
+  domain->config.lambda = 0.0;
+  domain->config.one_log1m_lambda = 0.0;
+  domain->config.callstack_size = 0;
+  domain->config.tracker = Val_unit;
   domain->callstack_buffer = NULL;
   domain->callstack_buffer_len = 0;
 
@@ -849,7 +872,7 @@ static void domain_prepare_to_sample(memprof_domain_t domain)
 {
   xoshiro_init(domain);
   domain->rand_pos = RAND_BLOCK_SIZE;
-  if (domain->config->lambda > 0) {
+  if (domain->config.lambda > 0) {
     /* next_rand_geom can be zero if the next word is to be sampled,
      * but rand_geom always returns a value >= 1. Subtract 1 to correct. */
     domain->next_rand_geom = rand_geom(domain) - 1;
@@ -858,68 +881,72 @@ static void domain_prepare_to_sample(memprof_domain_t domain)
   caml_memprof_renew_minor_sample(domain->caml_state);
 }
 
-/*** Create and destroy configuration records ***/
+/*** Create and destroy profile records ***/
 
-static memprof_config_t config_create(double lambda, intnat callstack_size,
-                                      value tracker, memprof_domain_t domain)
+static memprof_profile_t profile_create(double lambda, intnat callstack_size,
+                                        value tracker, memprof_domain_t domain)
 {
-  memprof_config_t config = caml_stat_alloc(sizeof(memprof_config_s));
-  if (!config) {
+  memprof_profile_t profile = caml_stat_alloc(sizeof(memprof_profile_s));
+  if (!profile) {
     return NULL;
   }
-  config->stopped = false;
-  config->lambda = lambda;
-  if (lambda > 0) {
-    config->one_log1m_lambda = lambda == 1 ? 0 : 1/caml_log1p(-lambda);
-  }
-  config->callstack_size = callstack_size;
-  config->tracker = tracker;
-  config->domains = domain;
-  entries_init(&config->entries, MIN_ENTRIES_CONFIG_SIZE);
-  caml_plat_mutex_init(&config->lock);
+  profile->id = atomic_fetch_add(&next_profile_id, 1);
 
-  domain->config = config;
+  atomic_store(&profile->config.stopped, false);
+  profile->config.lambda = lambda;
+  if (lambda > 0) {
+    profile->config.one_log1m_lambda = lambda == 1 ? 0 : 1/caml_log1p(-lambda);
+  }
+  profile->config.callstack_size = callstack_size;
+  profile->config.tracker = tracker;
+
+  profile->domains = domain;
+  entries_init(&profile->entries, MIN_ENTRIES_PROFILE_SIZE);
+  caml_plat_mutex_init(&profile->lock);
+
+  domain->config = profile->config;
+  domain->profile = profile;
   domain->next = NULL;
 
-  caml_plat_lock(&configs_lock);
-  config->next = configs;
-  configs = config;
-  caml_plat_unlock(&configs_lock);
-  return config;
+  caml_plat_lock(&profiles_lock);
+  profile->next = profile;
+  profiles = profile;
+  caml_plat_unlock(&profiles_lock);
+  return profile;
 }
 
-static void config_destroy(memprof_config_t config)
+static void profile_destroy(memprof_profile_t profile)
 {
-  memprof_domain_t domain = config->domains;
+  memprof_domain_t domain = profile->domains;
   (void)domain;
   CAMLassert(!domain);
 
-  /* remove config from list and take its lock */
+  /* remove profile from list and take its lock */
 
-  caml_plat_mutex *lock_p = &configs_lock;
+  caml_plat_mutex *lock_p = &profiles_lock;
   caml_plat_lock(lock_p);
-  memprof_config_t *config_p = &configs;
+  memprof_profile_t *profile_p = &profiles;
 
   bool found = false;
-  while(*config_p && !found) {
-    memprof_config_t next = *config_p;
+  while(*profile_p && !found) {
+    memprof_profile_t next = *profile_p;
     caml_plat_lock(&next->lock);
-    if (next == config) { /* found it, and we have its lock */
+    if (next == profile) { /* found it, and we have its lock */
       /* remove from linked list */
-      *config_p = config->next;
+      *profile_p = profile->next;
       found = true;
     }
     caml_plat_unlock(lock_p);
     lock_p = &next->lock;
-    config_p = &next->next;
+    profile_p = &next->next;
   }
   CAMLassert(found);
 
-  entries_clear(&config->entries);
+  entries_clear(&profile->entries);
 
-  caml_plat_unlock(&config->lock);
-  caml_plat_mutex_free(&config->lock);
-  caml_stat_free(config);
+  caml_plat_unlock(&profile->lock);
+  caml_plat_mutex_free(&profile->lock);
+  caml_stat_free(profile);
 }
 
 /**** Interface to domain module ***/
@@ -931,13 +958,13 @@ void caml_memprof_new_domain(caml_domain_state *parent,
 
   child->memprof = domain;
   /* if parent domain is profiling, child domain should also be profiling */
-  if (domain && parent && parent->memprof->config) {
-    memprof_config_t config = parent->memprof->config;
-    caml_plat_lock(&config->lock);
-    domain->config = config;
-    domain->next = config->domains;
-    config->domains = domain;
-    caml_plat_unlock(&config->lock);
+  if (domain && parent && parent->memprof->profile) {
+    memprof_profile_t profile = parent->memprof->profile;
+    caml_plat_lock(&profile->lock);
+    domain->profile = profile;
+    domain->next = profile->domains;
+    profile->domains = domain;
+    caml_plat_unlock(&profile->lock);
 
     domain_prepare_to_sample(domain);
   }
@@ -1046,47 +1073,47 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker_param)
     caml_invalid_argument("Gc.Memprof.start");
 
   memprof_domain_t domain = Caml_state->memprof;
-  if (domain->config) {
+  if (domain->profile) {
     caml_failwith("Gc.Memprof.start: already started.");
   }
 
-  memprof_config_t config = config_create(l, sz, tracker_param, domain);
-  if (!config) {
-    caml_failwith("Gc.Memprof.start: couldn't allocate configuration object.");
+  memprof_profile_t profile = profile_create(l, sz, tracker_param, domain);
+  if (!profile) {
+    caml_failwith("Gc.Memprof.start: couldn't allocate profile object.");
   }
 
   domain_prepare_to_sample(domain);
 
-  CAMLreturn(Val_ptr(config));
+  CAMLreturn(Val_long(profile->id));
 }
 
 CAMLprim value caml_memprof_stop(value unit)
 {
   memprof_domain_t domain = Caml_state->memprof;
-  memprof_config_t config = domain->config;
-  if (!config) {
+  memprof_profile_t profile = domain->profile;
+  if (!profile) {
     caml_failwith("Gc.Memprof.stop: not started.");
   }
 
-  caml_plat_lock(&config->lock);
-  /* Nobody else can be changing this config or any pointers to it */
+  caml_plat_lock(&profile->lock);
+  /* Nobody else can be changing this profileor any pointers to it */
 
-  config->stopped = true;
+  atomic_store(&profile->config.stopped, true);
 
-  /* TODO: ATOMIC. This is a hard one! */
-
-  /* stop memprof for all domains using this config */
-  memprof_domain_t d = config->domains;
+  /* stop memprof for all domains using this profile */
+  memprof_domain_t d = profile->domains;
   while (d) {
-    CAMLassert(d->config == config);
-    /* Turn off profiling in this domain */
-    d->config = NULL;
+    CAMLassert(d->profile == profile);
+    d->profile = NULL;
 
-    /* Transfer all entries from the domain and threads to the config. */
-    entries_transfer(&d->entries, &config->entries);
+    /* Turn off profiling in this domain */
+    atomic_store(&d->config.stopped, true);
+
+    /* Transfer all entries from the domain and threads to the profile. */
+    entries_transfer(&d->entries, &profile->entries);
     memprof_thread_t thread = d->threads;
     while (thread) {
-      entries_transfer(&thread->entries, &config->entries);
+      entries_transfer(&thread->entries, &profile->entries);
       thread = thread->next;
     }
     /* "renew_minor_sample" notices that we're not sampling and
@@ -1098,39 +1125,53 @@ CAMLprim value caml_memprof_stop(value unit)
     d = d->next;
   }
 
-  CAMLassert(!config->domains);
-  caml_plat_unlock(&config->lock);
+  CAMLassert(!profile->domains);
+  caml_plat_unlock(&profile->lock);
   return Val_unit;
 }
 
 CAMLprim value caml_memprof_discard(value v)
 {
-  memprof_config_t config = Ptr_val(v);
-  if (!config) {
+  uintnat id = Long_val(v);
+  memprof_profile_t profile = NULL;
+
+  /* find the profile structure */
+  caml_plat_lock(&profiles_lock);
+  profile = profiles;
+  while(profile) {
+    if (profile->id == id) {
+      break;
+    }
+    profile = profile->next;
+  }
+  caml_plat_unlock(&profiles_lock);
+
+  if (!profile) {
     caml_invalid_argument("Gc.Memprof.discard");
   }
 
-  caml_plat_lock(&config->lock);
-  if (!config->stopped) {
+  caml_plat_lock(&profile->lock);
+  if (!atomic_load(&profile->config.stopped)) {
     caml_failwith("Gc.Memprof.discard: profile has not been stopped.");
   }
-  CAMLassert(!config->domains);
+  CAMLassert(!profile->domains);
 
   /* tell any thread still running a callback for this profile that it
    * has been discarded. */
 
-  caml_plat_lock(config->entries.running_lock);
-  for (uintnat i = 0; i < config->entries.live; ++i) {
-    entry_t e = &config->entries.t[i];
-    if (e->running) {
-      caml_plat_lock(&e->running->callback_lock);
-      e->running->callback_table = NULL;
-      caml_plat_unlock(&e->running->callback_lock);
+  caml_plat_lock(&profile->entries.running_lock);
+  for (uintnat i = 0; i < profile->entries.live; ++i) {
+    entry_t e = &profile->entries.t[i];
+    memprof_thread_t running = e->running;
+    if (running) {
+      caml_plat_lock(&running->callback_lock);
+      running->callback_table = NULL;
+      caml_plat_unlock(&running->callback_lock);
     }
   }
-  caml_plat_unlock(&config->entries.running_lock);
-  caml_plat_unlock(&config->lock);
-  config_destroy(config);
+  caml_plat_unlock(&profile->entries.running_lock);
+  caml_plat_unlock(&profile->lock);
+  profile_destroy(profile);
   return Val_unit;
 }
 
@@ -1151,7 +1192,7 @@ static value capture_callstack_postponed(memprof_domain_t domain)
 {
   value res = Atom(0); /* empty array. */
   size_t frames =
-    caml_get_callstack(domain->config->callstack_size,
+    caml_get_callstack(domain->config.callstack_size,
                        &domain->callstack_buffer,
                        &domain->callstack_buffer_len, -1);
   if (frames) {
@@ -1177,7 +1218,7 @@ static value capture_callstack(memprof_domain_t domain, int alloc_idx)
   CAMLassert(domain->current->suspended);
 
   size_t frames =
-    caml_get_callstack(domain->config->callstack_size,
+    caml_get_callstack(domain->config.callstack_size,
                        &domain->callstack_buffer,
                        &domain->callstack_buffer_len,
                        alloc_idx);
@@ -1198,14 +1239,12 @@ static value capture_callstack(memprof_domain_t domain, int alloc_idx)
 
 /**** Running callbacks ****/
 
-/* Run a single callback, in thread `thread`, with configuration
- * `config`, for entry number `i` in table `es`. The callback closure
- * is `cb`, the parameter is `param`, and the "callback index" is
- * `cb_index`.
+/* Run a single callback, in thread `thread`, for entry number `i` in
+ * table `es`. The callback closure is `cb`, the parameter is `param`,
+ * and the "callback index" is `cb_index`.
  */
 
 Caml_inline value run_callback_exn(memprof_thread_t thread,
-                                   memprof_config_t config,
                                    entries_t es, uintnat i,
                                    uintnat cb_index,
                                    value cb, value param)
@@ -1315,7 +1354,7 @@ static value run_alloc_callback_exn(memprof_thread_t thread,
   Field(sample_info, 2) = Val_long(e->source);
   Field(sample_info, 3) = e->user_data; /* callstack */
   value callback = e->alloc_young ? Alloc_minor(config) : Alloc_major(config);
-  return run_callback_exn(thread, config, es, i,
+  return run_callback_exn(thread, es, i,
                           CB_ALLOC, callback, sample_info);
 }
 
@@ -1332,27 +1371,27 @@ static value entries_run_callbacks_exn(memprof_thread_t thread,
     entry_t e = &es->t[es->next];
 
     caml_plat_lock(&es->running_lock);
-    bool busy = e->deleted || e->running;
     if (e->deleted || e->running) {
       /* This entry is already deleted, or is running a callback. Ignore it. */
       ++ es->next;
+      caml_plat_unlock(&es->running_lock);
       continue;
     }
     caml_plat_unlock(&es->running_lock);
-    } else if (!(e->callbacks & CB_MASK(CB_ALLOC))) {
+    if (!(e->callbacks & CB_MASK(CB_ALLOC))) {
       /* allocation callback hasn't been run */
       res = run_alloc_callback_exn(thread, config, es, es->next);
       if (Is_exception_result(res)) goto end;
     } else if (e->promoted && !(e->callbacks & CB_MASK(CB_PROMOTE))) {
       /* promoted entry; call promote callback */
-      res = run_callback_exn(thread, config, es, es->next,
+      res = run_callback_exn(thread, es, es->next,
                              CB_PROMOTE, Promote(config), e->user_data);
       if (Is_exception_result(res)) goto end;
     } else if (e->deallocated && !(e->callbacks & CB_MASK(CB_DEALLOC))) {
       /* deallocated entry; call dealloc callback */
       value cb = (e->promoted || !e->alloc_young) ?
         Dealloc_major(config) : Dealloc_minor(config);
-      res = run_callback_exn(thread, config, es, es->next,
+      res = run_callback_exn(thread, es, es->next,
                              CB_DEALLOC, cb, e->user_data);
       if (Is_exception_result(res)) goto end;
     } else {
@@ -1377,7 +1416,7 @@ value caml_memprof_run_callbacks_exn(void)
   update_suspended(domain, true);
 
   /* run per-thread callbacks */
-  value res = entries_run_callbacks_exn(thread, domain->config,
+  value res = entries_run_callbacks_exn(thread, &domain->config,
                                         &thread->entries);
   if (Is_exception_result(res)) goto end;
   /* move entries from allocating thread to owning domain, so their
@@ -1385,28 +1424,30 @@ value caml_memprof_run_callbacks_exn(void)
   entries_transfer(&thread->entries, &domain->entries);
 
   /* run per-domain callbacks */
-  res = entries_run_callbacks_exn(thread, domain->config, &domain->entries);
+  res = entries_run_callbacks_exn(thread, &domain->config, &domain->entries);
   if (Is_exception_result(res)) goto end;
 
-  /* run orphaned per-config callbacks. TODO: drop the per-config
+  /* run orphaned per-profile callbacks. TODO: drop the per-config
    * lock. */
-  caml_plat_mutex *lock_p = &configs_lock;
+  caml_plat_mutex *lock_p = &profiles_lock;
   caml_plat_lock(lock_p);
-  memprof_config_t config = configs;
+  memprof_profile_t profile = profiles;
 
-  while (config) {
-    caml_plat_lock(&config->lock);
+  while (profile) {
+    caml_plat_lock(&profile->lock);
     caml_plat_unlock(lock_p);
-    lock_p = &config->lock;
+    lock_p = &profile->lock;
 
-    res = entries_run_callbacks_exn(thread, config, &config->entries);
+    res = entries_run_callbacks_exn(thread, &profile->config,
+                                    &profile->entries);
     if (Is_exception_result(res))
-      goto end;
+      break;
 
-    config = config->next;
+    profile = profile->next;
   }
-end:
   caml_plat_unlock(lock_p);
+
+end:
   update_suspended(domain, false);
   return res;
 }
@@ -1415,11 +1456,10 @@ end:
 
 Caml_inline bool running(memprof_domain_t domain)
 {
-  memprof_config_t config = domain->config;
   memprof_thread_t thread = domain->current;
-  return (config
-          && !config->stopped
-          && config->lambda > 0
+
+  return (!atomic_load(&domain->config.stopped)
+          && domain->config.lambda > 0
           && !thread->suspended);
 }
 
@@ -1466,13 +1506,12 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
                               int nallocs, unsigned char* encoded_alloc_lens)
 {
   memprof_domain_t domain = Caml_state->memprof;
-  memprof_config_t config = domain->config;
   memprof_thread_t thread = domain->current;
   uintnat whsize = Whsize_wosize(wosize);
   value callstack, res = Val_unit;
   int alloc_idx = 0, i, allocs_sampled = 0;
   intnat alloc_ofs, trigger_ofs;
-  double saved_lambda = config->lambda;
+  double saved_lambda = domain->config.lambda;
 
   /* If this condition is false, then [memprof_young_trigger]
      should be equal to [young_alloc_start]. But this function
@@ -1531,14 +1570,14 @@ void caml_memprof_track_young(uintnat wosize, int from_caml,
       t_idx = new_tracked(&thread->entries, samples, alloc_wosz, SRC_NORMAL, 1,
                           Placeholder_offs(alloc_ofs), callstack);
       if (t_idx == Invalid_index) continue;
-      res = run_alloc_callback_exn(thread, config, &thread->entries, t_idx);
+      res = run_alloc_callback_exn(thread, &domain->config,
+                                   &thread->entries, t_idx);
 
       /* Has [caml_memprof_stop] been called during the callback? */
-      bool stopped = config->stopped;
+      bool stopped = atomic_load(&domain->config.stopped);
       if (stopped) {
         allocs_sampled = 0;
-        config = domain->config;
-        double new_lambda = config ? config->lambda : 0.0;
+        double new_lambda = domain->config.lambda;
         if (saved_lambda != new_lambda) {
           /* [lambda] changed during the callback. We need to refresh
              [trigger_ofs]. */
@@ -1658,11 +1697,11 @@ typedef void (*entry_action)(entry_t, void *);
 
 typedef void (*entries_action)(entries_t, bool, void *);
 
-/* Type of a function to apply to a config object after iterating over
+/* Type of a function to apply to a profile object after iterating over
  * the entries. The second argument is 'young', indicating whether the
  * iteration was just over possibly-young entries. */
 
-typedef void (*config_action)(memprof_config_t, bool, void *);
+typedef void (*profile_action)(memprof_profile_t, bool, void *);
 
 /* Iterate an entry_action over entries in a single entries table,
  * followed by an entries_action on the whole table.  If `young` is
@@ -1696,27 +1735,27 @@ static void domain_apply_actions(memprof_domain_t domain, bool young,
   }
 }
 
-/* Iterate entry_action/entries_action/config_action over any entries
- * shared between all domains. We take the config locks for this, so
+/* Iterate entry_action/entries_action/profile_action over any entries
+ * shared between all domains. We take the profile locks for this, so
  * the actions must not require them. */
 
 static void shared_apply_actions(bool young, entry_action f, void *data,
                                  entries_action after,
-                                 config_action config_act)
+                                 profile_action profile_act)
 {
-  caml_plat_mutex *lock_p = &configs_lock;
+  caml_plat_mutex *lock_p = &profiles_lock;
   caml_plat_lock(lock_p);
-  memprof_config_t config = configs;
-  while (config) {
-    caml_plat_lock(&config->lock);
+  memprof_profile_t profile = profiles;
+  while (profile) {
+    caml_plat_lock(&profile->lock);
     caml_plat_unlock(lock_p);
-    lock_p = &config->lock;
+    lock_p = &profile->lock;
 
-    entries_apply_actions(&config->entries, young, f, data, after);
-    if (config_act) {
-      config_act(config, young, data);
+    entries_apply_actions(&profile->entries, young, f, data, after);
+    if (profile_act) {
+      profile_act(profile, young, data);
     }
-    config = config->next;
+    profile = profile->next;
   }
   caml_plat_unlock(lock_p);
 }
@@ -1737,13 +1776,13 @@ static void entry_scan(entry_t entry, void *data)
   closure->f(closure->fdata, entry->user_data, &entry->user_data);
 }
 
-/* A config_action is needed to scan the tracker root */
+/* A profile_action is needed to scan the tracker root */
 
-static void config_scan(memprof_config_t config, bool young, void *data)
+static void profile_scan(memprof_profile_t profile, bool young, void *data)
 {
   (void)young;
   struct entry_scan_closure *closure = data;
-  closure->f(closure->fdata, config->tracker, &config->tracker);
+  closure->f(closure->fdata, profile->config.tracker, &profile->config.tracker);
 }
 
 /* Scan all memprof roots for a GC (or for compaction, after that is merged). */
@@ -1758,8 +1797,9 @@ void caml_memprof_scan_roots(scanning_action f,
   struct entry_scan_closure closure = {f, fflags, fdata};
   memprof_domain_t domain = state->memprof;
   domain_apply_actions(domain, young, entry_scan, &closure, NULL);
+  f(fdata, domain->config.tracker, &domain->config.tracker);
   if (global) {
-    shared_apply_actions(young, entry_scan, &closure, NULL, config_scan);
+    shared_apply_actions(young, entry_scan, &closure, NULL, profile_scan);
   }
 }
 
