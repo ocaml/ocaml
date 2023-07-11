@@ -1127,7 +1127,7 @@ let transl_type_decl env rec_flag sdecl_list =
   (* Add abstract declarations to the environment to avoid strange error
      messages (#12334) *)
   let abs_env =
-    List.fold_left2 (enter_type ~abstract_abbrevs:false rec_flag)
+    List.fold_left2 (enter_type ~abstract_abbrevs:true rec_flag)
       env sdecl_list ids_list in
   List.iter
     (check_abbrev_regularity ~orig_env:abs_env new_env id_loc_list to_check)

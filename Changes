@@ -229,8 +229,9 @@ Working version
   (Vincent Laviron, report by François Pottier, review by Nathanaëlle Courant
   and Gabriel Scherer)
 
-- #12334: Bad error message with mutually recursive abbreviations
-  (Jacques Garrigue, report by Richard Eisenberg, review by ???)
+- #12334, #12368: Bad error message with mutually recursive abbreviations
+  (Jacques Garrigue, report by Richard Eisenberg, review by Gabriel Scherer
+   and Richard Eisenberg)
 
 OCaml 5.1.0
 ---------------

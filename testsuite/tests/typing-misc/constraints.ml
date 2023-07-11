@@ -440,9 +440,9 @@ and r = [ `Bar | `Foo ]
 type 'a t = 'a foo foo
 and 'a foo = int constraint 'a = int
 [%%expect{|
-Line 1, characters 12-22:
+Line 1, characters 0-22:
 1 | type 'a t = 'a foo foo
-                ^^^^^^^^^^
+    ^^^^^^^^^^^^^^^^^^^^^^
 Error: Constraints are not satisfied in this type.
-       Type "'a foo foo" should be an instance of "int foo"
+       Type "'a foo" should be an instance of "int"
 |}]
