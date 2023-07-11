@@ -27,7 +27,7 @@ let main () =
   let ocamlc = Filename.(quote (concat (dirname ocamlmktop) ocamlc)) in
   let cmdline =
     extra_quote ^ ocamlc ^
-    " -I +compiler-libs -I +ocamlmktop " ^
+    " -I +compiler-libs " ^
     "-linkall ocamlcommon.cma ocamlbytecomp.cma ocamltoplevel.cma " ^
     args ^ " topstart.cmo" ^
     extra_quote

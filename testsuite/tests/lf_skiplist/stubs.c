@@ -64,7 +64,7 @@ static int get_len(struct  lf_skipcell *p, struct lf_skipcell *end) {
 static uintnat count_marks(struct lf_skiplist *sk) {
   uintnat r = 0;
   struct lf_skipcell *p = sk->head;
-  uintptr_t succ;
+  uintptr_t succ = 0;
 
   while (p) {
     for (int k = p->top_level; k >= 0; k--) {
@@ -134,7 +134,6 @@ inline static uintnat calc_right(uintnat id,uintnat turn,uintnat ndoms) { return
 CAMLprim value insert_skiplist(value turn_val,value ndoms_val,value domain_id_val) {
   CAMLparam3(turn_val,ndoms_val,domain_id_val);
   uintnat domain_id = Long_val(domain_id_val);
-  uintnat ndoms = Long_val(ndoms_val);
   uintnat turn = Long_val(turn_val);
   uintnat k = calc_key(domain_id,turn) ;
   uintnat v =  calc_value(domain_id) ;
