@@ -793,6 +793,22 @@ Error: This expression has type "'a t" but an expression was expected of type
          "'a"
        The type variable "'a" occurs inside "'a t"
 |}];;
+fun ((x : 'a) | (x : 'a t)) -> ();;
+[%%expect{|
+Line 1, characters 10-12:
+1 | fun ((x : 'a) | (x : 'a t)) -> ();;
+              ^^
+Error: This type "'a t" should be an instance of type "'a"
+       The type variable "'a" occurs inside "'a t"
+|}];;
+fun ((x : 'a) | (x : 'a t)) -> ();;
+[%%expect{|
+Line 1, characters 10-12:
+1 | fun ((x : 'a) | (x : 'a t)) -> ();;
+              ^^
+Error: This type "'a t" should be an instance of type "'a"
+       The type variable "'a" occurs inside "'a t"
+|}];;
 type 'a t = < x : 'a >;;
 [%%expect{|
 type 'a t = < x : 'a >
@@ -809,6 +825,15 @@ Line 1, characters 18-26:
 Warning 10 [non-unit-statement]: this expression should have type unit.
 
 - : ('a t as 'a) t -> unit = <fun>
+|}];;
+fun ((x : 'a) | (x : 'a t)) -> ();;
+[%%expect{|
+Line 1, characters 17-18:
+1 | fun ((x : 'a) | (x : 'a t)) -> ();;
+                     ^
+Warning 12 [redundant-subpat]: this sub-pattern is unused.
+
+- : ('a t as 'a) -> unit = <fun>
 |}];;
 
 class ['a] c () = object

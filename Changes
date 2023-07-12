@@ -55,6 +55,11 @@ Working version
 - #12234: make instrumented time calculation more thread-safe on macOS.
   (Anil Madhavapeddy, review by Daniel Bünzli and Xavier Leroy)
 
+- #12235: introduce and use the `CAMLnoret` macro as a lighter alternative
+  to `CAMLnoreturn_start` / `CAMLnoreturn_end`
+  (Xavier Leroy, with help from Antonin Décimo, review by
+   Gabriel Scherer and David Allsopp)
+
 - #12275: caml/stack.h: more abstract macros to describe OCaml stacks and
   how to traverse them, supporting more stack layouts.
   (Xavier Leroy, review by KC Sivaramakrishnan and Fabrice Buoro)
@@ -69,6 +74,10 @@ Working version
   This reduces stack usage.  It's only C stacks that require 16-alignment.
   (Xavier Leroy, review by Gabriel Scherer and Stephen Dolan)
 
+- #12311: on POWER, 32-bit FP numbers stored in memory (e.g. in bigarrays)
+  were not correctly rounded sometimes.
+  (Xavier Leroy, review by Anil Madhavapeddy and Tim McGilchrist)
+
 ### Standard library:
 
 * #10775: Half-precision floating-point elements in Bigarray.
@@ -77,6 +86,12 @@ Working version
 - #12217: Add `Array.shuffle`.
   (Daniel Bünzli, review by Nicolás Ojeda Bär, David Allsopp and Alain Frisch)
 
+- #12212: Add cache-aligned constructor for atomics. The patch ensures that
+  all allocations (of the right size) in the shared heap are aligned.
+  (Bartosz Modelski with Gabriel Scherer, Guillaume Munch-Maccagnoni,
+   Xavier Leroy, review by Alain Frisch, Anil Madhavapeddy, Gabriel Scherer,
+   Guillaume Munch-Maccagnoni, KC Sivaramakrishnan, Stefan Muenzel,
+   Xavier Leroy)
 
 ### Other libraries:
 
@@ -84,6 +99,10 @@ Working version
   (Samuel Hym, review by Gabriel Scherer and Nicolás Ojeda Bär)
 
 ### Tools:
+
+- #12340: testsuite: collect known issues with current -short-paths
+  implementation for existential types
+  (Florian Angeletti, Samuel Hym, review by Florian Angeletti and Thomas Refis)
 
 - #12147: ocamllex: Allow carriage returns at the end of line directives.
   (SeungCheol Jung, review by Nicolás Ojeda Bär)
@@ -100,6 +119,9 @@ Working version
 - #12338: clarification of the documentation of process related function in
   the unix module regarding the first element of args and shell's pid.
   (Christophe Raffalli, review by Florian Angeletti)
+  
+- #12352: Fix a typo in the documentation of Arg.write_arg
+  (Christophe Raffalli, review by Florian Angeletti)
 
 ### Compiler user-interface and warnings:
 
@@ -115,6 +137,9 @@ Working version
   FlexDLL bootstrap procedure and existed solely for that purpose. Its removal
   greatly simplifies both the build system and testsuite machinery.
   (David Allsopp, review by Sébastien Hinderer)
+
+- #12347: error messages: always report missing polyvariant tags
+  (Florian Angeletti, report by Tianbo Hao, review by Gabriel Scherer)
 
 ### Internal/compiler-libs changes:
 
@@ -137,6 +162,14 @@ Working version
 - #12109: Pack parameters to unification in unification_environment
   (Takafumi Saikawa and Jacques Garrigue, review by Richard Eisenberg)
 
+- #12331, #12361: Pack the unification data for pattern checking in Typecore
+  (Takafumi Saikawa and Jacques Garrigue,
+   review by Gabriel Scherer, Thomas Refis and Florian Angeletti)
+
+- #12229: Remove global mutable state for typechecking patterns
+  in Typecore in favor of local mutable state.
+  (Nick Roberts, review by Takafumi Saikawa)
+
 ### Build system:
 
 - #12198: continue the merge of the sub-makefiles into the root Makefile
@@ -145,9 +178,15 @@ Working version
 
 ### Bug fixes:
 
+- #11931: Fix tricky typing bug with type substitutions
+  (Stephen Dolan, review by Leo White and Jacques Garrigue)
+
 - #12037: get_extern_state potential NULL dereference.
   (Alexander Skvortsov, report by Török Edwin,
    design by Gabriel Scherer, Xavier Leroy)
+
+- #12032, #12059: Bug fixes related to compilation of recursive definitions
+  (Vincent Laviron, report by Victoire Noizet, review by Gabriel Scherer)
 
 * #12145: Loopy constraints cause ocamlc to loop.
   Fixed by completely removing the call to `update_type` in
@@ -158,6 +197,10 @@ Working version
   type to be ignored (see tests/typing-misc/constraints.ml).
   (Jacques Garrigue, report by Richard Eisenberg, review by Leo White)
 
+- #12207, #12222: Make closure computation linear in the number of recursive
+  functions instead of quadratic
+  (Vincent Laviron, report by François Pottier, review by Nathanaëlle Courant
+  and Gabriel Scherer)
 
 OCaml 5.1.0
 ---------------
@@ -233,7 +276,7 @@ OCaml 5.1.0
   (Jeremy Yallop, review by Daniel Bünzli, Anil Madhavapeddy, Nicolás Ojeda Bär,
    Gabriel Scherer, and Bannerets)
 
-- #11362, #11402: Using TRMC, rhe following `Stdlib` functions are now
+- #11362, #11402: Using TRMC, the following `Stdlib` functions are now
   tail-recursive:
     List.map, List.mapi, List.map2,
     List.filter, List.filteri, List.filter_map,
@@ -287,7 +330,7 @@ OCaml 5.1.0
   (Daniel Bünzli, review by Jeremy Yallop, Gabriel Scherer, Wiktor Kuchta,
    Nicolás Ojeda Bär)
 
-- #12184: Sys.rename Windows fixes on directory corner cases.
+- #12184, #12320: Sys.rename Windows fixes on directory corner cases.
   (Jan Midtgaard, review by Anil Madhavapeddy)
 
 * #11565: Enable -strict-formats by default. Some incorrect format
@@ -608,6 +651,10 @@ Some of those changes will benefit all OCaml packages.
   `pp_print_newline` flushes its newline
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #12201: in the tutorial on modules, replace priority queue example by
+  a simpler example based on FIFO queues.
+  (Xavier Leroy, review by Anil Madhavapeddy and Nicolás Ojeda Bär).
+
 ### Compiler user-interface and warnings:
 
 - #10647: Show hints for the "undefined global" error in the toplevel
@@ -794,8 +841,21 @@ Some of those changes will benefit all OCaml packages.
   opened for checking
   (Hugo Heuzard, review by Nicolás Ojeda Bär)
 
-* #11745: Debugger and toplevels: embed printer types rather than
+* #11745, #12358: Debugger and toplevels: embed printer types rather than
   reading their representations from topdirs.cmi at runtime.
+  This change also removes the ocamlmktop initialization module introduced
+  in #11382 which was no longer useful.
+  This change breaks toplevel scripts relying on the visibility of `Topdirs`
+  in the initial toplevel environment without loading `topfind`.
+  Since the opam default `.ocamlinit` file loads `topfind`, it is expected
+  that only scripts run with `ocaml -noinit` are affected.
+  For those scripts, accessing `Topdirs` now requires the `compiler-libs`
+  directory to be added to the toplevel search path with
+  ```
+    #directory "+compiler-libs";;
+  ````
+  as was already the case for the other modules in the toplevel interface
+  library.
   (Sébastien Hinderer, review by Florian Angeletti, Nicolás Ojeda Bär and
   Gabriel Scherer)
 
@@ -966,6 +1026,10 @@ Some of those changes will benefit all OCaml packages.
   types.
   (Chris Casinghino, review by Gabriel Scherer)
 
+- #12037: Fix some data races by using volatile when necessary
+  (Fabrice Buoro and Olivier Nicole, review by Guillaume Munch-Maccagnoni,
+  Gabriel Scherer and Luc Maranget)
+
 - #12046: Flush stderr when tracing the parser
   (Hugo Heuzard, review by David Allsopp and Nicolás Ojeda Bär)
 
@@ -1012,6 +1076,10 @@ Some of those changes will benefit all OCaml packages.
 - #12277: ARM64, fix a potential assembler error for very large functions by
   emitting stack reallocation code before the body of the function.
   (Xavier Leroy, review by KC Sivaramakrishnan)
+
+- #12253, #12342: Fix infinite loop in signal handling.
+  (Guillaume Munch-Maccagnoni, report by Thomas Leonard, review by
+   KC Sivaramakrishnan and Sadiq Jaffer)
 
 OCaml 5.0.0 (15 December 2022)
 ------------------------------

@@ -144,16 +144,16 @@ CAMLexport void (*caml_leave_blocking_section_hook)(void) =
 
 CAMLexport void caml_enter_blocking_section(void)
 {
+  caml_domain_state * domain = Caml_state;
   while (1){
     /* Process all pending signals now */
-    caml_raise_if_exception(caml_process_pending_signals_exn());
+    caml_process_pending_actions();
     caml_enter_blocking_section_hook ();
-    /* Check again for pending signals.
-       If none, done; otherwise, try again */
-    // FIXME: does this become very slow if a signal is recorded but
-    // is masked for everybody in capacity of running signals at this
-    // point?
-    if (!caml_check_pending_signals()) break;
+    /* Check again if a signal arrived in the meanwhile. If none,
+       done; otherwise, try again. Since we do not hold the domain
+       lock, we cannot read [young_ptr] and we cannot call
+       [Caml_check_gc_interrupt]. */
+    if (atomic_load_relaxed(&domain->young_limit) != UINTNAT_MAX) break;
     caml_leave_blocking_section_hook ();
   }
 }

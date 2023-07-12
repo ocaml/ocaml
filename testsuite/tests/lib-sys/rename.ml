@@ -89,6 +89,11 @@ let _ =
   print_newline();
   safe_remove_dir "foo";
   safe_remove_dir "bar";
+  print_string "Rename existing empty directory to itself: ";
+  Sys.mkdir "foo" 0o755;
+  testrenamedir "foo" "foo";
+  print_newline();
+  safe_remove_dir "foo";
   print_string "Rename directory to existing file: ";
   Sys.mkdir "foo" 0o755;
   writefile f2 "xyz";
