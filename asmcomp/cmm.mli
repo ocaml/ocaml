@@ -199,6 +199,7 @@ and expression =
   | Cexit of int * expression list
   | Ctrywith of expression * Backend_var.With_provenance.t * expression
       * Debuginfo.t
+  | Creturn_addr (** Return address saved in the current call frame *)
 
 type codegen_option =
   | Reduce_code_size

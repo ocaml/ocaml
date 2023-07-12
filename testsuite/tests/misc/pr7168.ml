@@ -1,5 +1,12 @@
 (* TEST
  ocamlrunparam += "l=100000";
+ no-tsan; (* TSan does not support call stacks bigger than 64k frames *)
+ {
+   bytecode;
+ }
+ {
+   native;
+ }
 *)
 
 let rec f x =

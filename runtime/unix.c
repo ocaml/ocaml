@@ -89,10 +89,6 @@ int caml_read_fd(int fd, int flags, void * buf, int n)
   caml_enter_blocking_section_no_pending();
   retcode = read(fd, buf, n);
   caml_leave_blocking_section();
-  if (retcode == -1) {
-    if (errno == EINTR) return Io_interrupted;
-    else caml_sys_io_error(NO_ARG);
-  }
   return retcode;
 }
 
@@ -104,7 +100,6 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
   retcode = write(fd, buf, n);
   caml_leave_blocking_section();
   if (retcode == -1) {
-    if (errno == EINTR) return Io_interrupted;
     if ((errno == EAGAIN || errno == EWOULDBLOCK) && n > 1) {
       /* We couldn't do a partial write here, probably because
          n <= PIPE_BUF and POSIX says that writes of less than
@@ -114,8 +109,7 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
       n = 1; goto again;
     }
   }
-  if (retcode == -1) caml_sys_io_error(NO_ARG);
-  CAMLassert (retcode > 0);
+  CAMLassert (retcode > 0 || retcode == -1);
   return retcode;
 }
 

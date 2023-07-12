@@ -1,6 +1,7 @@
 (* TEST
  readonly_files = "main.c";
  arguments = "-DUNIT_INT -DFUN=solitaire main.c";
+ no-tsan; (* The asmgen action does not support TSan *)
  asmgen;
 *)
 

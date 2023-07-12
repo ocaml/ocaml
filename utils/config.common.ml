@@ -92,6 +92,7 @@ let configuration_variables () =
   p "native_c_compiler" native_c_compiler;
   p "bytecomp_c_libraries" bytecomp_c_libraries;
   p "native_c_libraries" native_c_libraries;
+  p "native_ldflags" native_ldflags;
   p "native_pack_linker" native_pack_linker;
   p_bool "native_compiler" native_compiler;
   p "architecture" architecture;
@@ -118,6 +119,7 @@ let configuration_variables () =
   p_bool "flat_float_array" flat_float_array;
   p_bool "function_sections" function_sections;
   p_bool "afl_instrument" afl_instrument;
+  p_bool "tsan" tsan;
   p_bool "windows_unicode" windows_unicode;
   p_bool "supports_shared_libraries" supports_shared_libraries;
   p_bool "native_dynlink" native_dynlink;

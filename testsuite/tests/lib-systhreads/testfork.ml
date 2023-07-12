@@ -3,6 +3,7 @@
  hassysthreads;
  not-bsd;
  libunix;
+ no-tsan; (* tsan limitation: starting new threads after fork is not supported *)
  {
    bytecode;
  }{

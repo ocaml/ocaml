@@ -740,6 +740,9 @@ let emit_instr env fallthrough i =
       I.mov (arg32 i 0) (res32 i 0)
   | Lop (Idls_get) ->
       I.mov (domain_field Domainstate.Domain_dls_root) (res i 0)
+  | Lop (Ireturn_addr) ->
+      let offset = frame_size env - 8 in
+      I.mov (mem64 QWORD offset RSP) (res i 0)
   | Lreloadretaddr ->
       ()
   | Lreturn ->
@@ -862,10 +865,17 @@ let emit_instr env fallthrough i =
           emit_call "caml_reraise_exn";
           record_frame env Reg.Set.empty (Dbg_raise i.dbg)
       | Lambda.Raise_notrace ->
-          I.mov (domain_field Domainstate.Domain_exn_handler) rsp;
-          I.pop (domain_field Domainstate.Domain_exn_handler);
-          I.pop r11;
-          I.jmp r11
+          if Config.tsan then begin
+            (* TSan requires to signal function exits upon exceptions,
+               even with [Raise_notrace] *)
+            emit_call "caml_tsan_raise_notrace_exn";
+            record_frame env Reg.Set.empty (Dbg_raise i.dbg)
+          end else begin
+            I.mov (domain_field Domainstate.Domain_exn_handler) rsp;
+            I.pop (domain_field Domainstate.Domain_exn_handler);
+            I.pop r11;
+            I.jmp r11
+          end
       end
 
 let rec emit_all env fallthrough i =

@@ -68,6 +68,10 @@ Working version
   due to memory resource exhaustion.  It was previous always a `Failure`.
   (Anil Madhavapeddy, review by David Allsopp)
 
+- #12300, #12314: Discard out_channel buffered data on permanent I/O error
+  (Xavier Leroy, report by Török Edwin, review by Anil Madhavapeddy
+  and Nicolás Ojeda Bär)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.
@@ -118,6 +122,10 @@ Working version
 
 - #12359: Add an example of reexporting an extensible variant types in
   another module.
+  (Christophe Raffalli, review by Florian Angeletti)
+
+- #12338: clarification of the documentation of process related function in
+  the unix module regarding the first element of args and shell's pi
   (Christophe Raffalli, review by Florian Angeletti)
 
 - #12352: Fix a typo in the documentation of Arg.write_arg
@@ -365,6 +373,11 @@ Some of those changes will benefit all OCaml packages.
   installed directly to `$BINDIR/ocamlmklib`; `ocamlmklib.byte` and
   `ocamlmklib.opt` are no longer installed to `$BINDIR`.
   (Xavier Leroy, review by Gabriel Scherer)
+
+- #12114: Add ThreadSanitizer support
+  (Fabrice Buoro and Olivier Nicole, based on an initial work by Anmol Sahoo,
+   review by Damien Doligez, Sebastien Hinderer, Jacques-Henri Jourdan, Luc
+   Maranget, Guillaume Munch-Maccagnoni, Gabriel Scherer)
 
 ### Runtime system:
 

@@ -1,4 +1,5 @@
 (* TEST
+ no-tsan; (* option -output-complete-obj is not supported with tsan *)
  readonly_files = "test.ml_stub.c";
  {
    setup-ocamlc.byte-build-env;

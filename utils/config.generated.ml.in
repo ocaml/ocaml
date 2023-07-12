@@ -45,6 +45,7 @@ let bytecomp_c_compiler =
 let native_c_compiler =
   c_compiler ^ " " ^ ocamlopt_cflags ^ " " ^ ocamlopt_cppflags
 let native_c_libraries = {@QS@|@cclibs@|@QS@}
+let native_ldflags = {@QS@|@native_ldflags@|@QS@}
 let native_pack_linker = {@QS@|@PACKLD@|@QS@}
 let default_rpath = {@QS@|@rpath@|@QS@}
 let mksharedlibrpath = {@QS@|@mksharedlibrpath@|@QS@}
@@ -90,3 +91,5 @@ let systhread_supported = @systhread_support@
 let flexdll_dirs = [@flexdll_dir@]
 
 let ar_supports_response_files = @ar_supports_response_files@
+
+let tsan = @tsan@

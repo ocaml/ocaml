@@ -197,6 +197,7 @@ type expression =
   | Cexit of int * expression list
   | Ctrywith of expression * Backend_var.With_provenance.t * expression
       * Debuginfo.t
+  | Creturn_addr
 
 type codegen_option =
   | Reduce_code_size
@@ -266,7 +267,8 @@ let iter_shallow_tail f = function
   | Cvar _
   | Cassign _
   | Ctuple _
-  | Cop _ ->
+  | Cop _
+  | Creturn_addr ->
       false
 
 let rec map_tail f = function
@@ -302,6 +304,7 @@ let rec map_tail f = function
   | Cvar _
   | Cassign _
   | Ctuple _
+  | Creturn_addr
   | Cop _ as c ->
       f c
 
@@ -336,5 +339,6 @@ let map_shallow f = function
   | Cconst_float _
   | Cconst_symbol _
   | Cvar _
+  | Creturn_addr
     as c ->
       c

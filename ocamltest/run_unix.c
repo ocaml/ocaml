@@ -332,7 +332,10 @@ static int run_command_parent(const command_settings *settings, pid_t child_pid)
     } else { /* Got a pid */
       code = handle_process_termination(
         settings, pid, status, settings->program);
-      if (pid == child_pid) child_code = code;
+      if (pid == child_pid) {
+        child_code = code;
+        waiting = 0;
+      }
     }
   }
 

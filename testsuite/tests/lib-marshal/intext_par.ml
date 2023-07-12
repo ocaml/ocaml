@@ -1,5 +1,12 @@
 (* TEST
  modules = "intextaux_par.c";
+ no-tsan; (* Takes too much time and memory with tsan *)
+ {
+   bytecode;
+ }
+ {
+   native;
+ }
 *)
 
 (* Test for output_value / input_value *)

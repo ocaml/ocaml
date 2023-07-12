@@ -595,6 +595,10 @@ let emit_instr env i =
     | Lop (Idls_get) ->
         let ofs = Domainstate.(idx_of_field Domain_dls_root) * 8 in
         `	lg	{emit_reg i.res.(0)}, {emit_int ofs}(%r10)\n`
+    | Lop (Ireturn_addr) ->
+        invalid_arg (
+          "Support for Ireturn_addr is not implemented on architecture "
+          ^ Config.architecture)
     | Lreloadretaddr ->
         let n = frame_size env in
         `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`

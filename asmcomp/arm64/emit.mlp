@@ -513,6 +513,10 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Ispecific Imove32) -> 1
     | Lop (Ispecific (Isignext _)) -> 1
     | Lop (Idls_get) -> 1
+    | Lop (Ireturn_addr) ->
+        invalid_arg (
+          "Support for Ireturn_addr is not implemented on architecture "
+          ^ Config.architecture)
     | Lreloadretaddr -> 0
     | Lreturn -> epilogue_size f
     | Llabel _ -> 0
@@ -958,6 +962,10 @@ let emit_instr env i =
     | Lop(Idls_get) ->
         let offset = Domainstate.(idx_of_field Domain_dls_root) * 8 in
         `	ldr	{emit_reg i.res.(0)}, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`
+    | Lop(Ireturn_addr) ->
+        invalid_arg (
+          "Support for Ireturn_addr is not implemented on architecture "
+          ^ Config.architecture)
     | Lreloadretaddr ->
         ()
     | Lreturn ->

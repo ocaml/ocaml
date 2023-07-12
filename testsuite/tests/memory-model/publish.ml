@@ -1,5 +1,6 @@
 (* TEST
  modules = "opt.ml barrier.ml hist.ml shared.ml run.ml outcome.ml";
+ no-tsan; (* tsan detects data races and fails *)
  not-bsd;
  {
    not-windows;

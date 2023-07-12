@@ -108,7 +108,6 @@ type complex32_elt = Complex32_elt
 type complex64_elt = Complex64_elt
 
 type ('a, 'b) kind =
-    Float16 : (float, float16_elt) kind
   | Float32 : (float, float32_elt) kind
   | Float64 : (float, float64_elt) kind
   | Int8_signed : (int, int8_signed_elt) kind
@@ -121,7 +120,8 @@ type ('a, 'b) kind =
   | Nativeint : (nativeint, nativeint_elt) kind
   | Complex32 : (Complex.t, complex32_elt) kind
   | Complex64 : (Complex.t, complex64_elt) kind
-  | Char : (char, int8_unsigned_elt) kind (**)
+  | Char : (char, int8_unsigned_elt) kind
+  | Float16 : (float, float16_elt) kind  (**)
 (** To each element kind is associated an OCaml type, which is
    the type of OCaml values that can be stored in the Bigarray
    or read back from it.  This type is not necessarily the same

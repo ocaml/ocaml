@@ -1,0 +1,144 @@
+Let's work!
+computation, entering f
+entering g
+entering h and perform-ing
+in the effect handler
+==================
+WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
+  Write of size 8 at <implemspecific> by main thread (mutexes: write M<implemspecific>):
+    #0 camlPerform.race_<implemspecific> <implemspecific> (<implemspecific>)
+    #1 camlPerform.fun_<implemspecific> <implemspecific> (<implemspecific>)
+    #2 camlPerform.main_<implemspecific> <implemspecific> (<implemspecific>)
+    #3 camlPerform.entry <implemspecific> (<implemspecific>)
+    #4 caml_program <implemspecific> (<implemspecific>)
+
+  Previous read of size 8 at <implemspecific> by thread T1 (mutexes: write M<implemspecific>):
+    #0 camlPerform.other_domain_<implemspecific> <implemspecific> (<implemspecific>)
+    #1 camlStdlib__Domain.body_<implemspecific> <implemspecific> (<implemspecific>)
+
+  As if synchronized via sleep:
+    #0 nanosleep <implemspecific> (<implemspecific>)
+    #1 caml_unix_sleep <implemspecific> (<implemspecific>)
+    #2 caml_c_call <implemspecific> (<implemspecific>)
+    #3 camlPerform.entry <implemspecific> (<implemspecific>)
+    #4 caml_program <implemspecific> (<implemspecific>)
+
+  Mutex M<implemspecific> (<implemspecific>) created at:
+    #0 pthread_mutex_init <implemspecific> (<implemspecific>)
+    #1 caml_plat_mutex_init <implemspecific> (<implemspecific>)
+    #2 caml_init_domains <implemspecific> (<implemspecific>)
+    #3 caml_init_gc <implemspecific> (<implemspecific>)
+
+  Mutex M<implemspecific> (<implemspecific>) created at:
+    #0 pthread_mutex_init <implemspecific> (<implemspecific>)
+    #1 caml_plat_mutex_init <implemspecific> (<implemspecific>)
+    #2 caml_init_domains <implemspecific> (<implemspecific>)
+    #3 caml_init_gc <implemspecific> (<implemspecific>)
+
+  Thread T1 (tid=<implemspecific>, running) created by main thread at:
+    #0 pthread_create <implemspecific> (<implemspecific>)
+    #1 caml_domain_spawn <implemspecific> (<implemspecific>)
+    #2 caml_c_call <implemspecific> (<implemspecific>)
+    #3 camlStdlib__Domain.spawn_<implemspecific> <implemspecific> (<implemspecific>)
+    #4 camlPerform.entry <implemspecific> (<implemspecific>)
+    #5 caml_program <implemspecific> (<implemspecific>)
+
+SUMMARY: ThreadSanitizer: data race (<systemspecific>:<implemspecific>) in camlPerform.race_<implemspecific>
+==================
+resuming h
+==================
+WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
+  Write of size 8 at <implemspecific> by main thread (mutexes: write M<implemspecific>):
+    #0 camlPerform.race_<implemspecific> <implemspecific> (<implemspecific>)
+    #1 camlPerform.h_<implemspecific> <implemspecific> (<implemspecific>)
+    #2 camlPerform.g_<implemspecific> <implemspecific> (<implemspecific>)
+    #3 camlPerform.f_<implemspecific> <implemspecific> (<implemspecific>)
+    #4 caml_runstack <implemspecific> (<implemspecific>)
+    #5 camlPerform.fun_<implemspecific> <implemspecific> (<implemspecific>)
+    #6 camlPerform.main_<implemspecific> <implemspecific> (<implemspecific>)
+    #7 camlPerform.entry <implemspecific> (<implemspecific>)
+    #8 caml_program <implemspecific> (<implemspecific>)
+
+  Previous read of size 8 at <implemspecific> by thread T1 (mutexes: write M<implemspecific>):
+    #0 camlPerform.other_domain_<implemspecific> <implemspecific> (<implemspecific>)
+    #1 camlStdlib__Domain.body_<implemspecific> <implemspecific> (<implemspecific>)
+
+  As if synchronized via sleep:
+    #0 nanosleep <implemspecific> (<implemspecific>)
+    #1 caml_unix_sleep <implemspecific> (<implemspecific>)
+    #2 caml_c_call <implemspecific> (<implemspecific>)
+    #3 camlPerform.entry <implemspecific> (<implemspecific>)
+    #4 caml_program <implemspecific> (<implemspecific>)
+
+  Mutex M<implemspecific> (<implemspecific>) created at:
+    #0 pthread_mutex_init <implemspecific> (<implemspecific>)
+    #1 caml_plat_mutex_init <implemspecific> (<implemspecific>)
+    #2 caml_init_domains <implemspecific> (<implemspecific>)
+    #3 caml_init_gc <implemspecific> (<implemspecific>)
+
+  Mutex M<implemspecific> (<implemspecific>) created at:
+    #0 pthread_mutex_init <implemspecific> (<implemspecific>)
+    #1 caml_plat_mutex_init <implemspecific> (<implemspecific>)
+    #2 caml_init_domains <implemspecific> (<implemspecific>)
+    #3 caml_init_gc <implemspecific> (<implemspecific>)
+
+  Thread T1 (tid=<implemspecific>, running) created by main thread at:
+    #0 pthread_create <implemspecific> (<implemspecific>)
+    #1 caml_domain_spawn <implemspecific> (<implemspecific>)
+    #2 caml_c_call <implemspecific> (<implemspecific>)
+    #3 camlStdlib__Domain.spawn_<implemspecific> <implemspecific> (<implemspecific>)
+    #4 camlPerform.entry <implemspecific> (<implemspecific>)
+    #5 caml_program <implemspecific> (<implemspecific>)
+
+SUMMARY: ThreadSanitizer: data race (<systemspecific>:<implemspecific>) in camlPerform.race_<implemspecific>
+==================
+leaving h
+leaving g
+computation, leaving f
+value handler
+==================
+WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
+  Write of size 8 at <implemspecific> by main thread (mutexes: write M<implemspecific>):
+    #0 camlPerform.race_<implemspecific> <implemspecific> (<implemspecific>)
+    #1 camlPerform.fun_<implemspecific> <implemspecific> (<implemspecific>)
+    #2 camlPerform.fun_<implemspecific> <implemspecific> (<implemspecific>)
+    #3 camlPerform.main_<implemspecific> <implemspecific> (<implemspecific>)
+    #4 camlPerform.entry <implemspecific> (<implemspecific>)
+    #5 caml_program <implemspecific> (<implemspecific>)
+
+  Previous read of size 8 at <implemspecific> by thread T1 (mutexes: write M<implemspecific>):
+    #0 camlPerform.other_domain_<implemspecific> <implemspecific> (<implemspecific>)
+    #1 camlStdlib__Domain.body_<implemspecific> <implemspecific> (<implemspecific>)
+
+  As if synchronized via sleep:
+    #0 nanosleep <implemspecific> (<implemspecific>)
+    #1 caml_unix_sleep <implemspecific> (<implemspecific>)
+    #2 caml_c_call <implemspecific> (<implemspecific>)
+    #3 camlPerform.entry <implemspecific> (<implemspecific>)
+    #4 caml_program <implemspecific> (<implemspecific>)
+
+  Mutex M<implemspecific> (<implemspecific>) created at:
+    #0 pthread_mutex_init <implemspecific> (<implemspecific>)
+    #1 caml_plat_mutex_init <implemspecific> (<implemspecific>)
+    #2 caml_init_domains <implemspecific> (<implemspecific>)
+    #3 caml_init_gc <implemspecific> (<implemspecific>)
+
+  Mutex M<implemspecific> (<implemspecific>) created at:
+    #0 pthread_mutex_init <implemspecific> (<implemspecific>)
+    #1 caml_plat_mutex_init <implemspecific> (<implemspecific>)
+    #2 caml_init_domains <implemspecific> (<implemspecific>)
+    #3 caml_init_gc <implemspecific> (<implemspecific>)
+
+  Thread T1 (tid=<implemspecific>, running) created by main thread at:
+    #0 pthread_create <implemspecific> (<implemspecific>)
+    #1 caml_domain_spawn <implemspecific> (<implemspecific>)
+    #2 caml_c_call <implemspecific> (<implemspecific>)
+    #3 camlStdlib__Domain.spawn_<implemspecific> <implemspecific> (<implemspecific>)
+    #4 camlPerform.entry <implemspecific> (<implemspecific>)
+    #5 caml_program <implemspecific> (<implemspecific>)
+
+SUMMARY: ThreadSanitizer: data race (<systemspecific>:<implemspecific>) in camlPerform.race_<implemspecific>
+==================
+handler after continue
+result = 44
+ThreadSanitizer: reported 3 warnings
