@@ -15206,6 +15206,17 @@ then :
   mkmaindll="$mkdll"
 fi
 
+# Make sure code sections in OCaml-generated executables are readable
+# (required for marshaling of function closures)
+
+case $host in #(
+  *-*-openbsd7.[3-9]|*-*-openbsd[89].*) :
+    oc_ldflags="$oc_ldflags -Wl,--no-execute-only"
+     natdynlinkopts="$natdynlinkopts -Wl,--no-execute-only" ;; #(
+  *) :
+     ;;
+esac
+
 # Configure native dynlink
 
 natdynlink=false

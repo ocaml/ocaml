@@ -1135,6 +1135,14 @@ AS_IF([test -z "$mkmaindll"],
   [mkmaindll_exp="$mkdll_exp"
   mkmaindll="$mkdll"])
 
+# Make sure code sections in OCaml-generated executables are readable
+# (required for marshaling of function closures)
+
+AS_CASE([$host],
+  [[*-*-openbsd7.[3-9]|*-*-openbsd[89].*]],
+    [oc_ldflags="$oc_ldflags -Wl,--no-execute-only"
+     natdynlinkopts="$natdynlinkopts -Wl,--no-execute-only"])
+
 # Configure native dynlink
 
 natdynlink=false
