@@ -733,7 +733,7 @@ let solve_constructor_annotation
         let decl = new_local_type ~loc:name.loc () in
         let (id, new_env) =
           Env.enter_type ~scope:expansion_scope name.txt decl !!penv in
-        penv.env <- new_env;
+        Pattern_env.set_env penv new_env;
         {name with txt = id})
       name_list
   in
@@ -1894,12 +1894,12 @@ and type_pat_aux
   | Ppat_open (lid,p) ->
       let path, new_env =
         !type_open Asttypes.Fresh !!penv sp.ppat_loc lid in
-      penv.env <- new_env;
+      Pattern_env.set_env penv new_env;
       let p = type_pat tps category ~penv p expected_ty in
       let new_env = !!penv in
       begin match Env.remove_last_open path new_env with
       | None -> assert false
-      | Some closed_env -> penv.env <- closed_env
+      | Some closed_env -> Pattern_env.set_env penv closed_env
       end;
       { p with pat_extra = (Tpat_open (path,lid,new_env),
                                 loc, sp.ppat_attributes) :: p.pat_extra }
@@ -2195,7 +2195,7 @@ let save_state penv =
     env = !!penv; }
 let set_state s penv =
   Btype.backtrack s.snapshot;
-  penv.Pattern_env.env <- s.env
+  Pattern_env.set_env penv s.env
 
 (** Find the first alternative in the tree of or-patterns for which
     [f] does not raise an error. If all fail, the last error is

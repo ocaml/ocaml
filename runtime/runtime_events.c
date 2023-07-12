@@ -593,18 +593,17 @@ void caml_ev_lifecycle(ev_lifecycle lifecycle, int64_t data) {
   }
 }
 
-static uint64_t alloc_buckets[RUNTIME_EVENTS_NUM_ALLOC_BUCKETS] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static uint64_t alloc_buckets[RUNTIME_EVENTS_NUM_ALLOC_BUCKETS] = { 0, };
 
 void caml_ev_alloc(uint64_t sz) {
   if ( !ring_is_active() )
     return;
 
-  if (sz < (RUNTIME_EVENTS_NUM_ALLOC_BUCKETS / 2)) {
+  if (sz < 10 * RUNTIME_EVENTS_NUM_ALLOC_BUCKETS_SINGLE) {
     ++alloc_buckets[sz];
-  } else if (sz < (RUNTIME_EVENTS_NUM_ALLOC_BUCKETS * 10 / 2)) {
-    ++alloc_buckets[sz / (RUNTIME_EVENTS_NUM_ALLOC_BUCKETS / 2)
-      + (RUNTIME_EVENTS_NUM_ALLOC_BUCKETS / 2 - 1)];
+  } else if (sz - 10 * RUNTIME_EVENTS_NUM_ALLOC_BUCKETS_SINGLE
+             < 10 * RUNTIME_EVENTS_NUM_ALLOC_BUCKETS_DECADE){
+    ++alloc_buckets[sz / 10 + 9 * RUNTIME_EVENTS_NUM_ALLOC_BUCKETS_SINGLE];
   } else {
     ++alloc_buckets[RUNTIME_EVENTS_NUM_ALLOC_BUCKETS - 1];
   }
