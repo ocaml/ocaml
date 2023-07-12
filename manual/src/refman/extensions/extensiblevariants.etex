@@ -67,7 +67,7 @@ type Expr.attr += Str = Expr.Str
 let now_works = Str "foo";;
 \end{caml_example}
 
-Extensible variant types can be reexported in another module,
+Extensible variant types can be make visible from another module,
 for instance to make the type appear in the most natural module
 for the end user of a library.
 \begin{caml_example*}{verbatim}
@@ -86,7 +86,7 @@ end = struct
 end
 \end{caml_example*}
 This example make the type "Expr2.t" and its constructors have the same
-internal representation as "Expr.attr" but do not export this equality.
+internal representation as "Expr.attr" but does not export this equality.
 
 Extensible variant constructors can be declared "private". As with
 regular variants, this prevents them from being constructed directly by
