@@ -71,13 +71,7 @@ Extensible variant types can be make visible from another module,
 for instance to make the type appear in the most natural module
 for the end user of a library.
 \begin{caml_example*}{verbatim}
-module Expr2 : sig
-  type t = ..
-  type t +=
-    | Str of string
-    | Int of int
-    | Float of float
-end = struct
+module Expr2 = struct
   type t = Expr.attr = ..
   type t +=
     | Str   = Expr.Str
@@ -85,8 +79,6 @@ end = struct
     | Float = Expr.Float
 end
 \end{caml_example*}
-This example make the type "Expr2.t" and its constructors have the same
-internal representation as "Expr.attr" but does not export this equality.
 
 Extensible variant constructors can be declared "private". As with
 regular variants, this prevents them from being constructed directly by
