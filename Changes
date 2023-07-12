@@ -116,6 +116,10 @@ Working version
 
 ### Manual and documentation:
 
+- #12338: clarification of the documentation of process related function in
+  the unix module regarding the first element of args and shell's pid.
+  (Christophe Raffalli, review by Florian Angeletti)
+
 - #12352: Fix a typo in the documentation of Arg.write_arg
   (Christophe Raffalli, review by Florian Angeletti)
 
