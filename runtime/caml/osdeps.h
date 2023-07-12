@@ -32,16 +32,12 @@ extern unsigned short caml_win32_revision;
 #include "misc.h"
 #include "memory.h"
 
-#define Io_interrupted (-1)
-
 /* Read at most [n] bytes from file descriptor [fd] into buffer [buf].
    [flags] indicates whether [fd] is a socket
    (bit [CHANNEL_FLAG_FROM_SOCKET] is set in this case, see [io.h]).
    (This distinction matters for Win32, but not for Unix.)
    Return number of bytes read.
-   In case of error, raises [Sys_error] or [Sys_blocked_io].
-   If interrupted by a signal and no bytes where read, returns
-   Io_interrupted without raising. */
+   In case of error, set [errno] and return -1. */
 extern int caml_read_fd(int fd, int flags, void * buf, int n);
 
 /* Write at most [n] bytes from buffer [buf] onto file descriptor [fd].
@@ -49,9 +45,7 @@ extern int caml_read_fd(int fd, int flags, void * buf, int n);
    (bit [CHANNEL_FLAG_FROM_SOCKET] is set in this case, see [io.h]).
    (This distinction matters for Win32, but not for Unix.)
    Return number of bytes written.
-   In case of error, raises [Sys_error] or [Sys_blocked_io].
-   If interrupted by a signal and no bytes were written, returns
-   Io_interrupted without raising. */
+   In case of error, set [errno] and return -1. */
 extern int caml_write_fd(int fd, int flags, void * buf, int n);
 
 /* Decompose the given path into a list of directories, and add them
@@ -111,6 +105,10 @@ void caml_plat_mem_decommit(void *, uintnat);
 void caml_plat_mem_unmap(void *, uintnat);
 
 #ifdef _WIN32
+
+/* Map a Win32 error code (as returned by GetLastError) to a POSIX error code
+   (from <errno.h>).  Return 0 if no POSIX error code matches. */
+CAMLextern int caml_posixerr_of_win32err(unsigned int win32err);
 
 extern int caml_win32_rename(const wchar_t *, const wchar_t *);
 CAMLextern int caml_win32_unlink(const wchar_t *);
