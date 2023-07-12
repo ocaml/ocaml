@@ -17,13 +17,16 @@
 
 type boxed_integer = Pnativeint | Pint32 | Pint64
 
+(* String, Bytes and Bigarray are not allowed as @untagged results *)
+type untagged_integer = Int | Bool | Char | Constants | String | Bytes | Bigarray
+
 (* Representation of arguments/result for the native code version
    of a primitive *)
 type native_repr =
   | Same_as_ocaml_repr
   | Unboxed_float
   | Unboxed_integer of boxed_integer
-  | Untagged_int
+  | Untagged_int of untagged_integer
 
 type description = private
   { prim_name: string;         (* Name of primitive  or C function *)

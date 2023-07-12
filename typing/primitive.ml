@@ -20,11 +20,14 @@ open Parsetree
 
 type boxed_integer = Pnativeint | Pint32 | Pint64
 
+(* String, Bytes and Bigarray are not allowed as @untagged results *)
+type untagged_integer = Int | Bool | Char | Constants | String | Bytes | Bigarray
+
 type native_repr =
   | Same_as_ocaml_repr
   | Unboxed_float
   | Unboxed_integer of boxed_integer
-  | Untagged_int
+  | Untagged_int of untagged_integer
 
 type description =
   { prim_name: string;         (* Name of primitive  or C function *)
@@ -45,16 +48,16 @@ let is_ocaml_repr = function
   | Same_as_ocaml_repr -> true
   | Unboxed_float
   | Unboxed_integer _
-  | Untagged_int -> false
+  | Untagged_int _ -> false
 
 let is_unboxed = function
   | Same_as_ocaml_repr
-  | Untagged_int -> false
+  | Untagged_int _ -> false
   | Unboxed_float
   | Unboxed_integer _ -> true
 
 let is_untagged = function
-  | Untagged_int -> true
+  | Untagged_int _ -> true
   | Same_as_ocaml_repr
   | Unboxed_float
   | Unboxed_integer _ -> false
@@ -181,7 +184,7 @@ let print p osig_val_decl =
     | Same_as_ocaml_repr -> None
     | Unboxed_float
     | Unboxed_integer _ -> if all_unboxed then None else Some oattr_unboxed
-    | Untagged_int -> if all_untagged then None else Some oattr_untagged
+    | Untagged_int _ -> if all_untagged then None else Some oattr_untagged
   in
   let type_attrs =
     List.map attr_of_native_repr p.prim_native_repr_args @
@@ -209,19 +212,32 @@ let equal_boxed_integer bi1 bi2 =
   | (Pnativeint | Pint32 | Pint64), _ ->
     false
 
+let equal_untagged_integer ui1 ui2 =
+  match ui1, ui2 with
+  | Int, Int
+  | Bool, Bool
+  | Char, Char
+  | Constants, Constants
+  | String, String
+  | Bigarray, Bigarray
+  | Bytes, Bytes ->
+    true
+  | (Int | Bool | Char | Constants | String | Bytes | Bigarray), _ ->
+    false
+
 let equal_native_repr nr1 nr2 =
   match nr1, nr2 with
   | Same_as_ocaml_repr, Same_as_ocaml_repr -> true
   | Same_as_ocaml_repr,
-    (Unboxed_float | Unboxed_integer _ | Untagged_int) -> false
+    (Unboxed_float | Unboxed_integer _ | Untagged_int _) -> false
   | Unboxed_float, Unboxed_float -> true
   | Unboxed_float,
-    (Same_as_ocaml_repr | Unboxed_integer _ | Untagged_int) -> false
+    (Same_as_ocaml_repr | Unboxed_integer _ | Untagged_int _) -> false
   | Unboxed_integer bi1, Unboxed_integer bi2 -> equal_boxed_integer bi1 bi2
   | Unboxed_integer _,
-    (Same_as_ocaml_repr | Unboxed_float | Untagged_int) -> false
-  | Untagged_int, Untagged_int -> true
-  | Untagged_int,
+    (Same_as_ocaml_repr | Unboxed_float | Untagged_int _) -> false
+  | Untagged_int ui1, Untagged_int ui2 -> equal_untagged_integer ui1 ui2
+  | Untagged_int _,
     (Same_as_ocaml_repr | Unboxed_float | Unboxed_integer _) -> false
 
 let native_name_is_external p =

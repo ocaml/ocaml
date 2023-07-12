@@ -1483,10 +1483,37 @@ let get_native_repr_attribute attrs ~global_repr =
   | _, Some { Location.loc }, _ ->
     raise (Error (loc, Multiple_native_repr_attributes))
 
-let native_repr_of_type env kind ty =
+let is_constants_only_variant path env =
+  let open Types in
+  let decl = Env.find_type path env in
+  let constants cd = match cd.cd_args with
+    | Cstr_tuple [] -> true
+    | _ -> false
+  in
+  match decl.type_kind with
+  | Type_abstract | Type_record _ | Type_open -> false
+  | Type_variant(crts, _) -> List.for_all constants crts
+
+let is_bigarray_c_layout ty env =
+  let (_, layout) = Typeopt.bigarray_type_kind_and_layout env ty in
+  layout = Lambda.Pbigarray_c_layout
+
+let native_repr_of_type env kind ty ~result =
   match kind, get_desc (Ctype.expand_head_opt env ty) with
   | Untagged, Tconstr (path, _, _) when Path.same path Predef.path_int ->
-    Some Untagged_int
+    Some (Untagged_int Int)
+  | Untagged, Tconstr (path, _, _) when Path.same path Predef.path_bool ->
+    Some (Untagged_int Bool)
+  | Untagged, Tconstr (path, _, _) when Path.same path Predef.path_char ->
+    Some (Untagged_int Char)
+  | Untagged, Tconstr (path, _, _) when is_constants_only_variant path env ->
+    Some (Untagged_int Constants)
+  | Untagged, Tconstr (path, _, _) when Path.same path Predef.path_string ->
+    if result then None else Some (Untagged_int String)
+  | Untagged, Tconstr (path, _, _) when Path.same path Predef.path_bytes ->
+    if result then None else Some (Untagged_int Bytes)
+  | Untagged, Tconstr _ when is_bigarray_c_layout ty env ->
+    if result then None else Some (Untagged_int Bigarray)
   | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_float ->
     Some Unboxed_float
   | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_int32 ->
@@ -1517,13 +1544,13 @@ let error_if_has_deep_native_repr_attributes core_type =
   in
   default_iterator.typ this_iterator core_type
 
-let make_native_repr env core_type ty ~global_repr =
+let make_native_repr env core_type ty ~global_repr ~result =
   error_if_has_deep_native_repr_attributes core_type;
   match get_native_repr_attribute core_type.ptyp_attributes ~global_repr with
   | Native_repr_attr_absent ->
     Same_as_ocaml_repr
   | Native_repr_attr_present kind ->
-    begin match native_repr_of_type env kind ty with
+    begin match native_repr_of_type env kind ty ~result with
     | None ->
       raise (Error (core_type.ptyp_loc, Cannot_unbox_or_untag_type kind))
     | Some repr -> repr
@@ -1536,7 +1563,7 @@ let rec parse_native_repr_attributes env core_type ty ~global_repr =
   | Ptyp_arrow _, Tarrow _, Native_repr_attr_present kind  ->
     raise (Error (core_type.ptyp_loc, Cannot_unbox_or_untag_type kind))
   | Ptyp_arrow (_, ct1, ct2), Tarrow (_, t1, t2, _), _ ->
-    let repr_arg = make_native_repr env ct1 t1 ~global_repr in
+    let repr_arg = make_native_repr env ct1 t1 ~global_repr ~result:false in
     let repr_args, repr_res =
       parse_native_repr_attributes env ct2 t2 ~global_repr
     in
@@ -1544,7 +1571,7 @@ let rec parse_native_repr_attributes env core_type ty ~global_repr =
   | (Ptyp_poly (_, t) | Ptyp_alias (t, _)), _, _ ->
      parse_native_repr_attributes env t ty ~global_repr
   | Ptyp_arrow _, _, _ | _, Tarrow _, _ -> assert false
-  | _ -> ([], make_native_repr env core_type ty ~global_repr)
+  | _ -> ([], make_native_repr env core_type ty ~global_repr ~result:true)
 
 
 let check_unboxable env loc ty =
