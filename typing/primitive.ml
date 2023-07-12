@@ -21,7 +21,8 @@ open Parsetree
 type boxed_integer = Pnativeint | Pint32 | Pint64
 
 (* String, Bytes and Bigarray are not allowed as @untagged results *)
-type untagged_integer = Int | Bool | Char | Constants | String | Bytes | Bigarray
+type untagged_integer = Int | Bool | Char | Constants
+                        | String | Bytes | Bigarray
 
 type native_repr =
   | Same_as_ocaml_repr
