@@ -61,6 +61,8 @@ uintnat caml_get_init_stack_wsize (void)
   return stack_wsize;
 }
 
+
+CAMLno_tsan /* Disable TSan reports from this function (see #11040) */
 void caml_change_max_stack_size (uintnat new_max_wsize)
 {
   struct stack_info *current_stack = Caml_state->current_stack;

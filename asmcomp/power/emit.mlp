@@ -437,6 +437,10 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Iopaque) -> 0
     | Lop(Ispecific _) -> 1
     | Lop (Idls_get) -> 1
+    | Lop (Ireturn_addr) ->
+        invalid_arg (
+          "Support for Ireturn_addr is not implemented on architecture "
+          ^ Config.architecture)
     | Lreloadretaddr -> 2
     | Lreturn -> 2
     | Llabel _ -> 0
@@ -778,6 +782,10 @@ let emit_instr env i =
     | Lop (Idls_get) ->
         let offset = Domainstate.(idx_of_field Domain_dls_root) * 8 in
         `	ld {emit_reg i.res.(0)}, {emit_int offset}(30)\n`
+    | Lop (Ireturn_addr) ->
+        invalid_arg (
+          "Support for Ireturn_addr is not implemented on architecture "
+          ^ Config.architecture)
     | Lreloadretaddr ->
         `	ld	11, {emit_int(retaddr_offset env)}(1)\n`;
         `	mtlr	11\n`

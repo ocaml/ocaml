@@ -160,7 +160,7 @@
    polling printcmm printlinear printmach proc
    reg reload reloadgen
    schedgen scheduling selectgen selection spill split
-   strmatch x86_ast x86_dsl x86_gas x86_masm x86_proc
+   strmatch thread_sanitizer x86_ast x86_dsl x86_gas x86_masm x86_proc
 
    ;; file_formats/
    linear_format

@@ -31,6 +31,7 @@
 #include "caml/roots.h"
 #include "caml/callback.h"
 #include "caml/signals.h"
+#include "caml/tsan.h"
 
 /* The globals holding predefined exceptions */
 
@@ -80,6 +81,10 @@ void caml_raise(value v)
          (char *) Caml_state->local_roots < exception_pointer) {
     Caml_state->local_roots = Caml_state->local_roots->next;
   }
+
+#if defined(WITH_THREAD_SANITIZER)
+  caml_tsan_exit_on_raise_c(exception_pointer);
+#endif
 
   caml_raise_exception(Caml_state, v);
 }
@@ -216,6 +221,11 @@ void caml_array_bound_error(void)
 
 void caml_array_bound_error_asm(void)
 {
+#if defined(WITH_THREAD_SANITIZER)
+  char* exception_pointer = (char*)Caml_state->c_stack;
+  caml_tsan_exit_on_raise_c(exception_pointer);
+#endif
+
   /* This exception is raised directly from ocamlopt-compiled OCaml,
      not C, so we jump directly to the OCaml handler (and avoid GC) */
   caml_raise_exception(Caml_state, array_bound_exn());

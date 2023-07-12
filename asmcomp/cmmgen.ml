@@ -116,8 +116,14 @@ let mut_from_env env ptr =
       else Mutable
     | _ -> Mutable
 
-let get_field env ptr n dbg =
-  let mut = mut_from_env env ptr in
+(* Minimum of two [mutable_flag] values, assuming [Immutable < Mutable]. *)
+let min_mut x y =
+  match x,y with
+  | Immutable,_ | _,Immutable -> Immutable
+  | Mutable,Mutable -> Mutable
+
+let get_field env mut ptr n dbg =
+  let mut = min_mut mut (mut_from_env env ptr) in
   get_field_gen mut ptr n dbg
 
 type rhs_kind =
@@ -842,8 +848,8 @@ and transl_prim_1 env p arg dbg =
     Popaque ->
       opaque (transl env arg) dbg
   (* Heap operations *)
-  | Pfield(n, _, _) ->
-      get_field env (transl env arg) n dbg
+  | Pfield(n, _, mut) ->
+      get_field env mut (transl env arg) n dbg
   | Pfloatfield n ->
       let ptr = transl env arg in
       box_float dbg (floatfield n ptr dbg)
@@ -1466,6 +1472,9 @@ let transl_function f =
       Afl_instrument.instrument_function (transl env body) f.dbg
     else
       transl env body in
+  let cmm_body =
+    if Config.tsan then Thread_sanitizer.instrument cmm_body else cmm_body
+  in
   let fun_codegen_options =
     if !Clflags.optimize_for_speed then
       []
@@ -1566,6 +1575,10 @@ let compunit (ulam, preallocated_blocks, constants) =
         (fun () -> dbg)
     else
       transl empty_env ulam in
+  let init_code =
+    if Config.tsan then Thread_sanitizer.instrument init_code
+    else init_code
+  in
   let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
                        fun_args = [];
                        fun_body = init_code;

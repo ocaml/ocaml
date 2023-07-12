@@ -366,6 +366,11 @@ Some of those changes will benefit all OCaml packages.
   `ocamlmklib.opt` are no longer installed to `$BINDIR`.
   (Xavier Leroy, review by Gabriel Scherer)
 
+- #12114: Add ThreadSanitizer support
+  (Fabrice Buoro and Olivier Nicole, based on an initial work by Anmol Sahoo,
+   review by Damien Doligez, Sebastien Hinderer, Jacques-Henri Jourdan, Luc
+   Maranget, Guillaume Munch-Maccagnoni, Gabriel Scherer)
+
 ### Runtime system:
 
 - #11589, #11903: Modify the GC pacing code to make sure the GC keeps

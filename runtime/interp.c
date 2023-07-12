@@ -244,6 +244,8 @@ static value raise_unhandled_effect;
 
 /* The interpreter itself */
 
+CAMLno_tsan /* No need to TSan-instrument this (and pay a slowdown) function as
+               TSan is not supported for bytecode. */
 value caml_interprete(code_t prog, asize_t prog_size)
 {
 #ifdef PC_REG

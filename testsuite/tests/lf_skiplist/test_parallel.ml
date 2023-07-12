@@ -1,5 +1,12 @@
 (* TEST
  modules = "stubs.c";
+ no-tsan; (* Takes too much time and memory with tsan *)
+ {
+   bytecode;
+ }
+ {
+   native;
+ }
 *)
 
 external init_skiplist : unit -> unit = "init_skiplist"
