@@ -36,6 +36,11 @@ Working version
   handlers, finalisers, memprof callbacks...) on the other hand.
   (Guillaume Munch-Maccagnoni, review by KC Sivaramakrishnan)
 
+- #12375: allow more use of [@untagged] for types char, bool, string, bytes,
+  bigarray with C layout and variant with only constant constructors. string,
+  bytes and bigarray are not allowed as result type.
+  (Christophe Raffalli, report by ..., review by ...)
+
 ### Type system:
 
 - #12313, #11799: Do not re-build as-pattern type when a ground type annotation
