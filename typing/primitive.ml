@@ -20,15 +20,11 @@ open Parsetree
 
 type boxed_integer = Pnativeint | Pint32 | Pint64
 
-(* String, Bytes and Bigarray are not allowed as @untagged results *)
-type untagged_integer = Int | Bool | Char | Constants
-                        | String | Bytes | Bigarray
-
 type native_repr =
   | Same_as_ocaml_repr
   | Unboxed_float
   | Unboxed_integer of boxed_integer
-  | Untagged_int of untagged_integer
+  | Untagged_int of Path.t
 
 type description =
   { prim_name: string;         (* Name of primitive  or C function *)
@@ -214,17 +210,7 @@ let equal_boxed_integer bi1 bi2 =
     false
 
 let equal_untagged_integer ui1 ui2 =
-  match ui1, ui2 with
-  | Int, Int
-  | Bool, Bool
-  | Char, Char
-  | Constants, Constants
-  | String, String
-  | Bigarray, Bigarray
-  | Bytes, Bytes ->
-    true
-  | (Int | Bool | Char | Constants | String | Bytes | Bigarray), _ ->
-    false
+  Path.same ui1 ui2
 
 let equal_native_repr nr1 nr2 =
   match nr1, nr2 with

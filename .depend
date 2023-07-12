@@ -1045,6 +1045,7 @@ typing/predef.cmi : \
     typing/path.cmi \
     typing/ident.cmi
 typing/primitive.cmo : \
+    typing/path.cmi \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
     utils/misc.cmi \
@@ -1052,6 +1053,7 @@ typing/primitive.cmo : \
     parsing/attr_helper.cmi \
     typing/primitive.cmi
 typing/primitive.cmx : \
+    typing/path.cmx \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
     utils/misc.cmx \
@@ -1059,6 +1061,7 @@ typing/primitive.cmx : \
     parsing/attr_helper.cmx \
     typing/primitive.cmi
 typing/primitive.cmi : \
+    typing/path.cmi \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
     parsing/location.cmi

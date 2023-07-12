@@ -36,10 +36,9 @@ Working version
   handlers, finalisers, memprof callbacks...) on the other hand.
   (Guillaume Munch-Maccagnoni, review by KC Sivaramakrishnan)
 
-- #12375: allow more use of [@untagged] for types char, bool, string, bytes,
-  bigarray with C layout and variant with only constant constructors. string,
-  bytes and bigarray are not allowed as result type.
-  (Christophe Raffalli, report by ..., review by ...)
+- #12375: allow use of [@untagged] for all immediate types like char, bool,
+  and variant with only constant constructors.
+  (Christophe Raffalli, review by Gabriel Scherer)
 
 ### Type system:
 

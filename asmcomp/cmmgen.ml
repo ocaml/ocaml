@@ -814,13 +814,8 @@ and transl_ccall env prim args dbg =
           | Pint32 -> XInt32
           | Pint64 -> XInt64 in
         (xty, transl_unbox_int dbg env bi arg)
-    | Untagged_int (Int | Char | Bool | Constants) ->
+    | Untagged_int _ ->
         (XInt, untag_int (transl env arg) dbg)
-    | Untagged_int (String | Bytes) ->
-        (XInt, transl env arg)
-    | Untagged_int (Bigarray) ->
-       (XInt, (Cop(mk_load_mut Word_int,
-                    [field_address (transl env arg) 1 dbg], dbg)))
   in
   let rec transl_args native_repr_args args =
     match native_repr_args, args with
@@ -840,10 +835,7 @@ and transl_ccall env prim args dbg =
     | Same_as_ocaml_repr -> (typ_val, fun x -> x)
     | Unboxed_float -> (typ_float, box_float dbg)
     | Unboxed_integer bi -> (typ_int, box_int dbg bi)
-    | Untagged_int (Int | Char | Bool | Constants) ->
-       (typ_int, (fun i -> tag_int i dbg))
-    | Untagged_int (String | Bytes | Bigarray) ->
-       Misc.fatal_error "String of Bytes are not allowed as untagged result"
+    | Untagged_int _ -> (typ_int, (fun i -> tag_int i dbg))
   in
   let typ_args, args = transl_args prim.prim_native_repr_args args in
   wrap_result
