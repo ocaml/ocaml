@@ -24,32 +24,30 @@ include $(ROOTDIR)/Makefile.common
 include $(ROOTDIR)/Makefile.best_binaries
 
 OCAMLC ?= $(BEST_OCAMLC) $(STDLIBFLAGS)
-OCAMLOPT ?= $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 
 expect_MAIN=expect_test
 expect_PROG=$(expect_MAIN)$(EXE)
 expect_DIRS = parsing utils driver typing toplevel
 expect_OCAMLFLAGS = $(addprefix -I $(ROOTDIR)/,$(expect_DIRS))
-expect_LIBS := $(addprefix $(COMPILERLIBSDIR)/,\
-  ocamlcommon ocamlbytecomp ocamltoplevel)
+expect_LIBS := $(addsuffix .cma,$(addprefix $(COMPILERLIBSDIR)/,\
+  ocamlcommon ocamlbytecomp ocamltoplevel))
 
 codegen_PROG = codegen$(EXE)
 codegen_DIRS = parsing utils typing middle_end bytecomp lambda asmcomp
 codegen_OCAMLFLAGS = $(addprefix -I $(ROOTDIR)/, $(codegen_DIRS)) -w +40 -g
 
-codegen_LIBS = $(addprefix $(COMPILERLIBSDIR)/,\
-  ocamlcommon ocamloptcomp)
+codegen_LIBS = $(addsuffix .cma, $(addprefix $(COMPILERLIBSDIR)/,\
+  ocamlcommon ocamloptcomp))
 
-codegen_OBJECTS = $(addsuffix .cmo,\
+codegen_CMI_FILES = $(addsuffix .cmi,\
+  parsecmmaux parsecmm lexcmm)
+codegen_CMO_FILES = $(addsuffix .cmo,\
   parsecmmaux parsecmm lexcmm codegen_main)
-
-ALL_LIBS = $(expect_LIBS)
 
 tools := $(expect_PROG)
 
 ifeq "$(NATIVE_COMPILER)" "true"
 tools += $(codegen_PROG)
-ALL_LIBS += $(codegen_LIBS)
 ifneq "$(CCOMPTYPE)-$(ARCH)" "msvc-amd64"
 # The asmgen tests are not ported to MSVC64 yet
 # so do not compile any arch-specific module
@@ -57,9 +55,10 @@ tools += asmgen_$(ARCH).$(O)
 endif
 endif
 
+.PHONY: all
 all: $(tools)
 
-$(expect_PROG): $(expect_LIBS:=.cma) $(expect_MAIN).cmo
+$(expect_PROG): $(expect_LIBS) $(expect_MAIN).cmo
 	$(OCAMLC) -linkall -o $@ $^
 
 $(expect_PROG): COMPFLAGS = $(expect_OCAMLFLAGS)
@@ -68,8 +67,8 @@ $(codegen_PROG): COMPFLAGS = $(codegen_OCAMLFLAGS)
 
 codegen_main.cmo: parsecmm.cmo
 
-$(codegen_PROG): $(codegen_OBJECTS)
-	$(OCAMLC) -o $@ $(COMPFLAGS) $(codegen_LIBS:=.cma) $^
+$(codegen_PROG): $(codegen_LIBS) $(codegen_CMO_FILES)
+	$(OCAMLC) -o $@ $(COMPFLAGS) $^
 
 parsecmmaux.cmo: parsecmmaux.cmi
 
@@ -77,14 +76,15 @@ lexcmm.cmo: lexcmm.cmi
 
 parsecmm.cmo: parsecmm.cmi
 
-%.cmi: %.mli $(ALL_LIBS:=.cma)
+expect_test.cmo: $(expect_LIBS)
+
+$(codegen_CMI_FILES) $(codegen_CMO_FILES): $(codegen_LIBS)
+
+%.cmi: %.mli
 	$(OCAMLC) $(COMPFLAGS) -c $<
 
-%.cmo: %.ml $(ALL_LIBS:=.cma)
+%.cmo: %.ml
 	$(OCAMLC) $(COMPFLAGS) -c $<
-
-%.cmx: %.ml $(ALL_LIBS:=.cmxa)
-	$(OCAMLOPT) $(COMPFLAGS) -c $<
 
 %.$(O): %.S
 	$(ASPP) $(OC_ASPPFLAGS) -o $@ $<
