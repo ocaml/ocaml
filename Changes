@@ -145,6 +145,10 @@ Working version
 - #12347: error messages: always report missing polyvariant tags
   (Florian Angeletti, report by Tianbo Hao, review by Gabriel Scherer)
 
+- #12224, specialized error message when trying to apply non-functor
+  module (e.g `module M = Int(Int)`)
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #12216, #12248: Prevent reordering of atomic loads during instruction

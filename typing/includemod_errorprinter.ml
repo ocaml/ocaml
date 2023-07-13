@@ -905,11 +905,7 @@ let report_error err =
   let main = err_msgs err in
   Location.errorf ~loc:Location.(in_file !input_name) "%t" main
 
-let report_apply_error ~loc env (lid_app, mty_f, args) =
-  let may_print_app ppf = match lid_app with
-    | None -> ()
-    | Some lid -> Format.fprintf ppf "%a " Printtyp.longident lid
-  in
+let report_apply_error ~loc env (app_name, mty_f, args) =
   let d = Functor_suberror.App.patch env ~f:mty_f ~args in
   match d with
   (* We specialize the one change and one argument case to remove the
@@ -924,26 +920,57 @@ let report_apply_error ~loc env (lid_app, mty_f, args) =
       in
       Location.errorf ~loc "%t" (Functor_suberror.App.single_diff g e more)
   | _ ->
-      let actual = Functor_suberror.App.got d in
-      let expected = Functor_suberror.expected d in
-      let sub =
-        List.rev @@
-        Functor_suberror.params functor_app_diff env ~expansion_token:true d
+      let not_functor =
+        List.for_all (function _, Diffing.Delete _ -> true | _ -> false) d
       in
-      Location.errorf ~loc ~sub
-        "@[<hv>The functor application %tis ill-typed.@ \
-         These arguments:@;<1 2>\
-         @[%t@]@ do not match these parameters:@;<1 2>@[functor@ %t@ -> ...@]@]"
-        may_print_app
-        actual expected
+      if not_functor then
+        match app_name with
+        | Includemod.Named_leftmost_functor lid ->
+            Location.errorf ~loc
+              "@[The module %a is not a functor, it cannot be applied.@]"
+               (Style.as_inline_code Printtyp.longident)  lid
+        | Includemod.Anonymous_functor
+        | Includemod.Full_application_path _
+          (* The "non-functor application in term" case is directly handled in
+             [Env] and it is the only case where we have a full application
+             path at hand. Thus this case of the or-pattern is currently
+             unreachable and we don't try to specialize the corresponding error
+             message. *) ->
+            Location.errorf ~loc
+              "@[This module is not a functor, it cannot be applied.@]"
+      else
+        let intro ppf =
+          match app_name with
+          | Includemod.Anonymous_functor ->
+              Format.fprintf ppf "This functor application is ill-typed."
+          | Includemod.Full_application_path lid ->
+              Format.fprintf ppf "The functor application %a is ill-typed."
+                (Style.as_inline_code Printtyp.longident) lid
+          |  Includemod.Named_leftmost_functor lid ->
+              Format.fprintf ppf
+                "This application of the functor %a is ill-typed."
+                 (Style.as_inline_code Printtyp.longident) lid
+        in
+        let actual = Functor_suberror.App.got d in
+        let expected = Functor_suberror.expected d in
+        let sub =
+          List.rev @@
+          Functor_suberror.params functor_app_diff env ~expansion_token:true d
+        in
+        Location.errorf ~loc ~sub
+          "@[<hv>%t@ \
+           These arguments:@;<1 2>@[%t@]@ \
+           do not match these parameters:@;<1 2>@[functor@ %t@ -> ...@]@]"
+          intro
+          actual expected
 
 let register () =
   Location.register_error_of_exn
     (function
       | Includemod.Error err -> Some (report_error err)
-      | Includemod.Apply_error {loc; env; lid_app; mty_f; args} ->
+      | Includemod.Apply_error {loc; env; app_name; mty_f; args} ->
           Some (Printtyp.wrap_printing_env env ~error:true (fun () ->
-              report_apply_error ~loc env (lid_app, mty_f, args))
+              report_apply_error ~loc env (app_name, mty_f, args))
             )
       | _ -> None
     )

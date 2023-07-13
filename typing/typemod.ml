@@ -2322,10 +2322,11 @@ and type_application loc strengthen funct_body env smod =
     let strengthen = strengthen && List.for_all has_path args in
     type_module strengthen funct_body None env sfunct
   in
-  List.fold_left (type_one_application ~ctx:(loc, funct, args) funct_body env)
+  List.fold_left
+    (type_one_application ~ctx:(loc, sfunct, funct, args) funct_body env)
     (funct, funct_shape) args
 
-and type_one_application ~ctx:(apply_loc,md_f,args)
+and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
     funct_body env (funct, funct_shape) app_view =
   match Env.scrape_alias env funct.mod_type with
   | Mty_functor (Unit, mty_res) ->
@@ -2355,8 +2356,11 @@ and type_one_application ~ctx:(apply_loc,md_f,args)
       let apply_error () =
         let args = List.map simplify_app_summary args in
         let mty_f = md_f.mod_type in
-        let lid_app = None in
-        raise(Includemod.Apply_error {loc=apply_loc;env;lid_app;mty_f;args})
+        let app_name = match sfunct.pmod_desc with
+          | Pmod_ident l -> Includemod.Named_leftmost_functor l.txt
+          | _ -> Includemod.Anonymous_functor
+        in
+        raise(Includemod.Apply_error {loc=apply_loc;env;app_name;mty_f;args})
       in
       begin match app_view with
       | { arg = None; _ } -> apply_error ()
@@ -2418,11 +2422,14 @@ and type_one_application ~ctx:(apply_loc,md_f,args)
     end
   | Mty_alias path ->
       raise(Error(app_view.f_loc, env, Cannot_scrape_alias path))
-  | _ ->
+  | Mty_ident _ | Mty_signature _  ->
       let args = List.map simplify_app_summary args in
       let mty_f = md_f.mod_type in
-      let lid_app = None in
-      raise(Includemod.Apply_error {loc=apply_loc;env;lid_app;mty_f;args})
+      let app_name = match sfunct.pmod_desc with
+        | Pmod_ident l -> Includemod.Named_leftmost_functor l.txt
+        | _ -> Includemod.Anonymous_functor
+      in
+      raise(Includemod.Apply_error {loc=apply_loc;env;app_name;mty_f;args})
 
 and type_open_decl ?used_slot ?toplevel funct_body names env sod =
   Builtin_attributes.warning_scope sod.popen_attributes

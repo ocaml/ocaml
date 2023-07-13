@@ -41,7 +41,7 @@ module M = F(X)(Z)
 Line 1, characters 11-18:
 1 | module M = F(X)(Z)
                ^^^^^^^
-Error: The functor application is ill-typed.
+Error: This application of the functor "F" is ill-typed.
        These arguments:
          X Z
        do not match these parameters:
@@ -134,7 +134,7 @@ module F :
 Line 4, characters 9-18:
 4 | type u = F(X)(Z).t
              ^^^^^^^^^
-Error: The functor application F(X)(Z) is ill-typed.
+Error: The functor application "F(X)(Z)" is ill-typed.
        These arguments:
          X Z
        do not match these parameters:
@@ -152,7 +152,7 @@ module F : functor () (X : sig type t end) -> sig end
 Line 2, characters 11-16:
 2 | module M = F()()
                ^^^^^
-Error: The functor application is ill-typed.
+Error: This application of the functor "F" is ill-typed.
        These arguments:
          () ()
        do not match these parameters:
@@ -204,7 +204,7 @@ end
 Line 9, characters 13-20:
 9 |   module M = F(Y)(X)
                  ^^^^^^^
-Error: The functor application is ill-typed.
+Error: This application of the functor "F" is ill-typed.
        These arguments:
          Ctx.Y Ctx.X
        do not match these parameters:
@@ -221,7 +221,7 @@ module Ord : sig type t = unit val compare : 'a -> 'b -> int end
 Line 2, characters 11-29:
 2 | module M = Map.Make(Ord)(Ord)
                ^^^^^^^^^^^^^^^^^^
-Error: The functor application is ill-typed.
+Error: This application of the functor "Map.Make" is ill-typed.
        These arguments:
          Ord Ord
        do not match these parameters:
@@ -250,7 +250,7 @@ module K : sig type x = X.x type y = Y.y end
 Line 10, characters 11-73:
 10 | module M = F(K)(struct type x = K.x end)( (* struct type z = K.y end *) )
                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The functor application is ill-typed.
+Error: This application of the functor "F" is ill-typed.
        These arguments:
          K $S2 ()
        do not match these parameters:
@@ -265,7 +265,7 @@ module M = F(K)(struct type y = K.y end)
 Line 1, characters 11-40:
 1 | module M = F(K)(struct type y = K.y end)
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The functor application is ill-typed.
+Error: This application of the functor "F" is ill-typed.
        These arguments:
          K $S3
        do not match these parameters:
@@ -288,7 +288,7 @@ Lines 2-5, characters 2-30:
 3 |     (struct include X include Y end)
 4 |     (struct type x = K.x end)
 5 |     (struct type yy = K.y end)
-Error: The functor application is ill-typed.
+Error: This application of the functor "F" is ill-typed.
        These arguments:
          $S1 $S2 $S3
        do not match these parameters:
@@ -323,7 +323,7 @@ module Defs :
 Line 13, characters 19-33:
 13 | module Missing_X = F(M.N)(Defs.Y)
                         ^^^^^^^^^^^^^^
-Error: The functor application is ill-typed.
+Error: This application of the functor "F" is ill-typed.
        These arguments:
          M.N Defs.Y
        do not match these parameters:
@@ -339,7 +339,7 @@ module Too_many_Xs = F(M.N)(Defs.X)(Defs.X)(Defs.Y)
 Line 1, characters 21-51:
 1 | module Too_many_Xs = F(M.N)(Defs.X)(Defs.X)(Defs.Y)
                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The functor application is ill-typed.
+Error: This application of the functor "F" is ill-typed.
        These arguments:
          M.N Defs.X Defs.X Defs.Y
        do not match these parameters:
@@ -361,7 +361,7 @@ module Y : sig type y = float end
 Line 3, characters 23-67:
 3 | module Missing_X_bis = F(struct type x = int type y = float end)(Y)
                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The functor application is ill-typed.
+Error: This application of the functor "F" is ill-typed.
        These arguments:
          $S1 Y
        do not match these parameters:
@@ -377,7 +377,7 @@ module Too_many_Xs_bis = F(struct type x = int type y = float end)(X)(X)(Y)
 Line 1, characters 25-75:
 1 | module Too_many_Xs_bis = F(struct type x = int type y = float end)(X)(X)(Y)
                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The functor application is ill-typed.
+Error: This application of the functor "F" is ill-typed.
        These arguments:
          $S1 X X Y
        do not match these parameters:
@@ -513,7 +513,7 @@ module F : functor (X : x) (B : b) (Y : y) -> sig type t end
 Line 8, characters 15-57:
 8 |     module U = F(struct type x end)(B)(struct type w end)
                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The functor application is ill-typed.
+Error: This application of the functor "F" is ill-typed.
        These arguments:
          $S1 P.B $S3
        do not match these parameters:
@@ -1050,7 +1050,7 @@ module type Arg =
 Line 14, characters 11-29:
 14 |   type u = G(X)(Y)(X)(Y)(X).t
                 ^^^^^^^^^^^^^^^^^^
-Error: The functor application G(X)(Y)(X)(Y)(X) is ill-typed.
+Error: The functor application "G(X)(Y)(X)(Y)(X)" is ill-typed.
        These arguments:
          A.X A.Y A.X A.Y A.X
        do not match these parameters:
@@ -1253,7 +1253,7 @@ module W = F(PF)(PF)(PF)(PF)(PF)(F)
 Line 1, characters 11-35:
 1 | module W = F(PF)(PF)(PF)(PF)(PF)(F)
                ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The functor application is ill-typed.
+Error: This application of the functor "F" is ill-typed.
        These arguments:
          PF PF PF PF PF F
        do not match these parameters:
@@ -1319,7 +1319,7 @@ module Choose_one = F(Add_one')(Add_three)(A)(A)(A)
 Line 1, characters 20-51:
 1 | module Choose_one = F(Add_one')(Add_three)(A)(A)(A)
                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The functor application is ill-typed.
+Error: This application of the functor "F" is ill-typed.
        These arguments:
          Add_one' Add_three A A A
        do not match these parameters:
@@ -1341,7 +1341,7 @@ module Mislead_chosen_one = F(Add_one)(Add_three)(A)(A)(A)
 Line 1, characters 28-58:
 1 | module Mislead_chosen_one = F(Add_one)(Add_three)(A)(A)(A)
                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The functor application is ill-typed.
+Error: This application of the functor "F" is ill-typed.
        These arguments:
          Add_one Add_three A A A
        do not match these parameters:
@@ -1563,7 +1563,7 @@ module Z : sig type t = Z of int end
 Line 9, characters 13-48:
 9 | module Error=F(X)(struct type t = int end)(Y)(Z)
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The functor application is ill-typed.
+Error: This application of the functor "F" is ill-typed.
        These arguments:
          X ... Y Z
        do not match these parameters:
@@ -1643,7 +1643,7 @@ type broken1 = Bar(B)(FiveArgsExt)(B)(AExt).a
 Line 1, characters 15-45:
 1 | type broken1 = Bar(B)(FiveArgsExt)(B)(AExt).a
                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The functor application Bar(B)(FiveArgsExt)(B)(AExt) is ill-typed.
+Error: The functor application "Bar(B)(FiveArgsExt)(B)(AExt)" is ill-typed.
        These arguments:
          B FiveArgsExt B AExt
        do not match these parameters:
@@ -1663,7 +1663,7 @@ type broken2 = Bar(A)(FiveArgsExt)(TY)(TY)(TY)(TY)(TY).a
 Line 1, characters 15-56:
 1 | type broken2 = Bar(A)(FiveArgsExt)(TY)(TY)(TY)(TY)(TY).a
                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The functor application Bar(A)(FiveArgsExt)(TY)(TY)(TY)(TY)(TY) is ill-typed.
+Error: The functor application "Bar(A)(FiveArgsExt)(TY)(TY)(TY)(TY)(TY)" is ill-typed.
        These arguments:
          A FiveArgsExt TY TY TY TY TY
        do not match these parameters:
@@ -1745,7 +1745,7 @@ module F : functor () (X : empty) () (Y : A) -> sig end
 Line 3, characters 2-73:
 3 |   F(struct end[@warning "-73"])(struct end)(struct end[@warning "-73"])();;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The functor application is ill-typed.
+Error: This application of the functor "F" is ill-typed.
        These arguments:
          (struct end) (struct end) (struct end) ()
        do not match these parameters:
@@ -1765,7 +1765,7 @@ module F : functor (X : empty) -> sig end
 Line 3, characters 2-17:
 3 |   F(struct end)();;
       ^^^^^^^^^^^^^^^
-Error: The functor application is ill-typed.
+Error: This application of the functor "F" is ill-typed.
        These arguments:
          (struct end) ()
        do not match these parameters:
@@ -1808,7 +1808,7 @@ Lines 15-21, characters 2-8:
 19 |     (struct
 20 |       let f x = x   (* this is bogus! *)
 21 |     end)
-Error: The functor application is ill-typed.
+Error: This application of the functor "F" is ill-typed.
        These arguments:
          $S1 $S2
        do not match these parameters:
@@ -1844,7 +1844,7 @@ module G :
 Line 8, characters 11-52:
 8 | module R = G(struct end)(struct let f (x,_) = x end)
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The functor application is ill-typed.
+Error: This application of the functor "G" is ill-typed.
        These arguments:
          (struct end) $S2
        do not match these parameters:
@@ -1880,7 +1880,7 @@ Lines 5-11, characters 11-6:
  9 |     ()
 10 |     ()
 11 |     ()
-Error: The functor application is ill-typed.
+Error: This application of the functor "With_expansion" is ill-typed.
        These arguments:
          $S1 () () ()
        do not match these parameters:
@@ -1906,7 +1906,7 @@ Lines 1-6, characters 12-6:
 4 |   end)
 5 |     ()
 6 |     ()
-Error: The functor application is ill-typed.
+Error: This application of the functor "With_expansion" is ill-typed.
        These arguments:
          $S1 () ()
        do not match these parameters:
@@ -1957,7 +1957,7 @@ Lines 18-25, characters 2-8:
 23 |     (struct
 24 |       let f x = x   (* this is fine *)
 25 |     end)
-Error: The functor application is ill-typed.
+Error: This application of the functor "H" is ill-typed.
        These arguments:
          $S1 $S2
        do not match these parameters:
@@ -2023,4 +2023,40 @@ Error: Signature mismatch:
             type 'a t = 'a list
           The type "'a * 'a" is not equal to the type "'a list"
        2. Module types $S2 and $T2 match
+|}]
+
+
+(** Application of non-functor *)
+
+module K = List(A)(B)
+[%%expect {|
+Line 3, characters 11-21:
+3 | module K = List(A)(B)
+               ^^^^^^^^^^
+Error: The module "List" is not a functor, it cannot be applied.
+|}]
+
+module Error = (struct end)(B)
+[%%expect {|
+Line 1, characters 15-30:
+1 | module Error = (struct end)(B)
+                   ^^^^^^^^^^^^^^^
+Error: This module is not a functor, it cannot be applied.
+|}]
+
+let f (x:Set.Make(Set)(A).t) = x
+[%%expect {|
+Line 1, characters 9-27:
+1 | let f (x:Set.Make(Set)(A).t) = x
+             ^^^^^^^^^^^^^^^^^^
+Error: The functor application "Set.Make(Set)(A)" is ill-typed.
+       These arguments:
+         Set A
+       do not match these parameters:
+         functor (Ord : Set.OrderedType) -> ...
+       1. The following extra argument is provided Set : (module Set)
+       2. Modules do not match:
+            A : sig type a = A.a end
+          is not included in
+            Set.OrderedType
 |}]
