@@ -928,7 +928,7 @@ let report_apply_error ~loc env (app_name, mty_f, args) =
         | Includemod.Named_leftmost_functor lid ->
             Location.errorf ~loc
               "@[The module %a is not a functor, it cannot be applied.@]"
-              Printtyp.longident lid
+               (Style.as_inline_code Printtyp.longident)  lid
         | Includemod.Anonymous_functor
         | Includemod.Full_application_path _
           (* The "non-functor application in term" case is directly handled in
@@ -945,11 +945,11 @@ let report_apply_error ~loc env (app_name, mty_f, args) =
               Format.fprintf ppf "This functor application is ill-typed."
           | Includemod.Full_application_path lid ->
               Format.fprintf ppf "The functor application %a is ill-typed."
-                Printtyp.longident lid
+                (Style.as_inline_code Printtyp.longident) lid
           |  Includemod.Named_leftmost_functor lid ->
               Format.fprintf ppf
                 "This application of the functor %a is ill-typed."
-                Printtyp.longident lid
+                 (Style.as_inline_code Printtyp.longident) lid
         in
         let actual = Functor_suberror.App.got d in
         let expected = Functor_suberror.expected d in
