@@ -947,7 +947,8 @@ let report_apply_error ~loc env (app_name, mty_f, args) =
               Format.fprintf ppf "The functor application %a is ill-typed."
                 Printtyp.longident lid
           |  Includemod.Named_leftmost_functor lid ->
-              Format.fprintf ppf "This functor application of %a is ill-typed."
+              Format.fprintf ppf
+                "This application of the functor %a is ill-typed."
                 Printtyp.longident lid
         in
         let actual = Functor_suberror.App.got d in
