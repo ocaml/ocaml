@@ -2149,8 +2149,10 @@ let report_error ppf = function
         Style.inline_code "nativeint"
   | Cannot_unbox_or_untag_type Untagged ->
       fprintf ppf "@[Don't know how to untag this type.@ \
-                   Only %a can be untagged.@]"
+                   Only %a, %a, %a and other immadiate types can be untagged.@]"
         Style.inline_code "int"
+        Style.inline_code "char"
+        Style.inline_code "bool"
   | Deep_unbox_or_untag_attribute kind ->
       fprintf ppf
         "@[The attribute %a should be attached to@ \
