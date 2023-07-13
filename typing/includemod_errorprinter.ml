@@ -905,7 +905,7 @@ let report_error err =
   let main = err_msgs err in
   Location.errorf ~loc:Location.(in_file !input_name) "%t" main
 
-let report_apply_error ~loc env (lid_app, mty_f, args) =
+let report_apply_error ~loc env (app_name, mty_f, args) =
   let d = Functor_suberror.App.patch env ~f:mty_f ~args in
   match d with
   (* We specialize the one change and one argument case to remove the
@@ -924,22 +924,29 @@ let report_apply_error ~loc env (lid_app, mty_f, args) =
         List.for_all (function _, Diffing.Delete _ -> true | _ -> false) d
       in
       if not_functor then
-        match lid_app with
-        | Some lid ->
+        match app_name with
+        | Includemod.Named_leftmost_functor lid ->
             Location.errorf ~loc
               "@[The module %a is not a functor, it cannot be applied.@]"
               Printtyp.longident lid
-        |  None ->
+        | Includemod.Anonymous_functor
+        | Includemod.Full_application_path _
+          (* The "non-functor application in term" case is directly handled in
+             [Env] and it is the only case where we have a full application
+             path at hand. Thus this case of the or-pattern is currently
+             unreachable and we don't try to specialize the corresponding error
+             message. *) ->
             Location.errorf ~loc
               "@[This module is not a functor, it cannot be applied.@]"
       else
         let intro ppf =
-          match lid_app with
-          | None -> Format.fprintf ppf "This functor application is ill-typed."
-          | Some (Longident.Lapply _ as lid) ->
+          match app_name with
+          | Includemod.Anonymous_functor ->
+              Format.fprintf ppf "This functor application is ill-typed."
+          | Includemod.Full_application_path lid ->
               Format.fprintf ppf "The functor application %a is ill-typed."
                 Printtyp.longident lid
-          |  Some lid ->
+          |  Includemod.Named_leftmost_functor lid ->
               Format.fprintf ppf "This functor application of %a is ill-typed."
                 Printtyp.longident lid
         in
@@ -960,9 +967,9 @@ let register () =
   Location.register_error_of_exn
     (function
       | Includemod.Error err -> Some (report_error err)
-      | Includemod.Apply_error {loc; env; lid_app; mty_f; args} ->
+      | Includemod.Apply_error {loc; env; app_name; mty_f; args} ->
           Some (Printtyp.wrap_printing_env env ~error:true (fun () ->
-              report_apply_error ~loc env (lid_app, mty_f, args))
+              report_apply_error ~loc env (app_name, mty_f, args))
             )
       | _ -> None
     )
