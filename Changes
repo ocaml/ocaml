@@ -147,7 +147,7 @@ Working version
 
 - #12224, specialized error message when trying to apply non-functor
   module (e.g `module M = Int(Int)`)
-  (Florian Angeletti, review by ???)
+  (Florian Angeletti, review by Gabriel Scherer)
 
 ### Internal/compiler-libs changes:
 
