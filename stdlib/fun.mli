@@ -30,6 +30,11 @@ val flip : ('a -> 'b -> 'c) -> ('b -> 'a -> 'c)
 (** [flip f] reverses the argument order of the binary function
     [f]. For any arguments [x] and [y], [(flip f) x y] is [f y x]. *)
 
+val on : ('a -> 'b) -> (('b -> 'b -> 'c) -> ('a -> 'a -> 'c))
+(** [on f] is a function that takes binary function and adjusts its operands on
+    the unary function [f].
+    For any arguments [x] and [y], [(on f) op x y] is [op (f x) (f y)]. *)
+
 val negate : ('a -> bool) -> ('a -> bool)
 (** [negate p] is the negation of the predicate function [p]. For any
     argument [x], [(negate p) x] is [not (p x)]. *)
