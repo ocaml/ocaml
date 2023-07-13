@@ -178,6 +178,21 @@ Working version
   in Typecore in favor of local mutable state.
   (Nick Roberts, review by Takafumi Saikawa)
 
+- #12236: Use syntax as the sole determiner of function arity
+  This changes function arity to be based solely on the source program's
+  parsetree. Previously, the heuristic for arity had more subtle heuristics
+  that involved type information about patterns.  Function arity is important
+  because it determines when a pattern match's effects run and is an input
+  into the fast path for function application.
+
+  This change affects tooling: it changes the function constructs in parsetree
+  and typedtree.
+
+  See https://github.com/ocaml/RFCs/pull/32 for the original RFC.
+
+  (Nick Roberts; review by Richard Eisenberg, Leo White, and Gabriel Scherer;
+  RFC by Stephen Dolan)
+
 ### Build system:
 
 - #12198: continue the merge of the sub-makefiles into the root Makefile
