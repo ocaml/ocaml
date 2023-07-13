@@ -2356,11 +2356,11 @@ and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
       let apply_error () =
         let args = List.map simplify_app_summary args in
         let mty_f = md_f.mod_type in
-        let lid_app = match sfunct.pmod_desc with
-          | Pmod_ident l -> Some l.txt
-          | _ -> None
+        let app_name = match sfunct.pmod_desc with
+          | Pmod_ident l -> Includemod.Named_leftmost_functor l.txt
+          | _ -> Includemod.Anonymous_functor
         in
-        raise(Includemod.Apply_error {loc=apply_loc;env;lid_app;mty_f;args})
+        raise(Includemod.Apply_error {loc=apply_loc;env;app_name;mty_f;args})
       in
       begin match app_view with
       | { arg = None; _ } -> apply_error ()
@@ -2425,11 +2425,11 @@ and type_one_application ~ctx:(apply_loc,sfunct,md_f,args)
   | Mty_ident _ | Mty_signature _  ->
       let args = List.map simplify_app_summary args in
       let mty_f = md_f.mod_type in
-      let lid_app = match sfunct.pmod_desc with
-        | Pmod_ident l -> Some l.txt
-        | _ -> None
+      let app_name = match sfunct.pmod_desc with
+        | Pmod_ident l -> Includemod.Named_leftmost_functor l.txt
+        | _ -> Includemod.Anonymous_functor
       in
-      raise(Includemod.Apply_error {loc=apply_loc;env;lid_app;mty_f;args})
+      raise(Includemod.Apply_error {loc=apply_loc;env;app_name;mty_f;args})
 
 and type_open_decl ?used_slot ?toplevel funct_body names env sod =
   Builtin_attributes.warning_scope sod.popen_attributes
