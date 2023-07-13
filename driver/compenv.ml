@@ -526,7 +526,7 @@ type file_option = {
 }
 
 let scan_line ic =
-  Scanf.bscanf ic "%[0-9a-zA-Z_.*] : %[a-zA-Z_-] = %s "
+  Scanf.bscanf ic "%[0-9a-zA-Z_.*/] : %[a-zA-Z_-] = %s "
     (fun pattern name value ->
        let pattern =
          match pattern with
