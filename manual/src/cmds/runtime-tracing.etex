@@ -99,6 +99,12 @@ In summary, there are three cases for the consumer when an event is received:
 The \texttt{Runtime_events.Type} module provides a way to use built-in event
 types and define new ones using an encoder-decoder pair.
 
+Event consumers bind callbacks to event types, so they can work as generic
+listeners interpreting payloads coming from events that were not registered.
+Because this only works for events of built-in types, it is useful to pair
+an event of custom type with an event of built-in type, enabling the design of
+a specialized consumer while staying compatible with generic tracing tools.
+
 \subsection{s:runtime-tracing-ingestion}{Events transport}
 
 The events transport part of the system ingests events emitted by the probes
