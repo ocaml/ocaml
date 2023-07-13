@@ -1485,9 +1485,9 @@ let get_native_repr_attribute attrs ~global_repr =
 
 let native_repr_of_type env kind ty =
   match kind, get_desc (Ctype.expand_head_opt env ty) with
-  | Untagged, Tconstr (path, _, _) when
+  | Untagged, Tconstr (_, _, _) when
          Typeopt.maybe_pointer_type env ty = Lambda.Immediate ->
-    Some (Untagged_int path)
+    Some Untagged_immediate
   | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_float ->
     Some Unboxed_float
   | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_int32 ->
