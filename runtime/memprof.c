@@ -309,7 +309,10 @@ struct memprof_domain_s {
   /* Linked list of threads in this domain */
   memprof_thread_t threads;
 
-  /* The current thread's memprof state */
+  /* The current thread's memprof state. Note that there may not be a
+     "current thread". TODO: maybe this shouldn't be nullable.
+     Nullability costs us some effort and may be meaningless. See call
+     site of caml_memprof_leave_thread() in st_stubs.c. */
   memprof_thread_t current;
 
   /* The current profile for this domain. NULL when not profiling. */
@@ -986,7 +989,8 @@ void caml_memprof_delete_domain(caml_domain_state *domain)
 
 static void set_action_pending_as_needed(memprof_domain_t domain)
 {
-  if (domain->current->suspended) return;
+  if (!domain->current ||
+      domain->current->suspended) return;
   if (domain->entries.next < domain->entries.live ||
       domain->current->entries.live > 0)
     caml_set_action_pending(domain->caml_state);
@@ -996,7 +1000,9 @@ static void set_action_pending_as_needed(memprof_domain_t domain)
 
 static void update_suspended(memprof_domain_t domain, bool s)
 {
-  domain->current->suspended = s;
+  if (domain->current) {
+    domain->current->suspended = s;
+  }
   caml_memprof_renew_minor_sample(domain->caml_state);
   if (!s) set_action_pending_as_needed(domain);
 }
@@ -1458,7 +1464,8 @@ Caml_inline bool running(memprof_domain_t domain)
 {
   memprof_thread_t thread = domain->current;
 
-  return (!atomic_load(&domain->config.stopped)
+  return (thread
+          && !atomic_load(&domain->config.stopped)
           && domain->config.lambda > 0
           && !thread->suspended);
 }

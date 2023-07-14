@@ -1225,20 +1225,19 @@ static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
   return budget;
 }
 
-static void memprof_clean_callback(caml_domain_state* domain, void* unused,
-                                   int participating_count,
-                                   caml_domain_state** participating)
-{
-  (void)unused;
-  (void)participating_count;
-  caml_memprof_after_major_gc(domain, domain == participating[0]);
-}
-
 static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
                                        int participating_count,
                                        caml_domain_state** participating)
 {
   uintnat num_domains_in_stw;
+
+  /* TODO: Not clear this memprof item is really part of the "cycle"
+   * operation. It's more like ephemeron-cleaning really. An earlier
+   * version had a separate callback for this, but resulted in
+   * failures because using caml_try_run_on_all_domains() on it would
+   * mysteriously put all domains back into mark/sweep.
+   */
+  caml_memprof_after_major_gc(domain, domain == participating[0]);
 
   CAML_EV_BEGIN(EV_MAJOR_GC_CYCLE_DOMAINS);
 
@@ -1729,14 +1728,7 @@ mark_again:
                                                       - blocks_marked_before));
 
   if (mode != Slice_opportunistic && is_complete_phase_sweep_ephe()) {
-    if (barrier_participants) {
-      memprof_clean_callback(domain_state,
-                             (void*)0,
-                             participant_count,
-                             barrier_participants);
-    } else {
-      caml_try_run_on_all_domains (&memprof_clean_callback, 0, 0);
-    }
+
     saved_major_cycle = caml_major_cycles_completed;
     /* To handle the case where multiple domains try to finish the major
       cycle simultaneously, we loop until the current cycle has ended,

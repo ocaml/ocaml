@@ -205,6 +205,11 @@ static void save_runtime_state(void)
   this_thread->trap_barrier_off = Caml_state->trap_barrier_off;
   this_thread->external_raise = Caml_state->external_raise;
 #endif
+
+  /* TODO: Not clear this is right here, as this is used in
+   * caml_thread_enter_blocking_section(). Possibly for memprof
+   * purposes we want to change to an API of _switch_thread() instead
+   * of _enter_ and _leave_. */
   caml_memprof_leave_thread();
 }
 
