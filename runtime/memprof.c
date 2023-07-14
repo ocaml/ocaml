@@ -845,7 +845,7 @@ static memprof_domain_t domain_create(caml_domain_state *caml_state)
   domain->threads = NULL;
   domain->current = NULL;
   domain->profile = NULL;
-  atomic_store(&domain->config.stopped, false);
+  atomic_store(&domain->config.stopped, true);
   domain->config.lambda = 0.0;
   domain->config.one_log1m_lambda = 0.0;
   domain->config.callstack_size = 0;
@@ -895,6 +895,7 @@ static memprof_profile_t profile_create(double lambda, intnat callstack_size,
   }
   profile->id = atomic_fetch_add(&next_profile_id, 1);
 
+  /* profiles are created in "not stopped" mode */
   atomic_store(&profile->config.stopped, false);
   profile->config.lambda = lambda;
   if (lambda > 0) {
@@ -965,6 +966,7 @@ void caml_memprof_new_domain(caml_domain_state *parent,
     memprof_profile_t profile = parent->memprof->profile;
     caml_plat_lock(&profile->lock);
     domain->profile = profile;
+    domain->config = profile->config;
     domain->next = profile->domains;
     profile->domains = domain;
     caml_plat_unlock(&profile->lock);
@@ -1102,7 +1104,7 @@ CAMLprim value caml_memprof_stop(value unit)
   }
 
   caml_plat_lock(&profile->lock);
-  /* Nobody else can be changing this profileor any pointers to it */
+  /* Nobody else can be changing this profile or any pointers to it */
 
   atomic_store(&profile->config.stopped, true);
 
