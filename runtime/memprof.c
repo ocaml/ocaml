@@ -50,37 +50,42 @@
  * terminated. It has a linked list of domain states for all the
  * domains using this profile.
  *
+ * There is a global linked list of profiles. This is the only global
+ * state, and is used to process the orphaned entries before and after
+ * each GC.
+ *
+ * There is synchronization code between different domains when
+ * accessing and updating these memprof-internal data structures. At
+ * present, these are managed by mutexes (caml_plat_mutex). Possibly
+ * we could move to lock-free systems.
+ *
+ * Although contention should be very rare, synchronisation is needed
+ * for several circumstances:
+ *
+ * - When accessing or manipulating the global list of profiles. We
+ *   have a global profiles_lock and each profile carries a lock.
+ *
+ * - When a thread T1 is running a callback on an entry, another
+ *   thread T2 may:
+ *
+ *   - evict deleted entries from the entry table, thus moving the entry
+ *     within the table;
+ *
+ *   - transfer all entries from the entry table to another
+ *     table. This happens when a thread has run all the allocation
+ *     callbacks on its own table, or when a thread or domain is
+ *     terminated, or when a profile is stopped. For some of these
+ *     cases, synchronisation may not be required.
+ *
+ *   In either case, T1 and T2 synchronise using mutexes on T1
+ *   (callback_lock) and on the entry table (running_lock), and have
+ *   lock priority (running_lock > callback_lock) to avoid deadlocks
+ *   here.
+ *
+ * - TODO: more detail on synchronisation here.
+ *
  */
 
-/*
- * TODO: Address data races.
- *
- * 1. Updates to thread->callback_table and thread->callback_index,
- * when a profile is stopped by another domain. The other domain tries
- * to transfer entries to the config object. This can race against:
- *
- *    - a thread which is running a callback;
- *    - adding a block (although this can't happen if ;
- *    -
- *
- * 2. Updates to the entries table of a thread or domain when another
- * domain stops the profile.
-
-an entry is transferred to . This is OK when being done
- * by another thread in the same domain, as switching systhreads is
- * cooperative. But this will also be done by another domain when
- * stopping a profile - all the entries are transferred to the config
- * object.
- *
- * 1. What if domain->config is stopped and/or discarded by another
- * domain? It's accessed by each domain. Initial plan for this: keep
- * the actual configuration values (callstack depth, lambda, tracker)
- * in the memprof_domain_s.
-
-(the callstack depth, tracker, and lambda) as an object on the Caml
- * heap. That way we don't have to explicitly manage its liveness. We
- * can atomically set the 'stopped' field in it.
- */
 
 #define CAML_INTERNALS
 
@@ -462,15 +467,24 @@ Caml_inline uintnat new_tracked(entries_t es,
   return i;
 }
 
-/* Mark a given entry in an entries table as "deleted" */
+/* Mark a given entry in an entries table as "deleted". TODO: think
+ * about locks here. */
 
 static void mark_deleted(entries_t es, uintnat i)
 {
   entry_t e = &es->t[i];
   e->deleted = 1;
+  caml_plat_lock(&es->running_lock);
+  if (e->running) {
+    memprof_thread_t t = e->running;
+    caml_plat_lock(&t->callback_lock);
+    t->callback_table = NULL;
+    caml_plat_unlock(&t->callback_lock);
+  }
+  e->running = NULL;
+  caml_plat_unlock(&es->running_lock);
   e->user_data = Val_unit;
   e->block = Val_unit;
-  e->running = NULL;
   if (i < es->evict) es->evict = i;
 }
 
@@ -532,8 +546,6 @@ static void evict_deleted(entries_t es)
         es->t[j] = es->t[i];
         /* if a callback is currently being run on this entry,
          * make sure its index is updated */
-        /* TODO: ATOMIC. What if runner changes here?
-         * Could have a global "runners_lock" ?? */
         memprof_thread_t runner = es->t[i].running;
         if (runner != NULL) {
           caml_plat_lock(&runner->callback_lock);
@@ -775,11 +787,29 @@ static void thread_destroy(memprof_thread_t thread)
   memprof_domain_t domain = thread->domain;
 
   caml_plat_lock(&thread->callback_lock);
-  /* If the thread is running a callback, delete that callback entry. */
-  if (thread->callback_table) {
-    mark_deleted(thread->callback_table, thread->callback_index);
+
+  /* If the thread is running a callback, delete that callback
+   * entry. TODO: improve on this awkward lock dance. */
+  while (thread->callback_table) {
+    entries_t es = thread->callback_table;
+    /* inverted priorities */
+    caml_plat_unlock(&thread->callback_lock);
+    caml_plat_lock(&es->running_lock);
+    caml_plat_lock(&thread->callback_lock);
+    if (thread->callback_table != es ||
+        es->t[thread->callback_index].running != thread) {
+      /* this thread is no longer running this callback */
+      caml_plat_unlock(&thread->callback_lock);
+      caml_plat_unlock(&es->running_lock);
+      caml_plat_lock(&thread->callback_lock);
+      /* ... but maybe now it's running a different callback? */
+      continue;
+    }
+    es->t[thread->callback_index].running = NULL;
+    caml_plat_unlock(&es->running_lock);
+    mark_deleted(es, thread->callback_index); /* TODO: locks?? */
+    thread->callback_table = NULL;
   }
-  thread->callback_table = NULL;
   caml_plat_unlock(&thread->callback_lock);
 
   if (domain->current == thread) {
@@ -1160,6 +1190,7 @@ CAMLprim value caml_memprof_discard(value v)
 
   caml_plat_lock(&profile->lock);
   if (!atomic_load(&profile->config.stopped)) {
+    caml_plat_unlock(&profile->lock);
     caml_failwith("Gc.Memprof.discard: profile has not been stopped.");
   }
   CAMLassert(!profile->domains);
@@ -1270,6 +1301,8 @@ Caml_inline value run_callback_exn(memprof_thread_t thread,
   caml_plat_unlock(&thread->callback_lock);
   caml_plat_unlock(&es->running_lock);
 
+  /* note: no mutexes held while actually calling the callback */
+
   e->callback = cb_index;
   e->callbacks |= CB_MASK(cb_index);
   e->user_data = Val_unit;      /* Release root. */
@@ -1292,7 +1325,7 @@ Caml_inline value run_callback_exn(memprof_thread_t thread,
   thread->callback_table = NULL;
   CAMLassert(e->running == thread);
   caml_plat_unlock(&thread->callback_lock);
-
+  /* TODO: fix lock priority race here */
   caml_plat_lock(&es->running_lock);
   e->running = NULL;
 
