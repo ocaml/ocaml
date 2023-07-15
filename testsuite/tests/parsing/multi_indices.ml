@@ -35,8 +35,7 @@ val ( .![;..]<- ) : ('a, 'b, 'c) A.t -> int array -> 'a -> unit = <fun>
 
 let (.![;..]) a n =
   Format.printf "indices: @[[|%a|]@]@."
-    (Format.pp_print_list
-       ~pp_sep:(fun ppf -> fun () -> Format.fprintf ppf ";@ ")
+    (Format.pp_print_list ~pp_sep:(fun ppf () -> Format.fprintf ppf ";@ ")
        Format.pp_print_int) (Array.to_list n);
   A.get a n;;
 val ( .![;..] ) : ('a, 'b, 'c) A.t -> int array -> 'a = <fun>

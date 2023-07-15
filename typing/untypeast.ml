@@ -16,7 +16,6 @@
 [@@@ocaml.warning "-60"] module Str = Ast_helper.Str (* For ocamldep *)
 [@@@ocaml.warning "+60"]
 
-open Longident
 open Asttypes
 open Parsetree
 open Ast_helper
@@ -81,11 +80,6 @@ open T
 (*
 Some notes:
 
-   * For Pexp_function, we cannot go back to the exact original version
-   when there is a default argument, because the default argument is
-   translated in the typer. The code, if printed, will not be parsable because
-   new generated identifiers are not correct.
-
    * For Pexp_apply, it is unclear whether arguments are reordered, especially
     when there are optional arguments.
 
@@ -107,13 +101,6 @@ let rec lident_of_path = function
   | Path.Pextra_ty (p, _) -> lident_of_path p
 
 let map_loc sub {loc; txt} = {loc = sub.location sub loc; txt}
-
-(** Try a name [$name$0], check if it's free, if not, increment and repeat. *)
-let fresh_name s env =
-  let name i = s ^ Int.to_string i in
-  let available i = not (Env.bound_value (name i) env) in
-  let first_i = Misc.find_first_mono available in
-  name first_i
 
 (** Extract the [n] patterns from the case of a letop *)
 let rec extract_letop_patterns n pat =
@@ -410,22 +397,43 @@ let expression sub exp =
         Pexp_let (rec_flag,
           List.map (sub.value_binding sub) list,
           sub.expr sub exp)
-
-    (* Pexp_function can't have a label, so we split in 3 cases. *)
-    (* One case, no guard: It's a fun. *)
-    | Texp_function { arg_label; cases = [{c_lhs=p; c_guard=None; c_rhs=e}];
-          _ } ->
-        Pexp_fun (arg_label, None, sub.pat sub p, sub.expr sub e)
-    (* No label: it's a function. *)
-    | Texp_function { arg_label = Nolabel; cases; _; } ->
-        Pexp_function (List.map (sub.case sub) cases)
-    (* Mix of both, we generate `fun ~label:$name$ -> match $name$ with ...` *)
-    | Texp_function { arg_label = Labelled s | Optional s as label; cases;
-          _ } ->
-        let name = fresh_name s exp.exp_env in
-        Pexp_fun (label, None, Pat.var ~loc {loc;txt = name },
-          Exp.match_ ~loc (Exp.ident ~loc {loc;txt= Lident name})
-                          (List.map (sub.case sub) cases))
+    | Texp_function (params, body) ->
+        let body, constraint_ =
+          match body with
+          | Tfunction_body body ->
+              (* Unlike function cases, the [exp_extra] is placed on the body
+                 itself. *)
+              Pfunction_body (sub.expr sub body), None
+          | Tfunction_cases { cases; loc; exp_extra; attributes; _ } ->
+              let cases = List.map (sub.case sub) cases in
+              let constraint_ =
+                match exp_extra with
+                | Some (Texp_coerce (ty1, ty2)) ->
+                    Some
+                      (Pcoerce (Option.map (sub.typ sub) ty1, sub.typ sub ty2))
+                | Some (Texp_constraint ty) ->
+                    Some (Pconstraint (sub.typ sub ty))
+                | Some (Texp_poly _ | Texp_newtype _) | None -> None
+              in
+              Pfunction_cases (cases, loc, attributes), constraint_
+        in
+        let params =
+          List.concat_map
+            (fun fp ->
+               let pat, default_arg =
+                 match fp.fp_kind with
+                 | Tparam_pat pat -> pat, None
+                 | Tparam_optional_default (pat, expr) -> pat, Some expr
+               in
+               let pat = sub.pat sub pat in
+               let default_arg = Option.map (sub.expr sub) default_arg in
+               let newtypes =
+                 List.map (fun x -> Pparam_newtype (x, x.loc)) fp.fp_newtypes
+               in
+               Pparam_val (fp.fp_arg_label, default_arg, pat) :: newtypes)
+            params
+        in
+        Pexp_function (params, constraint_, body)
     | Texp_apply (exp, list) ->
         Pexp_apply (sub.expr sub exp,
           List.fold_right (fun (label, expo) list ->
@@ -823,6 +831,21 @@ and is_self_pat = function
       string_is_prefix "self-" (Ident.name id)
   | _ -> false
 
+(* [Typeclass] adds a [self] parameter to initializers and methods that isn't
+   present in the source program.
+*)
+let remove_fun_self exp =
+  match exp with
+  | { exp_desc =
+        Texp_function
+          ({fp_arg_label = Nolabel; fp_kind = Tparam_pat pat} :: params, body)
+    }
+    when is_self_pat pat ->
+    (match params, body with
+     | [], Tfunction_body body -> body
+     | _, _ -> { exp with exp_desc = Texp_function (params, body) })
+  | e -> e
+
 let class_field sub cf =
   let loc = sub.location sub cf.cf_loc in
   let attrs = sub.attributes sub cf.cf_attributes in
@@ -839,21 +862,9 @@ let class_field sub cf =
     | Tcf_method (lab, priv, Tcfk_virtual cty) ->
         Pcf_method (lab, priv, Cfk_virtual (sub.typ sub cty))
     | Tcf_method (lab, priv, Tcfk_concrete (o, exp)) ->
-        let remove_fun_self = function
-          | { exp_desc =
-              Texp_function { arg_label = Nolabel; cases = [case]; _ } }
-            when is_self_pat case.c_lhs && case.c_guard = None -> case.c_rhs
-          | e -> e
-        in
         let exp = remove_fun_self exp in
         Pcf_method (lab, priv, Cfk_concrete (o, sub.expr sub exp))
     | Tcf_initializer exp ->
-        let remove_fun_self = function
-          | { exp_desc =
-              Texp_function { arg_label = Nolabel; cases = [case]; _ } }
-            when is_self_pat case.c_lhs && case.c_guard = None -> case.c_rhs
-          | e -> e
-        in
         let exp = remove_fun_self exp in
         Pcf_initializer (sub.expr sub exp)
     | Tcf_attribute x -> Pcf_attribute x

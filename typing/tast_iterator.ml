@@ -249,15 +249,35 @@ let pat
       sub.pat sub p1;
       sub.pat sub p2
 
+let extra sub = function
+  | Texp_constraint cty -> sub.typ sub cty
+  | Texp_coerce (cty1, cty2) ->
+    Option.iter (sub.typ sub) cty1;
+    sub.typ sub cty2
+  | Texp_newtype _ -> ()
+  | Texp_poly cto -> Option.iter (sub.typ sub) cto
+
+let function_param sub fp =
+  match fp.fp_kind with
+  | Tparam_pat pat -> sub.pat sub pat
+  | Tparam_optional_default (pat, default_arg) ->
+      sub.pat sub pat;
+      sub.expr sub default_arg
+
+let function_body sub body =
+  match[@warning "+9"] body with
+  | Tfunction_body body ->
+      sub.expr sub body
+  | Tfunction_cases
+      { cases; loc; exp_extra; attributes; partial = _; param = _ }
+    ->
+      List.iter (sub.case sub) cases;
+      sub.location sub loc;
+      Option.iter (extra sub) exp_extra;
+      sub.attributes sub attributes
+
 let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
-  let extra = function
-    | Texp_constraint cty -> sub.typ sub cty
-    | Texp_coerce (cty1, cty2) ->
-        Option.iter (sub.typ sub) cty1;
-        sub.typ sub cty2
-    | Texp_newtype _ -> ()
-    | Texp_poly cto -> Option.iter (sub.typ sub) cto
-  in
+  let extra x = extra sub x in
   sub.location sub exp_loc;
   sub.attributes sub exp_attributes;
   List.iter (fun (e, loc, _) -> extra e; sub.location sub loc) exp_extra;
@@ -268,8 +288,9 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
   | Texp_let (rec_flag, list, exp) ->
       sub.value_bindings sub (rec_flag, list);
       sub.expr sub exp
-  | Texp_function {cases; _} ->
-     List.iter (sub.case sub) cases
+  | Texp_function (params, body) ->
+      List.iter (function_param sub) params;
+      function_body sub body
   | Texp_apply (exp, list) ->
       sub.expr sub exp;
       List.iter (fun (_, o) -> Option.iter (sub.expr sub) o) list

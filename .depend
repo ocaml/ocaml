@@ -918,6 +918,7 @@ typing/parmatch.cmo : \
     typing/predef.cmi \
     typing/patterns.cmi \
     typing/path.cmi \
+    parsing/parsetree.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
@@ -937,6 +938,7 @@ typing/parmatch.cmx : \
     typing/predef.cmx \
     typing/patterns.cmx \
     typing/path.cmx \
+    parsing/parsetree.cmi \
     utils/misc.cmx \
     parsing/longident.cmx \
     parsing/location.cmx \
@@ -949,6 +951,7 @@ typing/parmatch.cmx : \
 typing/parmatch.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
+    parsing/parsetree.cmi \
     parsing/location.cmi \
     typing/env.cmi \
     parsing/asttypes.cmi
@@ -1903,11 +1906,9 @@ typing/untypeast.cmo : \
     typing/typedtree.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
-    utils/misc.cmi \
     parsing/longident.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
-    typing/env.cmi \
     parsing/asttypes.cmi \
     parsing/ast_helper.cmi \
     typing/untypeast.cmi
@@ -1915,11 +1916,9 @@ typing/untypeast.cmx : \
     typing/typedtree.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
-    utils/misc.cmx \
     parsing/longident.cmx \
     parsing/location.cmx \
     typing/ident.cmx \
-    typing/env.cmx \
     parsing/asttypes.cmi \
     parsing/ast_helper.cmx \
     typing/untypeast.cmi
@@ -3770,11 +3769,8 @@ lambda/translcore.cmo : \
     typing/primitive.cmi \
     typing/predef.cmi \
     typing/path.cmi \
-    parsing/parsetree.cmi \
-    typing/parmatch.cmi \
     utils/misc.cmi \
     lambda/matching.cmi \
-    parsing/longident.cmi \
     parsing/location.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
@@ -3797,11 +3793,8 @@ lambda/translcore.cmx : \
     typing/primitive.cmx \
     typing/predef.cmx \
     typing/path.cmx \
-    parsing/parsetree.cmi \
-    typing/parmatch.cmx \
     utils/misc.cmx \
     lambda/matching.cmx \
-    parsing/longident.cmx \
     parsing/location.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \

@@ -351,6 +351,32 @@ end
 module E = struct
   (* Value expressions for the core language *)
 
+  let iter_function_param sub param =
+    match param with
+    | Pparam_val (_lab, def, p) ->
+        iter_opt (sub.expr sub) def;
+        sub.pat sub p
+    | Pparam_newtype (ty, loc) ->
+        iter_loc sub ty;
+        sub.location sub loc
+
+  let iter_body sub body =
+    match body with
+    | Pfunction_body e ->
+        sub.expr sub e
+    | Pfunction_cases (cases, loc, attrs) ->
+        sub.cases sub cases;
+        sub.location sub loc;
+        sub.attributes sub attrs
+
+  let iter_constraint sub constraint_ =
+    match constraint_ with
+    | Pconstraint ty ->
+        sub.typ sub ty
+    | Pcoerce (ty1, ty2) ->
+        iter_opt (sub.typ sub) ty1;
+        sub.typ sub ty2
+
   let iter sub {pexp_loc = loc; pexp_desc = desc; pexp_attributes = attrs} =
     sub.location sub loc;
     sub.attributes sub attrs;
@@ -360,11 +386,10 @@ module E = struct
     | Pexp_let (_r, vbs, e) ->
         List.iter (sub.value_binding sub) vbs;
         sub.expr sub e
-    | Pexp_fun (_lab, def, p, e) ->
-        iter_opt (sub.expr sub) def;
-        sub.pat sub p;
-        sub.expr sub e
-    | Pexp_function pel -> sub.cases sub pel
+    | Pexp_function (params, constraint_, body) ->
+        List.iter (iter_function_param sub) params;
+        iter_opt (iter_constraint sub) constraint_;
+        iter_body sub body
     | Pexp_apply (e, l) ->
         sub.expr sub e; List.iter (iter_snd (sub.expr sub)) l
     | Pexp_match (e, pel) ->

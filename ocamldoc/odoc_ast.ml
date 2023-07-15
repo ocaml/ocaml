@@ -286,59 +286,46 @@ module Analyser =
 
     (** Analysis of the parameter of a function. Return a list of t_parameter created from
        the (pattern, expression) structures encountered. *)
-    let rec tt_analyse_function_parameters env current_comment_opt pat_exp_list =
-      match pat_exp_list with
-        [] ->
-          (* This case means we have a 'function' without pattern, that's impossible *)
-          raise (Failure "tt_analyse_function_parameters: 'function' without pattern")
-
-      | {c_lhs=pattern_param} :: _second_ele :: _ ->
-          (* implicit pattern matching -> anonymous parameter and no more parameter *)
-          (* FIXME : label ? *)
-          let parameter = Odoc_parameter.Tuple ([], Odoc_env.subst_type env pattern_param.pat_type) in
-          [ parameter ]
-
-      | {c_lhs=pattern_param; c_rhs=func_body} :: [] ->
-          let parameter =
+    let rec tt_analyse_function_parameters env current_comment_opt params body =
+      let params =
+        List.map
+          (fun param ->
+             let pat =
+               match param.fp_kind with
+               | Tparam_pat pat -> pat
+               | Tparam_optional_default (pat, _) -> pat
+            in
             tt_param_info_from_pattern
               env
               (Odoc_parameter.desc_from_info_opt current_comment_opt)
-              pattern_param
-
-          in
-         (* For optional parameters with a default value, a special treatment is required *)
-         (* we look if the name of the parameter we just add is "*opt*", which means
-            that there is a let param_name = ... in ... just right now *)
-          let (p, next_exp) =
-            match parameter with
-              Simple_name { sn_name = "*opt*" } ->
-                (
-                 (
-                  match func_body.exp_desc with
-                    Typedtree.Texp_let (_, {vb_pat={pat_desc = Typedtree.Tpat_var (id, _) };
-                                            vb_expr=exp} :: _, func_body2) ->
-                      let name = Name.from_ident id in
-                      let new_param = Simple_name
-                          { sn_name = name ;
-                            sn_text = Odoc_parameter.desc_from_info_opt current_comment_opt name ;
-                            sn_type = Odoc_env.subst_type env exp.exp_type
-                          }
-                      in
-                      (new_param, func_body2)
-                  | _ ->
-                      (parameter, func_body)
-                 )
-                )
-            | _ ->
-                (parameter, func_body)
-          in
-         (* continue if the body is still a function *)
-          match next_exp.exp_desc with
-            Texp_function { cases = pat_exp_list ; _ } ->
-              p :: (tt_analyse_function_parameters env current_comment_opt pat_exp_list)
-          | _ ->
-              (* something else ; no more parameter *)
-              [ p ]
+              pat)
+          params
+      in
+      let params_from_body =
+        match body with
+        | Tfunction_body { exp_desc = Texp_function (params, body) } ->
+            (* We keep this case for two reasons:
+               1. so odoc continues to gather together all arguments for
+                  functions written as [fun x -> fun y -> fun z -> ...].
+               2. so we can call [tt_analyse_function_parameters] as a
+                  subroutine of [tt_analyse_method_expression]. Methods
+                  nest all arguments after [self] as a separate [Texp_function]
+                  node.
+            *)
+            tt_analyse_function_parameters env current_comment_opt params body
+        | Tfunction_body _ -> []
+        | Tfunction_cases { cases = [] } ->
+            (* FIXME: ppxes/camlp4 can generate this case. *)
+            []
+        | Tfunction_cases { cases = { c_lhs = pattern_param } :: _ } ->
+            (* implicit pattern matching -> anonymous parameter and no more parameter *)
+            (* FIXME : label ? *)
+            let parameter : Odoc_parameter.param_info =
+              Tuple ([], Odoc_env.subst_type env pattern_param.pat_type)
+            in
+            [ parameter ]
+      in
+      params @ params_from_body
 
      (** Analysis of a Tstr_value from the typedtree. Create and return a list of [t_value].
         @raise Failure if an error occurs.*)
@@ -346,7 +333,8 @@ module Analyser =
        let (pat, exp) = pat_exp in
        let comment_opt = Odoc_sig.analyze_alerts comment_opt attrs in
        match (pat.pat_desc, exp.exp_desc) with
-         (Typedtree.Tpat_var (ident, _), Typedtree.Texp_function { cases = pat_exp_list2; _ }) ->
+         (Tpat_var (ident, _), Texp_function (params, body)) ->
+
            (* a new function is defined *)
            let name_pre = Name.from_ident ident in
            let name = Name.parens_if_infix name_pre in
@@ -364,7 +352,8 @@ module Analyser =
              val_info = comment_opt ;
              val_type = Odoc_env.subst_type env pat.Typedtree.pat_type ;
              val_recursive = rec_flag = Asttypes.Recursive ;
-             val_parameters = tt_analyse_function_parameters env comment_opt pat_exp_list2 ;
+             val_parameters =
+               tt_analyse_function_parameters env comment_opt params body ;
              val_code = code ;
              val_loc = { loc_impl = Some loc ; loc_inter = None } ;
            }
@@ -428,76 +417,20 @@ module Analyser =
 *)
       |  _ -> Odoc_messages.object_end
 
-    (** Analysis of a method expression to get the method parameters.
-       @param first indicates if we're analysing the method for
-       the first time ; in that case we must not keep the first parameter,
-       which is "self-*", the object itself.
-    *)
-    let rec tt_analyse_method_expression env current_method_name comment_opt ?(first=true) exp =
+    (** Analysis of a method expression to get the method parameters. *)
+    let tt_analyse_method_expression env current_method_name comment_opt exp =
       match exp.Typedtree.exp_desc with
-        Typedtree.Texp_function { cases = pat_exp_list; _ } ->
-          (
-           match pat_exp_list with
-             [] ->
-               (* it is not a function since there are no parameters *)
-               (* we can't get here normally *)
-               raise (Failure (Odoc_messages.bad_tree^" "^(Odoc_messages.method_without_param current_method_name)))
-           | l ->
-               match l with
-                 [] ->
-                   (* impossible case, it has already been filtered *)
-                   assert false
-               | {c_lhs=pattern_param} :: _second_ele :: _ ->
-                   (* implicit pattern matching -> anonymous parameter *)
-                   (* Note : We can't match this pattern if it is the first call to the function. *)
-                   let new_param = Simple_name
-                       { sn_name = "??" ; sn_text =  None;
-                         sn_type = Odoc_env.subst_type env pattern_param.Typedtree.pat_type }
-                   in
-                   [ new_param ]
-
-               | {c_lhs=pattern_param; c_rhs=body} :: [] ->
-                   (* if this is the first call to the function, this is the first parameter and we skip it *)
-                   if not first then
-                     (
-                      let parameter =
-                        tt_param_info_from_pattern
-                          env
-                          (Odoc_parameter.desc_from_info_opt comment_opt)
-                          pattern_param
-                      in
-                      (* For optional parameters with a default value, a special treatment is required. *)
-                      (* We look if the name of the parameter we just add is "*opt*", which means
-                         that there is a let param_name = ... in ... just right now. *)
-                      let (current_param, next_exp) =
-                        match parameter with
-                          Simple_name { sn_name = "*opt*"} ->
-                            (
-                             (
-                              match body.exp_desc with
-                                Typedtree.Texp_let (_, {vb_pat={pat_desc = Typedtree.Tpat_var (id, _) };
-                                                        vb_expr=exp} :: _, body2) ->
-                                  let name = Name.from_ident id in
-                                  let new_param = Simple_name
-                                      { sn_name = name ;
-                                        sn_text = Odoc_parameter.desc_from_info_opt comment_opt name ;
-                                        sn_type = Odoc_env.subst_type env exp.Typedtree.exp_type ;
-                                      }
-                                  in
-                                  (new_param, body2)
-                              | _ ->
-                                  (parameter, body)
-                             )
-                            )
-                        | _ ->
-                            (* no *opt* parameter, we add the parameter then continue *)
-                            (parameter, body)
-                      in
-                      current_param :: (tt_analyse_method_expression env current_method_name comment_opt ~first: false next_exp)
-                     )
-                   else
-                     tt_analyse_method_expression env current_method_name comment_opt ~first: false body
-          )
+         Typedtree.Texp_function (params, body) ->
+          let params =
+            tt_analyse_function_parameters env comment_opt params body
+          in
+          begin match params with
+          | _self :: rest -> rest
+          | [] ->
+            (* it is not a function since there are no parameters *)
+            (* we can't get here normally *)
+            raise (Failure (Odoc_messages.bad_tree^" "^(Odoc_messages.method_without_param current_method_name)))
+          end
       | _ ->
           (* no more parameter *)
           []

@@ -54,6 +54,11 @@ let bind_cases l =
     )
     l
 
+let bind_function_param loc fp =
+  match fp.fp_kind with
+  | Tparam_pat pat -> bind_variables loc pat
+  | Tparam_optional_default (pat, _) -> bind_variables loc pat
+
 let record_module_binding scope mb =
   Stypes.record (Stypes.An_ident
                    (mb.mb_name.loc,
@@ -97,9 +102,10 @@ let rec iterator ~scope rebuild_env =
         bind_bindings body.exp_loc bindings
     | Texp_match (_, f1, _) ->
         bind_cases f1
-    | Texp_function { cases = f; }
     | Texp_try (_, f) ->
         bind_cases f
+    | Texp_function (params, _) ->
+        List.iter (bind_function_param exp.exp_loc) params
     | Texp_letmodule (_, modname, _, _, body ) ->
         Stypes.record (Stypes.An_ident
                          (modname.loc,Option.value ~default:"_" modname.txt,

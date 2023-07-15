@@ -302,5 +302,52 @@
                 []
             ]
     ]
+  structure_item (attributes.ml[59,812+0]..[60,869+26])
+    Pstr_value Nonrec
+    [
+      <def>
+        pattern (attributes.ml[59,812+4]..[59,812+5])
+          Ppat_var "f" (attributes.ml[59,812+4]..[59,812+5])
+        expression (attributes.ml[59,812+6]..[60,869+26]) ghost
+          Pexp_function
+          [
+            Pparam_val
+              Nolabel
+              None
+              pattern (attributes.ml[59,812+6]..[59,812+16])
+                attribute "foo"
+                  []
+                Ppat_var "x" (attributes.ml[59,812+7]..[59,812+8])
+          ]
+          Some
+            Pconstraint
+              core_type (attributes.ml[59,812+19]..[59,812+31])
+                attribute "foo"
+                  []
+                Ptyp_arrow
+                Nolabel
+                core_type (attributes.ml[59,812+19]..[59,812+23])
+                  Ptyp_constr "unit" (attributes.ml[59,812+19]..[59,812+23])
+                  []
+                core_type (attributes.ml[59,812+27]..[59,812+31])
+                  Ptyp_constr "unit" (attributes.ml[59,812+27]..[59,812+31])
+                  []
+          Pfunction_cases (attributes.ml[59,812+41]..[60,869+26])
+              attribute "foo"
+                []
+            [
+              <case>
+                pattern (attributes.ml[60,869+4]..[60,869+14])
+                  attribute "foo"
+                    []
+                  Ppat_construct "()" (attributes.ml[60,869+5]..[60,869+7])
+                  None
+                expression (attributes.ml[60,869+18]..[60,869+20])
+                  attribute "foo"
+                    []
+                  Pexp_construct "()" (attributes.ml[60,869+18]..[60,869+20])
+                  None
+            ]
+    ]
 ]
 

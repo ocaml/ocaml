@@ -100,8 +100,7 @@ and expression_desc =
     Texp_ident of Path.t * Longident.t loc * Types.value_description
   | Texp_constant of constant
   | Texp_let of rec_flag * value_binding list * expression
-  | Texp_function of { arg_label : arg_label; param : Ident.t;
-      cases : value case list; partial : partial; }
+  | Texp_function of function_param list * function_body
   | Texp_apply of expression * (arg_label * expression option) list
   | Texp_match of expression * computation case list * partial
   | Texp_try of expression * value case list
@@ -159,6 +158,30 @@ and 'k case =
      c_guard: expression option;
      c_rhs: expression;
     }
+
+and function_param =
+  {
+    fp_arg_label: arg_label;
+    fp_param: Ident.t;
+    fp_partial: partial;
+    fp_kind: function_param_kind;
+    fp_newtypes: string loc list;
+  }
+
+and function_param_kind =
+  | Tparam_pat of pattern
+  | Tparam_optional_default of pattern * expression
+
+and function_body =
+  | Tfunction_body of expression
+  | Tfunction_cases of
+      { cases: value case list;
+        partial: partial;
+        param: Ident.t;
+        loc: Location.t;
+        exp_extra: exp_extra option;
+        attributes: attributes;
+      }
 
 and record_label_definition =
   | Kept of Types.type_expr * mutable_flag
