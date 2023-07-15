@@ -13,15 +13,16 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Clflags
-
 exception Exit_with_status of int
 
 let output_prefix name =
   let oname =
-    match !output_name with
+    match !Clflags.output_name with
     | None -> name
-    | Some n -> if !compile_only then (output_name := None; n) else name in
+    | Some n ->
+        if !Clflags.compile_only then begin
+          Clflags.output_name := None; n
+        end else name in
   Filename.remove_extension oname
 
 let print_version_and_library compiler =
@@ -160,7 +161,7 @@ let check_bool ppf name s =
 
 let decode_compiler_pass ppf v ~name ~filter =
   let module P = Clflags.Compiler_pass in
-  let passes = P.available_pass_names ~filter ~native:!native_code in
+  let passes = P.available_pass_names ~filter ~native:!Clflags.native_code in
   begin match List.find_opt (String.equal v) passes with
   | None ->
     Printf.ksprintf (print_error ppf)
@@ -232,47 +233,48 @@ let read_one_param ppf position name v =
   | "bin-annot" -> set "bin-annot" [ Clflags.binary_annotations ] v
   | "afl-instrument" -> set "afl-instrument" [ Clflags.afl_instrument ] v
   | "afl-inst-ratio" ->
-      int_setter ppf "afl-inst-ratio" afl_inst_ratio v
+      int_setter ppf "afl-inst-ratio" Clflags.afl_inst_ratio v
   | "annot" -> set "annot" [ Clflags.annotations ] v
   | "absname" -> set "absname" [ Clflags.absname ] v
-  | "compat-32" -> set "compat-32" [ bytecode_compatible_32 ] v
-  | "noassert" -> set "noassert" [ noassert ] v
-  | "noautolink" -> set "noautolink" [ no_auto_link ] v
-  | "nostdlib" -> set "nostdlib" [ no_std_include ] v
-  | "nocwd" -> set "nocwd" [ no_cwd ] v
-  | "linkall" -> set "linkall" [ link_everything ] v
-  | "nolabels" -> set "nolabels" [ classic ] v
-  | "principal" -> set "principal"  [ principal ] v
-  | "rectypes" -> set "rectypes" [ recursive_types ] v
+  | "compat-32" -> set "compat-32" [ Clflags.bytecode_compatible_32 ] v
+  | "noassert" -> set "noassert" [ Clflags.noassert ] v
+  | "noautolink" -> set "noautolink" [ Clflags.no_auto_link ] v
+  | "nostdlib" -> set "nostdlib" [ Clflags.no_std_include ] v
+  | "nocwd" -> set "nocwd" [ Clflags.no_cwd ] v
+  | "linkall" -> set "linkall" [ Clflags.link_everything ] v
+  | "nolabels" -> set "nolabels" [ Clflags.classic ] v
+  | "principal" -> set "principal"  [ Clflags.principal ] v
+  | "rectypes" -> set "rectypes" [ Clflags.recursive_types ] v
   | "safe-string" -> compat "safe-string" v (* kept for compatibility *)
-  | "strict-sequence" -> set "strict-sequence" [ strict_sequence ] v
-  | "strict-formats" -> set "strict-formats" [ strict_formats ] v
-  | "thread" -> set "thread" [ use_threads ] v
-  | "unboxed-types" -> set "unboxed-types" [ unboxed_types ] v
-  | "unsafe" -> set "unsafe" [ unsafe ] v
-  | "verbose" -> set "verbose" [ verbose ] v
-  | "nopervasives" -> set "nopervasives" [ nopervasives ] v
-  | "slash" -> set "slash" [ force_slash ] v (* for ocamldep *)
-  | "no-slash" -> clear "no-slash" [ force_slash ] v (* for ocamldep *)
+  | "strict-sequence" -> set "strict-sequence" [ Clflags.strict_sequence ] v
+  | "strict-formats" -> set "strict-formats" [ Clflags.strict_formats ] v
+  | "thread" -> set "thread" [ Clflags.use_threads ] v
+  | "unboxed-types" -> set "unboxed-types" [ Clflags.unboxed_types ] v
+  | "unsafe" -> set "unsafe" [ Clflags.unsafe ] v
+  | "verbose" -> set "verbose" [ Clflags.verbose ] v
+  | "nopervasives" -> set "nopervasives" [ Clflags.nopervasives ] v
+  | "slash" -> set "slash" [ Clflags.force_slash ] v (* for ocamldep *)
+  | "no-slash" -> clear "no-slash" [ Clflags.force_slash ] v (* for ocamldep *)
   | "keep-docs" -> set "keep-docs" [ Clflags.keep_docs ] v
   | "keep-locs" -> set "keep-locs" [ Clflags.keep_locs ] v
 
-  | "compact" -> clear "compact" [ optimize_for_speed ] v
-  | "no-app-funct" -> clear "no-app-funct" [ applicative_functors ] v
-  | "nodynlink" -> clear "nodynlink" [ dlcode ] v
-  | "short-paths" -> clear "short-paths" [ real_paths ] v
-  | "typing-recovery" -> set "typing-recovery" [ typing_recovery ] v
-  | "no-alias-deps" -> set "no-alias-deps" [ no_alias_deps ] v
-  | "opaque" -> set "opaque" [ opaque ] v
+  | "compact" -> clear "compact" [ Clflags.optimize_for_speed ] v
+  | "no-app-funct" -> clear "no-app-funct" [ Clflags.applicative_functors ] v
+  | "nodynlink" -> clear "nodynlink" [ Clflags.dlcode ] v
+  | "short-paths" -> clear "short-paths" [ Clflags.real_paths ] v
+  | "typing-recovery" -> set "typing-recovery" [ Clflags.typing_recovery ] v
+  | "no-alias-deps" -> set "no-alias-deps" [ Clflags.no_alias_deps ] v
+  | "opaque" -> set "opaque" [ Clflags.opaque ] v
 
-  | "pp" -> preprocessor := Some v
-  | "runtime-variant" -> runtime_variant := v
-  | "with-runtime" -> set "with-runtime" [ with_runtime ] v
+  | "pp" -> Clflags.preprocessor := Some v
+  | "runtime-variant" -> Clflags.runtime_variant := v
+  | "with-runtime" -> set "with-runtime" [ Clflags.with_runtime ] v
   | "open" ->
-      open_modules := List.rev_append (String.split_on_char ',' v) !open_modules
-  | "cc" -> c_compiler := Some v
+      Clflags.open_modules :=
+        List.rev_append (String.split_on_char ',' v) !Clflags.open_modules
+  | "cc" -> Clflags.c_compiler := Some v
 
-  | "clambda-checks" -> set "clambda-checks" [ clambda_checks ] v
+  | "clambda-checks" -> set "clambda-checks" [ Clflags.clambda_checks ] v
 
   | "function-sections" ->
     set "function-sections" [ Clflags.function_sections ] v
@@ -293,8 +295,8 @@ let read_one_param ppf position name v =
 
   (* inlining *)
   | "inline" ->
-      let module F = Float_arg_helper in
-      begin match F.parse_no_error v inline_threshold with
+      let module F = Clflags.Float_arg_helper in
+      begin match F.parse_no_error v Clflags.inline_threshold with
       | F.Ok -> ()
       | F.Parse_failed exn ->
           Printf.ksprintf (print_error ppf)
@@ -302,100 +304,102 @@ let read_one_param ppf position name v =
       end
 
   | "inline-toplevel" ->
-    Int_arg_helper.parse v
+    Clflags.Int_arg_helper.parse v
       "Bad syntax in OCAMLPARAM for 'inline-toplevel'"
-      inline_toplevel_threshold
+      Clflags.inline_toplevel_threshold
 
-  | "rounds" -> int_option_setter ppf "rounds" simplify_rounds v
+  | "rounds" -> int_option_setter ppf "rounds" Clflags.simplify_rounds v
   | "inline-max-unroll" ->
-    Int_arg_helper.parse v "Bad syntax in OCAMLPARAM for 'inline-max-unroll'"
-      inline_max_unroll
+    Clflags.Int_arg_helper.parse v
+      "Bad syntax in OCAMLPARAM for 'inline-max-unroll'"
+      Clflags.inline_max_unroll
   | "inline-call-cost" ->
-    Int_arg_helper.parse v
+    Clflags.Int_arg_helper.parse v
       "Bad syntax in OCAMLPARAM for 'inline-call-cost'"
-      inline_call_cost
+      Clflags.inline_call_cost
   | "inline-alloc-cost" ->
-    Int_arg_helper.parse v
+    Clflags.Int_arg_helper.parse v
       "Bad syntax in OCAMLPARAM for 'inline-alloc-cost'"
-      inline_alloc_cost
+      Clflags.inline_alloc_cost
   | "inline-prim-cost" ->
-    Int_arg_helper.parse v
+    Clflags.Int_arg_helper.parse v
       "Bad syntax in OCAMLPARAM for 'inline-prim-cost'"
-      inline_prim_cost
+      Clflags.inline_prim_cost
   | "inline-branch-cost" ->
-    Int_arg_helper.parse v
+    Clflags.Int_arg_helper.parse v
       "Bad syntax in OCAMLPARAM for 'inline-branch-cost'"
-      inline_branch_cost
+      Clflags.inline_branch_cost
   | "inline-indirect-cost" ->
-    Int_arg_helper.parse v
+    Clflags.Int_arg_helper.parse v
       "Bad syntax in OCAMLPARAM for 'inline-indirect-cost'"
-      inline_indirect_cost
+      Clflags.inline_indirect_cost
   | "inline-lifting-benefit" ->
-    Int_arg_helper.parse v
+    Clflags.Int_arg_helper.parse v
       "Bad syntax in OCAMLPARAM for 'inline-lifting-benefit'"
-      inline_lifting_benefit
+      Clflags.inline_lifting_benefit
   | "inline-branch-factor" ->
-    Float_arg_helper.parse v
+    Clflags.Float_arg_helper.parse v
       "Bad syntax in OCAMLPARAM for 'inline-branch-factor'"
-      inline_branch_factor
+      Clflags.inline_branch_factor
   | "inline-max-depth" ->
-    Int_arg_helper.parse v
+    Clflags.Int_arg_helper.parse v
       "Bad syntax in OCAMLPARAM for 'inline-max-depth'"
-      inline_max_depth
+      Clflags.inline_max_depth
 
   | "Oclassic" ->
-      set "Oclassic" [ classic_inlining ] v
+      set "Oclassic" [ Clflags.classic_inlining ] v
   | "O2" ->
     if check_bool ppf "O2" v then begin
-      default_simplify_rounds := 2;
-      use_inlining_arguments_set o2_arguments;
-      use_inlining_arguments_set ~round:0 o1_arguments
+      Clflags.default_simplify_rounds := 2;
+      Clflags.use_inlining_arguments_set Clflags.o2_arguments;
+      Clflags.use_inlining_arguments_set ~round:0 Clflags.o1_arguments
     end
 
   | "O3" ->
     if check_bool ppf "O3" v then begin
-      default_simplify_rounds := 3;
-      use_inlining_arguments_set o3_arguments;
-      use_inlining_arguments_set ~round:1 o2_arguments;
-      use_inlining_arguments_set ~round:0 o1_arguments
+      Clflags.default_simplify_rounds := 3;
+      Clflags.use_inlining_arguments_set Clflags.o3_arguments;
+      Clflags.use_inlining_arguments_set ~round:1 Clflags.o2_arguments;
+      Clflags.use_inlining_arguments_set ~round:0 Clflags.o1_arguments
     end
   | "unbox-closures" ->
-      set "unbox-closures" [ unbox_closures ] v
+      set "unbox-closures" [ Clflags.unbox_closures ] v
   | "unbox-closures-factor" ->
-      int_setter ppf "unbox-closures-factor" unbox_closures_factor v
+      int_setter ppf "unbox-closures-factor" Clflags.unbox_closures_factor v
   | "remove-unused-arguments" ->
-      set "remove-unused-arguments" [ remove_unused_arguments ] v
+      set "remove-unused-arguments" [ Clflags.remove_unused_arguments ] v
 
   | "inlining-report" ->
-      if !native_code then
-        set "inlining-report" [ inlining_report ] v
+      if !Clflags.native_code then
+        set "inlining-report" [ Clflags.inlining_report ] v
 
   | "flambda-verbose" ->
-      set "flambda-verbose" [ dump_flambda_verbose ] v
+      set "flambda-verbose" [ Clflags.dump_flambda_verbose ] v
   | "flambda-invariants" ->
-      set "flambda-invariants" [ flambda_invariant_checks ] v
+      set "flambda-invariants" [ Clflags.flambda_invariant_checks ] v
   | "cmm-invariants" ->
-      set "cmm-invariants" [ cmm_invariants ] v
+      set "cmm-invariants" [ Clflags.cmm_invariants ] v
   | "linscan" ->
-      set "linscan" [ use_linscan ] v
-  | "insn-sched" -> set "insn-sched" [ insn_sched ] v
-  | "no-insn-sched" -> clear "insn-sched" [ insn_sched ] v
+      set "linscan" [ Clflags.use_linscan ] v
+  | "insn-sched" -> set "insn-sched" [ Clflags.insn_sched ] v
+  | "no-insn-sched" -> clear "insn-sched" [ Clflags.insn_sched ] v
 
   (* color output *)
   | "color" ->
-      begin match color_reader.parse v with
+      begin match Clflags.color_reader.parse v with
       | None ->
         Printf.ksprintf (print_error ppf)
-          "bad value %s for \"color\", (%s)" v color_reader.usage
-      | Some setting -> color := Some setting
+          "bad value %s for \"color\", (%s)" v Clflags.color_reader.usage
+      | Some setting -> Clflags.color := Some setting
       end
 
   | "error-style" ->
-      begin match error_style_reader.parse v with
+      begin match Clflags.error_style_reader.parse v with
       | None ->
           Printf.ksprintf (print_error ppf)
-            "bad value %s for \"error-style\", (%s)" v error_style_reader.usage
-      | Some setting -> error_style := Some setting
+            "bad value %s for \"error-style\", (%s)"
+              v Clflags.error_style_reader.usage
+      | Some setting -> Clflags.error_style := Some setting
       end
 
   | "intf-suffix" -> Config.interface_suffix := v
@@ -412,7 +416,7 @@ let read_one_param ppf position name v =
       match position with
       | Before_compile _ -> ()
       | Before_link | Before_args ->
-        ccobjs := Misc.rev_split_words v @ !ccobjs
+        Clflags.ccobjs := Misc.rev_split_words v @ !Clflags.ccobjs
     end
 
   | "ccopt"
@@ -437,7 +441,7 @@ let read_one_param ppf position name v =
 
 
   | "cmo" | "cma" ->
-    if not !native_code then
+    if not !Clflags.native_code then
     begin
       match position with
       | Before_link | Before_compile _ ->
@@ -447,7 +451,7 @@ let read_one_param ppf position name v =
     end
 
   | "cmx" | "cmxa" ->
-    if !native_code then
+    if !Clflags.native_code then
     begin
       match position with
       | Before_link | Before_compile _ ->
@@ -457,25 +461,25 @@ let read_one_param ppf position name v =
     end
 
   | "pic" ->
-    if !native_code then
-      set "pic" [ pic_code ] v
+    if !Clflags.native_code then
+      set "pic" [ Clflags.pic_code ] v
 
   | "can-discard" ->
     can_discard := v ::!can_discard
 
   | "timings" | "profile" ->
      let if_on = if name = "timings" then [ `Time ] else Profile.all_columns in
-     profile_columns := if check_bool ppf name v then if_on else []
+     Clflags.profile_columns := if check_bool ppf name v then if_on else []
 
   | "stop-after" ->
     set_compiler_pass ppf v ~name Clflags.stop_after ~filter:(fun _ -> true)
 
   | "save-ir-after" ->
-    if !native_code then begin
+    if !Clflags.native_code then begin
       let filter = Clflags.Compiler_pass.can_save_ir_after in
       match decode_compiler_pass ppf v ~name ~filter with
       | None -> ()
-      | Some pass -> set_save_ir_after pass true
+      | Some pass -> Clflags.set_save_ir_after pass true
     end
   | "dump-into-file" -> Clflags.dump_into_file := true
   | "dump-dir" -> Clflags.dump_dir := Some v
@@ -606,14 +610,14 @@ let readenv ppf position =
   last_objfiles := [];
   apply_config_file ppf position;
   read_OCAMLPARAM ppf position;
-  all_ccopts := !last_ccopts @ !first_ccopts;
-  all_ppx := !last_ppx @ !first_ppx
+  Clflags.all_ccopts := !last_ccopts @ !first_ccopts;
+  Clflags.all_ppx := !last_ppx @ !first_ppx
 
 let get_objfiles ~with_ocamlparam =
   if with_ocamlparam then
-    List.rev (!last_objfiles @ !objfiles @ !first_objfiles)
+    List.rev (!last_objfiles @ !Clflags.objfiles @ !first_objfiles)
   else
-    List.rev !objfiles
+    List.rev !Clflags.objfiles
 
 let has_linker_inputs = ref false
 
@@ -654,45 +658,48 @@ let process_action ctx action =
     readenv ppf (Before_compile name);
     let opref = output_prefix name in
     compile_implementation ~start_from ~source_file:name ~output_prefix:opref;
-    objfiles := (opref ^ ocaml_mod_ext) :: !objfiles
+    Clflags.objfiles := (opref ^ ocaml_mod_ext) :: !Clflags.objfiles
   in
   match action with
   | ProcessImplementation name ->
-      impl ~start_from:Compiler_pass.Parsing name
+      impl ~start_from:Clflags.Compiler_pass.Parsing name
   | ProcessInterface name ->
       readenv ppf (Before_compile name);
       let opref = output_prefix name in
       compile_interface ~source_file:name ~output_prefix:opref;
-      if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
+      if !Clflags.make_package then
+        Clflags.objfiles := (opref ^ ".cmi") :: !Clflags.objfiles
   | ProcessCFile name ->
       readenv ppf (Before_compile name);
       Location.input_name := name;
-      let obj_name = match !output_name with
+      let obj_name = match !Clflags.output_name with
         | None -> c_object_of_filename name
         | Some n -> n
       in
-      if Ccomp.compile_file ?output:!output_name name <> 0
+      if Ccomp.compile_file ?output:!Clflags.output_name name <> 0
       then raise (Exit_with_status 2);
-      ccobjs := obj_name :: !ccobjs
+      Clflags.ccobjs := obj_name :: !Clflags.ccobjs
   | ProcessObjects names ->
-      ccobjs := names @ !ccobjs
+      Clflags.ccobjs := names @ !Clflags.ccobjs
   | ProcessDLLs (suffixed, names) ->
-      dllibs := (List.map (fun n -> (~suffixed, n)) names) @ !dllibs
+      Clflags.dllibs :=
+        (List.map (fun n -> (~suffixed, n)) names) @ !Clflags.dllibs
   | ProcessOtherFile name ->
       if Filename.check_suffix name ocaml_mod_ext
       || Filename.check_suffix name ocaml_lib_ext then
-        objfiles := name :: !objfiles
-      else if Filename.check_suffix name ".cmi" && !make_package then
-        objfiles := name :: !objfiles
+        Clflags.objfiles := name :: !Clflags.objfiles
+      else if Filename.check_suffix name ".cmi" && !Clflags.make_package then
+        Clflags.objfiles := name :: !Clflags.objfiles
       else if Filename.check_suffix name Config.ext_obj
            || Filename.check_suffix name Config.ext_lib then begin
         has_linker_inputs := true;
-        ccobjs := name :: !ccobjs
+        Clflags.ccobjs := name :: !Clflags.ccobjs
       end
-      else if not !native_code && Filename.check_suffix name Config.ext_dll then
-        dllibs := (~suffixed:false, name) :: !dllibs
+      else if not !Clflags.native_code
+           && Filename.check_suffix name Config.ext_dll then
+        Clflags.dllibs := (~suffixed:false, name) :: !Clflags.dllibs
       else
-        match Compiler_pass.of_input_filename name with
+        match Clflags.Compiler_pass.of_input_filename name with
         | Some start_from ->
           Location.input_name := name;
           impl ~start_from name
@@ -719,15 +726,15 @@ let impl filename = defer (ProcessImplementation filename)
 let intf filename = defer (ProcessInterface filename)
 
 let process_deferred_actions env =
-  let final_output_name = !output_name in
+  let final_output_name = !Clflags.output_name in
   (* Make sure the intermediate products don't clash with the final one
      when we're invoked like: ocamlopt -o foo bar.c baz.ml. *)
-  if not !compile_only then output_name := None;
+  if not !Clflags.compile_only then Clflags.output_name := None;
   begin
     match final_output_name with
     | None -> ()
     | Some _output_name ->
-        if !compile_only then begin
+        if !Clflags.compile_only then begin
           if List.length (List.filter (function
               | ProcessCFile _
               | ProcessImplementation _
@@ -736,7 +743,7 @@ let process_deferred_actions env =
             fatal "Options -c -o are incompatible with compiling multiple files"
         end;
   end;
-  if !make_archive then begin
+  if !Clflags.make_archive then begin
     if List.exists (function
         | ProcessOtherFile name -> Filename.check_suffix name ".cmxa"
         | _ -> false) !deferred_actions then
@@ -745,11 +752,11 @@ let process_deferred_actions env =
   else if !deferred_actions = [] then
     fatal "No input files";
   List.iter (process_action env) (List.rev !deferred_actions);
-  output_name := final_output_name;
+  Clflags.output_name := final_output_name;
   stop_early :=
-    !compile_only ||
-    !print_types ||
-    match !stop_after with
+    !Clflags.compile_only ||
+    !Clflags.print_types ||
+    match !Clflags.stop_after with
     | None -> false
     | Some p -> Clflags.Compiler_pass.is_compilation_pass p
 
@@ -765,7 +772,7 @@ let parse_arguments ?(current=ref 0) argv f program =
       Arg.parse_and_expand_argv_dynamic current argv Clflags.arg_spec f "\000"
     with
     | Arg.Bad err_msg ->
-      let usage_msg = create_usage_msg program in
+      let usage_msg = Clflags.create_usage_msg program in
       let err_msg = err_msg
       |> String.split_on_char '\000'
       |> List.hd

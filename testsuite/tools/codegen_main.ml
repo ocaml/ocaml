@@ -13,7 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Clflags
 let write_asm_file = ref false
 
 let compile_file filename =
@@ -60,19 +59,19 @@ let main() =
      "-S", Arg.Set write_asm_file,
        " Output file to filename.s (default is stdout)";
      "-g", Arg.Set Clflags.debug, "";
-     "-dcmm", Arg.Set dump_cmm, "";
-     "-dcse", Arg.Set dump_cse, "";
-     "-dsel", Arg.Set dump_selection, "";
-     "-dlive", Arg.Unit(fun () -> dump_live := true ), "";
-     "-dspill", Arg.Set dump_spill, "";
-     "-dsplit", Arg.Set dump_split, "";
-     "-dinterf", Arg.Set dump_interf, "";
-     "-dprefer", Arg.Set dump_prefer, "";
-     "-dalloc", Arg.Set dump_regalloc, "";
-     "-dreload", Arg.Set dump_reload, "";
-     "-dscheduling", Arg.Set dump_scheduling, "";
-     "-dlinear", Arg.Set dump_linear, "";
-     "-dtimings", Arg.Unit (fun () -> profile_columns := [ `Time ]), "";
+     "-dcmm", Arg.Set Clflags.dump_cmm, "";
+     "-dcse", Arg.Set Clflags.dump_cse, "";
+     "-dsel", Arg.Set Clflags.dump_selection, "";
+     "-dlive", Arg.Unit(fun () -> Clflags.dump_live := true ), "";
+     "-dspill", Arg.Set Clflags.dump_spill, "";
+     "-dsplit", Arg.Set Clflags.dump_split, "";
+     "-dinterf", Arg.Set Clflags.dump_interf, "";
+     "-dprefer", Arg.Set Clflags.dump_prefer, "";
+     "-dalloc", Arg.Set Clflags.dump_regalloc, "";
+     "-dreload", Arg.Set Clflags.dump_reload, "";
+     "-dscheduling", Arg.Set Clflags.dump_scheduling, "";
+     "-dlinear", Arg.Set Clflags.dump_linear, "";
+     "-dtimings", Arg.Unit (fun () -> Clflags.profile_columns := [ `Time ]), "";
     ] compile_file usage
 
 let () =
