@@ -21,7 +21,6 @@
 
 [@@@ocaml.warning "+a-4-9-40-41-42"]
 
-open Config
 open Cmx_format
 
 type error =
@@ -160,8 +159,9 @@ let current_unit_name () =
 let read_unit_info filename =
   let ic = open_in_bin filename in
   try
-    let buffer = really_input_string ic (String.length cmx_magic_number) in
-    if buffer <> cmx_magic_number then begin
+    let buffer =
+      really_input_string ic (String.length Config.cmx_magic_number) in
+    if buffer <> Config.cmx_magic_number then begin
       close_in ic;
       raise(Error(Not_a_unit_info filename))
     end;
@@ -175,8 +175,9 @@ let read_unit_info filename =
 
 let read_library_info filename =
   let ic = open_in_bin filename in
-  let buffer = really_input_string ic (String.length cmxa_magic_number) in
-  if buffer <> cmxa_magic_number then
+  let buffer =
+    really_input_string ic (String.length Config.cmxa_magic_number) in
+  if buffer <> Config.cmxa_magic_number then
     raise(Error(Not_a_unit_info filename));
   let infos = (input_value ic : library_infos) in
   close_in ic;
@@ -364,7 +365,7 @@ let need_stdlib_location () =
 
 let write_unit_info info filename =
   let oc = open_out_bin filename in
-  output_string oc cmx_magic_number;
+  output_string oc Config.cmx_magic_number;
   output_value oc info;
   flush oc;
   let crc = Digest.BLAKE128.file filename in

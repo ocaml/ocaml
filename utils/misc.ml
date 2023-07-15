@@ -1146,16 +1146,15 @@ module Magic_number = struct
     Printf.sprintf "%s%03d" (raw_kind kind) version
 
   let current_raw kind =
-    let open Config in
     match[@warning "+9"] kind with
-      | Exec -> exec_magic_number
-      | Cmi -> cmi_magic_number
-      | Cmo -> cmo_magic_number
-      | Cma -> cma_magic_number
+      | Exec -> Config.exec_magic_number
+      | Cmi -> Config.cmi_magic_number
+      | Cmo -> Config.cmo_magic_number
+      | Cma -> Config.cma_magic_number
       | Cmx config ->
          (* the 'if' guarantees that in the common case
             we return the "trusted" value from Config. *)
-         let reference = cmx_magic_number in
+         let reference = Config.cmx_magic_number in
          if config = native_obj_config then reference
          else
            (* otherwise we stitch together the magic number
@@ -1166,16 +1165,16 @@ module Magic_number = struct
            let len = String.length raw_kind in
            raw_kind ^ String.sub reference len (String.length reference - len)
       | Cmxa config ->
-         let reference = cmxa_magic_number in
+         let reference = Config.cmxa_magic_number in
          if config = native_obj_config then reference
          else
            let raw_kind = raw_kind kind in
            let len = String.length raw_kind in
            raw_kind ^ String.sub reference len (String.length reference - len)
-      | Cmxs -> cmxs_magic_number
-      | Cmt -> cmt_magic_number
-      | Ast_intf -> ast_intf_magic_number
-      | Ast_impl -> ast_impl_magic_number
+      | Cmxs -> Config.cmxs_magic_number
+      | Cmt -> Config.cmt_magic_number
+      | Ast_intf -> Config.ast_intf_magic_number
+      | Ast_impl -> Config.ast_impl_magic_number
 
   (* it would seem more direct to define current_version with the
      correct numbers and current_raw on top of it, but for now we

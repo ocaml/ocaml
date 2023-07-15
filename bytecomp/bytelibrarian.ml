@@ -16,7 +16,6 @@
 (* Build libraries of .cmo files *)
 
 open Misc
-open Config
 open Cmo_format
 
 type error =
@@ -69,8 +68,9 @@ let copy_object_file oc name =
       raise(Error(File_not_found name)) in
   let ic = open_in_bin file_name in
   try
-    let buffer = really_input_string ic (String.length cmo_magic_number) in
-    if buffer = cmo_magic_number then begin
+    let buffer =
+      really_input_string ic (String.length Config.cmo_magic_number) in
+    if buffer = Config.cmo_magic_number then begin
       let compunit_pos = input_binary_int ic in
       seek_in ic compunit_pos;
       let compunit = (input_value ic : compilation_unit) in
@@ -79,7 +79,7 @@ let copy_object_file oc name =
       close_in ic;
       [name,compunit]
     end else
-    if buffer = cma_magic_number then begin
+    if buffer = Config.cma_magic_number then begin
       let toc_pos = input_binary_int ic in
       seek_in ic toc_pos;
       let toc = (input_value ic : library) in
@@ -100,7 +100,7 @@ let create_archive file_list lib_name =
     ~always:(fun () -> close_out outchan)
     ~exceptionally:(fun () -> remove_file lib_name)
     (fun () ->
-       output_string outchan cma_magic_number;
+       output_string outchan Config.cma_magic_number;
        let ofs_pos_toc = pos_out outchan in
        output_binary_int outchan 0;
        let units =

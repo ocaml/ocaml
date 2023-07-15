@@ -18,7 +18,6 @@
 [@@@ocaml.warning "+a-4-9-40-41-42"]
 
 open Format
-open Config
 open Clflags
 open Misc
 open Cmm
@@ -269,14 +268,14 @@ type middle_end =
 
 let asm_filename output_prefix =
     if !keep_asm_file || !Emitaux.binary_backend_available
-    then output_prefix ^ ext_asm
-    else Filename.temp_file "camlasm" ext_asm
+    then output_prefix ^ Config.ext_asm
+    else Filename.temp_file "camlasm" Config.ext_asm
 
 let compile_implementation ?toplevel ~backend ~prefixname ~middle_end
       ~ppf_dump (program : Lambda.program) =
   compile_unit ~output_prefix:prefixname
     ~asm_filename:(asm_filename prefixname) ~keep_asm:!keep_asm_file
-    ~obj_filename:(prefixname ^ ext_obj)
+    ~obj_filename:(prefixname ^ Config.ext_obj)
     (fun () ->
       Ident.Set.iter Compilenv.require_global program.required_globals;
       let clambda_with_constants =
@@ -304,7 +303,7 @@ let compile_implementation_linear target =
   let output_prefix = Unit_info.prefix target in
   compile_unit ~output_prefix
     ~asm_filename:(asm_filename output_prefix) ~keep_asm:!keep_asm_file
-    ~obj_filename:(output_prefix ^ ext_obj)
+    ~obj_filename:(output_prefix ^ Config.ext_obj)
     (fun () ->
       linear_gen_implementation (Unit_info.input_source_file target))
 

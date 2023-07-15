@@ -15,7 +15,6 @@
 
 (* Native toplevel dynamic loading interface *)
 
-open Config
 open Misc
 open Topcommon
 
@@ -59,8 +58,8 @@ let backend = (module Backend : Backend_intf.S)
 
 let load ppf phrase_name program =
   let dll =
-    if !Clflags.keep_asm_file then phrase_name ^ ext_dll
-    else Filename.temp_file ("caml" ^ phrase_name) ext_dll
+    if !Clflags.keep_asm_file then phrase_name ^ Config.ext_dll
+    else Filename.temp_file ("caml" ^ phrase_name) Config.ext_dll
   in
   let filename = Filename.chop_extension dll in
   let middle_end =
@@ -70,8 +69,8 @@ let load ppf phrase_name program =
   Asmgen.compile_implementation ~toplevel:need_symbol
     ~backend ~prefixname:filename
     ~middle_end ~ppf_dump:ppf program;
-  Asmlink.call_linker_shared [filename ^ ext_obj] dll;
-  Sys.remove (filename ^ ext_obj);
+  Asmlink.call_linker_shared [filename ^ Config.ext_obj] dll;
+  Sys.remove (filename ^ Config.ext_obj);
 
   let dll =
     if Filename.is_implicit dll

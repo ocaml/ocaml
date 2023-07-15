@@ -16,7 +16,6 @@
 (* Link a set of .cmx/.o files and produce an executable *)
 
 open Misc
-open Config
 open Cmx_format
 open Compilenv
 
@@ -111,7 +110,7 @@ let runtime_lib () =
     else
       ["-lasmrun_shared"]
   else
-    let libname = "libasmrun" ^ !Clflags.runtime_variant ^ ext_lib in
+    let libname = "libasmrun" ^ !Clflags.runtime_variant ^ Config.ext_lib in
     try
       if !Clflags.nopervasives || not !Clflags.with_runtime then []
       else [ Load_path.find libname ]
@@ -125,9 +124,10 @@ type file =
   | Library of string * library_infos
 
 let object_file_name_of_file = function
-  | Unit (fname, _, _) -> Some (Filename.chop_suffix fname ".cmx" ^ ext_obj)
+  | Unit (fname, _, _) ->
+      Some (Filename.chop_suffix fname ".cmx" ^ Config.ext_obj)
   | Library (fname, infos) ->
-      let obj_file = Filename.chop_suffix fname ".cmxa" ^ ext_lib in
+      let obj_file = Filename.chop_suffix fname ".cmxa" ^ Config.ext_lib in
       (* MSVC doesn't support empty .lib files, and macOS struggles to make
          them (#6550), so there shouldn't be one if the .cmxa contains no
          units. The file_exists check is added to be ultra-defensive for the
@@ -291,9 +291,9 @@ let link_shared ~ppf_dump objfiles output_name =
       (List.rev !Clflags.ccobjs) in
     let startup =
       if !Clflags.keep_startup_file || !Emitaux.binary_backend_available
-      then output_name ^ ".startup" ^ ext_asm
-      else Filename.temp_file "camlstartup" ext_asm in
-    let startup_obj = output_name ^ ".startup" ^ ext_obj in
+      then output_name ^ ".startup" ^ Config.ext_asm
+      else Filename.temp_file "camlstartup" Config.ext_asm in
+    let startup_obj = output_name ^ ".startup" ^ Config.ext_obj in
     Asmgen.compile_unit ~output_prefix:output_name
       ~asm_filename:startup ~keep_asm:!Clflags.keep_startup_file
       ~obj_filename:startup_obj
@@ -314,7 +314,7 @@ let call_linker file_list startup_file output_name =
   let files, ldflags =
     if (not !Clflags.output_c_object) || main_dll || main_obj_runtime then
       files @ (List.rev !Clflags.ccobjs) @ runtime_lib (),
-      native_ldflags ^ " " ^
+      Config.native_ldflags ^ " " ^
       (if !Clflags.nopervasives || (main_obj_runtime && not main_dll)
        then "" else Config.native_c_libraries)
     else
@@ -354,9 +354,9 @@ let link ~ppf_dump objfiles output_name =
                                                  (* put user's opts first *)
     let startup =
       if !Clflags.keep_startup_file || !Emitaux.binary_backend_available
-      then output_name ^ ".startup" ^ ext_asm
-      else Filename.temp_file "camlstartup" ext_asm in
-    let startup_obj = Filename.temp_file "camlstartup" ext_obj in
+      then output_name ^ ".startup" ^ Config.ext_asm
+      else Filename.temp_file "camlstartup" Config.ext_asm in
+    let startup_obj = Filename.temp_file "camlstartup" Config.ext_obj in
     Asmgen.compile_unit ~output_prefix:output_name
       ~asm_filename:startup ~keep_asm:!Clflags.keep_startup_file
       ~obj_filename:startup_obj
