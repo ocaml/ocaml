@@ -1226,6 +1226,8 @@ void caml_compact_heap(caml_domain_state* domain_state,
       cur_pool = next_pool;
     }
 
+    pool_freelist.free = NULL;
+
     caml_plat_unlock(&pool_freelist.lock);
 
     /* We are done, increment our compaction count */
