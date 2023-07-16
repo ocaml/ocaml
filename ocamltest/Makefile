@@ -124,7 +124,7 @@ all: ocamltest$(EXE)
 allopt: ocamltest.opt$(EXE)
 opt.opt: allopt
 
-compdeps_names=ocamlcommon ocamlbytecomp
+compdeps_names=ocamlcommon-private ocamlbytecomp
 compdeps_paths=$(addprefix $(ROOTDIR)/compilerlibs/,$(compdeps_names))
 deps_paths = \
   $(compdeps_paths) $(addprefix $(ocamltest_unix_path)/,$(ocamltest_unix_name))

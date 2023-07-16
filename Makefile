@@ -301,12 +301,12 @@ opt: checknative
 opt.opt: checknative
 	$(MAKE) checkstack
 	$(MAKE) coreall
-	$(MAKE) ocaml
+	$(MAKE) compilerlibs/ocamlcommon.cma ocaml
 	$(MAKE) opt-core
 ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 	$(MAKE) flexlink.opt$(EXE)
 endif
-	$(MAKE) ocamlc.opt
+	$(MAKE) compilerlibs/ocamlcommon.cmxa ocamlc.opt
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) \
 	  $(WITH_OCAMLTEST)
 	$(MAKE) ocamlopt.opt
@@ -349,7 +349,7 @@ endif
 
 .PHONY: all
 all: coreall
-	$(MAKE) ocaml
+	$(MAKE) compilerlibs/ocamlcommon.cma ocaml
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) \
          $(WITH_OCAMLTEST)
 	$(MAKE) othertools
@@ -480,7 +480,7 @@ clean:: partialclean
 
 # The bytecode compiler
 
-ocamlc_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
+ocamlc_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon-private ocamlbytecomp)
 
 ocamlc_MODULES = driver/main
 
@@ -493,7 +493,7 @@ partialclean::
 
 # The native-code compiler
 
-ocamlopt_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamloptcomp)
+ocamlopt_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon-private ocamloptcomp)
 
 ocamlopt_MODULES = driver/optmain
 
@@ -505,7 +505,7 @@ partialclean::
 # The toplevel
 
 ocaml_LIBRARIES = \
-  $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp ocamltoplevel)
+  $(addprefix compilerlibs/,ocamlcommon-private ocamlbytecomp ocamltoplevel)
 
 ocaml_MODULES = toplevel/topstart
 
@@ -610,7 +610,7 @@ cvt_emit_MODULES = tools/cvt_emit
 
 # The "expunge" utility
 
-expunge_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
+expunge_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon-private ocamlbytecomp)
 
 expunge_MODULES = toplevel/expunge
 
@@ -1215,11 +1215,11 @@ partialclean:: partialclean-menhir
 # OCamldoc
 
 .PHONY: ocamldoc
-ocamldoc: ocamlc ocamlyacc ocamllex otherlibraries
+ocamldoc: ocamlc ocamlyacc ocamllex otherlibraries compilerlibs/ocamlcommon.cma
 	$(MAKE) -C ocamldoc all
 
 .PHONY: ocamldoc.opt
-ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
+ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex compilerlibs/ocamlcommon.cmxa
 	$(MAKE) -C ocamldoc opt.opt
 
 # OCamltest
@@ -1266,7 +1266,7 @@ clean::
 
 # The replay debugger
 
-ocamldebug_LIBRARIES = compilerlibs/ocamlcommon \
+ocamldebug_LIBRARIES = compilerlibs/ocamlcommon-private \
   $(addprefix otherlibs/,unix/unix dynlink/dynlink)
 
 # The following dependencies are necessary at the moment, because the
@@ -1354,7 +1354,7 @@ endif
 # Lint @since and @deprecated annotations
 
 lintapidiff_LIBRARIES = \
-  $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp) \
+  $(addprefix compilerlibs/,ocamlcommon-private ocamlbytecomp) \
   otherlibs/str/str
 lintapidiff_MODULES = tools/lintapidiff
 
@@ -1417,7 +1417,8 @@ partialclean::
 
 # The dependency generator
 
-ocamldep_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
+ocamldep_LIBRARIES = \
+  $(addprefix compilerlibs/,ocamlcommon-private ocamlbytecomp)
 ocamldep_MODULES = tools/ocamldep
 
 tools/ocamldep$(EXE): OC_BYTECODE_LINKFLAGS += -compat-32
@@ -1455,12 +1456,13 @@ ocamlmktop_MODULES = \
 
 # Reading cmt files
 
-ocamlcmt_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
+ocamlcmt_LIBRARIES = \
+  $(addprefix compilerlibs/,ocamlcommon-private ocamlbytecomp)
 ocamlcmt_MODULES = tools/ocamlcmt
 
 # The bytecode disassembler
 
-dumpobj_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
+dumpobj_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon-private ocamlbytecomp)
 dumpobj_MODULES = $(addprefix tools/,opnames dumpobj)
 
 make_opcodes = tools/make_opcodes$(EXE)
@@ -1479,29 +1481,29 @@ beforedepend:: $(addprefix tools/,opnames.ml make_opcodes.ml)
 # Display info on compiled files
 
 ocamlobjinfo_LIBRARIES = \
-  $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp ocamlmiddleend)
+  $(addprefix compilerlibs/,ocamlcommon-private ocamlbytecomp ocamlmiddleend)
 ocamlobjinfo_MODULES = tools/objinfo
 
 # Scan object files for required primitives
 
-primreq_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
+primreq_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon-private ocamlbytecomp)
 primreq_MODULES = tools/primreq
 
 # Copy a bytecode executable, stripping debug info
 
 stripdebug_LIBRARIES = \
-  $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
+  $(addprefix compilerlibs/,ocamlcommon-private ocamlbytecomp)
 stripdebug_MODULES = tools/stripdebug
 
 # Compare two bytecode executables
 
-cmpbyt_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp)
+cmpbyt_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon-private ocamlbytecomp)
 cmpbyt_MODULES = tools/cmpbyt
 
 # Scan latex files, and run ocaml code examples
 
 ocamltex_LIBRARIES = \
-  $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp ocamltoplevel) \
+  $(addprefix compilerlibs/,ocamlcommon-private ocamlbytecomp ocamltoplevel) \
   $(addprefix otherlibs/,str/str unix/unix)
 ocamltex_MODULES = tools/ocamltex
 
@@ -1556,7 +1558,7 @@ endif
 # The native toplevel
 
 ocamlnat_LIBRARIES = \
-  compilerlibs/ocamlcommon compilerlibs/ocamloptcomp \
+  compilerlibs/ocamlcommon-private compilerlibs/ocamloptcomp \
   compilerlibs/ocamlbytecomp otherlibs/dynlink/dynlink \
   compilerlibs/ocamltoplevel
 
@@ -1650,6 +1652,11 @@ distclean: clean
 	rm -rf autom4te.cache flexdll-sources $(BYTE_BUILD_TREE) $(OPT_BUILD_TREE)
 	rm -f config.log config.status libtool
 
+COMPILER_LIBS = ocamlcommon ocamlbytecomp ocamlmiddleend ocamltoplevel
+ifeq "$(NATIVE_COMPILER)" "true"
+COMPILER_LIBS += ocamloptcomp
+endif
+
 # Installation
 .PHONY: install
 install:
@@ -1734,7 +1741,7 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	  "$(INSTALL_LIBDIR_PROFILING)"
 endif
 	$(INSTALL_DATA) \
-	  compilerlibs/*.cma compilerlibs/META \
+	  $(addprefix compilerlibs/, $(COMPILER_LIBS:=.cma)) compilerlibs/META \
 	  "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
 	   $(ocamlc_MODULES:=.cmo) $(ocaml_MODULES:=.cmo) \
@@ -1890,7 +1897,8 @@ endif
            middle_end/flambda/base_types/*.cmx \
           "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-	   compilerlibs/*.cmxa compilerlibs/*.$(A) \
+	   $(addprefix compilerlibs/, $(COMPILER_LIBS:=.cmxa)) \
+	   $(addprefix compilerlibs/, $(COMPILER_LIBS:=.$(A))) \
 	   "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
 	   $(ocamlc_MODULES:=.cmx) $(ocamlc_MODULES:=.$(O)) \

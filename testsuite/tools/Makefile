@@ -30,14 +30,14 @@ expect_PROG=$(expect_MAIN)$(EXE)
 expect_DIRS = parsing utils driver typing toplevel
 expect_OCAMLFLAGS = $(addprefix -I $(ROOTDIR)/,$(expect_DIRS))
 expect_LIBS := $(addsuffix .cma,$(addprefix $(COMPILERLIBSDIR)/,\
-  ocamlcommon ocamlbytecomp ocamltoplevel))
+  ocamlcommon-private ocamlbytecomp ocamltoplevel))
 
 codegen_PROG = codegen$(EXE)
 codegen_DIRS = parsing utils typing middle_end bytecomp lambda asmcomp
 codegen_OCAMLFLAGS = $(addprefix -I $(ROOTDIR)/, $(codegen_DIRS)) -w +40 -g
 
 codegen_LIBS = $(addsuffix .cma, $(addprefix $(COMPILERLIBSDIR)/,\
-  ocamlcommon ocamloptcomp))
+  ocamlcommon-private ocamloptcomp))
 
 codegen_CMI_FILES = $(addsuffix .cmi,\
   parsecmmaux parsecmm lexcmm)
