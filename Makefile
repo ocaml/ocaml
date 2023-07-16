@@ -1425,34 +1425,23 @@ tools/ocamldep$(EXE): OC_BYTECODE_LINKFLAGS += -compat-32
 
 # The profiler
 
-ocamlprof_LIBRARIES =
-ocamlprof_MODULES = \
-  config build_path_prefix_map misc identifiable numbers arg_helper \
-  local_store load_path clflags terminfo warnings location longident \
-  docstrings syntaxerr ast_helper camlinternalMenhirLib parser \
-  lexer pprintast parse ocamlprof
+ocamlprof_LIBRARIES = compilerlibs/ocamlcommon-private
+ocamlprof_MODULES = ocamlprof
 
-ocamlcp_ocamloptp_MODULES = \
-  config build_path_prefix_map misc profile warnings identifiable numbers \
-  arg_helper local_store load_path clflags terminfo location ccomp compenv \
-  main_args ocamlcp_common
+ocamlcp_LIBRARIES = compilerlibs/ocamlcommon-private
+ocamlcp_MODULES = ocamlcp_common ocamlcp
 
-ocamlcp_LIBRARIES =
-ocamlcp_MODULES = $(ocamlcp_ocamloptp_MODULES) ocamlcp
-
-ocamloptp_LIBRARIES =
-ocamloptp_MODULES = $(ocamlcp_ocamloptp_MODULES) ocamloptp
+ocamloptp_LIBRARIES = compilerlibs/ocamlcommon-private
+ocamloptp_MODULES = ocamlcp_common ocamloptp
 
 # To help building mixed-mode libraries (OCaml + C)
-ocamlmklib_LIBRARIES =
-ocamlmklib_MODULES = config build_path_prefix_map misc ocamlmklib
+ocamlmklib_LIBRARIES = compilerlibs/ocamlcommon-private
+ocamlmklib_MODULES = ocamlmklib
 
 # To make custom toplevels
 
-ocamlmktop_LIBRARIES =
-ocamlmktop_MODULES = \
-  config build_path_prefix_map misc identifiable numbers arg_helper \
-  local_store load_path clflags profile ccomp ocamlmktop
+ocamlmktop_LIBRARIES = compilerlibs/ocamlcommon-private
+ocamlmktop_MODULES = ocamlmktop
 
 # Reading cmt files
 
