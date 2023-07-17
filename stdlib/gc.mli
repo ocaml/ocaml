@@ -42,7 +42,8 @@ type stat =
 
     heap_chunks : int;
     (** Number of contiguous pieces of memory that make up the major heap.
-        This metrics is currently not available in OCaml 5. *)
+        This metrics is currently not available in OCaml 5: the field value is
+        always [0]. *)
 
     live_words : int;
     (** Number of words of live data in the major heap, including the header
@@ -70,11 +71,13 @@ type stat =
 
     free_blocks : int;
     (** Number of blocks in the free list.
-        This metrics is currently not available in OCaml 5. *)
+        This metrics is currently not available in OCaml 5: the field value is
+        always [0]. *)
 
     largest_free : int;
     (** Size (in words) of the largest block in the free list.
-        This metrics is currently not available in OCaml 5. *)
+        This metrics is currently not available in OCaml 5: the field value
+        is always [0]. *)
 
     fragments : int;
     (** Number of wasted words due to fragmentation.  These are
@@ -89,7 +92,8 @@ type stat =
 
     stack_size: int;
     (** Current size of the stack, in words.
-        This metrics is currently not available in OCaml 5.
+        This metrics is currently not available in OCaml 5: the field value is
+        always [0].
         @since 3.12 *)
 
     forced_major_collections: int;
