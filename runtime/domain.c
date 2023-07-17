@@ -58,6 +58,7 @@ typedef cpuset_t cpu_set_t;
 #include "caml/intext.h"
 #include "caml/major_gc.h"
 #include "caml/minor_gc.h"
+#include "caml/memprof.h"
 #include "caml/misc.h"
 #include "caml/memory.h"
 #include "caml/osdeps.h"
@@ -518,6 +519,7 @@ static int allocate_minor_heap(asize_t wsize) {
    * major slice is scheduled. */
   domain_state->young_trigger = domain_state->young_start
          + (domain_state->young_end - domain_state->young_start) / 2;
+  caml_memprof_renew_minor_sample(domain_state);
   caml_reset_young_limit(domain_state);
 
   check_minor_heap();
@@ -555,7 +557,9 @@ static uintnat fresh_domain_unique_id(void) {
 }
 
 /* must be run on the domain's thread */
-static void domain_create(uintnat initial_minor_heap_wsize) {
+static void domain_create(uintnat initial_minor_heap_wsize,
+                          caml_domain_state *parent)
+{
   dom_internal* d = 0;
   caml_domain_state* domain_state;
   struct interruptor* s;
@@ -583,8 +587,6 @@ static void domain_create(uintnat initial_minor_heap_wsize) {
   CAMLassert(!s->running);
   CAMLassert(!s->interrupt_pending);
 
-  domain_self = d;
-
   /* If the chosen domain slot has not been previously used, allocate a fresh
      domain state. Otherwise, reuse it.
 
@@ -606,6 +608,21 @@ static void domain_create(uintnat initial_minor_heap_wsize) {
     domain_state = d->state;
   }
 
+  s->unique_id = fresh_domain_unique_id();
+  s->running = 1;
+  atomic_fetch_add(&caml_num_domains_running, 1);
+
+  /* Note: until we take d->domain_lock, the domain_state may still be
+   * shared with a domain which is terminating (see
+   * domain_terminate). */
+
+  caml_plat_lock(&d->domain_lock);
+
+  /* Set domain_self if we have successfully allocated the
+   * caml_domain_state. Otherwise domain_self will be NULL and it's up
+   * to the caller to deal with that. */
+
+  domain_self = d;
   caml_state = domain_state;
 
   domain_state->young_limit = 0;
@@ -615,11 +632,12 @@ static void domain_create(uintnat initial_minor_heap_wsize) {
   atomic_store_explicit(&s->interrupt_word, &domain_state->young_limit,
                         memory_order_release);
 
-  s->unique_id = fresh_domain_unique_id();
-  s->running = 1;
-  atomic_fetch_add(&caml_num_domains_running, 1);
-
-  caml_plat_lock(&d->domain_lock);
+  /* Tell memprof system about the new domain before either (a) new
+   * domain can allocate anything or (b) parent domain can go away. */
+  caml_memprof_new_domain(parent, domain_state);
+  if (!domain_state->memprof) {
+    goto init_memprof_failure;
+  }
 
   domain_state->id = d->id;
   domain_state->unique_id = d->interruptor.unique_id;
@@ -730,6 +748,8 @@ init_shared_heap_failure:
   caml_free_minor_tables(domain_state->minor_tables);
   domain_state->minor_tables = NULL;
 alloc_minor_tables_failure:
+  caml_memprof_delete_domain(domain_state);
+init_memprof_failure:
   domain_self = NULL;
 
 
@@ -921,7 +941,7 @@ void caml_init_domains(uintnat minor_heap_wsz) {
     dom->backup_thread_msg = BT_INIT;
   }
 
-  domain_create(minor_heap_wsz);
+  domain_create(minor_heap_wsz, NULL);
   if (!domain_self) caml_fatal_error("Failed to create main domain");
   CAMLassert (domain_self->state->unique_id == 0);
 
@@ -968,7 +988,7 @@ static void free_domain_ml_values(struct domain_ml_values* ml_values)
    parameters returned to the parent by the child.
 */
 struct domain_startup_params {
-  struct interruptor* parent; /* in */
+  dom_internal *parent; /* in */
   enum domain_status status; /* in+out:
                                 parent and child synchronize on this value. */
   struct domain_ml_values* ml_values; /* in */
@@ -1156,20 +1176,25 @@ static void* domain_thread_func(void* v)
   }
 #endif
 
-  domain_create(caml_params->init_minor_heap_wsz);
+  domain_create(caml_params->init_minor_heap_wsz, p->parent->state);
+
+  if (!domain_self) {
+    caml_fatal_error("Failed to create domain");
+  }
+
   /* this domain is now part of the STW participant set */
   p->newdom = domain_self;
 
   /* handshake with the parent domain */
-  caml_plat_lock(&p->parent->lock);
+  caml_plat_lock(&p->parent->interruptor.lock);
   if (domain_self) {
     p->status = Dom_started;
     p->unique_id = domain_self->interruptor.unique_id;
   } else {
     p->status = Dom_failed;
   }
-  caml_plat_broadcast(&p->parent->cond);
-  caml_plat_unlock(&p->parent->lock);
+  caml_plat_broadcast(&p->parent->interruptor.cond);
+  caml_plat_unlock(&p->parent->interruptor.lock);
   /* Cannot access p below here. */
 
   if (domain_self) {
@@ -1228,7 +1253,7 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
   if (caml_debugger_in_use)
     caml_fatal_error("ocamldebug does not support spawning multiple domains");
 #endif
-  p.parent = &domain_self->interruptor;
+  p.parent = domain_self;
   p.status = Dom_starting;
 
   p.ml_values =
@@ -1620,13 +1645,19 @@ void caml_interrupt_all_signal_safe(void)
    races. */
 void caml_reset_young_limit(caml_domain_state * dom_st)
 {
-  CAMLassert ((uintnat)dom_st->young_ptr >= (uintnat)dom_st->young_trigger);
   /* An interrupt might have been queued in the meanwhile; the
      atomic_exchange achieves the proper synchronisation with the
      reads that follow (an atomic_store is not enough). */
-  atomic_exchange(&dom_st->young_limit, (uintnat)dom_st->young_trigger);
-  /* In case of actions that we never delay, interrupt the domain
-     again immediately. */
+  value *trigger = dom_st->young_trigger > dom_st->memprof_young_trigger ?
+          dom_st->young_trigger : dom_st->memprof_young_trigger;
+  CAMLassert ((uintnat)dom_st->young_ptr >
+              (uintnat)dom_st->memprof_young_trigger);
+  CAMLassert ((uintnat)dom_st->young_ptr >
+              (uintnat)dom_st->young_trigger);
+  /* An interrupt might have been queued in the meanwhile; this
+     achieves the proper synchronisation. */
+  atomic_exchange(&dom_st->young_limit, (uintnat)trigger);
+
   dom_internal * d = &all_domains[dom_st->id];
   if (atomic_load_relaxed(&d->interruptor.interrupt_pending)
       || dom_st->requested_minor_gc
@@ -1897,6 +1928,18 @@ static void domain_terminate (void)
     }
     caml_plat_unlock(&all_domains_lock);
   }
+
+  /* domain_state may be re-used by a fresh domain here (now that we
+   * have done remove_from_stw_domains and released the
+   * all_domains_lock). However, domain_create() won't touch it until
+   * it has claimed the domain_lock, so we hang onto that while we are
+   * tearing down the state. */
+
+  /* Delete the domain state from statmemprof after any promotion
+   * (etc) done by this domain: any remaining memprof state will be
+   * handed over to surviving domains. */
+  caml_memprof_delete_domain(domain_state);
+
   /* We can not touch domain_self->interruptor after here
      because it may be reused */
   caml_remove_generational_global_root(&domain_state->dls_root);
