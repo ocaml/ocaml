@@ -378,13 +378,13 @@ struct memprof_profile_s {
 };
 
 /* List of all the non-discarded statmemprof profiles. */
-memprof_profile_t profiles = NULL;
+static memprof_profile_t profiles = NULL;
 
 /* lock controlling access to `profiles` variable */
-caml_plat_mutex profiles_lock = CAML_PLAT_MUTEX_INITIALIZER;
+static caml_plat_mutex profiles_lock = CAML_PLAT_MUTEX_INITIALIZER;
 
 /* The ID of the next profile to be created */
-atomic_uintnat next_profile_id = 0;
+static atomic_uintnat next_profile_id = 0;
 
 /**** Initializing and clearing entries tables ****/
 
