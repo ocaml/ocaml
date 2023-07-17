@@ -107,6 +107,22 @@ type error =
   | Expr_type_clash of
       Errortrace.unification_error * type_forcing_context option
       * Parsetree.expression_desc option
+  | Function_arity_type_clash of
+      { syntactic_arity :  int;
+        type_constraint : type_expr;
+      }
+  (* [Function_arity_type_clash { syntactic_arity = n; type_constraint }] is
+     the type error for the specific case where an n-ary function is constrained
+     at a type with an arity less than n, e.g.:
+     {[
+       type (_, _) eq = Eq : ('a, 'a) eq
+       let bad : type a. ?opt:(a, int -> int) eq -> unit -> a =
+         fun ?opt:(Eq = assert false) () x -> x + 1
+     ]}
+
+     [type_constraint] is the user-written polymorphic type (in this example
+     [?opt:(a, int -> int) eq -> unit -> a]) that causes this type clash.
+  *)
   | Apply_non_function of {
       funct : Typedtree.expression;
       func_ty : type_expr;
@@ -3357,8 +3373,20 @@ and type_expect_
                 newty (Tarrow (Nolabel, newvar (), newvar (), commu_ok)))
           in
           try unify env ty_function exp_type
-          with Unify err ->
-          raise(Error(loc, env, Expr_type_clash (err, None, Some desc)));
+          with Unify _ ->
+            let syntactic_arity =
+              List.length params +
+                (match body with
+                  | Tfunction_body _ -> 0
+                  | Tfunction_cases _ -> 1)
+            in
+            let err =
+              Function_arity_type_clash
+                { syntactic_arity;
+                  type_constraint = exp_type;
+                }
+            in
+            raise (Error (loc, env, err))
       end;
       re
         { exp_desc = Texp_function (params, body);
@@ -6433,6 +6461,29 @@ let report_error ~loc env = function
            fprintf ppf "This expression has type")
         (function ppf ->
            fprintf ppf "but an expression was expected of type");
+  | Function_arity_type_clash {
+      syntactic_arity; type_constraint;
+    } ->
+    (* [syntactic_arity>1] for this error, so "arguments" is always plural. *)
+    Location.errorf ~loc
+      "@[\
+       @[\
+       The syntactic arity of the function doesn't match the type constraint:@ \
+       Syntactic function arity must agree with (i.e., must be less than or @ \
+       equal to) function type arity without using local type equations.\
+       @]@ \
+       @[<2>\
+       This function has %d syntactic arguments, but its type is constrained@ \
+       to %a.\
+       @]@ \
+       @[@{<hint>Hint@}: \
+       consider splitting up the function's syntactic arity by@ \
+       inserting \" -> fun \" after the argument that introduces the local@ \
+       type equation.\
+       @]\
+       @]"
+      syntactic_arity
+      (Style.as_inline_code Printtyp.type_expr) type_constraint
   | Apply_non_function {
       funct; func_ty; res_ty; previous_arg_loc; extra_arg_loc
     } ->

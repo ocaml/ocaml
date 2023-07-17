@@ -45,10 +45,14 @@ let bad : type a. ?opt:(a, int -> int) eq -> unit -> a =
 Line 2, characters 2-67:
 2 |   fun ?opt:((Eq : (a, int -> int) eq) = assert false) () x -> x + 1;;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "?opt:(a, int -> int) eq -> unit -> 'a -> 'b"
-       but an expression was expected of type
-         "?opt:(a, int -> int) eq -> unit -> a"
-       Type "'a -> 'b" is not compatible with type "a"
+Error: The syntactic arity of the function doesn't match the type constraint:
+       Syntactic function arity must agree with (i.e., must be less than or
+       equal to) function type arity without using local type equations.
+       This function has 3 syntactic arguments, but its type is constrained
+         to "?opt:(a, int -> int) eq -> unit -> a".
+       Hint: consider splitting up the function's syntactic arity by
+       inserting " -> fun " after the argument that introduces the local
+       type equation.
 |}];;
 
 (* Workaround 1: no GADT in default argument pattern *)
@@ -108,9 +112,14 @@ Neq
 Line 2, characters 2-49:
 2 |   fun (Eq : (a, int -> int) eq_or_not) x -> x + 1;;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "(a, int -> int) eq_or_not -> 'a -> 'b"
-       but an expression was expected of type "(a, int -> int) eq_or_not -> a"
-       Type "'a -> 'b" is not compatible with type "a"
+Error: The syntactic arity of the function doesn't match the type constraint:
+       Syntactic function arity must agree with (i.e., must be less than or
+       equal to) function type arity without using local type equations.
+       This function has 2 syntactic arguments, but its type is constrained
+         to "(a, int -> int) eq_or_not -> a".
+       Hint: consider splitting up the function's syntactic arity by
+       inserting " -> fun " after the argument that introduces the local
+       type equation.
 |}];;
 
 
@@ -129,9 +138,14 @@ let bad : type a. (a, int -> int) eq lazy_t -> a =
 Line 2, characters 2-26:
 2 |   fun (lazy Eq) x -> x + 1
       ^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This expression has type "(a, int -> int) eq lazy_t -> 'a -> 'b"
-       but an expression was expected of type "(a, int -> int) eq lazy_t -> a"
-       Type "'a -> 'b" is not compatible with type "a"
+Error: The syntactic arity of the function doesn't match the type constraint:
+       Syntactic function arity must agree with (i.e., must be less than or
+       equal to) function type arity without using local type equations.
+       This function has 2 syntactic arguments, but its type is constrained
+         to "(a, int -> int) eq lazy_t -> a".
+       Hint: consider splitting up the function's syntactic arity by
+       inserting " -> fun " after the argument that introduces the local
+       type equation.
 |}];;
 
 
@@ -144,7 +158,12 @@ let spurious : type a. (a, int -> int) eq -> a =
 Line 2, characters 2-15:
 2 |   fun Eq x -> x
       ^^^^^^^^^^^^^
-Error: This expression has type "(a, int -> int) eq -> 'a -> 'b"
-       but an expression was expected of type "(a, int -> int) eq -> a"
-       Type "'a -> 'b" is not compatible with type "a"
+Error: The syntactic arity of the function doesn't match the type constraint:
+       Syntactic function arity must agree with (i.e., must be less than or
+       equal to) function type arity without using local type equations.
+       This function has 2 syntactic arguments, but its type is constrained
+         to "(a, int -> int) eq -> a".
+       Hint: consider splitting up the function's syntactic arity by
+       inserting " -> fun " after the argument that introduces the local
+       type equation.
 |}];;
