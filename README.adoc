@@ -70,7 +70,7 @@ compiler currently runs on the following platforms:
 |                |  Tier 1 (actively maintained)   | Tier 2 (maintained when possible)
 
 | x86 64 bits    | Linux, macOS, Windows, FreeBSD  |  NetBSD, OpenBSD, OmniOS (Solaris)
-| ARM 64 bits    | Linux, macOS                    |  FreeBSD, OpenBSD
+| ARM 64 bits    | Linux, macOS                    |  FreeBSD, OpenBSD, NetBSD
 | Power 64 bits  | Linux                           |
 | RISC-V 64 bits | Linux                           |
 | IBM Z (s390x)  | Linux                           |
