@@ -1073,7 +1073,7 @@ CAMLexport memprof_thread_t caml_memprof_main_thread(caml_domain_state *domain)
 
   /* There should currently be just one thread in this domain */
   CAMLassert(thread);
-  CAMLassert(thread->next = NULL);
+  CAMLassert(thread->next == NULL);
   return thread;
 }
 
