@@ -51,7 +51,7 @@ Error: The syntactic arity of the function doesn't match the type constraint:
        This function has 3 syntactic arguments, but its type is constrained
          to "?opt:(a, int -> int) eq -> unit -> a".
        Hint: consider splitting up the function's syntactic arity by
-       inserting " -> fun " after the argument that introduces the local
+       inserting "-> fun" after the argument that introduces the local
        type equation.
 |}];;
 
@@ -118,7 +118,7 @@ Error: The syntactic arity of the function doesn't match the type constraint:
        This function has 2 syntactic arguments, but its type is constrained
          to "(a, int -> int) eq_or_not -> a".
        Hint: consider splitting up the function's syntactic arity by
-       inserting " -> fun " after the argument that introduces the local
+       inserting "-> fun" after the argument that introduces the local
        type equation.
 |}];;
 
@@ -144,7 +144,7 @@ Error: The syntactic arity of the function doesn't match the type constraint:
        This function has 2 syntactic arguments, but its type is constrained
          to "(a, int -> int) eq lazy_t -> a".
        Hint: consider splitting up the function's syntactic arity by
-       inserting " -> fun " after the argument that introduces the local
+       inserting "-> fun" after the argument that introduces the local
        type equation.
 |}];;
 
@@ -164,6 +164,6 @@ Error: The syntactic arity of the function doesn't match the type constraint:
        This function has 2 syntactic arguments, but its type is constrained
          to "(a, int -> int) eq -> a".
        Hint: consider splitting up the function's syntactic arity by
-       inserting " -> fun " after the argument that introduces the local
+       inserting "-> fun" after the argument that introduces the local
        type equation.
 |}];;

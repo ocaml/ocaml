@@ -6478,12 +6478,13 @@ let report_error ~loc env = function
        @]@ \
        @[@{<hint>Hint@}: \
        consider splitting up the function's syntactic arity by@ \
-       inserting \" -> fun \" after the argument that introduces the local@ \
+       inserting %a after the argument that introduces the local@ \
        type equation.\
        @]\
        @]"
       syntactic_arity
       (Style.as_inline_code Printtyp.type_expr) type_constraint
+      Style.inline_code "-> fun"
   | Apply_non_function {
       funct; func_ty; res_ty; previous_arg_loc; extra_arg_loc
     } ->
