@@ -432,7 +432,7 @@ and binding_op =
     pbop_loc : Location.t;
   }
 
-and function_param =
+and function_param_desc =
   | Pparam_val of arg_label * expression option * pattern
   (** [Pparam_val (lbl, exp0, P)] represents the parameter:
       - [P]
@@ -451,17 +451,18 @@ and function_param =
       Note: If [E0] is provided, only
       {{!Asttypes.arg_label.Optional}[Optional]} is allowed.
   *)
-  | Pparam_newtype of string loc * Location.t
-  (** [Pparam_newtype (x, loc)] represents the parameter [(type x)].
-      [x] carries the location of the identifier, whereas [loc] is
-      the location of the [(type x)] as a whole.
+  | Pparam_newtype of string loc
+  (** [Pparam_newtype x] represents the parameter [(type x)].
+      [x] carries the location of the identifier, whereas the [pparam_loc]
+      on the enclosing [function_param] node is the location of the [(type x)]
+      as a whole.
 
       Multiple parameters [(type a b c)] are represented as multiple
       [Pparam_newtype] nodes, let's say:
 
-      {[ [ Pparam_newtype (a, loc1);
-           Pparam_newtype (b, loc2);
-           Pparam_newtype (c, loc3);
+      {[ [ { pparam_kind = Pparam_newtype a; pparam_loc = loc1 };
+           { pparam_kind = Pparam_newtype b; pparam_loc = loc2 };
+           { pparam_kind = Pparam_newtype c; pparam_loc = loc3 };
          ]
       ]}
 
@@ -470,6 +471,11 @@ and function_param =
       ghost locations. The locations on [a], [b], [c], correspond to the
       variables [a], [b], and [c] in the source code.
   *)
+
+and function_param =
+  { pparam_loc : Location.t;
+    pparam_desc : function_param_desc;
+  }
 
 and function_body =
   | Pfunction_body of expression

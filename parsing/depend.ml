@@ -275,7 +275,7 @@ let rec add_expr bv exp =
   | Pexp_unreachable -> ()
 
 and add_function_param bv param =
-  match param with
+  match param.pparam_desc with
   | Pparam_val (_, opte, pat) ->
       add_opt add_expr bv opte;
       add_pattern bv pat

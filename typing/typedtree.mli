@@ -312,6 +312,10 @@ and function_param =
           parameter. The newtypes that come before the first parameter are
           placed as exp_extras on the Texp_function node. This is just used in
           {!Untypeast}. *)
+    fp_loc: Location.t;
+      (** [fp_loc] is the location of the entire value parameter, not including
+          the [fp_newtypes].
+      *)
   }
 
 and function_param_kind =

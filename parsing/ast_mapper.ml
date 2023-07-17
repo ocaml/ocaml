@@ -392,15 +392,19 @@ end
 module E = struct
   (* Value expressions for the core language *)
 
-  let map_function_param sub param =
-    match param with
-    | Pparam_val (lab, def, p) ->
-        Pparam_val
-          (lab,
-           map_opt (sub.expr sub) def,
-           sub.pat sub p)
-    | Pparam_newtype (ty, loc) ->
-        Pparam_newtype (map_loc sub ty, sub.location sub loc)
+  let map_function_param sub { pparam_loc = loc; pparam_desc = desc } =
+    let loc = sub.location sub loc in
+    let desc =
+      match desc with
+      | Pparam_val (lab, def, p) ->
+          Pparam_val
+            (lab,
+             map_opt (sub.expr sub) def,
+             sub.pat sub p)
+      | Pparam_newtype ty ->
+          Pparam_newtype (map_loc sub ty)
+    in
+    { pparam_loc = loc; pparam_desc = desc }
 
   let map_function_body sub body =
     match body with

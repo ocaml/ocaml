@@ -273,7 +273,11 @@ let make_method loc cl_num expr =
     Pat.alias ~loc (Pat.var ~loc (mkid "self-*")) (mkid ("self-" ^ cl_num))
   in
   Exp.function_ ~loc:expr.pexp_loc
-    [ Pparam_val (Nolabel, None, pat) ] None (Pfunction_body expr)
+    [ { pparam_desc = Pparam_val (Nolabel, None, pat);
+        pparam_loc = pat.ppat_loc;
+      }
+    ]
+    None (Pfunction_body expr)
 
 (*******************************)
 
