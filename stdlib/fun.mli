@@ -20,24 +20,42 @@
 (** {1:combinators Combinators} *)
 
 external id : 'a -> 'a = "%identity"
-(** [id] is the identity function. For any argument [x], [id x] is [x]. *)
+(** [id] is the identity function. For any argument [x], [id x] is [x].
+
+    example:
+    [List.init 3 id] is [[0; 1; 2]] *)
 
 val const : 'a -> (_ -> 'a)
 (** [const c] is a function that always returns the value [c]. For any
-    argument [x], [(const c) x] is [c]. *)
+    argument [x], [(const c) x] is [c].
+
+    example:
+    [List.init 3 (const 0)] is [[0; 0; 0]]
+
+    One important difference between [const x] and [fun _ -> x] in the above
+    example is that [x] is evaluated only once, not three times. *)
 
 val flip : ('a -> 'b -> 'c) -> ('b -> 'a -> 'c)
 (** [flip f] reverses the argument order of the binary function
-    [f]. For any arguments [x] and [y], [(flip f) x y] is [f y x]. *)
+    [f]. For any arguments [x] and [y], [(flip f) x y] is [f y x].
+
+    example:
+    [List.map (flip (-) 2) [4; 6; 8]] is [[2; 4; 6]] *)
 
 val on : ('a -> 'b) -> (('b -> 'b -> 'c) -> ('a -> 'a -> 'c))
 (** [on f] is a function that takes binary function and adjusts its operands on
     the unary function [f].
-    For any arguments [x] and [y], [(on f) op x y] is [op (f x) (f y)]. *)
+    For any arguments [x] and [y], [(on f) op x y] is [op (f x) (f y)].
+
+    example:
+    [List.sort (on String.length compare) ["OCaml"; "hi"]] is [["hi"; "OCaml"]] *)
 
 val negate : ('a -> bool) -> ('a -> bool)
 (** [negate p] is the negation of the predicate function [p]. For any
-    argument [x], [(negate p) x] is [not (p x)]. *)
+    argument [x], [(negate p) x] is [not (p x)].
+
+    example:
+    [Fun.negate List.is_empty []] is [false] *)
 
 (** {1:exception Exception handling} *)
 
