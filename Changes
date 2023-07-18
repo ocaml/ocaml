@@ -23,6 +23,11 @@ OCaml 5.0 maintenance version
 - #11590: Allow installing to a destination path containing spaces.
   (Élie Brami, review by Sébastien Hinderer and David Allsopp)
 
+- #12372: Pass option -no-execute-only to the linker for OpenBSD >= 7.3
+  so that code sections remain readable, as needed for closure marshaling.
+  (Xavier Leroy and Anil Madhavapeddy, review by Anil Madhavapeddy and
+  Sébastien Hinderer)
+
 ### Bug fixes:
 
 - #13019: Remove linking instructions for the Unix library from threads.cma
