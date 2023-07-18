@@ -15225,6 +15225,12 @@ esac ;; #(
   *) :
     mkdll_flags='-shared' ;;
 esac
+       case $host in #(
+  *-*-openbsd7.[3-9]|*-*-openbsd[89].*) :
+    mkdll_flags="${mkdll_flags} -Wl,--no-execute-only" ;; #(
+  *) :
+     ;;
+esac
       oc_ldflags="$oc_ldflags -Wl,-E"
       rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
@@ -15245,6 +15251,17 @@ then :
   mkmaindll_exp="$mkdll_exp"
   mkmaindll="$mkdll"
 fi
+
+# Make sure code sections in OCaml-generated executables are readable
+# (required for marshaling of function closures)
+
+case $host in #(
+  *-*-openbsd7.[3-9]|*-*-openbsd[89].*) :
+    oc_ldflags="$oc_ldflags -Wl,--no-execute-only"
+     natdynlinkopts="$natdynlinkopts -Wl,--no-execute-only" ;; #(
+  *) :
+     ;;
+esac
 
 # Configure native dynlink
 

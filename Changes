@@ -959,6 +959,11 @@ Some of those changes will benefit all OCaml packages.
   with ZSTD support.
   (David Allsopp, review by Sébastien Hinderer)
 
+- #12372: Pass option -no-execute-only to the linker for OpenBSD >= 7.3
+  so that code sections remain readable, as needed for closure marshaling.
+  (Xavier Leroy and Anil Madhavapeddy, review by Anil Madhavapeddy and
+  Sébastien Hinderer)
+
 ### Bug fixes:
 
 - #12062: fix runtime events consumer: when events are dropped they shouldn't be
