@@ -244,10 +244,15 @@ val execvpe : prog:string -> args:string array -> env:string array -> 'a
 
 val fork : unit -> int
 (** Fork a new process. The returned integer is 0 for the child
-   process, the pid of the child process for the parent process.
+   process, the pid of the child process for the parent process. It
+   fails if the OCaml process is multi-core (any domain has been
+   spawned). In addition, if any thread from the Thread module has
+   been spawned, then the child process might be in a corrupted state.
 
-   @raise Invalid_argument on Windows. Use {!create_process} or threads
-   instead. *)
+   @raise Invalid_argument on Windows. Use {!create_process} or
+   threads instead.
+
+   @raise Failure if any domain has been spawned. *)
 
 val wait : unit -> int * process_status
 (** Wait until one of the children processes die, and return its pid

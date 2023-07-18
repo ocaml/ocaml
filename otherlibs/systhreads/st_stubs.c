@@ -161,30 +161,35 @@ static void caml_thread_scan_roots(
   scanning_action action, scanning_action_flags fflags, void *fdata,
   caml_domain_state *domain_state)
 {
-  caml_thread_t th;
+  caml_thread_t active, th;
 
-  th = Active_thread;
+  active = th = thread_table[domain_state->id].active_thread;
 
-  /* GC could be triggered before [Active_thread] is initialized */
-  if (th != NULL) {
+  /* The GC could be triggered before [active_thread] is initialized,
+     or after [caml_thread_domain_stop_hook] has been called; in this
+     case do nothing. */
+  if (active != NULL) {
     do {
       (*action)(fdata, th->descr, &th->descr);
       (*action)(fdata, th->backtrace_last_exn, &th->backtrace_last_exn);
-      if (th != Active_thread) {
+      /* Don't rescan the stack of the current thread, it was done already */
+      if (th != active) {
         if (th->current_stack != NULL)
           caml_do_local_roots(action, fflags, fdata,
                               th->local_roots, th->current_stack, th->gc_regs);
       }
       th = th->next;
-    } while (th != Active_thread);
+    } while (th != active);
+  }
 
-  };
-
+  /* Hook */
   if (prev_scan_roots_hook != NULL)
     (*prev_scan_roots_hook)(action, fflags, fdata, domain_state);
 
   return;
 }
+
+/* Saving and restoring runtime state in this_thread */
 
 static void save_runtime_state(void)
 {
@@ -364,6 +369,20 @@ static void caml_thread_remove_and_free(caml_thread_t th)
 
 static void caml_thread_reinitialize(void)
 {
+  /* caml_thread_reinitialize is called as part of the
+     caml_atfork_hook, and therefore this function is executed right
+     after a fork.
+
+     Note: "If a multi-threaded process calls fork() [...] the child
+     process may only execute async-signal-safe operations until such
+     time as one of the exec functions is called." (POSIX fork())
+
+     Keeping OCaml+threads running after a fork is best-effort, and
+     relies on having a single domain whose domain lock ensures some
+     consistency of state. (If there are other C threads running we
+     are hopeless.)
+  */
+
   caml_thread_t th, next;
 
   th = Active_thread->next;
@@ -382,8 +401,15 @@ static void caml_thread_reinitialize(void)
      the effective owner of the lock. So there is no need to run
      st_masterlock_acquire (busy = 1) */
   st_masterlock *m = Thread_lock(Caml_state->id);
-  m->init = 0; /* force initialization */
-  st_masterlock_init(m);
+  m->init = 0; /* force reinitialization */
+  /* Note: initializing an already-initialized mutex and cond variable
+     is UB (especially mutexes that are locked). This is best
+     effort. */
+  if (st_masterlock_init(m) != 0)
+    caml_fatal_error("Unix.fork: failed to reinitialize master lock");
+  /* FIXME: The same should be done (or not) for IO mutexes (as in the
+     pre-multicore world). However there they might be locked by
+     someone else, and we are probably in an inconsistent state. */
 }
 
 CAMLprim value caml_thread_join(value th);
@@ -415,6 +441,9 @@ static void caml_thread_domain_stop_hook(void) {
   };
 }
 
+/* FIXME: this should return an encoded exception for use in
+   domain_thread_func, but the latter is not ready to handle it
+   yet. */
 static void caml_thread_domain_initialize_hook(void)
 {
 
@@ -423,7 +452,8 @@ static void caml_thread_domain_initialize_hook(void)
   /* OS-specific initialization */
   st_initialize();
 
-  st_masterlock_init(Thread_lock(Caml_state->id));
+  int ret = st_masterlock_init(Thread_lock(Caml_state->id));
+  sync_check_error(ret, "caml_thread_domain_initialize_hook");
 
   new_thread =
     (caml_thread_t) caml_stat_alloc(sizeof(struct caml_thread_struct));
@@ -490,6 +520,10 @@ CAMLprim value caml_thread_initialize(value unit)
   return Val_unit;
 }
 
+/* Cleanup the thread machinery when the runtime is shut down. Joining the tick
+   thread take 25ms on average / 50ms in the worst case, so we don't do it on
+   program exit. (FIXME: not implemented in OCaml 5 yet) */
+
 CAMLprim value caml_thread_cleanup(value unit)
 {
   if (Tick_thread_running){
@@ -513,7 +547,7 @@ static void caml_thread_stop(void)
   /* The main domain thread does not go through [caml_thread_stop]. There is
      always one more thread in the chain at this point in time. */
   CAMLassert(Active_thread->next != Active_thread);
-
+  /* Signal that the thread has terminated */
   caml_threadstatus_terminate(Terminated(Active_thread->descr));
 
   /* The following also sets Active_thread to a sane value in case the
@@ -580,8 +614,22 @@ static int create_tick_thread(void)
 CAMLprim value caml_thread_new(value clos)
 {
   CAMLparam1(clos);
-  caml_thread_t th;
   st_retcode err;
+
+#ifndef NATIVE_CODE
+  if (caml_debugger_in_use)
+    caml_fatal_error("ocamldebug does not support multithreaded programs");
+#endif
+
+  /* Create the tick thread if not already done.
+     Because of PR#4666, we start the tick thread late, only when we create
+     the first additional thread in the current process */
+  if (! Tick_thread_running) {
+    err = create_tick_thread();
+    sync_check_error(err, "Thread.create");
+    Tick_thread_running = 1;
+  }
+
 #ifdef POSIX_SIGNALS
   sigset_t mask, old_mask;
 
@@ -589,12 +637,8 @@ CAMLprim value caml_thread_new(value clos)
   pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
 #endif
 
-#ifndef NATIVE_CODE
-  if (caml_debugger_in_use)
-    caml_fatal_error("ocamldebug does not support multithreaded programs");
-#endif
   /* Create a thread info block */
-  th = caml_thread_new_info();
+  caml_thread_t th = caml_thread_new_info();
 
   if (th == NULL)
     caml_raise_out_of_memory();
@@ -624,11 +668,6 @@ CAMLprim value caml_thread_new(value clos)
     sync_check_error(err, "Thread.create");
   }
 
-  if (! Tick_thread_running) {
-    err = create_tick_thread();
-    sync_check_error(err, "Thread.create");
-    Tick_thread_running = 1;
-  }
   CAMLreturn(th->descr);
 }
 
@@ -655,16 +694,11 @@ CAMLexport int caml_c_thread_register(void)
     return 0;
   }
   /* Add thread info block to the list of threads */
-  if (Active_thread == NULL) {
-    th->next = th;
-    th->prev = th;
-    Active_thread = th;
-  } else {
-    th->next = Active_thread->next;
-    th->prev = Active_thread;
-    Active_thread->next->prev = th;
-    Active_thread->next = th;
-  }
+  CAMLassert(Active_thread != NULL);
+  th->next = Active_thread->next;
+  th->prev = Active_thread;
+  Active_thread->next->prev = th;
+  Active_thread->next = th;
   /* Associate the thread descriptor with the thread */
   st_tls_set(caml_thread_key, (void *) th);
   /* Allocate the thread descriptor on the heap */
