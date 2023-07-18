@@ -157,6 +157,7 @@ type error =
   | Function_arity_type_clash of
       { syntactic_arity :  int;
         type_constraint : type_expr;
+        trace : Errortrace.unification_error;
       }
   | Apply_non_function of {
       funct : Typedtree.expression;

@@ -110,10 +110,11 @@ type error =
   | Function_arity_type_clash of
       { syntactic_arity :  int;
         type_constraint : type_expr;
+        trace : Errortrace.unification_error;
       }
-  (* [Function_arity_type_clash { syntactic_arity = n; type_constraint }] is
-     the type error for the specific case where an n-ary function is constrained
-     at a type with an arity less than n, e.g.:
+  (* [Function_arity_type_clash { syntactic_arity = n; type_constraint; trace }]
+     is the type error for the specific case where an n-ary function is
+     constrained at a type with an arity less than n, e.g.:
      {[
        type (_, _) eq = Eq : ('a, 'a) eq
        let bad : type a. ?opt:(a, int -> int) eq -> unit -> a =
@@ -121,7 +122,8 @@ type error =
      ]}
 
      [type_constraint] is the user-written polymorphic type (in this example
-     [?opt:(a, int -> int) eq -> unit -> a]) that causes this type clash.
+     [?opt:(a, int -> int) eq -> unit -> a]) that causes this type clash, and
+     [trace] is the unification error that signaled the issue.
   *)
   | Apply_non_function of {
       funct : Typedtree.expression;
@@ -3373,7 +3375,7 @@ and type_expect_
                 newty (Tarrow (Nolabel, newvar (), newvar (), commu_ok)))
           in
           try unify env ty_function exp_type
-          with Unify _ ->
+          with Unify trace ->
             let syntactic_arity =
               List.length params +
                 (match body with
@@ -3384,6 +3386,7 @@ and type_expect_
               Function_arity_type_clash
                 { syntactic_arity;
                   type_constraint = exp_type;
+                  trace;
                 }
             in
             raise (Error (loc, env, err))
@@ -6462,29 +6465,45 @@ let report_error ~loc env = function
         (function ppf ->
            fprintf ppf "but an expression was expected of type");
   | Function_arity_type_clash {
-      syntactic_arity; type_constraint;
+      syntactic_arity; type_constraint; trace = { trace };
     } ->
+    (* The last diff's expected type will be the locally-abstract type
+       that the GADT pattern introduced an equation on.
+    *)
+    let type_with_local_equation =
+      let last_diff =
+        List.find_map
+          (function Errortrace.Diff diff -> Some diff | _ -> None)
+          (List.rev trace)
+      in
+      match last_diff with
+      | None -> None
+      | Some diff -> Some diff.expected.ty
+    in
     (* [syntactic_arity>1] for this error, so "arguments" is always plural. *)
     Location.errorf ~loc
       "@[\
        @[\
        The syntactic arity of the function doesn't match the type constraint:@ \
-       Syntactic function arity must agree with (i.e., must be less than or @ \
-       equal to) function type arity without using local type equations.\
-       @]@ \
        @[<2>\
-       This function has %d syntactic arguments, but its type is constrained@ \
-       to %a.\
+       This function has %d syntactic arguments, but its type is constrained \
+       to@ %a.\
        @]@ \
-       @[@{<hint>Hint@}: \
-       consider splitting up the function's syntactic arity by@ \
-       inserting %a after the argument that introduces the local@ \
-       type equation.\
-       @]\
+       @]@ \
+       @[\
+       @[<2>@{<hint>Hint@}: \
+       consider splitting the function definition into@ %a@ \
+       where %a is the pattern with the GADT constructor that@ \
+       introduces the local type equation%t.\
        @]"
       syntactic_arity
       (Style.as_inline_code Printtyp.type_expr) type_constraint
-      Style.inline_code "-> fun"
+      Style.inline_code "fun ... gadt_pat -> fun ..."
+      Style.inline_code "gadt_pat"
+      (fun ppf ->
+         Option.iter
+           (fprintf ppf " on %a" (Style.as_inline_code Printtyp.type_expr))
+           type_with_local_equation)
   | Apply_non_function {
       funct; func_ty; res_ty; previous_arg_loc; extra_arg_loc
     } ->
