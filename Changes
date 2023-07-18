@@ -1,9 +1,9 @@
 OCaml 4.14 maintenance version
-------------------------------
 
 ### Runtime system:
 
-- #11764, #12577: Add prototypes to old-style C function definitions and declarations.
+- #11764, #12577: Add prototypes to old-style C function definitions
+   and declarations.
   (Antonin Décimo, review by Xavier Leroy and Nick Barnes)
 
 - #11763, #11759, #11861, #12509, #12577: Use strict prototypes on primitives.
@@ -14,6 +14,11 @@ OCaml 4.14 maintenance version
 
 - #11590: Allow installing to a destination path containing spaces.
   (Élie Brami, review by Sébastien Hinderer and David Allsopp)
+
+- #12372: Pass option -no-execute-only to the linker for OpenBSD >= 7.3
+  so that code sections remain readable, as needed for closure marshaling.
+  (Xavier Leroy and Anil Madhavapeddy, review by Anil Madhavapeddy and
+  Sébastien Hinderer)
 
 ### Bug fixes:
 
