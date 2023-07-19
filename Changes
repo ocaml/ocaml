@@ -182,7 +182,7 @@ Working version
   in Typecore in favor of local mutable state.
   (Nick Roberts, review by Takafumi Saikawa)
 
-- #12236: Use syntax as the sole determiner of function arity
+- #12236, #12386: Use syntax as the sole determiner of function arity
   This changes function arity to be based solely on the source program's
   parsetree. Previously, the heuristic for arity had more subtle heuristics
   that involved type information about patterns.  Function arity is important
