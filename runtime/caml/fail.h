@@ -75,6 +75,7 @@ int caml_is_special_exception(value exn);
 
 /* from runtime/sync.c */
 CAMLextern void caml_check_error(int err, char * msg);
+CAMLextern value caml_check_error_exn(int err, char * msg);
 
 #endif /* CAML_INTERNALS */
 

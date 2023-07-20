@@ -31,8 +31,15 @@
 
 CAMLexport void caml_check_error(int retcode, char * msg)
 {
-  return sync_check_error(retcode, msg);
+  value res = sync_check_error_exn(retcode, msg);
+  if (Is_exception_result(res)) caml_raise(Extract_exception(res));
 }
+
+CAMLexport value caml_check_error_exn(int retcode, char * msg)
+{
+  return sync_check_error_exn(retcode, msg);
+}
+
 
 /* Mutex operations */
 
