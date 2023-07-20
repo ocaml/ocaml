@@ -51,8 +51,6 @@
 #include "caml/sys.h"
 #include "caml/memprof.h"
 
-#include "../../runtime/sync_posix.h"
-
 /* "caml/threads.h" is *not* included since it contains the _external_
    declarations for the caml_c_thread_register and caml_c_thread_unregister
    functions. */
@@ -494,7 +492,7 @@ static void caml_thread_domain_initialize_hook(void)
   st_initialize();
 
   int ret = st_masterlock_init(Thread_lock(Caml_state->id));
-  sync_check_error(ret, "caml_thread_domain_initialize_hook");
+  caml_check_error(ret, "caml_thread_domain_initialize_hook");
 
   new_thread =
     (caml_thread_t) caml_stat_alloc(sizeof(struct caml_thread_struct));
@@ -678,7 +676,7 @@ CAMLprim value caml_thread_new(value clos)
      Because of PR#4666, we start the tick thread late, only when we create
      the first additional thread in the current process */
   st_retcode err = create_tick_thread();
-  sync_check_error(err, "Thread.create");
+  caml_check_error(err, "Thread.create");
 
   /* Create a thread info block */
   caml_thread_t th = thread_alloc_and_add();
@@ -690,7 +688,7 @@ CAMLprim value caml_thread_new(value clos)
   if (err != 0) {
     /* Creation failed, remove thread info block from list of threads */
     caml_thread_remove_and_free(th);
-    sync_check_error(err, "Thread.create");
+    caml_check_error(err, "Thread.create");
   }
 
   CAMLreturn(th->descr);
@@ -818,7 +816,7 @@ CAMLprim value caml_thread_yield(value unit)
 CAMLprim value caml_thread_join(value th)
 {
   st_retcode rc = caml_threadstatus_wait(Terminated(th));
-  sync_check_error(rc, "Thread.join");
+  caml_check_error(rc, "Thread.join");
   return Val_unit;
 }
 
@@ -853,7 +851,7 @@ static value caml_threadstatus_new (void)
 {
   st_event ts = NULL;           /* suppress warning */
   value wrapper;
-  sync_check_error(st_event_create(&ts), "Thread.create");
+  caml_check_error(st_event_create(&ts), "Thread.create");
   wrapper = caml_alloc_custom(&caml_threadstatus_ops,
                               sizeof(st_event *),
                               0, 1);
