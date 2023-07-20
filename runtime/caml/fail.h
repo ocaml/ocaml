@@ -74,7 +74,13 @@ struct caml_exception_context {
 int caml_is_special_exception(value exn);
 
 /* in runtime/sync_posix.h */
-CAMLextern void caml_check_error(int err, char * msg);
+CAMLextern value caml_check_error_exn(int err, char * msg);
+
+Caml_inline value caml_raise_if_exception (value val);
+Caml_inline void caml_check_error(int err, char * msg)
+{
+  caml_raise_if_exception(caml_check_error_exn(err, msg));
+}
 
 #endif /* CAML_INTERNALS */
 
