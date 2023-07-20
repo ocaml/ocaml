@@ -2,7 +2,7 @@
  not-msvc; (* FIXME: currently flaky on clang-cl 64 bits *)
  include runtime_events;
  include unix;
- set OCAMLRUNPARAM = "e=6";
+ ocamlrunparam += ",e=6";
  hasunix;
  {
    native;
