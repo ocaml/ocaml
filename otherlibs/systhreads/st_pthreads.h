@@ -123,6 +123,16 @@ static int st_masterlock_init(st_masterlock * m)
   return rc;
 }
 
+static void st_masterlock_destroy(st_masterlock * m)
+{
+  int rc;
+  rc = pthread_cond_destroy(&m->is_free);
+  CAMLassert(!rc);
+  rc = pthread_mutex_destroy(&m->lock);
+  CAMLassert(!rc);
+  (void)rc;
+}
+
 static uintnat st_masterlock_waiters(st_masterlock * m)
 {
   return atomic_load_acquire(&m->waiters);
