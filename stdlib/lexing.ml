@@ -144,9 +144,28 @@ let zero_pos = {
   pos_cnum = 0;
 }
 
+(* We use an initial lexing buffer of 256KiB, to avoid having to throw
+   any input away for the most common cases of human-written source
+   code files. At the time we chose this constant, the largest
+   human-written source file in the compiler distribution was
+   typing/typecore.ml at 246,316 bytes.
+
+   Keeping more data in the lexing buffer has the advantage of making
+   source reprinting on compiler errors more reliable -- it avoids the
+   fallback of having to re-open the source file, which may produce
+   wrong results in some cases, see the Location.lines_around_*
+   functions and #12238.
+
+   The buffer and refill sizes we chose are comparable to the buffer
+   sizes for input and output channels (64KiB at the time of writing).
+*)
+let initial_buffer_length, refill_size =
+  let kibi = 1 lsl 10 in
+  256 * kibi, 64 * kibi
+
 let from_function ?(with_positions = true) f =
-  { refill_buff = lex_refill f (Bytes.create 512);
-    lex_buffer = Bytes.create 1024;
+  { refill_buff = lex_refill f (Bytes.create refill_size);
+    lex_buffer = Bytes.create initial_buffer_length;
     lex_buffer_len = 0;
     lex_abs_pos = 0;
     lex_start_pos = 0;

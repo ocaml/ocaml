@@ -191,6 +191,10 @@ Working version
   (Vincent Laviron, report by François Pottier, review by Nathanaëlle Courant
   and Gabriel Scherer)
 
+- #12238: printing source on error is wrong in presence of compiler directives
+  partial workaround by using large lexing buffers
+  (Gabriel Scherer, report by Mike Spivey and Vincent Laviron)
+
 OCaml 5.1.0
 ---------------
 
