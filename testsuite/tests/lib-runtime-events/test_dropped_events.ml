@@ -14,11 +14,16 @@
 type Runtime_events.User.tag += Ev
 let ev = Runtime_events.User.register "ev" Ev Runtime_events.Type.int
 
-let producer () =
+let target_callbacks_count = 10
+let lost_events_callbacks = Atomic.make 0
+
+let rec producer () =
   let open Runtime_events in
   for _ = 0 to 100000 do
     User.write ev 0
-  done
+  done;
+  if Atomic.get lost_events_callbacks < target_callbacks_count then
+    producer ()
 
 let ready = Atomic.make 0
 
@@ -35,9 +40,12 @@ let _ =
     wait_ready ();
     producer ())
 
+let lost_events _ _ =
+  Atomic.incr lost_events_callbacks
+
 let callbacks =
   let open Runtime_events in
-  let evs = Runtime_events.Callbacks.create ()
+  let evs = Runtime_events.Callbacks.create ~lost_events ()
   in
   let id_callback d ts c i =
     assert (i = 0)
@@ -49,7 +57,9 @@ let ()
   Unix.sleepf 0.1;
   let cursor = Runtime_events.create_cursor None in
   wait_ready ();
-  for _ = 0 to 10 do
-    Runtime_events.read_poll cursor callbacks None
-    |> ignore
+  while Atomic.get lost_events_callbacks < target_callbacks_count do
+    for _ = 0 to 10 do
+      Runtime_events.read_poll cursor callbacks None
+      |> ignore
+    done
   done
