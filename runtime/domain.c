@@ -1040,8 +1040,8 @@ static void install_backup_thread (dom_internal* di)
     pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
 #endif
 
-    if (err)
-      caml_failwith("failed to create domain backup thread");
+    if (err != 0)
+      caml_check_error(err, "failed to create domain backup thread");
     di->backup_thread_running = 1;
     pthread_detach(di->backup_thread);
   }

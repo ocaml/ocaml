@@ -124,7 +124,7 @@ Caml_inline int sync_condvar_wait(sync_condvar c, sync_mutex m)
 
 /* Reporting errors */
 
-static void sync_check_error(int retcode, char * msg)
+CAMLexport void caml_check_error(int retcode, char * msg)
 {
   char * err;
   char buf[1024];
