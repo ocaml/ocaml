@@ -72,6 +72,10 @@ Working version
   (Xavier Leroy, report by Török Edwin, review by Anil Madhavapeddy
   and Nicolás Ojeda Bär)
 
+- #11386: Simplifications and fixes to multicore systhreads implementation.
+  (Guillaume Munch-Maccagnoni, review by Anil Madhavapeddy and KC
+   Sivaramakrishnan)
+
 - #11911, #12381: Restore statmemprof functionality in part
    (API changes in Gc.Memprof). (Nick Barnes)
 
@@ -181,7 +185,7 @@ Working version
   in Typecore in favor of local mutable state.
   (Nick Roberts, review by Takafumi Saikawa)
 
-- #12236: Use syntax as the sole determiner of function arity
+- #12236, #12386: Use syntax as the sole determiner of function arity
   This changes function arity to be based solely on the source program's
   parsetree. Previously, the heuristic for arity had more subtle heuristics
   that involved type information about patterns.  Function arity is important
@@ -961,6 +965,11 @@ Some of those changes will benefit all OCaml packages.
   library flags for the Windows ports, allowing Windows OCaml to be configured
   with ZSTD support.
   (David Allsopp, review by Sébastien Hinderer)
+
+- #12372: Pass option -no-execute-only to the linker for OpenBSD >= 7.3
+  so that code sections remain readable, as needed for closure marshaling.
+  (Xavier Leroy and Anil Madhavapeddy, review by Anil Madhavapeddy and
+  Sébastien Hinderer)
 
 ### Bug fixes:
 

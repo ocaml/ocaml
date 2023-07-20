@@ -953,11 +953,19 @@ variables "caml__dummy_xxx" at each use of "CAMLparam" and
 
 Example:
 \begin{verbatim}
-void foo (value v1, value v2, value v3)
+static void helper (value v1, value v2, value v3)
 {
   CAMLparam3 (v1, v2, v3);
   ...
   CAMLreturn0;
+}
+
+CAMLprim value foo (value v1, value v2, value v3)
+{
+  CAMLparam3 (v1, v2, v3);
+  helper(v1, v2, v3);
+  ...
+  CAMLreturn (Val_unit);
 }
 \end{verbatim}
 
