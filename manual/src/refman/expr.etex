@@ -86,6 +86,7 @@ argument:
 pattern-matching:
     [ '|' ] pattern ['when' expr] '->' expr
     { '|' pattern ['when' expr] '->' expr }
+  | '(' pattern-matching ')'
 ;
 let-binding:
     pattern '=' expr
