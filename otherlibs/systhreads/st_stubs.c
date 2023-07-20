@@ -439,10 +439,7 @@ static void caml_thread_domain_stop_hook(void) {
   };
 }
 
-/* FIXME: this should return an encoded exception for use in
-   domain_thread_func, but the latter is not ready to handle it
-   yet. */
-static void caml_thread_domain_initialize_hook(void)
+static value caml_thread_domain_initialize_hook_exn(void)
 {
 
   caml_thread_t new_thread;
@@ -451,10 +448,12 @@ static void caml_thread_domain_initialize_hook(void)
   st_initialize();
 
   int ret = st_masterlock_init(Thread_lock(Caml_state->id));
-  caml_check_error(ret, "caml_thread_domain_initialize_hook");
+  value res = caml_check_error_exn(ret, "caml_thread_domain_initialize_hook");
+  if (Is_exception_result(res)) return res;
 
   new_thread =
-    (caml_thread_t) caml_stat_alloc(sizeof(struct caml_thread_struct));
+    (caml_thread_t) caml_stat_alloc_noexc(sizeof(struct caml_thread_struct));
+  if (new_thread == NULL) return caml_out_of_memory_exn();
 
   new_thread->domain_id = Caml_state->id;
   new_thread->descr = caml_thread_new_descriptor(Val_unit);
@@ -466,6 +465,7 @@ static void caml_thread_domain_initialize_hook(void)
 
   Active_thread = new_thread;
 
+  return Val_unit;
 }
 
 CAMLprim value caml_thread_yield(value unit);
@@ -503,14 +503,14 @@ CAMLprim value caml_thread_initialize(value unit)
   st_tls_newkey(&caml_thread_key);
 
   /* First initialise the systhread chain on this domain */
-  caml_thread_domain_initialize_hook();
+  caml_raise_if_exception(caml_thread_domain_initialize_hook_exn());
 
   prev_scan_roots_hook = atomic_exchange(&caml_scan_roots_hook,
                                          caml_thread_scan_roots);
   caml_enter_blocking_section_hook = caml_thread_enter_blocking_section;
   caml_leave_blocking_section_hook = caml_thread_leave_blocking_section;
   caml_domain_external_interrupt_hook = caml_thread_interrupt_hook;
-  caml_domain_initialize_hook = caml_thread_domain_initialize_hook;
+  caml_domain_initialize_hook_exn = caml_thread_domain_initialize_hook_exn;
   caml_domain_stop_hook = caml_thread_domain_stop_hook;
 
   caml_atfork_hook = caml_thread_reinitialize;

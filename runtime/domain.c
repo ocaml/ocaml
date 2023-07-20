@@ -1009,7 +1009,7 @@ static void* backup_thread_func(void* v)
   return 0;
 }
 
-static void install_backup_thread (dom_internal* di)
+static value install_backup_thread_exn (dom_internal* di)
 {
   int err;
 #ifndef _WIN32
@@ -1041,15 +1041,16 @@ static void install_backup_thread (dom_internal* di)
 #endif
 
     if (err != 0)
-      caml_check_error(err, "failed to create domain backup thread");
+      return caml_check_error_exn(err, "failed to create domain backup thread");
     di->backup_thread_running = 1;
     pthread_detach(di->backup_thread);
   }
+  return Val_unit;
 }
 
-static void caml_domain_initialize_default(void)
+static value caml_domain_initialize_default_exn(void)
 {
-  return;
+  return Val_unit;
 }
 
 static void caml_domain_stop_default(void)
@@ -1062,8 +1063,8 @@ static void caml_domain_external_interrupt_hook_default(void)
   return;
 }
 
-CAMLexport void (*caml_domain_initialize_hook)(void) =
-   caml_domain_initialize_default;
+CAMLexport value (*caml_domain_initialize_hook_exn)(void) =
+   caml_domain_initialize_default_exn;
 
 CAMLexport void (*caml_domain_stop_hook)(void) =
    caml_domain_stop_default;
@@ -1139,7 +1140,8 @@ static void* domain_thread_func(void* v)
   /* Cannot access p below here. */
 
   if (domain_self) {
-    install_backup_thread(domain_self);
+    value res = install_backup_thread_exn(domain_self);
+    if (Is_exception_result(res)) goto terminate;
 
 #ifndef _WIN32
     /* It is now safe for us to handle signals */
@@ -1149,15 +1151,18 @@ static void* domain_thread_func(void* v)
     caml_gc_log("Domain starting (unique_id = %"ARCH_INTNAT_PRINTF_FORMAT"u)",
                 domain_self->interruptor.unique_id);
     CAML_EV_LIFECYCLE(EV_DOMAIN_SPAWN, getpid());
-    /* FIXME: ignoring errors during domain initialization is unsafe
-       and/or can deadlock. */
-    caml_domain_initialize_hook();
+
+    res = caml_domain_initialize_hook_exn();
+    if (Is_exception_result(res)) goto terminate;
 
     value callback = ml_values->callback;
     /* Release callback early */
     caml_modify_generational_global_root(&ml_values->callback, Val_unit);
-    value res_or_exn = caml_callback_exn(callback, Val_unit);
-    domain_sync_result(ml_values->term_sync, res_or_exn);
+    res = caml_callback_exn(callback, Val_unit);
+    /* fall through */
+
+  terminate:
+    domain_sync_result(ml_values->term_sync, res);
 
     sync_mutex mut = Mutex_val(*Term_mutex(ml_values->term_sync));
     domain_terminate();
@@ -1254,7 +1259,7 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
   }
   /* When domain 0 first spawns a domain, the backup thread is not active, we
      ensure it is started here. */
-  install_backup_thread(domain_self);
+  caml_raise_if_exception(install_backup_thread_exn(domain_self));
 
   CAMLreturn (Val_long(p.unique_id));
 }
