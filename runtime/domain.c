@@ -1117,9 +1117,9 @@ static void install_backup_thread (dom_internal* di)
   }
 }
 
-static void caml_domain_initialize_default(void)
+static value caml_domain_initialize_default_exn(void)
 {
-  return;
+  return Val_unit;
 }
 
 static void caml_domain_stop_default(void)
@@ -1132,8 +1132,8 @@ static void caml_domain_external_interrupt_hook_default(void)
   return;
 }
 
-CAMLexport void (*caml_domain_initialize_hook)(void) =
-   caml_domain_initialize_default;
+CAMLexport value (*caml_domain_initialize_hook_exn)(void) =
+   caml_domain_initialize_default_exn;
 
 CAMLexport void (*caml_domain_stop_hook)(void) =
    caml_domain_stop_default;
@@ -1219,7 +1219,7 @@ static void* domain_thread_func(void* v)
     CAML_EV_LIFECYCLE(EV_DOMAIN_SPAWN, getpid());
     /* FIXME: ignoring errors during domain initialization is unsafe
        and/or can deadlock. */
-    caml_domain_initialize_hook();
+    caml_domain_initialize_hook_exn();
 
     /* release callback early;
        see the [note about callbacks and GC] in callback.c */
