@@ -445,4 +445,6 @@ Line 1, characters 0-22:
     ^^^^^^^^^^^^^^^^^^^^^^
 Error: Constraints are not satisfied in this type.
        Type "'a foo" should be an instance of "int"
+       Type "foo" was considered abstract when checking constraints in this
+       recursive type definition.
 |}]
