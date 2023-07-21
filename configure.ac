@@ -1241,7 +1241,7 @@ has_native_backend=no
 native_ldflags=""
 AS_CASE([$host],
   [[i[3456]86-*-linux*]],
-    [arch=i386; system=linux_elf],
+    [arch=i386; system=linux],
   [[i[3456]86-*-freebsd*]],
     [arch=i386; system=freebsd],
   [[i[3456]86-*-netbsd*]],
