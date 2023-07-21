@@ -145,7 +145,10 @@ Working version
   `ocamlopt -config` or the `Config.system` constant). In particular, s390x and
   ppc64 now report "linux" instead of "elf"; all variants of 32-bit ARM on Linux
   now report "linux" and the new `Config.abi` contains either "eabi" or
-  "eabihf"; OpenBSD now reports "openbsd" instead of "bsd" for 32-bit ARM.
+  "eabihf"; OpenBSD now reports "openbsd" instead of "bsd" for 32-bit ARM;
+  FreeBSD, NetBSD and OpenBSD now report the same value for both x86_64 and
+  x86_32; x86_32 systems matching *bsd but not freebsd*, netbsd* or openbsd*
+  are no longer identified (as on x86_64).
   (David Allsopp, request by Kate Deplaix, review by Sébastien Hinderer and
   Xavier Leroy)
 
