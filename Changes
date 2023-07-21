@@ -141,6 +141,12 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+* #10613, #12405: Simplify the values used for the system variable (`system:` in
+  `ocamlopt -config` or the `Config.system` constant). In particular, s390x and
+  ppc64 now report "linux" instead of "elf".
+  (David Allsopp, request by Kate Deplaix, review by Sébastien Hinderer and
+  Xavier Leroy)
+
 - #12247: configure: --disable-ocamldebug can now be used instead
   of --disable-debugger (which remains available for compatibility)
   (Gabriel Scherer, review by Damien Doligez and Sébastien Hinderer)
