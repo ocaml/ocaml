@@ -15487,9 +15487,9 @@ case $host in #(
   arm*-*-linux-*eabi) :
     arch=arm; system=linux; abi=eabi ;; #(
   arm*-*-openbsd*) :
-    arch=arm; system=bsd ;; #(
+    arch=arm; system=openbsd ;; #(
   zaurus*-*-openbsd*) :
-    arch=arm; system=bsd ;; #(
+    arch=arm; system=openbsd ;; #(
   x86_64-*-linux*) :
     has_native_backend=yes; arch=amd64; system=linux ;; #(
   x86_64-*-gnu*) :
