@@ -234,41 +234,113 @@ MERGEMANIFESTEXE = $(call if_file_exists, $(1).manifest, \
 # Macros and rules to compile OCaml programs
 
 # We use secondary expansion here so that variables like
-# foo_LIBRARIES and foo_MODULES can be defined after the calls
+# foo_LIBRARIES and foo_SOURCES can be defined after the calls
 # to the macros below. Without secondary expansion, those variables
 # would have to be defined before the calls to OCAML_BYTECODE_PROGRAM etc.
 
 .SECONDEXPANSION:
 
+# Each program foo is characterised by the foo_LIBRARIES and foo_SOURCES
+# variables. The following macros provide the infrastructure to build foo
+# from the object files whose names are derived from these two
+# varialbes. In particular, the following macros define several
+# variables whose names are prefixed with foo_ to compute the
+# different lists of files used to build foo.
+
+# The first macro, _OCAML_PROGRAM_BASE, is a private macro (hence the _ at the
+# beginning of its name) which defines foo_ variables common to both
+# bytecode and native programs. The next two macros, OCAML_BYTECODE_PROGRAM
+# and OCAML_NATIVE_PROGRAM are used to define programs that are provided
+# only in bytecode or native form, respectively. Programs provided
+# in both forms should use OCAML_PROGRAM.
+
+define _OCAML_PROGRAM_BASE
+$(basename $(notdir $(1)))_C_FILES = \
+  $$(filter %.c, $$($(basename $(notdir $(1)))_SOURCES))
+$(basename $(notdir $(1)))_MLI_FILES = \
+  $$(filter %.mli, \
+    $$(subst .mly,.mli,\
+      $$($(basename $(notdir $(1)))_SOURCES)))
+$(basename $(notdir $(1)))_ML_FILES = \
+  $$(filter %.ml, \
+    $$(subst .ml.in,.ml,$$(subst .mll,.ml,$$(subst .mly,.ml,\
+      $$($(basename $(notdir $(1)))_SOURCES)))))
+$(basename $(notdir $(1)))_MLL_FILES = \
+  $$(filter %.mll, \
+    $$($(basename $(notdir $(1)))_SOURCES))
+$(basename $(notdir $(1)))_MLY_FILES = \
+  $$(filter %.mly, \
+    $$($(basename $(notdir $(1)))_SOURCES))
+$(basename $(notdir $(1)))_SECONDARY_FILES = \
+  $$(patsubst %.mll,%.ml, $$($(basename $(notdir $(1)))_MLL_FILES)) \
+  $$(patsubst %.mly,%.mli, $$($(basename $(notdir $(1)))_MLY_FILES)) \
+  $$(patsubst %.mly,%.ml, $$($(basename $(notdir $(1)))_MLY_FILES))
+.SECONDARY: $$$$($(basename $(notdir $(1)))_SECONDARY_FILES)
+beforedepend:: $$$$($(basename $(notdir $(1)))_SECONDARY_FILES)
+$(basename $(notdir $(1)))_GENERATED_FILES = \
+  $$($(basename $(notdir $(1)))_SECONDARY_FILES) \
+  $$(patsubst %.mly,%.output, $$($(basename $(notdir $(1)))_MLY_FILES))
+endef # _OCAML_PROGRAM_BASE
+
 LINK_BYTECODE_PROGRAM =\
   $(CAMLC) $(OC_COMMON_LINKFLAGS) $(OC_BYTECODE_LINKFLAGS)
 
-define OCAML_BYTECODE_PROGRAM
+# The _OCAML_BYTECODE_PROGRAM macro defines a bytecode program but assuming
+# that _OCAML_PROGRAM_BASE has already been called. Its public counterpart
+# does not rely on this assumption and rather does call _OCAML_PROGRAM_BASE
+# itself.
+
+define _OCAML_BYTECODE_PROGRAM
 $(eval $(call PROGRAM_SYNONYM,$(1)))
+$(basename $(notdir $(1)))_CMA_FILES = \
+  $$(patsubst %,%.cma, $$($(basename $(notdir $(1)))_LIBRARIES))
+$(basename $(notdir $(1)))_BO_FILES = \
+  $$(patsubst %.c,%.b.$(O), $$($(basename $(notdir $(1)))_C_FILES))
+$(basename $(notdir $(1)))_CMO_FILES = \
+  $$(patsubst %.ml,%.cmo, $$($(basename $(notdir $(1)))_ML_FILES))
 $(basename $(notdir $(1)))_BCOBJS = \
-  $$(patsubst %,%.cma, $$($(basename $(notdir $(1)))_LIBRARIES)) \
-  $$(patsubst %,%.cmo, $$($(basename $(notdir $(1)))_MODULES))
+  $$($(basename $(notdir $(1)))_CMA_FILES) \
+  $$($(basename $(notdir $(1)))_BO_FILES) \
+  $$($(basename $(notdir $(1)))_CMO_FILES)
 $(1)$(EXE): $$$$($(basename $(notdir $(1)))_BCOBJS)
 	$$(V_LINKC)$$(LINK_BYTECODE_PROGRAM) -o $$@ \
 	  $$($(basename $(notdir $(1)))_BCOBJS)
+endef # _OCAML_BYTECODE_PROGRAM
+
+define OCAML_BYTECODE_PROGRAM
+$(eval $(call _OCAML_PROGRAM_BASE,$(1)))
+$(eval $(call _OCAML_BYTECODE_PROGRAM,$(1)))
 endef # OCAML_BYTECODE_PROGRAM
 
 LINK_NATIVE_PROGRAM =\
   $(CAMLOPT) $(OC_COMMON_LINKFLAGS) $(OC_NATIVE_LINKFLAGS)
 
-define OCAML_NATIVE_PROGRAM
+define _OCAML_NATIVE_PROGRAM
 $(eval $(call PROGRAM_SYNONYM,$(1)))
+$(basename $(notdir $(1)))_CMXA_FILES = \
+  $$(patsubst %,%.cmxa, $$($(basename $(notdir $(1)))_LIBRARIES))
+$(basename $(notdir $(1)))_NO_FILES = \
+  $$(patsubst %.c,%.n.$(O), $$($(basename $(notdir $(1)))_C_FILES))
+$(basename $(notdir $(1)))_CMX_FILES = \
+  $$(patsubst %.ml,%.cmx, $$($(basename $(notdir $(1)))_ML_FILES))
 $(basename $(notdir $(1)))_NCOBJS = \
-  $$(patsubst %,%.cmxa, $$($(basename $(notdir $(1)))_LIBRARIES)) \
-  $$(patsubst %,%.cmx, $$($(basename $(notdir $(1)))_MODULES))
+  $$($(basename $(notdir $(1)))_CMXA_FILES) \
+  $$($(basename $(notdir $(1)))_NO_FILES) \
+  $$($(basename $(notdir $(1)))_CMX_FILES)
 $(1)$(EXE): $$$$($(basename $(notdir $(1)))_NCOBJS)
 	$$(V_LINKOPT)$$(LINK_NATIVE_PROGRAM) -o $$@ \
 	  $$($(basename $(notdir $(1)))_NCOBJS)
+endef # _OCAML_NATIVE_PROGRAM
+
+define OCAML_NATIVE_PROGRAM
+$(eval $(call _OCAML_PROGRAM_BASE,$(1)))
+$(eval $(call _OCAML_NATIVE_PROGRAM,$(1)))
 endef # OCAML_NATIVE_PROGRAM
 
 define OCAML_PROGRAM
-$(eval $(call OCAML_BYTECODE_PROGRAM,$(1)))
-$(eval $(call OCAML_NATIVE_PROGRAM,$(1).opt))
+$(eval $(call _OCAML_PROGRAM_BASE,$(1)))
+$(eval $(call _OCAML_BYTECODE_PROGRAM,$(1)))
+$(eval $(call _OCAML_NATIVE_PROGRAM,$(1).opt))
 endef # OCAML_PROGRAM
 
 # Installing a bytecode executable, with debug information removed
