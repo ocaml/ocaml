@@ -57,11 +57,9 @@ let use_lexbuf ppf ~wrap_in_module lb ~modpath ~filename =
     [~filename] is the name of the file that should be shown
     to the user. It may differ from [filepath] when using a temporary file. *)
 let use_file ppf ~wrap_in_module ~modpath ~filepath ~filename =
-  let ic = open_in_bin filepath in
-  Misc.try_finally ~always:(fun () -> close_in ic)
-    (fun () ->
-       let lexbuf = Lexing.from_channel ic in
-       use_lexbuf ppf ~wrap_in_module lexbuf ~modpath ~filename)
+  let source = In_channel.with_open_bin filepath In_channel.input_all in
+  let lexbuf = Lexing.from_string source in
+  use_lexbuf ppf ~wrap_in_module lexbuf ~modpath ~filename
 
 let use_output ppf command =
   let fn = Filename.temp_file "ocaml" "_toploop.ml" in
