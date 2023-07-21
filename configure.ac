@@ -1237,6 +1237,8 @@ model=default
 system=unknown
 abi=default
 
+# In all the cases below, if $arch is set so then so too must $system,
+# preserving $arch = 'none' <=> $system = 'unknown'
 has_native_backend=no
 native_ldflags=""
 AS_CASE([$host],
