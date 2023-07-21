@@ -1205,6 +1205,11 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
   if (caml_debugger_in_use)
     caml_fatal_error("ocamldebug does not support spawning multiple domains");
 #endif
+
+  /* When domain 0 first spawns a domain, the backup thread is not active, we
+     ensure it is started here. */
+  caml_raise_if_exception(install_backup_thread_exn(domain_self));
+
   p.parent = &domain_self->interruptor;
   p.status = Dom_starting;
 
@@ -1228,8 +1233,10 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
   pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
 #endif
 
+  value exn = Val_unit;
   if (err) {
-    caml_failwith("failed to create domain thread");
+    exn = caml_check_error_exn(err, "failed to create domain thread");
+    goto err1;
   }
 
   /* While waiting for the child thread to start up, we need to service any
@@ -1253,15 +1260,17 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
   } else {
     CAMLassert (p.status == Dom_failed);
     /* failed */
-    pthread_join(th, 0);
-    free_domain_ml_values(p.ml_values);
-    caml_failwith("failed to allocate domain");
+    exn = caml_failwith_exn("failed to allocate domain");
+    goto err2;
   }
-  /* When domain 0 first spawns a domain, the backup thread is not active, we
-     ensure it is started here. */
-  caml_raise_if_exception(install_backup_thread_exn(domain_self));
 
   CAMLreturn (Val_long(p.unique_id));
+
+ err2:
+  pthread_join(th, 0);
+ err1:
+  free_domain_ml_values(p.ml_values);
+  CAMLreturn(caml_raise_if_exception(exn));
 }
 
 CAMLprim value caml_ml_domain_id(value unit)
