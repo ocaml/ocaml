@@ -71,6 +71,7 @@ let native_compiler = @native_compiler@
 let architecture = {@QS@|@arch@|@QS@}
 let model = {@QS@|@model@|@QS@}
 let system = {@QS@|@system@|@QS@}
+let abi = {@QS@|@abi@|@QS@}
 
 let asm = {@QS@|@AS@|@QS@}
 let asm_cfi_supported = @asm_cfi_supported@

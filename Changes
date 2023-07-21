@@ -143,7 +143,9 @@ Working version
 
 * #10613, #12405: Simplify the values used for the system variable (`system:` in
   `ocamlopt -config` or the `Config.system` constant). In particular, s390x and
-  ppc64 now report "linux" instead of "elf".
+  ppc64 now report "linux" instead of "elf"; all variants of 32-bit ARM on Linux
+  now report "linux" and the new `Config.abi` contains either "eabi" or
+  "eabihf".
   (David Allsopp, request by Kate Deplaix, review by Sébastien Hinderer and
   Xavier Leroy)
 
