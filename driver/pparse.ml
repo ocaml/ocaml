@@ -182,7 +182,12 @@ let file_aux ~tool_name inputfile (type a) parse_fun invariant_fun
         ast
       end else begin
         seek_in ic 0;
-        let lexbuf = Lexing.from_channel ic in
+        (* We read the whole source file at once. This guarantees that all
+           input is in the lexing buffer and can be reused by error printers
+           to quote source code at specific locations -- see #12238 and the
+           Location.lines_around* functions. *)
+        let source = In_channel.input_all ic in
+        let lexbuf = Lexing.from_string source in
         Location.init lexbuf inputfile;
         Location.input_lexbuf := Some lexbuf;
         Profile.record_call "parser" (fun () -> parse_fun lexbuf)
