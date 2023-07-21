@@ -50,7 +50,7 @@ type type_structure =
 let structure : type_definition -> type_structure = fun def ->
   match def.type_kind with
   | Type_open -> Open
-  | Type_abstract ->
+  | Type_abstract _ ->
       begin match def.type_manifest with
       | None -> Abstract
       | Some type_expr -> Synonym type_expr

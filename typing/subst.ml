@@ -371,7 +371,7 @@ let type_declaration' copy_scope s decl =
     type_arity = decl.type_arity;
     type_kind =
       begin match decl.type_kind with
-        Type_abstract -> Type_abstract
+        Type_abstract r -> Type_abstract r
       | Type_variant (cstrs, rep) ->
           Type_variant (List.map (constructor_declaration copy_scope s) cstrs,
                         rep)

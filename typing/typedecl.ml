@@ -95,7 +95,7 @@ let add_type ~check id decl env =
   Builtin_attributes.warning_scope ~ppwarning:false decl.type_attributes
     (fun () -> Env.add_type ~check id decl env)
 
-let enter_type ~abstract_abbrevs rec_flag env sdecl (id, uid) =
+let enter_type ?abstract_abbrevs rec_flag env sdecl (id, uid) =
   let needed =
     match rec_flag with
     | Asttypes.Nonrecursive ->
@@ -111,17 +111,19 @@ let enter_type ~abstract_abbrevs rec_flag env sdecl (id, uid) =
   in
   let arity = List.length sdecl.ptype_params in
   if not needed then env else
+  let abstract_reason, type_manifest =
+    match sdecl.ptype_manifest, abstract_abbrevs with
+    | None, _             -> Abstract_def, None
+    | Some _, None        -> Abstract_def, Some (Btype.newgenvar ())
+    | Some _, Some reason -> reason, None
+  in
   let decl =
     { type_params =
         List.map (fun _ -> Btype.newgenvar ()) sdecl.ptype_params;
       type_arity = arity;
-      type_kind = Type_abstract;
+      type_kind = Type_abstract abstract_reason;
       type_private = sdecl.ptype_private;
-      type_manifest =
-        begin match sdecl.ptype_manifest with
-        | Some _ when not abstract_abbrevs -> Some(Btype.newgenvar ())
-        | _ -> None
-        end;
+      type_manifest = type_manifest;
       type_variance = Variance.unknown_signature ~injective:false ~arity;
       type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
@@ -367,7 +369,7 @@ let transl_declaration env sdecl (id, uid) =
   in
   let (tkind, kind) =
     match sdecl.ptype_kind with
-      | Ptype_abstract -> Ttype_abstract, Type_abstract
+      | Ptype_abstract -> Ttype_abstract, Type_abstract Abstract_def
       | Ptype_variant scstrs ->
         if List.exists (fun cstr -> cstr.pcd_res <> None) scstrs then begin
           match cstrs with
@@ -545,7 +547,7 @@ let check_constraints env sdecl (_, decl) =
     (fun (sty, _) ty -> check_constraints_rec env sty.ptyp_loc visited ty)
     sdecl.ptype_params decl.type_params;
   begin match decl.type_kind with
-  | Type_abstract -> ()
+  | Type_abstract _ -> ()
   | Type_variant (l, _rep) ->
       let find_pl = function
           Ptype_variant pl -> pl
@@ -998,7 +1000,7 @@ let check_duplicates sdecl_list =
 (* Force recursion to go through id for private types*)
 let name_recursion sdecl id decl =
   match decl with
-  | { type_kind = Type_abstract;
+  | { type_kind = Type_abstract _;
       type_manifest = Some ty;
       type_private = Private; } when is_fixed_type sdecl ->
     let ty' = newty2 ~level:(get_level ty) (get_desc ty) in
@@ -1065,8 +1067,7 @@ let transl_type_decl env rec_flag sdecl_list =
     Ctype.with_local_level_iter ~post:generalize_decl begin fun () ->
       (* Enter types. *)
       let temp_env =
-        List.fold_left2 (enter_type ~abstract_abbrevs:false rec_flag)
-          env sdecl_list ids_list in
+        List.fold_left2 (enter_type rec_flag) env sdecl_list ids_list in
       (* Translate each declaration. *)
       let current_slot = ref None in
       let warn_unused =
@@ -1127,7 +1128,8 @@ let transl_type_decl env rec_flag sdecl_list =
   (* Add abstract declarations to the environment to avoid strange error
      messages (#12334) *)
   let abs_env =
-    List.fold_left2 (enter_type ~abstract_abbrevs:true rec_flag)
+    List.fold_left2
+      (enter_type ~abstract_abbrevs:Abstract_rec_check_regularity rec_flag)
       env sdecl_list ids_list in
   List.iter
     (check_abbrev_regularity ~orig_env:abs_env new_env id_loc_list to_check)
@@ -1682,19 +1684,20 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
     with Ctype.Unify err ->
       raise(Error(loc, Inconsistent_constraint (env, err)))
   ) constraints;
+  let sig_decl_abstract = Btype.type_kind_is_abstract sig_decl in
   let priv =
     if sdecl.ptype_private = Private then Private else
-    if arity_ok && sig_decl.type_kind <> Type_abstract
+    if arity_ok && not sig_decl_abstract
     then sig_decl.type_private else sdecl.ptype_private
   in
-  if arity_ok && sig_decl.type_kind <> Type_abstract
+  if arity_ok && not sig_decl_abstract
   && sdecl.ptype_private = Private then
     Location.deprecated loc "spurious use of private";
   let type_kind, type_unboxed_default =
     if arity_ok && man <> None then
       sig_decl.type_kind, sig_decl.type_unboxed_default
     else
-      Type_abstract, false
+      Type_abstract Abstract_def, false
   in
   let new_sig_decl =
     { type_params = params;
@@ -1777,7 +1780,7 @@ let abstract_type_decl ~injective arity =
   Ctype.with_local_level ~post:generalize_decl begin fun () ->
     { type_params = make_params arity;
       type_arity = arity;
-      type_kind = Type_abstract;
+      type_kind = Type_abstract Abstract_def;
       type_private = Public;
       type_manifest = None;
       type_variance = Variance.unknown_signature ~injective ~arity;
@@ -2005,7 +2008,7 @@ let report_error ppf = function
       | Type_record (tl, _), _ ->
           explain_unbound ppf ty tl (fun l -> l.Types.ld_type)
             "field" (fun l -> Ident.name l.Types.ld_id ^ ": ")
-      | Type_abstract, Some ty' ->
+      | Type_abstract _, Some ty' ->
           explain_unbound_single ppf ty ty'
       | _ -> ()
       end;
