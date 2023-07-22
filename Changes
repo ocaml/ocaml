@@ -103,6 +103,12 @@ _______________
   (Tim McGilchrist, review by Miod Vallat, Gabriel Scherer and
    KC Sivaramakrishnan)
 
+- #12269, #12410, #13063: Fix unsafety, deadlocks, and/or leaks should
+  rare errors happen during domain creation and thread
+  creation/registration.
+  (Guillaume Munch-Maccagnoni, review by Gabriel Scherer, B. Szilvasy,
+   Miod Vallat)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously
