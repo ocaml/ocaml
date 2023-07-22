@@ -73,48 +73,60 @@ struct caml_exception_context {
 
 int caml_is_special_exception(value exn);
 
-CAMLextern value caml_raise_if_exception(value res);
-
 #endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/* The following functions immediately raise into OCaml. */
 CAMLextern CAMLnoret void caml_raise (value bucket);
-
 CAMLextern CAMLnoret void caml_raise_constant (value tag);
-
 CAMLextern CAMLnoret void caml_raise_with_arg (value tag, value arg);
-
-CAMLextern CAMLnoret
-void caml_raise_with_args (value tag, int nargs, value arg[]);
-
+CAMLextern CAMLnoret void caml_raise_with_args (value tag,
+                                                int nargs, value arg[]);
 CAMLextern CAMLnoret void caml_raise_with_string (value tag, char const * msg);
-
 CAMLextern CAMLnoret void caml_failwith (char const *msg);
-
 CAMLextern CAMLnoret void caml_failwith_value (value msg);
-
 CAMLextern CAMLnoret void caml_invalid_argument (char const *msg);
-
 CAMLextern CAMLnoret void caml_invalid_argument_value (value msg);
-
 CAMLextern CAMLnoret void caml_raise_out_of_memory (void);
-
 CAMLextern CAMLnoret void caml_raise_stack_overflow (void);
-
 CAMLextern CAMLnoret void caml_raise_sys_error (value);
-
 CAMLextern CAMLnoret void caml_raise_end_of_file (void);
-
 CAMLextern CAMLnoret void caml_raise_zero_divide (void);
-
 CAMLextern CAMLnoret void caml_raise_not_found (void);
-
 CAMLextern CAMLnoret void caml_array_bound_error (void);
-
 CAMLextern CAMLnoret void caml_raise_sys_blocked_io (void);
+
+/* Non-raising variants of the above functions. The result is an
+   encoded exception to use with [Is_exception_result] and
+   [Extract_exception]. */
+CAMLextern value caml_constant_exn (value tag);
+CAMLextern value caml_with_arg_exn (value tag, value arg);
+CAMLextern value caml_with_args_exn (value tag, int nargs, value arg[]);
+CAMLextern value caml_with_string_exn (value tag, char const * msg);
+CAMLextern value caml_failwith_exn (char const *msg);
+CAMLextern value caml_failwith_value_exn (value msg);
+CAMLextern value caml_invalid_argument_exn (char const *msg);
+CAMLextern value caml_invalid_argument_value_exn (value msg);
+CAMLextern value caml_out_of_memory_exn (void);
+CAMLextern value caml_stack_overflow_exn (void);
+CAMLextern value caml_sys_error_exn (value msg);
+CAMLextern value caml_end_of_file_exn (void);
+CAMLextern value caml_zero_divide_exn (void);
+CAMLextern value caml_not_found_exn (void);
+CAMLextern value caml_array_bound_error_exn (void);
+CAMLextern value caml_sys_blocked_io_exn (void);
+
+/* If [val] is an encoded exception as returned by _exn functions,
+   raise the exception it encodes. Otherwise, [val] is returned
+   unchanged with the guarantee that it is a regular value. */
+Caml_inline value caml_raise_if_exception(value val)
+{
+  if (Is_exception_result(val)) caml_raise(Extract_exception(val));
+  return val;
+}
 
 #ifdef __cplusplus
 }

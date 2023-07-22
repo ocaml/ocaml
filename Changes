@@ -80,6 +80,11 @@ Working version
   arise at specific locations during domain creation and shutdown.
   (Guillaume Munch-Maccagnoni, review by)
 
+- #? : Resource-handling improvements: add `_exn` variants for all
+  functions in `caml/fail.h` for cleaning-up state and resources
+  before re-raising.
+  (Guillaume Munch-Maccagnoni, review by)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.
