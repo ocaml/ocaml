@@ -848,8 +848,8 @@ The list of possible syntactic class is as follows:
 \end{tabular}
 \end{center}
 
-In the case of variant constructors or record field, the constructor
-or field name should be preceded by the name of the correspond type --
+In the case of variant constructors or record fields, the constructor
+or field name should be preceded by the name of the corresponding type
 to avoid the ambiguity of several types having the same constructor
 names. For example, the constructor "Node" of the type "tree" will be
 referenced as "{!tree.Node}" or "{!const:tree.Node}", or possibly
@@ -878,8 +878,8 @@ outside of the following text formatting :
 
 \subsubsection{sss:ocamldoc-target-specific-syntax}{Target-specific formatting}
 
-The content inside "{%foo: ... %}" is target-specific and will only be
-interpreted by the backend "foo", and ignored by the others. The
+The content inside "{%foo: ... %}" is target-specific and will be
+interpreted only by the backend "foo", and ignored by other backends. The
 backends of the distribution are "latex", "html", "texi" and "man". If
 no target is specified (syntax "{% ... %}"), "latex" is chosen by
 default. Custom generators may support their own target prefix.
