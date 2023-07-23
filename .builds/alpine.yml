@@ -1,0 +1,23 @@
+image: alpine/latest
+packages:
+  - make
+  - pkgconf
+  - zstd-dev
+sources:
+  - https://github.com/ocaml/ocaml
+environment:
+  OCAMLRUNPARAM: "b,v=0"
+tasks:
+  - configure: |
+      cd ocaml
+      ./configure --enable-debug-runtime \
+        --enable-flambda --enable-cmm-invariants \
+        --enable-dependency-generation \
+        --enable-native-toplevel
+  - build: |
+      cd ocaml
+      make
+  - test: |
+      cd ocaml
+      make tests
+
