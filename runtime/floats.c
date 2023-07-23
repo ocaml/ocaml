@@ -23,6 +23,9 @@
 /* Needed for strtod_l */
 #define _GNU_SOURCE
 
+/* Needed for copysign */
+#define _NETBSD_SOURCE
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
