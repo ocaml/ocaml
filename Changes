@@ -76,6 +76,10 @@ Working version
   (Guillaume Munch-Maccagnoni, review by Anil Madhavapeddy and KC
    Sivaramakrishnan)
 
+- #12408: `Domain.spawn` no longer leaks its functional argument for
+  the whole duration of the children domain lifetime.
+  (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.

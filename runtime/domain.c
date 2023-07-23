@@ -1114,7 +1114,13 @@ static void* domain_thread_func(void* v)
     /* FIXME: ignoring errors and asynchronous exceptions during
        domain initialization is unsafe and/or can deadlock. */
     caml_domain_initialize_hook();
-    caml_callback_exn(ml_values->callback, Val_unit);
+
+    /* release callback early;
+       see the [note about callbacks and GC] in callback.c */
+    value unrooted_callback = ml_values->callback;
+    caml_modify_generational_global_root(&ml_values->callback, Val_unit);
+    caml_callback_exn(unrooted_callback, Val_unit);
+
     domain_terminate();
 
     /* This domain currently holds the [term_mutex], and has signaled all the
