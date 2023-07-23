@@ -908,21 +908,27 @@ enum domain_status { Dom_starting, Dom_started, Dom_failed };
 
 struct domain_ml_values {
   value callback;
-  value term_mutex;
+  value term_sync;
 };
 
+/* stdlib/domain.ml */
+#define Term_state(sync) (&Field(sync, 0))
+#define Term_mutex(sync) (&Field(sync, 1))
+#define Term_condition(sync) (&Field(sync, 2))
+
 static void init_domain_ml_values(struct domain_ml_values* ml_values,
-                                  value callback, value term_mutex)
+                                  value callback, value term_sync)
 {
   ml_values->callback = callback;
-  ml_values->term_mutex = term_mutex;
+  ml_values->term_sync = term_sync;
   caml_register_generational_global_root(&ml_values->callback);
-  caml_register_generational_global_root(&ml_values->term_mutex);
+  caml_register_generational_global_root(&ml_values->term_sync);
 }
 
-static void free_domain_ml_values(struct domain_ml_values* ml_values) {
+static void free_domain_ml_values(struct domain_ml_values* ml_values)
+{
   caml_remove_generational_global_root(&ml_values->callback);
-  caml_remove_generational_global_root(&ml_values->term_mutex);
+  caml_remove_generational_global_root(&ml_values->term_sync);
   caml_stat_free(ml_values);
 }
 
@@ -1003,7 +1009,7 @@ static void* backup_thread_func(void* v)
   return 0;
 }
 
-static void install_backup_thread (dom_internal* di)
+static value install_backup_thread_exn (dom_internal* di)
 {
   int err;
 #ifndef _WIN32
@@ -1034,16 +1040,17 @@ static void install_backup_thread (dom_internal* di)
     pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
 #endif
 
-    if (err)
-      caml_failwith("failed to create domain backup thread");
+    if (err != 0)
+      return caml_check_error_exn(err, "failed to create domain backup thread");
     di->backup_thread_running = 1;
     pthread_detach(di->backup_thread);
   }
+  return Val_unit;
 }
 
-static void caml_domain_initialize_default(void)
+static value caml_domain_initialize_default_exn(void)
 {
-  return;
+  return Val_unit;
 }
 
 static void caml_domain_stop_default(void)
@@ -1056,8 +1063,8 @@ static void caml_domain_external_interrupt_hook_default(void)
   return;
 }
 
-CAMLexport void (*caml_domain_initialize_hook)(void) =
-   caml_domain_initialize_default;
+CAMLexport value (*caml_domain_initialize_hook_exn)(void) =
+   caml_domain_initialize_default_exn;
 
 CAMLexport void (*caml_domain_stop_hook)(void) =
    caml_domain_stop_default;
@@ -1069,6 +1076,38 @@ CAMLexport _Atomic caml_timing_hook caml_domain_terminated_hook =
   (caml_timing_hook)NULL;
 
 static void domain_terminate(void);
+
+static void domain_sync_result(value term_sync, value res_or_exn)
+{
+  CAMLparam1(term_sync);
+  CAMLlocal1(res);
+  if (Is_exception_result(res_or_exn)) {
+    res = Extract_exception(res_or_exn);
+    /* [Finished (Error res)] from stdlib/domain.ml */
+    res = caml_alloc_1(1, res);
+    res = caml_alloc_1(0, res);
+  } else {
+    res = res_or_exn;
+  }
+
+  /* Synchronize with joining domains. We call [caml_ml_mutex_lock]
+     because the systhreads are still running on this domain. We
+     assume this does not fail the exception it would raise at this
+     point would be bad for us. */
+  caml_ml_mutex_lock(*Term_mutex(term_sync));
+
+  /* Store result */
+  volatile value *state = Term_state(term_sync);
+  CAMLassert(!Is_block(*state));
+  caml_modify(state, res);
+
+  /* Signal all the waiting domains to be woken up */
+  caml_ml_condition_broadcast(*Term_condition(term_sync));
+
+  /* The mutex is unlocked in the runtime after the cleanup
+     functions are finished. */
+  CAMLreturn0;
+}
 
 static void* domain_thread_func(void* v)
 {
@@ -1101,7 +1140,8 @@ static void* domain_thread_func(void* v)
   /* Cannot access p below here. */
 
   if (domain_self) {
-    install_backup_thread(domain_self);
+    value res = install_backup_thread_exn(domain_self);
+    if (Is_exception_result(res)) goto terminate;
 
 #ifndef _WIN32
     /* It is now safe for us to handle signals */
@@ -1111,23 +1151,36 @@ static void* domain_thread_func(void* v)
     caml_gc_log("Domain starting (unique_id = %"ARCH_INTNAT_PRINTF_FORMAT"u)",
                 domain_self->interruptor.unique_id);
     CAML_EV_LIFECYCLE(EV_DOMAIN_SPAWN, getpid());
-    /* FIXME: ignoring errors and asynchronous exceptions during
-       domain initialization is unsafe and/or can deadlock. */
-    caml_domain_initialize_hook();
-    caml_callback_exn(ml_values->callback, Val_unit);
+
+    res = caml_domain_initialize_hook_exn();
+    if (Is_exception_result(res)) goto terminate;
+
+    value callback = ml_values->callback;
+    /* Release callback early */
+    caml_modify_generational_global_root(&ml_values->callback, Val_unit);
+    res = caml_callback_exn(callback, Val_unit);
+    /* fall through */
+
+  terminate:
+    domain_sync_result(ml_values->term_sync, res);
+
+    sync_mutex mut = Mutex_val(*Term_mutex(ml_values->term_sync));
     domain_terminate();
 
-    /* This domain currently holds the [term_mutex], and has signaled all the
-       waiting domains to be woken up. We unlock the [term_mutex] to release
-       the joining domains. The unlock is done after [domain_terminate] to
-       ensure that this domain has released all of its runtime state. */
-    caml_mutex_unlock(Mutex_val(ml_values->term_mutex));
+    /* This domain currently holds [mut], and has signaled all the
+       waiting domains to be woken up. We unlock [mut] to release the
+       joining domains. The unlock is done after [domain_terminate] to
+       ensure that this domain has released all of its runtime state.
+       We call [caml_mutex_unlock] directly instead of
+       [caml_ml_mutex_unlock] because the domain no longer exists at
+       this point. */
+    caml_mutex_unlock(mut);
 
-    /* [ml_values] must be freed after unlocking [term_mutex]. This ensures
-       that [term_mutex] is only removed from the root set after [term_mutex]
-       is unlocked. Otherwise, there is a risk of [term_mutex] being destroyed
-       by [caml_mutex_finalize] finaliser while it remains locked, leading to
-       undefined behaviour. */
+    /* [ml_values] must be freed after unlocking [mut]. This ensures
+       that [term_sync] is only removed from the root set after [mut]
+       is unlocked. Otherwise, there is a risk of [mut] being
+       destroyed by [caml_mutex_finalize] finaliser while it remains
+       locked, leading to undefined behaviour. */
     free_domain_ml_values(ml_values);
   } else {
     caml_gc_log("Failed to create domain");
@@ -1138,9 +1191,9 @@ static void* domain_thread_func(void* v)
   return 0;
 }
 
-CAMLprim value caml_domain_spawn(value callback, value mutex)
+CAMLprim value caml_domain_spawn(value callback, value term_sync)
 {
-  CAMLparam2 (callback, mutex);
+  CAMLparam2 (callback, term_sync);
   struct domain_startup_params p;
   pthread_t th;
   int err;
@@ -1152,13 +1205,18 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
   if (caml_debugger_in_use)
     caml_fatal_error("ocamldebug does not support spawning multiple domains");
 #endif
+
+  /* When domain 0 first spawns a domain, the backup thread is not active, we
+     ensure it is started here. */
+  caml_raise_if_exception(install_backup_thread_exn(domain_self));
+
   p.parent = &domain_self->interruptor;
   p.status = Dom_starting;
 
   p.ml_values =
       (struct domain_ml_values*) caml_stat_alloc(
                                     sizeof(struct domain_ml_values));
-  init_domain_ml_values(p.ml_values, callback, mutex);
+  init_domain_ml_values(p.ml_values, callback, term_sync);
 
 /* We block all signals while we spawn the new domain. This is because
    pthread_create inherits the current signals set, and we want to avoid a
@@ -1175,8 +1233,10 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
   pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
 #endif
 
+  value exn = Val_unit;
   if (err) {
-    caml_failwith("failed to create domain thread");
+    exn = caml_check_error_exn(err, "failed to create domain thread");
+    goto err1;
   }
 
   /* While waiting for the child thread to start up, we need to service any
@@ -1200,15 +1260,17 @@ CAMLprim value caml_domain_spawn(value callback, value mutex)
   } else {
     CAMLassert (p.status == Dom_failed);
     /* failed */
-    pthread_join(th, 0);
-    free_domain_ml_values(p.ml_values);
-    caml_failwith("failed to allocate domain");
+    exn = caml_failwith_exn("failed to allocate domain");
+    goto err2;
   }
-  /* When domain 0 first spawns a domain, the backup thread is not active, we
-     ensure it is started here. */
-  install_backup_thread(domain_self);
 
   CAMLreturn (Val_long(p.unique_id));
+
+ err2:
+  pthread_join(th, 0);
+ err1:
+  free_domain_ml_values(p.ml_values);
+  CAMLreturn(caml_raise_if_exception(exn));
 }
 
 CAMLprim value caml_ml_domain_id(value unit)

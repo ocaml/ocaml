@@ -909,6 +909,53 @@ null-terminated C string, raises the exception \var{id} with a copy of
 the C string \var{s} as argument.
 \end{itemize}
 
+Sometimes, it is necessary to clean-up state and release resources
+before actually raising the exception back into OCaml. To this end,
+alternative functions are provided to return the exception in an
+encoded form instead of raising it directly ("caml_failwith_exn",
+"caml_invalid_argument_exn", "caml_with_arg_exn", etc.).
+
+These functions take the same arguments as their non-"_exn"
+counterparts, but catch escaping exceptions and return them to the C
+code. Note that a raised exception returned by an "*_exn" function is
+is not a valid value, and in particular it is not the same thing as
+the value of the exception.
+
+As a general rule, the return value \var{v} of the "*_exn" functions
+must be tested later with the macro "Is_exception_result("\var{v}")".
+If "Is_exception_result("\var{v}")" returns ``true'', it denotes an
+exception that is being raised, and its value (the exception
+descriptor) can be recovered using "Extract_exception("\var{v}")",
+e.g. for raising with "caml_raise". The macro returns ``false'' for
+regular OCaml values where no exception occurred.
+
+\paragraph{Warning:} "Extract_exception" should be applied to the
+exception result prior to calling any function that may trigger
+garbage collection. Otherwise, if \var{v} is reachable during garbage
+collection, the runtime can crash since \var{v} does not contain a
+valid value.
+
+Example: "caml_process_pending_actions_exn" from
+Section~\ref{ss:c-process-pending-actions} is such a function that can
+return a raised exception, and it can be used as follows:
+
+\begin{verbatim}
+    CAMLlocal1(res);
+    ...
+    res = caml_process_pending_actions_exn();
+    if(Is_exception_result(res)) {
+      res = Extract_exception(res);
+      ...cleanup... /* Safe to trigger GC: [res] contains a valid value. */
+      caml_raise(res);
+    }
+\end{verbatim}
+
+The helper function "caml_raise_if_exception" is also provided to
+extract and raise the exception later when needed, without having to
+call "Extract_exception". It returns the value unchanged if it does
+not denote an exception that has been raised.
+
+
 \section{s:c-gc-harmony}{Living in harmony with the garbage collector}
 
 Unused blocks in the heap are automatically reclaimed by the garbage
@@ -1256,25 +1303,10 @@ collections. In particular, it can raise asynchronous exceptions. It
 is recommended to call it regularly at safe points inside long-running
 non-blocking C code.
 
-The variant \verb"caml_process_pending_actions_exn" is provided, that
-returns the exception instead of raising it directly into OCaml code.
-Its result must be tested using {\tt Is_exception_result}, and
-followed by {\tt Extract_exception} if appropriate. It is typically
-used for clean up before re-raising:
-
-\begin{verbatim}
-    CAMLlocal1(exn);
-    ...
-    exn = caml_process_pending_actions_exn();
-    if(Is_exception_result(exn)) {
-      exn = Extract_exception(exn);
-      ...cleanup...
-      caml_raise(exn);
-    }
-\end{verbatim}
-
-Correct use of exceptional return, in particular in the presence of
-garbage collection, is further detailed in Section~\ref{ss:c-callbacks}.
+The variant \verb"caml_process_pending_actions_exn" is provided, used
+for cleaning-up before re-raising. It returns the raised exception in
+encoded form instead of raising it directly into OCaml code, to be
+handled as detailed in Section~\ref{ss:c-exceptions}.
 
 \section{s:c-intf-example}{A complete example}
 
@@ -1470,37 +1502,9 @@ into \var{f}.
 
 If the C code wishes to catch exceptions escaping the OCaml function,
 it can use the functions "caml_callback_exn", "caml_callback2_exn",
-"caml_callback3_exn", "caml_callbackN_exn".  These functions take the same
-arguments as their non-"_exn" counterparts, but catch escaping
-exceptions and return them to the C code.  The return value \var{v} of the
-"caml_callback*_exn" functions must be tested with the macro
-"Is_exception_result("\var{v}")".  If the macro returns ``false'', no
-exception occurred, and \var{v} is the value returned by the OCaml
-function.  If "Is_exception_result("\var{v}")" returns ``true'',
-an exception escaped, and its value (the exception descriptor) can be
-recovered using "Extract_exception("\var{v}")".
-
-\paragraph{Warning:} If the OCaml function returned with an exception,
-"Extract_exception" should be applied to the exception result prior
-to calling a function that may trigger garbage collection.
-Otherwise, if \var{v} is reachable during garbage collection, the runtime
-can crash since \var{v} does not contain a valid value.
-
-Example:
-\begin{verbatim}
-    CAMLprim value call_caml_f_ex(value closure, value arg)
-    {
-      CAMLparam2(closure, arg);
-      CAMLlocal2(res, tmp);
-      res = caml_callback_exn(closure, arg);
-      if(Is_exception_result(res)) {
-        res = Extract_exception(res);
-        tmp = caml_alloc(3, 0); /* Safe to allocate: res contains valid value. */
-        ...
-      }
-      CAMLreturn (res);
-    }
-\end{verbatim}
+"caml_callback3_exn", "caml_callbackN_exn". The returned value, which
+can denote a raised exception, must be handled as detailed in
+Section~\ref{ss:c-exceptions}.
 
 \subsection{ss:c-closures}{Obtaining or registering OCaml closures for use in C functions}
 

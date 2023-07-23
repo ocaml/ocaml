@@ -124,23 +124,19 @@ Caml_inline int sync_condvar_wait(sync_condvar c, sync_mutex m)
 
 /* Reporting errors */
 
-static void sync_check_error(int retcode, char * msg)
+CAMLexport value caml_check_error_exn(int retcode, char * msg)
 {
-  char * err;
+  if (retcode == 0) return Val_unit;
+  if (retcode == ENOMEM) return caml_out_of_memory_exn();
   char buf[1024];
-  int errlen, msglen;
-  value str;
-
-  if (retcode == 0) return;
-  if (retcode == ENOMEM) caml_raise_out_of_memory();
-  err = caml_strerror(retcode, buf, sizeof(buf));
-  msglen = strlen(msg);
-  errlen = strlen(err);
-  str = caml_alloc_string(msglen + 2 + errlen);
+  char * err = caml_strerror(retcode, buf, sizeof(buf));
+  int msglen = strlen(msg);
+  int errlen = strlen(err);
+  value str = caml_alloc_string(msglen + 2 + errlen);
   memcpy (&Byte(str, 0), msg, msglen);
   memcpy (&Byte(str, msglen), ": ", 2);
   memcpy (&Byte(str, msglen + 2), err, errlen);
-  caml_raise_sys_error(str);
+  return caml_sys_error_exn(str);
 }
 
 #endif /* CAML_SYNC_POSIX_H */
