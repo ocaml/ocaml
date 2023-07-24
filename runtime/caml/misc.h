@@ -565,7 +565,7 @@ CAMLextern int caml_snwprintf(wchar_t * buf,
 #if defined(__has_feature)
 #  if __has_feature(address_sanitizer)
 #    undef CAMLno_asan
-#    define CAMLno_asan __attribute__((disable_sanitizer_instrumentation))
+#    define CAMLno_asan __attribute__((no_sanitize("address")))
 #  endif
 #else
 #  if __SANITIZE_ADDRESS__
