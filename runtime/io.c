@@ -328,9 +328,11 @@ CAMLexport void caml_really_putblock(struct channel *channel,
 
 CAMLexport void caml_seek_out(struct channel *channel, file_offset dest)
 {
+  file_offset res;
   caml_flush(channel);
   caml_enter_blocking_section_no_pending();
-  if (lseek(channel->fd, dest, SEEK_SET) != dest) {
+  res = lseek(channel->fd, dest, SEEK_SET);
+  if (res < 0 || res != dest) {
     caml_leave_blocking_section();
     caml_sys_error(NO_ARG);
   }
@@ -442,13 +444,15 @@ CAMLexport intnat caml_really_getblock(struct channel *chan, char *p, intnat n)
 
 CAMLexport void caml_seek_in(struct channel *channel, file_offset dest)
 {
+  file_offset res;
   if (dest >= channel->offset - (channel->max - channel->buff)
       && dest <= channel->offset
       && (channel->flags & CHANNEL_TEXT_MODE) == 0) {
     channel->curr = channel->max - (channel->offset - dest);
   } else {
     caml_enter_blocking_section_no_pending();
-    if (lseek(channel->fd, dest, SEEK_SET) != dest) {
+    res = lseek(channel->fd, dest, SEEK_SET);
+    if (res < 0 || res != dest) {
       caml_leave_blocking_section();
       caml_sys_error(NO_ARG);
     }
