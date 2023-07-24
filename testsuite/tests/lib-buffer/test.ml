@@ -255,3 +255,34 @@ let () =
     assert(Buffer.length b = 800);
   done
 ;;
+
+(* Tests for add_substitute *)
+let () =
+  let b = Buffer.create 64 in
+  let f x =
+    match x with
+    | "foo" -> "FOO"
+    | "bar" -> "BAR"
+    | "dollar" -> "$"
+    | "backslash" -> "\\"
+    | "#" -> "hash"
+    | "()" -> "nil"
+    | _ -> "unknown"
+  in
+  (* plain variable *)
+  Buffer.add_substitute b f " $foo";
+  (* parens *)
+  Buffer.add_substitute b f " ${#}";
+  Buffer.add_substitute b f " $(#)";
+  (* nested parens *)
+  Buffer.add_substitute b f " $(())";
+  (* escaped dollar *)
+  Buffer.add_substitute b f {| \$foo|};
+  Buffer.add_substitute b f {| \\$foo|};
+  Buffer.add_substitute b f {| \\\$foo|};
+  (* no variable name *)
+  Buffer.add_substitute b f " $";
+  Buffer.add_substitute b f " $!";
+  Buffer.add_substitute b f " $(abc";
+  assert (Buffer.contents b
+            = {| FOO hash hash nil $foo \$foo \\$foo $ $! $(abc|})
