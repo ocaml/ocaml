@@ -18,7 +18,7 @@
 (** Dynamic arrays.
 
     The {!Array} module provide arrays of fixed length. {!Dynarray}
-    provides array whose length can change over time, by adding or
+    provides arrays whose length can change over time, by adding or
     removing elements at the end of the array.
 
     This is typically used to accumulate elements whose number is not
@@ -131,9 +131,9 @@ val append_array : 'a t -> 'a array -> unit
 
     For example:
     {[
-      let a = Dynarray.of_list [1;2]
-      let () = Dynarray.append_array a [|3; 4|]
-      let () = assert (Dynarray.to_list a = [1; 2; 3; 4])
+      let a = Dynarray.of_list [1;2] in
+      Dynarray.append_array a [|3; 4|];
+      assert (Dynarray.to_list a = [1; 2; 3; 4])
     ]}
 *)
 
@@ -142,18 +142,22 @@ val append_list : 'a t -> 'a list -> unit
 
 val append : 'a t -> 'a t -> unit
 (** [append a b] is like [append_array a b],
-    but [b] is itself a dynamic arreay instead of a fixed-size array.
+    but [b] is itself a dynamic array instead of a fixed-size array.
 
-    Beware! Calling [append a a] iterates on [a] and adds elements to
-    it at the same time; it is a programming error and fails with
+    Warning: [append a a] is a programming error because it iterates
+    on [a] and adds elements to it at the same time -- see the
+    {{!sec:iteration} Iteration} section below. It fails with
     [Invalid_argument].
 *)
 
 val append_seq : 'a t -> 'a Seq.t -> unit
 (** Like {!append_array} but with a sequence.
 
-    Beware! Calling [append_seq a (to_seq a)] is unspecified and may
-    result in an infinite loop, see the {!append} comment above.
+    Warning: [append_seq a (to_seq a)] simultaneously traverses [a]
+    and adds element to it; the ordering of those operations is
+    unspecified, and may result in an infinite loop -- the new
+    elements may in turn be produced by [to_seq a] and get added again
+    and again.
 *)
 
 val append_iter :
@@ -209,7 +213,7 @@ val clear : 'a t -> unit
     Traversals of [a] are computed in increasing index order: from
     the element of index [0] to the element of index [length a - 1].
 
-    It is a programming error to modify the length of an array
+    It is a programming error to change the length of an array
     (by adding or removing elements) during an iteration on the
     array. Any iteration function will fail with [Invalid_argument]
     if it detects such a length change.
@@ -225,23 +229,23 @@ val map : ('a -> 'b) -> 'a t -> 'b t
 (** [map f a] is a new array of elements of the form [f x]
     for each element [x] of [a].
 
-    For example, if the elements of [a] are [x0, x1, x2],
-    then the elements of [b] are [f x0, f x1, f x2].
+    For example, if the elements of [a] are [x0], [x1], [x2],
+    then the elements of [b] are [f x0], [f x1], [f x2].
 *)
 
 val mapi : (int -> 'a -> 'b) -> 'a t -> 'b t
 (** [mapi f a] is a new array of elements of the form [f i x]
     for each element [x] of [a] at index [i].
 
-    For example, if the elements of [a] are [x0, x1, x2],
-    then the elements of [b] are [f 0 x0, f 1 x1, f 2 x2].
+    For example, if the elements of [a] are [x0], [x1], [x2],
+    then the elements of [b] are [f 0 x0], [f 1 x1], [f 2 x2].
 *)
 
 val fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
 (** [fold_left f acc a] folds [f] over [a] in order,
     starting with accumulator [acc].
 
-    For example, if the elements of [a] are [x0, x1],
+    For example, if the elements of [a] are [x0], [x1],
     then [fold f acc a] is
     {[
       let acc = f acc x0 in
@@ -253,13 +257,13 @@ val fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
 val fold_right : ('a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
 (** [fold_right f a acc] computes
     [f x0 (f x1 (... (f xn acc) ...))]
-    where [x0, x1, ..., xn] are the elements of [a].
+    where [x0], [x1], ..., [xn] are the elements of [a].
 *)
 
 val exists : ('a -> bool) -> 'a t -> bool
 (** [exists f a] is [true] if some element of [a] satisfies [f].
 
-    For example, if the elements of [a] are [x0, x1, x2], then
+    For example, if the elements of [a] are [x0], [x1], [x2], then
     [exists f a] is [f x0 || f x1 || f x2].
 *)
 
@@ -267,7 +271,7 @@ val for_all : ('a -> bool) -> 'a t -> bool
 (** [for_all f a] is [true] if all elements of [a] satisfy [f].
     This includes the case where [a] is empty.
 
-    For example, if the elements of [a] are [x0, x1], then
+    For example, if the elements of [a] are [x0], [x1], then
     [exists f a] is [f x0 && f x1 && f x2].
 *)
 
@@ -336,7 +340,7 @@ val to_seq : 'a t -> 'a Seq.t
     [get a 0], [get a 1]... [get a (length a - 1)].
 
     Because sequences are computed on-demand, we have to assume that
-    the array may be modified in the meantime, and give a precise
+    the array may be modified in the meantime. We give a precise
     specification for this case below.
 
     Demanding the [i]-th element of the resulting sequence (which can
@@ -423,15 +427,15 @@ val ensure_extra_capacity : 'a t -> int -> unit
 *)
 
 val fit_capacity : 'a t -> unit
-(** [fit_capacity a] shrinks the backing array so that its capacity is
-    exactly [length a], with no additional empty space at the
-    end. This can be useful to make sure there is no memory wasted on
-    a long-lived array.
+(** [fit_capacity a] reallocates a backing array if necessary, so that
+    the resulting capacity is exactly [length a], with no additional
+    empty space at the end. This can be useful to make sure there is
+    no memory wasted on a long-lived array.
 
     Note that calling [fit_capacity] breaks the amortized complexity
     guarantees provided by the default reallocation strategy. Calling
     it repeatedly on an array may have quadratic complexity, both in
-    time and in total number of allocations.
+    time and in total number of words allocated.
 
     If you know that a dynamic array has reached its final length,
     which will remain fixed in the future, it is sufficient to call
@@ -479,19 +483,19 @@ val reset : 'a t -> unit
     Each element is in a "box", allocated when the element is first
     added to the array -- see the implementation for more details.
 
-    Using a ['a array] would be delicate, as there is no obvious
+    Using an ['a array] would be delicate, as there is no obvious
     type-correct way to represent the empty space at the end of the
     backing array -- using user-provided values would either
     complicate the API or violate the {{!section:noleaks}no leaks}
     guarantee. The constraint of remaining memory-safe under
     unsynchronized concurrent usage makes it even more
     difficult. Various unsafe ways to do this have been discussed,
-    with no consensus for a standard implementation so far.
+    with no consensus on a standard implementation so far.
 
     On a realistic automated-theorem-proving program that relies
     heavily on dynamic arrays, we measured the overhead of this extra
     "boxing" as at most 25%. We believe that the overhead for most
-    uses of dynarray is much smaller, neglectible in many cases, but
+    uses of dynarray is much smaller, negligible in many cases, but
     you may still prefer to use your own specialized implementation
     for performance. (If you know that you do not need the
     {{:noleaks}no leaks} guarantee, you can also speed up deleting

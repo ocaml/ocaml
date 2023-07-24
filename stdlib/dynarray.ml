@@ -107,7 +107,7 @@ and 'a slot =
      forall i, [0 <= i < length] implies [arr.(i) = Empty]
 
    Unfortunately, we cannot easily enforce validity as an invariant in
-   presence of concurrent udpates. We can thus observe dynarrays in
+   presence of concurrent updates. We can thus observe dynarrays in
    "invalid states". Our implementation may raise exceptions or return
    incorrect results on observing invalid states, but of course it
    must preserve memory safety.
@@ -155,9 +155,9 @@ module Error = struct
       "Dynarray: invalid array (length %d > capacity %d)"
       length capacity
 
-  let iterator_invalidation f ~expected ~observed =
+  let length_change_during_iteration f ~expected ~observed =
     Printf.ksprintf invalid_arg
-      "Dynarray.%s: iterator invalidated by a length change from %d to %d"
+      "Dynarray.%s: a length change from %d to %d occurred during iteration"
       f expected observed
 
   (* When an [Empty] element is observed unexpectedly at index [i],
@@ -177,7 +177,7 @@ end
 let check_same_length f a ~length =
   let length_a = a.length in
   if length <> length_a then
-    Error.iterator_invalidation f
+    Error.length_change_during_iteration f
       ~expected:length ~observed:length_a
 
 (** Careful unsafe access. *)
