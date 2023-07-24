@@ -80,6 +80,10 @@ Working version
   the whole duration of the children domain lifetime.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
 
+- #12409: Fix unsafety and deadlocks should an asynchronous exception
+  arise at specific locations during domain creation and shutdown.
+  (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.
