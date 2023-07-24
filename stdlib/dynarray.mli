@@ -444,19 +444,19 @@ val fit_capacity : 'a t -> unit
     array for eventual future resizes.
 *)
 
-val truncate_capacity : 'a t -> int -> unit
-(** [truncate_capacity a n] shrinks the backing array to have
-    capacity at most [n]; in particular, like [truncate a n],
+val set_capacity : 'a t -> int -> unit
+(** [set_capacity a n] reallocates a backing array if necessary,
+    so that the resulting capacity is exactly [n]. In particular,
     all elements of index [n] or greater are removed.
-
-    This is equivalent to [truncate a n; fit_capacity a] but more
-    efficient: [truncate a n] needs to overwrite the removed elements
-    to preserve the {{!section:noleaks} no leaks} guarantee.
 
     Like {!fit_capacity}, this function breaks the amortized
     complexity guarantees provided by the reallocation
     strategy. Calling it repeatedly on an array may have quadratic
-    complexity, both in time and in total number of allocations.
+    complexity, both in time and in total number of words allocated.
+
+    This is an advanced function; in particular, {!ensure_capacity}
+    should be preferred to increase the capacity, as it preserves
+    those amortized guarantees.
 
     @raise Invalid_argument if [n < 0].
 *)
@@ -464,7 +464,7 @@ val truncate_capacity : 'a t -> int -> unit
 val reset : 'a t -> unit
 (** [reset a] clears [a] and replaces its backing array by an empty array.
 
-    It is equivalent to [clear a; fit_capacity a].
+    It is equivalent to [set_capacity a 0] or [clear a; fit_capacity a].
 *)
 
 (** {2:noleaks No leaks: preservation of memory liveness}

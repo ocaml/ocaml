@@ -362,13 +362,19 @@ let fit_capacity a =
   then ()
   else a.arr <- Array.sub a.arr 0 a.length
 
-let truncate_capacity a n =
-  if n >= capacity a then ()
-  else if n < 0 then
-    Error.negative_capacity "truncate_capacity" n
-  else begin
+let set_capacity a n =
+  if n < 0 then
+    Error.negative_capacity "set_capacity" n;
+  let arr = a.arr in
+  let cur_capacity = Array.length arr in
+  if n < cur_capacity then begin
     a.length <- min a.length n;
-    a.arr <- Array.sub a.arr 0 n;
+    a.arr <- Array.sub arr 0 n;
+  end
+  else if n > cur_capacity then begin
+    let new_arr = Array.make n Empty in
+    Array.blit arr 0 new_arr 0 a.length;
+    a.arr <- new_arr;
   end
 
 let reset a =

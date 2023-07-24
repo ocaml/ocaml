@@ -269,7 +269,7 @@ let () =
 
 (** {1:advanced Advanced topics for performance} *)
 
-(** truncate_capacity *)
+(** set_capacity *)
 
 let () =
   let a = A.create() in
@@ -277,7 +277,7 @@ let () =
   for i = 0 to max_length - 1 do A.add_last a i; done;
   List.iter
     (fun size ->
-      A.truncate_capacity a size;
+      A.set_capacity a size;
       let result_size = min max_length size in
       assert (A.to_list a = list_range 0 result_size))
     [ 30_000; 20_000; 19_999; 2000; 100; 50; 4; 4; 3; 2; 1; 0];;
