@@ -11,9 +11,9 @@ let get1 (Cons (x, _) : (_ * 'a, 'a) t) = x ;; (* warn, cf PR#6993 *)
 type (_, _) t =
     Nil : ('tl, 'tl) t
   | Cons : 'a * ('b, 'tl) t -> ('a * 'b, 'tl) t
-Line 5, characters 9-43:
+Line 5, characters 9-39:
 5 | let get1 (Cons (x, _) : (_ * 'a, 'a) t) = x ;; (* warn, cf PR#6993 *)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Nil

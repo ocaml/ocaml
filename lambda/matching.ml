@@ -2793,6 +2793,15 @@ let split_extension_cases tag_lambda_list =
   in
   split_rec tag_lambda_list
 
+let transl_match_on_option arg loc ~if_some ~if_none =
+  (* Keeping the Pisint test would make the bytecode
+     slightly worse, but it lets the native compiler generate
+     better code -- see #10681. *)
+  if !Clflags.native_code then
+    Lifthenelse(Lprim (Pisint, [ arg ], loc), if_none, if_some)
+  else
+    Lifthenelse(arg, if_some, if_none)
+
 let combine_constructor loc arg pat_env cstr partial ctx def
     (descr_lambda_list, total1, pats) =
   let tag_lambda (cstr, act) = (cstr.cstr_tag, act) in
@@ -2887,13 +2896,7 @@ let combine_constructor loc arg pat_env cstr partial ctx def
             | 1, 1, [ (0, act1) ], [ (0, act2) ] ->
                 (* This case is very frequent, it corresponds to
                    options and lists. *)
-                (* Keeping the Pisint test would make the bytecode
-                   slightly worse, but it lets the native compiler generate
-                   better code -- see #10681. *)
-                if !Clflags.native_code then
-                  Lifthenelse(Lprim (Pisint, [ arg ], loc), act1, act2)
-                else
-                  Lifthenelse(arg, act2, act1)
+                transl_match_on_option arg loc ~if_none:act1 ~if_some:act2
             | n, 0, _, [] ->
                 (* The matched type defines constant constructors only.
                    (typically the constant cases are dense, so
@@ -3877,3 +3880,17 @@ let for_multiple_match ~scopes loc paraml pat_act_list partial =
   let paraml = List.map (fun (v, _) -> Lvar v) v_paraml in
   List.fold_right bind_opt v_paraml
     (do_for_multiple_match ~scopes loc paraml pat_act_list partial)
+
+let for_optional_arg_default ~scopes loc pat ~default_arg ~param body =
+  let supplied_or_default =
+    transl_match_on_option
+      (Lvar param)
+      Loc_unknown
+      ~if_none:default_arg
+      ~if_some:
+        (Lprim
+           (Pfield (0, Pointer, Immutable),
+            [ Lvar param ],
+            Loc_unknown))
+  in
+  for_let ~scopes loc supplied_or_default pat body

@@ -19,6 +19,24 @@ open Asttypes
 open Typedtree
 open Types
 
+(** Most checks in this file need not access all information about a case,
+    and just need a few pieces of information. [parmatch_case] is those
+    few pieces of information.
+*)
+type 'pattern parmatch_case =
+  { pattern : 'pattern;
+    has_guard : bool;
+    needs_refute : bool;
+    (** true if the program text claims the case is unreachable, a la
+        [function _ -> .]
+    *)
+  }
+
+type 'category typed_case := 'category general_pattern parmatch_case
+
+val typed_case   : 'category case -> 'category typed_case
+val untyped_case : Parsetree.case -> Parsetree.pattern parmatch_case
+
 val const_compare : constant -> constant -> int
 (** [const_compare c1 c2] compares the actual values represented by [c1] and
     [c2], while simply using [Stdlib.compare] would compare the
@@ -97,9 +115,11 @@ val pressure_variants_in_computation_pattern:
     [refute] indicates that [check_unused] was called on a refutation clause.
  *)
 val check_partial:
-    (pattern -> pattern option) -> Location.t -> value case list -> partial
+    (pattern -> pattern option) -> Location.t -> value typed_case list
+    -> partial
+
 val check_unused:
-    (bool -> pattern -> pattern option) -> value case list -> unit
+    (bool -> pattern -> pattern option) -> value typed_case list -> unit
 
 (* Irrefutability tests *)
 val irrefutable : pattern -> bool
@@ -110,7 +130,7 @@ val irrefutable : pattern -> bool
     active. *)
 val inactive : partial:partial -> pattern -> bool
 
-(* Ambiguous bindings *)
+(* Ambiguous bindings. *)
 val check_ambiguous_bindings : value case list -> unit
 
 (* The tag used for open polymorphic variant types with an abstract row *)

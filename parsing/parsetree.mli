@@ -297,30 +297,21 @@ and expression_desc =
             - [let rec P1 = E1 and ... and Pn = EN in E]
                when [flag] is {{!Asttypes.rec_flag.Recursive}[Recursive]}.
          *)
-  | Pexp_function of case list  (** [function P1 -> E1 | ... | Pn -> En] *)
-  | Pexp_fun of arg_label * expression option * pattern * expression
-      (** [Pexp_fun(lbl, exp0, P, E1)] represents:
-            - [fun P -> E1]
-                      when [lbl] is {{!Asttypes.arg_label.Nolabel}[Nolabel]}
-                       and [exp0] is [None]
-            - [fun ~l:P -> E1]
-                      when [lbl] is {{!Asttypes.arg_label.Labelled}[Labelled l]}
-                       and [exp0] is [None]
-            - [fun ?l:P -> E1]
-                      when [lbl] is {{!Asttypes.arg_label.Optional}[Optional l]}
-                       and [exp0] is [None]
-            - [fun ?l:(P = E0) -> E1]
-                      when [lbl] is {{!Asttypes.arg_label.Optional}[Optional l]}
-                       and [exp0] is [Some E0]
+  | Pexp_function of
+      function_param list * type_constraint option * function_body
+  (** [Pexp_function ([P1; ...; Pn], C, body)] represents any construct
+      involving [fun] or [function], including:
+      - [fun P1 ... Pn -> E]
+        when [body = Pfunction_body E]
+      - [fun P1 ... Pn -> function p1 -> e1 | ... | pm -> em]
+        when [body = Pfunction_cases [ p1 -> e1; ...; pm -> em ]]
 
-           Notes:
-           - If [E0] is provided, only
-             {{!Asttypes.arg_label.Optional}[Optional]} is allowed.
-           - [fun P1 P2 .. Pn -> E1] is represented as nested
-             {{!expression_desc.Pexp_fun}[Pexp_fun]}.
-           - [let f P = E] is represented using
-             {{!expression_desc.Pexp_fun}[Pexp_fun]}.
-         *)
+      [C] represents a type constraint or coercion placed immediately before the
+      arrow, e.g. [fun P1 ... Pn : ty -> ...] when [C = Some (Pconstraint ty)].
+
+      A function must have parameters. [Pexp_function (params, _, body)] must
+      have non-empty [params] or a [Pfunction_cases _] body.
+  *)
   | Pexp_apply of expression * (arg_label * expression) list
       (** [Pexp_apply(E0, [(l1, E1) ; ... ; (ln, En)])]
             represents [E0 ~l1:E1 ... ~ln:En]
@@ -440,6 +431,60 @@ and binding_op =
     pbop_exp : expression;
     pbop_loc : Location.t;
   }
+
+and function_param =
+  | Pparam_val of arg_label * expression option * pattern
+  (** [Pparam_val (lbl, exp0, P)] represents the parameter:
+      - [P]
+        when [lbl] is {{!Asttypes.arg_label.Nolabel}[Nolabel]}
+        and [exp0] is [None]
+      - [~l:P]
+        when [lbl] is {{!Asttypes.arg_label.Labelled}[Labelled l]}
+        and [exp0] is [None]
+      - [?l:P]
+        when [lbl] is {{!Asttypes.arg_label.Optional}[Optional l]}
+        and [exp0] is [None]
+      - [?l:(P = E0)]
+        when [lbl] is {{!Asttypes.arg_label.Optional}[Optional l]}
+        and [exp0] is [Some E0]
+
+      Note: If [E0] is provided, only
+      {{!Asttypes.arg_label.Optional}[Optional]} is allowed.
+  *)
+  | Pparam_newtype of string loc * Location.t
+  (** [Pparam_newtype (x, loc)] represents the parameter [(type x)].
+      [x] carries the location of the identifier, whereas [loc] is
+      the location of the [(type x)] as a whole.
+
+      Multiple parameters [(type a b c)] are represented as multiple
+      [Pparam_newtype] nodes, let's say:
+
+      {[ [ Pparam_newtype (a, loc1);
+           Pparam_newtype (b, loc2);
+           Pparam_newtype (c, loc3);
+         ]
+      ]}
+
+      Here, the first loc [loc1] is the location of [(type a b c)], and the
+      subsequent locs [loc2] and [loc3] are the same as [loc1], except marked as
+      ghost locations. The locations on [a], [b], [c], correspond to the
+      variables [a], [b], and [c] in the source code.
+  *)
+
+and function_body =
+  | Pfunction_body of expression
+  | Pfunction_cases of case list * Location.t * attributes
+  (** In [Pfunction_cases (_, loc, attrs)], the location extends from the
+      start of the [function] keyword to the end of the last case. The compiler
+      will only use typechecking-related attributes from [attrs], e.g. enabling
+      or disabling a warning.
+  *)
+(** See the comment on {{!expression_desc.Pexp_function}[Pexp_function]}. *)
+
+and type_constraint =
+  | Pconstraint of core_type
+  | Pcoerce of core_type option * core_type
+(** See the comment on {{!expression_desc.Pexp_function}[Pexp_function]}. *)
 
 (** {2 Value descriptions} *)
 

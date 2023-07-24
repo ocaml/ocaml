@@ -42,6 +42,22 @@ val for_tupled_function:
         Ident.t list -> (pattern list * lambda) list -> partial ->
         lambda
 
+(** [for_optional_arg_default pat body ~default_arg ~param] is:
+
+   {[
+     let $pat =
+       match $param with
+       | Some x -> x
+       | None -> $default_arg
+     in
+     $body
+   ]}
+*)
+val for_optional_arg_default:
+  scopes:scopes -> Location.t ->
+  pattern -> default_arg:lambda -> param:Ident.t -> lambda ->
+  lambda
+
 exception Cannot_flatten
 
 val flatten_pattern: int -> pattern -> pattern list

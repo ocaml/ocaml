@@ -183,18 +183,17 @@ and expression_desc =
         (** let P1 = E1 and ... and Pn = EN in E       (flag = Nonrecursive)
             let rec P1 = E1 and ... and Pn = EN in E   (flag = Recursive)
          *)
-  | Texp_function of { arg_label : arg_label; param : Ident.t;
-      cases : value case list; partial : partial; }
-        (** [Pexp_fun] and [Pexp_function] both translate to [Texp_function].
-            See {!Parsetree} for more details.
+  | Texp_function of function_param list * function_body
+    (** fun P0 P1 -> function p1 -> e1 | p2 -> e2  (body = Tfunction_cases _)
+        fun P0 P1 -> E                             (body = Tfunction_body _)
 
-            [param] is the identifier that is to be used to name the
-            parameter of the function.
-
-            partial =
-              [Partial] if the pattern match is partial
-              [Total] otherwise.
-         *)
+        This construct has the same arity as the originating
+        {{!Parsetree.expression_desc.Pexp_function}[Pexp_function]}.
+        Arity determines when side-effects for effectful parameters are run
+        (e.g. optional argument defaults, matching against lazy patterns).
+        Parameters' effects are run left-to-right when an n-ary function is
+        saturated with n arguments.
+    *)
   | Texp_apply of expression * (arg_label * expression option) list
         (** E0 ~l1:E1 ... ~ln:En
 
@@ -293,6 +292,50 @@ and 'k case =
      c_guard: expression option;
      c_rhs: expression;
     }
+
+and function_param =
+  {
+    fp_arg_label: arg_label;
+    fp_param: Ident.t;
+    (** [fp_param] is the identifier that is to be used to name the
+        parameter of the function.
+    *)
+    fp_partial: partial;
+    (**
+       [fp_partial] =
+       [Partial] if the pattern match is partial
+       [Total] otherwise.
+    *)
+    fp_kind: function_param_kind;
+    fp_newtypes: string loc list;
+      (** [fp_newtypes] are the new type declarations that come *after* that
+          parameter. The newtypes that come before the first parameter are
+          placed as exp_extras on the Texp_function node. This is just used in
+          {!Untypeast}. *)
+  }
+
+and function_param_kind =
+  | Tparam_pat of pattern
+  (** [Tparam_pat p] is a non-optional argument with pattern [p]. *)
+  | Tparam_optional_default of pattern * expression
+  (** [Tparam_optional_default (p, e)] is an optional argument [p] with default
+      value [e], i.e. [?x:(p = e)]. If the parameter is of type [a option], the
+      pattern and expression are of type [a]. *)
+
+and function_body =
+  | Tfunction_body of expression
+  | Tfunction_cases of
+      { cases: value case list;
+        partial: partial;
+        param: Ident.t;
+        loc: Location.t;
+        exp_extra: exp_extra option;
+        attributes: attributes;
+        (** [attributes] is just used in untypeast. *)
+      }
+(** The function body binds a final argument in [Tfunction_cases],
+    and this argument is pattern-matched against the cases.
+*)
 
 and record_label_definition =
   | Kept of Types.type_expr * mutable_flag

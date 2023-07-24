@@ -73,14 +73,19 @@
                             expression (shortcut_ext_attr.ml[14,294+3]..[14,294+24])
                               attribute "foo"
                                 []
-                              Pexp_fun
-                              Nolabel
+                              Pexp_function
+                              [
+                                Pparam_val
+                                  Nolabel
+                                  None
+                                  pattern (shortcut_ext_attr.ml[14,294+17]..[14,294+18])
+                                    Ppat_var "x" (shortcut_ext_attr.ml[14,294+17]..[14,294+18])
+                              ]
                               None
-                              pattern (shortcut_ext_attr.ml[14,294+17]..[14,294+18])
-                                Ppat_var "x" (shortcut_ext_attr.ml[14,294+17]..[14,294+18])
-                              expression (shortcut_ext_attr.ml[14,294+22]..[14,294+24])
-                                Pexp_construct "()" (shortcut_ext_attr.ml[14,294+22]..[14,294+24])
-                                None
+                              Pfunction_body
+                                expression (shortcut_ext_attr.ml[14,294+22]..[14,294+24])
+                                  Pexp_construct "()" (shortcut_ext_attr.ml[14,294+22]..[14,294+24])
+                                  None
                         ]
                       expression (shortcut_ext_attr.ml[15,322+2]..[30,721+31])
                         Pexp_sequence
@@ -93,14 +98,17 @@
                                 attribute "foo"
                                   []
                                 Pexp_function
-                                [
-                                  <case>
-                                    pattern (shortcut_ext_attr.ml[15,322+22]..[15,322+23])
-                                      Ppat_var "x" (shortcut_ext_attr.ml[15,322+22]..[15,322+23])
-                                    expression (shortcut_ext_attr.ml[15,322+27]..[15,322+29])
-                                      Pexp_construct "()" (shortcut_ext_attr.ml[15,322+27]..[15,322+29])
-                                      None
-                                ]
+                                []
+                                None
+                                Pfunction_cases (shortcut_ext_attr.ml[15,322+3]..[15,322+29])
+                                  [
+                                    <case>
+                                      pattern (shortcut_ext_attr.ml[15,322+22]..[15,322+23])
+                                        Ppat_var "x" (shortcut_ext_attr.ml[15,322+22]..[15,322+23])
+                                      expression (shortcut_ext_attr.ml[15,322+27]..[15,322+29])
+                                        Pexp_construct "()" (shortcut_ext_attr.ml[15,322+27]..[15,322+29])
+                                        None
+                                  ]
                           ]
                         expression (shortcut_ext_attr.ml[16,355+2]..[30,721+31])
                           Pexp_sequence

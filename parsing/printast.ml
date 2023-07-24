@@ -260,15 +260,11 @@ and expression i ppf x =
       line i ppf "Pexp_let %a\n" fmt_rec_flag rf;
       list i value_binding ppf l;
       expression i ppf e;
-  | Pexp_function l ->
+  | Pexp_function (params, c, body) ->
       line i ppf "Pexp_function\n";
-      list i case ppf l;
-  | Pexp_fun (l, eo, p, e) ->
-      line i ppf "Pexp_fun\n";
-      arg_label i ppf l;
-      option i expression ppf eo;
-      pattern i ppf p;
-      expression i ppf e;
+      list i function_param ppf params;
+      option i type_constraint ppf c;
+      function_body i ppf body
   | Pexp_apply (e, l) ->
       line i ppf "Pexp_apply\n";
       expression i ppf e;
@@ -385,6 +381,36 @@ and expression i ppf x =
       payload i ppf arg
   | Pexp_unreachable ->
       line i ppf "Pexp_unreachable"
+
+and function_param i ppf param =
+  match param with
+  | Pparam_val (l, eo, p) ->
+      line i ppf "Pparam_val\n";
+      arg_label (i+1) ppf l;
+      option (i+1) expression ppf eo;
+      pattern (i+1) ppf p
+  | Pparam_newtype (ty, loc) ->
+      line i ppf "Pparam_newtype \"%s\" %a\n" ty.txt fmt_location loc
+
+and function_body i ppf body =
+  match body with
+  | Pfunction_body e ->
+      line i ppf "Pfunction_body\n";
+      expression (i+1) ppf e
+  | Pfunction_cases (cases, loc, attrs) ->
+      line i ppf "Pfunction_cases %a\n" fmt_location loc;
+      attributes (i+1) ppf attrs;
+      list (i+1) case ppf cases
+
+and type_constraint i ppf constraint_ =
+  match constraint_ with
+  | Pconstraint ty ->
+      line i ppf "Pconstraint\n";
+      core_type (i+1) ppf ty
+  | Pcoerce (ty1, ty2) ->
+      line i ppf "Pcoerce\n";
+      option (i+1) core_type ppf ty1;
+      core_type (i+1) ppf ty2
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_string_loc

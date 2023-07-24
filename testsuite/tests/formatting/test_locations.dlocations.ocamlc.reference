@@ -7,74 +7,77 @@
           Ppat_var "fib" (test_locations.ml[17,534+8]..[17,534+11])
         expression (test_locations.ml[17,534+14]..[19,572+34])
           Pexp_function
-          [
-            <case>
-              pattern (test_locations.ml[18,557+4]..[18,557+9])
-                Ppat_or
-                pattern (test_locations.ml[18,557+4]..[18,557+5])
-                  Ppat_constant PConst_int (0,None)
-                pattern (test_locations.ml[18,557+8]..[18,557+9])
-                  Ppat_constant PConst_int (1,None)
-              expression (test_locations.ml[18,557+13]..[18,557+14])
-                Pexp_constant PConst_int (1,None)
-            <case>
-              pattern (test_locations.ml[19,572+4]..[19,572+5])
-                Ppat_var "n" (test_locations.ml[19,572+4]..[19,572+5])
-              expression (test_locations.ml[19,572+9]..[19,572+34])
-                Pexp_apply
-                expression (test_locations.ml[19,572+21]..[19,572+22])
-                  Pexp_ident "+" (test_locations.ml[19,572+21]..[19,572+22])
-                [
-                  <arg>
-                  Nolabel
-                    expression (test_locations.ml[19,572+9]..[19,572+20])
-                      Pexp_apply
-                      expression (test_locations.ml[19,572+9]..[19,572+12])
-                        Pexp_ident "fib" (test_locations.ml[19,572+9]..[19,572+12])
-                      [
-                        <arg>
-                        Nolabel
-                          expression (test_locations.ml[19,572+13]..[19,572+20])
-                            Pexp_apply
-                            expression (test_locations.ml[19,572+16]..[19,572+17])
-                              Pexp_ident "-" (test_locations.ml[19,572+16]..[19,572+17])
-                            [
-                              <arg>
-                              Nolabel
-                                expression (test_locations.ml[19,572+14]..[19,572+15])
-                                  Pexp_ident "n" (test_locations.ml[19,572+14]..[19,572+15])
-                              <arg>
-                              Nolabel
-                                expression (test_locations.ml[19,572+18]..[19,572+19])
-                                  Pexp_constant PConst_int (1,None)
-                            ]
-                      ]
-                  <arg>
-                  Nolabel
-                    expression (test_locations.ml[19,572+23]..[19,572+34])
-                      Pexp_apply
-                      expression (test_locations.ml[19,572+23]..[19,572+26])
-                        Pexp_ident "fib" (test_locations.ml[19,572+23]..[19,572+26])
-                      [
-                        <arg>
-                        Nolabel
-                          expression (test_locations.ml[19,572+27]..[19,572+34])
-                            Pexp_apply
-                            expression (test_locations.ml[19,572+30]..[19,572+31])
-                              Pexp_ident "-" (test_locations.ml[19,572+30]..[19,572+31])
-                            [
-                              <arg>
-                              Nolabel
-                                expression (test_locations.ml[19,572+28]..[19,572+29])
-                                  Pexp_ident "n" (test_locations.ml[19,572+28]..[19,572+29])
-                              <arg>
-                              Nolabel
-                                expression (test_locations.ml[19,572+32]..[19,572+33])
-                                  Pexp_constant PConst_int (2,None)
-                            ]
-                      ]
-                ]
-          ]
+          []
+          None
+          Pfunction_cases (test_locations.ml[17,534+14]..[19,572+34])
+            [
+              <case>
+                pattern (test_locations.ml[18,557+4]..[18,557+9])
+                  Ppat_or
+                  pattern (test_locations.ml[18,557+4]..[18,557+5])
+                    Ppat_constant PConst_int (0,None)
+                  pattern (test_locations.ml[18,557+8]..[18,557+9])
+                    Ppat_constant PConst_int (1,None)
+                expression (test_locations.ml[18,557+13]..[18,557+14])
+                  Pexp_constant PConst_int (1,None)
+              <case>
+                pattern (test_locations.ml[19,572+4]..[19,572+5])
+                  Ppat_var "n" (test_locations.ml[19,572+4]..[19,572+5])
+                expression (test_locations.ml[19,572+9]..[19,572+34])
+                  Pexp_apply
+                  expression (test_locations.ml[19,572+21]..[19,572+22])
+                    Pexp_ident "+" (test_locations.ml[19,572+21]..[19,572+22])
+                  [
+                    <arg>
+                    Nolabel
+                      expression (test_locations.ml[19,572+9]..[19,572+20])
+                        Pexp_apply
+                        expression (test_locations.ml[19,572+9]..[19,572+12])
+                          Pexp_ident "fib" (test_locations.ml[19,572+9]..[19,572+12])
+                        [
+                          <arg>
+                          Nolabel
+                            expression (test_locations.ml[19,572+13]..[19,572+20])
+                              Pexp_apply
+                              expression (test_locations.ml[19,572+16]..[19,572+17])
+                                Pexp_ident "-" (test_locations.ml[19,572+16]..[19,572+17])
+                              [
+                                <arg>
+                                Nolabel
+                                  expression (test_locations.ml[19,572+14]..[19,572+15])
+                                    Pexp_ident "n" (test_locations.ml[19,572+14]..[19,572+15])
+                                <arg>
+                                Nolabel
+                                  expression (test_locations.ml[19,572+18]..[19,572+19])
+                                    Pexp_constant PConst_int (1,None)
+                              ]
+                        ]
+                    <arg>
+                    Nolabel
+                      expression (test_locations.ml[19,572+23]..[19,572+34])
+                        Pexp_apply
+                        expression (test_locations.ml[19,572+23]..[19,572+26])
+                          Pexp_ident "fib" (test_locations.ml[19,572+23]..[19,572+26])
+                        [
+                          <arg>
+                          Nolabel
+                            expression (test_locations.ml[19,572+27]..[19,572+34])
+                              Pexp_apply
+                              expression (test_locations.ml[19,572+30]..[19,572+31])
+                                Pexp_ident "-" (test_locations.ml[19,572+30]..[19,572+31])
+                              [
+                                <arg>
+                                Nolabel
+                                  expression (test_locations.ml[19,572+28]..[19,572+29])
+                                    Pexp_ident "n" (test_locations.ml[19,572+28]..[19,572+29])
+                                <arg>
+                                Nolabel
+                                  expression (test_locations.ml[19,572+32]..[19,572+33])
+                                    Pexp_constant PConst_int (2,None)
+                              ]
+                        ]
+                  ]
+            ]
     ]
 ]
 
@@ -88,75 +91,76 @@ let rec fib = function | 0 | 1 -> 1 | n -> (fib (n - 1)) + (fib (n - 2))
           Tpat_var "fib"
         expression (test_locations.ml[17,534+14]..test_locations.ml[19,572+34])
           Texp_function
-          Nolabel
-          [
-            <case>
-              pattern (test_locations.ml[18,557+4]..test_locations.ml[18,557+9])
-                Tpat_or
-                pattern (test_locations.ml[18,557+4]..test_locations.ml[18,557+5])
-                  Tpat_constant Const_int 0
-                pattern (test_locations.ml[18,557+8]..test_locations.ml[18,557+9])
-                  Tpat_constant Const_int 1
-              expression (test_locations.ml[18,557+13]..test_locations.ml[18,557+14])
-                Texp_constant Const_int 1
-            <case>
-              pattern (test_locations.ml[19,572+4]..test_locations.ml[19,572+5])
-                Tpat_var "n"
-              expression (test_locations.ml[19,572+9]..test_locations.ml[19,572+34])
-                Texp_apply
-                expression (test_locations.ml[19,572+21]..test_locations.ml[19,572+22])
-                  Texp_ident "Stdlib!.+"
-                [
-                  <arg>
-                    Nolabel
-                    expression (test_locations.ml[19,572+9]..test_locations.ml[19,572+20])
-                      Texp_apply
-                      expression (test_locations.ml[19,572+9]..test_locations.ml[19,572+12])
-                        Texp_ident "fib"
-                      [
-                        <arg>
-                          Nolabel
-                          expression (test_locations.ml[19,572+13]..test_locations.ml[19,572+20])
-                            Texp_apply
-                            expression (test_locations.ml[19,572+16]..test_locations.ml[19,572+17])
-                              Texp_ident "Stdlib!.-"
-                            [
-                              <arg>
-                                Nolabel
-                                expression (test_locations.ml[19,572+14]..test_locations.ml[19,572+15])
-                                  Texp_ident "n"
-                              <arg>
-                                Nolabel
-                                expression (test_locations.ml[19,572+18]..test_locations.ml[19,572+19])
-                                  Texp_constant Const_int 1
-                            ]
-                      ]
-                  <arg>
-                    Nolabel
-                    expression (test_locations.ml[19,572+23]..test_locations.ml[19,572+34])
-                      Texp_apply
-                      expression (test_locations.ml[19,572+23]..test_locations.ml[19,572+26])
-                        Texp_ident "fib"
-                      [
-                        <arg>
-                          Nolabel
-                          expression (test_locations.ml[19,572+27]..test_locations.ml[19,572+34])
-                            Texp_apply
-                            expression (test_locations.ml[19,572+30]..test_locations.ml[19,572+31])
-                              Texp_ident "Stdlib!.-"
-                            [
-                              <arg>
-                                Nolabel
-                                expression (test_locations.ml[19,572+28]..test_locations.ml[19,572+29])
-                                  Texp_ident "n"
-                              <arg>
-                                Nolabel
-                                expression (test_locations.ml[19,572+32]..test_locations.ml[19,572+33])
-                                  Texp_constant Const_int 2
-                            ]
-                      ]
-                ]
-          ]
+          []
+          Tfunction_cases (test_locations.ml[17,534+14]..test_locations.ml[19,572+34])
+            [
+              <case>
+                pattern (test_locations.ml[18,557+4]..test_locations.ml[18,557+9])
+                  Tpat_or
+                  pattern (test_locations.ml[18,557+4]..test_locations.ml[18,557+5])
+                    Tpat_constant Const_int 0
+                  pattern (test_locations.ml[18,557+8]..test_locations.ml[18,557+9])
+                    Tpat_constant Const_int 1
+                expression (test_locations.ml[18,557+13]..test_locations.ml[18,557+14])
+                  Texp_constant Const_int 1
+              <case>
+                pattern (test_locations.ml[19,572+4]..test_locations.ml[19,572+5])
+                  Tpat_var "n"
+                expression (test_locations.ml[19,572+9]..test_locations.ml[19,572+34])
+                  Texp_apply
+                  expression (test_locations.ml[19,572+21]..test_locations.ml[19,572+22])
+                    Texp_ident "Stdlib!.+"
+                  [
+                    <arg>
+                      Nolabel
+                      expression (test_locations.ml[19,572+9]..test_locations.ml[19,572+20])
+                        Texp_apply
+                        expression (test_locations.ml[19,572+9]..test_locations.ml[19,572+12])
+                          Texp_ident "fib"
+                        [
+                          <arg>
+                            Nolabel
+                            expression (test_locations.ml[19,572+13]..test_locations.ml[19,572+20])
+                              Texp_apply
+                              expression (test_locations.ml[19,572+16]..test_locations.ml[19,572+17])
+                                Texp_ident "Stdlib!.-"
+                              [
+                                <arg>
+                                  Nolabel
+                                  expression (test_locations.ml[19,572+14]..test_locations.ml[19,572+15])
+                                    Texp_ident "n"
+                                <arg>
+                                  Nolabel
+                                  expression (test_locations.ml[19,572+18]..test_locations.ml[19,572+19])
+                                    Texp_constant Const_int 1
+                              ]
+                        ]
+                    <arg>
+                      Nolabel
+                      expression (test_locations.ml[19,572+23]..test_locations.ml[19,572+34])
+                        Texp_apply
+                        expression (test_locations.ml[19,572+23]..test_locations.ml[19,572+26])
+                          Texp_ident "fib"
+                        [
+                          <arg>
+                            Nolabel
+                            expression (test_locations.ml[19,572+27]..test_locations.ml[19,572+34])
+                              Texp_apply
+                              expression (test_locations.ml[19,572+30]..test_locations.ml[19,572+31])
+                                Texp_ident "Stdlib!.-"
+                              [
+                                <arg>
+                                  Nolabel
+                                  expression (test_locations.ml[19,572+28]..test_locations.ml[19,572+29])
+                                    Texp_ident "n"
+                                <arg>
+                                  Nolabel
+                                  expression (test_locations.ml[19,572+32]..test_locations.ml[19,572+33])
+                                    Texp_constant Const_int 2
+                              ]
+                        ]
+                  ]
+            ]
     ]
 ]
 

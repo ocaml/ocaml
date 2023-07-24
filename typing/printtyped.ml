@@ -286,7 +286,20 @@ and pattern_extra i ppf (extra_pat, _, attrs) =
      line i ppf "Tpat_extra_open %a\n" fmt_path id;
      attributes i ppf attrs;
 
-and expression_extra i ppf (x,_,attrs) =
+and function_body i ppf (body : function_body) =
+  match[@warning "+9"] body with
+  | Tfunction_body e ->
+      line i ppf "Tfunction_body\n";
+      expression (i+1) ppf e
+  | Tfunction_cases
+      { cases; loc; exp_extra; attributes = attrs; param = _; partial = _ }
+    ->
+      line i ppf "Tfunction_cases %a\n" fmt_location loc;
+      attributes (i+1) ppf attrs;
+      Option.iter (fun e -> expression_extra (i+1) ppf e []) exp_extra;
+      list (i+1) case ppf cases
+
+and expression_extra i ppf x attrs =
   match x with
   | Texp_constraint ct ->
       line i ppf "Texp_constraint\n";
@@ -313,7 +326,7 @@ and expression i ppf x =
   | [] -> ()
   | extra ->
     line i ppf "extra\n";
-    List.iter (expression_extra (i+1) ppf) extra;
+    List.iter (fun (x, _, attrs) -> expression_extra (i+1) ppf x attrs) extra;
   end;
   match x.exp_desc with
   | Texp_ident (li,_,_) -> line i ppf "Texp_ident %a\n" fmt_path li;
@@ -323,10 +336,10 @@ and expression i ppf x =
       line i ppf "Texp_let %a\n" fmt_rec_flag rf;
       list i value_binding ppf l;
       expression i ppf e;
-  | Texp_function { arg_label = p; param = _; cases; partial = _; } ->
+  | Texp_function (params, body) ->
       line i ppf "Texp_function\n";
-      arg_label i ppf p;
-      list i case ppf cases;
+      list i function_param ppf params;
+      function_body i ppf body;
   | Texp_apply (e, l) ->
       line i ppf "Texp_apply\n";
       expression i ppf e;
@@ -450,6 +463,18 @@ and binding_op i ppf x =
   line i ppf "binding_op %a %a\n" fmt_path x.bop_op_path
     fmt_location x.bop_loc;
   expression i ppf x.bop_exp
+
+and function_param i ppf x =
+  let p = x.fp_arg_label in
+  arg_label i ppf p;
+  match x.fp_kind with
+  | Tparam_pat pat ->
+      line i ppf "Param_pat\n";
+      pattern (i+1) ppf pat
+  | Tparam_optional_default (pat, expr) ->
+      line i ppf "Param_optional_default\n";
+      pattern (i+1) ppf pat;
+      expression (i+1) ppf expr
 
 and type_parameter i ppf (x, _variance) = core_type i ppf x
 

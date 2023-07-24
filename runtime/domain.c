@@ -720,6 +720,19 @@ CAMLexport void caml_reset_domain_lock(void)
 {
   dom_internal* self = domain_self;
   // This is only used to reset the domain_lock state on fork.
+  /* FIXME: initializing an already-initialized mutex and cond
+     variable is UB (especially mutexes that are locked).
+
+     * On systhreads, this is best-effort but at least the error
+       conditions should be checked and reported.
+
+     * If there is only one thread, it is sensible to fork but the
+       mutex should still not be initialized while locked. On Linux it
+       seems that the mutex remains valid and locked
+       (https://man7.org/linux/man-pages/man2/fork.2.html). For
+       portability on POSIX the lock should be released and destroyed
+       prior to calling fork and then init afterwards in both parent
+       and child. */
   caml_plat_mutex_init(&self->domain_lock);
   caml_plat_cond_init(&self->domain_cond, &self->domain_lock);
 
@@ -1111,8 +1124,16 @@ static void* domain_thread_func(void* v)
     caml_gc_log("Domain starting (unique_id = %"ARCH_INTNAT_PRINTF_FORMAT"u)",
                 domain_self->interruptor.unique_id);
     CAML_EV_LIFECYCLE(EV_DOMAIN_SPAWN, getpid());
+    /* FIXME: ignoring errors and asynchronous exceptions during
+       domain initialization is unsafe and/or can deadlock. */
     caml_domain_initialize_hook();
-    caml_callback(ml_values->callback, Val_unit);
+
+    /* release callback early;
+       see the [note about callbacks and GC] in callback.c */
+    value unrooted_callback = ml_values->callback;
+    caml_modify_generational_global_root(&ml_values->callback, Val_unit);
+    caml_callback_exn(unrooted_callback, Val_unit);
+
     domain_terminate();
 
     /* This domain currently holds the [term_mutex], and has signaled all the
@@ -1733,9 +1754,13 @@ CAMLexport void caml_bt_exit_ocaml(void)
 }
 
 /* default handler for unix_fork, will be called by unix_fork. */
-static void caml_atfork_default(void) {
+static void caml_atfork_default(void)
+{
   caml_reset_domain_lock();
   caml_acquire_domain_lock();
+  /* FIXME: For best portability, the IO channel locks should be
+     reinitialised as well. (See comment in
+     caml_reset_domain_lock.) */
 }
 
 CAMLexport void (*caml_atfork_hook)(void) = caml_atfork_default;
