@@ -325,3 +325,5 @@
 #undef HAVE_LABELS_AS_VALUES
 
 /* Define if the C compiler supports the labels as values extension. */
+#undef HAS_MEMCMPEQ
+#undef LIBC_IS_MUSL
