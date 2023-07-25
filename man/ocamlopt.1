@@ -757,32 +757,6 @@ compilation times and code that probably runs rather slower.
 Emit .inlining files (one per round of optimisation) showing all of the
 inliner's decisions.
 
-.SH OPTIONS FOR THE IA32 ARCHITECTURE
-
-The IA32 code generator (Intel Pentium, AMD Athlon) supports the
-following additional option:
-.TP
-.B \-ffast\-math
-Use the IA32 instructions to compute
-trigonometric and exponential functions, instead of calling the
-corresponding library routines.  The functions affected are:
-.BR atan ,
-.BR atan2 ,
-.BR cos ,
-.BR log ,
-.BR log10 ,
-.BR sin ,
-.B sqrt
-and
-.BR tan .
-The resulting code runs faster, but the range of supported arguments
-and the precision of the result can be reduced.  In particular,
-trigonometric operations
-.BR cos ,
-.BR sin ,
-.B tan
-have their range reduced to [\-2^64, 2^64].
-
 .SH OPTIONS FOR THE AMD64 ARCHITECTURE
 
 The AMD64 code generator (64-bit versions of Intel Pentium and AMD
@@ -793,50 +767,6 @@ Generate position-independent machine code.  This is the default.
 .TP
 .B \-fno\-PIC
 Generate position-dependent machine code.
-
-.SH OPTIONS FOR THE POWER ARCHITECTURE
-
-The PowerPC code generator supports the following additional options:
-.TP
-.B \-flarge\-toc
-Enables the PowerPC large model allowing the TOC (table of contents) to be
-arbitrarily large.  This is the default since 4.11.
-.TP
-.B \-fsmall\-toc
-Enables the PowerPC small model allowing the TOC to be up to 64 kbytes per
-compilation unit.  Prior to 4.11 this was the default behaviour.
-\end{options}
-
-.SH OPTIONS FOR THE ARM ARCHITECTURE
-The ARM code generator supports the following additional options:
-.TP
-.B \-farch=armv4|armv5|armv5te|armv6|armv6t2|armv7
-Select the ARM target architecture
-.TP
-.B \-ffpu=soft|vfpv2|vfpv3\-d16|vfpv3
-Select the floating-point hardware
-.TP
-.B \-fPIC
-Generate position-independent machine code.
-.TP
-.B \-fno\-PIC
-Generate position-dependent machine code.  This is the default.
-.TP
-.B \-fthumb
-Enable Thumb/Thumb-2 code generation
-.TP
-.B \-fno\-thumb
-Disable Thumb/Thumb-2 code generation
-.P
-The default values for target architecture, floating-point hardware
-and thumb usage were selected at configure-time when building
-.B ocamlopt
-itself. This configuration can be inspected using
-.BR ocamlopt\ \-config .
-Target architecture depends on the "model" setting, while
-floating-point hardware and thumb support are determined from the ABI
-setting in "system"
-.RB ( linux_eabi " or " linux_eabihf ).
 
 .SH SEE ALSO
 .BR ocamlc (1).
