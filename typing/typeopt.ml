@@ -101,7 +101,7 @@ let classify env ty =
       else begin
         try
           match (Env.find_type p env).type_kind with
-          | Type_abstract ->
+          | Type_abstract _ ->
               Any
           | Type_record _ | Type_variant _ | Type_open ->
               Addr

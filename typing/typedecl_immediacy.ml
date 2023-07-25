@@ -35,8 +35,9 @@ let compute_decl env tdecl =
       Type_immediacy.Always
     else
       Type_immediacy.Unknown
-  | (Type_abstract, Some(typ)) -> Ctype.immediacy env typ
-  | (Type_abstract, None) -> Type_immediacy.of_attributes tdecl.type_attributes
+  | (Type_abstract _, Some(typ)) -> Ctype.immediacy env typ
+  | (Type_abstract _, None) ->
+      Type_immediacy.of_attributes tdecl.type_attributes
   | _ -> Type_immediacy.Unknown
 
 let property : (Type_immediacy.t, unit) Typedecl_properties.property =

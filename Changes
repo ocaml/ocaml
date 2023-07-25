@@ -237,6 +237,10 @@ Working version
   (Vincent Laviron, report by François Pottier, review by Nathanaëlle Courant
   and Gabriel Scherer)
 
+- #12334, #12368: Bad error message with mutually recursive abbreviations
+  (Jacques Garrigue, report by Richard Eisenberg, review by Gabriel Scherer
+   and Richard Eisenberg)
+
 - #12401: `seek_in` and `seek_out` sometimes returned normally when given
   negative offsets, instead of failing. Now both functions should consistently
   raise `Sys_error` in this case.

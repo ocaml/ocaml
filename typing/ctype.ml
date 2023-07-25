@@ -400,7 +400,7 @@ let in_pervasives p =
 let is_datatype decl=
   match decl.type_kind with
     Type_record _ | Type_variant _ | Type_open -> true
-  | Type_abstract -> false
+  | Type_abstract _ -> false
 
 
                   (**********************************************)
@@ -602,7 +602,7 @@ let closed_type_decl decl =
   try
     List.iter mark_type decl.type_params;
     begin match decl.type_kind with
-      Type_abstract ->
+      Type_abstract _ ->
         ()
     | Type_variant (v, _rep) ->
         List.iter
@@ -932,7 +932,7 @@ let rec lower_contravariant env var_level visited contra ty =
          try
            let typ = Env.find_type path env in
            typ.type_variance,
-           typ.type_kind = Type_abstract
+           type_kind_is_abstract typ
           with Not_found ->
             (* See testsuite/tests/typing-missing-cmi-2 for an example *)
             List.map (fun _ -> Variance.unknown) tyl,
@@ -1281,7 +1281,7 @@ let new_local_type ?(loc = Location.none) ?manifest_and_scope () =
   {
     type_params = [];
     type_arity = 0;
-    type_kind = Type_abstract;
+    type_kind = Type_abstract Abstract_def;
     type_private = Public;
     type_manifest = manifest;
     type_variance = [];
@@ -1339,7 +1339,7 @@ let instance_parameterized_type ?keep_names sch_args sch =
   )
 
 let map_kind f = function
-  | Type_abstract -> Type_abstract
+  | Type_abstract r -> Type_abstract r
   | Type_open -> Type_open
   | Type_variant (cl, rep) ->
       Type_variant (
@@ -1723,7 +1723,7 @@ let rec extract_concrete_typedecl env ty =
       begin match Env.find_type p env with
       | exception Not_found -> May_have_typedecl
       | decl ->
-          if decl.type_kind <> Type_abstract then Typedecl(p, p, decl)
+          if not (type_kind_is_abstract decl) then Typedecl(p, p, decl)
           else begin
             match try_expand_safe env ty with
             | exception Cannot_expand -> May_have_typedecl
@@ -1811,7 +1811,7 @@ let generic_abbrev env path =
 let generic_private_abbrev env path =
   try
     match Env.find_type path env with
-      {type_kind = Type_abstract;
+      {type_kind = Type_abstract _;
        type_private = Private;
        type_manifest = Some body} ->
          get_level body = generic_level
@@ -2262,7 +2262,7 @@ let non_aliasable p decl =
 let is_instantiable env p =
   try
     let decl = Env.find_type p env in
-    decl.type_kind = Type_abstract &&
+    type_kind_is_abstract decl &&
     decl.type_private = Public &&
     decl.type_arity = 0 &&
     decl.type_manifest = None &&
@@ -2445,9 +2445,9 @@ and mcomp_type_decl type_pairs env p1 p2 tl1 tl2 =
           mcomp_variant_description type_pairs env v1 v2
       | Type_open, Type_open ->
           mcomp_list type_pairs env tl1 tl2
-      | Type_abstract, Type_abstract -> ()
-      | Type_abstract, _ when not (non_aliasable p1 decl)-> ()
-      | _, Type_abstract when not (non_aliasable p2 decl') -> ()
+      | Type_abstract _, Type_abstract _ -> ()
+      | Type_abstract _, _ when not (non_aliasable p1 decl)-> ()
+      | _, Type_abstract _ when not (non_aliasable p2 decl') -> ()
       | _ -> raise Incompatible
   with Not_found -> ()
 
@@ -2577,7 +2577,7 @@ let complete_type_list ?(allow_absent=false) env fl1 lv2 mty2 fl2 =
     | (n, _) :: nl, _ ->
         let lid = concat_longident (Longident.Lident "Pkg") n in
         match Env.find_type_by_name lid env' with
-        | (_, {type_arity = 0; type_kind = Type_abstract;
+        | (_, {type_arity = 0; type_kind = Type_abstract _;
                type_private = Public; type_manifest = Some t2}) ->
             begin match nondep_instance env' lv2 id2 t2 with
             | t -> (n, t) :: complete nl fl2
@@ -2587,7 +2587,7 @@ let complete_type_list ?(allow_absent=false) env fl1 lv2 mty2 fl2 =
                 else
                   raise Exit
             end
-        | (_, {type_arity = 0; type_kind = Type_abstract;
+        | (_, {type_arity = 0; type_kind = Type_abstract _;
                type_private = Public; type_manifest = None})
           when allow_absent ->
             complete nl fl2
@@ -5387,7 +5387,7 @@ let nondep_type_decl env mid is_covariant decl =
     let params = List.map (nondep_type_rec env mid) decl.type_params in
     let tk =
       try map_kind (nondep_type_rec env mid) decl.type_kind
-      with Nondep_cannot_erase _ when is_covariant -> Type_abstract
+      with Nondep_cannot_erase _ when is_covariant -> Type_abstract Abstract_def
     and tm, priv =
       match decl.type_manifest with
       | None -> None, decl.type_private
