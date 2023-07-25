@@ -30,9 +30,9 @@ Error: This pattern matches values of type "string"
        but a pattern was expected which matches values of type "'a option"
 |}]
 
-let rec opt_ok_f () = opt_ok_g ~foo:A ()
-and opt_ok_g ?(foo : M.t option) () = opt_ok_f ()
+let rec opt_ok_f () = opt_ok_g ~foo:A ~bar:A ()
+and opt_ok_g ?(foo : M.t option) ?(bar : M.t = M.A) () = opt_ok_f ()
 [%%expect{|
 val opt_ok_f : unit -> 'a = <fun>
-val opt_ok_g : ?foo:M.t -> unit -> 'a = <fun>
+val opt_ok_g : ?foo:M.t -> ?bar:M.t -> unit -> 'a = <fun>
 |}]

@@ -2651,10 +2651,17 @@ let type_pattern_approx env spat =
   | Ppat_constraint (_, sty) -> approx_type env sty
   | _ -> newvar ()
 
-let type_approx_fun env label spat ret_ty =
+let type_approx_fun env label default spat ret_ty =
   let ty = type_pattern_approx env spat in
-  if is_optional label then
-    unify_pat_types spat.ppat_loc env ty (type_option (newvar ()));
+  let ty =
+    match label, default with
+    | (Nolabel | Labelled _), _ -> ty
+    | Optional _, None ->
+       unify_pat_types spat.ppat_loc env ty (type_option (newvar ()));
+       ty
+    | Optional _, Some _ ->
+       type_option ty
+  in
   newty (Tarrow (label, ty, ret_ty, commu_ok))
 
 let type_approx_constraint env ty constraint_ ~loc =
@@ -2706,8 +2713,8 @@ and type_approx_function env params c body ~loc =
      we give up.
   *)
   match params with
-  | Pparam_val (label, _, pat) :: params ->
-      type_approx_fun env label pat
+  | Pparam_val (label, default, pat) :: params ->
+      type_approx_fun env label default pat
         (type_approx_function env params c body ~loc)
   | Pparam_newtype _ :: _ ->
       newvar ()
