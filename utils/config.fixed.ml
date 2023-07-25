@@ -57,7 +57,6 @@ let tsan = false
 let architecture = "none"
 let model = "default"
 let system = "unknown"
-let abi = "default"
 let asm = boot_cannot_call "the assembler"
 let asm_cfi_supported = false
 let with_frame_pointers = false

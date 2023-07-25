@@ -122,7 +122,6 @@ AC_SUBST([arch])
 AC_SUBST([arch64])
 AC_SUBST([model])
 AC_SUBST([system])
-AC_SUBST([abi])
 AC_SUBST([native_cflags])
 AC_SUBST([native_cppflags])
 AC_SUBST([systhread_support])
@@ -1235,7 +1234,6 @@ OCAML_CC_SUPPORTS_TREE_VECTORIZE
 arch=none
 model=default
 system=unknown
-abi=default
 
 # In all the cases below, if $arch is set so then so too must $system,
 # preserving $arch = 'none' <=> $system = 'unknown'
@@ -1268,19 +1266,19 @@ AS_CASE([$host],
     [has_native_backend=yes; arch=s390x; model=z10; system=linux],
   # expected to match "gnueabihf" as well as "musleabihf"
   [armv6*-*-linux-*eabihf],
-    [arch=arm; model=armv6; system=linux; abi=eabihf],
+    [arch=arm; model=armv6; system=linux],
   [armv7*-*-linux-*eabihf],
-    [arch=arm; model=armv7; system=linux; abi=eabihf],
+    [arch=arm; model=armv7; system=linux],
   [armv8*-*-linux-*eabihf],
-    [arch=arm; model=armv8; system=linux; abi=eabihf],
+    [arch=arm; model=armv8; system=linux],
   [armv8*-*-linux-*eabi],
-    [arch=arm; model=armv8; system=linux; abi=eabi],
+    [arch=arm; model=armv8; system=linux],
   [armv7*-*-linux-*eabi],
-    [arch=arm; model=armv7; system=linux; abi=eabi],
+    [arch=arm; model=armv7; system=linux],
   [armv6t2*-*-linux-*eabi],
-    [arch=arm; model=armv6t2; system=linux; abi=eabi],
+    [arch=arm; model=armv6t2; system=linux],
   [armv6*-*-linux-*eabi],
-    [arch=arm; model=armv6; system=linux; abi=eabi],
+    [arch=arm; model=armv6; system=linux],
   [armv6*-*-freebsd*],
     [arch=arm; model=armv6; system=freebsd],
   [earmv6*-*-netbsd*],
@@ -1288,13 +1286,13 @@ AS_CASE([$host],
   [earmv7*-*-netbsd*],
     [arch=arm; model=armv7; system=netbsd],
   [armv5te*-*-linux-*eabi],
-    [arch=arm; model=armv5te; system=linux; abi=eabi],
+    [arch=arm; model=armv5te; system=linux],
   [armv5*-*-linux-*eabi],
-    [arch=arm; model=armv5; system=linux; abi=eabi],
+    [arch=arm; model=armv5; system=linux],
   [arm*-*-linux-*eabihf],
-    [arch=arm; system=linux; abi=eabihf],
+    [arch=arm; system=linux],
   [arm*-*-linux-*eabi],
-    [arch=arm; system=linux; abi=eabi],
+    [arch=arm; system=linux],
   [arm*-*-openbsd*],
     [arch=arm; system=openbsd],
   [zaurus*-*-openbsd*],

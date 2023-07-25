@@ -100,7 +100,6 @@ let configuration_variables () =
   p_int "int_size" Sys.int_size;
   p_int "word_size" Sys.word_size;
   p "system" system;
-  p "abi" abi;
   p "asm" asm;
   p_bool "asm_cfi_supported" asm_cfi_supported;
   p_bool "with_frame_pointers" with_frame_pointers;
