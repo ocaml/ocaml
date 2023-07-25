@@ -76,6 +76,14 @@ Working version
   (Guillaume Munch-Maccagnoni, review by Anil Madhavapeddy and KC
    Sivaramakrishnan)
 
+- #12408: `Domain.spawn` no longer leaks its functional argument for
+  the whole duration of the children domain lifetime.
+  (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
+
+- #12409: Fix unsafety and deadlocks should an asynchronous exception
+  arise at specific locations during domain creation and shutdown.
+  (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.
@@ -232,6 +240,11 @@ Working version
 - #12334, #12368: Bad error message with mutually recursive abbreviations
   (Jacques Garrigue, report by Richard Eisenberg, review by Gabriel Scherer
    and Richard Eisenberg)
+
+- #12401: `seek_in` and `seek_out` sometimes returned normally when given
+  negative offsets, instead of failing. Now both functions should consistently
+  raise `Sys_error` in this case.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
 OCaml 5.1.0
 ---------------

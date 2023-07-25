@@ -664,10 +664,10 @@ exception "Match_failure" is raised.
 %
 \index{Matchfailure\@\verb`Match_failure`}
 
-\begin{caml_example}{toplevel}[warning=8, error]
+\begin{caml_example}{toplevel}
 let unoption o =
   match o with
-  | Some x -> x 
+  | Some x -> x [@@expect warning 8];;
 
 let l = List.map unoption [Some 1; Some 10; None; Some 2];;
 \end{caml_example}
