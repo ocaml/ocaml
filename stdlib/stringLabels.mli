@@ -119,9 +119,10 @@ val to_bytes : string -> bytes
 
 val blit :
   src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int -> unit
-(** [blit ~src ~src_pos ~dst ~dst_pos ~len] copies [len] bytes
-    from the string [src], starting at index [src_pos],
-    to byte sequence [dst], starting at character number [dst_pos].
+(** Rather use {!Bytes.blit_string} but [blit ~src ~src_pos ~dst
+    ~dst_pos ~len] copies [len] bytes from the string [src], starting
+    at index [src_pos], to byte sequence [dst], starting at character
+    number [dst_pos].
 
     @raise Invalid_argument if [src_pos] and [len] do not
     designate a valid range of [src], or if [dst_pos] and [len]
