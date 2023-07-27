@@ -130,6 +130,10 @@ Working version
   (Damien Doligez with Florian Angeletti, Sébastien Hinderer, Gabriel Scherer,
    review by Sébastien Hinderer and Gabriel Scherer)
 
+- #12371: ocamltest: fix recursive expansion of variables.
+  (Antonin Décimo, Damien Doligez, review by Sébastien Hinderer,
+   Damien Doligez, Gabriel Scherer, and Xavier Leroy)
+
 ### Manual and documentation:
 
 - #12338: clarification of the documentation of process related function in

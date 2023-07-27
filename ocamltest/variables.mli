@@ -29,6 +29,8 @@ exception Variable_already_registered of string
 
 exception No_such_variable of string
 
+exception Recursive_variable_definition of string
+
 val make : string * string -> t
 
 val make_with_exporter : exporter -> string * string -> t
