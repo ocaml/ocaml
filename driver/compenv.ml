@@ -487,6 +487,9 @@ let read_one_param ppf position name v =
   | "dump-into-file" -> Clflags.dump_into_file := true
   | "dump-dir" -> Clflags.dump_dir := Some v
 
+  | "metaocaml-mode" ->
+     set "metaocaml-mode" [ Clflags.metaocaml_mode ] v
+
   | _ ->
     if not (List.mem name !can_discard) then begin
       can_discard := name :: !can_discard;
