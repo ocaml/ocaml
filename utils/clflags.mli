@@ -129,6 +129,7 @@ val float_const_prop : bool ref
 val transparent_modules : bool ref
 val unique_ids : bool ref
 val locations : bool ref
+val metaocaml_mode : bool ref
 val dump_source : bool ref
 val dump_parsetree : bool ref
 val dump_typedtree : bool ref
