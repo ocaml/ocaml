@@ -3870,7 +3870,7 @@ let param_to_var param =
   | Lvar v -> (v, None)
   | _ -> (Ident.create_local "*match*", Some param)
 
-let bind_opt (v, eo) k =
+let bind_opt k (v, eo) =
   match eo with
   | None -> k
   | Some e -> Lambda.bind Strict v e k
@@ -3878,8 +3878,12 @@ let bind_opt (v, eo) k =
 let for_multiple_match ~scopes loc paraml pat_act_list partial =
   let v_paraml = List.map param_to_var paraml in
   let paraml = List.map (fun (v, _) -> Lvar v) v_paraml in
-  List.fold_right bind_opt v_paraml
+  (* We use fold_left, so that the first expression ends up
+     evaluated last. This ensures coherence with the usual
+     right-to-left evaluation order for tuples. *)
+  List.fold_left bind_opt
     (do_for_multiple_match ~scopes loc paraml pat_act_list partial)
+    v_paraml
 
 let for_optional_arg_default ~scopes loc pat ~default_arg ~param body =
   let supplied_or_default =
