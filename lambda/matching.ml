@@ -643,7 +643,7 @@ let flatten_matrix size pss =
     pss []
 
 (** A default environment (referred to as "reachable trap handlers" in the
-    paper), is an ordered list of [matrix * raise_num] pairs, and is used to
+    paper), is an ordered list of [raise_num * matrix] pairs, and is used to
     decide where to jump next if none of the rows in a given matrix match the
     input.
 
@@ -665,7 +665,7 @@ module Default_environment : sig
 
   val is_empty : t -> bool
 
-  val pop : t -> ((matrix * int) * t) option
+  val pop : t -> ((int * matrix) * t) option
 
   val empty : t
 
@@ -681,7 +681,7 @@ module Default_environment : sig
 
   val pp : t -> unit
 end = struct
-  type t = (matrix * int) list
+  type t = (int * matrix) list
   (** All matrices in the list should have the same arity -- their rows should
       have the same number of columns -- as it should match the arity of the
       current scrutiny vector. *)
@@ -695,7 +695,7 @@ end = struct
   let cons matrix raise_num default =
     match matrix with
     | [] -> default
-    | _ -> (matrix, raise_num) :: default
+    | _ -> (raise_num, matrix) :: default
 
   let specialize_matrix arity matcher pss =
     let rec filter_rec = function
@@ -784,8 +784,8 @@ end = struct
   let specialize_ arity matcher env =
     let rec make_rec = function
       | [] -> []
-      | (([] :: _), i) :: _ -> [ ([ [] ], i) ]
-      | (pss, i) :: rem -> (
+      | (i, ([] :: _)) :: _ -> [ (i, [ [] ]) ]
+      | (i, pss) :: rem -> (
           (* we already handled the empty-row case
              so we know that all rows in pss are non-empty *)
           let non_empty = function
@@ -795,8 +795,8 @@ end = struct
           let pss = List.map non_empty pss in
           match specialize_matrix arity matcher pss with
           | [] -> make_rec rem
-          | [] :: _ -> [ ([ [] ], i) ]
-          | pss -> (pss, i) :: make_rec rem
+          | [] :: _ -> [ (i, [ [] ]) ]
+          | pss -> (i, pss) :: make_rec rem
         )
     in
     make_rec env
@@ -822,12 +822,12 @@ end = struct
   let pp def =
     Format.eprintf "+++++ Defaults +++++\n";
     List.iter
-      (fun (pss, i) -> Format.eprintf "Matrix for %d\n%a" i pretty_matrix pss)
+      (fun (i, pss) -> Format.eprintf "Matrix for %d\n%a" i pretty_matrix pss)
       def;
     Format.eprintf "+++++++++++++++++++++\n"
 
   let flatten size def =
-    List.map (fun (pss, i) -> (flatten_matrix size pss, i)) def
+    List.map (fun (i, pss) -> (i, flatten_matrix size pss)) def
 end
 
 module Jumps : sig
@@ -2647,7 +2647,7 @@ let mk_failaction_neg partial ctx def =
   match partial with
   | Partial -> (
       match Default_environment.pop def with
-      | Some ((_, idef), _) ->
+      | Some ((idef, _), _) ->
           (Some (Lstaticraise (idef, [])), Jumps.singleton idef ctx)
       | None ->
           (* Act as Total, this means
@@ -2669,7 +2669,7 @@ let mk_failaction_pos partial seen ctx defs =
     | [], _
     | _, None ->
         List.fold_left
-          (fun (klist, jumps) (pats, i) ->
+          (fun (klist, jumps) (i, pats) ->
             let action = Lstaticraise (i, []) in
             let klist =
               List.fold_right
@@ -2680,13 +2680,13 @@ let mk_failaction_pos partial seen ctx defs =
             in
             (klist, jumps))
           ([], Jumps.empty) env
-    | _, Some ((pss, idef), rem) -> (
+    | _, Some ((idef, pss), rem) -> (
         let now, later =
           List.partition (fun (_p, p_ctx) -> Context.matches p_ctx pss) to_test
         in
         match now with
         | [] -> scan_def env to_test rem
-        | _ -> scan_def ((List.map fst now, idef) :: env) later rem
+        | _ -> scan_def ((idef, List.map fst now) :: env) later rem
       )
   in
   let fail_pats = complete_pats_constrs seen in
@@ -3197,7 +3197,7 @@ let bind_check str v arg lam =
 
 let comp_exit ctx m =
   match Default_environment.pop m.default with
-  | Some ((_, i), _) -> (Lstaticraise (i, []), Jumps.singleton i ctx)
+  | Some ((i, _), _) -> (Lstaticraise (i, []), Jumps.singleton i ctx)
   | None -> fatal_error "Matching.comp_exit"
 
 let rec comp_match_handlers comp_fun partial ctx first_match next_matches =
