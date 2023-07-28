@@ -524,9 +524,11 @@ end = struct
       let shifted, left = rev_split_at n left in
       { left; right = shifted @ right }
 
-    (** Recombination of contexts (eg: (_,_)::p1::p2::rem ->  (p1,p2)::rem)
-  All mutable fields are replaced by '_', since side-effects in
-  guards can alter these fields *)
+    (** Recombination of contexts.
+        For example:
+          { (_,_)::left; p1::p2::right } -> { left; (p1,p2)::right }
+        All mutable fields are replaced by '_', since side-effects in
+        guards can alter these fields. *)
     let combine { left; right } =
       match left with
       | p :: ps -> { left = ps; right = set_args_erase_mutable p right }
@@ -3264,7 +3266,7 @@ let arg_to_var arg cls =
       ctx=a context
       m=a pattern matching
 
-   Output: a lambda term, a jump summary {..., exit number -> context, .. }
+   Output: a lambda term, a jump summary {..., exit number -> context, ... }
 *)
 
 let rec compile_match ~scopes repr partial ctx
