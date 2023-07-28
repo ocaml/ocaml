@@ -690,6 +690,7 @@ CAMLprim value caml_channel_descriptor(value vchannel)
 
 CAMLprim value caml_ml_close_channel(value vchannel)
 {
+  CAMLparam1 (vchannel);
   int result;
   int fd;
 
@@ -716,7 +717,7 @@ CAMLprim value caml_ml_close_channel(value vchannel)
     if (result == -1) caml_sys_error (NO_ARG);
   }
   Unlock(channel);
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 /* EOVERFLOW is the Unix98 error indicating that a file position or file
