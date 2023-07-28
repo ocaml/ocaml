@@ -120,8 +120,9 @@ and may_compats = MayCompat.compats
    Many functions on the various data structures of the algorithm :
      - Pattern matrices.
      - Default environments: mapping from matrices to exit numbers.
-     - Contexts:  matrices whose column are partitioned into
-       left and right.
+     - Contexts: matrices whose column are partitioned into
+       left (prefix of the input that we have already matched) and
+       right (what remains to be matched).
      - Jump summaries: mapping from exit numbers to contexts
 *)
 
@@ -494,6 +495,10 @@ module Context : sig
 end = struct
   module Row = struct
     type t = { left : pattern list; right : pattern list }
+    (* Static knowledge on a frontier of nodes (subtrees) in the matched values.
+       Left: what we know about what is above us, towards the root.
+       Right: what we know about whas is below us, towards the leaves. *)
+
 
     let eprintf { left; right } =
       Format.eprintf "LEFT:%a RIGHT:%a\n" pretty_line left pretty_line right
@@ -529,6 +534,8 @@ end = struct
   end
 
   type t = Row.t list
+  (* A union/disjunction of possible context "rows". What we know is that
+     the matching situation is described by one of the rows. *)
 
   let empty = []
 
