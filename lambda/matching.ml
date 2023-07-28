@@ -3200,44 +3200,39 @@ let comp_exit ctx m =
   | Some ((_, i), _) -> (Lstaticraise (i, []), Jumps.singleton i ctx)
   | None -> fatal_error "Matching.comp_exit"
 
-let rec comp_match_handlers comp_fun partial ctx first_match next_matchs =
-  match next_matchs with
+let rec comp_match_handlers comp_fun partial ctx first_match next_matches =
+  match next_matches with
   | [] -> comp_fun partial ctx first_match
-  | rem -> (
-      let rec c_rec body total_body = function
-        | [] -> (body, total_body)
-        (* Hum, -1 means never taken
-        | (-1,pm)::rem -> c_rec body total_body rem *)
-        | (i, pm) :: rem -> (
-            let ctx_i, total_rem = Jumps.extract i total_body in
+  | (_, second_match) :: next_next_matches -> (
+      let rec c_rec body jumps_body = function
+        | [] -> (body, jumps_body)
+        | (i, pm_i) :: rem -> (
+            let ctx_i, jumps_rem = Jumps.extract i jumps_body in
             if Context.is_empty ctx_i then
-              c_rec body total_body rem
+              c_rec body jumps_body rem
             else begin
               let partial = match rem with
                 | [] -> partial
                 | _ -> Partial
               in
-              match comp_fun partial ctx_i pm with
-              | li, total_i ->
+              match comp_fun partial ctx_i pm_i with
+              | lambda_i, jumps_i ->
                 c_rec
-                  (Lstaticcatch (body, (i, []), li))
-                  (Jumps.union total_i total_rem)
+                  (Lstaticcatch (body, (i, []), lambda_i))
+                  (Jumps.union jumps_i jumps_rem)
                   rem
               | exception Unused ->
                 c_rec
                   (Lstaticcatch (body, (i, []), lambda_unit))
-                  total_rem rem
+                  jumps_rem rem
             end
           )
       in
       match comp_fun Partial ctx first_match with
-      | first_lam, total ->
-        c_rec first_lam total rem
-      | exception Unused -> (
-        match next_matchs with
-        | [] -> raise Unused
-        | (_, x) :: xs -> comp_match_handlers comp_fun partial ctx x xs
-      )
+      | first_lam, jumps ->
+        c_rec first_lam jumps next_matches
+      | exception Unused ->
+        comp_match_handlers comp_fun partial ctx second_match next_next_matches
     )
 
 (* To find reasonable names for variables *)
