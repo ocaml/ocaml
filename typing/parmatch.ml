@@ -547,12 +547,14 @@ let do_set_args ~erase_mutable q r = match q with
     end
 | {pat_desc = Tpat_array omegas} ->
     let args,rest = read_args omegas r in
+    let args = if erase_mutable then omegas else args in
     make_pat
       (Tpat_array args) q.pat_type q.pat_env::
     rest
 | {pat_desc=Tpat_constant _|Tpat_any} ->
     q::r (* case any is used in matching.ml *)
-| _ -> fatal_error "Parmatch.set_args"
+| {pat_desc = (Tpat_var _ | Tpat_alias _ | Tpat_or _); _} ->
+    fatal_error "Parmatch.set_args"
 
 let set_args q r = do_set_args ~erase_mutable:false q r
 and set_args_erase_mutable q r = do_set_args ~erase_mutable:true q r
