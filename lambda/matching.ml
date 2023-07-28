@@ -643,9 +643,11 @@ let flatten_matrix size pss =
     pss []
 
 (** A default environment (referred to as "reachable trap handlers" in the
-    paper), is an ordered list of [raise_num * matrix] pairs, and is used to
-    decide where to jump next if none of the rows in a given matrix match the
-    input.
+    paper) is an ordered list of [raise_num * matrix] pairs, mapping reachable
+    exit numbers to the matrices of the corresponding exit handler.
+
+    It is used to decide where to jump next if none of the rows in a given
+    matrix match the input.
 
     In such situations, one thing you can do is to jump to the first (leftmost)
     [raise_num] in that list (by doing a raise to the static-cach handler number
@@ -653,12 +655,11 @@ let flatten_matrix size pss =
     either, it will do the same thing, etc.
     This is what [mk_failaction_neg] (and its callers) does.
 
-    A more sophisticated alternative is to use what you know about the input
-    (what you might already have matched) and the current pm (what you know you
-    can't match) to directly jump to a pm that might match it instead of the
-    next one; that is why we don't just keep [raise_num]s but also the
-    associated matrices.
-    [mk_failaction_pos] does (a slightly more sophisticated version of) this.
+    But in fact there is no point in jumping to a matrix if you can tell
+    statically that it cannot match your current input. Default environments
+    provide static information on what happens "after" each jump, which we use
+    to optimize our exit choices.
+    This is what [mk_failaction_pos] (and its callers) does.
 *)
 module Default_environment : sig
   type t
@@ -830,6 +831,13 @@ end = struct
     List.map (fun (i, pss) -> (i, flatten_matrix size pss)) def
 end
 
+(** For a given code fragment, we call "external" exits the exit numbers that
+    are raised within the code but not handled in the code fragment itself.
+
+    The jump summary of a code fragment is an ordered list of
+    [raise_num * Context.t] pairs, mapping all its external exit numbers to
+    context information valid for all its raise points within the code fragment.
+*)
 module Jumps : sig
   type t
 
@@ -849,6 +857,8 @@ module Jumps : sig
 
   val remove : int -> t -> t
 
+  (** [extract exit jumps] returns the context at the given exit
+      and the rest of the jump summary. *)
   val extract : int -> t -> Context.t * t
 
   val eprintf : t -> unit
