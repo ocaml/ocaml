@@ -29,7 +29,7 @@ type 'a t = {
    - capacity: the length of the backing array:
      [Array.length  arr]
    - live space: the portion of the backing array with
-     indices from [0] to [length] excluded.
+     indices from [0] to [length - 1] included.
    - empty space: the portion of the backing array
      from [length] to the end of the backing array.
 
@@ -91,7 +91,7 @@ and 'a slot =
    There are some situations where ['a option] is better: it makes
    [pop_last_opt] more efficient as the underlying option can be
    returned directly, and it also lets us use [Array.blit] to
-   implement [append]. We believe that optimzing [get] and [set] is
+   implement [append]. We believe that optimizing [get] and [set] is
    more important for dynamic arrays.
 
    {2 Invariants and valid states}
@@ -102,9 +102,9 @@ and 'a slot =
    The following conditions define what we call a "valid" dynarray:
    - valid length: [length <= Array.length arr]
    - no missing element in the live space:
-     forall i, [0 <= i <=length] implies [arr.(i) <> Empty]
+     forall i, [0 <= i < length] implies [arr.(i) <> Empty]
    - no element in the empty space:
-     forall i, [0 <= i < length] implies [arr.(i) = Empty]
+     forall i, [length <= i < Array.length arr] implies [arr.(i) = Empty]
 
    Unfortunately, we cannot easily enforce validity as an invariant in
    presence of concurrent updates. We can thus observe dynarrays in
@@ -243,14 +243,17 @@ let length a = a.length
 
 let is_empty a = (a.length = 0)
 
-let copy {length; arr} = {
-  length;
-  arr =
-    Array.map (function
-      | Empty -> Empty
-      | Elem {v} -> Elem {v}
-    ) arr;
-}
+let copy {length; arr} =
+  check_valid_length length arr;
+  (* use [length] as the new capacity to make
+     this an O(length) operation. *)
+  {
+    length;
+    arr = Array.init length (fun i ->
+      let v = unsafe_get arr ~i ~length in
+      Elem {v}
+    );
+  }
 
 (** {1:removing Removing elements} *)
 
@@ -384,7 +387,7 @@ let reset a =
 (** {1:adding Adding elements} *)
 
 (* We chose an implementation of [add_last a x] that behaves correctly
-   in presence of aynchronous / re-entrant code execution around
+   in presence of asynchronous / re-entrant code execution around
    allocations and poll points: if another thread or a callback gets
    executed on allocation, we add the element at the new end of the
    dynamic array.
@@ -397,7 +400,7 @@ let reset a =
 (* [add_last_if_room a elem] only writes the slot if there is room, and
    returns [false] otherwise.
 
-   It is sequentially atomic -- in absence of unsychronized concurrent
+   It is sequentially atomic -- in absence of unsynchronized concurrent
    uses, the fields of [a.arr] and [a.length] will not be mutated
    by any other code during execution of this function.
 *)
@@ -438,7 +441,7 @@ let append_iter a iter b =
   iter (fun x -> add_last a x) b
 
 let append_seq a seq =
-  Seq.iter (add_last a) seq
+  Seq.iter (fun x -> add_last a x) seq
 
 (* append_array: same [..._if_room] and loop logic as [add_last]. *)
 
@@ -681,7 +684,7 @@ let filter f a =
   b
 
 let filter_map f a =
-  let b = create() in
+  let b = create () in
   iter_ "filter_map" (fun x ->
     match f x with
     | None -> ()

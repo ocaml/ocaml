@@ -64,7 +64,7 @@ type 'a t
 (** A dynamic array containing values of type ['a].
 
     A dynamic array [a] provides constant-time [get] and [set]
-    operation on indices between [0] and [Dynarray.length a - 1]
+    operations on indices between [0] and [Dynarray.length a - 1]
     included. Its {!length} may change over time by adding or removing
     elements to the end of the array.
 
@@ -78,7 +78,7 @@ val create : unit -> 'a t
 val make : int -> 'a -> 'a t
 (** [make n x] is a new array of length [n], filled with [x].
 
-    @raise Invalid_argument if [n < 0].
+    @raise Invalid_argument if [n < 0] or [n > Sys.max_array_length].
 *)
 
 val init : int -> (int -> 'a) -> 'a t
@@ -90,7 +90,7 @@ val init : int -> (int -> 'a) -> 'a t
 
     This is similar to {!Array.init}.
 
-    @raise Invalid_argument if [n < 0].
+    @raise Invalid_argument if [n < 0] or [n > Sys.max_array_length].
 *)
 
 val get : 'a t -> int -> 'a
@@ -148,6 +148,9 @@ val append : 'a t -> 'a t -> unit
     on [a] and adds elements to it at the same time -- see the
     {{!sec:iteration} Iteration} section below. It fails with
     [Invalid_argument].
+    If you really want to append a copy of [a] to itself, you can use
+    [Dynarray.append_array a (Dynarray.to_array a)] which copies [a]
+    into a temporary array.
 *)
 
 val append_seq : 'a t -> 'a Seq.t -> unit
@@ -365,22 +368,22 @@ val to_seq_rev : 'a t -> 'a Seq.t
 
     Internally, a dynamic array uses a {b backing array} (a fixed-size
     array as provided by the {!Array} module) whose length is greater
-    or equal to the length of the dynamic array. We call {b capacity}
-    the length of the backing array.
+    or equal to the length of the dynamic array. We define the {b
+    capacity} of a dynamic array as the length of its backing array.
 
     The capacity of a dynamic array is relevant in advanced scenarios,
     when reasoning about the performance of dynamic array programs:
     {ul
     {- The memory usage of a dynamic array is proportional to its capacity,
        rather than its length.}
-    {- When then is no empty space left at the end of the backing array.
+    {- When there is no empty space left at the end of the backing array,
        adding elements requires allocating a new, larger backing array.}}
 
     The implementation uses a standard exponential reallocation
-    strategy which guarantees amortized constant-time operation: the
-    total capacity of all backing arrays allocated over the lifetime
-    of a dynamic array is at worst proportional to the total number of
-    elements added.
+    strategy which guarantees amortized constant-time operation; in
+    particular, the total capacity of all backing arrays allocated
+    over the lifetime of a dynamic array is at worst proportional to
+    the total number of elements added.
 
     In other words, users need not care about capacity and reallocations,
     and they will get reasonable behavior by default. However, in some
