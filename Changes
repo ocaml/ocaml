@@ -1139,6 +1139,9 @@ Some of those changes will benefit all OCaml packages.
   (Guillaume Munch-Maccagnoni, report by Thomas Leonard, review by
    KC Sivaramakrishnan and Sadiq Jaffer)
 
+- #12445: missing GC root registrations in runtime/io.c
+  (Gabriel Scherer, review by Xavier Leroy and Jeremy Yallop)
+
 OCaml 5.0.0 (15 December 2022)
 ------------------------------
 
