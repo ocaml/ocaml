@@ -43,8 +43,23 @@ let () =
   A.ensure_capacity a 256;
   assert (A.is_empty a);;
 
-
 (** length is tested below *)
+
+(** get_last, find_last *)
+let () =
+  let a = A.of_list [1; 2] in
+  assert (A.get_last a = 2);
+  assert (A.find_last a = Some 2);
+
+  A.remove_last a;
+  assert (A.to_list a = [1]);
+  assert (A.get_last a = 1);
+  assert (A.find_last a = Some 1);
+
+  A.remove_last a;
+  assert (A.to_list a = []);
+  assert (match A.get_last a with exception _ -> true | _ -> false);
+  assert (A.find_last a = None)
 
 (** copy, add_last *)
 

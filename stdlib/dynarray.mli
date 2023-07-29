@@ -114,10 +114,19 @@ val length : 'a t -> int
 val is_empty : 'a t -> bool
 (** [is_empty a] is [true] if [a] is empty, that is, if [length a = 0]. *)
 
+val get_last : 'a t -> 'a
+(** [get_last a] is the element of [a] at index [length a - 1].
+
+    @raise Invalid_argument if [a] is empty.
+*)
+
+val find_last : 'a t -> 'a option
+(** [find_last a] is [None] if [a] is empty
+    and [Some (get_last a)] otherwise. *)
+
 val copy : 'a t -> 'a t
 (** [copy a] is a shallow copy of [a], a new array
     containing the same elements as [a]. *)
-
 
 (** {1:adding Adding elements}
 

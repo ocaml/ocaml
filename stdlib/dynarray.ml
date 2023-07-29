@@ -168,6 +168,10 @@ module Error = struct
       missing_element ~i ~length
     else
       index_out_of_bounds f ~i ~length
+
+  let[@inline never] empty_dynarray f =
+    Printf.ksprintf invalid_arg
+      "Dynarray.%s: empty array" f
 end
 
 (* Detecting iterator invalidation.
@@ -184,7 +188,7 @@ let check_same_length f a ~length =
 
 (* Postcondition on non-exceptional return:
    [length <= Array.length arr] *)
-let check_valid_length length arr =
+let[@inline always] check_valid_length length arr =
   let capacity = Array.length arr in
   if length > capacity then
     Error.invalid_length ~length ~capacity
@@ -193,7 +197,7 @@ let check_valid_length length arr =
 
    This precondition is typically guaranteed by knowing
    [0 <= i < length] and calling [check_valid_length length arr].*)
-let unsafe_get arr ~i ~length =
+let[@inline always] unsafe_get arr ~i ~length =
   match Array.unsafe_get arr i with
   | Empty -> Error.missing_element ~i ~length
   | Elem {v} -> v
@@ -255,17 +259,33 @@ let copy {length; arr} =
     );
   }
 
+let get_last a =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  (* We know [length <= capacity a]. *)
+  if length = 0 then Error.empty_dynarray "get_last";
+  (* We know [length > 0]. *)
+  unsafe_get arr ~i:(length - 1) ~length
+
+let find_last a =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  (* We know [length <= capacity a]. *)
+  if length = 0 then None
+  else
+    (* We know [length > 0]. *)
+    Some (unsafe_get arr ~i:(length - 1) ~length)
+
 (** {1:removing Removing elements} *)
 
 let pop_last a =
   let {arr; length} = a in
+  check_valid_length length arr;
+  (* We know [length <= capacity a]. *)
   if length = 0 then raise Not_found;
   let last = length - 1 in
-  (* We know [length > 0] so [last >= 0].
-     See {!get} comment on the use of checked array
-     access without our own bound checking.
-  *)
-  match arr.(last) with
+  (* We know [length > 0] so [last >= 0]. *)
+  match Array.unsafe_get arr last with
   (* At this point we know that [last] is a valid index in [arr]. *)
   | Empty ->
       Error.missing_element ~i:last ~length
