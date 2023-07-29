@@ -253,7 +253,7 @@ let () =
 
 (** {1:conversions Conversions to other data structures} *)
 
-(** {of,to}_{list,array,seq} *)
+(** {of,to}_{list,array,seq{,_rev}{,_rentrant}} *)
 
 let () =
   for i = 0 to 1024 do
@@ -262,9 +262,76 @@ let () =
     let arr = Array.of_list ints in
     assert ((arr |> A.of_array |> A.to_array) = arr);
     let seq = Array.to_seq arr in
-    assert ((seq |> A.of_seq |> A.to_seq) |> Array.of_seq = arr);
+    [A.to_seq; A.to_seq_reentrant] |> List.iter (fun dynarray_to_seq ->
+      assert ((seq |> A.of_seq |> dynarray_to_seq) |> Array.of_seq = arr)
+    );
+    [A.to_seq_rev; A.to_seq_rev_reentrant] |> List.iter (fun dynarray_to_seq_rev ->
+      assert ((seq |> A.of_seq |> dynarray_to_seq_rev)
+                |> List.of_seq |> List.rev
+              = ints)
+    );
   done;;
-;;
+
+(** reentrancy for to_seq{,_rev}_reentrant *)
+let () =
+  let a = A.of_list [1; 2; 3; 4] in
+  let seq = A.to_seq a in
+  let srq = A.to_seq_reentrant a in
+  let elems_a = A.to_seq_reentrant a in
+
+  let (i, seq) = Option.get (Seq.uncons seq) in assert (i = 1);
+  let (i, srq) = Option.get (Seq.uncons srq) in assert (i = 1);
+
+  (* setting an element in the middle is observed by both versions *)
+  A.set a 1 12;
+  assert (List.of_seq elems_a = [1; 12; 3; 4]);
+  let (i, seq) = Option.get (Seq.uncons seq) in assert (i = 12);
+  let (i, srq) = Option.get (Seq.uncons srq) in assert (i = 12);
+
+  (* adding or removing elements invalidates [seq] but works with [srq] *)
+  A.remove_last a;
+  assert (List.of_seq elems_a = [1; 12; 3]);
+  assert (match Seq.uncons seq with
+    | exception (Invalid_argument _) -> true
+    | _ -> false
+  );
+  let (i, srq) = Option.get (Seq.uncons srq) in assert (i = 3);
+
+  A.add_last a 4;
+  assert (List.of_seq elems_a = [1; 12; 3; 4]);
+  let (i, srq) = Option.get (Seq.uncons srq) in assert (i = 4);
+  assert (Seq.is_empty srq)
+
+let () =
+  let a = A.of_list [1; 2; 3; 4; 5] in
+  let seq = A.to_seq_rev a in
+  let srq = A.to_seq_rev_reentrant a in
+
+  let (i, seq) = Option.get (Seq.uncons seq) in assert (i = 5);
+  let (i, srq) = Option.get (Seq.uncons srq) in assert (i = 5);
+
+  (* setting an element in the middle is observed by both versions *)
+  A.set a 3 14;
+  assert (A.to_list a = [1; 2; 3; 14; 5]);
+  let (i, seq) = Option.get (Seq.uncons seq) in assert (i = 14);
+  let (i, srq) = Option.get (Seq.uncons srq) in assert (i = 14);
+
+  (* adding elements invalidates [seq] but is ignored by [srq] *)
+  A.add_last a 6;
+  assert (A.to_list a = [1; 2; 3; 14; 5; 6]);
+  assert (match Seq.uncons seq with
+    | exception (Invalid_argument _) -> true
+    | _ -> false
+  );
+  (* just check the head, no popping *)
+  let (i, _) = Option.get (Seq.uncons srq) in assert (i = 3);
+  let (i, _) = Option.get (Seq.uncons srq) in assert (i = 3);
+
+  (* [srq] skips removed elements *)
+  A.truncate a 1;
+  assert (A.to_list a = [1]);
+  let (i, srq) = Option.get (Seq.uncons srq) in assert (i = 1);
+  assert (Seq.is_empty srq)
 
 
 (** {1:advanced Advanced topics for performance} *)

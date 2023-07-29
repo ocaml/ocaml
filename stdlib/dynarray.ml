@@ -737,7 +737,20 @@ let of_seq seq =
   init
 
 let to_seq a =
-  let rec aux i () =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  let rec aux i = fun () ->
+    check_same_length "to_seq" a ~length;
+    if i >= length then Seq.Nil
+    else begin
+      let v = unsafe_get arr ~i ~length in
+      Seq.Cons (v, aux (i + 1))
+    end
+  in
+  aux 0
+
+let to_seq_reentrant a =
+  let rec aux i = fun () ->
     if i >= length a then Seq.Nil
     else begin
       let v = get a i in
@@ -747,7 +760,20 @@ let to_seq a =
   aux 0
 
 let to_seq_rev a =
-  let rec aux i () =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  let rec aux i = fun () ->
+    check_same_length "to_seq_rev" a ~length;
+    if i < 0 then Seq.Nil
+    else begin
+      let v = unsafe_get arr ~i ~length in
+      Seq.Cons (v, aux (i - 1))
+    end
+  in
+  aux (length - 1)
+
+let to_seq_rev_reentrant a =
+  let rec aux i = fun () ->
     if i < 0 then Seq.Nil
     else if i >= length a then
       (* If some elements have been removed in the meantime, we skip

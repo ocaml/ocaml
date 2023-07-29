@@ -156,11 +156,11 @@ val append : 'a t -> 'a t -> unit
 val append_seq : 'a t -> 'a Seq.t -> unit
 (** Like {!append_array} but with a sequence.
 
-    Warning: [append_seq a (to_seq a)] simultaneously traverses [a]
-    and adds element to it; the ordering of those operations is
-    unspecified, and may result in an infinite loop -- the new
-    elements may in turn be produced by [to_seq a] and get added again
-    and again.
+    Warning: [append_seq a (to_seq_reentrant a)] simultaneously
+    traverses [a] and adds element to it; the ordering of those
+    operations is unspecified, and may result in an infinite loop --
+    the new elements may in turn be produced by [to_seq_reentrant a]
+    and get added again and again.
 *)
 
 val append_iter :
@@ -306,15 +306,11 @@ val filter_map : ('a -> 'b option) -> 'a t -> 'b t
     Note: the [of_*] functions raise [Invalid_argument] if the
     length needs to grow beyond {!Sys.max_array_length}.
 
-    The [to_*] functions, except for {!to_seq}, iterate on their
-    dynarray argument. In particular it is a programming error if the
-    length of the dynarray changes during their execution, and the
-    conversion functions raise [Invalid_argument] if they observe such
-    a change.
-
-    {!to_seq} produces an on-demand sequence of values, and is expected
-    to be called with effects happening in-between. Its specification
-    tolerates changes of length. (See below.)
+    The [to_*] functions, except those specifically marked
+    "reentrant", iterate on their dynarray argument. In particular it
+    is a programming error if the length of the dynarray changes
+    during their execution, and the conversion functions raise
+    [Invalid_argument] if they observe such a change.
 *)
 
 val of_array : 'a array -> 'a t
@@ -340,11 +336,12 @@ val of_seq : 'a Seq.t -> 'a t
 
 val to_seq : 'a t -> 'a Seq.t
 (** [to_seq a] is the sequence of elements
-    [get a 0], [get a 1]... [get a (length a - 1)].
+    [get a 0], [get a 1]... [get a (length a - 1)]. *)
 
-    Because sequences are computed on-demand, we have to assume that
-    the array may be modified in the meantime. We give a precise
-    specification for this case below.
+val to_seq_reentrant : 'a t -> 'a Seq.t
+(** [to_seq_reentrant a] is a reentrant variant of {!to_seq}, in the
+    sense that one may still access its elements after the length of
+    [a] has changed.
 
     Demanding the [i]-th element of the resulting sequence (which can
     happen zero, one or several times) will access the [i]-th element
@@ -355,7 +352,12 @@ val to_seq : 'a t -> 'a Seq.t
 val to_seq_rev : 'a t -> 'a Seq.t
 (** [to_seq_rev a] is the sequence of elements
     [get a (l - 1)], [get a (l - 2)]... [get a 0],
-    where [l] is [length a] at the time [to_seq_rev] is invoked.
+    where [l] is [length a] at the time [to_seq_rev] is invoked. *)
+
+val to_seq_rev_reentrant : 'a t -> 'a Seq.t
+(** [to_seq_rev_reentrant a] is a reentrant variant of {!to_seq_rev},
+    in the sense that one may still access its elements after the
+    length of [a] has changed.
 
     Elements that have been removed from the array by the time they
     are demanded in the sequence are skipped.
