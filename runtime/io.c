@@ -90,6 +90,17 @@ static void channel_mutex_unlock_exn_default(void)
     caml_channel_mutex_unlock(chan);
 }
 
+/* In OCaml 4.x, the [caml_channel_mutex_*] hooks below would be set
+   to NULL by default, and the systhreads code would patch them to
+   become actual {lock,unlock} operations, releasing the runtime lock
+   when relevant.
+
+   In OCaml 5.x, the default implementations above are not no-ops
+   anymore, they use a proper lock as the 4.x systhreads code does.
+   In consequence, systhreads do not patch these functions anymore;
+   the code pointers are not updated anywhere in the compiler
+   distribution, they are left for backwards-compatibility only.
+*/
 CAMLexport void (*caml_channel_mutex_free) (struct channel *)
   = channel_mutex_free_default;
 CAMLexport void (*caml_channel_mutex_lock) (struct channel *)
