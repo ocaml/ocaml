@@ -2161,6 +2161,9 @@ AC_LINK_IFELSE(
   [AC_LANG_PROGRAM(
     [[#define _GNU_SOURCE
       #include <sched.h>
+      #ifdef HAS_PTHREAD_NP_H
+      #include <pthread_np.h>
+      #endif
       #include <pthread.h>]],
     [[cpu_set_t cs;
       CPU_ZERO(&cs);

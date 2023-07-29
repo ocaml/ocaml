@@ -19287,6 +19287,9 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #define _GNU_SOURCE
       #include <sched.h>
+      #ifdef HAS_PTHREAD_NP_H
+      #include <pthread_np.h>
+      #endif
       #include <pthread.h>
 int
 main (void)
