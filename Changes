@@ -209,6 +209,9 @@ Working version
   (Nick Roberts; review by Richard Eisenberg, Leo White, and Gabriel Scherer;
   RFC by Stephen Dolan)
 
+- #12446: remove the hooks machinery around channel locking in runtimee/io.c
+  (Gabriel Scherer, review by Xavier Leroy)
+
 ### Build system:
 
 - #12198: continue the merge of the sub-makefiles into the root Makefile
