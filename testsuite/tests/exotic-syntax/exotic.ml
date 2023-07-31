@@ -116,6 +116,41 @@ end;;
 (* Double-semicolon at the beginning of a module body [ocp-indent] *)
 module M2 = struct ;; end;;
 
+(* Match/try/function with parens *)
+
+let match_paren x =
+  match x with
+  | Some y ->
+      match y with (
+      | true -> ()
+      | false -> ()
+      )
+  | None -> ()
+
+let match_paren_paren x =
+  match x with
+  | Some y ->
+      match y with ((
+      | true -> ()
+      | false -> ()
+      ))
+  | None -> ()
+
+let try_paren x =
+  match x with
+  | Some y ->
+      try y with (
+      | Not_found -> ()
+      )
+  | None -> ()
+
+let function_paren x =
+  match x with
+  | () ->
+      function (
+      | true -> ()
+      | false -> ()
+      )
 
 (**********************
 

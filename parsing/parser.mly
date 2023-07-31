@@ -867,6 +867,7 @@ The precedences must be listed from low to high.
 %nonassoc LESSMINUS                     /* below COLONEQUAL (lbl <- x := e) */
 %right    COLONEQUAL                    /* expr (e := e := e) */
 %nonassoc AS
+%nonassoc below_BAR
 %left     BAR                           /* pattern (p|p|p) */
 %nonassoc below_COMMA
 %left     COMMA                         /* expr/expr_comma_list (e,e,e) */
@@ -2745,8 +2746,10 @@ fun_body:
   | fun_seq_expr
       { Pfunction_body $1 }
 ;
-%inline match_cases:
-  xs = preceded_or_separated_nonempty_llist(BAR, match_case)
+match_cases:
+    xs = preceded_or_separated_nonempty_llist(BAR, match_case) %prec below_BAR
+    { xs }
+  | LPAREN xs = match_cases RPAREN
     { xs }
 ;
 match_case:
