@@ -710,6 +710,12 @@ Some of those changes will benefit all OCaml packages.
 
 ### Compiler user-interface and warnings:
 
+* #10613, #12450: Report "linux" instead of "elf" for Config.system (or for
+  `ocamlopt -config-var system`) for s390x and ppc64 for consistency with the
+  aarch64 and arm64 versions.
+  (David Allsopp, request by Kate Deplaix, review by Sébastien Hinderer and
+  Xavier Leroy)
+
 - #10647: Show hints for the "undefined global" error in the toplevel
   (Wiktor Kuchta, review by Gabriel Scherer)
 
