@@ -43,9 +43,13 @@ type variant_constructor = {
 }
 (** Description of a variant type constructor. *)
 
+type variant_sort =
+  | Ordinary
+  | Effect
+
 type type_kind =
     Type_abstract
-  | Type_variant of variant_constructor list
+  | Type_variant of variant_sort * variant_constructor list
   | Type_record of record_field list
   | Type_open
 (** The various kinds of type. *)

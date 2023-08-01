@@ -38,9 +38,13 @@ type variant_constructor = {
     mutable vc_text : Odoc_types.info option ; (** optional user description *)
   }
 
+type variant_sort =
+  | Ordinary
+  | Effect
+
 type type_kind =
     Type_abstract
-  | Type_variant of variant_constructor list
+  | Type_variant of variant_sort * variant_constructor list
                    (** constructors *)
   | Type_record of record_field list
                    (** fields *)

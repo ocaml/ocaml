@@ -48,6 +48,7 @@ type type_kind =
   | Kind_record
   | Kind_variant
   | Kind_open
+  | Kind_effect
 
 type kind_mismatch = type_kind * type_kind
 
@@ -79,6 +80,10 @@ type variant_change =
   (Types.constructor_declaration as 'cd, 'cd, constructor_mismatch)
     Diffing_with_keys.change
 
+type effect_change =
+  (Types.operation_declaration as 'od, 'od, constructor_mismatch)
+    Diffing_with_keys.change
+
 type private_variant_mismatch =
   | Only_outer_closed
   | Missing of position * string
@@ -101,6 +106,7 @@ type type_mismatch =
   | Variance
   | Record_mismatch of record_mismatch
   | Variant_mismatch of variant_change list
+  | Effect_mismatch of effect_change list
   | Unboxed_representation of position
   | Immediate of Type_immediacy.Violation.t
 

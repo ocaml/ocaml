@@ -115,7 +115,7 @@ module Search =
               Type_abstract -> []
             | Type_record l ->
                 List.flatten (List.map (fun rf -> search_recfield t rf v) l)
-            | Type_variant l ->
+            | Type_variant(_, l) ->
                 List.flatten (List.map (fun rf -> search_const t rf v) l)
             | Type_open -> []
       in

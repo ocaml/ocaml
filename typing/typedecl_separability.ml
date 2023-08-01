@@ -71,7 +71,7 @@ let structure : type_definition -> type_structure = fun def ->
      in
      Unboxed { argument_type = ty; result_type_parameter_instances = params }
 
-  | Type_record _ | Type_variant _ -> Algebraic
+  | Type_record _ | Type_variant _ | Type_effect _ -> Algebraic
 
 type error =
   | Non_separable_evar of string option

@@ -352,6 +352,16 @@ let compute_variance_decl env ~check decl (required, _ as rloc) =
           compute_variance_type env ~check rloc decl
             (mn @ List.map (fun {Types.ld_mutable; ld_type} ->
                  (ld_mutable = Mutable, ld_type)) ftl)
+      | Type_effect ops ->
+          let op_tl =
+            List.concat_map
+              (fun o ->
+                let args = for_constr o.Types.od_args in
+                let res = true, o.Types.od_res in
+                res :: args)
+              ops
+          in
+          compute_variance_type env ~check rloc decl (mn @ op_tl)
     in
     if mn = [] || not abstract then
       List.map Variance.strengthen vari

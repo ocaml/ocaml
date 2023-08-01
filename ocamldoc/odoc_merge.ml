@@ -165,7 +165,7 @@ let merge_types merge_options mli ml =
     Type_abstract, _ ->
       ()
 
-  | Type_variant l1, Type_variant l2 ->
+  | Type_variant(_, l1), Type_variant(_, l2) ->
       let f cons =
         try
           let cons2 = List.find

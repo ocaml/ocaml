@@ -1599,6 +1599,11 @@ and type_declaration ctxt f x =
     | Ptype_record l ->
         pp f "%t%t@;%a" intro priv (record_declaration ctxt) l
     | Ptype_open -> pp f "%t%t@;.." intro priv
+    | Ptype_effect l ->
+      let operations fmt xs =
+        if xs = [] then pp fmt " |" else
+          pp fmt "@\n%a" (list ~sep:"@\n" (operation_declaration ctxt)) xs
+      in pp f "%t@ effect@ %a" intro operations l
   in
   let constraints f =
     List.iter
@@ -1657,6 +1662,31 @@ and constructor_declaration ctxt f (name, vars, args, res, attrs) =
         )
         args
         (attributes ctxt) attrs
+
+and operation_declaration ctxt f x =
+  let name =
+    match x.pod_name.txt with
+    | "::" -> "(::)"
+    | s -> s
+  in
+  let pp_vars f vs =
+    match vs with
+    | [] -> ()
+    | vs -> pp f "%a@;.@;" (list tyvar_loc ~sep:"@;") vs
+  in
+  pp f "|@;%s:@;%a%a@;%a" name
+    pp_vars x.pod_vars
+    (fun f -> function
+       | Pcstr_tuple [] -> core_type1 ctxt f x.pod_res
+       | Pcstr_tuple l -> pp f "%a@;->@;%a"
+                            (list (core_type1 ctxt) ~sep:"@;*@;") l
+                            (core_type1 ctxt) x.pod_res
+       | Pcstr_record l ->
+           pp f "%a@;->@;%a" (record_declaration ctxt) l (core_type1 ctxt)
+             x.pod_res
+    )
+    x.pod_args
+    (attributes ctxt) x.pod_attributes
 
 and extension_constructor ctxt f x =
   (* Cf: #7200 *)

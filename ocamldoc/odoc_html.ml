@@ -1796,9 +1796,10 @@ class html =
       );
       (match t.ty_kind with
         Type_abstract -> bs b "</pre>"
-      | Type_variant l ->
+      | Type_variant(s, l) ->
           bs b "= ";
           if priv then bs b "private ";
+          if s = Effect then bs b "effect ";
           bs b
             (
              match t.ty_manifest with

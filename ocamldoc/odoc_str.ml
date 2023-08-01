@@ -207,8 +207,10 @@ let string_of_type t =
  let type_kind_str =
    match t.M.ty_kind with
    | M.Type_abstract -> ""
-   | M.Type_variant l ->
-     P.sprintf "=%s\n%s\n" (if priv then " private" else "") (
+   | M.Type_variant(s, l) ->
+     P.sprintf "=%s\n%s%s\n"
+       (if priv then " private" else "")
+       (if s = M.Effect then " effect" else "") (
        String.concat "\n" (
          List.map (fun cons ->
            let comment =

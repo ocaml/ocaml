@@ -71,6 +71,7 @@ type out_type =
   | Otyp_record of (string * bool * out_type) list
   | Otyp_stuff of string
   | Otyp_sum of out_constructor list
+  | Otyp_effect of out_operation list
   | Otyp_tuple of out_type list
   | Otyp_var of bool * string
   | Otyp_variant of out_variant * bool * (string list) option
@@ -82,6 +83,12 @@ and out_constructor = {
   ocstr_name: string;
   ocstr_args: out_type list;
   ocstr_return_type: out_type option;
+}
+
+and out_operation = {
+  oop_name: string;
+  oop_args: out_type list;
+  oop_return_type: out_type;
 }
 
 and out_variant =

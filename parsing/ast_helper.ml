@@ -553,6 +553,17 @@ module Type = struct
      pld_attributes = add_info_attrs info attrs;
     }
 
+  let operation ?(loc = !default_loc) ?(attrs = []) ?(info = empty_info)
+        ?(vars = []) name args res =
+    {
+     pod_name = name;
+     pod_vars = vars;
+     pod_args = args;
+     pod_res = res;
+     pod_loc = loc;
+     pod_attributes = add_info_attrs info attrs;
+    }
+
 end
 
 (** Type extensions *)

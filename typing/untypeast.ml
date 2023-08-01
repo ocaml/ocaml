@@ -56,6 +56,8 @@ type mapper = {
   package_type: mapper -> T.package_type -> package_type;
   open_declaration: mapper -> T.open_declaration -> open_declaration;
   open_description: mapper -> T.open_description -> open_description;
+  operation_declaration: mapper -> T.operation_declaration
+                           -> operation_declaration;
   pat: 'k . mapper -> 'k T.general_pattern -> pattern;
   row_field: mapper -> T.row_field -> row_field;
   object_field: mapper -> T.object_field -> object_field;
@@ -233,6 +235,8 @@ let type_kind sub tk = match tk with
   | Ttype_record list ->
       Ptype_record (List.map (sub.label_declaration sub) list)
   | Ttype_open -> Ptype_open
+  | Ttype_effect list ->
+      Ptype_effect (List.map (sub.operation_declaration sub) list)
 
 let constructor_arguments sub = function
    | Cstr_tuple l -> Pcstr_tuple (List.map (sub.typ sub) l)
@@ -254,6 +258,15 @@ let label_declaration sub ld =
     ~mut:ld.ld_mutable
     (map_loc sub ld.ld_name)
     (sub.typ sub ld.ld_type)
+
+let operation_declaration sub od =
+  let loc = sub.location sub od.od_loc in
+  let attrs = sub.attributes sub od.od_attributes in
+  Type.operation ~loc ~attrs
+    ~vars:od.od_vars
+    (map_loc sub od.od_name)
+    (constructor_arguments sub od.od_args)
+    (sub.typ sub od.od_res)
 
 let type_extension sub tyext =
   let attrs = sub.attributes sub tyext.tyext_attributes in
@@ -923,6 +936,7 @@ let default_mapper =
     value_binding = value_binding;
     constructor_declaration = constructor_declaration;
     label_declaration = label_declaration;
+    operation_declaration = operation_declaration;
     case = case;
     location = location;
     row_field = row_field ;

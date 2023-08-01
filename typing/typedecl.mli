@@ -70,6 +70,8 @@ type error =
   | Duplicate_constructor of string
   | Too_many_constructors
   | Duplicate_label of string
+  | Duplicate_operation of string
+  | Too_many_operations
   | Recursive_abbrev of string * Env.t * reaching_type_path
   | Cycle_in_def of string * Env.t * reaching_type_path
   | Definition_mismatch of

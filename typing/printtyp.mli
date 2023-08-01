@@ -133,6 +133,7 @@ val label : formatter -> label_declaration -> unit
 val add_constructor_to_preparation : constructor_declaration -> unit
 val prepared_constructor : formatter -> constructor_declaration -> unit
 val constructor : formatter -> constructor_declaration -> unit
+val operation : formatter -> operation_declaration -> unit
 val tree_of_type_declaration:
     Ident.t -> type_declaration -> rec_status -> out_sig_item
 val add_type_declaration_to_preparation :

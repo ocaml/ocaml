@@ -733,6 +733,7 @@ let mk_directive ~loc name arg =
 %token DOT                    "."
 %token DOTDOT                 ".."
 %token DOWNTO                 "downto"
+%token EFFECT                 "effect"
 %token ELSE                   "else"
 %token END                    "end"
 %token EOF                    ""
@@ -3157,6 +3158,10 @@ nonempty_type_kind:
     priv = inline_private_flag
     LBRACE ls = label_declarations RBRACE
       { (Ptype_record ls, priv, oty) }
+  | oty = type_synonym
+    EFFECT
+    os = operation_declarations
+      { (Ptype_effect os, Public, oty) }
 ;
 %inline type_synonym:
   ioption(terminated(core_type, EQUAL))
@@ -3302,6 +3307,38 @@ constructor_arguments:
   | LBRACE label_declarations RBRACE
       { Pcstr_record $2 }
 ;
+
+
+operation_declarations:
+  | BAR
+      { [] }
+  | cs = bar_llist(operation_declaration)
+      { cs }
+;
+operation_declaration(opening):
+  opening
+  oid = mkrhs(constr_ident)
+  vars_args_res = operation_arguments
+  attrs = attributes
+    {
+      let vars, args, res = vars_args_res in
+      let info = symbol_info $endpos in
+      let loc = make_loc $sloc in
+      Type.operation oid args res ~vars ~attrs ~loc ~info
+    }
+;
+operation_arguments:
+  | COLON constructor_arguments MINUSGREATER atomic_type %prec below_HASH
+                                  { ([],$2,$4) }
+  | COLON typevar_list DOT constructor_arguments MINUSGREATER atomic_type
+     %prec below_HASH
+                                  { ($2,$4,$6) }
+  | COLON atomic_type %prec below_HASH
+                                  { ([],Pcstr_tuple [],$2) }
+  | COLON typevar_list DOT atomic_type %prec below_HASH
+                                  { ($2,Pcstr_tuple [],$4) }
+;
+
 label_declarations:
     label_declaration                           { [$1] }
   | label_declaration_semi                      { [$1] }

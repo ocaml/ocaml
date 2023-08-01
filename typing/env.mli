@@ -64,7 +64,9 @@ val diff: t -> t -> Ident.t list
 val same_type_declarations: t -> t -> bool
 
 type type_descr_kind =
-  (label_description, constructor_description) type_kind
+  (label_description,
+   constructor_description,
+   constructor_description) type_kind
 
   (* alias for compatibility *)
 type type_descriptions = type_descr_kind
@@ -152,6 +154,8 @@ val mark_constructor_used:
     constructor_usage -> constructor_declaration -> unit
 val mark_extension_used:
     constructor_usage -> extension_constructor -> unit
+val mark_operation_used:
+    constructor_usage -> operation_declaration -> unit
 
 type label_usage =
     Projection | Mutation | Construct | Exported_private | Exported

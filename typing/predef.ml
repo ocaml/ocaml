@@ -45,6 +45,7 @@ and ident_lazy_t = ident_create "lazy_t"
 and ident_string = ident_create "string"
 and ident_extension_constructor = ident_create "extension_constructor"
 and ident_floatarray = ident_create "floatarray"
+and ident_operation = ident_create "operation"
 
 let path_int = Pident ident_int
 and path_char = Pident ident_char
@@ -63,6 +64,7 @@ and path_lazy_t = Pident ident_lazy_t
 and path_string = Pident ident_string
 and path_extension_constructor = Pident ident_extension_constructor
 and path_floatarray = Pident ident_floatarray
+and path_operation = Pident ident_operation
 
 let type_int = newgenty (Tconstr(path_int, [], ref Mnil))
 and type_char = newgenty (Tconstr(path_char, [], ref Mnil))
@@ -82,6 +84,8 @@ and type_string = newgenty (Tconstr(path_string, [], ref Mnil))
 and type_extension_constructor =
       newgenty (Tconstr(path_extension_constructor, [], ref Mnil))
 and type_floatarray = newgenty (Tconstr(path_floatarray, [], ref Mnil))
+and type_operation t1 t2 =
+  newgenty (Tconstr(path_operation, [t1; t2], ref Mnil))
 
 let ident_match_failure = ident_create "Match_failure"
 and ident_out_of_memory = ident_create "Out_of_memory"
@@ -178,6 +182,28 @@ let build_initial_env add_type add_extension empty_env =
       }
     in
     add_type type_ident decl env
+  and add_type2 type_ident
+      ~variance ~separability ?(kind=fun _ _ -> Type_abstract Definition) env =
+    let param1 = newgenvar () in
+    let param2 = newgenvar () in
+    let decl =
+      {type_params = [param1; param2];
+       type_arity = 2;
+       type_kind = kind param1 param2;
+       type_loc = Location.none;
+       type_private = Asttypes.Public;
+       type_manifest = None;
+       type_variance = variance;
+       type_separability = separability;
+       type_is_newtype = false;
+       type_expansion_scope = lowest_level;
+       type_attributes = [];
+       type_immediate = Unknown;
+       type_unboxed_default = false;
+       type_uid = Uid.of_predef_id type_ident;
+      }
+    in
+    add_type type_ident decl env
   in
   let add_extension id l =
     add_extension id
@@ -219,6 +245,9 @@ let build_initial_env add_type add_extension empty_env =
        ~kind:(fun tvar ->
          variant [cstr ident_nil []; cstr ident_cons [tvar; type_list tvar]])
   |> add_type ident_nativeint
+  |> add_type2 ident_operation
+        ~variance:[Variance.full; Variance.covariant]
+        ~separability:[Separability.Ind; Separability.Ind]
   |> add_type1 ident_option
        ~variance:Variance.covariant
        ~separability:Separability.Ind

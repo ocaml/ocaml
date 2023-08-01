@@ -399,7 +399,7 @@ let in_pervasives p =
 
 let is_datatype decl=
   match decl.type_kind with
-    Type_record _ | Type_variant _ | Type_open -> true
+    Type_record _ | Type_variant _ | Type_open | Type_effect _ -> true
   | Type_abstract _ -> false
 
 
@@ -618,6 +618,7 @@ let closed_type_decl decl =
     | Type_record(r, _rep) ->
         List.iter (fun l -> closed_type l.ld_type) r
     | Type_open -> ()
+    | Type_effect _ -> ()
     end;
     begin match decl.type_manifest with
       None    -> ()
@@ -1363,6 +1364,15 @@ let map_kind f = function
           (fun l ->
              {l with ld_type = f l.ld_type}
           ) fl, rr)
+  | Type_effect ol ->
+      Type_effect (
+        List.map
+          (fun o ->
+             {o with
+              od_args = map_type_expr_cstr_args f o.od_args;
+              od_res = f o.od_res
+             })
+          ol)
 
 
 let instance_declaration decl =
@@ -1717,22 +1727,31 @@ let _ = forward_try_expand_safe := try_expand_safe
 
 type typedecl_extraction_result =
   | Typedecl of Path.t * Path.t * type_declaration
+  | Operation of typedecl_extraction_result
   | Has_no_typedecl
   | May_have_typedecl
 
 let rec extract_concrete_typedecl env ty =
   match get_desc ty with
-    Tconstr (p, _, _) ->
+    Tconstr (p, args, _) ->
       begin match Env.find_type p env with
       | exception Not_found -> May_have_typedecl
       | decl ->
           if not (type_kind_is_abstract decl) then Typedecl(p, p, decl)
           else begin
             match try_expand_safe env ty with
-            | exception Cannot_expand -> May_have_typedecl
+            | exception Cannot_expand ->
+                if Path.same p Predef.path_operation then begin
+                  match args with
+                  | [_; ty] -> Operation (extract_concrete_typedecl env ty)
+                  | _ -> May_have_typedecl
+                end else begin
+                  May_have_typedecl
+                end
             | ty ->
                 match extract_concrete_typedecl env ty with
                 | Typedecl(_, p', decl) -> Typedecl(p, p', decl)
+                | Operation _ as res -> res
                 | Has_no_typedecl -> Has_no_typedecl
                 | May_have_typedecl -> May_have_typedecl
           end

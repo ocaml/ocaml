@@ -138,12 +138,14 @@ type type_kind =
   | Kind_record
   | Kind_variant
   | Kind_open
+  | Kind_effect
 
 let of_kind = function
   | Type_abstract _ -> Kind_abstract
   | Type_record (_, _) -> Kind_record
   | Type_variant (_, _) -> Kind_variant
   | Type_open -> Kind_open
+  | Type_effect _ -> Kind_effect
 
 type kind_mismatch = type_kind * type_kind
 
@@ -188,6 +190,10 @@ type variant_change =
   (Types.constructor_declaration as 'l, 'l, constructor_mismatch)
     Diffing_with_keys.change
 
+type effect_change =
+  (Types.operation_declaration as 'l, 'l, constructor_mismatch)
+    Diffing_with_keys.change
+
 type type_mismatch =
   | Arity
   | Privacy of privacy_mismatch
@@ -199,6 +205,7 @@ type type_mismatch =
   | Variance
   | Record_mismatch of record_mismatch
   | Variant_mismatch of variant_change list
+  | Effect_mismatch of effect_change list
   | Unboxed_representation of position
   | Immediate of Type_immediacy.Violation.t
 
@@ -368,6 +375,36 @@ let pp_variant_diff first second prefix decl env ppf (x : variant_change) =
         "@[<2>%aConstructor %a has been moved@ from@ position %d@ to %d.@]"
         prefix x Style.inline_code name expected got
 
+let pp_effect_diff first second prefix decl env ppf (x : effect_change) =
+  match x with
+  | Delete od ->
+      Format.fprintf ppf  "%aAn extra operation, %s, is provided in %s %s."
+        prefix x (Ident.name od.delete.od_id) first decl
+  | Insert od ->
+      Format.fprintf ppf "%aAn operatoin, %s, is missing in %s %s."
+        prefix x (Ident.name od.insert.od_id) first decl
+  | Change Type {got; expected; reason} ->
+      Format.fprintf ppf
+        "@[<hv>%aOperations do not match:@;<1 2>\
+         %a@ is not the same as:\
+         @;<1 2>%a@ %a@]"
+        prefix x
+        Printtyp.operation got
+        Printtyp.operation expected
+        (report_constructor_mismatch first second decl env) reason
+  | Change Name n ->
+      Format.fprintf ppf
+        "%aOperations have different names, %s and %s."
+        prefix x n.got n.expected
+  | Swap sw ->
+      Format.fprintf ppf
+        "%aOperations %s and %s have been swapped."
+        prefix x sw.first sw.last
+  | Move {name; got; expected} ->
+      Format.fprintf ppf
+        "@[<2>%aOperation %s has been moved@ from@ position %d@ to %d.@]"
+        prefix x name expected got
+
 let report_extension_constructor_mismatch first second decl env ppf err =
   let pr fmt = Format.fprintf ppf fmt in
   match (err : extension_constructor_mismatch) with
@@ -415,7 +452,9 @@ let report_kind_mismatch first second ppf (kind1, kind2) =
   | Kind_abstract -> "abstract"
   | Kind_record -> "a record"
   | Kind_variant -> "a variant"
-  | Kind_open -> "an extensible variant" in
+  | Kind_open -> "an extensible variant"
+  | Kind_effect -> "an effect"
+  in
   pr "%s is %s, but %s is %s."
     (String.capitalize_ascii first)
     (kind_to_string kind1)
@@ -450,6 +489,8 @@ let report_type_mismatch first second decl env ppf err =
       report_record_mismatch first second decl env ppf err
   | Variant_mismatch err ->
       report_patch pp_variant_diff first second decl env ppf err
+  | Effect_mismatch err ->
+      report_patch pp_effect_diff first second decl env ppf err
   | Unboxed_representation ord ->
       pr "Their internal representations differ:@ %s %s %s."
          (choose ord first second) decl
@@ -607,12 +648,13 @@ module Variant_diffing = struct
         else begin
         (* Ctype.equal must be called on all arguments at once, cf. PR#7378 *)
         match Ctype.equal env true (params1 @ arg1) (params2 @ arg2) with
-        | exception Ctype.Equality err -> Some (Type err)
+        | exception Ctype.Equality err ->
+            Some (Type err : constructor_mismatch)
         | () -> None
       end
     | Types.Cstr_record l1, Types.Cstr_record l2 ->
         Option.map
-          (fun rec_err -> Inline_record rec_err)
+          (fun rec_err -> (Inline_record rec_err : constructor_mismatch))
           (Record_diffing.compare env ~loc params1 params2 l1 l2)
     | Types.Cstr_record _, _ -> Some (Kind First : constructor_mismatch)
     | _, Types.Cstr_record _ -> Some (Kind Second : constructor_mismatch)
@@ -621,7 +663,8 @@ module Variant_diffing = struct
     match res1, res2 with
     | Some r1, Some r2 ->
         begin match Ctype.equal env true [r1] [r2] with
-        | exception Ctype.Equality err -> Some (Type err)
+        | exception Ctype.Equality err ->
+            Some (Type err : constructor_mismatch)
         | () -> compare_constructor_arguments ~loc env [r1] [r2] args1 args2
         end
     | Some _, None -> Some (Explicit_return_type First)
@@ -723,6 +766,99 @@ module Variant_diffing = struct
     | None, Variant_regular, Variant_unboxed ->
         Some (Unboxed_representation Second)
 end
+
+module Effect_diffing = struct
+
+  let compare_operations ~loc env params1 params2 res1 res2 args1 args2 =
+    let params_and_res1 = params1 @ [res1] in
+    let params_and_res2 = params2 @ [res2] in
+    match Ctype.equal env true params_and_res1 params_and_res2 with
+    | exception Ctype.Equality err ->
+        Some (Type err)
+    | () ->
+        Variant_diffing.compare_constructor_arguments
+          ~loc env params_and_res1 params_and_res2 args1 args2
+
+  let equal ~loc env params1 params2
+      (ops1 : Types.operation_declaration list)
+      (ops2 : Types.operation_declaration list) =
+    List.length ops1 = List.length ops2 &&
+    List.for_all2 (fun (od1:Types.operation_declaration)
+                    (od2:Types.operation_declaration) ->
+        Ident.name od1.od_id = Ident.name od2.od_id
+        &&
+        begin
+          Builtin_attributes.check_alerts_inclusion
+            ~def:od1.od_loc
+            ~use:od2.od_loc
+            loc
+            od1.od_attributes od2.od_attributes
+            (Ident.name od1.od_id)
+          ;
+        match compare_operations ~loc env params1 params2
+                od1.od_res od2.od_res od1.od_args od2.od_args with
+        | Some _ -> false
+        | None -> true
+      end) ops1 ops2
+
+  module Defs = struct
+    type left = Types.operation_declaration
+    type right = left
+    type diff = constructor_mismatch
+    type state = type_expr list * type_expr list
+  end
+  module D = Diffing_with_keys.Define(Defs)
+
+  let update _ st = st
+
+  let weight: D.change -> _ = function
+    | Insert _ -> 10
+    | Delete _ -> 10
+    | Keep _ -> 0
+    | Change (_,_,Diffing_with_keys.Name t) ->
+        if t.types_match then 10 else 15
+    | Change _ -> 10
+
+  let test loc env (params1,params2)
+      ({pos; data=od1}: D.left)
+      ({data=od2; _}: D.right) =
+    let name1, name2 = Ident.name od1.od_id, Ident.name od2.od_id in
+    if  name1 <> name2 then
+      let types_match =
+        match compare_operations ~loc env params1 params2
+                od1.od_res od2.od_res od1.od_args od2.od_args with
+        | Some _ -> false
+        | None -> true
+      in
+      Error
+        (Diffing_with_keys.Name {types_match; pos; got=name1; expected=name2})
+    else
+      match compare_operations ~loc env params1 params2
+              od1.od_res od2.od_res od1.od_args od2.od_args with
+      | Some reason ->
+          Error (Diffing_with_keys.Type {pos; got=od1; expected=od2; reason})
+      | None -> Ok ()
+
+  let diffing loc env params1 params2 ops_1 ops_2 =
+    let key (x:Defs.left) = Ident.name x.od_id in
+    let module Compute = D.Simple(struct
+        let key_left = key
+        let key_right = key
+        let test = test loc env
+        let update = update
+        let weight = weight
+      end)
+    in
+    Compute.diff (params1,params2) ops_1 ops_2
+
+  let compare ~loc env params1 params2 l r =
+    if equal ~loc env params1 params2 l r then
+      None
+    else
+      Some (Effect_mismatch (diffing loc env params1 params2 l r))
+
+end
+
 
 (* Inclusion between "private" annotations *)
 let privacy_mismatch env decl1 decl2 =
@@ -965,6 +1101,20 @@ let type_declarations ?(equality = false) ~loc env ~mark name
           labels1 labels2
           rep1 rep2
     | (Type_open, Type_open) -> None
+    | (Type_effect ops1, Type_effect ops2) ->
+        if mark then begin
+          let mark usage ops =
+            List.iter (Env.mark_operation_used usage) ops
+          in
+          mark Env.Exported ops1;
+          if equality then mark Env.Exported ops2
+        end;        
+        Effect_diffing.compare ~loc env
+          decl1.type_params
+          decl2.type_params
+          ops1
+          ops2
+
     | (_, _) -> Some (Kind (of_kind decl1.type_kind, of_kind decl2.type_kind))
   in
   if err <> None then err else

@@ -483,13 +483,17 @@ type type_declaration =
     type_uid: Uid.t;
   }
 
-and type_decl_kind = (label_declaration, constructor_declaration) type_kind
+and type_decl_kind =
+  (label_declaration,
+   constructor_declaration,
+   operation_declaration) type_kind
 
-and ('lbl, 'cstr) type_kind =
+and ('lbl, 'cstr, 'op) type_kind =
     Type_abstract of type_origin
   | Type_record of 'lbl list  * record_representation
   | Type_variant of 'cstr list * variant_representation
   | Type_open
+  | Type_effect of 'op list
 
 and type_origin =
     Definition
@@ -531,6 +535,16 @@ and constructor_declaration =
 and constructor_arguments =
   | Cstr_tuple of type_expr list
   | Cstr_record of label_declaration list
+
+and operation_declaration =
+  {
+    od_id: Ident.t;
+    od_args: constructor_arguments;
+    od_res: type_expr;
+    od_loc: Location.t;
+    od_attributes: Parsetree.attributes;
+    od_uid: Uid.t;
+  }
 
 type extension_constructor =
   {
@@ -655,6 +669,7 @@ type constructor_description =
     cstr_loc: Location.t;
     cstr_attributes: Parsetree.attributes;
     cstr_inlined: type_declaration option;
+    cstr_origin: Path.t;
     cstr_uid: Uid.t;
    }
 

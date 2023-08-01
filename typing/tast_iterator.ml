@@ -166,11 +166,20 @@ let constructor_decl sub x =
   constructor_args sub x.cd_args;
   Option.iter (sub.typ sub) x.cd_res
 
+let operation_decl sub x =
+  sub.location sub x.od_loc;
+  sub.attributes sub x.od_attributes;
+  iter_loc sub x.od_name;
+  List.iter (iter_loc sub) x.od_vars;
+  constructor_args sub x.od_args;
+  sub.typ sub x.od_res
+
 let type_kind sub = function
   | Ttype_abstract -> ()
   | Ttype_variant list -> List.iter (constructor_decl sub) list
   | Ttype_record list -> List.iter (label_decl sub) list
   | Ttype_open -> ()
+  | Ttype_effect list -> List.iter (operation_decl sub) list
 
 let type_declaration sub x =
   sub.location sub x.typ_loc;

@@ -516,6 +516,9 @@ and type_kind i ppf x =
       list (i+1) label_decl ppf l;
   | Ttype_open ->
       line i ppf "Ttype_open\n"
+  | Ttype_effect l ->
+      line i ppf "Ttype_effect\n";
+      list (i+1) operation_decl ppf l;
 
 and type_extension i ppf x =
   line i ppf "type_extension\n";
@@ -938,6 +941,15 @@ and label_decl i ppf {ld_id; ld_name = _; ld_mutable; ld_type; ld_loc;
   line (i+1) ppf "%a\n" fmt_mutable_flag ld_mutable;
   line (i+1) ppf "%a" fmt_ident ld_id;
   core_type (i+1) ppf ld_type
+
+and operation_decl i ppf {od_id; od_name = _; od_vars;
+                            od_args; od_res; od_loc; od_attributes} =
+  line i ppf "%a\n" fmt_location od_loc;
+  line (i+1) ppf "%a\n" fmt_ident od_id;
+  if od_vars <> [] then line (i+1) ppf "od_vars =%a\n" typevars od_vars;
+  attributes i ppf od_attributes;
+  constructor_arguments (i+1) ppf od_args;
+  core_type (i+1) ppf od_res
 
 and longident_x_pattern i ppf (li, _, p) =
   line i ppf "%a\n" fmt_longident li;

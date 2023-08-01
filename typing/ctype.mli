@@ -255,6 +255,9 @@ type typedecl_extraction_result =
   | Typedecl of Path.t * Path.t * type_declaration
     (* The original path of the types, and the first concrete
        type declaration found expanding it. *)
+  | Operation of typedecl_extraction_result
+    (* The type is [(_, t) operation] and the nested result is
+       the typedecl for [t] *)
   | Has_no_typedecl
   | May_have_typedecl
 

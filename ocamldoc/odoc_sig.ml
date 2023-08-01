@@ -216,6 +216,7 @@ module Analyser =
         (fun ct -> (proj ct).Location.loc_end.Lexing.pos_cnum)
     let ptyp' ct = ct.Parsetree.ptyp_loc
     let pcd' pcd = pcd.Parsetree.pcd_loc
+    let pod' pod = pod.Parsetree.pod_loc
     let loc' loc = loc
     let psig' p = p.Parsetree.psig_loc
 
@@ -223,6 +224,7 @@ module Analyser =
     let ptyp_start, ptyp_end = gen ptyp'
     let pcd_start, pcd_end = gen pcd'
     let psig_start, psig_end = gen psig'
+    let pod_start, pod_end = gen pod'
     end
 
     (** This function loads the given file in the file global variable,
@@ -310,11 +312,11 @@ module Analyser =
         start = (fun ld -> Loc.ptyp_start ld.pld_type);
         end_ =  (fun ld -> Loc.ptyp_end ld.pld_type);
         inline_record = begin
-          fun c -> match c.pcd_args with
+          fun (args, _) -> match args with
             | Pcstr_tuple _ -> None
             | Pcstr_record r -> Some r
         end;
-        inline_end = (fun c -> Loc.end_ c.pcd_loc)
+        inline_end = (fun (_, loc) -> Loc.end_ loc)
       }
 
     let types =
@@ -395,12 +397,18 @@ module Analyser =
               [] ->
                 (0, acc)
             | pcd :: [] ->
-                let acc = Record.(inline_doc parsetree) pcd @ acc in
+                let acc =
+                  Record.(inline_doc parsetree) (pcd.pcd_args, pcd.pcd_loc)
+                  @ acc
+                in
                 let (len, comment_opt) =
                   just_after_special (Loc.pcd_end pcd) pos_limit in
                 (len, List.rev @@ (pcd.pcd_name.txt, comment_opt):: acc )
             | pcd :: (pcd2 :: _ as q) ->
-                let acc = Record.(inline_doc parsetree) pcd @ acc in
+                let acc =
+                  Record.(inline_doc parsetree) (pcd.pcd_args, pcd.pcd_loc)
+                  @ acc
+                in
                 let pos_end_first = Loc.pcd_end pcd in
                 let pos_start_second = Loc.pcd_start pcd2 in
                 let (_,comment_opt) =
@@ -413,6 +421,32 @@ module Analyser =
           (0, Record.(doc parsetree) pos_end label_declaration_list)
       | Parsetree.Ptype_open ->
           (0, [])
+      | Parsetree.Ptype_effect op_list ->
+          let rec f acc op_list =
+            let open Parsetree in
+            match op_list with
+              [] ->
+                (0, acc)
+            | pod :: [] ->
+                let acc =
+                  Record.(inline_doc parsetree) (pod.pod_args, pod.pod_loc)
+                  @ acc
+                in
+                let (len, comment_opt) =
+                  just_after_special (Loc.pod_end pod) pos_limit in
+                (len, List.rev @@ (pod.pod_name.txt, comment_opt):: acc )
+            | pod :: (pod2 :: _ as q) ->
+                let acc =
+                  Record.(inline_doc parsetree) (pod.pod_args, pod.pod_loc)
+                  @ acc
+                in
+                let pos_end_first = Loc.pod_end pod in
+                let pos_start_second = Loc.pod_start pod2 in
+                let (_,comment_opt) =
+                  just_after_special pos_end_first pos_start_second in
+                f ((pod.pod_name.txt, comment_opt)::acc) q
+          in
+          f [] op_list
 
 
     let manifest_structure env name_comment_list type_expr =
@@ -478,7 +512,7 @@ module Analyser =
               vc_text = comment_opt
             }
           in
-          Odoc_type.Type_variant (List.map f l)
+          Odoc_type.Type_variant (Ordinary, List.map f l)
 
       | Types.Type_record (l, _) ->
           Odoc_type.Type_record (List.map (get_field env name_comment_list) l)
@@ -486,6 +520,36 @@ module Analyser =
       | Types.Type_open ->
           Odoc_type.Type_open
 
+      | Types.Type_effect l ->
+          let f {Types.od_id=constructor_name;od_args;od_res=ret_type;od_attributes} =
+            let constructor_name = Ident.name constructor_name in
+            let comment_opt =
+              try match List.assoc constructor_name name_comment_list with
+                | Some { i_desc = None | Some []; _ } -> None
+                | x -> x
+              with Not_found -> None
+            in
+            let comment_opt = analyze_alerts comment_opt od_attributes in
+            let vc_args =
+              match od_args with
+              | Cstr_tuple l -> Cstr_tuple (List.map (Odoc_env.subst_type env) l)
+              | Cstr_record l ->
+                  Cstr_record (List.map (get_field env name_comment_list) l)
+            in
+            let vc_name = match constructor_name with
+              | "::" ->
+                  (* The only infix constructor is always printed (::) *)
+                  "(::)"
+              | s -> s
+            in
+            {
+              vc_name;
+              vc_args;
+              vc_ret =  Some (Odoc_env.subst_type env ret_type);
+              vc_text = comment_opt
+            }
+          in
+          Odoc_type.Type_variant (Effect, List.map f l)
 
     let get_cstr_args env pos_end =
       let tuple ct = Odoc_env.subst_type env ct.Typedtree.ctyp_type in

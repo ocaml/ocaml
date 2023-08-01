@@ -58,6 +58,7 @@ type iterator = {
   module_type_declaration: iterator -> module_type_declaration -> unit;
   open_declaration: iterator -> open_declaration -> unit;
   open_description: iterator -> open_description -> unit;
+  operation_declaration: iterator -> operation_declaration -> unit;
   pat: iterator -> pattern -> unit;
   payload: iterator -> payload -> unit;
   signature: iterator -> signature -> unit;
