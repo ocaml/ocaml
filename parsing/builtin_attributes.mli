@@ -13,25 +13,64 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Support for some of the builtin attributes
+(** Support for the builtin attributes:
 
-    - ocaml.deprecated
     - ocaml.alert
-    - ocaml.error
-    - ocaml.ppwarning
-    - ocaml.warning
-    - ocaml.warnerror
-    - ocaml.explicit_arity (for camlp4/camlp5)
-    - ocaml.warn_on_literal_pattern
+    - ocaml.boxed
+    - ocaml.deprecated
     - ocaml.deprecated_mutable
+    - ocaml.explicit_arity
     - ocaml.immediate
     - ocaml.immediate64
-    - ocaml.boxed / ocaml.unboxed
+    - ocaml.inline
+    - ocaml.inlined
+    - ocaml.noalloc
+    - ocaml.ppwarning
+    - ocaml.tailcall
+    - ocaml.unboxed
+    - ocaml.untagged
+    - ocaml.unrolled
+    - ocaml.warnerror
+    - ocaml.warning
+    - ocaml.warn_on_literal_pattern
 
     {b Warning:} this module is unstable and part of
   {{!Compiler_libs}compiler-libs}.
 
 *)
+
+
+(** [register_attr] must be called on the locations of all attributes that
+    should be tracked for the purpose of misplaced attribute warnings.  In
+    particular, it should be called on all attributes that are present in the
+    source program except those that are contained in the payload of another
+    attribute (because these may be left behind by a ppx and intentionally
+    ignored by the compiler).
+
+    The [attr_tracking_time] argument indicates when the attr is being added for
+    tracking - either when it is created in the parser or when we see it while
+    running the check in the [Ast_invariants] module.  This ensures that we
+    track only attributes from the final version of the parse tree: we skip
+    adding attributes at parse time if we can see that a ppx will be run later,
+    because the [Ast_invariants] check is always run on the result of a ppx.
+
+    Note that the [Ast_invariants] check is also run on parse trees created from
+    marshalled ast files if no ppx is being used, ensuring we don't miss
+    attributes in that case.
+*)
+type attr_tracking_time = Parser | Invariant_check
+val register_attr : attr_tracking_time -> string Location.loc -> unit
+
+(** Marks the attributes hiding in the payload of another attribute used, for
+    the purposes of misplaced attribute warnings (see comment on
+    [attr_tracking_time] above).  In the parser, it's simplest to add these to
+    the table and remove them later, rather than threading through state
+    tracking whether we're in an attribute payload. *)
+val mark_payload_attrs_used : Parsetree.payload -> unit
+
+(** Issue misplaced attribute warnings for all attributes created with
+    [mk_internal] but not yet marked used. *)
+val warn_unused : unit -> unit
 
 val check_alerts: Location.t -> Parsetree.attributes -> string -> unit
 val check_alerts_inclusion:

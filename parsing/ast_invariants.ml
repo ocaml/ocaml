@@ -180,6 +180,14 @@ let iterator =
           "In object types, attaching attributes to inherited \
            subtypes is not allowed."
   in
+  let attribute self attr =
+    (* The change to `self` here avoids registering attributes within attributes
+       for the purposes of warning 53, while keeping all the other invariant
+       checks for attribute payloads.  See comment on [attr_tracking_time] in
+       [builtin_attributes.mli]. *)
+    super.attribute { self with attribute = super.attribute } attr;
+    Builtin_attributes.(register_attr Invariant_check attr.attr_name)
+  in
   { super with
     type_declaration
   ; typ
@@ -195,6 +203,7 @@ let iterator =
   ; signature_item
   ; row_field
   ; object_field
+  ; attribute
   }
 
 let structure st = iterator.structure iterator st

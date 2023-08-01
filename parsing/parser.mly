@@ -167,6 +167,10 @@ let mkuplus ~oploc name arg =
   | _ ->
       Pexp_apply(mkoperator ~loc:oploc ("~" ^ name), [Nolabel, arg])
 
+let mk_attr ~loc name payload =
+  Builtin_attributes.(register_attr Parser name);
+  Attr.mk ~loc name payload
+
 (* TODO define an abstraction boundary between locations-as-pairs
    and locations-as-Location.t; it should be clear when we move from
    one world to the other *)
@@ -4037,17 +4041,17 @@ attr_id:
   ) { $1 }
 ;
 attribute:
-  LBRACKETAT attr_id payload RBRACKET
-    { Attr.mk ~loc:(make_loc $sloc) $2 $3 }
+  LBRACKETAT attr_id attr_payload RBRACKET
+    { mk_attr ~loc:(make_loc $sloc) $2 $3 }
 ;
 post_item_attribute:
-  LBRACKETATAT attr_id payload RBRACKET
-    { Attr.mk ~loc:(make_loc $sloc) $2 $3 }
+  LBRACKETATAT attr_id attr_payload RBRACKET
+    { mk_attr ~loc:(make_loc $sloc) $2 $3 }
 ;
 floating_attribute:
-  LBRACKETATATAT attr_id payload RBRACKET
+  LBRACKETATATAT attr_id attr_payload RBRACKET
     { mark_symbol_docs $sloc;
-      Attr.mk ~loc:(make_loc $sloc) $2 $3 }
+      mk_attr ~loc:(make_loc $sloc) $2 $3 }
 ;
 %inline post_item_attributes:
   post_item_attribute*
@@ -4086,5 +4090,11 @@ payload:
   | COLON core_type { PTyp $2 }
   | QUESTION pattern { PPat ($2, None) }
   | QUESTION pattern WHEN seq_expr { PPat ($2, Some $4) }
+;
+attr_payload:
+  payload
+    { Builtin_attributes.mark_payload_attrs_used $1;
+      $1
+    }
 ;
 %%

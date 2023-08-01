@@ -15,6 +15,72 @@
 
 open Asttypes
 open Parsetree
+open Ast_helper
+
+
+module Attribute_table = Hashtbl.Make (struct
+  type t = string with_loc
+
+  let hash : t -> int = Hashtbl.hash
+  let equal : t -> t -> bool = (=)
+end)
+let unused_attrs = Attribute_table.create 128
+let mark_used t = Attribute_table.remove unused_attrs t
+
+(* [attr_order] is used to issue unused attribute warnings in the order the
+   attributes occur in the file rather than the random order of the hash table
+*)
+let attr_order a1 a2 =
+  match String.compare a1.loc.loc_start.pos_fname a2.loc.loc_start.pos_fname
+  with
+  | 0 -> Int.compare a1.loc.loc_start.pos_cnum a2.loc.loc_start.pos_cnum
+  | n -> n
+
+let warn_unused () =
+  let keys = List.of_seq (Attribute_table.to_seq_keys unused_attrs) in
+  let keys = List.sort attr_order keys in
+  List.iter (fun sloc ->
+    Location.prerr_warning sloc.loc (Warnings.Misplaced_attribute sloc.txt))
+    keys
+
+(* These are the attributes that are tracked in the builtin_attrs table for
+   misplaced attribute warnings. *)
+let builtin_attrs =
+  [ (* "alert"; "ocaml.alert" *)
+  (* ; "boxed"; "ocaml.boxed" *)
+  (* ; "deprecated"; "ocaml.deprecated" *)
+  (* ; "deprecated_mutable"; "ocaml.deprecated_mutable" *)
+  (* ; "explicit_arity"; "ocaml.explicit_arity" *)
+  (* ; "immediate"; "ocaml.immediate" *)
+  (* ; "immediate64"; "ocaml.immediate64" *)
+  (* ; "inline"; "ocaml.inline" *)
+  (* ; "inlined"; "ocaml.inlined" *)
+  (* ; "noalloc"; "ocaml.noalloc" *)
+  (* ; "ppwarning"; "ocaml.ppwarning" *)
+  (* ; "tailcall"; "ocaml.tailcall" *)
+  (* ; "unboxed"; "ocaml.unboxed" *)
+  (* ; "untagged"; "ocaml.untagged" *)
+  (* ; "unrolled"; "ocaml.unrolled" *)
+  (* ; "warnerror"; "ocaml.warnerror" *)
+  (* ; "warning"; "ocaml.warning" *)
+  (* ; "warn_on_literal_pattern"; "ocaml.warn_on_literal_pattern" *)
+  ]
+
+let builtin_attrs =
+  let tbl = Hashtbl.create 128 in
+  List.iter (fun attr -> Hashtbl.add tbl attr ()) builtin_attrs;
+  tbl
+
+let is_builtin_attr s = Hashtbl.mem builtin_attrs s
+
+type attr_tracking_time = Parser | Invariant_check
+
+let register_attr attr_tracking_time name =
+  match attr_tracking_time with
+  | Parser when !Clflags.all_ppx <> [] -> ()
+  | Parser | Invariant_check ->
+    if is_builtin_attr name.txt then
+      Attribute_table.replace unused_attrs name ()
 
 let string_of_cst = function
   | Pconst_string(s, _, _) -> Some s
@@ -66,6 +132,16 @@ let error_of_extension ext =
       end
   | ({txt; loc}, _) ->
       Location.errorf ~loc "Uninterpreted extension '%s'." txt
+
+let mark_payload_attrs_used payload =
+  let iter =
+    { Ast_iterator.default_iterator
+      with attribute = fun self a ->
+        mark_used a.attr_name;
+        Ast_iterator.default_iterator.attribute self a
+    }
+  in
+  iter.payload iter payload
 
 let kind_and_message = function
   | PStr[
