@@ -13,6 +13,42 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Shapes are an abstract representation of modules' implementations which
+    allow the tracking of definitions through functor applications and other
+    module-level operations.
+
+    The Shape of a compilation unit is elaborated during typing, partially
+    reduced (without loading external shapes) and written to the [cmt] file.
+
+    External tools can retrieve the definition of any value (or type, or module,
+    etc) by following this procedure:
+
+    - Build the Shape corresponding to the value's path:
+      [let shape = Env.shape_of_path ~namespace env path]
+
+    - Instantiate the [Make_reduce] functor with a way to load shapes from
+      external units and to looks for shapes in the environment (usually using
+      [Env.shape_of_path]).
+
+    - Completely reduce the shape:
+      [let shape = My_reduce.(weak_)reduce env shape]
+
+    - The [Uid.t] stored in the reduced shape should be the one of the
+      definition. However, if the [approximate] field of the reduced shape is
+      [true] then the [Uid.t] will not correspond to the definition, but to the
+      closest parent module's uid. This happens when Shape reduction gets stuck,
+      for example when hitting first-class modules.
+
+    - The location of the definition can be easily found with the
+      [cmt_format.cmt_uid_to_decl] talbe of the corresponding compilation unit.
+
+  See:
+  - {{: https://icfp22.sigplan.org/details/mlfamilyworkshop-2022-papers/10/Module-Shapes-for-Modern-Tooling }
+    the design document}
+  - {{: https://www.lix.polytechnique.fr/Labo/Gabriel.Scherer/research/shapes/2022-ml-workshop-shapes-talk.pdf }
+    a talk about the reduction strategy
+*)
+
 module Uid : sig
   type t = private
     | Compilation_unit of string
@@ -50,6 +86,7 @@ module Sig_component_kind : sig
   val can_appear_in_types : t -> bool
 end
 
+(** Shape's items are elements of a structure modeling module components. *)
 module Item : sig
   type t = string * Sig_component_kind.t
   val name : t -> string
@@ -145,6 +182,10 @@ end
 
 val dummy_mod : t
 
+(** This function returns the shape corresponding to a given path. It requires a
+    callback to find shapes in the environment. It is generally more useful to
+    rely directly on the [Env.shape_of_path] function to get the shape
+    associated with a given path. *)
 val of_path :
   find_shape:(Sig_component_kind.t -> Ident.t -> t) ->
   namespace:Sig_component_kind.t -> Path.t -> t
