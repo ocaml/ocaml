@@ -1,0 +1,18 @@
+Line 6, characters 28-30:
+6 | let specific_syntax_error = .~ x;;
+                                ^^
+Error: Reserved character sequence: .~ is reserved for use in MetaOCaml
+Valid syntax
+- : unit = ()
+val ( >. ) : float -> float -> bool = <fun>
+- : bool = false
+Syntax error on .<
+- : unit = ()
+Line 1, characters 9-11:
+1 | let x  = .< y >. ;;
+             ^^
+Error: Reserved character sequence: .< is reserved for use in MetaOCaml
+Still valid syntax
+- : unit = ()
+val ( >. ) : float -> float -> bool = <fun>
+
