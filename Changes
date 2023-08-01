@@ -324,6 +324,9 @@ Working version
   module (e.g `module M = Int(Int)`)
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #12451: Warning 53 (misplaced attributes) now works for all attributes.
+  (Chris Casinghino, review by Florian Angeletti)
+
 - #12622: Give hints about existential types appearing in error messages
   (Leo White, review by Gabriel Scherer and Florian Angeletti)
 
