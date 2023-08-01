@@ -16,20 +16,11 @@
 open X86_ast
 
 type system =
-  (* 32 bits and 64 bits *)
   | S_macosx
   | S_gnu
   | S_cygwin
-
-  (* 32 bits only *)
   | S_solaris
-  | S_win32
-  | S_linux_elf
-  | S_bsd_elf
   | S_beos
-  | S_mingw
-
-  (* 64 bits only *)
   | S_win64
   | S_linux
   | S_mingw64
@@ -42,17 +33,13 @@ type system =
 
 let system = match Config.system with
   | "macosx" -> S_macosx
-  | "solaris" -> S_solaris
-  | "win32" -> S_win32
-  | "linux_elf" -> S_linux_elf
-  | "bsd_elf" -> S_bsd_elf
-  | "beos" -> S_beos
   | "gnu" -> S_gnu
   | "cygwin" -> S_cygwin
-  | "mingw" -> S_mingw
-  | "mingw64" -> S_mingw64
+  | "solaris" -> S_solaris
+  | "beos" -> S_beos
   | "win64" -> S_win64
   | "linux" -> S_linux
+  | "mingw64" -> S_mingw64
   | "freebsd" -> S_freebsd
   | "netbsd" -> S_netbsd
   | "openbsd" -> S_openbsd
@@ -245,7 +232,7 @@ let with_internal_assembler assemble k =
 (* Which asm conventions to use *)
 let masm =
   match system with
-  | S_win32 | S_win64 -> true
+  | S_win64 -> true
   | _ -> false
 
 let use_plt =
