@@ -107,6 +107,24 @@ type error =
   | Expr_type_clash of
       Errortrace.unification_error * type_forcing_context option
       * Parsetree.expression_desc option
+  | Function_arity_type_clash of
+      { syntactic_arity :  int;
+        type_constraint : type_expr;
+        trace : Errortrace.unification_error;
+      }
+  (* [Function_arity_type_clash { syntactic_arity = n; type_constraint; trace }]
+     is the type error for the specific case where an n-ary function is
+     constrained at a type with an arity less than n, e.g.:
+     {[
+       type (_, _) eq = Eq : ('a, 'a) eq
+       let bad : type a. ?opt:(a, int -> int) eq -> unit -> a =
+         fun ?opt:(Eq = assert false) () x -> x + 1
+     ]}
+
+     [type_constraint] is the user-written polymorphic type (in this example
+     [?opt:(a, int -> int) eq -> unit -> a]) that causes this type clash, and
+     [trace] is the unification error that signaled the issue.
+  *)
   | Apply_non_function of {
       funct : Typedtree.expression;
       func_ty : type_expr;
@@ -2633,10 +2651,17 @@ let type_pattern_approx env spat =
   | Ppat_constraint (_, sty) -> approx_type env sty
   | _ -> newvar ()
 
-let type_approx_fun env label spat ret_ty =
+let type_approx_fun env label default spat ret_ty =
   let ty = type_pattern_approx env spat in
-  if is_optional label then
-    unify_pat_types spat.ppat_loc env ty (type_option (newvar ()));
+  let ty =
+    match label, default with
+    | (Nolabel | Labelled _), _ -> ty
+    | Optional _, None ->
+       unify_pat_types spat.ppat_loc env ty (type_option (newvar ()));
+       ty
+    | Optional _, Some _ ->
+       type_option ty
+  in
   newty (Tarrow (label, ty, ret_ty, commu_ok))
 
 let type_approx_constraint env ty constraint_ ~loc =
@@ -2688,8 +2713,8 @@ and type_approx_function env params c body ~loc =
      we give up.
   *)
   match params with
-  | Pparam_val (label, _, pat) :: params ->
-      type_approx_fun env label pat
+  | Pparam_val (label, default, pat) :: params ->
+      type_approx_fun env label default pat
         (type_approx_function env params c body ~loc)
   | Pparam_newtype _ :: _ ->
       newvar ()
@@ -3357,8 +3382,21 @@ and type_expect_
                 newty (Tarrow (Nolabel, newvar (), newvar (), commu_ok)))
           in
           try unify env ty_function exp_type
-          with Unify err ->
-          raise(Error(loc, env, Expr_type_clash (err, None, Some desc)));
+          with Unify trace ->
+            let syntactic_arity =
+              List.length params +
+                (match body with
+                  | Tfunction_body _ -> 0
+                  | Tfunction_cases _ -> 1)
+            in
+            let err =
+              Function_arity_type_clash
+                { syntactic_arity;
+                  type_constraint = exp_type;
+                  trace;
+                }
+            in
+            raise (Error (loc, env, err))
       end;
       re
         { exp_desc = Texp_function (params, body);
@@ -6433,6 +6471,46 @@ let report_error ~loc env = function
            fprintf ppf "This expression has type")
         (function ppf ->
            fprintf ppf "but an expression was expected of type");
+  | Function_arity_type_clash {
+      syntactic_arity; type_constraint; trace = { trace };
+    } ->
+    (* The last diff's expected type will be the locally-abstract type
+       that the GADT pattern introduced an equation on.
+    *)
+    let type_with_local_equation =
+      let last_diff =
+        List.find_map
+          (function Errortrace.Diff diff -> Some diff | _ -> None)
+          (List.rev trace)
+      in
+      match last_diff with
+      | None -> None
+      | Some diff -> Some diff.expected.ty
+    in
+    (* [syntactic_arity>1] for this error, so "arguments" is always plural. *)
+    Location.errorf ~loc
+      "@[\
+       @[\
+       The syntactic arity of the function doesn't match the type constraint:@ \
+       @[<2>\
+       This function has %d syntactic arguments, but its type is constrained \
+       to@ %a.\
+       @]@ \
+       @]@ \
+       @[\
+       @[<2>@{<hint>Hint@}: \
+       consider splitting the function definition into@ %a@ \
+       where %a is the pattern with the GADT constructor that@ \
+       introduces the local type equation%t.\
+       @]"
+      syntactic_arity
+      (Style.as_inline_code Printtyp.type_expr) type_constraint
+      Style.inline_code "fun ... gadt_pat -> fun ..."
+      Style.inline_code "gadt_pat"
+      (fun ppf ->
+         Option.iter
+           (fprintf ppf " on %a" (Style.as_inline_code Printtyp.type_expr))
+           type_with_local_equation)
   | Apply_non_function {
       funct; func_ty; res_ty; previous_arg_loc; extra_arg_loc
     } ->

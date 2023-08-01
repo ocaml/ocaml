@@ -95,7 +95,12 @@ let add_type ~check id decl env =
   Builtin_attributes.warning_scope ~ppwarning:false decl.type_attributes
     (fun () -> Env.add_type ~check id decl env)
 
-let enter_type rec_flag env sdecl (id, uid) =
+(* Add a dummy type declaration to the environment, with the given arity.
+   The [type_kind] is [Type_abstract], but there is a generic [type_manifest]
+   for abbreviations, to allow polymorphic expansion, except if
+   [abstract_abbrevs] is given along with a reason for not allowing expansion.
+   This function is only used in [transl_type_decl]. *)
+let enter_type ?abstract_abbrevs rec_flag env sdecl (id, uid) =
   let needed =
     match rec_flag with
     | Asttypes.Nonrecursive ->
@@ -111,15 +116,19 @@ let enter_type rec_flag env sdecl (id, uid) =
   in
   let arity = List.length sdecl.ptype_params in
   if not needed then env else
+  let abstract_reason, type_manifest =
+    match sdecl.ptype_manifest, abstract_abbrevs with
+    | None, _             -> Abstract_def, None
+    | Some _, None        -> Abstract_def, Some (Btype.newgenvar ())
+    | Some _, Some reason -> reason, None
+  in
   let decl =
     { type_params =
         List.map (fun _ -> Btype.newgenvar ()) sdecl.ptype_params;
       type_arity = arity;
-      type_kind = Type_abstract;
+      type_kind = Type_abstract abstract_reason;
       type_private = sdecl.ptype_private;
-      type_manifest =
-        begin match sdecl.ptype_manifest with None -> None
-        | Some _ -> Some(Btype.newgenvar ()) end;
+      type_manifest = type_manifest;
       type_variance = Variance.unknown_signature ~injective:false ~arity;
       type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
@@ -365,7 +374,7 @@ let transl_declaration env sdecl (id, uid) =
   in
   let (tkind, kind) =
     match sdecl.ptype_kind with
-      | Ptype_abstract -> Ttype_abstract, Type_abstract
+      | Ptype_abstract -> Ttype_abstract, Type_abstract Abstract_def
       | Ptype_variant scstrs ->
         if List.exists (fun cstr -> cstr.pcd_res <> None) scstrs then begin
           match cstrs with
@@ -543,7 +552,7 @@ let check_constraints env sdecl (_, decl) =
     (fun (sty, _) ty -> check_constraints_rec env sty.ptyp_loc visited ty)
     sdecl.ptype_params decl.type_params;
   begin match decl.type_kind with
-  | Type_abstract -> ()
+  | Type_abstract _ -> ()
   | Type_variant (l, _rep) ->
       let find_pl = function
           Ptype_variant pl -> pl
@@ -890,7 +899,7 @@ let check_well_founded_decl env loc path decl to_check =
    that all instances in [...] be equal to the constrainted type.
 *)
 
-let check_regularity ~orig_env env loc path decl to_check =
+let check_regularity ~abs_env env loc path decl to_check =
   (* to_check is true for potentially mutually recursive paths.
      (path, decl) is the type declaration to be checked. *)
 
@@ -904,7 +913,7 @@ let check_regularity ~orig_env env loc path decl to_check =
       match get_desc ty with
       | Tconstr(path', args', _) ->
           if Path.same path path' then begin
-            if not (Ctype.is_equal orig_env false args args') then
+            if not (Ctype.is_equal abs_env false args args') then
               raise (Error(loc,
                      Non_regular {
                        definition=path;
@@ -926,9 +935,9 @@ let check_regularity ~orig_env env loc path decl to_check =
               let (params, body) =
                 Ctype.instance_parameterized_type params0 body0 in
               begin
-                try List.iter2 (Ctype.unify orig_env) params args'
+                try List.iter2 (Ctype.unify abs_env) args' params
                 with Ctype.Unify err ->
-                  raise (Error(loc, Constraint_failed (orig_env, err)));
+                  raise (Error(loc, Constraint_failed (abs_env, err)));
               end;
               check_regular path' args
                 (path' :: prev_exp) (Expands_to (ty,body) :: trace)
@@ -957,10 +966,10 @@ let check_regularity ~orig_env env loc path decl to_check =
       check_regular path args [] [] body)
     decl.type_manifest
 
-let check_abbrev_regularity ~orig_env env id_loc_list to_check tdecl =
+let check_abbrev_regularity ~abs_env env id_loc_list to_check tdecl =
   let decl = tdecl.typ_type in
   let id = tdecl.typ_id in
-  check_regularity ~orig_env env (List.assoc id id_loc_list) (Path.Pident id)
+  check_regularity ~abs_env env (List.assoc id id_loc_list) (Path.Pident id)
     decl to_check
 
 let check_duplicates sdecl_list =
@@ -996,7 +1005,7 @@ let check_duplicates sdecl_list =
 (* Force recursion to go through id for private types*)
 let name_recursion sdecl id decl =
   match decl with
-  | { type_kind = Type_abstract;
+  | { type_kind = Type_abstract _;
       type_manifest = Some ty;
       type_private = Private; } when is_fixed_type sdecl ->
     let ty' = newty2 ~level:(get_level ty) (get_desc ty) in
@@ -1059,6 +1068,9 @@ let transl_type_decl env rec_flag sdecl_list =
       Uid.mk ~current_unit:(Env.get_unit_name ())
     ) sdecl_list
   in
+  (* Translate declarations, using a temporary environment where abbreviations
+     expand to a generic type variable. After that, we check the coherence of
+     the translated declarations in the resulting new enviroment. *)
   let tdecls, decls, new_env =
     Ctype.with_local_level_iter ~post:generalize_decl begin fun () ->
       (* Enter types. *)
@@ -1121,8 +1133,17 @@ let transl_type_decl env rec_flag sdecl_list =
     check_well_founded_decl new_env (List.assoc id id_loc_list) (Path.Pident id)
       decl to_check)
     decls;
+  (* [check_abbrev_regularity] cannot use the new environment, as this might
+     result in non-termination. Instead we use a completely abstract version
+     of the temporary environment, giving a reason for why abbreviations
+     cannot be expanded (#12334, #12368) *)
+  let abs_env =
+    List.fold_left2
+      (enter_type ~abstract_abbrevs:Abstract_rec_check_regularity rec_flag)
+      env sdecl_list ids_list in
   List.iter
-    (check_abbrev_regularity ~orig_env:env new_env id_loc_list to_check) tdecls;
+    (check_abbrev_regularity ~abs_env new_env id_loc_list to_check)
+    tdecls;
   (* Check that all type variables are closed *)
   List.iter2
     (fun sdecl tdecl ->
@@ -1673,19 +1694,20 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
     with Ctype.Unify err ->
       raise(Error(loc, Inconsistent_constraint (env, err)))
   ) constraints;
+  let sig_decl_abstract = Btype.type_kind_is_abstract sig_decl in
   let priv =
     if sdecl.ptype_private = Private then Private else
-    if arity_ok && sig_decl.type_kind <> Type_abstract
+    if arity_ok && not sig_decl_abstract
     then sig_decl.type_private else sdecl.ptype_private
   in
-  if arity_ok && sig_decl.type_kind <> Type_abstract
+  if arity_ok && not sig_decl_abstract
   && sdecl.ptype_private = Private then
     Location.deprecated loc "spurious use of private";
   let type_kind, type_unboxed_default =
     if arity_ok && man <> None then
       sig_decl.type_kind, sig_decl.type_unboxed_default
     else
-      Type_abstract, false
+      Type_abstract Abstract_def, false
   in
   let new_sig_decl =
     { type_params = params;
@@ -1768,7 +1790,7 @@ let abstract_type_decl ~injective arity =
   Ctype.with_local_level ~post:generalize_decl begin fun () ->
     { type_params = make_params arity;
       type_arity = arity;
-      type_kind = Type_abstract;
+      type_kind = Type_abstract Abstract_def;
       type_private = Public;
       type_manifest = None;
       type_variance = Variance.unknown_signature ~injective ~arity;
@@ -1800,8 +1822,8 @@ let check_recmod_typedecl env loc recmod_ids path decl =
      (path, decl) is the type declaration to be checked. *)
   let to_check path = Path.exists_free recmod_ids path in
   check_well_founded_decl env loc path decl to_check;
-  check_regularity ~orig_env:env env loc path decl to_check;
-  (* additionally check coherece, as one might build an incoherent signature,
+  check_regularity ~abs_env:env env loc path decl to_check;
+  (* additional coherence check, as one might build an incoherent signature,
      and use it to build an incoherent module, cf. #7851 *)
   check_coherence env loc path decl
 
@@ -1996,7 +2018,7 @@ let report_error ppf = function
       | Type_record (tl, _), _ ->
           explain_unbound ppf ty tl (fun l -> l.Types.ld_type)
             "field" (fun l -> Ident.name l.Types.ld_id ^ ": ")
-      | Type_abstract, Some ty' ->
+      | Type_abstract _, Some ty' ->
           explain_unbound_single ppf ty ty'
       | _ -> ()
       end;

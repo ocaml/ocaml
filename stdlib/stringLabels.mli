@@ -94,6 +94,15 @@ val empty : string
     @since 4.13
 *)
 
+external length : string -> int = "%string_length"
+(** [length s] is the length (number of bytes/characters) of [s]. *)
+
+external get : string -> int -> char = "%string_safe_get"
+(** [get s i] is the character at index [i] in [s]. This is the same
+    as writing [s.[i]].
+
+    @raise Invalid_argument if [i] not an index of [s]. *)
+
 val of_bytes : bytes -> string
 (** Return a new string that contains the same bytes as the given byte
     sequence.
@@ -108,14 +117,9 @@ val to_bytes : string -> bytes
     @since 4.13
 *)
 
-external length : string -> int = "%string_length"
-(** [length s] is the length (number of bytes/characters) of [s]. *)
-
-external get : string -> int -> char = "%string_safe_get"
-(** [get s i] is the character at index [i] in [s]. This is the same
-    as writing [s.[i]].
-
-    @raise Invalid_argument if [i] not an index of [s]. *)
+val blit :
+  src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int -> unit
+(** Same as {!Bytes.blit_string} which should be preferred. *)
 
 (** {1:concat Concatenating}
 
@@ -390,16 +394,6 @@ val get_utf_16le_uchar : t -> int -> Uchar.utf_decode
 val is_valid_utf_16le : t -> bool
 (** [is_valid_utf_16le b] is [true] if and only if [b] contains valid
     UTF-16LE data. *)
-
-val blit :
-  src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int -> unit
-(** [blit ~src ~src_pos ~dst ~dst_pos ~len] copies [len] bytes
-    from the string [src], starting at index [src_pos],
-    to byte sequence [dst], starting at character number [dst_pos].
-
-    @raise Invalid_argument if [src_pos] and [len] do not
-    designate a valid range of [src], or if [dst_pos] and [len]
-    do not designate a valid range of [dst]. *)
 
 (** {1 Binary decoding of integers} *)
 

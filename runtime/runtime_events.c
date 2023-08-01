@@ -827,7 +827,5 @@ CAMLprim value caml_runtime_events_user_resolve(
     CAMLreturn(event);
   }
 
-
-  CAMLdrop;
-  return (value) Val_none;
+  CAMLreturn (Val_none);
 }

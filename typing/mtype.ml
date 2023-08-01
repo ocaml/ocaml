@@ -65,7 +65,7 @@ and strengthen_lazy_sig' ~aliasable env sg p =
     [] -> []
   | (SigL_value(_, _, _) as sigelt) :: rem ->
       sigelt :: strengthen_lazy_sig' ~aliasable env rem p
-  | SigL_type(id, {type_kind=Type_abstract}, _, _) :: rem
+  | SigL_type(id, {type_kind=Type_abstract _}, _, _) :: rem
     when Btype.is_row_name (Ident.name id) ->
       strengthen_lazy_sig' ~aliasable env rem p
   | SigL_type(id, decl, rs, vis) :: rem ->
@@ -77,7 +77,7 @@ and strengthen_lazy_sig' ~aliasable env sg p =
             let manif =
               Some(Btype.newgenty(Tconstr(Pdot(p, Ident.name id),
                                           decl.type_params, ref Mnil))) in
-            if decl.type_kind = Type_abstract then
+            if Btype.type_kind_is_abstract decl then
               { decl with type_private = Public; type_manifest = manif }
             else
               { decl with type_manifest = manif }
@@ -388,7 +388,7 @@ and contains_type_sig env = List.iter (contains_type_item env)
 
 and contains_type_item env = function
     Sig_type (_,({type_manifest = None} |
-                 {type_kind = Type_abstract; type_private = Private}),_, _)
+                 {type_kind = Type_abstract _; type_private = Private}),_, _)
   | Sig_modtype _
   | Sig_typext (_, {ext_args = Cstr_record _}, _, _) ->
       (* We consider that extension constructors with an inlined

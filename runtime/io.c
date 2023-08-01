@@ -328,9 +328,11 @@ CAMLexport void caml_really_putblock(struct channel *channel,
 
 CAMLexport void caml_seek_out(struct channel *channel, file_offset dest)
 {
+  file_offset res;
   caml_flush(channel);
   caml_enter_blocking_section_no_pending();
-  if (lseek(channel->fd, dest, SEEK_SET) != dest) {
+  res = lseek(channel->fd, dest, SEEK_SET);
+  if (res < 0 || res != dest) {
     caml_leave_blocking_section();
     caml_sys_error(NO_ARG);
   }
@@ -442,13 +444,15 @@ CAMLexport intnat caml_really_getblock(struct channel *chan, char *p, intnat n)
 
 CAMLexport void caml_seek_in(struct channel *channel, file_offset dest)
 {
+  file_offset res;
   if (dest >= channel->offset - (channel->max - channel->buff)
       && dest <= channel->offset
       && (channel->flags & CHANNEL_TEXT_MODE) == 0) {
     channel->curr = channel->max - (channel->offset - dest);
   } else {
     caml_enter_blocking_section_no_pending();
-    if (lseek(channel->fd, dest, SEEK_SET) != dest) {
+    res = lseek(channel->fd, dest, SEEK_SET);
+    if (res < 0 || res != dest) {
       caml_leave_blocking_section();
       caml_sys_error(NO_ARG);
     }
@@ -619,6 +623,7 @@ CAMLprim value caml_ml_open_descriptor_out(value fd) {
 
 CAMLprim value caml_ml_set_channel_name(value vchannel, value vname)
 {
+  CAMLparam2(vchannel, vname);
   struct channel * channel = Channel(vchannel);
   Lock(channel);
   caml_stat_free(channel->name);
@@ -627,7 +632,7 @@ CAMLprim value caml_ml_set_channel_name(value vchannel, value vname)
   else
     channel->name = NULL;
   Unlock(channel);
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 struct channel_list {
@@ -686,6 +691,7 @@ CAMLprim value caml_channel_descriptor(value vchannel)
 
 CAMLprim value caml_ml_close_channel(value vchannel)
 {
+  CAMLparam1(vchannel);
   int result;
   int fd;
 
@@ -712,7 +718,7 @@ CAMLprim value caml_ml_close_channel(value vchannel)
     if (result == -1) caml_sys_error (NO_ARG);
   }
   Unlock(channel);
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 /* EOVERFLOW is the Unix98 error indicating that a file position or file
@@ -750,6 +756,7 @@ CAMLprim value caml_ml_channel_size_64(value vchannel)
 
 CAMLprim value caml_ml_set_binary_mode(value vchannel, value mode)
 {
+  CAMLparam2(vchannel, mode);
 #if defined(_WIN32) || defined(__CYGWIN__)
   struct channel * channel = Channel(vchannel);
   Lock(channel);
@@ -770,7 +777,7 @@ CAMLprim value caml_ml_set_binary_mode(value vchannel, value mode)
     channel->flags |= CHANNEL_TEXT_MODE;
   Unlock(channel);
 #endif
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 /*
@@ -794,6 +801,7 @@ CAMLprim value caml_ml_flush(value vchannel)
 
 CAMLprim value caml_ml_set_buffered(value vchannel, value mode)
 {
+  CAMLparam2(vchannel, mode);
   struct channel * channel = Channel(vchannel);
   Lock(channel);
   if (Bool_val(mode)) {
@@ -804,7 +812,7 @@ CAMLprim value caml_ml_set_buffered(value vchannel, value mode)
       caml_flush(channel);
   }
   Unlock(channel);
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value caml_ml_is_buffered(value vchannel)
@@ -888,23 +896,25 @@ CAMLprim value caml_ml_seek_out_64(value vchannel, value pos)
 
 CAMLprim value caml_ml_pos_out(value vchannel)
 {
+  CAMLparam1 (vchannel);
   file_offset pos;
   struct channel *channel = Channel(vchannel);
   Lock(channel);
   pos = caml_pos_out(channel);
   Unlock(channel);
   if (pos > Max_long) { errno = EOVERFLOW; caml_sys_error(NO_ARG); }
-  return Val_long(pos);
+  CAMLreturn (Val_long(pos));
 }
 
 CAMLprim value caml_ml_pos_out_64(value vchannel)
 {
+  CAMLparam1 (vchannel);
   file_offset pos;
   struct channel *channel = Channel(vchannel);
   Lock(channel);
   pos = caml_pos_out(channel);
   Unlock(channel);
-  return Val_file_offset(pos);
+  CAMLreturn (Val_file_offset(pos));
 }
 
 CAMLprim value caml_ml_input_char(value vchannel)
@@ -998,23 +1008,25 @@ CAMLprim value caml_ml_seek_in_64(value vchannel, value pos)
 
 CAMLprim value caml_ml_pos_in(value vchannel)
 {
+  CAMLparam1 (vchannel);
   file_offset pos;
   struct channel *channel = Channel(vchannel);
   Lock(channel);
   pos = caml_pos_in(channel);
   Unlock(channel);
   if (pos > Max_long) { errno = EOVERFLOW; caml_sys_error(NO_ARG); }
-  return Val_long(pos);
+  CAMLreturn (Val_long(pos));
 }
 
 CAMLprim value caml_ml_pos_in_64(value vchannel)
 {
+  CAMLparam1 (vchannel);
   file_offset pos;
   struct channel *channel = Channel(vchannel);
   Lock(channel);
   pos = caml_pos_in(channel);
   Unlock(channel);
-  return Val_file_offset(pos);
+  CAMLreturn (Val_file_offset(pos));
 }
 
 CAMLprim value caml_ml_input_scan_line(value vchannel)

@@ -923,8 +923,7 @@ All the macros described in this section are declared in the
 \begin{gcrule}
 A function that has parameters or local variables of type "value" must
 begin with a call to one of the "CAMLparam" macros and return with
-"CAMLreturn", "CAMLreturn0", or "CAMLreturnT". In particular, "CAMLlocal"
-and "CAMLxparam" can only be called \emph{after} "CAMLparam".
+"CAMLreturn", "CAMLreturn0", or "CAMLreturnT".
 \end{gcrule}
 
 There are six "CAMLparam" macros: "CAMLparam0" to "CAMLparam5", which
@@ -936,14 +935,15 @@ parameters, and use one or more calls to the "CAMLxparam" macros for
 the remaining parameters ("CAMLxparam1" to "CAMLxparam5").
 
 The macros "CAMLreturn", "CAMLreturn0", and "CAMLreturnT" are used to
-replace the C
-keyword "return".  Every occurrence of "return x" must be replaced by
-"CAMLreturn (x)" if "x" has type "value", or "CAMLreturnT (t, x)"
-(where "t" is the type of "x"); every occurrence of "return" without
-argument must be
-replaced by "CAMLreturn0".  If your C function is a procedure (i.e. if
-it returns void), you must insert "CAMLreturn0" at the end (to replace
-C's implicit "return").
+replace the C keyword "return"; any function using a "CAMLparam" macro
+on entry should use "CAMLreturn" on all exit points. C functions
+exported as OCaml externals must return a "value", and they should use
+"CAMLreturn (x)" instead of "return x". Some helper functions may
+manipulate OCaml values yet return "void" or another
+datatype. "void"-returning procedures should explicitly use
+"CAMLreturn0", and not have any implicit return. Helper functions
+returning C data of some type "t" should use "CAMLreturnT (t, x)"
+instead of "return x".
 
 \paragraph{Note:} Some C compilers give bogus warnings about unused
 variables "caml__dummy_xxx" at each use of "CAMLparam" and
@@ -951,13 +951,28 @@ variables "caml__dummy_xxx" at each use of "CAMLparam" and
 
 \goodbreak
 
-Example:
+Examples:
 \begin{verbatim}
-void foo (value v1, value v2, value v3)
+CAMLprim value my_external (value v1, value v2, value v3)
 {
   CAMLparam3 (v1, v2, v3);
   ...
+  CAMLreturn (Val_unit);
+}
+
+
+static void helper_procedure (value v1, value v2)
+{
+  CAMLparam2 (v1, v2);
+  ...
   CAMLreturn0;
+}
+
+static int helper_function (value v1, value v2)
+{
+  CAMLparam2 (v1, v2);
+  ...
+  CAMLreturnT (int, 0);
 }
 \end{verbatim}
 
@@ -990,6 +1005,20 @@ CAMLprim value bar (value v1, value v2, value v3)
   CAMLparam3 (v1, v2, v3);
   CAMLlocal1 (result);
   result = caml_alloc (3, 0);
+  ...
+  CAMLreturn (result);
+}
+\end{verbatim}
+
+\paragraph{Warning:} "CAMLlocal" (and "CAMLxparam") can only be called
+\emph{after} "CAMLparam". If a function declares local values but
+takes no value argument, it should start with "CAMLparam0 ()".
+
+\begin{verbatim}
+static value foo (int n)
+{
+  CAMLparam0 ();;
+  CAMLlocal (result);
   ...
   CAMLreturn (result);
 }

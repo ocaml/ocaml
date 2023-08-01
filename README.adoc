@@ -121,10 +121,6 @@ You can subscribe and access list archives via the Web interface at
 
 https://sympa.inria.fr/sympa/subscribe/caml-list
 
-An alternative archive of the mailing list is also available at
-
-https://inbox.ocaml.org/
-
 There also exist other mailing lists, chat channels, and various other forums
 around the internet for getting in touch with the OCaml and ML family language
 community. These can be accessed at
