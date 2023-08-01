@@ -327,6 +327,11 @@ let warning_attribute ?(ppwarning = true) =
     } when ppwarning ->
     (mark_used name;
      Location.prerr_warning pstr_loc (Warnings.Preprocessor s))
+  | {attr_name = {txt="ocaml.ppwarning"|"ppwarning"; _} as name;
+     attr_loc;
+     attr_payload = _ } when ppwarning ->
+    (mark_used name;
+     warn_payload attr_loc name.txt "A single string literal is expected")
   | {attr_name = {txt = ("ocaml.alert"|"alert"); _} as name;
      attr_loc;
      attr_payload;
