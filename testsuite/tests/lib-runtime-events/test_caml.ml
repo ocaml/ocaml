@@ -3,6 +3,15 @@
  ocamlrunparam += ",e=17";
 *)
 
+(* Tests that:
+ * - the runtime events subsystem works, logging events and passing
+ *   them to OCaml;
+ * - runtime event phases start and stop in matched pairs;
+ * - major and minor collections happen at expected frequencies;
+ * - it's possible to change the size of runtime event ring buffers
+ *   with OCAMLRUNPARAM.
+ *)
+
 open Runtime_events
 
 (* Record whether we have seen an EV_RING_START lifecycle event. *)
@@ -68,8 +77,8 @@ let lost_events domain_id num =
     Printf.printf "Lost %d events\n" num
 
 let epochs = 20
-
 let majors_per_epoch = 100
+let conses_per_major = 10
 
 let () =
     let list_ref = ref [] in
@@ -79,10 +88,10 @@ let () =
                                     ~lost_events ()
     in
     for epoch = 1 to epochs do
-        for a = 1 to majors_per_epoch do
+        for major = 1 to majors_per_epoch do
             list_ref := [];
-            for a = 1 to 10 do
-                list_ref := (Sys.opaque_identity(ref 42)) :: !list_ref
+            for cons = 1 to conses_per_major do
+                list_ref := (Sys.opaque_identity(ref cons)) :: !list_ref
             done;
             Gc.full_major ()
         done;
