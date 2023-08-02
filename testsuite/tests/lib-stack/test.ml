@@ -1,13 +1,6 @@
 (* TEST *)
 
-module S = struct
-  include Stack
-
-  let to_list s =    (* from bottom to top *)
-    let l = ref [] in
-    iter (fun x -> l := x :: !l) s;
-    !l
-end
+module S = Stack
 
 let does_raise f s =
   try
@@ -17,15 +10,21 @@ let does_raise f s =
     true
 
 let () =
+  let s = S.of_list [1; 2; 3; 4] in
+  assert (S.to_list s = [1; 2; 3; 4]) ;
+  assert (S.pop s = 1);
+  assert (S.to_list s = [2; 3; 4])
+
+let () =
   let s = S.create () in
   ();                   assert (S.to_list s = [          ] && S.length s = 0);
-  S.push 1 s;           assert (S.to_list s = [1         ] && S.length s = 1);
-  S.push 2 s;           assert (S.to_list s = [1; 2      ] && S.length s = 2);
-  S.push 3 s;           assert (S.to_list s = [1; 2; 3   ] && S.length s = 3);
-  S.push 4 s;           assert (S.to_list s = [1; 2; 3; 4] && S.length s = 4);
-  assert (S.pop s = 4); assert (S.to_list s = [1; 2; 3;  ] && S.length s = 3);
-  assert (S.pop s = 3); assert (S.to_list s = [1; 2;     ] && S.length s = 2);
-  assert (S.pop s = 2); assert (S.to_list s = [1;        ] && S.length s = 1);
+  S.push 1 s;           assert (S.to_list s = [         1] && S.length s = 1);
+  S.push 2 s;           assert (S.to_list s = [      2; 1] && S.length s = 2);
+  S.push 3 s;           assert (S.to_list s = [   3; 2; 1] && S.length s = 3);
+  S.push 4 s;           assert (S.to_list s = [4; 3; 2; 1] && S.length s = 4);
+  assert (S.pop s = 4); assert (S.to_list s = [   3; 2; 1] && S.length s = 3);
+  assert (S.pop s = 3); assert (S.to_list s = [      2; 1] && S.length s = 2);
+  assert (S.pop s = 2); assert (S.to_list s = [         1] && S.length s = 1);
   assert (S.pop s = 1); assert (S.to_list s = [          ] && S.length s = 0);
   assert (does_raise S.pop s);
 ;;
@@ -64,8 +63,8 @@ let () =
   let s1 = S.create () in
   for i = 1 to 10 do S.push i s1 done;
   let s2 = S.copy s1 in
-  assert (S.to_list s1 = [1; 2; 3; 4; 5; 6; 7; 8; 9; 10]);
-  assert (S.to_list s2 = [1; 2; 3; 4; 5; 6; 7; 8; 9; 10]);
+  assert (S.to_list s1 = [10; 9; 8; 7; 6; 5; 4; 3; 2; 1]);
+  assert (S.to_list s2 = [10; 9; 8; 7; 6; 5; 4; 3; 2; 1]);
   assert (S.length s1 = 10);
   assert (S.length s2 = 10);
   for i = 10 downto 1 do
@@ -111,10 +110,10 @@ let () =
 let () =
   let s1 = S.create () in
   for i = 1 to 4 do S.push i s1 done;
-  assert (S.length s1 = 4); assert (S.to_list s1 = [1; 2; 3; 4]);
+  assert (S.length s1 = 4); assert (S.to_list s1 = [4; 3; 2; 1]);
   let s2 = S.copy s1 in
-  assert (S.length s1 = 4); assert (S.to_list s1 = [1; 2; 3; 4]);
-  assert (S.length s2 = 4); assert (S.to_list s2 = [1; 2; 3; 4]);
+  assert (S.length s1 = 4); assert (S.to_list s1 = [4; 3; 2; 1]);
+  assert (S.length s2 = 4); assert (S.to_list s2 = [4; 3; 2; 1]);
 ;;
 
 let () =
@@ -122,9 +121,9 @@ let () =
   S.push 0 s;
   S.push 1 s;
   S.push 2 s;
-  assert (S.to_list s = [0; 1; 2]);
+  assert (S.to_list s = [2; 1; 0]);
   S.drop s;
-  assert (S.to_list s = [0; 1]);
+  assert (S.to_list s = [1; 0]);
   S.drop s;
   assert (S.to_list s = [0]);
   S.drop s;

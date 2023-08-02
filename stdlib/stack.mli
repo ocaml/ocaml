@@ -92,9 +92,13 @@ val fold : ('acc -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
 (** {1 Stacks and Sequences} *)
 
 val to_seq : 'a t -> 'a Seq.t
-(** Iterate on the stack, top to bottom.
+(** Iterate on the stack, from top to bottom.
     It is safe to modify the stack during iteration.
     @since 4.07 *)
+
+val to_list : 'a t -> 'a list
+(** Return the list of the stack's elements, from top to bottom.
+    @since NEXT_OCAML_RELEASE *)
 
 val add_seq : 'a t -> 'a Seq.t -> unit
 (** Add the elements of the sequence to the stack.
@@ -109,3 +113,9 @@ val of_seq : 'a Seq.t -> 'a t
     the top element of the stack is the {i last} element of the input sequence.
     The input sequence must be finite.
     @since 4.07 *)
+
+val of_list : 'a list -> 'a t
+(** Create a stack from the list's elements.
+    The order is preserved:
+    the top element of the stack is the head of the list.
+    @since NEXT_OCAML_RELEASE *)
