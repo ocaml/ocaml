@@ -122,6 +122,7 @@ module State = struct
   let rec intaux s n =
     let r = bits s in
     let v = r mod n in
+    (* Explanation of this test: see comment in [int63aux]. *)
     if r - v > 0x3FFFFFFF - n + 1 then intaux s n else v
 
   let int s bound =
@@ -132,8 +133,18 @@ module State = struct
   (* Return an integer between 0 (included) and [bound] (excluded).
      [bound] may be any positive [int]. *)
   let rec int63aux s n =
+    (* We start by drawing any representable non-negative integer. *)
     let r = Int64.to_int (next s) land max_int in
     let v = r mod n in
+    (* For uniform distribution of the result between 0 included and [n]
+     * excluded, the random number [r] must have been drawn uniformly in
+     * an interval whose length is a multiple of [n]. So the test below
+     * checks whether [r < k*n], where [k*n] is the greatest multiple of
+     * [n] such that [k*n - 1] is in the interval of representable
+     * integers. If failing that, any interval whose length is
+     * a multiple of [n] and which contains [r] has values that are not
+     * representable, hence, drawing was not uniform; in that case, we
+     * re-draw. *)
     if r - v > max_int - n + 1 then int63aux s n else v
 
   let full_int s bound =
@@ -152,6 +163,7 @@ module State = struct
   let rec int32aux s n =
     let r = Int32.shift_right_logical (bits32 s) 1 in
     let v = Int32.rem r n in
+    (* Explanation of this test: see comment in [int63aux]. *)
     if Int32.(sub r v > add (sub max_int n) 1l)
     then int32aux s n
     else v
@@ -169,6 +181,7 @@ module State = struct
   let rec int64aux s n =
     let r = Int64.shift_right_logical (bits64 s) 1 in
     let v = Int64.rem r n in
+    (* Explanation of this test: see comment in [int63aux]. *)
     if Int64.(sub r v > add (sub max_int n) 1L)
     then int64aux s n
     else v
