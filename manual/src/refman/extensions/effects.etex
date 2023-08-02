@@ -87,6 +87,21 @@ effect only. In situations where they are applicable, deep handlers are usually
 preferred. An example that utilises shallow handlers is discussed later
 in~\ref{s:effects-shallow}.
 
+\subsubsection{s:effects-limitations}{Limitations}
+
+OCaml's effects are \emph{synchronous}: It is not possible to perform
+an effect asynchronously from a signal handler, a finaliser, a memprof
+callback, or a GC alarm, and catch it from the main part of the code.
+Instead, this would result in an "Effect.Unhandled"
+exception (\ref{s:effects-unhandled}).
+
+Similarly, effects are incompatible with the use of callbacks from C
+to OCaml (section~\ref{s:c-callback}). It is not possible for an
+effect to cross a call to "caml_callback", this would instead result
+in an "Effect.Unhandled" exception. In particular, care must be taken
+when mixing libraries that use callbacks from C to OCaml and libraries
+that use effects.
+
 \subsection{s:effects-concurrency}{Concurrency}
 
 The expressive power of effect handlers comes from the delimited continuation.
