@@ -319,7 +319,7 @@ CAMLprim value caml_make_array(value init)
    Since the [memmove] implementation does not guarantee that the writes are
    always word-sized, we explicitly perform word-sized writes of the release
    kind to avoid mixed-mode accesses. Performing release writes should be
-   sufficient to prevent smart compilers from coalesing the writes into vector
+   sufficient to prevent smart compilers from coalescing the writes into vector
    writes, and hence prevent mixed-mode accesses. [MM].
    */
 static void wo_memmove (volatile value* const dst,

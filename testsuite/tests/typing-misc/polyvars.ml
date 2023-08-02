@@ -233,7 +233,7 @@ val x : [> `X of [> `Y of '_weak2 -> bool ] as '_weak3 ] as '_weak2 =
   `X (`Y <fun>)
 |}]
 
-(** Code coverage for [unify_row_field] erros *)
+(** Code coverage for [unify_row_field] errors *)
 
 (** Arity mismatch *)
 

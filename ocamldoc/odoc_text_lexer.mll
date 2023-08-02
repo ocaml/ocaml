@@ -784,7 +784,7 @@ rule main = parse
       if !shortcut_list_mode then
         (
          shortcut_list_mode := false;
-                        (* go back one char to re-use the last '\n', so we can
+                        (* go back one char to reuse the last '\n', so we can
                            restart another shortcut-list with a single blank line,
                            and not two.*)
          END_SHORTCUT_LIST

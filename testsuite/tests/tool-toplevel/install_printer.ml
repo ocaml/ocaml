@@ -32,7 +32,7 @@ let print_old = function
 [OA; OB];;
 
 
-(* genreic printers *)
+(* generic printers *)
 type ('a, 'b) v = D of 'a * 'b;;
 
 type 'a printer = Format.formatter -> 'a -> unit;;
