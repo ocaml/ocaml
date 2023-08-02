@@ -177,3 +177,16 @@ let a : int array =
 [%%expect{|
 val a : int array = [|2; 4; 6; 8|]
 |}]
+
+let a = Array.init_matrix 2 3 (fun i j -> ref (10*i+j));;
+a.(0).(0) := 99;;
+a (* other cells are unchanged *);;
+[%%expect{|
+val a : int ref array array =
+  [|[|{contents = 0}; {contents = 1}; {contents = 2}|];
+    [|{contents = 10}; {contents = 11}; {contents = 12}|]|]
+- : unit = ()
+- : int ref array array =
+[|[|{contents = 99}; {contents = 1}; {contents = 2}|];
+  [|{contents = 10}; {contents = 11}; {contents = 12}|]|]
+|}]

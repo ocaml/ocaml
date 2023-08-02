@@ -63,6 +63,13 @@ let make_matrix sx sy init =
   done;
   res
 
+let init_matrix sx sy f =
+  let res = create sx [||] in
+  for x = 0 to pred sx do
+    unsafe_set res x (init sy (fun y -> f x y))
+  done;
+  res
+
 let copy a =
   let l = length a in if l = 0 then [||] else unsafe_sub a 0 l
 

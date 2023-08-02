@@ -91,6 +91,21 @@ val make_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
    If the value of [e] is a floating-point number, then the maximum
    size is only [Sys.max_array_length / 2]. *)
 
+val init_matrix : dimx:int -> dimy:int -> f:(int -> int -> 'a) -> 'a array array
+(** [init_matrix ~dimx ~dimy ~f] returns a two-dimensional array
+   (an array of arrays)
+   with first dimension [dimx] and second dimension [dimy],
+   where the element at index ([x,y]) is initialized with [f x y].
+   The element ([x,y]) of a matrix [m] is accessed
+   with the notation [m.(x).(y)].
+
+   @raise Invalid_argument if [dimx] or [dimy] is negative or
+   greater than {!Sys.max_array_length}.
+   If the return type of [f] is [float],
+   then the maximum size is only [Sys.max_array_length / 2].
+
+   @since 5.2 *)
+
 val append : 'a array -> 'a array -> 'a array
 (** [append v1 v2] returns a fresh array containing the
    concatenation of the arrays [v1] and [v2].
