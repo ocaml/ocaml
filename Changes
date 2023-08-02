@@ -84,6 +84,11 @@ Working version
   arise at specific locations during domain creation and shutdown.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
 
+- #12114: Add ThreadSanitizer support
+  (Fabrice Buoro and Olivier Nicole, based on an initial work by Anmol Sahoo,
+   review by Damien Doligez, Sebastien Hinderer, Jacques-Henri Jourdan, Luc
+   Maranget, Guillaume Munch-Maccagnoni, Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.
@@ -416,11 +421,6 @@ Some of those changes will benefit all OCaml packages.
   installed directly to `$BINDIR/ocamlmklib`; `ocamlmklib.byte` and
   `ocamlmklib.opt` are no longer installed to `$BINDIR`.
   (Xavier Leroy, review by Gabriel Scherer)
-
-- #12114: Add ThreadSanitizer support
-  (Fabrice Buoro and Olivier Nicole, based on an initial work by Anmol Sahoo,
-   review by Damien Doligez, Sebastien Hinderer, Jacques-Henri Jourdan, Luc
-   Maranget, Guillaume Munch-Maccagnoni, Gabriel Scherer)
 
 ### Runtime system:
 
