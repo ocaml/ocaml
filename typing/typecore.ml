@@ -2713,10 +2713,10 @@ and type_approx_function env params c body ~loc =
      we give up.
   *)
   match params with
-  | Pparam_val (label, default, pat) :: params ->
+  | { pparam_desc = Pparam_val (label, default, pat) } :: params ->
       type_approx_fun env label default pat
         (type_approx_function env params c body ~loc)
-  | Pparam_newtype _ :: _ ->
+  | { pparam_desc = Pparam_newtype _ } :: _ ->
       newvar ()
   | [] ->
     let body_ty =
@@ -4515,17 +4515,15 @@ and type_function
   let loc : Location.t =
     match params_suffix, body with
     | param :: _, _ ->
-        let loc_start =
-          match param with
-          | Pparam_newtype (_, loc_param) -> loc_param.loc_start
-          | Pparam_val (_, _, pat) -> pat.ppat_loc.loc_start
-        in
-        { loc_start; loc_end = loc_function.loc_end; loc_ghost = true }
+        { loc_start = param.pparam_loc.loc_start;
+          loc_end = loc_function.loc_end;
+          loc_ghost = true;
+        }
     | [], Pfunction_body pexp -> pexp.pexp_loc
     | [], Pfunction_cases (_, loc_cases, _) -> loc_cases
   in
   match params_suffix with
-  | Pparam_newtype (newtype, _) :: rest ->
+  | { pparam_desc = Pparam_newtype newtype; pparam_loc = _ } :: rest ->
       (* Check everything else in the scope of (type a). *)
       let (params, body, newtypes, contains_gadt), exp_type =
         type_newtype loc env newtype.txt (fun env ->
@@ -4541,7 +4539,9 @@ and type_function
       with_explanation ty_fun.explanation (fun () ->
         unify_exp_types loc env exp_type (instance ty_expected));
       exp_type, params, body, newtype :: newtypes, contains_gadt
-  | Pparam_val (arg_label, default_arg, pat) :: rest ->
+  | { pparam_desc = Pparam_val (arg_label, default_arg, pat); pparam_loc }
+      :: rest
+    ->
       let ty_arg, ty_res =
         split_function_ty env ty_expected ~arg_label ~first ~in_function
       in
@@ -4627,6 +4627,7 @@ and type_function
           fp_param;
           fp_partial = partial;
           fp_newtypes = newtypes;
+          fp_loc = pparam_loc;
         }
       in
       exp_type, param :: params, body, [], contains_gadt

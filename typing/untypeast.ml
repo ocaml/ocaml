@@ -428,9 +428,17 @@ let expression sub exp =
                let pat = sub.pat sub pat in
                let default_arg = Option.map (sub.expr sub) default_arg in
                let newtypes =
-                 List.map (fun x -> Pparam_newtype (x, x.loc)) fp.fp_newtypes
+                 List.map
+                   (fun x ->
+                      { pparam_desc = Pparam_newtype x;
+                        pparam_loc = x.loc;
+                      })
+                   fp.fp_newtypes
                in
-               Pparam_val (fp.fp_arg_label, default_arg, pat) :: newtypes)
+               let pparam_desc =
+                 Pparam_val (fp.fp_arg_label, default_arg, pat)
+               in
+               { pparam_desc; pparam_loc = fp.fp_loc } :: newtypes)
             params
         in
         Pexp_function (params, constraint_, body)
