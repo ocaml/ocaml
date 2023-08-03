@@ -127,20 +127,20 @@ module State = struct
      The bound must fit in 31 bits.
      This function is designed so that it yields the same output
      on 32-bit and 64-bit platforms. *)
-  let rec intaux s n =
+  let rec int31aux s n =
     let r = bits s in
     let v = r mod n in
-    (* Explanation of this test: see comment in [int63aux]. *)
-    if r - v > 0x3FFFFFFF - n + 1 then intaux s n else v
+    (* Explanation of this test: see comment in [full_int_aux]. *)
+    if r - v > 0x3FFFFFFF - n + 1 then int31aux s n else v
 
   let int s bound =
     if bound > 0x3FFFFFFF || bound <= 0
     then invalid_arg "Random.int"
-    else intaux s bound
+    else int31aux s bound
 
   (* Return an integer between 0 (included) and [bound] (excluded).
      [bound] may be any positive [int]. *)
-  let rec int63aux s n =
+  let rec full_int_aux s n =
     (* We start by drawing any representable non-negative integer. *)
     let r = Int64.to_int (next s) land max_int in
     let v = r mod n in
@@ -153,17 +153,17 @@ module State = struct
      * a multiple of [n] and which contains [r] has values that are not
      * representable, hence, drawing was not uniform; in that case, we
      * re-draw. *)
-    if r - v > max_int - n + 1 then int63aux s n else v
+    if r - v > max_int - n + 1 then full_int_aux s n else v
 
   let full_int s bound =
     if bound <= 0 then
       invalid_arg "Random.full_int"
-    (* When the bound fits in 31 bits, we use [intaux]
+    (* When the bound fits in 31 bits, we use [int31aux]
      * so as to yield the same output on 32-bit and 64-bit platforms. *)
     else if bound > 0x3FFFFFFF then
-      int63aux s bound
+      full_int_aux s bound
     else
-      intaux s bound
+      int31aux s bound
 
   (* Cast a full-width integer to a signed 31-bit integer, by computing its
    * signed remainder modulo 2^31. *)
@@ -188,7 +188,7 @@ module State = struct
     if span <= 0 || span > 0x3FFF_FFFF then
       int31_in_range_aux s ~min ~max
     else
-      min + intaux s span
+      min + int31aux s span
 
   (* Return an integer between [min] (included) and [max] (included).
      We must have [min <= max]. *)
@@ -208,8 +208,8 @@ module State = struct
        * of the representable integers, so that it converges quickly
        * (the probability of re-drawing is at most 1/2).
        *
-       * When [max - min + 1] does not overflow, we use [int63aux], for
-       * 2 reasons:
+       * When [max - min + 1] does not overflow, we use [full_int_aux],
+       * for 2 reasons:
        *   - [int_in_range] then has a high probability of re-drawing,
        *     so would be very slow;
        *   - we thus guarantee that, when [min = 0], [int_in_range]
@@ -218,7 +218,7 @@ module State = struct
       if span <= 0 then
         int_in_range_aux s ~min ~max
       else
-        min + int63aux s span
+        min + full_int_aux s span
     else
       int31_in_range s ~min ~max
 
@@ -230,7 +230,7 @@ module State = struct
   let rec int32aux s n =
     let r = Int32.shift_right_logical (bits32 s) 1 in
     let v = Int32.rem r n in
-    (* Explanation of this test: see comment in [int63aux]. *)
+    (* Explanation of this test: see comment in [full_int_aux]. *)
     if Int32.(sub r v > add (sub max_int n) 1l)
     then int32aux s n
     else v
@@ -265,7 +265,7 @@ module State = struct
   let rec int64aux s n =
     let r = Int64.shift_right_logical (bits64 s) 1 in
     let v = Int64.rem r n in
-    (* Explanation of this test: see comment in [int63aux]. *)
+    (* Explanation of this test: see comment in [full_int_aux]. *)
     if Int64.(sub r v > add (sub max_int n) 1L)
     then int64aux s n
     else v
