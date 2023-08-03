@@ -178,15 +178,20 @@ let a : int array =
 val a : int array = [|2; 4; 6; 8|]
 |}]
 
-let a = Array.init_matrix 2 3 (fun i j -> ref (10*i+j));;
-a.(0).(0) := 99;;
-a (* other cells are unchanged *);;
+let a = Array.make_matrix 2 3 "placeholder";;
+a.(0).(0) <- "hello";;
+a (* other rows are unchanged *);;
 [%%expect{|
-val a : int ref array array =
-  [|[|{contents = 0}; {contents = 1}; {contents = 2}|];
-    [|{contents = 10}; {contents = 11}; {contents = 12}|]|]
+val a : string array array =
+  [|[|"placeholder"; "placeholder"; "placeholder"|];
+    [|"placeholder"; "placeholder"; "placeholder"|]|]
 - : unit = ()
-- : int ref array array =
-[|[|{contents = 99}; {contents = 1}; {contents = 2}|];
-  [|{contents = 10}; {contents = 11}; {contents = 12}|]|]
+- : string array array =
+[|[|"hello"; "placeholder"; "placeholder"|];
+  [|"placeholder"; "placeholder"; "placeholder"|]|]
+|}]
+
+let a = Array.init_matrix 2 3 (fun i j -> 10 * i + j);;
+[%%expect{|
+val a : int array array = [|[|0; 1; 2|]; [|10; 11; 12|]|]
 |}]
