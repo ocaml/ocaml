@@ -4665,7 +4665,7 @@ and type_function
                     [type_argument] on the cases, and discard the cases'
                     inferred type in favor of the constrained type. (Function
                     cases aren't inferred, so [type_argument] would just call
-                    [type_expect] straight away, so we do the same here.)
+                    [type_expect] straightaway, so we do the same here.)
                   - [type_without_constraint]: If there is just a coercion and
                     no constraint, call [type_exp] on the cases and surface the
                     cases' inferred type to [type_constraint_expect]. *)

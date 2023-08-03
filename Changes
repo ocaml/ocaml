@@ -2865,7 +2865,7 @@ OCaml 4.13.0 (24 September 2021)
   (Xavier Leroy, report by Richard Bornat, review by Stephen Dolan
    and Mark Shinwell)
 
-- #10371: no longer generated useless `.cds` file when using
+- #10371: Stop generating useless `.cds` file when using
   `-output-complete-exe`.
   (Nicolás Ojeda Bär, review by David Allsopp)
 
