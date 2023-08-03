@@ -114,11 +114,19 @@ module State = struct
   let make_self_init () =
     make (random_seed ())
 
-  (* Return 30 random bits as an integer 0 <= x < 1073741824 *)
+  (* NOTE:
+   *   0x3FFF_FFFF = 2^30 - 1, which is max_int for 31-bit integers
+   *   -0x4000_0000 = -2^30, which is min_int for 31-bit integers
+   *)
+
+  (* Return 30 random bits as an integer 0 <= x < 2^30 *)
   let bits s =
     Int64.to_int (next s) land 0x3FFF_FFFF
 
-  (* Return an integer between 0 (included) and [bound] (excluded) *)
+  (* Return an integer between 0 (included) and [bound] (excluded).
+     The bound must fit in 31 bits.
+     This function is designed so that it yields the same output
+     on 32-bit and 64-bit platforms. *)
   let rec intaux s n =
     let r = bits s in
     let v = r mod n in
@@ -150,10 +158,37 @@ module State = struct
   let full_int s bound =
     if bound <= 0 then
       invalid_arg "Random.full_int"
+    (* When the bound fits in 31 bits, we use [intaux]
+     * so as to yield the same output on 32-bit and 64-bit platforms. *)
     else if bound > 0x3FFFFFFF then
       int63aux s bound
     else
       intaux s bound
+
+  (* Cast a full-width integer to a signed 31-bit integer, by computing its
+   * signed remainder modulo 2^31. *)
+  let int31_of_int x =
+    let d = Sys.int_size - 31 in
+    (* Replicate the 31th bit (sign bit) to higher positions: *)
+    (x lsl d) asr d
+
+  (* Return an integer between [min] (included) and [max] (included).
+     We must have [min <= max], and [min] and [max] must fit in 31 bits.
+     This function is designed so that it yields the same output on
+     32-bit and 64-bit platforms. *)
+  let rec int31_in_range_aux s ~min ~max =
+    let r = int31_of_int (Int64.to_int (next s)) in
+    if r < min || r > max then int31_in_range_aux s ~min ~max else r
+
+  let int31_in_range s ~min ~max =
+    let span = max - min + 1 in
+    (* Explanation of this test: see comment in [int_in_range];
+     * the comparison to 0 is for 32-bit platforms;
+     * the comparison to 2^30-1 is for 64-bit platforms. *)
+    if span <= 0 || span > 0x3FFF_FFFF then
+      int31_in_range_aux s ~min ~max
+    else
+      min + intaux s span
 
   (* Return an integer between [min] (included) and [max] (included).
      We must have [min <= max]. *)
@@ -164,7 +199,9 @@ module State = struct
   let int_in_range s ~min ~max =
     if min > max then
       invalid_arg "Random.int_in_range"
-    else
+    (* When both bounds fit in 31 bits, we use [int31_in_range],
+     * so as to yield the same output on 32-bit and 64-bit platforms. *)
+    else if min < -0x4000_0000 || max > 0x3FFF_FFFF then
       let span = max - min + 1 in
       (* We use [int_in_range_aux] only if [max - min + 1] overflows;
        * then, the interval between [min] and [max] covers at least half
@@ -180,10 +217,10 @@ module State = struct
        *)
       if span <= 0 then
         int_in_range_aux s ~min ~max
-      else if span > 0x3FFFFFFF then
-        min + int63aux s span
       else
-        min + intaux s span
+        min + int63aux s span
+    else
+      int31_in_range s ~min ~max
 
   (* Return 32 random bits as an [int32] *)
   let bits32 s =
