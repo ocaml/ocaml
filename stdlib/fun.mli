@@ -97,7 +97,7 @@ exception Finally_raised of exn
     - [[false; false; ...; false]].
 
     whereas [List.init n (fun _ -> Random.bool())] will have 2{^n} possible
-    outcomes because the randomness effect is performed with every element.
+    outcomes, because the randomness effect is performed with every element.
 
     {!val:flip}
     {[
@@ -111,9 +111,11 @@ exception Finally_raised of exn
     # List.fold_left (Fun.flip List.cons) [] [1; 2; 3];;
     - : int list = [3; 2; 1]
     ]}
-    Note that given a function [(f : a -> b -> c -> d)]:
-    - [(flip f x : a -> c -> d)] and [(x : b)], whereas
-    - [(flip (f x) : c -> b -> d)] and [(x : a)]
+    Thanks to currying, [flip] can work with functions that take more than two
+    arguments, by flipping the first two and leaving the rest in order. Given a
+    function [f : a -> b -> c -> d]:
+    - [flip f m] will have type [a -> c -> d], whereas
+    - [flip (f n)] will have type [c -> b -> d]
 
     {!val:negate}
     {[
