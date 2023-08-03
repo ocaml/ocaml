@@ -76,6 +76,18 @@ Working version
   (Guillaume Munch-Maccagnoni, review by Anil Madhavapeddy and KC
    Sivaramakrishnan)
 
+- #12408: `Domain.spawn` no longer leaks its functional argument for
+  the whole duration of the children domain lifetime.
+  (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
+
+- #12409: Fix unsafety and deadlocks should an asynchronous exception
+  arise at specific locations during domain creation and shutdown.
+  (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
+
+- #12114: Add ThreadSanitizer support
+  (Fabrice Buoro and Olivier Nicole, based on an initial work by Anmol Sahoo,
+   review by Damien Doligez, Sebastien Hinderer, Jacques-Henri Jourdan, Luc
+   Maranget, Guillaume Munch-Maccagnoni, Gabriel Scherer)
 - #11911, #12381: Restore statmemprof functionality in part
    (API changes in Gc.Memprof). (Nick Barnes)
 
@@ -124,6 +136,10 @@ Working version
 - #12185: New script language for ocamltest.
   (Damien Doligez with Florian Angeletti, Sébastien Hinderer, Gabriel Scherer,
    review by Sébastien Hinderer and Gabriel Scherer)
+
+- #12371: ocamltest: fix recursive expansion of variables.
+  (Antonin Décimo, Damien Doligez, review by Sébastien Hinderer,
+   Damien Doligez, Gabriel Scherer, and Xavier Leroy)
 
 ### Manual and documentation:
 
@@ -185,7 +201,7 @@ Working version
   in Typecore in favor of local mutable state.
   (Nick Roberts, review by Takafumi Saikawa)
 
-- #12236, #12386: Use syntax as the sole determiner of function arity
+- #12236, #12386, #12391: Use syntax as the sole determiner of function arity
   This changes function arity to be based solely on the source program's
   parsetree. Previously, the heuristic for arity had more subtle heuristics
   that involved type information about patterns.  Function arity is important
@@ -232,8 +248,20 @@ Working version
   (Vincent Laviron, report by François Pottier, review by Nathanaëlle Courant
   and Gabriel Scherer)
 
-OCaml 5.1.0
----------------
+- #12334, #12368: Bad error message with mutually recursive abbreviations
+  (Jacques Garrigue, report by Richard Eisenberg, review by Gabriel Scherer
+   and Richard Eisenberg)
+
+- #12401: `seek_in` and `seek_out` sometimes returned normally when given
+  negative offsets, instead of failing. Now both functions should consistently
+  raise `Sys_error` in this case.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
+
+- #12267: Fix stack alignment computation
+  (Miod Vallat, report by Jan Midtgaard, review by Gabriel Scherer)
+
+OCaml 5.1.0 release branch
+--------------------------
 
 ### Restored backends
 
@@ -395,11 +423,6 @@ Some of those changes will benefit all OCaml packages.
   installed directly to `$BINDIR/ocamlmklib`; `ocamlmklib.byte` and
   `ocamlmklib.opt` are no longer installed to `$BINDIR`.
   (Xavier Leroy, review by Gabriel Scherer)
-
-- #12114: Add ThreadSanitizer support
-  (Fabrice Buoro and Olivier Nicole, based on an initial work by Anmol Sahoo,
-   review by Damien Doligez, Sebastien Hinderer, Jacques-Henri Jourdan, Luc
-   Maranget, Guillaume Munch-Maccagnoni, Gabriel Scherer)
 
 ### Runtime system:
 
@@ -1120,6 +1143,9 @@ Some of those changes will benefit all OCaml packages.
 - #12253, #12342: Fix infinite loop in signal handling.
   (Guillaume Munch-Maccagnoni, report by Thomas Leonard, review by
    KC Sivaramakrishnan and Sadiq Jaffer)
+
+- #12445: missing GC root registrations in runtime/io.c
+  (Gabriel Scherer, review by Xavier Leroy and Jeremy Yallop)
 
 OCaml 5.0.0 (15 December 2022)
 ------------------------------

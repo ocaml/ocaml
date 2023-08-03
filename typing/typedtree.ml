@@ -166,6 +166,7 @@ and function_param =
     fp_partial: partial;
     fp_kind: function_param_kind;
     fp_newtypes: string loc list;
+    fp_loc : Location.t;
   }
 
 and function_param_kind =

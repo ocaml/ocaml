@@ -166,8 +166,8 @@ alloc_size_class_stack_noexc(mlsize_t wosize, int cache_bucket, value hval,
 
     /* Ensure 16-byte alignment because some architectures require it */
     hand = (struct stack_handler*)
-     (((uintnat)stack + sizeof(struct stack_info) + sizeof(value) * wosize + 8)
-      & ((uintnat)-1 << 4));
+     (((uintnat)stack + sizeof(struct stack_info) + sizeof(value) * wosize + 15)
+      & ~((uintnat)15));
     stack->handler = hand;
   }
 
@@ -181,8 +181,9 @@ alloc_size_class_stack_noexc(mlsize_t wosize, int cache_bucket, value hval,
 #ifdef DEBUG
   stack->magic = 42;
 #endif
-  CAMLassert(Stack_high(stack) - Stack_base(stack) == wosize ||
-             Stack_high(stack) - Stack_base(stack) == wosize + 1);
+  /* Due to stack alignment performed above, the actual stack size may be
+   * larger than requested. */
+  CAMLassert(Stack_high(stack) - Stack_base(stack) >= wosize);
   return stack;
 
 }

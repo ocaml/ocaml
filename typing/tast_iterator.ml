@@ -258,6 +258,7 @@ let extra sub = function
   | Texp_poly cto -> Option.iter (sub.typ sub) cto
 
 let function_param sub fp =
+  sub.location sub fp.fp_loc;
   match fp.fp_kind with
   | Tparam_pat pat -> sub.pat sub pat
   | Tparam_optional_default (pat, default_arg) ->

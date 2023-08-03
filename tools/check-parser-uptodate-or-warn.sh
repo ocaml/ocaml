@@ -35,7 +35,7 @@ if test $? != 0
 then MTIME=""
 elif stat --version 2>/dev/null | grep -Fq 'coreutils'
 then MTIME="stat --format %Y"
-elif stat 2>&1 | grep -Fq 'busybox'
+elif stat 2>&1 | grep -Fiq 'busybox'
 then MTIME="stat -c %Y"
 else MTIME="stat -f %m" # BSD stat?
 fi

@@ -27,12 +27,17 @@ extern "C" {
 
 void caml_init_callbacks (void);
 
+/* If the callback raises an exception, the functions caml_callback{,2,3,N}
+   propagate it to their caller. */
 CAMLextern value caml_callback (value closure, value arg);
 CAMLextern value caml_callback2 (value closure, value arg1, value arg2);
 CAMLextern value caml_callback3 (value closure, value arg1, value arg2,
                                  value arg3);
 CAMLextern value caml_callbackN (value closure, int narg, value args[]);
 
+/* If the callback raises an exception, the functions
+   caml_callback{,2,3,N}_exn do not propagate it, they return the exception
+   as an 'encoded exceptional result value' (see mlvalues.h) */
 CAMLextern value caml_callback_exn (value closure, value arg);
 CAMLextern value caml_callback2_exn (value closure, value arg1, value arg2);
 CAMLextern value caml_callback3_exn (value closure,

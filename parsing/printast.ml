@@ -382,14 +382,14 @@ and expression i ppf x =
   | Pexp_unreachable ->
       line i ppf "Pexp_unreachable"
 
-and function_param i ppf param =
-  match param with
+and function_param i ppf { pparam_desc = desc; pparam_loc = loc } =
+  match desc with
   | Pparam_val (l, eo, p) ->
-      line i ppf "Pparam_val\n";
+      line i ppf "Pparam_val %a\n" fmt_location loc;
       arg_label (i+1) ppf l;
       option (i+1) expression ppf eo;
       pattern (i+1) ppf p
-  | Pparam_newtype (ty, loc) ->
+  | Pparam_newtype ty ->
       line i ppf "Pparam_newtype \"%s\" %a\n" ty.txt fmt_location loc
 
 and function_body i ppf body =

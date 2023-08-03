@@ -273,7 +273,11 @@ let make_method loc cl_num expr =
     Pat.alias ~loc (Pat.var ~loc (mkid "self-*")) (mkid ("self-" ^ cl_num))
   in
   Exp.function_ ~loc:expr.pexp_loc
-    [ Pparam_val (Nolabel, None, pat) ] None (Pfunction_body expr)
+    [ { pparam_desc = Pparam_val (Nolabel, None, pat);
+        pparam_loc = pat.ppat_loc;
+      }
+    ]
+    None (Pfunction_body expr)
 
 (*******************************)
 
@@ -1443,7 +1447,7 @@ let temp_abbrev loc arity uid =
   let ty_td =
       {type_params = !params;
        type_arity = arity;
-       type_kind = Type_abstract;
+       type_kind = Type_abstract Abstract_def;
        type_private = Public;
        type_manifest = Some ty;
        type_variance = Variance.unknown_signature ~injective:false ~arity;
@@ -1667,7 +1671,7 @@ let class_infos define_class kind
     {
      type_params = obj_params;
      type_arity = arity;
-     type_kind = Type_abstract;
+     type_kind = Type_abstract Abstract_def;
      type_private = Public;
      type_manifest = Some obj_ty;
      type_variance = Variance.unknown_signature ~injective:false ~arity;

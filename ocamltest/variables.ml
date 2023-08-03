@@ -33,6 +33,8 @@ exception Variable_already_registered of string
 
 exception No_such_variable of string
 
+exception Recursive_variable_definition of string
+
 let default_exporter varname value = (varname, value)
 
 let make (name, description) =

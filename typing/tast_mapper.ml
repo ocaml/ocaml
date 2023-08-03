@@ -311,11 +311,13 @@ let function_param sub fp =
       let expr = sub.expr sub expr in
       Tparam_optional_default (pat, expr)
   in
+  let fp_loc = sub.location sub fp.fp_loc in
   { fp_kind;
     fp_param = fp.fp_param;
     fp_arg_label = fp.fp_arg_label;
     fp_partial = fp.fp_partial;
     fp_newtypes = fp.fp_newtypes;
+    fp_loc;
   }
 
 let extra sub = function
