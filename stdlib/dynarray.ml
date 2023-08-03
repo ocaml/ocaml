@@ -114,7 +114,7 @@ and 'a slot =
 *)
 
 module Error = struct
-  let index_out_of_bounds f ~i ~length =
+  let[@inline never] index_out_of_bounds f ~i ~length =
     if length = 0 then
       Printf.ksprintf invalid_arg
         "Dynarray.%s: index %d out of bounds (empty dynarray)"
@@ -124,17 +124,17 @@ module Error = struct
         "Dynarray.%s: index %d out of bounds (0..%d)"
         f i (length - 1)
 
-  let negative_length f n =
+  let[@inline never] negative_length f n =
     Printf.ksprintf invalid_arg
       "Dynarray.%s: negative length %d"
       f n
 
-  let negative_capacity f n =
+  let[@inline never] negative_capacity f n =
     Printf.ksprintf invalid_arg
       "Dynarray.%s: negative capacity %d"
       f n
 
-  let requested_length_out_of_bounds f requested_length =
+  let[@inline never] requested_length_out_of_bounds f requested_length =
     Printf.ksprintf invalid_arg
       "Dynarray.%s: cannot grow to requested length %d (max_array_length is %d)"
       f requested_length Sys.max_array_length
@@ -145,17 +145,17 @@ module Error = struct
      performed earlier, and not to the callsite of the function
      itself. *)
 
-  let missing_element ~i ~length =
+  let[@inline never] missing_element ~i ~length =
     Printf.ksprintf invalid_arg
       "Dynarray: invalid array (missing element at position %d < length %d)"
       i length
 
-  let invalid_length ~length ~capacity =
+  let[@inline never] invalid_length ~length ~capacity =
     Printf.ksprintf invalid_arg
       "Dynarray: invalid array (length %d > capacity %d)"
       length capacity
 
-  let length_change_during_iteration f ~expected ~observed =
+  let[@inline never] length_change_during_iteration f ~expected ~observed =
     Printf.ksprintf invalid_arg
       "Dynarray.%s: a length change from %d to %d occurred during iteration"
       f expected observed
@@ -163,7 +163,7 @@ module Error = struct
   (* When an [Empty] element is observed unexpectedly at index [i],
      it may be either an out-of-bounds access or an invalid-state situation
      depending on whether [i <= length]. *)
-  let unexpected_empty_element f ~i ~length =
+  let[@inline never] unexpected_empty_element f ~i ~length =
     if i < length then
       missing_element ~i ~length
     else
