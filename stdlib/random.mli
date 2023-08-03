@@ -63,17 +63,49 @@ val full_int : int -> int
 
     @since 4.13 *)
 
+val int_in_range : min:int -> max:int -> int
+(** [Random.int_in_range ~min ~max] returns a random integer
+    between [min] (inclusive) and [max] (inclusive).
+    Both [min] and [max] are allowed to be negative;
+    [min] must be less than or equal to [max].
+
+    @since 5.2 *)
+
 val int32 : Int32.t -> Int32.t
 (** [Random.int32 bound] returns a random integer between 0 (inclusive)
      and [bound] (exclusive).  [bound] must be greater than 0. *)
+
+val int32_in_range : min:int32 -> max:int32 -> int32
+(** [Random.int32_in_range ~min ~max] returns a random integer
+    between [min] (inclusive) and [max] (inclusive).
+    Both [min] and [max] are allowed to be negative;
+    [min] must be less than or equal to [max].
+
+    @since 5.2 *)
 
 val nativeint : Nativeint.t -> Nativeint.t
 (** [Random.nativeint bound] returns a random integer between 0 (inclusive)
      and [bound] (exclusive).  [bound] must be greater than 0. *)
 
+val nativeint_in_range : min:nativeint -> max:nativeint -> nativeint
+(** [Random.nativeint_in_range ~min ~max] returns a random integer
+    between [min] (inclusive) and [max] (inclusive).
+    Both [min] and [max] are allowed to be negative;
+    [min] must be less than or equal to [max].
+
+    @since 5.2 *)
+
 val int64 : Int64.t -> Int64.t
 (** [Random.int64 bound] returns a random integer between 0 (inclusive)
      and [bound] (exclusive).  [bound] must be greater than 0. *)
+
+val int64_in_range : min:int64 -> max:int64 -> int64
+(** [Random.int64_in_range ~min ~max] returns a random integer
+    between [min] (inclusive) and [max] (inclusive).
+    Both [min] and [max] are allowed to be negative;
+    [min] must be less than or equal to [max].
+
+    @since 5.2 *)
 
 val float : float -> float
 (** [Random.float bound] returns a random floating-point number
@@ -127,9 +159,13 @@ module State : sig
   val bits : t -> int
   val int : t -> int -> int
   val full_int : t -> int -> int
+  val int_in_range : t -> min:int -> max:int -> int
   val int32 : t -> Int32.t -> Int32.t
+  val int32_in_range : t -> min:int32 -> max:int32 -> int32
   val nativeint : t -> Nativeint.t -> Nativeint.t
+  val nativeint_in_range : t -> min:nativeint -> max:nativeint -> nativeint
   val int64 : t -> Int64.t -> Int64.t
+  val int64_in_range : t -> min:int64 -> max:int64 -> int64
   val float : t -> float -> float
   val bool : t -> bool
   val bits32 : t -> Int32.t

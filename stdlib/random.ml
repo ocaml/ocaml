@@ -155,6 +155,28 @@ module State = struct
     else
       intaux s bound
 
+  (* Return an integer between [min] (included) and [max] (included).
+     We must have [min <= max]. *)
+  let rec int_in_range_aux s ~min ~max =
+    let r = Int64.to_int (next s) in
+    if r < min || r > max then int_in_range_aux s ~min ~max else r
+
+  let int_in_range s ~min ~max =
+    if min > max then
+      invalid_arg "Random.int_in_range"
+    else
+      let span = max - min + 1 in
+      (* We use [int_in_range_aux] only if [max - min + 1] overflows;
+       * then, the interval between [min] and [max] covers at least half
+       * of the representable integers, so that it converges quickly
+       * (the probability of re-drawing is at most 1/2). *)
+      if span <= 0 then
+        int_in_range_aux s ~min ~max
+      else if span > 0x3FFFFFFF then
+        min + int63aux s span
+      else
+        min + intaux s span
+
   (* Return 32 random bits as an [int32] *)
   let bits32 s =
     Int64.to_int32 (next s)
@@ -172,6 +194,22 @@ module State = struct
     if bound <= 0l
     then invalid_arg "Random.int32"
     else int32aux s bound
+
+  (* Return an [int32] between [min] (included) and [max] (included).
+     We must have [min <= max]. *)
+  let rec int32_in_range_aux s ~min ~max =
+    let r = Int64.to_int32 (next s) in
+    if r < min || r > max then int32_in_range_aux s ~min ~max else r
+
+  let int32_in_range s ~min ~max =
+    if min > max then
+      invalid_arg "Random.int32_in_range"
+    else
+      let span = Int32.succ (Int32.sub max min) in
+      if span <= Int32.zero then
+        int32_in_range_aux s ~min ~max
+      else
+        Int32.add min (int32aux s span)
 
   (* Return 64 random bits as an [int64] *)
   let bits64 s =
@@ -191,6 +229,22 @@ module State = struct
     then invalid_arg "Random.int64"
     else int64aux s bound
 
+  (* Return an [int64] between [min] (included) and [max] (included).
+     We must have [min <= max]. *)
+  let rec int64_in_range_aux s ~min ~max =
+    let r = next s in
+    if r < min || r > max then int64_in_range_aux s ~min ~max else r
+
+  let int64_in_range s ~min ~max =
+    if min > max then
+      invalid_arg "Random.int64_in_range"
+    else
+      let span = Int64.succ (Int64.sub max min) in
+      if span <= Int64.zero then
+        int64_in_range_aux s ~min ~max
+      else
+        Int64.add min (int64aux s span)
+
   (* Return 32 or 64 random bits as a [nativeint] *)
   let nativebits =
     if Nativeint.size = 32
@@ -202,6 +256,16 @@ module State = struct
     if Nativeint.size = 32
     then fun s bound -> Nativeint.of_int32 (int32 s (Nativeint.to_int32 bound))
     else fun s bound -> Int64.to_nativeint (int64 s (Int64.of_nativeint bound))
+
+  (* Return a [nativeint] between [min] (included) and [max] (included). *)
+  let nativeint_in_range =
+    if Nativeint.size = 32
+    then fun s ~min ~max ->
+      Nativeint.of_int32 (int32_in_range s
+        ~min:(Nativeint.to_int32 min) ~max:(Nativeint.to_int32 max))
+    else fun s ~min ~max ->
+      Int64.to_nativeint (int64_in_range s
+        ~min:(Int64.of_nativeint min) ~max:(Int64.of_nativeint max))
 
   (* Return a float 0 < x < 1 uniformly distributed among the
      multiples of 2^-53 *)
@@ -236,9 +300,17 @@ let random_key =
 let bits () = State.bits (Domain.DLS.get random_key)
 let int bound = State.int (Domain.DLS.get random_key) bound
 let full_int bound = State.full_int (Domain.DLS.get random_key) bound
+let int_in_range ~min ~max =
+  State.int_in_range (Domain.DLS.get random_key) ~min ~max
 let int32 bound = State.int32 (Domain.DLS.get random_key) bound
+let int32_in_range ~min ~max =
+  State.int32_in_range (Domain.DLS.get random_key) ~min ~max
 let nativeint bound = State.nativeint (Domain.DLS.get random_key) bound
+let nativeint_in_range ~min ~max =
+  State.nativeint_in_range (Domain.DLS.get random_key) ~min ~max
 let int64 bound = State.int64 (Domain.DLS.get random_key) bound
+let int64_in_range ~min ~max =
+  State.int64_in_range (Domain.DLS.get random_key) ~min ~max
 let float scale = State.float (Domain.DLS.get random_key) scale
 let bool () = State.bool (Domain.DLS.get random_key)
 let bits32 () = State.bits32 (Domain.DLS.get random_key)
