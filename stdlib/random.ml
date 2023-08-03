@@ -169,7 +169,15 @@ module State = struct
       (* We use [int_in_range_aux] only if [max - min + 1] overflows;
        * then, the interval between [min] and [max] covers at least half
        * of the representable integers, so that it converges quickly
-       * (the probability of re-drawing is at most 1/2). *)
+       * (the probability of re-drawing is at most 1/2).
+       *
+       * When [max - min + 1] does not overflow, we use [int63aux], for
+       * 2 reasons:
+       *   - [int_in_range] then has a high probability of re-drawing,
+       *     so would be very slow;
+       *   - we thus guarantee that, when [min = 0], [int_in_range]
+       *     yields the same output as [full_int (max+1)].
+       *)
       if span <= 0 then
         int_in_range_aux s ~min ~max
       else if span > 0x3FFFFFFF then
@@ -206,6 +214,7 @@ module State = struct
       invalid_arg "Random.int32_in_range"
     else
       let span = Int32.succ (Int32.sub max min) in
+      (* Explanation of this test: see comment in [int_in_range]. *)
       if span <= Int32.zero then
         int32_in_range_aux s ~min ~max
       else
@@ -240,6 +249,7 @@ module State = struct
       invalid_arg "Random.int64_in_range"
     else
       let span = Int64.succ (Int64.sub max min) in
+      (* Explanation of this test: see comment in [int_in_range]. *)
       if span <= Int64.zero then
         int64_in_range_aux s ~min ~max
       else
