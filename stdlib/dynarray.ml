@@ -696,9 +696,9 @@ let filter_map f a =
 (** {1:conversions Conversions to other data structures} *)
 
 (* The eager [to_*] conversion functions behave similarly to iterators
-   in presence of updates during computation. The [to_seq*] functions
-   obey their more permissive specification, which tolerates any
-   concurrent update. *)
+   in presence of updates during computation. The [*_reentrant]
+   functions obey their more permissive specification, which tolerates
+   any concurrent update. *)
 
 let of_array a =
   let length = Array.length a in

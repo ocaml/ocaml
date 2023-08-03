@@ -53,9 +53,11 @@
 ]
 
 (**
-   Unsynchronized accesses to a dynamic array may lead to an invalid
-   dynamic array state. Thus, concurrent accesses to dynamic arrays
-   must be synchronized (for instance with a {!Mutex.t}).
+   Concurrent accesses to dynamic arrays must be synchronized
+   (for instance with a {!Mutex.t}). Unsynchronized accesses to
+   a dynamic array are a programming error that may lead to an invalid
+   dynamic array state, on which some operations would fail with an
+   [Invalid_argument] exception.
 *)
 
 (** {1:dynarrays Dynamic arrays} *)
@@ -146,7 +148,7 @@ val append : 'a t -> 'a t -> unit
 
     Warning: [append a a] is a programming error because it iterates
     on [a] and adds elements to it at the same time -- see the
-    {{!sec:iteration} Iteration} section below. It fails with
+    {{!section:iteration} Iteration} section below. It fails with
     [Invalid_argument].
     If you really want to append a copy of [a] to itself, you can use
     [Dynarray.append_array a (Dynarray.to_array a)] which copies [a]
@@ -422,6 +424,9 @@ val ensure_capacity : 'a t -> int -> unit
 val ensure_extra_capacity : 'a t -> int -> unit
 (** [ensure_extra_capacity a n] is [ensure_capacity a (length a + n)],
     it makes sure that [a] has room for [n] extra items.
+
+    @raise Invalid_argument if the total requested capacity is
+      outside the range [0 .. Sys.max_array_length].
 
     A use case would be to implement {!append_array}:
     {[
