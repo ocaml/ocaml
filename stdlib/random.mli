@@ -24,6 +24,9 @@
     In contrast, all threads within a domain share the same domain-local
     generator.  Independent generators can be created with the {!Random.split}
     function and used with the functions from the {!Random.State} module.
+
+    @before 5.0 Random value generation used a different algorithm.
+    This affects all the functions in this module which return random values.
 *)
 
 (** {1 Basic functions} *)
@@ -44,22 +47,26 @@ val self_init : unit -> unit
 
 val bits : unit -> int
 (** Return 30 random bits in a nonnegative integer.
-    @before 5.0 used a different algorithm (affects all the following functions)
 *)
 
 val int : int -> int
 (** [Random.int bound] returns a random integer between 0 (inclusive)
      and [bound] (exclusive).  [bound] must be greater than 0 and less
-     than 2{^30}. *)
+     than 2{^30}.
+
+    @raise Invalid_argument if [bound] <= 0 or [bound] >= 2{^30}.
+*)
 
 val full_int : int -> int
 (** [Random.full_int bound] returns a random integer between 0 (inclusive)
      and [bound] (exclusive). [bound] may be any positive integer.
 
      If [bound] is less than 2{^30}, [Random.full_int bound] is equal to
-     {!Random.int}[ bound]. If [bound] is greater than 2{^30} (on 64-bit systems
+     {!Random.int}[ bound]. If [bound] is at least 2{^30} (on 64-bit systems
      or non-standard environments, such as JavaScript), [Random.full_int]
      returns a value, where {!Random.int} raises {!Stdlib.Invalid_argument}.
+
+    @raise Invalid_argument if [bound] <= 0.
 
     @since 4.13 *)
 
@@ -69,11 +76,16 @@ val int_in_range : min:int -> max:int -> int
     Both [min] and [max] are allowed to be negative;
     [min] must be less than or equal to [max].
 
+    @raise Invalid_argument if [min > max].
+
     @since 5.2 *)
 
 val int32 : Int32.t -> Int32.t
 (** [Random.int32 bound] returns a random integer between 0 (inclusive)
-     and [bound] (exclusive).  [bound] must be greater than 0. *)
+     and [bound] (exclusive).  [bound] must be greater than 0.
+
+    @raise Invalid_argument if [bound] <= 0.
+*)
 
 val int32_in_range : min:int32 -> max:int32 -> int32
 (** [Random.int32_in_range ~min ~max] returns a random integer
@@ -81,11 +93,16 @@ val int32_in_range : min:int32 -> max:int32 -> int32
     Both [min] and [max] are allowed to be negative;
     [min] must be less than or equal to [max].
 
+    @raise Invalid_argument if [min > max].
+
     @since 5.2 *)
 
 val nativeint : Nativeint.t -> Nativeint.t
 (** [Random.nativeint bound] returns a random integer between 0 (inclusive)
-     and [bound] (exclusive).  [bound] must be greater than 0. *)
+     and [bound] (exclusive).  [bound] must be greater than 0.
+
+    @raise Invalid_argument if [bound] <= 0.
+*)
 
 val nativeint_in_range : min:nativeint -> max:nativeint -> nativeint
 (** [Random.nativeint_in_range ~min ~max] returns a random integer
@@ -93,17 +110,24 @@ val nativeint_in_range : min:nativeint -> max:nativeint -> nativeint
     Both [min] and [max] are allowed to be negative;
     [min] must be less than or equal to [max].
 
+    @raise Invalid_argument if [min > max].
+
     @since 5.2 *)
 
 val int64 : Int64.t -> Int64.t
 (** [Random.int64 bound] returns a random integer between 0 (inclusive)
-     and [bound] (exclusive).  [bound] must be greater than 0. *)
+     and [bound] (exclusive).  [bound] must be greater than 0.
+
+    @raise Invalid_argument if [bound] <= 0.
+*)
 
 val int64_in_range : min:int64 -> max:int64 -> int64
 (** [Random.int64_in_range ~min ~max] returns a random integer
     between [min] (inclusive) and [max] (inclusive).
     Both [min] and [max] are allowed to be negative;
     [min] must be less than or equal to [max].
+
+    @raise Invalid_argument if [min > max].
 
     @since 5.2 *)
 
