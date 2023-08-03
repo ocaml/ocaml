@@ -64,10 +64,17 @@ let make_matrix sx sy init =
   res
 
 let init_matrix sx sy f =
+  if sy < 0 then invalid_arg "Array.init_matrix";
   let res = create sx [||] in
-  for x = 0 to pred sx do
-    unsafe_set res x (init sy (fun y -> f x y))
-  done;
+  if sy > 0 then begin
+    for x = 0 to pred sx do
+      let row = create sy (f x 0) in
+      for y = 1 to pred sy do
+        unsafe_set row y (f x y)
+      done;
+      unsafe_set res x row
+    done;
+  end;
   res
 
 let copy a =
