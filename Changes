@@ -214,6 +214,10 @@ Working version
   (Nick Roberts; review by Richard Eisenberg, Leo White, and Gabriel Scherer;
   RFC by Stephen Dolan)
 
+- #12442: document jump summaries in the pattern-matching compiler
+  (Gabriel Scherer and Thomas Refis, review by Florian Angeletti
+   and Vincent Laviron)
+
 ### Build system:
 
 - #12198: continue the merge of the sub-makefiles into the root Makefile
