@@ -68,12 +68,10 @@ exception Finally_raised of exn
 
     {2 Combinators}
 
-    One common mode of usage for {!combinators} is to create and pass anonymous
-    functions as arguments to higher-order functions, without needing to specify
-    [(fun ... -> ...)] explicitly.
-
-    The examples below will be demonstrating this mainly with the {!module:List}
-    module.
+    {{!combinators}Combinators} provide a lightweight and sometimes more
+    readable way to create anonymous functions, best used as short-lived
+    arguments rather than standalone definitions. The examples below will
+    demonstrate this mainly with the {!module:List} module.
 
     {!val:id}
     {[
@@ -86,21 +84,20 @@ exception Finally_raised of exn
 
     {!val:const}
     {[
-    # List.init 3 (Fun.const 0)
+    # List.init 3 (Fun.const 0);;
     - : int list = [0; 0; 0]
     ]}
-    One difference between applying [const (...)] and passing the lambda
-    [(fun _ -> ...)] directly is that the expression denoted [(...)] will be
-    evaluated once, and the function [const] returns will only have access to
-    the result of evaluating [(...)]. So really, [const (...)] is not equivalent
-    to [(fun _ -> ...)], but rather to [let result = ... in (fun _ -> result)].
+    Note that applying [const (...)] evaluates the expression [(...)] once, and
+    returns a function that only has the result of this evaluation. To
+    demonstrate this, consider if [(...)] was a call to {!val:Random.bool}[()]:
 
-    To demonstrate this, consider if [(...)] was a call to {!val:Random.bool}:
-
-    for all [n] where [n > 0], [List.init n (Fun.const (Random.bool()))] will
-    have {i exactly two} possible outcomes,
+    [List.init n (Fun.const (Random.bool()))] for any [n > 0] will have
+    {i exactly two} possible outcomes,
     - [[true; true; ...; true]] or
     - [[false; false; ...; false]].
+
+    whereas [List.init n (fun _ -> Random.bool())] will have 2{^n} possible
+    outcomes because the randomness effect is performed with every element.
 
     {!val:flip}
     {[
