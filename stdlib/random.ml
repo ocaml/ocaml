@@ -146,13 +146,12 @@ module State = struct
     let v = r mod n in
     (* For uniform distribution of the result between 0 included and [n]
      * excluded, the random number [r] must have been drawn uniformly in
-     * an interval whose length is a multiple of [n]. So the test below
-     * checks whether [r < k*n], where [k*n] is the greatest multiple of
-     * [n] such that [k*n - 1] is in the interval of representable
-     * integers. If failing that, any interval whose length is
-     * a multiple of [n] and which contains [r] has values that are not
-     * representable, hence, drawing was not uniform; in that case, we
-     * re-draw. *)
+     * an interval whose length is a multiple of [n]. To achieve this,
+     * we use rejection sampling on the greatest interval [ [0, k*n-1] ]
+     * that fits in representable integers, that is, we reject the
+     * sample if it falls outside of this interval, and draw again.
+     * This is what the test below does (while carefuly avoiding
+     * overflows and sparing a division [max_int / n]). *)
     if r - v > max_int - n + 1 then full_int_aux s n else v
 
   let full_int s bound =
