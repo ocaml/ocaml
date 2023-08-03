@@ -78,14 +78,29 @@ exception Finally_raised of exn
     # List.init 3 Fun.id;;
     - : int list = [0; 1; 2]
 
-    # List.find_all Fun.id [false; false; true; false];;
-    - : bool list = [true]
+    # List.filter_map Fun.id [None; Some 2; Some 3; None; Some 5];;
+    - : int list = [2; 3; 5]
+
+    # let to_flat = Float.Array.map_from_array Fun.id
+    val to_flat : float array -> Float.Array.t
+    ]}
+    Dispatching functions of type [foo -> foo] conditionally is another place
+    where [id] may be useful
+    {[
+    if Sys.win32 then String.map (function '\\' -> '/' | c -> c) else Fun.id
     ]}
 
     {!val:const}
     {[
     # List.init 3 (Fun.const 0);;
     - : int list = [0; 0; 0]
+
+    # let last xs = List.fold_left (Fun.const Option.some) None xs;;
+    val last : 'a list -> 'a option
+    # last [1; 2; 3];;
+    - : int option = Some 3
+    # last [];;
+    - : int option = None
     ]}
     Note that applying [const (...)] evaluates the expression [(...)] once, and
     returns a function that only has the result of this evaluation. To
