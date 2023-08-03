@@ -30,6 +30,7 @@
 #include "caml/globroots.h"
 #include "caml/major_gc.h"
 #include "caml/memory.h"
+#include "caml/memprof.h"
 #include "caml/minor_gc.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
@@ -137,6 +138,7 @@ void caml_set_minor_heap_size (asize_t wsize)
   }
 
   reset_minor_tables(r);
+  caml_memprof_renew_minor_sample(domain_state);
 }
 
 /*****************************************************************************/
@@ -594,6 +596,11 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
                              domain, 0);
   CAML_EV_END(EV_MINOR_FINALIZERS_OLDIFY);
 
+  CAML_EV_BEGIN(EV_MINOR_MEMPROF_ROOTS);
+  caml_memprof_scan_roots(&oldify_one, oldify_scanning_flags, &st,
+                          domain, 1, participating[0] == domain);
+  CAML_EV_END(EV_MINOR_MEMPROF_ROOTS);
+
   CAML_EV_BEGIN(EV_MINOR_REMEMBERED_SET_PROMOTE);
   oldify_mopup (&st, 1); /* ephemerons promoted here */
   CAML_EV_END(EV_MINOR_REMEMBERED_SET_PROMOTE);
@@ -634,12 +641,15 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS_PROMOTE);
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS);
 
+  caml_memprof_after_minor_gc(domain, participating[0] == domain);
+
   domain->young_ptr = domain->young_end;
   /* Trigger a GC poll when half of the minor heap is filled. At that point, a
    * major slice is scheduled. */
   domain->young_trigger = domain->young_start
     + (domain->young_end - domain->young_start) / 2;
   caml_reset_young_limit(domain);
+  caml_memprof_renew_minor_sample(domain);
 
   if( participating_count > 1 ) {
     atomic_fetch_add_explicit
@@ -720,7 +730,6 @@ caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
     }
     CAML_EV_END(EV_MINOR_LEAVE_BARRIER);
   }
-
   CAML_EV_BEGIN(EV_MINOR_FINALIZERS_ADMIN);
   caml_gc_log("running finalizer data structure book-keeping");
   caml_final_update_last_minor(domain);
@@ -840,9 +849,8 @@ void caml_alloc_small_dispatch (caml_domain_state * dom_st,
   /* Re-do the allocation: we now have enough space in the minor heap. */
   dom_st->young_ptr -= whsize;
 
-#if 0
   /* Check if the allocated block has been sampled by memprof. */
-  if (dom_st->young_ptr < caml_memprof_young_trigger) {
+  if (dom_st->young_ptr < dom_st->memprof_young_trigger) {
     if(flags & CAML_DO_TRACK) {
       caml_memprof_track_young(wosize, flags & CAML_FROM_CAML,
                                nallocs, encoded_alloc_lens);
@@ -854,9 +862,8 @@ void caml_alloc_small_dispatch (caml_domain_state * dom_st,
          allocation, because its value has been used as the pointer to
          the sampled block.
       */
-    } else caml_memprof_renew_minor_sample();
+    } else caml_memprof_renew_minor_sample(dom_st);
   }
-#endif
 }
 
 /* Request a minor collection and enter as if it were an interrupt.

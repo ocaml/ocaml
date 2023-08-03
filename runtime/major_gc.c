@@ -31,6 +31,7 @@
 #include "caml/globroots.h"
 #include "caml/gc_stats.h"
 #include "caml/memory.h"
+#include "caml/memprof.h"
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
 #include "caml/roots.h"
@@ -1237,6 +1238,14 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
 {
   uintnat num_domains_in_stw;
 
+  /* TODO: Not clear this memprof item is really part of the "cycle"
+   * operation. It's more like ephemeron-cleaning really. An earlier
+   * version had a separate callback for this, but resulted in
+   * failures because using caml_try_run_on_all_domains() on it would
+   * mysteriously put all domains back into mark/sweep.
+   */
+  caml_memprof_after_major_gc(domain, domain == participating[0]);
+
   CAML_EV_BEGIN(EV_MAJOR_GC_CYCLE_DOMAINS);
 
   CAMLassert(domain == Caml_state);
@@ -1389,6 +1398,11 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
     }
   }
   CAML_EV_END(EV_MAJOR_MARK_ROOTS);
+
+  CAML_EV_BEGIN(EV_MAJOR_MEMPROF_ROOTS);
+  caml_memprof_scan_roots(caml_darken, darken_scanning_flags, domain,
+                          domain, 0, participating[0] == Caml_state);
+  CAML_EV_END(EV_MAJOR_MEMPROF_ROOTS);
 
   if (domain->mark_stack->count == 0 &&
       !caml_addrmap_iter_ok(&domain->mark_stack->compressed_stack,
@@ -1698,13 +1712,12 @@ mark_again:
         is_complete_phase_mark_final ()) {
       CAMLassert (caml_gc_phase != Phase_sweep_ephe);
       if (barrier_participants) {
-        try_complete_gc_phase (domain_state,
-                              (void*)0,
-                              participant_count,
-                              barrier_participants);
+              try_complete_gc_phase(domain_state, (void*)0,
+                                    participant_count, barrier_participants);
       } else {
-        caml_try_run_on_all_domains (&try_complete_gc_phase, 0, 0);
+              caml_try_run_on_all_domains(&try_complete_gc_phase, 0, 0);
       }
+
       if (get_major_slice_work(mode) > 0) goto mark_again;
     }
   }
@@ -1722,18 +1735,20 @@ mark_again:
                                                       - blocks_marked_before));
 
   if (mode != Slice_opportunistic && is_complete_phase_sweep_ephe()) {
+
     saved_major_cycle = caml_major_cycles_completed;
     /* To handle the case where multiple domains try to finish the major
       cycle simultaneously, we loop until the current cycle has ended,
       ignoring whether caml_try_run_on_all_domains succeeds. */
 
-
     while (saved_major_cycle == caml_major_cycles_completed) {
       if (barrier_participants) {
-        cycle_all_domains_callback
-              (domain_state, (void*)0, participant_count, barrier_participants);
+        cycle_all_domains_callback(domain_state,
+                                   (void*)0,
+                                   participant_count,
+                                   barrier_participants);
       } else {
-        caml_try_run_on_all_domains(&cycle_all_domains_callback, 0, 0);
+        caml_try_run_on_all_domains (&cycle_all_domains_callback, 0, 0);
       }
     }
   }

@@ -41,6 +41,7 @@ type runtime_phase =
 | EV_MAJOR
 | EV_MAJOR_SWEEP
 | EV_MAJOR_MARK_ROOTS
+| EV_MAJOR_MEMPROF_ROOTS
 | EV_MAJOR_MARK
 | EV_MINOR
 | EV_MINOR_LOCAL_ROOTS
@@ -51,6 +52,7 @@ type runtime_phase =
 | EV_INTERRUPT_REMOTE
 | EV_MAJOR_EPHE_MARK
 | EV_MAJOR_EPHE_SWEEP
+| EV_MAJOR_MEMPROF_CLEAN
 | EV_MAJOR_FINISH_MARKING
 | EV_MAJOR_GC_CYCLE_DOMAINS
 | EV_MAJOR_GC_PHASE_CHANGE
@@ -60,6 +62,7 @@ type runtime_phase =
 | EV_MAJOR_FINISH_CYCLE
 | EV_MINOR_CLEAR
 | EV_MINOR_FINALIZERS_OLDIFY
+| EV_MINOR_MEMPROF_ROOTS
 | EV_MINOR_GLOBAL_ROOTS
 | EV_MINOR_LEAVE_BARRIER
 | EV_STW_API_BARRIER
@@ -122,6 +125,7 @@ let runtime_phase_name phase =
   | EV_MAJOR -> "major"
     | EV_MAJOR_SWEEP -> "major_sweep"
   | EV_MAJOR_MARK_ROOTS -> "major_mark_roots"
+  | EV_MAJOR_MEMPROF_ROOTS -> "major_memprof_roots"
   | EV_MAJOR_MARK -> "major_mark"
   | EV_MINOR -> "minor"
   | EV_MINOR_LOCAL_ROOTS -> "minor_local_roots"
@@ -132,6 +136,7 @@ let runtime_phase_name phase =
   | EV_INTERRUPT_REMOTE -> "interrupt_remote"
   | EV_MAJOR_EPHE_MARK -> "major_ephe_mark"
   | EV_MAJOR_EPHE_SWEEP -> "major_ephe_sweep"
+  | EV_MAJOR_MEMPROF_CLEAN -> "major_memprof_clean"
   | EV_MAJOR_FINISH_MARKING -> "major_finish_marking"
   | EV_MAJOR_GC_CYCLE_DOMAINS -> "major_gc_cycle_domains"
   | EV_MAJOR_GC_PHASE_CHANGE -> "major_gc_phase_change"
@@ -140,6 +145,7 @@ let runtime_phase_name phase =
   | EV_MAJOR_SLICE -> "major_slice"
   | EV_MINOR_CLEAR -> "minor_clear"
   | EV_MINOR_FINALIZERS_OLDIFY -> "minor_finalizers_oldify"
+  | EV_MINOR_MEMPROF_ROOTS -> "minor_memprof_roots"
   | EV_MINOR_GLOBAL_ROOTS -> "minor_global_roots"
   | EV_MINOR_LEAVE_BARRIER -> "minor_leave_barrier"
   | EV_STW_API_BARRIER -> "stw_api_barrier"
