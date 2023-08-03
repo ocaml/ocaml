@@ -398,17 +398,8 @@ let reset a =
 *)
 
 (* [add_last_if_room a elem] only writes the slot if there is room, and
-   returns [false] otherwise.
-
-   It is sequentially atomic -- in absence of unsynchronized concurrent
-   uses, the fields of [a.arr] and [a.length] will not be mutated
-   by any other code during execution of this function.
-*)
+   returns [false] otherwise. *)
 let[@inline] add_last_if_room a elem =
-  (* BEGIN ATOMIC: the code in this section
-     does not contain any poll point (backedge,
-     allocation or function call) in native code,
-     as can be checked when reading the -dcmm output. *)
   let {arr; length} = a in
   (* we know [0 <= length] *)
   if length >= Array.length arr then false
@@ -416,7 +407,6 @@ let[@inline] add_last_if_room a elem =
     (* we know [0 <= length < Array.length arr] *)
     a.length <- length + 1;
     Array.unsafe_set arr length elem;
-    (* END ATOMIC *)
     true
   end
 
@@ -446,18 +436,11 @@ let append_seq a seq =
 (* append_array: same [..._if_room] and loop logic as [add_last]. *)
 
 let append_array_if_room a b =
-  (* BEGIN ATOMIC *)
   let {arr; length = length_a} = a in
   let length_b = Array.length b in
   if length_a + length_b > Array.length arr then false
   else begin
     a.length <- length_a + length_b;
-    (* END ATOMIC
-
-       Notice that, unlike for [add_last], the atomic section here
-       lasts until the length is extended, but stops before the
-       elements are added, so one could observe missing elements if
-       the code yields.  *)
     (* Note: we intentionally update the length *before* filling the
        elements. This "reserve before fill" approach provides better
        behavior than "fill then notify" in presence of reentrant
@@ -505,20 +488,16 @@ let append_array a b =
 (* append: same [..._if_room] and loop logic as [add_last],
    same reserve-before-fill logic as [append_array]. *)
 
-(* Note: unlike [add_last_if_room], [append_if_room] is *not* atomic.
-
-   It is a programming error to mutate the length of [b] during a call
+(* It is a programming error to mutate the length of [b] during a call
    to [append a b]. To detect this mistake we keep track of the length
    of [b] throughout the computation and check it that does not
    change.
 *)
 let append_if_room a b ~length_b =
-  (* BEGIN ATOMIC *)
   let {arr = arr_a; length = length_a} = a in
   if length_a + length_b > Array.length arr_a then false
   else begin
     a.length <- length_a + length_b;
-    (* END ATOMIC *)
     let arr_b = b.arr in
     check_valid_length length_b arr_b;
     for i = 0 to length_b - 1 do
