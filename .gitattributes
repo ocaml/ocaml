@@ -158,8 +158,8 @@ tools/magic                       typo.missing-header
 aclocal.m4 typo.tab
 configure.ac text eol=lf
 build-aux/compile text eol=lf
-build-aux/config.guess text eol=lf
-build-aux/config.sub text eol=lf
+build-aux/config.guess linguist-generated text eol=lf
+build-aux/config.sub linguist-generated text eol=lf
 build-aux/install-sh text eol=lf
 build-aux/missing text eol=lf
 ocamltest/OCAMLTEST.org typo.long-line=may typo.missing-header
