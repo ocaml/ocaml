@@ -248,7 +248,7 @@ typedef char char_os;
 
 #define CAMLassert(x) \
   (CAMLlikely(x) ? (void) 0 : caml_failed_assert ( #x , __OSFILE__, __LINE__))
-CAMLextern CAMLnoret void caml_failed_assert (char *, char_os *, int);
+CAMLnoret CAMLextern void caml_failed_assert (char *, char_os *, int);
 #else
 #define CAMLassert(x) ((void) 0)
 #endif
@@ -299,7 +299,7 @@ typedef void (*fatal_error_hook) (char *msg, va_list args);
 extern _Atomic fatal_error_hook caml_fatal_error_hook;
 #endif
 
-CAMLextern CAMLnoret void caml_fatal_error (char *, ...)
+CAMLnoret CAMLextern void caml_fatal_error (char *, ...)
 #ifdef __GNUC__
   __attribute__ ((format (printf, 1, 2)))
 #endif
