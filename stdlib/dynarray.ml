@@ -124,14 +124,14 @@ module Error = struct
         "Dynarray.%s: index %d out of bounds (0..%d)"
         f i (length - 1)
 
-  let[@inline never] negative_length f n =
+  let[@inline never] negative_length_requested f n =
     Printf.ksprintf invalid_arg
-      "Dynarray.%s: negative length %d"
+      "Dynarray.%s: negative length %d requested"
       f n
 
-  let[@inline never] negative_capacity f n =
+  let[@inline never] negative_capacity_requested f n =
     Printf.ksprintf invalid_arg
-      "Dynarray.%s: negative capacity %d"
+      "Dynarray.%s: negative capacity %d requested"
       f n
 
   let[@inline never] requested_length_out_of_bounds f requested_length =
@@ -145,14 +145,19 @@ module Error = struct
      performed earlier, and not to the callsite of the function
      itself. *)
 
+  let invalid_state_description =
+    "Invalid dynarray (unsynchronized concurrent length change)"
+
   let[@inline never] missing_element ~i ~length =
     Printf.ksprintf invalid_arg
-      "Dynarray: invalid array (missing element at position %d < length %d)"
+      "%s: missing element at position %d < length %d"
+      invalid_state_description
       i length
 
   let[@inline never] invalid_length ~length ~capacity =
     Printf.ksprintf invalid_arg
-      "Dynarray: invalid array (length %d > capacity %d)"
+      "%s: length %d > capacity %d"
+      invalid_state_description
       length capacity
 
   let[@inline never] length_change_during_iteration f ~expected ~observed =
@@ -211,14 +216,14 @@ let create () = {
 }
 
 let make n x =
-  if n < 0 then Error.negative_length "make" n;
+  if n < 0 then Error.negative_length_requested "make" n;
   {
     length = n;
     arr = Array.init n (fun _ -> Elem {v = x});
   }
 
 let init n f =
-  if n < 0 then Error.negative_length "init" n;
+  if n < 0 then Error.negative_length_requested "init" n;
   {
     length = n;
     arr = Array.init n (fun i -> Elem {v = f i});
@@ -307,7 +312,7 @@ let remove_last a =
   end
 
 let truncate a n =
-  if n < 0 then Error.negative_length "truncate" n;
+  if n < 0 then Error.negative_length_requested "truncate" n;
   let {arr; length} = a in
   if length <= n then ()
   else begin
@@ -344,7 +349,7 @@ let ensure_capacity a capacity_request =
   let arr = a.arr in
   let cur_capacity = Array.length arr in
   if capacity_request < 0 then
-    Error.negative_capacity "ensure_capacity" capacity_request
+    Error.negative_capacity_requested "ensure_capacity" capacity_request
   else if cur_capacity >= capacity_request then
     (* This is the fast path, the code up to here must do as little as
        possible. (This is why we don't use [let {arr; length} = a] as
@@ -387,7 +392,7 @@ let fit_capacity a =
 
 let set_capacity a n =
   if n < 0 then
-    Error.negative_capacity "set_capacity" n;
+    Error.negative_capacity_requested "set_capacity" n;
   let arr = a.arr in
   let cur_capacity = Array.length arr in
   if n < cur_capacity then begin
