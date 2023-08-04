@@ -31,6 +31,11 @@ Working version
   (Alistair O'Brien, review by Gabriel Scherer, Nicolás Ojeda Bär
    and Florian Angeletti)
 
+- #12456: Document the incompatibility between effects on the one
+  hand, and `caml_callback` and asynchronous callbacks (signal
+  handlers, finalisers, memprof callbacks...) on the other hand.
+  (Guillaume Munch-Maccagnoni, review by KC Sivaramakrishnan)
+
 ### Type system:
 
 - #12313, #11799: Do not re-build as-pattern type when a ground type annotation
