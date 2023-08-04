@@ -331,7 +331,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               when Path.same path (mk_persistent "Stdlib__Uchar" ["t"]) ->
             Oval_constr
               (Oide_ident (Out_name.create "Uchar.of_int"),
-              [Oval_printer (fun ppf -> fprintf ppf "%#x" (O.obj obj : int))])
+              [Oval_printer (fun ppf -> fprintf ppf "0x%04X" (O.obj obj : int))])
 
           | Tconstr (path, [ty_arg], _)
             when Path.same path Predef.path_lazy_t ->
