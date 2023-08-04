@@ -57,7 +57,7 @@ jobs:
          '${{ github.event.repository.full_name }}'
       - name: Configure tree
         run: |
-          MAKE_ARG=-j XARCH=x64 CONFIG_ARG='--enable-flambda --enable-cmm-invariants --enable-dependency-generation --enable-native-toplevel' OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
+          MAKE_ARG=-j CONFIG_ARG='--enable-flambda --enable-cmm-invariants --enable-dependency-generation --enable-native-toplevel' OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
       - name: Build
         run: |
           MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
@@ -125,7 +125,7 @@ jobs:
         run: brew install parallel
       - name: configure tree
         run: |
-          CONFIG_ARG=${{ matrix.config_arg }} MAKE_ARG=-j XARCH=x64 bash -xe tools/ci/actions/runner.sh configure
+          CONFIG_ARG=${{ matrix.config_arg }} MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh configure
       - name: Build
         run: |
           MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
@@ -146,7 +146,7 @@ jobs:
   i386:
     runs-on: ubuntu-latest
     container:
-      image: i386/ubuntu:18.04
+      image: debian:12
       options: --platform linux/i386 --user root
     steps:
       - name: OS Dependencies
@@ -158,7 +158,7 @@ jobs:
         uses: actions/checkout@v1
       - name: configure tree
         run: |
-          MAKE_ARG=-j XARCH=i386 bash -xe tools/ci/actions/runner.sh configure
+          MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh configure
       - name: Build
         run: |
           MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
