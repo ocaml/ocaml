@@ -89,6 +89,9 @@ Working version
    review by Damien Doligez, Sebastien Hinderer, Jacques-Henri Jourdan, Luc
    Maranget, Guillaume Munch-Maccagnoni, Gabriel Scherer)
 
+- #11911, #12381: Restore statmemprof functionality in part
+   (API changes in Gc.Memprof). (Nick Barnes)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.

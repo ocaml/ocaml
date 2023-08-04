@@ -434,15 +434,16 @@ val eventlog_pause : unit -> unit
 val eventlog_resume : unit -> unit
 [@@ocaml.deprecated "Use Runtime_events.resume instead."]
 
-(** [Memprof] is a sampling engine for allocated memory words. Every
-   allocated word has a probability of being sampled equal to a
-   configurable sampling rate. Once a block is sampled, it becomes
-   tracked. A tracked block triggers a user-defined callback as soon
-   as it is allocated, promoted or deallocated.
+(** [Memprof] is a profiling engine which randomly samples allocated
+   memory words. Every allocated word has a probability of being
+   sampled equal to a configurable sampling rate. Once a block is
+   sampled, it becomes tracked. A tracked block triggers a
+   user-defined callback as soon as it is allocated, promoted or
+   deallocated.
 
    Since blocks are composed of several words, a block can potentially
    be sampled several times. If a block is sampled several times, then
-   each of the callback is called once for each event of this block:
+   each of the callbacks is called once for each event of this block:
    the multiplicity is given in the [n_samples] field of the
    [allocation] structure.
 
@@ -453,6 +454,9 @@ val eventlog_resume : unit -> unit
    notice. *)
 module Memprof :
   sig
+    type t
+    (** the type of a profile *)
+
     type allocation_source = Normal | Marshal | Custom
     type allocation = private
       { n_samples : int;
@@ -462,7 +466,8 @@ module Memprof :
         (** The size of the block, in words, excluding the header. *)
 
         source : allocation_source;
-        (** The type of the allocation. *)
+        (** The cause of the allocation; [Marshal] cannot be produced
+          since OCaml 5. *)
 
         callstack : Printexc.raw_backtrace
         (** The callstack for the allocation. *)
@@ -485,12 +490,11 @@ module Memprof :
        to keep for minor blocks, and ['major] the type of metadata
        for major blocks.
 
-       When using threads, it is guaranteed that allocation callbacks are
-       always run in the thread where the allocation takes place.
+       The member functions in a [tracker] are called callbacks.
 
-       If an allocation-tracking or promotion-tracking function returns [None],
-       memprof stops tracking the corresponding value.
-     *)
+       If an allocation or promotion callback raises an exception or
+       returns [None], memprof stops tracking the corresponding block.
+       *)
 
     val null_tracker: ('minor, 'major) tracker
     (** Default callbacks simply return [None] or [()] *)
@@ -499,14 +503,15 @@ module Memprof :
       sampling_rate:float ->
       ?callstack_size:int ->
       ('minor, 'major) tracker ->
-      unit
-    (** Start the sampling with the given parameters. Fails if
-       sampling is already active.
+      t
+    (** Start a profile with the given parameters. Raises an exception
+       if a profile is already sampling in the current domain.
 
-       The parameter [sampling_rate] is the sampling rate in samples
-       per word (including headers). Usually, with cheap callbacks, a
-       rate of 1e-4 has no visible effect on performance, and 1e-3
-       causes the program to run a few percent slower
+       Sampling begins immediately. The parameter [sampling_rate] is
+       the sampling rate in samples per word (including headers).
+       Usually, with cheap callbacks, a rate of 1e-4 has no visible
+       effect on performance, and 1e-3 causes the program to run a few
+       percent slower.
 
        The parameter [callstack_size] is the length of the callstack
        recorded at every sample. Its default is [max_int].
@@ -514,24 +519,51 @@ module Memprof :
        The parameter [tracker] determines how to track sampled blocks
        over their lifetime in the minor and major heap.
 
-       Sampling is temporarily disabled when calling a callback
-       for the current thread. So they do not need to be re-entrant if
-       the program is single-threaded. However, if threads are used,
-       it is possible that a context switch occurs during a callback,
-       in this case the callback functions must be re-entrant.
+       Sampling is temporarily disabled on the current thread when
+       calling a callback, so callbacks do not need to be re-entrant
+       if the program is single-threaded and single-domain. However,
+       if threads or multiple domains are used, it is possible that
+       several callbacks will run in parallel. In this case, callback
+       functions must be re-entrant.
 
-       Note that the callback can be postponed slightly after the
-       actual event. The callstack passed to the callback is always
-       accurate, but the program state may have evolved. *)
+       Note that a callback may be postponed slightly after the actual
+       event. The callstack passed to an allocation callback always
+       accurately reflects the allocation, but the program state may
+       have evolved between the allocation and the call to the
+       callback.
+
+       If a new thread or domain is created when profiling is active,
+       the child thread or domain joins that profile (using the same
+       [sampling_rate], [callstack_size], and [tracker] callbacks).
+
+       An allocation callback is generally run by the thread which
+       allocated the block. If the thread exits or the profile is
+       stopped before the callback is called, the callback may be run
+       by a different thread.
+
+       Each callback is generally run by the domain which allocated
+       the block. If the domain terminates or the profile is stopped
+       before the callback is called, the callback may be run by a
+       different domain.
+
+       Different domains may run different profiles simultaneously.
+       *)
 
     val stop : unit -> unit
-    (** Stop the sampling. Fails if sampling is not active.
+    (** Stop sampling for the current profile. Fails if no profile is
+       sampling in the current domain. Stops sampling in all threads
+       and domains sharing the profile.
 
-        This function does not allocate memory.
+       Callbacks from a profile may run after [stop] is called, until
+       [discard] is applied to the profile.
 
-        All the already tracked blocks are discarded. If there are
-        pending postponed callbacks, they may be discarded.
+       A profile is implicitly stopped (but not discarded) if all
+       domains and threads sampling for it are terminated.
+       *)
 
-        Calling [stop] when a callback is running can lead to
-        callbacks not being called even though some events happened. *)
+    val discard : t -> unit
+    (** Discards all profiling state for a stopped profile, which
+       prevents any more callbacks for it. Raises an exception if
+       called on a profile which has not been stopped.
+       *)
 end
