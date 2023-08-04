@@ -116,7 +116,7 @@ consistency.
 
 One way to explain the observed behaviour is as if the operations performed on
 a domain were reordered. For example, if the second and the third reads from
-"d2" were reordered,
+"d1" were reordered,
 
 \begin{caml_example*}{verbatim}
 let d1 a b =
