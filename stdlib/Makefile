@@ -23,10 +23,30 @@ include $(ROOTDIR)/Makefile.common
 
 TARGET_BINDIR ?= $(BINDIR)
 
-COMPILER=$(ROOTDIR)/ocamlc$(EXE)
-CAMLC=$(OCAMLRUN) $(COMPILER)
-COMPFLAGS=-strict-sequence -absname -w +a-4-9-41-42-44-45-48 \
-          -g -warn-error +A -bin-annot -nostdlib -principal
+# There are three ways the Standard Library is compiled in bytecode:
+# 1. During coldstart
+#      - using ../boot/ocamlc which runs on ../boot/ocamlrun
+# 2. During coreall (via library),
+#      - using ../ocamlc which runs on ../boot/ocamlrun
+# 3. During coreboot (via library-cross),
+#      - using ../ocamlc which at that point runs on ../runtime/ocamlrun
+# If $(USE_BOOT_OCAMLC) is non-empty, we select case 1 and add any additional
+# flags specified in $(BOOT_OCAMLC_FLAGS), since coldstart needs to add
+# -use-prims to the calls (as the boot compiler may not have the same primitive
+# table as the root compiler).
+# Otherwise, we use $(OCAMLRUN) ../ocamlc, with $(OCAMLRUN) being
+# ../boot/ocamlrun by default, but able to overridden by library-cross to
+# ../runtime/ocamlrun.
+USE_BOOT_OCAMLC ?=
+BOOT_OCAMLC_FLAGS ?=
+
+ifeq "$(USE_BOOT_OCAMLC)" ""
+CAMLC = $(OCAMLRUN) $(ROOTDIR)/ocamlc$(EXE)
+else
+CAMLC = $(BOOT_OCAMLC) $(BOOT_OCAMLC_FLAGS)
+endif
+COMPFLAGS = -strict-sequence -absname -w +a-4-9-41-42-44-45-48 \
+            -g -warn-error +A -bin-annot -nostdlib -principal
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS += -O3
 endif
