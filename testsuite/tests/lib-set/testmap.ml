@@ -190,6 +190,33 @@ let test x v s1 s2 =
        (M.to_seq_from x s1)
        (M.to_seq s1 |> Seq.filter (fun (y,_) -> y >= x)));
 
+  checkbool "to_seq_upto"
+    (Seq.equal (=)
+       (M.to_seq_upto x s1)
+       (M.to_seq s1 |> Seq.filter (fun (y,_) -> y <= x)));
+
+  checkbool "to_seq_between"
+    (let z = Random.int 10 in
+     Seq.equal (=)
+       (M.to_seq_between x z s1)
+       (M.to_seq s1 |> Seq.filter (fun (y,_) -> x <= y && y <= z)));
+
+  checkbool "to_rev_seq_from"
+    (Seq.equal (=)
+       (M.to_rev_seq_from x s1)
+       (M.to_rev_seq s1 |> Seq.filter (fun (y,_) -> y <= x)));
+
+  checkbool "to_rev_seq_downto"
+    (Seq.equal (=)
+       (M.to_rev_seq_downto x s1)
+       (M.to_rev_seq s1 |> Seq.filter (fun (y,_) -> y >= x)));
+
+  checkbool "to_rev_seq_between"
+    (let z = Random.int 10 in
+     Seq.equal (=)
+       (M.to_rev_seq_between x z s1)
+       (M.to_rev_seq s1 |> Seq.filter (fun (y,_) -> x <= y && y <= z)));
+
   ()
 
 let rkey() = Random.int 10

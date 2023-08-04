@@ -65,7 +65,12 @@ module type S =
     val of_list : (key * 'a) list -> 'a t
     val to_seq : 'a t -> (key * 'a) Seq.t
     val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
+    val to_seq_upto : key -> 'a t -> (key * 'a) Seq.t
+    val to_seq_between : key -> key -> 'a t -> (key * 'a) Seq.t
     val to_rev_seq : 'a t -> (key * 'a) Seq.t
+    val to_rev_seq_from : key -> 'a t -> (key * 'a) Seq.t
+    val to_rev_seq_downto : key -> 'a t -> (key * 'a) Seq.t
+    val to_rev_seq_between : key -> key -> 'a t -> (key * 'a) Seq.t
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     val of_seq : (key * 'a) Seq.t -> 'a t
   end
@@ -520,28 +525,153 @@ module Make(Ord: OrderedType) = struct
     let to_seq m =
       seq_of_enum_ (cons_enum m End)
 
-    let rec snoc_enum m e =
+    (* We use this datatype for reverse-order traversals. It is
+     * isomorphic to [enumeration] but makes the code slightly more
+     * readable, and prevents programming mistakes (e.g. using
+     * [cons_enum] instead of [snoc_enum]). *)
+    type 'a rev_enumeration =
+    | REnd
+    | RMore of 'a rev_enumeration * 'a t * key * 'a
+
+    let rec snoc_enum e m =
       match m with
         Empty -> e
-      | Node{l; v; d; r} -> snoc_enum r (More(v, d, l, e))
+      | Node{l; v; d; r} -> snoc_enum (RMore(e, l, v, d)) r
 
     let rec seq_of_rev_enum_ e () = match e with
-      | End -> Seq.Nil
-      | More (k,v,t,rest) ->
-          Seq.Cons ((k,v), seq_of_rev_enum_ (snoc_enum t rest))
+      | REnd -> Seq.Nil
+      | RMore (rest, t, k,v) ->
+          Seq.Cons ((k,v), seq_of_rev_enum_ (snoc_enum rest t))
 
     let to_rev_seq m =
-      seq_of_rev_enum_ (snoc_enum m End)
+      seq_of_rev_enum_ (snoc_enum REnd m)
+
+    (* Build an enumeration of the bindings of [m] which are [>= low],
+     * in increasing order, and prepend it to the enumeration [tail]: *)
+    let rec to_enum_from_ low m tail = match m with
+      | Empty -> tail
+      | Node {l; v; d; r; _} ->
+          begin match Ord.compare low v with
+            | 0 -> More (v, d, r, tail)
+            | lo when lo > 0 -> to_enum_from_ low r tail
+            | _ -> to_enum_from_ low l (More (v, d, r, tail))
+          end
 
     let to_seq_from low m =
-      let rec to_enum_from_ low m tail = match m with
-        | Empty -> tail
-        | Node {l; v; d; r; _} ->
-            begin match Ord.compare low v with
-              | 0 -> More (v, d, r, tail)
-              | lo when lo > 0 -> to_enum_from_ low r tail
-              | _ -> to_enum_from_ low l (More (v, d, r, tail))
-            end
-      in
       seq_of_enum_ (to_enum_from_ low m End)
+
+    (* Build a rev-enumeration of the bindings of [m] which are [<= high],
+     * in decreasing order, and append it to the enumeration [tail]: *)
+    let rec to_rev_enum_from_ high tail m = match m with
+      | Empty -> tail
+      | Node {l; v; d; r; _} ->
+          begin match Ord.compare high v with
+            | 0 -> RMore (tail, l, v, d)
+            | hi when hi < 0 -> to_rev_enum_from_ high tail l
+            | _ -> to_rev_enum_from_ high (RMore (tail, l, v, d)) r
+          end
+
+    let to_rev_seq_from high m =
+      seq_of_rev_enum_ (to_rev_enum_from_ high REnd m)
+
+    (* Build an enumeration of the bindings of [m] which are [<= high],
+     * in increasing order, and prepend the binding [(v0,d0)] to it: *)
+    let rec to_enum_upto_ high v0 d0 m = match m with
+      | Empty -> More (v0, d0, Empty, End)
+      | Node {l; v; d; r; _} ->
+          begin match Ord.compare high v with
+          | 0 -> More (v0, d0, l, More (v, d, Empty, End))
+          | hi when hi < 0 -> to_enum_upto_ high v0 d0 l
+          | _ -> More (v0, d0, l, to_enum_upto_ high v d r)
+          end
+
+    let rec to_seq_upto high m = match m with
+      | Empty -> Seq.empty
+      | Node {l; v; d; r; _} ->
+          begin match Ord.compare high v with
+          | 0 -> seq_of_enum_ (cons_enum l (More (v, d, Empty, End)))
+          | hi when hi < 0 -> to_seq_upto high l
+          | _ -> seq_of_enum_ (cons_enum l (to_enum_upto_ high v d r))
+          end
+
+    (* Build a rev-enumeration of the bindings of [m] which are [>= low],
+     * in decreasing order, and append the binding [(v0,d0)] to it: *)
+    let rec to_rev_enum_downto_ low m v0 d0 = match m with
+      | Empty -> RMore (REnd, Empty, v0, d0)
+      | Node {l; v; d; r; _} ->
+          begin match Ord.compare low v with
+          | 0 -> RMore (RMore (REnd, Empty, v, d), r, v0, d0)
+          | lo when lo > 0 -> to_rev_enum_downto_ low r v0 d0
+          | _ -> RMore (to_rev_enum_downto_ low l v d, r, v0, d0)
+          end
+
+    let rec to_rev_seq_downto low m = match m with
+      | Empty -> Seq.empty
+      | Node {l; v; d; r; _} ->
+          begin match Ord.compare low v with
+          | 0 -> seq_of_rev_enum_ (snoc_enum (RMore (REnd, Empty, v, d)) r)
+          | lo when lo > 0 -> to_rev_seq_downto low r
+          | _ -> seq_of_rev_enum_ (snoc_enum (to_rev_enum_downto_ low l v d) r)
+          end
+
+    (* Build an enumeration of the bindings of [m] which are
+     * [>= low] and [<= high], in increasing order: *)
+    let rec to_enum_between low high m =
+      match m with
+      | Empty -> End
+      | Node {l; v; d; r; _} ->
+          begin match Ord.compare low v, Ord.compare high v with
+          (* low = v < high: *)
+          | 0, _ -> to_enum_upto_ high v d r
+          (* low < v = high: *)
+          | _, 0 -> to_enum_from_ low l (More (v, d, Empty, End))
+          (* v < low: *)
+          | lo, _ when lo > 0 -> to_enum_between low high r
+          (* high < v: *)
+          | _, hi when hi < 0 -> to_enum_between low high l
+          (* low < v < high: *)
+          | _ -> to_enum_from_ low l (to_enum_upto_ high v d r)
+          end
+
+    let to_seq_between low high m =
+      begin match Ord.compare low high with
+      | 0 ->
+          begin match find_opt low m with
+          | Some v -> Seq.return (low, v)
+          | None   -> Seq.empty
+          end
+      | c when c > 0 -> Seq.empty
+      | _ -> seq_of_enum_ (to_enum_between low high m)
+      end
+
+    (* Build a rev-enumeration of the bindings of [m] which are
+     * [>= low] and [<= high], in decreasing order: *)
+    let rec to_rev_enum_between low high m =
+      match m with
+      | Empty -> REnd
+      | Node {l; v; d; r; _} ->
+          begin match Ord.compare low v, Ord.compare high v with
+          (* low = v < high: *)
+          | 0, _ -> to_rev_enum_from_ high (RMore (REnd, Empty, v, d)) r
+          (* low < v = high: *)
+          | _, 0 -> to_rev_enum_downto_ low l v d
+          (* v < low: *)
+          | lo, _ when lo > 0 -> to_rev_enum_between low high r
+          (* high < v: *)
+          | _, hi when hi < 0 -> to_rev_enum_between low high l
+          (* low < v < high: *)
+          | _ -> to_rev_enum_from_ high (to_rev_enum_downto_ low l v d) r
+          end
+
+    let to_rev_seq_between low high m =
+      begin match Ord.compare low high with
+      | 0 ->
+          begin match find_opt low m with
+          | Some v -> Seq.return (low, v)
+          | None   -> Seq.empty
+          end
+      | c when c > 0 -> Seq.empty
+      | _ -> seq_of_rev_enum_ (to_rev_enum_between low high m)
+      end
+
 end

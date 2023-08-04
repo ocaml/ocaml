@@ -46,7 +46,12 @@ val to_list : t -> elt list = <fun>
 val of_list : elt list -> t = <fun>
 val to_seq : t -> elt Seq.t = <fun>
 val to_seq_from : elt -> t -> elt Seq.t = <fun>
+val to_seq_upto : elt -> t -> elt Seq.t = <fun>
+val to_seq_between : elt -> elt -> t -> elt Seq.t = <fun>
 val to_rev_seq : t -> elt Seq.t = <fun>
+val to_rev_seq_from : elt -> t -> elt Seq.t = <fun>
+val to_rev_seq_downto : elt -> t -> elt Seq.t = <fun>
+val to_rev_seq_between : elt -> elt -> t -> elt Seq.t = <fun>
 val add_seq : elt Seq.t -> t -> t = <fun>
 val of_seq : elt Seq.t -> t = <fun>
 |}]

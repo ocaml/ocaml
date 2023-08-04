@@ -203,6 +203,33 @@ let test x s1 s2 =
        (S.to_seq_from x s1)
        (S.to_seq s1 |> Seq.filter (fun y -> y >= x)));
 
+  checkbool "to_seq_upto"
+    (Seq.equal (=)
+       (S.to_seq_upto x s1)
+       (S.to_seq s1 |> Seq.filter (fun y -> y <= x)));
+
+  checkbool "to_seq_between"
+    (let z = Random.int 10 in
+     Seq.equal (=)
+       (S.to_seq_between x z s1)
+       (S.to_seq s1 |> Seq.filter (fun y -> x <= y && y <= z)));
+
+  checkbool "to_rev_seq_from"
+    (Seq.equal (=)
+       (S.to_rev_seq_from x s1)
+       (S.to_rev_seq s1 |> Seq.filter (fun y -> y <= x)));
+
+  checkbool "to_rev_seq_downto"
+    (Seq.equal (=)
+       (S.to_rev_seq_downto x s1)
+       (S.to_rev_seq s1 |> Seq.filter (fun y -> y >= x)));
+
+  checkbool "to_rev_seq_between"
+    (let z = Random.int 10 in
+     Seq.equal (=)
+       (S.to_rev_seq_between x z s1)
+       (S.to_rev_seq s1 |> Seq.filter (fun y -> x <= y && y <= z)));
+
   ()
 
 let relt() = Random.int 10

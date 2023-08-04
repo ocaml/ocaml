@@ -345,7 +345,12 @@ module type MapT =
     val of_list : (key * 'a) list -> 'a t
     val to_seq : 'a t -> (key * 'a) Seq.t
     val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
+    val to_seq_upto : key -> 'a t -> (key * 'a) Seq.t
+    val to_seq_between : key -> key -> 'a t -> (key * 'a) Seq.t
     val to_rev_seq : 'a t -> (key * 'a) Seq.t
+    val to_rev_seq_from : key -> 'a t -> (key * 'a) Seq.t
+    val to_rev_seq_downto : key -> 'a t -> (key * 'a) Seq.t
+    val to_rev_seq_between : key -> key -> 'a t -> (key * 'a) Seq.t
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     val of_seq : (key * 'a) Seq.t -> 'a t
     type data
@@ -401,7 +406,12 @@ module SSMap :
     val of_list : (key * 'a) list -> 'a t
     val to_seq : 'a t -> (key * 'a) Seq.t
     val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
+    val to_seq_upto : key -> 'a t -> (key * 'a) Seq.t
+    val to_seq_between : key -> key -> 'a t -> (key * 'a) Seq.t
     val to_rev_seq : 'a t -> (key * 'a) Seq.t
+    val to_rev_seq_from : key -> 'a t -> (key * 'a) Seq.t
+    val to_rev_seq_downto : key -> 'a t -> (key * 'a) Seq.t
+    val to_rev_seq_between : key -> key -> 'a t -> (key * 'a) Seq.t
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     val of_seq : (key * 'a) Seq.t -> 'a t
     type data = string
