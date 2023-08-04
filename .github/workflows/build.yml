@@ -146,7 +146,7 @@ jobs:
   i386:
     runs-on: ubuntu-latest
     container:
-      image: i386/ubuntu:18.04
+      image: debian:12
       options: --platform linux/i386 --user root
     steps:
       - name: OS Dependencies
