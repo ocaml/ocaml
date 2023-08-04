@@ -295,25 +295,26 @@ module type S =
         except perhaps for lists with many duplicated elements.
         @since 4.02 *)
 
-    val to_seq_from : elt -> t -> elt Seq.t
-    (** [to_seq_from x s] iterates on a subset of the elements of [s]
-        in ascending order, from [x] or above.
+    val to_seq : t -> elt Seq.t
+    (** [to_seq s] yields the elements of [s] in ascending order.
         @since 4.07 *)
 
-    val to_seq : t -> elt Seq.t
-    (** Iterate on the whole set, in ascending order
+    val to_seq_from : elt -> t -> elt Seq.t
+    (** [to_seq_from min s] yields the elements of [s]
+        which are greater than or equal to [min],
+        in ascending order.
         @since 4.07 *)
 
     val to_rev_seq : t -> elt Seq.t
-    (** Iterate on the whole set, in descending order
+    (** [to_rev_seq s] yields the elements of [s] in descending order.
         @since 4.12 *)
 
     val add_seq : elt Seq.t -> t -> t
-    (** Add the given elements to the set, in order.
+    (** Add the given elements to the set.
         @since 4.07 *)
 
     val of_seq : elt Seq.t -> t
-    (** Build a set from the given bindings
+    (** Build a set from the given elements.
         @since 4.07 *)
   end
 (** Output signature of the functor {!Make}. *)
