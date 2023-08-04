@@ -73,7 +73,7 @@ module Item : sig
 end
 
 type var = Ident.t
-type t = { uid: Uid.t option; desc: desc }
+type t = { uid: Uid.t option; desc: desc; approximated: bool }
 and desc =
   | Var of var
   | Abs of var * t
