@@ -153,22 +153,22 @@ method! is_immediate op n =
 
 method is_immediate_test _cmp n = is_immediate n
 
-method! is_simple_expr e =
+method! is_simple_expr env e =
   match e with
   | Cop(Cextcall (fn, _, _, _), args, _)
     when List.mem fn inline_ops ->
       (* inlined ops are simple if their arguments are *)
-      List.for_all self#is_simple_expr args
+      List.for_all (self#is_simple_expr env) args
   | _ ->
-      super#is_simple_expr e
+      super#is_simple_expr env e
 
-method! effects_of e =
+method! effects_of env e =
   match e with
   | Cop(Cextcall(fn, _, _, _), args, _)
     when List.mem fn inline_ops ->
-      Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
+      Selectgen.Effect_and_coeffect.join_list_map args (self#effects_of env)
   | _ ->
-      super#effects_of e
+      super#effects_of env e
 
 method select_addressing _chunk exp =
   let (a, d) = select_addr exp in
