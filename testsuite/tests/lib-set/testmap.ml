@@ -180,14 +180,8 @@ let test x v s1 s2 =
     (M.equal (=) s1 (M.of_seq @@ M.to_rev_seq s1));
 
   checkbool "to_seq_from"
-    (let seq = M.to_seq_from x s1 in
-     let ok1 = List.of_seq seq |> List.for_all (fun (y,_) -> y >= x) in
-     let ok2 =
-       (M.to_seq s1 |> List.of_seq |> List.filter (fun (y,_) -> y >= x))
-       =
-       (List.of_seq seq)
-     in
-     ok1 && ok2);
+    (List.of_seq (M.to_seq_from x s1)
+     = (M.bindings s1 |> List.filter (fun (y,_) -> y >= x)));
 
   checkbool "to_seq_increasing"
     (let seq = M.to_seq s1 in

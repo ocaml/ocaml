@@ -189,18 +189,12 @@ let test x s1 s2 =
   checkbool "to_seq_of_seq"
     (S.equal s1 (S.of_seq @@ S.to_seq s1));
 
-  checkbool "to_seq_of_seq"
+  checkbool "to_rev_seq_of_seq"
     (S.equal s1 (S.of_seq @@ S.to_rev_seq s1));
 
   checkbool "to_seq_from"
-    (let seq = S.to_seq_from x s1 in
-     let ok1 = List.of_seq seq |> List.for_all (fun y -> y >= x) in
-     let ok2 =
-       (S.elements s1 |> List.filter (fun y -> y >= x))
-       =
-       (List.of_seq seq)
-     in
-     ok1 && ok2);
+    (List.of_seq (S.to_seq_from x s1)
+     = (S.elements s1 |> List.filter (fun y -> y >= x)));
 
   checkbool "to_seq_increasing"
     (let seq = S.to_seq s1 in
