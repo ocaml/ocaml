@@ -587,37 +587,37 @@ module Make(Ord: OrderedType) =
       | [x0; x1; x2; x3; x4] -> add x4 (add x3 (add x2 (add x1 (singleton x0))))
       | _ -> of_sorted_list (List.sort_uniq Ord.compare l)
 
-    let add_seq i m =
-      Seq.fold_left (fun s x -> add x s) m i
+    let add_seq seq s =
+      Seq.fold_left (fun s x -> add x s) s seq
 
-    let of_seq i = add_seq i empty
+    let of_seq seq = add_seq seq empty
 
-    let rec seq_of_enum_ c () = match c with
+    let rec seq_of_enum_ e () = match e with
       | End -> Seq.Nil
       | More (x, t, rest) -> Seq.Cons (x, seq_of_enum_ (cons_enum t rest))
 
-    let to_seq c = seq_of_enum_ (cons_enum c End)
+    let to_seq s = seq_of_enum_ (cons_enum s End)
 
     let rec snoc_enum s e =
       match s with
         Empty -> e
       | Node{l; v; r} -> snoc_enum r (More(v, l, e))
 
-    let rec rev_seq_of_enum_ c () = match c with
+    let rec seq_of_rev_enum_ e () = match e with
       | End -> Seq.Nil
-      | More (x, t, rest) -> Seq.Cons (x, rev_seq_of_enum_ (snoc_enum t rest))
+      | More (x, t, rest) -> Seq.Cons (x, seq_of_rev_enum_ (snoc_enum t rest))
 
-    let to_rev_seq c = rev_seq_of_enum_ (snoc_enum c End)
+    let to_rev_seq s = seq_of_rev_enum_ (snoc_enum s End)
 
     let to_seq_from low s =
-      let rec aux low s c = match s with
-        | Empty -> c
-        | Node {l; r; v; _} ->
-            begin match Ord.compare v low with
-              | 0 -> More (v, r, c)
-              | n when n<0 -> aux low r c
-              | _ -> aux low l (More (v, r, c))
+      let rec to_enum_from_ low s tail = match s with
+        | Empty -> tail
+        | Node {l; v; r; _} ->
+            begin match Ord.compare low v with
+              | 0 -> More (v, r, tail)
+              | lo when lo > 0 -> to_enum_from_ low r tail
+              | _ -> to_enum_from_ low l (More (v, r, tail))
             end
       in
-      seq_of_enum_ (aux low s End)
+      seq_of_enum_ (to_enum_from_ low s End)
   end

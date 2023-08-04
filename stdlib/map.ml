@@ -508,40 +508,40 @@ module Make(Ord: OrderedType) = struct
     let to_list = bindings
     let of_list bs = List.fold_left (fun m (k, v) -> add k v m) empty bs
 
-    let add_seq i m =
-      Seq.fold_left (fun m (k,v) -> add k v m) m i
+    let add_seq seq m =
+      Seq.fold_left (fun m (k,v) -> add k v m) m seq
 
-    let of_seq i = add_seq i empty
+    let of_seq seq = add_seq seq empty
 
-    let rec seq_of_enum_ c () = match c with
+    let rec seq_of_enum_ e () = match e with
       | End -> Seq.Nil
       | More (k,v,t,rest) -> Seq.Cons ((k,v), seq_of_enum_ (cons_enum t rest))
 
     let to_seq m =
       seq_of_enum_ (cons_enum m End)
 
-    let rec snoc_enum s e =
-      match s with
+    let rec snoc_enum m e =
+      match m with
         Empty -> e
       | Node{l; v; d; r} -> snoc_enum r (More(v, d, l, e))
 
-    let rec rev_seq_of_enum_ c () = match c with
+    let rec seq_of_rev_enum_ e () = match e with
       | End -> Seq.Nil
       | More (k,v,t,rest) ->
-          Seq.Cons ((k,v), rev_seq_of_enum_ (snoc_enum t rest))
+          Seq.Cons ((k,v), seq_of_rev_enum_ (snoc_enum t rest))
 
-    let to_rev_seq c =
-      rev_seq_of_enum_ (snoc_enum c End)
+    let to_rev_seq m =
+      seq_of_rev_enum_ (snoc_enum m End)
 
     let to_seq_from low m =
-      let rec aux low m c = match m with
-        | Empty -> c
+      let rec to_enum_from_ low m tail = match m with
+        | Empty -> tail
         | Node {l; v; d; r; _} ->
-            begin match Ord.compare v low with
-              | 0 -> More (v, d, r, c)
-              | n when n<0 -> aux low r c
-              | _ -> aux low l (More (v, d, r, c))
+            begin match Ord.compare low v with
+              | 0 -> More (v, d, r, tail)
+              | lo when lo > 0 -> to_enum_from_ low r tail
+              | _ -> to_enum_from_ low l (More (v, d, r, tail))
             end
       in
-      seq_of_enum_ (aux low m End)
+      seq_of_enum_ (to_enum_from_ low m End)
 end
