@@ -53,7 +53,8 @@ Build () {
   fi
   failed=0
   if grep -Fq ' warning: undefined variable ' build.log; then
-    echo Undefined Makefile variables detected
+    echo Undefined Makefile variables detected:
+    grep -F ' warning: undefined variable ' build.log
     failed=1
   fi
   rm build.log
