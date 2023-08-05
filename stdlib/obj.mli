@@ -25,7 +25,7 @@ type raw_data = nativeint  (* @since 4.12 *)
 external repr : 'a -> t = "%identity"
 external obj : t -> 'a = "%identity"
 external magic : 'a -> 'b = "%identity"
-val [@inline always] is_block : t -> bool
+val is_block : t -> bool
 external is_int : t -> bool = "%obj_is_int"
 external tag : t -> int = "caml_obj_tag" [@@noalloc]
 external size : t -> int = "%obj_size"
@@ -54,8 +54,8 @@ external field : t -> int -> t = "%obj_field"
 *)
 external set_field : t -> int -> t -> unit = "%obj_set_field"
 
-val [@inline always] double_field : t -> int -> float  (* @since 3.11.2 *)
-val [@inline always] set_double_field : t -> int -> float -> unit
+val double_field : t -> int -> float  (* @since 3.11.2 *)
+val set_double_field : t -> int -> float -> unit
   (* @since 3.11.2 *)
 
 external raw_field : t -> int -> raw_data = "caml_obj_raw_field"
@@ -96,8 +96,8 @@ module Extension_constructor :
 sig
   type t = extension_constructor
   val of_val : 'a -> t
-  val [@inline always] name : t -> string
-  val [@inline always] id : t -> int
+  val name : t -> string
+  val id : t -> int
 end
 
 module Ephemeron: sig

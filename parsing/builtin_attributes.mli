@@ -112,6 +112,25 @@ val warning_scope:
       is executed.
   *)
 
+(** [has_attribute names attrs] is true if an attribute named in [names] is
+    present in [attrs].  It marks that attribute used for the purposes of
+    misplaced attribute warnings. *)
+val has_attribute : string list -> Parsetree.attributes -> bool
+
+(** [filter_attributes actions attrs] finds the elements of [attrs] that appear
+    in [actions] and either returns them or just marks them used, according to
+    the corresponding [attr_action].
+
+    Each element [(nm, action)] of the [actions] list is an attribute along with
+    an [attr_action] specifying what to do with that attribute.  The action is
+    used to accomodate different compiler configurations.  If an attribute is
+    used only in some compiler configurations, it's important that we still look
+    for it and mark it used when compiling with other configurations.
+    Otherwise, we would issue spurious misplaced attribute warnings. *)
+type attr_action = Mark_used_only | Return
+val filter_attributes :
+  (string * attr_action) list -> Parsetree.attributes -> Parsetree.attributes
+
 val warn_on_literal_pattern: Parsetree.attributes -> bool
 val explicit_arity: Parsetree.attributes -> bool
 

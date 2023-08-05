@@ -47,20 +47,20 @@ let warn_unused () =
    misplaced attribute warnings. *)
 let builtin_attrs =
   [ (* "alert"; "ocaml.alert" *)
-  (* ; "boxed"; "ocaml.boxed" *)
+    "boxed"; "ocaml.boxed"
   (* ; "deprecated"; "ocaml.deprecated" *)
   (* ; "deprecated_mutable"; "ocaml.deprecated_mutable" *)
-  (* ; "explicit_arity"; "ocaml.explicit_arity" *)
-  (* ; "immediate"; "ocaml.immediate" *)
-  (* ; "immediate64"; "ocaml.immediate64" *)
-  (* ; "inline"; "ocaml.inline" *)
-  (* ; "inlined"; "ocaml.inlined" *)
-  (* ; "noalloc"; "ocaml.noalloc" *)
+  ; "explicit_arity"; "ocaml.explicit_arity"
+  ; "immediate"; "ocaml.immediate"
+  ; "immediate64"; "ocaml.immediate64"
+  ; "inline"; "ocaml.inline"
+  ; "inlined"; "ocaml.inlined"
+  ; "noalloc"; "ocaml.noalloc"
   (* ; "ppwarning"; "ocaml.ppwarning" *)
-  (* ; "tailcall"; "ocaml.tailcall" *)
-  (* ; "unboxed"; "ocaml.unboxed" *)
-  (* ; "untagged"; "ocaml.untagged" *)
-  (* ; "unrolled"; "ocaml.unrolled" *)
+  ; "tailcall"; "ocaml.tailcall"
+  ; "unboxed"; "ocaml.unboxed"
+  ; "untagged"; "ocaml.untagged"
+  ; "unrolled"; "ocaml.unrolled"
   (* ; "warnerror"; "ocaml.warnerror" *)
   (* ; "warning"; "ocaml.warning" *)
   (* ; "warn_on_literal_pattern"; "ocaml.warn_on_literal_pattern" *)
@@ -319,34 +319,36 @@ let warning_scope ?ppwarning attrs f =
     Warnings.restore prev;
     raise exn
 
-
-let warn_on_literal_pattern =
+let has_attribute nms attrs =
   List.exists
-    (fun a -> match a.attr_name.txt with
-       | "ocaml.warn_on_literal_pattern"|"warn_on_literal_pattern" -> true
-       | _ -> false
-    )
+    (fun a ->
+       if List.mem a.attr_name.txt nms
+       then (mark_used a.attr_name; true)
+       else false)
+    attrs
 
-let explicit_arity =
-  List.exists
-    (fun a -> match a.attr_name.txt with
-       | "ocaml.explicit_arity"|"explicit_arity" -> true
-       | _ -> false
-    )
+type attr_action = Mark_used_only | Return
+let filter_attributes actions attrs =
+  List.filter (fun a ->
+    List.exists (fun (nm, action) ->
+      String.equal nm a.attr_name.txt &&
+      begin
+        mark_used a.attr_name;
+        action = Return
+      end)
+      actions
+  ) attrs
 
-let immediate =
-  List.exists
-    (fun a -> match a.attr_name.txt with
-       | "ocaml.immediate"|"immediate" -> true
-       | _ -> false
-    )
+let warn_on_literal_pattern attrs =
+  has_attribute ["ocaml.warn_on_literal_pattern"; "warn_on_literal_pattern"]
+    attrs
 
-let immediate64 =
-  List.exists
-    (fun a -> match a.attr_name.txt with
-       | "ocaml.immediate64"|"immediate64" -> true
-       | _ -> false
-    )
+let explicit_arity attrs =
+  has_attribute ["ocaml.explicit_arity"; "explicit_arity"] attrs
+
+let immediate attrs = has_attribute ["ocaml.immediate"; "immediate"] attrs
+
+let immediate64 attrs = has_attribute ["ocaml.immediate64"; "immediate64"] attrs
 
 (* The "ocaml.boxed (default)" and "ocaml.unboxed (default)"
    attributes cannot be input by the user, they are added by the
@@ -355,11 +357,6 @@ let immediate64 =
    source file because the default can change between compiler
    invocations. *)
 
-let check l a = List.mem a.attr_name.txt l
+let has_unboxed attrs = has_attribute ["ocaml.unboxed"; "unboxed"] attrs
 
-let has_unboxed attr =
-  List.exists (check ["ocaml.unboxed"; "unboxed"])
-    attr
-
-let has_boxed attr =
-  List.exists (check ["ocaml.boxed"; "boxed"]) attr
+let has_boxed attrs = has_attribute ["ocaml.boxed"; "boxed"] attrs
