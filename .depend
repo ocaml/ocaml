@@ -272,12 +272,14 @@ parsing/attr_helper.cmo : \
     parsing/parsetree.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
+    parsing/builtin_attributes.cmi \
     parsing/asttypes.cmi \
     parsing/attr_helper.cmi
 parsing/attr_helper.cmx : \
     parsing/parsetree.cmi \
     utils/misc.cmx \
     parsing/location.cmx \
+    parsing/builtin_attributes.cmx \
     parsing/asttypes.cmi \
     parsing/attr_helper.cmi
 parsing/attr_helper.cmi : \
@@ -3781,6 +3783,7 @@ lambda/translattribute.cmo : \
     parsing/location.cmi \
     lambda/lambda.cmi \
     utils/config.cmi \
+    parsing/builtin_attributes.cmi \
     lambda/translattribute.cmi
 lambda/translattribute.cmx : \
     utils/warnings.cmx \
@@ -3791,6 +3794,7 @@ lambda/translattribute.cmx : \
     parsing/location.cmx \
     lambda/lambda.cmx \
     utils/config.cmx \
+    parsing/builtin_attributes.cmx \
     lambda/translattribute.cmi
 lambda/translattribute.cmi : \
     typing/typedtree.cmi \
