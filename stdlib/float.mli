@@ -533,6 +533,27 @@ module Array : sig
       applied to the integers [0] to [n-1].
       @raise Invalid_argument if [n < 0] or [n > Sys.max_floatarray_length]. *)
 
+  val make_matrix : int -> int -> float -> t array
+  (** [make_matrix dimx dimy e] returns a two-dimensional array
+      (an array of arrays) with first dimension [dimx] and
+      second dimension [dimy], where all elements are initialized with [e].
+
+      @raise Invalid_argument if [dimx] or [dimy] is negative or
+      greater than {!Sys.max_floatarray_length}.
+
+      @since 5.2 *)
+
+  val init_matrix : int -> int -> (int -> int -> float) -> t array
+  (** [init_matrix dimx dimy f] returns a two-dimensional array
+      (an array of arrays)
+      with first dimension [dimx] and second dimension [dimy],
+      where the element at index ([x,y]) is initialized with [f x y].
+
+      @raise Invalid_argument if [dimx] or [dimy] is negative or
+      greater than {!Sys.max_floatarray_length}.
+
+      @since 5.2 *)
+
   val append : t -> t -> t
   (** [append v1 v2] returns a fresh floatarray containing the
       concatenation of the floatarrays [v1] and [v2].
@@ -878,6 +899,27 @@ module ArrayLabels : sig
       In other terms, [init n ~f] tabulates the results of [f]
       applied to the integers [0] to [n-1].
       @raise Invalid_argument if [n < 0] or [n > Sys.max_floatarray_length]. *)
+
+  val make_matrix : dimx:int -> dimy:int -> float -> t array
+  (** [make_matrix ~dimx ~dimy e] returns a two-dimensional array
+      (an array of arrays) with first dimension [dimx] and
+      second dimension [dimy], where all elements are initialized with [e].
+
+      @raise Invalid_argument if [dimx] or [dimy] is negative or
+      greater than {!Sys.max_floatarray_length}.
+
+      @since 5.2 *)
+
+  val init_matrix : dimx:int -> dimy:int -> f:(int -> int -> float) -> t array
+  (** [init_matrix ~dimx ~dimy ~f] returns a two-dimensional array
+      (an array of arrays)
+      with first dimension [dimx] and second dimension [dimy],
+      where the element at index ([x,y]) is initialized with [f x y].
+
+      @raise Invalid_argument if [dimx] or [dimy] is negative or
+      greater than {!Sys.max_floatarray_length}.
+
+      @since 5.2 *)
 
   val append : t -> t -> t
   (** [append v1 v2] returns a fresh floatarray containing the

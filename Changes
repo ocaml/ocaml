@@ -165,7 +165,8 @@ Working version
   (Nicolás Ojeda Bär, review by Jeremy Yallop, Xavier Leroy, Gabriel Scherer,
    David Allsopp)
 
-- #12455: Add `Array.init_matrix`.
+- #12455: Add `Array.init_matrix`, `Float.Array.make_matrix`,
+  `Float.Array.init_matrix`.
   (Glen Mével, review by Xavier Leroy, Gabriel Scherer, Jeremy Yallop,
   Nicolas Ojeda Bar)
 
