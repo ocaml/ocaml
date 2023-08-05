@@ -46,24 +46,24 @@ let warn_unused () =
 (* These are the attributes that are tracked in the builtin_attrs table for
    misplaced attribute warnings. *)
 let builtin_attrs =
-  [ (* "alert"; "ocaml.alert" *)
-    "boxed"; "ocaml.boxed"
-  (* ; "deprecated"; "ocaml.deprecated" *)
-  (* ; "deprecated_mutable"; "ocaml.deprecated_mutable" *)
+  [ "alert"; "ocaml.alert"
+  ; "boxed"; "ocaml.boxed"
+  ; "deprecated"; "ocaml.deprecated"
+  ; "deprecated_mutable"; "ocaml.deprecated_mutable"
   ; "explicit_arity"; "ocaml.explicit_arity"
   ; "immediate"; "ocaml.immediate"
   ; "immediate64"; "ocaml.immediate64"
   ; "inline"; "ocaml.inline"
   ; "inlined"; "ocaml.inlined"
   ; "noalloc"; "ocaml.noalloc"
-  (* ; "ppwarning"; "ocaml.ppwarning" *)
+  ; "ppwarning"; "ocaml.ppwarning"
   ; "tailcall"; "ocaml.tailcall"
   ; "unboxed"; "ocaml.unboxed"
   ; "untagged"; "ocaml.untagged"
   ; "unrolled"; "ocaml.unrolled"
-  (* ; "warnerror"; "ocaml.warnerror" *)
-  (* ; "warning"; "ocaml.warning" *)
-  (* ; "warn_on_literal_pattern"; "ocaml.warn_on_literal_pattern" *)
+  ; "warnerror"; "ocaml.warnerror"
+  ; "warning"; "ocaml.warning"
+  ; "warn_on_literal_pattern"; "ocaml.warn_on_literal_pattern"
   ]
 
 let builtin_attrs =
@@ -132,6 +132,30 @@ let error_of_extension ext =
       end
   | ({txt; loc}, _) ->
       Location.errorf ~loc "Uninterpreted extension '%s'." txt
+
+let mark_alert_used a =
+  match a.attr_name.txt with
+  | "ocaml.deprecated"|"deprecated"|"ocaml.alert"|"alert" ->
+    mark_used a.attr_name
+  | _ -> ()
+
+let mark_alerts_used l = List.iter mark_alert_used l
+
+let mark_warn_on_literal_pattern_used l =
+  List.iter (fun a ->
+    match a.attr_name.txt with
+    | "ocaml.warn_on_literal_pattern"|"warn_on_literal_pattern" ->
+      mark_used a.attr_name
+    | _ -> ())
+    l
+
+let mark_deprecated_mutable_used l =
+  List.iter (fun a ->
+    match a.attr_name.txt with
+    | "ocaml.deprecated_mutable"|"deprecated_mutable" ->
+      mark_used a.attr_name
+    | _ -> ())
+    l
 
 let mark_payload_attrs_used payload =
   let iter =
@@ -240,57 +264,59 @@ let rec attrs_of_str = function
 
 let alerts_of_str str = alerts_of_attrs (attrs_of_str str)
 
-let check_no_alert attrs =
-  List.iter
-    (fun (a, _, _) ->
-       Location.prerr_warning a.attr_loc
-         (Warnings.Misplaced_attribute a.attr_name.txt)
-    )
-    (alert_attrs attrs)
-
 let warn_payload loc txt msg =
   Location.prerr_warning loc (Warnings.Attribute_payload (txt, msg))
 
 let warning_attribute ?(ppwarning = true) =
-  let process loc txt errflag payload =
+  let process loc name errflag payload =
+    mark_used name;
     match string_of_payload payload with
     | Some s ->
         begin try
           Option.iter (Location.prerr_alert loc)
             (Warnings.parse_options errflag s)
-        with Arg.Bad msg -> warn_payload loc txt msg
+        with Arg.Bad msg -> warn_payload loc name.txt msg
         end
     | None ->
-        warn_payload loc txt "A single string literal is expected"
+        warn_payload loc name.txt "A single string literal is expected"
   in
-  let process_alert loc txt = function
+  let process_alert loc name = function
     | PStr[{pstr_desc=
               Pstr_eval(
                 {pexp_desc=Pexp_constant(Pconst_string(s,_,_))},
                 _)
            }] ->
-        begin try Warnings.parse_alert_option s
-        with Arg.Bad msg -> warn_payload loc txt msg
+        begin
+          mark_used name;
+          try Warnings.parse_alert_option s
+          with Arg.Bad msg -> warn_payload loc name.txt msg
         end
     | k ->
+        (* Don't [mark_used] in the [Some] cases - that happens in [Env] or
+           [type_mod] if they are in a valid place.  Do [mark_used] in the
+           [None] case, which is just malformed and covered by the "Invalid
+           payload" warning. *)
         match kind_and_message k with
         | Some ("all", _) ->
-            warn_payload loc txt "The alert name 'all' is reserved"
+            warn_payload loc name.txt "The alert name 'all' is reserved"
         | Some _ -> ()
-        | None -> warn_payload loc txt "Invalid payload"
+        | None -> begin
+            mark_used name;
+            warn_payload loc name.txt "Invalid payload"
+          end
   in
   function
-  | {attr_name = {txt = ("ocaml.warning"|"warning") as txt; _};
+  | {attr_name = {txt = ("ocaml.warning"|"warning"); _} as name;
      attr_loc;
      attr_payload;
      } ->
-      process attr_loc txt false attr_payload
-  | {attr_name = {txt = ("ocaml.warnerror"|"warnerror") as txt; _};
+      process attr_loc name false attr_payload
+  | {attr_name = {txt = ("ocaml.warnerror"|"warnerror"); _} as name;
      attr_loc;
      attr_payload
     } ->
-      process attr_loc txt true attr_payload
-  | {attr_name = {txt="ocaml.ppwarning"|"ppwarning"; _};
+      process attr_loc name true attr_payload
+  | {attr_name = {txt="ocaml.ppwarning"|"ppwarning"; _} as name;
      attr_loc = _;
      attr_payload =
        PStr [
@@ -299,12 +325,13 @@ let warning_attribute ?(ppwarning = true) =
            pstr_loc }
        ];
     } when ppwarning ->
-     Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
-  | {attr_name = {txt = ("ocaml.alert"|"alert") as txt; _};
+    (mark_used name;
+     Location.prerr_warning pstr_loc (Warnings.Preprocessor s))
+  | {attr_name = {txt = ("ocaml.alert"|"alert"); _} as name;
      attr_loc;
      attr_payload;
      } ->
-      process_alert attr_loc txt attr_payload
+      process_alert attr_loc name attr_payload
   | _ ->
      ()
 

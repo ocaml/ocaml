@@ -1904,6 +1904,7 @@ and check_value_name name loc =
 
 and store_value ?check id addr decl shape env =
   check_value_name (Ident.name id) decl.val_loc;
+  Builtin_attributes.mark_alerts_used decl.val_attributes;
   Option.iter
     (fun f -> check_usage decl.val_loc id decl.val_uid f !value_declarations)
     check;
@@ -1942,6 +1943,8 @@ and store_constructor ~check type_decl type_id cstr_id cstr env =
               (constructor_usage_complaint ~rebind:false priv used));
     end;
   end);
+  Builtin_attributes.mark_alerts_used cstr.cstr_attributes;
+  Builtin_attributes.mark_warn_on_literal_pattern_used cstr.cstr_attributes;
   let cda_shape = Shape.leaf cstr.cstr_uid in
   { env with
     constrs =
@@ -1974,6 +1977,9 @@ and store_label ~check type_decl type_id lbl_id lbl env =
                      loc (Warnings.Unused_field(name, complaint)))
               (label_usage_complaint priv mut used))
   end);
+  Builtin_attributes.mark_alerts_used lbl.lbl_attributes;
+  if lbl.lbl_mut = Mutable then
+    Builtin_attributes.mark_deprecated_mutable_used lbl.lbl_attributes;
   { env with
     labels = TycompTbl.add lbl_id lbl env.labels;
   }
@@ -2011,6 +2017,7 @@ and store_type ~check id info shape env =
       tda_descriptions = descrs;
       tda_shape = shape }
   in
+  Builtin_attributes.mark_alerts_used info.type_attributes;
   { env with
     types = IdTbl.add id tda env.types;
     summary = Env_type(env.summary, id, info) }
@@ -2042,6 +2049,8 @@ and store_extension ~check ~rebind id addr ext shape env =
       cda_address = Some addr;
       cda_shape = shape }
   in
+  Builtin_attributes.mark_alerts_used ext.ext_attributes;
+  Builtin_attributes.mark_warn_on_literal_pattern_used ext.ext_attributes;
   Builtin_attributes.warning_scope ext.ext_attributes (fun () ->
   if check && not loc.Location.loc_ghost &&
     Warnings.is_active (Warnings.Unused_extension ("", false, Unused))
@@ -2075,6 +2084,7 @@ and store_module ?(update_summary=true) ~check
   let loc = md.mdl_loc in
   Option.iter
     (fun f -> check_usage loc id md.mdl_uid f !module_declarations) check;
+  Builtin_attributes.mark_alerts_used md.mdl_attributes;
   let alerts = Builtin_attributes.alerts_of_attrs md.mdl_attributes in
   let comps =
     components_of_module ~alerts ~uid:md.mdl_uid
@@ -2094,6 +2104,7 @@ and store_module ?(update_summary=true) ~check
     summary }
 
 and store_modtype ?(update_summary=true) id info shape env =
+  Builtin_attributes.mark_alerts_used info.Subst.Lazy.mtdl_attributes;
   let mtda = { mtda_declaration = info; mtda_shape = shape } in
   let summary =
     if not update_summary then env.summary
@@ -2103,6 +2114,7 @@ and store_modtype ?(update_summary=true) id info shape env =
     summary }
 
 and store_class id addr desc shape env =
+  Builtin_attributes.mark_alerts_used desc.cty_attributes;
   let clda =
     { clda_declaration = desc;
       clda_address = addr;
@@ -2113,6 +2125,7 @@ and store_class id addr desc shape env =
     summary = Env_class(env.summary, id, desc) }
 
 and store_cltype id desc shape env =
+  Builtin_attributes.mark_alerts_used desc.clty_attributes;
   let cltda = { cltda_declaration = desc; cltda_shape = shape } in
   { env with
     cltypes = IdTbl.add id cltda env.cltypes;

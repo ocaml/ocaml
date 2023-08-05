@@ -1,3 +1,28 @@
+File "w53.ml", line 12, characters 16-21:
+12 |   val x : int [@alert foo "foo"] (* rejected *)
+                     ^^^^^
+Warning 53 [misplaced-attribute]: the "alert" attribute cannot appear in this context
+
+File "w53.ml", line 18, characters 6-11:
+18 |   [@@@alert foo "foo"] (* rejected *)
+           ^^^^^
+Warning 53 [misplaced-attribute]: the "alert" attribute cannot appear in this context
+
+File "w53.ml", line 22, characters 14-19:
+22 |   let x = 5 [@alert foo "foo"] (* rejected *)
+                   ^^^^^
+Warning 53 [misplaced-attribute]: the "alert" attribute cannot appear in this context
+
+File "w53.ml", line 24, characters 16-21:
+24 |   let y = 10 [@@alert foo "foo"] (* rejected *)
+                     ^^^^^
+Warning 53 [misplaced-attribute]: the "alert" attribute cannot appear in this context
+
+File "w53.ml", line 26, characters 6-11:
+26 |   [@@@alert foo "foo"] (* rejected *)
+           ^^^^^
+Warning 53 [misplaced-attribute]: the "alert" attribute cannot appear in this context
+
 File "w53.ml", line 31, characters 24-29:
 31 |   type t1 = { x : int [@boxed] } (* rejected *)
                              ^^^^^
@@ -32,6 +57,76 @@ File "w53.ml", line 47, characters 6-11:
 47 |   [@@@boxed] (* rejected *)
            ^^^^^
 Warning 53 [misplaced-attribute]: the "boxed" attribute cannot appear in this context
+
+File "w53.ml", line 54, characters 16-26:
+54 |   val x : int [@deprecated] (* rejected *)
+                     ^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "deprecated" attribute cannot appear in this context
+
+File "w53.ml", line 60, characters 6-16:
+60 |   [@@@deprecated] (* rejected *)
+           ^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "deprecated" attribute cannot appear in this context
+
+File "w53.ml", line 64, characters 14-24:
+64 |   let x = 5 [@deprecated] (* rejected *)
+                   ^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "deprecated" attribute cannot appear in this context
+
+File "w53.ml", line 66, characters 16-26:
+66 |   let y = 10 [@@deprecated] (* rejected *)
+                     ^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "deprecated" attribute cannot appear in this context
+
+File "w53.ml", line 68, characters 6-16:
+68 |   [@@@deprecated] (* rejected *)
+           ^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "deprecated" attribute cannot appear in this context
+
+File "w53.ml", line 73, characters 19-37:
+73 |   type t1 = Foo1 [@deprecated_mutable] (* rejected *)
+                        ^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "deprecated_mutable" attribute cannot appear in this context
+
+File "w53.ml", line 75, characters 16-34:
+75 |   val x : int [@deprecated_mutable] (* rejected *)
+                     ^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "deprecated_mutable" attribute cannot appear in this context
+
+File "w53.ml", line 77, characters 21-39:
+77 |   type 'a t2 = 'a [@@deprecated_mutable] (* rejected *)
+                          ^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "deprecated_mutable" attribute cannot appear in this context
+
+File "w53.ml", line 81, characters 24-42:
+81 |   type t4 = { x : int [@deprecated_mutable] } (* rejected *)
+                             ^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "deprecated_mutable" attribute cannot appear in this context
+
+File "w53.ml", line 83, characters 17-35:
+83 |   val y : int [@@deprecated_mutable] (* rejected *)
+                      ^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "deprecated_mutable" attribute cannot appear in this context
+
+File "w53.ml", line 85, characters 6-24:
+85 |   [@@@deprecated_mutable] (* rejected *)
+           ^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "deprecated_mutable" attribute cannot appear in this context
+
+File "w53.ml", line 89, characters 14-32:
+89 |   let x = 5 [@deprecated_mutable] (* rejected *)
+                   ^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "deprecated_mutable" attribute cannot appear in this context
+
+File "w53.ml", line 91, characters 16-34:
+91 |   let y = 10 [@@deprecated_mutable] (* rejected *)
+                     ^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "deprecated_mutable" attribute cannot appear in this context
+
+File "w53.ml", line 93, characters 6-24:
+93 |   [@@@deprecated_mutable] (* rejected *)
+           ^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "deprecated_mutable" attribute cannot appear in this context
 
 File "w53.ml", line 98, characters 32-46:
 98 |   type t1 = Foo1 of int * int [@explicit_arity] (* rejected *)
@@ -507,3 +602,48 @@ File "w53.ml", line 338, characters 6-14:
 338 |   [@@@unrolled 42] (* rejected *)
             ^^^^^^^^
 Warning 53 [misplaced-attribute]: the "unrolled" attribute cannot appear in this context
+
+File "w53.ml", line 387, characters 25-48:
+387 |     | Lit_pat2 of int [@@warn_on_literal_pattern] (* rejected *)
+                               ^^^^^^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "warn_on_literal_pattern" attribute cannot appear in this context
+
+File "w53.ml", line 391, characters 16-39:
+391 |   val x : int [@warn_on_literal_pattern] (* rejected *)
+                      ^^^^^^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "warn_on_literal_pattern" attribute cannot appear in this context
+
+File "w53.ml", line 393, characters 21-44:
+393 |   type 'a t2 = 'a [@@warn_on_literal_pattern] (* rejected *)
+                           ^^^^^^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "warn_on_literal_pattern" attribute cannot appear in this context
+
+File "w53.ml", line 395, characters 17-40:
+395 |   val y : int [@@warn_on_literal_pattern] (* rejected *)
+                       ^^^^^^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "warn_on_literal_pattern" attribute cannot appear in this context
+
+File "w53.ml", line 397, characters 6-29:
+397 |   [@@@warn_on_literal_pattern] (* rejected *)
+            ^^^^^^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "warn_on_literal_pattern" attribute cannot appear in this context
+
+File "w53.ml", line 403, characters 25-48:
+403 |     | Lit_pat2 of int [@@warn_on_literal_pattern] (* rejected *)
+                               ^^^^^^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "warn_on_literal_pattern" attribute cannot appear in this context
+
+File "w53.ml", line 405, characters 14-37:
+405 |   let x = 5 [@warn_on_literal_pattern] (* rejected *)
+                    ^^^^^^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "warn_on_literal_pattern" attribute cannot appear in this context
+
+File "w53.ml", line 407, characters 16-39:
+407 |   let y = 10 [@@warn_on_literal_pattern] (* rejected *)
+                      ^^^^^^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "warn_on_literal_pattern" attribute cannot appear in this context
+
+File "w53.ml", line 409, characters 6-29:
+409 |   [@@@warn_on_literal_pattern] (* rejected *)
+            ^^^^^^^^^^^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "warn_on_literal_pattern" attribute cannot appear in this context

@@ -1455,7 +1455,6 @@ let transl_exception env sext =
   ext, newenv
 
 let transl_type_exception env t =
-  Builtin_attributes.check_no_alert t.ptyexn_attributes;
   let contructor, newenv =
     Builtin_attributes.warning_scope t.ptyexn_attributes
       (fun () ->

@@ -61,6 +61,24 @@
 type attr_tracking_time = Parser | Invariant_check
 val register_attr : attr_tracking_time -> string Location.loc -> unit
 
+(** Marks the attribute used for the purposes of misplaced attribute warnings if
+    it is an alert.  Call this when moving things allowed to have alert
+    attributes into the environment. *)
+val mark_alert_used : Parsetree.attribute -> unit
+
+(** The same as [List.iter mark_alert_used]. *)
+val mark_alerts_used : Parsetree.attributes -> unit
+
+(** Marks "warn_on_literal_pattern" attributes used for the purposes of
+    misplaced attribute warnings.  Call this when moving constructors into the
+    environment. *)
+val mark_warn_on_literal_pattern_used : Parsetree.attributes -> unit
+
+(** Marks "deprecated_mutable" attributes used for the purposes of misplaced
+    attribute warnings.  Call this when moving labels of mutable fields into the
+    environment. *)
+val mark_deprecated_mutable_used : Parsetree.attributes -> unit
+
 (** Marks the attributes hiding in the payload of another attribute used, for
     the purposes of misplaced attribute warnings (see comment on
     [attr_tracking_time] above).  In the parser, it's simplest to add these to
@@ -86,14 +104,12 @@ val check_deprecated_mutable_inclusion:
   def:Location.t -> use:Location.t -> Location.t -> Parsetree.attributes ->
   Parsetree.attributes -> string -> unit
 
-val check_no_alert: Parsetree.attributes -> unit
-
 val error_of_extension: Parsetree.extension -> Location.error
 
 val warning_attribute: ?ppwarning:bool -> Parsetree.attribute -> unit
   (** Apply warning settings from the specified attribute.
-      "ocaml.warning"/"ocaml.warnerror" (and variants without the prefix)
-      are processed and other attributes are ignored.
+      "ocaml.warning"/"ocaml.warnerror" (and variants without the prefix) are
+      processed and marked used for warning 53.  Other attributes are ignored.
 
       Also implement ocaml.ppwarning (unless ~ppwarning:false is
       passed).
