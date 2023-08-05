@@ -57,6 +57,8 @@ let init l f =
    res
 
 let make_matrix sx sy init =
+  (* We raise even if [sx = 0 && sy < 0]: *)
+  if sy < 0 then invalid_arg "Array.make_matrix";
   let res = create sx [||] in
   for x = 0 to pred sx do
     unsafe_set res x (create sy init)
@@ -64,6 +66,7 @@ let make_matrix sx sy init =
   res
 
 let init_matrix sx sy f =
+  (* We raise even if [sx = 0 && sy < 0]: *)
   if sy < 0 then invalid_arg "Array.init_matrix";
   let res = create sx [||] in
   if sy > 0 then begin
