@@ -240,6 +240,22 @@ let test x s1 s2 =
        (S.slice_to_seq ~rev:true ~min:x ~max:z s1)
        (S.to_rev_seq s1 |> Seq.filter (fun y -> x <= y && y <= z)));
 
+  checkbool "slice_to_seq_cond"
+    (let z = Random.int 10 in
+     let low = (fun y -> if y <= x then 1 else -1) in
+     let high = (fun y -> if y < z then 1 else -1) in
+     Seq.equal (=)
+       (S.slice_to_seq_cond ~low ~high s1)
+       (S.to_seq s1 |> Seq.filter (fun y -> x < y && y < z)));
+
+  checkbool "slice_to_rev_seq_cond"
+    (let z = Random.int 10 in
+     let low = (fun y -> if y <= x then 1 else -1) in
+     let high = (fun y -> if y < z then 1 else -1) in
+     Seq.equal (=)
+       (S.slice_to_seq_cond ~rev:true ~low ~high s1)
+       (S.to_rev_seq s1 |> Seq.filter (fun y -> x < y && y < z)));
+
   ()
 
 let relt() = Random.int 10

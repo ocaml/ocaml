@@ -373,6 +373,29 @@ module type S =
         if [rev] is [true], they are rather yielded in descending order.
         @since NEXT_OCAML_VERSION *)
 
+    val slice_to_seq_cond :
+      ?rev:bool -> ?low:(key -> int) -> ?high:(key -> int) ->
+      'a t -> (key * 'a) Seq.t
+    (** [slice_to_seq_cond low high m]
+        yields the bindings [(k,v)] of [m]
+        whose keys satisfy [low k <= 0 && high k >= 0].
+        The boundary functions [low] and [high]
+        must be monotonically decreasing,
+        and must return zero for at most one key in the map.
+        Both functions can be omitted.
+        By default, bindings are yielded in ascending order of keys;
+        if [rev] is [true], they are rather yielded in descending order.
+
+        For instance,
+        if [compare_key] is the comparison function for bindings,
+        then the following code yields all bindings of [m]
+        whose keys are at least equal to [a] and at most equal to b:
+{[
+        slice_to_seq_cond ~low:(compare_key a) ~high:(compare_key b) m
+]}
+
+        @since NEXT_OCAML_VERSION *)
+
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     (** Add the given bindings to the map.
         @since 4.07 *)

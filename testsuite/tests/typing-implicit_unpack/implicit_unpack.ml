@@ -349,6 +349,9 @@ module type MapT =
     val to_rev_seq_from : key -> 'a t -> (key * 'a) Seq.t
     val slice_to_seq :
       ?rev:bool -> ?min:key -> ?max:key -> 'a t -> (key * 'a) Seq.t
+    val slice_to_seq_cond :
+      ?rev:bool ->
+      ?low:(key -> int) -> ?high:(key -> int) -> 'a t -> (key * 'a) Seq.t
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     val of_seq : (key * 'a) Seq.t -> 'a t
     type data
@@ -408,6 +411,9 @@ module SSMap :
     val to_rev_seq_from : key -> 'a t -> (key * 'a) Seq.t
     val slice_to_seq :
       ?rev:bool -> ?min:key -> ?max:key -> 'a t -> (key * 'a) Seq.t
+    val slice_to_seq_cond :
+      ?rev:bool ->
+      ?low:(key -> int) -> ?high:(key -> int) -> 'a t -> (key * 'a) Seq.t
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     val of_seq : (key * 'a) Seq.t -> 'a t
     type data = string

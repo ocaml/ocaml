@@ -68,6 +68,8 @@ module type S =
     val to_rev_seq : t -> elt Seq.t
     val to_rev_seq_from : elt -> t -> elt Seq.t
     val slice_to_seq : ?rev:bool -> ?min:elt -> ?max:elt -> t -> elt Seq.t
+    val slice_to_seq_cond :
+      ?rev:bool -> ?low:(elt -> int) -> ?high:(elt -> int) -> t -> elt Seq.t
     val add_seq : elt Seq.t -> t -> t
     val of_seq : elt Seq.t -> t
   end
@@ -617,12 +619,12 @@ module Make(Ord: OrderedType) =
 
     let to_rev_seq s = seq_of_rev_enum_ (snoc_enum REnd s)
 
-    (* Build an enumeration of the elements of [s] which are [>= low],
+    (* Build an enumeration of the elements of [s] such that [low x <= 0],
      * in increasing order, and prepend it to the enumeration [tail]: *)
     let rec to_enum_from_ low s tail = match s with
       | Empty -> tail
       | Node {l; v; r; _} ->
-          begin match Ord.compare low v with
+          begin match low v with
             | 0 -> More (v, r, tail)
             | lo when lo > 0 -> to_enum_from_ low r tail
             | _ -> to_enum_from_ low l (More (v, r, tail))
@@ -631,12 +633,12 @@ module Make(Ord: OrderedType) =
     let to_seq_from low s =
       seq_of_enum_ (to_enum_from_ low s End)
 
-    (* Build a rev-enumeration of the elements of [s] which are [<= high],
+    (* Build a rev-enumeration of the elements of [s] such that [high x >= 0],
      * in decreasing order, and append it to the enumeration [tail]: *)
     let rec to_rev_enum_from_ high tail s = match s with
       | Empty -> tail
       | Node {l; v; r; _} ->
-          begin match Ord.compare high v with
+          begin match high v with
             | 0 -> RMore (tail, l, v)
             | hi when hi < 0 -> to_rev_enum_from_ high tail l
             | _ -> to_rev_enum_from_ high (RMore (tail, l, v)) r
@@ -645,12 +647,12 @@ module Make(Ord: OrderedType) =
     let to_rev_seq_from high s =
       seq_of_rev_enum_ (to_rev_enum_from_ high REnd s)
 
-    (* Build an enumeration of the elements of [s] which are [<= high],
+    (* Build an enumeration of the elements of [s] such that [high x >= 0],
      * in increasing order, and prepend the element [headv] to it: *)
     let rec to_enum_upto_ high headv s = match s with
       | Empty -> More (headv, Empty, End)
       | Node {l; v; r; _} ->
-          begin match Ord.compare high v with
+          begin match high v with
           | 0 -> More (headv, l, More (v, Empty, End))
           | hi when hi < 0 -> to_enum_upto_ high headv l
           | _ -> More (headv, l, to_enum_upto_ high v r)
@@ -659,18 +661,18 @@ module Make(Ord: OrderedType) =
     let rec to_seq_upto high s = match s with
       | Empty -> Seq.empty
       | Node {l; v; r; _} ->
-          begin match Ord.compare high v with
+          begin match high v with
           | 0 -> seq_of_enum_ (cons_enum l (More (v, Empty, End)))
           | hi when hi < 0 -> to_seq_upto high l
           | _ -> seq_of_enum_ (cons_enum l (to_enum_upto_ high v r))
           end
 
-    (* Build a rev-enumeration of the elements of [s] which are [>= low],
+    (* Build a rev-enumeration of the elements of [s] such that [low x <= 0],
      * in decreasing order, and append the element [headv] to it: *)
     let rec to_rev_enum_downto_ low s headv = match s with
       | Empty -> RMore (REnd, Empty, headv)
       | Node {l; v; r; _} ->
-          begin match Ord.compare low v with
+          begin match low v with
           | 0 -> RMore (RMore (REnd, Empty, v), r, headv)
           | lo when lo > 0 -> to_rev_enum_downto_ low r headv
           | _ -> RMore (to_rev_enum_downto_ low l v, r, headv)
@@ -679,19 +681,23 @@ module Make(Ord: OrderedType) =
     let rec to_rev_seq_downto low s = match s with
       | Empty -> Seq.empty
       | Node {l; v; r; _} ->
-          begin match Ord.compare low v with
+          begin match low v with
           | 0 -> seq_of_rev_enum_ (snoc_enum (RMore (REnd, Empty, v)) r)
           | lo when lo > 0 -> to_rev_seq_downto low r
           | _ -> seq_of_rev_enum_ (snoc_enum (to_rev_enum_downto_ low l v) r)
           end
 
-    (* Build an enumeration of the elements of [s] which are
-     * [>= low] and [<= high], in increasing order: *)
+    (* Build an enumeration of the elements of [s] such that
+     * [low x <= 0 && high x >= 0], in increasing order: *)
     let rec to_enum_between low high s =
       match s with
       | Empty -> End
       | Node {l; v; r; _} ->
-          begin match Ord.compare low v, Ord.compare high v with
+          begin match low v, high v with
+          (* high < low: *)
+          | lo, hi when lo > hi -> End
+          (* low = v = high: *)
+          | 0, 0 -> More (v, Empty, End)
           (* low = v < high: *)
           | 0, _ -> to_enum_upto_ high v r
           (* low < v = high: *)
@@ -705,19 +711,19 @@ module Make(Ord: OrderedType) =
           end
 
     let to_seq_between low high s =
-      begin match Ord.compare low high with
-      | 0 -> if mem low s then Seq.return low else Seq.empty
-      | c when c > 0 -> Seq.empty
-      | _ -> seq_of_enum_ (to_enum_between low high s)
-      end
+      seq_of_enum_ (to_enum_between low high s)
 
-    (* Build a rev-enumeration of the elements of [s] which are
-     * [>= low] and [<= high], in decreasing order: *)
+    (* Build a rev-enumeration of the elements of [s] such that
+     * [low x <= 0 && high x >= 0], in decreasing order: *)
     let rec to_rev_enum_between low high s =
       match s with
       | Empty -> REnd
       | Node {l; v; r; _} ->
-          begin match Ord.compare low v, Ord.compare high v with
+          begin match low v, high v with
+          (* high < low: *)
+          | lo, hi when lo > hi -> REnd
+          (* low = v = high: *)
+          | 0, 0 -> RMore (REnd, Empty, v)
           (* low = v < high: *)
           | 0, _ -> to_rev_enum_from_ high (RMore (REnd, Empty, v)) r
           (* low < v = high: *)
@@ -731,22 +737,29 @@ module Make(Ord: OrderedType) =
           end
 
     let to_rev_seq_between low high s =
-      begin match Ord.compare low high with
-      | 0 -> if mem low s then Seq.return low else Seq.empty
-      | c when c > 0 -> Seq.empty
-      | _ -> seq_of_rev_enum_ (to_rev_enum_between low high s)
+      seq_of_rev_enum_ (to_rev_enum_between low high s)
+
+    let slice_to_seq_cond ?(rev=false) ?low ?high s =
+      begin match rev, low, high with
+      | false, None,     None      -> to_seq s
+      | false, None,     Some high -> to_seq_upto high s
+      | false, Some low, None      -> to_seq_from low s
+      | false, Some low, Some high -> to_seq_between low high s
+      | true,  None,     None      -> to_rev_seq s
+      | true,  None,     Some high -> to_rev_seq_from high s
+      | true,  Some low, None      -> to_rev_seq_downto low s
+      | true,  Some low, Some high -> to_rev_seq_between low high s
       end
 
-    let slice_to_seq ?(rev=false) ?min ?max s =
-      begin match rev, min, max with
-      | false, None,     None     -> to_seq s
-      | false, None,     Some max -> to_seq_upto max s
-      | false, Some min, None     -> to_seq_from min s
-      | false, Some min, Some max -> to_seq_between min max s
-      | true,  None,     None     -> to_rev_seq s
-      | true,  None,     Some max -> to_rev_seq_from max s
-      | true,  Some min, None     -> to_rev_seq_downto min s
-      | true,  Some min, Some max -> to_rev_seq_between min max s
-      end
+    let slice_to_seq ?rev ?min ?max s =
+      let low = Option.map Ord.compare min in
+      let high = Option.map Ord.compare max in
+      slice_to_seq_cond ?rev ?low ?high s
+
+    let to_seq_from min s =
+      slice_to_seq ~min s
+
+    let to_rev_seq_from max s =
+      slice_to_seq ~rev:true ~max s
 
   end

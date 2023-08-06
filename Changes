@@ -114,7 +114,8 @@ Working version
    Guillaume Munch-Maccagnoni, KC Sivaramakrishnan, Stefan Muenzel,
    Xavier Leroy)
 
-- #12XXX: Add `Set.to_rev_seq_from`, `Set.slice_to_seq` and likewise in `Map`.
+- #12XXX: Add `Set.to_rev_seq_from`, `Set.slice_to_seq`, `Set.slice_to_seq_cond`
+  and likewise in `Map`.
   (Glen Mével, review by XXX)
 
 ### Other libraries:
