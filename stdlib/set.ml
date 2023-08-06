@@ -630,7 +630,7 @@ module Make(Ord: OrderedType) =
             | _ -> to_enum_from_ low l (More (v, r, tail))
           end
 
-    let to_seq_from low s =
+    let to_seq_from_cond low s =
       seq_of_enum_ (to_enum_from_ low s End)
 
     (* Build a rev-enumeration of the elements of [s] such that [high x >= 0],
@@ -644,7 +644,7 @@ module Make(Ord: OrderedType) =
             | _ -> to_rev_enum_from_ high (RMore (tail, l, v)) r
           end
 
-    let to_rev_seq_from high s =
+    let to_rev_seq_from_cond high s =
       seq_of_rev_enum_ (to_rev_enum_from_ high REnd s)
 
     (* Build an enumeration of the elements of [s] such that [high x >= 0],
@@ -658,12 +658,12 @@ module Make(Ord: OrderedType) =
           | _ -> More (headv, l, to_enum_upto_ high v r)
           end
 
-    let rec to_seq_upto high s = match s with
+    let rec to_seq_upto_cond high s = match s with
       | Empty -> Seq.empty
       | Node {l; v; r; _} ->
           begin match high v with
           | 0 -> seq_of_enum_ (cons_enum l (More (v, Empty, End)))
-          | hi when hi < 0 -> to_seq_upto high l
+          | hi when hi < 0 -> to_seq_upto_cond high l
           | _ -> seq_of_enum_ (cons_enum l (to_enum_upto_ high v r))
           end
 
@@ -678,12 +678,12 @@ module Make(Ord: OrderedType) =
           | _ -> RMore (to_rev_enum_downto_ low l v, r, headv)
           end
 
-    let rec to_rev_seq_downto low s = match s with
+    let rec to_rev_seq_downto_cond low s = match s with
       | Empty -> Seq.empty
       | Node {l; v; r; _} ->
           begin match low v with
           | 0 -> seq_of_rev_enum_ (snoc_enum (RMore (REnd, Empty, v)) r)
-          | lo when lo > 0 -> to_rev_seq_downto low r
+          | lo when lo > 0 -> to_rev_seq_downto_cond low r
           | _ -> seq_of_rev_enum_ (snoc_enum (to_rev_enum_downto_ low l v) r)
           end
 
@@ -710,7 +710,7 @@ module Make(Ord: OrderedType) =
           | _ -> to_enum_from_ low l (to_enum_upto_ high v r)
           end
 
-    let to_seq_between low high s =
+    let to_seq_between_cond low high s =
       seq_of_enum_ (to_enum_between low high s)
 
     (* Build a rev-enumeration of the elements of [s] such that
@@ -736,19 +736,19 @@ module Make(Ord: OrderedType) =
           | _ -> to_rev_enum_from_ high (to_rev_enum_downto_ low l v) r
           end
 
-    let to_rev_seq_between low high s =
+    let to_rev_seq_between_cond low high s =
       seq_of_rev_enum_ (to_rev_enum_between low high s)
 
     let slice_to_seq_cond ?(rev=false) ?low ?high s =
       begin match rev, low, high with
       | false, None,     None      -> to_seq s
-      | false, None,     Some high -> to_seq_upto high s
-      | false, Some low, None      -> to_seq_from low s
-      | false, Some low, Some high -> to_seq_between low high s
+      | false, None,     Some high -> to_seq_upto_cond high s
+      | false, Some low, None      -> to_seq_from_cond low s
+      | false, Some low, Some high -> to_seq_between_cond low high s
       | true,  None,     None      -> to_rev_seq s
-      | true,  None,     Some high -> to_rev_seq_from high s
-      | true,  Some low, None      -> to_rev_seq_downto low s
-      | true,  Some low, Some high -> to_rev_seq_between low high s
+      | true,  None,     Some high -> to_rev_seq_from_cond high s
+      | true,  Some low, None      -> to_rev_seq_downto_cond low s
+      | true,  Some low, Some high -> to_rev_seq_between_cond low high s
       end
 
     let slice_to_seq ?rev ?min ?max s =
