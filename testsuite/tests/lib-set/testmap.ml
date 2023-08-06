@@ -173,27 +173,22 @@ let test x v s1 s2 =
        else if i > x then img i r = img i s1
        else p = img i s1);
 
-  checkbool "to_seq_of_seq"
+  checkbool "to_seq"
+    (List.of_seq (M.to_seq s1) = M.bindings s1);
+
+  checkbool "to_rev_seq"
+    (List.of_seq (M.to_rev_seq s1) = List.rev (M.bindings s1));
+
+  checkbool "of_seq/to_seq"
     (M.equal (=) s1 (M.of_seq @@ M.to_seq s1));
 
-  checkbool "to_rev_seq_of_seq"
+  checkbool "of_seq/to_rev_seq"
     (M.equal (=) s1 (M.of_seq @@ M.to_rev_seq s1));
 
   checkbool "to_seq_from"
-    (List.of_seq (M.to_seq_from x s1)
-     = (M.bindings s1 |> List.filter (fun (y,_) -> y >= x)));
-
-  checkbool "to_seq_increasing"
-    (let seq = M.to_seq s1 in
-     let last = ref min_int in
-     Seq.iter (fun (x, _) -> assert (!last <= x); last := x) seq;
-     true);
-
-  checkbool "to_rev_seq_decreasing"
-    (let seq = M.to_rev_seq s1 in
-     let last = ref max_int in
-     Seq.iter (fun (x, _) -> assert (x <= !last); last := x) seq;
-     true);
+    (Seq.equal (=)
+       (M.to_seq_from x s1)
+       (M.to_seq s1 |> Seq.filter (fun (y,_) -> y >= x)));
 
   ()
 
