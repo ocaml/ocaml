@@ -36,6 +36,10 @@ Working version
   handlers, finalisers, memprof callbacks...) on the other hand.
   (Guillaume Munch-Maccagnoni, review by KC Sivaramakrishnan)
 
+- #12375: allow use of [@untagged] for all immediate types like char, bool,
+  and variant with only constant constructors.
+  (Christophe Raffalli, review by Gabriel Scherer)
+
 ### Type system:
 
 - #12313, #11799: Do not re-build as-pattern type when a ground type annotation

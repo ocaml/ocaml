@@ -814,7 +814,7 @@ and transl_ccall env prim args dbg =
           | Pint32 -> XInt32
           | Pint64 -> XInt64 in
         (xty, transl_unbox_int dbg env bi arg)
-    | Untagged_int ->
+    | Untagged_immediate ->
         (XInt, untag_int (transl env arg) dbg)
   in
   let rec transl_args native_repr_args args =
@@ -835,7 +835,7 @@ and transl_ccall env prim args dbg =
     | Same_as_ocaml_repr -> (typ_val, fun x -> x)
     | Unboxed_float -> (typ_float, box_float dbg)
     | Unboxed_integer bi -> (typ_int, box_int dbg bi)
-    | Untagged_int -> (typ_int, (fun i -> tag_int i dbg))
+    | Untagged_immediate -> (typ_int, (fun i -> tag_int i dbg))
   in
   let typ_args, args = transl_args prim.prim_native_repr_args args in
   wrap_result

@@ -24,7 +24,7 @@ type native_repr =
   | Same_as_ocaml_repr
   | Unboxed_float
   | Unboxed_integer of boxed_integer
-  | Untagged_int
+  | Untagged_immediate
 
 type description =
   { prim_name: string;         (* Name of primitive  or C function *)
@@ -45,16 +45,16 @@ let is_ocaml_repr = function
   | Same_as_ocaml_repr -> true
   | Unboxed_float
   | Unboxed_integer _
-  | Untagged_int -> false
+  | Untagged_immediate -> false
 
 let is_unboxed = function
   | Same_as_ocaml_repr
-  | Untagged_int -> false
+  | Untagged_immediate -> false
   | Unboxed_float
   | Unboxed_integer _ -> true
 
 let is_untagged = function
-  | Untagged_int -> true
+  | Untagged_immediate -> true
   | Same_as_ocaml_repr
   | Unboxed_float
   | Unboxed_integer _ -> false
@@ -181,7 +181,7 @@ let print p osig_val_decl =
     | Same_as_ocaml_repr -> None
     | Unboxed_float
     | Unboxed_integer _ -> if all_unboxed then None else Some oattr_unboxed
-    | Untagged_int -> if all_untagged then None else Some oattr_untagged
+    | Untagged_immediate -> if all_untagged then None else Some oattr_untagged
   in
   let type_attrs =
     List.map attr_of_native_repr p.prim_native_repr_args @
@@ -213,15 +213,15 @@ let equal_native_repr nr1 nr2 =
   match nr1, nr2 with
   | Same_as_ocaml_repr, Same_as_ocaml_repr -> true
   | Same_as_ocaml_repr,
-    (Unboxed_float | Unboxed_integer _ | Untagged_int) -> false
+    (Unboxed_float | Unboxed_integer _ | Untagged_immediate) -> false
   | Unboxed_float, Unboxed_float -> true
   | Unboxed_float,
-    (Same_as_ocaml_repr | Unboxed_integer _ | Untagged_int) -> false
+    (Same_as_ocaml_repr | Unboxed_integer _ | Untagged_immediate) -> false
   | Unboxed_integer bi1, Unboxed_integer bi2 -> equal_boxed_integer bi1 bi2
   | Unboxed_integer _,
-    (Same_as_ocaml_repr | Unboxed_float | Untagged_int) -> false
-  | Untagged_int, Untagged_int -> true
-  | Untagged_int,
+    (Same_as_ocaml_repr | Unboxed_float | Untagged_immediate) -> false
+  | Untagged_immediate, Untagged_immediate -> true
+  | Untagged_immediate,
     (Same_as_ocaml_repr | Unboxed_float | Unboxed_integer _) -> false
 
 let native_name_is_external p =

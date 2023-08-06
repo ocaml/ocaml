@@ -113,8 +113,8 @@ TYPING = \
   typing/typedecl_unboxed.cmo \
   typing/typedecl_immediacy.cmo \
   typing/typedecl_separability.cmo \
-  typing/typedecl.cmo \
   typing/typeopt.cmo \
+  typing/typedecl.cmo \
   typing/rec_check.cmo \
   typing/typecore.cmo \
   typing/typeclass.cmo \
