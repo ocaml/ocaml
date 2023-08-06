@@ -160,6 +160,12 @@ Working version
 - #12352: Fix a typo in the documentation of Arg.write_arg
   (Christophe Raffalli, review by Florian Angeletti)
 
+- #12473: Document in runtime/memory.c our current understanding of
+  accesses to the OCaml heap from the C runtime code -- the problem
+  of hybrid programs mixing two memory models.
+  (Gabriel Scherer and Guillaume Munch-Maccagnoni, review by Olivier
+   Nicole and Xavier Leroy)
+
 ### Compiler user-interface and warnings:
 
 - #12247: configure: --disable-ocamldebug can now be used instead
