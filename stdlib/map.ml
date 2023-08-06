@@ -65,12 +65,10 @@ module type S =
     val of_list : (key * 'a) list -> 'a t
     val to_seq : 'a t -> (key * 'a) Seq.t
     val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
-    val to_seq_upto : key -> 'a t -> (key * 'a) Seq.t
-    val to_seq_between : key -> key -> 'a t -> (key * 'a) Seq.t
     val to_rev_seq : 'a t -> (key * 'a) Seq.t
     val to_rev_seq_from : key -> 'a t -> (key * 'a) Seq.t
-    val to_rev_seq_downto : key -> 'a t -> (key * 'a) Seq.t
-    val to_rev_seq_between : key -> key -> 'a t -> (key * 'a) Seq.t
+    val slice_to_seq :
+      ?rev:bool -> ?min:key -> ?max:key -> 'a t -> (key * 'a) Seq.t
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     val of_seq : (key * 'a) Seq.t -> 'a t
   end
@@ -672,6 +670,18 @@ module Make(Ord: OrderedType) = struct
           end
       | c when c > 0 -> Seq.empty
       | _ -> seq_of_rev_enum_ (to_rev_enum_between low high m)
+      end
+
+    let slice_to_seq ?(rev=false) ?min ?max m =
+      begin match rev, min, max with
+      | false, None,     None     -> to_seq m
+      | false, None,     Some max -> to_seq_upto max m
+      | false, Some min, None     -> to_seq_from min m
+      | false, Some min, Some max -> to_seq_between min max m
+      | true,  None,     None     -> to_rev_seq m
+      | true,  None,     Some max -> to_rev_seq_from max m
+      | true,  Some min, None     -> to_rev_seq_downto min m
+      | true,  Some min, Some max -> to_rev_seq_between min max m
       end
 
 end

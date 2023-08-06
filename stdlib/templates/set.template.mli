@@ -305,20 +305,6 @@ module type S =
         in ascending order.
         @since 4.07 *)
 
-    val to_seq_upto : elt -> t -> elt Seq.t
-    (** [to_seq_upto max s]
-        yields the elements of [s]
-        which are less than or equal to [max],
-        in ascending order.
-        @since NEXT_OCAML_VERSION *)
-
-    val to_seq_between : min:elt -> max:elt -> t -> elt Seq.t
-    (** [to_seq_between ~min ~max s]
-        yields the elements of [s]
-        which are at least equal to [min] and at most equal to [max],
-        in ascending order.
-        @since NEXT_OCAML_VERSION *)
-
     val to_rev_seq : t -> elt Seq.t
     (** [to_rev_seq s] yields the elements of [s] in descending order.
         @since 4.12 *)
@@ -330,18 +316,13 @@ module type S =
         in descending order.
         @since NEXT_OCAML_RELEASE *)
 
-    val to_rev_seq_downto : elt -> t -> elt Seq.t
-    (** [to_rev_seq_downto min s]
+    val slice_to_seq : ?rev:bool -> ?min:elt -> ?max:elt -> t -> elt Seq.t
+    (** [slice_to_seq ~rev ~min ~max s]
         yields the elements of [s]
-        which are greater than or equal to [min],
-        in descending order.
-        @since NEXT_OCAML_VERSION *)
-
-    val to_rev_seq_between : min:elt -> max:elt -> t -> elt Seq.t
-    (** [to_rev_seq_between ~min ~max s]
-        yields the elements of [s]
-        which are at least equal to [min] and at most equal to [max],
-        in descending order.
+        which are at least equal to [min] and at most equal to [max].
+        Both [min] and [max] can be omitted.
+        By default, elements are yielded in ascending order;
+        if [rev] is [true], they are rather yielded in descending order.
         @since NEXT_OCAML_VERSION *)
 
     val add_seq : elt Seq.t -> t -> t

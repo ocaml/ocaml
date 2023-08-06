@@ -114,8 +114,7 @@ Working version
    Guillaume Munch-Maccagnoni, KC Sivaramakrishnan, Stefan Muenzel,
    Xavier Leroy)
 
-- #12XXX: Add `Set.to_seq_upto`, `Set.to_seq_between`, `Set.to_rev_seq_from`,
-  `Set.to_rev_seq_downto`, `Set.to_rev_seq_between`, and likewise in `Map`.
+- #12XXX: Add `Set.to_rev_seq_from`, `Set.slice_to_seq` and likewise in `Map`.
   (Glen Mével, review by XXX)
 
 ### Other libraries:
