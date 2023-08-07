@@ -20,11 +20,11 @@
 #include <caml/memory.h>
 #include "unixsupport.h"
 
+extern char ** environ;
+
 #ifdef HAS_POSIX_SPAWN
 
 #include <spawn.h>
-
-extern char ** environ;
 
 /* Implementation based on posix_spawn() */
 
@@ -85,12 +85,6 @@ CAMLprim value caml_unix_spawn(value executable, /* string */
 
 /* Fallback implementation based on fork() and exec() */
 
-#ifndef HAS_EXECVPE
-extern int caml_unix_execvpe_emulation(const char * name,
-                                  char * const argv[],
-                                  char * const envp[]);
-#endif
-
 /* Exit code used for the child process to report failure to exec */
 /* This is consistent with system() and allowed by posix_spawn() specs */
 
@@ -148,7 +142,10 @@ CAMLprim value caml_unix_spawn(value executable, /* string */
 #ifdef HAS_EXECVPE
       execvpe(path, argv, envp);
 #else
-      caml_unix_execvpe_emulation(path, argv, envp);
+      /* No other thread is running in the child process, so we can change
+         the global variable [environ] without bothering anyone. */
+      environ = envp;
+      execvp(path, argv);
 #endif
     }
   } else {
