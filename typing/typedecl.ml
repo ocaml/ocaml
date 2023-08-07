@@ -42,7 +42,8 @@ type error =
   | Duplicate_label of string
   | Recursive_abbrev of string * Env.t * reaching_type_path
   | Cycle_in_def of string * Env.t * reaching_type_path
-  | Definition_mismatch of type_expr * Env.t * Includecore.type_mismatch option
+  | Definition_mismatch of
+      string * type_expr * Env.t * Includecore.type_mismatch option
   | Constraint_failed of Env.t * Errortrace.unification_error
   | Inconsistent_constraint of Env.t * Errortrace.unification_error
   | Type_clash of Env.t * Errortrace.unification_error
@@ -604,6 +605,13 @@ let check_constraints env sdecl (_, decl) =
       check_constraints_rec env sty.ptyp_loc visited ty
   end
 
+let type_kind_name decl =
+  match decl.type_kind with
+  | Type_abstract _ -> ""
+  | Type_variant _ -> "variant "
+  | Type_record _ -> "record "
+  | Type_open -> "extensible variant "
+
 (*
    If both a variant/record definition and a type equation are given,
    need to check that the equation refers to a type of the same kind
@@ -634,12 +642,16 @@ let check_coherence env loc dpath decl =
                          (Subst.add_type_path dpath path Subst.identity) decl)
               end
             in
-            if err <> None then
-              raise(Error(loc, Definition_mismatch (ty, env, err)))
+            if err <> None then begin
+              let kind = type_kind_name decl in
+              raise(Error(loc, Definition_mismatch(kind, ty, env, err)))
+            end
           with Not_found ->
             raise(Error(loc, Unavailable_type_constructor path))
           end
-      | _ -> raise(Error(loc, Definition_mismatch (ty, env, None)))
+      | _ ->
+          let kind = type_kind_name decl in
+          raise(Error(loc, Definition_mismatch (kind, ty, env, None)))
       end
   | _ -> ()
 
@@ -1950,13 +1962,15 @@ let report_error ppf = function
       fprintf ppf "@[<v>The definition of %a contains a cycle%a@]"
         Style.inline_code s
         Reaching_path.pp_colon reaching_path
-  | Definition_mismatch (ty, _env, None) ->
+  | Definition_mismatch (kind, ty, _env, None) ->
+      let intro = "This " ^ kind ^ "definition" in
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]@]"
-        "This variant or record definition" "does not match that of type"
+        intro "does not match that of type"
         (Style.as_inline_code Printtyp.type_expr) ty
-  | Definition_mismatch (ty, env, Some err) ->
+  | Definition_mismatch (kind, ty, env, Some err) ->
+      let intro = "This " ^ kind ^ "definition" in
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]%a@]"
-        "This variant or record definition" "does not match that of type"
+        intro "does not match that of type"
         (Style.as_inline_code Printtyp.type_expr) ty
         (Includecore.report_type_mismatch
            "the original" "this" "definition" env)

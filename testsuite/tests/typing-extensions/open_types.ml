@@ -81,7 +81,7 @@ type baz = bar = ..
 Line 1, characters 0-19:
 1 | type baz = bar = ..
     ^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "bar"
+Error: This extensible variant definition does not match that of type "bar"
        The original is abstract, but this is an extensible variant.
 |}]
 
@@ -99,7 +99,7 @@ type ('a, 'b) bar = 'a foo = ..
 Line 1, characters 0-31:
 1 | type ('a, 'b) bar = 'a foo = ..
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "'a foo"
+Error: This extensible variant definition does not match that of type "'a foo"
        They have different arities.
 |}]
 
@@ -115,7 +115,7 @@ type ('a, 'b) bar = ('a, 'a) foo = ..
 Line 1, characters 0-37:
 1 | type ('a, 'b) bar = ('a, 'a) foo = ..
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type
+Error: This extensible variant definition does not match that of type
          "('a, 'a) foo"
        Their parameters differ
        The type "'a" is not equal to the type "'b"
