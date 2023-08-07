@@ -280,6 +280,11 @@ Working version
 - #12267: Fix stack alignment computation
   (Miod Vallat, report by Jan Midtgaard, review by Gabriel Scherer)
 
+- #12395, #12404: Fix thread-unsafety in the fallback implementation of
+  `Unix.create_process` (the one used when `posix_spawnp` is unavailable)
+  (Xavier Leroy, report by Chris Vine, review by Nicolás Ojeda Bär)
+
+
 OCaml 5.1.0 release branch
 --------------------------
 
