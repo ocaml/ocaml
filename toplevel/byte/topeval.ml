@@ -75,15 +75,13 @@ let load_lambda ppf lam =
   if !Clflags.dump_rawlambda then fprintf ppf "%a@." Printlambda.lambda lam;
   let slam = Simplif.simplify_lambda lam in
   if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
-  let (init_code, fun_code) = Bytegen.compile_phrase slam in
+  let instrs, can_free = Bytegen.compile_phrase slam in
   if !Clflags.dump_instr then
-    fprintf ppf "%a%a@."
-    Printinstr.instrlist init_code
-    Printinstr.instrlist fun_code;
+    fprintf ppf "%a@."
+    Printinstr.instrlist instrs;
   let (code, reloc, events) =
-    Emitcode.to_memory init_code fun_code
+    Emitcode.to_memory instrs
   in
-  let can_free = (fun_code = []) in
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code reloc;
   Symtable.check_global_initialized reloc;

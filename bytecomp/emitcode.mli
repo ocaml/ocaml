@@ -28,7 +28,7 @@ val to_file: out_channel -> Cmo_format.compunit -> string ->
                evaluated before this one
              list of instructions to emit *)
 val to_memory:
-  instruction list -> instruction list ->
+  instruction list ->
     Misc.LongString.t * (reloc_info * int) list * debug_event list
         (* Arguments:
              initialization code (terminated by STOP)

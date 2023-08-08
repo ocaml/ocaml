@@ -460,11 +460,10 @@ let to_file outchan unit_name objfile ~required_globals code =
 
 (* Emission to a memory block *)
 
-let to_memory init_code fun_code =
+let to_memory instrs =
   init();
   Fun.protect ~finally:clear (fun () ->
-  emit init_code;
-  emit fun_code;
+  emit instrs;
   let code = LongString.create !out_position in
   LongString.blit !out_buffer 0 code 0 !out_position;
   let reloc = List.rev !reloc_info in
