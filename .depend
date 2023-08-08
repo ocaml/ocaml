@@ -6570,7 +6570,6 @@ toplevel/byte/topeval.cmo : \
     typing/persistent_env.cmi \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
-    bytecomp/opcodes.cmi \
     utils/misc.cmi \
     bytecomp/meta.cmi \
     parsing/location.cmi \
@@ -6605,7 +6604,6 @@ toplevel/byte/topeval.cmx : \
     typing/persistent_env.cmx \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
-    bytecomp/opcodes.cmx \
     utils/misc.cmx \
     bytecomp/meta.cmx \
     parsing/location.cmx \

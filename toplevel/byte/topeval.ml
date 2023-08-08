@@ -220,12 +220,7 @@ let check_consistency ppf filename cu =
 let load_compunit ic filename ppf compunit =
   check_consistency ppf filename compunit;
   seek_in ic compunit.cu_pos;
-  let code_size = compunit.cu_codesize + 8 in
-  let code = LongString.create code_size in
-  LongString.input_bytes_into code ic compunit.cu_codesize;
-  LongString.set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
-  LongString.blit_string "\000\000\000\001\000\000\000" 0
-                     code (compunit.cu_codesize + 1) 7;
+  let code = LongString.input_bytes ic compunit.cu_codesize in
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code compunit.cu_reloc;
   Symtable.update_global_table();
