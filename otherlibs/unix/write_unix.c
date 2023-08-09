@@ -59,9 +59,8 @@ CAMLprim value caml_unix_write_bigarray(value fd, value vbuf,
                                         value vofs, value vlen)
 {
   CAMLparam4(fd, vbuf, vofs, vlen);
-  long ofs, len, written;
+  intnat ofs, len, written, ret;
   void *buf;
-  int ret;
 
   buf = Caml_ba_data_val(vbuf);
   ofs = Long_val(vofs);
@@ -117,9 +116,8 @@ CAMLprim value caml_unix_single_write_bigarray(value fd, value vbuf, value vofs,
                                                value vlen)
 {
   CAMLparam4(fd, vbuf, vofs, vlen);
-  intnat ofs, len;
+  intnat ofs, len, ret;
   void *buf;
-  int ret;
 
   buf = Caml_ba_data_val(vbuf);
   ofs = Long_val(vofs);
@@ -131,5 +129,5 @@ CAMLprim value caml_unix_single_write_bigarray(value fd, value vbuf, value vofs,
     caml_leave_blocking_section();
     if (ret == -1) caml_uerror("single_write_bigarray", Nothing);
   }
-  CAMLreturn(Val_int(ret));
+  CAMLreturn(Val_long(ret));
 }
