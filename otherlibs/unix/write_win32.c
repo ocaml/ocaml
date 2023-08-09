@@ -14,6 +14,7 @@
 /**************************************************************************/
 
 #include <errno.h>
+#include <limits.h>
 #include <string.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
@@ -77,18 +78,20 @@ CAMLprim value caml_unix_write_bigarray(value fd, value vbuf,
   written = 0;
   while (len > 0) {
     if (Descr_kind_val(fd) == KIND_SOCKET) {
-      int ret;
+      int numbytes, ret;
       SOCKET s = Socket_val(fd);
+      numbytes = len > INT_MAX ? INT_MAX : len;
       caml_enter_blocking_section();
-      ret = send(s, buf + ofs, len, 0);
+      ret = send(s, buf + ofs, numbytes, 0);
       if (ret == SOCKET_ERROR) err = WSAGetLastError();
       caml_leave_blocking_section();
       if (ret == SOCKET_ERROR && err == WSAEWOULDBLOCK && written > 0) break;
       numwritten = ret;
     } else {
       HANDLE h = Handle_val(fd);
+      DWORD numbytes = len > 0xFFFFFFFF ? 0xFFFFFFFF : len;
       caml_enter_blocking_section();
-      if (! WriteFile(h, buf + ofs, len, &numwritten, NULL))
+      if (! WriteFile(h, buf + ofs, numbytes, &numwritten, NULL))
         err = GetLastError();
       caml_leave_blocking_section();
     }
@@ -157,17 +160,19 @@ CAMLprim value caml_unix_single_write_bigarray(value fd, value vbuf,
   written = 0;
   if (len > 0) {
     if (Descr_kind_val(fd) == KIND_SOCKET) {
-      int ret;
+      int numbytes, ret;
       SOCKET s = Socket_val(fd);
+      numbytes = len > INT_MAX ? INT_MAX : len;
       caml_enter_blocking_section();
-      ret = send(s, buf + ofs, len, 0);
+      ret = send(s, buf + ofs, numbytes, 0);
       if (ret == SOCKET_ERROR) err = WSAGetLastError();
       caml_leave_blocking_section();
       numwritten = ret;
     } else {
       HANDLE h = Handle_val(fd);
+      DWORD numbytes = len > 0xFFFFFFFF ? 0xFFFFFFFF : len;
       caml_enter_blocking_section();
-      if (! WriteFile(h, buf + ofs, len, &numwritten, NULL))
+      if (! WriteFile(h, buf + ofs, numbytes, &numwritten, NULL))
         err = GetLastError();
       caml_leave_blocking_section();
     }

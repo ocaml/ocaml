@@ -13,6 +13,7 @@
 /*                                                                        */
 /**************************************************************************/
 
+#include <limits.h>
 #include <string.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
@@ -75,6 +76,7 @@ CAMLprim value caml_unix_read_bigarray(value fd, value vbuf,
   if (Descr_kind_val(fd) == KIND_SOCKET) {
     int ret;
     SOCKET s = Socket_val(fd);
+    if (len > INT_MAX) len = INT_MAX;
     caml_enter_blocking_section();
     ret = recv(s, buf + ofs, len, 0);
     if (ret == SOCKET_ERROR) err = WSAGetLastError();
@@ -82,6 +84,7 @@ CAMLprim value caml_unix_read_bigarray(value fd, value vbuf,
     numread = ret;
   } else {
     HANDLE h = Handle_val(fd);
+    if (len > 0xFFFFFFFF) len = 0xFFFFFFFF;
     caml_enter_blocking_section();
     if (! ReadFile(h, buf + ofs, len, &numread, NULL))
       err = GetLastError();
