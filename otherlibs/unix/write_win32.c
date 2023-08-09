@@ -64,9 +64,9 @@ CAMLprim value caml_unix_write(value fd, value buf, value vofs, value vlen)
 }
 
 CAMLprim value caml_unix_write_bigarray(value fd, value vbuf,
-                                        value vofs, value vlen)
+                                        value vofs, value vlen, value vsingle)
 {
-  CAMLparam4(fd, vbuf, vofs, vlen);
+  CAMLparam5(fd, vbuf, vofs, vlen, vsingle);
   intnat ofs, len, written;
   void *buf;
   DWORD numwritten;
@@ -102,6 +102,7 @@ CAMLprim value caml_unix_write_bigarray(value fd, value vbuf,
     written += numwritten;
     ofs += numwritten;
     len -= numwritten;
+    if (Bool_val(vsingle)) break;
   }
   CAMLreturn(Val_long(written));
 }
@@ -139,46 +140,6 @@ CAMLprim value caml_unix_single_write(value fd, value buf, value vofs,
     if (err) {
       caml_win32_maperr(err);
       caml_uerror("single_write", Nothing);
-    }
-    written = numwritten;
-  }
-  CAMLreturn(Val_long(written));
-}
-
-CAMLprim value caml_unix_single_write_bigarray(value fd, value vbuf,
-                                               value vofs, value vlen)
-{
-  CAMLparam4(fd, vbuf, vofs, vlen);
-  intnat ofs, len, written;
-  void *buf;
-  DWORD numwritten;
-  DWORD err = 0;
-
-  buf = Caml_ba_data_val(vbuf);
-  ofs = Long_val(vofs);
-  len = Long_val(vlen);
-  written = 0;
-  if (len > 0) {
-    if (Descr_kind_val(fd) == KIND_SOCKET) {
-      int numbytes, ret;
-      SOCKET s = Socket_val(fd);
-      numbytes = len > INT_MAX ? INT_MAX : len;
-      caml_enter_blocking_section();
-      ret = send(s, buf + ofs, numbytes, 0);
-      if (ret == SOCKET_ERROR) err = WSAGetLastError();
-      caml_leave_blocking_section();
-      numwritten = ret;
-    } else {
-      HANDLE h = Handle_val(fd);
-      DWORD numbytes = len > 0xFFFFFFFF ? 0xFFFFFFFF : len;
-      caml_enter_blocking_section();
-      if (! WriteFile(h, buf + ofs, numbytes, &numwritten, NULL))
-        err = GetLastError();
-      caml_leave_blocking_section();
-    }
-    if (err) {
-      caml_win32_maperr(err);
-      caml_uerror("single_write_bigarray", Nothing);
     }
     written = numwritten;
   }

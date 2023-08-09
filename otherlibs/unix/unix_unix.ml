@@ -264,13 +264,10 @@ external unsafe_read_bigarray :
 external unsafe_write : file_descr -> bytes -> int -> int -> int
                       = "caml_unix_write"
 external unsafe_write_bigarray :
-  file_descr -> _ Bigarray.Array1.t -> int -> int -> int
+  file_descr -> _ Bigarray.Array1.t -> int -> int -> single: bool -> int
   = "caml_unix_write_bigarray"
 external unsafe_single_write : file_descr -> bytes -> int -> int -> int
    = "caml_unix_single_write"
-external unsafe_single_write_bigarray :
-  file_descr -> _ Bigarray.Array1.t -> int -> int -> int
-  = "caml_unix_single_write_bigarray"
 
 let read fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > Bytes.length buf - len
@@ -287,7 +284,7 @@ let write fd buf ofs len =
 let write_bigarray fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > Bigarray.Array1.dim buf - len
   then invalid_arg "Unix.write_bigarray"
-  else unsafe_write_bigarray fd buf ofs len
+  else unsafe_write_bigarray fd buf ofs len ~single:false
 (* write misbehaves because it attempts to write all data by making repeated
    calls to the Unix write function (see comment in write.c and unix.mli).
    single_write fixes this by never calling write twice. *)
@@ -298,7 +295,7 @@ let single_write fd buf ofs len =
 let single_write_bigarray fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > Bigarray.Array1.dim buf - len
   then invalid_arg "Unix.single_write_bigarray"
-  else unsafe_single_write_bigarray fd buf ofs len
+  else unsafe_write_bigarray fd buf ofs len ~single:true
 
 let write_substring fd buf ofs len =
   write fd (Bytes.unsafe_of_string buf) ofs len
