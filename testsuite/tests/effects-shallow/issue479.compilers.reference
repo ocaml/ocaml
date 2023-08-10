@@ -1,0 +1,14 @@
+- : unit = ()
+type ('a, 'container) iterator = ('a -> unit) -> 'container -> unit
+type 'a generator = unit -> 'a option
+type ('a, 'container) iter2gen =
+    ('a, 'container) iterator -> 'container -> 'a generator
+type hold = effect Hold : unit
+val hold : hold Effect.t = <abstr>
+val iter2gen : (int, 'a) iter2gen = <fun>
+val f : unit -> unit = <fun>
+Hold 1
+1
+Hold 2
+Exception: Stdlib.Effect.Continuation_already_resumed.
+

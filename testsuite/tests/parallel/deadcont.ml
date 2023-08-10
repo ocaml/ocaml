@@ -7,9 +7,10 @@
  *)
 
 open Effect
-open Effect.Deep
 
-type _ t += Poke : unit t
+type eff = effect Poke : unit
+
+let eff = Effect.create ()
 
 type result = Done | Poking of (unit -> result)
 
@@ -19,23 +20,21 @@ let print s = print_string s; Format.pp_print_flush Format.std_formatter ()
 (* Just poke the handler n times. *)
 let rec poke = function
   | 0 -> ()
-  | n -> perform Poke; poke (n-1)
+  | n -> perform eff Poke; poke (n-1)
 
 (* The handler inside the domain, that captures the continuation whenever
     it gets poked. *)
 let domain_handler f =
-  match_with f ()
-  { retc = (fun () -> Done);
-    exnc = (fun e -> raise e);
-    effc = fun (type a) (e : a t) ->
-          match e with
-          | Poke -> Some (fun (k : (a, _) continuation) ->
-              Poking (fun () ->
-                print "...";
-                ignore (continue k ());
-                print "success\n";
-                Done))
-          | _ -> None }
+  run_with eff f ()
+    { result = (fun () -> Done);
+      exn = (fun e -> raise e);
+      operation =
+        (fun (type a) (Poke : (a, eff) operation) (k : (a, _) continuation) ->
+          Poking (fun () ->
+              print "...";
+              ignore (continue k ());
+              print "success\n";
+              Done)) }
 
 (* Re-runs the poker that happened inside a domain. *)
 let rerunner = function

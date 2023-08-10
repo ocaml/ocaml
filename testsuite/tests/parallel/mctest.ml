@@ -154,21 +154,23 @@ end
 module Scheduler =
 struct
   open Effect
-  open Effect.Deep
 
   type 'a cont = ('a, unit) continuation
 
-  type _ t += Suspend : ('a cont -> 'a option) -> 'a t
-            | Resume : ('a cont * 'a) -> unit t
-            | GetTid : int t
-            | Spawn : (unit -> unit) -> unit t
-            | Yield : unit t
+  type async = effect
+    | Suspend : ('a cont -> 'a option) -> 'a
+    | Resume : ('a cont * 'a) -> unit
+    | GetTid : int
+    | Spawn : (unit -> unit) -> unit
+    | Yield : unit
 
-  let suspend f = perform (Suspend f)
-  let resume t v = perform (Resume (t, v))
-  let get_tid () = perform GetTid
-  let spawn f = perform (Spawn f)
-  let yield () = perform Yield
+  let async = Effect.create ()
+
+  let suspend f = perform async (Suspend f)
+  let resume t v = perform async (Resume (t, v))
+  let get_tid () = perform async GetTid
+  let spawn f = perform async (Spawn f)
+  let yield () = perform async Yield
 
   let pqueue = Q.create ()
 
@@ -186,27 +188,29 @@ struct
 
   let rec exec f =
     let pid = get_free_pid () in
-      match_with f ()
-      { retc = (fun () -> dequeue ());
-        exnc = (fun e -> raise e);
-        effc = fun (type a) (e : a t) ->
-          match e with
-          | Suspend f -> Some (fun (k : (a, _) continuation) ->
-              match f k with
-                | None -> dequeue ()
-                | Some v -> continue k v)
-        | Resume (t, v) -> Some (fun (k : (a, _) continuation) ->
-            enqueue k;
-            continue t v)
-        | GetTid -> Some (fun (k : (a, _) continuation) ->
-            continue k pid)
-        | Spawn f -> Some (fun (k : (a, _) continuation) ->
-            enqueue k;
-            exec f)
-        | Yield -> Some (fun (k : (a, _) continuation) ->
-            enqueue k;
-            dequeue ())
-        | _ -> None }
+      run_with async f ()
+        { result = (fun () -> dequeue ());
+          exn = (fun e -> raise e);
+          operation =
+            (fun (type a) (op : (a, async) operation)
+                 (k : (a, _) continuation) ->
+              match op with
+              | Suspend f -> begin
+                  match f k with
+                  | None -> dequeue ()
+                  | Some v -> continue k v
+                end
+              | Resume (t, v) ->
+                  enqueue k;
+                  continue t v
+              | GetTid ->
+                  continue k pid
+              | Spawn f ->
+                  enqueue k;
+                  exec f
+              | Yield ->
+                  enqueue k;
+                  dequeue ()) }
 
   let num_threads = 2
 
