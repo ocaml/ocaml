@@ -508,7 +508,7 @@ val safe_set_geometry : max_indent:int -> margin:int -> unit
    [pp_set_geometry ppf ~max_indent ~margin] sets both the margin
    and maximum indentation limit for [ppf].
 
-   When [1 < max_indent < margin],
+   When [1 < max_indent < margin < 1,000,000,010],
    [pp_set_geometry ppf ~max_indent ~margin]
    is equivalent to
    [pp_set_margin ppf margin; pp_set_max_indent ppf max_indent];
@@ -518,6 +518,7 @@ val safe_set_geometry : max_indent:int -> margin:int -> unit
    Outside of this domain, [pp_set_geometry] raises an invalid argument
    exception whereas [pp_safe_set_geometry] does nothing.
 
+   Note that if the upper limit of [1,000,000,0010] is exceeded, even if the inequality [max_indent < margin] is satisfied, the [max_indent] will not be set correctly.
    @since 4.08
 *)
 
