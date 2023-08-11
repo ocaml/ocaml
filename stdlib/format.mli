@@ -473,11 +473,11 @@ val set_max_indent : int -> unit
 
   Nothing happens if [d] is smaller than 2.
 
-  If [d] is too large, the limit is set to the maximum
+  In order of priority, following checks are carried out:
+  - if [d] is greater than the current margin, it is ignored, and the current
+    maximum indentation limit is kept.
+  - if [d] is too large, the limit is set to the maximum
   admissible value (which is greater than [10 ^ 9]).
-
-  If [d] is greater or equal than the current margin, it is ignored,
-  and the current maximum indentation limit is kept.
 
   See also {!pp_set_geometry}.
 *)
