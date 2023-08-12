@@ -512,7 +512,7 @@ val safe_set_geometry : max_indent:int -> margin:int -> unit
    [max_indent < margin] is satisfied, the [max_indent] will not be set
    correctly.
 
-   If [margin >= max_indent], [pp_set_geometry] raises an invalid argument
+   If [max_indent >= margin], [pp_set_geometry] raises an invalid argument
    exception whereas [pp_safe_set_geometry] does nothing.
 
    When [1 < max_indent < margin],
