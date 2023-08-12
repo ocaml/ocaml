@@ -387,13 +387,15 @@ module Make(Ord: OrderedType) = struct
     let rec split x = function
         Empty ->
           (Empty, None, Empty)
-      | Node {l; v; d; r} ->
+      | Node {l; v; d; r} as t ->
           let c = Ord.compare x v in
           if c = 0 then (l, Some d, r)
           else if c < 0 then
-            let (ll, pres, rl) = split x l in (ll, pres, join rl v d r)
+            let (ll, pres, rl) = split x l in
+            if rl == l then (ll, pres, t) else (ll, pres, join rl v d r)
           else
-            let (lr, pres, rr) = split x r in (join l v d lr, pres, rr)
+            let (lr, pres, rr) = split x r in
+            if lr == r then (t, pres, rr) else (join l v d lr, pres, rr)
 
     let rec merge f s1 s2 =
       match (s1, s2) with

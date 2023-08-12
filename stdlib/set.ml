@@ -230,13 +230,15 @@ module Make(Ord: OrderedType) =
     let rec split x = function
         Empty ->
           (Empty, false, Empty)
-      | Node{l; v; r} ->
+      | Node{l; v; r} as t ->
           let c = Ord.compare x v in
           if c = 0 then (l, true, r)
           else if c < 0 then
-            let (ll, pres, rl) = split x l in (ll, pres, join rl v r)
+            let (ll, pres, rl) = split x l in
+            if rl == l then (ll, pres, t) else (ll, pres, join rl v r)
           else
-            let (lr, pres, rr) = split x r in (join l v lr, pres, rr)
+            let (lr, pres, rr) = split x r in
+            if lr == r then (t, pres, rr) else (join l v lr, pres, rr)
 
     (* Implementation of the set operations *)
 
