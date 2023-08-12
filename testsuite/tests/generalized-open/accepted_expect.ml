@@ -35,6 +35,7 @@ val filter : (elt -> bool) -> t -> t = <fun>
 val filter_map : (elt -> elt option) -> t -> t = <fun>
 val partition : (elt -> bool) -> t -> t * t = <fun>
 val split : elt -> t -> t * bool * t = <fun>
+val split_at_cond : (elt -> int) -> t -> t * elt option * t = <fun>
 val is_empty : t -> bool = <fun>
 val mem : elt -> t -> bool = <fun>
 val equal : t -> t -> bool = <fun>

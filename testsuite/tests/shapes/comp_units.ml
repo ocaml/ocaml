@@ -132,6 +132,7 @@ module Without_constraint :
     val filter_map : (elt -> elt option) -> t -> t
     val partition : (elt -> bool) -> t -> t * t
     val split : elt -> t -> t * bool * t
+    val split_at_cond : (elt -> int) -> t -> t * elt option * t
     val is_empty : t -> bool
     val mem : elt -> t -> bool
     val equal : t -> t -> bool

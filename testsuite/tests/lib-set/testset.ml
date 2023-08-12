@@ -186,6 +186,13 @@ let test x s1 s2 =
        else if i > x then S.mem i r = S.mem i s1
        else p = S.mem i s1);
 
+  check "split_at_cond"
+    (let (l, p, r) = S.split_at_cond (fun y -> x - y) s1 in
+     fun i ->
+       if i < x then S.mem i l = S.mem i s1
+       else if i > x then S.mem i r = S.mem i s1
+       else (p <> None) = S.mem i s1 && (p = None || p = Some x));
+
   checkbool "to_seq"
     (List.of_seq (S.to_seq s1) = S.elements s1);
 

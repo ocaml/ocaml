@@ -299,6 +299,20 @@ module type S =
           or [Some v] if [m] binds [v] to [x].
         @since 3.12 *)
 
+    val split_at_cond: f:(key -> int) -> 'a t -> 'a t * (key * 'a) option * 'a t
+    (** [split_at_cond ~f m],
+        where [f] is a monotonically decreasing function
+        which returns zero for at most one key in the map,
+        returns a triple [(l, o, r)], where:
+        - [l] is the bindings of [m] whose keys [k] satisfy [f k > 0];
+        - [r] is the bindings of [m] whose keys [k] satisfy [f k < 0];
+        - [o] is [Some (k,v)] if [(k,v)] is a binding of [m]
+          such that [f k = 0].
+          or [None] if there is no such binding.
+
+        @since NEXT_OCAML_RELEASE
+    *)
+
     (** {1:predicates Predicates and comparisons} *)
 
     val is_empty: 'a t -> bool

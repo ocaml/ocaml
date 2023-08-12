@@ -55,6 +55,7 @@ module type S =
     val filter_map: (key -> 'a -> 'b option) -> 'a t -> 'b t
     val partition: (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val split: key -> 'a t -> 'a t * 'a option * 'a t
+    val split_at_cond: (key -> int) -> 'a t -> 'a t * (key * 'a) option * 'a t
     val is_empty: 'a t -> bool
     val mem: key -> 'a t -> bool
     val equal: ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
@@ -395,6 +396,21 @@ module Make(Ord: OrderedType) = struct
             if rl == l then (ll, pres, t) else (ll, pres, join rl v d r)
           else
             let (lr, pres, rr) = split x r in
+            if lr == r then (t, pres, rr) else (join l v d lr, pres, rr)
+
+    (* Same with a predicate. *)
+
+    let rec split_at_cond f = function
+        Empty ->
+          (Empty, None, Empty)
+      | Node{l; v; d; r} as t ->
+          let c = f v in
+          if c = 0 then (l, Some (v,d), r)
+          else if c < 0 then
+            let (ll, pres, rl) = split_at_cond f l in
+            if rl == l then (ll, pres, t) else (ll, pres, join rl v d r)
+          else
+            let (lr, pres, rr) = split_at_cond f r in
             if lr == r then (t, pres, rr) else (join l v d lr, pres, rr)
 
     let rec merge f s1 s2 =

@@ -335,6 +335,8 @@ module type MapT =
     val filter_map : (key -> 'a -> 'b option) -> 'a t -> 'b t
     val partition : (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val split : key -> 'a t -> 'a t * 'a option * 'a t
+    val split_at_cond :
+      (key -> int) -> 'a t -> 'a t * (key * 'a) option * 'a t
     val is_empty : 'a t -> bool
     val mem : key -> 'a t -> bool
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
@@ -391,6 +393,8 @@ module SSMap :
     val filter_map : (key -> 'a -> 'b option) -> 'a t -> 'b t
     val partition : (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val split : key -> 'a t -> 'a t * 'a option * 'a t
+    val split_at_cond :
+      (key -> int) -> 'a t -> 'a t * (key * 'a) option * 'a t
     val is_empty : 'a t -> bool
     val mem : key -> 'a t -> bool
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool

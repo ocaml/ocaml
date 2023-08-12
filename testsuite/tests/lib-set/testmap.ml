@@ -173,6 +173,17 @@ let test x v s1 s2 =
        else if i > x then img i r = img i s1
        else p = img i s1);
 
+  check "split_at_cond"
+    (let (l, p, r) = M.split_at_cond (fun y -> x - y) s1 in
+     fun i ->
+       if i < x then M.mem i l = M.mem i s1
+       else if i > x then M.mem i r = M.mem i s1
+       else
+        begin match p with
+        | None -> not (M.mem i s1)
+        | Some (k,_) -> k = i && M.mem i s1
+        end);
+
   checkbool "to_seq"
     (List.of_seq (M.to_seq s1) = M.bindings s1);
 

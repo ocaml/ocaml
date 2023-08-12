@@ -255,6 +255,19 @@ module type S =
         [present] is [false] if [s] contains no element equal to [x],
         or [true] if [s] contains an element equal to [x]. *)
 
+    val split_at_cond: (elt -> int) -> t -> t * elt option * t
+    (** [split_at_cond f s],
+        where [f] is a monotonically decreasing function
+        which returns zero for at most one element in the set,
+        returns a triple [(l, o, r)], where:
+        - [l] is the set of elements [x] of [s] such that [f x > 0];
+        - [r] is the set of elements [x] of [s] such that [f x < 0];
+        - [o] is [Some x] if [x] is an element of [s] such that [f x = 0].
+          or [None] if there is no such element.
+
+        @since NEXT_OCAML_RELEASE
+    *)
+
     (** {1:predicates Predicates and comparisons} *)
 
     val is_empty: t -> bool

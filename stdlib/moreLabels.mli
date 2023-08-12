@@ -947,6 +947,20 @@ module Map : sig
             or [Some v] if [m] binds [v] to [x].
           @since 3.12 *)
 
+      val split_at_cond: f:(key -> int) -> 'a t -> 'a t * (key * 'a) option * 'a t
+      (** [split_at_cond ~f m],
+          where [f] is a monotonically decreasing function
+          which returns zero for at most one key in the map,
+          returns a triple [(l, o, r)], where:
+          - [l] is the bindings of [m] whose keys [k] satisfy [f k > 0];
+          - [r] is the bindings of [m] whose keys [k] satisfy [f k < 0];
+          - [o] is [Some (k,v)] if [(k,v)] is a binding of [m]
+            such that [f k = 0].
+            or [None] if there is no such binding.
+
+          @since NEXT_OCAML_RELEASE
+      *)
+
       (** {1:predicates Predicates and comparisons} *)
 
       val is_empty: 'a t -> bool
@@ -1261,6 +1275,19 @@ module Set : sig
           strictly greater than [x];
           [present] is [false] if [s] contains no element equal to [x],
           or [true] if [s] contains an element equal to [x]. *)
+
+      val split_at_cond: f:(elt -> int) -> t -> t * elt option * t
+      (** [split_at_cond ~f s],
+          where [f] is a monotonically decreasing function
+          which returns zero for at most one element in the set,
+          returns a triple [(l, o, r)], where:
+          - [l] is the set of elements [x] of [s] such that [f x > 0];
+          - [r] is the set of elements [x] of [s] such that [f x < 0];
+          - [o] is [Some x] if [x] is an element of [s] such that [f x = 0].
+            or [None] if there is no such element.
+
+          @since NEXT_OCAML_RELEASE
+      *)
 
       (** {1:predicates Predicates and comparisons} *)
 
