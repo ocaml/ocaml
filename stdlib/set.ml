@@ -263,40 +263,48 @@ module Make(Ord: OrderedType) =
 
     let rec slice_at_cond_from low = function
       | Empty -> Empty
-      | Node{l; v; r} ->
+      | Node{l; v; r} as t ->
           let c = low v in
           if c = 0 then
-            add_min_element v r
+            if l = Empty then t else add_min_element v r
           else if c > 0 then
             slice_at_cond_from low r
           else
-            join (slice_at_cond_from low l) v r
+            let l' = slice_at_cond_from low l in
+            if l' == l then t else join l' v r
 
     let rec slice_at_cond_upto high = function
       | Empty -> Empty
-      | Node{l; v; r} ->
+      | Node{l; v; r} as t ->
           let c = high v in
           if c = 0 then
-            add_max_element v l
+            if r = Empty then t else add_max_element v l
           else if c < 0 then
             slice_at_cond_upto high l
           else
-            join l v (slice_at_cond_upto high r)
+            let r' = slice_at_cond_upto high r in
+            if r' == r then t else join l v r'
 
     let rec slice_at_cond_aux low high = function
       | Empty -> Empty
-      | Node{l; v; r} ->
+      | Node{l; v; r} as t ->
           begin match sign (low v), sign (high v) with
           | 1, 0 -> Empty
           | 1, -1 -> Empty
           | 0, -1 -> Empty
           | 1, 1 -> slice_at_cond_aux low high r
           | -1, -1 -> slice_at_cond_aux low high l
-          | 0, 0 -> singleton v
-          | 0, 1 -> add_min_element v (slice_at_cond_upto high r)
-          | -1, 0 -> add_max_element v (slice_at_cond_from low l)
+          | 0, 0 -> if l = Empty && r = Empty then t else singleton v
+          | 0, 1 ->
+              let r' = slice_at_cond_upto high r in
+              if l = Empty && r' == r then t else add_min_element v r'
+          | -1, 0 ->
+              let l' = slice_at_cond_from low l in
+              if r = Empty && l' == l then t else add_max_element v l'
           | _ (* -1, 1 *) ->
-              join (slice_at_cond_from low l) v (slice_at_cond_upto high r)
+              let l' = slice_at_cond_from low l
+              and r' = slice_at_cond_upto high r in
+              if l' == l && r' == r then t else join l' v r'
           end
 
     let slice_at_cond ?low ?high s =
