@@ -961,6 +961,26 @@ module Map : sig
           @since NEXT_OCAML_RELEASE
       *)
 
+      val slice: ?min:key -> ?max:key -> 'a t -> 'a t
+      (** [slice_at_cond ?min ?max m]
+          returns the bindings of [m] whose keys
+          are at least equal to [min] and at most equal to [max].
+          Both [min] and [max] can be omitted.
+
+          @since NEXT_OCAML_RELEASE
+      *)
+
+      val slice_at_cond: ?low:(key -> int) -> ?high:(key -> int) -> 'a t -> 'a t
+      (** [slice_at_cond ?low ?high m],
+          where [low] and [high] are monotonically decreasing functions
+          which return zero for at most one key in the map,
+          returns the bindings of [m] whose keys [k]
+          satisfy [low k <= 0 && high k >= 0].
+          Both [low] and [high] can be omitted.
+
+          @since NEXT_OCAML_RELEASE
+      *)
+
       (** {1:predicates Predicates and comparisons} *)
 
       val is_empty: 'a t -> bool
@@ -1285,6 +1305,26 @@ module Set : sig
           - [r] is the set of elements [x] of [s] such that [f x < 0];
           - [o] is [Some x] if [x] is an element of [s] such that [f x = 0].
             or [None] if there is no such element.
+
+          @since NEXT_OCAML_RELEASE
+      *)
+
+      val slice: ?min:elt -> ?max:elt -> t -> t
+      (** [slice_at_cond ?min ?max s]
+          returns the subset of [s] whose elements
+          are at least equal to [min] and at most equal to [max].
+          Both [min] and [max] can be omitted.
+
+          @since NEXT_OCAML_RELEASE
+      *)
+
+      val slice_at_cond: ?low:(elt -> int) -> ?high:(elt -> int) -> t -> t
+      (** [slice_at_cond ?low ?high s],
+          where [low] and [high] are monotonically decreasing functions
+          which return zero for at most one element in the set,
+          returns the subset of [s] whose elements [x]
+          satisfy [low x <= 0 && high x >= 0].
+          Both [low] and [high] can be omitted.
 
           @since NEXT_OCAML_RELEASE
       *)

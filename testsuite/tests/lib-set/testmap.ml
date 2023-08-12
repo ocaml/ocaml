@@ -16,7 +16,7 @@ let checkbool msg b =
 
 let uncurry (f: 'a -> 'b -> 'c) (x, y: 'a * 'b) : 'c = f x y
 
-let test x v s1 s2 =
+let test x v x2 v2 s1 s2 =
 
   checkbool "is_empty"
     (M.is_empty s1 = List.for_all (fun i -> img i s1 = None) testvals);
@@ -184,6 +184,21 @@ let test x v s1 s2 =
         | Some (k,_) -> k = i && M.mem i s1
         end);
 
+  checkbool "slice_min"
+    (M.equal (=)
+      (M.slice ~min:x s1)
+      (M.filter (fun y _ -> x <= y) s1));
+
+  checkbool "slice_max"
+    (M.equal (=)
+      (M.slice ~max:x s1)
+      (M.filter (fun y _ -> y <= x) s1));
+
+  checkbool "slice"
+    (M.equal (=)
+      (M.slice ~min:x ~max:x2 s1)
+      (M.filter (fun y _ -> x <= y && y <= x2) s1));
+
   checkbool "to_seq"
     (List.of_seq (M.to_seq s1) = M.bindings s1);
 
@@ -214,7 +229,9 @@ let rmap() =
 
 let _ =
   Random.init 42;
-  for i = 1 to 10000 do test (rkey()) (rdata()) (rmap()) (rmap()) done
+  for i = 1 to 10000 do
+    test (rkey()) (rdata()) (rkey()) (rdata()) (rmap()) (rmap())
+  done
 
 let () =
   (* check that removing a binding from a map that is not present in this map

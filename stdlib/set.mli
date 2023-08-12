@@ -268,6 +268,26 @@ module type S =
         @since NEXT_OCAML_RELEASE
     *)
 
+    val slice: ?min:elt -> ?max:elt -> t -> t
+    (** [slice_at_cond ?min ?max s]
+        returns the subset of [s] whose elements
+        are at least equal to [min] and at most equal to [max].
+        Both [min] and [max] can be omitted.
+
+        @since NEXT_OCAML_RELEASE
+    *)
+
+    val slice_at_cond: ?low:(elt -> int) -> ?high:(elt -> int) -> t -> t
+    (** [slice_at_cond ?low ?high s],
+        where [low] and [high] are monotonically decreasing functions
+        which return zero for at most one element in the set,
+        returns the subset of [s] whose elements [x]
+        satisfy [low x <= 0 && high x >= 0].
+        Both [low] and [high] can be omitted.
+
+        @since NEXT_OCAML_RELEASE
+    *)
+
     (** {1:predicates Predicates and comparisons} *)
 
     val is_empty: t -> bool

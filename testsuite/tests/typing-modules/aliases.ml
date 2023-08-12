@@ -309,6 +309,8 @@ module StringSet :
     val partition : (elt -> bool) -> t -> t * t
     val split : elt -> t -> t * bool * t
     val split_at_cond : (elt -> int) -> t -> t * elt option * t
+    val slice : ?min:elt -> ?max:elt -> t -> t
+    val slice_at_cond : ?low:(elt -> int) -> ?high:(elt -> int) -> t -> t
     val is_empty : t -> bool
     val mem : elt -> t -> bool
     val equal : t -> t -> bool
@@ -358,6 +360,8 @@ module SSet :
     val partition : (elt -> bool) -> t -> t * t
     val split : elt -> t -> t * bool * t
     val split_at_cond : (elt -> int) -> t -> t * elt option * t
+    val slice : ?min:elt -> ?max:elt -> t -> t
+    val slice_at_cond : ?low:(elt -> int) -> ?high:(elt -> int) -> t -> t
     val is_empty : t -> bool
     val mem : elt -> t -> bool
     val equal : t -> t -> bool
@@ -439,6 +443,8 @@ module A :
         val partition : (elt -> bool) -> t -> t * t
         val split : elt -> t -> t * bool * t
         val split_at_cond : (elt -> int) -> t -> t * elt option * t
+        val slice : ?min:elt -> ?max:elt -> t -> t
+        val slice_at_cond : ?low:(elt -> int) -> ?high:(elt -> int) -> t -> t
         val is_empty : t -> bool
         val mem : elt -> t -> bool
         val equal : t -> t -> bool
@@ -572,6 +578,8 @@ module SInt :
     val partition : (elt -> bool) -> t -> t * t
     val split : elt -> t -> t * bool * t
     val split_at_cond : (elt -> int) -> t -> t * elt option * t
+    val slice : ?min:elt -> ?max:elt -> t -> t
+    val slice_at_cond : ?low:(elt -> int) -> ?high:(elt -> int) -> t -> t
     val is_empty : t -> bool
     val mem : elt -> t -> bool
     val equal : t -> t -> bool

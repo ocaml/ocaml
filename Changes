@@ -114,6 +114,10 @@ Working version
    Guillaume Munch-Maccagnoni, KC Sivaramakrishnan, Stefan Muenzel,
    Xavier Leroy)
 
+- #XXXXX: Add `Set.split_at_cond`, `Set.slice`, `Set.slice_at_cond` and ditto
+  for Map.
+  (Glen Mével, review by XXX)
+
 ### Other libraries:
 
 - #12213: Dynlink library, improve legibility of error messages

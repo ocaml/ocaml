@@ -50,6 +50,9 @@ module Core :
             val split : key -> 'a t -> 'a t * 'a option * 'a t
             val split_at_cond :
               (key -> key) -> 'a t -> 'a t * (key * 'a) option * 'a t
+            val slice : ?min:key -> ?max:key -> 'a t -> 'a t
+            val slice_at_cond :
+              ?low:(key -> key) -> ?high:(key -> key) -> 'a t -> 'a t
             val is_empty : 'a t -> bool
             val mem : key -> 'a t -> bool
             val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool

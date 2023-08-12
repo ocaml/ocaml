@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* Return [0] if [x = 0], [1] if [x > 0] and [-1] if [x < 0]. *)
+let sign x = compare x 0
+
 (* Sets over ordered types *)
 
 module type OrderedType =
@@ -55,6 +58,8 @@ module type S =
     val partition: (elt -> bool) -> t -> t * t
     val split: elt -> t -> t * bool * t
     val split_at_cond: (elt -> int) -> t -> t * elt option * t
+    val slice: ?min:elt -> ?max:elt -> t -> t
+    val slice_at_cond: ?low:(elt -> int) -> ?high:(elt -> int) -> t -> t
     val is_empty: t -> bool
     val mem: elt -> t -> bool
     val equal: t -> t -> bool
@@ -255,6 +260,57 @@ module Make(Ord: OrderedType) =
           else
             let (lr, pres, rr) = split_at_cond f r in
             if lr == r then (t, pres, rr) else (join l v lr, pres, rr)
+
+    let rec slice_at_cond_from low = function
+      | Empty -> Empty
+      | Node{l; v; r} ->
+          let c = low v in
+          if c = 0 then
+            add_min_element v r
+          else if c > 0 then
+            slice_at_cond_from low r
+          else
+            join (slice_at_cond_from low l) v r
+
+    let rec slice_at_cond_upto high = function
+      | Empty -> Empty
+      | Node{l; v; r} ->
+          let c = high v in
+          if c = 0 then
+            add_max_element v l
+          else if c < 0 then
+            slice_at_cond_upto high l
+          else
+            join l v (slice_at_cond_upto high r)
+
+    let rec slice_at_cond_aux low high = function
+      | Empty -> Empty
+      | Node{l; v; r} ->
+          begin match sign (low v), sign (high v) with
+          | 1, 0 -> Empty
+          | 1, -1 -> Empty
+          | 0, -1 -> Empty
+          | 1, 1 -> slice_at_cond_aux low high r
+          | -1, -1 -> slice_at_cond_aux low high l
+          | 0, 0 -> singleton v
+          | 0, 1 -> add_min_element v (slice_at_cond_upto high r)
+          | -1, 0 -> add_max_element v (slice_at_cond_from low l)
+          | _ (* -1, 1 *) ->
+              join (slice_at_cond_from low l) v (slice_at_cond_upto high r)
+          end
+
+    let slice_at_cond ?low ?high s =
+      begin match low, high with
+      | None, None -> s
+      | Some low, None -> slice_at_cond_from low s
+      | None, Some high -> slice_at_cond_upto high s
+      | Some low, Some high -> slice_at_cond_aux low high s
+      end
+
+    let slice ?min ?max s =
+      let low = Option.map Ord.compare min in
+      let high = Option.map Ord.compare max in
+      slice_at_cond ?low ?high s
 
     (* Implementation of the set operations *)
 

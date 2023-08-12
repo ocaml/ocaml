@@ -15,7 +15,7 @@ let checkbool msg b =
 let normalize_cmp c =
   if c = 0 then 0 else if c > 0 then 1 else -1
 
-let test x s1 s2 =
+let test x x2 s1 s2 =
 
   checkbool "is_empty"
     (S.is_empty s1 = List.for_all (fun i -> not (S.mem i s1)) testvals);
@@ -193,6 +193,21 @@ let test x s1 s2 =
        else if i > x then S.mem i r = S.mem i s1
        else (p <> None) = S.mem i s1 && (p = None || p = Some x));
 
+  checkbool "slice_min"
+    (S.equal
+      (S.slice ~min:x s1)
+      (S.filter (fun y -> x <= y) s1));
+
+  checkbool "slice_max"
+    (S.equal
+      (S.slice ~max:x s1)
+      (S.filter (fun y -> y <= x) s1));
+
+  checkbool "slice"
+    (S.equal
+      (S.slice ~min:x ~max:x2 s1)
+      (S.filter (fun y -> x <= y && y <= x2) s1));
+
   checkbool "to_seq"
     (List.of_seq (S.to_seq s1) = S.elements s1);
 
@@ -221,7 +236,7 @@ let rset() =
 
 let _ =
   Random.init 42;
-  for i = 1 to 10000 do test (relt()) (rset()) (rset()) done
+  for i = 1 to 10000 do test (relt()) (relt()) (rset()) (rset()) done
 
 let () =
   (* #6645: check that adding an element to set that already contains

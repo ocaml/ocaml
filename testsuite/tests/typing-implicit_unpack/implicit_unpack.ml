@@ -337,6 +337,9 @@ module type MapT =
     val split : key -> 'a t -> 'a t * 'a option * 'a t
     val split_at_cond :
       (key -> int) -> 'a t -> 'a t * (key * 'a) option * 'a t
+    val slice : ?min:key -> ?max:key -> 'a t -> 'a t
+    val slice_at_cond :
+      ?low:(key -> int) -> ?high:(key -> int) -> 'a t -> 'a t
     val is_empty : 'a t -> bool
     val mem : key -> 'a t -> bool
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
@@ -395,6 +398,9 @@ module SSMap :
     val split : key -> 'a t -> 'a t * 'a option * 'a t
     val split_at_cond :
       (key -> int) -> 'a t -> 'a t * (key * 'a) option * 'a t
+    val slice : ?min:key -> ?max:key -> 'a t -> 'a t
+    val slice_at_cond :
+      ?low:(key -> int) -> ?high:(key -> int) -> 'a t -> 'a t
     val is_empty : 'a t -> bool
     val mem : key -> 'a t -> bool
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
