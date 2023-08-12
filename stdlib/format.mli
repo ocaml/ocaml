@@ -152,6 +152,9 @@ type formatter
 
 *)
 
+val pp_infinity : int
+(** [pp_infinity] is a large value that is used as default token size *)
+
 val pp_open_box : formatter -> int -> unit
 val open_box : int -> unit
 (** [pp_open_box ppf d] opens a new compacting pretty-printing box with
@@ -505,22 +508,15 @@ val safe_set_geometry : max_indent:int -> margin:int -> unit
    [pp_set_geometry ppf ~max_indent ~margin] sets both the margin
    and maximum indentation limit for [ppf].
 
-   [margin] and [max_indent] should satisfy
-   [1 < max_indent < margin < 1,000,000,010].
-
-   If the upper limit of [1,000,000,0010] is exceeded, even if the inequality
-   [max_indent < margin] is satisfied, the [max_indent] will not be set
-   correctly.
-
-   If [max_indent >= margin], [pp_set_geometry] raises an invalid argument
-   exception whereas [pp_safe_set_geometry] does nothing.
-
-   When [1 < max_indent < margin],
+   When [1 < max_indent < margin < pp_infinity],
    [pp_set_geometry ppf ~max_indent ~margin]
    is equivalent to
    [pp_set_margin ppf margin; pp_set_max_indent ppf max_indent];
    and avoids the subtly incorrect
    [pp_set_max_indent ppf max_indent; pp_set_margin ppf margin];
+
+   Outside of this domain, [pp_set_geometry] raises an invalid argument
+   exception whereas [pp_safe_set_geometry] does nothing.
 
    @since 4.08
 *)
