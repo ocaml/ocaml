@@ -236,13 +236,13 @@ val exists2 : f:('a -> 'b -> bool) -> 'a array -> 'b array -> bool
 
 val mem : 'a -> set:'a array -> bool
 (** [mem a ~set] is true if and only if [a] is structurally equal
-    to an element of [l] (i.e. there is an [x] in [l] such that
+    to an element of [set] (i.e. there is an [x] in [set] such that
     [compare a x = 0]).
     @since 4.03 *)
 
 val memq : 'a -> set:'a array -> bool
 (** Same as {!mem}, but uses physical equality
-   instead of structural equality to compare list elements.
+   instead of structural equality to compare array elements.
    @since 4.03 *)
 
 val find_opt : f:('a -> bool) -> 'a array -> 'a option
