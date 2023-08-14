@@ -101,6 +101,10 @@ Working version
 - #11911, #12381: Restore statmemprof functionality in part
    (API changes in Gc.Memprof). (Nick Barnes)
 
+- #12430: Simplify dynamic bytecode loading in Meta.reify_bytecode
+  (Stephen Dolan, review by Sébastien Hinderer, Vincent Laviron and Xavier
+   Leroy)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.

@@ -1239,20 +1239,23 @@ let reset () =
   compunit_name := "";
   Stack.clear functions_to_compile
 
-let compile_implementation modulename expr =
+let compile_gen ?modulename ~init_stack expr =
   reset ();
-  compunit_name := modulename;
+  begin match modulename with
+  | Some name -> compunit_name := name
+  | None -> ()
+  end;
   Fun.protect ~finally:reset (fun () ->
-  let init_code = comp_block empty_env expr 0 [] in
+  let init_code = comp_block empty_env expr init_stack [] in
   if Stack.length functions_to_compile > 0 then begin
     let lbl_init = new_label() in
-    Kbranch lbl_init :: comp_remainder (Klabel lbl_init :: init_code)
+    (Kbranch lbl_init :: comp_remainder (Klabel lbl_init :: init_code)),
+    false
   end else
-    init_code)
+    init_code, true)
+
+let compile_implementation modulename expr =
+  fst (compile_gen ~modulename ~init_stack:0 expr)
 
 let compile_phrase expr =
-  reset ();
-  Fun.protect ~finally:reset (fun () ->
-  let init_code = comp_block empty_env expr 1 [Kreturn 1] in
-  let fun_code = comp_remainder [] in
-  (init_code, fun_code))
+  compile_gen ~init_stack:1 expr
