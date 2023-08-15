@@ -738,23 +738,21 @@ END_FUNCTION(caml_reperform)
 FUNCTION(caml_resume)
     /*  a0: new fiber
         a1: fun
-        a2: arg */
+        a2: arg
+        a3: last_fiber */
         addi    a0, a0, -1 /* a0 = Ptr_val(a0) */
-        ld      a3, 0(a1)  /* code pointer */
+        ld      a4, 0(a1)  /* code pointer */
     /* Check if stack null, then already used */
-        beqz    a0, 2f
-    /* Find end of list of stacks (put in t2) */
-        mv      TMP, a0
-1:      ld      t2, Stack_handler(TMP)
-        ld      TMP, Handler_parent(t2)
-        bnez    TMP, 1b
+        beqz    a0, 1f
     /* Add current stack to the end */
+        addi    a3, a3, -1 /* a3 = Ptr_val(a3) */
+        ld      t2, Stack_handler(a3)
         ld      t3, Caml_state(current_stack)
         sd      t3, Handler_parent(t2)
         SWITCH_OCAML_STACKS t3, a0
         mv      a0, a2
-        jr      a3
-2:      la      ADDITIONAL_ARG, caml_raise_continuation_already_resumed
+        jr      a4
+1:      la      ADDITIONAL_ARG, caml_raise_continuation_already_resumed
         j       L(caml_c_call)
 END_FUNCTION(caml_resume)
 

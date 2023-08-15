@@ -779,19 +779,14 @@ ENDFUNCTION(G(caml_reperform))
 
 FUNCTION(G(caml_resume))
 CFI_STARTPROC
-    /* %r2 -> new fiber, %r3 -> fun, %r4 -> arg */
+    /* %r2 -> new fiber, %r3 -> fun, %r4 -> arg, %r5 -> last_fiber */
         lay     %r2, -1(%r2)  /* %r2 (new stack) = Ptr_val(%r2) */
-        lg      %r5,  0(%r3)  /* code pointer */
+        lg      %r6,  0(%r3)  /* code pointer */
     /*  check if stack null, then already used */
         cgfi    %r2, 0
-        jz      LBL(caml_resume_2)
-    /* Find end of list of stacks and add current */
-        lgr     TMP, %r2
-LBL(caml_resume_1):
-        lg      %r8, Stack_handler(TMP)
-        lg      TMP, Handler_parent(%r8)
-        cgfi    TMP, 0
-        jnz     LBL(caml_resume_1)
+        jz      LBL(caml_resume_1)
+    /* Add current stack to the end */
+        lg      %r8, (Stack_handler-1)(%r5)
         lg      %r9, Caml_state(current_stack)
         stg     %r9, Handler_parent(%r8)
      /* Need to update the oldest saved frame pointer here as the current fiber
@@ -800,7 +795,7 @@ LBL(caml_resume_1):
         SWITCH_OCAML_STACKS(%r9, %r2)
         lgr     %r2, %r4
         br      %r5
-LBL(caml_resume_2):
+LBL(caml_resume_1):
         LEA_VAR(caml_raise_continuation_already_resumed, ADDITIONAL_ARG)
         brcl    15, GCALL(caml_c_call)
 CFI_ENDPROC

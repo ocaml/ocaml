@@ -810,23 +810,21 @@ FUNCTION(caml_resume)
 CFI_STARTPROC
     /*  x0: new fiber
         x1: fun
-        x2: arg */
+        x2: arg
+        x3: last_fiber */
         sub     x0, x0, 1 /* x0 = Ptr_val(x0) */
-        ldr     x3, [x1]  /* code pointer */
+        ldr     x4, [x1]  /* code pointer */
     /* Check if stack null, then already used */
-        cbz     x0, 2f
-    /* Find end of list of stacks (put in x8) */
-        mov     TMP, x0
-1:      ldr     x8, Stack_handler(TMP)
-        ldr     TMP, Handler_parent(x8)
-        cbnz    TMP, 1b
+        cbz     x0, 1f
     /* Add current stack to the end */
+        sub     x3, x3, 1 /* x3 = Ptr_val(x3) */
+        ldr     x8, Stack_handler(x3)
         ldr     x9, Caml_state(current_stack)
         str     x9, Handler_parent(x8)
         SWITCH_OCAML_STACKS x9, x0
         mov     x0, x2
-        br      x3
-2:      ADDRGLOBAL(ADDITIONAL_ARG, caml_raise_continuation_already_resumed)
+        br      x4
+1:      ADDRGLOBAL(ADDITIONAL_ARG, caml_raise_continuation_already_resumed)
         b       G(caml_c_call)
         CFI_ENDPROC
         END_FUNCTION(caml_resume)
