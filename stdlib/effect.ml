@@ -36,15 +36,16 @@ let _ = Callback.register_exception "Effect.Unhandled"
 let _ = Callback.register_exception "Effect.Continuation_already_resumed"
           Continuation_already_resumed
 
-type ('a, 'b) stack
+type ('a, 'b) stack [@@immediate]
+type last_fiber [@@immediate]
 
-external resume : ('a, 'b) stack -> ('c -> 'a) -> 'c -> 'b = "%resume"
+external resume :
+  ('a, 'b) stack -> ('c -> 'a) -> 'c -> last_fiber -> 'b = "%resume"
 external runstack : ('a, 'b) stack -> ('c -> 'a) -> 'c -> 'b = "%runstack"
 
 module Deep = struct
 
   type ('a,'b) continuation
-  type last_fiber
 
   external take_cont_noexc : ('a, 'b) continuation -> ('a, 'b) stack =
     "caml_continuation_use_noexc" [@@noalloc]
@@ -53,13 +54,19 @@ module Deep = struct
     (exn -> 'b) ->
     ('c t -> ('c, 'b) continuation -> last_fiber -> 'b) ->
     ('a, 'b) stack = "caml_alloc_stack"
+  external cont_last_fiber : ('a, 'b) continuation -> last_fiber = "%field1"
+  external cont_set_last_fiber :
+    ('a, 'b) continuation -> last_fiber -> unit = "%setfield1"
 
-  let continue k v = resume (take_cont_noexc k) (fun x -> x) v
+  let continue k v =
+    resume (take_cont_noexc k) (fun x -> x) v (cont_last_fiber k)
 
-  let discontinue k e = resume (take_cont_noexc k) (fun e -> raise e) e
+  let discontinue k e =
+    resume (take_cont_noexc k) (fun e -> raise e) e (cont_last_fiber k)
 
-  let discontinue_with_backtrace k e bt = resume (take_cont_noexc k) (fun e ->
-    Printexc.raise_with_backtrace e bt) e
+  let discontinue_with_backtrace k e bt =
+    resume (take_cont_noexc k) (fun e -> Printexc.raise_with_backtrace e bt)
+      e (cont_last_fiber k)
 
   type ('a,'b) handler =
     { retc: 'a -> 'b;
@@ -72,7 +79,9 @@ module Deep = struct
   let match_with comp arg handler =
     let effc eff k last_fiber =
       match handler.effc eff with
-      | Some f -> f k
+      | Some f ->
+          cont_set_last_fiber k last_fiber;
+          f k
       | None -> reperform eff k last_fiber
     in
     let s = alloc_stack handler.retc handler.exnc effc in
@@ -84,7 +93,9 @@ module Deep = struct
   let try_with comp arg handler =
     let effc' eff k last_fiber =
       match handler.effc eff with
-      | Some f -> f k
+      | Some f ->
+          cont_set_last_fiber k last_fiber;
+          f k
       | None -> reperform eff k last_fiber
     in
     let s = alloc_stack (fun x -> x) (fun e -> raise e) effc' in
@@ -98,7 +109,6 @@ end
 module Shallow = struct
 
   type ('a,'b) continuation
-  type last_fiber
 
   external alloc_stack :
     ('a -> 'b) ->
@@ -106,15 +116,20 @@ module Shallow = struct
     ('c t -> ('c, 'b) continuation -> last_fiber -> 'b) ->
     ('a, 'b) stack = "caml_alloc_stack"
 
+  external cont_last_fiber : ('a, 'b) continuation -> last_fiber = "%field1"
+  external cont_set_last_fiber :
+    ('a, 'b) continuation -> last_fiber -> unit = "%setfield1"
 
   let fiber : type a b. (a -> b) -> (a, b) continuation = fun f ->
     let module M = struct type _ t += Initial_setup__ : a t end in
     let exception E of (a,b) continuation in
     let f' () = f (perform M.Initial_setup__) in
     let error _ = failwith "impossible" in
-    let effc eff k _last_fiber =
+    let effc eff k last_fiber =
       match eff with
-      | M.Initial_setup__ -> raise_notrace (E k)
+      | M.Initial_setup__ ->
+          cont_set_last_fiber k last_fiber;
+          raise_notrace (E k)
       | _ -> error ()
     in
     let s = alloc_stack error error effc in
@@ -140,11 +155,14 @@ module Shallow = struct
   let continue_gen k resume_fun v handler =
     let effc eff k last_fiber =
       match handler.effc eff with
-      | Some f -> f k
+      | Some f ->
+          cont_set_last_fiber k last_fiber;
+          f k
       | None -> reperform eff k last_fiber
     in
+    let last_fiber = cont_last_fiber k in
     let stack = update_handler k handler.retc handler.exnc effc in
-    resume stack resume_fun v
+    resume stack resume_fun v last_fiber
 
   let continue_with k v handler =
     continue_gen k (fun x -> x) v handler
