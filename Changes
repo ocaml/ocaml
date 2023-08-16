@@ -592,7 +592,7 @@ Some of those changes will benefit all OCaml packages.
 
 ### Type system:
 
-* #6941, #11187: prohibit using classes through recursive modules
+* #6941, #11187, #12483: prohibit using classes through recursive modules
   inheriting or including a class belonging to a mutually-recursive module
   would previous behave incorrectly, and now results in a clean error.
   (Leo White, review by Gabriel Scherer and Florian Angeletti)
