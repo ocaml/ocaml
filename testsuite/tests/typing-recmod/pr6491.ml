@@ -26,7 +26,7 @@ Line 2, characters 29-34:
 Error: Illegal recursive module reference
 |}]
 
-(* PR 6491 *)
+(* #12480 *)
 module rec TypedGui : sig
   class type untyped =
     object
