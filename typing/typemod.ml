@@ -899,7 +899,7 @@ and approx_sig env ssg =
               (extract_sig env smty.pmty_loc mty) env in
           sg @ approx_sig newenv srem
       | Psig_class sdecls | Psig_class_type sdecls ->
-          let decls = Typeclass.approx_class_declarations env sdecls in
+          let decls, env = Typeclass.approx_class_declarations env sdecls in
           let rem = approx_sig env srem in
           map_rec (fun rs decl ->
             let open Typeclass in [

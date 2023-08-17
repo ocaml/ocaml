@@ -1966,7 +1966,7 @@ let approx_class sdecl =
 let approx_class_declarations env sdecls =
   let decls, env = class_type_declarations env (List.map approx_class sdecls) in
   List.iter (check_recmod_decl env) sdecls;
-  decls
+  decls, env
 
 (*******************************)
 

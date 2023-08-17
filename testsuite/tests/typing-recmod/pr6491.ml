@@ -25,3 +25,19 @@ Line 2, characters 29-34:
                                  ^^^^^
 Error: Illegal recursive module reference
 |}]
+
+(* #12480 *)
+module rec TypedGui : sig
+  class type untyped =
+    object
+    end
+
+  class type t =
+    object
+      inherit untyped
+    end
+end = TypedGui
+[%%expect{|
+module rec TypedGui :
+  sig class type untyped = object  end class type t = object  end end
+|}]
