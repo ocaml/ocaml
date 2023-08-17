@@ -3301,7 +3301,10 @@ label_declarations:
 label_declaration:
     mutable_flag mkrhs(label) COLON poly_type_no_attr attributes
       { let info = symbol_info $endpos in
-        Type.field $2 $4 ~mut:$1 ~attrs:$5 ~loc:(make_loc $sloc) ~info }
+        Type.field $2 (Some $4) ~mut:$1 ~attrs:$5 ~loc:(make_loc $sloc) ~info }
+  | mutable_flag mkrhs(label) attributes
+      { let info = symbol_info $endpos in
+        Type.field $2 None ~mut:$1 ~attrs:$3 ~loc:(make_loc $sloc) ~info }
 ;
 label_declaration_semi:
     mutable_flag mkrhs(label) COLON poly_type_no_attr attributes SEMI attributes
@@ -3310,7 +3313,14 @@ label_declaration_semi:
           | Some _ as info_before_semi -> info_before_semi
           | None -> symbol_info $endpos
        in
-       Type.field $2 $4 ~mut:$1 ~attrs:($5 @ $7) ~loc:(make_loc $sloc) ~info }
+       Type.field $2 (Some $4) ~mut:$1 ~attrs:($5 @ $7) ~loc:(make_loc $sloc) ~info }
+  | mutable_flag mkrhs(label) attributes SEMI attributes
+      { let info =
+          match rhs_info $endpos($5) with
+          | Some _ as info_before_semi -> info_before_semi
+          | None -> symbol_info $endpos
+       in
+       Type.field $2 None ~mut:$1 ~attrs:($3 @ $5) ~loc:(make_loc $sloc) ~info }
 ;
 
 /* Type Extensions */

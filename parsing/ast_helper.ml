@@ -545,6 +545,17 @@ module Type = struct
 
   let field ?(loc = !default_loc) ?(attrs = []) ?(info = empty_info)
         ?(mut = Immutable) name typ =
+          let typ = match typ with
+          | Some typ -> typ
+          | None ->
+              {
+                ptyp_desc = Ptyp_var name.txt
+                  ; ptyp_loc = name.loc
+                  ; ptyp_loc_stack = []
+                  ; ptyp_attributes = []
+              }
+
+              in
     {
      pld_name = name;
      pld_mutable = mut;

@@ -253,7 +253,7 @@ let label_declaration sub ld =
   Type.field ~loc ~attrs
     ~mut:ld.ld_mutable
     (map_loc sub ld.ld_name)
-    (sub.typ sub ld.ld_type)
+    (Some (sub.typ sub ld.ld_type))
 
 let type_extension sub tyext =
   let attrs = sub.attributes sub tyext.tyext_attributes in

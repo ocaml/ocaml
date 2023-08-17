@@ -762,7 +762,7 @@ let default_mapper =
       (fun this {pld_name; pld_type; pld_loc; pld_mutable; pld_attributes} ->
          Type.field
            (map_loc this pld_name)
-           (this.typ this pld_type)
+           (Some (this.typ this pld_type))
            ~mut:pld_mutable
            ~loc:(this.location this pld_loc)
            ~attrs:(this.attributes this pld_attributes)

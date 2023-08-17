@@ -7473,3 +7473,13 @@ module M = struct
     inherit \#val \#let as \#mutable
   end
 end
+
+(* record type-def punning *)
+type foo
+type bar
+type foobar = { foo; bar }
+
+type this
+type that = { foo: foo; bar: int; this }
+
+type m = A of { foo; this }
