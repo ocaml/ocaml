@@ -99,6 +99,22 @@ static DWORD do_create_process_native(wchar_t * exefile, wchar_t * cmdline,
   return err;
 }
 
+void caml_win32_copy_env(value env, wchar_t * wenv)
+{
+  if (Is_some(env)) {
+    env = Some_val(env);
+    size =
+      caml_win32_multi_byte_to_wide_char(String_val(env),
+                                         caml_string_length(env), NULL, 0);
+    wenv = caml_stat_alloc((size + 1)*sizeof(wchar_t));
+    caml_win32_multi_byte_to_wide_char(String_val(env),
+                                       caml_string_length(env), wenv, size);
+    wenv[size] = 0;
+  } else {
+    wenv = NULL;
+  }
+}
+
 value caml_unix_create_process_native(value cmd, value cmdline, value env,
                                  value fd1, value fd2, value fd3)
 {
@@ -117,18 +133,7 @@ value caml_unix_create_process_native(value cmd, value cmdline, value env,
   caml_stat_free(wcmd);
   wcmdline = caml_stat_strdup_to_utf16(String_val(cmdline));
 
-  if (Is_some(env)) {
-    env = Some_val(env);
-    size =
-      caml_win32_multi_byte_to_wide_char(String_val(env),
-                                         caml_string_length(env), NULL, 0);
-    wenv = caml_stat_alloc((size + 1)*sizeof(wchar_t));
-    caml_win32_multi_byte_to_wide_char(String_val(env),
-                                       caml_string_length(env), wenv, size);
-    wenv[size] = 0;
-  } else {
-    wenv = NULL;
-  }
+  caml_win32_copy_env(env, wenv);
 
   err =
     do_create_process_native(exefile, wcmdline, wenv, Handle_val(fd1),

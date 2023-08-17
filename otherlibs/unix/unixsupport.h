@@ -93,6 +93,8 @@ extern void caml_win32_maperr(DWORD errcode);
  */
 #define CAML_NT_EPOCH_100ns_TICKS 116444736000000000ULL
 
+void caml_win32_copy_env(value env, wchar_t * wenv)
+
 #endif /* _WIN32 */
 
 #define Nothing ((value) 0)
