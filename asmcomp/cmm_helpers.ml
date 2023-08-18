@@ -816,7 +816,7 @@ let call_cached_method obj tag cache pos args dbg =
 
 (* Allocation *)
 
-let make_alloc_generic set_fn dbg tag wordsize args =
+let make_alloc_generic ~strict_init set_fn dbg tag wordsize args =
   if wordsize <= Config.max_young_wosize then
     Cop(Calloc, Cconst_natint(block_header tag wordsize, dbg) :: args, dbg)
   else begin
@@ -828,29 +828,33 @@ let make_alloc_generic set_fn dbg tag wordsize args =
             Csequence(set_fn (Cvar id) (Cconst_int (idx, dbg)) e1 dbg,
                       fill_fields (idx + 2) el)
       in
+      let alloc_function =
+        if strict_init then "caml_alloc_shr_check_gc" else "caml_alloc"
+      in
       Clet(VP.create id,
-           Cop(Cextcall("caml_alloc_shr_check_gc", typ_val, [], true),
+           Cop(Cextcall(alloc_function, typ_val, [], true),
                [Cconst_int (wordsize, dbg); Cconst_int (tag, dbg)], dbg),
            fill_fields 1 args)
     in
-    let rec bind_args simple_args_rev = function
+    let rec bind_args_then_alloc simple_args_rev = function
       | [] -> do_alloc (List.rev simple_args_rev)
       | arg :: args ->
           bind_load "alloc_arg" arg
-            (fun arg -> bind_args (arg :: simple_args_rev) args)
+            (fun arg -> bind_args_then_alloc (arg :: simple_args_rev) args)
     in
-    bind_args [] args
+    if strict_init then bind_args_then_alloc [] args else do_alloc args
   end
 
-let make_alloc dbg tag args =
+let make_alloc ~strict_init dbg tag args =
   let addr_array_init arr ofs newval dbg =
     Cop(Cextcall("caml_initialize", typ_void, [], false),
         [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
   in
-  make_alloc_generic addr_array_init dbg tag (List.length args) args
+  make_alloc_generic
+    ~strict_init addr_array_init dbg tag (List.length args) args
 
 let make_float_alloc dbg tag args =
-  make_alloc_generic float_array_set dbg tag
+  make_alloc_generic ~strict_init:false float_array_set dbg tag
                      (List.length args * size_float / size_addr) args
 
 (* Bounds checking *)
