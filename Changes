@@ -299,6 +299,10 @@ Working version
   `Unix.create_process` (the one used when `posix_spawnp` is unavailable)
   (Xavier Leroy, report by Chris Vine, review by Nicolás Ojeda Bär)
 
+- #12481, #12485: Fix issue with large allocations leaking naked pointers
+  (Vincent Laviron, report by Andrey Popp, review by Xavier Leroy and
+   Gabriel Scherer, with help from KC Sivaramakrishnan)
+
 
 OCaml 5.1.0 release branch
 --------------------------
