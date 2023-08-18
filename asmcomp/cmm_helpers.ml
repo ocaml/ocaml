@@ -820,6 +820,23 @@ let make_alloc_generic ~strict_init set_fn dbg tag wordsize args =
   if wordsize <= Config.max_young_wosize then
     Cop(Calloc, Cconst_natint(block_header tag wordsize, dbg) :: args, dbg)
   else begin
+    (* Note on [strict_init]:
+       If we're not in the strict case, we generate a call to [caml_alloc],
+       which returns a GC-safe block that we can then initialize field by field,
+       computing the field expressions right when needed.
+       Assuming that the set of free variables of the field expressions is
+       smaller than the number of fields (which is assumed to be the most common
+       case for large allocations), this reduces the number of registers to keep
+       live across the allocation function, improving compile times and even
+       execution times.
+       The strict case, however, is for allocations where it is not safe to
+       expose the result to the GC before it has been initialized properly.
+       So we need to use [caml_alloc_shr_check_gc], which will check for urgent
+       GC before allocating the block instead of after, and we need to make
+       sure that no GC can occur between the allocation and the initialization.
+       This is done by binding the field expressions to variables if they're not
+       simple enough, then allocating the block, then patching it using
+       constructions that are never going to trigger a GC. *)
     let do_alloc args =
       let id = V.create_local "*alloc*" in
       let rec fill_fields idx = function
