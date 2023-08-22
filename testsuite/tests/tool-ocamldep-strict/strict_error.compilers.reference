@@ -1,0 +1,8 @@
+File "doesnotexist.ml", line 1:
+Error: I/O error: doesnotexist.ml: No such file or directory
+a.cmo : \
+    dep.cmo
+a.cmx : \
+    dep.cmx
+doesnotexist.cmo :
+doesnotexist.cmx :

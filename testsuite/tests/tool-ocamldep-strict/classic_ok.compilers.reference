@@ -1,0 +1,4 @@
+a.cmo : \
+    dep.cmo
+a.cmx : \
+    dep.cmx

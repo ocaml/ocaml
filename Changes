@@ -719,6 +719,11 @@ Some of those changes will benefit all OCaml packages.
 - #12165: ocamldoc, use standard doctype to avoid quirk mode.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #11593: ocamldep: add a -strict flag to fail when an input file does not
+  exist.
+  (Etienne Millon, Mark Shinwell, review by Nicolás Ojeda Bär and Sébastien
+  Hinderer)
+
 ### Manual and documentation:
 
 - #11476: Add examples in documentation of Hashtbl, Queue, Atomic, Format
