@@ -404,7 +404,9 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
      excluding the terminating '\0'. */
   n = vsnprintf(buf, sizeof(buf), format, args);
   va_end(args);
-  if (n < sizeof(buf)) {
+  if (n < 0) {
+    caml_raise_out_of_memory();
+  } else if (n < sizeof(buf)) {
     /* All output characters were written to buf, including the
        terminating '\0'.  Allocate a Caml string with length "n"
        as computed by vsnprintf, and copy the output of vsnprintf into it. */
