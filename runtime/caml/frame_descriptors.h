@@ -149,7 +149,9 @@ caml_frame_descrs caml_get_frame_descrs(void);
 frame_descr* caml_find_frame_descr(caml_frame_descrs fds, uintnat pc);
 
 
-frame_descr * caml_next_frame_descriptor
+/* Returns the next frame descriptor (or NULL if none is available),
+   and updates *pc and *sp to point to the following one.  */
+frame_descr *caml_next_frame_descriptor
     (caml_frame_descrs fds, uintnat * pc, char ** sp, struct stack_info* stack);
 
 #endif /* CAML_INTERNALS */
