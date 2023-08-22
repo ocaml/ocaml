@@ -205,6 +205,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #12447: Remove 32-bit targets from X86_proc.system
+  (Masanori Ogino, review by David Allsopp)
+
 - #12216, #12248: Prevent reordering of atomic loads during instruction
   scheduling.  This is for reference, as instruction scheduling is currently
   unused in OCaml 5.
