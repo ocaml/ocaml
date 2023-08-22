@@ -130,6 +130,9 @@ Working version
    Guillaume Munch-Maccagnoni, KC Sivaramakrishnan, Stefan Muenzel,
    Xavier Leroy)
 
+- #12XXX: Add `Stack.of_list` and `Stack.to_list`.
+  (Glen Mével, review by XXX)
+
 ### Other libraries:
 
 - #12213: Dynlink library, improve legibility of error messages
