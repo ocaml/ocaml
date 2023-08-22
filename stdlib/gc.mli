@@ -164,10 +164,17 @@ type control =
        Default: 1024k. *)
 
     allocation_policy : int;
-    (** Ignored.
+    (** The policy used for allocating in the major heap.
 
-        In OCaml versions < 5.0, this was used to set the allocation policy used
-        in the major heap.
+        This option is ignored in OCaml 5.x.
+
+        Prior to OCaml 5.0, possible values were 0, 1 and 2.
+
+        - 0 was the next-fit policy
+
+        - 1 was the first-fit policy (since OCaml 3.11)
+
+        - 2 was the best-fit policy (since OCaml 4.10)
 
         @since 3.11 *)
 
