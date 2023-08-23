@@ -61,18 +61,29 @@ are printed on standard output, errors on standard error. End-of-file
 on standard input terminates "ocaml" (see also the "#quit" directive
 in section~\ref{s:toplevel-directives}).
 
-On start-up (before the first phrase is read), if the file
-".ocamlinit" exists in the current directory,
-its contents are read as a sequence of OCaml phrases
-and executed as per the "#use" directive
-described in section~\ref{s:toplevel-directives}.
+On start-up (before the first phrase is read), the contents of initialization
+file are read as a sequence of OCaml phrases and executed as per the "#use"
+directive described in section~\ref{s:toplevel-directives}.
 The evaluation outcode for each phrase are not displayed.
-If the current directory does not contain an ".ocamlinit" file,
-the file "XDG_CONFIG_HOME/ocaml/init.ml" is looked up according
-to the XDG base directory specification and used instead (on Windows
-this is skipped). If that file doesn't exist then an [.ocamlinit] file
-in the users' home directory (determined via environment variable "HOME") is
-used if existing.
+
+The initialization file is the first found of:
+\begin{enumerate}
+  \item ".ocamlinit" in the current directory;
+  \item "XDG_CONFIG_HOME/ocaml/init.ml", if "XDG_CONFIG_HOME" is an absolute
+    path;
+  \item otherwise, on Unix, "HOME/ocaml/init.ml" or, on Windows,
+    "ocaml\\init.ml" under "LocalAppData"
+    (e.g. "C:\\Users\\Bactrian\\AppData\\Local\\ocaml\\init.ml");
+  \item "ocaml/init.ml" under any of the absolute paths in "XDG_CONFIG_DIRS".
+    Paths in "XDG_CONFIG_DIRS" are colon-delimited on Unix, and
+    semicolon-delimited on Windows;
+  \item if "XDG_CONFIG_DIRS" contained no absolute paths,
+    "/usr/xdg/ocaml/init.ml" on Unix or, "ocaml\\init.ml" under any of
+    "LocalAppData" (e.g. "C:\\Users\\Bactrian\\AppData\\Local"),
+    "RoamingAppData" (e.g. "C:\\Users\\Bactrian\\AppData\\Roaming"), or
+    "ProgramData" (e.g. "C:\\ProgramData") on Windows;
+  \item "HOME/.ocamlinit", if "HOME" is non-empty;
+\end{enumerate}
 
 The toplevel system does not perform line editing, but it can
 easily be used in conjunction with an external line editor such as
@@ -136,8 +147,8 @@ attempts to underline visually the location of the error. It
 consults the "TERM" variable to determines the type of output terminal
 and look up its capabilities in the terminal database.
 
-\item["XDG_CONFIG_HOME", "HOME"]
-".ocamlinit" lookup procedure (see above).
+\item["XDG_CONFIG_HOME", "HOME", "XDG_CONFIG_DIRS"]
+Initialization file lookup procedure (see above).
 \end{options}
 \end{unix}
 

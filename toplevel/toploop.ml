@@ -194,32 +194,76 @@ let split_path =
   else
     String.split_on_char ':'
 
+external windows_xdg_defaults : unit -> string list = "caml_xdg_defaults"
+
 let find_ocamlinit () =
   let ocamlinit = ".ocamlinit" in
+  (* 1. .ocamlinit in the current directory *)
   if Sys.file_exists ocamlinit then Some ocamlinit else
-  let getenv var = match Sys.getenv var with
-    | exception Not_found -> None | "" -> None | v -> Some v
-  in
-  let exists_in_dir dir file = match dir with
-    | None -> None
-    | Some dir ->
-        let file = Filename.concat dir file in
-        if Sys.file_exists file then Some file else None
+  let init_ml = Filename.concat "ocaml" "init.ml" in
+  let getenv var = match Sys.getenv_opt var with Some "" -> None | v -> v in
+  let is_absolute = Fun.negate Filename.is_relative in
+  let exists_in_dir ~file dir =
+    let file = Filename.concat dir file in
+    if Sys.file_exists file then Some file else None
   in
   let home_dir () = getenv "HOME" in
-  let config_dir () =
-    if Sys.win32 then None else
+  let windows_xdg_defaults = Lazy.from_fun windows_xdg_defaults in
+  (* 2. ocaml/init.ml under $XDG_CONFIG_HOME (or $HOME/.config on Unix, if
+        $XDG_CONFIG_HOME is unset, empty or not an absolute path) *)
+  let check_xdg_config_home () =
     match getenv "XDG_CONFIG_HOME" with
-    | Some _ as v -> v
-    | None ->
-        match home_dir () with
-        | None -> None
-        | Some dir -> Some (Filename.concat dir ".config")
+    | Some dir when is_absolute dir ->
+        exists_in_dir ~file:init_ml dir
+    | _ ->
+        let default =
+          if Sys.win32 then
+            (* The first entry of the list is FOLDERID_LocalAppData (exposed by
+               default in the process environment as %LOCALAPPDATA%) *)
+            match Lazy.force windows_xdg_defaults with
+            | dir::_ -> Some dir
+            | [] -> None
+          else
+            Option.map (fun dir -> Filename.concat dir ".config") (home_dir ())
+        in
+        Option.bind default (exists_in_dir ~file:init_ml)
   in
-  let init_ml = Filename.concat "ocaml" "init.ml" in
-  match exists_in_dir (config_dir ()) init_ml with
-  | Some _ as v -> v
-  | None -> exists_in_dir (home_dir ()) ocamlinit
+  (* 3. ocaml/init.ml under any of $XDG_CONFIG_DIRS (or /etc/xdg on Unix, or
+        %LOCALAPPDATA%, %APPDATA%, %PROGRAMDATA% on Windows) *)
+  let check_xdg_config_dirs () =
+    let dirs_from_env =
+      match getenv "XDG_CONFIG_DIRS" with
+      | Some entry -> List.filter is_absolute (split_path entry)
+      | None -> []
+    in
+    let search =
+      if dirs_from_env = [] then
+        if Sys.win32 then
+          (* There's a non-zero chance that a user of Cygwin, etc. sets
+             XDG_CONFIG_HOME for their Cygwin installation and then starts
+             native Windows `ocaml.exe` from within that installation. In this
+             scenario, XDG_CONFIG_HOME is very unlikely to be a valid path (as
+             Cygwin won't have translated it from Unix notation). To mitigate
+             this, the default value we take for XDG_CONFIG_DIRS on Windows
+             includes the default for XDG_CONFIG_HOME again. If the Cygwin user
+             has set both XDG_CONFIG_HOME and XDG_CONFIG_DIRS then we can't help
+             them! *)
+          Lazy.force windows_xdg_defaults
+        else
+          ["/etc/xdg"]
+      else
+        dirs_from_env
+    in
+    List.find_map (exists_in_dir ~file:init_ml) search
+  in
+  (* 4. .ocamlinit in $HOME *)
+  let check_home () =
+    Option.bind (home_dir ()) (exists_in_dir ~file:ocamlinit)
+  in
+  List.find_map (fun f -> f ())
+                [check_xdg_config_home;
+                 check_xdg_config_dirs;
+                 check_home]
 
 let load_ocamlinit ppf =
   if !Clflags.noinit then ()

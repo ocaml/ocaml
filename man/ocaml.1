@@ -318,15 +318,29 @@ Display a short usage summary and exit.
 When
 .BR ocaml (1)
 is invoked, it will read phrases from an initialization file before
-giving control to the user. The default file is
-.B .ocamlinit
-in the current directory if it exists, otherwise
-.B XDG_CONFIG_HOME/ocaml/init.ml
-according to the XDG base directory specification lookup if it exists (on
-Windows this is skipped), otherwise
-.B .ocamlinit
-in the user's home directory
-.RB ( HOME " variable)."
+giving control to the user. The file read is the first found of:
+.IP 1.
+\fB.ocamlinit\fP in the current directory;
+.IP 2.
+\fBXDG_CONFIG_HOME/ocaml/init.ml\fP, if \fBXDG_CONFIG_HOME\fP is an absolute
+path;
+.IP 3.
+otherwise, on Unix, \fBHOME/ocaml/init.ml\fP or, on Windows,
+\fBocaml\\init.ml\fP under \fBLocalAppData\fP
+(e.g. \fBC:\\Users\\Bactrian\\AppData\\Local\\ocaml\\init.ml\fP);
+.IP 4.
+\fBocaml/init.ml\fP under any of the absolute paths in \fBXDG_CONFIG_DIRS\fP.
+Paths in \fBXDG_CONFIG_DIRS\fP are colon-delimited on Unix, and
+semicolon-delimited on Windows;
+.IP 5.
+if \fBXDG_CONFIG_DIRS\fP contained no absolute paths,
+\fB/usr/xdg/ocaml/init.ml\fP on Unix or, \fBocaml\\init.ml\fP under any of
+\fBLocalAppData\fP (e.g. \fBC:\\Users\\Bactrian\\AppData\\Local\fP),
+\fBRoamingAppData\fP (e.g. \fBC:\\Users\\Bactrian\\AppData\\Roaming\fP), or
+\fBProgramData\fP (e.g. \fBC:\\ProgramData\fP) on Windows;
+.IP 6.
+\fBHOME/.ocamlinit\fP, if \fBHOME\fP is non-empty;
+
 You can specify a different initialization file
 by using the
 .BI \-init " file"
@@ -352,9 +366,10 @@ attempts to underline visually the location of the error. It
 consults the TERM variable to determines the type of output terminal
 and look up its capabilities in the terminal database.
 .TP
-.B XDG_CONFIG_HOME HOME
-.B .ocamlinit
-lookup procedure (see above).
+.B XDG_CONFIG_HOME HOME XDG_CONFIG_DIRS
+See
+.B INITIALIZATION FILE
+above.
 .SH SEE ALSO
 .BR ocamlc "(1), " ocamlopt "(1), " ocamlrun (1).
 .br

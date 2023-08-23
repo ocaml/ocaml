@@ -313,9 +313,24 @@ them to silently become direct dependencies.
 \top{%
 \item["-init" \var{file}]
 Load the given file instead of the default initialization file.
-The default file is ".ocamlinit" in the current directory if it
-exists, otherwise "XDG_CONFIG_HOME/ocaml/init.ml" or
-".ocamlinit" in the user's home directory.
+The default initialization file is the first found of:
+\begin{enumerate}
+  \item ".ocamlinit" in the current directory;
+  \item "XDG_CONFIG_HOME/ocaml/init.ml", if "XDG_CONFIG_HOME" is an absolute
+    path;
+  \item otherwise, on Unix, "HOME/ocaml/init.ml" or, on Windows,
+    "ocaml\\init.ml" under "LocalAppData"
+    (e.g. "C:\\Users\\Bactrian\\AppData\\Local\\ocaml\\init.ml");
+  \item "ocaml/init.ml" under any of the absolute paths in "XDG_CONFIG_DIRS".
+    Paths in "XDG_CONFIG_DIRS" are colon-delimited on Unix, and
+    semicolon-delimited on Windows;
+  \item if "XDG_CONFIG_DIRS" contained no absolute paths,
+    "/usr/xdg/ocaml/init.ml" on Unix or, "ocaml\\init.ml" under any of
+    "LocalAppData" (e.g. "C:\\Users\\Bactrian\\AppData\\Local"),
+    "RoamingAppData" (e.g. "C:\\Users\\Bactrian\\AppData\\Roaming"), or
+    "ProgramData" (e.g. "C:\\ProgramData") on Windows;
+  \item "HOME/.ocamlinit", if "HOME" is non-empty;
+\end{enumerate}
 }%top
 
 \notop{%
