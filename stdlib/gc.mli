@@ -157,8 +157,6 @@ type control =
        compaction is triggered at the end of each major GC cycle
        (this setting is intended for testing purposes only).
        If [max_overhead >= 1000000], compaction is never triggered.
-       If compaction is permanently disabled, it is strongly suggested
-       to set [allocation_policy] to 2.
        Default: 500. *)
 
     stack_limit : int;
@@ -167,37 +165,16 @@ type control =
 
     allocation_policy : int;
     (** The policy used for allocating in the major heap.
-        Possible values are 0, 1 and 2.
 
-        - 0 is the next-fit policy, which is usually fast but can
-          result in fragmentation, increasing memory consumption.
+        This option is ignored in OCaml 5.x.
 
-        - 1 is the first-fit policy, which avoids fragmentation but
-          has corner cases (in certain realistic workloads) where it
-          is sensibly slower.
+        Prior to OCaml 5.0, possible values were 0, 1 and 2.
 
-        - 2 is the best-fit policy, which is fast and avoids
-          fragmentation. In our experiments it is faster and uses less
-          memory than both next-fit and first-fit.
-          (since OCaml 4.10)
+        - 0 was the next-fit policy
 
-        The default is best-fit.
+        - 1 was the first-fit policy (since OCaml 3.11)
 
-        On one example that was known to be bad for next-fit and first-fit,
-        next-fit takes 28s using 855Mio of memory,
-        first-fit takes 47s using 566Mio of memory,
-        best-fit takes 27s using 545Mio of memory.
-
-        Note: If you change to next-fit, you may need to reduce
-        the [space_overhead] setting, for example using [80] instead
-        of the default [120] which is tuned for best-fit. Otherwise,
-        your program will need more memory.
-
-        Note: changing the allocation policy at run-time forces
-        a heap compaction, which is a lengthy operation unless the
-        heap is small (e.g. at the start of the program).
-
-        Default: 2.
+        - 2 was the best-fit policy (since OCaml 4.10)
 
         @since 3.11 *)
 
