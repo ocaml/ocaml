@@ -272,6 +272,9 @@ type function_attribute = {
   is_a_functor: bool;
   stub: bool;
   tmc_candidate: bool;
+  (* [may_fuse_arity] is true if [simplif.ml] is permitted to fuse arity, i.e.,
+     to perform the rewrite [fun x -> fun y -> e] to [fun x y -> e] *)
+  may_fuse_arity: bool;
 }
 
 type scoped_location = Debuginfo.Scoped_location.t

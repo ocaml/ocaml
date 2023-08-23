@@ -285,6 +285,7 @@ type function_attribute = {
   is_a_functor: bool;
   stub: bool;
   tmc_candidate: bool;
+  may_fuse_arity: bool;
 }
 
 type scoped_location = Debuginfo.Scoped_location.t
@@ -384,6 +385,15 @@ let default_function_attribute = {
   is_a_functor = false;
   stub = false;
   tmc_candidate = false;
+  (* Plain functions ([fun] and [function]) set [may_fuse_arity] to [false] so
+     that runtime arity matches syntactic arity in more situations.
+
+     Many things compile to functions without having a notion of syntactic arity
+     that survives typechecking, e.g. functors. Multi-arg functors are compiled
+     as nested unary functions, and rely on the arity fusion in simplif to make
+     them multi-argument. So, we keep arity fusion turned on by default for now.
+  *)
+  may_fuse_arity = true;
 }
 
 let default_stub_attribute =
