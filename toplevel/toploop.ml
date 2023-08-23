@@ -145,6 +145,55 @@ let _ =
   Sys.interactive := true;
   Topeval.init ()
 
+(* Split a PATH-style variable, Windows-style. Entries are separated by
+   semicolons. Sections of entries may be double-quoted (which allows
+   semicolons in filenames to be quoted). The double-quote characters are
+   stripped (i.e. [f"o"o = foo]).
+   The Windows behaviour is sparsely documented: the primary source is the
+   comment from 1989 at the top of env/getpath.cpp in the Universal C Runtime.
+   See also https://devblogs.microsoft.com/oldnewthing/20060929-06/?p=29533 *)
+let split_path_win32 path =
+  (* Buffer for storing the current segment being scanned *)
+  let buf = Buffer.create 256 in
+  let get_contents () =
+    let s = Buffer.contents buf in
+    Buffer.clear buf;
+    s
+  in
+  let add_segment segment_begin i =
+    Buffer.add_substring buf path segment_begin (i - segment_begin)
+  in
+  let len = String.length path in
+  let[@tail_mod_cons] rec parse segment_begin terminator i =
+    if i >= len then
+      (* Done - return the last entry *)
+      [get_contents (add_segment segment_begin i)]
+    else
+      let ch = path.[i] in
+      (* terminator is either ';' or '"' *)
+      if ch = terminator then begin
+        add_segment segment_begin i;
+        if ch = ';' then
+          (* Return this entry and begin scanning the next *)
+          get_contents () :: parse (succ i) ';' (succ i)
+        else
+          (* Finished scanning '".."' so continue scanning this entry *)
+          parse (succ i) ';' (succ i)
+      end else if ch = '"' then begin
+        (* Encountered the beginning of a quoted segment *)
+        add_segment segment_begin i;
+        parse (succ i) '"' (succ i)
+      end else
+        parse segment_begin terminator (succ i)
+  in
+  parse 0 ';' 0
+
+let split_path =
+  if Sys.win32 then
+    split_path_win32
+  else
+    String.split_on_char ':'
+
 let find_ocamlinit () =
   let ocamlinit = ".ocamlinit" in
   if Sys.file_exists ocamlinit then Some ocamlinit else
