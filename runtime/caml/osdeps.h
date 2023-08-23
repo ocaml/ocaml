@@ -140,6 +140,8 @@ CAMLextern void caml_expand_command_line (int *, wchar_t ***);
 
 CAMLextern clock_t caml_win32_clock(void);
 
+CAMLextern value caml_win32_xdg_defaults(void);
+
 #endif /* _WIN32 */
 
 /* Returns the current value of a counter that increments once per nanosecond.
