@@ -302,6 +302,9 @@ Working version
   `Unix.create_process` (the one used when `posix_spawnp` is unavailable)
   (Xavier Leroy, report by Chris Vine, review by Nicolás Ojeda Bär)
 
+- #12491, #12500: allocating subarrays or slices of bigarrays increases
+  GC speed wrongly -- as if new memory was allocated
+  (Gabriel Scherer, report by Ido Yariv, review by ???)
 
 OCaml 5.1.0 release branch
 --------------------------
