@@ -116,7 +116,7 @@ val output_substring : t -> string -> int -> int -> unit
 val output_bigarray :
   t -> (_, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t ->
   int -> int -> unit
-(** Same as {!output} bu take data from a bigarray.
+(** Same as {!output} but take the data from a bigarray.
     @since 5.2 *)
 
 (** {1:flushing Flushing} *)
