@@ -117,7 +117,7 @@ Working version
 
 ### Standard library:
 
-* #10775: Half-precision floating-point elements in Bigarray.
+* #10775, #12499: Half-precision floating-point elements in Bigarray.
   (Anton Yabchinskiy, review by Xavier Leroy and Nicolás Ojeda Bär)
 
 - #12217: Add `Array.shuffle`.
