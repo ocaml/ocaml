@@ -215,6 +215,20 @@ CAMLexport const struct custom_operations caml_ba_ops = {
 
 /* Allocation of a big array */
 
+/* Precompute the size of a new bigarray into [num_elts] and [size].
+   returns 0 on overflow (MPR#7765), non-zero otherwise. */
+static int ba_compute_size(int flags, int num_dims, intnat * dim, uintnat *num_elts, uintnat *size)
+{
+  *num_elts = 1;
+  for (int i = 0; i < num_dims; i++) {
+    if (caml_umul_overflow(*num_elts, dim[i], num_elts))
+      return 0;
+  }
+  return (!caml_umul_overflow(*num_elts,
+                         caml_ba_element_size[flags & CAML_BA_KIND_MASK],
+                         size));
+}
+
 /* [caml_ba_alloc] will allocate a new bigarray object in the heap.
    If [data] is NULL, the memory for the contents is also allocated
    (with [malloc]) by [caml_ba_alloc].
@@ -224,7 +238,7 @@ CAMLexport const struct custom_operations caml_ba_ops = {
 CAMLexport value
 caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
 {
-  uintnat num_elts, asize, size;
+  uintnat asize, num_elts, size;
   int i, is_managed;
   value res;
   struct caml_ba_array * b;
@@ -233,14 +247,7 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
   CAMLassert(num_dims >= 0 && num_dims <= CAML_BA_MAX_NUM_DIMS);
   CAMLassert((flags & CAML_BA_KIND_MASK) < CAML_BA_FIRST_UNIMPLEMENTED_KIND);
   for (i = 0; i < num_dims; i++) dimcopy[i] = dim[i];
-  num_elts = 1;
-  for (i = 0; i < num_dims; i++) {
-    if (caml_umul_overflow(num_elts, dimcopy[i], &num_elts))
-      caml_raise_out_of_memory();
-  }
-  if (caml_umul_overflow(num_elts,
-                         caml_ba_element_size[flags & CAML_BA_KIND_MASK],
-                         &size))
+  if (!ba_compute_size(flags, num_dims, dimcopy, &num_elts, &size))
     caml_raise_out_of_memory();
   if (data == NULL) {
     data = malloc(size);
@@ -603,18 +610,10 @@ CAMLexport uintnat caml_ba_deserialize(void * dst)
     if (len == 0xffff) len = caml_deserialize_uint_8();
     b->dim[i] = len;
   }
-  /* Compute total number of elements.  Watch out for overflows (MPR#7765). */
-  num_elts = 1;
-  for (i = 0; i < b->num_dims; i++) {
-    if (caml_umul_overflow(num_elts, b->dim[i], &num_elts))
-      caml_deserialize_error("input_value: size overflow for bigarray");
-  }
-  /* Determine array size in bytes.  Watch out for overflows (MPR#7765). */
+  /* [ba_compute_size] uses the kind, so we check first that it is valid. */
   if ((b->flags & CAML_BA_KIND_MASK) >= CAML_BA_FIRST_UNIMPLEMENTED_KIND)
     caml_deserialize_error("input_value: bad bigarray kind");
-  if (caml_umul_overflow(num_elts,
-                         caml_ba_element_size[b->flags & CAML_BA_KIND_MASK],
-                         &size))
+  if (!ba_compute_size(b->flags, b->num_dims, b->dim, &num_elts, &size))
     caml_deserialize_error("input_value: size overflow for bigarray");
   /* Allocate room for data */
   b->data = malloc(size);
