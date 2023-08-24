@@ -137,7 +137,8 @@ $(foreach PROGRAM, $(C_PROGRAMS),\
 
 # OCaml programs that are compiled in both bytecode and native code
 
-OCAML_PROGRAMS = ocamlc ocamlopt lex/ocamllex $(TOOLS_NAT_PROGRAMS)
+OCAML_PROGRAMS = ocamlc ocamlopt lex/ocamllex $(TOOLS_NAT_PROGRAMS) \
+  ocamltest/ocamltest
 
 $(foreach PROGRAM, $(OCAML_PROGRAMS),\
   $(eval $(call OCAML_PROGRAM,$(PROGRAM))))
@@ -1087,7 +1088,7 @@ clean::
 # Dependencies
 
 subdirs = stdlib $(addprefix otherlibs/, $(ALL_OTHERLIBS)) \
-  ocamldoc ocamltest
+  ocamldoc
 
 .PHONY: alldepend
 alldepend: depend
@@ -1241,14 +1242,116 @@ ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
 	$(MAKE) -C ocamldoc opt.opt
 
 # OCamltest
-ocamltest: ocamlc ocamlyacc ocamllex otherlibraries
-	$(MAKE) -C ocamltest all
 
-ocamltest.opt: ocamlc.opt ocamlyacc ocamllex
-	$(MAKE) -C ocamltest allopt
+# Libraries ocamltest depends on
+
+ocamltest_LIBRARIES = \
+  $(addprefix compilerlibs/,ocamlcommon ocamlbytecomp) \
+  $(unix_library)
+
+# List of source files from which ocamltest is compiled
+# (all the different sorts of files are derived from this)
+
+# ocamltest has two components: its core and the OCaml "plugin"
+# which is actually built into the tool but clearly separated from its core
+
+ocamltest_CORE = \
+  run_$(UNIX_OR_WIN32).c run_stubs.c \
+  ocamltest_config.ml.in ocamltest_config.mli \
+  ocamltest_unix.mli ocamltest_unix.ml \
+  ocamltest_stdlib.mli ocamltest_stdlib.ml \
+  run_command.mli run_command.ml \
+  filecompare.mli filecompare.ml \
+  variables.mli variables.ml \
+  environments.mli environments.ml \
+  result.mli result.ml \
+  actions.mli actions.ml \
+  tests.mli tests.ml \
+  strace.mli strace.ml \
+  tsl_ast.mli tsl_ast.ml \
+  tsl_parser.mly \
+  tsl_lexer.mli tsl_lexer.mll \
+  modifier_parser.mli modifier_parser.ml \
+  tsl_semantics.mli tsl_semantics.ml \
+  builtin_variables.mli builtin_variables.ml \
+  actions_helpers.mli actions_helpers.ml \
+  builtin_actions.mli builtin_actions.ml \
+  translate.mli translate.ml
+
+ocamltest_ocaml_PLUGIN = \
+  ocaml_backends.mli ocaml_backends.ml \
+  ocaml_filetypes.mli ocaml_filetypes.ml \
+  ocaml_variables.mli ocaml_variables.ml \
+  ocaml_modifiers.mli ocaml_modifiers.ml \
+  ocaml_directories.mli ocaml_directories.ml \
+  ocaml_files.mli ocaml_files.ml \
+  ocaml_flags.mli ocaml_flags.ml \
+  ocaml_commands.mli ocaml_commands.ml \
+  ocaml_tools.mli ocaml_tools.ml \
+  ocaml_compilers.mli ocaml_compilers.ml \
+  ocaml_toplevels.mli ocaml_toplevels.ml \
+  ocaml_actions.mli ocaml_actions.ml \
+  ocaml_tests.mli ocaml_tests.ml
+
+ocamltest_SOURCES = $(addprefix ocamltest/, \
+  $(ocamltest_CORE) $(ocamltest_ocaml_PLUGIN) \
+  options.mli options.ml \
+  main.mli main.ml)
+
+$(eval $(call COMPILE_C_FILE,ocamltest/%.b,ocamltest/%))
+$(eval $(call COMPILE_C_FILE,ocamltest/%.n,ocamltest/%))
+
+ifeq "$(COMPUTE_DEPS)" "true"
+include $(addprefix $(DEPDIR)/, $(ocamltest_C_FILES:.c=.$(D)))
+endif
+
+ocamltest_DEP_FILES = $(addprefix $(DEPDIR)/, $(ocamltest_C_FILES:.c=.$(D)))
+
+$(ocamltest_DEP_FILES): | $(DEPDIR)/ocamltest
+
+$(DEPDIR)/ocamltest:
+	$(MKDIR) $@
+
+$(ocamltest_DEP_FILES): $(DEPDIR)/ocamltest/%.$(D): ocamltest/%.c
+	$(V_CCDEPS)$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@
+
+beforedepend:: $(ocamltest_MLI_FILES) $(ocamltest_ML_FILES)
+
+ocamltest/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
+
+ocamltest: ocamltest/ocamltest$(EXE)
+
+ocamltest/ocamltest$(EXE): OC_BYTECODE_LINKFLAGS += -custom
+
+ocamltest/ocamltest$(EXE): ocamlc ocamlyacc ocamllex
+
+ocamltest.opt: ocamltest/ocamltest.opt$(EXE)
+
+ocamltest/ocamltest.opt$(EXE): ocamlc.opt ocamlyacc ocamllex
+
+# ocamltest does _not_ want to have access to the Unix interface by default,
+# to ensure functions and types are only used via Ocamltest_stdlib.Unix
+# (see #9797)
+ocamltest/%: \
+  VPATH := $(filter-out $(unix_directory), $(VPATH))
+
+# Ocamltest_unix and the linking of the executable itself should include the
+# Unix library, if it's being built.
+ocamltest/ocamltest_unix.% \
+ocamltest/ocamltest$(EXE) ocamltest/ocamltest.opt$(EXE): \
+  VPATH += $(unix_directory)
+
+# For flambda mode, it is necessary for Ocamltest_unix to be compiled with
+# -opaque to prevent errors compiling the other modules of ocamltest.
+ocamltest/ocamltest_unix.%: \
+  OC_COMMON_COMPFLAGS += -opaque
 
 partialclean::
-	$(MAKE) -C ocamltest clean
+	rm -rf ocamltest/ocamltest ocamltest/ocamltest.exe
+	rm -f ocamltest/ocamltest.opt ocamltest/ocamltest.opt.exe
+	rm -f $(addprefix ocamltest/,*.o *.obj *.cm*)
+	rm -rf $(ocamltest_GENERATED_FILES)
+	rm -f ocamltest.html
 
 # Documentation
 
@@ -1265,6 +1368,14 @@ partialclean::
 
 partialclean::
 	$(MAKE) -C api_docgen clean
+
+# The OCamltest manual
+
+.PHONY: ocamltest-manual
+ocamltest-manual: ocamltest/ocamltest.html
+
+ocamltest/ocamltest.html: ocamltest/ocamltest.org
+	pandoc -s --toc -N -f org -t html -o $@ $<
 
 # The extra libraries
 
@@ -1724,7 +1835,8 @@ depend: beforedepend
 	$(V_GEN)for d in utils parsing typing bytecomp asmcomp middle_end \
          lambda file_formats middle_end/closure middle_end/flambda \
          middle_end/flambda/base_types \
-         driver toplevel toplevel/byte toplevel/native lex tools debugger; \
+         driver toplevel toplevel/byte toplevel/native lex tools debugger \
+	 ocamltest; \
 	 do \
 	   $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $$d $(INCLUDES) \
 	   $(OCAMLDEPFLAGS) $$d/*.mli $$d/*.ml \
@@ -1735,7 +1847,7 @@ depend: beforedepend
 distclean: clean
 	$(MAKE) -C manual distclean
 	$(MAKE) -C ocamldoc distclean
-	$(MAKE) -C ocamltest distclean
+	rm -f $(addprefix ocamltest/,ocamltest_config.ml ocamltest_unix.ml)
 	$(MAKE) -C otherlibs distclean
 	rm -f $(runtime_CONFIGURED_HEADERS)
 	$(MAKE) -C stdlib distclean

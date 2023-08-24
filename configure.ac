@@ -79,9 +79,8 @@ lib_systhreads=false
 lib_unix=false
 ocamltest_libunix=None
 ocamltest_unix_impl="dummy"
-ocamltest_unix_name=""
-ocamltest_unix_path=""
-ocamltest_unix_include=""
+unix_library=""
+unix_directory=""
 
 # Information about the package
 
@@ -176,9 +175,8 @@ AC_SUBST([lib_systhreads])
 AC_SUBST([lib_unix])
 AC_SUBST([ocamltest_CPP])
 AC_SUBST([ocamltest_libunix])
-AC_SUBST([ocamltest_unix_name])
-AC_SUBST([ocamltest_unix_path])
-AC_SUBST([ocamltest_unix_include])
+AC_SUBST([unix_library])
+AC_SUBST([unix_directory])
 AC_SUBST([cc_has_debug_prefix_map])
 AC_SUBST([as_has_debug_prefix_map])
 AC_SUBST([with_debugger]) # TODO: rename this variable
@@ -671,9 +669,8 @@ AS_IF([test x"$enable_unix_lib" != "xno"],
     otherlibs/unix/unix.ml:otherlibs/unix/unix_${unix_or_win32}.ml
   ])
   ocamltest_unix_impl="real"
-  ocamltest_unix_name="unix"
-  ocamltest_unix_path='$(ROOTDIR)/otherlibs/unix'
-  ocamltest_unix_include='-I $(ROOTDIR)/otherlibs/unix '],
+  unix_directory="otherlibs/unix"
+  unix_library="${unix_directory}/unix"],
   [ocamltest_libunix="None"])
 
 AS_IF([test x"$enable_str_lib" != "xno"],

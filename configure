@@ -824,9 +824,8 @@ build_ocamldebug
 with_debugger
 as_has_debug_prefix_map
 cc_has_debug_prefix_map
-ocamltest_unix_include
-ocamltest_unix_path
-ocamltest_unix_name
+unix_directory
+unix_library
 ocamltest_libunix
 ocamltest_CPP
 lib_unix
@@ -3269,9 +3268,8 @@ lib_systhreads=false
 lib_unix=false
 ocamltest_libunix=None
 ocamltest_unix_impl="dummy"
-ocamltest_unix_name=""
-ocamltest_unix_path=""
-ocamltest_unix_include=""
+unix_library=""
+unix_directory=""
 
 # Information about the package
 
@@ -3309,7 +3307,6 @@ OCAML_VERSION_SHORT=5.2
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
-
 
 
 
@@ -13627,9 +13624,8 @@ then :
   ac_config_links="$ac_config_links otherlibs/unix/unix.ml:otherlibs/unix/unix_${unix_or_win32}.ml"
 
   ocamltest_unix_impl="real"
-  ocamltest_unix_name="unix"
-  ocamltest_unix_path='$(ROOTDIR)/otherlibs/unix'
-  ocamltest_unix_include='-I $(ROOTDIR)/otherlibs/unix '
+  unix_directory="otherlibs/unix"
+  unix_library="${unix_directory}/unix"
 else $as_nop
   ocamltest_libunix="None"
 fi
