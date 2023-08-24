@@ -192,6 +192,26 @@ static size_t get_callstack(struct stack_info* stack, intnat max_slots,
   return slots;
 }
 
+/* Obtain up to [max_slots] of the callstack of the current domain,
+ * including parent fibers. The callstack is written into [*buffer_p],
+ * current size [*alloc_size_p], which should be reallocated (on the C
+ * heap) if required. Returns the number of slots obtained.
+ *
+ * If [alloc_idx] is non-negative, then the backtrace is of an
+ * allocation point and may therefore include an initial entry of the
+ * allocation point itself.
+ */
+
+size_t caml_get_callstack(size_t max_slots,
+                          backtrace_slot **buffer_p,
+                          size_t *alloc_size_p,
+                          ssize_t alloc_idx)
+{
+  return get_callstack(Caml_state->current_stack, max_slots,
+                       alloc_idx,
+                       buffer_p, alloc_size_p);
+}
+
 static value alloc_callstack(backtrace_slot* trace, size_t slots)
 {
   CAMLparam0();
