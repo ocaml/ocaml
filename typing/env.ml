@@ -694,9 +694,12 @@ let check_shadowing env = function
   | `Label (Some (l1, l2))
     when not (!same_constr env l1.lbl_res l2.lbl_res) ->
       Some "label"
-  | `Value (Some _) -> Some "value"
+  | `Value (Some (Val_unbound _, _)) -> None
+  | `Value (Some (_, _)) -> Some "value"
   | `Type (Some _) -> Some "type"
-  | `Module (Some _) | `Component (Some _) -> Some "module"
+  | `Module (Some (Mod_unbound _, _)) -> None
+  | `Module (Some _) | `Component (Some _) ->
+      Some "module"
   | `Module_type (Some _) -> Some "module type"
   | `Class (Some _) -> Some "class"
   | `Class_type (Some _) -> Some "class type"

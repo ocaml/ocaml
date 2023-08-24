@@ -29,11 +29,6 @@ val g : (unit -> 'a) -> int = <fun>
 *)
 let f () = M.(f ());;
 [%%expect {|
-Line 1, characters 11-12:
-1 | let f () = M.(f ());;
-               ^
-Warning 44 [open-shadow-identifier]: this open statement shadows the value identifier f (which is later used)
-
 val f : unit -> int = <fun>
 |}]
 
@@ -66,10 +61,5 @@ class c = object
 end;;
 [%%expect {|
 module M : sig val x : int end
-Line 5, characters 10-11:
-5 |   val y = M.( x ) + 1
-              ^
-Warning 44 [open-shadow-identifier]: this open statement shadows the value identifier x (which is later used)
-
 class c : object val x : int val y : int end
 |}]

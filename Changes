@@ -328,6 +328,8 @@ Working version
   `Unix.create_process` (the one used when `posix_spawnp` is unavailable)
   (Xavier Leroy, report by Chris Vine, review by Nicolás Ojeda Bär)
 
+- #12949: open shadowing mistriggers
+  (Gabriel Scherer, review by Florian Angeletti, report by Andreas Rossberg)
 
 OCaml 5.1.0
 ---------------
