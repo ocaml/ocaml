@@ -229,8 +229,49 @@ static int ba_compute_size(int flags, int num_dims, intnat * dim, uintnat *num_e
                          size));
 }
 
+/* [caml_ba_alloc_gen] will allocate a new bigarray object in the heap.
+
+   If [data] is NULL, the memory for the contents is also allocated.
+   (with [malloc]) by [caml_ba_alloc_gen].
+
+   If [data] is NULL or [owns_data] is non-zero, we consider that [data] is now
+   owned by the OCaml heap, and adjust GC pacing accordingly --
+   the external memory considered is the size of the bigarray.
+
+   [data] cannot point into the OCaml heap.
+   [dim] may point into an object in the OCaml heap.
+*/
+static value caml_ba_alloc_gen(int flags, int num_dims, void * data, intnat * dim, int owns_data)
+{
+  uintnat asize, num_elts, size;
+  value res;
+  struct caml_ba_array * b;
+  intnat dimcopy[CAML_BA_MAX_NUM_DIMS];
+
+  CAMLassert(num_dims >= 0 && num_dims <= CAML_BA_MAX_NUM_DIMS);
+  CAMLassert((flags & CAML_BA_KIND_MASK) < CAML_BA_FIRST_UNIMPLEMENTED_KIND);
+  for (int i = 0; i < num_dims; i++) dimcopy[i] = dim[i];
+  if (!ba_compute_size(flags, num_dims, dimcopy, &num_elts, &size))
+    caml_raise_out_of_memory();
+  if (data == NULL) {
+    data = malloc(size);
+    if (data == NULL && size != 0) caml_raise_out_of_memory();
+    owns_data = 1;
+    flags |= CAML_BA_MANAGED;
+  }
+  asize = SIZEOF_BA_ARRAY + num_dims * sizeof(intnat);
+  res = caml_alloc_custom_mem(&caml_ba_ops, asize, owns_data ? size : 0);
+  b = Caml_ba_array_val(res);
+  b->data = data;
+  b->num_dims = num_dims;
+  b->flags = flags;
+  b->proxy = NULL;
+  for (int i = 0; i < num_dims; i++) b->dim[i] = dimcopy[i];
+  return res;
+}
+
 /* [caml_ba_alloc] will allocate a new bigarray object in the heap.
-   If [data] is NULL, the memory for the contents is also allocated
+   If [data] is NULL, the memory for the contents is also allocated.
    (with [malloc]) by [caml_ba_alloc].
    [data] cannot point into the OCaml heap.
    [dim] may point into an object in the OCaml heap.
@@ -238,32 +279,8 @@ static int ba_compute_size(int flags, int num_dims, intnat * dim, uintnat *num_e
 CAMLexport value
 caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
 {
-  uintnat asize, num_elts, size;
-  int i, is_managed;
-  value res;
-  struct caml_ba_array * b;
-  intnat dimcopy[CAML_BA_MAX_NUM_DIMS];
-
-  CAMLassert(num_dims >= 0 && num_dims <= CAML_BA_MAX_NUM_DIMS);
-  CAMLassert((flags & CAML_BA_KIND_MASK) < CAML_BA_FIRST_UNIMPLEMENTED_KIND);
-  for (i = 0; i < num_dims; i++) dimcopy[i] = dim[i];
-  if (!ba_compute_size(flags, num_dims, dimcopy, &num_elts, &size))
-    caml_raise_out_of_memory();
-  if (data == NULL) {
-    data = malloc(size);
-    if (data == NULL && size != 0) caml_raise_out_of_memory();
-    flags |= CAML_BA_MANAGED;
-  }
-  asize = SIZEOF_BA_ARRAY + num_dims * sizeof(intnat);
-  is_managed = ((flags & CAML_BA_MANAGED_MASK) == CAML_BA_MANAGED);
-  res = caml_alloc_custom_mem(&caml_ba_ops, asize, is_managed ? size : 0);
-  b = Caml_ba_array_val(res);
-  b->data = data;
-  b->num_dims = num_dims;
-  b->flags = flags;
-  b->proxy = NULL;
-  for (i = 0; i < num_dims; i++) b->dim[i] = dimcopy[i];
-  return res;
+  int is_managed = ((flags & CAML_BA_MANAGED_MASK) == CAML_BA_MANAGED);
+  return caml_ba_alloc_gen(flags, num_dims, data, dim, is_managed);
 }
 
 /* Same as caml_ba_alloc, but dimensions are passed as a list of
@@ -1101,7 +1118,8 @@ static value caml_ba_inherit(value vb, int num_dims, intnat * dim)
   CAMLparam1 (vb);
   CAMLlocal1 (res);
 #define b (Caml_ba_array_val(vb))
-  res = caml_ba_alloc(b->flags, num_dims, b->data, dim);
+  int owns_data = 0;
+  res = caml_ba_alloc_gen(b->flags, num_dims, b->data, dim, owns_data);
    /* Copy the finalization function from the original array (PR#8568) */
   Custom_ops_val(res) = Custom_ops_val(vb);
   /* Create or update proxy in case of managed bigarray */
