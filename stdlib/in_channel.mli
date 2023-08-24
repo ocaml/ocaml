@@ -156,7 +156,7 @@ val really_input : t -> bytes -> int -> int -> unit option
 val really_input_bigarray :
   t -> (_, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t ->
   int -> int -> unit option
-(** Same as {!really_input}, but write data to a bigarray.
+(** Same as {!really_input}, but read the data into a bigarray.
     @since 5.2 *)
 
 val fold_lines : ('acc -> string -> 'acc) -> 'acc -> t -> 'acc
