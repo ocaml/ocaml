@@ -153,7 +153,7 @@ case "$1" in
     # Now reconfigure ocamltest to run in bytecode-only mode
     sed -i '/native_/s/true/false/' \
            "$FULL_BUILD_PREFIX-$PORT/ocamltest/ocamltest_config.ml"
-    $MAKE -C "$FULL_BUILD_PREFIX-$PORT/ocamltest" -j all allopt
+    $MAKE -C "$FULL_BUILD_PREFIX-$PORT" -j ocamltest ocamltest.opt
     # And run the entire testsuite, skipping all the native-code tests
     run "test $PORT" \
         make -C "$FULL_BUILD_PREFIX-$PORT/testsuite" SHOW_TIMINGS=1 all
