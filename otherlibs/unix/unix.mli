@@ -387,7 +387,7 @@ val read_bigarray :
   file_descr ->
   (_, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t ->
   int -> int -> int
-(** Same as {!read}, but read data into a bigarray.
+(** Same as {!read}, but read the data into a bigarray.
     @since 5.2 *)
 
 val write : file_descr -> bytes -> int -> int -> int
@@ -401,7 +401,7 @@ val write_bigarray :
   file_descr ->
   (_, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t ->
   int -> int -> int
-(** Same as {!write}, but take data from a bigarray.
+(** Same as {!write}, but take the data from a bigarray.
     @since 5.2 *)
 
 val single_write : file_descr -> bytes -> int -> int -> int
