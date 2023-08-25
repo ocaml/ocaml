@@ -927,7 +927,7 @@ void caml_cycle_heap(struct caml_heap_state* local) {
   local->next_to_sweep = 0;
 }
 
-void caml_destroy_freelist (void) {
+void caml_release_freelist (void) {
   int freed_large = 0;
   caml_plat_lock(&pool_freelist.lock);
   while (pool_freelist.global_large) {
