@@ -927,8 +927,8 @@ void caml_cycle_heap(struct caml_heap_state* local) {
   local->next_to_sweep = 0;
 }
 
-void caml_finalise_freelist (void) {
-  int freed = 0, freed_large = 0;
+void caml_destroy_freelist (void) {
+  int freed_large = 0;
   caml_plat_lock(&pool_freelist.lock);
   while (pool_freelist.global_large) {
     large_alloc* a = pool_freelist.global_large;
@@ -937,6 +937,5 @@ void caml_finalise_freelist (void) {
     freed_large++;
   }
   caml_plat_unlock(&pool_freelist.lock);
-  caml_gc_log("Finalise freelist. Freed %d active pools, %d large",
-	       freed, freed_large);
+  caml_gc_log("Finalise freelist. Freed %d large", freed_large);
 }

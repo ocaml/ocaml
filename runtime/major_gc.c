@@ -1569,5 +1569,5 @@ void caml_finalise_heap (void)
   caml_domain_state* d = Caml_state;
   caml_finish_sweeping();
   caml_teardown_shared_heap(d->shared_heap);
-  caml_finalise_freelist();
+  caml_destroy_freelist();
 }
