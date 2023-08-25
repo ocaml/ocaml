@@ -1566,5 +1566,8 @@ void caml_teardown_major_gc(void) {
 
 void caml_finalise_heap (void)
 {
-  return;
+  caml_domain_state* d = Caml_state;
+  caml_finish_sweeping();
+  caml_teardown_shared_heap(d->shared_heap);
+  caml_finalise_freelist();
 }
