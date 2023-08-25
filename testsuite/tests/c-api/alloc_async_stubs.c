@@ -5,6 +5,19 @@
 #define CAML_INTERNALS
 #include "caml/gc_ctrl.h"
 
+
+void print_status(const char *str, int n)
+{
+  printf("%s: %d\n", str, n);
+  fflush(stdout);
+}
+
+value print_status_caml(value str, value n)
+{
+  print_status(String_val(str), Int_val(n));
+  return Val_unit;
+}
+
 const char* strs[] = { "foo", "bar", 0 };
 value stub(value ref)
 {
@@ -12,7 +25,7 @@ value stub(value ref)
   CAMLlocal2(x, y);
   char* s; intnat coll_before;
 
-  printf("C, before: %d\n", Int_val(Field(ref, 0)));
+  print_status("C, before", Int_val(Field(ref, 0)));
 
   /* First, do enough major allocations to do a full major collection cycle */
   coll_before = caml_stat_major_collections;
@@ -50,7 +63,6 @@ value stub(value ref)
   free(s);
 
 
-  printf("C, after: %d\n", Int_val(Field(ref, 0)));
-  fflush(stdout);
+  print_status("C, after", Int_val(Field(ref, 0)));
   CAMLreturn (Val_unit);
 }
