@@ -38,6 +38,7 @@ _ocamltestd
 .merlin
 _build
 META
+.vscode
 
 # local to root directory
 
