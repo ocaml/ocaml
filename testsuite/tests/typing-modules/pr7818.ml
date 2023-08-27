@@ -273,9 +273,14 @@ module MkT :
       val exists : (elt -> bool) -> t -> bool
       val to_list : t -> elt list
       val of_list : elt list -> t
-      val to_seq_from : elt -> t -> elt Seq.t
       val to_seq : t -> elt Seq.t
+      val to_seq_from : elt -> t -> elt Seq.t
       val to_rev_seq : t -> elt Seq.t
+      val to_rev_seq_from : elt -> t -> elt Seq.t
+      val slice_to_seq : ?rev:bool -> ?min:elt -> ?max:elt -> t -> elt Seq.t
+      val slice_to_seq_cond :
+        ?rev:bool ->
+        ?low:(elt -> int) -> ?high:(elt -> int) -> t -> elt Seq.t
       val add_seq : elt Seq.t -> t -> t
       val of_seq : elt Seq.t -> t
     end

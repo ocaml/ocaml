@@ -64,8 +64,14 @@ module type S =
     val to_list : 'a t -> (key * 'a) list
     val of_list : (key * 'a) list -> 'a t
     val to_seq : 'a t -> (key * 'a) Seq.t
-    val to_rev_seq : 'a t -> (key * 'a) Seq.t
     val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
+    val to_rev_seq : 'a t -> (key * 'a) Seq.t
+    val to_rev_seq_from : key -> 'a t -> (key * 'a) Seq.t
+    val slice_to_seq :
+      ?rev:bool -> ?min:key -> ?max:key -> 'a t -> (key * 'a) Seq.t
+    val slice_to_seq_cond :
+      ?rev:bool -> ?low:(key -> int) -> ?high:(key -> int) ->
+      'a t -> (key * 'a) Seq.t
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     val of_seq : (key * 'a) Seq.t -> 'a t
   end
@@ -508,40 +514,180 @@ module Make(Ord: OrderedType) = struct
     let to_list = bindings
     let of_list bs = List.fold_left (fun m (k, v) -> add k v m) empty bs
 
-    let add_seq i m =
-      Seq.fold_left (fun m (k,v) -> add k v m) m i
+    let add_seq seq m =
+      Seq.fold_left (fun m (k,v) -> add k v m) m seq
 
-    let of_seq i = add_seq i empty
+    let of_seq seq = add_seq seq empty
 
-    let rec seq_of_enum_ c () = match c with
+    let rec seq_of_enum_ e () = match e with
       | End -> Seq.Nil
       | More (k,v,t,rest) -> Seq.Cons ((k,v), seq_of_enum_ (cons_enum t rest))
 
     let to_seq m =
       seq_of_enum_ (cons_enum m End)
 
-    let rec snoc_enum s e =
-      match s with
+    (* We use this datatype for reverse-order traversals. It is
+     * isomorphic to [enumeration] but makes the code slightly more
+     * readable, and prevents programming mistakes (e.g. using
+     * [cons_enum] instead of [snoc_enum]). *)
+    type 'a rev_enumeration =
+    | REnd
+    | RMore of 'a rev_enumeration * 'a t * key * 'a
+
+    let rec snoc_enum e m =
+      match m with
         Empty -> e
-      | Node{l; v; d; r} -> snoc_enum r (More(v, d, l, e))
+      | Node{l; v; d; r} -> snoc_enum (RMore(e, l, v, d)) r
 
-    let rec rev_seq_of_enum_ c () = match c with
-      | End -> Seq.Nil
-      | More (k,v,t,rest) ->
-          Seq.Cons ((k,v), rev_seq_of_enum_ (snoc_enum t rest))
+    let rec seq_of_rev_enum_ e () = match e with
+      | REnd -> Seq.Nil
+      | RMore (rest, t, k,v) ->
+          Seq.Cons ((k,v), seq_of_rev_enum_ (snoc_enum rest t))
 
-    let to_rev_seq c =
-      rev_seq_of_enum_ (snoc_enum c End)
+    let to_rev_seq m =
+      seq_of_rev_enum_ (snoc_enum REnd m)
 
-    let to_seq_from low m =
-      let rec aux low m c = match m with
-        | Empty -> c
-        | Node {l; v; d; r; _} ->
-            begin match Ord.compare v low with
-              | 0 -> More (v, d, r, c)
-              | n when n<0 -> aux low r c
-              | _ -> aux low l (More (v, d, r, c))
-            end
-      in
-      seq_of_enum_ (aux low m End)
+    (* Build an enumeration of the bindings of [m] such that [low k <= 0],
+     * in increasing order, and prepend it to the enumeration [tail]: *)
+    let rec to_enum_from_ low m tail = match m with
+      | Empty -> tail
+      | Node {l; v; d; r; _} ->
+          begin match low v with
+            | 0 -> More (v, d, r, tail)
+            | lo when lo > 0 -> to_enum_from_ low r tail
+            | _ -> to_enum_from_ low l (More (v, d, r, tail))
+          end
+
+    let to_seq_from_cond low m =
+      seq_of_enum_ (to_enum_from_ low m End)
+
+    (* Build a rev-enumeration of the bindings of [m] such that [high k >= 0],
+     * in decreasing order, and append it to the enumeration [tail]: *)
+    let rec to_rev_enum_from_ high tail m = match m with
+      | Empty -> tail
+      | Node {l; v; d; r; _} ->
+          begin match high v with
+            | 0 -> RMore (tail, l, v, d)
+            | hi when hi < 0 -> to_rev_enum_from_ high tail l
+            | _ -> to_rev_enum_from_ high (RMore (tail, l, v, d)) r
+          end
+
+    let to_rev_seq_from_cond high m =
+      seq_of_rev_enum_ (to_rev_enum_from_ high REnd m)
+
+    (* Build an enumeration of the bindings of [m] such that [high k >= 0],
+     * in increasing order, and prepend the binding [(v0,d0)] to it: *)
+    let rec to_enum_upto_ high v0 d0 m = match m with
+      | Empty -> More (v0, d0, Empty, End)
+      | Node {l; v; d; r; _} ->
+          begin match high v with
+          | 0 -> More (v0, d0, l, More (v, d, Empty, End))
+          | hi when hi < 0 -> to_enum_upto_ high v0 d0 l
+          | _ -> More (v0, d0, l, to_enum_upto_ high v d r)
+          end
+
+    let rec to_rev_seq_upto_cond high m = match m with
+      | Empty -> Seq.empty
+      | Node {l; v; d; r; _} ->
+          begin match high v with
+          | 0 -> seq_of_enum_ (cons_enum l (More (v, d, Empty, End)))
+          | hi when hi < 0 -> to_rev_seq_upto_cond high l
+          | _ -> seq_of_enum_ (cons_enum l (to_enum_upto_ high v d r))
+          end
+
+    (* Build a rev-enumeration of the bindings of [m] such that [low k <= 0],
+     * in decreasing order, and append the binding [(v0,d0)] to it: *)
+    let rec to_rev_enum_downto_ low m v0 d0 = match m with
+      | Empty -> RMore (REnd, Empty, v0, d0)
+      | Node {l; v; d; r; _} ->
+          begin match low v with
+          | 0 -> RMore (RMore (REnd, Empty, v, d), r, v0, d0)
+          | lo when lo > 0 -> to_rev_enum_downto_ low r v0 d0
+          | _ -> RMore (to_rev_enum_downto_ low l v d, r, v0, d0)
+          end
+
+    let rec to_rev_seq_downto_cond low m = match m with
+      | Empty -> Seq.empty
+      | Node {l; v; d; r; _} ->
+          begin match low v with
+          | 0 -> seq_of_rev_enum_ (snoc_enum (RMore (REnd, Empty, v, d)) r)
+          | lo when lo > 0 -> to_rev_seq_downto_cond low r
+          | _ -> seq_of_rev_enum_ (snoc_enum (to_rev_enum_downto_ low l v d) r)
+          end
+
+    (* Build an enumeration of the bindings of [m] such that
+     * [low k <= 0 && high k >= 0], in increasing order: *)
+    let rec to_enum_between low high m =
+      match m with
+      | Empty -> End
+      | Node {l; v; d; r; _} ->
+          begin match low v, high v with
+          (* high < low: *)
+          | lo, hi when lo > hi -> End
+          (* low = v = high: *)
+          | 0, 0 -> More (v, d, Empty, End)
+          (* low = v < high: *)
+          | 0, _ -> to_enum_upto_ high v d r
+          (* low < v = high: *)
+          | _, 0 -> to_enum_from_ low l (More (v, d, Empty, End))
+          (* v < low: *)
+          | lo, _ when lo > 0 -> to_enum_between low high r
+          (* high < v: *)
+          | _, hi when hi < 0 -> to_enum_between low high l
+          (* low < v < high: *)
+          | _ -> to_enum_from_ low l (to_enum_upto_ high v d r)
+          end
+
+    let to_seq_between_cond low high m =
+        seq_of_enum_ (to_enum_between low high m)
+
+    (* Build a rev-enumeration of the bindings of [m] such that
+     * [low k <= 0 && high k >= 0], in decreasing order: *)
+    let rec to_rev_enum_between low high m =
+      match m with
+      | Empty -> REnd
+      | Node {l; v; d; r; _} ->
+          begin match low v, high v with
+          (* high < low: *)
+          | lo, hi when lo > hi -> REnd
+          (* low = v = high: *)
+          | 0, 0 -> RMore (REnd, Empty, v, d)
+          (* low = v < high: *)
+          | 0, _ -> to_rev_enum_from_ high (RMore (REnd, Empty, v, d)) r
+          (* low < v = high: *)
+          | _, 0 -> to_rev_enum_downto_ low l v d
+          (* v < low: *)
+          | lo, _ when lo > 0 -> to_rev_enum_between low high r
+          (* high < v: *)
+          | _, hi when hi < 0 -> to_rev_enum_between low high l
+          (* low < v < high: *)
+          | _ -> to_rev_enum_from_ high (to_rev_enum_downto_ low l v d) r
+          end
+
+    let to_rev_enum_between_cond low high m =
+      seq_of_rev_enum_ (to_rev_enum_between low high m)
+
+    let slice_to_seq_cond ?(rev=false) ?low ?high m =
+      begin match rev, low, high with
+      | false, None,     None      -> to_seq m
+      | false, None,     Some high -> to_rev_seq_upto_cond high m
+      | false, Some low, None      -> to_seq_from_cond low m
+      | false, Some low, Some high -> to_seq_between_cond low high m
+      | true,  None,     None      -> to_rev_seq m
+      | true,  None,     Some high -> to_rev_seq_from_cond high m
+      | true,  Some low, None      -> to_rev_seq_downto_cond low m
+      | true,  Some low, Some high -> to_rev_enum_between_cond low high m
+      end
+
+    let slice_to_seq ?rev ?min ?max m =
+      let low = Option.map Ord.compare min in
+      let high = Option.map Ord.compare max in
+      slice_to_seq_cond ?rev ?low ?high m
+
+    let to_seq_from min m =
+      slice_to_seq ~min m
+
+    let to_rev_seq_from max m =
+      slice_to_seq ~rev:true ~max m
+
 end

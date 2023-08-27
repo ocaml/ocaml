@@ -295,25 +295,64 @@ module type S =
         except perhaps for lists with many duplicated elements.
         @since 4.02 *)
 
-    val to_seq_from : elt -> t -> elt Seq.t
-    (** [to_seq_from x s] iterates on a subset of the elements of [s]
-        in ascending order, from [x] or above.
+    val to_seq : t -> elt Seq.t
+    (** [to_seq s] yields the elements of [s] in ascending order.
         @since 4.07 *)
 
-    val to_seq : t -> elt Seq.t
-    (** Iterate on the whole set, in ascending order
+    val to_seq_from : elt -> t -> elt Seq.t
+    (** [to_seq_from min s] yields the elements of [s]
+        which are greater than or equal to [min],
+        in ascending order.
         @since 4.07 *)
 
     val to_rev_seq : t -> elt Seq.t
-    (** Iterate on the whole set, in descending order
+    (** [to_rev_seq s] yields the elements of [s] in descending order.
         @since 4.12 *)
 
+    val to_rev_seq_from : elt -> t -> elt Seq.t
+    (** [to_rev_seq_from max s]
+        yields the elements of [s]
+        which are less than or equal to [max],
+        in descending order.
+        @since NEXT_OCAML_RELEASE *)
+
+    val slice_to_seq : ?rev:bool -> ?min:elt -> ?max:elt -> t -> elt Seq.t
+    (** [slice_to_seq rev min max s]
+        yields the elements of [s]
+        which are at least equal to [min] and at most equal to [max].
+        Both [min] and [max] can be omitted.
+        By default, elements are yielded in ascending order;
+        if [rev] is [true], they are rather yielded in descending order.
+        @since NEXT_OCAML_VERSION *)
+
+    val slice_to_seq_cond :
+      ?rev:bool -> ?low:(elt -> int) -> ?high:(elt -> int) -> t -> elt Seq.t
+    (** [slice_to_seq_cond low high s]
+        yields the elements [x] of [s]
+        such that [low x <= 0 && high x >= 0].
+        The boundary functions [low] and [high]
+        must be monotonically decreasing,
+        and must return zero for at most one element in the set.
+        Both functions can be omitted.
+        By default, elements are yielded in ascending order;
+        if [rev] is [true], they are rather yielded in descending order.
+
+        For instance,
+        if [compare_elt] is the comparison function for elements,
+        then the following code yields all elements of [s]
+        which are at least equal to [a] and at most equal to b:
+{[
+        slice_to_seq_cond ~low:(compare_elt a) ~high:(compare_elt b) s
+]}
+
+        @since NEXT_OCAML_VERSION *)
+
     val add_seq : elt Seq.t -> t -> t
-    (** Add the given elements to the set, in order.
+    (** Add the given elements to the set.
         @since 4.07 *)
 
     val of_seq : elt Seq.t -> t
-    (** Build a set from the given bindings
+    (** Build a set from the given elements.
         @since 4.07 *)
   end
 (** Output signature of the functor {!Make}. *)

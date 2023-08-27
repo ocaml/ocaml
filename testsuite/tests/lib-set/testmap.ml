@@ -173,33 +173,75 @@ let test x v s1 s2 =
        else if i > x then img i r = img i s1
        else p = img i s1);
 
-  checkbool "to_seq_of_seq"
+  checkbool "to_seq"
+    (List.of_seq (M.to_seq s1) = M.bindings s1);
+
+  checkbool "to_rev_seq"
+    (List.of_seq (M.to_rev_seq s1) = List.rev (M.bindings s1));
+
+  checkbool "of_seq/to_seq"
     (M.equal (=) s1 (M.of_seq @@ M.to_seq s1));
 
-  checkbool "to_rev_seq_of_seq"
+  checkbool "of_seq/to_rev_seq"
     (M.equal (=) s1 (M.of_seq @@ M.to_rev_seq s1));
 
+  checkbool "to_seq_from=slice_to_seq"
+    (Seq.equal (=)
+       (M.to_seq_from x s1)
+       (M.slice_to_seq ~min:x s1));
+
   checkbool "to_seq_from"
-    (let seq = M.to_seq_from x s1 in
-     let ok1 = List.of_seq seq |> List.for_all (fun (y,_) -> y >= x) in
-     let ok2 =
-       (M.to_seq s1 |> List.of_seq |> List.filter (fun (y,_) -> y >= x))
-       =
-       (List.of_seq seq)
-     in
-     ok1 && ok2);
+    (Seq.equal (=)
+       (M.slice_to_seq ~min:x s1)
+       (M.to_seq s1 |> Seq.filter (fun (y,_) -> y >= x)));
 
-  checkbool "to_seq_increasing"
-    (let seq = M.to_seq s1 in
-     let last = ref min_int in
-     Seq.iter (fun (x, _) -> assert (!last <= x); last := x) seq;
-     true);
+  checkbool "to_seq_upto"
+    (Seq.equal (=)
+       (M.slice_to_seq ~max:x s1)
+       (M.to_seq s1 |> Seq.filter (fun (y,_) -> y <= x)));
 
-  checkbool "to_rev_seq_decreasing"
-    (let seq = M.to_rev_seq s1 in
-     let last = ref max_int in
-     Seq.iter (fun (x, _) -> assert (x <= !last); last := x) seq;
-     true);
+  checkbool "to_seq_between"
+    (let z = Random.int 10 in
+     Seq.equal (=)
+       (M.slice_to_seq ~min:x ~max:z s1)
+       (M.to_seq s1 |> Seq.filter (fun (y,_) -> x <= y && y <= z)));
+
+  checkbool "to_rev_seq_from=slice_to_seq"
+    (Seq.equal (=)
+       (M.to_rev_seq_from x s1)
+       (M.slice_to_seq ~rev:true ~max:x s1));
+
+  checkbool "to_rev_seq_from"
+    (Seq.equal (=)
+       (M.slice_to_seq ~rev:true ~max:x s1)
+       (M.to_rev_seq s1 |> Seq.filter (fun (y,_) -> y <= x)));
+
+  checkbool "to_rev_seq_downto"
+    (Seq.equal (=)
+       (M.slice_to_seq ~rev:true ~min:x s1)
+       (M.to_rev_seq s1 |> Seq.filter (fun (y,_) -> y >= x)));
+
+  checkbool "to_rev_seq_between"
+    (let z = Random.int 10 in
+     Seq.equal (=)
+       (M.slice_to_seq ~rev:true ~min:x ~max:z s1)
+       (M.to_rev_seq s1 |> Seq.filter (fun (y,_) -> x <= y && y <= z)));
+
+  checkbool "slice_to_seq_cond"
+    (let z = Random.int 10 in
+     let low = (fun y -> if y <= x then 1 else -1) in
+     let high = (fun y -> if y < z then 1 else -1) in
+     Seq.equal (=)
+       (M.slice_to_seq_cond ~low ~high s1)
+       (M.to_seq s1 |> Seq.filter (fun (y,_) -> x < y && y < z)));
+
+  checkbool "slice_to_rev_seq_cond"
+    (let z = Random.int 10 in
+     let low = (fun y -> if y <= x then 1 else -1) in
+     let high = (fun y -> if y < z then 1 else -1) in
+     Seq.equal (=)
+       (M.slice_to_seq_cond ~rev:true ~low ~high s1)
+       (M.to_rev_seq s1 |> Seq.filter (fun (y,_) -> x < y && y < z)));
 
   ()
 

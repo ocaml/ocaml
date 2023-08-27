@@ -44,9 +44,15 @@ val for_all : (elt -> bool) -> t -> bool = <fun>
 val exists : (elt -> bool) -> t -> bool = <fun>
 val to_list : t -> elt list = <fun>
 val of_list : elt list -> t = <fun>
-val to_seq_from : elt -> t -> elt Seq.t = <fun>
 val to_seq : t -> elt Seq.t = <fun>
+val to_seq_from : elt -> t -> elt Seq.t = <fun>
 val to_rev_seq : t -> elt Seq.t = <fun>
+val to_rev_seq_from : elt -> t -> elt Seq.t = <fun>
+val slice_to_seq : ?rev:bool -> ?min:elt -> ?max:elt -> t -> elt Seq.t =
+  <fun>
+val slice_to_seq_cond :
+  ?rev:bool -> ?low:(elt -> int) -> ?high:(elt -> int) -> t -> elt Seq.t =
+  <fun>
 val add_seq : elt Seq.t -> t -> t = <fun>
 val of_seq : elt Seq.t -> t = <fun>
 |}]
