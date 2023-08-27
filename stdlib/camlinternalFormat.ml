@@ -2068,7 +2068,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
     | None -> true
   (*  When this flag is enabled, the format parser tries to behave as
       the <4.02 implementations, in particular it ignores most benign
-      nonsensical format. When the flag is disabled, it will reject any
+      nonsensical formats. When the flag is disabled, it will reject any
       format that is not accepted by the specification.
 
       A typical example would be "%+ d": specifying both '+' (if the
