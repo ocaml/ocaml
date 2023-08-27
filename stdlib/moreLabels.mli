@@ -853,7 +853,7 @@ module Map : sig
           For example, [find_first (fun k -> Ord.compare k x >= 0) m] will
           return the first binding [k, v] of [m] where [Ord.compare k x >= 0]
           (intuitively: [k >= x]), or raise [Not_found] if [x] is greater than
-          any element of [m].
+          any key of [m].
 
           @since 4.05 *)
 
@@ -925,8 +925,8 @@ module Map : sig
             (fun _k li -> match li with [] -> None | _::tl -> Some tl)
             m
           ]}
-          drops all bindings of [m] whose value is an empty list, and pops
-          the first element of each value that is non-empty.
+          drops all bindings of [m] whose value is an empty list,
+          and drops the first element of each value that is non-empty.
 
           @since 4.11 *)
 
@@ -946,6 +946,40 @@ module Map : sig
             [data] is [None] if [m] contains no binding for [x],
             or [Some v] if [m] binds [v] to [x].
           @since 3.12 *)
+
+      val split_at_cond: f:(key -> int) -> 'a t -> 'a t * (key * 'a) option * 'a t
+      (** [split_at_cond ~f m],
+          where [f] is a monotonically decreasing function
+          which returns zero for at most one key in the map,
+          returns a triple [(l, o, r)], where:
+          - [l] is the bindings of [m] whose keys [k] satisfy [f k > 0];
+          - [r] is the bindings of [m] whose keys [k] satisfy [f k < 0];
+          - [o] is [Some (k,v)] if [(k,v)] is a binding of [m]
+            such that [f k = 0].
+            or [None] if there is no such binding.
+
+          @since NEXT_OCAML_RELEASE
+      *)
+
+      val slice: ?min:key -> ?max:key -> 'a t -> 'a t
+      (** [slice_at_cond ?min ?max m]
+          returns the bindings of [m] whose keys
+          are at least equal to [min] and at most equal to [max].
+          Both [min] and [max] can be omitted.
+
+          @since NEXT_OCAML_RELEASE
+      *)
+
+      val slice_at_cond: ?low:(key -> int) -> ?high:(key -> int) -> 'a t -> 'a t
+      (** [slice_at_cond ?low ?high m],
+          where [low] and [high] are monotonically decreasing functions
+          which return zero for at most one key in the map,
+          returns the bindings of [m] whose keys [k]
+          satisfy [low k <= 0 && high k >= 0].
+          Both [low] and [high] can be omitted.
+
+          @since NEXT_OCAML_RELEASE
+      *)
 
       (** {1:predicates Predicates and comparisons} *)
 
@@ -989,24 +1023,27 @@ module Map : sig
           @since 5.1 *)
 
       val to_seq : 'a t -> (key * 'a) Seq.t
-      (** Iterate on the whole map, in ascending order of keys
+      (** [to_seq m] yields the bindings of [m]
+          in ascending order of keys.
+          @since 4.07 *)
+
+      val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
+      (** [to_seq_from min m] yields the bindings of [m]
+          whose keys are greater than or equal to [min],
+          in ascending order of keys.
           @since 4.07 *)
 
       val to_rev_seq : 'a t -> (key * 'a) Seq.t
-      (** Iterate on the whole map, in descending order of keys
+      (** [to_rev_seq m] yields the bindings of [m]
+          in descending order of keys.
           @since 4.12 *)
 
-      val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
-      (** [to_seq_from k m] iterates on a subset of the bindings of [m],
-          in ascending order of keys, from key [k] or above.
-          @since 4.07 *)
-
       val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
-      (** Add the given bindings to the map, in order.
+      (** Add the given bindings to the map.
           @since 4.07 *)
 
       val of_seq : (key * 'a) Seq.t -> 'a t
-      (** Build a map from the given bindings
+      (** Build a map from the given bindings.
           @since 4.07 *)
     end
   (** Output signature of the functor {!Make}. *)
@@ -1259,6 +1296,39 @@ module Set : sig
           [present] is [false] if [s] contains no element equal to [x],
           or [true] if [s] contains an element equal to [x]. *)
 
+      val split_at_cond: f:(elt -> int) -> t -> t * elt option * t
+      (** [split_at_cond ~f s],
+          where [f] is a monotonically decreasing function
+          which returns zero for at most one element in the set,
+          returns a triple [(l, o, r)], where:
+          - [l] is the set of elements [x] of [s] such that [f x > 0];
+          - [r] is the set of elements [x] of [s] such that [f x < 0];
+          - [o] is [Some x] if [x] is an element of [s] such that [f x = 0].
+            or [None] if there is no such element.
+
+          @since NEXT_OCAML_RELEASE
+      *)
+
+      val slice: ?min:elt -> ?max:elt -> t -> t
+      (** [slice_at_cond ?min ?max s]
+          returns the subset of [s] whose elements
+          are at least equal to [min] and at most equal to [max].
+          Both [min] and [max] can be omitted.
+
+          @since NEXT_OCAML_RELEASE
+      *)
+
+      val slice_at_cond: ?low:(elt -> int) -> ?high:(elt -> int) -> t -> t
+      (** [slice_at_cond ?low ?high s],
+          where [low] and [high] are monotonically decreasing functions
+          which return zero for at most one element in the set,
+          returns the subset of [s] whose elements [x]
+          satisfy [low x <= 0 && high x >= 0].
+          Both [low] and [high] can be omitted.
+
+          @since NEXT_OCAML_RELEASE
+      *)
+
       (** {1:predicates Predicates and comparisons} *)
 
       val is_empty: t -> bool
@@ -1299,25 +1369,26 @@ module Set : sig
           except perhaps for lists with many duplicated elements.
           @since 4.02 *)
 
-      val to_seq_from : elt -> t -> elt Seq.t
-      (** [to_seq_from x s] iterates on a subset of the elements of [s]
-          in ascending order, from [x] or above.
+      val to_seq : t -> elt Seq.t
+      (** [to_seq s] yields the elements of [s] in ascending order.
           @since 4.07 *)
 
-      val to_seq : t -> elt Seq.t
-      (** Iterate on the whole set, in ascending order
+      val to_seq_from : elt -> t -> elt Seq.t
+      (** [to_seq_from min s] yields the elements of [s]
+          which are greater than or equal to [min],
+          in ascending order.
           @since 4.07 *)
 
       val to_rev_seq : t -> elt Seq.t
-      (** Iterate on the whole set, in descending order
+      (** [to_rev_seq s] yields the elements of [s] in descending order.
           @since 4.12 *)
 
       val add_seq : elt Seq.t -> t -> t
-      (** Add the given elements to the set, in order.
+      (** Add the given elements to the set.
           @since 4.07 *)
 
       val of_seq : elt Seq.t -> t
-      (** Build a set from the given bindings
+      (** Build a set from the given elements.
           @since 4.07 *)
     end
   (** Output signature of the functor {!Make}. *)

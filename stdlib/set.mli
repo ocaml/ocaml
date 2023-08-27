@@ -255,6 +255,39 @@ module type S =
         [present] is [false] if [s] contains no element equal to [x],
         or [true] if [s] contains an element equal to [x]. *)
 
+    val split_at_cond: (elt -> int) -> t -> t * elt option * t
+    (** [split_at_cond f s],
+        where [f] is a monotonically decreasing function
+        which returns zero for at most one element in the set,
+        returns a triple [(l, o, r)], where:
+        - [l] is the set of elements [x] of [s] such that [f x > 0];
+        - [r] is the set of elements [x] of [s] such that [f x < 0];
+        - [o] is [Some x] if [x] is an element of [s] such that [f x = 0].
+          or [None] if there is no such element.
+
+        @since NEXT_OCAML_RELEASE
+    *)
+
+    val slice: ?min:elt -> ?max:elt -> t -> t
+    (** [slice_at_cond ?min ?max s]
+        returns the subset of [s] whose elements
+        are at least equal to [min] and at most equal to [max].
+        Both [min] and [max] can be omitted.
+
+        @since NEXT_OCAML_RELEASE
+    *)
+
+    val slice_at_cond: ?low:(elt -> int) -> ?high:(elt -> int) -> t -> t
+    (** [slice_at_cond ?low ?high s],
+        where [low] and [high] are monotonically decreasing functions
+        which return zero for at most one element in the set,
+        returns the subset of [s] whose elements [x]
+        satisfy [low x <= 0 && high x >= 0].
+        Both [low] and [high] can be omitted.
+
+        @since NEXT_OCAML_RELEASE
+    *)
+
     (** {1:predicates Predicates and comparisons} *)
 
     val is_empty: t -> bool
@@ -295,25 +328,26 @@ module type S =
         except perhaps for lists with many duplicated elements.
         @since 4.02 *)
 
-    val to_seq_from : elt -> t -> elt Seq.t
-    (** [to_seq_from x s] iterates on a subset of the elements of [s]
-        in ascending order, from [x] or above.
+    val to_seq : t -> elt Seq.t
+    (** [to_seq s] yields the elements of [s] in ascending order.
         @since 4.07 *)
 
-    val to_seq : t -> elt Seq.t
-    (** Iterate on the whole set, in ascending order
+    val to_seq_from : elt -> t -> elt Seq.t
+    (** [to_seq_from min s] yields the elements of [s]
+        which are greater than or equal to [min],
+        in ascending order.
         @since 4.07 *)
 
     val to_rev_seq : t -> elt Seq.t
-    (** Iterate on the whole set, in descending order
+    (** [to_rev_seq s] yields the elements of [s] in descending order.
         @since 4.12 *)
 
     val add_seq : elt Seq.t -> t -> t
-    (** Add the given elements to the set, in order.
+    (** Add the given elements to the set.
         @since 4.07 *)
 
     val of_seq : elt Seq.t -> t
-    (** Build a set from the given bindings
+    (** Build a set from the given elements.
         @since 4.07 *)
   end
 (** Output signature of the functor {!Make}. *)

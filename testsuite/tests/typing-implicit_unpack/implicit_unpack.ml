@@ -335,6 +335,11 @@ module type MapT =
     val filter_map : (key -> 'a -> 'b option) -> 'a t -> 'b t
     val partition : (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val split : key -> 'a t -> 'a t * 'a option * 'a t
+    val split_at_cond :
+      (key -> int) -> 'a t -> 'a t * (key * 'a) option * 'a t
+    val slice : ?min:key -> ?max:key -> 'a t -> 'a t
+    val slice_at_cond :
+      ?low:(key -> int) -> ?high:(key -> int) -> 'a t -> 'a t
     val is_empty : 'a t -> bool
     val mem : key -> 'a t -> bool
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
@@ -344,8 +349,8 @@ module type MapT =
     val to_list : 'a t -> (key * 'a) list
     val of_list : (key * 'a) list -> 'a t
     val to_seq : 'a t -> (key * 'a) Seq.t
-    val to_rev_seq : 'a t -> (key * 'a) Seq.t
     val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
+    val to_rev_seq : 'a t -> (key * 'a) Seq.t
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     val of_seq : (key * 'a) Seq.t -> 'a t
     type data
@@ -391,6 +396,11 @@ module SSMap :
     val filter_map : (key -> 'a -> 'b option) -> 'a t -> 'b t
     val partition : (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val split : key -> 'a t -> 'a t * 'a option * 'a t
+    val split_at_cond :
+      (key -> int) -> 'a t -> 'a t * (key * 'a) option * 'a t
+    val slice : ?min:key -> ?max:key -> 'a t -> 'a t
+    val slice_at_cond :
+      ?low:(key -> int) -> ?high:(key -> int) -> 'a t -> 'a t
     val is_empty : 'a t -> bool
     val mem : key -> 'a t -> bool
     val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
@@ -400,8 +410,8 @@ module SSMap :
     val to_list : 'a t -> (key * 'a) list
     val of_list : (key * 'a) list -> 'a t
     val to_seq : 'a t -> (key * 'a) Seq.t
-    val to_rev_seq : 'a t -> (key * 'a) Seq.t
     val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
+    val to_rev_seq : 'a t -> (key * 'a) Seq.t
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     val of_seq : (key * 'a) Seq.t -> 'a t
     type data = string

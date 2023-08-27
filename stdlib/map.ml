@@ -13,6 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(* Return [0] if [x = 0], [1] if [x > 0] and [-1] if [x < 0]. *)
+let sign x = compare x 0
+
 module type OrderedType =
   sig
     type t
@@ -55,6 +58,9 @@ module type S =
     val filter_map: (key -> 'a -> 'b option) -> 'a t -> 'b t
     val partition: (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     val split: key -> 'a t -> 'a t * 'a option * 'a t
+    val split_at_cond: (key -> int) -> 'a t -> 'a t * (key * 'a) option * 'a t
+    val slice: ?min:key -> ?max:key -> 'a t -> 'a t
+    val slice_at_cond: ?low:(key -> int) -> ?high:(key -> int) -> 'a t -> 'a t
     val is_empty: 'a t -> bool
     val mem: key -> 'a t -> bool
     val equal: ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
@@ -64,8 +70,8 @@ module type S =
     val to_list : 'a t -> (key * 'a) list
     val of_list : (key * 'a) list -> 'a t
     val to_seq : 'a t -> (key * 'a) Seq.t
-    val to_rev_seq : 'a t -> (key * 'a) Seq.t
     val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
+    val to_rev_seq : 'a t -> (key * 'a) Seq.t
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     val of_seq : (key * 'a) Seq.t -> 'a t
   end
@@ -387,13 +393,89 @@ module Make(Ord: OrderedType) = struct
     let rec split x = function
         Empty ->
           (Empty, None, Empty)
-      | Node {l; v; d; r} ->
+      | Node {l; v; d; r} as t ->
           let c = Ord.compare x v in
           if c = 0 then (l, Some d, r)
           else if c < 0 then
-            let (ll, pres, rl) = split x l in (ll, pres, join rl v d r)
+            let (ll, pres, rl) = split x l in
+            if rl == l then (ll, pres, t) else (ll, pres, join rl v d r)
           else
-            let (lr, pres, rr) = split x r in (join l v d lr, pres, rr)
+            let (lr, pres, rr) = split x r in
+            if lr == r then (t, pres, rr) else (join l v d lr, pres, rr)
+
+    (* Same with a predicate. *)
+
+    let rec split_at_cond f = function
+        Empty ->
+          (Empty, None, Empty)
+      | Node{l; v; d; r} as t ->
+          let c = f v in
+          if c = 0 then (l, Some (v,d), r)
+          else if c < 0 then
+            let (ll, pres, rl) = split_at_cond f l in
+            if rl == l then (ll, pres, t) else (ll, pres, join rl v d r)
+          else
+            let (lr, pres, rr) = split_at_cond f r in
+            if lr == r then (t, pres, rr) else (join l v d lr, pres, rr)
+
+    let rec slice_at_cond_from low = function
+      | Empty -> Empty
+      | Node{l; v; d; r} as t ->
+          let c = low v in
+          if c = 0 then
+            if l = Empty then t else add_min_binding v d r
+          else if c > 0 then
+            slice_at_cond_from low r
+          else
+            let l' = slice_at_cond_from low l in
+            if l' == l then t else join l' v d r
+
+    let rec slice_at_cond_upto high = function
+      | Empty -> Empty
+      | Node{l; v; d; r} as t ->
+          let c = high v in
+          if c = 0 then
+            if r = Empty then t else add_max_binding v d l
+          else if c < 0 then
+            slice_at_cond_upto high l
+          else
+            let r' = slice_at_cond_upto high r in
+            if r' == r then t else join l v d r'
+
+    let rec slice_at_cond_aux low high = function
+      | Empty -> Empty
+      | Node{l; v; d; r} as t ->
+          begin match sign (low v), sign (high v) with
+          | 1, 0 -> Empty
+          | 1, -1 -> Empty
+          | 0, -1 -> Empty
+          | 1, 1 -> slice_at_cond_aux low high r
+          | -1, -1 -> slice_at_cond_aux low high l
+          | 0, 0 -> if l = Empty && r = Empty then t else singleton v d
+          | 0, 1 ->
+              let r' = slice_at_cond_upto high r in
+              if l = Empty && r' == r then t else add_min_binding v d r'
+          | -1, 0 ->
+              let l' = slice_at_cond_from low l in
+              if r = Empty && l' == l then t else add_max_binding v d l'
+          | _ (* -1, 1 *) ->
+              let l' = slice_at_cond_from low l
+              and r' = slice_at_cond_upto high r in
+              if l' == l && r' == r then t else join l' v d r'
+          end
+
+    let slice_at_cond ?low ?high s =
+      begin match low, high with
+      | None, None -> s
+      | Some low, None -> slice_at_cond_from low s
+      | None, Some high -> slice_at_cond_upto high s
+      | Some low, Some high -> slice_at_cond_aux low high s
+      end
+
+    let slice ?min ?max s =
+      let low = Option.map Ord.compare min in
+      let high = Option.map Ord.compare max in
+      slice_at_cond ?low ?high s
 
     let rec merge f s1 s2 =
       match (s1, s2) with
@@ -508,40 +590,40 @@ module Make(Ord: OrderedType) = struct
     let to_list = bindings
     let of_list bs = List.fold_left (fun m (k, v) -> add k v m) empty bs
 
-    let add_seq i m =
-      Seq.fold_left (fun m (k,v) -> add k v m) m i
+    let add_seq seq m =
+      Seq.fold_left (fun m (k,v) -> add k v m) m seq
 
-    let of_seq i = add_seq i empty
+    let of_seq seq = add_seq seq empty
 
-    let rec seq_of_enum_ c () = match c with
+    let rec seq_of_enum_ e () = match e with
       | End -> Seq.Nil
       | More (k,v,t,rest) -> Seq.Cons ((k,v), seq_of_enum_ (cons_enum t rest))
 
     let to_seq m =
       seq_of_enum_ (cons_enum m End)
 
-    let rec snoc_enum s e =
-      match s with
+    let rec snoc_enum m e =
+      match m with
         Empty -> e
       | Node{l; v; d; r} -> snoc_enum r (More(v, d, l, e))
 
-    let rec rev_seq_of_enum_ c () = match c with
+    let rec seq_of_rev_enum_ e () = match e with
       | End -> Seq.Nil
       | More (k,v,t,rest) ->
-          Seq.Cons ((k,v), rev_seq_of_enum_ (snoc_enum t rest))
+          Seq.Cons ((k,v), seq_of_rev_enum_ (snoc_enum t rest))
 
-    let to_rev_seq c =
-      rev_seq_of_enum_ (snoc_enum c End)
+    let to_rev_seq m =
+      seq_of_rev_enum_ (snoc_enum m End)
 
     let to_seq_from low m =
-      let rec aux low m c = match m with
-        | Empty -> c
+      let rec to_enum_from_ low m tail = match m with
+        | Empty -> tail
         | Node {l; v; d; r; _} ->
-            begin match Ord.compare v low with
-              | 0 -> More (v, d, r, c)
-              | n when n<0 -> aux low r c
-              | _ -> aux low l (More (v, d, r, c))
+            begin match Ord.compare low v with
+              | 0 -> More (v, d, r, tail)
+              | lo when lo > 0 -> to_enum_from_ low r tail
+              | _ -> to_enum_from_ low l (More (v, d, r, tail))
             end
       in
-      seq_of_enum_ (aux low m End)
+      seq_of_enum_ (to_enum_from_ low m End)
 end

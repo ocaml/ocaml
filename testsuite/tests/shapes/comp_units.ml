@@ -132,6 +132,9 @@ module Without_constraint :
     val filter_map : (elt -> elt option) -> t -> t
     val partition : (elt -> bool) -> t -> t * t
     val split : elt -> t -> t * bool * t
+    val split_at_cond : (elt -> int) -> t -> t * elt option * t
+    val slice : ?min:elt -> ?max:elt -> t -> t
+    val slice_at_cond : ?low:(elt -> int) -> ?high:(elt -> int) -> t -> t
     val is_empty : t -> bool
     val mem : elt -> t -> bool
     val equal : t -> t -> bool
@@ -141,8 +144,8 @@ module Without_constraint :
     val exists : (elt -> bool) -> t -> bool
     val to_list : t -> elt list
     val of_list : elt list -> t
-    val to_seq_from : elt -> t -> elt Seq.t
     val to_seq : t -> elt Seq.t
+    val to_seq_from : elt -> t -> elt Seq.t
     val to_rev_seq : t -> elt Seq.t
     val add_seq : elt Seq.t -> t -> t
     val of_seq : elt Seq.t -> t

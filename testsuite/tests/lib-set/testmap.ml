@@ -16,7 +16,7 @@ let checkbool msg b =
 
 let uncurry (f: 'a -> 'b -> 'c) (x, y: 'a * 'b) : 'c = f x y
 
-let test x v s1 s2 =
+let test x v x2 v2 s1 s2 =
 
   checkbool "is_empty"
     (M.is_empty s1 = List.for_all (fun i -> img i s1 = None) testvals);
@@ -173,33 +173,48 @@ let test x v s1 s2 =
        else if i > x then img i r = img i s1
        else p = img i s1);
 
-  checkbool "to_seq_of_seq"
+  check "split_at_cond"
+    (let (l, p, r) = M.split_at_cond (fun y -> x - y) s1 in
+     fun i ->
+       if i < x then M.mem i l = M.mem i s1
+       else if i > x then M.mem i r = M.mem i s1
+       else
+        begin match p with
+        | None -> not (M.mem i s1)
+        | Some (k,_) -> k = i && M.mem i s1
+        end);
+
+  checkbool "slice_min"
+    (M.equal (=)
+      (M.slice ~min:x s1)
+      (M.filter (fun y _ -> x <= y) s1));
+
+  checkbool "slice_max"
+    (M.equal (=)
+      (M.slice ~max:x s1)
+      (M.filter (fun y _ -> y <= x) s1));
+
+  checkbool "slice"
+    (M.equal (=)
+      (M.slice ~min:x ~max:x2 s1)
+      (M.filter (fun y _ -> x <= y && y <= x2) s1));
+
+  checkbool "to_seq"
+    (List.of_seq (M.to_seq s1) = M.bindings s1);
+
+  checkbool "to_rev_seq"
+    (List.of_seq (M.to_rev_seq s1) = List.rev (M.bindings s1));
+
+  checkbool "of_seq/to_seq"
     (M.equal (=) s1 (M.of_seq @@ M.to_seq s1));
 
-  checkbool "to_rev_seq_of_seq"
+  checkbool "of_seq/to_rev_seq"
     (M.equal (=) s1 (M.of_seq @@ M.to_rev_seq s1));
 
   checkbool "to_seq_from"
-    (let seq = M.to_seq_from x s1 in
-     let ok1 = List.of_seq seq |> List.for_all (fun (y,_) -> y >= x) in
-     let ok2 =
-       (M.to_seq s1 |> List.of_seq |> List.filter (fun (y,_) -> y >= x))
-       =
-       (List.of_seq seq)
-     in
-     ok1 && ok2);
-
-  checkbool "to_seq_increasing"
-    (let seq = M.to_seq s1 in
-     let last = ref min_int in
-     Seq.iter (fun (x, _) -> assert (!last <= x); last := x) seq;
-     true);
-
-  checkbool "to_rev_seq_decreasing"
-    (let seq = M.to_rev_seq s1 in
-     let last = ref max_int in
-     Seq.iter (fun (x, _) -> assert (x <= !last); last := x) seq;
-     true);
+    (Seq.equal (=)
+       (M.to_seq_from x s1)
+       (M.to_seq s1 |> Seq.filter (fun (y,_) -> y >= x)));
 
   ()
 
@@ -214,7 +229,9 @@ let rmap() =
 
 let _ =
   Random.init 42;
-  for i = 1 to 10000 do test (rkey()) (rdata()) (rmap()) (rmap()) done
+  for i = 1 to 10000 do
+    test (rkey()) (rdata()) (rkey()) (rdata()) (rmap()) (rmap())
+  done
 
 let () =
   (* check that removing a binding from a map that is not present in this map
