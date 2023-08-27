@@ -402,6 +402,13 @@ let rec transl env e =
         | [] -> Debuginfo.none
         | fundecl::_ -> fundecl.dbg
       in
+      (* #11482, #12481: the 'clos_vars' may be arbitrary expressions
+         and may invoke the GC, which would be able to observe the
+         partially-filled block. This is safe because 'make_alloc'
+         evaluates and fills fields from left to right, and does not
+         call a GC between the allocation and filling fields. So the
+         closure metadata, which comes before the closure variables,
+         will always have been written before a GC can happen. *)
       make_alloc dbg Obj.closure_tag (transl_fundecls 0 fundecls)
   | Uoffset(arg, offset) ->
       (* produces a valid Caml value, pointing just after an infix header *)
