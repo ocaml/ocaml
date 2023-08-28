@@ -796,11 +796,12 @@ and transl_curried_function ~scopes loc return repr params body =
   let body, params =
     List.fold_right (fun fp (body, params) ->
       let param = fp.fp_param in
+      let param_loc = fp.fp_loc in
       match fp.fp_kind with
       | Tparam_pat pat ->
           let kind = value_kind pat.pat_env pat.pat_type in
           let body =
-            Matching.for_function ~scopes pat.pat_loc None (Lvar param)
+            Matching.for_function ~scopes param_loc None (Lvar param)
               [ pat, body ]
               fp.fp_partial
           in
@@ -811,7 +812,7 @@ and transl_curried_function ~scopes loc return repr params body =
           in
           let body =
             Matching.for_optional_arg_default
-              ~scopes pat.pat_loc pat body ~default_arg ~param
+              ~scopes param_loc pat body ~default_arg ~param
           in
           (* The optional param is Pgenval as it's an option. *)
           body, (param, Pgenval) :: params)

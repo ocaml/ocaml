@@ -311,7 +311,7 @@
         expression (attributes.ml[59,812+6]..[60,869+26]) ghost
           Pexp_function
           [
-            Pparam_val
+            Pparam_val (attributes.ml[59,812+6]..[59,812+16])
               Nolabel
               None
               pattern (attributes.ml[59,812+6]..[59,812+16])

@@ -68,7 +68,7 @@ and class_type_declaration =
 *)
 
 val approx_class_declarations:
-  Env.t -> Parsetree.class_description list -> class_type_info list
+  Env.t -> Parsetree.class_description list -> class_type_info list * Env.t
 
 (*
 val type_classes :

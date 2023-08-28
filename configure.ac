@@ -79,9 +79,8 @@ lib_systhreads=false
 lib_unix=false
 ocamltest_libunix=None
 ocamltest_unix_impl="dummy"
-ocamltest_unix_name=""
-ocamltest_unix_path=""
-ocamltest_unix_include=""
+unix_library=""
+unix_directory=""
 
 # Information about the package
 
@@ -176,10 +175,8 @@ AC_SUBST([lib_systhreads])
 AC_SUBST([lib_unix])
 AC_SUBST([ocamltest_CPP])
 AC_SUBST([ocamltest_libunix])
-AC_SUBST([ocamltest_unix_impl])
-AC_SUBST([ocamltest_unix_name])
-AC_SUBST([ocamltest_unix_path])
-AC_SUBST([ocamltest_unix_include])
+AC_SUBST([unix_library])
+AC_SUBST([unix_directory])
 AC_SUBST([cc_has_debug_prefix_map])
 AC_SUBST([as_has_debug_prefix_map])
 AC_SUBST([with_debugger]) # TODO: rename this variable
@@ -672,9 +669,8 @@ AS_IF([test x"$enable_unix_lib" != "xno"],
     otherlibs/unix/unix.ml:otherlibs/unix/unix_${unix_or_win32}.ml
   ])
   ocamltest_unix_impl="real"
-  ocamltest_unix_name="unix"
-  ocamltest_unix_path='$(ROOTDIR)/otherlibs/unix'
-  ocamltest_unix_include='-I $(ROOTDIR)/otherlibs/unix '],
+  unix_directory="otherlibs/unix"
+  unix_library="${unix_directory}/unix"],
   [ocamltest_libunix="None"])
 
 AS_IF([test x"$enable_str_lib" != "xno"],
@@ -1235,13 +1231,19 @@ arch=none
 model=default
 system=unknown
 
+# In all the cases below, if $arch is set so then so too must $system,
+# preserving $arch = 'none' <=> $system = 'unknown'
 has_native_backend=no
 native_ldflags=""
 AS_CASE([$host],
   [[i[3456]86-*-linux*]],
-    [arch=i386; system=linux_elf],
-  [[i[3456]86-*-*bsd*]],
-    [arch=i386; system=bsd_elf],
+    [arch=i386; system=linux],
+  [[i[3456]86-*-freebsd*]],
+    [arch=i386; system=freebsd],
+  [[i[3456]86-*-netbsd*]],
+    [arch=i386; system=netbsd],
+  [[i[3456]86-*-openbsd*]],
+    [arch=i386; system=openbsd],
   [[i[3456]86-*-haiku*]],
     [arch=i386; system=beos],
   [[i[3456]86-*-cygwin]],
@@ -1255,24 +1257,24 @@ AS_CASE([$host],
   [x86_64-pc-windows],
     [arch=amd64; system=win64],
   [[powerpc64le*-*-linux*]],
-    [has_native_backend=yes; arch=power; model=ppc64le; system=elf],
+    [has_native_backend=yes; arch=power; model=ppc64le; system=linux],
   [[s390x*-*-linux*]],
-    [has_native_backend=yes; arch=s390x; model=z10; system=elf],
+    [has_native_backend=yes; arch=s390x; model=z10; system=linux],
   # expected to match "gnueabihf" as well as "musleabihf"
   [armv6*-*-linux-*eabihf],
-    [arch=arm; model=armv6; system=linux_eabihf],
+    [arch=arm; model=armv6; system=linux],
   [armv7*-*-linux-*eabihf],
-    [arch=arm; model=armv7; system=linux_eabihf],
+    [arch=arm; model=armv7; system=linux],
   [armv8*-*-linux-*eabihf],
-    [arch=arm; model=armv8; system=linux_eabihf],
+    [arch=arm; model=armv8; system=linux],
   [armv8*-*-linux-*eabi],
-    [arch=arm; model=armv8; system=linux_eabi],
+    [arch=arm; model=armv8; system=linux],
   [armv7*-*-linux-*eabi],
-    [arch=arm; model=armv7; system=linux_eabi],
+    [arch=arm; model=armv7; system=linux],
   [armv6t2*-*-linux-*eabi],
-    [arch=arm; model=armv6t2; system=linux_eabi],
+    [arch=arm; model=armv6t2; system=linux],
   [armv6*-*-linux-*eabi],
-    [arch=arm; model=armv6; system=linux_eabi],
+    [arch=arm; model=armv6; system=linux],
   [armv6*-*-freebsd*],
     [arch=arm; model=armv6; system=freebsd],
   [earmv6*-*-netbsd*],
@@ -1280,17 +1282,17 @@ AS_CASE([$host],
   [earmv7*-*-netbsd*],
     [arch=arm; model=armv7; system=netbsd],
   [armv5te*-*-linux-*eabi],
-    [arch=arm; model=armv5te; system=linux_eabi],
+    [arch=arm; model=armv5te; system=linux],
   [armv5*-*-linux-*eabi],
-    [arch=arm; model=armv5; system=linux_eabi],
+    [arch=arm; model=armv5; system=linux],
   [arm*-*-linux-*eabihf],
-    [arch=arm; system=linux_eabihf],
+    [arch=arm; system=linux],
   [arm*-*-linux-*eabi],
-    [arch=arm; system=linux_eabi],
+    [arch=arm; system=linux],
   [arm*-*-openbsd*],
-    [arch=arm; system=bsd],
+    [arch=arm; system=openbsd],
   [zaurus*-*-openbsd*],
-    [arch=arm; system=bsd],
+    [arch=arm; system=openbsd],
   [x86_64-*-linux*],
     [has_native_backend=yes; arch=amd64; system=linux],
   [x86_64-*-gnu*],
@@ -2258,7 +2260,11 @@ AS_CASE([$enable_ocamltest,OCAML__DEVELOPMENT_VERSION],
   [ocamltest=''])
 
 AS_IF([test -n "$ocamltest"],
-  [AC_CHECK_PROGS([DIFF], [patdiff diff], [none])
+  [ocamltest_unix_mod="ocamltest/ocamltest_unix_${ocamltest_unix_impl}.ml"
+  AC_CONFIG_LINKS([
+    ocamltest/ocamltest_unix.ml:${ocamltest_unix_mod}
+  ])
+  AC_CHECK_PROGS([DIFF], [patdiff diff], [none])
   DIFF_FLAGS=""
   flags=""
   AS_CASE([$DIFF],

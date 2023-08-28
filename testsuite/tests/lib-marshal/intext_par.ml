@@ -11,6 +11,12 @@
 
 (* Test for output_value / input_value *)
 
+let test_size =
+  try int_of_string (Sys.getenv "OCAML_TEST_SIZE")
+  with Not_found | Failure _ -> 1
+
+let num_domains = 1 lsl test_size
+
 let max_data_depth = 500000
 
 type t = A | B of int | C of float | D of string | E of char
@@ -595,7 +601,7 @@ let main_domain id =
   ()
 
 let main () =
-  let domains = Array.init 8 (fun id ->
+  let domains = Array.init num_domains (fun id ->
     Domain.spawn (fun () -> main_domain id))
   in
   Array.iter Domain.join domains;

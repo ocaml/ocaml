@@ -351,14 +351,14 @@ end
 module E = struct
   (* Value expressions for the core language *)
 
-  let iter_function_param sub param =
-    match param with
+  let iter_function_param sub { pparam_loc = loc; pparam_desc = desc } =
+    sub.location sub loc;
+    match desc with
     | Pparam_val (_lab, def, p) ->
         iter_opt (sub.expr sub) def;
         sub.pat sub p
-    | Pparam_newtype (ty, loc) ->
-        iter_loc sub ty;
-        sub.location sub loc
+    | Pparam_newtype ty ->
+        iter_loc sub ty
 
   let iter_body sub body =
     match body with

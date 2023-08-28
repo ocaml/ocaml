@@ -105,12 +105,7 @@ module Bytecode = struct
         let old_state = Symtable.current_state () in
         let compunit : Cmo_format.compilation_unit = unit_header in
         seek_in ic compunit.cu_pos;
-        let code_size = compunit.cu_codesize + 8 in
-        let code = LongString.create code_size in
-        LongString.input_bytes_into code ic compunit.cu_codesize;
-        LongString.set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
-        LongString.blit_string "\000\000\000\001\000\000\000" 0
-          code (compunit.cu_codesize + 1) 7;
+        let code = LongString.input_bytes ic compunit.cu_codesize in
         begin try
           Symtable.patch_object code compunit.cu_reloc;
           Symtable.check_global_initialized compunit.cu_reloc;

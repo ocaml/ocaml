@@ -19,7 +19,7 @@ Here is an example of a case that is not matched:
 T (`Conj _)
 
 val f : s t -> unit = <fun>
-Exception: Match_failure ("", 4, 7).
+Exception: Match_failure ("", 4, 6).
 |}];;
 
 module M : sig

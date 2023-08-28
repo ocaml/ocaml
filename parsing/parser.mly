@@ -592,12 +592,14 @@ let class_of_let_bindings ~loc lbs body =
    parameter.
 *)
 let all_params_as_newtypes =
-  let is_newtype = function
+  let is_newtype { pparam_desc; _ } =
+    match pparam_desc with
     | Pparam_newtype _ -> true
     | Pparam_val _ -> false
   in
-  let as_newtype = function
-    | Pparam_newtype (x, loc) -> Some (x, loc)
+  let as_newtype { pparam_desc; pparam_loc } =
+    match pparam_desc with
+    | Pparam_newtype x -> Some (x, pparam_loc)
     | Pparam_val _ -> None
   in
   fun params ->
@@ -2768,11 +2770,14 @@ fun_param_as_list:
           | [_] -> make_loc $sloc
           | _ :: _ :: _ -> ghost_loc $sloc
         in
-        List.map (fun x -> Pparam_newtype (x, loc)) ty_params
+        List.map
+          (fun x -> { pparam_loc = loc; pparam_desc = Pparam_newtype x })
+          ty_params
       }
   | labeled_simple_pattern
       { let a, b, c = $1 in
-        [ Pparam_val (a, b, c) ] }
+        [ { pparam_loc = make_loc $sloc; pparam_desc = Pparam_val (a, b, c) } ]
+      }
 ;
 fun_params:
   | nonempty_concat(fun_param_as_list) { $1 }

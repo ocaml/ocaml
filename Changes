@@ -31,6 +31,15 @@ Working version
   (Alistair O'Brien, review by Gabriel Scherer, Nicolás Ojeda Bär
    and Florian Angeletti)
 
+- #12456: Document the incompatibility between effects on the one
+  hand, and `caml_callback` and asynchronous callbacks (signal
+  handlers, finalisers, memprof callbacks...) on the other hand.
+  (Guillaume Munch-Maccagnoni, review by KC Sivaramakrishnan)
+
+- #12375: allow use of [@untagged] for all immediate types like char, bool,
+  and variant with only constant constructors.
+  (Christophe Raffalli, review by Gabriel Scherer)
+
 ### Type system:
 
 - #12313, #11799: Do not re-build as-pattern type when a ground type annotation
@@ -84,6 +93,18 @@ Working version
   arise at specific locations during domain creation and shutdown.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
 
+- #12114: Add ThreadSanitizer support
+  (Fabrice Buoro and Olivier Nicole, based on an initial work by Anmol Sahoo,
+   review by Damien Doligez, Sebastien Hinderer, Jacques-Henri Jourdan, Luc
+   Maranget, Guillaume Munch-Maccagnoni, Gabriel Scherer)
+
+- #11911, #12381: Restore statmemprof functionality in part
+   (API changes in Gc.Memprof). (Nick Barnes)
+
+- #12430: Simplify dynamic bytecode loading in Meta.reify_bytecode
+  (Stephen Dolan, review by Sébastien Hinderer, Vincent Laviron and Xavier
+   Leroy)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.
@@ -96,7 +117,7 @@ Working version
 
 ### Standard library:
 
-* #10775: Half-precision floating-point elements in Bigarray.
+* #10775, #12499: Half-precision floating-point elements in Bigarray.
   (Anton Yabchinskiy, review by Xavier Leroy and Nicolás Ojeda Bär)
 
 - #12217: Add `Array.shuffle`.
@@ -143,7 +164,24 @@ Working version
 - #12352: Fix a typo in the documentation of Arg.write_arg
   (Christophe Raffalli, review by Florian Angeletti)
 
+- #12473: Document in runtime/memory.c our current understanding of
+  accesses to the OCaml heap from the C runtime code -- the problem
+  of hybrid programs mixing two memory models.
+  (Gabriel Scherer and Guillaume Munch-Maccagnoni, review by Olivier
+   Nicole and Xavier Leroy)
+
 ### Compiler user-interface and warnings:
+
+* #10613, #12405: Simplify the values used for the system variable (`system:` in
+  `ocamlopt -config` or the `Config.system` constant). In particular, s390x and
+  ppc64 now report "linux" instead of "elf"; all variants of 32-bit ARM on Linux
+  now report "linux"; OpenBSD now reports "openbsd" instead of "bsd" for 32-bit
+  ARM; FreeBSD, NetBSD and OpenBSD now report the same value for both x86_64 and
+  x86_32; x86_32 systems matching *bsd but not freebsd*, netbsd* or openbsd*
+  are no longer identified (as on x86_64); x86_32 Linux now reports "linux"
+  instead of "linux_elf".
+  (David Allsopp, request by Kate Deplaix, review by Sébastien Hinderer and
+  Xavier Leroy)
 
 - #12247: configure: --disable-ocamldebug can now be used instead
   of --disable-debugger (which remains available for compatibility)
@@ -166,6 +204,9 @@ Working version
   (Florian Angeletti, review by Gabriel Scherer)
 
 ### Internal/compiler-libs changes:
+
+- #12447: Remove 32-bit targets from X86_proc.system
+  (Masanori Ogino, review by David Allsopp)
 
 - #12216, #12248: Prevent reordering of atomic loads during instruction
   scheduling.  This is for reference, as instruction scheduling is currently
@@ -194,7 +235,7 @@ Working version
   in Typecore in favor of local mutable state.
   (Nick Roberts, review by Takafumi Saikawa)
 
-- #12236, #12386: Use syntax as the sole determiner of function arity
+- #12236, #12386, #12391: Use syntax as the sole determiner of function arity
   This changes function arity to be based solely on the source program's
   parsetree. Previously, the heuristic for arity had more subtle heuristics
   that involved type information about patterns.  Function arity is important
@@ -209,12 +250,16 @@ Working version
   (Nick Roberts; review by Richard Eisenberg, Leo White, and Gabriel Scherer;
   RFC by Stephen Dolan)
 
+- #12442: document jump summaries in the pattern-matching compiler
+  (Gabriel Scherer and Thomas Refis, review by Florian Angeletti
+   and Vincent Laviron)
+
 - #12446: remove the hooks machinery around channel locking in runtimee/io.c
   (Gabriel Scherer, review by Xavier Leroy)
 
 ### Build system:
 
-- #12198: continue the merge of the sub-makefiles into the root Makefile
+- #12198, #12321: continue the merge of the sub-makefiles into the root Makefile
   started with #11243, #11248, #11268, #11420 and #11675.
   (Sébastien Hinderer, review by David Allsopp and Florian Angeletti)
 
@@ -252,6 +297,14 @@ Working version
   negative offsets, instead of failing. Now both functions should consistently
   raise `Sys_error` in this case.
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
+
+- #12267: Fix stack alignment computation
+  (Miod Vallat, report by Jan Midtgaard, review by Gabriel Scherer)
+
+- #12395, #12404: Fix thread-unsafety in the fallback implementation of
+  `Unix.create_process` (the one used when `posix_spawnp` is unavailable)
+  (Xavier Leroy, report by Chris Vine, review by Nicolás Ojeda Bär)
+
 
 OCaml 5.1.0 release branch
 --------------------------
@@ -417,11 +470,6 @@ Some of those changes will benefit all OCaml packages.
   `ocamlmklib.opt` are no longer installed to `$BINDIR`.
   (Xavier Leroy, review by Gabriel Scherer)
 
-- #12114: Add ThreadSanitizer support
-  (Fabrice Buoro and Olivier Nicole, based on an initial work by Anmol Sahoo,
-   review by Damien Doligez, Sebastien Hinderer, Jacques-Henri Jourdan, Luc
-   Maranget, Guillaume Munch-Maccagnoni, Gabriel Scherer)
-
 ### Runtime system:
 
 - #11589, #11903: Modify the GC pacing code to make sure the GC keeps
@@ -550,7 +598,7 @@ Some of those changes will benefit all OCaml packages.
 
 ### Type system:
 
-* #6941, #11187: prohibit using classes through recursive modules
+* #6941, #11187, #12483: prohibit using classes through recursive modules
   inheriting or including a class belonging to a mutually-recursive module
   would previous behave incorrectly, and now results in a clean error.
   (Leo White, review by Gabriel Scherer and Florian Angeletti)
@@ -1141,6 +1189,9 @@ Some of those changes will benefit all OCaml packages.
 - #12253, #12342: Fix infinite loop in signal handling.
   (Guillaume Munch-Maccagnoni, report by Thomas Leonard, review by
    KC Sivaramakrishnan and Sadiq Jaffer)
+
+- #12445: missing GC root registrations in runtime/io.c
+  (Gabriel Scherer, review by Xavier Leroy and Jeremy Yallop)
 
 OCaml 5.0.0 (15 December 2022)
 ------------------------------

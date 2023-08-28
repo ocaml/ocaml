@@ -1485,8 +1485,9 @@ let get_native_repr_attribute attrs ~global_repr =
 
 let native_repr_of_type env kind ty =
   match kind, get_desc (Ctype.expand_head_opt env ty) with
-  | Untagged, Tconstr (path, _, _) when Path.same path Predef.path_int ->
-    Some Untagged_int
+  | Untagged, Tconstr (_, _, _) when
+         Typeopt.maybe_pointer_type env ty = Lambda.Immediate ->
+    Some Untagged_immediate
   | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_float ->
     Some Unboxed_float
   | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_int32 ->
@@ -2147,8 +2148,8 @@ let report_error ppf = function
         Style.inline_code "int64"
         Style.inline_code "nativeint"
   | Cannot_unbox_or_untag_type Untagged ->
-      fprintf ppf "@[Don't know how to untag this type.@ \
-                   Only %a can be untagged.@]"
+      fprintf ppf "@[Don't know how to untag this type. Only %a@ \
+                   and other immediate types can be untagged.@]"
         Style.inline_code "int"
   | Deep_unbox_or_untag_attribute kind ->
       fprintf ppf
