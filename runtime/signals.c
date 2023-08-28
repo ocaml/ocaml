@@ -159,12 +159,20 @@ CAMLexport void (*caml_enter_blocking_section_hook)(void) =
 CAMLexport void (*caml_leave_blocking_section_hook)(void) =
    caml_leave_blocking_section_default;
 
+static int check_pending_actions(caml_domain_state * dom_st);
+
 CAMLexport void caml_enter_blocking_section(void)
 {
   caml_domain_state * domain = Caml_state;
-  while (1){
+  while (1) {
     /* Process all pending signals now */
-    caml_process_pending_actions();
+    if (check_pending_actions(domain)) {
+      /* First reset young_limit, and set action_pending in case there
+         are further async callbacks pending beyond OCaml signal
+         handlers. */
+      caml_handle_gc_interrupt();
+      caml_raise_if_exception(caml_process_pending_signals_exn());
+    }
     caml_enter_blocking_section_hook ();
     /* Check again if a signal arrived in the meanwhile. If none,
        done; otherwise, try again. Since we do not hold the domain
@@ -321,10 +329,15 @@ CAMLexport void caml_set_action_pending(caml_domain_state * dom_st)
   dom_st->action_pending = true;
 }
 
+static int check_pending_actions(caml_domain_state * dom_st)
+{
+  return Caml_check_gc_interrupt(dom_st) || dom_st->action_pending;
+}
+
 CAMLexport int caml_check_pending_actions(void)
 {
   Caml_check_caml_state();
-  return Caml_check_gc_interrupt(Caml_state) || Caml_state->action_pending;
+  return check_pending_actions(Caml_state);
 }
 
 value caml_do_pending_actions_exn(void)
