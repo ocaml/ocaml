@@ -1618,11 +1618,17 @@ void caml_interrupt_all_for_signal(void)
   }
 }
 
+/* To avoid any risk of forgetting an action through a race,
+   [caml_reset_young_limit] is the only way (apart from setting
+   young_limit to -1 for immediate interruption) through which
+   [young_limit] can be modified. We take care here of possible
+   races. */
 void caml_reset_young_limit(caml_domain_state * dom_st)
 {
   CAMLassert ((uintnat)dom_st->young_ptr > (uintnat)dom_st->young_trigger);
-  /* An interrupt might have been queued in the meanwhile; this
-     achieves the proper synchronisation. */
+  /* An interrupt might have been queued in the meanwhile; the
+     atomic_exchange achieves the proper synchronisation with the
+     reads that follow (an atomic_store is not enough). */
   atomic_exchange(&dom_st->young_limit, (uintnat)dom_st->young_trigger);
   dom_internal * d = &all_domains[dom_st->id];
   if (atomic_load_relaxed(&d->interruptor.interrupt_pending)
