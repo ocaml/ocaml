@@ -17,6 +17,7 @@
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
+#include <caml/bigarray.h>
 #include "unixsupport.h"
 
 CAMLprim value caml_unix_read(value fd, value buf, value ofs, value len)
@@ -34,4 +35,21 @@ CAMLprim value caml_unix_read(value fd, value buf, value ofs, value len)
   if (ret == -1) caml_uerror("read", Nothing);
   memmove (&Byte(buf, Long_val(ofs)), iobuf, ret);
   CAMLreturn(Val_int(ret));
+}
+
+CAMLprim value caml_unix_read_bigarray(value fd, value vbuf,
+                                       value vofs, value vlen)
+{
+  CAMLparam4(fd, vbuf, vofs, vlen);
+  intnat ofs, len, ret;
+  void *buf;
+
+  buf = Caml_ba_data_val(vbuf);
+  ofs = Long_val(vofs);
+  len = Long_val(vlen);
+  caml_enter_blocking_section();
+  ret = read(Int_val(fd), buf + ofs, len);
+  caml_leave_blocking_section();
+  if (ret == -1) caml_uerror("read_bigarray", Nothing);
+  CAMLreturn(Val_long(ret));
 }

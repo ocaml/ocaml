@@ -130,6 +130,12 @@ Working version
    Guillaume Munch-Maccagnoni, KC Sivaramakrishnan, Stefan Muenzel,
    Xavier Leroy)
 
+- #12365: Add In_channel.input_bigarray, In_channel.really_input_bigarray,
+  Out_channel.output_bigarray, Unix.read_bigarray, Unix.write_bigarray,
+  Unix.single_write_bigarray.
+  (Nicolás Ojeda Bär, review by Jeremy Yallop, Xavier Leroy, Gabriel Scherer,
+   David Allsopp)
+
 ### Other libraries:
 
 - #12213: Dynlink library, improve legibility of error messages
