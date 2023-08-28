@@ -128,7 +128,7 @@ val f1 : 'a th -> 'a = <fun>
 val f2 : 'a th -> 'a = <fun>
 |}]
 (* Do not allow to deduce extra assumptions *)
-let ko (type a) : a th -> a = function
+let ko1 (type a) : a th -> a = function
   | Thunk (type b c) (x, f : b * (b -> c option)) -> f x
 [%%expect{|
 Line 2, characters 29-48:
@@ -137,6 +137,18 @@ Line 2, characters 29-48:
 Error: This pattern matches values of type "b * (b -> c option)"
        but a pattern was expected which matches values of type "b * (b -> a)"
        Type "c option" is not compatible with type "a"
+|}]
+(* Can only name closed types *)
+let ko2 = function
+  | Thunk (type b c) (x, f : b * (b -> c)) -> f x
+[%%expect{|
+Line 2, characters 29-41:
+2 |   | Thunk (type b c) (x, f : b * (b -> c)) -> f x
+                                 ^^^^^^^^^^^^
+Error: This pattern matches values of type "b * (b -> 'a)"
+       but a pattern was expected which matches values of type "b * (b -> 'b)"
+       This instance of "'a" is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 type _ tho =
