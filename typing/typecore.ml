@@ -749,51 +749,84 @@ let solve_Ppat_tuple (type a) ~refine loc env (args : a list) expected_ty =
 let solve_constructor_annotation
     tps (penv : Pattern_env.t) name_list sty ty_args ty_ex =
   let expansion_scope = penv.equations_scope in
-  let ids =
-    List.map
-      (fun name ->
-        let decl = new_local_type ~loc:name.loc Definition in
-        let (id, new_env) =
-          Env.enter_type ~scope:expansion_scope name.txt decl !!penv in
-        Pattern_env.set_env penv new_env;
-        {name with txt = id})
-      name_list
-  in
-  let cty, ty, force =
-    with_local_level ~post:(fun (_,ty,_) -> generalize_structure ty)
-      (fun () -> Typetexp.transl_simple_type_delayed !!penv sty)
-  in
-  tps.tps_pattern_force <- force :: tps.tps_pattern_force;
-  let ty_args =
-    let ty1 = instance ty and ty2 = instance ty in
-    match ty_args with
-      [] -> assert false
-    | [ty_arg] ->
-        unify_pat_types cty.ctyp_loc !!penv ty1 ty_arg;
-        [ty2]
-    | _ ->
-        unify_pat_types cty.ctyp_loc !!penv ty1 (newty (Ttuple ty_args));
-        match get_desc (expand_head !!penv ty2) with
-          Ttuple tyl -> tyl
-        | _ -> assert false
-  in
-  if ids <> [] then ignore begin
-    let ids = List.map (fun x -> x.txt) ids in
-    let rem =
-      List.fold_left
-        (fun rem tv ->
-          match get_desc tv with
-            Tconstr(Path.Pident id, [], _) when List.mem id rem ->
-              list_remove id rem
-          | _ ->
+  let ty_args, ids, cty =
+    with_local_level begin fun () ->
+      let ids =
+        List.map
+          (fun name ->
+            let decl =
+              new_local_type ~loc:name.loc Definition
+                ~manifest_and_scope:(newvar (),expansion_scope) in
+            let (id, new_env) =
+              Env.enter_type ~scope:expansion_scope name.txt decl !!penv in
+            Pattern_env.set_env penv new_env;
+            {name with txt = id})
+          name_list
+      in
+      let cty, ty, force =
+        with_local_level ~post:(fun (_,ty,_) -> generalize_structure ty)
+          (fun () -> Typetexp.transl_simple_type_delayed !!penv sty)
+      in
+      tps.tps_pattern_force <- force :: tps.tps_pattern_force;
+      let ty_args =
+        let ty1 = instance ty and ty2 = instance ty in
+        match ty_args with
+          [] -> assert false
+        | [ty_arg] ->
+            unify_pat_types cty.ctyp_loc !!penv ty1 ty_arg;
+            [ty2]
+        | _ ->
+            unify_pat_types cty.ctyp_loc !!penv ty1 (newty (Ttuple ty_args));
+            match get_desc (expand_head !!penv ty2) with
+              Ttuple tyl -> tyl
+            | _ -> assert false
+      in
+      let get_decl_manifest id env =
+        let decl =
+          try Env.find_type (Path.Pident id) env
+          with Not_found -> assert false in
+        match decl.type_manifest with
+          None -> assert false
+        | Some ty -> (decl, ty)
+      in
+      if ids <> [] then ignore begin
+        let ids = List.map (fun x -> x.txt) ids in
+        let rem =
+          List.fold_left
+            (fun rem tv ->
+              match get_desc tv with
+                Tconstr(Path.Pident id, [], _) when List.mem id rem ->
+                  let decl, tv' = get_decl_manifest id !!penv in
+                  let env =
+                    Env.add_type ~check:false id
+                      {decl with type_manifest = None} !!penv
+                  in
+                  Pattern_env.set_env penv env;
+                  unify_pat_types cty.ctyp_loc env tv tv';
+                  list_remove id rem
+              | _ ->
+                  raise (Error (cty.ctyp_loc, !!penv,
+                                Unbound_existential (ids, ty))))
+            ids ty_ex
+        in
+        List.iter
+          (fun id ->
+            let _, tv' = get_decl_manifest id !!penv in
+            if free_variables tv' <> [] then
               raise (Error (cty.ctyp_loc, !!penv,
                             Unbound_existential (ids, ty))))
-        ids ty_ex
-    in
-    if rem <> [] then
-      raise (Error (cty.ctyp_loc, !!penv,
-                    Unbound_existential (ids, ty)))
-  end;
+          rem;
+      end;
+      ty_args, ids, cty
+    end
+    ~post:begin fun (_, ids, _) ->
+      let env = !!penv in
+      List.iter (fun {txt=id} ->
+        let decl = Env.find_type (Path.Pident id) env in
+        Option.iter generalize_structure decl.type_manifest)
+        ids
+    end
+  in
   ty_args, Some (ids, cty)
 
 let solve_Ppat_construct ~refine tps penv loc constr no_existentials

@@ -32,14 +32,9 @@ Line 1, characters 40-41:
 Error: This type does not bind all existentials in the constructor:
          "type a. 'a ty * 'a"
 |}]
-let ko2 = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
+let ok3 = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
 [%%expect{|
-Line 1, characters 42-50:
-1 | let ko2 = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
-                                              ^^^^^^^^
-Error: This pattern matches values of type "a ty * b"
-       but a pattern was expected which matches values of type "a ty * a"
-       Type "b" is not compatible with type "a"
+val ok3 : dyn -> unit = <fun>
 |}]
 
 type u = C : 'a * ('a -> 'b list) -> u
@@ -116,4 +111,54 @@ let f = function Pair (x, y : int * _) -> x + y
 [%%expect{|
 type ('a, 'b) pair = Pair of 'a * 'b
 val f : (int, int) pair -> int = <fun>
+|}]
+
+
+(* #11891: allow naming more types *)
+
+type _ th =
+  | Thunk : 'a * ('a -> 'b) -> 'b th
+let f1 (type a) : a th -> a = function
+  | Thunk (type b) (x, f : b * (b -> _)) -> f x
+let f2 (type a) : a th -> a = function
+  | Thunk (type b c) (x, f : b * (b -> c)) -> f x
+[%%expect{|
+type _ th = Thunk : 'a * ('a -> 'b) -> 'b th
+val f1 : 'a th -> 'a = <fun>
+val f2 : 'a th -> 'a = <fun>
+|}]
+(* Do not allow to deduce extra assumptions *)
+let ko (type a) : a th -> a = function
+  | Thunk (type b c) (x, f : b * (b -> c option)) -> f x
+[%%expect{|
+Line 2, characters 29-48:
+2 |   | Thunk (type b c) (x, f : b * (b -> c option)) -> f x
+                                 ^^^^^^^^^^^^^^^^^^^
+Error: This pattern matches values of type "b * (b -> c option)"
+       but a pattern was expected which matches values of type "b * (b -> a)"
+       Type "c option" is not compatible with type "a"
+|}]
+
+type _ tho =
+  | Thunk_opt : 'b * ('b -> 'c option) -> 'c option tho
+let f3 (type a) : a tho -> a = function
+  | Thunk_opt (type b c) (x, f : b * (b -> c option)) -> f x
+[%%expect{|
+type _ tho = Thunk_opt : 'b * ('b -> 'c option) -> 'c option tho
+val f3 : 'a tho -> 'a = <fun>
+|}]
+
+type _ ty =
+  | Int : int ty
+  | Pair : 'b ty * 'c ty -> ('b * 'c) ty
+let rec example : type a . a ty -> a = function
+| Int -> 0
+| Pair (x, y) -> (example x, example y)
+let rec example : type a . a ty -> a = function
+| Int -> 0
+| Pair (type b c) (x, y : b ty * c ty) -> (example x, example y)
+[%%expect{|
+type _ ty = Int : int ty | Pair : 'b ty * 'c ty -> ('b * 'c) ty
+val example : 'a ty -> 'a = <fun>
+val example : 'a ty -> 'a = <fun>
 |}]
