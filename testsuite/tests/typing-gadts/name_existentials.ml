@@ -79,7 +79,7 @@ let rec test : type a. a expr -> a = function
 Line 2, characters 22-23:
 2 |   | Int (type b) (n : a) -> n
                           ^
-Error: This type does not bind all existentials in the constructor: "type b. a"
+Error: This type annotation attempts to bind b to the non-closed type 'a.
 |}]
 
 (* Strange wildcard *)
@@ -149,6 +149,16 @@ Error: This pattern matches values of type "b * (b -> 'a)"
        but a pattern was expected which matches values of type "b * (b -> 'b)"
        This instance of "'a" is ambiguous:
        it would escape the scope of its equation
+|}]
+let ko3 () =
+  match [] with
+  | [Thunk (type b c) (x, f : b * (b -> c))] -> f x
+  | _ -> assert false
+[%%expect{|
+Line 3, characters 30-42:
+3 |   | [Thunk (type b c) (x, f : b * (b -> c))] -> f x
+                                  ^^^^^^^^^^^^
+Error: This type annotation attempts to bind c to the non-closed type 'a.
 |}]
 
 type _ tho =

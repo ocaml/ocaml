@@ -189,6 +189,7 @@ type error =
   | Andop_type_clash of string * Errortrace.unification_error
   | Bindings_type_clash of Errortrace.unification_error
   | Unbound_existential of Ident.t list * type_expr
+  | Non_closed_type_alias of Ident.t * type_expr
   | Missing_type_constraint
   | Wrong_expected_kind of wrong_kind_sort * wrong_kind_context * type_expr
   | Expr_not_a_record_type of type_expr
@@ -749,84 +750,76 @@ let solve_Ppat_tuple (type a) ~refine loc env (args : a list) expected_ty =
 let solve_constructor_annotation
     tps (penv : Pattern_env.t) name_list sty ty_args ty_ex =
   let expansion_scope = penv.equations_scope in
-  let ty_args, ids, cty =
-    with_local_level begin fun () ->
-      let ids =
-        List.map
-          (fun name ->
-            let decl =
-              new_local_type ~loc:name.loc Definition
-                ~manifest_and_scope:(newvar (),expansion_scope) in
-            let (id, new_env) =
-              Env.enter_type ~scope:expansion_scope name.txt decl !!penv in
-            Pattern_env.set_env penv new_env;
-            {name with txt = id})
-          name_list
-      in
-      let cty, ty, force =
-        with_local_level ~post:(fun (_,ty,_) -> generalize_structure ty)
-          (fun () -> Typetexp.transl_simple_type_delayed !!penv sty)
-      in
-      tps.tps_pattern_force <- force :: tps.tps_pattern_force;
-      let ty_args =
-        let ty1 = instance ty and ty2 = instance ty in
-        match ty_args with
-          [] -> assert false
-        | [ty_arg] ->
-            unify_pat_types cty.ctyp_loc !!penv ty1 ty_arg;
-            [ty2]
-        | _ ->
-            unify_pat_types cty.ctyp_loc !!penv ty1 (newty (Ttuple ty_args));
-            match get_desc (expand_head !!penv ty2) with
-              Ttuple tyl -> tyl
-            | _ -> assert false
-      in
-      let get_decl_manifest id env =
+  let ids =
+    List.map
+      (fun name ->
         let decl =
-          try Env.find_type (Path.Pident id) env
-          with Not_found -> assert false in
-        match decl.type_manifest with
-          None -> assert false
-        | Some ty -> (decl, ty)
-      in
-      if ids <> [] then ignore begin
-        let ids = List.map (fun x -> x.txt) ids in
-        let rem =
-          List.fold_left
-            (fun rem tv ->
-              match get_desc tv with
-                Tconstr(Path.Pident id, [], _) when List.mem id rem ->
-                  let decl, tv' = get_decl_manifest id !!penv in
-                  let env =
-                    Env.add_type ~check:false id
-                      {decl with type_manifest = None} !!penv
-                  in
-                  Pattern_env.set_env penv env;
-                  unify_pat_types cty.ctyp_loc env tv tv';
-                  list_remove id rem
-              | _ ->
-                  raise (Error (cty.ctyp_loc, !!penv,
-                                Unbound_existential (ids, ty))))
-            ids ty_ex
-        in
-        List.iter
-          (fun id ->
-            let _, tv' = get_decl_manifest id !!penv in
-            if free_variables tv' <> [] then
+          new_local_type ~loc:name.loc Definition
+            ~manifest_and_scope:(newvar (),expansion_scope) in
+        let (id, new_env) =
+          Env.enter_type ~scope:expansion_scope name.txt decl !!penv in
+        Pattern_env.set_env penv new_env;
+        {name with txt = id})
+      name_list
+  in
+  let cty, ty, force =
+    with_local_level ~post:(fun (_,ty,_) -> generalize_structure ty)
+      (fun () -> Typetexp.transl_simple_type_delayed !!penv sty)
+  in
+  tps.tps_pattern_force <- force :: tps.tps_pattern_force;
+  let ty_args =
+    let ty1 = instance ty and ty2 = instance ty in
+    match ty_args with
+      [] -> assert false
+    | [ty_arg] ->
+        unify_pat_types cty.ctyp_loc !!penv ty1 ty_arg;
+        [ty2]
+    | _ ->
+        unify_pat_types cty.ctyp_loc !!penv ty1 (newty (Ttuple ty_args));
+        match get_desc (expand_head !!penv ty2) with
+          Ttuple tyl -> tyl
+        | _ -> assert false
+  in
+  if ids <> [] then ignore begin
+    let get_decl_manifest id env =
+      let decl =
+        try Env.find_type (Path.Pident id) env with Not_found -> assert false in
+      match decl.type_manifest with
+        None -> assert false
+      | Some ty -> (decl, ty)
+    in
+    let ids = List.map (fun x -> x.txt) ids in
+    let rem =
+      List.fold_left
+        (fun rem tv ->
+          match get_desc tv with
+            Tconstr(Path.Pident id, [], _) when List.mem id rem ->
+              let decl, tv' = get_decl_manifest id !!penv in
+              let env =
+                Env.add_type ~check:false id
+                  {decl with type_manifest = None} !!penv
+              in
+              Pattern_env.set_env penv env;
+              unify_pat_types cty.ctyp_loc env tv tv';
+              list_remove id rem
+          | _ ->
               raise (Error (cty.ctyp_loc, !!penv,
                             Unbound_existential (ids, ty))))
-          rem;
-      end;
-      ty_args, ids, cty
-    end
-    ~post:begin fun (_, ids, _) ->
-      let env = !!penv in
-      List.iter (fun {txt=id} ->
-        let decl = Env.find_type (Path.Pident id) env in
-        Option.iter generalize_structure decl.type_manifest)
-        ids
-    end
-  in
+        ids ty_ex
+    in
+    List.iter
+      (fun id ->
+        let decl, tv' = get_decl_manifest id !!penv in
+        if free_variables tv' <> [] then
+          raise (Error (cty.ctyp_loc, !!penv,
+                        Non_closed_type_alias (id, tv')));
+        let env =
+          Env.add_type ~check:false id
+            {decl with type_manifest = Some (correct_levels tv')} !!penv
+        in
+        Pattern_env.set_env penv env)
+      rem;
+  end;
   ty_args, Some (ids, cty)
 
 let solve_Ppat_construct ~refine tps penv loc constr no_existentials
@@ -6897,6 +6890,10 @@ let report_error ~loc env = function
         "@[<2>%s:@ %a@]"
         "This type does not bind all existentials in the constructor"
         (Style.as_inline_code pp_type) (ids, ty)
+  | Non_closed_type_alias (id, ty) ->
+      Location.errorf ~loc
+        "@[<hov2>This type annotation attempts to bind@ %s@ %s@ %a.@]"
+        (Ident.name id) "to the non-closed type" Printtyp.type_expr ty
   | Missing_type_constraint ->
       Location.errorf ~loc
         "@[%s@ %s@]"
