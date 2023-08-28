@@ -750,6 +750,8 @@ let solve_Ppat_tuple (type a) ~refine loc env (args : a list) expected_ty =
 let solve_constructor_annotation
     tps (penv : Pattern_env.t) name_list sty ty_args ty_ex =
   let expansion_scope = penv.equations_scope in
+  (* Introduce fresh type names that expand to type variables.
+     They should eventually be bound to ground types. *)
   let ids =
     List.map
       (fun name ->
@@ -762,6 +764,7 @@ let solve_constructor_annotation
         {name with txt = id})
       name_list
   in
+  (* Translate the type annotation using these type names. *)
   let cty, ty, force =
     with_local_level ~post:(fun (_,ty,_) -> generalize_structure ty)
       (fun () -> Typetexp.transl_simple_type_delayed !!penv sty)
@@ -790,6 +793,8 @@ let solve_constructor_annotation
     in
     let ids = List.map (fun x -> x.txt) ids in
     let rem =
+      (* First process the existentials introduced by this constructor.
+         Just need to make their definitions abstract. *)
       List.fold_left
         (fun rem tv ->
           match get_desc tv with
@@ -807,6 +812,7 @@ let solve_constructor_annotation
                             Unbound_existential (ids, ty))))
         ids ty_ex
     in
+    (* The other type names should be bound to closed types. *)
     List.iter
       (fun id ->
         let decl, tv' = get_decl_manifest id !!penv in
