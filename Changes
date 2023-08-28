@@ -121,6 +121,9 @@ OCaml 5.2.0
   is given. This allows to work around problems with GADTs in as-patterns.
   (Jacques Garrigue, report by Leo White, review by Gabriel Scherer)
 
+- #11891, #12507: Allow to name closed types in constructor type annotations.
+  (Jacques Garrigue, report and review by Gabriel Scherer)
+
 ### Runtime system:
 
 - #12193: Re-introduce GC compaction for shared pools
