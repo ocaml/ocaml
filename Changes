@@ -265,6 +265,9 @@ Working version
   (Gabriel Scherer and Thomas Refis, review by Florian Angeletti
    and Vincent Laviron)
 
+- #12446: remove the hooks machinery around channel locking in runtimee/io.c
+  (Gabriel Scherer, review by Xavier Leroy)
+
 ### Build system:
 
 - #12198, #12321: continue the merge of the sub-makefiles into the root Makefile
