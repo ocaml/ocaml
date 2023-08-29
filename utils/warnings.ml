@@ -944,7 +944,8 @@ let message = function
   | Wildcard_arg_to_constant_constr ->
      "wildcard pattern given as argument to a constant constructor"
   | Eol_in_string ->
-     "unescaped end-of-line in a string constant (non-portable code)"
+     "unescaped end-of-line in a string constant\n\
+      (non-portable behavior before OCaml 5.2)"
   | Duplicate_definitions (kind, cname, tc1, tc2) ->
       Printf.sprintf "the %s %s is defined in both types %s and %s."
         kind cname tc1 tc2
