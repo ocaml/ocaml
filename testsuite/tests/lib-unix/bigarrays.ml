@@ -1,5 +1,6 @@
 (* TEST
 include unix;
+hasunix;
 *)
 
 let filename = "test.out"
