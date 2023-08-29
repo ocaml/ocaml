@@ -106,7 +106,8 @@ Working version
    Leroy)
 
 - #12489: Fix an error-handling bug in caml_alloc_sprintf
-  (Stephen Dolan, report by Chris Casinghino)
+  (Stephen Dolan, report by Chris Casinghino, review by Jeremy Yallop
+   and Xavier Leroy)
 
 ### Code generation and optimizations:
 
