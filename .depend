@@ -3180,6 +3180,7 @@ asmcomp/stackframe.cmx : \
     utils/config.cmx \
     asmcomp/stackframe.cmi
 asmcomp/stackframe.cmi : \
+    asmcomp/stackframegen.cmi \
     asmcomp/mach.cmi
 asmcomp/stackframegen.cmo : \
     asmcomp/mach.cmi \

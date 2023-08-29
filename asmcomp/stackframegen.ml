@@ -18,6 +18,12 @@
 
 open Mach
 
+type analysis_result = {
+  contains_nontail_calls: bool;
+  frame_required: bool;
+  extra_stack_used: int;
+}
+
 class virtual stackframe_generic = object (self)
 
 (* Size of an exception handler block on the stack.
@@ -103,8 +109,8 @@ method analyze f =
     | Iraise _ -> ()
  in
    analyze 0 f.fun_body;
-   (!contains_nontail_calls,
-    self#frame_required f !contains_calls,
-    !extra_space)
+   { contains_nontail_calls = !contains_nontail_calls;
+     frame_required = self#frame_required f !contains_calls;
+     extra_stack_used = !extra_space }
 
 end
