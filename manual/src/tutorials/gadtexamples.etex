@@ -272,7 +272,7 @@ explicitly. For instance, the following code names the type of the argument of
 type _ closure = Closure : ('a -> 'b) * 'a -> 'b closure
 let eval = fun (Closure (type a) (f, x : (a -> _) * _)) -> f (x : a)
 \end{caml_example*}
-All existential type variables of the constructor must by introduced by
+All existential type variables of the constructor must be introduced by
 the ("type" ...) construct and bound by a type annotation on the
 outside of the constructor argument.
 
