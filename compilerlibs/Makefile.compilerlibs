@@ -228,6 +228,8 @@ ASMCOMP = \
   asmcomp/reloadgen.cmo \
   asmcomp/reload.cmo \
   asmcomp/deadcode.cmo \
+  asmcomp/stackframegen.cmo \
+  asmcomp/stackframe.cmo \
   asmcomp/linear.cmo \
   asmcomp/printlinear.cmo \
   asmcomp/linearize.cmo \

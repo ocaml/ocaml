@@ -71,6 +71,7 @@ META
 /asmcomp/reload.ml
 /asmcomp/scheduling.ml
 /asmcomp/CSE.ml
+/asmcomp/stackframe.ml
 
 /boot/ocamlrun
 /boot/camlheader

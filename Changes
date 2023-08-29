@@ -256,6 +256,11 @@ Working version
   (Nick Roberts; review by Richard Eisenberg, Leo White, and Gabriel Scherer;
   RFC by Stephen Dolan)
 
+- #12242: Move the computation of stack frame parameters to a separate
+  `Stackframe` module, and save the parameters in the results of the
+  `Linearize` pass
+  (Xavier Leroy, review by KC Sivaramakrishnan and Mark Shinwell)
+
 - #12442: document jump summaries in the pattern-matching compiler
   (Gabriel Scherer and Thomas Refis, review by Florian Angeletti
    and Vincent Laviron)

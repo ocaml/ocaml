@@ -214,16 +214,6 @@ let max_register_pressure = function
     Iextcall _ -> [| 4; 7 |]
   | _ -> [| 9; 15 |]
 
-(* Layout of the stack *)
-
-let frame_required fd =
-  fd.fun_contains_calls
-    || fd.fun_num_stack_slots.(0) > 0
-    || fd.fun_num_stack_slots.(1) > 0
-
-let prologue_required fd =
-  frame_required fd
-
 (* Calling the assembler *)
 
 let assemble_file infile outfile =

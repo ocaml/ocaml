@@ -373,7 +373,7 @@ module BR = Branch_relaxation.Make (struct
   let prologue_size f =
     profiling_prologue_size
       + (if initial_stack_offset f > 0 then 1 else 0)
-      + (if f.fun_contains_calls then 3 else 0)
+      + (if f.fun_frame_required then 3 else 0)
 
   let tocload_size = 2
 
@@ -528,13 +528,12 @@ let emit_instr env i =
     match i.desc with
     | Lend -> ()
     | Lprologue ->
-      assert (env.f.fun_prologue_required);
       let n = frame_size env in
       if n > 0 then begin
         `	addi	1, 1, {emit_int(-n)}\n`;
         cfi_adjust_cfa_offset n
       end;
-      if env.f.fun_contains_calls then begin
+      if env.f.fun_frame_required then begin
         let ra = retaddr_offset env in
         `	mflr	0\n`;
         `	std	0, {emit_int ra}(1)\n`;
@@ -619,7 +618,7 @@ let emit_instr env i =
     | Lop(Itailcall_ind) ->
         `	mtctr	{emit_reg i.arg.(0)}\n`;
         `	mr	12, {emit_reg i.arg.(0)}\n`;   (* addr of fn in r12 *)
-        if env.f.fun_contains_calls then begin
+        if env.f.fun_frame_required then begin
           `	ld	11, {emit_int(retaddr_offset env)}(1)\n`;
           `	mtlr	11\n`
         end;
@@ -631,7 +630,7 @@ let emit_instr env i =
         else begin
           emit_tocload emit_gpr 12 (TocSym func); (* addr of fn must be in r12 *)
           `	mtctr	12\n`;
-          if env.f.fun_contains_calls then begin
+          if env.f.fun_frame_required then begin
             `	ld	11, {emit_int(retaddr_offset env)}(1)\n`;
             `	mtlr	11\n`
           end;
@@ -907,12 +906,10 @@ let fundecl fundecl =
   `	.align	2\n`;
   (* Dynamic stack checking *)
   let stack_threshold_size = Config.stack_threshold * 8 in (* bytes *)
-  let { max_frame_size; contains_nontail_calls} =
-    preproc_stack_check
-      ~fun_body:fundecl.fun_body ~frame_size:(frame_size env) ~trap_size:16
-  in
+  let max_frame_size = frame_size env + fundecl.fun_extra_stack_used in
   let handle_overflow = ref None in
-  if contains_nontail_calls || max_frame_size >= stack_threshold_size then begin
+  if fundecl.fun_contains_nontail_calls
+  || max_frame_size >= stack_threshold_size then begin
     let overflow = new_label () and ret = new_label () in
     (* The return address is saved in a register not used for param passing *)
     `{emit_label overflow}:	mflr	28\n`;

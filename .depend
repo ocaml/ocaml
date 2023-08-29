@@ -2757,7 +2757,6 @@ asmcomp/emit.cmi : \
     asmcomp/linear.cmi \
     asmcomp/cmm.cmi
 asmcomp/emitaux.cmo : \
-    asmcomp/linear.cmi \
     asmcomp/emitenv.cmi \
     lambda/debuginfo.cmi \
     utils/config.cmi \
@@ -2766,7 +2765,6 @@ asmcomp/emitaux.cmo : \
     asmcomp/arch.cmi \
     asmcomp/emitaux.cmi
 asmcomp/emitaux.cmx : \
-    asmcomp/linear.cmx \
     asmcomp/emitenv.cmi \
     lambda/debuginfo.cmx \
     utils/config.cmx \
@@ -2828,8 +2826,8 @@ asmcomp/linear.cmi : \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi
 asmcomp/linearize.cmo : \
+    asmcomp/stackframe.cmi \
     asmcomp/reg.cmi \
-    asmcomp/proc.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
     asmcomp/linear.cmi \
@@ -2837,8 +2835,8 @@ asmcomp/linearize.cmo : \
     asmcomp/cmm.cmi \
     asmcomp/linearize.cmi
 asmcomp/linearize.cmx : \
+    asmcomp/stackframe.cmx \
     asmcomp/reg.cmx \
-    asmcomp/proc.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
     asmcomp/linear.cmx \
@@ -3092,7 +3090,6 @@ asmcomp/selectgen.cmo : \
     lambda/lambda.cmi \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
-    utils/clflags.cmi \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi \
     asmcomp/arch.cmi \
@@ -3107,7 +3104,6 @@ asmcomp/selectgen.cmx : \
     lambda/lambda.cmx \
     lambda/debuginfo.cmx \
     asmcomp/cmm.cmx \
-    utils/clflags.cmx \
     middle_end/backend_var.cmx \
     parsing/asttypes.cmi \
     asmcomp/arch.cmx \
@@ -3172,6 +3168,31 @@ asmcomp/split.cmx : \
     asmcomp/mach.cmx \
     asmcomp/split.cmi
 asmcomp/split.cmi : \
+    asmcomp/mach.cmi
+asmcomp/stackframe.cmo : \
+    asmcomp/stackframegen.cmi \
+    asmcomp/mach.cmi \
+    utils/config.cmi \
+    asmcomp/stackframe.cmi
+asmcomp/stackframe.cmx : \
+    asmcomp/stackframegen.cmx \
+    asmcomp/mach.cmx \
+    utils/config.cmx \
+    asmcomp/stackframe.cmi
+asmcomp/stackframe.cmi : \
+    asmcomp/stackframegen.cmi \
+    asmcomp/mach.cmi
+asmcomp/stackframegen.cmo : \
+    asmcomp/mach.cmi \
+    lambda/lambda.cmi \
+    utils/clflags.cmi \
+    asmcomp/stackframegen.cmi
+asmcomp/stackframegen.cmx : \
+    asmcomp/mach.cmx \
+    lambda/lambda.cmx \
+    utils/clflags.cmx \
+    asmcomp/stackframegen.cmi
+asmcomp/stackframegen.cmi : \
     asmcomp/mach.cmi
 asmcomp/strmatch.cmo : \
     lambda/lambda.cmi \

@@ -397,17 +397,7 @@ method schedule_fundecl f =
   if f.fun_fast && !Clflags.insn_sched then begin
     let new_body = schedule f.fun_body 0 in
     clear_code_dag();
-    { fun_name = f.fun_name;
-      fun_args = f.fun_args;
-      fun_body = new_body;
-      fun_fast = f.fun_fast;
-      fun_dbg  = f.fun_dbg;
-      fun_tailrec_entry_point_label = f.fun_tailrec_entry_point_label;
-      fun_contains_calls = f.fun_contains_calls;
-      fun_num_stack_slots = f.fun_num_stack_slots;
-      fun_frame_required = f.fun_frame_required;
-      fun_prologue_required = f.fun_prologue_required;
-    }
+    { f with fun_body = new_body }
   end else
     f
 

@@ -270,12 +270,6 @@ let max_register_pressure = function
   | Iintoffloat | Istore(Single, _, _) -> [| 23; 31 |]
   | _ -> [| 23; 32 |]
 
-(* Layout of the stack *)
-
-let frame_required _ = true
-
-let prologue_required _ = true
-
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
