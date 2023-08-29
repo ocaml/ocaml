@@ -35,5 +35,5 @@ method! frame_required f contains_calls =
 
 end
 
-let analyze f = 
+let analyze f =
   (new stackframe)#analyze f

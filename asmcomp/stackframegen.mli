@@ -44,4 +44,3 @@ class virtual stackframe_generic : object
   method frame_required : Mach.fundecl -> bool -> bool
   method analyze : Mach.fundecl -> analysis_result
 end
-

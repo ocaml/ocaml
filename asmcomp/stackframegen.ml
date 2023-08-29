@@ -65,7 +65,7 @@ method is_call = function
    behaviors. *)
 
 method frame_required f contains_calls =
-  contains_calls || 
+  contains_calls ||
   f.fun_num_stack_slots.(0) > 0 || f.fun_num_stack_slots.(1) > 0
 
 (* Analyze the body of a Mach function to determine

@@ -28,5 +28,5 @@ method trap_handler_size = trap_handler_size
 
 end
 
-let analyze f = 
+let analyze f =
   (new stackframe)#analyze f
