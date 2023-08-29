@@ -805,6 +805,9 @@ let solve_constructor_annotation
                   {decl with type_manifest = None} !!penv
               in
               Pattern_env.set_env penv env;
+              (* We have changed the definition, so clean up *)
+              Btype.cleanup_abbrev ();
+              (* Since id is now abstract, this does not create a cycle *)
               unify_pat_types cty.ctyp_loc env tv tv';
               list_remove id rem
           | _ ->
@@ -825,6 +828,7 @@ let solve_constructor_annotation
         in
         Pattern_env.set_env penv env)
       rem;
+    if rem <> [] then Btype.cleanup_abbrev ();
   end;
   ty_args, Some (ids, cty)
 
