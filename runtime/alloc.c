@@ -57,12 +57,23 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
   return result;
 }
 
-/* This is used by the native compiler for large block allocations. */
+/* This is used by the native compiler for large block allocations.
+   The resulting block can be filled with [caml_modify], or [caml_initialize],
+   or direct writes for integer values and code pointers.
+   If [tag == Closure_tag], no GC must take place until field 1
+   of the block has been set to the correct "arity & start of environment"
+   information (issue #11482). */
+
+#ifdef NATIVE_CODE
 CAMLexport value caml_alloc_shr_check_gc (mlsize_t wosize, tag_t tag)
 {
+  CAMLassert(tag < No_scan_tag);
   caml_check_urgent_gc (Val_unit);
-  return caml_alloc_shr (wosize, tag);
+  value result = caml_alloc_shr (wosize, tag);
+  for (mlsize_t i = 0; i < wosize; i++) Field (result, i) = Val_unit;
+  return result;
 }
+#endif
 
 /* Copy the values to be preserved to a different array.
    The original vals array never escapes, generating better code in
