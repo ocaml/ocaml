@@ -14,6 +14,10 @@ OCaml 5.0 maintenance version
   (Antonin Décimo, review by Xavier Leroy, David Allsopp and Sébastien
   Hinderer)
 
+- #12509: Use strict prototypes on primitives when generating a standalone
+  bytecode executable (`ocamlc -custom`).
+  (Antonin Décimo, review by Xavier Leroy)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.
