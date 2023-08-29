@@ -2757,7 +2757,6 @@ asmcomp/emit.cmi : \
     asmcomp/linear.cmi \
     asmcomp/cmm.cmi
 asmcomp/emitaux.cmo : \
-    asmcomp/linear.cmi \
     asmcomp/emitenv.cmi \
     lambda/debuginfo.cmi \
     utils/config.cmi \
@@ -2766,7 +2765,6 @@ asmcomp/emitaux.cmo : \
     asmcomp/arch.cmi \
     asmcomp/emitaux.cmi
 asmcomp/emitaux.cmx : \
-    asmcomp/linear.cmx \
     asmcomp/emitenv.cmi \
     lambda/debuginfo.cmx \
     utils/config.cmx \
@@ -3092,7 +3090,6 @@ asmcomp/selectgen.cmo : \
     lambda/lambda.cmi \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
-    utils/clflags.cmi \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi \
     asmcomp/arch.cmi \
@@ -3107,7 +3104,6 @@ asmcomp/selectgen.cmx : \
     lambda/lambda.cmx \
     lambda/debuginfo.cmx \
     asmcomp/cmm.cmx \
-    utils/clflags.cmx \
     middle_end/backend_var.cmx \
     parsing/asttypes.cmi \
     asmcomp/arch.cmx \
@@ -3176,10 +3172,12 @@ asmcomp/split.cmi : \
 asmcomp/stackframe.cmo : \
     asmcomp/stackframegen.cmi \
     asmcomp/mach.cmi \
+    utils/config.cmi \
     asmcomp/stackframe.cmi
 asmcomp/stackframe.cmx : \
     asmcomp/stackframegen.cmx \
     asmcomp/mach.cmx \
+    utils/config.cmx \
     asmcomp/stackframe.cmi
 asmcomp/stackframe.cmi : \
     asmcomp/mach.cmi
