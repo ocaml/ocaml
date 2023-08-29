@@ -1137,7 +1137,7 @@ module Functor_app_diff = struct
     | Insert(Named(Some param, param_ty))
     | Change(_, Named(Some param, param_ty), _ ) ->
         (* Change is Delete + Insert: we add the Inserted parameter to the
-           environnement to track equalities with external components that the
+           environment to track equalities with external components that the
            parameter might add. *)
         let mty = Subst.modtype Keep st.subst param_ty in
         let env = Env.add_module ~arg:true param Mp_present mty st.env in

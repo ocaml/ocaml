@@ -685,7 +685,7 @@ FUNCTION(caml_perform)
         a1: freshly allocated continuation */
         ld      a2, Caml_state(current_stack) /* a2 := old stack */
         addi    a3, a2, 1 /* a3 := Val_ptr(old stack) */
-        sd      a3, 0(a1) /* Iniitalize continuation */
+        sd      a3, 0(a1) /* Initialize continuation */
 L(do_perform):
     /*  a0: effect to perform
         a1: continuation

@@ -50,7 +50,7 @@ extern int32_t caml_seek_section(int fd, struct exec_trailer *trail,
 enum caml_byte_program_mode
   {
    STANDARD /* normal bytecode program requiring "ocamlrun" */,
-   COMPLETE_EXE /* embeding the vm, i.e. compiled with --output-complete-exe */
+   COMPLETE_EXE /* embedding the vm, i.e. compiled with --output-complete-exe */
   };
 
 extern enum caml_byte_program_mode caml_byte_program_mode;
