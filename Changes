@@ -725,6 +725,10 @@ Some of those changes will benefit all OCaml packages.
   lists for simpler printing of manual references
   (Stefan Muenzel, review by Florian Angeletti)
 
+- #12509: Use strict prototypes on primitives when generating a standalone
+  bytecode executable (`ocamlc -custom`).
+  (Antonin Décimo, review by Xavier Leroy)
+
 ### Build system:
 
 - #11844: Reduce verbosity of `make` logs by printing program invocations in
