@@ -183,7 +183,7 @@ let copyright = '\xA9';;
 \begin{syntax}
 string-literal:
           '"' { string-character } '"'
-       |  '{' quoted-string-id '|' { any-char } '|' quoted-string-id '}'
+       |  '{' quoted-string-id '|' { newline | any-char } '|' quoted-string-id '}'
 ;
 quoted-string-id:
      { 'a'...'z' || '_' }
@@ -192,6 +192,7 @@ string-character:
           regular-string-char
         | escape-sequence
         | "\u{" {{ "0"\ldots"9" || "A"\ldots"F" || "a"\ldots"f" }} "}"
+        | newline
         | '\' newline { space || tab }
 \end{syntax}
 
@@ -211,6 +212,12 @@ let greeting = "Hello, World!\n"
 let superscript_plus = "\u{207A}";;
 \end{caml_example}
 
+Any sequence of carriage return characters followed by a line feed
+character is considered as a newline sequence. Since OCaml 5.2,
+a newline sequence occurring in a string literal is normalized into
+a single line feed character. This guarantees that the OCaml value is
+independent of the newline convention used by the source file.
+
 To allow splitting long string literals across lines, the sequence
 "\\"\var{newline}~\var{spaces-or-tabs} (a backslash at the end of a line
 followed by any number of spaces and horizontal tabulations at the
@@ -225,14 +232,29 @@ let longstr =
   he world.";;
 \end{caml_example}
 
+Escaped newlines provide more convenient behavior than non-escaped
+newlines, as the indentation is not considered part of the string
+literal.
+
+\begin{caml_example}{toplevel}
+let contains_unexpected_spaces =
+  "This multiline literal
+   contains three consecutive spaces."
+
+let no_unexpected_spaces =
+  "This multiline literal \n\
+   uses a single space between all words.";;
+\end{caml_example}
+
 Quoted string literals provide an alternative lexical syntax for
-string literals. They are useful to represent strings of arbitrary content
-without escaping. Quoted strings are delimited by a matching pair
-of @'{' quoted-string-id '|'@ and @'|' quoted-string-id '}'@ with
-the same @quoted-string-id@ on both sides. Quoted strings do not interpret
-any character in a special way but requires that the
-sequence @'|' quoted-string-id '}'@ does not occur in the string itself.
-The identifier @quoted-string-id@ is a (possibly empty) sequence of
+string literals. They are useful to represent strings of arbitrary
+content without escaping. Quoted strings are delimited by a matching
+pair of @'{' quoted-string-id '|'@ and @'|' quoted-string-id '}'@ with
+the same @quoted-string-id@ on both sides. Quoted strings do not
+interpret any character in a special way (except for
+newline normalization) but requires that the sequence @'|'
+quoted-string-id '}'@ does not occur in the string itself.  The
+identifier @quoted-string-id@ is a (possibly empty) sequence of
 lowercase letters and underscores that can be freely chosen to avoid
 such issue.
 

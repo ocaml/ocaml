@@ -108,7 +108,7 @@ let store_string_char c = Buffer.add_char string_buffer c
 let store_string_utf_8_uchar u = Buffer.add_utf_8_uchar string_buffer u
 let store_string s = Buffer.add_string string_buffer s
 let store_lexeme lexbuf = store_string (Lexing.lexeme lexbuf)
-let store_normalizated_newline () =
+let store_normalized_newline () =
   (* #12502: we normalize newlines to "\n" at lexing time,
      to avoid behavior difference due to OS-specific
      newline characters in string literals.
