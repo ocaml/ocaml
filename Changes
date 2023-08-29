@@ -276,6 +276,9 @@ Working version
 
 ### Bug fixes:
 
+- #12490: Unix: protect the popen_processes hashtable with a mutex
+  (Gabriel Scherer, report by Olivier Nicole, review by Xavier Leroy)
+
 - #11931: Fix tricky typing bug with type substitutions
   (Stephen Dolan, review by Leo White and Jacques Garrigue)
 

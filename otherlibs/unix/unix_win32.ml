@@ -1019,10 +1019,12 @@ type popen_process =
   | Process_full of in_channel * out_channel * in_channel
 
 let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
+let popen_mutex = Mutex.create ()
 
 let open_proc prog cmdline optenv proc input output error =
   let pid = create_process_stub prog cmdline optenv input output error in
-  Hashtbl.add popen_processes proc pid
+  Mutex.protect popen_mutex (fun () ->
+    Hashtbl.add popen_processes proc pid)
 
 let open_process_cmdline_in prog cmdline =
   let (in_read, in_write) = pipe ~cloexec:true () in
@@ -1125,12 +1127,16 @@ let open_process_full cmd =
 
 let find_proc_id fun_name proc =
   try
-    Hashtbl.find popen_processes proc
+    Mutex.protect popen_mutex (fun () ->
+      Hashtbl.find popen_processes proc
+    )
   with Not_found ->
     raise(Unix_error(EBADF, fun_name, ""))
 
 let remove_proc_id proc =
-  Hashtbl.remove popen_processes proc
+  Mutex.protect popen_mutex (fun () ->
+    Hashtbl.remove popen_processes proc
+  )
 
 let process_in_pid inchan =
   find_proc_id "process_in_pid" (Process_in inchan)
