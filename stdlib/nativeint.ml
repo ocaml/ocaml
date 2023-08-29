@@ -49,7 +49,7 @@ let min_int = shift_left 1n (size - 1)
 let max_int = sub min_int 1n
 let lognot n = logxor n (-1n)
 
-let unsigned_to_int n =
+let unsigned_to_int =
   let max_int = of_int Stdlib.max_int in
   fun n ->
     if n >= 0n && n <= max_int then
