@@ -146,7 +146,8 @@ Working version
   workaround for the known bug in mingw-w64's `round` function remains. On
   Windows (and Cygwin), the FMA instruction set extension is required for the
   `caml_fma` primitives. Programs using `Float.fma` run on a pre-Haswell or
-  pre-Piledriver CPU will abort with EXCEPTION_ILLEGAL_INSTRUCTION (SIGILL).
+  pre-Piledriver CPU will either return `nan` (MSVC), abort with
+  EXCEPTION_ILLEGAL_INSTRUCTION (mingw-w64), or abort with SIGILL (Cygwin).
   The `caml_log1p` function is no longer exposed in `caml/misc.h`.
   (David Allsopp, review by ???)
 

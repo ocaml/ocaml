@@ -74,9 +74,12 @@ external fma : float -> float -> float -> float =
 
    On Windows (including Cygwin), this function requires the Intel FMA
    instruction set extension, available since the Haswell (Intel) and
-   Piledriver (AMD) microarchitectures in 2012/13. Programs which use this
-   function will abort with [EXCEPTION_ILLEGAL_INSTRUCTION] ([SIGILL] on Cygwin)
-   when run on CPUs not supporting this extension.
+   Piledriver (AMD) microarchitectures in 2012/13.
+
+   When hardware support is not available, the MSVC port of OCaml returns [nan]
+   for all inputs; the mingw-w64 port of OCaml aborts with
+   [EXCEPTION_ILLEGAL_INSTRUCTION]; the Cygwin port of OCaml aborts with
+   [SIGILL].
 
    @since 4.08 *)
 
@@ -340,8 +343,7 @@ external atanh : float -> float = "caml_atanh_float" "atanh"
     @since 4.13
 *)
 
-external erf : float -> float = "caml_erf_float" "erf"
-  [@@unboxed] [@@noalloc]
+external erf : float -> float = "caml_erf_float" "erf" [@@unboxed] [@@noalloc]
 (** Error function.  The argument ranges over the entire real line.
     The result is always within [[-1.0, 1.0]].
 
@@ -404,7 +406,8 @@ external next_after : float -> float -> float
 
    @since 4.08 *)
 
-external copy_sign : float -> float -> float = "caml_copysign_float" "copysign"
+external copy_sign : float -> float -> float
+  = "caml_copysign_float" "copysign"
 [@@unboxed] [@@noalloc]
 (** [copy_sign x y] returns a float whose absolute value is that of [x]
     and whose sign is that of [y].  If [x] is [nan], returns [nan].

@@ -12,6 +12,10 @@
 /*                                                                        */
 /**************************************************************************/
 
+#if defined(_MSC_VER)
+#include <windows.h>
+#endif
+
 #include <math.h>
 
 /* caml_fma lives in a unit of its own since it's compiled with hardware fma
@@ -20,5 +24,17 @@
 
 double caml_fma(double x, double y, double z)
 {
-  return fma(x, y, z);
+#ifdef _MSC_VER
+  /* For Microsoft Visual Studio, we use cl's native SEH support to return nan
+     on pre-Haswell / pre-Piledriver CPUs (zero-cost on x64; relatively low cost
+     on x86). */
+  __try {
+#endif
+    return fma(x, y, z);
+#ifdef _MSC_VER
+  } __except(GetExceptionCode() == EXCEPTION_ILLEGAL_INSTRUCTION
+               ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH) {
+    return NAN;
+  }
+#endif
 }
