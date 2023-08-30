@@ -1514,10 +1514,7 @@ AC_CHECK_FUNCS(m4_normalize([expm1 log1p hypot fma exp2 log2 cbrt acosh asinh
 AS_IF([$has_c99_float_ops],
   [AC_DEFINE([HAS_C99_FLOAT_OPS])
   # Check whether round works (known bug in mingw-w64)
-  OCAML_C99_CHECK_ROUND
-  # Check whether fma works (regressed in mingw-w64 8.0.0; present, but broken,
-  # in VS2013-2017 and present but unimplemented in Cygwin64)
-  OCAML_C99_CHECK_FMA],
+  OCAML_C99_CHECK_ROUND],
   [AS_IF([test x"$enable_imprecise_c99_float_ops" != "xyes" ],
     [AS_CASE([$enable_imprecise_c99_float_ops,$ocaml_cv_cc_vendor],
       [no,*], [hard_error=true],

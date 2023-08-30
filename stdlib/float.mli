@@ -72,10 +72,11 @@ external fma : float -> float -> float -> float =
    instructions (providing full IEEE compliance) or a software
    emulation.
 
-   On 64-bit Cygwin, 64-bit mingw-w64 and MSVC 2017 and earlier, this function
-   may be emulated owing to known bugs on limitations on these platforms.
-   Note: since software emulation of the fma is costly, make sure that you are
-   using hardware fma support if performance matters.
+   On Windows (including Cygwin), this function requires the Intel FMA
+   instruction set extension, available since the Haswell (Intel) and
+   Piledriver (AMD) microarchitectures in 2012/13. Programs which use this
+   function will abort with [EXCEPTION_ILLEGAL_INSTRUCTION] ([SIGILL] on Cygwin)
+   when run on CPUs not supporting this extension.
 
    @since 4.08 *)
 

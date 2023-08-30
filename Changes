@@ -138,6 +138,11 @@ Working version
   (Guillaume Munch-Maccagnoni, review by Enguerrand Decorne, Xavier
   Leroy, and KC Sivaramakrishnan)
 
+* #12519: Require the FMA instruction set extension on Windows (and Cygwin) for
+  the `caml_fma` primitives. Programs using `Float.fma` run on a pre-Haswell or
+  pre-Piledriver CPU will abort with EXCEPTION_ILLEGAL_INSTRUCTION (SIGILL).
+  (David Allsopp, review by ???)
+
 - #12634: Simplify TSan backtrace bookkeeping upon raise
   (Olivier Nicole and Fabrice Buoro, review by Gabriel Scherer)
 
