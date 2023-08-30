@@ -411,6 +411,8 @@ let class_signature copy_scope s sign =
       Meths.map
         (function (p, v, t) -> (p, v, typexp copy_scope s t))
         sign.csig_meths;
+    csig_bound_type_vars =
+      List.map (typexp copy_scope s) sign.csig_bound_type_vars;
   }
 
 let rec class_type copy_scope s = function
@@ -465,6 +467,8 @@ let value_description' copy_scope s descr =
     val_loc = loc s descr.val_loc;
     val_attributes = attrs s descr.val_attributes;
     val_uid = descr.val_uid;
+    val_bound_type_vars =
+      List.map (typexp copy_scope s) descr.val_bound_type_vars;
    }
 
 let value_description s descr =

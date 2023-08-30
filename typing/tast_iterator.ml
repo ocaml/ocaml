@@ -295,7 +295,7 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
   | Texp_apply (exp, list) ->
       sub.expr sub exp;
       List.iter (fun (_, o) -> Option.iter (sub.expr sub) o) list
-  | Texp_match (exp, cases, _) ->
+  | Texp_match ({qexp_expr=exp}, cases, _) ->
       sub.expr sub exp;
       List.iter (sub.case sub) cases
   | Texp_try (exp, cases) ->
@@ -620,7 +620,7 @@ let value_binding sub {vb_loc; vb_pat; vb_expr; vb_attributes; _} =
   sub.location sub vb_loc;
   sub.attributes sub vb_attributes;
   sub.pat sub vb_pat;
-  sub.expr sub vb_expr
+  sub.expr sub vb_expr.qexp_expr
 
 let env _sub _ = ()
 

@@ -465,7 +465,10 @@ let enter_ancestor_met ~loc name ~sign ~meths ~cl_num ~ty ~attrs met_env =
     { val_type = ty; val_kind = kind;
       val_attributes = attrs;
       Types.val_loc = loc;
-      val_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) }
+      val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+      val_bound_type_vars = [];
+      (* quantifications are inside methods and they are Tpoly *)
+    }
   in
   Env.enter_value ~check name desc met_env
 
@@ -480,7 +483,9 @@ let add_self_met loc id sign self_var_kind vars cl_num
     { val_type = ty; val_kind = kind;
       val_attributes = attrs;
       Types.val_loc = loc;
-      val_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) }
+      val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+      val_bound_type_vars = [];
+    }
   in
   Env.add_value ~check id desc met_env
 
@@ -495,7 +500,9 @@ let add_instance_var_met loc label id sign cl_num attrs met_env =
     { val_type = ty; val_kind = kind;
       val_attributes = attrs;
       Types.val_loc = loc;
-      val_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) }
+      val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+      val_bound_type_vars = [];
+    }
   in
   Env.add_value id desc met_env
 
@@ -1332,6 +1339,8 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
                 val_attributes = [];
                 Types.val_loc = vd.Types.val_loc;
                 val_uid = vd.val_uid;
+                val_bound_type_vars =
+                Ctype.generic_free_variables expr.exp_type;
                }
              in
              let id' = Ident.create_local (Ident.name id) in
@@ -1641,6 +1650,7 @@ let class_infos define_class kind
     }
   in
   dummy_class.cty_type <- typ;
+  (* code smell: the only place the mutability of cty_type is used *)
   let env =
     Env.add_cltype ty_id cltydef (
     if define_class then Env.add_class id clty env else env)
@@ -1734,6 +1744,12 @@ let final_decl env define_class
                  , Non_generalizable_class { id; clty; nongen_vars }));
     );
 
+  (* correct csig_bound_type_vars in the leaf class_signatures *)
+  let clty = Ctype.map_class_declaration
+      Ctype.update_bound_variables_in_class_signature clty in
+  let cltydef = Ctype.map_class_type_declaration
+      Ctype.update_bound_variables_in_class_signature cltydef in
+
   begin match
     Ctype.closed_class clty.cty_params
       (Btype.signature_of_class_type clty.cty_type)
@@ -1747,6 +1763,7 @@ let final_decl env define_class
       in
       raise(Error(cl.pci_loc, env, Unbound_type_var(printer, reason)))
   end;
+
   { id; clty; ty_id; cltydef; obj_id; obj_abbr; arity;
     pub_meths; coe;
     id_loc = cl.pci_name;

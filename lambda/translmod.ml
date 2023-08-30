@@ -1468,7 +1468,7 @@ let transl_toplevel_item ~scopes item =
   match item.str_desc with
     Tstr_eval (expr, _)
   | Tstr_value(Nonrecursive,
-               [{vb_pat = {pat_desc=Tpat_any};vb_expr = expr}]) ->
+               [{vb_pat = {pat_desc=Tpat_any};vb_expr = {qexp_expr = expr}}]) ->
       (* special compilation for toplevel "let _ = expr", so
          that Toploop can display the result of the expression.
          Otherwise, the normal compilation would result

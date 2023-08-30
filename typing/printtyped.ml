@@ -344,7 +344,7 @@ and expression i ppf x =
       line i ppf "Texp_apply\n";
       expression i ppf e;
       list i label_x_expression ppf l;
-  | Texp_match (e, l, _partial) ->
+  | Texp_match ({qexp_expr=e}, l, _partial) ->
       line i ppf "Texp_match\n";
       expression i ppf e;
       list i case ppf l;
@@ -947,7 +947,7 @@ and value_binding i ppf x =
   line i ppf "<def>\n";
   attributes (i+1) ppf x.vb_attributes;
   pattern (i+1) ppf x.vb_pat;
-  expression (i+1) ppf x.vb_expr
+  expression (i+1) ppf x.vb_expr.qexp_expr
 
 and string_x_expression i ppf (s, _, e) =
   line i ppf "<override> \"%a\"\n" fmt_ident s;

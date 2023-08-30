@@ -147,6 +147,21 @@ val generalize_class_type_structure : class_type -> unit
        (* Generalize the structure of the components of a class type *)
 val generalize_class_signature_spine : Env.t -> class_signature -> unit
        (* Special function to generalize methods during inference *)
+val map_class_type:
+    (class_signature -> class_signature) -> class_type -> class_type
+val map_class_declaration:
+    (params:type_expr list -> class_signature -> class_signature) ->
+      class_declaration -> class_declaration
+val map_class_type_declaration:
+    (params:type_expr list -> class_signature -> class_signature) ->
+      class_type_declaration -> class_type_declaration
+        (* Map class signatures in a class type, etc. *)
+val generic_free_variables: type_expr -> type_expr list
+        (* Collect variables that are about to be bound
+           in the surrounding type *)
+val update_bound_variables_in_class_signature:
+    params:type_expr list -> class_signature -> class_signature
+
 val correct_levels: type_expr -> type_expr
         (* Returns a copy with decreasing levels *)
 val limited_generalize: type_expr -> type_expr -> unit
