@@ -24,14 +24,14 @@ index ab5cd5c07..e09cbe215 100644
 --- a/stdlib/float.ml
 +++ b/stdlib/float.ml
 @@ -85,8 +85,6 @@ external hypot : float -> float -> float
-                = "caml_hypot_float" "caml_hypot" [@@unboxed] [@@noalloc]
+                = "caml_hypot_float" "hypot" [@@unboxed] [@@noalloc]
  external cosh : float -> float = "caml_cosh_float" "cosh"
    [@@unboxed] [@@noalloc]
 -external sinh : float -> float = "caml_sinh_float" "sinh"
 -  [@@unboxed] [@@noalloc]
  external tanh : float -> float = "caml_tanh_float" "tanh"
    [@@unboxed] [@@noalloc]
- external acosh : float -> float = "caml_acosh_float" "caml_acosh"
+ external acosh : float -> float = "caml_acosh_float" "acosh"
 diff --git a/stdlib/float.mli b/stdlib/float.mli
 index ba84d9b0e..8132f93f7 100644
 --- a/stdlib/float.mli
@@ -52,12 +52,12 @@ index aac8fcc17..663ce44f2 100644
 --- a/stdlib/stdlib.ml
 +++ b/stdlib/stdlib.ml
 @@ -146,8 +146,6 @@ external log10 : float -> float = "caml_log10_float" "log10"
- external log1p : float -> float = "caml_log1p_float" "caml_log1p"
+ external log1p : float -> float = "caml_log1p_float" "log1p"
    [@@unboxed] [@@noalloc]
  external sin : float -> float = "caml_sin_float" "sin" [@@unboxed] [@@noalloc]
 -external sinh : float -> float = "caml_sinh_float" "sinh"
 -  [@@unboxed] [@@noalloc]
- external asinh : float -> float = "caml_asinh_float" "caml_asinh"
+ external asinh : float -> float = "caml_asinh_float" "asinh"
    [@@unboxed] [@@noalloc]
  external sqrt : float -> float = "caml_sqrt_float" "sqrt"
 diff --git a/stdlib/stdlib.mli b/stdlib/stdlib.mli

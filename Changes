@@ -139,7 +139,9 @@ Working version
   Leroy, and KC Sivaramakrishnan)
 
 * #12519: ISO C99-compliant float functions are now required. The emulated
-  versions of these functions are no longer available and
+  versions of these functions are no longer available. The names of native
+  primitives have consequently changed - for example, the unboxed version of
+  `Float.cbrt` now directly calls `cbrt` rather than `caml_cbrt`. Consequently,
   `--enable-imprecise-c99-float-ops` can no longer be passed to configure. The
   workaround for the known bug in mingw-w64's `round` function remains. On
   Windows (and Cygwin), the FMA instruction set extension is required for the
