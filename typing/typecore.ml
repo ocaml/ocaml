@@ -1948,25 +1948,30 @@ and type_pat_aux
 let iter_pattern_variables_type f : pattern_variable list -> unit =
   List.iter (fun {pv_type; _} -> f pv_type)
 
-let add_pattern_variables ?check ?check_as ?old_env env pv =
+let add_pattern_variables ?check ?check_as env pv =
   List.fold_right
     (fun {pv_id; pv_type; pv_loc; pv_as_var; pv_attributes} env ->
        let check = if pv_as_var then check_as else check in
-       let val_uid =  match old_env with
-       | None -> Uid.mk ~current_unit:(Env.get_unit_name ())
-       | Some old_env ->
-           let desc = Env.find_value (Path.Pident pv_id) old_env in
-           desc.val_uid
-       in
        Env.add_value ?check pv_id
          {val_type = pv_type; val_kind = Val_reg; Types.val_loc = pv_loc;
           val_attributes = pv_attributes;
-          val_uid;
+          val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
           val_bound_type_vars = generic_free_variables pv_type;
          } env
     )
     pv env
-    
+
+let copy_pattern_variables ~old_env env pvs =
+  List.fold_right begin fun {pv_id} env ->
+    let desc =
+      try Env.find_value (Path.Pident pv_id) old_env
+      with Not_found -> assert false
+    in
+    Env.add_value pv_id
+      {desc with val_bound_type_vars = generic_free_variables desc.val_type}
+      env
+  end pvs env
+
 let add_module_variables env module_variables =
   let module_variables_as_list =
     match module_variables with
@@ -5994,7 +5999,7 @@ and type_let ?check ?check_strict
           vb.vb_expr.qexp_expr
     ) l;
   (* See Note [add_module_variables after checking expressions] *)
-  let new_env = add_pattern_variables ~old_env env pvs in
+  let new_env = copy_pattern_variables ~old_env env pvs in
   let new_env = add_module_variables new_env mvs in
   (l, new_env)
 
