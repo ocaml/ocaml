@@ -440,15 +440,11 @@ int main (void) {
     [AC_MSG_RESULT([no])
     AS_CASE([$enable_imprecise_c99_float_ops,$target],
       [no,*], [hard_error=true],
-      [yes,*], [hard_error=false],
       [*,x86_64-w64-mingw32*], [hard_error=false],
       [hard_error=true])
     AS_IF([test x"$hard_error" = "xtrue"],
-      [AC_MSG_ERROR(m4_normalize([
-        round does not work, enable emulation with
-        --enable-imprecise-c99-float-ops]))],
-      [AC_MSG_WARN(m4_normalize([
-        round does not work; emulation enabled]))])],
+      [AC_MSG_ERROR(m4_normalize([round does not work]))],
+      [AC_MSG_WARN(m4_normalize([round does not work; emulation enabled]))])],
     [AS_CASE([$target],
       [x86_64-w64-mingw32*],[AC_MSG_RESULT([cross-compiling; assume not])],
       [AC_MSG_RESULT([cross-compiling; assume yes])

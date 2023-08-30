@@ -138,8 +138,12 @@ Working version
   (Guillaume Munch-Maccagnoni, review by Enguerrand Decorne, Xavier
   Leroy, and KC Sivaramakrishnan)
 
-* #12519: Require the FMA instruction set extension on Windows (and Cygwin) for
-  the `caml_fma` primitives. Programs using `Float.fma` run on a pre-Haswell or
+* #12519: ISO C99-compliant float functions are now required. The emulated
+  versions of these functions are no longer available and
+  `--enable-imprecise-c99-float-ops` can no longer be passed to configure. The
+  workaround for the known bug in mingw-w64's `round` function remains. On
+  Windows (and Cygwin), the FMA instruction set extension is required for the
+  `caml_fma` primitives. Programs using `Float.fma` run on a pre-Haswell or
   pre-Piledriver CPU will abort with EXCEPTION_ILLEGAL_INSTRUCTION (SIGILL).
   (David Allsopp, review by ???)
 

@@ -75,10 +75,6 @@
 #endif
 #endif
 
-#ifndef M_LOG2E
-#define M_LOG2E 1.44269504088896340735992468100 /* log_2 (e) */
-#endif
-
 #ifdef ARCH_ALIGN_DOUBLE
 
 CAMLexport double caml_Double_val(value val)
@@ -466,11 +462,7 @@ CAMLprim value caml_exp_float(value f)
 
 CAMLexport double caml_exp2(double x)
 {
-#ifdef HAS_C99_FLOAT_OPS
   return exp2(x);
-#else
-  return pow(2, x);
-#endif
 }
 
 CAMLprim value caml_exp2_float(value f)
@@ -480,11 +472,7 @@ CAMLprim value caml_exp2_float(value f)
 
 CAMLexport double caml_trunc(double x)
 {
-#ifdef HAS_C99_FLOAT_OPS
   return trunc(x);
-#else
-  return (x >= 0.0)? floor(x) : ceil(x);
-#endif
 }
 
 CAMLprim value caml_trunc_float(value f)
@@ -588,11 +576,7 @@ CAMLprim value caml_log10_float(value f)
 
 CAMLexport double caml_log2(double x)
 {
-#ifdef HAS_C99_FLOAT_OPS
   return log2(x);
-#else
-  return log(x) * M_LOG2E;
-#endif
 }
 
 CAMLprim value caml_log2_float(value f)
@@ -622,13 +606,7 @@ CAMLprim value caml_sqrt_float(value f)
 
 CAMLexport double caml_cbrt(double x)
 {
-#ifdef HAS_C99_FLOAT_OPS
   return cbrt(x);
-#else
-  static const double third = 1.0 / 3.0;
-  double res = exp(third * log(fabs(x)));
-  return (x >= 0) ? res : -res;
-#endif
 }
 
 CAMLprim value caml_cbrt_float(value f)
@@ -678,11 +656,7 @@ CAMLprim value caml_asin_float(value f)
 
 CAMLexport double caml_asinh(double x)
 {
-#ifdef HAS_C99_FLOAT_OPS
   return asinh(x);
-#else
-  return log(x + sqrt(x * x + 1.0));
-#endif
 }
 
 CAMLprim value caml_asinh_float(value f)
@@ -697,11 +671,7 @@ CAMLprim value caml_acos_float(value f)
 
 CAMLexport double caml_acosh(double x)
 {
-#ifdef HAS_C99_FLOAT_OPS
   return acosh(x);
-#else
-  return log(x + sqrt(x * x - 1.0));
-#endif
 }
 
 CAMLprim value caml_acosh_float(value f)
@@ -716,11 +686,7 @@ CAMLprim value caml_atan_float(value f)
 
 CAMLexport double caml_atanh(double x)
 {
-#ifdef HAS_C99_FLOAT_OPS
   return atanh(x);
-#else
-  return 0.5 * log((1.0 + x) / (1.0 - x));
-#endif
 }
 
 CAMLprim value caml_atanh_float(value f)
@@ -740,20 +706,7 @@ CAMLprim value caml_ceil_float(value f)
 
 CAMLexport double caml_hypot(double x, double y)
 {
-#ifdef HAS_C99_FLOAT_OPS
   return hypot(x, y);
-#else
-  double tmp, ratio;
-  x = fabs(x); y = fabs(y);
-  if (x != x) /* x is NaN */
-    return y > DBL_MAX ? y : x;  /* PR#6321 */
-  if (y != y) /* y is NaN */
-    return x > DBL_MAX ? x : y;  /* PR#6321 */
-  if (x < y) { tmp = x; x = y; y = tmp; }
-  if (x == 0.0) return 0.0;
-  ratio = y / x;
-  return x * sqrt(1.0 + ratio * ratio);
-#endif
 }
 
 CAMLprim value caml_hypot_float(value f, value g)
@@ -761,33 +714,14 @@ CAMLprim value caml_hypot_float(value f, value g)
   return caml_copy_double(caml_hypot(Double_val(f), Double_val(g)));
 }
 
-/* These emulations of expm1() and log1p() are due to William Kahan.
-   See http://www.plunk.org/~hatch/rightway.php */
 CAMLexport double caml_expm1(double x)
 {
-#ifdef HAS_C99_FLOAT_OPS
   return expm1(x);
-#else
-  double u = exp(x);
-  if (u == 1.)
-    return x;
-  if (u - 1. == -1.)
-    return -1.;
-  return (u - 1.) * x / log(u);
-#endif
 }
 
 CAMLexport double caml_log1p(double x)
 {
-#ifdef HAS_C99_FLOAT_OPS
   return log1p(x);
-#else
-  double u = 1. + x;
-  if (u == 1.)
-    return x;
-  else
-    return log(u) * x / (u - 1.);
-#endif
 }
 
 CAMLprim value caml_expm1_float(value f)
@@ -800,32 +734,9 @@ CAMLprim value caml_log1p_float(value f)
   return caml_copy_double(caml_log1p(Double_val(f)));
 }
 
-#ifndef HAS_C99_FLOAT_OPS
-Caml_inline double simple_erf(double x)
-{
-  /* This algorithm for calculating the error function is based on formula
-     7.1.26 from the "Handbook of Mathematical Functions" by Abramowitz
-     and Stegun.  The implementation using Horner's method for evaluating the
-     polynomial approximation is derived from Python code by John D. Cook. */
-  double a1 =  0.254829592, a2 = -0.284496736, a3 = 1.421413741,
-         a4 = -1.453152027, a5 =  1.061405429, p  = 0.3275911,
-         t, y;
-
-  int sign = (x >= 0) ? 1 : -1;
-  x = fabs(x);
-  t = 1.0 / (1.0 + p * x);
-  y = 1.0 - (((((a5 *t  + a4) * t) + a3) * t + a2) * t + a1) * t * exp(-x * x);
-  return sign * y;
-}
-#endif
-
 CAMLexport double caml_erf(double x)
 {
-#ifdef HAS_C99_FLOAT_OPS
   return erf(x);
-#else
-  return simple_erf(x);
-#endif
 }
 
 CAMLprim value caml_erf_float(value f)
@@ -835,11 +746,7 @@ CAMLprim value caml_erf_float(value f)
 
 CAMLexport double caml_erfc(double x)
 {
-#ifdef HAS_C99_FLOAT_OPS
   return erfc(x);
-#else
-  return 1.0 - simple_erf(x);
-#endif
 }
 
 CAMLprim value caml_erfc_float(value f)
@@ -847,27 +754,9 @@ CAMLprim value caml_erfc_float(value f)
   return caml_copy_double(caml_erfc(Double_val(f)));
 }
 
-union double_as_two_int32 {
-    double d;
-#if defined(ARCH_BIG_ENDIAN) || (defined(__arm__) && !defined(__ARM_EABI__))
-    struct { uint32_t h; uint32_t l; } i;
-#else
-    struct { uint32_t l; uint32_t h; } i;
-#endif
-};
-
 CAMLexport double caml_copysign(double x, double y)
 {
-#ifdef HAS_C99_FLOAT_OPS
   return copysign(x, y);
-#else
-  union double_as_two_int32 ux, uy;
-  ux.d = x;
-  uy.d = y;
-  ux.i.h &= 0x7FFFFFFFU;
-  ux.i.h |= (uy.i.h & 0x80000000U);
-  return ux.d;
-#endif
 }
 
 CAMLprim value caml_copysign_float(value f, value g)
@@ -877,13 +766,7 @@ CAMLprim value caml_copysign_float(value f, value g)
 
 CAMLprim value caml_signbit(double x)
 {
-#ifdef HAS_C99_FLOAT_OPS
   return Val_bool(signbit(x));
-#else
-  union double_as_two_int32 ux;
-  ux.d = x;
-  return Val_bool(ux.i.h >> 31);
-#endif
 }
 
 CAMLprim value caml_signbit_float(value f)
@@ -925,6 +808,15 @@ CAMLprim value caml_float_compare(value vf, value vg)
 {
   return Val_int(caml_float_compare_unboxed(Double_val(vf),Double_val(vg)));
 }
+
+union double_as_two_int32 {
+    double d;
+#if defined(ARCH_BIG_ENDIAN) || (defined(__arm__) && !defined(__ARM_EABI__))
+    struct { uint32_t h; uint32_t l; } i;
+#else
+    struct { uint32_t l; uint32_t h; } i;
+#endif
+};
 
 enum { FP_normal, FP_subnormal, FP_zero, FP_infinite, FP_nan };
 

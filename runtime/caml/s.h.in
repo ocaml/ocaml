@@ -48,9 +48,9 @@
    supported, including across DLLs.  This is not the case with
    macOS and with Windows + MinGW-64. */
 
-#undef HAS_C99_FLOAT_OPS
+#define HAS_C99_FLOAT_OPS 1
 
-/* Define HAS_C99_FLOAT_OPS if <math.h> conforms to ISO C99.
+/* Since OCaml 5.2, <math.h> must conform to ISO C99.
    In particular, it should provide expm1(), log1p(), hypot(), fma(),
    exp2(), log2(), cbrt(), acosh(), asinh(), atanh(), erf(), erfc(),
    trunc(), round(), copysign(). */
