@@ -17,7 +17,10 @@
 type ('a, 'b) mut_first = { mutable mut : 'a; immut : 'b ; };;
 
 let _no_mention {immut} = immut in ();;
-(* exceptation: no mutable read *)
+(* exceptation: no mutable read
+   (this expectation is met, as the StrictOpt mutable read is
+    optimized away by Simplif.)
+*)
 [%%expect {|
 0
 0
@@ -26,7 +29,7 @@ type ('a, 'b) mut_first = { mutable mut : 'a; immut : 'b; }
   (_no_mention/279 =
      (function param/282
        (let
-         (*match*/283 =o (field_mut 0 param/282)
+         (*strict*/283 =o (field_mut 0 param/282)
           immut/281 =a (field_imm 1 param/282))
          immut/281)))
   0)
@@ -41,7 +44,7 @@ let _no_use {immut; mut = _} = immut in ();;
   (_no_use/284 =
      (function param/287
        (let
-         (*match*/288 =o (field_mut 0 param/287)
+         (*strict*/288 =o (field_mut 0 param/287)
           immut/286 =a (field_imm 1 param/287))
          immut/286)))
   0)
@@ -58,19 +61,19 @@ in ();;
 (let
   (_matching/289 =
      (function param/292 : int
-       (let (*match*/293 =o (field_mut 0 param/292))
-         (if *match*/293
+       (let (*strict*/293 =o (field_mut 0 param/292))
+         (if *strict*/293
            (let
              (*match*/295 =a (field_imm 1 param/292)
-              n/291 =a (field_imm 0 *match*/293))
+              n/291 =a (field_imm 0 *strict*/293))
              n/291)
            (let (*match*/294 =a (field_imm 1 param/292)) 0)))))
   0)
 (let
   (_matching/289 =
      (function param/292 : int
-       (let (*match*/293 =o (field_mut 0 param/292))
-         (if *match*/293 (field_imm 0 *match*/293) 0))))
+       (let (*strict*/293 =o (field_mut 0 param/292))
+         (if *strict*/293 (field_imm 0 *strict*/293) 0))))
   0)
 - : unit = ()
 |}];;
@@ -86,11 +89,11 @@ in ();;
 (let
   (_matching_first/296 =
      (function param/299 : int
-       (let (*match*/300 =o (field_mut 0 param/299))
-         (if *match*/300
+       (let (*strict*/300 =o (field_mut 0 param/299))
+         (if *strict*/300
            (let
              (*match*/302 =a (field_imm 1 param/299)
-              n/298 =a (field_imm 0 *match*/300))
+              n/298 =a (field_imm 0 *strict*/300))
              n/298)
            (let (*match*/301 =a (field_imm 1 param/299))
              (if *match*/301 0 -1))))))
@@ -98,8 +101,8 @@ in ();;
 (let
   (_matching_first/296 =
      (function param/299 : int
-       (let (*match*/300 =o (field_mut 0 param/299))
-         (if *match*/300 (field_imm 0 *match*/300)
+       (let (*strict*/300 =o (field_mut 0 param/299))
+         (if *strict*/300 (field_imm 0 *strict*/300)
            (if (field_imm 1 param/299) 0 -1)))))
   0)
 - : unit = ()
@@ -117,7 +120,7 @@ let _matching_second_in_two_switches : (_, _) mut_second -> _ = function
 | {immut = true ; mut = None} -> 0
 | {immut = true ; mut = Some n} -> n
 in ();;
-(* exceptation: two mutable read, one in each branch of an 'if' on [immut] *)
+(* exceptation: one mutable read as a strict bindings at the top. *)
 [%%expect {|
 0
 0
@@ -125,23 +128,22 @@ type ('a, 'b) mut_second = { immut : 'a; mutable mut : 'b; }
 (let
   (_matching_second_in_two_switches/306 =
      (function param/310 : int
-       (let (*match*/311 =a (field_imm 0 param/310))
-         (if *match*/311
-           (let (*match*/313 =o (field_mut 1 param/310))
-             (if *match*/313 (let (n/309 =a (field_imm 0 *match*/313)) n/309)
-               0))
-           (let (*match*/312 =o (field_mut 1 param/310))
-             (if *match*/312
-               (let (n/308 =a (field_imm 0 *match*/312)) (~ n/308)) -1))))))
+       (let
+         (*strict*/311 =o (field_mut 1 param/310)
+          *match*/312 =a (field_imm 0 param/310))
+         (if *match*/312
+           (if *strict*/311 (let (n/309 =a (field_imm 0 *strict*/311)) n/309)
+             0)
+           (if *strict*/311
+             (let (n/308 =a (field_imm 0 *strict*/311)) (~ n/308)) -1)))))
   0)
 (let
   (_matching_second_in_two_switches/306 =
      (function param/310 : int
-       (if (field_imm 0 param/310)
-         (let (*match*/313 =o (field_mut 1 param/310))
-           (if *match*/313 (field_imm 0 *match*/313) 0))
-         (let (*match*/312 =o (field_mut 1 param/310))
-           (if *match*/312 (~ (field_imm 0 *match*/312)) -1)))))
+       (let (*strict*/311 =o (field_mut 1 param/310))
+         (if (field_imm 0 param/310)
+           (if *strict*/311 (field_imm 0 *strict*/311) 0)
+           (if *strict*/311 (~ (field_imm 0 *strict*/311)) -1)))))
   0)
 - : unit = ()
 |}];;
@@ -151,25 +153,28 @@ let _matching_second_in_one_switch : (_, _) mut_second -> _ = function
 | {immut = true ; mut = None} -> 0
 | {immut = true ; mut = Some n} -> n
 in ();;
-(* exceptation: a single mutable read in the [true] branch. *)
+(* exceptation: a single mutable read in the [true] branch.
+   current (suboptimal) behavior: the mutable read is performed as the
+   top, so it is computed even in the [false] branch.
+*)
 [%%expect {|
 (let
-  (_matching_second_in_one_switch/314 =
-     (function param/317 : int
-       (let (*match*/318 =a (field_imm 0 param/317))
+  (_matching_second_in_one_switch/313 =
+     (function param/316 : int
+       (let
+         (*strict*/317 =o (field_mut 1 param/316)
+          *match*/318 =a (field_imm 0 param/316))
          (if *match*/318
-           (let (*match*/320 =o (field_mut 1 param/317))
-             (if *match*/320 (let (n/316 =a (field_imm 0 *match*/320)) n/316)
-               0))
-           (let (*match*/319 =o (field_mut 1 param/317)) -1)))))
+           (if *strict*/317 (let (n/315 =a (field_imm 0 *strict*/317)) n/315)
+             0)
+           -1))))
   0)
 (let
-  (_matching_second_in_one_switch/314 =
-     (function param/317 : int
-       (if (field_imm 0 param/317)
-         (let (*match*/320 =o (field_mut 1 param/317))
-           (if *match*/320 (field_imm 0 *match*/320) 0))
-         -1)))
+  (_matching_second_in_one_switch/313 =
+     (function param/316 : int
+       (let (*strict*/317 =o (field_mut 1 param/316))
+         (if (field_imm 0 param/316)
+           (if *strict*/317 (field_imm 0 *strict*/317) 0) -1))))
   0)
 - : unit = ()
 |}];;
@@ -188,31 +193,33 @@ let _matching_second_in_one_switch_among_many : (_, _) mut_second -> _ = functio
 | {immut = C; _ } -> -2
 | {immut = D; _ } -> -3
 in ();;
-(* exceptation: a single mutable read in the [true] branch. *)
+(* exceptation: a single mutable read in the [true] branch.
+   current (suboptimal) behavior: the mutable read is performed
+   at the beginning, so it is evaluated in all branches. *)
 [%%expect {|
 (let
-  (_matching_second_in_one_switch_among_many/326 =
-     (function param/329 : int
-       (let (*match*/330 =a (field_imm 0 param/329))
-         (switch* *match*/330
-          case int 0: (let (*match*/331 =o (field_mut 1 param/329)) -1)
+  (_matching_second_in_one_switch_among_many/324 =
+     (function param/327 : int
+       (let
+         (*strict*/328 =o (field_mut 1 param/327)
+          *match*/329 =a (field_imm 0 param/327))
+         (switch* *match*/329
+          case int 0: -1
           case int 1:
-           (let (*match*/332 =o (field_mut 1 param/329))
-             (if *match*/332 (let (n/328 =a (field_imm 0 *match*/332)) n/328)
-               0))
-          case int 2: (let (*match*/333 =o (field_mut 1 param/329)) -2)
-          case int 3: (let (*match*/334 =o (field_mut 1 param/329)) -3)))))
+           (if *strict*/328 (let (n/326 =a (field_imm 0 *strict*/328)) n/326)
+             0)
+          case int 2: -2
+          case int 3: -3))))
   0)
 (let
-  (_matching_second_in_one_switch_among_many/326 =
-     (function param/329 : int
-       (switch* (field_imm 0 param/329)
-        case int 0: -1
-        case int 1:
-         (let (*match*/332 =o (field_mut 1 param/329))
-           (if *match*/332 (field_imm 0 *match*/332) 0))
-        case int 2: -2
-        case int 3: -3)))
+  (_matching_second_in_one_switch_among_many/324 =
+     (function param/327 : int
+       (let (*strict*/328 =o (field_mut 1 param/327))
+         (switch* (field_imm 0 param/327)
+          case int 0: -1
+          case int 1: (if *strict*/328 (field_imm 0 *strict*/328) 0)
+          case int 2: -2
+          case int 3: -3))))
   0)
 - : unit = ()
 |}];;
@@ -222,37 +229,27 @@ let _matching_second_in_two_cuts : (_, _) mut_second -> _ = function
 | {immut = true ; mut = None} -> 0
 | {immut = _ ;    mut = Some n} -> n
 in ();;
-(* exceptation: a mutable read in each switch -- the second is in an
-   exit handler. *)
+(* exceptation: a single mutable read, shared by the two split submatrices. *)
 [%%expect {|
 (let
-  (_matching_second_in_two_cuts/335 =
-     (function param/338 : int
-       (let (*match*/339 =a (field_imm 0 param/338))
+  (_matching_second_in_two_cuts/330 =
+     (function param/333 : int
+       (let
+         (*strict*/334 =o (field_mut 1 param/333)
+          *match*/335 =a (field_imm 0 param/333))
          (catch
-           (if *match*/339
-             (let (*match*/341 =o (field_mut 1 param/338))
-               (if *match*/341 (exit 1) 0))
-             (let (*match*/340 =o (field_mut 1 param/338))
-               (if *match*/340 (exit 1) -1)))
-          with (1)
-           (let
-             (*match*/342 =o (field_mut 1 param/338)
-              n/337 =a (field_imm 0 *match*/342))
-             n/337)))))
+           (if *match*/335 (if *strict*/334 (exit 1) 0)
+             (if *strict*/334 (exit 1) -1))
+          with (1) (let (n/332 =a (field_imm 0 *strict*/334)) n/332)))))
   0)
 (let
-  (_matching_second_in_two_cuts/335 =
-     (function param/338 : int
-       (catch
-         (if (field_imm 0 param/338)
-           (let (*match*/341 =o (field_mut 1 param/338))
-             (if *match*/341 (exit 1) 0))
-           (let (*match*/340 =o (field_mut 1 param/338))
-             (if *match*/340 (exit 1) -1)))
-        with (1)
-         (let (*match*/342 =o (field_mut 1 param/338))
-           (field_imm 0 *match*/342)))))
+  (_matching_second_in_two_cuts/330 =
+     (function param/333 : int
+       (let (*strict*/334 =o (field_mut 1 param/333))
+         (catch
+           (if (field_imm 0 param/333) (if *strict*/334 (exit 1) 0)
+             (if *strict*/334 (exit 1) -1))
+          with (1) (field_imm 0 *strict*/334)))))
   0)
 - : unit = ()
 |}];;

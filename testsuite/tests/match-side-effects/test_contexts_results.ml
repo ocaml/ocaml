@@ -10,10 +10,8 @@ val example_1 : unit -> (bool, int) Result.t = <fun>
 |}]
 
 let _ = example_1 ();;
-(* <unknown constructor> means that we got an 'unsound boolean',
-   which is neither 'true' nor 'false'. There was a bug here! *)
 [%%expect {|
-- : (bool, int) Result.t = Result.Ok <unknown constructor>
+- : (bool, int) Result.t = Result.Ok true
 |}]
 
 #use "contexts_2.ml";;
@@ -24,7 +22,8 @@ val example_2 : unit -> (bool, int) Result.t = <fun>
 |}];;
 
 let _ = example_2 ();;
-(* Also a bug! *)
+(* <unknown constructor> means that we got an 'unsound boolean',
+   which is neither 'true' nor 'false'. There is a bug here! *)
 [%%expect {|
 - : (bool, int) Result.t = Result.Ok <unknown constructor>
 |}]

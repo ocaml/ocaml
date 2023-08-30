@@ -534,8 +534,23 @@ end = struct
     (** Recombination of contexts.
         For example:
           { (_,_)::left; p1::p2::right } -> { left; (p1,p2)::right }
-        All mutable fields are replaced by '_', since side-effects in
-        guards can alter these fields. *)
+
+        [set_args_erase_mutable]: all mutable fields are replaced by
+        '_', since side-effects in guards can alter these fields.
+
+        Note: erasing mutable field information on [combine] means
+        that no static information is kept on the mutable sub-fields
+        of the current arguments of the pattern matrix -- and their
+        sub-sub-fields, etc.
+
+        We do keep information on the head constructor of each
+        argument, which correspond to the head constructors of the
+        [right] columns in the context. This information remains valid
+        even if the arguments are themselves under a mutable field,
+        because accesses to mutable fields are evaluated strictly as
+        soon as the corresponding arguments appear in the context, and
+        never re-evaluated inside their lexical scope -- see
+        [collect_strict_bindings].  *)
     let combine { left; right } =
       match left with
       | p :: ps -> { left = ps; right = set_args_erase_mutable p right }
@@ -1740,6 +1755,7 @@ let split_and_precompile_half_simplified ~arg pm =
 (* General divide functions *)
 
 type cell = {
+  bindings : (Ident.t * lambda * let_kind) list;
   pm : initial_clause pattern_matching;
   ctx : Context.t;
   discr : Patterns.Head.t
@@ -1747,21 +1763,63 @@ type cell = {
 (** a submatrix after specializing by discriminant pattern;
     [ctx] is the context shared by all rows. *)
 
+(* Note on [collect_strict_bindings]:
+
+   When we split on a column, we generate expressions to access the
+   sub-values of the scrutinee (see the [get_expr_args_*] functions),
+   which are pushed in the [args] list of sub-scrutinees. Those
+   expressions will be bound to variables in the generated code in
+   a "delayed" manner: each argument will be bound right before the
+   corresponding colum is itself split over. Sometimes the
+   pattern-matching compiler will split on the same position several
+   times, and argument access expressions may be duplicated in the
+   generated code.
+
+   However, some access expressions are effectful: reads of a mutable
+   field or array element, forcing a lazy thunk. We bind these in
+   a "strict" manner, right after splitting on the head constructor
+   above those subvalues. This guarantees that they are never
+   duplicated in the generated code. Reading a mutable field several
+   times would not only give surprising behavior in some cases, it is
+   even unsound (see issue #7241): our "context" optimizations
+   (see the [Context]) module carry static optimization information on
+   the scrutinees: "we know this argument starts with a [Some]
+   constructor, so we can access its first field directly without
+   checking". This information could become invalid on a second read
+   of the mutable field (the argument was mutated into [None]),
+   leading to memory errors.
+*)
+let collect_strict_bindings args =
+  let bindings_rev, delayed_args =
+    List.fold_left_map (fun args_now ((arg_lam, str) as arg) ->
+      match str with
+      | Alias -> (args_now, arg)
+      | Strict | StrictOpt ->
+          let v = Ident.create_local "*strict*" in
+          ((v, arg_lam, str) :: args_now, (Lvar v, Alias))
+    ) [] args
+  in List.rev bindings_rev, delayed_args
+
+let process_new_args get_expr_args head arg old_args =
+  let new_args = get_expr_args head arg [] in
+  let bindings, new_delayed_args = collect_strict_bindings new_args in
+  let args = new_delayed_args @ old_args in
+  (bindings, args)
+
 let make_matching get_expr_args head def ctx = function
   | [] -> fatal_error "Matching.make_matching"
   | arg :: rem ->
       let def = Default_environment.specialize head def
-      and args = get_expr_args head arg rem
+      and bindings, args = process_new_args get_expr_args head arg rem
       and ctx = Context.specialize head ctx in
-      { pm = { cases = []; args; default = def }; ctx; discr = head }
+      { bindings; pm = { cases = []; args; default = def }; ctx; discr = head }
 
 let make_line_matching get_expr_args head def = function
   | [] -> fatal_error "Matching.make_line_matching"
   | arg :: rem ->
-      { cases = [];
-        args = get_expr_args head arg rem;
-        default = Default_environment.specialize head def
-      }
+      let bindings, args = process_new_args get_expr_args head arg rem in
+      let default = Default_environment.specialize head def in
+      bindings, { cases = []; args; default; }
 
 type 'a division = {
   args : (lambda * let_kind) list;
@@ -1799,16 +1857,14 @@ let add_line patl_action pm =
   pm
 
 let divide_line make_ctx get_expr_args get_pat_args discr ctx
-    (pm : Simple.clause pattern_matching) =
+    ({args; default; cases} : Simple.clause pattern_matching) =
   let add ((p, patl), action) submatrix =
     let p = General.erase p in
     add_line (get_pat_args p patl, action) submatrix
   in
-  let pm =
-    List.fold_right add pm.cases
-      (make_line_matching get_expr_args discr pm.default pm.args)
-  in
-  { pm; ctx = make_ctx ctx; discr }
+  let bindings, pm = make_line_matching get_expr_args discr default args in
+  let pm = List.fold_right add cases pm in
+  { bindings; pm; ctx = make_ctx ctx; discr }
 
 let drop_pat_arg _p rem = rem
 let drop_expr_arg _head _arg rem = rem
@@ -3195,6 +3251,15 @@ let rec event_branch repr lam =
 
 exception Unused
 
+let bind_cell_bindings cell lam =
+  List.fold_right (fun (v, arg, str) lam ->
+    bind str v arg lam
+  ) cell.bindings lam
+
+let compile_cell compile_fun cell =
+  let (lam, jumps) = compile_fun cell.ctx cell.pm in
+  (bind_cell_bindings cell lam, jumps)
+
 let compile_list compile_fun division =
   let rec c_rec totals = function
     | [] -> ([], Jumps.unions totals, [])
@@ -3202,10 +3267,10 @@ let compile_list compile_fun division =
         if Context.is_empty cell.ctx then
           c_rec totals rem
         else begin
-          match compile_fun cell.ctx cell.pm with
+          match compile_cell compile_fun cell with
           | exception Unused ->
-            if rem <> [] then separate_debug_output ();
-            c_rec totals rem
+              if rem <> [] then separate_debug_output ();
+              c_rec totals rem
           | lambda1, total1 ->
             if rem <> [] then separate_debug_output ();
             let c_rem, total, new_discrs =
@@ -3534,9 +3599,8 @@ and do_compile_matching ~scopes repr partial ctx pmh =
         lam total ctx handlers
 
 and compile_no_test ~scopes divide up_ctx repr partial ctx to_match =
-  let { pm = this_match; ctx = this_ctx } = divide ctx to_match in
-  let lambda, total =
-    compile_match ~scopes repr partial this_ctx this_match in
+  let cell = divide ctx to_match in
+  let lambda, total = compile_cell (compile_match ~scopes repr partial) cell in
   (lambda, Jumps.map up_ctx total)
 
 (* The entry points *)
