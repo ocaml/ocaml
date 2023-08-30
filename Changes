@@ -114,6 +114,10 @@ Working version
    Guillaume Munch-Maccagnoni, KC Sivaramakrishnan, Stefan Muenzel,
    Xavier Leroy)
 
+- #12511: Minor performance improvements and cleanups in the implementation
+  of modules Int32, Int64, and Nativeint
+  (Xavier Leroy, review by Gabriel Scherer and Daniel Bünzli)
+
 ### Other libraries:
 
 - #12213: Dynlink library, improve legibility of error messages
