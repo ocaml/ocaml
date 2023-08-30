@@ -72,7 +72,7 @@ let find_eval_phrase str =
   match str.str_items with
   | [ { str_desc = Tstr_eval (e, attrs) ; str_loc = loc } ]
   | [ { str_desc = Tstr_value (Asttypes.Nonrecursive,
-                                [{ vb_expr = e
+                                [{ vb_expr = { qexp_expr = e; _ }
                                  ; vb_pat = { pat_desc = Tpat_any; _ }
                                  ; vb_attributes = attrs }])
       ; str_loc = loc }
