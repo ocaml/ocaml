@@ -145,6 +145,7 @@ Working version
   Windows (and Cygwin), the FMA instruction set extension is required for the
   `caml_fma` primitives. Programs using `Float.fma` run on a pre-Haswell or
   pre-Piledriver CPU will abort with EXCEPTION_ILLEGAL_INSTRUCTION (SIGILL).
+  The `caml_log1p` function is no longer exposed in `caml/misc.h`.
   (David Allsopp, review by ???)
 
 - #12634: Simplify TSan backtrace bookkeeping upon raise
