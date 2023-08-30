@@ -98,7 +98,6 @@ type fundecl =
     fun_dbg : Debuginfo.t;
     fun_poll: Lambda.poll_attribute;
     fun_num_stack_slots: int array;
-    fun_contains_calls: bool;
   }
 
 val dummy_instr: instruction

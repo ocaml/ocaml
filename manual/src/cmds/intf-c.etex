@@ -2404,6 +2404,11 @@ The corresponding C type must be "intnat".
 {\bf Note:} Do not use the C "int" type in correspondence with "(int
 [\@untagged])". This is because they often differ in size.
 
+It is possible to annotate with "[\@untagged]" any immediate type, i.e. types
+that are represented like "int". This includes "bool", "char", any variant
+type with only constant constructors. Note: this does not include
+"Unix.file_descr" which is not represented as an interger on all platforms.
+
 \subsection{ss:c-direct-call}{Direct C call}
 
 In order to be able to run the garbage collector in the middle of

@@ -117,7 +117,7 @@ gc_phase_t caml_gc_phase;
 
    - Opportunistic collections may happen while a domain is waiting on
      a STW barrier, so it might race with the code running inside
-     anoter in-STW barrier. (It is possible that a deeper analysis of
+     another in-STW barrier. (It is possible that a deeper analysis of
      the current runtime code would in fact rule out such a race, but
      it is simpler to avoid phase accesses during opportunistic
      collections.)

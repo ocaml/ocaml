@@ -652,7 +652,7 @@ let check_abbrev env sdecl (id, decl) =
    We want to guarantee that all cycles within OCaml types are
    "guarded".
 
-   More precisly, we consider a reachability relation
+   More precisely, we consider a reachability relation
      "[t] is reachable [guarded|unguarded] from [u]"
    defined as follows:
 
@@ -896,7 +896,7 @@ let check_well_founded_decl env loc path decl to_check =
 
    Note: in the case of a constrained type definition
    [type 'a t = ... constraint 'a = ...], we require
-   that all instances in [...] be equal to the constrainted type.
+   that all instances in [...] be equal to the constrained type.
 *)
 
 let check_regularity ~abs_env env loc path decl to_check =
@@ -1070,7 +1070,7 @@ let transl_type_decl env rec_flag sdecl_list =
   in
   (* Translate declarations, using a temporary environment where abbreviations
      expand to a generic type variable. After that, we check the coherence of
-     the translated declarations in the resulting new enviroment. *)
+     the translated declarations in the resulting new environment. *)
   let tdecls, decls, new_env =
     Ctype.with_local_level_iter ~post:generalize_decl begin fun () ->
       (* Enter types. *)
@@ -1485,8 +1485,9 @@ let get_native_repr_attribute attrs ~global_repr =
 
 let native_repr_of_type env kind ty =
   match kind, get_desc (Ctype.expand_head_opt env ty) with
-  | Untagged, Tconstr (path, _, _) when Path.same path Predef.path_int ->
-    Some Untagged_int
+  | Untagged, Tconstr (_, _, _) when
+         Typeopt.maybe_pointer_type env ty = Lambda.Immediate ->
+    Some Untagged_immediate
   | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_float ->
     Some Unboxed_float
   | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_int32 ->
@@ -2147,8 +2148,8 @@ let report_error ppf = function
         Style.inline_code "int64"
         Style.inline_code "nativeint"
   | Cannot_unbox_or_untag_type Untagged ->
-      fprintf ppf "@[Don't know how to untag this type.@ \
-                   Only %a can be untagged.@]"
+      fprintf ppf "@[Don't know how to untag this type. Only %a@ \
+                   and other immediate types can be untagged.@]"
         Style.inline_code "int"
   | Deep_unbox_or_untag_attribute kind ->
       fprintf ppf

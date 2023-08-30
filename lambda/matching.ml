@@ -120,8 +120,9 @@ and may_compats = MayCompat.compats
    Many functions on the various data structures of the algorithm :
      - Pattern matrices.
      - Default environments: mapping from matrices to exit numbers.
-     - Contexts:  matrices whose column are partitioned into
-       left and right.
+     - Contexts: matrices whose column are partitioned into
+       left (prefix of the input that we have already matched) and
+       right (what remains to be matched).
      - Jump summaries: mapping from exit numbers to contexts
 *)
 
@@ -494,6 +495,10 @@ module Context : sig
 end = struct
   module Row = struct
     type t = { left : pattern list; right : pattern list }
+    (* Static knowledge on a frontier of nodes (subtrees) in the matched values.
+       Left: what we know about what is above us, towards the root.
+       Right: what we know about whas is below us, towards the leaves. *)
+
 
     let eprintf { left; right } =
       Format.eprintf "LEFT:%a RIGHT:%a\n" pretty_line left pretty_line right
@@ -519,9 +524,11 @@ end = struct
       let shifted, left = rev_split_at n left in
       { left; right = shifted @ right }
 
-    (** Recombination of contexts (eg: (_,_)::p1::p2::rem ->  (p1,p2)::rem)
-  All mutable fields are replaced by '_', since side-effects in
-  guards can alter these fields *)
+    (** Recombination of contexts.
+        For example:
+          { (_,_)::left; p1::p2::right } -> { left; (p1,p2)::right }
+        All mutable fields are replaced by '_', since side-effects in
+        guards can alter these fields. *)
     let combine { left; right } =
       match left with
       | p :: ps -> { left = ps; right = set_args_erase_mutable p right }
@@ -529,6 +536,8 @@ end = struct
   end
 
   type t = Row.t list
+  (* A union/disjunction of possible context "rows". What we know is that
+     the matching situation is described by one of the rows. *)
 
   let empty = []
 
@@ -634,9 +643,11 @@ let flatten_matrix size pss =
     pss []
 
 (** A default environment (referred to as "reachable trap handlers" in the
-    paper), is an ordered list of [matrix * raise_num] pairs, and is used to
-    decide where to jump next if none of the rows in a given matrix match the
-    input.
+    paper) is an ordered list of [raise_num * matrix] pairs, mapping reachable
+    exit numbers to the matrices of the corresponding exit handler.
+
+    It is used to decide where to jump next if none of the rows in a given
+    matrix match the input.
 
     In such situations, one thing you can do is to jump to the first (leftmost)
     [raise_num] in that list (by doing a raise to the static-cach handler number
@@ -644,19 +655,18 @@ let flatten_matrix size pss =
     either, it will do the same thing, etc.
     This is what [mk_failaction_neg] (and its callers) does.
 
-    A more sophisticated alternative is to use what you know about the input
-    (what you might already have matched) and the current pm (what you know you
-    can't match) to directly jump to a pm that might match it instead of the
-    next one; that is why we don't just keep [raise_num]s but also the
-    associated matrices.
-    [mk_failaction_pos] does (a slightly more sophisticated version of) this.
+    But in fact there is no point in jumping to a matrix if you can tell
+    statically that it cannot match your current input. Default environments
+    provide static information on what happens "after" each jump, which we use
+    to optimize our exit choices.
+    This is what [mk_failaction_pos] (and its callers) does.
 *)
 module Default_environment : sig
   type t
 
   val is_empty : t -> bool
 
-  val pop : t -> ((matrix * int) * t) option
+  val pop : t -> ((int * matrix) * t) option
 
   val empty : t
 
@@ -672,7 +682,7 @@ module Default_environment : sig
 
   val pp : t -> unit
 end = struct
-  type t = (matrix * int) list
+  type t = (int * matrix) list
   (** All matrices in the list should have the same arity -- their rows should
       have the same number of columns -- as it should match the arity of the
       current scrutiny vector. *)
@@ -686,7 +696,7 @@ end = struct
   let cons matrix raise_num default =
     match matrix with
     | [] -> default
-    | _ -> (matrix, raise_num) :: default
+    | _ -> (raise_num, matrix) :: default
 
   let specialize_matrix arity matcher pss =
     let rec filter_rec = function
@@ -775,8 +785,8 @@ end = struct
   let specialize_ arity matcher env =
     let rec make_rec = function
       | [] -> []
-      | (([] :: _), i) :: _ -> [ ([ [] ], i) ]
-      | (pss, i) :: rem -> (
+      | (i, ([] :: _)) :: _ -> [ (i, [ [] ]) ]
+      | (i, pss) :: rem -> (
           (* we already handled the empty-row case
              so we know that all rows in pss are non-empty *)
           let non_empty = function
@@ -786,8 +796,8 @@ end = struct
           let pss = List.map non_empty pss in
           match specialize_matrix arity matcher pss with
           | [] -> make_rec rem
-          | [] :: _ -> [ ([ [] ], i) ]
-          | pss -> (pss, i) :: make_rec rem
+          | [] :: _ -> [ (i, [ [] ]) ]
+          | pss -> (i, pss) :: make_rec rem
         )
     in
     make_rec env
@@ -813,14 +823,21 @@ end = struct
   let pp def =
     Format.eprintf "+++++ Defaults +++++\n";
     List.iter
-      (fun (pss, i) -> Format.eprintf "Matrix for %d\n%a" i pretty_matrix pss)
+      (fun (i, pss) -> Format.eprintf "Matrix for %d\n%a" i pretty_matrix pss)
       def;
     Format.eprintf "+++++++++++++++++++++\n"
 
   let flatten size def =
-    List.map (fun (pss, i) -> (flatten_matrix size pss, i)) def
+    List.map (fun (i, pss) -> (i, flatten_matrix size pss)) def
 end
 
+(** For a given code fragment, we call "external" exits the exit numbers that
+    are raised within the code but not handled in the code fragment itself.
+
+    The jump summary of a code fragment is an ordered list of
+    [raise_num * Context.t] pairs, mapping all its external exit numbers to
+    context information valid for all its raise points within the code fragment.
+*)
 module Jumps : sig
   type t
 
@@ -840,6 +857,8 @@ module Jumps : sig
 
   val remove : int -> t -> t
 
+  (** [extract exit jumps] returns the context at the given exit
+      and the rest of the jump summary. *)
   val extract : int -> t -> Context.t * t
 
   val eprintf : t -> unit
@@ -2638,7 +2657,7 @@ let mk_failaction_neg partial ctx def =
   match partial with
   | Partial -> (
       match Default_environment.pop def with
-      | Some ((_, idef), _) ->
+      | Some ((idef, _), _) ->
           (Some (Lstaticraise (idef, [])), Jumps.singleton idef ctx)
       | None ->
           (* Act as Total, this means
@@ -2660,7 +2679,7 @@ let mk_failaction_pos partial seen ctx defs =
     | [], _
     | _, None ->
         List.fold_left
-          (fun (klist, jumps) (pats, i) ->
+          (fun (klist, jumps) (i, pats) ->
             let action = Lstaticraise (i, []) in
             let klist =
               List.fold_right
@@ -2671,13 +2690,13 @@ let mk_failaction_pos partial seen ctx defs =
             in
             (klist, jumps))
           ([], Jumps.empty) env
-    | _, Some ((pss, idef), rem) -> (
+    | _, Some ((idef, pss), rem) -> (
         let now, later =
           List.partition (fun (_p, p_ctx) -> Context.matches p_ctx pss) to_test
         in
         match now with
         | [] -> scan_def env to_test rem
-        | _ -> scan_def ((List.map fst now, idef) :: env) later rem
+        | _ -> scan_def ((idef, List.map fst now) :: env) later rem
       )
   in
   let fail_pats = complete_pats_constrs seen in
@@ -3188,47 +3207,42 @@ let bind_check str v arg lam =
 
 let comp_exit ctx m =
   match Default_environment.pop m.default with
-  | Some ((_, i), _) -> (Lstaticraise (i, []), Jumps.singleton i ctx)
+  | Some ((i, _), _) -> (Lstaticraise (i, []), Jumps.singleton i ctx)
   | None -> fatal_error "Matching.comp_exit"
 
-let rec comp_match_handlers comp_fun partial ctx first_match next_matchs =
-  match next_matchs with
+let rec comp_match_handlers comp_fun partial ctx first_match next_matches =
+  match next_matches with
   | [] -> comp_fun partial ctx first_match
-  | rem -> (
-      let rec c_rec body total_body = function
-        | [] -> (body, total_body)
-        (* Hum, -1 means never taken
-        | (-1,pm)::rem -> c_rec body total_body rem *)
-        | (i, pm) :: rem -> (
-            let ctx_i, total_rem = Jumps.extract i total_body in
+  | (_, second_match) :: next_next_matches -> (
+      let rec c_rec body jumps_body = function
+        | [] -> (body, jumps_body)
+        | (i, pm_i) :: rem -> (
+            let ctx_i, jumps_rem = Jumps.extract i jumps_body in
             if Context.is_empty ctx_i then
-              c_rec body total_body rem
+              c_rec body jumps_body rem
             else begin
               let partial = match rem with
                 | [] -> partial
                 | _ -> Partial
               in
-              match comp_fun partial ctx_i pm with
-              | li, total_i ->
+              match comp_fun partial ctx_i pm_i with
+              | lambda_i, jumps_i ->
                 c_rec
-                  (Lstaticcatch (body, (i, []), li))
-                  (Jumps.union total_i total_rem)
+                  (Lstaticcatch (body, (i, []), lambda_i))
+                  (Jumps.union jumps_i jumps_rem)
                   rem
               | exception Unused ->
                 c_rec
                   (Lstaticcatch (body, (i, []), lambda_unit))
-                  total_rem rem
+                  jumps_rem rem
             end
           )
       in
       match comp_fun Partial ctx first_match with
-      | first_lam, total ->
-        c_rec first_lam total rem
-      | exception Unused -> (
-        match next_matchs with
-        | [] -> raise Unused
-        | (_, x) :: xs -> comp_match_handlers comp_fun partial ctx x xs
-      )
+      | first_lam, jumps ->
+        c_rec first_lam jumps next_matches
+      | exception Unused ->
+        comp_match_handlers comp_fun partial ctx second_match next_next_matches
     )
 
 (* To find reasonable names for variables *)
@@ -3257,7 +3271,7 @@ let arg_to_var arg cls =
       ctx=a context
       m=a pattern matching
 
-   Output: a lambda term, a jump summary {..., exit number -> context, .. }
+   Output: a lambda term, a jump summary {..., exit number -> context, ... }
 *)
 
 let rec compile_match ~scopes repr partial ctx

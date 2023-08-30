@@ -400,15 +400,18 @@ stdlib__In_channel.cmo : in_channel.ml \
     stdlib.cmi \
     stdlib__Fun.cmi \
     stdlib__Bytes.cmi \
+    stdlib__Bigarray.cmi \
     stdlib__In_channel.cmi
 stdlib__In_channel.cmx : in_channel.ml \
     stdlib__Sys.cmx \
     stdlib.cmx \
     stdlib__Fun.cmx \
     stdlib__Bytes.cmx \
+    stdlib__Bigarray.cmx \
     stdlib__In_channel.cmi
 stdlib__In_channel.cmi : in_channel.mli \
-    stdlib.cmi
+    stdlib.cmi \
+    stdlib__Bigarray.cmi
 stdlib__Int.cmo : int.ml \
     stdlib.cmi \
     stdlib__Int.cmi
@@ -556,13 +559,16 @@ stdlib__Option.cmi : option.mli \
 stdlib__Out_channel.cmo : out_channel.ml \
     stdlib.cmi \
     stdlib__Fun.cmi \
+    stdlib__Bigarray.cmi \
     stdlib__Out_channel.cmi
 stdlib__Out_channel.cmx : out_channel.ml \
     stdlib.cmx \
     stdlib__Fun.cmx \
+    stdlib__Bigarray.cmx \
     stdlib__Out_channel.cmi
 stdlib__Out_channel.cmi : out_channel.mli \
-    stdlib.cmi
+    stdlib.cmi \
+    stdlib__Bigarray.cmi
 stdlib__Parsing.cmo : parsing.ml \
     stdlib__Obj.cmi \
     stdlib__Lexing.cmi \

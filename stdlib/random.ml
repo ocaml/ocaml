@@ -46,7 +46,7 @@ module State = struct
        a version number. We should update this prefix if we change
        the Random algorithm or the serialization format, so that users
        get a clean error instead of believing that they faithfully
-       reproduce their previous state and in fact get a differrent
+       reproduce their previous state and in fact get a different
        stream.
 
        Note that there is no constraint to keep the same

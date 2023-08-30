@@ -19,12 +19,17 @@
 
 CAMLprim value caml_memprof_start(value lv, value szv, value tracker_param)
 {
-  caml_failwith("Gc.memprof.start: not implemented in multicore");
+  caml_failwith("Gc.Memprof.start: not implemented in multicore");
 }
 
 CAMLprim value caml_memprof_stop(value unit)
 {
-  caml_failwith("Gc.memprof.stop: not implemented in multicore");
+  caml_failwith("Gc.Memprof.stop: not implemented in multicore");
+}
+
+CAMLprim value caml_memprof_discard(value profile)
+{
+  caml_failwith("Gc.Memprof.discard: not implemented in multicore");
 }
 
 /* FIXME: integrate memprof with multicore */

@@ -58,7 +58,7 @@
    It is important to keep TSan entries and exits balanced to avoid
    underflow/overflow on the TSan internal buffer used for reconstructing
    events backtrace.
-   The runtime is responsible for emiting `__tsan_func_exit` call for each
+   The runtime is responsible for emitting `__tsan_func_exit` call for each
    function "aborted" while raising an exception or performing an effect. They
    match the corresponding `__tsan_func_entry` call inserted by the Cmm
    instrumentation pass.
@@ -92,7 +92,7 @@
 
    2. Effects
 
-   Similary to exceptions, when `perform` is called `__tsan_func_exit` must be
+   Similarly to exceptions, when `perform` is called `__tsan_func_exit` must be
    called for every function on the current fiber. The process can be repeated
    for every fiber's parents, because of `caml_repeform` until reaching the
    effect handler.

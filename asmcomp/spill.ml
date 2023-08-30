@@ -423,12 +423,4 @@ let fundecl f =
       (Reg.inter_set_array tospill_at_entry f.fun_args)
       body2
   in
-  { fun_name = f.fun_name;
-    fun_args = f.fun_args;
-    fun_body = new_body;
-    fun_codegen_options = f.fun_codegen_options;
-    fun_poll = f.fun_poll;
-    fun_dbg  = f.fun_dbg;
-    fun_num_stack_slots = f.fun_num_stack_slots;
-    fun_contains_calls = f.fun_contains_calls;
-  }
+  { f with fun_body = new_body }

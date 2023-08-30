@@ -123,6 +123,7 @@ let delete_alarm a = Atomic.set a false
 
 module Memprof =
   struct
+    type t
     type allocation_source = Normal | Marshal | Custom
     type allocation =
       { n_samples : int;
@@ -147,7 +148,7 @@ module Memprof =
     }
 
     external c_start :
-      float -> int -> ('minor, 'major) tracker -> unit
+      float -> int -> ('minor, 'major) tracker -> t
       = "caml_memprof_start"
 
     let start
@@ -157,4 +158,6 @@ module Memprof =
       c_start sampling_rate callstack_size tracker
 
     external stop : unit -> unit = "caml_memprof_stop"
+
+    external discard : t -> unit = "caml_memprof_discard"
   end

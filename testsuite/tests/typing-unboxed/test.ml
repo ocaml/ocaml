@@ -631,7 +631,8 @@ external g : (float [@untagged]) -> float = "g" "g_nat";;
 Line 1, characters 14-19:
 1 | external g : (float [@untagged]) -> float = "g" "g_nat";;
                   ^^^^^
-Error: Don't know how to untag this type. Only "int" can be untagged.
+Error: Don't know how to untag this type. Only "int"
+       and other immediate types can be untagged.
 |}]
 external h : (int [@unboxed]) -> float = "h" "h_nat";;
 [%%expect{|

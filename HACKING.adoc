@@ -553,7 +553,7 @@ machine, you can use the configuration values and run command taken from
 link:tools/ci/actions/runner.sh[]:
 
 ----
-XARCH=x64 bash -ex tools/ci/actions/runner.sh configure
+bash -ex tools/ci/actions/runner.sh configure
 ----
 
 The link:.github/workflows/hygiene.yml[] script supports other kinds of

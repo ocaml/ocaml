@@ -31,7 +31,7 @@ let frame_size env =
   env.stack_offset +                     (* Trap frame, outgoing parameters *)
   size_int * env.f.fun_num_stack_slots.(0) +    (* Local int variables *)
   size_float * env.f.fun_num_stack_slots.(1) +  (* Local float variables *)
-  (if env.f.fun_contains_calls then size_addr else 0) (* Return address *)
+  (if env.f.fun_frame_required then size_addr else 0) (* Return address *)
 
 let slot_offset env loc cls =
   match loc with
@@ -263,10 +263,9 @@ let emit_instr env i =
   match i.desc with
     Lend -> ()
   | Lprologue ->
-      assert (env.f.fun_prologue_required);
       let n = frame_size env in
       emit_stack_adjustment (-n);
-      if env.f.fun_contains_calls then begin
+      if env.f.fun_frame_required then begin
         store_ra n;
         cfi_offset ~reg:1 (* ra *) ~offset:(-8)
       end;
@@ -312,7 +311,7 @@ let emit_instr env i =
       record_frame env i.live (Dbg_other i.dbg)
   | Lop(Itailcall_ind) ->
       let n = frame_size env in
-      if env.f.fun_contains_calls then reload_ra n;
+      if env.f.fun_frame_required then reload_ra n;
       emit_stack_adjustment n;
       `	jr	{emit_reg i.arg.(0)}\n`
   | Lop(Itailcall_imm {func}) ->
@@ -320,7 +319,7 @@ let emit_instr env i =
         `	j	{emit_label env.f.fun_tailrec_entry_point_label}\n`
       end else begin
         let n = frame_size env in
-        if env.f.fun_contains_calls then reload_ra n;
+        if env.f.fun_frame_required then reload_ra n;
         emit_stack_adjustment n;
         `	{emit_tail func}\n`
       end
@@ -627,12 +626,10 @@ let fundecl fundecl =
 
   (* Dynamic stack checking *)
   let stack_threshold_size = Config.stack_threshold * 8 in (* bytes *)
-  let { max_frame_size; contains_nontail_calls } =
-    preproc_stack_check
-      ~fun_body:fundecl.fun_body ~frame_size:(frame_size env) ~trap_size:16
-  in
+  let max_frame_size = frame_size env + fundecl.fun_extra_stack_used in
   let handle_overflow =
-    if contains_nontail_calls || max_frame_size >= stack_threshold_size then begin
+    if fundecl.fun_contains_nontail_calls
+    || max_frame_size >= stack_threshold_size then begin
       let overflow = new_label () and ret = new_label () in
       let threshold_offset = Domainstate.stack_ctx_words * 8 + stack_threshold_size in
       let f = max_frame_size + threshold_offset in

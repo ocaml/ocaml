@@ -42,19 +42,7 @@ EOF
     --enable-debug-runtime \
     $CONFIG_ARG"
 
-  case $XARCH in
-  x64)
-    ./configure $configure_flags
-    ;;
-  i386)
-    ./configure --build=x86_64-pc-linux-gnu --host=i386-pc-linux-gnu \
-      $configure_flags
-    ;;
-  *)
-    echo unknown arch
-    exit 1
-    ;;
-  esac
+  ./configure $configure_flags
 }
 
 Build () {
