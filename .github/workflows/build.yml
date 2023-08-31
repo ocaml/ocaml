@@ -19,7 +19,7 @@ jobs:
   i386-static:
     runs-on: ubuntu-latest
     container:
-      image: debian:12
+      image: debian:10
       options: --platform linux/i386 --user root
     steps:
       - name: OS Dependencies
