@@ -518,6 +518,9 @@ Some of those changes will benefit all OCaml packages.
 - #11827, #12249: Restore prefetching for GC marking
   (Fabrice Buoro and Stephen Dolan, review by Gabriel Scherer and Sadiq Jaffer)
 
+- #11144: Restore frame-pointers support for amd64
+  (Fabrice Buoro, review by Frederic Bour and KC Sivaramakrishnan)
+
 - #11935: Load frametables of dynlink'd modules in batch
   (Stephen Dolan, review by David Allsopp and Guillaume Munch-Maccagnoni)
 
@@ -1352,9 +1355,6 @@ OCaml 5.0.0 (15 December 2022)
   Changes the interface of user-provided root-scanning hooks.
   (Gabriel Scherer, review by Xavier Leroy,
    Guillaume Munch-Maccagnoni, Sadiq Jaffer and Tom Kelly)
-
-- #11144: Restore frame-pointers support for amd64
-  (Fabrice Buoro, review by Frederic Bour and KC Sivaramakrishnan)
 
 * #11255: in the C interface, `&Field(v, i)` now has type `volatile value *`
   instead of `value *` in OCaml 4.  This makes the memory model
