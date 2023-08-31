@@ -170,14 +170,14 @@ void caml_free_extern_state (void)
 
 /* Forward declarations */
 
-static CAMLnoret void extern_out_of_memory(struct caml_extern_state* s);
+CAMLnoret static void extern_out_of_memory(struct caml_extern_state* s);
 
-static CAMLnoret
+CAMLnoret static
 void extern_invalid_argument(struct caml_extern_state* s, char *msg);
 
-static CAMLnoret void extern_failwith(struct caml_extern_state* s, char *msg);
+CAMLnoret static void extern_failwith(struct caml_extern_state* s, char *msg);
 
-static CAMLnoret void extern_stack_overflow(struct caml_extern_state* s);
+CAMLnoret static void extern_stack_overflow(struct caml_extern_state* s);
 
 static void free_extern_output(struct caml_extern_state* s);
 
