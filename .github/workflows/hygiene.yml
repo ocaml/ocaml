@@ -17,6 +17,10 @@ jobs:
         # context variable.
         if: failure()
 
+      - name: Packages
+        run: |
+          sudo apt-get update -y && sudo apt-get install -y autoconf2.69
+
       - uses: actions/checkout@v2
         with:
           fetch-depth: 50

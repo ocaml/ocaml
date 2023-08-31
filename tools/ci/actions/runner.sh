@@ -45,27 +45,11 @@ EOF
     --disable-dependency-generation \
     $CONFIG_ARG"
 
-  case $XARCH in
-  x64)
-    ./configure $configure_flags
-    ;;
-  i386)
-    ./configure --build=x86_64-pc-linux-gnu --host=i386-linux \
-      CC='gcc -m32 -march=x86-64' \
-      AS='as --32' \
-      ASPP='gcc -m32 -march=x86-64 -c' \
-      PARTIALLD='ld -r -melf_i386' \
-      $configure_flags
-    ;;
-  *)
-    echo unknown arch
-    exit 1
-    ;;
-  esac
+  ./configure $configure_flags
 }
 
 Build () {
-  script --return --command "$MAKE_WARN world.opt" build.log
+  script --return --command "$MAKE_WARN" build.log
   echo Ensuring that all names are prefixed in the runtime
   ./tools/check-symbol-names runtime/*.a
 }
