@@ -329,8 +329,8 @@ Working version
   (Xavier Leroy, report by Chris Vine, review by Nicolás Ojeda Bär)
 
 
-OCaml 5.1.0 release branch
---------------------------
+OCaml 5.1.0
+---------------
 
 ### Restored backends
 
@@ -357,6 +357,9 @@ OCaml 5.1.0 release branch
   at no noticeable cost on the marshalling time.
   (Xavier Leroy, review by Edwin Török and Gabriel Scherer, fix by Damien
    Doligez)
+
+- #10464: Add List.is_empty.
+  (Craig Ferguson, review by David Allsopp)
 
 - #11848: Add `List.find_mapi`,
   `List.find_index: ('a -> bool) -> 'a list -> int option`,
@@ -522,6 +525,11 @@ Some of those changes will benefit all OCaml packages.
   (Stephen Dolan, review by David Allsopp and Guillaume Munch-Maccagnoni)
 
 
+- #11284: Use compression of entries scheme when pruning mark stack.
+  Can decrease memory usage for some workloads, otherwise should be
+  unobservable.
+  (Tom Kelly, review by Sabine Schmaltz, Sadiq Jaffer and Damien Doligez)
+
 * #11865, #11868, #11876: Clarify that the operations of a custom
   block must never access the OCaml runtime. The previous
   documentation only mentioned the main illicit usages. In particular,
@@ -676,6 +684,9 @@ Some of those changes will benefit all OCaml packages.
   (Nicolás Ojeda Bär, review by Stephen Dolan, Anil Madhavapeddy, and Xavier
   Leroy)
 
+- #11134: Optimise 'include struct' in more cases
+  (Stephen Dolan, review by Leo White and Vincent Laviron)
+
 ### Other libraries:
 
 - #11374: Remove pointer cast to a type with stricter alignment requirements
@@ -774,6 +785,9 @@ Some of those changes will benefit all OCaml packages.
 - #11481: Fix the type of Unix.umask to Unix.file_perm -> Unix.file_perm
   (Favonia, review by Sébastien Hinderer)
 
+- #11514: Document ocamltest builtin variables and actions
+  (Olivier Nicole, review by Sébastien Hinderer)
+
 - #11676: Fix missing since annotation in the `Sys` and `Format` modules
   (Github user Bukolab99, review by Florian Angeletti)
 
@@ -787,6 +801,10 @@ Some of those changes will benefit all OCaml packages.
 
 - #12352: Fix a typo in the documentation of Arg.write_arg
   (Christophe Raffalli, review by Florian Angeletti)
+
+- #7179, #11894: correct the description of CAMLreturn and CAMLreturn0 in
+  the Interfacing C page and memory.h file.
+  (Dong An, review by Guillaume Munch-Maccagnoni and Olivier Nicole )
 
 ### Compiler user-interface and warnings:
 
@@ -1117,14 +1135,8 @@ Some of those changes will benefit all OCaml packages.
   currying optimisation accidentally disabled by #10340.
   (Stephen Dolan, review by Gabriel Scherer)
 
-- #11732: Ensure that types from packed modules are always generalised
-  (Stephen Dolan and Leo White, review by Jacques Garrigue)
-
 - #11771: Use a more relaxed mode for unification in Ctype.subst
   (Leo White, review by Jacques Garrigue and Gabriel Scherer)
-
-- #11776: Extend environment with functor parameters in `strengthen_lazy`.
-  (Chris Casinghino and Luke Maurer, review by Gabriel Scherer)
 
 - #11803, #11808: on x86, the destination of an integer comparison must be
   a register, it cannot be a stack slot.
@@ -1227,6 +1239,11 @@ Some of those changes will benefit all OCaml packages.
   (Xavier Leroy, report by Andrey Popp, analysis by KC Sivaramakrishnan
    and Vincent Laviron, review by Gabriel Scherer)
 
+- #11150, #11207, #11936: Avoid recomputation in Typedecl.check_wellfounded
+  (Jacques Garrigue, report by Boris Yakobowski, review by Gabriel Scherer)
+
+- #11186, #11188: Fix composition of coercions with aliases
+  (Vincent Laviron, report and review by Leo White)
 
 OCaml 5.0.0 (15 December 2022)
 ------------------------------
@@ -1335,11 +1352,6 @@ OCaml 5.0.0 (15 December 2022)
   i.e. 1 Gib for 64-bit platforms and 512 Mib for 32-bit platforms.
   (Xavier Leroy, review by Sébastien Hinderer)
 
-- #11284: Use compression of entries scheme when pruning mark stack.
-  Can decrease memory usage for some workloads, otherwise should be
-  unobservable.
-  (Tom Kelly, review by Sabine Schmaltz, Sadiq Jaffer and Damien Doligez)
-
 * #11295: An ISO C 2011 compliant compiler, including full support for atomic
   types, is now required to build the OCaml runtime system.
   (Xavier Leroy, review by David Allsopp and Sébastien Hinderer)
@@ -1409,9 +1421,6 @@ OCaml 5.0.0 (15 December 2022)
 * #10845 Emit frametable size on amd64 BSD (OpenBSD, FreeBSD, NetBSD) systems
   (emitted for Linux in #8805)
   (Hannes Mehnert, review by Nicolás Ojeda Bär)
-
-- #11134: Optimise 'include struct' in more cases
-  (Stephen Dolan, review by Leo White and Vincent Laviron)
 
 ### Standard library:
 
@@ -1536,9 +1545,6 @@ OCaml 5.0.0 (15 December 2022)
   toplevel printers.
   (Florian Angeletti, review by Gabriel Scherer and David Allsopp)
 
-- #11514: Document ocamltest builtin variables and actions
-  (Olivier Nicole, review by Sébastien Hinderer)
-
 ### Manual and documentation:
 
 - #11058: runtime/HACKING.adoc tips on debugging the runtime
@@ -1560,6 +1566,9 @@ OCaml 5.0.0 (15 December 2022)
    flambda commonly-used options, and negative options (`-no-rectypes`, ... ).
    (Amandine Nangah, review by David Allsopp, Florian Angeletti,
    Sébastien Hinderer, and Vincent Laviron)
+
+- #11676: Fix missing since annotation in the `Sys` and `Format` modules
+  (Github user Bukolab99, review by Florian Angeletti)
 
 - #11813: Make new multicore chapters easier to discover, and emphasize impact
   on C bindings.
@@ -1718,12 +1727,6 @@ OCaml 5.0.0 (15 December 2022)
   socket and deadlock the parent.
   (Antonin Décimo, review by Xavier Leroy)
 
-- #11150, #11207, #11936: Avoid recomputation in Typedecl.check_wellfounded
-  (Jacques Garrigue, report by Boris Yakobowski, review by Gabriel Scherer)
-
-- #11186, #11188: Fix composition of coercions with aliases
-  (Vincent Laviron, report and review by Leo White)
-
 - #11194, #11609: Fix inconsistent type variable names in "unbound type var"
   messages
   (Ulysse Gérard and Florian Angeletti, review Florian Angeletti and
@@ -1793,9 +1796,15 @@ OCaml 5.0.0 (15 December 2022)
   the bug was only present in development version of OCaml 5.
   (Stephen Dolan, report by Andre Maroneze, review by Gabriel Scherer)
 
+- #11732: Ensure that types from packed modules are always generalised
+  (Stephen Dolan and Leo White, review by Jacques Garrigue)
+
 - #11737: Fix segfault condition in Unix.stat under Windows in the presence of
   multiple threads.
   (Marc Lasson, Nicolás Ojeda Bär, review by Gabriel Scherer and David Allsopp)
+
+- #11776: Extend environment with functor parameters in `strengthen_lazy`.
+  (Chris Casinghino and Luke Maurer, review by Gabriel Scherer)
 
 - #11533, #11534: follow synonyms again in #show_module_type
   (this had stopped working in 4.14.0)
@@ -1947,9 +1956,6 @@ OCaml 4.14.0 (28 March 2022)
 - #10786: The implementation of Complex.norm now uses Float.hypot.
   (Christophe Troestler, review by David Allsopp and Xavier Leroy)
 
-- #10464: Add List.is_empty.
-  (Craig Ferguson, review by David Allsopp)
-
 ### Other libraries:
 
 - #10192: Add support for Unix domain sockets on Windows and use them
@@ -2020,10 +2026,6 @@ OCaml 4.14.0 (28 March 2022)
   (Raphael Sousa Santos, review by Vincent Laviron and Gabriel Scherer)
 
 ### Manual and documentation:
-
-- #7179, #11894: correct the description of CAMLreturn and CAMLreturn0 in
-  the Interfacing C page and memory.h file.
-  (Dong An, review by Guillaume Munch-Maccagnoni and Olivier Nicole )
 
 - #7812, #10475: reworded the description of the behaviors of
   float->int conversions in case of overflow, and of iterators
