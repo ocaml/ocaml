@@ -135,9 +135,6 @@ OCaml 5.0 (16 December 2022)
   (Gabriel Scherer, review by Xavier Leroy,
    Guillaume Munch-Maccagnoni, Sadiq Jaffer and Tom Kelly)
 
-- #11144: Restore frame-pointers support for amd64
-  (Fabrice Buoro, review by Frederic Bour and KC Sivaramakrishnan)
-
 * #11255: in the C interface, `&Field(v, i)` now has type `volatile value *`
   instead of `value *` in OCaml 4.  This makes the memory model
   for mixed OCaml/C code better defined, but can cause warnings or type
@@ -239,6 +236,13 @@ OCaml 5.0 (16 December 2022)
 - #8878: Add String.hash and String.seeded_hash.
   (Tom Kelly, review by Alain Frisch and Nicolás Ojeda Bär)
 
+- #11279, #11585, #11742: ensure that the unsafe Buffer code
+  remains memory-safe in concurrent settings.
+  Unsynchronized access to Buffer is a programming error and may
+  result in wrong behavior, but it should preserve memory-safety.
+  (Florian Angeletti and Gabriel Scherer, review by Gabriel Scherer
+   and Vincent Laviron, report by David Allsopp)
+
 ### Other libraries:
 
 * #9071, #9100, #10935: Reimplement `Thread.exit()` as raising the
@@ -318,9 +322,10 @@ OCaml 5.0 (16 December 2022)
   Scherer, Thomas Leonard, Tom Ridge, Xavier Leroy, Luc Maranget, Fabrice
   Buoro, Olivier Nicole, Guillaume Munch-Maccagnoni, Jacques-Henri Jourdan)
 
-- #11640: Add Flambda commonly-used options to the ocamlopt manpage
-  (Amandine Nangah, review by David Allsopp, Florian Angeletti,
-  Sébastien Hinderer, and Vincent Laviron)
+- #11640, #11647: Add missing options to the man pages:
+   flambda commonly-used options, and negative options (`-no-rectypes`, ... ).
+   (Amandine Nangah, review by David Allsopp, Florian Angeletti,
+   Sébastien Hinderer, and Vincent Laviron)
 
 - #11676: Fix missing since annotation in the `Sys` and `Format` modules
   (Github user Bukolab99, review by Florian Angeletti)
@@ -563,7 +568,8 @@ OCaml 5.0 (16 December 2022)
 
 - #11533, #11534: follow synonyms again in #show_module_type
   (this had stopped working in 4.14.0)
-  (Gabriel Scherer, review by Jacques Garrigue, report by Yaron Minsky)
+  (Gabriel Scherer, review by Jacques Garrigue and Florian Angeletti,
+   report by Yaron Minsky)
 
 OCaml 4.14.0 (28 March 2022)
 ----------------------------
