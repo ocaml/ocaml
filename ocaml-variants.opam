@@ -2,6 +2,17 @@ opam-version: "2.0"
 version: "5.2.0+trunk"
 license: "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception"
 synopsis: "OCaml development version"
+maintainer: "caml-list@inria.fr"
+authors: [
+  "Xavier Leroy"
+  "Damien Doligez"
+  "Alain Frisch"
+  "Jacques Garrigue"
+  "Didier Rémy"
+  "Jérôme Vouillon"
+]
+homepage: "https://github.com/ocaml/ocaml/"
+bug-reports: "https://github.com/ocaml/ocaml/issues"
 depends: [
   "ocaml" {= "5.2.0" & post}
   "base-unix" {post}
@@ -54,15 +65,4 @@ depopts: [
   "ocaml-option-fp"
   "ocaml-option-musl"
   "ocaml-option-static"
-]
-maintainer: "caml-list@inria.fr"
-homepage: "https://github.com/ocaml/ocaml/"
-bug-reports: "https://github.com/ocaml/ocaml/issues"
-authors: [
-  "Xavier Leroy"
-  "Damien Doligez"
-  "Alain Frisch"
-  "Jacques Garrigue"
-  "Didier Rémy"
-  "Jérôme Vouillon"
 ]
