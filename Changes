@@ -1222,6 +1222,12 @@ Some of those changes will benefit all OCaml packages.
 - #12445: missing GC root registrations in runtime/io.c
   (Gabriel Scherer, review by Xavier Leroy and Jeremy Yallop)
 
+- #12481, #12505: Fix incorrect initialization of array expressions
+  `[|e1;...;eN|]` when `N` is large enough to require major heap allocation.
+  (Xavier Leroy, report by Andrey Popp, analysis by KC Sivaramakrishnan
+   and Vincent Laviron, review by Gabriel Scherer)
+
+
 OCaml 5.0.0 (15 December 2022)
 ------------------------------
 
