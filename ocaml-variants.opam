@@ -49,15 +49,9 @@ build: [
     "CC=clang -fsanitize=address -fno-omit-frame-pointer -O1 -g" {ocaml-option-address-sanitizer:installed & os="macos"}
     "CC=gcc -m32" {ocaml-option-32bit:installed & os="linux"}
     "CC=gcc -Wl,-read_only_relocs,suppress -arch i386 -m32" {ocaml-option-32bit:installed & os="macos"}
-    "ASPP=cc -c" {!ocaml-option-32bit:installed & !ocaml-option-musl:installed & (os="openbsd"|os="macos")}
     "ASPP=musl-gcc -c" {ocaml-option-musl:installed & os-distribution!="alpine"}
-    "ASPP=gcc -m32 -c" {ocaml-option-32bit:installed & os="linux"}
-    "ASPP=gcc -arch i386 -m32 -c" {ocaml-option-32bit:installed & os="macos"}
-    "AS=as --32" {ocaml-option-32bit:installed & os="linux"}
-    "AS=as -arch i386" {ocaml-option-32bit:installed & os="macos"}
     "--host=i386-linux" {ocaml-option-32bit:installed & os="linux"}
     "--host=i386-apple-darwin13.2.0" {ocaml-option-32bit:installed & os="macos"}
-    "PARTIALLD=ld -r -melf_i386" {ocaml-option-32bit:installed & os="linux"}
     "LIBS=-static" {ocaml-option-static:installed}
     "--disable-warn-error"
   ]
