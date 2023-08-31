@@ -653,10 +653,9 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
       with_attrs
         (fun () ->
            let cty =
-             Ctype.with_local_level_if_principal
+             Ctype.with_local_level_generalize_structure_if_principal
                (fun () -> Typetexp.transl_simple_type val_env
                             ~closed:false styp)
-               ~post:(fun cty -> Ctype.generalize_structure cty.ctyp_type)
            in
            add_instance_variable ~strict:true loc val_env
              label.txt mut Virtual cty.ctyp_type sign;
@@ -693,8 +692,7 @@ let rec class_field_first_pass self_loc cl_num sign self_scope acc cf =
                            No_overriding ("instance variable", label.txt)))
            end;
            let definition =
-             Ctype.with_local_level_if_principal
-               ~post:Typecore.generalize_structure_exp
+             Ctype.with_local_level_generalize_structure_if_principal
                (fun () -> type_exp val_env sdefinition)
            in
            add_instance_variable ~strict:true loc val_env
@@ -1150,13 +1148,9 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
       class_expr cl_num val_env met_env virt self_scope sfun
   | Pcl_fun (l, None, spat, scl') ->
       let (pat, pv, val_env', met_env) =
-        Ctype.with_local_level_if_principal
+        Ctype.with_local_level_generalize_structure_if_principal
           (fun () ->
             Typecore.type_class_arg_pattern cl_num val_env met_env l spat)
-          ~post: begin fun (pat, _, _, _) ->
-            let gen {pat_type = ty} = Ctype.generalize_structure ty in
-            iter_pattern gen pat
-          end
       in
       let pv =
         List.map
@@ -1200,9 +1194,8 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
   | Pcl_apply (scl', sargs) ->
       assert (sargs <> []);
       let cl =
-        Ctype.with_local_level_if_principal
+        Ctype.with_local_level_generalize_structure_if_principal
           (fun () -> class_expr cl_num val_env met_env virt self_scope scl')
-          ~post:(fun cl -> Ctype.generalize_class_type_structure cl.cl_type)
       in
       let rec nonopt_labels ls ty_fun =
         match ty_fun with
@@ -1313,7 +1306,7 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
              (* do not mark the value as used *)
              let vd = Env.find_value path val_env in
              let ty =
-               Ctype.with_local_level ~post:Ctype.generalize
+               Ctype.with_local_level_generalize
                  (fun () -> Ctype.instance vd.val_type)
              in
              let expr =
@@ -1371,8 +1364,10 @@ and class_expr_aux cl_num val_env met_env virt self_scope scl =
           cl, clty
         end
         ~post: begin fun ({cl_type=cl}, {cltyp_type=clty}) ->
-          Ctype.limited_generalize_class_type (Btype.self_type_row cl) cl;
-          Ctype.limited_generalize_class_type (Btype.self_type_row clty) clty;
+          Ctype.limited_generalize_class_type
+            (Btype.self_type_row cl) ~inside:cl;
+          Ctype.limited_generalize_class_type
+            (Btype.self_type_row clty) ~inside:clty;
         end
       in
       begin match
@@ -1473,8 +1468,8 @@ let initial_env define_class approx
 
   (* Temporary type for the class constructor *)
   let constr_type =
-    Ctype.with_local_level_if_principal (fun () -> approx cl.pci_expr)
-      ~post:Ctype.generalize_structure
+    Ctype.with_local_level_generalize_structure_if_principal
+      (fun () -> approx cl.pci_expr)
   in
   let dummy_cty = Cty_signature (Ctype.new_class_signature ()) in
   let dummy_class =
@@ -1559,8 +1554,10 @@ let class_infos define_class kind
     end
     ~post: begin fun (_, params, _, _, typ, sign) ->
       (* Generalize the row variable *)
-      List.iter (Ctype.limited_generalize sign.csig_self_row) params;
-      Ctype.limited_generalize_class_type sign.csig_self_row typ;
+      List.iter
+        (fun inside -> Ctype.limited_generalize sign.csig_self_row ~inside)
+        params;
+      Ctype.limited_generalize_class_type sign.csig_self_row ~inside:typ;
     end
   in
   (* Check the abbreviation for the object type *)
@@ -1709,31 +1706,20 @@ let class_infos define_class kind
     arity, pub_meths, List.rev !coercion_locs, expr) :: res,
    env)
 
+let collapse_conj_class_params env (cl, id, clty, _, _, _, _, _, _, _, _, _) =
+  try Ctype.collapse_conj_params env clty.cty_params
+  with Ctype.Unify err ->
+    raise(Error(cl.pci_loc, env, Non_collapsable_conjunction (id, clty, err)))
+
 let final_decl env define_class
     (cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, ci_params,
      arity, pub_meths, coe, expr) =
-  let cl_abbr = cltydef.clty_hash_type in
-
-  begin try Ctype.collapse_conj_params env clty.cty_params
-  with Ctype.Unify err ->
-    raise(Error(cl.pci_loc, env, Non_collapsable_conjunction (id, clty, err)))
-  end;
-
-  List.iter Ctype.generalize clty.cty_params;
-  Ctype.generalize_class_type clty.cty_type;
-  Option.iter  Ctype.generalize clty.cty_new;
-  List.iter Ctype.generalize obj_abbr.type_params;
-  Option.iter  Ctype.generalize obj_abbr.type_manifest;
-  List.iter Ctype.generalize cl_abbr.type_params;
-  Option.iter  Ctype.generalize cl_abbr.type_manifest;
-
   Ctype.nongen_vars_in_class_declaration clty
   |> Option.iter (fun vars ->
       let nongen_vars = Btype.TypeSet.elements vars in
       raise(Error(cl.pci_loc, env
                  , Non_generalizable_class { id; clty; nongen_vars }));
     );
-
   begin match
     Ctype.closed_class clty.cty_params
       (Btype.signature_of_class_type clty.cty_type)
@@ -1852,13 +1838,14 @@ let type_classes define_class approx kind env cls =
       cls
   in
   let res, env =
-    Ctype.with_local_level_for_class begin fun () ->
+    Ctype.with_local_level_generalize_for_class begin fun () ->
       let (res, env) =
         List.fold_left (initial_env define_class approx) ([], env) cls
       in
       let (res, env) =
         List.fold_right (class_infos define_class kind) res ([], env)
       in
+      List.iter (collapse_conj_class_params env) res;
       res, env
     end
   in

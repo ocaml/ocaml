@@ -62,6 +62,15 @@ val generic_level: int
 val lowest_level: int
         (* lowest level for type nodes; = Ident.lowest_scope *)
 
+val with_new_pool: level:int -> (unit -> 'a) -> 'a * transient_expr list
+val add_to_pool: level:int -> transient_expr -> unit
+        (* Only types with [level < generic_level - 1] are tracked *)
+
+val newty3: level:int -> scope:int -> type_desc -> type_expr
+        (* Create a type with a fresh id *)
+val newty2: level:int -> type_desc -> type_expr
+        (* Create a type with a fresh id and no scope *)
+
 val newgenty: type_desc -> type_expr
         (* Create a generic type *)
 val newgenvar: ?name:string -> unit -> type_expr
@@ -75,9 +84,11 @@ val newgenstub: scope:int -> type_expr
 val is_Tvar: type_expr -> bool
 val is_Tunivar: type_expr -> bool
 val is_Tconstr: type_expr -> bool
+val is_poly_Tpoly: type_expr -> bool
 val dummy_method: label
 val type_kind_is_abstract: type_declaration -> bool
-val type_origin : type_declaration -> type_origin
+val type_origin: type_declaration -> type_origin
+val label_is_poly: label_description -> bool
 
 (**** polymorphic variants ****)
 

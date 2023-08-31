@@ -147,79 +147,6 @@ exception Matches_failure of Env.t * unification_error
 
 exception Incompatible
 
-(**** Type level management ****)
-
-let current_level = s_ref 0
-let nongen_level = s_ref 0
-let global_level = s_ref 0
-let saved_level = s_ref []
-
-let get_current_level () = !current_level
-let init_def level = current_level := level; nongen_level := level
-let begin_def () =
-  saved_level := (!current_level, !nongen_level) :: !saved_level;
-  incr current_level; nongen_level := !current_level
-let begin_class_def () =
-  saved_level := (!current_level, !nongen_level) :: !saved_level;
-  incr current_level
-let raise_nongen_level () =
-  saved_level := (!current_level, !nongen_level) :: !saved_level;
-  nongen_level := !current_level
-let end_def () =
-  let (cl, nl) = List.hd !saved_level in
-  saved_level := List.tl !saved_level;
-  current_level := cl; nongen_level := nl
-let create_scope () =
-  init_def (!current_level + 1);
-  !current_level
-
-let wrap_end_def f = Misc.try_finally f ~always:end_def
-
-let with_local_level ?post f =
-  begin_def ();
-  let result = wrap_end_def f in
-  Option.iter (fun g -> g result) post;
-  result
-let with_local_level_if cond f ~post =
-  if cond then with_local_level f ~post else f ()
-let with_local_level_iter f ~post =
-  begin_def ();
-  let result, l = wrap_end_def f in
-  List.iter post l;
-  result
-let with_local_level_iter_if cond f ~post =
-  if cond then with_local_level_iter f ~post else fst (f ())
-let with_local_level_if_principal f ~post =
-  with_local_level_if !Clflags.principal f ~post
-let with_local_level_iter_if_principal f ~post =
-  with_local_level_iter_if !Clflags.principal f ~post
-let with_level ~level f =
-  begin_def (); init_def level;
-  let result = wrap_end_def f in
-  result
-let with_level_if cond ~level f =
-  if cond then with_level ~level f else f ()
-
-let with_local_level_for_class ?post f =
-  begin_class_def ();
-  let result = wrap_end_def f in
-  Option.iter (fun g -> g result) post;
-  result
-
-let with_raised_nongen_level f =
-  raise_nongen_level ();
-  wrap_end_def f
-
-
-let reset_global_level () =
-  global_level := !current_level
-let increase_global_level () =
-  let gl = !global_level in
-  global_level := !current_level;
-  gl
-let restore_global_level gl =
-  global_level := gl
-
 (**** Control tracing of GADT instances *)
 
 let trace_gadt_instances = ref false
@@ -245,6 +172,120 @@ let proper_abbrevs tl abbrev =
   if tl <> [] || !trace_gadt_instances || !Clflags.principal
   then abbrev
   else simple_abbrevs
+
+(**** Type level management ****)
+
+let current_level = s_ref 0
+let nongen_level = s_ref 0
+let global_level = s_ref 0
+let saved_level = s_ref []
+
+let get_current_level () = !current_level
+let init_def level = current_level := level; nongen_level := level
+let begin_def () =
+  saved_level := (!current_level, !nongen_level) :: !saved_level;
+  incr current_level; nongen_level := !current_level
+let begin_class_def () =
+  saved_level := (!current_level, !nongen_level) :: !saved_level;
+  incr current_level
+let raise_nongen_level () =
+  saved_level := (!current_level, !nongen_level) :: !saved_level;
+  nongen_level := !current_level
+let end_def () =
+  let (cl, nl) = List.hd !saved_level in
+  saved_level := List.tl !saved_level;
+  current_level := cl; nongen_level := nl
+let create_scope () =
+  let level = !current_level + 1 in
+  init_def level;
+  level
+
+let wrap_end_def f = Misc.try_finally f ~always:end_def
+let wrap_end_def_new_pool f =
+  wrap_end_def (fun _ -> with_new_pool ~level:!current_level f)
+
+let with_local_level_gen ~begin_def ~structure ?before_generalize f =
+  begin_def ();
+  let level = !current_level in
+  let result, pool = wrap_end_def_new_pool f in
+  Option.iter (fun g -> g result) before_generalize;
+  simple_abbrevs := Mnil;
+  List.iter begin fun ty ->
+    match ty.desc with
+    | Tvar _ when structure && ty.level >= level ->
+        let old_level = !current_level in
+        Transient_expr.set_level ty old_level;
+        add_to_pool ~level:old_level ty
+    | Tlink _ -> ()
+    | _ ->
+        if ty.level >= generic_level then () else
+        if ty.level >= level then begin
+          Transient_expr.set_level ty generic_level;
+          match ty.desc with
+            Tconstr (_, _, abbrev) when structure ->
+              abbrev := Mnil
+          | _ -> ()
+        end
+        else
+          add_to_pool ~level:ty.level ty
+  end pool;
+  result
+let with_local_level_generalize_structure f =
+  with_local_level_gen ~begin_def ~structure:true f
+let with_local_level_generalize ?before_generalize f =
+  with_local_level_gen ~begin_def ~structure:false ?before_generalize f
+let with_local_level_generalize_if cond ?before_generalize f =
+  if cond then with_local_level_generalize ?before_generalize f else f ()
+let with_local_level_generalize_structure_if cond f =
+  if cond then with_local_level_generalize_structure f else f ()
+let with_local_level_generalize_structure_if_principal f =
+  if !Clflags.principal then with_local_level_generalize_structure f else f ()
+let with_local_level_generalize_for_class f =
+  with_local_level_gen ~begin_def:begin_class_def ~structure:false f
+
+let with_local_level ?post f =
+  begin_def ();
+  let result = wrap_end_def f in
+  Option.iter (fun g -> g result) post;
+  result
+let with_local_level_if cond f ~post =
+  if cond then with_local_level f ~post else f ()
+let with_local_level_iter f ~post =
+  begin_def ();
+  let (result, l) = wrap_end_def f in
+  List.iter post l;
+  result
+let with_local_level_iter_if cond f ~post =
+  if cond then with_local_level_iter f ~post else fst (f ())
+let with_local_level_if_principal f ~post =
+  with_local_level_if !Clflags.principal f ~post
+let with_local_level_iter_if_principal f ~post =
+  with_local_level_iter_if !Clflags.principal f ~post
+let with_level ~level f =
+  begin_def (); init_def level;
+  wrap_end_def f
+let with_level_if cond ~level f =
+  if cond then with_level ~level f else f ()
+
+let with_local_level_for_class ?post f =
+  begin_class_def ();
+  let result = wrap_end_def f in
+  Option.iter (fun g -> g result) post;
+  result
+
+let with_raised_nongen_level f =
+  raise_nongen_level ();
+  wrap_end_def f
+
+
+let reset_global_level () =
+  global_level := !current_level
+let increase_global_level () =
+  let gl = !global_level in
+  global_level := !current_level;
+  gl
+let restore_global_level gl =
+  global_level := gl
 
 (**** Some type creators ****)
 
@@ -709,6 +750,7 @@ let generalize ty =
   generalize ty
 
 (* Generalize the structure and lower the variables *)
+(* Used in principal mode to track types that do not depend on environment *)
 
 let rec generalize_structure ty =
   let level = get_level ty in
@@ -732,28 +774,41 @@ let generalize_structure ty =
 
 (* Generalize the spine of a function, if the level >= !current_level *)
 
-let rec generalize_spine ty =
-  let level = get_level ty in
-  if level < !current_level || level = generic_level then () else
+let rec copy_spine copy_scope ty =
   match get_desc ty with
-    Tarrow (_, ty1, ty2, _) ->
-      set_level ty generic_level;
-      generalize_spine ty1;
-      generalize_spine ty2;
-  | Tpoly (ty', _) ->
-      set_level ty generic_level;
-      generalize_spine ty'
-  | Ttuple tyl ->
-      set_level ty generic_level;
-      List.iter generalize_spine tyl
-  | Tpackage (_, fl) ->
-      set_level ty generic_level;
-      List.iter (fun (_n, ty) -> generalize_spine ty) fl
-  | Tconstr (_, tyl, memo) ->
-      set_level ty generic_level;
-      memo := Mnil;
-      List.iter generalize_spine tyl
-  | _ -> ()
+  | Tsubst (ty, _) -> ty
+  | Tvar _
+  | Tfield _
+  | Tnil
+  | Tvariant _
+  | Tobject _
+  | Tlink _
+  | Tunivar _ -> ty
+  | (Tarrow _ | Tpoly _ | Ttuple _ | Tpackage _ | Tconstr _) as desc ->
+      let level = get_level ty in
+      if level < !current_level || level = generic_level then ty else
+      let t = newgenstub ~scope:(get_scope ty) in
+      For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
+      let copy_rec = copy_spine copy_scope in
+      let desc' = match desc with
+      | Tarrow (lbl, ty1, ty2, _) ->
+          Tarrow (lbl, copy_rec ty1, copy_rec ty2, commu_ok)
+      | Tpoly (ty', tvl) ->
+          Tpoly (copy_rec ty', tvl)
+      | Ttuple tyl ->
+          Ttuple (List.map copy_rec tyl)
+      | Tpackage (path, fl) ->
+          let fl = List.map (fun (n, ty) -> n, copy_rec ty) fl in
+          Tpackage (path, fl)
+      | Tconstr (path, tyl, _) ->
+          Tconstr (path, List.map copy_rec tyl, ref Mnil)
+      | _ -> assert false
+      in
+      Transient_expr.set_stub_desc t desc';
+      t
+
+let copy_spine ty =
+  For_copy.with_scope (fun copy_scope -> copy_spine copy_scope ty)
 
 let forward_try_expand_safe = (* Forward declaration *)
   ref (fun _env _ty -> assert false)
@@ -831,8 +886,14 @@ let update_scope_for tr_exn scope ty =
 *)
 
 let rec update_level env level expand ty =
-  if get_level ty > level then begin
+  let ty_level = get_level ty in
+  if ty_level > level then begin
     if level < get_scope ty then raise_scope_escape_exn ty;
+    let set_level () =
+      set_level ty level;
+      if ty_level = generic_level then
+        add_to_pool ~level (Transient_expr.repr ty)
+    in
     match get_desc ty with
       Tconstr(p, _tl, _abbrev) when level < Path.scope p ->
         (* Try first to replace an abbreviation by its expansion. *)
@@ -859,7 +920,7 @@ let rec update_level env level expand ty =
           link_type ty ty';
           update_level env level expand ty'
         with Cannot_expand ->
-          set_level ty level;
+          set_level ();
           iter_type_expr (update_level env level expand) ty
         end
     | Tpackage (p, fl) when level < Path.scope p ->
@@ -877,13 +938,13 @@ let rec update_level env level expand ty =
             set_type_desc ty (Tvariant (set_row_name row None))
         | _ -> ()
         end;
-        set_level ty level;
+        set_level ();
         iter_type_expr (update_level env level expand) ty
     | Tfield(lab, _, ty1, _)
       when lab = dummy_method && level < get_scope ty1 ->
         raise_escape_exn Self
     | _ ->
-        set_level ty level;
+        set_level ();
         (* XXX what about abbreviations in Tconstr ? *)
         iter_type_expr (update_level env level expand) ty
   end
@@ -978,16 +1039,17 @@ let rec generalize_class_type' gen =
 
 let generalize_class_type cty =
   generalize_class_type' generalize cty
-
+(*
 let generalize_class_type_structure cty =
   generalize_class_type' generalize_structure cty
+*)
 
 (* Correct the levels of type [ty]. *)
 let correct_levels ty =
   duplicate_type ty
 
 (* Only generalize the type ty0 in ty *)
-let limited_generalize ty0 ty =
+let limited_generalize ty0 ~inside:ty =
   let graph = TypeHash.create 17 in
   let roots = ref [] in
 
@@ -1027,8 +1089,8 @@ let limited_generalize ty0 ty =
        if get_level ty <> generic_level then set_level ty !current_level)
     graph
 
-let limited_generalize_class_type rv cty =
-  generalize_class_type' (limited_generalize rv) cty
+let limited_generalize_class_type rv ~inside:cty =
+  generalize_class_type' (fun inside -> limited_generalize rv ~inside) cty
 
 (* Compute statically the free univars of all nodes in a type *)
 (* This avoids doing it repeatedly during instantiation *)
@@ -3715,20 +3777,11 @@ let close_class_signature env sign =
   let self = expand_head env sign.csig_self in
   close env (object_fields self)
 
-let generalize_class_signature_spine env sign =
+let generalize_class_signature_spine _env sign =
   (* Generalize the spine of methods *)
-  let meths = sign.csig_meths in
-  Meths.iter (fun _ (_, _, ty) -> generalize_spine ty) meths;
-  let new_meths =
-    Meths.map
-      (fun (priv, virt, ty) -> (priv, virt, generic_instance ty))
-      meths
-  in
-  (* But keep levels correct on the type of self *)
-  Meths.iter
-    (fun _ (_, _, ty) -> unify_var env (newvar ()) ty)
-    meths;
-  sign.csig_meths <- new_meths
+  sign.csig_meths <-
+    Meths.map (fun (priv, virt, ty) -> priv, virt, copy_spine ty)
+      sign.csig_meths
 
                         (***********************************)
                         (*  Matching between type schemes  *)

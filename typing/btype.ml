@@ -98,7 +98,51 @@ end
 let generic_level = Ident.highest_scope
 let lowest_level = Ident.lowest_scope
 
+(**** leveled type pool ****)
+
+module IntMap = Map.Make(Int)
+let leveled_type_pool = s_ref IntMap.empty
+let last_pool = s_ref (ref [])
+let last_level = s_ref 0
+
+let with_new_pool ~level f =
+  let old_type_pool = !leveled_type_pool in
+  let old_level = !last_level and old_pool = !last_pool in
+  let pool = ref [] in
+  leveled_type_pool := IntMap.add level pool old_type_pool;
+  last_level := level;
+  last_pool := pool;
+  let r =
+    Misc.try_finally f ~always:
+      (fun () ->
+        leveled_type_pool := old_type_pool;
+        last_level := old_level;
+        last_pool := old_pool)
+  in
+  let p = !pool in
+  (r, p)
+
+let add_to_pool ~level ty =
+  if level >= generic_level - 1 || level <= 0 then () else
+  let pool =
+    if level >= !last_level then !last_pool else
+    try IntMap.find level !leveled_type_pool
+    with Not_found -> !last_pool
+  in
+  pool := ty :: !pool
+  (* Format.eprintf "@[<2>Level %d not in pool: %a@]@." level
+        (fun ppf -> List.iter (Format.fprintf ppf "@ %d"))
+        (List.map fst (IntMap.bindings !leveled_type_pool)) *)
+
 (**** Some type creators ****)
+
+let newty3 ~level ~scope desc =
+  let ty = proto_newty3 ~level ~scope desc in
+  add_to_pool ~level ty;
+  Transient_expr.type_expr ty
+
+let newty2 ~level desc =
+  newty3 ~level ~scope:Ident.lowest_scope desc
 
 let newgenty desc      = newty2 ~level:generic_level desc
 let newgenvar ?name () = newgenty (Tvar name)
@@ -109,12 +153,15 @@ let newgenstub ~scope  = newty3 ~level:generic_level ~scope (Tvar None)
 let is_Tvar ty = match get_desc ty with Tvar _ -> true | _ -> false
 let is_Tunivar ty = match get_desc ty with Tunivar _ -> true | _ -> false
 let is_Tconstr ty = match get_desc ty with Tconstr _ -> true | _ -> false
+let is_poly_Tpoly ty =
+  match get_desc ty with Tpoly (_, _ :: _) -> true | _ -> false
 let type_kind_is_abstract decl =
   match decl.type_kind with Type_abstract _ -> true | _ -> false
 let type_origin decl =
   match decl.type_kind with
   | Type_abstract origin -> origin
   | Type_variant _ | Type_record _ | Type_open -> Definition
+let label_is_poly lbl = is_poly_Tpoly lbl.lbl_arg
 
 let dummy_method = "*dummy method*"
 

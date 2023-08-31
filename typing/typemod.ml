@@ -2296,9 +2296,8 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       final_shape
   | Pmod_unpack sexp ->
       let exp =
-        Ctype.with_local_level_if_principal
+        Ctype.with_local_level_generalize_structure_if_principal
           (fun () -> Typecore.type_exp env sexp)
-          ~post:Typecore.generalize_structure_exp
       in
       let mty =
         match get_desc (Ctype.expand_head env exp.exp_type) with

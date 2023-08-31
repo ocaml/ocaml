@@ -276,8 +276,8 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
       (* narrow and widen are now invoked through wrap_type_variable_scope *)
       TyVarEnv.with_local_scope begin fun () ->
       let closed = svars <> [] in
-      let targs, tret_type, args, ret_type, _univars =
-        Ctype.with_local_level_if closed begin fun () ->
+      let targs, tret_type, args, ret_type, univars =
+        Ctype.with_local_level_generalize_if closed begin fun () ->
           TyVarEnv.reset ();
           let univar_list =
             TyVarEnv.make_poly_univars (List.map (fun v -> v.txt) svars) in
@@ -306,15 +306,13 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
           end;
           (targs, tret_type, args, ret_type, univar_list)
         end
-        ~post: begin fun (_, _, args, ret_type, univars) ->
-          Btype.iter_type_expr_cstr_args Ctype.generalize args;
-          Ctype.generalize ret_type;
-          let _vars = TyVarEnv.instance_poly_univars env loc univars in
-          let set_level t = Ctype.enforce_current_level env t in
-          Btype.iter_type_expr_cstr_args set_level args;
-          set_level ret_type;
-        end
       in
+      if closed then begin
+        ignore (TyVarEnv.instance_poly_univars env loc univars);
+        let set_level t = Ctype.enforce_current_level env t in
+        Btype.iter_type_expr_cstr_args set_level args;
+        set_level ret_type
+      end;
       targs, Some tret_type, args, Some ret_type
       end
 
@@ -341,7 +339,6 @@ let shape_map_cstrs =
 
 let transl_declaration env sdecl (id, uid) =
   (* Bind type parameters *)
-  Ctype.with_local_level begin fun () ->
   TyVarEnv.reset();
   let tparams = make_params env sdecl.ptype_params in
   let params = List.map (fun (cty, _) -> cty.ctyp_type) tparams in
@@ -460,6 +457,7 @@ let transl_declaration env sdecl (id, uid) =
           Ttype_record lbls, Type_record(lbls', rep)
       | Ptype_open -> Ttype_open, Type_open
       in
+  begin
     let (tman, man) = match sdecl.ptype_manifest with
         None -> None, None
       | Some sty ->
@@ -524,16 +522,6 @@ let transl_declaration env sdecl (id, uid) =
       | Ttype_abstract | Ttype_open -> Shape.leaf uid
     in
     decl, typ_shape
-  end
-
-(* Generalize a type declaration *)
-
-let generalize_decl decl =
-  List.iter Ctype.generalize decl.type_params;
-  Btype.iter_type_expr_kind Ctype.generalize decl.type_kind;
-  begin match decl.type_manifest with
-  | None    -> ()
-  | Some ty -> Ctype.generalize ty
   end
 
 (* Check that all constraints are enforced *)
@@ -1040,10 +1028,10 @@ let name_recursion sdecl id decl =
   | { type_kind = Type_abstract _;
       type_manifest = Some ty;
       type_private = Private; } when is_fixed_type sdecl ->
-    let ty' = newty2 ~level:(get_level ty) (get_desc ty) in
+    let ty' = Btype.newty2 ~level:(get_level ty) (get_desc ty) in
     if Ctype.deep_occur ty ty' then
       let td = Tconstr(Path.Pident id, decl.type_params, ref Mnil) in
-      link_type ty (newty2 ~level:(get_level ty) td);
+      link_type ty (Btype.newty2 ~level:(get_level ty) td);
       {decl with type_manifest = Some ty'}
     else decl
   | _ -> decl
@@ -1105,7 +1093,7 @@ let transl_type_decl env rec_flag sdecl_list =
      expand to a generic type variable. After that, we check the coherence of
      the translated declarations in the resulting new environment. *)
   let tdecls, decls, shapes, new_env =
-    Ctype.with_local_level_iter ~post:generalize_decl begin fun () ->
+    Ctype.with_local_level_generalize begin fun () ->
       (* Enter types. *)
       let temp_env =
         List.fold_left2 (enter_type rec_flag) env sdecl_list ids_list in
@@ -1151,7 +1139,7 @@ let transl_type_decl env rec_flag sdecl_list =
       check_duplicates sdecl_list;
       (* Build the final env. *)
       let new_env = add_types_to_env decls shapes env in
-      ((tdecls, decls, shapes, new_env), List.map snd decls)
+      (tdecls, decls, shapes, new_env)
     end
   in
   (* Check for ill-formed abbrevs *)
@@ -1407,7 +1395,7 @@ let transl_type_extension extend env loc styext =
     (* Note: it would be incorrect to call [create_scope] *after*
        [TyVarEnv.reset] or after [with_local_level] (see #10010). *)
     let scope = Ctype.create_scope () in
-    Ctype.with_local_level begin fun () ->
+    Ctype.with_local_level_generalize begin fun () ->
       TyVarEnv.reset();
       let ttype_params = make_params env styext.ptyext_params in
       let type_params = List.map (fun (cty, _) -> cty.ctyp_type) ttype_params in
@@ -1420,15 +1408,6 @@ let transl_type_extension extend env loc styext =
           styext.ptyext_constructors
       in
       (ttype_params, type_params, constructors)
-    end
-    ~post: begin fun (_, type_params, constructors) ->
-      (* Generalize types *)
-      List.iter Ctype.generalize type_params;
-      List.iter
-        (fun (ext, _shape) ->
-          Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_type.ext_args;
-          Option.iter Ctype.generalize ext.ext_type.ext_ret_type)
-        constructors;
     end
   in
   (* Check that all type variables are closed *)
@@ -1479,15 +1458,11 @@ let transl_type_extension extend env loc styext =
 let transl_exception env sext =
   let ext, shape =
     let scope = Ctype.create_scope () in
-    Ctype.with_local_level
+    Ctype.with_local_level_generalize
       (fun () ->
         TyVarEnv.reset();
         transl_extension_constructor ~scope env
           Predef.path_exn [] [] Asttypes.Public sext)
-      ~post: begin fun (ext, _shape) ->
-        Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_type.ext_args;
-        Option.iter Ctype.generalize ext.ext_type.ext_ret_type;
-      end
   in
   (* Check that all type variables are closed *)
   begin match Ctype.closed_extension_constructor ext.ext_type with
@@ -1694,7 +1669,7 @@ let transl_value_decl env loc valdecl =
 let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
     sdecl =
   Env.mark_type_used sig_decl.type_uid;
-  Ctype.with_local_level begin fun () ->
+  Ctype.with_local_level_generalize begin fun () ->
   TyVarEnv.reset();
   (* In the first part of this function, we typecheck the syntactic
      declaration [sdecl] in the outer environment [outer_env]. *)
@@ -1829,7 +1804,6 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
     typ_attributes = sdecl.ptype_attributes;
   }
   end
-  ~post:(fun ttyp -> generalize_decl ttyp.typ_type)
 
 (* A simplified version of [transl_with_constraint], for the case of packages.
    Package constraints are much simpler than normal with type constraints (e.g.,
@@ -1863,7 +1837,7 @@ let transl_package_constraint ~loc env ty =
 let abstract_type_decl ~injective arity =
   let rec make_params n =
     if n <= 0 then [] else Ctype.newvar() :: make_params (n-1) in
-  Ctype.with_local_level ~post:generalize_decl begin fun () ->
+  Ctype.with_local_level_generalize begin fun () ->
     { type_params = make_params arity;
       type_arity = arity;
       type_kind = Type_abstract Definition;
