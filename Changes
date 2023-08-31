@@ -1707,7 +1707,7 @@ OCaml 4.13.0 (24 September 2021)
   (Xavier Leroy, report by Richard Bornat, review by Stephen Dolan
    and Mark Shinwell)
 
-- #10371: no longer generatd useless `.cds` file when using
+- #10371: Stop generating useless `.cds` file when using
   `-output-complete-exe`.
   (Nicolás Ojeda Bär, review by David Allsopp)
 
@@ -3334,7 +3334,7 @@ OCaml 4.10.0 (21 February 2020)
   (Florian Angeletti, report by Anton Kochkov, review by Gabriel Scherer)
 
 - #9101: add links to section anchor before the section title,
-  make the name of those anchor explicits.
+  make the name of those anchor explicit.
   (Florian Angeletti, review by Daniel Bünzli, Sébastien Hinderer,
    and Gabriel Scherer)
 
