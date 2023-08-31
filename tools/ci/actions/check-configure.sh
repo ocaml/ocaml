@@ -60,7 +60,7 @@ CheckTree () {
     git checkout -qB return
     git checkout -q "$COMMIT"
     mv configure configure.ref
-    make -s configure
+    make -s configure AUTOCONF_TOOL_NAME=autoconf2.69
     if diff -q configure configure.ref >/dev/null ; then
       echo -e "$COMMIT: \e[32mconfigure.ac generates configure\e[0m"
     else
