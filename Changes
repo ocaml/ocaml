@@ -80,6 +80,9 @@ _______________
   Falls back to using TransientTypeSet when marks are exhausted.
   (Jacques Garrigue and Takafumi Saikawa, review by Basile Clément)
 
+- #12946: Make generalization automatic when leaving scope
+  (Jacques Garrigue and Takafumi Saikawa, review by ???)
+
 ### Build system:
 
 - #12909: Reorganise how MKEXE_VIA_CC is built to make it correct for MSVC by
