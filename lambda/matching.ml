@@ -3736,8 +3736,14 @@ let for_let ~scopes loc param pat body =
       (* This eliminates a useless variable (and stack slot in bytecode)
          for "let _ = ...". See #6865. *)
       Lsequence (param, body)
-  | Tpat_var (id, _) ->
-      (* fast path, and keep track of simple bindings to unboxable numbers *)
+  | Tpat_var (id, _) | Tpat_alias ({ pat_desc = Tpat_any }, id, _) ->
+      (* Fast path, and keep track of simple bindings to unboxable numbers.
+
+         Note: the (Tpat_alias (Tpat_any, id)) case needs to be
+         supported as well because the type-checker emits a typedtree
+         of this shape in presence of type constraints -- see the
+         non-polymorphic Ppat_constraint case in type_pat_aux.
+      *)
       let k = Typeopt.value_kind pat.pat_env pat.pat_type in
       Llet (Strict, k, id, param, body)
   | _ ->

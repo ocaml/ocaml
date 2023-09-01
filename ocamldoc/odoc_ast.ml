@@ -50,7 +50,8 @@ module Typedtree_search =
 
     let iter_val_pattern = function
       | Typedtree.Tpat_any -> None
-      | Typedtree.Tpat_var (name, _) -> Some (Name.from_ident name)
+      | Typedtree.Tpat_var (name, _)
+      | Typedtree.Tpat_alias (_, name, _)  -> Some (Name.from_ident name)
       | Typedtree.Tpat_tuple _ -> None (* FIXME when we will handle tuples *)
       | _ -> None
 
@@ -332,8 +333,10 @@ module Analyser =
      let tt_analyse_value env current_module_name comment_opt loc pat_exp rec_flag attrs =
        let (pat, exp) = pat_exp in
        let comment_opt = Odoc_sig.analyze_alerts comment_opt attrs in
-       match (pat.pat_desc, exp.exp_desc) with
-         (Tpat_var (ident, _), Texp_function (params, body)) ->
+       match pat.pat_desc with
+       | Tpat_var (ident, _) | Tpat_alias (_, ident, _) ->
+          begin match exp.exp_desc with
+          | Texp_function (params, body) ->
 
            (* a new function is defined *)
            let name_pre = Name.from_ident ident in
@@ -360,7 +363,7 @@ module Analyser =
            in
            [ new_value ]
 
-       | (Typedtree.Tpat_var (ident, _), _) ->
+          | _ ->
            (* a new value is defined *)
            let name_pre = Name.from_ident ident in
            let name = Name.parens_if_infix name_pre in
@@ -383,8 +386,9 @@ module Analyser =
            }
            in
            [ new_value ]
+         end
 
-       | (Typedtree.Tpat_tuple _, _) ->
+       | Typedtree.Tpat_tuple _ ->
            (* new identifiers are defined *)
            (* FIXME : by now we don't accept to have global variables defined in tuples *)
            []
