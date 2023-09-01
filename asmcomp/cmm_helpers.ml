@@ -816,30 +816,62 @@ let call_cached_method obj tag cache pos args dbg =
 
 (* Allocation *)
 
-let make_alloc_generic set_fn dbg tag wordsize args =
+let make_alloc_generic ~strict_init set_fn dbg tag wordsize args =
   if wordsize <= Config.max_young_wosize then
     Cop(Calloc, Cconst_natint(block_header tag wordsize, dbg) :: args, dbg)
   else begin
-    let id = V.create_local "*alloc*" in
-    let rec fill_fields idx = function
-      [] -> Cvar id
-    | e1::el -> Csequence(set_fn (Cvar id) (Cconst_int (idx, dbg)) e1 dbg,
-                          fill_fields (idx + 2) el) in
-    Clet(VP.create id,
-         Cop(Cextcall("caml_alloc_shr_check_gc", typ_val, [], true),
-                 [Cconst_int (wordsize, dbg); Cconst_int (tag, dbg)], dbg),
-         fill_fields 1 args)
+    (* Note on [strict_init]:
+       If we're not in the strict case, we generate a call to [caml_alloc],
+       which returns a GC-safe block that we can then initialize field by field,
+       computing the field expressions right when needed.
+       Assuming that the set of free variables of the field expressions is
+       smaller than the number of fields (which is assumed to be the most common
+       case for large allocations), this reduces the number of registers to keep
+       live across the allocation function, improving compile times and even
+       execution times.
+       The strict case, however, is for allocations where it is not safe to
+       expose the result to the GC before it has been initialized properly.
+       So we need to use [caml_alloc_shr_check_gc], which will check for urgent
+       GC before allocating the block instead of after, and we need to make
+       sure that no GC can occur between the allocation and the initialization.
+       This is done by binding the field expressions to variables if they're not
+       simple enough, then allocating the block, then patching it using
+       constructions that are never going to trigger a GC. *)
+    let do_alloc args =
+      let id = V.create_local "*alloc*" in
+      let rec fill_fields idx = function
+        | [] -> Cvar id
+        | e1::el ->
+            Csequence(set_fn (Cvar id) (Cconst_int (idx, dbg)) e1 dbg,
+                      fill_fields (idx + 2) el)
+      in
+      let alloc_function =
+        if strict_init then "caml_alloc_shr_check_gc" else "caml_alloc"
+      in
+      Clet(VP.create id,
+           Cop(Cextcall(alloc_function, typ_val, [], true),
+               [Cconst_int (wordsize, dbg); Cconst_int (tag, dbg)], dbg),
+           fill_fields 1 args)
+    in
+    let rec bind_args_then_alloc simple_args_rev = function
+      | [] -> do_alloc (List.rev simple_args_rev)
+      | arg :: args ->
+          bind_load "alloc_arg" arg
+            (fun arg -> bind_args_then_alloc (arg :: simple_args_rev) args)
+    in
+    if strict_init then bind_args_then_alloc [] args else do_alloc args
   end
 
-let make_alloc dbg tag args =
+let make_alloc ~strict_init dbg tag args =
   let addr_array_init arr ofs newval dbg =
     Cop(Cextcall("caml_initialize", typ_void, [], false),
         [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
   in
-  make_alloc_generic addr_array_init dbg tag (List.length args) args
+  make_alloc_generic
+    ~strict_init addr_array_init dbg tag (List.length args) args
 
 let make_float_alloc dbg tag args =
-  make_alloc_generic float_array_set dbg tag
+  make_alloc_generic ~strict_init:false float_array_set dbg tag
                      (List.length args * size_float / size_addr) args
 
 (* Bounds checking *)

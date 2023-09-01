@@ -453,7 +453,8 @@ let rec transl env e =
         | [] -> Debuginfo.none
         | fundecl::_ -> fundecl.dbg
       in
-      make_alloc dbg Obj.closure_tag (transl_fundecls 0 fundecls)
+      make_alloc ~strict_init:true dbg Obj.closure_tag
+        (transl_fundecls 0 fundecls)
   | Uoffset(arg, offset) ->
       (* produces a valid Caml value, pointing just after an infix header *)
       let ptr = transl env arg in
@@ -508,7 +509,7 @@ let rec transl env e =
       | (Pmakeblock _, []) ->
           assert false
       | (Pmakeblock(tag, _mut, _kind), args) ->
-          make_alloc dbg tag (List.map (transl env) args)
+          make_alloc ~strict_init:false dbg tag (List.map (transl env) args)
       | (Pccall prim, args) ->
           transl_ccall env prim args dbg
       | (Pduparray (kind, _), [Uprim (Pmakearray (kind', _), args, _dbg)]) ->
@@ -793,9 +794,10 @@ and transl_make_array dbg env kind args =
   match kind with
   | Pgenarray ->
       Cop(Cextcall("caml_make_array", typ_val, [], true),
-          [make_alloc dbg 0 (List.map (transl env) args)], dbg)
+          [make_alloc ~strict_init:false dbg 0 (List.map (transl env) args)],
+          dbg)
   | Paddrarray | Pintarray ->
-      make_alloc dbg 0 (List.map (transl env) args)
+      make_alloc ~strict_init:false dbg 0 (List.map (transl env) args)
   | Pfloatarray ->
       make_float_alloc dbg Obj.double_array_tag
                       (List.map (transl_unbox_float dbg env) args)
@@ -906,7 +908,9 @@ and transl_prim_1 env p arg dbg =
       tag_int (bswap16 (ignore_high_bit_int (untag_int
         (transl env arg) dbg)) dbg) dbg
   | Pperform ->
-      let cont = make_alloc dbg Obj.cont_tag [int_const dbg 0] in
+      let cont =
+        make_alloc ~strict_init:false dbg Obj.cont_tag [int_const dbg 0]
+      in
       Cop(Capply typ_val,
        [Cconst_symbol ("caml_perform", dbg); transl env arg; cont],
        dbg)

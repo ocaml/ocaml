@@ -306,8 +306,13 @@ val call_cached_method :
 
 (** Allocations *)
 
-(** Allocate a block of regular values with the given tag *)
-val make_alloc : Debuginfo.t -> int -> expression list -> expression
+(** Allocate a block of regular values with the given tag
+    When [strict_init] is true, the result of the allocation is not allowed
+    to be exposed to the GC before initialization is complete.
+    This is currently used for closures, where the start-of-env field has to be
+    set to its correct value before the block is published. *)
+val make_alloc :
+  strict_init:bool -> Debuginfo.t -> int -> expression list -> expression
 
 (** Allocate a block of unboxed floats with the given tag *)
 val make_float_alloc : Debuginfo.t -> int -> expression list -> expression
