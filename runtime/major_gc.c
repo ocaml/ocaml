@@ -727,7 +727,7 @@ static void realloc_mark_stack (struct mark_stack* stk)
      will not compress and because we are using a domain local heap bound we
      need to fit large blocks into the local mark stack. See PR#11284 */
   if (mark_stack_bsize >= local_heap_bsize / 32) {
-    int i;
+    uintnat i;
     for (i = 0; i < stk->count; ++i) {
       mark_entry* me = &stk->stack[i];
       if (me->end - me->start > BITS_PER_WORD)
@@ -778,8 +778,8 @@ CAMLno_tsan /* Disable TSan reports from this function (see #11040) */
 /* returns the work done by skipping unmarkable objects */
 static intnat mark_stack_push_block(struct mark_stack* stk, value block)
 {
-  int i, block_wsz = Wosize_val(block), end;
-  uintnat offset = 0;
+  int i, end;
+  uintnat block_wsz = Wosize_val(block), offset = 0;
 
   if (Tag_val(block) == Closure_tag) {
     /* Skip the code pointers and integers at beginning of closure;
@@ -1887,8 +1887,7 @@ static void mark_stack_prune(struct mark_stack* stk)
   stk->compressed_stack = new_compressed_stack;
 
   /* scan mark stack and compress entries */
-  int i;
-  uintnat new_stk_count = 0, compressed_entries = 0, total_words = 0;
+  uintnat i, new_stk_count = 0, compressed_entries = 0, total_words = 0;
   for (i=0; i < stk->count; i++) {
     mark_entry me = stk->stack[i];
     total_words += me.end - me.start;

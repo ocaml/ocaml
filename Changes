@@ -524,8 +524,7 @@ Some of those changes will benefit all OCaml packages.
 - #11935: Load frametables of dynlink'd modules in batch
   (Stephen Dolan, review by David Allsopp and Guillaume Munch-Maccagnoni)
 
-
-- #11284: Use compression of entries scheme when pruning mark stack.
+- #11284, #12525: Use compression of entries scheme when pruning mark stack.
   Can decrease memory usage for some workloads, otherwise should be
   unobservable.
   (Tom Kelly, review by Sabine Schmaltz, Sadiq Jaffer and Damien Doligez)
