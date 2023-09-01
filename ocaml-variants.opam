@@ -2,62 +2,7 @@ opam-version: "2.0"
 version: "5.2.0+trunk"
 license: "LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception"
 synopsis: "OCaml development version"
-depends: [
-  "ocaml" {= "5.2.0" & post}
-  "base-unix" {post}
-  "base-bigarray" {post}
-  "base-threads" {post}
-  "base-domains" {post}
-]
-conflict-class: "ocaml-core-compiler"
-flags: compiler
-build: [
-  [
-    "./configure"
-    "--prefix=%{prefix}%"
-    "--docdir=%{doc}%/ocaml"
-    "--with-afl" {ocaml-option-afl:installed}
-    "--disable-native-compiler" {ocaml-option-bytecode-only:installed}
-    "--disable-flat-float-array" {ocaml-option-no-flat-float-array:installed}
-    "--enable-flambda" {ocaml-option-flambda:installed}
-    "--enable-frame-pointers" {ocaml-option-fp:installed}
-    "CC=cc" {!ocaml-option-32bit:installed & !ocaml-option-musl:installed & (os="openbsd"|os="macos")}
-    "CC=musl-gcc" {ocaml-option-musl:installed & os-distribution!="alpine"}
-    "CFLAGS=-Os" {ocaml-option-musl:installed}
-    #"CC=gcc -m32" {ocaml-option-32bit:installed & os="linux"}
-    #"CC=gcc -Wl,-read_only_relocs,suppress -arch i386 -m32" {ocaml-option-32bit:installed & os="macos"}
-    "ASPP=cc -c" {!ocaml-option-32bit:installed & !ocaml-option-musl:installed & (os="openbsd"|os="macos")}
-    "ASPP=musl-gcc -c" {ocaml-option-musl:installed & os-distribution!="alpine"}
-    #"ASPP=gcc -m32 -c" {ocaml-option-32bit:installed & os="linux"}
-    #"ASPP=gcc -arch i386 -m32 -c" {ocaml-option-32bit:installed & os="macos"}
-    #"AS=as --32" {ocaml-option-32bit:installed & os="linux"}
-    #"AS=as -arch i386" {ocaml-option-32bit:installed & os="macos"}
-    #"--host=i386-linux" {ocaml-option-32bit:installed & os="linux"}
-    #"--host=i386-apple-darwin13.2.0" {ocaml-option-32bit:installed & os="macos"}
-    #"PARTIALLD=ld -r -melf_i386" {ocaml-option-32bit:installed & os="linux"}
-    # 32bit options above commented out just to reduce diff with ocaml-variants.4.12.0+options
-    "LIBS=-static" {ocaml-option-static:installed}
-  ]
-  [make "-j%{jobs}%"]
-]
-install: [make "install"]
-conflicts: [
-  "ocaml-option-32bit"      # Not yet implemented
-  "ocaml-option-nnpchecker" # Fundamentally not possible
-  "ocaml-option-default-unsafe-string" # Not supported since 5.0
-]
-depopts: [
-  "ocaml-option-afl"
-  "ocaml-option-bytecode-only"
-  "ocaml-option-no-flat-float-array"
-  "ocaml-option-flambda"
-  "ocaml-option-fp"
-  "ocaml-option-musl"
-  "ocaml-option-static"
-]
 maintainer: "caml-list@inria.fr"
-homepage: "https://github.com/ocaml/ocaml/"
-bug-reports: "https://github.com/ocaml/ocaml/issues"
 authors: [
   "Xavier Leroy"
   "Damien Doligez"
@@ -65,4 +10,64 @@ authors: [
   "Jacques Garrigue"
   "Didier Rémy"
   "Jérôme Vouillon"
+]
+homepage: "https://github.com/ocaml/ocaml/"
+bug-reports: "https://github.com/ocaml/ocaml/issues"
+depends: [
+  "ocaml" {= "5.2.0" & post}
+  "base-unix" {post}
+  "base-bigarray" {post}
+  "base-threads" {post}
+  "base-domains" {post}
+  "base-nnp" {post}
+  "ocaml-option-bytecode-only" {arch != "arm64" & arch != "x86_64" & arch != "s390x" & arch != "riscv64" & arch != "ppc64"}
+]
+conflict-class: "ocaml-core-compiler"
+flags: compiler
+build-env: [
+  [LSAN_OPTIONS = "detect_leaks=0,exitcode=0"]
+  [ASAN_OPTIONS = "detect_leaks=0,exitcode=0"]
+]
+build: [
+  [
+    "./configure"
+    "--prefix=%{prefix}%"
+    "--docdir=%{doc}%/ocaml"
+    "-C"
+    "--with-afl" {ocaml-option-afl:installed}
+    "--disable-native-compiler" {ocaml-option-bytecode-only:installed}
+    "--disable-flat-float-array" {ocaml-option-no-flat-float-array:installed}
+    "--enable-flambda" {ocaml-option-flambda:installed}
+    "--enable-frame-pointers" {ocaml-option-fp:installed}
+    "--enable-tsan" {ocaml-option-tsan:installed}
+    "CC=cc" {!ocaml-option-32bit:installed & !ocaml-option-musl:installed & (os="openbsd"|os="macos")}
+    "CC=musl-gcc" {ocaml-option-musl:installed & os-distribution!="alpine"}
+    "CFLAGS=-Os" {ocaml-option-musl:installed}
+    "LDFLAGS=-Wl,--no-as-needed,-ldl" {ocaml-option-leak-sanitizer:installed | (ocaml-option-address-sanitizer:installed & os!="macos")}
+    "CC=gcc -ldl -fsanitize=leak -fno-omit-frame-pointer -O1 -g" {ocaml-option-leak-sanitizer:installed}
+    "CC=gcc -ldl -fsanitize=address -fno-omit-frame-pointer -O1 -g" {ocaml-option-address-sanitizer:installed & os!="macos"}
+    "CC=clang -fsanitize=address -fno-omit-frame-pointer -O1 -g" {ocaml-option-address-sanitizer:installed & os="macos"}
+    "CC=gcc -m32" {ocaml-option-32bit:installed & os="linux"}
+    "CC=gcc -Wl,-read_only_relocs,suppress -arch i386 -m32" {ocaml-option-32bit:installed & os="macos"}
+    "ASPP=musl-gcc -c" {ocaml-option-musl:installed & os-distribution!="alpine"}
+    "--host=i386-linux" {ocaml-option-32bit:installed & os="linux"}
+    "--host=i386-apple-darwin13.2.0" {ocaml-option-32bit:installed & os="macos"}
+    "LIBS=-static" {ocaml-option-static:installed}
+    "--disable-warn-error"
+  ]
+  [make "-j%{jobs}%"]
+]
+install: [make "install"]
+depopts: [
+  "ocaml-option-32bit"
+  "ocaml-option-afl"
+  "ocaml-option-bytecode-only"
+  "ocaml-option-no-flat-float-array"
+  "ocaml-option-flambda"
+  "ocaml-option-fp"
+  "ocaml-option-musl"
+  "ocaml-option-leak-sanitizer"
+  "ocaml-option-address-sanitizer"
+  "ocaml-option-static"
+  "ocaml-option-tsan"
 ]
