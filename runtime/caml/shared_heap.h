@@ -47,8 +47,6 @@ uintnat caml_heap_size(struct caml_heap_state*);
 uintnat caml_top_heap_words(struct caml_heap_state*);
 uintnat caml_heap_blocks(struct caml_heap_state*);
 
-struct pool* caml_pool_of_shared_block(value v);
-
 void caml_compact_heap(caml_domain_state* domain_state,
                          int participating_count,
                          caml_domain_state** participants);

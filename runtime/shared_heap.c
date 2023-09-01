@@ -181,8 +181,8 @@ static pool* pool_acquire(struct caml_heap_state* local) {
 
   caml_plat_lock(&pool_freelist.lock);
   if (!pool_freelist.free) {
-    void* mem = caml_mem_map(Bsize_wsize(POOL_WSIZE),
-                              Bsize_wsize(POOL_WSIZE), 0 /* allocate */);
+    void* mem = caml_mem_map(Bsize_wsize(POOL_WSIZE), 0);
+
     if (mem) {
       CAMLassert(pool_freelist.free == NULL);
 
@@ -460,18 +460,6 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
   }
 #endif
   return p;
-}
-
-struct pool* caml_pool_of_shared_block(value v)
-{
-  mlsize_t whsize;
-  CAMLassert (Is_block(v) && !Is_young(v));
-  whsize = Whsize_wosize(Wosize_val(v));
-  if (whsize > 0 && whsize <= SIZECLASS_MAX) {
-    return (pool*)((uintnat)v &~(POOL_WSIZE * sizeof(value) - 1));
-  } else {
-    return 0;
-  }
 }
 
 /* Sweeping */
@@ -844,9 +832,8 @@ static inline void compact_update_value(void* ignored,
       return;
 
     if (Whsize_val(v) <= SIZECLASS_MAX) {
-      if (caml_pool_of_shared_block(v)->evacuating) {
+      if (Has_status_val(v, caml_global_heap_state.MARKED)) {
         value fwd = Field(v, 0) + infix_offset;
-        CAMLassert(!caml_pool_of_shared_block(fwd)->evacuating);
         CAMLassert(Is_block(fwd));
         CAMLassert(Tag_val(fwd) == tag);
         *p = fwd;
@@ -1099,6 +1086,11 @@ void caml_compact_heap(caml_domain_state* domain_state,
 
             /* Set first field of p to a forwarding pointer */
             Field(Val_hp(p), 0) = Val_hp(new_p);
+
+            /* Since there can be no blocks with the MARKED status, we use this
+              to indicate that a block has been evacuated and any pointers to
+              it should be updated. */
+            *p = With_status_hd(hd, caml_global_heap_state.MARKED);
           } else if (Has_status_hd(hd, caml_global_heap_state.GARBAGE)) {
             /* We are implicitly sweeping pools in the evacuation set and thus
                we must remember to call finalisers for Custom blocks that would

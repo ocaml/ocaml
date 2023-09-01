@@ -470,37 +470,15 @@ void caml_init_os_params(void)
 
 #ifndef __CYGWIN__
 
-/* Standard Unix implementation: reserve with mmap (and trim to alignment) with
-   commit done using mmap as well. */
-
-Caml_inline void safe_munmap(uintnat addr, uintnat size)
+void *caml_plat_mem_map(uintnat size, int reserve_only)
 {
-  if (size > 0) {
-    caml_gc_message(0x1000, "munmap %" ARCH_INTNAT_PRINTF_FORMAT "d"
-                            " bytes at %" ARCH_INTNAT_PRINTF_FORMAT "x"
-                            " for heaps\n", size, addr);
-    munmap((void*)addr, size);
-  }
-}
-
-void *caml_plat_mem_map(uintnat size, uintnat alignment, int reserve_only)
-{
-  uintnat alloc_sz = size + alignment;
-  uintnat base, aligned_start, aligned_end;
+  uintnat alloc_sz = size;
   void* mem;
 
   mem = mmap(0, alloc_sz, reserve_only ? PROT_NONE : (PROT_READ | PROT_WRITE),
              MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   if (mem == MAP_FAILED)
     return 0;
-
-  /* trim to an aligned region */
-  base = (uintnat)mem;
-  aligned_start = (base + alignment - 1) & ~(alignment - 1);
-  aligned_end = aligned_start + size;
-  safe_munmap(base, aligned_start - base);
-  safe_munmap(aligned_end, (base + alloc_sz) - aligned_end);
-  mem = (void*)aligned_start;
 
   return mem;
 }
@@ -523,12 +501,9 @@ static void* map_fixed(void* mem, uintnat size, int prot)
    done using mprotect, since Cygwin's mmap doesn't implement the required
    functions for committing using mmap. */
 
-void *caml_plat_mem_map(uintnat size, uintnat alignment, int reserve_only)
+void *caml_plat_mem_map(uintnat size, int reserve_only)
 {
   void* mem;
-
-  if (alignment > caml_plat_mmap_alignment)
-    caml_fatal_error("Cannot align memory to %lx on this platform", alignment);
 
   mem = mmap(0, size, reserve_only ? PROT_NONE : (PROT_READ | PROT_WRITE),
              MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
