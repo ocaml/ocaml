@@ -339,6 +339,10 @@ Working version
   (Miod Vallat, report by Jan Midtgaard, review by Vincent Laviron and Xavier
   Leroy)
 
+- #12526: Honor `ocaml.inline always` attribute on functions with
+  optional arguments and default values in the Closure backend
+  (Alain Frisch, review by Vincent Laviron)
+
 OCaml 5.1.0
 ---------------
 

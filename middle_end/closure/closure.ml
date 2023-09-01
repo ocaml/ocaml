@@ -1247,15 +1247,27 @@ and close_named env id = function
 
 and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
   let fun_defs =
-    List.flatten
-      (List.map
-         (function
+    (* Split functions with optional arguments and default values into
+       a wrapper function (likely to be inlined) and an inner function
+       (never inlined).
+
+       However, if the user forces inlining of the function, this is
+       counterproductive; we want the whole function to be inlined,
+       not just the wrapper. So we disable the split when inlining
+       is forced. Cf #12526
+    *)
+    match fun_defs with
+    | [_, Lfunction{attr = { inline = Always_inline; }}] ->
+        fun_defs
+    | _ ->
+        List.concat_map
+          (function
            | (id, Lfunction{kind; params; return; body; attr; loc}) ->
-               Simplif.split_default_wrapper ~id ~kind ~params
-                 ~body ~attr ~loc ~return
+             Simplif.split_default_wrapper ~id ~kind ~params
+               ~body ~attr ~loc ~return
            | _ -> assert false
          )
-         fun_defs)
+         fun_defs
   in
   let inline_attribute = match fun_defs with
     | [_, Lfunction{attr = { inline; }}] -> inline
