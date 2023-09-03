@@ -3605,6 +3605,20 @@ and compile_no_test ~scopes divide up_ctx repr partial ctx to_match =
 
 (* The entry points *)
 
+(* Bind non-trivial toplevel arguments *)
+
+let param_to_var cls param =
+  match param with
+  | Lvar v -> (v, None)
+  | _ ->
+      let (v, _) = arg_to_var param cls in
+      (v, Some param)
+
+let bind_opt (v, eo) k =
+  match eo with
+  | None -> k
+  | Some e -> Lambda.bind Strict v e k
+
 (*
    If there is a guard in a matching or a lazy pattern,
    then set exhaustiveness info to Partial.
@@ -3759,8 +3773,12 @@ let toplevel_handler ~scopes loc ~failer partial args cases compile_fun =
 
 let compile_matching ~scopes loc ~failer repr arg pat_act_list partial =
   let partial = check_partial pat_act_list partial in
-  let args = [ (arg, Strict) ] in
+  let (v, _) as v_param =
+    let cls = List.map (fun (p, act) -> (p, []), act) pat_act_list in
+    param_to_var cls arg in
+  let args = [ (Lvar v, Alias) ] in
   let rows = map_on_rows (fun pat -> (pat, [])) pat_act_list in
+  bind_opt v_param @@
   toplevel_handler ~scopes loc ~failer partial args rows (fun partial pm ->
     compile_match_nonempty ~scopes repr partial (Context.start 1) pm)
 
@@ -4033,11 +4051,12 @@ let compile_flattened ~scopes repr partial ctx pmh =
       let lam, total = compile_match_nonempty ~scopes repr partial ctx b in
       compile_orhandlers (compile_match ~scopes repr partial) lam total ctx hs
 
-let do_for_multiple_match ~scopes loc paraml pat_act_list partial =
+let do_for_multiple_match ~scopes loc v_args pat_act_list partial =
   let repr = None in
+  let lam_args = List.map (fun v -> Lvar v) v_args in
   let arg =
     let sloc = Scoped_location.of_location ~scopes loc in
-    Lprim (Pmakeblock (0, Immutable, None), paraml, sloc) in
+    Lprim (Pmakeblock (0, Immutable, None), lam_args, sloc) in
   let handler =
     let partial = check_partial pat_act_list partial in
     let rows = map_on_rows (fun p -> (p, [])) pat_act_list in
@@ -4048,40 +4067,23 @@ let do_for_multiple_match ~scopes loc paraml pat_act_list partial =
       { pm1 with cases = List.map (half_simplify_nonempty ~arg) pm1.cases }
     in
     let next, nexts = split_and_precompile_half_simplified ~arg pm1_half in
-    let size = List.length paraml
-    and idl = List.map (function
-      | Lvar id -> id
-      | _ -> Ident.create_local "*match*") paraml in
-    let args = List.map (fun id -> (Lvar id, Alias)) idl in
+    let size = List.length v_args in
+    let args = List.map (fun arg -> (arg, Alias)) lam_args in
     let flat_next = flatten_precompiled size args next
     and flat_nexts =
       List.map (fun (e, pm) -> (e, flatten_precompiled size args pm)) nexts
     in
-    let lam, total =
-      comp_match_handlers (compile_flattened ~scopes repr) partial
-        (Context.start size) flat_next flat_nexts
-    in
-    List.fold_right2 (bind Strict) idl paraml lam, total
+    comp_match_handlers (compile_flattened ~scopes repr) partial
+      (Context.start size) flat_next flat_nexts
   )
 
-(* PR#4828: Believe it or not, the 'paraml' argument below
-   may not be side effect free. *)
-
-let param_to_var param =
-  match param with
-  | Lvar v -> (v, None)
-  | _ -> (Ident.create_local "*match*", Some param)
-
-let bind_opt (v, eo) k =
-  match eo with
-  | None -> k
-  | Some e -> Lambda.bind Strict v e k
-
 let for_multiple_match ~scopes loc paraml pat_act_list partial =
-  let v_paraml = List.map param_to_var paraml in
-  let paraml = List.map (fun (v, _) -> Lvar v) v_paraml in
+  (* PR#4828: Believe it or not, the 'paraml' argument below
+     may not be side effect free. *)
+  let v_paraml = List.map (param_to_var []) paraml in
+  let v_args = List.map fst v_paraml in
   List.fold_right bind_opt v_paraml
-    (do_for_multiple_match ~scopes loc paraml pat_act_list partial)
+    (do_for_multiple_match ~scopes loc v_args pat_act_list partial)
 
 let for_optional_arg_default ~scopes loc pat ~default_arg ~param body =
   let supplied_or_default =
