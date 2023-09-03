@@ -4061,7 +4061,7 @@ let do_for_multiple_match ~scopes loc v_args pat_act_list partial =
     let partial = check_partial pat_act_list partial in
     let rows = map_on_rows (fun p -> (p, [])) pat_act_list in
     toplevel_handler ~scopes loc ~failer:Raise_match_failure
-      partial [ (arg, Strict) ] rows in
+      partial [ (arg, Alias) ] rows in
   handler (fun partial pm1 ->
     let pm1_half =
       { pm1 with cases = List.map (half_simplify_nonempty ~arg) pm1.cases }
