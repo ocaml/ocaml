@@ -3972,7 +3972,7 @@ let for_let ~scopes loc param pat body =
 (* Easy case since variables are available *)
 let for_tupled_function ~scopes loc paraml pats_act_list partial =
   let partial = check_partial_list pats_act_list partial in
-  let args = List.map (fun id -> (Lvar id, Strict)) paraml in
+  let args = List.map (fun id -> (Lvar id, Alias)) paraml in
   let handler =
     toplevel_handler ~scopes loc ~failer:Raise_match_failure
       partial args pats_act_list in
