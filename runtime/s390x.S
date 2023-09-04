@@ -169,7 +169,7 @@ caml_system__code_begin:
 /* Stack switching operations */
 /******************************************************************************/
 
-/* Switch from OCaml to C stack. Clobbers %r8, %r9. */
+/* Switch from OCaml to C stack. Clobbers %r1, %r12. */
 #ifdef ASM_CFI_SUPPORTED
 #define SWITCH_OCAML_TO_C_CFI                                   \
         CFI_REMEMBER_STATE;                                     \
@@ -193,7 +193,7 @@ caml_system__code_begin:
         lgr     %r15, TMP2;                                \
         SWITCH_OCAML_TO_C_CFI
 
-/* Switch from C to OCaml stack.  Clobbers %r9. */
+/* Switch from C to OCaml stack. */
 #define SWITCH_C_TO_OCAML                                           \
         lg     %r15, Cstack_sp(%r15);                               \
         CFI_RESTORE_STATE
@@ -734,7 +734,7 @@ LBL(do_perform):
 
         lg      %r9, Stack_handler(%r4)  /* %r9 := old stack -> handler */
         lg      %r8, Handler_parent(%r9)
-        clgfi   %r8, 0   /* %r10 := parent stack; is parent NULL? */
+        clgfi   %r8, 0   /* %r8 := parent stack; is parent NULL? */
         je      LBL(112)
         SWITCH_OCAML_STACKS(%r4, %r8)
      /* We have to null the Handler_parent after the switch because the
