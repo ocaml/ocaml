@@ -1472,7 +1472,7 @@ let copy_sep ~copy_scope ~fixed ~(visited : type_expr TypeHash.t) sch =
   List.iter Lazy.force !delayed_copies;
   ty
 
-let instance_poly' copy_scope ~keep_names fixed univars sch =
+let instance_poly' copy_scope ~keep_names ~fixed univars sch =
   (* In order to compute univars below, [sch] should not contain [Tsubst] *)
   let copy_var ty =
     match get_desc ty with
@@ -1485,17 +1485,17 @@ let instance_poly' copy_scope ~keep_names fixed univars sch =
   let ty = copy_sep ~copy_scope ~fixed ~visited sch in
   vars, ty
 
-let instance_poly ?(keep_names=false) fixed univars sch =
+let instance_poly ?(keep_names=false) ~fixed univars sch =
   For_copy.with_scope (fun copy_scope ->
-    instance_poly' copy_scope ~keep_names fixed univars sch
+    instance_poly' copy_scope ~keep_names ~fixed univars sch
   )
 
-let instance_label fixed lbl =
+let instance_label ~fixed lbl =
   For_copy.with_scope (fun copy_scope ->
     let vars, ty_arg =
       match get_desc lbl.lbl_arg with
         Tpoly (ty, tl) ->
-          instance_poly' copy_scope ~keep_names:false fixed tl ty
+          instance_poly' copy_scope ~keep_names:false ~fixed tl ty
       | _ ->
           [], copy copy_scope lbl.lbl_arg
     in
@@ -4894,7 +4894,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
     | (Tpoly (u1, []), Tpoly (u2, [])) ->
         subtype_rec env trace u1 u2 cstrs
     | (Tpoly (u1, tl1), Tpoly (u2, [])) ->
-        let _, u1' = instance_poly false tl1 u1 in
+        let _, u1' = instance_poly ~fixed:false tl1 u1 in
         subtype_rec env trace u1' u2 cstrs
     | (Tpoly (u1, tl1), Tpoly (u2,tl2)) ->
         begin try

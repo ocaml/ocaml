@@ -692,7 +692,7 @@ and build_as_type_aux (env : Env.t) p =
       let ty = newvar () in
       let ppl = List.map (fun (_, l, p) -> l.lbl_pos, p) lpl in
       let do_label lbl =
-        let _, ty_arg, ty_res = instance_label false lbl in
+        let _, ty_arg, ty_res = instance_label ~fixed:false lbl in
         unify_pat env {p with pat_type = ty} ty_res;
         let refinable =
           lbl.lbl_mut = Immutable && List.mem_assoc lbl.lbl_pos ppl &&
@@ -701,7 +701,7 @@ and build_as_type_aux (env : Env.t) p =
           let arg = List.assoc lbl.lbl_pos ppl in
           unify_pat env {arg with pat_type = build_as_type env arg} ty_arg
         end else begin
-          let _, ty_arg', ty_res' = instance_label false lbl in
+          let _, ty_arg', ty_res' = instance_label ~fixed:false lbl in
           unify_pat_types p.pat_loc env ty_arg ty_arg';
           unify_pat env p ty_res'
         end in
@@ -731,7 +731,7 @@ let solve_Ppat_poly_constraint tps env loc sty expected_ty =
   | Tpoly (body, tyl) ->
       let _, ty' =
         with_level ~level:generic_level
-          (fun () -> instance_poly ~keep_names:true false tyl body)
+          (fun () -> instance_poly ~keep_names:true ~fixed:false tyl body)
       in
       (cty, ty, ty')
   | _ -> assert false
@@ -870,7 +870,7 @@ let solve_Ppat_construct ~refine tps penv loc constr no_existentials
 
 let solve_Ppat_record_field ~refine loc penv label label_lid record_ty =
   with_local_level_iter ~post:generalize_structure begin fun () ->
-    let (_, ty_arg, ty_res) = instance_label false label in
+    let (_, ty_arg, ty_res) = instance_label ~fixed:false label in
     begin try
       unify_pat_types_refine ~refine loc penv ty_res (instance record_ty)
     with Error(_loc, _env, Pattern_type_clash(err, _)) ->
@@ -2755,7 +2755,7 @@ let check_univars env kind exp ty_expected vars =
           (* Enforce scoping for type_let:
              since body is not generic,  instance_poly only makes
              copies of nodes that have a Tunivar as descendant *)
-          let _, ty' = instance_poly true tl body in
+          let _, ty' = instance_poly ~fixed:true tl body in
           let vars, exp_ty = instance_parameterized_type vars exp.exp_type in
           unify_exp_types exp.exp_loc env exp_ty ty';
           ((exp_ty, vars), exp_ty::vars)
@@ -3651,14 +3651,14 @@ and type_expect_
         | Some exp ->
             let ty_exp = instance exp.exp_type in
             let unify_kept lbl =
-              let _, ty_arg1, ty_res1 = instance_label false lbl in
+              let _, ty_arg1, ty_res1 = instance_label ~fixed:false lbl in
               unify_exp_types exp.exp_loc env ty_exp ty_res1;
               match matching_label lbl with
               | lid, _lbl, lbl_exp ->
                   (* do not connect result types for overridden labels *)
                   Overridden (lid, lbl_exp)
               | exception Not_found -> begin
-                  let _, ty_arg2, ty_res2 = instance_label false lbl in
+                  let _, ty_arg2, ty_res2 = instance_label ~fixed:false lbl in
                   unify_exp_types loc env ty_arg1 ty_arg2;
                   with_explanation (fun () ->
                     unify_exp_types loc env (instance ty_expected) ty_res2);
@@ -3694,7 +3694,7 @@ and type_expect_
       let (record, label, _) =
         type_label_access env srecord Env.Projection lid
       in
-      let (_, ty_arg, ty_res) = instance_label false label in
+      let (_, ty_arg, ty_res) = instance_label ~fixed:false label in
       unify_exp env record ty_res;
       rue {
         exp_desc = Texp_field(record, lid, label);
@@ -3846,7 +3846,7 @@ and type_expect_
             if !Clflags.principal && get_level typ <> generic_level then
               Location.prerr_warning loc
                 (Warnings.Not_principal "this use of a polymorphic method");
-            snd (instance_poly false tl ty)
+            snd (instance_poly ~fixed:false tl ty)
         | Tvar _ ->
             let ty' = newvar () in
             unify env (instance typ) (newty(Tpoly(ty',[])));
@@ -4070,7 +4070,7 @@ and type_expect_
               with_local_level begin fun () ->
                 let vars, ty'' =
                   with_local_level_if_principal
-                    (fun () -> instance_poly true tl ty')
+                    (fun () -> instance_poly ~fixed:true tl ty')
                     ~post:(fun (_,ty'') -> generalize_structure ty'')
                 in
                 let exp = type_expect env sbody (mk_expected ty'') in
@@ -4989,7 +4989,8 @@ and type_label_exp create env loc ty_expected
           let (vars, ty_arg, ty_res) =
             with_local_level_iter_if separate ~post:generalize_structure
               begin fun () ->
-                let ((_, ty_arg, ty_res) as r) = instance_label true label in
+                let ((_, ty_arg, ty_res) as r) =
+                  instance_label ~fixed:true label in
                 (r, [ty_arg; ty_res])
               end
           in
@@ -5845,7 +5846,7 @@ and type_let ?check ?check_strict
                   match get_desc pat.pat_type with
                   | Tpoly (ty, tl) ->
                       {pat with pat_type =
-                       snd (instance_poly ~keep_names:true false tl ty)}
+                       snd (instance_poly ~keep_names:true ~fixed:false tl ty)}
                   | _ -> pat
                 in
                 let bound_expr = vb_exp_constraint binding in
@@ -5904,7 +5905,7 @@ and type_let ?check ?check_strict
                 let vars, ty' =
                   with_local_level_if_principal
                     ~post:(fun (_,ty') -> generalize_structure ty')
-                    (fun () -> instance_poly ~keep_names:true true tl ty)
+                    (fun () -> instance_poly ~keep_names:true ~fixed:true tl ty)
                 in
                 let exp =
                   Builtin_attributes.warning_scope pvb_attributes (fun () ->
