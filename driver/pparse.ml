@@ -167,29 +167,38 @@ let parse (type a) (kind : a ast_kind) lexbuf : a =
 
 let file_aux ~tool_name inputfile (type a) parse_fun invariant_fun
              (kind : a ast_kind) : a =
-  let ast_magic = magic_of_kind kind in
-  let (ic, is_ast_file) = open_and_check_magic inputfile ast_magic in
   let ast =
-    try
-      if is_ast_file then begin
+    let ast_magic = magic_of_kind kind in
+    let (ic, is_ast_file) = open_and_check_magic inputfile ast_magic in
+    let close_ic () = close_in ic in
+    if is_ast_file then begin
+      let ast =
+        Fun.protect ~finally:close_ic @@ fun () ->
         Location.input_name := (input_value ic : string);
         if !Clflags.unsafe then
           Location.prerr_warning (Location.in_file !Location.input_name)
             Warnings.Unsafe_array_syntax_without_parsing;
-        let ast = (input_value ic : a) in
-        if !Clflags.all_ppx = [] then invariant_fun ast;
-        (* if all_ppx <> [], invariant_fun will be called by apply_rewriters *)
-        ast
-      end else begin
+        (input_value ic : a)
+      in
+      if !Clflags.all_ppx = [] then invariant_fun ast;
+      (* if all_ppx <> [], invariant_fun will be called by apply_rewriters *)
+      ast
+    end else begin
+      let source =
+        (* We read the whole source file at once. This guarantees that all
+           input is in the lexing buffer and can be reused by error printers
+           to quote source code at specific locations -- see #12238 and the
+           Location.lines_around* functions. *)
+        Fun.protect ~finally:close_ic @@ fun () ->
         seek_in ic 0;
-        let lexbuf = Lexing.from_channel ic in
-        Location.init lexbuf inputfile;
-        Location.input_lexbuf := Some lexbuf;
-        Profile.record_call "parser" (fun () -> parse_fun lexbuf)
-      end
-    with x -> close_in ic; raise x
+        In_channel.input_all ic
+      in
+      let lexbuf = Lexing.from_string source in
+      Location.init lexbuf inputfile;
+      Location.input_lexbuf := Some lexbuf;
+      Profile.record_call "parser" (fun () -> parse_fun lexbuf)
+    end
   in
-  close_in ic;
   Profile.record_call "-ppx" (fun () ->
       apply_rewriters ~restore:false ~tool_name kind ast
     )

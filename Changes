@@ -312,6 +312,10 @@ Working version
   (Vincent Laviron, report by François Pottier, review by Nathanaëlle Courant
   and Gabriel Scherer)
 
+- #12238, #12403: read input files in one go to avoid source reprinting issues
+  (Gabriel Scherer, report by Mike Spivey and Vincent Laviron, review by
+   Nicolás Ojeda Bär, Xavier Leroy and Jeremy Yallop)
+
 - #12334, #12368: Bad error message with mutually recursive abbreviations
   (Jacques Garrigue, report by Richard Eisenberg, review by Gabriel Scherer
    and Richard Eisenberg)

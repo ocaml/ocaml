@@ -28,7 +28,7 @@ let filename_of_input = function
   | File name -> name
   | Stdin | String _ -> ""
 
-let use_lexbuf ppf ~wrap_in_module lb name filename =
+let use_lexbuf ppf ~wrap_in_module lb ~modpath ~filename =
   Warnings.reset_fatal ();
   Location.init lb filename;
   (* Skip initial #! line if any *)
@@ -43,7 +43,7 @@ let use_lexbuf ppf ~wrap_in_module lb name filename =
           let ph = preprocess_phrase ppf ph in
           if not (execute_phrase !use_print_results ppf ph) then raise Exit)
         (if wrap_in_module then
-           parse_mod_use_file name lb
+           parse_mod_use_file modpath lb
          else
            !parse_use_file lb);
       true
@@ -51,6 +51,15 @@ let use_lexbuf ppf ~wrap_in_module lb name filename =
     | Exit -> false
     | Sys.Break -> fprintf ppf "Interrupted.@."; false
     | x -> Location.report_exception ppf x; false)
+
+(** [~modpath] is used to determine the module name when [wrap_in_module]
+    [~filepath] is the filesystem path to the input,
+    [~filename] is the name of the file that should be shown
+    to the user. It may differ from [filepath] when using a temporary file. *)
+let use_file ppf ~wrap_in_module ~modpath ~filepath ~filename =
+  let source = In_channel.with_open_bin filepath In_channel.input_all in
+  let lexbuf = Lexing.from_string source in
+  use_lexbuf ppf ~wrap_in_module lexbuf ~modpath ~filename
 
 let use_output ppf command =
   let fn = Filename.temp_file "ocaml" "_toploop.ml" in
@@ -63,11 +72,8 @@ let use_output ppf command =
            (Filename.quote fn)
        with
        | 0 ->
-         let ic = open_in_bin fn in
-         Misc.try_finally ~always:(fun () -> close_in ic)
-           (fun () ->
-            let lexbuf = (Lexing.from_channel ic) in
-            use_lexbuf ppf ~wrap_in_module:false lexbuf "" "(command-output)")
+         use_file ppf ~wrap_in_module:false ~modpath:""
+           ~filepath:fn ~filename:"(command-output)"
        | n ->
          fprintf ppf "Command exited with code %d.@." n;
          false)
@@ -76,33 +82,30 @@ let use_input ppf ~wrap_in_module input =
   match input with
   | Stdin ->
     let lexbuf = Lexing.from_channel stdin in
-    use_lexbuf ppf ~wrap_in_module lexbuf "" "(stdin)"
+    use_lexbuf ppf ~wrap_in_module lexbuf ~modpath:"" ~filename:"(stdin)"
   | String value ->
     let lexbuf = Lexing.from_string value in
-    use_lexbuf ppf ~wrap_in_module lexbuf "" "(command-line input)"
+    use_lexbuf ppf ~wrap_in_module lexbuf
+      ~modpath:"" ~filename:"(command-line input)"
   | File name ->
     match Load_path.find name with
     | filename ->
-      let ic = open_in_bin filename in
-      Misc.try_finally ~always:(fun () -> close_in ic)
-        (fun () ->
-          let lexbuf = Lexing.from_channel ic in
-          use_lexbuf ppf ~wrap_in_module lexbuf name filename)
+      use_file ppf ~wrap_in_module ~modpath:name ~filename ~filepath:filename
     | exception Not_found ->
       fprintf ppf "Cannot find file %s.@." name;
       false
 
-let mod_use_input ppf name =
-  use_input ppf ~wrap_in_module:true name
-let use_input ppf name =
-  use_input ppf ~wrap_in_module:false name
+let mod_use_input ppf input =
+  use_input ppf ~wrap_in_module:true input
+let use_input ppf input =
+  use_input ppf ~wrap_in_module:false input
 let use_file ppf name =
   use_input ppf (File name)
 
-let use_silently ppf name =
+let use_silently ppf input =
   Misc.protect_refs
     [ R (use_print_results, false) ]
-    (fun () -> use_input ppf name)
+    (fun () -> use_input ppf input)
 
 let load_file = load_file false
 
