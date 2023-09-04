@@ -119,7 +119,7 @@ and may_compats = MayCompat.compats
 (*
    Many functions on the various data structures of the algorithm :
      - Pattern matrices.
-     - Default environments: mapping from matrices to exit numbers.
+     - Default environments: mapping from exit numbers to matrices.
      - Contexts: matrices whose column are partitioned into
        left (prefix of the input that we have already matched) and
        right (what remains to be matched).
