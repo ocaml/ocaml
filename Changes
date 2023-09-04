@@ -335,6 +335,10 @@ Working version
 - #12949: open shadowing mistriggers
   (Gabriel Scherer, review by Florian Angeletti, report by Andreas Rossberg)
 
+- #12486: Fix delivery of unhandled effect exceptions on s390x
+  (Miod Vallat, report by Jan Midtgaard, review by Vincent Laviron and Xavier
+  Leroy)
+
 OCaml 5.1.0
 ---------------
 
