@@ -913,6 +913,10 @@ Some of those changes will benefit all OCaml packages.
 - #11186, #11188: Fix composition of coercions with aliases
   (Vincent Laviron, report and review by Leo White)
 
+- #12486: Fix delivery of unhandled effect exceptions on s390x
+  (Miod Vallat, report by Jan Midtgaard, review by Vincent Laviron and Xavier
+  Leroy)
+
 OCaml 5.0.0 (15 December 2022)
 ------------------------------
 
