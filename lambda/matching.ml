@@ -2804,38 +2804,59 @@ let mk_failaction_pos partial seen ctx defs =
     ;
     (fail, [], jumps)
   ) else (
-    (* [scan_def env to_test defs] traverses the default environment
-       [def] to determine to which exit number (and under which context)
-       the failure patterns in [to_test] should be sent. *)
-    let rec scan_def env to_test defs =
-      match (to_test, Default_environment.pop defs) with
-      | [], _
-      | _, None ->
-          List.fold_left
-            (fun (klist, jumps) (i, pats) ->
-              let action = Lstaticraise (i, []) in
-              let klist =
-                List.fold_right
-                  (fun pat r -> (get_key_constr pat, action) :: r)
-                  pats klist
-              and jumps =
-                Jumps.add i (Context.lub (list_as_pat pats) ctx) jumps
-              in
-              (klist, jumps))
-            ([], Jumps.empty) env
-      | _, Some ((idef, pss), rem) -> (
+    (* Compute a specialized context for each failure pattern. *)
+    let fail_pats_in_ctx =
+      List.map (fun pat -> (pat, Context.lub pat ctx)) fail_pats in
+    (* Determine which exit is appropriate for which failure patterns. *)
+    let rec exit_failpats defs fail_pats_in_ctx acc =
+      match Default_environment.pop defs with
+      | Some ((idef, pss), rem) ->
+          (* Collect the patterns whose context matches the
+             matrix [pss] of the exit [idef]. *)
           let now, later =
-            List.partition (fun (_p, p_ctx) -> Context.matches p_ctx pss) to_test
+            List.partition_map (fun ((p, p_ctx) as fail_pat) ->
+              if Context.matches p_ctx pss
+              then Either.Left p
+              else Either.Right fail_pat
+            ) fail_pats_in_ctx
           in
-          match now with
-          | [] -> scan_def env to_test rem
-          | _ -> scan_def ((idef, List.map fst now) :: env) later rem
-        )
+          let acc =
+            match now with
+            | [] -> acc
+            | _ :: _ -> (idef, now) :: acc
+          in
+          begin match later with
+          | _ :: _ -> exit_failpats rem later acc
+          | [] ->
+              (* We have assigned exit point to all fail patterns, so
+                 we can stop iterating on the exits. *)
+              acc
+          end
+      | None ->
+          (* If there are no exits left in the environment, we
+             consider that the remaining failing patterns cannot
+             actually arise. [mk_failaction_neg] has the same
+             logic. *)
+          acc
     in
-    let fails, jumps =
-      scan_def []
-        (List.map (fun pat -> (pat, Context.lub pat ctx)) fail_pats)
-        defs
+    let exit_failpats = exit_failpats defs fail_pats_in_ctx [] in
+    let fails =
+      List.concat_map (fun (i, i_fail_pats) ->
+        let action = Lstaticraise (i, []) in
+        List.map (fun pat -> (get_key_constr pat, action)) i_fail_pats
+      ) exit_failpats
+    in
+    let jumps =
+      List.fold_left (fun jumps (i, i_fail_pats) ->
+        (* We specialize the current context to the or-pattern of all
+           fail patterns going to this exit. This is equivalent to
+           unioning the specialized contexts of each failure pattern,
+           but more efficient -- the union would have a lot of
+           redundancy. *)
+        let i_fail_pat = list_as_pat i_fail_pats in
+        let i_fail_ctx = Context.lub i_fail_pat ctx in
+        Jumps.add i i_fail_ctx jumps
+      ) Jumps.empty exit_failpats
     in
     debugf
       "@,@[<v 2>COMBINE (mk_failaction_pos %a)@,\
