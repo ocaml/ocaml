@@ -1818,10 +1818,9 @@ let drop_expr_arg _head _arg rem = rem
 let get_key_constant caller = function
   | { pat_desc = Tpat_constant cst } -> cst
   | p ->
-      Format.eprintf "BAD (%s): %a"
+      fatal_errorf "BAD(%s): %a"
         caller
-        pretty_pat p;
-      assert false
+        pretty_pat p
 
 let get_pat_args_constant = drop_pat_arg
 let get_expr_args_constant = drop_expr_arg
@@ -1957,11 +1956,11 @@ let get_mod_field modname field =
      in
      match Env.open_pers_signature modname env with
      | Error `Not_found ->
-         fatal_error ("Module " ^ modname ^ " unavailable.")
+         fatal_errorf "Module %s unavailable." modname
      | Ok env -> (
          match Env.find_value_by_name (Longident.Lident field) env with
          | exception Not_found ->
-             fatal_error ("Primitive " ^ modname ^ "." ^ field ^ " not found.")
+             fatal_errorf "Primitive %s.%s not found." modname field
          | path, _ -> transl_value_path Loc_unknown env path
        ))
 
@@ -3162,8 +3161,7 @@ let rec event_branch repr lam =
       Llet (str, k, id, lam, event_branch repr body)
   | Lstaticraise _, _ -> lam
   | _, Some _ ->
-      Printlambda.lambda Format.str_formatter lam;
-      fatal_error ("Matching.event_branch: " ^ Format.flush_str_formatter ())
+      fatal_errorf "Matching.event_branch: %a" Printlambda.lambda lam
 
 (*
    This exception is raised when the compiler cannot produce code
@@ -3908,12 +3906,8 @@ let flatten_simple_pattern size (p : Simple.pattern) =
          where we know that the scrutinee is a tuple literal.
 
          Since the PM is well typed, none of these cases are possible. *)
-      let msg =
-        Format.fprintf Format.str_formatter
-          "Matching.flatten_pattern: got '%a'" pretty_pat (General.erase p);
-        Format.flush_str_formatter ()
-      in
-      fatal_error msg
+      fatal_errorf
+        "Matching.flatten_pattern: got '%a'" pretty_pat (General.erase p)
 
 let flatten_cases size cases =
   List.map
