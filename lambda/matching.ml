@@ -93,7 +93,6 @@ open Types
 open Typedtree
 open Lambda
 open Parmatch
-open Printf
 open Printpat
 
 module Scoped_location = Debuginfo.Scoped_location
@@ -868,7 +867,7 @@ end = struct
   let eprintf (env : t) =
     List.iter
       (fun (i, ctx) ->
-        Printf.eprintf "jump for %d\n" i;
+        Format.eprintf "jump for %d\n" i;
         Context.eprintf ctx)
       env
 
@@ -1017,7 +1016,7 @@ let rec pretty_precompiled = function
       pretty_matrix Format.err_formatter x.or_matrix;
       List.iter
         (fun { exit = i; pm; _ } ->
-          eprintf "++ Handler %d ++\n" i;
+          Format.eprintf "++ Handler %d ++\n" i;
           pretty_pm pm)
         x.handlers
 
@@ -1025,7 +1024,7 @@ let pretty_precompiled_res first nexts =
   pretty_precompiled first;
   List.iter
     (fun (e, pmh) ->
-      eprintf "** DEFAULT %d **\n" e;
+      Format.eprintf "** DEFAULT %d **\n" e;
       pretty_precompiled pmh)
     nexts
 
@@ -1072,7 +1071,7 @@ let make_catch_delayed handler =
   | None -> (
       let i = next_raise_count () in
       (*
-    Printf.eprintf "SHARE LAMBDA: %i\n%s\n" i (string_of_lam handler);
+    Format.eprintf "SHARE LAMBDA: %i\n%s\n" i (string_of_lam handler);
 *)
       ( i,
         fun body ->
@@ -2522,7 +2521,7 @@ let as_interval_canfail fail low high l =
   let do_store _tag act =
     let i = store.act_store () act in
     (*
-    eprintf "STORE [%s] %i %s\n" tag i (string_of_lam act) ;
+    Format.eprintf "STORE [%s] %i %s\n" tag i (string_of_lam act) ;
 *)
     i
   in
@@ -2707,16 +2706,16 @@ let mk_failaction_pos partial seen ctx defs =
         defs
     in
     if dbg then (
-      eprintf "POSITIVE JUMPS [%i]:\n" (List.length fail_pats);
+      Format.eprintf "POSITIVE JUMPS [%i]:\n" (List.length fail_pats);
       Jumps.eprintf jmps
     );
     (None, fail, jmps)
   ) else (
     (* Too many non-matched constructors -> reduced information *)
-    if dbg then eprintf "POS->NEG!!!\n%!";
+    if dbg then Format.eprintf "POS->NEG!!!\n%!";
     let fail, jumps = mk_failaction_neg partial ctx defs in
     if dbg then
-      eprintf "FAIL: %s\n"
+      Format.eprintf "FAIL: %s\n"
         ( match fail with
         | None -> "<none>"
         | Some lam -> string_of_lam lam
