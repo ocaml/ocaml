@@ -1900,7 +1900,7 @@ let do_check_partial ~pred loc casel pss = match pss with
           try
             let buf = Buffer.create 16 in
             let fmt = Format.formatter_of_buffer buf in
-            Printpat.top_pretty fmt v;
+            Format.fprintf fmt "%a@?" Printpat.pretty_pat v;
             if do_match (initial_only_guarded casel) [v] then
               Buffer.add_string buf
                 "\n(However, some guarded clause may match this value.)";

@@ -99,6 +99,11 @@ module Scoped_location = Debuginfo.Scoped_location
 
 let dbg = false
 
+let debugf fmt =
+  if dbg
+  then Format.eprintf fmt
+  else Format.ifprintf Format.err_formatter fmt
+
 (*
    Compatibility predicate that considers potential rebindings of constructors
    of an extension type.
@@ -124,10 +129,6 @@ and may_compats = MayCompat.compats
        right (what remains to be matched).
      - Jump summaries: mapping from exit numbers to contexts
 *)
-
-let string_of_lam lam =
-  Printlambda.lambda Format.str_formatter lam;
-  Format.flush_str_formatter ()
 
 let all_record_args lbls =
   match lbls with
@@ -472,7 +473,7 @@ module Context : sig
 
   val start : int -> t
 
-  val eprintf : t -> unit
+  val pp : Format.formatter -> t -> unit
 
   val specialize : Patterns.Head.t -> t -> t
 
@@ -499,8 +500,11 @@ end = struct
        Right: what we know about whas is below us, towards the leaves. *)
 
 
-    let eprintf { left; right } =
-      Format.eprintf "LEFT:%a RIGHT:%a\n" pretty_line left pretty_line right
+    let pp ppf { left; right } =
+      Format.fprintf ppf
+        "@[LEFT@ %aRIGHT@ %a@]"
+        pretty_line left
+        pretty_line right
 
     let le c1 c2 = le_pats c1.left c2.left && le_pats c1.right c2.right
 
@@ -546,7 +550,9 @@ end = struct
     | [] -> true
     | _ -> false
 
-  let eprintf ctx = List.iter Row.eprintf ctx
+  let pp ppf ctx =
+    Format.pp_print_list ~pp_sep:Format.pp_print_cut
+      Row.pp ppf ctx
 
   let lshift ctx =
     if List.length ctx < !Clflags.match_context_rows then
@@ -679,7 +685,7 @@ module Default_environment : sig
 
   val flatten : int -> t -> t
 
-  val pp : t -> unit
+  val pp : Format.formatter -> t -> unit
 end = struct
   type t = (int * matrix) list
   (** All matrices in the list should have the same arity -- their rows should
@@ -819,12 +825,22 @@ end = struct
     | [] -> None
     | def :: defs -> Some (def, defs)
 
-  let pp def =
-    Format.eprintf "+++++ Defaults +++++\n";
-    List.iter
-      (fun (i, pss) -> Format.eprintf "Matrix for %d\n%a" i pretty_matrix pss)
-      def;
-    Format.eprintf "+++++++++++++++++++++\n"
+  let pp ppf def =
+    Format.fprintf ppf
+      "@[<v 2>Default environment:@,\
+       %a@]"
+      (fun ppf li ->
+         if li = [] then Format.fprintf ppf "empty"
+         else
+           Format.pp_print_list ~pp_sep:Format.pp_print_cut
+             (fun ppf (i, pss) ->
+                Format.fprintf ppf
+                  "Matrix for %d:@,\
+                   %a"
+                  i
+                  pretty_matrix pss
+             ) ppf li
+      ) def
 
   let flatten size def =
     List.map (fun (i, pss) -> (i, flatten_matrix size pss)) def
@@ -860,16 +876,19 @@ module Jumps : sig
       and the rest of the jump summary. *)
   val extract : int -> t -> Context.t * t
 
-  val eprintf : t -> unit
+  val pp : Format.formatter -> t -> unit
 end = struct
   type t = (int * Context.t) list
 
-  let eprintf (env : t) =
-    List.iter
-      (fun (i, ctx) ->
-        Format.eprintf "jump for %d\n" i;
-        Context.eprintf ctx)
-      env
+  let pp ppf (env : t) =
+    if env = [] then Format.fprintf ppf "empty" else
+    Format.pp_print_list ~pp_sep:Format.pp_print_cut (fun ppf (i, ctx) ->
+      Format.fprintf ppf
+        "jump for %d@,\
+         %a"
+        i
+        Context.pp ctx
+    ) ppf env
 
   let rec extract i = function
     | [] -> (Context.empty, [])
@@ -991,42 +1010,65 @@ let erase_cases f cases =
 let erase_pm pm =
   { pm with cases = erase_cases General.erase pm.cases }
 
-let pretty_cases cases =
-  List.iter
-    (fun (ps, _l) ->
-      List.iter (fun p -> Format.eprintf " %a%!" top_pretty p) ps;
-      Format.eprintf "\n")
+let pretty_cases ppf cases =
+  Format.fprintf ppf "@[<v 2>  %a@]"
+    (Format.pp_print_list ~pp_sep:Format.pp_print_cut
+       (fun ppf (ps, _l) ->
+          Format.fprintf ppf "@[";
+          List.iter (fun p -> Format.fprintf ppf "%a@ " pretty_pat p) ps;
+          Format.fprintf ppf "@]";
+       ))
     cases
 
-let pretty_pm pm =
-  pretty_cases pm.cases;
+let pretty_pm ppf pm =
+  pretty_cases ppf pm.cases;
   if not (Default_environment.is_empty pm.default) then
-    Default_environment.pp pm.default
+    Format.fprintf ppf "@,%a"
+      Default_environment.pp pm.default
 
-let rec pretty_precompiled = function
+let rec pretty_precompiled ppf = function
   | Pm pm ->
-      Format.eprintf "++++ PM ++++\n";
-      pretty_pm (erase_pm pm)
+      Format.fprintf ppf
+        "PM:@,\
+         %a"
+        pretty_pm (erase_pm pm)
   | PmVar x ->
-      Format.eprintf "++++ VAR ++++\n";
-      pretty_precompiled x.inside
+      Format.fprintf ppf
+        "PM Var:@,\
+         %a"
+        pretty_precompiled x.inside
   | PmOr x ->
-      Format.eprintf "++++ OR ++++\n";
-      pretty_pm (erase_pm x.body);
-      pretty_matrix Format.err_formatter x.or_matrix;
-      List.iter
-        (fun { exit = i; pm; _ } ->
-          Format.eprintf "++ Handler %d ++\n" i;
-          pretty_pm pm)
-        x.handlers
+      let pretty_handlers ppf handlers =
+        List.iter (fun { exit = i; pm; _ } ->
+          Format.fprintf ppf
+            "++ Handler %d ++@,\
+             %a"
+            i
+            pretty_pm pm
+        ) handlers
+      in
+      Format.fprintf ppf "PM Or:@,\
+                          %a@,\
+                          %a@,\
+                          %a"
+        pretty_pm (erase_pm x.body)
+        pretty_matrix x.or_matrix
+        pretty_handlers x.handlers
 
-let pretty_precompiled_res first nexts =
-  pretty_precompiled first;
-  List.iter
-    (fun (e, pmh) ->
-      Format.eprintf "** DEFAULT %d **\n" e;
-      pretty_precompiled pmh)
-    nexts
+let pretty_precompiled_res ppf (first, nexts) =
+  Format.fprintf ppf
+    "@[<v 2>First matrix:@,\
+       %a@]@,\
+     %a"
+    pretty_precompiled first
+    (Format.pp_print_list ~pp_sep:Format.pp_print_cut
+       (fun ppf (e, pmh) ->
+          Format.fprintf ppf
+            "@[<v 2>Default matrix %d:@,\
+             %a@]"
+            e
+            pretty_precompiled pmh)
+    ) nexts
 
 (* Identifying some semantically equivalent lambda-expressions,
    Our goal here is also to
@@ -1071,8 +1113,8 @@ let make_catch_delayed handler =
   | None -> (
       let i = next_raise_count () in
       (*
-    Format.eprintf "SHARE LAMBDA: %i\n%s\n" i (string_of_lam handler);
-*)
+      debugf "SHARE LAMBDA: %i@,%a@," i Printlambda.lambda handler;
+      *)
       ( i,
         fun body ->
           match body with
@@ -1630,6 +1672,28 @@ and precompile_or ~arg (cls : Simple.clause list) ors args def k =
     },
     k )
 
+let separate_debug_output () =
+  (* This function should be called when a debug-producing function
+     has just been called, and another debug-producing function is
+     about to be called.
+
+     The format boxes used for debug pretty-printing must use @, as
+     *separator* between two non-empty outputs. (We use vertical boxes
+     with indentation, where extraneous cuts give ugly output, so we
+     do not want to place a cut before each item or after each item.)
+
+     Each debug-outputting function can assume that it starts on a new
+     line, and is expected to *not* include a cut the end of its
+     output. The glue code that calls those functions is responsible
+     for placing separator cut @, between them.
+
+     In most cases we know statically that some output was produced
+     and some other output will follow, and place a cut separator @,
+     at the right places in the debug format strings. But sometimes it
+     is not obvious in the code that a separator is needed. This
+     function is meant to be used in those less obvious cases.  *)
+  debugf "@,"
+
 let dbg_split_and_precompile pm next nexts =
   if
     dbg
@@ -1640,9 +1704,16 @@ let dbg_split_and_precompile pm next nexts =
        | _ -> false
        )
   then (
-    Format.eprintf "** SPLIT **\n";
-    pretty_pm (erase_pm pm);
-    pretty_precompiled_res next nexts
+    debugf
+      "SPLIT@,\
+       %a@,\
+       @[<v 2>INTO:@,\
+         %a@]"
+      pretty_pm (erase_pm pm)
+      pretty_precompiled_res (next, nexts);
+    separate_debug_output
+      (* split_and_precompile is always followed by a compile_* function. *)
+      ();
   )
 
 let split_and_precompile_simplified pm =
@@ -1747,8 +1818,9 @@ let drop_expr_arg _head _arg rem = rem
 let get_key_constant caller = function
   | { pat_desc = Tpat_constant cst } -> cst
   | p ->
-      Format.eprintf "BAD: %s" caller;
-      pretty_pat p;
+      Format.eprintf "BAD (%s): %a"
+        caller
+        pretty_pat p;
       assert false
 
 let get_pat_args_constant = drop_pat_arg
@@ -2521,8 +2593,8 @@ let as_interval_canfail fail low high l =
   let do_store _tag act =
     let i = store.act_store () act in
     (*
-    Format.eprintf "STORE [%s] %i %s\n" tag i (string_of_lam act) ;
-*)
+    debugf "@,STORE [%s] %i %a" tag i Printlambda.lambda act;
+    *)
     i
   in
   let rec nofail_rec cur_low cur_high cur_act = function
@@ -2668,11 +2740,6 @@ let mk_failaction_neg partial ctx def =
 
 (* In line with the article and simpler than before *)
 let mk_failaction_pos partial seen ctx defs =
-  if dbg then (
-    Format.eprintf "**POS**\n";
-    Default_environment.pp defs;
-    ()
-  );
   let rec scan_def env to_test defs =
     match (to_test, Default_environment.pop defs) with
     | [], _
@@ -2705,21 +2772,35 @@ let mk_failaction_pos partial seen ctx defs =
         (List.map (fun pat -> (pat, Context.lub pat ctx)) fail_pats)
         defs
     in
-    if dbg then (
-      Format.eprintf "POSITIVE JUMPS [%i]:\n" (List.length fail_pats);
-      Jumps.eprintf jmps
-    );
+    debugf
+      "@,@[<v 2>COMBINE (mk_failaction_pos)@,\
+           %a@,\
+           @[<v 2>FAIL PATTERNS:@,\
+             %a@]@,\
+           @[<v 2>POSITIVE JUMPS:@,\
+             %a@]\
+           @]"
+      Default_environment.pp defs
+      (Format.pp_print_list ~pp_sep:Format.pp_print_cut
+         Printpat.pretty_pat) fail_pats
+      Jumps.pp jmps
+    ;
     (None, fail, jmps)
   ) else (
     (* Too many non-matched constructors -> reduced information *)
-    if dbg then Format.eprintf "POS->NEG!!!\n%!";
     let fail, jumps = mk_failaction_neg partial ctx defs in
-    if dbg then
-      Format.eprintf "FAIL: %s\n"
-        ( match fail with
-        | None -> "<none>"
-        | Some lam -> string_of_lam lam
-        );
+    debugf
+      "@,@[<v 2>COMBINE (mk_failaction_pos)@,\
+           %a@,\
+           @[<v 2>FAIL:@,\
+             %t@]\
+           @]"
+      Default_environment.pp defs
+      ( fun ppf -> match fail with
+        | None -> Format.fprintf ppf "<none>"
+        | Some lam -> Printlambda.lambda ppf lam
+      )
+    ;
     (fail, [], jumps)
   )
 
@@ -3108,8 +3189,11 @@ let compile_list compile_fun division =
           c_rec totals rem
         else begin
           match compile_fun cell.ctx cell.pm with
-          | exception Unused -> c_rec totals rem
+          | exception Unused ->
+            if rem <> [] then separate_debug_output ();
+            c_rec totals rem
           | lambda1, total1 ->
+            if rem <> [] then separate_debug_output ();
             let c_rem, total, new_discrs =
               c_rec (Jumps.map Context.combine total1 :: totals) rem
             in
@@ -3128,8 +3212,10 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
         let ctx = Context.select_columns mat ctx in
         match compile_fun ctx pm with
         | exception Unused ->
+          if rem <> [] then separate_debug_output ();
           do_rec (Lstaticcatch (r, (i, vars), lambda_unit)) total_r rem
         | handler_i, total_i ->
+          if rem <> [] then separate_debug_output ();
           begin match raw_action r with
           | Lstaticraise (j, args) ->
               if i = j then
@@ -3216,6 +3302,7 @@ let rec comp_match_handlers comp_fun partial ctx first_match next_matches =
       let rec c_rec body jumps_body = function
         | [] -> (body, jumps_body)
         | (i, pm_i) :: rem -> (
+            separate_debug_output ();
             let ctx_i, jumps_rem = Jumps.extract i jumps_body in
             if Context.is_empty ctx_i then
               c_rec body jumps_body rem
@@ -3241,6 +3328,7 @@ let rec comp_match_handlers comp_fun partial ctx first_match next_matches =
       | first_lam, jumps ->
         c_rec first_lam jumps next_matches
       | exception Unused ->
+        separate_debug_output ();
         comp_match_handlers comp_fun partial ctx second_match next_next_matches
     )
 
@@ -3277,13 +3365,18 @@ let rec compile_match ~scopes repr partial ctx
     (m : initial_clause pattern_matching) =
   match m.cases with
   | ([], action) :: rem ->
-      if is_guarded action then
-        let lambda, total =
-          compile_match ~scopes None partial ctx { m with cases = rem }
-        in
-        (event_branch repr (patch_guarded lambda action), total)
-      else
-        (event_branch repr action, Jumps.empty)
+      let res =
+        if is_guarded action then
+          let lambda, total =
+            compile_match ~scopes None partial ctx { m with cases = rem }
+          in
+          (event_branch repr (patch_guarded lambda action), total)
+        else
+          (event_branch repr action, Jumps.empty)
+      in
+      debugf "empty matrix%t"
+        (fun ppf -> if is_guarded action then Format.fprintf ppf " (guarded)");
+      res
   | nonempty_cases ->
       compile_match_nonempty ~scopes repr partial ctx
         { m with cases = map_on_rows Non_empty_row.of_initial nonempty_cases }
@@ -3328,17 +3421,30 @@ and combine_handlers ~scopes repr partial ctx (v, str, arg) first_match rem =
 
 (* verbose version of do_compile_matching, for debug *)
 and do_compile_matching_pr ~scopes repr partial ctx x =
-  Format.eprintf "COMPILE: %s\nMATCH\n"
+  debugf
+    "@[<v>MATCH %s\
+     @,%a"
     ( match partial with
     | Partial -> "Partial"
     | Total -> "Total"
-    );
-  pretty_precompiled x;
-  Format.eprintf "CTX\n";
-  Context.eprintf ctx;
-  let ((_, jumps) as r) = do_compile_matching ~scopes repr partial ctx x in
-  Format.eprintf "JUMPS\n";
-  Jumps.eprintf jumps;
+    )
+    pretty_precompiled x;
+  debugf "@,@[<v 2>CTX:@,%a@]"
+    Context.pp ctx;
+  debugf "@,@[<v 2>COMPILE:@,";
+  let ((_, jumps) as r) =
+    try do_compile_matching ~scopes repr partial ctx x with
+    | exn ->
+        debugf "EXN (%s)@]@]" (Printexc.to_string exn);
+        raise exn
+  in
+  debugf "@]";
+  if Jumps.is_empty jumps then
+    debugf "@,NO JUMPS"
+  else
+    debugf "@,@[<v 2>JUMPS:@,%a@]"
+      Jumps.pp jumps;
+  debugf "@]";
   r
 
 and do_compile_matching ~scopes repr partial ctx pmh =
@@ -3551,6 +3657,12 @@ let check_total ~scopes loc ~failer total lambda i =
                   failure_handler ~scopes loc ~failer ())
 
 let toplevel_handler ~scopes loc ~failer partial args cases compile_fun =
+  let compile_fun partial pm =
+    debugf "@[<v>MATCHING@,";
+    let result = compile_fun partial pm in
+    debugf "@]@.";
+    result
+  in
   match partial with
   | Total when not !Clflags.safer_matching ->
       let default = Default_environment.empty in
@@ -3798,7 +3910,7 @@ let flatten_simple_pattern size (p : Simple.pattern) =
          Since the PM is well typed, none of these cases are possible. *)
       let msg =
         Format.fprintf Format.str_formatter
-          "Matching.flatten_pattern: got '%a'" top_pretty (General.erase p);
+          "Matching.flatten_pattern: got '%a'" pretty_pat (General.erase p);
         Format.flush_str_formatter ()
       in
       fatal_error msg
