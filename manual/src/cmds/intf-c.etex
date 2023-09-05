@@ -616,7 +616,8 @@ contains "h", second field "t".}
 \end{tableau}
 
 As a convenience, "caml/mlvalues.h" defines the macros "Val_unit",
-"Val_false" and "Val_true" to refer to "()", "false" and "true".
+"Val_false", "Val_true" and "Val_emptylist" to refer to "()",
+"false", "true" and "[]".
 
 The following example illustrates the assignment of
 integers and block tags to constructors:
