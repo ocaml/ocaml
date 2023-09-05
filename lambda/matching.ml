@@ -2787,35 +2787,51 @@ let mk_failaction_pos partial seen ctx defs =
      in [seen]. For example, if [seen] is [[None]], then [fail_pats]
      will be [[Some _]]. *)
   let fail_pats = complete_pats_constrs seen in
-  (* [scan_def env to_test defs] traverses the default environment
-     [def] to determine to which exit number (and under which context)
-     the failure patterns in [to_test] should be sent. *)
-  let rec scan_def env to_test defs =
-    match (to_test, Default_environment.pop defs) with
-    | [], _
-    | _, None ->
-        List.fold_left
-          (fun (klist, jumps) (i, pats) ->
-            let action = Lstaticraise (i, []) in
-            let klist =
-              List.fold_right
-                (fun pat r -> (get_key_constr pat, action) :: r)
-                pats klist
-            and jumps =
-              Jumps.add i (Context.lub (list_as_pat pats) ctx) jumps
-            in
-            (klist, jumps))
-          ([], Jumps.empty) env
-    | _, Some ((idef, pss), rem) -> (
-        let now, later =
-          List.partition (fun (_p, p_ctx) -> Context.matches p_ctx pss) to_test
-        in
-        match now with
-        | [] -> scan_def env to_test rem
-        | _ -> scan_def ((idef, List.map fst now) :: env) later rem
+  if List.length fail_pats >= !Clflags.match_context_rows then (
+    (* Too many non-matched constructors -> reduced information. *)
+    let fail, jumps = mk_failaction_neg partial ctx defs in
+    debugf
+      "@,@[<v 2>COMBINE (mk_failaction_pos)@,\
+           %a@,\
+           @[<v 2>FAIL:@,\
+             %t@]\
+           @]"
+      Default_environment.pp defs
+      ( fun ppf -> match fail with
+        | None -> Format.fprintf ppf "<none>"
+        | Some lam -> Printlambda.lambda ppf lam
       )
-  in
-  if List.length fail_pats < !Clflags.match_context_rows then (
+    ;
+    (fail, [], jumps)
+  ) else (
+    (* [scan_def env to_test defs] traverses the default environment
+       [def] to determine to which exit number (and under which context)
+       the failure patterns in [to_test] should be sent. *)
+    let rec scan_def env to_test defs =
+      match (to_test, Default_environment.pop defs) with
+      | [], _
+      | _, None ->
+          List.fold_left
+            (fun (klist, jumps) (i, pats) ->
+              let action = Lstaticraise (i, []) in
+              let klist =
+                List.fold_right
+                  (fun pat r -> (get_key_constr pat, action) :: r)
+                  pats klist
+              and jumps =
+                Jumps.add i (Context.lub (list_as_pat pats) ctx) jumps
+              in
+              (klist, jumps))
+            ([], Jumps.empty) env
+      | _, Some ((idef, pss), rem) -> (
+          let now, later =
+            List.partition (fun (_p, p_ctx) -> Context.matches p_ctx pss) to_test
+          in
+          match now with
+          | [] -> scan_def env to_test rem
+          | _ -> scan_def ((idef, List.map fst now) :: env) later rem
+        )
+    in
     let fails, jumps =
       scan_def []
         (List.map (fun pat -> (pat, Context.lub pat ctx)) fail_pats)
@@ -2836,22 +2852,6 @@ let mk_failaction_pos partial seen ctx defs =
       Jumps.pp jumps
     ;
     (None, fails, jumps)
-  ) else (
-    (* Too many non-matched constructors -> reduced information. *)
-    let fail, jumps = mk_failaction_neg partial ctx defs in
-    debugf
-      "@,@[<v 2>COMBINE (mk_failaction_pos)@,\
-           %a@,\
-           @[<v 2>FAIL:@,\
-             %t@]\
-           @]"
-      Default_environment.pp defs
-      ( fun ppf -> match fail with
-        | None -> Format.fprintf ppf "<none>"
-        | Some lam -> Printlambda.lambda ppf lam
-      )
-    ;
-    (fail, [], jumps)
   )
 
 let combine_constant loc arg cst partial ctx def
