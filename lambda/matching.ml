@@ -2730,7 +2730,7 @@ let complete_pats_constrs = function
   | _ -> assert false
 
 (*
-     Following two ``failaction'' function compute n, the trap handler
+    Following two ``failaction'' function compute n, the trap handler
     to jump to in case of failure of elementary tests
 *)
 
@@ -2752,8 +2752,44 @@ let mk_failaction_neg partial ctx def =
     )
   | Total -> (None, Jumps.empty)
 
-(* In line with the article and simpler than before *)
+(* In [mk_failaction_pos partial seen ctx defs],
+   - [partial] is Total if we know the current switch
+     is already exhaustive
+   - [seen] is the list of constructors accepted by the switch
+     (those that will be matched)
+   - [ctx] is the current context (what we know of the value
+     being matched)
+   - [defs] is the default environment (what inputs
+     are expected by the switches present at larger exit numbers).
+
+   The function returns a triple [(fail, fails, jumps)] containing
+   information for the failure cases, the constructors missing from
+   the current switch:
+   - [fail] is an optional 'default' action for the switch
+   - [fails] is a list of extra switch clauses to add for failure cases,
+     each jumping to a larger exit number
+   - [jumps] contains a jump summary for all these new cases
+     (context information for all exits they reach)
+
+   The general strategy is to compute an accurate list of [fails] and
+   try to avoid having a default action, as this generates better
+   code. But we choose to have a default action when the list [fails]
+   would be too large or too costly to compute.
+
+   Through its jump summary, [mk_failaction_pos] propagates "negative
+   information" about the constructors not taken. For example, if
+   a switch only accepts the [None] constructor, [mk_failaction_pos]
+   generates a failure clause along with context information that the
+   value reaching the failure clause must be [Some _].
+*)
 let mk_failaction_pos partial seen ctx defs =
+  (* The failure patterns are formed of the constructors not present
+     in [seen]. For example, if [seen] is [[None]], then [fail_pats]
+     will be [[Some _]]. *)
+  let fail_pats = complete_pats_constrs seen in
+  (* [scan_def env to_test defs] traverses the default environment
+     [def] to determine to which exit number (and under which context)
+     the failure patterns in [to_test] should be sent. *)
   let rec scan_def env to_test defs =
     match (to_test, Default_environment.pop defs) with
     | [], _
@@ -2779,9 +2815,8 @@ let mk_failaction_pos partial seen ctx defs =
         | _ -> scan_def ((idef, List.map fst now) :: env) later rem
       )
   in
-  let fail_pats = complete_pats_constrs seen in
   if List.length fail_pats < !Clflags.match_context_rows then (
-    let fail, jmps =
+    let fails, jumps =
       scan_def []
         (List.map (fun pat -> (pat, Context.lub pat ctx)) fail_pats)
         defs
@@ -2798,11 +2833,11 @@ let mk_failaction_pos partial seen ctx defs =
       Default_environment.pp defs
       (Format.pp_print_list ~pp_sep:Format.pp_print_cut
          Printpat.pretty_pat) fail_pats
-      Jumps.pp jmps
+      Jumps.pp jumps
     ;
-    (None, fail, jmps)
+    (None, fails, jumps)
   ) else (
-    (* Too many non-matched constructors -> reduced information *)
+    (* Too many non-matched constructors -> reduced information. *)
     let fail, jumps = mk_failaction_neg partial ctx defs in
     debugf
       "@,@[<v 2>COMBINE (mk_failaction_pos)@,\
