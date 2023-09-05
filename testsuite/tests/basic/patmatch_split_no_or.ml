@@ -18,9 +18,9 @@ let last_is_anys = function
   (last_is_anys/11 =
      (function param/13 : int
        (catch
-         (if (field_imm 0 param/13) (if (field_imm 1 param/13) (exit 1) 1)
-           (if (field_imm 1 param/13) (exit 1) 2))
-        with (1) 3)))
+         (if (field_imm 0 param/13) (if (field_imm 1 param/13) (exit 2) 1)
+           (if (field_imm 1 param/13) (exit 2) 2))
+        with (2) 3)))
   (apply (field_mut 1 (global Toploop!)) "last_is_anys" last_is_anys/11))
 val last_is_anys : bool * bool -> int = <fun>
 |}]
@@ -35,9 +35,9 @@ let last_is_vars = function
   (last_is_vars/18 =
      (function param/22 : int
        (catch
-         (if (field_imm 0 param/22) (if (field_imm 1 param/22) (exit 3) 1)
-           (if (field_imm 1 param/22) (exit 3) 2))
-        with (3) 3)))
+         (if (field_imm 0 param/22) (if (field_imm 1 param/22) (exit 5) 1)
+           (if (field_imm 1 param/22) (exit 5) 2))
+        with (5) 3)))
   (apply (field_mut 1 (global Toploop!)) "last_is_vars" last_is_vars/18))
 val last_is_vars : bool * bool -> int = <fun>
 |}]
@@ -78,9 +78,9 @@ let f = function
      (function param/31 : int
        (let (*match*/32 =a (field_imm 0 param/31))
          (catch
-           (if (== *match*/32 A/26) (if (field_imm 1 param/31) 1 (exit 8))
-             (exit 8))
-          with (8)
+           (if (== *match*/32 A/26) (if (field_imm 1 param/31) 1 (exit 11))
+             (exit 11))
+          with (11)
            (if (field_imm 1 param/31)
              (if (== (field_imm 0 *match*/32) B/27) 2
                (if (== (field_imm 0 *match*/32) C/28) 3 4))
