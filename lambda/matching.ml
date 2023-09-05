@@ -1020,23 +1020,23 @@ let pretty_cases ppf cases =
        ))
     cases
 
-let pretty_pm ppf pm =
+let pretty_pm_ ~print_default ppf pm =
   pretty_cases ppf pm.cases;
-  if not (Default_environment.is_empty pm.default) then
+  if print_default && not (Default_environment.is_empty pm.default) then
     Format.fprintf ppf "@,%a"
       Default_environment.pp pm.default
 
-let rec pretty_precompiled ppf = function
+let rec pretty_precompiled_ ~print_default ppf = function
   | Pm pm ->
       Format.fprintf ppf
         "PM:@,\
          %a"
-        pretty_pm (erase_pm pm)
+        (pretty_pm_ ~print_default) (erase_pm pm)
   | PmVar x ->
       Format.fprintf ppf
         "PM Var:@,\
          %a"
-        pretty_precompiled x.inside
+        (pretty_precompiled_ ~print_default) x.inside
   | PmOr x ->
       let pretty_handlers ppf handlers =
         List.iter (fun { exit = i; pm; _ } ->
@@ -1044,30 +1044,37 @@ let rec pretty_precompiled ppf = function
             "++ Handler %d ++@,\
              %a"
             i
-            pretty_pm pm
+            (pretty_pm_ ~print_default) pm
         ) handlers
       in
       Format.fprintf ppf "PM Or:@,\
                           %a@,\
                           %a@,\
                           %a"
-        pretty_pm (erase_pm x.body)
+        (pretty_pm_ ~print_default) (erase_pm x.body)
         pretty_matrix x.or_matrix
         pretty_handlers x.handlers
+
+let pretty_pm =
+    pretty_pm_ ~print_default:true
+let pretty_precompiled =
+    pretty_precompiled_ ~print_default:true
+let pretty_precompiled_without_default =
+    pretty_precompiled_ ~print_default:false
 
 let pretty_precompiled_res ppf (first, nexts) =
   Format.fprintf ppf
     "@[<v 2>First matrix:@,\
        %a@]@,\
      %a"
-    pretty_precompiled first
+    pretty_precompiled_without_default first
     (Format.pp_print_list ~pp_sep:Format.pp_print_cut
        (fun ppf (e, pmh) ->
           Format.fprintf ppf
             "@[<v 2>Default matrix %d:@,\
              %a@]"
             e
-            pretty_precompiled pmh)
+            pretty_precompiled_without_default pmh)
     ) nexts
 
 (* Identifying some semantically equivalent lambda-expressions,
