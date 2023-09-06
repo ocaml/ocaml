@@ -382,6 +382,10 @@ Working version
   optional arguments and default values in the Closure backend
   (Alain Frisch, review by Vincent Laviron)
 
+- #12486: Fix delivery of unhandled effect exceptions on amd64 with
+  --enable-frame-pointers
+  (Miod Vallat, report by Jan Midtgaard, review by Gabriel Scherer)
+
 OCaml 5.1.0 (14 September 2023)
 -------------------------------
 
