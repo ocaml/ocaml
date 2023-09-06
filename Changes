@@ -331,6 +331,9 @@ Working version
 - #12532, #12553: improve readability of the pattern-matching debug output
   (Gabriel Scherer, review by Thomas Refis)
 
+- #12534: document and refactor Matching.mk_failaction_pos
+  (Gabriel Scherer, review by Vincent Laviron)
+
 ### Build system:
 
 - #12198, #12321: continue the merge of the sub-makefiles into the root Makefile
