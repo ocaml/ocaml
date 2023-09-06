@@ -20,6 +20,7 @@
 
 #include <string.h>
 #include <unistd.h>
+#include <assert.h>
 #include "caml/alloc.h"
 #include "caml/callback.h"
 #include "caml/codefrag.h"
@@ -45,6 +46,8 @@
 #else
 #define fiber_debug_log(...)
 #endif
+
+static_assert(sizeof(struct stack_info) == Stack_ctx_words * sizeof(value), "");
 
 static _Atomic int64_t fiber_id = 0;
 
@@ -143,8 +146,8 @@ alloc_size_class_stack_noexc(mlsize_t wosize, int cache_bucket, value hval,
   struct stack_handler* hand;
   struct stack_info **cache = Caml_state->stack_cache;
 
-  CAML_STATIC_ASSERT(sizeof(struct stack_info) % sizeof(value) == 0);
-  CAML_STATIC_ASSERT(sizeof(struct stack_handler) % sizeof(value) == 0);
+  static_assert(sizeof(struct stack_info) % sizeof(value) == 0, "");
+  static_assert(sizeof(struct stack_handler) % sizeof(value) == 0, "");
 
   CAMLassert(cache != NULL);
 

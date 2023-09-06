@@ -17,7 +17,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-
+#include <assert.h>
 #include "caml/addrmap.h"
 #include "caml/custom.h"
 #include "caml/runtime_events.h"
@@ -48,14 +48,14 @@ typedef struct pool {
   caml_domain_state* owner;
   sizeclass sz;
 } pool;
-CAML_STATIC_ASSERT(sizeof(pool) == Bsize_wsize(POOL_HEADER_WSIZE));
+static_assert(sizeof(pool) == Bsize_wsize(POOL_HEADER_WSIZE), "");
 #define POOL_SLAB_WOFFSET(sz) (POOL_HEADER_WSIZE + wastage_sizeclass[sz])
 
 typedef struct large_alloc {
   caml_domain_state* owner;
   struct large_alloc* next;
 } large_alloc;
-CAML_STATIC_ASSERT(sizeof(large_alloc) % sizeof(value) == 0);
+static_assert(sizeof(large_alloc) % sizeof(value) == 0, "");
 #define LARGE_ALLOC_HEADER_SZ sizeof(large_alloc)
 
 static struct {

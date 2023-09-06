@@ -335,6 +335,10 @@ Working version
 - #12532, #12553: improve readability of the pattern-matching debug output
   (Gabriel Scherer, review by Thomas Refis)
 
+- #12537: Use C11/C++11 standard static assertion.
+  (Antonin Décimo, review by Sebastien Hinderer, Xavier Leroy,
+   and KC Sivaramakrishnan)
+
 ### Build system:
 
 - #12198, #12321: continue the merge of the sub-makefiles into the root Makefile
