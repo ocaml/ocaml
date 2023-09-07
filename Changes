@@ -131,9 +131,9 @@ _______________
   unsupported native backends (POWER, riscv64 and s390x)
   (Miod Vallat, review by Nicolás Ojeda Bär)
 
-- #7241, #12555, #13076, #13138, #13338, #13152: fix a soundness bug
-  in the pattern-matching compiler when side-effects
-  mutate the scrutinee during matching.
+- #7241, #12555, #13076, #13138, #13338, #13152, #13153:
+  fix a soundness bug in the pattern-matching compiler
+  when side-effects mutate the scrutinee during matching.
   (Gabriel Scherer, review by Nick Roberts)
 
 - #13179: Fix evaluation of toplevel lets in classes containing

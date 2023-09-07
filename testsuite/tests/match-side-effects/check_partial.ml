@@ -20,30 +20,27 @@ type _ t =
 let lazy_total : _ * bool t -> int = function
   | ({ contents = _ }, True) -> 0
   | ({ contents = lazy () }, False) -> 12
-(* This pattern-matching is in fact total: a Match_failure case is
-   not necessary for soundness. *)
+(* This pattern-matching is total: a Match_failure case is not
+   necessary for soundness. *)
 [%%expect {|
 0
 type _ t = Int : int -> int t | True : bool t | False : bool t
 (let
   (lazy_total/281 =
      (function param/283 : int
-       (let
-         (*match*/285 =o (field_mut 0 (field_imm 0 param/283))
-          *match*/286 =a (field_imm 1 param/283))
-         (if (isint *match*/286)
-           (if *match*/286
-             (let
-               (*match*/293 =
-                  (let (tag/288 =a (caml_obj_tag *match*/285))
-                    (if (== tag/288 250) (field_mut 0 *match*/285)
-                      (if (|| (== tag/288 246) (== tag/288 244))
-                        (apply (field_imm 1 (global CamlinternalLazy!))
-                          (opaque *match*/285))
-                        *match*/285))))
-               12)
-             0)
-           (raise (makeblock 0 (global Match_failure/20!) [0: "" 6 37]))))))
+       (let (*match*/285 =o (field_mut 0 (field_imm 0 param/283)))
+         (switch* (field_imm 1 param/283)
+          case int 0: 0
+          case int 1:
+           (let
+             (*match*/293 =
+                (let (tag/288 =a (caml_obj_tag *match*/285))
+                  (if (== tag/288 250) (field_mut 0 *match*/285)
+                    (if (|| (== tag/288 246) (== tag/288 244))
+                      (apply (field_imm 1 (global CamlinternalLazy!))
+                        (opaque *match*/285))
+                      *match*/285))))
+             12)))))
   (apply (field_mut 1 (global Toploop!)) "lazy_total" lazy_total/281))
 val lazy_total : unit lazy_t ref * bool t -> int = <fun>
 |}];;
