@@ -420,7 +420,7 @@ val print_newline : unit -> unit
 
 val pp_infinity : int
 (** [pp_infinity] is the maximal size of the margin.
-Its exact value is implementation dependent but is guaranteed to be greater than 10^9. *)
+  Its exact value is implementation dependent but is guaranteed to be greater than 10{^9}. *)
 
 val pp_set_margin : formatter -> int -> unit
 val set_margin : int -> unit
@@ -430,8 +430,7 @@ val set_margin : int -> unit
   Setting the margin to [d] means that the formatting engine aims at
   printing at most [d-1] characters per line.
   Nothing happens if [d] is smaller than 2.
-  If [d] is too large, the right margin is set to the maximum
-  admissible value (which is greater than [10 ^ 9]).
+  If [d >= ]{!pp_infinity}, then the right margin is set to {!pp_infinity}[ - 1].
   If [d] is less than the current maximum indentation limit, the
   maximum indentation limit is decreased while trying to preserve
   a minimal ratio [max_indent/margin>=50%] and if possible
@@ -498,7 +497,7 @@ type geometry = { max_indent:int; margin: int}
 (** @since 4.08 *)
 
 val check_geometry: geometry -> bool
-(** Check if the formatter geometry is valid: [1 < max_indent < margin < pp_infinity]
+(** Check if the formatter geometry is valid: [1 < max_indent < margin < ]{!pp_infinity}
     @since 4.08 *)
 
 val pp_set_geometry : formatter -> max_indent:int -> margin:int -> unit
@@ -509,7 +508,7 @@ val safe_set_geometry : max_indent:int -> margin:int -> unit
    [pp_set_geometry ppf ~max_indent ~margin] sets both the margin
    and maximum indentation limit for [ppf].
 
-   When [1 < max_indent < margin < pp_infinity],
+   When [1 < max_indent < margin < ]{!pp_infinity},
    [pp_set_geometry ppf ~max_indent ~margin]
    is equivalent to
    [pp_set_margin ppf margin; pp_set_max_indent ppf max_indent];
