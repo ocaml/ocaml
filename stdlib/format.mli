@@ -152,9 +152,6 @@ type formatter
 
 *)
 
-val pp_infinity : int
-(** [pp_infinity] is a large value that is used as default token size *)
-
 val pp_open_box : formatter -> int -> unit
 val open_box : int -> unit
 (** [pp_open_box ppf d] opens a new compacting pretty-printing box with
@@ -420,6 +417,10 @@ val print_newline : unit -> unit
 *)
 
 (** {1 Margin} *)
+
+val pp_infinity : int
+(** [pp_infinity] is the maximal size of the margin.
+Its exact value is implementation dependent but is guaranteed to be greater than 10^9. *)
 
 val pp_set_margin : formatter -> int -> unit
 val set_margin : int -> unit
