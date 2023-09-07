@@ -932,15 +932,18 @@ end = struct
 
   let partial { partial = p; _ } = p
 
-  let pp ppf ({ env } : t) =
-    if env = [] then Format.fprintf ppf "empty" else
-    Format.pp_print_list ~pp_sep:Format.pp_print_cut (fun ppf (i, ctx) ->
-      Format.fprintf ppf
-        "jump for %d@,\
-         %a"
-        i
-        Context.pp ctx
-    ) ppf env
+  let pp ppf ({ env; partial } : t) =
+    if env = [] then Format.fprintf ppf "empty"
+    else begin
+      Format.pp_print_list ~pp_sep:Format.pp_print_cut (fun ppf (i, ctx) ->
+        Format.fprintf ppf
+          "jump for %d@,\
+           %a"
+          i
+          Context.pp ctx
+      ) ppf env
+    end;
+    Format.fprintf ppf "@,%a" pp_partial partial
 
   let extract i jumps =
     let rec extract i = function
@@ -2949,15 +2952,19 @@ let mk_failaction_pos partial seen ctx defs =
     debugf
       "@,@[<v 2>COMBINE (mk_failaction_pos %a)@,\
            %a@,\
+           @[<v 2>CTX:@,\
+             %a@]@,\
            @[<v 2>FAIL PATTERNS:@,\
              %a@]@,\
-           @[<v 2>POSITIVE JUMPS:@,\
+           @[<v 2>POSITIVE JUMPS (%a):@,\
              %a@]\
            @]"
       pp_partial partial
       Default_environment.pp defs
+      Context.pp ctx
       (Format.pp_print_list ~pp_sep:Format.pp_print_cut
          Printpat.pretty_pat) input_fail_pats
+      pp_partial (Jumps.partial jumps)
       Jumps.pp jumps
     ;
     (None, fails, jumps)
@@ -3629,7 +3636,8 @@ and do_compile_matching_pr ~scopes repr partial ctx x =
   in
   debugf "@]";
   if Jumps.is_empty jumps then
-    debugf "@,NO JUMPS"
+    debugf "@,NO JUMPS (%a)"
+      pp_partial (Jumps.partial jumps)
   else
     debugf "@,@[<v 2>JUMPS:@,%a@]"
       Jumps.pp jumps;
