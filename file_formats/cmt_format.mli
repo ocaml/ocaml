@@ -90,10 +90,8 @@ val read_cmi : string -> Cmi_format.cmi_infos
 (** [save_cmt filename modname binary_annots sourcefile initial_env cmi]
     writes a cmt(i) file.  *)
 val save_cmt :
-  string ->  (* filename.cmt to generate *)
-  string ->  (* module name *)
+  Unit_info.Artifact.t ->
   binary_annots ->
-  string option ->  (* source file *)
   Env.t -> (* initial env *)
   Cmi_format.cmi_infos option -> (* if a .cmi was generated *)
   Shape.t option ->

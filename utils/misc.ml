@@ -277,7 +277,7 @@ let find_in_path_rel path name =
 
 let normalized_unit_filename = String.uncapitalize_ascii
 
-let find_in_path_uncap path name =
+let find_in_path_normalized path name =
   let uname = normalized_unit_filename name in
   let rec try_dir = function
     [] -> raise Not_found

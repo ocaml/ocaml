@@ -100,7 +100,7 @@ let add_to_synonym_list synonyms suffix =
 let find_module_in_load_path name =
   let names = List.map (fun ext -> name ^ ext) (!mli_synonyms @ !ml_synonyms) in
   let unames =
-    let uname = String.uncapitalize_ascii name in
+    let uname = Unit_info.normalize name in
     List.map (fun ext -> uname ^ ext) (!mli_synonyms @ !ml_synonyms)
   in
   let rec find_in_array a pos =
@@ -440,9 +440,7 @@ let sort_files_by_dependencies files =
 
 (* Init Hashtbl with all defined modules *)
   let files = List.map (fun (file, file_kind, deps, pp_deps) ->
-    let modname =
-      String.capitalize_ascii (Filename.chop_extension (Filename.basename file))
-    in
+    let modname = Unit_info.modname_from_source file in
     let key = (modname, file_kind) in
     let new_deps = ref [] in
     Hashtbl.add h key (file, new_deps);
@@ -545,9 +543,7 @@ let parse_map fname =
       ~mli_file:process_mli_map
   in
   Clflags.transparent_modules := old_transp;
-  let modname =
-    String.capitalize_ascii
-      (Filename.basename (Filename.chop_extension fname)) in
+  let modname = Unit_info.modname_from_source fname in
   if String.Map.is_empty m then
     report_err (Failure (fname ^ " : empty map file or parse error"));
   let mm = Depend.make_node m in

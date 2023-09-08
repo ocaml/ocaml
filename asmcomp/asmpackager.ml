@@ -40,10 +40,10 @@ type pack_member =
     pm_kind: pack_member_kind }
 
 let read_member_info pack_path file = (
-  let name =
-    String.capitalize_ascii(Filename.basename(chop_extensions file)) in
+  let unit_info = Unit_info.Artifact.from_filename file in
+  let name = Unit_info.Artifact.modname unit_info in
   let kind =
-    if Filename.check_suffix file ".cmi" then
+    if Unit_info.is_cmi unit_info  then
       PM_intf
     else begin
       let (info, crc) = Compilenv.read_unit_info file in
@@ -79,12 +79,13 @@ let check_units members =
 
 (* Make the .o file for the package *)
 
-let make_package_object ~ppf_dump members targetobj targetname coercion
-      ~backend =
-  Profile.record_call (Printf.sprintf "pack(%s)" targetname) (fun () ->
+let make_package_object ~ppf_dump members target coercion ~backend =
+  let pack_name =
+    Printf.sprintf "pack(%s)" (Unit_info.Artifact.modname target) in
+  Profile.record_call pack_name (fun () ->
     let objtemp =
       if !Clflags.keep_asm_file
-      then Filename.remove_extension targetobj ^ ".pack" ^ Config.ext_obj
+      then Unit_info.Artifact.prefix target ^ ".pack" ^ Config.ext_obj
       else
         (* Put the full name of the module in the temporary file name
            to avoid collisions with MSVC's link /lib in case of successive
@@ -97,7 +98,8 @@ let make_package_object ~ppf_dump members targetobj targetname coercion
           | PM_intf -> None
           | PM_impl _ -> Some(Ident.create_persistent m.pm_name))
         members in
-    let module_ident = Ident.create_persistent targetname in
+    let module_ident =
+      Ident.create_persistent @@ Unit_info.Artifact.modname target in
     let prefixname = Filename.remove_extension objtemp in
     let required_globals = Ident.Set.empty in
     let program, middle_end =
@@ -117,8 +119,7 @@ let make_package_object ~ppf_dump members targetobj targetname coercion
         program, Flambda_middle_end.lambda_to_clambda
       else
         let main_module_block_size, code =
-          Translmod.transl_store_package components
-            (Ident.create_persistent targetname) coercion
+          Translmod.transl_store_package components module_ident coercion
         in
         let code = Simplif.simplify_lambda code in
         let program =
@@ -141,7 +142,8 @@ let make_package_object ~ppf_dump members targetobj targetname coercion
         (fun m -> Filename.remove_extension m.pm_file ^ Config.ext_obj)
         (List.filter (fun m -> m.pm_kind <> PM_intf) members) in
     let exitcode =
-      Ccomp.call_linker Ccomp.Partial targetobj (objtemp :: objfiles) ""
+      Ccomp.call_linker Ccomp.Partial (Unit_info.Artifact.filename target)
+        (objtemp :: objfiles) ""
     in
     remove_file objtemp;
     if not (exitcode = 0) then raise(Error Linking_error)
@@ -238,15 +240,14 @@ let build_package_cmx members cmxfile =
 
 (* Make the .cmx and the .o for the package *)
 
-let package_object_files ~ppf_dump files targetcmx
-                         targetobj targetname coercion ~backend =
+let package_object_files ~ppf_dump files target targetcmx coercion ~backend =
   let pack_path =
     match !Clflags.for_package with
-    | None -> targetname
-    | Some p -> p ^ "." ^ targetname in
+    | None -> Unit_info.Artifact.modname target
+    | Some p -> p ^ "." ^ Unit_info.Artifact.modname target in
   let members = map_left_right (read_member_info pack_path) files in
   check_units members;
-  make_package_object ~ppf_dump members targetobj targetname coercion ~backend;
+  make_package_object ~ppf_dump members target coercion ~backend;
   build_package_cmx members targetcmx
 
 (* The entry point *)
@@ -258,21 +259,20 @@ let package_files ~ppf_dump initial_env files targetcmx ~backend =
         try Load_path.find f
         with Not_found -> raise(Error(File_not_found f)))
       files in
-  let prefix = chop_extensions targetcmx in
-  let targetcmi = prefix ^ ".cmi" in
-  let targetobj = Filename.remove_extension targetcmx ^ Config.ext_obj in
-  let targetname = String.capitalize_ascii(Filename.basename prefix) in
+  let cmi = Unit_info.(companion_cmi @@ Artifact.from_filename targetcmx) in
+  let obj = Unit_info.companion_obj cmi in
   (* Set the name of the current "input" *)
   Location.input_name := targetcmx;
   (* Set the name of the current compunit *)
-  Compilenv.reset ?packname:!Clflags.for_package targetname;
+  Compilenv.reset ?packname:!Clflags.for_package
+    (Unit_info.Artifact.modname cmi);
   Misc.try_finally (fun () ->
-      let coercion =
-        Typemod.package_units initial_env files targetcmi targetname in
-      package_object_files ~ppf_dump files targetcmx targetobj targetname
-        coercion ~backend
+      let coercion = Typemod.package_units initial_env files cmi in
+      package_object_files ~ppf_dump files obj targetcmx coercion ~backend
     )
-    ~exceptionally:(fun () -> remove_file targetcmx; remove_file targetobj)
+    ~exceptionally:(fun () ->
+        remove_file targetcmx; remove_file (Unit_info.Artifact.filename obj)
+      )
 
 (* Error report *)
 

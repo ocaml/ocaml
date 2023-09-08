@@ -52,7 +52,7 @@ let source_of_module pos mdle =
       function
         | [] -> raise Not_found
         | ext :: exts ->
-          try find_in_path_uncap path (innermost_module ^ ext)
+          try find_in_path_normalized path (innermost_module ^ ext)
           with Not_found -> loop exts
     in loop source_extensions
   else if Filename.is_relative fname then

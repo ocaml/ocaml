@@ -213,7 +213,7 @@ val find_in_path_rel: string list -> string -> string
  (** Normalize file name [Foo.ml] to [foo.ml] *)
 val normalized_unit_filename: string -> string
 
-val find_in_path_uncap: string list -> string -> string
+val find_in_path_normalized: string list -> string -> string
 (** Same as {!find_in_path_rel} , but search also for normalized unit filename,
     i.e. if name is [Foo.ml], allow [/path/Foo.ml] and [/path/foo.ml] to
     match. *)

@@ -46,7 +46,7 @@ module Dir : sig
   val find : t -> string -> string option
   (** [find dir fn] returns the full path to [fn] in [dir]. *)
 
-  val find_uncap : t -> string -> string option
+  val find_normalized : t -> string -> string option
   (** As {!find}, but search also for uncapitalized name, i.e. if name is
       Foo.ml, either /path/Foo.ml or /path/foo.ml may be returned. *)
 end
@@ -77,9 +77,10 @@ val find : string -> string
     filename is a basename, i.e. doesn't contain a directory
     separator. *)
 
-val find_uncap : string -> string
-(** Same as [find], but search also for uncapitalized name, i.e.  if
-    name is Foo.ml, allow /path/Foo.ml and /path/foo.ml to match. *)
+val find_normalized : string -> string
+(** Same as [find], but search also for normalized unit name (see
+    {!Misc.normalized_unit_filename}), i.e. if name is [Foo.ml], allow
+    [/path/Foo.ml] and [/path/foo.ml] to match. *)
 
 val[@deprecated] add : Dir.t -> unit
 (** Old name for {!append_dir} *)
