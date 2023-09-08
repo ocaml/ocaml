@@ -2216,7 +2216,7 @@ as follows:
 \begin{tableau}{|l|l|}{C expression}{Returns}
 \entree{"Caml_ba_array_val("\var{v}")->num_dims"}{number of dimensions}
 \entree{"Caml_ba_array_val("\var{v}")->dim["\var{i}"]"}{\var{i}-th dimension}
-\entree{"Caml_ba_array_val("\var{v}")->flags & BIGARRAY_KIND_MASK"}{kind of array elements}
+\entree{"Caml_ba_array_val("\var{v}")->flags & CAML_BA_KIND_MASK"}{kind of array elements}
 \end{tableau}
 The kind of array elements is one of the following constants:
 \begin{tableau}{|l|l|}{Constant}{Element kind}
