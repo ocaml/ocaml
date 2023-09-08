@@ -343,6 +343,9 @@ Working version
   optional arguments and default values in the Closure backend
   (Alain Frisch, review by Vincent Laviron)
 
+- #12482: Fix stack handling in POWER SIGTRAP handler
+  (Miod Vallat, report by Jan Midtgaard, review by TBD)
+
 OCaml 5.1.0
 ---------------
 

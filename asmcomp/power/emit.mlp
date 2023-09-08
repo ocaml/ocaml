@@ -735,6 +735,9 @@ let emit_instr env i =
     | Lop(Iintop (Icheckbound)) ->
         if !Clflags.debug then
           record_frame env Reg.Set.empty (Dbg_other i.dbg);
+        (* caml_sigtrap_handler() relies upon the value of r11 below. *)
+        let delta = frame_size env in
+          `	li	11, {emit_int(delta)}\n`;
         `	tdlle   {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
     | Lop(Iintop op) ->
         let instr = name_for_intop op in
@@ -753,6 +756,9 @@ let emit_instr env i =
     | Lop(Iintop_imm(Icheckbound, n)) ->
         if !Clflags.debug then
           record_frame env Reg.Set.empty (Dbg_other i.dbg);
+        (* caml_sigtrap_handler() relies upon the value of r11 below. *)
+        let delta = frame_size env in
+          `	li	11, {emit_int(delta)}\n`;
         `	tdllei	{emit_reg i.arg.(0)}, {emit_int n}\n`
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_intop_imm op in

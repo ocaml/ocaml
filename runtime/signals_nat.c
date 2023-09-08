@@ -106,9 +106,12 @@ void caml_sigtrap_handler(int signo, siginfo_t * info, void * context)
   uint64_t ctx_sp = ctx->uc_mcontext.gp_regs[1];
   uint64_t ctx_exn_ptr = ctx->uc_mcontext.gp_regs[29];
   uint64_t ctx_young_ptr = ctx->uc_mcontext.gp_regs[31];
+  uint64_t ctx_r11 = ctx->uc_mcontext.gp_regs[11];
   /* Save address of trap as the return address in the standard stack frame
-     location, so that it will be recorded in the stack backtrace. */
-  ((uint64_t *) ctx_sp)[2] = ctx_pc;
+     location, so that it will be recorded in the stack backtrace.
+     r11 has been set to the offset between the current stack pointer and
+     the caller's frame. */
+  ((uint64_t *) (ctx_sp + ctx_r11))[2] = ctx_pc;
   /* Record the OCaml stack pointer (for backtraces) */
   /* Update the exception handler pointer and the allocation pointer */
   dom_st->current_stack-> sp = (void *) ctx_sp;
