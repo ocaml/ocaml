@@ -480,6 +480,21 @@ parsing/syntaxerr.cmx : \
     parsing/syntaxerr.cmi
 parsing/syntaxerr.cmi : \
     parsing/location.cmi
+parsing/unit_info.cmo : \
+    utils/warnings.cmi \
+    utils/misc.cmi \
+    parsing/location.cmi \
+    utils/load_path.cmi \
+    utils/config.cmi \
+    parsing/unit_info.cmi
+parsing/unit_info.cmx : \
+    utils/warnings.cmx \
+    utils/misc.cmx \
+    parsing/location.cmx \
+    utils/load_path.cmx \
+    utils/config.cmx \
+    parsing/unit_info.cmi
+parsing/unit_info.cmi :
 typing/annot.cmi : \
     parsing/location.cmi
 typing/btype.cmo : \

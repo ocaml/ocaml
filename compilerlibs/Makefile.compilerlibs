@@ -51,6 +51,7 @@ UTILS_CMI =
 
 PARSING = \
   parsing/location.cmo \
+  parsing/unit_info.cmo \
   parsing/longident.cmo \
   parsing/docstrings.cmo \
   parsing/syntaxerr.cmo \
