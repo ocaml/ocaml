@@ -212,8 +212,9 @@ Working version
   (Antonin Décimo, Damien Doligez, review by Sébastien Hinderer,
    Damien Doligez, Gabriel Scherer, and Xavier Leroy)
 
-- #12576: ocamldep: various refactors.
-  (Antonin Décimo, review by Florian Angeletti, Gabriel Scherer, and Léo Andrès)
+- #12576, #12604: ocamldep: various refactors, use caching from Load_path.
+  (Antonin Décimo, review by Florian Angeletti, Gabriel Scherer,
+   Léo Andrès, and Nicolás Ojeda Bär)
 
 ### Manual and documentation:
 
