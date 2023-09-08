@@ -271,7 +271,7 @@ let adjust_stack_offset env delta =
 
 (* Record live pointers at call points *)
 
-let record_frame env live dbg =
+let record_frame_label env live dbg =
   let lbl = new_label() in
   let live_offset = ref [] in
   Reg.Set.iter
@@ -286,6 +286,10 @@ let record_frame env live dbg =
     live;
   record_frame_descr ~label:lbl ~frame_size:(frame_size env)
     ~live_offset:!live_offset dbg;
+  lbl
+
+let record_frame env live dbg =
+  let lbl = record_frame_label env live dbg in
   `{emit_label lbl}:\n`
 
 (* Names for conditional branches after comparisons *)
@@ -521,6 +525,36 @@ let emit_poll env i return_label far =
     | Some return_label -> ` b   {emit_label return_label}\n`
   end
 
+let bound_error_label env dbg =
+  if !Clflags.debug then begin
+    let lbl_bound_error = new_label() in
+    let lbl_frame = record_frame_label env Reg.Set.empty (Dbg_other dbg) in
+    env.bound_error_sites <-
+      { bd_lbl = lbl_bound_error;
+        bd_frame = lbl_frame; } :: env.bound_error_sites;
+    lbl_bound_error
+  end else begin
+    match env.bound_error_call with
+    | None ->
+      let lbl = new_label() in
+      env.bound_error_call <- Some lbl;
+      lbl
+    | Some lbl -> lbl
+  end
+
+let emit_call_bound_error bd =
+  `{emit_label bd.bd_lbl}:\n`;
+  emit_call "caml_ml_array_bound_error";
+  emit_call_nop();
+  `{emit_label bd.bd_frame}:\n`
+
+let emit_call_bound_errors env =
+  List.iter emit_call_bound_error env.bound_error_sites;
+  match env.bound_error_call with
+  | None -> ()
+  | Some lbl ->
+    `{emit_label lbl}:`; emit_call "caml_ml_array_bound_error"
+
 (* Output the assembly code for an instruction *)
 
 let emit_instr env i =
@@ -733,9 +767,9 @@ let emit_instr env i =
         let (bitnum, negated) = emit_float_comp cmp i.arg in
         emit_extract_crbit bitnum negated i.res.(0)
     | Lop(Iintop (Icheckbound)) ->
-        if !Clflags.debug then
-          record_frame env Reg.Set.empty (Dbg_other i.dbg);
-        `	tdlle   {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
+        let lbl = bound_error_label env i.dbg in
+        `	cmpld	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	ble-	{emit_label lbl}\n`
     | Lop(Iintop op) ->
         let instr = name_for_intop op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
@@ -751,9 +785,9 @@ let emit_instr env i =
             emit_set_comp c i.res.(0)
         end
     | Lop(Iintop_imm(Icheckbound, n)) ->
-        if !Clflags.debug then
-          record_frame env Reg.Set.empty (Dbg_other i.dbg);
-        `	tdllei	{emit_reg i.arg.(0)}, {emit_int n}\n`
+        let lbl = bound_error_label env i.dbg in
+        `	cmpldi	{emit_reg i.arg.(0)}, {emit_int n}\n`;
+        `	ble-	{emit_label lbl}\n`
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_intop_imm op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_int n}\n`
@@ -957,6 +991,8 @@ let fundecl fundecl =
     `	mtctr	12\n`;
     `	bctr\n`
   end;
+  (* Emit the glue code to handle bound errors *)
+  emit_call_bound_errors env;
   cfi_endproc();
   `	.size	{emit_symbol fundecl.fun_name}, . - {emit_symbol fundecl.fun_name}\n`;
   (* Emit the numeric literals *)

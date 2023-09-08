@@ -815,6 +815,11 @@ FUNCTION caml_runstack
         b       1b
 ENDFUNCTION caml_runstack
 
+FUNCTION caml_ml_array_bound_error
+        Addrglobal(C_CALL_FUN, caml_array_bound_error_asm)
+        b       .Lcaml_c_call
+ENDFUNCTION caml_resume
+
         .section ".text"
         .globl  caml_system__code_end
 caml_system__code_end:
@@ -848,6 +853,7 @@ TOCENTRY(caml_program)
 TOCENTRY(caml_exn_Stack_overflow)
 TOCENTRY(caml_raise_unhandled_effect)
 TOCENTRY(caml_raise_continuation_already_resumed)
+TOCENTRY(caml_array_bound_error_asm)
 TOCENTRYLABEL(fiber_exn_handler)
 TOCENTRYLABEL(trap_handler)
 
