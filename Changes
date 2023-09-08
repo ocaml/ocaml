@@ -34,6 +34,9 @@ Working version
   in the debugger
   (Pierre Boutillier and Gabriel Scherer, review by Florian Angeletti)
 
+- #12604: ocamldep: use caching from Load_path.
+  (Antonin Décimo, review by Nicolás Ojeda Bär)
+
 ### Manual and documentation:
 
 * #13975: documented the `[@remove_aliases]` built-in attribute for signatures
