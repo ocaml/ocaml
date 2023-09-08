@@ -122,13 +122,12 @@ type pack_member =
     pm_kind: pack_member_kind }
 
 let read_member_info targetname file =
-  let member_name =
-    String.capitalize_ascii(Filename.basename(chop_extensions file))
-  in
+  let member = Unit_info.Artifact.from_filename file in
+  let member_name = Unit_info.Artifact.modname member in
   let member_compunit = Compunit member_name in
   let kind =
     (* PR#7479: make sure it is either a .cmi or a .cmo *)
-    if Filename.check_suffix file ".cmi" then
+    if Unit_info.is_cmi member then
       PM_intf
     else begin
       let ic = open_in_bin file in
@@ -240,7 +239,9 @@ let build_global_target ~ppf_dump oc target_name state components coercion =
 
 (* Build the .cmo file obtained by packaging the given .cmo files. *)
 
-let package_object_files ~ppf_dump files targetfile targetname coercion =
+let package_object_files ~ppf_dump files target coercion =
+  let targetfile = Unit_info.Artifact.filename target in
+  let targetname = Unit_info.Artifact.modname target in
   let members = map_left_right (read_member_info targetname) files in
   let required_compunits =
     List.fold_right (fun compunit required_compunits -> match compunit with
@@ -333,13 +334,12 @@ let package_files ~ppf_dump initial_env files targetfile =
          try Load_path.find f
          with Not_found -> raise(Error(File_not_found f)))
       files in
-  let prefix = chop_extensions targetfile in
-  let targetcmi = prefix ^ ".cmi" in
-  let targetname = String.capitalize_ascii(Filename.basename prefix) in
+  let target = Unit_info.Artifact.from_filename targetfile in
   Misc.try_finally (fun () ->
       let coercion =
-        Typemod.package_units initial_env files targetcmi targetname in
-      package_object_files ~ppf_dump files targetfile targetname coercion
+        Typemod.package_units initial_env files (Unit_info.companion_cmi target)
+      in
+      package_object_files ~ppf_dump files target coercion
     )
     ~exceptionally:(fun () -> remove_file targetfile)
 

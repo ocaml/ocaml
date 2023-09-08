@@ -3033,11 +3033,20 @@ let () =
 
 (* Typecheck an implementation file *)
 
-let gen_annot outputprefix sourcefile annots =
-  Cmt2annot.gen_annot (Some (outputprefix ^ ".annot"))
-    ~sourcefile:(Some sourcefile) ~use_summaries:false annots
+let gen_annot target annots =
+  let annot = Unit_info.annot target in
+  Cmt2annot.gen_annot (Some (Unit_info.Artifact.filename annot))
+    ~sourcefile:(Unit_info.Artifact.source_file annot)
+    ~use_summaries:false
+    annots
 
-let type_implementation sourcefile outputprefix modulename initial_env ast =
+let type_implementation target initial_env ast =
+  let sourcefile = Unit_info.source_file target in
+  let save_cmt target annots initial_env cmi shape =
+    Cmt_format.save_cmt (Unit_info.cmt target)
+      annots initial_env cmi shape;
+    gen_annot target annots;
+  in
   Cmt_format.clear ();
   Misc.try_finally (fun () ->
       Typecore.reset_delayed_checks ();
@@ -3047,8 +3056,8 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
       let (str, sg, names, shape, finalenv) =
         type_structure initial_env ast in
       let shape =
-        Shape.set_uid_if_none shape
-          (Uid.of_compilation_unit_id (Ident.create_persistent modulename))
+        let id = Ident.create_persistent @@ Unit_info.modname target in
+        Shape.set_uid_if_none shape (Uid.of_compilation_unit_id id)
       in
       let simple_sg = Signature_names.simplify finalenv names sg in
       if !Clflags.print_types then begin
@@ -3056,32 +3065,32 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
         let shape = Shape.local_reduce shape in
         Printtyp.wrap_printing_env ~error:false initial_env
           (fun () -> fprintf std_formatter "%a@."
-              (Printtyp.printed_signature sourcefile) simple_sg
+              (Printtyp.printed_signature @@ Unit_info.source_file target)
+              simple_sg
           );
-        gen_annot outputprefix sourcefile (Cmt_format.Implementation str);
+        gen_annot target (Cmt_format.Implementation str);
         { structure = str;
           coercion = Tcoerce_none;
           shape;
           signature = simple_sg
         } (* result is ignored by Compile.implementation *)
       end else begin
-        let sourceintf =
-          Filename.remove_extension sourcefile ^ !Config.interface_suffix in
-        if !Clflags.cmi_file <> None || Sys.file_exists sourceintf then begin
-          let intf_file =
+        let source_intf = Unit_info.mli_from_source target in
+        if !Clflags.cmi_file <> None
+        || Sys.file_exists source_intf then begin
+          let compiled_intf_file =
             match !Clflags.cmi_file with
+            | Some cmi_file -> Unit_info.Artifact.from_filename cmi_file
             | None ->
-              (try
-                Load_path.find_uncap (modulename ^ ".cmi")
-              with Not_found ->
-                raise(Error(Location.in_file sourcefile, Env.empty,
-                      Interface_not_compiled sourceintf)))
-            | Some cmi_file -> cmi_file
+                try Unit_info.find_normalized_cmi target with Not_found ->
+                  raise(Error(Location.in_file sourcefile, Env.empty,
+                              Interface_not_compiled source_intf))
           in
-          let dclsig = Env.read_signature modulename intf_file in
+          let dclsig = Env.read_signature compiled_intf_file in
           let coercion, shape =
             Includemod.compunit initial_env ~mark:Mark_positive
-              sourcefile sg intf_file dclsig shape
+              sourcefile sg source_intf
+              dclsig shape
           in
           Typecore.force_delayed_checks ();
           (* It is important to run these checks after the inclusion test above,
@@ -3089,16 +3098,15 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
              exported are not reported as being unused. *)
           let shape = Shape.local_reduce shape in
           let annots = Cmt_format.Implementation str in
-          Cmt_format.save_cmt (outputprefix ^ ".cmt") modulename
-            annots (Some sourcefile) initial_env None (Some shape);
-          gen_annot outputprefix sourcefile annots;
+          save_cmt target annots initial_env None (Some shape);
           { structure = str;
             coercion;
             shape;
             signature = dclsig
           }
         end else begin
-          Location.prerr_warning (Location.in_file sourcefile)
+          Location.prerr_warning
+            (Location.in_file (Unit_info.source_file target))
             Warnings.Missing_mli;
           let coercion, shape =
             Includemod.compunit initial_env ~mark:Mark_positive
@@ -3115,13 +3123,10 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           if not !Clflags.dont_write_files then begin
             let alerts = Builtin_attributes.alerts_of_str ast in
             let cmi =
-              Env.save_signature ~alerts
-                simple_sg modulename (outputprefix ^ ".cmi")
+              Env.save_signature ~alerts simple_sg (Unit_info.cmi target)
             in
             let annots = Cmt_format.Implementation str in
-            Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
-              annots (Some sourcefile) initial_env (Some cmi) (Some shape);
-            gen_annot outputprefix sourcefile annots
+            save_cmt target annots initial_env (Some cmi) (Some shape)
           end;
           { structure = str;
             coercion;
@@ -3136,14 +3141,12 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           Cmt_format.Partial_implementation
             (Array.of_list (Cmt_format.get_saved_types ()))
         in
-        Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
-          annots (Some sourcefile) initial_env None None;
-        gen_annot outputprefix sourcefile annots
+        save_cmt target annots initial_env None None
       )
 
-let save_signature modname tsg outputprefix source_file initial_env cmi =
-  Cmt_format.save_cmt  (outputprefix ^ ".cmti") modname
-    (Cmt_format.Interface tsg) (Some source_file) initial_env (Some cmi) None
+let save_signature target tsg initial_env cmi =
+  Cmt_format.save_cmt (Unit_info.cmti target)
+    (Cmt_format.Interface tsg) initial_env (Some cmi) None
 
 let type_interface env ast =
   transl_signature env ast
@@ -3181,25 +3184,24 @@ let package_signatures units =
       Sig_module(newid, Mp_present, md, Trec_not, Exported))
     units_with_ids
 
-let package_units initial_env objfiles cmifile modulename =
+let package_units initial_env objfiles target_cmi =
   (* Read the signatures of the units *)
   let units =
     List.map
       (fun f ->
-         let pref = chop_extensions f in
-         let modname = String.capitalize_ascii(Filename.basename pref) in
-         let sg = Env.read_signature modname (pref ^ ".cmi") in
-         if Filename.check_suffix f ".cmi" &&
+         let artifact = Unit_info.Artifact.from_filename f in
+         let sg = Env.read_signature (Unit_info.companion_cmi artifact) in
+         if Unit_info.is_cmi artifact &&
             not(Mtype.no_code_needed_sig Env.initial sg)
          then raise(Error(Location.none, Env.empty,
                           Implementation_is_required f));
-         (modname, Env.read_signature modname (pref ^ ".cmi")))
+         Unit_info.Artifact.modname artifact, sg)
       objfiles in
   (* Compute signature of packaged unit *)
   Ident.reinit();
   let sg = package_signatures units in
   (* Compute the shape of the package *)
-  let prefix = Filename.remove_extension cmifile in
+  let prefix = Unit_info.Artifact.prefix target_cmi in
   let pack_uid = Uid.of_compilation_unit_id (Ident.create_persistent prefix) in
   let shape =
     List.fold_left (fun map (name, _sg) ->
@@ -3209,19 +3211,20 @@ let package_units initial_env objfiles cmifile modulename =
     |> Shape.str ~uid:pack_uid
   in
   (* See if explicit interface is provided *)
-  let mlifile = prefix ^ !Config.interface_suffix in
-  if Sys.file_exists mlifile then begin
-    if not (Sys.file_exists cmifile) then begin
-      raise(Error(Location.in_file mlifile, Env.empty,
-                  Interface_not_compiled mlifile))
+  let mli = Unit_info.mli_from_artifact target_cmi in
+  if Sys.file_exists mli then begin
+    if not (Sys.file_exists @@ Unit_info.Artifact.filename target_cmi) then
+    begin
+      raise(Error(Location.in_file mli, Env.empty,
+                  Interface_not_compiled mli))
     end;
-    let dclsig = Env.read_signature modulename cmifile in
+    let dclsig = Env.read_signature target_cmi in
     let cc, _shape =
       Includemod.compunit initial_env ~mark:Mark_both
-        "(obtained by packing)" sg mlifile dclsig shape
+        "(obtained by packing)" sg mli dclsig shape
     in
-    Cmt_format.save_cmt  (prefix ^ ".cmt") modulename
-      (Cmt_format.Packed (sg, objfiles)) None initial_env  None (Some shape);
+    Cmt_format.save_cmt (Unit_info.companion_cmt target_cmi)
+      (Cmt_format.Packed (sg, objfiles)) initial_env  None (Some shape);
     cc
   end else begin
     (* Determine imports *)
@@ -3234,11 +3237,10 @@ let package_units initial_env objfiles cmifile modulename =
     if not !Clflags.dont_write_files then begin
       let cmi =
         Env.save_signature_with_imports ~alerts:Misc.Stdlib.String.Map.empty
-          sg modulename
-          (prefix ^ ".cmi") imports
+          sg target_cmi imports
       in
-      Cmt_format.save_cmt (prefix ^ ".cmt")  modulename
-        (Cmt_format.Packed (cmi.Cmi_format.cmi_sign, objfiles)) None initial_env
+      Cmt_format.save_cmt (Unit_info.companion_cmt target_cmi)
+        (Cmt_format.Packed (cmi.Cmi_format.cmi_sign, objfiles)) initial_env
         (Some cmi) (Some shape);
     end;
     Tcoerce_none

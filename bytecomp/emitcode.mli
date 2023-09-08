@@ -18,7 +18,7 @@
 open Cmo_format
 open Instruct
 
-val to_file: out_channel -> Cmo_format.compunit -> string ->
+val to_file: out_channel -> Unit_info.Artifact.t ->
   required_globals:Ident.Set.t -> instruction list -> unit
         (* Arguments:
              channel on output file

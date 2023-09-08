@@ -197,11 +197,10 @@ let get_relative_opt n1 n2 =
 
 let alias_unprefix ln s =
   if ln = "" then s else
-  let p = ln ^ "__" in
-  let n, k = String.(length p, length s) in
-  if k > n &&
-     String.sub s 0 n = p then
-    String.( capitalize_ascii @@ sub s n (k-n) )
+  let prefix = ln ^ "__" in
+  if String.starts_with ~prefix s then
+    let pre = String.length prefix in
+    Unit_info.modulize (String.sub s pre (String.length s-pre))
   else
     s
 

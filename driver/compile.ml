@@ -30,29 +30,30 @@ let interface ~source_file ~output_prefix =
 let to_bytecode i Typedtree.{structure; coercion; _} =
   (structure, coercion)
   |> Profile.(record transl)
-    (Translmod.transl_implementation i.module_name)
+    (Translmod.transl_implementation (Unit_info.modname i.target))
   |> Profile.(record ~accumulate:true generate)
     (fun { Lambda.code = lambda; required_globals } ->
        lambda
        |> print_if i.ppf_dump Clflags.dump_rawlambda Printlambda.lambda
        |> Simplif.simplify_lambda
        |> print_if i.ppf_dump Clflags.dump_lambda Printlambda.lambda
-       |> Bytegen.compile_implementation i.module_name
+       |> Bytegen.compile_implementation (Unit_info.modname i.target)
        |> print_if i.ppf_dump Clflags.dump_instr Printinstr.instrlist
        |> fun bytecode -> bytecode, required_globals
     )
 
 let emit_bytecode i (bytecode, required_globals) =
-  let cmofile = cmo i in
-  let oc = open_out_bin cmofile in
+  let cmo = Unit_info.cmo i.target in
+  let oc = open_out_bin (Unit_info.Artifact.filename cmo) in
   Misc.try_finally
     ~always:(fun () -> close_out oc)
-    ~exceptionally:(fun () -> Misc.remove_file cmofile)
+    ~exceptionally:(fun () ->
+       Misc.remove_file (Unit_info.Artifact.filename cmo)
+    )
     (fun () ->
        bytecode
        |> Profile.(record ~accumulate:true generate)
-         (Emitcode.to_file oc
-           (Cmo_format.Compunit i.module_name) cmofile ~required_globals);
+         (Emitcode.to_file oc cmo ~required_globals);
     )
 
 let implementation ~start_from ~source_file ~output_prefix =

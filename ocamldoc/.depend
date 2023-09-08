@@ -19,6 +19,7 @@ odoc.cmx : \
 odoc.cmi :
 odoc_analyse.cmo : \
     ../utils/warnings.cmi \
+    ../parsing/unit_info.cmi \
     ../typing/types.cmi \
     ../typing/typemod.cmi \
     ../typing/typedtree.cmi \
@@ -46,6 +47,7 @@ odoc_analyse.cmo : \
     odoc_analyse.cmi
 odoc_analyse.cmx : \
     ../utils/warnings.cmx \
+    ../parsing/unit_info.cmx \
     ../typing/types.cmx \
     ../typing/typemod.cmx \
     ../typing/typedtree.cmx \
@@ -107,6 +109,7 @@ odoc_args.cmx : \
 odoc_args.cmi : \
     odoc_gen.cmi
 odoc_ast.cmo : \
+    ../parsing/unit_info.cmi \
     ../typing/types.cmi \
     ../typing/typedtree.cmi \
     ../typing/predef.cmi \
@@ -130,6 +133,7 @@ odoc_ast.cmo : \
     ../parsing/asttypes.cmi \
     odoc_ast.cmi
 odoc_ast.cmx : \
+    ../parsing/unit_info.cmx \
     ../typing/types.cmx \
     ../typing/typedtree.cmx \
     ../typing/predef.cmx \
@@ -623,11 +627,13 @@ odoc_module.cmi : \
     odoc_class.cmi \
     ../utils/misc.cmi
 odoc_name.cmo : \
+    ../parsing/unit_info.cmi \
     ../typing/path.cmi \
     odoc_misc.cmi \
     ../typing/ident.cmi \
     odoc_name.cmi
 odoc_name.cmx : \
+    ../parsing/unit_info.cmx \
     ../typing/path.cmx \
     odoc_misc.cmx \
     ../typing/ident.cmx \
@@ -737,6 +743,7 @@ odoc_see_lexer.cmx : \
 odoc_see_lexer.cmi : \
     odoc_parser.cmi
 odoc_sig.cmo : \
+    ../parsing/unit_info.cmi \
     ../typing/types.cmi \
     ../typing/typedtree.cmi \
     ../parsing/parsetree.cmi \
@@ -761,6 +768,7 @@ odoc_sig.cmo : \
     ../parsing/asttypes.cmi \
     odoc_sig.cmi
 odoc_sig.cmx : \
+    ../parsing/unit_info.cmx \
     ../typing/types.cmx \
     ../typing/typedtree.cmx \
     ../parsing/parsetree.cmi \

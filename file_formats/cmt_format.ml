@@ -164,19 +164,20 @@ let record_value_dependency vd1 vd2 =
   if vd1.Types.val_loc <> vd2.Types.val_loc then
     value_deps := (vd1, vd2) :: !value_deps
 
-let save_cmt filename modname binary_annots sourcefile initial_env cmi shape =
+let save_cmt target binary_annots initial_env cmi shape =
   if !Clflags.binary_annotations && not !Clflags.print_types then begin
     Misc.output_to_file_via_temporary
-       ~mode:[Open_binary] filename
+       ~mode:[Open_binary] (Unit_info.Artifact.filename target)
        (fun temp_file_name oc ->
          let this_crc =
            match cmi with
            | None -> None
            | Some cmi -> Some (output_cmi temp_file_name oc cmi)
          in
+         let sourcefile = Unit_info.Artifact.source_file target in
          let source_digest = Option.map Digest.file sourcefile in
          let cmt = {
-           cmt_modname = modname;
+           cmt_modname = Unit_info.Artifact.modname target;
            cmt_annots = clear_env binary_annots;
            cmt_value_dependencies = !value_deps;
            cmt_comments = Lexer.comments ();

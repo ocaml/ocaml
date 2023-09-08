@@ -267,7 +267,7 @@ and really_load_file recursive ppf name filename ic =
               when not (Symtable.is_global_defined
                 (Symtable.Global.Glob_compunit cu)) ->
                 let file = (Symtable.Compunit.name cu) ^ ".cmo" in
-                begin match Load_path.find_uncap file with
+                begin match Load_path.find_normalized file with
                 | exception Not_found -> ()
                 | file ->
                     if not (load_file recursive ppf file) then raise Load_failed

@@ -300,12 +300,13 @@ let linear_gen_implementation filename =
   Profile.record "Emit" (List.iter emit_item) linear_unit_info.items;
   emit_end_assembly ()
 
-let compile_implementation_linear output_prefix ~progname =
+let compile_implementation_linear target =
+  let output_prefix = Unit_info.prefix target in
   compile_unit ~output_prefix
     ~asm_filename:(asm_filename output_prefix) ~keep_asm:!keep_asm_file
     ~obj_filename:(output_prefix ^ ext_obj)
     (fun () ->
-      linear_gen_implementation progname)
+      linear_gen_implementation (Unit_info.source_file target))
 
 (* Error report *)
 module Style = Misc.Style

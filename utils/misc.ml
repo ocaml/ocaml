@@ -275,8 +275,10 @@ let find_in_path_rel path name =
       if Sys.file_exists fullname then fullname else try_dir rem
   in try_dir path
 
-let find_in_path_uncap path name =
-  let uname = String.uncapitalize_ascii name in
+let normalized_unit_filename = String.uncapitalize_ascii
+
+let find_in_path_normalized path name =
+  let uname = normalized_unit_filename name in
   let rec try_dir = function
     [] -> raise Not_found
   | dir::rem ->
