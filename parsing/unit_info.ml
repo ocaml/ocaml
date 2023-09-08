@@ -50,13 +50,13 @@ let is_identchar_latin1 = function
   | _ -> false
 
 (* Check validity of module name *)
-let is_unit_name ~strict name =
+let is_unit_name name =
   String.length name > 0
-  && (not strict || start_char name.[0])
+  && start_char name.[0]
   && String.for_all is_identchar_latin1 name
 
 let check_unit_name file =
-  if not (is_unit_name ~strict:true (modname file)) then
+  if not (is_unit_name (modname file)) then
     Location.prerr_warning (Location.in_file (source_file file))
       (Warnings.Bad_module_name (modname file))
 

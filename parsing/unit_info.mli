@@ -39,9 +39,8 @@ val modname_from_source: filename -> modname
 (** {2:module_name_validation Module name validation function}*)
 
 (** [is_unit_name ~strict name] is true only if [name] can be used as a
-    valid module name. The [strict] mode enforces that the first character is
-    an ascii capital letter. *)
-val is_unit_name : strict:bool -> modname -> bool
+    valid module name. *)
+val is_unit_name : modname -> bool
 
 
 (** {1:unit_info Metadata for compilation unit} *)

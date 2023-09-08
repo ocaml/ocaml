@@ -2521,7 +2521,7 @@ let unit_name_of_filename fn =
   match Filename.extension fn with
   | ".cmi" ->
       let modname = Unit_info.modname_from_source fn in
-      if Unit_info.is_unit_name ~strict:false modname then Some modname
+      if Unit_info.is_unit_name modname then Some modname
       else None
   | _ -> None
 
