@@ -368,7 +368,7 @@ val of_seq : char Seq.t -> t
 (** {2:utf_8 UTF-8} *)
 
 val get_utf_8_uchar : t -> int -> Uchar.utf_decode
-(** [get_utf_8_uchar b i] decodes an UTF-8 character at index [i] in
+(** [get_utf_8_uchar b i] decodes an UTF-8 character at byte index [i] in
     [b]. *)
 
 val is_valid_utf_8 : t -> bool
@@ -378,7 +378,7 @@ val is_valid_utf_8 : t -> bool
 (** {2:utf_16be UTF-16BE} *)
 
 val get_utf_16be_uchar : t -> int -> Uchar.utf_decode
-(** [get_utf_16be_uchar b i] decodes an UTF-16BE character at index
+(** [get_utf_16be_uchar b i] decodes an UTF-16BE character at byte index
     [i] in [b]. *)
 
 val is_valid_utf_16be : t -> bool
@@ -388,7 +388,7 @@ val is_valid_utf_16be : t -> bool
 (** {2:utf_16le UTF-16LE} *)
 
 val get_utf_16le_uchar : t -> int -> Uchar.utf_decode
-(** [get_utf_16le_uchar b i] decodes an UTF-16LE character at index
+(** [get_utf_16le_uchar b i] decodes an UTF-16LE character at byte index
     [i] in [b]. *)
 
 val is_valid_utf_16le : t -> bool
@@ -400,7 +400,7 @@ val is_valid_utf_16le : t -> bool
 (** The functions in this section binary decode integers from strings.
 
     All following functions raise [Invalid_argument] if the bytes
-    needed at index [i] to decode the integer are not available.
+    needed at byte index [i] to decode the integer are not available.
 
     Little-endian (resp. big-endian) encoding means that least
     (resp. most) significant bytes are stored first.  Big-endian is

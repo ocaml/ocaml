@@ -494,11 +494,11 @@ val of_seq : char Seq.t -> t
 (** {2:utf_8 UTF-8} *)
 
 val get_utf_8_uchar : t -> int -> Uchar.utf_decode
-(** [get_utf_8_uchar b i] decodes an UTF-8 character at index [i] in
+(** [get_utf_8_uchar b i] decodes an UTF-8 character at byte index [i] in
     [b]. *)
 
 val set_utf_8_uchar : t -> int -> Uchar.t -> int
-(** [set_utf_8_uchar b i u] UTF-8 encodes [u] at index [i] in [b]
+(** [set_utf_8_uchar b i u] UTF-8 encodes [u] at byte index [i] in [b]
     and returns the number of bytes [n] that were written starting
     at [i]. If [n] is [0] there was not enough space to encode [u]
     at [i] and [b] was left untouched. Otherwise a new character can
@@ -511,11 +511,11 @@ val is_valid_utf_8 : t -> bool
 (** {2:utf_16be UTF-16BE} *)
 
 val get_utf_16be_uchar : t -> int -> Uchar.utf_decode
-(** [get_utf_16be_uchar b i] decodes an UTF-16BE character at index
+(** [get_utf_16be_uchar b i] decodes an UTF-16BE character at byte index
     [i] in [b]. *)
 
 val set_utf_16be_uchar : t -> int -> Uchar.t -> int
-(** [set_utf_16be_uchar b i u] UTF-16BE encodes [u] at index [i] in [b]
+(** [set_utf_16be_uchar b i u] UTF-16BE encodes [u] at byte index [i] in [b]
     and returns the number of bytes [n] that were written starting
     at [i]. If [n] is [0] there was not enough space to encode [u]
     at [i] and [b] was left untouched. Otherwise a new character can
@@ -528,11 +528,11 @@ val is_valid_utf_16be : t -> bool
 (** {2:utf_16le UTF-16LE} *)
 
 val get_utf_16le_uchar : t -> int -> Uchar.utf_decode
-(** [get_utf_16le_uchar b i] decodes an UTF-16LE character at index
+(** [get_utf_16le_uchar b i] decodes an UTF-16LE character at byte index
     [i] in [b]. *)
 
 val set_utf_16le_uchar : t -> int -> Uchar.t -> int
-(** [set_utf_16le_uchar b i u] UTF-16LE encodes [u] at index [i] in [b]
+(** [set_utf_16le_uchar b i u] UTF-16LE encodes [u] at byte index [i] in [b]
     and returns the number of bytes [n] that were written starting
     at [i]. If [n] is [0] there was not enough space to encode [u]
     at [i] and [b] was left untouched. Otherwise a new character can
@@ -548,7 +548,7 @@ val is_valid_utf_16le : t -> bool
     and from byte sequences.
 
     All following functions raise [Invalid_argument] if the space
-    needed at index [i] to decode or encode the integer is not
+    needed at byte index [i] to decode or encode the integer is not
     available.
 
     Little-endian (resp. big-endian) encoding means that least
