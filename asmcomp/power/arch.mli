@@ -31,6 +31,9 @@ type specific_operation =
   | Ialloc_far of                       (* allocation in large functions *)
       { bytes : int; dbginfo : Debuginfo.alloc_dbginfo }
   | Ipoll_far of { return_label : cmm_label option }
+                                        (* poll point in large functions *)
+  | Icheckbound_far                     (* bounds check in large functions *)
+  | Icheckbound_imm_far of int          (* bounds check in large functions *)
 
 (* Addressing modes *)
 

@@ -363,8 +363,11 @@ module BR = Branch_relaxation.Make (struct
     let classify_instr = function
       | Lop (Ialloc _)
       | Lop (Ipoll _)
-      (* [Ialloc_far] does not need to be here, since its code sequence
-         never involves any conditional branches that might need relaxing. *)
+      | Lop (Iintop Icheckbound)
+      | Lop (Iintop_imm (Icheckbound, _))
+      (* The various "far" variants in [specific_operation] don't need to
+         return [Some] here, since their code sequences never contain any
+         conditional branches that might need relaxing. *)
       | Lcondbranch _
       | Lcondbranch3 _ -> Some Branch
       | _ -> None
@@ -431,9 +434,13 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Ispecific(Ipoll_far { return_label = None } )) -> 4
     | Lop(Iintop Imod) -> 3
     | Lop(Iintop(Icomp _)) -> 4
+    | Lop(Iintop(Icheckbound)) -> 2
+    | Lop(Ispecific(Icheckbound_far)) -> 3
     | Lop(Icompf _) -> 5
     | Lop(Iintop _) -> 1
     | Lop(Iintop_imm(Icomp _, _)) -> 4
+    | Lop(Iintop_imm(Icheckbound, _)) -> 2
+    | Lop(Ispecific(Icheckbound_imm_far _)) -> 3
     | Lop(Iintop_imm _) -> 1
     | Lop(Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf) -> 1
     | Lop(Ifloatofint) -> 9
@@ -468,11 +475,15 @@ module BR = Branch_relaxation.Make (struct
   let relax_poll ~return_label =
     Lop (Ispecific (Ipoll_far { return_label }))
 
+  let relax_intop_checkbound () =
+    Lop (Ispecific (Icheckbound_far))
+
+  let relax_intop_imm_checkbound ~bound =
+    Lop (Ispecific (Icheckbound_imm_far bound))
+
   (* [classify_addr], above, never identifies these instructions as needing
      relaxing.  As such, these functions should never be called. *)
   let relax_specific_op _ = assert false
-  let relax_intop_checkbound () = assert false
-  let relax_intop_imm_checkbound ~bound:_ = assert false
 end)
 
 (* Assembly code for inlined allocation *)
@@ -769,6 +780,13 @@ let emit_instr env i =
         let lbl = bound_error_label env i.dbg in
         `	cmpld	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	ble-	{emit_label lbl}\n`
+    | Lop(Ispecific (Icheckbound_far)) ->
+        let lbl_err = bound_error_label env i.dbg in
+        let lbl_next = new_label() in
+        `	cmpld	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	bgt+	{emit_label lbl_next}\n`;
+        `	b	{emit_label lbl_err}\n`;
+        `{emit_label lbl_next}:\n`
     | Lop(Iintop op) ->
         let instr = name_for_intop op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
@@ -787,6 +805,13 @@ let emit_instr env i =
         let lbl = bound_error_label env i.dbg in
         `	cmpldi	{emit_reg i.arg.(0)}, {emit_int n}\n`;
         `	ble-	{emit_label lbl}\n`
+    | Lop(Ispecific(Icheckbound_imm_far n)) ->
+        let lbl_err = bound_error_label env i.dbg in
+        let lbl_next = new_label() in
+        `	cmpldi	{emit_reg i.arg.(0)}, {emit_int n}\n`;
+        `	bgt+	{emit_label lbl_next}\n`;
+        `	b	{emit_label lbl_err}\n`;
+        `{emit_label lbl_next}:\n`
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_intop_imm op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_int n}\n`
@@ -931,6 +956,35 @@ let rec emit_all env i =
   | Lend -> ()
   |  _   -> emit_instr env i; emit_all env i.next
 
+(* On this target, the possible "out of line" code blocks are:
+   - a single "call GC" point, which comes immediately after the
+     function's body;
+   - zero, one or several "call bound error" point, which comes just after.
+*)
+
+let max_out_of_line_code_offset fundecl =
+  let rec num_checkbounds count instr =
+    match instr.desc with
+    | Lend -> count
+    | Lop (Iintop Icheckbound)
+    | Lop (Iintop_imm (Icheckbound, _)) ->
+        num_checkbounds (count + 1) instr.next
+    (* The following two should never be seen, since this function is run
+       before branch relaxation. *)
+    | Lop (Ispecific Icheckbound_far)
+    | Lop (Ispecific (Icheckbound_imm_far _)) -> assert false
+    | _ -> num_checkbounds count instr.next in
+  let num_chk = num_checkbounds 0 fundecl.fun_body in
+  (* This is what the end of the function looks like:
+        - offset 0: call GC point  (5 insn)
+        - offset 5: first (or only if not !Clflags.debug) call bound error
+                    (2 insns)
+        - offsets 7, 9, .. : second, third, ..., call bound error
+                    (2 insns each) *)
+  if num_chk = 0 then 0
+  else if !Clflags.debug then 5 + (num_chk - 1) * 2
+  else 5
+
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
@@ -976,10 +1030,8 @@ let fundecl fundecl =
       `	ble-	{emit_label overflow}\n`;
       `{emit_label ret}:\n`
   end;
-  (* On this target, there is at most one "out of line" code block per
-     function: a single "call GC" point.  It comes immediately after the
-     function's body. *)
-  BR.relax fundecl ~max_out_of_line_code_offset:0;
+  BR.relax fundecl
+           ~max_out_of_line_code_offset: (max_out_of_line_code_offset fundecl);
   emit_all env fundecl.fun_body;
   (* Emit the glue code to call the GC *)
   if env.call_gc_label > 0 then begin
