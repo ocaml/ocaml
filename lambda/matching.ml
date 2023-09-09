@@ -3221,6 +3221,43 @@ let combine_array loc arg kind partial ctx def (len_lambda_list, total1, _pats)
   in
   (lambda1, Jumps.union local_jumps total1)
 
+(* Attempt to avoid some useless bindings by lowering them *)
+
+(* Approximation of v present in lam *)
+let rec approx_present v = function
+  | Lconst _ -> false
+  | Lstaticraise (_, args) ->
+      List.exists (fun lam -> approx_present v lam) args
+  | Lprim (_, args, _) -> List.exists (fun lam -> approx_present v lam) args
+  | Llet (Alias, _k, _, l1, l2) -> approx_present v l1 || approx_present v l2
+  | Lvar vv -> Ident.same v vv
+  | _ -> true
+
+let rec lower_bind v arg lam =
+  match lam with
+  | Lifthenelse (cond, ifso, ifnot) -> (
+      let pcond = approx_present v cond
+      and pso = approx_present v ifso
+      and pnot = approx_present v ifnot in
+      match (pcond, pso, pnot) with
+      | false, false, false -> lam
+      | false, true, false -> Lifthenelse (cond, lower_bind v arg ifso, ifnot)
+      | false, false, true -> Lifthenelse (cond, ifso, lower_bind v arg ifnot)
+      | _, _, _ -> bind Alias v arg lam
+    )
+  | Lswitch (ls, ({ sw_consts = [ (i, act) ]; sw_blocks = [] } as sw), loc)
+    when not (approx_present v ls) ->
+      Lswitch (ls, { sw with sw_consts = [ (i, lower_bind v arg act) ] }, loc)
+  | Lswitch (ls, ({ sw_consts = []; sw_blocks = [ (i, act) ] } as sw), loc)
+    when not (approx_present v ls) ->
+      Lswitch (ls, { sw with sw_blocks = [ (i, lower_bind v arg act) ] }, loc)
+  | Llet (Alias, k, vv, lv, l) ->
+      if approx_present v lv then
+        bind Alias v arg lam
+      else
+        Llet (Alias, k, vv, lv, lower_bind v arg l)
+  | _ -> bind Alias v arg lam
+
 (* Insertion of debugging events *)
 
 let rec event_branch repr lam =
@@ -3331,43 +3368,6 @@ let compile_test compile_fun partial divide combine ctx to_match =
       | Some l, total -> (l, total)
     )
   | _ -> combine ctx to_match.default c_div
-
-(* Attempt to avoid some useless bindings by lowering them *)
-
-(* Approximation of v present in lam *)
-let rec approx_present v = function
-  | Lconst _ -> false
-  | Lstaticraise (_, args) ->
-      List.exists (fun lam -> approx_present v lam) args
-  | Lprim (_, args, _) -> List.exists (fun lam -> approx_present v lam) args
-  | Llet (Alias, _k, _, l1, l2) -> approx_present v l1 || approx_present v l2
-  | Lvar vv -> Ident.same v vv
-  | _ -> true
-
-let rec lower_bind v arg lam =
-  match lam with
-  | Lifthenelse (cond, ifso, ifnot) -> (
-      let pcond = approx_present v cond
-      and pso = approx_present v ifso
-      and pnot = approx_present v ifnot in
-      match (pcond, pso, pnot) with
-      | false, false, false -> lam
-      | false, true, false -> Lifthenelse (cond, lower_bind v arg ifso, ifnot)
-      | false, false, true -> Lifthenelse (cond, ifso, lower_bind v arg ifnot)
-      | _, _, _ -> bind Alias v arg lam
-    )
-  | Lswitch (ls, ({ sw_consts = [ (i, act) ]; sw_blocks = [] } as sw), loc)
-    when not (approx_present v ls) ->
-      Lswitch (ls, { sw with sw_consts = [ (i, lower_bind v arg act) ] }, loc)
-  | Lswitch (ls, ({ sw_consts = []; sw_blocks = [ (i, act) ] } as sw), loc)
-    when not (approx_present v ls) ->
-      Lswitch (ls, { sw with sw_blocks = [ (i, lower_bind v arg act) ] }, loc)
-  | Llet (Alias, k, vv, lv, l) ->
-      if approx_present v lv then
-        bind Alias v arg lam
-      else
-        Llet (Alias, k, vv, lv, lower_bind v arg l)
-  | _ -> bind Alias v arg lam
 
 let bind_check str v arg lam =
   match (str, arg) with
