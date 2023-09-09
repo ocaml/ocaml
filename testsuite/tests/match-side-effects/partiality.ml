@@ -56,9 +56,10 @@ type t = { a : bool; mutable b : int option; }
 (let
   (f/288 =
      (function x/289 : int
-       (let (*strict*/291 =o (field_mut 1 x/289))
-         (if (field_int 0 x/289)
-           (if *strict*/291 (field_imm 0 *strict*/291) 1) 0))))
+       (if (field_int 0 x/289)
+         (let (*strict*/291 =o (field_mut 1 x/289))
+           (if *strict*/291 (field_imm 0 *strict*/291) 1))
+         0)))
   (apply (field_mut 1 (global Toploop!)) "f" f/288))
 val f : t -> int = <fun>
 |}]

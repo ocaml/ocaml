@@ -3233,30 +3233,36 @@ let rec approx_present v = function
   | Lvar vv -> Ident.same v vv
   | _ -> true
 
-let rec lower_bind v arg lam =
+let rec lower_bind v k arg lam =
   match lam with
   | Lifthenelse (cond, ifso, ifnot) -> (
       let pcond = approx_present v cond
       and pso = approx_present v ifso
       and pnot = approx_present v ifnot in
       match (pcond, pso, pnot) with
-      | false, false, false -> lam
-      | false, true, false -> Lifthenelse (cond, lower_bind v arg ifso, ifnot)
-      | false, false, true -> Lifthenelse (cond, ifso, lower_bind v arg ifnot)
-      | _, _, _ -> bind Alias v arg lam
+      | false, true, false -> Lifthenelse (cond, lower_bind v k arg ifso, ifnot)
+      | false, false, true -> Lifthenelse (cond, ifso, lower_bind v k arg ifnot)
+      | _, _, _ -> bind k v arg lam
+      (* note: in the (false, false, false) case, it would be tempting
+         to not perform any binding and return [lam] directly, but
+         this would change the semantics of Strict bindings. *)
     )
   | Lswitch (ls, ({ sw_consts = [ (i, act) ]; sw_blocks = [] } as sw), loc)
     when not (approx_present v ls) ->
-      Lswitch (ls, { sw with sw_consts = [ (i, lower_bind v arg act) ] }, loc)
+      Lswitch (ls, { sw with sw_consts = [ (i, lower_bind v k arg act) ] }, loc)
   | Lswitch (ls, ({ sw_consts = []; sw_blocks = [ (i, act) ] } as sw), loc)
     when not (approx_present v ls) ->
-      Lswitch (ls, { sw with sw_blocks = [ (i, lower_bind v arg act) ] }, loc)
-  | Llet (Alias, k, vv, lv, l) ->
-      if approx_present v lv then
-        bind Alias v arg lam
-      else
-        Llet (Alias, k, vv, lv, lower_bind v arg l)
-  | _ -> bind Alias v arg lam
+      Lswitch (ls, { sw with sw_blocks = [ (i, lower_bind v k arg act) ] }, loc)
+  | Lstaticcatch (body, (i, []), handler) ->
+      begin match approx_present v body, approx_present v handler with
+      | true, false -> Lstaticcatch (lower_bind v k arg body, (i, []), handler)
+      | false, true -> Lstaticcatch (body, (i, []), lower_bind v k arg handler)
+      | _ -> bind k v arg lam
+      end
+  | Llet (lk, vk, vv, lv, l)
+    when not (approx_present v lv) ->
+      Llet (lk, vk, vv, lv, lower_bind v k arg l)
+  | _ -> bind k v arg lam
 
 (* Insertion of debugging events *)
 
@@ -3288,15 +3294,12 @@ let rec event_branch repr lam =
 
    comp_match_handlers (for compiling split matches)
    may reraise Unused
-
-
 *)
-
 exception Unused
 
 let bind_cell_bindings cell lam =
   List.fold_right (fun (v, arg, str) lam ->
-    bind str v arg lam
+    lower_bind v str arg lam
   ) cell.bindings lam
 
 let compile_cell compile_fun cell =
@@ -3372,7 +3375,7 @@ let compile_test compile_fun partial divide combine ctx to_match =
 let bind_check str v arg lam =
   match (str, arg) with
   | _, Lvar _ -> bind str v arg lam
-  | Alias, _ -> lower_bind v arg lam
+  | Alias, _ -> lower_bind v Alias arg lam
   | _, _ -> bind str v arg lam
 
 let comp_exit ctx m =
