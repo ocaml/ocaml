@@ -79,7 +79,7 @@ val make : int -> char -> bytes
 
 val init : int -> (int -> char) -> bytes
 (** [init n f] returns a fresh byte sequence of length [n],
-    with character [i] initialized to the result of [f i] (in increasing
+    with byte [i] initialized to the result of [f i] (in increasing
     index order).
     @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
@@ -120,7 +120,7 @@ val extend : bytes -> int -> int -> bytes
 
 val fill : bytes -> int -> int -> char -> unit
 (** [fill s pos len c] modifies [s] in place, replacing [len]
-    characters with [c], starting at [pos].
+    bytes with [c], starting at [pos].
     @raise Invalid_argument if [pos] and [len] do not designate a
     valid range of [s]. *)
 
@@ -178,7 +178,7 @@ val map : (char -> char) -> bytes -> bytes
     that is returned as the result. *)
 
 val mapi : (int -> char -> char) -> bytes -> bytes
-(** [mapi f s] calls [f] with each character of [s] and its
+(** [mapi f s] calls [f] with each byte of [s] and its
     index (in increasing index order) and stores the resulting bytes
     in a new sequence that is returned as the result. *)
 
@@ -195,11 +195,11 @@ val fold_right : (char -> 'acc -> 'acc) -> bytes -> 'acc -> 'acc
     @since 4.13 *)
 
 val for_all : (char -> bool) -> bytes -> bool
-(** [for_all p s] checks if all characters in [s] satisfy the predicate [p].
+(** [for_all p s] checks if all bytes in [s] satisfy the predicate [p].
     @since 4.13 *)
 
 val exists : (char -> bool) -> bytes -> bool
-(** [exists p s] checks if at least one character of [s] satisfies the predicate
+(** [exists p s] checks if at least one byte of [s] satisfies the predicate
     [p].
     @since 4.13 *)
 
@@ -211,7 +211,7 @@ val trim : bytes -> bytes
 val escaped : bytes -> bytes
 (** Return a copy of the argument, with special characters represented
     by escape sequences, following the lexical conventions of OCaml.
-    All characters outside the ASCII printable range (32..126) are
+    All bytes outside the ASCII printable range (32..126) are
     escaped, as well as backslash and double-quote.
     @raise Invalid_argument if the result is longer than
     {!Sys.max_string_length} bytes. *)
@@ -459,7 +459,7 @@ let s = Bytes.of_string "hello"
 
 val split_on_char: char -> bytes -> bytes list
 (** [split_on_char sep s] returns the list of all (possibly empty)
-    subsequences of [s] that are delimited by the [sep] character.
+    subsequences of [s] that are delimited by the [sep] byte.
 
     The function's output is specified by the following invariants:
 
@@ -467,7 +467,7 @@ val split_on_char: char -> bytes -> bytes list
     - Concatenating its elements using [sep] as a separator returns a
       byte sequence equal to the input ([Bytes.concat (Bytes.make 1 sep)
       (Bytes.split_on_char sep s) = s]).
-    - No byte sequence in the result contains the [sep] character.
+    - No byte sequence in the result contains the [sep] byte.
 
     @since 4.13
 *)

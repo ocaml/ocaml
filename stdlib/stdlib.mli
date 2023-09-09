@@ -149,7 +149,7 @@ external ( <= ) : 'a -> 'a -> bool = "%lessequal"
 
 external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
 (** Structural ordering functions. These functions coincide with
-   the usual orderings over integers, characters, strings, byte sequences
+   the usual orderings over integers, bytes, strings, byte sequences
    and floating-point numbers, and extend them to a
    total ordering over all types.
    The ordering is compatible with [( = )]. As in the case
