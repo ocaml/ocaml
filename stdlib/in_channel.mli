@@ -99,18 +99,18 @@ val input_line : t -> string option
     [\r\n]. *)
 
 val really_input_string : t -> int -> string option
-(** [really_input_string ic len] reads [len] characters from channel [ic] and
+(** [really_input_string ic len] reads [len] bytes from channel [ic] and
     returns them in a new string.  Returns [None] if the end of file is reached
-    before [len] characters have been read.
+    before [len] bytes have been read.
 
     If the same channel is read concurrently by multiple threads, the returned
-    string is not guaranteed to contain contiguous characters from the input. *)
+    string is not guaranteed to contain contiguous bytes from the input. *)
 
 val input_all : t -> string
 (** [input_all ic] reads all remaining data from [ic].
 
     If the same channel is read concurrently by multiple threads, the returned
-    string is not guaranteed to contain contiguous characters from the input. *)
+    string is not guaranteed to contain contiguous bytes from the input. *)
 
 val input_lines : t -> string list
 (** [input_lines ic] reads lines using {!input_line}
@@ -124,12 +124,12 @@ val input_lines : t -> string list
 (** {1:advanced_input Advanced input}*)
 
 val input : t -> bytes -> int -> int -> int
-(** [input ic buf pos len] reads up to [len] characters from the given channel
-    [ic], storing them in byte sequence [buf], starting at character number
-    [pos]. It returns the actual number of characters read, between 0 and [len]
+(** [input ic buf pos len] reads up to [len] bytes from the given channel
+    [ic], storing them in byte sequence [buf], starting at byte number
+    [pos]. It returns the actual number of bytes read, between 0 and [len]
     (inclusive). A return value of 0 means that the end of file was reached.
 
-    Use {!really_input} to read exactly [len] characters.
+    Use {!really_input} to read exactly [len] bytes.
 
     @raise Invalid_argument if [pos] and [len] do not designate a valid range of
     [buf]. *)
@@ -141,10 +141,10 @@ val input_bigarray :
     @since 5.2 *)
 
 val really_input : t -> bytes -> int -> int -> unit option
-(** [really_input ic buf pos len] reads [len] characters from channel [ic],
-    storing them in byte sequence [buf], starting at character number [pos].
+(** [really_input ic buf pos len] reads [len] bytes from channel [ic],
+    storing them in byte sequence [buf], starting at byte number [pos].
 
-    Returns [None] if the end of file is reached before [len] characters have
+    Returns [None] if the end of file is reached before [len] bytes have
     been read.
 
     If the same channel is read concurrently by multiple threads, the bytes
@@ -190,7 +190,7 @@ val pos : t -> int64
 (** {1:attributes Attributes} *)
 
 val length : t -> int64
-(** Return the size (number of characters) of the regular file on which the
+(** Return the size (number of bytes) of the regular file on which the
     given channel is opened.  If the channel is opened on a file that is not a
     regular file, the result is meaningless.  The returned size does not take
     into account the end-of-line translations that can be performed when reading

@@ -995,7 +995,7 @@ val output_bytes : out_channel -> bytes -> unit
    @since 4.02 *)
 
 val output : out_channel -> bytes -> int -> int -> unit
-(** [output oc buf pos len] writes [len] characters from byte sequence [buf],
+(** [output oc buf pos len] writes [len] bytes from byte sequence [buf],
    starting at offset [pos], to the given output channel [oc].
    @raise Invalid_argument if [pos] and [len] do not
    designate a valid range of [buf]. *)
@@ -1044,7 +1044,7 @@ val pos_out : out_channel -> int
     opened in binary mode. *)
 
 val out_channel_length : out_channel -> int
-(** Return the size (number of characters) of the regular file
+(** Return the size (number of bytes) of the regular file
    on which the given channel is opened.  If the channel is opened
     on a file that is not a regular file, the result is meaningless. *)
 
@@ -1101,35 +1101,35 @@ val input_line : in_channel -> string
    at the beginning of line. *)
 
 val input : in_channel -> bytes -> int -> int -> int
-(** [input ic buf pos len] reads up to [len] characters from
+(** [input ic buf pos len] reads up to [len] bytes from
    the given channel [ic], storing them in byte sequence [buf], starting at
-   character number [pos].
-   It returns the actual number of characters read, between 0 and
+   byte number [pos].
+   It returns the actual number of bytes read, between 0 and
    [len] (inclusive).
    A return value of 0 means that the end of file was reached.
    A return value between 0 and [len] exclusive means that
-   not all requested [len] characters were read, either because
-   no more characters were available at that time, or because
+   not all requested [len] bytes were read, either because
+   no more bytes were available at that time, or because
    the implementation found it convenient to do a partial read;
-   [input] must be called again to read the remaining characters,
+   [input] must be called again to read the remaining bytes,
    if desired.  (See also {!Stdlib.really_input} for reading
-   exactly [len] characters.)
+   exactly [len] bytes.)
    Exception [Invalid_argument "input"] is raised if [pos] and [len]
    do not designate a valid range of [buf]. *)
 
 val really_input : in_channel -> bytes -> int -> int -> unit
-(** [really_input ic buf pos len] reads [len] characters from channel [ic],
-   storing them in byte sequence [buf], starting at character number [pos].
+(** [really_input ic buf pos len] reads [len] bytes from channel [ic],
+   storing them in byte sequence [buf], starting at byte number [pos].
    @raise End_of_file if the end of file is reached before [len]
-   characters have been read.
+   bytes have been read.
    @raise Invalid_argument if
    [pos] and [len] do not designate a valid range of [buf]. *)
 
 val really_input_string : in_channel -> int -> string
-(** [really_input_string ic len] reads [len] characters from channel [ic]
+(** [really_input_string ic len] reads [len] bytes from channel [ic]
    and returns them in a new string.
    @raise End_of_file if the end of file is reached before [len]
-   characters have been read.
+   bytes have been read.
    @since 4.02 *)
 
 val input_byte : in_channel -> int
@@ -1165,7 +1165,7 @@ val pos_in : in_channel -> int
     binary mode. *)
 
 val in_channel_length : in_channel -> int
-(** Return the size (number of characters) of the regular file
+(** Return the size (number of bytes) of the regular file
     on which the given channel is opened.  If the channel is opened
     on a file that is not a regular file, the result is meaningless.
     The returned size does not take into account the end-of-line
