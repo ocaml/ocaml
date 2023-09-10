@@ -543,17 +543,16 @@ let bound_error_label env dbg =
   end
 
 let emit_call_bound_error bd =
-  `{emit_label bd.bd_lbl}:\n`;
-  emit_call "caml_ml_array_bound_error";
-  emit_call_nop();
-  `{emit_label bd.bd_frame}:\n`
+  `{emit_label bd.bd_lbl}:`;  emit_call "caml_ml_array_bound_error";
+  `{emit_label bd.bd_frame}:`; emit_call_nop()
 
 let emit_call_bound_errors env =
   List.iter emit_call_bound_error env.bound_error_sites;
   match env.bound_error_call with
   | None -> ()
   | Some lbl ->
-    `{emit_label lbl}:`; emit_call "caml_ml_array_bound_error"
+    `{emit_label lbl}:`; emit_call "caml_ml_array_bound_error";
+    emit_call_nop()
 
 (* Output the assembly code for an instruction *)
 
