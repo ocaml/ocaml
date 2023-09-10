@@ -58,6 +58,8 @@ v}
     is the encoding used by Unicode escapes in string literals. For
     example the string ["\u{1F42B}"] is the UTF-8 encoding of the
     Unicode character U+1F42B.
+    This module offers
+    {{!utf} functions for encoding and decoding UTF-8}.
 
     {b Past mutability.} Before OCaml 4.02, strings used to be modifiable in
     place like {!Bytes.t} mutable sequences of bytes.

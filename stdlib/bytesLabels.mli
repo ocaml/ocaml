@@ -40,8 +40,9 @@
    range of [s] if [len >= 0] and [start] and [start+len] are valid
    positions in [s].
 
-   Byte sequences can be modified in place, for instance via the [set]
-   and [blit] functions described below.  See also strings (module
+   Byte sequences can be modified in place, for instance via the
+   {!set}, {!blit} or {!set_utf_8_uchar} functions described below.
+   See also strings (module
    {!String}), which are almost the same data structure, but cannot be
    modified in place.
 
