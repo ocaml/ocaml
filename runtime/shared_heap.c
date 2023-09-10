@@ -102,6 +102,10 @@ struct caml_heap_state {
   struct heap_stats stats;
 };
 
+struct compact_pool_stat {
+  int free_blocks;
+  int live_blocks;
+};
 
 /* You need to hold the [pool_freelist] lock to call these functions. */
 static void orphan_heap_stats_with_lock(struct caml_heap_state *);
@@ -1004,6 +1008,19 @@ void caml_compact_heap(caml_domain_state* domain_state,
       continue;
     }
 
+    /* count the number of pools */
+    int num_pools = 0;
+
+    while (cur_pool) {
+      num_pools++;
+      cur_pool = cur_pool->next;
+    }
+
+    struct compact_pool_stat* pool_stats = caml_stat_alloc_noexc(
+      sizeof(struct compact_pool_stat) * num_pools);
+
+    cur_pool = heap->unswept_avail_pools[sz_class];
+
     /* Count the number of non-empty blocks in the pools. This is an
        over-approximation of the amount of space we'll need, as we
        only move UNMARKED (MARKED in the previous cycle) blocks. In other words,
@@ -1014,38 +1031,75 @@ void caml_compact_heap(caml_domain_state* domain_state,
        exact amount of space needed or even sweep all pools in this counting
        pass.
     */
-    uintnat nonempty_blocks = 0;
+    int k = 0;
+    int total_live_blocks = 0;
+#ifdef DEBUG
+    int total_free_blocks = 0;
+#endif
     while (cur_pool) {
       header_t* p = POOL_FIRST_BLOCK(cur_pool, sz_class);
       header_t* end = POOL_END(cur_pool);
       mlsize_t wh = wsize_sizeclass[sz_class];
 
+      pool_stats[k].free_blocks = 0;
+      pool_stats[k].live_blocks = 0;
+
       while (p + wh <= end) {
-        if (atomic_load_relaxed((atomic_uintnat*)p)) {
-          ++ nonempty_blocks;
+        header_t h = (header_t)atomic_load_relaxed((atomic_uintnat*)p);
+
+        /* A zero header in a shared heap pool indicates an empty space */
+        if (!h) {
+          pool_stats[k].free_blocks++;
+#ifdef DEBUG
+          total_free_blocks++;
+#endif
+        } else if (Has_status_hd(h, caml_global_heap_state.UNMARKED)) {
+          total_live_blocks++;
+          pool_stats[k].live_blocks++;
         }
         p += wh;
       }
+
       cur_pool = cur_pool->next;
+      k++;
     }
 
-    if (!nonempty_blocks) {
-      /* No non-empty blocks in partially filled pools, nothing to do */
+    /* Note that partially filled pools must have at least some free space*/
+#ifdef DEBUG
+    CAMLassert(total_free_blocks > 0);
+#endif
+
+    if (!total_live_blocks) {
+      /* No live (i.e unmarked) blocks in partially filled pools, nothing to do
+         for this size class */
       continue;
     }
 
-    /* Find the first pool to be evacuated. */
-    int cur_blocks = 0;
+    /* Now we use the pool stats to calculate which pools will be evacuated. We
+       want to walk through the pools and check whether we have enough free
+       blocks in the pools behind us to accommodate all the remaining live
+       blocks. */
+    int free_blocks = 0;
+    int j = 0;
+    int remaining_live_blocks = total_live_blocks;
+
     cur_pool = heap->unswept_avail_pools[sz_class];
     while (cur_pool) {
-      if (cur_blocks >= nonempty_blocks) {
+      if (free_blocks >= remaining_live_blocks) {
         break;
       }
 
-      cur_blocks += POOL_BLOCKS(cur_pool);
+      free_blocks += pool_stats[j].free_blocks;
+      remaining_live_blocks -= pool_stats[j].live_blocks;
       cur_pool = cur_pool->next;
+      j++;
     }
-    /* `cur_pool` now points to the first pool we are evacuating */
+
+    /* `cur_pool` now points to the first pool we are evacuating or null if
+        there we could not compact this particular size class (for this
+        domain) */
+
+    caml_stat_free(pool_stats);
 
     /* Evacuate marked blocks from the evacuating pools into the
        avail pools. */
