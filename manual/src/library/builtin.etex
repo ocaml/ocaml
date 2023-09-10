@@ -22,7 +22,12 @@ consequence, they can only be referred by their short names.
 \end{ocamldoccode}
 \index{char@\verb`char`}
 \begin{ocamldocdescription}
-   The type of characters.
+  The type of bytes, historically referred to as characters.
+  A byte is an 8-bit unit of arbitrary data,
+  commonly used to represent a character
+  from a restricted charset such as ASCII or Latin-1.
+  However it cannot represent an arbitrary Unicode character
+  (see modules \stdmoduleref{Uchar} and \stdmoduleref{String}).
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
