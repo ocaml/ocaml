@@ -3,7 +3,7 @@
 
 (* tests that we correctly empty the shared pool's freelist. This requires a
     bunch of garbage to be generated, a major cycle and two compactions to
-    test. *)
+    test. If we can do that without segfault, we're good. *)
 
 let () =
   let arr = ref (Some (Array.init 1000000 (fun x -> (Some x)))) in
