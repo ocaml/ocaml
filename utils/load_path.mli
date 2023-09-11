@@ -22,7 +22,9 @@
     doesn't change during the execution of the compiler.
 *)
 
-val add_dir : string -> unit
+
+type warn = Warnings.ambiguous_artifacts -> unit
+val add_dir : ?warn:warn -> string -> unit
 (** Add a directory to the end of the load path (i.e. at lowest priority.) *)
 
 val remove_dir : string -> unit
@@ -59,7 +61,8 @@ val no_auto_include : auto_include_callback
 (** No automatic directory inclusion: misses in the load path raise [Not_found]
     as normal. *)
 
-val init : auto_include:auto_include_callback -> string list -> unit
+val init :
+  ?warn:warn -> auto_include:auto_include_callback -> string list -> unit
 (** [init l] is the same as [reset (); List.iter add_dir (List.rev l)] *)
 
 val auto_include_otherlibs :
@@ -82,14 +85,14 @@ val find_normalized : string -> string
     {!Misc.normalized_unit_filename}), i.e. if name is [Foo.ml], allow
     [/path/Foo.ml] and [/path/foo.ml] to match. *)
 
-val[@deprecated] add : Dir.t -> unit
+val[@deprecated] add : ?warn:warn -> Dir.t -> unit
 (** Old name for {!append_dir} *)
 
-val append_dir : Dir.t -> unit
+val append_dir : ?warn:warn -> Dir.t -> unit
 (** [append_dir d] adds [d] to the end of the load path (i.e. at lowest
     priority. *)
 
-val prepend_dir : Dir.t -> unit
+val prepend_dir : ?warn:warn -> Dir.t -> unit
 (** [prepend_dir d] adds [d] to the start of the load path (i.e. at highest
     priority. *)
 

@@ -44,7 +44,7 @@ let init_path ?(auto_include=auto_include) ?(dir="") () =
     (if !Clflags.no_cwd then [] else [dir])
     @ List.rev_append exp_dirs (Clflags.std_include_dir ())
   in
-  Load_path.init ~auto_include dirs;
+  Load_path.init ~warn:Location.warn_artifacts ~auto_include dirs;
   Env.reset_cache ()
 
 (* Return the initial environment in which compilation proceeds. *)

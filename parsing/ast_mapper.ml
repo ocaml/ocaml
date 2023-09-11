@@ -962,7 +962,8 @@ module PpxContext = struct
               let alert = Location.auto_include_alert in
               Load_path.auto_include_otherlibs alert find_in_dir fn
           in
-          Load_path.init ~auto_include (get_list get_string payload)
+          Load_path.init ~warn:Location.warn_artifacts ~auto_include
+            (get_list get_string payload)
       | "open_modules" ->
           Clflags.open_modules := get_list get_string payload
       | "for_package" ->
