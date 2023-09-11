@@ -281,6 +281,9 @@ Working version
   artifacts in preparation for better unicode support for OCaml source files.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- #12532: improve readability of the pattern-matching debug output
+  (Gabriel Scherer, review by Thomas Refis)
+
 ### Build system:
 
 - #12198, #12321: continue the merge of the sub-makefiles into the root Makefile
