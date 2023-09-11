@@ -489,6 +489,8 @@ module Context : sig
 
   val lub : pattern -> t -> t
 
+  val erase_first_col : t -> t
+
   val matches : t -> matrix -> bool
 
   val combine : t -> t
@@ -520,6 +522,11 @@ end = struct
     let lforget { left; right } =
       match right with
       | _ :: xs -> { left = Patterns.omega :: left; right = xs }
+      | _ -> assert false
+
+    let erase_first_col { left; right } =
+      match right with
+      | _ :: right -> { left; right = Patterns.omega :: right }
       | _ -> assert false
 
     let rshift { left; right } =
@@ -566,6 +573,8 @@ end = struct
       get_mins Row.le (List.map Row.lforget ctx)
 
   let rshift ctx = List.map Row.rshift ctx
+
+  let erase_first_col ctx = List.map Row.erase_first_col ctx
 
   let rshift_num n ctx = List.map (Row.rshift_num n) ctx
 
@@ -3477,7 +3486,7 @@ and compile_match_simplified ~scopes repr partial ctx
   | _ -> assert false
 
 and combine_handlers ~scopes repr partial ctx (v, str, arg) first_match rem =
-  let lam, total =
+  let lam, jumps =
     comp_match_handlers
       (( if dbg then
          do_compile_matching_pr ~scopes
@@ -3487,7 +3496,52 @@ and combine_handlers ~scopes repr partial ctx (v, str, arg) first_match rem =
          repr)
       partial ctx first_match rem
   in
-  (bind_check str v arg lam, total)
+  let jumps =
+    (* If the Lambda expression [arg] to access the first argument is
+       a mutable field read, then its binding and evaluation may be
+       emitted in different calls to [combine_handlers] on the same
+       column. Consider for example:
+
+         type ('a, 'b) mut_second = { immut : 'a; mutable mut : 'b; }
+
+         function
+         | {immut = false; mut = None} -> -1
+         | {immut = true ; mut = None} -> 0
+         | {immut = _ ;    mut = Some n} -> n
+
+       When compiling this example, [immut] will be matched first, and
+       each case will perform a [None] check and also jump to a shared
+       exit handler containing the [Some n] clause. The field access
+       to the [mut] field will be emitted three times, in each branch
+       of the switch and in the shared handler.
+
+       In the general case, the value of the mutable field may change
+       between the reads (due to a [when] guard or even a race from
+       another thread or domain), so we must be careful not to
+       propagate context information that could have become
+       incorrect. We "fix" the context information on mutable arguments
+       by calling [Context.erase_first_col] below.
+    *)
+    let mut =
+      (* This is somewhat of a hack: we notice that a pattern-matching
+         argument is mutable (its value can change if evaluated
+         several times) exactly when it is bound as StrictOpt. Alias
+         bindings are obviously pure, but Strict bindings are also only
+         used in the pattern-matching compiler for expressions that give
+         the same value when evaluated twice.
+         An alternative would be to track 'mutability of the field'
+         directly.
+      *)
+      match str with
+      | Strict | Alias -> Immutable
+      | StrictOpt -> Mutable
+    in
+    match mut with
+    | Immutable -> jumps
+    | Mutable ->
+        Jumps.map Context.erase_first_col jumps in
+  (bind_check str v arg lam,
+   jumps)
 
 (* verbose version of do_compile_matching, for debug *)
 and do_compile_matching_pr ~scopes repr partial ctx x =

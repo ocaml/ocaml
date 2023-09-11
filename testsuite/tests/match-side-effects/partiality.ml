@@ -17,9 +17,7 @@ let f x =
    (field_mut 1) access, or the second access should include
    a Match_failure case.
 
-   FAIL: the second occurrence of (field_mut 1) is used with a direct
-   (field_imm 0) access without a constructor check. The compiler is
-   unsound here. *)
+   PASS: the second access includes a Match_failure case. *)
 [%%expect {|
 0
 type t = { a : bool; mutable b : int option; }
@@ -31,7 +29,9 @@ type t = { a : bool; mutable b : int option; }
            (if *match*/286
              (if (seq (setfield_ptr 1 x/282 0) 0) 2
                (let (*match*/287 =o (field_mut 1 x/282))
-                 (field_imm 0 *match*/287)))
+                 (if *match*/287 (field_imm 0 *match*/287)
+                   (raise
+                     (makeblock 0 (global Match_failure/18!) [0: "" 4 2])))))
              1))
          0)))
   (apply (field_mut 1 (global Toploop!)) "f" f/280))
