@@ -114,6 +114,6 @@ let mli_from_source u =
 let is_cmi f = Filename.check_suffix (Artifact.filename f) ".cmi"
 
 let find_normalized_cmi f =
-  let filename = prefix f ^ ".cmi" in
+  let filename = modname f ^ ".cmi" in
   let filename = Load_path.find_normalized filename in
   { Artifact.filename; modname = modname f; source_file = Some f.source_file  }
