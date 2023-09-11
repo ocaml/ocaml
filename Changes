@@ -277,7 +277,7 @@ Working version
   bytecode executable (`ocamlc -custom`).
   (Antonin Décimo, review by Xavier Leroy)
 
-- #12389, centralize the handling of metadata for compilation units and
+- #12389, #12544: centralize the handling of metadata for compilation units and
   artifacts in preparation for better unicode support for OCaml source files.
   (Florian Angeletti, review by Gabriel Scherer)
 
