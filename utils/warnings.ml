@@ -34,6 +34,12 @@ type constructor_usage_warning =
   | Not_constructed
   | Only_exported_private
 
+type ambiguous_artifacts = {
+  dir:string;
+  normalized: string;
+  similar: string list
+}
+
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
@@ -109,6 +115,7 @@ type t =
   | Unused_tmc_attribute                    (* 71 *)
   | Tmc_breaks_tailcall                     (* 72 *)
   | Generative_application_expects_unit     (* 73 *)
+  | Ambiguous_library_artifacts of ambiguous_artifacts (* 74 *)
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
    the numbers of existing warnings.
@@ -190,12 +197,13 @@ let number = function
   | Unused_tmc_attribute -> 71
   | Tmc_breaks_tailcall -> 72
   | Generative_application_expects_unit -> 73
+  | Ambiguous_library_artifacts  _ -> 74
 ;;
 (* DO NOT REMOVE the ;; above: it is used by
    the testsuite/ests/warnings/mnemonics.mll test to determine where
    the  definition of the number function above ends *)
 
-let last_warning_number = 73
+let last_warning_number = 74
 
 type description =
   { number : int;
@@ -534,6 +542,11 @@ let descriptions = [
     description = "A generative functor is applied to an empty structure \
                    (struct end) rather than to ().";
     since = since 5 1 };
+  { number = 74;
+    names = ["ambiguous-library-artifacts"];
+    description = "A library provides multiple artifacts with similar name \
+                   that maps to the same compilation unit name.";
+    since = since 5 2 };
 ]
 
 let name_to_number =
@@ -1138,6 +1151,16 @@ let message = function
   | Generative_application_expects_unit ->
       "A generative functor\n\
        should be applied to '()'; using '(struct end)' is deprecated."
+  | Ambiguous_library_artifacts { dir; normalized; similar } ->
+      let pp_sep ppf () = Format.fprintf ppf ",@ " in
+      Format.asprintf
+        "@[<v 2>@,@[Multiple artifact files@ (@[%a@])@ in directory %s@ \
+         provide@ the@ same@ compilation@ artifact, %s.@]@,\
+         @[One of them was selected arbitrarily,@ \
+         but this a packaging@ or build system bug.@]@]"
+        Format.(pp_print_list ~pp_sep pp_print_string) similar
+        dir
+        normalized
 ;;
 
 let nerrors = ref 0

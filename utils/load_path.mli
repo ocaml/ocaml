@@ -22,7 +22,8 @@
     doesn't change during the execution of the compiler.
 *)
 
-val add_dir : hidden:bool -> string -> unit
+type warn = Warnings.ambiguous_artifacts -> unit
+val add_dir :  ?warn:warn ->  hidden:bool -> string -> unit
 (** Add a directory to the end of the load path (i.e. at lowest priority.) *)
 
 val remove_dir : string -> unit
@@ -64,7 +65,7 @@ val no_auto_include : auto_include_callback
     as normal. *)
 
 val init :
-  auto_include:auto_include_callback -> visible:string list ->
+  warn:warn -> auto_include:auto_include_callback -> visible:string list ->
   hidden:string list -> unit
 (** [init ~visible ~hidden] is the same as
     [reset ();
@@ -104,14 +105,14 @@ val find_normalized_with_visibility : string -> string * visibility
 (** Same as [find_normalized], but also reports whether the cmi was found in a
     -I directory (Visible) or a -H directory (Hidden) *)
 
-val[@deprecated] add : Dir.t -> unit
+val[@deprecated] add : ?warn:warn -> Dir.t -> unit
 (** Old name for {!append_dir} *)
 
-val append_dir : Dir.t -> unit
+val append_dir : ?warn:warn -> Dir.t -> unit
 (** [append_dir d] adds [d] to the end of the load path (i.e. at lowest
     priority. *)
 
-val prepend_dir : Dir.t -> unit
+val prepend_dir : ?warn:warn -> Dir.t -> unit
 (** [prepend_dir d] adds [d] to the start of the load path (i.e. at highest
     priority. *)
 

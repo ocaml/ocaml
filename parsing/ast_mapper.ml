@@ -1000,7 +1000,7 @@ module PpxContext = struct
           let visible, hidden =
             get_pair (get_list get_string) (get_list get_string) payload
           in
-          Load_path.init ~auto_include ~visible ~hidden
+          Load_path.init ~warn:Location.warn_artifacts ~auto_include ~visible ~hidden
       | "open_modules" ->
           Clflags.open_modules := get_list get_string payload
       | "for_package" ->

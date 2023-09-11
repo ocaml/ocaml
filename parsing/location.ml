@@ -961,6 +961,9 @@ let deprecated_script_alert program =
   in
   prerr_alert none alert
 
+let warn_artifacts x =
+  prerr_warning none (Warnings.Ambiguous_library_artifacts x)
+
 (******************************************************************************)
 (* Reporting errors on exceptions *)
 

@@ -54,7 +54,7 @@ let init_path ?(auto_include=auto_include) ?(dir="") () =
     List.rev_map (Misc.expand_directory Config.standard_library)
       !Clflags.hidden_include_dirs
   in
-  Load_path.init ~auto_include ~visible ~hidden;
+  Load_path.init ~warn:Location.warn_artifacts ~auto_include ~visible ~hidden;
   Env.reset_cache ()
 
 (* Return the initial environment in which compilation proceeds. *)

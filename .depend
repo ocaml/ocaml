@@ -141,16 +141,19 @@ utils/linkdeps.cmx : \
 utils/linkdeps.cmi : \
     utils/format_doc.cmi
 utils/load_path.cmo : \
+    utils/warnings.cmi \
     utils/misc.cmi \
     utils/local_store.cmi \
     utils/config.cmi \
     utils/load_path.cmi
 utils/load_path.cmx : \
+    utils/warnings.cmx \
     utils/misc.cmx \
     utils/local_store.cmx \
     utils/config.cmx \
     utils/load_path.cmi
-utils/load_path.cmi :
+utils/load_path.cmi : \
+    utils/warnings.cmi
 utils/local_store.cmo : \
     utils/local_store.cmi
 utils/local_store.cmx : \

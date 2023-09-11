@@ -99,14 +99,26 @@ let get_paths () =
 let get_visible_path_list () = List.rev_map Dir.path !visible_dirs
 let get_hidden_path_list () = List.rev_map Dir.path !hidden_dirs
 
+
+(* Check ambiguity *)
+type warn = Warnings.ambiguous_artifacts -> unit
+let ambiguity_checker dir warn map normalized file =
+  match STbl.find_opt map normalized with
+  | Some file' when file <> file' ->
+      warn {Warnings.dir=dir.Dir.path;similar=[file;file'];normalized}
+  | None -> STbl.add map normalized file
+  | Some _ -> ()
+
 (* Optimized version of [add] below, for use in [init] and [remove_dir]: since
    we are starting from an empty cache, we can avoid checking whether a unit
    name already exists in the cache simply by adding entries in reverse
    order. *)
-let prepend_add dir =
+let prepend_add ?(warn=ignore) dir =
+  let local_tbl = STbl.create 42 in
   List.iter (fun base ->
       Result.iter (fun filename ->
           let fn = Filename.concat dir.Dir.path base in
+          ambiguity_checker dir warn local_tbl filename fn;
           if dir.Dir.hidden then begin
             STbl.replace !hidden_files base fn;
             STbl.replace !hidden_files_uncap filename fn
@@ -117,11 +129,11 @@ let prepend_add dir =
         (Misc.normalized_unit_filename base)
     ) dir.Dir.files
 
-let init ~auto_include ~visible ~hidden =
+let init  ~warn ~auto_include ~visible ~hidden =
   reset ();
   visible_dirs := List.rev_map (Dir.create ~hidden:false) visible;
   hidden_dirs := List.rev_map (Dir.create ~hidden:true) hidden;
-  List.iter prepend_add !hidden_dirs;
+  List.iter (prepend_add ~warn) !hidden_dirs;
   List.iter prepend_add !visible_dirs;
   auto_include_callback := auto_include
 
@@ -141,8 +153,9 @@ let remove_dir dir =
 (* General purpose version of function to add a new entry to load path: We only
    add a basename to the cache if it is not already present, in order to enforce
    left-to-right precedence. *)
-let add (dir : Dir.t) =
+let add ?(warn=ignore) (dir : Dir.t) =
   assert (not Config.merlin || Local_store.is_bound ());
+  let local_tbl = STbl.create 42 in
   let update base fn visible_files hidden_files =
     if dir.hidden && not (STbl.mem !hidden_files base) then
       STbl.replace !hidden_files base fn
@@ -153,6 +166,7 @@ let add (dir : Dir.t) =
     (fun base ->
        Result.iter (fun ubase ->
            let fn = Filename.concat dir.Dir.path base in
+           ambiguity_checker dir warn local_tbl base fn;
            update base fn visible_files hidden_files;
            update ubase fn visible_files_uncap hidden_files_uncap
          )
@@ -166,13 +180,13 @@ let add (dir : Dir.t) =
 
 let append_dir = add
 
-let add_dir ~hidden dir = add (Dir.create ~hidden dir)
+let add_dir ?warn ~hidden dir = add ?warn (Dir.create ~hidden dir)
 
 (* Add the directory at the start of load path - so basenames are
    unconditionally added. *)
-let prepend_dir (dir : Dir.t) =
+let prepend_dir ?warn (dir : Dir.t) =
   assert (not Config.merlin || Local_store.is_bound ());
-  prepend_add dir;
+  prepend_add ?warn dir;
   if dir.hidden then
     hidden_dirs := !hidden_dirs @ [dir]
   else
