@@ -831,7 +831,7 @@ let check_well_founded env loc path to_check visited ty0 =
           !Clflags.recursive_types && Ctype.is_contractive env path in
         let parents =
           if rec_ok then TypeSet.empty else TypeSet.add ty parents in
-        List.iter (check parents trace) args)
+        List.iter (check_subtype parents trace ty) args)
       ty;
     let rec_ok =
       match get_desc ty with
