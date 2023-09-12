@@ -104,6 +104,10 @@ let debugf fmt =
   then Format.eprintf fmt
   else Format.ifprintf Format.err_formatter fmt
 
+let pp_partial ppf = function
+  | Total -> Format.fprintf ppf "Total"
+  | Partial -> Format.fprintf ppf "Partial"
+
 (*
    Compatibility predicate that considers potential rebindings of constructors
    of an extension type.
@@ -3427,12 +3431,9 @@ and combine_handlers ~scopes repr partial ctx (v, str, arg) first_match rem =
 (* verbose version of do_compile_matching, for debug *)
 and do_compile_matching_pr ~scopes repr partial ctx x =
   debugf
-    "@[<v>MATCH %s\
+    "@[<v>MATCH %a\
      @,%a"
-    ( match partial with
-    | Partial -> "Partial"
-    | Total -> "Total"
-    )
+    pp_partial partial
     pretty_precompiled x;
   debugf "@,@[<v 2>CTX:@,%a@]"
     Context.pp ctx;
