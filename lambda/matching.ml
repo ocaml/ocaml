@@ -541,11 +541,10 @@ end = struct
     (** Recombination of contexts.
         For example:
           { (_,_)::left; p1::p2::right } -> { left; (p1,p2)::right }
-        All mutable fields are replaced by '_', since side-effects in
-        guards can alter these fields. *)
+    *)
     let combine { left; right } =
       match left with
-      | p :: ps -> { left = ps; right = set_args_erase_mutable p right }
+      | p :: ps -> { left = ps; right = set_args p right }
       | _ -> assert false
   end
 
