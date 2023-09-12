@@ -99,7 +99,7 @@ module Typedtree_search =
             info_list
       | Typedtree.Tstr_value (_, pat_exp_list) ->
           List.iter
-            (fun {vb_pat=pat; vb_expr=exp} ->
+            (fun {vb_pat=pat; vb_expr={qexp_expr=exp}} ->
               match iter_val_pattern pat.Typedtree.pat_desc with
                 None -> ()
               | Some n -> Hashtbl.add table_values n (pat,exp)
@@ -683,7 +683,7 @@ module Analyser =
                       let new_param = Simple_name
                           { sn_name = name ;
                             sn_text = Odoc_parameter.desc_from_info_opt comment_opt name ;
-                            sn_type = Odoc_env.subst_type env exp.exp_type
+                            sn_type = Odoc_env.subst_type env exp.qexp_expr.exp_type
                           }
                       in
                       (new_param, tt_class_expr3)

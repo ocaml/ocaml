@@ -125,7 +125,8 @@ let name_expression ~loc ~attrs exp =
       val_kind = Val_reg;
       val_loc = loc;
       val_attributes = attrs;
-      val_uid = Uid.internal_not_actually_unique; }
+      val_uid = Uid.internal_not_actually_unique;
+      val_bound_type_vars = Ctype.generic_free_variables exp.exp_type; }
    in
    let sg = [Sig_value(id, vd, Exported)] in
    let pat =
@@ -138,7 +139,9 @@ let name_expression ~loc ~attrs exp =
    in
    let vb =
      { vb_pat = pat;
-       vb_expr = exp;
+       vb_expr =
+       { qexp_expr = exp;
+         qexp_vars = Ctype.generic_free_variables exp.exp_type };
        vb_attributes = attrs;
        vb_loc = loc; }
    in

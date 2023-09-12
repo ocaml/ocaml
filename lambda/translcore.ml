@@ -898,7 +898,7 @@ and transl_let ~scopes ?(in_structure=false) rec_flag pat_expr_list =
         [] ->
           fun body -> body
       | {vb_pat=pat; vb_expr=expr; vb_attributes=attr; vb_loc} :: rem ->
-          let lam = transl_bound_exp ~scopes ~in_structure pat expr in
+          let lam = transl_bound_exp ~scopes ~in_structure pat expr.qexp_expr in
           let lam = Translattribute.add_function_attributes lam vb_loc attr in
           let mk_body = transl rem in
           fun body ->
@@ -913,7 +913,8 @@ and transl_let ~scopes ?(in_structure=false) rec_flag pat_expr_list =
             | _ -> assert false)
         pat_expr_list in
       let transl_case {vb_expr=expr; vb_attributes; vb_loc; vb_pat} id =
-        let lam = transl_bound_exp ~scopes ~in_structure vb_pat expr in
+        let lam =
+          transl_bound_exp ~scopes ~in_structure vb_pat expr.qexp_expr in
         let lam =
           Translattribute.add_function_attributes lam vb_loc vb_attributes
         in
@@ -1100,7 +1101,7 @@ and transl_match ~scopes e arg pat_expr_list partial =
        handler)
   in
   let classic =
-    match arg, exn_cases with
+    match arg.qexp_expr, exn_cases with
     | {exp_desc = Texp_tuple argl}, [] ->
       assert (static_handlers = []);
       Matching.for_multiple_match ~scopes e.exp_loc

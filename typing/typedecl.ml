@@ -1579,6 +1579,7 @@ let transl_value_decl env loc valdecl =
       { val_type = ty; val_kind = Val_reg; Types.val_loc = loc;
         val_attributes = valdecl.pval_attributes;
         val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+        val_bound_type_vars = Ctype.free_variables ty;
       }
   | [] ->
       raise (Error(valdecl.pval_loc, Val_in_structure))
@@ -1609,6 +1610,7 @@ let transl_value_decl env loc valdecl =
       { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
         val_attributes = valdecl.pval_attributes;
         val_uid = Uid.mk ~current_unit:(Env.get_unit_name ());
+        val_bound_type_vars = Ctype.free_variables ty;
       }
   in
   let (id, newenv) =

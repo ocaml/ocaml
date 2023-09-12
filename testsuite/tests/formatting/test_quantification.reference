@@ -1,0 +1,125 @@
+[
+  structure_item 
+    Tstr_eval
+    expression 
+      Texp_let Nonrec
+      [
+        <def>
+          pattern 
+            Tpat_var "x"
+          quantified 'a. 'a list
+            expression 
+              Texp_construct "[]"
+              []
+      ]
+      expression 
+        Texp_ident "x"
+  structure_item 
+    Tstr_eval
+    expression 
+      Texp_match
+      quantified 'a. 'a list
+        expression 
+          Texp_construct "[]"
+          []
+      [
+        <case>
+          pattern 
+            Tpat_value
+            pattern 
+              Tpat_var "x"
+          expression 
+            Texp_ident "x"
+      ]
+  structure_item 
+    Tstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Tpat_var "f"
+        quantified 'a 'b. 'b -> 'b * 'a list
+          expression 
+            Texp_function
+            [
+              Nolabel
+              Param_pat
+                pattern 
+                  Tpat_var "x"
+            ]
+            Tfunction_body
+              expression 
+                Texp_let Nonrec
+                [
+                  <def>
+                    pattern 
+                      Tpat_var "y"
+                    quantified 'a. 'b * 'a list
+                      expression 
+                        Texp_tuple
+                        [
+                          expression 
+                            Texp_ident "x"
+                          expression 
+                            Texp_construct "[]"
+                            []
+                        ]
+                ]
+                expression 
+                  Texp_ident "y"
+    ]
+  structure_item 
+    Tstr_class
+    [
+      class_declaration 
+        pci_virt = Concrete
+        pci_params =
+          []
+        pci_name = "c"
+        pci_expr =
+          class_expr 
+            Tcl_let Nonrec
+            [
+              <def>
+                pattern 
+                  Tpat_var "x"
+                quantified 'a. 'a list
+                  expression 
+                    Texp_construct "[]"
+                    []
+            ]
+            [
+              <def> "x"
+                expression 
+                  Texp_ident "x"
+            ]
+            class_expr 
+              Tcl_structure
+              class_structure
+                pattern 
+                  Tpat_alias "selfpat-*"
+                  pattern 
+                    Tpat_any
+                [
+                  class_field 
+                    Tcf_method "x" Private
+                      Concrete Fresh
+                      expression 
+                        Texp_function
+                        [
+                          Nolabel
+                          Param_pat
+                            pattern 
+                              Tpat_alias "self-1"
+                              pattern 
+                                Tpat_var "self-*"
+                        ]
+                        Tfunction_body
+                          expression 
+                            extra
+                              Texp_poly
+                              None
+                            Texp_instvar "x"
+                ]
+    ]
+]
+

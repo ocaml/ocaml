@@ -37,6 +37,7 @@ type mapper =
     class_type_field: mapper -> class_type_field -> class_type_field;
     env: mapper -> Env.t -> Env.t;
     expr: mapper -> expression -> expression;
+    qexpr: mapper -> quantified_expression -> quantified_expression;
     extension_constructor: mapper -> extension_constructor ->
       extension_constructor;
     location: mapper -> Location.t -> Location.t;
@@ -363,7 +364,7 @@ let expr sub x =
         )
     | Texp_match (exp, cases, p) ->
         Texp_match (
-          sub.expr sub exp,
+          sub.qexpr sub exp,
           List.map (sub.case sub) cases,
           p
         )
@@ -494,6 +495,10 @@ let expr sub x =
   let exp_attributes = sub.attributes sub x.exp_attributes in
   {x with exp_loc; exp_extra; exp_desc; exp_env; exp_attributes}
 
+
+let qexpr sub {qexp_expr; qexp_vars} =
+  let qexp_expr = sub.expr sub qexp_expr in
+  {qexp_expr; qexp_vars}
 
 let package_type sub x =
   let pack_txt = map_loc sub x.pack_txt in
@@ -852,7 +857,7 @@ let case
 let value_binding sub x =
   let vb_loc = sub.location sub x.vb_loc in
   let vb_pat = sub.pat sub x.vb_pat in
-  let vb_expr = sub.expr sub x.vb_expr in
+  let vb_expr = sub.qexpr sub x.vb_expr in
   let vb_attributes = sub.attributes sub x.vb_attributes in
   {vb_loc; vb_pat; vb_expr; vb_attributes}
 
@@ -875,6 +880,7 @@ let default =
     class_type_field;
     env;
     expr;
+    qexpr;
     extension_constructor;
     location;
     module_binding;

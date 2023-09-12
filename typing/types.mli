@@ -372,6 +372,7 @@ type value_description =
     val_loc: Location.t;
     val_attributes: Parsetree.attributes;
     val_uid: Uid.t;
+    val_bound_type_vars: type_expr list;
   }
 
 and value_kind =
@@ -391,7 +392,10 @@ and class_signature =
   { csig_self: type_expr;
     mutable csig_self_row: type_expr;
     mutable csig_vars: (mutable_flag * virtual_flag * type_expr) Vars.t;
-    mutable csig_meths: (method_privacy * virtual_flag * type_expr) Meths.t; }
+    mutable csig_meths: (method_privacy * virtual_flag * type_expr) Meths.t;
+    csig_bound_type_vars: type_expr list; }
+    (* csig_bound_type_vars contains quantified type variables that appear only
+       in csig_vars *)
 
 and method_privacy =
   | Mpublic

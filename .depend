@@ -1162,6 +1162,7 @@ typing/printtyp.cmi : \
 typing/printtyped.cmo : \
     typing/types.cmi \
     typing/typedtree.cmi \
+    typing/printtyp.cmi \
     parsing/printast.cmi \
     parsing/pprintast.cmi \
     typing/path.cmi \
@@ -1175,6 +1176,7 @@ typing/printtyped.cmo : \
 typing/printtyped.cmx : \
     typing/types.cmx \
     typing/typedtree.cmx \
+    typing/printtyp.cmx \
     parsing/printast.cmx \
     parsing/pprintast.cmx \
     typing/path.cmx \
@@ -6778,6 +6780,7 @@ toplevel/native/topeval.cmo : \
     typing/ident.cmi \
     typing/env.cmi \
     otherlibs/dynlink/dynlink.cmi \
+    typing/ctype.cmi \
     utils/config.cmi \
     driver/compmisc.cmi \
     middle_end/compilenv.cmi \
@@ -6809,6 +6812,7 @@ toplevel/native/topeval.cmx : \
     typing/ident.cmx \
     typing/env.cmx \
     otherlibs/dynlink/dynlink.cmi \
+    typing/ctype.cmx \
     utils/config.cmx \
     driver/compmisc.cmx \
     middle_end/compilenv.cmx \

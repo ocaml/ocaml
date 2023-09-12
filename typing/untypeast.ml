@@ -384,7 +384,7 @@ let value_binding sub vb =
   let attrs = sub.attributes sub vb.vb_attributes in
   Vb.mk ~loc ~attrs
     (sub.pat sub vb.vb_pat)
-    (sub.expr sub vb.vb_expr)
+    (sub.expr sub vb.vb_expr.qexp_expr)
 
 let expression sub exp =
   let loc = sub.location sub exp.exp_loc in
@@ -449,7 +449,7 @@ let expression sub exp =
                 None -> list
               | Some exp -> (label, sub.expr sub exp) :: list
           ) list [])
-    | Texp_match (exp, cases, _) ->
+    | Texp_match ({qexp_expr=exp}, cases, _) ->
       Pexp_match (sub.expr sub exp, List.map (sub.case sub) cases)
     | Texp_try (exp, cases) ->
         Pexp_try (sub.expr sub exp, List.map (sub.case sub) cases)

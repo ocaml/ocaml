@@ -90,6 +90,11 @@ and expression =
     exp_attributes: attribute list;
    }
 
+and quantified_expression =
+  { qexp_expr: expression;
+    qexp_vars: type_expr list;
+  }
+
 and exp_extra =
   | Texp_constraint of core_type
   | Texp_coerce of core_type option * core_type
@@ -102,7 +107,7 @@ and expression_desc =
   | Texp_let of rec_flag * value_binding list * expression
   | Texp_function of function_param list * function_body
   | Texp_apply of expression * (arg_label * expression option) list
-  | Texp_match of expression * computation case list * partial
+  | Texp_match of quantified_expression * computation case list * partial
   | Texp_try of expression * value case list
   | Texp_tuple of expression list
   | Texp_construct of
@@ -322,7 +327,7 @@ and module_binding =
 and value_binding =
   {
     vb_pat: pattern;
-    vb_expr: expression;
+    vb_expr: quantified_expression;
     vb_attributes: attributes;
     vb_loc: Location.t;
   }

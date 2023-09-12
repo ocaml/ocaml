@@ -36,6 +36,7 @@ type mapper =
     class_type_field: mapper -> class_type_field -> class_type_field;
     env: mapper -> Env.t -> Env.t;
     expr: mapper -> expression -> expression;
+    qexpr: mapper -> quantified_expression -> quantified_expression;
     extension_constructor: mapper -> extension_constructor ->
       extension_constructor;
     location: mapper -> Location.t -> Location.t;

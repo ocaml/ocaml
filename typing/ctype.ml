@@ -989,6 +989,39 @@ let generalize_class_type cty =
 let generalize_class_type_structure cty =
   generalize_class_type' generalize_structure cty
 
+let rec map_class_type f = function
+  | Cty_constr (p, args, cty') ->
+      Cty_constr (p, args, map_class_type f cty')
+  | Cty_signature sign -> Cty_signature (f sign)
+  | Cty_arrow (l, arg, cty') ->
+      Cty_arrow (l, arg, map_class_type f cty')
+
+let map_class_declaration f cdecl =
+  {cdecl with
+   cty_type = map_class_type (f ~params:cdecl.cty_params) cdecl.cty_type}
+
+let map_class_type_declaration f ctdecl =
+  {ctdecl with
+   clty_type = map_class_type (f ~params:ctdecl.clty_params) ctdecl.clty_type}
+
+let generic_free_variables t = 
+  let fvars = free_variables t in
+  List.filter (fun v -> get_level v = generic_level) fvars
+
+let update_bound_variables_in_class_signature ~params csig =
+  let add_free_variables ty s =
+    TypeSet.union s (TypeSet.of_list (generic_free_variables ty)) in
+  let vars_vars =
+    Vars.fold (fun _label (_m, _v, ty) -> add_free_variables ty)
+      csig.csig_vars TypeSet.empty in
+  let vars_meths =
+    Meths.fold (fun _label (_priv, _v, ty) -> add_free_variables ty)
+      csig.csig_meths TypeSet.empty in
+  let vars_params =
+    List.fold_right add_free_variables params TypeSet.empty in
+  let vars = TypeSet.diff (TypeSet.union vars_vars vars_meths) vars_params in
+  {csig with csig_bound_type_vars = TypeSet.elements vars}
+
 (* Correct the levels of type [ty]. *)
 let correct_levels ty =
   duplicate_type ty
@@ -1390,7 +1423,10 @@ let instance_class params cty =
            csig_meths =
              Meths.map
                (function (p, v, ty) -> (p, v, copy copy_scope ty))
-               sign.csig_meths}
+               sign.csig_meths;
+           csig_bound_type_vars = [];
+           (* instances are not generic and have no quantification *)
+         }
     | Cty_arrow (l, ty, cty) ->
         Cty_arrow (l, copy copy_scope ty, copy_class_type copy_scope cty)
   in
@@ -3463,7 +3499,8 @@ let new_class_signature () =
   { csig_self = self;
     csig_self_row = row;
     csig_vars = Vars.empty;
-    csig_meths = Meths.empty; }
+    csig_meths = Meths.empty;
+    csig_bound_type_vars = []; }
 
 let add_dummy_method env ~scope sign =
   let _, ty, row =
@@ -5472,7 +5509,9 @@ let nondep_class_signature env id sign =
         sign.csig_vars;
     csig_meths =
       Meths.map (function (p, v, t) -> (p, v, nondep_type_rec env id t))
-        sign.csig_meths }
+        sign.csig_meths;
+    csig_bound_type_vars =
+      List.map (nondep_type_rec env id) sign.csig_bound_type_vars; }
 
 let rec nondep_class_type env ids =
   function

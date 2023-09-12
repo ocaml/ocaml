@@ -318,6 +318,17 @@ and expression_extra i ppf x attrs =
       line i ppf "Texp_newtype \"%s\"\n" s;
       attributes i ppf attrs;
 
+and quantified_expression i ppf {qexp_expr; qexp_vars} =
+  if qexp_vars = [] then expression i ppf qexp_expr else
+  let t = Btype.newgenty (Types.Tpoly (qexp_expr.exp_type, qexp_vars)) in
+  let buf = Buffer.create 10 in
+  let f = Format.formatter_of_buffer buf in
+  Format.pp_set_margin f 1_000_000_000;
+  Printtyp.type_expr f t;
+  Format.pp_print_flush f ();
+  line i ppf "quantified %s\n" (Buffer.contents buf);
+  expression (i+1) ppf qexp_expr
+
 and expression i ppf x =
   line i ppf "expression %a\n" fmt_location x.exp_loc;
   attributes i ppf x.exp_attributes;
@@ -344,9 +355,9 @@ and expression i ppf x =
       line i ppf "Texp_apply\n";
       expression i ppf e;
       list i label_x_expression ppf l;
-  | Texp_match (e, l, _partial) ->
+  | Texp_match (qe, l, _partial) ->
       line i ppf "Texp_match\n";
-      expression i ppf e;
+      quantified_expression i ppf qe;
       list i case ppf l;
   | Texp_try (e, l) ->
       line i ppf "Texp_try\n";
@@ -947,7 +958,7 @@ and value_binding i ppf x =
   line i ppf "<def>\n";
   attributes (i+1) ppf x.vb_attributes;
   pattern (i+1) ppf x.vb_pat;
-  expression (i+1) ppf x.vb_expr
+  quantified_expression (i+1) ppf x.vb_expr
 
 and string_x_expression i ppf (s, _, e) =
   line i ppf "<override> \"%a\"\n" fmt_ident s;
