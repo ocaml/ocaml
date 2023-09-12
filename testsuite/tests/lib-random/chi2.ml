@@ -143,12 +143,12 @@ let _ =
   test "Random.int_in_range, full int31 range (bits 23-30)"
       (fun () -> (Random.int_in_range ~min:min_int31 ~max:max_int31) lsr 23);
   test "Random.int_in_range, range of length 256*p < 2^30 (bits 0-7)"
-      (let p = 2097169 in (* prime < 2^22 *)
+      (let p = 2_097_169 in (* prime < 2^22 *)
        let min_ = -214748364 in
        let max_ = min_ + (256 * p) - 1 in
        fun () -> (Random.int_in_range ~min:min_ ~max:max_ - min_) / p);
   test "Random.int_in_range, range of length 2^30 < 256*p < 2^31 (bits 0-7)"
-      (let p = 4194319 in (* prime > 2^22 and < 2^23 *)
+      (let p = 6_291_469 in (* prime > 2^22 and < 2^23 *)
        let min_ = min_int in
        let max_ = min_ + (256 * p) - 1 in
        fun () -> udiv (Random.int_in_range ~min:min_ ~max:max_ - min_) p);
@@ -160,7 +160,7 @@ let _ =
     test "Random.int_in_range, full int32 range (bits 24-31)"
         (fun () -> (Random.int_in_range ~min:min_int32 ~max:max_int32) lsr 24);
     test "Random.int_in_range, range of length 2^31 < 256*p < 2^32 (bits 0-7)"
-        (let p = 8388617 in (* prime > 2^23 and < 2^24 *)
+        (let p = 12_582_917 in (* prime > 2^23 and < 2^24 *)
          let min_ = min_int in
          let max_ = min_ + (256 * p) - 1 in
          fun () -> udiv (Random.int_in_range ~min:min_ ~max:max_ - min_) p);
@@ -189,12 +189,12 @@ let _ =
     test "Random.int_in_range, full int range (bits 55-62)"
         (fun () -> (Random.int_in_range ~min:min_int ~max:max_int) lsr 55);
     test "Random.int_in_range, range of length 2^61 < 256*p < 2^62 (bits 0-7)"
-        (let p = Int64.to_int 9007199254740997L in (* prime > 2^53 and < 2^54 *)
+        (let p = Int64.to_int 13510798882111519L in (*prime > 2^53 and < 2^54 *)
          let min_ = min_int in
          let max_ = min_ + (256 * p) - 1 in
          fun () -> (Random.int_in_range ~min:min_ ~max:max_ - min_) / p);
     test "Random.int_in_range, range of length 256*p > 2^62 (bits 0-7)"
-        (let p = Int64.to_int 18014398509482143L in (*prime > 2^54 and < 2^55 *)
+        (let p = Int64.to_int 27021597764223071L in (*prime > 2^54 and < 2^55 *)
          let min_ = min_int in
          let max_ = min_ + (256 * p) - 1 in
          fun () -> udiv (Random.int_in_range ~min:min_ ~max:max_ - min_) p);
@@ -227,13 +227,13 @@ let _ =
             (Random.int32_in_range ~min:min_int ~max:max_int)
             24)));
   test "Random.int32_in_range, range of length 256*p < 2^31 (bits 0-7)"
-       (let p = 4194319l in (* prime < 2^23 *)
+       (let p = 6_291_469l in (* prime < 2^23 *)
         let min_ = -429496751l in
         let max_ = Int32.(pred (add min_ (mul 256l p))) in
         fun () -> Int32.(to_int
             (div (sub (Random.int32_in_range ~min:min_ ~max:max_) min_) p)));
   test "Random.int32_in_range, range of length 256*p > 2^31 (bits 0-7)"
-       (let p = 8388617l in (* prime > 2^23 and < 2^24 *)
+       (let p = 12_582_917l in (* prime > 2^23 and < 2^24 *)
         let min_ = Int32.min_int in
         let max_ = Int32.(pred (add min_ (mul 256l p))) in
         fun () -> Int32.(to_int
@@ -279,13 +279,13 @@ let _ =
             (Random.int64_in_range ~min:min_int ~max:max_int)
             56)));
   test "Random.int64_in_range, range of length 256*p < 2^63 (bits 0-7)"
-       (let p = 18014398509482143L in (* prime < 2^55 *)
+       (let p = 27021597764223071L in (* prime < 2^55 *)
         let min_ = -1844674407370955197L in
         let max_ = Int64.(pred (add min_ (mul 256L p))) in
         fun () -> Int64.(to_int
             (div (sub (Random.int64_in_range ~min:min_ ~max:max_) min_) p)));
   test "Random.int64_in_range, range of length 256*p > 2^63 (bits 0-7)"
-       (let p = 36028797018963971L in (* prime > 2^55 and < 2^56 *)
+       (let p = 54043195528445957L in (* prime > 2^55 and < 2^56 *)
         let min_ = Int64.min_int in
         let max_ = Int64.(pred (add min_ (mul 256L p))) in
         fun () -> Int64.(to_int
