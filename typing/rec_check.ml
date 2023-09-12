@@ -16,7 +16,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Static checking of recursive declarations
+(** Static checking of recursive declarations, as described in
+
+      A practical mode system for recursive definitions
+      Alban Reynaud, Gabriel Scherer and Jeremy Yallop
+      POPL 2021
 
 Some recursive definitions are meaningful
 {[
