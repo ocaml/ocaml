@@ -75,13 +75,11 @@ val lubs : pattern list -> pattern list -> pattern list
 
 val get_mins : ('a -> 'a -> bool) -> 'a list -> 'a list
 
-(** Those two functions recombine one pattern and its arguments:
+(** This function recombines one pattern and its arguments:
     For instance:
       (_,_)::p1::p2::rem -> (p1, p2)::rem
-    The second one will replace mutable arguments by '_'
 *)
 val set_args : pattern -> pattern list -> pattern list
-val set_args_erase_mutable : pattern -> pattern list -> pattern list
 
 val pat_of_constr : pattern -> constructor_description -> pattern
 val complete_constrs :
