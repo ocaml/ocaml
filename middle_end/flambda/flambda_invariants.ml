@@ -162,12 +162,12 @@ let variable_and_symbol_invariants (program : Flambda.program) =
       loop (add_mutable_binding_occurrence env mut_var) body
     | Let_rec (defs, body) ->
       let env =
-        List.fold_left (fun env (var, def) ->
+        List.fold_left (fun env (var, _clas, def) ->
             will_traverse_named_expression_later def;
             add_binding_occurrence env var)
           env defs
       in
-      List.iter (fun (var, def) ->
+      List.iter (fun (var, _clas, def) ->
         already_added_bound_variable_to_env var;
         loop_named env def) defs;
       loop env body

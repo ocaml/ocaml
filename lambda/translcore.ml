@@ -907,17 +907,22 @@ and transl_let ~scopes ?(in_structure=false) rec_flag pat_expr_list =
   | Recursive ->
       let idlist =
         List.map
-          (fun {vb_pat=pat} -> match pat.pat_desc with
-              Tpat_var (id,_) -> id
-            | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
-            | _ -> assert false)
+          (fun {vb_pat=pat} ->
+             let id =
+               match pat.pat_desc with
+               | Tpat_var (id,_) -> id
+               | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
+               | _ -> assert false
+             in
+             let clas = Ident.Tbl.find Rec_check.classifications id in
+             id, clas)
         pat_expr_list in
-      let transl_case {vb_expr=expr; vb_attributes; vb_loc; vb_pat} id =
+      let transl_case {vb_expr=expr; vb_attributes; vb_loc; vb_pat} (id, clas) =
         let lam = transl_bound_exp ~scopes ~in_structure vb_pat expr in
         let lam =
           Translattribute.add_function_attributes lam vb_loc vb_attributes
         in
-        (id, lam) in
+        (id, clas, lam) in
       let lam_bds = List.map2 transl_case pat_expr_list idlist in
       fun body -> Lletrec(lam_bds, body)
 

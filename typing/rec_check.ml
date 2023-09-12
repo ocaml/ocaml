@@ -106,7 +106,12 @@ exception Illegal_expr
 
 (** {1 Static or dynamic size} *)
 
-type sd = Static | Dynamic
+type sd = Lambda.rec_check_classification
+
+let classifications : Lambda.rec_check_classification Ident.Tbl.t =
+  Ident.Tbl.create 17
+
+let reset_classifications () = Ident.Tbl.reset classifications
 
 let is_ref : Types.value_description -> bool = function
   | { Types.val_kind =
@@ -142,7 +147,7 @@ let classify_expression : Typedtree.expression -> sd =
     The first definition can be allowed (`y` has a statically-known
     size) but the second one is unsound (`y` has no statically-known size).
   *)
-  let rec classify_expression env e = match e.exp_desc with
+  let rec classify_expression env e : sd = match e.exp_desc with
     (* binding and variable cases *)
     | Texp_let (rec_flag, vb, e) ->
         let env = classify_value_bindings rec_flag env vb in
@@ -247,13 +252,13 @@ let classify_expression : Typedtree.expression -> sd =
 
                 This could be fixed by a more complete implementation.
             *)
-            Dynamic
+            Lambda.Dynamic
         end
     | Path.Pdot _ | Path.Papply _ | Path.Pextra_ty _ ->
         (* local modules could have such paths to local definitions;
             classify_expression could be extend to compute module
             shapes more precisely *)
-        Dynamic
+        Lambda.Dynamic
   in classify_expression Ident.empty
 
 
@@ -1271,12 +1276,15 @@ and is_destructuring_pattern : type k . k general_pattern -> bool =
     | Tpat_or (l,r,_) ->
         is_destructuring_pattern l || is_destructuring_pattern r
 
-let is_valid_recursive_expression idlist expr =
+let is_valid_recursive_expression idlist id expr =
   match expr.exp_desc with
   | Texp_function _ ->
      (* Fast path: functions can never have invalid recursive references *)
+      Ident.Tbl.add classifications id Lambda.Static;
      true
   | _ ->
+     let classification = classify_expression expr in
+      Ident.Tbl.add classifications id classification;
      match classify_expression expr with
      | Static ->
         (* The expression has known size *)

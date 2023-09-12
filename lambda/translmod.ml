@@ -425,7 +425,7 @@ let transl_class_bindings ~scopes cl_list =
   (ids,
    List.map
      (fun ({ci_id_class=id; ci_expr=cl; ci_virt=vf}, meths) ->
-       (id, transl_class ~scopes ids id meths cl vf))
+       (id, Static, transl_class ~scopes ids id meths cl vf))
      cl_list)
 
 (* Compile one or more functors, merging curried functors to produce

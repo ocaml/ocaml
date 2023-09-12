@@ -37,4 +37,4 @@ val split_default_wrapper
   -> body:lambda
   -> attr:function_attribute
   -> loc:Lambda.scoped_location
-  -> (Ident.t * lambda) list
+  -> (Ident.t * Lambda.rec_check_classification * lambda) list

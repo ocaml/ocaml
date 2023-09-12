@@ -1209,6 +1209,7 @@ typing/rec_check.cmx : \
     typing/rec_check.cmi
 typing/rec_check.cmi : \
     typing/typedtree.cmi \
+    lambda/lambda.cmi \
     typing/ident.cmi
 typing/shape.cmo : \
     typing/path.cmi \
@@ -3824,6 +3825,7 @@ lambda/translcore.cmo : \
     lambda/translprim.cmi \
     lambda/translobj.cmi \
     lambda/translattribute.cmi \
+    typing/rec_check.cmi \
     typing/printtyp.cmi \
     typing/primitive.cmi \
     typing/predef.cmi \
@@ -3848,6 +3850,7 @@ lambda/translcore.cmx : \
     lambda/translprim.cmx \
     lambda/translobj.cmx \
     lambda/translattribute.cmx \
+    typing/rec_check.cmx \
     typing/printtyp.cmx \
     typing/primitive.cmx \
     typing/predef.cmx \
@@ -6076,6 +6079,7 @@ driver/compile_common.cmo : \
     typing/typedtree.cmi \
     typing/typecore.cmi \
     typing/shape.cmi \
+    typing/rec_check.cmi \
     utils/profile.cmi \
     typing/printtyped.cmi \
     typing/printtyp.cmi \
@@ -6096,6 +6100,7 @@ driver/compile_common.cmx : \
     typing/typedtree.cmx \
     typing/typecore.cmx \
     typing/shape.cmx \
+    typing/rec_check.cmx \
     utils/profile.cmx \
     typing/printtyped.cmx \
     typing/printtyp.cmx \

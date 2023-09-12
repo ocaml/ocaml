@@ -2608,8 +2608,14 @@ let maybe_expansive e = not (is_nonexpansive e)
 let check_recursive_bindings env valbinds =
   let ids = let_bound_idents valbinds in
   List.iter
-    (fun {vb_expr} ->
-       if not (Rec_check.is_valid_recursive_expression ids vb_expr) then
+    (fun {vb_pat; vb_expr} ->
+       let id =
+         match vb_pat.pat_desc with
+         | Tpat_var (id, _loc) -> id
+         | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
+         | _ -> assert false
+       in
+       if not (Rec_check.is_valid_recursive_expression ids id vb_expr) then
          raise(Error(vb_expr.exp_loc, env, Illegal_letrec_expr))
     )
     valbinds

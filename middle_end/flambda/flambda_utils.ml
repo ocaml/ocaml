@@ -221,8 +221,14 @@ and same_move_within_set_of_closures (m1 : Flambda.move_within_set_of_closures)
     && Closure_id.equal m1.start_from m2.start_from
     && Closure_id.equal m1.move_to m2.move_to
 
-and samebinding (v1, n1) (v2, n2) =
-  Variable.equal v1 v2 && same_named n1 n2
+and samebinding (v1, clas1, n1) (v2, clas2, n2) =
+  let equal_clas c1 c2 =
+    match (c1 : Lambda.rec_check_classification),
+          (c2 : Lambda.rec_check_classification) with
+    | Dynamic, Dynamic | Static, Static -> true
+    | Dynamic, Static | Static, Dynamic -> false
+  in
+  Variable.equal v1 v2 && equal_clas clas1 clas2 && same_named n1 n2
 
 and sameswitch (fs1 : Flambda.switch) (fs2 : Flambda.switch) =
   let samecase (n1, a1) (n2, a2) = n1 = n2 && same a1 a2 in
@@ -638,7 +644,7 @@ let substitute_read_symbol_field_for_variables
       expr
     | Let_rec (defs, body) ->
       let free_variables_of_defs =
-        List.fold_left (fun set (_, named) ->
+        List.fold_left (fun set (_, _, named) ->
             Variable.Set.union set (Flambda.free_variables_named named))
           Variable.Set.empty defs
       in
@@ -654,8 +660,8 @@ let substitute_read_symbol_field_for_variables
           Variable.Map.of_set (fun var -> Variable.rename var) to_substitute
         in
         let defs =
-          List.map (fun (var, named) ->
-              var, substitute_named bindings named)
+          List.map (fun (var, clas, named) ->
+              var, clas, substitute_named bindings named)
             defs
         in
         let expr =

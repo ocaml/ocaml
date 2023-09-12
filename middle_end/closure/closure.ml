@@ -71,7 +71,7 @@ let occurs_var var u =
     | Ulet(_str, _kind, _id, def, body) -> occurs def || occurs body
     | Uphantom_let _ -> no_phantom_lets ()
     | Uletrec(decls, body) ->
-        List.exists (fun (_id, u) -> occurs u) decls || occurs body
+        List.exists (fun (_id, _clas, u) -> occurs u) decls || occurs body
     | Uprim(_p, args, _) -> List.exists occurs args
     | Uswitch(arg, s, _dbg) ->
         occurs arg ||
@@ -576,17 +576,17 @@ let rec substitute loc ((backend, fpc) as st) sb rn ulam =
   | Uphantom_let _ -> no_phantom_lets ()
   | Uletrec(bindings, body) ->
       let bindings1 =
-        List.map (fun (id, rhs) ->
-          (VP.var id, VP.rename id, rhs)) bindings
+        List.map (fun (id, clas, rhs) ->
+          (VP.var id, VP.rename id, clas, rhs)) bindings
       in
       let sb' =
-        List.fold_right (fun (id, id', _) s ->
+        List.fold_right (fun (id, id', _, _) s ->
             V.Map.add id (Uvar (VP.var id')) s)
           bindings1 sb
       in
       Uletrec(
         List.map
-           (fun (_id, id', rhs) -> (id', substitute loc st sb' rn rhs))
+           (fun (_id, id', clas, rhs) -> (id', clas, substitute loc st sb' rn rhs))
            bindings1,
         substitute loc st sb' rn body)
   | Uprim(p, args, dbg) ->
@@ -1053,7 +1053,7 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
      (Ulet(Mutable, kind, VP.create id, ulam, ubody), abody)
   | Lletrec(defs, body) ->
       if List.for_all
-           (function (_id, Lfunction _) -> true | _ -> false)
+           (function (_id, _clas, Lfunction _) -> true | _ -> false)
            defs
       then begin
         (* Simple case: only function definitions *)
@@ -1078,10 +1078,10 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         (* General case: recursive definition of values *)
         let rec clos_defs = function
           [] -> ([], fenv)
-        | (id, lam) :: rem ->
+        | (id, clas, lam) :: rem ->
             let (udefs, fenv_body) = clos_defs rem in
             let (ulam, approx) = close_named env id lam in
-            ((VP.create id, ulam) :: udefs, V.Map.add id approx fenv_body) in
+            ((VP.create id, clas, ulam) :: udefs, V.Map.add id approx fenv_body) in
         let (udefs, fenv_body) = clos_defs defs in
         let (ubody, approx) =
           close { backend; fenv = fenv_body; cenv; mutable_vars } body in
@@ -1257,12 +1257,12 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
        is forced. Cf #12526
     *)
     match fun_defs with
-    | [_, Lfunction{attr = { inline = Always_inline; }}] ->
+    | [_, _, Lfunction{attr = { inline = Always_inline; }}] ->
         fun_defs
     | _ ->
         List.concat_map
           (function
-           | (id, Lfunction{kind; params; return; body; attr; loc}) ->
+           | (id, _clas, Lfunction{kind; params; return; body; attr; loc}) ->
              Simplif.split_default_wrapper ~id ~kind ~params
                ~body ~attr ~loc ~return
            | _ -> assert false
@@ -1270,7 +1270,7 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
          fun_defs
   in
   let inline_attribute = match fun_defs with
-    | [_, Lfunction{attr = { inline; }}] -> inline
+    | [_, _, Lfunction{attr = { inline; }}] -> inline
     | _ -> Default_inline (* recursive functions can't be inlined *)
   in
   (* Update and check nesting depth *)
@@ -1286,7 +1286,7 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
   let uncurried_defs =
     List.map
       (function
-          (id, Lfunction{kind; params; return; body; loc; attr}) ->
+          (id, _clas, Lfunction{kind; params; return; body; loc; attr}) ->
             let label = Compilenv.make_symbol (Some (V.unique_name id)) in
             let arity = List.length params in
             let fundesc =
@@ -1298,7 +1298,7 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
                fun_poll = attr.poll } in
             let dbg = Debuginfo.from_location loc in
             (id, params, return, body, fundesc, dbg)
-        | (_, _) -> fatal_error "Closure.close_functions")
+        | (_, _, _) -> fatal_error "Closure.close_functions")
       fun_defs in
   (* Build an approximate fenv for compiling the functions *)
   let fenv_rec =
@@ -1423,7 +1423,7 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
 (* Same, for one non-recursive function *)
 
 and close_one_function env id funct =
-  match close_functions env [id, funct] with
+  match close_functions env [id, Lambda.Static, funct] with
   | (clos, (i, _, approx) :: _) when id = i -> (clos, approx)
   | _ -> fatal_error "Closure.close_one_function"
 
@@ -1514,7 +1514,7 @@ let collect_exported_structured_constants a =
     | Uoffset(u, _) -> ulam u
     | Ulet (_str, _kind, _, u1, u2) -> ulam u1; ulam u2
     | Uphantom_let _ -> no_phantom_lets ()
-    | Uletrec (l, u) -> List.iter (fun (_, u) -> ulam u) l; ulam u
+    | Uletrec (l, u) -> List.iter (fun (_, _, u) -> ulam u) l; ulam u
     | Uprim (_, ul, _) -> List.iter ulam ul
     | Uswitch (u, sl, _dbg) ->
         ulam u;

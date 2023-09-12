@@ -40,7 +40,7 @@ let rec eliminate_ref id = function
   | Lmutlet(kind, v, e1, e2) ->
       Lmutlet(kind, v, eliminate_ref id e1, eliminate_ref id e2)
   | Lletrec(idel, e2) ->
-      Lletrec(List.map (fun (v, e) -> (v, eliminate_ref id e)) idel,
+      Lletrec(List.map (fun (v, clas, e) -> (v, clas, eliminate_ref id e)) idel,
               eliminate_ref id e2)
   | Lprim(Pfield (0, _, _), [Lvar v], _) when Ident.same v id ->
       Lmutvar id
@@ -129,7 +129,7 @@ let simplify_exits lam =
   | Lmutlet(_kind, _v, l1, l2) ->
       count ~try_depth l2; count ~try_depth l1
   | Lletrec(bindings, body) ->
-      List.iter (fun (_v, l) -> count ~try_depth l) bindings;
+      List.iter (fun (_v, _clas, l) -> count ~try_depth l) bindings;
       count ~try_depth body
   | Lprim(_p, ll, _) -> List.iter (count ~try_depth) ll
   | Lswitch(l, sw, _loc) ->
@@ -226,7 +226,7 @@ let simplify_exits lam =
   | Lmutlet(kind, v, l1, l2) ->
       Lmutlet(kind, v, simplif ~try_depth l1, simplif ~try_depth l2)
   | Lletrec(bindings, body) ->
-      Lletrec(List.map (fun (v, l) -> (v, simplif ~try_depth l)) bindings,
+      Lletrec(List.map (fun (v, clas, l) -> (v, clas, simplif ~try_depth l)) bindings,
       simplif ~try_depth body)
   | Lprim(p, ll, loc) -> begin
     let ll = List.map (simplif ~try_depth) ll in
@@ -417,7 +417,7 @@ let simplify_lets lam =
      count bv l1;
      count bv l2
   | Lletrec(bindings, body) ->
-      List.iter (fun (_v, l) -> count bv l) bindings;
+      List.iter (fun (_v, _clas, l) -> count bv l) bindings;
       count bv body
   | Lprim(_p, ll, _) -> List.iter (count bv) ll
   | Lswitch(l, sw, _loc) ->
@@ -556,7 +556,7 @@ let simplify_lets lam =
   | Llet(str, kind, v, l1, l2) -> mklet str kind v (simplif l1) (simplif l2)
   | Lmutlet(kind, v, l1, l2) -> mkmutlet kind v (simplif l1) (simplif l2)
   | Lletrec(bindings, body) ->
-      Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
+      Lletrec(List.map (fun (v, clas, l) -> (v, clas, simplif l)) bindings, simplif body)
   | Lprim(p, ll, loc) -> Lprim(p, List.map simplif ll, loc)
   | Lswitch(l, sw, loc) ->
       let new_l = simplif l
@@ -629,7 +629,7 @@ let rec emit_tail_infos is_tail lambda =
       emit_tail_infos false lam;
       emit_tail_infos is_tail body
   | Lletrec (bindings, body) ->
-      List.iter (fun (_, lam) -> emit_tail_infos false lam) bindings;
+      List.iter (fun (_, _clas, lam) -> emit_tail_infos false lam) bindings;
       emit_tail_infos is_tail body
   | Lprim ((Pbytes_to_string | Pbytes_of_string), [arg], _) ->
       emit_tail_infos is_tail arg
@@ -753,14 +753,17 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~return ~body ~attr ~loc =
             ~params:(List.map (fun id -> id, Pgenval) new_ids)
             ~return ~body ~attr ~loc
         in
-        (wrapper_body, (inner_id, inner_fun))
+        (wrapper_body, (inner_id, Static, inner_fun))
   in
   try
     let body, inner = aux [] body in
     let attr = default_stub_attribute in
-    [(fun_id, lfunction ~kind ~params ~return ~body ~attr ~loc); inner]
+    [(fun_id, Static,
+      lfunction ~kind ~params ~return ~body ~attr ~loc);
+     inner]
   with Exit ->
-    [(fun_id, lfunction ~kind ~params ~return ~body ~attr ~loc)]
+    [(fun_id, Static,
+      lfunction ~kind ~params ~return ~body ~attr ~loc)]
 
 (* Simplify local let-bound functions: if all occurrences are
    fully-applied function calls in the same "tail scope", replace the

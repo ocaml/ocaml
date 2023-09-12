@@ -581,9 +581,14 @@ let rec lam ppf = function
       let bindings ppf id_arg_list =
         let spc = ref false in
         List.iter
-          (fun (id, l) ->
+          (fun (id, clas, l) ->
             if !spc then fprintf ppf "@ " else spc := true;
-            fprintf ppf "@[<2>%a@ %a@]" Ident.print id lam l)
+            let clas_annot =
+              match (clas : Lambda.rec_check_classification) with
+              | Static -> ""
+              | Dynamic -> "[Dyn]"
+            in
+            fprintf ppf "@[<2>%a%s@ %a@]" Ident.print id clas_annot lam l)
           id_arg_list in
       fprintf ppf
         "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]" bindings id_arg_list lam body
