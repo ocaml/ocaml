@@ -108,11 +108,6 @@ exception Illegal_expr
 
 type sd = Lambda.rec_check_classification
 
-let classifications : Lambda.rec_check_classification Ident.Tbl.t =
-  Ident.Tbl.create 17
-
-let reset_classifications () = Ident.Tbl.reset classifications
-
 let is_ref : Types.value_description -> bool = function
   | { Types.val_kind =
         Types.Val_prim { Primitive.prim_name = "%makemutable";
@@ -1276,24 +1271,23 @@ and is_destructuring_pattern : type k . k general_pattern -> bool =
     | Tpat_or (l,r,_) ->
         is_destructuring_pattern l || is_destructuring_pattern r
 
-let is_valid_recursive_expression idlist id expr =
+let is_valid_recursive_expression idlist expr =
   match expr.exp_desc with
   | Texp_function _ ->
      (* Fast path: functions can never have invalid recursive references *)
-      Ident.Tbl.add classifications id Lambda.Static;
-     true
+     Some Lambda.Static
   | _ ->
-     let classification = classify_expression expr in
-      Ident.Tbl.add classifications id classification;
      match classify_expression expr with
      | Static ->
         (* The expression has known size *)
         let ty = expression expr Return in
-        Env.unguarded ty idlist = []
+        if Env.unguarded ty idlist = [] then Some Lambda.Static else None
      | Dynamic ->
         (* The expression has unknown size *)
         let ty = expression expr Return in
-        Env.unguarded ty idlist = [] && Env.dependent ty idlist = []
+        if Env.unguarded ty idlist = [] && Env.dependent ty idlist = []
+        then Some Lambda.Dynamic
+        else None
 
 (* A class declaration may contain let-bindings. If they are recursive,
    their validity will already be checked by [is_valid_recursive_expression]

@@ -183,7 +183,6 @@ type error =
   | Literal_overflow of string
   | Unknown_literal of string * char
   | Illegal_letrec_pat
-  | Illegal_letrec_expr
   | Illegal_class_expr
   | Letop_type_clash of string * Errortrace.unification_error
   | Andop_type_clash of string * Errortrace.unification_error
@@ -2605,21 +2604,6 @@ and is_nonexpansive_opt = function
 
 let maybe_expansive e = not (is_nonexpansive e)
 
-let check_recursive_bindings env valbinds =
-  let ids = let_bound_idents valbinds in
-  List.iter
-    (fun {vb_pat; vb_expr} ->
-       let id =
-         match vb_pat.pat_desc with
-         | Tpat_var (id, _loc) -> id
-         | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
-         | _ -> assert false
-       in
-       if not (Rec_check.is_valid_recursive_expression ids id vb_expr) then
-         raise(Error(vb_expr.exp_loc, env, Illegal_letrec_expr))
-    )
-    valbinds
-
 let check_recursive_class_bindings env ids exprs =
   List.iter
     (fun expr ->
@@ -3317,10 +3301,6 @@ and type_expect_
               allow_modules
           in
           let body = type_expect new_env sbody ty_expected_explained in
-          let () =
-            if rec_flag = Recursive then
-              check_recursive_bindings env pat_exp_list
-          in
           (* The "bound expressions" component of the scope escape check.
 
              This kind of scope escape is relevant only for recursive
@@ -6822,10 +6802,6 @@ let report_error ~loc env = function
   | Illegal_letrec_pat ->
       Location.errorf ~loc
         "Only variables are allowed as left-hand side of %a"
-        Style.inline_code "let rec"
-  | Illegal_letrec_expr ->
-      Location.errorf ~loc
-        "This kind of expression is not allowed as right-hand side of %a"
         Style.inline_code "let rec"
   | Illegal_class_expr ->
       Location.errorf ~loc

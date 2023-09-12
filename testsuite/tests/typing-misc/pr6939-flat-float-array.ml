@@ -18,6 +18,11 @@ Error: This kind of expression is not allowed as right-hand side of "let rec"
 
 let rec x = let u = [|y|] in 10. and y = 1.;;
 [%%expect{|
+Line 1, characters 16-17:
+1 | let rec x = let u = [|y|] in 10. and y = 1.;;
+                    ^
+Warning 26 [unused-var]: unused variable u.
+
 Line 1, characters 12-32:
 1 | let rec x = let u = [|y|] in 10. and y = 1.;;
                 ^^^^^^^^^^^^^^^^^^^^

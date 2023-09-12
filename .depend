@@ -6079,7 +6079,6 @@ driver/compile_common.cmo : \
     typing/typedtree.cmi \
     typing/typecore.cmi \
     typing/shape.cmi \
-    typing/rec_check.cmi \
     utils/profile.cmi \
     typing/printtyped.cmi \
     typing/printtyp.cmi \
@@ -6100,7 +6099,6 @@ driver/compile_common.cmx : \
     typing/typedtree.cmx \
     typing/typecore.cmx \
     typing/shape.cmx \
-    typing/rec_check.cmx \
     utils/profile.cmx \
     typing/printtyped.cmx \
     typing/printtyp.cmx \

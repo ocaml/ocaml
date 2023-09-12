@@ -15,10 +15,6 @@
 exception Illegal_expr
 
 val is_valid_recursive_expression :
-  Ident.t list -> Ident.t -> Typedtree.expression -> bool
+  Ident.t list -> Typedtree.expression -> Lambda.rec_check_classification option
 
 val is_valid_class_expr : Ident.t list -> Typedtree.class_expr -> bool
-
-val classifications : Lambda.rec_check_classification Ident.Tbl.t
-
-val reset_classifications : unit -> unit

@@ -91,7 +91,6 @@ let parse_impl i =
   |> print_if i.ppf_dump Clflags.dump_source Pprintast.structure
 
 let typecheck_impl i parsetree =
-  Rec_check.reset_classifications ();
   parsetree
   |> Profile.(record typing)
     (Typemod.type_implementation i.target i.env)

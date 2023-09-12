@@ -42,6 +42,7 @@ val transl_scoped_exp : scopes:scopes -> expression -> lambda
 type error =
     Free_super_var
   | Unreachable_reached
+  | Illegal_letrec_expr
 
 exception Error of Location.t * error
 
