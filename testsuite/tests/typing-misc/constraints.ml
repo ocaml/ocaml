@@ -182,8 +182,11 @@ Error: This recursive type is not regular.
 
 type 'a t = 'b constraint 'a = ('b * 'b) t;;
 [%%expect{|
-Uncaught exception: File "typing/typedecl.ml", line 800, characters 18-24: Assertion failed
-
+Line 1, characters 0-42:
+1 | type 'a t = 'b constraint 'a = ('b * 'b) t;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The definition of "t" contains a cycle:
+         "'a * 'a" contains "'a * 'a"
 |}]
 
 type 'a t = 'a * 'b constraint _ * 'a = 'b t;;
@@ -243,8 +246,11 @@ Error: This recursive type is not regular.
 |}]
 module rec M : sig type 'a t = 'b constraint 'a = ('b * 'b) t end = M;;
 [%%expect{|
-Uncaught exception: File "typing/typedecl.ml", line 800, characters 18-24: Assertion failed
-
+Line 1, characters 19-61:
+1 | module rec M : sig type 'a t = 'b constraint 'a = ('b * 'b) t end = M;;
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The definition of "t" contains a cycle:
+         "'a * 'a" contains "'a * 'a"
 |}]
 
 module type S =
