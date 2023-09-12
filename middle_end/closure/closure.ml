@@ -585,9 +585,9 @@ let rec substitute loc ((backend, fpc) as st) sb rn ulam =
           bindings1 sb
       in
       Uletrec(
-        List.map
-           (fun (_id, id', clas, rhs) -> (id', clas, substitute loc st sb' rn rhs))
-           bindings1,
+        List.map (fun (_id, id', clas, rhs) ->
+            (id', clas, substitute loc st sb' rn rhs))
+          bindings1,
         substitute loc st sb' rn body)
   | Uprim(p, args, dbg) ->
       let sargs = List.map (substitute loc st sb rn) args in
@@ -1081,7 +1081,9 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         | (id, clas, lam) :: rem ->
             let (udefs, fenv_body) = clos_defs rem in
             let (ulam, approx) = close_named env id lam in
-            ((VP.create id, clas, ulam) :: udefs, V.Map.add id approx fenv_body) in
+            ((VP.create id, clas, ulam) :: udefs,
+             V.Map.add id approx fenv_body)
+        in
         let (udefs, fenv_body) = clos_defs defs in
         let (ubody, approx) =
           close { backend; fenv = fenv_body; cenv; mutable_vars } body in

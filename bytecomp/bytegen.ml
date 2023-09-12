@@ -240,7 +240,9 @@ let rec size_of_lambda env = function
       size_of_lambda env body
   (* See the Lletrec case of comp_expr *)
   | Lletrec(bindings, body) when
-      List.for_all (function (_, _, Lfunction _) -> true | _ -> false) bindings ->
+      List.for_all
+        (function (_, _, Lfunction _) -> true | _ -> false)
+        bindings ->
       (* let rec of functions *)
       let fv =
         Ident.Set.elements (free_variables (Lletrec(bindings, lambda_unit))) in

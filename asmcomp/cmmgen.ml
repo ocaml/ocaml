@@ -152,7 +152,7 @@ let rec expr_size env = function
   | Uletrec(bindings, body) ->
       let env =
         List.fold_right
-          (fun (id, _clas, exp) env -> V.add (VP.var id) (expr_size env exp) env)
+          (fun (id, _, exp) env -> V.add (VP.var id) (expr_size env exp) env)
           bindings env
       in
       expr_size env body

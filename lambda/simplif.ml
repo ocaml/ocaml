@@ -226,8 +226,9 @@ let simplify_exits lam =
   | Lmutlet(kind, v, l1, l2) ->
       Lmutlet(kind, v, simplif ~try_depth l1, simplif ~try_depth l2)
   | Lletrec(bindings, body) ->
-      Lletrec(List.map (fun (v, clas, l) -> (v, clas, simplif ~try_depth l)) bindings,
-      simplif ~try_depth body)
+      Lletrec(
+        List.map (fun (v, clas, l) -> (v, clas, simplif ~try_depth l)) bindings,
+        simplif ~try_depth body)
   | Lprim(p, ll, loc) -> begin
     let ll = List.map (simplif ~try_depth) ll in
     match p, ll with
@@ -556,7 +557,8 @@ let simplify_lets lam =
   | Llet(str, kind, v, l1, l2) -> mklet str kind v (simplif l1) (simplif l2)
   | Lmutlet(kind, v, l1, l2) -> mkmutlet kind v (simplif l1) (simplif l2)
   | Lletrec(bindings, body) ->
-      Lletrec(List.map (fun (v, clas, l) -> (v, clas, simplif l)) bindings, simplif body)
+      Lletrec(List.map (fun (v, clas, l) -> (v, clas, simplif l)) bindings,
+              simplif body)
   | Lprim(p, ll, loc) -> Lprim(p, List.map simplif ll, loc)
   | Lswitch(l, sw, loc) ->
       let new_l = simplif l

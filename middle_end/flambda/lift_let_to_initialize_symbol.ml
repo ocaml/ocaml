@@ -53,7 +53,8 @@ let rec accumulate ~substitution ~copied_lets ~extracted_lets
     when
       Variable.equal var var'
       && List.for_all (fun field ->
-          List.exists (fun (def_var, _, _) -> Variable.equal def_var field) defs)
+          List.exists (fun (def_var, _, _) ->
+              Variable.equal def_var field) defs)
       fields ->
     { copied_lets; extracted_lets;
       terminator = Flambda_utils.toplevel_substitution substitution expr;

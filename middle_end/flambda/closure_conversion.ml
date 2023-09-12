@@ -57,7 +57,7 @@ let add_default_argument_wrappers lam =
           List.flatten
             (List.map
                (function
-                 | (id, _clas, Lambda.Lfunction {kind; params; body; attr; loc}) ->
+                 | (id, _, Lambda.Lfunction {kind; params; body; attr; loc}) ->
                    Simplif.split_default_wrapper ~id ~kind ~params ~body
                      ~return:Pgenval ~attr ~loc
                  | _ -> assert false)
