@@ -433,7 +433,7 @@ val set_margin : int -> unit
   Setting the margin to [d] means that the formatting engine aims at
   printing at most [d-1] characters per line.
   Nothing happens if [d] is smaller than 2.
-  If [d >= ]{!pp_infinity}, then the right margin is set to {!pp_infinity}[ - 1].
+  If [d >= ]{!pp_infinity}, the right margin is set to {!pp_infinity}[ - 1].
   If [d] is less than the current maximum indentation limit, the
   maximum indentation limit is decreased while trying to preserve
   a minimal ratio [max_indent/margin>=50%] and if possible
@@ -500,8 +500,10 @@ type geometry = { max_indent:int; margin: int}
 (** @since 4.08 *)
 
 val check_geometry: geometry -> bool
-(** Check if the formatter geometry is valid: [1 < max_indent < margin < ]{!pp_infinity}
-    @since 4.08 *)
+(** Check if the formatter geometry is valid:
+  [1 < max_indent < margin < ]{!pp_infinity}
+
+  @since 4.08 *)
 
 val pp_set_geometry : formatter -> max_indent:int -> margin:int -> unit
 val set_geometry : max_indent:int -> margin:int -> unit
