@@ -51,7 +51,7 @@ let rec loadfiles ppf name =
     true
   with
   | Dynlink.Error (Dynlink.Unavailable_unit unit) ->
-      loadfiles ppf (String.uncapitalize_ascii unit ^ ".cmo")
+      loadfiles ppf (Unit_info.normalize unit ^ ".cmo")
         &&
       loadfiles ppf name
   | Not_found ->

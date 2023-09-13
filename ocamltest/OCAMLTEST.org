@@ -582,7 +582,7 @@ namely:
 #+end_src
 
 The braces make explicit the scope of variable assignments: an
-assignement modifies a variable for the rest of its block and for all
+assignment modifies a variable for the rest of its block and for all
 sub-blocks (unless overridden at some point).
 
 For instance, given the following blocks:

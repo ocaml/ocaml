@@ -383,12 +383,26 @@ val read : file_descr -> buf:bytes -> pos:int -> len:int -> int
     storing them in byte sequence [buf], starting at position [pos] in
     [buf]. Return the number of bytes actually read. *)
 
+val read_bigarray :
+  file_descr ->
+  buf:(_, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t ->
+  pos:int -> len:int -> int
+(** Same as {!read}, but read the data into a bigarray.
+    @since 5.2 *)
+
 val write : file_descr -> buf:bytes -> pos:int -> len:int -> int
 (** [write fd ~buf ~pos ~len] writes [len] bytes to descriptor [fd],
     taking them from byte sequence [buf], starting at position [pos]
     in [buff]. Return the number of bytes actually written.  [write]
     repeats the writing operation until all bytes have been written or
     an error occurs.  *)
+
+val write_bigarray :
+  file_descr ->
+  buf:(_, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t ->
+  pos:int -> len:int -> int
+(** Same as {!write}, but take the data from a bigarray.
+    @since 5.2 *)
 
 val single_write : file_descr -> buf:bytes -> pos:int -> len:int -> int
 (** Same as {!write}, but attempts to write only once.
@@ -405,6 +419,13 @@ val single_write_substring :
 (** Same as {!single_write}, but take the data from a string instead of
     a byte sequence.
     @since 4.02 *)
+
+val single_write_bigarray :
+  file_descr ->
+  buf:(_, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t ->
+  pos:int -> len:int -> int
+(** Same as {!single_write}, but take the data from a bigarray.
+    @since 5.2 *)
 
 (** {1 Interfacing with the standard input/output library} *)
 

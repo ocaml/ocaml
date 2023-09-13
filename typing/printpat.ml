@@ -84,7 +84,7 @@ let rec pretty_val : type k . _ -> k general_pattern -> _ = fun ppf v ->
             | (_,_,{pat_desc=Tpat_any}) -> false (* do not show lbl=_ *)
             | _ -> true) lvs in
       begin match filtered_lvs with
-      | [] -> fprintf ppf "_"
+      | [] -> fprintf ppf "{ _ }"
       | (_, lbl, _) :: q ->
           let elision_mark ppf =
             (* we assume that there is no label repetitions here *)
@@ -144,26 +144,20 @@ and pretty_lvals ppf = function
       fprintf ppf "%s=%a;@ %a"
         lbl.lbl_name pretty_val v pretty_lvals rest
 
-let top_pretty ppf v =
-  fprintf ppf "@[%a@]@?" pretty_val v
-
-let pretty_pat p =
-  top_pretty Format.str_formatter p ;
-  prerr_string (Format.flush_str_formatter ())
+let pretty_pat ppf p =
+  fprintf ppf "@[%a@]" pretty_val p
 
 type 'k matrix = 'k general_pattern list list
 
-let pretty_line fmt =
+let pretty_line ppf line =
+  Format.fprintf ppf "@[";
   List.iter (fun p ->
-    Format.fprintf fmt " <";
-    top_pretty fmt p;
-    Format.fprintf fmt ">";
-  )
+    Format.fprintf ppf "<%a>@ "
+      pretty_val p
+  ) line;
+  Format.fprintf ppf "@]"
 
-let pretty_matrix fmt (pss : 'k matrix) =
-  Format.fprintf fmt "begin matrix\n" ;
-  List.iter (fun ps ->
-    pretty_line fmt ps ;
-    Format.fprintf fmt "\n"
-  ) pss;
-  Format.fprintf fmt "end matrix\n%!"
+let pretty_matrix ppf (pss : 'k matrix) =
+  Format.fprintf ppf "@[<v 2>  %a@]"
+    (Format.pp_print_list ~pp_sep:Format.pp_print_cut pretty_line)
+    pss

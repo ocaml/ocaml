@@ -18,6 +18,7 @@
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
+#include <caml/bigarray.h>
 #include "unixsupport.h"
 
 #ifndef EAGAIN
@@ -51,6 +52,34 @@ CAMLprim value caml_unix_write(value fd, value buf, value vofs, value vlen)
     ofs += ret;
     len -= ret;
   }
+  CAMLreturn(Val_long(written));
+}
+
+CAMLprim value caml_unix_write_bigarray(value fd, value vbuf,
+                                        value vofs, value vlen, value vsingle)
+{
+  CAMLparam5(fd, vbuf, vofs, vlen, vsingle);
+  intnat ofs, len, written, ret;
+  void *buf;
+
+  buf = Caml_ba_data_val(vbuf);
+  ofs = Long_val(vofs);
+  len = Long_val(vlen);
+  written = 0;
+  caml_enter_blocking_section();
+  while (len > 0) {
+    ret = write(Int_val(fd), buf + ofs, len);
+    if (ret == -1) {
+      if ((errno == EAGAIN || errno == EWOULDBLOCK) && written > 0) break;
+      caml_leave_blocking_section();
+      caml_uerror("write_bigarray", Nothing);
+    }
+    written += ret;
+    ofs += ret;
+    len -= ret;
+    if (Bool_val(vsingle)) break;
+  }
+  caml_leave_blocking_section();
   CAMLreturn(Val_long(written));
 }
 

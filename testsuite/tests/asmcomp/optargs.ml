@@ -24,3 +24,21 @@ let () =
   let x2 = Gc.allocated_bytes () in
   assert(x1 -. x0 = x2 -. x1)
      (* check that we have not allocated anything between x1 and x2 *)
+
+
+(* Check that 'ocaml.inline always' is not broken due to the split
+   into a worker+wrapper. *)
+
+
+let[@ocaml.inline always] f ?(x = 1.) a b = a +. b *. x
+let () =
+  let r = ref 0. in
+  let x0 = Gc.allocated_bytes () in
+  let x1 = Gc.allocated_bytes () in
+  for _ = 1 to 1000 do
+    r := !r +. f 1. 1.
+  done;
+  let x2 = Gc.allocated_bytes () in
+  assert(x1 -. x0 = x2 -. x1)
+  (* If the body of `f` itself were not inlined, we would get float
+     boxing allocations. *)

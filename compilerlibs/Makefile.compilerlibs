@@ -51,6 +51,7 @@ UTILS_CMI =
 
 PARSING = \
   parsing/location.cmo \
+  parsing/unit_info.cmo \
   parsing/longident.cmo \
   parsing/docstrings.cmo \
   parsing/syntaxerr.cmo \
@@ -228,6 +229,8 @@ ASMCOMP = \
   asmcomp/reloadgen.cmo \
   asmcomp/reload.cmo \
   asmcomp/deadcode.cmo \
+  asmcomp/stackframegen.cmo \
+  asmcomp/stackframe.cmo \
   asmcomp/linear.cmo \
   asmcomp/printlinear.cmo \
   asmcomp/linearize.cmo \

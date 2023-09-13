@@ -1164,7 +1164,7 @@ let tests () =
   test_structured_io 13 (make_array2 complex32 c_layout 0 100 100 makecomplex);
   test_structured_io 14 (make_array3 complex64 fortran_layout 1 10 20 30
                                      makecomplex);
-
+  test_structured_io 15 (from_list float16 [0.0; 0.25; -4.0; 3.141592654]);
   ()
   [@@inline never]
 

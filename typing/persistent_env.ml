@@ -37,7 +37,7 @@ module Persistent_signature = struct
       cmi : Cmi_format.cmi_infos }
 
   let load = ref (fun ~unit_name ->
-      match Load_path.find_uncap (unit_name ^ ".cmi") with
+      match Load_path.find_normalized (unit_name ^ ".cmi") with
       | filename -> Some { filename; cmi = read_cmi filename }
       | exception Not_found -> None)
 end
@@ -192,7 +192,9 @@ let acknowledge_pers_struct penv check modname pers_sig pm =
   Hashtbl.add persistent_structures modname (Found (ps, pm));
   ps
 
-let read_pers_struct penv val_of_pers_sig check modname filename =
+let read_pers_struct penv val_of_pers_sig check cmi =
+  let modname = Unit_info.Artifact.modname cmi in
+  let filename = Unit_info.Artifact.filename cmi in
   add_import penv modname;
   let cmi = read_cmi filename in
   let pers_sig = { Persistent_signature.filename; cmi } in
@@ -254,8 +256,8 @@ let check_pers_struct penv f ~loc name =
       let warn = Warnings.No_cmi_file(name, Some msg) in
         Location.prerr_warning loc warn
 
-let read penv f modname filename =
-  snd (read_pers_struct penv f true modname filename)
+let read penv f a =
+  snd (read_pers_struct penv f true a)
 
 let find penv f name =
   snd (find_pers_struct penv f true name)

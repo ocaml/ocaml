@@ -18,7 +18,7 @@
 open Cmo_format
 open Instruct
 
-val to_file: out_channel -> Cmo_format.compunit -> string ->
+val to_file: out_channel -> Unit_info.Artifact.t ->
   required_globals:Ident.Set.t -> instruction list -> unit
         (* Arguments:
              channel on output file
@@ -28,7 +28,7 @@ val to_file: out_channel -> Cmo_format.compunit -> string ->
                evaluated before this one
              list of instructions to emit *)
 val to_memory:
-  instruction list -> instruction list ->
+  instruction list ->
     Misc.LongString.t * (reloc_info * int) list * debug_event list
         (* Arguments:
              initialization code (terminated by STOP)

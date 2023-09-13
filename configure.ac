@@ -55,11 +55,10 @@ oc_dll_ldflags=""
 oc_exe_ldflags=""
 
 tsan=false
-oc_tsan_cflags="-fsanitize=thread"
-
 # Passed to the linker by ocamlopt when tsan is enabled
-
+oc_tsan_cflags="-fsanitize=thread"
 oc_tsan_cppflags="-DWITH_THREAD_SANITIZER"
+tsan_distinguish_volatile_cflags=""
 
 # The C# compiler and its flags
 CSC=""
@@ -79,9 +78,8 @@ lib_systhreads=false
 lib_unix=false
 ocamltest_libunix=None
 ocamltest_unix_impl="dummy"
-ocamltest_unix_name=""
-ocamltest_unix_path=""
-ocamltest_unix_include=""
+unix_library=""
+unix_directory=""
 
 # Information about the package
 
@@ -176,10 +174,8 @@ AC_SUBST([lib_systhreads])
 AC_SUBST([lib_unix])
 AC_SUBST([ocamltest_CPP])
 AC_SUBST([ocamltest_libunix])
-AC_SUBST([ocamltest_unix_impl])
-AC_SUBST([ocamltest_unix_name])
-AC_SUBST([ocamltest_unix_path])
-AC_SUBST([ocamltest_unix_include])
+AC_SUBST([unix_library])
+AC_SUBST([unix_directory])
 AC_SUBST([cc_has_debug_prefix_map])
 AC_SUBST([as_has_debug_prefix_map])
 AC_SUBST([with_debugger]) # TODO: rename this variable
@@ -672,9 +668,8 @@ AS_IF([test x"$enable_unix_lib" != "xno"],
     otherlibs/unix/unix.ml:otherlibs/unix/unix_${unix_or_win32}.ml
   ])
   ocamltest_unix_impl="real"
-  ocamltest_unix_name="unix"
-  ocamltest_unix_path='$(ROOTDIR)/otherlibs/unix'
-  ocamltest_unix_include='-I $(ROOTDIR)/otherlibs/unix '],
+  unix_directory="otherlibs/unix"
+  unix_library="${unix_directory}/unix"],
   [ocamltest_libunix="None"])
 
 AS_IF([test x"$enable_str_lib" != "xno"],
@@ -739,6 +734,11 @@ AS_CASE([$ocaml_cv_cc_vendor],
   warn_error_flag='-Werror'
   cc_warnings="-Wall -Wint-conversion -Wstrict-prototypes \
 -Wold-style-definition"])
+
+# Use -Wold-style-declaration if supported
+AX_CHECK_COMPILE_FLAG([-Wold-style-declaration],
+  [cc_warnings="$cc_warnings -Wold-style-declaration"], [],
+  [$warn_error_flag])
 
 AS_CASE([$enable_warn_error,OCAML__DEVELOPMENT_VERSION],
   [yes,*|,true],
@@ -1661,9 +1661,15 @@ AS_IF([$tsan],
     [oc_tsan_cflags="$oc_tsan_cflags -Wno-tsan"])
   AS_CASE([$ocaml_cv_cc_vendor],
     [gcc*],
-    [oc_tsan_cflags="$oc_tsan_cflags --param=tsan-distinguish-volatile=1"],
+      [tsan_distinguish_volatile_cflags="--param=tsan-distinguish-volatile=1"],
     [clang*],
-    [oc_tsan_cflags="$oc_tsan_cflags -mllvm -tsan-distinguish-volatile"])
+      [tsan_distinguish_volatile_cflags="-mllvm -tsan-distinguish-volatile"])
+  AX_CHECK_COMPILE_FLAG([-fsanitize=thread $tsan_distinguish_volatile_cflags],
+    [],
+    [AC_MSG_ERROR(m4_normalize([The C compiler does not support the
+      `$tsan_distinguish_volatile_cflags' flag. Try upgrading to GCC >= 11, or
+      to Clang >= 11.]))], [$warn_error_flag])
+  oc_tsan_cflags="$oc_tsan_cflags $tsan_distinguish_volatile_cflags"
   common_cppflags="$common_cppflags $oc_tsan_cppflags"
   native_cflags="$native_cflags $oc_tsan_cflags"
   ocamlc_cflags="$ocamlc_cflags $oc_tsan_cflags"
@@ -2264,7 +2270,11 @@ AS_CASE([$enable_ocamltest,OCAML__DEVELOPMENT_VERSION],
   [ocamltest=''])
 
 AS_IF([test -n "$ocamltest"],
-  [AC_CHECK_PROGS([DIFF], [patdiff diff], [none])
+  [ocamltest_unix_mod="ocamltest/ocamltest_unix_${ocamltest_unix_impl}.ml"
+  AC_CONFIG_LINKS([
+    ocamltest/ocamltest_unix.ml:${ocamltest_unix_mod}
+  ])
+  AC_CHECK_PROGS([DIFF], [patdiff diff], [none])
   DIFF_FLAGS=""
   flags=""
   AS_CASE([$DIFF],

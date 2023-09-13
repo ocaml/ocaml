@@ -692,7 +692,7 @@ and build_as_type_aux (env : Env.t) p =
       let ty = newvar () in
       let ppl = List.map (fun (_, l, p) -> l.lbl_pos, p) lpl in
       let do_label lbl =
-        let _, ty_arg, ty_res = instance_label false lbl in
+        let _, ty_arg, ty_res = instance_label ~fixed:false lbl in
         unify_pat env {p with pat_type = ty} ty_res;
         let refinable =
           lbl.lbl_mut = Immutable && List.mem_assoc lbl.lbl_pos ppl &&
@@ -701,7 +701,7 @@ and build_as_type_aux (env : Env.t) p =
           let arg = List.assoc lbl.lbl_pos ppl in
           unify_pat env {arg with pat_type = build_as_type env arg} ty_arg
         end else begin
-          let _, ty_arg', ty_res' = instance_label false lbl in
+          let _, ty_arg', ty_res' = instance_label ~fixed:false lbl in
           unify_pat_types p.pat_loc env ty_arg ty_arg';
           unify_pat env p ty_res'
         end in
@@ -731,7 +731,7 @@ let solve_Ppat_poly_constraint tps env loc sty expected_ty =
   | Tpoly (body, tyl) ->
       let _, ty' =
         with_level ~level:generic_level
-          (fun () -> instance_poly ~keep_names:true false tyl body)
+          (fun () -> instance_poly ~keep_names:true ~fixed:false tyl body)
       in
       (cty, ty, ty')
   | _ -> assert false
@@ -870,7 +870,7 @@ let solve_Ppat_construct ~refine tps penv loc constr no_existentials
 
 let solve_Ppat_record_field ~refine loc penv label label_lid record_ty =
   with_local_level_iter ~post:generalize_structure begin fun () ->
-    let (_, ty_arg, ty_res) = instance_label false label in
+    let (_, ty_arg, ty_res) = instance_label ~fixed:false label in
     begin try
       unify_pat_types_refine ~refine loc penv ty_res (instance record_ty)
     with Error(_loc, _env, Pattern_type_clash(err, _)) ->
@@ -2755,7 +2755,7 @@ let check_univars env kind exp ty_expected vars =
           (* Enforce scoping for type_let:
              since body is not generic,  instance_poly only makes
              copies of nodes that have a Tunivar as descendant *)
-          let _, ty' = instance_poly true tl body in
+          let _, ty' = instance_poly ~fixed:true tl body in
           let vars, exp_ty = instance_parameterized_type vars exp.exp_type in
           unify_exp_types exp.exp_loc env exp_ty ty';
           ((exp_ty, vars), exp_ty::vars)
@@ -3463,7 +3463,8 @@ and type_expect_
       in
       let cases, partial =
         type_cases Computation env
-          arg.exp_type ty_expected_explained true loc caselist in
+          arg.exp_type ty_expected_explained
+          ~check_if_total:true loc caselist in
       if
         List.for_all (fun c -> pattern_needs_partial_application_check c.c_lhs)
           cases
@@ -3478,7 +3479,8 @@ and type_expect_
       let body = type_expect env sbody ty_expected_explained in
       let cases, _ =
         type_cases Value env
-          Predef.type_exn ty_expected_explained false loc caselist in
+          Predef.type_exn ty_expected_explained
+          ~check_if_total:false loc caselist in
       re {
         exp_desc = Texp_try(body, cases);
         exp_loc = loc; exp_extra = [];
@@ -3649,14 +3651,14 @@ and type_expect_
         | Some exp ->
             let ty_exp = instance exp.exp_type in
             let unify_kept lbl =
-              let _, ty_arg1, ty_res1 = instance_label false lbl in
+              let _, ty_arg1, ty_res1 = instance_label ~fixed:false lbl in
               unify_exp_types exp.exp_loc env ty_exp ty_res1;
               match matching_label lbl with
               | lid, _lbl, lbl_exp ->
                   (* do not connect result types for overridden labels *)
                   Overridden (lid, lbl_exp)
               | exception Not_found -> begin
-                  let _, ty_arg2, ty_res2 = instance_label false lbl in
+                  let _, ty_arg2, ty_res2 = instance_label ~fixed:false lbl in
                   unify_exp_types loc env ty_arg1 ty_arg2;
                   with_explanation (fun () ->
                     unify_exp_types loc env (instance ty_expected) ty_res2);
@@ -3692,7 +3694,7 @@ and type_expect_
       let (record, label, _) =
         type_label_access env srecord Env.Projection lid
       in
-      let (_, ty_arg, ty_res) = instance_label false label in
+      let (_, ty_arg, ty_res) = instance_label ~fixed:false label in
       unify_exp env record ty_res;
       rue {
         exp_desc = Texp_field(record, lid, label);
@@ -3844,7 +3846,7 @@ and type_expect_
             if !Clflags.principal && get_level typ <> generic_level then
               Location.prerr_warning loc
                 (Warnings.Not_principal "this use of a polymorphic method");
-            snd (instance_poly false tl ty)
+            snd (instance_poly ~fixed:false tl ty)
         | Tvar _ ->
             let ty' = newvar () in
             unify env (instance typ) (newty(Tpoly(ty',[])));
@@ -4068,7 +4070,7 @@ and type_expect_
               with_local_level begin fun () ->
                 let vars, ty'' =
                   with_local_level_if_principal
-                    (fun () -> instance_poly true tl ty')
+                    (fun () -> instance_poly ~fixed:true tl ty')
                     ~post:(fun (_,ty'') -> generalize_structure ty'')
                 in
                 let exp = type_expect env sbody (mk_expected ty'') in
@@ -4179,7 +4181,8 @@ and type_expect_
       let scase = Ast_helper.Exp.case spat_params sbody in
       let cases, partial =
         type_cases Value env
-          ty_params (mk_expected ty_func_result) true loc [scase]
+          ty_params (mk_expected ty_func_result)
+          ~check_if_total:true loc [scase]
       in
       let body =
         match cases with
@@ -4566,7 +4569,7 @@ and type_function
       let (pat, params, body, newtypes, contains_gadt), partial =
         (* Check everything else in the scope of the parameter. *)
         map_half_typed_cases Value env ty_arg_internal ty_res pat.ppat_loc
-          ~partial_flag:true
+          ~check_if_total:true
           (* We don't make use of [case_data] here so we pass unit. *)
           [ { pattern = pat; has_guard = false; needs_refute = false }, () ]
           ~type_body:begin
@@ -4986,7 +4989,8 @@ and type_label_exp create env loc ty_expected
           let (vars, ty_arg, ty_res) =
             with_local_level_iter_if separate ~post:generalize_structure
               begin fun () ->
-                let ((_, ty_arg, ty_res) as r) = instance_label true label in
+                let ((_, ty_arg, ty_res) as r) =
+                  instance_label ~fixed:true label in
                 (r, [ty_arg; ty_res])
               end
           in
@@ -5522,10 +5526,10 @@ and map_half_typed_cases
         -> ty_infer:_ (* type to infer for body *)
         -> contains_gadt:_ (* whether the pattern contains a GADT *)
         -> ret)
-    -> partial_flag:bool
+    -> check_if_total:bool (* if false, assume Partial right away *)
     -> ret list * partial
   = fun ?additional_checks_for_split_cases
-    category env ty_arg ty_res loc caselist ~type_body ~partial_flag ->
+    category env ty_arg ty_res loc caselist ~type_body ~check_if_total ->
   (* ty_arg is _fully_ generalized *)
   let patterns = List.map (fun ((x : untyped_case), _) -> x.pattern) caselist in
   let contains_polyvars = List.exists contains_polymorphic_variant patterns in
@@ -5716,7 +5720,7 @@ and map_half_typed_cases
   if val_cases = [] && exn_cases <> [] then
     raise (Error (loc, env, No_value_clauses));
   let partial =
-    if partial_flag then
+    if check_if_total then
       check_partial ~lev env ty_arg_check loc val_cases
     else
       Partial
@@ -5750,10 +5754,10 @@ and map_half_typed_cases
 (* Typing of match cases *)
 and type_cases
     : type k . k pattern_category ->
-           _ -> _ -> _ -> _ -> _ -> Parsetree.case list ->
+           _ -> _ -> _ -> check_if_total:bool -> _ -> Parsetree.case list ->
            k case list * partial
   = fun category env
-        ty_arg ty_res_explained partial_flag loc caselist ->
+        ty_arg ty_res_explained ~check_if_total loc caselist ->
   let { ty = ty_res; explanation } = ty_res_explained in
   let caselist =
     List.map (fun case -> Parmatch.untyped_case case, case) caselist
@@ -5762,7 +5766,7 @@ and type_cases
      is to typecheck the guards and the cases, and then to check for some
      warnings that can fire in the presence of guards.
   *)
-  map_half_typed_cases category env ty_arg ty_res loc caselist ~partial_flag
+  map_half_typed_cases category env ty_arg ty_res loc caselist ~check_if_total
     ~type_body:begin
       fun { pc_guard; pc_rhs } pat ~ext_env ~ty_expected ~ty_infer
           ~contains_gadt:_ ->
@@ -5806,7 +5810,8 @@ and type_function_cases_expect
       split_function_ty env ty_expected ~arg_label:Nolabel ~first ~in_function
     in
     let cases, partial =
-      type_cases Value env ty_arg (mk_expected ty_res) true loc cases
+      type_cases Value env ty_arg (mk_expected ty_res)
+        ~check_if_total:true loc cases
     in
     let ty_fun =
       instance (newgenty (Tarrow (Nolabel, ty_arg, ty_res, commu_ok)))
@@ -5841,7 +5846,7 @@ and type_let ?check ?check_strict
                   match get_desc pat.pat_type with
                   | Tpoly (ty, tl) ->
                       {pat with pat_type =
-                       snd (instance_poly ~keep_names:true false tl ty)}
+                       snd (instance_poly ~keep_names:true ~fixed:false tl ty)}
                   | _ -> pat
                 in
                 let bound_expr = vb_exp_constraint binding in
@@ -5900,7 +5905,7 @@ and type_let ?check ?check_strict
                 let vars, ty' =
                   with_local_level_if_principal
                     ~post:(fun (_,ty') -> generalize_structure ty')
-                    (fun () -> instance_poly ~keep_names:true true tl ty)
+                    (fun () -> instance_poly ~keep_names:true ~fixed:true tl ty)
                 in
                 let exp =
                   Builtin_attributes.warning_scope pvb_attributes (fun () ->

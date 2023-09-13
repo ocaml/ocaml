@@ -154,10 +154,12 @@ let module_of_longident id =
 let convert_module mdle =
   match mdle with
   | Some m ->
-      (* Strip .ml extension if any, and capitalize *)
-      String.capitalize_ascii(if Filename.check_suffix m ".ml"
-                              then Filename.chop_suffix m ".ml"
-                              else m)
+     (* Strip .ml extension if any, beware that mdle might be a module path *)
+     let stripped =
+       if Filename.check_suffix m ".ml" then Filename.chop_suffix m ".ml"
+       else m
+     in
+     Unit_info.modulize stripped
   | None ->
       try (get_current_event ()).ev_ev.ev_module
       with Not_found -> error "Not in a module."

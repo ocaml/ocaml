@@ -34,7 +34,7 @@ val compile_implementation
   -> unit
 
 val compile_implementation_linear :
-    string -> progname:string -> unit
+    Unit_info.t -> unit
 
 val compile_phrase :
     ppf_dump:Format.formatter -> Cmm.phrase -> unit

@@ -325,7 +325,7 @@ val add_local_type: Path.t -> type_declaration -> t -> t
    contents of the module is accessed. *)
 val add_persistent_structure : Ident.t -> t -> t
 
-(* Returns the set of persistent structures found in the given
+ (* Returns the set of persistent structures found in the given
    directory. *)
 val persistent_structures_of_dir : Load_path.Dir.t -> Misc.Stdlib.String.Set.t
 
@@ -398,14 +398,14 @@ val set_unit_name: string -> unit
 val get_unit_name: unit -> string
 
 (* Read, save a signature to/from a file *)
-val read_signature: modname -> filepath -> signature
+val read_signature: Unit_info.Artifact.t -> signature
         (* Arguments: module name, file name. Results: signature. *)
 val save_signature:
-  alerts:alerts -> signature -> modname -> filepath
+  alerts:alerts -> Types.signature -> Unit_info.Artifact.t
   -> Cmi_format.cmi_infos
         (* Arguments: signature, module name, file name. *)
 val save_signature_with_imports:
-  alerts:alerts -> signature -> modname -> filepath -> crcs
+  alerts:alerts -> signature -> Unit_info.Artifact.t -> crcs
   -> Cmi_format.cmi_infos
         (* Arguments: signature, module name, file name,
            imported units with their CRCs. *)

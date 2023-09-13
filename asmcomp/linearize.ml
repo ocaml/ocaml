@@ -333,20 +333,18 @@ let add_prologue first_insn prologue_required =
     tailrec_entry_point_label, tailrec_entry_point
 
 let fundecl f =
-  let fun_prologue_required = Proc.prologue_required f in
-  let contains_calls = f.Mach.fun_contains_calls in
-  let fun_tailrec_entry_point_label, fun_body =
-    add_prologue (linear f.Mach.fun_body end_instr contains_calls)
-      fun_prologue_required
-  in
+  let fa = Stackframe.analyze f in
+  let (fun_tailrec_entry_point_label, fun_body) =
+    add_prologue (linear f.Mach.fun_body end_instr fa.frame_required)
+                 fa.frame_required in
   { fun_name = f.Mach.fun_name;
     fun_args = Reg.set_of_array f.Mach.fun_args;
     fun_body;
     fun_fast = not (List.mem Cmm.Reduce_code_size f.Mach.fun_codegen_options);
     fun_dbg  = f.Mach.fun_dbg;
     fun_tailrec_entry_point_label;
-    fun_contains_calls = contains_calls;
+    fun_contains_nontail_calls = fa.contains_nontail_calls;
     fun_num_stack_slots = f.Mach.fun_num_stack_slots;
-    fun_frame_required = Proc.frame_required f;
-    fun_prologue_required;
+    fun_frame_required = fa.frame_required;
+    fun_extra_stack_used = fa.extra_stack_used
   }

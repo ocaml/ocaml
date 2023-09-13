@@ -35,6 +35,7 @@
 #include "caml/mlvalues.h"
 #include "caml/prims.h"
 #include "caml/startup_aux.h"
+#include "caml/instruct.h"
 
 #ifndef NATIVE_CODE
 
@@ -56,35 +57,6 @@ struct bytecode {
 };
 #define Bytecode_val(p) ((struct bytecode*)Data_abstract_val(p))
 
-/* Convert a bytes array (= LongString.t) to a contiguous buffer.
-   The result is allocated with caml_stat_alloc */
-static char* buffer_of_bytes_array(value ls, asize_t *len)
-{
-  CAMLparam1(ls);
-  CAMLlocal1(s);
-  asize_t off;
-  char *ret;
-  int i;
-
-  *len = 0;
-  for (i = 0; i < Wosize_val(ls); i++) {
-    s = Field(ls, i);
-    *len += caml_string_length(s);
-  }
-
-  ret = caml_stat_alloc(*len);
-  off = 0;
-  for (i = 0; i < Wosize_val(ls); i++) {
-    size_t s_len;
-    s = Field(ls, i);
-    s_len = caml_string_length(s);
-    memcpy(ret + off, Bytes_val(s), s_len);
-    off += s_len;
-  }
-
-  CAMLreturnT (char*, ret);
-}
-
 CAMLprim value caml_reify_bytecode(value ls_prog,
                                    value debuginfo,
                                    value digest_opt)
@@ -92,12 +64,36 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
   CAMLparam3(ls_prog, debuginfo, digest_opt);
   CAMLlocal3(clos, bytecode, retval);
   code_t prog;
-  asize_t len;
+  asize_t len, off; /* in bytes */
   enum digest_status digest_kind;
   unsigned char * digest;
-  int fragnum;
+  int fragnum, i;
 
-  prog = (code_t)buffer_of_bytes_array(ls_prog, &len);
+  /* ls_prog is a bytes array (= LongString.t) */
+  len = 0;
+  for (i = 0; i < Wosize_val(ls_prog); i++) {
+    value s = Field(ls_prog, i);
+    len += caml_string_length(s);
+  }
+  prog = caml_stat_alloc(len + sizeof(opcode_t) * 2 /* for 'RETURN 1' */);
+
+  off = 0;
+  for (i = 0; i < Wosize_val(ls_prog); i++) {
+    size_t s_len;
+    value s = Field(ls_prog, i);
+    s_len = caml_string_length(s);
+    memcpy((char*)prog + off, Bytes_val(s), s_len);
+    off += s_len;
+  }
+
+#ifdef ARCH_BIG_ENDIAN
+  caml_fixup_endianness(prog, len);
+#endif
+  prog[len / sizeof(opcode_t)] = RETURN;
+  len += sizeof(opcode_t);
+  prog[len / sizeof(opcode_t)] = 1;
+  len += sizeof(opcode_t);
+
   caml_add_debug_info(prog, Val_long(len), debuginfo);
   /* match (digest_opt : string option) with */
   if (Is_some(digest_opt)) {
@@ -109,9 +105,6 @@ CAMLprim value caml_reify_bytecode(value ls_prog,
   }
   fragnum = caml_register_code_fragment((char *) prog, (char *) prog + len,
                                         digest_kind, digest);
-#ifdef ARCH_BIG_ENDIAN
-  caml_fixup_endianness((code_t) prog, len);
-#endif
 #ifdef THREADED_CODE
   caml_thread_code((code_t) prog, len);
 #endif

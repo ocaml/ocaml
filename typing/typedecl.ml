@@ -528,7 +528,7 @@ let rec check_constraints_rec env loc visited ty =
       end;
       List.iter (check_constraints_rec env loc visited) args
   | Tpoly (ty, tl) ->
-      let _, ty = Ctype.instance_poly false tl ty in
+      let _, ty = Ctype.instance_poly ~fixed:false tl ty in
       check_constraints_rec env loc visited ty
   | _ ->
       Btype.iter_type_expr (check_constraints_rec env loc visited) ty
@@ -652,7 +652,7 @@ let check_abbrev env sdecl (id, decl) =
    We want to guarantee that all cycles within OCaml types are
    "guarded".
 
-   More precisly, we consider a reachability relation
+   More precisely, we consider a reachability relation
      "[t] is reachable [guarded|unguarded] from [u]"
    defined as follows:
 
@@ -896,7 +896,7 @@ let check_well_founded_decl env loc path decl to_check =
 
    Note: in the case of a constrained type definition
    [type 'a t = ... constraint 'a = ...], we require
-   that all instances in [...] be equal to the constrainted type.
+   that all instances in [...] be equal to the constrained type.
 *)
 
 let check_regularity ~abs_env env loc path decl to_check =
@@ -946,7 +946,8 @@ let check_regularity ~abs_env env loc path decl to_check =
           end;
           List.iter (check_subtype cpath args prev_exp trace ty) args'
       | Tpoly (ty, tl) ->
-          let (_, ty) = Ctype.instance_poly ~keep_names:true false tl ty in
+          let (_, ty) =
+            Ctype.instance_poly ~keep_names:true ~fixed:false tl ty in
           check_regular cpath args prev_exp trace ty
       | _ ->
           Btype.iter_type_expr
@@ -1070,7 +1071,7 @@ let transl_type_decl env rec_flag sdecl_list =
   in
   (* Translate declarations, using a temporary environment where abbreviations
      expand to a generic type variable. After that, we check the coherence of
-     the translated declarations in the resulting new enviroment. *)
+     the translated declarations in the resulting new environment. *)
   let tdecls, decls, new_env =
     Ctype.with_local_level_iter ~post:generalize_decl begin fun () ->
       (* Enter types. *)

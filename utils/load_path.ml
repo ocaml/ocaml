@@ -37,10 +37,10 @@ module Dir = struct
     else
       None
 
-  let find_uncap t fn =
-    let fn = String.uncapitalize_ascii fn in
+  let find_normalized t fn =
+    let fn = Misc.normalized_unit_filename fn in
     let search base =
-      if String.uncapitalize_ascii base = fn then
+      if Misc.normalized_unit_filename base = fn then
         Some (Filename.concat t.path base)
       else
         None
@@ -85,7 +85,7 @@ let prepend_add dir =
   List.iter (fun base ->
       let fn = Filename.concat dir.Dir.path base in
       STbl.replace !files base fn;
-      STbl.replace !files_uncap (String.uncapitalize_ascii base) fn
+      STbl.replace !files_uncap (Misc.normalized_unit_filename base) fn
     ) dir.Dir.files
 
 let init ~auto_include l =
@@ -113,7 +113,7 @@ let add dir =
        let fn = Filename.concat dir.Dir.path base in
        if not (STbl.mem !files base) then
          STbl.replace !files base fn;
-       let ubase = String.uncapitalize_ascii base in
+       let ubase = Misc.normalized_unit_filename base in
        if not (STbl.mem !files_uncap ubase) then
          STbl.replace !files_uncap ubase fn)
     dir.Dir.files;
@@ -164,13 +164,13 @@ let find fn =
   with Not_found ->
     !auto_include_callback Dir.find fn
 
-let find_uncap fn =
+let find_normalized fn =
   assert (not Config.merlin || Local_store.is_bound ());
   try
     if is_basename fn && not !Sys.interactive then
-      STbl.find !files_uncap (String.uncapitalize_ascii fn)
+      STbl.find !files_uncap (Misc.normalized_unit_filename fn)
     else
-      Misc.find_in_path_uncap (get_paths ()) fn
+      Misc.find_in_path_normalized (get_paths ()) fn
   with Not_found ->
-    let fn_uncap = String.uncapitalize_ascii fn in
-    !auto_include_callback Dir.find_uncap fn_uncap
+    let fn_uncap = Misc.normalized_unit_filename fn in
+    !auto_include_callback Dir.find_normalized fn_uncap

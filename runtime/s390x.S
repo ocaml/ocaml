@@ -169,7 +169,7 @@ caml_system__code_begin:
 /* Stack switching operations */
 /******************************************************************************/
 
-/* Switch from OCaml to C stack. Clobbers %r8, %r9. */
+/* Switch from OCaml to C stack. Clobbers %r1, %r12. */
 #ifdef ASM_CFI_SUPPORTED
 #define SWITCH_OCAML_TO_C_CFI                                   \
         CFI_REMEMBER_STATE;                                     \
@@ -193,7 +193,7 @@ caml_system__code_begin:
         lgr     %r15, TMP2;                                \
         SWITCH_OCAML_TO_C_CFI
 
-/* Switch from C to OCaml stack.  Clobbers %r9. */
+/* Switch from C to OCaml stack. */
 #define SWITCH_C_TO_OCAML                                           \
         lg     %r15, Cstack_sp(%r15);                               \
         CFI_RESTORE_STATE
@@ -734,7 +734,7 @@ LBL(do_perform):
 
         lg      %r9, Stack_handler(%r4)  /* %r9 := old stack -> handler */
         lg      %r8, Handler_parent(%r9)
-        clgfi   %r8, 0   /* %r10 := parent stack; is parent NULL? */
+        clgfi   %r8, 0   /* %r8 := parent stack; is parent NULL? */
         je      LBL(112)
         SWITCH_OCAML_STACKS(%r4, %r8)
      /* We have to null the Handler_parent after the switch because the
@@ -753,7 +753,7 @@ LBL(112):
         SWITCH_OCAML_STACKS(%r9, %r8)
     /* No parent stack. Raise Unhandled. */
         LEA_VAR(caml_raise_unhandled_effect, ADDITIONAL_ARG)
-        brcl    15, LBL(caml_c_call)
+        brcl    15, GCALL(caml_c_call)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_perform))
 
@@ -795,7 +795,7 @@ LBL(caml_resume_1):
         br      %r5
 LBL(caml_resume_2):
         LEA_VAR(caml_raise_continuation_already_resumed, ADDITIONAL_ARG)
-        brcl    15, LBL(caml_c_call)
+        brcl    15, GCALL(caml_c_call)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_resume))
 
@@ -891,6 +891,8 @@ CFI_STARTPROC
         CFI_OFFSET(14, -168)
         ENTER_FUNCTION
         LEA_VAR(caml_array_bound_error_asm, ADDITIONAL_ARG)
+    /* Note the following jumps in the middle of caml_c_call, since stack
+       has already been adjusted. */
         brcl    15, LBL(caml_c_call)
 CFI_ENDPROC
 ENDFUNCTION(G(caml_ml_array_bound_error))

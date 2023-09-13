@@ -578,7 +578,7 @@ let lines_around
   loop ();
   List.rev !lines
 
-(* Try to get lines from a lexbuf *)
+(* Attempt to get lines from the lexing buffer. *)
 let lines_around_from_lexbuf
     ~(start_pos: position) ~(end_pos: position)
     (lb: lexbuf):
@@ -619,61 +619,16 @@ let lines_around_from_phrasebuf
   in
   lines_around ~start_pos ~end_pos ~seek ~read_char
 
-(* Get lines from a file *)
-let lines_around_from_file
-    ~(start_pos: position) ~(end_pos: position)
-    (filename: string):
-  input_line list
-  =
-  try
-    let cin = open_in_bin filename in
-    let read_char () =
-      try Some (input_char cin) with End_of_file -> None
-    in
-    let lines =
-      lines_around ~start_pos ~end_pos ~seek:(seek_in cin) ~read_char
-    in
-    close_in cin;
-    lines
-  with Sys_error _ -> []
-
 (* A [get_lines] function for [highlight_quote] that reads from the current
-   input.
-
-   It first tries to read from [!input_lexbuf], then if that fails (because the
-   lexbuf no longer contains the input we want), it reads from [!input_name]
-   directly *)
+   input. *)
 let lines_around_from_current_input ~start_pos ~end_pos =
-  (* Be a bit defensive, and do not try to open one of the possible
-     [!input_name] values that we know do not denote valid filenames. *)
-  let file_valid = function
-    | "//toplevel//" | "_none_" | "" -> false
-    | _ -> true
-  in
-  let from_file () =
-    if file_valid !input_name then
-      lines_around_from_file !input_name ~start_pos ~end_pos
-    else
-      []
-  in
   match !input_lexbuf, !input_phrase_buffer, !input_name with
   | _, Some pb, "//toplevel//" ->
-      begin match lines_around_from_phrasebuf pb ~start_pos ~end_pos with
-      | [] -> (* Could not read the input from the phrase buffer. This is likely
-                 a sign that we were given a buggy location. *)
-          []
-      | lines ->
-          lines
-      end
+      lines_around_from_phrasebuf pb ~start_pos ~end_pos
   | Some lb, _, _ ->
-      begin match lines_around_from_lexbuf lb ~start_pos ~end_pos with
-      | [] -> (* The input is likely not in the lexbuf anymore *)
-          from_file ()
-      | lines ->
-          lines
-      end
+      lines_around_from_lexbuf lb ~start_pos ~end_pos
   | None, _, _ ->
-      from_file ()
+      []
 
 (******************************************************************************)
 (* Reporting errors and warnings *)

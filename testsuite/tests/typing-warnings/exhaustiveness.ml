@@ -333,7 +333,7 @@ Line 1, characters 8-37:
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-(_, 1)
+({ _ }, 1)
 
 val f : 'a ref * int -> int = <fun>
 |}]

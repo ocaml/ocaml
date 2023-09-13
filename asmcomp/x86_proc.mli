@@ -58,20 +58,11 @@ val assemble_file: (*infile*) string -> (*outfile*) string -> (*retcode*) int
 (** System detection *)
 
 type system =
-  (* 32 bits and 64 bits *)
   | S_macosx
   | S_gnu
   | S_cygwin
-
-  (* 32 bits only *)
   | S_solaris
-  | S_win32
-  | S_linux_elf
-  | S_bsd_elf
   | S_beos
-  | S_mingw
-
-  (* 64 bits only *)
   | S_win64
   | S_linux
   | S_mingw64

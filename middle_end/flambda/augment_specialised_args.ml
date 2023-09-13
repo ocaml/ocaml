@@ -155,7 +155,7 @@ module Processed_what_to_specialise = struct
        needs a "new inner var" and a "new outer var".  However if there
        is already a lifted projection being introduced around the set
        of closures (corresponding to another new specialised argument),
-       we should re-use its "new outer var" to avoid duplication of
+       we should reuse its "new outer var" to avoid duplication of
        projection definitions.  Likewise if the definition is just
        [Existing_inner_free_var], in which case we can use the
        corresponding existing outer free variable. *)

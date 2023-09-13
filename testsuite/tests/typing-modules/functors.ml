@@ -1333,7 +1333,7 @@ Error: This application of the functor "F" is ill-typed.
        5. Module A matches the expected module type arg
 |}]
 
-(** Known lmitation: we choose the wrong environment without the
+(** Known limitation: we choose the wrong environment without the
     error on Add_one
 **)
 module Mislead_chosen_one = F(Add_one)(Add_three)(A)(A)(A)

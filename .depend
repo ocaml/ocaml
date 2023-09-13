@@ -480,6 +480,21 @@ parsing/syntaxerr.cmx : \
     parsing/syntaxerr.cmi
 parsing/syntaxerr.cmi : \
     parsing/location.cmi
+parsing/unit_info.cmo : \
+    utils/warnings.cmi \
+    utils/misc.cmi \
+    parsing/location.cmi \
+    utils/load_path.cmi \
+    utils/config.cmi \
+    parsing/unit_info.cmi
+parsing/unit_info.cmx : \
+    utils/warnings.cmx \
+    utils/misc.cmx \
+    parsing/location.cmx \
+    utils/load_path.cmx \
+    utils/config.cmx \
+    parsing/unit_info.cmi
+parsing/unit_info.cmi :
 typing/annot.cmi : \
     parsing/location.cmi
 typing/btype.cmo : \
@@ -599,6 +614,7 @@ typing/datarepr.cmi : \
     typing/ident.cmi
 typing/env.cmo : \
     utils/warnings.cmi \
+    parsing/unit_info.cmi \
     typing/types.cmi \
     typing/subst.cmi \
     typing/shape.cmi \
@@ -621,6 +637,7 @@ typing/env.cmo : \
     typing/env.cmi
 typing/env.cmx : \
     utils/warnings.cmx \
+    parsing/unit_info.cmx \
     typing/types.cmx \
     typing/subst.cmx \
     typing/shape.cmx \
@@ -643,6 +660,7 @@ typing/env.cmx : \
     typing/env.cmi
 typing/env.cmi : \
     utils/warnings.cmi \
+    parsing/unit_info.cmi \
     typing/types.cmi \
     typing/subst.cmi \
     typing/shape.cmi \
@@ -993,6 +1011,7 @@ typing/patterns.cmi : \
     parsing/asttypes.cmi
 typing/persistent_env.cmo : \
     utils/warnings.cmi \
+    parsing/unit_info.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
     utils/load_path.cmi \
@@ -1003,6 +1022,7 @@ typing/persistent_env.cmo : \
     typing/persistent_env.cmi
 typing/persistent_env.cmx : \
     utils/warnings.cmx \
+    parsing/unit_info.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
     utils/load_path.cmx \
@@ -1012,6 +1032,7 @@ typing/persistent_env.cmx : \
     utils/clflags.cmx \
     typing/persistent_env.cmi
 typing/persistent_env.cmi : \
+    parsing/unit_info.cmi \
     typing/types.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
@@ -1079,6 +1100,7 @@ typing/printpat.cmi : \
     parsing/asttypes.cmi
 typing/printtyp.cmo : \
     utils/warnings.cmi \
+    parsing/unit_info.cmi \
     typing/types.cmi \
     typing/type_immediacy.cmi \
     typing/signature_group.cmi \
@@ -1103,6 +1125,7 @@ typing/printtyp.cmo : \
     typing/printtyp.cmi
 typing/printtyp.cmx : \
     utils/warnings.cmx \
+    parsing/unit_info.cmx \
     typing/types.cmx \
     typing/type_immediacy.cmx \
     typing/signature_group.cmx \
@@ -1701,6 +1724,7 @@ typing/typedtree.cmi : \
     parsing/asttypes.cmi
 typing/typemod.cmo : \
     utils/warnings.cmi \
+    parsing/unit_info.cmi \
     typing/typetexp.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
@@ -1724,7 +1748,6 @@ typing/typemod.cmo : \
     typing/ident.cmi \
     typing/env.cmi \
     typing/ctype.cmi \
-    utils/config.cmi \
     file_formats/cmt_format.cmi \
     typing/cmt2annot.cmi \
     file_formats/cmi_format.cmi \
@@ -1736,6 +1759,7 @@ typing/typemod.cmo : \
     typing/typemod.cmi
 typing/typemod.cmx : \
     utils/warnings.cmx \
+    parsing/unit_info.cmx \
     typing/typetexp.cmx \
     typing/types.cmx \
     typing/typedtree.cmx \
@@ -1759,7 +1783,6 @@ typing/typemod.cmx : \
     typing/ident.cmx \
     typing/env.cmx \
     typing/ctype.cmx \
-    utils/config.cmx \
     file_formats/cmt_format.cmx \
     typing/cmt2annot.cmx \
     file_formats/cmi_format.cmx \
@@ -1770,6 +1793,7 @@ typing/typemod.cmx : \
     parsing/asttypes.cmi \
     typing/typemod.cmi
 typing/typemod.cmi : \
+    parsing/unit_info.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/typedecl.cmi \
@@ -2026,6 +2050,7 @@ bytecomp/bytelink.cmi : \
     utils/misc.cmi \
     file_formats/cmo_format.cmi
 bytecomp/bytepackager.cmo : \
+    parsing/unit_info.cmi \
     typing/typemod.cmi \
     lambda/translmod.cmi \
     bytecomp/symtable.cmi \
@@ -2047,6 +2072,7 @@ bytecomp/bytepackager.cmo : \
     bytecomp/bytegen.cmi \
     bytecomp/bytepackager.cmi
 bytecomp/bytepackager.cmx : \
+    parsing/unit_info.cmx \
     typing/typemod.cmx \
     lambda/translmod.cmx \
     bytecomp/symtable.cmx \
@@ -2089,6 +2115,7 @@ bytecomp/dll.cmx : \
     bytecomp/dll.cmi
 bytecomp/dll.cmi :
 bytecomp/emitcode.cmo : \
+    parsing/unit_info.cmi \
     lambda/translmod.cmi \
     bytecomp/symtable.cmi \
     typing/primitive.cmi \
@@ -2107,6 +2134,7 @@ bytecomp/emitcode.cmo : \
     parsing/asttypes.cmi \
     bytecomp/emitcode.cmi
 bytecomp/emitcode.cmx : \
+    parsing/unit_info.cmx \
     lambda/translmod.cmx \
     bytecomp/symtable.cmx \
     typing/primitive.cmx \
@@ -2125,6 +2153,7 @@ bytecomp/emitcode.cmx : \
     parsing/asttypes.cmi \
     bytecomp/emitcode.cmi
 bytecomp/emitcode.cmi : \
+    parsing/unit_info.cmi \
     utils/misc.cmi \
     bytecomp/instruct.cmi \
     typing/ident.cmi \
@@ -2278,6 +2307,7 @@ asmcomp/arch.cmi : \
     asmcomp/x86_ast.cmi \
     lambda/lambda.cmi
 asmcomp/asmgen.cmo : \
+    parsing/unit_info.cmi \
     lambda/translmod.cmi \
     asmcomp/split.cmi \
     asmcomp/spill.cmi \
@@ -2321,6 +2351,7 @@ asmcomp/asmgen.cmo : \
     middle_end/backend_intf.cmi \
     asmcomp/asmgen.cmi
 asmcomp/asmgen.cmx : \
+    parsing/unit_info.cmx \
     lambda/translmod.cmx \
     asmcomp/split.cmx \
     asmcomp/spill.cmx \
@@ -2364,6 +2395,7 @@ asmcomp/asmgen.cmx : \
     middle_end/backend_intf.cmi \
     asmcomp/asmgen.cmi
 asmcomp/asmgen.cmi : \
+    parsing/unit_info.cmi \
     lambda/lambda.cmi \
     asmcomp/emitaux.cmi \
     asmcomp/cmm.cmi \
@@ -2438,6 +2470,7 @@ asmcomp/asmlink.cmi : \
     utils/misc.cmi \
     file_formats/cmx_format.cmi
 asmcomp/asmpackager.cmo : \
+    parsing/unit_info.cmi \
     typing/typemod.cmi \
     lambda/translmod.cmi \
     lambda/simplif.cmi \
@@ -2462,6 +2495,7 @@ asmcomp/asmpackager.cmo : \
     asmcomp/asmgen.cmi \
     asmcomp/asmpackager.cmi
 asmcomp/asmpackager.cmx : \
+    parsing/unit_info.cmx \
     typing/typemod.cmx \
     lambda/translmod.cmx \
     lambda/simplif.cmx \
@@ -2757,7 +2791,6 @@ asmcomp/emit.cmi : \
     asmcomp/linear.cmi \
     asmcomp/cmm.cmi
 asmcomp/emitaux.cmo : \
-    asmcomp/linear.cmi \
     asmcomp/emitenv.cmi \
     lambda/debuginfo.cmi \
     utils/config.cmi \
@@ -2766,7 +2799,6 @@ asmcomp/emitaux.cmo : \
     asmcomp/arch.cmi \
     asmcomp/emitaux.cmi
 asmcomp/emitaux.cmx : \
-    asmcomp/linear.cmx \
     asmcomp/emitenv.cmi \
     lambda/debuginfo.cmx \
     utils/config.cmx \
@@ -2828,8 +2860,8 @@ asmcomp/linear.cmi : \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi
 asmcomp/linearize.cmo : \
+    asmcomp/stackframe.cmi \
     asmcomp/reg.cmi \
-    asmcomp/proc.cmi \
     utils/misc.cmi \
     asmcomp/mach.cmi \
     asmcomp/linear.cmi \
@@ -2837,8 +2869,8 @@ asmcomp/linearize.cmo : \
     asmcomp/cmm.cmi \
     asmcomp/linearize.cmi
 asmcomp/linearize.cmx : \
+    asmcomp/stackframe.cmx \
     asmcomp/reg.cmx \
-    asmcomp/proc.cmx \
     utils/misc.cmx \
     asmcomp/mach.cmx \
     asmcomp/linear.cmx \
@@ -3092,7 +3124,6 @@ asmcomp/selectgen.cmo : \
     lambda/lambda.cmi \
     lambda/debuginfo.cmi \
     asmcomp/cmm.cmi \
-    utils/clflags.cmi \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi \
     asmcomp/arch.cmi \
@@ -3107,7 +3138,6 @@ asmcomp/selectgen.cmx : \
     lambda/lambda.cmx \
     lambda/debuginfo.cmx \
     asmcomp/cmm.cmx \
-    utils/clflags.cmx \
     middle_end/backend_var.cmx \
     parsing/asttypes.cmi \
     asmcomp/arch.cmx \
@@ -3172,6 +3202,31 @@ asmcomp/split.cmx : \
     asmcomp/mach.cmx \
     asmcomp/split.cmi
 asmcomp/split.cmi : \
+    asmcomp/mach.cmi
+asmcomp/stackframe.cmo : \
+    asmcomp/stackframegen.cmi \
+    asmcomp/mach.cmi \
+    utils/config.cmi \
+    asmcomp/stackframe.cmi
+asmcomp/stackframe.cmx : \
+    asmcomp/stackframegen.cmx \
+    asmcomp/mach.cmx \
+    utils/config.cmx \
+    asmcomp/stackframe.cmi
+asmcomp/stackframe.cmi : \
+    asmcomp/stackframegen.cmi \
+    asmcomp/mach.cmi
+asmcomp/stackframegen.cmo : \
+    asmcomp/mach.cmi \
+    lambda/lambda.cmi \
+    utils/clflags.cmi \
+    asmcomp/stackframegen.cmi
+asmcomp/stackframegen.cmx : \
+    asmcomp/mach.cmx \
+    lambda/lambda.cmx \
+    utils/clflags.cmx \
+    asmcomp/stackframegen.cmi
+asmcomp/stackframegen.cmi : \
     asmcomp/mach.cmi
 asmcomp/strmatch.cmo : \
     lambda/lambda.cmi \
@@ -3957,6 +4012,7 @@ file_formats/cmi_format.cmi : \
 file_formats/cmo_format.cmi : \
     utils/misc.cmi
 file_formats/cmt_format.cmo : \
+    parsing/unit_info.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/tast_mapper.cmi \
@@ -3971,6 +4027,7 @@ file_formats/cmt_format.cmo : \
     utils/clflags.cmi \
     file_formats/cmt_format.cmi
 file_formats/cmt_format.cmx : \
+    parsing/unit_info.cmx \
     typing/types.cmx \
     typing/typedtree.cmx \
     typing/tast_mapper.cmx \
@@ -3985,6 +4042,7 @@ file_formats/cmt_format.cmx : \
     utils/clflags.cmx \
     file_formats/cmt_format.cmi
 file_formats/cmt_format.cmi : \
+    parsing/unit_info.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
     typing/shape.cmi \
@@ -5976,6 +6034,7 @@ driver/compenv.cmx : \
 driver/compenv.cmi : \
     utils/clflags.cmi
 driver/compile.cmo : \
+    parsing/unit_info.cmi \
     typing/typedtree.cmi \
     lambda/translmod.cmi \
     lambda/simplif.cmi \
@@ -5986,11 +6045,11 @@ driver/compile.cmo : \
     lambda/lambda.cmi \
     bytecomp/emitcode.cmi \
     driver/compile_common.cmi \
-    file_formats/cmo_format.cmi \
     utils/clflags.cmi \
     bytecomp/bytegen.cmi \
     driver/compile.cmi
 driver/compile.cmx : \
+    parsing/unit_info.cmx \
     typing/typedtree.cmx \
     lambda/translmod.cmx \
     lambda/simplif.cmx \
@@ -6001,7 +6060,6 @@ driver/compile.cmx : \
     lambda/lambda.cmx \
     bytecomp/emitcode.cmx \
     driver/compile_common.cmx \
-    file_formats/cmo_format.cmi \
     utils/clflags.cmx \
     bytecomp/bytegen.cmx \
     driver/compile.cmi
@@ -6013,6 +6071,7 @@ driver/compile.cmi : \
     utils/clflags.cmi
 driver/compile_common.cmo : \
     utils/warnings.cmi \
+    parsing/unit_info.cmi \
     typing/typemod.cmi \
     typing/typedtree.cmi \
     typing/typecore.cmi \
@@ -6026,14 +6085,13 @@ driver/compile_common.cmo : \
     utils/misc.cmi \
     typing/includemod.cmi \
     typing/env.cmi \
-    utils/config.cmi \
     driver/compmisc.cmi \
-    driver/compenv.cmi \
     utils/clflags.cmi \
     parsing/builtin_attributes.cmi \
     driver/compile_common.cmi
 driver/compile_common.cmx : \
     utils/warnings.cmx \
+    parsing/unit_info.cmx \
     typing/typemod.cmx \
     typing/typedtree.cmx \
     typing/typecore.cmx \
@@ -6047,13 +6105,12 @@ driver/compile_common.cmx : \
     utils/misc.cmx \
     typing/includemod.cmx \
     typing/env.cmx \
-    utils/config.cmx \
     driver/compmisc.cmx \
-    driver/compenv.cmx \
     utils/clflags.cmx \
     parsing/builtin_attributes.cmx \
     driver/compile_common.cmi
 driver/compile_common.cmi : \
+    parsing/unit_info.cmi \
     typing/typedtree.cmi \
     parsing/parsetree.cmi \
     typing/env.cmi
@@ -6152,6 +6209,7 @@ driver/maindriver.cmx : \
     driver/maindriver.cmi
 driver/maindriver.cmi :
 driver/makedepend.cmo : \
+    parsing/unit_info.cmi \
     driver/pparse.cmi \
     parsing/parsetree.cmi \
     parsing/parser.cmi \
@@ -6165,6 +6223,7 @@ driver/makedepend.cmo : \
     utils/clflags.cmi \
     driver/makedepend.cmi
 driver/makedepend.cmx : \
+    parsing/unit_info.cmx \
     driver/pparse.cmx \
     parsing/parsetree.cmi \
     parsing/parser.cmx \
@@ -6179,6 +6238,7 @@ driver/makedepend.cmx : \
     driver/makedepend.cmi
 driver/makedepend.cmi :
 driver/optcompile.cmo : \
+    parsing/unit_info.cmi \
     typing/typedtree.cmi \
     lambda/translmod.cmi \
     lambda/simplif.cmi \
@@ -6195,6 +6255,7 @@ driver/optcompile.cmo : \
     asmcomp/asmgen.cmi \
     driver/optcompile.cmi
 driver/optcompile.cmx : \
+    parsing/unit_info.cmx \
     typing/typedtree.cmx \
     lambda/translmod.cmx \
     lambda/simplif.cmx \
@@ -6299,12 +6360,14 @@ driver/pparse.cmx : \
 driver/pparse.cmi : \
     parsing/parsetree.cmi
 toplevel/expunge.cmo : \
+    parsing/unit_info.cmi \
     bytecomp/symtable.cmi \
     utils/misc.cmi \
     file_formats/cmo_format.cmi \
     bytecomp/bytesections.cmi \
     toplevel/expunge.cmi
 toplevel/expunge.cmx : \
+    parsing/unit_info.cmx \
     bytecomp/symtable.cmx \
     utils/misc.cmx \
     file_formats/cmo_format.cmi \
@@ -6353,6 +6416,7 @@ toplevel/genprintval.cmi : \
     typing/outcometree.cmi \
     typing/env.cmi
 toplevel/topcommon.cmo : \
+    parsing/unit_info.cmi \
     typing/typedtree.cmi \
     bytecomp/symtable.cmi \
     parsing/printast.cmi \
@@ -6382,6 +6446,7 @@ toplevel/topcommon.cmo : \
     parsing/ast_helper.cmi \
     toplevel/topcommon.cmi
 toplevel/topcommon.cmx : \
+    parsing/unit_info.cmx \
     typing/typedtree.cmx \
     bytecomp/symtable.cmx \
     parsing/printast.cmx \
@@ -6570,7 +6635,6 @@ toplevel/byte/topeval.cmo : \
     typing/persistent_env.cmi \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
-    bytecomp/opcodes.cmi \
     utils/misc.cmi \
     bytecomp/meta.cmi \
     parsing/location.cmi \
@@ -6605,7 +6669,6 @@ toplevel/byte/topeval.cmx : \
     typing/persistent_env.cmx \
     parsing/parsetree.cmi \
     typing/outcometree.cmi \
-    bytecomp/opcodes.cmx \
     utils/misc.cmx \
     bytecomp/meta.cmx \
     parsing/location.cmx \
@@ -6993,6 +7056,7 @@ tools/eqparsetree.cmx : \
 tools/gen_sizeclasses.cmo :
 tools/gen_sizeclasses.cmx :
 tools/lintapidiff.cmo : \
+    parsing/unit_info.cmi \
     otherlibs/str/str.cmi \
     typing/printtyp.cmi \
     driver/pparse.cmi \
@@ -7004,6 +7068,7 @@ tools/lintapidiff.cmo : \
     typing/ident.cmi \
     tools/lintapidiff.cmi
 tools/lintapidiff.cmx : \
+    parsing/unit_info.cmx \
     otherlibs/str/str.cmx \
     typing/printtyp.cmx \
     driver/pparse.cmx \
@@ -7258,6 +7323,7 @@ debugger/checkpoints.cmi : \
 debugger/command_line.cmo : \
     debugger/unix_tools.cmi \
     otherlibs/unix/unix.cmi \
+    parsing/unit_info.cmi \
     typing/types.cmi \
     debugger/time_travel.cmi \
     debugger/symbols.cmi \
@@ -7296,6 +7362,7 @@ debugger/command_line.cmo : \
 debugger/command_line.cmx : \
     debugger/unix_tools.cmx \
     otherlibs/unix/unix.cmx \
+    parsing/unit_info.cmx \
     typing/types.cmx \
     debugger/time_travel.cmx \
     debugger/symbols.cmx \
@@ -7492,6 +7559,7 @@ debugger/int64ops.cmx : \
     debugger/int64ops.cmi
 debugger/int64ops.cmi :
 debugger/loadprinter.cmo : \
+    parsing/unit_info.cmi \
     typing/types.cmi \
     toplevel/topprinters.cmi \
     bytecomp/symtable.cmi \
@@ -7508,6 +7576,7 @@ debugger/loadprinter.cmo : \
     file_formats/cmo_format.cmi \
     debugger/loadprinter.cmi
 debugger/loadprinter.cmx : \
+    parsing/unit_info.cmx \
     typing/types.cmx \
     toplevel/topprinters.cmx \
     bytecomp/symtable.cmx \
@@ -7859,3 +7928,509 @@ debugger/unix_tools.cmx : \
     debugger/unix_tools.cmi
 debugger/unix_tools.cmi : \
     otherlibs/unix/unix.cmi
+ocamltest/actions.cmo : \
+    ocamltest/variables.cmi \
+    ocamltest/result.cmi \
+    ocamltest/environments.cmi \
+    ocamltest/actions.cmi
+ocamltest/actions.cmx : \
+    ocamltest/variables.cmx \
+    ocamltest/result.cmx \
+    ocamltest/environments.cmx \
+    ocamltest/actions.cmi
+ocamltest/actions.cmi : \
+    ocamltest/variables.cmi \
+    ocamltest/result.cmi \
+    ocamltest/environments.cmi
+ocamltest/actions_helpers.cmo : \
+    ocamltest/variables.cmi \
+    otherlibs/unix/unix.cmi \
+    ocamltest/strace.cmi \
+    ocamltest/run_command.cmi \
+    ocamltest/result.cmi \
+    ocamltest/ocamltest_stdlib.cmi \
+    ocamltest/modifier_parser.cmi \
+    ocamltest/filecompare.cmi \
+    ocamltest/environments.cmi \
+    ocamltest/builtin_variables.cmi \
+    ocamltest/actions.cmi \
+    ocamltest/actions_helpers.cmi
+ocamltest/actions_helpers.cmx : \
+    ocamltest/variables.cmx \
+    otherlibs/unix/unix.cmx \
+    ocamltest/strace.cmx \
+    ocamltest/run_command.cmx \
+    ocamltest/result.cmx \
+    ocamltest/ocamltest_stdlib.cmx \
+    ocamltest/modifier_parser.cmx \
+    ocamltest/filecompare.cmx \
+    ocamltest/environments.cmx \
+    ocamltest/builtin_variables.cmx \
+    ocamltest/actions.cmx \
+    ocamltest/actions_helpers.cmi
+ocamltest/actions_helpers.cmi : \
+    ocamltest/variables.cmi \
+    ocamltest/result.cmi \
+    ocamltest/environments.cmi \
+    ocamltest/actions.cmi
+ocamltest/builtin_actions.cmo : \
+    otherlibs/unix/unix.cmi \
+    ocamltest/result.cmi \
+    ocamltest/ocamltest_stdlib.cmi \
+    ocamltest/ocamltest_config.cmi \
+    ocamltest/environments.cmi \
+    ocamltest/builtin_variables.cmi \
+    ocamltest/actions_helpers.cmi \
+    ocamltest/actions.cmi \
+    ocamltest/builtin_actions.cmi
+ocamltest/builtin_actions.cmx : \
+    otherlibs/unix/unix.cmx \
+    ocamltest/result.cmx \
+    ocamltest/ocamltest_stdlib.cmx \
+    ocamltest/ocamltest_config.cmx \
+    ocamltest/environments.cmx \
+    ocamltest/builtin_variables.cmx \
+    ocamltest/actions_helpers.cmx \
+    ocamltest/actions.cmx \
+    ocamltest/builtin_actions.cmi
+ocamltest/builtin_actions.cmi : \
+    ocamltest/actions.cmi
+ocamltest/builtin_variables.cmo : \
+    ocamltest/variables.cmi \
+    ocamltest/builtin_variables.cmi
+ocamltest/builtin_variables.cmx : \
+    ocamltest/variables.cmx \
+    ocamltest/builtin_variables.cmi
+ocamltest/builtin_variables.cmi : \
+    ocamltest/variables.cmi
+ocamltest/environments.cmo : \
+    ocamltest/variables.cmi \
+    ocamltest/ocamltest_stdlib.cmi \
+    ocamltest/environments.cmi
+ocamltest/environments.cmx : \
+    ocamltest/variables.cmx \
+    ocamltest/ocamltest_stdlib.cmx \
+    ocamltest/environments.cmi
+ocamltest/environments.cmi : \
+    ocamltest/variables.cmi
+ocamltest/filecompare.cmo : \
+    ocamltest/run_command.cmi \
+    ocamltest/ocamltest_stdlib.cmi \
+    ocamltest/ocamltest_config.cmi \
+    ocamltest/filecompare.cmi
+ocamltest/filecompare.cmx : \
+    ocamltest/run_command.cmx \
+    ocamltest/ocamltest_stdlib.cmx \
+    ocamltest/ocamltest_config.cmx \
+    ocamltest/filecompare.cmi
+ocamltest/filecompare.cmi :
+ocamltest/main.cmo : \
+    otherlibs/unix/unix.cmi \
+    ocamltest/tsl_semantics.cmi \
+    ocamltest/tsl_parser.cmi \
+    ocamltest/tsl_lexer.cmi \
+    ocamltest/translate.cmi \
+    ocamltest/tests.cmi \
+    ocamltest/result.cmi \
+    ocamltest/options.cmi \
+    ocamltest/ocamltest_stdlib.cmi \
+    parsing/location.cmi \
+    ocamltest/environments.cmi \
+    ocamltest/builtin_variables.cmi \
+    ocamltest/actions_helpers.cmi \
+    ocamltest/actions.cmi \
+    ocamltest/main.cmi
+ocamltest/main.cmx : \
+    otherlibs/unix/unix.cmx \
+    ocamltest/tsl_semantics.cmx \
+    ocamltest/tsl_parser.cmx \
+    ocamltest/tsl_lexer.cmx \
+    ocamltest/translate.cmx \
+    ocamltest/tests.cmx \
+    ocamltest/result.cmx \
+    ocamltest/options.cmx \
+    ocamltest/ocamltest_stdlib.cmx \
+    parsing/location.cmx \
+    ocamltest/environments.cmx \
+    ocamltest/builtin_variables.cmx \
+    ocamltest/actions_helpers.cmx \
+    ocamltest/actions.cmx \
+    ocamltest/main.cmi
+ocamltest/main.cmi :
+ocamltest/modifier_parser.cmo : \
+    ocamltest/variables.cmi \
+    ocamltest/tsl_lexer.cmi \
+    ocamltest/ocamltest_stdlib.cmi \
+    ocamltest/environments.cmi \
+    ocamltest/modifier_parser.cmi
+ocamltest/modifier_parser.cmx : \
+    ocamltest/variables.cmx \
+    ocamltest/tsl_lexer.cmx \
+    ocamltest/ocamltest_stdlib.cmx \
+    ocamltest/environments.cmx \
+    ocamltest/modifier_parser.cmi
+ocamltest/modifier_parser.cmi : \
+    ocamltest/environments.cmi
+ocamltest/ocaml_actions.cmo : \
+    ocamltest/result.cmi \
+    ocamltest/ocamltest_stdlib.cmi \
+    ocamltest/ocamltest_config.cmi \
+    ocamltest/ocaml_variables.cmi \
+    ocamltest/ocaml_toplevels.cmi \
+    ocamltest/ocaml_tools.cmi \
+    ocamltest/ocaml_modifiers.cmi \
+    ocamltest/ocaml_flags.cmi \
+    ocamltest/ocaml_filetypes.cmi \
+    ocamltest/ocaml_files.cmi \
+    ocamltest/ocaml_directories.cmi \
+    ocamltest/ocaml_compilers.cmi \
+    ocamltest/ocaml_commands.cmi \
+    ocamltest/ocaml_backends.cmi \
+    utils/misc.cmi \
+    ocamltest/filecompare.cmi \
+    ocamltest/environments.cmi \
+    utils/config.cmi \
+    file_formats/cmo_format.cmi \
+    utils/clflags.cmi \
+    ocamltest/builtin_variables.cmi \
+    ocamltest/actions_helpers.cmi \
+    ocamltest/actions.cmi \
+    ocamltest/ocaml_actions.cmi
+ocamltest/ocaml_actions.cmx : \
+    ocamltest/result.cmx \
+    ocamltest/ocamltest_stdlib.cmx \
+    ocamltest/ocamltest_config.cmx \
+    ocamltest/ocaml_variables.cmx \
+    ocamltest/ocaml_toplevels.cmx \
+    ocamltest/ocaml_tools.cmx \
+    ocamltest/ocaml_modifiers.cmx \
+    ocamltest/ocaml_flags.cmx \
+    ocamltest/ocaml_filetypes.cmx \
+    ocamltest/ocaml_files.cmx \
+    ocamltest/ocaml_directories.cmx \
+    ocamltest/ocaml_compilers.cmx \
+    ocamltest/ocaml_commands.cmx \
+    ocamltest/ocaml_backends.cmx \
+    utils/misc.cmx \
+    ocamltest/filecompare.cmx \
+    ocamltest/environments.cmx \
+    utils/config.cmx \
+    file_formats/cmo_format.cmi \
+    utils/clflags.cmx \
+    ocamltest/builtin_variables.cmx \
+    ocamltest/actions_helpers.cmx \
+    ocamltest/actions.cmx \
+    ocamltest/ocaml_actions.cmi
+ocamltest/ocaml_actions.cmi : \
+    ocamltest/actions.cmi
+ocamltest/ocaml_backends.cmo : \
+    ocamltest/ocaml_backends.cmi
+ocamltest/ocaml_backends.cmx : \
+    ocamltest/ocaml_backends.cmi
+ocamltest/ocaml_backends.cmi :
+ocamltest/ocaml_commands.cmo : \
+    ocamltest/ocaml_files.cmi \
+    ocamltest/ocaml_commands.cmi
+ocamltest/ocaml_commands.cmx : \
+    ocamltest/ocaml_files.cmx \
+    ocamltest/ocaml_commands.cmi
+ocamltest/ocaml_commands.cmi :
+ocamltest/ocaml_compilers.cmo : \
+    ocamltest/variables.cmi \
+    ocamltest/ocamltest_stdlib.cmi \
+    ocamltest/ocaml_variables.cmi \
+    ocamltest/ocaml_tools.cmi \
+    ocamltest/ocaml_files.cmi \
+    ocamltest/ocaml_commands.cmi \
+    ocamltest/ocaml_backends.cmi \
+    ocamltest/builtin_variables.cmi \
+    ocamltest/ocaml_compilers.cmi
+ocamltest/ocaml_compilers.cmx : \
+    ocamltest/variables.cmx \
+    ocamltest/ocamltest_stdlib.cmx \
+    ocamltest/ocaml_variables.cmx \
+    ocamltest/ocaml_tools.cmx \
+    ocamltest/ocaml_files.cmx \
+    ocamltest/ocaml_commands.cmx \
+    ocamltest/ocaml_backends.cmx \
+    ocamltest/builtin_variables.cmx \
+    ocamltest/ocaml_compilers.cmi
+ocamltest/ocaml_compilers.cmi : \
+    ocamltest/variables.cmi \
+    ocamltest/ocaml_tools.cmi \
+    ocamltest/ocaml_backends.cmi
+ocamltest/ocaml_directories.cmo : \
+    ocamltest/ocamltest_stdlib.cmi \
+    ocamltest/ocamltest_config.cmi \
+    ocamltest/ocaml_directories.cmi
+ocamltest/ocaml_directories.cmx : \
+    ocamltest/ocamltest_stdlib.cmx \
+    ocamltest/ocamltest_config.cmx \
+    ocamltest/ocaml_directories.cmi
+ocamltest/ocaml_directories.cmi :
+ocamltest/ocaml_files.cmo : \
+    ocamltest/ocamltest_stdlib.cmi \
+    ocamltest/ocamltest_config.cmi \
+    ocamltest/ocaml_directories.cmi \
+    ocamltest/ocaml_files.cmi
+ocamltest/ocaml_files.cmx : \
+    ocamltest/ocamltest_stdlib.cmx \
+    ocamltest/ocamltest_config.cmx \
+    ocamltest/ocaml_directories.cmx \
+    ocamltest/ocaml_files.cmi
+ocamltest/ocaml_files.cmi :
+ocamltest/ocaml_filetypes.cmo : \
+    ocamltest/ocamltest_config.cmi \
+    ocamltest/ocaml_backends.cmi \
+    ocamltest/ocaml_filetypes.cmi
+ocamltest/ocaml_filetypes.cmx : \
+    ocamltest/ocamltest_config.cmx \
+    ocamltest/ocaml_backends.cmx \
+    ocamltest/ocaml_filetypes.cmi
+ocamltest/ocaml_filetypes.cmi : \
+    ocamltest/ocaml_backends.cmi
+ocamltest/ocaml_flags.cmo : \
+    ocamltest/ocaml_variables.cmi \
+    ocamltest/ocaml_files.cmi \
+    ocamltest/ocaml_directories.cmi \
+    ocamltest/ocaml_backends.cmi \
+    ocamltest/environments.cmi \
+    ocamltest/ocaml_flags.cmi
+ocamltest/ocaml_flags.cmx : \
+    ocamltest/ocaml_variables.cmx \
+    ocamltest/ocaml_files.cmx \
+    ocamltest/ocaml_directories.cmx \
+    ocamltest/ocaml_backends.cmx \
+    ocamltest/environments.cmx \
+    ocamltest/ocaml_flags.cmi
+ocamltest/ocaml_flags.cmi : \
+    ocamltest/ocaml_backends.cmi \
+    ocamltest/environments.cmi
+ocamltest/ocaml_modifiers.cmo : \
+    ocamltest/ocamltest_stdlib.cmi \
+    ocamltest/ocamltest_config.cmi \
+    ocamltest/ocaml_variables.cmi \
+    ocamltest/environments.cmi \
+    ocamltest/ocaml_modifiers.cmi
+ocamltest/ocaml_modifiers.cmx : \
+    ocamltest/ocamltest_stdlib.cmx \
+    ocamltest/ocamltest_config.cmx \
+    ocamltest/ocaml_variables.cmx \
+    ocamltest/environments.cmx \
+    ocamltest/ocaml_modifiers.cmi
+ocamltest/ocaml_modifiers.cmi : \
+    ocamltest/environments.cmi
+ocamltest/ocaml_tests.cmo : \
+    ocamltest/tests.cmi \
+    ocamltest/ocamltest_config.cmi \
+    ocamltest/ocaml_actions.cmi \
+    ocamltest/builtin_actions.cmi \
+    ocamltest/actions_helpers.cmi \
+    ocamltest/ocaml_tests.cmi
+ocamltest/ocaml_tests.cmx : \
+    ocamltest/tests.cmx \
+    ocamltest/ocamltest_config.cmx \
+    ocamltest/ocaml_actions.cmx \
+    ocamltest/builtin_actions.cmx \
+    ocamltest/actions_helpers.cmx \
+    ocamltest/ocaml_tests.cmi
+ocamltest/ocaml_tests.cmi : \
+    ocamltest/tests.cmi
+ocamltest/ocaml_tools.cmo : \
+    ocamltest/variables.cmi \
+    ocamltest/ocamltest_stdlib.cmi \
+    ocamltest/ocaml_variables.cmi \
+    ocamltest/ocaml_files.cmi \
+    ocamltest/environments.cmi \
+    ocamltest/actions_helpers.cmi \
+    ocamltest/ocaml_tools.cmi
+ocamltest/ocaml_tools.cmx : \
+    ocamltest/variables.cmx \
+    ocamltest/ocamltest_stdlib.cmx \
+    ocamltest/ocaml_variables.cmx \
+    ocamltest/ocaml_files.cmx \
+    ocamltest/environments.cmx \
+    ocamltest/actions_helpers.cmx \
+    ocamltest/ocaml_tools.cmi
+ocamltest/ocaml_tools.cmi : \
+    ocamltest/variables.cmi \
+    ocamltest/environments.cmi
+ocamltest/ocaml_toplevels.cmo : \
+    ocamltest/variables.cmi \
+    ocamltest/ocamltest_stdlib.cmi \
+    ocamltest/ocaml_variables.cmi \
+    ocamltest/ocaml_tools.cmi \
+    ocamltest/ocaml_files.cmi \
+    ocamltest/ocaml_compilers.cmi \
+    ocamltest/ocaml_commands.cmi \
+    ocamltest/ocaml_backends.cmi \
+    ocamltest/ocaml_toplevels.cmi
+ocamltest/ocaml_toplevels.cmx : \
+    ocamltest/variables.cmx \
+    ocamltest/ocamltest_stdlib.cmx \
+    ocamltest/ocaml_variables.cmx \
+    ocamltest/ocaml_tools.cmx \
+    ocamltest/ocaml_files.cmx \
+    ocamltest/ocaml_compilers.cmx \
+    ocamltest/ocaml_commands.cmx \
+    ocamltest/ocaml_backends.cmx \
+    ocamltest/ocaml_toplevels.cmi
+ocamltest/ocaml_toplevels.cmi : \
+    ocamltest/variables.cmi \
+    ocamltest/ocaml_tools.cmi \
+    ocamltest/ocaml_compilers.cmi \
+    ocamltest/ocaml_backends.cmi
+ocamltest/ocaml_variables.cmo : \
+    ocamltest/variables.cmi \
+    ocamltest/ocamltest_stdlib.cmi \
+    ocamltest/ocaml_variables.cmi
+ocamltest/ocaml_variables.cmx : \
+    ocamltest/variables.cmx \
+    ocamltest/ocamltest_stdlib.cmx \
+    ocamltest/ocaml_variables.cmi
+ocamltest/ocaml_variables.cmi : \
+    ocamltest/variables.cmi
+ocamltest/ocamltest_config.cmo : \
+    ocamltest/ocamltest_config.cmi
+ocamltest/ocamltest_config.cmx : \
+    ocamltest/ocamltest_config.cmi
+ocamltest/ocamltest_config.cmi :
+ocamltest/ocamltest_stdlib.cmo : \
+    ocamltest/ocamltest_unix.cmi \
+    ocamltest/ocamltest_config.cmi \
+    utils/misc.cmi \
+    ocamltest/ocamltest_stdlib.cmi
+ocamltest/ocamltest_stdlib.cmx : \
+    ocamltest/ocamltest_unix.cmx \
+    ocamltest/ocamltest_config.cmx \
+    utils/misc.cmx \
+    ocamltest/ocamltest_stdlib.cmi
+ocamltest/ocamltest_stdlib.cmi : \
+    ocamltest/ocamltest_unix.cmi \
+    utils/misc.cmi
+ocamltest/ocamltest_unix.cmo : \
+    otherlibs/unix/unix.cmi \
+    ocamltest/ocamltest_unix.cmi
+ocamltest/ocamltest_unix.cmx : \
+    otherlibs/unix/unix.cmx \
+    ocamltest/ocamltest_unix.cmi
+ocamltest/ocamltest_unix.cmi :
+ocamltest/ocamltest_unix_dummy.cmo :
+ocamltest/ocamltest_unix_dummy.cmx :
+ocamltest/ocamltest_unix_real.cmo : \
+    otherlibs/unix/unix.cmi
+ocamltest/ocamltest_unix_real.cmx : \
+    otherlibs/unix/unix.cmx
+ocamltest/options.cmo : \
+    ocamltest/variables.cmi \
+    ocamltest/translate.cmi \
+    ocamltest/tests.cmi \
+    ocamltest/actions.cmi \
+    ocamltest/options.cmi
+ocamltest/options.cmx : \
+    ocamltest/variables.cmx \
+    ocamltest/translate.cmx \
+    ocamltest/tests.cmx \
+    ocamltest/actions.cmx \
+    ocamltest/options.cmi
+ocamltest/options.cmi : \
+    ocamltest/translate.cmi
+ocamltest/result.cmo : \
+    ocamltest/result.cmi
+ocamltest/result.cmx : \
+    ocamltest/result.cmi
+ocamltest/result.cmi :
+ocamltest/run_command.cmo : \
+    ocamltest/ocamltest_stdlib.cmi \
+    ocamltest/run_command.cmi
+ocamltest/run_command.cmx : \
+    ocamltest/ocamltest_stdlib.cmx \
+    ocamltest/run_command.cmi
+ocamltest/run_command.cmi :
+ocamltest/strace.cmo : \
+    ocamltest/variables.cmi \
+    ocamltest/strace.cmi
+ocamltest/strace.cmx : \
+    ocamltest/variables.cmx \
+    ocamltest/strace.cmi
+ocamltest/strace.cmi : \
+    ocamltest/variables.cmi
+ocamltest/tests.cmo : \
+    ocamltest/result.cmi \
+    ocamltest/actions.cmi \
+    ocamltest/tests.cmi
+ocamltest/tests.cmx : \
+    ocamltest/result.cmx \
+    ocamltest/actions.cmx \
+    ocamltest/tests.cmi
+ocamltest/tests.cmi : \
+    ocamltest/result.cmi \
+    ocamltest/environments.cmi \
+    ocamltest/actions.cmi
+ocamltest/translate.cmo : \
+    ocamltest/tsl_semantics.cmi \
+    ocamltest/tsl_parser.cmi \
+    ocamltest/tsl_lexer.cmi \
+    ocamltest/tsl_ast.cmi \
+    parsing/location.cmi \
+    ocamltest/translate.cmi
+ocamltest/translate.cmx : \
+    ocamltest/tsl_semantics.cmx \
+    ocamltest/tsl_parser.cmx \
+    ocamltest/tsl_lexer.cmx \
+    ocamltest/tsl_ast.cmx \
+    parsing/location.cmx \
+    ocamltest/translate.cmi
+ocamltest/translate.cmi :
+ocamltest/tsl_ast.cmo : \
+    parsing/location.cmi \
+    ocamltest/tsl_ast.cmi
+ocamltest/tsl_ast.cmx : \
+    parsing/location.cmx \
+    ocamltest/tsl_ast.cmi
+ocamltest/tsl_ast.cmi : \
+    parsing/location.cmi
+ocamltest/tsl_lexer.cmo : \
+    ocamltest/tsl_parser.cmi \
+    ocamltest/tsl_lexer.cmi
+ocamltest/tsl_lexer.cmx : \
+    ocamltest/tsl_parser.cmx \
+    ocamltest/tsl_lexer.cmi
+ocamltest/tsl_lexer.cmi : \
+    ocamltest/tsl_parser.cmi
+ocamltest/tsl_parser.cmo : \
+    ocamltest/tsl_ast.cmi \
+    parsing/location.cmi \
+    ocamltest/tsl_parser.cmi
+ocamltest/tsl_parser.cmx : \
+    ocamltest/tsl_ast.cmx \
+    parsing/location.cmx \
+    ocamltest/tsl_parser.cmi
+ocamltest/tsl_parser.cmi : \
+    ocamltest/tsl_ast.cmi
+ocamltest/tsl_semantics.cmo : \
+    ocamltest/variables.cmi \
+    ocamltest/tsl_ast.cmi \
+    ocamltest/tests.cmi \
+    parsing/location.cmi \
+    ocamltest/environments.cmi \
+    ocamltest/actions.cmi \
+    ocamltest/tsl_semantics.cmi
+ocamltest/tsl_semantics.cmx : \
+    ocamltest/variables.cmx \
+    ocamltest/tsl_ast.cmx \
+    ocamltest/tests.cmx \
+    parsing/location.cmx \
+    ocamltest/environments.cmx \
+    ocamltest/actions.cmx \
+    ocamltest/tsl_semantics.cmi
+ocamltest/tsl_semantics.cmi : \
+    ocamltest/tsl_ast.cmi \
+    ocamltest/tests.cmi \
+    ocamltest/environments.cmi \
+    ocamltest/actions.cmi
+ocamltest/variables.cmo : \
+    ocamltest/variables.cmi
+ocamltest/variables.cmx : \
+    ocamltest/variables.cmi
+ocamltest/variables.cmi :

@@ -45,7 +45,7 @@
    config build_path_prefix_map misc identifiable numbers arg_helper clflags
    profile terminfo ccomp warnings consistbl strongly_connected_components
    targetint load_path int_replace_polymorphic_compare binutils local_store
-   lazy_backtrack diffing diffing_with_keys
+   lazy_backtrack diffing diffing_with_keys unit_info
 
    ;; PARSING
    location longident docstrings syntaxerr ast_helper camlinternalMenhirLib
