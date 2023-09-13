@@ -1957,6 +1957,7 @@ typing/value_rec_check.cmo : \
     typing/typedtree.cmi \
     typing/primitive.cmi \
     typing/path.cmi \
+    utils/misc.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
     parsing/asttypes.cmi \
@@ -1968,6 +1969,7 @@ typing/value_rec_check.cmx : \
     typing/typedtree.cmx \
     typing/primitive.cmx \
     typing/path.cmx \
+    utils/misc.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \
     parsing/asttypes.cmi \
