@@ -46,7 +46,9 @@ end
 (* Functions for batch linking *)
 
 val init: unit -> unit
-val patch_object: Misc.LongString.t -> (reloc_info * int) list -> unit
+val patch_object:
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t ->
+  (reloc_info * int) list -> unit
 val require_primitive: string -> unit
 val initial_global_table: unit -> Obj.t array
 val output_global_map: out_channel -> unit

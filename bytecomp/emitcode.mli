@@ -29,7 +29,8 @@ val to_file: out_channel -> Unit_info.Artifact.t ->
              list of instructions to emit *)
 val to_memory:
   instruction list ->
-    Misc.LongString.t * (reloc_info * int) list * debug_event list
+    (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t *
+    (reloc_info * int) list * debug_event list
         (* Arguments:
              initialization code (terminated by STOP)
              function code

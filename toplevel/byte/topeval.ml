@@ -218,7 +218,12 @@ let check_consistency ppf filename cu =
 let load_compunit ic filename ppf compunit =
   check_consistency ppf filename compunit;
   seek_in ic compunit.cu_pos;
-  let code = LongString.input_bytes ic compunit.cu_codesize in
+  let code =
+    Bigarray.Array1.create Bigarray.Char Bigarray.c_layout compunit.cu_codesize
+  in
+  match In_channel.really_input_bigarray ic code 0 compunit.cu_codesize with
+    | None -> raise End_of_file
+    | Some () -> ();
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code compunit.cu_reloc;
   Symtable.update_global_table();
