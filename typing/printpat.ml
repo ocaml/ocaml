@@ -84,7 +84,7 @@ let rec pretty_val : type k . _ -> k general_pattern -> _ = fun ppf v ->
             | (_,_,{pat_desc=Tpat_any}) -> false (* do not show lbl=_ *)
             | _ -> true) lvs in
       begin match filtered_lvs with
-      | [] -> fprintf ppf "_"
+      | [] -> fprintf ppf "{ _ }"
       | (_, lbl, _) :: q ->
           let elision_mark ppf =
             (* we assume that there is no label repetitions here *)

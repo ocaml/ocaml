@@ -104,6 +104,10 @@ let debugf fmt =
   then Format.eprintf fmt
   else Format.ifprintf Format.err_formatter fmt
 
+let pp_partial ppf = function
+  | Total -> Format.fprintf ppf "Total"
+  | Partial -> Format.fprintf ppf "Partial"
+
 (*
    Compatibility predicate that considers potential rebindings of constructors
    of an extension type.
@@ -2731,6 +2735,10 @@ let complete_pats_constrs = function
 *)
 
 let mk_failaction_neg partial ctx def =
+  debugf
+    "@,@[<v 2>COMBINE (mk_failaction_neg %a)@]"
+    pp_partial partial
+  ;
   match partial with
   | Partial -> (
       match Default_environment.pop def with
@@ -2779,13 +2787,14 @@ let mk_failaction_pos partial seen ctx defs =
         defs
     in
     debugf
-      "@,@[<v 2>COMBINE (mk_failaction_pos)@,\
+      "@,@[<v 2>COMBINE (mk_failaction_pos %a)@,\
            %a@,\
            @[<v 2>FAIL PATTERNS:@,\
              %a@]@,\
            @[<v 2>POSITIVE JUMPS:@,\
              %a@]\
            @]"
+      pp_partial partial
       Default_environment.pp defs
       (Format.pp_print_list ~pp_sep:Format.pp_print_cut
          Printpat.pretty_pat) fail_pats
@@ -3427,12 +3436,9 @@ and combine_handlers ~scopes repr partial ctx (v, str, arg) first_match rem =
 (* verbose version of do_compile_matching, for debug *)
 and do_compile_matching_pr ~scopes repr partial ctx x =
   debugf
-    "@[<v>MATCH %s\
+    "@[<v>MATCH %a\
      @,%a"
-    ( match partial with
-    | Partial -> "Partial"
-    | Total -> "Total"
-    )
+    pp_partial partial
     pretty_precompiled x;
   debugf "@,@[<v 2>CTX:@,%a@]"
     Context.pp ctx;
