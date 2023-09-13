@@ -420,7 +420,10 @@ val print_newline : unit -> unit
 
 val pp_infinity : int
 (** [pp_infinity] is the maximal size of the margin.
-  Its exact value is implementation dependent but is guaranteed to be greater than 10{^9}. *)
+  Its exact value is implementation dependent but is guaranteed to be greater
+  than 10{^9}.
+
+  @since 5.2*)
 
 val pp_set_margin : formatter -> int -> unit
 val set_margin : int -> unit
