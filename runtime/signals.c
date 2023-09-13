@@ -306,7 +306,8 @@ void caml_request_minor_gc (void)
    [caml_process_pending_actions], [caml_leave_blocking_section], or
    it returns to OCaml. When returning to OCaml, we set again
    [Caml_state->young_limit] to a high value if
-   [Caml_state->action_pending] is set.
+   [Caml_state->action_pending] is set, to execute asynchronous
+   actions as soon as possible when back in OCaml code.
 
    [Caml_state->action_pending] is then reset _at the beginning_ of
    processing all actions. Hence, when a delayable action is pending,
