@@ -154,7 +154,7 @@ Working version
   of modules Int32, Int64, and Nativeint
   (Xavier Leroy, review by Gabriel Scherer and Daniel Bünzli)
 
-- #12557: Adapt GC alarms for multicore and fix their documentation.
+- #12558: Adapt GC alarms for multicore and fix their documentation.
   (Guillaume Munch-Maccagnoni, review by)
 
 ### Other libraries:
