@@ -224,8 +224,22 @@ let rec expr_size env = function
 
 let expr_size_of_binding (clas : Typedtree.recursive_binding_kind) expr =
   match clas with
-  | Not_recursive -> RHS_nonrec
-  | Static -> expr_size V.empty expr
+  | Not_recursive | Constant -> RHS_nonrec
+  | Class ->
+       (* Actual size is always 4, but [transl_class] only generates
+          explicit allocations when the classes are actually recursive.
+          Computing the size means that we don't go through pre-allocation
+          when the classes are not recursive. *)
+      expr_size V.empty expr
+  | Static ->
+      let result = expr_size V.empty expr in
+      (* Patching Closure to properly propagate Constant kinds is too complex;
+         for now, just live with the fact that Static expressions may not always
+         be statically allocated with Closure.
+         Forthcoming patches will remove all this logic anyway. *)
+      if Config.flambda then
+        assert (result <> RHS_nonrec);
+      result
 
 (* Translate structured constants to Cmm data items *)
 

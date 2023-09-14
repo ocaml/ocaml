@@ -102,12 +102,12 @@ let rec accumulate ~substitution ~copied_lets ~extracted_lets
       ~substitution
       ~copied_lets
       ~extracted_lets:(extracted::extracted_lets)
-  | Let_rec ([var, clas, named], body) ->
+  | Let_rec ([var, rkind, named], body) ->
     let renamed = Variable.rename var in
     let def_substitution = Variable.Map.add var renamed substitution in
     let expr =
       Flambda_utils.toplevel_substitution def_substitution
-        (Let_rec ([renamed, clas, named], Var renamed))
+        (Let_rec ([renamed, rkind, named], Var renamed))
     in
     let extracted = Expr (var, expr) in
     accumulate body
@@ -116,9 +116,9 @@ let rec accumulate ~substitution ~copied_lets ~extracted_lets
       ~extracted_lets:(extracted::extracted_lets)
   | Let_rec (defs, body) ->
     let renamed_defs, def_substitution =
-      List.fold_right (fun (var, clas, def) (acc, substitution) ->
+      List.fold_right (fun (var, rkind, def) (acc, substitution) ->
           let new_var = Variable.rename var in
-          (new_var, clas, def) :: acc,
+          (new_var, rkind, def) :: acc,
           Variable.Map.add var new_var substitution)
         defs ([], substitution)
     in

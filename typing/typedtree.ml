@@ -35,6 +35,8 @@ type _ pattern_category =
 type recursive_binding_kind =
 | Not_recursive
 | Static
+| Constant
+| Class
 
 type pattern = value general_pattern
 and 'k general_pattern = 'k pattern_desc pattern_data

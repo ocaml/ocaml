@@ -74,12 +74,24 @@ let map_snd_sharing f ((a, b) as cpl) =
   else
     (a, new_b)
 
-let map_rec_binding_sharing f ((v, clas, named) as binding) =
+let map_rec_binding_sharing f ((v, rkind, named) as binding) =
   let new_named = f v named in
   if named == new_named then
     binding
   else
-    (v, clas, new_named)
+    let rkind =
+      (* We could be replacing an expression with arbitrary recursive kind
+         by a constant, in which case we need to change the kind.
+         Mode conditions for the [Constant] kind are not stricter
+         than any other kind, so we do not need to re-check the
+         modes. *)
+      match (new_named : Flambda.named) with
+      | Symbol _ | Const _ | Allocated_const _-> Typedtree.Constant
+      | Read_mutable _ | Read_symbol_field _ | Set_of_closures _
+      | Project_closure _ | Move_within_set_of_closures _ | Project_var _
+      | Prim _ | Expr _ -> rkind
+    in
+    (v, rkind, new_named)
 
 let map_subexpressions f f_named (tree:Flambda.t) : Flambda.t =
   match tree with
@@ -187,7 +199,7 @@ let iter_all_immutable_let_and_let_rec_bindings t ~f =
   iter_expr (function
       | Let { var; defining_expr; _ } -> f var defining_expr
       | Let_rec (defs, _) ->
-        List.iter (fun (var, _clas, named) -> f var named) defs
+        List.iter (fun (var, _rkind, named) -> f var named) defs
       | _ -> ())
     t
 
@@ -196,7 +208,7 @@ let iter_all_toplevel_immutable_let_and_let_rec_bindings t ~f =
     (function
       | Let { var; defining_expr; _ } -> f var defining_expr
       | Let_rec (defs, _) ->
-        List.iter (fun (var, _clas, named) -> f var named) defs
+        List.iter (fun (var, _rkind, named) -> f var named) defs
       | _ -> ())
     (fun _ -> ())
     (Is_expr t)
@@ -311,8 +323,24 @@ let map_general ~toplevel f f_named tree =
         | Let_rec (defs, body) ->
           let done_something = ref false in
           let defs =
-            List.map (fun (id, clas, lam) ->
-                id, clas, aux_named_done_something id lam done_something)
+            List.map (fun (id, rkind, lam) ->
+                let new_named =
+                  aux_named_done_something id lam done_something
+                in
+                (* See comment in [map_rec_binding_sharing] *)
+                let new_rkind =
+                  match (new_named : Flambda.named) with
+                  | Symbol _ | Const _ | Allocated_const _->
+                    begin match (rkind : Typedtree.recursive_binding_kind) with
+                    | Constant -> ()
+                    | Static | Not_recursive | Class -> done_something := true
+                    end;
+                    Typedtree.Constant
+                  | Read_mutable _ | Read_symbol_field _ | Set_of_closures _
+                  | Project_closure _ | Move_within_set_of_closures _
+                  | Project_var _ | Prim _ | Expr _ -> rkind
+                in
+                id, new_rkind, new_named)
               defs
           in
           let body = aux_done_something body done_something in

@@ -4670,11 +4670,13 @@ middle_end/flambda/flambda_invariants.cmi : \
     middle_end/flambda/flambda.cmi
 middle_end/flambda/flambda_iterators.cmo : \
     middle_end/variable.cmi \
+    typing/typedtree.cmi \
     utils/int_replace_polymorphic_compare.cmi \
     middle_end/flambda/flambda.cmi \
     middle_end/flambda/flambda_iterators.cmi
 middle_end/flambda/flambda_iterators.cmx : \
     middle_end/variable.cmx \
+    typing/typedtree.cmx \
     utils/int_replace_polymorphic_compare.cmx \
     middle_end/flambda/flambda.cmx \
     middle_end/flambda/flambda_iterators.cmi

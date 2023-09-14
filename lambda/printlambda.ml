@@ -587,6 +587,8 @@ let rec lam ppf = function
               match rkind with
               | Static -> ""
               | Not_recursive -> "[Nonrec]"
+              | Constant -> "[Cst]"
+              | Class -> "[Class]"
             in
             fprintf ppf "@[<2>%a%s@ %a@]" Ident.print id rec_annot lam def)
           id_arg_list in
