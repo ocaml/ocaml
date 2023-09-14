@@ -546,7 +546,7 @@ end) = struct
     reduce_ env t |> weak_read_back env
 end
 
-module Local_reduce =
+module Toplevel_local_reduce =
   (* Note: this definition with [type env = unit] is only suitable for
      reduction of toplevel shapes -- shapes of compilation units,
      where free variables are only Comp_unit names. If we wanted to
@@ -559,11 +559,8 @@ module Local_reduce =
     let find_shape _env _id = raise Not_found
   end)
 
-let local_reduce shape =
-  Local_reduce.reduce () shape
-
-let local_weak_reduce shape =
-  Local_reduce.weak_reduce () shape
+let toplevel_local_reduce shape =
+  Toplevel_local_reduce.reduce () shape
 
 let dummy_mod =
   { uid = None; desc = Struct Item.Map.empty; approximated = false }

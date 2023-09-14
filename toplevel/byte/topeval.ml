@@ -131,7 +131,7 @@ let execute_phrase print_outcome ppf phr =
       let sg' = Typemod.Signature_names.simplify newenv sn sg in
       ignore (Includemod.signatures ~mark:Mark_positive oldenv sg sg');
       Typecore.force_delayed_checks ();
-      let shape = Shape.local_reduce shape in
+      let shape = Shape.toplevel_local_reduce shape in
       if !Clflags.dump_shape then Shape.print ppf shape;
       let lam = Translmod.transl_toplevel_definition str in
       Warnings.check_fatal ();

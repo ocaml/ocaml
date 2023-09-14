@@ -3078,7 +3078,7 @@ let type_implementation target initial_env ast =
       let simple_sg = Signature_names.simplify finalenv names sg in
       if !Clflags.print_types then begin
         Typecore.force_delayed_checks ();
-        let shape = Shape.local_reduce shape in
+        let shape = Shape.toplevel_local_reduce shape in
         Printtyp.wrap_printing_env ~error:false initial_env
           (fun () -> fprintf std_formatter "%a@."
               (Printtyp.printed_signature @@ Unit_info.source_file target)
@@ -3112,7 +3112,7 @@ let type_implementation target initial_env ast =
           (* It is important to run these checks after the inclusion test above,
              so that value declarations which are not used internally but
              exported are not reported as being unused. *)
-          let shape = Shape.local_reduce shape in
+          let shape = Shape.toplevel_local_reduce shape in
           let annots = Cmt_format.Implementation str in
           save_cmt target annots initial_env None (Some shape);
           { structure = str;
@@ -3135,7 +3135,7 @@ let type_implementation target initial_env ast =
              the values being exported. We can still capture unused
              declarations like "let x = true;; let x = 1;;", because in this
              case, the inferred signature contains only the last declaration. *)
-          let shape = Shape.local_reduce shape in
+          let shape = Shape.toplevel_local_reduce shape in
           if not !Clflags.dont_write_files then begin
             let alerts = Builtin_attributes.alerts_of_str ast in
             let cmi =
