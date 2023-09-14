@@ -569,7 +569,8 @@ G(caml_system__code_begin):
 #define TSAN_SAVE_CALLER_REGS
 #endif
 
-/* Undo TSAN_SAVE_CALLER_REGS. Expects gc_regs bucket in %r15 */
+/* Restore registers saved by TSAN_SAVE_CALLER_REGS. Expects gc_regs bucket in
+   %r15 */
 #ifdef WITH_THREAD_SANITIZER
 #define TSAN_RESTORE_CALLER_REGS                            \
     /* Restore %rax, freeing up the next ptr slot */   \
@@ -706,6 +707,7 @@ LBL(caml_c_call):
     /* Load ocaml stack and restore global variables */
         SWITCH_C_TO_OCAML
 #ifdef WITH_THREAD_SANITIZER
+    /* Save non-callee-saved registers %rax and %xmm0 before C call */
         pushq   %rax; CFI_ADJUST(8);
         subq    $16, %rsp; CFI_ADJUST(16);
         movupd   %xmm0, (%rsp)
@@ -778,9 +780,10 @@ CFI_STARTPROC
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
 #if defined(WITH_THREAD_SANITIZER)
-    /* TSan enter function from C */
-        pushq   C_ARG_1
-        movq    56(%rsp), C_ARG_1
+    /* We can't use the TSAN_ENTER_FUNCTION macro as it assumes an OCaml stack,
+       and we are on a C stack. */
+        pushq   C_ARG_1 /* Save C_ARG_1 before C call */
+        movq    56(%rsp), C_ARG_1 /* Read return address */
         C_call  (GCALL(__tsan_func_entry))
         popq    C_ARG_1
 #endif
@@ -857,8 +860,9 @@ LBL(108):
         movq    %r10, Caml_state(c_stack)
         addq    $SIZEOF_C_STACK_LINK, %rsp; CFI_ADJUST(-SIZEOF_C_STACK_LINK)
 #if defined(WITH_THREAD_SANITIZER)
-    /* TSan exit function from C */
-        pushq   %rax
+    /* We can't use the TSAN_EXIT_FUNCTION macro as it assumes an OCaml stack,
+       and we are on a C stack. */
+        pushq   %rax /* Save %rax before C call */
         movq    $0, C_ARG_1
         C_call  (GCALL(__tsan_func_exit))
         popq    %rax
@@ -916,6 +920,8 @@ LBL(117):
         C_call  (GCALL(caml_stash_backtrace))
 #if defined(WITH_THREAD_SANITIZER)
 LBL(118):
+    /* Signal to TSan all stack frames exited by the exception. No need to save
+       any registers here. */
         movq    STACK_RETADDR(%r13), C_ARG_1   /* arg 1: pc of raise */
         leaq    STACK_ARG_1(%r13), C_ARG_2  /* arg 2: sp at raise */
         movq    Caml_state(exn_handler), C_ARG_3 /* arg 3: sp of handler */
@@ -981,11 +987,11 @@ ENDFUNCTION(G(caml_raise_exception))
 FUNCTION(G(caml_callback_asm))
 CFI_STARTPROC
 #if defined(WITH_THREAD_SANITIZER)
-    /* TSan enter function from C */
+    /* Save non-callee-saved registers C_ARG_1, C_ARG_2, C_ARG_3 before C call */
         pushq   C_ARG_1
         pushq   C_ARG_2
         pushq   C_ARG_3
-        movq    24(%rsp), C_ARG_1
+        movq    24(%rsp), C_ARG_1 /* Read return address */
         C_call  (GCALL(__tsan_func_entry))
         popq    C_ARG_3
         popq    C_ARG_2
@@ -1007,11 +1013,11 @@ ENDFUNCTION(G(caml_callback_asm))
 FUNCTION(G(caml_callback2_asm))
 CFI_STARTPROC
 #if defined(WITH_THREAD_SANITIZER)
-    /* TSan enter function from C */
+    /* Save non-callee-saved registers C_ARG_1, C_ARG_2, C_ARG_3 before C call */
         pushq   C_ARG_1
         pushq   C_ARG_2
         pushq   C_ARG_3
-        movq    24(%rsp), C_ARG_1
+        movq    24(%rsp), C_ARG_1 /* Read return address */
         C_call  (GCALL(__tsan_func_entry))
         popq    C_ARG_3
         popq    C_ARG_2
@@ -1033,11 +1039,11 @@ ENDFUNCTION(G(caml_callback2_asm))
 FUNCTION(G(caml_callback3_asm))
 CFI_STARTPROC
 #if defined(WITH_THREAD_SANITIZER)
-    /* TSan enter function from C */
+    /* Save non-callee-saved registers C_ARG_1, C_ARG_2, C_ARG_3 before C call */
         pushq   C_ARG_1
         pushq   C_ARG_2
         pushq   C_ARG_3
-        movq    24(%rsp), C_ARG_1
+        movq    24(%rsp), C_ARG_1 /* Read return address */
         C_call  (GCALL(__tsan_func_entry))
         popq    C_ARG_3
         popq    C_ARG_2
@@ -1080,6 +1086,7 @@ LBL(do_perform):
         cmpq    $0, %r10                   /* parent is NULL? */
         je      LBL(112)
 #if defined(WITH_THREAD_SANITIZER)
+    /* Signal to TSan all stack frames exited by the perform. */
         TSAN_SAVE_CALLER_REGS
         movq    (%rsp), C_ARG_1   /* arg 1: pc of perform */
         leaq    8(%rsp), C_ARG_2  /* arg 2: sp at perform */
@@ -1148,12 +1155,15 @@ CFI_STARTPROC
         testq   %r10, %r10
         jz      2f
 #if defined(WITH_THREAD_SANITIZER)
+    /* Save non-callee-saved registers %rax and %r10 before C call */
         pushq   %rax; CFI_ADJUST(8);
         pushq   %r10; CFI_ADJUST(8);
+    /* Necessary to include the caller of caml_resume in the TSan backtrace */
         TSAN_ENTER_FUNCTION(16)
         popq    %r10; CFI_ADJUST(-8);
         popq    %rax; CFI_ADJUST(-8);
         TSAN_SAVE_CALLER_REGS
+    /* Signal to TSan all stack frames exited by the perform. */
         movq    Stack_sp(%r10), %r11
         movq    (%r11), C_ARG_1   /* arg 1: pc of perform */
         leaq    8(%r11), C_ARG_2  /* arg 2: sp at perform */
@@ -1177,7 +1187,8 @@ CFI_STARTPROC
         UPDATE_BASE_POINTER(%rcx)
         SWITCH_OCAML_STACKS
         jmp     *(%rbx)
-2:      TSAN_ENTER_FUNCTION(0)
+2:      TSAN_ENTER_FUNCTION(0) /* Necessary to include the caller of caml_resume
+                                  in the TSan backtrace */
         LEA_VAR(caml_raise_continuation_already_resumed, %rax)
         jmp LBL(caml_c_call)
 CFI_ENDPROC
@@ -1190,8 +1201,10 @@ CFI_STARTPROC
         CFI_SIGNAL_FRAME
         ENTER_FUNCTION
 #ifdef WITH_THREAD_SANITIZER
+     /* Save non-callee-saved registers %rax and %rdi before C call */
         pushq   %rax; CFI_ADJUST(8);
         pushq   %rdi; CFI_ADJUST(8);
+     /* Necessary to include the caller of caml_runstack in TSan backtrace */
         TSAN_ENTER_FUNCTION(16)
         popq   %rdi; CFI_ADJUST(-8);
         popq   %rax; CFI_ADJUST(-8);
@@ -1252,6 +1265,7 @@ LBL(frame_runstack):
     /* switch directly to parent stack with correct return */
         movq    %r13, %rsp
         CFI_RESTORE_STATE
+    /* signal to TSan that we exit caml_runstack (no registers to save here) */
         TSAN_EXIT_FUNCTION
         movq    %r12, %rax
     /* Invoke handle_value (or handle_exn) */
@@ -1267,6 +1281,7 @@ ENDFUNCTION(G(caml_runstack))
 FUNCTION(G(caml_ml_array_bound_error))
 CFI_STARTPROC
         ENTER_FUNCTION
+    /* No registers require saving before C call to TSan */
         TSAN_ENTER_FUNCTION(0)
         LEA_VAR(caml_array_bound_error_asm, %rax)
         jmp     LBL(caml_c_call)
