@@ -1577,7 +1577,7 @@ int caml_try_run_on_all_domains_async(
 
 void caml_interrupt_self(void)
 {
-  interrupt_domain(&domain_self->interruptor);
+  interrupt_domain_local(Caml_state);
 }
 
 /* async-signal-safe */
@@ -1588,8 +1588,7 @@ void caml_interrupt_all_signal_safe(void)
        [interrupt_word] directly without synchronisation other than
        with other people who access the same [interrupt_word].*/
     atomic_uintnat * interrupt_word =
-      atomic_load_explicit(&d->interruptor.interrupt_word,
-                           memory_order_acquire);
+      atomic_load_acquire(&d->interruptor.interrupt_word);
     /* Early exit: if the current domain was never initialized, then
        neither have been any of the remaining ones. */
     if (interrupt_word == NULL) return;
