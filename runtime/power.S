@@ -291,7 +291,7 @@ ENDFUNCTION caml_call_gc
 .macro RET_FROM_C_CALL
         lbz     TMP, Caml_state(action_pending)
         cmplwi  TMP, 0
-        beqlr   0
+        beqlr+  0
         li      TMP, -1
         std     TMP, Caml_state(young_limit)
         blr
