@@ -1115,6 +1115,7 @@ LBL(do_perform):
         je      LBL(112)
 #if defined(WITH_THREAD_SANITIZER)
     /* Signal to TSan all stack frames exited by the perform. */
+        ENTER_FUNCTION
         TSAN_SAVE_CALLER_REGS
         movq    (%rsp), C_ARG_1   /* arg 1: pc of perform */
         leaq    8(%rsp), C_ARG_2  /* arg 2: sp at perform */
@@ -1122,6 +1123,7 @@ LBL(do_perform):
         C_call  (GCALL(caml_tsan_exit_on_perform))
         SWITCH_C_TO_OCAML
         TSAN_RESTORE_CALLER_REGS
+        LEAVE_FUNCTION
 #endif
         SWITCH_OCAML_STACKS /* preserves r11 and rsi */
      /* We have to null the Handler_parent after the switch because the
@@ -1185,6 +1187,7 @@ CFI_STARTPROC
         jz      2f
 #if defined(WITH_THREAD_SANITIZER)
     /* Save non-callee-saved registers %rax and %r10 before C call */
+        ENTER_FUNCTION
         pushq   %rax; CFI_ADJUST(8);
         pushq   %r10; CFI_ADJUST(8);
     /* Necessary to include the caller of caml_resume in the TSan backtrace */
@@ -1201,6 +1204,7 @@ CFI_STARTPROC
         C_call  (GCALL(caml_tsan_entry_on_resume))
         SWITCH_C_TO_OCAML
         TSAN_RESTORE_CALLER_REGS
+        LEAVE_FUNCTION
 #endif
     /* Find end of list of stacks and add current */
         movq    %r10, %rsi
