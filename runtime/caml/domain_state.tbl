@@ -37,7 +37,7 @@ DOMAIN_STATE(struct stack_info*, current_stack)
 DOMAIN_STATE(void*, exn_handler)
 /* Pointer into the current stack */
 
-DOMAIN_STATE(int, action_pending)
+DOMAIN_STATE(_Bool, action_pending)
 /* Whether we are due to start the processing of delayable pending
    actions. See runtime/signal.c. */
 

@@ -109,6 +109,16 @@ Working version
   (Stephen Dolan, report by Chris Casinghino, review by Jeremy Yallop
    and Xavier Leroy)
 
+- #11307: Finish adapting the implementation of asynchronous actions for
+  multicore: soundness, liveness, and performance issues.
+  Do not crash if a signal handler is  called from an unregistered C
+  thread, and other possible soundness issues. Prevent issues where join
+  on other domains could make the toplevel unresponsible to Ctrl-C. Avoid
+  needless repeated polling in C code when callbacks cannot run
+  immediately.
+  (Guillaume Munch-Maccagnoni, review by Enguerrand Decorne, Xavier
+  Leroy, and KC Sivaramakrishnan)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.

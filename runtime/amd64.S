@@ -684,6 +684,31 @@ ENDFUNCTION(G(caml_allocN))
 /* Call a C function from OCaml */
 /******************************************************************************/
 
+/* Update [young_limit] when returning from non-noalloc extern calls.
+   Here is C code that can be used to generate RET_FROM_C_CALL for a
+   new back-end.
+
+     #include <stdatomic.h>
+     #include <stdint.h>
+
+     typedef struct { _Atomic(uint64_t) young_limit;
+                      _Bool action_pending; } caml_domain_state;
+
+     void ret_from_c_call(caml_domain_state *dom_st)
+     {
+       if (__builtin_expect(dom_st->action_pending, 0))
+         atomic_store_explicit(&dom_st->young_limit, (uint64_t)-1,
+                               memory_order_relaxed);
+     }
+
+*/
+#define RET_FROM_C_CALL                         \
+        cmpb    $0, Caml_state(action_pending); \
+        jne     1f;                             \
+        ret;                                    \
+1:      movq    $-1, Caml_state(young_limit);   \
+        ret
+
 FUNCTION(G(caml_c_call))
 CFI_STARTPROC
         CFI_SIGNAL_FRAME
@@ -716,7 +741,7 @@ LBL(caml_c_call):
 #endif
         LEAVE_FUNCTION
     /* Return to OCaml caller */
-        ret
+        RET_FROM_C_CALL
 CFI_ENDPROC
 ENDFUNCTION(G(caml_c_call))
 
@@ -764,7 +789,7 @@ LBL(106):
         SWITCH_C_TO_OCAML
     /* Return to OCaml caller */
         LEAVE_FUNCTION
-        ret
+        RET_FROM_C_CALL
 CFI_ENDPROC
 ENDFUNCTION(G(caml_c_call_stack_args))
 

@@ -336,6 +336,15 @@ END_FUNCTION(caml_allocN)
 /* Call a C function from OCaml */
 /* Function to call is in ADDITIONAL_ARG */
 
+.macro RET_FROM_C_CALL
+        lbu     TMP, Caml_state(action_pending)
+        bnez    TMP, 1f
+        ret
+1:      li      TMP, -1
+        sd      TMP, Caml_state(young_limit)
+        ret
+.endm
+
 FUNCTION(caml_c_call)
 L(caml_c_call):
         CFI_OFFSET(ra, -8)
@@ -356,7 +365,7 @@ L(caml_c_call):
     /* Return */
         ld      ra, 8(sp)
         addi    sp, sp, 16
-        ret
+        RET_FROM_C_CALL
 END_FUNCTION(caml_c_call)
 
 FUNCTION(caml_c_call_stack_args)
@@ -398,7 +407,7 @@ FUNCTION(caml_c_call_stack_args)
     /* Return */
         ld      ra, 8(sp)
         addi    sp, sp, 16
-        ret
+        RET_FROM_C_CALL
 END_FUNCTION(caml_c_call_stack_args)
 
 /* Start the OCaml program */
