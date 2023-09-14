@@ -470,7 +470,7 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
 
 static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
                          sizeclass sz, int release_to_global_pool) {
-  intnat work = 0;
+  intnat work;
   pool* a = *plist;
   if (!a) return 0;
   *plist = a->next;
@@ -478,11 +478,12 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
   {
     header_t* p = POOL_FIRST_BLOCK(a, sz);
     header_t* end = POOL_END(a);
+    work = end - p;
     mlsize_t wh = wsize_sizeclass[sz];
     int all_used = 1;
     struct heap_stats* s = &local->stats;
 
-    while (p + wh <= end) {
+    do {
       header_t hd = (header_t)atomic_load_relaxed((atomic_uintnat*)p);
       if (hd == 0) {
         /* already on freelist */
@@ -518,8 +519,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
         release_to_global_pool = 0;
       }
       p += wh;
-      work += wh;
-    }
+    } while (p + wh <= end);
 
     if (release_to_global_pool) {
       pool_release(local, a, sz);
