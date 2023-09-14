@@ -987,7 +987,8 @@ ENDFUNCTION(G(caml_raise_exception))
 FUNCTION(G(caml_callback_asm))
 CFI_STARTPROC
 #if defined(WITH_THREAD_SANITIZER)
-    /* Save non-callee-saved registers C_ARG_1, C_ARG_2, C_ARG_3 before C call */
+    /* Save non-callee-saved registers C_ARG_1, C_ARG_2, C_ARG_3 before C call
+     */
         pushq   C_ARG_1
         pushq   C_ARG_2
         pushq   C_ARG_3
@@ -1013,7 +1014,8 @@ ENDFUNCTION(G(caml_callback_asm))
 FUNCTION(G(caml_callback2_asm))
 CFI_STARTPROC
 #if defined(WITH_THREAD_SANITIZER)
-    /* Save non-callee-saved registers C_ARG_1, C_ARG_2, C_ARG_3 before C call */
+    /* Save non-callee-saved registers C_ARG_1, C_ARG_2, C_ARG_3 before C call
+     */
         pushq   C_ARG_1
         pushq   C_ARG_2
         pushq   C_ARG_3
@@ -1039,7 +1041,8 @@ ENDFUNCTION(G(caml_callback2_asm))
 FUNCTION(G(caml_callback3_asm))
 CFI_STARTPROC
 #if defined(WITH_THREAD_SANITIZER)
-    /* Save non-callee-saved registers C_ARG_1, C_ARG_2, C_ARG_3 before C call */
+    /* Save non-callee-saved registers C_ARG_1, C_ARG_2, C_ARG_3 before C call
+     */
         pushq   C_ARG_1
         pushq   C_ARG_2
         pushq   C_ARG_3
