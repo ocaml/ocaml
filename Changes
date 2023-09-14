@@ -273,10 +273,6 @@ Working version
 - #12446: remove the hooks machinery around channel locking in runtimee/io.c
   (Gabriel Scherer, review by Xavier Leroy)
 
-- #12509: Use strict prototypes on primitives when generating a standalone
-  bytecode executable (`ocamlc -custom`).
-  (Antonin Décimo, review by Xavier Leroy)
-
 - #12389, #12544: centralize the handling of metadata for compilation units and
   artifacts in preparation for better unicode support for OCaml source files.
   (Florian Angeletti, review by Gabriel Scherer)
@@ -342,16 +338,12 @@ Working version
 - #12949: open shadowing mistriggers
   (Gabriel Scherer, review by Florian Angeletti, report by Andreas Rossberg)
 
-- #12486: Fix delivery of unhandled effect exceptions on s390x
-  (Miod Vallat, report by Jan Midtgaard, review by Vincent Laviron and Xavier
-  Leroy)
-
 - #12526: Honor `ocaml.inline always` attribute on functions with
   optional arguments and default values in the Closure backend
   (Alain Frisch, review by Vincent Laviron)
 
-OCaml 5.1.0
----------------
+OCaml 5.1.0 (14 September 2023)
+-------------------------------
 
 ### Restored backends
 
@@ -1077,6 +1069,10 @@ Some of those changes will benefit all OCaml packages.
   lists for simpler printing of manual references
   (Stefan Muenzel, review by Florian Angeletti)
 
+- #12509: Use strict prototypes on primitives when generating a standalone
+  bytecode executable (`ocamlc -custom`).
+  (Antonin Décimo, review by Xavier Leroy)
+
 ### Build system:
 
 - #11844: Reduce verbosity of `make` logs by printing program invocations in
@@ -1264,6 +1260,10 @@ Some of those changes will benefit all OCaml packages.
 
 - #11186, #11188: Fix composition of coercions with aliases
   (Vincent Laviron, report and review by Leo White)
+
+- #12486: Fix delivery of unhandled effect exceptions on s390x
+  (Miod Vallat, report by Jan Midtgaard, review by Vincent Laviron and Xavier
+  Leroy)
 
 OCaml 5.0.0 (15 December 2022)
 ------------------------------
