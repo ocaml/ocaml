@@ -947,8 +947,8 @@ LBL(117):
 LBL(118):
     /* Signal to TSan all stack frames exited by the exception. No need to save
        any registers here. */
-        movq    STACK_RETADDR(%r13), C_ARG_1   /* arg 1: pc of raise */
-        leaq    STACK_ARG_1(%r13), C_ARG_2  /* arg 2: sp at raise */
+        movq    STACK_RETADDR(%r13), C_ARG_1     /* arg 1: pc of raise */
+        leaq    STACK_ARG_1(%r13), C_ARG_2       /* arg 2: sp at raise */
         movq    Caml_state(exn_handler), C_ARG_3 /* arg 3: sp of handler */
         C_call  (GCALL(caml_tsan_exit_on_raise))
 #endif
@@ -1117,8 +1117,8 @@ LBL(do_perform):
     /* Signal to TSan all stack frames exited by the perform. */
         ENTER_FUNCTION
         TSAN_SAVE_CALLER_REGS
-        movq    (%rsp), C_ARG_1   /* arg 1: pc of perform */
-        leaq    8(%rsp), C_ARG_2  /* arg 2: sp at perform */
+        movq    STACK_RETADDR(%rsp), C_ARG_1  /* arg 1: pc of perform */
+        leaq    STACK_ARG_1(%rsp), C_ARG_2    /* arg 2: sp at perform */
         SWITCH_OCAML_TO_C
         C_call  (GCALL(caml_tsan_exit_on_perform))
         SWITCH_C_TO_OCAML
@@ -1145,10 +1145,9 @@ LBL(112):
            original performer stack. For that, we perform the necessary calls
            to __tsan_func_entry via caml_tsan_entry_on_resume. */
         TSAN_SAVE_CALLER_REGS
-        movq    Stack_sp(%r10), %r11
-        movq    (%r11), C_ARG_1   /* arg 1: pc of perform */
-        leaq    8(%r11), C_ARG_2  /* arg 2: sp at perform */
-        movq    %r10, C_ARG_3     /* arg 3: fiber */
+        movq    STACK_RETADDR(%rsp), C_ARG_1       /* arg 1: pc of perform */
+        leaq    STACK_ARG_1(%rsp), C_ARG_2         /* arg 2: sp at perform */
+        movq    Caml_state(current_stack), C_ARG_3 /* arg 3: fiber */
         SWITCH_OCAML_TO_C
         C_call  (GCALL(caml_tsan_entry_on_resume))
         SWITCH_C_TO_OCAML
@@ -1197,9 +1196,9 @@ CFI_STARTPROC
         TSAN_SAVE_CALLER_REGS
     /* Signal to TSan all stack frames exited by the perform. */
         movq    Stack_sp(%r10), %r11
-        movq    (%r11), C_ARG_1   /* arg 1: pc of perform */
-        leaq    8(%r11), C_ARG_2  /* arg 2: sp at perform */
-        movq    %r10, C_ARG_3     /* arg 3: fiber */
+        movq    STACK_RETADDR(%r11), C_ARG_1  /* arg 1: pc of perform */
+        leaq    STACK_ARG_1(%r11), C_ARG_2    /* arg 2: sp at perform */
+        movq    %r10, C_ARG_3                 /* arg 3: fiber */
         SWITCH_OCAML_TO_C
         C_call  (GCALL(caml_tsan_entry_on_resume))
         SWITCH_C_TO_OCAML
