@@ -932,16 +932,10 @@ LBL(117):
         testq   $1, Caml_state(backtrace_active)
         je    LBL(118)
 #endif
-        movq    %rax, C_ARG_1     /* arg 1: exception bucket */
-#ifdef WITH_FRAME_POINTERS
-        movq    8(%r13), C_ARG_2   /* arg 2: pc of raise */
-        leaq    16(%r13), C_ARG_3  /* arg 3: sp at raise */
-#else
-        movq    (%r13), C_ARG_2   /* arg 2: pc of raise */
-        leaq    8(%r13), C_ARG_3  /* arg 3: sp at raise */
-#endif
-        movq    Caml_state(exn_handler), C_ARG_4
-                                  /* arg 4: sp of handler */
+        movq    %rax, C_ARG_1                    /* arg 1: exception bucket */
+        movq    STACK_RETADDR(%r13), C_ARG_2     /* arg 2: pc of raise */
+        leaq    STACK_ARG_1(%r13), C_ARG_3       /* arg 3: sp at raise */
+        movq    Caml_state(exn_handler), C_ARG_4 /* arg 4: sp of handler */
         C_call  (GCALL(caml_stash_backtrace))
 #if defined(WITH_THREAD_SANITIZER)
 LBL(118):
