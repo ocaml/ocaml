@@ -118,6 +118,10 @@ module State = struct
    *   0x3FFF_FFFF = 2^30 - 1, which is max_int for 31-bit integers
    *   -0x4000_0000 = -2^30, which is min_int for 31-bit integers
    *)
+  let min_int32 = -(1 lsl 31)
+      (* -0x8000_0000 on JavaScript and 64-bit OCaml *)
+  let max_int32 = (1 lsl 31) - 1
+      (*  0x7FFF_FFFF on JavaScript and 64-bit OCaml *)
 
   (* Return 30 random bits as an integer 0 <= x < 2^30 *)
   let bits s =
@@ -158,9 +162,15 @@ module State = struct
     if bound <= 0 then
       invalid_arg "Random.full_int"
     (* When the bound fits in 31 bits, we use the same mask as in function
-       [int], so as to yield the same output on 32-bit and 64-bit platforms. *)
+       [int], so as to yield the same output on all platforms supported
+       by OCaml (32-bit OCaml, 64-bit OCaml, and Javascript).
+       When the bound fits in 32 bits, we use 0x7FFF_FFFF as mask
+       so as to yield the same output on JavaScript and on 64-bit OCaml. *)
     else
-      intaux s bound (if bound <= 0x3FFF_FFFF then 0x3FFF_FFFF else max_int)
+      intaux s bound
+        (if bound <= 0x3FFF_FFFF then 0x3FFF_FFFF
+         else if bound <= max_int32 then max_int32 (* 0x7FFF_FFFF *)
+         else max_int)
 
   (* Return an integer between [min] (included) and [max] (included).
      The [nbits] parameter is the size in bits of the signed integers
@@ -196,9 +206,14 @@ module State = struct
       invalid_arg "Random.int_in_range";
     (* When both bounds fit in 31 bits, we use [mask] and [drop] parameters
        appropriate for 31-bit integers, so as to yield the same output on
-       all platforms supported by OCaml *)
+       all platforms supported by OCaml.
+       When both bounds fits in 32 bits, we use [mask] and [drop] parameters
+       appropriate for 32-bit integers, so as to yield the same output on
+       JavaScript and on 64-bit OCaml. *)
     if min >= -0x4000_0000 && max <= 0x3FFF_FFFF then
       int_in_range_gen s ~min ~max ~mask:0x3FFF_FFFF ~nbits:31
+    else if min >= min_int32 && max <= max_int32 then
+      int_in_range_gen s ~min ~max ~mask:max_int32 ~nbits:32
     else
       int_in_range_gen s ~min ~max ~mask:max_int ~nbits:Sys.int_size
 
