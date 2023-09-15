@@ -306,6 +306,11 @@ Working version
 
 ### Bug fixes:
 
+- #12566: caml_output_value_to_malloc wrongly uses `caml_stat_alloc`
+  instead of `malloc` since 4.06, breaking (in pooled mode) user code
+  that uses `free` on the result.
+  (Gabriel Scherer, review by Enguerrand Decorne, report by Ido Yariv)
+
 - #12490: Unix: protect the popen_processes hashtable with a mutex
   (Gabriel Scherer, report by Olivier Nicole, review by Xavier Leroy)
 
