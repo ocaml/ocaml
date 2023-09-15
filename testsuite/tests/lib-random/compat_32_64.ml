@@ -3,8 +3,6 @@
 (* Check that [full_int] and [int_in_range] yield the same outputs on
  * every tested platform, regardless of the word size. *)
 
-open Bigarray
-
 let min_int31 = -0x4000_0000 (* = -2^30 *)
 let max_int31 = 0x3FFF_FFFF (* = 2^30-1 *)
 
