@@ -19254,8 +19254,9 @@ test -n "$PTHREAD_CXX" || PTHREAD_CXX="$CXX"
 # Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
 if test "x$ax_pthread_ok" = "xyes"; then
         common_cflags="$common_cflags $PTHREAD_CFLAGS"
-    saved_CFLAGS="$CFLAGS"
-    saved_LIBS="$LIBS"
+    # The two following lines add flags and libraries for pthread to the
+    # global CFLAGS and LIBS variables. This means that all the subsequent
+    # tests can rely on the assumption that pthread is enabled.
     CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
     LIBS="$LIBS $PTHREAD_LIBS"
     ac_fn_c_check_func "$LINENO" "sigwait" "ac_cv_func_sigwait"
@@ -19265,8 +19266,6 @@ then :
 
 fi
 
-    LIBS="$saved_LIBS"
-    CFLAGS="$saved_CFLAGS"
         :
 else
         ax_pthread_ok=no
