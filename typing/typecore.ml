@@ -3808,12 +3808,11 @@ and type_expect_
         exp_env = env }
   | Pexp_constraint (sarg, sty) ->
       let (ty, exp_extra) = type_constraint env sty in
-      let ty' = instance ty in
       let arg = type_argument env sarg ty (instance ty) in
       rue {
         exp_desc = arg.exp_desc;
         exp_loc = arg.exp_loc;
-        exp_type = ty';
+        exp_type = instance ty;
         exp_attributes = arg.exp_attributes;
         exp_env = env;
         exp_extra = (exp_extra, loc, sexp.pexp_attributes) :: arg.exp_extra;
