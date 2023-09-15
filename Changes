@@ -271,6 +271,9 @@ Working version
   (Nick Roberts; review by Richard Eisenberg, Leo White, and Gabriel Scherer;
   RFC by Stephen Dolan)
 
+- #12542: Minor bugfix to #12236: restore dropped call to `instance`
+  (Nick Roberts, review by Jacques Garrigue)
+
 - #12242: Move the computation of stack frame parameters to a separate
   `Stackframe` module, and save the parameters in the results of the
   `Linearize` pass
