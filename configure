@@ -18342,65 +18342,6 @@ then :
 fi
 
 
-## pthread_getaffinity_np, args differ from GNU and BSD
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking arguments for pthread_getaffinity_np" >&5
-printf %s "checking arguments for pthread_getaffinity_np... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#define _GNU_SOURCE
-      #include <sched.h>
-      #include <pthread.h>
-int
-main (void)
-{
-cpu_set_t cs;
-      CPU_ZERO(&cs);
-      CPU_COUNT(&cs);
-      pthread_getaffinity_np(pthread_self(), sizeof(cs), &cs);
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: gnu" >&5
-printf "%s\n" "gnu" >&6; }
-  printf "%s\n" "#define HAS_GNU_GETAFFINITY_NP 1" >>confdefs.h
-
-else $as_nop
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <pthread.h>
-        #include <pthread_np.h>
-        #include <sys/cpuset.h>
-int
-main (void)
-{
-cpuset_t cs;
-        /* Not every BSD has CPU_ZERO and CPU_COUNT (NetBSD) */
-        CPU_ZERO(&cs);
-        CPU_COUNT(&cs);
-        pthread_getaffinity_np(pthread_self(), sizeof(cs), &cs);
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: BSD" >&5
-printf "%s\n" "BSD" >&6; }
-    printf "%s\n" "#define HAS_BSD_GETAFFINITY_NP 1" >>confdefs.h
-
-else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: pthread_getaffinity_np not found" >&5
-printf "%s\n" "pthread_getaffinity_np not found" >&6; }
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-
 if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}pkg-config", so it can be a program name with args.
 set dummy ${ac_tool_prefix}pkg-config; ac_word=$2
@@ -19395,8 +19336,9 @@ test -n "$PTHREAD_CXX" || PTHREAD_CXX="$CXX"
 # Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
 if test "x$ax_pthread_ok" = "xyes"; then
         common_cflags="$common_cflags $PTHREAD_CFLAGS"
-    saved_CFLAGS="$CFLAGS"
-    saved_LIBS="$LIBS"
+    # The two following lines add flags and libraries for pthread to the
+    # global CFLAGS and LIBS variables. This means that all the subsequent
+    # tests can rely on the assumption that pthread is enabled.
     CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
     LIBS="$LIBS $PTHREAD_LIBS"
     ac_fn_c_check_func "$LINENO" "sigwait" "ac_cv_func_sigwait"
@@ -19406,8 +19348,6 @@ then :
 
 fi
 
-    LIBS="$saved_LIBS"
-    CFLAGS="$saved_CFLAGS"
         :
 else
         ax_pthread_ok=no
@@ -19421,6 +19361,68 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
  ;;
 esac
+
+## pthread_getaffinity_np, args differ from GNU and BSD
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking arguments for pthread_getaffinity_np" >&5
+printf %s "checking arguments for pthread_getaffinity_np... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#define _GNU_SOURCE
+      #include <sched.h>
+      #ifdef HAS_PTHREAD_NP_H
+      #include <pthread_np.h>
+      #endif
+      #include <pthread.h>
+int
+main (void)
+{
+cpu_set_t cs;
+      CPU_ZERO(&cs);
+      CPU_COUNT(&cs);
+      pthread_getaffinity_np(pthread_self(), sizeof(cs), &cs);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: GNU" >&5
+printf "%s\n" "GNU" >&6; }
+  printf "%s\n" "#define HAS_GNU_GETAFFINITY_NP 1" >>confdefs.h
+
+else $as_nop
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <pthread.h>
+        #include <pthread_np.h>
+        #include <sys/cpuset.h>
+int
+main (void)
+{
+cpuset_t cs;
+        /* Not every BSD has CPU_ZERO and CPU_COUNT (NetBSD) */
+        CPU_ZERO(&cs);
+        CPU_COUNT(&cs);
+        pthread_getaffinity_np(pthread_self(), sizeof(cs), &cs);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: BSD" >&5
+printf "%s\n" "BSD" >&6; }
+    printf "%s\n" "#define HAS_BSD_GETAFFINITY_NP 1" >>confdefs.h
+
+else $as_nop
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: pthread_getaffinity_np not found" >&5
+printf "%s\n" "pthread_getaffinity_np not found" >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
 
 ## Activate the systhread library
 

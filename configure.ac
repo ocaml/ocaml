@@ -2088,33 +2088,6 @@ AC_CHECK_HEADER([spawn.h],
 AC_CHECK_FUNC([ffs], [AC_DEFINE([HAS_FFS])])
 AC_CHECK_FUNC([_BitScanForward], [AC_DEFINE([HAS_BITSCANFORWARD])])
 
-## pthread_getaffinity_np, args differ from GNU and BSD
-AC_MSG_CHECKING([arguments for pthread_getaffinity_np])
-AC_LINK_IFELSE(
-  [AC_LANG_PROGRAM(
-    [[#define _GNU_SOURCE
-      #include <sched.h>
-      #include <pthread.h>]],
-    [[cpu_set_t cs;
-      CPU_ZERO(&cs);
-      CPU_COUNT(&cs);
-      pthread_getaffinity_np(pthread_self(), sizeof(cs), &cs);]])],
-  [AC_MSG_RESULT([gnu])
-  AC_DEFINE([HAS_GNU_GETAFFINITY_NP])],
-  [AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM(
-      [[#include <pthread.h>
-        #include <pthread_np.h>
-        #include <sys/cpuset.h>]],
-      [[cpuset_t cs;
-        /* Not every BSD has CPU_ZERO and CPU_COUNT (NetBSD) */
-        CPU_ZERO(&cs);
-        CPU_COUNT(&cs);
-        pthread_getaffinity_np(pthread_self(), sizeof(cs), &cs);]])],
-    [AC_MSG_RESULT([BSD])
-    AC_DEFINE([HAS_BSD_GETAFFINITY_NP])],
-    [AC_MSG_RESULT([pthread_getaffinity_np not found])])])
-
 AC_PATH_TOOL([PKG_CONFIG], [pkg-config], [false])
 
 ## ZSTD compression library
@@ -2183,15 +2156,44 @@ AS_CASE([$host],
     [PTHREAD_LIBS="-l:libpthread.lib"],
   [AX_PTHREAD(
     [common_cflags="$common_cflags $PTHREAD_CFLAGS"
-    saved_CFLAGS="$CFLAGS"
-    saved_LIBS="$LIBS"
+    # The two following lines add flags and libraries for pthread to the
+    # global CFLAGS and LIBS variables. This means that all the subsequent
+    # tests can rely on the assumption that pthread is enabled.
     CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
     LIBS="$LIBS $PTHREAD_LIBS"
-    AC_CHECK_FUNC([sigwait], [AC_DEFINE([HAS_SIGWAIT])])
-    LIBS="$saved_LIBS"
-    CFLAGS="$saved_CFLAGS"],
+    AC_CHECK_FUNC([sigwait], [AC_DEFINE([HAS_SIGWAIT])])],
     [AC_MSG_ERROR(m4_normalize([POSIX threads are required but not supported on
       this platform]))])])
+
+## pthread_getaffinity_np, args differ from GNU and BSD
+AC_MSG_CHECKING([arguments for pthread_getaffinity_np])
+AC_LINK_IFELSE(
+  [AC_LANG_PROGRAM(
+    [[#define _GNU_SOURCE
+      #include <sched.h>
+      #ifdef HAS_PTHREAD_NP_H
+      #include <pthread_np.h>
+      #endif
+      #include <pthread.h>]],
+    [[cpu_set_t cs;
+      CPU_ZERO(&cs);
+      CPU_COUNT(&cs);
+      pthread_getaffinity_np(pthread_self(), sizeof(cs), &cs);]])],
+  [AC_MSG_RESULT([GNU])
+  AC_DEFINE([HAS_GNU_GETAFFINITY_NP])],
+  [AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <pthread.h>
+        #include <pthread_np.h>
+        #include <sys/cpuset.h>]],
+      [[cpuset_t cs;
+        /* Not every BSD has CPU_ZERO and CPU_COUNT (NetBSD) */
+        CPU_ZERO(&cs);
+        CPU_COUNT(&cs);
+        pthread_getaffinity_np(pthread_self(), sizeof(cs), &cs);]])],
+    [AC_MSG_RESULT([BSD])
+    AC_DEFINE([HAS_BSD_GETAFFINITY_NP])],
+    [AC_MSG_RESULT([pthread_getaffinity_np not found])])])
 
 ## Activate the systhread library
 
