@@ -5477,18 +5477,19 @@ and type_statement ?explanation env sexp =
     To avoid this issue, we disable the warning in this particular case.
     We might consider re-enabling it at a point when most users have
     migrated to OCaml 5.2.0 or later. *)
-  let allow_polymorphic e = match e.pexp_desc with
-    | Pexp_while _ -> true
+  let allow_polymorphic e = match e.exp_desc with
+    | Texp_while _ -> true
     | _ -> false
   in
   (* Raise the current level to detect non-returning functions *)
   let exp = with_local_level (fun () -> type_exp env sexp) in
+  let subexp = final_subexpression exp in
   let ty = expand_head env exp.exp_type in
   if is_Tvar ty
      && get_level ty > get_current_level ()
-     && not (allow_polymorphic sexp) then
+     && not (allow_polymorphic subexp) then
     Location.prerr_warning
-      (final_subexpression exp).exp_loc
+      subexp.exp_loc
       Warnings.Nonreturning_statement;
   if !Clflags.strict_sequence then
     let expected_ty = instance Predef.type_unit in

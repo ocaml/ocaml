@@ -8,7 +8,8 @@ Working version
 
 ### Language features:
 
-- #12295: Give `while true' a polymorphic type, similarly to `assert false'
+- #12295, #12568: Give `while true' a polymorphic type, similarly to
+  `assert false'
   (Jeremy Yallop, review by Nicolás Ojeda Bär and Gabriel Scherer,
   suggestion by Rodolphe Lepigre and John Whitington)
 
