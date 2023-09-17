@@ -1041,7 +1041,7 @@ val make_formatter :
   For instance,
   {[
     make_formatter
-      (Stdlib.output oc)
+      (Stdlib.output_substring oc)
       (fun () -> Stdlib.flush oc)
   ]}
   returns a formatter to the {!Stdlib.out_channel} [oc].
