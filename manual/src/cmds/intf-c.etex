@@ -660,6 +660,22 @@ to do the method call "foo#bar" from the C side, you should call:
   callback(caml_get_public_method(foo, hash_variant("bar")), foo);
 \end{verbatim}
 
+\subsection{ss:c-extvar}{Extensible variants and exceptions}
+
+Extension constructors are represented as blocks with tag "Object_tag".
+The first field of the block refers to a string containing the
+extension constructor's name. The second field contains a unique object
+ID, used for comparisons.
+
+A constant extensible variant is represented directly by its extension
+constructor. A non-constant extensible variant declared with $n$
+arguments is represented by a block of size $n + 1$. The first field of
+the block refers to its extension constructor. The remaining $n$ fields
+contain its arguments.
+
+Since exceptions are extensible variants, their constructors and values
+are represented in the same way.
+
 \subsection{ss:c-polyvar}{Polymorphic variants}
 
 Like constructed terms, polymorphic variant values are represented either
