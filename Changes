@@ -156,7 +156,8 @@ Working version
   (Xavier Leroy, review by Gabriel Scherer and Daniel Bünzli)
 
 - #12558: Adapt GC alarms for multicore and fix their documentation.
-  (Guillaume Munch-Maccagnoni, review by)
+  (Guillaume Munch-Maccagnoni, review by KC Sivaramakrishnan
+   and Gabriel Scherer)
 
 ### Other libraries:
 
