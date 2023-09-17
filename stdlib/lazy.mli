@@ -116,7 +116,7 @@ val map_val : ('a -> 'b) -> 'a t -> 'b t
 (** {1 Advanced}
 
    The following definitions are for advanced uses only; they require
-   familiary with the lazy compilation scheme to be used appropriately. *)
+   familiarity with the lazy compilation scheme to be used appropriately. *)
 
 val from_fun : (unit -> 'a) -> 'a t
 (** [from_fun f] is the same as [lazy (f ())] but slightly more efficient.
