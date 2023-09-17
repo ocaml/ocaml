@@ -391,15 +391,36 @@ val finalise_release : unit -> unit
 
 type alarm
 (** An alarm is a piece of data that calls a user function at the end of
-   each major GC cycle.  The following functions are provided to create
+   major GC cycle.  The following functions are provided to create
    and delete alarms. *)
 
 val create_alarm : (unit -> unit) -> alarm
-(** [create_alarm f] will arrange for [f] to be called at the end of each
-   major GC cycle, not caused by [f] itself, starting with the current
-   cycle or the next one.
-   A value of type [alarm] is returned that you can
-   use to call [delete_alarm]. *)
+(** [create_alarm f] will arrange for [f] to be called at the end of
+   major GC cycles, not caused by [f] itself, starting with the
+   current cycle or the next one. [f] will run on the same domain that
+   created the alarm, until the domain exits or [delete_alarm] is
+   called. A value of type [alarm] is returned that you can use to
+   call [delete_alarm].
+
+   It is not guaranteed that the Gc alarm runs at the end of every major
+   GC cycle, but it is guaranteed that it will run eventually.
+
+   As an example, here is a crude way to interrupt a function if the
+   memory consumption of the program exceeds a given [limit] in MB,
+   suitable for use in the toplevel:
+
+   {[
+let run_with_memory_limit (limit : int) (f : unit -> 'a) : 'a =
+  let limit_memory () =
+    let mem = Gc.(quick_stat ()).heap_words in
+    if mem / (1024 * 1024) > limit / (Sys.word_size / 8) then
+      raise Out_of_memory
+  in
+  let alarm = Gc.create_alarm limit_memory in
+  Fun.protect f ~finally:(fun () -> Gc.delete_alarm alarm ; Gc.compact ())
+   ]}
+
+*)
 
 val delete_alarm : alarm -> unit
 (** [delete_alarm a] will stop the calls to the function associated

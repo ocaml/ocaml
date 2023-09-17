@@ -112,14 +112,14 @@ let rec call_alarm arec =
     Fun.protect ~finally arec.f
   end
 
+let delete_alarm a = Atomic.set a false
 
 let create_alarm f =
   let arec = { active = Atomic.make true; f = f } in
+  Domain.at_exit (fun () -> delete_alarm arec.active);
   finalise call_alarm arec;
   arec.active
 
-
-let delete_alarm a = Atomic.set a false
 
 module Memprof =
   struct
