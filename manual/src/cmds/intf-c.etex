@@ -616,7 +616,8 @@ contains "h", second field "t".}
 \end{tableau}
 
 As a convenience, "caml/mlvalues.h" defines the macros "Val_unit",
-"Val_false" and "Val_true" to refer to "()", "false" and "true".
+"Val_false", "Val_true" and "Val_emptylist" to refer to "()",
+"false", "true" and "[]".
 
 The following example illustrates the assignment of
 integers and block tags to constructors:
@@ -710,6 +711,7 @@ truth value of the C integer \var{x}.
 \item "Bool_val("\var{v}")" returns 0 if \var{v} is the OCaml boolean
 "false", 1 if \var{v} is "true".
 \item "Val_true", "Val_false" represent the OCaml booleans "true" and "false".
+\item "Val_emptylist", "Val_emptylist" represents the empty list.
 \item "Val_none" represents the OCaml value "None".
 \end{itemize}
 
@@ -1210,7 +1212,7 @@ value alloc_list_int(int i1, int i2)
 
   r = caml_alloc(2, 0);                   /* Allocate a cons cell */
   Store_field(r, 0, Val_int(i2));         /* car = the integer i2 */
-  Store_field(r, 1, Val_int(0));          /* cdr = the empty list [] */
+  Store_field(r, 1, Val_emptylist);       /* cdr = the empty list [] */
   result = caml_alloc(2, 0);              /* Allocate the other cons cell */
   Store_field(result, 0, Val_int(i1));    /* car = the integer i1 */
   Store_field(result, 1, r);              /* cdr = the first cons cell */
@@ -1233,7 +1235,7 @@ value alloc_list_int(int i1, int i2)
 
   r = caml_alloc_small(2, 0);             /* Allocate a cons cell */
   Field(r, 0) = Val_int(i2);              /* car = the integer i2 */
-  Field(r, 1) = Val_int(0);               /* cdr = the empty list [] */
+  Field(r, 1) = Val_emptylist;            /* cdr = the empty list [] */
   result = caml_alloc_small(2, 0);        /* Allocate the other cons cell */
   Field(result, 0) = Val_int(i1);         /* car = the integer i1 */
   Field(result, 1) = r;                   /* cdr = the first cons cell */
@@ -1254,7 +1256,7 @@ value alloc_list_int(int i1, int i2)
   Field(r, 1) = Val_int(0);               /* A dummy value
   tail = caml_alloc_small(2, 0);          /* Allocate the other cons cell */
   Field(tail, 0) = Val_int(i2);           /* car = the integer i2 */
-  Field(tail, 1) = Val_int(0);            /* cdr = the empty list [] */
+  Field(tail, 1) = Val_emptylist;         /* cdr = the empty list [] */
   caml_modify(&Field(r, 1), tail);        /* cdr of the result = tail */
   CAMLreturn (r);
 }
