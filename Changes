@@ -675,6 +675,9 @@ Some of those changes will benefit all OCaml packages.
 
 ### Code generation and optimizations:
 
+- #12139: BUILD_PATH_PREFIX_MAP support in bytecomp.
+  (Richard L ford, review by Gabriel Scherer)
+
 - #11967: Remove traces of Obj.truncate, which allows some mutable
   loads to become immutable.
   (Nick Barnes, review by Vincent Laviron and KC Sivaramakrishnan)

@@ -300,13 +300,6 @@ let output_debug_info oc =
     !debug_info;
   debug_info := []
 
-(* Transform a file name into an absolute file name *)
-
-let make_absolute file =
-  if not (Filename.is_relative file) then file
-  else Location.rewrite_absolute_path
-         (Filename.concat (Sys.getcwd()) file)
-
 (* Create a bytecode executable file *)
 
 let link_bytecode ?final_name tolink exec_name standalone =
@@ -346,6 +339,10 @@ let link_bytecode ?final_name tolink exec_name standalone =
        (* The path to the bytecode interpreter (in use_runtime mode) *)
        if String.length !Clflags.use_runtime > 0 && !Clflags.with_runtime then
        begin
+         (* Do not use BUILD_PATH_PREFIX_MAP mapping for this. *)
+         let make_absolute file =
+           if Filename.is_relative file then Filename.concat (Sys.getcwd()) file
+           else file in
          let runtime = make_absolute !Clflags.use_runtime in
          let runtime =
            (* shebang mustn't exceed 128 including the #! and \0 *)

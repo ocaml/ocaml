@@ -592,6 +592,10 @@ val get_build_path_prefix_map: unit -> Build_path_prefix_map.map option
 (** Returns the map encoded in the [BUILD_PATH_PREFIX_MAP] environment
     variable. *)
 
+val get_deploy_path_prefix_map: unit -> Build_path_prefix_map.map option
+(** Returns the map encoded in the [BUILD_PATH_PREFIX_MAP] environment
+    variable. *)
+
 val debug_prefix_map_flags: unit -> string list
 (** Returns the list of [--debug-prefix-map] flags to be passed to the
     assembler, built from the [BUILD_PATH_PREFIX_MAP] environment variable. *)
