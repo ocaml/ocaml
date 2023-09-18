@@ -67,7 +67,11 @@ struct caml_intern_state {
 
   unsigned char * intern_input;
   /* Pointer to beginning of block holding input data,
-    if non-NULL this pointer will be freed by the cleanup function. */
+    if non-NULL this pointer will be freed by the cleanup function.
+
+    Allocated using malloc/free instead of stat_alloc/stat_free to
+    satisfy the expectations of caml_input_value_from_malloc users.
+  */
 
   asize_t obj_counter;
   /* Count how many objects seen so far */
@@ -229,7 +233,7 @@ static void intern_free_stack(struct caml_intern_state* s)
 static void intern_cleanup(struct caml_intern_state* s)
 {
   if (s->intern_input != NULL) {
-     caml_stat_free(s->intern_input);
+     free(s->intern_input);
      s->intern_input = NULL;
   }
   if (s->intern_obj_table != NULL) {
@@ -793,7 +797,7 @@ static void intern_decompress_input(struct caml_intern_state * s,
   s->compressed = h->compressed;
   if (! h->compressed) return;
 #ifdef HAS_ZSTD
-  unsigned char * blk = caml_stat_alloc_noexc(h->uncompressed_data_len);
+  unsigned char * blk = malloc(h->uncompressed_data_len);
   if (blk == NULL) {
     intern_cleanup(s);
     caml_raise_out_of_memory();
@@ -801,11 +805,11 @@ static void intern_decompress_input(struct caml_intern_state * s,
   size_t res =
     ZSTD_decompress(blk, h->uncompressed_data_len, s->intern_src, h->data_len);
   if (res != h->uncompressed_data_len) {
-    caml_stat_free(blk);
+    free(blk);
     intern_cleanup(s);
     intern_failwith2(fun_name, "decompression error");
   }
-  if (s->intern_input != NULL) caml_stat_free(s->intern_input);
+  if (s->intern_input != NULL) free(s->intern_input);
   s->intern_input = blk;  /* to be freed at end of demarshaling */
   s->intern_src = blk;
 #else
@@ -855,9 +859,12 @@ value caml_input_val(struct channel *chan)
      can take place (via context switching in systhreads),
      and the context [s] may change.  So, wait until all I/O is over
      before using the context [s] again. */
-  block = caml_stat_alloc(h.data_len);
+  block = malloc(h.data_len);
+  if (block == NULL) {
+    caml_raise_out_of_memory();
+  }
   if (caml_really_getblock(chan, block, h.data_len) < h.data_len) {
-    caml_stat_free(block);
+    free(block);
     caml_failwith("input_value: truncated object");
   }
   /* Initialize global state */
