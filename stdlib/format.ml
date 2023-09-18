@@ -819,6 +819,8 @@ let validate_geometry {margin; max_indent} =
     Error "max_indent < 2"
   else if margin <= max_indent then
     Error "margin <= max_indent"
+  else if margin >= pp_infinity then
+    Error "margin >= pp_infinity"
   else Ok ()
 
 let check_geometry geometry =

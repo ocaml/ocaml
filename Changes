@@ -135,6 +135,11 @@ Working version
 * #10775, #12499: Half-precision floating-point elements in Bigarray.
   (Anton Yabchinskiy, review by Xavier Leroy and Nicolás Ojeda Bär)
 
+- #11517, #12477: Expose pp_infinity in interface of the format module, and
+  check that margin is less than pp_infinity when setting or checking geometry.
+  (Janith Petangoda, reported by Simmo Saan, reviewed by Florian Angeletti,
+  Simmo Saan, Josh Berdine and Gabriel Scherer)
+
 - #12217: Add `Array.shuffle`.
   (Daniel Bünzli, review by Nicolás Ojeda Bär, David Allsopp and Alain Frisch)
 
