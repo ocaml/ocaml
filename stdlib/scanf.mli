@@ -310,14 +310,19 @@ val bscanf_opt : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner_opt
 
     The conversion characters and their meanings are:
 
-    - [d]: reads an optionally signed decimal integer ([0-9]+).
+    - [d]: reads an optionally signed decimal integer [[+-]?[0-9][0-9_]*]
+      (accepting underscores after the first digit is reminiscent of OCaml
+       lexical conventions).
     - [i]: reads an optionally signed integer
-      (usual input conventions for decimal ([0-9]+), hexadecimal
-       ([0x[0-9a-f]+] and [0X[0-9A-F]+]), octal ([0o[0-7]+]), and binary
-       ([0b[0-1]+]) notations are understood).
-    - [u]: reads an unsigned decimal integer.
-    - [x] or [X]: reads an unsigned hexadecimal integer ([[0-9a-fA-F]+]).
-    - [o]: reads an unsigned octal integer ([[0-7]+]).
+      (usual input conventions for decimal [[+-]?[0-9][0-9_]*],
+       hexadecimal [[+-]?0x[0-9a-f][0-9a-f_]*]
+       or [[+-]?0X[0-9A-F][0-9A-F_]*],
+       octal [[+-]?0o[0-7][0-7_]*], and
+       binary [[+-]?0b[0-1][0-1_]*] notations are understood).
+    - [u]: reads an unsigned decimal integer [[0-9][0-9_]*].
+    - [x] or [X]: reads an unsigned hexadecimal integer
+      [[0-9a-fA-F][0-9a-fA-F_]*].
+    - [o]: reads an unsigned octal integer [[0-7][0-7_]*].
     - [s]: reads a string argument that spreads as much as possible, until the
       following bounding condition holds:
       {ul
@@ -419,11 +424,6 @@ val bscanf_opt : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner_opt
 
     - as mentioned above, a [%s] conversion always succeeds, even if there is
       nothing to read in the input: in this case, it simply returns [""].
-
-    - in addition to the relevant digits, ['_'] characters may appear
-    inside numbers (this is reminiscent to the usual OCaml lexical
-    conventions). If stricter scanning is desired, use the range
-    conversion facility instead of the number conversions.
 
     - the [scanf] facility is not intended for heavy duty lexical
     analysis and parsing. If it appears not expressive enough for your
