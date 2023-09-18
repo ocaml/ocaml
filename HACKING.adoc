@@ -399,6 +399,8 @@ installation, the following targets may be of use:
 
 `make runtop` :: builds and runs the ocaml toplevel of the distribution
                           (optionally uses `rlwrap` for readline+history support)
+                          (use `make runtop-with-otherlibs` if you need `Unix` or other
+                           `otherlibs/` libraries)
 `make natruntop`:: builds and runs the native ocaml toplevel (experimental)
 
 `make partialclean`:: Clean the OCaml files but keep the compiled C files.

@@ -535,23 +535,31 @@ partialclean::
 TOPFLAGS ?=
 OC_TOPFLAGS = $(STDLIBFLAGS) -I toplevel -noinit $(TOPINCLUDES) $(TOPFLAGS)
 
-# Note: Beware that, since this rule begins with a coldstart, both
+RUN_OCAML = $(RLWRAP) $(OCAMLRUN) ./ocaml$(EXE) $(OC_TOPFLAGS)
+RUN_OCAMLNAT = $(RLWRAP) ./ocamlnat$(EXE) $(OC_TOPFLAGS)
+
+# Note: Beware that, since these rules begin with a coldstart, both
 # boot/ocamlrun and runtime/ocamlrun will be the same when the toplevel
 # is run.
 .PHONY: runtop
-runtop:
-	$(MAKE) coldstart
+runtop: coldstart
+	$(MAKE) ocamlc
+	$(MAKE) ocaml
+	@$(RUN_OCAML)
+
+.PHONY: runtop-with-otherlibs
+runtop-with-otherlibs: coldstart
 	$(MAKE) ocamlc
 	$(MAKE) otherlibraries
 	$(MAKE) ocaml
-	@$(RLWRAP) $(OCAMLRUN) ./ocaml$(EXE) $(OC_TOPFLAGS)
+	@$(RUN_OCAML)
 
 .PHONY: natruntop
 natruntop:
 	$(MAKE) core
 	$(MAKE) opt
 	$(MAKE) ocamlnat
-	@$(RLWRAP) ./ocamlnat$(EXE) $(OC_TOPFLAGS)
+	@$(RUN_OCAMLNAT)
 
 # Native dynlink
 
