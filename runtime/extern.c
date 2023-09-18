@@ -1189,7 +1189,7 @@ CAMLexport void caml_output_value_to_malloc(value v, value flags,
 
   init_extern_output(s);
   data_len = extern_value(s, v, flags, header, &header_len);
-  res = caml_stat_alloc_noexc(header_len + data_len);
+  res = malloc(header_len + data_len);
   if (res == NULL) extern_out_of_memory(s);
   *buf = res;
   *len = header_len + data_len;
