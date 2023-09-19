@@ -38,6 +38,9 @@
 * If you do not have write access to `/tmp`, you should set the environment
   variable `TMPDIR` to the name of some other temporary directory.
 
+* The zstd library is used for compression of marshaled data. The option
+  `--without-zstd` may be passed to `configure` in order to disable it.
+
 == Prerequisites (special cases)
 
 * Under Cygwin, the `gcc-core` package is required. `flexdll` is also necessary
