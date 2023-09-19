@@ -315,6 +315,9 @@ Working version
 
 ### Bug fixes:
 
+- #12580: Fix location of alias pattern variables.
+  (Chris Casinghino, review Gabriel Scherer, report by Milo Davis)
+
 - #12583: Add a closing event for when `EV_MAJOR_EPHE_MARK` is complete
   (Sudha Parimala, review by Gabriel Scherer)
 
