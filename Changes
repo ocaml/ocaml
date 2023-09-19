@@ -315,6 +315,9 @@ Working version
 
 ### Bug fixes:
 
+- #12583: Add a closing event for when `EV_MAJOR_EPHE_MARK` is complete
+  (Sudha Parimala, review by Gabriel Scherer)
+
 - #12566: caml_output_value_to_malloc wrongly uses `caml_stat_alloc`
   instead of `malloc` since 4.06, breaking (in pooled mode) user code
   that uses `free` on the result. Symmetrically,
