@@ -315,7 +315,7 @@ void caml_darken (value v, value *p)
 /* This function shrinks the mark stack back to the MARK_STACK_INIT_SIZE size
    and is called at the end of a GC compaction to avoid a mark stack greater
    than 1/32th of the heap. */
-void caml_shrink_mark_stack () {
+void caml_shrink_mark_stack (void) {
   struct mark_stack* stk = Caml_state->mark_stack;
   intnat init_stack_bsize = MARK_STACK_INIT_SIZE * sizeof(mark_entry);
   mark_entry* shrunk_stack;

@@ -120,7 +120,7 @@ static int64_t time_counter(void)
 #endif
 }
 
-static void setup_evbuf()
+static void setup_evbuf(void)
 {
   CAMLassert(!evbuf);
   evbuf = caml_stat_alloc_noexc(sizeof(*evbuf));
@@ -132,7 +132,7 @@ static void setup_evbuf()
 }
 
 #define OUTPUT_FILE_LEN 4096
-static void setup_eventlog_file()
+static void setup_eventlog_file(void)
 {
   char_os output_file[OUTPUT_FILE_LEN];
   char_os *eventlog_filename = NULL;
@@ -239,7 +239,7 @@ static void teardown_eventlog(void)
   }
 }
 
-void caml_eventlog_init()
+void caml_eventlog_init(void)
 {
   char_os *toggle = caml_secure_getenv(T("OCAML_EVENTLOG_ENABLED"));
 
@@ -330,7 +330,7 @@ void caml_ev_alloc(uint64_t sz)
 /*  Note that this function does not trigger an actual disk flush, it just
     pushes events in the event buffer.
 */
-void caml_ev_alloc_flush()
+void caml_ev_alloc_flush(void)
 {
   int i;
 
@@ -345,7 +345,7 @@ void caml_ev_alloc_flush()
   }
 }
 
-void caml_ev_flush()
+void caml_ev_flush(void)
 {
   if (!Caml_state->eventlog_enabled) return;
   if (Caml_state->eventlog_paused) return;
@@ -357,7 +357,7 @@ void caml_ev_flush()
   };
 }
 
-void caml_eventlog_disable()
+void caml_eventlog_disable(void)
 {
   Caml_state->eventlog_enabled = 0;
   teardown_eventlog();

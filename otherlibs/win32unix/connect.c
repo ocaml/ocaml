@@ -18,8 +18,7 @@
 #include "unixsupport.h"
 #include "socketaddr.h"
 
-CAMLprim value unix_connect(socket, address)
-     value socket, address;
+CAMLprim value unix_connect(value socket, value address)
 {
   SOCKET s = Socket_val(socket);
   union sock_addr_union addr;

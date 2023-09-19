@@ -305,7 +305,7 @@ Caml_inline value process_pending_actions_with_root_exn(value extra_root)
 }
 
 CAMLno_tsan /* The access to [caml_something_to_do] is not synchronized. */
-int caml_check_pending_actions()
+int caml_check_pending_actions(void)
 {
   return caml_something_to_do;
 }

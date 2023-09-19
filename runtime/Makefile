@@ -219,16 +219,20 @@ primitives: $(shell ./gen_primitives.sh > primitives.new; \
 	cp $^ $@
 
 prims.c : primitives
-	(echo '#define CAML_INTERNALS'; \
-         echo '#include "caml/mlvalues.h"'; \
-	 echo '#include "caml/prims.h"'; \
-	 sed -e 's/.*/extern value &();/' primitives; \
+	export LC_ALL=C; \
+	(echo '#include "caml/config.h"'; \
+	 echo 'typedef intnat value;'; \
+	 echo 'typedef value (*c_primitive)(void);'; \
+	 echo; \
+	 sed -e 's/.*/extern value &(void);/' $<; \
+	 echo; \
 	 echo 'c_primitive caml_builtin_cprim[] = {'; \
-	 sed -e 's/.*/  &,/' primitives; \
+	 sed -e 's/.*/  &,/' $<; \
 	 echo '  0 };'; \
+	 echo; \
 	 echo 'char * caml_names_of_builtin_cprim[] = {'; \
-	 sed -e 's/.*/  "&",/' primitives; \
-	 echo '  0 };') > prims.c
+	 sed -e 's/.*/  "&",/' $<; \
+	 echo '  0 };') > $@
 
 caml/opnames.h : caml/instruct.h
 	tr -d '\r' < $< | \

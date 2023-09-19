@@ -340,7 +340,7 @@ static uintnat rand_binom(uintnat len)
    which may call the GC, but prefer using [caml_alloc_shr], which
    gives this guarantee. The return value is either a valid callstack
    or 0 in out-of-memory scenarios. */
-static value capture_callstack_postponed()
+static value capture_callstack_postponed(void)
 {
   value res;
   intnat callstack_len =
@@ -1099,7 +1099,7 @@ static void th_ctx_iter_default(th_ctx_action f, void* data) {
 CAMLexport void (*caml_memprof_th_ctx_iter_hook)(th_ctx_action, void*)
   = th_ctx_iter_default;
 
-CAMLexport struct caml_memprof_th_ctx* caml_memprof_new_th_ctx()
+CAMLexport struct caml_memprof_th_ctx* caml_memprof_new_th_ctx(void)
 {
   struct caml_memprof_th_ctx* ctx =
     caml_stat_alloc(sizeof(struct caml_memprof_th_ctx));

@@ -36,10 +36,9 @@ extern code_t caml_start_code;
 
 intnat caml_icount = 0;
 
-void caml_stop_here () {}
+void caml_stop_here (void) {}
 
-void caml_disasm_instr(pc)
-     code_t pc;
+void caml_disasm_instr(code_t pc)
 {
   int instr = *pc;
   printf("%6ld  %s", (long) (pc - caml_start_code),

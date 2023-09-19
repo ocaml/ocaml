@@ -21,7 +21,7 @@
 
 CAMLexport caml_domain_state* Caml_state;
 
-void caml_init_domain ()
+void caml_init_domain (void)
 {
   if (Caml_state != NULL)
     return;

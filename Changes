@@ -1,6 +1,15 @@
 OCaml 4.14 maintenance version
 ------------------------------
 
+### Runtime system:
+
+- #11764, #12577: Add prototypes to old-style C function definitions and declarations.
+  (Antonin Décimo, review by Xavier Leroy and Nick Barnes)
+
+- #11763, #11759, #11861, #12509, #12577: Use strict prototypes on primitives.
+  (Antonin Décimo, review by Xavier Leroy, David Allsopp, Sébastien
+   Hinderer and Nick Barnes)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.

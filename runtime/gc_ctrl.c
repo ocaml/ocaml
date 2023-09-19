@@ -319,7 +319,7 @@ CAMLprim value caml_gc_quick_stat(value v)
   CAMLreturn (res);
 }
 
-double caml_gc_minor_words_unboxed()
+double caml_gc_minor_words_unboxed(void)
 {
   return (Caml_state->stat_minor_words
           + (double) (Caml_state->young_alloc_end - Caml_state->young_ptr));

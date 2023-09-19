@@ -152,11 +152,11 @@ static void generic_final_update (struct finalisable * final, int darken_value)
   }
 }
 
-void caml_final_update_mark_phase (){
+void caml_final_update_mark_phase (void){
   generic_final_update(&finalisable_first, /* darken_value */ 1);
 }
 
-void caml_final_update_clean_phase (){
+void caml_final_update_clean_phase (void){
   generic_final_update(&finalisable_last, /* darken_value */ 0);
 }
 
@@ -227,7 +227,7 @@ void caml_final_do_roots (scanning_action f)
 /* Call caml_invert_root on the values of the finalisable set. This is called
    directly by the compactor.
 */
-void caml_final_invert_finalisable_values ()
+void caml_final_invert_finalisable_values (void)
 {
   uintnat i;
 
@@ -247,7 +247,7 @@ void caml_final_invert_finalisable_values ()
 /* Call [caml_oldify_one] on the closures and values of the recent set.
    This is called by the minor GC through [caml_oldify_local_roots].
 */
-void caml_final_oldify_young_roots ()
+void caml_final_oldify_young_roots (void)
 {
   uintnat i;
 
@@ -337,7 +337,7 @@ static void generic_final_minor_update (struct finalisable * final)
    minor heap when moved to major heap or moved them to the finalising
    set when dead.
 */
-void caml_final_update_minor_roots ()
+void caml_final_update_minor_roots (void)
 {
   generic_final_minor_update(&finalisable_last);
 }
