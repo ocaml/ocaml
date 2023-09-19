@@ -1640,7 +1640,7 @@ and type_pat_aux
       let ty_var = solve_Ppat_alias !!penv q in
       let id =
         enter_variable
-          ~is_as_variable:true tps loc name ty_var sp.ppat_attributes
+          ~is_as_variable:true tps name.loc name ty_var sp.ppat_attributes
       in
       rvp { pat_desc = Tpat_alias(q, id, name);
             pat_loc = loc; pat_extra=[];
