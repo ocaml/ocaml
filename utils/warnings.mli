@@ -69,7 +69,7 @@ type t =
   | Unused_var_strict of string             (* 27 *)
   | Wildcard_arg_to_constant_constr         (* 28 *)
   | Eol_in_string                           (* 29
-      Note: since OCaml 5.2, the lexer normalizes \r*\n sequences in
+      Note: since OCaml 5.2, the lexer normalizes \r\n sequences in
       the source file to a single \n character, so the behavior of
       newlines in string literals is portable. This warning is
       never emitted anymore. *)

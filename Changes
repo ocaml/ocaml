@@ -41,14 +41,14 @@ Working version
   and variant with only constant constructors.
   (Christophe Raffalli, review by Gabriel Scherer)
 
-- #12502: the compiler now normalizes newline sequences (\r*\n) to
+- #12502: the compiler now normalizes the newline sequence \r\n to
   a single \n character during lexing, to guarantee that the semantics
-  of newlines in string literals is not modified by tools applying OS-specific
-  newline conversions.
+  of newlines in string literals is not modified by Windows tools
+  transforming \n into \r\n in source files.
   Warning 29 [eol-in-string] is not emitted anymore, as the normalization
   gives a more robust semantics to newlines in string literals.
-  (Gabriel Scherer, review by Daniel Bünzli and David Allsopp, report
-   by Andreas Rossberg)
+  (Gabriel Scherer and Damien Doligez, review by Daniel Bünzli, David
+   Allsopp, Andreas Rossberg, Xavier Leroy, report by Andreas Rossberg)
 
 ### Type system:
 
