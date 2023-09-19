@@ -249,19 +249,22 @@ static struct {
   { 0 }
 };
 
-static void add_to_stw_domains(dom_internal* dom) {
-  int i;
+static void add_next_to_stw_domains(void)
+{
   CAMLassert(stw_domains.participating_domains < Max_domains);
-  for(i=stw_domains.participating_domains; stw_domains.domains[i]!=dom; ++i) {
-    CAMLassert(i<Max_domains);
-  }
-
-  /* swap passed domain with domain at stw_domains.participating_domains */
-  dom = stw_domains.domains[stw_domains.participating_domains];
-  stw_domains.domains[stw_domains.participating_domains] =
-      stw_domains.domains[i];
-  stw_domains.domains[i] = dom;
   stw_domains.participating_domains++;
+#ifdef DEBUG
+  /* Enforce here the invariant for early-exit in
+     [caml_interrupt_all_signal_safe], because the latter must be
+     async-signal-safe and one cannot CAMLassert inside it. */
+  bool prev_has_interrupt_word = true;
+  for (int i = 0; i < Max_domains; i++) {
+    bool has_interrupt_word = all_domains[i].interruptor.interrupt_word != NULL;
+    if (i < stw_domains.participating_domains) CAMLassert(has_interrupt_word);
+    if (!prev_has_interrupt_word) CAMLassert(!has_interrupt_word);
+    prev_has_interrupt_word = has_interrupt_word;
+  }
+#endif
 }
 
 static void remove_from_stw_domains(dom_internal* dom) {
@@ -703,7 +706,7 @@ static void domain_create(uintnat initial_minor_heap_wsize) {
 #endif
 
   caml_reset_young_limit(domain_state);
-  add_to_stw_domains(domain_self);
+  add_next_to_stw_domains();
   goto domain_init_complete;
 
 alloc_main_stack_failure:
