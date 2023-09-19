@@ -1635,6 +1635,8 @@ mark_again:
           }
         }
 
+        CAML_EV_END(EV_MAJOR_EPHE_MARK);
+
         if (domain_state->ephe_info->todo == (value)NULL) {
           ephe_todo_list_emptied ();
         }
