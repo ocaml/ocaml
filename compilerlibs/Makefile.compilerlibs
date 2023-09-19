@@ -180,14 +180,6 @@ intel_SOURCES = \
   x86_gas.mli x86_gas.ml \
   x86_masm.mli x86_masm.ml
 
-arch_specific_SOURCES =
-ifeq ($(ARCH),i386)
-arch_specific_SOURCES = $(intel_SOURCES)
-endif
-ifeq ($(ARCH),amd64)
-arch_specific_SOURCES = $(intel_SOURCES)
-endif
-
 asmcomp_SOURCES = \
 $(addprefix asmcomp/, \
   $(arch_specific_SOURCES) \
