@@ -6237,7 +6237,7 @@ let clear_hash ()   =
 let rec nondep_type_rec_aux ?(expand_private=false) env id_map ids ty =
   let try_expand env t =
     if expand_private then try_expand_safe_opt env t
-    else try_expand_safe env t
+    else try_expand_safe_no_link env t
   in
   let desc = get_constr_desc ty in
   match desc with
