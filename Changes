@@ -316,7 +316,7 @@ Working version
 ### Bug fixes:
 
 - #12580: Fix location of alias pattern variables.
-  (Chris Casinghino, review by ???, report by Milo Davis)
+  (Chris Casinghino, review Gabriel Scherer, report by Milo Davis)
 
 - #12566: caml_output_value_to_malloc wrongly uses `caml_stat_alloc`
   instead of `malloc` since 4.06, breaking (in pooled mode) user code
