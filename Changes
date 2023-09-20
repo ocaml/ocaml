@@ -41,6 +41,9 @@ OCaml 5.1.1
   (Damien Doligez, review by Xavier Leroy, Gabriel Scherer and KC
   Sivaramakrishnan)
 
+- #12486, #12535: Fix delivery of unhandled effect exceptions on amd64 with
+  --enable-frame-pointers
+  (Miod Vallat, report by Jan Midtgaard, review by Gabriel Scherer)
 
 - # 12791: `extern` is applied to definitions of `caml_builtin_cprim`
     and `caml_names_of_builtin_cprim` when linking bytecode '-custom'
