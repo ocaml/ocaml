@@ -3291,8 +3291,7 @@ and type_expect_
       let may_contain_modules =
         List.exists (fun pvb -> may_contain_modules pvb.pvb_pat) spat_sexp_list
       in
-      let outer_level = get_current_level () in
-      let (pat_exp_list, body, _new_env) =
+      let (pat_exp_list, body, _bound_exps, _new_env) =
         (* If the patterns contain module unpacks, there is a possibility that
            the types of the let body or bound expressions mention types
            introduced by those unpacks. The below code checks for scope escape
@@ -3310,42 +3309,46 @@ and type_expect_
             type_let existential_context env rec_flag spat_sexp_list
               allow_modules
           in
-          let body = type_expect new_env sbody ty_expected_explained in
-          let () =
-            if rec_flag = Recursive then
-              check_recursive_bindings env pat_exp_list
-          in
-          (* The "bound expressions" component of the scope escape check.
+          if rec_flag = Recursive then
+            check_recursive_bindings env pat_exp_list;
 
+          let body = type_expect new_env sbody ty_expected_explained
+          (* The "bound expressions" to be checked.
              This kind of scope escape is relevant only for recursive
              module definitions.
           *)
-          if rec_flag = Recursive && may_contain_modules then begin
-            List.iter
-              (fun vb ->
-                 (* [type_let] already generalized bound expressions' types
-                    in-place. We first take an instance before checking scope
-                    escape at the outer level to avoid losing generality of
-                    types added to [new_env].
+          and bound_exp_types =
+            if not (rec_flag = Recursive && may_contain_modules) then [] else
+            List.map
+              begin fun vb ->
+                (* [type_let] already generalized bound expressions' types
+                   in-place. We first take an instance before checking scope
+                   escape at the outer level to avoid losing generality of
+                   types added to [new_env].
                  *)
                 let bound_exp = vb.vb_expr in
                 generalize_structure_exp bound_exp;
                 let bound_exp_type = Ctype.instance bound_exp.exp_type in
                 let loc = proper_exp_loc bound_exp in
-                let outer_var = newvar2 outer_level in
-                (* Checking unification within an environment extended with the
-                   module bindings allows us to correctly accept more programs.
-                   This environment allows unification to identify more cases
-                   where a type introduced by the module is equal to a type
-                   introduced at an outer scope. *)
-                unify_exp_types loc new_env bound_exp_type outer_var)
+                (loc, bound_exp_type)
+              end
               pat_exp_list
-          end;
-          (pat_exp_list, body, new_env)
+          in
+          (pat_exp_list, body, bound_exp_types, new_env)
         end
-        ~post:(fun (_pat_exp_list, body, new_env) ->
-          (* The "body" component of the scope escape check. *)
-          unify_exp new_env body (newvar ()))
+        ~post: begin fun (_pat_exp_list, body, bound_exp_types, new_env) ->
+          (* The "body" component of the scope escape check.
+             Checking unification within an environment extended with the
+             module bindings allows us to correctly accept more programs.
+             This environment allows unification to identify more cases
+             where a type introduced by the module is equal to a type
+             introduced at an outer scope. *)
+          unify_exp new_env body (newvar ());
+          (* The "bound expressions" component of the scope escape check. *)
+          List.iter
+            (fun (loc, ty) -> unify_exp_types loc new_env ty (newvar ()))
+            bound_exp_types
+        end
       in
       re {
         exp_desc = Texp_let(rec_flag, pat_exp_list, body);
