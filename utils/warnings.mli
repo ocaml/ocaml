@@ -68,7 +68,11 @@ type t =
   | Unused_var of string                    (* 26 *)
   | Unused_var_strict of string             (* 27 *)
   | Wildcard_arg_to_constant_constr         (* 28 *)
-  | Eol_in_string                           (* 29 *)
+  | Eol_in_string                           (* 29
+      Note: since OCaml 5.2, the lexer normalizes \r\n sequences in
+      the source file to a single \n character, so the behavior of
+      newlines in string literals is portable. This warning is
+      never emitted anymore. *)
   | Duplicate_definitions of string * string * string * string (* 30 *)
   | Unused_value_declaration of string      (* 32 *)
   | Unused_open of string                   (* 33 *)

@@ -41,6 +41,15 @@ Working version
   and variant with only constant constructors.
   (Christophe Raffalli, review by Gabriel Scherer)
 
+- #12502: the compiler now normalizes the newline sequence \r\n to
+  a single \n character during lexing, to guarantee that the semantics
+  of newlines in string literals is not modified by Windows tools
+  transforming \n into \r\n in source files.
+  Warning 29 [eol-in-string] is not emitted anymore, as the normalization
+  gives a more robust semantics to newlines in string literals.
+  (Gabriel Scherer and Damien Doligez, review by Daniel Bünzli, David
+   Allsopp, Andreas Rossberg, Xavier Leroy, report by Andreas Rossberg)
+
 ### Type system:
 
 - #12313, #11799: Do not re-build as-pattern type when a ground type annotation
