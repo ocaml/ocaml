@@ -1137,6 +1137,7 @@ LBL(112):
         movq    Caml_state(current_stack), %rsi
         SWITCH_OCAML_STACKS
     /* No parent stack. Raise Effect.Unhandled. */
+        ENTER_FUNCTION
 #if defined(WITH_THREAD_SANITIZER)
         /* We must let the TSan runtime know that we switched back to the
            original performer stack. For that, we perform the necessary calls
@@ -1215,7 +1216,8 @@ CFI_STARTPROC
         UPDATE_BASE_POINTER(%rcx)
         SWITCH_OCAML_STACKS
         jmp     *(%rbx)
-2:      TSAN_ENTER_FUNCTION(0) /* Necessary to include the caller of caml_resume
+2:      ENTER_FUNCTION
+        TSAN_ENTER_FUNCTION(0) /* Necessary to include the caller of caml_resume
                                   in the TSan backtrace */
         LEA_VAR(caml_raise_continuation_already_resumed, %rax)
         jmp LBL(caml_c_call)
