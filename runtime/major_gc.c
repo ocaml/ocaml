@@ -346,15 +346,14 @@ static void orph_ephe_list_verify_status (int status)
   value v;
 
   caml_plat_lock(&orphaned_lock);
-
   v = orph_structs.ephe_list_live;
+  caml_plat_unlock(&orphaned_lock);
+
   while (v) {
     CAMLassert (Tag_val(v) == Abstract_tag);
     CAMLassert (Has_status_val(v, status));
     v = Ephe_link(v);
   }
-
-  caml_plat_unlock(&orphaned_lock);
 }
 #endif
 
@@ -366,8 +365,6 @@ static intnat ephe_mark (intnat budget, uintnat for_cycle, int force_alive);
 CAMLno_tsan /* Disable TSan reports from this function (see #11040) */
 void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info)
 {
-  caml_plat_lock(&orphaned_lock);
-
   /* Force all ephemerons and their data on todo list to be alive */
   if (ephe_info->todo) {
     while (ephe_info->todo) {
@@ -380,12 +377,13 @@ void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info)
   if (ephe_info->live) {
     value live_tail = ephe_list_tail(ephe_info->live);
     CAMLassert(Ephe_link(live_tail) == 0);
+
+    caml_plat_lock(&orphaned_lock);
     Ephe_link(live_tail) = orph_structs.ephe_list_live;
     orph_structs.ephe_list_live = ephe_info->live;
     ephe_info->live = 0;
+    caml_plat_unlock(&orphaned_lock);
   }
-
-  caml_plat_unlock(&orphaned_lock);
 
   if (ephe_info->must_sweep_ephe) {
     ephe_info->must_sweep_ephe = 0;
@@ -397,7 +395,7 @@ CAMLno_tsan /* Disable TSan reports from this function (see #11040) */
 void caml_adopt_orphaned_work (void)
 {
   caml_domain_state* domain_state = Caml_state;
-  value last;
+  value orph_ephe_list_live, last;
   struct caml_final_info *f, *myf, *temp;
 
   if (no_orphaned_work() || caml_domain_is_terminating())
@@ -405,15 +403,21 @@ void caml_adopt_orphaned_work (void)
 
   caml_plat_lock(&orphaned_lock);
 
-  if (orph_structs.ephe_list_live) {
-    last = ephe_list_tail(orph_structs.ephe_list_live);
-    CAMLassert(Ephe_link(last) == 0);
-    Ephe_link(last) = domain_state->ephe_info->live;
-    domain_state->ephe_info->live = orph_structs.ephe_list_live;
-    orph_structs.ephe_list_live = 0;
-  }
+  orph_ephe_list_live = orph_structs.ephe_list_live;
+  orph_structs.ephe_list_live = 0;
 
   f = orph_structs.final_info;
+  orph_structs.final_info = NULL;
+
+  caml_plat_unlock(&orphaned_lock);
+
+  if (orph_ephe_list_live) {
+    last = ephe_list_tail(orph_ephe_list_live);
+    CAMLassert(Ephe_link(last) == 0);
+    Ephe_link(last) = domain_state->ephe_info->live;
+    domain_state->ephe_info->live = orph_ephe_list_live;
+  }
+
   myf = domain_state->final_info;
   while (f != NULL) {
     CAMLassert (!f->updated_first);
@@ -441,8 +445,6 @@ void caml_adopt_orphaned_work (void)
     f = f->next;
     caml_stat_free (temp);
   }
-  orph_structs.final_info = NULL;
-  caml_plat_unlock(&orphaned_lock);
 }
 
 #define BUFFER_SIZE 64
