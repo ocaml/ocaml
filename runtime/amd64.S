@@ -1141,7 +1141,7 @@ LBL(112):
         TSAN_SAVE_CALLER_REGS
         movq    STACK_RETADDR(%rsp), C_ARG_1       /* arg 1: pc of perform */
         leaq    STACK_ARG_1(%rsp), C_ARG_2         /* arg 2: sp at perform */
-        movq    Caml_state(current_stack), C_ARG_3 /* arg 3: fiber */
+        movq    %r10, C_ARG_3                      /* arg 3: performer stack */
         SWITCH_OCAML_TO_C
         C_call  (GCALL(caml_tsan_entry_on_resume))
         SWITCH_C_TO_OCAML
