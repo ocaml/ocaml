@@ -50,3 +50,14 @@ Line 1, characters 37-41:
                                          ^^^^
 Error: This expression has no method "bar"
 |}]
+
+class empty = object end
+class also_empty = object inherit! empty end
+[%%expect{|
+class empty : object  end
+Line 2, characters 26-40:
+2 | class also_empty = object inherit! empty end
+                              ^^^^^^^^^^^^^^
+Error: This inheritance does not override any methods or instance variables
+       but is explicitly marked as overriding with "!".
+|}]
