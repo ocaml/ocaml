@@ -386,6 +386,10 @@ Working version
   --enable-frame-pointers
   (Miod Vallat, report by Jan Midtgaard, review by Gabriel Scherer)
 
+- #12561: Fix crash when combining TSan and frame-pointers
+  (Fabrice Buoro and Olivier Nicole, report by Jan Midtgaard, review by Miod
+  Vallat and Gabriel Scherer)
+
 OCaml 5.1.0 (14 September 2023)
 -------------------------------
 
