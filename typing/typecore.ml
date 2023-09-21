@@ -96,6 +96,11 @@ type existential_restriction =
   | In_class_def  (** or in [class c = let ... in ...] *)
   | In_self_pattern (** or in self pattern *)
 
+type existential_binding =
+  | Bind_already_bound
+  | Bind_not_in_scope
+  | Bind_non_locally_abstract
+
 type error =
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * Errortrace.unification_error
@@ -189,7 +194,7 @@ type error =
   | Andop_type_clash of string * Errortrace.unification_error
   | Bindings_type_clash of Errortrace.unification_error
   | Unbound_existential of Ident.t list * type_expr
-  | Non_closed_type_alias of Ident.t * type_expr
+  | Bind_existential of existential_binding * Ident.t * type_expr
   | Missing_type_constraint
   | Wrong_expected_kind of wrong_kind_sort * wrong_kind_context * type_expr
   | Expr_not_a_record_type of type_expr
@@ -748,7 +753,7 @@ let solve_Ppat_tuple (type a) ~refine loc env (args : a list) expected_ty =
   vars
 
 let solve_constructor_annotation
-    tps (penv : Pattern_env.t) name_list sty ty_args ty_ex =
+    tps (penv : Pattern_env.t) name_list sty ty_args ty_ex unify_res =
   let expansion_scope = penv.equations_scope in
   (* Introduce fresh type names that expand to type variables.
      They should eventually be bound to ground types. *)
@@ -770,6 +775,8 @@ let solve_constructor_annotation
       (fun () -> Typetexp.transl_simple_type_delayed !!penv sty)
   in
   tps.tps_pattern_force <- force :: tps.tps_pattern_force;
+  (* Only unify the return type after generating the ids *)
+  unify_res ();
   let ty_args =
     let ty1 = instance ty and ty2 = instance ty in
     match ty_args with
@@ -815,13 +822,26 @@ let solve_constructor_annotation
                             Unbound_existential (ids, ty))))
         ids ty_ex
     in
-    (* The other type names should be bound to closed types. *)
+    (* The other type names should be bound to newly introduced existentials. *)
+    let bound_ids = ref ids in
     List.iter
       (fun id ->
         let decl, tv' = get_decl_manifest id !!penv in
-        if free_variables tv' <> [] then
-          raise (Error (cty.ctyp_loc, !!penv,
-                        Non_closed_type_alias (id, tv')));
+        begin match get_desc tv' with
+        | Tconstr (Path.Pident id', [], _) when
+            Ident.scope id' = penv.equations_scope ->
+              if List.exists (Ident.same id') !bound_ids then
+                raise (Error (cty.ctyp_loc, !!penv,
+                              Bind_existential (Bind_already_bound, id, tv')));
+              if List.exists (fun id -> Ident.compare id id' > 0) ids then
+                raise (Error (cty.ctyp_loc, !!penv,
+                              Bind_existential (Bind_not_in_scope, id, tv')));
+              bound_ids := id' :: !bound_ids
+        | _ ->
+            raise (Error (cty.ctyp_loc, !!penv,
+                          Bind_existential
+                            (Bind_non_locally_abstract, id, tv')));
+        end;
         let env =
           Env.add_type ~check:false id
             {decl with type_manifest = Some (correct_levels tv')} !!penv
@@ -868,11 +888,12 @@ let solve_Ppat_construct ~refine tps penv loc constr no_existentials
             let ty_args, ty_res, ty_ex =
               instance_constructor existential_treatment constr
             in
-            let equated_types = unify_res ty_res expected_ty in
+            let equated_types = lazy (unify_res ty_res expected_ty) in
             let ty_args, existential_ctyp =
               solve_constructor_annotation tps penv name_list sty ty_args ty_ex
+                (fun () -> ignore (Lazy.force equated_types))
             in
-            ty_args, ty_res, equated_types, existential_ctyp
+            ty_args, ty_res, Lazy.force equated_types, existential_ctyp
       in
       if constr.cstr_existentials <> [] then
         lower_variables_only !!penv penv.Pattern_env.equations_scope ty_res;
@@ -6900,10 +6921,15 @@ let report_error ~loc env = function
         "@[<2>%s:@ %a@]"
         "This type does not bind all existentials in the constructor"
         (Style.as_inline_code pp_type) (ids, ty)
-  | Non_closed_type_alias (id, ty) ->
+  | Bind_existential (reason, id, ty) ->
+      let reason = match reason with
+      | Bind_already_bound -> "already bound existential"
+      | Bind_not_in_scope -> "out-of-scope existential"
+      | Bind_non_locally_abstract -> "non-locally-abstract type"
+      in
       Location.errorf ~loc
-        "@[<hov2>This type annotation attempts to bind@ %s@ %s@ %a.@]"
-        (Ident.name id) "to the non-closed type" Printtyp.type_expr ty
+        "@[<hov0>This type annotation attempts to bind@ \"%s\"@ %s%s@ \"%a\".@]"
+        (Ident.name id) "to the " reason Printtyp.type_expr ty
   | Missing_type_constraint ->
       Location.errorf ~loc
         "@[%s@ %s@]"

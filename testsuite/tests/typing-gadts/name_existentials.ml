@@ -34,7 +34,11 @@ Error: This type does not bind all existentials in the constructor:
 |}]
 let ok3 = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
 [%%expect{|
-val ok3 : dyn -> unit = <fun>
+Line 1, characters 42-50:
+1 | let ok3 = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
+                                              ^^^^^^^^
+Error: This type annotation attempts to bind "b"
+       to the already bound existential "a".
 |}]
 
 type u = C : 'a * ('a -> 'b list) -> u
@@ -79,7 +83,8 @@ let rec test : type a. a expr -> a = function
 Line 2, characters 22-23:
 2 |   | Int (type b) (n : a) -> n
                           ^
-Error: This type annotation attempts to bind b to the non-closed type 'a.
+Error: This type annotation attempts to bind "b"
+       to the non-locally-abstract type "'a".
 |}]
 
 (* Strange wildcard *)
@@ -115,6 +120,7 @@ val f : (int, int) pair -> int = <fun>
 
 
 (* #11891: allow naming more types *)
+(* We stillonly allow to name freshly introduced existentials *)
 
 type _ th =
   | Thunk : 'a * ('a -> 'b) -> 'b th
@@ -125,7 +131,11 @@ let f2 (type a) : a th -> a = function
 [%%expect{|
 type _ th = Thunk : 'a * ('a -> 'b) -> 'b th
 val f1 : 'a th -> 'a = <fun>
-val f2 : 'a th -> 'a = <fun>
+Line 6, characters 29-41:
+6 |   | Thunk (type b c) (x, f : b * (b -> c)) -> f x
+                                 ^^^^^^^^^^^^
+Error: This type annotation attempts to bind "c"
+       to the non-locally-abstract type "a".
 |}]
 (* Do not allow to deduce extra assumptions *)
 let ko1 (type a) : a th -> a = function
@@ -138,7 +148,7 @@ Error: This pattern matches values of type "b * (b -> c option)"
        but a pattern was expected which matches values of type "b * (b -> a)"
        Type "c option" is not compatible with type "a"
 |}]
-(* Can only name closed types *)
+(* Can only name fresh existentials *)
 let ko2 = function
   | Thunk (type b c) (x, f : b * (b -> c)) -> f x
 [%%expect{|
@@ -158,7 +168,8 @@ let ko3 () =
 Line 3, characters 30-42:
 3 |   | [Thunk (type b c) (x, f : b * (b -> c))] -> f x
                                   ^^^^^^^^^^^^
-Error: This type annotation attempts to bind c to the non-closed type 'a.
+Error: This type annotation attempts to bind "c"
+       to the non-locally-abstract type "'a".
 |}]
 
 type _ tho =
