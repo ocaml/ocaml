@@ -10,10 +10,10 @@ val example_1 : unit -> (bool, int) Result.t = <fun>
 |}]
 
 let _ = example_1 ();;
-(* <unknown constructor> means that we got an 'unsound boolean',
-   which is neither 'true' nor 'false'. There was a bug here! *)
+(* Getting a Match_failure is not the only reasonable behavior
+   for this test, but it is sound. *)
 [%%expect {|
-- : (bool, int) Result.t = Result.Ok <unknown constructor>
+Exception: Match_failure ("contexts_1.ml", 17, 2).
 |}]
 
 #use "contexts_2.ml";;
@@ -24,7 +24,8 @@ val example_2 : unit -> (bool, int) Result.t = <fun>
 |}];;
 
 let _ = example_2 ();;
-(* Also a bug! *)
+(* <unknown constructor> means that we got an 'unsound boolean',
+   which is neither 'true' nor 'false'. There was a bug here! *)
 [%%expect {|
 - : (bool, int) Result.t = Result.Ok <unknown constructor>
 |}]
