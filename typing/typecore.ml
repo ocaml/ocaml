@@ -833,7 +833,7 @@ let solve_constructor_annotation
               if List.exists (Ident.same id') !bound_ids then
                 raise (Error (cty.ctyp_loc, !!penv,
                               Bind_existential (Bind_already_bound, id, tv')));
-              if List.exists (fun id -> Ident.compare id id' > 0) ids then
+              if Ident.compare id id' > 0 then
                 raise (Error (cty.ctyp_loc, !!penv,
                               Bind_existential (Bind_not_in_scope, id, tv')));
               bound_ids := id' :: !bound_ids
