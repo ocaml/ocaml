@@ -286,11 +286,20 @@ static void record_ephe_marking_done (uintnat ephe_cycle)
   caml_plat_unlock(&ephe_lock);
 }
 
-/* These are biased data structures left over from terminating domains. */
+/* These are biased data structures left over from terminating domains.
+
+   Synchronization:
+   - operations that mutate the structure
+     (adding new orphaned values or adopting orphans)
+     are protected from each other using [orphaned_lock];
+     this is simpler than using atomic lists, and not performance-sensitive
+   - the read-only function [no_orphaned_work()] uses atomic accesses
+     to avoid taking a lock (it is called more often)
+ */
 static struct {
-  value ephe_list_live;
-  struct caml_final_info *final_info;
-} orph_structs = {0, 0};
+  value _Atomic ephe_list_live;
+  struct caml_final_info * _Atomic final_info;
+} orph_structs = {0, NULL};
 
 static caml_plat_mutex orphaned_lock = CAML_PLAT_MUTEX_INITIALIZER;
 
@@ -321,12 +330,11 @@ void caml_final_domain_terminate (caml_domain_state *domain_state)
   }
 }
 
-CAMLno_tsan /* Disable TSan reports from this function (see #11040) */
 static int no_orphaned_work (void)
 {
   return
-    orph_structs.ephe_list_live == 0 &&
-    orph_structs.final_info == NULL;
+    atomic_load_acquire(&orph_structs.ephe_list_live) == 0 &&
+    atomic_load_acquire(&orph_structs.final_info) == NULL;
 }
 
 Caml_inline value ephe_list_tail(value e)
@@ -345,9 +353,7 @@ static void orph_ephe_list_verify_status (int status)
 {
   value v;
 
-  caml_plat_lock(&orphaned_lock);
   v = orph_structs.ephe_list_live;
-  caml_plat_unlock(&orphaned_lock);
 
   while (v) {
     CAMLassert (Tag_val(v) == Abstract_tag);
@@ -362,7 +368,6 @@ static void orph_ephe_list_verify_status (int status)
 
 static intnat ephe_mark (intnat budget, uintnat for_cycle, int force_alive);
 
-CAMLno_tsan /* Disable TSan reports from this function (see #11040) */
 void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info)
 {
   /* Force all ephemerons and their data on todo list to be alive */
@@ -391,7 +396,6 @@ void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info)
   }
 }
 
-CAMLno_tsan /* Disable TSan reports from this function (see #11040) */
 void caml_adopt_orphaned_work (void)
 {
   caml_domain_state* domain_state = Caml_state;
