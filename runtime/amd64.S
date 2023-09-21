@@ -932,23 +932,17 @@ LBL(117):
         testq   $1, Caml_state(backtrace_active)
         je    LBL(118)
 #endif
-        movq    %rax, C_ARG_1     /* arg 1: exception bucket */
-#ifdef WITH_FRAME_POINTERS
-        movq    8(%r13), C_ARG_2   /* arg 2: pc of raise */
-        leaq    16(%r13), C_ARG_3  /* arg 3: sp at raise */
-#else
-        movq    (%r13), C_ARG_2   /* arg 2: pc of raise */
-        leaq    8(%r13), C_ARG_3  /* arg 3: sp at raise */
-#endif
-        movq    Caml_state(exn_handler), C_ARG_4
-                                  /* arg 4: sp of handler */
+        movq    %rax, C_ARG_1                    /* arg 1: exception bucket */
+        movq    STACK_RETADDR(%r13), C_ARG_2     /* arg 2: pc of raise */
+        leaq    STACK_ARG_1(%r13), C_ARG_3       /* arg 3: sp at raise */
+        movq    Caml_state(exn_handler), C_ARG_4 /* arg 4: sp of handler */
         C_call  (GCALL(caml_stash_backtrace))
 #if defined(WITH_THREAD_SANITIZER)
 LBL(118):
     /* Signal to TSan all stack frames exited by the exception. No need to save
        any registers here. */
-        movq    STACK_RETADDR(%r13), C_ARG_1   /* arg 1: pc of raise */
-        leaq    STACK_ARG_1(%r13), C_ARG_2  /* arg 2: sp at raise */
+        movq    STACK_RETADDR(%r13), C_ARG_1     /* arg 1: pc of raise */
+        leaq    STACK_ARG_1(%r13), C_ARG_2       /* arg 2: sp at raise */
         movq    Caml_state(exn_handler), C_ARG_3 /* arg 3: sp of handler */
         C_call  (GCALL(caml_tsan_exit_on_raise))
 #endif
@@ -1115,13 +1109,15 @@ LBL(do_perform):
         je      LBL(112)
 #if defined(WITH_THREAD_SANITIZER)
     /* Signal to TSan all stack frames exited by the perform. */
+        ENTER_FUNCTION
         TSAN_SAVE_CALLER_REGS
-        movq    (%rsp), C_ARG_1   /* arg 1: pc of perform */
-        leaq    8(%rsp), C_ARG_2  /* arg 2: sp at perform */
+        movq    STACK_RETADDR(%rsp), C_ARG_1  /* arg 1: pc of perform */
+        leaq    STACK_ARG_1(%rsp), C_ARG_2    /* arg 2: sp at perform */
         SWITCH_OCAML_TO_C
         C_call  (GCALL(caml_tsan_exit_on_perform))
         SWITCH_C_TO_OCAML
         TSAN_RESTORE_CALLER_REGS
+        LEAVE_FUNCTION
 #endif
         SWITCH_OCAML_STACKS /* preserves r11 and rsi */
      /* We have to null the Handler_parent after the switch because the
@@ -1143,10 +1139,9 @@ LBL(112):
            original performer stack. For that, we perform the necessary calls
            to __tsan_func_entry via caml_tsan_entry_on_resume. */
         TSAN_SAVE_CALLER_REGS
-        movq    Stack_sp(%r10), %r11
-        movq    (%r11), C_ARG_1   /* arg 1: pc of perform */
-        leaq    8(%r11), C_ARG_2  /* arg 2: sp at perform */
-        movq    %r10, C_ARG_3     /* arg 3: fiber */
+        movq    STACK_RETADDR(%rsp), C_ARG_1       /* arg 1: pc of perform */
+        leaq    STACK_ARG_1(%rsp), C_ARG_2         /* arg 2: sp at perform */
+        movq    %r10, C_ARG_3                      /* arg 3: performer stack */
         SWITCH_OCAML_TO_C
         C_call  (GCALL(caml_tsan_entry_on_resume))
         SWITCH_C_TO_OCAML
@@ -1185,6 +1180,7 @@ CFI_STARTPROC
         jz      2f
 #if defined(WITH_THREAD_SANITIZER)
     /* Save non-callee-saved registers %rax and %r10 before C call */
+        ENTER_FUNCTION
         pushq   %rax; CFI_ADJUST(8);
         pushq   %r10; CFI_ADJUST(8);
     /* Necessary to include the caller of caml_resume in the TSan backtrace */
@@ -1194,13 +1190,14 @@ CFI_STARTPROC
         TSAN_SAVE_CALLER_REGS
     /* Signal to TSan all stack frames exited by the perform. */
         movq    Stack_sp(%r10), %r11
-        movq    (%r11), C_ARG_1   /* arg 1: pc of perform */
-        leaq    8(%r11), C_ARG_2  /* arg 2: sp at perform */
-        movq    %r10, C_ARG_3     /* arg 3: fiber */
+        movq    STACK_RETADDR(%r11), C_ARG_1  /* arg 1: pc of perform */
+        leaq    STACK_ARG_1(%r11), C_ARG_2    /* arg 2: sp at perform */
+        movq    %r10, C_ARG_3                 /* arg 3: fiber */
         SWITCH_OCAML_TO_C
         C_call  (GCALL(caml_tsan_entry_on_resume))
         SWITCH_C_TO_OCAML
         TSAN_RESTORE_CALLER_REGS
+        LEAVE_FUNCTION
 #endif
     /* Find end of list of stacks and add current */
         movq    %r10, %rsi
