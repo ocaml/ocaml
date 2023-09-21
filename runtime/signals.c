@@ -93,7 +93,7 @@ CAMLexport value caml_process_pending_signals_exn(void)
         if (curr == 0) goto next_word;
         if ((curr & mask) == 0) goto next_bit;
       }
-      exn = caml_execute_signal_exn(signo, 0);
+      exn = caml_execute_signal_exn(signo);
       if (Is_exception_result(exn)) return exn;
       /* curr probably changed during the evaluation of the signal handler;
          refresh it from memory */
@@ -228,10 +228,8 @@ void caml_init_signal_handling(void) {
 
 /* Execute a signal handler immediately */
 
-value caml_execute_signal_exn(int signal_number, int in_signal_handler)
+value caml_execute_signal_exn(int signal_number)
 {
-  value res;
-  value handler;
 #ifdef POSIX_SIGNALS
   sigset_t nsigs, sigs;
   /* Block the signal before executing the handler, and record in sigs
@@ -240,19 +238,12 @@ value caml_execute_signal_exn(int signal_number, int in_signal_handler)
   sigaddset(&nsigs, signal_number);
   pthread_sigmask(SIG_BLOCK, &nsigs, &sigs);
 #endif
-  handler = Field(caml_signal_handlers, signal_number);
-    res = caml_callback_exn(
-             handler,
-             Val_int(caml_rev_convert_signal_number(signal_number)));
+  value handler = Field(caml_signal_handlers, signal_number);
+  value signum = Val_int(caml_rev_convert_signal_number(signal_number));
+  value res = caml_callback_exn(handler, signum);
 #ifdef POSIX_SIGNALS
-  if (! in_signal_handler) {
-    /* Restore the original signal mask */
-    pthread_sigmask(SIG_SETMASK, &sigs, NULL);
-  } else if (Is_exception_result(res)) {
-    /* Restore the original signal mask and unblock the signal itself */
-    sigdelset(&sigs, signal_number);
-    pthread_sigmask(SIG_SETMASK, &sigs, NULL);
-  }
+  /* Restore the original signal mask */
+  pthread_sigmask(SIG_SETMASK, &sigs, NULL);
 #endif
   return res;
 }
