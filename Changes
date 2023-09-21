@@ -16,6 +16,10 @@ OCaml 5.1.1
 - #12623, fix the computation of variance composition
   (Florian Angeletti, report by Vesa Karvonen, review by Gabriel Scherer)
 
+- #12590, #12595: Move `caml_collect_gc_stats_sample` in
+  `caml_empty_minor_heap_promote` before barrier arrival.
+  (B. Szilvasy, review by Gabriel Scherer)
+
 - #12645, #12649 fix error messages for cyclic type definitions in presence of
   the `-short-paths` flag.
   (Florian Angeletti, report by Vesa Karvonen, review by Gabriel Scherer)

@@ -455,6 +455,9 @@ void caml_empty_minor_heap_domain_clear(caml_domain_state* domain)
   domain->extra_heap_resources_minor = 0.0;
 }
 
+void caml_do_opportunistic_major_slice
+  (caml_domain_state* domain_unused, void* unused);
+
 void caml_empty_minor_heap_promote(caml_domain_state* domain,
                                    int participating_count,
                                    caml_domain_state** participating)
@@ -637,13 +640,33 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
     + (domain->young_end - domain->young_start) / 2;
   caml_reset_young_limit(domain);
 
+  domain->stat_minor_words += Wsize_bsize (minor_allocated_bytes);
+  domain->stat_promoted_words += domain->allocated_words - prev_alloc_words;
+
+  /* gc stats may be accessed unsynchronised by mutator code, so we collect the
+     sample before arriving at the barrier, which ensures that it doesn't race
+  */
+  caml_collect_gc_stats_sample(domain);
+
+  /* The code above is synchronised with other domains by the barrier below,
+     which is split into two steps, "arriving" and "leaving". When the final
+     domain arrives at the barrier, all other domains are free to leave, after
+     which they finish running the STW callback and may, depending on the
+     specific STW section, begin executing mutator code.
+
+     Leaving the barrier synchronises (only) with the arrivals of other domains,
+     so that all writes performed by a domain before arrival "happen-before" any
+     domain leaves the barrier. However, any code after arrival, including the
+     code between the two steps, can potentially race with mutator code.
+  */
+
+  /* arrive at the barrier */
   if( participating_count > 1 ) {
     atomic_fetch_add_explicit
       (&domains_finished_minor_gc, 1, memory_order_release);
   }
-
-  domain->stat_minor_words += Wsize_bsize (minor_allocated_bytes);
-  domain->stat_promoted_words += domain->allocated_words - prev_alloc_words;
+  /* other domains may be executing mutator code from this point, but
+     not before */
 
   call_timing_hook(&caml_minor_gc_end_hook);
   CAML_EV_COUNTER(EV_C_MINOR_PROMOTED,
@@ -656,6 +679,22 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
                domain->id,
                100.0 * (double)st.live_bytes / (double)minor_allocated_bytes,
                (unsigned)(minor_allocated_bytes + 512)/1024);
+
+  /* leave the barrier */
+  if( participating_count > 1 ) {
+    CAML_EV_BEGIN(EV_MINOR_LEAVE_BARRIER);
+    {
+      SPIN_WAIT {
+        if (atomic_load_acquire(&domains_finished_minor_gc) ==
+            participating_count) {
+          break;
+        }
+
+        caml_do_opportunistic_major_slice(domain, 0);
+      }
+    }
+    CAML_EV_END(EV_MINOR_LEAVE_BARRIER);
+  }
 }
 
 void caml_do_opportunistic_major_slice
@@ -698,24 +737,6 @@ caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
 
   caml_gc_log("running stw empty_minor_heap_promote");
   caml_empty_minor_heap_promote(domain, participating_count, participating);
-
-  /* collect gc stats before leaving the barrier */
-  caml_collect_gc_stats_sample(domain);
-
-  if( participating_count > 1 ) {
-    CAML_EV_BEGIN(EV_MINOR_LEAVE_BARRIER);
-    {
-      SPIN_WAIT {
-        if (atomic_load_acquire(&domains_finished_minor_gc) ==
-            participating_count) {
-          break;
-        }
-
-        caml_do_opportunistic_major_slice(domain, 0);
-      }
-    }
-    CAML_EV_END(EV_MINOR_LEAVE_BARRIER);
-  }
 
   CAML_EV_BEGIN(EV_MINOR_FINALIZERS_ADMIN);
   caml_gc_log("running finalizer data structure book-keeping");
