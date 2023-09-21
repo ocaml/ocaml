@@ -204,6 +204,32 @@ module Array = struct
       done;
       res
 
+  let make_matrix sx sy v =
+    (* We raise even if [sx = 0 && sy < 0]: *)
+    if sy < 0 then invalid_arg "Float.Array.make_matrix";
+    let res = Array.make sx (create 0) in
+    if sy > 0 then begin
+      for x = 0 to sx - 1 do
+        Array.unsafe_set res x (make sy v)
+      done;
+    end;
+    res
+
+  let init_matrix sx sy f =
+    (* We raise even if [sx = 0 && sy < 0]: *)
+    if sy < 0 then invalid_arg "Float.Array.init_matrix";
+    let res = Array.make sx (create 0) in
+    if sy > 0 then begin
+      for x = 0 to sx - 1 do
+        let row = create sy in
+        for y = 0 to sy - 1 do
+          unsafe_set row y (f x y)
+        done;
+        Array.unsafe_set res x row
+      done;
+    end;
+    res
+
   let append a1 a2 =
     let l1 = length a1 in
     let l2 = length a2 in

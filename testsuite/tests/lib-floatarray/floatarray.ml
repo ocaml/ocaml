@@ -11,6 +11,8 @@ module type S = sig
   val make : int -> float -> t
   val create : int -> t
   val init : int -> (int -> float) -> t
+  val make_matrix : int -> int -> float -> t array
+  val init_matrix : int -> int -> (int -> int -> float) -> t array
   val append : t -> t -> t
   val concat : t list -> t
   val sub : t -> int -> int -> t
@@ -124,6 +126,47 @@ module Test (A : S) : sig end = struct
   check_i a;
   check_inval (fun i -> A.init i Float.of_int) (-1);
   check_inval (fun i -> A.init i Float.of_int) (A.max_length + 1);
+
+  (* [make_matrix] *)
+  let check_make_matrix m n =
+    let a = A.make_matrix m n 42. in
+    assert (Array.length a = m);
+    for i = 0 to m-1 do
+      let row = Array.get a i in
+      assert (A.length row = n);
+      for j = 0 to n-1 do
+        assert (A.get row j = 42.);
+        A.set row j (Float.of_int (i*n + j));
+      done;
+    done;
+    (* check absence of sharing: *)
+    if n > 0 then begin
+      for i = 0 to m-1 do
+        assert (A.get (Array.get a i) 0 = Float.of_int (i*n));
+      done
+    end
+  in
+  check_make_matrix 0 0;
+  check_make_matrix 0 3;
+  check_make_matrix 5 0;
+  check_make_matrix 5 3;
+
+  (* [init_matrix] *)
+  let check_init_matrix m n =
+    let a = A.init_matrix m n (fun i j -> Float.of_int (i*n + j)) in
+    assert (Array.length a = m);
+    for i = 0 to m-1 do
+      let row = Array.get a i in
+      assert (A.length row = n);
+      for j = 0 to n-1 do
+        assert (A.get row j = Float.of_int (i*n + j));
+      done;
+    done;
+  in
+  check_init_matrix 0 0;
+  check_init_matrix 0 3;
+  check_init_matrix 5 0;
+  check_init_matrix 5 3;
 
   (* [append] *)
   let check m n =

@@ -47,7 +47,8 @@ end
 let init l f =
   if l = 0 then [||] else
   if l < 0 then invalid_arg "Array.init"
-  (* See #6575. We could also check for maximum array size, but this depends
+  (* See #6575. We must not evaluate [f 0] when [l <= 0].
+     We could also check for maximum array size, but this depends
      on whether we create a float array or a regular one... *)
   else
    let res = create l (f 0) in
@@ -57,10 +58,30 @@ let init l f =
    res
 
 let make_matrix sx sy init =
+  (* We raise even if [sx = 0 && sy < 0]: *)
+  if sy < 0 then invalid_arg "Array.make_matrix";
   let res = create sx [||] in
-  for x = 0 to pred sx do
-    unsafe_set res x (create sy init)
-  done;
+  if sy > 0 then begin
+    for x = 0 to pred sx do
+      unsafe_set res x (create sy init)
+    done;
+  end;
+  res
+
+let init_matrix sx sy f =
+  (* We raise even if [sx = 0 && sy < 0]: *)
+  if sy < 0 then invalid_arg "Array.init_matrix";
+  let res = create sx [||] in
+  (* We must not evaluate [f x 0] when [sy <= 0]: *)
+  if sy > 0 then begin
+    for x = 0 to pred sx do
+      let row = create sy (f x 0) in
+      for y = 1 to pred sy do
+        unsafe_set row y (f x y)
+      done;
+      unsafe_set res x row
+    done;
+  end;
   res
 
 let copy a =

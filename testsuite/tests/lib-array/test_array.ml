@@ -177,3 +177,21 @@ let a : int array =
 [%%expect{|
 val a : int array = [|2; 4; 6; 8|]
 |}]
+
+let a = Array.make_matrix 2 3 "placeholder";;
+a.(0).(0) <- "hello";;
+a (* other rows are unchanged *);;
+[%%expect{|
+val a : string array array =
+  [|[|"placeholder"; "placeholder"; "placeholder"|];
+    [|"placeholder"; "placeholder"; "placeholder"|]|]
+- : unit = ()
+- : string array array =
+[|[|"hello"; "placeholder"; "placeholder"|];
+  [|"placeholder"; "placeholder"; "placeholder"|]|]
+|}]
+
+let a = Array.init_matrix 2 3 (fun i j -> 10 * i + j);;
+[%%expect{|
+val a : int array array = [|[|0; 1; 2|]; [|10; 11; 12|]|]
+|}]

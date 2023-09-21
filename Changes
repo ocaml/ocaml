@@ -165,6 +165,15 @@ Working version
   (Nicolás Ojeda Bär, review by Jeremy Yallop, Xavier Leroy, Gabriel Scherer,
    David Allsopp)
 
+- #12455: Add `Array.init_matrix`, `Float.Array.make_matrix`,
+  `Float.Array.init_matrix`.
+  (Glen Mével, review by Xavier Leroy, Gabriel Scherer, Jeremy Yallop,
+  Nicolas Ojeda Bar)
+
+* #12455: `Array.make_matrix dimx dimy f` now raises `Invalid_argument`
+  when `dimx = 0 && dimy < 0` This was already specified but not enforced.
+  (Glen Mével, report by Jeremy Yallop, review by Nicolas Ojeda Bar)
+
 - #12511: Minor performance improvements and cleanups in the implementation
   of modules Int32, Int64, and Nativeint
   (Xavier Leroy, review by Gabriel Scherer and Daniel Bünzli)
