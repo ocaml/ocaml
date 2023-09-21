@@ -235,11 +235,11 @@ val pp_print_string : formatter -> string -> unit
 val print_string : string -> unit
 (** [pp_print_string ppf s] prints [s] in the current pretty-printing box. *)
 
-val pp_print_substring : first:int -> len:int -> formatter -> string -> unit
-val print_substring : first:int -> len:int -> string -> unit
-(** [pp_print_substring ~first ~len ppf s] prints the substring of [s]
-  that starts at index [start] and stop at index [start+len] in the current
-  pretty-printing box.
+val pp_print_substring : pos:int -> len:int -> formatter -> string -> unit
+val print_substring : pos:int -> len:int -> string -> unit
+(** [pp_print_substring ~pos ~len ppf s] prints the substring of [s] that starts
+    at position [pos] and stops at position [pos+len] in the current
+    pretty-printing box.
   @since 5.1
 *)
 
@@ -256,10 +256,10 @@ val print_as : int -> string -> unit
 *)
 
 val pp_print_substring_as :
-  first:int -> len:int -> formatter -> int -> string -> unit
-val print_substring_as : first:int -> len:int -> int -> string -> unit
+  pos:int -> len:int -> formatter -> int -> string -> unit
+val print_substring_as : pos:int -> len:int -> int -> string -> unit
 (** [pp_print_substring_as ~first ~len ppf len_as s] prints the substring of [s]
-  that starts at index [start] and stop at index [start+len] in the current
+  that starts at position [pos] and stop at position [pos+len] in the current
   pretty-printing box as if it were of length [len_as].
   @since 5.1
 *)

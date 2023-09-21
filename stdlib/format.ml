@@ -67,7 +67,7 @@ type box_type = CamlinternalFormatBasics.block_type =
    elements that drive indentation and line splitting. *)
 type pp_token =
   | Pp_text of string          (* normal text *)
-  | Pp_substring of { source:string; first:int; len:int} (* slice of text *)
+  | Pp_substring of { source:string; pos:int; len:int} (* slice of text *)
   | Pp_break of {              (* complete break *)
       fits: string * int * string;   (* line is not split *)
       breaks: string * int * string; (* line is split *)
@@ -250,8 +250,8 @@ let pp_infinity = 1000000010
 
 (* Output functions for the formatter. *)
 let pp_output_string state s = state.pp_out_string s 0 (String.length s)
-and pp_output_substring state ~first ~len s =
-  state.pp_out_string s first len
+and pp_output_substring state ~pos ~len s =
+  state.pp_out_string s pos len
 and pp_output_newline state = state.pp_out_newline ()
 and pp_output_spaces state n = state.pp_out_spaces n
 and pp_output_indent state n = state.pp_out_indent n
@@ -263,9 +263,9 @@ let format_pp_text state size text =
   state.pp_is_new_line <- false
 
 (* Format a slice *)
-let format_pp_substring state size ~first ~len source =
+let format_pp_substring state size ~pos ~len source =
   state.pp_space_left <- state.pp_space_left - size;
-  pp_output_substring state ~first ~len source;
+  pp_output_substring state ~pos ~len source;
   state.pp_is_new_line <- false
 
 (* Format a string by its length, if not empty *)
@@ -329,8 +329,8 @@ let pp_skip_token state =
 let format_pp_token state size = function
   | Pp_text s ->
     format_pp_text state size s
-  | Pp_substring {source;first;len} ->
-    format_pp_substring state size ~first ~len source
+  | Pp_substring {source;pos;len} ->
+    format_pp_substring state size ~pos ~len source
   | Pp_begin (off, ty) ->
     let insertion_point = state.pp_margin - state.pp_space_left in
     if insertion_point > state.pp_max_indent then
@@ -459,8 +459,8 @@ let enqueue_string_as state size s =
   enqueue_advance state { size; token = Pp_text s; length = Size.to_int size }
 
 (* To enqueue substrings. *)
-let enqueue_substring_as ~first ~len state size source =
-  let token = Pp_substring {source;first;len} in
+let enqueue_substring_as ~pos ~len state size source =
+  let token = Pp_substring {source;pos;len} in
   enqueue_advance state { size; token; length = Size.to_int size }
 
 let enqueue_string state s =
@@ -646,12 +646,12 @@ let pp_print_as state isize s =
 let pp_print_string state s =
   pp_print_as state (String.length s) s
 
-let pp_print_substring_as ~first ~len state size s =
+let pp_print_substring_as ~pos ~len state size s =
   if state.pp_curr_depth < state.pp_max_boxes
-  then enqueue_substring_as ~first ~len state (Size.of_int size) s
+  then enqueue_substring_as ~pos ~len state (Size.of_int size) s
 
-let pp_print_substring ~first ~len state s =
-  pp_print_substring_as ~first ~len state len s
+let pp_print_substring ~pos ~len state s =
+  pp_print_substring_as ~pos ~len state len s
 
 let pp_print_bytes state s =
   pp_print_as state (Bytes.length s) (Bytes.to_string s)
@@ -1203,10 +1203,10 @@ and open_stag v = pp_open_stag (DLS.get std_formatter_key) v
 and close_stag v = pp_close_stag (DLS.get std_formatter_key) v
 and print_as v w = pp_print_as (DLS.get std_formatter_key) v w
 and print_string v = pp_print_string (DLS.get std_formatter_key) v
-and print_substring ~first ~len v =
-  pp_print_substring  ~first ~len (DLS.get std_formatter_key) v
-and print_substring_as ~first ~len as_len v =
-  pp_print_substring_as ~first ~len (DLS.get std_formatter_key) as_len v
+and print_substring ~pos ~len v =
+  pp_print_substring  ~pos ~len (DLS.get std_formatter_key) v
+and print_substring_as ~pos ~len as_len v =
+  pp_print_substring_as ~pos ~len (DLS.get std_formatter_key) as_len v
 and print_bytes v = pp_print_bytes (DLS.get std_formatter_key) v
 and print_int v = pp_print_int (DLS.get std_formatter_key) v
 and print_float v = pp_print_float (DLS.get std_formatter_key) v
@@ -1304,7 +1304,7 @@ let pp_print_text ppf s =
   let left = ref 0 in
   let right = ref 0 in
   let flush () =
-    pp_print_substring ppf s ~first:!left ~len:(!right - !left);
+    pp_print_substring ppf s ~pos:!left ~len:(!right - !left);
     incr right; left := !right;
   in
   while (!right <> len) do
