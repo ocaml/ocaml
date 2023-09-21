@@ -36,7 +36,7 @@ let run () =
   (* Goal: joining the domain [d] must be achievable by Ctrl-C *)
   let d = Domain.spawn (fun () -> break_trap "Domain 1")
   in
-  let finished = ref false in
+  let finished = Atomic.make false in
   (* Simulate repeated Ctrl-C *)
   let d2 = Domain.spawn (fun () ->
     ignore (Thread.sigmask Unix.SIG_BLOCK [Sys.sigint]);
@@ -48,14 +48,14 @@ let run () =
       );
       Unix.sleepf 0.05;
       Unix.kill pid Sys.sigint;
-      if not !finished then kill (n - 1)
+      if not (Atomic.get finished) then kill (n - 1)
     in
     kill 10)
   in
   break_trap "Domain 0 - 1";
   Domain.join d;
   break_trap "Domain 0 - 2";
-  finished := true;
+  Atomic.set finished true;
   Domain.join d2
 
 let () =
