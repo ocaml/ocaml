@@ -827,12 +827,15 @@ let solve_constructor_annotation
     List.iter
       (fun id ->
         let decl, tv' = get_decl_manifest id !!penv in
+        let tv' = expand_head !!penv tv' in
         begin match get_desc tv' with
         | Tconstr (Path.Pident id', [], _) when
             Ident.scope id' = penv.equations_scope ->
               if List.exists (Ident.same id') !bound_ids then
                 raise (Error (cty.ctyp_loc, !!penv,
                               Bind_existential (Bind_already_bound, id, tv')));
+              (* Both id and id' are Scoped identifiers, so Ident.compare
+                 will only compare their stamps *)
               if Ident.compare id id' > 0 then
                 raise (Error (cty.ctyp_loc, !!penv,
                               Bind_existential (Bind_not_in_scope, id, tv')));
