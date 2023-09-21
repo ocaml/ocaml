@@ -195,3 +195,30 @@ type _ ty = Int : int ty | Pair : 'b ty * 'c ty -> ('b * 'c) ty
 val example : 'a ty -> 'a = <fun>
 val example : 'a ty -> 'a = <fun>
 |}]
+
+
+(* check locality *)
+type 'a wrap = Wrap of 'a
+type _ ty = Int : int ty | Pair : ('b ty * 'c ty) wrap -> ('b * 'c) ty
+(* ok *)
+let rec default : type a. a ty -> a = function
+  | Int -> 0
+  | Pair (type b c) (Wrap (b, c) : (b ty * c ty) wrap) ->
+      (default b : b), (default c : c)
+[%%expect{|
+type 'a wrap = Wrap of 'a
+type _ ty = Int : int ty | Pair : ('b ty * 'c ty) wrap -> ('b * 'c) ty
+val default : 'a ty -> 'a = <fun>
+|}]
+(* ko *)
+let rec default : type a. a ty -> a = function
+  | Int -> 0
+  | Pair (Wrap (type b c) (b, c : b ty * c ty)) ->
+      (default b : b), (default c : c)
+[%%expect{|
+Line 3, characters 34-45:
+3 |   | Pair (Wrap (type b c) (b, c : b ty * c ty)) ->
+                                      ^^^^^^^^^^^
+Error: This type annotation attempts to bind "b"
+       to the previously defined existential "$0".
+|}]

@@ -6924,7 +6924,7 @@ let report_error ~loc env = function
   | Bind_existential (reason, id, ty) ->
       let reason = match reason with
       | Bind_already_bound -> "already bound existential"
-      | Bind_not_in_scope -> "out-of-scope existential"
+      | Bind_not_in_scope -> "previously defined existential"
       | Bind_non_locally_abstract -> "non-locally-abstract type"
       in
       Location.errorf ~loc
