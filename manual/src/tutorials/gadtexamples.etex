@@ -276,9 +276,9 @@ All existential type variables of the constructor must be introduced by
 the ("type" ...) construct and bound by a type annotation on the
 outside of the constructor argument.
 
-One can additionally bind closed types that appear in the type of the
-arguments. This is particularly useful if they were freshly introduced
-by the refinement of another existential type.
+One can additionally bind existentials that were freshly introduced
+by the refinement of another existential type, if they appear in the
+type of the arguments.
 \begin{caml_example*}{verbatim}
 type _ ty =
   | Int : int ty
