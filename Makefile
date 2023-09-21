@@ -163,6 +163,7 @@ lambda_SOURCES = $(addprefix lambda/, \
   printlambda.mli printlambda.ml \
   switch.mli switch.ml \
   matching.mli matching.ml \
+  value_rec_compiler.mli value_rec_compiler.ml \
   translobj.mli translobj.ml \
   translattribute.mli translattribute.ml \
   translprim.mli translprim.ml \

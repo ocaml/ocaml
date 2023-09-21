@@ -312,8 +312,7 @@ type lambda =
 
 and rec_binding = {
   id : Ident.t;
-  rkind : Value_rec_types.recursive_binding_kind;
-  def : lambda;
+  def : lfunction;
 }
 
 and lfunction = private
@@ -386,6 +385,15 @@ val lfunction :
   attr:function_attribute -> (* specified with [@inline] attribute *)
   loc:scoped_location ->
   lambda
+
+val lfunction' :
+  kind:function_kind ->
+  params:(Ident.t * value_kind) list ->
+  return:value_kind ->
+  body:lambda ->
+  attr:function_attribute -> (* specified with [@inline] attribute *)
+  loc:scoped_location ->
+  lfunction
 
 
 val iter_head_constructor: (lambda -> unit) -> lambda -> unit
@@ -493,3 +501,4 @@ val merge_inline_attributes
   -> inline_attribute option
 
 val reset: unit -> unit
+

@@ -940,7 +940,7 @@ and traverse_let outer_ctx var def =
 and traverse_letrec ctx bindings =
   let ctx =
     List.fold_left declare_binding ctx
-      (List.map (fun { id; rkind=_; def } -> id, def) bindings)
+      (List.map (fun { id; def } -> id, Lfunction def) bindings)
   in
   let bindings =
     List.concat_map (traverse_binding Recursive ctx ctx) bindings
@@ -952,21 +952,22 @@ and traverse_binding :
   fun binding_kind outer_ctx inner_ctx binding ->
   let (var, def) : Ident.t * lambda =
     match binding_kind, binding with
-    | Recursive, { id; rkind=_; def } -> id, def
+    | Recursive, { id; def } -> id, Lfunction def
     | Non_recursive, (var, def) -> var, def
   in
-  let mk_same_binding (var : Ident.t) (def : lambda) : a =
-    match binding_kind, binding with
-    | Recursive, { id=_; rkind; def=_ } -> { id = var; rkind; def }
-    | Non_recursive, _ -> var, def
-  in
-  let mk_static_binding (var : Ident.t) (def : lambda) : a =
-    match binding_kind, binding with
-    | Recursive, _ -> { id = var; rkind = Static; def }
-    | Non_recursive, _ -> var, def
+  let mk_binding (var : Ident.t) (def : lambda) : a =
+    match binding_kind with
+    | Recursive ->
+        let def =
+          match def with
+          | Lfunction lfun -> lfun
+          | _ -> assert false
+        in
+        { id = var; def }
+    | Non_recursive -> var, def
   in
   match find_candidate def with
-  | None -> [mk_same_binding var (traverse outer_ctx def)]
+  | None -> [mk_binding var (traverse outer_ctx def)]
   | Some lfun ->
   let special = Ident.Map.find var inner_ctx.specialized in
   let fun_choice = choice outer_ctx ~tail:true lfun.body in
@@ -996,7 +997,7 @@ and traverse_binding :
       ~loc:lfun.loc
   in
   let dps_var = special.dps_id in
-  [mk_static_binding var direct; mk_static_binding dps_var dps]
+  [mk_binding var direct; mk_binding dps_var dps]
 
 and traverse_list ctx terms =
   List.map (traverse ctx) terms

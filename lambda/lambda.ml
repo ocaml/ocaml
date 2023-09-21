@@ -317,8 +317,7 @@ type lambda =
 
 and rec_binding = {
   id : Ident.t;
-  rkind : Value_rec_types.recursive_binding_kind;
-  def : lambda;
+  def : lfunction;
 }
 
 and lfunction =
@@ -371,9 +370,12 @@ let max_arity () =
   (* 126 = 127 (the maximal number of parameters supported in C--)
            - 1 (the hidden parameter containing the environment) *)
 
-let lfunction ~kind ~params ~return ~body ~attr ~loc =
+let lfunction' ~kind ~params ~return ~body ~attr ~loc =
   assert (List.length params <= max_arity ());
-  Lfunction { kind; params; return; body; attr; loc }
+  { kind; params; return; body; attr; loc }
+
+let lfunction ~kind ~params ~return ~body ~attr ~loc =
+  Lfunction (lfunction' ~kind ~params ~return ~body ~attr ~loc)
 
 let lambda_unit = Lconst const_unit
 
@@ -529,7 +531,7 @@ let shallow_iter ~tail ~non_tail:f = function
       f arg; tail body
   | Lletrec(decl, body) ->
       tail body;
-      List.iter (fun { def } -> f def) decl
+      List.iter (fun { def } -> f (Lfunction def)) decl
   | Lprim (Psequand, [l1; l2], _)
   | Lprim (Psequor, [l1; l2], _) ->
       f l1;
@@ -588,7 +590,7 @@ let rec free_variables = function
   | Lletrec(decl, body) ->
       let set =
         free_variables_list (free_variables body)
-          (List.map (fun { def } -> def) decl)
+          (List.map (fun { def } -> Lfunction def) decl)
       in
       Ident.Set.diff set
         (Ident.Set.of_list (List.map (fun { id } -> id) decl))
@@ -780,8 +782,7 @@ let subst update_env ?(freshen_bound_variables = false) s input_lam =
         Lapply{ap with ap_func = subst s l ap.ap_func;
                       ap_args = subst_list s l ap.ap_args}
     | Lfunction lf ->
-        let params, l' = bind_many lf.params l in
-        Lfunction {lf with params; body = subst s l' lf.body}
+        Lfunction (subst_lfun s l lf)
     | Llet(str, k, id, arg, body) ->
         let id, l' = bind id l in
         Llet(str, k, id, subst s l arg, subst s l' body)
@@ -855,7 +856,10 @@ let subst update_env ?(freshen_bound_variables = false) s input_lam =
         let id = try Ident.Map.find id l with Not_found -> id in
         Lifused (id, subst s l e)
   and subst_list s l li = List.map (subst s l) li
-  and subst_decl s l decl = { decl with def = subst s l decl.def }
+  and subst_decl s l decl = { decl with def = subst_lfun s l decl.def }
+  and subst_lfun s l lf =
+    let params, l' = bind_many lf.params l in
+    { lf with params; body = subst s l' lf.body }
   and subst_case s l (key, case) = (key, subst s l case)
   and subst_strcase s l (key, case) = (key, subst s l case)
   and subst_opt s l = function
@@ -900,7 +904,11 @@ let shallow_map f = function
   | Lmutlet (k, v, e1, e2) ->
       Lmutlet (k, v, f e1, f e2)
   | Lletrec (idel, e2) ->
-      Lletrec (List.map (fun rb -> { rb with def = f rb.def }) idel, f e2)
+      Lletrec
+        (List.map (fun rb ->
+             { rb with def = { rb.def with body = f rb.def.body } })
+            idel,
+         f e2)
   | Lprim (p, el, loc) ->
       Lprim (p, List.map f el, loc)
   | Lswitch (e, sw, loc) ->

@@ -40,11 +40,10 @@ let rec eliminate_ref id = function
   | Lmutlet(kind, v, e1, e2) ->
       Lmutlet(kind, v, eliminate_ref id e1, eliminate_ref id e2)
   | Lletrec(idel, e2) ->
-      let bindings =
-        List.map (fun rb -> { rb with def = eliminate_ref id rb.def })
-          idel
-      in
-      Lletrec(bindings, eliminate_ref id e2)
+      if Ident.Set.mem id (free_variables (Lletrec (idel, lambda_unit)))
+      then raise Real_reference
+      else
+        Lletrec(idel, eliminate_ref id e2)
   | Lprim(Pfield (0, _, _), [Lvar v], _) when Ident.same v id ->
       Lmutvar id
   | Lprim(Psetfield(0, _, _), [Lvar v; e], _) when Ident.same v id ->
@@ -132,7 +131,7 @@ let simplify_exits lam =
   | Lmutlet(_kind, _v, l1, l2) ->
       count ~try_depth l2; count ~try_depth l1
   | Lletrec(bindings, body) ->
-      List.iter (fun { def } -> count ~try_depth def) bindings;
+      List.iter (fun { def = { body } } -> count ~try_depth body) bindings;
       count ~try_depth body
   | Lprim(_p, ll, _) -> List.iter (count ~try_depth) ll
   | Lswitch(l, sw, _loc) ->
@@ -230,7 +229,13 @@ let simplify_exits lam =
       Lmutlet(kind, v, simplif ~try_depth l1, simplif ~try_depth l2)
   | Lletrec(bindings, body) ->
       let bindings =
-        List.map (fun rb -> { rb with def = simplif ~try_depth rb.def })
+        List.map (fun ({ def = {kind; params; return; body = l; attr; loc} }
+                       as rb) ->
+                   let def =
+                     lfunction' ~kind ~params ~return
+                       ~body:(simplif ~try_depth l) ~attr ~loc
+                   in
+                   { rb with def })
           bindings
       in
       Lletrec(bindings, simplif ~try_depth body)
@@ -423,7 +428,7 @@ let simplify_lets lam =
      count bv l1;
      count bv l2
   | Lletrec(bindings, body) ->
-      List.iter (fun { def } -> count bv def) bindings;
+      List.iter (fun { def } -> count bv def.body) bindings;
       count bv body
   | Lprim(_p, ll, _) -> List.iter (count bv) ll
   | Lswitch(l, sw, _loc) ->
@@ -567,7 +572,11 @@ let simplify_lets lam =
   | Lmutlet(kind, v, l1, l2) -> mkmutlet kind v (simplif l1) (simplif l2)
   | Lletrec(bindings, body) ->
       let bindings =
-        List.map (fun rb -> { rb with def = simplif rb.def })
+        List.map (fun rb ->
+            let def = simplif (Lfunction rb.def) in
+            match def with
+            | Lfunction def -> { rb with def }
+            | _ -> Misc.fatal_error "Lfunction not simplified into a function")
           bindings
       in
       Lletrec(bindings, simplif body)
@@ -643,7 +652,7 @@ let rec emit_tail_infos is_tail lambda =
       emit_tail_infos false lam;
       emit_tail_infos is_tail body
   | Lletrec (bindings, body) ->
-      List.iter (fun { def } -> emit_tail_infos false def) bindings;
+      List.iter (fun { def } -> emit_tail_infos true def.body) bindings;
       emit_tail_infos is_tail body
   | Lprim ((Pbytes_to_string | Pbytes_of_string), [arg], _) ->
       emit_tail_infos is_tail arg
@@ -763,21 +772,22 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~return ~body ~attr ~loc =
         in
         let body = Lambda.rename subst body in
         let inner_fun =
-          lfunction ~kind:Curried
+          lfunction' ~kind:Curried
             ~params:(List.map (fun id -> id, Pgenval) new_ids)
             ~return ~body ~attr ~loc
         in
-        (wrapper_body, { id = inner_id; rkind = Static; def = inner_fun })
+        (wrapper_body, { id = inner_id;
+                         def = inner_fun })
   in
   try
     let body, inner = aux [] body in
     let attr = default_stub_attribute in
-    [{ id = fun_id; rkind = Static;
-       def = lfunction ~kind ~params ~return ~body ~attr ~loc };
+    [{ id = fun_id;
+       def = lfunction' ~kind ~params ~return ~body ~attr ~loc };
      inner]
   with Exit ->
-    [{ id = fun_id; rkind = Static;
-       def = lfunction ~kind ~params ~return ~body ~attr ~loc }]
+    [{ id = fun_id;
+       def = lfunction' ~kind ~params ~return ~body ~attr ~loc }]
 
 (* Simplify local let-bound functions: if all occurrences are
    fully-applied function calls in the same "tail scope", replace the
