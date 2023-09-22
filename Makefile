@@ -45,7 +45,6 @@ endif
 
 OC_OCAMLDEPDIRS = $(VPATH)
 
-OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
 OCAMLTEST_OPT=$(WITH_OCAMLTEST:=.opt)
 
 # This list is passed to expunge, which accepts both uncapitalized and
@@ -743,13 +742,14 @@ ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 	$(MAKE) flexlink.opt$(EXE)
 endif
 	$(MAKE) ocamlc.opt
-	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) \
+	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(OCAMLDOC_TARGET) \
 	  $(WITH_OCAMLTEST)
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
-	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
+	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt \
+	  $(OCAMLDOC_OPT_TARGET) \
 	  $(OCAMLTEST_OPT) othertools ocamlnat
-ifeq "$(WITH_OCAMLDOC)-$(STDLIB_MANPAGES)" "ocamldoc-true"
+ifeq "$(build_ocamldoc)-$(STDLIB_MANPAGES)" "true-true"
 	$(MAKE) manpages
 endif
 
@@ -786,10 +786,10 @@ endif
 .PHONY: all
 all: coreall
 	$(MAKE) ocaml
-	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) \
+	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(OCAMLDOC_TARGET) \
          $(WITH_OCAMLTEST)
 	$(MAKE) othertools
-ifeq "$(WITH_OCAMLDOC)-$(STDLIB_MANPAGES)" "ocamldoc-true"
+ifeq "$(build_ocamldoc)-$(STDLIB_MANPAGES)" "true-true"
 	$(MAKE) manpages
 endif
 
@@ -2408,7 +2408,7 @@ endif
 ifeq "$(build_ocamldoc)" "true"
 	$(MAKE) -C ocamldoc install
 endif
-ifeq "$(WITH_OCAMLDOC)-$(STDLIB_MANPAGES)" "ocamldoc-true"
+ifeq "$(build_ocamldoc)-$(STDLIB_MANPAGES)" "true-true"
 	$(MAKE) -C api_docgen install
 endif
 	if test -n "$(WITH_DEBUGGER)"; then \

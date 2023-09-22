@@ -182,8 +182,10 @@ AC_SUBST([as_has_debug_prefix_map])
 AC_SUBST([with_debugger]) # TODO: rename this variable
 AC_SUBST([build_ocamldebug])
 AC_SUBST([build_ocamltex])
-AC_SUBST([ocamldoc])
 AC_SUBST([build_ocamldoc])
+AC_SUBST([ocamldoc_target])
+AC_SUBST([ocamldoc_opt_target])
+AC_SUBST([with_ocamldoc])
 AC_SUBST([documentation_tool])
 AC_SUBST([documentation_tool_cmd])
 AC_SUBST([ocamltest])
@@ -2250,9 +2252,13 @@ AS_IF([test x"$enable_installing_source_artifacts" = "xno"],
   [install_source_artifacts=true])
 
 AS_IF([test x"$enable_ocamldoc" = "xno"],
-  [ocamldoc=""
+  [ocamldoc_target=""
+  ocamldoc_opt_target=""
+  with_ocamldoc=""
   build_ocamldoc=false],
-  [ocamldoc=ocamldoc
+  [ocamldoc_target=ocamldoc
+  ocamldoc_opt_target=ocamldoc.opt
+  with_ocamldoc=ocamldoc
   build_ocamldoc=true
   AC_CONFIG_FILES([ocamldoc/META])])
 

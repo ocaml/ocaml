@@ -817,8 +817,10 @@ ASPP
 ocamltest
 documentation_tool_cmd
 documentation_tool
+with_ocamldoc
+ocamldoc_opt_target
+ocamldoc_target
 build_ocamldoc
-ocamldoc
 build_ocamltex
 build_ocamldebug
 with_debugger
@@ -3378,6 +3380,8 @@ OCAML_VERSION_SHORT=5.2
 
 
  # TODO: rename this variable
+
+
 
 
 
@@ -19721,10 +19725,14 @@ fi
 
 if test x"$enable_ocamldoc" = "xno"
 then :
-  ocamldoc=""
+  ocamldoc_target=""
+  ocamldoc_opt_target=""
+  with_ocamldoc=""
   build_ocamldoc=false
 else $as_nop
-  ocamldoc=ocamldoc
+  ocamldoc_target=ocamldoc
+  ocamldoc_opt_target=ocamldoc.opt
+  with_ocamldoc=ocamldoc
   build_ocamldoc=true
   ac_config_files="$ac_config_files ocamldoc/META"
 
