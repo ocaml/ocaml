@@ -2607,15 +2607,18 @@ let maybe_expansive e = not (is_nonexpansive e)
 
 let annotate_recursive_bindings env valbinds =
   let ids = let_bound_idents valbinds in
-  List.fold_right
-    (fun {vb_pat; vb_expr; vb_rec_kind = _; vb_attributes; vb_loc} bindings ->
-       match (Rec_check.is_valid_recursive_expression ids vb_expr) with
-       | None ->
-         raise(Error(vb_expr.exp_loc, env, Illegal_letrec_expr))
-       | Some vb_rec_kind ->
-         { vb_pat; vb_expr; vb_rec_kind; vb_attributes; vb_loc} :: bindings
-    )
-    valbinds []
+  let rev_bindings =
+    List.fold_left
+      (fun bindings {vb_pat; vb_expr; vb_rec_kind = _; vb_attributes; vb_loc} ->
+         match (Rec_check.is_valid_recursive_expression ids vb_expr) with
+         | None ->
+           raise(Error(vb_expr.exp_loc, env, Illegal_letrec_expr))
+         | Some vb_rec_kind ->
+           { vb_pat; vb_expr; vb_rec_kind; vb_attributes; vb_loc} :: bindings
+      )
+      [] valbinds
+  in
+  List.rev rev_bindings
 
 let check_recursive_class_bindings env ids exprs =
   List.iter

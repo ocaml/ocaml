@@ -24,11 +24,6 @@ val x : unit = ()
 
 let rec x = let y = () in x;;
 [%%expect{|
-Line 1, characters 16-17:
-1 | let rec x = let y = () in x;;
-                    ^
-Warning 26 [unused-var]: unused variable y.
-
 Line 1, characters 12-27:
 1 | let rec x = let y = () in x;;
                 ^^^^^^^^^^^^^^^

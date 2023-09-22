@@ -30,16 +30,6 @@ class c = object
 end;;
 let _ = print_float (new c)#m;;
 [%%expect{|
-Line 4, characters 12-13:
-4 |     let rec x = (f <- y; ()) and y = 2.0 in f
-                ^
-Warning 26 [unused-var]: unused variable x.
-
-Line 4, characters 33-34:
-4 |     let rec x = (f <- y; ()) and y = 2.0 in f
-                                     ^
-Warning 26 [unused-var]: unused variable y.
-
 Line 4, characters 16-28:
 4 |     let rec x = (f <- y; ()) and y = 2.0 in f
                     ^^^^^^^^^^^^
