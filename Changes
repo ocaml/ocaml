@@ -105,7 +105,7 @@ Working version
 
 - #12114: Add ThreadSanitizer support
   (Fabrice Buoro and Olivier Nicole, based on an initial work by Anmol Sahoo,
-   review by Damien Doligez, Sebastien Hinderer, Jacques-Henri Jourdan, Luc
+   review by Damien Doligez, Sébastien Hinderer, Jacques-Henri Jourdan, Luc
    Maranget, Guillaume Munch-Maccagnoni, Gabriel Scherer)
 
 - #11911, #12381: Restore statmemprof functionality in part
@@ -524,7 +524,7 @@ OCaml 5.1.0 (14 September 2023)
   fold_right : ('a -> 'acc -> 'acc) -> 'a list -> 'acc -> 'acc
   fold_left_map : ('acc -> 'a -> 'acc * 'b) -> 'acc -> 'a list -> 'acc * 'b list
   ...
-  (Valentin Gatien-Baron and Francois Berenger,
+  (Valentin Gatien-Baron and François Berenger,
   review by Gabriel Scherer and Nicolás Ojeda Bär)
 
 - #11354: Hashtbl.find_all is now tail-recursive.
@@ -605,7 +605,7 @@ Some of those changes will benefit all OCaml packages.
   (Fabrice Buoro and Stephen Dolan, review by Gabriel Scherer and Sadiq Jaffer)
 
 - #11144: Restore frame-pointers support for amd64
-  (Fabrice Buoro, review by Frederic Bour and KC Sivaramakrishnan)
+  (Fabrice Buoro, review by Frédéric Bour and KC Sivaramakrishnan)
 
 - #11935: Load frametables of dynlink'd modules in batch
   (Stephen Dolan, review by David Allsopp and Guillaume Munch-Maccagnoni)
@@ -709,7 +709,7 @@ Some of those changes will benefit all OCaml packages.
   was made based on the type of `F`. With this patch, we now distinguish
   these two application forms; writing `F (struct end)` for a generative
   functor leads to new warning 73.
-  (Frederic Bour and Richard Eisenberg, review by Florian Angeletti)
+  (Frédéric Bour and Richard Eisenberg, review by Florian Angeletti)
 
 
 - #9975, #11365: Make empty types (`type t = |`) immediate.
@@ -1598,7 +1598,7 @@ OCaml 5.0.0 (15 December 2022)
 
 - #11309, #11424, #11427, #11545: Add Domain.recommended_domain_count.
   (Christiano Haesbaert, Konstantin Belousov, review by David Allsopp,
-  KC Sivaramakrishnan, Gabriel Scherer, Nicolas Ojeda Bar)
+  KC Sivaramakrishnan, Gabriel Scherer, Nicolás Ojeda Bär)
 
 - #11461, #11466: Fix gethostbyaddr for IPv6 arguments and make it domain-safe
   (Olivier Nicole, Nicolás Ojeda Bär, David Allsopp and Xavier Leroy,
@@ -2626,7 +2626,7 @@ OCaml 4.13.0 (24 September 2021)
 
 - #1400: Add an optional invariants check on Cmm, which can be activated
   with the -dcmm-invariants flag
-  (Vincent Laviron, with help from Sebastien Hinderer, review by Stephen Dolan
+  (Vincent Laviron, with help from Sébastien Hinderer, review by Stephen Dolan
    and David Allsopp)
 
 - #9562, #367: Allow CSE of immutable loads across stores
@@ -2662,7 +2662,7 @@ OCaml 4.13.0 (24 September 2021)
 
 - #9487, #9489: Add Random.full_int which allows 62-bit bounds on 64-bit
   systems.
-  (David Allsopp, request by Francois Berenger, review by Xavier Leroy and
+  (David Allsopp, request by François Berenger, review by Xavier Leroy and
    Damien Doligez)
 
 - #9961: Add Array.fold_left_map.
@@ -3656,7 +3656,7 @@ OCaml 4.12.0 (24 February 2021)
    not low (Chet Murthy, review by Florian Angeletti)
 
 -  #9590: fix pprint of extension constructors (and exceptions) that rebind
-   (Chet Murthy, review by octachron@)
+   (Chet Murthy, review by Florian Angeletti)
 
 - #9963: Centralized tracking of frontend's global state
   (Frédéric Bour and Thomas Refis, review by Gabriel Scherer)
@@ -3714,7 +3714,7 @@ OCaml 4.12.0 (24 February 2021)
 
 - #7902, #9556: Type-checker infers recursive type, even though -rectypes is
   off.
-  (Jacques Garrigue, report by Francois Pottier, review by Leo White)
+  (Jacques Garrigue, report by François Pottier, review by Leo White)
 
 - #8746: Hashtbl: Restore ongoing traversal status after filter_map_inplace
   (Mehdi Bouaziz, review by Alain Frisch)
@@ -4120,7 +4120,7 @@ OCaml 4.11.0 (19 August 2020)
   (Glenn Slotte, review by Florian Angeletti)
 
 - #9410, #9422: replaced naive fibonacci example with gcd
-  (Anukriti Kumar, review by San Vu Ngoc, Florian Angeletti, Léo Andrès)
+  (Anukriti Kumar, review by San Vũ Ngọc, Florian Angeletti, Léo Andrès)
 
 - #9541: Add a documentation page for the instrumented runtime;
   additional changes to option names in the instrumented runtime.
@@ -4751,7 +4751,7 @@ OCaml 4.10.0 (21 February 2020)
   locate an `.ocamlinit` file. Reads an `$XDG_CONFIG_HOME/ocaml/init.ml`
   file before trying to lookup `~/.ocamlinit`. On Windows the behaviour
   is unchanged.
-  (Daniel C. Bünzli, review by David Allsopp, Armaël Guéneau and
+  (Daniel Bünzli, review by David Allsopp, Armaël Guéneau and
    Nicolás Ojeda Bär)
 
 - #9113: ocamldoc: fix the rendering of multi-line code blocks
@@ -4759,7 +4759,7 @@ OCaml 4.10.0 (21 February 2020)
   (Gabriel Scherer, review by Florian Angeletti)
 
 - #9127, #9130: ocamldoc: fix the formatting of closing brace in record types.
-  (David Allsopp, report by San Vu Ngoc)
+  (David Allsopp, report by San Vũ Ngọc)
 
 - #9181: make objinfo work on Cygwin and look for the caml_plugin_header
   symbol in both the static and the dynamic symbol tables.
@@ -5528,7 +5528,7 @@ OCaml 4.08.0 (13 June 2019)
 ### Other libraries:
 
 - #2533, #1839, #1949: added Unix.fsync
-  (Francois Berenger, Nicolás Ojeda Bär, review by Daniel Bünzli, David Allsopp
+  (François Berenger, Nicolás Ojeda Bär, review by Daniel Bünzli, David Allsopp
   and ygrek)
 
 - #1792, #7794: Add Unix.open_process_args{,_in,_out,_full} similar to
@@ -6458,15 +6458,15 @@ OCaml 4.07.0 (10 July 2018)
   (Hugo Heuzard, reviewed by Nicolás Ojeda Bär)
 
 - #1627: Reduce cmx sizes by sharing variable names (Flambda only).
-  (Fuyong Quah, Leo White, review by Xavier Clerc)
+  (Fu Yong Quah, Leo White, review by Xavier Clerc)
 
 - #1665: reduce the size of cmx files in classic mode by dropping the
   bodies of functions that will not be inlined.
-  (Fuyong Quah, review by Leo White and Pierre Chambart)
+  (Fu Yong Quah, review by Leo White and Pierre Chambart)
 
 - #1666: reduce the size of cmx files in classic mode by dropping the
   bodies of functions that cannot be reached from the module block.
-  (Fuyong Quah, review by Leo White and Pierre Chambart)
+  (Fu Yong Quah, review by Leo White and Pierre Chambart)
 
 - #1686: Turn off by default flambda invariants checks.
   (Pierre Chambart)
@@ -7302,7 +7302,7 @@ OCaml 4.06.0 (3 Nov 2017):
 
 - #1012: ocamlyacc, fix parsing of raw strings and nested comments, as well
   as the handling of ' characters in identifiers.
-  (Demi Obenour)
+  (Demi Marie Obenour)
 
 - #1045: ocamldep, add a "-shared" option to generate dependencies
   for native plugin files (i.e. .cmxs files)
@@ -8484,7 +8484,7 @@ OCaml 4.04.0 (4 Nov 2016):
 
 - #427: Obj.is_block is now an inlined OCaml function instead of a
   C external.  This should be faster.
-  (Demi Obenour)
+  (Demi Marie Obenour)
 
 - #580: Optimize immutable float records
   (Pierre Chambart, review by Mark Shinwell)
@@ -8626,7 +8626,7 @@ OCaml 4.04.0 (4 Nov 2016):
 * #512, #587: Installed `ocamlc`, `ocamlopt`, and `ocamllex` are
   now the native-code versions of the tools, if those versions were
   built.
-  (Demi Obenour)
+  (Demi Marie Obenour)
 
 - #525: fix build on OpenIndiana
   (Sergey Avseyev, review by Damien Doligez)
@@ -9048,7 +9048,7 @@ OCaml 4.03.0 (25 Apr 2016):
   settings that are currently the default:
   `-alias-deps`, `-app-funct`, `-no-keep-docs`, `-no-keep-locs`,
   `-no-principal`, `-no-rectypes`, `-no-strict-formats`
-  (Demi Obenour)
+  (Demi Marie Obenour)
 
 - #545: use reraise to preserve backtrace on
   `match .. with exception e -> raise e`
