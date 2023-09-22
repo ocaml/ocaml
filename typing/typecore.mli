@@ -217,6 +217,7 @@ type error =
   | Literal_overflow of string
   | Unknown_literal of string * char
   | Illegal_letrec_pat
+  | Illegal_letrec_expr
   | Illegal_class_expr
   | Letop_type_clash of string * Errortrace.unification_error
   | Andop_type_clash of string * Errortrace.unification_error
@@ -255,5 +256,7 @@ val type_package:
 
 val constant: Parsetree.constant -> (Asttypes.constant, error) result
 
+val annotate_recursive_bindings :
+  Env.t -> Typedtree.value_binding list -> Typedtree.value_binding list
 val check_recursive_class_bindings :
   Env.t -> Ident.t list -> Typedtree.class_expr list -> unit

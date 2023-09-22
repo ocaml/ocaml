@@ -222,9 +222,9 @@ let rec expr_size env = function
   | Uassign _ | Usend _ -> RHS_nonrec
   | Uunreachable -> RHS_unreachable
 
-let expr_size_of_binding (clas : Lambda.rec_check_classification) expr =
+let expr_size_of_binding (clas : Typedtree.recursive_binding_kind) expr =
   match clas with
-  | Dynamic -> RHS_nonrec
+  | Not_recursive -> RHS_nonrec
   | Static -> expr_size V.empty expr
 
 (* Translate structured constants to Cmm data items *)

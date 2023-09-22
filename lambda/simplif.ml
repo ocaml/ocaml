@@ -755,16 +755,16 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~return ~body ~attr ~loc =
             ~params:(List.map (fun id -> id, Pgenval) new_ids)
             ~return ~body ~attr ~loc
         in
-        (wrapper_body, (inner_id, Static, inner_fun))
+        (wrapper_body, (inner_id, Typedtree.Static, inner_fun))
   in
   try
     let body, inner = aux [] body in
     let attr = default_stub_attribute in
-    [(fun_id, Static,
+    [(fun_id, Typedtree.Static,
       lfunction ~kind ~params ~return ~body ~attr ~loc);
      inner]
   with Exit ->
-    [(fun_id, Static,
+    [(fun_id, Typedtree.Static,
       lfunction ~kind ~params ~return ~body ~attr ~loc)]
 
 (* Simplify local let-bound functions: if all occurrences are

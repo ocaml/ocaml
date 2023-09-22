@@ -223,10 +223,10 @@ and same_move_within_set_of_closures (m1 : Flambda.move_within_set_of_closures)
 
 and samebinding (v1, clas1, n1) (v2, clas2, n2) =
   let equal_clas c1 c2 =
-    match (c1 : Lambda.rec_check_classification),
-          (c2 : Lambda.rec_check_classification) with
-    | Dynamic, Dynamic | Static, Static -> true
-    | Dynamic, Static | Static, Dynamic -> false
+    match (c1 : Typedtree.recursive_binding_kind),
+          (c2 : Typedtree.recursive_binding_kind) with
+    | Not_recursive, Not_recursive | Static, Static -> true
+    | Not_recursive, Static | Static, Not_recursive -> false
   in
   Variable.equal v1 v2 && equal_clas clas1 clas2 && same_named n1 n2
 

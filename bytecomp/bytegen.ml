@@ -311,8 +311,8 @@ let rec size_of_lambda env = function
   | Lifused _ -> RHS_nonrec
 
 let size_of_rec_binding clas expr =
-  match (clas : Lambda.rec_check_classification) with
-  | Dynamic -> RHS_nonrec
+  match (clas : Typedtree.recursive_binding_kind) with
+  | Not_recursive -> RHS_nonrec
   | Static -> size_of_lambda Ident.empty expr
 
 (**** Merging consecutive events ****)

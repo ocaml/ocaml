@@ -552,7 +552,8 @@ and specialized = {
 }
 
 type _ binding_kind =
-  | Recursive : (Ident.t * rec_check_classification * lambda) binding_kind
+  | Recursive :
+      (Ident.t * Typedtree.recursive_binding_kind * lambda) binding_kind
   | Non_recursive : (Ident.t * lambda) binding_kind
 
 let llets lk vk bindings body =
@@ -962,7 +963,7 @@ and traverse_binding :
   in
   let mk_static_binding (var : Ident.t) (def : lambda) : a =
     match binding_kind, binding with
-    | Recursive, _ -> var, Lambda.Static, def
+    | Recursive, _ -> var, Typedtree.Static, def
     | Non_recursive, _ -> var, def
   in
   match find_candidate def with

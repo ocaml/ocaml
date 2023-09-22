@@ -258,8 +258,6 @@ type let_kind = Strict | Alias | StrictOpt
       we can discard e if x does not appear in e'
  *)
 
-type rec_check_classification = Static | Dynamic
-
 type meth_kind = Self | Public | Cached
 
 val equal_meth_kind : meth_kind -> meth_kind -> bool
@@ -286,7 +284,8 @@ type lambda =
   | Lfunction of lfunction
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
   | Lmutlet of value_kind * Ident.t * lambda * lambda
-  | Lletrec of (Ident.t * rec_check_classification * lambda) list * lambda
+  | Lletrec of
+      (Ident.t * Typedtree.recursive_binding_kind * lambda) list * lambda
   | Lprim of primitive * lambda list * scoped_location
   | Lswitch of lambda * lambda_switch * scoped_location
 (* switch on strings, clauses are sorted by string order,

@@ -1425,7 +1425,7 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
 (* Same, for one non-recursive function *)
 
 and close_one_function env id funct =
-  match close_functions env [id, Lambda.Static, funct] with
+  match close_functions env [id, Typedtree.Static, funct] with
   | (clos, (i, _, approx) :: _) when id = i -> (clos, approx)
   | _ -> fatal_error "Closure.close_one_function"
 

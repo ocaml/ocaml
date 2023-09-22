@@ -28,7 +28,6 @@ open Debuginfo.Scoped_location
 type error =
     Free_super_var
   | Unreachable_reached
-  | Illegal_letrec_expr
 
 exception Error of Location.t * error
 
@@ -898,7 +897,8 @@ and transl_let ~scopes ?(in_structure=false) rec_flag pat_expr_list =
       let rec transl = function
         [] ->
           fun body -> body
-      | {vb_pat=pat; vb_expr=expr; vb_attributes=attr; vb_loc} :: rem ->
+      | {vb_pat=pat; vb_expr=expr; vb_rec_kind=_; vb_attributes=attr; vb_loc}
+        :: rem ->
           let lam = transl_bound_exp ~scopes ~in_structure pat expr in
           let lam = Translattribute.add_function_attributes lam vb_loc attr in
           let mk_body = transl rem in
@@ -906,7 +906,6 @@ and transl_let ~scopes ?(in_structure=false) rec_flag pat_expr_list =
             Matching.for_let ~scopes pat.pat_loc lam pat (mk_body body)
       in transl pat_expr_list
   | Recursive ->
-      let ids = let_bound_idents pat_expr_list in
       let idlist =
         List.map
           (fun {vb_pat=pat} -> match pat.pat_desc with
@@ -914,12 +913,8 @@ and transl_let ~scopes ?(in_structure=false) rec_flag pat_expr_list =
             | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
             | _ -> assert false)
         pat_expr_list in
-      let transl_case {vb_expr=expr; vb_attributes; vb_loc; vb_pat} id =
-        let clas =
-          match Rec_check.is_valid_recursive_expression ids expr with
-          | None -> raise(Error(expr.exp_loc, Illegal_letrec_expr))
-          | Some clas -> clas
-        in
+      let transl_case {vb_expr=expr; vb_attributes; vb_rec_kind = clas;
+                       vb_loc; vb_pat} id =
         let lam = transl_bound_exp ~scopes ~in_structure vb_pat expr in
         let lam =
           Translattribute.add_function_attributes lam vb_loc vb_attributes
@@ -1216,10 +1211,6 @@ let report_error ppf = function
         "Ancestor names can only be used to select inherited methods"
   | Unreachable_reached ->
       fprintf ppf "Unreachable expression was reached"
-  | Illegal_letrec_expr ->
-      fprintf ppf
-        "This kind of expression is not allowed as right-hand side of %a"
-        Style.inline_code "let rec"
 
 let () =
   Location.register_error_of_exn

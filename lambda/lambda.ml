@@ -266,8 +266,6 @@ type function_kind = Curried | Tupled
 
 type let_kind = Strict | Alias | StrictOpt
 
-type rec_check_classification = Static | Dynamic
-
 type meth_kind = Self | Public | Cached
 
 let equal_meth_kind x y =
@@ -299,7 +297,8 @@ type lambda =
   | Lfunction of lfunction
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
   | Lmutlet of value_kind * Ident.t * lambda * lambda
-  | Lletrec of (Ident.t * rec_check_classification * lambda) list * lambda
+  | Lletrec of
+      (Ident.t * Typedtree.recursive_binding_kind * lambda) list * lambda
   | Lprim of primitive * lambda list * scoped_location
   | Lswitch of lambda * lambda_switch * scoped_location
   | Lstringswitch of

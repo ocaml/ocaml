@@ -183,6 +183,7 @@ type error =
   | Literal_overflow of string
   | Unknown_literal of string * char
   | Illegal_letrec_pat
+  | Illegal_letrec_expr
   | Illegal_class_expr
   | Letop_type_clash of string * Errortrace.unification_error
   | Andop_type_clash of string * Errortrace.unification_error
@@ -2604,6 +2605,18 @@ and is_nonexpansive_opt = function
 
 let maybe_expansive e = not (is_nonexpansive e)
 
+let annotate_recursive_bindings env valbinds =
+  let ids = let_bound_idents valbinds in
+  List.fold_right
+    (fun {vb_pat; vb_expr; vb_rec_kind = _; vb_attributes; vb_loc} bindings ->
+       match (Rec_check.is_valid_recursive_expression ids vb_expr) with
+       | None ->
+         raise(Error(vb_expr.exp_loc, env, Illegal_letrec_expr))
+       | Some vb_rec_kind ->
+         { vb_pat; vb_expr; vb_rec_kind; vb_attributes; vb_loc} :: bindings
+    )
+    valbinds []
+
 let check_recursive_class_bindings env ids exprs =
   List.iter
     (fun expr ->
@@ -3301,6 +3314,10 @@ and type_expect_
               allow_modules
           in
           let body = type_expect new_env sbody ty_expected_explained in
+          let pat_exp_list = match rec_flag with
+            | Recursive -> annotate_recursive_bindings env pat_exp_list
+            | Nonrecursive -> pat_exp_list
+          in
           (* The "bound expressions" component of the scope escape check.
 
              This kind of scope escape is relevant only for recursive
@@ -5136,7 +5153,7 @@ and type_argument ?explanation ?recarg env sarg ty_expected' ty_expected =
       re { texp with exp_type = ty_fun; exp_desc =
            Texp_let (Nonrecursive,
                      [{vb_pat=let_pat; vb_expr=texp; vb_attributes=[];
-                       vb_loc=Location.none;
+                       vb_loc=Location.none; vb_rec_kind = Not_recursive;
                       }],
                      func let_var) }
       end
@@ -5946,8 +5963,9 @@ and type_let ?check ?check_strict
   let l =
     List.map2
       (fun (p, (e, _)) pvb ->
+        (* vb_rec_kind will be computed later for recursive bindings *)
         {vb_pat=p; vb_expr=e; vb_attributes=pvb.pvb_attributes;
-         vb_loc=pvb.pvb_loc;
+         vb_loc=pvb.pvb_loc; vb_rec_kind = Not_recursive;
         })
       l spat_sexp_list
   in
@@ -6802,6 +6820,10 @@ let report_error ~loc env = function
   | Illegal_letrec_pat ->
       Location.errorf ~loc
         "Only variables are allowed as left-hand side of %a"
+        Style.inline_code "let rec"
+  | Illegal_letrec_expr ->
+      Location.errorf ~loc
+        "This kind of expression is not allowed as right-hand side of %a"
         Style.inline_code "let rec"
   | Illegal_class_expr ->
       Location.errorf ~loc

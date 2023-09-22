@@ -60,7 +60,7 @@ type t =
   | Var of Variable.t
   | Let of let_expr
   | Let_mutable of let_mutable
-  | Let_rec of (Variable.t * Lambda.rec_check_classification * named) list * t
+  | Let_rec of (Variable.t * Typedtree.recursive_binding_kind * named) list * t
   | Apply of apply
   | Send of send
   | Assign of assign
@@ -258,9 +258,9 @@ let rec lam ppf (flam : t) =
           (fun (id, clas, l) ->
              if !spc then fprintf ppf "@ " else spc := true;
              let clas_annot =
-               match (clas : Lambda.rec_check_classification) with
+               match (clas : Typedtree.recursive_binding_kind) with
                | Static -> ""
-               | Dynamic -> "[Dyn]"
+               | Not_recursive -> "[Nonrec]"
              in
              fprintf ppf "@[<2>%a%s@ %a@]"
                Variable.print id clas_annot print_named l)

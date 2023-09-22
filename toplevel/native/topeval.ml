@@ -139,6 +139,7 @@ let name_expression ~loc ~attrs exp =
    let vb =
      { vb_pat = pat;
        vb_expr = exp;
+       vb_rec_kind = Not_recursive;
        vb_attributes = attrs;
        vb_loc = loc; }
    in

@@ -584,9 +584,9 @@ let rec lam ppf = function
           (fun (id, clas, l) ->
             if !spc then fprintf ppf "@ " else spc := true;
             let clas_annot =
-              match (clas : Lambda.rec_check_classification) with
+              match (clas : Typedtree.recursive_binding_kind) with
               | Static -> ""
-              | Dynamic -> "[Dyn]"
+              | Not_recursive -> "[Nonrec]"
             in
             fprintf ppf "@[<2>%a%s@ %a@]" Ident.print id clas_annot lam l)
           id_arg_list in

@@ -57,7 +57,7 @@ let ignore_params_with_value_kind (_ : (VP.t * Lambda.value_kind) list) = ()
 let ignore_direction_flag (_ : Asttypes.direction_flag) = ()
 let ignore_meth_kind (_ : Lambda.meth_kind) = ()
 let ignore_value_kind (_ : Lambda.value_kind) = ()
-let ignore_rec_classification (_ : Lambda.rec_check_classification) = ()
+let ignore_rec_classification (_ : Typedtree.recursive_binding_kind) = ()
 
 (* CR-soon mshinwell: check we aren't traversing function bodies more than
    once (need to analyse exactly what the calls are from Cmmgen into this
