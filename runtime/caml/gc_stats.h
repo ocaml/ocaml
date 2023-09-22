@@ -72,11 +72,10 @@ struct gc_stats {
 
 void caml_orphan_alloc_stats(caml_domain_state *);
 
-/* Update the sampled stats of a domain from its live stats. */
-void caml_collect_gc_stats_sample(caml_domain_state *domain);
-
-/* Clear the sampled stats on domain termination. */
-void caml_clear_gc_stats_sample(caml_domain_state *domain);
+/* Update the sampled stats of a domain from its live stats.
+   May only be called during STW, so that it does not race
+   with mutators calling [caml_compute_gc_stats]. */
+void caml_collect_gc_stats_sample_stw(caml_domain_state *domain);
 
 /* Compute global runtime stats.
 
