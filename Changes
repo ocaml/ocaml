@@ -1210,7 +1210,7 @@ Some of those changes will benefit all OCaml packages.
 
 - #11450, #12018: Fix erroneous functor error messages that were too eager to
   cast `struct end` functor arguments as unit modules in `F(struct end)`.
-  (Florian Angetti, review by Gabriel Scherer)
+  (Florian Angeletti, review by Gabriel Scherer)
 
 - #11643: Add missing test declaration to float_compare test, so that it will
   run.
@@ -1279,7 +1279,7 @@ Some of those changes will benefit all OCaml packages.
 - #12075: auto-detect whether `ar` support @FILE arguments at
   configure-time to avoid using this feature with toolchains
   that do not support it (eg FreeBSD/Darwin).
-  (Nicolás Ojeda Bär, review by Xavier Leroy, David Allsop, Javier
+  (Nicolás Ojeda Bär, review by Xavier Leroy, David Allsopp, Javier
   Chávarri, Anil Madhavapeddy)
 
 - #12103, 12104: fix a concurrency memory-safety bug in Buffer
@@ -2022,7 +2022,7 @@ OCaml 4.14.0 (28 March 2022)
 
 * #10583, #10998: Add over 40 new functions in Seq.
   (François Pottier and Simon Cruanes, review by Nicolás Ojeda Bär,
-  Daniel Bünzli, Naëla Courant, Craig Ferguson, Wiktor Kuchta,
+  Daniel Bünzli, Nathanaëlle Courant, Craig Ferguson, Wiktor Kuchta,
   Xavier Leroy, Guillaume Munch-Maccagnoni, Raphaël Proust, Gabriel Scherer
   and Thierry Martinez)
 
@@ -2134,7 +2134,7 @@ OCaml 4.14.0 (28 March 2022)
   (Dong An, review by Xavier Leroy and David Allsopp)
 
 - #10397: Document exceptions raised by Unix module functions on Windows
-  (Martin Jambon, review by Daniel Bünzli, David Alsopp, Damien Doligez,
+  (Martin Jambon, review by Daniel Bünzli, David Allsopp, Damien Doligez,
    Xavier Leroy, and Florian Angeletti)
 
 - #10589: Fix many typos (excess/inconsistent spaces) in the HTML manual.
@@ -2524,7 +2524,7 @@ OCaml 4.13.0 (24 September 2021)
   A mostly-internal change that preserves more information in errors
   during type checking; most significantly, it split the errors from
   unification, moregen, and type equality into three different types.
-  (Antal Spector-Zabusky and Mekhrubon Tuarev, review by Leo White,
+  (Antal Spector-Zabusky and Mekhrubon Turaev, review by Leo White,
   Florian Angeletti, and Jacques Garrigue)
 
 - #9994: Make Types.type_expr a private type, and abstract marking mechanism
@@ -2814,7 +2814,7 @@ OCaml 4.13.0 (24 September 2021)
   (Gabriel Scherer, review by Thomas Refis and Florian Angeletti)
 
 - #9827: Replace references with functions arguments in Simplif
-  (Anukriti Kumar, review by Vincent Laviron and David Allsop)
+  (Anukriti Kumar, review by Vincent Laviron and David Allsopp)
 
 - #10007: Driver.compile_common: when typing a .ml file, return the
   compilation unit signature (inferred or from the .cmi) in addition
@@ -3189,8 +3189,8 @@ OCaml 4.12.0 (24 February 2021)
   I/O locks are not held while it runs. A polling point was removed from
   caml_leave_blocking_section, and one added to caml_raise.
   (Stephen Dolan, review by Goswin von Brederlow, Xavier Leroy, Damien
-   Doligez, Anil Madhavapeddy, Guillaume Munch-Maccagnoni and Jacques-
-   Henri Jourdan)
+   Doligez, Anil Madhavapeddy, Guillaume Munch-Maccagnoni
+   and Jacques-Henri Jourdan)
 
 * #5154, #9569, #9734: Add `Val_none`, `Some_val`, `Is_none`, `Is_some`,
   `caml_alloc_some`, and `Tag_some`. As these macros are sometimes defined by
@@ -3324,7 +3324,7 @@ OCaml 4.12.0 (24 February 2021)
 
 - #10050: update {PUSH,}OFFSETCLOSURE* bytecode instructions to match new
   representation for closures
-  (Nathanaël Courant, review by Xavier Leroy)
+  (Nathanaëlle Courant, review by Xavier Leroy)
 
 - #9728: Take advantage of the new closure representation to simplify the
   compaction algorithm and remove its dependence on the page table
@@ -3623,7 +3623,7 @@ OCaml 4.12.0 (24 February 2021)
    report by Alex Fedoseev through Hongbo Zhang)
 
 - #9514: optimize pattern-matching exhaustivity analysis in the single-row case
-  (Gabriel Scherer, review by Stephen DOlan)
+  (Gabriel Scherer, review by Stephen Dolan)
 
 - #9442: refactor the implementation of the [@tailcall] attribute
   to allow for a structured attribute payload
@@ -4218,7 +4218,7 @@ OCaml 4.11.0 (19 August 2020)
   Caml_inline to stop abuse of the inline keyword on MSVC and to help ensure
   that only static inline is used in the codebase (erroneous instance in
   runtime/win32.c removed).
-  (David Allsopp, review by Oliver Andrieu and Xavier Leroy)
+  (David Allsopp, review by Olivier Andrieu and Xavier Leroy)
 
 - #8934: Stop relying on location to track usage
   (Thomas Refis, review by Gabriel Radanne)
@@ -6304,7 +6304,7 @@ OCaml 4.07.0 (10 July 2018)
 - #7528, #1500: add a Format.pp_set_geometry function to avoid memory
   effects in set_margin and set_max_indent.
   (Florian Angeletti, review by Richard Bonichon, Gabriel Radanne,
-   Gabiel Scherer and Pierre Weis)
+   Gabriel Scherer and Pierre Weis)
 
 - #7690, #1528: fix the float_of_string function for hexadecimal floats
   with very large values of the exponent.
