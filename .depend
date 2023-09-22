@@ -2246,7 +2246,6 @@ bytecomp/symtable.cmo : \
     utils/config.cmi \
     file_formats/cmo_format.cmi \
     utils/clflags.cmi \
-    bytecomp/bytesections.cmi \
     bytecomp/symtable.cmi
 bytecomp/symtable.cmx : \
     lambda/runtimedef.cmx \
@@ -2260,7 +2259,6 @@ bytecomp/symtable.cmx : \
     utils/config.cmx \
     file_formats/cmo_format.cmi \
     utils/clflags.cmx \
-    bytecomp/bytesections.cmx \
     bytecomp/symtable.cmi
 bytecomp/symtable.cmi : \
     lambda/lambda.cmi \
