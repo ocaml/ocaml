@@ -80,6 +80,8 @@
 
 #undef HAS_SYS_MMAN_H
 
+#undef HAS_LINUX_FUTEX_H
+
 /* 2. For the Unix library. */
 
 #undef HAS_SOCKETS
