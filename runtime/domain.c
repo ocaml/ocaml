@@ -1298,7 +1298,6 @@ CAMLprim value caml_ml_domain_id(value unit)
 }
 
 /* sense-reversing barrier */
-#define BARRIER_SENSE_BIT 0x100000
 
 barrier_status caml_global_barrier_begin(void)
 {
