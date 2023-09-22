@@ -15,7 +15,6 @@
 # Used by included Makefiles
 ROOTDIR = ../..
 include ../Makefile.common
-include ../../ocamldoc/Makefile.best_ocamldoc
 vpath %.mli ../../stdlib $(DOC_COMPILERLIBS_DIRS)  $(DOC_STDLIB_DIRS)
 
 

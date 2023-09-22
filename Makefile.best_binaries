@@ -57,3 +57,28 @@ BEST_OCAMLDEP := $(strip $(if \
       $(call check_not_stale,boot/ocamlc,ocamlc.opt$(EXE)))), \
     $(ROOTDIR)/ocamlc.opt$(EXE) -depend, \
     $(BOOT_OCAMLC) -depend))
+
+OCAMLDOC = $(ROOTDIR)/ocamldoc/ocamldoc$(EXE)
+OCAMLDOC_OPT = $(ROOTDIR)/ocamldoc/ocamldoc.opt$(EXE)
+
+ifeq "$(TARGET)" "$(HOST)"
+  ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
+    OCAMLDOC_RUN_BYTE = $(NEW_OCAMLRUN) -I $(ROOTDIR)/otherlibs/unix \
+                                    -I $(ROOTDIR)/otherlibs/str $(OCAMLDOC)
+  else
+    # if shared-libraries are not supported, unix.cma and str.cma
+    # are compiled with -custom, so ocamldoc also uses -custom,
+    # and (ocamlrun ocamldoc) does not work.
+    OCAMLDOC_RUN_BYTE = $(OCAMLDOC)
+  endif
+else
+  OCAMLDOC_RUN_BYTE = $(NEW_OCAMLRUN) $(OCAMLDOC)
+endif
+
+OCAMLDOC_RUN_OPT = $(OCAMLDOC_OPT)
+
+ifeq "$(wildcard $(OCAMLDOC_OPT))" ""
+  OCAMLDOC_RUN = $(OCAMLDOC_RUN_BYTE)
+else
+  OCAMLDOC_RUN = $(OCAMLDOC_RUN_OPT)
+endif

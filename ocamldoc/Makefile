@@ -25,7 +25,6 @@ OCAMLOPT = $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 ##############
 
 programs := ocamldoc ocamldoc.opt
-include Makefile.best_ocamldoc
 
 OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
