@@ -35,6 +35,8 @@
 #include "caml/osdeps.h"
 #include "caml/prims.h"
 #include "caml/signals.h"
+#include "caml/intext.h"
+#include "caml/startup_aux.h"
 
 #include "build_config.h"
 
@@ -43,16 +45,20 @@
 /* The table of primitives */
 struct ext_table caml_prim_table;
 
-#ifdef DEBUG
-/* The names of primitives (for instrtrace.c) */
+/* The names of primitives */
 struct ext_table caml_prim_name_table;
-#endif
 
 /* The table of shared libraries currently opened */
 static struct ext_table shared_libs;
 
 /* The search path for shared libraries */
 struct ext_table caml_shared_libs_path;
+
+/* The SYMB and CRCS sections of the bytecode executable */
+static char* symb_section;
+static intnat symb_section_len;
+static char* crcs_section;
+static intnat crcs_section_len;
 
 /* Look up the given primitive name in the built-in primitive table,
    then in the opened shared libraries (shared_libs) */
@@ -160,11 +166,14 @@ static void open_shared_lib(char_os * name)
 /* Build the table of primitives, given a search path and a list
    of shared libraries (both 0-separated in a char array).
    Abort the runtime system on error. */
-void caml_build_primitive_table(char_os * lib_path,
-                                char_os * libs,
-                                char * req_prims)
+void caml_init_dynlink(char_os * lib_path,
+                       char_os * libs,
+                       char * req_prims,
+                       char * symb_section_,
+                       intnat symb_section_len_,
+                       char * crcs_section_,
+                       intnat crcs_section_len_)
 {
-  char_os * tofree1, * tofree2;
   char_os * p;
   char * q;
 
@@ -173,12 +182,12 @@ void caml_build_primitive_table(char_os * lib_path,
      - directories specified in the CAML_LD_LIBRARY_PATH
      - directories specified in the executable
      - directories specified in the file <stdlib>/ld.conf */
-  tofree1 = caml_decompose_path(&caml_shared_libs_path,
-                                caml_secure_getenv(T("CAML_LD_LIBRARY_PATH")));
+  caml_decompose_path(&caml_shared_libs_path,
+                      caml_secure_getenv(T("CAML_LD_LIBRARY_PATH")));
   if (lib_path != NULL)
     for (p = lib_path; *p != 0; p += strlen_os(p) + 1)
       caml_ext_table_add(&caml_shared_libs_path, p);
-  tofree2 = caml_parse_ld_conf();
+  caml_parse_ld_conf();
   /* Open the shared libraries */
   caml_ext_table_init(&shared_libs, 8);
   if (libs != NULL)
@@ -186,22 +195,18 @@ void caml_build_primitive_table(char_os * lib_path,
       open_shared_lib(p);
   /* Build the primitive table */
   caml_ext_table_init(&caml_prim_table, 0x180);
-#ifdef DEBUG
   caml_ext_table_init(&caml_prim_name_table, 0x180);
-#endif
   for (q = req_prims; *q != 0; q += strlen(q) + 1) {
     c_primitive prim = lookup_primitive(q);
     if (prim == NULL)
           caml_fatal_error("unknown C primitive `%s'", q);
     caml_ext_table_add(&caml_prim_table, (void *) prim);
-#ifdef DEBUG
     caml_ext_table_add(&caml_prim_name_table, caml_stat_strdup(q));
-#endif
   }
-  /* Clean up */
-  caml_stat_free(tofree1);
-  caml_stat_free(tofree2);
-  caml_ext_table_free(&caml_shared_libs_path, 0);
+  symb_section = symb_section_;
+  symb_section_len = symb_section_len_;
+  crcs_section = crcs_section_;
+  crcs_section_len = crcs_section_len_;
 }
 
 /* Build the table of primitives as a copy of the builtin primitive table.
@@ -211,15 +216,11 @@ void caml_build_primitive_table_builtin(void)
 {
   int i;
   caml_ext_table_init(&caml_prim_table, 0x180);
-#ifdef DEBUG
   caml_ext_table_init(&caml_prim_name_table, 0x180);
-#endif
   for (i = 0; caml_builtin_cprim[i] != 0; i++) {
     caml_ext_table_add(&caml_prim_table, (void *) caml_builtin_cprim[i]);
-#ifdef DEBUG
     caml_ext_table_add(&caml_prim_name_table,
                        caml_stat_strdup(caml_names_of_builtin_cprim[i]));
-#endif
   }
 }
 
@@ -227,6 +228,55 @@ void caml_free_shared_libs(void)
 {
   while (shared_libs.size > 0)
     caml_dlclose(shared_libs.contents[--shared_libs.size]);
+}
+
+static value list_of_ext_table(struct ext_table* tbl)
+{
+  CAMLparam0();
+  CAMLlocal3(list, tmp, str);
+  int i;
+  for (i = tbl->size - 1; i >= 0; i--) {
+    str = caml_copy_string(tbl->contents[i]);
+    tmp = caml_alloc_small(2, 0);
+    Field(tmp, 0) = str;
+    Field(tmp, 1) = list;
+    list = tmp;
+  }
+  CAMLreturn (list);
+}
+
+CAMLprim value caml_dynlink_get_bytecode_sections(value unit)
+{
+  CAMLparam1(unit);
+  CAMLlocal2(ret, tbl);
+  ret = caml_alloc(4, 0);
+
+  if (caml_params->section_table != NULL) {
+    const char* sec_names[] = {"SYMB", "CRCS", "PRIM", "DLPT"};
+    int i, j;
+    tbl = caml_input_value_from_block(caml_params->section_table,
+                                      caml_params->section_table_size);
+    for (i = 0; i < sizeof(sec_names)/sizeof(sec_names[0]); i++) {
+      for (j = 0; j < Wosize_val(tbl); j++) {
+        value kv = Field(tbl, j);
+        if (!strcmp(sec_names[i], String_val(Field(kv, 0))))
+          Store_field(ret, i, Field(kv, 1));
+      }
+    }
+  } else {
+    Store_field(ret, 0,
+      caml_input_value_from_block(symb_section, symb_section_len));
+    if (crcs_section != NULL) {
+      Store_field(ret, 1,
+        caml_input_value_from_block(crcs_section, crcs_section_len));
+    }
+    Store_field(ret, 2,
+      list_of_ext_table(&caml_prim_name_table));
+    Store_field(ret, 3,
+      list_of_ext_table(&caml_shared_libs_path));
+  }
+
+  CAMLreturn (ret);
 }
 
 #endif /* NATIVE_CODE */
@@ -307,6 +357,12 @@ value caml_dynlink_add_primitive(value handle)
 value caml_dynlink_get_current_libs(value unit)
 {
   caml_invalid_argument("dynlink_get_current_libs");
+  return Val_unit; /* not reached */
+}
+
+value caml_dynlink_get_bytecode_sections(value unit)
+{
+  caml_invalid_argument("dynlink_get_bytecode_sections");
   return Val_unit; /* not reached */
 }
 

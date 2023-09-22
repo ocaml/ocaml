@@ -55,7 +55,7 @@ val output_global_map: out_channel -> unit
 val output_primitive_names: out_channel -> unit
 val output_primitive_table: out_channel -> unit
 val data_global_map: unit -> Obj.t
-val data_primitive_names: unit -> string
+val data_primitive_names: unit -> string list
 val transl_const: Lambda.structured_constant -> Obj.t
 
 (* Functions for the toplevel *)
