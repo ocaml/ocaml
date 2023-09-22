@@ -1507,7 +1507,7 @@ OCaml 5.0.0 (15 December 2022)
 
 - #10972: ARM64 multicore support: OCaml & C stack separation;
   dynamic stack size checks; fiber and effects support.
-  (Tom Kelly and Xavier Leroy, review by KC Sivaramakrishnan, Xavier Leroy
+  (Tom Kelly and Xavier Leroy, review by KC Sivaramakrishnan, Xavier Leroy,
   Guillaume Munch-Maccagnoni, Eduardo Rafael, Stephen Dolan and
   Gabriel Scherer)
 
