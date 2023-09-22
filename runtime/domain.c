@@ -1835,10 +1835,18 @@ static void handover_finalisers(caml_domain_state* domain_state)
   caml_final_domain_terminate(domain_state);
 }
 
+static inline int domain_terminating(dom_internal *d) {
+  return d->interruptor.terminating;
+}
+
+int caml_domain_terminating (caml_domain_state *dom_st)
+{
+  return domain_terminating(&all_domains[dom_st->id]);
+}
+
 int caml_domain_is_terminating (void)
 {
-  struct interruptor* s = &domain_self->interruptor;
-  return s->terminating;
+  return domain_terminating(domain_self);
 }
 
 static void domain_terminate (void)
