@@ -69,7 +69,12 @@ extern value caml_fl_merge;  /* Defined in freelist.c. */
 static char *redarken_first_chunk = NULL;
 
 static char *sweep_chunk;
-static double p_backlog = 0.0; /* backlog for the gc speedup parameter */
+
+/* Part of the major slice left for future slices since otherwise a
+   single slice would be too big.
+
+   In units of words so that it remains consistent across heap size growth */
+static uintnat backlog_words = 0;
 
 int caml_gc_subphase;     /* Subphase_{mark_roots,mark_main,mark_final} */
 
@@ -404,6 +409,7 @@ static void start_cycle (void)
   CAMLassert (redarken_first_chunk == NULL);
   caml_gc_message (0x01, "Starting new major GC cycle\n");
   marked_words = 0;
+  backlog_words = 0;
   caml_darken_all_roots_start ();
   caml_gc_phase = Phase_mark;
   heap_wsz_at_cycle_start = Caml_state->stat_heap_wsz;
@@ -1010,10 +1016,10 @@ void caml_major_collection_slice (intnat howmuch)
   }
   if (p < dp) p = dp;
   if (p < caml_extra_heap_resources) p = caml_extra_heap_resources;
-  p += p_backlog;
-  p_backlog = 0.0;
+  p += (double)backlog_words / (double)Caml_state->stat_heap_wsz;
+  backlog_words = 0;
   if (p > 0.3){
-    p_backlog = p - 0.3;
+    backlog_words = (uintnat)((p - 0.3) * (double)Caml_state->stat_heap_wsz);
     p = 0.3;
   }
 
@@ -1032,8 +1038,8 @@ void caml_major_collection_slice (intnat howmuch)
                          ARCH_INTNAT_PRINTF_FORMAT "du\n",
                    (intnat) (p * 1000000));
   caml_gc_message (0x40, "work backlog = %"
-                         ARCH_INTNAT_PRINTF_FORMAT "du\n",
-                   (intnat) (p_backlog * 1000000));
+                         ARCH_INTNAT_PRINTF_FORMAT "d\n",
+                   backlog_words);
 
   for (i = 0; i < caml_major_window; i++){
     caml_major_ring[i] += p / caml_major_window;
@@ -1178,7 +1184,6 @@ void caml_major_collection_slice (intnat howmuch)
 void caml_finish_major_cycle (void)
 {
   if (caml_gc_phase == Phase_idle){
-    p_backlog = 0.0; /* full major GC cycle, the backlog becomes irrelevant */
     start_cycle ();
   }
   while (caml_gc_phase == Phase_mark) mark_slice (LONG_MAX);

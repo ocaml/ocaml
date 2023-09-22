@@ -26,6 +26,9 @@ OCaml 4.14 maintenance version
   that causes very slow compaction.
   (Damien Doligez, report by Arseniy Alekseyev, review by Sadiq Jaffer)
 
+- #???: Bugfix for GC backlog tracking
+  (Stephen Dolan and Damien Doligez)
+
 OCaml 4.14.1 (20 December 2022)
 ------------------------------
 
