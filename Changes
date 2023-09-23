@@ -380,6 +380,10 @@ Working version
   (Vincent Laviron, report by François Pottier, review by Nathanaëlle Courant
   and Gabriel Scherer)
 
+- #11040, #12591: fix a data race in major_gc.c
+  (Gabriel Scherer, review by Guillaume Munch-Maccagnoni
+   and KC Sivaramakrishnan, report by Sadiq Jaffer)
+
 - #12238, #12403: read input files in one go to avoid source reprinting issues
   (Gabriel Scherer, report by Mike Spivey and Vincent Laviron, review by
    Nicolás Ojeda Bär, Xavier Leroy and Jeremy Yallop)
