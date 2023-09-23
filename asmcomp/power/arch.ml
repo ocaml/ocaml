@@ -35,7 +35,8 @@ type specific_operation =
   | Ipoll_far of { return_label : cmm_label option }
                                         (* poll point in large functions *)
   | Icheckbound_far                     (* bounds check in large functions *)
-  | Icheckbound_imm_far of int          (* bounds check in large functions *)
+  | Icheckbound_imm_far of int          (* bounds check in large functions,
+                                           constant 2nd arg (the index) *)
 
 (* Addressing modes *)
 
