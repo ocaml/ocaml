@@ -53,7 +53,7 @@ let () =
 let create_bigarray = Bigarray.Array1.create Bigarray.Char Bigarray.c_layout
 
 let copy_bigarray src dst size =
-  Bigarray.Array1.(blit src (sub dst 0 size))
+  Bigarray.Array1.(blit (sub src 0 size) (sub dst 0 size))
 
 let out_buffer = ref(create_bigarray 0)
 and out_position = ref 0
