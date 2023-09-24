@@ -1864,18 +1864,9 @@ static void domain_terminate (void)
   caml_domain_state* domain_state = domain_self->state;
   struct interruptor* s = &domain_self->interruptor;
   int finished = 0;
-#ifndef _WIN32
-  sigset_t mask;
-#endif
 
   caml_gc_log("Domain terminating");
   s->terminating = 1;
-
-#ifndef _WIN32
-  /* Block all signals so that signal handlers do not run on this thread */
-  sigfillset(&mask);
-  pthread_sigmask(SIG_BLOCK, &mask, NULL);
-#endif
 
   /* Join ongoing systhreads, if necessary, and then run user-defined
      termination hooks. No OCaml code can run on this domain after

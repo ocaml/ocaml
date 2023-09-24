@@ -65,7 +65,7 @@ void caml_request_major_slice (int global);
 void caml_request_minor_gc (void);
 CAMLextern int caml_convert_signal_number (int);
 CAMLextern int caml_rev_convert_signal_number (int);
-value caml_execute_signal_exn(int signal_number, int in_signal_handler);
+value caml_execute_signal_exn(int signal_number);
 CAMLextern void caml_record_signal(int signal_number);
 CAMLextern value caml_process_pending_signals_exn(void);
 CAMLextern void caml_set_action_pending(caml_domain_state *);
