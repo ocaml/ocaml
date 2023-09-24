@@ -270,10 +270,11 @@ let init () =
 (* Relocate a block of object bytecode *)
 
 let patch_int buff pos n =
-  LongString.set buff pos (Char.unsafe_chr n);
-  LongString.set buff (pos + 1) (Char.unsafe_chr (n asr 8));
-  LongString.set buff (pos + 2) (Char.unsafe_chr (n asr 16));
-  LongString.set buff (pos + 3) (Char.unsafe_chr (n asr 24))
+  let open Bigarray.Array1 in
+  set buff pos (Char.unsafe_chr n);
+  set buff (pos + 1) (Char.unsafe_chr (n asr 8));
+  set buff (pos + 2) (Char.unsafe_chr (n asr 16));
+  set buff (pos + 3) (Char.unsafe_chr (n asr 24))
 
 let patch_object buff patchlist =
   List.iter

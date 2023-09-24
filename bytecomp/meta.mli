@@ -20,7 +20,8 @@ external realloc_global_data : int -> unit = "caml_realloc_global"
 type closure = unit -> Obj.t
 type bytecode
 external reify_bytecode :
-  bytes array -> Instruct.debug_event list array -> string option ->
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t ->
+  Instruct.debug_event list array -> string option ->
     bytecode * closure
                            = "caml_reify_bytecode"
 external release_bytecode : bytecode -> unit

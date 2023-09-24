@@ -2241,7 +2241,6 @@ bytecomp/symtable.cmx : \
     parsing/asttypes.cmi \
     bytecomp/symtable.cmi
 bytecomp/symtable.cmi : \
-    utils/misc.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
     file_formats/cmo_format.cmi

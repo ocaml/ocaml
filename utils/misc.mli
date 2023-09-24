@@ -416,23 +416,6 @@ val snd4: 'a * 'b * 'c * 'd -> 'b
 val thd4: 'a * 'b * 'c * 'd -> 'c
 val for4: 'a * 'b * 'c * 'd -> 'd
 
-(** {1 Long strings} *)
-
-(** ``Long strings'' are mutable arrays of characters that are not limited
-    in length to {!Sys.max_string_length}. *)
-
-module LongString :
-  sig
-    type t = bytes array
-    val create : int -> t
-    val length : t -> int
-    val get : t -> int -> char
-    val set : t -> int -> char -> unit
-    val blit : t -> int -> t -> int -> int -> unit
-    val output : out_channel -> t -> int -> int -> unit
-    val input_bytes : in_channel -> int -> t
-  end
-
 (** {1 Spell checking and ``did you mean'' suggestions} *)
 
 val edit_distance : string -> string -> int -> int option

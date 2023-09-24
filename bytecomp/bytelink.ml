@@ -226,7 +226,14 @@ let debug_info = ref ([] : (int * Instruct.debug_event list * string list) list)
 let link_compunit output_fun currpos_fun inchan file_name compunit =
   check_consistency file_name compunit;
   seek_in inchan compunit.cu_pos;
-  let code_block = LongString.input_bytes inchan compunit.cu_codesize in
+  let code_block =
+    Bigarray.Array1.create Bigarray.Char Bigarray.c_layout compunit.cu_codesize
+  in
+  match
+    In_channel.really_input_bigarray inchan code_block 0 compunit.cu_codesize
+  with
+    | None -> raise End_of_file
+    | Some () -> ();
   Symtable.patch_object code_block compunit.cu_reloc;
   if !Clflags.debug && compunit.cu_debug > 0 then begin
     seek_in inchan compunit.cu_debug;
@@ -239,7 +246,7 @@ let link_compunit output_fun currpos_fun inchan file_name compunit =
       else file_path :: debug_dirs in
     debug_info := (currpos_fun(), debug_event_list, debug_dirs) :: !debug_info
   end;
-  Array.iter output_fun code_block;
+  output_fun code_block;
   if !Clflags.link_everything then
     List.iter Symtable.require_primitive compunit.cu_primitives
 
@@ -372,7 +379,8 @@ let link_bytecode ?final_name tolink exec_name standalone =
          try Dll.open_dlls Dll.For_checking sharedobjs
          with Failure reason -> raise(Error(Cannot_open_dll reason))
        end;
-       let output_fun = output_bytes outchan
+       let output_fun buf =
+         Out_channel.output_bigarray outchan buf 0 (Bigarray.Array1.dim buf)
        and currpos_fun () = pos_out outchan - start_code in
        List.iter (link_file output_fun currpos_fun) tolink;
        if check_dlls then Dll.close_all_dlls();
@@ -418,12 +426,12 @@ let output_code_string_counter = ref 0
 
 let output_code_string outchan code =
   let pos = ref 0 in
-  let len = Bytes.length code in
+  let len = Bigarray.Array1.dim code in
   while !pos < len do
-    let c1 = Char.code(Bytes.get code !pos) in
-    let c2 = Char.code(Bytes.get code (!pos + 1)) in
-    let c3 = Char.code(Bytes.get code (!pos + 2)) in
-    let c4 = Char.code(Bytes.get code (!pos + 3)) in
+    let c1 = Char.code(Bigarray.Array1.get code !pos) in
+    let c2 = Char.code(Bigarray.Array1.get code (!pos + 1)) in
+    let c3 = Char.code(Bigarray.Array1.get code (!pos + 2)) in
+    let c4 = Char.code(Bigarray.Array1.get code (!pos + 3)) in
     pos := !pos + 4;
     Printf.fprintf outchan "0x%02x%02x%02x%02x, " c4 c3 c2 c1;
     incr output_code_string_counter;
@@ -506,7 +514,7 @@ let link_bytecode_as_c tolink outfile with_main =
        let currpos = ref 0 in
        let output_fun code =
          output_code_string outchan code;
-         currpos := !currpos + Bytes.length code
+         currpos := !currpos + (Bigarray.Array1.dim code)
        and currpos_fun () = !currpos in
        List.iter (link_file output_fun currpos_fun) tolink;
        (* The final STOP instruction *)
