@@ -13,8 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "-40"]
-
 (* To assign numbers to globals and primitives *)
 
 open Misc
