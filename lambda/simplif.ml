@@ -41,8 +41,7 @@ let rec eliminate_ref id = function
       Lmutlet(kind, v, eliminate_ref id e1, eliminate_ref id e2)
   | Lletrec(idel, e2) ->
       let bindings =
-        List.map (fun { id = v; rkind; def } ->
-            { id = v; rkind; def = eliminate_ref id def })
+        List.map (fun rb -> { rb with def = eliminate_ref id rb.def })
           idel
       in
       Lletrec(bindings, eliminate_ref id e2)
@@ -231,8 +230,7 @@ let simplify_exits lam =
       Lmutlet(kind, v, simplif ~try_depth l1, simplif ~try_depth l2)
   | Lletrec(bindings, body) ->
       let bindings =
-        List.map (fun { id; rkind; def } ->
-            { id; rkind; def = simplif ~try_depth def })
+        List.map (fun rb -> { rb with def = simplif ~try_depth rb.def })
           bindings
       in
       Lletrec(bindings, simplif ~try_depth body)
@@ -565,7 +563,7 @@ let simplify_lets lam =
   | Lmutlet(kind, v, l1, l2) -> mkmutlet kind v (simplif l1) (simplif l2)
   | Lletrec(bindings, body) ->
       let bindings =
-        List.map (fun { id; rkind; def } -> { id; rkind; def = simplif def })
+        List.map (fun rb -> { rb with def = simplif rb.def })
           bindings
       in
       Lletrec(bindings, simplif body)

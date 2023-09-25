@@ -741,9 +741,9 @@ let subst update_env ?(freshen_bound_variables = false) s input_lam =
       ) ids ([], l)
   in
   let bind_rec ids l =
-    List.fold_right (fun { id; rkind; def } (ids', l) ->
-        let id', l = bind id l in
-        ({ id = id'; rkind; def } :: ids' , l)
+    List.fold_right (fun rb (ids', l) ->
+        let id', l = bind rb.id l in
+        ({ rb with id = id' } :: ids' , l)
       ) ids ([], l)
   in
   let rec subst s l lam =
@@ -845,7 +845,7 @@ let subst update_env ?(freshen_bound_variables = false) s input_lam =
         let id = try Ident.Map.find id l with Not_found -> id in
         Lifused (id, subst s l e)
   and subst_list s l li = List.map (subst s l) li
-  and subst_decl s l { id; rkind; def } = { id; rkind; def = subst s l def }
+  and subst_decl s l decl = { decl with def = subst s l decl.def }
   and subst_case s l (key, case) = (key, subst s l case)
   and subst_strcase s l (key, case) = (key, subst s l case)
   and subst_opt s l = function
@@ -890,9 +890,7 @@ let shallow_map f = function
   | Lmutlet (k, v, e1, e2) ->
       Lmutlet (k, v, f e1, f e2)
   | Lletrec (idel, e2) ->
-      Lletrec
-        (List.map (fun { id; rkind; def } -> { id; rkind; def = f def }) idel,
-         f e2)
+      Lletrec (List.map (fun rb -> { rb with def = f rb.def }) idel, f e2)
   | Lprim (p, el, loc) ->
       Lprim (p, List.map f el, loc)
   | Lswitch (e, sw, loc) ->
