@@ -17,8 +17,6 @@
 
 (** Types shared amongst the various parts of the dynlink code. *)
 
-[@@@ocaml.warning "+a-4-30-40-41-42"]
-
 type implem_state =
   | Loaded
   | Not_initialized
