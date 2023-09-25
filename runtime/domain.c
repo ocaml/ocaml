@@ -143,7 +143,7 @@ typedef cpuset_t cpu_set_t;
 /* control of STW interrupts */
 struct interruptor {
   /* The outermost atomic is for synchronization with
-     caml_interrupt_all_for_signal. The innermost atomic is also for
+     caml_interrupt_all_signal_safe. The innermost atomic is also for
      cross-domain communication.*/
   _Atomic(atomic_uintnat *) interrupt_word;
   caml_plat_mutex lock;
@@ -596,7 +596,7 @@ static void domain_create(uintnat initial_minor_heap_wsize) {
   caml_state = domain_state;
 
   domain_state->young_limit = 0;
-  /* Synchronized with [caml_interrupt_all_for_signal], so that the
+  /* Synchronized with [caml_interrupt_all_signal_safe], so that the
      initializing write of young_limit happens before any
      interrupt. */
   atomic_store_explicit(&s->interrupt_word, &domain_state->young_limit,
@@ -1577,19 +1577,18 @@ int caml_try_run_on_all_domains_async(
 
 void caml_interrupt_self(void)
 {
-  interrupt_domain(&domain_self->interruptor);
+  interrupt_domain_local(Caml_state);
 }
 
 /* async-signal-safe */
-void caml_interrupt_all_for_signal(void)
+void caml_interrupt_all_signal_safe(void)
 {
   for (dom_internal *d = all_domains; d < &all_domains[Max_domains]; d++) {
     /* [all_domains] is an array of values. So we can access
        [interrupt_word] directly without synchronisation other than
        with other people who access the same [interrupt_word].*/
     atomic_uintnat * interrupt_word =
-      atomic_load_explicit(&d->interruptor.interrupt_word,
-                           memory_order_acquire);
+      atomic_load_acquire(&d->interruptor.interrupt_word);
     /* Early exit: if the current domain was never initialized, then
        neither have been any of the remaining ones. */
     if (interrupt_word == NULL) return;
@@ -1646,27 +1645,7 @@ Caml_inline void advance_global_major_slice_epoch (caml_domain_state* d)
   if (old_value != atomic_load (&caml_minor_collections_count)) {
     /* This domain is the first one to use up half of its minor heap arena
         in this minor cycle. Trigger major slice on other domains. */
-    if (caml_plat_try_lock(&all_domains_lock)) {
-      /* Note that this interrupt is best-effort. If we get the lock,
-         then interrupt all the domains. If not, either some other domain
-         is calling for a stop-the-world section interrupting all the
-         domains, or a domain is being created or terminated. All of these
-         actions also try to lock [all_domains_lock] mutex, and the above
-         lock acquisition may fail.
-
-         If we don't get the lock, we don't interrupt other domains. This is
-         acceptable since it does not affect safety but only liveness -- the
-         speed of the major gc. The other domains may themselves fill half of
-         their minor heap triggering a major slice, or will certainly do a
-         major slice right after their next minor GC when they observe that
-         their domain-local [Caml_state->major_slice_epoch] is less than the
-         global one [caml_major_slice_epoch]. */
-      for(int i = 0; i < stw_domains.participating_domains; i++) {
-        dom_internal * di = stw_domains.domains[i];
-        if (di->state != d) interrupt_domain(&di->interruptor);
-      }
-      caml_plat_unlock (&all_domains_lock);
-    }
+    caml_interrupt_all_signal_safe();
   }
 }
 

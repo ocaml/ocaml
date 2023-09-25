@@ -137,7 +137,7 @@ CAMLexport void caml_record_signal(int signal_number)
        - Ctrl-C in the toplevel when domain 0 is stuck inside [Domain.join].
        - a thread that has just spawned, before the appropriate mask is set.
   */
-  caml_interrupt_all_for_signal();
+  caml_interrupt_all_signal_safe();
 }
 
 /* Management of blocking sections. */
