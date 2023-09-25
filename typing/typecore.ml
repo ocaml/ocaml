@@ -834,9 +834,8 @@ let solve_constructor_annotation
               if List.exists (Ident.same id') !bound_ids then
                 raise (Error (cty.ctyp_loc, !!penv,
                               Bind_existential (Bind_already_bound, id, tv')));
-              (* Both id and id' are Scoped identifiers, so Ident.compare
-                 will only compare their stamps *)
-              if Ident.compare id id' > 0 then
+              (* Both id and id' are Scoped identifiers, so their stamps grow *)
+              if Ident.compare_stamp id id' > 0 then
                 raise (Error (cty.ctyp_loc, !!penv,
                               Bind_existential (Bind_not_in_scope, id, tv')));
               bound_ids := id' :: !bound_ids
