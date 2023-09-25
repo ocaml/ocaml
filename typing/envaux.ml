@@ -80,6 +80,9 @@ let rec env_from_summary sum subst =
               Env.add_local_type (Subst.type_path subst path)
                 (Subst.type_declaration subst info))
             map (env_from_summary s subst)
+      | Env_in_signature s ->
+          let env = env_from_summary s subst in
+          Env.in_signature true env
       | Env_copy_types s ->
           let env = env_from_summary s subst in
           Env.make_copy_of_types env env

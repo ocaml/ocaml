@@ -45,6 +45,7 @@ type summary =
       to skip, i.e. that won't be imported in the toplevel namespace. *)
   | Env_functor_arg of summary * Ident.t
   | Env_constraints of summary * type_declaration Path.Map.t
+  | Env_in_signature of summary
   | Env_copy_types of summary
   | Env_persistent of summary * Ident.t
   | Env_value_unbound of summary * string * value_unbound_reason
