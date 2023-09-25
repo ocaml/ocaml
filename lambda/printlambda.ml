@@ -581,9 +581,14 @@ let rec lam ppf = function
       let bindings ppf id_arg_list =
         let spc = ref false in
         List.iter
-          (fun (id, l) ->
+          (fun { id; rkind; def } ->
             if !spc then fprintf ppf "@ " else spc := true;
-            fprintf ppf "@[<2>%a@ %a@]" Ident.print id lam l)
+            let rec_annot =
+              match rkind with
+              | Static -> ""
+              | Not_recursive -> "[Nonrec]"
+            in
+            fprintf ppf "@[<2>%a%s@ %a@]" Ident.print id rec_annot lam def)
           id_arg_list in
       fprintf ppf
         "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]" bindings id_arg_list lam body

@@ -246,14 +246,14 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
     Ulet (Mutable, contents_kind, VP.create id, def, to_clambda t env_body body)
   | Let_rec (defs, body) ->
     let env, defs =
-      List.fold_right (fun (var, def) (env, defs) ->
+      List.fold_right (fun (var, clas, def) (env, defs) ->
           let id, env = Env.add_fresh_ident env var in
-          env, (id, var, def) :: defs)
+          env, (id, var, clas, def) :: defs)
         defs (env, [])
     in
     let defs =
-      List.map (fun (id, var, def) ->
-          VP.create id, to_clambda_named t env var def)
+      List.map (fun (id, var, clas, def) ->
+          VP.create id, clas, to_clambda_named t env var def)
         defs
     in
     Uletrec (defs, to_clambda t env body)

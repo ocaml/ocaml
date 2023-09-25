@@ -297,7 +297,7 @@ type lambda =
   | Lfunction of lfunction
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
   | Lmutlet of value_kind * Ident.t * lambda * lambda
-  | Lletrec of (Ident.t * lambda) list * lambda
+  | Lletrec of rec_binding list * lambda
   | Lprim of primitive * lambda list * scoped_location
   | Lswitch of lambda * lambda_switch * scoped_location
   | Lstringswitch of
@@ -313,6 +313,12 @@ type lambda =
   | Lsend of meth_kind * lambda * lambda * lambda list * scoped_location
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
+
+and rec_binding = {
+  id : Ident.t;
+  rkind : Typedtree.recursive_binding_kind;
+  def : lambda;
+}
 
 and lfunction =
   { kind: function_kind;
@@ -513,7 +519,7 @@ let shallow_iter ~tail ~non_tail:f = function
       f arg; tail body
   | Lletrec(decl, body) ->
       tail body;
-      List.iter (fun (_id, exp) -> f exp) decl
+      List.iter (fun { def } -> f def) decl
   | Lprim (Psequand, [l1; l2], _)
   | Lprim (Psequor, [l1; l2], _) ->
       f l1;
@@ -570,8 +576,12 @@ let rec free_variables = function
         (free_variables arg)
         (Ident.Set.remove id (free_variables body))
   | Lletrec(decl, body) ->
-      let set = free_variables_list (free_variables body) (List.map snd decl) in
-      Ident.Set.diff set (Ident.Set.of_list (List.map fst decl))
+      let set =
+        free_variables_list (free_variables body)
+          (List.map (fun { def } -> def) decl)
+      in
+      Ident.Set.diff set
+        (Ident.Set.of_list (List.map (fun { id } -> id) decl))
   | Lprim(_p, args, _loc) ->
       free_variables_list Ident.Set.empty args
   | Lswitch(arg, sw,_) ->
@@ -730,6 +740,12 @@ let subst update_env ?(freshen_bound_variables = false) s input_lam =
         ((id', rhs) :: ids' , l)
       ) ids ([], l)
   in
+  let bind_rec ids l =
+    List.fold_right (fun rb (ids', l) ->
+        let id', l = bind rb.id l in
+        ({ rb with id = id' } :: ids' , l)
+      ) ids ([], l)
+  in
   let rec subst s l lam =
     match lam with
     | Lvar id as lam ->
@@ -763,7 +779,7 @@ let subst update_env ?(freshen_bound_variables = false) s input_lam =
         let id, l' = bind id l in
         Lmutlet(k, id, subst s l arg, subst s l' body)
     | Lletrec(decl, body) ->
-        let decl, l' = bind_many decl l in
+        let decl, l' = bind_rec decl l in
         Lletrec(List.map (subst_decl s l') decl, subst s l' body)
     | Lprim(p, args, loc) -> Lprim(p, subst_list s l args, loc)
     | Lswitch(arg, sw, loc) ->
@@ -829,7 +845,7 @@ let subst update_env ?(freshen_bound_variables = false) s input_lam =
         let id = try Ident.Map.find id l with Not_found -> id in
         Lifused (id, subst s l e)
   and subst_list s l li = List.map (subst s l) li
-  and subst_decl s l (id, exp) = (id, subst s l exp)
+  and subst_decl s l decl = { decl with def = subst s l decl.def }
   and subst_case s l (key, case) = (key, subst s l case)
   and subst_strcase s l (key, case) = (key, subst s l case)
   and subst_opt s l = function
@@ -874,7 +890,7 @@ let shallow_map f = function
   | Lmutlet (k, v, e1, e2) ->
       Lmutlet (k, v, f e1, f e2)
   | Lletrec (idel, e2) ->
-      Lletrec (List.map (fun (v, e) -> (v, f e)) idel, f e2)
+      Lletrec (List.map (fun rb -> { rb with def = f rb.def }) idel, f e2)
   | Lprim (p, el, loc) ->
       Lprim (p, List.map f el, loc)
   | Lswitch (e, sw, loc) ->

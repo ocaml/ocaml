@@ -37,4 +37,4 @@ val split_default_wrapper
   -> body:lambda
   -> attr:function_attribute
   -> loc:Lambda.scoped_location
-  -> (Ident.t * lambda) list
+  -> rec_binding list

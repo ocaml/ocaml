@@ -34,8 +34,9 @@ type t = {
 }
 
 let add_default_argument_wrappers lam =
-  let defs_are_all_functions (defs : (_ * Lambda.lambda) list) =
-    List.for_all (function (_, Lambda.Lfunction _) -> true | _ -> false) defs
+  let defs_are_all_functions (defs : Lambda.rec_binding list) =
+    List.for_all (function Lambda.{ def = Lfunction _ } -> true | _ -> false)
+      defs
   in
   let f (lam : Lambda.lambda) : Lambda.lambda =
     match lam with
@@ -45,8 +46,10 @@ let add_default_argument_wrappers lam =
         Simplif.split_default_wrapper ~id ~kind ~params
           ~body:fbody ~return:Pgenval ~attr ~loc
       with
-      | [fun_id, def] -> Llet (Alias, Pgenval, fun_id, def, body)
-      | [fun_id, def; inner_fun_id, def_inner] ->
+      | [{ id = fun_id; rkind=_; def }] ->
+        Llet (Alias, Pgenval, fun_id, def, body)
+      | [{ id = fun_id;rkind=_; def };
+         { id = inner_fun_id; rkind=_; def = def_inner }] ->
         Llet (Alias, Pgenval, inner_fun_id, def_inner,
               Llet (Alias, Pgenval, fun_id, def, body))
       | _ -> assert false
@@ -57,7 +60,8 @@ let add_default_argument_wrappers lam =
           List.flatten
             (List.map
                (function
-                 | (id, Lambda.Lfunction {kind; params; body; attr; loc}) ->
+                 | Lambda.{ id; rkind = _;
+                     def = Lambda.Lfunction {kind; params; body; attr; loc} } ->
                    Simplif.split_default_wrapper ~id ~kind ~params ~body
                      ~return:Pgenval ~attr ~loc
                  | _ -> assert false)
@@ -246,7 +250,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
             })))
   | Lletrec (defs, body) ->
     let env =
-      List.fold_right (fun (id,  _) env ->
+      List.fold_right (fun { Lambda.id } env ->
           Env.add_var env id (Variable.create_with_same_name_as_ident id))
         defs env
     in
@@ -254,8 +258,8 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       (* Identify any bindings in the [let rec] that are functions.  These
          will be named after the corresponding identifier in the [let rec]. *)
       List.map (function
-          | (let_rec_ident,
-             Lambda.Lfunction { kind; params; body; attr; loc }) ->
+          | Lambda.{ id = let_rec_ident; rkind = _;
+              def = Lambda.Lfunction { kind; params; body; attr; loc }} ->
             let closure_bound_var =
               Variable.create_with_same_name_as_ident let_rec_ident
             in
@@ -305,9 +309,10 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
          expression; any functions bound by it will have their own
          individual closures. *)
       let defs =
-        List.map (fun (id, def) ->
+        List.map (fun Lambda.{ id; rkind; def } ->
             let var = Env.find_var env id in
-            var, close_let_bound_expression t ~let_rec_ident:id var env def)
+            var, rkind,
+            close_let_bound_expression t ~let_rec_ident:id var env def)
           defs
       in
       Let_rec (defs, close t env body)

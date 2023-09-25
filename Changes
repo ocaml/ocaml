@@ -139,6 +139,9 @@ Working version
   were not correctly rounded sometimes.
   (Xavier Leroy, review by Anil Madhavapeddy and Tim McGilchrist)
 
+- #12551: Propagate classification of recursive bindings from Rec_check
+  (Vincent Laviron, review by Gabriel Scherer)
+
 ### Standard library:
 
 * #10775, #12499: Half-precision floating-point elements in Bigarray.

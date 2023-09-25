@@ -897,7 +897,8 @@ and transl_let ~scopes ?(in_structure=false) rec_flag pat_expr_list =
       let rec transl = function
         [] ->
           fun body -> body
-      | {vb_pat=pat; vb_expr=expr; vb_attributes=attr; vb_loc} :: rem ->
+      | {vb_pat=pat; vb_expr=expr; vb_rec_kind=_; vb_attributes=attr; vb_loc}
+        :: rem ->
           let lam = transl_bound_exp ~scopes ~in_structure pat expr in
           let lam = Translattribute.add_function_attributes lam vb_loc attr in
           let mk_body = transl rem in
@@ -912,12 +913,13 @@ and transl_let ~scopes ?(in_structure=false) rec_flag pat_expr_list =
             | Tpat_alias ({pat_desc=Tpat_any}, id,_) -> id
             | _ -> assert false)
         pat_expr_list in
-      let transl_case {vb_expr=expr; vb_attributes; vb_loc; vb_pat} id =
-        let lam = transl_bound_exp ~scopes ~in_structure vb_pat expr in
-        let lam =
-          Translattribute.add_function_attributes lam vb_loc vb_attributes
+      let transl_case {vb_expr=expr; vb_attributes; vb_rec_kind = rkind;
+                       vb_loc; vb_pat} id =
+        let def = transl_bound_exp ~scopes ~in_structure vb_pat expr in
+        let def =
+          Translattribute.add_function_attributes def vb_loc vb_attributes
         in
-        (id, lam) in
+        { id; rkind; def } in
       let lam_bds = List.map2 transl_case pat_expr_list idlist in
       fun body -> Lletrec(lam_bds, body)
 

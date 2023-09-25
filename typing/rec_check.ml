@@ -110,7 +110,7 @@ exception Illegal_expr
 
 (** {1 Static or dynamic size} *)
 
-type sd = Static | Dynamic
+type sd = Typedtree.recursive_binding_kind
 
 let is_ref : Types.value_description -> bool = function
   | { Types.val_kind =
@@ -146,7 +146,7 @@ let classify_expression : Typedtree.expression -> sd =
     The first definition can be allowed (`y` has a statically-known
     size) but the second one is unsound (`y` has no statically-known size).
   *)
-  let rec classify_expression env e = match e.exp_desc with
+  let rec classify_expression env e : sd = match e.exp_desc with
     (* binding and variable cases *)
     | Texp_let (rec_flag, vb, e) ->
         let env = classify_value_bindings rec_flag env vb in
@@ -179,7 +179,7 @@ let classify_expression : Typedtree.expression -> sd =
       when List.exists is_abstracted_arg args ->
         Static
     | Texp_apply _ ->
-        Dynamic
+        Not_recursive
 
     | Texp_for _
     | Texp_constant _
@@ -207,7 +207,7 @@ let classify_expression : Typedtree.expression -> sd =
     | Texp_try _
     | Texp_override _
     | Texp_letop _ ->
-        Dynamic
+        Not_recursive
   and classify_value_bindings rec_flag env bindings =
     (* We use a non-recursive classification, classifying each
         binding with respect to the old environment
@@ -247,17 +247,17 @@ let classify_expression : Typedtree.expression -> sd =
                 For non-local identifiers it might be reasonable (although
                 not completely clear) to consider them Static (they have
                 already been evaluated), but for the others we must
-                under-approximate with Dynamic.
+                under-approximate with Not_recursive.
 
                 This could be fixed by a more complete implementation.
             *)
-            Dynamic
+            Not_recursive
         end
     | Path.Pdot _ | Path.Papply _ | Path.Pextra_ty _ ->
         (* local modules could have such paths to local definitions;
             classify_expression could be extend to compute module
             shapes more precisely *)
-        Dynamic
+        Not_recursive
   in classify_expression Ident.empty
 
 
@@ -1275,21 +1275,23 @@ and is_destructuring_pattern : type k . k general_pattern -> bool =
     | Tpat_or (l,r,_) ->
         is_destructuring_pattern l || is_destructuring_pattern r
 
-let is_valid_recursive_expression idlist expr =
+let is_valid_recursive_expression idlist expr : sd option =
   match expr.exp_desc with
   | Texp_function _ ->
      (* Fast path: functions can never have invalid recursive references *)
-     true
+     Some Static
   | _ ->
      match classify_expression expr with
      | Static ->
         (* The expression has known size *)
         let ty = expression expr Return in
-        Env.unguarded ty idlist = []
-     | Dynamic ->
+        if Env.unguarded ty idlist = [] then Some Static else None
+     | Not_recursive ->
         (* The expression has unknown size *)
         let ty = expression expr Return in
-        Env.unguarded ty idlist = [] && Env.dependent ty idlist = []
+        if Env.unguarded ty idlist = [] && Env.dependent ty idlist = []
+        then Some Not_recursive
+        else None
 
 (* A class declaration may contain let-bindings. If they are recursive,
    their validity will already be checked by [is_valid_recursive_expression]

@@ -120,11 +120,15 @@ and lift_lets_named _var (named:Flambda.named) ~toplevel : Flambda.named =
 
 module Sort_lets = Strongly_connected_components.Make (Variable)
 
-let rebuild_let_rec (defs:(Variable.t * Flambda.named) list) body =
-  let map = Variable.Map.of_list defs in
+let rebuild_let_rec (defs:(Variable.t * _ * Flambda.named) list) body =
+  let map =
+    List.fold_left (fun map (var, clas, def) ->
+        Variable.Map.add var (clas, def) map)
+      Variable.Map.empty defs
+  in
   let graph =
     Variable.Map.map
-      (fun named ->
+      (fun (_clas, named) ->
          Variable.Set.filter (fun v -> Variable.Map.mem v map)
            (Flambda.free_variables_named named))
       map
@@ -135,11 +139,15 @@ let rebuild_let_rec (defs:(Variable.t * Flambda.named) list) body =
   Array.fold_left (fun body (component:Sort_lets.component) ->
       match component with
       | No_loop v ->
-          let def = Variable.Map.find v map in
+          let (_clas, def) = Variable.Map.find v map in
           Flambda.create_let v def body
       | Has_loop l ->
           Flambda.Let_rec
-            (List.map (fun v -> v, Variable.Map.find v map) l,
+            (List.map
+               (fun v ->
+                  let clas, def = Variable.Map.find v map in
+                 v, clas, def)
+               l,
              body))
     body components
 

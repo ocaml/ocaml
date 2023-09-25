@@ -551,6 +551,10 @@ and specialized = {
   direct_kind: function_kind;
 }
 
+type _ binding_kind =
+  | Recursive : rec_binding binding_kind
+  | Non_recursive : (Ident.t * lambda) binding_kind
+
 let llets lk vk bindings body =
   List.fold_right (fun (var, def) body ->
     Llet (lk, vk, var, def, body)
@@ -928,17 +932,41 @@ and traverse ctx = function
 
 and traverse_let outer_ctx var def =
   let inner_ctx = declare_binding outer_ctx (var, def) in
-  let bindings = traverse_binding outer_ctx inner_ctx (var, def) in
+  let bindings =
+    traverse_binding Non_recursive outer_ctx inner_ctx (var, def)
+  in
   inner_ctx, bindings
 
 and traverse_letrec ctx bindings =
-  let ctx = List.fold_left declare_binding ctx bindings in
-  let bindings = List.concat_map (traverse_binding ctx ctx) bindings in
+  let ctx =
+    List.fold_left declare_binding ctx
+      (List.map (fun { id; rkind=_; def } -> id, def) bindings)
+  in
+  let bindings =
+    List.concat_map (traverse_binding Recursive ctx ctx) bindings
+  in
   ctx, bindings
 
-and traverse_binding outer_ctx inner_ctx (var, def) =
+and traverse_binding :
+  type a. a binding_kind -> context -> context -> a -> a list =
+  fun binding_kind outer_ctx inner_ctx binding ->
+  let (var, def) : Ident.t * lambda =
+    match binding_kind, binding with
+    | Recursive, { id; rkind=_; def } -> id, def
+    | Non_recursive, (var, def) -> var, def
+  in
+  let mk_same_binding (var : Ident.t) (def : lambda) : a =
+    match binding_kind, binding with
+    | Recursive, { id=_; rkind; def=_ } -> { id = var; rkind; def }
+    | Non_recursive, _ -> var, def
+  in
+  let mk_static_binding (var : Ident.t) (def : lambda) : a =
+    match binding_kind, binding with
+    | Recursive, _ -> { id = var; rkind = Static; def }
+    | Non_recursive, _ -> var, def
+  in
   match find_candidate def with
-  | None -> [(var, traverse outer_ctx def)]
+  | None -> [mk_same_binding var (traverse outer_ctx def)]
   | Some lfun ->
   let special = Ident.Map.find var inner_ctx.specialized in
   let fun_choice = choice outer_ctx ~tail:true lfun.body in
@@ -968,7 +996,7 @@ and traverse_binding outer_ctx inner_ctx (var, def) =
       ~loc:lfun.loc
   in
   let dps_var = special.dps_id in
-  [(var, direct); (dps_var, dps)]
+  [mk_static_binding var direct; mk_static_binding dps_var dps]
 
 and traverse_list ctx terms =
   List.map (traverse ctx) terms

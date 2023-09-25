@@ -57,6 +57,7 @@ let ignore_params_with_value_kind (_ : (VP.t * Lambda.value_kind) list) = ()
 let ignore_direction_flag (_ : Asttypes.direction_flag) = ()
 let ignore_meth_kind (_ : Lambda.meth_kind) = ()
 let ignore_value_kind (_ : Lambda.value_kind) = ()
+let ignore_rec_classification (_ : Typedtree.recursive_binding_kind) = ()
 
 (* CR-soon mshinwell: check we aren't traversing function bodies more than
    once (need to analyse exactly what the calls are from Cmmgen into this
@@ -167,8 +168,9 @@ let make_var_info (clam : Clambda.ulambda) : var_info =
       ignore_uphantom_defining_expr_option defining_expr_opt;
       loop ~depth body
     | Uletrec (defs, body) ->
-      List.iter (fun (var, def) ->
+      List.iter (fun (var, clas, def) ->
           ignore_var_with_provenance var;
+          ignore_rec_classification clas;
           loop ~depth def)
         defs;
       loop ~depth body
@@ -352,8 +354,9 @@ let let_bound_vars_that_can_be_moved var_info (clam : Clambda.ulambda) =
       (* Evaluation order for [defs] is not defined, and this case
          probably isn't important for [Cmmgen] anyway. *)
       let_stack := [];
-      List.iter (fun (var, def) ->
+      List.iter (fun (var, clas, def) ->
           ignore_var_with_provenance var;
+          ignore_rec_classification clas;
           loop def;
           let_stack := [])
         defs;
@@ -517,8 +520,8 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
     Uphantom_let (var, defining_expr, body)
   | Uletrec (defs, body) ->
     let defs =
-      List.map (fun (var, def) ->
-          var, substitute_let_moveable is_let_moveable env def)
+      List.map (fun (var, clas, def) ->
+          var, clas, substitute_let_moveable is_let_moveable env def)
         defs
     in
     let body = substitute_let_moveable is_let_moveable env body in
@@ -743,7 +746,7 @@ let rec un_anf_and_moveable var_info env (clam : Clambda.ulambda)
     Uphantom_let (var, defining_expr, body), body_moveable
   | Uletrec (defs, body) ->
     let defs =
-      List.map (fun (var, def) -> var, un_anf var_info env def) defs
+      List.map (fun (var, clas, def) -> var, clas, un_anf var_info env def) defs
     in
     let body = un_anf var_info env body in
     Uletrec (defs, body), Fixed

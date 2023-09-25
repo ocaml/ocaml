@@ -284,7 +284,7 @@ type lambda =
   | Lfunction of lfunction
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
   | Lmutlet of value_kind * Ident.t * lambda * lambda
-  | Lletrec of (Ident.t * lambda) list * lambda
+  | Lletrec of rec_binding list * lambda
   | Lprim of primitive * lambda list * scoped_location
   | Lswitch of lambda * lambda_switch * scoped_location
 (* switch on strings, clauses are sorted by string order,
@@ -304,6 +304,12 @@ type lambda =
   | Lsend of meth_kind * lambda * lambda * lambda list * scoped_location
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
+
+and rec_binding = {
+  id : Ident.t;
+  rkind : Typedtree.recursive_binding_kind;
+  def : lambda;
+}
 
 and lfunction = private
   { kind: function_kind;

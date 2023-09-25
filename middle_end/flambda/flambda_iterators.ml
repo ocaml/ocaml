@@ -27,7 +27,7 @@ let apply_on_subexpressions f f_named (flam : Flambda.t) =
   | Let_mutable { body; _ } ->
     f body
   | Let_rec (defs, body) ->
-    List.iter (fun (_,l) -> f_named l) defs;
+    List.iter (fun (_,_,l) -> f_named l) defs;
     f body
   | Switch (_, sw) ->
     List.iter (fun (_,l) -> f l) sw.consts;
@@ -74,6 +74,13 @@ let map_snd_sharing f ((a, b) as cpl) =
   else
     (a, new_b)
 
+let map_rec_binding_sharing f ((v, clas, named) as binding) =
+  let new_named = f v named in
+  if named == new_named then
+    binding
+  else
+    (v, clas, new_named)
+
 let map_subexpressions f f_named (tree:Flambda.t) : Flambda.t =
   match tree with
   | Var _ | Apply _ | Assign _ | Send _ | Proved_unreachable
@@ -87,7 +94,7 @@ let map_subexpressions f f_named (tree:Flambda.t) : Flambda.t =
       Flambda.create_let var new_named new_body
   | Let_rec (defs, body) ->
     let new_defs =
-      list_map_sharing (map_snd_sharing f_named) defs
+      list_map_sharing (map_rec_binding_sharing f_named) defs
     in
     let new_body = f body in
     if new_defs == defs && new_body == body then
@@ -179,7 +186,8 @@ let iter_named_toplevel f f_named named =
 let iter_all_immutable_let_and_let_rec_bindings t ~f =
   iter_expr (function
       | Let { var; defining_expr; _ } -> f var defining_expr
-      | Let_rec (defs, _) -> List.iter (fun (var, named) -> f var named) defs
+      | Let_rec (defs, _) ->
+        List.iter (fun (var, _clas, named) -> f var named) defs
       | _ -> ())
     t
 
@@ -187,7 +195,8 @@ let iter_all_toplevel_immutable_let_and_let_rec_bindings t ~f =
   iter_general ~toplevel:true
     (function
       | Let { var; defining_expr; _ } -> f var defining_expr
-      | Let_rec (defs, _) -> List.iter (fun (var, named) -> f var named) defs
+      | Let_rec (defs, _) ->
+        List.iter (fun (var, _clas, named) -> f var named) defs
       | _ -> ())
     (fun _ -> ())
     (Is_expr t)
@@ -302,8 +311,8 @@ let map_general ~toplevel f f_named tree =
         | Let_rec (defs, body) ->
           let done_something = ref false in
           let defs =
-            List.map (fun (id, lam) ->
-                id, aux_named_done_something id lam done_something)
+            List.map (fun (id, clas, lam) ->
+                id, clas, aux_named_done_something id lam done_something)
               defs
           in
           let body = aux_done_something body done_something in

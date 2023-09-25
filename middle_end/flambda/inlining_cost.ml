@@ -86,7 +86,7 @@ let lambda_smaller' lam ~than:threshold =
       lambda_size body
     | Let_mutable { body } -> lambda_size body
     | Let_rec (bindings, body) ->
-      List.iter (fun (_, lam) -> lambda_named_size lam) bindings;
+      List.iter (fun (_, _, lam) -> lambda_named_size lam) bindings;
       lambda_size body
     | Switch (_, sw) ->
       let cost cases =
