@@ -35,7 +35,8 @@ type t = {
 
 let add_default_argument_wrappers lam =
   let defs_are_all_functions (defs : Lambda.rec_binding list) =
-    List.for_all (function Lambda.{ def = Lfunction _ } -> true | _ -> false) defs
+    List.for_all (function Lambda.{ def = Lfunction _ } -> true | _ -> false)
+      defs
   in
   let f (lam : Lambda.lambda) : Lambda.lambda =
     match lam with
