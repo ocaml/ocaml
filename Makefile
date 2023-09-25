@@ -1756,8 +1756,6 @@ $(DEPDIR)/ocamltest:
 $(ocamltest_DEP_FILES): $(DEPDIR)/ocamltest/%.$(D): ocamltest/%.c
 	$(V_CCDEPS)$(DEP_CC) $(OC_CPPFLAGS) $(CPPFLAGS) $< -MT '$*.$(O)' -MF $@
 
-beforedepend:: $(ocamltest_MLI_FILES) $(ocamltest_ML_FILES)
-
 ocamltest/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 
 ocamltest: ocamltest/ocamltest$(EXE)
