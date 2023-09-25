@@ -221,6 +221,10 @@ Working version
 - #12615: ocamldoc: get rid of the odoc_literate and odoc_todo generators.
   (Sébaistien Hinderer, review by Gabriel Scherer and Florian Angeletti)
 
+* #12497, #12613: Make ocamlc/ocamlopt fail with an error when no
+  input files are specified to build an executable.
+  (Antonin Décimo, review by Sébastien Hinderer)
+
 ### Manual and documentation:
 
 - #12338: clarification of the documentation of process related function in

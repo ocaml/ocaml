@@ -687,10 +687,14 @@ let process_deferred_actions env =
             fatal "Options -c -o are incompatible with compiling multiple files"
         end;
   end;
-  if !make_archive && List.exists (function
-      | ProcessOtherFile name -> Filename.check_suffix name ".cmxa"
-      | _ -> false) !deferred_actions then
-    fatal "Option -a cannot be used with .cmxa input files.";
+  if !make_archive then begin
+    if List.exists (function
+        | ProcessOtherFile name -> Filename.check_suffix name ".cmxa"
+        | _ -> false) !deferred_actions then
+      fatal "Option -a cannot be used with .cmxa input files."
+    end
+  else if !deferred_actions = [] then
+    fatal "No input files";
   List.iter (process_action env) (List.rev !deferred_actions);
   output_name := final_output_name;
   stop_early :=
