@@ -120,7 +120,7 @@ Working version
   (Xavier Leroy, review by Anil Madhavapeddy and Tim McGilchrist)
 
 - #12551: Propagate classification of recursive bindings from Rec_check
-  (Vincent Laviron, not reviewed yet)
+  (Vincent Laviron, review by Gabriel Scherer)
 
 ### Standard library:
 
