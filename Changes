@@ -419,6 +419,10 @@ Working version
   (Fabrice Buoro and Olivier Nicole, report by Jan Midtgaard, review by Miod
   Vallat and Gabriel Scherer)
 
+- #12482: Rework bounds checking code in the POWER backend
+  (Miod Vallat and Xavier Leroy, report by Jan Midtgaard, review by
+   KC Sivaramakrishnan)
+
 OCaml 5.1.0 (14 September 2023)
 -------------------------------
 
