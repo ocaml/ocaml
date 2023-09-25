@@ -16,7 +16,6 @@
 (* To assign numbers to globals and primitives *)
 
 open Misc
-open Asttypes
 open Lambda
 open Cmo_format
 
