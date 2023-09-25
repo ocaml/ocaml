@@ -18,8 +18,6 @@
 (** Interface for platform-specific dynlink providers.
     Note that this file needs to be a valid .mli file. *)
 
-[@@@ocaml.warning "+a-4-30-40-41-42"]
-
 module type S = sig
   type handle
 

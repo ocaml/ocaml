@@ -15,8 +15,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-30-40-41-42"]
-
 open! Dynlink_compilerlibs
 
 module String = struct

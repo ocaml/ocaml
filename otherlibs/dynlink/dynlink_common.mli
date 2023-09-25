@@ -15,8 +15,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-30-40-41-42"]
-
 (** Construction of dynlink functionality given the platform-specific code. *)
 
 module Make (_ : Dynlink_platform_intf.S) : sig
