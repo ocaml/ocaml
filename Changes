@@ -41,7 +41,7 @@ Working version
   and variant with only constant constructors.
   (Christophe Raffalli, review by Gabriel Scherer)
 
-- #12502: the compiler now normalizes the newline sequence \r\n to
+* #12502: the compiler now normalizes the newline sequence \r\n to
   a single \n character during lexing, to guarantee that the semantics
   of newlines in string literals is not modified by Windows tools
   transforming \n into \r\n in source files.
