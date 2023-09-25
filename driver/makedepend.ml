@@ -13,15 +13,15 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Print the dependencies *)
+
 open Parsetree
 module String = Misc.Stdlib.String
 
-let ppf = Format.err_formatter
-(* Print the dependencies *)
+let stderr = Format.err_formatter
 
 type file_kind = ML | MLI
 
-let load_path = ref ([] : (string * string array) list)
 let ml_synonyms = ref [".ml"]
 let mli_synonyms = ref [".mli"]
 let shared = ref false
@@ -32,12 +32,14 @@ let sort_files = ref false
 let all_dependencies = ref false
 let nocwd = ref false
 let one_line = ref false
+let allow_approximation = ref false
+let debug = ref false
+
+(* [(dir, contents)] where [contents] is returned by [Sys.readdir dir]. *)
+let load_path = ref ([] : (string * string array) list)
 let files =
   ref ([] : (string * file_kind * String.Set.t * string list) list)
-let allow_approximation = ref false
-let map_files = ref []
 let module_map = ref String.Map.empty
-let debug = ref false
 
 module Error_occurred : sig
   val set : unit -> unit
@@ -50,9 +52,10 @@ end = struct
   let set () = error_occurred := true
 end
 
+let prepend_to_list l e = l := e :: !l
+
 (* Fix path to use '/' as directory separator instead of '\'.
    Only under Windows. *)
-
 let fix_slash s =
   if Sys.os_type = "Unix" then s else begin
     String.map (function '\\' -> '/' | c -> c) s
@@ -69,30 +72,27 @@ let readdir dir =
       try
         Sys.readdir dir
       with Sys_error msg ->
-        Format.fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
+        Format.eprintf "@[Bad -I option: %s@]@." msg;
         Error_occurred.set ();
         [||]
     in
     dirs := String.Map.add dir contents !dirs;
     contents
 
-let add_to_list li s =
-  li := s :: !li
-
 let add_to_load_path dir =
   try
     let dir = Misc.expand_directory Config.standard_library dir in
     let contents = readdir dir in
-    add_to_list load_path (dir, contents)
+    prepend_to_list load_path (dir, contents)
   with Sys_error msg ->
-    Format.fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
+    Format.eprintf "@[Bad -I option: %s@]@." msg;
     Error_occurred.set ()
 
 let add_to_synonym_list synonyms suffix =
   if (String.length suffix) > 1 && suffix.[0] = '.' then
-    add_to_list synonyms suffix
+    prepend_to_list synonyms suffix
   else begin
-    Format.fprintf Format.err_formatter "@[Bad suffix: '%s'@]@." suffix;
+    Format.eprintf "@[Bad suffix: '%s'@]@." suffix;
     Error_occurred.set ()
   end
 
@@ -103,26 +103,21 @@ let find_module_in_load_path name =
     let uname = Unit_info.normalize name in
     List.map (fun ext -> uname ^ ext) (!mli_synonyms @ !ml_synonyms)
   in
-  let rec find_in_array a pos =
-    if pos >= Array.length a then None else begin
-      let s = a.(pos) in
-      if List.mem s names || List.mem s unames then
-        Some s
-      else
-        find_in_array a (pos + 1)
-    end in
   let rec find_in_path = function
-    [] -> raise Not_found
-  | (dir, contents) :: rem ->
-      match find_in_array contents 0 with
-        Some truename ->
-          if dir = "." then truename else Filename.concat dir truename
-      | None -> find_in_path rem in
+    | [] -> raise Not_found
+    | (dir, contents) :: rem ->
+        let mem s = List.mem s names || List.mem s unames in
+        match Array.find_opt mem contents with
+        | Some truename ->
+            if dir = Filename.current_dir_name then truename
+            else Filename.concat dir truename
+        | None -> find_in_path rem in
   find_in_path !load_path
 
 let find_dependency target_kind modname (byt_deps, opt_deps) =
-  try
-    let filename = find_module_in_load_path modname in
+  match find_module_in_load_path modname with
+  | exception Not_found -> (byt_deps, opt_deps)
+  | filename ->
     let basename = Filename.chop_extension filename in
     let cmi_file = basename ^ ".cmi" in
     let cmx_file = basename ^ ".cmx" in
@@ -163,8 +158,6 @@ let find_dependency target_kind modname (byt_deps, opt_deps) =
         else [ cmx_file ]
       in
       (bytenames @ byt_deps, optnames @  opt_deps)
-  with Not_found ->
-    (byt_deps, opt_deps)
 
 let (depends_on, escaped_eol) = (":", " \\\n    ")
 
@@ -243,7 +236,7 @@ let print_raw_dependencies source_file deps =
 (* Process one file *)
 
 let print_exception exn =
-  Location.report_exception Format.err_formatter exn
+  Location.report_exception stderr exn
 
 let report_err exn =
   Error_occurred.set ();
@@ -260,43 +253,40 @@ let rec lexical_approximation lexbuf =
        lower-case identifier
      - always skip the token after a backquote
   *)
-  try
-    let rec process after_lident lexbuf =
-      match Lexer.token lexbuf with
-      | Parser.UIDENT name ->
-          Depend.free_structure_names :=
-            String.Set.add name !Depend.free_structure_names;
-          process false lexbuf
-      | Parser.LIDENT _ -> process true lexbuf
-      | Parser.DOT when after_lident -> process false lexbuf
-      | Parser.DOT | Parser.BACKQUOTE -> skip_one lexbuf
-      | Parser.EOF -> ()
-      | _ -> process false lexbuf
-    and skip_one lexbuf =
-      match Lexer.token lexbuf with
-      | Parser.DOT | Parser.BACKQUOTE -> skip_one lexbuf
-      | Parser.EOF -> ()
-      | _ -> process false lexbuf
+  let rec process ~after_lident lexbuf =
+    match Lexer.token lexbuf with
+    | Parser.UIDENT name ->
+        Depend.free_structure_names :=
+          String.Set.add name !Depend.free_structure_names;
+        process ~after_lident:false lexbuf
+    | Parser.LIDENT _ -> process ~after_lident:true lexbuf
+    | Parser.DOT when after_lident -> process ~after_lident:false lexbuf
+    | Parser.DOT | Parser.BACKQUOTE -> skip_one lexbuf
+    | Parser.EOF -> ()
+    | _ -> process ~after_lident:false lexbuf
+  and skip_one lexbuf =
+    match Lexer.token lexbuf with
+    | Parser.DOT | Parser.BACKQUOTE -> skip_one lexbuf
+    | Parser.EOF -> ()
+    | _ -> process ~after_lident:false lexbuf
 
-    in
-    process false lexbuf
+  in
+  try process ~after_lident:false lexbuf
   with Lexer.Error _ -> lexical_approximation lexbuf
 
 let read_and_approximate inputfile =
   Depend.free_structure_names := String.Set.empty;
-  let ic = open_in_bin inputfile in
-  try
+  begin try
+    In_channel.with_open_bin inputfile @@ fun ic ->
     seek_in ic 0;
     Location.input_name := inputfile;
     let lexbuf = Lexing.from_channel ic in
     Location.init lexbuf inputfile;
-    lexical_approximation lexbuf;
-    close_in ic;
-    !Depend.free_structure_names
+    lexical_approximation lexbuf
   with exn ->
-    close_in ic;
-    report_err exn;
-    !Depend.free_structure_names
+    report_err exn
+  end;
+  !Depend.free_structure_names
 
 let read_parse_and_extract parse_function extract_function def ast_kind
     source_file =
@@ -304,7 +294,8 @@ let read_parse_and_extract parse_function extract_function def ast_kind
   Depend.free_structure_names := String.Set.empty;
   try
     let input_file = Pparse.preprocess source_file in
-    begin try
+    Fun.protect ~finally:(fun () -> Pparse.remove_preprocessed input_file)
+    @@ fun () ->
       let ast = Pparse.file ~tool_name input_file parse_function ast_kind in
       let bound_vars =
         List.fold_left
@@ -318,12 +309,7 @@ let read_parse_and_extract parse_function extract_function def ast_kind
           !module_map ((* PR#7248 *) List.rev !Clflags.open_modules)
       in
       let r = extract_function bound_vars ast in
-      Pparse.remove_preprocessed input_file;
       (!Depend.free_structure_names, r)
-    with x ->
-      Pparse.remove_preprocessed input_file;
-      raise x
-    end
   with x -> begin
     print_exception x;
     if not !allow_approximation then begin
@@ -387,23 +373,23 @@ let ml_file_dependencies source_file =
       | Ptop_def s -> s
       | Ptop_dir _ -> []
     in
-    List.flatten (List.map f (Parse.use_file lexbuf))
+    List.concat_map f (Parse.use_file lexbuf)
   in
   let (extracted_deps, ()) =
     read_parse_and_extract parse_use_file_as_impl Depend.add_implementation ()
                            Pparse.Structure source_file
   in
-  files := (source_file, ML, extracted_deps, !Depend.pp_deps) :: !files
+  prepend_to_list files (source_file, ML, extracted_deps, !Depend.pp_deps)
 
 let mli_file_dependencies source_file =
   let (extracted_deps, ()) =
     read_parse_and_extract Parse.interface Depend.add_signature ()
                            Pparse.Signature source_file
   in
-  files := (source_file, MLI, extracted_deps, !Depend.pp_deps) :: !files
+  prepend_to_list files (source_file, MLI, extracted_deps, !Depend.pp_deps)
 
 let process_file_as process_fun def source_file =
-  Compenv.readenv ppf (Before_compile source_file);
+  Compenv.readenv stderr (Before_compile source_file);
   load_path := [];
   let cwd = if !nocwd then [] else [Filename.current_dir_name] in
   List.iter add_to_load_path (
@@ -444,15 +430,13 @@ let sort_files_by_dependencies files =
     let key = (modname, file_kind) in
     let new_deps = ref [] in
     Hashtbl.add h key (file, new_deps);
-    worklist := key :: !worklist;
+    prepend_to_list worklist key;
     (modname, file_kind, deps, new_deps, pp_deps)
   ) files in
 
 (* Keep only dependencies to defined modules *)
   List.iter (fun (modname, file_kind, deps, new_deps, _pp_deps) ->
-    let add_dep modname kind =
-      new_deps := (modname, kind) :: !new_deps;
-    in
+    let add_dep modname kind = prepend_to_list new_deps (modname, kind) in
     String.Set.iter (fun modname ->
       match file_kind with
           ML -> (* ML depends both on ML and MLI *)
@@ -479,32 +463,31 @@ let sort_files_by_dependencies files =
       let set = !deps in
       deps := [];
       List.iter (fun key ->
-        if Hashtbl.mem h key then deps := key :: !deps
+        if Hashtbl.mem h key then prepend_to_list deps key
       ) set;
       if !deps = [] then begin
         printed := true;
         Printf.printf "%s " file;
         Hashtbl.remove h key;
       end else
-        worklist := key :: !worklist
+        prepend_to_list worklist key
     ) files
   done;
 
   if !worklist <> [] then begin
     Location.error "cycle in dependencies. End of list is not sorted."
-    |> Location.print_report Format.err_formatter;
+    |> Location.print_report stderr;
     let sorted_deps =
       let li = ref [] in
-      Hashtbl.iter (fun _ file_deps -> li := file_deps :: !li) h;
+      Hashtbl.iter (fun _ file_deps -> prepend_to_list li file_deps) h;
       List.sort (fun (file1, _) (file2, _) -> String.compare file1 file2) !li
     in
     List.iter (fun (file, deps) ->
-      Format.fprintf Format.err_formatter "\t@[%s: " file;
+      Format.eprintf "\t@[%s: " file;
       List.iter (fun (modname, kind) ->
-        Format.fprintf Format.err_formatter "%s.%s " modname
-          (if kind=ML then "ml" else "mli");
+        Format.eprintf "%s.%s " modname (if kind=ML then "ml" else "mli")
       ) !deps;
-      Format.fprintf Format.err_formatter "@]@.";
+      Format.eprintf "@]@.";
       Printf.printf "%s " file) sorted_deps;
     Error_occurred.set ()
   end;
@@ -534,7 +517,6 @@ let process_mli_map =
                          String.Map.empty Pparse.Signature
 
 let parse_map fname =
-  map_files := fname :: !map_files ;
   let old_transp = !Clflags.transparent_modules in
   Clflags.transparent_modules := true;
   let (deps, m) =
@@ -552,7 +534,7 @@ let parse_map fname =
       (fun ppf -> String.Set.iter (Format.fprintf ppf " %s") deps)
       (dump_map deps) (String.Map.add modname mm String.Map.empty)
   end;
-  let mm = Depend.(weaken_map (String.Set.singleton modname) mm) in
+  let mm = Depend.weaken_map (String.Set.singleton modname) mm in
   module_map := String.Map.add modname mm !module_map
 
 (* Dependency processing *)
@@ -581,10 +563,10 @@ let print_version_num () =
 
 let run_main argv =
   let dep_args_rev : dep_arg list ref = ref [] in
-  let add_dep_arg f s = dep_args_rev := (f s) :: !dep_args_rev in
+  let add_dep_arg f s = prepend_to_list dep_args_rev (f s) in
   Clflags.classic := false;
   try
-    Compenv.readenv ppf Before_args;
+    Compenv.readenv stderr Before_args;
     Clflags.reset_arguments (); (* reset arguments from ocamlc/ocamlopt *)
     Clflags.add_arguments __LOC__ [
       "-absname", Arg.Set Clflags.absname,
@@ -600,7 +582,7 @@ let run_main argv =
         (* "compiler uses -no-alias-deps, and no module is coerced"; *)
       "-debug-map", Arg.Set debug,
         " Dump the delayed dependency map for each map file";
-      "-I", Arg.String (add_to_list Clflags.include_dirs),
+      "-I", Arg.String (prepend_to_list Clflags.include_dirs),
         "<dir>  Add <dir> to the list of include directories";
       "-nocwd", Arg.Set nocwd,
         " Do not add current working directory to \
@@ -623,13 +605,13 @@ let run_main argv =
         " Generate dependencies for bytecode-code only (no .cmx files)";
       "-one-line", Arg.Set one_line,
         " Output one line per file, regardless of the length";
-      "-open", Arg.String (add_to_list Clflags.open_modules),
+      "-open", Arg.String (prepend_to_list Clflags.open_modules),
         "<module>  Opens the module <module> before typing";
       "-plugin", Arg.String(fun _p -> Clflags.plugin := true),
         "<plugin>  (no longer supported)";
       "-pp", Arg.String(fun s -> Clflags.preprocessor := Some s),
         "<cmd>  Pipe sources through preprocessor <cmd>";
-      "-ppx", Arg.String (add_to_list Compenv.first_ppx),
+      "-ppx", Arg.String (prepend_to_list Compenv.first_ppx),
         "<cmd>  Pipe abstract syntax trees through preprocessor <cmd>";
       "-shared", Arg.Set shared,
         " Generate dependencies for native plugin files (.cmxs targets)";
@@ -654,7 +636,7 @@ let run_main argv =
     Compenv.parse_arguments (ref argv)
       (add_dep_arg (fun f -> Src (f, None))) program;
     process_dep_args (List.rev !dep_args_rev);
-    Compenv.readenv ppf Before_link;
+    Compenv.readenv stderr Before_link;
     if !sort_files then sort_files_by_dependencies !files
     else List.iter print_file_dependencies (List.sort compare !files);
     (if Error_occurred.get () then 2 else 0)
@@ -662,7 +644,7 @@ let run_main argv =
   | Compenv.Exit_with_status n ->
       n
   | exn ->
-      Location.report_exception ppf exn;
+      Location.report_exception stderr exn;
       2
 
 

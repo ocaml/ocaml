@@ -52,8 +52,6 @@ let rec lookup_map lid m =
   | Ldot (l, s) -> String.Map.find s (get_map (lookup_map l m))
   | Lapply _    -> raise Not_found
 
-(* Collect free module identifiers in the a.s.t. *)
-
 let free_structure_names = ref String.Set.empty
 
 let add_names s =

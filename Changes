@@ -207,6 +207,9 @@ Working version
   (Antonin Décimo, Damien Doligez, review by Sébastien Hinderer,
    Damien Doligez, Gabriel Scherer, and Xavier Leroy)
 
+- #12576: ocamldep: various refactors.
+  (Antonin Décimo, review by Florian Angeletti, Gabriel Scherer, and Léo Andrès)
+
 ### Manual and documentation:
 
 - #12338: clarification of the documentation of process related function in
