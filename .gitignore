@@ -38,7 +38,14 @@ _ocamltestd
 .merlin
 _build
 META
+
+# VScode, Emacs, VIM temporary files
+
 .vscode
+*~
+#*#
+*.swp
+*.swo
 
 # local to root directory
 
