@@ -552,8 +552,7 @@ and specialized = {
 }
 
 type _ binding_kind =
-  | Recursive :
-      (Ident.t * Typedtree.recursive_binding_kind * lambda) binding_kind
+  | Recursive : rec_binding binding_kind
   | Non_recursive : (Ident.t * lambda) binding_kind
 
 let llets lk vk bindings body =
@@ -941,7 +940,7 @@ and traverse_let outer_ctx var def =
 and traverse_letrec ctx bindings =
   let ctx =
     List.fold_left declare_binding ctx
-      (List.map (fun (var, _clas, def) -> var, def) bindings)
+      (List.map (fun { id; rkind=_; def } -> id, def) bindings)
   in
   let bindings =
     List.concat_map (traverse_binding Recursive ctx ctx) bindings
@@ -953,17 +952,17 @@ and traverse_binding :
   fun binding_kind outer_ctx inner_ctx binding ->
   let (var, def) : Ident.t * lambda =
     match binding_kind, binding with
-    | Recursive, (var, _clas, def) -> var, def
+    | Recursive, { id; rkind=_; def } -> id, def
     | Non_recursive, (var, def) -> var, def
   in
   let mk_same_binding (var : Ident.t) (def : lambda) : a =
     match binding_kind, binding with
-    | Recursive, (_old_var, clas, _old_def) -> var, clas, def
+    | Recursive, { id=_; rkind; def=_ } -> { id = var; rkind; def }
     | Non_recursive, _ -> var, def
   in
   let mk_static_binding (var : Ident.t) (def : lambda) : a =
     match binding_kind, binding with
-    | Recursive, _ -> var, Typedtree.Static, def
+    | Recursive, _ -> { id = var; rkind = Static; def }
     | Non_recursive, _ -> var, def
   in
   match find_candidate def with

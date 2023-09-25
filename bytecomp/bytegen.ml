@@ -241,20 +241,21 @@ let rec size_of_lambda env = function
   (* See the Lletrec case of comp_expr *)
   | Lletrec(bindings, body) when
       List.for_all
-        (function (_, _, Lfunction _) -> true | _ -> false)
+        (function { def = Lfunction _ } -> true | _ -> false)
         bindings ->
       (* let rec of functions *)
       let fv =
         Ident.Set.elements (free_variables (Lletrec(bindings, lambda_unit))) in
       (* See Instruct(CLOSUREREC) in interp.c *)
       let blocksize = List.length bindings * 3 - 1 + List.length fv in
-      let offsets = List.mapi (fun i (id, _clas, _e) -> (id, i * 3)) bindings in
+      let offsets = List.mapi (fun i { id } -> (id, i * 3)) bindings in
       let env = List.fold_right (fun (id, offset) env ->
         Ident.add id (RHS_infix { blocksize; offset }) env) offsets env in
       size_of_lambda env body
   | Lletrec(bindings, body) ->
       let env = List.fold_right
-        (fun (id, _clas, e) env -> Ident.add id (size_of_lambda env e) env)
+        (fun { id; rkind=_; def } env ->
+          Ident.add id (size_of_lambda env def) env)
         bindings env
       in
       size_of_lambda env body
@@ -731,18 +732,18 @@ let rec comp_expr stack_info env exp sz cont =
           (add_pop 1 cont))
   | Lletrec(decl, body) ->
       let ndecl = List.length decl in
-      if List.for_all (function (_, _clas, Lfunction _) -> true | _ -> false)
+      if List.for_all (function { def = Lfunction _ } -> true | _ -> false)
                       decl then begin
         (* let rec of functions *)
         let fv =
           Ident.Set.elements (free_variables (Lletrec(decl, lambda_unit))) in
-        let rec_idents = List.map (fun (id, _clas, _lam) -> id) decl in
+        let rec_idents = List.map (fun { id } -> id) decl in
         let entries =
           closure_entries (Multiple_recursive rec_idents) fv
         in
         let rec comp_fun pos = function
             [] -> []
-          | (_id, _clas, Lfunction{params; body}) :: rem ->
+          | { def = Lfunction{params; body} } :: rem ->
               let lbl = new_label() in
               let to_compile =
                 { params = List.map fst params; body = body; label = lbl;
@@ -758,8 +759,8 @@ let rec comp_expr stack_info env exp sz cont =
               (add_pop ndecl cont)))
       end else begin
         let decl_size =
-          List.map (fun (id, clas, exp) ->
-              (id, exp, size_of_rec_binding clas exp))
+          List.map (fun { id; rkind; def } ->
+              (id, def, size_of_rec_binding rkind def))
             decl
         in
         let rec comp_init new_env sz = function

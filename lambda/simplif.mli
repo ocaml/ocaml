@@ -37,4 +37,4 @@ val split_default_wrapper
   -> body:lambda
   -> attr:function_attribute
   -> loc:Lambda.scoped_location
-  -> (Ident.t * Typedtree.recursive_binding_kind * lambda) list
+  -> rec_binding list

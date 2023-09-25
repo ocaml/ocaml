@@ -1053,7 +1053,7 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
      (Ulet(Mutable, kind, VP.create id, ulam, ubody), abody)
   | Lletrec(defs, body) ->
       if List.for_all
-           (function (_id, _clas, Lfunction _) -> true | _ -> false)
+           (function { def = Lfunction _ } -> true | _ -> false)
            defs
       then begin
         (* Simple case: only function definitions *)
@@ -1078,10 +1078,10 @@ let rec close ({ backend; fenv; cenv ; mutable_vars } as env) lam =
         (* General case: recursive definition of values *)
         let rec clos_defs = function
           [] -> ([], fenv)
-        | (id, clas, lam) :: rem ->
+        | { id; rkind; def } :: rem ->
             let (udefs, fenv_body) = clos_defs rem in
-            let (ulam, approx) = close_named env id lam in
-            ((VP.create id, clas, ulam) :: udefs,
+            let (ulam, approx) = close_named env id def in
+            ((VP.create id, rkind, ulam) :: udefs,
              V.Map.add id approx fenv_body)
         in
         let (udefs, fenv_body) = clos_defs defs in
@@ -1259,12 +1259,13 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
        is forced. Cf #12526
     *)
     match fun_defs with
-    | [_, _, Lfunction{attr = { inline = Always_inline; }}] ->
+    | [{ def = Lfunction{attr = { inline = Always_inline; }}}] ->
         fun_defs
     | _ ->
         List.concat_map
           (function
-           | (id, _clas, Lfunction{kind; params; return; body; attr; loc}) ->
+           | { id; rkind=_;
+               def = Lfunction{kind; params; return; body; attr; loc} } ->
              Simplif.split_default_wrapper ~id ~kind ~params
                ~body ~attr ~loc ~return
            | _ -> assert false
@@ -1272,7 +1273,7 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
          fun_defs
   in
   let inline_attribute = match fun_defs with
-    | [_, _, Lfunction{attr = { inline; }}] -> inline
+    | [{ def = Lfunction{attr = { inline; }}}] -> inline
     | _ -> Default_inline (* recursive functions can't be inlined *)
   in
   (* Update and check nesting depth *)
@@ -1288,7 +1289,8 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
   let uncurried_defs =
     List.map
       (function
-          (id, _clas, Lfunction{kind; params; return; body; loc; attr}) ->
+          { id; rkind=_;
+            def = Lfunction{kind; params; return; body; loc; attr} } ->
             let label = Compilenv.make_symbol (Some (V.unique_name id)) in
             let arity = List.length params in
             let fundesc =
@@ -1300,7 +1302,7 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
                fun_poll = attr.poll } in
             let dbg = Debuginfo.from_location loc in
             (id, params, return, body, fundesc, dbg)
-        | (_, _, _) -> fatal_error "Closure.close_functions")
+        | _ -> fatal_error "Closure.close_functions")
       fun_defs in
   (* Build an approximate fenv for compiling the functions *)
   let fenv_rec =
@@ -1425,7 +1427,7 @@ and close_functions { backend; fenv; cenv; mutable_vars } fun_defs =
 (* Same, for one non-recursive function *)
 
 and close_one_function env id funct =
-  match close_functions env [id, Typedtree.Static, funct] with
+  match close_functions env [{ id; rkind = Static; def = funct }] with
   | (clos, (i, _, approx) :: _) when id = i -> (clos, approx)
   | _ -> fatal_error "Closure.close_one_function"
 
