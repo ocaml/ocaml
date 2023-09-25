@@ -3682,7 +3682,6 @@ lambda/matching.cmi : \
     lambda/debuginfo.cmi
 lambda/printlambda.cmo : \
     typing/types.cmi \
-    typing/typedtree.cmi \
     typing/printtyp.cmi \
     typing/primitive.cmi \
     parsing/location.cmi \
@@ -3694,7 +3693,6 @@ lambda/printlambda.cmo : \
     lambda/printlambda.cmi
 lambda/printlambda.cmx : \
     typing/types.cmx \
-    typing/typedtree.cmx \
     typing/printtyp.cmx \
     typing/primitive.cmx \
     parsing/location.cmx \
@@ -3714,7 +3712,6 @@ lambda/runtimedef.cmx : \
 lambda/runtimedef.cmi :
 lambda/simplif.cmo : \
     utils/warnings.cmi \
-    typing/typedtree.cmi \
     lambda/tmc.cmi \
     typing/primitive.cmi \
     parsing/location.cmi \
@@ -3726,7 +3723,6 @@ lambda/simplif.cmo : \
     lambda/simplif.cmi
 lambda/simplif.cmx : \
     utils/warnings.cmx \
-    typing/typedtree.cmx \
     lambda/tmc.cmx \
     typing/primitive.cmx \
     parsing/location.cmx \
@@ -3737,7 +3733,6 @@ lambda/simplif.cmx : \
     parsing/asttypes.cmi \
     lambda/simplif.cmi
 lambda/simplif.cmi : \
-    typing/typedtree.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi
 lambda/switch.cmo : \
@@ -3747,7 +3742,6 @@ lambda/switch.cmx : \
 lambda/switch.cmi :
 lambda/tmc.cmo : \
     utils/warnings.cmi \
-    typing/typedtree.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
     lambda/lambda.cmi \
@@ -3757,7 +3751,6 @@ lambda/tmc.cmo : \
     lambda/tmc.cmi
 lambda/tmc.cmx : \
     utils/warnings.cmx \
-    typing/typedtree.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
     lambda/lambda.cmx \
@@ -4094,7 +4087,6 @@ file_formats/linear_format.cmi : \
     asmcomp/cmm.cmi
 middle_end/closure/closure.cmo : \
     utils/warnings.cmi \
-    typing/typedtree.cmi \
     lambda/switch.cmi \
     lambda/simplif.cmi \
     middle_end/semantics_of_primitives.cmi \
@@ -4117,7 +4109,6 @@ middle_end/closure/closure.cmo : \
     middle_end/closure/closure.cmi
 middle_end/closure/closure.cmx : \
     utils/warnings.cmx \
-    typing/typedtree.cmx \
     lambda/switch.cmx \
     lambda/simplif.cmx \
     middle_end/semantics_of_primitives.cmx \
