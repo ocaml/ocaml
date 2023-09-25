@@ -43,7 +43,7 @@ META
 
 .vscode
 *~
-#*#
+\#*\#
 *.swp
 *.swo
 
