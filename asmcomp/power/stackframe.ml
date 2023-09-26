@@ -24,8 +24,6 @@ class stackframe = object
 
 inherit Stackframegen.stackframe_generic
 
-method! frame_required _f _contains_calls = true
-
 method trap_handler_size = trap_handler_size
 
 end

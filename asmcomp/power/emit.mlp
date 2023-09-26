@@ -31,9 +31,12 @@ let reserved_stack_space = 32
 (* Layout of the stack.  The stack is kept 16-aligned. *)
 
 let initial_stack_offset f =
-  reserved_stack_space +                    (* Including the return address *)
-  size_int * f.fun_num_stack_slots.(0) +    (* Local int variables *)
-  size_float * f.fun_num_stack_slots.(1)    (* Local float variables *)
+  if f.fun_frame_required then
+    reserved_stack_space +                    (* Including the return address *)
+    size_int * f.fun_num_stack_slots.(0) +    (* Local int variables *)
+    size_float * f.fun_num_stack_slots.(1)    (* Local float variables *)
+  else
+    0
 
 let frame_size env =
   let size =
@@ -375,12 +378,8 @@ module BR = Branch_relaxation.Make (struct
 
   let offset_pc_at_branch = 1
 
-  let profiling_prologue_size = 6
-
   let prologue_size f =
-    profiling_prologue_size
-      + (if initial_stack_offset f > 0 then 1 else 0)
-      + (if f.fun_frame_required then 3 else 0)
+    if f.fun_frame_required then 4 else 0
 
   let tocload_size = 2
 
