@@ -99,10 +99,10 @@ let emit_reg r =
 let emit_stack_adjustment n =
   if n <> 0 then begin
     if is_immediate n then
-      `        addi    sp, sp, {emit_int n}\n`
+      `	addi	sp, sp, {emit_int n}\n`
     else begin
-      `        li      {emit_reg reg_tmp}, {emit_int n}\n`;
-      `        add     sp, sp, {emit_reg reg_tmp}\n`
+      `	li	{emit_reg reg_tmp}, {emit_int n}\n`;
+      `	add	sp, sp, {emit_reg reg_tmp}\n`
     end;
     cfi_adjust_cfa_offset (-n)
   end
@@ -274,7 +274,7 @@ let emit_instr env i =
       if src.loc <> dst.loc then begin
         match (src, dst) with
         | {loc = Reg _; typ = (Val | Int | Addr)}, {loc = Reg _} ->
-            `	mv      {emit_reg dst}, {emit_reg src}\n`
+            `	mv	{emit_reg dst}, {emit_reg src}\n`
         | {loc = Reg _; typ = Float}, {loc = Reg _; typ = Float} ->
             `	fmv.d   {emit_reg dst}, {emit_reg src}\n`
         | {loc = Reg _; typ = Float}, {loc = Reg _; typ = (Val | Int | Addr)} ->
@@ -431,8 +431,8 @@ let emit_instr env i =
       begin match return_label with
       | None -> `	bltu	{emit_reg reg_alloc_ptr}, {emit_reg reg_tmp}, {emit_label lbl_call_gc}\n`;
                 `{emit_label lbl_after_poll}:\n`;
-      | Some lbl -> ` bgeu  {emit_reg reg_alloc_ptr}, {emit_reg reg_tmp}, {emit_label lbl}\n`;
-                    ` j {emit_label lbl_call_gc}\n`
+      | Some lbl -> `	bgeu	{emit_reg reg_alloc_ptr}, {emit_reg reg_tmp}, {emit_label lbl}\n`;
+                    `	j	{emit_label lbl_call_gc}\n`
       end;
       env.call_gc_sites <-
         { gc_lbl = lbl_call_gc;

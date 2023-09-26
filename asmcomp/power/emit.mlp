@@ -492,7 +492,7 @@ let emit_alloc env i bytes dbginfo far =
   if env.call_gc_label = 0 then env.call_gc_label <- new_label ();
   let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
   `	ld	0, {emit_int offset}(30)\n`;
-  `	addi    31, 31, {emit_int(-bytes)}\n`;
+  `	addi	31, 31, {emit_int(-bytes)}\n`;
   `	cmpld	31, 0\n`;
   if not far then begin
     `	bltl-	{emit_label env.call_gc_label}\n`;
@@ -520,9 +520,9 @@ let emit_poll env i return_label far =
     end
     | Some return_label ->
       begin
-        ` bltl-  {emit_label env.call_gc_label}\n`;
+        `	bltl-	{emit_label env.call_gc_label}\n`;
         record_frame env i.live (Dbg_alloc []);
-        ` b   {emit_label return_label}\n`
+        `	b	{emit_label return_label}\n`
       end
     end;
   end else begin
@@ -530,10 +530,10 @@ let emit_poll env i return_label far =
     `	bge+	{emit_label lbl}\n`;
     `	bl	{emit_label env.call_gc_label}\n`;
     record_frame env i.live (Dbg_alloc []);
-    ` {emit_label lbl}:	\n`;
+    `{emit_label lbl}:	\n`;
     match return_label with
     | None ->   ()
-    | Some return_label -> ` b   {emit_label return_label}\n`
+    | Some return_label -> `	b	{emit_label return_label}\n`
   end
 
 let bound_error_label env dbg =
@@ -838,7 +838,7 @@ let emit_instr env i =
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`
     | Lop (Idls_get) ->
         let offset = Domainstate.(idx_of_field Domain_dls_root) * 8 in
-        `	ld {emit_reg i.res.(0)}, {emit_int offset}(30)\n`
+        `	ld	{emit_reg i.res.(0)}, {emit_int offset}(30)\n`
     | Lop (Ireturn_addr) ->
         invalid_arg (
           "Support for Ireturn_addr is not implemented on architecture "
@@ -925,7 +925,7 @@ let emit_instr env i =
         adjust_stack_offset env trap_size;
         `	std	29, {emit_int reserved_stack_space}(1)\n`;
         emit_tocload emit_gpr 29 (TocLabel lbl_handler);
-        `	std     29, {emit_int (reserved_stack_space + 8)}(1)\n`;
+        `	std	29, {emit_int (reserved_stack_space + 8)}(1)\n`;
         `	addi	29, 1, {emit_int reserved_stack_space}\n`
     | Lpoptrap ->
         `	ld	29, {emit_int reserved_stack_space}(1)\n`;
@@ -944,7 +944,7 @@ let emit_instr env i =
         | Lambda.Raise_notrace ->
             `	ld	0, 8(29)\n`;
             `	addi	1, 29, {emit_int (trap_size - reserved_stack_space)}\n`;
-            `	mtctr   0\n`;
+            `	mtctr	0\n`;
             `	ld	29, {emit_int (reserved_stack_space - trap_size)}(1)\n`;
             `	bctr\n`
         end
