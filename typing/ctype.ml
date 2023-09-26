@@ -1938,14 +1938,12 @@ let local_non_recursive_abbrev uenv p ty =
 
 (* Since we cannot duplicate universal variables, unification must
    be done at meta-level, using bindings in univar_pairs *)
-(* TODO: use find_opt *)
 let rec unify_univar t1 t2 = function
     (cl1, cl2) :: rem ->
       let find_univ t cl =
-        try
-          let (_, r) = List.find (fun (t',_) -> eq_type t t') cl in
-          Some r
-        with Not_found -> None
+        List.find_map (fun (t', r) ->
+          if eq_type t t' then Some r else None
+        ) cl
       in
       begin match find_univ t1 cl1, find_univ t2 cl2 with
         Some {contents=Some t'2}, Some _ when eq_type t2 t'2 ->
