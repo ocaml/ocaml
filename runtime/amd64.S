@@ -1102,11 +1102,8 @@ CFI_STARTPROC
         leaq    1(%rsi), %rdi /* %rdi (last_fiber) := Val_ptr(old stack) */
         movq    %rdi, 0(%rbx) /* Initialise continuation */
 LBL(do_perform):
-    /*  %rsi: old stack */
-        movq    Stack_handler(%rsi), %r11  /* %r11 := old stack -> handler */
-        movq    Handler_parent(%r11), %r10 /* %r10 := parent stack */
-        cmpq    $0, %r10                   /* parent is NULL? */
-        je      LBL(112)
+    /*  %rdi: last_fiber
+        %rsi: old stack */
 #if defined(WITH_THREAD_SANITIZER)
     /* Signal to TSan all stack frames exited by the perform. */
         ENTER_FUNCTION
@@ -1118,6 +1115,26 @@ LBL(do_perform):
         SWITCH_C_TO_OCAML
         TSAN_RESTORE_CALLER_REGS
         LEAVE_FUNCTION
+#endif
+        movq    Stack_handler(%rsi), %r11  /* %r11 := old stack -> handler */
+        movq    Handler_parent(%r11), %r10 /* %r10 := parent stack */
+        cmpq    $0, %r10                   /* parent is NULL? */
+        je      LBL(112)
+#if defined(WITH_THREAD_SANITIZER)
+     /* Save non-callee-saved registers %rax, %rdi, %rsi, %r10, %r11 before C
+        call */
+        pushq   %rax; CFI_ADJUST(8);
+        pushq   %rdi; CFI_ADJUST(8);
+        pushq   %rsi; CFI_ADJUST(8);
+        pushq   %r10; CFI_ADJUST(8);
+        pushq   %r11; CFI_ADJUST(8);
+     /* Match the TSan-enter made from caml_runstack */
+        TSAN_EXIT_FUNCTION
+        popq   %r11; CFI_ADJUST(-8);
+        popq   %r10; CFI_ADJUST(-8);
+        popq   %rsi; CFI_ADJUST(-8);
+        popq   %rdi; CFI_ADJUST(-8);
+        popq   %rax; CFI_ADJUST(-8);
 #endif
         SWITCH_OCAML_STACKS /* preserves r11 and rsi */
      /* We have to null the Handler_parent after the switch because the
@@ -1137,7 +1154,10 @@ LBL(112):
 #if defined(WITH_THREAD_SANITIZER)
         /* We must let the TSan runtime know that we switched back to the
            original performer stack. For that, we perform the necessary calls
-           to __tsan_func_entry via caml_tsan_entry_on_resume. */
+           to __tsan_func_entry via caml_tsan_entry_on_resume.
+           Note that from TSan's point of view, we just exited all stack
+           frames, including those of the main fiber. This is ok, because we
+           re-enter them immediately via caml_tsan_entry_on_resume below. */
         TSAN_SAVE_CALLER_REGS
         movq    STACK_RETADDR(%rsp), C_ARG_1       /* arg 1: pc of perform */
         leaq    STACK_ARG_1(%rsp), C_ARG_2         /* arg 2: sp at perform */

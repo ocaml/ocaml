@@ -215,13 +215,13 @@ void caml_tsan_exit_on_perform(uintnat pc, char* sp)
   /* iterate on each frame  */
   while (1) {
     frame_descr* descr = caml_next_frame_descriptor(fds, &next_pc, &sp, stack);
+    if (descr == NULL) {
+      break;
+    }
 
     caml_tsan_debug_log_pc("forced__tsan_func_exit for", pc);
     __tsan_func_exit(NULL);
 
-    if (descr == NULL) {
-      break;
-    }
     pc = next_pc;
   }
 }
