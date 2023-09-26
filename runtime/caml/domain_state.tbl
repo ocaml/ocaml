@@ -15,9 +15,14 @@
 /**************************************************************************/
 
 DOMAIN_STATE(atomic_uintnat, young_limit)
-/* Minor heap limit. Typically young_limit == young_start, but this field is set
- * by other domains to signal this domain by causing a spurious allocation
- * failure. */
+/* Minor heap limit. Typically [young_start] <= [young_limit] <=
+ * [young_end], but this field can be set atomically to UINTNAT_MAX by
+ * another thread (typically from another domain) in order to
+ * interrupt this domain (by causing an allocation failure). Setting
+ * [young_limit] to UINTNAT_MAX can be done safely at any time
+ * whatsoever by any thread. To avoid races, setting [young_limit] to
+ * anything else than UINTNAT_MAX should only be done via
+ * [caml_reset_young_limit] by the domain itself. */
 
 DOMAIN_STATE(value*, young_ptr)
 /* Minor heap pointer */
