@@ -15,7 +15,8 @@
 
 (* Symbol table information for .cmo and .cma files *)
 
-open Misc
+type modname = string
+type crcs = (modname * Digest.t option) list
 
 (* Names of compilation units as represented in CMO files *)
 type compunit = Compunit of string [@@unboxed]

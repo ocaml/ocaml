@@ -4006,8 +4006,7 @@ file_formats/cmi_format.cmx : \
 file_formats/cmi_format.cmi : \
     typing/types.cmi \
     utils/misc.cmi
-file_formats/cmo_format.cmi : \
-    utils/misc.cmi
+file_formats/cmo_format.cmi :
 file_formats/cmt_format.cmo : \
     parsing/unit_info.cmi \
     typing/types.cmi \
@@ -4051,8 +4050,7 @@ file_formats/cmx_format.cmi : \
     utils/misc.cmi \
     middle_end/flambda/export_info.cmi \
     middle_end/clambda.cmi
-file_formats/cmxs_format.cmi : \
-    utils/misc.cmi
+file_formats/cmxs_format.cmi :
 file_formats/linear_format.cmo : \
     utils/misc.cmi \
     parsing/location.cmi \
