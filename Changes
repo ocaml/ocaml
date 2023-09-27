@@ -60,9 +60,10 @@ Working version
 - #12234: make instrumented time calculation more thread-safe on macOS.
   (Anil Madhavapeddy, review by Daniel Bünzli and Xavier Leroy)
 
-- #12235: introduce and use the `CAMLnoret` macro as a lighter alternative
-  to `CAMLnoreturn_start` / `CAMLnoreturn_end`
-  (Xavier Leroy, with help from Antonin Décimo, review by
+- #12235, #12468: introduce and use the `CAMLnoret` macro as
+  a lighter alternative to `CAMLnoreturn_start` / `CAMLnoreturn_end`.
+  Implement it so as to conform with C11, C23, C++11, C++17.
+  (Xavier Leroy and Dhruv Maroo, with help from Antonin Décimo, review by
    Gabriel Scherer and David Allsopp)
 
 - #12275: caml/stack.h: more abstract macros to describe OCaml stacks and
