@@ -17,7 +17,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Format of .cmx, .cmxa and .cmxs files *)
+(* Format of .cmx and .cmxa files *)
 
 open Misc
 
