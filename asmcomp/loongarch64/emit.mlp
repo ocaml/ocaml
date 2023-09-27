@@ -408,7 +408,8 @@ let emit_instr env i =
         let offset = Domainstate.(idx_of_field Domain_young_limit) * 8 in
         emit_addimm reg_alloc_ptr reg_alloc_ptr n;
         `	ld.d	{emit_reg reg_tmp}, {emit_reg reg_domain_state_ptr}, {emit_int offset}\n`;
-        `	bltu	{emit_reg reg_alloc_ptr}, {emit_reg reg_tmp}, {emit_label lbl_call_gc}\n`;
+        `   sltu    {emit_reg reg_tmp}, {emit_reg reg_alloc_ptr}, {emit_reg reg_tmp}\n`;
+        `   bnez    {emit_reg reg_tmp}, {emit_label lbl_call_gc}\n`;
         `{emit_label lbl_after_alloc}:\n`;
         `	addi.d	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, 8\n`;
         env.call_gc_sites <-
