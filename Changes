@@ -290,6 +290,11 @@ OCaml 5.2.0
   syntax for types.
   (Chet Murthy, review by Gabriel Scherer)
 
+- #11736, #12664: Support utf-8 encoded source files and latin-9 compatible
+  identifiers.
+  (Xavier Leroy and Florian Angeletti, review by Daniel Bünzli and
+   Jules Aguillon)
+
 ### Type system:
 
 - #12313, #11799: Do not re-build as-pattern type when a ground type annotation
