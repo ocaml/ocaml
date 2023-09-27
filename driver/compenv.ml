@@ -647,7 +647,7 @@ let process_action
         | Some start_from ->
           Location.input_name := name;
           impl ~start_from name
-        | None -> raise(Arg.Bad("don't know what to do with " ^ name))
+        | None -> raise(Arg.Bad("Don't know what to do with " ^ name))
 
 
 let action_of_file name =
