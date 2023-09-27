@@ -33,6 +33,7 @@ type error =
   | Invalid_literal of string
   | Invalid_directive of string * string option
   | Invalid_char_in_ident of Uchar.t
+  | Capitalized_raw_identifier of string
 
 exception Error of error * Location.t
 
@@ -352,6 +353,10 @@ let prepare_error loc = function
   | Invalid_char_in_ident u ->
       Location.errorf ~loc "Invalid character U+%X in identifier"
          (Uchar.to_int u)
+  | Capitalized_raw_identifier lbl ->
+      Location.errorf ~loc
+        "%a cannot be used as a raw identifier, \
+         it must start with a lowercase letter" Style.inline_code lbl
 
 let () =
   Location.register_error_of_exn
@@ -429,6 +434,11 @@ rule token = parse
           (Reserved_sequence (".~", Some "is reserved for use in MetaOCaml")) }
   | "~" raw_ident_escape (lowercase identchar * as name) ':'
       { LABEL name }
+  | "~" raw_ident_escape (identstart_ext identchar_ext * as raw_name) ':'
+      { let name = ident_for_extended lexbuf raw_name in
+        if UString.is_capitalized name
+        then error lexbuf (Capitalized_label name);
+        LABEL name }
   | "~" (identstart identchar * as name) ':'
       { check_label_name lexbuf name;
         LABEL name }
@@ -440,6 +450,12 @@ rule token = parse
       { QUESTION }
   | "?" raw_ident_escape (lowercase identchar * as name) ':'
       { OPTLABEL name }
+  | "?" raw_ident_escape (identstart_ext identchar_ext * as raw_name) ':'
+      { let name = ident_for_extended lexbuf raw_name in
+        if UString.is_capitalized name
+        then error lexbuf (Capitalized_label name);
+        OPTLABEL name
+      }
   | "?" (lowercase identchar * as name) ':'
       { check_label_name lexbuf name;
         OPTLABEL name }
@@ -449,6 +465,11 @@ rule token = parse
         OPTLABEL name }
   | raw_ident_escape (lowercase identchar * as name)
       { LIDENT name }
+  | raw_ident_escape  (identstart_ext identchar_ext * as raw_name)
+      { let name = ident_for_extended lexbuf raw_name in
+        if UString.is_capitalized name
+        then error lexbuf (Capitalized_raw_identifier name);
+        LIDENT name }
   | lowercase identchar * as name
       { try Hashtbl.find keyword_table name
         with Not_found -> LIDENT name }
