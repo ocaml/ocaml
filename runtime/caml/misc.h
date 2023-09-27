@@ -78,7 +78,8 @@ CAMLdeprecated_typedef(addr, char *);
 /* Noreturn, CAMLnoreturn_start and CAMLnoreturn_end are preserved
    for compatibility reasons.  Instead, we recommend using the CAMLnoret
    macro, to be added as a modifier at the beginning of the
-   function definition or declaration.
+   function definition or declaration.  It must occur first, before
+   "static", "extern", "CAMLexport", "CAMLextern".
 
    Note: CAMLnoreturn is a different macro defined in memory.h,
    to be used in function bodies rather than as a function attribute.
