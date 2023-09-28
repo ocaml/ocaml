@@ -35,7 +35,10 @@ module Dir : sig
   type t
   (** Represent one directory in the load path. *)
 
-  val create : hidden:bool -> string -> t
+  val create : hidden:bool -> string -> t * string option
+  (** [create path] creates an entry in the load path. If an error
+      occurred, the directory is considered empty and an error message
+      is returned. *)
 
   val path : t -> string
 

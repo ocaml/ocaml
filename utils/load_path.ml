@@ -57,12 +57,13 @@ module Dir = struct
      + treat [""] as the current directory. *)
   let readdir_compat dir =
     try
-      Sys.readdir (if dir = "" then Filename.current_dir_name else dir)
-    with Sys_error _ ->
-      [||]
+      Sys.readdir (if dir = "" then Filename.current_dir_name else dir), None
+    with Sys_error msg ->
+      [||], Some msg
 
   let create ~hidden path =
-    { path; files = Array.to_list (readdir_compat path); hidden }
+    let files, error = readdir_compat path in
+    { path; files = Array.to_list files; hidden }, error
 end
 
 type auto_include_callback =
@@ -119,8 +120,10 @@ let prepend_add dir =
 
 let init ~auto_include ~visible ~hidden =
   reset ();
-  visible_dirs := List.rev_map (Dir.create ~hidden:false) visible;
-  hidden_dirs := List.rev_map (Dir.create ~hidden:true) hidden;
+  visible_dirs :=
+    List.rev_map (fun path -> Dir.create ~hidden:false path |> fst) visible;
+  hidden_dirs :=
+    List.rev_map (fun path -> Dir.create ~hidden:true path |> fst) hidden;
   List.iter prepend_add !hidden_dirs;
   List.iter prepend_add !visible_dirs;
   auto_include_callback := auto_include
@@ -166,7 +169,7 @@ let add (dir : Dir.t) =
 
 let append_dir = add
 
-let add_dir ~hidden dir = add (Dir.create ~hidden dir)
+let add_dir ~hidden dir = add (Dir.create ~hidden dir |> fst)
 
 (* Add the directory at the start of load path - so basenames are
    unconditionally added. *)
@@ -198,7 +201,8 @@ let auto_include_otherlibs =
   (* Ensure directories are only ever scanned once *)
   let expand = Misc.expand_directory Config.standard_library in
   let otherlibs =
-    let read_lib lib = lazy (Dir.create ~hidden:false (expand ("+" ^ lib))) in
+    let read_lib lib =
+      lazy (Dir.create ~hidden:false (expand ("+" ^ lib)) |> fst) in
     List.map (fun lib -> (lib, read_lib lib)) ["dynlink"; "str"; "unix"] in
   auto_include_libs otherlibs
 
