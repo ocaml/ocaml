@@ -68,11 +68,14 @@ let dirs = s_ref []
 let no_auto_include _ _ = raise Not_found
 let auto_include_callback = ref no_auto_include
 
+let clear () =
+  dirs := []
+
 let reset () =
   assert (not Config.merlin || Local_store.is_bound ());
   STbl.clear !files;
   STbl.clear !files_uncap;
-  dirs := [];
+  clear ();
   auto_include_callback := no_auto_include
 
 let get () = List.rev !dirs
