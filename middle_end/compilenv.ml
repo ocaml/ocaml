@@ -183,6 +183,12 @@ let read_library_info filename =
 
 (* Read and cache info on global identifiers *)
 
+(* Referring to a packed unit is only allowed from a unit that will
+   ultimately end up in the same pack, including through nested packs. *)
+let is_import_from_same_pack ~imported ~current =
+  String.equal imported current
+  || String.starts_with ~prefix:(imported ^ ".") current
+
 let get_global_info global_ident = (
   let modname = Ident.name global_ident in
   if modname = current_unit.ui_name then
@@ -206,28 +212,12 @@ let get_global_info global_ident = (
                an unit outside of the pack. *)
             (match ui.ui_for_pack, current_unit.ui_for_pack with
              | None, _ -> ()
-             | Some p1, p2_opt ->
-               let error () =
-                 raise (Error (Mismatching_for_pack
-                                 (filename, p1, current_unit.ui_name, p2_opt)))
-               in
-               match p2_opt with
-               | None -> error ()
-               | Some p2 ->
-                 if String.starts_with ~prefix:p1 p2 then
-                   let l1 = String.length p1 in
-                   let l2 = String.length p2 in
-                   if l1 = l2 then
-                     () (* Same pack *)
-                   else begin
-                     assert (l2 > l1);
-                     (* p1 is a prefix of p2. If the first character of p2 after
-                        p1 is a dot, then p2 is a sub-pack of p1 and can refer
-                        to p1. *)
-                     if p2.[l1] = '.' then ()
-                     else error ()
-                   end
-                 else error ());
+             | Some p1, Some p2 when
+                 is_import_from_same_pack ~imported:p1 ~current:p2 ->
+                 ()
+             | Some p1, p2 ->
+               raise (Error (Mismatching_for_pack
+                               (filename, p1, current_unit.ui_name, p2))));
             (Some ui, Some crc)
           with Not_found ->
             let warn = Warnings.No_cmx_file modname in
