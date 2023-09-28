@@ -74,14 +74,17 @@ let hidden_dirs = s_ref []
 let no_auto_include _ _ = raise Not_found
 let auto_include_callback = ref no_auto_include
 
+let clear () =
+  hidden_dirs := [];
+  visible_dirs := []
+
 let reset () =
   assert (not Config.merlin || Local_store.is_bound ());
   STbl.clear !hidden_files;
   STbl.clear !hidden_files_uncap;
   STbl.clear !visible_files;
   STbl.clear !visible_files_uncap;
-  hidden_dirs := [];
-  visible_dirs := [];
+  clear ();
   auto_include_callback := no_auto_include
 
 let get_visible () = List.rev !visible_dirs
