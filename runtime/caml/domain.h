@@ -132,7 +132,7 @@ int caml_global_barrier_is_final(barrier_status);
 void caml_global_barrier_end(barrier_status);
 int caml_global_barrier_num_domains(void);
 
-int caml_domain_is_terminating(void);
+int caml_domain_is_terminating(caml_domain_state *);
 
 #endif /* CAML_INTERNALS */
 

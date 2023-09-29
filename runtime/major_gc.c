@@ -402,7 +402,7 @@ void caml_adopt_orphaned_work (void)
   value orph_ephe_list_live, last;
   struct caml_final_info *f, *myf, *temp;
 
-  if (no_orphaned_work() || caml_domain_is_terminating())
+  if (no_orphaned_work() || caml_domain_is_terminating(domain_state))
     return;
 
   caml_plat_lock(&orphaned_lock);
