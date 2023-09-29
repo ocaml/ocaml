@@ -40,21 +40,13 @@ OCAMLDOC_LIBCMIS=$(OCAMLDOC_LIBMLIS:.mli=.cmi)
 OCAMLDOC_LIBCMTS=$(OCAMLDOC_LIBMLIS:.mli=.cmt) $(OCAMLDOC_LIBMLIS:.mli=.cmti)
 
 ODOC_TEST=odoc_test.cmo
-GENERATORS_CMOS= \
-        generators/odoc_todo.cmo \
-        generators/odoc_literate.cmo
-ifeq "$(NATDYNLINK)" "true"
-GENERATORS_CMXS = $(GENERATORS_CMOS:.cmo=.cmxs)
-else
-GENERATORS_CMXS =
-endif
 
 # Compilation
 #############
 
 
 INCLUDE_DIRS = $(addprefix $(ROOTDIR)/,\
-  utils parsing typing driver bytecomp toplevel) generators
+  utils parsing typing driver bytecomp toplevel)
 INCLUDES_DEP = $(addprefix -I ,$(INCLUDE_DIRS))
 INCLUDES_NODEP = $(addprefix -I $(ROOTDIR)/,\
   compilerlibs otherlibs/str otherlibs/dynlink \
@@ -130,7 +122,7 @@ LIBCMXFILES = $(LIBCMOFILES:.cmo=.cmx)
 LIBCMIFILES = $(LIBCMOFILES:.cmo=.cmi)
 
 .PHONY: all
-all: lib exe generators
+all: lib exe
 
 .PHONY: exe
 exe: $(OCAMLDOC)
@@ -138,11 +130,8 @@ exe: $(OCAMLDOC)
 .PHONY: lib
 lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) $(ODOC_TEST)
 
-.PHONY: generators
-generators: $(GENERATORS_CMOS)
-
 .PHONY: opt.opt allopt # allopt and opt.opt are synonyms
-opt.opt: exeopt libopt generatorsopt
+opt.opt: exeopt libopt
 allopt: opt.opt
 
 .PHONY: exeopt
@@ -150,9 +139,6 @@ exeopt: $(OCAMLDOC_OPT)
 
 .PHONY: libopt
 libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
-
-.PHONY: generatorsopt
-generatorsopt: $(GENERATORS_CMXS)
 
 OCAMLDOC_LIBRARIES = ocamlcommon unix str dynlink
 
@@ -175,12 +161,6 @@ $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
 $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
 	$(V_LINKOPT)$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $^
 
-.PHONY: dot
-dot: ocamldoc.dot
-
-ocamldoc.dot: $(EXECMOFILES)
-	$(OCAMLDOC_RUN) -dot -dot-reduce -o $@ $(INCLUDES) odoc*.ml
-
 # Lexers and parsers
 
 LEXERS = $(addsuffix .mll,\
@@ -202,9 +182,6 @@ DEPEND_PREREQS = $(LEXERS:.mll=.ml) \
 
 %.cmx: %.ml
 	$(V_OCAMLOPT)$(OCAMLOPT) $(COMPFLAGS) -c $<
-
-%.cmxs: %.ml
-	$(V_OCAMLOPT)$(OCAMLOPT) -shared -o $@ $(COMPFLAGS) $<
 
 # Installation targets
 ######################
@@ -255,72 +232,6 @@ endif
 
 # TODO: also split into several rules
 
-# Testing :
-###########
-
-.PHONY: test
-test:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/ocamldoc.odoc odoc*.ml odoc*.mli -v
-	$(MKDIR) $@-custom
-	$(OCAMLDOC_RUN_PLUGINS) -colorize-code -sort -d $@-custom $(INCLUDES) \
-	-g generators/odoc_literate.cmo -g generators/odoc_todo.cmo \
-	-load $@/ocamldoc.odoc -v
-
-.PHONY: test_stdlib
-test_stdlib:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc -keep-code \
-	$(ROOTDIR)/stdlib/*.mli \
-	$(ROOTDIR)/otherlibs/unix/unix.mli \
-	$(ROOTDIR)/otherlibs/str/str.mli
-
-.PHONY: test_stdlib_code
-test_stdlib_code:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc -keep-code \
-	`ls $(ROOTDIR)/stdlib/*.ml | grep -v Labels` \
-	$(ROOTDIR)/otherlibs/unix/unix.ml \
-	$(ROOTDIR)/otherlibs/str/str.ml
-
-.PHONY: test_latex
-test_latex:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) odoc*.ml \
-	        odoc*.mli test2.txt $(ROOTDIR)/stdlib/*.mli $(ROOTDIR)/otherlibs/unix/unix.mli
-
-.PHONY: test_latex_simple
-test_latex_simple:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) \
-	-latextitle 6,subsection -latextitle 7,subsubection \
-	$(ROOTDIR)/stdlib/hashtbl.mli \
-	$(ROOTDIR)/stdlib/arg.mli \
-	$(ROOTDIR)/otherlibs/unix/unix.mli \
-	$(ROOTDIR)/stdlib/map.mli
-
-.PHONY: test_man
-test_man:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -man -sort -d $@ $(INCLUDES) odoc*.ml odoc*.mli
-
-.PHONY: test_texi
-test_texi:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -texi -sort -d $@ $(INCLUDES) odoc*.ml odoc*.mli
-
-# stdlib non-prefixed :
-#######################
-
-.PHONY: autotest_stdlib
-autotest_stdlib:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN_PLUGINS) -g autotest/odoc_test.cmo\
-	$(INCLUDES) -keep-code \
-	$(ROOTDIR)/stdlib/*.mli \
-	$(ROOTDIR)/otherlibs/unix/unix.mli \
-	$(ROOTDIR)/otherlibs/str/str.mli
-
 # backup, clean and depend :
 ############################
 
@@ -332,8 +243,6 @@ clean:
 	rm -f odoc_parser.output odoc_text_parser.output
 	rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
 	rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
-	rm -f generators/*.cm[taiox] generators/*.a generators/*.lib generators/*.o generators/*.obj \
-        generators/*.cmx[as] generators/*.cmti
 
 .PHONY: distclean
 distclean: clean
@@ -342,6 +251,5 @@ distclean: clean
 .PHONY: depend
 depend: $(DEPEND_PREREQS)
 	$(OCAMLDEP_CMD) *.mll *.mly *.ml *.mli > .depend
-	$(OCAMLDEP_CMD) -shared generators/*.ml generators/*.mli >> .depend
 
 include .depend

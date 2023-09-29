@@ -215,6 +215,9 @@ Working version
 - #12576: ocamldep: various refactors.
   (Antonin Décimo, review by Florian Angeletti, Gabriel Scherer, and Léo Andrès)
 
+- #12615: ocamldoc: get rid of the odoc_literate and odoc_todo generators.
+  (Sébaistien Hinderer, review by Gabriel Scherer and Florian Angeletti)
+
 ### Manual and documentation:
 
 - #12338: clarification of the documentation of process related function in
