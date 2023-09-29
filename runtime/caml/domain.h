@@ -70,10 +70,21 @@ void caml_interrupt_all_signal_safe(void);
 void caml_reset_young_limit(caml_domain_state *);
 void caml_update_young_limit_after_c_call(caml_domain_state *);
 
+/* returns [1] if a second domain has ever been spawned,
+   and in particular some backup threads may be running.
+
+   This is a stricter condition than [caml_domain_alone] below,
+   which returns [1] when other domains have been spawned
+   and then terminated.
+
+   [caml_runtime_is_multicore] can be used as an approximation for 'is
+   forking safe without hassle?'.
+*/
+CAMLextern intnat caml_runtime_is_multicore(void);
+
 CAMLextern void caml_reset_domain_lock(void);
 CAMLextern int caml_bt_is_in_blocking_section(void);
 CAMLextern int caml_bt_is_self(void);
-CAMLextern intnat caml_domain_is_multicore (void);
 CAMLextern void caml_bt_enter_ocaml(void);
 CAMLextern void caml_bt_exit_ocaml(void);
 CAMLextern void caml_acquire_domain_lock(void);

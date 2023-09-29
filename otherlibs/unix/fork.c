@@ -36,7 +36,7 @@ void caml_atfork_child(void) {
 CAMLprim value caml_unix_fork(value unit)
 {
   int ret;
-  if (caml_domain_is_multicore()) {
+  if (caml_runtime_is_multicore()) {
     caml_failwith
       ("Unix.fork may not be called after any domain has been spawned");
   }

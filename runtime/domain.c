@@ -211,8 +211,8 @@ static caml_plat_cond all_domains_cond =
 static atomic_uintnat /* dom_internal* */ stw_leader = 0;
 static dom_internal all_domains[Max_domains];
 
-CAMLexport atomic_uintnat caml_num_domains_running;
-
+static atomic_intnat runtime_has_spawned = 0;
+CAMLexport atomic_uintnat caml_num_domains_running = 0;
 
 
 /* size of the virtual memory reservation for the minor heap, per domain */
@@ -1210,6 +1210,7 @@ CAMLprim value caml_domain_spawn(value callback, value term_sync)
   pthread_t th;
   int err;
 
+  atomic_store_release(&runtime_has_spawned, 1);
 #ifndef NATIVE_CODE
   if (caml_debugger_in_use)
     caml_fatal_error("ocamldebug does not support spawning multiple domains");
@@ -1748,10 +1749,9 @@ CAMLexport int caml_bt_is_self(void)
   return pthread_equal(domain_self->backup_thread, pthread_self());
 }
 
-CAMLexport intnat caml_domain_is_multicore (void)
+CAMLexport intnat caml_runtime_is_multicore (void)
 {
-  dom_internal *self = domain_self;
-  return (!caml_domain_alone() || self->backup_thread_running);
+  return atomic_load_acquire(&runtime_has_spawned);
 }
 
 CAMLexport void caml_acquire_domain_lock(void)
