@@ -175,12 +175,6 @@ $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
 $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
 	$(V_LINKOPT)$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $^
 
-.PHONY: dot
-dot: ocamldoc.dot
-
-ocamldoc.dot: $(EXECMOFILES)
-	$(OCAMLDOC_RUN) -dot -dot-reduce -o $@ $(INCLUDES) odoc*.ml
-
 # Lexers and parsers
 
 LEXERS = $(addsuffix .mll,\
@@ -254,72 +248,6 @@ endif
 	  "$(INSTALL_LIBDIR)/ocamldoc"
 
 # TODO: also split into several rules
-
-# Testing :
-###########
-
-.PHONY: test
-test:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/ocamldoc.odoc odoc*.ml odoc*.mli -v
-	$(MKDIR) $@-custom
-	$(OCAMLDOC_RUN_PLUGINS) -colorize-code -sort -d $@-custom $(INCLUDES) \
-	-g generators/odoc_literate.cmo -g generators/odoc_todo.cmo \
-	-load $@/ocamldoc.odoc -v
-
-.PHONY: test_stdlib
-test_stdlib:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc -keep-code \
-	$(ROOTDIR)/stdlib/*.mli \
-	$(ROOTDIR)/otherlibs/unix/unix.mli \
-	$(ROOTDIR)/otherlibs/str/str.mli
-
-.PHONY: test_stdlib_code
-test_stdlib_code:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/stdlib.odoc -keep-code \
-	`ls $(ROOTDIR)/stdlib/*.ml | grep -v Labels` \
-	$(ROOTDIR)/otherlibs/unix/unix.ml \
-	$(ROOTDIR)/otherlibs/str/str.ml
-
-.PHONY: test_latex
-test_latex:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) odoc*.ml \
-	        odoc*.mli test2.txt $(ROOTDIR)/stdlib/*.mli $(ROOTDIR)/otherlibs/unix/unix.mli
-
-.PHONY: test_latex_simple
-test_latex_simple:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) \
-	-latextitle 6,subsection -latextitle 7,subsubection \
-	$(ROOTDIR)/stdlib/hashtbl.mli \
-	$(ROOTDIR)/stdlib/arg.mli \
-	$(ROOTDIR)/otherlibs/unix/unix.mli \
-	$(ROOTDIR)/stdlib/map.mli
-
-.PHONY: test_man
-test_man:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -man -sort -d $@ $(INCLUDES) odoc*.ml odoc*.mli
-
-.PHONY: test_texi
-test_texi:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -texi -sort -d $@ $(INCLUDES) odoc*.ml odoc*.mli
-
-# stdlib non-prefixed :
-#######################
-
-.PHONY: autotest_stdlib
-autotest_stdlib:
-	$(MKDIR) $@
-	$(OCAMLDOC_RUN_PLUGINS) -g autotest/odoc_test.cmo\
-	$(INCLUDES) -keep-code \
-	$(ROOTDIR)/stdlib/*.mli \
-	$(ROOTDIR)/otherlibs/unix/unix.mli \
-	$(ROOTDIR)/otherlibs/str/str.mli
 
 # backup, clean and depend :
 ############################
