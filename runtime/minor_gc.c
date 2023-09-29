@@ -732,7 +732,7 @@ caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
 {
 #ifdef DEBUG
   uintnat* initial_young_ptr = (uintnat*)domain->young_ptr;
-  CAMLassert(caml_domain_is_in_stw());
+  CAMLassert(caml_domain_is_in_stw(domain));
 #endif
 
   if( participating[0] == Caml_state ) {
@@ -791,7 +791,7 @@ void caml_empty_minor_heap_no_major_slice_from_stw(caml_domain_state* domain,
 int caml_try_stw_empty_minor_heap_on_all_domains (void)
 {
   #ifdef DEBUG
-  CAMLassert(!caml_domain_is_in_stw());
+  CAMLassert(!caml_domain_is_in_stw(Caml_state));
   #endif
 
   caml_gc_log("requesting stw empty_minor_heap");
@@ -810,7 +810,7 @@ void caml_empty_minor_heaps_once (void)
   uintnat saved_minor_cycle = atomic_load(&caml_minor_cycles_started);
 
   #ifdef DEBUG
-  CAMLassert(!caml_domain_is_in_stw());
+  CAMLassert(!caml_domain_is_in_stw(Caml_state));
   #endif
 
   /* To handle the case where multiple domains try to execute a minor gc

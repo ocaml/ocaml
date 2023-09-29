@@ -98,7 +98,7 @@ Caml_inline intnat caml_domain_alone(void)
 }
 
 #ifdef DEBUG
-int caml_domain_is_in_stw(void);
+int caml_domain_is_in_stw(caml_domain_state *);
 #endif
 
 int caml_try_run_on_all_domains_with_spin_work(

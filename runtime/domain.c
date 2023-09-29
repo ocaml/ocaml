@@ -1368,8 +1368,8 @@ static void stw_handler(caml_domain_state* domain)
 
 
 #ifdef DEBUG
-int caml_domain_is_in_stw(void) {
-  return Caml_state->inside_stw_handler;
+int caml_domain_is_in_stw(caml_domain_state *domain) {
+  return domain->inside_stw_handler;
 }
 #endif
 
