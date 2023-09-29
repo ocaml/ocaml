@@ -40,21 +40,13 @@ OCAMLDOC_LIBCMIS=$(OCAMLDOC_LIBMLIS:.mli=.cmi)
 OCAMLDOC_LIBCMTS=$(OCAMLDOC_LIBMLIS:.mli=.cmt) $(OCAMLDOC_LIBMLIS:.mli=.cmti)
 
 ODOC_TEST=odoc_test.cmo
-GENERATORS_CMOS= \
-        generators/odoc_todo.cmo \
-        generators/odoc_literate.cmo
-ifeq "$(NATDYNLINK)" "true"
-GENERATORS_CMXS = $(GENERATORS_CMOS:.cmo=.cmxs)
-else
-GENERATORS_CMXS =
-endif
 
 # Compilation
 #############
 
 
 INCLUDE_DIRS = $(addprefix $(ROOTDIR)/,\
-  utils parsing typing driver bytecomp toplevel) generators
+  utils parsing typing driver bytecomp toplevel)
 INCLUDES_DEP = $(addprefix -I ,$(INCLUDE_DIRS))
 INCLUDES_NODEP = $(addprefix -I $(ROOTDIR)/,\
   compilerlibs otherlibs/str otherlibs/dynlink \
@@ -130,7 +122,7 @@ LIBCMXFILES = $(LIBCMOFILES:.cmo=.cmx)
 LIBCMIFILES = $(LIBCMOFILES:.cmo=.cmi)
 
 .PHONY: all
-all: lib exe generators
+all: lib exe
 
 .PHONY: exe
 exe: $(OCAMLDOC)
@@ -138,11 +130,8 @@ exe: $(OCAMLDOC)
 .PHONY: lib
 lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) $(ODOC_TEST)
 
-.PHONY: generators
-generators: $(GENERATORS_CMOS)
-
 .PHONY: opt.opt allopt # allopt and opt.opt are synonyms
-opt.opt: exeopt libopt generatorsopt
+opt.opt: exeopt libopt
 allopt: opt.opt
 
 .PHONY: exeopt
@@ -150,9 +139,6 @@ exeopt: $(OCAMLDOC_OPT)
 
 .PHONY: libopt
 libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
-
-.PHONY: generatorsopt
-generatorsopt: $(GENERATORS_CMXS)
 
 OCAMLDOC_LIBRARIES = ocamlcommon unix str dynlink
 
@@ -196,9 +182,6 @@ DEPEND_PREREQS = $(LEXERS:.mll=.ml) \
 
 %.cmx: %.ml
 	$(V_OCAMLOPT)$(OCAMLOPT) $(COMPFLAGS) -c $<
-
-%.cmxs: %.ml
-	$(V_OCAMLOPT)$(OCAMLOPT) -shared -o $@ $(COMPFLAGS) $<
 
 # Installation targets
 ######################
@@ -260,8 +243,6 @@ clean:
 	rm -f odoc_parser.output odoc_text_parser.output
 	rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
 	rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
-	rm -f generators/*.cm[taiox] generators/*.a generators/*.lib generators/*.o generators/*.obj \
-        generators/*.cmx[as] generators/*.cmti
 
 .PHONY: distclean
 distclean: clean
@@ -270,6 +251,5 @@ distclean: clean
 .PHONY: depend
 depend: $(DEPEND_PREREQS)
 	$(OCAMLDEP_CMD) *.mll *.mly *.ml *.mli > .depend
-	$(OCAMLDEP_CMD) -shared generators/*.ml generators/*.mli >> .depend
 
 include .depend
