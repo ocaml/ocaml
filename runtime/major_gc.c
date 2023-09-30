@@ -1237,9 +1237,10 @@ static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
   return budget;
 }
 
-static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
-                                       int participating_count,
-                                       caml_domain_state** participating)
+static void stw_cycle_all_domains(
+  caml_domain_state* domain, void* unused,
+  int participating_count,
+  caml_domain_state** participating)
 {
   uintnat num_domains_in_stw;
 
@@ -1742,10 +1743,10 @@ mark_again:
 
     while (saved_major_cycle == caml_major_cycles_completed) {
       if (barrier_participants) {
-        cycle_all_domains_callback
+        stw_cycle_all_domains
               (domain_state, (void*)0, participant_count, barrier_participants);
       } else {
-        caml_try_run_on_all_domains(&cycle_all_domains_callback, 0, 0);
+        caml_try_run_on_all_domains(&stw_cycle_all_domains, 0, 0);
       }
     }
   }
@@ -1782,9 +1783,10 @@ void caml_major_collection_slice(intnat howmuch)
   Caml_state->major_slice_epoch = major_slice_epoch;
 }
 
-static void finish_major_cycle_callback (caml_domain_state* domain, void* arg,
-                                         int participating_count,
-                                         caml_domain_state** participating)
+static void stw_finish_major_cycle(
+  caml_domain_state* domain, void* arg,
+  int participating_count,
+  caml_domain_state** participating)
 {
   uintnat saved_major_cycles = (uintnat)arg;
   CAMLassert (domain == Caml_state);
@@ -1811,7 +1813,7 @@ void caml_finish_major_cycle (void)
 
   while( saved_major_cycles == caml_major_cycles_completed ) {
     caml_try_run_on_all_domains
-    (&finish_major_cycle_callback, (void*)caml_major_cycles_completed, 0);
+    (&stw_finish_major_cycle, (void*)caml_major_cycles_completed, 0);
   }
 }
 

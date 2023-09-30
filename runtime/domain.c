@@ -1652,10 +1652,11 @@ Caml_inline void advance_global_major_slice_epoch (caml_domain_state* d)
   }
 }
 
-static void global_major_slice_callback (caml_domain_state *domain,
-                                         void *unused,
-                                         int participating_count,
-                                         caml_domain_state **participating)
+static void stw_global_major_slice(
+  caml_domain_state *domain,
+  void *unused,
+  int participating_count,
+  caml_domain_state **participating)
 {
   domain->requested_major_slice = 1;
   /* Nothing else to do, as [stw_hander] will call [caml_poll_gc_work]
@@ -1710,7 +1711,7 @@ void caml_poll_gc_work(void)
 
   if (d->requested_global_major_slice) {
     if (caml_try_run_on_all_domains_async(
-          &global_major_slice_callback, NULL, NULL)){
+          &stw_global_major_slice, NULL, NULL)){
       d->requested_global_major_slice = 0;
     }
     /* If caml_try_run_on_all_domains_async fails, we'll try again next time
