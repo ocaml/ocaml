@@ -1789,6 +1789,11 @@ static void finish_major_cycle_callback (caml_domain_state* domain, void* arg,
   uintnat saved_major_cycles = (uintnat)arg;
   CAMLassert (domain == Caml_state);
 
+  /* We are in a STW critical section here. There is no obvious call
+     to a barrier at the end of the callback, but the [while] loop
+     will only terminate when [caml_major_cycles_completed] is
+     incremented, and this happens in [cycle_all_domains] inside
+     a barrier. */
   caml_empty_minor_heap_no_major_slice_from_stw
     (domain, (void*)0, participating_count, participating);
 
