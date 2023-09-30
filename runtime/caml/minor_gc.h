@@ -74,7 +74,7 @@ extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
 extern void caml_empty_minor_heap_no_major_slice_from_stw
   (caml_domain_state* domain, void* unused, int participating_count,
     caml_domain_state** participating); /* in STW */
-extern int caml_try_stw_empty_minor_heap_on_all_domains(void); /* out STW */
+extern int caml_try_empty_minor_heap_on_all_domains(void); /* out STW */
 extern void caml_empty_minor_heaps_once(void); /* out STW */
 void caml_alloc_small_dispatch (caml_domain_state* domain,
                                 intnat wosize, int flags,
