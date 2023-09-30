@@ -113,6 +113,60 @@ int caml_try_run_on_all_domains(
   void*,
   void (*leader_setup)(caml_domain_state*));
 
+/* Function naming conventions for STW callbacks and STW critical sections.
+
+   A "STW callback" is a callback passed to one of the
+   [caml_try_run_on_all_domains*] runners, it will
+   run on all participant domains in parallel.
+
+   The "STW critical section" is the runtime interval betweeen the
+   start of the execution of the STW callback and the last barrier in
+   the callback. During this interval, mutator code from registered
+   participants cannot be running in parallel.
+
+   Note:
+
+   - Some parts of a STW callback are *not* inside the STW critical
+     section: all the code after the last barrier, or all the callback
+     if it does not contain a barrier.
+
+   - Program initialization can be considered as a STW critical
+     section as well, when no mutators or domains are running yet.
+
+   Some functions must be called within a STW critical section only,
+   calling then in a less-synchronized context introduces races with
+   mutators. To avoid these mistakes we use naming conventions as
+   a barebones effect system.
+
+   1. [stw_*] prefix for STW callbacks.
+
+      A function that defines a STW callback starts with [stw_] or
+      [caml_stw_]. It is passed to the [caml_try_run_on_all_domains*]
+      runner.
+
+      Examples:
+      - [caml_stw_empty_minor_heap] is a STW callback that empties the
+        minor heap
+      - [stw_resize_minor_heap_reservation] is a STW callback that
+        resizes the memory reservation for the minor heap
+
+   2. [*_from_stw] suffix for auxiliary functions that may only be
+      called within a STW critical section.
+
+   3. [*_from_stw_single] suffix for auxiliary functions that may only
+      be called within a STW critical section, and only by a single
+      domain at a time -- typically the last one entering a barrier.
+
+   5. No [stw] in the name for functions that are not called in a STW
+      callback, in particular functions that themselves start a STW
+      context by calling a [caml_try_run_on_all_domains*].
+
+   We could consider a [*_outside_stw] suffix for functions that must
+   not be called inside a STW callback, but it is generally not
+   necessary to enforce this discipline in the function name.
+*/
+
+
 /* barriers */
 typedef uintnat barrier_status;
 void caml_global_barrier(void);
