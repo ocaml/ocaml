@@ -1259,10 +1259,11 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
 
   {
     /* Cycle major heap */
-    // FIXME: delete caml_cycle_heap_stw and have per-domain copies of the data?
+    /* FIXME: delete caml_cycle_heap_from_stw_single
+       and have per-domain copies of the data? */
     barrier_status b = caml_global_barrier_begin();
     if (caml_global_barrier_is_final(b)) {
-      caml_cycle_heap_stw();
+      caml_cycle_heap_from_stw_single();
       caml_gc_log("GC cycle %lu completed (heap cycled)",
                   (long unsigned int)caml_major_cycles_completed);
 
@@ -1355,8 +1356,11 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
   /* If the heap is to be verified, do it before the domains continue
      running OCaml code. */
   if (caml_params->verify_heap) {
-    caml_verify_heap(domain);
+    caml_verify_heap_from_stw(domain);
     caml_gc_log("Heap verified");
+    /* This global barrier avoids races between the verify_heap code
+       and the rest of the STW critical section, for example the parts
+       that mark global roots. */
     caml_global_barrier();
   }
 

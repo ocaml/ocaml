@@ -777,7 +777,7 @@ static void verify_object(struct heap_verify_state* st, value v) {
   }
 }
 
-void caml_verify_heap(caml_domain_state *domain) {
+void caml_verify_heap_from_stw(caml_domain_state *domain) {
   struct heap_verify_state* st = caml_verify_begin();
   caml_do_roots (&caml_verify_root, verify_scanning_flags, st, domain, 1);
   caml_scan_global_roots(&caml_verify_root, st);
@@ -882,7 +882,7 @@ static void verify_swept (struct caml_heap_state* local) {
   CAMLassert(local->stats.large_blocks == large_stats.live_blocks);
 }
 
-void caml_cycle_heap_stw (void) {
+void caml_cycle_heap_from_stw_single (void) {
   struct global_heap_state oldg = caml_global_heap_state;
   struct global_heap_state newg;
   newg.UNMARKED     = oldg.MARKED;
