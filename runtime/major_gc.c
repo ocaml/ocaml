@@ -1483,9 +1483,10 @@ static int is_complete_phase_sweep_ephe (void)
     /* All orphaned structures have been adopted */
 }
 
-static void try_complete_gc_phase (caml_domain_state* domain, void* unused,
-                                   int participant_count,
-                                   caml_domain_state** participating)
+static void stw_try_complete_gc_phase(
+  caml_domain_state* domain, void* unused,
+  int participant_count,
+  caml_domain_state** participating)
 {
   barrier_status b;
   CAML_EV_BEGIN(EV_MAJOR_GC_PHASE_CHANGE);
@@ -1709,12 +1710,13 @@ mark_again:
         is_complete_phase_mark_final ()) {
       CAMLassert (caml_gc_phase != Phase_sweep_ephe);
       if (barrier_participants) {
-        try_complete_gc_phase (domain_state,
-                              (void*)0,
-                              participant_count,
-                              barrier_participants);
+        stw_try_complete_gc_phase(
+          domain_state,
+          (void*)0,
+          participant_count,
+          barrier_participants);
       } else {
-        caml_try_run_on_all_domains (&try_complete_gc_phase, 0, 0);
+        caml_try_run_on_all_domains (&stw_try_complete_gc_phase, 0, 0);
       }
       if (get_major_slice_work(mode) > 0) goto mark_again;
     }
