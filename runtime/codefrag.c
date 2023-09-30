@@ -160,7 +160,7 @@ caml_find_code_fragment_by_digest(unsigned char digest[16]) {
 }
 
 /* This is only ever called from a stw by one domain */
-void caml_code_fragment_cleanup (void)
+void caml_code_fragment_cleanup_from_stw_single (void)
 {
   struct code_fragment_garbage *curr;
 

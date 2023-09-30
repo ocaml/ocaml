@@ -753,7 +753,7 @@ CAMLexport void caml_reset_domain_lock(void)
 
 /* minor heap initialization and resizing */
 
-static void reserve_minor_heaps(void) {
+static void reserve_minor_heaps_from_stw_single(void) {
   void* heaps_base;
   uintnat minor_heap_reservation_bsize;
   uintnat minor_heap_max_bsz;
@@ -790,7 +790,7 @@ static void reserve_minor_heaps(void) {
   }
 }
 
-static void unreserve_minor_heaps(void) {
+static void unreserve_minor_heaps_from_stw_single(void) {
   uintnat size;
 
   caml_gc_log("unreserve_minor_heaps");
@@ -842,16 +842,16 @@ static void stw_resize_minor_heap_reservation(caml_domain_state* domain,
     caml_gc_log("stw_resize_minor_heap_reservation: "
                 "unreserve_minor_heaps");
 
-    unreserve_minor_heaps();
+    unreserve_minor_heaps_from_stw_single();
     /* new_minor_wsz is page-aligned because caml_norm_minor_heap_size has
        been called to normalize it earlier.
     */
     caml_minor_heap_max_wsz = new_minor_wsz;
     caml_gc_log("stw_resize_minor_heap_reservation: reserve_minor_heaps");
-    reserve_minor_heaps();
-    /* The call to [reserve_minor_heaps] makes a new reservation,
-       and it also updates the reservation boundaries of each domain
-       by mutating its [minor_heap_area_start{,_end}] variables.
+    reserve_minor_heaps_from_stw_single();
+    /* The call to [reserve_minor_heaps_from_stw_single] makes a new
+       reservation, and it also updates the reservation boundaries of each
+       domain by mutating its [minor_heap_area_start{,_end}] variables.
 
        These variables are synchronized by the fact that we are inside
        a STW section: no other domains are running in parallel, and
@@ -887,7 +887,9 @@ void caml_update_minor_heap_max(uintnat requested_wsz) {
 void caml_init_domains(uintnat minor_heap_wsz) {
   int i;
 
-  reserve_minor_heaps();
+  reserve_minor_heaps_from_stw_single();
+  /* stw_single: mutators and domains have not started yet. */
+
   for (i = 0; i < Max_domains; i++) {
     struct dom_internal* dom = &all_domains[i];
 

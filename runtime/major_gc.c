@@ -1345,9 +1345,7 @@ static void stw_cycle_all_domains(
 
       atomic_store(&domain_global_roots_started, WORK_UNSTARTED);
 
-      /* Cleanups for various data structures that must be done in a STW by
-        only a single domain */
-      caml_code_fragment_cleanup();
+      caml_code_fragment_cleanup_from_stw_single();
     }
     // should interrupts be processed here or not?
     // depends on whether marking above may need interrupts

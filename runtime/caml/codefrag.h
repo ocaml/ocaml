@@ -87,9 +87,8 @@ extern struct code_fragment *
    Returns NULL if the code fragment was registered with [DIGEST_IGNORE]. */
 extern unsigned char * caml_digest_of_code_fragment(struct code_fragment *);
 
-/* Cleans up (and frees) removed code fragments. Must be called from a stop the
-   world pause by only a single thread. */
-extern void caml_code_fragment_cleanup(void);
+/* Cleans up (and frees) removed code fragments. */
+extern void caml_code_fragment_cleanup_from_stw_single(void);
 
 #endif
 
