@@ -293,9 +293,10 @@ module Existential_escape =
 Line 5, characters 21-22:
 5 |     let eval (D x) = x
                          ^
-Error: This expression has type "$D_'a t"
-       but an expression was expected of type "'a"
-       The type constructor "$D_'a" would escape its scope
+Error: This expression has type "$a t" but an expression was expected of type
+         "'a"
+       The type constructor "$a" would escape its scope
+       Hint: "$a" is an existential type bound by the constructor "D".
 |}];;
 
 module Rectype =
@@ -1353,10 +1354,11 @@ module M :
 Line 9, characters 4-5:
 9 |     z#b
         ^
-Error: This expression has type "$C_'a" = "< b : bool >"
+Error: This expression has type "$a" = "< b : bool >"
        but an expression was expected of type "< b : 'a; .. >"
        This instance of "< b : bool >" is ambiguous:
        it would escape the scope of its equation
+       Hint: "$a" is an existential type bound by the constructor "C".
 |}]
 
 (* Check got/expected when the order changes *)
@@ -1380,8 +1382,9 @@ module M :
 Line 9, characters 4-5:
 9 |     z#b
         ^
-Error: This expression has type "$C_'a" = "< b : bool >"
+Error: This expression has type "$a" = "< b : bool >"
        but an expression was expected of type "< b : 'a; .. >"
        This instance of "< b : bool >" is ambiguous:
        it would escape the scope of its equation
+       Hint: "$a" is an existential type bound by the constructor "C".
 |}]

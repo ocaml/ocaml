@@ -116,17 +116,17 @@ let enter_type ?abstract_abbrevs rec_flag env sdecl (id, uid) =
   in
   let arity = List.length sdecl.ptype_params in
   if not needed then env else
-  let abstract_reason, type_manifest =
+  let abstract_source, type_manifest =
     match sdecl.ptype_manifest, abstract_abbrevs with
-    | None, _             -> Abstract_def, None
-    | Some _, None        -> Abstract_def, Some (Btype.newgenvar ())
+    | None, _             -> Origin_def, None
+    | Some _, None        -> Origin_def, Some (Btype.newgenvar ())
     | Some _, Some reason -> reason, None
   in
   let decl =
     { type_params =
         List.map (fun _ -> Btype.newgenvar ()) sdecl.ptype_params;
       type_arity = arity;
-      type_kind = Type_abstract abstract_reason;
+      type_kind = Type_abstract abstract_source;
       type_private = sdecl.ptype_private;
       type_manifest = type_manifest;
       type_variance = Variance.unknown_signature ~injective:false ~arity;
@@ -374,7 +374,7 @@ let transl_declaration env sdecl (id, uid) =
   in
   let (tkind, kind) =
     match sdecl.ptype_kind with
-      | Ptype_abstract -> Ttype_abstract, Type_abstract Abstract_def
+      | Ptype_abstract -> Ttype_abstract, Type_abstract Origin_def
       | Ptype_variant scstrs ->
         if List.exists (fun cstr -> cstr.pcd_res <> None) scstrs then begin
           match cstrs with
@@ -1140,7 +1140,7 @@ let transl_type_decl env rec_flag sdecl_list =
      cannot be expanded (#12334, #12368) *)
   let abs_env =
     List.fold_left2
-      (enter_type ~abstract_abbrevs:Abstract_rec_check_regularity rec_flag)
+      (enter_type ~abstract_abbrevs:Origin_rec_check_regularity rec_flag)
       env sdecl_list ids_list in
   List.iter
     (check_abbrev_regularity ~abs_env new_env id_loc_list to_check)
@@ -1709,7 +1709,7 @@ let transl_with_constraint id ?fixed_row_path ~sig_env ~sig_decl ~outer_env
     if arity_ok && man <> None then
       sig_decl.type_kind, sig_decl.type_unboxed_default
     else
-      Type_abstract Abstract_def, false
+      Type_abstract Origin_def, false
   in
   let new_sig_decl =
     { type_params = params;
@@ -1792,7 +1792,7 @@ let abstract_type_decl ~injective arity =
   Ctype.with_local_level ~post:generalize_decl begin fun () ->
     { type_params = make_params arity;
       type_arity = arity;
-      type_kind = Type_abstract Abstract_def;
+      type_kind = Type_abstract Origin_def;
       type_private = Public;
       type_manifest = None;
       type_variance = Variance.unknown_signature ~injective ~arity;

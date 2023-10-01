@@ -752,7 +752,7 @@ let solve_constructor_annotation
   let ids =
     List.map
       (fun name ->
-        let decl = new_local_type ~loc:name.loc () in
+        let decl = new_local_type ~loc:name.loc Origin_def in
         let (id, new_env) =
           Env.enter_type ~scope:expansion_scope name.txt decl !!penv in
         Pattern_env.set_env penv new_env;
@@ -1704,7 +1704,7 @@ and type_pat_aux
       begin match no_existentials, constr.cstr_existentials with
       | None, _ | _, [] -> ()
       | Some r, (_ :: _ as exs)  ->
-          let exs = List.map (Ctype.existential_name constr) exs in
+          let exs = Ctype.existential_names exs in
           let name = constr.cstr_name in
           raise (Error (loc, !!penv, Unexpected_existential (r, name, exs)))
       end;
@@ -4393,7 +4393,7 @@ and type_newtype
   (* Use [with_local_level] just for scoping *)
   with_local_level begin fun () ->
     (* Create a fake abstract type declaration for [name]. *)
-    let decl = new_local_type ~loc () in
+    let decl = new_local_type ~loc Origin_def in
     let scope = create_scope () in
     let (id, new_env) = Env.enter_type ~scope name decl env in
 

@@ -761,6 +761,7 @@ let f = function
 Line 2, characters 6-7:
 2 |   | A x
           ^
-Error: This pattern matches values of type "$A_'a"
-       The type constructor "$A_'a" would escape its scope
+Error: This pattern matches values of type "$a"
+       The type constructor "$a" would escape its scope
+       Hint: "$a" is an existential type bound by the constructor "A".
 |}]
