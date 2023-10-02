@@ -122,6 +122,21 @@ val f : (int, int) pair -> int = <fun>
 (* #11891: allow naming more types *)
 (* We stillonly allow to name freshly introduced existentials *)
 
+type _ ty =
+  | Int : int ty
+  | Pair : 'b ty * 'c ty -> ('b * 'c) ty
+let rec example : type a . a ty -> a = function
+| Int -> 0
+| Pair (x, y) -> (example x, example y)
+let rec example : type a . a ty -> a = function
+| Int -> 0
+| Pair (type b c) (x, y : b ty * c ty) -> (example x, example y)
+[%%expect{|
+type _ ty = Int : int ty | Pair : 'b ty * 'c ty -> ('b * 'c) ty
+val example : 'a ty -> 'a = <fun>
+val example : 'a ty -> 'a = <fun>
+|}]
+
 type _ th =
   | Thunk : 'a * ('a -> 'b) -> 'b th
 let f1 (type a) : a th -> a = function
@@ -177,21 +192,6 @@ let f3 (type a) : a tho -> a = function
 [%%expect{|
 type _ tho = Thunk_opt : 'b * ('b -> 'c option) -> 'c option tho
 val f3 : 'a tho -> 'a = <fun>
-|}]
-
-type _ ty =
-  | Int : int ty
-  | Pair : 'b ty * 'c ty -> ('b * 'c) ty
-let rec example : type a . a ty -> a = function
-| Int -> 0
-| Pair (x, y) -> (example x, example y)
-let rec example : type a . a ty -> a = function
-| Int -> 0
-| Pair (type b c) (x, y : b ty * c ty) -> (example x, example y)
-[%%expect{|
-type _ ty = Int : int ty | Pair : 'b ty * 'c ty -> ('b * 'c) ty
-val example : 'a ty -> 'a = <fun>
-val example : 'a ty -> 'a = <fun>
 |}]
 
 
