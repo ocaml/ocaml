@@ -829,13 +829,13 @@ let solve_constructor_annotation
         let decl, tv' = get_decl_manifest id !!penv in
         let tv' = expand_head !!penv tv' in
         begin match get_desc tv' with
-        | Tconstr (Path.Pident id', [], _) when
-            Ident.scope id' = penv.equations_scope ->
+        | Tconstr (Path.Pident id', [], _) ->
               if List.exists (Ident.same id') !bound_ids then
                 raise (Error (cty.ctyp_loc, !!penv,
                               Bind_existential (Bind_already_bound, id, tv')));
               (* Both id and id' are Scoped identifiers, so their stamps grow *)
-              if Ident.compare_stamp id id' > 0 then
+              if Ident.scope id' <> penv.equations_scope
+              || Ident.compare_stamp id id' > 0 then
                 raise (Error (cty.ctyp_loc, !!penv,
                               Bind_existential (Bind_not_in_scope, id, tv')));
               bound_ids := id' :: !bound_ids
@@ -6924,14 +6924,19 @@ let report_error ~loc env = function
         "This type does not bind all existentials in the constructor"
         (Style.as_inline_code pp_type) (ids, ty)
   | Bind_existential (reason, id, ty) ->
-      let reason = match reason with
-      | Bind_already_bound -> "already bound existential"
-      | Bind_not_in_scope -> "previously defined existential"
-      | Bind_non_locally_abstract -> "non-locally-abstract type"
+      let reason1, reason2 = match reason with
+      | Bind_already_bound -> "the name", "that is already bound"
+      | Bind_not_in_scope -> "the name", "that was defined before"
+      | Bind_non_locally_abstract -> "the type",
+          "that is not a locally abstract type"
       in
       Location.errorf ~loc
-        "@[<hov0>This type annotation attempts to bind@ \"%s\"@ %s%s@ \"%a\".@]"
-        (Ident.name id) "to the " reason Printtyp.type_expr ty
+        "@[<hov0>The local name@ %a@ %s@ %s.@ %s@ %s@ %a@ %s.@]"
+        (Style.as_inline_code Printtyp.ident) id
+        "can only be given to an existential variable"
+        "introduced by this GADT constructor"
+        "The type annotation tries to bind it to"
+        reason1 (Style.as_inline_code Printtyp.type_expr) ty reason2
   | Missing_type_constraint ->
       Location.errorf ~loc
         "@[%s@ %s@]"

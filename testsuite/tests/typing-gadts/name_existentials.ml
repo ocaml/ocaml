@@ -37,8 +37,10 @@ let ko2 = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
 Line 1, characters 42-50:
 1 | let ko2 = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
                                               ^^^^^^^^
-Error: This type annotation attempts to bind "b"
-       to the already bound existential "a".
+Error: The local name "b" can only be given to an existential variable
+       introduced by this GADT constructor.
+       The type annotation tries to bind it to the name "a"
+       that is already bound.
 |}]
 
 type u = C : 'a * ('a -> 'b list) -> u
@@ -83,8 +85,10 @@ let rec test : type a. a expr -> a = function
 Line 2, characters 22-23:
 2 |   | Int (type b) (n : a) -> n
                           ^
-Error: This type annotation attempts to bind "b"
-       to the non-locally-abstract type "'a".
+Error: The local name "b" can only be given to an existential variable
+       introduced by this GADT constructor.
+       The type annotation tries to bind it to the type "'a"
+       that is not a locally abstract type.
 |}]
 
 (* Strange wildcard *)
@@ -149,8 +153,10 @@ val f1 : 'a th -> 'a = <fun>
 Line 6, characters 29-41:
 6 |   | Thunk (type b c) (x, f : b * (b -> c)) -> f x
                                  ^^^^^^^^^^^^
-Error: This type annotation attempts to bind "c"
-       to the non-locally-abstract type "a".
+Error: The local name "c" can only be given to an existential variable
+       introduced by this GADT constructor.
+       The type annotation tries to bind it to the name "a"
+       that was defined before.
 |}]
 (* Do not allow to deduce extra assumptions *)
 let ko1 (type a) : a th -> a = function
@@ -170,8 +176,10 @@ let ko2 = function
 Line 2, characters 29-41:
 2 |   | Thunk (type b c) (x, f : b * (b -> c)) -> f x
                                  ^^^^^^^^^^^^
-Error: This type annotation attempts to bind "c"
-       to the non-locally-abstract type "'a".
+Error: The local name "c" can only be given to an existential variable
+       introduced by this GADT constructor.
+       The type annotation tries to bind it to the type "'a"
+       that is not a locally abstract type.
 |}]
 let ko3 () =
   match [] with
@@ -181,8 +189,10 @@ let ko3 () =
 Line 3, characters 30-42:
 3 |   | [Thunk (type b c) (x, f : b * (b -> c))] -> f x
                                   ^^^^^^^^^^^^
-Error: This type annotation attempts to bind "c"
-       to the non-locally-abstract type "'a".
+Error: The local name "c" can only be given to an existential variable
+       introduced by this GADT constructor.
+       The type annotation tries to bind it to the type "'a"
+       that is not a locally abstract type.
 |}]
 
 type _ tho =
@@ -217,6 +227,8 @@ let rec default : type a. a ty -> a = function
 Line 3, characters 34-45:
 3 |   | Pair (Wrap (type b c) (b, c : b ty * c ty)) ->
                                       ^^^^^^^^^^^
-Error: This type annotation attempts to bind "b"
-       to the previously defined existential "$0".
+Error: The local name "b" can only be given to an existential variable
+       introduced by this GADT constructor.
+       The type annotation tries to bind it to the name "$0"
+       that was defined before.
 |}]
