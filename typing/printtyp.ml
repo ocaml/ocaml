@@ -862,11 +862,11 @@ end = struct
           | exception Not_found -> acc
           | decl ->
               match type_origin decl with
-              | Origin_existential constr ->
+              | Existential constr ->
                   let prev = String.Map.find_opt constr acc in
                   let prev = Option.value ~default:[] prev in
                   String.Map.add constr (tree_of_path None p :: prev) acc
-              | Origin_def | Origin_rec_check_regularity -> acc)
+              | Definition | Rec_check_regularity -> acc)
         !names String.Map.empty
     in
     String.Map.iter
@@ -970,11 +970,7 @@ end = struct
     || String.Set.mem name !named_weak_vars
 
   let rec new_name () =
-    let name =
-      if !name_counter < 26
-      then String.make 1 (Char.chr(97 + !name_counter))
-      else String.make 1 (Char.chr(97 + !name_counter mod 26)) ^
-             Int.to_string(!name_counter / 26) in
+    let name = Misc.letter_of_int !name_counter in
     incr name_counter;
     if name_is_already_used name then new_name () else name
 
@@ -1932,7 +1928,7 @@ let dummy =
   {
     type_params = [];
     type_arity = 0;
-    type_kind = Type_abstract Origin_def;
+    type_kind = Type_abstract Definition;
     type_private = Public;
     type_manifest = None;
     type_variance = [];
@@ -2505,18 +2501,20 @@ let warn_on_missing_def env ppf t =
   match get_desc t with
   | Tconstr (p,_,_) ->
     begin match Env.find_type p env with
-    | { type_kind = Type_abstract Origin_rec_check_regularity;
-        type_manifest = None; _ } ->
-        fprintf ppf
-          "@,@[<hov>Type %a was considered abstract@ when checking\
-           @ constraints@ in this@ recursive type definition.@]"
-          (Style.as_inline_code path) p
     | exception Not_found ->
         fprintf ppf
           "@,@[<hov>Type %a is abstract because@ no corresponding\
            @ cmi file@ was found@ in path.@]" (Style.as_inline_code path) p
-    | _ -> ()
-    end
+    | { type_manifest = Some _; _ } -> ()
+    | { type_manifest = None; _ } as decl ->
+        match type_origin decl with
+        | Rec_check_regularity ->
+            fprintf ppf
+              "@,@[<hov>Type %a was considered abstract@ when checking\
+               @ constraints@ in this@ recursive type definition.@]"
+              (Style.as_inline_code path) p
+        | Definition | Existential _ -> ()
+      end
   | _ -> ()
 
 let prepare_expansion_head empty_tr = function

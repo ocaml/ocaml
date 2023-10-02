@@ -492,9 +492,9 @@ and ('lbl, 'cstr) type_kind =
   | Type_open
 
 and type_origin =
-    Origin_def
-  | Origin_rec_check_regularity       (* See Typedecl.transl_type_decl *)
-  | Origin_existential of string
+    Definition
+  | Rec_check_regularity       (* See Typedecl.transl_type_decl *)
+  | Existential of string
 
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)

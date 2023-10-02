@@ -256,9 +256,9 @@ and ('lbl, 'cstr) type_kind =
   | Type_open
 
 and type_origin =
-    Origin_def
-  | Origin_rec_check_regularity
-  | Origin_existential of string
+    Definition
+  | Rec_check_regularity
+  | Existential of string
 
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)

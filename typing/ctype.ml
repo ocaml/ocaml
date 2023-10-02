@@ -1300,20 +1300,11 @@ let existential_name name_counter ty =
     match get_desc ty with
     | Tvar (Some name) -> name
     | _ ->
-        let name =
-          if !name_counter < 26
-          then String.make 1 (Char.chr(97 + !name_counter))
-          else String.make 1 (Char.chr(97 + !name_counter mod 26))
-               ^ Int.to_string(!name_counter / 26)
-        in
+        let name = Misc.letter_of_int !name_counter in
         incr name_counter;
         name
   in
   "$" ^ name
-
-let existential_names tys =
-  let name_counter = ref 0 in
-  List.map (existential_name name_counter) tys
 
 type existential_treatment =
   | Keep_existentials_flexible
@@ -1329,7 +1320,7 @@ let instance_constructor existential_treatment cstr =
           fun existential ->
             let env = penv.env in
             let fresh_constr_scope = penv.equations_scope in
-            let decl = new_local_type (Origin_existential cstr.cstr_name) in
+            let decl = new_local_type (Existential cstr.cstr_name) in
             let name = existential_name name_counter existential in
             let (id, new_env) =
               Env.enter_type (get_new_abstract_name env name) decl env
@@ -2216,7 +2207,7 @@ let reify uenv t =
   let fresh_constr_scope = get_equations_scope uenv in
   let create_fresh_constr lev name =
     let name = match name with Some s -> "$'"^s | _ -> "$" in
-    let decl = new_local_type Origin_def in
+    let decl = new_local_type Definition in
     let env = get_env uenv in
     let new_name =
       (* unique names are needed only for error messages *)
@@ -5409,7 +5400,7 @@ let nondep_type_decl env mid is_covariant decl =
     let params = List.map (nondep_type_rec env mid) decl.type_params in
     let tk =
       try map_kind (nondep_type_rec env mid) decl.type_kind
-      with Nondep_cannot_erase _ when is_covariant -> Type_abstract Origin_def
+      with Nondep_cannot_erase _ when is_covariant -> Type_abstract Definition
     and tm, priv =
       match decl.type_manifest with
       | None -> None, decl.type_private

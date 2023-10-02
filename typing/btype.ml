@@ -130,7 +130,7 @@ let type_kind_is_abstract decl =
 let type_origin decl =
   match decl.type_kind with
   | Type_abstract origin -> origin
-  | Type_variant _ | Type_record _ | Type_open -> Origin_def
+  | Type_variant _ | Type_record _ | Type_open -> Definition
 
 let dummy_method = "*dummy method*"
 

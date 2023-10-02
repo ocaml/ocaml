@@ -175,7 +175,6 @@ val new_local_type:
         ?loc:Location.t ->
         ?manifest_and_scope:(type_expr * int) ->
         type_origin -> type_declaration
-val existential_names: type_expr list -> string list
 
 module Pattern_env : sig
   type t = private

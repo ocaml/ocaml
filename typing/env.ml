@@ -1136,7 +1136,7 @@ let rec find_type_data path env =
   | decl ->
     {
       tda_declaration = decl;
-      tda_descriptions = Type_abstract Origin_def;
+      tda_descriptions = Type_abstract (Btype.type_origin decl);
       tda_shape = Shape.leaf decl.type_uid;
     }
   | exception Not_found -> begin
@@ -2024,7 +2024,7 @@ and store_type_infos ~tda_shape id info env =
   let tda =
     {
       tda_declaration = info;
-      tda_descriptions = Type_abstract Origin_def;
+      tda_descriptions = Type_abstract (Btype.type_origin info);
       tda_shape
     }
   in
