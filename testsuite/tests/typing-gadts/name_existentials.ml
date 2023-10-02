@@ -155,10 +155,8 @@ let ko2 = function
 Line 2, characters 29-41:
 2 |   | Thunk (type b c) (x, f : b * (b -> c)) -> f x
                                  ^^^^^^^^^^^^
-Error: This pattern matches values of type "b * (b -> 'a)"
-       but a pattern was expected which matches values of type "b * (b -> 'b)"
-       This instance of "'a" is ambiguous:
-       it would escape the scope of its equation
+Error: This type annotation attempts to bind "c"
+       to the non-locally-abstract type "'a".
 |}]
 let ko3 () =
   match [] with

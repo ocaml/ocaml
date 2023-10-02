@@ -762,7 +762,7 @@ let solve_constructor_annotation
       (fun name ->
         let decl =
           new_local_type ~loc:name.loc Definition
-            ~manifest_and_scope:(newvar (),expansion_scope) in
+            ~manifest_and_scope:(newvar (),Ident.lowest_scope) in
         let (id, new_env) =
           Env.enter_type ~scope:expansion_scope name.txt decl !!penv in
         Pattern_env.set_env penv new_env;
