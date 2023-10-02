@@ -32,10 +32,10 @@ Line 1, characters 40-41:
 Error: This type does not bind all existentials in the constructor:
          "type a. 'a ty * 'a"
 |}]
-let ok3 = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
+let ko2 = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
 [%%expect{|
 Line 1, characters 42-50:
-1 | let ok3 = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
+1 | let ko2 = function Dyn (type a b) (a, x : a ty * b) -> ignore (x : b)
                                               ^^^^^^^^
 Error: This type annotation attempts to bind "b"
        to the already bound existential "a".
