@@ -141,6 +141,17 @@ val example : 'a ty -> 'a = <fun>
 val example : 'a ty -> 'a = <fun>
 |}]
 
+let rec example : type a . a ty -> a = function
+| Int -> 0
+| Pair (type b c) (x, y : b ty * c ty) -> (example x, example (*error*)x)
+[%%expect{|
+Line 3, characters 54-72:
+3 | | Pair (type b c) (x, y : b ty * c ty) -> (example x, example (*error*)x)
+                                                          ^^^^^^^^^^^^^^^^^^
+Error: This expression has type "b" = "$0" but an expression was expected of type
+         "$1"
+|}]
+
 type _ th =
   | Thunk : 'a * ('a -> 'b) -> 'b th
 let f1 (type a) : a th -> a = function
