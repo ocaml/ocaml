@@ -647,10 +647,9 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   domain->stat_minor_words += Wsize_bsize (minor_allocated_bytes);
   domain->stat_promoted_words += domain->allocated_words - prev_alloc_words;
 
-  /* gc stats may be accessed unsynchronised by mutator code, so we collect the
-     sample before arriving at the barrier, which ensures that it doesn't race
-  */
-  caml_collect_gc_stats_sample(domain);
+  /* Must be called during the STW section -- before any mutators
+     start running, so before arriving at the barrier. */
+  caml_collect_gc_stats_sample_stw(domain);
 
   /* The code above is synchronised with other domains by the barrier below,
      which is split into two steps, "arriving" and "leaving". When the final

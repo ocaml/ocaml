@@ -347,9 +347,11 @@ Working version
 
 ### Bug fixes:
 
-- #12590, #12595: Move `caml_collect_gc_stats_sample` in
-  `caml_empty_minor_heap_promote` before barrier arrival.
+- #12590, #12595: fix a race in `caml_collect_gc_stats_sample`
   (B. Szilvasy, review by Gabriel Scherer)
+
+- #12595, #12597: fix a race in `caml_clear_gc_stats_sample`
+  (Gabriel Scherer, review by B. Szilvasy, report by B. Szilvasy)
 
 - #12580: Fix location of alias pattern variables.
   (Chris Casinghino, review Gabriel Scherer, report by Milo Davis)

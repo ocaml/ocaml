@@ -1835,10 +1835,18 @@ static void handover_finalisers(caml_domain_state* domain_state)
   caml_final_domain_terminate(domain_state);
 }
 
+static inline int domain_terminating(dom_internal *d) {
+  return d->interruptor.terminating;
+}
+
+int caml_domain_terminating (caml_domain_state *dom_st)
+{
+  return domain_terminating(&all_domains[dom_st->id]);
+}
+
 int caml_domain_is_terminating (void)
 {
-  struct interruptor* s = &domain_self->interruptor;
-  return s->terminating;
+  return domain_terminating(domain_self);
 }
 
 static void domain_terminate (void)
@@ -1921,13 +1929,13 @@ static void domain_terminate (void)
   domain_state->minor_tables = 0;
 
   caml_orphan_alloc_stats(domain_state);
-  /* Heap stats were orphaned by caml_teardown_shared_heap above.
-     At this point, the stats of the domain must be empty;
-     we also clear the sampled copy.
+  /* Heap stats were orphaned by [caml_teardown_shared_heap] above.
+     At this point, the stats of the domain must be empty.
 
-     Note: We cannot call caml_collect_gc_stats_sample to clear the
-     sample at this point as the shared heap is gone. */
-  caml_clear_gc_stats_sample(domain_state);
+     The sampled copy was also cleared by the minor collection(s)
+     performed above at [caml_empty_minor_heaps_once()], see the
+     termination-specific logic in [caml_collect_gc_stats_sample_stw].
+  */
 
   /* TODO: can this ever be NULL? can we remove this check? */
   if(domain_state->current_stack != NULL) {
