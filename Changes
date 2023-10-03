@@ -187,6 +187,9 @@ Working version
   (Guillaume Munch-Maccagnoni, review by KC Sivaramakrishnan
    and Gabriel Scherer)
 
+- #12625: Remove the Closure module from Obj
+  (Vincent Laviron, not reviewed)
+
 ### Other libraries:
 
 - #12213: Dynlink library, improve legibility of error messages
