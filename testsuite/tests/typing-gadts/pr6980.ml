@@ -26,6 +26,7 @@ Line 11, characters 27-29:
                                 ^^
 Error: This expression has type "[< `Bar | `Foo > `Bar ]"
        but an expression was expected of type "[< `Bar | `Foo ]"
-       The second variant type is bound to "$Aux_'a",
+       The second variant type is bound to "$a",
        it may not allow the tag(s) "`Bar"
+       Hint: "$a" is an existential type bound by the constructor "Aux".
 |}];;

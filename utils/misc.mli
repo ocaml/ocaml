@@ -307,6 +307,8 @@ val no_overflow_lsl: int -> int -> bool
        (** [no_overflow_lsl n k] returns [true] if the computation of
            [n lsl k] does not overflow. *)
 
+val letter_of_int : int -> string
+
 module Int_literal_converter : sig
   val int : string -> int
     (** Convert a string to an integer.  Unlike {!Stdlib.int_of_string},
