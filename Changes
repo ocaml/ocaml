@@ -440,6 +440,14 @@ Working version
   (Fabrice Buoro and Olivier Nicole, report by Jan Midtgaard and Miod Vallat,
    review by Gabriel Scherer)
 
+OCaml 5.1.1
+-----------
+
+### Bug fixes:
+
+- #12623, fix the computation of variance composition
+  (Florian Angeletti, report by Vesa Karvonen, review by Gabriel Scherer)
+
 OCaml 5.1.0 (14 September 2023)
 -------------------------------
 
