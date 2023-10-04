@@ -13859,7 +13859,7 @@ fi
   sunc-*) :
     # Optimization should be >= O4 to inline functions
               # and prevent unresolved externals
-      common_cflags="-O4 -xc99=all -D_XPG6 $CFLAGS";
+      common_cflags="-O4 -xc99=all -D_XPG6";
       internal_cflags="$cc_warnings" ;; #(
   *) :
     common_cflags="-O" ;;
@@ -20029,8 +20029,8 @@ fi
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
-ocamlc_cflags="$ocamlc_cflags $common_cflags $sharedlib_cflags $CFLAGS"
-ocamlc_cppflags="$common_cppflags $CPPFLAGS"
+ocamlc_cflags="$ocamlc_cflags $common_cflags $sharedlib_cflags"
+ocamlc_cppflags="$common_cppflags"
 
 case $host in #(
   *-*-mingw32*) :
@@ -20311,7 +20311,7 @@ fi
   if test -n "$mkexe_cflags"
 then :
   mkexe="$mkexe $mkexe_cflags"
-    mkexe_exp="$mkexe_exp $common_cflags $CFLAGS"
+    mkexe_exp="$mkexe_exp $common_cflags"
 fi
   if test -n "$mkexe_extra_flags"
 then :

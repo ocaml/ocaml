@@ -798,7 +798,7 @@ AS_CASE([$host],
       internal_cflags="$cc_warnings"],
     [sunc-*], # Optimization should be >= O4 to inline functions
               # and prevent unresolved externals
-      [common_cflags="-O4 -xc99=all -D_XPG6 $CFLAGS";
+      [common_cflags="-O4 -xc99=all -D_XPG6";
       internal_cflags="$cc_warnings"],
     [common_cflags="-O"])])
 
@@ -2375,8 +2375,8 @@ AS_IF([test "$ccomptype" != "msvc"],
 
 oc_cflags="$common_cflags $internal_cflags"
 oc_cppflags="$common_cppflags $internal_cppflags"
-ocamlc_cflags="$ocamlc_cflags $common_cflags $sharedlib_cflags $CFLAGS"
-ocamlc_cppflags="$common_cppflags $CPPFLAGS"
+ocamlc_cflags="$ocamlc_cflags $common_cflags $sharedlib_cflags"
+ocamlc_cppflags="$common_cppflags"
 
 AS_CASE([$host],
   [*-*-mingw32*],
@@ -2472,7 +2472,7 @@ AC_CONFIG_COMMANDS_PRE([
   mkexe_exp="$mkexe_cmd_exp"
   AS_IF([test -n "$mkexe_cflags"],
     [mkexe="$mkexe $mkexe_cflags"
-    mkexe_exp="$mkexe_exp $common_cflags $CFLAGS"])
+    mkexe_exp="$mkexe_exp $common_cflags"])
   AS_IF([test -n "$mkexe_extra_flags"],
     [mkexe="$mkexe $mkexe_extra_flags"
     mkexe_exp="$mkexe_exp $mkexe_extra_flags"])
