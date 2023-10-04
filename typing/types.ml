@@ -186,7 +186,7 @@ module Variance = struct
     let mp =
       mem May_pos v1 && mem May_pos v2 || mem May_neg v1 && mem May_neg v2
     and mn =
-      mem May_pos v1 && mem May_neg v2 || mem May_pos v1 && mem May_neg v2
+      mem May_pos v1 && mem May_neg v2 || mem May_neg v1 && mem May_pos v2
     and mw = mem May_weak v1 && v2 <> null || v1 <> null && mem May_weak v2
     and inj = mem Inj v1 && mem Inj v2
     and pos = mem Pos v1 && mem Pos v2 || mem Neg v1 && mem Neg v2
