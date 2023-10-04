@@ -52,7 +52,7 @@ let rec findi_acc i p = function
 let findi = findi_acc 0
 
 let arena = 4096
-let header_size = 5
+let header_size = 4
 let max_slot = 128
 let avail_arena = arena - header_size
 let sizes = List.rev (blocksizes avail_arena max_int max_slot)
@@ -89,9 +89,9 @@ let _ =
   printf "#define SIZECLASS_MAX %d\n" max_slot;
   printf "#define NUM_SIZECLASSES %d\n" (List.length sizes);
   printf "static const unsigned int \
-wsize_sizeclass[NUM_SIZECLASSES] = @[<2>{ %a };@]\n" print_list sizes;
+wsize_sizeclass[NUM_SIZECLASSES] =@[<2>{ %a };@]\n" print_list sizes;
   printf "static const unsigned char \
-wastage_sizeclass[NUM_SIZECLASSES] = @[<2>{ %a };@]\n" print_list wastage;
+wastage_sizeclass[NUM_SIZECLASSES] =@[<2>{ %a };@]\n" print_list wastage;
   printf "static const unsigned char \
-sizeclass_wsize[SIZECLASS_MAX + 1] = @[<2>{ %a };@]\n"
+sizeclass_wsize[SIZECLASS_MAX + 1] =@[<2>{ %a };@]\n"
     print_list (255 :: size_slots 1);
