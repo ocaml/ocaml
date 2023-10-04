@@ -2,7 +2,9 @@
 #include <unistd.h>
 #include <setjmp.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #define ARRSIZE(a)  (sizeof(a) / sizeof(*(a)))
 
@@ -77,13 +79,19 @@ static int safe_read(const struct frame_info* fi, struct frame_info** prev,
   return ret;
 }
 
-static void print_location(void* addr)
+static char *get_symbol(void* addr)
 {
   if (!addr)
-    return;
+    return NULL;
 
-  /* This requires the binary to be linked with '-rdynamic' */
-  backtrace_symbols_fd(&addr, 1, STDOUT_FILENO);
+  char **symbols = backtrace_symbols(&addr, 1);
+  if (symbols == NULL)
+    return NULL;
+
+  char *symb = strdup(symbols[0]);
+  free(symbols);
+
+  return symb;
 }
 
 void fp_backtrace(void)
@@ -99,7 +107,18 @@ void fp_backtrace(void)
     if (safe_read(fi, &next, &retaddr) != 0)
       return;
 
-    print_location(retaddr);
+    char *symbol = get_symbol(retaddr);
+    if (symbol != NULL) {
+      /* stop before entering C code */
+      if (   strstr(symbol, "caml_main")
+          || strstr(symbol, "caml_startup"))
+      {
+        free(symbol);
+        return;
+      }
+      printf("%s\n", symbol); fflush(stdout);
+      free(symbol);
+    }
 
     /* Detect the simplest kind of infinite loop */
     if (fi == next) {
