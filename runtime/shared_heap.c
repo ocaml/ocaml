@@ -809,8 +809,8 @@ void caml_verify_heap_from_stw(caml_domain_state *domain) {
 
 /* Compaction start */
 
-/* Given a single value `v`, found at `p`, check if it points in to an
-   evacuated pool and if so update it using the forwarding pointer
+/* Given a single value `v`, found at `p`, check if it points to an
+   evacuated block, and if so update it using the forwarding pointer
    created by the compactor. */
 static inline void compact_update_value(void* ignored,
                                         value v,
@@ -846,17 +846,17 @@ static inline void compact_update_value(void* ignored,
   }
 }
 
-/* Given a value found at `p` check if it points in to an
-   evacuated pool and if so update it using the forwarding pointer
-   created by the compactor. */
+/* Given a value found at `p` check if it points to an evacuated
+   block, and if so update it using the forwarding pointer created by
+   the compactor. */
 static inline void compact_update_value_at(volatile value* p)
 {
   compact_update_value(NULL, *p, p);
 }
 
-/* For each pointer in the block pointed to by `p` check if it
-   points in to an evacuated pool and if so update it using the
-   forwarding pointer created by the compactor. */
+/* For each pointer in the block pointed to by `p`, check if it points
+   to an evacuated block and if so update it using the forwarding
+   pointer created by the compactor. */
 static void compact_update_block(header_t* p)
 {
   header_t hd = Hd_hp(p);
@@ -893,7 +893,8 @@ static void compact_update_block(header_t* p)
   }
 }
 
-/* Update all the blocks in all the non-evacuating pools in a list of pools. */
+/* Update all the live blocks in all the non-evacuating pools in a
+ * list of pools. */
 
 static void compact_update_pools(pool *cur_pool)
 {
@@ -1096,8 +1097,7 @@ void caml_compact_heap(caml_domain_state* domain_state,
     }
 
     /* `cur_pool` now points to the first pool we are evacuating or null if
-        there we could not compact this particular size class (for this
-        domain) */
+        we could not compact this particular size class (for this domain) */
 
     caml_stat_free(pool_stats);
 
