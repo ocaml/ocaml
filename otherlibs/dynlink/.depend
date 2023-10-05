@@ -6,7 +6,6 @@ byte/dynlink.cmo : \
     dynlink_cmo_format.cmi \
     byte/dynlink.cmi
 byte/dynlink.cmi :
-byte/dynlink_compilerlibs.cmi :
 byte/dynlink_symtable.cmo : \
     dynlink_config.cmi \
     dynlink_cmo_format.cmi \
