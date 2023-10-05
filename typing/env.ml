@@ -2523,7 +2523,7 @@ let read_signature u =
 let unit_name_of_filename fn =
   match Filename.extension fn with
   | ".cmi" ->
-      let modname = Unit_info.modname_from_source fn in
+      let modname = Unit_info.strict_modname_from_source fn in
       if Unit_info.is_unit_name modname then Some modname
       else None
   | _ -> None

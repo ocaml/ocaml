@@ -342,12 +342,17 @@ module UString = struct
 
   let normalize_generic transform s =
     let buf = Buffer.create (String.length s) in
+    let valid = ref true in
+    let check d u =
+        valid := !valid && Uchar.utf_decode_is_valid d && u <> Uchar.rep
+    in
     let rec norm prev i =
       if i >= String.length s then begin
         Buffer.add_utf_8_uchar buf (transform prev)
       end else begin
         let d = String.get_utf_8_uchar s i in
         let u = Uchar.utf_decode_uchar d in
+        check d u;
         let i' = i + Uchar.utf_decode_length d in
         match Hashtbl.find_opt known_pairs (prev, u) with
         | Some u' ->
@@ -356,10 +361,16 @@ module UString = struct
             Buffer.add_utf_8_uchar buf (transform prev);
             norm u i'
       end in
-    if s = "" then s else begin
+    if s = "" then Ok s else begin
       let d = String.get_utf_8_uchar s 0 in
-      norm (Uchar.utf_decode_uchar d) (Uchar.utf_decode_length d);
-      Buffer.contents buf
+      let u = Uchar.utf_decode_uchar d in
+      check d u;
+      norm u (Uchar.utf_decode_length d);
+      let contents = Buffer.contents buf in
+      if !valid then
+       Ok contents
+      else
+       Error contents
     end
 
   let normalize s =
@@ -493,7 +504,9 @@ let find_in_path_rel path name =
 let normalized_unit_filename = UString.uncapitalize
 
 let find_in_path_normalized path name =
-  let uname = normalized_unit_filename name in
+  match normalized_unit_filename name with
+  | Error _ -> raise Not_found
+  | Ok uname ->
   let rec try_dir = function
     [] -> raise Not_found
   | dir::rem ->

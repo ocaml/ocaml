@@ -217,8 +217,9 @@ val find_in_path: string list -> string -> string
 val find_in_path_rel: string list -> string -> string
        (** Search a relative file in a list of directories. *)
 
- (** Normalize file name [Foo.ml] to [foo.ml] *)
-val normalized_unit_filename: string -> string
+ (** Normalize file name [Foo.ml] to [foo.ml]
+     Return [Error] if the input is not a valid utf-8 byte sequence *)
+val normalized_unit_filename: string -> (string,string) Result.t
 
 val find_in_path_normalized: string list -> string -> string
 (** Same as {!find_in_path_rel} , but search also for normalized unit filename,
@@ -798,18 +799,19 @@ end
 module UString : sig
   type t = string
 
-  val normalize: string -> t
+  val normalize: string -> (t,t) Result.t
   (** Normalize the given UTF-8 encoded string.
-      Invalid UTF-8 sequences are replaced by U+FFFD.
+      Invalid UTF-8 sequences results in a error and are replaced
+      by U+FFFD.
       Identifier characters are put in NFC normalized form.
       Other Unicode characters are left unchanged. *)
 
-  val capitalize: string -> t
+  val capitalize: string -> (t,t) Result.t
   (** Like [normalize], but if the string starts with a lowercase identifier
       character, it is replaced by the corresponding uppercase character.
       Subsequent characters are not changed. *)
 
-  val uncapitalize: string -> t
+  val uncapitalize: string -> (t,t) Result.t
   (** Like [normalize], but if the string starts with an uppercase identifier
       character, it is replaced by the corresponding lowercase character.
       Subsequent characters are not changed. *)

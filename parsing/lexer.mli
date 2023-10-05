@@ -36,6 +36,7 @@ type error =
   | Capitalized_label of string
   | Invalid_literal of string
   | Invalid_directive of string * string option
+  | Invalid_encoding of string
   | Invalid_char_in_ident of Uchar.t
   | Capitalized_raw_identifier of string
 

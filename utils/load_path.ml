@@ -105,15 +105,16 @@ let get_hidden_path_list () = List.rev_map Dir.path !hidden_dirs
    order. *)
 let prepend_add dir =
   List.iter (fun base ->
-      let fn = Filename.concat dir.Dir.path base in
-      let filename = Misc.normalized_unit_filename base in
-      if dir.Dir.hidden then begin
-        STbl.replace !hidden_files base fn;
-        STbl.replace !hidden_files_uncap filename fn
-      end else begin
-        STbl.replace !visible_files base fn;
-        STbl.replace !visible_files_uncap filename fn
-      end
+      Result.iter (fun filename ->
+          let fn = Filename.concat dir.Dir.path base in
+          if dir.Dir.hidden then begin
+            STbl.replace !hidden_files base fn;
+            STbl.replace !hidden_files_uncap filename fn
+          end else begin
+            STbl.replace !visible_files base fn;
+            STbl.replace !visible_files_uncap filename fn
+          end)
+        (Misc.normalized_unit_filename base)
     ) dir.Dir.files
 
 let init ~auto_include ~visible ~hidden =
@@ -150,10 +151,13 @@ let add (dir : Dir.t) =
   in
   List.iter
     (fun base ->
-       let fn = Filename.concat dir.Dir.path base in
-       update base fn visible_files hidden_files;
-       let ubase = Misc.normalized_unit_filename base in
-       update ubase fn visible_files_uncap hidden_files_uncap)
+       Result.iter (fun ubase ->
+           let fn = Filename.concat dir.Dir.path base in
+           update base fn visible_files hidden_files;
+           update ubase fn visible_files_uncap hidden_files_uncap
+         )
+         (Misc.normalized_unit_filename base)
+    )
     dir.files;
   if dir.hidden then
     hidden_dirs := dir :: !hidden_dirs
@@ -216,9 +220,12 @@ let find fn =
 
 let find_normalized_with_visibility fn =
   assert (not Config.merlin || Local_store.is_bound ());
+  match Misc.normalized_unit_filename fn with
+  | Error _ -> raise Not_found
+  | Ok fn_uncap ->
   try
     if is_basename fn && not !Sys.interactive then
-      find_file_in_cache (Misc.normalized_unit_filename fn)
+      find_file_in_cache fn_uncap
         visible_files_uncap hidden_files_uncap
     else
       try
@@ -227,7 +234,6 @@ let find_normalized_with_visibility fn =
       | Not_found ->
         (Misc.find_in_path_normalized (get_hidden_path_list ()) fn, Hidden)
   with Not_found ->
-    let fn_uncap = Misc.normalized_unit_filename fn in
     (!auto_include_callback Dir.find_normalized fn_uncap, Visible)
 
 let find_normalized fn = fst (find_normalized_with_visibility fn)

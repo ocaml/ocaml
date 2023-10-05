@@ -32,6 +32,7 @@ type error =
   | Capitalized_label of string
   | Invalid_literal of string
   | Invalid_directive of string * string option
+  | Invalid_encoding of string
   | Invalid_char_in_ident of Uchar.t
   | Capitalized_raw_identifier of string
 
@@ -259,7 +260,9 @@ let uchar_for_uchar_escape lexbuf =
         (Printf.sprintf "%X is not a Unicode scalar value" cp)
 
 let ident_for_extended lexbuf raw_name =
-  let name = UString.normalize raw_name in
+  match UString.normalize raw_name with
+  | Error _ -> error lexbuf (Invalid_encoding raw_name)
+  | Ok name ->
   match UString.validate_identifier name with
   | UString.Valid -> name
   | UString.Invalid_character u -> error lexbuf (Invalid_char_in_ident u)
@@ -350,6 +353,8 @@ let prepare_error loc = function
         (fun ppf -> match explanation with
            | None -> ()
            | Some expl -> fprintf ppf ": %s" expl)
+  | Invalid_encoding s ->
+    Location.errorf ~loc "Invalid encoding of identifier %s." s
   | Invalid_char_in_ident u ->
       Location.errorf ~loc "Invalid character U+%X in identifier"
          (Uchar.to_int u)
