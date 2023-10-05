@@ -26,6 +26,9 @@
 #include "config.h"
 #include "mlvalues.h"
 #include "sys.h"
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
 
 #if defined(MAP_ANON) && !defined(MAP_ANONYMOUS)
 #define MAP_ANONYMOUS MAP_ANON
@@ -50,6 +53,8 @@ Caml_inline void cpu_relax(void) {
   /* Just a compiler barrier */
   __asm__ volatile ("" ::: "memory");
 #endif
+#elif defined(_MSC_VER)
+  _mm_pause();
 #endif
 }
 
