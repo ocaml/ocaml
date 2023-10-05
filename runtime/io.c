@@ -885,7 +885,7 @@ CAMLprim value caml_ml_output_bigarray(value vchannel, value vbuf,
   intnat len = Long_val(vlen);
 
   caml_channel_lock(channel);
-  caml_really_putblock(channel, Caml_ba_data_val(vbuf) + pos, len);
+  caml_really_putblock(channel, (char *)Caml_ba_data_val(vbuf) + pos, len);
   caml_channel_unlock(channel);
 
   CAMLreturn (Val_unit);
@@ -1013,7 +1013,7 @@ CAMLprim value caml_ml_input_bigarray(value vchannel, value vbuf,
   intnat n;
 
   caml_channel_lock(channel);
-  n = caml_getblock(channel, Caml_ba_data_val(vbuf) + pos, len);
+  n = caml_getblock(channel, (char *)Caml_ba_data_val(vbuf) + pos, len);
   caml_channel_unlock(channel);
 
   CAMLreturn (Val_long(n));
