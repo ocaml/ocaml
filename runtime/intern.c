@@ -95,8 +95,7 @@ struct caml_intern_state {
   /* 1 if the compressed format is in use, 0 otherwise */
 };
 
-/* Allocates the domain local intern state if needed */
-static struct caml_intern_state* get_intern_state (void)
+static struct caml_intern_state* init_intern_state (void)
 {
   Caml_check_caml_state();
   struct caml_intern_state* s;
@@ -116,6 +115,19 @@ static struct caml_intern_state* get_intern_state (void)
 
   Caml_state->intern_state = s;
   return s;
+}
+
+static struct caml_intern_state* get_intern_state (void)
+{
+  Caml_check_caml_state();
+
+  if (Caml_state->intern_state == NULL)
+    caml_fatal_error (
+      "intern_state not initialized: it is likely that a caml_deserialize_* "
+      "function was called without going through caml_input_*."
+      );
+
+  return Caml_state->intern_state;
 }
 
 void caml_free_intern_state (void)
@@ -827,7 +839,7 @@ value caml_input_val(struct channel *chan)
   struct marshal_header h;
   char * block;
   value res;
-  struct caml_intern_state* s = get_intern_state ();
+  struct caml_intern_state* s = init_intern_state ();
 
   if (! caml_channel_binary_mode(chan))
     caml_failwith("input_value: not a binary channel");
@@ -901,7 +913,7 @@ CAMLexport value caml_input_val_from_bytes(value str, intnat ofs)
   CAMLparam1 (str);
   CAMLlocal1 (obj);
   struct marshal_header h;
-  struct caml_intern_state* s = get_intern_state ();
+  struct caml_intern_state* s = init_intern_state ();
 
   /* Initialize global state */
   intern_init(s, &Byte_u(str, ofs), NULL);
@@ -939,7 +951,7 @@ static value input_val_from_block(struct caml_intern_state* s,
 CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
 {
   struct marshal_header h;
-  struct caml_intern_state* s = get_intern_state ();
+  struct caml_intern_state* s = init_intern_state ();
 
   intern_init(s, data + ofs, data);
   caml_parse_header(s, "input_value_from_malloc", &h);
@@ -950,7 +962,7 @@ CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
 CAMLexport value caml_input_value_from_block(const char * data, intnat len)
 {
   struct marshal_header h;
-  struct caml_intern_state* s = get_intern_state ();
+  struct caml_intern_state* s = init_intern_state ();
 
   /* Initialize global state */
   intern_init(s, data, NULL);
@@ -980,7 +992,7 @@ CAMLprim value caml_marshal_data_size(value buff, value ofs)
   uint32_t magic;
   int header_len;
   uintnat data_len;
-  struct caml_intern_state *s = get_intern_state ();
+  struct caml_intern_state *s = init_intern_state ();
 
   s->intern_src = &Byte_u(buff, Long_val(ofs));
   magic = read32u(s);
