@@ -154,7 +154,7 @@ struct interruptor {
   /* The outermost atomic is for synchronization with
      caml_interrupt_all_signal_safe. The innermost atomic is also for
      cross-domain communication.*/
-  _Atomic(atomic_uintnat *) interrupt_word;
+  atomic_uintnat * _Atomic interrupt_word;
   caml_plat_mutex lock;
   caml_plat_cond cond;
 
