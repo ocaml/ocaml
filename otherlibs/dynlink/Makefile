@@ -41,11 +41,11 @@ OPTCOMPFLAGS += -I native
 
 LOCAL_SRC=dynlink_compilerlibs
 
-OBJS=byte/dynlink_compilerlibs.cmo dynlink_config.cmo dynlink_types.cmo \
-  dynlink_platform_intf.cmo dynlink_common.cmo byte/dynlink.cmo
+OBJS=dynlink_config.cmo dynlink_types.cmo dynlink_platform_intf.cmo \
+  dynlink_common.cmo byte/dynlink_symtable.cmo byte/dynlink.cmo
 
-NATOBJS=native/dynlink_compilerlibs.cmx dynlink_config.cmx dynlink_types.cmx \
-  dynlink_platform_intf.cmx dynlink_common.cmx native/dynlink.cmx
+NATOBJS=dynlink_config.cmx dynlink_types.cmx dynlink_platform_intf.cmx \
+  dynlink_common.cmx native/dynlink.cmx
 
 # We need/desire access to compilerlibs for various reasons:
 # - The bytecode dynamic linker is in compilerlibs and has many dependencies
@@ -297,7 +297,8 @@ clean: partialclean
 
 .PHONY: distclean
 distclean: clean
-	rm -f META dynlink_config.ml
+	rm -f META dynlink_config.ml dynlink_cmo_format.mli \
+	dynlink_cmxs_format.mli
 
 .PHONY: beforedepend
 beforedepend: dynlink_platform_intf.mli
@@ -312,7 +313,7 @@ DEPEND_DUMMY_FILES=\
 depend: beforedepend
 	$(V_GEN)touch $(DEPEND_DUMMY_FILES) && \
 	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
-	  -I byte -bytecode *.mli *.ml byte/dynlink.ml > .depend && \
+	  -I byte -bytecode *.mli *.ml byte/*.mli byte/*.ml > .depend && \
 	$(OCAMLRUN) $(ROOTDIR)/boot/ocamlc -depend -slash \
 	  -I native -native *.ml native/dynlink.ml >> .depend && \
 	rm -f $(DEPEND_DUMMY_FILES)
