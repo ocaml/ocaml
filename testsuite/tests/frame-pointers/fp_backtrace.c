@@ -65,7 +65,8 @@ static regmatch_t func_name_from_symbol(const char* symbol)
 
 static bool is_caml_entry(const char* symbol, const regmatch_t* funcname)
 {
-  return strstr(symbol + funcname->rm_so, CAML_ENTRY) != NULL;
+  size_t len = funcname->rm_eo - funcname->rm_so;
+  return strncmp(symbol + funcname->rm_so, CAML_ENTRY, len) == 0;
 }
 
 static regmatch_t trim_func_name(const char* symbol, const regmatch_t* funcname)
