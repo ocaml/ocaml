@@ -1,0 +1,16 @@
+val _ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿŠšŽžŒœŸ :
+  string = "ok"
+type t = Æsop | Âcre | Ça | Élégant | Öst | Œuvre
+val été : string = "summer"
+val ça : string = "that"
+val straße : string = "street"
+val øre : string = "ear"
+val f : t -> int = <fun>
+val l : string list = ["summer"; "that"; "street"; "ear"]
+val s : string = "ok"
+Line 3, characters 0-47:
+3 | module Élégant (* NFD encoded *) = struct end;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Multiple definition of the module name "Élégant".
+       Names must be unique in a given structure or signature.
+

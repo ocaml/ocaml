@@ -1,4 +1,6 @@
-(* TEST *)
+(* TEST
+ toplevel;
+*)
 
 (* NFC representation *)
 
@@ -20,3 +22,14 @@ let f = function
 let l = [été; ça; straße; øre]
 
 let s = _ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿŠšŽžŒœŸ
+
+let () = assert (f Élégant (* NFC encoded *) = 4)
+
+let () =
+  let called = ref false in
+  let élégant (* NFC encoded *) () = called := true in
+  élégant (* NFD encoded *) (); assert (!called)
+;;
+(* The following two defs should error with 'Multiple definition…' *)
+module Élégant (* NFC encoded *) = struct end
+module Élégant (* NFD encoded *) = struct end;;
