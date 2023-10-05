@@ -68,7 +68,7 @@ CAMLprim value caml_unix_write_bigarray(value fd, value vbuf,
   written = 0;
   caml_enter_blocking_section();
   while (len > 0) {
-    ret = write(Int_val(fd), buf + ofs, len);
+    ret = write(Int_val(fd), (char *) buf + ofs, len);
     if (ret == -1) {
       if ((errno == EAGAIN || errno == EWOULDBLOCK) && written > 0) break;
       caml_leave_blocking_section();

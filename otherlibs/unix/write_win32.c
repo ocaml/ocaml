@@ -82,7 +82,7 @@ CAMLprim value caml_unix_write_bigarray(value fd, value vbuf,
       SOCKET s = Socket_val(fd);
       numbytes = len > INT_MAX ? INT_MAX : len;
       caml_enter_blocking_section();
-      ret = send(s, buf + ofs, numbytes, 0);
+      ret = send(s, (char *)buf + ofs, numbytes, 0);
       if (ret == SOCKET_ERROR) err = WSAGetLastError();
       caml_leave_blocking_section();
       if (ret == SOCKET_ERROR && err == WSAEWOULDBLOCK && written > 0) break;
@@ -91,7 +91,7 @@ CAMLprim value caml_unix_write_bigarray(value fd, value vbuf,
       HANDLE h = Handle_val(fd);
       DWORD numbytes = len > 0xFFFFFFFF ? 0xFFFFFFFF : len;
       caml_enter_blocking_section();
-      if (! WriteFile(h, buf + ofs, numbytes, &numwritten, NULL))
+      if (! WriteFile(h, (char *)buf + ofs, numbytes, &numwritten, NULL))
         err = GetLastError();
       caml_leave_blocking_section();
     }
