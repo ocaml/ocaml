@@ -263,7 +263,7 @@ static void readfloat(struct caml_intern_state* s,
 #else
   /* Host is neither big nor little; permute as appropriate */
   if (code == CODE_DOUBLE_LITTLE)
-    Permute_64(dest, ARCH_FLOAT_ENDIANNESS, dest, 0x01234567)
+    Permute_64(dest, ARCH_FLOAT_ENDIANNESS, dest, 0x01234567);
   else
     Permute_64(dest, ARCH_FLOAT_ENDIANNESS, dest, 0x76543210);
 #endif
