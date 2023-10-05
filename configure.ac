@@ -2155,7 +2155,7 @@ AS_CASE([$host],
   [*-*-mingw32*],
     [PTHREAD_LIBS="-l:libpthread.a -lgcc_eh"],
   [*-pc-windows],
-    [PTHREAD_LIBS="-l:libpthread.lib"],
+    [PTHREAD_LIBS=''],
   [AX_PTHREAD(
     [common_cflags="$common_cflags $PTHREAD_CFLAGS"
     # The two following lines add flags and libraries for pthread to the
