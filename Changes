@@ -244,6 +244,11 @@ Working version
   `Random.State`.
   (Glen Mével, review by Gabriel Scherer, Xavier Leroy, Florian Angeletti)
 
+- #12459: `Random`: restore compatibility between 32-bit integers (JavaScript)
+  and 63-bit integers (64-bit OCaml).
+  For `Random.full_int` this was guaranteed in 4.14 but wrongly removed in 5.0.
+  (Xavier Leroy, review by Glen Mével)
+
 - #12511: Minor performance improvements and cleanups in the implementation
   of modules Int32, Int64, and Nativeint
   (Xavier Leroy, review by Gabriel Scherer and Daniel Bünzli)
