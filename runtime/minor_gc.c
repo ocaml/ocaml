@@ -691,6 +691,24 @@ static void custom_finalize_minor (caml_domain_state * domain)
     value *v = &elt->block;
     if (Is_block(*v) && Is_young(*v)) {
       if (get_header_val(*v) == 0) { /* value copied to major heap */
+        if (elt->max == 0){
+          /* When [max] is proportional to heap size, use the current heap
+             size, not the (major) heap size at the time of allocation in
+             the minor heap. */
+          /* The major ratio is a percentage relative to the major heap
+             size.  A complete GC cycle will be done every time 2/3 of
+             that much memory is allocated for blocks in the major heap.
+             Assuming constant allocation and deallocation rates, this
+             means there are at most [M/100 * major-heap-size] bytes of
+             floating garbage at any time.  The reason for a factor of
+             2/3 (or 1.5) is, roughly speaking, because the major GC
+             takes 1.5 cycles (previous cycle + marking phase) before it
+             starts to deallocate dead blocks allocated during the
+             previous cycle.  [heap_size / 150] is really [heap_size *
+             (2/3) / 100] (but faster). */
+          elt->max = caml_heap_size(Caml_state->shared_heap) / 150
+                     * caml_custom_major_ratio;
+        }
         caml_adjust_gc_speed(elt->mem, elt->max);
       } else {
         void (*final_fun)(value) = Custom_ops_val(*v)->finalize;

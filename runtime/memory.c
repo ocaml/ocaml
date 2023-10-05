@@ -21,6 +21,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include "caml/config.h"
+#include "caml/custom.h"
 #include "caml/misc.h"
 #include "caml/fail.h"
 #include "caml/memory.h"
