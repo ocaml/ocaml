@@ -382,7 +382,7 @@ Working version
 - #11931: Fix tricky typing bug with type substitutions
   (Stephen Dolan, review by Leo White and Jacques Garrigue)
 
-- #12037: get_extern_state potential NULL dereference.
+- #12037, #12171: Fix get_extern_state potential NULL dereference.
   (Alexander Skvortsov, report by Török Edwin,
    design by Gabriel Scherer, Xavier Leroy)
 
