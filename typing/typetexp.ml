@@ -526,7 +526,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
   | Ptyp_alias(st, alias) ->
       let cty =
         try
-          let t = TyVarEnv.lookup_local ~row_context alias in
+          let t = TyVarEnv.lookup_local ~row_context alias.txt in
           let ty = transl_type env ~policy ~aliased:true ~row_context st in
           begin try unify_var env t ty.ctyp_type with Unify err ->
             let err = Errortrace.swap_unification_error err in
@@ -537,7 +537,7 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
           let t, ty =
             with_local_level_if_principal begin fun () ->
               let t = newvar () in
-              TyVarEnv.remember_used alias t styp.ptyp_loc;
+              TyVarEnv.remember_used alias.txt t styp.ptyp_loc;
               let ty = transl_type env ~policy ~row_context st in
               begin try unify_var env t ty.ctyp_type with Unify err ->
                 let err = Errortrace.swap_unification_error err in
@@ -550,8 +550,8 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
           let t = instance t in
           let px = Btype.proxy t in
           begin match get_desc px with
-          | Tvar None -> set_type_desc px (Tvar (Some alias))
-          | Tunivar None -> set_type_desc px (Tunivar (Some alias))
+          | Tvar None -> set_type_desc px (Tvar (Some alias.txt))
+          | Tunivar None -> set_type_desc px (Tunivar (Some alias.txt))
           | _ -> ()
           end;
           { ty with ctyp_type = t }

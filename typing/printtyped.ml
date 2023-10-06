@@ -206,7 +206,7 @@ let rec core_type i ppf x =
       line i ppf "Ttyp_class %a\n" fmt_path li;
       list i core_type ppf l;
   | Ttyp_alias (ct, s) ->
-      line i ppf "Ttyp_alias \"%s\"\n" s;
+      line i ppf "Ttyp_alias \"%s\"\n" s.txt;
       core_type i ppf ct;
   | Ttyp_poly (sl, ct) ->
       line i ppf "Ttyp_poly%a\n"
