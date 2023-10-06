@@ -61,13 +61,17 @@ val full_int : int -> int
 (** [Random.full_int bound] returns a random integer between 0 (inclusive)
      and [bound] (exclusive). [bound] may be any positive integer.
 
-     If [bound] is less than 2{^30}, [Random.full_int bound] is equal to
-     {!Random.int}[ bound],
-     so in that case, [full_int] yields identical output
+     If [bound] is less than 2{^31},
+     then [Random.full_int bound] yields identical output
      across systems with varying [int] sizes.
-     If [bound] is at least 2{^30} (on 64-bit systems
-     or non-standard environments, such as JavaScript), [Random.full_int]
-     returns a value, where {!Random.int} raises {!Stdlib.Invalid_argument}.
+
+     If [bound] is less than 2{^30},
+     then [Random.full_int bound] is equal to {!Random.int}[ bound].
+
+     If [bound] is at least 2{^30}
+     (on 64-bit systems, or non-standard environments such as JavaScript),
+     then [Random.full_int] returns a value
+     whereas {!Random.int} raises {!Stdlib.Invalid_argument}.
 
     @raise Invalid_argument if [bound] <= 0.
 
@@ -79,8 +83,8 @@ val int_in_range : min:int -> max:int -> int
     Both [min] and [max] are allowed to be negative;
     [min] must be less than or equal to [max].
 
-    If both bounds fit in 31 bits
-    (that is, if -2{^30} <= [min] and [max] < 2{^30}),
+    If both bounds fit in 32-bit signed integers
+    (that is, if -2{^31} <= [min] and [max] < 2{^31}),
     then [int_in_range] yields identical output
     across systems with varying [int] sizes.
 
