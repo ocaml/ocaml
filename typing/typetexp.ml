@@ -530,18 +530,19 @@ and transl_type_aux env ~row_context ~aliased ~policy styp =
           let ty = transl_type env ~policy ~aliased:true ~row_context st in
           begin try unify_var env t ty.ctyp_type with Unify err ->
             let err = Errortrace.swap_unification_error err in
-            raise(Error(styp.ptyp_loc, env, Alias_type_mismatch err))
+            raise(Error(alias.loc, env, Alias_type_mismatch err))
           end;
           ty
         with Not_found ->
           let t, ty =
             with_local_level_if_principal begin fun () ->
               let t = newvar () in
+              (* Use the whole location, which is used by [Type_mismatch]. *)
               TyVarEnv.remember_used alias.txt t styp.ptyp_loc;
               let ty = transl_type env ~policy ~row_context st in
               begin try unify_var env t ty.ctyp_type with Unify err ->
                 let err = Errortrace.swap_unification_error err in
-                raise(Error(styp.ptyp_loc, env, Alias_type_mismatch err))
+                raise(Error(alias.loc, env, Alias_type_mismatch err))
               end;
               (t, ty)
             end
