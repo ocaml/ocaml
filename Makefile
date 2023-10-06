@@ -1031,21 +1031,16 @@ runtime/%.i.o: runtime/%.S
 runtime/%_libasmrunpic.o: runtime/%.S
 	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) $(SHAREDLIB_CFLAGS) -o $@ $<
 
-runtime/domain_state64.inc: \
-  runtime/gen_domain_state64_inc.awk runtime/caml/domain_state.tbl
-	$(V_GEN)$(AWK) -f $^ > $@
+runtime/domain_state.inc: runtime/caml/domain_state.tbl
+	$(V_GEN)$(CPP) $< > $@
 
-runtime/domain_state32.inc: \
-  runtime/gen_domain_state32_inc.awk runtime/caml/domain_state.tbl
-	$(V_GEN)$(AWK) -f $^ > $@
-
-runtime/amd64nt.obj: runtime/amd64nt.asm runtime/domain_state64.inc
+runtime/amd64nt.obj: runtime/amd64nt.asm runtime/domain_state.inc
 	$(V_ASM)$(ASM)$@ $<
 
-runtime/amd64nt.d.obj: runtime/amd64nt.asm runtime/domain_state64.inc
+runtime/amd64nt.d.obj: runtime/amd64nt.asm runtime/domain_state.inc
 	$(V_ASM)$(ASM)$@ $(ocamlrund_CPPFLAGS) $<
 
-runtime/amd64nt.i.obj: runtime/amd64nt.asm runtime/domain_state64.inc
+runtime/amd64nt.i.obj: runtime/amd64nt.asm runtime/domain_state.inc
 	$(V_ASM)$(ASM)$@ $(ocamlruni_CPPFLAGS) $<
 
 runtime/%_libasmrunpic.obj: runtime/%.asm
@@ -1081,7 +1076,7 @@ clean::
 	  ocamlrun.exe ocamlrund.exe ocamlruni.exe ocamlruns.exe sak.exe)
 	rm -f runtime/primitives runtime/primitives.new runtime/prims.c \
 	  $(runtime_BUILT_HEADERS)
-	rm -f runtime/domain_state*.inc
+	rm -f runtime/domain_state.inc
 	rm -rf $(DEPDIR)
 	rm -f stdlib/libcamlrun.a stdlib/libcamlrun.lib
 
