@@ -71,22 +71,25 @@ let string_of_string_literal s =
   Buffer.contents b
 
 let string_of_symbol prefix s =
-  let spec = ref false in
-  for i = 0 to String.length s - 1 do
-    match String.unsafe_get s i with
-    | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' | '.' -> ()
-    | _ -> spec := true;
-  done;
-  if not !spec then if prefix = "" then s else prefix ^ s
+  let is_special_char = function
+    | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' -> false
+    | c -> c <> Compilenv.symbol_separator
+  in
+  let spec = String.exists is_special_char s in
+  if not spec then if prefix = "" then s else prefix ^ s
   else
     let b = Buffer.create (String.length s + 10) in
     Buffer.add_string b prefix;
     String.iter
-      (function
-        | ('A'..'Z' | 'a'..'z' | '0'..'9' | '_' | '.') as c ->
-            Buffer.add_char b c
-        | c ->
-            Printf.bprintf b "$%02x" (Char.code c)
+      (fun c ->
+       (* FIXME: using $ to prefix escaped characters can make names
+          ambiguous if the symbol separator is also set to $; a different
+          escape prefix should be used in this case, if this ever causes
+          problems in the real world. *)
+       if is_special_char c then
+         Printf.bprintf b "$%02x" (Char.code c)
+       else
+         Buffer.add_char b c
       )
       s;
     Buffer.contents b
