@@ -827,13 +827,19 @@ module UString : sig
       - it does not start with a digit or a single quote
   *)
 
+  val is_lowercase: t -> bool
+  (** Returns [true] if the given normalized string only contains lowercase
+      identifier character, [false] otherwise. May return wrong results if the
+      string is not normalized. *)
+
   type validation_result =
     | Valid
     | Invalid_character of Uchar.t   (** Character not allowed *)
     | Invalid_beginning of Uchar.t   (** Character not allowed as first char *)
 
-  val validate_identifier: t -> validation_result
-  (** Like [is_valid_identifier], but returns a more detailed error code. *)
+  val validate_identifier: ?with_dot:bool -> t -> validation_result
+  (** Like [is_valid_identifier], but returns a more detailed error code. Dots
+      can be allowed to extend support to path-like identifiers. *)
 
   val starts_like_a_valid_identifier: t -> bool
   (** Checks whether the given normalized string starts with an identifier

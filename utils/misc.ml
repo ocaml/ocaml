@@ -421,10 +421,11 @@ module UString = struct
 
   (* Characters allowed in identifiers.  Currently:
        - ASCII letters, underscore
-       - Latin-1 letters, represented in NFC
+       - Latin-9 letters, represented in NFC
        - ASCII digits, single quote (but not as first character)
+       - dot if [with_dot] = true
   *)
-  let uchar_valid_in_identifier u =
+  let uchar_valid_in_identifier ~with_dot u =
     let c = Uchar.to_int u in
     if c < 0x80 then
          c >= 97 (* a *) && c <= 122 (* z *)
@@ -432,6 +433,7 @@ module UString = struct
       || c >= 48 (* 0 *) && c <= 57 (* 9 *)
       || c = 95 (* underscore *)
       || c = 39 (* single quote *)
+      || (with_dot && c = 46) (* dot *)
     else
       Hashtbl.mem known_chars u
 
@@ -447,13 +449,13 @@ module UString = struct
     | Invalid_character of Uchar.t   (** Character not allowed *)
     | Invalid_beginning of Uchar.t   (** Character not allowed as first char *)
 
-  let validate_identifier s =
+  let validate_identifier ?(with_dot=false) s =
     let rec check i =
       if i >= String.length s then Valid else begin
         let d = String.get_utf_8_uchar s i in
         let u = Uchar.utf_decode_uchar d in
         let i' = i + Uchar.utf_decode_length d in
-        if not (uchar_valid_in_identifier u) then
+        if not (uchar_valid_in_identifier ~with_dot u) then
           Invalid_character u
         else if i = 0 && uchar_not_identifier_start u then
           Invalid_beginning u
@@ -468,7 +470,20 @@ module UString = struct
   let starts_like_a_valid_identifier s =
     s <> "" &&
     (let u = Uchar.utf_decode_uchar (String.get_utf_8_uchar s 0) in
-     uchar_valid_in_identifier u && not (uchar_not_identifier_start u))
+     uchar_valid_in_identifier ~with_dot:false u
+     && not (uchar_not_identifier_start u))
+
+  let is_lowercase s =
+    let rec is_lowercase_at len s n =
+      if n >= len then true
+      else
+        let d = String.get_utf_8_uchar s n in
+        let u = Uchar.utf_decode_uchar d in
+        (uchar_valid_in_identifier ~with_dot:false  u)
+        && not (uchar_is_uppercase u)
+        && is_lowercase_at len s (n+Uchar.utf_decode_length d)
+    in
+    is_lowercase_at (String.length s) s 0
 end
 
 (* File functions *)

@@ -38,6 +38,7 @@ type error =
   | Invalid_directive of string * string option
   | Invalid_encoding of string
   | Invalid_char_in_ident of Uchar.t
+  | Non_lowercase_delimiter of string
   | Capitalized_raw_identifier of string
 
 exception Error of error * Location.t
