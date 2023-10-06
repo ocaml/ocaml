@@ -95,6 +95,13 @@ struct caml_intern_state {
   /* 1 if the compressed format is in use, 0 otherwise */
 };
 
+static void init_intern_stack(struct caml_intern_state* s)
+{
+  /* (Re)initialize the globals for next time around */
+  s->intern_stack = s->intern_stack_init;
+  s->intern_stack_limit = s->intern_stack + INTERN_STACK_INIT_SIZE;
+}
+
 static struct caml_intern_state* init_intern_state (void)
 {
   Caml_check_caml_state();
@@ -109,9 +116,8 @@ static struct caml_intern_state* init_intern_state (void)
   s->intern_input = NULL;
   s->obj_counter = 0;
   s->intern_obj_table = NULL;
-  s->intern_stack = s->intern_stack_init;
-  s->intern_stack_limit = s->intern_stack + INTERN_STACK_INIT_SIZE;
   s->intern_dest = NULL;
+  init_intern_stack(s);
 
   Caml_state->intern_state = s;
   return s;
@@ -132,9 +138,10 @@ static struct caml_intern_state* get_intern_state (void)
 
 void caml_free_intern_state (void)
 {
-  if (Caml_state->intern_state != NULL)
+  if (Caml_state->intern_state != NULL) {
     caml_stat_free(Caml_state->intern_state);
-  Caml_state->intern_state = NULL;
+    Caml_state->intern_state = NULL;
+  }
 }
 
 static char * intern_resolve_code_pointer(unsigned char digest[16],
@@ -236,9 +243,7 @@ static void intern_free_stack(struct caml_intern_state* s)
 {
   if (s->intern_stack != s->intern_stack_init) {
     caml_stat_free(s->intern_stack);
-    /* Reinitialize the globals for next time around */
-    s->intern_stack = s->intern_stack_init;
-    s->intern_stack_limit = s->intern_stack + INTERN_STACK_INIT_SIZE;
+    init_intern_stack(s);
   }
 }
 
