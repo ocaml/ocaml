@@ -10,7 +10,7 @@ open Effect.Deep
 
 type _ t += E : int -> int t
 
-external fp_backtrace : unit -> unit = "fp_backtrace" [@@noalloc]
+external fp_backtrace : string -> unit = "fp_backtrace" [@@noalloc]
 external c_fun : unit -> int = "c_fun"
 
 let[@inline never][@local never] f x = x
@@ -39,7 +39,7 @@ let[@inline never] consume_stack () =
 
 let[@inline never] callback () =
   consume_stack ();
-  fp_backtrace ();
+  fp_backtrace Sys.argv.(0);
   0
 
 let _ = Callback.register "callback" callback
