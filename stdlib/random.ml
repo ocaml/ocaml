@@ -114,18 +114,19 @@ module State = struct
   let make_self_init () =
     make (random_seed ())
 
-  (* NOTE:
-   *   0x3FFF_FFFF = 2^30 - 1, which is max_int for 31-bit integers
-   *   -0x4000_0000 = -2^30, which is min_int for 31-bit integers
-   *)
+  let min_int31 = -0x4000_0000
+      (* = -2{^30}, which is [min_int] for 31-bit integers *)
+  let max_int31 = 0x3FFF_FFFF
+      (* =  2{^30}-1, which is [max_int] for 31-bit integers *)
+  (* avoid integer literals for these, 32-bit OCaml would reject them: *)
   let min_int32 = -(1 lsl 31)
-      (* -0x8000_0000 on JavaScript and 64-bit OCaml *)
+      (* = -0x8000_0000 on platforms where [Sys.int_size >= 32] *)
   let max_int32 = (1 lsl 31) - 1
-      (*  0x7FFF_FFFF on JavaScript and 64-bit OCaml *)
+      (* =  0x7FFF_FFFF on platforms where [Sys.int_size >= 32] *)
 
   (* Return 30 random bits as an integer 0 <= x < 2^30 *)
   let bits s =
-    Int64.to_int (next s) land 0x3FFF_FFFF
+    Int64.to_int (next s) land max_int31
 
   (* Return an integer between 0 (included) and [n] (excluded).
      [bound] may be any positive [int].  [mask] must be of the form [2{^i}-1]
@@ -150,9 +151,9 @@ module State = struct
      The bound must fit in 31-bit signed integers.
      This function yields the same output regardless of the integer size. *)
   let int s bound =
-    if bound > 0x3FFF_FFFF || bound <= 0
+    if bound > max_int31 || bound <= 0
     then invalid_arg "Random.int"
-    else int_aux s bound 0x3FFF_FFFF
+    else int_aux s bound max_int31
 
   (* Return an integer between 0 (included) and [bound] (excluded).
      [bound] may be any positive [int]. *)
@@ -162,13 +163,13 @@ module State = struct
     (* When the bound fits in 31-bit signed integers, we use the same mask
        as in function [int] so as to yield the same output on all platforms
        supported by OCaml (32-bit OCaml, 64-bit OCaml, and JavaScript).
-       When the bound fits in 32-bit signed integers, we use 0x7FFF_FFFF
+       When the bound fits in 32-bit signed integers, we use [max_int32]
        as the mask so as to yield the same output on all platforms where
        [Sys.int_size >= 32] (i.e. JavaScript and 64-bit OCaml). *)
     else
       int_aux s bound
-        (if bound <= 0x3FFF_FFFF then 0x3FFF_FFFF
-         else if bound <= max_int32 then max_int32 (* 0x7FFF_FFFF *)
+        (if bound <= max_int31 then max_int31
+         else if bound <= max_int32 then max_int32
          else max_int)
 
   (* Return an integer between [min] (included) and [max] (included).
@@ -208,8 +209,8 @@ module State = struct
        When both bounds fit in 32-bit signed integers, we use parameters
        [mask] and [nbits] appropriate for 32-bit integers, so as to
        yield the same output on JavaScript and on 64-bit OCaml. *)
-    if min >= -0x4000_0000 && max <= 0x3FFF_FFFF then
-      int_in_range_aux s ~min ~max ~mask:0x3FFF_FFFF ~nbits:31
+    if min >= min_int31 && max <= max_int31 then
+      int_in_range_aux s ~min ~max ~mask:max_int31 ~nbits:31
     else if min >= min_int32 && max <= max_int32 then
       int_in_range_aux s ~min ~max ~mask:max_int32 ~nbits:32
     else
