@@ -77,21 +77,34 @@ let reset () =
 let get () = List.rev !dirs
 let get_paths () = List.rev_map Dir.path !dirs
 
+
+(* Check ambiguity *)
+type warn = Warnings.ambiguous_artifacts -> unit
+let ambiguity_checker dir warn map normalized file =
+  match STbl.find_opt map normalized with
+  | Some file' when file <> file' ->
+      warn {Warnings.dir=dir.Dir.path;similar=[file;file'];normalized}
+  | None -> STbl.add map normalized file
+  | Some _ -> ()
+
 (* Optimized version of [add] below, for use in [init] and [remove_dir]: since
    we are starting from an empty cache, we can avoid checking whether a unit
    name already exists in the cache simply by adding entries in reverse
    order. *)
-let prepend_add dir =
-  List.iter (fun base ->
+let prepend_add ?(warn=ignore) dir =
+  let local_tbl = STbl.create 42 in
+    List.iter (fun base ->
       let fn = Filename.concat dir.Dir.path base in
+      let normalized = Misc.normalized_unit_filename base in
+      ambiguity_checker dir warn local_tbl normalized fn;
       STbl.replace !files base fn;
-      STbl.replace !files_uncap (Misc.normalized_unit_filename base) fn
+      STbl.replace !files_uncap normalized fn
     ) dir.Dir.files
 
-let init ~auto_include l =
+let init ?(warn=ignore) ~auto_include l =
   reset ();
   dirs := List.rev_map Dir.create l;
-  List.iter prepend_add !dirs;
+  List.iter (prepend_add ~warn) !dirs;
   auto_include_callback := auto_include
 
 let remove_dir dir =
@@ -106,28 +119,30 @@ let remove_dir dir =
 (* General purpose version of function to add a new entry to load path: We only
    add a basename to the cache if it is not already present in the cache, in
    order to enforce left-to-right precedence. *)
-let add dir =
+let add ?(warn=ignore) dir =
   assert (not Config.merlin || Local_store.is_bound ());
+  let local_tbl = STbl.create 42 in
   List.iter
     (fun base ->
        let fn = Filename.concat dir.Dir.path base in
+       let normalized = Misc.normalized_unit_filename base in
+       ambiguity_checker dir warn local_tbl normalized fn;
        if not (STbl.mem !files base) then
          STbl.replace !files base fn;
-       let ubase = Misc.normalized_unit_filename base in
-       if not (STbl.mem !files_uncap ubase) then
-         STbl.replace !files_uncap ubase fn)
+       if not (STbl.mem !files_uncap normalized) then
+         STbl.replace !files_uncap normalized fn)
     dir.Dir.files;
   dirs := dir :: !dirs
 
 let append_dir = add
 
-let add_dir dir = add (Dir.create dir)
+let add_dir ?warn dir = add ?warn (Dir.create dir)
 
 (* Add the directory at the start of load path - so basenames are
    unconditionally added. *)
-let prepend_dir dir =
+let prepend_dir ?warn dir =
   assert (not Config.merlin || Local_store.is_bound ());
-  prepend_add dir;
+  prepend_add ?warn dir;
   dirs := !dirs @ [dir]
 
 let is_basename fn = Filename.basename fn = fn

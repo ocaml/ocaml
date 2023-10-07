@@ -273,7 +273,7 @@ let set_paths ?(auto_include=Compmisc.auto_include) () =
       [expand "+camlp4"];
     ]
   in
-  Load_path.init ~auto_include load_path;
+  Load_path.init ~warn:Location.warn_artifacts ~auto_include load_path;
   Dll.add_path load_path
 
 let update_search_path_from_env () =
