@@ -21,7 +21,7 @@ let string_of_cst = function
   | _ -> None
 
 let string_of_payload = function
-  | PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant c},_)}] ->
+  | PStr { pstrmod_items = [{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant c},_)}]; _ } ->
       string_of_cst c
   | _ -> None
 
@@ -35,9 +35,9 @@ let error_of_extension ext =
     | {pstr_desc=Pstr_extension
            (({txt = ("ocaml.error"|"error"); loc}, p), _)} ->
         begin match p with
-        | PStr([{pstr_desc=Pstr_eval
+        | PStr{ pstrmod_items = [{pstr_desc=Pstr_eval
                      ({pexp_desc=Pexp_constant(Pconst_string(msg,_,_))}, _)}
-               ]) ->
+              ]; _ } ->
             { Location.loc; txt = fun ppf -> Format.pp_print_text ppf msg }
         | _ ->
             { Location.loc; txt = fun ppf ->
@@ -55,10 +55,10 @@ let error_of_extension ext =
   match ext with
   | ({txt = ("ocaml.error"|"error") as txt; loc}, p) ->
       begin match p with
-      | PStr [] -> raise Location.Already_displayed_error
-      | PStr({pstr_desc=Pstr_eval
+      | PStr { pstrmod_items = []; _ } -> raise Location.Already_displayed_error
+      | PStr { pstrmod_items = {pstr_desc=Pstr_eval
                   ({pexp_desc=Pexp_constant(Pconst_string(msg,_,_))}, _)}::
-             inner) ->
+                    inner } ->
           let sub = List.map (submessage_from loc txt) inner in
           Location.error_of_printer ~loc ~sub Format.pp_print_text msg
       | _ ->
@@ -68,18 +68,18 @@ let error_of_extension ext =
       Location.errorf ~loc "Uninterpreted extension '%s'." txt
 
 let kind_and_message = function
-  | PStr[
+  | PStr { pstrmod_items = [
       {pstr_desc=
          Pstr_eval
            ({pexp_desc=Pexp_apply
                  ({pexp_desc=Pexp_ident{txt=Longident.Lident id}},
                   [Nolabel,{pexp_desc=Pexp_constant (Pconst_string(s,_,_))}])
-            },_)}] ->
+          },_)}]; _ } ->
       Some (id, s)
-  | PStr[
+  | PStr { pstrmod_items = [
       {pstr_desc=
          Pstr_eval
-           ({pexp_desc=Pexp_ident{txt=Longident.Lident id}},_)}] ->
+           ({pexp_desc=Pexp_ident{txt=Longident.Lident id}},_)}]; _ } ->
       Some (id, "")
   | _ -> None
 
@@ -154,7 +154,7 @@ let rec attrs_of_sig = function
   | _ ->
       []
 
-let alerts_of_sig sg = alerts_of_attrs (attrs_of_sig sg)
+let alerts_of_sig sg = alerts_of_attrs (attrs_of_sig sg.psigmod_items)
 
 let rec attrs_of_str = function
   | {pstr_desc = Pstr_attribute a} :: tl ->
@@ -162,7 +162,7 @@ let rec attrs_of_str = function
   | _ ->
       []
 
-let alerts_of_str str = alerts_of_attrs (attrs_of_str str)
+let alerts_of_str str = alerts_of_attrs (attrs_of_str str.pstrmod_items)
 
 let check_no_alert attrs =
   List.iter
@@ -188,11 +188,11 @@ let warning_attribute ?(ppwarning = true) =
         warn_payload loc txt "A single string literal is expected"
   in
   let process_alert loc txt = function
-    | PStr[{pstr_desc=
+    | PStr {pstrmod_items = [ {pstr_desc=
               Pstr_eval(
                 {pexp_desc=Pexp_constant(Pconst_string(s,_,_))},
                 _)
-           }] ->
+            }]; _ } ->
         begin try Warnings.parse_alert_option s
         with Arg.Bad msg -> warn_payload loc txt msg
         end
@@ -217,11 +217,11 @@ let warning_attribute ?(ppwarning = true) =
   | {attr_name = {txt="ocaml.ppwarning"|"ppwarning"; _};
      attr_loc = _;
      attr_payload =
-       PStr [
+       PStr { pstrmod_items = [
          { pstr_desc=
              Pstr_eval({pexp_desc=Pexp_constant (Pconst_string (s, _, _))},_);
            pstr_loc }
-       ];
+       ]; _ }
     } when ppwarning ->
      Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
   | {attr_name = {txt = ("ocaml.alert"|"alert") as txt; _};

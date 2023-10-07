@@ -1167,13 +1167,13 @@ and module_type1 ctxt f x =
         pp f "(module %a)" longident_loc li;
     | Pmty_signature (s) ->
         pp f "@[<hv0>@[<hv2>sig@ %a@]@ end@]" (* "@[<hov>sig@ %a@ end@]" *)
-          (list (signature_item ctxt)) s (* FIXME wrong indentation*)
+          (list (signature_item ctxt)) s.psigmod_items (* FIXME wrong indentation*)
     | Pmty_typeof me ->
         pp f "@[<hov2>module@ type@ of@ %a@]" (module_expr ctxt) me
     | Pmty_extension e -> extension ctxt f e
     | _ -> paren true (module_type ctxt) f x
 
-and signature ctxt f x =  list ~sep:"@\n" (signature_item ctxt) f x
+and signature ctxt f x =  list ~sep:"@\n" (signature_item ctxt) f x.psigmod_items
 
 and signature_item ctxt f x : unit =
   match x.psig_desc with
@@ -1283,7 +1283,7 @@ and module_expr ctxt f x =
   else match x.pmod_desc with
     | Pmod_structure (s) ->
         pp f "@[<hv2>struct@;@[<0>%a@]@;<1 -2>end@]"
-          (list (structure_item ctxt) ~sep:"@\n") s;
+          (list (structure_item ctxt) ~sep:"@\n") s.pstrmod_items;
     | Pmod_constraint (me, mt) ->
         pp f "@[<hov2>(%a@ :@ %a)@]"
           (module_expr ctxt) me
@@ -1305,10 +1305,10 @@ and module_expr ctxt f x =
         pp f "(val@ %a)" (expression ctxt) e
     | Pmod_extension e -> extension ctxt f e
 
-and structure ctxt f x = list ~sep:"@\n" (structure_item ctxt) f x
+and structure ctxt f x = list ~sep:"@\n" (structure_item ctxt) f x.pstrmod_items
 
 and payload ctxt f = function
-  | PStr [{pstr_desc = Pstr_eval (e, attrs)}] ->
+  | PStr {pstrmod_items = [{pstr_desc = Pstr_eval (e, attrs)}]; _ } ->
       pp f "@[<2>%a@]%a"
         (expression ctxt) e
         (item_attributes ctxt) attrs
@@ -1705,7 +1705,7 @@ and directive_argument f x =
 
 let toplevel_phrase f x =
   match x with
-  | Ptop_def (s) ->pp f "@[<hov0>%a@]"  (list (structure_item reset_ctxt)) s
+  | Ptop_def (s) ->pp f "@[<hov0>%a@]"  (list (structure_item reset_ctxt)) s.pstrmod_items
    (* pp_open_hvbox f 0; *)
    (* pp_print_list structure_item f s ; *)
    (* pp_close_box f (); *)

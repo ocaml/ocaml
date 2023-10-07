@@ -282,6 +282,7 @@ module Mod:
 module Sig:
   sig
     val mk: ?loc:loc -> signature_item_desc -> signature_item
+    val mk_mod: ?loc:loc -> signature_item list -> signature
 
     val value: ?loc:loc -> value_description -> signature_item
     val type_: ?loc:loc -> rec_flag -> type_declaration list -> signature_item
@@ -306,6 +307,7 @@ module Sig:
 module Str:
   sig
     val mk: ?loc:loc -> structure_item_desc -> structure_item
+    val mk_mod: ?loc:loc -> structure_item list -> structure
 
     val eval: ?loc:loc -> ?attrs:attributes -> expression -> structure_item
     val value: ?loc:loc -> rec_flag -> value_binding list -> structure_item

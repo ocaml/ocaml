@@ -27,7 +27,7 @@ exception Error of Location.t * error
 let get_no_payload_attribute alt_names attrs =
   match List.filter (fun a -> List.mem a.attr_name.txt alt_names) attrs with
   | [] -> None
-  | [ {attr_name = name; attr_payload = PStr []; attr_loc = _} ] -> Some name
+  | [ {attr_name = name; attr_payload = PStr { pstrmod_items = []; _}; attr_loc = _} ] -> Some name
   | [ {attr_name = name; _} ] ->
     raise (Error (name.loc, No_payload_expected name.txt))
   | _ :: {attr_name = name; _} :: _ ->

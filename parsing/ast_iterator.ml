@@ -300,6 +300,10 @@ module MT = struct
         sub.attributes sub attrs;
         sub.extension sub x
     | Psig_attribute x -> sub.attribute sub x
+
+  let iter_signature sub { psigmod_items = items; psigmod_loc = loc } =
+    sub.location sub loc;
+    List.iter (iter_signature_item sub) items
 end
 
 
@@ -346,6 +350,10 @@ module M = struct
     | Pstr_extension (x, attrs) ->
         sub.attributes sub attrs; sub.extension sub x
     | Pstr_attribute x -> sub.attribute sub x
+
+  let iter_structure sub {pstrmod_loc = loc; pstrmod_items = items} =
+    sub.location sub loc;
+    List.iter (iter_structure_item sub) items
 end
 
 module E = struct
@@ -561,10 +569,10 @@ end
 
 let default_iterator =
   {
-    structure = (fun this l -> List.iter (this.structure_item this) l);
+    structure = M.iter_structure;
     structure_item = M.iter_structure_item;
     module_expr = M.iter;
-    signature = (fun this l -> List.iter (this.signature_item this) l);
+    signature = MT.iter_signature;
     signature_item = MT.iter_signature_item;
     module_type = MT.iter;
     with_constraint = MT.iter_with_constraint;

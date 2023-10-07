@@ -875,7 +875,11 @@ and functor_parameter =
             - [(X : MT)] when [name] is [Some X],
             - [(_ : MT)] when [name] is [None] *)
 
-and signature = signature_item list
+and signature = 
+    { 
+     psigmod_items: signature_item list;
+     psigmod_loc : Location.t;
+    }
 
 and signature_item =
     {
@@ -1018,7 +1022,11 @@ and module_expr_desc =
   | Pmod_unpack of expression  (** [(val E)] *)
   | Pmod_extension of extension  (** [[%id]] *)
 
-and structure = structure_item list
+and structure =
+    { 
+     pstrmod_items: structure_item list;
+     pstrmod_loc: Location.t;
+    }
 
 and structure_item =
     {

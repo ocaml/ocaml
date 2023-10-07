@@ -705,7 +705,9 @@ and module_type i ppf x =
       line i ppf "Pmod_extension \"%s\"\n" s.txt;
       payload i ppf arg
 
-and signature i ppf x = list i signature_item ppf x
+and signature i ppf x =
+  line i ppf "signature %a\n" fmt_location x.psigmod_loc;
+  list (i + 1) signature_item ppf x.psigmod_items
 
 and signature_item i ppf x =
   line i ppf "signature_item %a\n" fmt_location x.psig_loc;
@@ -830,7 +832,9 @@ and module_expr i ppf x =
       line i ppf "Pmod_extension \"%s\"\n" s.txt;
       payload i ppf arg
 
-and structure i ppf x = list i structure_item ppf x
+and structure i ppf x =
+  line i ppf "signature %a\n" fmt_location x.pstrmod_loc;
+  list (i + 1) structure_item ppf x.pstrmod_items
 
 and structure_item i ppf x =
   line i ppf "structure_item %a\n" fmt_location x.pstr_loc;

@@ -54,8 +54,10 @@ let mkpat ~loc d = Pat.mk ~loc:(make_loc loc) d
 let mkexp ~loc d = Exp.mk ~loc:(make_loc loc) d
 let mkmty ~loc ?attrs d = Mty.mk ~loc:(make_loc loc) ?attrs d
 let mksig ~loc d = Sig.mk ~loc:(make_loc loc) d
+let mksigmod ~loc d = Sig.mk_mod ~loc:(make_loc loc) d
 let mkmod ~loc ?attrs d = Mod.mk ~loc:(make_loc loc) ?attrs d
 let mkstr ~loc d = Str.mk ~loc:(make_loc loc) d
+let mkstrmod ~loc d = Str.mk_mod ~loc:(make_loc loc) d
 let mkclass ~loc ?attrs d = Cl.mk ~loc:(make_loc loc) ?attrs d
 let mkcty ~loc ?attrs d = Cty.mk ~loc:(make_loc loc) ?attrs d
 
@@ -140,7 +142,9 @@ let ghpat ~loc d = Pat.mk ~loc:(ghost_loc loc) d
 let ghtyp ~loc d = Typ.mk ~loc:(ghost_loc loc) d
 let ghloc ~loc d = { txt = d; loc = ghost_loc loc }
 let ghstr ~loc d = Str.mk ~loc:(ghost_loc loc) d
+let ghstrmod ~loc d = Str.mk_mod ~loc:(ghost_loc loc) d
 let ghsig ~loc d = Sig.mk ~loc:(ghost_loc loc) d
+let ghsigmod ~loc d = Sig.mk_mod ~loc:(ghost_loc loc) d
 
 let mkinfix arg1 op arg2 =
   Pexp_apply(op, [Nolabel, arg1; Nolabel, arg2])
@@ -427,7 +431,7 @@ let wrap_exp_attrs ~loc body (ext, attrs) =
   let body = {body with pexp_attributes = attrs @ body.pexp_attributes} in
   match ext with
   | None -> body
-  | Some id -> ghexp(Pexp_extension (id, PStr [mkstrexp body []]))
+  | Some id -> ghexp(Pexp_extension (id, PStr (ghstrmod ~loc [mkstrexp body []])))
 
 let mkexp_attrs ~loc d attrs =
   wrap_exp_attrs ~loc (mkexp ~loc d) attrs
@@ -459,7 +463,7 @@ let wrap_mty_attrs ~loc:_ attrs body =
 let wrap_str_ext ~loc body ext =
   match ext with
   | None -> body
-  | Some id -> ghstr ~loc (Pstr_extension ((id, PStr [body]), []))
+  | Some id -> ghstr ~loc (Pstr_extension ((id, PStr (ghstrmod ~loc [body])), []))
 
 let wrap_mkstr_ext ~loc (item, ext) =
   wrap_str_ext ~loc (mkstr ~loc item) ext
@@ -467,7 +471,7 @@ let wrap_mkstr_ext ~loc (item, ext) =
 let wrap_sig_ext ~loc body ext =
   match ext with
   | None -> body
-  | Some id -> ghsig ~loc (Psig_extension ((id, PSig [body]), []))
+  | Some id -> ghsig ~loc (Psig_extension ((id, PSig (ghsigmod ~loc [body])), []))
 
 let wrap_mksig_ext ~loc (item, ext) =
   wrap_sig_ext ~loc (mksig ~loc item) ext
@@ -475,14 +479,14 @@ let wrap_mksig_ext ~loc (item, ext) =
 let mk_quotedext ~loc (id, idloc, str, strloc, delim) =
   let exp_id = mkloc id idloc in
   let e = ghexp ~loc (Pexp_constant (Pconst_string (str, strloc, delim))) in
-  (exp_id, PStr [mkstrexp e []])
+  (exp_id, PStr (ghstrmod ~loc [mkstrexp e []]))
 
 let text_str pos = Str.text (rhs_text pos)
 let text_sig pos = Sig.text (rhs_text pos)
 let text_cstr pos = Cf.text (rhs_text pos)
 let text_csig pos = Ctf.text (rhs_text pos)
 let text_def pos =
-  List.map (fun def -> Ptop_def [def]) (Str.text (rhs_text pos))
+  List.map (fun def -> Ptop_def (Str.mk_mod ~loc:def.pstr_loc [def])) (Str.text (rhs_text pos))
 
 let extra_text startpos endpos text items =
   match items with
@@ -501,7 +505,7 @@ let extra_cstr p1 p2 items = extra_text p1 p2 Cf.text items
 let extra_csig p1 p2 items = extra_text p1 p2 Ctf.text  items
 let extra_def p1 p2 items =
   extra_text p1 p2
-    (fun txt -> List.map (fun def -> Ptop_def [def]) (Str.text txt))
+    (fun txt -> List.map (fun def -> Ptop_def (Str.mk_mod ~loc:def.pstr_loc [def])) (Str.text txt))
     items
 
 let extra_rhs_core_type ct ~pos =
@@ -561,7 +565,7 @@ let val_of_let_bindings ~loc lbs =
   let str = mkstr ~loc (Pstr_value(lbs.lbs_rec, List.rev bindings)) in
   match lbs.lbs_extension with
   | None -> str
-  | Some id -> ghstr ~loc (Pstr_extension((id, PStr [str]), []))
+  | Some id -> ghstr ~loc (Pstr_extension((id, PStr(ghstrmod ~loc [str])), []))
 
 let expr_of_let_bindings ~loc lbs body =
   let bindings =
@@ -945,8 +949,8 @@ The precedences must be listed from low to high.
 %%
 
 /* macros */
-%inline extra_str(symb): symb { extra_str $startpos $endpos $1 };
-%inline extra_sig(symb): symb { extra_sig $startpos $endpos $1 };
+%inline extra_str(symb): symb { mkstrmod ~loc:$sloc (extra_str $startpos $endpos $1) };
+%inline extra_sig(symb): symb { mksigmod ~loc:$sloc (extra_sig $startpos $endpos $1) };
 %inline extra_cstr(symb): symb { extra_cstr $startpos $endpos $1 };
 %inline extra_csig(symb): symb { extra_csig $startpos $endpos $1 };
 %inline extra_def(symb): symb { extra_def $startpos $endpos $1 };
@@ -967,7 +971,7 @@ The precedences must be listed from low to high.
 %inline text_def(symb): symb
   { text_def $startpos @ [$1] }
 %inline top_def(symb): symb
-  { Ptop_def [$1] }
+  { Ptop_def (mkstrmod ~loc:$sloc [$1]) }
 %inline text_cstr(symb): symb
   { text_cstr $startpos @ [$1] }
 %inline text_csig(symb): symb
@@ -2314,7 +2318,7 @@ fun_seq_expr:
     { $1 }
   | fun_expr SEMI PERCENT attr_id seq_expr
     { let seq = mkexp ~loc:$sloc (Pexp_sequence ($1, $5)) in
-      let payload = PStr [mkstrexp seq []] in
+    let payload = PStr (mkstrmod ~loc:$loc [mkstrexp seq []]) in
       mkexp ~loc:$sloc (Pexp_extension ($4, payload)) }
 ;
 seq_expr:

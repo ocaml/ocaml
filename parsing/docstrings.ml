@@ -101,7 +101,7 @@ let docs_attr ds =
     { pstr_desc = Pstr_eval (exp, []); pstr_loc = loc }
   in
   { attr_name = doc_loc;
-    attr_payload = PStr [item];
+    attr_payload = PStr { pstrmod_items = [item]; pstrmod_loc = loc };
     attr_loc = loc }
 
 let add_docs_attrs docs attrs =
@@ -153,7 +153,7 @@ let text_attr ds =
     { pstr_desc = Pstr_eval (exp, []); pstr_loc = loc }
   in
   { attr_name = text_loc;
-    attr_payload = PStr [item];
+    attr_payload = PStr { pstrmod_items = [item]; pstrmod_loc = loc };
     attr_loc = loc }
 
 let add_text_attrs dsl attrs =

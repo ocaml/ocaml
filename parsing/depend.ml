@@ -264,7 +264,7 @@ let rec add_expr bv exp =
       add_expr bv' body
   | Pexp_extension (({ txt = ("ocaml.extension_constructor"|
                               "extension_constructor"); _ },
-                     PStr [item]) as e) ->
+                     PStr { pstrmod_items = [item]; _ }) as e) ->
       begin match item.pstr_desc with
       | Pstr_eval ({ pexp_desc = Pexp_construct (c, None) }, _) -> add bv c
       | _ -> handle_extension e
@@ -380,7 +380,7 @@ and add_signature bv sg =
   ignore (add_signature_binding bv sg)
 
 and add_signature_binding bv sg =
-  snd (List.fold_left add_sig_item (bv, String.Map.empty) sg)
+  snd (List.fold_left add_sig_item (bv, String.Map.empty) sg.psigmod_items)
 
 and add_sig_item (bv, m) item =
   match item.psig_desc with
@@ -510,13 +510,13 @@ and add_class_description bv infos =
 
 and add_class_type_declaration bv infos = add_class_description bv infos
 
-and add_structure bv item_list =
-  let (bv, m) = add_structure_binding bv item_list in
+and add_structure bv str =
+  let (bv, m) = add_structure_binding bv str in
   add_names (collect_free (make_node m));
   bv
 
-and add_structure_binding bv item_list =
-  List.fold_left add_struct_item (bv, String.Map.empty) item_list
+and add_structure_binding bv str =
+  List.fold_left add_struct_item (bv, String.Map.empty) str.pstrmod_items
 
 and add_struct_item (bv, m) item : _ String.Map.t * _ String.Map.t =
   match item.pstr_desc with

@@ -336,6 +336,10 @@ module MT = struct
         let attrs = sub.attributes sub attrs in
         extension ~loc ~attrs (sub.extension sub x)
     | Psig_attribute x -> attribute ~loc (sub.attribute sub x)
+
+  let map_signature sub { psigmod_items = items; psigmod_loc = loc } =
+    let loc = sub.location sub loc in
+    Sig.mk_mod ~loc (List.map (map_signature_item sub) items)
 end
 
 
@@ -387,6 +391,10 @@ module M = struct
         let attrs = sub.attributes sub attrs in
         extension ~loc ~attrs (sub.extension sub x)
     | Pstr_attribute x -> attribute ~loc (sub.attribute sub x)
+
+  let map_structure sub {pstrmod_loc = loc; pstrmod_items = items} =
+    let loc = sub.location sub loc in
+    Str.mk_mod ~loc (List.map (map_structure_item sub) items)
 end
 
 module E = struct
@@ -621,10 +629,10 @@ end
 let default_mapper =
   {
     constant = C.map;
-    structure = (fun this l -> List.map (this.structure_item this) l);
+    structure = M.map_structure;
     structure_item = M.map_structure_item;
     module_expr = M.map;
-    signature = (fun this l -> List.map (this.signature_item this) l);
+    signature = MT.map_signature;
     signature_item = MT.map_signature_item;
     module_type = MT.map;
     with_constraint = MT.map_with_constraint;
@@ -810,18 +818,18 @@ let extension_of_error {kind; main; sub} =
   let str_of_pp pp_msg = Format.asprintf "%t" pp_msg in
   let extension_of_sub sub =
     { loc = sub.loc; txt = "ocaml.error" },
-    PStr ([Str.eval (Exp.constant
+    PStr (Str.mk_mod [Str.eval (Exp.constant
                        (Pconst_string (str_of_pp sub.txt, sub.loc, None)))])
   in
   { loc = main.loc; txt = "ocaml.error" },
-  PStr (Str.eval (Exp.constant
+  PStr (Str.mk_mod (Str.eval (Exp.constant
                     (Pconst_string (str_of_pp main.txt, main.loc, None))) ::
-        List.map (fun msg -> Str.extension (extension_of_sub msg)) sub)
+        List.map (fun msg -> Str.extension (extension_of_sub msg)) sub))
 
 let attribute_of_warning loc s =
   Attr.mk
     {loc; txt = "ocaml.ppwarning" }
-    (PStr ([Str.eval ~loc (Exp.constant (Pconst_string (s, loc, None)))]))
+    (PStr (Str.mk_mod [Str.eval ~loc (Exp.constant (Pconst_string (s, loc, None)))]))
 
 let cookies = ref String.Map.empty
 
@@ -874,7 +882,7 @@ module PpxContext = struct
   let mk fields =
     {
       attr_name = { txt = "ocaml.ppx.context"; loc = Location.none };
-      attr_payload = Parsetree.PStr [Str.eval (Exp.record fields None)];
+      attr_payload = Parsetree.PStr (Str.mk_mod [Str.eval (Exp.record fields None)]);
       attr_loc = Location.none
     }
 
@@ -900,8 +908,8 @@ module PpxContext = struct
     mk fields
 
   let get_fields = function
-    | PStr [{pstr_desc = Pstr_eval
-                 ({ pexp_desc = Pexp_record (fields, None) }, [])}] ->
+    | PStr { pstrmod_items = [{pstr_desc = Pstr_eval
+                 ({ pexp_desc = Pexp_record (fields, None) }, [])}]; _ } ->
         fields
     | _ ->
         raise_errorf "Internal error: invalid [@@@ocaml.ppx.context] syntax"
@@ -1008,7 +1016,7 @@ let extension_of_exn exn =
   match error_of_exn exn with
   | Some (`Ok error) -> extension_of_error error
   | Some `Already_displayed ->
-      { loc = Location.none; txt = "ocaml.error" }, PStr []
+      { loc = Location.none; txt = "ocaml.error" }, PStr (Str.mk_mod [])
   | None -> raise exn
 
 
@@ -1016,9 +1024,9 @@ let apply_lazy ~source ~target mapper =
   let implem ast =
     let fields, ast =
       match ast with
-      | {pstr_desc = Pstr_attribute ({attr_name = {txt = "ocaml.ppx.context"};
-                                      attr_payload = x})} :: l ->
-          PpxContext.get_fields x, l
+      |{ pstrmod_items = {pstr_desc = Pstr_attribute ({attr_name = {txt = "ocaml.ppx.context"};
+                                      attr_payload = x})} :: pstrmod_items; pstrmod_loc } ->
+          PpxContext.get_fields x, { pstrmod_items; pstrmod_loc }
       | _ -> [], ast
     in
     PpxContext.restore fields;
@@ -1027,19 +1035,20 @@ let apply_lazy ~source ~target mapper =
         let mapper = mapper () in
         mapper.structure mapper ast
       with exn ->
-        [{pstr_desc = Pstr_extension (extension_of_exn exn, []);
-          pstr_loc  = Location.none}]
+        Str.mk_mod
+          [{pstr_desc = Pstr_extension (extension_of_exn exn, []);
+            pstr_loc  = Location.none}]
     in
     let fields = PpxContext.update_cookies fields in
-    Str.attribute (PpxContext.mk fields) :: ast
+    { ast with pstrmod_items = Str.attribute (PpxContext.mk fields) :: ast.pstrmod_items }
   in
   let iface ast =
     let fields, ast =
       match ast with
-      | {psig_desc = Psig_attribute ({attr_name = {txt = "ocaml.ppx.context"};
+      | { psigmod_items =  {psig_desc = Psig_attribute ({attr_name = {txt = "ocaml.ppx.context"};
                                       attr_payload = x;
-                                      attr_loc = _})} :: l ->
-          PpxContext.get_fields x, l
+                                      attr_loc = _})} :: psigmod_items; psigmod_loc } ->
+          PpxContext.get_fields x, { psigmod_items; psigmod_loc }
       | _ -> [], ast
     in
     PpxContext.restore fields;
@@ -1048,11 +1057,12 @@ let apply_lazy ~source ~target mapper =
         let mapper = mapper () in
         mapper.signature mapper ast
       with exn ->
-        [{psig_desc = Psig_extension (extension_of_exn exn, []);
-          psig_loc  = Location.none}]
+        Sig.mk_mod
+          [{psig_desc = Psig_extension (extension_of_exn exn, []);
+            psig_loc  = Location.none}]
     in
     let fields = PpxContext.update_cookies fields in
-    Sig.attribute (PpxContext.mk fields) :: ast
+    { ast with psigmod_items = Sig.attribute (PpxContext.mk fields) :: ast.psigmod_items }
   in
 
   let ic = open_in_bin source in
@@ -1082,32 +1092,34 @@ let apply_lazy ~source ~target mapper =
   else fail ()
 
 let drop_ppx_context_str ~restore = function
-  | {pstr_desc = Pstr_attribute
+  | { pstrmod_items = {pstr_desc = Pstr_attribute
                    {attr_name = {Location.txt = "ocaml.ppx.context"};
                     attr_payload = a;
                     attr_loc = _}}
-    :: items ->
+  :: pstrmod_items; pstrmod_loc } ->
       if restore then
         PpxContext.restore (PpxContext.get_fields a);
-      items
-  | items -> items
+      { pstrmod_items; pstrmod_loc }
+  | structure -> structure
 
 let drop_ppx_context_sig ~restore = function
-  | {psig_desc = Psig_attribute
+  | {psigmod_items = {psig_desc = Psig_attribute
                    {attr_name = {Location.txt = "ocaml.ppx.context"};
                     attr_payload = a;
                     attr_loc = _}}
-    :: items ->
+  :: psigmod_items; psigmod_loc } ->
       if restore then
         PpxContext.restore (PpxContext.get_fields a);
-      items
-  | items -> items
+      {psigmod_items; psigmod_loc }
+  | signature -> signature
 
 let add_ppx_context_str ~tool_name ast =
-  Ast_helper.Str.attribute (ppx_context ~tool_name ()) :: ast
+  { ast with pstrmod_items = 
+    Ast_helper.Str.attribute (ppx_context ~tool_name ()) :: ast.pstrmod_items }
 
 let add_ppx_context_sig ~tool_name ast =
-  Ast_helper.Sig.attribute (ppx_context ~tool_name ()) :: ast
+  { ast with psigmod_items = 
+    Ast_helper.Sig.attribute (ppx_context ~tool_name ()) :: ast.psigmod_items }
 
 
 let apply ~source ~target mapper =
