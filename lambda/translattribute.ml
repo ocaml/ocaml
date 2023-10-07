@@ -68,13 +68,13 @@ let is_unrolled = function
 let get_payload get_from_exp =
   let open Parsetree in
   function
-  | PStr [{pstr_desc = Pstr_eval (exp, [])}] -> get_from_exp exp
+  | PStr { pstrmod_items = [{pstr_desc = Pstr_eval (exp, [])}]; _ } -> get_from_exp exp
   | _ -> Result.Error ()
 
 let get_optional_payload get_from_exp =
   let open Parsetree in
   function
-  | PStr [] -> Result.Ok None
+  | PStr { pstrmod_items = []; _ } -> Result.Ok None
   | other -> Result.map Option.some (get_payload get_from_exp other)
 
 let get_id_from_exp =

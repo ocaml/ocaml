@@ -370,10 +370,10 @@ let ml_file_dependencies source_file =
   let parse_use_file_as_impl lexbuf =
     let f x =
       match x with
-      | Ptop_def s -> s
+      | Ptop_def { pstrmod_items; _ } -> pstrmod_items
       | Ptop_dir _ -> []
     in
-    List.concat_map f (Parse.use_file lexbuf)
+    { pstrmod_items = List.concat_map f (Parse.use_file lexbuf); pstrmod_loc = Location.in_file source_file }
   in
   let (extracted_deps, ()) =
     read_parse_and_extract parse_use_file_as_impl Depend.add_implementation ()
