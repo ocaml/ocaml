@@ -189,7 +189,7 @@ let build_initial_env add_type add_extension empty_env =
         ext_loc = Location.none;
         ext_attributes = [Ast_helper.Attr.mk
                             (Location.mknoloc "ocaml.warn_on_literal_pattern")
-                            (Parsetree.PStr [])];
+                            (PStr (Ast_helper.Str.mk_mod []))];
         ext_uid = Uid.of_predef_id id;
       }
   in

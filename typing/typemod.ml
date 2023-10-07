@@ -761,7 +761,7 @@ let rec approx_modtype env smty =
       in
       Mty_alias(path)
   | Pmty_signature ssg ->
-      Mty_signature(approx_sig env ssg)
+      Mty_signature(approx_sig env ssg.psigmod_items)
   | Pmty_functor(param, sres) ->
       let (param, newenv) =
         match param with
@@ -813,7 +813,7 @@ and approx_module_declaration env pmd =
     md_uid = Uid.internal_not_actually_unique;
   }
 
-and approx_sig env ssg =
+and approx_sig env (ssg : Parsetree.signature_item list) =
   match ssg with
     [] -> []
   | item :: srem ->
@@ -1686,10 +1686,10 @@ and transl_signature env sg =
   let previous_saved_types = Cmt_format.get_saved_types () in
   Builtin_attributes.warning_scope []
     (fun () ->
-       let (trem, rem, final_env) = transl_sig (Env.in_signature true env) sg in
+       let (trem, rem, final_env) = transl_sig (Env.in_signature true env) sg.psigmod_items in
        let rem = Signature_names.simplify final_env names rem in
        let sg =
-         { sig_items = trem; sig_type = rem; sig_final_env = final_env }
+         { sig_items = trem; sig_type = rem; sig_final_env = final_env; sig_mod_loc = sg.psigmod_loc }
        in
        Cmt_format.set_saved_types
          ((Cmt_format.Partial_signature sg) :: previous_saved_types);
@@ -2291,12 +2291,17 @@ and type_application loc strengthen funct_body env smod =
     match smod.pmod_desc with
     | Pmod_apply (f, sarg) ->
         let arg, shape = type_module true funct_body None env sarg in
+        let is_syntactic_unit = 
+          match sarg.pmod_desc with
+          | Pmod_structure { pstrmod_items = []; _ } -> true
+          | _ -> false
+        in
         let summary = {
           loc = smod.pmod_loc;
           attributes = smod.pmod_attributes;
           f_loc = f.pmod_loc;
           arg = Some {
-            is_syntactic_unit = sarg.pmod_desc = Pmod_structure [];
+            is_syntactic_unit;
             arg;
             path = path_of_module arg;
             shape;
@@ -2853,9 +2858,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
   let previous_saved_types = Cmt_format.get_saved_types () in
   let run () =
     let (items, sg, shape_map, final_env) =
-      type_struct env Shape.Map.empty sstr
+      type_struct env Shape.Map.empty sstr.pstrmod_items
     in
-    let str = { str_items = items; str_type = sg; str_final_env = final_env } in
+    let str = { str_items = items; str_type = sg; str_final_env = final_env; str_mod_loc = sstr.pstrmod_loc } in
     Cmt_format.set_saved_types
       (Cmt_format.Partial_structure str :: previous_saved_types);
     str, sg, names, Shape.str shape_map, final_env

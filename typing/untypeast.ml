@@ -138,7 +138,8 @@ let attribute sub a = {
 let attributes sub l = List.map (sub.attribute sub) l
 
 let structure sub str =
-  List.map (sub.structure_item sub) str.str_items
+  let loc = sub.location sub str.str_mod_loc in
+  Str.mk_mod ~loc (List.map (sub.structure_item sub) str.str_items)
 
 let open_description sub od =
   let loc = sub.location sub od.open_loc in
@@ -530,9 +531,9 @@ let expression sub exp =
         Pexp_unreachable
     | Texp_extension_constructor (lid, _) ->
         Pexp_extension ({ txt = "ocaml.extension_constructor"; loc },
-                        PStr [ Str.eval ~loc
+                        PStr (Str.mk_mod ~loc [ Str.eval ~loc
                                  (Exp.construct ~loc (map_loc sub lid) None)
-                             ])
+                             ]))
     | Texp_open (od, exp) ->
         Pexp_open (sub.open_declaration sub od, sub.expr sub exp)
   in
@@ -559,7 +560,8 @@ let module_type_declaration sub mtd =
     (map_loc sub mtd.mtd_name)
 
 let signature sub sg =
-  List.map (sub.signature_item sub) sg.sig_items
+  let loc = sub.location sub sg.sig_mod_loc in
+  Sig.mk_mod ~loc (List.map (sub.signature_item sub) sg.sig_items)
 
 let signature_item sub item =
   let loc = sub.location sub item.sig_loc in

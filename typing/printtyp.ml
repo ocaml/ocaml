@@ -2044,7 +2044,7 @@ and tree_of_sigitem = function
   | Sig_module(id, _, md, rs, _) ->
       let ellipsis =
         List.exists (function
-          | Parsetree.{attr_name = {txt="..."}; attr_payload = PStr []} -> true
+          | Parsetree.{attr_name = {txt="..."}; attr_payload = PStr { pstrmod_items = []; _ }} -> true
           | _ -> false)
           md.md_attributes in
       tree_of_module id md.md_type rs ~ellipsis

@@ -4213,9 +4213,9 @@ and type_expect_
                              |"extension_constructor"); _ },
                     payload) ->
       begin match payload with
-      | PStr [ { pstr_desc =
+      | PStr { pstrmod_items = [ { pstr_desc =
                    Pstr_eval ({ pexp_desc = Pexp_construct (lid, None); _ }, _)
-               } ] ->
+      } ]; _ } ->
           let path =
             let cd =
               Env.lookup_constructor Env.Positive ~loc:lid.loc lid.txt env

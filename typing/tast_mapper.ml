@@ -92,11 +92,12 @@ let attribute sub x =
 
 let attributes sub l = List.map (attribute sub) l
 
-let structure sub {str_items; str_type; str_final_env} =
+let structure sub {str_items; str_type; str_final_env; str_mod_loc} =
   {
     str_items = List.map (sub.structure_item sub) str_items;
     str_final_env = sub.env sub str_final_env;
     str_type;
+    str_mod_loc = sub.location sub str_mod_loc;
   }
 
 let class_infos sub f x =

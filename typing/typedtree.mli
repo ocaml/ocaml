@@ -455,6 +455,7 @@ and structure = {
   str_items : structure_item list;
   str_type : Types.signature;
   str_final_env : Env.t;
+  str_mod_loc : Location.t;
 }
 
 and structure_item =
@@ -534,6 +535,7 @@ and signature = {
   sig_items : signature_item list;
   sig_type : Types.signature;
   sig_final_env : Env.t;
+  sig_mod_loc : Location.t;
 }
 
 and signature_item =
