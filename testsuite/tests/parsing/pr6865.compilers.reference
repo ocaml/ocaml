@@ -1,7 +1,7 @@
 [
   structure_item (pr6865.ml[9,153+0]..[9,153+14]) ghost
     Pstr_extension "foo"
-    signature (pr6865.ml[9,153+0]..[9,153+14]) ghost
+    structure (pr6865.ml[9,153+0]..[9,153+14]) ghost
       [
         structure_item (pr6865.ml[9,153+0]..[9,153+14])
           Pstr_value Nonrec
@@ -15,7 +15,7 @@
       ]
   structure_item (pr6865.ml[10,168+0]..[10,168+25]) ghost
     Pstr_extension "foo"
-    signature (pr6865.ml[10,168+0]..[10,168+25]) ghost
+    structure (pr6865.ml[10,168+0]..[10,168+25]) ghost
       [
         structure_item (pr6865.ml[10,168+0]..[10,168+25])
           Pstr_value Nonrec
@@ -36,7 +36,7 @@
       ]
   structure_item (pr6865.ml[11,194+0]..[11,194+14]) ghost
     Pstr_extension "foo"
-    signature (pr6865.ml[11,194+0]..[11,194+14]) ghost
+    structure (pr6865.ml[11,194+0]..[11,194+14]) ghost
       [
         structure_item (pr6865.ml[11,194+0]..[11,194+14])
           Pstr_value Nonrec

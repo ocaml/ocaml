@@ -1,7 +1,7 @@
 [
   structure_item (extensions.ml[9,153+0]..[9,153+22])
     Pstr_extension "foo"
-    signature (extensions.ml[9,153+7]..[9,153+21])
+    structure (extensions.ml[9,153+7]..[9,153+21])
       [
         structure_item (extensions.ml[9,153+7]..[9,153+21])
           Pstr_eval
@@ -23,7 +23,7 @@
       <def>
         pattern (extensions.ml[10,176+4]..[10,176+14])
           Ppat_extension "foo"
-          signature (extensions.ml[10,176+10]..[10,176+13])
+          structure (extensions.ml[10,176+10]..[10,176+13])
             [
               structure_item (extensions.ml[10,176+10]..[10,176+13])
                 Pstr_eval
@@ -44,7 +44,7 @@
             ]
         core_type (extensions.ml[10,176+17]..[10,176+31])
           Ptyp_extension "foo"
-          signature (extensions.ml[10,176+23]..[10,176+30])
+          structure (extensions.ml[10,176+23]..[10,176+30])
             [
               structure_item (extensions.ml[10,176+23]..[10,176+30])
                 Pstr_eval
@@ -56,7 +56,7 @@
             ]
         expression (extensions.ml[10,176+34]..[10,176+46])
           Pexp_extension "foo"
-          signature (extensions.ml[10,176+40]..[10,176+45])
+          structure (extensions.ml[10,176+40]..[10,176+45])
             [
               structure_item (extensions.ml[10,176+40]..[10,176+45])
                 Pstr_eval
@@ -66,14 +66,14 @@
     ]
   structure_item (extensions.ml[12,224+0]..[12,224+26])
     Pstr_extension "foo"
-    signature (extensions.ml[12,224+7]..[12,224+24])
+    structure (extensions.ml[12,224+7]..[12,224+24])
       [
         structure_item (extensions.ml[12,224+7]..[12,224+24])
           Pstr_module
           "M" (extensions.ml[12,224+14]..[12,224+15])
             module_expr (extensions.ml[12,224+18]..[12,224+24])
               Pmod_extension "bar"
-              signature (extensions.ml[12,224+23]..[12,224+23])
+              structure (extensions.ml[12,224+23]..[12,224+23])
                 []
       ]
   structure_item (extensions.ml[13,251+0]..[13,251+74])
@@ -82,7 +82,7 @@
       <def>
         pattern (extensions.ml[13,251+4]..[13,251+23])
           Ppat_extension "foo"
-          signature (extensions.ml[13,251+10]..[13,251+21])
+          structure (extensions.ml[13,251+10]..[13,251+21])
             [
               structure_item (extensions.ml[13,251+10]..[13,251+21])
                 Pstr_value Nonrec
@@ -98,7 +98,7 @@
             ]
         core_type (extensions.ml[13,251+26]..[13,251+44])
           Ptyp_extension "foo"
-          signature (extensions.ml[13,251+32]..[13,251+42])
+          structure (extensions.ml[13,251+32]..[13,251+42])
             [
               structure_item (extensions.ml[13,251+32]..[13,251+42])
                 Pstr_type Rec
@@ -120,7 +120,7 @@
             ]
         expression (extensions.ml[13,251+47]..[13,251+74])
           Pexp_extension "foo"
-          signature (extensions.ml[13,251+53]..[13,251+73])
+          structure (extensions.ml[13,251+53]..[13,251+73])
             [
               structure_item (extensions.ml[13,251+53]..[13,251+73])
                 Pstr_class
@@ -251,7 +251,7 @@
           Psig_module "M" (extensions.ml[22,507+15]..[22,507+16])
           module_type (extensions.ml[22,507+19]..[22,507+25])
             Pmod_extension "baz"
-            signature (extensions.ml[22,507+24]..[22,507+24])
+            structure (extensions.ml[22,507+24]..[22,507+24])
               []
       ]
   structure_item (extensions.ml[23,534+0]..[25,606+23])

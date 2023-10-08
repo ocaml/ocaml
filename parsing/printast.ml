@@ -833,7 +833,7 @@ and module_expr i ppf x =
       payload i ppf arg
 
 and structure i ppf x =
-  line i ppf "signature %a\n" fmt_location x.pstrmod_loc;
+  line i ppf "structure %a\n" fmt_location x.pstrmod_loc;
   list (i + 1) structure_item ppf x.pstrmod_items
 
 and structure_item i ppf x =

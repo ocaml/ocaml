@@ -8,7 +8,7 @@
           None
         expression (shortcut_ext_attr.ml[10,179+2]..[30,721+31]) ghost
           Pexp_extension "foo"
-          signature (shortcut_ext_attr.ml[10,179+2]..[30,721+31]) ghost
+          structure (shortcut_ext_attr.ml[10,179+2]..[30,721+31]) ghost
             [
               structure_item (shortcut_ext_attr.ml[10,179+2]..[30,721+31])
                 Pstr_eval
@@ -17,7 +17,7 @@
                   [
                     <def>
                         attribute "foo"
-                          signature (shortcut_ext_attr.ml[10,179+14]..[10,179+14])
+                          structure (shortcut_ext_attr.ml[10,179+14]..[10,179+14])
                             []
                       pattern (shortcut_ext_attr.ml[10,179+16]..[10,179+17])
                         Ppat_var "x" (shortcut_ext_attr.ml[10,179+16]..[10,179+17])
@@ -25,7 +25,7 @@
                         Pexp_constant PConst_int (3,None)
                     <def>
                         attribute "foo"
-                          signature (shortcut_ext_attr.ml[11,201+10]..[11,201+10])
+                          structure (shortcut_ext_attr.ml[11,201+10]..[11,201+10])
                             []
                       pattern (shortcut_ext_attr.ml[11,201+12]..[11,201+13])
                         Ppat_var "y" (shortcut_ext_attr.ml[11,201+12]..[11,201+13])
@@ -36,13 +36,13 @@
                     Pexp_sequence
                     expression (shortcut_ext_attr.ml[12,222+2]..[12,222+36])
                       Pexp_extension "foo"
-                      signature (shortcut_ext_attr.ml[12,222+3]..[12,222+35]) ghost
+                      structure (shortcut_ext_attr.ml[12,222+3]..[12,222+35]) ghost
                         [
                           structure_item (shortcut_ext_attr.ml[12,222+3]..[12,222+35])
                             Pstr_eval
                             expression (shortcut_ext_attr.ml[12,222+3]..[12,222+35])
                               attribute "foo"
-                                signature (shortcut_ext_attr.ml[12,222+22]..[12,222+22])
+                                structure (shortcut_ext_attr.ml[12,222+22]..[12,222+22])
                                   []
                               Pexp_letmodule "M" (shortcut_ext_attr.ml[12,222+24]..[12,222+25])
                               module_expr (shortcut_ext_attr.ml[12,222+28]..[12,222+29])
@@ -55,13 +55,13 @@
                       Pexp_sequence
                       expression (shortcut_ext_attr.ml[13,261+2]..[13,261+30])
                         Pexp_extension "foo"
-                        signature (shortcut_ext_attr.ml[13,261+3]..[13,261+29]) ghost
+                        structure (shortcut_ext_attr.ml[13,261+3]..[13,261+29]) ghost
                           [
                             structure_item (shortcut_ext_attr.ml[13,261+3]..[13,261+29])
                               Pstr_eval
                               expression (shortcut_ext_attr.ml[13,261+3]..[13,261+29])
                                 attribute "foo"
-                                  signature (shortcut_ext_attr.ml[13,261+20]..[13,261+20])
+                                  structure (shortcut_ext_attr.ml[13,261+20]..[13,261+20])
                                     []
                                 Pexp_open Fresh
                                 module_expr (shortcut_ext_attr.ml[13,261+22]..[13,261+23])
@@ -74,13 +74,13 @@
                         Pexp_sequence
                         expression (shortcut_ext_attr.ml[14,294+2]..[14,294+25])
                           Pexp_extension "foo"
-                          signature (shortcut_ext_attr.ml[14,294+3]..[14,294+24]) ghost
+                          structure (shortcut_ext_attr.ml[14,294+3]..[14,294+24]) ghost
                             [
                               structure_item (shortcut_ext_attr.ml[14,294+3]..[14,294+24])
                                 Pstr_eval
                                 expression (shortcut_ext_attr.ml[14,294+3]..[14,294+24])
                                   attribute "foo"
-                                    signature (shortcut_ext_attr.ml[14,294+15]..[14,294+15])
+                                    structure (shortcut_ext_attr.ml[14,294+15]..[14,294+15])
                                       []
                                   Pexp_function
                                   [
@@ -100,13 +100,13 @@
                           Pexp_sequence
                           expression (shortcut_ext_attr.ml[15,322+2]..[15,322+30])
                             Pexp_extension "foo"
-                            signature (shortcut_ext_attr.ml[15,322+3]..[15,322+29]) ghost
+                            structure (shortcut_ext_attr.ml[15,322+3]..[15,322+29]) ghost
                               [
                                 structure_item (shortcut_ext_attr.ml[15,322+3]..[15,322+29])
                                   Pstr_eval
                                   expression (shortcut_ext_attr.ml[15,322+3]..[15,322+29])
                                     attribute "foo"
-                                      signature (shortcut_ext_attr.ml[15,322+20]..[15,322+20])
+                                      structure (shortcut_ext_attr.ml[15,322+20]..[15,322+20])
                                         []
                                     Pexp_function
                                     []
@@ -125,13 +125,13 @@
                             Pexp_sequence
                             expression (shortcut_ext_attr.ml[16,355+2]..[16,355+33])
                               Pexp_extension "foo"
-                              signature (shortcut_ext_attr.ml[16,355+3]..[16,355+32]) ghost
+                              structure (shortcut_ext_attr.ml[16,355+3]..[16,355+32]) ghost
                                 [
                                   structure_item (shortcut_ext_attr.ml[16,355+3]..[16,355+32])
                                     Pstr_eval
                                     expression (shortcut_ext_attr.ml[16,355+3]..[16,355+32])
                                       attribute "foo"
-                                        signature (shortcut_ext_attr.ml[16,355+15]..[16,355+15])
+                                        structure (shortcut_ext_attr.ml[16,355+15]..[16,355+15])
                                           []
                                       Pexp_try
                                       expression (shortcut_ext_attr.ml[16,355+17]..[16,355+19])
@@ -150,13 +150,13 @@
                               Pexp_sequence
                               expression (shortcut_ext_attr.ml[17,391+2]..[17,391+35])
                                 Pexp_extension "foo"
-                                signature (shortcut_ext_attr.ml[17,391+3]..[17,391+34]) ghost
+                                structure (shortcut_ext_attr.ml[17,391+3]..[17,391+34]) ghost
                                   [
                                     structure_item (shortcut_ext_attr.ml[17,391+3]..[17,391+34])
                                       Pstr_eval
                                       expression (shortcut_ext_attr.ml[17,391+3]..[17,391+34])
                                         attribute "foo"
-                                          signature (shortcut_ext_attr.ml[17,391+14]..[17,391+14])
+                                          structure (shortcut_ext_attr.ml[17,391+14]..[17,391+14])
                                             []
                                         Pexp_ifthenelse
                                         expression (shortcut_ext_attr.ml[17,391+16]..[17,391+18])
@@ -174,13 +174,13 @@
                                 Pexp_sequence
                                 expression (shortcut_ext_attr.ml[18,429+2]..[18,429+31]) ghost
                                   Pexp_extension "foo"
-                                  signature (shortcut_ext_attr.ml[18,429+2]..[18,429+31]) ghost
+                                  structure (shortcut_ext_attr.ml[18,429+2]..[18,429+31]) ghost
                                     [
                                       structure_item (shortcut_ext_attr.ml[18,429+2]..[18,429+31])
                                         Pstr_eval
                                         expression (shortcut_ext_attr.ml[18,429+2]..[18,429+31])
                                           attribute "foo"
-                                            signature (shortcut_ext_attr.ml[18,429+16]..[18,429+16])
+                                            structure (shortcut_ext_attr.ml[18,429+16]..[18,429+16])
                                               []
                                           Pexp_while
                                           expression (shortcut_ext_attr.ml[18,429+18]..[18,429+20])
@@ -194,13 +194,13 @@
                                   Pexp_sequence
                                   expression (shortcut_ext_attr.ml[19,463+2]..[19,463+39]) ghost
                                     Pexp_extension "foo"
-                                    signature (shortcut_ext_attr.ml[19,463+2]..[19,463+39]) ghost
+                                    structure (shortcut_ext_attr.ml[19,463+2]..[19,463+39]) ghost
                                       [
                                         structure_item (shortcut_ext_attr.ml[19,463+2]..[19,463+39])
                                           Pstr_eval
                                           expression (shortcut_ext_attr.ml[19,463+2]..[19,463+39])
                                             attribute "foo"
-                                              signature (shortcut_ext_attr.ml[19,463+14]..[19,463+14])
+                                              structure (shortcut_ext_attr.ml[19,463+14]..[19,463+14])
                                                 []
                                             Pexp_for Up
                                             pattern (shortcut_ext_attr.ml[19,463+16]..[19,463+17])
@@ -217,7 +217,7 @@
                                       ]
                                   expression (shortcut_ext_attr.ml[20,505+2]..[30,721+31])
                                     Pexp_extension "foo"
-                                    signature (shortcut_ext_attr.ml[20,505+2]..[30,721+31])
+                                    structure (shortcut_ext_attr.ml[20,505+2]..[30,721+31])
                                       [
                                         structure_item (shortcut_ext_attr.ml[20,505+2]..[30,721+31])
                                           Pstr_eval
@@ -235,13 +235,13 @@
                                                 Pexp_sequence
                                                 expression (shortcut_ext_attr.ml[21,521+2]..[21,521+23]) ghost
                                                   Pexp_extension "foo"
-                                                  signature (shortcut_ext_attr.ml[21,521+2]..[21,521+23]) ghost
+                                                  structure (shortcut_ext_attr.ml[21,521+2]..[21,521+23]) ghost
                                                     [
                                                       structure_item (shortcut_ext_attr.ml[21,521+2]..[21,521+23])
                                                         Pstr_eval
                                                         expression (shortcut_ext_attr.ml[21,521+2]..[21,521+23])
                                                           attribute "foo"
-                                                            signature (shortcut_ext_attr.ml[21,521+17]..[21,521+17])
+                                                            structure (shortcut_ext_attr.ml[21,521+17]..[21,521+17])
                                                               []
                                                           Pexp_assert
                                                           expression (shortcut_ext_attr.ml[21,521+19]..[21,521+23])
@@ -252,13 +252,13 @@
                                                   Pexp_sequence
                                                   expression (shortcut_ext_attr.ml[22,547+2]..[22,547+18]) ghost
                                                     Pexp_extension "foo"
-                                                    signature (shortcut_ext_attr.ml[22,547+2]..[22,547+18]) ghost
+                                                    structure (shortcut_ext_attr.ml[22,547+2]..[22,547+18]) ghost
                                                       [
                                                         structure_item (shortcut_ext_attr.ml[22,547+2]..[22,547+18])
                                                           Pstr_eval
                                                           expression (shortcut_ext_attr.ml[22,547+2]..[22,547+18])
                                                             attribute "foo"
-                                                              signature (shortcut_ext_attr.ml[22,547+15]..[22,547+15])
+                                                              structure (shortcut_ext_attr.ml[22,547+15]..[22,547+15])
                                                                 []
                                                             Pexp_lazy
                                                             expression (shortcut_ext_attr.ml[22,547+17]..[22,547+18])
@@ -268,13 +268,13 @@
                                                     Pexp_sequence
                                                     expression (shortcut_ext_attr.ml[23,568+2]..[23,568+22]) ghost
                                                       Pexp_extension "foo"
-                                                      signature (shortcut_ext_attr.ml[23,568+2]..[23,568+22]) ghost
+                                                      structure (shortcut_ext_attr.ml[23,568+2]..[23,568+22]) ghost
                                                         [
                                                           structure_item (shortcut_ext_attr.ml[23,568+2]..[23,568+22])
                                                             Pstr_eval
                                                             expression (shortcut_ext_attr.ml[23,568+2]..[23,568+22])
                                                               attribute "foo"
-                                                                signature (shortcut_ext_attr.ml[23,568+17]..[23,568+17])
+                                                                structure (shortcut_ext_attr.ml[23,568+17]..[23,568+17])
                                                                   []
                                                               Pexp_object
                                                               class_structure
@@ -286,13 +286,13 @@
                                                       Pexp_sequence
                                                       expression (shortcut_ext_attr.ml[24,593+2]..[24,593+23]) ghost
                                                         Pexp_extension "foo"
-                                                        signature (shortcut_ext_attr.ml[24,593+2]..[24,593+23]) ghost
+                                                        structure (shortcut_ext_attr.ml[24,593+2]..[24,593+23]) ghost
                                                           [
                                                             structure_item (shortcut_ext_attr.ml[24,593+2]..[24,593+23])
                                                               Pstr_eval
                                                               expression (shortcut_ext_attr.ml[24,593+2]..[24,593+23])
                                                                 attribute "foo"
-                                                                  signature (shortcut_ext_attr.ml[24,593+16]..[24,593+16])
+                                                                  structure (shortcut_ext_attr.ml[24,593+16]..[24,593+16])
                                                                     []
                                                                 Pexp_constant PConst_int (3,None)
                                                           ]
@@ -300,25 +300,25 @@
                                                         Pexp_sequence
                                                         expression (shortcut_ext_attr.ml[25,619+2]..[25,619+17]) ghost
                                                           Pexp_extension "foo"
-                                                          signature (shortcut_ext_attr.ml[25,619+2]..[25,619+17]) ghost
+                                                          structure (shortcut_ext_attr.ml[25,619+2]..[25,619+17]) ghost
                                                             [
                                                               structure_item (shortcut_ext_attr.ml[25,619+2]..[25,619+17])
                                                                 Pstr_eval
                                                                 expression (shortcut_ext_attr.ml[25,619+2]..[25,619+17])
                                                                   attribute "foo"
-                                                                    signature (shortcut_ext_attr.ml[25,619+14]..[25,619+14])
+                                                                    structure (shortcut_ext_attr.ml[25,619+14]..[25,619+14])
                                                                       []
                                                                   Pexp_new "x" (shortcut_ext_attr.ml[25,619+16]..[25,619+17])
                                                             ]
                                                         expression (shortcut_ext_attr.ml[27,640+2]..[30,721+31]) ghost
                                                           Pexp_extension "foo"
-                                                          signature (shortcut_ext_attr.ml[27,640+2]..[30,721+31]) ghost
+                                                          structure (shortcut_ext_attr.ml[27,640+2]..[30,721+31]) ghost
                                                             [
                                                               structure_item (shortcut_ext_attr.ml[27,640+2]..[30,721+31])
                                                                 Pstr_eval
                                                                 expression (shortcut_ext_attr.ml[27,640+2]..[30,721+31])
                                                                   attribute "foo"
-                                                                    signature (shortcut_ext_attr.ml[27,640+16]..[27,640+16])
+                                                                    structure (shortcut_ext_attr.ml[27,640+16]..[27,640+16])
                                                                       []
                                                                   Pexp_match
                                                                   expression (shortcut_ext_attr.ml[27,640+18]..[27,640+20])
@@ -330,7 +330,7 @@
 Ppat_extension "foo"
 pattern (shortcut_ext_attr.ml[29,694+4]..[29,694+20])
   attribute "foo"
-    signature (shortcut_ext_attr.ml[29,694+17]..[29,694+17])
+    structure (shortcut_ext_attr.ml[29,694+17]..[29,694+17])
       []
   Ppat_lazy
   pattern (shortcut_ext_attr.ml[29,694+19]..[29,694+20])
@@ -343,7 +343,7 @@ None
 Ppat_extension "foo"
 pattern (shortcut_ext_attr.ml[30,721+4]..[30,721+25])
   attribute "foo"
-    signature (shortcut_ext_attr.ml[30,721+22]..[30,721+22])
+    structure (shortcut_ext_attr.ml[30,721+22]..[30,721+22])
       []
   Ppat_exception
   pattern (shortcut_ext_attr.ml[30,721+24]..[30,721+25])
@@ -367,7 +367,7 @@ None
         pci_expr =
           class_expr (shortcut_ext_attr.ml[35,789+12]..[46,1049+5])
             attribute "foo"
-              signature (shortcut_ext_attr.ml[35,789+10]..[35,789+10])
+              structure (shortcut_ext_attr.ml[35,789+10]..[35,789+10])
                 []
             Pcl_fun
             Nolabel
@@ -379,7 +379,7 @@ None
               [
                 <def>
                     attribute "foo"
-                      signature (shortcut_ext_attr.ml[36,806+10]..[36,806+10])
+                      structure (shortcut_ext_attr.ml[36,806+10]..[36,806+10])
                         []
                   pattern (shortcut_ext_attr.ml[36,806+12]..[36,806+13])
                     Ppat_var "x" (shortcut_ext_attr.ml[36,806+12]..[36,806+13])
@@ -388,7 +388,7 @@ None
               ]
               class_expr (shortcut_ext_attr.ml[37,827+2]..[46,1049+5])
                 attribute "foo"
-                  signature (shortcut_ext_attr.ml[37,827+13]..[37,827+13])
+                  structure (shortcut_ext_attr.ml[37,827+13]..[37,827+13])
                     []
                 Pcl_structure
                 class_structure
@@ -397,7 +397,7 @@ None
                   [
                     class_field (shortcut_ext_attr.ml[38,842+4]..[38,842+19])
                         attribute "foo"
-                          signature (shortcut_ext_attr.ml[38,842+16]..[38,842+16])
+                          structure (shortcut_ext_attr.ml[38,842+16]..[38,842+16])
                             []
                       Pcf_inherit Fresh
                         class_expr (shortcut_ext_attr.ml[38,842+18]..[38,842+19])
@@ -406,7 +406,7 @@ None
                         None
                     class_field (shortcut_ext_attr.ml[39,862+4]..[39,862+19])
                         attribute "foo"
-                          signature (shortcut_ext_attr.ml[39,862+12]..[39,862+12])
+                          structure (shortcut_ext_attr.ml[39,862+12]..[39,862+12])
                             []
                       Pcf_val Immutable
                         "x" (shortcut_ext_attr.ml[39,862+14]..[39,862+15])
@@ -415,7 +415,7 @@ None
                           Pexp_constant PConst_int (3,None)
                     class_field (shortcut_ext_attr.ml[40,882+4]..[40,882+27])
                         attribute "foo"
-                          signature (shortcut_ext_attr.ml[40,882+12]..[40,882+12])
+                          structure (shortcut_ext_attr.ml[40,882+12]..[40,882+12])
                             []
                       Pcf_val Immutable
                         "x" (shortcut_ext_attr.ml[40,882+22]..[40,882+23])
@@ -425,7 +425,7 @@ None
                           []
                     class_field (shortcut_ext_attr.ml[41,910+4]..[41,910+28])
                         attribute "foo"
-                          signature (shortcut_ext_attr.ml[41,910+13]..[41,910+13])
+                          structure (shortcut_ext_attr.ml[41,910+13]..[41,910+13])
                             []
                       Pcf_val Mutable
                         "x" (shortcut_ext_attr.ml[41,910+23]..[41,910+24])
@@ -434,7 +434,7 @@ None
                           Pexp_constant PConst_int (3,None)
                     class_field (shortcut_ext_attr.ml[42,939+4]..[42,939+22])
                         attribute "foo"
-                          signature (shortcut_ext_attr.ml[42,939+15]..[42,939+15])
+                          structure (shortcut_ext_attr.ml[42,939+15]..[42,939+15])
                             []
                       Pcf_method Public
                         "x" (shortcut_ext_attr.ml[42,939+17]..[42,939+18])
@@ -446,7 +446,7 @@ None
                           None
                     class_field (shortcut_ext_attr.ml[43,962+4]..[43,962+30])
                         attribute "foo"
-                          signature (shortcut_ext_attr.ml[43,962+15]..[43,962+15])
+                          structure (shortcut_ext_attr.ml[43,962+15]..[43,962+15])
                             []
                       Pcf_method Public
                         "x" (shortcut_ext_attr.ml[43,962+25]..[43,962+26])
@@ -456,7 +456,7 @@ None
                           []
                     class_field (shortcut_ext_attr.ml[44,993+4]..[44,993+31])
                         attribute "foo"
-                          signature (shortcut_ext_attr.ml[44,993+16]..[44,993+16])
+                          structure (shortcut_ext_attr.ml[44,993+16]..[44,993+16])
                             []
                       Pcf_method Private
                         "x" (shortcut_ext_attr.ml[44,993+26]..[44,993+27])
@@ -468,7 +468,7 @@ None
                           None
                     class_field (shortcut_ext_attr.ml[45,1025+4]..[45,1025+23])
                         attribute "foo"
-                          signature (shortcut_ext_attr.ml[45,1025+20]..[45,1025+20])
+                          structure (shortcut_ext_attr.ml[45,1025+20]..[45,1025+20])
                             []
                       Pcf_initializer
                         expression (shortcut_ext_attr.ml[45,1025+22]..[45,1025+23])
@@ -486,7 +486,7 @@ None
         pci_expr =
           class_type (shortcut_ext_attr.ml[50,1100+2]..[57,1265+5])
             attribute "foo"
-              signature (shortcut_ext_attr.ml[50,1100+13]..[50,1100+13])
+              structure (shortcut_ext_attr.ml[50,1100+13]..[50,1100+13])
                 []
             Pcty_signature
             class_signature
@@ -495,7 +495,7 @@ None
               [
                 class_type_field (shortcut_ext_attr.ml[51,1115+4]..[51,1115+19])
                     attribute "foo"
-                      signature (shortcut_ext_attr.ml[51,1115+16]..[51,1115+16])
+                      structure (shortcut_ext_attr.ml[51,1115+16]..[51,1115+16])
                         []
                   Pctf_inherit
                   class_type (shortcut_ext_attr.ml[51,1115+18]..[51,1115+19])
@@ -503,7 +503,7 @@ None
                     []
                 class_type_field (shortcut_ext_attr.ml[52,1135+4]..[52,1135+19])
                     attribute "foo"
-                      signature (shortcut_ext_attr.ml[52,1135+12]..[52,1135+12])
+                      structure (shortcut_ext_attr.ml[52,1135+12]..[52,1135+12])
                         []
                   Pctf_val "x" Immutable Concrete
                     core_type (shortcut_ext_attr.ml[52,1135+18]..[52,1135+19])
@@ -511,7 +511,7 @@ None
                       []
                 class_type_field (shortcut_ext_attr.ml[53,1155+4]..[53,1155+27])
                     attribute "foo"
-                      signature (shortcut_ext_attr.ml[53,1155+12]..[53,1155+12])
+                      structure (shortcut_ext_attr.ml[53,1155+12]..[53,1155+12])
                         []
                   Pctf_val "x" Mutable Concrete
                     core_type (shortcut_ext_attr.ml[53,1155+26]..[53,1155+27])
@@ -519,7 +519,7 @@ None
                       []
                 class_type_field (shortcut_ext_attr.ml[54,1183+4]..[54,1183+22])
                     attribute "foo"
-                      signature (shortcut_ext_attr.ml[54,1183+15]..[54,1183+15])
+                      structure (shortcut_ext_attr.ml[54,1183+15]..[54,1183+15])
                         []
                   Pctf_method "x" Public Concrete
                     core_type (shortcut_ext_attr.ml[54,1183+21]..[54,1183+22])
@@ -527,7 +527,7 @@ None
                       []
                 class_type_field (shortcut_ext_attr.ml[55,1206+4]..[55,1206+30])
                     attribute "foo"
-                      signature (shortcut_ext_attr.ml[55,1206+15]..[55,1206+15])
+                      structure (shortcut_ext_attr.ml[55,1206+15]..[55,1206+15])
                         []
                   Pctf_method "x" Private Concrete
                     core_type (shortcut_ext_attr.ml[55,1206+29]..[55,1206+30])
@@ -535,7 +535,7 @@ None
                       []
                 class_type_field (shortcut_ext_attr.ml[56,1237+4]..[56,1237+27])
                     attribute "foo"
-                      signature (shortcut_ext_attr.ml[56,1237+19]..[56,1237+19])
+                      structure (shortcut_ext_attr.ml[56,1237+19]..[56,1237+19])
                         []
                   Pctf_constraint
                     core_type (shortcut_ext_attr.ml[56,1237+21]..[56,1237+22])
@@ -563,7 +563,7 @@ None
               Ptyp_extension "foo"
               core_type (shortcut_ext_attr.ml[61,1304+2]..[61,1304+22])
                 attribute "foo"
-                  signature (shortcut_ext_attr.ml[61,1304+18]..[61,1304+18])
+                  structure (shortcut_ext_attr.ml[61,1304+18]..[61,1304+18])
                     []
                 Ptyp_package "M" (shortcut_ext_attr.ml[61,1304+20]..[61,1304+21])
                 []
@@ -573,7 +573,7 @@ None
     "M" (shortcut_ext_attr.ml[64,1353+7]..[64,1353+8])
       module_expr (shortcut_ext_attr.ml[65,1364+16]..[67,1409+22])
         attribute "foo"
-          signature (shortcut_ext_attr.ml[65,1364+14]..[65,1364+14])
+          structure (shortcut_ext_attr.ml[65,1364+14]..[65,1364+14])
             []
         Pmod_functor "M" (shortcut_ext_attr.ml[65,1364+17]..[65,1364+18])
         module_type (shortcut_ext_attr.ml[65,1364+21]..[65,1364+22])
@@ -582,23 +582,23 @@ None
           Pmod_apply
           module_expr (shortcut_ext_attr.ml[66,1391+4]..[66,1391+17])
             attribute "foo"
-              signature (shortcut_ext_attr.ml[66,1391+13]..[66,1391+13])
+              structure (shortcut_ext_attr.ml[66,1391+13]..[66,1391+13])
                 []
             Pmod_unpack
             expression (shortcut_ext_attr.ml[66,1391+15]..[66,1391+16])
               Pexp_ident "x" (shortcut_ext_attr.ml[66,1391+15]..[66,1391+16])
           module_expr (shortcut_ext_attr.ml[67,1409+5]..[67,1409+21])
             attribute "foo"
-              signature (shortcut_ext_attr.ml[67,1409+16]..[67,1409+16])
+              structure (shortcut_ext_attr.ml[67,1409+16]..[67,1409+16])
                 []
             Pmod_structure
-            signature (shortcut_ext_attr.ml[67,1409+17]..[67,1409+17])
+            structure (shortcut_ext_attr.ml[67,1409+17]..[67,1409+17])
               []
   structure_item (shortcut_ext_attr.ml[70,1462+0]..[73,1535+19])
     Pstr_modtype "S" (shortcut_ext_attr.ml[70,1462+12]..[70,1462+13])
       module_type (shortcut_ext_attr.ml[71,1478+16]..[73,1535+19])
         attribute "foo"
-          signature (shortcut_ext_attr.ml[71,1478+14]..[71,1478+14])
+          structure (shortcut_ext_attr.ml[71,1478+14]..[71,1478+14])
             []
         Pmty_functor "M" (shortcut_ext_attr.ml[71,1478+17]..[71,1478+18])
         module_type (shortcut_ext_attr.ml[71,1478+19]..[71,1478+20])
@@ -607,28 +607,28 @@ None
           Pmty_functor "_" (_none_[0,0+-1]..[0,0+-1]) ghost
           module_type (shortcut_ext_attr.ml[72,1503+5]..[72,1503+27])
             attribute "foo"
-              signature (shortcut_ext_attr.ml[72,1503+24]..[72,1503+24])
+              structure (shortcut_ext_attr.ml[72,1503+24]..[72,1503+24])
                 []
             Pmty_typeof
             module_expr (shortcut_ext_attr.ml[72,1503+26]..[72,1503+27])
               Pmod_ident "M" (shortcut_ext_attr.ml[72,1503+26]..[72,1503+27])
           module_type (shortcut_ext_attr.ml[73,1535+5]..[73,1535+18])
             attribute "foo"
-              signature (shortcut_ext_attr.ml[73,1535+13]..[73,1535+13])
+              structure (shortcut_ext_attr.ml[73,1535+13]..[73,1535+13])
                 []
             Pmty_signature
             signature (shortcut_ext_attr.ml[73,1535+14]..[73,1535+14])
               []
   structure_item (shortcut_ext_attr.ml[76,1578+0]..[77,1598+15]) ghost
     Pstr_extension "foo"
-    signature (shortcut_ext_attr.ml[76,1578+0]..[77,1598+15]) ghost
+    structure (shortcut_ext_attr.ml[76,1578+0]..[77,1598+15]) ghost
       [
         structure_item (shortcut_ext_attr.ml[76,1578+0]..[77,1598+15])
           Pstr_value Nonrec
           [
             <def>
                 attribute "foo"
-                  signature (shortcut_ext_attr.ml[76,1578+12]..[76,1578+12])
+                  structure (shortcut_ext_attr.ml[76,1578+12]..[76,1578+12])
                     []
               pattern (shortcut_ext_attr.ml[76,1578+14]..[76,1578+15])
                 Ppat_var "x" (shortcut_ext_attr.ml[76,1578+14]..[76,1578+15])
@@ -636,7 +636,7 @@ None
                 Pexp_constant PConst_int (4,None)
             <def>
                 attribute "foo"
-                  signature (shortcut_ext_attr.ml[77,1598+8]..[77,1598+8])
+                  structure (shortcut_ext_attr.ml[77,1598+8]..[77,1598+8])
                     []
               pattern (shortcut_ext_attr.ml[77,1598+10]..[77,1598+11])
                 Ppat_var "y" (shortcut_ext_attr.ml[77,1598+10]..[77,1598+11])
@@ -646,14 +646,14 @@ None
       ]
   structure_item (shortcut_ext_attr.ml[79,1615+0]..[80,1638+17]) ghost
     Pstr_extension "foo"
-    signature (shortcut_ext_attr.ml[79,1615+0]..[80,1638+17]) ghost
+    structure (shortcut_ext_attr.ml[79,1615+0]..[80,1638+17]) ghost
       [
         structure_item (shortcut_ext_attr.ml[79,1615+0]..[80,1638+17])
           Pstr_type Rec
           [
             type_declaration "t" (shortcut_ext_attr.ml[79,1615+15]..[79,1615+16]) (shortcut_ext_attr.ml[79,1615+0]..[79,1615+22])
               attribute "foo"
-                signature (shortcut_ext_attr.ml[79,1615+13]..[79,1615+13])
+                structure (shortcut_ext_attr.ml[79,1615+13]..[79,1615+13])
                   []
               ptype_params =
                 []
@@ -669,7 +669,7 @@ None
                     []
             type_declaration "t" (shortcut_ext_attr.ml[80,1638+10]..[80,1638+11]) (shortcut_ext_attr.ml[80,1638+0]..[80,1638+17])
               attribute "foo"
-                signature (shortcut_ext_attr.ml[80,1638+8]..[80,1638+8])
+                structure (shortcut_ext_attr.ml[80,1638+8]..[80,1638+8])
                   []
               ptype_params =
                 []
@@ -687,13 +687,13 @@ None
       ]
   structure_item (shortcut_ext_attr.ml[81,1656+0]..[81,1656+21]) ghost
     Pstr_extension "foo"
-    signature (shortcut_ext_attr.ml[81,1656+0]..[81,1656+21]) ghost
+    structure (shortcut_ext_attr.ml[81,1656+0]..[81,1656+21]) ghost
       [
         structure_item (shortcut_ext_attr.ml[81,1656+0]..[81,1656+21])
           Pstr_typext
           type_extension
             attribute "foo"
-              signature (shortcut_ext_attr.ml[81,1656+13]..[81,1656+13])
+              structure (shortcut_ext_attr.ml[81,1656+13]..[81,1656+13])
                 []
             ptyext_path = "t" (shortcut_ext_attr.ml[81,1656+15]..[81,1656+16])
             ptyext_params =
@@ -711,14 +711,14 @@ None
       ]
   structure_item (shortcut_ext_attr.ml[83,1679+0]..[83,1679+21]) ghost
     Pstr_extension "foo"
-    signature (shortcut_ext_attr.ml[83,1679+0]..[83,1679+21]) ghost
+    structure (shortcut_ext_attr.ml[83,1679+0]..[83,1679+21]) ghost
       [
         structure_item (shortcut_ext_attr.ml[83,1679+0]..[83,1679+21])
           Pstr_class
           [
             class_declaration (shortcut_ext_attr.ml[83,1679+0]..[83,1679+21])
               attribute "foo"
-                signature (shortcut_ext_attr.ml[83,1679+14]..[83,1679+14])
+                structure (shortcut_ext_attr.ml[83,1679+14]..[83,1679+14])
                   []
               pci_virt = Concrete
               pci_params =
@@ -732,14 +732,14 @@ None
       ]
   structure_item (shortcut_ext_attr.ml[84,1701+0]..[84,1701+26]) ghost
     Pstr_extension "foo"
-    signature (shortcut_ext_attr.ml[84,1701+0]..[84,1701+26]) ghost
+    structure (shortcut_ext_attr.ml[84,1701+0]..[84,1701+26]) ghost
       [
         structure_item (shortcut_ext_attr.ml[84,1701+0]..[84,1701+26])
           Pstr_class_type
           [
             class_type_declaration (shortcut_ext_attr.ml[84,1701+0]..[84,1701+26])
               attribute "foo"
-                signature (shortcut_ext_attr.ml[84,1701+19]..[84,1701+19])
+                structure (shortcut_ext_attr.ml[84,1701+19]..[84,1701+19])
                   []
               pci_virt = Concrete
               pci_params =
@@ -753,13 +753,13 @@ None
       ]
   structure_item (shortcut_ext_attr.ml[85,1728+0]..[85,1728+30]) ghost
     Pstr_extension "foo"
-    signature (shortcut_ext_attr.ml[85,1728+0]..[85,1728+30]) ghost
+    structure (shortcut_ext_attr.ml[85,1728+0]..[85,1728+30]) ghost
       [
         structure_item (shortcut_ext_attr.ml[85,1728+0]..[85,1728+30])
           Pstr_primitive
           value_description "x" (shortcut_ext_attr.ml[85,1728+19]..[85,1728+20]) (shortcut_ext_attr.ml[85,1728+0]..[85,1728+30])
             attribute "foo"
-              signature (shortcut_ext_attr.ml[85,1728+17]..[85,1728+17])
+              structure (shortcut_ext_attr.ml[85,1728+17]..[85,1728+17])
                 []
             core_type (shortcut_ext_attr.ml[85,1728+23]..[85,1728+24])
               Ptyp_any
@@ -769,7 +769,7 @@ None
       ]
   structure_item (shortcut_ext_attr.ml[86,1759+0]..[86,1759+21]) ghost
     Pstr_extension "foo"
-    signature (shortcut_ext_attr.ml[86,1759+0]..[86,1759+21]) ghost
+    structure (shortcut_ext_attr.ml[86,1759+0]..[86,1759+21]) ghost
       [
         structure_item (shortcut_ext_attr.ml[86,1759+0]..[86,1759+21])
           Pstr_exception
@@ -777,7 +777,7 @@ None
             ptyext_constructor =
               extension_constructor (shortcut_ext_attr.ml[86,1759+0]..[86,1759+21])
                 attribute "foo"
-                  signature (shortcut_ext_attr.ml[86,1759+18]..[86,1759+18])
+                  structure (shortcut_ext_attr.ml[86,1759+18]..[86,1759+18])
                     []
                 pext_name = "X"
                 pext_kind =
@@ -787,27 +787,27 @@ None
       ]
   structure_item (shortcut_ext_attr.ml[88,1782+0]..[88,1782+22]) ghost
     Pstr_extension "foo"
-    signature (shortcut_ext_attr.ml[88,1782+0]..[88,1782+22]) ghost
+    structure (shortcut_ext_attr.ml[88,1782+0]..[88,1782+22]) ghost
       [
         structure_item (shortcut_ext_attr.ml[88,1782+0]..[88,1782+22])
           Pstr_module
           "M" (shortcut_ext_attr.ml[88,1782+17]..[88,1782+18])
             attribute "foo"
-              signature (shortcut_ext_attr.ml[88,1782+15]..[88,1782+15])
+              structure (shortcut_ext_attr.ml[88,1782+15]..[88,1782+15])
                 []
             module_expr (shortcut_ext_attr.ml[88,1782+21]..[88,1782+22])
               Pmod_ident "M" (shortcut_ext_attr.ml[88,1782+21]..[88,1782+22])
       ]
   structure_item (shortcut_ext_attr.ml[89,1805+0]..[90,1836+19]) ghost
     Pstr_extension "foo"
-    signature (shortcut_ext_attr.ml[89,1805+0]..[90,1836+19]) ghost
+    structure (shortcut_ext_attr.ml[89,1805+0]..[90,1836+19]) ghost
       [
         structure_item (shortcut_ext_attr.ml[89,1805+0]..[90,1836+19])
           Pstr_recmodule
           [
             "M" (shortcut_ext_attr.ml[89,1805+21]..[89,1805+22])
               attribute "foo"
-                signature (shortcut_ext_attr.ml[89,1805+15]..[89,1805+15])
+                structure (shortcut_ext_attr.ml[89,1805+15]..[89,1805+15])
                   []
               module_expr (shortcut_ext_attr.ml[89,1805+23]..[89,1805+30])
                 Pmod_constraint
@@ -817,7 +817,7 @@ None
                   Pmty_ident "S" (shortcut_ext_attr.ml[89,1805+25]..[89,1805+26])
             "M" (shortcut_ext_attr.ml[90,1836+10]..[90,1836+11])
               attribute "foo"
-                signature (shortcut_ext_attr.ml[90,1836+8]..[90,1836+8])
+                structure (shortcut_ext_attr.ml[90,1836+8]..[90,1836+8])
                   []
               module_expr (shortcut_ext_attr.ml[90,1836+12]..[90,1836+19])
                 Pmod_constraint
@@ -829,37 +829,37 @@ None
       ]
   structure_item (shortcut_ext_attr.ml[91,1856+0]..[91,1856+27]) ghost
     Pstr_extension "foo"
-    signature (shortcut_ext_attr.ml[91,1856+0]..[91,1856+27]) ghost
+    structure (shortcut_ext_attr.ml[91,1856+0]..[91,1856+27]) ghost
       [
         structure_item (shortcut_ext_attr.ml[91,1856+0]..[91,1856+27])
           Pstr_modtype "S" (shortcut_ext_attr.ml[91,1856+22]..[91,1856+23])
             attribute "foo"
-              signature (shortcut_ext_attr.ml[91,1856+20]..[91,1856+20])
+              structure (shortcut_ext_attr.ml[91,1856+20]..[91,1856+20])
                 []
             module_type (shortcut_ext_attr.ml[91,1856+26]..[91,1856+27])
               Pmty_ident "S" (shortcut_ext_attr.ml[91,1856+26]..[91,1856+27])
       ]
   structure_item (shortcut_ext_attr.ml[93,1885+0]..[93,1885+19]) ghost
     Pstr_extension "foo"
-    signature (shortcut_ext_attr.ml[93,1885+0]..[93,1885+19]) ghost
+    structure (shortcut_ext_attr.ml[93,1885+0]..[93,1885+19]) ghost
       [
         structure_item (shortcut_ext_attr.ml[93,1885+0]..[93,1885+19])
           Pstr_include            attribute "foo"
-              signature (shortcut_ext_attr.ml[93,1885+16]..[93,1885+16])
+              structure (shortcut_ext_attr.ml[93,1885+16]..[93,1885+16])
                 []
           module_expr (shortcut_ext_attr.ml[93,1885+18]..[93,1885+19])
             Pmod_ident "M" (shortcut_ext_attr.ml[93,1885+18]..[93,1885+19])
       ]
   structure_item (shortcut_ext_attr.ml[94,1905+0]..[94,1905+16]) ghost
     Pstr_extension "foo"
-    signature (shortcut_ext_attr.ml[94,1905+0]..[94,1905+16]) ghost
+    structure (shortcut_ext_attr.ml[94,1905+0]..[94,1905+16]) ghost
       [
         structure_item (shortcut_ext_attr.ml[94,1905+0]..[94,1905+16])
           Pstr_open Fresh
           module_expr (shortcut_ext_attr.ml[94,1905+15]..[94,1905+16])
             Pmod_ident "M" (shortcut_ext_attr.ml[94,1905+15]..[94,1905+16])
             attribute "foo"
-              signature (shortcut_ext_attr.ml[94,1905+13]..[94,1905+13])
+              structure (shortcut_ext_attr.ml[94,1905+13]..[94,1905+13])
                 []
       ]
   structure_item (shortcut_ext_attr.ml[97,1945+0]..[120,2341+3])
@@ -876,7 +876,7 @@ None
                     Psig_value
                     value_description "x" (shortcut_ext_attr.ml[98,1965+16]..[98,1965+17]) (shortcut_ext_attr.ml[98,1965+2]..[98,1965+21])
                       attribute "foo"
-                        signature (shortcut_ext_attr.ml[98,1965+14]..[98,1965+14])
+                        structure (shortcut_ext_attr.ml[98,1965+14]..[98,1965+14])
                           []
                       core_type (shortcut_ext_attr.ml[98,1965+20]..[98,1965+21])
                         Ptyp_constr "t" (shortcut_ext_attr.ml[98,1965+20]..[98,1965+21])
@@ -891,7 +891,7 @@ None
                     Psig_value
                     value_description "x" (shortcut_ext_attr.ml[99,1987+21]..[99,1987+22]) (shortcut_ext_attr.ml[99,1987+2]..[99,1987+31])
                       attribute "foo"
-                        signature (shortcut_ext_attr.ml[99,1987+19]..[99,1987+19])
+                        structure (shortcut_ext_attr.ml[99,1987+19]..[99,1987+19])
                           []
                       core_type (shortcut_ext_attr.ml[99,1987+25]..[99,1987+26])
                         Ptyp_constr "t" (shortcut_ext_attr.ml[99,1987+25]..[99,1987+26])
@@ -909,7 +909,7 @@ None
                     [
                       type_declaration "t" (shortcut_ext_attr.ml[101,2020+17]..[101,2020+18]) (shortcut_ext_attr.ml[101,2020+2]..[101,2020+24])
                         attribute "foo"
-                          signature (shortcut_ext_attr.ml[101,2020+15]..[101,2020+15])
+                          structure (shortcut_ext_attr.ml[101,2020+15]..[101,2020+15])
                             []
                         ptype_params =
                           []
@@ -925,7 +925,7 @@ None
                               []
                       type_declaration "t'" (shortcut_ext_attr.ml[102,2045+12]..[102,2045+14]) (shortcut_ext_attr.ml[102,2045+2]..[102,2045+20])
                         attribute "foo"
-                          signature (shortcut_ext_attr.ml[102,2045+10]..[102,2045+10])
+                          structure (shortcut_ext_attr.ml[102,2045+10]..[102,2045+10])
                             []
                         ptype_params =
                           []
@@ -949,7 +949,7 @@ None
                     Psig_typext
                     type_extension
                       attribute "foo"
-                        signature (shortcut_ext_attr.ml[103,2066+15]..[103,2066+15])
+                        structure (shortcut_ext_attr.ml[103,2066+15]..[103,2066+15])
                           []
                       ptyext_path = "t" (shortcut_ext_attr.ml[103,2066+17]..[103,2066+18])
                       ptyext_params =
@@ -975,7 +975,7 @@ None
                       ptyext_constructor =
                         extension_constructor (shortcut_ext_attr.ml[105,2091+2]..[105,2091+23])
                           attribute "foo"
-                            signature (shortcut_ext_attr.ml[105,2091+20]..[105,2091+20])
+                            structure (shortcut_ext_attr.ml[105,2091+20]..[105,2091+20])
                               []
                           pext_name = "X"
                           pext_kind =
@@ -990,7 +990,7 @@ None
                   signature_item (shortcut_ext_attr.ml[107,2116+2]..[107,2116+24])
                     Psig_module "M" (shortcut_ext_attr.ml[107,2116+19]..[107,2116+20])
                       attribute "foo"
-                        signature (shortcut_ext_attr.ml[107,2116+17]..[107,2116+17])
+                        structure (shortcut_ext_attr.ml[107,2116+17]..[107,2116+17])
                           []
                     module_type (shortcut_ext_attr.ml[107,2116+23]..[107,2116+24])
                       Pmty_ident "S" (shortcut_ext_attr.ml[107,2116+23]..[107,2116+24])
@@ -1004,13 +1004,13 @@ None
                     [
                       "M" (shortcut_ext_attr.ml[108,2141+23]..[108,2141+24])
                         attribute "foo"
-                          signature (shortcut_ext_attr.ml[108,2141+17]..[108,2141+17])
+                          structure (shortcut_ext_attr.ml[108,2141+17]..[108,2141+17])
                             []
                         module_type (shortcut_ext_attr.ml[108,2141+27]..[108,2141+28])
                           Pmty_ident "S" (shortcut_ext_attr.ml[108,2141+27]..[108,2141+28])
                       "M" (shortcut_ext_attr.ml[109,2170+12]..[109,2170+13])
                         attribute "foo"
-                          signature (shortcut_ext_attr.ml[109,2170+10]..[109,2170+10])
+                          structure (shortcut_ext_attr.ml[109,2170+10]..[109,2170+10])
                             []
                         module_type (shortcut_ext_attr.ml[109,2170+16]..[109,2170+17])
                           Pmty_ident "S" (shortcut_ext_attr.ml[109,2170+16]..[109,2170+17])
@@ -1023,7 +1023,7 @@ None
                   signature_item (shortcut_ext_attr.ml[110,2188+2]..[110,2188+24])
                     Psig_module "M" (shortcut_ext_attr.ml[110,2188+19]..[110,2188+20])
                       attribute "foo"
-                        signature (shortcut_ext_attr.ml[110,2188+17]..[110,2188+17])
+                        structure (shortcut_ext_attr.ml[110,2188+17]..[110,2188+17])
                           []
                     module_type (shortcut_ext_attr.ml[110,2188+23]..[110,2188+24])
                       Pmty_alias "M" (shortcut_ext_attr.ml[110,2188+23]..[110,2188+24])
@@ -1035,7 +1035,7 @@ None
                   signature_item (shortcut_ext_attr.ml[112,2214+2]..[112,2214+29])
                     Psig_modtype "S" (shortcut_ext_attr.ml[112,2214+24]..[112,2214+25])
                       attribute "foo"
-                        signature (shortcut_ext_attr.ml[112,2214+22]..[112,2214+22])
+                        structure (shortcut_ext_attr.ml[112,2214+22]..[112,2214+22])
                           []
                       module_type (shortcut_ext_attr.ml[112,2214+28]..[112,2214+29])
                         Pmty_ident "S" (shortcut_ext_attr.ml[112,2214+28]..[112,2214+29])
@@ -1049,7 +1049,7 @@ None
                     module_type (shortcut_ext_attr.ml[114,2245+20]..[114,2245+21])
                       Pmty_ident "M" (shortcut_ext_attr.ml[114,2245+20]..[114,2245+21])
                       attribute "foo"
-                        signature (shortcut_ext_attr.ml[114,2245+18]..[114,2245+18])
+                        structure (shortcut_ext_attr.ml[114,2245+18]..[114,2245+18])
                           []
                 ]
             signature_item (shortcut_ext_attr.ml[115,2267+2]..[115,2267+18]) ghost
@@ -1059,7 +1059,7 @@ None
                   signature_item (shortcut_ext_attr.ml[115,2267+2]..[115,2267+18])
                     Psig_open Fresh "M" (shortcut_ext_attr.ml[115,2267+17]..[115,2267+18])
                       attribute "foo"
-                        signature (shortcut_ext_attr.ml[115,2267+15]..[115,2267+15])
+                        structure (shortcut_ext_attr.ml[115,2267+15]..[115,2267+15])
                           []
                 ]
             signature_item (shortcut_ext_attr.ml[117,2287+2]..[117,2287+23]) ghost
@@ -1071,7 +1071,7 @@ None
                     [
                       class_description (shortcut_ext_attr.ml[117,2287+2]..[117,2287+23])
                         attribute "foo"
-                          signature (shortcut_ext_attr.ml[117,2287+16]..[117,2287+16])
+                          structure (shortcut_ext_attr.ml[117,2287+16]..[117,2287+16])
                             []
                         pci_virt = Concrete
                         pci_params =
@@ -1092,7 +1092,7 @@ None
                     [
                       class_type_declaration (shortcut_ext_attr.ml[118,2311+2]..[118,2311+28])
                         attribute "foo"
-                          signature (shortcut_ext_attr.ml[118,2311+21]..[118,2311+21])
+                          structure (shortcut_ext_attr.ml[118,2311+21]..[118,2311+21])
                             []
                         pci_virt = Concrete
                         pci_params =

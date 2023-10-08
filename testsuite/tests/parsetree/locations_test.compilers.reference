@@ -1,11 +1,11 @@
 Ptop_def
-  signature (//toplevel//[10,215+0]..[10,215+39])
+  structure (//toplevel//[10,215+0]..[10,215+39])
     [
       structure_item (//toplevel//[10,215+0]..[10,215+39])
         Pstr_modtype "S" (//toplevel//[10,215+12]..[10,215+13])
           module_type (//toplevel//[10,215+16]..[10,215+23])
             attribute "attr"
-              signature (//toplevel//[10,215+31]..[10,215+38])
+              structure (//toplevel//[10,215+31]..[10,215+38])
                 [
                   structure_item (//toplevel//[10,215+31]..[10,215+38])
                     Pstr_eval
@@ -19,14 +19,14 @@ Ptop_def
 
 module type S = sig end
 Ptop_def
-  signature (//toplevel//[3,2+0]..[3,2+37])
+  structure (//toplevel//[3,2+0]..[3,2+37])
     [
       structure_item (//toplevel//[3,2+0]..[3,2+37])
         Pstr_module
         "M" (//toplevel//[3,2+7]..[3,2+8])
           module_expr (//toplevel//[3,2+11]..[3,2+21])
             attribute "attr"
-              signature (//toplevel//[3,2+29]..[3,2+36])
+              structure (//toplevel//[3,2+29]..[3,2+36])
                 [
                   structure_item (//toplevel//[3,2+29]..[3,2+36])
                     Pstr_eval
@@ -34,13 +34,13 @@ Ptop_def
                       Pexp_ident "payload" (//toplevel//[3,2+29]..[3,2+36])
                 ]
             Pmod_structure
-            signature (//toplevel//[3,2+17]..[3,2+17])
+            structure (//toplevel//[3,2+17]..[3,2+17])
               []
     ]
 
 module M : sig end
 Ptop_def
-  signature (//toplevel//[2,1+0]..[2,1+28])
+  structure (//toplevel//[2,1+0]..[2,1+28])
     [
       structure_item (//toplevel//[2,1+0]..[2,1+28])
         Pstr_type Rec
@@ -57,7 +57,7 @@ Ptop_def
               Some
                 core_type (//toplevel//[2,1+9]..[2,1+12])
                   attribute "attr"
-                    signature (//toplevel//[2,1+20]..[2,1+27])
+                    structure (//toplevel//[2,1+20]..[2,1+27])
                       [
                         structure_item (//toplevel//[2,1+20]..[2,1+27])
                           Pstr_eval
@@ -71,13 +71,13 @@ Ptop_def
 
 type t = int
 Ptop_def
-  signature (//toplevel//[2,1+0]..[2,1+17])
+  structure (//toplevel//[2,1+0]..[2,1+17])
     [
       structure_item (//toplevel//[2,1+0]..[2,1+1])
         Pstr_eval
         expression (//toplevel//[2,1+0]..[2,1+1])
           attribute "attr"
-            signature (//toplevel//[2,1+9]..[2,1+16])
+            structure (//toplevel//[2,1+9]..[2,1+16])
               [
                 structure_item (//toplevel//[2,1+9]..[2,1+16])
                   Pstr_eval
@@ -89,13 +89,13 @@ Ptop_def
 
 - : int = 3
 Ptop_def
-  signature (//toplevel//[2,1+0]..[2,1+30])
+  structure (//toplevel//[2,1+0]..[2,1+30])
     [
       structure_item (//toplevel//[2,1+0]..[2,1+30])
         Pstr_exception
         type_exception
           attribute "attr"
-            signature (//toplevel//[2,1+22]..[2,1+29])
+            structure (//toplevel//[2,1+22]..[2,1+29])
               [
                 structure_item (//toplevel//[2,1+22]..[2,1+29])
                   Pstr_eval
@@ -113,7 +113,7 @@ Ptop_def
 
 exception Exn
 Ptop_def
-  signature (//toplevel//[4,17+0]..[4,17+50])
+  structure (//toplevel//[4,17+0]..[4,17+50])
     [
       structure_item (//toplevel//[4,17+0]..[4,17+50])
         Pstr_modtype "F" (//toplevel//[4,17+12]..[4,17+13])
@@ -133,7 +133,7 @@ Ptop_def
 
 module type F = functor (A : S) (B : S) -> sig end
 Ptop_def
-  signature (//toplevel//[2,1+0]..[2,1+48])
+  structure (//toplevel//[2,1+0]..[2,1+48])
     [
       structure_item (//toplevel//[2,1+0]..[2,1+48])
         Pstr_module
@@ -148,13 +148,13 @@ Ptop_def
                 Pmty_ident "S" (//toplevel//[2,1+32]..[2,1+33])
               module_expr (//toplevel//[2,1+38]..[2,1+48])
                 Pmod_structure
-                signature (//toplevel//[2,1+44]..[2,1+44])
+                structure (//toplevel//[2,1+44]..[2,1+44])
                   []
     ]
 
 module F : functor (A : S) (B : S) -> sig end
 Ptop_def
-  signature (//toplevel//[4,18+0]..[4,18+31])
+  structure (//toplevel//[4,18+0]..[4,18+31])
     [
       structure_item (//toplevel//[4,18+0]..[4,18+31])
         Pstr_modtype "S1" (//toplevel//[4,18+12]..[4,18+14])
@@ -181,7 +181,7 @@ Ptop_def
 
 module type S1 = sig type t end
 Ptop_def
-  signature (//toplevel//[2,1+0]..[2,1+37])
+  structure (//toplevel//[2,1+0]..[2,1+37])
     [
       structure_item (//toplevel//[2,1+0]..[2,1+37])
         Pstr_modtype "T1" (//toplevel//[2,1+12]..[2,1+14])
@@ -209,7 +209,7 @@ Ptop_def
 
 module type T1 = sig type t = int end
 Ptop_def
-  signature (//toplevel//[2,1+0]..[2,1+38])
+  structure (//toplevel//[2,1+0]..[2,1+38])
     [
       structure_item (//toplevel//[2,1+0]..[2,1+38])
         Pstr_modtype "T1" (//toplevel//[2,1+12]..[2,1+14])
@@ -237,7 +237,7 @@ Ptop_def
 
 module type T1 = sig end
 Ptop_def
-  signature (//toplevel//[4,29+0]..[4,29+15])
+  structure (//toplevel//[4,29+0]..[4,29+15])
     [
       structure_item (//toplevel//[4,29+0]..[4,29+15])
         Pstr_value Nonrec
@@ -255,7 +255,7 @@ Ptop_def
 
 val x : int = 3
 Ptop_def
-  signature (//toplevel//[2,1+0]..[2,1+35])
+  structure (//toplevel//[2,1+0]..[2,1+35])
     [
       structure_item (//toplevel//[2,1+0]..[2,1+35])
         Pstr_value Nonrec
@@ -291,7 +291,7 @@ Ptop_def
 
 val x : 'a -> 'a = <fun>
 Ptop_def
-  signature (//toplevel//[2,1+0]..[5,61+3])
+  structure (//toplevel//[2,1+0]..[5,61+3])
     [
       structure_item (//toplevel//[2,1+0]..[5,61+3])
         Pstr_value Nonrec
@@ -353,7 +353,7 @@ Ptop_def
 
 - : < x : 'a. 'a -> 'a > = <obj>
 Ptop_def
-  signature (//toplevel//[4,17+0]..[4,17+29])
+  structure (//toplevel//[4,17+0]..[4,17+29])
     [
       structure_item (//toplevel//[4,17+0]..[4,17+29])
         Pstr_value Nonrec
@@ -385,7 +385,7 @@ Ptop_def
 
 val x : 'a -> 'a ref = <fun>
 Ptop_def
-  signature (//toplevel//[2,1+0]..[2,1+30])
+  structure (//toplevel//[2,1+0]..[2,1+30])
     [
       structure_item (//toplevel//[2,1+0]..[2,1+30])
         Pstr_value Nonrec
@@ -411,7 +411,7 @@ Ptop_def
 
 val x : int ref = {contents = 3}
 Ptop_def
-  signature (//toplevel//[2,1+0]..[2,1+35])
+  structure (//toplevel//[2,1+0]..[2,1+35])
     [
       structure_item (//toplevel//[2,1+0]..[2,1+35])
         Pstr_value Nonrec
@@ -448,7 +448,7 @@ Ptop_def
 
 val x : int -> int ref = <fun>
 Ptop_def
-  signature (//toplevel//[2,1+0]..[2,1+41])
+  structure (//toplevel//[2,1+0]..[2,1+41])
     [
       structure_item (//toplevel//[2,1+0]..[2,1+41])
         Pstr_value Nonrec
@@ -478,7 +478,7 @@ Ptop_def
 
 val x : 'a ref -> 'a = <fun>
 Ptop_def
-  signature (//toplevel//[2,1+0]..[2,1+47])
+  structure (//toplevel//[2,1+0]..[2,1+47])
     [
       structure_item (//toplevel//[2,1+0]..[2,1+47])
         Pstr_value Nonrec
@@ -513,7 +513,7 @@ Ptop_def
 
 val x : int ref -> int = <fun>
 Ptop_def
-  signature (//toplevel//[2,1+0]..[2,1+44])
+  structure (//toplevel//[2,1+0]..[2,1+44])
     [
       structure_item (//toplevel//[2,1+0]..[2,1+44])
         Pstr_value Nonrec
@@ -548,7 +548,7 @@ Ptop_def
 
 val x : int ref -> int = <fun>
 Ptop_def
-  signature (//toplevel//[2,1+0]..[3,9+50])
+  structure (//toplevel//[2,1+0]..[3,9+50])
     [
       structure_item (//toplevel//[2,1+0]..[3,9+50])
         Pstr_value Nonrec
@@ -599,7 +599,7 @@ Ptop_def
 
 - : < x : int -> 'a > as 'a = <obj>
 Ptop_def
-  signature (//toplevel//[4,19+0]..[4,19+26])
+  structure (//toplevel//[4,19+0]..[4,19+26])
     [
       structure_item (//toplevel//[4,19+0]..[4,19+26])
         Pstr_value Nonrec
@@ -624,7 +624,7 @@ Ptop_def
 
 val x : int ref = {contents = 3}
 Ptop_def
-  signature (//toplevel//[2,1+0]..[2,1+18])
+  structure (//toplevel//[2,1+0]..[2,1+18])
     [
       structure_item (//toplevel//[2,1+0]..[2,1+18])
         Pstr_value Nonrec
@@ -662,7 +662,7 @@ Ptop_def
 
 val x : int list = [3; 4]
 Ptop_def
-  signature (//toplevel//[2,1+0]..[2,1+18])
+  structure (//toplevel//[2,1+0]..[2,1+18])
     [
       structure_item (//toplevel//[2,1+0]..[2,1+18])
         Pstr_value Nonrec
@@ -690,7 +690,7 @@ Warning 10 [non-unit-statement]: this expression should have type unit.
 
 val x : int = 4
 Ptop_def
-  signature (//toplevel//[6,56+0]..[11,200+33])
+  structure (//toplevel//[6,56+0]..[11,200+33])
     [
       structure_item (//toplevel//[6,56+0]..[6,56+24])
         Pstr_value Nonrec
@@ -974,7 +974,7 @@ val ( .%.{}<- ) : int -> int -> int -> int = <fun>
 val ( .%.[] ) : int -> int -> int = <fun>
 val ( .%.[]<- ) : int -> int -> int -> int = <fun>
 Ptop_def
-  signature (//toplevel//[4,27+0]..[4,27+6])
+  structure (//toplevel//[4,27+0]..[4,27+6])
     [
       structure_item (//toplevel//[4,27+0]..[4,27+6])
         Pstr_eval
@@ -996,7 +996,7 @@ Ptop_def
 
 - : int = 8
 Ptop_def
-  signature (//toplevel//[1,0+0]..[1,0+11])
+  structure (//toplevel//[1,0+0]..[1,0+11])
     [
       structure_item (//toplevel//[1,0+0]..[1,0+11])
         Pstr_eval
@@ -1022,7 +1022,7 @@ Ptop_def
 
 - : int = 12
 Ptop_def
-  signature (//toplevel//[2,1+0]..[2,1+7])
+  structure (//toplevel//[2,1+0]..[2,1+7])
     [
       structure_item (//toplevel//[2,1+0]..[2,1+7])
         Pstr_eval
@@ -1044,7 +1044,7 @@ Ptop_def
 
 - : int = 8
 Ptop_def
-  signature (//toplevel//[1,0+0]..[1,0+12])
+  structure (//toplevel//[1,0+0]..[1,0+12])
     [
       structure_item (//toplevel//[1,0+0]..[1,0+12])
         Pstr_eval
@@ -1070,7 +1070,7 @@ Ptop_def
 
 - : int = 12
 Ptop_def
-  signature (//toplevel//[2,1+0]..[2,1+7])
+  structure (//toplevel//[2,1+0]..[2,1+7])
     [
       structure_item (//toplevel//[2,1+0]..[2,1+7])
         Pstr_eval
@@ -1092,7 +1092,7 @@ Ptop_def
 
 - : int = 8
 Ptop_def
-  signature (//toplevel//[1,0+0]..[1,0+12])
+  structure (//toplevel//[1,0+0]..[1,0+12])
     [
       structure_item (//toplevel//[1,0+0]..[1,0+12])
         Pstr_eval
@@ -1118,7 +1118,7 @@ Ptop_def
 
 - : int = 12
 Ptop_def
-  signature (//toplevel//[4,28+0]..[4,28+37])
+  structure (//toplevel//[4,28+0]..[4,28+37])
     [
       structure_item (//toplevel//[4,28+0]..[4,28+37])
         Pstr_value Nonrec
@@ -1149,7 +1149,7 @@ Ptop_def
 
 val f : (module S) -> unit = <fun>
 Ptop_def
-  signature (//toplevel//[4,45+0]..[6,71+12])
+  structure (//toplevel//[4,45+0]..[6,71+12])
     [
       structure_item (//toplevel//[4,45+0]..[6,71+12])
         Pstr_class
@@ -1173,7 +1173,7 @@ Ptop_def
 
 class c : object  end
 Ptop_def
-  signature (//toplevel//[2,1+0]..[4,33+12])
+  structure (//toplevel//[2,1+0]..[4,33+12])
     [
       structure_item (//toplevel//[2,1+0]..[4,33+12])
         Pstr_class_type
@@ -1197,14 +1197,14 @@ Ptop_def
 
 class type ct = object  end
 Ptop_def
-  signature (//toplevel//[5,56+0]..[6,64+4])
+  structure (//toplevel//[5,56+0]..[6,64+4])
     [
       structure_item (//toplevel//[5,56+0]..[6,64+4])
         Pstr_value Nonrec
         [
           <def>
               attribute "ocaml.doc"
-                signature (//toplevel//[4,19+0]..[4,19+36])
+                structure (//toplevel//[4,19+0]..[4,19+36])
                   [
                     structure_item (//toplevel//[4,19+0]..[4,19+36])
                       Pstr_eval
@@ -1212,7 +1212,7 @@ Ptop_def
                         Pexp_constant PConst_string(" Some docstring attached to x. ",(//toplevel//[4,19+0]..[4,19+36]),None)
                   ]
               attribute "ocaml.doc"
-                signature (//toplevel//[7,69+0]..[7,69+39])
+                structure (//toplevel//[7,69+0]..[7,69+39])
                   [
                     structure_item (//toplevel//[7,69+0]..[7,69+39])
                       Pstr_eval
@@ -1228,7 +1228,7 @@ Ptop_def
 
 val x : int = 42
 Ptop_def
-  signature (//toplevel//[3,56+0]..[3,56+31])
+  structure (//toplevel//[3,56+0]..[3,56+31])
     [
       structure_item (//toplevel//[3,56+0]..[3,56+31])
         Pstr_value Nonrec
@@ -1257,7 +1257,7 @@ Ptop_def
 
 val x : < f : int > = <obj>
 Ptop_def
-  signature (//toplevel//[1,0+0]..[1,0+35])
+  structure (//toplevel//[1,0+0]..[1,0+35])
     [
       structure_item (//toplevel//[1,0+0]..[1,0+35])
         Pstr_value Nonrec
@@ -1288,7 +1288,7 @@ Ptop_def
 
 val x : int = 1
 Ptop_def
-  signature (//toplevel//[1,0+0]..[1,0+36])
+  structure (//toplevel//[1,0+0]..[1,0+36])
     [
       structure_item (//toplevel//[1,0+0]..[1,0+36])
         Pstr_value Nonrec
@@ -1320,7 +1320,7 @@ Ptop_def
 
 val x : < f : int > option = Some <obj>
 Ptop_def
-  signature (//toplevel//[1,0+0]..[1,0+40])
+  structure (//toplevel//[1,0+0]..[1,0+40])
     [
       structure_item (//toplevel//[1,0+0]..[1,0+40])
         Pstr_value Nonrec
@@ -1354,7 +1354,7 @@ Ptop_def
 
 val x : int option = Some 1
 Ptop_def
-  signature (//toplevel//[2,1+0]..[5,76+12])
+  structure (//toplevel//[2,1+0]..[5,76+12])
     [
       structure_item (//toplevel//[2,1+0]..[5,76+12])
         Pstr_eval
@@ -1444,7 +1444,7 @@ Ptop_def
 
 - : < f : int > = <obj>
 Ptop_def
-  signature (//toplevel//[3,66+0]..[5,98+12])
+  structure (//toplevel//[3,66+0]..[5,98+12])
     [
       structure_item (//toplevel//[3,66+0]..[5,98+12])
         Pstr_value Nonrec
