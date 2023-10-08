@@ -834,6 +834,9 @@ static inline void compact_update_value(void* ignored,
       return;
 
     if (Whsize_val(v) <= SIZECLASS_MAX) {
+      /* MARKED header status means the location `p` points to a block that
+         has been evacuated. Use the forwarding pointer in the first field
+         to update to the new location. */
       if (Has_status_val(v, caml_global_heap_state.MARKED)) {
         value fwd = Field(v, 0) + infix_offset;
         CAMLassert(Is_block(fwd));
@@ -967,7 +970,7 @@ void caml_compact_heap(caml_domain_state* domain_state,
   */
 
   /* First phase. Here we compute the number of live blocks in partially
-  filled pools, mark pools to be evacuated and then evacuate from them.
+  filled pools, determine pools to be evacuated and then evacuate from them.
   For the first phase we need not consider full pools, they
   cannot be evacuated to or from. */
   caml_global_barrier();
@@ -1020,11 +1023,11 @@ void caml_compact_heap(caml_domain_state* domain_state,
 
     cur_pool = heap->unswept_avail_pools[sz_class];
 
-    /* Count the number of non-empty blocks in the pools. This is an
-       over-approximation of the amount of space we'll need, as we
-       only move UNMARKED (MARKED in the previous cycle) blocks. In other words,
-       after compaction the shared pools will contain UNMARKED and GARBAGE from
-       the "to" pools and UNMARKED from the "from" pools which were evacuated.
+    /* Count the number of free and live blocks in each pool. Note that a live
+       block here currently has the header status UNMARKED (because it was
+       MARKED in the previous cycle). After compaction the shared pools will
+       contain UNMARKED and GARBAGE from the "to" pools and UNMARKED from the
+       "from" pools which were evacuated.
 
        At the cost of some complexity or an additional pass we could compute the
        exact amount of space needed or even sweep all pools in this counting
@@ -1083,6 +1086,10 @@ void caml_compact_heap(caml_domain_state* domain_state,
     int remaining_live_blocks = total_live_blocks;
 
     cur_pool = heap->unswept_avail_pools[sz_class];
+    /* [last_pool_p] will be a pointer to the next field of the last
+       non-evacuating pool. We need this so we can snip the list of evacuating
+       pools from [unswept_avail_pools] and eventually attach them all to
+       [evacuated_pools]. */
     pool **last_pool_p = &heap->unswept_avail_pools[sz_class];
     while (cur_pool) {
       if (free_blocks >= remaining_live_blocks) {
@@ -1102,7 +1109,7 @@ void caml_compact_heap(caml_domain_state* domain_state,
     /* `cur_pool` now points to the first pool we are evacuating, or NULL if
         we could not compact this particular size class (for this domain) */
 
-    /* remove evacuating pools from list of pools we are retaining */
+    /* Snip the evacuating pools from list of pools we are retaining */
     *last_pool_p = NULL;
 
     /* Evacuate marked blocks from the evacuating pools into the
@@ -1185,11 +1192,11 @@ void caml_compact_heap(caml_domain_state* domain_state,
   /* Second phase: at this point all live blocks in evacuated pools
     have been moved and their old locations' first fields now point to
     their new locations. We now go through all pools again (including
-    full ones this time) and for each field we check what shared pool
-    it is in and if it is an evacuating pool. This hopefully generates
-    fewer cache misses than using a bit in the header of moved blocks.
-    If the pool is evacuating we find the moved block's forwarding
-    pointer and update accordingly. */
+    full ones this time) and for each field we check if the block the
+    field points to has the header status MARKED - if it does then the block
+    has been evacuated and we need to update the field to point to the new
+    location. We do this by using the forwarding pointer that is in the first
+    field of the evacuated block. */
 
   /* First we do roots (locals and finalisers) */
   caml_do_roots(&compact_update_value, 0, NULL, Caml_state, 1);
