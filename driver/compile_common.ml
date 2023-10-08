@@ -42,7 +42,7 @@ let with_info ~native ~tool_name ~source_file ~output_prefix ~dump_ext k =
 
 let parse_intf i =
   Pparse.parse_interface ~tool_name:i.tool_name (Unit_info.source_file i.target)
-  |> print_if i.ppf_dump Clflags.dump_parsetree (fun fmt i -> Printast.interface fmt i.Parsetree.psigmod_items)
+  |> print_if i.ppf_dump Clflags.dump_parsetree Printast.interface
   |> print_if i.ppf_dump Clflags.dump_source Pprintast.signature
 
 let typecheck_intf info ast =
@@ -87,7 +87,7 @@ let interface info =
 let parse_impl i =
   let sourcefile = Unit_info.source_file i.target in
   Pparse.parse_implementation ~tool_name:i.tool_name sourcefile
-  |> print_if i.ppf_dump Clflags.dump_parsetree (fun fmt i -> Printast.implementation fmt i.Parsetree.pstrmod_items)
+  |> print_if i.ppf_dump Clflags.dump_parsetree Printast.implementation
   |> print_if i.ppf_dump Clflags.dump_source Pprintast.structure
 
 let typecheck_impl i parsetree =

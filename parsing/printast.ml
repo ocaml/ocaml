@@ -1008,8 +1008,8 @@ and directive_argument i ppf x =
   | Pdir_ident (li) -> line i ppf "Pdir_ident %a\n" fmt_longident li
   | Pdir_bool (b) -> line i ppf "Pdir_bool %s\n" (string_of_bool b)
 
-let interface ppf x = list 0 signature_item ppf x
+let interface ppf x = list 0 signature_item ppf x.Parsetree.psigmod_items
 
-let implementation ppf x = list 0 structure_item ppf x
+let implementation ppf x = list 0 structure_item ppf x.Parsetree.pstrmod_items
 
 let top_phrase ppf x = toplevel_phrase 0 ppf x
