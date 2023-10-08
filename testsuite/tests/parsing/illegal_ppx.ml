@@ -23,7 +23,7 @@ let expr mapper e =
   match e.pexp_desc with
   | Pexp_extension ({txt="tuple";loc},_) -> empty_tuple loc
   | Pexp_extension({txt="record";loc},_) -> empty_record loc
-  | Pexp_extension({txt="no_args";loc},PStr[{pstr_desc= Pstr_eval (e,_);_}])
+  | Pexp_extension({txt="no_args";loc},PStr{ pstrmod_items = [{pstr_desc= Pstr_eval (e,_);_}]; _ })
     -> empty_apply loc e
   | _ -> super.M.expr mapper e
 

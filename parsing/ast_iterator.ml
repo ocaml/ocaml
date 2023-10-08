@@ -303,7 +303,7 @@ module MT = struct
 
   let iter_signature sub { psigmod_items = items; psigmod_loc = loc } =
     sub.location sub loc;
-    List.iter (iter_signature_item sub) items
+    List.iter (sub.signature_item sub) items
 end
 
 
@@ -353,7 +353,7 @@ module M = struct
 
   let iter_structure sub {pstrmod_loc = loc; pstrmod_items = items} =
     sub.location sub loc;
-    List.iter (iter_structure_item sub) items
+    List.iter (sub.structure_item sub) items
 end
 
 module E = struct

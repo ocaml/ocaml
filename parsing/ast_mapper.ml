@@ -339,7 +339,7 @@ module MT = struct
 
   let map_signature sub { psigmod_items = items; psigmod_loc = loc } =
     let loc = sub.location sub loc in
-    Sig.mk_mod ~loc (List.map (map_signature_item sub) items)
+    Sig.mk_mod ~loc (List.map (sub.signature_item sub) items)
 end
 
 
@@ -394,7 +394,7 @@ module M = struct
 
   let map_structure sub {pstrmod_loc = loc; pstrmod_items = items} =
     let loc = sub.location sub loc in
-    Str.mk_mod ~loc (List.map (map_structure_item sub) items)
+    Str.mk_mod ~loc (List.map (sub.structure_item sub) items)
 end
 
 module E = struct
