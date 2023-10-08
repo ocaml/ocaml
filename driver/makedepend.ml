@@ -35,8 +35,7 @@ let one_line = ref false
 let allow_approximation = ref false
 let debug = ref false
 
-(* [(dir, contents)] where [contents] is returned by [Sys.readdir dir]. *)
-let load_path = ref ([] : (string * string array) list)
+let () = Load_path.(init ~auto_include:no_auto_include) []
 let files =
   ref ([] : (string * file_kind * String.Set.t * string list) list)
 let module_map = ref String.Map.empty
@@ -61,32 +60,14 @@ let fix_slash s =
     String.map (function '\\' -> '/' | c -> c) s
   end
 
-(* Since we reinitialize load_path after reading OCAMLCOMP,
-  we must use a cache instead of calling Sys.readdir too often. *)
-let dirs = ref String.Map.empty
-let readdir dir =
-  try
-    String.Map.find dir !dirs
-  with Not_found ->
-    let contents =
-      try
-        Sys.readdir dir
-      with Sys_error msg ->
-        Format.eprintf "@[Bad -I option: %s@]@." msg;
-        Error_occurred.set ();
-        [||]
-    in
-    dirs := String.Map.add dir contents !dirs;
-    contents
-
 let add_to_load_path dir =
-  try
-    let dir = Misc.expand_directory Config.standard_library dir in
-    let contents = readdir dir in
-    prepend_to_list load_path (dir, contents)
-  with Sys_error msg ->
-    Format.eprintf "@[Bad -I option: %s@]@." msg;
-    Error_occurred.set ()
+  let path = Misc.expand_directory Config.standard_library dir in
+  match Load_path.Dir.create path with
+  | dir, None ->
+     Load_path.prepend_dir dir
+  | _, Some msg ->
+     Format.eprintf "@[Bad -I option: %s@]@." msg;
+     Error_occurred.set ()
 
 let add_to_synonym_list synonyms suffix =
   if (String.length suffix) > 1 && suffix.[0] = '.' then
@@ -96,23 +77,34 @@ let add_to_synonym_list synonyms suffix =
     Error_occurred.set ()
   end
 
+let rec is_before e e' = function
+  | [] -> raise Not_found
+  | h :: _ when h = e -> true
+  | h :: _ when h = e' -> false
+  | _ :: l -> is_before e e' l
+
 (* Find file 'name' (capitalized) in search path *)
 let find_module_in_load_path name =
-  let names = List.map (fun ext -> name ^ ext) (!mli_synonyms @ !ml_synonyms) in
-  let unames =
-    let uname = Unit_info.normalize name in
-    List.map (fun ext -> uname ^ ext) (!mli_synonyms @ !ml_synonyms)
+  let find find =
+    List.filter_map (fun ext ->
+        try Some (find (name ^ ext)) with Not_found -> None)
+      (!mli_synonyms @ !ml_synonyms)
   in
-  let rec find_in_path = function
-    | [] -> raise Not_found
-    | (dir, contents) :: rem ->
-        let mem s = List.mem s names || List.mem s unames in
-        match Array.find_opt mem contents with
-        | Some truename ->
-            if dir = Filename.current_dir_name then truename
-            else Filename.concat dir truename
-        | None -> find_in_path rem in
-  find_in_path !load_path
+  let names = find Load_path.find and unames = find Load_path.find_normalized in
+  let paths = Load_path.get_paths () in
+  let rec aux current = function
+    | [] -> current
+    | f :: tl ->
+       let dir = Filename.dirname f in
+       if dir = Filename.current_dir_name then Some (dir, Filename.basename f)
+       else match current with
+            | None -> aux (Some (dir, f)) tl
+            | Some (dir', _) ->
+               if is_before dir dir' paths then aux (Some (dir, f)) tl
+               else aux current tl
+  in
+  match aux None (names @ unames) with
+  | None -> raise Not_found | Some (_, f) -> f
 
 let find_dependency target_kind modname (byt_deps, opt_deps) =
   match find_module_in_load_path modname with
@@ -390,7 +382,7 @@ let mli_file_dependencies source_file =
 
 let process_file_as process_fun def source_file =
   Compenv.readenv stderr (Before_compile source_file);
-  load_path := [];
+  Load_path.clear ();
   let cwd = if !nocwd then [] else [Filename.current_dir_name] in
   List.iter add_to_load_path (
       (!Compenv.last_include_dirs @

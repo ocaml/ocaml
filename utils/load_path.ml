@@ -52,12 +52,13 @@ module Dir = struct
      + treat [""] as the current directory. *)
   let readdir_compat dir =
     try
-      Sys.readdir (if dir = "" then Filename.current_dir_name else dir)
-    with Sys_error _ ->
-      [||]
+      Sys.readdir (if dir = "" then Filename.current_dir_name else dir), None
+    with Sys_error msg ->
+      [||], Some msg
 
   let create path =
-    { path; files = Array.to_list (readdir_compat path) }
+    let files, error = readdir_compat path in
+    { path; files = Array.to_list files }, error
 end
 
 type auto_include_callback =
@@ -67,11 +68,14 @@ let dirs = s_ref []
 let no_auto_include _ _ = raise Not_found
 let auto_include_callback = ref no_auto_include
 
+let clear () =
+  dirs := []
+
 let reset () =
   assert (not Config.merlin || Local_store.is_bound ());
   STbl.clear !files;
   STbl.clear !files_uncap;
-  dirs := [];
+  clear ();
   auto_include_callback := no_auto_include
 
 let get () = List.rev !dirs
@@ -90,7 +94,7 @@ let prepend_add dir =
 
 let init ~auto_include l =
   reset ();
-  dirs := List.rev_map Dir.create l;
+  dirs := List.rev_map (fun path -> Dir.create path |> fst) l;
   List.iter prepend_add !dirs;
   auto_include_callback := auto_include
 
@@ -121,7 +125,7 @@ let add dir =
 
 let append_dir = add
 
-let add_dir dir = add (Dir.create dir)
+let add_dir dir = add (Dir.create dir |> fst)
 
 (* Add the directory at the start of load path - so basenames are
    unconditionally added. *)
@@ -150,7 +154,7 @@ let auto_include_otherlibs =
   (* Ensure directories are only ever scanned once *)
   let expand = Misc.expand_directory Config.standard_library in
   let otherlibs =
-    let read_lib lib = lazy (Dir.create (expand ("+" ^ lib))) in
+    let read_lib lib = lazy (Dir.create (expand ("+" ^ lib)) |> fst) in
     List.map (fun lib -> (lib, read_lib lib)) ["dynlink"; "str"; "unix"] in
   auto_include_libs otherlibs
 

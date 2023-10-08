@@ -6230,6 +6230,7 @@ driver/makedepend.cmo : \
     parsing/parse.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
+    utils/load_path.cmi \
     parsing/lexer.cmi \
     parsing/depend.cmi \
     utils/config.cmi \
@@ -6244,6 +6245,7 @@ driver/makedepend.cmx : \
     parsing/parse.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
+    utils/load_path.cmx \
     parsing/lexer.cmx \
     parsing/depend.cmx \
     utils/config.cmx \

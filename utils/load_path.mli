@@ -28,14 +28,20 @@ val add_dir : string -> unit
 val remove_dir : string -> unit
 (** Remove a directory from the load path *)
 
+val clear : unit -> unit
+(** Remove all directories, but not the internal caches. *)
+
 val reset : unit -> unit
-(** Remove all directories *)
+(** Remove all directories and internal caches. *)
 
 module Dir : sig
   type t
   (** Represent one directory in the load path. *)
 
-  val create : string -> t
+  val create : string -> t * string option
+  (** [create path] creates an entry in the load path. If an error
+      occurred, the directory is considered empty and an error message
+      is returned. *)
 
   val path : t -> string
 
