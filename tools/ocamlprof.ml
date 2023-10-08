@@ -385,7 +385,7 @@ and rewrite_class_declaration iflag cl =
 and rewrite_mod iflag smod =
   match smod.pmod_desc with
     Pmod_ident _ -> ()
-  | Pmod_structure sstr -> List.iter (rewrite_str_item iflag) sstr
+  | Pmod_structure sstr -> List.iter (rewrite_str_item iflag) sstr.pstrmod_items
   | Pmod_functor(_param, sbody) -> rewrite_mod iflag sbody
   | Pmod_apply(smod1, smod2) ->
       rewrite_mod iflag smod1;
@@ -412,7 +412,7 @@ let rewrite_file srcfile add_function =
   let lb = Lexing.from_channel !inchan in
   Location.input_name := srcfile;
   Location.init lb srcfile;
-  List.iter (rewrite_str_item false) (Parse.implementation lb);
+  List.iter (rewrite_str_item false) (Parse.implementation lb).pstrmod_items;
   final_rewrite add_function;
   close_in !inchan
 

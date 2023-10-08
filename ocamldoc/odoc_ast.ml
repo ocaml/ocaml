@@ -214,7 +214,7 @@ let analyze_toplevel_alerts info ast =
         attr :: extract_attributes tl
     | _ :: _ | [] -> []
   in
-  Odoc_sig.analyze_alerts info (extract_attributes ast)
+  Odoc_sig.analyze_alerts info (extract_attributes ast.Parsetree.pstrmod_items)
 
 module Analyser =
   functor (My_ir : Odoc_sig.Info_retriever) ->
@@ -1001,7 +1001,7 @@ module Analyser =
             in
             ele_comments @ elements @ (iter new_env (item.Parsetree.pstr_loc.Location.loc_end.Lexing.pos_cnum + maybe_more) q)
       in
-      iter env last_pos parsetree
+      iter env last_pos Parsetree.(parsetree.pstrmod_items)
 
    (** Analysis of a parse tree structure item to obtain a new environment and a list of elements.*)
    and analyse_structure_item env current_module_name loc pos_limit comment_opt parsetree_item_desc _typedtree
@@ -1847,7 +1847,7 @@ module Analyser =
        (* We create the t_module for this file. *)
        let mod_name = Unit_info.modname_from_source source_file in
        let len, info_opt = Sig.preamble !file_name !file
-           (fun x -> x.Parsetree.pstr_loc) parsetree in
+           (fun x -> x.Parsetree.pstr_loc) parsetree.Parsetree.pstrmod_items in
       let info_opt = analyze_toplevel_alerts info_opt parsetree in
        (* we must complete the included modules *)
        let elements = analyse_structure Odoc_env.empty mod_name len (String.length !file) parsetree tree_structure in

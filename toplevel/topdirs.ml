@@ -373,7 +373,7 @@ let trim_signature = function
                  let attribute =
                    Ast_helper.Attr.mk
                      (Location.mknoloc "...")
-                     (Parsetree.PStr [])
+                     (Parsetree.PStr (Ast_helper.Str.mk_mod []))
                  in
                  Sig_module (id, pres, {md with md_attributes =
                                           attribute :: md.md_attributes},

@@ -38,16 +38,17 @@ let parse_mod_use_file name lb =
   let items =
     List.concat
       (List.map
-         (function Ptop_def s -> s | Ptop_dir _ -> [])
+         (function Ptop_def s -> s.pstrmod_items | Ptop_dir _ -> [])
          (!parse_use_file lb))
   in
   [ Ptop_def
+    (Str.mk_mod 
       [ Str.module_
           (Mb.mk
              (Location.mknoloc (Some modname))
-             (Mod.structure items)
+             (Mod.structure (Str.mk_mod items))
           )
-       ]
+       ])
    ]
 
 (* Hooks for printing *)

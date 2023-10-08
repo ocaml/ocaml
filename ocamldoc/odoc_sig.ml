@@ -126,11 +126,11 @@ let alert_of_attribute attr =
   in
   let load_alert_name name = Longident.last name.Location.txt in
   let deprecated_payload = function
-    | PStr [ { pstr_desc = Pstr_eval (s, _); _ } ] -> load_constant_string s
+    | PStr { pstrmod_items = [ { pstr_desc = Pstr_eval (s, _); _ } ]; _ } -> load_constant_string s
     | _ -> None
   in
   let alert_payload = function
-    | PStr [ { pstr_desc = Pstr_eval ({ pexp_desc; _ }, _); _ } ] -> (
+    | PStr { pstrmod_items = [ { pstr_desc = Pstr_eval ({ pexp_desc; _ }, _); _ } ]; _ } -> (
         match pexp_desc with
         | Pexp_apply ({ pexp_desc = Pexp_ident name; _ }, [ (_, payload) ]) ->
             Some (load_alert_name name, load_constant_string payload)
@@ -184,7 +184,7 @@ let analyze_toplevel_alerts info ast =
         attr :: extract_attributes tl
     | _ :: _ | [] -> []
   in
-  analyze_alerts info (extract_attributes ast)
+  analyze_alerts info (extract_attributes ast.Parsetree.psigmod_items)
 
 module Analyser =
   functor (My_ir : Info_retriever) ->
@@ -554,8 +554,9 @@ module Analyser =
            pmty_attributes = []
          }
 
-    let filter_out_erased_items_from_signature erased signature =
-      if Name.Map.is_empty erased then signature
+    let filter_out_erased_items_from_signature erased { Parsetree.psigmod_items; psigmod_loc } =
+      let psigmod_items = 
+      if Name.Map.is_empty erased then psigmod_items
       else List.fold_right (fun sig_item acc ->
         let take_item psig_desc = { sig_item with Parsetree.psig_desc } :: acc in
         match sig_item.Parsetree.psig_desc with
@@ -601,7 +602,9 @@ module Analyser =
            with
            | [] -> acc
            | mods -> take_item (Parsetree.Psig_recmodule mods)))
-        signature []
+        psigmod_items []
+      in
+      { Parsetree.psigmod_items; psigmod_loc }
 
     (** Analysis of the elements of a class, from the information in the parsetree and in the class
        signature. @return the couple (inherited_class list, elements).*)
@@ -786,7 +789,7 @@ module Analyser =
     (** Analyse of a .mli parse tree, to get the corresponding elements.
        last_pos is the position of the first character which may be used to look for special comments.
     *)
-    let rec analyse_parsetree env signat current_module_name last_pos pos_limit sig_item_list =
+    let rec analyse_parsetree env signat current_module_name last_pos pos_limit { Parsetree.psigmod_items; _ } =
       let table = Signature_search.table signat in
       (* we look for the comment of each item then analyse the item *)
       let rec f acc_eles acc_env last_pos = function
@@ -835,7 +838,7 @@ module Analyser =
               new_pos
               q
       in
-      f [] env last_pos sig_item_list
+      f [] env last_pos psigmod_items
 
     (** Analyse the given signature_item_desc to create the corresponding module element
        (with the given attached comment).*)
@@ -1417,10 +1420,10 @@ module Analyser =
                   let open Parsetree in
                   begin match mexpr.pmod_desc with
                     Pmod_ident longident -> Name.from_longident longident.txt
-                  | Pmod_structure [
+                  | Pmod_structure { pstrmod_items = [
                       {pstr_desc=Pstr_include
                            {pincl_mod={pmod_desc=Pmod_ident longident}}
-                      }] -> (* include module type of struct include M end*)
+                      }]; _ } -> (* include module type of struct include M end*)
                       Name.from_longident longident.txt
                   | _ -> "??"
                   end
@@ -1887,7 +1890,7 @@ module Analyser =
       (* We create the t_module for this file. *)
       let mod_name = Unit_info.modname_from_source source_file in
       let len, info_opt = preamble !file_name !file
-          (fun x -> x.Parsetree.psig_loc) ast in
+          (fun x -> x.Parsetree.psig_loc) ast.Parsetree.psigmod_items in
       let info_opt = analyze_toplevel_alerts info_opt ast in
       let elements =
         analyse_parsetree Odoc_env.empty signat mod_name len (String.length !file) ast

@@ -214,7 +214,7 @@ module Toplevel = struct
           let sign = Parse.interface lex in
           let name = Location.mknoloc "wrap" in
           let str =
-            Ast_helper.[Str.modtype @@ Mtd.mk ~typ:(Mty.signature sign) name] in
+            Ast_helper.(Str.mk_mod [Str.modtype @@ Mtd.mk ~typ:(Mty.signature sign) name]) in
           Parsetree.Ptop_def str
     with
     | Lexer.Error _ | Syntaxerr.Error _ ->

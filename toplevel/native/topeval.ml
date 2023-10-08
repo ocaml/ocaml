@@ -152,7 +152,8 @@ let name_expression ~loc ~attrs exp =
    let str =
      { str_items = [item];
        str_type = sg;
-       str_final_env = final_env }
+       str_final_env = final_env;
+       str_mod_loc = loc; }
    in
    str, sg
 
