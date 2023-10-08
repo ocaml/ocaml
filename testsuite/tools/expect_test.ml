@@ -72,7 +72,7 @@ let match_expect_extension (ext : Parsetree.extension) =
     in
     let expectation =
       match payload with
-      | PStr [{ pstr_desc = Pstr_eval (e, []) }] ->
+      | PStr { pstrmod_items = [{ pstr_desc = Pstr_eval (e, []) }]; _ } ->
         let normal, principal =
           match e.pexp_desc with
           | Pexp_tuple
@@ -88,7 +88,7 @@ let match_expect_extension (ext : Parsetree.extension) =
         ; normal
         ; principal
         }
-      | PStr [] ->
+      | PStr { pstrmod_items = []; _ } ->
         let s = { tag = ""; str = "" } in
         { extid_loc
         ; payload_loc  = { extid_loc with loc_start = extid_loc.loc_end }
@@ -112,8 +112,8 @@ let split_chunks phrases =
         (List.rev acc, Some (List.rev code_acc))
     | phrase :: phrases ->
       match phrase with
-      | Ptop_def [] -> loop phrases code_acc acc
-      | Ptop_def [{pstr_desc = Pstr_extension(ext, [])}] -> begin
+      | Ptop_def { pstrmod_items = []; _ } -> loop phrases code_acc acc
+      | Ptop_def { pstrmod_items = [{pstr_desc = Pstr_extension(ext, [])}]; _ } -> begin
           match match_expect_extension ext with
           | None -> loop phrases (phrase :: code_acc) acc
           | Some expectation ->
@@ -212,8 +212,8 @@ let shift_lines delta phrases =
 let rec min_line_number : Parsetree.toplevel_phrase list -> int option =
 function
   | [] -> None
-  | (Ptop_dir _  | Ptop_def []) :: l -> min_line_number l
-  | Ptop_def (st :: _) :: _ -> Some st.pstr_loc.loc_start.pos_lnum
+  | (Ptop_dir _  | Ptop_def { pstrmod_items = []; _ }) :: l -> min_line_number l
+  | Ptop_def { pstrmod_items = (st :: _); _ } :: _ -> Some st.pstr_loc.loc_start.pos_lnum
 
 let eval_expect_file _fname ~file_contents =
   Warnings.reset_fatal ();
