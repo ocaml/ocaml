@@ -104,7 +104,7 @@ module Typ = struct
         | Ptyp_class (longident, lst) ->
             Ptyp_class (longident, List.map loop lst)
         | Ptyp_alias(core_type, alias) ->
-            check_variable var_names t.ptyp_loc alias.txt;
+            check_variable var_names alias.loc alias.txt;
             Ptyp_alias(loop core_type, alias)
         | Ptyp_variant(row_field_list, flag, lbl_lst_option) ->
             Ptyp_variant(List.map loop_row_field row_field_list,
