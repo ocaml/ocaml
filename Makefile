@@ -81,7 +81,8 @@ utils_SOURCES = $(addprefix utils/, \
   binutils.mli binutils.ml \
   lazy_backtrack.mli lazy_backtrack.ml \
   diffing.mli diffing.ml \
-  diffing_with_keys.mli diffing_with_keys.ml)
+  diffing_with_keys.mli diffing_with_keys.ml \
+  compression.mli compression.ml)
 
 parsing_SOURCES = $(addprefix parsing/, \
   location.mli location.ml \

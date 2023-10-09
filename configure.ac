@@ -546,7 +546,7 @@ AC_ARG_WITH([flexdll],
 
 AC_ARG_WITH([zstd],
   [AS_HELP_STRING([--without-zstd],
-    [disable compression of marshaled data])])
+    [disable compression of compilation artefacts])])
 
 AS_IF([test x"$enable_unix_lib" = "xno"],
   [AS_IF([test x"$enable_ocamldebug" = "xyes"],
@@ -2165,7 +2165,7 @@ AS_IF([test x"$with_zstd" != "xno"],
       [zstd_status="zstd library not found"])]))
 
 AS_IF([test x"$zstd_status" = "xok"],
-  [AC_MSG_NOTICE([compressed marshaling supported])
+  [AC_MSG_NOTICE([compressed compilation artefacts supported])
    cclibs="$cclibs $zstd_libs"
    internal_cppflags="$internal_cppflags $zstd_flags"
    AC_DEFINE([HAS_ZSTD])],
@@ -2175,7 +2175,7 @@ AS_IF([test x"$zstd_status" = "xok"],
      [yes],
        [AC_MSG_ERROR([$zstd_status])],
      [AC_MSG_WARN([$zstd_status])
-      AC_MSG_WARN([compressed marshaling not supported])])])
+      AC_MSG_WARN([compressed compilation artefacts not supported])])])
 
 ## Determine whether the debugger should/can be built
 
