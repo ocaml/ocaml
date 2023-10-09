@@ -118,6 +118,12 @@
 #define ENTRIES_PER_TRAIL_BLOCK  1025
 #define SIZE_EXTERN_OUTPUT_BLOCK 8100
 
+struct caml_output_block {
+  struct caml_output_block * next;
+  char * end;
+  char data[SIZE_EXTERN_OUTPUT_BLOCK];
+};
+
 void caml_free_extern_state (void);
 
 /* The entry points */
@@ -126,6 +132,14 @@ void caml_output_val (struct channel * chan, value v, value flags);
   /* Output [v] with flags [flags] on the channel [chan]. */
 
 void caml_free_intern_state (void);
+
+/* Compression hooks */
+
+CAMLextern _Bool (*caml_extern_compress_output)(struct caml_output_block **);
+CAMLextern size_t (*caml_intern_decompress_input)(unsigned char *,
+                                                  uintnat,
+                                                  const unsigned char *,
+                                                  uintnat);
 
 #endif /* CAML_INTERNALS */
 

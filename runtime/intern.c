@@ -37,9 +37,6 @@
 #include "caml/reverse.h"
 #include "caml/shared_heap.h"
 #include "caml/signals.h"
-#ifdef HAS_ZSTD
-#include <zstd.h>
-#endif
 
 /* Item on the stack with defined operation */
 struct intern_item {
@@ -792,32 +789,40 @@ static void caml_parse_header(struct caml_intern_state* s,
    when the memory block for the compressed input can be freed
    before more memory is allocated. */
 
+size_t (*caml_intern_decompress_input)(unsigned char *,
+                                       uintnat,
+                                       const unsigned char *,
+                                       uintnat) = NULL;
+
 static void intern_decompress_input(struct caml_intern_state * s,
                                     const char * fun_name,
                                     struct marshal_header * h)
 {
   s->compressed = h->compressed;
   if (! h->compressed) return;
-#ifdef HAS_ZSTD
-  unsigned char * blk = caml_stat_alloc_noexc(h->uncompressed_data_len);
-  if (blk == NULL) {
+  if (caml_intern_decompress_input != NULL) {
+    unsigned char * blk = malloc(h->uncompressed_data_len);
+    if (blk == NULL) {
+      intern_cleanup(s);
+      caml_raise_out_of_memory();
+    }
+    size_t res =
+      caml_intern_decompress_input(blk,
+                                   h->uncompressed_data_len,
+                                   s->intern_src,
+                                   h->data_len);
+    if (res != h->uncompressed_data_len) {
+      free(blk);
+      intern_cleanup(s);
+      intern_failwith2(fun_name, "decompression error");
+    }
+    if (s->intern_input != NULL) free(s->intern_input);
+    s->intern_input = blk;  /* to be freed at end of demarshaling */
+    s->intern_src = blk;
+  } else {
     intern_cleanup(s);
-    caml_raise_out_of_memory();
+    intern_failwith2(fun_name, "compressed object, cannot decompress");
   }
-  size_t res =
-    ZSTD_decompress(blk, h->uncompressed_data_len, s->intern_src, h->data_len);
-  if (res != h->uncompressed_data_len) {
-    caml_stat_free(blk);
-    intern_cleanup(s);
-    intern_failwith2(fun_name, "decompression error");
-  }
-  if (s->intern_input != NULL) caml_stat_free(s->intern_input);
-  s->intern_input = blk;  /* to be freed at end of demarshaling */
-  s->intern_src = blk;
-#else
-  intern_cleanup(s);
-  intern_failwith2(fun_name, "compressed object, cannot decompress");
-#endif
 }
 
 /* Reading from a channel */
