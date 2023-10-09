@@ -54,7 +54,7 @@ type cmt_infos = {
   cmt_args : string array;
   cmt_sourcefile : string option;
   cmt_builddir : string;
-  cmt_loadpath : string list;
+  cmt_loadpath : Load_path.paths;
   cmt_source_digest : Digest.t option;
   cmt_initial_env : Env.t;
   cmt_imports : (string * Digest.t option) list;
@@ -184,7 +184,7 @@ let save_cmt target binary_annots initial_env cmi shape =
            cmt_args = Sys.argv;
            cmt_sourcefile = sourcefile;
            cmt_builddir = Location.rewrite_absolute_path (Sys.getcwd ());
-           cmt_loadpath = Load_path.get_path_list ();
+           cmt_loadpath = Load_path.get_paths ();
            cmt_source_digest = source_digest;
            cmt_initial_env = if need_to_clear_env then
                keep_only_summary initial_env else initial_env;
