@@ -143,8 +143,8 @@ module OCaml_refs = struct
     if attr.attr_name.Location.txt <> "manual.ref"
     then None
     else begin match attr.attr_payload with
-      | PStr [{pstr_desc= Pstr_eval
-                 ({ pexp_desc = Pexp_constant Pconst_string (s,_,_) },_) } ] ->
+      | PStr { pstrmod_items = [{pstr_desc= Pstr_eval
+                 ({ pexp_desc = Pexp_constant Pconst_string (s,_,_) },_) } ]; _ } ->
           Some s
       | _ -> print_error (Wrong_attribute_payload attr.attr_loc);
           Some "" (* triggers an error *)
