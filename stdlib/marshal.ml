@@ -67,9 +67,8 @@ let from_string buff ofs =
      sequence is never mutated *)
   from_bytes (Bytes.unsafe_of_string buff) ofs
 
-let compression_supported () =
-  let s = to_string () [Compression] in
-  match s.[3] with
-  | '\xBD' -> true
-  | '\xBE' -> false
-  | _ -> assert false
+external zstd_initialize: unit -> bool = "caml_zstd_initialize"
+
+let compr_supp = zstd_initialize()
+
+let compression_supported () = compr_supp
