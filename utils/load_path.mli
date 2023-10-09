@@ -14,8 +14,8 @@
 
 (** Management of include directories.
 
-    This module offers a high level interface to locating files in the
-    load path, which is constructed from [-I] command line flags and a few
+    This module offers a high level interface to locating files in the load
+    path, which is constructed from [-I] and [-H] command line flags and a few
     other parameters.
 
     It makes the assumption that the contents of include directories

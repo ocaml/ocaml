@@ -209,7 +209,7 @@ interface files (".cmi" files).
 
 \item["-H" \var{directory}]
 Like "-I", but the "-H" directories are searched last and the program may
-not directly refer to the modules included this way.
+not directly refer to the modules added to the search path this way.
 
 \item["-nolabels"]
 Ignore non-optional labels in types.
