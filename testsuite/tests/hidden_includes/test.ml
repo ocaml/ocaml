@@ -1,3 +1,4 @@
+(* TEST
 (* This tests the -H flag.
 
    The basic structure is that libc depends on libb, which depends on liba.  We
@@ -18,9 +19,6 @@
    The liba_alt directory has an alternate versions of liba used for testing the
    precedence order of the includes.
 *)
-
-
-(* TEST
 
 subdirectories = "liba liba_alt libb libc";
 setup-ocamlc.byte-build-env;
