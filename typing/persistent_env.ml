@@ -34,15 +34,16 @@ let error err = raise (Error err)
 module Persistent_signature = struct
   type t =
     { filename : string;
-      cmi : Cmi_format.cmi_infos }
+      cmi : Cmi_format.cmi_infos;
+      visibility : Load_path.visibility }
 
   let load = ref (fun ~allow_hidden ~unit_name ->
-    let find =
-      Load_path.(if allow_hidden then find_normalized
-                 else find_visible_normalized)
-    in
-    match find (unit_name ^ ".cmi") with
-    | filename -> Some { filename; cmi = read_cmi filename }
+    match Load_path.find_normalized_with_visibility (unit_name ^ ".cmi") with
+    | filename, visibility when allow_hidden ->
+      Some { filename; cmi = read_cmi filename; visibility}
+    | filename, Visible ->
+      Some { filename; cmi = read_cmi filename; visibility = Visible}
+    | _, Hidden
     | exception Not_found -> None)
 end
 
@@ -55,6 +56,7 @@ type pers_struct = {
   ps_crcs: (string * Digest.t option) list;
   ps_filename: string;
   ps_flags: pers_flags list;
+  ps_visibility: Load_path.visibility;
 }
 
 module String = Misc.Stdlib.String
@@ -172,7 +174,7 @@ let save_pers_struct penv crc ps pm =
   add_import penv modname
 
 let acknowledge_pers_struct penv check modname pers_sig pm =
-  let { Persistent_signature.filename; cmi } = pers_sig in
+  let { Persistent_signature.filename; cmi; visibility } = pers_sig in
   let name = cmi.cmi_name in
   let crcs = cmi.cmi_crcs in
   let flags = cmi.cmi_flags in
@@ -180,6 +182,7 @@ let acknowledge_pers_struct penv check modname pers_sig pm =
              ps_crcs = crcs;
              ps_filename = filename;
              ps_flags = flags;
+             ps_visibility = visibility;
            } in
   if ps.ps_name <> modname then
     error (Illegal_renaming(modname, ps.ps_name, filename));
@@ -201,7 +204,7 @@ let read_pers_struct penv val_of_pers_sig check cmi =
   let filename = Unit_info.Artifact.filename cmi in
   add_import penv modname;
   let cmi = read_cmi filename in
-  let pers_sig = { Persistent_signature.filename; cmi } in
+  let pers_sig = { Persistent_signature.filename; cmi; visibility = Visible } in
   let pm = val_of_pers_sig pers_sig in
   let ps = acknowledge_pers_struct penv check modname pers_sig pm in
   (ps, pm)
@@ -210,7 +213,9 @@ let find_pers_struct ~allow_hidden penv val_of_pers_sig check name =
   let {persistent_structures; _} = penv in
   if name = "*predef*" then raise Not_found;
   match Hashtbl.find persistent_structures name with
-  | Found (ps, pm) -> (ps, pm)
+  | Found (ps, pm) when allow_hidden || ps.ps_visibility = Load_path.Visible ->
+    (ps, pm)
+  | Found _ -> raise Not_found
   | Missing -> raise Not_found
   | exception Not_found ->
     match can_load_cmis penv with
@@ -319,7 +324,7 @@ let make_cmi penv modname sign alerts =
   }
 
 let save_cmi penv psig pm =
-  let { Persistent_signature.filename; cmi } = psig in
+  let { Persistent_signature.filename; cmi; visibility } = psig in
   Misc.try_finally (fun () ->
       let {
         cmi_name = modname;
@@ -338,6 +343,7 @@ let save_cmi penv psig pm =
           ps_crcs = (cmi.cmi_name, Some crc) :: imports;
           ps_filename = filename;
           ps_flags = flags;
+          ps_visibility = visibility
         } in
       save_pers_struct penv crc ps pm
     )

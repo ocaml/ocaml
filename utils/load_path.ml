@@ -97,6 +97,7 @@ let get_paths () =
     hidden = List.rev_map Dir.path !hidden_dirs }
 
 let get_visible_path_list () = List.rev_map Dir.path !visible_dirs
+let get_hidden_path_list () = List.rev_map Dir.path !hidden_dirs
 
 (* Optimized version of [add] below, for use in [init] and [remove_dir]: since
    we are starting from an empty cache, we can avoid checking whether a unit
@@ -197,37 +198,50 @@ let auto_include_otherlibs =
     List.map (fun lib -> (lib, read_lib lib)) ["dynlink"; "str"; "unix"] in
   auto_include_libs otherlibs
 
+type visibility = Visible | Hidden
+
 let find_file_in_cache fn visible_files hidden_files =
   try STbl.find !visible_files fn with
-  | Not_found ->
-    match hidden_files with
-    | Some hidden_files -> STbl.find !hidden_files fn
-    | None -> raise Not_found
+  | Not_found -> STbl.find !hidden_files fn
+
+let find_file_in_cache_with_visibility fn visible_files hidden_files =
+  try (STbl.find !visible_files fn, Visible) with
+  | Not_found -> (STbl.find !hidden_files fn, Hidden)
 
 let find fn =
   assert (not Config.merlin || Local_store.is_bound ());
   try
     if is_basename fn && not !Sys.interactive then
-      find_file_in_cache fn visible_files (Some hidden_files)
+      find_file_in_cache fn visible_files hidden_files
     else
       Misc.find_in_path (get_path_list ()) fn
   with Not_found ->
     !auto_include_callback Dir.find fn
 
-let find_normalized fn visible_files hidden_files get_paths =
+let find_normalized fn =
   assert (not Config.merlin || Local_store.is_bound ());
   try
     if is_basename fn && not !Sys.interactive then
-      find_file_in_cache (Misc.normalized_unit_filename fn) visible_files
-        hidden_files
+      find_file_in_cache (Misc.normalized_unit_filename fn) visible_files_uncap
+        hidden_files_uncap
     else
-      Misc.find_in_path_normalized (get_paths ()) fn
+      Misc.find_in_path_normalized (get_path_list ()) fn
   with Not_found ->
     let fn_uncap = Misc.normalized_unit_filename fn in
     !auto_include_callback Dir.find_normalized fn_uncap
 
-let find_visible_normalized fn =
-  find_normalized fn visible_files_uncap None get_visible_path_list
-
-let find_normalized fn =
-  find_normalized fn visible_files_uncap (Some hidden_files_uncap) get_path_list
+let find_normalized_with_visibility fn =
+  assert (not Config.merlin || Local_store.is_bound ());
+  try
+    if is_basename fn && not !Sys.interactive then
+      find_file_in_cache_with_visibility (Misc.normalized_unit_filename fn)
+        visible_files_uncap hidden_files_uncap
+    else
+      try
+        (Misc.find_in_path_normalized (get_visible_path_list ()) fn, Visible)
+      with
+      | Not_found ->
+        (Misc.find_in_path_normalized (get_hidden_path_list ()) fn, Hidden)
+  with Not_found ->
+    let fn_uncap = Misc.normalized_unit_filename fn in
+    (!auto_include_callback Dir.find_normalized fn_uncap, Visible)

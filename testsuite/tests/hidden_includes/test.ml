@@ -131,4 +131,17 @@ ocamlc.byte;
   ocamlc.byte;
 }
 
+(* Test that a hidden `A` doesn't become visible as a result of the typechecker
+   using it. *)
+{
+  flags = "-H liba -I libb -nocwd";
+  module = "libc/c4.ml";
+  setup-ocamlc.byte-build-env;
+  ocamlc_byte_exit_status = "2";
+  ocamlc.byte;
+  compiler_reference =
+    "${test_source_directory}/hidden_stays_hidden.ocamlc.reference";
+  check-ocamlc.byte-output;
+}
+
 *)

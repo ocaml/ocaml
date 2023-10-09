@@ -27,8 +27,9 @@ let () =
     match unit_name with
     | "Foo" ->
       Some { Persistent_signature.
-             filename = Sys.executable_name
-           ; cmi      = Marshal.from_string Cached_cmi.foo 0
+             filename   = Sys.executable_name
+           ; cmi        = Marshal.from_string Cached_cmi.foo 0
+           ; visibility = Visible
            }
     | _ -> old_loader ~allow_hidden ~unit_name);
   Toploop.add_hook (function
