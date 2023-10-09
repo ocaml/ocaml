@@ -326,8 +326,7 @@ let test_size() =
     let s =
       Marshal.to_bytes (G(A, G(B 2, G(C 3.14, G(D "glop", E 'e'))))) flags in
     test n (Marshal.header_size + Marshal.data_size s 0 = Bytes.length s) in
-  test_one 300 [];
-  test_one 301 [Marshal.Compression]
+  test_one 300 []
 
 let test_bounds_checking () =
   let test_one n v flags =
@@ -341,8 +340,7 @@ let test_bounds_checking () =
        with Invalid_argument _ -> true);
     test (n+2)
       (Marshal.from_string (s ^ "silly padding") 0 = v) in
-  test_one 310 longstring [];
-  test_one 320 longstring [Marshal.Compression]
+  test_one 310 longstring []
 
 external marshal_to_block : int -> 'a -> Marshal.extern_flags list -> unit
                           = "marshal_to_block"
@@ -618,8 +616,6 @@ let main() =
     test_out "intext.data"; test_in "intext.data";
     print_string "Default flags (again)\n";
     test_out "intext.data"; test_in "intext.data";
-    print_string "[Compression] flags\n";
-    test_out ~flags:[Marshal.Compression] "intext.data"; test_in "intext.data";
     print_string "Marshal.to_string\n";
     test_string();
     print_string "Marshal.to_buffer\n";

@@ -45,6 +45,11 @@ utils/clflags.cmx : \
 utils/clflags.cmi : \
     utils/profile.cmi \
     utils/misc.cmi
+utils/compression.cmo : \
+    utils/compression.cmi
+utils/compression.cmx : \
+    utils/compression.cmi
+utils/compression.cmi :
 utils/config.common.cmo :
 utils/config.common.cmx :
 utils/config.fixed.cmo :
@@ -2024,6 +2029,7 @@ bytecomp/bytepackager.cmo : \
     typing/env.cmi \
     bytecomp/emitcode.cmi \
     utils/config.cmi \
+    utils/compression.cmi \
     file_formats/cmo_format.cmi \
     utils/clflags.cmi \
     bytecomp/bytelink.cmi \
@@ -2044,6 +2050,7 @@ bytecomp/bytepackager.cmx : \
     typing/env.cmx \
     bytecomp/emitcode.cmx \
     utils/config.cmx \
+    utils/compression.cmx \
     file_formats/cmo_format.cmi \
     utils/clflags.cmx \
     bytecomp/bytelink.cmx \
@@ -2082,6 +2089,7 @@ bytecomp/emitcode.cmo : \
     typing/ident.cmi \
     typing/env.cmi \
     utils/config.cmi \
+    utils/compression.cmi \
     file_formats/cmo_format.cmi \
     utils/clflags.cmi \
     bytecomp/bytegen.cmi \
@@ -2100,6 +2108,7 @@ bytecomp/emitcode.cmx : \
     typing/ident.cmx \
     typing/env.cmx \
     utils/config.cmx \
+    utils/compression.cmx \
     file_formats/cmo_format.cmi \
     utils/clflags.cmx \
     bytecomp/bytegen.cmx \
@@ -3908,12 +3917,14 @@ file_formats/cmi_format.cmo : \
     utils/misc.cmi \
     parsing/location.cmi \
     utils/config.cmi \
+    utils/compression.cmi \
     file_formats/cmi_format.cmi
 file_formats/cmi_format.cmx : \
     typing/types.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
     utils/config.cmx \
+    utils/compression.cmx \
     file_formats/cmi_format.cmi
 file_formats/cmi_format.cmi : \
     typing/types.cmi \
@@ -3932,6 +3943,7 @@ file_formats/cmt_format.cmo : \
     parsing/lexer.cmi \
     typing/env.cmi \
     utils/config.cmi \
+    utils/compression.cmi \
     file_formats/cmi_format.cmi \
     utils/clflags.cmi \
     file_formats/cmt_format.cmi
@@ -3946,6 +3958,7 @@ file_formats/cmt_format.cmx : \
     parsing/lexer.cmx \
     typing/env.cmx \
     utils/config.cmx \
+    utils/compression.cmx \
     file_formats/cmi_format.cmx \
     utils/clflags.cmx \
     file_formats/cmt_format.cmi

@@ -46,7 +46,9 @@ UTILS = \
   utils/binutils.cmo \
   utils/lazy_backtrack.cmo \
   utils/diffing.cmo \
-  utils/diffing_with_keys.cmo
+  utils/diffing_with_keys.cmo \
+  utils/compression.cmo
+
 UTILS_CMI =
 
 PARSING = \

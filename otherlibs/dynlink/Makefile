@@ -88,6 +88,7 @@ COMPILERLIBS_SOURCES=\
   utils/warnings.ml \
   utils/int_replace_polymorphic_compare.ml \
   utils/lazy_backtrack.ml \
+  utils/compression.ml \
   parsing/location.ml \
   parsing/longident.ml \
   parsing/docstrings.ml \

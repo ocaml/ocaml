@@ -794,6 +794,11 @@ size_t (*caml_intern_decompress_input)(unsigned char *,
                                        const unsigned char *,
                                        uintnat) = NULL;
 
+CAMLprim value caml_compression_available(value vunit)
+{
+  return Val_bool(caml_intern_decompress_input != NULL);
+}
+
 static void intern_decompress_input(struct caml_intern_state * s,
                                     const char * fun_name,
                                     struct marshal_header * h)
