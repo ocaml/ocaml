@@ -85,18 +85,18 @@ let reset () =
 
 let get_visible () = List.rev !visible_dirs
 
-let get_paths () =
+let get_path_list () =
   Misc.rev_map_end Dir.path !visible_dirs (List.rev_map Dir.path !hidden_dirs)
 
-type path_info =
+type paths =
   { visible : string list;
     hidden : string list }
 
-let get_path_info () =
+let get_paths () =
   { visible = List.rev_map Dir.path !visible_dirs;
     hidden = List.rev_map Dir.path !hidden_dirs }
 
-let get_visible_paths () = List.rev_map Dir.path !visible_dirs
+let get_visible_path_list () = List.rev_map Dir.path !visible_dirs
 
 (* Optimized version of [add] below, for use in [init] and [remove_dir]: since
    we are starting from an empty cache, we can avoid checking whether a unit
@@ -210,7 +210,7 @@ let find fn =
     if is_basename fn && not !Sys.interactive then
       find_file_in_cache fn visible_files (Some hidden_files)
     else
-      Misc.find_in_path (get_paths ()) fn
+      Misc.find_in_path (get_path_list ()) fn
   with Not_found ->
     !auto_include_callback Dir.find fn
 
@@ -227,7 +227,7 @@ let find_normalized fn visible_files hidden_files get_paths =
     !auto_include_callback Dir.find_normalized fn_uncap
 
 let find_visible_normalized fn =
-  find_normalized fn visible_files_uncap None get_visible_paths
+  find_normalized fn visible_files_uncap None get_visible_path_list
 
 let find_normalized fn =
-  find_normalized fn visible_files_uncap (Some hidden_files_uncap) get_paths
+  find_normalized fn visible_files_uncap (Some hidden_files_uncap) get_path_list

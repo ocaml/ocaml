@@ -128,7 +128,7 @@ let initialize_loading () =
   end;
   Symbols.clear_symbols ();
   Symbols.read_symbols Debugcom.main_frag !program_name;
-  let Load_path.{visible; hidden} = Load_path.get_path_info () in
+  let Load_path.{visible; hidden} = Load_path.get_paths () in
   let visible = visible @ !Symbols.program_source_dirs in
   Load_path.init ~auto_include:Compmisc.auto_include ~visible ~hidden;
   Envaux.reset_cache ();

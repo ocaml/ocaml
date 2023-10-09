@@ -110,7 +110,7 @@ let _ = add_directive "remove_directory" (Directive_string dir_remove_directory)
     }
 
 let dir_show_dirs () =
-  List.iter print_endline (Load_path.get_paths ())
+  List.iter print_endline (Load_path.get_path_list ())
 
 let _ = add_directive "show_dirs" (Directive_none dir_show_dirs)
     {

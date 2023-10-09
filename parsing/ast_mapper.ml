@@ -879,7 +879,7 @@ module PpxContext = struct
     }
 
   let make ~tool_name () =
-    let Load_path.{ visible; hidden } =  Load_path.get_path_info () in
+    let Load_path.{ visible; hidden } = Load_path.get_paths () in
     let fields =
       [
         lid "tool_name",    make_string tool_name;

@@ -77,14 +77,14 @@ val auto_include_otherlibs :
     {!Load_path.init} and automatically adds [-I +lib] to the load path after
     calling [alert lib]. *)
 
-val get_paths : unit -> string list
+val get_path_list : unit -> string list
 (** Return the list of directories passed to [add_dir] so far. *)
 
-type path_info =
+type paths =
   { visible : string list;
     hidden : string list }
 
-val get_path_info : unit -> path_info
+val get_paths : unit -> paths
 (** Return the directories passed to [add_dir] so far. *)
 
 val find : string -> string

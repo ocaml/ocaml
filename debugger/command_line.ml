@@ -281,7 +281,8 @@ let instr_dir ppf lexbuf =
           List.iter (function x -> add_path (expand_path x)) new_directory'
     end;
     let print_dirs ppf l = List.iter (function x -> fprintf ppf "@ %s" x) l in
-    fprintf ppf "@[<2>Directories: %a@]@." print_dirs (Load_path.get_paths ());
+    fprintf ppf "@[<2>Directories: %a@]@." print_dirs
+      (Load_path.get_path_list ());
     Hashtbl.iter
       (fun mdl dirs ->
          fprintf ppf "@[<2>Source directories for %s: %a@]@." mdl print_dirs
