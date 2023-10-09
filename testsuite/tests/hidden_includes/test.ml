@@ -144,4 +144,13 @@ ocamlc.byte;
   check-ocamlc.byte-output;
 }
 
+(* Test that type-directed constructor disambiguation works through -H (at
+   least, for now). *)
+{
+  flags = "-H liba -I libb -nocwd";
+  module = "libc/c5.ml";
+  setup-ocamlc.byte-build-env;
+  ocamlc.byte;
+}
+
 *)
