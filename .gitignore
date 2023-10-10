@@ -243,6 +243,7 @@ META
 /runtime/primitives.new
 /runtime/prims.c
 /runtime/caml/opnames.h
+/runtime/caml/exec.h
 /runtime/caml/version.h
 /runtime/ocamlrun
 /runtime/ocamlrund
@@ -323,6 +324,7 @@ META
 
 /utils/config_boot.ml
 /utils/config_boot.mli
+/utils/config.common.ml
 /utils/config.generated.ml
 /utils/config_main.ml
 /utils/config_main.mli

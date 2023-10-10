@@ -895,6 +895,12 @@ CSCFLAGS
 CSC
 DIFF_FLAGS
 CC
+CMXA_FORMAT
+CMX_FORMAT
+MAGIC_LENGTH
+EXEC_FORMAT
+MAGIC_VERSION
+MAGIC_PREFIX
 OCAML_VERSION_SHORT
 OCAML_VERSION_EXTRA
 OCAML_VERSION_PATCHLEVEL
@@ -3299,6 +3305,22 @@ OCAML_VERSION_EXTRA=dev0-2023-04-11
 
 OCAML_VERSION_SHORT=5.2
 
+MAGIC_PREFIX=Caml1999
+
+printf "%s\n" "#define MAGIC_PREFIX \"Caml1999\"" >>confdefs.h
+
+MAGIC_VERSION=033
+
+printf "%s\n" "#define MAGIC_VERSION \"033\"" >>confdefs.h
+
+EXEC_FORMAT=X
+
+printf "%s\n" "#define EXEC_FORMAT \"X\"" >>confdefs.h
+
+MAGIC_LENGTH=12
+
+
+
 
 
 
@@ -3432,11 +3454,15 @@ ac_config_files="$ac_config_files manual/src/html_processing/src/common.ml"
 
 ac_config_files="$ac_config_files ocamltest/ocamltest_config.ml"
 
+ac_config_files="$ac_config_files utils/config.common.ml"
+
 ac_config_files="$ac_config_files utils/config.generated.ml"
 
 ac_config_headers="$ac_config_headers runtime/caml/m.h"
 
 ac_config_headers="$ac_config_headers runtime/caml/s.h"
+
+ac_config_headers="$ac_config_headers runtime/caml/exec.h"
 
 ac_config_headers="$ac_config_headers runtime/caml/version.h"
 
@@ -3455,6 +3481,8 @@ printf "%s\n" "#define OCAML_VERSION_MAJOR 5" >>confdefs.h
 printf "%s\n" "#define OCAML_VERSION_MINOR 2" >>confdefs.h
 
 printf "%s\n" "#define OCAML_VERSION_PATCHLEVEL 0" >>confdefs.h
+
+printf "%s\n" "#define EXEC_MAGIC_LENGTH 12" >>confdefs.h
 
 printf "%s\n" "#define OCAML_VERSION_ADDITIONAL \"dev0-2023-04-11\"" >>confdefs.h
 
@@ -19861,6 +19889,15 @@ else $as_nop
   flambda_invariants=false
 fi
 
+if $flambda
+then :
+  CMX_FORMAT=y
+  CMXA_FORMAT=z
+else $as_nop
+  CMX_FORMAT=Y
+  CMXA_FORMAT=Z
+fi
+
 if test x"$enable_cmm_invariants" = "xyes"
 then :
   cmm_invariants=true
@@ -21286,9 +21323,11 @@ do
     "manual/src/version.tex") CONFIG_FILES="$CONFIG_FILES manual/src/version.tex" ;;
     "manual/src/html_processing/src/common.ml") CONFIG_FILES="$CONFIG_FILES manual/src/html_processing/src/common.ml" ;;
     "ocamltest/ocamltest_config.ml") CONFIG_FILES="$CONFIG_FILES ocamltest/ocamltest_config.ml" ;;
+    "utils/config.common.ml") CONFIG_FILES="$CONFIG_FILES utils/config.common.ml" ;;
     "utils/config.generated.ml") CONFIG_FILES="$CONFIG_FILES utils/config.generated.ml" ;;
     "runtime/caml/m.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/m.h" ;;
     "runtime/caml/s.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/s.h" ;;
+    "runtime/caml/exec.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/exec.h" ;;
     "runtime/caml/version.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/version.h" ;;
     "compilerlibs/META") CONFIG_FILES="$CONFIG_FILES compilerlibs/META" ;;
     "otherlibs/dynlink/META") CONFIG_FILES="$CONFIG_FILES otherlibs/dynlink/META" ;;

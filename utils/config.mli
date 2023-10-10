@@ -99,6 +99,9 @@ val ar: string
 val interface_suffix: string ref
 (** Suffix for interface file names *)
 
+val magic_length: int
+(** Length of all the magic numbers in bytes *)
+
 val exec_magic_number: string
 (** Magic number for bytecode executable files *)
 

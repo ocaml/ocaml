@@ -88,3 +88,21 @@ m4_define([OCAML__RELEASE_EXTRA],
   m4_if(OCAML__VERSION_EXTRA,[],[None],
       ['Some (]m4_if(OCAML__VERSION_EXTRA_PREFIX,+,[Plus],
       [Tilde])[, "]OCAML__VERSION_EXTRA[")']))]))
+
+# Magic numbers
+
+# The magic numbers are made of three components:
+# - An 8-bytes prefix, common to all of them
+# - A 1-byte kind, specifying the file type (exeecutable, cmi, cmo, etc.)
+# - A 3-bytes version number
+
+m4_define([MAGIC__PREFIX], [Caml1999])
+m4_define([MAGIC__VERSION], [033])
+
+m4_define([MAGIC__LENGTH], [12])
+
+m4_define([EXEC__FORMAT], [X])
+m4_define([CMX__FORMAT], [Y])
+m4_define([CMX_FLAMBDA__FORMAT], [y])
+m4_define([CMXA__FORMAT], [Z])
+m4_define([CMXA_FLAMBDA__FORMAT], [z])

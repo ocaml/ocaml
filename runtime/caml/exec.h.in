@@ -46,7 +46,7 @@ struct section_descriptor {
   uint32_t len;                   /* Length of data in bytes */
 };
 
-#define EXEC_MAGIC_LENGTH 12
+#undef EXEC_MAGIC_LENGTH
 
 /* Structure of the trailer. */
 
@@ -58,9 +58,15 @@ struct exec_trailer {
 
 #define TRAILER_SIZE (4+EXEC_MAGIC_LENGTH)
 
+#undef MAGIC_PREFIX
+
+#undef MAGIC_VERSION
+
+#undef EXEC_FORMAT
+
 /* Magic number for this release */
 
-#define EXEC_MAGIC "Caml1999X033"
+#define EXEC_MAGIC MAGIC_PREFIX EXEC_FORMAT MAGIC_VERSION
 
 #endif /* CAML_INTERNALS */
 

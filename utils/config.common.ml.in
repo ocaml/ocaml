@@ -1,4 +1,5 @@
-#2 "utils/config.common.ml"
+(* @configure_input@ *)
+#3 "utils/config.common.ml.in"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
@@ -28,26 +29,26 @@ let standard_library =
   with Not_found ->
     standard_library_default
 
-let exec_magic_number = "Caml1999X033"
+let magic_prefix = {@QS@|@MAGIC_PREFIX@|@QS@}
+let magic_version = {@QS@|@MAGIC_VERSION@|@QS@}
+
+let make_magic_number kind =
+  magic_prefix ^ (String.make 1 kind) ^ magic_version
+
+let magic_length = @MAGIC_LENGTH@
+
+let exec_magic_number = make_magic_number '@EXEC_FORMAT@'
     (* exec_magic_number is duplicated in runtime/caml/exec.h *)
-and cmi_magic_number = "Caml1999I033"
-and cmo_magic_number = "Caml1999O033"
-and cma_magic_number = "Caml1999A033"
-and cmx_magic_number =
-  if flambda then
-    "Caml1999y033"
-  else
-    "Caml1999Y033"
-and cmxa_magic_number =
-  if flambda then
-    "Caml1999z033"
-  else
-    "Caml1999Z033"
-and ast_impl_magic_number = "Caml1999M033"
-and ast_intf_magic_number = "Caml1999N033"
-and cmxs_magic_number = "Caml1999D033"
-and cmt_magic_number = "Caml1999T033"
-and linear_magic_number = "Caml1999L033"
+and cmi_magic_number = make_magic_number 'I'
+and cmo_magic_number = make_magic_number 'O'
+and cma_magic_number = make_magic_number 'A'
+and cmx_magic_number = make_magic_number '@CMX_FORMAT@'
+and cmxa_magic_number = make_magic_number '@CMXA_FORMAT@'
+and ast_impl_magic_number = make_magic_number 'M'
+and ast_intf_magic_number = make_magic_number 'N'
+and cmxs_magic_number = make_magic_number 'D'
+and cmt_magic_number = make_magic_number 'T'
+and linear_magic_number = make_magic_number 'L'
 
 let safe_string = true
 let default_safe_string = true
