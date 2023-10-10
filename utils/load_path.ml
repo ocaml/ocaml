@@ -201,10 +201,6 @@ let auto_include_otherlibs =
 type visibility = Visible | Hidden
 
 let find_file_in_cache fn visible_files hidden_files =
-  try STbl.find !visible_files fn with
-  | Not_found -> STbl.find !hidden_files fn
-
-let find_file_in_cache_with_visibility fn visible_files hidden_files =
   try (STbl.find !visible_files fn, Visible) with
   | Not_found -> (STbl.find !hidden_files fn, Hidden)
 
@@ -212,29 +208,17 @@ let find fn =
   assert (not Config.merlin || Local_store.is_bound ());
   try
     if is_basename fn && not !Sys.interactive then
-      find_file_in_cache fn visible_files hidden_files
+      fst (find_file_in_cache fn visible_files hidden_files)
     else
       Misc.find_in_path (get_path_list ()) fn
   with Not_found ->
     !auto_include_callback Dir.find fn
 
-let find_normalized fn =
-  assert (not Config.merlin || Local_store.is_bound ());
-  try
-    if is_basename fn && not !Sys.interactive then
-      find_file_in_cache (Misc.normalized_unit_filename fn) visible_files_uncap
-        hidden_files_uncap
-    else
-      Misc.find_in_path_normalized (get_path_list ()) fn
-  with Not_found ->
-    let fn_uncap = Misc.normalized_unit_filename fn in
-    !auto_include_callback Dir.find_normalized fn_uncap
-
 let find_normalized_with_visibility fn =
   assert (not Config.merlin || Local_store.is_bound ());
   try
     if is_basename fn && not !Sys.interactive then
-      find_file_in_cache_with_visibility (Misc.normalized_unit_filename fn)
+      find_file_in_cache (Misc.normalized_unit_filename fn)
         visible_files_uncap hidden_files_uncap
     else
       try
@@ -245,3 +229,5 @@ let find_normalized_with_visibility fn =
   with Not_found ->
     let fn_uncap = Misc.normalized_unit_filename fn in
     (!auto_include_callback Dir.find_normalized fn_uncap, Visible)
+
+let find_normalized fn = fst (find_normalized_with_visibility fn)
