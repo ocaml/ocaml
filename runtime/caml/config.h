@@ -135,21 +135,26 @@ typedef unsigned short uint16_t;
 typedef unsigned char uint8_t;
 #endif
 
+#include <limits.h>
+
 #if SIZEOF_PTR == SIZEOF_LONG
 /* Standard models: ILP32 or I32LP64 */
 typedef long intnat;
 typedef unsigned long uintnat;
 #define ARCH_INTNAT_PRINTF_FORMAT "l"
+#define INTNAT_MIN LONG_MIN
 #elif SIZEOF_PTR == SIZEOF_INT
 /* Hypothetical IP32L64 model */
 typedef int intnat;
 typedef unsigned int uintnat;
 #define ARCH_INTNAT_PRINTF_FORMAT ""
+#define INTNAT_MIN INT_MIN
 #elif SIZEOF_PTR == 8
 /* Win64 model: IL32P64 */
 typedef int64_t intnat;
 typedef uint64_t uintnat;
 #define ARCH_INTNAT_PRINTF_FORMAT ARCH_INT64_PRINTF_FORMAT
+#define INTNAT_MIN INT64_MIN
 #else
 #error "No integer type available to represent pointers"
 #endif

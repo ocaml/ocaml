@@ -120,7 +120,7 @@ static void run_pending_actions(struct compare_stack* stk,
 #define LESS -1
 #define EQUAL 0
 #define GREATER 1
-#define UNORDERED ((intnat)1 << (8 * sizeof(value) - 1))
+#define UNORDERED INTNAT_MIN
 
 /* The return value of compare_val is as follows:
       > 0                 v1 is greater than v2

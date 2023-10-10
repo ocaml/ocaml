@@ -251,7 +251,7 @@ CAMLprim value caml_int32_div(value v1, value v2)
   if (divisor == 0) caml_raise_zero_divide();
   /* PR#4740: on some processors, division crashes on overflow.
      Implement the same behavior as for type "int". */
-  if (dividend == (1<<31) && divisor == -1) return v1;
+  if (dividend == INT32_MIN && divisor == -1) return v1;
   return caml_copy_int32(dividend / divisor);
 }
 
@@ -262,7 +262,7 @@ CAMLprim value caml_int32_mod(value v1, value v2)
   if (divisor == 0) caml_raise_zero_divide();
   /* PR#4740: on some processors, modulus crashes if division overflows.
      Implement the same behavior as for type "int". */
-  if (dividend == (1<<31) && divisor == -1) return caml_copy_int32(0);
+  if (dividend == INT32_MIN && divisor == -1) return caml_copy_int32(0);
   return caml_copy_int32(dividend % divisor);
 }
 
@@ -472,7 +472,7 @@ CAMLprim_int64_2(div)(int64_t dividend, int64_t divisor)
   if (divisor == 0) caml_raise_zero_divide();
   /* PR#4740: on some processors, division crashes on overflow.
      Implement the same behavior as for type "int". */
-  if (dividend == ((int64_t)1 << 63) && divisor == -1) return dividend;
+  if (dividend == INT64_MIN && divisor == -1) return dividend;
   return dividend / divisor;
 }
 
@@ -481,7 +481,7 @@ CAMLprim_int64_2(mod)(int64_t dividend, int64_t divisor)
   if (divisor == 0) caml_raise_zero_divide();
   /* PR#4740: on some processors, division crashes on overflow.
      Implement the same behavior as for type "int". */
-  if (dividend == ((int64_t)1 << 63) && divisor == -1) return 0;
+  if (dividend == INT64_MIN && divisor == -1) return 0;
   return dividend % divisor;
 }
 
@@ -675,7 +675,7 @@ static void nativeint_serialize(value v, uintnat * bsize_32,
 {
   intnat l = Nativeint_val(v);
 #ifdef ARCH_SIXTYFOUR
-  if (l >= -((intnat)1 << 31) && l < ((intnat)1 << 31)) {
+  if (-(intnat)INT32_MIN <= l && l < (intnat)INT32_MIN) {
     caml_serialize_int_1(1);
     caml_serialize_int_4((int32_t) l);
   } else {
@@ -740,8 +740,6 @@ CAMLprim value caml_nativeint_sub(value v1, value v2)
 CAMLprim value caml_nativeint_mul(value v1, value v2)
 { return caml_copy_nativeint(Nativeint_val(v1) * Nativeint_val(v2)); }
 
-#define Nativeint_min_int ((intnat) 1 << (sizeof(intnat) * 8 - 1))
-
 CAMLprim value caml_nativeint_div(value v1, value v2)
 {
   intnat dividend = Nativeint_val(v1);
@@ -749,7 +747,7 @@ CAMLprim value caml_nativeint_div(value v1, value v2)
   if (divisor == 0) caml_raise_zero_divide();
   /* PR#4740: on some processors, modulus crashes if division overflows.
      Implement the same behavior as for type "int". */
-  if (dividend == Nativeint_min_int && divisor == -1) return v1;
+  if (dividend == INTNAT_MIN && divisor == -1) return v1;
   return caml_copy_nativeint(dividend / divisor);
 }
 
@@ -760,7 +758,7 @@ CAMLprim value caml_nativeint_mod(value v1, value v2)
   if (divisor == 0) caml_raise_zero_divide();
   /* PR#4740: on some processors, modulus crashes if division overflows.
      Implement the same behavior as for type "int". */
-  if (dividend == Nativeint_min_int && divisor == -1){
+  if (dividend == INTNAT_MIN && divisor == -1){
     return caml_copy_nativeint(0);
   }
   return caml_copy_nativeint(dividend % divisor);
