@@ -7,6 +7,8 @@ on:
       - '5.**'
       - 'trunk'
   pull_request:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 # Restrict the GITHUB_TOKEN
 permissions: {}
