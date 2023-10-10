@@ -475,7 +475,7 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   caml_memprof_th_ctx_iter_hook = memprof_ctx_iter;
   /* Set up fork() to reinitialize the thread machinery in the child
      (PR#4577) */
-  st_atfork(caml_thread_reinitialize);
+  caml_atfork_hook = caml_thread_reinitialize;
   return Val_unit;
 }
 

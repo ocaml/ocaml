@@ -27,7 +27,6 @@
 #ifdef __linux__
 #include <unistd.h>
 #endif
-#include <caml/domain.h>
 
 typedef int st_retcode;
 
@@ -393,24 +392,6 @@ static void * caml_thread_tick(void * arg)
     caml_record_signal(SIGPREEMPTION);
   }
   return NULL;
-}
-
-/* "At fork" processing */
-
-#if defined(__ANDROID__)
-/* Android's libc does not include declaration of pthread_atfork;
-   however, it implements it since API level 10 (Gingerbread).
-   The reason for the omission is that Android (GUI) applications
-   are not supposed to fork at all, however this workaround is still
-   included in case OCaml is used for an Android CLI utility. */
-int pthread_atfork(void (*prepare)(void), void (*parent)(void),
-                   void (*child)(void));
-#endif
-
-static int st_atfork(void (*fn)(void))
-{
-  caml_atfork_hook = fn;
-  return 0;
 }
 
 /* Signal handling */

@@ -516,13 +516,6 @@ static DWORD WINAPI caml_thread_tick(void * arg)
   return 0;
 }
 
-/* "At fork" processing -- none under Win32 */
-
-static DWORD st_atfork(void (*fn)(void))
-{
-  return 0;
-}
-
 /* Signal handling -- none under Win32 */
 
 value caml_thread_sigmask(value cmd, value sigs) /* ML */
