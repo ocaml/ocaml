@@ -377,7 +377,7 @@ let ml_file_dependencies source_file =
   in
   let (extracted_deps, ()) =
     read_parse_and_extract parse_use_file_as_impl Depend.add_implementation ()
-                           Pparse.Structure source_file
+                           Pparse.Implementation source_file
   in
   prepend_to_list files (source_file, ML, extracted_deps, !Depend.pp_deps)
 
