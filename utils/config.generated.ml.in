@@ -1,5 +1,5 @@
 (* @configure_input@ *)
-#2 "utils/config.generated.ml.in"
+#3 "utils/config.generated.ml.in"
 (**************************************************************************)
 (*                                                                        *)
 (*                                 OCaml                                  *)
