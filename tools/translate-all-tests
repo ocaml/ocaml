@@ -45,7 +45,6 @@ shadow_include/shadow_all.ml \
 
 # These tests can be translated without special care
 TESTS_PLAIN="
-newtest/hello.ml \
 arch-power/exn_raise.ml \
 array-functions/test.ml \
 asmcomp/0001-test.ml \
@@ -313,6 +312,7 @@ lib-channels/input_lines.ml \
 lib-channels/refcounting.ml \
 lib-channels/seek_in.ml \
 lib-digest/md5.ml \
+newtest/hello.ml \
 lib-dynlink-bytecode/main.ml \
 lib-dynlink-csharp/main.ml \
 lib-dynlink-domains/main.ml \
