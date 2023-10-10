@@ -81,6 +81,10 @@ _______________
   (Antonin Décimo, review by Nicolás Ojeda Bär, Xavier Leroy, and
    Gabriel Scherer)
 
+- #13083: Use macros from limits.h to avoid signed-integer wrap-around.
+  (Antonin Décimo, review by Nick Barnes, Xavier Leroy, Gabriel Scherer,
+   and Miod Vallat)
+
 ### Code generation and optimizations:
 
 - #13014: Enable compile-time option -function-sections on all previously
