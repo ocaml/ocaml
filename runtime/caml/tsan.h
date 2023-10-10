@@ -61,6 +61,7 @@
 
 struct stack_info;
 
+CAMLextern void caml_tsan_exit_on_raise(uintnat pc, char* sp, char* trapsp);
 CAMLextern void caml_tsan_exit_on_raise_c(char* limit);
 
 CAMLextern void caml_tsan_exit_on_perform(uintnat pc, char* sp);
