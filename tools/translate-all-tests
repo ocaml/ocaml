@@ -45,6 +45,7 @@ shadow_include/shadow_all.ml \
 
 # These tests can be translated without special care
 TESTS_PLAIN="
+newtest/hello.ml \
 arch-power/exn_raise.ml \
 array-functions/test.ml \
 asmcomp/0001-test.ml \
