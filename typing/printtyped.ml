@@ -1014,9 +1014,13 @@ and label_x_bool_x_core_type_list i ppf x =
       line i ppf "Tinherit\n";
       core_type (i+1) ppf ct
 
-let interface ppf x = list 0 signature_item ppf x.sig_items
+let structure = structure 0
+let signature = signature 0
 
-let implementation ppf x = list 0 structure_item ppf x.str_items
+let interface ppf { intf_signature; intf_loc; _ } =
+  line 0 ppf "interface %a\n" fmt_location intf_loc;
+  signature ppf intf_signature
 
-let implementation_with_coercion ppf Typedtree.{structure; _} =
-  implementation ppf structure
+let implementation ppf { impl_structure; impl_loc; _ } =
+  line 0 ppf "implementation %a\n" fmt_location impl_loc;
+  structure ppf impl_structure

@@ -21,4 +21,4 @@
 
 let () =
   let ast = Pparse.parse_implementation ~tool_name:"test" "foo.ml" in
-  Pparse.write_ast Pparse.Structure "foo.marshalled.ml" ast
+  Pparse.write_ast Pparse.Implementation "foo.marshalled.ml" ast

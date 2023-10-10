@@ -22,6 +22,9 @@
 val structure : Parsetree.structure -> unit
 val signature : Parsetree.signature -> unit
 
+val implementation : Parsetree.implementation -> unit
+val interface : Parsetree.interface -> unit
+
 (** Checks the invariant of Location.t's loc_ghost field, that are stated in
     location.mli. This can be run with -dparsetree-loc-ghost-invariants, which
     is used slightly in the testsuite, but should be used more to find more

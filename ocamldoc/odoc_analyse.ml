@@ -77,12 +77,12 @@ let process_implementation_file sourcefile =
   let inputfile = preprocess sourcefile in
   let env = initial_env () in
   try
-    let parsetree =
+    let implementation =
       Pparse.file ~tool_name inputfile
-        (no_docstring Parse.implementation) Pparse.Structure
+        (no_docstring Parse.implementation) Pparse.Implementation
     in
-    let typedtree = Typemod.type_implementation source env parsetree in
-    (Some (parsetree, typedtree), inputfile)
+    let typedtree = Typemod.type_implementation source env implementation in
+    (Some (implementation, typedtree), inputfile)
   with
   | Syntaxerr.Error _ as exn ->
       begin match Location.error_of_exn exn with
@@ -105,13 +105,13 @@ let process_interface_file sourcefile =
   let unit = unit_from_source sourcefile Unit_info.Intf in
   Env.set_current_unit unit;
   let inputfile = preprocess sourcefile in
-  let ast =
+  let interface =
     Pparse.file ~tool_name inputfile
-      (no_docstring Parse.interface) Pparse.Signature
+      (no_docstring Parse.interface) Pparse.Interface
   in
-  let sg = Typemod.type_interface (initial_env()) ast in
+  let typedtree = Typemod.type_interface (initial_env()) interface in
   Warnings.check_fatal ();
-  (ast, sg, inputfile)
+  (interface, typedtree, inputfile)
 
 (** The module used to analyse the parsetree and signature of an implementation file.*)
 module Ast_analyser = Odoc_ast.Analyser (Odoc_comments.Basic_info_retriever)
@@ -149,10 +149,10 @@ let process_file sourcefile =
          match parsetree_typedtree_opt with
            None ->
              None
-         | Some (parsetree, Typedtree.{structure; coercion; _}) ->
+         | Some (parsetree, Typedtree.{impl_structure = structure; impl_coercion = coercion; _}) ->
              let typedtree = (structure, coercion) in
              let file_module = Ast_analyser.analyse_typed_tree file
-                 input_file parsetree typedtree
+                 input_file parsetree.Parsetree.pimpl_structure typedtree
              in
              file_module.Odoc_module.m_top_deps <- Odoc_dep.impl_dependencies parsetree ;
 
@@ -179,10 +179,11 @@ let process_file sourcefile =
        Location.input_name := file;
        try
          let (ast, signat, input_file) = process_interface_file file in
-         let file_module = Sig_analyser.analyse_signature file
-             input_file ast signat.sig_type
+         let file_module =
+           Sig_analyser.analyse_signature file
+             input_file ast.Parsetree.pintf_signature
+             signat.intf_signature.sig_type
          in
-
          file_module.Odoc_module.m_top_deps <- Odoc_dep.intf_dependencies ast ;
 
          if !Odoc_global.verbose then

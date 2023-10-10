@@ -42,16 +42,17 @@ let with_info ~native ~tool_name ~dump_ext unit_info k =
 let parse_intf i =
   Pparse.parse_interface ~tool_name:i.tool_name (Unit_info.source_file i.target)
   |> print_if i.ppf_dump Clflags.dump_parsetree Printast.interface
-  |> print_if i.ppf_dump Clflags.dump_source Pprintast.signature
+  |> print_if i.ppf_dump Clflags.dump_source Pprintast.interface
 
 let typecheck_intf info ast =
   Profile.(record_call typing) @@ fun () ->
-  let tsg =
+  let tintf =
     ast
     |> Typemod.type_interface info.env
     |> print_if info.ppf_dump Clflags.dump_typedtree Printtyped.interface
   in
-  let alerts = Builtin_attributes.alerts_of_sig ~mark:true ast in
+  let alerts = Builtin_attributes.alerts_of_intf ~mark:true ast in
+  let tsg = tintf.Typedtree.intf_signature in
   let sg = tsg.Typedtree.sig_type in
   if !Clflags.print_types then
     Printtyp.wrap_printing_env ~error:false info.env (fun () ->
@@ -62,9 +63,10 @@ let typecheck_intf info ast =
   Typecore.force_delayed_checks ();
   Builtin_attributes.warn_unused ();
   Warnings.check_fatal ();
-  alerts, tsg
+  alerts, tintf
 
-let emit_signature info alerts tsg =
+let emit_interface info alerts tintf =
+  let tsg = tintf.Typedtree.intf_signature in
   let sg =
     Env.save_signature ~alerts tsg.Typedtree.sig_type
       (Unit_info.cmi info.target)
@@ -75,9 +77,9 @@ let interface info =
   Profile.record_call (Unit_info.source_file info.target) @@ fun () ->
   let ast = parse_intf info in
   if Clflags.(should_stop_after Compiler_pass.Parsing) then () else begin
-    let alerts, tsg = typecheck_intf info ast in
+    let alerts, tintf = typecheck_intf info ast in
     if not !Clflags.print_types then begin
-      emit_signature info alerts tsg
+      emit_interface info alerts tintf
     end
   end
 
@@ -88,16 +90,16 @@ let parse_impl i =
   let sourcefile = Unit_info.source_file i.target in
   Pparse.parse_implementation ~tool_name:i.tool_name sourcefile
   |> print_if i.ppf_dump Clflags.dump_parsetree Printast.implementation
-  |> print_if i.ppf_dump Clflags.dump_source Pprintast.structure
+  |> print_if i.ppf_dump Clflags.dump_source Pprintast.implementation
 
 let typecheck_impl i parsetree =
   parsetree
   |> Profile.(record typing)
     (Typemod.type_implementation i.target i.env)
   |> print_if i.ppf_dump Clflags.dump_typedtree
-    Printtyped.implementation_with_coercion
+    Printtyped.implementation
   |> print_if i.ppf_dump Clflags.dump_shape
-    (fun fmt {Typedtree.shape; _} -> Shape.print fmt shape)
+    (fun fmt {Typedtree.impl_shape; _} -> Shape.print fmt impl_shape)
 
 let implementation info ~backend =
   Profile.record_call (Unit_info.source_file info.target) @@ fun () ->

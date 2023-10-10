@@ -858,10 +858,11 @@ and 'a class_infos =
    }
 
 type implementation = {
-  structure: structure;
-  coercion: module_coercion;
-  signature: Types.signature;
-  shape: Shape.t;
+  impl_structure: structure;
+  impl_coercion: module_coercion;
+  impl_signature: Types.signature;
+  impl_shape: Shape.t;
+  impl_loc: Location.t;
 }
 (** A typechecked implementation including its module structure, its exported
     signature, and a coercion of the module against that signature.
@@ -872,6 +873,12 @@ type implementation = {
     If there isn't one, the signature will be inferred from the module
     structure.
 *)
+
+type interface = {
+  intf_signature: signature;
+  intf_loc: Location.t;
+}
+(** A typechecked interface including its signature and its location. *)
 
 type item_declaration =
   | Value of value_description

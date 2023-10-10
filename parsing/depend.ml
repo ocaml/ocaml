@@ -577,19 +577,6 @@ and add_struct_item (bv, m) item : _ String.Map.t * _ String.Map.t =
       handle_extension e;
       (bv, m)
 
-and add_use_file bv top_phrs =
-  ignore (List.fold_left add_top_phrase bv top_phrs)
-
-and add_implementation bv l =
-    ignore (add_structure_binding bv l)
-
-and add_implementation_binding bv l =
-  snd (add_structure_binding bv l)
-
-and add_top_phrase bv = function
-  | Ptop_def str -> add_structure bv str
-  | Ptop_dir _ -> bv
-
 and add_class_expr bv ce =
   match ce.pcl_desc with
     Pcl_constr(l, tyl) ->
@@ -624,3 +611,26 @@ and add_class_field bv pcf =
 
 and add_class_declaration bv decl =
   add_class_expr bv decl.pci_expr
+
+
+let add_structure_binding bv l =
+  snd (add_structure_binding bv l)
+
+let add_structure bv l =
+  ignore (add_structure_binding bv l)
+
+let add_top_phrase bv = function
+  | Ptop_def str -> add_structure_binding bv str
+  | Ptop_dir _ -> bv
+
+let add_use_file bv top_phrs =
+  ignore (List.fold_left add_top_phrase bv top_phrs)
+
+let add_signature bv signature =
+  ignore (add_signature_binding bv signature)
+
+let add_implementation bv impl =
+  add_structure bv impl.pimpl_structure
+
+let add_interface bv intf =
+  add_signature bv intf.pintf_signature

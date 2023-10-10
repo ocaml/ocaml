@@ -1908,3 +1908,6 @@ let signature_item = signature_item reset_ctxt
 let binding = binding reset_ctxt
 let payload = payload reset_ctxt
 let longident = value_longident
+
+let interface fmt intf = signature fmt intf.pintf_signature
+let implementation fmt intf = structure fmt intf.pimpl_structure

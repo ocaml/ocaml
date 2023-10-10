@@ -3309,7 +3309,7 @@ let type_implementation target initial_env ast =
       if !Clflags.print_types then (* #7656 *)
         ignore @@ Warnings.parse_options false "-32-34-37-38-60";
       let (str, sg, names, shape, finalenv) =
-        type_structure initial_env ast in
+        type_structure initial_env ast.pimpl_structure in
       let shape =
         let id = Ident.create_persistent @@ Unit_info.modname target in
         Shape.set_uid_if_none shape (Uid.of_compilation_unit_id id)
@@ -3324,10 +3324,11 @@ let type_implementation target initial_env ast =
               simple_sg
           );
         gen_annot target (Cmt_format.Implementation str);
-        { structure = str;
-          coercion = Tcoerce_none;
-          shape;
-          signature = simple_sg
+        { impl_structure = str;
+          impl_coercion = Tcoerce_none;
+          impl_shape = shape;
+          impl_signature = simple_sg;
+          impl_loc = ast.pimpl_loc;
         } (* result is ignored by Compile.implementation *)
       end else begin
         let source_intf = Unit_info.mli_from_source target in
@@ -3354,10 +3355,11 @@ let type_implementation target initial_env ast =
           let shape = Shape_reduce.local_reduce Env.empty shape in
           let annots = Cmt_format.Implementation str in
           save_cmt target annots initial_env None (Some shape);
-          { structure = str;
-            coercion;
-            shape;
-            signature = dclsig
+          { impl_structure = str;
+            impl_coercion = coercion;
+            impl_shape = shape;
+            impl_signature = dclsig;
+            impl_loc = ast.pimpl_loc;
           }
         end else begin
           Location.prerr_warning
@@ -3375,7 +3377,7 @@ let type_implementation target initial_env ast =
              declarations like "let x = true;; let x = 1;;", because in this
              case, the inferred signature contains only the last declaration. *)
           let shape = Shape_reduce.local_reduce Env.empty shape in
-          let alerts = Builtin_attributes.alerts_of_str ~mark:true ast in
+          let alerts = Builtin_attributes.alerts_of_impl ~mark:true ast in
           if not !Clflags.dont_write_files then begin
             let cmi =
               Env.save_signature ~alerts simple_sg (Unit_info.cmi target)
@@ -3383,10 +3385,11 @@ let type_implementation target initial_env ast =
             let annots = Cmt_format.Implementation str in
             save_cmt target annots initial_env (Some cmi) (Some shape)
           end;
-          { structure = str;
-            coercion;
-            shape;
-            signature = simple_sg
+          { impl_structure = str;
+            impl_coercion = coercion;
+            impl_shape = shape;
+            impl_signature = simple_sg;
+            impl_loc = ast.pimpl_loc;
           }
         end
       end
@@ -3404,7 +3407,9 @@ let save_signature target tsg initial_env cmi =
     (Cmt_format.Interface tsg) initial_env (Some cmi) None
 
 let type_interface env ast =
-  transl_signature env ast
+  { intf_signature = transl_signature env ast.pintf_signature
+  ; intf_loc = ast.pintf_loc
+  }
 
 (* "Packaging" of several compilation units into one unit
    having them as sub-modules.  *)

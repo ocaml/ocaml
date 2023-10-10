@@ -18,16 +18,16 @@ let root = Sys.argv.(1)
 let () = assert (Sys.file_exists (Filename.concat root "VERSION"))
 
 type _ kind =
-  | Implem : Parsetree.structure kind
-  | Interf : Parsetree.signature kind
+  | Implem : Parsetree.implementation kind
+  | Interf : Parsetree.interface kind
 
 let parse : type a. a kind -> Lexing.lexbuf -> a = function
   | Implem -> Parse.implementation
   | Interf -> Parse.interface
 
 let invariants : type a. a kind -> a -> unit = function
-  | Implem -> Ast_invariants.structure
-  | Interf -> Ast_invariants.signature
+  | Implem -> Ast_invariants.implementation
+  | Interf -> Ast_invariants.interface
 
 let check_file kind fn =
   ignore (Warnings.parse_options false "-a");
