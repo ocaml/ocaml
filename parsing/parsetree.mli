@@ -1117,3 +1117,15 @@ and directive_argument_desc =
   | Pdir_int of string * char option
   | Pdir_ident of Longident.t
   | Pdir_bool of bool
+
+type implementation = 
+  {
+    pimpl_structure: structure;
+    pimpl_loc : Location.t;
+  }
+
+type interface = 
+  {
+    pintf_signature: signature;
+    pintf_loc : Location.t;
+  }

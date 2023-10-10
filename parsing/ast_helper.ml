@@ -646,3 +646,13 @@ module Of = struct
   let inherit_ ?loc ty =
     mk ?loc (Oinherit ty)
 end
+
+module Impl = struct
+  let mk ?(loc = !default_loc) pimpl_structure =
+    { pimpl_structure; pimpl_loc = loc }
+end
+
+module Intf = struct
+  let mk ?(loc = !default_loc) pintf_signature =
+    { pintf_signature; pintf_loc = loc }
+end

@@ -158,9 +158,9 @@ val parse_constr_longident: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Longid
 
 val parse_any_longident: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Longident.t)
 
-val interface: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Parsetree.signature)
+val interface: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Parsetree.interface)
 
-val implementation: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Parsetree.structure)
+val implementation: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Parsetree.implementation)
 
 module MenhirInterpreter : sig
   
@@ -201,8 +201,8 @@ module Incremental : sig
   
   val parse_any_longident: Lexing.position -> (Longident.t) MenhirInterpreter.checkpoint
   
-  val interface: Lexing.position -> (Parsetree.signature) MenhirInterpreter.checkpoint
+  val interface: Lexing.position -> (Parsetree.interface) MenhirInterpreter.checkpoint
   
-  val implementation: Lexing.position -> (Parsetree.structure) MenhirInterpreter.checkpoint
+  val implementation: Lexing.position -> (Parsetree.implementation) MenhirInterpreter.checkpoint
   
 end

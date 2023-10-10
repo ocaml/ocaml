@@ -20,8 +20,8 @@
 
 *)
 
-val implementation : Lexing.lexbuf -> Parsetree.structure
-val interface : Lexing.lexbuf -> Parsetree.signature
+val implementation : Lexing.lexbuf -> Parsetree.implementation
+val interface : Lexing.lexbuf -> Parsetree.interface
 val toplevel_phrase : Lexing.lexbuf -> Parsetree.toplevel_phrase
 val use_file : Lexing.lexbuf -> Parsetree.toplevel_phrase list
 val core_type : Lexing.lexbuf -> Parsetree.core_type

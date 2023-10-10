@@ -908,10 +908,10 @@ The precedences must be listed from low to high.
    states in the automaton are reachable from it. */
 
 %start implementation                   /* for implementation files */
-%type <Parsetree.structure> implementation
+%type <Parsetree.implementation> implementation
 /* BEGIN AVOID */
 %start interface                        /* for interface files */
-%type <Parsetree.signature> interface
+%type <Parsetree.interface> interface
 /* END AVOID */
 %start toplevel_phrase                  /* for interactive use */
 %type <Parsetree.toplevel_phrase> toplevel_phrase
@@ -1229,14 +1229,14 @@ listx(delimiter, X, Y):
 (* An .ml file. *)
 implementation:
   structure EOF
-    { $1 }
+    { { pimpl_structure = $1; pimpl_loc = make_loc $sloc } }
 ;
 
 /* BEGIN AVOID */
 (* An .mli file. *)
 interface:
   signature EOF
-    { $1 }
+    { { pintf_signature = $1; pintf_loc = make_loc $sloc } }
 ;
 /* END AVOID */
 

@@ -32,8 +32,8 @@ val preprocess : string -> string
 val remove_preprocessed : string -> unit
 
 type 'a ast_kind =
-| Structure : Parsetree.structure ast_kind
-| Signature : Parsetree.signature ast_kind
+| Implementation : Parsetree.implementation ast_kind
+| Interface : Parsetree.interface ast_kind
 
 val read_ast : 'a ast_kind -> string -> 'a
 val write_ast : 'a ast_kind -> string -> 'a -> unit
@@ -46,20 +46,20 @@ val apply_rewriters: ?restore:bool -> tool_name:string ->
   (** If [restore = true] (the default), cookies set by external
       rewriters will be kept for later calls. *)
 
-val apply_rewriters_str:
-  ?restore:bool -> tool_name:string -> Parsetree.structure ->
-  Parsetree.structure
-val apply_rewriters_sig:
-  ?restore:bool -> tool_name:string -> Parsetree.signature ->
-  Parsetree.signature
+val apply_rewriters_impl:
+  ?restore:bool -> tool_name:string -> Parsetree.implementation ->
+  Parsetree.implementation
+val apply_rewriters_intf:
+  ?restore:bool -> tool_name:string -> Parsetree.interface ->
+  Parsetree.interface
 
 val report_error : formatter -> error -> unit
 
 
 val parse_implementation:
-  tool_name:string -> string -> Parsetree.structure
+  tool_name:string -> string -> Parsetree.implementation
 val parse_interface:
-  tool_name:string -> string -> Parsetree.signature
+  tool_name:string -> string -> Parsetree.interface
 
 (* [call_external_preprocessor sourcefile pp] *)
 val call_external_preprocessor : string -> string -> string
