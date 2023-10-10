@@ -224,6 +224,9 @@ let iterator =
 let structure st = iterator.structure iterator st
 let signature sg = iterator.signature iterator sg
 
+let implementation impl = iterator.implementation iterator impl
+let interface intf = iterator.interface iterator intf
+
 let check_loc_ghost meth v ~source_contents =
   let equal_modulo_loc =
     let no_locs =

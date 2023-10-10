@@ -50,10 +50,12 @@ let remove_preprocessed inputfile =
 type 'a ast_kind =
 | Structure : Parsetree.structure ast_kind
 | Signature : Parsetree.signature ast_kind
+| Implementation : Parsetree.implementation ast_kind
+| Interface : Parsetree.interface ast_kind
 
 let magic_of_kind : type a . a ast_kind -> string = function
-  | Structure -> Config.ast_impl_magic_number
-  | Signature -> Config.ast_intf_magic_number
+  | Structure | Implementation -> Config.ast_impl_magic_number
+  | Signature | Interface -> Config.ast_intf_magic_number
 
 (* Note: some of the functions here should go to Ast_mapper instead,
    which would encapsulate the "binary AST" protocol. *)
@@ -132,6 +134,16 @@ let apply_rewriters_sig ?(restore = true) ~tool_name ast =
       in
       Ast_invariants.signature ast; ast
 
+let apply_rewriters_impl ?restore ~tool_name impl = Parsetree.{
+  impl with pimpl_structure =
+    apply_rewriters_str ?restore ~tool_name impl.pimpl_structure
+}
+
+let apply_rewriters_intf ?restore ~tool_name intf = Parsetree.{
+  intf with pintf_signature =
+    apply_rewriters_sig ?restore ~tool_name intf.pintf_signature
+}
+
 let apply_rewriters ?restore ~tool_name
     (type a) (kind : a ast_kind) (ast : a) : a =
   match kind with
@@ -139,6 +151,10 @@ let apply_rewriters ?restore ~tool_name
       apply_rewriters_str ?restore ~tool_name ast
   | Signature ->
       apply_rewriters_sig ?restore ~tool_name ast
+  | Implementation ->
+      apply_rewriters_impl ?restore ~tool_name ast
+  | Interface ->
+      apply_rewriters_intf ?restore ~tool_name ast
 
 (* Parse a file or get a dumped syntax tree from it *)
 
@@ -160,11 +176,6 @@ let open_and_check_magic inputfile ast_magic =
   in
   (ic, is_ast_file)
 
-let parse (type a) (kind : a ast_kind) lexbuf : a =
-  match kind with
-  | Structure -> Parse.implementation lexbuf
-  | Signature -> Parse.interface lexbuf
-
 let set_input_lexbuf ic =
   let source =
     (* We read the whole source file at once. This guarantees that all
@@ -183,6 +194,8 @@ let check_loc_ghost (type a) (kind : a ast_kind) (ast : a) ~inputfile =
       match kind with
       | Structure -> (fun i -> i.structure)
       | Signature -> (fun i -> i.signature)
+      | Implementation -> (fun i -> i.implementation)
+      | Interface -> (fun i -> i.interface)
     in
     let source_contents =
       In_channel.with_open_bin inputfile In_channel.input_all
@@ -225,8 +238,8 @@ let file_aux ~tool_name ~sourcefile inputfile (type a) parse_fun invariant_fun
   in
   check_loc_ghost kind ast ~inputfile;
   Profile.record_call "-ppx" (fun () ->
-      apply_rewriters ~restore:false ~tool_name kind ast
-    )
+    apply_rewriters ~restore:false ~tool_name kind ast
+  )
 
 let file ~tool_name inputfile parse_fun ast_kind =
   file_aux ~tool_name ~sourcefile:inputfile inputfile parse_fun ignore ast_kind
@@ -257,10 +270,18 @@ let parse_file ~tool_name invariant_fun parse kind sourcefile =
        file_aux ~tool_name ~sourcefile inputfile parse invariant_fun kind)
     ~always:(fun () -> remove_preprocessed inputfile)
 
-let parse_implementation ~tool_name sourcefile =
+let parse_structure ~tool_name sourcefile =
   parse_file ~tool_name Ast_invariants.structure
-      (parse Structure) Structure sourcefile
+    Parse.structure Structure sourcefile
+
+let parse_signature ~tool_name sourcefile =
+  parse_file ~tool_name Ast_invariants.signature
+    Parse.signature Signature sourcefile
+
+let parse_implementation ~tool_name sourcefile =
+  parse_file ~tool_name Ast_invariants.implementation
+    Parse.implementation Implementation sourcefile
 
 let parse_interface ~tool_name sourcefile =
-  parse_file ~tool_name Ast_invariants.signature
-    (parse Signature) Signature sourcefile
+  parse_file ~tool_name Ast_invariants.interface
+    Parse.interface Interface sourcefile

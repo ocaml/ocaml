@@ -117,8 +117,11 @@ val check_alerts_inclusion:
   def:Location.t -> use:Location.t -> Location.t -> Parsetree.attributes ->
   Parsetree.attributes -> string -> unit
 val alerts_of_attrs: Parsetree.attributes -> Misc.alerts
+
 val alerts_of_sig: mark:bool -> Parsetree.signature -> Misc.alerts
 val alerts_of_str: mark:bool -> Parsetree.structure -> Misc.alerts
+val alerts_of_impl: mark:bool -> Parsetree.implementation -> Misc.alerts
+val alerts_of_intf: mark:bool -> Parsetree.interface -> Misc.alerts
 
 val check_deprecated_mutable:
     Location.t -> Parsetree.attributes -> string -> unit

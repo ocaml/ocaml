@@ -407,7 +407,7 @@ let rewrite_file srcfile add_function =
   let lb = Lexing.from_channel !inchan in
   Location.input_name := srcfile;
   Location.init lb srcfile;
-  List.iter (rewrite_str_item false) (Parse.implementation lb);
+  List.iter (rewrite_str_item false) (Parse.structure lb);
   final_rewrite add_function;
   close_in !inchan
 

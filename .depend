@@ -8013,7 +8013,6 @@ tools/lintapidiff.cmo : \
     driver/pparse.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
-    parsing/parse.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
@@ -8025,7 +8024,6 @@ tools/lintapidiff.cmx : \
     driver/pparse.cmx \
     typing/path.cmx \
     parsing/parsetree.cmi \
-    parsing/parse.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
     typing/ident.cmx \
@@ -8935,6 +8933,7 @@ ocamldoc/odoc_analyse.cmo : \
     typing/typedtree.cmi \
     parsing/syntaxerr.cmi \
     driver/pparse.cmi \
+    parsing/parsetree.cmi \
     parsing/parse.cmi \
     ocamldoc/odoc_types.cmi \
     ocamldoc/odoc_text.cmi \
@@ -8963,6 +8962,7 @@ ocamldoc/odoc_analyse.cmx : \
     typing/typedtree.cmx \
     parsing/syntaxerr.cmx \
     driver/pparse.cmx \
+    parsing/parsetree.cmi \
     parsing/parse.cmx \
     ocamldoc/odoc_types.cmx \
     ocamldoc/odoc_text.cmx \
@@ -9187,7 +9187,6 @@ ocamldoc/odoc_dag2html.cmi : \
     ocamldoc/odoc_info.cmi
 ocamldoc/odoc_dep.cmo : \
     otherlibs/str/str.cmi \
-    parsing/parsetree.cmi \
     ocamldoc/odoc_type.cmi \
     ocamldoc/odoc_print.cmi \
     ocamldoc/odoc_module.cmi \
@@ -9196,7 +9195,6 @@ ocamldoc/odoc_dep.cmo : \
     ocamldoc/odoc_dep.cmi
 ocamldoc/odoc_dep.cmx : \
     otherlibs/str/str.cmx \
-    parsing/parsetree.cmi \
     ocamldoc/odoc_type.cmx \
     ocamldoc/odoc_print.cmx \
     ocamldoc/odoc_module.cmx \

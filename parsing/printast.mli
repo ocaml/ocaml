@@ -23,11 +23,12 @@
 open Parsetree
 open Format
 
-val interface : formatter -> signature_item list -> unit
-val implementation : formatter -> structure_item list -> unit
+val interface : formatter -> interface -> unit
+val implementation : formatter -> implementation -> unit
 val top_phrase : formatter -> toplevel_phrase -> unit
 
+val signature : formatter -> signature -> unit
+val structure : formatter -> structure -> unit
 val pattern: int -> formatter -> pattern -> unit
 val expression: int -> formatter -> expression -> unit
-val structure: int -> formatter -> structure -> unit
 val payload: int -> formatter -> payload -> unit

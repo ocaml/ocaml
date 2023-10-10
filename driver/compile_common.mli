@@ -44,19 +44,19 @@ val with_info :
 
 (** {2 Interfaces} *)
 
-val parse_intf : info -> Parsetree.signature
+val parse_intf : info -> Parsetree.interface
 (** [parse_intf info] parses an interface (usually an [.mli] file). *)
 
 val typecheck_intf :
-  info -> Parsetree.signature -> Misc.alerts * Typedtree.signature
+  info -> Parsetree.interface -> Misc.alerts * Typedtree.interface
 (** [typecheck_intf info parsetree] typechecks an interface and returns the
-    typedtree of the associated signature, together with the alerts appearing at
-    the top of the signature (before any other non-attribute item).
+    typedtree of the associated interface, together with the alerts appearing at
+    the top of the interface (before any other non-attribute item).
 *)
 
-val emit_signature : info -> Misc.alerts -> Typedtree.signature -> unit
-(** [emit_signature info alerts typedtree] emits the [.cmi] file containing the
-    given signature and compilation unit alerts (as returned eg by
+val emit_interface : info -> Misc.alerts -> Typedtree.interface -> unit
+(** [emit_interface info alerts typedtree] emits the [.cmi] file containing the
+    given interface and compilation unit alerts (as returned eg by
     [typecheck_intf] above).
 *)
 
@@ -65,10 +65,11 @@ val interface : info -> unit
 
 (** {2 Implementations} *)
 
-val parse_impl : info -> Parsetree.structure
+val parse_impl : info -> Parsetree.implementation
 (** [parse_impl info] parses an implementation (usually an [.ml] file). *)
 
-val typecheck_impl : info -> Parsetree.structure -> Typedtree.implementation
+val typecheck_impl :
+  info -> Parsetree.implementation -> Typedtree.implementation
 (** [typecheck_impl info parsetree] typechecks an implementation and returns
     the typedtree of the associated module, its public interface, and a
     coercion against that public interface.

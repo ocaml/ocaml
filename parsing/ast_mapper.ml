@@ -53,8 +53,10 @@ type mapper = {
   extension: mapper -> extension -> extension;
   extension_constructor: mapper -> extension_constructor
                          -> extension_constructor;
+  implementation: mapper -> implementation -> implementation;
   include_declaration: mapper -> include_declaration -> include_declaration;
   include_description: mapper -> include_description -> include_description;
+  interface: mapper -> interface -> interface;
   label_declaration: mapper -> label_declaration -> label_declaration;
   location: mapper -> Location.t -> Location.t;
   module_binding: mapper -> module_binding -> module_binding;
@@ -746,6 +748,13 @@ let default_mapper =
            ~attrs:(this.attributes this popen_attributes)
       );
 
+    implementation =
+      (fun this { pimpl_structure; pimpl_loc } ->
+        Impl.mk
+          ~loc:(this.location this pimpl_loc)
+          (this.structure this pimpl_structure)
+      );
+
     include_description =
       (fun this {pincl_mod; pincl_attributes; pincl_loc} ->
          Incl.mk (this.module_type this pincl_mod)
@@ -760,6 +769,12 @@ let default_mapper =
            ~attrs:(this.attributes this pincl_attributes)
       );
 
+    interface =
+      (fun this { pintf_signature; pintf_loc } ->
+        Intf.mk
+          ~loc:(this.location this pintf_loc)
+          (this.signature this pintf_signature)
+      );
 
     value_binding =
       (fun this {pvb_pat; pvb_expr; pvb_constraint; pvb_attributes; pvb_loc} ->
@@ -1173,7 +1188,6 @@ let add_ppx_context_str ~tool_name ast =
 
 let add_ppx_context_sig ~tool_name ast =
   Ast_helper.Sig.attribute (ppx_context ~tool_name ()) :: ast
-
 
 let apply ~source ~target mapper =
   apply_lazy ~source ~target (fun () -> mapper)

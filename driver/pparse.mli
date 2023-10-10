@@ -32,6 +32,8 @@ val remove_preprocessed : string -> unit
 type 'a ast_kind =
 | Structure : Parsetree.structure ast_kind
 | Signature : Parsetree.signature ast_kind
+| Implementation : Parsetree.implementation ast_kind
+| Interface : Parsetree.interface ast_kind
 
 val read_ast : 'a ast_kind -> string -> 'a
 val write_ast : 'a ast_kind -> string -> 'a -> unit
@@ -50,15 +52,25 @@ val apply_rewriters_str:
 val apply_rewriters_sig:
   ?restore:bool -> tool_name:string -> Parsetree.signature ->
   Parsetree.signature
+val apply_rewriters_impl:
+  ?restore:bool -> tool_name:string -> Parsetree.implementation ->
+  Parsetree.implementation
+val apply_rewriters_intf:
+  ?restore:bool -> tool_name:string -> Parsetree.interface ->
+  Parsetree.interface
 
 val report_error : error Format_doc.format_printer
 val report_error_doc: error Format_doc.printer
 
+val parse_structure:
+  tool_name:string -> string -> Parsetree.structure
+val parse_signature:
+  tool_name:string -> string -> Parsetree.signature
 
 val parse_implementation:
-  tool_name:string -> string -> Parsetree.structure
+  tool_name:string -> string -> Parsetree.implementation
 val parse_interface:
-  tool_name:string -> string -> Parsetree.signature
+  tool_name:string -> string -> Parsetree.interface
 
 (* [call_external_preprocessor sourcefile pp] *)
 val call_external_preprocessor : string -> string -> string

@@ -39,6 +39,8 @@ type mapper =
     expr: mapper -> expression -> expression;
     extension_constructor: mapper -> extension_constructor ->
       extension_constructor;
+    implementation: mapper -> implementation -> implementation;
+    interface: mapper -> interface -> interface;
     location: mapper -> Location.t -> Location.t;
     module_binding: mapper -> module_binding -> module_binding;
     module_coercion: mapper -> module_coercion -> module_coercion;
@@ -871,6 +873,9 @@ let value_binding sub x =
 
 let env _sub x = x
 
+let implementation _sub x = x
+let interface _sub x = x
+
 let default =
   {
     attribute;
@@ -889,6 +894,8 @@ let default =
     env;
     expr;
     extension_constructor;
+    implementation;
+    interface;
     location;
     module_binding;
     module_coercion;

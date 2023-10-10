@@ -376,14 +376,14 @@ let ml_file_dependencies source_file =
     List.concat_map f (Parse.use_file lexbuf)
   in
   let (extracted_deps, ()) =
-    read_parse_and_extract parse_use_file_as_impl Depend.add_implementation ()
+    read_parse_and_extract parse_use_file_as_impl Depend.add_structure ()
                            Pparse.Structure source_file
   in
   prepend_to_list files (source_file, ML, extracted_deps, !Depend.pp_deps)
 
 let mli_file_dependencies source_file =
   let (extracted_deps, ()) =
-    read_parse_and_extract Parse.interface Depend.add_signature ()
+    read_parse_and_extract Parse.signature Depend.add_signature ()
                            Pparse.Signature source_file
   in
   prepend_to_list files (source_file, MLI, extracted_deps, !Depend.pp_deps)
@@ -510,11 +510,11 @@ let rec dump_map s0 ppf m =
     m
 
 let process_ml_map =
-  read_parse_and_extract Parse.implementation Depend.add_implementation_binding
+  read_parse_and_extract Parse.structure Depend.add_structure_binding
                          String.Map.empty Pparse.Structure
 
 let process_mli_map =
-  read_parse_and_extract Parse.interface Depend.add_signature_binding
+  read_parse_and_extract Parse.signature Depend.add_signature_binding
                          String.Map.empty Pparse.Signature
 
 let parse_map fname =

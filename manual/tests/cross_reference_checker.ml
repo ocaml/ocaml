@@ -232,7 +232,7 @@ module OCaml_refs = struct
       let value_binding = value_binding m in
       let expr = expr m in
       Ast_iterator.{ default_iterator with value_binding; expr } in
-    iterator.structure iterator ast
+    iterator.implementation iterator ast
 
   let from_file m f =
     from_ast m @@ parse f
