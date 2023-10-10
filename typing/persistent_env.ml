@@ -225,7 +225,7 @@ let find_pers_struct ~allow_hidden penv val_of_pers_sig check name =
           match !Persistent_signature.load ~allow_hidden ~unit_name:name with
           | Some psig -> psig
           | None ->
-            Hashtbl.add persistent_structures name Missing;
+            if allow_hidden then Hashtbl.add persistent_structures name Missing;
             raise Not_found
         in
         add_import penv name;
