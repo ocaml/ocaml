@@ -1036,6 +1036,7 @@ typing/persistent_env.cmi : \
     typing/types.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
+    utils/load_path.cmi \
     utils/lazy_backtrack.cmi \
     utils/consistbl.cmi \
     file_formats/cmi_format.cmi
@@ -4056,6 +4057,7 @@ file_formats/cmt_format.cmi : \
     typing/shape.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
+    utils/load_path.cmi \
     typing/env.cmi \
     file_formats/cmi_format.cmi
 file_formats/cmx_format.cmi : \
