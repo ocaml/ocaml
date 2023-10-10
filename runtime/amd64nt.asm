@@ -25,9 +25,27 @@
         EXTRN  caml_apply3: NEAR
         EXTRN  caml_program: NEAR
         EXTRN  caml_array_bound_error_asm: NEAR
-       EXTRN  caml_stash_backtrace: NEAR
+        EXTRN  caml_stash_backtrace: NEAR
 
-INCLUDE domain_state64.inc
+; Load caml/domain_state.tbl (via domain_state.inc, to remove C-style comments)
+        domain_curr_field = 0
+DOMAIN_STATE MACRO _type:REQ, name:REQ
+        domain_field_caml_&name EQU domain_curr_field
+        domain_curr_field = domain_curr_field + 1
+        ; Returning a value turns DOMAIN_STATE into a macro function, which
+        ; causes the bracketed parameters to be both required and correctly
+        ; parsed. Returning an empty string allows this to be used as though
+        ; it were a macro procedure.
+        EXITM <>
+ENDM
+
+INCLUDE domain_state.inc
+
+; Caml_state(field) expands to the address of field in Caml_state, which is
+; always stored in r14.
+Caml_state MACRO field:REQ
+        EXITM @CatStr(<[r14+>, %(domain_field_caml_&field), <*8]>)
+ENDM
 
         .CODE
 
@@ -43,16 +61,16 @@ caml_system__code_begin:
 caml_call_gc:
     ; Record lowest stack address and return address
         mov     r11, [rsp]
-        Store_last_return_address r11
+        mov     Caml_state(last_return_address), r11
         lea     r11, [rsp+8]
-        Store_bottom_of_stack r11
+        mov     Caml_state(bottom_of_stack), r11
     ; Touch the stack to trigger a recoverable segfault
     ; if insufficient space remains
         sub     rsp, 01000h
         mov     [rsp], r11
         add     rsp, 01000h
     ; Save young_ptr
-        Store_young_ptr r15
+        mov     Caml_state(young_ptr), r15
     ; Build array of registers, save it into Caml_state(gc_regs)
         push    rbp
         push    r11
@@ -67,7 +85,7 @@ caml_call_gc:
         push    rdi
         push    rbx
         push    rax
-        Store_gc_regs rsp
+        mov     Caml_state(gc_regs), rsp
     ; Save floating-point registers
         sub     rsp, 16*8
         movsd   QWORD PTR [rsp + 0*8], xmm0
@@ -122,7 +140,7 @@ caml_call_gc:
         pop     r11
         pop     rbp
     ; Restore Caml_state(young_ptr)
-        Load_young_ptr r15
+        mov     r15, Caml_state(young_ptr)
     ; Return to caller
         ret
 
@@ -130,7 +148,7 @@ caml_call_gc:
         ALIGN   16
 caml_alloc1:
         sub     r15, 16
-        Cmp_young_limit r15
+        cmp     r15, Caml_state(young_limit)
         jb      caml_call_gc
         ret
 
@@ -138,7 +156,7 @@ caml_alloc1:
         ALIGN   16
 caml_alloc2:
         sub     r15, 24
-        Cmp_young_limit r15
+        cmp     r15, Caml_state(young_limit)
         jb      caml_call_gc
         ret
 
@@ -146,14 +164,14 @@ caml_alloc2:
         ALIGN   16
 caml_alloc3:
         sub     r15, 32
-        Cmp_young_limit r15
+        cmp     r15, Caml_state(young_limit)
         jb      caml_call_gc
         ret
 
         PUBLIC  caml_allocN
         ALIGN   16
 caml_allocN:
-        Cmp_young_limit r15
+        cmp     r15, Caml_state(young_limit)
         jb      caml_call_gc
         ret
 
@@ -164,19 +182,19 @@ caml_allocN:
 caml_c_call:
     ; Record lowest stack address and return address
         pop     r12
-        Store_last_return_address r12
-        Store_bottom_of_stack rsp
+        mov     Caml_state(last_return_address), r12
+        mov     Caml_state(bottom_of_stack), rsp
     ; Touch the stack to trigger a recoverable segfault
     ; if insufficient space remains
         sub     rsp, 01000h
         mov     [rsp], rax
         add     rsp, 01000h
     ; Make the alloc ptr available to the C code
-        Store_young_ptr r15
+        mov     Caml_state(young_ptr), r15
     ; Call the function (address in rax)
         call    rax
     ; Reload alloc ptr
-        Load_young_ptr r15
+        mov     r15, Caml_state(young_ptr)
     ; Return to caller
         push    r12
         ret
@@ -214,29 +232,29 @@ caml_start_program:
 L106:
     ; Build a callback link
         sub     rsp, 8  ; stack 16-aligned
-        Push_gc_regs
-        Push_last_return_address
-        Push_bottom_of_stack
+        push    Caml_state(gc_regs)
+        push    Caml_state(last_return_address)
+        push    Caml_state(bottom_of_stack)
     ; Setup alloc ptr
-        Load_young_ptr r15
+        mov     r15, Caml_state(young_ptr)
     ; Build an exception handler
         lea     r13, L108
         push    r13
-        Push_exception_pointer
-        Store_exception_pointer rsp
+        push    Caml_state(exception_pointer)
+        mov     Caml_state(exception_pointer), rsp
     ; Call the OCaml code
         call    r12
 L107:
     ; Pop the exception handler
-        Pop_exception_pointer
+        pop     Caml_state(exception_pointer)
         pop     r12    ; dummy register
 L109:
     ; Update alloc ptr
-        Store_young_ptr r15
+        mov     Caml_state(young_ptr), r15
     ; Pop the callback restoring, link the global variables
-        Pop_bottom_of_stack
-        Pop_last_return_address
-        Pop_gc_regs
+        pop     Caml_state(bottom_of_stack)
+        pop     Caml_state(last_return_address)
+        pop     Caml_state(gc_regs)
         add     rsp, 8
     ; Restore callee-save registers.
         movapd  xmm6, OWORD PTR [rsp + 0*16]
@@ -271,55 +289,55 @@ L108:
         PUBLIC  caml_raise_exn
         ALIGN   16
 caml_raise_exn:
-        Load_backtrace_active r11
+        mov     r11, Caml_state(backtrace_active)
         test    r11, 1
         jne     L110
-        Load_exception_pointer rsp ; Cut stack
+        mov     rsp, Caml_state(exception_pointer) ; Cut stack
     ; Recover previous exception handler
-        Pop_exception_pointer
+        pop     Caml_state(exception_pointer)
         ret                                        ; Branch to handler
 L110:
-        mov     r12, rax             ; Save exception bucket in r12
-        mov     rcx, rax             ; Arg 1: exception bucket
-        mov     rdx, [rsp]           ; Arg 2: PC of raise
-        lea     r8, [rsp+8]          ; Arg 3: SP of raise
-        Load_exception_pointer r9    ; Arg 4: SP of handler
-        sub     rsp, 32              ; Reserve 32 bytes on stack
+        mov     r12, rax                           ; Save exception bucket
+        mov     rcx, rax                           ; Arg 1: exception bucket
+        mov     rdx, [rsp]                         ; Arg 2: PC of raise
+        lea     r8, [rsp+8]                        ; Arg 3: SP of raise
+        mov     r9, Caml_state(exception_pointer)  ; Arg 4: SP of handler
+        sub     rsp, 32                            ; Reserve 32 bytes on stack
         call    caml_stash_backtrace
-        mov     rax, r12             ; Recover exception bucket
-        Load_exception_pointer rsp ; Cut stack
+        mov     rax, r12                           ; Recover exception bucket
+        mov     rsp, Caml_state(exception_pointer) ; Cut stack
     ; Recover previous exception handler
-        Pop_exception_pointer
-        ret                          ; Branch to handler
+        pop     Caml_state(exception_pointer)
+        ret                                        ; Branch to handler
 
 ; Raise an exception from C
 
         PUBLIC  caml_raise_exception
         ALIGN   16
 caml_raise_exception:
-        mov     r14, rcx             ; First argument is Caml_state
-        Load_backtrace_active r11
+        mov     r14, rcx                             ; First arg is Caml_state
+        mov     r11, Caml_state(backtrace_active)
         test    r11, 1
         jne     L112
-        mov     rax, rdx             ; Second argument is exn bucket
-        Load_exception_pointer rsp
+        mov     rax, rdx                             ; Second arg is exn bucket
+        mov     rsp, Caml_state(exception_pointer)
     ; Recover previous exception handler
-        Pop_exception_pointer
-        Load_young_ptr r15           ; Reload alloc ptr
+        pop     Caml_state(exception_pointer)
+        mov     r15, Caml_state(young_ptr)           ; Reload alloc ptr
         ret
 L112:
-        mov     r12, rdx             ; Save exception bucket in r12
-        mov     rcx, rdx             ; Arg 1: exception bucket
-        Load_last_return_address rdx ; Arg 2: PC of raise
-        Load_bottom_of_stack r8      ; Arg 3: SP of raise
-        Load_exception_pointer r9    ; Arg 4: SP of handler
-        sub     rsp, 32              ; Reserve 32 bytes on stack
+        mov     r12, rdx                             ; Save exception bucket
+        mov     rcx, rdx                             ; Arg 1: exception bucket
+        mov     rdx, Caml_state(last_return_address) ; Arg 2: PC of raise
+        mov     r8, Caml_state(bottom_of_stack)      ; Arg 3: SP of raise
+        mov     r9, Caml_state(exception_pointer)    ; Arg 4: SP of handler
+        sub     rsp, 32                              ; Reserve 32 bytes on stack
         call    caml_stash_backtrace
-        mov     rax, r12             ; Recover exception bucket
-        Load_exception_pointer rsp
+        mov     rax, r12                             ; Recover exception bucket
+        mov     rsp, Caml_state(exception_pointer)
     ; Recover previous exception handler
-        Pop_exception_pointer
-        Load_young_ptr r15; Reload alloc ptr
+        pop     Caml_state(exception_pointer)
+        mov     r15, Caml_state(young_ptr)           ; Reload alloc ptr
         ret
 
 ; Callback from C to OCaml

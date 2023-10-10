@@ -78,7 +78,7 @@ CAMLprim value caml_unix_read_bigarray(value fd, value vbuf,
     SOCKET s = Socket_val(fd);
     if (len > INT_MAX) len = INT_MAX;
     caml_enter_blocking_section();
-    ret = recv(s, buf + ofs, len, 0);
+    ret = recv(s, (char *)buf + ofs, len, 0);
     if (ret == SOCKET_ERROR) err = WSAGetLastError();
     caml_leave_blocking_section();
     numread = ret;
@@ -86,7 +86,7 @@ CAMLprim value caml_unix_read_bigarray(value fd, value vbuf,
     HANDLE h = Handle_val(fd);
     if (len > 0xFFFFFFFF) len = 0xFFFFFFFF;
     caml_enter_blocking_section();
-    if (! ReadFile(h, buf + ofs, len, &numread, NULL))
+    if (! ReadFile(h, (char *)buf + ofs, len, &numread, NULL))
       err = GetLastError();
     caml_leave_blocking_section();
   }

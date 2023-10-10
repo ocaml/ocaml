@@ -240,12 +240,22 @@ let instrument body =
     | Cop ((Cload { mutability = Immutable; _ } as op), es, dbg_none) ->
       (* Loads of immutable location require no instrumentation *)
       Cop (op, List.map aux es, dbg_none)
+    | Cop (Craise _, _, _) as raise ->
+      (* Call a routine that will call [__tsan_func_exit] for every function
+         about to be exited due to the exception *)
+      Csequence
+        (Cmm_helpers.return_unit dbg_none
+          (Cop (Capply typ_int,
+                [Cconst_symbol ("caml_tsan_exit_on_raise_asm", dbg_none);
+                  Cconst_int (0, dbg_none)],
+                dbg_none)),
+         raise)
     | Cop
         ( (( Capply _ | Caddi | Calloc | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
            | Cand | Cor | Cxor | Clsl | Clsr | Casr | Caddv | Cadda | Cnegf
            | Cabsf | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat
            | Ccheckbound | Copaque | Cdls_get | Cextcall _ | Ccmpi _ | Ccmpa _
-           | Ccmpf _ | Craise _ ) as op),
+           | Ccmpf _ ) as op),
           es,
           dbg_none ) ->
       Cop (op, List.map aux es, dbg_none)

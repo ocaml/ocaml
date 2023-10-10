@@ -235,6 +235,7 @@ META
 /parsing/camlinternalMenhirLib.ml
 /parsing/camlinternalMenhirLib.mli
 
+/runtime/domain_state.inc
 /runtime/caml/jumptbl.h
 /runtime/caml/m.h
 /runtime/caml/s.h
@@ -250,8 +251,6 @@ META
 /runtime/.gdb_history
 /runtime/build_config.h
 /runtime/sak
-/runtime/domain_state32.inc
-/runtime/domain_state64.inc
 
 /stdlib/camlheader
 /stdlib/target_camlheader
