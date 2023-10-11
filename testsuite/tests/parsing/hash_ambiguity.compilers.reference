@@ -1,3 +1,4 @@
+implementation (hash_ambiguity.ml[8,140+0]..[25,613+0])
 [
   structure_item (hash_ambiguity.ml[8,140+0]..[8,140+28])
     Pstr_class

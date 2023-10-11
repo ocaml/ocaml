@@ -1,3 +1,4 @@
+implementation (quotedextensions.ml[10,170+0]..[51,1065+0])
 [
   structure_item (quotedextensions.ml[10,170+0]..[10,170+23])
     Pstr_extension "M.foo"
