@@ -95,7 +95,12 @@ let add_type ~check id decl env =
   Builtin_attributes.warning_scope ~ppwarning:false decl.type_attributes
     (fun () -> Env.add_type ~check id decl env)
 
-let enter_type rec_flag env sdecl (id, uid) =
+(* Add a dummy type declaration to the environment, with the given arity.
+   The [type_kind] is [Type_abstract], but there is a generic [type_manifest]
+   for abbreviations, to allow polymorphic expansion, except if
+   [abstract_abbrevs] is [true].
+   This function is only used in [transl_type_decl]. *)
+let enter_type ~abstract_abbrevs rec_flag env sdecl (id, uid) =
   let needed =
     match rec_flag with
     | Asttypes.Nonrecursive ->
@@ -111,15 +116,17 @@ let enter_type rec_flag env sdecl (id, uid) =
   in
   let arity = List.length sdecl.ptype_params in
   if not needed then env else
+  let type_manifest = match sdecl.ptype_manifest, abstract_abbrevs with
+    | None, _ | Some _, true -> None
+    | Some _, false -> Some(Ctype.newvar ())
+  in
   let decl =
     { type_params =
         List.map (fun _ -> Btype.newgenvar ()) sdecl.ptype_params;
       type_arity = arity;
       type_kind = Type_abstract;
       type_private = sdecl.ptype_private;
-      type_manifest =
-        begin match sdecl.ptype_manifest with None -> None
-        | Some _ -> Some(Ctype.newvar ()) end;
+      type_manifest;
       type_variance = Variance.unknown_signature ~injective:false ~arity;
       type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
@@ -782,7 +789,7 @@ let check_abbrev env sdecl (id, decl) =
    - if -rectypes is not used, we only allow cycles in the type graph
      if they go through an object or polymorphic variant type *)
 
-let check_well_founded env loc path to_check visited ty0 =
+let check_well_founded ~abs_env env loc path to_check visited ty0 =
   let rec check parents trace ty =
     if TypeSet.mem ty parents then begin
       (*Format.eprintf "@[%a@]@." Printtyp.raw_type_expr ty;*)
@@ -798,8 +805,8 @@ let check_well_founded env loc path to_check visited ty0 =
           | trace -> List.rev trace, false
         in
         if rec_abbrev
-        then Recursive_abbrev (Path.name path, env, reaching_path)
-        else Cycle_in_def (Path.name path, env, reaching_path)
+        then Recursive_abbrev (Path.name path, abs_env, reaching_path)
+        else Cycle_in_def (Path.name path, abs_env, reaching_path)
       in raise (Error (loc, err))
     end;
     let (fini, parents) =
@@ -844,11 +851,11 @@ let check_well_founded env loc path to_check visited ty0 =
     (* Will be detected by check_regularity *)
     Btype.backtrack snap
 
-let check_well_founded_manifest env loc path decl =
+let check_well_founded_manifest ~abs_env env loc path decl =
   if decl.type_manifest = None then () else
   let args = List.map (fun _ -> Ctype.newvar()) decl.type_params in
   let visited = ref TypeMap.empty in
-  check_well_founded env loc path (Path.same path) visited
+  check_well_founded ~abs_env env loc path (Path.same path) visited
     (Ctype.newconstr path args)
 
 (* Given a new type declaration [type t = ...] (potentially mutually-recursive),
@@ -866,7 +873,7 @@ let check_well_founded_manifest env loc path decl =
    (we don't have an example at hand where it is necessary), but we
    are doing it anyway out of caution.
 *)
-let check_well_founded_decl env loc path decl to_check =
+let check_well_founded_decl ~abs_env env loc path decl to_check =
   let open Btype in
   (* We iterate on all subexpressions of the declaration to check
      "in depth" that no ill-founded type exists. *)
@@ -885,7 +892,7 @@ let check_well_founded_decl env loc path decl to_check =
     {type_iterators with it_type_expr =
      (fun self ty ->
        if TypeSet.mem ty !checked then () else begin
-         check_well_founded env loc path to_check visited ty;
+         check_well_founded ~abs_env env loc path to_check visited ty;
          checked := TypeSet.add ty !checked;
          self.it_do_type_expr self ty
        end)} in
@@ -1073,7 +1080,8 @@ let transl_type_decl env rec_flag sdecl_list =
     Ctype.with_local_level_iter ~post:generalize_decl begin fun () ->
       (* Enter types. *)
       let temp_env =
-        List.fold_left2 (enter_type rec_flag) env sdecl_list ids_list in
+        List.fold_left2 (enter_type ~abstract_abbrevs:false rec_flag)
+          env sdecl_list ids_list in
       (* Translate each declaration. *)
       let current_slot = ref None in
       let warn_unused =
@@ -1130,14 +1138,23 @@ let transl_type_decl env rec_flag sdecl_list =
     List.map2 (fun (id, _) sdecl -> (id, sdecl.ptype_loc))
       ids_list sdecl_list
   in
+  (* Error messages cannot use the new environment, as this might result in
+     non-termination. Instead we use a completely abstract version of the
+     temporary environment, giving a reason for why abbreviations cannot be
+     expanded (#12645, #12649) *)
+  let abs_env =
+    List.fold_left2
+      (enter_type ~abstract_abbrevs:true rec_flag)
+      env sdecl_list ids_list in
   List.iter (fun (id, decl) ->
-    check_well_founded_manifest new_env (List.assoc id id_loc_list)
+    check_well_founded_manifest ~abs_env new_env (List.assoc id id_loc_list)
       (Path.Pident id) decl)
     decls;
   let to_check =
     function Path.Pident id -> List.mem_assoc id id_loc_list | _ -> false in
   List.iter (fun (id, decl) ->
-    check_well_founded_decl new_env (List.assoc id id_loc_list) (Path.Pident id)
+    check_well_founded_decl ~abs_env new_env (List.assoc id id_loc_list)
+      (Path.Pident id)
       decl to_check)
     decls;
   List.iter
@@ -1818,7 +1835,7 @@ let check_recmod_typedecl env loc recmod_ids path decl =
   (* recmod_ids is the list of recursively-defined module idents.
      (path, decl) is the type declaration to be checked. *)
   let to_check path = Path.exists_free recmod_ids path in
-  check_well_founded_decl env loc path decl to_check;
+  check_well_founded_decl ~abs_env:env env loc path decl to_check;
   check_regularity ~orig_env:env env loc path decl to_check;
   (* additionally check coherece, as one might build an incoherent signature,
      and use it to build an incoherent module, cf. #7851 *)
