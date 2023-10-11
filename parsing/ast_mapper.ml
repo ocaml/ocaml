@@ -1024,7 +1024,7 @@ let extension_of_exn exn =
 
 
 let apply_lazy ~source ~target mapper =
-  let implem ast =
+  let implem { pimpl_structure = ast; pimpl_loc } =
     let fields, ast =
       match ast with
       | {pstr_desc = Pstr_attribute ({attr_name = {txt = "ocaml.ppx.context"};
@@ -1033,18 +1033,20 @@ let apply_lazy ~source ~target mapper =
       | _ -> [], ast
     in
     PpxContext.restore fields;
-    let ast =
+    let ast, loc =
       try
         let mapper = mapper () in
-        mapper.structure mapper ast
+        let loc = mapper.location mapper pimpl_loc in
+        mapper.structure mapper ast, loc
       with exn ->
         [{pstr_desc = Pstr_extension (extension_of_exn exn, []);
-          pstr_loc  = Location.none}]
+          pstr_loc  = Location.none}], Location.none
     in
     let fields = PpxContext.update_cookies fields in
     Str.attribute (PpxContext.mk fields) :: ast
+    |> Impl.mk ~loc
   in
-  let iface ast =
+  let iface { pintf_loc; pintf_signature = ast } =
     let fields, ast =
       match ast with
       | {psig_desc = Psig_attribute ({attr_name = {txt = "ocaml.ppx.context"};
@@ -1054,16 +1056,18 @@ let apply_lazy ~source ~target mapper =
       | _ -> [], ast
     in
     PpxContext.restore fields;
-    let ast =
+    let ast, loc =
       try
         let mapper = mapper () in
-        mapper.signature mapper ast
+        let loc = mapper.location mapper pintf_loc in
+        mapper.signature mapper ast, loc
       with exn ->
         [{psig_desc = Psig_extension (extension_of_exn exn, []);
-          psig_loc  = Location.none}]
+          psig_loc  = Location.none}], Location.none
     in
     let fields = PpxContext.update_cookies fields in
     Sig.attribute (PpxContext.mk fields) :: ast
+    |> Intf.mk ~loc
   in
 
   let ic = open_in_bin source in
@@ -1087,9 +1091,9 @@ let apply_lazy ~source ~target mapper =
   in
 
   if magic = Config.ast_impl_magic_number then
-    rewrite (implem : structure -> structure)
+    rewrite (implem : implementation -> implementation)
   else if magic = Config.ast_intf_magic_number then
-    rewrite (iface : signature -> signature)
+    rewrite (iface : interface -> interface)
   else fail ()
 
 let drop_ppx_context_impl ~restore = function
