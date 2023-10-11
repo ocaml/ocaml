@@ -95,6 +95,11 @@ let add_type ~check id decl env =
   Builtin_attributes.warning_scope ~ppwarning:false decl.type_attributes
     (fun () -> Env.add_type ~check id decl env)
 
+(* Add a dummy type declaration to the environment, with the given arity.
+   The [type_kind] is [Type_abstract], but there is a generic [type_manifest]
+   for abbreviations, to allow polymorphic expansion, except if
+   [abstract_abbrevs] is [true].
+   This function is only used in [transl_type_decl]. *)
 let enter_type ~abstract_abbrevs rec_flag env sdecl (id, uid) =
   let needed =
     match rec_flag with
