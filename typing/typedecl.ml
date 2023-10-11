@@ -95,7 +95,7 @@ let add_type ~check id decl env =
   Builtin_attributes.warning_scope ~ppwarning:false decl.type_attributes
     (fun () -> Env.add_type ~check id decl env)
 
-let enter_type rec_flag env sdecl (id, uid) =
+let enter_type ~abstract_abbrevs rec_flag env sdecl (id, uid) =
   let needed =
     match rec_flag with
     | Asttypes.Nonrecursive ->
@@ -111,15 +111,17 @@ let enter_type rec_flag env sdecl (id, uid) =
   in
   let arity = List.length sdecl.ptype_params in
   if not needed then env else
+  let type_manifest = match sdecl.ptype_manifest, abstract_abbrevs with
+    | None, _ | Some _, true -> None
+    | Some _, false -> Some(Ctype.newvar ())
+  in
   let decl =
     { type_params =
         List.map (fun _ -> Btype.newgenvar ()) sdecl.ptype_params;
       type_arity = arity;
       type_kind = Type_abstract;
       type_private = sdecl.ptype_private;
-      type_manifest =
-        begin match sdecl.ptype_manifest with None -> None
-        | Some _ -> Some(Ctype.newvar ()) end;
+      type_manifest;
       type_variance = Variance.unknown_signature ~injective:false ~arity;
       type_separability = Types.Separability.default_signature ~arity;
       type_is_newtype = false;
@@ -1073,7 +1075,8 @@ let transl_type_decl env rec_flag sdecl_list =
     Ctype.with_local_level_iter ~post:generalize_decl begin fun () ->
       (* Enter types. *)
       let temp_env =
-        List.fold_left2 (enter_type rec_flag) env sdecl_list ids_list in
+        List.fold_left2 (enter_type ~abstract_abbrevs:false rec_flag)
+          env sdecl_list ids_list in
       (* Translate each declaration. *)
       let current_slot = ref None in
       let warn_unused =
