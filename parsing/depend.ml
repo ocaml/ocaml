@@ -586,7 +586,7 @@ and add_use_file bv top_phrs =
   ignore (List.fold_left add_top_phrase bv top_phrs)
 
 and add_implementation bv l =
-    ignore (add_implementation bv l)
+    ignore (add_implementation_binding bv l)
 
 and add_implementation_binding bv l =
   snd (add_structure_binding bv l.pimpl_structure)
