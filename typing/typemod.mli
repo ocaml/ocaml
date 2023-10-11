@@ -39,10 +39,10 @@ val type_toplevel_phrase:
   Typedtree.structure * Types.signature * Signature_names.t * Shape.t *
   Env.t
 val type_implementation:
-  Unit_info.t -> Env.t -> Parsetree.structure ->
+  Unit_info.t -> Env.t -> Parsetree.implementation ->
   Typedtree.implementation
 val type_interface:
-        Env.t -> Parsetree.signature -> Typedtree.signature
+        Env.t -> Parsetree.interface -> Typedtree.interface
 val transl_signature:
         Env.t -> Parsetree.signature -> Typedtree.signature
 val check_nongen_signature:

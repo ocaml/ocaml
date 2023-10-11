@@ -38,9 +38,9 @@ val open_module : bound_map -> Longident.t -> bound_map
 
 val add_use_file : bound_map -> Parsetree.toplevel_phrase list -> unit
 
-val add_signature : bound_map -> Parsetree.signature -> unit
+val add_interface : bound_map -> Parsetree.interface -> unit
 
-val add_implementation : bound_map -> Parsetree.structure -> unit
+val add_implementation : bound_map -> Parsetree.implementation -> unit
 
-val add_implementation_binding : bound_map -> Parsetree.structure -> bound_map
-val add_signature_binding : bound_map -> Parsetree.signature -> bound_map
+val add_implementation_binding : bound_map -> Parsetree.implementation -> bound_map
+val add_interface_binding : bound_map -> Parsetree.interface -> bound_map

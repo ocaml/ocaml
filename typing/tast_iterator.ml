@@ -34,6 +34,8 @@ type iterator =
     env: iterator -> Env.t -> unit;
     expr: iterator -> expression -> unit;
     extension_constructor: iterator -> extension_constructor -> unit;
+    implementation: iterator -> implementation -> unit;
+    interface: iterator -> interface -> unit;
     location: iterator -> Location.t -> unit;
     module_binding: iterator -> module_binding -> unit;
     module_coercion: iterator -> module_coercion -> unit;
@@ -622,6 +624,16 @@ let value_binding sub {vb_loc; vb_pat; vb_expr; vb_attributes; _} =
   sub.pat sub vb_pat;
   sub.expr sub vb_expr
 
+let interface sub { intf_signature; intf_loc } =
+  sub.location sub intf_loc;
+  sub.signature sub intf_signature
+;;
+
+let implementation sub { impl_structure; impl_loc; _ } =
+  sub.location sub impl_loc;
+  sub.structure sub impl_structure
+;;
+
 let env _sub _ = ()
 
 let default_iterator =
@@ -642,6 +654,8 @@ let default_iterator =
     env;
     expr;
     extension_constructor;
+    implementation;
+    interface;
     location;
     module_binding;
     module_coercion;
