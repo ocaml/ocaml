@@ -101,8 +101,8 @@ val find_normalized : string -> string
 type visibility = Visible | Hidden
 
 val find_normalized_with_visibility : string -> string * visibility
-(** Same as [find_normalized], but also whether the cmi was found in a -I
-    directory (Visible) or a -H directory (Hidden) *)
+(** Same as [find_normalized], but also reports whether the cmi was found in a
+    -I directory (Visible) or a -H directory (Hidden) *)
 
 val[@deprecated] add : Dir.t -> unit
 (** Old name for {!append_dir} *)
