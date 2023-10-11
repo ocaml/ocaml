@@ -879,11 +879,16 @@ module PpxContext = struct
     }
 
   let make ~tool_name () =
+    let Load_path.{ visible; hidden } = Load_path.get_paths () in
     let fields =
       [
         lid "tool_name",    make_string tool_name;
-        lid "include_dirs", make_list make_string !Clflags.include_dirs;
-        lid "load_path",    make_list make_string (Load_path.get_paths ());
+        lid "include_dirs", make_list make_string (!Clflags.include_dirs);
+        lid "hidden_include_dirs",
+          make_list make_string (!Clflags.hidden_include_dirs);
+        lid "load_path",
+          make_pair (make_list make_string) (make_list make_string)
+            (visible, hidden);
         lid "open_modules", make_list make_string !Clflags.open_modules;
         lid "for_package",  make_option make_string !Clflags.for_package;
         lid "debug",        make_bool !Clflags.debug;
@@ -952,6 +957,8 @@ module PpxContext = struct
           tool_name_ref := get_string payload
       | "include_dirs" ->
           Clflags.include_dirs := get_list get_string payload
+      | "hidden_include_dirs" ->
+          Clflags.hidden_include_dirs := get_list get_string payload
       | "load_path" ->
           (* Duplicates Compmisc.auto_include, since we can't reference Compmisc
              from this module. *)
@@ -962,7 +969,10 @@ module PpxContext = struct
               let alert = Location.auto_include_alert in
               Load_path.auto_include_otherlibs alert find_in_dir fn
           in
-          Load_path.init ~auto_include (get_list get_string payload)
+          let visible, hidden =
+            get_pair (get_list get_string) (get_list get_string) payload
+          in
+          Load_path.init ~auto_include ~visible ~hidden
       | "open_modules" ->
           Clflags.open_modules := get_list get_string payload
       | "for_package" ->
