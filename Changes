@@ -117,6 +117,10 @@ Working version
   (Stephen Dolan, review by Sébastien Hinderer, Vincent Laviron and Xavier
    Leroy)
 
+- #12439: Finalize and collect dead custom blocks during minor collection
+  (Damien Doligez, review by Xavier Leroy, Gabriel Scherer and KC
+  Sivaramakrishnan)
+
 - #12489: Fix an error-handling bug in caml_alloc_sprintf
   (Stephen Dolan, report by Chris Casinghino, review by Jeremy Yallop
    and Xavier Leroy)
