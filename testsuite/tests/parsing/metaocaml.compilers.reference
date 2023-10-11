@@ -1,0 +1,338 @@
+[
+  structure_item 
+    Pstr_value Nonrec
+    [
+      <def>
+          attribute "ocaml.doc"
+            [
+              structure_item 
+                Pstr_eval
+                expression 
+                  Pexp_constant PConst_string(" In the MetaOCaml mode, the lexer always emits the DOTTILDE token for .~",,None)
+            ]
+        pattern 
+          Ppat_var "escape" 
+        expression 
+          Pexp_extension "metaocaml.escape"
+          [
+            structure_item 
+              Pstr_eval
+              expression 
+                Pexp_ident "x" 
+          ]
+    ]
+  structure_item 
+    Pstr_value Nonrec
+    [
+      <def>
+          attribute "ocaml.doc"
+            [
+              structure_item 
+                Pstr_eval
+                expression 
+                  Pexp_constant PConst_string(" Contrarily, >. is only translated to the MetaOCaml token after the first\n    .> ",,None)
+            ]
+        pattern 
+          Ppat_var ">." 
+        core_type 
+          Ptyp_arrow
+          Nolabel
+          core_type 
+            Ptyp_constr "float" 
+            []
+          core_type 
+            Ptyp_arrow
+            Nolabel
+            core_type 
+              Ptyp_constr "float" 
+              []
+            core_type 
+              Ptyp_constr "bool" 
+              []
+        expression 
+          Pexp_ident "Stdlib.>" 
+    ]
+  structure_item 
+    Pstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Ppat_any
+        expression 
+          Pexp_apply
+          expression 
+            Pexp_ident ">." 
+          [
+            <arg>
+            Nolabel
+              expression 
+                Pexp_constant PConst_float (1.,None)
+            <arg>
+            Nolabel
+              expression 
+                Pexp_constant PConst_float (4.,None)
+          ]
+    ]
+  structure_item 
+    Pstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Ppat_constant PConst_int (45,None)
+        expression 
+          Pexp_let Nonrec
+          [
+            <def>
+              pattern 
+                Ppat_var ">." 
+              expression 
+                Pexp_function
+                [
+                  Pparam_val 
+                    Nolabel
+                    None
+                    pattern 
+                      Ppat_var "x" 
+                  Pparam_val 
+                    Nolabel
+                    None
+                    pattern 
+                      Ppat_var "y" 
+                ]
+                None
+                Pfunction_body
+                  expression 
+                    Pexp_apply
+                    expression 
+                      Pexp_ident "-" 
+                    [
+                      <arg>
+                      Nolabel
+                        expression 
+                          Pexp_ident "x" 
+                      <arg>
+                      Nolabel
+                        expression 
+                          Pexp_ident "y" 
+                    ]
+            <def>
+              pattern 
+                Ppat_var ">.>" 
+              expression 
+                Pexp_function
+                [
+                  Pparam_val 
+                    Nolabel
+                    None
+                    pattern 
+                      Ppat_var "x" 
+                  Pparam_val 
+                    Nolabel
+                    None
+                    pattern 
+                      Ppat_var "y" 
+                ]
+                None
+                Pfunction_body
+                  expression 
+                    Pexp_apply
+                    expression 
+                      Pexp_ident "*" 
+                    [
+                      <arg>
+                      Nolabel
+                        expression 
+                          Pexp_ident "x" 
+                      <arg>
+                      Nolabel
+                        expression 
+                          Pexp_ident "y" 
+                    ]
+            <def>
+              pattern 
+                Ppat_var ">.>." 
+              expression 
+                Pexp_function
+                [
+                  Pparam_val 
+                    Nolabel
+                    None
+                    pattern 
+                      Ppat_var "x" 
+                  Pparam_val 
+                    Nolabel
+                    None
+                    pattern 
+                      Ppat_var "y" 
+                ]
+                None
+                Pfunction_body
+                  expression 
+                    Pexp_apply
+                    expression 
+                      Pexp_ident "+" 
+                    [
+                      <arg>
+                      Nolabel
+                        expression 
+                          Pexp_apply
+                          expression 
+                            Pexp_ident "*" 
+                          [
+                            <arg>
+                            Nolabel
+                              expression 
+                                Pexp_constant PConst_int (2,None)
+                            <arg>
+                            Nolabel
+                              expression 
+                                Pexp_ident "x" 
+                          ]
+                      <arg>
+                      Nolabel
+                        expression 
+                          Pexp_ident "y" 
+                    ]
+          ]
+          expression 
+            Pexp_apply
+            expression 
+              Pexp_ident ">.>" 
+            [
+              <arg>
+              Nolabel
+                expression 
+                  Pexp_apply
+                  expression 
+                    Pexp_ident ">.>." 
+                  [
+                    <arg>
+                    Nolabel
+                      expression 
+                        Pexp_apply
+                        expression 
+                          Pexp_ident ">." 
+                        [
+                          <arg>
+                          Nolabel
+                            expression 
+                              Pexp_constant PConst_int (3,None)
+                          <arg>
+                          Nolabel
+                            expression 
+                              Pexp_constant PConst_int (1,None)
+                        ]
+                    <arg>
+                    Nolabel
+                      expression 
+                        Pexp_constant PConst_int (1,None)
+                  ]
+              <arg>
+              Nolabel
+                expression 
+                  Pexp_apply
+                  expression 
+                    Pexp_ident ">." 
+                  [
+                    <arg>
+                    Nolabel
+                      expression 
+                        Pexp_constant PConst_int (13,None)
+                    <arg>
+                    Nolabel
+                      expression 
+                        Pexp_constant PConst_int (4,None)
+                  ]
+            ]
+    ]
+  structure_item 
+    Pstr_value Nonrec
+    [
+      <def>
+          attribute "ocaml.doc"
+            [
+              structure_item 
+                Pstr_eval
+                expression 
+                  Pexp_constant PConst_string(" The tests below should reprint MetaOCaml constructs, but they\n    currently output the extension syntax as MetaOCaml pretty-printing\n    support was not upstreamed yet. ",,None)
+            ]
+        pattern 
+          Ppat_var "test" 
+        expression 
+          Pexp_extension "metaocaml.bracket"
+          [
+            structure_item 
+              Pstr_eval
+              expression 
+                Pexp_ident "x" 
+          ]
+    ]
+  structure_item 
+    Pstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Ppat_var "test2" 
+        expression 
+          Pexp_extension "metaocaml.escape"
+          [
+            structure_item 
+              Pstr_eval
+              expression 
+                Pexp_ident "x" 
+          ]
+    ]
+  structure_item 
+    Pstr_value Nonrec
+    [
+      <def>
+          attribute "ocaml.doc"
+            [
+              structure_item 
+                Pstr_eval
+                expression 
+                  Pexp_constant PConst_string(" Test that the extension syntax is normalized to the constructor version.\n    (this test will not produce the expected output before pretty-printing\n     support is upstreamed)",,None)
+            ]
+        pattern 
+          Ppat_var "_normalize" 
+        expression 
+          Pexp_extension "metaocaml.escape"
+          [
+            structure_item 
+              Pstr_eval
+              expression 
+                Pexp_ident "y" 
+          ]
+    ]
+  structure_item 
+    Pstr_value Nonrec
+    [
+      <def>
+        pattern 
+          Ppat_var "_normalize" 
+        expression 
+          Pexp_extension "metaocaml.bracket"
+          [
+            structure_item 
+              Pstr_eval
+              expression 
+                Pexp_ident "z" 
+          ]
+    ]
+]
+
+let escape = [%metaocaml.escape x][@@ocaml.doc
+                                    " In the MetaOCaml mode, the lexer always emits the DOTTILDE token for .~"]
+let (>.) : float -> float -> bool = Stdlib.(>)[@@ocaml.doc
+                                                " Contrarily, >. is only translated to the MetaOCaml token after the first\n    .> "]
+let _ = 1. >. 4.
+let 45 =
+  let (>.) x y = x - y
+  and (>.>) x y = x * y
+  and (>.>.) x y = (2 * x) + y in ((3 >. 1) >.>. 1) >.> (13 >. 4)
+let test = [%metaocaml.bracket x][@@ocaml.doc
+                                   " The tests below should reprint MetaOCaml constructs, but they\n    currently output the extension syntax as MetaOCaml pretty-printing\n    support was not upstreamed yet. "]
+let test2 = [%metaocaml.escape x]
+let _normalize = [%metaocaml.escape y][@@ocaml.doc
+                                        " Test that the extension syntax is normalized to the constructor version.\n    (this test will not produce the expected output before pretty-printing\n     support is upstreamed)"]
+let _normalize = [%metaocaml.bracket z]

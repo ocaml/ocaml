@@ -182,12 +182,15 @@ let ocamlc_opt_exit_status = make ("ocamlc_opt_exit_status",
 let ocamlopt_opt_exit_status = make ("ocamlopt_opt_exit_status",
   "Expected exit status of ocamlopt.opt")
 
-let export_ocamlrunparam value =
-  ("OCAMLRUNPARAM", value)
+let ocamlparam =
+  make_with_exporter
+    (fun value -> ("OCAMLPARAM", value))
+    ("ocamlparam",
+      "Equivalent of OCAMLPARAM")
 
 let ocamlrunparam =
   make_with_exporter
-    export_ocamlrunparam
+    (fun value -> ("OCAMLRUNPARAM", value))
     ("ocamlrunparam",
       "Equivalent of OCAMLRUNPARAM")
 
@@ -283,6 +286,7 @@ let _ = List.iter register_variable
     ocamlnat_exit_status;
     ocamlc_opt_exit_status;
     ocamlopt_opt_exit_status;
+    ocamlparam;
     ocamlrunparam;
     ocamllex_flags;
     ocamlyacc_flags;

@@ -83,6 +83,7 @@ type token =
   | HASH
   | GREATERRBRACKET
   | GREATERRBRACE
+  | GREATERDOT
   | GREATER
   | FUNCTOR
   | FUNCTION
@@ -98,7 +99,9 @@ type token =
   | END
   | ELSE
   | DOWNTO
+  | DOTTILDE
   | DOTOP of (string)
+  | DOTLESS
   | DOTDOT
   | DOT
   | DONE
