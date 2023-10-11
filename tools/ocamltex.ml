@@ -209,9 +209,9 @@ module Toplevel = struct
     try
       match mode with
       | Toplevel -> Parse.toplevel_phrase lex
-      | Verbatim -> Parsetree.Ptop_def (Parse.implementation lex)
+      | Verbatim -> Parsetree.Ptop_def (Parse.implementation lex).pimpl_structure
       | Signature ->
-          let sign = Parse.interface lex in
+          let sign = (Parse.interface lex).pintf_signature in
           let name = Location.mknoloc "wrap" in
           let str =
             Ast_helper.[Str.modtype @@ Mtd.mk ~typ:(Mty.signature sign) name] in

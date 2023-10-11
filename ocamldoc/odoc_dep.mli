@@ -15,9 +15,9 @@
 
 (** Top modules dependencies. *)
 
-val impl_dependencies : Parsetree.structure -> Misc.Stdlib.String.Set.elt list
+val impl_dependencies : Parsetree.implementation -> Misc.Stdlib.String.Set.elt list
 
-val intf_dependencies : Parsetree.signature -> Misc.Stdlib.String.Set.elt list
+val intf_dependencies : Parsetree.interface -> Misc.Stdlib.String.Set.elt list
 
 val kernel_deps_of_modules : Odoc_module.t_module list -> unit
 
