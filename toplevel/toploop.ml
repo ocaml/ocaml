@@ -187,6 +187,110 @@ let load_ocamlinit ppf =
 
 exception PPerror
 
+let ends_with_lf lb =
+  let open Lexing in
+  Bytes.get lb.lex_buffer (lb.lex_buffer_len - 1) = '\n'
+
+(* Without changing the state of [lb], try to see if it contains a token.
+   Return [EOF] if there is no token in [lb], a token if there is one,
+   or raise a lexer error as appropriate.
+   Print lexer warnings or not according to [print_warnings].
+*)
+let look_ahead ~print_warnings lb =
+  let shadow =
+    Lexing.{ lb with
+      refill_buff = (fun newlb -> newlb.lex_eof_reached <- true);
+      lex_buffer = Bytes.copy lb.lex_buffer;
+      lex_mem = Array.copy lb.lex_mem;
+    }
+  in
+  Misc.protect_refs [
+      R (Lexer.print_warnings, print_warnings);
+      Location.(R (report_printer, fun () -> batch_mode_printer));
+    ] (fun () -> Lexer.token shadow)
+;;
+
+(* Refill the buffer until the next linefeed or end-of-file that is not
+   inside a comment and check that its contents can be ignored.
+   We do this by adding whole lines to the lexbuf until one of these
+   occurs:
+   - it contains no tokens and no unterminated comments
+   - it contains some token or unterminated string
+   - it contains a lexical error
+*)
+let is_blank_with_linefeed lb =
+  let open Lexing in
+  if Bytes.get lb.lex_buffer lb.lex_curr_pos = '\n' then
+    (* shortcut for the most usual case *)
+    true
+  else begin
+    let rec loop () =
+      if not (lb.lex_eof_reached || ends_with_lf lb) then begin
+        (* Make sure the buffer does not contain a truncated line. *)
+        lb.refill_buff lb;
+        loop ()
+      end else begin
+        (* Check for tokens in the lexbuf. We may have to
+           repeat this step, so don't print any warnings yet. *)
+        match look_ahead ~print_warnings:false lb with
+        | EOF -> true (* no tokens *)
+        | _ -> false (* some token *)
+        | exception Lexer.(Error ((Unterminated_comment _
+                                   | Unterminated_string_in_comment _), _)) ->
+            (* In this case we don't know whether there will be a token
+               before the next linefeed, so get more chars and continue. *)
+            Misc.protect_refs [ R (comment_prompt_override, true) ]
+              (fun () -> lb.refill_buff lb);
+            loop ()
+        | exception _ -> false (* syntax error *)
+      end
+    in
+    loop ()
+  end
+
+(* Read and parse toplevel phrases, stop when a complete phrase has been
+   parsed and the lexbuf contains and end of line with optional whitespace
+   and comments. *)
+let rec get_phrases ppf lb phrs =
+  match !parse_toplevel_phrase lb with
+  | phr ->
+    if is_blank_with_linefeed lb then begin
+      (* The lexbuf does not contain any tokens. We know it will be
+         flushed after the phrases are evaluated, so print warnings now. *)
+      ignore (look_ahead ~print_warnings:true lb);
+      List.rev (phr :: phrs)
+    end else
+      get_phrases ppf lb (phr :: phrs)
+  | exception Exit -> raise PPerror
+  | exception e -> Location.report_exception ppf e; []
+
+(* Type, compile and execute a phrase. *)
+let process_phrase ppf snap phr =
+  snap := Btype.snapshot ();
+  Warnings.reset_fatal ();
+  let phr = preprocess_phrase ppf phr in
+  Env.reset_cache_toplevel ();
+  ignore(execute_phrase true ppf phr)
+
+(* Type, compile and execute a list of phrases, setting the report printer
+   to batch mode for all but the first one.
+   We have to use batch mode for reporting for two reasons:
+   1. we can't underline several parts of the input line(s) in place
+   2. the execution of the first phrase may mess up the line count so we
+      can't move the cursor back to the correct line
+ *)
+let process_phrases ppf snap phrs =
+  match phrs with
+  | [] -> ()
+  | phr :: rest ->
+    process_phrase ppf snap phr;
+    if rest <> [] then begin
+      let process ph = Location.reset (); process_phrase ppf snap ph in
+      Misc.protect_refs
+        Location.[R (report_printer, fun () -> batch_mode_printer)]
+        (fun () -> List.iter process rest)
+    end
+
 let loop ppf =
   Clflags.debug := true;
   Location.formatter_for_warnings := ppf;
@@ -209,21 +313,18 @@ let loop ppf =
   run_hooks After_setup;
   load_ocamlinit ppf;
   while true do
-    let snap = Btype.snapshot () in
+    let snap = ref (Btype.snapshot ()) in
     try
       Lexing.flush_input lb;
       (* Reset the phrase buffer when we flush the lexing buffer. *)
       Buffer.reset phrase_buffer;
       Location.reset();
-      Warnings.reset_fatal ();
       first_line := true;
-      let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
-      let phr = preprocess_phrase ppf phr  in
-      Env.reset_cache_toplevel ();
-      ignore(execute_phrase true ppf phr)
+      let phrs = get_phrases ppf lb [] in
+      process_phrases ppf snap phrs
     with
     | End_of_file -> raise (Compenv.Exit_with_status 0)
-    | Sys.Break -> fprintf ppf "Interrupted.@."; Btype.backtrack snap
+    | Sys.Break -> fprintf ppf "Interrupted.@."; Btype.backtrack !snap
     | PPerror -> ()
-    | x -> Location.report_exception ppf x; Btype.backtrack snap
+    | x -> Location.report_exception ppf x; Btype.backtrack !snap
   done

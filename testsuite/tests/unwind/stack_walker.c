@@ -50,7 +50,7 @@ value ml_perform_stack_walk(value unused) {
             } else {
               printf("%s\n", procname);
             }
-            if (!strcmp(procname, "main")) break;
+            if (!strcmp(procname, "caml_program")) break;
         }
 
         {

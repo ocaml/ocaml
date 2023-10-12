@@ -117,6 +117,10 @@ Working version
   (Stephen Dolan, review by Sébastien Hinderer, Vincent Laviron and Xavier
    Leroy)
 
+- #12439: Finalize and collect dead custom blocks during minor collection
+  (Damien Doligez, review by Xavier Leroy, Gabriel Scherer and KC
+  Sivaramakrishnan)
+
 - #12489: Fix an error-handling bug in caml_alloc_sprintf
   (Stephen Dolan, report by Chris Casinghino, review by Jeremy Yallop
    and Xavier Leroy)
@@ -252,6 +256,11 @@ Working version
   instead of "linux_elf".
   (David Allsopp, request by Kate Deplaix, review by Sébastien Hinderer and
   Xavier Leroy)
+
+- #11989, #12246, RFC 31: New flag, -H, to allow for transitive dependencies
+  without including them in the initial environment.
+  (Chris Casinghino, François Bobot, and Gabriel Scherer, review by Leo White
+   and Stefan Muenzel, RFC by François Bobot)
 
 - #12247: configure: --disable-ocamldebug can now be used instead
   of --disable-debugger (which remains available for compatibility)
@@ -462,6 +471,10 @@ OCaml 5.1.1
 ### Bug fixes:
 
 - #12623, fix the computation of variance composition
+  (Florian Angeletti, report by Vesa Karvonen, review by Gabriel Scherer)
+
+- #12645, fix error messages for cyclic type definitions in presence of
+  the `-short-paths` flag.
   (Florian Angeletti, report by Vesa Karvonen, review by Gabriel Scherer)
 
 OCaml 5.1.0 (14 September 2023)
@@ -1226,6 +1239,10 @@ Some of those changes will benefit all OCaml packages.
   Sébastien Hinderer)
 
 ### Bug fixes:
+
+- #8813, #12029: In the toplevel, let the user type several phrases in one line
+  (Damien Doligez, report by Daniel Bünzli, review by Gabriel Scherer and
+   Wiktor Kuchta)
 
 - #12062: fix runtime events consumer: when events are dropped they shouldn't be
   parsed. (Lucas Pluvinage)

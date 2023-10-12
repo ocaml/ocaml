@@ -1,21 +1,22 @@
 \chapter{The toplevel system or REPL (ocaml)} \label{c:camllight}
 %HEVEA\cutname{toplevel.html}
 
-This chapter describes the toplevel system for OCaml, that permits
+This chapter describes "ocaml", the toplevel system for OCaml, that permits
 interactive use of the OCaml system
 through a read-eval-print loop (REPL). In this mode, the system repeatedly
 reads OCaml phrases from the input, then typechecks, compile and
 evaluate them, then prints the inferred type and result value, if
-any. The system prints a "#" (sharp) prompt before reading each
-phrase.
+any. End-of-file on standard input terminates "ocaml".
 
-Input to the toplevel can span several lines. It is terminated by @";;"@ (a
-double-semicolon). The toplevel input consists in one or several
+Input to the toplevel can span several lines. It begins after the "#"
+(sharp) prompt printed by the system and is terminated by @";;"@ (a
+double-semicolon) followed by optional white space and comments and an
+end of line. The toplevel input consists in one or several
 toplevel phrases, with the following syntax:
 
 \begin{syntax}
 toplevel-input:
-          {{ definition }} ';;'
+          { definition } ';;'
         | expr ';;'
         | '#' ident [ directive-argument ] ';;'
 ;
@@ -26,10 +27,10 @@ directive-argument:
         | 'true' || 'false'
 \end{syntax}
 
-A phrase can consist of a definition, like those found in
+A phrase can consist of a sequence of definitions, like those found in
 implementations of compilation units or in @'struct' \ldots 'end'@
-module expressions. The definition can bind value names, type names,
-an exception, a module name, or a module type name. The toplevel
+module expressions. The definitions can bind value names, type names,
+exceptions, module names, or module type names. The toplevel
 system performs the bindings, then prints the types and values (if
 any) for the names thus defined.
 

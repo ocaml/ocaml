@@ -6,7 +6,7 @@
    flags = "-w -a -output-complete-obj";
    program = "test.ml.bc.${objext}";
    ocamlc.byte;
-   script = "${mkexe} -I${ocamlsrcdir}/runtime -o test.ml_bc_stub.exe test.ml.bc.${objext} ${nativecc_libs} test.ml_stub.c";
+   script = "${mkexe} -I${ocamlsrcdir}/runtime -o test.ml_bc_stub.exe test.ml.bc.${objext} ${bytecc_libs} test.ml_stub.c";
    output = "${compiler_output}";
    script;
    program = "./test.ml_bc_stub.exe";
@@ -18,7 +18,7 @@
    flags = "-w -a -output-complete-obj";
    program = "test.ml.exe.${objext}";
    ocamlopt.byte;
-   script = "${mkexe} -I${ocamlsrcdir}/runtime -o test.ml_stub.exe test.ml.exe.${objext} ${bytecc_libs} test.ml_stub.c";
+   script = "${mkexe} -I${ocamlsrcdir}/runtime -o test.ml_stub.exe test.ml.exe.${objext} ${nativecc_libs} test.ml_stub.c";
    output = "${compiler_output}";
    script;
    program = "./test.ml_stub.exe";

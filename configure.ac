@@ -2083,11 +2083,6 @@ AC_CHECK_HEADER([spawn.h],
   [AC_CHECK_FUNC([posix_spawn],
     [AC_CHECK_FUNC([posix_spawnp], [AC_DEFINE([HAS_POSIX_SPAWN])])])])
 
-## ffs or _BitScanForward
-
-AC_CHECK_FUNC([ffs], [AC_DEFINE([HAS_FFS])])
-AC_CHECK_FUNC([_BitScanForward], [AC_DEFINE([HAS_BITSCANFORWARD])])
-
 AC_PATH_TOOL([PKG_CONFIG], [pkg-config], [false])
 
 ## ZSTD compression library

@@ -95,8 +95,10 @@ let print_cmt_infos cmt =
          (match cmt.cmt_sourcefile with None -> "(none)" | Some f -> f);
   printf "Compilation flags:";
   Array.iter print_spaced_string cmt.cmt_args;
-  printf "\nLoad path:";
-  List.iter print_spaced_string cmt.cmt_loadpath;
+  printf "\nLoad path:\n  Visible:";
+  List.iter print_spaced_string cmt.cmt_loadpath.visible;
+  printf "\n  Hidden:";
+  List.iter print_spaced_string cmt.cmt_loadpath.hidden;
   printf "\n";
   printf "cmt interface digest: %s\n"
     (match cmt.cmt_interface_digest with

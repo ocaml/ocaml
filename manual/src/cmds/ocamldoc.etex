@@ -207,6 +207,10 @@ They have the same meaning as for the "ocamlc" and "ocamlopt" commands.
 Add \var{directory} to the list of directories search for compiled
 interface files (".cmi" files).
 
+\item["-H" \var{directory}]
+Like "-I", but the "-H" directories are searched last and the program may
+not directly refer to the modules added to the search path this way.
+
 \item["-nolabels"]
 Ignore non-optional labels in types.
 
