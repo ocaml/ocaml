@@ -5,6 +5,8 @@
  set TSAN_OPTIONS="detect_deadlocks=0";
 
  tsan;
+ readonly_files = "waitgroup_stubs.c";
+ all_modules = "${readonly_files} waitgroup.ml raise_through_handler.ml";
  native;
 
 *)
@@ -13,21 +15,23 @@ open Printf
 open Effect
 open Effect.Deep
 
-let g_ref = ref 0
+let wg = Waitgroup.create 2
+let r = ref 0
 
 let [@inline never] race () =
-  g_ref := 42
+  r := 42;
+  Waitgroup.join wg
 
 let [@inline never] g () =
-  print_endline "entering g";
+  print_endline "Entering g";
   ignore @@ raise Exit;
-  print_endline "leaving g";
+  print_endline "Leaving g";
   12
 
 let [@inline never] f () =
-  print_endline "computation, entering f";
+  print_endline "Computation, entering f";
   let v = g () in
-  print_endline "computation, leaving f";
+  print_endline "Computation, leaving f";
   v + 1
 
 let effh : type a. a t -> ((a, 'b) continuation -> 'b) option = fun _ -> None
@@ -47,13 +51,12 @@ let[@inline never] main () =
   );
   44
 
-let[@inline never] other_domain () =
-  ignore (Sys.opaque_identity !g_ref);
-  Unix.sleepf 0.66
+let [@inline never] reader () =
+  Waitgroup.join wg;
+  ignore (Sys.opaque_identity !r)
 
 let () =
-  let d = Domain.spawn other_domain in
-  Unix.sleepf 0.33;
+  let d = Domain.spawn reader in
   let v = main () in
-  printf "result = %d\n" v;
+  printf "Result = %d\n" v;
   Domain.join d

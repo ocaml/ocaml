@@ -1,4 +1,4 @@
-performing an unhandled effect from the main fiber
+Performing an unhandled effect from the main fiber
 ==================
 WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
   Write of size 8 at <implemspecific> by main thread (mutexes: write M<implemspecific>):
@@ -10,13 +10,6 @@ WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
   Previous read of size 8 at <implemspecific> by thread T1 (mutexes: write M<implemspecific>):
     #0 camlUnhandled.other_domain_<implemspecific> <implemspecific> (<implemspecific>)
     #1 camlStdlib__Domain.body_<implemspecific> <implemspecific> (<implemspecific>)
-
-  As if synchronized via sleep:
-    #0 nanosleep <implemspecific> (<implemspecific>)
-    #1 caml_unix_sleep <implemspecific> (<implemspecific>)
-    #2 caml_c_call <implemspecific> (<implemspecific>)
-    #3 camlUnhandled.entry <implemspecific> (<implemspecific>)
-    #4 caml_program <implemspecific> (<implemspecific>)
 
   Mutex M<implemspecific> (<implemspecific>) created at:
     #0 pthread_mutex_init <implemspecific> (<implemspecific>)
@@ -40,10 +33,10 @@ WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
 
 SUMMARY: ThreadSanitizer: data race (<systemspecific>:<implemspecific>) in camlUnhandled.race_<implemspecific>
 ==================
-performing an unhandled effect from another fiber
-entering f
-entering g
-entering h
+Performing an unhandled effect from another fiber
+Entering f
+Entering g
+Entering h
 ==================
 WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
   Write of size 8 at <implemspecific> by main thread (mutexes: write M<implemspecific>):
@@ -63,13 +56,6 @@ WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
     #0 camlUnhandled.other_domain_<implemspecific> <implemspecific> (<implemspecific>)
     #1 camlStdlib__Domain.body_<implemspecific> <implemspecific> (<implemspecific>)
 
-  As if synchronized via sleep:
-    #0 nanosleep <implemspecific> (<implemspecific>)
-    #1 caml_unix_sleep <implemspecific> (<implemspecific>)
-    #2 caml_c_call <implemspecific> (<implemspecific>)
-    #3 camlUnhandled.entry <implemspecific> (<implemspecific>)
-    #4 caml_program <implemspecific> (<implemspecific>)
-
   Mutex M<implemspecific> (<implemspecific>) created at:
     #0 pthread_mutex_init <implemspecific> (<implemspecific>)
     #1 caml_plat_mutex_init <implemspecific> (<implemspecific>)
@@ -92,9 +78,9 @@ WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
 
 SUMMARY: ThreadSanitizer: data race (<systemspecific>:<implemspecific>) in camlUnhandled.race_<implemspecific>
 ==================
-leaving h
-leaving g
-leaving f
-value handler
-result=1339
+Leaving h
+Leaving g
+Leaving f
+Value handler
+Result=42
 ThreadSanitizer: reported 2 warnings

@@ -5,6 +5,8 @@
  set TSAN_OPTIONS="detect_deadlocks=0";
 
  tsan;
+ readonly_files = "waitgroup_stubs.c";
+ all_modules = "${readonly_files} waitgroup.ml exn_reraise.ml";
  native;
 
 *)
@@ -13,38 +15,45 @@ exception ExnB
 
 open Printf
 
+let wg = Waitgroup.create 2
 let r = ref 0
 
-let [@inline never] race () = ignore @@ !r
+let [@inline never] race () =
+  ignore @@ !r;
+  Waitgroup.join wg
 
 let [@inline never] i () =
-  printf "entering i\n%!";
-  printf "throwing Exn...\n%!";
+  printf "Entering i\n%!";
+  printf "Throwing ExnA...\n%!";
   ignore (raise ExnA);
-  printf "leaving i\n%!"
+  printf "Leaving i\n%!"
 
 let [@inline never] h () =
-  printf "entering h\n%!";
+  printf "Entering h\n%!";
   try i () with
-  | ExnB -> printf "caught an ExnB\n%!";
-  printf "leaving h\n%!"
+  | ExnB -> printf "Caught an ExnB\n%!";
+  printf "Leaving h\n%!"
 
 let [@inline never] g () =
-  printf "entering g\n%!";
+  printf "Entering g\n%!";
   h ();
-  printf "leaving g\n%!"
+  printf "Leaving g\n%!"
 
 let [@inline never] f () =
-  printf "entering f\n%!";
+  printf "Entering f\n%!";
   (try g () with
   | ExnA ->
-    printf "caught an ExnA\n%!";
+    printf "Caught an ExnA\n%!";
     Printexc.print_backtrace stdout;
     race ());
-  printf "leaving f\n%!"
+  printf "Leaving f\n%!"
+
+let [@inline never] writer () =
+  Waitgroup.join wg;
+  r := 1
 
 let () =
   Printexc.record_backtrace true;
-  let d = Domain.spawn (fun () -> Unix.sleep 1; r := 1) in
-  f (); Unix.sleep 1;
+  let d = Domain.spawn writer in
+  f ();
   Domain.join d
