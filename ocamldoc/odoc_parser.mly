@@ -16,10 +16,6 @@
 
 open Odoc_comments_global
 
-let uppercase = "[A-Z\192-\214\216-\222]"
-let identchar =
-  "[A-Za-z_\192-\214\216-\246\248-\255'0-9]"
-let blank = "[ \010\013\009\012]"
 %}
 
 %token <string * (string option)> Description
@@ -28,14 +24,14 @@ let blank = "[ \010\013\009\012]"
 %token <string> See_file
 %token <string> See_doc
 
-%token T_PARAM
+%token <string> T_PARAM
 %token T_AUTHOR
 %token T_VERSION
 %token T_SEE
 %token T_SINCE
-%token T_BEFORE
+%token <string> T_BEFORE
 %token T_DEPRECATED
-%token T_RAISES
+%token <string> T_RAISES
 %token T_RETURN
 %token <string> T_CUSTOM
 
@@ -89,24 +85,7 @@ element:
 ;
 
 param:
-    T_PARAM Desc
-    {
-      (* isolate the identificator *)
-      (* we only look for simple id, no pattern nor tuples *)
-      let s = $2 in
-      match Str.split (Str.regexp (blank^"+")) s with
-        []
-      | _ :: [] ->
-          raise (Failure "usage: @param id description")
-      | id :: _ ->
-          let reg = identchar^"+" in
-          if Str.string_match (Str.regexp reg) id 0 then
-            let remain = String.sub s (String.length id) ((String.length s) - (String.length id)) in
-            let remain2 = Str.replace_first (Str.regexp ("^"^blank^"+")) "" remain in
-            params := !params @ [(id, remain2)]
-          else
-            raise (Failure (id^" is not a valid parameter identificator in \"@param "^s^"\""))
-    }
+    T_PARAM Desc { params := !params @ [($1, $2)] }
 ;
 author:
     T_AUTHOR Desc { authors := !authors @ [ $2 ] }
@@ -121,41 +100,14 @@ since:
     T_SINCE Desc { since := Some $2 }
 ;
 before:
-    T_BEFORE Desc
-    {
-      (* isolate the version name *)
-      let s = $2 in
-      match Str.split (Str.regexp (blank^"+")) s with
-        []
-      | _ :: [] ->
-          raise (Failure "usage: @before version description")
-      | id :: _ ->
-            let remain = String.sub s (String.length id) ((String.length s) - (String.length id)) in
-            let remain2 = Str.replace_first (Str.regexp ("^"^blank^"+")) "" remain in
-            before := !before @ [(id, remain2)]
-    }
+    T_BEFORE Desc { before := !before @ [($1, $2)] }
 ;
 deprecated:
     T_DEPRECATED Desc { deprecated := Some $2 }
 ;
 raise_exc:
     T_RAISES Desc
-    {
-      (* isolate the exception constructor name *)
-      let s = $2 in
-      match Str.split (Str.regexp (blank^"+")) s with
-        []
-      | _ :: [] ->
-          raise (Failure "usage: @raise Exception description")
-      | id :: _ ->
-          let reg = uppercase^identchar^"*"^"\\(\\."^uppercase^identchar^"*\\)*" in
-          if Str.string_match (Str.regexp reg) id 0 then
-            let remain = String.sub s (String.length id) ((String.length s) - (String.length id)) in
-            let remain2 = Str.replace_first (Str.regexp ("^"^blank^"+")) "" remain in
-            raised_exceptions := !raised_exceptions @ [(id, remain2)]
-          else
-            raise (Failure (id^" is not a valid exception constructor in \"@raise "^s^"\""))
-    }
+    {  raised_exceptions := !raised_exceptions @ [($1, $2)] }
 ;
 return:
     T_RETURN Desc { return_value := Some $2 }

@@ -8641,12 +8641,10 @@ ocamldoc/odoc_parameter.cmi : \
     typing/types.cmi \
     ocamldoc/odoc_types.cmi
 ocamldoc/odoc_parser.cmo : \
-    otherlibs/str/str.cmi \
     ocamldoc/odoc_types.cmi \
     ocamldoc/odoc_comments_global.cmi \
     ocamldoc/odoc_parser.cmi
 ocamldoc/odoc_parser.cmx : \
-    otherlibs/str/str.cmx \
     ocamldoc/odoc_types.cmx \
     ocamldoc/odoc_comments_global.cmx \
     ocamldoc/odoc_parser.cmi
