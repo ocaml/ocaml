@@ -300,6 +300,16 @@ the toplevel is running with the "#directory" directive
 (section~\ref{s:toplevel-directives}).
 }%top
 
+\notop{%
+\item["-H" \var{directory}]
+Behaves identically to "-I", except that (a) programs may not directly refer to
+modules added to the search path this way, and (b) these directories are
+searched after any "-I" directories.  This makes it possible to provide the
+compiler with compiled interface and object code files for the current program's
+transitive dependencies (the dependencies of its dependencies) without allowing
+them to silently become direct dependencies.
+}%notop
+
 \top{%
 \item["-init" \var{file}]
 Load the given file instead of the default initialization file.

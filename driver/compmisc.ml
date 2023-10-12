@@ -23,28 +23,36 @@ let auto_include find_in_dir fn =
 (* Initialize the search path.
    [dir] (default: the current directory)
    is always searched first  unless -nocwd is specified,
-   then the directories specified with the -I option (in command-line order),
-   then the standard library directory (unless the -nostdlib option is given).
+   then the directories specified with the -I option (in command line order),
+   then the standard library directory (unless the -nostdlib option is given),
+   then the directories specified with the -H option (in command line order).
  *)
 
 let init_path ?(auto_include=auto_include) ?(dir="") () =
-  let dirs =
+  let visible =
     if !Clflags.use_threads then "+threads" :: !Clflags.include_dirs
     else
       !Clflags.include_dirs
   in
-  let dirs =
-    !Compenv.last_include_dirs @ dirs @ Config.flexdll_dirs @
-    !Compenv.first_include_dirs
+  let visible =
+    List.concat
+      [!Compenv.last_include_dirs;
+       visible;
+       Config.flexdll_dirs;
+       !Compenv.first_include_dirs]
   in
-  let exp_dirs =
-    List.map (Misc.expand_directory Config.standard_library) dirs
+  let visible =
+    List.map (Misc.expand_directory Config.standard_library) visible
   in
-  let dirs =
+  let visible =
     (if !Clflags.no_cwd then [] else [dir])
-    @ List.rev_append exp_dirs (Clflags.std_include_dir ())
+    @ List.rev_append visible (Clflags.std_include_dir ())
   in
-  Load_path.init ~auto_include dirs;
+  let hidden =
+    List.rev_map (Misc.expand_directory Config.standard_library)
+      !Clflags.hidden_include_dirs
+  in
+  Load_path.init ~auto_include ~visible ~hidden;
   Env.reset_cache ()
 
 (* Return the initial environment in which compilation proceeds. *)

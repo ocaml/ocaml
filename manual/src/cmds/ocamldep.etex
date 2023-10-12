@@ -65,6 +65,12 @@ and no dependencies are generated. For programs that span multiple
 directories, it is recommended to pass "ocamldep" the same "-I" options
 that are passed to the compiler.
 
+\item["-H" \var{directory}]
+Behaves identically to "-I", except that the "-H" directories are searched
+last.  This flag is included to make it easier to invoke "ocamldep" with
+the same options as the compiler, where "-H" is used for transitive
+dependencies that the program should not directly mention.
+
 \item["-nocwd"]
 Do not add current working directory to the list of include directories.
 

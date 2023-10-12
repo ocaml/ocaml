@@ -1,0 +1,7 @@
+File "libc/c1.ml", line 1, characters 8-11:
+1 | let x = B.x + 1
+            ^^^
+Error: This expression has type "A.t" but an expression was expected of type
+         "int"
+       Type "A.t" is abstract because no corresponding cmi file was found
+       in path.

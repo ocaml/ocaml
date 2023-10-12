@@ -69,7 +69,10 @@ let print_info cmt =
     Printf.fprintf oc "sourcefile: %s\n" name;
   end;
   Printf.fprintf oc "build directory: %s\n" cmt.cmt_builddir;
-  List.iter (Printf.fprintf oc "load path: %s\n%!") cmt.cmt_loadpath;
+  List.iter (Printf.fprintf oc "load path (visible): %s\n%!")
+    cmt.cmt_loadpath.visible;
+  List.iter (Printf.fprintf oc "load path (hidden): %s\n%!")
+    cmt.cmt_loadpath.hidden;
   begin
     match cmt.cmt_source_digest with
       None -> ()
@@ -149,7 +152,8 @@ let record_cmt_info cmt =
                                     Annot.Idef (location_file value)))
   in
   let open Cmt_format in
-  List.iter (fun dir -> record_info "include" dir) cmt.cmt_loadpath;
+  List.iter (fun dir -> record_info "include" dir) cmt.cmt_loadpath.visible;
+  List.iter (fun dir -> record_info "include" dir) cmt.cmt_loadpath.hidden;
   record_info "chdir" cmt.cmt_builddir;
   (match cmt.cmt_sourcefile with
     None -> () | Some file -> record_info "source" file)
@@ -174,7 +178,8 @@ let main () =
           | Some _ as x -> x
         in
         Envaux.reset_cache ();
-        List.iter Load_path.add_dir cmt.cmt_loadpath;
+        List.iter (Load_path.add_dir ~hidden:false) cmt.cmt_loadpath.visible;
+        List.iter (Load_path.add_dir ~hidden:true) cmt.cmt_loadpath.hidden;
         Cmt2annot.gen_annot target_filename
           ~sourcefile:cmt.cmt_sourcefile
           ~use_summaries:cmt.cmt_use_summaries
