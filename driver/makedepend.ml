@@ -394,7 +394,8 @@ let process_file_as process_fun def source_file =
   load_path := [];
   let cwd = if !nocwd then [] else [Filename.current_dir_name] in
   List.iter add_to_load_path (
-      (!Compenv.last_include_dirs @
+      (!Clflags.hidden_include_dirs @
+       !Compenv.last_include_dirs @
        !Clflags.include_dirs @
        !Compenv.first_include_dirs @
        cwd
@@ -584,6 +585,8 @@ let run_main argv =
       "-debug-map", Arg.Set debug,
         " Dump the delayed dependency map for each map file";
       "-I", Arg.String (prepend_to_list Clflags.include_dirs),
+        "<dir>  Add <dir> to the list of include directories";
+      "-H", Arg.String (prepend_to_list Clflags.hidden_include_dirs),
         "<dir>  Add <dir> to the list of include directories";
       "-nocwd", Arg.Set nocwd,
         " Do not add current working directory to \

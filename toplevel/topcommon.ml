@@ -264,18 +264,23 @@ let set_paths ?(auto_include=Compmisc.auto_include) () =
      but keep the directories that user code linked in with ocamlmktop
      may have added to load_path. *)
   let expand = Misc.expand_directory Config.standard_library in
-  let current_load_path = Load_path.get_paths () in
-  let load_path = List.concat [
+  let Load_path.{ visible; hidden } = Load_path.get_paths () in
+  let visible = List.concat [
       [ "" ];
       List.map expand (List.rev !Compenv.first_include_dirs);
       List.map expand (List.rev !Clflags.include_dirs);
       List.map expand (List.rev !Compenv.last_include_dirs);
-      current_load_path;
+      visible;
       [expand "+camlp4"];
     ]
   in
-  Load_path.init ~auto_include load_path;
-  Dll.add_path load_path
+  let hidden = List.concat [
+      List.map expand (List.rev !Clflags.hidden_include_dirs);
+      hidden
+    ]
+  in
+  Load_path.init ~auto_include ~visible ~hidden;
+  Dll.add_path (visible @ hidden)
 
 let update_search_path_from_env () =
   let extra_paths =

@@ -224,7 +224,8 @@ let main () =
     end;
     if !Parameters.version
     then printf "\tOCaml Debugger version %s@.@." Config.version;
-    Load_path.init ~auto_include:Compmisc.auto_include !default_load_path;
+    Load_path.init ~auto_include:Compmisc.auto_include
+      ~visible:!default_load_path ~hidden:[];
     Clflags.recursive_types := true;    (* Allow recursive types. *)
     toplevel_loop ();                   (* Toplevel. *)
     kill_program ();

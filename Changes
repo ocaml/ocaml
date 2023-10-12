@@ -253,6 +253,11 @@ Working version
   (David Allsopp, request by Kate Deplaix, review by Sébastien Hinderer and
   Xavier Leroy)
 
+- #11989, #12246, RFC 31: New flag, -H, to allow for transitive dependencies
+  without including them in the initial environment.
+  (Chris Casinghino, François Bobot, and Gabriel Scherer, review by Leo White
+   and Stefan Muenzel, RFC by François Bobot)
+
 - #12247: configure: --disable-ocamldebug can now be used instead
   of --disable-debugger (which remains available for compatibility)
   (Gabriel Scherer, review by Damien Doligez and Sébastien Hinderer)
@@ -385,9 +390,12 @@ Working version
 - #11931: Fix tricky typing bug with type substitutions
   (Stephen Dolan, review by Leo White and Jacques Garrigue)
 
-- #12037: get_extern_state potential NULL dereference.
+- #12037, #12171: Fix get_extern_state potential NULL dereference.
   (Alexander Skvortsov, report by Török Edwin,
    design by Gabriel Scherer, Xavier Leroy)
+
+- #12635: Fix get_intern_state potential NULL dereference.
+  (Antonin Décimo, review by KC Sivaramakrishnan)
 
 - #12032, #12059: Bug fixes related to compilation of recursive definitions
   (Vincent Laviron, report by Victoire Noizet, review by Gabriel Scherer)
@@ -459,6 +467,10 @@ OCaml 5.1.1
 ### Bug fixes:
 
 - #12623, fix the computation of variance composition
+  (Florian Angeletti, report by Vesa Karvonen, review by Gabriel Scherer)
+
+- #12645, fix error messages for cyclic type definitions in presence of
+  the `-short-paths` flag.
   (Florian Angeletti, report by Vesa Karvonen, review by Gabriel Scherer)
 
 OCaml 5.1.0 (14 September 2023)
