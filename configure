@@ -18325,23 +18325,6 @@ fi
 fi
 
 
-## ffs or _BitScanForward
-
-ac_fn_c_check_func "$LINENO" "ffs" "ac_cv_func_ffs"
-if test "x$ac_cv_func_ffs" = xyes
-then :
-  printf "%s\n" "#define HAS_FFS 1" >>confdefs.h
-
-fi
-
-ac_fn_c_check_func "$LINENO" "_BitScanForward" "ac_cv_func__BitScanForward"
-if test "x$ac_cv_func__BitScanForward" = xyes
-then :
-  printf "%s\n" "#define HAS_BITSCANFORWARD 1" >>confdefs.h
-
-fi
-
-
 if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}pkg-config", so it can be a program name with args.
 set dummy ${ac_tool_prefix}pkg-config; ac_word=$2
