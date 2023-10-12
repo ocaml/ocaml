@@ -289,9 +289,6 @@
 
 #undef HAS_POSIX_SPAWN
 
-#undef HAS_FFS
-#undef HAS_BITSCANFORWARD
-
 #undef HAS_SIGWAIT
 
 #undef HAS_HUGE_PAGES
