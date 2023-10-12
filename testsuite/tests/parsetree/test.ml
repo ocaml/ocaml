@@ -90,16 +90,16 @@ let rec process path =
   else if Filename.check_suffix path ".ml" then
     test
       Parse.implementation
-      Pprintast.structure
+      Pprintast.implementation
       Printast.implementation
-      (fun mapper -> mapper.Ast_mapper.structure)
+      (fun mapper -> mapper.Ast_mapper.implementation)
       path
   else if Filename.check_suffix path ".mli" then
     test
       Parse.interface
-      Pprintast.signature
+      Pprintast.interface
       Printast.interface
-      (fun mapper -> mapper.Ast_mapper.signature)
+      (fun mapper -> mapper.Ast_mapper.interface)
       path
 
 let () =

@@ -1,3 +1,4 @@
+implementation 
 [
   structure_item 
     Pstr_value Rec
@@ -82,6 +83,7 @@
 ]
 
 let rec fib = function | 0 | 1 -> 1 | n -> (fib (n - 1)) + (fib (n - 2))
+implementation 
 [
   structure_item 
     Tstr_value Rec
