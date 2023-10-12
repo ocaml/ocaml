@@ -1768,7 +1768,7 @@ AC_CHECK_HEADER([spawn.h],
 ## ffs or _BitScanForward
 
 AC_CHECK_FUNC([ffs], [AC_DEFINE([HAS_FFS])])
-AC_CHECK_FUNC([_BitScanForward], [AC_DEFINE([HAS_BITSCANFORWARD])])
+AC_CHECK_DECL([_BitScanForward], [AC_DEFINE([HAS_BITSCANFORWARD])], [])
 
 ## Determine whether the debugger should/can be built
 
