@@ -27,6 +27,6 @@ match 14 with 15 -> ();; 16;; 17;; (* Warning + run-time error in 1st phrase. *)
 let f 22 = ();; let f 23 = ();; let f 24 = ();; (* Several warnings. *)
 
 (* TEST
-   * toplevel
-     flags = "-prompt"
+   flags = "-prompt";
+   toplevel;
 *)
