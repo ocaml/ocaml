@@ -230,4 +230,6 @@ val backtrace: string option ref
 val parse_mod_use_file:
   string -> Lexing.lexbuf -> Parsetree.toplevel_phrase list
 
+val comment_prompt_override : bool ref
+
 val refill_lexbuf: bytes -> int -> int

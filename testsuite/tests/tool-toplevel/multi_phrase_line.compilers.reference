@@ -1,0 +1,70 @@
+#     - : unit = ()
+#   - : int = 1
+- : int = 2
+#     - : int = 3
+- : unit = ()
+#       - : int = 5
+- : unit = ()
+#   * - : int = 7
+#   * Line 2, characters 6-9:
+2 | 750;; (*) comment-start warning after semicolon must be displayed once
+          ^^^
+Warning 1 [comment-start]: this `(*' is the start of a comment.
+Hint: Did you forget spaces when writing the infix operator `( * )'?
+
+- : int = 750
+#   Line 2, characters 9-11:
+2 | 8;; let 9;; 10;; (* Syntax error in second phrase. *)
+             ^^
+Error: Syntax error
+#   - : int = 11
+Line 2, characters 16-20:
+2 | 11;; let x = 12+true;; 13;; (* Type error in second phrase. *)
+                    ^^^^
+Error: This expression has type "bool" but an expression was expected of type
+         "int"
+#   Line 2, characters 0-22:
+2 | match 14 with 15 -> ();; 16;; 17;; (* Warning + run-time error in 1st phrase. *)
+    ^^^^^^^^^^^^^^^^^^^^^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+0
+
+Exception: Match_failure ("//toplevel//", 2, 0).
+- : int = 16
+- : int = 17
+#   - : int = 18
+Line 2, characters 5-27:
+2 | 18;; match 19 with 20 -> ();; 21;; (* Warning + run-time error in 2nd phrase. *)
+         ^^^^^^^^^^^^^^^^^^^^^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+0
+
+Exception: Match_failure ("//toplevel//", 2, 5).
+- : int = 21
+#   Line 2, characters 6-8:
+2 | let f 22 = ();; let f 23 = ();; let f 24 = ();; (* Several warnings. *)
+          ^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+0
+
+val f : int -> unit = <fun>
+Line 2, characters 22-24:
+2 | let f 22 = ();; let f 23 = ();; let f 24 = ();; (* Several warnings. *)
+                          ^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+0
+
+val f : int -> unit = <fun>
+Line 2, characters 38-40:
+2 | let f 22 = ();; let f 23 = ();; let f 24 = ();; (* Several warnings. *)
+                                          ^^
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+0
+
+val f : int -> unit = <fun>
+#   * * *   
