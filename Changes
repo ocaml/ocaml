@@ -37,6 +37,11 @@ OCaml 5.1.1
   the major heap.
   (Damien Doligez, report by Stephen Dolan, review by Gabriel Scherer)
 
+- #12439: Finalize and collect dead custom blocks during minor collection
+  (Damien Doligez, review by Xavier Leroy, Gabriel Scherer and KC
+  Sivaramakrishnan)
+
+
 OCaml 5.1.0 (14 September 2023)
 -------------------------------
 

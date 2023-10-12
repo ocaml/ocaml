@@ -463,7 +463,6 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
                                    caml_domain_state** participating)
 {
   struct caml_minor_tables *self_minor_tables = domain->minor_tables;
-  struct caml_custom_elt *elt;
   value* young_ptr = domain->young_ptr;
   value* young_end = domain->young_end;
   uintnat minor_allocated_bytes = (uintnat)young_end - (uintnat)young_ptr;
@@ -573,20 +572,6 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
     }
   #endif
 
-  /* unconditionally promote custom blocks so accounting is correct */
-  for (elt = self_minor_tables->custom.base;
-       elt < self_minor_tables->custom.ptr; elt++) {
-    value *v = &elt->block;
-    if (Is_block(*v) && Is_young(*v)) {
-      caml_adjust_gc_speed(elt->mem, elt->max);
-      if (get_header_val(*v) == 0) { /* value copied to major heap */
-        *v = Field(*v, 0);
-      } else {
-        oldify_one(&st, *v, v);
-      }
-    }
-  }
-
   CAML_EV_BEGIN(EV_MINOR_FINALIZERS_OLDIFY);
   /* promote the finalizers unconditionally as we want to avoid barriers */
   caml_final_do_young_roots (&oldify_one, oldify_scanning_flags, &st,
@@ -607,13 +592,6 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   for (r = self_minor_tables->major_ref.base;
        r < self_minor_tables->major_ref.ptr; r++) {
     value vnew = **r;
-    CAMLassert (!Is_block(vnew)
-            || (get_header_val(vnew) != 0 && !Is_young(vnew)));
-  }
-
-  for (elt = self_minor_tables->custom.base;
-       elt < self_minor_tables->custom.ptr; elt++) {
-    value vnew = elt->block;
     CAMLassert (!Is_block(vnew)
             || (get_header_val(vnew) != 0 && !Is_young(vnew)));
   }
@@ -697,6 +675,28 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   }
 }
 
+/* Finalize dead custom blocks and do the accounting for the live
+   ones. This must be done right after leaving the barrier. At this
+   point, all domains have finished minor GC, but this domain hasn't
+   resumed running OCaml code. Other domains may have resumed OCaml
+   code, but they cannot have any pointers into our minor heap. */
+static void custom_finalize_minor (caml_domain_state * domain)
+{
+  struct caml_custom_elt *elt;
+  for (elt = domain->minor_tables->custom.base;
+       elt < domain->minor_tables->custom.ptr; elt++) {
+    value *v = &elt->block;
+    if (Is_block(*v) && Is_young(*v)) {
+      if (get_header_val(*v) == 0) { /* value copied to major heap */
+        caml_adjust_gc_speed(elt->mem, elt->max);
+      } else {
+        void (*final_fun)(value) = Custom_ops_val(*v)->finalize;
+        if (final_fun != NULL) final_fun(*v);
+      }
+    }
+  }
+}
+
 void caml_do_opportunistic_major_slice
   (caml_domain_state* domain_unused, void* unused)
 {
@@ -737,6 +737,11 @@ caml_stw_empty_minor_heap_no_major_slice(caml_domain_state* domain,
 
   caml_gc_log("running stw empty_minor_heap_promote");
   caml_empty_minor_heap_promote(domain, participating_count, participating);
+
+  CAML_EV_BEGIN(EV_MINOR_FINALIZED);
+  caml_gc_log("finalizing dead minor custom blocks");
+  custom_finalize_minor(domain);
+  CAML_EV_END(EV_MINOR_FINALIZED);
 
   CAML_EV_BEGIN(EV_MINOR_FINALIZERS_ADMIN);
   caml_gc_log("running finalizer data structure book-keeping");
