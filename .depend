@@ -941,12 +941,14 @@ typing/mtype.cmi : \
 typing/oprint.cmo : \
     parsing/pprintast.cmi \
     typing/outcometree.cmi \
+    utils/misc.cmi \
     parsing/lexer.cmi \
     parsing/asttypes.cmi \
     typing/oprint.cmi
 typing/oprint.cmx : \
     parsing/pprintast.cmx \
     typing/outcometree.cmi \
+    utils/misc.cmx \
     parsing/lexer.cmx \
     parsing/asttypes.cmi \
     typing/oprint.cmi
@@ -7554,9 +7556,11 @@ debugger/debugger_config.cmx : \
     debugger/debugger_config.cmi
 debugger/debugger_config.cmi :
 debugger/debugger_lexer.cmo : \
+    utils/misc.cmi \
     debugger/debugger_parser.cmi \
     debugger/debugger_lexer.cmi
 debugger/debugger_lexer.cmx : \
+    utils/misc.cmx \
     debugger/debugger_parser.cmx \
     debugger/debugger_lexer.cmi
 debugger/debugger_lexer.cmi : \
@@ -8587,6 +8591,7 @@ ocamldoc/odoc_lexer.cmo : \
     ocamldoc/odoc_messages.cmi \
     ocamldoc/odoc_global.cmi \
     ocamldoc/odoc_comments_global.cmi \
+    utils/misc.cmi \
     ocamldoc/odoc_lexer.cmi
 ocamldoc/odoc_lexer.cmx : \
     otherlibs/str/str.cmx \
@@ -8594,6 +8599,7 @@ ocamldoc/odoc_lexer.cmx : \
     ocamldoc/odoc_messages.cmx \
     ocamldoc/odoc_global.cmx \
     ocamldoc/odoc_comments_global.cmx \
+    utils/misc.cmx \
     ocamldoc/odoc_lexer.cmi
 ocamldoc/odoc_lexer.cmi : \
     ocamldoc/odoc_parser.cmi
@@ -8736,9 +8742,11 @@ ocamldoc/odoc_name.cmi : \
     typing/ident.cmi
 ocamldoc/odoc_ocamlhtml.cmo : \
     otherlibs/str/str.cmi \
+    utils/misc.cmi \
     ocamldoc/odoc_ocamlhtml.cmi
 ocamldoc/odoc_ocamlhtml.cmx : \
     otherlibs/str/str.cmx \
+    utils/misc.cmx \
     ocamldoc/odoc_ocamlhtml.cmi
 ocamldoc/odoc_ocamlhtml.cmi :
 ocamldoc/odoc_parameter.cmo : \
