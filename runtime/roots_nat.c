@@ -218,13 +218,19 @@ void caml_unregister_frametable(intnat *table) {
     d = next_frame_descr(d);
   }
 
-  iter_list(frametables,lnk) {
-    if(lnk->data == table) {
-      previous->next = lnk->next;
-      caml_stat_free(lnk);
-      break;
+  if (frametables->data == table) {
+    lnk = frametables;
+    frametables = frametables->next;
+    caml_stat_free(lnk);
+  } else {
+    iter_list(frametables->next,lnk) {
+      if(lnk->data == table) {
+        previous->next = lnk->next;
+        caml_stat_free(lnk);
+        break;
+      }
+      previous = lnk;
     }
-    previous = lnk;
   }
 }
 
