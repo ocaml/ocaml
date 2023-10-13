@@ -88,18 +88,14 @@ void caml_redarken_pool(struct pool*, scanning_action, void*);
 
 intnat caml_sweep(struct caml_heap_state*, intnat);
 
-
-/* must be called during STW */
-void caml_cycle_heap_stw(void);
+void caml_cycle_heap_from_stw_single(void);
 
 /* must be called on each domain
-   (after caml_cycle_heap_stw) */
+   (after caml_cycle_heap_from_stw_single) */
 void caml_cycle_heap(struct caml_heap_state*);
 
 /* Heap invariant verification (for debugging) */
-
-/* caml_verify_heap must only be called while all domains are paused */
-void caml_verify_heap(caml_domain_state *domain);
+void caml_verify_heap_from_stw(caml_domain_state *domain);
 
 #ifdef DEBUG
 /* [is_garbage(v)] returns true if [v] is a garbage value */

@@ -774,10 +774,11 @@ static void caml_stw_empty_minor_heap (caml_domain_state* domain, void* unused,
 }
 
 /* must be called within a STW section  */
-void caml_empty_minor_heap_no_major_slice_from_stw(caml_domain_state* domain,
-                                            void* unused,
-                                             int participating_count,
-                                             caml_domain_state** participating)
+void caml_empty_minor_heap_no_major_slice_from_stw(
+  caml_domain_state* domain,
+  void* unused,
+  int participating_count,
+  caml_domain_state** participating)
 {
   barrier_status b = caml_global_barrier_begin();
   if( caml_global_barrier_is_final(b) ) {
@@ -792,7 +793,7 @@ void caml_empty_minor_heap_no_major_slice_from_stw(caml_domain_state* domain,
 }
 
 /* must be called outside a STW section */
-int caml_try_stw_empty_minor_heap_on_all_domains (void)
+int caml_try_empty_minor_heap_on_all_domains (void)
 {
   #ifdef DEBUG
   CAMLassert(!caml_domain_is_in_stw());
@@ -820,7 +821,7 @@ void caml_empty_minor_heaps_once (void)
   /* To handle the case where multiple domains try to execute a minor gc
      STW section */
   do {
-    caml_try_stw_empty_minor_heap_on_all_domains();
+    caml_try_empty_minor_heap_on_all_domains();
   } while (saved_minor_cycle == atomic_load(&caml_minor_cycles_started));
 }
 
