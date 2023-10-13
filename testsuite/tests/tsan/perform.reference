@@ -16,6 +16,12 @@ WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
     #0 camlPerform.other_domain_<implemspecific> <implemspecific> (<implemspecific>)
     #1 camlStdlib__Domain.body_<implemspecific> <implemspecific> (<implemspecific>)
 
+  As if synchronized via sleep:
+    #0 usleep <implemspecific> (<implemspecific>)
+    #1 wg_wait <implemspecific> (<implemspecific>)
+    #2 camlPerform.entry <implemspecific> (<implemspecific>)
+    #3 caml_program <implemspecific> (<implemspecific>)
+
   Mutex M<implemspecific> (<implemspecific>) created at:
     #0 pthread_mutex_init <implemspecific> (<implemspecific>)
     #1 caml_plat_mutex_init <implemspecific> (<implemspecific>)
@@ -56,6 +62,12 @@ WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
     #0 camlPerform.other_domain_<implemspecific> <implemspecific> (<implemspecific>)
     #1 camlStdlib__Domain.body_<implemspecific> <implemspecific> (<implemspecific>)
 
+  As if synchronized via sleep:
+    #0 usleep <implemspecific> (<implemspecific>)
+    #1 wg_wait <implemspecific> (<implemspecific>)
+    #2 camlPerform.entry <implemspecific> (<implemspecific>)
+    #3 caml_program <implemspecific> (<implemspecific>)
+
   Mutex M<implemspecific> (<implemspecific>) created at:
     #0 pthread_mutex_init <implemspecific> (<implemspecific>)
     #1 caml_plat_mutex_init <implemspecific> (<implemspecific>)
@@ -95,6 +107,12 @@ WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
   Previous read of size 8 at <implemspecific> by thread T1 (mutexes: write M<implemspecific>):
     #0 camlPerform.other_domain_<implemspecific> <implemspecific> (<implemspecific>)
     #1 camlStdlib__Domain.body_<implemspecific> <implemspecific> (<implemspecific>)
+
+  As if synchronized via sleep:
+    #0 usleep <implemspecific> (<implemspecific>)
+    #1 wg_wait <implemspecific> (<implemspecific>)
+    #2 camlPerform.entry <implemspecific> (<implemspecific>)
+    #3 caml_program <implemspecific> (<implemspecific>)
 
   Mutex M<implemspecific> (<implemspecific>) created at:
     #0 pthread_mutex_init <implemspecific> (<implemspecific>)

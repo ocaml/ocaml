@@ -8,9 +8,11 @@
 #define MAX_WAITGROUP   8
 #define SPIN_WAIT_MS    10
 
+/* waitgroup inspired by Golang's `sync.WaitGroup`. This version does *not*
+ * allow to restart a waitgroup. */
 typedef struct {
-  unsigned    limit; /* Number of threads participating to the checkpoint */
-  atomic_uint count; /* Number of threads that have reach the checkpoint */
+  unsigned    limit; /* Number of threads participating in the checkpoint */
+  atomic_uint count; /* Number of threads that have reached the checkpoint */
 } waitgroup;
 
 static waitgroup waitgroups[MAX_WAITGROUP] = { 0 };
@@ -46,6 +48,12 @@ CAMLno_tsan value wg_wait(value t)
 {
   waitgroup* wg = wg_get(Int_val(t));
 
-  while (wg->count != wg->limit) { /* spinwait */ }
+  /* Always sleep at least once, even for the last thread to reach the
+   * checkpoint. This allows TSan to always generate a report with a
+   * 'As if synchronized via sleep' section. */
+  do {
+    usleep(SPIN_WAIT_MS);
+  }
+  while (wg->count != wg->limit);
   return Val_unit;
 }

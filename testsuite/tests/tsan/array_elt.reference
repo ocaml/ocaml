@@ -9,6 +9,12 @@ WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
     #1 camlArray_elt.entry <implemspecific> (<implemspecific>)
     #2 caml_program <implemspecific> (<implemspecific>)
 
+  As if synchronized via sleep:
+    #0 usleep <implemspecific> (<implemspecific>)
+    #1 wg_wait <implemspecific> (<implemspecific>)
+    #2 camlArray_elt.writer_<implemspecific> <implemspecific> (<implemspecific>)
+    #3 camlStdlib__Domain.body_<implemspecific> <implemspecific> (<implemspecific>)
+
   Mutex M<implemspecific> (<implemspecific>) created at:
     #0 pthread_mutex_init <implemspecific> (<implemspecific>)
     #1 caml_plat_mutex_init <implemspecific> (<implemspecific>)
