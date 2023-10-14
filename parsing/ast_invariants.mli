@@ -19,5 +19,7 @@
 
 *)
 
+val structure : Parsetree.structure -> unit
+val signature : Parsetree.signature -> unit
 val implementation : Parsetree.implementation -> unit
 val interface : Parsetree.interface -> unit

@@ -1034,7 +1034,7 @@ let extension_of_exn exn =
 
 
 let apply_lazy ~source ~target mapper =
-  let implem { pimpl_structure = ast; pimpl_loc } =
+  let implem ast =
     let fields, ast =
       match ast with
       | {pstr_desc = Pstr_attribute ({attr_name = {txt = "ocaml.ppx.context"};
@@ -1043,20 +1043,18 @@ let apply_lazy ~source ~target mapper =
       | _ -> [], ast
     in
     PpxContext.restore fields;
-    let ast, loc =
+    let ast =
       try
         let mapper = mapper () in
-        let loc = mapper.location mapper pimpl_loc in
-        mapper.structure mapper ast, loc
+        mapper.structure mapper ast
       with exn ->
         [{pstr_desc = Pstr_extension (extension_of_exn exn, []);
-          pstr_loc  = Location.none}], Location.none
+          pstr_loc  = Location.none}]
     in
     let fields = PpxContext.update_cookies fields in
     Str.attribute (PpxContext.mk fields) :: ast
-    |> Impl.mk ~loc
   in
-  let iface { pintf_loc; pintf_signature = ast } =
+  let iface ast =
     let fields, ast =
       match ast with
       | {psig_desc = Psig_attribute ({attr_name = {txt = "ocaml.ppx.context"};
@@ -1066,18 +1064,16 @@ let apply_lazy ~source ~target mapper =
       | _ -> [], ast
     in
     PpxContext.restore fields;
-    let ast, loc =
+    let ast =
       try
         let mapper = mapper () in
-        let loc = mapper.location mapper pintf_loc in
-        mapper.signature mapper ast, loc
+        mapper.signature mapper ast
       with exn ->
         [{psig_desc = Psig_extension (extension_of_exn exn, []);
-          psig_loc  = Location.none}], Location.none
+          psig_loc  = Location.none}]
     in
     let fields = PpxContext.update_cookies fields in
     Sig.attribute (PpxContext.mk fields) :: ast
-    |> Intf.mk ~loc
   in
 
   let ic = open_in_bin source in
@@ -1101,45 +1097,38 @@ let apply_lazy ~source ~target mapper =
   in
 
   if magic = Config.ast_impl_magic_number then
-    rewrite (implem : implementation -> implementation)
+    rewrite (implem : structure -> structure)
   else if magic = Config.ast_intf_magic_number then
-    rewrite (iface : interface -> interface)
+    rewrite (iface : signature -> signature)
   else fail ()
 
-let drop_ppx_context_impl ~restore = function
-  | { pimpl_structure =
-      {pstr_desc = Pstr_attribute
+let drop_ppx_context_str ~restore = function
+  | {pstr_desc = Pstr_attribute
                    {attr_name = {Location.txt = "ocaml.ppx.context"};
                     attr_payload = a;
                     attr_loc = _}}
-      :: items;
-      pimpl_loc;
-    } ->
+    :: items ->
       if restore then
         PpxContext.restore (PpxContext.get_fields a);
-      { pimpl_structure = items; pimpl_loc }
-  | impl -> impl
+      items
+  | items -> items
 
-let drop_ppx_context_intf ~restore = function
-  | { pintf_signature = 
-      {psig_desc = Psig_attribute
-                     {attr_name = {Location.txt = "ocaml.ppx.context"};
-                      attr_payload = a;
-                      attr_loc = _}}
-      :: items;
-      pintf_loc;
-    } ->
+let drop_ppx_context_sig ~restore = function
+  | {psig_desc = Psig_attribute
+                   {attr_name = {Location.txt = "ocaml.ppx.context"};
+                    attr_payload = a;
+                    attr_loc = _}}
+    :: items ->
       if restore then
         PpxContext.restore (PpxContext.get_fields a);
-      { pintf_signature = items; pintf_loc }
-  | intf -> intf
+      items
+  | items -> items
 
-let add_ppx_context_impl ~tool_name ast =
-  { ast with pimpl_structure =  Ast_helper.Str.attribute (ppx_context ~tool_name ()) :: ast.pimpl_structure }
+let add_ppx_context_str ~tool_name ast =
+  Ast_helper.Str.attribute (ppx_context ~tool_name ()) :: ast
 
-let add_ppx_context_intf ~tool_name ast =
-  { ast with pintf_signature = Ast_helper.Sig.attribute (ppx_context ~tool_name ()) :: ast.pintf_signature }
-
+let add_ppx_context_sig ~tool_name ast =
+  Ast_helper.Sig.attribute (ppx_context ~tool_name ()) :: ast
 
 let apply ~source ~target mapper =
   apply_lazy ~source ~target (fun () -> mapper)

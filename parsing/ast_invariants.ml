@@ -197,5 +197,7 @@ let iterator =
   ; object_field
   }
 
-let implementation st = iterator.implementation iterator st
-let interface sg = iterator.interface iterator sg
+let structure st = iterator.structure iterator st
+let signature sg = iterator.signature iterator sg
+let implementation impl = iterator.implementation iterator impl
+let interface intf = iterator.interface iterator intf
