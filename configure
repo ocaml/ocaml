@@ -16618,8 +16618,8 @@ if test "x$ac_cv_func_ffs" = xyes; then :
 
 fi
 
-ac_fn_c_check_func "$LINENO" "_BitScanForward" "ac_cv_func__BitScanForward"
-if test "x$ac_cv_func__BitScanForward" = xyes; then :
+ac_fn_c_check_decl "$LINENO" "_BitScanForward" "ac_cv_have_decl__BitScanForward" "$ac_includes_default"
+if test "x$ac_cv_have_decl__BitScanForward" = xyes; then :
   $as_echo "#define HAS_BITSCANFORWARD 1" >>confdefs.h
 
 fi
