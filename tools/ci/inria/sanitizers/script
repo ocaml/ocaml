@@ -47,18 +47,16 @@ else
 fi
 
 # A tool that makes error backtraces nicer
-# Need to pick the one that matches clang-9 and is named "llvm-symbolizer"
+# Need to pick the one that matches clang-14 and is named "llvm-symbolizer"
 # (/usr/bin/llvm-symbolizer-9 doesn't work, that would be too easy)
-export ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-9/bin/llvm-symbolizer
+export ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-14/bin/llvm-symbolizer
 export TSAN_SYMBOLIZER_PATH="$ASAN_SYMBOLIZER_PATH"
 
 #########################################################################
 
-echo "======== clang 9, address sanitizer, UB sanitizer =========="
+echo "======== clang, address sanitizer, UB sanitizer =========="
 
 git clean -q -f -d -x
-
-# Use clang 9
 
 # These are the undefined behaviors we want to check
 # Others occur on purpose e.g. signed arithmetic overflow
@@ -81,7 +79,7 @@ sanitizers="-fsanitize=address -fsanitize-trap=$ubsan"
 # Don't optimize too much to get better backtraces of errors
 
 ./configure \
-  CC=clang-9 \
+  CC=clang-14 \
   CFLAGS="-O1 -fno-omit-frame-pointer $sanitizers" \
   --disable-stdlib-manpages --enable-dependency-generation
 
@@ -107,7 +105,7 @@ ASAN_OPTIONS="detect_leaks=0,use_sigaltstack=0" $run_testsuite
 
 #########################################################################
 
-echo "======== clang 9, thread sanitizer =========="
+echo "======== clang, thread sanitizer =========="
 
 git clean -q -f -d -x
 
@@ -115,7 +113,7 @@ git clean -q -f -d -x
 # Don't optimize too much to get better backtraces of errors
 
 ./configure \
-  CC=clang-9 \
+  CC=clang-14 \
   CFLAGS="-O1 -fno-omit-frame-pointer -fsanitize=thread" \
   --disable-stdlib-manpages --enable-dependency-generation
 
@@ -155,7 +153,7 @@ TSAN_OPTIONS="die_after_fork=0" $run_testsuite
 # # Don't optimize at all to get better backtraces of errors
 
 # ./configure \
-#   CC=clang-9 \
+#   CC=clang-6 \
 #   CFLAGS="-O0 -g -fno-omit-frame-pointer -fsanitize=memory" \
 #   --disable-native-compiler
 # # A tool that makes error backtraces nicer
