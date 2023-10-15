@@ -128,7 +128,7 @@ static void write_to_ring(ev_category category, ev_message_type type,
                           int word_offset);
 
 static void events_register_write_buffer(int index, value event_name);
-static void runtime_events_create_raw(void);
+static void runtime_events_create_from_stw_single(void);
 
 void caml_runtime_events_init(void) {
 
@@ -150,17 +150,15 @@ void caml_runtime_events_init(void) {
             caml_secure_getenv(T("OCAML_RUNTIME_EVENTS_PRESERVE")) ? 1 : 0;
 
   if (caml_secure_getenv(T("OCAML_RUNTIME_EVENTS_START"))) {
-    /* since [caml_runtime_events_init] can only be called from the startup code
-    and we can be sure there is only a single domain running, it is safe to call
-    [runtime_events_create_raw] outside of a stop-the-world section */
-    runtime_events_create_raw();
+    runtime_events_create_from_stw_single();
+    /* stw_single: mutators and domains have not started yet. */
   }
 }
 
 /* teardown the ring buffers. This must be called from a stop-the-world
    unless we are sure there is only a single domain running (e.g after a fork)
 */
-static void runtime_events_teardown_raw(int remove_file) {
+static void runtime_events_teardown_from_stw_single(int remove_file) {
 #ifdef _WIN32
     UnmapViewOfFile(current_metadata);
     CloseHandle(ring_file_handle);
@@ -186,13 +184,15 @@ static void runtime_events_teardown_raw(int remove_file) {
 }
 
 /* Stop-the-world which calls the teardown code */
-static void stw_teardown_runtime_events(caml_domain_state *domain_state,
-                               void *remove_file_data, int num_participating,
-                               caml_domain_state **participating_domains) {
+static void stw_teardown_runtime_events(
+  caml_domain_state *domain_state,
+  void *remove_file_data, int num_participating,
+  caml_domain_state **participating_domains)
+{
   caml_global_barrier();
   if (participating_domains[0] == domain_state) {
     int remove_file = *(int*)remove_file_data;
-    runtime_events_teardown_raw(remove_file);
+    runtime_events_teardown_from_stw_single(remove_file);
   }
   caml_global_barrier();
 }
@@ -208,9 +208,9 @@ void caml_runtime_events_post_fork(void) {
     /* In the child we need to tear down the various structures used for the
     existing runtime_events from the parent. In doing so we need to make sure we
     don't remove the runtime_events file itself as that may still be used by
-    the parent. There is no need for a stop-the-world in this case as we are
-    certain there is only a single domain running. */
-    runtime_events_teardown_raw(0 /* don't remove the file */);
+    the parent. */
+    runtime_events_teardown_from_stw_single(0 /* don't remove the file */);
+    /* stw_single: mutators and domains have not started after the fork yet. */
 
     /* We still have the path and ring size from our parent */
     caml_runtime_events_start();
@@ -249,7 +249,7 @@ void caml_runtime_events_destroy(void) {
 /* Create the initial runtime_events ring buffers. This must be called from
   within a stop-the-world section if we cannot be sure there is only a single
   domain running. */
-static void runtime_events_create_raw(void) {
+static void runtime_events_create_from_stw_single(void) {
   /* Don't initialise runtime_events twice */
   if (!atomic_load_acquire(&runtime_events_enabled)) {
     int ret, ring_headers_length, ring_data_length;
@@ -404,18 +404,16 @@ static void runtime_events_create_raw(void) {
   }
 }
 
-/* Stop the world section which calls [runtime_events_create_raw], used when we
-   can't be sure there is only a single domain running. */
-static void
-stw_create_runtime_events(caml_domain_state *domain_state, void *data,
-                              int num_participating,
-                              caml_domain_state **participating_domains) {
-  /* Everyone must be stopped for starting and stopping runtime_events */
+static void stw_create_runtime_events(
+  caml_domain_state *domain_state, void *data,
+  int num_participating,
+  caml_domain_state **participating_domains)
+{
   caml_global_barrier();
 
   /* Only do this on one domain */
   if (participating_domains[0] == domain_state) {
-    runtime_events_create_raw();
+    runtime_events_create_from_stw_single();
   }
   caml_global_barrier();
 }

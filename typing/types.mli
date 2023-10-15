@@ -486,14 +486,15 @@ type type_declaration =
 and type_decl_kind = (label_declaration, constructor_declaration) type_kind
 
 and ('lbl, 'cstr) type_kind =
-    Type_abstract of abstract_reason
+    Type_abstract of type_origin
   | Type_record of 'lbl list  * record_representation
   | Type_variant of 'cstr list * variant_representation
   | Type_open
 
-and abstract_reason =
-    Abstract_def
-  | Abstract_rec_check_regularity       (* See Typedecl.transl_type_decl *)
+and type_origin =
+    Definition
+  | Rec_check_regularity       (* See Typedecl.transl_type_decl *)
+  | Existential of string
 
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)

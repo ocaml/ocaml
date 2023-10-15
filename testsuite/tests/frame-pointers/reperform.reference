@@ -15,6 +15,3 @@ camlReperform.bar
 caml_runstack
 camlReperform.entry
 caml_program
-caml_start_program
-caml_main/caml_startup
-main

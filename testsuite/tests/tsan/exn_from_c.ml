@@ -1,12 +1,12 @@
 (* TEST
 
- modules = "callbacks.c";
-
  ocamlopt_flags = "-g -ccopt -fsanitize=thread -ccopt -O1 -ccopt -fno-omit-frame-pointer -ccopt -g";
  include unix;
  set TSAN_OPTIONS="detect_deadlocks=0";
 
  tsan;
+ readonly_files = "callbacks.c waitgroup_stubs.c";
+ all_modules = "${readonly_files} waitgroup.ml exn_from_c.ml";
  native;
 
 *)
@@ -15,37 +15,44 @@ external print_and_raise : unit -> unit = "print_and_raise"
 
 open Printf
 
+let wg = Waitgroup.create 2
 let r = ref 0
 
-let [@inline never] race () = ignore @@ !r
+let [@inline never] race () =
+  ignore @@ !r;
+  Waitgroup.join wg
 
 let [@inline never] i () =
-  printf "entering i\n%!";
-  printf "calling print_and_raise...\n%!";
+  printf "Entering i\n%!";
+  printf "Calling print_and_raise...\n%!";
   print_and_raise ();
-  printf "leaving i\n%!"
+  printf "Leaving i\n%!"
 
 let [@inline never] h () =
-  printf "entering h\n%!";
+  printf "Entering h\n%!";
   i ();
-  printf "leaving h\n%!"
+  printf "Leaving h\n%!"
 
 let [@inline never] g () =
-  printf "entering g\n%!";
+  printf "Entering g\n%!";
   h ();
-  printf "leaving g\n%!"
+  printf "Leaving g\n%!"
 
 let [@inline never] f () =
-  printf "entering f\n%!";
+  printf "Entering f\n%!";
   (try g ()
   with Failure msg ->
-    printf "caught Failure \"%s\"\n%!" msg;
+    printf "Caught Failure \"%s\"\n%!" msg;
     Printexc.print_backtrace stdout;
     race ());
-  printf "leaving f\n%!"
+  printf "Leaving f\n%!"
+
+let [@inline never] writer () =
+  Waitgroup.join wg;
+  r := 1
 
 let () =
   Printexc.record_backtrace true;
-  let d = Domain.spawn (fun () -> Unix.sleep 1; r := 1) in
-  f (); Unix.sleep 1;
+  let d = Domain.spawn writer in
+  f ();
   Domain.join d

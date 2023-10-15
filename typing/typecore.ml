@@ -169,7 +169,7 @@ type error =
   | Modules_not_allowed
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
-  | Unexpected_existential of existential_restriction * string * string list
+  | Unexpected_existential of existential_restriction * string
   | Invalid_interval
   | Invalid_for_loop_index
   | No_value_clauses
@@ -752,7 +752,7 @@ let solve_constructor_annotation
   let ids =
     List.map
       (fun name ->
-        let decl = new_local_type ~loc:name.loc () in
+        let decl = new_local_type ~loc:name.loc Definition in
         let (id, new_env) =
           Env.enter_type ~scope:expansion_scope name.txt decl !!penv in
         Pattern_env.set_env penv new_env;
@@ -1703,10 +1703,9 @@ and type_pat_aux
       in
       begin match no_existentials, constr.cstr_existentials with
       | None, _ | _, [] -> ()
-      | Some r, (_ :: _ as exs)  ->
-          let exs = List.map (Ctype.existential_name constr) exs in
+      | Some r, (_ :: _) ->
           let name = constr.cstr_name in
-          raise (Error (loc, !!penv, Unexpected_existential (r, name, exs)))
+          raise (Error (loc, !!penv, Unexpected_existential (r, name)))
       end;
       let sarg', existential_styp =
         match sarg with
@@ -4393,7 +4392,7 @@ and type_newtype
   (* Use [with_local_level] just for scoping *)
   with_local_level begin fun () ->
     (* Create a fake abstract type declaration for [name]. *)
-    let decl = new_local_type ~loc () in
+    let decl = new_local_type ~loc Definition in
     let scope = create_scope () in
     let (id, new_env) = Env.enter_type ~scope name decl env in
 
@@ -6744,7 +6743,7 @@ let report_error ~loc env = function
       Location.errorf ~loc
         "This expression is packed module, but the expected type is@ %a"
         (Style.as_inline_code Printtyp.type_expr) ty
-  | Unexpected_existential (reason, name, types) ->
+  | Unexpected_existential (reason, name) ->
       let reason_str =
          match reason with
         | In_class_args ->
@@ -6765,16 +6764,9 @@ let report_error ~loc env = function
             dprintf
               "Existential types are not allowed in presence of attributes"
       in
-      begin match List.find (fun ty -> ty <> "$" ^ name) types with
-      | example ->
-          Location.errorf ~loc
-            "%t,@ but this pattern introduces the existential type %a."
-            reason_str Style.inline_code example
-      | exception Not_found ->
-          Location.errorf ~loc
-            "%t,@ but the constructor %a introduces existential types."
-            reason_str Style.inline_code name
-      end
+      Location.errorf ~loc
+        "%t,@ but the constructor %a introduces existential types."
+        reason_str Style.inline_code name
   | Invalid_interval ->
       Location.errorf ~loc
         "@[Only character intervals are supported in patterns.@]"

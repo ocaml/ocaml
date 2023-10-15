@@ -7,6 +7,3 @@ camlStack_realloc.f_comp
 caml_runstack
 camlStack_realloc.entry
 caml_program
-caml_start_program
-caml_main/caml_startup
-main

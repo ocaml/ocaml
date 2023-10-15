@@ -829,6 +829,70 @@ let printer_iter_type_expr f ty =
   | _ ->
       Btype.iter_type_expr f ty
 
+module Internal_names : sig
+
+  val reset : unit -> unit
+
+  val add : Path.t -> unit
+
+  val print_explanations : Env.t -> Format.formatter -> unit
+
+end = struct
+
+  let names = ref Ident.Set.empty
+
+  let reset () =
+    names := Ident.Set.empty
+
+  let add p =
+    match p with
+    | Pident id ->
+        let name = Ident.name id in
+        if String.length name > 0 && name.[0] = '$' then begin
+          names := Ident.Set.add id !names
+        end
+    | Pdot _ | Papply _ | Pextra_ty _ -> ()
+
+  let print_explanations env ppf =
+    let constrs =
+      Ident.Set.fold
+        (fun id acc ->
+          let p = Pident id in
+          match Env.find_type p env with
+          | exception Not_found -> acc
+          | decl ->
+              match type_origin decl with
+              | Existential constr ->
+                  let prev = String.Map.find_opt constr acc in
+                  let prev = Option.value ~default:[] prev in
+                  String.Map.add constr (tree_of_path None p :: prev) acc
+              | Definition | Rec_check_regularity -> acc)
+        !names String.Map.empty
+    in
+    String.Map.iter
+      (fun constr out_idents ->
+        match out_idents with
+        | [] -> ()
+        | [out_ident] ->
+            fprintf ppf
+              "@ @[<2>@{<hint>Hint@}:@ %a@ is an existential type@ \
+               bound by the constructor@ %a.@]"
+              (Style.as_inline_code !Oprint.out_ident) out_ident
+              Style.inline_code constr
+        | out_ident :: out_idents ->
+            fprintf ppf
+              "@ @[<2>@{<hint>Hint@}:@ %a@ and %a@ are existential types@ \
+               bound by the constructor@ %a.@]"
+              (Format.pp_print_list
+                 ~pp_sep:(fun ppf () -> fprintf ppf ",@ ")
+                 (Style.as_inline_code !Oprint.out_ident))
+              (List.rev out_idents)
+              (Style.as_inline_code !Oprint.out_ident) out_ident
+              Style.inline_code constr)
+      constrs
+
+end
+
 module Names : sig
   val reset_names : unit -> unit
 
@@ -906,11 +970,7 @@ end = struct
     || String.Set.mem name !named_weak_vars
 
   let rec new_name () =
-    let name =
-      if !name_counter < 26
-      then String.make 1 (Char.chr(97 + !name_counter))
-      else String.make 1 (Char.chr(97 + !name_counter mod 26)) ^
-             Int.to_string(!name_counter / 26) in
+    let name = Misc.letter_of_int !name_counter in
     incr name_counter;
     if name_is_already_used name then new_name () else name
 
@@ -1063,7 +1123,7 @@ let reset_loop_marks () =
   visited_objects := []; aliased := []; delayed := []; printed_aliases := []
 
 let reset_except_context () =
-  Names.reset_names (); reset_loop_marks ()
+  Names.reset_names (); reset_loop_marks (); Internal_names.reset ()
 
 let reset () =
   Conflicts.reset ();
@@ -1119,9 +1179,10 @@ let rec tree_of_typexp mode ty =
         let tyl' = apply_subst s tyl in
         if is_nth s && not (tyl'=[])
         then tree_of_typexp mode (List.hd tyl')
-        else
-          let tpath = tree_of_best_type_path p p' in
-          Otyp_constr (tpath, tree_of_typlist mode tyl')
+        else begin
+          Internal_names.add p';
+          Otyp_constr (tree_of_best_type_path p p', tree_of_typlist mode tyl')
+        end
     | Tvariant row ->
         let Row {fields; name; closed; _} = row_repr row in
         let fields =
@@ -1867,7 +1928,7 @@ let dummy =
   {
     type_params = [];
     type_arity = 0;
-    type_kind = Type_abstract Abstract_def;
+    type_kind = Type_abstract Definition;
     type_private = Public;
     type_manifest = None;
     type_variance = [];
@@ -2285,7 +2346,11 @@ let explain_fixed_row pos expl = match expl with
   | Reified p ->
     dprintf "The %a variant type is bound to %a"
       Errortrace.print_pos pos
-      (Style.as_inline_code (fun ppf p -> print_path p ppf)) p
+      (Style.as_inline_code
+         (fun ppf p ->
+           Internal_names.add p;
+           print_path p ppf))
+      p
   | Rigid -> ignore
 
 let explain_variant (type variety) : variety Errortrace.variant -> _ = function
@@ -2436,19 +2501,20 @@ let warn_on_missing_def env ppf t =
   match get_desc t with
   | Tconstr (p,_,_) ->
     begin match Env.find_type p env with
-    | { type_kind = Type_abstract Abstract_rec_check_regularity; _ } ->
-        fprintf ppf
-          "@,@[<hov>Type %a was considered abstract@ when checking\
-           @ constraints@ in this@ recursive type definition.@]"
-          (Style.as_inline_code path) p
     | exception Not_found ->
         fprintf ppf
           "@,@[<hov>Type %a is abstract because@ no corresponding\
            @ cmi file@ was found@ in path.@]" (Style.as_inline_code path) p
-    | {type_kind =
-       Type_abstract Abstract_def | Type_record _ | Type_variant _ | Type_open }
-      -> ()
-    end
+    | { type_manifest = Some _; _ } -> ()
+    | { type_manifest = None; _ } as decl ->
+        match type_origin decl with
+        | Rec_check_regularity ->
+            fprintf ppf
+              "@,@[<hov>Type %a was considered abstract@ when checking\
+               @ constraints@ in this@ recursive type definition.@]"
+              (Style.as_inline_code path) p
+        | Definition | Existential _ -> ()
+      end
   | _ -> ()
 
 let prepare_expansion_head empty_tr = function
@@ -2503,6 +2569,7 @@ let error trace_format mode subst env tr txt1 ppf txt2 ty_expect_explanation =
         (explain mis);
       if env <> Env.empty
       then warn_on_missing_defs env ppf head;
+      Internal_names.print_explanations env ppf;
       Conflicts.print_explanations ppf;
       print_labels := true
     with exn ->

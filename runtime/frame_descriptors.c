@@ -180,7 +180,7 @@ typedef struct frametable_array {
   int ntables;
 } frametable_array;
 
-static void register_frametables(frametable_array *array)
+static void register_frametables_from_stw_single(frametable_array *array)
 {
   caml_frametable_list *new_frametables = NULL;
   for (int i = 0; i < array->ntables; i++)
@@ -198,7 +198,7 @@ static void stw_register_frametables(
   barrier_status b = caml_global_barrier_begin ();
 
   if (caml_global_barrier_is_final(b)) {
-    register_frametables((frametable_array*) frametables);
+    register_frametables_from_stw_single((frametable_array*) frametables);
   }
 
   caml_global_barrier_end(b);

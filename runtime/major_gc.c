@@ -1237,9 +1237,10 @@ static intnat ephe_sweep (caml_domain_state* domain_state, intnat budget)
   return budget;
 }
 
-static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
-                                       int participating_count,
-                                       caml_domain_state** participating)
+static void stw_cycle_all_domains(
+  caml_domain_state* domain, void* unused,
+  int participating_count,
+  caml_domain_state** participating)
 {
   uintnat num_domains_in_stw;
 
@@ -1259,10 +1260,11 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
 
   {
     /* Cycle major heap */
-    // FIXME: delete caml_cycle_heap_stw and have per-domain copies of the data?
+    /* FIXME: delete caml_cycle_heap_from_stw_single
+       and have per-domain copies of the data? */
     barrier_status b = caml_global_barrier_begin();
     if (caml_global_barrier_is_final(b)) {
-      caml_cycle_heap_stw();
+      caml_cycle_heap_from_stw_single();
       caml_gc_log("GC cycle %lu completed (heap cycled)",
                   (long unsigned int)caml_major_cycles_completed);
 
@@ -1343,9 +1345,7 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
 
       atomic_store(&domain_global_roots_started, WORK_UNSTARTED);
 
-      /* Cleanups for various data structures that must be done in a STW by
-        only a single domain */
-      caml_code_fragment_cleanup();
+      caml_code_fragment_cleanup_from_stw_single();
     }
     // should interrupts be processed here or not?
     // depends on whether marking above may need interrupts
@@ -1355,8 +1355,11 @@ static void cycle_all_domains_callback(caml_domain_state* domain, void* unused,
   /* If the heap is to be verified, do it before the domains continue
      running OCaml code. */
   if (caml_params->verify_heap) {
-    caml_verify_heap(domain);
+    caml_verify_heap_from_stw(domain);
     caml_gc_log("Heap verified");
+    /* This global barrier avoids races between the verify_heap code
+       and the rest of the STW critical section, for example the parts
+       that mark global roots. */
     caml_global_barrier();
   }
 
@@ -1480,9 +1483,10 @@ static int is_complete_phase_sweep_ephe (void)
     /* All orphaned structures have been adopted */
 }
 
-static void try_complete_gc_phase (caml_domain_state* domain, void* unused,
-                                   int participant_count,
-                                   caml_domain_state** participating)
+static void stw_try_complete_gc_phase(
+  caml_domain_state* domain, void* unused,
+  int participant_count,
+  caml_domain_state** participating)
 {
   barrier_status b;
   CAML_EV_BEGIN(EV_MAJOR_GC_PHASE_CHANGE);
@@ -1706,12 +1710,13 @@ mark_again:
         is_complete_phase_mark_final ()) {
       CAMLassert (caml_gc_phase != Phase_sweep_ephe);
       if (barrier_participants) {
-        try_complete_gc_phase (domain_state,
-                              (void*)0,
-                              participant_count,
-                              barrier_participants);
+        stw_try_complete_gc_phase(
+          domain_state,
+          (void*)0,
+          participant_count,
+          barrier_participants);
       } else {
-        caml_try_run_on_all_domains (&try_complete_gc_phase, 0, 0);
+        caml_try_run_on_all_domains (&stw_try_complete_gc_phase, 0, 0);
       }
       if (get_major_slice_work(mode) > 0) goto mark_again;
     }
@@ -1738,10 +1743,10 @@ mark_again:
 
     while (saved_major_cycle == caml_major_cycles_completed) {
       if (barrier_participants) {
-        cycle_all_domains_callback
+        stw_cycle_all_domains
               (domain_state, (void*)0, participant_count, barrier_participants);
       } else {
-        caml_try_run_on_all_domains(&cycle_all_domains_callback, 0, 0);
+        caml_try_run_on_all_domains(&stw_cycle_all_domains, 0, 0);
       }
     }
   }
@@ -1778,13 +1783,19 @@ void caml_major_collection_slice(intnat howmuch)
   Caml_state->major_slice_epoch = major_slice_epoch;
 }
 
-static void finish_major_cycle_callback (caml_domain_state* domain, void* arg,
-                                         int participating_count,
-                                         caml_domain_state** participating)
+static void stw_finish_major_cycle(
+  caml_domain_state* domain, void* arg,
+  int participating_count,
+  caml_domain_state** participating)
 {
   uintnat saved_major_cycles = (uintnat)arg;
   CAMLassert (domain == Caml_state);
 
+  /* We are in a STW critical section here. There is no obvious call
+     to a barrier at the end of the callback, but the [while] loop
+     will only terminate when [caml_major_cycles_completed] is
+     incremented, and this happens in [cycle_all_domains] inside
+     a barrier. */
   caml_empty_minor_heap_no_major_slice_from_stw
     (domain, (void*)0, participating_count, participating);
 
@@ -1802,7 +1813,7 @@ void caml_finish_major_cycle (void)
 
   while( saved_major_cycles == caml_major_cycles_completed ) {
     caml_try_run_on_all_domains
-    (&finish_major_cycle_callback, (void*)caml_major_cycles_completed, 0);
+    (&stw_finish_major_cycle, (void*)caml_major_cycles_completed, 0);
   }
 }
 

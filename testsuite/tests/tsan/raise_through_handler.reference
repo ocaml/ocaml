@@ -1,25 +1,24 @@
 Let's work!
-computation, entering f
-entering g
+Computation, entering f
+Entering g
 In exception handler
 ==================
 WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
-  Write of size 8 at <implemspecific> by main thread (mutexes: write M<implemspecific>):
+  Read of size 8 at <implemspecific> by thread T1 (mutexes: write M<implemspecific>):
+    #0 camlRaise_through_handler.reader_<implemspecific> <implemspecific> (<implemspecific>)
+    #1 camlStdlib__Domain.body_<implemspecific> <implemspecific> (<implemspecific>)
+
+  Previous write of size 8 at <implemspecific> by main thread (mutexes: write M<implemspecific>):
     #0 camlRaise_through_handler.race_<implemspecific> <implemspecific> (<implemspecific>)
     #1 camlRaise_through_handler.main_<implemspecific> <implemspecific> (<implemspecific>)
     #2 camlRaise_through_handler.entry <implemspecific> (<implemspecific>)
     #3 caml_program <implemspecific> (<implemspecific>)
 
-  Previous read of size 8 at <implemspecific> by thread T1 (mutexes: write M<implemspecific>):
-    #0 camlRaise_through_handler.other_domain_<implemspecific> <implemspecific> (<implemspecific>)
-    #1 camlStdlib__Domain.body_<implemspecific> <implemspecific> (<implemspecific>)
-
   As if synchronized via sleep:
-    #0 nanosleep <implemspecific> (<implemspecific>)
-    #1 caml_unix_sleep <implemspecific> (<implemspecific>)
-    #2 caml_c_call <implemspecific> (<implemspecific>)
-    #3 camlRaise_through_handler.entry <implemspecific> (<implemspecific>)
-    #4 caml_program <implemspecific> (<implemspecific>)
+    #0 usleep <implemspecific> (<implemspecific>)
+    #1 wg_wait <implemspecific> (<implemspecific>)
+    #2 camlRaise_through_handler.reader_<implemspecific> <implemspecific> (<implemspecific>)
+    #3 camlStdlib__Domain.body_<implemspecific> <implemspecific> (<implemspecific>)
 
   Mutex M<implemspecific> (<implemspecific>) created at:
     #0 pthread_mutex_init <implemspecific> (<implemspecific>)
@@ -41,7 +40,7 @@ WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
     #4 camlRaise_through_handler.entry <implemspecific> (<implemspecific>)
     #5 caml_program <implemspecific> (<implemspecific>)
 
-SUMMARY: ThreadSanitizer: data race (<systemspecific>:<implemspecific>) in camlRaise_through_handler.race_<implemspecific>
+SUMMARY: ThreadSanitizer: data race (<systemspecific>:<implemspecific>) in camlRaise_through_handler.reader_<implemspecific>
 ==================
-result = 44
+Result = 44
 ThreadSanitizer: reported 1 warnings

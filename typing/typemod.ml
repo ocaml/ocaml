@@ -136,7 +136,7 @@ let initial_env ~loc ~initially_opened_module
       env
   in
   let units =
-    List.map Env.persistent_structures_of_dir (Load_path.get ())
+    List.map Env.persistent_structures_of_dir (Load_path.get_visible ())
   in
   let env, units =
     match initially_opened_module with
@@ -499,7 +499,7 @@ let merge_constraint initial_env loc sg lid constr =
             type_params =
               List.map (fun _ -> Btype.newgenvar()) sdecl.ptype_params;
             type_arity = arity;
-            type_kind = Type_abstract Abstract_def;
+            type_kind = Type_abstract Definition;
             type_private = Private;
             type_manifest = None;
             type_variance =

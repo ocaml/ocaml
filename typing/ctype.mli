@@ -173,8 +173,8 @@ val instance_list: type_expr list -> type_expr list
         (* Take an instance of a list of type schemes *)
 val new_local_type:
         ?loc:Location.t ->
-        ?manifest_and_scope:(type_expr * int) -> unit -> type_declaration
-val existential_name: constructor_description -> type_expr -> string
+        ?manifest_and_scope:(type_expr * int) ->
+        type_origin -> type_declaration
 
 module Pattern_env : sig
   type t = private

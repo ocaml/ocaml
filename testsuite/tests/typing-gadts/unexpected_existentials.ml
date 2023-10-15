@@ -14,7 +14,7 @@ Line 1, characters 4-9:
 1 | let Any x = Any ()
         ^^^^^
 Error: Existential types are not allowed in toplevel bindings,
-       but this pattern introduces the existential type "$Any_'a".
+       but the constructor "Any" introduces existential types.
 |}]
 
 let () =
@@ -25,7 +25,7 @@ Line 2, characters 6-11:
 2 |   let Any x = Any () and () = () in
           ^^^^^
 Error: Existential types are not allowed in "let ... and ..." bindings,
-       but this pattern introduces the existential type "$Any_'a".
+       but the constructor "Any" introduces existential types.
 |}]
 
 
@@ -37,7 +37,7 @@ Line 2, characters 10-15:
 2 |   let rec Any x = Any () in
               ^^^^^
 Error: Existential types are not allowed in recursive bindings,
-       but this pattern introduces the existential type "$Any_'a".
+       but the constructor "Any" introduces existential types.
 |}]
 
 
@@ -49,7 +49,7 @@ Line 2, characters 18-23:
 2 |   let[@attribute] Any x = Any () in
                       ^^^^^
 Error: Existential types are not allowed in presence of attributes,
-       but this pattern introduces the existential type "$Any_'a".
+       but the constructor "Any" introduces existential types.
 |}]
 
 
@@ -59,7 +59,7 @@ Line 1, characters 8-15:
 1 | class c (Any x) = object end
             ^^^^^^^
 Error: Existential types are not allowed in class arguments,
-       but this pattern introduces the existential type "$Any_'a".
+       but the constructor "Any" introduces existential types.
 |}]
 
 class c = object(Any x)end
@@ -68,7 +68,7 @@ Line 1, characters 16-23:
 1 | class c = object(Any x)end
                     ^^^^^^^
 Error: Existential types are not allowed in self patterns,
-       but this pattern introduces the existential type "$Any_'a".
+       but the constructor "Any" introduces existential types.
 |}]
 
 type other = Any: _ -> other

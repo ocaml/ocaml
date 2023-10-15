@@ -1,10 +1,17 @@
 #include <execinfo.h>
-#include <unistd.h>
-#include <setjmp.h>
-#include <signal.h>
+#include <regex.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#define ARRSIZE(a)  (sizeof(a) / sizeof(*(a)))
+#include "caml/mlvalues.h"
+
+#define ARR_SIZE(a)    (sizeof(a) / sizeof(*(a)))
+
+#define RE_FUNC_NAME  "^.*\\((.+)\\+0x[[:xdigit:]]+\\) \\[0x[[:xdigit:]]+\\]$"
+#define RE_TRIM_FUNC  "(caml.*)_[[:digit:]]+"
+#define CAML_ENTRY    "caml_program"
 
 typedef struct frame_info
 {
@@ -12,99 +19,137 @@ typedef struct frame_info
   void*               retaddr;  /* rip */
 } frame_info;
 
-jmp_buf resume_buf;
 
-
-static void signal_handler(int signum)
+/*
+ * A backtrace symbol looks like:
+ * ./path/to/binary(camlModule_fn_123+0xAABBCC) [0xAABBCCDDEE]
+ */
+static const char* backtrace_symbol(const struct frame_info* fi)
 {
-  /* Should be safe to be called from a signal handler.
-   * See 21.2.1 "Performing a nonlocal goto from a signal handler" from
-   * The Linux Programming Interface, Michael Kerrisk */
-  siglongjmp(resume_buf, 1);
-}
-
-static int install_signal_handlers(const int signals[], struct sigaction
-    handlers[], int count)
-{
-  for (int i = 0; i < count; i++) {
-    struct sigaction action = { 0 };
-    action.sa_handler = signal_handler;
-    sigemptyset(&action.sa_mask);
-    action.sa_flags = 0;
-
-    if (sigaction(signals[i], &action, &handlers[i]) != 0) {
-      perror("sigaction");
-      return -1;
-    }
-  }
-  return 0;
-}
-
-static int restore_signal_handlers(const int signals[], struct sigaction
-    handlers[], int count)
-{
-  for (int i = 0; i < count; i++) {
-    if (sigaction(signals[i], &handlers[i], NULL) != 0) {
-      perror("sigaction");
-      return -1;
-    }
-  }
-  return 0;
-}
-
-static int safe_read(const struct frame_info* fi, struct frame_info** prev,
-    void** retaddr)
-{
-  /* Signals to ignore while attempting to read frame_info members */
-  const int signals[] = { SIGSEGV, SIGBUS };
-  /* Store original signal handers */
-  struct sigaction handlers[ARRSIZE(signals)] = { 0 };
-  int ret = 0;
-
-  if (install_signal_handlers(signals, handlers, ARRSIZE(signals)) != 0)
-    return -1;
-
-  if (!sigsetjmp(resume_buf, 1)) {
-    *prev = fi->prev;
-    *retaddr = fi->retaddr;
-  } else {
-    ret = -1;
+  char** symbols = backtrace_symbols(&fi->retaddr, 1);
+  if (!symbols) {
+    perror("backtrace_symbols");
+    return NULL;
   }
 
-  if (restore_signal_handlers(signals, handlers, ARRSIZE(signals)) != 0)
-    return -1;
-
-  return ret;
+  const char* symbol = strdup(symbols[0]);
+  free(symbols);
+  return symbol;
 }
 
-static void print_location(void* addr)
+static bool is_from_executable(const char* symbol, const char* execname)
 {
-  if (!addr)
-    return;
-
-  /* This requires the binary to be linked with '-rdynamic' */
-  backtrace_symbols_fd(&addr, 1, STDOUT_FILENO);
+  return strncmp(symbol, execname, strlen(execname)) == 0;
 }
 
-void fp_backtrace(void)
+static regmatch_t func_name_from_symbol(const char* symbol)
 {
-  struct frame_info *fi;
-  struct frame_info* next;
-  void* retaddr;
+  regex_t     regex;
+  regmatch_t  match[2] = { {-1, -1}, {-1, -1}};
+  char        errbuf[128];
+  int         err;
 
-  fi = __builtin_frame_address(0);
-  retaddr = __builtin_extract_return_addr(__builtin_return_address(0));
+  err = regcomp(&regex, RE_FUNC_NAME, REG_EXTENDED);
+  if (err) {
+    regerror(err, &regex, errbuf, ARR_SIZE(errbuf));
+    fprintf(stderr, "regcomp: %s\n", errbuf);
+    return match[0];
+  }
 
-  for (; fi; fi = next) {
-    if (safe_read(fi, &next, &retaddr) != 0)
-      return;
+  err = regexec(&regex, symbol, ARR_SIZE(match), match, 0);
+  if (err == REG_NOMATCH)
+    return match[0];
 
-    print_location(retaddr);
+  return match[1];
+}
+
+static bool is_caml_entry(const char* symbol, const regmatch_t* funcname)
+{
+  size_t len = funcname->rm_eo - funcname->rm_so;
+  return strncmp(symbol + funcname->rm_so, CAML_ENTRY, len) == 0;
+}
+
+static regmatch_t trim_func_name(const char* symbol, const regmatch_t* funcname)
+{
+  regex_t     regex;
+  regmatch_t  match[2] = { {-1, -1}, {-1, -1}};
+  char        errbuf[128];
+  int         err;
+
+  err = regcomp(&regex, RE_TRIM_FUNC, REG_EXTENDED);
+  if (err) {
+    regerror(err, &regex, errbuf, ARR_SIZE(errbuf));
+    fprintf(stderr, "regcomp: %s\n", errbuf);
+    return match[0];
+  }
+
+  match[0] = *funcname;
+  err = regexec(&regex, symbol, ARR_SIZE(match), match, REG_STARTEND);
+  if (err == REG_NOMATCH) {
+    /* match[0] has already been overwritten to hold the function full name for
+       regexec */
+    return match[1];
+  }
+
+  return match[1];
+}
+
+static void print_symbol(const char* symbol, const regmatch_t* match)
+{
+  regoff_t off = match->rm_so;
+  regoff_t len = match->rm_eo - match->rm_so;
+
+  fprintf(stdout, "%.*s\n", len, symbol + off);
+  fflush(stdout);
+}
+
+void fp_backtrace(value argv0)
+{
+  const char* execname = String_val(argv0);
+  struct frame_info* next = NULL;
+  const char* symbol = NULL;
+
+  for (struct frame_info* fi = __builtin_frame_address(0); fi; fi = next) {
+    next = fi->prev;
 
     /* Detect the simplest kind of infinite loop */
     if (fi == next) {
-      printf("fp_backtrace: loop detected\n");
-      return;
+      fprintf(stderr, "fp_backtrace: loop detected\n");
+      break;
     }
+
+    symbol = backtrace_symbol(fi);
+    if (!symbol)
+      continue;
+
+    /* Skip entries not from the test */
+    if (!is_from_executable(symbol, execname))
+      goto skip;
+
+    /* Exctract the full function name */
+    regmatch_t funcname = func_name_from_symbol(symbol);
+    if (funcname.rm_so == -1)
+      goto skip;
+
+    /* Trim numeric suffix from caml functions */
+    regmatch_t functrimmed = trim_func_name(symbol, &funcname);
+
+    /* Use the trimmed caml name if available, otherwise use the full function
+       name */
+    const regmatch_t* match = (functrimmed.rm_so != -1) ?
+      &functrimmed : &funcname;
+
+    print_symbol(symbol, match);
+
+    /* Stop the backtrace at caml_program */
+    if (is_caml_entry(symbol, &funcname))
+      break;
+
+skip:
+    free((void*)symbol);
+    symbol = NULL;
   }
+
+  if (symbol)
+    free((void*)symbol);
 }

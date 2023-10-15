@@ -127,6 +127,10 @@ let is_Tunivar ty = match get_desc ty with Tunivar _ -> true | _ -> false
 let is_Tconstr ty = match get_desc ty with Tconstr _ -> true | _ -> false
 let type_kind_is_abstract decl =
   match decl.type_kind with Type_abstract _ -> true | _ -> false
+let type_origin decl =
+  match decl.type_kind with
+  | Type_abstract origin -> origin
+  | Type_variant _ | Type_record _ | Type_open -> Definition
 
 let dummy_method = "*dummy method*"
 

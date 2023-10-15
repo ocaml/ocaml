@@ -1,6 +1,6 @@
-entering f
-entering g
-entering h
+Entering f
+Entering g
+Entering h
 E1 handler before continue
 ==================
 WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
@@ -17,11 +17,10 @@ WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
     #1 camlStdlib__Domain.body_<implemspecific> <implemspecific> (<implemspecific>)
 
   As if synchronized via sleep:
-    #0 nanosleep <implemspecific> (<implemspecific>)
-    #1 caml_unix_sleep <implemspecific> (<implemspecific>)
-    #2 caml_c_call <implemspecific> (<implemspecific>)
-    #3 camlReperform.entry <implemspecific> (<implemspecific>)
-    #4 caml_program <implemspecific> (<implemspecific>)
+    #0 usleep <implemspecific> (<implemspecific>)
+    #1 wg_wait <implemspecific> (<implemspecific>)
+    #2 camlReperform.entry <implemspecific> (<implemspecific>)
+    #3 caml_program <implemspecific> (<implemspecific>)
 
   Mutex M<implemspecific> (<implemspecific>) created at:
     #0 pthread_mutex_init <implemspecific> (<implemspecific>)
@@ -66,11 +65,10 @@ WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
     #1 camlStdlib__Domain.body_<implemspecific> <implemspecific> (<implemspecific>)
 
   As if synchronized via sleep:
-    #0 nanosleep <implemspecific> (<implemspecific>)
-    #1 caml_unix_sleep <implemspecific> (<implemspecific>)
-    #2 caml_c_call <implemspecific> (<implemspecific>)
-    #3 camlReperform.entry <implemspecific> (<implemspecific>)
-    #4 caml_program <implemspecific> (<implemspecific>)
+    #0 usleep <implemspecific> (<implemspecific>)
+    #1 wg_wait <implemspecific> (<implemspecific>)
+    #2 camlReperform.entry <implemspecific> (<implemspecific>)
+    #3 caml_program <implemspecific> (<implemspecific>)
 
   Mutex M<implemspecific> (<implemspecific>) created at:
     #0 pthread_mutex_init <implemspecific> (<implemspecific>)
@@ -94,12 +92,12 @@ WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
 
 SUMMARY: ThreadSanitizer: data race (<systemspecific>:<implemspecific>) in camlReperform.race_<implemspecific>
 ==================
-leaving h
-leaving g
-leaving f
-value handler
+Leaving h
+Leaving g
+Leaving f
+Value handler
 E1 handler after continue
-result=1339
+Result=42
 ==================
 WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
   Write of size 8 at <implemspecific> by main thread (mutexes: write M<implemspecific>):
@@ -112,11 +110,10 @@ WARNING: ThreadSanitizer: data race (pid=<implemspecific>)
     #1 camlStdlib__Domain.body_<implemspecific> <implemspecific> (<implemspecific>)
 
   As if synchronized via sleep:
-    #0 nanosleep <implemspecific> (<implemspecific>)
-    #1 caml_unix_sleep <implemspecific> (<implemspecific>)
-    #2 caml_c_call <implemspecific> (<implemspecific>)
-    #3 camlReperform.entry <implemspecific> (<implemspecific>)
-    #4 caml_program <implemspecific> (<implemspecific>)
+    #0 usleep <implemspecific> (<implemspecific>)
+    #1 wg_wait <implemspecific> (<implemspecific>)
+    #2 camlReperform.entry <implemspecific> (<implemspecific>)
+    #3 caml_program <implemspecific> (<implemspecific>)
 
   Mutex M<implemspecific> (<implemspecific>) created at:
     #0 pthread_mutex_init <implemspecific> (<implemspecific>)

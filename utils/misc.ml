@@ -70,6 +70,13 @@ let rec map_end f l1 l2 =
     [] -> l2
   | hd::tl -> f hd :: map_end f tl l2
 
+let rev_map_end f l1 l2 =
+  let rec rmap_f accu = function
+    | [] -> accu
+    | hd::tl -> rmap_f (f hd :: accu) tl
+  in
+  rmap_f l2 l1
+
 let rec map_left_right f = function
     [] -> []
   | hd::tl -> let res = f hd in res :: map_left_right f tl
@@ -397,6 +404,12 @@ let no_overflow_mul a b =
 
 let no_overflow_lsl a k =
   0 <= k && k < Sys.word_size - 1 && min_int asr k <= a && a <= max_int asr k
+
+let letter_of_int n =
+  let letter = String.make 1 (Char.chr (Char.code 'a' + n mod 26)) in
+  let num = n / 26 in
+  if num = 0 then letter
+  else letter ^ Int.to_string num
 
 module Int_literal_converter = struct
   (* To convert integer literals, allowing max_int + 1 (PR#4210) *)
