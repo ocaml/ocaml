@@ -357,6 +357,10 @@ Working version
 - #12532, #12553: improve readability of the pattern-matching debug output
   (Gabriel Scherer, review by Thomas Refis)
 
+- #12537: Use C11/C++11 standard static assertion.
+  (Antonin Décimo, review by Sebastien Hinderer, Xavier Leroy,
+   and KC Sivaramakrishnan)
+
 - #12169: runtime: document and enforce naming conventions around STW sections.
   (Gabriel Scherer, review by Enguerrand Decorne, Miod Vallat, B. Szilvasy
    and Nick Barnes, report by KC Sivaramakrishnan)

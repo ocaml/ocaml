@@ -216,14 +216,6 @@ Caml_inline void call_timing_hook(_Atomic caml_timing_hook * a)
 
 #endif /* CAML_INTERNALS */
 
-#define CAML_STATIC_ASSERT_3(b, l) \
-  CAMLunused_start \
-    CAMLextern char static_assertion_failure_line_##l[(b) ? 1 : -1] \
-  CAMLunused_end
-
-#define CAML_STATIC_ASSERT_2(b, l) CAML_STATIC_ASSERT_3(b, l)
-#define CAML_STATIC_ASSERT(b) CAML_STATIC_ASSERT_2(b, __LINE__)
-
 /* Windows Unicode support (rest below - char_os is needed earlier) */
 
 #ifdef _WIN32

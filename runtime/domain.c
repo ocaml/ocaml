@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <string.h>
+#include <assert.h>
 #ifdef HAS_GNU_GETAFFINITY_NP
 #include <sched.h>
 #ifdef HAS_PTHREAD_NP_H
@@ -64,6 +65,13 @@ typedef cpuset_t cpu_set_t;
 #include "caml/startup.h"
 #include "caml/sync.h"
 #include "caml/weak.h"
+
+/* Check that the domain_state structure was laid out without padding,
+   since the runtime assumes this in computing offsets */
+static_assert(
+    offsetof(caml_domain_state, LAST_DOMAIN_STATE_MEMBER) ==
+    (Domain_state_num_fields - 1) * 8,
+    "");
 
 /* The runtime can run stop-the-world (STW) sections, during which all
    active domains run the same callback in parallel (with a barrier
