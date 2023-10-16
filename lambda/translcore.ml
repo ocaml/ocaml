@@ -529,6 +529,10 @@ and transl_exp0 ~in_new_scope ~scopes e =
          let fn = lfunction ~kind:Curried
                             ~params:[Ident.create_local "param", Pgenval]
                             ~return:Pgenval
+                            (* The translation of [e] may be a function, in
+                               which case disallowing arity fusion gives a very
+                               small performance improvement.
+                            *)
                             ~attr:function_attribute_disallowing_arity_fusion
                             ~loc:(of_location ~scopes e.exp_loc)
                             ~body:(transl_exp ~scopes e) in
