@@ -365,6 +365,9 @@ Working version
   (Gabriel Scherer, review by Enguerrand Decorne, Miod Vallat, B. Szilvasy
    and Nick Barnes, report by KC Sivaramakrishnan)
 
+- #????? : Clean up some global state handling in schedgen
+  (Stefan Muenzel, review by ?????)
+
 ### Build system:
 
 - #12198, #12321: continue the merge of the sub-makefiles into the root Makefile
