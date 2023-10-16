@@ -149,8 +149,6 @@ let some_load =
 
 class virtual scheduler_generic = object (self)
 
-val mutable trywith_nesting = 0
-
 (* Determine whether an operation ends a basic block or not.
    Can be overridden for some processors to signal specific instructions
    that terminate a basic block. *)
