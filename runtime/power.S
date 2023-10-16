@@ -15,6 +15,10 @@
 
         .abiversion 2
 
+#if _CALL_ELF != 2
+#error "This POWER port requires the ELFv2 ABI"
+#endif
+
 /* Special registers */
 #define SP 1
 #define TMP 11
