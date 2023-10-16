@@ -145,7 +145,7 @@ module Doc = struct
    in case it is a keyword, or parenthesis when it is an infix or prefix
    operator. *)
   let ident_of_name ~kind ppf txt =
-    let format : (_, _, _) format =
+    let format : (_, _, _) Format_string.t =
       if Lexer.is_keyword txt then begin
         match kind, txt with
         | Constr, ("true"|"false") -> "%s"
@@ -247,7 +247,7 @@ let constr ppf l = Format_doc.compat Doc.constr ppf l
 
 let ident_of_name_loc ppf s = ident_of_name ppf s.txt
 
-type space_formatter = (unit, Format.formatter, unit) format
+type space_formatter = (unit, Format.formatter, unit) Format_string.t
 
 let override = function
   | Override -> "!"
@@ -328,9 +328,9 @@ let list : 'a . ?sep:space_formatter -> ?first:space_formatter ->
   ?last:space_formatter -> (Format.formatter -> 'a -> unit) ->
   Format.formatter -> 'a list -> unit
   = fun ?sep ?first ?last fu f xs ->
-    let first = match first with Some x -> x |None -> ("": _ format6)
-    and last = match last with Some x -> x |None -> ("": _ format6)
-    and sep = match sep with Some x -> x |None -> ("@ ": _ format6) in
+    let first = match first with Some x -> x |None -> ("": _ Format_string.t6)
+    and last = match last with Some x -> x |None -> ("": _ Format_string.t6)
+    and sep = match sep with Some x -> x |None -> ("@ ": _ Format_string.t6) in
     let aux f = function
       | [] -> ()
       | [x] -> fu f x
@@ -346,15 +346,16 @@ let list : 'a . ?sep:space_formatter -> ?first:space_formatter ->
 let option : 'a. ?first:space_formatter -> ?last:space_formatter ->
   (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a option -> unit
   = fun  ?first  ?last fu f a ->
-    let first = match first with Some x -> x | None -> ("": _ format6)
-    and last = match last with Some x -> x | None -> ("": _ format6) in
+    let first = match first with Some x -> x | None -> ("": _ Format_string.t6)
+    and last = match last with Some x -> x | None -> ("": _ Format_string.t6) in
     match a with
     | None -> ()
     | Some x -> pp f first; fu f x; pp f last
 
 let paren: 'a . ?first:space_formatter -> ?last:space_formatter ->
   bool -> (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a -> unit
-  = fun  ?(first=("": _ format6)) ?(last=("": _ format6)) b fu f x ->
+  = fun  ?(first=("": _ Format_string.t6)) ?(last=("": _ Format_string.t6))
+      b fu f x ->
     if b then (pp f "("; pp f first; fu f x; pp f last; pp f ")")
     else fu f x
 
@@ -929,7 +930,8 @@ and expression ctxt f x =
           (simple_expr ctxt) e1 longident_loc li (simple_expr ctxt) e2
     | Pexp_ifthenelse (e1, e2, eo) ->
         (* @;@[<2>else@ %a@]@] *)
-        let fmt:(_,_,_)format ="@[<hv0>@[<2>if@ %a@]@;@[<2>then@ %a@]%a@]" in
+        let fmt:(_,_,_) Format_string.t =
+          "@[<hv0>@[<2>if@ %a@]@;@[<2>then@ %a@]%a@]" in
         let expression_under_ifthenelse = expression (under_ifthenelse ctxt) in
         pp f fmt expression_under_ifthenelse e1 expression_under_ifthenelse e2
           (fun f eo -> match eo with
@@ -1046,10 +1048,10 @@ and simple_expr ctxt f x =
         pp f "@[<0>@[<2>[|%a|]@]@]"
           (list (simple_expr (under_semi ctxt)) ~sep:";") l
     | Pexp_while (e1, e2) ->
-        let fmt : (_,_,_) format = "@[<2>while@;%a@;do@;%a@;done@]" in
+        let fmt : (_,_,_) Format_string.t = "@[<2>while@;%a@;do@;%a@;done@]" in
         pp f fmt (expression ctxt) e1 (expression ctxt) e2
     | Pexp_for (s, e1, e2, df, e3) ->
-        let fmt:(_,_,_)format =
+        let fmt:(_,_,_) Format_string.t =
           "@[<hv0>@[<hv2>@[<2>for %a =@;%a@;%a%a@;do@]@;%a@]@;done@]" in
         let expression = expression ctxt in
         pp f fmt (pattern ctxt) s expression e1 direction_flag

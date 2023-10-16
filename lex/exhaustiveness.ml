@@ -15,7 +15,6 @@
    Check whether a rule may fail to match on some input
 *)
 
-open Printf
 
 (************************)
 (* Debugging *)
@@ -26,22 +25,22 @@ let debug = false
 
 (* Print what we care about for debugging purposes *)
 let print_state state_id (state : Lexgen.automata) =
-  printf "state %i\n" state_id;
+  Printf.printf "state %i\n" state_id;
   match state with
   | Perform (_action_id, _tag_actions) ->
-      printf "  final\n"
+      Printf.printf "  final\n"
   | Shift (trans, transitions) ->
-      printf "  %i transitions\n" (Array.length transitions);
+      Printf.printf "  %i transitions\n" (Array.length transitions);
       (match trans with
        | No_remember ->
-           printf "    no remember\n"
+           Printf.printf "    no remember\n"
        | Remember (n, _tag_action) ->
-           printf "    remember %i\n" n);
+           Printf.printf "    remember %i\n" n);
       Array.iteri (fun symbol ((move : Lexgen.automata_move), _mem_actions) ->
         match move with
         | Backtrack -> ()
         | Goto dst_state ->
-            printf "    symbol %i: goto %i\n"
+            Printf.printf "    symbol %i: goto %i\n"
               symbol dst_state
       ) transitions
 
@@ -201,7 +200,7 @@ let extend_path
 let is_exhaustive
     (states : Lexgen.automata array) (initial_state : int) =
   if debug then
-    printf "check initial state %i\n" initial_state;
+    Printf.printf "check initial state %i\n" initial_state;
   let rec bfs_visit
       visited_states
       (paths : char list DFA_state_map.t) =
@@ -271,7 +270,7 @@ let check_entry
         ~fatal
         ~name:"missing-case"
         e.auto_body_location
-        (sprintf "rule \"%s\" is not exhaustive.\n\
+        (Printf.sprintf "rule \"%s\" is not exhaustive.\n\
                   Here is an example of nonmatching input:\n\
                   %S%s"
            e.auto_name example
@@ -283,7 +282,7 @@ let check
     (states : Lexgen.automata array)
     (entries : (_, Syntax.location) Lexgen.automata_entry list) =
   if debug then (
-    printf "number of states: %i\n" (Array.length states);
+    Printf.printf "number of states: %i\n" (Array.length states);
     Array.iteri print_state states
   );
   let results = List.map (check_entry ~fatal states) entries in

@@ -1601,6 +1601,10 @@ let lasprintf (Format (fmt, _)) args =
 
 let ldprintf fmt args ppf = lfprintf ppf fmt args
 
+module Syntax = struct
+  let ( ^^ ) = Format_string.(^^)
+end
+
 (* Flushing standard formatters at end of execution. *)
 
 let flush_standard_formatters () =

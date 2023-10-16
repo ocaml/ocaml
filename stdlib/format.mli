@@ -1396,7 +1396,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a
 
 *)
 
-val printf : ('a, formatter, unit) format -> 'a
+val printf : ('a, formatter, unit) Format_string.t -> 'a
 (** Same as [fprintf] above, but output on [get_std_formatter ()].
 
     It is defined similarly to [fun fmt -> fprintf (get_std_formatter ()) fmt]
@@ -1406,7 +1406,7 @@ val printf : ('a, formatter, unit) format -> 'a
     the formatter is flushed, such as with {!print_flush}.
 *)
 
-val eprintf : ('a, formatter, unit) format -> 'a
+val eprintf : ('a, formatter, unit) Format_string.t -> 'a
 (** Same as [fprintf] above, but output on [get_err_formatter ()].
 
     It is defined similarly to [fun fmt -> fprintf (get_err_formatter ()) fmt]
@@ -1416,7 +1416,7 @@ val eprintf : ('a, formatter, unit) format -> 'a
     the formatter is flushed, such as with {!print_flush}.
 *)
 
-val sprintf : ('a, unit, string) format -> 'a
+val sprintf : ('a, unit, string) Format_string.t -> 'a
 (** Same as {!printf} above, but instead of printing on a formatter,
   returns a string containing the result of formatting the arguments.
   Note that the pretty-printer queue is flushed at the end of {e each
@@ -1434,7 +1434,7 @@ val sprintf : ('a, unit, string) format -> 'a
   pretty-printing returns the desired string.
 *)
 
-val asprintf : ('a, formatter, unit, string) format4 -> 'a
+val asprintf : ('a, formatter, unit, string) Format_string.t4 -> 'a
 (** Same as [printf] above, but instead of printing on a formatter,
   returns a string containing the result of formatting the arguments.
   The type of [asprintf] is general enough to interact nicely with [%a]
@@ -1444,7 +1444,7 @@ val asprintf : ('a, formatter, unit, string) format4 -> 'a
 *)
 
 val dprintf :
-  ('a, formatter, unit, formatter -> unit) format4 -> 'a
+  ('a, formatter, unit, formatter -> unit) Format_string.t4 -> 'a
 (** Same as {!fprintf}, except the formatter is the last argument.
   [dprintf "..." a b c] is a function of type
   [formatter -> unit] which can be given to a format specifier [%t].
@@ -1466,7 +1466,7 @@ val dprintf :
 *)
 
 
-val ifprintf : formatter -> ('a, formatter, unit) format -> 'a
+val ifprintf : formatter -> ('a, formatter, unit) Format_string.t -> 'a
 (** Same as [fprintf] above, but does not print anything.
   Useful to ignore some material when conditionally printing.
 
@@ -1477,13 +1477,13 @@ val ifprintf : formatter -> ('a, formatter, unit) format -> 'a
 
 val kfprintf :
   (formatter -> 'a) -> formatter ->
-  ('b, formatter, unit, 'a) format4 -> 'b
+  ('b, formatter, unit, 'a) Format_string.t4 -> 'b
 (** Same as [fprintf] above, but instead of returning immediately,
   passes the formatter to its first argument at the end of printing. *)
 
 val kdprintf :
   ((formatter -> unit) -> 'a) ->
-  ('b, formatter, unit, 'a) format4 -> 'b
+  ('b, formatter, unit, 'a) Format_string.t4 -> 'b
 (** Same as {!dprintf} above, but instead of returning immediately,
   passes the suspended printer to its first argument at the end of printing.
 
@@ -1492,18 +1492,19 @@ val kdprintf :
 
 val ikfprintf :
   (formatter -> 'a) -> formatter ->
-  ('b, formatter, unit, 'a) format4 -> 'b
+  ('b, formatter, unit, 'a) Format_string.t4 -> 'b
 (** Same as [kfprintf] above, but does not print anything.
   Useful to ignore some material when conditionally printing.
 
   @since 3.12
 *)
 
-val ksprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b
+val ksprintf : (string -> 'a) -> ('b, unit, string, 'a) Format_string.t4 -> 'b
 (** Same as [sprintf] above, but instead of returning the string,
   passes it to the first argument. *)
 
-val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
+val kasprintf :
+  (string -> 'a) -> ('b, formatter, unit, 'a) Format_string.t4 -> 'b
 (** Same as [asprintf] above, but instead of returning the string,
   passes it to the first argument.
 
@@ -1558,7 +1559,7 @@ end
 *)
 
 val lfprintf :
-  formatter -> ('a, formatter, unit) format ->
+  formatter -> ('a, formatter, unit) Format_string.t ->
   ('a, unit) Args.t -> unit
 (** Same as [fprintf] above, but with the arguments bundled in a single
     heterogeneous list.
@@ -1573,7 +1574,7 @@ val lfprintf :
 *)
 
 val lprintf :
-  ('a, formatter, unit) format ->
+  ('a, formatter, unit) Format_string.t ->
   ('a, unit) Args.t -> unit
 (** Same as [printf] above, but with the arguments bundled in a single
     heterogeneous list.
@@ -1582,7 +1583,7 @@ val lprintf :
 *)
 
 val leprintf :
-  ('a, formatter, unit) format ->
+  ('a, formatter, unit) Format_string.t ->
   ('a, unit) Args.t -> unit
 (** Same as [eprintf] above, but with the arguments bundled in a single
     heterogeneous list.
@@ -1591,7 +1592,7 @@ val leprintf :
 *)
 
 val lasprintf :
-  ('a, formatter, unit, string) format4 ->
+  ('a, formatter, unit, string) Format_string.t4 ->
   ('a, string) Args.t -> string
 (** Same as [asprintf] above, but with the arguments bundled in a single
     heterogeneous list.
@@ -1600,7 +1601,7 @@ val lasprintf :
 *)
 
 val ldprintf :
-  ('a, formatter, unit, unit) format4 ->
+  ('a, formatter, unit, unit) Format_string.t4 ->
   ('a, unit) Args.t -> formatter -> unit
 (** Same as [dprintf] above, but with the arguments bundled in a single
     heterogeneous list.
@@ -1614,6 +1615,21 @@ val ldprintf :
 
   @since 5.5
 *)
+
+module Syntax: sig
+  val ( ^^ ) :
+    ('a, 'b, 'c, 'd, 'e, 'f) Format_string.t6 ->
+    ('f, 'b, 'c, 'e, 'g, 'h) Format_string.t6 ->
+    ('a, 'b, 'c, 'd, 'g, 'h) Format_string.t6
+(** [f1 ^^ f2] catenates format strings [f1] and [f2]. The result is a
+    format string that behaves as the concatenation of format strings [f1] and
+    [f2]: in case of formatted output, it accepts arguments from [f1], then
+    arguments from [f2]; in case of formatted input, it returns results from
+    [f1], then results from [f2].
+    Right-associative operator, see {!Ocaml_operators} for more information.
+    @since 5.6
+ *)
+end
 
 (** {1:examples Examples}
 

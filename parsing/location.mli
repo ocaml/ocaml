@@ -218,7 +218,7 @@ val highlight_terminfo:
 
 type msg = Format_doc.t loc
 
-val msg: ?loc:t -> ('a, Format_doc.formatter, unit, msg) format4 -> 'a
+val msg: ?loc:t -> ('a, Format_doc.formatter, unit, msg) Format_string.t4 -> 'a
 
 type report_kind =
   | Report_error
@@ -358,7 +358,7 @@ type delayed_msg = unit -> Format_doc.t option
 val error: ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg -> string -> error
 
 val errorf: ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg ->
-  ('a, Format_doc.formatter, unit, error) format4 -> 'a
+  ('a, Format_doc.formatter, unit, error) Format_string.t4 -> 'a
 
 val aligned_error_hint:
   ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg ->
@@ -394,7 +394,7 @@ exception Already_displayed_error
    printed. The exception will be caught, but nothing will be printed *)
 
 val raise_errorf: ?loc:t -> ?sub:msg list -> ?footnote:delayed_msg ->
-  ('a, Format_doc.formatter, unit, 'b) format4 -> 'a
+  ('a, Format_doc.formatter, unit, 'b) Format_string.t4 -> 'a
 
 val report_exception: formatter -> exn -> unit
 (** Reraise the exception if it is unknown. *)
