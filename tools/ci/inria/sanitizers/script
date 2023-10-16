@@ -119,8 +119,8 @@ echo "======== clang 13, thread sanitizer =========="
 git clean -q -f -d -x
 
 ./configure \
-  CC=clang-13
-  --enable-tsan
+  CC=clang-13 \
+  --enable-tsan \
   --disable-stdlib-manpages --enable-dependency-generation
 
 # Build the system
