@@ -1154,10 +1154,10 @@ let test48 () =
   (* Testing format_from_string. *)
   let test_meta_read s fmt efmt = format_from_string s fmt = efmt in
   (* Test if format %i is indeed read as %i. *)
-  let s, fmt = "%i", format_of_string "%i" in
+  let s, fmt = "%i", Format_string.id "%i" in
   test_meta_read s fmt fmt &&
   (* Test if format %i is compatible with %d and indeed read as %i. *)
-  let s, fmt = "%i", format_of_string "%d" in
+  let s, fmt = "%i", Format_string.id "%d" in
   test_meta_read s fmt "%i" &&
   (* Complex test of scanning a meta format specified in the scanner input
      format string and extraction of its specification from a string. *)
@@ -1454,25 +1454,25 @@ let test57 () =
   let test_format_scan s fmt efmt =
     format_from_string s fmt = efmt in
   (* Test if format %i is indeed read as %i. *)
-  let s, fmt = " %i ", format_of_string "%i" in
+  let s, fmt = " %i ", Format_string.id "%i" in
   test_format_scan s fmt " %i " &&
   (* Test if format %i is compatible with %d and indeed read as %i. *)
-  let s, fmt = "%i", format_of_string "%d" in
+  let s, fmt = "%i", Format_string.id "%d" in
   test_format_scan s fmt "%i" &&
 
   let s, fmt =
     "Read an int %i then a string %s.",
-    format_of_string "Spec%difi%scation" in
+    Format_string.id "Spec%difi%scation" in
   test_format_scan s fmt "Read an int %i then a string %s." &&
 
   let s, fmt =
     "Read an int %i then a string \"%s\".",
-    format_of_string "Spec%difi%Scation" in
+    Format_string.id "Spec%difi%Scation" in
   test_format_scan s fmt "Read an int %i then a string \"%s\"." &&
 
   let s, fmt =
     "Read an int %i then a string \"%s\".",
-    format_of_string "Spec%difi%scation" in
+    Format_string.id "Spec%difi%scation" in
   test_format_scan s fmt "Read an int %i then a string \"%s\"." &&
 
   (* Complex test of scanning a meta format specified in the scanner input
@@ -1543,7 +1543,7 @@ test (test60 ())
 
 let test61 () =
   let test fmt =
-    format_from_string (string_of_format fmt) fmt = fmt
+    format_from_string (Format_string.to_string fmt) fmt = fmt
   in
   test "%s/%a" &&
   test "\\ " &&

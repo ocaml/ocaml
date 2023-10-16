@@ -2,11 +2,12 @@
  expect;
 *)
 
-let inspect (format : _ format6) =
+let inspect (format : _ Format_string.t6) =
   let (CamlinternalFormatBasics.Format (fmt, str)) = format in
   (CamlinternalFormat.string_of_fmt fmt, str);;
 [%%expect{|
-val inspect : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string * string = <fun>
+val inspect : ('a, 'b, 'c, 'd, 'e, 'f) Format_string.t6 -> string * string =
+  <fun>
 |}];;
 
 inspect "@[foo@]";;

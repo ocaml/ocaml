@@ -214,6 +214,9 @@ end
 
 (** {1 Type of formatted input functions} *)
 
+[@@@warning "-44"]
+open Format_string
+
 type ('a, 'b, 'c, 'd) scanner =
      ('a, Scanning.in_channel, 'b, 'c, 'a -> 'd, 'd) format6 -> 'c
 (** The type of formatted input scanners: [('a, 'b, 'c, 'd) scanner]

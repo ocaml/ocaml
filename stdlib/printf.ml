@@ -41,3 +41,6 @@ let ksprintf k (Format (fmt, _)) =
 let sprintf fmt = ksprintf (fun s -> s) fmt
 
 let kprintf = ksprintf
+
+
+let ( ^^ ) = Format_string.(^^)

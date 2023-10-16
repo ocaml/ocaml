@@ -253,10 +253,10 @@ Error: Invalid "[%extension_constructor]" payload, a constructor is expected.
 |}]
 
 (** Invalid format *)
-let x = format_of_string "%z"
+let x = Format_string.id "%z"
 [%%expect {|
 Line 1, characters 25-29:
-1 | let x = format_of_string "%z"
+1 | let x = Format_string.id "%z"
                              ^^^^
 Error: invalid format "%z": at character number 1, invalid conversion "%z"
 |}]

@@ -72,6 +72,7 @@ STDLIB_MODULE_BASENAMES = \
   semaphore \
   domain \
   camlinternalFormat \
+  format_string \
   printf \
   arg \
   printexc \

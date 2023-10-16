@@ -1264,6 +1264,9 @@ val pp_print_either :
 
 *)
 
+[@@@warning "-44"]
+open Format_string
+
 val fprintf : formatter -> ('a, formatter, unit) format -> 'a
 
 (** [fprintf ff fmt arg1 ... argN] formats the arguments [arg1] to [argN]
@@ -1439,6 +1442,7 @@ val ikfprintf :
   @since 3.12
 *)
 
+
 val ksprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b
 (** Same as [sprintf] above, but instead of returning the string,
   passes it to the first argument. *)
@@ -1448,6 +1452,19 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
   passes it to the first argument.
 
   @since 4.03
+*)
+
+val ( ^^ ) :
+  ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+  ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
+  ('a, 'b, 'c, 'd, 'g, 'h) format6
+(** [f1 ^^ f2] catenates format strings [f1] and [f2]. The result is a
+  format string that behaves as the concatenation of format strings [f1] and
+  [f2]: in case of formatted output, it accepts arguments from [f1], then
+  arguments from [f2]; in case of formatted input, it returns results from
+  [f1], then results from [f2].
+  Right-associative operator, see {!Ocaml_operators} for more information.
+  @since 5.2
 *)
 
 (** {1:examples Examples}

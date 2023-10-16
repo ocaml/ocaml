@@ -648,11 +648,11 @@ try
      to a string and print it using %s. *)
 
   printf "\n{...%%}\n%!";
-  let f = format_of_string "%4g/%s" in
+  let f = Format_string.id "%4g/%s" in
   test (sprintf "%{%.4F%5S%}" f = "%f%s");
 
   printf "\n(...%%)\n%!";
-  let f = format_of_string "%d/foo/%s" in
+  let f = Format_string.id "%d/foo/%s" in
   test (sprintf "%(%d%s%)" f 42 "bar" = "42/foo/bar");
 
   printf "\n! %% @ , and constants\n%!";

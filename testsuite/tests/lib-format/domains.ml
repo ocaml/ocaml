@@ -2,7 +2,7 @@
 
 (** Test that domains stdout and stderr are flushed at domain exit *)
 
-type pf = { pf: 'a. ('a, Format.formatter, unit) format -> 'a }
+type pf = { pf: 'a. ('a, Format.formatter, unit) Format_string.t -> 'a }
 
 let n_domain = 1 (* to preserve Domain.at_exit ordering *)
 

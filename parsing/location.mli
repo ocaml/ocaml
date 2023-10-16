@@ -187,7 +187,7 @@ val highlight_terminfo:
 
 type msg = (Format.formatter -> unit) loc
 
-val msg: ?loc:t -> ('a, Format.formatter, unit, msg) format4 -> 'a
+val msg: ?loc:t -> ('a, Format.formatter, unit, msg) Format_string.t4 -> 'a
 
 type report_kind =
   | Report_error
@@ -324,7 +324,7 @@ type error = report
 val error: ?loc:t -> ?sub:msg list -> string -> error
 
 val errorf: ?loc:t -> ?sub:msg list ->
-  ('a, Format.formatter, unit, error) format4 -> 'a
+  ('a, Format.formatter, unit, error) Format_string.t4 -> 'a
 
 val error_of_printer: ?loc:t -> ?sub:msg list ->
   (formatter -> 'a -> unit) -> 'a -> error
@@ -353,7 +353,7 @@ exception Already_displayed_error
    printed. The exception will be caught, but nothing will be printed *)
 
 val raise_errorf: ?loc:t -> ?sub:msg list ->
-  ('a, Format.formatter, unit, 'b) format4 -> 'a
+  ('a, Format.formatter, unit, 'b) Format_string.t4 -> 'a
 
 val report_exception: formatter -> exn -> unit
 (** Reraise the exception if it is unknown. *)

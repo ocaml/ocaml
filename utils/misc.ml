@@ -18,9 +18,10 @@
 exception Fatal_error
 
 let fatal_errorf fmt =
-  Format.kfprintf
+  let open Format in
+  kfprintf
     (fun _ -> raise Fatal_error)
-    Format.err_formatter
+    err_formatter
     ("@?>> Fatal error: " ^^ fmt ^^ "@.")
 
 let fatal_error msg = fatal_errorf "%s" msg

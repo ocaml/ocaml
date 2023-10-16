@@ -1465,6 +1465,8 @@ let kasprintf k (Format (fmt, _)) =
 
 let asprintf fmt = kasprintf id fmt
 
+let ( ^^ ) = Format_string.(^^)
+
 (* Flushing standard formatters at end of execution. *)
 
 let flush_standard_formatters () =

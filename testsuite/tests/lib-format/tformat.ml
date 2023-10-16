@@ -511,11 +511,11 @@ try
    of the conversions present in [fmt].
 *)
   say "\n{...%%}\n%!";
-  let f = format_of_string "%f/%s" in
+  let f = Format_string.id "%f/%s" in
   test (sprintf "%{%f%s%}" f = "%f%s");
 
   say "\n(...%%)\n%!";
-  let f = format_of_string "%d/foo/%s" in
+  let f =  Format_string.id "%d/foo/%s" in
   test (sprintf "%(%d%s%)" f 42 "bar" = "42/foo/bar");
 
   say "\n! %% @ , and constants\n%!";
