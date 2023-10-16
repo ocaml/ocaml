@@ -365,8 +365,8 @@ Working version
   (Gabriel Scherer, review by Enguerrand Decorne, Miod Vallat, B. Szilvasy
    and Nick Barnes, report by KC Sivaramakrishnan)
 
-- #????? : Clean up some global state handling in schedgen
-  (Stefan Muenzel, review by ?????)
+- #12669 : Clean up some global state handling in schedgen
+  (Stefan Muenzel, review by Miod Vallat)
 
 ### Build system:
 
