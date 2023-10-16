@@ -1,11 +1,14 @@
 Working version
 ---------------
 
-### Restored backends:
+### Restored and new backends:
 
 - #12276, #12601: native-code compilation for POWER (64 bits, little-endian)
   (Xavier Leroy, review by KC Sivaramakrishnan, Anil Madhavapeddy,
    and Stephen Dolan)
+
+- #12667: extend the latter to POWER 64 bits, big-endian, ELFv2 ABI
+  (A. Wilcox, review by Xavier Leroy)
 
 ### Language features:
 
