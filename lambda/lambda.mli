@@ -272,8 +272,10 @@ type function_attribute = {
   is_a_functor: bool;
   stub: bool;
   tmc_candidate: bool;
-  (* [may_fuse_arity] is true if [simplif.ml] is permitted to fuse arity, i.e.,
-     to perform the rewrite [fun x -> fun y -> e] to [fun x y -> e] *)
+  (* [simplif.ml] (in the `simplif` function within `simplify_lets`) attempts to fuse
+     nested functions, rewriting e.g. [fun x -> fun y -> e] to [fun x y -> e]. This
+     fusion is allowed only when the [may_fuse_arity] field on *both* functions
+     involved is [true]. *)
   may_fuse_arity: bool;
 }
 
