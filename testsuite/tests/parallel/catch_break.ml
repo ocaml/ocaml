@@ -2,6 +2,7 @@
 hassysthreads;
 include systhreads;
 not-windows;
+no-tsan;
 {
   bytecode;
 }{
