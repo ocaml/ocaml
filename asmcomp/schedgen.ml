@@ -21,15 +21,16 @@ open Linear
 
 (* Representation of the code DAG. *)
 
-type code_dag_node =
-  { instr: instruction;                 (* The instruction *)
+type code_dag_node = {
+    instr: instruction;                 (* The instruction *)
     delay: int;           (* How many cycles before result is available *)
     mutable sons: (code_dag_node * int) list;
                                         (* Instructions that depend on it *)
     mutable date: int;                  (* Start date *)
     mutable length: int;                (* Length of longest path to result *)
     mutable ancestors: int;             (* Number of ancestors *)
-    mutable emitted_ancestors: int }    (* Number of emitted ancestors *)
+    mutable emitted_ancestors: int      (* Number of emitted ancestors *)
+  }
 
 let dummy_node =
   { instr = end_instr; delay = 0; sons = []; date = 0;
@@ -44,20 +45,21 @@ let dummy_node =
    - code_checkbounds contains the latest checkbound node not matched
      by a subsequent load or store. *)
 
-type code_dag =
-  { results : (location, code_dag_node) Hashtbl.t
-  ; uses : (location, code_dag_node) Hashtbl.t
-  ; mutable stores : code_dag_node list
-  ; mutable loads : code_dag_node list
-  ; mutable checkbounds : code_dag_node list
+type code_dag = {
+    results : (location, code_dag_node) Hashtbl.t;
+    uses : (location, code_dag_node) Hashtbl.t;
+    mutable stores : code_dag_node list;
+    mutable loads : code_dag_node list;
+    mutable checkbounds : code_dag_node list;
   }
 
-let create () =
-  { results = Hashtbl.create 31
-  ; uses = Hashtbl.create 31
-  ; stores = []
-  ; loads = []
-  ; checkbounds = []
+let empty_dag () =
+  {
+    results = Hashtbl.create 31;
+    uses = Hashtbl.create 31;
+    stores = [];
+    loads = [];
+    checkbounds = [];
   }
 
 (* Add an edge to the code DAG *)
@@ -376,7 +378,7 @@ method schedule_fundecl f =
     | Lpoptrap -> { i with next = schedule i.next (try_nesting - 1) }
     | _ ->
         if self#instr_in_basic_block i try_nesting then begin
-          schedule_block (create ()) [] i try_nesting
+          schedule_block (empty_dag ()) [] i try_nesting
         end else
           { i with next = schedule i.next try_nesting }
 
