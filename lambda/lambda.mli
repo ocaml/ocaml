@@ -272,6 +272,11 @@ type function_attribute = {
   is_a_functor: bool;
   stub: bool;
   tmc_candidate: bool;
+  (* [simplif.ml] (in the `simplif` function within `simplify_lets`) attempts to
+     fuse nested functions, rewriting e.g. [fun x -> fun y -> e] to
+     [fun x y -> e]. This fusion is allowed only when the [may_fuse_arity] field
+     on *both* functions involved is [true]. *)
+  may_fuse_arity: bool;
 }
 
 type scoped_location = Debuginfo.Scoped_location.t

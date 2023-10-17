@@ -121,7 +121,8 @@ and apply_coercion_result loc strict funct params args cc_res =
              ~return:Pgenval
              ~attr:{ default_function_attribute with
                         is_a_functor = true;
-                        stub = true; }
+                        stub = true;
+                        may_fuse_arity = true; }
              ~loc
              ~body:(apply_coercion
                    loc Strict cc_res
@@ -500,6 +501,7 @@ let rec compile_functor ~scopes mexp coercion root_path loc =
       is_a_functor = true;
       stub = false;
       tmc_candidate = false;
+      may_fuse_arity = true;
     }
     ~loc
     ~body

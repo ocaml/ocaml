@@ -516,19 +516,23 @@ let simplify_lets lam =
           end
       | _ -> no_opt ()
       end
-  | Lfunction{kind; params; return=return1; body = l; attr; loc} ->
+  | Lfunction{kind; params; return=return1; body = l; attr=attr1; loc}
+    ->
       begin match simplif l with
-        Lfunction{kind=Curried; params=params'; return=return2; body; attr; loc}
+        Lfunction{kind=Curried; params=params'; return=return2; body;
+                  attr=attr2; loc}
         when kind = Curried && optimize &&
+             attr1.may_fuse_arity && attr2.may_fuse_arity &&
              List.length params + List.length params' <= Lambda.max_arity() ->
           (* The return type is the type of the value returned after
              applying all the parameters to the function. The return
              type of the merged function taking [params @ params'] as
              parameters is the type returned after applying [params']. *)
           let return = return2 in
-          lfunction ~kind ~params:(params @ params') ~return ~body ~attr ~loc
+          lfunction ~kind ~params:(params @ params') ~return ~body ~attr:attr2
+            ~loc
       | body ->
-          lfunction ~kind ~params ~return:return1 ~body ~attr ~loc
+          lfunction ~kind ~params ~return:return1 ~body ~attr:attr1 ~loc
       end
   | Llet(_str, _k, v, Lvar w, l2) when optimize ->
       Hashtbl.add subst v (simplif (Lvar w));

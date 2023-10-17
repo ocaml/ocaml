@@ -31,7 +31,8 @@ let lfunction params body =
   if params = [] then body else
   match body with
   | Lfunction {kind = Curried; params = params'; body = body'; attr; loc}
-    when List.length params + List.length params' <= Lambda.max_arity() ->
+    when attr.may_fuse_arity &&
+         List.length params + List.length params' <= Lambda.max_arity() ->
       lfunction ~kind:Curried ~params:(params @ params')
                 ~return:Pgenval
                 ~body:body'
