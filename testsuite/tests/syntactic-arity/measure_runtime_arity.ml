@@ -85,7 +85,8 @@ let maybe_runtime_arity (type a) (x : a) : a arity option =
 (* The "nested arity" of a value is either:
      - the empty list, if the value isn't a function
      - x :: xs if the value is a function [f], where [x] is [f]'s arity, and
-       [xs] is the nested arity of the result of applying [f] to a value.
+       [xs] is the nested arity of the result of applying [f] to [x] many
+       values.
 
    "nested arity" isn't well-defined for a function that, say, returns a 2-ary
    function for some inputs and a 3-ary for others. None of the functions in
