@@ -322,7 +322,7 @@ type class_match_failure =
   | CM_Parameter_arity_mismatch of int * int
   | CM_Type_parameter_mismatch of int * Env.t * Errortrace.equality_error
   | CM_Class_type_mismatch of Env.t * class_type * class_type
-  | CM_Parameter_mismatch of Env.t * Errortrace.moregen_error
+  | CM_Parameter_mismatch of int * Env.t * Errortrace.moregen_error
   | CM_Val_type_mismatch of string * Env.t * Errortrace.comparison_error
   | CM_Meth_type_mismatch of string * Env.t * Errortrace.comparison_error
   | CM_Non_mutable_value of string

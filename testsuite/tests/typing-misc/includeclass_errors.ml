@@ -180,7 +180,30 @@ Error: Signature mismatch:
          class c : float -> object  end
        does not match
          class c : int -> object  end
-       A parameter has type "float" but is expected to have type "int"
+       The 1st parameter has type "float" but is expected to have type "int"
+|}]
+
+module M: sig
+  class c : int -> int -> object end
+end = struct
+  class c (_ : int) (x : float) = object end
+end
+;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   class c (_ : int) (x : float) = object end
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig class c : int -> float -> object  end end
+       is not included in
+         sig class c : int -> int -> object  end end
+       Class declarations do not match:
+         class c : int -> float -> object  end
+       does not match
+         class c : int -> int -> object  end
+       The 2nd parameter has type "float" but is expected to have type "int"
 |}]
 
 class virtual foo: foo_t =
