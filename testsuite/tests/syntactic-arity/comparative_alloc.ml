@@ -11,6 +11,15 @@
    of arguments appearing directly following [fun]).
 *)
 
+(* This function will need to change if the runtime representation of closures
+   changes. Currently, the arity is the first 8 bits of the second field of
+   a closure.
+*)
+let extract_arity_from_closure (closure : Obj.t) : int =
+  assert (Obj.closure_tag = Obj.tag closure);
+  let clos_info = Obj.raw_field (Obj.repr closure) 1 in
+  Nativeint.(to_int (shift_right clos_info (Sys.word_size - 8)))
+
 type (_, _) raw_arity =
   | One : (int -> 'ret, 'ret) raw_arity
   | Succ : ('f, 'ret) raw_arity -> (int -> 'f, 'ret) raw_arity
@@ -43,10 +52,7 @@ let arity_description (type a) (arity : a arity) =
    is subject to change.
 *)
 let runtime_arity (f : 'a -> 'b) : ('a -> 'b) arity =
-  let clos_info = Obj.raw_field (Obj.repr f) 1 in
-  let raw_arity =
-    Nativeint.(to_int (shift_right clos_info (Sys.word_size - 8)))
-  in
+  let raw_arity = extract_arity_from_closure (Obj.repr f) in
   if raw_arity < 0 then Tupled else
     let rec build_arity n =
       if n = 1 then Packed_raw_arity One
