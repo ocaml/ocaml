@@ -252,8 +252,7 @@ work locally) by pinning:
 
 ----
 opam switch create my-switch-name --empty
-# Replace $VERSION by the trunk version
-opam pin add ocaml-variants.$VERSION+branch git+https://$REPO#branch
+opam pin add ocaml-variants git+https://$REPO#branch
 ----
 
 ==== Incremental builds with `opam`
