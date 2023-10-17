@@ -259,23 +259,7 @@ let f3 ?x:((_ : M.t) = A) () = ();;
 
 [%%expect {|
 module M : sig type t = A | B end
-Line 5, characters 19-20:
-5 | let f1 ?(x : M.t = A) () = ();;
-                       ^
-Warning 41 [ambiguous-name]: A belongs to several types: M/5.y u x
-The first one was selected. Please disambiguate if this is wrong.
-Lines 1-3, characters 0-3:
-  Definition of module M
-Line 4, characters 0-46:
-  Definition of module M/5
-
-Line 5, characters 9-16:
-5 | let f1 ?(x : M.t = A) () = ();;
-             ^^^^^^^
-Error: This pattern matches values of type "M.t"
-       but a pattern was expected which matches values of type "M/5.y"
-       Lines 1-3, characters 0-3:
-         Definition of module "M"
-       Line 4, characters 0-46:
-         Definition of module "M/5"
+val f1 : ?x:M.t -> unit -> unit = <fun>
+val f2 : ?x:M.t -> unit -> unit = <fun>
+val f3 : ?x:M.t -> unit -> unit = <fun>
 |}]

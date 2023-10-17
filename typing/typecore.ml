@@ -4564,6 +4564,16 @@ and type_function
               try unify env (type_option ty_default) ty_arg
               with Unify _ -> assert false;
             end;
+            (* Issue#12668: Retain type-directed disambiguation of
+               ?x:(y : Variant.t = Constr)
+            *)
+            let default =
+              match pat.ppat_desc with
+              | Ppat_constraint (_, sty) ->
+                  let gloc = { default.pexp_loc with loc_ghost = true } in
+                  Ast_helper.Exp.constraint_ default sty ~loc:gloc
+              | _ -> default
+            in
             let default = type_expect env default (mk_expected ty_default) in
             ty_default, Some default
       in
