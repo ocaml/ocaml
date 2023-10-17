@@ -728,6 +728,7 @@ typing/includeclass.cmo : \
     typing/types.cmi \
     typing/printtyp.cmi \
     typing/path.cmi \
+    utils/misc.cmi \
     typing/ctype.cmi \
     parsing/builtin_attributes.cmi \
     typing/includeclass.cmi
@@ -735,6 +736,7 @@ typing/includeclass.cmx : \
     typing/types.cmx \
     typing/printtyp.cmx \
     typing/path.cmx \
+    utils/misc.cmx \
     typing/ctype.cmx \
     parsing/builtin_attributes.cmx \
     typing/includeclass.cmi
