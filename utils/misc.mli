@@ -131,6 +131,10 @@ module Stdlib : sig
         If [l1] is of length n and [l2 = h2 @ t2] with h2 of length n,
         r1 is [List.map2 f l1 h1] and r2 is t2. *)
 
+    val iteri2 : (int -> 'a -> 'b -> unit) -> 'a list -> 'b list -> unit
+    (** Same as {!iter2}, but the function is applied to the index of
+        the element as first argument (counting from 0) *)
+
     val split_at : int -> 'a t -> 'a t * 'a t
     (** [split_at n l] returns the pair [before, after] where [before] is
         the [n] first elements of [l] and [after] the remaining ones.

@@ -4315,7 +4315,7 @@ let rec equal_private env params1 ty1 params2 ty2 =
 type class_match_failure =
     CM_Virtual_class
   | CM_Parameter_arity_mismatch of int * int
-  | CM_Type_parameter_mismatch of Env.t * equality_error
+  | CM_Type_parameter_mismatch of int * Env.t * equality_error
   | CM_Class_type_mismatch of Env.t * class_type * class_type
   | CM_Parameter_mismatch of Env.t * moregen_error
   | CM_Val_type_mismatch of string * Env.t * comparison_error
@@ -4556,11 +4556,11 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
         let ls = List.length subj_params in
         if lp  <> ls then
           raise (Failure [CM_Parameter_arity_mismatch (lp, ls)]);
-        List.iter2 (fun p s ->
+        Stdlib.List.iteri2 (fun n p s ->
           try eqtype true type_pairs subst env p s with Equality_trace trace ->
             raise (Failure
                      [CM_Type_parameter_mismatch
-                        (env, expand_to_equality_error env trace !subst)]))
+                        (n+1, env, expand_to_equality_error env trace !subst)]))
           patt_params subj_params;
      (* old code: equal_clty false type_pairs subst env patt_type subj_type; *)
         equal_clsig false type_pairs subst env sign1 sign2;

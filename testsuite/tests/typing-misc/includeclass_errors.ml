@@ -111,7 +111,7 @@ Error: Signature mismatch:
            object constraint 'a = int method private id : 'a -> int end
        does not match
          class ['x, 'y] c : object  end
-       A type parameter has type "int" but is expected to have type "'x"
+       The 1st type parameter has type "int" but is expected to have type "'x"
 |}]
 
 module M: sig
@@ -134,7 +134,30 @@ Error: Signature mismatch:
          class ['a] c : object  end
        does not match
          class ['a] c : object constraint 'a = int end
-       A type parameter has type "'a" but is expected to have type "int"
+       The 1st type parameter has type "'a" but is expected to have type "int"
+|}]
+
+module M: sig
+  class ['a, 'b] c: object constraint 'b = int end
+end = struct
+  class ['a, 'b] c = object end
+end
+;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   class ['a, 'b] c = object end
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig class ['a, 'b] c : object  end end
+       is not included in
+         sig class ['a, 'b] c : object constraint 'b = int end end
+       Class declarations do not match:
+         class ['a, 'b] c : object  end
+       does not match
+         class ['a, 'b] c : object constraint 'b = int end
+       The 2nd type parameter has type "'b" but is expected to have type "int"
 |}]
 
 module M: sig
