@@ -87,6 +87,33 @@ Error: Signature mismatch:
        The classes do not have the same number of type parameters
 |}]
 
+module Confusing: sig
+  class ['x, 'y] c: object end
+end = struct
+  class ['y, 'x] c  = object method private id (x : 'y) = x + 1 end
+end
+;;
+[%%expect{|
+Lines 3-5, characters 6-3:
+3 | ......struct
+4 |   class ['y, 'x] c  = object method private id (x : 'y) = x + 1 end
+5 | end
+Error: Signature mismatch:
+       Modules do not match:
+         sig
+           class ['a, 'x] c :
+             object constraint 'a = int method private id : 'a -> int end
+         end
+       is not included in
+         sig class ['x, 'y] c : object  end end
+       Class declarations do not match:
+         class ['a, 'x] c :
+           object constraint 'a = int method private id : 'a -> int end
+       does not match
+         class ['x, 'y] c : object  end
+       A type parameter has type "int" but is expected to have type "'x"
+|}]
+
 module M: sig
   class ['a] c: object constraint 'a = int end
 end = struct
