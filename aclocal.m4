@@ -49,6 +49,14 @@ AC_DEFUN([OCAML_CC_VENDOR], [
 msvc _MSC_VER
 #elif defined(__INTEL_COMPILER)
 icc __INTEL_COMPILER
+#elif defined(__MINGW32__)
+#include <_mingw_mac.h>
+mingw32 __MINGW64_VERSION_MAJOR __MINGW64_VERSION_MINOR
+# if defined(__clang_major__) && defined(__clang_minor__)
+  clang __clang_major__ __clang_minor__
+# elif defined(__GNUC__) && defined(__GNUC_MINOR__)
+  gcc __GNUC__ __GNUC_MINOR__
+# endif
 #elif defined(__clang_major__) && defined(__clang_minor__)
 clang __clang_major__ __clang_minor__
 #elif defined(__GNUC__) && defined(__GNUC_MINOR__)
@@ -62,8 +70,8 @@ unknown
 #endif]
     )],
     [AC_CACHE_VAL([ocaml_cv_cc_vendor],
-      [ocaml_cv_cc_vendor=`grep ['^[a-z]'] conftest.i | tr -s ' ' '-' \
-                                                      | tr -d '\r'`])],
+      [ocaml_cv_cc_vendor=`sed -e '/^#/d' conftest.i | tr -s '[:space:]' '-' \
+                             | sed -e 's/^-//' -e 's/-$//'`])],
     [AC_MSG_FAILURE([unexpected preprocessor failure])])
   AC_MSG_RESULT([$ocaml_cv_cc_vendor])
 ])

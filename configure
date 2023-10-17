@@ -13558,6 +13558,14 @@ printf %s "checking C compiler vendor... " >&6; }
 msvc _MSC_VER
 #elif defined(__INTEL_COMPILER)
 icc __INTEL_COMPILER
+#elif defined(__MINGW32__)
+#include <_mingw_mac.h>
+mingw32 __MINGW64_VERSION_MAJOR __MINGW64_VERSION_MINOR
+# if defined(__clang_major__) && defined(__clang_minor__)
+  clang __clang_major__ __clang_minor__
+# elif defined(__GNUC__) && defined(__GNUC_MINOR__)
+  gcc __GNUC__ __GNUC_MINOR__
+# endif
 #elif defined(__clang_major__) && defined(__clang_minor__)
 clang __clang_major__ __clang_minor__
 #elif defined(__GNUC__) && defined(__GNUC_MINOR__)
@@ -13577,8 +13585,8 @@ then :
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  ocaml_cv_cc_vendor=`grep '^[a-z]' conftest.i | tr -s ' ' '-' \
-                                                      | tr -d '\r'`
+  ocaml_cv_cc_vendor=`sed -e '/^#/d' conftest.i | tr -s '[:space:]' '-' \
+                             | sed -e 's/^-//' -e 's/-$//'`
 fi
 
 else $as_nop
@@ -13876,44 +13884,31 @@ esac
 # Concerning optimization level, -O3 is somewhat risky, so take -O2.
 # Concerning language version, recent enough versions of GCC and Clang
 # default to gnu11 (C11 + GNU extensions) or gnu17, which is fine.
-
-# Note: the vendor macro can not recognize MinGW because it calls the
-# C preprocessor directly so no compiler specific macro like __MING32__
-# is defined. We thus catch MinGW first by looking at host and examine
-# the vendor only as a fall-back. We could put tis part of the logic
-# in the macro itself, too
-case $host in #(
-  *-*-mingw32*) :
-    case $ocaml_cv_cc_vendor in #(
-  gcc-[01234]-*) :
-    as_fn_error $? "This version of MinGW-w64 GCC is too old. Please use GCC version 5 or above." "$LINENO" 5 ;; #(
-  gcc-*) :
-    internal_cflags="-Wno-unused $cc_warnings \
--fexcess-precision=standard"
-        # TODO: see whether the code can be fixed to avoid -Wno-unused
-        common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
-        internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
-        internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-        internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
-  *) :
-    as_fn_error $? "Unsupported C compiler for a MinGW-w64 build" "$LINENO" 5 ;;
-esac ;; #(
-  *) :
-    case $ocaml_cv_cc_vendor in #(
+case $ocaml_cv_cc_vendor in #(
   clang-*) :
     common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$cc_warnings -fno-common" ;; #(
-  gcc-[0123]-*|gcc-4-[0-8]) :
+    internal_cflags="$cc_warnings -fno-common" ;; #(
+  *gcc-[0123]-*|*gcc-4-[0-8]) :
     # No C11 support
-      as_fn_error 69 "This version of GCC is too old. Please use GCC version 4.9 or above." "$LINENO" 5 ;; #(
+    as_fn_error 69 "This version of GCC is too old. Please use GCC version 4.9 or above." "$LINENO" 5 ;; #(
   gcc-*) :
     common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$cc_warnings -fno-common -fexcess-precision=standard \
+    internal_cflags="$cc_warnings -fno-common -fexcess-precision=standard \
 -Wvla" ;; #(
+  mingw32-*-*-gcc-*) :
+    internal_cflags="-Wno-unused $cc_warnings \
+-fexcess-precision=standard"
+    # TODO: see whether the code can be fixed to avoid -Wno-unused
+    common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
+    internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
+    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
+    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
+  mingw32-*) :
+    as_fn_error $? "Unsupported C compiler for a MinGW-w64 build" "$LINENO" 5 ;; #(
   msvc-*) :
     common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
-      common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
-      internal_cppflags='-DUNICODE -D_UNICODE'
+    common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
+    internal_cppflags='-DUNICODE -D_UNICODE'
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports -d2VolatileMetadata-" >&5
 printf %s "checking whether the C compiler supports -d2VolatileMetadata-... " >&6; }
@@ -13936,23 +13931,22 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
   CFLAGS="$saved_CFLAGS"
 
-      if test "x$cl_has_volatile_metadata" = "xtrue"
+    if test "x$cl_has_volatile_metadata" = "xtrue"
 then :
   internal_cflags='-d2VolatileMetadata-'
 fi
-      internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-      internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
+    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
+    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
   xlc-*) :
     common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
-      internal_cflags="$cc_warnings" ;; #(
+    internal_cflags="$cc_warnings" ;; #(
   sunc-*) :
     # Optimization should be >= O4 to inline functions
-              # and prevent unresolved externals
-      common_cflags="-O4 -xc99=all -D_XPG6 $CFLAGS";
-      internal_cflags="$cc_warnings" ;; #(
+            # and prevent unresolved externals
+    common_cflags="-O4 -xc99=all -D_XPG6 $CFLAGS";
+    internal_cflags="$cc_warnings" ;; #(
   *) :
     common_cflags="-O" ;;
-esac ;;
 esac
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.

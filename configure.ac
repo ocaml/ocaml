@@ -797,56 +797,45 @@ AS_CASE([$enable_warn_error,OCAML__DEVELOPMENT_VERSION],
 # Concerning optimization level, -O3 is somewhat risky, so take -O2.
 # Concerning language version, recent enough versions of GCC and Clang
 # default to gnu11 (C11 + GNU extensions) or gnu17, which is fine.
-
-# Note: the vendor macro can not recognize MinGW because it calls the
-# C preprocessor directly so no compiler specific macro like __MING32__
-# is defined. We thus catch MinGW first by looking at host and examine
-# the vendor only as a fall-back. We could put tis part of the logic
-# in the macro itself, too
-AS_CASE([$host],
-  [*-*-mingw32*],
-    [AS_CASE([$ocaml_cv_cc_vendor],
-      [gcc-[[01234]]-*],
-        [AC_MSG_ERROR(m4_normalize([This version of MinGW-w64 GCC is too old.
-          Please use GCC version 5 or above.]))],
-      [gcc-*],
-        [internal_cflags="-Wno-unused $cc_warnings \
--fexcess-precision=standard"
-        # TODO: see whether the code can be fixed to avoid -Wno-unused
-        common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
-        internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
-        internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-        internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
-      [AC_MSG_ERROR([Unsupported C compiler for a MinGW-w64 build])])],
-  [AS_CASE([$ocaml_cv_cc_vendor],
-    [clang-*],
-      [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$cc_warnings -fno-common"],
-    [gcc-[[0123]]-*|gcc-4-[[0-8]]],
-      # No C11 support
-      [AC_MSG_ERROR(m4_normalize([This version of GCC is too old.
-        Please use GCC version 4.9 or above.]), 69)],
-    [gcc-*],
-      [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$cc_warnings -fno-common -fexcess-precision=standard \
+AS_CASE([$ocaml_cv_cc_vendor],
+  [clang-*],
+    [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
+    internal_cflags="$cc_warnings -fno-common"],
+  [*gcc-[[0123]]-*|*gcc-4-[[0-8]]],
+    # No C11 support
+    [AC_MSG_ERROR(m4_normalize([This version of GCC is too old.
+      Please use GCC version 4.9 or above.]), 69)],
+  [gcc-*],
+    [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
+    internal_cflags="$cc_warnings -fno-common -fexcess-precision=standard \
 -Wvla"],
-    [msvc-*],
-      [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
-      common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
-      internal_cppflags='-DUNICODE -D_UNICODE'
-      OCAML_CL_HAS_VOLATILE_METADATA
-      AS_IF([test "x$cl_has_volatile_metadata" = "xtrue"],
-            [internal_cflags='-d2VolatileMetadata-'])
-      internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-      internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
-    [xlc-*],
-      [common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
-      internal_cflags="$cc_warnings"],
-    [sunc-*], # Optimization should be >= O4 to inline functions
-              # and prevent unresolved externals
-      [common_cflags="-O4 -xc99=all -D_XPG6 $CFLAGS";
-      internal_cflags="$cc_warnings"],
-    [common_cflags="-O"])])
+  [mingw32-*-*-gcc-*],
+    [internal_cflags="-Wno-unused $cc_warnings \
+-fexcess-precision=standard"
+    # TODO: see whether the code can be fixed to avoid -Wno-unused
+    common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
+    internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
+    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
+    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
+  [mingw32-*],
+    [AC_MSG_ERROR([Unsupported C compiler for a MinGW-w64 build])],
+  [msvc-*],
+    [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
+    common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
+    internal_cppflags='-DUNICODE -D_UNICODE'
+    OCAML_CL_HAS_VOLATILE_METADATA
+    AS_IF([test "x$cl_has_volatile_metadata" = "xtrue"],
+          [internal_cflags='-d2VolatileMetadata-'])
+    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
+    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
+  [xlc-*],
+    [common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
+    internal_cflags="$cc_warnings"],
+  [sunc-*], # Optimization should be >= O4 to inline functions
+            # and prevent unresolved externals
+    [common_cflags="-O4 -xc99=all -D_XPG6 $CFLAGS";
+    internal_cflags="$cc_warnings"],
+  [common_cflags="-O"])
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
 AS_CASE([$host],
