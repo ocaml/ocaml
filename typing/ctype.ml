@@ -4385,23 +4385,24 @@ let match_class_sig_shape ~strict sign1 sign2 =
       else err)
     sign1.csig_vars errors
 
-let rec moregen_clty ?arrow_index trace type_pairs env cty1 cty2 =
+(* [arrow_index] is the number of [Cty_arrow]
+           constructors we've seen so far. *)
+let rec moregen_clty ~arrow_index trace type_pairs env cty1 cty2 =
   try
     match cty1, cty2 with
     | Cty_constr (_, _, cty1), _ ->
-        moregen_clty true type_pairs env cty1 cty2
+        moregen_clty ~arrow_index true type_pairs env cty1 cty2
     | _, Cty_constr (_, _, cty2) ->
-        moregen_clty true type_pairs env cty1 cty2
+        moregen_clty ~arrow_index true type_pairs env cty1 cty2
     | Cty_arrow (l1, ty1, cty1'), Cty_arrow (l2, ty2, cty2') when l1 = l2 ->
-        let arrow_index = Option.value ~default:1 arrow_index in
+        let arrow_index = arrow_index + 1 in
         begin
           try moregen true type_pairs env ty1 ty2 with Moregen_trace trace ->
             raise (Failure [
                 CM_Parameter_mismatch
                   (arrow_index, env, expand_to_moregen_error env trace)])
         end;
-        moregen_clty
-          ~arrow_index:(arrow_index + 1) false type_pairs env cty1' cty2'
+        moregen_clty ~arrow_index false type_pairs env cty1' cty2'
     | Cty_signature sign1, Cty_signature sign2 ->
         Meths.iter
           (fun lab (_, _, ty) ->
@@ -4444,6 +4445,9 @@ let rec moregen_clty ?arrow_index trace type_pairs env cty1 cty2 =
   with
     Failure error when trace || error = [] ->
       raise (Failure (CM_Class_type_mismatch (env, cty1, cty2)::error))
+
+let moregen_clty trace type_pairs env cty1 cty2 =
+  moregen_clty ~arrow_index:0 trace type_pairs env cty1 cty2
 
 let match_class_types ?(trace=true) env pat_sch subj_sch =
   let sign1 = signature_of_class_type pat_sch in
