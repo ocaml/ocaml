@@ -132,7 +132,7 @@ module Stdlib : sig
         r1 is [List.map2 f l1 h1] and r2 is t2. *)
 
     val iteri2 : (int -> 'a -> 'b -> unit) -> 'a list -> 'b list -> unit
-    (** Same as {!iter2}, but the function is applied to the index of
+    (** Same as {!List.iter2}, but the function is applied to the index of
         the element as first argument (counting from 0) *)
 
     val split_at : int -> 'a t -> 'a t * 'a t
