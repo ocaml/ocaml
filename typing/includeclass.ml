@@ -56,12 +56,13 @@ let include_err mode ppf =
   | CM_Parameter_arity_mismatch _ ->
       fprintf ppf
         "The classes do not have the same number of type parameters"
-  | CM_Type_parameter_mismatch (env, err) ->
+  | CM_Type_parameter_mismatch (n, env, err) ->
       Printtyp.report_equality_error ppf mode env err
         (function ppf ->
-          fprintf ppf "A type parameter has type")
+           fprintf ppf "The %d%s type parameter has type"
+             n (Misc.ordinal_suffix n))
         (function ppf ->
-          fprintf ppf "but is expected to have type")
+           fprintf ppf "but is expected to have type")
   | CM_Class_type_mismatch (env, cty1, cty2) ->
       Printtyp.wrap_printing_env ~error:true env (fun () ->
         fprintf ppf
@@ -69,10 +70,11 @@ let include_err mode ppf =
           Printtyp.class_type cty1
           "is not matched by the class type"
           Printtyp.class_type cty2)
-  | CM_Parameter_mismatch (env, err) ->
+  | CM_Parameter_mismatch (n, env, err) ->
       Printtyp.report_moregen_error ppf mode env err
         (function ppf ->
-          fprintf ppf "A parameter has type")
+           fprintf ppf "The %d%s parameter has type"
+             n (Misc.ordinal_suffix n))
         (function ppf ->
           fprintf ppf "but is expected to have type")
   | CM_Val_type_mismatch (lab, env, err) ->

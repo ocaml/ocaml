@@ -291,6 +291,11 @@ Working version
 - #12622: Give hints about existential types appearing in error messages
   (Leo White, review by Gabriel Scherer and Florian Angeletti)
 
+- #12671: When a class type parameter or class parameter does not match,
+  identify which parameter in the error message, instead of saying
+  "A type parameter" or "A parameter".
+  (Stefan Muenzel, review by Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - #12447: Remove 32-bit targets from X86_proc.system

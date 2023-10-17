@@ -4315,9 +4315,9 @@ let rec equal_private env params1 ty1 params2 ty2 =
 type class_match_failure =
     CM_Virtual_class
   | CM_Parameter_arity_mismatch of int * int
-  | CM_Type_parameter_mismatch of Env.t * equality_error
+  | CM_Type_parameter_mismatch of int * Env.t * equality_error
   | CM_Class_type_mismatch of Env.t * class_type * class_type
-  | CM_Parameter_mismatch of Env.t * moregen_error
+  | CM_Parameter_mismatch of int * Env.t * moregen_error
   | CM_Val_type_mismatch of string * Env.t * comparison_error
   | CM_Meth_type_mismatch of string * Env.t * comparison_error
   | CM_Non_mutable_value of string
@@ -4385,20 +4385,24 @@ let match_class_sig_shape ~strict sign1 sign2 =
       else err)
     sign1.csig_vars errors
 
-let rec moregen_clty trace type_pairs env cty1 cty2 =
+(* [arrow_index] is the number of [Cty_arrow]
+           constructors we've seen so far. *)
+let rec moregen_clty ~arrow_index trace type_pairs env cty1 cty2 =
   try
     match cty1, cty2 with
     | Cty_constr (_, _, cty1), _ ->
-        moregen_clty true type_pairs env cty1 cty2
+        moregen_clty ~arrow_index true type_pairs env cty1 cty2
     | _, Cty_constr (_, _, cty2) ->
-        moregen_clty true type_pairs env cty1 cty2
+        moregen_clty ~arrow_index true type_pairs env cty1 cty2
     | Cty_arrow (l1, ty1, cty1'), Cty_arrow (l2, ty2, cty2') when l1 = l2 ->
+        let arrow_index = arrow_index + 1 in
         begin
           try moregen true type_pairs env ty1 ty2 with Moregen_trace trace ->
             raise (Failure [
-              CM_Parameter_mismatch (env, expand_to_moregen_error env trace)])
+                CM_Parameter_mismatch
+                  (arrow_index, env, expand_to_moregen_error env trace)])
         end;
-        moregen_clty false type_pairs env cty1' cty2'
+        moregen_clty ~arrow_index false type_pairs env cty1' cty2'
     | Cty_signature sign1, Cty_signature sign2 ->
         Meths.iter
           (fun lab (_, _, ty) ->
@@ -4441,6 +4445,9 @@ let rec moregen_clty trace type_pairs env cty1 cty2 =
   with
     Failure error when trace || error = [] ->
       raise (Failure (CM_Class_type_mismatch (env, cty1, cty2)::error))
+
+let moregen_clty trace type_pairs env cty1 cty2 =
+  moregen_clty ~arrow_index:0 trace type_pairs env cty1 cty2
 
 let match_class_types ?(trace=true) env pat_sch subj_sch =
   let sign1 = signature_of_class_type pat_sch in
@@ -4556,11 +4563,11 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
         let ls = List.length subj_params in
         if lp  <> ls then
           raise (Failure [CM_Parameter_arity_mismatch (lp, ls)]);
-        List.iter2 (fun p s ->
+        Stdlib.List.iteri2 (fun n p s ->
           try eqtype true type_pairs subst env p s with Equality_trace trace ->
             raise (Failure
                      [CM_Type_parameter_mismatch
-                        (env, expand_to_equality_error env trace !subst)]))
+                        (n+1, env, expand_to_equality_error env trace !subst)]))
           patt_params subj_params;
      (* old code: equal_clty false type_pairs subst env patt_type subj_type; *)
         equal_clsig false type_pairs subst env sign1 sign2;

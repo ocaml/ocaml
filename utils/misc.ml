@@ -133,6 +133,14 @@ module Stdlib = struct
       in
       aux [] l1 l2
 
+    let rec iteri2 i f l1 l2 =
+      match (l1, l2) with
+        ([], []) -> ()
+      | (a1::l1, a2::l2) -> f i a1 a2; iteri2 (i + 1) f l1 l2
+      | (_, _) -> raise (Invalid_argument "iteri2")
+
+    let iteri2 f l1 l2 = iteri2 0 f l1 l2
+
     let some_if_all_elements_are_some l =
       let rec aux acc l =
         match l with
