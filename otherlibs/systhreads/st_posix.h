@@ -197,29 +197,39 @@ Caml_inline void st_thread_yield(st_masterlock * m)
 
 typedef pthread_mutex_t * st_mutex;
 
-static int st_mutex_create(st_mutex * res)
+static int st_mutex_init(st_mutex m)
 {
   int rc;
   pthread_mutexattr_t attr;
-  st_mutex m;
 
   rc = pthread_mutexattr_init(&attr);
   if (rc != 0) goto error1;
   rc = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
   if (rc != 0) goto error2;
-  m = caml_stat_alloc_noexc(sizeof(pthread_mutex_t));
-  if (m == NULL) { rc = ENOMEM; goto error2; }
   rc = pthread_mutex_init(m, &attr);
-  if (rc != 0) goto error3;
+  if (rc != 0) goto error2;
   pthread_mutexattr_destroy(&attr);
-  *res = m;
   return 0;
-error3:
-  caml_stat_free(m);
 error2:
   pthread_mutexattr_destroy(&attr);
 error1:
   return rc;
+}
+
+static int st_mutex_create(st_mutex * res)
+{
+  int rc;
+  st_mutex m;
+
+  m = caml_stat_alloc_noexc(sizeof(pthread_mutex_t));
+  if (m == NULL) { return ENOMEM; }
+  rc = st_mutex_init(m);
+  if (rc != 0) {
+    caml_stat_free(m);
+    return rc;
+  }
+  *res = m;
+  return 0;
 }
 
 static int st_mutex_destroy(st_mutex m)

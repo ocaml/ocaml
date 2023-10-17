@@ -222,6 +222,12 @@ static DWORD st_mutex_destroy(st_mutex m)
   return 0;
 }
 
+/* Unused under Windows because there is no fork() */
+static DWORD st_mutex_init(st_mutex m)
+{
+  return 0;
+}
+
 /* Error codes with the 29th bit set are reserved for the application */
 
 #define MUTEX_DEADLOCK (1<<29 | 1)
