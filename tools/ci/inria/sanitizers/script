@@ -48,18 +48,18 @@ else
 fi
 
 # A tool that makes error backtraces nicer
-# Need to pick the one that matches clang-13 and is named "llvm-symbolizer"
-# (/usr/bin/llvm-symbolizer-13 doesn't work, that would be too easy)
-export ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-13/bin/llvm-symbolizer
+# Need to pick the one that matches clang-14 and is named "llvm-symbolizer"
+# (/usr/bin/llvm-symbolizer-14 doesn't work, that would be too easy)
+export ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-14/bin/llvm-symbolizer
 export TSAN_SYMBOLIZER_PATH="$ASAN_SYMBOLIZER_PATH"
 
 #########################################################################
 
-echo "======== clang 13, address sanitizer, UB sanitizer =========="
+echo "======== clang 14, address sanitizer, UB sanitizer =========="
 
 git clean -q -f -d -x
 
-# # Use clang 13
+# # Use clang 14
 
 # These are the undefined behaviors we want to check
 # Others occur on purpose e.g. signed arithmetic overflow
@@ -82,7 +82,7 @@ sanitizers="-fsanitize=address -fsanitize-trap=$ubsan"
 # Don't optimize too much to get better backtraces of errors
 
 ./configure \
-  CC=clang-13 \
+  CC=clang-14 \
   CFLAGS="-O1 -fno-omit-frame-pointer $sanitizers" \
   --disable-stdlib-manpages --enable-dependency-generation
 
@@ -110,34 +110,24 @@ ASAN_OPTIONS="detect_leaks=0,use_sigaltstack=0" $run_testsuite
 
 #########################################################################
 
-# Thread sanitizer is not working in OCaml 5: too many alarms that are
-# probably benign races in the GC (#11040).  Turn it off.
+# Run the testsuite with ThreadSanitizer support (--enable-tsan) enabled.
+# Initially intended to detect data races in OCaml programs and C stubs, it has
+# proved effective at also detecting races in the runtime (see #11040).
 
-# echo "======== clang 13, thread sanitizer =========="
+echo "======== clang 14, thread sanitizer =========="
 
-# git clean -q -f -d -x
+git clean -q -f -d -x
 
-# # Select thread sanitizer
-# # Don't optimize too much to get better backtraces of errors
+./configure \
+  CC=clang-14 \
+  --enable-tsan \
+  --disable-stdlib-manpages --enable-dependency-generation
 
-# ./configure \
-#   CC=clang-13 \
-#   CFLAGS="-O1 -fno-omit-frame-pointer -fsanitize=thread" \
-#   --disable-stdlib-manpages --enable-dependency-generation
+# Build the system
+make $jobs
 
-# # Build the system
-# TSAN_OPTIONS="detect_deadlocks=0" make $jobs
-
-# # ThreadSanitizer reports errors for the error case of unlocking an
-# # error-checking mutex.
-# # Exclude the corresponding test
-# export OCAMLTEST_SKIP_TESTS="$OCAMLTEST_SKIP_TESTS \
-# tests/lib-threads/mutex_errors.ml"
-
-# # Run the testsuite.
-# # ThreadSanitizer complains about fork() in threaded programs,
-# # we ask it to just continue in this case.
-# TSAN_OPTIONS="detect_deadlocks=0,die_after_fork=0" $run_testsuite
+# Run the testsuite.
+TSAN_OPTIONS="" $run_testsuite
 
 #########################################################################
 
