@@ -7473,3 +7473,5 @@ module M = struct
     inherit \#val \#let as \#mutable
   end
 end
+
+let là = function ça -> ça

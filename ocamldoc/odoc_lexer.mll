@@ -87,12 +87,38 @@ let remove_blanks s =
 (** Remove first blank characters of each line of a string, until the first '*' *)
 let remove_stars s =
   Str.global_replace (Str.regexp ("^"^blank^"*\\*")) "" s
+
+let validate_encoding raw_name =
+  match Misc.UString.normalize raw_name with
+  | Error s -> failwith (Format.asprintf "Invalid encoding %s" s)
+  | Ok name -> name
+
+let validate_ident raw_name =
+  let name = validate_encoding raw_name in
+  match Misc.UString.validate_identifier name with
+  | Misc.UString.Valid -> name
+  | Misc.UString.Invalid_character u ->
+    failwith (Format.asprintf "Invalid character U+%X" (Uchar.to_int u))
+  | Misc.UString.Invalid_beginning u  ->
+    failwith (Format.asprintf "Invalid first character U+%X" (Uchar.to_int u))
+
+ let validate_exception_uident raw_name =
+    let name = validate_ident raw_name in
+    if Misc.UString.is_capitalized name then name else
+      failwith (Format.asprintf "Invalid exception name: %s" name)
 }
 
-let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
-let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
-let identchar =
-  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+let blank = [ ' ' '\013' '\009' '\012']
+let nl_blank = blank | '\010'
+let version = [^ ' ' '\010' '\013' '\009' '\012']+
+
+let lowercase = ['a'-'z' '_']
+let uppercase = ['A'-'Z']
+let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
+let utf8 = ['\192'-'\255'] ['\128'-'\191']*
+let identchar_ext = identchar | utf8
+let identstart_ext = lowercase | uppercase | utf8
+let ident_ext = identstart_ext identchar_ext*
 
 rule main = parse
     [' ' '\013' '\009' '\012'] +
@@ -280,7 +306,7 @@ and special_comment_part2 = parse
       }
 
 and elements = parse
-  | [' ' '\013' '\009' '\012'] +
+  | blank+
       {
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length (Lexing.lexeme lexbuf));
         elements lexbuf
@@ -295,14 +321,28 @@ and elements = parse
         raise (Failure (Odoc_messages.should_escape_at_sign))
       }
 
+  | "@param" nl_blank+ (identchar+ as id) nl_blank+ { T_PARAM id }
+  | "@param" nl_blank+ (identchar_ext+ as raw_id) nl_blank+ {
+     let id = validate_ident raw_id in
+     T_PARAM id
+     }
+  | "@param" { failwith "usage: @param id description"}
+  | "@before" nl_blank+ (version as v) nl_blank+ {
+     let v = validate_encoding v in
+     T_BEFORE v }
+  | "@before" { failwith "usage: @before version description"}
+  | "@raise" nl_blank+ (ident_ext ('.' ident_ext)* as exn_path) nl_blank+
+    {  let raw_path = String.split_on_char '.' exn_path in
+       let path = List.map validate_exception_uident raw_path in
+       let id = String.concat "." path in
+       T_RAISES id }
+  | "@raise" { failwith "usage: @raise Exception description"}
   | "@"lowercase+
       {
         let s = Lexing.lexeme lexbuf in
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length s);
         let s2 = String.sub s 1 ((String.length s) - 1) in
         match s2 with
-          "param" ->
-            T_PARAM
          | "author" ->
             T_AUTHOR
          | "version" ->
@@ -311,12 +351,8 @@ and elements = parse
              T_SEE
          | "since" ->
              T_SINCE
-         | "before" ->
-             T_BEFORE
          | "deprecated" ->
              T_DEPRECATED
-         | "raise" ->
-             T_RAISES
          | "return" ->
              T_RETURN
          | s ->

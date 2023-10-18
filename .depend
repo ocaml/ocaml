@@ -914,12 +914,14 @@ typing/mtype.cmi : \
 typing/oprint.cmo : \
     parsing/pprintast.cmi \
     typing/outcometree.cmi \
+    utils/misc.cmi \
     parsing/lexer.cmi \
     parsing/asttypes.cmi \
     typing/oprint.cmi
 typing/oprint.cmx : \
     parsing/pprintast.cmx \
     typing/outcometree.cmi \
+    utils/misc.cmx \
     parsing/lexer.cmx \
     parsing/asttypes.cmi \
     typing/oprint.cmi
@@ -7442,9 +7444,11 @@ debugger/debugger_config.cmx : \
     debugger/debugger_config.cmi
 debugger/debugger_config.cmi :
 debugger/debugger_lexer.cmo : \
+    utils/misc.cmi \
     debugger/debugger_parser.cmi \
     debugger/debugger_lexer.cmi
 debugger/debugger_lexer.cmx : \
+    utils/misc.cmx \
     debugger/debugger_parser.cmx \
     debugger/debugger_lexer.cmi
 debugger/debugger_lexer.cmi : \

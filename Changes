@@ -54,6 +54,10 @@ Working version
   (Gabriel Scherer and Damien Doligez, review by Daniel Bünzli, David
    Allsopp, Andreas Rossberg, Xavier Leroy, report by Andreas Rossberg)
 
+- #11736, ????: Support utf-8 encoded source files and latin-9 compatible
+  identifiers.
+  (Xavier Leroy, review by Daniel Bünzli)
+
 ### Type system:
 
 - #12313, #11799: Do not re-build as-pattern type when a ground type annotation

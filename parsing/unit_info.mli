@@ -25,6 +25,9 @@ type modname = string
 type filename = string
 type file_prefix = string
 
+type error = Invalid_encoding of filename
+exception Error of error
+
 (** [modulize s] capitalizes the first letter of [s]. *)
 val modulize: string -> modname
 
@@ -35,6 +38,10 @@ val normalize: string -> string
     basename of the filename [filename] stripped from all its extensions.
     For instance, [modname_from_source "/pa.th/x.ml.pp"] is ["X"]. *)
 val modname_from_source: filename -> modname
+
+(** Same as {!modname_from_source} but raises an {!error.Invalid_encoding} error
+    on filename with invalid utf8 encoding. *)
+val strict_modname_from_source: filename -> modname
 
 (** {2:module_name_validation Module name validation function}*)
 

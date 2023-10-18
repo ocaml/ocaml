@@ -508,12 +508,14 @@ odoc_lexer.cmo : \
     odoc_messages.cmi \
     odoc_global.cmi \
     odoc_comments_global.cmi \
+    ../utils/misc.cmi \
     odoc_lexer.cmi
 odoc_lexer.cmx : \
     odoc_parser.cmx \
     odoc_messages.cmx \
     odoc_global.cmx \
     odoc_comments_global.cmx \
+    ../utils/misc.cmx \
     odoc_lexer.cmi
 odoc_lexer.cmi : \
     odoc_parser.cmi
@@ -643,8 +645,10 @@ odoc_name.cmi : \
     ../parsing/longident.cmi \
     ../typing/ident.cmi
 odoc_ocamlhtml.cmo : \
+    ../utils/misc.cmi \
     odoc_ocamlhtml.cmi
 odoc_ocamlhtml.cmx : \
+    ../utils/misc.cmx \
     odoc_ocamlhtml.cmi
 odoc_ocamlhtml.cmi :
 odoc_parameter.cmo : \
