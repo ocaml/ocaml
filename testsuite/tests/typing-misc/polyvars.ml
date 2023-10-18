@@ -165,9 +165,9 @@ val f : [> `AnyOtherTag ] * [> `AnyOtherTag | `AnyOtherTag' ] -> int = <fun>
 
 let x:(([`A] as 'a)* ([`B] as 'a)) = [`A]
 [%%expect {|
-Line 1, characters 22-32:
+Line 1, characters 31-32:
 1 | let x:(([`A] as 'a)* ([`B] as 'a)) = [`A]
-                          ^^^^^^^^^^
+                                   ^
 Error: This alias is bound to type "[ `B ]" but is used as an instance of type
          "[ `A ]"
        These two variant types have no intersection

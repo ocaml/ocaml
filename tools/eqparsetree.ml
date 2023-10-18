@@ -175,7 +175,7 @@ and eq_core_type_desc :
          (eq_list eq_core_type (a1, b1)))
         && (eq_list Asttypes.eq_label (a2, b2))
   | (Ptyp_alias (a0, a1), Ptyp_alias (b0, b1)) ->
-      (eq_core_type (a0, b0)) && (eq_string (a1, b1))
+      (eq_core_type (a0, b0)) && (eq_string (a1.txt, b1.txt))
   | (Ptyp_variant (a0, a1, a2), Ptyp_variant (b0, b1, b2)) ->
       ((eq_list eq_row_field (a0, b0)) && (eq_bool (a1, b1))) &&
         (eq_option (eq_list Asttypes.eq_label) (a2, b2))

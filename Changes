@@ -298,6 +298,10 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- #12639: parsing: Attach a location to the RHS of Ptyp_alias
+  and improve the 'alias type mismatch' error message.
+  (Jules Aguillon, review by Florian Angeletti)
+
 - #12447: Remove 32-bit targets from X86_proc.system
   (Masanori Ogino, review by David Allsopp)
 
