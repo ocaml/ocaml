@@ -586,10 +586,10 @@ and add_use_file bv top_phrs =
   ignore (List.fold_left add_top_phrase bv top_phrs)
 
 and add_implementation bv l =
-    ignore (add_structure_binding bv l)
+    ignore (add_implementation_binding bv l)
 
 and add_implementation_binding bv l =
-  snd (add_structure_binding bv l)
+  snd (add_structure_binding bv l.pimpl_structure)
 
 and add_top_phrase bv = function
   | Ptop_def str -> add_structure bv str
@@ -629,3 +629,9 @@ and add_class_field bv pcf =
 
 and add_class_declaration bv decl =
   add_class_expr bv decl.pci_expr
+
+and add_interface bv interface =
+  ignore (add_interface_binding bv interface)
+
+and add_interface_binding bv interface =
+  add_signature_binding bv interface.pintf_signature

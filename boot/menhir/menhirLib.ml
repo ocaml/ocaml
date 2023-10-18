@@ -1,14 +1,11 @@
 module General = struct
 (******************************************************************************)
 (*                                                                            *)
-(*                                   Menhir                                   *)
+(*                                    Menhir                                  *)
 (*                                                                            *)
-(*                       François Pottier, Inria Paris                        *)
-(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
-(*                                                                            *)
-(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
-(*  terms of the GNU Library General Public License version 2, with a         *)
-(*  special exception on linking, as described in the file LICENSE.           *)
+(*   Copyright Inria. All rights reserved. This file is distributed under     *)
+(*   the terms of the GNU Library General Public License version 2, with a    *)
+(*   special exception on linking, as described in the file LICENSE.          *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -89,14 +86,11 @@ end
 module Convert = struct
 (******************************************************************************)
 (*                                                                            *)
-(*                                   Menhir                                   *)
+(*                                    Menhir                                  *)
 (*                                                                            *)
-(*                       François Pottier, Inria Paris                        *)
-(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
-(*                                                                            *)
-(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
-(*  terms of the GNU Library General Public License version 2, with a         *)
-(*  special exception on linking, as described in the file LICENSE.           *)
+(*   Copyright Inria. All rights reserved. This file is distributed under     *)
+(*   the terms of the GNU Library General Public License version 2, with a    *)
+(*   special exception on linking, as described in the file LICENSE.          *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -212,14 +206,11 @@ end
 module IncrementalEngine = struct
 (******************************************************************************)
 (*                                                                            *)
-(*                                   Menhir                                   *)
+(*                                    Menhir                                  *)
 (*                                                                            *)
-(*                       François Pottier, Inria Paris                        *)
-(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
-(*                                                                            *)
-(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
-(*  terms of the GNU Library General Public License version 2, with a         *)
-(*  special exception on linking, as described in the file LICENSE.           *)
+(*   Copyright Inria. All rights reserved. This file is distributed under     *)
+(*   the terms of the GNU Library General Public License version 2, with a    *)
+(*   special exception on linking, as described in the file LICENSE.          *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -701,14 +692,11 @@ end
 module EngineTypes = struct
 (******************************************************************************)
 (*                                                                            *)
-(*                                   Menhir                                   *)
+(*                                    Menhir                                  *)
 (*                                                                            *)
-(*                       François Pottier, Inria Paris                        *)
-(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
-(*                                                                            *)
-(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
-(*  terms of the GNU Library General Public License version 2, with a         *)
-(*  special exception on linking, as described in the file LICENSE.           *)
+(*   Copyright Inria. All rights reserved. This file is distributed under     *)
+(*   the terms of the GNU Library General Public License version 2, with a    *)
+(*   special exception on linking, as described in the file LICENSE.          *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -786,6 +774,53 @@ type ('state, 'semantic_value, 'token) env = {
   current: 'state;
 
 }
+
+(* --------------------------------------------------------------------------- *)
+
+(* A number of logging hooks are used to (optionally) emit logging messages. *)
+
+(* The comments indicate the conventional messages that correspond
+   to these hooks in the code-based back-end; see [CodeBackend]. *)
+
+module type LOG = sig
+
+  type state
+  type terminal
+  type production
+
+  (* State %d: *)
+
+  val state: state -> unit
+
+  (* Shifting (<terminal>) to state <state> *)
+
+  val shift: terminal -> state -> unit
+
+  (* Reducing a production should be logged either as a reduction
+     event (for regular productions) or as an acceptance event (for
+     start productions). *)
+
+  (* Reducing production <production> / Accepting *)
+
+  val reduce_or_accept: production -> unit
+
+  (* Lookahead token is now <terminal> (<pos>-<pos>) *)
+
+  val lookahead_token: terminal -> Lexing.position -> Lexing.position -> unit
+
+  (* Initiating error handling *)
+
+  val initiating_error_handling: unit -> unit
+
+  (* Resuming error handling *)
+
+  val resuming_error_handling: unit -> unit
+
+  (* Handling error in state <state> *)
+
+  val handling_error: state -> unit
+
+end
 
 (* --------------------------------------------------------------------------- *)
 
@@ -965,51 +1000,17 @@ module type TABLE = sig
 
   val may_reduce: state -> production -> bool
 
-  (* The LR engine requires a number of hooks, which are used for logging. *)
-
-  (* The comments below indicate the conventional messages that correspond
-     to these hooks in the code-based back-end; see [CodeBackend]. *)
-
   (* If the flag [log] is false, then the logging functions are not called.
      If it is [true], then they are called. *)
 
   val log : bool
 
-  module Log : sig
+  (* The logging hooks required by the LR engine. *)
 
-    (* State %d: *)
-
-    val state: state -> unit
-
-    (* Shifting (<terminal>) to state <state> *)
-
-    val shift: terminal -> state -> unit
-
-    (* Reducing a production should be logged either as a reduction
-       event (for regular productions) or as an acceptance event (for
-       start productions). *)
-
-    (* Reducing production <production> / Accepting *)
-
-    val reduce_or_accept: production -> unit
-
-    (* Lookahead token is now <terminal> (<pos>-<pos>) *)
-
-    val lookahead_token: terminal -> Lexing.position -> Lexing.position -> unit
-
-    (* Initiating error handling *)
-
-    val initiating_error_handling: unit -> unit
-
-    (* Resuming error handling *)
-
-    val resuming_error_handling: unit -> unit
-
-    (* Handling error in state <state> *)
-
-    val handling_error: state -> unit
-
-  end
+  module Log : LOG
+    with type state := state
+     and type terminal := terminal
+     and type production := production
 
 end
 
@@ -1102,14 +1103,11 @@ end
 module Engine = struct
 (******************************************************************************)
 (*                                                                            *)
-(*                                   Menhir                                   *)
+(*                                    Menhir                                  *)
 (*                                                                            *)
-(*                       François Pottier, Inria Paris                        *)
-(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
-(*                                                                            *)
-(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
-(*  terms of the GNU Library General Public License version 2, with a         *)
-(*  special exception on linking, as described in the file LICENSE.           *)
+(*   Copyright Inria. All rights reserved. This file is distributed under     *)
+(*   the terms of the GNU Library General Public License version 2, with a    *)
+(*   special exception on linking, as described in the file LICENSE.          *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -1256,8 +1254,7 @@ module Make (T : TABLE) = struct
 
   (* The following recursive group of functions are tail recursive, produce a
      checkpoint of type [semantic_value checkpoint], and cannot raise an
-     exception. A semantic action can raise [Error], but this exception is
-     immediately caught within [reduce]. *)
+     exception. *)
 
   let rec run env please_discard : semantic_value checkpoint =
 
@@ -1413,33 +1410,22 @@ module Make (T : TABLE) = struct
 
     (* Invoke the semantic action. The semantic action is responsible for
        truncating the stack and pushing a new cell onto the stack, which
-       contains a new semantic value. It can raise [Error]. *)
-
-    (* If the semantic action terminates normally, it returns a new stack,
+       contains a new semantic value. The semantic action returns a new stack,
        which becomes the current stack. *)
 
-    (* If the semantic action raises [Error], we catch it and initiate error
-       handling. *)
+    let stack = T.semantic_action prod env in
 
-    (* This [match/with/exception] construct requires OCaml 4.02. *)
+    (* By our convention, the semantic action has produced an updated
+       stack. The state now found in the top stack cell is the return
+       state. *)
 
-    match T.semantic_action prod env with
-    | stack ->
+    (* Perform a goto transition. The target state is determined
+       by consulting the goto table at the return state and at
+       production [prod]. *)
 
-        (* By our convention, the semantic action has produced an updated
-           stack. The state now found in the top stack cell is the return
-           state. *)
-
-        (* Perform a goto transition. The target state is determined
-           by consulting the goto table at the return state and at
-           production [prod]. *)
-
-        let current = T.goto_prod stack.state prod in
-        let env = { env with stack; current } in
-        run env false
-
-    | exception Error ->
-        initiate env
+    let current = T.goto_prod stack.state prod in
+    let env = { env with stack; current } in
+    run env false
 
   and accept env prod =
     (* Log an accept event. *)
@@ -2063,14 +2049,11 @@ end
 module ErrorReports = struct
 (******************************************************************************)
 (*                                                                            *)
-(*                                   Menhir                                   *)
+(*                                    Menhir                                  *)
 (*                                                                            *)
-(*                       François Pottier, Inria Paris                        *)
-(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
-(*                                                                            *)
-(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
-(*  terms of the GNU Library General Public License version 2, with a         *)
-(*  special exception on linking, as described in the file LICENSE.           *)
+(*   Copyright Inria. All rights reserved. This file is distributed under     *)
+(*   the terms of the GNU Library General Public License version 2, with a    *)
+(*   special exception on linking, as described in the file LICENSE.          *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -2229,14 +2212,11 @@ end
 module LexerUtil = struct
 (******************************************************************************)
 (*                                                                            *)
-(*                                   Menhir                                   *)
+(*                                    Menhir                                  *)
 (*                                                                            *)
-(*                       François Pottier, Inria Paris                        *)
-(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
-(*                                                                            *)
-(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
-(*  terms of the GNU Library General Public License version 2, with a         *)
-(*  special exception on linking, as described in the file LICENSE.           *)
+(*   Copyright Inria. All rights reserved. This file is distributed under     *)
+(*   the terms of the GNU Library General Public License version 2, with a    *)
+(*   special exception on linking, as described in the file LICENSE.          *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -2280,18 +2260,40 @@ let range ((pos1, pos2) as range) =
     sprintf "File \"%s\", line %d, characters %d-%d:\n"
       file line char1 char2
       (* use [char1 + 1] and [char2 + 1] if *not* using Caml mode *)
+
+let tabulate (type a) (is_eof : a -> bool) (lexer : unit -> a) : unit -> a =
+  (* Read tokens from the lexer until we hit an EOF token. *)
+  let rec read tokens =
+    let token = lexer() in
+    let tokens = token :: tokens in
+    if is_eof token then
+      (* Once done, reverse the list and convert it to an array. *)
+      tokens |> List.rev |> Array.of_list
+    else
+      read tokens
+  in
+  (* We now have an array of tokens. *)
+  let tokens = read [] in
+  (* Define a pseudo-lexer that reads from this array. *)
+  let i = ref 0 in
+  let lexer () =
+    (* If this assertion is violated, then the parser is trying to read
+       past an EOF token. This should not happen. *)
+    assert (!i < Array.length tokens);
+    let token = Array.unsafe_get tokens !i in
+    i := !i + 1;
+    token
+  in
+  lexer
 end
 module Printers = struct
 (******************************************************************************)
 (*                                                                            *)
-(*                                   Menhir                                   *)
+(*                                    Menhir                                  *)
 (*                                                                            *)
-(*                       François Pottier, Inria Paris                        *)
-(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
-(*                                                                            *)
-(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
-(*  terms of the GNU Library General Public License version 2, with a         *)
-(*  special exception on linking, as described in the file LICENSE.           *)
+(*   Copyright Inria. All rights reserved. This file is distributed under     *)
+(*   the terms of the GNU Library General Public License version 2, with a    *)
+(*   special exception on linking, as described in the file LICENSE.          *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -2407,14 +2409,11 @@ end
 module InfiniteArray = struct
 (******************************************************************************)
 (*                                                                            *)
-(*                                   Menhir                                   *)
+(*                                    Menhir                                  *)
 (*                                                                            *)
-(*                       François Pottier, Inria Paris                        *)
-(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
-(*                                                                            *)
-(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
-(*  terms of the GNU Library General Public License version 2, with a         *)
-(*  special exception on linking, as described in the file LICENSE.           *)
+(*   Copyright Inria. All rights reserved. This file is distributed under     *)
+(*   the terms of the GNU Library General Public License version 2, with a    *)
+(*   special exception on linking, as described in the file LICENSE.          *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -2472,14 +2471,11 @@ end
 module PackedIntArray = struct
 (******************************************************************************)
 (*                                                                            *)
-(*                                   Menhir                                   *)
+(*                                    Menhir                                  *)
 (*                                                                            *)
-(*                       François Pottier, Inria Paris                        *)
-(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
-(*                                                                            *)
-(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
-(*  terms of the GNU Library General Public License version 2, with a         *)
-(*  special exception on linking, as described in the file LICENSE.           *)
+(*   Copyright Inria. All rights reserved. This file is distributed under     *)
+(*   the terms of the GNU Library General Public License version 2, with a    *)
+(*   special exception on linking, as described in the file LICENSE.          *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -2681,14 +2677,11 @@ end
 module RowDisplacement = struct
 (******************************************************************************)
 (*                                                                            *)
-(*                                   Menhir                                   *)
+(*                                    Menhir                                  *)
 (*                                                                            *)
-(*                       François Pottier, Inria Paris                        *)
-(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
-(*                                                                            *)
-(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
-(*  terms of the GNU Library General Public License version 2, with a         *)
-(*  special exception on linking, as described in the file LICENSE.           *)
+(*   Copyright Inria. All rights reserved. This file is distributed under     *)
+(*   the terms of the GNU Library General Public License version 2, with a    *)
+(*   special exception on linking, as described in the file LICENSE.          *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -2941,14 +2934,11 @@ end
 module LinearizedArray = struct
 (******************************************************************************)
 (*                                                                            *)
-(*                                   Menhir                                   *)
+(*                                    Menhir                                  *)
 (*                                                                            *)
-(*                       François Pottier, Inria Paris                        *)
-(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
-(*                                                                            *)
-(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
-(*  terms of the GNU Library General Public License version 2, with a         *)
-(*  special exception on linking, as described in the file LICENSE.           *)
+(*   Copyright Inria. All rights reserved. This file is distributed under     *)
+(*   the terms of the GNU Library General Public License version 2, with a    *)
+(*   special exception on linking, as described in the file LICENSE.          *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -3023,14 +3013,11 @@ end
 module TableFormat = struct
 (******************************************************************************)
 (*                                                                            *)
-(*                                   Menhir                                   *)
+(*                                    Menhir                                  *)
 (*                                                                            *)
-(*                       François Pottier, Inria Paris                        *)
-(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
-(*                                                                            *)
-(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
-(*  terms of the GNU Library General Public License version 2, with a         *)
-(*  special exception on linking, as described in the file LICENSE.           *)
+(*   Copyright Inria. All rights reserved. This file is distributed under     *)
+(*   the terms of the GNU Library General Public License version 2, with a    *)
+(*   special exception on linking, as described in the file LICENSE.          *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -3162,14 +3149,11 @@ end
 module InspectionTableFormat = struct
 (******************************************************************************)
 (*                                                                            *)
-(*                                   Menhir                                   *)
+(*                                    Menhir                                  *)
 (*                                                                            *)
-(*                       François Pottier, Inria Paris                        *)
-(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
-(*                                                                            *)
-(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
-(*  terms of the GNU Library General Public License version 2, with a         *)
-(*  special exception on linking, as described in the file LICENSE.           *)
+(*   Copyright Inria. All rights reserved. This file is distributed under     *)
+(*   the terms of the GNU Library General Public License version 2, with a    *)
+(*   special exception on linking, as described in the file LICENSE.          *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -3238,14 +3222,11 @@ end
 module InspectionTableInterpreter = struct
 (******************************************************************************)
 (*                                                                            *)
-(*                                   Menhir                                   *)
+(*                                    Menhir                                  *)
 (*                                                                            *)
-(*                       François Pottier, Inria Paris                        *)
-(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
-(*                                                                            *)
-(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
-(*  terms of the GNU Library General Public License version 2, with a         *)
-(*  special exception on linking, as described in the file LICENSE.           *)
+(*   Copyright Inria. All rights reserved. This file is distributed under     *)
+(*   the terms of the GNU Library General Public License version 2, with a    *)
+(*   special exception on linking, as described in the file LICENSE.          *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -3549,14 +3530,11 @@ end
 module TableInterpreter = struct
 (******************************************************************************)
 (*                                                                            *)
-(*                                   Menhir                                   *)
+(*                                    Menhir                                  *)
 (*                                                                            *)
-(*                       François Pottier, Inria Paris                        *)
-(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
-(*                                                                            *)
-(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
-(*  terms of the GNU Library General Public License version 2, with a         *)
-(*  special exception on linking, as described in the file LICENSE.           *)
+(*   Copyright Inria. All rights reserved. This file is distributed under     *)
+(*   the terms of the GNU Library General Public License version 2, with a    *)
+(*   special exception on linking, as described in the file LICENSE.          *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -3792,5 +3770,5 @@ module MakeEngineTable (T : TableFormat.TABLES) = struct
 end
 end
 module StaticVersion = struct
-let require_20210419 = ()
+let require_20230608 = ()
 end

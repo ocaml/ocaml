@@ -26,12 +26,12 @@ let set_to_list s =
 
 let impl_dependencies ast =
   Depend.free_structure_names := String.Set.empty;
-  Depend.add_use_file String.Map.empty [Parsetree.Ptop_def ast];
+  Depend.add_implementation String.Map.empty ast;
   set_to_list !Depend.free_structure_names
 
 let intf_dependencies ast =
   Depend.free_structure_names := String.Set.empty;
-  Depend.add_signature String.Map.empty ast;
+  Depend.add_interface String.Map.empty ast;
   set_to_list !Depend.free_structure_names
 
 

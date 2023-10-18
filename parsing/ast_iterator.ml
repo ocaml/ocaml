@@ -43,8 +43,10 @@ type iterator = {
   expr: iterator -> expression -> unit;
   extension: iterator -> extension -> unit;
   extension_constructor: iterator -> extension_constructor -> unit;
+  implementation: iterator -> implementation -> unit;
   include_declaration: iterator -> include_declaration -> unit;
   include_description: iterator -> include_description -> unit;
+  interface: iterator -> interface -> unit;
   label_declaration: iterator -> label_declaration -> unit;
   location: iterator -> Location.t -> unit;
   module_binding: iterator -> module_binding -> unit;
@@ -646,6 +648,11 @@ let default_iterator =
          this.attributes this popen_attributes
       );
 
+    implementation =
+      (fun this {pimpl_structure; pimpl_loc} ->
+         this.structure this pimpl_structure;
+         this.location this pimpl_loc;
+      );
 
     include_description =
       (fun this {pincl_mod; pincl_attributes; pincl_loc} ->
@@ -661,6 +668,11 @@ let default_iterator =
          this.attributes this pincl_attributes
       );
 
+    interface =
+      (fun this {pintf_signature; pintf_loc} ->
+         this.signature this pintf_signature;
+         this.location this pintf_loc;
+      );
 
     value_binding =
       (fun this {pvb_pat; pvb_expr; pvb_attributes; pvb_loc; pvb_constraint} ->

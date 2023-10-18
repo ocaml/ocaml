@@ -1004,8 +1004,12 @@ and directive_argument i ppf x =
   | Pdir_ident (li) -> line i ppf "Pdir_ident %a\n" fmt_longident li
   | Pdir_bool (b) -> line i ppf "Pdir_bool %s\n" (string_of_bool b)
 
-let interface ppf x = list 0 signature_item ppf x
+let interface ppf x =
+  line 0 ppf "interface %a\n" fmt_location x.pintf_loc;
+  list 0 signature_item ppf x.pintf_signature
 
-let implementation ppf x = list 0 structure_item ppf x
+let implementation ppf x =
+  line 0 ppf "implementation %a\n" fmt_location x.pimpl_loc;
+  list 0 structure_item ppf x.pimpl_structure
 
 let top_phrase ppf x = toplevel_phrase 0 ppf x

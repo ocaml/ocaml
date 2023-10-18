@@ -496,3 +496,15 @@ module Of:
       label with_loc -> core_type -> object_field
     val inherit_: ?loc:loc -> core_type -> object_field
   end
+
+(** Implementation *)
+module Impl:
+  sig
+    val mk: ?loc:loc -> structure -> implementation
+  end
+
+(** Interface *)
+module Intf:
+  sig
+    val mk: ?loc:loc -> signature -> interface
+  end

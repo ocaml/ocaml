@@ -52,8 +52,10 @@ type mapper = {
   extension: mapper -> extension -> extension;
   extension_constructor: mapper -> extension_constructor
                          -> extension_constructor;
+  implementation: mapper -> implementation -> implementation;
   include_declaration: mapper -> include_declaration -> include_declaration;
   include_description: mapper -> include_description -> include_description;
+  interface: mapper -> interface -> interface;
   label_declaration: mapper -> label_declaration -> label_declaration;
   location: mapper -> Location.t -> Location.t;
   module_binding: mapper -> module_binding -> module_binding;
@@ -712,6 +714,11 @@ let default_mapper =
            ~attrs:(this.attributes this popen_attributes)
       );
 
+    implementation =
+      (fun this { pimpl_structure; pimpl_loc } ->
+        Impl.mk ~loc:(this.location this pimpl_loc) (this.structure this pimpl_structure)
+      );
+
     include_description =
       (fun this {pincl_mod; pincl_attributes; pincl_loc} ->
          Incl.mk (this.module_type this pincl_mod)
@@ -726,6 +733,10 @@ let default_mapper =
            ~attrs:(this.attributes this pincl_attributes)
       );
 
+    interface =
+      (fun this { pintf_signature; pintf_loc } ->
+        Intf.mk ~loc:(this.location this pintf_loc) (this.signature this pintf_signature)
+      );
 
     value_binding =
       (fun this {pvb_pat; pvb_expr; pvb_constraint; pvb_attributes; pvb_loc} ->
@@ -1023,7 +1034,7 @@ let extension_of_exn exn =
 
 
 let apply_lazy ~source ~target mapper =
-  let implem ast =
+  let implem { pimpl_structure = ast; pimpl_loc } =
     let fields, ast =
       match ast with
       | {pstr_desc = Pstr_attribute ({attr_name = {txt = "ocaml.ppx.context"};
@@ -1032,18 +1043,20 @@ let apply_lazy ~source ~target mapper =
       | _ -> [], ast
     in
     PpxContext.restore fields;
-    let ast =
+    let ast, loc =
       try
         let mapper = mapper () in
-        mapper.structure mapper ast
+        let loc = mapper.location mapper pimpl_loc in
+        mapper.structure mapper ast, loc
       with exn ->
         [{pstr_desc = Pstr_extension (extension_of_exn exn, []);
-          pstr_loc  = Location.none}]
+          pstr_loc  = Location.none}], Location.none
     in
     let fields = PpxContext.update_cookies fields in
     Str.attribute (PpxContext.mk fields) :: ast
+    |> Impl.mk ~loc
   in
-  let iface ast =
+  let iface { pintf_loc; pintf_signature = ast } =
     let fields, ast =
       match ast with
       | {psig_desc = Psig_attribute ({attr_name = {txt = "ocaml.ppx.context"};
@@ -1053,16 +1066,18 @@ let apply_lazy ~source ~target mapper =
       | _ -> [], ast
     in
     PpxContext.restore fields;
-    let ast =
+    let ast, loc =
       try
         let mapper = mapper () in
-        mapper.signature mapper ast
+        let loc = mapper.location mapper pintf_loc in
+        mapper.signature mapper ast, loc
       with exn ->
         [{psig_desc = Psig_extension (extension_of_exn exn, []);
-          psig_loc  = Location.none}]
+          psig_loc  = Location.none}], Location.none
     in
     let fields = PpxContext.update_cookies fields in
     Sig.attribute (PpxContext.mk fields) :: ast
+    |> Intf.mk ~loc
   in
 
   let ic = open_in_bin source in
@@ -1086,38 +1101,44 @@ let apply_lazy ~source ~target mapper =
   in
 
   if magic = Config.ast_impl_magic_number then
-    rewrite (implem : structure -> structure)
+    rewrite (implem : implementation -> implementation)
   else if magic = Config.ast_intf_magic_number then
-    rewrite (iface : signature -> signature)
+    rewrite (iface : interface -> interface)
   else fail ()
 
-let drop_ppx_context_str ~restore = function
-  | {pstr_desc = Pstr_attribute
+let drop_ppx_context_impl ~restore = function
+  | { pimpl_structure =
+      {pstr_desc = Pstr_attribute
                    {attr_name = {Location.txt = "ocaml.ppx.context"};
                     attr_payload = a;
                     attr_loc = _}}
-    :: items ->
+      :: items;
+      pimpl_loc;
+    } ->
       if restore then
         PpxContext.restore (PpxContext.get_fields a);
-      items
-  | items -> items
+      { pimpl_structure = items; pimpl_loc }
+  | impl -> impl
 
-let drop_ppx_context_sig ~restore = function
-  | {psig_desc = Psig_attribute
-                   {attr_name = {Location.txt = "ocaml.ppx.context"};
-                    attr_payload = a;
-                    attr_loc = _}}
-    :: items ->
+let drop_ppx_context_intf ~restore = function
+  | { pintf_signature = 
+      {psig_desc = Psig_attribute
+                     {attr_name = {Location.txt = "ocaml.ppx.context"};
+                      attr_payload = a;
+                      attr_loc = _}}
+      :: items;
+      pintf_loc;
+    } ->
       if restore then
         PpxContext.restore (PpxContext.get_fields a);
-      items
-  | items -> items
+      { pintf_signature = items; pintf_loc }
+  | intf -> intf
 
-let add_ppx_context_str ~tool_name ast =
-  Ast_helper.Str.attribute (ppx_context ~tool_name ()) :: ast
+let add_ppx_context_impl ~tool_name ast =
+  { ast with pimpl_structure =  Ast_helper.Str.attribute (ppx_context ~tool_name ()) :: ast.pimpl_structure }
 
-let add_ppx_context_sig ~tool_name ast =
-  Ast_helper.Sig.attribute (ppx_context ~tool_name ()) :: ast
+let add_ppx_context_intf ~tool_name ast =
+  { ast with pintf_signature = Ast_helper.Sig.attribute (ppx_context ~tool_name ()) :: ast.pintf_signature }
 
 
 let apply ~source ~target mapper =

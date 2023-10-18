@@ -651,10 +651,16 @@ and 'a class_infos =
    }
 
 type implementation = {
-  structure: structure;
-  coercion: module_coercion;
-  signature: Types.signature;
-  shape: Shape.t;
+  impl_structure: structure;
+  impl_coercion: module_coercion;
+  impl_signature: Types.signature;
+  impl_shape: Shape.t;
+  impl_loc: Location.t
+}
+
+type interface = {
+  intf_signature: signature;
+  intf_loc: Location.t
 }
 
 
