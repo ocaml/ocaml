@@ -160,6 +160,7 @@ let value_descriptions ~loc env ~mark subst id vd1 vd2 =
   Cmt_format.record_value_dependency vd1 vd2;
   if mark_positive mark then
     Env.mark_value_used vd1.val_uid;
+  let vd1 = Subst.value_description Subst.identity vd1 in
   let vd2 = Subst.value_description subst vd2 in
   try
     Ok (Includecore.value_descriptions ~loc env (Ident.name id) vd1 vd2)
@@ -172,6 +173,7 @@ let type_declarations ~loc env ~mark ?old_env:_ subst id decl1 decl2 =
   let mark = mark_positive mark in
   if mark then
     Env.mark_type_used decl1.type_uid;
+  let decl1 = Subst.type_declaration Subst.identity decl1 in
   let decl2 = Subst.type_declaration subst decl2 in
   match
     Includecore.type_declarations ~loc env ~mark
@@ -185,6 +187,7 @@ let type_declarations ~loc env ~mark ?old_env:_ subst id decl1 decl2 =
 
 let extension_constructors ~loc env ~mark  subst id ext1 ext2 =
   let mark = mark_positive mark in
+  let ext1 = Subst.extension_constructor Subst.identity ext1 in
   let ext2 = Subst.extension_constructor subst ext2 in
   match Includecore.extension_constructors ~loc env ~mark id ext1 ext2 with
   | None -> Ok Tcoerce_none
@@ -194,6 +197,7 @@ let extension_constructors ~loc env ~mark  subst id ext1 ext2 =
 (* Inclusion between class declarations *)
 
 let class_type_declarations ~loc ~old_env:_ env  subst decl1 decl2 =
+  let decl1 = Subst.cltype_declaration Subst.identity decl1 in
   let decl2 = Subst.cltype_declaration subst decl2 in
   match Includeclass.class_type_declarations ~loc env decl1 decl2 with
     []     -> Ok Tcoerce_none
@@ -201,6 +205,7 @@ let class_type_declarations ~loc ~old_env:_ env  subst decl1 decl2 =
       Error Error.(Core(Class_type_declarations(diff decl1 decl2 reason)))
 
 let class_declarations ~old_env:_ env  subst decl1 decl2 =
+  let decl1 = Subst.class_declaration Subst.identity decl1 in
   let decl2 = Subst.class_declaration subst decl2 in
   match Includeclass.class_declarations env decl1 decl2 with
     []     -> Ok Tcoerce_none
@@ -486,6 +491,9 @@ and try_modtypes ~in_eq ~loc env ~mark subst mty1 mty2 orig_shape =
       end
   | (Mty_signature sig1, Mty_signature sig2) ->
       begin match
+        (*Format.eprintf "@[Inclusion of@ %a@ in@ %a@]@."
+          Printtyp.raw_signature sig1
+          Printtyp.raw_signature sig2;*)
         signatures ~in_eq ~loc env ~mark subst sig1 sig2 orig_shape
       with
       | Ok _ as ok -> ok

@@ -455,6 +455,10 @@ let raw_list pr ppf = function
       fprintf ppf "@[<1>[%a%t]@]" pr a
         (fun ppf -> List.iter (fun x -> fprintf ppf ";@,%a" pr x) l)
 
+let raw_option pr ppf = function
+    None -> fprintf ppf "None"
+  | Some x -> fprintf ppf "@[<hov>Some(@,%a)@]" pr x
+
 let kind_vars = ref []
 let kind_count = ref 0
 
@@ -493,6 +497,7 @@ let rec raw_type ppf ty =
       ty.scope raw_type_desc ty.desc
   end
 and raw_type_list tl = raw_list raw_type tl
+and raw_type_option ot = raw_option raw_type ot
 and raw_type_desc ppf = function
     Tvar name -> fprintf ppf "Tvar %a" print_name name
   | Tarrow(l,t1,t2,c) ->
@@ -516,10 +521,6 @@ and raw_type_desc ppf = function
         (string_of_field_kind k)
         raw_type t1 raw_type t2
   | Tnil -> fprintf ppf "Tnil"
-  | Tlink t -> fprintf ppf "@[<1>Tlink@,%a@]" raw_type t
-  | Tsubst (t, None) -> fprintf ppf "@[<1>Tsubst@,(%a,None)@]" raw_type t
-  | Tsubst (t, Some t') ->
-      fprintf ppf "@[<1>Tsubst@,(%a,@ Some%a)@]" raw_type t raw_type t'
   | Tunivar name -> fprintf ppf "Tunivar %a" print_name name
   | Tpoly (t, tl) ->
       fprintf ppf "@[<hov1>Tpoly(@,%a,@,%a)@]"
@@ -544,6 +545,13 @@ and raw_type_desc ppf = function
   | Tpackage (p, fl) ->
       fprintf ppf "@[<hov1>Tpackage(@,%a@,%a)@]" path p
         raw_type_list (List.map snd fl)
+  | Tlink t -> fprintf ppf "@[<1>Tlink@,%a@]" raw_type t
+  | Tsubst (t, None) -> fprintf ppf "@[<1>Tsubst(@,%a,None)@]" raw_type t
+  | Tsubst (t, Some t') ->
+      fprintf ppf "@[<1>Tsubst(@,%a,@,Some%a)@]" raw_type t raw_type t'
+  | Texpand (t, p, args) ->
+      fprintf ppf "@[<1>Texpand(@,%a,@,%a,@,%a)@]" raw_type t path p
+        raw_type_list args
 and raw_row_fixed ppf = function
 | None -> fprintf ppf "None"
 | Some Types.Fixed_private -> fprintf ppf "Some Fixed_private"
@@ -567,12 +575,112 @@ and raw_field ppf rf =
           | Some f -> fprintf ppf "@,@[<1>(%a)@]" raw_field f))
     rf
 
-let raw_type_expr ppf t =
+let raw_wrap f ppf x =
   visited := []; kind_vars := []; kind_count := 0;
-  raw_type ppf t;
+  f ppf x;
   visited := []; kind_vars := []
 
+let raw_type_expr ppf t =
+  raw_wrap raw_type ppf t
+
 let () = Btype.print_raw := raw_type_expr
+
+let raw_label_decl ppf ld =
+  fprintf ppf "@[<hov1>{ld_id=%a;@,ld_mutable=%s;@,ld_type=%a}@]"
+    Ident.print ld.ld_id
+    (match ld.ld_mutable with Immutable -> "Immutable" | Mutable -> "Mutable")
+    raw_type ld.ld_type
+
+let raw_cstr_args ppf = function
+  | Cstr_tuple tl ->
+      fprintf ppf "@[<hov>Cstr_tuple@,%a@]" raw_type_list tl
+  | Cstr_record lbl ->
+      fprintf ppf "@[<hov>Cstr_record@,%a@]"
+        (raw_list raw_label_decl) lbl
+
+let raw_cstr_decl ppf cd =
+  fprintf ppf "@[<hov1>{cd_id=%a;@,cd_args=%a;@,cd_res=%a}@]"
+    Ident.print cd.cd_id
+    raw_cstr_args cd.cd_args
+    raw_type_option cd.cd_res
+
+let raw_type_kind ppf tk =
+  match tk with
+    Type_abstract _ -> fprintf ppf "Type_abstract"
+  | Type_open -> fprintf ppf "Type_open"
+  | Type_record (lbl,_) ->
+      fprintf ppf "@[<hov>Type_record@,%a@]"
+        (raw_list raw_label_decl) lbl
+  | Type_variant (csl,_) ->
+      fprintf ppf "@[<hov>Type_variant@,%a@]"
+        (raw_list raw_cstr_decl) csl
+
+let raw_type_decl ppf td =
+  fprintf ppf
+    "@[<hov1>{type_params=%a;@ type_kind=%a;@ type_private=%s;\
+     @ type_manifest=%a}@]"
+    raw_type_list td.type_params
+    raw_type_kind td.type_kind
+    (match td.type_private with Private -> "Private" | Public -> "Public")
+    raw_type_option td.type_manifest
+
+let raw_type_declaration ppf td =
+  raw_wrap raw_type_decl ppf td
+
+let raw_value_desc ppf vd =
+  fprintf ppf "@[<hov1>{val_type=%a;@,val_kind=%s}@]"
+    raw_type vd.val_type
+    (match vd.val_kind with
+    | Val_reg -> "Val_reg"
+    | Val_prim _ -> "Val_prim"
+    | Val_ivar _ -> "Val_ivar"
+    | Val_self _ -> "Val_self"
+    | Val_anc _  -> "Val_anc")
+
+let rec raw_sig_item ppf sg =
+  match sg with
+    Sig_value (id, vd, _vis) ->
+      fprintf ppf "@[<hov>Sig_value(@,%a,@,%a)@]"
+        Ident.print id
+        (raw_wrap raw_value_desc) vd
+  | Sig_type (id, td, _, _) ->
+      fprintf ppf "@[<hov>Sig_type(@,%a,@,%a)@]"
+        Ident.print id
+        raw_type_declaration td
+  | Sig_typext (id, _, _, _) ->
+      fprintf ppf "Sig_typext(%a,..)" Ident.print id
+  | Sig_module (id, _, md, _, _) ->
+      fprintf ppf "@[<hov>Sig_module(@,%a,@,%a,..)@]"
+        Ident.print id
+        raw_modtype md.md_type
+  | Sig_modtype (id, mtd, _) ->
+      fprintf ppf "@[<hov>Sig_modtype(@,%a,@,%a,..)@]"
+        Ident.print id
+        (raw_option raw_modtype) mtd.mtd_type
+  | Sig_class (id, _, _, _) ->
+      fprintf ppf "Sig_class(%a,..)" Ident.print id
+  | Sig_class_type (id, _, _, _) ->
+      fprintf ppf "Sig_class_type(%a,..)" Ident.print id
+
+and raw_signature ppf sg = raw_list raw_sig_item ppf sg
+
+and raw_modtype ppf mty =
+  match mty with
+    Mty_ident id -> fprintf ppf "Mty_ident(%a)" path id
+  | Mty_alias id -> fprintf ppf "Mty_alias(%a)" path id
+  | Mty_signature sg ->
+      fprintf ppf "@[<hov>Mty_signature@,%a@]" raw_signature sg
+  | Mty_functor (fp, mty) ->
+      fprintf ppf "@[<hov>Mty_functor(@,%a,@,%a)@]"
+        raw_func_param fp
+        raw_modtype mty
+
+and raw_func_param ppf = function
+    Unit -> fprintf ppf "Unit"
+  | Named (ido, mty) ->
+      fprintf ppf "@[<hov>Named(@,%a,@,%a)@]"
+        (raw_option Ident.print) ido
+        raw_modtype mty
 
 (* Normalize paths *)
 
@@ -627,10 +735,17 @@ let rec uniq = function
     [] -> true
   | a :: l -> not (List.memq (a : int) l) && uniq l
 
+let printer_get_desc ty =
+  match get_expand ty with
+    Some (path, args)
+    when not (is_Tvar ty || List.exists (deep_occur ty) args) ->
+      Tconstr (path, args, ref Mnil)
+  | _ -> get_desc ty
+
 let rec normalize_type_path ?(cache=false) env p =
   try
     let (params, ty, _) = Env.find_type_expansion p env in
-    match get_desc ty with
+    match printer_get_desc ty with
       Tconstr (p1, tyl, _) ->
         if List.length params = List.length tyl
         && List.for_all2 eq_type params tyl
@@ -799,7 +914,7 @@ let nameable_row row =
    short-circuits the traversal of the [type_expr], so that it covers only the
    subterms that would be printed by the type printer. *)
 let printer_iter_type_expr f ty =
-  match get_desc ty with
+  match printer_get_desc ty with
   | Tconstr(p, tyl, _) ->
       let (_p', s) = best_type_path p in
       List.iter f (apply_subst s tyl)
@@ -1082,14 +1197,14 @@ let add_printed_alias_proxy ~non_gen px =
 let add_printed_alias ty = add_printed_alias_proxy (proxy ty)
 
 let aliasable ty =
-  match get_desc ty with
+  match printer_get_desc ty with
     Tvar _ | Tunivar _ | Tpoly _ -> false
   | Tconstr (p, _, _) ->
       not (is_nth (snd (best_type_path p)))
   | _ -> true
 
 let should_visit_object ty =
-  match get_desc ty with
+  match printer_get_desc ty with
   | Tvariant row -> not (static_row row)
   | Tobject _ -> opened_object ty
   | _ -> false
@@ -1097,9 +1212,8 @@ let should_visit_object ty =
 let rec mark_loops_rec visited ty =
   let px = proxy ty in
   if List.memq px visited && aliasable ty then add_alias_proxy px else
-    let tty = Transient_expr.repr ty in
     let visited = px :: visited in
-    match tty.desc with
+    match printer_get_desc ty with
     | Tvariant _ | Tobject _ ->
         if List.memq px !visited_objects then add_alias_proxy px else begin
           if should_visit_object ty then
@@ -1154,7 +1268,7 @@ let rec tree_of_typexp mode ty =
 
   let pr_typ () =
     let tty = Transient_expr.repr ty in
-    match tty.desc with
+    match printer_get_desc ty with
     | Tvar _ ->
         let non_gen = is_non_gen mode ty in
         let name_gen = Names.new_var_name ~non_gen ty in
@@ -1165,7 +1279,7 @@ let rec tree_of_typexp mode ty =
         in
         let t1 =
           if is_optional l then
-            match get_desc ty1 with
+            match printer_get_desc ty1 with
             | Tconstr(path, [ty], _)
               when Path.same path Predef.path_option ->
                 tree_of_typexp mode ty
@@ -1221,11 +1335,6 @@ let rec tree_of_typexp mode ty =
         tree_of_typobject mode fi !nm
     | Tnil | Tfield _ ->
         tree_of_typobject mode ty None
-    | Tsubst _ ->
-        (* This case should only happen when debugging the compiler *)
-        Otyp_stuff "<Tsubst>"
-    | Tlink _ ->
-        fatal_error "Printtyp.tree_of_typexp"
     | Tpoly (ty, []) ->
         tree_of_typexp mode ty
     | Tpoly (ty, tyl) ->
@@ -1254,6 +1363,11 @@ let rec tree_of_typexp mode ty =
               tree_of_typexp mode ty
             )) fl in
         Otyp_module (tree_of_path (Some Module_type) p, fl)
+    | Tsubst _ ->
+        (* This case should only happen when debugging the compiler *)
+        Otyp_stuff "<Tsubst>"
+    | Tlink _ | Texpand _ ->
+        fatal_error "Printtyp.tree_of_typexp"
   in
   if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;
   alias_nongen_row mode px ty;
@@ -1439,7 +1553,7 @@ let prepare_decl id decl =
     | Some ty ->
         let ty =
           (* Special hack to hide variant name *)
-          match get_desc ty with
+          match printer_get_desc ty with
             Tvariant row ->
               begin match row_name row with
                 Some (Pident id', _) when Ident.same id id' ->
@@ -2143,8 +2257,8 @@ let incompatibility_phrase (type variety) : variety trace_format -> string =
 (* Print a unification error *)
 
 let same_path t t' =
-  eq_type t t' ||
-  match get_desc t, get_desc t' with
+  eq_type t t' && get_expand t = None && get_expand t' = None ||
+  match printer_get_desc t, printer_get_desc t' with
     Tconstr(p,tl,_), Tconstr(p',tl',_) ->
       let (p1, s1) = best_type_path p and (p2, s2)  = best_type_path p' in
       begin match s1, s2 with
@@ -2155,8 +2269,8 @@ let same_path t t' =
           List.for_all2 eq_type tl tl'
       | _ -> false
       end
-  | _ ->
-      false
+  | Tconstr _, _ | _, Tconstr _ -> false
+  | _ -> true
 
 type 'a diff = Same of 'a | Diff of 'a * 'a
 
@@ -2166,8 +2280,8 @@ let trees_of_type_expansion mode Errortrace.{ty = t; expanded = t'} =
   if same_path t t'
   then begin add_delayed (proxy t); Same (tree_of_typexp mode t) end
   else begin
-    mark_loops t';
     let t' = if proxy t == proxy t' then unalias t' else t' in
+    mark_loops t';
     (* beware order matter due to side effect,
        e.g. when printing object types *)
     let first = tree_of_typexp mode t in
@@ -2263,7 +2377,7 @@ let type_path_list =
 
 (* Hide variant name and var, to force printing the expanded type *)
 let hide_variant_name t =
-  match get_desc t with
+  match printer_get_desc t with
   | Tvariant row ->
       let Row {fields; more; name; fixed; closed} = row_repr row in
       if name = None then t else
@@ -2280,7 +2394,7 @@ let prepare_expansion Errortrace.{ty; expanded} =
   Errortrace.{ty; expanded}
 
 let may_prepare_expansion compact (Errortrace.{ty; expanded} as ty_exp) =
-  match get_desc expanded with
+  match printer_get_desc expanded with
     Tvariant _ | Tobject _ when compact ->
       reserve_names ty; Errortrace.{ty; expanded = ty}
   | _ -> prepare_expansion ty_exp

@@ -1075,7 +1075,7 @@ type _ int_bar = IB_constr : < bar : int; .. > int_bar
 Line 10, characters 3-4:
 10 |   (x:<foo:int>)
         ^
-Error: This expression has type "t" = "< foo : int; .. >"
+Error: This expression has type "t" = "< bar : int; foo : int; .. >"
        but an expression was expected of type "< foo : int >"
        Type "$0" = "< bar : int; .. >" is not compatible with type "<  >"
        The second object type has no method "bar"
@@ -1089,7 +1089,7 @@ let g (type t) (x:t) (e : t int_foo) (e' : t int_bar) =
 Line 3, characters 3-4:
 3 |   (x:<foo:int;bar:int>)
        ^
-Error: This expression has type "t" = "< foo : int; .. >"
+Error: This expression has type "t" = "< bar : int; foo : int; .. >"
        but an expression was expected of type "< bar : int; foo : int >"
        Type "$0" = "< bar : int; .. >" is not compatible with type "< bar : int >"
        The first object type has an abstract row, it cannot be closed

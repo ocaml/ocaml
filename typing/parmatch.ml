@@ -360,7 +360,7 @@ let clean_copy ty =
   else Subst.type_expr Subst.identity ty
 
 let get_constructor_type_path ty tenv =
-  let ty = Ctype.expand_head tenv (clean_copy ty) in
+  let ty = Ctype.expand_head_nolink tenv (clean_copy ty) in
   match get_desc ty with
   | Tconstr (path,_,_) -> path
   | _ -> assert false

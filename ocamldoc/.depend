@@ -671,12 +671,10 @@ odoc_parser.cmi : \
 odoc_print.cmo : \
     ../typing/types.cmi \
     ../typing/printtyp.cmi \
-    ../typing/btype.cmi \
     odoc_print.cmi
 odoc_print.cmx : \
     ../typing/types.cmx \
     ../typing/printtyp.cmx \
-    ../typing/btype.cmx \
     odoc_print.cmi
 odoc_print.cmi : \
     ../typing/types.cmi

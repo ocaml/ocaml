@@ -35,7 +35,7 @@ let f (x : 'a vlist) = (x : 'b vlist)
  script;
  {
    module = "pr3918c.ml";
-   ocamlc_byte_exit_status = "2";
+   ocamlc_byte_exit_status = "0";
    ocamlc.byte;
  }{
    check-ocamlc.byte-output;

@@ -8,7 +8,7 @@ Line 1, characters 0-32:
 1 | type 'a t = [`A of 'a t t] as 'a;; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The type abbreviation "t" is cyclic:
-         "('a t as 'b) t as 'a" contains "'b"
+         "[ `A of 'a ] as 'a" contains "'a"
 |}, Principal{|
 Line 1, characters 0-32:
 1 | type 'a t = [`A of 'a t t] as 'a;; (* fails *)
@@ -37,16 +37,20 @@ type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
 Line 1, characters 0-47:
 1 | type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The definition of "t" contains a cycle:
-         "'a t as 'a" contains "'a"
+Error: This recursive type is not regular.
+       The type constructor "t" is defined as
+         type "'a t"
+       but it is used as
+         "'a t t".
+       All uses need to match the definition for the recursive type to be regular.
 |}];;
 type 'a t = [`A of 'a t] constraint 'a = 'a t;; (* fails since 4.04 *)
 [%%expect{|
-Line 1, characters 0-45:
+Line 1, characters 5-7:
 1 | type 'a t = [`A of 'a t] constraint 'a = 'a t;; (* fails since 4.04 *)
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The definition of "t" contains a cycle:
-         "'a t as 'a" contains "'a"
+         ^^
+Error: Constraints are not satisfied in this type.
+       Type "'a" should be an instance of "'b t"
 |}];;
 type 'a t = [`A of 'a] as 'a;;
 [%%expect{|
@@ -73,7 +77,7 @@ val f : 'a -> unit = <fun>
 
 let f (x : 'a t) (y : 'a) = x = y;;
 [%%expect{|
-val f : 'a t -> 'a -> bool = <fun>
+val f : 'a -> 'a -> bool = <fun>
 |}];;
 
 (* PR#6505 *)
@@ -85,11 +89,11 @@ module type PR6505 = sig
 end
 ;; (* fails *)
 [%%expect{|
-Line 3, characters 2-44:
+Line 3, characters 6-8:
 3 |   and 'o abs constraint 'o = 'o is_an_object
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The definition of "abs" contains a cycle:
-         "'a is_an_object as 'a" contains "'a"
+          ^^
+Error: Constraints are not satisfied in this type.
+       Type "'o" should be an instance of "< .. > is_an_object"
 |}];;
 
 module PR6505a_old = struct
@@ -110,20 +114,18 @@ module PR6505a = struct
   type ('k,'l) abs = 'l constraint 'k = 'l is_an_object
   let y : ('o, 'o) abs = object end
 end;;
-let _ = PR6505a.y#bang;; (* fails *)
+let _ = lazy PR6505a.y#bang;; (* fails *)
 [%%expect{|
 module PR6505a :
   sig
     type 'o is_an_object = 'o constraint 'o = < .. >
-    type ('a, 'b) abs = 'b constraint 'a = 'b is_an_object
-      constraint 'b = < .. >
-    val y : (<  > is_an_object, <  > is_an_object) abs
+    type ('a, 'b) abs = 'a constraint 'a = < .. > constraint 'b = 'a
+    val y : (<  >, <  >) abs
   end
-Line 6, characters 8-17:
-6 | let _ = PR6505a.y#bang;; (* fails *)
-            ^^^^^^^^^
-Error: This expression has type
-         "(<  > PR6505a.is_an_object, <  > PR6505a.is_an_object) PR6505a.abs"
+Line 6, characters 13-22:
+6 | let _ = lazy PR6505a.y#bang;; (* fails *)
+                 ^^^^^^^^^
+Error: This expression has type "<  >"
        It has no method "bang"
 |}, Principal{|
 module PR6505a :
@@ -133,10 +135,10 @@ module PR6505a :
       constraint 'b = < .. >
     val y : (<  >, <  >) abs
   end
-Line 6, characters 8-17:
-6 | let _ = PR6505a.y#bang;; (* fails *)
-            ^^^^^^^^^
-Error: This expression has type "(<  >, <  >) PR6505a.abs"
+Line 6, characters 13-22:
+6 | let _ = lazy PR6505a.y#bang;; (* fails *)
+                 ^^^^^^^^^
+Error: This expression has type "<  >"
        It has no method "bang"
 |}]
 
@@ -145,23 +147,22 @@ module PR6505b = struct
   type ('k,'l) abs = 'l constraint 'k = 'l is_an_object
   let x : ('a, 'a) abs = `Foo 6
 end;;
-let () = print_endline (match PR6505b.x with `Bar s -> s);; (* fails *)
+let _ = lazy (match PR6505b.x with `Bar s -> s);; (* fails *)
 [%%expect{|
 module PR6505b :
   sig
     type 'o is_an_object = 'o constraint 'o = [>  ]
-    type ('a, 'o) abs = 'o constraint 'a = 'o is_an_object
-      constraint 'o = [>  ]
-    val x : (([> `Foo of int ] as 'a) is_an_object, 'a is_an_object) abs
+    type ('a, 'b) abs = 'a constraint 'a = [>  ] constraint 'b = 'a
+    val x : ([> `Foo of int ] as 'a, 'a) abs
   end
-Line 6, characters 23-57:
-6 | let () = print_endline (match PR6505b.x with `Bar s -> s);; (* fails *)
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Line 6, characters 13-47:
+6 | let _ = lazy (match PR6505b.x with `Bar s -> s);; (* fails *)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8 [partial-match]: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 `Foo _
 
-Exception: Match_failure ("", 6, 23).
+- : 'a lazy_t = <lazy>
 |}]
 
 (* #9866, #9873 *)
@@ -184,12 +185,8 @@ type 'a t = 'b constraint 'a = ('b * 'b) t;;
 Line 1, characters 0-42:
 1 | type 'a t = 'b constraint 'a = ('b * 'b) t;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This recursive type is not regular.
-       The type constructor "t" is defined as
-         type "('b * 'b) t t"
-       but it is used as
-         "('b * 'b) t".
-       All uses need to match the definition for the recursive type to be regular.
+Error: The definition of "t" contains a cycle:
+         "'a * 'a" contains "'a * 'a"
 |}]
 
 type 'a t = 'a * 'b constraint _ * 'a = 'b t;;
@@ -205,9 +202,12 @@ type 'a t = 'a * 'b constraint 'a = 'b t;;
 Line 1, characters 0-40:
 1 | type 'a t = 'a * 'b constraint 'a = 'b t;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The type abbreviation "t" is cyclic:
-         "'a t t" = "'a t * 'a",
-         "'a t * 'a" contains "'a t"
+Error: This recursive type is not regular.
+       The type constructor "t" is defined as
+         type "'b t t"
+       but it is used as
+         "'b t".
+       All uses need to match the definition for the recursive type to be regular.
 |}]
 
 type 'a t = <a : 'a; b : 'b> constraint 'a = 'b t;;
@@ -249,12 +249,8 @@ module rec M : sig type 'a t = 'b constraint 'a = ('b * 'b) t end = M;;
 Line 1, characters 19-61:
 1 | module rec M : sig type 'a t = 'b constraint 'a = ('b * 'b) t end = M;;
                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This recursive type is not regular.
-       The type constructor "t" is defined as
-         type "('b * 'b) t t"
-       but it is used as
-         "('b * 'b) t".
-       All uses need to match the definition for the recursive type to be regular.
+Error: The definition of "t" contains a cycle:
+         "'a * 'a" contains "'a * 'a"
 |}]
 
 module type S =
@@ -318,13 +314,11 @@ type ('node,'self) extension = < node: 'node; self: 'self > as 'self
 type 'ext node = < > constraint 'ext = ('ext node, 'self) extension;;
 [%%expect{|
 type ('node, 'a) extension = 'a constraint 'a = < node : 'node; self : 'a >
-type 'a node = <  >
-  constraint 'a = ('a node, < node : 'a node; self : 'b > as 'b) extension
+type 'a node = <  > constraint 'a = < node : 'a node; self : 'a >
 |}, Principal{|
 type ('node, 'a) extension = < node : 'node; self : 'b > as 'b
   constraint 'a = < node : 'node; self : 'a >
-type 'a node = <  >
-  constraint 'a = ('a node, < node : 'a node; self : 'b > as 'b) extension
+type 'a node = <  > constraint 'a = < node : 'a node; self : 'a >
 |}]
 
 class type ['node] extension =

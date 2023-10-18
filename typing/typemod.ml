@@ -2258,7 +2258,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
           ~post:Typecore.generalize_structure_exp
       in
       let mty =
-        match get_desc (Ctype.expand_head env exp.exp_type) with
+        match get_desc (Ctype.expand_head_nolink env exp.exp_type) with
           Tpackage (p, fl) ->
             if List.exists (fun (_n, t) -> Ctype.free_variables t <> []) fl then
               raise (Error (smod.pmod_loc, env,
