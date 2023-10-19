@@ -391,7 +391,7 @@ AC_ARG_ENABLE([ocamldoc],
   [AS_HELP_STRING([--disable-ocamldoc],
     [do not build the ocamldoc documentation system])],
   [],
-  [ocamldoc=auto])
+  [enable_ocamldoc='auto'])
 
 AC_ARG_WITH([odoc],
   [AS_HELP_STRING([--with-odoc],
@@ -471,7 +471,9 @@ AC_ARG_ENABLE([reserved-header-bits],
 
 AC_ARG_ENABLE([stdlib-manpages],
   [AS_HELP_STRING([--disable-stdlib-manpages],
-    [do not build or install the library man pages])])
+    [do not build or install the library man pages])],
+  [],
+  [enable_stdlib_manpages='auto'])
 
 AC_ARG_ENABLE([warn-error],
   [AS_HELP_STRING([--enable-warn-error],
@@ -527,6 +529,20 @@ AS_IF([test x"$enable_unix_lib" = "xno" || test x"$enable_str_lib" = "xno"],
     [enable_ocamldoc="no"
      build_ocamltex=false])],
   [build_ocamltex=true])
+
+AS_IF([test x"$enable_ocamldoc" = "xno"],
+  [AS_IF([test x"$enable_stdlib_manpages" = "xyes"],
+    [AC_MSG_ERROR([--enable-stdlib-manpages requires ocamldoc])])
+  ocamldoc_target=""
+  ocamldoc_opt_target=""
+  with_ocamldoc=""
+  enable_stdlib_manpages=no
+  build_ocamldoc=false],
+  [ocamldoc_target=ocamldoc
+  ocamldoc_opt_target=ocamldoc.opt
+  with_ocamldoc=ocamldoc
+  build_ocamldoc=true
+  AC_CONFIG_FILES([ocamldoc/META])])
 
 # Initialization of libtool
 # Allow the MSVC linker to be found even if ld isn't installed.
@@ -2251,16 +2267,8 @@ AS_IF([test x"$enable_installing_source_artifacts" = "xno"],
   [install_source_artifacts=false],
   [install_source_artifacts=true])
 
-AS_IF([test x"$enable_ocamldoc" = "xno"],
-  [ocamldoc_target=""
-  ocamldoc_opt_target=""
-  with_ocamldoc=""
-  build_ocamldoc=false],
-  [ocamldoc_target=ocamldoc
-  ocamldoc_opt_target=ocamldoc.opt
-  with_ocamldoc=ocamldoc
-  build_ocamldoc=true
-  AC_CONFIG_FILES([ocamldoc/META])])
+AS_IF([test x"$enable_stdlib_manpages" != "xno"],
+  [build_libraries_manpages=true],[build_libraries_manpages=false])
 
 documentation_tool_cmd=''
 AC_ARG_WITH([odoc],
@@ -2446,9 +2454,6 @@ AS_CASE([$host],
     # This is required as otherwise floats are printed
     # as "Infinity" and "Inf" instead of the expected "inf"
     [AC_DEFINE([HAS_BROKEN_PRINTF])])
-
-AS_IF([test x"$enable_stdlib_manpages" != "xno"],
-  [build_libraries_manpages=true],[build_libraries_manpages=false])
 
 # Do not permanently cache the result of flexdll.h
 unset ac_cv_header_flexdll_h
