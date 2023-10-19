@@ -1021,6 +1021,16 @@ void caml_compact_heap(caml_domain_state* domain_state,
     struct compact_pool_stat* pool_stats = caml_stat_alloc_noexc(
       sizeof(struct compact_pool_stat) * num_pools);
 
+    /* if we're unable to allocate pool_stats here then we should avoid
+      evacuating this size class. It's unlikely but it may be that we had
+      better success with an earlier size class and that results in some
+      memory being freed up. */
+    if( pool_stats == NULL ) {
+      caml_gc_log("Unable to allocate pool_stats for size class %d", sz_class);
+
+      continue;
+    }
+
     cur_pool = heap->unswept_avail_pools[sz_class];
 
     /* Count the number of free and live blocks in each pool. Note that a live
