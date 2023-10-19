@@ -222,13 +222,13 @@ AFL_INSTRUMENT=@afl@
 FLAT_FLOAT_ARRAY=@flat_float_array@
 FUNCTION_SECTIONS=@function_sections@
 AWK=@AWK@
-STDLIB_MANPAGES=@stdlib_manpages@
 NAKED_POINTERS=false
 
 # Deprecated variables
 
 ## Variables deprecated since OCaml 5.2
 
+STDLIB_MANPAGES=@build_libraries_manpages@
 WITH_OCAMLDOC=@with_ocamldoc@
 
 ## Variables deprecated since OCaml 5.0

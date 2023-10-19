@@ -785,7 +785,7 @@ QS
 ocaml_libdir
 ocaml_bindir
 compute_deps
-stdlib_manpages
+build_libraries_manpages
 PACKLD
 mkexe_ldflags_exp
 mkdll_ldflags_exp
@@ -20137,9 +20137,9 @@ esac
 
 if test x"$enable_stdlib_manpages" != "xno"
 then :
-  stdlib_manpages=true
+  build_libraries_manpages=true
 else $as_nop
-  stdlib_manpages=false
+  build_libraries_manpages=false
 fi
 
 # Do not permanently cache the result of flexdll.h

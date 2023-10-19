@@ -756,7 +756,7 @@ endif
 	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt \
 	  $(OCAMLDOC_OPT_TARGET) \
 	  $(OCAMLTEST_OPT) othertools ocamlnat
-ifeq "$(build_ocamldoc)-$(STDLIB_MANPAGES)" "true-true"
+ifeq "$(build_ocamldoc)-$(build_libraries_manpages)" "true-true"
 	$(MAKE) manpages
 endif
 
@@ -796,7 +796,7 @@ all: coreall
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(OCAMLDOC_TARGET) \
          $(WITH_OCAMLTEST)
 	$(MAKE) othertools
-ifeq "$(build_ocamldoc)-$(STDLIB_MANPAGES)" "true-true"
+ifeq "$(build_ocamldoc)-$(build_libraries_manpages)" "true-true"
 	$(MAKE) manpages
 endif
 
@@ -2511,7 +2511,7 @@ ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	  "$(INSTALL_LIBDIR)/ocamldoc"
 endif
 endif
-ifeq "$(build_ocamldoc)-$(STDLIB_MANPAGES)" "true-true"
+ifeq "$(build_ocamldoc)-$(build_libraries_manpages)" "true-true"
 	$(MAKE) -C api_docgen install
 endif
 	if test -n "$(WITH_DEBUGGER)"; then \

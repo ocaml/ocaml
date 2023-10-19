@@ -217,7 +217,7 @@ AC_SUBST([flexdll_chain])
 AC_SUBST([mkdll_ldflags_exp])
 AC_SUBST([mkexe_ldflags_exp])
 AC_SUBST([PACKLD])
-AC_SUBST([stdlib_manpages])
+AC_SUBST([build_libraries_manpages])
 AC_SUBST([compute_deps])
 AC_SUBST([ocaml_bindir])
 AC_SUBST([ocaml_libdir])
@@ -2448,7 +2448,7 @@ AS_CASE([$host],
     [AC_DEFINE([HAS_BROKEN_PRINTF])])
 
 AS_IF([test x"$enable_stdlib_manpages" != "xno"],
-  [stdlib_manpages=true],[stdlib_manpages=false])
+  [build_libraries_manpages=true],[build_libraries_manpages=false])
 
 # Do not permanently cache the result of flexdll.h
 unset ac_cv_header_flexdll_h
