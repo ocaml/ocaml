@@ -805,7 +805,7 @@ void caml_verify_heap_from_stw(caml_domain_state *domain) {
   caml_stat_free(st);
 }
 
-/* Compaction start */
+/* Compaction starts here. See [caml_compact_heap] for entry. */
 
 /* Given a single value `v`, found at `p`, check if it points to an
    evacuated block, and if so update it using the forwarding pointer
