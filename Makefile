@@ -528,7 +528,7 @@ $(foreach PROGRAM, $(C_PROGRAMS),\
 # OCaml programs that are compiled in both bytecode and native code
 
 OCAML_PROGRAMS = ocamlc ocamlopt lex/ocamllex $(TOOLS_NAT_PROGRAMS) \
-  ocamltest/ocamltest
+  ocamldoc/ocamldoc ocamltest/ocamltest
 
 $(foreach PROGRAM, $(OCAML_PROGRAMS),\
   $(eval $(call OCAML_PROGRAM,$(PROGRAM))))
@@ -580,6 +580,10 @@ $(COMPILERLIBS:=.cma): \
 compilerlibs/ocamlcommon.cma: $(ALL_CONFIG_CMO)
 
 OCAML_LIBRARIES = $(COMPILERLIBS)
+
+ifeq "$(build_ocamldoc)" "true"
+OCAML_LIBRARIES += ocamldoc/odoc_info
+endif
 
 $(foreach LIBRARY, $(OCAML_LIBRARIES),\
   $(eval $(call OCAML_LIBRARY,$(LIBRARY))))
@@ -742,6 +746,9 @@ ifeq "$(BOOTSTRAPPING_FLEXDLL)" "true"
 	$(MAKE) flexlink.opt$(EXE)
 endif
 	$(MAKE) ocamlc.opt
+# TODO: introduce OPTIONAL_LIBRARIES and OPTIONAL_TOOLS variables to be
+# computed at configure time to keep track of which tools and libraries
+# need to be built
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(OCAMLDOC_TARGET) \
 	  $(WITH_OCAMLTEST)
 	$(MAKE) ocamlopt.opt
@@ -1528,8 +1535,7 @@ clean::
 
 # Dependencies
 
-subdirs = stdlib $(addprefix otherlibs/, $(ALL_OTHERLIBS)) \
-  ocamldoc
+subdirs = stdlib $(addprefix otherlibs/, $(ALL_OTHERLIBS))
 
 .PHONY: alldepend
 alldepend: depend
@@ -1674,13 +1680,85 @@ partialclean:: partialclean-menhir
 
 # OCamldoc
 
+# First define the odoc_info library used to build OCamldoc
+
+odoc_info_SOURCES = $(addprefix ocamldoc/,\
+  odoc_config.mli odoc_config.ml \
+  odoc_messages.mli odoc_messages.ml \
+  odoc_global.mli odoc_global.ml \
+  odoc_types.mli odoc_types.ml \
+  odoc_misc.mli odoc_misc.ml \
+  odoc_text_parser.mly \
+  odoc_text_lexer.mli odoc_text_lexer.mll \
+  odoc_text.mli odoc_text.ml \
+  odoc_name.mli odoc_name.ml \
+  odoc_parameter.mli odoc_parameter.ml \
+  odoc_value.mli odoc_value.ml \
+  odoc_type.mli odoc_type.ml \
+  odoc_extension.mli odoc_extension.ml \
+  odoc_exception.mli odoc_exception.ml \
+  odoc_class.mli odoc_class.ml \
+  odoc_module.mli odoc_module.ml \
+  odoc_print.mli odoc_print.ml \
+  odoc_str.mli odoc_str.ml \
+  odoc_comments_global.mli odoc_comments_global.ml \
+  odoc_parser.mly \
+  odoc_lexer.mli odoc_lexer.mll \
+  odoc_see_lexer.mli odoc_see_lexer.mll \
+  odoc_env.mli odoc_env.ml \
+  odoc_merge.mli odoc_merge.ml \
+  odoc_sig.mli odoc_sig.ml \
+  odoc_ast.mli odoc_ast.ml \
+  odoc_search.mli odoc_search.ml \
+  odoc_scan.mli odoc_scan.ml \
+  odoc_cross.mli odoc_cross.ml \
+  odoc_comments.mli odoc_comments.ml \
+  odoc_dep.mli odoc_dep.ml \
+  odoc_analyse.mli odoc_analyse.ml \
+  odoc_info.mli odoc_info.ml)
+
+ocamldoc_LIBRARIES = \
+  compilerlibs/ocamlcommon \
+  $(addprefix otherlibs/,\
+    unix/unix \
+    str/str \
+    dynlink/dynlink) \
+  ocamldoc/odoc_info
+
+ocamldoc_SOURCES = $(addprefix ocamldoc/,\
+  odoc_dag2html.mli odoc_dag2html.ml \
+  odoc_to_text.mli odoc_to_text.ml \
+  odoc_ocamlhtml.mli odoc_ocamlhtml.mll \
+  odoc_html.mli odoc_html.ml \
+  odoc_man.mli odoc_man.ml \
+  odoc_latex_style.mli odoc_latex_style.ml \
+  odoc_latex.mli odoc_latex.ml \
+  odoc_texi.mli odoc_texi.ml \
+  odoc_dot.mli odoc_dot.ml \
+  odoc_gen.mli odoc_gen.ml \
+  odoc_args.mli odoc_args.ml \
+  odoc.mli odoc.ml)
+
+# OCamldoc files to install (a subset of what is built)
+
+OCAMLDOC_LIBMLIS = $(addprefix ocamldoc/,$(addsuffix .mli,\
+  odoc_dep odoc_dot odoc_extension odoc_html odoc_info odoc_latex \
+  odoc_latex_style odoc_man odoc_messages odoc_ocamlhtml odoc_parameter \
+  odoc_texi odoc_text_lexer odoc_to_text odoc_type odoc_value))
+OCAMLDOC_LIBCMIS=$(OCAMLDOC_LIBMLIS:.mli=.cmi)
+OCAMLDOC_LIBCMTS=$(OCAMLDOC_LIBMLIS:.mli=.cmt) $(OCAMLDOC_LIBMLIS:.mli=.cmti)
+
+ocamldoc/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
+
 .PHONY: ocamldoc
-ocamldoc: ocamlc ocamlyacc ocamllex otherlibraries
-	$(MAKE) -C ocamldoc all
+ocamldoc: ocamldoc/ocamldoc$(EXE) ocamldoc/odoc_test.cmo
+
+ocamldoc/ocamldoc$(EXE): ocamlc ocamlyacc ocamllex
 
 .PHONY: ocamldoc.opt
-ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
-	$(MAKE) -C ocamldoc opt.opt
+ocamldoc.opt: ocamldoc/ocamldoc.opt$(EXE)
+
+ocamldoc/ocamldoc.opt$(EXE): ocamlc.opt ocamlyacc ocamllex
 
 # OCamltest
 
@@ -1803,7 +1881,14 @@ manpages:
 	$(MAKE) -C api_docgen man
 
 partialclean::
-	$(MAKE) -C ocamldoc clean
+	rm -f ocamldoc/\#*\#
+	rm -f ocamldoc/*.cm[aiotx] ocamldoc/*.cmxa ocamldoc/*.cmti \
+	  ocamldoc/*.a ocamldoc/*.lib ocamldoc/*.o ocamldoc/*.obj
+	rm -f ocamldoc/odoc_parser.output ocamldoc/odoc_text_parser.output
+	rm -f ocamldoc/odoc_lexer.ml ocamldoc/odoc_text_lexer.ml \
+	  ocamldoc/odoc_see_lexer.ml ocamldoc/odoc_ocamlhtml.ml
+	rm -f ocamldoc/odoc_parser.ml ocamldoc/odoc_parser.mli \
+	  ocamldoc/odoc_text_parser.ml ocamldoc/odoc_text_parser.mli
 
 partialclean::
 	$(MAKE) -C api_docgen clean
@@ -1826,6 +1911,10 @@ otherlibraries: ocamltools
 otherlibrariesopt:
 	$(MAKE) -C otherlibs allopt
 
+otherlibs/unix/unix.cmxa: otherlibrariesopt
+otherlibs/dynlink/dynlink.cmxa: otherlibrariesopt
+otherlibs/str/str.cmxa: otherlibrariesopt
+
 partialclean::
 	$(MAKE) -C otherlibs partialclean
 
@@ -1844,6 +1933,7 @@ ocamldebug_LIBRARIES = compilerlibs/ocamlcommon \
 
 otherlibs/unix/unix.cma: otherlibraries
 otherlibs/dynlink/dynlink.cma: otherlibraries
+otherlibs/str/str.cma: otherlibraries
 
 debugger/%: VPATH += otherlibs/unix otherlibs/dynlink
 
@@ -2276,7 +2366,7 @@ depend: beforedepend
          lambda file_formats middle_end/closure middle_end/flambda \
          middle_end/flambda/base_types \
          driver toplevel toplevel/byte toplevel/native lex tools debugger \
-	 ocamltest; \
+	 ocamldoc ocamltest; \
 	 do \
 	   $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $$d $(INCLUDES) \
 	   $(OCAMLDEPFLAGS) $$d/*.mli $$d/*.ml \
@@ -2286,7 +2376,7 @@ depend: beforedepend
 .PHONY: distclean
 distclean: clean
 	$(MAKE) -C manual distclean
-	$(MAKE) -C ocamldoc distclean
+	rm -f ocamldoc/META
 	rm -f $(addprefix ocamltest/,ocamltest_config.ml ocamltest_unix.ml)
 	$(MAKE) -C otherlibs distclean
 	rm -f $(runtime_CONFIGURED_HEADERS)
@@ -2406,7 +2496,20 @@ endif
 	  $(MAKE) -C otherlibs/$$i install || exit $$?; \
 	done
 ifeq "$(build_ocamldoc)" "true"
-	$(MAKE) -C ocamldoc install
+	$(MKDIR) "$(INSTALL_LIBDIR)/ocamldoc"
+	$(INSTALL_PROG) $(OCAMLDOC) "$(INSTALL_BINDIR)"
+	$(INSTALL_DATA) \
+	  ocamldoc/ocamldoc.hva ocamldoc/*.cmi ocamldoc/odoc_info.cma \
+	  ocamldoc/META \
+	  "$(INSTALL_LIBDIR)/ocamldoc"
+	$(INSTALL_DATA) \
+	  $(OCAMLDOC_LIBCMIS) \
+	  "$(INSTALL_LIBDIR)/ocamldoc"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMTS) \
+	  "$(INSTALL_LIBDIR)/ocamldoc"
+endif
 endif
 ifeq "$(build_ocamldoc)-$(STDLIB_MANPAGES)" "true-true"
 	$(MAKE) -C api_docgen install
@@ -2495,7 +2598,20 @@ endif
 	    $(ocamlopt_CMO_FILES) \
 	    "$(INSTALL_COMPLIBDIR)"
 ifeq "$(build_ocamldoc)" "true"
-	$(MAKE) -C ocamldoc installopt
+	$(MKDIR) "$(INSTALL_LIBDIR)/ocamldoc"
+	$(INSTALL_PROG) $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)"
+	$(INSTALL_DATA) \
+	  $(OCAMLDOC_LIBCMIS) \
+	  "$(INSTALL_LIBDIR)/ocamldoc"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMTS) \
+	  "$(INSTALL_LIBDIR)/ocamldoc"
+endif
+	$(INSTALL_DATA) \
+	  ocamldoc/ocamldoc.hva ocamldoc/*.cmx ocamldoc/odoc_info.$(A) \
+	  ocamldoc/odoc_info.cmxa \
+	  "$(INSTALL_LIBDIR)/ocamldoc"
 endif
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKE) -C otherlibs/$$i installopt || exit $$?; \
