@@ -164,6 +164,46 @@ OCAML_NATIVE_PROGRAMS = ocamlnat tools/lintapidiff.opt
 $(foreach PROGRAM, $(OCAML_NATIVE_PROGRAMS),\
   $(eval $(call OCAML_NATIVE_PROGRAM,$(PROGRAM))))
 
+# OCaml libraries that are compiled in both bytecode and native code
+
+# List of compilerlibs
+
+COMPILERLIBS = $(addprefix compilerlibs/, \
+  ocamlbytecomp \
+  ocamlcommon \
+  ocamlmiddleend \
+  ocamloptcomp \
+  ocamltoplevel)
+
+# Since the compiler libraries are necessarily compiled with boot/ocamlc,
+# make sure they *always are*, even when rebuilding a program compiled
+# with ./ocamlc (e.g. ocamltex)
+
+$(COMPILERLIBS:=.cma): \
+  CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) -use-prims runtime/primitives
+
+# FIXME: how about making another target depend on $(ALL_CONFIG_CMO)?
+compilerlibs/ocamlcommon.cma: $(ALL_CONFIG_CMO)
+
+OCAML_LIBRARIES = $(COMPILERLIBS)
+
+$(foreach LIBRARY, $(OCAML_LIBRARIES),\
+  $(eval $(call OCAML_LIBRARY,$(LIBRARY))))
+
+# OCaml libraries that are compiled only in bytecode
+
+OCAML_BYTECODE_LIBRARIES =
+
+$(foreach LIBRARY, $(OCAML_BYTECODE_LIBRARIES),\
+  $(eval $(call OCAML_BYTECODE_LIBRARY,$(LIBRARY))))
+
+# OCaml libraries that are compiled only in native code
+
+OCAML_NATIVE_LIBRARIES =
+
+$(foreach LIBRARY, $(OCAML_NATIVE_LIBRARIES),\
+  $(eval $(call OCAML_NATIVE_LIBRARY,$(LIBRARY))))
+
 USE_RUNTIME_PRIMS = -use-prims ../runtime/primitives
 USE_STDLIB = -nostdlib -I ../stdlib
 
@@ -2150,3 +2190,11 @@ config.status:
 	@echo "  make install"
 	@echo "should work."
 	@false
+
+# We need to express that all the CMX files depend on the native compiler,
+# so that they get invalidated and rebuilt when the compiler is updated
+# This dependency must appear after all the definitions of the
+# _SOURCES variable so that GNU make's secondary expansion mechanism works
+# This is why this dependency is kept at the very end of this file
+
+$(ALL_CMX_FILES): ocamlopt$(EXE)

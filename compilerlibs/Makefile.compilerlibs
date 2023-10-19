@@ -18,377 +18,346 @@
 # This file is meant to be included from the root Makefile, not to be
 # executed directly (this is why it is not simply named Makefile).
 
-# For each group of compilation units, we have a variable GROUP with
-# only .cmo files, and a separate variable GROUP_CMI for .cmi files
-# corresponding to the .mli-only modules only. These .cmi are not
-# linked in the archive, but they are marked as dependencies to ensure
-# that they are consistent with the interface digests in the archives.
+utils_SOURCES = $(addprefix utils/, \
+  config.mli config.ml \
+  build_path_prefix_map.mli build_path_prefix_map.ml \
+  misc.mli misc.ml \
+  identifiable.mli identifiable.ml \
+  numbers.mli numbers.ml \
+  arg_helper.mli arg_helper.ml \
+  local_store.mli local_store.ml \
+  load_path.mli load_path.ml \
+  clflags.mli clflags.ml \
+  profile.mli profile.ml \
+  terminfo.mli terminfo.ml \
+  ccomp.mli ccomp.ml \
+  warnings.mli warnings.ml \
+  consistbl.mli consistbl.ml \
+  strongly_connected_components.mli strongly_connected_components.ml \
+  targetint.mli targetint.ml \
+  int_replace_polymorphic_compare.mli int_replace_polymorphic_compare.ml \
+  domainstate.mli domainstate.ml \
+  binutils.mli binutils.ml \
+  lazy_backtrack.mli lazy_backtrack.ml \
+  diffing.mli diffing.ml \
+  diffing_with_keys.mli diffing_with_keys.ml)
 
-UTILS = \
-  utils/config.cmo \
-  utils/build_path_prefix_map.cmo \
-  utils/misc.cmo \
-  utils/identifiable.cmo \
-  utils/numbers.cmo \
-  utils/arg_helper.cmo \
-  utils/local_store.cmo \
-  utils/load_path.cmo \
-  utils/clflags.cmo \
-  utils/profile.cmo \
-  utils/terminfo.cmo \
-  utils/ccomp.cmo \
-  utils/warnings.cmo \
-  utils/consistbl.cmo \
-  utils/strongly_connected_components.cmo \
-  utils/targetint.cmo \
-  utils/int_replace_polymorphic_compare.cmo \
-  utils/domainstate.cmo \
-  utils/binutils.cmo \
-  utils/lazy_backtrack.cmo \
-  utils/diffing.cmo \
-  utils/diffing_with_keys.cmo
-UTILS_CMI =
+parsing_SOURCES = $(addprefix parsing/, \
+  location.mli location.ml \
+  unit_info.mli unit_info.ml \
+  asttypes.mli \
+  longident.mli longident.ml \
+  parsetree.mli \
+  docstrings.mli docstrings.ml \
+  syntaxerr.mli syntaxerr.ml \
+  ast_helper.mli ast_helper.ml \
+  camlinternalMenhirLib.mli camlinternalMenhirLib.ml \
+  parser.mly \
+  lexer.mll \
+  pprintast.mli pprintast.ml \
+  parse.mli parse.ml \
+  printast.mli printast.ml \
+  ast_mapper.mli ast_mapper.ml \
+  ast_iterator.mli ast_iterator.ml \
+  attr_helper.mli attr_helper.ml \
+  builtin_attributes.mli builtin_attributes.ml \
+  ast_invariants.mli ast_invariants.ml \
+  depend.mli depend.ml)
 
-PARSING = \
-  parsing/location.cmo \
-  parsing/unit_info.cmo \
-  parsing/longident.cmo \
-  parsing/docstrings.cmo \
-  parsing/syntaxerr.cmo \
-  parsing/ast_helper.cmo \
-  parsing/camlinternalMenhirLib.cmo \
-  parsing/parser.cmo \
-  parsing/lexer.cmo \
-  parsing/pprintast.cmo \
-  parsing/parse.cmo \
-  parsing/printast.cmo \
-  parsing/ast_mapper.cmo \
-  parsing/ast_iterator.cmo \
-  parsing/attr_helper.cmo \
-  parsing/builtin_attributes.cmo \
-  parsing/ast_invariants.cmo \
-  parsing/depend.cmo
-PARSING_CMI = \
-  parsing/asttypes.cmi \
-  parsing/parsetree.cmi
+typing_SOURCES = \
+$(addprefix typing/,\
+  annot.mli \
+  ident.mli ident.ml \
+  path.mli path.ml \
+  primitive.mli primitive.ml \
+  type_immediacy.mli type_immediacy.ml \
+  outcometree.mli \
+  shape.mli shape.ml \
+  types.mli types.ml \
+  btype.mli btype.ml \
+  oprint.mli oprint.ml \
+  subst.mli subst.ml \
+  predef.mli predef.ml \
+  datarepr.mli datarepr.ml) \
+  file_formats/cmi_format.mli file_formats/cmi_format.ml \
+$(addprefix typing/, \
+  persistent_env.mli persistent_env.ml \
+  env.mli env.ml \
+  errortrace.mli errortrace.ml \
+  typedtree.mli typedtree.ml \
+  signature_group.mli signature_group.ml \
+  printtyped.mli printtyped.ml \
+  ctype.mli ctype.ml \
+  printtyp.mli printtyp.ml \
+  includeclass.mli includeclass.ml \
+  mtype.mli mtype.ml \
+  envaux.mli envaux.ml \
+  includecore.mli includecore.ml \
+  tast_iterator.mli tast_iterator.ml \
+  tast_mapper.mli tast_mapper.ml \
+  stypes.mli stypes.ml) \
+  file_formats/cmt_format.mli file_formats/cmt_format.ml \
+$(addprefix typing/, \
+  cmt2annot.mli cmt2annot.ml \
+  untypeast.mli untypeast.ml \
+  includemod.mli includemod.ml \
+  includemod_errorprinter.mli includemod_errorprinter.ml \
+  typetexp.mli typetexp.ml \
+  printpat.mli printpat.ml \
+  patterns.mli patterns.ml \
+  parmatch.mli parmatch.ml \
+  typedecl_properties.mli typedecl_properties.ml \
+  typedecl_variance.mli typedecl_variance.ml \
+  typedecl_unboxed.mli typedecl_unboxed.ml \
+  typedecl_immediacy.mli typedecl_immediacy.ml \
+  typedecl_separability.mli typedecl_separability.ml \
+  typeopt.mli typeopt.ml \
+  typedecl.mli typedecl.ml \
+  rec_check.mli rec_check.ml \
+  typecore.mli typecore.ml \
+  typeclass.mli typeclass.ml \
+  typemod.mli typemod.ml)
 
-TYPING = \
-  typing/ident.cmo \
-  typing/path.cmo \
-  typing/primitive.cmo \
-  typing/type_immediacy.cmo \
-  typing/shape.cmo \
-  typing/types.cmo \
-  typing/btype.cmo \
-  typing/oprint.cmo \
-  typing/subst.cmo \
-  typing/predef.cmo \
-  typing/datarepr.cmo \
-  file_formats/cmi_format.cmo \
-  typing/persistent_env.cmo \
-  typing/env.cmo \
-  typing/errortrace.cmo \
-  typing/typedtree.cmo \
-  typing/signature_group.cmo \
-  typing/printtyped.cmo \
-  typing/ctype.cmo \
-  typing/printtyp.cmo \
-  typing/includeclass.cmo \
-  typing/mtype.cmo \
-  typing/envaux.cmo \
-  typing/includecore.cmo \
-  typing/tast_iterator.cmo \
-  typing/tast_mapper.cmo \
-  typing/stypes.cmo \
-  file_formats/cmt_format.cmo \
-  typing/cmt2annot.cmo \
-  typing/untypeast.cmo \
-  typing/includemod.cmo \
-  typing/includemod_errorprinter.cmo \
-  typing/typetexp.cmo \
-  typing/printpat.cmo \
-  typing/patterns.cmo \
-  typing/parmatch.cmo \
-  typing/typedecl_properties.cmo \
-  typing/typedecl_variance.cmo \
-  typing/typedecl_unboxed.cmo \
-  typing/typedecl_immediacy.cmo \
-  typing/typedecl_separability.cmo \
-  typing/typeopt.cmo \
-  typing/typedecl.cmo \
-  typing/rec_check.cmo \
-  typing/typecore.cmo \
-  typing/typeclass.cmo \
-  typing/typemod.cmo
-TYPING_CMI = \
-  typing/annot.cmi \
-  typing/outcometree.cmi
+lambda_SOURCES = $(addprefix lambda/, \
+  debuginfo.mli debuginfo.ml \
+  lambda.mli lambda.ml \
+  printlambda.mli printlambda.ml \
+  switch.mli switch.ml \
+  matching.mli matching.ml \
+  translobj.mli translobj.ml \
+  translattribute.mli translattribute.ml \
+  translprim.mli translprim.ml \
+  translcore.mli translcore.ml \
+  translclass.mli translclass.ml \
+  translmod.mli translmod.ml \
+  tmc.mli tmc.ml \
+  simplif.mli simplif.ml \
+  runtimedef.mli runtimedef.ml)
 
-LAMBDA = \
-  lambda/debuginfo.cmo \
-  lambda/lambda.cmo \
-  lambda/printlambda.cmo \
-  lambda/switch.cmo \
-  lambda/matching.cmo \
-  lambda/translobj.cmo \
-  lambda/translattribute.cmo \
-  lambda/translprim.cmo \
-  lambda/translcore.cmo \
-  lambda/translclass.cmo \
-  lambda/translmod.cmo \
-  lambda/tmc.cmo \
-  lambda/simplif.cmo \
-  lambda/runtimedef.cmo
-LAMBDA_CMI =
-
-COMP = \
-  bytecomp/meta.cmo \
-  bytecomp/opcodes.cmo \
-  bytecomp/bytesections.cmo \
-  bytecomp/dll.cmo \
-  bytecomp/symtable.cmo \
-  driver/pparse.cmo \
-  driver/compenv.cmo \
-  driver/main_args.cmo \
-  driver/compmisc.cmo \
-  driver/makedepend.cmo \
-  driver/compile_common.cmo
-COMP_CMI = \
-  file_formats/cmo_format.cmi \
-  file_formats/cmx_format.cmi \
-  file_formats/cmxs_format.cmi
+comp_SOURCES = \
+$(addprefix file_formats/, \
+  cmo_format.mli \
+  cmx_format.mli \
+  cmxs_format.mli) \
+$(addprefix bytecomp/, \
+  meta.mli meta.ml \
+  opcodes.mli opcodes.ml \
+  bytesections.mli bytesections.ml \
+  dll.mli dll.ml \
+  symtable.mli symtable.ml) \
+$(addprefix driver/, \
+  pparse.mli pparse.ml \
+  compenv.mli compenv.ml \
+  main_args.mli main_args.ml \
+  compmisc.mli compmisc.ml \
+  makedepend.mli makedepend.ml \
+  compile_common.mli compile_common.ml)
 # All file format descriptions (including cmx{,s}) are in the
 # ocamlcommon library so that ocamlobjinfo can depend on them.
 
-COMMON_CMI = $(UTILS_CMI) $(PARSING_CMI) $(TYPING_CMI) $(LAMBDA_CMI) $(COMP_CMI)
+ocamlcommon_SOURCES = \
+  $(utils_SOURCES) $(parsing_SOURCES) $(typing_SOURCES) \
+  $(lambda_SOURCES) $(comp_SOURCES)
 
-COMMON = $(UTILS) $(PARSING) $(TYPING) $(LAMBDA) $(COMP)
+ocamlbytecomp_SOURCES = \
+$(addprefix bytecomp/, \
+  instruct.mli instruct.ml \
+  bytegen.mli bytegen.ml \
+  printinstr.mli printinstr.ml \
+  emitcode.mli emitcode.ml \
+  bytelink.mli bytelink.ml \
+  bytelibrarian.mli bytelibrarian.ml \
+  bytepackager.mli bytepackager.ml) \
+$(addprefix driver/, \
+  errors.mli errors.ml \
+  compile.mli compile.ml \
+  maindriver.mli maindriver.ml)
 
-BYTECOMP = \
-  bytecomp/instruct.cmo \
-  bytecomp/bytegen.cmo \
-  bytecomp/printinstr.cmo \
-  bytecomp/emitcode.cmo \
-  bytecomp/bytelink.cmo \
-  bytecomp/bytelibrarian.cmo \
-  bytecomp/bytepackager.cmo \
-  driver/errors.cmo \
-  driver/compile.cmo \
-  driver/maindriver.cmo
-BYTECOMP_CMI =
+intel_SOURCES = \
+  x86_ast.mli \
+  x86_proc.mli x86_proc.ml \
+  x86_dsl.mli x86_dsl.ml \
+  x86_gas.mli x86_gas.ml \
+  x86_masm.mli x86_masm.ml
 
-INTEL_ASM = \
-  asmcomp/x86_proc.cmo \
-  asmcomp/x86_dsl.cmo \
-  asmcomp/x86_gas.cmo \
-  asmcomp/x86_masm.cmo
-INTEL_ASM_CMI = \
-  asmcomp/x86_ast.cmi
-
-ARCH_SPECIFIC_ASMCOMP =
-ARCH_SPECIFIC_ASMCOMP_CMI =
+arch_specific_SOURCES =
 ifeq ($(ARCH),i386)
-ARCH_SPECIFIC_ASMCOMP = $(INTEL_ASM)
-ARCH_SPECIFIC_ASMCOMP_CMI = $(INTEL_ASM_CMI)
+arch_specific_SOURCES = $(intel_SOURCES)
 endif
 ifeq ($(ARCH),amd64)
-ARCH_SPECIFIC_ASMCOMP = $(INTEL_ASM)
-ARCH_SPECIFIC_ASMCOMP_CMI = $(INTEL_ASM_CMI)
+arch_specific_SOURCES = $(intel_SOURCES)
 endif
 
-ASMCOMP = \
-  $(ARCH_SPECIFIC_ASMCOMP) \
-  asmcomp/arch.cmo \
-  asmcomp/cmm.cmo \
-  asmcomp/printcmm.cmo \
-  asmcomp/reg.cmo \
-  asmcomp/mach.cmo \
-  asmcomp/proc.cmo \
-  asmcomp/strmatch.cmo \
-  asmcomp/cmmgen_state.cmo \
-  asmcomp/cmm_helpers.cmo \
-  asmcomp/afl_instrument.cmo \
-  asmcomp/thread_sanitizer.cmo \
-  asmcomp/cmmgen.cmo \
-  asmcomp/cmm_invariants.cmo \
-  asmcomp/interval.cmo \
-  asmcomp/printmach.cmo \
-  asmcomp/dataflow.cmo \
-  asmcomp/polling.cmo \
-  asmcomp/selectgen.cmo \
-  asmcomp/selection.cmo \
-  asmcomp/comballoc.cmo \
-  asmcomp/CSEgen.cmo \
-  asmcomp/CSE.cmo \
-  asmcomp/liveness.cmo \
-  asmcomp/spill.cmo \
-  asmcomp/split.cmo \
-  asmcomp/interf.cmo \
-  asmcomp/coloring.cmo \
-  asmcomp/linscan.cmo \
-  asmcomp/reloadgen.cmo \
-  asmcomp/reload.cmo \
-  asmcomp/deadcode.cmo \
-  asmcomp/stackframegen.cmo \
-  asmcomp/stackframe.cmo \
-  asmcomp/linear.cmo \
-  asmcomp/printlinear.cmo \
-  asmcomp/linearize.cmo \
-  file_formats/linear_format.cmo \
-  asmcomp/schedgen.cmo \
-  asmcomp/scheduling.cmo \
-  asmcomp/branch_relaxation.cmo \
-  asmcomp/emitaux.cmo \
-  asmcomp/emit.cmo \
-  asmcomp/asmgen.cmo \
-  asmcomp/asmlink.cmo \
-  asmcomp/asmlibrarian.cmo \
-  asmcomp/asmpackager.cmo \
-  driver/opterrors.cmo \
-  driver/optcompile.cmo \
-  driver/optmaindriver.cmo
-ASMCOMP_CMI = $(ARCH_SPECIFIC_ASMCOMP_CMI)
+asmcomp_SOURCES = \
+$(addprefix asmcomp/, \
+  $(arch_specific_SOURCES) \
+  arch.mli arch.ml \
+  cmm.mli cmm.ml \
+  printcmm.mli printcmm.ml \
+  reg.mli reg.ml \
+  mach.mli mach.ml \
+  proc.mli proc.ml \
+  strmatch.mli strmatch.ml \
+  cmmgen_state.mli cmmgen_state.ml \
+  cmm_helpers.mli cmm_helpers.ml \
+  afl_instrument.mli afl_instrument.ml \
+  thread_sanitizer.mli thread_sanitizer.ml \
+  cmmgen.mli cmmgen.ml \
+  cmm_invariants.mli cmm_invariants.ml \
+  interval.mli interval.ml \
+  printmach.mli printmach.ml \
+  dataflow.mli dataflow.ml \
+  polling.mli polling.ml \
+  selectgen.mli selectgen.ml \
+  selection.mli selection.ml \
+  comballoc.mli comballoc.ml \
+  CSEgen.mli CSEgen.ml \
+  CSE.mli CSE.ml \
+  liveness.mli liveness.ml \
+  spill.mli spill.ml \
+  split.mli split.ml \
+  interf.mli interf.ml \
+  coloring.mli coloring.ml \
+  linscan.mli linscan.ml \
+  reloadgen.mli reloadgen.ml \
+  reload.mli reload.ml \
+  deadcode.mli deadcode.ml \
+  stackframegen.mli stackframegen.ml \
+  stackframe.mli stackframe.ml \
+  linear.mli linear.ml \
+  printlinear.mli printlinear.ml \
+  linearize.mli linearize.ml) \
+  file_formats/linear_format.mli file_formats/linear_format.ml \
+$(addprefix asmcomp/, \
+  schedgen.mli schedgen.ml \
+  scheduling.mli scheduling.ml \
+  branch_relaxation.mli branch_relaxation.ml \
+  emitaux.mli emitaux.ml \
+  emit.mli emit.ml \
+  asmgen.mli asmgen.ml \
+  asmlink.mli asmlink.ml \
+  asmlibrarian.mli asmlibrarian.ml \
+  asmpackager.mli asmpackager.ml) \
+$(addprefix driver/, \
+  opterrors.mli opterrors.ml \
+  optcompile.mli optcompile.ml \
+  optmaindriver.mli optmaindriver.ml)
 
 # Files under middle_end/ are not to reference files under asmcomp/.
 # This ensures that the middle end can be linked (e.g. for objinfo) even when
 # the native code compiler is not present for some particular target.
 
-MIDDLE_END_CLOSURE = \
-  middle_end/closure/closure.cmo \
-  middle_end/closure/closure_middle_end.cmo
-MIDDLE_END_CLOSURE_CMI =
+middle_end_closure_SOURCES = $(addprefix middle_end/closure/, \
+  closure.mli closure.ml \
+  closure_middle_end.mli closure_middle_end.ml)
 
 # Owing to dependencies through [Compilenv], which would be
 # difficult to remove, some of the lower parts of Flambda (anything that is
 # saved in a .cmx file) have to be included in the [MIDDLE_END] stanza, below.
-MIDDLE_END_FLAMBDA = \
-  middle_end/flambda/import_approx.cmo \
-  middle_end/flambda/lift_code.cmo \
-  middle_end/flambda/closure_conversion_aux.cmo \
-  middle_end/flambda/closure_conversion.cmo \
-  middle_end/flambda/initialize_symbol_to_let_symbol.cmo \
-  middle_end/flambda/lift_let_to_initialize_symbol.cmo \
-  middle_end/flambda/find_recursive_functions.cmo \
-  middle_end/flambda/invariant_params.cmo \
-  middle_end/flambda/inconstant_idents.cmo \
-  middle_end/flambda/alias_analysis.cmo \
-  middle_end/flambda/lift_constants.cmo \
-  middle_end/flambda/share_constants.cmo \
-  middle_end/flambda/simplify_common.cmo \
-  middle_end/flambda/remove_unused_arguments.cmo \
-  middle_end/flambda/remove_unused_closure_vars.cmo \
-  middle_end/flambda/remove_unused_program_constructs.cmo \
-  middle_end/flambda/simplify_boxed_integer_ops.cmo \
-  middle_end/flambda/simplify_primitives.cmo \
-  middle_end/flambda/inlining_stats_types.cmo \
-  middle_end/flambda/inlining_stats.cmo \
-  middle_end/flambda/inline_and_simplify_aux.cmo \
-  middle_end/flambda/remove_free_vars_equal_to_args.cmo \
-  middle_end/flambda/extract_projections.cmo \
-  middle_end/flambda/augment_specialised_args.cmo \
-  middle_end/flambda/unbox_free_vars_of_closures.cmo \
-  middle_end/flambda/unbox_specialised_args.cmo \
-  middle_end/flambda/unbox_closures.cmo \
-  middle_end/flambda/inlining_transforms.cmo \
-  middle_end/flambda/inlining_decision.cmo \
-  middle_end/flambda/inline_and_simplify.cmo \
-  middle_end/flambda/ref_to_variables.cmo \
-  middle_end/flambda/flambda_invariants.cmo \
-  middle_end/flambda/traverse_for_exported_symbols.cmo \
-  middle_end/flambda/build_export_info.cmo \
-  middle_end/flambda/closure_offsets.cmo \
-  middle_end/flambda/un_anf.cmo \
-  middle_end/flambda/flambda_to_clambda.cmo \
-  middle_end/flambda/flambda_middle_end.cmo
-MIDDLE_END_FLAMBDA_CMI = \
-  middle_end/flambda/inlining_decision_intf.cmi \
-  middle_end/flambda/simplify_boxed_integer_ops_intf.cmi
+middle_end_flambda_SOURCES = \
+$(addprefix middle_end/flambda/, \
+  import_approx.mli import_approx.ml \
+  lift_code.mli lift_code.ml \
+  closure_conversion_aux.mli closure_conversion_aux.ml \
+  closure_conversion.mli closure_conversion.ml \
+  initialize_symbol_to_let_symbol.mli initialize_symbol_to_let_symbol.ml \
+  lift_let_to_initialize_symbol.mli lift_let_to_initialize_symbol.ml \
+  find_recursive_functions.mli find_recursive_functions.ml \
+  invariant_params.mli invariant_params.ml \
+  inconstant_idents.mli inconstant_idents.ml \
+  alias_analysis.mli alias_analysis.ml \
+  lift_constants.mli lift_constants.ml \
+  share_constants.mli share_constants.ml \
+  simplify_common.mli simplify_common.ml \
+  remove_unused_arguments.mli remove_unused_arguments.ml \
+  remove_unused_closure_vars.mli remove_unused_closure_vars.ml \
+  remove_unused_program_constructs.mli remove_unused_program_constructs.ml \
+  simplify_boxed_integer_ops.mli simplify_boxed_integer_ops.ml \
+  simplify_primitives.mli simplify_primitives.ml \
+  inlining_stats_types.mli inlining_stats_types.ml \
+  inlining_stats.mli inlining_stats.ml \
+  inline_and_simplify_aux.mli inline_and_simplify_aux.ml \
+  inlining_decision_intf.mli \
+  remove_free_vars_equal_to_args.mli remove_free_vars_equal_to_args.ml \
+  extract_projections.mli extract_projections.ml \
+  augment_specialised_args.mli augment_specialised_args.ml \
+  unbox_free_vars_of_closures.mli unbox_free_vars_of_closures.ml \
+  unbox_specialised_args.mli unbox_specialised_args.ml \
+  unbox_closures.mli unbox_closures.ml \
+  inlining_transforms.mli inlining_transforms.ml \
+  inlining_decision.mli inlining_decision.ml \
+  inline_and_simplify.mli inline_and_simplify.ml \
+  ref_to_variables.mli ref_to_variables.ml \
+  flambda_invariants.mli flambda_invariants.ml \
+  traverse_for_exported_symbols.mli traverse_for_exported_symbols.ml \
+  build_export_info.mli build_export_info.ml \
+  closure_offsets.mli closure_offsets.ml \
+  un_anf.mli un_anf.ml \
+  flambda_to_clambda.mli flambda_to_clambda.ml \
+  flambda_middle_end.mli flambda_middle_end.ml \
+  simplify_boxed_integer_ops_intf.mli)
 
-MIDDLE_END = \
-  middle_end/internal_variable_names.cmo \
-  middle_end/linkage_name.cmo \
-  middle_end/compilation_unit.cmo \
-  middle_end/variable.cmo \
-  middle_end/flambda/base_types/closure_element.cmo \
-  middle_end/flambda/base_types/closure_id.cmo \
-  middle_end/symbol.cmo \
-  middle_end/backend_var.cmo \
-  middle_end/clambda_primitives.cmo \
-  middle_end/printclambda_primitives.cmo \
-  middle_end/clambda.cmo \
-  middle_end/printclambda.cmo \
-  middle_end/semantics_of_primitives.cmo \
-  middle_end/convert_primitives.cmo \
-  middle_end/flambda/base_types/id_types.cmo \
-  middle_end/flambda/base_types/export_id.cmo \
-  middle_end/flambda/base_types/tag.cmo \
-  middle_end/flambda/base_types/mutable_variable.cmo \
-  middle_end/flambda/base_types/set_of_closures_id.cmo \
-  middle_end/flambda/base_types/set_of_closures_origin.cmo \
-  middle_end/flambda/base_types/closure_origin.cmo \
-  middle_end/flambda/base_types/var_within_closure.cmo \
-  middle_end/flambda/base_types/static_exception.cmo \
-  middle_end/flambda/pass_wrapper.cmo \
-  middle_end/flambda/allocated_const.cmo \
-  middle_end/flambda/parameter.cmo \
-  middle_end/flambda/projection.cmo \
-  middle_end/flambda/flambda.cmo \
-  middle_end/flambda/flambda_iterators.cmo \
-  middle_end/flambda/flambda_utils.cmo \
-  middle_end/flambda/freshening.cmo \
-  middle_end/flambda/effect_analysis.cmo \
-  middle_end/flambda/inlining_cost.cmo \
-  middle_end/flambda/simple_value_approx.cmo \
-  middle_end/flambda/export_info.cmo \
-  middle_end/flambda/export_info_for_pack.cmo \
-  middle_end/compilenv.cmo \
-  $(MIDDLE_END_CLOSURE) \
-  $(MIDDLE_END_FLAMBDA)
-MIDDLE_END_CMI = \
-  middle_end/backend_intf.cmi \
-  $(MIDDLE_END_CLOSURE_CMI) \
-  $(MIDDLE_END_FLAMBDA_CMI)
+ocamlmiddleend_SOURCES = \
+$(addprefix middle_end/, \
+  internal_variable_names.mli internal_variable_names.ml \
+  linkage_name.mli linkage_name.ml \
+  compilation_unit.mli compilation_unit.ml \
+  variable.mli variable.ml \
+  $(addprefix flambda/base_types/, \
+    closure_element.mli closure_element.ml \
+    closure_id.mli closure_id.ml) \
+  symbol.mli symbol.ml \
+  backend_var.mli backend_var.ml \
+  clambda_primitives.mli clambda_primitives.ml \
+  printclambda_primitives.mli printclambda_primitives.ml \
+  clambda.mli clambda.ml \
+  printclambda.mli printclambda.ml \
+  semantics_of_primitives.mli semantics_of_primitives.ml \
+  convert_primitives.mli convert_primitives.ml \
+  $(addprefix flambda/, \
+    $(addprefix base_types/, \
+      id_types.mli id_types.ml \
+      export_id.mli export_id.ml \
+      tag.mli tag.ml \
+      mutable_variable.mli mutable_variable.ml \
+      set_of_closures_id.mli set_of_closures_id.ml \
+      set_of_closures_origin.mli set_of_closures_origin.ml \
+      closure_origin.mli closure_origin.ml \
+      var_within_closure.mli var_within_closure.ml \
+      static_exception.mli static_exception.ml) \
+    pass_wrapper.mli pass_wrapper.ml \
+    allocated_const.mli allocated_const.ml \
+    parameter.mli parameter.ml \
+    projection.mli projection.ml \
+    flambda.mli flambda.ml \
+    flambda_iterators.mli flambda_iterators.ml \
+    flambda_utils.mli flambda_utils.ml \
+    freshening.mli freshening.ml \
+    effect_analysis.mli effect_analysis.ml \
+    inlining_cost.mli inlining_cost.ml \
+    simple_value_approx.mli simple_value_approx.ml \
+    export_info.mli export_info.ml \
+    export_info_for_pack.mli export_info_for_pack.ml) \
+  compilenv.mli compilenv.ml \
+  backend_intf.mli) \
+  $(middle_end_closure_SOURCES) \
+  $(middle_end_flambda_SOURCES)
 
-OPTCOMP = $(MIDDLE_END) $(ASMCOMP)
-OPTCOMP_CMI = $(MIDDLE_END_CMI) $(ASMCOMP_CMI)
+ocamloptcomp_SOURCES = $(ocamlmiddleend_SOURCES) $(asmcomp_SOURCES)
 
-TOPLEVEL = \
-  toplevel/genprintval.cmo \
-  toplevel/topcommon.cmo \
-  toplevel/byte/topeval.cmo \
-  toplevel/byte/trace.cmo \
-  toplevel/toploop.cmo \
-  toplevel/topprinters.cmo \
-  toplevel/topdirs.cmo \
-  toplevel/byte/topmain.cmo
-TOPLEVEL_CMI = \
-  toplevel/topcommon.cmi \
-  toplevel/byte/topeval.cmi \
-  toplevel/byte/trace.cmi \
-  toplevel/toploop.cmi \
-  toplevel/topprinters.cmi \
-  toplevel/topdirs.cmi \
-  toplevel/byte/topmain.cmi
-
-OPTTOPLEVEL = \
-  toplevel/genprintval.cmo \
-  toplevel/topcommon.cmo \
-  toplevel/native/tophooks.cmo \
-  toplevel/native/topeval.cmo \
-  toplevel/native/trace.cmo \
-  toplevel/toploop.cmo \
-  toplevel/topprinters.cmo \
-  toplevel/topdirs.cmo \
-  toplevel/native/topmain.cmo
-OPTTOPLEVEL_CMI = \
-  toplevel/topcommon.cmi \
-  toplevel/native/tophooks.cmi \
-  toplevel/native/topeval.cmi \
-  toplevel/native/trace.cmi \
-  toplevel/toploop.cmi \
-  toplevel/topprinters.cmi \
-  toplevel/topdirs.cmi \
-  toplevel/native/topmain.cmi
+ocamltoplevel_SOURCES = $(addprefix toplevel/, \
+  genprintval.mli genprintval.ml \
+  topcommon.mli topcommon.ml \
+  native/tophooks.mli native/tophooks.ml \
+  byte/topeval.mli byte/topeval.ml \
+  native/topeval.mli native/topeval.ml \
+  byte/trace.mli byte/trace.ml \
+  native/trace.mli native/trace.ml \
+  toploop.mli toploop.ml \
+  topprinters.mli topprinters.ml \
+  topdirs.mli topdirs.ml \
+  byte/topmain.mli byte/topmain.ml \
+  native/topmain.mli native/topmain.ml)
 
 TOPLEVEL_SHARED_MLIS = topeval.mli trace.mli topmain.mli
 TOPLEVEL_SHARED_CMIS = $(TOPLEVEL_SHARED_MLIS:%.mli=%.cmi)
@@ -410,9 +379,6 @@ partialclean::
 	cd toplevel/byte ; rm -f $(TOPLEVEL_SHARED_ARTEFACTS)
 	cd toplevel/native ; rm -f $(TOPLEVEL_SHARED_ARTEFACTS)
 
-$(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(OPTCOMP:.cmo=.cmx): ocamlopt$(EXE)
-$(OPTTOPLEVEL:.cmo=.cmx): ocamlopt$(EXE)
-
 ALL_CONFIG_CMO = utils/config_main.cmo utils/config_boot.cmo
 
 utils/config_%.mli: utils/config.mli
@@ -420,43 +386,25 @@ utils/config_%.mli: utils/config.mli
 
 beforedepend:: utils/config_main.mli utils/config_boot.mli
 
-# Since the compiler libraries are necessarily compiled with boot/ocamlc,
-# make sure they *always are*, even when rebuilding a program compiled
-# with ./ocamlc (e.g. ocamltex)
+$(addprefix compilerlibs/ocamlcommon., cma cmxa): \
+  OC_OCAML_COMMON_LDFLAGS = += -linkall
 
-$(addprefix compilerlibs/,\
-  ocamlcommon.cma ocamlbytecomp.cma ocamloptcomp.cma ocamlmiddleend.cma \
-  ocamltoplevel.cma): \
-  CAMLC = $(BOOT_OCAMLC) $(BOOT_STDLIBFLAGS) -use-prims runtime/primitives
-
-compilerlibs/ocamlcommon.cma: $(COMMON_CMI) $(ALL_CONFIG_CMO) $(COMMON)
-	$(V_LINKC)$(CAMLC) -a -linkall -o $@ $(COMMON)
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cma
 
-compilerlibs/ocamlcommon.cmxa: $(COMMON_CMI) $(COMMON:.cmo=.cmx)
-	$(V_LINKOPT)$(CAMLOPT) -a -linkall -o $@ $(COMMON:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cmxa \
 	      compilerlibs/ocamlcommon.a compilerlibs/ocamlcommon.lib
 
 
-compilerlibs/ocamlbytecomp.cma: $(BYTECOMP_CMI) $(BYTECOMP)
-	$(V_LINKC)$(CAMLC) -a -o $@ $(BYTECOMP)
 partialclean::
 	rm -f compilerlibs/ocamlbytecomp.cma
 
-compilerlibs/ocamlbytecomp.cmxa: $(BYTECOMP_CMI) $(BYTECOMP:.cmo=.cmx)
-	$(V_LINKOPT)$(CAMLOPT) -a $(OCAML_NATDYNLINKOPTS) -o $@ $(BYTECOMP:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamlbytecomp.cmxa \
 	      compilerlibs/ocamlbytecomp.a compilerlibs/ocamlbytecomp.lib
 
 
-compilerlibs/ocamlmiddleend.cma: $(MIDDLE_END_CMI) $(MIDDLE_END)
-	$(V_LINKC)$(CAMLC) -a -o $@ $(MIDDLE_END)
-compilerlibs/ocamlmiddleend.cmxa: $(MIDDLE_END_CMI) $(MIDDLE_END:%.cmo=%.cmx)
-	$(V_LINKOPT)$(CAMLOPT) -a -o $@ $(MIDDLE_END:%.cmo=%.cmx)
 partialclean::
 	rm -f compilerlibs/ocamlmiddleend.cma \
 	      compilerlibs/ocamlmiddleend.cmxa \
@@ -464,25 +412,19 @@ partialclean::
 	      compilerlibs/ocamlmiddleend.lib
 
 
-compilerlibs/ocamloptcomp.cma: $(OPTCOMP_CMI) $(OPTCOMP)
-	$(V_LINKC)$(CAMLC) -a -o $@ $(OPTCOMP)
 partialclean::
 	rm -f compilerlibs/ocamloptcomp.cma
 
-compilerlibs/ocamloptcomp.cmxa: $(OPTCOMP_CMI) $(OPTCOMP:.cmo=.cmx)
-	$(V_LINKOPT)$(CAMLOPT) -a -o $@ $(OPTCOMP:.cmo=.cmx)
 partialclean::
 	rm -f compilerlibs/ocamloptcomp.cmxa \
 	      compilerlibs/ocamloptcomp.a compilerlibs/ocamloptcomp.lib
 
 
-compilerlibs/ocamltoplevel.cma: $(TOPLEVEL_CMI) $(TOPLEVEL)
-	$(V_LINKC)$(CAMLC) -a -o $@ -I toplevel/byte $(TOPLEVEL)
+compilerlibs/ocamltoplevel.cma: VPATH += toplevel/byte
 partialclean::
 	rm -f compilerlibs/ocamltoplevel.cma
 
-compilerlibs/ocamltoplevel.cmxa: $(OPTTOPLEVEL_CMI) $(OPTTOPLEVEL:.cmo=.cmx)
-	$(V_LINKOPT)$(CAMLOPT) -a -o $@ -I toplevel/native $(OPTTOPLEVEL:.cmo=.cmx)
+compilerlibs/ocamltoplevel.cmxa: VPATH += toplevel/native
 partialclean::
 	rm -f compilerlibs/ocamltoplevel.cmxa \
 	  compilerlibs/ocamltoplevel.a compilerlibs/ocamltoplevel.lib
