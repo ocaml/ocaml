@@ -16637,7 +16637,8 @@ esac
 
 fi
 
-# ThreadSanitizer support is only for Linux/FreeBSD/macOS on amd64.
+# ThreadSanitizer support is only for Linux/FreeBSD/macOS on amd64, as well as
+# Linux/macOS on arm64.
 # ThreadSanitizer supports more architectures but the OCaml client side is not
 # implemented (yet).
 if test "x$enable_tsan" = "xyes"
@@ -16654,7 +16655,22 @@ then :
           ;;
 esac ;; #(
   *) :
-     ;;
+    as_fn_error $? "thread sanitizer not supported on system $system" "$LINENO" 5
+        ;;
+esac ;; #(
+  arm64) :
+    case "$system" in #(
+  linux|macosx) :
+    case "$ocaml_cv_cc_vendor" in #(
+  gcc-*|clang-*) :
+    tsan=true ;; #(
+  *) :
+    as_fn_error $? "thread sanitizer not supported with vendor=$ocaml_cv_cc_vendor\"" "$LINENO" 5
+          ;;
+esac ;; #(
+  *) :
+    as_fn_error $? "thread sanitizer not supported on system $system" "$LINENO" 5
+        ;;
 esac ;; #(
   *) :
     as_fn_error $? "thread sanitizer not supported on arch $arch" "$LINENO" 5
@@ -16789,7 +16805,14 @@ fi
   "macosx") :
     libunwind_ldflags="-framework System" ;; #(
   *) :
-    libunwind_ldflags="-lunwind -lunwind-x86_64" ;;
+    case "$arch" in #(
+  "amd64") :
+    libunwind_ldflags="-lunwind -lunwind-x86_64" ;; #(
+  "arm64") :
+    libunwind_ldflags="-lunwind -lunwind-aarch64" ;; #(
+  *) :
+     ;;
+esac ;;
 esac
 
   if test x"$LIBUNWIND_LDFLAGS" != x
