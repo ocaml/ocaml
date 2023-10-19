@@ -165,6 +165,10 @@ Working version
   (KC Sivaramakrishnan, report by Gabriel Scherer, review by Gabriel Scherer,
   Sadiq Jaffer and Fabrice Buoro)
 
+- #12681: Fix TSan false positives due to volatile write handling
+  (Olivier Nicole, Fabrice Buoro and Anmol Sahoo, review by Luc Maranget,
+   Gabriel Scherer, Hernan Ponce de Leon and Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.
