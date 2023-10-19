@@ -151,6 +151,9 @@ runtime_ASM_OBJECTS = $(addprefix runtime/,@runtime_asm_objects@)
 # Platform-dependent module for ocamlyacc
 ocamlyacc_WSTR_MODULE = @ocamlyacc_wstr_module@
 
+# Architecture-specific modules, if any
+arch_specific_SOURCES = @arch_specific_SOURCES@
+
 # ThreadSanitizer support enabled
 TSAN=@tsan@
 # Contains TSan-specific runtime files, or nothing if TSan support is
