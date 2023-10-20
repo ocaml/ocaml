@@ -3449,7 +3449,8 @@ let report_error ~loc _env = function
   | Unpackable_local_modtype_subst p ->
       Location.errorf ~loc
         "The module type@ %a@ is not a valid type for a packed module:@ \
-         it is defined as a local substitution for a non-path module type."
+         it is defined as a local substitution for a module type which@ \
+         does not have a name."
         Style.inline_code (Path.name p)
 
 let report_error env ~loc err =
