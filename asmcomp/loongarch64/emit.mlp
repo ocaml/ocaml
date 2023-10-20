@@ -281,6 +281,8 @@ let emit_instr env i =
             `	move      {emit_reg dst}, {emit_reg src}\n`
         | {loc = Reg _; typ = Float}, {loc = Reg _; typ = Float} ->
             `	fmov.d   {emit_reg dst}, {emit_reg src}\n`
+        | {loc = Reg _; typ = Float}, {loc = Reg _; typ = (Val | Int | Addr)} ->
+            `	movfr2gr.d {emit_reg dst}, {emit_reg src}\n`
         | {loc = Reg _; typ = (Val | Int | Addr)}, {loc = Stack s} ->
             let (base, ofs) = slot_offset env s (register_class dst) in
             emit_store src ofs base
@@ -293,7 +295,6 @@ let emit_instr env i =
         | {loc = Stack s; typ = Float}, {loc = Reg _} ->
             let (base, ofs) = slot_offset env s (register_class src) in
             emit_float_load dst ofs base
-        | {loc = Reg _; typ = Float}, {loc = Reg _; typ = (Val | Int | Addr)}
         | {loc = Stack _}, {loc = Stack _}
         | {loc = Unknown}, _ | _, {loc = Unknown} ->
             Misc.fatal_error "Emit: Imove"
