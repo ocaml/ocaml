@@ -78,6 +78,7 @@ let majors_per_epoch = 50
 let conses_per_major = 10
 
 let () =
+    Gc.full_major ();
     let list_ref = ref [] in
     start ();
     let cursor = create_cursor None in
