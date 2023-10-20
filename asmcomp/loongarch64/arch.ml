@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Specific operations for the Loongarch processor *)
+(* Specific operations for the LoongArch processor *)
 
 open Format
 
