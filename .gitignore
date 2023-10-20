@@ -71,6 +71,9 @@ META
 /asmcomp/reload.ml
 /asmcomp/scheduling.ml
 /asmcomp/CSE.ml
+/asmcomp/loongarch64/CSE.ml
+/asmcomp/loongarch64/reload.ml
+/asmcomp/loongarch64/scheduling.ml
 
 /boot/ocamlrun
 /boot/ocamlruns
@@ -332,6 +335,3 @@ META
 /yacc/version.h
 /yacc/.gdb_history
 
-/asmcomp/loongarch64/CSE.ml
-/asmcomp/loongarch64/reload.ml
-/asmcomp/loongarch64/scheduling.ml

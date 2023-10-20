@@ -39,8 +39,8 @@ let word_addressed = false
     s0           18        general purpose (preserved by C)
     t0, t1       19-20     temporaries (used by call veneers)
     s1           21        trap pointer (preserved by C)
-    s7          22        allocation pointer (preserved by C)
-    s8          23        domain pointer (preserved by C)
+    s7           22        allocation pointer (preserved by C)
+    s8           23        domain pointer (preserved by C)
 
   Floating-point register map
   ---------------------------
