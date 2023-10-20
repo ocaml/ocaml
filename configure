@@ -785,7 +785,7 @@ QS
 ocaml_libdir
 ocaml_bindir
 compute_deps
-stdlib_manpages
+build_libraries_manpages
 PACKLD
 mkexe_ldflags_exp
 mkdll_ldflags_exp
@@ -817,8 +817,10 @@ ASPP
 ocamltest
 documentation_tool_cmd
 documentation_tool
+with_ocamldoc
+ocamldoc_opt_target
+ocamldoc_target
 build_ocamldoc
-ocamldoc
 build_ocamltex
 build_ocamldebug
 with_debugger
@@ -3420,6 +3422,8 @@ OCAML_VERSION_SHORT=5.2
 
 
 
+
+
 ## Generated files
 
 ac_config_files="$ac_config_files Makefile.build_config"
@@ -3769,7 +3773,7 @@ if test ${enable_ocamldoc+y}
 then :
   enableval=$enable_ocamldoc;
 else $as_nop
-  ocamldoc=auto
+  enable_ocamldoc='auto'
 fi
 
 
@@ -3912,6 +3916,8 @@ fi
 if test ${enable_stdlib_manpages+y}
 then :
   enableval=$enable_stdlib_manpages;
+else $as_nop
+  enable_stdlib_manpages='auto'
 fi
 
 
@@ -4011,6 +4017,26 @@ else $as_nop
 fi
 else $as_nop
   build_ocamltex=true
+fi
+
+if test x"$enable_ocamldoc" = "xno"
+then :
+  if test x"$enable_stdlib_manpages" = "xyes"
+then :
+  as_fn_error $? "--enable-stdlib-manpages requires ocamldoc" "$LINENO" 5
+fi
+  ocamldoc_target=""
+  ocamldoc_opt_target=""
+  with_ocamldoc=""
+  enable_stdlib_manpages=no
+  build_ocamldoc=false
+else $as_nop
+  ocamldoc_target=ocamldoc
+  ocamldoc_opt_target=ocamldoc.opt
+  with_ocamldoc=ocamldoc
+  build_ocamldoc=true
+  ac_config_files="$ac_config_files ocamldoc/META"
+
 fi
 
 # Initialization of libtool
@@ -19719,15 +19745,11 @@ else $as_nop
   install_source_artifacts=true
 fi
 
-if test x"$enable_ocamldoc" = "xno"
+if test x"$enable_stdlib_manpages" != "xno"
 then :
-  ocamldoc=""
-  build_ocamldoc=false
+  build_libraries_manpages=true
 else $as_nop
-  ocamldoc=ocamldoc
-  build_ocamldoc=true
-  ac_config_files="$ac_config_files ocamldoc/META"
-
+  build_libraries_manpages=false
 fi
 
 documentation_tool_cmd=''
@@ -20126,13 +20148,6 @@ case $host in #(
   *) :
      ;;
 esac
-
-if test x"$enable_stdlib_manpages" != "xno"
-then :
-  stdlib_manpages=true
-else $as_nop
-  stdlib_manpages=false
-fi
 
 # Do not permanently cache the result of flexdll.h
 unset ac_cv_header_flexdll_h
@@ -21289,12 +21304,12 @@ do
     "otherlibs/runtime_events/META") CONFIG_FILES="$CONFIG_FILES otherlibs/runtime_events/META" ;;
     "stdlib/META") CONFIG_FILES="$CONFIG_FILES stdlib/META" ;;
     "native-symlinks") CONFIG_COMMANDS="$CONFIG_COMMANDS native-symlinks" ;;
+    "ocamldoc/META") CONFIG_FILES="$CONFIG_FILES ocamldoc/META" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "otherlibs/unix/META") CONFIG_FILES="$CONFIG_FILES otherlibs/unix/META" ;;
     "otherlibs/unix/unix.ml") CONFIG_LINKS="$CONFIG_LINKS otherlibs/unix/unix.ml:otherlibs/unix/unix_${unix_or_win32}.ml" ;;
     "otherlibs/str/META") CONFIG_FILES="$CONFIG_FILES otherlibs/str/META" ;;
     "otherlibs/systhreads/META") CONFIG_FILES="$CONFIG_FILES otherlibs/systhreads/META" ;;
-    "ocamldoc/META") CONFIG_FILES="$CONFIG_FILES ocamldoc/META" ;;
     "ocamltest/ocamltest_unix.ml") CONFIG_LINKS="$CONFIG_LINKS ocamltest/ocamltest_unix.ml:${ocamltest_unix_mod}" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

@@ -205,7 +205,6 @@ RUNTIMED=@debug_runtime@
 INSTRUMENTED_RUNTIME=@instrumented_runtime@
 INSTRUMENTED_RUNTIME_LIBS=@instrumented_runtime_libs@
 WITH_DEBUGGER=@with_debugger@
-WITH_OCAMLDOC=@ocamldoc@
 WITH_OCAMLTEST=@ocamltest@
 ASM_CFI_SUPPORTED=@asm_cfi_supported@
 WITH_FRAME_POINTERS=@frame_pointers@
@@ -223,10 +222,14 @@ AFL_INSTRUMENT=@afl@
 FLAT_FLOAT_ARRAY=@flat_float_array@
 FUNCTION_SECTIONS=@function_sections@
 AWK=@AWK@
-STDLIB_MANPAGES=@stdlib_manpages@
 NAKED_POINTERS=false
 
 # Deprecated variables
+
+## Variables deprecated since OCaml 5.2
+
+STDLIB_MANPAGES=@build_libraries_manpages@
+WITH_OCAMLDOC=@with_ocamldoc@
 
 ## Variables deprecated since OCaml 5.0
 

@@ -7946,6 +7946,1020 @@ debugger/unix_tools.cmx : \
     debugger/unix_tools.cmi
 debugger/unix_tools.cmi : \
     otherlibs/unix/unix.cmi
+ocamldoc/odoc.cmo : \
+    ocamldoc/odoc_messages.cmi \
+    ocamldoc/odoc_info.cmi \
+    ocamldoc/odoc_global.cmi \
+    ocamldoc/odoc_gen.cmi \
+    ocamldoc/odoc_config.cmi \
+    ocamldoc/odoc_args.cmi \
+    ocamldoc/odoc_analyse.cmi \
+    otherlibs/dynlink/dynlink.cmi \
+    ocamldoc/odoc.cmi
+ocamldoc/odoc.cmx : \
+    ocamldoc/odoc_messages.cmx \
+    ocamldoc/odoc_info.cmx \
+    ocamldoc/odoc_global.cmx \
+    ocamldoc/odoc_gen.cmx \
+    ocamldoc/odoc_config.cmx \
+    ocamldoc/odoc_args.cmx \
+    ocamldoc/odoc_analyse.cmx \
+    otherlibs/dynlink/dynlink.cmi \
+    ocamldoc/odoc.cmi
+ocamldoc/odoc.cmi :
+ocamldoc/odoc_analyse.cmo : \
+    utils/warnings.cmi \
+    parsing/unit_info.cmi \
+    typing/types.cmi \
+    typing/typemod.cmi \
+    typing/typedtree.cmi \
+    parsing/syntaxerr.cmi \
+    driver/pparse.cmi \
+    parsing/parse.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_text.cmi \
+    ocamldoc/odoc_sig.cmi \
+    ocamldoc/odoc_module.cmi \
+    ocamldoc/odoc_misc.cmi \
+    ocamldoc/odoc_messages.cmi \
+    ocamldoc/odoc_merge.cmi \
+    ocamldoc/odoc_global.cmi \
+    ocamldoc/odoc_dep.cmi \
+    ocamldoc/odoc_cross.cmi \
+    ocamldoc/odoc_comments.cmi \
+    ocamldoc/odoc_class.cmi \
+    ocamldoc/odoc_ast.cmi \
+    parsing/location.cmi \
+    parsing/lexer.cmi \
+    typing/env.cmi \
+    driver/compmisc.cmi \
+    utils/clflags.cmi \
+    ocamldoc/odoc_analyse.cmi
+ocamldoc/odoc_analyse.cmx : \
+    utils/warnings.cmx \
+    parsing/unit_info.cmx \
+    typing/types.cmx \
+    typing/typemod.cmx \
+    typing/typedtree.cmx \
+    parsing/syntaxerr.cmx \
+    driver/pparse.cmx \
+    parsing/parse.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_text.cmx \
+    ocamldoc/odoc_sig.cmx \
+    ocamldoc/odoc_module.cmx \
+    ocamldoc/odoc_misc.cmx \
+    ocamldoc/odoc_messages.cmx \
+    ocamldoc/odoc_merge.cmx \
+    ocamldoc/odoc_global.cmx \
+    ocamldoc/odoc_dep.cmx \
+    ocamldoc/odoc_cross.cmx \
+    ocamldoc/odoc_comments.cmx \
+    ocamldoc/odoc_class.cmx \
+    ocamldoc/odoc_ast.cmx \
+    parsing/location.cmx \
+    parsing/lexer.cmx \
+    typing/env.cmx \
+    driver/compmisc.cmx \
+    utils/clflags.cmx \
+    ocamldoc/odoc_analyse.cmi
+ocamldoc/odoc_analyse.cmi : \
+    ocamldoc/odoc_module.cmi \
+    ocamldoc/odoc_global.cmi
+ocamldoc/odoc_args.cmo : \
+    otherlibs/str/str.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_texi.cmi \
+    ocamldoc/odoc_messages.cmi \
+    ocamldoc/odoc_man.cmi \
+    ocamldoc/odoc_latex.cmi \
+    ocamldoc/odoc_html.cmi \
+    ocamldoc/odoc_global.cmi \
+    ocamldoc/odoc_gen.cmi \
+    ocamldoc/odoc_dot.cmi \
+    ocamldoc/odoc_config.cmi \
+    driver/main_args.cmi \
+    utils/config.cmi \
+    driver/compenv.cmi \
+    ocamldoc/odoc_args.cmi
+ocamldoc/odoc_args.cmx : \
+    otherlibs/str/str.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_texi.cmx \
+    ocamldoc/odoc_messages.cmx \
+    ocamldoc/odoc_man.cmx \
+    ocamldoc/odoc_latex.cmx \
+    ocamldoc/odoc_html.cmx \
+    ocamldoc/odoc_global.cmx \
+    ocamldoc/odoc_gen.cmx \
+    ocamldoc/odoc_dot.cmx \
+    ocamldoc/odoc_config.cmx \
+    driver/main_args.cmx \
+    utils/config.cmx \
+    driver/compenv.cmx \
+    ocamldoc/odoc_args.cmi
+ocamldoc/odoc_args.cmi : \
+    ocamldoc/odoc_gen.cmi
+ocamldoc/odoc_ast.cmo : \
+    parsing/unit_info.cmi \
+    typing/types.cmi \
+    typing/typedtree.cmi \
+    typing/predef.cmi \
+    typing/path.cmi \
+    parsing/parsetree.cmi \
+    ocamldoc/odoc_value.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_sig.cmi \
+    ocamldoc/odoc_parameter.cmi \
+    ocamldoc/odoc_module.cmi \
+    ocamldoc/odoc_messages.cmi \
+    ocamldoc/odoc_global.cmi \
+    ocamldoc/odoc_extension.cmi \
+    ocamldoc/odoc_exception.cmi \
+    ocamldoc/odoc_env.cmi \
+    ocamldoc/odoc_class.cmi \
+    parsing/location.cmi \
+    typing/ident.cmi \
+    typing/btype.cmi \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_ast.cmi
+ocamldoc/odoc_ast.cmx : \
+    parsing/unit_info.cmx \
+    typing/types.cmx \
+    typing/typedtree.cmx \
+    typing/predef.cmx \
+    typing/path.cmx \
+    parsing/parsetree.cmi \
+    ocamldoc/odoc_value.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_type.cmx \
+    ocamldoc/odoc_sig.cmx \
+    ocamldoc/odoc_parameter.cmx \
+    ocamldoc/odoc_module.cmx \
+    ocamldoc/odoc_messages.cmx \
+    ocamldoc/odoc_global.cmx \
+    ocamldoc/odoc_extension.cmx \
+    ocamldoc/odoc_exception.cmx \
+    ocamldoc/odoc_env.cmx \
+    ocamldoc/odoc_class.cmx \
+    parsing/location.cmx \
+    typing/ident.cmx \
+    typing/btype.cmx \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_ast.cmi
+ocamldoc/odoc_ast.cmi : \
+    typing/types.cmi \
+    typing/typedtree.cmi \
+    parsing/parsetree.cmi \
+    ocamldoc/odoc_sig.cmi \
+    ocamldoc/odoc_name.cmi \
+    ocamldoc/odoc_module.cmi
+ocamldoc/odoc_class.cmo : \
+    typing/types.cmi \
+    ocamldoc/odoc_value.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_parameter.cmi \
+    ocamldoc/odoc_name.cmi \
+    ocamldoc/odoc_class.cmi
+ocamldoc/odoc_class.cmx : \
+    typing/types.cmx \
+    ocamldoc/odoc_value.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_parameter.cmx \
+    ocamldoc/odoc_name.cmx \
+    ocamldoc/odoc_class.cmi
+ocamldoc/odoc_class.cmi : \
+    typing/types.cmi \
+    ocamldoc/odoc_value.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_parameter.cmi \
+    ocamldoc/odoc_name.cmi
+ocamldoc/odoc_comments.cmo : \
+    otherlibs/str/str.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_text.cmi \
+    ocamldoc/odoc_see_lexer.cmi \
+    ocamldoc/odoc_parser.cmi \
+    ocamldoc/odoc_misc.cmi \
+    ocamldoc/odoc_messages.cmi \
+    ocamldoc/odoc_merge.cmi \
+    ocamldoc/odoc_lexer.cmi \
+    ocamldoc/odoc_global.cmi \
+    ocamldoc/odoc_cross.cmi \
+    ocamldoc/odoc_comments_global.cmi \
+    ocamldoc/odoc_comments.cmi
+ocamldoc/odoc_comments.cmx : \
+    otherlibs/str/str.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_text.cmx \
+    ocamldoc/odoc_see_lexer.cmx \
+    ocamldoc/odoc_parser.cmx \
+    ocamldoc/odoc_misc.cmx \
+    ocamldoc/odoc_messages.cmx \
+    ocamldoc/odoc_merge.cmx \
+    ocamldoc/odoc_lexer.cmx \
+    ocamldoc/odoc_global.cmx \
+    ocamldoc/odoc_cross.cmx \
+    ocamldoc/odoc_comments_global.cmx \
+    ocamldoc/odoc_comments.cmi
+ocamldoc/odoc_comments.cmi : \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_module.cmi
+ocamldoc/odoc_comments_global.cmo : \
+    ocamldoc/odoc_comments_global.cmi
+ocamldoc/odoc_comments_global.cmx : \
+    ocamldoc/odoc_comments_global.cmi
+ocamldoc/odoc_comments_global.cmi :
+ocamldoc/odoc_config.cmo : \
+    utils/config.cmi \
+    ocamldoc/odoc_config.cmi
+ocamldoc/odoc_config.cmx : \
+    utils/config.cmx \
+    ocamldoc/odoc_config.cmi
+ocamldoc/odoc_config.cmi :
+ocamldoc/odoc_cross.cmo : \
+    otherlibs/str/str.cmi \
+    ocamldoc/odoc_value.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_search.cmi \
+    ocamldoc/odoc_scan.cmi \
+    ocamldoc/odoc_parameter.cmi \
+    ocamldoc/odoc_name.cmi \
+    ocamldoc/odoc_module.cmi \
+    ocamldoc/odoc_misc.cmi \
+    ocamldoc/odoc_messages.cmi \
+    ocamldoc/odoc_global.cmi \
+    ocamldoc/odoc_extension.cmi \
+    ocamldoc/odoc_exception.cmi \
+    ocamldoc/odoc_class.cmi \
+    utils/misc.cmi \
+    ocamldoc/odoc_cross.cmi
+ocamldoc/odoc_cross.cmx : \
+    otherlibs/str/str.cmx \
+    ocamldoc/odoc_value.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_type.cmx \
+    ocamldoc/odoc_search.cmx \
+    ocamldoc/odoc_scan.cmx \
+    ocamldoc/odoc_parameter.cmx \
+    ocamldoc/odoc_name.cmx \
+    ocamldoc/odoc_module.cmx \
+    ocamldoc/odoc_misc.cmx \
+    ocamldoc/odoc_messages.cmx \
+    ocamldoc/odoc_global.cmx \
+    ocamldoc/odoc_extension.cmx \
+    ocamldoc/odoc_exception.cmx \
+    ocamldoc/odoc_class.cmx \
+    utils/misc.cmx \
+    ocamldoc/odoc_cross.cmi
+ocamldoc/odoc_cross.cmi : \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_module.cmi
+ocamldoc/odoc_dag2html.cmo : \
+    ocamldoc/odoc_info.cmi \
+    ocamldoc/odoc_dag2html.cmi
+ocamldoc/odoc_dag2html.cmx : \
+    ocamldoc/odoc_info.cmx \
+    ocamldoc/odoc_dag2html.cmi
+ocamldoc/odoc_dag2html.cmi : \
+    ocamldoc/odoc_info.cmi
+ocamldoc/odoc_dep.cmo : \
+    otherlibs/str/str.cmi \
+    parsing/parsetree.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_print.cmi \
+    ocamldoc/odoc_module.cmi \
+    utils/misc.cmi \
+    parsing/depend.cmi \
+    ocamldoc/odoc_dep.cmi
+ocamldoc/odoc_dep.cmx : \
+    otherlibs/str/str.cmx \
+    parsing/parsetree.cmi \
+    ocamldoc/odoc_type.cmx \
+    ocamldoc/odoc_print.cmx \
+    ocamldoc/odoc_module.cmx \
+    utils/misc.cmx \
+    parsing/depend.cmx \
+    ocamldoc/odoc_dep.cmi
+ocamldoc/odoc_dep.cmi : \
+    parsing/parsetree.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_module.cmi \
+    utils/misc.cmi
+ocamldoc/odoc_dot.cmo : \
+    ocamldoc/odoc_messages.cmi \
+    ocamldoc/odoc_info.cmi \
+    ocamldoc/odoc_dot.cmi
+ocamldoc/odoc_dot.cmx : \
+    ocamldoc/odoc_messages.cmx \
+    ocamldoc/odoc_info.cmx \
+    ocamldoc/odoc_dot.cmi
+ocamldoc/odoc_dot.cmi : \
+    ocamldoc/odoc_info.cmi
+ocamldoc/odoc_env.cmo : \
+    typing/types.cmi \
+    typing/predef.cmi \
+    typing/path.cmi \
+    ocamldoc/odoc_name.cmi \
+    typing/btype.cmi \
+    ocamldoc/odoc_env.cmi
+ocamldoc/odoc_env.cmx : \
+    typing/types.cmx \
+    typing/predef.cmx \
+    typing/path.cmx \
+    ocamldoc/odoc_name.cmx \
+    typing/btype.cmx \
+    ocamldoc/odoc_env.cmi
+ocamldoc/odoc_env.cmi : \
+    typing/types.cmi \
+    ocamldoc/odoc_name.cmi
+ocamldoc/odoc_exception.cmo : \
+    typing/types.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_name.cmi \
+    ocamldoc/odoc_exception.cmi
+ocamldoc/odoc_exception.cmx : \
+    typing/types.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_type.cmx \
+    ocamldoc/odoc_name.cmx \
+    ocamldoc/odoc_exception.cmi
+ocamldoc/odoc_exception.cmi : \
+    typing/types.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_name.cmi
+ocamldoc/odoc_extension.cmo : \
+    typing/types.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_name.cmi \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_extension.cmi
+ocamldoc/odoc_extension.cmx : \
+    typing/types.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_type.cmx \
+    ocamldoc/odoc_name.cmx \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_extension.cmi
+ocamldoc/odoc_extension.cmi : \
+    typing/types.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_name.cmi \
+    parsing/asttypes.cmi
+ocamldoc/odoc_gen.cmo : \
+    ocamldoc/odoc_texi.cmi \
+    ocamldoc/odoc_module.cmi \
+    ocamldoc/odoc_man.cmi \
+    ocamldoc/odoc_latex.cmi \
+    ocamldoc/odoc_html.cmi \
+    ocamldoc/odoc_dot.cmi \
+    ocamldoc/odoc_gen.cmi
+ocamldoc/odoc_gen.cmx : \
+    ocamldoc/odoc_texi.cmx \
+    ocamldoc/odoc_module.cmx \
+    ocamldoc/odoc_man.cmx \
+    ocamldoc/odoc_latex.cmx \
+    ocamldoc/odoc_html.cmx \
+    ocamldoc/odoc_dot.cmx \
+    ocamldoc/odoc_gen.cmi
+ocamldoc/odoc_gen.cmi : \
+    ocamldoc/odoc_texi.cmi \
+    ocamldoc/odoc_module.cmi \
+    ocamldoc/odoc_man.cmi \
+    ocamldoc/odoc_latex.cmi \
+    ocamldoc/odoc_html.cmi \
+    ocamldoc/odoc_dot.cmi
+ocamldoc/odoc_global.cmo : \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_messages.cmi \
+    ocamldoc/odoc_config.cmi \
+    utils/clflags.cmi \
+    ocamldoc/odoc_global.cmi
+ocamldoc/odoc_global.cmx : \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_messages.cmx \
+    ocamldoc/odoc_config.cmx \
+    utils/clflags.cmx \
+    ocamldoc/odoc_global.cmi
+ocamldoc/odoc_global.cmi : \
+    ocamldoc/odoc_types.cmi
+ocamldoc/odoc_html.cmo : \
+    otherlibs/str/str.cmi \
+    middle_end/flambda/parameter.cmi \
+    ocamldoc/odoc_text.cmi \
+    ocamldoc/odoc_ocamlhtml.cmi \
+    ocamldoc/odoc_messages.cmi \
+    ocamldoc/odoc_info.cmi \
+    ocamldoc/odoc_global.cmi \
+    ocamldoc/odoc_dag2html.cmi \
+    utils/misc.cmi \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_html.cmi
+ocamldoc/odoc_html.cmx : \
+    otherlibs/str/str.cmx \
+    middle_end/flambda/parameter.cmx \
+    ocamldoc/odoc_text.cmx \
+    ocamldoc/odoc_ocamlhtml.cmx \
+    ocamldoc/odoc_messages.cmx \
+    ocamldoc/odoc_info.cmx \
+    ocamldoc/odoc_global.cmx \
+    ocamldoc/odoc_dag2html.cmx \
+    utils/misc.cmx \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_html.cmi
+ocamldoc/odoc_html.cmi : \
+    typing/types.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_parameter.cmi \
+    ocamldoc/odoc_info.cmi \
+    ocamldoc/odoc_dag2html.cmi \
+    utils/misc.cmi
+ocamldoc/odoc_info.cmo : \
+    typing/printtyp.cmi \
+    ocamldoc/odoc_value.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_text.cmi \
+    ocamldoc/odoc_str.cmi \
+    ocamldoc/odoc_search.cmi \
+    ocamldoc/odoc_scan.cmi \
+    ocamldoc/odoc_print.cmi \
+    ocamldoc/odoc_parameter.cmi \
+    ocamldoc/odoc_name.cmi \
+    ocamldoc/odoc_module.cmi \
+    ocamldoc/odoc_misc.cmi \
+    ocamldoc/odoc_global.cmi \
+    ocamldoc/odoc_extension.cmi \
+    ocamldoc/odoc_exception.cmi \
+    ocamldoc/odoc_dep.cmi \
+    ocamldoc/odoc_config.cmi \
+    ocamldoc/odoc_comments.cmi \
+    ocamldoc/odoc_class.cmi \
+    ocamldoc/odoc_analyse.cmi \
+    parsing/location.cmi \
+    ocamldoc/odoc_info.cmi
+ocamldoc/odoc_info.cmx : \
+    typing/printtyp.cmx \
+    ocamldoc/odoc_value.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_type.cmx \
+    ocamldoc/odoc_text.cmx \
+    ocamldoc/odoc_str.cmx \
+    ocamldoc/odoc_search.cmx \
+    ocamldoc/odoc_scan.cmx \
+    ocamldoc/odoc_print.cmx \
+    ocamldoc/odoc_parameter.cmx \
+    ocamldoc/odoc_name.cmx \
+    ocamldoc/odoc_module.cmx \
+    ocamldoc/odoc_misc.cmx \
+    ocamldoc/odoc_global.cmx \
+    ocamldoc/odoc_extension.cmx \
+    ocamldoc/odoc_exception.cmx \
+    ocamldoc/odoc_dep.cmx \
+    ocamldoc/odoc_config.cmx \
+    ocamldoc/odoc_comments.cmx \
+    ocamldoc/odoc_class.cmx \
+    ocamldoc/odoc_analyse.cmx \
+    parsing/location.cmx \
+    ocamldoc/odoc_info.cmi
+ocamldoc/odoc_info.cmi : \
+    typing/types.cmi \
+    otherlibs/str/str.cmi \
+    ocamldoc/odoc_value.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_search.cmi \
+    ocamldoc/odoc_parameter.cmi \
+    ocamldoc/odoc_module.cmi \
+    ocamldoc/odoc_global.cmi \
+    ocamldoc/odoc_extension.cmi \
+    ocamldoc/odoc_exception.cmi \
+    ocamldoc/odoc_class.cmi \
+    parsing/location.cmi \
+    parsing/asttypes.cmi
+ocamldoc/odoc_latex.cmo : \
+    otherlibs/str/str.cmi \
+    ocamldoc/odoc_to_text.cmi \
+    ocamldoc/odoc_messages.cmi \
+    ocamldoc/odoc_latex_style.cmi \
+    ocamldoc/odoc_info.cmi \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_latex.cmi
+ocamldoc/odoc_latex.cmx : \
+    otherlibs/str/str.cmx \
+    ocamldoc/odoc_to_text.cmx \
+    ocamldoc/odoc_messages.cmx \
+    ocamldoc/odoc_latex_style.cmx \
+    ocamldoc/odoc_info.cmx \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_latex.cmi
+ocamldoc/odoc_latex.cmi : \
+    typing/types.cmi \
+    otherlibs/str/str.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_info.cmi
+ocamldoc/odoc_latex_style.cmo : \
+    ocamldoc/odoc_latex_style.cmi
+ocamldoc/odoc_latex_style.cmx : \
+    ocamldoc/odoc_latex_style.cmi
+ocamldoc/odoc_latex_style.cmi :
+ocamldoc/odoc_lexer.cmo : \
+    otherlibs/str/str.cmi \
+    ocamldoc/odoc_parser.cmi \
+    ocamldoc/odoc_messages.cmi \
+    ocamldoc/odoc_global.cmi \
+    ocamldoc/odoc_comments_global.cmi \
+    ocamldoc/odoc_lexer.cmi
+ocamldoc/odoc_lexer.cmx : \
+    otherlibs/str/str.cmx \
+    ocamldoc/odoc_parser.cmx \
+    ocamldoc/odoc_messages.cmx \
+    ocamldoc/odoc_global.cmx \
+    ocamldoc/odoc_comments_global.cmx \
+    ocamldoc/odoc_lexer.cmi
+ocamldoc/odoc_lexer.cmi : \
+    ocamldoc/odoc_parser.cmi
+ocamldoc/odoc_man.cmo : \
+    otherlibs/str/str.cmi \
+    middle_end/flambda/parameter.cmi \
+    ocamldoc/odoc_str.cmi \
+    ocamldoc/odoc_print.cmi \
+    ocamldoc/odoc_misc.cmi \
+    ocamldoc/odoc_messages.cmi \
+    ocamldoc/odoc_info.cmi \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_man.cmi
+ocamldoc/odoc_man.cmx : \
+    otherlibs/str/str.cmx \
+    middle_end/flambda/parameter.cmx \
+    ocamldoc/odoc_str.cmx \
+    ocamldoc/odoc_print.cmx \
+    ocamldoc/odoc_misc.cmx \
+    ocamldoc/odoc_messages.cmx \
+    ocamldoc/odoc_info.cmx \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_man.cmi
+ocamldoc/odoc_man.cmi : \
+    typing/types.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_info.cmi
+ocamldoc/odoc_merge.cmo : \
+    otherlibs/str/str.cmi \
+    ocamldoc/odoc_value.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_parameter.cmi \
+    ocamldoc/odoc_module.cmi \
+    ocamldoc/odoc_messages.cmi \
+    ocamldoc/odoc_global.cmi \
+    ocamldoc/odoc_extension.cmi \
+    ocamldoc/odoc_exception.cmi \
+    ocamldoc/odoc_class.cmi \
+    ocamldoc/odoc_merge.cmi
+ocamldoc/odoc_merge.cmx : \
+    otherlibs/str/str.cmx \
+    ocamldoc/odoc_value.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_type.cmx \
+    ocamldoc/odoc_parameter.cmx \
+    ocamldoc/odoc_module.cmx \
+    ocamldoc/odoc_messages.cmx \
+    ocamldoc/odoc_global.cmx \
+    ocamldoc/odoc_extension.cmx \
+    ocamldoc/odoc_exception.cmx \
+    ocamldoc/odoc_class.cmx \
+    ocamldoc/odoc_merge.cmi
+ocamldoc/odoc_merge.cmi : \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_module.cmi
+ocamldoc/odoc_messages.cmo : \
+    otherlibs/str/str.cmi \
+    utils/config.cmi \
+    ocamldoc/odoc_messages.cmi
+ocamldoc/odoc_messages.cmx : \
+    otherlibs/str/str.cmx \
+    utils/config.cmx \
+    ocamldoc/odoc_messages.cmi
+ocamldoc/odoc_messages.cmi :
+ocamldoc/odoc_misc.cmo : \
+    otherlibs/unix/unix.cmi \
+    typing/types.cmi \
+    typing/predef.cmi \
+    typing/path.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_messages.cmi \
+    parsing/longident.cmi \
+    typing/btype.cmi \
+    ocamldoc/odoc_misc.cmi
+ocamldoc/odoc_misc.cmx : \
+    otherlibs/unix/unix.cmx \
+    typing/types.cmx \
+    typing/predef.cmx \
+    typing/path.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_messages.cmx \
+    parsing/longident.cmx \
+    typing/btype.cmx \
+    ocamldoc/odoc_misc.cmi
+ocamldoc/odoc_misc.cmi : \
+    typing/types.cmi \
+    ocamldoc/odoc_types.cmi \
+    parsing/longident.cmi \
+    parsing/asttypes.cmi
+ocamldoc/odoc_module.cmo : \
+    typing/types.cmi \
+    ocamldoc/odoc_value.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_name.cmi \
+    ocamldoc/odoc_extension.cmi \
+    ocamldoc/odoc_exception.cmi \
+    ocamldoc/odoc_class.cmi \
+    utils/misc.cmi \
+    ocamldoc/odoc_module.cmi
+ocamldoc/odoc_module.cmx : \
+    typing/types.cmx \
+    ocamldoc/odoc_value.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_type.cmx \
+    ocamldoc/odoc_name.cmx \
+    ocamldoc/odoc_extension.cmx \
+    ocamldoc/odoc_exception.cmx \
+    ocamldoc/odoc_class.cmx \
+    utils/misc.cmx \
+    ocamldoc/odoc_module.cmi
+ocamldoc/odoc_module.cmi : \
+    typing/types.cmi \
+    ocamldoc/odoc_value.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_name.cmi \
+    ocamldoc/odoc_extension.cmi \
+    ocamldoc/odoc_exception.cmi \
+    ocamldoc/odoc_class.cmi \
+    utils/misc.cmi
+ocamldoc/odoc_name.cmo : \
+    parsing/unit_info.cmi \
+    otherlibs/str/str.cmi \
+    typing/path.cmi \
+    ocamldoc/odoc_misc.cmi \
+    typing/ident.cmi \
+    ocamldoc/odoc_name.cmi
+ocamldoc/odoc_name.cmx : \
+    parsing/unit_info.cmx \
+    otherlibs/str/str.cmx \
+    typing/path.cmx \
+    ocamldoc/odoc_misc.cmx \
+    typing/ident.cmx \
+    ocamldoc/odoc_name.cmi
+ocamldoc/odoc_name.cmi : \
+    typing/path.cmi \
+    parsing/longident.cmi \
+    typing/ident.cmi
+ocamldoc/odoc_ocamlhtml.cmo : \
+    otherlibs/str/str.cmi \
+    ocamldoc/odoc_ocamlhtml.cmi
+ocamldoc/odoc_ocamlhtml.cmx : \
+    otherlibs/str/str.cmx \
+    ocamldoc/odoc_ocamlhtml.cmi
+ocamldoc/odoc_ocamlhtml.cmi :
+ocamldoc/odoc_parameter.cmo : \
+    typing/types.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_parameter.cmi
+ocamldoc/odoc_parameter.cmx : \
+    typing/types.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_parameter.cmi
+ocamldoc/odoc_parameter.cmi : \
+    typing/types.cmi \
+    ocamldoc/odoc_types.cmi
+ocamldoc/odoc_parser.cmo : \
+    otherlibs/str/str.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_comments_global.cmi \
+    ocamldoc/odoc_parser.cmi
+ocamldoc/odoc_parser.cmx : \
+    otherlibs/str/str.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_comments_global.cmx \
+    ocamldoc/odoc_parser.cmi
+ocamldoc/odoc_parser.cmi : \
+    ocamldoc/odoc_types.cmi
+ocamldoc/odoc_print.cmo : \
+    typing/types.cmi \
+    typing/printtyp.cmi \
+    typing/btype.cmi \
+    ocamldoc/odoc_print.cmi
+ocamldoc/odoc_print.cmx : \
+    typing/types.cmx \
+    typing/printtyp.cmx \
+    typing/btype.cmx \
+    ocamldoc/odoc_print.cmi
+ocamldoc/odoc_print.cmi : \
+    typing/types.cmi
+ocamldoc/odoc_scan.cmo : \
+    ocamldoc/odoc_value.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_module.cmi \
+    ocamldoc/odoc_extension.cmi \
+    ocamldoc/odoc_exception.cmi \
+    ocamldoc/odoc_class.cmi \
+    ocamldoc/odoc_scan.cmi
+ocamldoc/odoc_scan.cmx : \
+    ocamldoc/odoc_value.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_type.cmx \
+    ocamldoc/odoc_module.cmx \
+    ocamldoc/odoc_extension.cmx \
+    ocamldoc/odoc_exception.cmx \
+    ocamldoc/odoc_class.cmx \
+    ocamldoc/odoc_scan.cmi
+ocamldoc/odoc_scan.cmi : \
+    ocamldoc/odoc_value.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_module.cmi \
+    ocamldoc/odoc_extension.cmi \
+    ocamldoc/odoc_exception.cmi \
+    ocamldoc/odoc_class.cmi
+ocamldoc/odoc_search.cmo : \
+    otherlibs/str/str.cmi \
+    ocamldoc/odoc_value.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_module.cmi \
+    ocamldoc/odoc_misc.cmi \
+    ocamldoc/odoc_extension.cmi \
+    ocamldoc/odoc_exception.cmi \
+    ocamldoc/odoc_class.cmi \
+    ocamldoc/odoc_search.cmi
+ocamldoc/odoc_search.cmx : \
+    otherlibs/str/str.cmx \
+    ocamldoc/odoc_value.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_type.cmx \
+    ocamldoc/odoc_module.cmx \
+    ocamldoc/odoc_misc.cmx \
+    ocamldoc/odoc_extension.cmx \
+    ocamldoc/odoc_exception.cmx \
+    ocamldoc/odoc_class.cmx \
+    ocamldoc/odoc_search.cmi
+ocamldoc/odoc_search.cmi : \
+    otherlibs/str/str.cmi \
+    ocamldoc/odoc_value.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_module.cmi \
+    ocamldoc/odoc_extension.cmi \
+    ocamldoc/odoc_exception.cmi \
+    ocamldoc/odoc_class.cmi
+ocamldoc/odoc_see_lexer.cmo : \
+    ocamldoc/odoc_parser.cmi \
+    ocamldoc/odoc_see_lexer.cmi
+ocamldoc/odoc_see_lexer.cmx : \
+    ocamldoc/odoc_parser.cmx \
+    ocamldoc/odoc_see_lexer.cmi
+ocamldoc/odoc_see_lexer.cmi : \
+    ocamldoc/odoc_parser.cmi
+ocamldoc/odoc_sig.cmo : \
+    parsing/unit_info.cmi \
+    typing/types.cmi \
+    typing/typedtree.cmi \
+    parsing/parsetree.cmi \
+    ocamldoc/odoc_value.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_parameter.cmi \
+    ocamldoc/odoc_module.cmi \
+    ocamldoc/odoc_misc.cmi \
+    ocamldoc/odoc_messages.cmi \
+    ocamldoc/odoc_merge.cmi \
+    ocamldoc/odoc_global.cmi \
+    ocamldoc/odoc_extension.cmi \
+    ocamldoc/odoc_exception.cmi \
+    ocamldoc/odoc_env.cmi \
+    ocamldoc/odoc_class.cmi \
+    parsing/longident.cmi \
+    parsing/location.cmi \
+    typing/ident.cmi \
+    typing/ctype.cmi \
+    typing/btype.cmi \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_sig.cmi
+ocamldoc/odoc_sig.cmx : \
+    parsing/unit_info.cmx \
+    typing/types.cmx \
+    typing/typedtree.cmx \
+    parsing/parsetree.cmi \
+    ocamldoc/odoc_value.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_type.cmx \
+    ocamldoc/odoc_parameter.cmx \
+    ocamldoc/odoc_module.cmx \
+    ocamldoc/odoc_misc.cmx \
+    ocamldoc/odoc_messages.cmx \
+    ocamldoc/odoc_merge.cmx \
+    ocamldoc/odoc_global.cmx \
+    ocamldoc/odoc_extension.cmx \
+    ocamldoc/odoc_exception.cmx \
+    ocamldoc/odoc_env.cmx \
+    ocamldoc/odoc_class.cmx \
+    parsing/longident.cmx \
+    parsing/location.cmx \
+    typing/ident.cmx \
+    typing/ctype.cmx \
+    typing/btype.cmx \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_sig.cmi
+ocamldoc/odoc_sig.cmi : \
+    typing/types.cmi \
+    typing/typedtree.cmi \
+    parsing/parsetree.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_name.cmi \
+    ocamldoc/odoc_module.cmi \
+    ocamldoc/odoc_env.cmi \
+    ocamldoc/odoc_class.cmi \
+    parsing/location.cmi
+ocamldoc/odoc_str.cmo : \
+    typing/types.cmi \
+    typing/printtyp.cmi \
+    ocamldoc/odoc_value.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_print.cmi \
+    ocamldoc/odoc_name.cmi \
+    ocamldoc/odoc_misc.cmi \
+    ocamldoc/odoc_messages.cmi \
+    ocamldoc/odoc_extension.cmi \
+    ocamldoc/odoc_exception.cmi \
+    ocamldoc/odoc_class.cmi \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_str.cmi
+ocamldoc/odoc_str.cmx : \
+    typing/types.cmx \
+    typing/printtyp.cmx \
+    ocamldoc/odoc_value.cmx \
+    ocamldoc/odoc_type.cmx \
+    ocamldoc/odoc_print.cmx \
+    ocamldoc/odoc_name.cmx \
+    ocamldoc/odoc_misc.cmx \
+    ocamldoc/odoc_messages.cmx \
+    ocamldoc/odoc_extension.cmx \
+    ocamldoc/odoc_exception.cmx \
+    ocamldoc/odoc_class.cmx \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_str.cmi
+ocamldoc/odoc_str.cmi : \
+    typing/types.cmi \
+    ocamldoc/odoc_value.cmi \
+    ocamldoc/odoc_type.cmi \
+    ocamldoc/odoc_extension.cmi \
+    ocamldoc/odoc_exception.cmi \
+    ocamldoc/odoc_class.cmi
+ocamldoc/odoc_test.cmo : \
+    ocamldoc/odoc_info.cmi \
+    ocamldoc/odoc_gen.cmi \
+    ocamldoc/odoc_args.cmi \
+    ocamldoc/odoc_test.cmi
+ocamldoc/odoc_test.cmx : \
+    ocamldoc/odoc_info.cmx \
+    ocamldoc/odoc_gen.cmx \
+    ocamldoc/odoc_args.cmx \
+    ocamldoc/odoc_test.cmi
+ocamldoc/odoc_test.cmi :
+ocamldoc/odoc_texi.cmo : \
+    typing/types.cmi \
+    otherlibs/str/str.cmi \
+    ocamldoc/odoc_to_text.cmi \
+    ocamldoc/odoc_messages.cmi \
+    ocamldoc/odoc_info.cmi \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_texi.cmi
+ocamldoc/odoc_texi.cmx : \
+    typing/types.cmx \
+    otherlibs/str/str.cmx \
+    ocamldoc/odoc_to_text.cmx \
+    ocamldoc/odoc_messages.cmx \
+    ocamldoc/odoc_info.cmx \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_texi.cmi
+ocamldoc/odoc_texi.cmi : \
+    typing/types.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_info.cmi
+ocamldoc/odoc_text.cmo : \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_text_parser.cmi \
+    ocamldoc/odoc_text_lexer.cmi \
+    ocamldoc/odoc_text.cmi
+ocamldoc/odoc_text.cmx : \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_text_parser.cmx \
+    ocamldoc/odoc_text_lexer.cmx \
+    ocamldoc/odoc_text.cmi
+ocamldoc/odoc_text.cmi : \
+    ocamldoc/odoc_types.cmi
+ocamldoc/odoc_text_lexer.cmo : \
+    otherlibs/str/str.cmi \
+    ocamldoc/odoc_text_parser.cmi \
+    ocamldoc/odoc_misc.cmi \
+    ocamldoc/odoc_text_lexer.cmi
+ocamldoc/odoc_text_lexer.cmx : \
+    otherlibs/str/str.cmx \
+    ocamldoc/odoc_text_parser.cmx \
+    ocamldoc/odoc_misc.cmx \
+    ocamldoc/odoc_text_lexer.cmi
+ocamldoc/odoc_text_lexer.cmi : \
+    ocamldoc/odoc_text_parser.cmi
+ocamldoc/odoc_text_parser.cmo : \
+    otherlibs/str/str.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_misc.cmi \
+    ocamldoc/odoc_text_parser.cmi
+ocamldoc/odoc_text_parser.cmx : \
+    otherlibs/str/str.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_misc.cmx \
+    ocamldoc/odoc_text_parser.cmi
+ocamldoc/odoc_text_parser.cmi : \
+    ocamldoc/odoc_types.cmi
+ocamldoc/odoc_to_text.cmo : \
+    otherlibs/str/str.cmi \
+    middle_end/flambda/parameter.cmi \
+    ocamldoc/odoc_str.cmi \
+    ocamldoc/odoc_module.cmi \
+    ocamldoc/odoc_messages.cmi \
+    ocamldoc/odoc_info.cmi \
+    ocamldoc/odoc_to_text.cmi
+ocamldoc/odoc_to_text.cmx : \
+    otherlibs/str/str.cmx \
+    middle_end/flambda/parameter.cmx \
+    ocamldoc/odoc_str.cmx \
+    ocamldoc/odoc_module.cmx \
+    ocamldoc/odoc_messages.cmx \
+    ocamldoc/odoc_info.cmx \
+    ocamldoc/odoc_to_text.cmi
+ocamldoc/odoc_to_text.cmi : \
+    typing/types.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_info.cmi
+ocamldoc/odoc_type.cmo : \
+    typing/types.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_name.cmi \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_type.cmi
+ocamldoc/odoc_type.cmx : \
+    typing/types.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_name.cmx \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_type.cmi
+ocamldoc/odoc_type.cmi : \
+    typing/types.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_name.cmi \
+    parsing/asttypes.cmi
+ocamldoc/odoc_types.cmo : \
+    ocamldoc/odoc_messages.cmi \
+    parsing/location.cmi \
+    ocamldoc/odoc_types.cmi
+ocamldoc/odoc_types.cmx : \
+    ocamldoc/odoc_messages.cmx \
+    parsing/location.cmx \
+    ocamldoc/odoc_types.cmi
+ocamldoc/odoc_types.cmi : \
+    parsing/location.cmi
+ocamldoc/odoc_value.cmo : \
+    typing/types.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_parameter.cmi \
+    ocamldoc/odoc_name.cmi \
+    ocamldoc/odoc_misc.cmi \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_value.cmi
+ocamldoc/odoc_value.cmx : \
+    typing/types.cmx \
+    ocamldoc/odoc_types.cmx \
+    ocamldoc/odoc_parameter.cmx \
+    ocamldoc/odoc_name.cmx \
+    ocamldoc/odoc_misc.cmx \
+    parsing/asttypes.cmi \
+    ocamldoc/odoc_value.cmi
+ocamldoc/odoc_value.cmi : \
+    typing/types.cmi \
+    ocamldoc/odoc_types.cmi \
+    ocamldoc/odoc_parameter.cmi \
+    ocamldoc/odoc_name.cmi
 ocamltest/actions.cmo : \
     ocamltest/variables.cmi \
     ocamltest/result.cmi \
