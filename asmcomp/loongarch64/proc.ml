@@ -210,6 +210,9 @@ let external_calling_conventions
         if !float <= last_float then begin
           loc.(i) <- [| phys_reg !float |];
           incr float
+        end else if !int <= last_int then begin
+          loc.(i) <- [| phys_reg !int |];
+          incr int
         end else begin
           loc.(i) <- [| stack_slot (make_stack !ofs) Float |];
           ofs := !ofs + size_float
