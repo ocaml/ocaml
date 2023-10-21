@@ -37,7 +37,7 @@ module Raw = struct
   external spawn : (unit -> 'a) -> 'a term_sync -> t
     = "caml_domain_spawn"
   external self : unit -> t
-    = "caml_ml_domain_id"
+    = "caml_ml_domain_id" [@@noalloc]
   external cpu_relax : unit -> unit
     = "caml_ml_domain_cpu_relax"
   external get_recommended_domain_count: unit -> int
