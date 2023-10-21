@@ -604,6 +604,7 @@ USE_STDLIB = -nostdlib -I ../stdlib
 FLEXDLL_OBJECTS = \
   flexdll_$(FLEXDLL_CHAIN).$(O) flexdll_initer_$(FLEXDLL_CHAIN).$(O)
 FLEXLINK_BUILD_ENV = \
+  MSVCC_ROOT= \
   MSVC_DETECT=0 OCAML_CONFIG_FILE=../Makefile.config \
   CHAINS=$(FLEXDLL_CHAIN) ROOTDIR=..
 FLEXDLL_SOURCES = \
