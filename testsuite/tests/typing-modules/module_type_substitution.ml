@@ -309,8 +309,8 @@ Line 3, characters 2-19:
 3 |   val x: (module t)
       ^^^^^^^^^^^^^^^^^
 Error: The module type "t" is not a valid type for a packed module:
-       it is defined as a temporary local name for an anonymous module type.
-       (see manual section 12.7.3)
+       it is defined as a local substitution (temporary local name)
+       for an anonymous module type. (see manual section 12.7.3)
 |}]
 
 
