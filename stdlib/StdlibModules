@@ -73,6 +73,7 @@ STDLIB_MODULE_BASENAMES = \
   domain \
   camlinternalFormat \
   printf \
+  dynarray \
   arg \
   printexc \
   fun \
