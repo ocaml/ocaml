@@ -373,19 +373,19 @@ let ml_file_dependencies source_file =
       | Ptop_def s -> s
       | Ptop_dir _ -> []
     in
-    List.concat_map f (Parse.use_file lexbuf);
+    List.concat_map f (Parse.use_file lexbuf)
     |> Ast_helper.Impl.mk
   in
   let (extracted_deps, ()) =
     read_parse_and_extract parse_use_file_as_impl Depend.add_implementation ()
-                           Pparse.Implementation source_file
+                           Pparse.Structure source_file
   in
   prepend_to_list files (source_file, ML, extracted_deps, !Depend.pp_deps)
 
 let mli_file_dependencies source_file =
   let (extracted_deps, ()) =
     read_parse_and_extract Parse.interface Depend.add_interface ()
-                           Pparse.Interface source_file
+                           Pparse.Signature source_file
   in
   prepend_to_list files (source_file, MLI, extracted_deps, !Depend.pp_deps)
 
@@ -512,11 +512,11 @@ let rec dump_map s0 ppf m =
 
 let process_ml_map =
   read_parse_and_extract Parse.implementation Depend.add_implementation_binding
-                         String.Map.empty Pparse.Implementation
+                         String.Map.empty Pparse.Structure
 
 let process_mli_map =
   read_parse_and_extract Parse.interface Depend.add_interface_binding
-                         String.Map.empty Pparse.Interface
+                         String.Map.empty Pparse.Signature
 
 let parse_map fname =
   let old_transp = !Clflags.transparent_modules in

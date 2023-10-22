@@ -199,11 +199,10 @@ let preprocess_phrase ppf phr =
   let phr =
     match phr with
     | Ptop_def str ->
-        let impl =
-          Ast_helper.Impl.mk str
-          |> Pparse.apply_rewriters_impl ~restore:true ~tool_name:"ocaml"
+        let str =
+          Pparse.apply_rewriters_str ~restore:true ~tool_name:"ocaml" str
         in
-        Ptop_def impl.pimpl_structure
+        Ptop_def str
     | phr -> phr
   in
   if !Clflags.dump_parsetree then Printast.top_phrase ppf phr;

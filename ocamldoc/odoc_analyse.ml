@@ -79,7 +79,7 @@ let process_implementation_file sourcefile =
   try
     let parsetree =
       Pparse.file ~tool_name inputfile
-        (no_docstring Parse.implementation) Pparse.Implementation
+        (no_docstring Parse.implementation) Pparse.Structure
     in
     let typedtree = Typemod.type_implementation source env parsetree in
     (Some (parsetree, typedtree), inputfile)
@@ -108,7 +108,7 @@ let process_interface_file sourcefile =
   let inputfile = preprocess sourcefile in
   let ast =
     Pparse.file ~tool_name inputfile
-      (no_docstring Parse.interface) Pparse.Interface
+      (no_docstring Parse.interface) Pparse.Signature
   in
   let sg = Typemod.type_interface (initial_env()) ast in
   Warnings.check_fatal ();
