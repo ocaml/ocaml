@@ -1,8 +1,6 @@
 (* TEST
- include unix;
  modules = "test3_.c";
  no-tsan; (* TSan does not support call stacks bigger than 64k frames *)
- libunix;
  {
    bytecode;
  }{

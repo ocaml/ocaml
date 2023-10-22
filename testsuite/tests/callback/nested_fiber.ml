@@ -1,12 +1,5 @@
 (* TEST
- include unix;
  modules = "nested_fiber_.c";
- libunix;
- {
-   bytecode;
- }{
-   native;
- }
 *)
 
 external caml_to_c : (unit -> 'a) -> 'a = "caml_to_c"
