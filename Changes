@@ -496,6 +496,9 @@ Working version
   (Fabrice Buoro and Olivier Nicole, report by Jan Midtgaard and Miod Vallat,
    review by Gabriel Scherer)
 
+- #12684: fix locations filename in AST produced by the `-pp` option
+  (Gabriel Scherer, review by Florian Angeletti)
+
 OCaml 5.1.1
 -----------
 
