@@ -1,6 +1,6 @@
 (* TEST
  include unix;
- libunix;
+ hasunix;
  {
    bytecode;
  }{
