@@ -157,9 +157,11 @@ static void print_trace (const char *template, ...){
 
 /* The pushdown automata */
 
-CAMLprim value caml_parse_engine(struct parser_tables *tables,
-                                 struct parser_env *env, value cmd, value arg)
+CAMLprim value caml_parse_engine(value vtables, value venv,
+                                 value cmd, value arg)
 {
+  struct parser_tables * tables = (struct parser_tables *) vtables;
+  struct parser_env * env = (struct parser_env *) venv;
   int state;
   mlsize_t sp, asp;
   int errflag;
