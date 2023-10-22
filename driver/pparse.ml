@@ -165,7 +165,7 @@ let parse (type a) (kind : a ast_kind) lexbuf : a =
   | Structure -> Parse.implementation lexbuf
   | Signature -> Parse.interface lexbuf
 
-let file_aux ~tool_name inputfile (type a) parse_fun invariant_fun
+let file_aux ~tool_name ~sourcefile inputfile (type a) parse_fun invariant_fun
              (kind : a ast_kind) : a =
   let ast =
     let ast_magic = magic_of_kind kind in
@@ -194,7 +194,7 @@ let file_aux ~tool_name inputfile (type a) parse_fun invariant_fun
         In_channel.input_all ic
       in
       let lexbuf = Lexing.from_string source in
-      Location.init lexbuf inputfile;
+      Location.init lexbuf sourcefile;
       Location.input_lexbuf := Some lexbuf;
       Profile.record_call "parser" (fun () -> parse_fun lexbuf)
     end
@@ -204,7 +204,7 @@ let file_aux ~tool_name inputfile (type a) parse_fun invariant_fun
     )
 
 let file ~tool_name inputfile parse_fun ast_kind =
-  file_aux ~tool_name inputfile parse_fun ignore ast_kind
+  file_aux ~tool_name ~sourcefile:inputfile inputfile parse_fun ignore ast_kind
 
 let report_error ppf = function
   | CannotRun cmd ->
@@ -227,7 +227,7 @@ let parse_file ~tool_name invariant_fun parse kind sourcefile =
   Misc.try_finally
     (fun () ->
        Profile.record_call "parsing" @@ fun () ->
-       file_aux ~tool_name inputfile parse invariant_fun kind)
+       file_aux ~tool_name ~sourcefile inputfile parse invariant_fun kind)
     ~always:(fun () -> remove_preprocessed inputfile)
 
 let parse_implementation ~tool_name sourcefile =
