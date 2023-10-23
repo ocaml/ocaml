@@ -184,6 +184,7 @@ Line 1, characters 25-58:
 1 | module type fst_erased = fst with module type t := sig end
                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This "with" constraint "t := sig end" makes a packed module ill-formed.
+       (see manual section 12.7.3)
 |}]
 
 module type fst_ok = fst with module type t = sig end
@@ -205,6 +206,7 @@ Line 8, characters 16-49:
 8 | module type R = S with module type M.T := sig end
                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This "with" constraint "M.T := sig end" makes a packed module ill-formed.
+       (see manual section 12.7.3)
 |}]
 
 
@@ -222,6 +224,7 @@ Line 8, characters 16-49:
 8 | module type R = S with module type M.T := sig end
                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This "with" constraint "T := sig end" makes a packed module ill-formed.
+       (see manual section 12.7.3)
 |}]
 
 
@@ -253,7 +256,51 @@ Error: Multiple definition of the type name "a".
        Names must be unique in a given structure or signature.
 |}]
 
-module type fst = sig
+(* Only local module type substitutions resulting in paths may
+   be used in first class modules. *)
+
+module X = struct
+  module type s = sig type t end
+  module Y(Z : s) = struct
+    module type Ys = sig end
+  end
+end
+
+module type fcm_path = sig
+  module type t_s := X.s
+  module Z : sig type t end
+  module type t_Ys := X.Y(Z).Ys
+
+  module F : functor (Z : module type of Z) -> sig
+    module type t_F = sig type ff end
+  end
+
+  module type t_FF := F(Z).t_F
+
+  val x_s: (module t_s)
+  val x_sY: (module t_Ys)
+  val x_sFF : (module t_FF)
+end
+
+[%%expect {|
+module X :
+  sig
+    module type s = sig type t end
+    module Y : functor (Z : s) -> sig module type Ys = sig end end
+  end
+module type fcm_path =
+  sig
+    module Z : sig type t end
+    module F :
+      functor (Z : sig type t end) ->
+        sig module type t_F = sig type ff end end
+    val x_s : (module X.s)
+    val x_sY : (module X.Y(Z).Ys)
+    val x_sFF : (module F(Z).t_F)
+  end
+|}]
+
+module type fcm_signature = sig
   module type t := sig end
   val x: (module t)
 end
@@ -262,7 +309,8 @@ Line 3, characters 2-19:
 3 |   val x: (module t)
       ^^^^^^^^^^^^^^^^^
 Error: The module type "t" is not a valid type for a packed module:
-       it is defined as a local substitution for a non-path module type.
+       it is defined as a local substitution (temporary name)
+       for an anonymous module type. (see manual section 12.7.3)
 |}]
 
 

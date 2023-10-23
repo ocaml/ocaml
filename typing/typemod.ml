@@ -3314,14 +3314,18 @@ let report_error ~loc _env = function
               types (other than when replacing a type constructor with @ \
               a type constructor with the same arguments).@]"
   | With_cannot_remove_packed_modtype (p,mty) ->
+      let[@manual.ref "ss:module-type-substitution"] manual_ref =
+        [ 12; 7; 3 ]
+      in
       let pp_constraint ppf () =
         Format.fprintf ppf "%s := %a"
           (Path.name p) Printtyp.modtype mty
       in
       Location.errorf ~loc
-        "This %a constraint@ %a@ makes a packed module ill-formed."
+        "This %a constraint@ %a@ makes a packed module ill-formed.@ %a"
         Style.inline_code "with"
         (Style.as_inline_code pp_constraint) ()
+        Misc.print_see_manual manual_ref
   | Repeated_name(kind, name) ->
       Location.errorf ~loc
         "@[Multiple definition of the %s name %a.@ \
@@ -3447,10 +3451,15 @@ let report_error ~loc _env = function
       Location.errorf ~loc "Only type synonyms are allowed on the right of %a"
         Style.inline_code  ":="
   | Unpackable_local_modtype_subst p ->
+      let[@manual.ref "ss:module-type-substitution"] manual_ref =
+        [ 12; 7; 3 ]
+      in
       Location.errorf ~loc
         "The module type@ %a@ is not a valid type for a packed module:@ \
-         it is defined as a local substitution for a non-path module type."
+         it is defined as a local substitution (temporary name)@ \
+         for an anonymous module type.@ %a"
         Style.inline_code (Path.name p)
+        Misc.print_see_manual manual_ref
 
 let report_error env ~loc err =
   Printtyp.wrap_printing_env ~error:true env

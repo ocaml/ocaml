@@ -56,7 +56,7 @@ module type CompareInt = ComparableInt with type t := int
 
 \subsection{ss:local-substitution}{Local substitution declarations}
 
-(Introduced in OCaml 4.08)
+(Introduced in OCaml 4.08, module type substitution introduced in 4.13)
 
 \begin{syntax}
 specification:
@@ -99,6 +99,29 @@ module type S = sig
   type 'a poly_list := [ `Cons of 'a * 'a poly_list | `Nil ]
 end [@@expect error];;
 \end{caml_example}
+
+
+Local substitutions can also be used to give a local name to a type or
+a module type introduced by a functor application:
+
+\begin{caml_example}{toplevel}
+module type F = sig
+  type set := Set.Make(Int).t
+
+  module type Type = sig type t end
+  module Nest : Type -> sig module type T = Type end
+
+  module type T := Nest(Int).T
+
+  val set: set
+  val m : (module T)
+end;;
+\end{caml_example}
+
+
+Local module type substitutions are subject to the same limitations as module
+type substitutions, see section \ref{ss:module-type-substitution}.
+
 
 \subsection{ss:module-type-substitution}{Module type substitutions}
 
@@ -151,11 +174,20 @@ from the signature
 \begin{caml_example}{toplevel}
 module type ENDO' = ENDO with module type T := ENDO;;
 \end{caml_example}
-If the right hand side of the substitution is not a path, then the destructive
-substitution is only valid if the left-hand side of the substitution is never
-used as the type of a first-class module in the original module type.
+
+\subsubsection*{ss:module-type-substitution-limitations}{Limitations}
+
+If the right hand side of a module type substitution or a local module
+type substitution is not a @modtype-path@,
+then the destructive substitution is only valid if the left-hand side of the
+substitution is never used as the type of a first-class module in the original
+module type.
 
 \begin{caml_example}{verbatim}[error]
 module type T = sig module type S val x: (module S) end
 module type Error = T with module type S := sig end
+\end{caml_example}
+
+\begin{caml_example}{verbatim}[error]
+module type T = sig module type S := sig end val x: (module S) end
 \end{caml_example}

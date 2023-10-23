@@ -303,6 +303,10 @@ Working version
   "A type parameter" or "A parameter".
   (Stefan Muenzel, review by Gabriel Scherer)
 
+- #12679: Add more detail to the error message and manual in case of
+  invalid module type substitutions.
+  (Stefan Muenzel, review by Gabriel Scherer and Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - #12639: parsing: Attach a location to the RHS of Ptyp_alias
