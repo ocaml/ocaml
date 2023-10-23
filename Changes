@@ -245,6 +245,14 @@ Working version
   input files are specified to build an executable.
   (Antonin Décimo, review by Sébastien Hinderer)
 
+- #12688: Setting the env variable `NO_COLOR` with an empty value no longer
+  has effects. Previously, setting `NO_COLOR` with any value, including
+  the empty value, would disable colors (unless `OCAML_COLOR` is also set).
+  After this change, the user must set `NO_COLOR` with an non-empty value
+  to disable colors. This reflects a specification clarification/change
+  from the upstream website at https://no-color.org.
+  (Favonia, review by Gabriel Scherer)
+
 ### Manual and documentation:
 
 - #12338: clarification of the documentation of process related function in
