@@ -3456,7 +3456,7 @@ let report_error ~loc _env = function
       in
       Location.errorf ~loc
         "The module type@ %a@ is not a valid type for a packed module:@ \
-         it is defined as a local substitution (temporary local name)@ \
+         it is defined as a local substitution (temporary name)@ \
          for an anonymous module type.@ %a"
         Style.inline_code (Path.name p)
         Misc.print_see_manual manual_ref

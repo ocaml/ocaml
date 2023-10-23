@@ -101,20 +101,20 @@ end [@@expect error];;
 \end{caml_example}
 
 
-Local module type substitutions also allow for the removal of functor
-applications:
+Local substitutions can also be used to give a local name to a type or
+a module type introduced by a functor application:
 
 \begin{caml_example}{toplevel}
 module type F = sig
-  module Z : sig type t end
+  type set := Set.Make(Int).t
 
-  module F : functor (Z : module type of Z) -> sig
-    module type FF = sig type ff end
-  end
+  module type Type = sig type t end
+  module Nest : Type -> sig module type T = Type end
 
-  module type M := F(Z).FF
+  module type T := Nest(Int).T
 
-  val m : (module M)
+  val set: set
+  val m : (module T)
 end;;
 \end{caml_example}
 
