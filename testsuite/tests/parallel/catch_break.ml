@@ -68,6 +68,9 @@ let rec wait n =
     wait n
   )
 
+(* We busy-wait because other synchronisation mechanisms involve
+   blocking calls, which may exercise other parts of the async
+   callback implementation than we want.*)
 let break_trap s =
   begin
     try Atomic.incr ready_count; while true do () done
