@@ -45,10 +45,11 @@ Success.
 *)
 
 let delay = 0.001 (* 1 ms *)
-let fuel = Atomic.make 1000 (* 1s *)
+let fuel = Atomic.make 1000 (* = 1s max retry duration *)
 
 let print = if verbose then print_endline else fun _ -> ()
 
+(* start sending interrupts when reaches 1 or 2 *)
 let ready_count = Atomic.make 0
 
 (* Does not poll *)
@@ -75,17 +76,17 @@ let break_trap s =
   print s;
   Atomic.decr ready_count
 
-(* Simulate repeated Ctrl-C *)
+(* Simulate repeated Ctrl-C from a parallel thread *)
 let interruptor_domain () =
   Domain.spawn @@ fun () ->
   ignore (Thread.sigmask Unix.SIG_BLOCK [Sys.sigint]);
   let kill () = sleep () ; Unix.kill (Unix.getpid ()) Sys.sigint in
   wait 2;
-  kill ();
+  kill (); (* interrupt Domain 1 or Domain 0-1 *)
   wait 1;
-  kill ();
+  kill (); (* interrupt the other one of Domain 1 or Domain 0-1 *)
   wait 2;
-  kill ()
+  kill ()  (* interrupt Domain 0-2 *)
 
 let run () =
   (* We simulate the user pressing Ctrl-C repeatedly. Goal: joining
@@ -96,13 +97,14 @@ let run () =
   break_trap "Domain 0 - 1";
   Domain.join d;
   assert (Atomic.get ready_count = 0);
-  Atomic.incr ready_count;
+  Atomic.incr ready_count; (* Make sure it reaches 2 *)
   break_trap "Domain 0 - 2";
   Domain.join d2
 
 let () =
   Sys.catch_break true;
   (try run () with Sys.Break ->
-     print "Test could not complete due to scheduling hazard.");
+     print ("Test could not complete due to scheduling hazard"
+            ^ " (possible false positive)."));
   print "Success.";
   exit 0
