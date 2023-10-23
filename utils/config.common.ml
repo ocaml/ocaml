@@ -28,26 +28,26 @@ let standard_library =
   with Not_found ->
     standard_library_default
 
-let exec_magic_number = "Caml1999X033"
+let exec_magic_number = {magic|Caml1999X033|magic}
     (* exec_magic_number is duplicated in runtime/caml/exec.h *)
-and cmi_magic_number = "Caml1999I033"
-and cmo_magic_number = "Caml1999O033"
-and cma_magic_number = "Caml1999A033"
+and cmi_magic_number = {magic|Caml1999I033|magic}
+and cmo_magic_number = {magic|Caml1999O033|magic}
+and cma_magic_number = {magic|Caml1999A033|magic}
 and cmx_magic_number =
   if flambda then
-    "Caml1999y033"
+    {magic|Caml1999y033|magic}
   else
-    "Caml1999Y033"
+    {magic|Caml1999Y033|magic}
 and cmxa_magic_number =
   if flambda then
-    "Caml1999z033"
+    {magic|Caml1999z033|magic}
   else
-    "Caml1999Z033"
-and ast_impl_magic_number = "Caml1999M033"
-and ast_intf_magic_number = "Caml1999N033"
-and cmxs_magic_number = "Caml1999D033"
-and cmt_magic_number = "Caml1999T033"
-and linear_magic_number = "Caml1999L033"
+    {magic|Caml1999Z033|magic}
+and ast_impl_magic_number = {magic|Caml1999M033|magic}
+and ast_intf_magic_number = {magic|Caml1999N033|magic}
+and cmxs_magic_number = {magic|Caml1999D033|magic}
+and cmt_magic_number = {magic|Caml1999T033|magic}
+and linear_magic_number = {magic|Caml1999L033|magic}
 
 let safe_string = true
 let default_safe_string = true
