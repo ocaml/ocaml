@@ -88,7 +88,7 @@ struct caml_ba_array {
   intnat dim[]  /*[num_dims]*/; /* Size in each dimension */
 };
 
-/* Size of struct caml_ba_array, in bytes, without dummy first dimension */
+/* Size of struct caml_ba_array, in bytes, without [dim] array */
 #define SIZEOF_BA_ARRAY sizeof(struct caml_ba_array)
 
 #define Caml_ba_array_val(v) ((struct caml_ba_array *) Data_custom_val(v))
