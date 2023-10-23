@@ -26,11 +26,7 @@
 #include "caml/skiplist.h"
 
 /* Size of struct skipcell, in bytes, without the forward array */
-#if (__STDC_VERSION__ >= 199901L)
 #define SIZEOF_SKIPCELL sizeof(struct skipcell)
-#else
-#define SIZEOF_SKIPCELL (sizeof(struct skipcell) - sizeof(struct skipcell *))
-#endif
 
 /* Generate a random level for a new node: 0 with probability 3/4,
    1 with probability 3/16, 2 with probability 3/64, etc.
