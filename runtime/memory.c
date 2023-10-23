@@ -479,19 +479,10 @@ struct pool_block {
 #endif
   struct pool_block *next;
   struct pool_block *prev;
-  /* Use C99's flexible array types if possible */
-#if (__STDC_VERSION__ >= 199901L)
   union max_align data[];  /* not allocated, used for alignment purposes */
-#else
-  union max_align data[1];
-#endif
 };
 
-#if (__STDC_VERSION__ >= 199901L)
 #define SIZEOF_POOL_BLOCK sizeof(struct pool_block)
-#else
-#define SIZEOF_POOL_BLOCK offsetof(struct pool_block, data)
-#endif
 
 static struct pool_block *pool = NULL;
 static caml_plat_mutex pool_mutex = CAML_PLAT_MUTEX_INITIALIZER;

@@ -48,11 +48,7 @@ struct lf_skipcell {
   uintnat top_level;
   void *stat_block;
   struct lf_skipcell *_Atomic garbage_next;
-#if (__STDC_VERSION__ >= 199901L)
-  struct lf_skipcell *_Atomic forward[]; /* variable-length array */
-#else
-  struct lf_skipcell *_Atomic forward[1]; /* variable-length array */
-#endif
+  struct lf_skipcell *_Atomic forward[]; /* flexible array member */
 };
 
 /* Initialize a skip list */

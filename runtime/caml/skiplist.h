@@ -39,11 +39,7 @@ struct skiplist {
 struct skipcell {
   uintnat key;
   uintnat data;
-#if (__STDC_VERSION__ >= 199901L)
-  struct skipcell * forward[];  /* variable-length array */
-#else
-  struct skipcell * forward[1]; /* variable-length array */
-#endif
+  struct skipcell * forward[];  /* flexible array member */
 };
 
 /* Initialize a skip list, statically */

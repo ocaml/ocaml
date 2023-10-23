@@ -50,12 +50,7 @@
 #include <stddef.h>
 
 /* Size of struct lf_skipcell, in bytes, without the forward array */
-#if (__STDC_VERSION__ >= 199901L)
 #define SIZEOF_LF_SKIPCELL sizeof(struct lf_skipcell)
-#else
-#define SIZEOF_LF_SKIPCELL                                                     \
-  (sizeof(struct lf_skipcell) - sizeof(struct lf_skipcell *))
-#endif
 
 /* Generate a random level for a new node: 0 with probability 3/4,
    1 with probability 3/16, 2 with probability 3/64, etc.
