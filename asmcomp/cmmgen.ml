@@ -580,6 +580,14 @@ let rec transl env e =
           tag_int (Cop(mk_load_mut Word_int,
             [field_address (transl env b) dim_ofs dbg],
             dbg)) dbg
+      | (Pintcomp _ as comp,
+         [Uprim(Pcompare_ints, [arg1; arg2], _);
+          Uconst(Uconst_int 0)]) ->
+          transl env (Uprim (comp, [arg1; arg2], dbg))
+      | (Pintcomp comp,
+         [Uprim(Pcompare_bints b, [arg1; arg2], _);
+          Uconst(Uconst_int 0)]) ->
+          transl env (Uprim (Pbintcomp (b, comp), [arg1; arg2], dbg))
       | (p, [arg]) ->
           transl_prim_1 env p arg dbg
       | (p, [arg1; arg2]) ->

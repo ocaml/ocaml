@@ -1,0 +1,80 @@
+testing "int"...
+  #0: OK
+  #1: OK
+  #2: OK
+  #3: OK
+  #4: OK
+  #5: OK
+  #6: OK
+  #7: OK
+  #8: OK
+  #9: OK
+  #10: OK
+  #11: OK
+  #12: OK
+  #13: OK
+  #14: OK
+  #15: OK
+  #16: OK
+  #17: OK
+
+testing "int32"...
+  #0: OK
+  #1: OK
+  #2: OK
+  #3: OK
+  #4: OK
+  #5: OK
+  #6: OK
+  #7: OK
+  #8: OK
+  #9: OK
+  #10: OK
+  #11: OK
+  #12: OK
+  #13: OK
+  #14: OK
+  #15: OK
+  #16: OK
+  #17: OK
+
+testing "int64"...
+  #0: OK
+  #1: OK
+  #2: OK
+  #3: OK
+  #4: OK
+  #5: OK
+  #6: OK
+  #7: OK
+  #8: OK
+  #9: OK
+  #10: OK
+  #11: OK
+  #12: OK
+  #13: OK
+  #14: OK
+  #15: OK
+  #16: OK
+  #17: OK
+
+testing "nativeint"...
+  #0: OK
+  #1: OK
+  #2: OK
+  #3: OK
+  #4: OK
+  #5: OK
+  #6: OK
+  #7: OK
+  #8: OK
+  #9: OK
+  #10: OK
+  #11: OK
+  #12: OK
+  #13: OK
+  #14: OK
+  #15: OK
+  #16: OK
+  #17: OK
+

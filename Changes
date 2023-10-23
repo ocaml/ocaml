@@ -154,6 +154,9 @@ Working version
 - #12551: Propagate classification of recursive bindings from Rec_check
   (Vincent Laviron, review by Gabriel Scherer)
 
+- #1809, #12181: rewrite `compare x y op 0` to `x op y` when values are integers
+  (Xavier Clerc, Stefan Muenzel, review by Gabriel Scherer and Vincent Laviron)
+
 ### Standard library:
 
 - #11563: Add the Dynarray module to the stdlib. Dynamic arrays are
