@@ -141,6 +141,12 @@ Working version
 - #12634: Simplify TSan backtrace bookkeeping upon raise
   (Olivier Nicole and Fabrice Buoro, review by Gabriel Scherer)
 
+* #12686: Some primitives had the wrong types to be callable from the bytecode
+  interpreter.  Either fix their types, mark them as `CAMLexport` instead of
+  `CAMLprim`, or remove them entirely if no longer used.
+  (Xavier Leroy, review by David Allsopp)
+
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.
@@ -204,6 +210,11 @@ Working version
 
 - #12213: Dynlink library, improve legibility of error messages
   (Samuel Hym, review by Gabriel Scherer and Nicolás Ojeda Bär)
+
+* #12686: Runtime_events library, C API: define
+  `caml_runtime_events_{start,pause,resume}` as returning `void`
+  instead of `value`.
+  (Xavier Leroy, review by David Allsopp)
 
 ### Tools:
 
