@@ -398,6 +398,10 @@ Working version
   use 'runtop-with-otherlibs' to use a library from otherlibs/
   (Gabriel Scherer, review by Sébastien Hinderer, suggestion by David Allsopp)
 
+- #12652: Make magic numbers easier to bump and duplicate.
+  (Sébastien Hinderer, review by Antonin Décimo, David Allsopp and Florian
+  Angeletti)
+
 ### Bug fixes:
 
 - #12590, #12595: fix a race in `caml_collect_gc_stats_sample`
