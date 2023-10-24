@@ -297,9 +297,9 @@ module Callbacks = struct
 
 end
 
-external start : unit -> unit = "caml_runtime_events_start"
-external pause : unit -> unit = "caml_runtime_events_pause"
-external resume : unit -> unit = "caml_runtime_events_resume"
+external start : unit -> unit = "caml_ml_runtime_events_start"
+external pause : unit -> unit = "caml_ml_runtime_events_pause"
+external resume : unit -> unit = "caml_ml_runtime_events_resume"
 
 external create_cursor : (string * int) option -> cursor
                                         = "caml_ml_runtime_events_create_cursor"

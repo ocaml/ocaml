@@ -449,6 +449,21 @@ CAMLprim value caml_runtime_events_resume(void) {
 
   return Val_unit;
 }
+
+/* Make the three functions above callable from OCaml */
+
+CAMLprim value caml_ml_runtime_events_start(value vunit) {
+  caml_runtime_events_start(); return Val_unit;
+}
+
+CAMLprim value caml_ml_runtime_events_pause(value vunit) {
+  caml_runtime_events_pause(); return Val_unit;
+}
+
+CAMLprim value caml_ml_runtime_events_resume(value vunit) {
+  caml_runtime_events_resume(); return Val_unit;
+}
+
 static struct runtime_events_buffer_header *get_ring_buffer_by_domain_id
                                                               (int domain_id) {
   return (
