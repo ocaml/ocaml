@@ -89,10 +89,15 @@ let remove_stars s =
   Str.global_replace (Str.regexp ("^"^blank^"*\\*")) "" s
 }
 
+let blank = [ ' ' '\013' '\009' '\012']
+let nl_blank = blank | '\010'
+let notblank = [^ ' ' '\010' '\013' '\009' '\012']
 let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
 let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
 let identchar =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+
+let modident = uppercase identchar* ('.' uppercase identchar* )*
 
 rule main = parse
     [' ' '\013' '\009' '\012'] +
@@ -280,7 +285,7 @@ and special_comment_part2 = parse
       }
 
 and elements = parse
-  | [' ' '\013' '\009' '\012'] +
+  | blank+
       {
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length (Lexing.lexeme lexbuf));
         elements lexbuf
@@ -295,14 +300,18 @@ and elements = parse
         raise (Failure (Odoc_messages.should_escape_at_sign))
       }
 
+  | "@param" nl_blank+ (identchar+ as id) nl_blank+ { T_PARAM id }
+  | "@param" { failwith "usage: @param id description"}
+  | "@before" nl_blank+ (notblank+ as v) nl_blank+ { T_BEFORE v }
+  | "@before" { failwith "usage: @before version description"}
+  | "@raise" nl_blank+ (modident as id) nl_blank+ { T_RAISES id }
+  | "@raise" { failwith "usage: @raise Exception description"}
   | "@"lowercase+
       {
         let s = Lexing.lexeme lexbuf in
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length s);
         let s2 = String.sub s 1 ((String.length s) - 1) in
         match s2 with
-          "param" ->
-            T_PARAM
          | "author" ->
             T_AUTHOR
          | "version" ->
@@ -311,12 +320,8 @@ and elements = parse
              T_SEE
          | "since" ->
              T_SINCE
-         | "before" ->
-             T_BEFORE
          | "deprecated" ->
              T_DEPRECATED
-         | "raise" ->
-             T_RAISES
          | "return" ->
              T_RETURN
          | s ->
