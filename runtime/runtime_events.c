@@ -418,36 +418,30 @@ static void stw_create_runtime_events(
   caml_global_barrier();
 }
 
-CAMLprim value caml_runtime_events_start(void) {
+CAMLexport void caml_runtime_events_start(void) {
   while (!atomic_load_acquire(&runtime_events_enabled)) {
     caml_try_run_on_all_domains(&stw_create_runtime_events, NULL, NULL);
   }
-
-  return Val_unit;
 }
 
-CAMLprim value caml_runtime_events_pause(void) {
-  if (!atomic_load_acquire(&runtime_events_enabled)) return Val_unit;
+CAMLexport void caml_runtime_events_pause(void) {
+  if (!atomic_load_acquire(&runtime_events_enabled)) return;
 
   uintnat not_paused = 0;
 
   if( atomic_compare_exchange_strong(&runtime_events_paused, &not_paused, 1) ) {
     caml_ev_lifecycle(EV_RING_PAUSE, 0);
   }
-
-  return Val_unit;
 }
 
-CAMLprim value caml_runtime_events_resume(void) {
-  if (!atomic_load_acquire(&runtime_events_enabled)) return Val_unit;
+CAMLexport void caml_runtime_events_resume(void) {
+  if (!atomic_load_acquire(&runtime_events_enabled)) return;
 
   uintnat paused = 1;
 
   if( atomic_compare_exchange_strong(&runtime_events_paused, &paused, 0) ) {
     caml_ev_lifecycle(EV_RING_RESUME, 0);
   }
-
-  return Val_unit;
 }
 
 /* Make the three functions above callable from OCaml */
