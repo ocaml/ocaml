@@ -797,7 +797,7 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
    then it can be partially reconstructed, the only missing information being
    the associated tag. This function returns an event structure, except when the
    event is unknown and the event type id is EV_USER_ML_TYPE_CUSTOM. */
-CAMLprim value caml_runtime_events_user_resolve(
+CAMLexport value caml_runtime_events_user_resolve(
   char* event_name, ev_user_ml_type event_type_id)
 {
   CAMLparam0();
