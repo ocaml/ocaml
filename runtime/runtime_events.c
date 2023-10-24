@@ -418,37 +418,46 @@ static void stw_create_runtime_events(
   caml_global_barrier();
 }
 
-CAMLprim value caml_runtime_events_start(void) {
+CAMLexport void caml_runtime_events_start(void) {
   while (!atomic_load_acquire(&runtime_events_enabled)) {
     caml_try_run_on_all_domains(&stw_create_runtime_events, NULL, NULL);
   }
-
-  return Val_unit;
 }
 
-CAMLprim value caml_runtime_events_pause(void) {
-  if (!atomic_load_acquire(&runtime_events_enabled)) return Val_unit;
+CAMLexport void caml_runtime_events_pause(void) {
+  if (!atomic_load_acquire(&runtime_events_enabled)) return;
 
   uintnat not_paused = 0;
 
   if( atomic_compare_exchange_strong(&runtime_events_paused, &not_paused, 1) ) {
     caml_ev_lifecycle(EV_RING_PAUSE, 0);
   }
-
-  return Val_unit;
 }
 
-CAMLprim value caml_runtime_events_resume(void) {
-  if (!atomic_load_acquire(&runtime_events_enabled)) return Val_unit;
+CAMLexport void caml_runtime_events_resume(void) {
+  if (!atomic_load_acquire(&runtime_events_enabled)) return;
 
   uintnat paused = 1;
 
   if( atomic_compare_exchange_strong(&runtime_events_paused, &paused, 0) ) {
     caml_ev_lifecycle(EV_RING_RESUME, 0);
   }
-
-  return Val_unit;
 }
+
+/* Make the three functions above callable from OCaml */
+
+CAMLprim value caml_ml_runtime_events_start(value vunit) {
+  caml_runtime_events_start(); return Val_unit;
+}
+
+CAMLprim value caml_ml_runtime_events_pause(value vunit) {
+  caml_runtime_events_pause(); return Val_unit;
+}
+
+CAMLprim value caml_ml_runtime_events_resume(value vunit) {
+  caml_runtime_events_resume(); return Val_unit;
+}
+
 static struct runtime_events_buffer_header *get_ring_buffer_by_domain_id
                                                               (int domain_id) {
   return (
@@ -788,7 +797,7 @@ CAMLprim value caml_runtime_events_user_write(value event, value event_content)
    then it can be partially reconstructed, the only missing information being
    the associated tag. This function returns an event structure, except when the
    event is unknown and the event type id is EV_USER_ML_TYPE_CUSTOM. */
-CAMLprim value caml_runtime_events_user_resolve(
+CAMLexport value caml_runtime_events_user_resolve(
   char* event_name, ev_user_ml_type event_type_id)
 {
   CAMLparam0();

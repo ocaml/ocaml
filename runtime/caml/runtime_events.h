@@ -155,21 +155,20 @@ typedef enum {
 
 /* Starts runtime_events. Needs to be called before
    [caml_runtime_events_create_cursor]. Needs the runtime lock held to call and
-   will trigger a stop-the-world pause. Returns Val_unit. */
-CAMLextern value caml_runtime_events_start(void);
+   will trigger a stop-the-world pause. */
+CAMLextern void caml_runtime_events_start(void);
 
 /* Pauses runtime_events if not currently paused otherwise does nothing.
    No new events (other than the pause itself) will be written to the ring
    buffer by this domain immediately and all other domains soon. Needs the
-   runtime lock held to call as a pause event is written during this call.
-   Returns Val_unit. */
-CAMLextern value caml_runtime_events_pause(void);
+   runtime lock held to call as a pause event is written during this call. */
+CAMLextern void caml_runtime_events_pause(void);
 
 /* Resumes runtime_events if currently paused otherwise does nothing. New events
    (as well as a resume event) will be written to this domain immediately and
    all other domains soon. Needs the runtime lock held to call as a resume event
-   is written during this call. Returns Val_unit. */
-CAMLextern value caml_runtime_events_resume(void);
+   is written during this call. */
+CAMLextern void caml_runtime_events_resume(void);
 
 #ifdef CAML_INTERNALS
 
