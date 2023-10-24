@@ -88,3 +88,38 @@ m4_define([OCAML__RELEASE_EXTRA],
   m4_if(OCAML__VERSION_EXTRA,[],[None],
       ['Some (]m4_if(OCAML__VERSION_EXTRA_PREFIX,+,[Plus],
       [Tilde])[, "]OCAML__VERSION_EXTRA[")']))]))
+
+# Magic numbers for the different file formats
+
+# The magic numbers are made of three components:
+# - An 8-bytes prefix, common to all of them
+# - A 1-byte kind, specifying the file type (exeecutable, cmi, cmo, etc.)
+# - A 3-bytes version number
+
+m4_define([MAGIC_NUMBER__PREFIX], [Caml1999])
+m4_define([MAGIC_NUMBER__VERSION], [033])
+
+# The following macro is used to define all our magic numbers
+# Its first argument is the name of the file type described by that
+# magic number and its second argument is the character used to
+# characterize that file type
+
+AC_DEFUN([DEFINE_MAGIC_NUMBER],
+  [m4_define([$1__MAGIC_NUMBER],
+    [MAGIC_NUMBER__PREFIX[]$2[]MAGIC_NUMBER__VERSION])])
+
+m4_define(EXEC__FORMAT, [X])
+DEFINE_MAGIC_NUMBER([EXEC], EXEC__FORMAT)
+DEFINE_MAGIC_NUMBER([CMI], [I])
+DEFINE_MAGIC_NUMBER([CMO], [O])
+DEFINE_MAGIC_NUMBER([CMA], [A])
+DEFINE_MAGIC_NUMBER([CMX_CLAMBDA], [Y])
+DEFINE_MAGIC_NUMBER([CMX_FLAMBDA], [y])
+DEFINE_MAGIC_NUMBER([CMXA_CLAMBDA], [Z])
+DEFINE_MAGIC_NUMBER([CMXA_FLAMBDA], [z])
+DEFINE_MAGIC_NUMBER([AST_IMPL], [M])
+DEFINE_MAGIC_NUMBER([AST_INTF], [N])
+DEFINE_MAGIC_NUMBER([CMXS], [D])
+DEFINE_MAGIC_NUMBER([CMT], [T])
+DEFINE_MAGIC_NUMBER([LINEAR], [L])
+m4_define([MAGIC_NUMBER__LENGTH], m4_len(EXEC__MAGIC_NUMBER))

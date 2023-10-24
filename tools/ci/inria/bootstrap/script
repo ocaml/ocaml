@@ -57,22 +57,6 @@ quote1 () {
   printf "'%s'" "`printf %s "$1" | sed -e "s/'/'\\\\\\\\''/g"`";
 }
 
-# Functions used to modify the source code
-
-change_exe_magic_number() {
-  old=`./runtime/ocamlrun -M`
-  new="$1"
-  echo Changing executable magic number from ${old} to ${new}
-  # Change magic number in runtime/caml/exec.h
-  sed -i.tmp 's/\x23define \+EXEC_MAGIC \+\x22'${old}\
-'\x22/#define EXEC_MAGIC "'${new}'"/' runtime/caml/exec.h
-  rm -f runtime/caml/exec.h.tmp
-  # Change magic number in utils/config.common.ml
-  sed -i.tmp 's/let \+exec_magic_number \+= \+\x22'${old}\
-'\x22/let exec_magic_number = "'${new}'"/' utils/config.common.ml
-  rm -f utils/config.common.ml.tmp
-}
-
 remove_primitive()
 {
   echo Removing the \'sinh\' primitive
@@ -240,7 +224,7 @@ eval "./configure $build $host --prefix='$instdir' $confoptions"
 
 $make world
 
-change_exe_magic_number "CI-bootstrap"
+tools/bump-magic-numbers ZZZ
 
 remove_primitive
 

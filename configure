@@ -898,6 +898,18 @@ CSCFLAGS
 CSC
 DIFF_FLAGS
 CC
+LINEAR_MAGIC_NUMBER
+CMT_MAGIC_NUMBER
+CMXS_MAGIC_NUMBER
+AST_INTF_MAGIC_NUMBER
+AST_IMPL_MAGIC_NUMBER
+CMXA_MAGIC_NUMBER
+CMX_MAGIC_NUMBER
+CMA_MAGIC_NUMBER
+CMO_MAGIC_NUMBER
+CMI_MAGIC_NUMBER
+EXEC_MAGIC_NUMBER
+MAGIC_NUMBER_LENGTH
 OCAML_VERSION_SHORT
 OCAML_VERSION_EXTRA
 OCAML_VERSION_PATCHLEVEL
@@ -3302,6 +3314,36 @@ OCAML_VERSION_EXTRA=dev0-2023-04-11
 
 OCAML_VERSION_SHORT=5.2
 
+printf "%s\n" "#define MAGIC_NUMBER_PREFIX \"Caml1999\"" >>confdefs.h
+
+printf "%s\n" "#define MAGIC_NUMBER_VERSION \"033\"" >>confdefs.h
+
+MAGIC_NUMBER_LENGTH=12
+
+printf "%s\n" "#define EXEC_MAGIC_LENGTH 12" >>confdefs.h
+
+printf "%s\n" "#define EXEC_FORMAT \"X\"" >>confdefs.h
+
+EXEC_MAGIC_NUMBER=Caml1999X033
+
+CMI_MAGIC_NUMBER=Caml1999I033
+
+CMO_MAGIC_NUMBER=Caml1999O033
+
+CMA_MAGIC_NUMBER=Caml1999A033
+
+
+
+AST_IMPL_MAGIC_NUMBER=Caml1999M033
+
+AST_INTF_MAGIC_NUMBER=Caml1999N033
+
+CMXS_MAGIC_NUMBER=Caml1999D033
+
+CMT_MAGIC_NUMBER=Caml1999T033
+
+LINEAR_MAGIC_NUMBER=Caml1999L033
+
 
 
 
@@ -3438,7 +3480,11 @@ ac_config_files="$ac_config_files manual/src/html_processing/src/common.ml"
 
 ac_config_files="$ac_config_files ocamltest/ocamltest_config.ml"
 
+ac_config_files="$ac_config_files utils/config.common.ml"
+
 ac_config_files="$ac_config_files utils/config.generated.ml"
+
+ac_config_headers="$ac_config_headers runtime/caml/exec.h"
 
 ac_config_headers="$ac_config_headers runtime/caml/m.h"
 
@@ -19877,6 +19923,15 @@ else $as_nop
   flambda_invariants=false
 fi
 
+if $flambda
+then :
+  CMX_MAGIC_NUMBER=Caml1999y033
+  CMXA_MAGIC_NUMBER=Caml1999z033
+else $as_nop
+  CMX_MAGIC_NUMBER=Caml1999Y033
+  CMXA_MAGIC_NUMBER=Caml1999Z033
+fi
+
 if test x"$enable_cmm_invariants" = "xyes"
 then :
   cmm_invariants=true
@@ -21295,7 +21350,9 @@ do
     "manual/src/version.tex") CONFIG_FILES="$CONFIG_FILES manual/src/version.tex" ;;
     "manual/src/html_processing/src/common.ml") CONFIG_FILES="$CONFIG_FILES manual/src/html_processing/src/common.ml" ;;
     "ocamltest/ocamltest_config.ml") CONFIG_FILES="$CONFIG_FILES ocamltest/ocamltest_config.ml" ;;
+    "utils/config.common.ml") CONFIG_FILES="$CONFIG_FILES utils/config.common.ml" ;;
     "utils/config.generated.ml") CONFIG_FILES="$CONFIG_FILES utils/config.generated.ml" ;;
+    "runtime/caml/exec.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/exec.h" ;;
     "runtime/caml/m.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/m.h" ;;
     "runtime/caml/s.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/s.h" ;;
     "runtime/caml/version.h") CONFIG_HEADERS="$CONFIG_HEADERS runtime/caml/version.h" ;;
