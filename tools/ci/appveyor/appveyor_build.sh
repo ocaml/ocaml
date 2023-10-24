@@ -56,25 +56,21 @@ function set_configuration {
             man=''
         ;;
         mingw32)
-            build='--build=i686-pc-cygwin'
             host='--host=i686-w64-mingw32'
             dep='--disable-dependency-generation'
             man=''
         ;;
         mingw64)
-            build='--build=i686-pc-cygwin'
             host='--host=x86_64-w64-mingw32'
             dep='--disable-dependency-generation'
             man='--disable-stdlib-manpages'
         ;;
         msvc32)
-            build='--build=i686-pc-cygwin'
             host='--host=i686-pc-windows'
             dep='--disable-dependency-generation'
             man=''
         ;;
         msvc64)
-            build='--build=x86_64-pc-cygwin'
             host='--host=x86_64-pc-windows'
             # Explicitly test dependency generation on msvc64
             dep='--enable-dependency-generation'
