@@ -26,6 +26,8 @@ else
   MAKE=make
 fi
 
+git config --global --add safe.directory '*'
+
 function run {
     if [[ $1 = "--show" ]] ; then SHOW_CMD='true'; shift; else SHOW_CMD=''; fi
     NAME=$1
