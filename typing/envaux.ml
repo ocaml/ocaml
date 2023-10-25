@@ -77,7 +77,7 @@ let rec env_from_summary sum subst =
       | Env_constraints(s, map) ->
           Path.Map.fold
             (fun path info ->
-              Env.add_local_type (Subst.type_path subst path)
+              Env.add_local_constraint (Subst.type_path subst path)
                 (Subst.type_declaration subst info))
             map (env_from_summary s subst)
       | Env_copy_types s ->

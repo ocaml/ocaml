@@ -1574,7 +1574,7 @@ let apply ?(use_current_level = false) env params body args =
 let previous_env = ref Env.empty
 (*let string_of_kind = function Public -> "public" | Private -> "private"*)
 let check_abbrev_env env =
-  if env != !previous_env then begin
+  if not (Env.same_type_declarations env !previous_env) then begin
     (* prerr_endline "cleanup expansion cache"; *)
     cleanup_abbrev ();
     previous_env := env
@@ -1606,36 +1606,25 @@ let expand_abbrev_gen kind find_type_expansion env ty =
       let level = get_level ty in
       let scope = get_scope ty in
       let lookup_abbrev = proper_abbrevs args abbrev in
-      begin match find_expans kind path !lookup_abbrev with
+      begin try match find_expans kind path !lookup_abbrev with
         Some ty' ->
           (* prerr_endline
             ("found a "^string_of_kind kind^" expansion for "^Path.name path);*)
-          if level <> generic_level then
-            begin try
-              update_level env level ty'
-            with Escape _ ->
-              (* XXX This should not happen.
-                 However, levels are not correctly restored after a
-                 typing error *)
-              ()
-            end;
-          begin try
-            update_scope scope ty';
-          with Escape _ ->
-            (* XXX This should not happen.
-               However, levels are not correctly restored after a
-               typing error *)
-            ()
-          end;
+          if level <> generic_level then update_level env level ty';
+          update_scope scope ty';
           ty'
-      | None ->
-          match find_type_expansion path env with
-          | exception Not_found ->
+      | None -> raise Not_found
+      with Escape _ | Not_found as e ->
+        (* in case of Escape, discard the stale expansion first *)
+        if e <> Not_found then forget_abbrev lookup_abbrev path;
+        (* attempt to (re-)expand *)
+        match find_type_expansion path env with
+        | exception Not_found ->
             (* another way to expand is to normalize the path itself *)
             let path' = Env.normalize_type_path None env path in
             if Path.same path path' then raise Cannot_expand
             else newty2 ~level (Tconstr (path', args, abbrev))
-          | (params, body, lv) ->
+        | (params, body, lv) ->
             (* prerr_endline
               ("add a "^string_of_kind kind^" expansion for "^Path.name path);*)
             let ty' =
@@ -2538,7 +2527,7 @@ let add_gadt_equation uenv source destination =
         ~manifest_and_scope:(destination, expansion_scope)
         type_origin
     in
-    set_env uenv (Env.add_local_type source decl env);
+    set_env uenv (Env.add_local_constraint source decl env);
     cleanup_abbrev ()
   end
 

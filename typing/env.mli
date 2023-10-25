@@ -60,6 +60,9 @@ val empty: t
 val initial: t
 val diff: t -> t -> Ident.t list
 
+(* approximation to the preimage equivalence class of [find_type] *)
+val same_type_declarations: t -> t -> bool
+
 type type_descr_kind =
   (label_description, constructor_description) type_kind
 
@@ -313,7 +316,7 @@ val add_modtype_lazy: update_summary:bool ->
    Ident.t -> Subst.Lazy.modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
-val add_local_type: Path.t -> type_declaration -> t -> t
+val add_local_constraint: Path.t -> type_declaration -> t -> t
 
 (* Insertion of persistent signatures *)
 
