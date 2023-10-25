@@ -37,9 +37,9 @@ let test_serial_domain_spawn () =
   done
 
 let () =
-  let running = ref true in
+  let running = Atomic.make true in
   let rec run_until_stop fn () =
-    while !running do
+    while Atomic.get running do
       fn ();
     done
   in
@@ -49,7 +49,7 @@ let () =
 
   test_serial_domain_spawn ();
 
-  running := false;
+  Atomic.set running false;
   join domain_minor_gc;
   join domain_major_gc;
 
