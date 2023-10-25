@@ -81,11 +81,25 @@ function set_configuration {
     esac
 
     mkdir -p "$CACHE_DIRECTORY"
-    ./configure --cache-file="$CACHE_DIRECTORY/config.cache-$1" \
-                $dep $build $man $host --prefix="$2" --enable-ocamltest || ( \
-      rm -f "$CACHE_DIRECTORY/config.cache-$1" ; \
-      ./configure --cache-file="$CACHE_DIRECTORY/config.cache-$1" \
-                  $dep $build $man $host --prefix="$2" --enable-ocamltest )
+
+    local CACHE_KEY CACHE_FILE_PREFIX CACHE_FILE
+    CACHE_KEY=$({ cat configure; uname; } | shasum | cut -c 1-7)
+    CACHE_FILE_PREFIX="$CACHE_DIRECTORY/config.cache-$1"
+    CACHE_FILE="$CACHE_FILE_PREFIX-$CACHE_KEY"
+
+    # Remove old configure cache if the configure script or the OS
+    # have changed
+    if [[ ! -f "$CACHE_FILE" ]] ; then
+        rm -f -- "$CACHE_FILE_PREFIX"*
+    fi
+
+    # Remove configure cache if the script has failed
+    if ! ./configure --cache-file="$CACHE_FILE" $dep $build $man $host \
+                     --prefix="$2" --enable-ocamltest ; then
+        rm -f -- "$CACHE_FILE"
+        ./configure --cache-file="$CACHE_FILE" $dep $build $man $host \
+                    --prefix="$2" --enable-ocamltest
+    fi
 
 #    FILE=$(pwd | cygpath -f - -m)/Makefile.config
 #    run "Content of $FILE" cat Makefile.config
