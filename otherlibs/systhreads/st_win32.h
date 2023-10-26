@@ -222,6 +222,12 @@ static DWORD st_mutex_destroy(st_mutex m)
   return 0;
 }
 
+/* Unused under Windows because there is no fork() */
+static DWORD st_mutex_init(st_mutex m)
+{
+  return 0;
+}
+
 /* Error codes with the 29th bit set are reserved for the application */
 
 #define MUTEX_DEADLOCK (1<<29 | 1)
@@ -513,13 +519,6 @@ static DWORD WINAPI caml_thread_tick(void * arg)
      caml_record_signal(). */
     caml_record_signal(SIGPREEMPTION);
   }
-  return 0;
-}
-
-/* "At fork" processing -- none under Win32 */
-
-static DWORD st_atfork(void (*fn)(void))
-{
   return 0;
 }
 

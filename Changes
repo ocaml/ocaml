@@ -32,6 +32,9 @@ OCaml 4.14 maintenance version
 - #11633, #11636: bugfix in caml_unregister_frametable
   (Frédéric Recoules, review by Gabriel Scherer)
 
+- #12636, #12646: More prudent reinitialization of I/O mutexes after a fork()
+  (Xavier Leroy, report by Zach Baylin, review by Enguerrand Decorne)
+
 OCaml 4.14.1 (20 December 2022)
 ------------------------------
 

@@ -27,6 +27,8 @@ extern "C" {
 
 void caml_init_domain(void);
 
+CAMLextern void (*caml_atfork_hook)(void);
+
 #endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus

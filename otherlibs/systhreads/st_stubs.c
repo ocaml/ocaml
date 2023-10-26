@@ -417,14 +417,11 @@ static void caml_thread_reinitialize(void)
   /* Tick thread is not currently running in child process, will be
      re-created at next Thread.create */
   caml_tick_thread_running = 0;
-  /* Destroy all IO mutexes; will be reinitialized on demand */
+  /* Reinitialize all IO mutexes */
   for (chan = caml_all_opened_channels;
        chan != NULL;
        chan = chan->next) {
-    if (chan->mutex != NULL) {
-      st_mutex_destroy(chan->mutex);
-      chan->mutex = NULL;
-    }
+    if (chan->mutex != NULL) st_mutex_init(chan->mutex);
   }
 }
 
@@ -475,7 +472,7 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   caml_memprof_th_ctx_iter_hook = memprof_ctx_iter;
   /* Set up fork() to reinitialize the thread machinery in the child
      (PR#4577) */
-  st_atfork(caml_thread_reinitialize);
+  caml_atfork_hook = caml_thread_reinitialize;
   return Val_unit;
 }
 
