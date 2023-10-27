@@ -126,13 +126,14 @@ caml_BLAKE2Init(struct BLAKE2_context * s,
                 int keylen, const unsigned char * key)
 {
   CAMLassert (0 < hashlen && hashlen <= 64);
-  CAMLassert (0 <= keylen && keylen <= 64);
+  CAMLassert (0 <= keylen);
   for (int i = 0; i < 8; i++) s->h[i] = caml_BLAKE2_iv[i];
   s->h[0] ^= 0x01010000 | (keylen << 8) | hashlen;
   s->len[0] = s->len[1] = 0;
   s->numbytes = 0;
   /* If key was supplied, pad to 128 bytes and prepend to message */
   if (keylen > 0) {
+    if (keylen > 64) keylen = 64;
     memcpy(s->buffer, key, keylen);
     memset(s->buffer + keylen, 0, BLAKE2_BLOCKSIZE - keylen);
     s->numbytes = BLAKE2_BLOCKSIZE;
@@ -202,6 +203,7 @@ static struct custom_operations caml_blake2_operations = {
 
 CAMLprim value caml_blake2_create(value hashlen, value key)
 {
+  CAMLparam1(key);
   struct BLAKE2_context * ctx =
     caml_stat_alloc(sizeof(struct BLAKE2_context));
   value res =
@@ -211,7 +213,7 @@ CAMLprim value caml_blake2_create(value hashlen, value key)
   caml_BLAKE2Init(ctx, Int_val(hashlen),
                   caml_string_length(key), &Byte_u(key, 0));
   BLAKE2_context_val(res) = ctx;
-  return res;
+  CAMLreturn(res);
 }
 
 CAMLprim value caml_blake2_update(value ctx, value buf, value ofs, value len)
