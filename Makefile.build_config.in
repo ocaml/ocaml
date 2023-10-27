@@ -48,6 +48,8 @@ lib_str = @lib_str@
 lib_systhreads = @lib_systhreads@
 lib_unix = @lib_unix@
 
+OPTIONAL_LIBRARIES = @optional_libraries@
+
 # Whether to install the native toplevel (ocamlnat)
 INSTALL_OCAMLNAT = @install_ocamlnat@
 

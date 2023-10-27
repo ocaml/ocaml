@@ -76,6 +76,7 @@ lib_dynlink=false
 lib_str=false
 lib_systhreads=false
 lib_unix=false
+optional_libraries=''
 ocamltest_libunix=None
 ocamltest_unix_impl="dummy"
 unix_library=""
@@ -189,6 +190,7 @@ AC_SUBST([lib_runtime_events])
 AC_SUBST([lib_str])
 AC_SUBST([lib_systhreads])
 AC_SUBST([lib_unix])
+AC_SUBST([optional_libraries])
 AC_SUBST([ocamltest_CPP])
 AC_SUBST([ocamltest_libunix])
 AC_SUBST([unix_library])
@@ -560,6 +562,7 @@ AS_IF([test x"$enable_ocamldoc" = "xno"],
   ocamldoc_opt_target=ocamldoc.opt
   with_ocamldoc=ocamldoc
   build_ocamldoc=true
+  optional_libraries="$optional_libraries ocamldoc/odoc_info"
   AC_CONFIG_FILES([ocamldoc/META])])
 
 # Initialization of libtool

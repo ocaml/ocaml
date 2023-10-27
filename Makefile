@@ -579,11 +579,7 @@ $(COMPILERLIBS:=.cma): \
 
 compilerlibs/ocamlcommon.cma: $(ALL_CONFIG_CMO)
 
-OCAML_LIBRARIES = $(COMPILERLIBS)
-
-ifeq "$(build_ocamldoc)" "true"
-OCAML_LIBRARIES += ocamldoc/odoc_info
-endif
+OCAML_LIBRARIES = $(COMPILERLIBS) $(OPTIONAL_LIBRARIES)
 
 $(foreach LIBRARY, $(OCAML_LIBRARIES),\
   $(eval $(call OCAML_LIBRARY,$(LIBRARY))))
