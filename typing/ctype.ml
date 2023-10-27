@@ -1567,9 +1567,9 @@ let apply ?(use_current_level = false) env params body args =
 
 (*
    If the environment has changed, memorized expansions might not
-   be correct anymore, and so we flush the cache. This is safe but
-   quite pessimistic: it would be enough to flush the cache when a
-   type or module definition is overridden in the environment.
+   be correct anymore, and so we flush the cache. The test used
+   checks whether any of types, modules, or local constraints have
+   been changed.
 *)
 let previous_env = ref Env.empty
 (*let string_of_kind = function Public -> "public" | Private -> "private"*)
@@ -1606,17 +1606,24 @@ let expand_abbrev_gen kind find_type_expansion env ty =
       let level = get_level ty in
       let scope = get_scope ty in
       let lookup_abbrev = proper_abbrevs args abbrev in
-      begin try match find_expans kind path !lookup_abbrev with
-        Some ty' ->
+      let expansion =
+        (* first look for an existing expansion *)
+        match find_expans kind path !lookup_abbrev with
+        | None -> None
+        | Some ty' -> try
           (* prerr_endline
             ("found a "^string_of_kind kind^" expansion for "^Path.name path);*)
-          if level <> generic_level then update_level env level ty';
-          update_scope scope ty';
-          ty'
-      | None -> raise Not_found
-      with Escape _ | Not_found as e ->
-        (* in case of Escape, discard the stale expansion first *)
-        if e <> Not_found then forget_abbrev lookup_abbrev path;
+            if level <> generic_level then update_level env level ty';
+            update_scope scope ty';
+            Some ty'
+        with Escape _ ->
+          (* in case of Escape, discard the stale expansion and re-expand *)
+          forget_abbrev lookup_abbrev path;
+          None
+      in
+      begin match expansion with
+      | Some ty' -> ty'
+      | None ->
         (* attempt to (re-)expand *)
         match find_type_expansion path env with
         | exception Not_found ->
