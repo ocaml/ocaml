@@ -1261,20 +1261,9 @@ runtime/primitives: \
 	$(V_GEN)cp $^ $@
 
 runtime/prims.c : runtime/primitives
-	$(V_GEN)export LC_ALL=C; \
-	(echo '#include "caml/config.h"'; \
-	 echo 'typedef intnat value;'; \
-	 echo 'typedef value (*c_primitive)(void);'; \
-	 echo; \
-	 sed -e 's/.*/extern value &(void);/' $<; \
-	 echo; \
-	 echo 'const c_primitive caml_builtin_cprim[] = {'; \
-	 sed -e 's/.*/  &,/' $<; \
-	 echo '  0 };'; \
-	 echo; \
-	 echo 'const char * const caml_names_of_builtin_cprim[] = {'; \
-	 sed -e 's/.*/  "&",/' $<; \
-	 echo '  0 };') > $@
+	$(V_GEN) runtime/gen_primsc.sh \
+                    runtime/primitives $(runtime_BYTECODE_C_SOURCES) \
+                    > $@
 
 runtime/caml/opnames.h : runtime/caml/instruct.h
 	$(V_GEN)tr -d '\r' < $< | \
