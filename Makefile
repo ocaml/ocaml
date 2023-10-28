@@ -1732,6 +1732,8 @@ ocamldoc/ocamldoc.opt$(EXE): ocamlc.opt ocamlyacc ocamllex
 
 # OCamltest
 
+ifeq "$(build_ocamltest)" "true"
+
 # Libraries ocamltest depends on
 
 ocamltest_LIBRARIES = \
@@ -1869,12 +1871,23 @@ ocamltest/ocamltest$(EXE) ocamltest/ocamltest.opt$(EXE): \
 # -opaque to prevent errors compiling the other modules of ocamltest.
 ocamltest/ocamltest_unix.%: \
   OC_COMMON_COMPFLAGS += -opaque
+else # ifeq "$(build_ocamltest)" "true"
+ocamltest_TARGETS = ocamltest ocamltest.opt
+.PHONY: $(ocamltest_TARGETS)
+$(ocamltest_TARGETS):
+	@echo ocamltest is disabled
+	@echo To build it, run configure again with --enable-ocamltest
+	@false
+endif # ifeq "$(build_ocamltest)" "true"
 
 partialclean::
-	rm -rf ocamltest/ocamltest ocamltest/ocamltest.exe
+	rm -f ocamltest/ocamltest ocamltest/ocamltest.exe
 	rm -f ocamltest/ocamltest.opt ocamltest/ocamltest.opt.exe
 	rm -f $(addprefix ocamltest/,*.o *.obj *.cm*)
-	rm -rf $(ocamltest_GENERATED_FILES)
+	rm -f $(patsubst %.mll,%.ml, $(wildcard ocamltest/*.mll))
+	rm -f $(patsubst %.mly,%.ml, $(wildcard ocamltest/*.mly))
+	rm -f $(patsubst %.mly,%.mli, $(wildcard ocamltest/*.mly))
+	rm -f $(patsubst %.mly,%.output, $(wildcard ocamltest/*.mly))
 	rm -f ocamltest/ocamltest.html
 	rm -f $(addprefix testsuite/lib/*.,cm* o obj a lib)
 	rm -f $(addprefix testsuite/tools/*.,cm* o obj a lib)
