@@ -1600,55 +1600,55 @@ let check_abbrev_env env =
       and this other expansion fails.
 *)
 let expand_abbrev_gen kind find_type_expansion env ty =
+  let path, args, abbrev = match get_desc ty with
+  | Tconstr (path,args,abbrev) -> path, args, abbrev
+  | _ -> assert false
+  in
   check_abbrev_env env;
-  match get_desc ty with
-    Tconstr (path, args, abbrev) ->
-      let level = get_level ty in
-      let scope = get_scope ty in
-      let lookup_abbrev = proper_abbrevs args abbrev in
-      let expansion =
-        (* first look for an existing expansion *)
-        match find_expans kind path !lookup_abbrev with
-        | None -> None
-        | Some ty' -> try
+  let level = get_level ty in
+  let scope = get_scope ty in
+  let lookup_abbrev = proper_abbrevs args abbrev in
+  let expansion =
+    (* first look for an existing expansion *)
+    match find_expans kind path !lookup_abbrev with
+    | None -> None
+    | Some ty' -> try
+        (* prerr_endline
+           ("found a "^string_of_kind kind^" expansion for "^Path.name path);*)
+        if level <> generic_level then update_level env level ty';
+        update_scope scope ty';
+        Some ty'
+    with Escape _ ->
+      (* in case of Escape, discard the stale expansion and re-expand *)
+      forget_abbrev lookup_abbrev path;
+      None
+  in
+  begin match expansion with
+  | Some ty' -> ty'
+  | None ->
+      (* attempt to (re-)expand *)
+      match find_type_expansion path env with
+      | exception Not_found ->
+          (* another way to expand is to normalize the path itself *)
+          let path' = Env.normalize_type_path None env path in
+          if Path.same path path' then raise Cannot_expand
+          else newty2 ~level (Tconstr (path', args, abbrev))
+      | (params, body, lv) ->
           (* prerr_endline
-            ("found a "^string_of_kind kind^" expansion for "^Path.name path);*)
-            if level <> generic_level then update_level env level ty';
-            update_scope scope ty';
-            Some ty'
-        with Escape _ ->
-          (* in case of Escape, discard the stale expansion and re-expand *)
-          forget_abbrev lookup_abbrev path;
-          None
-      in
-      begin match expansion with
-      | Some ty' -> ty'
-      | None ->
-        (* attempt to (re-)expand *)
-        match find_type_expansion path env with
-        | exception Not_found ->
-            (* another way to expand is to normalize the path itself *)
-            let path' = Env.normalize_type_path None env path in
-            if Path.same path path' then raise Cannot_expand
-            else newty2 ~level (Tconstr (path', args, abbrev))
-        | (params, body, lv) ->
-            (* prerr_endline
-              ("add a "^string_of_kind kind^" expansion for "^Path.name path);*)
-            let ty' =
-              try
-                subst env level kind abbrev (Some ty) params args body
-              with Cannot_subst -> raise_escape_exn Constraint
-            in
-            (* For gadts, remember type as non exportable *)
-            (* The ambiguous level registered for ty' should be the highest *)
-            (* if !trace_gadt_instances then begin *)
-            let scope = Int.max lv (get_scope ty) in
-            update_scope scope ty;
-            update_scope scope ty';
-            ty'
-      end
-  | _ ->
-      assert false
+             ("add a "^string_of_kind kind^" expansion for "^Path.name path);*)
+          let ty' =
+            try
+              subst env level kind abbrev (Some ty) params args body
+            with Cannot_subst -> raise_escape_exn Constraint
+          in
+          (* For gadts, remember type as non exportable *)
+          (* The ambiguous level registered for ty' should be the highest *)
+          (* if !trace_gadt_instances then begin *)
+          let scope = Int.max lv (get_scope ty) in
+          update_scope scope ty;
+          update_scope scope ty';
+          ty'
+  end
 
 (* Expand respecting privacy *)
 let expand_abbrev env ty =
