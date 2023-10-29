@@ -46,9 +46,7 @@ sed -n \
   -e '/^CAMLprim value [^)]*$/,/)/p' \
   "$@" |
 # Transform these definitions into "CAMLextern" declarations
-# TODO: consider getting rid of the DEFINE_NAN_CMP macro in runtime/floats.c
 sed \
-  -e 's/DEFINE_NAN_CMP(.*)/(value, value)/' \
   -e 's/^CAMLprim /CAMLextern /' \
   -e 's/).*$/);/'
 
