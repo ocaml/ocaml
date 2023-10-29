@@ -27,10 +27,10 @@
    applications.  The BLAKE2 functions below are cryptographically secure. *)
 
 type t = string
-(** The type of digests: 16-character strings. *)
+(** The type of digests: 16-byte strings. *)
 
 val compare : t -> t -> int
-(** The comparison function for 16-character digest, with the same
+(** The comparison function for 16-byte digests, with the same
     specification as {!Stdlib.compare} and the implementation
     shared with {!String.compare}. Along with the type [t], this
     function [compare] allows the module [Digest] to be passed as
@@ -38,7 +38,7 @@ val compare : t -> t -> int
     @since 4.00 *)
 
 val equal : t -> t -> bool
-(** The equal function for 16-character digest.
+(** The equal function for 16-byte digest.
     @since 4.03 *)
 
 val string : string -> t
@@ -100,7 +100,7 @@ module type S = sig
     (** The length of digests, in bytes. *)
 
   val compare : t -> t -> int
-    (** Compare two digests, , with the same specification as
+    (** Compare two digests, with the same specification as
         {!Stdlib.compare}. *)
 
   val equal : t -> t -> bool
@@ -171,5 +171,6 @@ module BLAKE512 : S
 
 module MD5 : S
   (** [MD5] is the MD5 hash function.  It produces 128-bit (16-byte) digests
-      and is not cryptographically secure at all.
+      and is not cryptographically secure at all. It should be used only
+      for compatibility with earlier designs that mandate the use of MD5.
       @since 5.2 *)
