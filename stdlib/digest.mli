@@ -146,21 +146,21 @@ end
 
 (** {1 Specific hash functions} *)
 
-module BLAKE2_128 : S
-  (** [BLAKE2_128] is the BLAKE2b hash function producing
+module BLAKE128 : S
+  (** [BLAKE128] is the BLAKE2b hash function producing
       128-bit (16-byte) digests.  It is cryptographically secure.
       However, the small size of the digests enable brute-force attacks
       in [2{^64}] attempts.
       @since 5.2 *)
 
-module BLAKE2_256 : S
-  (** [BLAKE2_256] is the BLAKE2b hash function producing
+module BLAKE256 : S
+  (** [BLAKE256] is the BLAKE2b hash function producing
       256-bit (32-byte) digests.  It is cryptographically secure,
       and the digests are large enough to thwart brute-force attacks.
       @since 5.2 *)
 
-module BLAKE2_512 : S
-  (** [BLAKE2_512] is the BLAKE2b hash function producing
+module BLAKE512 : S
+  (** [BLAKE512] is the BLAKE2b hash function producing
       512-bit (64-byte) digests.  It is cryptographically secure,
       and the digests are large enough to thwart brute-force attacks.
       @since 5.2 *)

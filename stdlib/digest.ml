@@ -134,9 +134,9 @@ let from_hex s =
 
 end
 
-module BLAKE2_128 = BLAKE2(struct let hash_size = 16 end)
-module BLAKE2_256 = BLAKE2(struct let hash_size = 32 end)
-module BLAKE2_512 = BLAKE2(struct let hash_size = 64 end)
+module BLAKE128 = BLAKE2(struct let hash_size = 16 end)
+module BLAKE256 = BLAKE2(struct let hash_size = 32 end)
+module BLAKE512 = BLAKE2(struct let hash_size = 64 end)
 
 (* MD5 hashing *)
 
