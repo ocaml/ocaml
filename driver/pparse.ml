@@ -175,6 +175,15 @@ let file_aux ~tool_name ~sourcefile inputfile (type a) parse_fun invariant_fun
       let ast =
         Fun.protect ~finally:close_ic @@ fun () ->
         Location.input_name := (input_value ic : string);
+        begin match In_channel.with_open_bin !Location.input_name In_channel.input_all with
+        | source ->
+            (* If the source file for the marshalled AST is found, then read it
+               fully into a lexing buffer to make it available to error printers
+               to quote source code at specific locations. *)
+            Location.input_lexbuf := Some (Lexing.from_string source)
+        | exception Sys_error _ ->
+            ()
+        end;
         if !Clflags.unsafe then
           Location.prerr_warning (Location.in_file !Location.input_name)
             Warnings.Unsafe_array_syntax_without_parsing;
