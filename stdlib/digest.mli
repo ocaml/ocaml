@@ -38,7 +38,7 @@ val compare : t -> t -> int
     @since 4.00 *)
 
 val equal : t -> t -> bool
-(** The equal function for 16-byte digest.
+(** The equal function for 16-byte digests.
     @since 4.03 *)
 
 val string : string -> t
@@ -96,7 +96,7 @@ module type S = sig
   type t = string
     (** The type of digests. *)
 
-  val hash_size : int
+  val hash_length : int
     (** The length of digests, in bytes. *)
 
   val compare : t -> t -> int
@@ -136,16 +136,16 @@ module type S = sig
   val to_hex : t -> string
     (** Return the printable hexadecimal representation of the given digest.
         @raise Invalid_argument if the length of the argument
-        is not [hash_size], *)
+        is not [hash_length], *)
 
   val of_hex : string -> t
     (** Convert a hexadecimal representation back into the corresponding digest.
         @raise Invalid_argument if the length of the argument
-        is not [2 * hash_size], or if the arguments contains non-hexadecimal
+        is not [2 * hash_length], or if the arguments contains non-hexadecimal
         characters. *)
 end
    (** The signature for a hash function that produces digests of length
-       [hash_size] from character strings, byte arrays, and files.
+       [hash_length] from character strings, byte arrays, and files.
        @since 5.2 *)
 
 (** {1 Specific hash functions} *)

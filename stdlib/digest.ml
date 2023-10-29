@@ -42,7 +42,7 @@ let string_of_hex s =
 
 module type S = sig
   type t = string
-  val hash_size : int
+  val hash_length : int
   val compare : t -> t -> int
   val equal : t -> t -> bool
   val string : string -> t
@@ -59,14 +59,14 @@ end
 
 (* BLAKE2 hashing, parameterized by hash size *)
 
-module BLAKE2 (X: sig val hash_size : int end) : S = struct
+module BLAKE2 (X: sig val hash_length : int end) : S = struct
 
 type t = string
 
-let hash_size =
-  if X.hash_size < 1 || X.hash_size > 64
+let hash_length =
+  if X.hash_length < 1 || X.hash_length > 64
   then invalid_arg "Digest.BLAKE2: wrong hash size";
-  X.hash_size
+  X.hash_length
 
 let compare = String.compare
 let equal = String.equal
@@ -79,10 +79,10 @@ external final: state -> int -> t = "caml_blake2_final"
 external unsafe_string: int -> string -> string -> int -> int -> t
                       = "caml_blake2_string"
 
-let create () = create_gen hash_size ""
+let create () = create_gen hash_length ""
 
 let string str =
-  unsafe_string hash_size "" str 0 (String.length str)
+  unsafe_string hash_length "" str 0 (String.length str)
 
 let bytes b =
   string (Bytes.unsafe_to_string b)
@@ -90,7 +90,7 @@ let bytes b =
 let substring str ofs len =
   if ofs < 0 || len < 0 || ofs > String.length str - len
   then invalid_arg "Digest.substring";
-  unsafe_string hash_size "" str ofs len
+  unsafe_string hash_length "" str ofs len
 
 let subbytes b ofs len =
   substring (Bytes.unsafe_to_string b) ofs len
@@ -103,12 +103,12 @@ let channel ic toread =
     let rec do_read () =
       let n = In_channel.input ic buf 0 buf_size in
       if n = 0
-      then final ctx hash_size
+      then final ctx hash_length
       else (update ctx (Bytes.unsafe_to_string buf) 0 n; do_read ())
     in do_read ()
   end else begin
     let rec do_read toread =
-      if toread = 0 then final ctx hash_size else begin
+      if toread = 0 then final ctx hash_length else begin
         let n = In_channel.input ic buf 0 (Int.min buf_size toread) in
         if n = 0
         then raise End_of_file
@@ -122,21 +122,21 @@ let file filename =
 
 let output chan digest = output_string chan digest
 
-let input chan = really_input_string chan hash_size
+let input chan = really_input_string chan hash_length
 
 let to_hex d =
-  if String.length d <> hash_size then invalid_arg "Digest.to_hex";
+  if String.length d <> hash_length then invalid_arg "Digest.to_hex";
   hex_of_string d
 
 let of_hex s =
-  if String.length s <> hash_size * 2 then invalid_arg "Digest.of_hex";
+  if String.length s <> hash_length * 2 then invalid_arg "Digest.of_hex";
   string_of_hex s
 
 end
 
-module BLAKE128 = BLAKE2(struct let hash_size = 16 end)
-module BLAKE256 = BLAKE2(struct let hash_size = 32 end)
-module BLAKE512 = BLAKE2(struct let hash_size = 64 end)
+module BLAKE128 = BLAKE2(struct let hash_length = 16 end)
+module BLAKE256 = BLAKE2(struct let hash_length = 32 end)
+module BLAKE512 = BLAKE2(struct let hash_length = 64 end)
 
 (* MD5 hashing *)
 
@@ -144,7 +144,7 @@ module MD5 = struct
 
 type t = string
 
-let hash_size = 16
+let hash_length = 16
 
 let compare = String.compare
 let equal = String.equal
