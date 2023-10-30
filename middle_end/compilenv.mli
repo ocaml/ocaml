@@ -53,6 +53,9 @@ val current_unit: unit -> Compilation_unit.t
 val current_unit_symbol: unit -> Symbol.t
         (* flambda-only *)
 
+val symbol_separator: char
+        (* Return the module separator used when building symbol names. *)
+
 val make_symbol: ?unitname:string -> string option -> string
         (* [make_symbol ~unitname:u None] returns the asm symbol that
            corresponds to the compilation unit [u] (default: the current unit).

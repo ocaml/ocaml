@@ -90,8 +90,13 @@ let current_unit =
     ui_export_info = default_ui_export_info;
     ui_for_pack = None }
 
+let symbol_separator =
+  match Config.ccomp_type with
+  | "msvc" -> '$' (* MASM does not allow for dots in symbol names *)
+  | _ -> '.'
+
 let concat_symbol unitname id =
-  unitname ^ "." ^ id
+  Printf.sprintf "%s%c%s" unitname symbol_separator id
 
 let symbolname_for_pack pack name =
   match pack with

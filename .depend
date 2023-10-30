@@ -2798,6 +2798,7 @@ asmcomp/emitaux.cmo : \
     asmcomp/emitenv.cmi \
     lambda/debuginfo.cmi \
     utils/config.cmi \
+    middle_end/compilenv.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     asmcomp/arch.cmi \
@@ -2806,6 +2807,7 @@ asmcomp/emitaux.cmx : \
     asmcomp/emitenv.cmi \
     lambda/debuginfo.cmx \
     utils/config.cmx \
+    middle_end/compilenv.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
     asmcomp/arch.cmx \
@@ -3304,6 +3306,7 @@ asmcomp/x86_proc.cmo : \
     asmcomp/x86_ast.cmi \
     utils/misc.cmi \
     utils/config.cmi \
+    middle_end/compilenv.cmi \
     utils/clflags.cmi \
     utils/ccomp.cmi \
     asmcomp/x86_proc.cmi
@@ -3311,6 +3314,7 @@ asmcomp/x86_proc.cmx : \
     asmcomp/x86_ast.cmi \
     utils/misc.cmx \
     utils/config.cmx \
+    middle_end/compilenv.cmx \
     utils/clflags.cmx \
     utils/ccomp.cmx \
     asmcomp/x86_proc.cmi

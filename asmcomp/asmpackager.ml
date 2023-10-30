@@ -49,8 +49,12 @@ let read_member_info pack_path file = (
       let (info, crc) = Compilenv.read_unit_info file in
       if info.ui_name <> name
       then raise(Error(Illegal_renaming(name, file, info.ui_name)));
-      if info.ui_symbol <>
-         (Compilenv.current_unit_infos()).ui_symbol ^ "." ^ info.ui_name
+      let expected_symbol =
+        Printf.sprintf "%s%c%s"
+          (Compilenv.current_unit_infos()).ui_symbol Compilenv.symbol_separator
+          info.ui_name
+      in
+      if info.ui_symbol <> expected_symbol
       then raise(Error(Wrong_for_pack(file, pack_path)));
       Asmlink.check_consistency file info crc;
       Compilenv.cache_unit_info info;

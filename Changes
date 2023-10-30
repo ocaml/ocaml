@@ -413,6 +413,9 @@ Working version
 - #12669 : Clean up some global state handling in schedgen
   (Stefan Muenzel, review by Miod Vallat and Gabriel Scherer)
 
+- #12640: Make the module separator used in symbol names configurable
+  (Miod Vallat, review by Hugo Heuzard and Xavier Leroy)
+
 ### Build system:
 
 - #12198, #12321, #12586, #12616: continue the merge of the sub-makefiles
