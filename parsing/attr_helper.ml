@@ -24,8 +24,8 @@ type error =
 
 exception Error of Location.t * error
 
-let get_no_payload_attribute alt_names attrs =
-  let actions = List.map (fun nm -> nm, Builtin_attributes.Return) alt_names in
+let get_no_payload_attribute nm attrs =
+  let actions = [(nm, Builtin_attributes.Return)] in
   match Builtin_attributes.filter_attributes actions attrs with
   | [] -> None
   | [ {attr_name = name; attr_payload = PStr []; attr_loc = _} ] -> Some name

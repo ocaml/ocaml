@@ -22,46 +22,30 @@ let return_if_flambda =
   if Config.flambda then Return else Mark_used_only
 
 let is_inline_attribute =
-  [ "inline", Return
-  ; "ocaml.inline", Return
-  ]
+  [ "inline", Return ]
 
 let is_inlined_attribute =
   [ "inlined", Return
-  ; "ocaml.inlined", Return
   ; "unrolled", return_if_flambda
-  ; "ocaml.unrolled", return_if_flambda
   ]
 
 let is_specialise_attribute =
-  [ "specialise", return_if_flambda
-  ; "ocaml.specialise", return_if_flambda
-  ]
+  [ "specialise", return_if_flambda ]
 
 let is_specialised_attribute =
-  [ "specialised", return_if_flambda
-  ; "ocaml.specialised", return_if_flambda
-  ]
+  [ "specialised", return_if_flambda ]
 
 let is_local_attribute =
-  [ "local", Return
-  ; "ocaml.local", Return
-  ]
+  [ "local", Return ]
 
 let is_tailcall_attribute =
-  [ "tailcall", Return
-  ; "ocaml.tailcall", Return
-  ]
+  [ "tailcall", Return ]
 
 let is_tmc_attribute =
-  [ "tail_mod_cons", Return
-  ; "ocaml.tail_mod_cons", Return
-  ]
+  [ "tail_mod_cons", Return ]
 
 let is_poll_attribute =
-  [ "poll", Return
-  ; "ocaml.poll", Return
-  ]
+  [ "poll", Return ]
 
 let find_attribute p attributes =
   let inline_attribute = filter_attributes p attributes in
@@ -75,9 +59,10 @@ let find_attribute p attributes =
   in
   attr
 
-let is_unrolled = function
-  | {txt="unrolled"|"ocaml.unrolled"} -> true
-  | {txt="inline"|"ocaml.inline"|"inlined"|"ocaml.inlined"} -> false
+let is_unrolled name =
+  match drop_ocaml_attr_prefix name with
+  | "unrolled" -> true
+  | "inline" | "inlined" -> false
   | _ -> assert false
 
 let get_payload get_from_exp =
@@ -146,8 +131,8 @@ let parse_id_payload txt loc ~default ~empty cases payload =
 let parse_inline_attribute attr =
   match attr with
   | None -> Default_inline
-  | Some {Parsetree.attr_name = {txt;loc} as id; attr_payload = payload} ->
-    if is_unrolled id then begin
+  | Some ({Parsetree.attr_name = {txt;loc}; attr_payload = payload}) ->
+    if is_unrolled txt then begin
       (* the 'unrolled' attributes must be used as [@unrolled n]. *)
       let warning txt = Warnings.Attribute_payload
           (txt, "It must be an integer literal")

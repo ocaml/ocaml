@@ -1236,8 +1236,7 @@ end
 
 let has_remove_aliases_attribute attr =
   let remove_aliases =
-    Attr_helper.get_no_payload_attribute
-      ["remove_aliases"; "ocaml.remove_aliases"] attr
+    Attr_helper.get_no_payload_attribute "remove_aliases" attr
   in
   match remove_aliases with
   | None -> false

@@ -128,10 +128,10 @@ val warning_scope:
       is executed.
   *)
 
-(** [has_attribute names attrs] is true if an attribute named in [names] is
-    present in [attrs].  It marks that attribute used for the purposes of
-    misplaced attribute warnings. *)
-val has_attribute : string list -> Parsetree.attributes -> bool
+(** [has_attribute name attrs] is true if an attribute with name [name] or
+    ["ocaml." ^ name] is present in [attrs].  It marks that attribute used for
+    the purposes of misplaced attribute warnings. *)
+val has_attribute : string -> Parsetree.attributes -> bool
 
 (** [filter_attributes actions attrs] finds the elements of [attrs] that appear
     in [actions] and either returns them or just marks them used, according to
@@ -146,6 +146,12 @@ val has_attribute : string list -> Parsetree.attributes -> bool
 type attr_action = Mark_used_only | Return
 val filter_attributes :
   (string * attr_action) list -> Parsetree.attributes -> Parsetree.attributes
+
+(** This drops a leading "ocaml." prefix from a string, if present.  It is
+    useful for manually inspecting attribute names, but note that doing so will
+    not result in marking the attribute used for the purpose of warning 53, so
+    it is usually preferrable to use [has_attribute] or [filter_attributes]. *)
+val drop_ocaml_attr_prefix : string -> string
 
 val warn_on_literal_pattern: Parsetree.attributes -> bool
 val explicit_arity: Parsetree.attributes -> bool
