@@ -187,7 +187,9 @@ let file_aux ~tool_name ~sourcefile inputfile (type a) parse_fun invariant_fun
       let ast =
         Fun.protect ~finally:close_ic @@ fun () ->
         Location.input_name := (input_value ic : string);
-        begin match In_channel.with_open_bin !Location.input_name set_input_lexbuf with
+        begin match
+          In_channel.with_open_bin !Location.input_name set_input_lexbuf
+        with
         | (_ : Lexing.lexbuf) -> ()
         | exception Sys_error _ -> ()
         end;
