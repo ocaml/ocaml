@@ -586,7 +586,7 @@ the following environment variables, which should be set in link:appveyor.yml[]:
   `world`, `opt`, `opt.opt` targets. The `C` build is a fast test used to
   build just enough of the tree to cover the C sources (it's used to test
   old MSVC compilers).
-- `SDK`. Defaults to Visual Studio 2015. Specifies the exact command to run
+- `SDK`. Defaults to Visual Studio 2022. Specifies the exact command to run
   to set-up the Microsoft build environment.
 - `CYGWIN_DIST`. Default: `64`. Either `64` or `32`, selects 32-bit or 64-bit
   Cygwin as the build environment.

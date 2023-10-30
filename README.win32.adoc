@@ -118,6 +118,7 @@ Visual C/C++ Compiler as well as the Build Tools for Visual Studio.
 | Visual Studio 2015 | 19.00.x.x    | 32/64-bit               | Build Tools for Visual Studio 2015 also provides 32/64-bit compilers
 | Visual Studio 2017 | 19.10.x.x    | 32/64-bit               | Build Tools for Visual Studio 2017 also provides 32/64-bit compilers
 | Visual Studio 2019 | 19.20.x.x    | 32/64-bit               | Build Tools for Visual Studio 2019 also provides 32/64-bit compilers
+| Visual Studio 2022 | 19.37.x.x    | 32/64-bit               | Build Tools for Visual Studio 2022 also provides 32/64-bit compilers
 |=====
 
 === COMPILATION FROM THE SOURCES
@@ -166,11 +167,11 @@ work with OCaml.
 
 For Visual Studio 2012 and 2013, both x86 and x64 Command Prompt shortcuts
 indicate if they are the "Native Tools" or "Cross Tools" versions. Visual Studio
-2015 and 2017 make the shortcuts even clearer by including the full name of the
-architecture.
+2015, 2017, and 2022 make the shortcuts even clearer by including the full name
+of the architecture.
 
-The Build Tools for Visual Studio 2015 and 2017 provide shortcuts similar to
-the ones of their respective Visual Studio version.
+The Build Tools for Visual Studio 2015, 2017, and 2022 provide shortcuts similar
+to the ones of their respective Visual Studio version.
 
 You cannot at present use a cross-compiler to compile 64-bit OCaml on 32-bit
 Windows.
@@ -179,7 +180,7 @@ Once you have started a Command Prompt, you can verify that you have the
 compiler you are expecting simply by running:
 
   cl
-  Microsoft (R) C/C++ Optimizing Compiler Version 19.00.23506 for x86
+  Microsoft (R) C/C++ Optimizing Compiler Version 19.37.32825 for x64
   ...
 
 You then need to start Cygwin from this Command Prompt.  Assuming you have
