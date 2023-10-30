@@ -205,7 +205,7 @@ Caml_inline header_t Hd_val(value val)
 #define Tag_hp(hp) (((volatile unsigned char *) (hp)) [sizeof(value)-1])
                                                  /* Also an l-value. */
 #else
-#define Tag_val(val) (((volatile unsigned char *) (val)) [-sizeof(value)])
+#define Tag_val(val) (((volatile unsigned char *) (val)) [- (int)sizeof(value)])
                                                  /* Also an l-value. */
 #define Tag_hp(hp) (((volatile unsigned char *) (hp)) [0])
                                                  /* Also an l-value. */

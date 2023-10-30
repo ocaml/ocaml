@@ -529,6 +529,10 @@ Working version
   (Miod Vallat and Xavier Leroy, report by Jan Midtgaard, review by
    KC Sivaramakrishnan)
 
+- #12528, #12703: Avoid pointer arithmetic overflow in Tag_val macro
+  (very likely harmless, but can trigger alarms)
+  (Xavier Leroy, report by Sam Goldman, review by Guillaume Munch-Maccagnoni)
+
 - #12593: TSan should handle Effect.Unhandled correctly
   (Fabrice Buoro and Olivier Nicole, report by Jan Midtgaard and Miod Vallat,
    review by Gabriel Scherer)
