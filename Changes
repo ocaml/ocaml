@@ -483,7 +483,8 @@ Working version
   (Gabriel Scherer, review by Guillaume Munch-Maccagnoni
    and KC Sivaramakrishnan, report by Sadiq Jaffer)
 
-- #12238, #12403: read input files in one go to avoid source reprinting issues
+- #12238, #12403, #12698: read input files in one go to avoid source reprinting
+  issues.
   (Gabriel Scherer, report by Mike Spivey and Vincent Laviron, review by
    Nicolás Ojeda Bär, Xavier Leroy and Jeremy Yallop)
 
