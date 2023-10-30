@@ -15,7 +15,8 @@
 
 (* Format of .cmxs files *)
 
-open Misc
+type modname = string
+type crcs = (modname * Digest.t option) list
 
 (* Each .cmxs dynamically-loaded plugin contains a symbol
    "caml_plugin_header" containing the following info

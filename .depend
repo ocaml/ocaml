@@ -3961,8 +3961,7 @@ file_formats/cmx_format.cmi : \
     utils/misc.cmi \
     middle_end/flambda/export_info.cmi \
     middle_end/clambda.cmi
-file_formats/cmxs_format.cmi : \
-    utils/misc.cmi
+file_formats/cmxs_format.cmi :
 file_formats/linear_format.cmo : \
     utils/misc.cmi \
     parsing/location.cmi \
