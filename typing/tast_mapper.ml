@@ -504,7 +504,7 @@ let package_type sub x =
 let binding_op sub x =
   let bop_loc = sub.location sub x.bop_loc in
   let bop_op_name = map_loc sub x.bop_op_name in
-  { x with bop_loc; bop_op_name; bop_exp = sub.expr sub x.bop_exp }
+  { x with bop_loc; bop_op_name; bop_expr = sub.expr sub x.bop_expr }
 
 let signature sub x =
   let sig_final_env = sub.env sub x.sig_final_env in

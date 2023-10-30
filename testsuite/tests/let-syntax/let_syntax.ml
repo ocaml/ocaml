@@ -46,6 +46,72 @@ let res2 =
 val res2 : int = 3
 |}];;
 
+let res3 =
+  Id.(
+    let+ 1 = 1 in
+    2
+  );;
+[%%expect{|
+Lines 3-4, characters 4-5:
+3 | ....let+ 1 = 1 in
+4 |     2
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+0
+val res3 : int = 2
+|}];;
+
+let res4 =
+  Id.(
+    let+ [@ocaml.warning "-8"] 1 = 1 in
+    2
+  );;
+[%%expect{|
+val res4 : int = 2
+|}];;
+
+let res5 =
+  Id.(
+    let+ _ = 7
+    and+ 1 = 1 in
+    2
+  );;
+[%%expect{|
+Lines 3-5, characters 4-5:
+3 | ....let+ _ = 7
+4 |     and+ 1 = 1 in
+5 |     2
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(_, 0)
+val res5 : int = 2
+|}];;
+
+let res6 =
+  Id.(
+    let+ [@ocaml.warning "-8"] _ = 7
+    and+ 1 = 1 in
+    2
+  );;
+[%%expect{|
+3 | ....let+ [@ocaml.warning "-8"] _ = 7
+4 |     and+ 1 = 1 in
+5 |     2
+Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(_, 0)
+val res6 : int = 2
+|}];;
+
+let res7 =
+  Id.(
+    let+ _ = 7
+    and+ [@ocaml.warning "-8"] 1 = 1 in
+    2
+  );;
+[%%expect{|
+val res7 : int = 2
+|}];;
 
 module List = struct
 

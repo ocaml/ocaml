@@ -471,7 +471,7 @@ and value_description i ppf x =
 and binding_op i ppf x =
   line i ppf "binding_op %a %a\n" fmt_path x.bop_op_path
     fmt_location x.bop_loc;
-  expression i ppf x.bop_exp
+  expression i ppf x.bop_expr
 
 and function_param i ppf x =
   let p = x.fp_arg_label in

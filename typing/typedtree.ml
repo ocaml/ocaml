@@ -198,7 +198,8 @@ and binding_op =
     bop_op_name : string loc;
     bop_op_val : Types.value_description;
     bop_op_type : Types.type_expr;
-    bop_exp : expression;
+    bop_expr : expression;
+    bop_attributes : attributes;
     bop_loc : Location.t;
   }
 

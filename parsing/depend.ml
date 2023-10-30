@@ -320,7 +320,7 @@ and add_bindings recf bv pel =
   bv'
 
 and add_binding_op bv bv' pbop =
-  add_expr bv pbop.pbop_exp;
+  add_expr bv pbop.pbop_expr;
   add_pattern bv' pbop.pbop_pat
 
 and add_modtype bv mty =
