@@ -385,7 +385,11 @@ CAMLextern header_t *caml_atom_table;
 /* Booleans are integers 0 or 1 */
 
 #define Val_bool(x) Val_int((x) != 0)
+#ifdef __cplusplus
+#define Bool_val(x) ((bool) Int_val(x))
+#else
 #define Bool_val(x) Int_val(x)
+#endif
 #define Val_false Val_int(0)
 #define Val_true Val_int(1)
 #define Val_not(x) (Val_false + Val_true - (x))

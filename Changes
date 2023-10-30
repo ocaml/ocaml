@@ -13,6 +13,9 @@ OCaml 4.14 maintenance version
 * #10723: do not use `-flat-namespace` linking for macOS.
   (Carlo Cabrera, review by Damien Doligez)
 
+- #11332, #12702: make sure `Bool_val(v)` has type `bool` in C++
+  (Xavier Leroy, report by ygrek, review by Gabriel Scherer)
+
 ### Build system:
 
 - #11590: Allow installing to a destination path containing spaces.
