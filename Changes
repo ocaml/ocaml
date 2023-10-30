@@ -71,6 +71,9 @@ Working version
   of `caml_read_directory`.  Also, check for overflows in ext table sizes.
   (Xavier Leroy, report by Arseniy Alekseyev, review by Gabriel Scherer)
 
+- #11332, #12702: make sure `Bool_val(v)` has type `bool` in C++
+  (Xavier Leroy, report by ygrek, review by Gabriel Scherer)
+
 - #12223: Constify constructors and flags tables in C code. Now these
   tables will go in the readonly segment, where they belong.
   (Antonin Décimo, review by Gabriel Scherer and Xavier Leroy)
