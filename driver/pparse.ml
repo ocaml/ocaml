@@ -165,6 +165,18 @@ let parse (type a) (kind : a ast_kind) lexbuf : a =
   | Structure -> Parse.implementation lexbuf
   | Signature -> Parse.interface lexbuf
 
+let set_input_lexbuf ic =
+  let source =
+    (* We read the whole source file at once. This guarantees that all
+       input is in the lexing buffer and can be reused by error printers
+       to quote source code at specific locations -- see #12238 and the
+       Location.lines_around* functions. *)
+    In_channel.input_all ic
+  in
+  let lexbuf = Lexing.from_string source in
+  Location.input_lexbuf := Some lexbuf;
+  lexbuf
+
 let file_aux ~tool_name ~sourcefile inputfile (type a) parse_fun invariant_fun
              (kind : a ast_kind) : a =
   let ast =
@@ -175,6 +187,12 @@ let file_aux ~tool_name ~sourcefile inputfile (type a) parse_fun invariant_fun
       let ast =
         Fun.protect ~finally:close_ic @@ fun () ->
         Location.input_name := (input_value ic : string);
+        begin match
+          In_channel.with_open_bin !Location.input_name set_input_lexbuf
+        with
+        | (_ : Lexing.lexbuf) -> ()
+        | exception Sys_error _ -> ()
+        end;
         if !Clflags.unsafe then
           Location.prerr_warning (Location.in_file !Location.input_name)
             Warnings.Unsafe_array_syntax_without_parsing;
@@ -184,18 +202,12 @@ let file_aux ~tool_name ~sourcefile inputfile (type a) parse_fun invariant_fun
       (* if all_ppx <> [], invariant_fun will be called by apply_rewriters *)
       ast
     end else begin
-      let source =
-        (* We read the whole source file at once. This guarantees that all
-           input is in the lexing buffer and can be reused by error printers
-           to quote source code at specific locations -- see #12238 and the
-           Location.lines_around* functions. *)
+      let lexbuf =
         Fun.protect ~finally:close_ic @@ fun () ->
         seek_in ic 0;
-        In_channel.input_all ic
+        set_input_lexbuf ic
       in
-      let lexbuf = Lexing.from_string source in
       Location.init lexbuf sourcefile;
-      Location.input_lexbuf := Some lexbuf;
       Profile.record_call "parser" (fun () -> parse_fun lexbuf)
     end
   in
