@@ -1042,14 +1042,17 @@ static void install_backup_thread (dom_internal* di)
 #endif
 
   if (di->backup_thread_running == 0) {
-    CAMLassert (di->backup_thread_msg == BT_INIT || /* Using fresh domain */
-            di->backup_thread_msg == BT_TERMINATE); /* Reusing domain */
+    uintnat msg;
+    msg = atomic_load_acquire(&di->backup_thread_msg);
+    CAMLassert (msg == BT_INIT || /* Using fresh domain */
+                msg == BT_TERMINATE); /* Reusing domain */
 
-    while (atomic_load_acquire(&di->backup_thread_msg) != BT_INIT) {
+    while (msg != BT_INIT) {
       /* Give a chance for backup thread on this domain to terminate */
       caml_plat_unlock (&di->domain_lock);
       cpu_relax ();
       caml_plat_lock (&di->domain_lock);
+      msg = atomic_load_acquire(&di->backup_thread_msg);
     }
 
 #ifndef _WIN32
