@@ -206,7 +206,10 @@ AC_SUBST([ocamldoc_opt_target])
 AC_SUBST([with_ocamldoc])
 AC_SUBST([documentation_tool])
 AC_SUBST([documentation_tool_cmd])
+AC_SUBST([build_ocamltest])
 AC_SUBST([ocamltest])
+AC_SUBST([ocamltest_target])
+AC_SUBST([ocamltest_opt_target])
 AC_SUBST([ASPP])
 AC_SUBST([endianness])
 AC_SUBST([AS])
@@ -2306,11 +2309,18 @@ AS_IF([test "x$documentation_tool_cmd" = 'x']
 
 
 AS_CASE([$enable_ocamltest,OCAML__DEVELOPMENT_VERSION],
-  [yes,*|,true],[ocamltest='ocamltest'],
-  [ocamltest=''])
+  [yes,*|,true],
+    [build_ocamltest=true
+    ocamltest_target=ocamltest
+    ocamltest_opt_target=ocamltest.opt
+    ocamltest='ocamltest'
+    ],
+  [build_ocamltest=false
+  ocamltest=''])
 
-AS_IF([test -n "$ocamltest"],
-  [ocamltest_unix_mod="ocamltest/ocamltest_unix_${ocamltest_unix_impl}.ml"
+AS_IF([$build_ocamltest],
+  [optional_libraries="$optional_libraries testsuite/lib/testing"
+  ocamltest_unix_mod="ocamltest/ocamltest_unix_${ocamltest_unix_impl}.ml"
   AC_CONFIG_LINKS([
     ocamltest/ocamltest_unix.ml:${ocamltest_unix_mod}
   ])

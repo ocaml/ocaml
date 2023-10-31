@@ -45,8 +45,6 @@ endif
 
 OC_OCAMLDEPDIRS = $(VPATH)
 
-OCAMLTEST_OPT=$(WITH_OCAMLTEST:=.opt)
-
 # This list is passed to expunge, which accepts both uncapitalized and
 # capitalized module names.
 PERVASIVES=$(STDLIB_MODULES) outcometree topprinters topdirs toploop
@@ -746,12 +744,12 @@ endif
 # computed at configure time to keep track of which tools and libraries
 # need to be built
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(OCAMLDOC_TARGET) \
-	  $(WITH_OCAMLTEST)
+	  $(OCAMLTEST_TARGET)
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt \
 	  $(OCAMLDOC_OPT_TARGET) \
-	  $(OCAMLTEST_OPT) othertools ocamlnat
+	  $(OCAMLTEST_OPT_TARGET) othertools ocamlnat
 ifeq "$(build_libraries_manpages)" "true"
 	$(MAKE) manpages
 endif
@@ -790,7 +788,7 @@ endif
 all: coreall
 	$(MAKE) ocaml
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(OCAMLDOC_TARGET) \
-         $(WITH_OCAMLTEST)
+         $(OCAMLTEST_TARGET)
 	$(MAKE) othertools
 ifeq "$(build_libraries_manpages)" "true"
 	$(MAKE) manpages
@@ -1807,13 +1805,22 @@ $(ocamltest_DEP_FILES): $(DEPDIR)/ocamltest/%.$(D): ocamltest/%.c
 
 ocamltest/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 
-ocamltest: ocamltest/ocamltest$(EXE)
+ocamltest: ocamltest/ocamltest$(EXE) \
+  testsuite/lib/lib.cmo testsuite/lib/testing.cma
+
+testsuite/lib/%: VPATH += testsuite/lib
+
+testing_SOURCES = testsuite/lib/testing.mli testsuite/lib/testing.ml
+testing_LIBRARIES =
+
+$(addprefix testsuite/lib/testing., cma cmxa): \
+  OC_COMMON_LINKFLAGS += -linkall
 
 ocamltest/ocamltest$(EXE): OC_BYTECODE_LINKFLAGS += -custom
 
 ocamltest/ocamltest$(EXE): ocamlc ocamlyacc ocamllex
 
-ocamltest.opt: ocamltest/ocamltest.opt$(EXE)
+ocamltest.opt: ocamltest/ocamltest.opt$(EXE) testsuite/lib/testing.cmxa
 
 ocamltest/ocamltest.opt$(EXE): ocamlc.opt ocamlyacc ocamllex
 
@@ -1839,7 +1846,8 @@ partialclean::
 	rm -f ocamltest/ocamltest.opt ocamltest/ocamltest.opt.exe
 	rm -f $(addprefix ocamltest/,*.o *.obj *.cm*)
 	rm -rf $(ocamltest_GENERATED_FILES)
-	rm -f ocamltest.html
+	rm -f ocamltest/ocamltest.html
+	rm -f $(addprefix testsuite/lib/*.,cm* o obj a lib)
 
 # Documentation
 
@@ -2339,7 +2347,7 @@ depend: beforedepend
          lambda file_formats middle_end/closure middle_end/flambda \
          middle_end/flambda/base_types \
          driver toplevel toplevel/byte toplevel/native lex tools debugger \
-	 ocamldoc ocamltest; \
+	 ocamldoc ocamltest testsuite/lib; \
 	 do \
 	   $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $$d $(INCLUDES) \
 	   $(OCAMLDEPFLAGS) $$d/*.mli $$d/*.ml \

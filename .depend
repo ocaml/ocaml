@@ -9486,3 +9486,13 @@ ocamltest/variables.cmo : \
 ocamltest/variables.cmx : \
     ocamltest/variables.cmi
 ocamltest/variables.cmi :
+testsuite/lib/lib.cmo : \
+    testsuite/lib/lib.cmi
+testsuite/lib/lib.cmx : \
+    testsuite/lib/lib.cmi
+testsuite/lib/lib.cmi :
+testsuite/lib/testing.cmo : \
+    testsuite/lib/testing.cmi
+testsuite/lib/testing.cmx : \
+    testsuite/lib/testing.cmi
+testsuite/lib/testing.cmi :

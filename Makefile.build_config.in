@@ -37,8 +37,12 @@ build_ocamldoc = @build_ocamldoc@
 build_libraries_manpages = @build_libraries_manpages@
 
 OCAMLDOC_TARGET = @ocamldoc_target@
+OCAMLTEST_TARGET = @ocamltest_target@
 
 OCAMLDOC_OPT_TARGET = @ocamldoc_opt_target@
+OCAMLTEST_OPT_TARGET = @ocamltest_opt_target@
+
+build_ocamltest = @build_ocamltest@
 
 build_ocamltex = @build_ocamltex@
 

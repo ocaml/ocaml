@@ -814,7 +814,10 @@ asm_cfi_supported
 AS
 endianness
 ASPP
+ocamltest_opt_target
+ocamltest_target
 ocamltest
+build_ocamltest
 documentation_tool_cmd
 documentation_tool
 with_ocamldoc
@@ -3425,6 +3428,9 @@ LINEAR_MAGIC_NUMBER=Caml1999L033
 
 
  # TODO: rename this variable
+
+
+
 
 
 
@@ -19830,13 +19836,19 @@ fi
 
 case $enable_ocamltest,true in #(
   yes,*|,true) :
-    ocamltest='ocamltest' ;; #(
+    build_ocamltest=true
+    ocamltest_target=ocamltest
+    ocamltest_opt_target=ocamltest.opt
+    ocamltest='ocamltest'
+     ;; #(
   *) :
-    ocamltest='' ;;
+    build_ocamltest=false
+  ocamltest='' ;;
 esac
 
-if test -n "$ocamltest"
+if $build_ocamltest
 then :
+  optional_libraries="$optional_libraries testsuite/lib/testing"
   ocamltest_unix_mod="ocamltest/ocamltest_unix_${ocamltest_unix_impl}.ml"
   ac_config_links="$ac_config_links ocamltest/ocamltest_unix.ml:${ocamltest_unix_mod}"
 
