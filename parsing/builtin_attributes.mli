@@ -25,8 +25,12 @@
     - ocaml.inline
     - ocaml.inlined
     - ocaml.noalloc
+    - ocaml.poll
     - ocaml.ppwarning
+    - ocaml.specialise
+    - ocaml.specialised
     - ocaml.tailcall
+    - ocaml.tail_mod_cons
     - ocaml.unboxed
     - ocaml.untagged
     - ocaml.unrolled

@@ -1,5 +1,5 @@
 (* TEST
- flags = "-w +A-22-27-32-60-67-70";
+ flags = "-w +A-22-27-32-60-67-70-71-72";
  setup-ocamlc.byte-build-env;
  compile_only = "true";
  ocamlc.byte;
@@ -412,3 +412,96 @@ end
 
 (* Attributes in attributes shouldn't be tracked for w53 *)
 [@@@foo [@@@deprecated]]
+
+
+module type TestPollSig = sig
+  type 'a t1 = 'a [@@poll error] (* rejected *)
+  type s1 = Foo1 [@poll error] (* rejected *)
+  val x : int64 [@@poll error] (* rejected *)
+
+  external y : (int64 [@poll error]) -> (int64 [@poll error]) = (* rejected *)
+    "x"
+  external z : int64 -> int64 = "x" [@@poll error] (* rejected *)
+end
+
+module TestPollStruct = struct
+  type 'a t1 = 'a [@@poll error] (* rejected *)
+  type s1 = Foo1 [@poll error] (* rejected *)
+  let x : int64 = 42L [@@poll error] (* rejected *)
+  let [@poll error] f x = x (* accepted *)
+
+  external y : (int64 [@poll error]) -> (int64 [@poll error]) =  (* rejected *)
+    "x"
+  external z : int64 -> int64 = "x" [@@poll error] (* rejected *)
+end
+
+
+module type TestSpecialiseSig = sig
+  type 'a t1 = 'a [@@specialise] (* rejected *)
+  type s1 = Foo1 [@specialise] (* rejected *)
+  val x : int64 [@@specialise] (* rejected *)
+
+  external y : (int64 [@specialise]) -> (int64 [@specialise]) = (* rejected *)
+    "x"
+  external z : int64 -> int64 = "x" [@@specialise] (* rejected *)
+end
+
+module TestSpecialiseStruct = struct
+  type 'a t1 = 'a [@@specialise] (* rejected *)
+  type s1 = Foo1 [@specialise] (* rejected *)
+  let x : int64 = 42L [@@specialise] (* rejected *)
+  let [@specialise] f x = x (* accepted *)
+  let g x = (f[@specialise]) x (* rejected *)
+
+  external y : (int64 [@specialise]) -> (int64 [@specialise]) = (* rejected *)
+    "x"
+  external z : int64 -> int64 = "x" [@@specialise] (* rejected *)
+end
+
+
+module type TestSpecialisedSig = sig
+  type 'a t1 = 'a [@@specialised] (* rejected *)
+  type s1 = Foo1 [@specialised] (* rejected *)
+  val x : int64 [@@specialised] (* rejected *)
+
+  external y : (int64 [@specialised]) -> (int64 [@specialised]) = (* rejected *)
+    "x"
+  external z : int64 -> int64 = "x" [@@specialised] (* rejected *)
+end
+
+module TestSpecialisedStruct = struct
+  type 'a t1 = 'a [@@specialised] (* rejected *)
+  type s1 = Foo1 [@specialised] (* rejected *)
+  let x : int64 = 42L [@@specialised] (* rejected *)
+  let [@specialised] f x = x (* rejected *)
+  let g x = (f[@specialised]) x (* accepted *)
+
+  external y : (int64 [@specialised]) -> (int64 [@specialised]) = (* rejected *)
+    "x"
+  external z : int64 -> int64 = "x" [@@specialised] (* rejected *)
+end
+
+
+module type TestTailModConsSig = sig
+  type 'a t1 = 'a [@@tail_mod_cons] (* rejected *)
+  type s1 = Foo1 [@tail_mod_cons] (* rejected *)
+  val x : int64 [@@tail_mod_cons] (* rejected *)
+
+  external y : (int64 [@tail_mod_cons]) -> (int64 [@tail_mod_cons]) =
+    (* rejected *)
+    "x"
+  external z : int64 -> int64 = "x" [@@tail_mod_cons] (* rejected *)
+end
+
+module TestTailModConsStruct = struct
+  type 'a t1 = 'a [@@tail_mod_cons] (* rejected *)
+  type s1 = Foo1 [@tail_mod_cons] (* rejected *)
+  let x : int64 = 42L [@@tail_mod_cons] (* rejected *)
+  let [@tail_mod_cons] f x = x (* accepted *)
+  let g x = (f[@tail_mod_cons]) x (* rejected *)
+
+  external y : (int64 [@tail_mod_cons]) -> (int64 [@tail_mod_cons]) =
+    (* rejected *)
+    "x"
+  external z : int64 -> int64 = "x" [@@tail_mod_cons] (* rejected *)
+end

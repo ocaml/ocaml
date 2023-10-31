@@ -647,3 +647,258 @@ File "w53.ml", line 409, characters 6-29:
 409 |   [@@@warn_on_literal_pattern] (* rejected *)
             ^^^^^^^^^^^^^^^^^^^^^^^
 Warning 53 [misplaced-attribute]: the "warn_on_literal_pattern" attribute cannot appear in this context
+
+File "w53.ml", line 418, characters 21-25:
+418 |   type 'a t1 = 'a [@@poll error] (* rejected *)
+                           ^^^^
+Warning 53 [misplaced-attribute]: the "poll" attribute cannot appear in this context
+
+File "w53.ml", line 419, characters 19-23:
+419 |   type s1 = Foo1 [@poll error] (* rejected *)
+                         ^^^^
+Warning 53 [misplaced-attribute]: the "poll" attribute cannot appear in this context
+
+File "w53.ml", line 420, characters 19-23:
+420 |   val x : int64 [@@poll error] (* rejected *)
+                         ^^^^
+Warning 53 [misplaced-attribute]: the "poll" attribute cannot appear in this context
+
+File "w53.ml", line 422, characters 24-28:
+422 |   external y : (int64 [@poll error]) -> (int64 [@poll error]) = (* rejected *)
+                              ^^^^
+Warning 53 [misplaced-attribute]: the "poll" attribute cannot appear in this context
+
+File "w53.ml", line 422, characters 49-53:
+422 |   external y : (int64 [@poll error]) -> (int64 [@poll error]) = (* rejected *)
+                                                       ^^^^
+Warning 53 [misplaced-attribute]: the "poll" attribute cannot appear in this context
+
+File "w53.ml", line 424, characters 39-43:
+424 |   external z : int64 -> int64 = "x" [@@poll error] (* rejected *)
+                                             ^^^^
+Warning 53 [misplaced-attribute]: the "poll" attribute cannot appear in this context
+
+File "w53.ml", line 428, characters 21-25:
+428 |   type 'a t1 = 'a [@@poll error] (* rejected *)
+                           ^^^^
+Warning 53 [misplaced-attribute]: the "poll" attribute cannot appear in this context
+
+File "w53.ml", line 429, characters 19-23:
+429 |   type s1 = Foo1 [@poll error] (* rejected *)
+                         ^^^^
+Warning 53 [misplaced-attribute]: the "poll" attribute cannot appear in this context
+
+File "w53.ml", line 430, characters 25-29:
+430 |   let x : int64 = 42L [@@poll error] (* rejected *)
+                               ^^^^
+Warning 53 [misplaced-attribute]: the "poll" attribute cannot appear in this context
+
+File "w53.ml", line 433, characters 24-28:
+433 |   external y : (int64 [@poll error]) -> (int64 [@poll error]) =  (* rejected *)
+                              ^^^^
+Warning 53 [misplaced-attribute]: the "poll" attribute cannot appear in this context
+
+File "w53.ml", line 433, characters 49-53:
+433 |   external y : (int64 [@poll error]) -> (int64 [@poll error]) =  (* rejected *)
+                                                       ^^^^
+Warning 53 [misplaced-attribute]: the "poll" attribute cannot appear in this context
+
+File "w53.ml", line 435, characters 39-43:
+435 |   external z : int64 -> int64 = "x" [@@poll error] (* rejected *)
+                                             ^^^^
+Warning 53 [misplaced-attribute]: the "poll" attribute cannot appear in this context
+
+File "w53.ml", line 440, characters 21-31:
+440 |   type 'a t1 = 'a [@@specialise] (* rejected *)
+                           ^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialise" attribute cannot appear in this context
+
+File "w53.ml", line 441, characters 19-29:
+441 |   type s1 = Foo1 [@specialise] (* rejected *)
+                         ^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialise" attribute cannot appear in this context
+
+File "w53.ml", line 442, characters 19-29:
+442 |   val x : int64 [@@specialise] (* rejected *)
+                         ^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialise" attribute cannot appear in this context
+
+File "w53.ml", line 444, characters 24-34:
+444 |   external y : (int64 [@specialise]) -> (int64 [@specialise]) = (* rejected *)
+                              ^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialise" attribute cannot appear in this context
+
+File "w53.ml", line 444, characters 49-59:
+444 |   external y : (int64 [@specialise]) -> (int64 [@specialise]) = (* rejected *)
+                                                       ^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialise" attribute cannot appear in this context
+
+File "w53.ml", line 446, characters 39-49:
+446 |   external z : int64 -> int64 = "x" [@@specialise] (* rejected *)
+                                             ^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialise" attribute cannot appear in this context
+
+File "w53.ml", line 450, characters 21-31:
+450 |   type 'a t1 = 'a [@@specialise] (* rejected *)
+                           ^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialise" attribute cannot appear in this context
+
+File "w53.ml", line 451, characters 19-29:
+451 |   type s1 = Foo1 [@specialise] (* rejected *)
+                         ^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialise" attribute cannot appear in this context
+
+File "w53.ml", line 452, characters 25-35:
+452 |   let x : int64 = 42L [@@specialise] (* rejected *)
+                               ^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialise" attribute cannot appear in this context
+
+File "w53.ml", line 454, characters 16-26:
+454 |   let g x = (f[@specialise]) x (* rejected *)
+                      ^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialise" attribute cannot appear in this context
+
+File "w53.ml", line 456, characters 24-34:
+456 |   external y : (int64 [@specialise]) -> (int64 [@specialise]) = (* rejected *)
+                              ^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialise" attribute cannot appear in this context
+
+File "w53.ml", line 456, characters 49-59:
+456 |   external y : (int64 [@specialise]) -> (int64 [@specialise]) = (* rejected *)
+                                                       ^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialise" attribute cannot appear in this context
+
+File "w53.ml", line 458, characters 39-49:
+458 |   external z : int64 -> int64 = "x" [@@specialise] (* rejected *)
+                                             ^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialise" attribute cannot appear in this context
+
+File "w53.ml", line 463, characters 21-32:
+463 |   type 'a t1 = 'a [@@specialised] (* rejected *)
+                           ^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialised" attribute cannot appear in this context
+
+File "w53.ml", line 464, characters 19-30:
+464 |   type s1 = Foo1 [@specialised] (* rejected *)
+                         ^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialised" attribute cannot appear in this context
+
+File "w53.ml", line 465, characters 19-30:
+465 |   val x : int64 [@@specialised] (* rejected *)
+                         ^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialised" attribute cannot appear in this context
+
+File "w53.ml", line 467, characters 24-35:
+467 |   external y : (int64 [@specialised]) -> (int64 [@specialised]) = (* rejected *)
+                              ^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialised" attribute cannot appear in this context
+
+File "w53.ml", line 467, characters 50-61:
+467 |   external y : (int64 [@specialised]) -> (int64 [@specialised]) = (* rejected *)
+                                                        ^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialised" attribute cannot appear in this context
+
+File "w53.ml", line 469, characters 39-50:
+469 |   external z : int64 -> int64 = "x" [@@specialised] (* rejected *)
+                                             ^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialised" attribute cannot appear in this context
+
+File "w53.ml", line 473, characters 21-32:
+473 |   type 'a t1 = 'a [@@specialised] (* rejected *)
+                           ^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialised" attribute cannot appear in this context
+
+File "w53.ml", line 474, characters 19-30:
+474 |   type s1 = Foo1 [@specialised] (* rejected *)
+                         ^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialised" attribute cannot appear in this context
+
+File "w53.ml", line 475, characters 25-36:
+475 |   let x : int64 = 42L [@@specialised] (* rejected *)
+                               ^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialised" attribute cannot appear in this context
+
+File "w53.ml", line 476, characters 8-19:
+476 |   let [@specialised] f x = x (* rejected *)
+              ^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialised" attribute cannot appear in this context
+
+File "w53.ml", line 479, characters 24-35:
+479 |   external y : (int64 [@specialised]) -> (int64 [@specialised]) = (* rejected *)
+                              ^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialised" attribute cannot appear in this context
+
+File "w53.ml", line 479, characters 50-61:
+479 |   external y : (int64 [@specialised]) -> (int64 [@specialised]) = (* rejected *)
+                                                        ^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialised" attribute cannot appear in this context
+
+File "w53.ml", line 481, characters 39-50:
+481 |   external z : int64 -> int64 = "x" [@@specialised] (* rejected *)
+                                             ^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "specialised" attribute cannot appear in this context
+
+File "w53.ml", line 486, characters 21-34:
+486 |   type 'a t1 = 'a [@@tail_mod_cons] (* rejected *)
+                           ^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "tail_mod_cons" attribute cannot appear in this context
+
+File "w53.ml", line 487, characters 19-32:
+487 |   type s1 = Foo1 [@tail_mod_cons] (* rejected *)
+                         ^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "tail_mod_cons" attribute cannot appear in this context
+
+File "w53.ml", line 488, characters 19-32:
+488 |   val x : int64 [@@tail_mod_cons] (* rejected *)
+                         ^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "tail_mod_cons" attribute cannot appear in this context
+
+File "w53.ml", line 490, characters 24-37:
+490 |   external y : (int64 [@tail_mod_cons]) -> (int64 [@tail_mod_cons]) =
+                              ^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "tail_mod_cons" attribute cannot appear in this context
+
+File "w53.ml", line 490, characters 52-65:
+490 |   external y : (int64 [@tail_mod_cons]) -> (int64 [@tail_mod_cons]) =
+                                                          ^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "tail_mod_cons" attribute cannot appear in this context
+
+File "w53.ml", line 493, characters 39-52:
+493 |   external z : int64 -> int64 = "x" [@@tail_mod_cons] (* rejected *)
+                                             ^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "tail_mod_cons" attribute cannot appear in this context
+
+File "w53.ml", line 497, characters 21-34:
+497 |   type 'a t1 = 'a [@@tail_mod_cons] (* rejected *)
+                           ^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "tail_mod_cons" attribute cannot appear in this context
+
+File "w53.ml", line 498, characters 19-32:
+498 |   type s1 = Foo1 [@tail_mod_cons] (* rejected *)
+                         ^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "tail_mod_cons" attribute cannot appear in this context
+
+File "w53.ml", line 499, characters 25-38:
+499 |   let x : int64 = 42L [@@tail_mod_cons] (* rejected *)
+                               ^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "tail_mod_cons" attribute cannot appear in this context
+
+File "w53.ml", line 501, characters 16-29:
+501 |   let g x = (f[@tail_mod_cons]) x (* rejected *)
+                      ^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "tail_mod_cons" attribute cannot appear in this context
+
+File "w53.ml", line 503, characters 24-37:
+503 |   external y : (int64 [@tail_mod_cons]) -> (int64 [@tail_mod_cons]) =
+                              ^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "tail_mod_cons" attribute cannot appear in this context
+
+File "w53.ml", line 503, characters 52-65:
+503 |   external y : (int64 [@tail_mod_cons]) -> (int64 [@tail_mod_cons]) =
+                                                          ^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "tail_mod_cons" attribute cannot appear in this context
+
+File "w53.ml", line 506, characters 39-52:
+506 |   external z : int64 -> int64 = "x" [@@tail_mod_cons] (* rejected *)
+                                             ^^^^^^^^^^^^^
+Warning 53 [misplaced-attribute]: the "tail_mod_cons" attribute cannot appear in this context
