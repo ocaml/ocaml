@@ -1251,48 +1251,19 @@ runtime/ld.conf: $(ROOTDIR)/Makefile.config
 	$(V_GEN)echo "$(STUBLIBDIR)" > $@ && \
 	echo "$(LIBDIR)" >> $@
 
-# If primitives contain duplicated lines (e.g. because the code is defined
-# like
-# #ifdef X
-# CAMLprim value caml_foo() ...
-# #else
-# CAMLprim value caml_foo() ...
-# #endif), horrible things will happen: duplicated entries in Runtimedef ->
-# double registration in Symtable -> empty entry in the PRIM table ->
-# the bytecode interpreter is confused.
-# We sort the primitive file and remove duplicates to avoid this problem.
-
-# Warning: we use "sort | uniq" instead of "sort -u" because in the MSVC
-# port, the "sort" program in the path is Microsoft's and not cygwin's
-
-# Warning: POSIX sort is locale dependent, that's why we set LC_ALL explicitly.
-# Sort is unstable for "is_directory" and "isatty"
-# see http://pubs.opengroup.org/onlinepubs/9699919799/utilities/sort.html:
-# "using sort to process pathnames, it is recommended that LC_ALL .. set to C"
-
 # To speed up builds, we avoid changing "primitives" when files
 # containing primitives change but the primitives table does not
-runtime/primitives: \
-  $(shell runtime/gen_primitives.sh > runtime/primitives.new; \
+runtime/primitives: runtime/gen_primitives.sh \
+  $(shell runtime/gen_primitives.sh $(runtime_BYTECODE_C_SOURCES) \
+                    > runtime/primitives.new; \
                     cmp -s runtime/primitives runtime/primitives.new || \
                     echo runtime/primitives.new)
-	$(V_GEN)cp $^ $@
+	$(V_GEN)cp runtime/primitives.new $@
 
-runtime/prims.c : runtime/primitives
-	$(V_GEN)export LC_ALL=C; \
-	(echo '#include "caml/config.h"'; \
-	 echo 'typedef intnat value;'; \
-	 echo 'typedef value (*c_primitive)(void);'; \
-	 echo; \
-	 sed -e 's/.*/extern value &(void);/' $<; \
-	 echo; \
-	 echo 'const c_primitive caml_builtin_cprim[] = {'; \
-	 sed -e 's/.*/  &,/' $<; \
-	 echo '  0 };'; \
-	 echo; \
-	 echo 'const char * const caml_names_of_builtin_cprim[] = {'; \
-	 sed -e 's/.*/  "&",/' $<; \
-	 echo '  0 };') > $@
+runtime/prims.c: runtime/gen_primsc.sh runtime/primitives
+	$(V_GEN)runtime/gen_primsc.sh \
+                    runtime/primitives $(runtime_BYTECODE_C_SOURCES) \
+                    > $@
 
 runtime/caml/opnames.h : runtime/caml/instruct.h
 	$(V_GEN)tr -d '\r' < $< | \

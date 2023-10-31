@@ -15,18 +15,29 @@
 #*                                                                        *
 #**************************************************************************
 
-# #8985: the meaning of character range a-z depends on the locale, so force C
-#        locale throughout.
+# If primitives contain duplicated lines (e.g. because the code is defined
+# like
+# #ifdef X
+# CAMLprim value caml_foo() ...
+# #else
+# CAMLprim value caml_foo() ...
+# #endif), horrible things will happen: duplicated entries in Runtimedef ->
+# double registration in Symtable -> empty entry in the PRIM table ->
+# the bytecode interpreter is confused.
+# We sort the primitive file and remove duplicates to avoid this problem.
+
+# Warning: we use "sort | uniq" instead of "sort -u" because in the MSVC
+# port, the "sort" program in the path is Microsoft's and not cygwin's
+
+# Warning: POSIX sort is locale dependent, that's why we set LC_ALL explicitly.
+# Sort is unstable for "is_directory" and "isatty"
+# see http://pubs.opengroup.org/onlinepubs/9699919799/utilities/sort.html:
+# "using sort to process pathnames, it is recommended that LC_ALL .. set to C"
+
+# #8985: in sed, the meaning of character range a-z depends on the locale,
+# so force C locale throughout.
+
 export LC_ALL=C
-(
-  for prim in \
-      alloc array compare extern floats gc_ctrl hash intern interp ints io \
-      lexing md5 meta memprof obj parsing signals str sys callback weak \
-      finalise domain platform fiber memory startup_aux runtime_events sync \
-      dynlink backtrace_byt backtrace afl \
-      bigarray prng
-  do
-      sed -n -e 's/^CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p' \
-        "runtime/$prim.c"
-  done
-) | sort | uniq
+
+sed -n -e 's/^CAMLprim value \([a-z][a-z0-9_]*\).*$/\1/p' "$@" | \
+sort | uniq

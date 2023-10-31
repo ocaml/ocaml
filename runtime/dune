@@ -13,7 +13,7 @@
 ;**************************************************************************
 
 (rule
- (targets primitives)
+ (targets primitives prims.c)
  (mode    fallback)
  (deps
    ; matches the line structure of files in gen_primitives.sh
@@ -25,8 +25,9 @@
      runtime_events.c sync.c
    dynlink.c backtrace_byt.c backtrace.c afl.c bigarray.c prng.c)
  (action
-   (chdir ..
-     (with-stdout-to %{targets} (run %{dep:gen_primitives.sh})))))
+   (progn
+     (with-stdout-to primitives (run %{dep:gen_primitives.sh} %{deps}))
+     (with-stdout-to prims.c (run %{dep:gen_primsc.sh} primitives %{deps})))))
 
 (rule
  (targets libcamlrun.a)

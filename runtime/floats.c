@@ -1100,16 +1100,6 @@ CAMLprim value caml_signbit_float(value f)
   return caml_signbit(Double_val(f));
 }
 
-CAMLprim value caml_neq_float(value f, value g)
-{
-  return Val_bool(Double_val(f) != Double_val(g));
-}
-
-#define DEFINE_NAN_CMP(op) (value f, value g) \
-{ \
-  return Val_bool(Double_val(f) op Double_val(g)); \
-}
-
 intnat caml_float_compare_unboxed(double f, double g)
 {
   /* If one or both of f and g is NaN, order according to the convention
@@ -1124,11 +1114,15 @@ intnat caml_float_compare_unboxed(double f, double g)
   return res;
 }
 
-CAMLprim value caml_eq_float DEFINE_NAN_CMP(==)
-CAMLprim value caml_le_float DEFINE_NAN_CMP(<=)
-CAMLprim value caml_lt_float DEFINE_NAN_CMP(<)
-CAMLprim value caml_ge_float DEFINE_NAN_CMP(>=)
-CAMLprim value caml_gt_float DEFINE_NAN_CMP(>)
+#define FLOAT_CMP(op, f, g) \
+  return Val_bool(Double_val(f) op Double_val(g));
+
+CAMLprim value caml_neq_float(value f, value g) { FLOAT_CMP(!=, f, g) }
+CAMLprim value caml_eq_float(value f, value g) { FLOAT_CMP(==, f, g) }
+CAMLprim value caml_le_float(value f, value g) { FLOAT_CMP(<=, f, g) }
+CAMLprim value caml_lt_float(value f, value g) { FLOAT_CMP(<, f, g) }
+CAMLprim value caml_ge_float(value f, value g) { FLOAT_CMP(>=, f, g) }
+CAMLprim value caml_gt_float(value f, value g) { FLOAT_CMP(>, f, g) }
 
 CAMLprim value caml_float_compare(value vf, value vg)
 {
