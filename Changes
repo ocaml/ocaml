@@ -436,6 +436,9 @@ Working version
 
 ### Bug fixes:
 
+- #11800, #12707: fix an assertion race condition in `install_backup_thread`
+  (Jan Midtgaard, review by Gabriel Scherer)
+
 - #12590, #12595: fix a race in `caml_collect_gc_stats_sample`
   (B. Szilvasy, review by Gabriel Scherer)
 
