@@ -80,10 +80,10 @@ let drop_ocaml_attr_prefix s =
 
 let is_builtin_attr s = Hashtbl.mem builtin_attrs (drop_ocaml_attr_prefix s)
 
-type attr_tracking_time = Parser | Invariant_check
+type current_phase = Parser | Invariant_check
 
-let register_attr attr_tracking_time name =
-  match attr_tracking_time with
+let register_attr current_phase name =
+  match current_phase with
   | Parser when !Clflags.all_ppx <> [] -> ()
   | Parser | Invariant_check ->
     if is_builtin_attr name.txt then
@@ -354,7 +354,7 @@ let has_attribute nm attrs =
     attrs
 
 type attr_action = Mark_used_only | Return
-let filter_attributes actions attrs =
+let select_attributes actions attrs =
   List.filter (fun a ->
     List.exists (fun (nm, action) ->
       String.equal nm (drop_ocaml_attr_prefix a.attr_name.txt) &&

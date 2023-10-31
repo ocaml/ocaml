@@ -48,7 +48,7 @@ let is_poll_attribute =
   [ "poll", Return ]
 
 let find_attribute p attributes =
-  let inline_attribute = filter_attributes p attributes in
+  let inline_attribute = select_attributes p attributes in
   let attr =
     match inline_attribute with
     | [] -> None

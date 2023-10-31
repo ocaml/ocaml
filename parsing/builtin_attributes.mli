@@ -47,19 +47,20 @@
     attribute (because these may be left behind by a ppx and intentionally
     ignored by the compiler).
 
-    The [attr_tracking_time] argument indicates when the attr is being added for
-    tracking - either when it is created in the parser or when we see it while
-    running the check in the [Ast_invariants] module.  This ensures that we
-    track only attributes from the final version of the parse tree: we skip
-    adding attributes at parse time if we can see that a ppx will be run later,
-    because the [Ast_invariants] check is always run on the result of a ppx.
+    The [current_phase] argument indicates when this function is being called
+    - either when an attribute is created in the parser or when we see an
+    attribute while running the check in the [Ast_invariants] module.  This is
+    used to ensure that we track only attributes from the final version of the
+    parse tree: we skip adding attributes seen at parse time if we can see that
+    a ppx will be run later, because the [Ast_invariants] check is always run on
+    the result of a ppx.
 
     Note that the [Ast_invariants] check is also run on parse trees created from
     marshalled ast files if no ppx is being used, ensuring we don't miss
     attributes in that case.
 *)
-type attr_tracking_time = Parser | Invariant_check
-val register_attr : attr_tracking_time -> string Location.loc -> unit
+type current_phase = Parser | Invariant_check
+val register_attr : current_phase -> string Location.loc -> unit
 
 (** Marks the attribute used for the purposes of misplaced attribute warnings if
     it is an alert.  Call this when moving things allowed to have alert
@@ -81,7 +82,7 @@ val mark_deprecated_mutable_used : Parsetree.attributes -> unit
 
 (** Marks the attributes hiding in the payload of another attribute used, for
     the purposes of misplaced attribute warnings (see comment on
-    [attr_tracking_time] above).  In the parser, it's simplest to add these to
+    [current_phase] above).  In the parser, it's simplest to add these to
     the table and remove them later, rather than threading through state
     tracking whether we're in an attribute payload. *)
 val mark_payload_attrs_used : Parsetree.payload -> unit
@@ -133,7 +134,7 @@ val warning_scope:
     the purposes of misplaced attribute warnings. *)
 val has_attribute : string -> Parsetree.attributes -> bool
 
-(** [filter_attributes actions attrs] finds the elements of [attrs] that appear
+(** [select_attributes actions attrs] finds the elements of [attrs] that appear
     in [actions] and either returns them or just marks them used, according to
     the corresponding [attr_action].
 
@@ -144,13 +145,13 @@ val has_attribute : string -> Parsetree.attributes -> bool
     for it and mark it used when compiling with other configurations.
     Otherwise, we would issue spurious misplaced attribute warnings. *)
 type attr_action = Mark_used_only | Return
-val filter_attributes :
+val select_attributes :
   (string * attr_action) list -> Parsetree.attributes -> Parsetree.attributes
 
 (** This drops a leading "ocaml." prefix from a string, if present.  It is
     useful for manually inspecting attribute names, but note that doing so will
     not result in marking the attribute used for the purpose of warning 53, so
-    it is usually preferrable to use [has_attribute] or [filter_attributes]. *)
+    it is usually preferrable to use [has_attribute] or [select_attributes]. *)
 val drop_ocaml_attr_prefix : string -> string
 
 val warn_on_literal_pattern: Parsetree.attributes -> bool
