@@ -39,6 +39,7 @@
 
 *)
 
+(** {2 Attribute tracking for warning 53} *)
 
 (** [register_attr] must be called on the locations of all attributes that
     should be tracked for the purpose of misplaced attribute warnings.  In
@@ -62,6 +63,29 @@
 type current_phase = Parser | Invariant_check
 val register_attr : current_phase -> string Location.loc -> unit
 
+(** Marks the attributes hiding in the payload of another attribute used, for
+    the purposes of misplaced attribute warnings (see comment on
+    [current_phase] above).  In the parser, it's simplest to add these to
+    the table and remove them later, rather than threading through state
+    tracking whether we're in an attribute payload. *)
+val mark_payload_attrs_used : Parsetree.payload -> unit
+
+(** Issue misplaced attribute warnings for all attributes created with
+    [mk_internal] but not yet marked used. *)
+val warn_unused : unit -> unit
+
+(** {3 Warning 53 helpers for environment attributes}
+
+    Some attributes, like deprecation markers, do not affect the compilation of
+    the definition on which they appear, but rather result in warnings on future
+    uses of that definition.  This is implemented by moving the raw attributes
+    into the environment, where they will be noticed on future accesses.
+
+    To make misplaced attribute warnings work appropriately for these
+    attributes, we mark them "used" when they are moved into the environment.
+    This is done with the helper functions in this section.
+*)
+
 (** Marks the attribute used for the purposes of misplaced attribute warnings if
     it is an alert.  Call this when moving things allowed to have alert
     attributes into the environment. *)
@@ -80,16 +104,7 @@ val mark_warn_on_literal_pattern_used : Parsetree.attributes -> unit
     environment. *)
 val mark_deprecated_mutable_used : Parsetree.attributes -> unit
 
-(** Marks the attributes hiding in the payload of another attribute used, for
-    the purposes of misplaced attribute warnings (see comment on
-    [current_phase] above).  In the parser, it's simplest to add these to
-    the table and remove them later, rather than threading through state
-    tracking whether we're in an attribute payload. *)
-val mark_payload_attrs_used : Parsetree.payload -> unit
-
-(** Issue misplaced attribute warnings for all attributes created with
-    [mk_internal] but not yet marked used. *)
-val warn_unused : unit -> unit
+(** {2 Helpers for alert and warning attributes} *)
 
 val check_alerts: Location.t -> Parsetree.attributes -> string -> unit
 val check_alerts_inclusion:
@@ -129,6 +144,8 @@ val warning_scope:
       is executed.
   *)
 
+(** {2 Helpers for searching for particular attributes} *)
+
 (** [has_attribute name attrs] is true if an attribute with name [name] or
     ["ocaml." ^ name] is present in [attrs].  It marks that attribute used for
     the purposes of misplaced attribute warnings. *)
@@ -156,7 +173,6 @@ val drop_ocaml_attr_prefix : string -> string
 
 val warn_on_literal_pattern: Parsetree.attributes -> bool
 val explicit_arity: Parsetree.attributes -> bool
-
 
 val immediate: Parsetree.attributes -> bool
 val immediate64: Parsetree.attributes -> bool
