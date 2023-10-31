@@ -419,9 +419,9 @@ Working version
 - #12640: Make the module separator used in symbol names configurable
   (Miod Vallat, review by Hugo Heuzard and Xavier Leroy)
 
-- #????? : Clean up Ctype.expand_abbrev_gen and
+- #12691 : Clean up Ctype.expand_abbrev_gen and
   rename Env.add_local_type to add_local_constraint
-  (Takafumi Saikawa, Jacques Garrigue, review by ??)
+  (Takafumi Saikawa and Jacques Garrigue, review by Florian Angeletti)
 
 ### Build system:
 
