@@ -1253,15 +1253,15 @@ runtime/ld.conf: $(ROOTDIR)/Makefile.config
 
 # To speed up builds, we avoid changing "primitives" when files
 # containing primitives change but the primitives table does not
-runtime/primitives: \
+runtime/primitives: runtime/gen_primitives.sh \
   $(shell runtime/gen_primitives.sh $(runtime_BYTECODE_C_SOURCES) \
                     > runtime/primitives.new; \
                     cmp -s runtime/primitives runtime/primitives.new || \
                     echo runtime/primitives.new)
-	$(V_GEN)cp $^ $@
+	$(V_GEN)cp runtime/primitives.new $@
 
-runtime/prims.c : runtime/primitives
-	$(V_GEN) runtime/gen_primsc.sh \
+runtime/prims.c: runtime/gen_primsc.sh runtime/primitives
+	$(V_GEN)runtime/gen_primsc.sh \
                     runtime/primitives $(runtime_BYTECODE_C_SOURCES) \
                     > $@
 
