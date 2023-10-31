@@ -146,6 +146,10 @@ Working version
   `CAMLprim`, or remove them entirely if no longer used.
   (Xavier Leroy, review by David Allsopp)
 
+- #12700, continuing #11763 and trying to address #12660:
+  Use the correct types for primitives when generating the table of primitives
+  used by ocamlrun.
+  (Xavier Leroy, motivation, review and improvements by Antonin Décimo)
 
 ### Code generation and optimizations:
 
