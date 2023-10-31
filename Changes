@@ -13,6 +13,9 @@ OCaml 5.1.1
 
 ### Bug fixes:
 
+- #11800, #12707: fix an assertion race condition in `install_backup_thread`
+  (Jan Midtgaard, review by Gabriel Scherer)
+
 - #12623, fix the computation of variance composition
   (Florian Angeletti, report by Vesa Karvonen, review by Gabriel Scherer)
 
