@@ -833,6 +833,8 @@ unix_directory
 unix_library
 ocamltest_libunix
 ocamltest_CPP
+optional_native_tools
+optional_bytecode_tools
 optional_libraries
 lib_unix
 lib_systhreads
@@ -3285,6 +3287,8 @@ lib_str=false
 lib_systhreads=false
 lib_unix=false
 optional_libraries=''
+optional_bytecode_tools=''
+optional_native_tools=''
 ocamltest_libunix=None
 ocamltest_unix_impl="dummy"
 unix_library=""
@@ -3356,6 +3360,8 @@ LINEAR_MAGIC_NUMBER=Caml1999L033
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
+
 
 
 
@@ -18636,6 +18642,7 @@ printf "%s\n" "$as_me: ocamldebug disabled" >&6;} ;; #(
 then :
   with_debugger="ocamldebug"
     build_ocamldebug=true
+    optional_bytecode_tools="$optional_bytecode_tools debugger/ocamldebug"
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: ocamldebug supported" >&5
 printf "%s\n" "$as_me: ocamldebug supported" >&6;}
 else $as_nop
@@ -19840,7 +19847,8 @@ case $enable_ocamltest,true in #(
     ocamltest_target=ocamltest
     ocamltest_opt_target=ocamltest.opt
     ocamltest='ocamltest'
-     ;; #(
+    testsuite_tools='testsuite/tools/codegen testsuite/tools/expect'
+    optional_bytecode_tools="$optional_bytecode_tools $testsuite_tools" ;; #(
   *) :
     build_ocamltest=false
   ocamltest='' ;;

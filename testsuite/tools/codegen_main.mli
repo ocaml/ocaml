@@ -2,9 +2,9 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Sebastien Hinderer, projet Gallium, INRIA Paris            *)
+(*                       Sebastien Hinderer, Tarides                      *)
 (*                                                                        *)
-(*   Copyright 2018 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2023 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
@@ -13,23 +13,4 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Helper functions to build OCaml-related commands *)
-
-val ocamlrun_ocamlc : string
-
-val ocamlrun_ocamlopt : string
-
-val ocamlrun_ocaml : string
-
-val ocamlrun_expect : string
-
-val ocamlrun_ocamllex : string
-
-val ocamlrun_ocamldoc : string
-
-val ocamlrun_ocamldebug : string
-
-val ocamlrun_ocamlobjinfo : string
-
-val ocamlrun_ocamlmklib : string
-val ocamlrun_codegen : string
+(* Empty interface file *)

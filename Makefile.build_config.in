@@ -53,6 +53,8 @@ lib_systhreads = @lib_systhreads@
 lib_unix = @lib_unix@
 
 OPTIONAL_LIBRARIES = @optional_libraries@
+OPTIONAL_BYTECODE_TOOLS = @optional_bytecode_tools@
+OPTIONAL_NATIVE_TOOLS = @optional_native_tools@
 
 # Whether to install the native toplevel (ocamlnat)
 INSTALL_OCAMLNAT = @install_ocamlnat@

@@ -195,11 +195,7 @@ META
 /ocamldoc/odoc_text_parser.ml
 /ocamldoc/odoc_text_parser.mli
 /ocamldoc/*.output
-/ocamldoc/test_stdlib
-/ocamldoc/test_latex
-/ocamldoc/test
 
-/ocamltest/.dep
 /ocamltest/ocamltest
 /ocamltest/ocamltest.opt
 /ocamltest/ocamltest_config.ml
@@ -273,9 +269,8 @@ META
 
 /testsuite/_retries
 
-
 /testsuite/tools/codegen
-/testsuite/tools/expect_test
+/testsuite/tools/expect
 /testsuite/tools/lexcmm.ml
 /testsuite/tools/parsecmm.ml
 /testsuite/tools/parsecmm.mli

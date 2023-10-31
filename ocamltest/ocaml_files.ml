@@ -58,10 +58,10 @@ let cmpbyt =
   Filename.make_path
     [Ocaml_directories.srcdir; "tools"; Filename.mkexe "cmpbyt"]
 
-let expect_test =
+let expect =
   Filename.make_path
     [Ocaml_directories.srcdir; "testsuite"; "tools";
-     Filename.mkexe "expect_test"]
+     Filename.mkexe "expect"]
 
 let ocamllex =
   Filename.make_path

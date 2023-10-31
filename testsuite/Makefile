@@ -141,7 +141,6 @@ default:
 	@echo "    ... DIR=d                  ... the tests located in the directory d"
 	@echo "    ... LIST=f                 ... the tests listed in the file f (one \
 	per line)"
-	@echo "  tools                      build test tools"
 	@echo "  clean                      delete generated files"
 	@echo "  report                     print the report for the last execution"
 	@echo
@@ -158,7 +157,7 @@ all:
 	@$(MAKE) --no-print-directory report
 
 .PHONY: new-without-report
-new-without-report: tools
+new-without-report:
 	@rm -f $(failstamp)
 	@($(ocamltest) -find-test-dirs tests | while $(IFS_LINE) read -r dir; do \
 	  echo Running tests from \'$$dir\' ... ; \
@@ -177,7 +176,7 @@ check-failstamp:
 	fi
 
 .PHONY: all-%
-all-%: tools
+all-%:
 	@for dir in tests/$**; do \
 	  $(MAKE) --no-print-directory exec-one DIR=$$dir; \
 	done 2>&1 | tee $(TESTLOG)
@@ -215,7 +214,7 @@ all-%: tools
 J_ARGUMENT = $(filter-out -j,$(filter -j%,$(MAKEFLAGS)))
 
 .PHONY: parallel-%
-parallel-%: tools
+parallel-%:
 	@echo | parallel >/dev/null 2>/dev/null \
 	 || (echo "Unable to run the GNU parallel tool;";\
 	     echo "You should install it before using the parallel* targets.";\
@@ -234,7 +233,7 @@ parallel-%: tools
 parallel: parallel-*
 
 .PHONY: list
-list: tools
+list:
 	@if [ -z "$(FILE)" ]; \
     then echo "No value set for variable 'FILE'."; \
     exit 1; \
@@ -242,7 +241,7 @@ list: tools
 	@$(MAKE) --no-print-directory one LIST="$(FILE)"
 
 .PHONY: one
-one: tools
+one:
 	@case "$(words $(DIR) $(LIST) $(TEST))" in \
    0) echo 'No value set for variable DIR, LIST or TEST'>&2; exit 1;; \
    1) exit 0;; \
@@ -303,23 +302,17 @@ clean-one:
 	fi
 
 .PHONY: promote
-promote: tools
+promote:
 	@$(MAKE) one PROMOTE=true
-
-.PHONY: tools
-tools:
-	@cd tools && $(MAKE) -s BASEDIR=$(BASEDIR)
 
 .PHONY: clean
 clean:
-	@cd tools && $(MAKE) BASEDIR=$(BASEDIR) clean
 	find . -name '*_ocamltest*' | xargs rm -rf
 	rm -f $(failstamp)
 
 .PHONY: distclean
 distclean: clean
 	rm -f _log*
-	$(MAKE) -C tools distclean
 
 .PHONY: report
 report:

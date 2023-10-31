@@ -77,6 +77,8 @@ lib_str=false
 lib_systhreads=false
 lib_unix=false
 optional_libraries=''
+optional_bytecode_tools=''
+optional_native_tools=''
 ocamltest_libunix=None
 ocamltest_unix_impl="dummy"
 unix_library=""
@@ -191,6 +193,8 @@ AC_SUBST([lib_str])
 AC_SUBST([lib_systhreads])
 AC_SUBST([lib_unix])
 AC_SUBST([optional_libraries])
+AC_SUBST([optional_bytecode_tools])
+AC_SUBST([optional_native_tools])
 AC_SUBST([ocamltest_CPP])
 AC_SUBST([ocamltest_libunix])
 AC_SUBST([unix_library])
@@ -2181,6 +2185,7 @@ AS_CASE([$enable_ocamldebug],
   [AS_IF([$sockets],
     [with_debugger="ocamldebug"
     build_ocamldebug=true
+    optional_bytecode_tools="$optional_bytecode_tools debugger/ocamldebug"
     AC_MSG_NOTICE([ocamldebug supported])],
     [with_debugger=""
     build_ocamldebug=false
@@ -2314,7 +2319,8 @@ AS_CASE([$enable_ocamltest,OCAML__DEVELOPMENT_VERSION],
     ocamltest_target=ocamltest
     ocamltest_opt_target=ocamltest.opt
     ocamltest='ocamltest'
-    ],
+    testsuite_tools='testsuite/tools/codegen testsuite/tools/expect'
+    optional_bytecode_tools="$optional_bytecode_tools $testsuite_tools"],
   [build_ocamltest=false
   ocamltest=''])
 
