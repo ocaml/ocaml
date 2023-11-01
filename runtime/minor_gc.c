@@ -48,8 +48,7 @@ struct generic_table CAML_TABLE_STRUCT(char);
 CAMLexport atomic_uintnat caml_minor_collections_count;
 CAMLexport atomic_uintnat caml_major_slice_epoch;
 
-static caml_plat_barrier domains_finished_minor_gc =
-  CAML_PLAT_BARRIER_INITIALIZER;
+static caml_plat_barrier minor_gc_end_barrier = CAML_PLAT_BARRIER_INITIALIZER;
 
 static atomic_uintnat caml_minor_cycles_started = 0;
 
@@ -462,6 +461,8 @@ void caml_empty_minor_heap_domain_clear(caml_domain_state* domain)
   domain->extra_heap_resources_minor = 0.0;
 }
 
+/* try to do a major slice, returns nonzero if there was any work available,
+   used as useful spin work while waiting for synchronisation */
 int caml_do_opportunistic_major_slice
   (caml_domain_state* domain_unused, void* unused);
 static void minor_gc_leave_barrier
@@ -663,9 +664,9 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
 
   /* arrive at the barrier */
   if( participating_count > 1 ) {
-    if (caml_plat_barrier_arrive(&domains_finished_minor_gc)
+    if (caml_plat_barrier_arrive(&minor_gc_end_barrier)
         == participating_count) {
-      caml_plat_barrier_release(&domains_finished_minor_gc);
+      caml_plat_barrier_release(&minor_gc_end_barrier);
     }
   }
   /* other domains may be executing mutator code from this point, but
@@ -724,7 +725,7 @@ static void minor_gc_leave_barrier
 {
   /* Spin while we have major work available */
   SPIN_WAIT_BOUNDED {
-    if (caml_plat_barrier_is_released(&domains_finished_minor_gc)) {
+    if (caml_plat_barrier_is_released(&minor_gc_end_barrier)) {
       return;
     }
 
@@ -735,15 +736,16 @@ static void minor_gc_leave_barrier
 
   /* Spin a bit longer, which is far less fruitful if we're waiting on
      more than one thread */
-  unsigned spins = participating_count == 2 ? Max_spins_medium : Max_spins_short;
+  unsigned spins =
+    participating_count == 2 ? Max_spins_medium : Max_spins_short;
   SPIN_WAIT_NTIMES(spins) {
-    if (caml_plat_barrier_is_released(&domains_finished_minor_gc)) {
+    if (caml_plat_barrier_is_released(&minor_gc_end_barrier)) {
       return;
     }
   }
 
   /* If there's nothing to do, block */
-  caml_plat_barrier_wait(&domains_finished_minor_gc);
+  caml_plat_barrier_wait(&minor_gc_end_barrier);
 }
 
 int caml_do_opportunistic_major_slice
@@ -766,7 +768,7 @@ int caml_do_opportunistic_major_slice
 void caml_empty_minor_heap_setup(caml_domain_state* domain_unused) {
   /* Increment the total number of minor collections done in the program */
   nonatomic_increment_counter (&caml_minor_collections_count);
-  caml_plat_barrier_reset(&domains_finished_minor_gc);
+  caml_plat_barrier_reset(&minor_gc_end_barrier);
 }
 
 /* must be called within a STW section */

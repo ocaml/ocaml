@@ -1420,7 +1420,6 @@ static void cycle_major_heap_from_stw_single(
 
   domain->swept_words = 0;
 
-  num_domains_in_stw = (uintnat)caml_global_barrier_num_domains();
   atomic_store_release(&num_domains_to_sweep, num_domains_in_stw);
   atomic_store_release(&num_domains_to_mark, num_domains_in_stw);
 

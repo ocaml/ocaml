@@ -483,11 +483,14 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
   {
     header_t* p = POOL_FIRST_BLOCK(a, sz);
     header_t* end = POOL_END(a);
-    work = end - p;
     mlsize_t wh = wsize_sizeclass[sz];
     int all_used = 1;
     struct heap_stats* s = &local->stats;
 
+    /* conceptually, this is incremented by [wh] for every iteration
+       below, however we can hoist these increments knowing that [p ==
+       end] on exit from the loop (as asserted) */
+    work = end - p;
     do {
       header_t hd = (header_t)atomic_load_relaxed((atomic_uintnat*)p);
       if (hd == 0) {
@@ -525,6 +528,7 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
       }
       p += wh;
     } while (p + wh <= end);
+    CAMLassert(p == end);
 
     if (release_to_global_pool) {
       pool_release(local, a, sz);

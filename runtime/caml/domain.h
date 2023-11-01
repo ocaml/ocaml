@@ -121,6 +121,7 @@ int caml_try_run_on_all_domains_with_spin_work(
   void (*handler)(caml_domain_state*, void*, int, caml_domain_state**),
   void* data,
   void (*leader_setup)(caml_domain_state*),
+  /* return nonzero if there may still be useful work to do while spinning */
   int (*enter_spin_callback)(caml_domain_state*, void*),
   void* enter_spin_data);
 int caml_try_run_on_all_domains(
@@ -182,46 +183,46 @@ int caml_try_run_on_all_domains(
 */
 
 
-/* barriers */
-typedef uintnat barrier_status;
+/* Barriers */
+
+/* Get the number of parties expected to arrive into the barrier, i.e. the
+   number of domains participating in the STW section. In most cases the barrier
+   is used directly from an STW callback that already has the number of
+   participating domains at hand, which should be used instead. */
+int caml_global_barrier_num_participating(void);
+
+/* Arrive at the barrier and wait for all parties */
 void caml_global_barrier(void);
-barrier_status caml_global_barrier_begin(void);
-Caml_inline int caml_global_barrier_is_nth(barrier_status b, int n) {
-  return (b & ~0x100000) == n;
-}
-int caml_global_barrier_is_final(barrier_status);
-void caml_global_barrier_end(barrier_status);
-int caml_global_barrier_num_domains(void);
+/* Arrive at the barrier and wait iff there is more than one party */
+#define Caml_maybe_global_barrier(num_participating)                    \
+  do { if ((num_participating) != 1) caml_global_barrier(); } while(0)
 
-/* combined begin/is_final/end, for the common case where the last party has
-   some code to run; returns 0 unless we are the last party, in which case it
-   returns the status
-*/
+typedef uintnat barrier_status;
+/* Arrive at the barrier and wait, returning zero after, unless we are the final
+   party, in which case the status (which is nonzero) to be passed to
+   [release_as_final()] is returned instead */
 barrier_status caml_global_barrier_wait_unless_final(int num_participating);
-/* releases the barrier with the given status */
+/* Release the barrier with the given status */
 void caml_global_barrier_release_as_final(barrier_status);
+/* Arrive at the global barrier and run the body if we are the final party
 
-/* arrive at the global barrier iff there is more than one party */
-#define Caml_maybe_global_barrier(num_participating)    \
-  if ((num_participating) != 1) caml_global_barrier()
-/* arrive at the global barrier and run the body if we are the final party */
+   Example usage:
+
+   Caml_global_barrier_if_final(num_participating) {
+     do_something_in_final_domain();
+   }
+ */
 #define Caml_global_barrier_if_final(num_participating)                 \
-  Caml__global_barrier_if_X_setup(num_participating);                   \
-  Caml__global_barrier_if_X_run_if(                                     \
-      0 !=, caml_global_barrier_wait_unless_final(num_participating))   \
-    Caml__global_barrier_if_X_finish_with(caml_global_barrier_release_as_final)
-
-#define Caml__global_barrier_if_X_setup(num_participating) \
-  /* fast path when alone */                               \
-  int GENSYM(caml__alone) = (num_participating) == 1;      \
-  barrier_status GENSYM(caml__b) = 0
-#define Caml__global_barrier_if_X_finish_with(barrier_end)     \
-  for (int GENSYM(caml__continue) = 1; GENSYM(caml__continue); \
-       ((GENSYM(caml__alone) ? (void)0 :                       \
-         barrier_end(GENSYM(caml__b))),                        \
-        GENSYM(caml__continue) = 0))
-#define Caml__global_barrier_if_X_run_if(check, barrier_arrive)         \
-  if (GENSYM(caml__alone) || check(GENSYM(caml__b) = barrier_arrive))
+  /* fast path when alone */                                            \
+  int CAML_GENSYM(alone) = (num_participating) == 1;                    \
+  barrier_status CAML_GENSYM(b) = 0;                                    \
+  if (CAML_GENSYM(alone) ||                                             \
+      (CAML_GENSYM(b)                                                   \
+       = caml_global_barrier_wait_unless_final(num_participating)))     \
+    for (int CAML_GENSYM(continue) = 1; CAML_GENSYM(continue);          \
+         ((CAML_GENSYM(alone) ? (void)0 :                               \
+           caml_global_barrier_release_as_final(CAML_GENSYM(b))),       \
+          CAML_GENSYM(continue) = 0))
 
 #endif /* CAML_INTERNALS */
 
