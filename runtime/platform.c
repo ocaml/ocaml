@@ -132,97 +132,13 @@ void caml_plat_cond_free(caml_plat_cond* cond)
   cond->mutex=0;
 }
 
-/* Barriers */
+/* Futexes */
 
-#ifndef CAML_PLAT_FUTEX_FALLBACK
-#  if defined(_WIN32)
-#    include <synchapi.h>
-#    define CAML_PLAT_FUTEX_WAIT(ftx, undesired)                \
-  WaitOnAddress(ftx, &undesired, sizeof(undesired), INFINITE)
-#    define CAML_PLAT_FUTEX_WAKE(ftx) \
-  WakeByAddressAll(ftx)
+#ifdef CAML_PLAT_FUTEX_FALLBACK
 
-#  elif defined(__linux__)
-#    include <linux/futex.h>
-#    include <sys/syscall.h>
-#    define CAML_PLAT_FUTEX_WAIT(ftx, undesired)    \
-  syscall(SYS_futex, ftx, FUTEX_WAIT_PRIVATE,       \
-          /* expected */ undesired,                 \
-          /* timeout */ NULL,                       \
-          /* ignored */ NULL, 0)
-#    define CAML_PLAT_FUTEX_WAKE(ftx)           \
-  syscall(SYS_futex, ftx, FUTEX_WAKE_PRIVATE,   \
-          /* count */ INT_MAX,                  \
-          /* timeout */ NULL,                   \
-          /* ignored */ NULL, 0)
-
-/* #  elif defined(__APPLE__)
-   macOS has __ulock_wait which is used in implementations of libc++,
-   (e.g. by LLVM) but the API is private and unstable. */
-
-#  elif defined(__FreeBSD__)
-#    include <sys/umtx.h>
-#    define CAML_PLAT_FUTEX_WAIT(ftx, undesired) \
-  _umtx_op(ftx, UMTX_OP_WAIT_UINT_PRIVATE,       \
-           /* expected */ undesired,             \
-           /* timeout */ NULL, NULL)
-#    define CAML_PLAT_FUTEX_WAKE(ftx) \
-  _umtx_op(ftx, UMTX_OP_WAKE_PRIVATE, \
-           /* count */ INT_MAX,       \
-           /* unused */ NULL, NULL)
-
-#  elif defined(__OpenBSD__)
-#    include <sys/futex.h>
-#    define CAML_PLAT_FUTEX_WAIT(ftx, undesired)      \
-  futex((volatile uint32_t*)ftx, FUTEX_WAIT_PRIVATE,  \
-        /* expected */ undesired,                     \
-        /* timeout */ NULL,                           \
-        /* ignored */ NULL)
-#    define CAML_PLAT_FUTEX_WAKE(ftx)                \
-  futex((volatile uint32_t*)ftx, FUTEX_WAKE_PRIVATE, \
-        /* count */ INT_MAX,                         \
-        /* ignored */ NULL, NULL)
-
-#  elif defined(__NetBSD__)
-#    include <sys/futex.h>
-#    include <sys/syscall.h>
-#    define CAML_PLAT_FUTEX_WAIT(ftx, undesired)    \
-  syscall(SYS___futex, ftx,                         \
-          FUTEX_WAIT | FUTEX_PRIVATE_FLAG,          \
-          /* expected */ undesired,                 \
-          /* timeout */ NULL,                       \
-          /* ignored */ NULL, 0, 0)
-#    define CAML_PLAT_FUTEX_WAKE(ftx)            \
-  sycall(SYS___futex, ftx,                       \
-         FUTEX_WAKE | FUTEX_PRIVATE_FLAG,        \
-         /* count */ INT_MAX,                    \
-         /* ignored */ NULL, NULL, 0, 0)
-
-#  elif defined(__DragonFly__)
-#    define CAML_PLAT_FUTEX_WAIT(ftx, undesired)    \
-  umtx_sleep((volatile const int*)ftx, undesired, 0)
-#    define CAML_PLAT_FUTEX_WAKE(ftx)           \
-  umtx_wakeup((volatile const int*)ftx, INT_MAX)
-
-#  else
-#    error "No futex implementation available"
-#  endif
-#endif
-
-#if !defined(CAML_PLAT_FUTEX_FALLBACK)
-
-void caml_plat_futex_wait(caml_plat_futex* ftx,
-                          caml_plat_futex_value undesired) {
-  while (atomic_load_acquire(&ftx->value) == undesired) {
-    CAML_PLAT_FUTEX_WAIT(&ftx->value, undesired);
-  }
-}
-
-void caml_plat_futex_wake_all(caml_plat_futex* ftx) {
-  CAML_PLAT_FUTEX_WAKE(&ftx->value);
-}
-
-#else
+/* Conditon-variable-based futex implementation, for when a native OS
+   version isn't available. This also illustrates the semantics of the
+   [wait()] and [wake_all()] operations. */
 
 void caml_plat_futex_wait(caml_plat_futex* futex,
                           caml_plat_futex_value undesired) {
@@ -249,31 +165,155 @@ void caml_plat_futex_free(caml_plat_futex* ftx) {
   caml_plat_mutex_free(&ftx->mutex);
   check_err("cond_destroy", pthread_cond_destroy(&ftx->cond));
 }
-#endif
 
-/* single-sense */
+#else /* ! CAML_PLAT_FUTEX_FALLBACK */
 
-void caml_plat_barrier_raw_release(caml_plat_futex* futex) {
-  /* if nobody is blocking, release in user-space */
-  if (atomic_exchange(&futex->value, Barrier_released)
-      != Barrier_unreleased) {
-    /* at least one thread is (going to be) blocked on the futex, notify */
-    caml_plat_futex_wake_all(futex);
+/* Platform-specific futex implementation.
+
+   For each platform we define [WAIT(futex_word* ftx, futex_value
+   undesired)] and [WAKE(futex_word* ftx)] in terms of
+   platform-specific syscalls. The exact semantics vary, but these are
+   the weakest expected guarantees:
+
+   - [WAIT()] compares the value at [ftx] to [undesired], and if they
+     are equal, goes to sleep on [ftx].
+
+   - [WAKE()] wakes up all [WAIT()]-ers on [ftx].
+
+   - [WAIT()] must be atomic with respect to [WAKE()], in that if the
+     [WAIT()]-ing thread observes the undesired value and goes to
+     sleep, it will not miss a wakeup from the [WAKE()]-ing thread
+     between the comparison and sleep.
+
+   - [WAIT()]'s initial read of [ftx] is to be treated as being atomic
+     with [memory_order_relaxed]. That is, no memory ordering is
+     guaranteed around it.
+
+   - Spurious wakeups of [WAIT()] may be possible.
+*/
+
+#  if defined(_WIN32)
+#    include <synchapi.h>
+#    define CAML_PLAT_FUTEX_WAIT(ftx, undesired)                \
+  WaitOnAddress(ftx, &undesired, sizeof(undesired), INFINITE)
+#    define CAML_PLAT_FUTEX_WAKE(ftx)           \
+  WakeByAddressAll(ftx)
+
+#  elif defined(__linux__)
+#    include <linux/futex.h>
+#    include <sys/syscall.h>
+#    define CAML_PLAT_FUTEX_WAIT(ftx, undesired)    \
+  syscall(SYS_futex, ftx, FUTEX_WAIT_PRIVATE,       \
+          /* expected */ undesired,                 \
+          /* timeout */ NULL,                       \
+          /* ignored */ NULL, 0)
+#    define CAML_PLAT_FUTEX_WAKE(ftx)           \
+  syscall(SYS_futex, ftx, FUTEX_WAKE_PRIVATE,   \
+          /* count */ INT_MAX,                  \
+          /* timeout */ NULL,                   \
+          /* ignored */ NULL, 0)
+
+#  elif 0 /* defined(__APPLE__)
+   macOS has [__ulock_(wait|wake)()] which is used in implementations
+   of libc++, (e.g. by LLVM) but the API is private and unstable.
+   Therefore, we currently use the condition variable fallback on
+   macOS. */
+
+#  elif defined(__FreeBSD__)
+#    include <sys/umtx.h>
+#    define CAML_PLAT_FUTEX_WAIT(ftx, undesired) \
+  _umtx_op(ftx, UMTX_OP_WAIT_UINT_PRIVATE,       \
+           /* expected */ undesired,             \
+           /* timeout */ NULL, NULL)
+#    define CAML_PLAT_FUTEX_WAKE(ftx) \
+  _umtx_op(ftx, UMTX_OP_WAKE_PRIVATE, \
+           /* count */ INT_MAX,       \
+           /* unused */ NULL, NULL)
+
+#  elif defined(__OpenBSD__)
+#    include <sys/futex.h>
+#    define CAML_PLAT_FUTEX_WAIT(ftx, undesired)      \
+  futex((volatile uint32_t*)ftx, FUTEX_WAIT_PRIVATE,  \
+        /* expected */ undesired,                     \
+        /* timeout */ NULL,                           \
+        /* ignored */ NULL)
+#    define CAML_PLAT_FUTEX_WAKE(ftx)                \
+  futex((volatile uint32_t*)ftx, FUTEX_WAKE_PRIVATE, \
+        /* count */ INT_MAX,                         \
+        /* ignored */ NULL, NULL)
+
+#  elif 0 /* defined(__NetBSD__)
+   this platform is untested, the fallback is used instead */
+#    include <sys/futex.h>
+#    include <sys/syscall.h>
+#    define CAML_PLAT_FUTEX_WAIT(ftx, undesired)    \
+  syscall(SYS___futex, ftx,                         \
+          FUTEX_WAIT | FUTEX_PRIVATE_FLAG,          \
+          /* expected */ undesired,                 \
+          /* timeout */ NULL,                       \
+          /* ignored */ NULL, 0, 0)
+#    define CAML_PLAT_FUTEX_WAKE(ftx)            \
+  sycall(SYS___futex, ftx,                       \
+         FUTEX_WAKE | FUTEX_PRIVATE_FLAG,        \
+         /* count */ INT_MAX,                    \
+         /* ignored */ NULL, NULL, 0, 0)
+
+#  elif 0 /* defined(__DragonFly__)
+   this platform is untested, the fallback is used instead */
+#    define CAML_PLAT_FUTEX_WAIT(ftx, undesired)        \
+  umtx_sleep((volatile const int*)ftx, undesired, 0)
+#    define CAML_PLAT_FUTEX_WAKE(ftx)               \
+  umtx_wakeup((volatile const int*)ftx, INT_MAX)
+
+#  else
+#    error "No futex implementation available"
+#  endif
+
+void caml_plat_futex_wait(caml_plat_futex* ftx,
+                          caml_plat_futex_value undesired) {
+  while (atomic_load_acquire(&ftx->value) == undesired) {
+    CAML_PLAT_FUTEX_WAIT(&ftx->value, undesired);
   }
 }
 
-void caml_plat_barrier_raw_wait(caml_plat_futex* futex) {
-  /* indicate that we are about to block */
-  caml_plat_futex_value expected = Barrier_unreleased;
-  (void)atomic_compare_exchange_strong
-    (&futex->value, &expected, Barrier_contested);
-  /* it's either already released (== Barrier_released), or we are
-     going to block (== Barrier_contested), futex_wait() here will
-     take care of both */
-  caml_plat_futex_wait(futex, Barrier_contested);
+void caml_plat_futex_wake_all(caml_plat_futex* ftx) {
+  CAML_PLAT_FUTEX_WAKE(&ftx->value);
 }
 
-/* sense-reversing */
+void caml_plat_futex_init(caml_plat_futex* ftx,
+                          caml_plat_futex_value value) {
+  ftx->value = value;
+}
+
+void caml_plat_futex_free(caml_plat_futex* ftx) {
+  (void) ftx; /* noop */
+}
+
+#endif /* CAML_PLAT_FUTEX_FALLBACK */
+
+/* Latches */
+
+void caml_plat_latch_release(caml_plat_binary_latch* latch) {
+  /* if nobody is blocking, release in user-space */
+  if (atomic_exchange(&latch->value, Latch_released)
+      != Latch_unreleased) {
+    /* at least one thread is (going to be) blocked on the futex, notify */
+    caml_plat_futex_wake_all(latch);
+  }
+}
+
+void caml_plat_latch_wait(caml_plat_binary_latch* latch) {
+  /* indicate that we are about to block */
+  caml_plat_futex_value expected = Latch_unreleased;
+  (void)atomic_compare_exchange_strong
+    (&latch->value, &expected, Latch_contested);
+  /* it's either already released (== Latch_released), or we are
+     going to block (== Latch_contested), futex_wait() here will
+     take care of both */
+  caml_plat_futex_wait(latch, Latch_contested);
+}
+
+/* Sense-reversing barrier */
 /* futex states:
    - X...0 if nobody is blocking (but they may be spinning)
    - X...1 if anybody is blocking (or about to)
@@ -400,20 +440,20 @@ void caml_mem_unmap(void* mem, uintnat size)
 #define Slow_sleep_ns    1000000 //  1 ms
 #define Max_sleep_ns  1000000000 //  1 s
 
-unsigned caml_plat_spin_wait(unsigned spins,
-                             const struct caml_plat_srcloc* loc)
+unsigned caml_plat_spin_back_off(unsigned sleep_ns,
+                                 const struct caml_plat_srcloc* loc)
 {
-  if (spins < Min_sleep_ns) spins = Min_sleep_ns;
-  if (spins > Max_sleep_ns) spins = Max_sleep_ns;
-  unsigned next_spins = spins + spins / 4;
-  if (spins < Slow_sleep_ns && Slow_sleep_ns <= next_spins) {
+  if (sleep_ns < Min_sleep_ns) sleep_ns = Min_sleep_ns;
+  if (sleep_ns > Max_sleep_ns) sleep_ns = Max_sleep_ns;
+  unsigned next_sleep_ns = sleep_ns + sleep_ns / 4;
+  if (sleep_ns < Slow_sleep_ns && Slow_sleep_ns <= next_sleep_ns) {
     caml_gc_log("Slow spin-wait loop in %s at %s:%d",
                 loc->function, loc->file, loc->line);
   }
 #ifdef _WIN32
-  Sleep(spins/1000000);
+  Sleep(sleep_ns/1000000);
 #else
-  usleep(spins/1000);
+  usleep(sleep_ns/1000);
 #endif
-  return next_spins;
+  return next_sleep_ns;
 }
