@@ -1567,14 +1567,14 @@ let apply ?(use_current_level = false) env params body args =
 
 (*
    If the environment has changed, memorized expansions might not
-   be correct anymore, and so we flush the cache. This is safe but
-   quite pessimistic: it would be enough to flush the cache when a
-   type or module definition is overridden in the environment.
+   be correct anymore, and so we flush the cache. The test used
+   checks whether any of types, modules, or local constraints have
+   been changed.
 *)
 let previous_env = ref Env.empty
 (*let string_of_kind = function Public -> "public" | Private -> "private"*)
 let check_abbrev_env env =
-  if env != !previous_env then begin
+  if not (Env.same_type_declarations env !previous_env) then begin
     (* prerr_endline "cleanup expansion cache"; *)
     cleanup_abbrev ();
     previous_env := env
@@ -1600,59 +1600,55 @@ let check_abbrev_env env =
       and this other expansion fails.
 *)
 let expand_abbrev_gen kind find_type_expansion env ty =
+  let path, args, abbrev = match get_desc ty with
+  | Tconstr (path,args,abbrev) -> path, args, abbrev
+  | _ -> assert false
+  in
   check_abbrev_env env;
-  match get_desc ty with
-    Tconstr (path, args, abbrev) ->
-      let level = get_level ty in
-      let scope = get_scope ty in
-      let lookup_abbrev = proper_abbrevs args abbrev in
-      begin match find_expans kind path !lookup_abbrev with
-        Some ty' ->
+  let level = get_level ty in
+  let scope = get_scope ty in
+  let lookup_abbrev = proper_abbrevs args abbrev in
+  let expansion =
+    (* first look for an existing expansion *)
+    match find_expans kind path !lookup_abbrev with
+    | None -> None
+    | Some ty' -> try
+        (* prerr_endline
+           ("found a "^string_of_kind kind^" expansion for "^Path.name path);*)
+        if level <> generic_level then update_level env level ty';
+        update_scope scope ty';
+        Some ty'
+    with Escape _ ->
+      (* in case of Escape, discard the stale expansion and re-expand *)
+      forget_abbrev lookup_abbrev path;
+      None
+  in
+  begin match expansion with
+  | Some ty' -> ty'
+  | None ->
+      (* attempt to (re-)expand *)
+      match find_type_expansion path env with
+      | exception Not_found ->
+          (* another way to expand is to normalize the path itself *)
+          let path' = Env.normalize_type_path None env path in
+          if Path.same path path' then raise Cannot_expand
+          else newty2 ~level (Tconstr (path', args, abbrev))
+      | (params, body, lv) ->
           (* prerr_endline
-            ("found a "^string_of_kind kind^" expansion for "^Path.name path);*)
-          if level <> generic_level then
-            begin try
-              update_level env level ty'
-            with Escape _ ->
-              (* XXX This should not happen.
-                 However, levels are not correctly restored after a
-                 typing error *)
-              ()
-            end;
-          begin try
-            update_scope scope ty';
-          with Escape _ ->
-            (* XXX This should not happen.
-               However, levels are not correctly restored after a
-               typing error *)
-            ()
-          end;
+             ("add a "^string_of_kind kind^" expansion for "^Path.name path);*)
+          let ty' =
+            try
+              subst env level kind abbrev (Some ty) params args body
+            with Cannot_subst -> raise_escape_exn Constraint
+          in
+          (* For gadts, remember type as non exportable *)
+          (* The ambiguous level registered for ty' should be the highest *)
+          (* if !trace_gadt_instances then begin *)
+          let scope = Int.max lv (get_scope ty) in
+          update_scope scope ty;
+          update_scope scope ty';
           ty'
-      | None ->
-          match find_type_expansion path env with
-          | exception Not_found ->
-            (* another way to expand is to normalize the path itself *)
-            let path' = Env.normalize_type_path None env path in
-            if Path.same path path' then raise Cannot_expand
-            else newty2 ~level (Tconstr (path', args, abbrev))
-          | (params, body, lv) ->
-            (* prerr_endline
-              ("add a "^string_of_kind kind^" expansion for "^Path.name path);*)
-            let ty' =
-              try
-                subst env level kind abbrev (Some ty) params args body
-              with Cannot_subst -> raise_escape_exn Constraint
-            in
-            (* For gadts, remember type as non exportable *)
-            (* The ambiguous level registered for ty' should be the highest *)
-            (* if !trace_gadt_instances then begin *)
-            let scope = Int.max lv (get_scope ty) in
-            update_scope scope ty;
-            update_scope scope ty';
-            ty'
-      end
-  | _ ->
-      assert false
+  end
 
 (* Expand respecting privacy *)
 let expand_abbrev env ty =
@@ -2538,7 +2534,7 @@ let add_gadt_equation uenv source destination =
         ~manifest_and_scope:(destination, expansion_scope)
         type_origin
     in
-    set_env uenv (Env.add_local_type source decl env);
+    set_env uenv (Env.add_local_constraint source decl env);
     cleanup_abbrev ()
   end
 

@@ -423,6 +423,10 @@ Working version
 - #12640: Make the module separator used in symbol names configurable
   (Miod Vallat, review by Hugo Heuzard and Xavier Leroy)
 
+- #12691 : Clean up Ctype.expand_abbrev_gen and
+  rename Env.add_local_type to add_local_constraint
+  (Takafumi Saikawa and Jacques Garrigue, review by Florian Angeletti)
+
 ### Build system:
 
 - #12198, #12321, #12586, #12616: continue the merge of the sub-makefiles

@@ -674,6 +674,11 @@ let error err = raise (Error err)
 let lookup_error loc env err =
   error (Lookup_error(loc, env, err))
 
+let same_type_declarations e1 e2 =
+  e1.types == e2.types &&
+  e1.modules == e2.modules &&
+  e1.local_constraints == e2.local_constraints
+
 let same_constr = ref (fun _ _ _ -> assert false)
 
 let check_well_formed_module = ref (fun _ -> assert false)
@@ -2231,7 +2236,7 @@ let add_module_lazy ~update_summary id presence mty env =
   in
   add_module_declaration_lazy ~update_summary id presence md env
 
-let add_local_type path info env =
+let add_local_constraint path info env =
   { env with
     local_constraints = Path.Map.add path info env.local_constraints }
 
