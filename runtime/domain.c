@@ -1836,9 +1836,12 @@ static void handover_finalisers(caml_domain_state* domain_state)
   if (f->todo_head != NULL || f->first.size != 0 || f->last.size != 0) {
     /* have some final structures */
     if (caml_gc_phase != Phase_sweep_and_mark_main) {
-      /* Force a major GC cycle to simplify constraints for
-       * handing over finalisers. */
+      /* Force a major GC cycle to simplify constraints for orphaning
+         finalisers. See note attached to the declaration of
+         [num_domains_orphaning_finalisers] variable in major_gc.c */
+      caml_incr_num_domains_orphaning_finalisers();
       caml_finish_major_cycle(0);
+      caml_decr_num_domains_orphaning_finalisers();
       CAMLassert(caml_gc_phase == Phase_sweep_and_mark_main);
     }
     caml_add_orphaned_finalisers (f);

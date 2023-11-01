@@ -50,6 +50,8 @@ void caml_orphan_allocated_words(void);
 void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info);
 void caml_add_orphaned_finalisers (struct caml_final_info*);
 void caml_final_domain_terminate (caml_domain_state *domain_state);
+void caml_incr_num_domains_orphaning_finalisers (void);
+void caml_decr_num_domains_orphaning_finalisers (void);
 
 /* Forces finalisation of all heap-allocated values,
    disregarding both local and global roots.

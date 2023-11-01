@@ -80,8 +80,34 @@ uintnat caml_major_cycles_completed = 0;
 static atomic_uintnat num_domains_to_sweep;
 static atomic_uintnat num_domains_to_mark;
 static atomic_uintnat num_domains_to_ephe_sweep;
+
+/* [num_domains_to_final_update_first] and [num_domains_to_final_update_last]
+   are initialised to [num_domains_in_stw] at the start of the cycle. Whenever
+   a domain finishes processing its first or last finalisers, it decrements the
+   appropriate counter.
+
+   Newly created domains increment both the counters. Terminating domain
+   orphans its finalisers and then decrements the counters. See
+   [caml_final_domain_terminate]. */
 static atomic_uintnat num_domains_to_final_update_first;
 static atomic_uintnat num_domains_to_final_update_last;
+
+/* When domains terminate, they will orphan their finalisers. As mentioned in
+   the comment attached to [num_domains_to_final_update_*] counters, a domain
+   will decrement the counters when the corresponding finalisers are processed
+   for that domain. We would like to preserve this invariant when adopting
+   orphaned finalisers. To this end, we orphan and adopt finalisers only in
+   [Phase_sweep_and_mark_main] when [num_domains_to_final_update_*] counters
+   have not been decremented for the domain yet.
+
+   [num_domains_orphaning_finalisers] keeps a count of the number of domains
+   currently orphaning finalisers. This counter is only used in the
+   [Phase_sweep_and_mark_main] to determine wheter to proceed to
+   [Phase_mark_final]. If domains are currently orphaning finalisers, we remain
+   in [Phase_sweep_and_mark_main] so that the orphaned finalisers can be
+   adopted before moving onto [Phase_mark_final] where the [GC.finalise]
+   (finalise first) finalisers are processed. */
+static atomic_uintnat num_domains_orphaning_finalisers = 0;
 
 /* These two counters keep track of how much work the GC is supposed to
    do in order to keep up with allocation. Both are in GC work units.
@@ -316,7 +342,7 @@ void caml_add_orphaned_finalisers (struct caml_final_info* f)
 
 }
 
-/* Called by terminating domain from handover_finalisers */
+/* Called by terminating domain from [handover_finalisers] */
 void caml_final_domain_terminate (caml_domain_state *domain_state)
 {
   struct caml_final_info *f = domain_state->final_info;
@@ -328,6 +354,18 @@ void caml_final_domain_terminate (caml_domain_state *domain_state)
     atomic_fetch_add_verify_ge0(&num_domains_to_final_update_last, -1);
     f->updated_last = 1;
   }
+}
+
+/* Called by terminating domain from [handover_finalisers] */
+void caml_incr_num_domains_orphaning_finalisers (void)
+{
+  atomic_fetch_add(&num_domains_orphaning_finalisers, +1);
+}
+
+/* Called by terminating domain from [handover_finalisers] */
+void caml_decr_num_domains_orphaning_finalisers (void)
+{
+  atomic_fetch_add_verify_ge0(&num_domains_orphaning_finalisers, -1);
 }
 
 static int no_orphaned_work (void)
@@ -1465,6 +1503,8 @@ static int is_complete_phase_sweep_and_mark_main (void)
     atomic_load_acquire (&num_domains_to_sweep) == 0 &&
     atomic_load_acquire (&num_domains_to_mark) == 0 &&
     /* Marking is done */
+    atomic_load_acquire (&num_domains_orphaning_finalisers) == 0 &&
+    /* No domains are orphaning finalisers. */
     atomic_load_acquire(&ephe_cycle_info.num_domains_todo) ==
     atomic_load_acquire(&ephe_cycle_info.num_domains_done) &&
     /* Ephemeron marking is done */
