@@ -120,11 +120,17 @@ and desc =
   | Leaf
   | Proj of t * Item.t
   | Comp_unit of string
+  | Error of string
+
+type reduction_result =
+  | Resolved of Uid.t
+  | Unresolved of t
+  | Approximated of Uid.t option
+  | Missing_uid
+
+val print_reduction_result : Format.formatter -> reduction_result -> unit
 
 val print : Format.formatter -> t -> unit
-
-(** A Shape is closed if it does not refer to external compilation units *)
-val is_closed : t -> bool
 
 (* Smart constructors *)
 
@@ -213,8 +219,10 @@ module Make_reduce(Context : sig
   end) : sig
   val reduce :  ?keep_alias:(t -> bool) -> Context.env -> t -> t
 
-  (** Week reduction does not reduce eagerly all module items *)
-  val weak_reduce : ?keep_alias:(t -> bool) -> Context.env -> t -> t
+  (** Perform weak reduction and return the head's uid if any. If reduction was
+    incomplete the partially reduced shape is returned. *)
+  val reduce_for_uid :
+    ?keep_alias:(t -> bool) -> Context.env -> t -> reduction_result
 end
 
 (** [toplevel_local_reduce] is only suitable to reduce toplevel shapes (shapes

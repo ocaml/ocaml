@@ -145,6 +145,7 @@ and desc =
   | Leaf
   | Proj of t * Item.t
   | Comp_unit of string
+  | Error of string
 
 let print fmt t =
   let print_uid_opt =
@@ -201,20 +202,13 @@ let print fmt t =
           Format.fprintf fmt "{@[<v>%a@,%a@]}" print_uid_opt uid print_map map
     | Alias t ->
         Format.fprintf fmt "Alias@[(@[<v>%a@,%a@])@]" print_uid_opt uid aux t
+    | Error s ->
+        Format.fprintf fmt "Error %s" s
   in
   if t.approximated then
     Format.fprintf fmt "@[(approx)@ %a@]@;" aux t
   else
     Format.fprintf fmt "@[%a@]@;" aux t
-
-let rec is_closed (t : t) = match t.desc with
-  | Comp_unit _ -> false
-  | Leaf | Var _ -> true
-  | Abs (_ , t) -> is_closed t
-  | App (t, t') -> is_closed t && is_closed t'
-  | Struct map -> Item.Map.for_all (fun _ t -> is_closed t) map
-  | Proj (t, _) -> is_closed t
-  | Alias t -> is_closed t
 
 let fresh_var ?(name="shape-var") uid =
   let var = Ident.create_local name in
@@ -260,6 +254,25 @@ let decompose_abs t =
   | Abs (x, t) -> Some (x, t)
   | _ -> None
 
+type reduction_result =
+  | Resolved of Uid.t
+  | Unresolved of t
+  | Approximated of Uid.t option
+  | Missing_uid
+
+let print_reduction_result fmt result =
+  match result with
+  | Resolved uid ->
+      Format.fprintf fmt "@[Resolved: %a@]@;" Uid.print uid
+  | Unresolved shape ->
+      Format.fprintf fmt "@[Unresolved: %a@]@;" print shape
+  | Approximated (Some uid) ->
+      Format.fprintf fmt "@[Approximated: %a@]@;" Uid.print uid
+  | Approximated None ->
+      Format.fprintf fmt "@[Approximated: No uid@]@;"
+  | Missing_uid ->
+      Format.fprintf fmt "@[Missing uid@]@;"
+
 module Make_reduce(Params : sig
   type env
   val fuel : int
@@ -279,7 +292,8 @@ end) = struct
     | NProj of nf * Item.t
     | NLeaf
     | NComp_unit of string
-    | NoFuelLeft of desc
+    | NError of string
+
   (* A type of normal forms for strong call-by-need evaluation.
      The normal form of an abstraction
        Abs(x, t)
@@ -387,7 +401,7 @@ end) = struct
     let return ?(approximated = t.approximated) desc : nf =
       { uid = t.uid; desc; approximated }
     in
-    if !fuel < 0 then return ~approximated:true (NoFuelLeft t.desc)
+    if !fuel < 0 then return ~approximated:true (NError "NoFuelLeft")
     else
       match t.desc with
       | Comp_unit unit_name ->
@@ -453,8 +467,9 @@ end) = struct
         if env.keep_alias t
         then return (NAlias nf)
         else nf
+      | Error s -> return ~approximated:true (NError s)
 
-  let rec read_back env (nf : nf) : t =
+  and read_back env (nf : nf) : t =
     in_memo_table env.read_back_memo_table nf (read_back_ env) nf
   (* The [nf] normal form we receive may contain a lot of internal
      sharing due to the use of memoization in the evaluator. We have
@@ -462,9 +477,9 @@ end) = struct
      over the term as a tree. *)
 
   and read_back_ env (nf : nf) : t =
-    { uid = nf.uid;
+    { uid = nf.uid ;
       desc = read_back_desc env nf.desc;
-      approximated = nf.approximated}
+      approximated = nf.approximated }
 
   and read_back_desc env desc =
     let read_back nf = read_back env nf in
@@ -484,7 +499,7 @@ end) = struct
         Proj (read_back nf, item)
     | NLeaf -> Leaf
     | NComp_unit s -> Comp_unit s
-    | NoFuelLeft t -> t
+    | NError s -> Error s
 
   (* Sharing the memo tables is safe at the level of a compilation unit since
     idents should be unique *)
@@ -504,35 +519,18 @@ end) = struct
     } in
     reduce_ env t |> read_back env
 
-  let weak_read_back env (nf : nf) : t =
-    let cache = Hashtbl.create 42 in
-    let rec weak_read_back env nf =
-      let memo_key = (env.local_env, nf) in
-      in_memo_table cache memo_key (weak_read_back_ env) nf
-    and weak_read_back_ env nf : t =
-      { uid = nf.uid;
-        desc = weak_read_back_desc env nf.desc;
-        approximated = nf.approximated }
-    and weak_read_back_desc env desc : desc =
-      let weak_read_back_no_force (Thunk { shape = t; _ }) = t in
-      match desc with
-      | NVar v ->
-          Var v
-      | NApp (nft, nfu) ->
-          App(weak_read_back env nft, weak_read_back env nfu)
-      | NAbs (_env, x, _t, nf) ->
-          Abs(x, weak_read_back_no_force nf)
-      | NStruct nstr ->
-          Struct (Item.Map.map weak_read_back_no_force nstr)
-      | NAlias nf -> Alias (read_back env nf)
-      | NProj (nf, item) ->
-          Proj (read_back env nf, item)
-      | NLeaf -> Leaf
-      | NComp_unit s -> Comp_unit s
-      | NoFuelLeft t -> t
-    in weak_read_back env nf
+  let rec is_stuck_on_comp_unit (nf : nf) =
+    match nf.desc with
+    | NVar _ ->
+        (* This should not happen if we only reduce closed terms *)
+        false
+    | NApp (nf, _) | NProj (nf, _) | NAlias nf -> is_stuck_on_comp_unit nf
+    | NStruct _ | NAbs _ -> false
+    | NComp_unit _ -> true
+    | NError _ -> false
+    | NLeaf -> false
 
-  let weak_reduce ?(keep_alias = fun _ -> true) global_env t =
+  let reduce_for_uid ?(keep_alias = fun _ -> true) global_env t =
     let fuel = ref Params.fuel in
     let local_env = Ident.Map.empty in
     let env = {
@@ -543,7 +541,21 @@ end) = struct
       read_back_memo_table = !read_back_memo_table;
       local_env;
     } in
-    reduce_ env t |> weak_read_back env
+    let nf = reduce_ env t in
+    if is_stuck_on_comp_unit nf then
+      Unresolved (read_back env nf)
+    else match nf with
+      | { uid = Some uid; approximated = false; _ } ->
+          Resolved uid
+      | { uid; approximated = true; _ } ->
+          Approximated uid
+      | { uid = None; approximated = false; _ } ->
+          (* A missing Uid after a complete reduction means the Uid was first
+             missing in the shape which is a code error. Having the
+             [Missing_uid] reported will allow Merlin (or another tool working
+             with the index) to ask users to report the issue if it does happen.
+          *)
+          Missing_uid
 end
 
 module Toplevel_local_reduce =

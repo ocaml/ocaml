@@ -60,12 +60,6 @@ type item_declaration =
   | Value_binding of value_binding
   | Value_description of value_description
 
-type index_item =
-  | Resolved of Uid.t
-  | Unresolved of Shape.t
-  | Approximated of Shape.t
-  | Missing_uid of Shape.t
-
 type cmt_infos = {
   cmt_modname : string;
   cmt_annots : binary_annots;
@@ -83,7 +77,8 @@ type cmt_infos = {
   cmt_use_summaries : bool;
   cmt_uid_to_decl : item_declaration Shape.Uid.Tbl.t;
   cmt_impl_shape : Shape.t option; (* None for mli *)
-  cmt_ident_occurrences : (Longident.t Location.loc * index_item) list
+  cmt_ident_occurrences :
+    (Longident.t Location.loc * Shape.reduction_result) list
 }
 
 type error =
@@ -399,7 +394,9 @@ let index_declarations binary_annots =
   index
 
 let index_usages binary_annots =
-  let index : (Longident.t Location.loc * index_item) list ref = ref [] in
+  let index : (Longident.t Location.loc * Shape.reduction_result) list ref =
+    ref []
+  in
   let f ~namespace env path lid =
     let not_ghost { Location.loc = { loc_ghost; _ }; _ } = not loc_ghost in
     if not_ghost lid then
@@ -407,20 +404,8 @@ let index_usages binary_annots =
       | exception Not_found -> ()
       | { uid = Some (Predef _); _ } -> ()
       | path_shape ->
-        let shape = Local_reduce.weak_reduce env path_shape in
-        if not (Shape.is_closed shape) then
-          index := (lid, Unresolved shape) :: !index
-        else match shape with
-        | { uid = Some uid; approximated = false; _ } ->
-          index := (lid, Resolved uid) :: !index
-        | { uid = _; approximated = true; _ } ->
-          index := (lid, Approximated shape) :: !index
-        | { uid = None; approximated = false; _ } ->
-          (* A missing Uid after a complete reduction means the Uid was first
-            missing in the shape which is a code error. Having the [Missing_uid]
-            reported will allow Merlin (or another tool working with the index)
-            to ask users to report the issue if it does happen. *)
-          index := (lid, Missing_uid shape) :: !index
+        let result = Local_reduce.reduce_for_uid env path_shape in
+        index := (lid, result) :: !index
   in
   iter_on_annots (iter_on_usages ~f) binary_annots;
   !index
