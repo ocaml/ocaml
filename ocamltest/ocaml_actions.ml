@@ -158,6 +158,8 @@ let generate_lexer = generate_module ocamllex
 
 let generate_parser = generate_module ocamlyacc
 
+exception Cannot_compile_file_type of string
+
 let prepare_module output_variable log env input =
   let input_type = snd input in
   let open Ocaml_filetypes in
@@ -165,12 +167,12 @@ let prepare_module output_variable log env input =
     | Implementation | Interface | C | Obj -> [input]
     | Binary_interface -> [input]
     | Backend_specific _ -> [input]
-    | C_minus_minus -> assert false
     | Lexer ->
       generate_lexer output_variable input log env
     | Grammar ->
       generate_parser output_variable input log env
-    | Text -> assert false
+    | Text | C_minus_minus | Other _ ->
+      raise (Cannot_compile_file_type (string_of_filetype input_type))
 
 let get_program_file backend env =
   let testfile = Actions_helpers.testfile env in

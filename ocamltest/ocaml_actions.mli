@@ -15,6 +15,8 @@
 
 (* Actions specific to the OCaml compilers *)
 
+exception Cannot_compile_file_type of string
+
 val setup_ocamlc_byte_build_env : Actions.t
 val ocamlc_byte : Actions.t
 val check_ocamlc_byte_output : Actions.t

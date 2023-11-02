@@ -9059,15 +9059,18 @@ ocamltest/filecompare.cmx : \
     ocamltest/filecompare.cmi
 ocamltest/filecompare.cmi :
 ocamltest/main.cmo : \
+    ocamltest/variables.cmi \
     otherlibs/unix/unix.cmi \
     ocamltest/tsl_semantics.cmi \
     ocamltest/tsl_parser.cmi \
     ocamltest/tsl_lexer.cmi \
+    ocamltest/tsl_ast.cmi \
     ocamltest/translate.cmi \
     ocamltest/tests.cmi \
     ocamltest/result.cmi \
     ocamltest/options.cmi \
     ocamltest/ocamltest_stdlib.cmi \
+    ocamltest/ocaml_actions.cmi \
     parsing/location.cmi \
     ocamltest/environments.cmi \
     ocamltest/builtin_variables.cmi \
@@ -9075,15 +9078,18 @@ ocamltest/main.cmo : \
     ocamltest/actions.cmi \
     ocamltest/main.cmi
 ocamltest/main.cmx : \
+    ocamltest/variables.cmx \
     otherlibs/unix/unix.cmx \
     ocamltest/tsl_semantics.cmx \
     ocamltest/tsl_parser.cmx \
     ocamltest/tsl_lexer.cmx \
+    ocamltest/tsl_ast.cmx \
     ocamltest/translate.cmx \
     ocamltest/tests.cmx \
     ocamltest/result.cmx \
     ocamltest/options.cmx \
     ocamltest/ocamltest_stdlib.cmx \
+    ocamltest/ocaml_actions.cmx \
     parsing/location.cmx \
     ocamltest/environments.cmx \
     ocamltest/builtin_variables.cmx \

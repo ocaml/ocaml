@@ -23,9 +23,8 @@ val interpret_environment_statement :
   Environments.t -> Tsl_ast.environment_statement Tsl_ast.located ->
   Environments.t
 
-val interpret_environment_statements :
-  Environments.t -> Tsl_ast.environment_statement Tsl_ast.located list ->
-  Environments.t
+exception No_such_test_or_action of string
+val lookup_test : string located -> Tests.t
 
 type test_tree =
   | Node of
@@ -38,21 +37,14 @@ val test_trees_of_tsl_block :
   Tsl_ast.tsl_item list ->
   Tsl_ast.environment_statement located list * test_tree list
 
-val test_trees_of_tsl_ast :
-  Tsl_ast.t ->
-  Tsl_ast.environment_statement located list * test_tree list
-
 val tsl_ast_of_test_trees :
   Tsl_ast.environment_statement located list * test_tree list ->
   Tsl_ast.t
 
-val tests_in_tree : test_tree -> Tests.TestSet.t
-
-val tests_in_trees : test_tree list -> Tests.TestSet.t
+val tests_in_tree : Tsl_ast.t -> Tests.TestSet.t
 
 val actions_in_test : Tests.t -> Actions.ActionSet.t
 
 val actions_in_tests : Tests.TestSet.t -> Actions.ActionSet.t
-
 
 val print_tsl_ast : compact:bool -> out_channel -> Tsl_ast.t -> unit

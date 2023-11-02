@@ -16,11 +16,12 @@
 (* Main program of the ocamltest test driver *)
 
 open Ocamltest_stdlib
+open Tsl_ast
 open Tsl_semantics
 
 type behavior =
-  | Skip_all_tests
-  | Run of Environments.t
+  | Skip_all
+  | Run
 
 (* this primitive announce should be used for tests
    that were aborted on system error before ocamltest
@@ -28,6 +29,32 @@ type behavior =
 let announce_test_error test_filename error =
   Printf.printf " ... testing '%s' => unexpected error (%s)\n%!"
     (Filename.basename test_filename) error
+
+let print_exn loc e =
+  let open Printf in
+  let locstring =
+    if loc = Location.none then "" else begin
+      let file = loc.Location.loc_start.Lexing.pos_fname in
+      let line = loc.Location.loc_start.Lexing.pos_lnum in
+      sprintf "%s:%d: " file line
+    end
+  in
+  let msg =
+    match e with
+    | Variables.Variable_already_registered v ->
+      sprintf "Variable \"%s\" is already in the environment." v
+    | Variables.No_such_variable v ->
+      sprintf "Variable \"%s\" is not in the environment." v
+    | Environments.Modifiers_name_not_found name ->
+      sprintf "Environment modifier \"%s\" does not exist." name
+    | Tsl_semantics.No_such_test_or_action name ->
+      sprintf "This is not the name of a test or an action: \"%s\"." name
+    | Ocaml_actions.Cannot_compile_file_type t ->
+      sprintf "Cannot compile files of type %s." t
+    | _ ->
+      sprintf "Unexpected exception: %s" (Printexc.to_string e)
+  in
+  eprintf "\n%s%s\n%!" locstring msg
 
 exception Syntax_error of Lexing.position
 
@@ -57,6 +84,10 @@ let tsl_parse_file_safe test_filename =
 let print_usage () =
   Printf.printf "%s\n%!" Options.usage
 
+let report_error loc e =
+  print_exn loc e;
+  "=> error in test script"
+
 type result_summary = No_failure | Some_failure | All_skipped
 let join_result summary result =
   let open Result in
@@ -73,31 +104,47 @@ let join_summaries sa sb =
   | All_skipped, All_skipped -> All_skipped
   | _ -> No_failure
 
-let rec run_test log common_prefix path behavior = function
-  Node (testenvspec, test, env_modifiers, subtrees) ->
-  Printf.printf "%s %s (%s) %!" common_prefix path test.Tests.test_name;
-  let (msg, children_behavior, result) = match behavior with
-    | Skip_all_tests -> "=> n/a", Skip_all_tests, Result.skip
-    | Run env ->
-      let testenv0 = interpret_environment_statements env testenvspec in
-      let testenv = List.fold_left apply_modifiers testenv0 env_modifiers in
-      let (result, newenv) = Tests.run log testenv test in
-      let msg = Result.string_of_result result in
-      let children_behavior =
-        if Result.is_pass result then Run newenv else Skip_all_tests in
-      (msg, children_behavior, result) in
-  Printf.printf "%s\n%!" msg;
-  join_result
-    (run_test_trees log common_prefix path children_behavior subtrees) result
-
-and run_test_trees log common_prefix path behavior trees =
-  List.fold_left join_summaries All_skipped
-    (List.mapi (run_test_i log common_prefix path behavior) trees)
-
-and run_test_i log common_prefix path behavior i test_tree =
-  let path_prefix = if path="" then "" else path ^ "." in
-  let new_path = Printf.sprintf "%s%d" path_prefix (i+1) in
-  run_test log common_prefix new_path behavior test_tree
+let rec run_test_tree log common_prefix behavior env summ ast =
+  match ast with
+  | Ast (Environment_statement s :: stmts, subs) ->
+    begin match interpret_environment_statement env s with
+    | env ->
+      run_test_tree log common_prefix behavior env summ (Ast (stmts, subs))
+    | exception e ->
+      let line = s.loc.Location.loc_start.Lexing.pos_lnum in
+      Printf.printf "%s line %d %!" common_prefix line;
+      Printf.printf "%s\n%!" (report_error s.loc e);
+      Some_failure
+    end
+  | Ast (Test (_, name, mods) :: stmts, subs) ->
+    let locstr =
+      if name.loc = Location.none then
+        "default"
+      else
+        Printf.sprintf "line %d" name.loc.Location.loc_start.Lexing.pos_lnum
+    in
+    Printf.printf "%s %s (%s) %!" common_prefix locstr name.node;
+    let (msg, children_behavior, newenv, result) =
+      match behavior with
+      | Skip_all -> ("=> n/a", Skip_all, env, Result.skip)
+      | Run ->
+        begin try
+          let testenv = List.fold_left apply_modifiers env mods in
+          let test = lookup_test name in
+          let (result, newenv) = Tests.run log testenv test in
+          let msg = Result.string_of_result result in
+          let sub_behavior = if Result.is_pass result then Run else Skip_all in
+          (msg, sub_behavior, newenv, result)
+        with e -> (report_error name.loc e, Skip_all, env, Result.fail)
+        end
+    in
+    Printf.printf "%s\n%!" msg;
+    let newsumm = join_result summ result in
+    let newast = Ast (stmts, subs) in
+    run_test_tree log common_prefix children_behavior newenv newsumm newast
+  | Ast ([], subs) ->
+    List.fold_left join_summaries All_skipped
+      (List.map (run_test_tree log common_prefix behavior env All_skipped) subs)
 
 let get_test_source_directory test_dirname =
   if (Filename.is_relative test_dirname) then
@@ -118,18 +165,26 @@ let tests_to_skip = ref []
 let init_tests_to_skip () =
   tests_to_skip := String.words (Sys.safe_getenv "OCAMLTEST_SKIP_TESTS")
 
+let extract_rootenv (Ast (stmts, subs)) =
+  let (env, stmts) = split_env stmts in
+  (env, Ast (stmts, subs))
+
 let test_file test_filename =
   let start = if Options.show_timings then Unix.gettimeofday () else 0.0 in
   let skip_test = List.mem test_filename !tests_to_skip in
   let tsl_ast = tsl_parse_file_safe test_filename in
-  let (rootenv_statements, test_trees) = test_trees_of_tsl_ast tsl_ast in
-  let test_trees = match test_trees with
-    | [] ->
+  let (rootenv_statements, tsl_ast) = extract_rootenv tsl_ast in
+  let tsl_ast = match tsl_ast with
+    | Ast ([], []) ->
       let default_tests = Tests.default_tests() in
-      let make_tree test = Node ([], test, [], []) in
-      List.map make_tree default_tests
-    | _ -> test_trees in
-  let used_tests = tests_in_trees test_trees in
+      let make_tree test =
+        let id = make_identifier test.Tests.test_name in
+        Ast ([Test (0, id, [])], [])
+      in
+      Ast ([], List.map make_tree default_tests)
+    | _ -> tsl_ast
+  in
+  let used_tests = tests_in_tree tsl_ast in
   let used_actions = actions_in_tests used_tests in
   let action_names =
     let f act names = String.Set.add (Actions.name act) names in
@@ -183,17 +238,32 @@ let test_file test_filename =
              Builtin_variables.promote, promote;
              Builtin_variables.timeout, default_timeout;
            ] in
-       let rootenv =
-         Environments.initialize Environments.Pre log initial_environment in
-       let rootenv =
-         interpret_environment_statements rootenv rootenv_statements in
-       let rootenv = Environments.initialize Environments.Post log rootenv in
        let common_prefix = " ... testing '" ^ test_basename ^ "' with" in
-       let initial_status =
-         if skip_test then Skip_all_tests else Run rootenv
+       let initial_status = if skip_test then Skip_all else Run in
+       let rootenv =
+         Environments.initialize Environments.Pre log initial_environment
        in
+       let rootenv, initial_status =
+         let rec loop env stmts =
+           match stmts with
+           | [] -> (env, initial_status)
+           | s :: t ->
+             begin match interpret_environment_statement env s with
+             | env -> loop env t
+             | exception e ->
+               let line = s.loc.Location.loc_start.Lexing.pos_lnum in
+               Printf.printf "%s line %d %!" common_prefix line;
+               Printf.printf "%s\n%!" (report_error s.loc e);
+               (env, Skip_all)
+             end
+         in
+         loop rootenv rootenv_statements
+       in
+       let rootenv = Environments.initialize Environments.Post log rootenv in
        let summary =
-         run_test_trees log common_prefix "" initial_status test_trees in
+         run_test_tree log common_prefix initial_status rootenv All_skipped
+           tsl_ast
+       in
        Actions.clear_all_hooks();
        summary
     ) in
