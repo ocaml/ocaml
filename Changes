@@ -161,6 +161,10 @@ Working version
   used by ocamlrun.
   (Xavier Leroy, motivation, review and improvements by Antonin Décimo)
 
+- #12345, #12710: Fix issues with finaliser orphaning at domain termination
+  (KC Sivaramakrishnan, report by Gabriel Scherer, review by Gabriel Scherer,
+  Sadiq Jaffer and Fabrice Buoro)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.

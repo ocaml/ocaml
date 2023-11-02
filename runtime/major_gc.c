@@ -423,6 +423,7 @@ void caml_orphan_ephemerons (caml_domain_state* domain_state)
     ephe_info->must_sweep_ephe = 0;
     atomic_fetch_add_verify_ge0(&num_domains_to_ephe_sweep, -1);
   }
+  CAMLassert (ephe_info->must_sweep_ephe == 0);
   CAMLassert (ephe_info->live == 0);
   CAMLassert (ephe_info->todo == 0);
 }
@@ -451,8 +452,7 @@ void caml_orphan_finalisers (caml_domain_state* domain_state)
     caml_plat_unlock(&orphaned_lock);
 
     /* Create a dummy final info */
-    domain_state->final_info = caml_alloc_final_info();
-    f = domain_state->final_info;
+    f = domain_state->final_info = caml_alloc_final_info();
     atomic_fetch_add_verify_ge0(&num_domains_orphaning_finalisers, -1);
   }
 
