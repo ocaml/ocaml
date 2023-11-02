@@ -33,6 +33,10 @@ _______________
   (Nick Barnes, review by Stephen Dolan, Jacques-Henri Jourdan
    and Guillaume Munch-Maccagnoni).
 
+- #12579: OS-based Synchronisation for Stop-the-World Sections
+  (B. Szilvasy, review by Miod Vallat, Nick Barnes, Olivier Nicole,
+   Gabriel Scherer and Damien Doligez)
+
 - #12789: Restore caml_unregister_frametable from OCaml 4
   (Frédéric Recoules, review by Gabriel Scherer)
 
