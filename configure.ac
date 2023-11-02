@@ -167,6 +167,7 @@ AC_SUBST([oc_ldflags])
 AC_SUBST([oc_dll_ldflags])
 AC_SUBST([cclibs])
 AC_SUBST([native_ldflags])
+AC_SUBST([zstd_libs])
 AC_SUBST([ocamlc_cflags])
 AC_SUBST([ocamlc_cppflags])
 AC_SUBST([flexdll_source_dir])
@@ -2150,6 +2151,8 @@ AC_PATH_TOOL([PKG_CONFIG], [pkg-config], [false])
 ## ZSTD compression library
 
 zstd_status=""
+zstd_libs=""
+
 AS_IF([test x"$with_zstd" != "xno"],
   # Try pkg-config first, as it gives the most reliable results
   AS_IF([${PKG_CONFIG} libzstd 2>/dev/null],
@@ -2172,7 +2175,6 @@ AS_IF([test x"$with_zstd" != "xno"],
 
 AS_IF([test x"$zstd_status" = "xok"],
   [AC_MSG_NOTICE([compressed compilation artefacts supported])
-   cclibs="$cclibs $zstd_libs"
    internal_cppflags="$internal_cppflags $zstd_flags"
    AC_DEFINE([HAS_ZSTD])],
   [AS_CASE(["$with_zstd"],
