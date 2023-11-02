@@ -13,15 +13,14 @@
 (*                                                                        *)
 (**************************************************************************)
 
-val to_channel : out_channel -> 'a -> Marshal.extern_flags list -> unit
-(** [Compression.Marshal.to_channel chan v flags] writes the representation
+val output_value : out_channel -> 'a -> unit
+(** [Compression.outpput_value chan v] writes the representation
     of [v] on channel [chan].
-    The [flags] argument is as described in {!Marshal.to_channel}.
     If compression is supported, the marshaled data
     representing value [v] is compressed before being written to
     channel [chan].
     If compression is not supported, this function behaves like
-    {!Marshal.to_channel}. *)
+    {!Stdlib.output_value}. *)
 
 val compression_supported : bool
 (** Reports whether compression is supported. *)

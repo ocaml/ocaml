@@ -272,8 +272,8 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
       build_global_target ~ppf_dump oc targetname state components coercion in
     let pos_debug = pos_out oc in
     if !Clflags.debug && state.events <> [] then begin
-      Compression.to_channel oc (List.rev state.events) [];
-      Compression.to_channel oc (String.Set.elements state.debug_dirs) []
+      Compression.output_value oc (List.rev state.events);
+      Compression.output_value oc (String.Set.elements state.debug_dirs)
     end;
     let force_link =
       List.exists (function

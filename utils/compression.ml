@@ -17,8 +17,13 @@ external zstd_initialize: unit -> bool = "caml_zstd_initialize"
 
 let compression_supported = zstd_initialize ()
 
-external to_channel: out_channel -> 'a -> int list -> unit = "caml_output_value"
+type [@warning "-unused-constructor"] extern_flags =
+    No_sharing                          (** Don't preserve sharing *)
+  | Closures                            (** Send function closures *)
+  | Compat_32                           (** Ensure 32-bit compatibility *)
+  | Compression                         (** Optional compression *)
 
-let to_channel ch v (flags : Marshal.extern_flags list) =
-  (* Add the Compression (constructor 4) to the list of flags *)
-  to_channel ch v (3 :: (Obj.magic flags : int list))
+external to_channel: out_channel -> 'a -> extern_flags list -> unit
+                   = "caml_output_value"
+
+let output_value ch v = to_channel ch v [Compression]
