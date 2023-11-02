@@ -862,6 +862,7 @@ bootstrapping_flexdll
 flexdll_source_dir
 ocamlc_cppflags
 ocamlc_cflags
+zstd_libs
 native_ldflags
 cclibs
 oc_exe_ldflags
@@ -3361,6 +3362,7 @@ LINEAR_MAGIC_NUMBER=Caml1999L033
 # Note: This is present for the flexdll bootstrap where it exposed as the old
 # TOOLPREF variable. It would be better if flexdll where updated to require
 # WINDRES instead.
+
 
 
 
@@ -18598,6 +18600,8 @@ fi
 ## ZSTD compression library
 
 zstd_status=""
+zstd_libs=""
+
 if test x"$with_zstd" != "xno"
 then :
   # Try pkg-config first, as it gives the most reliable results
@@ -18673,7 +18677,6 @@ if test x"$zstd_status" = "xok"
 then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: compressed compilation artefacts supported" >&5
 printf "%s\n" "$as_me: compressed compilation artefacts supported" >&6;}
-   cclibs="$cclibs $zstd_libs"
    internal_cppflags="$internal_cppflags $zstd_flags"
    printf "%s\n" "#define HAS_ZSTD 1" >>confdefs.h
 
