@@ -1817,40 +1817,6 @@ static void caml_atfork_default(void)
 
 CAMLexport void (*caml_atfork_hook)(void) = caml_atfork_default;
 
-static void orphan_ephemerons(caml_domain_state* domain_state)
-{
-  if (domain_state->ephe_info->todo == 0 &&
-      domain_state->ephe_info->live == 0 &&
-      domain_state->ephe_info->must_sweep_ephe == 0)
-    return;
-
-  caml_add_to_orphaned_ephe_list(domain_state->ephe_info);
-  CAMLassert (domain_state->ephe_info->live == 0);
-  CAMLassert (domain_state->ephe_info->todo == 0);
-}
-
-static void orphan_finalisers(caml_domain_state* domain_state)
-{
-  struct caml_final_info* f = domain_state->final_info;
-
-  if (f->todo_head != NULL || f->first.size != 0 || f->last.size != 0) {
-    /* have some final structures */
-    if (caml_gc_phase != Phase_sweep_and_mark_main) {
-      /* Force a major GC cycle to simplify constraints for orphaning
-         finalisers. See note attached to the declaration of
-         [num_domains_orphaning_finalisers] variable in major_gc.c */
-      caml_incr_num_domains_orphaning_finalisers();
-      caml_finish_major_cycle(0);
-      caml_decr_num_domains_orphaning_finalisers();
-      CAMLassert(caml_gc_phase == Phase_sweep_and_mark_main);
-    }
-    caml_add_orphaned_finalisers (f);
-    /* Create a dummy final info */
-    domain_state->final_info = caml_alloc_final_info();
-  }
-  caml_final_domain_terminate(domain_state);
-}
-
 static inline int domain_terminating(dom_internal *d) {
   return d->interruptor.terminating;
 }
@@ -1888,8 +1854,9 @@ static void domain_terminate (void)
        STW sections that has sent an interrupt to this domain. */
 
     caml_finish_marking();
-    orphan_ephemerons(domain_state);
-    orphan_finalisers(domain_state);
+
+    caml_orphan_ephemerons(domain_state);
+    caml_orphan_finalisers(domain_state);
 
     /* take the all_domains_lock to try and exit the STW participant set
        without racing with a STW section being triggered */
