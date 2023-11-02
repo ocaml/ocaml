@@ -432,8 +432,15 @@ compilerlibs/ocamlcommon.cma: $(COMMON_CMI) $(ALL_CONFIG_CMO) $(COMMON)
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cma
 
-compilerlibs/ocamlcommon.cmxa: $(COMMON_CMI) $(COMMON:.cmo=.cmx)
-	$(V_LINKOPT)$(CAMLOPT) -a -linkall -o $@ $(COMMON:.cmo=.cmx)
+ZSTD_OBJ=runtime/zstd.n.$(O)
+ZSTD_FLAGS=$(patsubst %, -ccopt %, $(filter-out -l%,$(ZSTD_LIBS))) \
+           $(patsubst %, -cclib %, $(filter -l%,$(ZSTD_LIBS)))
+
+compilerlibs/ocamlcommon.cmxa: $(COMMON_CMI) $(COMMON:.cmo=.cmx) $(ZSTD_OBJ)
+	$(V_LINKOPT)$(CAMLOPT) -a -linkall -o $@ \
+                               $(ZSTD_FLAGS) $(COMMON:.cmo=.cmx)
+	$(V_MKLIB)$(ARCMD) r compilerlibs/ocamlcommon.$(A) $(ZSTD_OBJ)
+
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cmxa \
 	      compilerlibs/ocamlcommon.a compilerlibs/ocamlcommon.lib
