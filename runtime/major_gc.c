@@ -1250,7 +1250,9 @@ static void stw_cycle_all_domains(caml_domain_state* domain, void* args,
                                        caml_domain_state** participating)
 {
   uintnat num_domains_in_stw;
-  struct cycle_callback_params* params = (struct cycle_callback_params*)args;
+  /* We copy params because the stw leader may leave early. No barrier needed
+     because there's one in the minor gc and after. */
+  struct cycle_callback_params params = *((struct cycle_callback_params*)args);
 
   CAML_EV_BEGIN(EV_MAJOR_GC_CYCLE_DOMAINS);
 
@@ -1375,7 +1377,7 @@ static void stw_cycle_all_domains(caml_domain_state* domain, void* args,
 
   /* Compact here if requested (or, in some future version, if the heap overhead
       is too high). */
-  if (params->force_compaction) {
+  if (params.force_compaction) {
     caml_compact_heap(domain, participating_count, participating);
   }
 
@@ -1812,8 +1814,13 @@ static void stw_finish_major_cycle (caml_domain_state* domain, void* arg,
                                          int participating_count,
                                          caml_domain_state** participating)
 {
-  struct finish_major_cycle_params* params
-          = (struct finish_major_cycle_params*)arg;
+  /* We copy params and then barrier because the leader may exit this
+    before other domains do. */
+  struct finish_major_cycle_params params =
+      *((struct finish_major_cycle_params*)arg);
+
+  /* We need a global barrier here so */
+  caml_global_barrier();
 
   CAMLassert (domain == Caml_state);
 
@@ -1826,9 +1833,9 @@ static void stw_finish_major_cycle (caml_domain_state* domain, void* arg,
     (domain, (void*)0, participating_count, participating);
 
   CAML_EV_BEGIN(EV_MAJOR_FINISH_CYCLE);
-  while (params->saved_major_cycles == caml_major_cycles_completed) {
+  while (params.saved_major_cycles == caml_major_cycles_completed) {
     major_collection_slice(10000000, participating_count, participating,
-                           Slice_uninterruptible, params->force_compaction);
+                           Slice_uninterruptible, params.force_compaction);
   }
   CAML_EV_END(EV_MAJOR_FINISH_CYCLE);
 }
