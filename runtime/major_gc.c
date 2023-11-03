@@ -1814,13 +1814,12 @@ static void stw_finish_major_cycle (caml_domain_state* domain, void* arg,
                                          int participating_count,
                                          caml_domain_state** participating)
 {
-  /* We copy params and then barrier because the leader may exit this
-    before other domains do. */
+  /* We must copy params because the leader may exit this
+    before other domains do. There is at least one barrier somewhere
+    in the major cycle ending, so we don't need one immediately
+    after this. */
   struct finish_major_cycle_params params =
       *((struct finish_major_cycle_params*)arg);
-
-  /* We need a global barrier here so */
-  caml_global_barrier();
 
   CAMLassert (domain == Caml_state);
 
