@@ -250,13 +250,8 @@ CAMLreally_no_tsan void caml_tsan_entry_on_resume(uintnat pc, char* sp,
       return;
     }
 
-    char* p = (char*)stack->sp;
-#ifdef WITH_FRAME_POINTERS
-    p += sizeof(value); /* Would not work on POWER (but POWER is not supported
-                           by TSan anyway) */
-#endif
-    next_pc = *(uintnat*)p;
-    sp = p + sizeof(value);
+    sp = First_frame(stack->sp);
+    next_pc = Saved_return_address(sp);
   }
 
   caml_tsan_entry_on_resume(next_pc, sp, stack);
