@@ -283,6 +283,11 @@ Working version
   (Gabriel Scherer and Guillaume Munch-Maccagnoni, review by Olivier
    Nicole and Xavier Leroy)
 
+- #12694: Document in runtime/tsan.c the TSan instrumentation choices and the
+  consequences with regard to the memory model.
+  (Olivier Nicole, review by Miod Vallat, Gabriel Scherer, Guillaume
+   Munch-Maccagnoni and Fabrice Buoro)
+
 ### Compiler user-interface and warnings:
 
 * #10613, #12405: Simplify the values used for the system variable (`system:` in
