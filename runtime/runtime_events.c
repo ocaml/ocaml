@@ -405,7 +405,7 @@ static void runtime_events_create_from_stw_single(void) {
 }
 
 static void stw_create_runtime_events(
-  caml_domain_state *domain_state, void *data,
+  caml_domain_state *domain_state, void *unused,
   int num_participating,
   caml_domain_state **participating_domains)
 {
