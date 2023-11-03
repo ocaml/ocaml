@@ -540,6 +540,11 @@ Working version
 - #12684: fix locations filename in AST produced by the `-pp` option
   (Gabriel Scherer, review by Florian Angeletti)
 
+- #12713, #12715: disable common subexpression elimination for atomic loads
+  (Gabriel Scherer and Vincent Laviron,
+   review by Vincent Laviron, KC Sivaramakrishnan and Xavier Leroy,
+   report by Vesa Karvonen and Carine Morel)
+
 OCaml 5.1.1
 -----------
 
