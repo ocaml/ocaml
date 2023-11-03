@@ -176,6 +176,13 @@ void caml_memprof_after_major_gc(caml_domain_state *state, bool global)
 {
 }
 
+/**** Running callbacks ****/
+
+value caml_memprof_run_callbacks_exn(void)
+{
+  return Val_unit;
+}
+
 /**** Interface to domain module ***/
 
 void caml_memprof_new_domain(caml_domain_state *parent,

@@ -85,9 +85,13 @@ extern void caml_memprof_after_minor_gc(caml_domain_state *state, _Bool global);
 
 extern void caml_memprof_after_major_gc(caml_domain_state *state, _Bool global);
 
-extern void caml_memprof_set_suspended(int);
 
-extern value caml_memprof_handle_postponed_exn(void);
+/*** Callbacks ***/
+
+/* Run any pending callbacks for the current domain (or adopted from a
+ * terminated domain). */
+
+extern value caml_memprof_run_callbacks_exn(void);
 
 /* Suspend or unsuspend profiling */
 extern void caml_memprof_update_suspended(_Bool);
