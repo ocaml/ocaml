@@ -31,6 +31,11 @@ OCaml 5.1.1
   to correctly handle nested packs
   (Vincent Laviron, report by Javier Chávarri, review by Pierre Chambart)
 
+- #12713, #12715: disable common subexpression elimination for atomic loads
+  (Gabriel Scherer and Vincent Laviron,
+   review by Vincent Laviron, KC Sivaramakrishnan and Xavier Leroy,
+   report by Vesa Karvonen and Carine Morel)
+
 - #12757: Fix ocamlnat (native toplevel) by registering frametables correctly
   (Stephen Dolan, Nick Barnes and Mark Shinwell,
    review by Vincent Laviron and Sébastien Hinderer)
