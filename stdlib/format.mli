@@ -263,6 +263,11 @@ val pp_print_bool : formatter -> bool -> unit
 val print_bool : bool -> unit
 (** Print a boolean in the current pretty-printing box. *)
 
+val pp_print_nothing : formatter -> unit -> unit
+(** Print nothing.
+    @since 5.2
+*)
+
 (** {1:breaks Break hints} *)
 
 (** A 'break hint' tells the pretty-printer to output some space or split the
