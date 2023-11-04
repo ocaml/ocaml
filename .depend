@@ -1988,6 +1988,7 @@ bytecomp/bytelink.cmo : \
     bytecomp/dll.cmi \
     utils/consistbl.cmi \
     utils/config.cmi \
+    utils/compression.cmi \
     file_formats/cmo_format.cmi \
     utils/clflags.cmi \
     utils/ccomp.cmi \
@@ -2005,6 +2006,7 @@ bytecomp/bytelink.cmx : \
     bytecomp/dll.cmx \
     utils/consistbl.cmx \
     utils/config.cmx \
+    utils/compression.cmx \
     file_formats/cmo_format.cmi \
     utils/clflags.cmx \
     utils/ccomp.cmx \
@@ -6937,6 +6939,7 @@ tools/dumpobj.cmo : \
     bytecomp/instruct.cmi \
     typing/ident.cmi \
     utils/config.cmi \
+    utils/compression.cmi \
     file_formats/cmo_format.cmi \
     bytecomp/bytesections.cmi \
     tools/dumpobj.cmi
@@ -6949,6 +6952,7 @@ tools/dumpobj.cmx : \
     bytecomp/instruct.cmx \
     typing/ident.cmx \
     utils/config.cmx \
+    utils/compression.cmx \
     file_formats/cmo_format.cmi \
     bytecomp/bytesections.cmx \
     tools/dumpobj.cmi

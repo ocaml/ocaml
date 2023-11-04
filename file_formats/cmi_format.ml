@@ -42,7 +42,7 @@ type cmi_infos = {
 }
 
 let input_cmi ic =
-  let (name, sign) = (input_value ic : header) in
+  let (name, sign) = (Compression.input_value ic : header) in
   let crcs = (input_value ic : crcs) in
   let flags = (input_value ic : flags) in
   {

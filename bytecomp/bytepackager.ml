@@ -162,13 +162,13 @@ let rename_append_bytecode packagename oc state objfile compunit =
     let events, debug_dirs =
       if !Clflags.debug && compunit.cu_debug > 0 then begin
         seek_in ic compunit.cu_debug;
-        let unit_events = (input_value ic : debug_event list) in
+        let unit_events = (Compression.input_value ic : debug_event list) in
         let events =
           rev_append_map
             (relocate_debug state.offset packagename state.subst)
             unit_events
             state.events in
-        let unit_debug_dirs = (input_value ic : string list) in
+        let unit_debug_dirs = (Compression.input_value ic : string list) in
         let debug_dirs =
           String.Set.union
             state.debug_dirs
