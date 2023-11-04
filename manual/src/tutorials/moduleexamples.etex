@@ -283,7 +283,7 @@ Abstracting a type component in a functor result is a powerful
 technique that provides a high degree of type safety, as we now
 illustrate. Consider an ordering over character strings that is
 different from the standard ordering implemented in the
-"OrderedString" structure. For instance, we compare strings without
+"OrderedString" structure. For instance, we compare ASCII strings without
 distinguishing upper and lower case.
 \begin{caml_example}{toplevel}
 module NoCaseString =

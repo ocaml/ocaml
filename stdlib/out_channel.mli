@@ -103,7 +103,7 @@ val output_bytes : t -> bytes -> unit
 (** {1:advanced_output Advanced output} *)
 
 val output : t -> bytes -> int -> int -> unit
-(** [output oc buf pos len] writes [len] characters from byte sequence [buf],
+(** [output oc buf pos len] writes [len] bytes from byte sequence [buf],
     starting at offset [pos], to the given output channel [oc].
 
     @raise Invalid_argument if [pos] and [len] do not designate a valid range of
@@ -149,7 +149,7 @@ val pos : t -> int64
 (** {1:attributes Attributes}  *)
 
 val length : t -> int64
-(** Return the size (number of characters) of the regular file on which the
+(** Return the size (number of bytes) of the regular file on which the
     given channel is opened.  If the channel is opened on a file that is not a
     regular file, the result is meaningless. *)
 

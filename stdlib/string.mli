@@ -58,6 +58,8 @@ v}
     is the encoding used by Unicode escapes in string literals. For
     example the string ["\u{1F42B}"] is the UTF-8 encoding of the
     Unicode character U+1F42B.
+    This module offers
+    {{!utf} functions for encoding and decoding UTF-8}.
 
     {b Past mutability.} Before OCaml 4.02, strings used to be modifiable in
     place like {!Bytes.t} mutable sequences of bytes.
@@ -77,13 +79,13 @@ type t = string
 
 val make : int -> char -> string
 (** [make n c] is a string of length [n] with each index holding the
-    character [c].
+    byte [c].
 
     @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}. *)
 
 val init : int -> (int -> char) -> string
 (** [init n f] is a string of length [n] with index
-    [i] holding the character [f i] (called in increasing index order).
+    [i] holding the byte [f i] (called in increasing index order).
 
     @raise Invalid_argument if [n < 0] or [n > ]{!Sys.max_string_length}.
     @since 4.02 *)
@@ -95,10 +97,10 @@ val empty : string
 *)
 
 external length : string -> int = "%string_length"
-(** [length s] is the length (number of bytes/characters) of [s]. *)
+(** [length s] is the length (number of bytes) of [s]. *)
 
 external get : string -> int -> char = "%string_safe_get"
-(** [get s i] is the character at index [i] in [s]. This is the same
+(** [get s i] is the byte at index [i] in [s]. This is the same
     as writing [s.[i]].
 
     @raise Invalid_argument if [i] not an index of [s]. *)
@@ -145,7 +147,7 @@ val cat : string -> string -> string
 (** {1:predicates Predicates and comparisons} *)
 
 val equal : t -> t -> bool
-(** [equal s0 s1] is [true] if and only if [s0] and [s1] are character-wise
+(** [equal s0 s1] is [true] if and only if [s0] and [s1] are byte-wise
     equal.
     @since 4.03 (4.05 in StringLabels) *)
 
@@ -194,7 +196,7 @@ val sub : string -> int -> int -> string
 
 val split_on_char : char -> string -> string list
 (** [split_on_char sep s] is the list of all (possibly empty)
-    substrings of [s] that are delimited by the character [sep].
+    substrings of [s] that are delimited by the byte [sep].
 
     The function's result is specified by the following invariants:
     {ul
@@ -202,7 +204,7 @@ val split_on_char : char -> string -> string list
     {- Concatenating its elements using [sep] as a separator returns a
       string equal to the input ([concat (make 1 sep)
       (split_on_char sep s) = s]).}
-    {- No string in the result contains the [sep] character.}}
+    {- No string in the result contains the [sep] byte.}}
 
     @since 4.04 (4.05 in StringLabels) *)
 
@@ -210,12 +212,12 @@ val split_on_char : char -> string -> string list
 
 val map : (char -> char) -> string -> string
 (** [map f s] is the string resulting from applying [f] to all the
-    characters of [s] in increasing order.
+    bytes of [s] in increasing order.
 
     @since 4.00 *)
 
 val mapi : (int -> char -> char) -> string -> string
-(** [mapi f s] is like {!map} but the index of the character is also
+(** [mapi f s] is like {!map} but the index of the byte is also
     passed to [f].
 
     @since 4.02 *)
@@ -231,11 +233,11 @@ val fold_right : (char -> 'acc -> 'acc) -> string -> 'acc -> 'acc
     @since 4.13 *)
 
 val for_all : (char -> bool) -> string -> bool
-(** [for_all p s] checks if all characters in [s] satisfy the predicate [p].
+(** [for_all p s] checks if all bytes in [s] satisfy the predicate [p].
     @since 4.13 *)
 
 val exists : (char -> bool) -> string -> bool
-(** [exists p s] checks if at least one character of [s] satisfies the predicate
+(** [exists p s] checks if at least one byte of [s] satisfies the predicate
     [p].
     @since 4.13 *)
 
@@ -249,7 +251,7 @@ val escaped : string -> string
 (** [escaped s] is [s] with special characters represented by escape
     sequences, following the lexical conventions of OCaml.
 
-    All characters outside the US-ASCII printable range \[0x20;0x7E\] are
+    All bytes outside the US-ASCII printable range \[0x20;0x7E\] are
     escaped, as well as backslash (0x2F) and double-quote (0x22).
 
     The function {!Scanf.unescaped} is a left inverse of [escaped],
@@ -286,12 +288,12 @@ val uncapitalize_ascii : string -> string
 (** {1:traversing Traversing} *)
 
 val iter : (char -> unit) -> string -> unit
-(** [iter f s] applies function [f] in turn to all the characters of [s].
+(** [iter f s] applies function [f] in turn to all the bytes of [s].
     It is equivalent to [f s.[0]; f s.[1]; ...; f s.[length s - 1]; ()]. *)
 
 val iteri : (int -> char -> unit) -> string -> unit
 (** [iteri] is like {!iter}, but the function is also given the
-    corresponding character index.
+    corresponding byte index.
 
     @since 4.00 *)
 
@@ -345,7 +347,7 @@ val rindex_opt : string -> char -> int option
 (** {1 Strings and Sequences} *)
 
 val to_seq : t -> char Seq.t
-(** [to_seq s] is a sequence made of the string's characters in
+(** [to_seq s] is a sequence made of the string's bytes in
     increasing order. In ["unsafe-string"] mode, modifications of the string
     during iteration will be reflected in the sequence.
 
@@ -357,7 +359,7 @@ val to_seqi : t -> (int * char) Seq.t
     @since 4.07 *)
 
 val of_seq : char Seq.t -> t
-(** [of_seq s] is a string made of the sequence's characters.
+(** [of_seq s] is a string made of the sequence's bytes.
 
     @since 4.07 *)
 
@@ -368,7 +370,7 @@ val of_seq : char Seq.t -> t
 (** {2:utf_8 UTF-8} *)
 
 val get_utf_8_uchar : t -> int -> Uchar.utf_decode
-(** [get_utf_8_uchar b i] decodes an UTF-8 character at index [i] in
+(** [get_utf_8_uchar b i] decodes an UTF-8 character at byte index [i] in
     [b]. *)
 
 val is_valid_utf_8 : t -> bool
@@ -378,7 +380,7 @@ val is_valid_utf_8 : t -> bool
 (** {2:utf_16be UTF-16BE} *)
 
 val get_utf_16be_uchar : t -> int -> Uchar.utf_decode
-(** [get_utf_16be_uchar b i] decodes an UTF-16BE character at index
+(** [get_utf_16be_uchar b i] decodes an UTF-16BE character at byte index
     [i] in [b]. *)
 
 val is_valid_utf_16be : t -> bool
@@ -388,7 +390,7 @@ val is_valid_utf_16be : t -> bool
 (** {2:utf_16le UTF-16LE} *)
 
 val get_utf_16le_uchar : t -> int -> Uchar.utf_decode
-(** [get_utf_16le_uchar b i] decodes an UTF-16LE character at index
+(** [get_utf_16le_uchar b i] decodes an UTF-16LE character at byte index
     [i] in [b]. *)
 
 val is_valid_utf_16le : t -> bool
@@ -399,8 +401,8 @@ val is_valid_utf_16le : t -> bool
 
 (** The functions in this section binary decode integers from strings.
 
-    All following functions raise [Invalid_argument] if the characters
-    needed at index [i] to decode the integer are not available.
+    All following functions raise [Invalid_argument] if the bytes
+    needed at byte index [i] to decode the integer are not available.
 
     Little-endian (resp. big-endian) encoding means that least
     (resp. most) significant bytes are stored first.  Big-endian is
@@ -418,14 +420,14 @@ val is_valid_utf_16le : t -> bool
 *)
 
 val get_uint8 : string -> int -> int
-(** [get_uint8 b i] is [b]'s unsigned 8-bit integer starting at character
+(** [get_uint8 b i] is [b]'s unsigned 8-bit integer starting at byte
     index [i].
 
     @since 4.13
 *)
 
 val get_int8 : string -> int -> int
-(** [get_int8 b i] is [b]'s signed 8-bit integer starting at character
+(** [get_int8 b i] is [b]'s signed 8-bit integer starting at byte
     index [i].
 
     @since 4.13
@@ -433,49 +435,49 @@ val get_int8 : string -> int -> int
 
 val get_uint16_ne : string -> int -> int
 (** [get_uint16_ne b i] is [b]'s native-endian unsigned 16-bit integer
-    starting at character index [i].
+    starting at byte index [i].
 
     @since 4.13
 *)
 
 val get_uint16_be : string -> int -> int
 (** [get_uint16_be b i] is [b]'s big-endian unsigned 16-bit integer
-    starting at character index [i].
+    starting at byte index [i].
 
     @since 4.13
 *)
 
 val get_uint16_le : string -> int -> int
 (** [get_uint16_le b i] is [b]'s little-endian unsigned 16-bit integer
-    starting at character index [i].
+    starting at byte index [i].
 
     @since 4.13
 *)
 
 val get_int16_ne : string -> int -> int
 (** [get_int16_ne b i] is [b]'s native-endian signed 16-bit integer
-    starting at character index [i].
+    starting at byte index [i].
 
     @since 4.13
 *)
 
 val get_int16_be : string -> int -> int
 (** [get_int16_be b i] is [b]'s big-endian signed 16-bit integer
-    starting at character index [i].
+    starting at byte index [i].
 
     @since 4.13
 *)
 
 val get_int16_le : string -> int -> int
 (** [get_int16_le b i] is [b]'s little-endian signed 16-bit integer
-    starting at character index [i].
+    starting at byte index [i].
 
     @since 4.13
 *)
 
 val get_int32_ne : string -> int -> int32
 (** [get_int32_ne b i] is [b]'s native-endian 32-bit integer
-    starting at character index [i].
+    starting at byte index [i].
 
     @since 4.13
 *)
@@ -496,35 +498,35 @@ val seeded_hash : int -> t -> int
 
 val get_int32_be : string -> int -> int32
 (** [get_int32_be b i] is [b]'s big-endian 32-bit integer
-    starting at character index [i].
+    starting at byte index [i].
 
     @since 4.13
 *)
 
 val get_int32_le : string -> int -> int32
 (** [get_int32_le b i] is [b]'s little-endian 32-bit integer
-    starting at character index [i].
+    starting at byte index [i].
 
     @since 4.13
 *)
 
 val get_int64_ne : string -> int -> int64
 (** [get_int64_ne b i] is [b]'s native-endian 64-bit integer
-    starting at character index [i].
+    starting at byte index [i].
 
     @since 4.13
 *)
 
 val get_int64_be : string -> int -> int64
 (** [get_int64_be b i] is [b]'s big-endian 64-bit integer
-    starting at character index [i].
+    starting at byte index [i].
 
     @since 4.13
 *)
 
 val get_int64_le : string -> int -> int64
 (** [get_int64_le b i] is [b]'s little-endian 64-bit integer
-    starting at character index [i].
+    starting at byte index [i].
 
     @since 4.13
 *)
