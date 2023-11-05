@@ -373,7 +373,7 @@ let primitives_table =
     "%reperform", Primitive (Preperform, 3);
     "%perform", Primitive (Pperform, 1);
     "%resume", Primitive (Presume, 4);
-    "%dls_get", Primitive (Pdls_get, 1);
+    "%dls_get", Primitive (Ptls_get, 1);
   ]
 
 
@@ -826,7 +826,7 @@ let lambda_primitive_needs_event_after = function
   | Pbytessetu | Pmakearray ((Pintarray | Paddrarray | Pfloatarray), _)
   | Parraylength _ | Parrayrefu _ | Parraysetu _ | Pisint | Pisout
   | Patomic_exchange | Patomic_cas | Patomic_fetch_add | Patomic_load _
-  | Pintofbint _ | Pctconst _ | Pbswap16 | Pint_as_pointer | Popaque | Pdls_get
+  | Pintofbint _ | Pctconst _ | Pbswap16 | Pint_as_pointer | Popaque | Ptls_get
       -> false
 
 (* Determine if a primitive should be surrounded by an "after" debug event *)

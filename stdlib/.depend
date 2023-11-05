@@ -176,6 +176,22 @@ camlinternalOO.cmx : \
     camlinternalOO.cmi
 camlinternalOO.cmi : \
     stdlib__Obj.cmi
+camlinternalTLS.cmo : \
+    stdlib__Sys.cmi \
+    stdlib__Obj.cmi \
+    stdlib__List.cmi \
+    stdlib__Atomic.cmi \
+    stdlib__Array.cmi \
+    camlinternalTLS.cmi
+camlinternalTLS.cmx : \
+    stdlib__Sys.cmx \
+    stdlib__Obj.cmx \
+    stdlib__List.cmx \
+    stdlib__Atomic.cmx \
+    stdlib__Array.cmx \
+    camlinternalTLS.cmi
+camlinternalTLS.cmi : \
+    stdlib__Obj.cmi
 stdlib__Char.cmo : char.ml \
     stdlib__Char.cmi
 stdlib__Char.cmx : char.ml \
@@ -208,26 +224,23 @@ stdlib__Digest.cmx : digest.ml \
     stdlib__Digest.cmi
 stdlib__Digest.cmi : digest.mli
 stdlib__Domain.cmo : domain.ml \
-    stdlib__Sys.cmi \
+    stdlib__Thread_local_storage.cmi \
     stdlib.cmi \
-    stdlib__Obj.cmi \
     stdlib__Mutex.cmi \
-    stdlib__List.cmi \
     stdlib__Condition.cmi \
+    camlinternalTLS.cmi \
     stdlib__Atomic.cmi \
-    stdlib__Array.cmi \
     stdlib__Domain.cmi
 stdlib__Domain.cmx : domain.ml \
-    stdlib__Sys.cmx \
+    stdlib__Thread_local_storage.cmx \
     stdlib.cmx \
-    stdlib__Obj.cmx \
     stdlib__Mutex.cmx \
-    stdlib__List.cmx \
     stdlib__Condition.cmx \
+    camlinternalTLS.cmx \
     stdlib__Atomic.cmx \
-    stdlib__Array.cmx \
     stdlib__Domain.cmi
-stdlib__Domain.cmi : domain.mli
+stdlib__Domain.cmi : domain.mli \
+    stdlib__Thread_local_storage.cmi
 stdlib__Dynarray.cmo : dynarray.ml \
     stdlib__Sys.cmi \
     stdlib__Seq.cmi \
@@ -289,23 +302,23 @@ stdlib__Ephemeron.cmi : ephemeron.mli \
     stdlib__Seq.cmi \
     stdlib__Hashtbl.cmi
 stdlib__Filename.cmo : filename.ml \
+    stdlib__Thread_local_storage.cmi \
     stdlib__Sys.cmi \
     stdlib__String.cmi \
     stdlib__Random.cmi \
     stdlib__Printf.cmi \
     stdlib__List.cmi \
     stdlib__Fun.cmi \
-    stdlib__Domain.cmi \
     stdlib__Buffer.cmi \
     stdlib__Filename.cmi
 stdlib__Filename.cmx : filename.ml \
+    stdlib__Thread_local_storage.cmx \
     stdlib__Sys.cmx \
     stdlib__String.cmx \
     stdlib__Random.cmx \
     stdlib__Printf.cmx \
     stdlib__List.cmx \
     stdlib__Fun.cmx \
-    stdlib__Domain.cmx \
     stdlib__Buffer.cmx \
     stdlib__Filename.cmi
 stdlib__Filename.cmi : filename.mli
@@ -325,6 +338,7 @@ stdlib__Float.cmi : float.mli \
     stdlib.cmi \
     stdlib__Seq.cmi
 stdlib__Format.cmo : format.ml \
+    stdlib__Thread_local_storage.cmi \
     stdlib__String.cmi \
     stdlib.cmi \
     stdlib__Stack.cmi \
@@ -341,6 +355,7 @@ stdlib__Format.cmo : format.ml \
     stdlib__Array.cmi \
     stdlib__Format.cmi
 stdlib__Format.cmx : format.ml \
+    stdlib__Thread_local_storage.cmx \
     stdlib__String.cmx \
     stdlib.cmx \
     stdlib__Stack.cmx \
@@ -357,10 +372,10 @@ stdlib__Format.cmx : format.ml \
     stdlib__Array.cmx \
     stdlib__Format.cmi
 stdlib__Format.cmi : format.mli \
+    stdlib__Thread_local_storage.cmi \
     stdlib.cmi \
     stdlib__Seq.cmi \
     stdlib__Either.cmi \
-    stdlib__Domain.cmi \
     stdlib__Buffer.cmi
 stdlib__Fun.cmo : fun.ml \
     stdlib__Printexc.cmi \
@@ -396,7 +411,6 @@ stdlib__Hashtbl.cmo : hashtbl.ml \
     stdlib__Random.cmi \
     stdlib__Obj.cmi \
     stdlib__Int.cmi \
-    stdlib__Domain.cmi \
     stdlib__Atomic.cmi \
     stdlib__Array.cmi \
     stdlib__Hashtbl.cmi
@@ -407,7 +421,6 @@ stdlib__Hashtbl.cmx : hashtbl.ml \
     stdlib__Random.cmx \
     stdlib__Obj.cmx \
     stdlib__Int.cmx \
-    stdlib__Domain.cmx \
     stdlib__Atomic.cmx \
     stdlib__Array.cmx \
     stdlib__Hashtbl.cmi
@@ -642,7 +655,6 @@ stdlib__Random.cmo : random.ml \
     stdlib__Nativeint.cmi \
     stdlib__Int64.cmi \
     stdlib__Int32.cmi \
-    stdlib__Domain.cmi \
     stdlib__Digest.cmi \
     stdlib__Bytes.cmi \
     stdlib__Bigarray.cmi \
@@ -654,7 +666,6 @@ stdlib__Random.cmx : random.ml \
     stdlib__Nativeint.cmx \
     stdlib__Int64.cmx \
     stdlib__Int32.cmx \
-    stdlib__Domain.cmx \
     stdlib__Digest.cmx \
     stdlib__Bytes.cmx \
     stdlib__Bigarray.cmx \
@@ -782,6 +793,13 @@ stdlib__Sys.cmo : sys.ml \
 stdlib__Sys.cmx : sys.ml \
     stdlib__Sys.cmi
 stdlib__Sys.cmi : sys.mli
+stdlib__Thread_local_storage.cmo : thread_local_storage.ml \
+    camlinternalTLS.cmi \
+    stdlib__Thread_local_storage.cmi
+stdlib__Thread_local_storage.cmx : thread_local_storage.ml \
+    camlinternalTLS.cmx \
+    stdlib__Thread_local_storage.cmi
+stdlib__Thread_local_storage.cmi : thread_local_storage.mli
 stdlib__Type.cmo : type.ml \
     stdlib__Obj.cmi \
     stdlib__Type.cmi

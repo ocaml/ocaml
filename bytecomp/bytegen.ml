@@ -166,7 +166,7 @@ let preserve_tailcall_for_prim = function
   | Pbigstring_load_64 _ | Pbigstring_set_16 _ | Pbigstring_set_32 _
   | Pbigstring_set_64 _ | Pctconst _ | Pbswap16 | Pbbswap _ | Pint_as_pointer
   | Patomic_exchange | Patomic_cas | Patomic_fetch_add | Patomic_load _
-  | Pdls_get ->
+  | Ptls_get ->
       false
 
 (* Add a Kpop N instruction in front of a continuation *)
@@ -628,7 +628,7 @@ let comp_primitive stack_info p sz args =
   | Patomic_exchange -> Kccall("caml_atomic_exchange", 2)
   | Patomic_cas -> Kccall("caml_atomic_cas", 3)
   | Patomic_fetch_add -> Kccall("caml_atomic_fetch_add", 2)
-  | Pdls_get -> Kccall("caml_domain_dls_get", 1)
+  | Ptls_get -> Kccall("caml_domain_dls_get", 1)
   (* The cases below are handled in [comp_expr] before the [comp_primitive] call
      (in the order in which they appear below),
      so they should never be reached in this function. *)

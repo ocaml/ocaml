@@ -150,7 +150,7 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Patomic_cas -> Patomic_cas
   | Patomic_fetch_add -> Patomic_fetch_add
   | Popaque -> Popaque
-  | Pdls_get -> Pdls_get
+  | Ptls_get -> Ptls_get
   | Pbytes_to_string
   | Pbytes_of_string
   | Pctconst _

@@ -168,7 +168,7 @@ and operation =
   | Craise of Lambda.raise_kind
   | Ccheckbound
   | Copaque
-  | Cdls_get
+  | Ctls_get
 
 type expression =
     Cconst_int of int * Debuginfo.t

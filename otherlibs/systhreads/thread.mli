@@ -172,3 +172,7 @@ val set_uncaught_exception_handler : (exn -> unit) -> unit
 
     If the newly set uncaught exception handler raise an exception,
     {!default_uncaught_exception_handler} will be called. *)
+
+(** Thread local storage.
+    @since 5.2 *)
+module Local_storage = Thread_local_storage

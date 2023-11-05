@@ -130,7 +130,7 @@ type primitive =
   (* Inhibition of optimisation *)
   | Popaque
   (* Fetch domain-local state *)
-  | Pdls_get
+  | Ptls_get
 
 
 and integer_comparison = Lambda.integer_comparison =

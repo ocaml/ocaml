@@ -252,7 +252,7 @@ let find_poll_alloc_or_calls instr =
             Iconst_symbol _ | Iextcall { alloc = false } | Istackoffset _ |
             Iload _ | Istore _ | Iintop _ | Iintop_imm _ | Ifloatofint |
             Iintoffloat | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf |
-            Iopaque | Ispecific _ | Idls_get | Icompf _ | Ireturn_addr) -> None
+            Iopaque | Ispecific _ | Itls_get | Icompf _ | Ireturn_addr) -> None
       | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Icatch _ | Iexit _ |
         Itrywith _ | Iraise _ -> None
     in

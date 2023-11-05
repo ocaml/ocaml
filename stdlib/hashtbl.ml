@@ -57,7 +57,9 @@ let randomized = Atomic.make randomized_default
 let randomize () = Atomic.set randomized true
 let is_randomized () = Atomic.get randomized
 
-let prng_key = Domain.DLS.new_key Random.State.make_self_init
+module TLS = Stdlib__Thread_local_storage
+
+let prng_key = TLS.Key.create Random.State.make_self_init
 
 (* Functions which appear before the functorial interface must either be
    independent of the hash function or take it as a parameter (see #2202 and
@@ -73,7 +75,7 @@ let rec power_2_above x n =
 let create ?(random = Atomic.get randomized) initial_size =
   let s = power_2_above 16 initial_size in
   let seed =
-    if random then Random.State.bits (Domain.DLS.get prng_key) else 0
+    if random then Random.State.bits (TLS.get prng_key) else 0
   in
   { initial_size = s; size = 0; seed = seed; data = Array.make s Empty }
 
@@ -621,7 +623,7 @@ let of_seq i =
 let rebuild ?(random = Atomic.get randomized) h =
   let s = power_2_above 16 (Array.length h.data) in
   let seed =
-    if random then Random.State.bits (Domain.DLS.get prng_key)
+    if random then Random.State.bits (TLS.get prng_key)
     else if Obj.size (Obj.repr h) >= 4 then h.seed
     else 0 in
   let h' = {

@@ -1024,30 +1024,30 @@ and err_formatter = formatter_of_out_channel Stdlib.stderr
 and str_formatter = formatter_of_buffer stdbuf
 
 (* Initialise domain local state *)
-module DLS = Domain.DLS
+module TLS = Thread_local_storage
 
-let stdbuf_key = DLS.new_key pp_make_buffer
-let _ = DLS.set stdbuf_key stdbuf
+let stdbuf_key = TLS.Key.create pp_make_buffer
+let _ = TLS.set stdbuf_key stdbuf
 
-let str_formatter_key = DLS.new_key (fun () ->
-  formatter_of_buffer (DLS.get stdbuf_key))
-let _ = DLS.set str_formatter_key str_formatter
+let str_formatter_key = TLS.Key.create (fun () ->
+  formatter_of_buffer (TLS.get stdbuf_key))
+let _ = TLS.set str_formatter_key str_formatter
 
 let buffered_out_string key str ofs len =
-  Buffer.add_substring (Domain.DLS.get key) str ofs len
+  Buffer.add_substring (TLS.get key) str ofs len
 
 let buffered_out_flush oc key () =
-  let buf = Domain.DLS.get key in
+  let buf = TLS.get key in
   let len = Buffer.length buf in
   let str = Buffer.contents buf in
   output_substring oc str 0 len ;
   Stdlib.flush oc;
   Buffer.clear buf
 
-let std_buf_key = Domain.DLS.new_key (fun () -> Buffer.create pp_buffer_size)
-let err_buf_key = Domain.DLS.new_key (fun () -> Buffer.create pp_buffer_size)
+let std_buf_key = TLS.Key.create (fun () -> Buffer.create pp_buffer_size)
+let err_buf_key = TLS.Key.create (fun () -> Buffer.create pp_buffer_size)
 
-let std_formatter_key = DLS.new_key (fun () ->
+let std_formatter_key = TLS.Key.create (fun () ->
   let ppf =
     pp_make_formatter (buffered_out_string std_buf_key)
       (buffered_out_flush Stdlib.stdout std_buf_key) ignore ignore ignore
@@ -1057,9 +1057,9 @@ let std_formatter_key = DLS.new_key (fun () ->
   ppf.pp_out_indent <- display_indent ppf;
   Domain.at_exit (pp_print_flush ppf);
   ppf)
-let _ = DLS.set std_formatter_key std_formatter
+let _ = TLS.set std_formatter_key std_formatter
 
-let err_formatter_key = DLS.new_key (fun () ->
+let err_formatter_key = TLS.Key.create (fun () ->
   let ppf =
     pp_make_formatter (buffered_out_string err_buf_key)
       (buffered_out_flush Stdlib.stderr err_buf_key) ignore ignore ignore
@@ -1069,12 +1069,12 @@ let err_formatter_key = DLS.new_key (fun () ->
   ppf.pp_out_indent <- display_indent ppf;
   Domain.at_exit (pp_print_flush ppf);
   ppf)
-let _ = DLS.set err_formatter_key err_formatter
+let _ = TLS.set err_formatter_key err_formatter
 
-let get_std_formatter () = DLS.get std_formatter_key
-let get_err_formatter () = DLS.get err_formatter_key
-let get_str_formatter () = DLS.get str_formatter_key
-let get_stdbuf () = DLS.get stdbuf_key
+let get_std_formatter () = TLS.get std_formatter_key
+let get_err_formatter () = TLS.get err_formatter_key
+let get_str_formatter () = TLS.get str_formatter_key
+let get_stdbuf () = TLS.get stdbuf_key
 
 (* [flush_buffer_formatter buf ppf] flushes formatter [ppf],
    then returns the contents of buffer [buf] that is reset.
@@ -1088,12 +1088,12 @@ let flush_buffer_formatter buf ppf =
 
 (* Flush [str_formatter] and get the contents of [stdbuf]. *)
 let flush_str_formatter () =
-  let stdbuf = DLS.get stdbuf_key in
-  let str_formatter = DLS.get str_formatter_key in
+  let stdbuf = TLS.get stdbuf_key in
+  let str_formatter = TLS.get str_formatter_key in
   flush_buffer_formatter stdbuf str_formatter
 
 let make_synchronized_formatter output flush =
-  DLS.new_key (fun () ->
+  TLS.Key.create (fun () ->
     let buf = Buffer.create pp_buffer_size in
     let output' = Buffer.add_substring buf in
     let flush' () =
@@ -1173,83 +1173,83 @@ let formatter_of_symbolic_output_buffer sob =
 
 *)
 
-let open_hbox v = pp_open_hbox (DLS.get std_formatter_key) v
-and open_vbox v = pp_open_vbox (DLS.get std_formatter_key) v
-and open_hvbox v = pp_open_hvbox (DLS.get std_formatter_key) v
-and open_hovbox v = pp_open_hovbox (DLS.get std_formatter_key) v
-and open_box v = pp_open_box (DLS.get std_formatter_key) v
-and close_box v = pp_close_box (DLS.get std_formatter_key) v
-and open_stag v = pp_open_stag (DLS.get std_formatter_key) v
-and close_stag v = pp_close_stag (DLS.get std_formatter_key) v
-and print_as v w = pp_print_as (DLS.get std_formatter_key) v w
-and print_string v = pp_print_string (DLS.get std_formatter_key) v
-and print_bytes v = pp_print_bytes (DLS.get std_formatter_key) v
-and print_int v = pp_print_int (DLS.get std_formatter_key) v
-and print_float v = pp_print_float (DLS.get std_formatter_key) v
-and print_char v = pp_print_char (DLS.get std_formatter_key) v
-and print_bool v = pp_print_bool (DLS.get std_formatter_key) v
-and print_break v w = pp_print_break (DLS.get std_formatter_key) v w
-and print_cut v = pp_print_cut (DLS.get std_formatter_key) v
-and print_space v = pp_print_space (DLS.get std_formatter_key) v
-and force_newline v = pp_force_newline (DLS.get std_formatter_key) v
-and print_flush v = pp_print_flush (DLS.get std_formatter_key) v
-and print_newline v = pp_print_newline (DLS.get std_formatter_key) v
-and print_if_newline v = pp_print_if_newline (DLS.get std_formatter_key) v
+let open_hbox v = pp_open_hbox (TLS.get std_formatter_key) v
+and open_vbox v = pp_open_vbox (TLS.get std_formatter_key) v
+and open_hvbox v = pp_open_hvbox (TLS.get std_formatter_key) v
+and open_hovbox v = pp_open_hovbox (TLS.get std_formatter_key) v
+and open_box v = pp_open_box (TLS.get std_formatter_key) v
+and close_box v = pp_close_box (TLS.get std_formatter_key) v
+and open_stag v = pp_open_stag (TLS.get std_formatter_key) v
+and close_stag v = pp_close_stag (TLS.get std_formatter_key) v
+and print_as v w = pp_print_as (TLS.get std_formatter_key) v w
+and print_string v = pp_print_string (TLS.get std_formatter_key) v
+and print_bytes v = pp_print_bytes (TLS.get std_formatter_key) v
+and print_int v = pp_print_int (TLS.get std_formatter_key) v
+and print_float v = pp_print_float (TLS.get std_formatter_key) v
+and print_char v = pp_print_char (TLS.get std_formatter_key) v
+and print_bool v = pp_print_bool (TLS.get std_formatter_key) v
+and print_break v w = pp_print_break (TLS.get std_formatter_key) v w
+and print_cut v = pp_print_cut (TLS.get std_formatter_key) v
+and print_space v = pp_print_space (TLS.get std_formatter_key) v
+and force_newline v = pp_force_newline (TLS.get std_formatter_key) v
+and print_flush v = pp_print_flush (TLS.get std_formatter_key) v
+and print_newline v = pp_print_newline (TLS.get std_formatter_key) v
+and print_if_newline v = pp_print_if_newline (TLS.get std_formatter_key) v
 
-and open_tbox v = pp_open_tbox (DLS.get std_formatter_key) v
-and close_tbox v = pp_close_tbox (DLS.get std_formatter_key) v
-and print_tbreak v w = pp_print_tbreak (DLS.get std_formatter_key) v w
+and open_tbox v = pp_open_tbox (TLS.get std_formatter_key) v
+and close_tbox v = pp_close_tbox (TLS.get std_formatter_key) v
+and print_tbreak v w = pp_print_tbreak (TLS.get std_formatter_key) v w
 
-and set_tab v = pp_set_tab (DLS.get std_formatter_key) v
-and print_tab v = pp_print_tab (DLS.get std_formatter_key) v
+and set_tab v = pp_set_tab (TLS.get std_formatter_key) v
+and print_tab v = pp_print_tab (TLS.get std_formatter_key) v
 
-and set_margin v = pp_set_margin (DLS.get std_formatter_key) v
-and get_margin v = pp_get_margin (DLS.get std_formatter_key) v
+and set_margin v = pp_set_margin (TLS.get std_formatter_key) v
+and get_margin v = pp_get_margin (TLS.get std_formatter_key) v
 
-and set_max_indent v = pp_set_max_indent (DLS.get std_formatter_key) v
-and get_max_indent v = pp_get_max_indent (DLS.get std_formatter_key) v
+and set_max_indent v = pp_set_max_indent (TLS.get std_formatter_key) v
+and get_max_indent v = pp_get_max_indent (TLS.get std_formatter_key) v
 
 and set_geometry ~max_indent ~margin =
-  pp_set_geometry (DLS.get std_formatter_key) ~max_indent ~margin
+  pp_set_geometry (TLS.get std_formatter_key) ~max_indent ~margin
 and safe_set_geometry ~max_indent ~margin =
-  pp_safe_set_geometry (DLS.get std_formatter_key) ~max_indent ~margin
-and get_geometry v = pp_get_geometry (DLS.get std_formatter_key) v
-and update_geometry v = pp_update_geometry (DLS.get std_formatter_key) v
+  pp_safe_set_geometry (TLS.get std_formatter_key) ~max_indent ~margin
+and get_geometry v = pp_get_geometry (TLS.get std_formatter_key) v
+and update_geometry v = pp_update_geometry (TLS.get std_formatter_key) v
 
-and set_max_boxes v = pp_set_max_boxes (DLS.get std_formatter_key) v
-and get_max_boxes v = pp_get_max_boxes (DLS.get std_formatter_key) v
-and over_max_boxes v = pp_over_max_boxes (DLS.get std_formatter_key) v
+and set_max_boxes v = pp_set_max_boxes (TLS.get std_formatter_key) v
+and get_max_boxes v = pp_get_max_boxes (TLS.get std_formatter_key) v
+and over_max_boxes v = pp_over_max_boxes (TLS.get std_formatter_key) v
 
-and set_ellipsis_text v = pp_set_ellipsis_text (DLS.get std_formatter_key) v
-and get_ellipsis_text v = pp_get_ellipsis_text (DLS.get std_formatter_key) v
+and set_ellipsis_text v = pp_set_ellipsis_text (TLS.get std_formatter_key) v
+and get_ellipsis_text v = pp_get_ellipsis_text (TLS.get std_formatter_key) v
 
 and set_formatter_out_channel v =
-  pp_set_formatter_out_channel (DLS.get std_formatter_key) v
+  pp_set_formatter_out_channel (TLS.get std_formatter_key) v
 
 and set_formatter_out_functions v =
-  pp_set_formatter_out_functions (DLS.get std_formatter_key) v
+  pp_set_formatter_out_functions (TLS.get std_formatter_key) v
 and get_formatter_out_functions v =
-  pp_get_formatter_out_functions (DLS.get std_formatter_key) v
+  pp_get_formatter_out_functions (TLS.get std_formatter_key) v
 
 and set_formatter_output_functions v w =
-  pp_set_formatter_output_functions (DLS.get std_formatter_key) v w
+  pp_set_formatter_output_functions (TLS.get std_formatter_key) v w
 and get_formatter_output_functions v =
-  pp_get_formatter_output_functions (DLS.get std_formatter_key) v
+  pp_get_formatter_output_functions (TLS.get std_formatter_key) v
 
 and set_formatter_stag_functions v =
-  pp_set_formatter_stag_functions (DLS.get std_formatter_key) v
+  pp_set_formatter_stag_functions (TLS.get std_formatter_key) v
 and get_formatter_stag_functions v =
-  pp_get_formatter_stag_functions (DLS.get std_formatter_key) v
+  pp_get_formatter_stag_functions (TLS.get std_formatter_key) v
 and set_print_tags v =
-  pp_set_print_tags (DLS.get std_formatter_key) v
+  pp_set_print_tags (TLS.get std_formatter_key) v
 and get_print_tags v =
-  pp_get_print_tags (DLS.get std_formatter_key) v
+  pp_get_print_tags (TLS.get std_formatter_key) v
 and set_mark_tags v =
-  pp_set_mark_tags (DLS.get std_formatter_key) v
+  pp_set_mark_tags (TLS.get std_formatter_key) v
 and get_mark_tags v =
-  pp_get_mark_tags (DLS.get std_formatter_key) v
+  pp_get_mark_tags (TLS.get std_formatter_key) v
 and set_tags v =
-  pp_set_tags (DLS.get std_formatter_key) v
+  pp_set_tags (TLS.get std_formatter_key) v
 
 
 (* Convenience functions *)
@@ -1430,12 +1430,12 @@ let fprintf ppf = kfprintf ignore ppf
 
 let printf (Format (fmt, _)) =
   make_printf
-    (fun acc -> output_acc (DLS.get std_formatter_key) acc)
+    (fun acc -> output_acc (TLS.get std_formatter_key) acc)
     End_of_acc fmt
 
 let eprintf (Format (fmt, _)) =
   make_printf
-    (fun acc -> output_acc (DLS.get err_formatter_key) acc)
+    (fun acc -> output_acc (TLS.get err_formatter_key) acc)
     End_of_acc fmt
 
 let kdprintf k (Format (fmt, _)) =
@@ -1470,8 +1470,8 @@ let asprintf fmt = kasprintf id fmt
 (* Flushing standard formatters at end of execution. *)
 
 let flush_standard_formatters () =
-  pp_print_flush (DLS.get std_formatter_key) ();
-  pp_print_flush (DLS.get err_formatter_key) ()
+  pp_print_flush (TLS.get std_formatter_key) ();
+  pp_print_flush (TLS.get err_formatter_key) ()
 
 let () = at_exit flush_standard_formatters
 

@@ -66,7 +66,7 @@ type operation =
   | Iopaque
   | Ispecific of Arch.specific_operation
   | Ipoll of { return_label: Cmm.label option }
-  | Idls_get
+  | Itls_get
   | Ireturn_addr
 
 type instruction =
@@ -154,7 +154,7 @@ let rec instr_iter f i =
 let operation_is_pure = function
   | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _ | Ipoll _
-  | Idls_get
+  | Itls_get
   | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) | Iopaque -> false
   | Ispecific sop -> Arch.operation_is_pure sop
   | _ -> true

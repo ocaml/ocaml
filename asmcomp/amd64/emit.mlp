@@ -737,7 +737,7 @@ let emit_instr env fallthrough i =
       I.movsxd (arg32 i 0) (res i 0)
   | Lop(Ispecific(Izextend32)) ->
       I.mov (arg32 i 0) (res32 i 0)
-  | Lop (Idls_get) ->
+  | Lop (Itls_get) ->
       I.mov (domain_field Domainstate.Domain_dls_root) (res i 0)
   | Lop (Ireturn_addr) ->
       let offset = frame_size env - 8 in

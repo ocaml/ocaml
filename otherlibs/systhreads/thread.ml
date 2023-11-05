@@ -42,9 +42,11 @@ let set_uncaught_exception_handler fn = uncaught_exception_handler := fn
 exception Exit
 
 let create fn arg =
+  let pk = CamlinternalTLS.get_initial_keys () in
   thread_new
     (fun () ->
       try
+        CamlinternalTLS.set_initial_keys pk;
         fn arg;
         ignore (Sys.opaque_identity (check_memprof_cb ()))
       with
@@ -93,3 +95,6 @@ let wait_pid p = Unix.waitpid [] p
 external sigmask : Unix.sigprocmask_command -> int list -> int list
    = "caml_thread_sigmask"
 external wait_signal : int list -> int = "caml_wait_signal"
+
+
+module Local_storage = Thread_local_storage

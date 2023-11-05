@@ -1452,6 +1452,7 @@ module StdLabels      = StdLabels
 module String         = String
 module StringLabels   = StringLabels
 module Sys            = Sys
+module Thread_local_storage = Thread_local_storage
 module Type           = Type
 module Uchar          = Uchar
 module Unit           = Unit

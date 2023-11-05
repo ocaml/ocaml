@@ -138,7 +138,7 @@ let for_primitive (prim : Clambda_primitives.primitive) =
   | Psequor ->
       (* Removed by [Closure_conversion] in the flambda pipeline. *)
       No_effects, No_coeffects
-  | Pdls_get ->
+  | Ptls_get ->
       (* only read *)
       No_effects, No_coeffects
 

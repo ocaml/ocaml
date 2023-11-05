@@ -358,7 +358,7 @@ let primitive ppf = function
   | Patomic_cas -> fprintf ppf "atomic_cas"
   | Patomic_fetch_add -> fprintf ppf "atomic_fetch_add"
   | Popaque -> fprintf ppf "opaque"
-  | Pdls_get -> fprintf ppf "dls_get"
+  | Ptls_get -> fprintf ppf "tls_get"
 
 let name_of_primitive = function
   | Pbytes_of_string -> "Pbytes_of_string"
@@ -473,7 +473,7 @@ let name_of_primitive = function
   | Presume -> "Presume"
   | Pperform -> "Pperform"
   | Preperform -> "Preperform"
-  | Pdls_get -> "Pdls_get"
+  | Ptls_get -> "Ptls_get"
 
 let function_attribute ppf t =
   if t.is_a_functor then
