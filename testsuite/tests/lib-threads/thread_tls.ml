@@ -31,7 +31,7 @@ let () =
     List.init 2 @@ fun d_idx ->
     Domain.join @@
     Domain.spawn @@ fun () ->
-    Array.to_list @@ 
+    Array.to_list @@
     Array.init 10 (fun t_idx -> Thread.create (run_thread ~d_idx ~t_idx) ())
   in
 

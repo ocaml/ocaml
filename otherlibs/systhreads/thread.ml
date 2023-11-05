@@ -119,7 +119,8 @@ module TLS = struct
     _id: int;  (** Thread ID (here for padding reasons) *)
     mutable tls: Obj.t;  (** Our data, stowed away in this unused field *)
     _other: Obj.t;
-        (** Here to avoid lying to ocamlopt/flambda about the size of [Thread.t] *)
+        (** Here to avoid lying to ocamlopt/flambda about the size
+            of [t] *)
   }
   (** A partial representation of the internal type [t], allowing
     us to access the second field (unused after the thread
