@@ -195,6 +195,7 @@ val sub : string -> int -> int -> string
 val split_on_char : char -> string -> string list
 (** [split_on_char sep s] is the list of all (possibly empty)
     substrings of [s] that are delimited by the character [sep].
+    If [s] is empty, the result is the singleton list [[""]].
 
     The function's result is specified by the following invariants:
     {ul
