@@ -24,6 +24,8 @@
 #include "misc.h"
 #include "gc_stats.h"
 
+CAMLextern atomic_uintnat caml_compactions_count;
+
 struct caml_heap_state;
 struct pool;
 
@@ -31,7 +33,7 @@ struct caml_heap_state* caml_init_shared_heap(void);
 void caml_teardown_shared_heap(struct caml_heap_state* heap);
 
 value* caml_shared_try_alloc(struct caml_heap_state*,
-                             mlsize_t, tag_t, reserved_t, int);
+                             mlsize_t, tag_t, reserved_t);
 
 /* Copy the domain-local heap stats into a heap stats sample. */
 void caml_collect_heap_stats_sample(
@@ -45,7 +47,9 @@ uintnat caml_heap_size(struct caml_heap_state*);
 uintnat caml_top_heap_words(struct caml_heap_state*);
 uintnat caml_heap_blocks(struct caml_heap_state*);
 
-struct pool* caml_pool_of_shared_block(value v);
+void caml_compact_heap(caml_domain_state* domain_state,
+                         int participating_count,
+                         caml_domain_state** participants);
 
 void caml_shared_unpin(value v);
 

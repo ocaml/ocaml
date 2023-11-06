@@ -56,11 +56,12 @@ CAMLprim value caml_gc_quick_stat(value v)
   CAMLlocal1 (res);
 
   /* get a copy of these before allocating anything... */
-  intnat majcoll, mincoll;
+  intnat majcoll, mincoll, compactions;
   struct gc_stats s;
   caml_compute_gc_stats(&s);
   majcoll = caml_major_cycles_completed;
   mincoll = atomic_load(&caml_minor_collections_count);
+  compactions = atomic_load(&caml_compactions_count);
 
   res = caml_alloc_tuple (17);
   Store_field (res, 0, caml_copy_double ((double)s.alloc_stats.minor_words));
@@ -81,7 +82,7 @@ CAMLprim value caml_gc_quick_stat(value v)
   Store_field (res, 10, Val_long (0));
   Store_field (res, 11, Val_long (0));
   Store_field (res, 12, Val_long (s.heap_stats.pool_frag_words));
-  Store_field (res, 13, Val_long (0));
+  Store_field (res, 13, Val_long (compactions));
   Store_field (res, 14, Val_long (
     s.heap_stats.pool_max_words + s.heap_stats.large_max_words));
   Store_field (res, 15, Val_long (0));
@@ -239,12 +240,12 @@ CAMLprim value caml_gc_minor(value v)
   return caml_raise_if_exception(exn);
 }
 
-static value gc_major_exn(void)
+static value gc_major_exn(int force_compaction)
 {
   CAML_EV_BEGIN(EV_EXPLICIT_GC_MAJOR);
   caml_gc_log ("Major GC cycle requested");
   caml_empty_minor_heaps_once();
-  caml_finish_major_cycle();
+  caml_finish_major_cycle(force_compaction);
   value exn = caml_process_pending_actions_exn();
   CAML_EV_END(EV_EXPLICIT_GC_MAJOR);
   return exn;
@@ -254,7 +255,7 @@ CAMLprim value caml_gc_major(value v)
 {
   Caml_check_caml_state();
   CAMLassert (v == Val_unit);
-  return caml_raise_if_exception(gc_major_exn());
+  return caml_raise_if_exception(gc_major_exn(0));
 }
 
 static value gc_full_major_exn(void)
@@ -267,7 +268,7 @@ static value gc_full_major_exn(void)
      currently-unreachable object to be collected. */
   for (i = 0; i < 3; i++) {
     caml_empty_minor_heaps_once();
-    caml_finish_major_cycle();
+    caml_finish_major_cycle(0);
     exn = caml_process_pending_actions_exn();
     if (Is_exception_result(exn)) break;
   }
@@ -296,13 +297,12 @@ CAMLprim value caml_gc_major_slice (value v)
 CAMLprim value caml_gc_compaction(value v)
 {
   Caml_check_caml_state();
-  value exn = Val_unit;
   CAML_EV_BEGIN(EV_EXPLICIT_GC_COMPACT);
   CAMLassert (v == Val_unit);
-  exn = gc_major_exn();
+  value exn = gc_major_exn(1);
   ++ Caml_state->stat_forced_major_collections;
   CAML_EV_END(EV_EXPLICIT_GC_COMPACT);
-  return exn;
+  return caml_raise_if_exception(exn);
 }
 
 CAMLprim value caml_gc_stat(value v)

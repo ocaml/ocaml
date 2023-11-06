@@ -61,6 +61,13 @@ Working version
   (Jacques Garrigue, report by Leo White, review by Gabriel Scherer)
 
 ### Runtime system:
+- #12193: Re-introduce GC compaction for shared pools
+  Adds a parallel compactor for the shared pools (which contain major heap
+  blocks sized less than 128 words). Explicit only for now, on calls to
+  `Gc.compact`.
+  (Sadiq Jaffer, Nick Barnes, review by Anil Madhavapeddy, Damien Doligez,
+   David Allsopp, Miod Vallat, Artem Pianykh, Stephen Dolan, Mark Shinwell
+   and KC Sivaramakrishnan)
 
 - #10111: Increase the detail of location information for debugging events to
   allow the end line number and character offset to be reported.

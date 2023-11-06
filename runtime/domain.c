@@ -773,8 +773,7 @@ static void reserve_minor_heaps_from_stw_single(void) {
   minor_heap_reservation_bsize = minor_heap_max_bsz * Max_domains;
 
   /* reserve memory space for minor heaps */
-  heaps_base = caml_mem_map(minor_heap_reservation_bsize, caml_plat_pagesize,
-                1 /* reserve_only */);
+  heaps_base = caml_mem_map(minor_heap_reservation_bsize, 1 /* reserve_only */);
   if (heaps_base == NULL)
     caml_fatal_error("Not enough heap memory to reserve minor heaps");
 
@@ -1839,7 +1838,7 @@ static void handover_finalisers(caml_domain_state* domain_state)
     if (caml_gc_phase != Phase_sweep_and_mark_main) {
       /* Force a major GC cycle to simplify constraints for
        * handing over finalisers. */
-      caml_finish_major_cycle();
+      caml_finish_major_cycle(0);
       CAMLassert(caml_gc_phase == Phase_sweep_and_mark_main);
     }
     caml_add_orphaned_finalisers (f);

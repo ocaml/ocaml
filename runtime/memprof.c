@@ -47,7 +47,6 @@ CAMLprim value caml_memprof_discard(value profile)
 #include "caml/weak.h"
 #include "caml/stack.h"
 #include "caml/misc.h"
-#include "caml/compact.h"
 #include "caml/printexc.h"
 #include "caml/runtime_events.h"
 

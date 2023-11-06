@@ -403,7 +403,7 @@ Caml_inline value alloc_shr(mlsize_t wosize, tag_t tag, reserved_t reserved,
   Caml_check_caml_state();
   caml_domain_state *dom_st = Caml_state;
   value *v = caml_shared_try_alloc(dom_st->shared_heap,
-                                   wosize, tag, reserved, 0);
+                                   wosize, tag, reserved);
   if (v == NULL) {
     if (!noexc)
       caml_raise_out_of_memory();
