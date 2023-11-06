@@ -197,6 +197,9 @@ Working version
   style that the compiler driver uses.
   (David Allsopp, review by Gabriel Scherer)
 
+- #12811: Define and use the CAMLthread_local macro for TLS variables.
+  (Antonin Décimo and Samuel Hym, review by Miod Vallat and Xavier Leroy)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.

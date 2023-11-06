@@ -1130,8 +1130,8 @@ OCAML_CC_SUPPORTS_ATOMIC([$cclibs])
 AS_IF([! $cc_supports_atomic],
   [AC_MSG_FAILURE([C11 atomic support is required, use another C compiler])])
 
-# Full support for C11 __thread variables
-# macOS and MinGW-64 have problems with __thread variables accessed from DLLs
+# Full support for thread local storage
+# macOS and MinGW-w64 have problems with thread local storage accessed from DLLs
 
 AS_CASE([$host],
   [*-apple-darwin*|*-mingw32*], [],
