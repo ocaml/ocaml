@@ -671,7 +671,7 @@ and transl_apply ~scopes
           if args = [] then lam else lapply lam (List.rev_map fst args)
         in
         let handle = protect "func" lam in
-        let args' = 
+        let args' =
           List.map (fun (arg, opt) -> protect "arg" arg, opt) args'
         in
         let l =
