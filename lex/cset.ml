@@ -30,7 +30,7 @@ let interval c1 c2 =
   if c1 <= c2 then [c1,c2]
   else [c2,c1]
 
-
+(* Merge two lists. *)
 let rec union s1 s2 = match s1,s2 with
 | [],_ -> s2
 | _,[] -> s1
@@ -46,6 +46,7 @@ let rec union s1 s2 = match s1,s2 with
         union s1 r2
     end
 
+(* Computes the intersection of two lists. *)
 let rec inter l l' =  match l, l' with
     _, [] -> []
   | [], _ -> []
@@ -59,6 +60,7 @@ let rec inter l l' =  match l, l' with
       else
         (Int.max c1 c1', c2')::inter l r'
 
+(* Computes the set difference of two lists. *)
 let rec diff l l' =  match l, l' with
     _, [] -> l
   | [], _ -> []
@@ -76,9 +78,12 @@ let rec diff l l' =  match l, l' with
 
 
 let eof = singleton 256
+(* Represents all possible characters, ranging from 0 to 255. *)
 and all_chars = interval 0 255
+(* Represents all possible characters, and the eof marker. *)
 and all_chars_eof = interval 0 256
 
+(* Compute the difference between the set of all_chars and the set s. *)
 let complement s = diff all_chars s
 
 let env_to_array env = match env with
