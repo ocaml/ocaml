@@ -564,6 +564,12 @@ Working version
    review by Vincent Laviron, KC Sivaramakrishnan and Xavier Leroy,
    report by Vesa Karvonen and Carine Morel)
 
+- #12714: check whether macros are defined before using them to ensure
+  that the headers can always be used in code which turns on -Wundef
+  (or equivalent).
+  (Antonin Décimo, review by Miod Vallat, Gabriel Scherer,
+   Xavier Leroy, and David Allsopp)
+
 OCaml 5.1.1
 -----------
 

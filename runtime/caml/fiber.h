@@ -101,6 +101,8 @@ struct stack_info {
 #elif defined(TARGET_power)
 /* ELF ABI: 4 reserved words at bottom of C stack */
   #define Reserved_space_c_stack_link 4 * 8
+#else
+  #define Reserved_space_c_stack_link 0
 #endif
 
 /* This structure is used for storing the OCaml return pointer when
