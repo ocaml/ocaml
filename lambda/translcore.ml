@@ -671,28 +671,27 @@ and transl_apply ~scopes
           if args = [] then lam else lapply lam (List.rev_map fst args)
         in
         let handle = protect "func" lam in
+        let args' = 
+          List.map (fun (arg, opt) -> protect "arg" arg, opt) args'
+        in
         let l =
           List.map (fun (arg, opt) -> Option.map (protect "arg") arg, opt) l
         in
         let id_arg = Ident.create_local "param" in
         let body =
           match build_apply handle ((Lvar id_arg, optional)::args') l with
-            Lfunction{kind = Curried; params = ids; return;
-                      body = lam; attr; loc}
-               when List.length ids < Lambda.max_arity () ->
-              lfunction ~kind:Curried
-                        ~params:((id_arg, Pgenval)::ids)
-                        ~return
-                        ~body:lam ~attr
-                        ~loc
-          | lam ->
+            Lfunction{kind = Curried; params = ids; return; body; attr; loc}
+            when List.length ids < Lambda.max_arity () ->
+              lfunction ~kind:Curried ~params:((id_arg, Pgenval)::ids)
+                        ~return ~body ~attr ~loc
+          | body ->
               lfunction ~kind:Curried ~params:[id_arg, Pgenval]
-                        ~return:Pgenval ~body:lam
+                        ~return:Pgenval ~body
                         ~attr:default_stub_attribute ~loc
         in
-        List.fold_left
-          (fun body (id, lam) -> Llet(Strict, Pgenval, id, lam, body))
-          body !defs
+        List.fold_right
+          (fun (id, lam) body -> Llet(Strict, Pgenval, id, lam, body))
+          !defs body
     | (Some arg, optional) :: l ->
         build_apply lam ((arg, optional) :: args) l
     | [] ->
