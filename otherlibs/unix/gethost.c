@@ -31,11 +31,6 @@
 
 #define NETDB_BUFFER_SIZE 10000
 
-#ifdef _WIN32
-#define GETHOSTBYADDR_IS_REENTRANT 1
-#define GETHOSTBYNAME_IS_REENTRANT 1
-#endif
-
 static value alloc_one_addr_4(char const *a)
 {
   return caml_alloc_initialized_string(4, a);
@@ -101,7 +96,15 @@ CAMLprim value caml_unix_gethostbyaddr(value a)
 #if HAS_IPV6
   }
 #endif
-#if HAS_GETHOSTBYADDR_R == 7
+#if !defined(HAS_GETHOSTBYADDR_R)
+#ifdef _WIN32
+  caml_enter_blocking_section();
+#endif
+  hp = gethostbyaddr(adr, addr_len, addr_type);
+#ifdef _WIN32
+  caml_leave_blocking_section();
+#endif
+#elif HAS_GETHOSTBYADDR_R == 7
   struct hostent h;
   char buffer[NETDB_BUFFER_SIZE];
   int h_errnop;
@@ -118,14 +121,6 @@ CAMLprim value caml_unix_gethostbyaddr(value a)
                        &h, buffer, sizeof(buffer), &hp, &h_errnop);
   caml_leave_blocking_section();
   if (rc != 0) hp = NULL;
-#else
-#ifdef GETHOSTBYADDR_IS_REENTRANT
-  caml_enter_blocking_section();
-#endif
-  hp = gethostbyaddr(adr, addr_len, addr_type);
-#ifdef GETHOSTBYADDR_IS_REENTRANT
-  caml_leave_blocking_section();
-#endif
 #endif
   if (hp == (struct hostent *) NULL) caml_raise_not_found();
   return alloc_host_entry(hp);
@@ -135,7 +130,7 @@ CAMLprim value caml_unix_gethostbyname(value name)
 {
   struct hostent * hp;
   char * hostname;
-#if HAS_GETHOSTBYNAME_R
+#ifdef HAS_GETHOSTBYNAME_R
   struct hostent h;
   char buffer[NETDB_BUFFER_SIZE];
   int err;
@@ -145,7 +140,15 @@ CAMLprim value caml_unix_gethostbyname(value name)
 
   hostname = caml_stat_strdup(String_val(name));
 
-#if HAS_GETHOSTBYNAME_R == 5
+#if !defined(HAS_GETHOSTBYNAME_R)
+#ifdef _WIN32
+  caml_enter_blocking_section();
+#endif
+  hp = gethostbyname(hostname);
+#ifdef _WIN32
+  caml_leave_blocking_section();
+#endif
+#elif HAS_GETHOSTBYNAME_R == 5
   {
     caml_enter_blocking_section();
     hp = gethostbyname_r(hostname, &h, buffer, sizeof(buffer), &err);
@@ -159,14 +162,6 @@ CAMLprim value caml_unix_gethostbyname(value name)
     caml_leave_blocking_section();
     if (rc != 0) hp = NULL;
   }
-#else
-#ifdef GETHOSTBYNAME_IS_REENTRANT
-  caml_enter_blocking_section();
-#endif
-  hp = gethostbyname(hostname);
-#ifdef GETHOSTBYNAME_IS_REENTRANT
-  caml_leave_blocking_section();
-#endif
 #endif
 
   caml_stat_free(hostname);

@@ -404,7 +404,7 @@ static void do_print_config(void)
          "false");
 #endif
   printf("windows_unicode: %s\n",
-#if WINDOWS_UNICODE
+#if defined(WINDOWS_UNICODE) && WINDOWS_UNICODE != 0
          "true");
 #else
          "false");
