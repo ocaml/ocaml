@@ -30,6 +30,7 @@
 #include "caml/globroots.h"
 #include "caml/major_gc.h"
 #include "caml/memory.h"
+#include "caml/memprof.h"
 #include "caml/minor_gc.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
@@ -582,6 +583,11 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
                              domain, 0);
   CAML_EV_END(EV_MINOR_FINALIZERS_OLDIFY);
 
+  CAML_EV_BEGIN(EV_MINOR_MEMPROF_ROOTS);
+  caml_memprof_scan_roots(&oldify_one, oldify_scanning_flags, &st,
+                          domain, 1, participating[0] == domain);
+  CAML_EV_END(EV_MINOR_MEMPROF_ROOTS);
+
   CAML_EV_BEGIN(EV_MINOR_REMEMBERED_SET_PROMOTE);
   oldify_mopup (&st, 1); /* ephemerons promoted here */
   CAML_EV_END(EV_MINOR_REMEMBERED_SET_PROMOTE);
@@ -614,6 +620,10 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
   oldify_mopup (&st, 0);
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS_PROMOTE);
   CAML_EV_END(EV_MINOR_LOCAL_ROOTS);
+
+  CAML_EV_BEGIN(EV_MINOR_MEMPROF_CLEAN);
+  caml_memprof_after_minor_gc(domain, participating[0] == domain);
+  CAML_EV_END(EV_MINOR_MEMPROF_CLEAN);
 
   domain->young_ptr = domain->young_end;
   /* Trigger a GC poll when half of the minor heap is filled. At that point, a
@@ -865,7 +875,8 @@ void caml_alloc_small_dispatch (caml_domain_state * dom_st,
   /* Re-do the allocation: we now have enough space in the minor heap. */
   dom_st->young_ptr -= whsize;
 
-#if 0
+#if 0 /* memprof checks, will be reintroduced after PR #12382 is merged */
+
   /* Check if the allocated block has been sampled by memprof. */
   if (dom_st->young_ptr < caml_memprof_young_trigger) {
     if(flags & CAML_DO_TRACK) {

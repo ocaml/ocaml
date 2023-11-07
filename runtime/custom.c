@@ -112,7 +112,9 @@ CAMLexport value caml_alloc_custom_mem(const struct custom_operations * ops,
                                        uintnat bsz,
                                        mlsize_t mem)
 {
-  return alloc_custom_gen (ops, bsz, mem, 0, get_max_minor());
+  value v = alloc_custom_gen (ops, bsz, mem, 0, get_max_minor());
+  caml_memprof_track_custom(v, mem);
+  return v;
 }
 
 struct custom_operations_list {

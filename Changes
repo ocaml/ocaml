@@ -183,12 +183,10 @@ Working version
   (David Allsopp, Antonin Décimo, and Samuel Hym, review by Nicolas
    Ojeda Bar)
 
-- #11911, #12383: Restore statmemprof functionality in part
-   (backtrace buffers). (Nick Barnes, review by Gabriel Scherer)
-
-- #11911, #12383: Restore statmemprof functionality in part (backtrace
-   buffers). (Nick Barnes, review by Gabriel Scherer and Fabrice
-   Buoro).
+- #11911, #12383, #12390: Restore statmemprof functionality in part
+  (backtrace buffers, wiring to GC and allocation). (Nick Barnes,
+  review by Gabriel Scherer, Fabrice Buoro, Jacques-Henri Jourdan,
+  Sadiq Jaffer).
 
 ### Code generation and optimizations:
 
