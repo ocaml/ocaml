@@ -22,7 +22,6 @@
 #include <pthread.h>
 #include <signal.h>
 #include <time.h>
-#include <sys/time.h>
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif

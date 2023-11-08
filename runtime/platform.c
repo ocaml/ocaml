@@ -18,7 +18,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
-#include <sys/time.h>
 #include "caml/osdeps.h"
 #include "caml/platform.h"
 #include "caml/fail.h"
