@@ -7147,11 +7147,14 @@ tools/make_opcodes.cmx : \
     tools/make_opcodes.cmi
 tools/make_opcodes.cmi :
 tools/objinfo.cmo : \
+    typing/typedtree.cmi \
     bytecomp/symtable.cmi \
     middle_end/symbol.cmi \
     typing/shape.cmi \
     middle_end/printclambda.cmi \
+    parsing/pprintast.cmi \
     utils/misc.cmi \
+    parsing/location.cmi \
     middle_end/linkage_name.cmi \
     typing/ident.cmi \
     middle_end/flambda/export_info.cmi \
@@ -7165,11 +7168,14 @@ tools/objinfo.cmo : \
     utils/binutils.cmi \
     tools/objinfo.cmi
 tools/objinfo.cmx : \
+    typing/typedtree.cmx \
     bytecomp/symtable.cmx \
     middle_end/symbol.cmx \
     typing/shape.cmx \
     middle_end/printclambda.cmx \
+    parsing/pprintast.cmx \
     utils/misc.cmx \
+    parsing/location.cmx \
     middle_end/linkage_name.cmx \
     typing/ident.cmx \
     middle_end/flambda/export_info.cmx \
