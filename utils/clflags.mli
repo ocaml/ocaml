@@ -102,6 +102,7 @@ val all_ppx : string list ref
 val absname : bool ref
 val annotations : bool ref
 val binary_annotations : bool ref
+val store_usage_index : bool ref
 val use_threads : bool ref
 val noassert : bool ref
 val verbose : bool ref

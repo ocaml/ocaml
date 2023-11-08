@@ -497,7 +497,12 @@ let save_cmt target binary_annots initial_env cmi shape =
            | Some cmi -> Some (output_cmi temp_file_name oc cmi)
          in
          let sourcefile = Unit_info.Artifact.source_file target in
-         let cmt_ident_occurrences = index_usages binary_annots in
+         let cmt_ident_occurrences =
+          if !Clflags.store_usage_index then
+            index_usages binary_annots
+          else
+            []
+         in
          let cmt_annots = clear_env binary_annots in
          let cmt_uid_to_decl = index_declarations cmt_annots in
          let source_digest = Option.map Digest.file sourcefile in
