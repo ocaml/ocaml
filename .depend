@@ -1203,12 +1203,14 @@ typing/printtyped.cmi : \
 typing/shape.cmo : \
     typing/path.cmi \
     utils/misc.cmi \
+    utils/local_store.cmi \
     utils/identifiable.cmi \
     typing/ident.cmi \
     typing/shape.cmi
 typing/shape.cmx : \
     typing/path.cmx \
     utils/misc.cmx \
+    utils/local_store.cmx \
     utils/identifiable.cmx \
     typing/ident.cmx \
     typing/shape.cmi

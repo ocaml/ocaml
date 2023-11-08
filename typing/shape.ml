@@ -99,6 +99,9 @@ module Item = struct
     type t = string * Sig_component_kind.t
     let compare = compare
 
+    let name (name, _) = name
+    let kind (_, kind) = kind
+
     let make str ns = str, ns
 
     let value id = Ident.name id, Sig_component_kind.Value
@@ -189,6 +192,14 @@ let print fmt =
           Format.fprintf fmt "{@[<v>%a@,%a@]}" print_uid_opt uid print_map map
   in
   Format.fprintf fmt"@[%a@]@;" aux
+
+let rec is_closed (t : t) = match t.desc with
+  | Comp_unit _ -> false
+  | Leaf | Var _ -> true
+  | Abs (_ , t) -> is_closed t
+  | App (t, t') -> is_closed t && is_closed t'
+  | Struct map -> Item.Map.for_all (fun _ t -> is_closed t) map
+  | Proj (t, _) -> is_closed t
 
 let fresh_var ?(name="shape-var") uid =
   let var = Ident.create_local name in
@@ -437,19 +448,59 @@ end) = struct
     | NComp_unit s -> Comp_unit s
     | NoFuelLeft t -> t
 
+  (* Sharing the memo tables is safe at the level of a compilation unit since
+    idents should be unique *)
+  let reduce_memo_table = Local_store.s_table Hashtbl.create 42
+  let read_back_memo_table = Local_store.s_table Hashtbl.create 42
+
   let reduce global_env t =
     let fuel = ref Params.fuel in
-    let reduce_memo_table = Hashtbl.create 42 in
-    let read_back_memo_table = Hashtbl.create 42 in
     let local_env = Ident.Map.empty in
     let env = {
       fuel;
       global_env;
-      reduce_memo_table;
-      read_back_memo_table;
+      reduce_memo_table = !reduce_memo_table;
+      read_back_memo_table = !read_back_memo_table;
       local_env;
     } in
     reduce_ env t |> read_back env
+
+  let weak_read_back env (nf : nf) : t =
+    let cache = Hashtbl.create 42 in
+    let rec weak_read_back env nf =
+      let memo_key = (env.local_env, nf) in
+      in_memo_table cache memo_key (weak_read_back_ env) nf
+    and weak_read_back_ env nf : t =
+      { uid = nf.uid; desc = weak_read_back_desc env nf.desc }
+    and weak_read_back_desc env desc : desc =
+      let weak_read_back_no_force (Thunk (_local_env, t)) = t in
+      match desc with
+      | NVar v ->
+          Var v
+      | NApp (nft, nfu) ->
+          App(weak_read_back env nft, weak_read_back env nfu)
+      | NAbs (_env, x, _t, nf) ->
+          Abs(x, weak_read_back_no_force nf)
+      | NStruct nstr ->
+          Struct (Item.Map.map weak_read_back_no_force nstr)
+      | NProj (nf, item) ->
+          Proj (read_back env nf, item)
+      | NLeaf -> Leaf
+      | NComp_unit s -> Comp_unit s
+      | NoFuelLeft t -> t
+    in weak_read_back env nf
+
+  let weak_reduce global_env t =
+    let fuel = ref Params.fuel in
+    let local_env = Ident.Map.empty in
+    let env = {
+      fuel;
+      global_env;
+      reduce_memo_table = !reduce_memo_table;
+      read_back_memo_table = !read_back_memo_table;
+      local_env;
+    } in
+    reduce_ env t |> weak_read_back env
 end
 
 module Local_reduce =
@@ -467,6 +518,9 @@ module Local_reduce =
 
 let local_reduce shape =
   Local_reduce.reduce () shape
+
+let local_weak_reduce shape =
+  Local_reduce.weak_reduce () shape
 
 let dummy_mod = { uid = None; desc = Struct Item.Map.empty }
 
