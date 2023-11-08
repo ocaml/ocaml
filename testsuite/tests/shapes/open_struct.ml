@@ -11,8 +11,7 @@ open struct
   end
 end
 [%%expect{|
-{
- }
+{}
 module M : sig type t = A end
 |}]
 

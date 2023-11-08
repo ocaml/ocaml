@@ -14,8 +14,7 @@ end
 [%%expect{|
 {
  "Foo"[module] -> {<.2>
-                   "Bar"[module] -> {<.0>
-                                     };
+                   "Bar"[module] -> {<.0>};
                    };
  }
 module Foo : sig module Bar : sig end end
@@ -42,8 +41,7 @@ end
 [%%expect{|
 {
  "E"[module] -> {<.6>
-                 "Bar"[module] -> {<.5>
-                                   };
+                 "Bar"[module] -> {<.5>};
                  };
  }
 module E : Extended

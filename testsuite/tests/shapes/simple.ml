@@ -81,8 +81,7 @@ module _ = struct
   type t = Should_not_appear_in_shape
 end
 [%%expect{|
-{
- }
+{}
 |}]
 
 module rec M1 : sig

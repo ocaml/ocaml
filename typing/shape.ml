@@ -183,7 +183,10 @@ let print fmt =
                 aux t
             )
         in
-        Format.fprintf fmt "{@[<v>%a@,%a@]}" print_uid_opt uid print_map map
+        if Item.Map.is_empty map then
+          Format.fprintf fmt "@[<hv>{%a}@]" print_uid_opt uid
+        else
+          Format.fprintf fmt "{@[<v>%a@,%a@]}" print_uid_opt uid print_map map
   in
   Format.fprintf fmt"@[%a@]@;" aux
 

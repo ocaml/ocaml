@@ -80,7 +80,6 @@ module P :
 
 P.to_string (0, ("!=", 1))
 [%%expect{|
-{
- }
+{}
 - : string = "0 != 1"
 |}]
