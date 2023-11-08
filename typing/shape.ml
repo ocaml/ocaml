@@ -370,8 +370,7 @@ end) = struct
           | NAbs(clos_env, var, body, _body_nf) ->
               let arg = delay_reduce env arg in
               let env = bind { env with local_env = clos_env } var (Some arg) in
-              reduce env body
-              |> improve_uid t.uid
+              { (reduce env body) with uid = t.uid }
           | _ ->
               let arg = reduce env arg in
               return (NApp(f, arg))

@@ -57,7 +57,7 @@ module App_direct_indir : sig type t = Mdirect.t end
 module App_proj_indir = F (Mproj)
 [%%expect{|
 {
- "App_proj_indir"[module] -> (CU Stdlib . "Unit"[module])<.1>;
+ "App_proj_indir"[module] -> (CU Stdlib . "Unit"[module])<.8>;
  }
 module App_proj_indir : sig type t = Mproj.t end
 |}]
