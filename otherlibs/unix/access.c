@@ -19,7 +19,7 @@
 #include <caml/signals.h>
 #define CAML_INTERNALS
 #include <caml/osdeps.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #ifdef HAS_UNISTD
 # include <unistd.h>

@@ -16,7 +16,7 @@
 #include <time.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 double caml_unix_time_unboxed(value unit)
 {

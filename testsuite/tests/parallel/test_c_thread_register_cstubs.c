@@ -10,7 +10,7 @@
 #include "caml/gc.h"
 #include "caml/memory.h"
 #include "caml/callback.h"
-#include "threads.h"
+#include "caml/threads.h"
 
 void *create_root(value v)
 {

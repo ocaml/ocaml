@@ -24,7 +24,7 @@
 #include <caml/misc.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 CAMLprim value caml_unix_mkdir(value path, value perm)
 {

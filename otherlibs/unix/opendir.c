@@ -17,7 +17,7 @@
 #include <caml/memory.h>
 #include <caml/alloc.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <sys/types.h>
 #ifdef HAS_DIRENT
 #include <dirent.h>

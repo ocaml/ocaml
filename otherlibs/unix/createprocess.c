@@ -17,7 +17,7 @@
 
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <windows.h>
 #include <caml/osdeps.h>
 #include <errno.h>

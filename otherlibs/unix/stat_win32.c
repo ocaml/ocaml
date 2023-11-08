@@ -28,7 +28,7 @@
 #include <caml/alloc.h>
 #include <caml/signals.h>
 #include <caml/osdeps.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include "cst2constr.h"
 #include <sys/types.h>
 #include <sys/stat.h>

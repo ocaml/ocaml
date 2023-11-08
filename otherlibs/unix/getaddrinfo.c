@@ -20,12 +20,12 @@
 #include <caml/memory.h>
 #include <caml/misc.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include "cst2constr.h"
 
 #if defined(HAS_SOCKETS) && defined(HAS_IPV6)
 
-#include "socketaddr.h"
+#include "caml/socketaddr.h"
 #ifndef _WIN32
 #include <sys/types.h>
 #include <netdb.h>

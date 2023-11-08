@@ -21,11 +21,11 @@
 #include <caml/mlvalues.h>
 #include <caml/io.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #ifdef HAS_SOCKETS
 #include <sys/socket.h>
-#include "socketaddr.h"
+#include "caml/socketaddr.h"
 #endif
 
 /* Check that the given file descriptor has "stream semantics" and

@@ -73,7 +73,7 @@ C_SOURCES = $(COMMON_C_SOURCES) $(OS_C_SOURCES)
 
 CAMLOBJS=unix.cmo unixLabels.cmo
 
-HEADERS=unixsupport.h socketaddr.h
+HEADERS=$(addprefix caml/, unixsupport.h socketaddr.h)
 
 include ../Makefile.otherlibs.common
 

@@ -16,7 +16,7 @@
 
 #include <caml/mlvalues.h>
 #include <caml/osdeps.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 CAMLprim value caml_unix_isatty(value fd)
 {

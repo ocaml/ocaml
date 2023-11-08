@@ -18,7 +18,7 @@
 #include <caml/memory.h>
 #include <caml/signals.h>
 #include <caml/bigarray.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 CAMLprim value caml_unix_read(value fd, value buf, value ofs, value len)
 {

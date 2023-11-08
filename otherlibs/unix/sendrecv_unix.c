@@ -19,10 +19,10 @@
 #include <caml/fail.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #ifdef HAS_SOCKETS
-#include "socketaddr.h"
+#include "caml/socketaddr.h"
 
 static const int msg_flag_table[] = {
   MSG_OOB, MSG_DONTROUTE, MSG_PEEK

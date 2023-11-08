@@ -27,7 +27,7 @@
 #include <caml/signals.h>
 #include <caml/osdeps.h>
 #include <caml/platform.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #ifndef SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
 #define SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE (0x2)

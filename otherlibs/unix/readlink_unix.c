@@ -22,7 +22,7 @@
 #ifdef HAS_SYMLINK
 
 #include <sys/param.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #ifndef PATH_MAX
 #ifdef MAXPATHLEN

@@ -17,7 +17,7 @@
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 CAMLprim value caml_unix_rename(value path1, value path2)
 {

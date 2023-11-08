@@ -16,7 +16,7 @@
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <fcntl.h>
 
 /* PR#4749: pick a size that matches that of I/O buffers */

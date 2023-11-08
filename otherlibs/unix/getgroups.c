@@ -24,7 +24,7 @@
 #include <unistd.h>
 #endif
 #include <limits.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 CAMLprim value caml_unix_getgroups(value unit)
 {

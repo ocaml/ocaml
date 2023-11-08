@@ -20,7 +20,7 @@
 #include <caml/mlvalues.h>
 #include <caml/io.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif

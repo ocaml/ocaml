@@ -18,7 +18,7 @@
 #include <caml/fail.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #ifdef HAS_SELECT
 

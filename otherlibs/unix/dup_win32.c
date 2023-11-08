@@ -16,7 +16,7 @@
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/fail.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #define _WIN32_LEAN_AND_MEAN
 #include <winsock2.h>

@@ -17,7 +17,7 @@
 #include <caml/memory.h>
 #include <caml/alloc.h>
 #include <caml/fail.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #ifdef HAS_SOCKETS
 
@@ -27,7 +27,7 @@
 #include <sys/socket.h>
 #include <netinet/tcp.h>
 
-#include "socketaddr.h"
+#include "caml/socketaddr.h"
 
 #ifndef SO_DEBUG
 #define SO_DEBUG (-1)

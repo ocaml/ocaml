@@ -16,7 +16,7 @@
 #define _GNU_SOURCE
 #include <caml/fail.h>
 #include <caml/mlvalues.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #ifdef HAS_SOCKETS
 

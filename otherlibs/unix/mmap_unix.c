@@ -26,7 +26,7 @@
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
 #include "caml/sys.h"
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #include <errno.h>
 #ifdef HAS_UNISTD

@@ -15,7 +15,7 @@
 
 #include <caml/fail.h>
 #include <caml/mlvalues.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <errno.h>
 #include <sys/types.h>
 #ifdef HAS_DIRENT

@@ -17,7 +17,7 @@
 #include <caml/memory.h>
 #include <caml/alloc.h>
 #include <caml/fail.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #ifdef HAS_REALPATH
 

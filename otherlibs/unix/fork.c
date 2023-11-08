@@ -18,7 +18,7 @@
 #include <caml/mlvalues.h>
 #include <caml/debugger.h>
 #include <caml/runtime_events.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <caml/domain.h>
 #include <caml/fail.h>
 

@@ -20,7 +20,7 @@
 #include <caml/alloc.h>
 #include <caml/signals.h>
 #include <caml/osdeps.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <process.h>
 #include <stdio.h>
 

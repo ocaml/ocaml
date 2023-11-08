@@ -14,7 +14,7 @@
 /**************************************************************************/
 
 #include <caml/mlvalues.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <errno.h>
 #ifdef HAS_UNISTD
 #include <unistd.h>

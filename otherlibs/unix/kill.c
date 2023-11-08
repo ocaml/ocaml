@@ -17,7 +17,7 @@
 
 #include <caml/mlvalues.h>
 #include <caml/fail.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <signal.h>
 #include <caml/signals.h>
 

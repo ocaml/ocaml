@@ -17,7 +17,7 @@
 #include <caml/fail.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <errno.h>
 #include <stdio.h>
 #include <grp.h>

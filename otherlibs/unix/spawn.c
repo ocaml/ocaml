@@ -18,7 +18,7 @@
 #include <sys/types.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 extern char ** environ;
 

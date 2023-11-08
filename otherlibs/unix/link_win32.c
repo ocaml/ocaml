@@ -19,7 +19,7 @@
 #include <caml/fail.h>
 #include <caml/memory.h>
 #include <caml/osdeps.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <errno.h>
 #include <windows.h>
 

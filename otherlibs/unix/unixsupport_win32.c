@@ -24,7 +24,7 @@
 #include <caml/custom.h>
 #include <caml/platform.h>
 #include <caml/osdeps.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include "cst2constr.h"
 #include <errno.h>
 

@@ -14,7 +14,7 @@
 /**************************************************************************/
 
 #include <caml/mlvalues.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 extern value caml_win32_process_id;
 

@@ -19,7 +19,7 @@
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/osdeps.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 char_os ** caml_unix_cstringvect(value arg, char * cmdname)
 {

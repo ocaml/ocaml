@@ -24,7 +24,7 @@
 #include <caml/mlvalues.h>
 #include <caml/osdeps.h>
 
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #ifdef HAS_PUTENV
 

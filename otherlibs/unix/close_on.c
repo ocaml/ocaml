@@ -14,7 +14,7 @@
 /**************************************************************************/
 
 #include <caml/mlvalues.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <windows.h>
 
 CAMLprim value caml_unix_set_close_on_exec(value fd)

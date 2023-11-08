@@ -20,7 +20,7 @@
 #include <caml/fail.h>
 #include <caml/signals.h>
 #include <caml/osdeps.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <errno.h>
 #include <winioctl.h>
 #include <caml/winsupport.h>

@@ -18,11 +18,11 @@
 #include <caml/alloc.h>
 #include <caml/memory.h>
 #include <errno.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #ifdef HAS_SOCKETS
 
-#include "socketaddr.h"
+#include "caml/socketaddr.h"
 
 #ifdef _WIN32
 #undef EAFNOSUPPORT
