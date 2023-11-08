@@ -9,7 +9,8 @@
 module Mdirect = Stdlib__Unit
 [%%expect{|
 {
- "Mdirect"[module] -> CU Stdlib__Unit;
+ "Mdirect"[module] -> Alias(<.0>
+                            CU Stdlib__Unit);
  }
 module Mdirect = Unit
 |}]
@@ -17,7 +18,8 @@ module Mdirect = Unit
 module Mproj = Stdlib.Unit
 [%%expect{|
 {
- "Mproj"[module] -> (CU Stdlib . "Unit"[module])<.1>;
+ "Mproj"[module] -> Alias(<.1>
+                          CU Stdlib . "Unit"[module]);
  }
 module Mproj = Unit
 |}]
@@ -49,7 +51,8 @@ module App_proj : sig type t = Unit.t end
 module App_direct_indir = F (Mdirect)
 [%%expect{|
 {
- "App_direct_indir"[module] -> CU Stdlib__Unit;
+ "App_direct_indir"[module] -> Alias(<.7>
+                                     CU Stdlib__Unit);
  }
 module App_direct_indir : sig type t = Mdirect.t end
 |}]
@@ -57,7 +60,8 @@ module App_direct_indir : sig type t = Mdirect.t end
 module App_proj_indir = F (Mproj)
 [%%expect{|
 {
- "App_proj_indir"[module] -> (CU Stdlib . "Unit"[module])<.8>;
+ "App_proj_indir"[module] -> Alias(<.8>
+                                   CU Stdlib . "Unit"[module]);
  }
 module App_proj_indir : sig type t = Mproj.t end
 |}]
