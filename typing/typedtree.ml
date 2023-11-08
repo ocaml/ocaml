@@ -826,6 +826,14 @@ let let_bound_idents_full bindings =
 let let_bound_idents pat =
   rev_only_idents (rev_let_bound_idents_full pat)
 
+let let_filter_bound bindings =
+  let decls = ref [] in
+  let add vb (_,_,_,uid) =
+    decls := (vb, uid) :: !decls
+  in
+  List.iter (fun vb -> iter_bound_idents (add vb) vb.vb_pat) bindings;
+  !decls
+
 let alpha_var env id = List.assoc id env
 
 let rec alpha_pat

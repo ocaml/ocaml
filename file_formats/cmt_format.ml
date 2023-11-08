@@ -36,14 +36,29 @@ type binary_annots =
   | Partial_interface of binary_part array
 
 and binary_part =
-| Partial_structure of structure
-| Partial_structure_item of structure_item
-| Partial_expression of expression
-| Partial_pattern : 'k pattern_category * 'k general_pattern -> binary_part
-| Partial_class_expr of class_expr
-| Partial_signature of signature
-| Partial_signature_item of signature_item
-| Partial_module_type of module_type
+  | Partial_structure of structure
+  | Partial_structure_item of structure_item
+  | Partial_expression of expression
+  | Partial_pattern : 'k pattern_category * 'k general_pattern -> binary_part
+  | Partial_class_expr of class_expr
+  | Partial_signature of signature
+  | Partial_signature_item of signature_item
+  | Partial_module_type of module_type
+
+type item_declaration =
+  | Class_declaration of class_declaration
+  | Class_description of class_description
+  | Class_type_declaration of class_type_declaration
+  | Constructor_declaration of constructor_declaration
+  | Extension_constructor of extension_constructor
+  | Label_declaration of label_declaration
+  | Module_binding of module_binding
+  | Module_declaration of module_declaration
+  | Module_substitution of module_substitution
+  | Module_type_declaration of module_type_declaration
+  | Type_declaration of type_declaration
+  | Value_binding of value_binding
+  | Value_description of value_description
 
 type cmt_infos = {
   cmt_modname : string;
@@ -60,20 +75,105 @@ type cmt_infos = {
   cmt_imports : (string * Digest.t option) list;
   cmt_interface_digest : Digest.t option;
   cmt_use_summaries : bool;
-  cmt_uid_to_loc : Location.t Shape.Uid.Tbl.t;
+  cmt_uid_to_decl : item_declaration Shape.Uid.Tbl.t;
   cmt_impl_shape : Shape.t option; (* None for mli *)
 }
 
 type error =
     Not_a_typedtree of string
 
+let iter_on_parts (it : Tast_iterator.iterator) = function
+  | Partial_structure s -> it.structure it s
+  | Partial_structure_item s -> it.structure_item it s
+  | Partial_expression e -> it.expr it e
+  | Partial_pattern (_category, p) -> it.pat it p
+  | Partial_class_expr ce -> it.class_expr it ce
+  | Partial_signature s -> it.signature it s
+  | Partial_signature_item s -> it.signature_item it s
+  | Partial_module_type s -> it.module_type it s
+
+let iter_on_annots (it : Tast_iterator.iterator) = function
+  | Implementation s -> it.structure it s
+  | Interface s -> it.signature it s
+  | Packed _ -> ()
+  | Partial_implementation array -> Array.iter (iter_on_parts it) array
+  | Partial_interface array -> Array.iter (iter_on_parts it) array
+
+let iter_on_declarations ~(f: Shape.Uid.t -> item_declaration -> unit) =
+  let f_lbl_decls ldecls =
+    List.iter (fun ({ ld_uid; _ } as ld) ->
+      f ld_uid (Label_declaration ld)) ldecls
+  in
+  Tast_iterator.{ default_iterator with
+
+  value_bindings = (fun sub ((_, vbs) as bindings) ->
+    let bound_idents = let_filter_bound vbs in
+    List.iter (fun (vb, uid) -> f uid (Value_binding vb)) bound_idents;
+    default_iterator.value_bindings sub bindings);
+
+  module_binding = (fun sub mb ->
+    f mb.mb_uid (Module_binding mb);
+    default_iterator.module_binding sub mb);
+
+  module_declaration = (fun sub md ->
+    f md.md_uid (Module_declaration md);
+    default_iterator.module_declaration sub md);
+
+  module_type_declaration = (fun sub mtd ->
+    f mtd.mtd_uid (Module_type_declaration mtd);
+    default_iterator.module_type_declaration sub mtd);
+
+  module_substitution = (fun sub ms ->
+    f ms.ms_uid (Module_substitution ms);
+    default_iterator.module_substitution sub ms);
+
+  value_description = (fun sub vd ->
+    f vd.val_val.val_uid (Value_description vd);
+    default_iterator.value_description sub vd);
+
+  type_declaration = (fun sub td ->
+    (* compiler-generated "row_names" share the uid of their corresponding
+       class declaration, so we ignore them to prevent duplication *)
+    if not (Btype.is_row_name (Ident.name td.typ_id)) then begin
+      f td.typ_type.type_uid (Type_declaration td);
+      (* We also register records labels and constructors *)
+      match td.typ_kind with
+      | Ttype_variant constrs ->
+          List.iter (fun ({ cd_uid; cd_args; _ } as cd) ->
+            f cd_uid (Constructor_declaration cd);
+            match cd_args with
+            | Cstr_record ldecls -> f_lbl_decls ldecls
+            | Cstr_tuple _ -> ()) constrs
+      | Ttype_record labels -> f_lbl_decls labels
+      | _ -> ()
+    end;
+    default_iterator.type_declaration sub td);
+
+  extension_constructor = (fun sub ec ->
+    f ec.ext_type.ext_uid (Extension_constructor ec);
+    begin match ec.ext_kind with
+    | Text_decl (_, Cstr_record lbls,_) -> f_lbl_decls lbls
+    | _ -> () end;
+    default_iterator.extension_constructor sub ec);
+
+  class_declaration = (fun sub cd ->
+    f cd.ci_decl.cty_uid (Class_declaration cd);
+    default_iterator.class_declaration sub cd);
+
+  class_type_declaration = (fun sub ctd ->
+    f ctd.ci_decl.cty_uid (Class_type_declaration ctd);
+    default_iterator.class_type_declaration sub ctd);
+
+  class_description =(fun sub cd ->
+    f cd.ci_decl.cty_uid (Class_description cd);
+    default_iterator.class_description sub cd);
+}
+
 let need_to_clear_env =
   try ignore (Sys.getenv "OCAML_BINANNOT_WITHENV"); false
   with Not_found -> true
 
 let keep_only_summary = Env.keep_only_summary
-
-open Tast_mapper
 
 let cenv =
   {Tast_mapper.default with env = fun _sub env -> keep_only_summary env}
@@ -102,6 +202,12 @@ let clear_env binary_annots =
         Partial_interface (Array.map clear_part array)
 
   else binary_annots
+
+let index_declarations binary_annots =
+  let index : item_declaration Types.Uid.Tbl.t = Types.Uid.Tbl.create 16 in
+  let f uid fragment = Types.Uid.Tbl.add index uid fragment in
+  iter_on_annots (iter_on_declarations ~f) binary_annots;
+  index
 
 exception Error of error
 
@@ -175,10 +281,12 @@ let save_cmt target binary_annots initial_env cmi shape =
            | Some cmi -> Some (output_cmi temp_file_name oc cmi)
          in
          let sourcefile = Unit_info.Artifact.source_file target in
+         let cmt_annots = clear_env binary_annots in
+         let cmt_uid_to_decl = index_declarations cmt_annots in
          let source_digest = Option.map Digest.file sourcefile in
          let cmt = {
            cmt_modname = Unit_info.Artifact.modname target;
-           cmt_annots = clear_env binary_annots;
+           cmt_annots;
            cmt_value_dependencies = !value_deps;
            cmt_comments = Lexer.comments ();
            cmt_args = Sys.argv;
@@ -191,7 +299,7 @@ let save_cmt target binary_annots initial_env cmi shape =
            cmt_imports = List.sort compare (Env.imports ());
            cmt_interface_digest = this_crc;
            cmt_use_summaries = need_to_clear_env;
-           cmt_uid_to_loc = Env.get_uid_to_loc_tbl ();
+           cmt_uid_to_decl;
            cmt_impl_shape = shape;
          } in
          output_cmt oc cmt)
