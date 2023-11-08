@@ -115,17 +115,6 @@ module TLS = struct
     let index = Atomic.fetch_and_add counter 1 in
     { index; compute }
 
-  type thread_internal_state = {
-    _id: int;  (** Thread ID (here for padding reasons) *)
-    mutable tls: Obj.t;  (** Our data, stowed away in this unused field *)
-    _other: Obj.t;
-        (** Here to avoid lying to ocamlopt/flambda about the size
-            of [t] *)
-  }
-  (** A partial representation of the internal type [t], allowing
-    us to access the second field (unused after the thread
-    has started) and stash TLS data in it. *)
-
   let ceil_pow_2_minus_1 (n : int) : int =
     let n = n lor (n lsr 1) in
     let n = n lor (n lsr 2) in
@@ -144,12 +133,15 @@ module TLS = struct
     Array.blit old 0 new_ 0 (Array.length old);
     new_
 
+  external get_tls_root : unit -> Obj.t = "caml_thread_tls_get" [@@noalloc]
+
+  external set_tls_root : Obj.t -> unit = "caml_thread_tls_set" [@@noalloc]
+
   let[@inline] get_tls_ (index : int) : Obj.t array =
-    let thread : thread_internal_state = Obj.magic (self ()) in
-    let tls = thread.tls in
-    if Obj.is_int tls then (
+    let tls = get_tls_root () in
+    if tls == Obj.repr () then (
       let new_tls = grow_tls [||] index in
-      thread.tls <- Obj.repr new_tls;
+      set_tls_root (Obj.repr new_tls);
       new_tls
     ) else (
       let tls = (Obj.obj tls : Obj.t array) in
@@ -157,7 +149,7 @@ module TLS = struct
         tls
       else (
         let new_tls = grow_tls tls index in
-        thread.tls <- Obj.repr new_tls;
+        set_tls_root (Obj.repr new_tls);
         new_tls
       )
     )
