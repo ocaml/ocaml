@@ -123,7 +123,7 @@ static __inline void __declspec(noreturn) run_runtime(wchar_t * runtime,
   PROCESS_INFORMATION procinfo;
   DWORD retcode;
   if (SearchPath(NULL, runtime, L".exe", sizeof(path)/sizeof(wchar_t),
-                 path, &runtime) == 0) {
+                 path, NULL) == 0) {
     HANDLE errh;
     errh = GetStdHandle(STD_ERROR_HANDLE);
     write_console(errh, L"Cannot exec ");
