@@ -42,8 +42,9 @@
   #define CAMLdeprecated_typedef(name, type) typedef type name
 #endif
 
-#if defined(__GNUC__) && __STDC_VERSION__ >= 199901L \
- || defined(_MSC_VER) && _MSC_VER >= 1925
+#if defined(__GNUC__)                                           \
+    && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L \
+    || defined(_MSC_VER) && _MSC_VER >= 1925
 
 #define CAML_STRINGIFY(x) #x
 #ifdef _MSC_VER
@@ -84,9 +85,10 @@ CAMLdeprecated_typedef(addr, char *);
    Note: CAMLnoreturn is a different macro defined in memory.h,
    to be used in function bodies rather than as a function attribute.
 */
-#if __STDC_VERSION__ >= 202300L || __cplusplus >= 201103L
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202300L    \
+    || defined(__cplusplus) && __cplusplus >= 201103L
   #define CAMLnoret [[noreturn]]
-#elif __STDC_VERSION__ >= 201112L
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
   #define CAMLnoret _Noreturn
 #elif defined(__GNUC__)
   #define CAMLnoret  __attribute__ ((noreturn))
@@ -561,7 +563,7 @@ CAMLextern int caml_snwprintf(wchar_t * buf,
 #    define CAMLno_asan __attribute__((no_sanitize("address")))
 #  endif
 #else
-#  if __SANITIZE_ADDRESS__
+#  if defined(__SANITIZE_ADDRESS__)
 #    undef CAMLno_asan
 #    define CAMLno_asan __attribute__((no_sanitize_address))
 #  endif

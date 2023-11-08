@@ -34,7 +34,7 @@
 #    endif
 #  endif
 #else
-#  if __SANITIZE_THREAD__
+#  if defined(__SANITIZE_THREAD__)
 #    undef CAMLreally_no_tsan
 #    define CAMLreally_no_tsan __attribute__((no_sanitize_thread))
 #  endif

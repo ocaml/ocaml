@@ -770,7 +770,7 @@ AS_CASE([$ocaml_cv_cc_vendor],
   [outputobj='-o '
   warn_error_flag='-Werror'
   cc_warnings="-Wall -Wint-conversion -Wstrict-prototypes \
--Wold-style-definition"])
+-Wold-style-definition -Wundef"])
 
 # Use -Wold-style-declaration if supported
 AX_CHECK_COMPILE_FLAG([-Wold-style-declaration],
