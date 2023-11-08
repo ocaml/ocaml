@@ -67,6 +67,8 @@ module Sig_component_kind = struct
   type t =
     | Value
     | Type
+    | Constructor
+    | Label
     | Module
     | Module_type
     | Extension_constructor
@@ -76,6 +78,8 @@ module Sig_component_kind = struct
   let to_string = function
     | Value -> "value"
     | Type -> "type"
+    | Constructor -> "constructor"
+    | Label -> "label"
     | Module -> "module"
     | Module_type -> "module type"
     | Extension_constructor -> "extension constructor"
@@ -87,6 +91,8 @@ module Sig_component_kind = struct
     | Extension_constructor ->
         false
     | Type
+    | Constructor
+    | Label
     | Module
     | Module_type
     | Class
@@ -106,6 +112,8 @@ module Item = struct
 
     let value id = Ident.name id, Sig_component_kind.Value
     let type_ id = Ident.name id, Sig_component_kind.Type
+    let constr id = Ident.name id, Sig_component_kind.Constructor
+    let label id = Ident.name id, Sig_component_kind.Label
     let module_ id = Ident.name id, Sig_component_kind.Module
     let module_type id = Ident.name id, Sig_component_kind.Module_type
     let extension_constructor id =
@@ -548,18 +556,31 @@ let local_weak_reduce shape =
 
 let dummy_mod = { uid = None; desc = Struct Item.Map.empty }
 
-let of_path ~find_shape ~namespace =
+let of_path ~find_shape ~namespace path =
+  (* We need to handle the following cases:
+    Path of constructor:
+      M.t.C
+    Path of label:
+      M.t.lbl
+    Path of label of inline record:
+      M.t.C.lbl *)
   let rec aux : Sig_component_kind.t -> Path.t -> t = fun ns -> function
     | Pident id -> find_shape ns id
-    | Pdot (path, name) -> proj (aux Module path) (name, ns)
+    | Pdot (path, name) ->
+        let namespace : Sig_component_kind.t =
+          if ns = Sig_component_kind.Constructor then Type
+          else if ns = Sig_component_kind.Label then Type
+          else Module
+        in
+        proj (aux namespace path) (name, ns)
     | Papply (p1, p2) -> app (aux Module p1) ~arg:(aux Module p2)
     | Pextra_ty (path, extra) -> begin
         match extra with
-          Pcstr_ty _ -> aux Type path
+          Pcstr_ty name -> proj (aux Type path) (name, Constructor)
         | Pext_ty -> aux Extension_constructor path
       end
   in
-  aux namespace
+  aux namespace path
 
 let for_persistent_unit s =
   { uid = Some (Uid.of_compilation_unit_id (Ident.create_persistent s));
@@ -585,9 +606,19 @@ module Map = struct
     let item = Item.value id in
     Item.Map.add item (proj shape item) t
 
-  let add_type t id uid = Item.Map.add (Item.type_ id) (leaf uid) t
+  let add_type t id shape = Item.Map.add (Item.type_ id) shape t
   let add_type_proj t id shape =
     let item = Item.type_ id in
+    Item.Map.add item (proj shape item) t
+
+  let add_constr t id shape = Item.Map.add (Item.constr id) shape t
+  let add_constr_proj t id shape =
+    let item = Item.constr id in
+    Item.Map.add item (proj shape item) t
+
+  let add_label t id uid = Item.Map.add (Item.label id) (leaf uid) t
+  let add_label_proj t id shape =
+    let item = Item.label id in
     Item.Map.add item (proj shape item) t
 
   let add_module t id shape = Item.Map.add (Item.module_ id) shape t
@@ -601,8 +632,8 @@ module Map = struct
     let item = Item.module_type id in
     Item.Map.add item (proj shape item) t
 
-  let add_extcons t id uid =
-    Item.Map.add (Item.extension_constructor id) (leaf uid) t
+  let add_extcons t id shape =
+    Item.Map.add (Item.extension_constructor id) shape t
   let add_extcons_proj t id shape =
     let item = Item.extension_constructor id in
     Item.Map.add item (proj shape item) t

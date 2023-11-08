@@ -1273,6 +1273,10 @@ let find_shape env (ns : Shape.Sig_component_kind.t) id =
   match ns with
   | Type ->
       (IdTbl.find_same id env.types).tda_shape
+  | Constructor ->
+      Shape.leaf ((TycompTbl.find_same id env.constrs).cda_description.cstr_uid)
+  | Label ->
+      Shape.leaf ((TycompTbl.find_same id env.labels).lbl_uid)
   | Extension_constructor ->
       (TycompTbl.find_same id env.constrs).cda_shape
   | Value ->
@@ -2357,8 +2361,6 @@ let enter_signature_and_shape ~scope ~parent_shape mod_shape sg env =
   enter_signature_and_shape ~scope ~parent_shape (Some mod_shape) sg env
 
 let add_value = add_value ?shape:None
-let add_type = add_type ?shape:None
-let add_extension = add_extension ?shape:None
 let add_class = add_class ?shape:None
 let add_cltype = add_cltype ?shape:None
 let add_modtype = add_modtype ?shape:None

@@ -55,6 +55,8 @@ let in_printing_env f = Env.without_cmis f !printing_env
  type namespace = Sig_component_kind.t =
     | Value
     | Type
+    | Constructor
+    | Label
     | Module
     | Module_type
     | Extension_constructor
@@ -70,7 +72,7 @@ module Namespace = struct
     | Module_type -> 2
     | Class -> 3
     | Class_type -> 4
-    | Extension_constructor | Value -> 5
+    | Extension_constructor | Value | Constructor | Label -> 5
      (* we do not handle those component *)
 
   let size = 1 + id Value
@@ -90,7 +92,8 @@ module Namespace = struct
     | Some Module_type -> to_lookup Env.find_modtype_by_name
     | Some Class -> to_lookup Env.find_class_by_name
     | Some Class_type -> to_lookup Env.find_cltype_by_name
-    | None | Some(Value|Extension_constructor) -> fun _ -> raise Not_found
+    | None | Some(Value|Extension_constructor|Constructor|Label) ->
+         fun _ -> raise Not_found
 
   let location namespace id =
     let path = Path.Pident id in
@@ -101,7 +104,8 @@ module Namespace = struct
         | Some Module_type -> (in_printing_env @@ Env.find_modtype path).mtd_loc
         | Some Class -> (in_printing_env @@ Env.find_class path).cty_loc
         | Some Class_type -> (in_printing_env @@ Env.find_cltype path).clty_loc
-        | Some (Extension_constructor|Value) | None -> Location.none
+        | Some (Extension_constructor|Value|Constructor|Label) | None ->
+            Location.none
       ) with Not_found -> None
 
   let best_class_namespace = function
@@ -284,7 +288,7 @@ let indexed_name namespace id =
     | Module_type -> Env.find_modtype_index id env
     | Class -> Env.find_class_index id env
     | Class_type-> Env.find_cltype_index id env
-    | Value | Extension_constructor -> None
+    | Value | Extension_constructor | Constructor | Label -> None
   in
   let index =
     match M.find_opt (Ident.name id) !bound_in_recursion with

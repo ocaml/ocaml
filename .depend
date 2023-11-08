@@ -1493,6 +1493,7 @@ typing/typedecl.cmo : \
     typing/typedecl_immediacy.cmi \
     typing/type_immediacy.cmi \
     typing/subst.cmi \
+    typing/shape.cmi \
     typing/printtyp.cmi \
     typing/primitive.cmi \
     typing/predef.cmi \
@@ -1530,6 +1531,7 @@ typing/typedecl.cmx : \
     typing/typedecl_immediacy.cmx \
     typing/type_immediacy.cmx \
     typing/subst.cmx \
+    typing/shape.cmx \
     typing/printtyp.cmx \
     typing/primitive.cmx \
     typing/predef.cmx \
@@ -1561,6 +1563,7 @@ typing/typedecl.cmi : \
     typing/typedecl_variance.cmi \
     typing/typedecl_separability.cmi \
     typing/typedecl_immediacy.cmi \
+    typing/shape.cmi \
     typing/path.cmi \
     parsing/parsetree.cmi \
     parsing/longident.cmi \

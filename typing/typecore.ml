@@ -3996,7 +3996,7 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_letexception(cd, sbody) ->
-      let (cd, newenv) = Typedecl.transl_exception env cd in
+      let (cd, newenv, _shape) = Typedecl.transl_exception env cd in
       let body = type_expect newenv sbody ty_expected_explained in
       re {
         exp_desc = Texp_letexception(cd, body);

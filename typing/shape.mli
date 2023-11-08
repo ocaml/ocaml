@@ -36,6 +36,8 @@ module Sig_component_kind : sig
   type t =
     | Value
     | Type
+    | Constructor
+    | Label
     | Module
     | Module_type
     | Extension_constructor
@@ -57,6 +59,8 @@ module Item : sig
 
   val value : Ident.t -> t
   val type_ : Ident.t -> t
+  val constr : Ident.t -> t
+  val label : Ident.t -> t
   val module_ : Ident.t -> t
   val module_type : Ident.t -> t
   val extension_constructor : Ident.t -> t
@@ -114,8 +118,14 @@ module Map : sig
   val add_value : t -> Ident.t -> Uid.t -> t
   val add_value_proj : t -> Ident.t -> shape -> t
 
-  val add_type : t -> Ident.t -> Uid.t -> t
+  val add_type : t -> Ident.t -> shape -> t
   val add_type_proj : t -> Ident.t -> shape -> t
+
+  val add_constr : t -> Ident.t -> shape -> t
+  val add_constr_proj : t -> Ident.t -> shape -> t
+
+  val add_label : t -> Ident.t -> Uid.t -> t
+  val add_label_proj : t -> Ident.t -> shape -> t
 
   val add_module : t -> Ident.t -> shape -> t
   val add_module_proj : t -> Ident.t -> shape -> t
@@ -123,7 +133,7 @@ module Map : sig
   val add_module_type : t -> Ident.t -> Uid.t -> t
   val add_module_type_proj : t -> Ident.t -> shape -> t
 
-  val add_extcons : t -> Ident.t -> Uid.t -> t
+  val add_extcons : t -> Ident.t -> shape -> t
   val add_extcons_proj : t -> Ident.t -> shape -> t
 
   val add_class : t -> Ident.t -> Uid.t -> t

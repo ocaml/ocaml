@@ -8,14 +8,14 @@ module B = A
 [%%expect{|
 {
  "A"[module] -> {<.1>
-                 "t"[type] -> <.0>;
+                 "t"[type] -> {<.0>};
                  };
  }
 module A : sig type t end
 {
  "B"[module] -> Alias(<.2>
                       {<.1>
-                       "t"[type] -> <.0>;
+                       "t"[type] -> {<.0>};
                        });
  }
 module B = A
@@ -25,7 +25,7 @@ type u = B.t
 
 [%%expect{|
 {
- "u"[type] -> <.3>;
+ "u"[type] -> {<.3>};
  }
 type u = B.t
 |}]
@@ -48,7 +48,7 @@ module C = F'(A)
 [%%expect{|
 {
  "C"[module] -> {<.8>
-                 "t"[type] -> <.0>;
+                 "t"[type] -> {<.0>};
                  };
  }
 module C : sig type t = A.t end
@@ -61,7 +61,7 @@ module C = F(B)
 {
  "C"[module] -> Alias(<.9>
                       {<.1>
-                       "t"[type] -> <.0>;
+                       "t"[type] -> {<.0>};
                        });
  }
 module C : sig type t = B.t end
@@ -74,7 +74,7 @@ module D = C
  "D"[module] -> Alias(<.10>
                       Alias(<.9>
                             {<.1>
-                             "t"[type] -> <.0>;
+                             "t"[type] -> {<.0>};
                              }));
  }
 module D = C
@@ -94,7 +94,7 @@ module E = G(B)
 [%%expect{|
 {
  "E"[module] -> {<.14>
-                 "t"[type] -> <.0>;
+                 "t"[type] -> {<.0>};
                  };
  }
 module E : sig type t = B.t end
