@@ -7,7 +7,7 @@ type _ t += E : unit t
 
 let () =
   try_with perform E
-  { effc = fun (type a) (e : a t) ->
+  { effc = fun e ->
       Some (fun k ->
           match Marshal.to_string k [] with
           | _ -> assert false

@@ -7,7 +7,7 @@ type _ t += E : unit t
 
 let () =
   try_with perform E
-  { effc = fun (type a) (e : a t) ->
+  { effc = fun e ->
       match e with
       | E -> Some (fun k ->
           begin match k = k with

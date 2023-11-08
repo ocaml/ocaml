@@ -45,9 +45,9 @@ let main () =
     exnc = (fun e ->
       let open Printexc in
       print_raw_backtrace stdout (get_raw_backtrace ()));
-    effc = fun (type a) (e : a t) ->
+    effc = fun e ->
       match e with
-      | Wait -> Some (fun (k : (a, _) continuation) ->
+      | Wait -> Some (fun k ->
           discontinue_with_backtrace k x bt)
       | _ -> None }
 

@@ -10,11 +10,11 @@ let f () = (perform (Foo 3)) (* 3 + 1 *)
 
 let r =
   try_with f ()
-  { effc = fun (type a) (e : a t) ->
+  { effc = fun e ->
       match e with
-      | Foo i -> Some (fun (k : (a, _) continuation) ->
+      | Foo i -> Some (fun k ->
           try_with (continue k) (i + 1)
-          { effc = fun (type a) (e : a t) ->
+          { effc = fun e ->
               match e with
               | Foo i -> Some (fun k -> failwith "NO")
               | _ -> None })

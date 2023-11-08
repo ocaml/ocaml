@@ -8,7 +8,7 @@ type _ t += E : unit t
 let rec even n =
   if n = 0 then true
   else try_with odd (n-1)
-       { effc = fun (type a) (e : a t) ->
+       { effc = fun e ->
            match e with
            | E -> Some (fun k -> assert false)
            | _ -> None }

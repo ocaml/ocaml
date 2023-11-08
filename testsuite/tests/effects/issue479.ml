@@ -31,9 +31,9 @@ let iter2gen : _ iter2gen = fun iter c ->
     match_with (iter suspending_f) c
     { retc = (fun _ -> fun () -> None);
       exnc = (fun e -> raise e);
-      effc = fun (type a) (e : a t) ->
+      effc = fun e ->
         match e with
-        | Hold -> Some (fun (k : (a,_) continuation) ->
+        | Hold -> Some (fun k ->
             fun () ->
               let x = !r in
               Printf.printf "Hold %s\n%!" (

@@ -8,7 +8,7 @@ exception Done
 
 let handle_partial f =
   try_with f ()
-  { effc = fun (type a) (e : a t) ->
+  { effc = fun e ->
       match e with
       | E -> Some (fun k -> assert false)
       | _ -> None }
@@ -21,7 +21,7 @@ let () =
     exnc = (function
       | Done -> print_string "ok\n"
       | e -> raise e);
-    effc = fun (type a) (e : a t) ->
+    effc = fun e ->
       match e with
-      | E -> Some (fun (k : (a, _) continuation) -> discontinue k Done)
+      | E -> Some (fun k -> discontinue k Done)
       | _ -> None }

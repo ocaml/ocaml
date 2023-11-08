@@ -26,13 +26,13 @@ let run main =
       exnc = (function
         | E -> say "!"; dequeue ()
         | e -> raise e);
-      effc = fun (type a) (e : a t) ->
+      effc = fun e ->
         match e with
-        | Yield -> Some (fun (k : (a, _) continuation) ->
+        | Yield -> Some (fun k ->
             say ","; enqueue k; dequeue ())
-        | Fork f -> Some (fun (k : (a, _) continuation) ->
+        | Fork f -> Some (fun k ->
             say "+"; enqueue k; spawn f)
-        | Ping -> Some (fun (k : (a, _) continuation) ->
+        | Ping -> Some (fun k ->
             say "["; discontinue k Pong)
         | _ -> None }
   in
@@ -47,9 +47,9 @@ let test () =
         exnc = (function
           | Pong -> say "]"
           | e -> raise e);
-        effc = fun (type a) (e : a t) ->
+        effc = fun e ->
           match e with
-          | Yield -> Some (fun (k : (a,_) continuation) -> failwith "what?")
+          | Yield -> Some (fun k -> failwith "what?")
           | _ -> None }
      end;
      raise E));

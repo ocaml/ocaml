@@ -15,7 +15,7 @@ let () =
       exnc = (function
         | X -> 10
         | e -> raise e);
-      effc = (fun (type a) (e : a t) ->
+      effc = (fun e ->
         match e with
         | E -> Some (fun k -> 11)
         | e -> None) }
