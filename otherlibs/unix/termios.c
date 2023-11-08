@@ -38,7 +38,7 @@ enum { Input, Output };
 
 /* Structure of the terminal_io record. Cf. unix.mli */
 
-static long terminal_io_descr[] = {
+static const long terminal_io_descr[] = {
   /* Input modes */
   Bool, iflags, IGNBRK,
   Bool, iflags, BRKINT,
@@ -90,7 +90,7 @@ static long terminal_io_descr[] = {
 #undef cflags
 #undef lflags
 
-static struct {
+static const struct {
   speed_t speed;
   int baud;
 } speedtable[] = {
@@ -192,10 +192,9 @@ static struct {
 
 static void encode_terminal_status(volatile value *dst, struct termios *src)
 {
-  long * pc;
   int i;
 
-  for(pc = terminal_io_descr; *pc != End; dst++) {
+  for(const long * pc = terminal_io_descr; *pc != End; dst++) {
     switch(*pc++) {
     case Bool:
       { tcflag_t * src_p = (tcflag_t *) ((char *)src + *pc++);
@@ -242,10 +241,9 @@ static void encode_terminal_status(volatile value *dst, struct termios *src)
 
 static void decode_terminal_status(struct termios *dst, volatile value *src)
 {
-  long * pc;
   int i;
 
-  for (pc = terminal_io_descr; *pc != End; src++) {
+  for (const long * pc = terminal_io_descr; *pc != End; src++) {
     switch(*pc++) {
     case Bool:
       { tcflag_t * dst_p = (tcflag_t *) ((char *)dst + *pc++);
