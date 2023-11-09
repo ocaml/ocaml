@@ -60,7 +60,7 @@ module type TestDeprecatedSig = sig
   [@@@deprecated] (* rejected *)
 end
 
-module TestDeprecatedStruct = struct  (* CJC XXX THIS IS ALL BUGGY *)
+module TestDeprecatedStruct = struct
   let x = 5 [@deprecated] (* rejected *)
 
   let y = 10 [@@deprecated] (* rejected *)

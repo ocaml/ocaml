@@ -169,11 +169,12 @@ type attr_action = Mark_used_only | Return
 val select_attributes :
   (string * attr_action) list -> Parsetree.attributes -> Parsetree.attributes
 
-(** This drops a leading "ocaml." prefix from a string, if present.  It is
-    useful for manually inspecting attribute names, but note that doing so will
-    not result in marking the attribute used for the purpose of warning 53, so
-    it is usually preferrable to use [has_attribute] or [select_attributes]. *)
-val drop_ocaml_attr_prefix : string -> string
+(** [attr_equals_builtin attr s] is true if the name of the attribute is [s] or
+    ["ocaml." ^ s].  This is useful for manually inspecting attribute names, but
+    note that doing so will not result in marking the attribute used for the
+    purpose of warning 53, so it is usually preferrable to use [has_attribute]
+    or [select_attributes]. *)
+val attr_equals_builtin : Parsetree.attribute -> string -> bool
 
 val warn_on_literal_pattern: Parsetree.attributes -> bool
 val explicit_arity: Parsetree.attributes -> bool

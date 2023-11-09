@@ -144,28 +144,29 @@ let error_of_extension ext =
   | ({txt; loc}, _) ->
       Location.errorf ~loc "Uninterpreted extension '%s'." txt
 
+let attr_equals_builtin {attr_name = {txt; _}; _} s =
+  (* Check for attribute s or ocaml.s.  Avoid allocating a fresh string. *)
+  txt = s ||
+  (   String.length txt = 6 + String.length s
+   && String.starts_with ~prefix:"ocaml." txt
+   && String.ends_with ~suffix:s txt)
+
 let mark_alert_used a =
-  match drop_ocaml_attr_prefix a.attr_name.txt with
-  | "deprecated" | "alert" ->
-    mark_used a.attr_name
-  | _ -> ()
+  if attr_equals_builtin a "deprecated" || attr_equals_builtin a "alert"
+  then mark_used a.attr_name
 
 let mark_alerts_used l = List.iter mark_alert_used l
 
 let mark_warn_on_literal_pattern_used l =
   List.iter (fun a ->
-    match drop_ocaml_attr_prefix a.attr_name.txt with
-    | "warn_on_literal_pattern" ->
-      mark_used a.attr_name
-    | _ -> ())
+    if attr_equals_builtin a "warn_on_literal_pattern"
+    then mark_used a.attr_name)
     l
 
 let mark_deprecated_mutable_used l =
   List.iter (fun a ->
-    match drop_ocaml_attr_prefix a.attr_name.txt with
-    | "deprecated_mutable" ->
-      mark_used a.attr_name
-    | _ -> ())
+    if attr_equals_builtin a "deprecated_mutable"
+    then mark_used a.attr_name)
     l
 
 let mark_payload_attrs_used payload =
@@ -198,15 +199,14 @@ let cat s1 s2 =
   if s2 = "" then s1 else s1 ^ "\n" ^ s2
 
 let alert_attr x =
-  match drop_ocaml_attr_prefix x.attr_name.txt with
-  | "deprecated" ->
-      Some (x, "deprecated", string_of_opt_payload x.attr_payload)
-  | "alert" ->
-      begin match kind_and_message x.attr_payload with
-      | Some (kind, message) -> Some (x, kind, message)
-      | None -> None (* note: bad payloads detected by warning_attribute *)
-      end
-  | _ -> None
+  if attr_equals_builtin x "deprecated" then
+    Some (x, "deprecated", string_of_opt_payload x.attr_payload)
+  else if attr_equals_builtin x "alert" then
+    begin match kind_and_message x.attr_payload with
+    | Some (kind, message) -> Some (x, kind, message)
+    | None -> None (* note: bad payloads detected by warning_attribute *)
+    end
+  else None
 
 let alert_attrs l =
   List.filter_map alert_attr l
@@ -239,9 +239,8 @@ let check_alerts_inclusion ~def ~use loc attrs1 attrs2 s =
 
 let rec deprecated_mutable_of_attrs = function
   | [] -> None
-  | {attr_name = {txt; _}; attr_payload = p} :: _
-    when String.equal "deprecated_mutable" (drop_ocaml_attr_prefix txt) ->
-     Some (string_of_opt_payload p)
+  | attr :: _ when attr_equals_builtin attr "deprecated_mutable" ->
+    Some (string_of_opt_payload attr.attr_payload)
   | _ :: tl -> deprecated_mutable_of_attrs tl
 
 let check_deprecated_mutable loc attrs s =
@@ -316,11 +315,14 @@ let warning_attribute ?(ppwarning = true) =
             warn_payload loc name.txt "Invalid payload"
           end
   in
-  fun {attr_name; attr_loc; attr_payload} ->
-    match drop_ocaml_attr_prefix attr_name.txt with
-    | "warning" -> process attr_loc attr_name false attr_payload
-    | "warnerror" -> process attr_loc attr_name true attr_payload
-    | "ppwarning" when ppwarning ->
+  fun ({attr_name; attr_loc; attr_payload} as attr) ->
+    if attr_equals_builtin attr "warning" then
+      process attr_loc attr_name false attr_payload
+    else if attr_equals_builtin attr "warnerror" then
+      process attr_loc attr_name true attr_payload
+    else if attr_equals_builtin attr "alert" then
+      process_alert attr_loc attr_name attr_payload
+    else if ppwarning && attr_equals_builtin attr "ppwarning" then
       begin match attr_payload with
       | PStr [{ pstr_desc=
                   Pstr_eval({pexp_desc=Pexp_constant
@@ -333,10 +335,6 @@ let warning_attribute ?(ppwarning = true) =
          warn_payload attr_loc attr_name.txt
            "A single string literal is expected")
       end
-    | "alert" ->
-      process_alert attr_loc attr_name attr_payload
-    | _ ->
-      ()
 
 let warning_scope ?ppwarning attrs f =
   let prev = Warnings.backup () in
@@ -352,7 +350,7 @@ let warning_scope ?ppwarning attrs f =
 let has_attribute nm attrs =
   List.exists
     (fun a ->
-       if String.equal (drop_ocaml_attr_prefix a.attr_name.txt) nm
+       if attr_equals_builtin a nm
        then (mark_used a.attr_name; true)
        else false)
     attrs
@@ -361,7 +359,7 @@ type attr_action = Mark_used_only | Return
 let select_attributes actions attrs =
   List.filter (fun a ->
     List.exists (fun (nm, action) ->
-      String.equal nm (drop_ocaml_attr_prefix a.attr_name.txt) &&
+      attr_equals_builtin a nm &&
       begin
         mark_used a.attr_name;
         action = Return

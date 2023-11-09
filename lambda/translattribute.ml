@@ -59,12 +59,6 @@ let find_attribute p attributes =
   in
   attr
 
-let is_unrolled name =
-  match drop_ocaml_attr_prefix name with
-  | "unrolled" -> true
-  | "inline" | "inlined" -> false
-  | _ -> assert false
-
 let get_payload get_from_exp =
   let open Parsetree in
   function
@@ -131,8 +125,8 @@ let parse_id_payload txt loc ~default ~empty cases payload =
 let parse_inline_attribute attr =
   match attr with
   | None -> Default_inline
-  | Some ({Parsetree.attr_name = {txt;loc}; attr_payload = payload}) ->
-    if is_unrolled txt then begin
+  | Some ({Parsetree.attr_name = {txt;loc}; attr_payload = payload} as attr) ->
+    if attr_equals_builtin attr "unrolled" then begin
       (* the 'unrolled' attributes must be used as [@unrolled n]. *)
       let warning txt = Warnings.Attribute_payload
           (txt, "It must be an integer literal")
