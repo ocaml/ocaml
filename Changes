@@ -584,6 +584,11 @@ Working version
   (Antonin Décimo, review by Miod Vallat, Gabriel Scherer,
    Xavier Leroy, and David Allsopp)
 
+- #12726: fix segmentation fault under Windows when executing a bytecode file if
+  the runtime (`ocamlrun.exe`) cannot be found.
+  (Vadim Zborovskii, Nicolás Ojeda Bär, report by Vadim Zborovskii, review by
+  David Allsopp)
+
 OCaml 5.1.1
 -----------
 
