@@ -652,8 +652,21 @@ and transl_apply ~scopes
           ap_specialised=specialised;
         }
   in
+  (* Build a function application.
+     Particular care is required for out-of-order partial applications.
+     The following code guarantees that:
+     * arguments are evaluated right-to-left according to their order in
+       the type of the function, before the function is called;
+     * side-effects occurring after receiving a non-optional parameter
+       will occur exactly when all the arguments up to this parameter
+       have been received;
+     * side-effects occurring after receiving an optional parameter
+       will occur at the latest when all the arguments up to the first
+       non-optional parameter that follows it have been received.
+  *)
   let rec build_apply lam args = function
       (None, optional) :: l ->
+        (* Out-of-order partial application; we will need to build a closure *)
         let defs = ref [] in
         let protect name lam =
           match lam with
@@ -663,6 +676,8 @@ and transl_apply ~scopes
               defs := (id, lam) :: !defs;
               Lvar id
         in
+        (* If all arguments in [args] were optional, delay their application
+           until after this one is received *)
         let args, args' =
           if List.for_all (fun (_,opt) -> opt) args then [], args
           else args, []
@@ -670,29 +685,36 @@ and transl_apply ~scopes
         let lam =
           if args = [] then lam else lapply lam (List.rev_map fst args)
         in
+        (* Evaluate the function, applied to the arguments in [args] *)
         let handle = protect "func" lam in
+        (* Evaluate the arguments whose applications was delayed;
+           if we already passed here this is a no-op. *)
+        let args' =
+          List.map (fun (arg, opt) -> protect "arg" arg, opt) args'
+        in
+        (* Evaluate the remaining arguments;
+           if we already passed here this is a no-op. *)
         let l =
           List.map (fun (arg, opt) -> Option.map (protect "arg") arg, opt) l
         in
         let id_arg = Ident.create_local "param" in
+        (* Process remaining arguments and build closure *)
         let body =
           match build_apply handle ((Lvar id_arg, optional)::args') l with
-            Lfunction{kind = Curried; params = ids; return;
-                      body = lam; attr; loc}
-               when List.length ids < Lambda.max_arity () ->
-              lfunction ~kind:Curried
-                        ~params:((id_arg, Pgenval)::ids)
-                        ~return
-                        ~body:lam ~attr
-                        ~loc
-          | lam ->
+            Lfunction{kind = Curried; params = ids; return; body; attr; loc}
+            when List.length ids < Lambda.max_arity () ->
+              lfunction ~kind:Curried ~params:((id_arg, Pgenval)::ids)
+                        ~return ~body ~attr ~loc
+          | body ->
               lfunction ~kind:Curried ~params:[id_arg, Pgenval]
-                        ~return:Pgenval ~body:lam
+                        ~return:Pgenval ~body
                         ~attr:default_stub_attribute ~loc
         in
-        List.fold_left
-          (fun body (id, lam) -> Llet(Strict, Pgenval, id, lam, body))
-          body !defs
+        (* Wrap "protected" definitions, starting from the left,
+           so that evaluation is right-to-left. *)
+        List.fold_right
+          (fun (id, lam) body -> Llet(Strict, Pgenval, id, lam, body))
+          !defs body
     | (Some arg, optional) :: l ->
         build_apply lam ((arg, optional) :: args) l
     | [] ->
