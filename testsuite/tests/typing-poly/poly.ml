@@ -2037,3 +2037,47 @@ Error: Some type variables are unbound in this type:
                    ('irr -> unit) * ((< x : 'a; y : 'b; .. > as 'c) -> 'a) >"
        where "'c" is unbound
 |}]
+
+
+(** A function that requires locally abstract types to get its intended type *)
+let coerce : ('a, 'b) Type.eq -> 'a -> 'b = fun Type.Equal x -> x
+[%%expect {|
+val coerce : ('b, 'b) Type.eq -> 'b -> 'b = <fun>
+|}]
+
+(** Polymorphic annotations give locally abstract types *)
+let coerce : 'a 'b. ('a, 'b) Type.eq -> 'a -> 'b =
+  fun Equal x -> x
+[%%expect {|
+Line 2, characters 2-18:
+2 |   fun Equal x -> x
+      ^^^^^^^^^^^^^^^^
+Error: This definition has type "'c. ('c, 'c) Type.eq -> 'c -> 'c"
+       which is less general than "'a 'b. ('a, 'b) Type.eq -> 'a -> 'b"
+|}]
+
+(** Polymorphic method annotations give locally abstract types *)
+class c = object
+  method coerce : 'a 'b. ('a, 'b) Type.eq -> 'a -> 'b =
+    fun Equal x -> x
+end
+[%%expect {|
+Line 3, characters 4-20:
+3 |     fun Equal x -> x
+        ^^^^^^^^^^^^^^^^
+Error: This method has type "'c. ('c, 'c) Type.eq -> 'c -> 'c"
+       which is less general than "'a 'b. ('a, 'b) Type.eq -> 'a -> 'b"
+|}]
+
+(** Polymorphic record field types give locally abstract types *)
+type t = { coerce : 'a 'b. ('a, 'b) Type.eq -> 'a -> 'b }
+
+let t = { coerce = fun Equal x -> x }
+[%%expect {|
+type t = { coerce : 'a 'b. ('a, 'b) Type.eq -> 'a -> 'b; }
+Line 3, characters 19-35:
+3 | let t = { coerce = fun Equal x -> x }
+                       ^^^^^^^^^^^^^^^^
+Error: This field value has type "'c. ('c, 'c) Type.eq -> 'c -> 'c"
+       which is less general than "'a 'b. ('a, 'b) Type.eq -> 'a -> 'b"
+|}]
