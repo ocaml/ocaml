@@ -685,7 +685,7 @@ and transl_apply ~scopes
         let lam =
           if args = [] then lam else lapply lam (List.rev_map fst args)
         in
-        (* Evaluate the function, possibly applied to the arguments in [args] *)
+        (* Evaluate the function, applied to the arguments in [args] *)
         let handle = protect "func" lam in
         (* Evaluate the arguments whose applications was delayed;
            if we already passed here this is a no-op. *)
