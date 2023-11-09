@@ -459,8 +459,8 @@ Working version
 
 ### Bug fixes:
 
-- #10653, #12720: Fix evaluation order in presence of optional arguments
-  (Jacques Garrigue, Nick Roberts, report by Leo White)
+- #10652, #12720: fix evaluation order in presence of optional arguments
+  (Jacques Garrigue, report by Leo White, review by Vincent Laviron)
 
 - #11800, #12707: fix an assertion race condition in `install_backup_thread`
   (Jan Midtgaard, review by Gabriel Scherer)
