@@ -73,15 +73,68 @@ struct mark_stack {
 
 uintnat caml_percent_free = Percent_free_def;
 
-/* This variable is only written with the world stopped,
-   so it need not be atomic */
+/* This variable is only written with the world stopped, so it need not be
+   atomic */
 uintnat caml_major_cycles_completed = 0;
 
+/* [num_domains_to_sweep] records the number of domains to sweep in the current
+   major cycle. The number is set to the [num_domains_in_stw] at the start of
+   the cycle and _strictly decreases_ to 0.
+
+   Domains created in a given cycle will not have any sweep work in that cycle.
+   Sweep changes GARBAGE coloured objects in the domain's own pools to FREE
+   (not a distinct colour; object header is set to 0) and adds them to the free
+   list. No object will have the GARBAGE colour in the domain's own pools since
+   the domain starts with an empty pool with no objects and new objects are
+   allocated with colour MARKED. Hence, they do not affect
+   [num_domains_to_sweep].
+
+   Terminating domains terminate after sweeping is complete for their domain.
+   */
 static atomic_uintnat num_domains_to_sweep;
+
+/* [num_domains_to_mark] records the number of domains to mark in the current
+   major cycle. The number is set to the [num_domains_in_stw] at the start of
+   the cycle. The value of [num_domains_to_mark] may decrease or increase.
+
+   [num_domains_to_mark] may grow larger than the value of [num_domains_in_stw]
+   at the start of the cycle. This is because [caml_modify] may push a block
+   into a potentially empty mark stack of the newly spawned domain.
+
+   Terminating domains empty their mark stack before terminating. */
 static atomic_uintnat num_domains_to_mark;
+
+/* [num_domains_to_ephe_sweep] is set to the [participating_count] at the start
+   of the [Phase_sweep_ephe] and strictly decreases. */
 static atomic_uintnat num_domains_to_ephe_sweep;
+
+/* [num_domains_to_final_update_first] and [num_domains_to_final_update_last]
+   are initialised to [num_domains_in_stw] at the start of the cycle. Whenever
+   a domain finishes processing its first or last finalisers, it decrements the
+   appropriate counter.
+
+   Newly created domains increment both the counters. Terminating domain
+   orphans its finalisers and then decrements the counters. See
+   [caml_final_domain_terminate]. */
 static atomic_uintnat num_domains_to_final_update_first;
 static atomic_uintnat num_domains_to_final_update_last;
+
+/* When domains terminate, they will orphan their finalisers. As mentioned in
+   the comment attached to [num_domains_to_final_update_*] counters, a domain
+   will decrement the counters when the corresponding finalisers are processed
+   for that domain. We would like to preserve this invariant when adopting
+   orphaned finalisers. To this end, we orphan and adopt finalisers only in
+   [Phase_sweep_and_mark_main] when [num_domains_to_final_update_*] counters
+   have not been decremented for the domain yet.
+
+   [num_domains_orphaning_finalisers] keeps a count of the number of domains
+   currently orphaning finalisers. This counter is only used in the
+   [Phase_sweep_and_mark_main] to determine whether to proceed to
+   [Phase_mark_final]. If domains are currently orphaning finalisers, we remain
+   in [Phase_sweep_and_mark_main] so that the orphaned finalisers can be
+   adopted before moving onto [Phase_mark_final] where the [GC.finalise]
+   (finalise first) finalisers are processed. */
+static atomic_uintnat num_domains_orphaning_finalisers = 0;
 
 /* These two counters keep track of how much work the GC is supposed to
    do in order to keep up with allocation. Both are in GC work units.
@@ -286,6 +339,10 @@ static void record_ephe_marking_done (uintnat ephe_cycle)
   caml_plat_unlock(&ephe_lock);
 }
 
+/*******************************************************************************
+ * Orphaning and adoption
+ ******************************************************************************/
+
 /* These are biased data structures left over from terminating domains.
 
    Synchronization:
@@ -302,40 +359,6 @@ static struct {
 } orph_structs = {0, NULL};
 
 static caml_plat_mutex orphaned_lock = CAML_PLAT_MUTEX_INITIALIZER;
-
-void caml_add_orphaned_finalisers (struct caml_final_info* f)
-{
-  CAMLassert (caml_gc_phase == Phase_sweep_and_mark_main);
-  CAMLassert (!f->updated_first);
-  CAMLassert (!f->updated_last);
-
-  caml_plat_lock(&orphaned_lock);
-  f->next = orph_structs.final_info;
-  orph_structs.final_info = f;
-  caml_plat_unlock(&orphaned_lock);
-
-}
-
-/* Called by terminating domain from handover_finalisers */
-void caml_final_domain_terminate (caml_domain_state *domain_state)
-{
-  struct caml_final_info *f = domain_state->final_info;
-  if(!f->updated_first) {
-    atomic_fetch_add_verify_ge0(&num_domains_to_final_update_first, -1);
-    f->updated_first = 1;
-  }
-  if(!f->updated_last) {
-    atomic_fetch_add_verify_ge0(&num_domains_to_final_update_last, -1);
-    f->updated_last = 1;
-  }
-}
-
-static int no_orphaned_work (void)
-{
-  return
-    atomic_load_acquire(&orph_structs.ephe_list_live) == 0 &&
-    atomic_load_acquire(&orph_structs.final_info) == NULL;
-}
 
 Caml_inline value ephe_list_tail(value e)
 {
@@ -368,8 +391,14 @@ static void orph_ephe_list_verify_status (int status)
 
 static intnat ephe_mark (intnat budget, uintnat for_cycle, int force_alive);
 
-void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info)
+void caml_orphan_ephemerons (caml_domain_state* domain_state)
 {
+  struct caml_ephe_info* ephe_info = domain_state->ephe_info;
+  if (ephe_info->todo == 0 &&
+      ephe_info->live == 0 &&
+      ephe_info->must_sweep_ephe == 0)
+    return;
+
   /* Force all ephemerons and their data on todo list to be alive */
   if (ephe_info->todo) {
     while (ephe_info->todo) {
@@ -394,9 +423,60 @@ void caml_add_to_orphaned_ephe_list(struct caml_ephe_info* ephe_info)
     ephe_info->must_sweep_ephe = 0;
     atomic_fetch_add_verify_ge0(&num_domains_to_ephe_sweep, -1);
   }
+  CAMLassert (ephe_info->must_sweep_ephe == 0);
+  CAMLassert (ephe_info->live == 0);
+  CAMLassert (ephe_info->todo == 0);
 }
 
-void caml_adopt_orphaned_work (void)
+void caml_orphan_finalisers (caml_domain_state* domain_state)
+{
+  struct caml_final_info* f = domain_state->final_info;
+
+  if (f->todo_head != NULL || f->first.size != 0 || f->last.size != 0) {
+    /* have some final structures */
+    atomic_fetch_add(&num_domains_orphaning_finalisers, +1);
+    if (caml_gc_phase != Phase_sweep_and_mark_main) {
+      /* Force a major GC cycle to simplify constraints for orphaning
+         finalisers. See note attached to the declaration of
+         [num_domains_orphaning_finalisers] variable in major_gc.c */
+      caml_finish_major_cycle(0);
+    }
+    CAMLassert(caml_gc_phase == Phase_sweep_and_mark_main);
+    CAMLassert (!f->updated_first);
+    CAMLassert (!f->updated_last);
+
+    /* Add the finalisers to [orph_structs] */
+    caml_plat_lock(&orphaned_lock);
+    f->next = orph_structs.final_info;
+    orph_structs.final_info = f;
+    caml_plat_unlock(&orphaned_lock);
+
+    /* Create a dummy final info */
+    f = domain_state->final_info = caml_alloc_final_info();
+    atomic_fetch_add_verify_ge0(&num_domains_orphaning_finalisers, -1);
+  }
+
+  /* [caml_orphan_finalisers] is called in a while loop in [domain_terminate].
+     We take care to decrement the [num_domains_to_final_update*] counters only
+     if we have not already decremented it for the current cycle. */
+  if(!f->updated_first) {
+    atomic_fetch_add_verify_ge0(&num_domains_to_final_update_first, -1);
+    f->updated_first = 1;
+  }
+  if(!f->updated_last) {
+    atomic_fetch_add_verify_ge0(&num_domains_to_final_update_last, -1);
+    f->updated_last = 1;
+  }
+}
+
+static int no_orphaned_work (void)
+{
+  return
+    atomic_load_acquire(&orph_structs.ephe_list_live) == 0 &&
+    atomic_load_acquire(&orph_structs.final_info) == NULL;
+}
+
+static void adopt_orphaned_work (void)
 {
   caml_domain_state* domain_state = Caml_state;
   value orph_ephe_list_live, last;
@@ -422,14 +502,16 @@ void caml_adopt_orphaned_work (void)
     domain_state->ephe_info->live = orph_ephe_list_live;
   }
 
-  myf = domain_state->final_info;
   while (f != NULL) {
-    CAMLassert (!f->updated_first);
-    CAMLassert (!f->updated_last);
+    myf = domain_state->final_info;
+    CAMLassert (caml_gc_phase == Phase_sweep_and_mark_main);
+    /* Since we are in [Phase_sweep_and_mark_main], the current domain has not
+       updated its finalisers. */
     CAMLassert (!myf->updated_first);
     CAMLassert (!myf->updated_last);
-    CAMLassert (caml_gc_phase == Phase_sweep_and_mark_main);
+
     if (f->todo_head) {
+      /* Adopt the finalising set. */
       if (myf->todo_tail == NULL) {
         CAMLassert(myf->todo_head == NULL);
         myf->todo_head = f->todo_head;
@@ -439,17 +521,22 @@ void caml_adopt_orphaned_work (void)
         myf->todo_tail = f->todo_tail;
       }
     }
+
+    /* Adopt the finalisable set */
     if (f->first.young > 0) {
       caml_final_merge_finalisable (&f->first, &myf->first);
     }
     if (f->last.young > 0) {
       caml_final_merge_finalisable (&f->last, &myf->last);
     }
+
     temp = f;
     f = f->next;
     caml_stat_free (temp);
   }
 }
+
+/******************************************************************************/
 
 #define BUFFER_SIZE 64
 
@@ -1424,12 +1511,12 @@ static void stw_cycle_all_domains(caml_domain_state* domain, void* args,
   }
 
   /* Ephemerons */
-  // Adopt orphaned work from domains that were spawned and terminated in
-  // the previous cycle.
 #ifdef DEBUG
   orph_ephe_list_verify_status (caml_global_heap_state.UNMARKED);
 #endif
-  caml_adopt_orphaned_work ();
+  /* Adopt orphaned work from domains that were spawned and terminated in the
+     previous cycle. */
+  adopt_orphaned_work ();
   CAMLassert(domain->ephe_info->todo == (value) NULL);
   domain->ephe_info->todo = domain->ephe_info->live;
   domain->ephe_info->live = (value) NULL;
@@ -1461,42 +1548,52 @@ static void stw_cycle_all_domains(caml_domain_state* domain, void* args,
 static int is_complete_phase_sweep_and_mark_main (void)
 {
   return
+    /* Marking is done */
     caml_gc_phase == Phase_sweep_and_mark_main &&
     atomic_load_acquire (&num_domains_to_sweep) == 0 &&
     atomic_load_acquire (&num_domains_to_mark) == 0 &&
-    /* Marking is done */
+
+    /* No domains are orphaning finalisers. */
+    atomic_load_acquire (&num_domains_orphaning_finalisers) == 0 &&
+
+    /* Ephemeron marking is done */
     atomic_load_acquire(&ephe_cycle_info.num_domains_todo) ==
     atomic_load_acquire(&ephe_cycle_info.num_domains_done) &&
-    /* Ephemeron marking is done */
-    no_orphaned_work();
+
     /* All orphaned ephemerons have been adopted */
+    no_orphaned_work();
 }
 
 static int is_complete_phase_mark_final (void)
 {
   return
+    /* updated finalise first values */
     caml_gc_phase == Phase_mark_final &&
     atomic_load_acquire (&num_domains_to_final_update_first) == 0 &&
-    /* updated finalise first values */
-    atomic_load_acquire (&num_domains_to_mark) == 0 &&
+
     /* Marking is done */
+    atomic_load_acquire (&num_domains_to_mark) == 0 &&
+
+    /* Ephemeron marking is done */
     atomic_load_acquire(&ephe_cycle_info.num_domains_todo) ==
     atomic_load_acquire(&ephe_cycle_info.num_domains_done) &&
-    /* Ephemeron marking is done */
-    no_orphaned_work();
+
     /* All orphaned ephemerons have been adopted */
+    no_orphaned_work();
 }
 
 static int is_complete_phase_sweep_ephe (void)
 {
   return
+    /* All domains have swept their ephemerons */
     caml_gc_phase == Phase_sweep_ephe &&
     atomic_load_acquire (&num_domains_to_ephe_sweep) == 0 &&
-    /* All domains have swept their ephemerons */
-    atomic_load_acquire (&num_domains_to_final_update_last) == 0 &&
+
     /* All domains have updated finalise last values */
-    no_orphaned_work();
+    atomic_load_acquire (&num_domains_to_final_update_last) == 0 &&
+
     /* All orphaned structures have been adopted */
+    no_orphaned_work();
 }
 
 static void stw_try_complete_gc_phase(
@@ -1543,10 +1640,10 @@ static char collection_slice_mode_char(collection_slice_mode mode)
 }
 
 static void major_collection_slice(intnat howmuch,
-                                     int participant_count,
-                                     caml_domain_state** barrier_participants,
-                                     collection_slice_mode mode,
-                                     int force_compaction)
+                                   int participant_count,
+                                   caml_domain_state** barrier_participants,
+                                   collection_slice_mode mode,
+                                   int force_compaction)
 {
   caml_domain_state* domain_state = Caml_state;
   intnat sweep_work = 0, mark_work = 0;
@@ -1636,7 +1733,7 @@ mark_again:
 #ifdef DEBUG
     orph_ephe_list_verify_status (caml_global_heap_state.MARKED);
 #endif
-    caml_adopt_orphaned_work();
+    adopt_orphaned_work();
 
     /* Ephemerons */
     if (caml_gc_phase != Phase_sweep_ephe) {
@@ -1752,10 +1849,10 @@ mark_again:
                                                       - blocks_marked_before));
 
   if (mode != Slice_opportunistic && is_complete_phase_sweep_ephe()) {
+    /* To handle the case where multiple domains try to finish the major cycle
+       simultaneously, we loop until the current cycle has ended, ignoring
+       whether [caml_try_run_on_all_domains] succeeds. */
     saved_major_cycle = caml_major_cycles_completed;
-    /* To handle the case where multiple domains try to finish the major
-      cycle simultaneously, we loop until the current cycle has ended,
-      ignoring whether caml_try_run_on_all_domains succeeds. */
 
     struct cycle_callback_params params;
     params.force_compaction = force_compaction;

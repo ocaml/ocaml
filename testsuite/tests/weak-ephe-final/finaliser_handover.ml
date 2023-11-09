@@ -1,6 +1,4 @@
-(* TEST
-reason="this test is too flaky, see #12345";
-skip; *)
+(* TEST *)
 
 (* ocaml-multicore issues 528 and 468 *)
 

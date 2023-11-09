@@ -1817,37 +1817,6 @@ static void caml_atfork_default(void)
 
 CAMLexport void (*caml_atfork_hook)(void) = caml_atfork_default;
 
-static void handover_ephemerons(caml_domain_state* domain_state)
-{
-  if (domain_state->ephe_info->todo == 0 &&
-      domain_state->ephe_info->live == 0 &&
-      domain_state->ephe_info->must_sweep_ephe == 0)
-    return;
-
-  caml_add_to_orphaned_ephe_list(domain_state->ephe_info);
-  CAMLassert (domain_state->ephe_info->live == 0);
-  CAMLassert (domain_state->ephe_info->todo == 0);
-}
-
-static void handover_finalisers(caml_domain_state* domain_state)
-{
-  struct caml_final_info* f = domain_state->final_info;
-
-  if (f->todo_head != NULL || f->first.size != 0 || f->last.size != 0) {
-    /* have some final structures */
-    if (caml_gc_phase != Phase_sweep_and_mark_main) {
-      /* Force a major GC cycle to simplify constraints for
-       * handing over finalisers. */
-      caml_finish_major_cycle(0);
-      CAMLassert(caml_gc_phase == Phase_sweep_and_mark_main);
-    }
-    caml_add_orphaned_finalisers (f);
-    /* Create a dummy final info */
-    domain_state->final_info = caml_alloc_final_info();
-  }
-  caml_final_domain_terminate(domain_state);
-}
-
 static inline int domain_terminating(dom_internal *d) {
   return d->interruptor.terminating;
 }
@@ -1885,21 +1854,22 @@ static void domain_terminate (void)
        STW sections that has sent an interrupt to this domain. */
 
     caml_finish_marking();
-    handover_ephemerons(domain_state);
-    handover_finalisers(domain_state);
+
+    caml_orphan_ephemerons(domain_state);
+    caml_orphan_finalisers(domain_state);
 
     /* take the all_domains_lock to try and exit the STW participant set
        without racing with a STW section being triggered */
     caml_plat_lock(&all_domains_lock);
 
     /* The interaction of termination and major GC is quite subtle.
-     *
-     * At the end of the major GC, we decide the number of domains to mark and
-     * sweep for the next cycle. If a STW section has been started, it will
-     * require this domain to participate, which in turn could involve a
-     * major GC cycle. This would then require finish marking and sweeping
-     * again in order to decrement the globals [num_domains_to_mark] and
-     * [num_domains_to_sweep] (see major_gc.c).
+
+       At the end of the major GC, we decide the number of domains to mark and
+       sweep for the next cycle. If a STW section has been started, it will
+       require this domain to participate, which in turn could involve a major
+       GC cycle. This would then require finish marking and sweeping again in
+       order to decrement the globals [num_domains_to_mark] and
+       [num_domains_to_sweep] (see major_gc.c).
      */
 
     if (!caml_incoming_interrupts_queued() &&
