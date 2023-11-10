@@ -577,15 +577,30 @@ let rec expression : Typedtree.expression -> term_judg =
       *)
       expression arg << Guard
     | Texp_apply (e, args)  ->
-        let arg (_, eo) = option expression eo in
-        let app_mode = if List.exists is_abstracted_arg args
-          then (* see the comment on Texp_apply in typedtree.mli;
-                  the non-abstracted arguments are bound to local
-                  variables, which corresponds to a Guard mode. *)
-            Guard
-          else Dereference
+        (* [args] may contain omitted arguments, corresponding to labels in
+           the function's type that were not passed in the actual application.
+           The arguments before the first omitted argument are passed to the
+           function immediately, so they are dereferenced. The arguments after
+           the first omitted one are stored in a closure, so guarded.
+           The function itself is called immediately (dereferenced) if there
+           is at least one argument before the first omitted one, stored in
+           the closure (guarded) otherwise. *)
+        let rec split_args before_omitted = function
+          | (_, None) :: rest -> before_omitted, rest
+          | ((_, Some _) as arg) :: rest ->
+            split_args (arg :: before_omitted) rest
+          | [] -> before_omitted, []
         in
-        join [expression e; list arg args] << app_mode
+        let dereferenced, guarded = split_args [] args in
+        let arg (_, eo) = option expression eo in
+        let function_mode =
+          match dereferenced with
+          | [] -> Guard
+          | _ :: _ -> Dereference
+        in
+        join [expression e << function_mode;
+              list arg dereferenced << Dereference;
+              list arg guarded << Guard]
     | Texp_tuple exprs ->
       list expression exprs << Guard
     | Texp_array exprs ->
