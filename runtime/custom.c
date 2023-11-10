@@ -32,6 +32,22 @@ uintnat caml_custom_major_ratio = Custom_major_ratio_def;
 uintnat caml_custom_minor_ratio = Custom_minor_ratio_def;
 uintnat caml_custom_minor_max_bsz = Custom_minor_max_bsz_def;
 
+mlsize_t caml_custom_get_max_major (void)
+{
+  /* The major ratio is a percentage relative to the major heap size.
+     A complete GC cycle will be done every time 2/3 of that much
+     memory is allocated for blocks in the major heap.  Assuming
+     constant allocation and deallocation rates, this means there are
+     at most [M/100 * major-heap-size] bytes of floating garbage at
+     any time.  The reason for a factor of 2/3 (or 1.5) is, roughly
+     speaking, because the major GC takes 1.5 cycles (previous cycle +
+     marking phase) before it starts to deallocate dead blocks
+     allocated during the previous cycle.  [heap_size / 150] is really
+     [heap_size * (2/3) / 100] (but faster). */
+  return caml_heap_size(Caml_state->shared_heap) / 150
+         * caml_custom_major_ratio;
+}
+
 /* [mem] is an amount of out-of-heap resources, in the same units as
    [max_major] and [max_minor]. When the cumulated amount of such
    resources reaches [max_minor] (for resources held by the minor
@@ -40,7 +56,7 @@ uintnat caml_custom_minor_max_bsz = Custom_minor_max_bsz_def;
    is done.
 
    If [max_major] is 0, then [mem] is a number of bytes and the actual
-   limit is [heap_size / 150 * caml_custom_major_ratio], computed at the
+   limit is [caml_custom_get_max_major ()] computed at the
    time when the custom block is promoted to the major heap.
 */
 static value alloc_custom_gen (const struct custom_operations * ops,
@@ -86,8 +102,7 @@ CAMLexport value caml_alloc_custom(const struct custom_operations * ops,
                                    mlsize_t mem,
                                    mlsize_t max)
 {
-  if (max == 0) max = 1;
-  return alloc_custom_gen (ops, bsz, mem, max, max);
+  return alloc_custom_gen (ops, bsz, mem, max, max == 0 ? 1 : max);
 }
 
 CAMLexport value caml_alloc_custom_mem(const struct custom_operations * ops,

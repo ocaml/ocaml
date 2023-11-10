@@ -255,10 +255,16 @@ CAMLexport void caml_free_dependent_memory (mlsize_t nbytes)
    this time.
    Note that only [res/max] is relevant.  The units (and kind of
    resource) can change between calls to [caml_adjust_gc_speed].
+
+   If [max] = 0, then we use a number proportional to the major heap
+   size and [caml_custom_major_ratio]. In this case, [mem] should
+   be a number of bytes and the trade-off between GC work and space
+   overhead is under the control of the user through
+   [caml_custom_major_ratio].
 */
 CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
 {
-  if (max == 0) max = 1;
+  if (max == 0) max = caml_custom_get_max_major ();
   if (res > max) res = max;
   Caml_state->extra_heap_resources += (double) res / (double) max;
   if (Caml_state->extra_heap_resources > 0.2){

@@ -70,6 +70,9 @@ CAMLextern value caml_alloc_custom_mem(const struct custom_operations * ops,
 CAMLextern void
           caml_register_custom_operations(const struct custom_operations * ops);
 
+/* Return the current [max] factor for [caml_alloc_custom_mem] allocations. */
+CAMLextern mlsize_t caml_custom_get_max_major (void);
+
 /* Global variable moved to Caml_state in 4.10 */
 #define caml_compare_unordered (Caml_state_field(compare_unordered))
 
