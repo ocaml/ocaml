@@ -592,6 +592,9 @@ Working version
   (Vadim Zborovskii, Nicolás Ojeda Bär, report by Vadim Zborovskii, review by
   David Allsopp)
 
+- #12727, #12730: fix bug with value let-rec and labelled applications
+  (Vincent Laviron, review by ???)
+
 OCaml 5.1.1
 -----------
 
