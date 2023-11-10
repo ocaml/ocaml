@@ -95,8 +95,7 @@ let parse_declaration valdecl ~native_repr_args ~native_repr_res =
         fatal_error "Primitive.parse_declaration"
   in
   let noalloc_attribute =
-    Attr_helper.has_no_payload_attribute ["noalloc"; "ocaml.noalloc"]
-      valdecl.pval_attributes
+    Attr_helper.has_no_payload_attribute "noalloc" valdecl.pval_attributes
   in
   if old_style_float &&
      not (List.for_all is_ocaml_repr native_repr_args &&

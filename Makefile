@@ -94,6 +94,8 @@ parsing_SOURCES = $(addprefix parsing/, \
   docstrings.mli docstrings.ml \
   syntaxerr.mli syntaxerr.ml \
   ast_helper.mli ast_helper.ml \
+  ast_iterator.mli ast_iterator.ml \
+  builtin_attributes.mli builtin_attributes.ml \
   camlinternalMenhirLib.mli camlinternalMenhirLib.ml \
   parser.mly \
   lexer.mll \
@@ -101,9 +103,7 @@ parsing_SOURCES = $(addprefix parsing/, \
   parse.mli parse.ml \
   printast.mli printast.ml \
   ast_mapper.mli ast_mapper.ml \
-  ast_iterator.mli ast_iterator.ml \
   attr_helper.mli attr_helper.ml \
-  builtin_attributes.mli builtin_attributes.ml \
   ast_invariants.mli ast_invariants.ml \
   depend.mli depend.ml)
 
@@ -2106,6 +2106,8 @@ ocamlprof_SOURCES = \
   docstrings.mli docstrings.ml \
   syntaxerr.mli syntaxerr.ml \
   ast_helper.mli ast_helper.ml \
+  ast_iterator.mli ast_iterator.ml \
+  builtin_attributes.mli builtin_attributes.ml \
   camlinternalMenhirLib.mli camlinternalMenhirLib.ml \
   parser.mli parser.ml \
   lexer.mli lexer.ml \

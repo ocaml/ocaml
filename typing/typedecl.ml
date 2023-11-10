@@ -1455,7 +1455,6 @@ let transl_exception env sext =
   ext, newenv
 
 let transl_type_exception env t =
-  Builtin_attributes.check_no_alert t.ptyexn_attributes;
   let contructor, newenv =
     Builtin_attributes.warning_scope t.ptyexn_attributes
       (fun () ->
@@ -1473,8 +1472,8 @@ type native_repr_attribute =
 
 let get_native_repr_attribute attrs ~global_repr =
   match
-    Attr_helper.get_no_payload_attribute ["unboxed"; "ocaml.unboxed"]  attrs,
-    Attr_helper.get_no_payload_attribute ["untagged"; "ocaml.untagged"] attrs,
+    Attr_helper.get_no_payload_attribute "unboxed"  attrs,
+    Attr_helper.get_no_payload_attribute "untagged" attrs,
     global_repr
   with
   | None, None, None -> Native_repr_attr_absent
