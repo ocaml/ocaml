@@ -108,7 +108,7 @@ runtime/sak.c            typo.non-ascii
 stdlib/hashbang     typo.white-at-eol typo.missing-lf
 
 testsuite/tests/**                                      typo.missing-header typo.long-line=may
-testsuite/tests/lib-bigarray-2/bigarrf.f                typo.tab
+testsuite/tests/lib-bigarray-2/bigarrf.f                typo.tab linguist-language=Fortran
 testsuite/tests/lib-unix/win-stat/fakeclock.c           typo.missing-header=false
 testsuite/tests/misc-unsafe/almabench.ml                typo.long-line
 testsuite/tests/tool-toplevel/strings.ml                typo.utf8
@@ -156,6 +156,17 @@ tools/magic                       typo.missing-header
 
 /tools/ci/appveyor/appveyor_build.cmd text eol=crlf
 
+Makefile* linguist-language=Makefile
+*.c linguist-language=C
+*.h linguist-language=C
+*.h.in linguist-language=C
+*.hva linguist-language=TeX
+*.ml linguist-language=OCaml
+*.ml? linguist-language=OCaml
+*.mld linguist-documentation
+*.ml*.in linguist-language=OCaml
+*.tbl linguist-language=C
+
 aclocal.m4 typo.tab -linguist-vendored
 configure.ac text eol=lf
 # These scripts are all parts of autoconf and are tagged linguist-generated
@@ -177,7 +188,7 @@ tools/ci/inria/bootstrap/remove-sinh-primitive.patch -text
 tools/check-typo text eol=lf
 tools/check-symbol-names text eol=lf
 tools/msvs-promote-path text eol=lf
-tools/gdb-macros text eol=lf
+tools/gdb-macros text eol=lf linguist-language=GDB
 tools/magic text eol=lf
 tools/ocamlsize text eol=lf
 tools/pre-commit-githook text eol=lf
