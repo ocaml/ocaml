@@ -408,8 +408,12 @@ DEFINE_TSAN_VOLATILE_READ_WRITE(2, 16);
 DEFINE_TSAN_VOLATILE_READ_WRITE(4, 32);
 DEFINE_TSAN_VOLATILE_READ_WRITE(8, 64);
 
-/* We do not treat accesses to 128-bit values as atomic, since it is dubious
-   that they can be treated as such. */
+/* We do not treat accesses to 128-bit (a.k.a. 16-byte) values as atomic, since
+   it is dubious that they can be treated as such. Still, the functions below
+   are needed because, without them, building a C library for OCaml with TSan
+   enabled will fail at the linking step with an unresolved symbol error if it
+   contains volatile accesses to 128-bit values. It is better to have 128-bit
+   volatiles behave silently like plain 128-bit values. */
 
 extern void __tsan_read16(void*);
 extern void __tsan_write16(void*);
