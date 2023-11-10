@@ -13630,10 +13630,9 @@ case $ocaml_cv_cc_vendor in #(
     ocamltest_CPP="$CPP" ;; #(
   msvc-*) :
     CPP="$CC -nologo -EP"
-    ocamltest_CPP="$CPP 2>null" ;; #(
+    ocamltest_CPP="$CPP 2> nul" ;; #(
   *) :
-    #  TODO: why can we not use $CPP in multicore, fix this?
-  CPP="$CC -E -P"
+    CPP="$CC -E -P"
   ocamltest_CPP="$CPP" ;;
 esac
 

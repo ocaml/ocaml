@@ -26,7 +26,9 @@ val binary_modules : Variables.t
 val bytecc_libs : Variables.t
 (** Libraries to link with for bytecode *)
 
-val c_preprocessor : Variables.t
+val cpp : Variables.t
+
+val cppflags : Variables.t
 
 val cc : Variables.t
 

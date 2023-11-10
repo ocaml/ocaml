@@ -38,8 +38,11 @@ let binary_modules = make ("binary_modules",
 let bytecc_libs = make ("bytecc_libs",
   "Libraries to link with for bytecode")
 
-let c_preprocessor = make ("c_preprocessor",
+let cpp = make ("cpp",
   "Command to use to invoke the C preprocessor")
+
+let cppflags = make ("cppflags",
+  "Flags passed to the C preprocessor")
 
 let cc = make ("cc",
   "Command to use to invoke the C compiler")
@@ -247,7 +250,8 @@ let _ = List.iter register_variable
     arch;
     binary_modules;
     bytecc_libs;
-    c_preprocessor;
+    cpp;
+    cppflags;
     cc;
     cflags;
     caml_ld_library_path;

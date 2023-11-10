@@ -1,5 +1,5 @@
 (* TEST
- flags = "-pp '${c_preprocessor}'";
+ flags = "-pp '${cpp} ${cppflags}'";
  ocaml_filetype_flag = "-impl";
  {
    compare_programs = "false";
