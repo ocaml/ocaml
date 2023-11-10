@@ -186,12 +186,10 @@
 
    More details and examples can be found in PR #12681.
 
-  Our current make-do solution is that `__tsan_volatile_readN` performs a dummy
-  call to `__tsan_atomic64_load`, which is sufficient for TSan to view them as
-  relaxed loads; but `__tsan_volatile_writeN` simply calls `__tsan_write8`,
-  i.e., volatile writes are still treated as plain writes. This has the
-  unfortunate consequence that two volatile accesses may be considered racy by
-  TSan, which is a false positive, as mentioned above. */
+   Our current make-do solution is that `__tsan_volatile_readN` performs a
+   dummy call to `__tsan_atomic64_load`, which is sufficient for TSan to view
+   them as relaxed loads; and `__tsan_volatile_writeN` performs a dummy
+   fetch_add of zero. */
 
 
 Caml_inline void caml_tsan_debug_log_pc(const char* msg, uintnat pc)
@@ -366,24 +364,20 @@ Caml_inline bool is_aligned(void *ptr, size_t byte_count)
 
 #include <stdint.h>
 
-extern uint8_t __tsan_atomic8_load(void*, int);
-extern uint16_t __tsan_atomic16_load(void*, int);
-extern uint32_t __tsan_atomic32_load(void*, int);
-extern uint64_t __tsan_atomic64_load(void*, int);
-extern unsigned __int128 __tsan_atomic128_load(void*, int);
-
-/* Make TSan see volatile reads as relaxed atomic loads. Volatile stores are
-   still seen as plain stores. Refer to the detailed comments at the beginning
-   of this file. */
+/* Make TSan see word-aligned volatile accesses as relaxed atomic accesses.
+   Refer to the detailed comments at the beginning of this file. */
 #define DEFINE_TSAN_VOLATILE_READ_WRITE(size, bitsize)                         \
                                                                                \
 extern void __tsan_read##size(void*);                                          \
 extern void __tsan_write##size(void*);                                         \
                                                                                \
+extern uint##bitsize##_t __tsan_atomic##bitsize##_load(void*, int);            \
+extern uint##bitsize##_t __tsan_atomic##bitsize##_fetch_add(                   \
+    volatile void*, uint##bitsize##_t, memory_order);                          \
+                                                                               \
 CAMLreally_no_tsan void __tsan_volatile_read##size(void *ptr)                  \
 {                                                                              \
-  const bool is_atomic = size <= sizeof(long long) &&                          \
-             is_aligned(ptr, 8);                                               \
+  const bool is_atomic = size <= sizeof(long long) && is_aligned(ptr, 8);      \
   if (is_atomic)                                                               \
     __tsan_atomic##bitsize##_load(ptr, memory_order_relaxed);                  \
   else                                                                         \
@@ -395,7 +389,14 @@ CAMLreally_no_tsan void __tsan_unaligned_volatile_read##size(void *ptr)        \
 }                                                                              \
 CAMLreally_no_tsan void __tsan_volatile_write##size(void *ptr)                 \
 {                                                                              \
-  __tsan_write##size(ptr);                                                     \
+  const bool is_atomic = size <= sizeof(long long) && is_aligned(ptr, 8);      \
+  if (is_atomic) {                                                             \
+    /* Signal a relaxed atomic store to TSan. We don't have access to the      \
+       actual value written so we do a fetch_add of 0 which has the effect of  \
+       signaling a relaxed store without changing the value. */                \
+    __tsan_atomic##bitsize##_fetch_add(ptr, 0, memory_order_relaxed);          \
+  } else                                                                       \
+    __tsan_write##size(ptr);                                                   \
 }                                                                              \
 CAMLreally_no_tsan void __tsan_unaligned_volatile_write##size(void *ptr)       \
 {                                                                              \
@@ -406,4 +407,30 @@ DEFINE_TSAN_VOLATILE_READ_WRITE(1, 8);
 DEFINE_TSAN_VOLATILE_READ_WRITE(2, 16);
 DEFINE_TSAN_VOLATILE_READ_WRITE(4, 32);
 DEFINE_TSAN_VOLATILE_READ_WRITE(8, 64);
-DEFINE_TSAN_VOLATILE_READ_WRITE(16, 128);
+
+/* We do not treat accesses to 128-bit (a.k.a. 16-byte) values as atomic, since
+   it is dubious that they can be treated as such. Still, the functions below
+   are needed because, without them, building a C library for OCaml with TSan
+   enabled will fail at the linking step with an unresolved symbol error if it
+   contains volatile accesses to 128-bit values. It is better to have 128-bit
+   volatiles behave silently like plain 128-bit values. */
+
+extern void __tsan_read16(void*);
+extern void __tsan_write16(void*);
+
+CAMLreally_no_tsan void __tsan_volatile_read16(void *ptr)
+{
+    __tsan_read16(ptr);
+}
+CAMLreally_no_tsan void __tsan_unaligned_volatile_read16(void *ptr)
+{
+  __tsan_read16(ptr);
+}
+CAMLreally_no_tsan void __tsan_volatile_write16(void *ptr)
+{
+    __tsan_write16(ptr);
+}
+CAMLreally_no_tsan void __tsan_unaligned_volatile_write16(void *ptr)
+{
+  __tsan_write16(ptr);
+}
