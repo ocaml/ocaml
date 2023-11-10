@@ -377,8 +377,7 @@ extern uint##bitsize##_t __tsan_atomic##bitsize##_fetch_add(                   \
                                                                                \
 CAMLreally_no_tsan void __tsan_volatile_read##size(void *ptr)                  \
 {                                                                              \
-  const bool is_atomic = size <= sizeof(long long) &&                          \
-             is_aligned(ptr, 8);                                               \
+  const bool is_atomic = size <= sizeof(long long) && is_aligned(ptr, 8);      \
   if (is_atomic)                                                               \
     __tsan_atomic##bitsize##_load(ptr, memory_order_relaxed);                  \
   else                                                                         \
@@ -390,8 +389,7 @@ CAMLreally_no_tsan void __tsan_unaligned_volatile_read##size(void *ptr)        \
 }                                                                              \
 CAMLreally_no_tsan void __tsan_volatile_write##size(void *ptr)                 \
 {                                                                              \
-  const bool is_atomic = size <= sizeof(long long) &&                          \
-             is_aligned(ptr, 8);                                               \
+  const bool is_atomic = size <= sizeof(long long) && is_aligned(ptr, 8);      \
   if (is_atomic) {                                                             \
     /* Signal a relaxed atomic store to TSan. We don't have access to the      \
        actual value written so we do a fetch_add of 0 which has the effect of  \
