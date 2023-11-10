@@ -148,7 +148,7 @@ tools/magic                       typo.missing-header
 *.sh text eol=lf
 *.sh.in text eol=lf
 *.awk text eol=lf
-*.m4 text eol=lf
+*.m4 text eol=lf linguist-language=M4Sugar
 
 # ocamltest hooks which are used in the testsuite
 *.check-program-output text eol=lf
@@ -167,7 +167,7 @@ Makefile* linguist-language=Makefile
 *.ml*.in linguist-language=OCaml
 *.tbl linguist-language=C
 
-aclocal.m4 typo.tab -linguist-vendored
+aclocal.m4 typo.tab -linguist-vendored linguist-language=M4Sugar
 configure.ac text eol=lf
 # These scripts are all parts of autoconf and are tagged linguist-generated
 # to suppress inclusion in PR diffs.
@@ -178,7 +178,7 @@ build-aux/install-sh linguist-generated text eol=lf
 build-aux/ltmain.sh linguist-generated text eol=lf
 build-aux/missing linguist-generated text eol=lf
 build-aux/*.m4 linguist-vendored
-build-aux/ocaml_version.m4 -linguist-vendored
+build-aux/ocaml_version.m4 -linguist-vendored linguist-language=M4Sugar
 ocamltest/OCAMLTEST.org typo.long-line=may typo.missing-header
 stdlib/Compflags text eol=lf
 stdlib/hashbang -text
