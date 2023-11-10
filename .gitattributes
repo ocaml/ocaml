@@ -156,7 +156,7 @@ tools/magic                       typo.missing-header
 
 /tools/ci/appveyor/appveyor_build.cmd text eol=crlf
 
-aclocal.m4 typo.tab
+aclocal.m4 typo.tab -linguist-vendored
 configure.ac text eol=lf
 # These scripts are all parts of autoconf and are tagged linguist-generated
 # to suppress inclusion in PR diffs.
@@ -166,6 +166,8 @@ build-aux/config.sub linguist-generated text eol=lf
 build-aux/install-sh linguist-generated text eol=lf
 build-aux/ltmain.sh linguist-generated text eol=lf
 build-aux/missing linguist-generated text eol=lf
+build-aux/*.m4 linguist-vendored
+build-aux/ocaml_version.m4 -linguist-vendored
 ocamltest/OCAMLTEST.org typo.long-line=may typo.missing-header
 stdlib/Compflags text eol=lf
 stdlib/hashbang -text
