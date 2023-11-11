@@ -240,7 +240,7 @@ META
 /runtime/caml/m.h
 /runtime/caml/s.h
 /runtime/primitives
-/runtime/primitives.new
+/runtime/primitives*.new
 /runtime/prims.c
 /runtime/caml/exec.h
 /runtime/caml/opnames.h
