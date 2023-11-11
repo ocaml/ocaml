@@ -577,15 +577,33 @@ let rec expression : Typedtree.expression -> term_judg =
       *)
       expression arg << Guard
     | Texp_apply (e, args)  ->
-        let arg (_, eo) = option expression eo in
-        let app_mode = if List.exists is_abstracted_arg args
-          then (* see the comment on Texp_apply in typedtree.mli;
-                  the non-abstracted arguments are bound to local
-                  variables, which corresponds to a Guard mode. *)
-            Guard
-          else Dereference
+        (* [args] may contain omitted arguments, corresponding to labels in
+           the function's type that were not passed in the actual application.
+           The arguments before the first omitted argument are passed to the
+           function immediately, so they are dereferenced. The arguments after
+           the first omitted one are stored in a closure, so guarded.
+           The function itself is called immediately (dereferenced) if there
+           is at least one argument before the first omitted one.
+           On the other hand, if the first argument is omitted then the
+           function is stored in the closure without being called. *)
+        let rec split_args ~has_omitted_arg = function
+          | [] -> [], []
+          | (_, None) :: rest -> split_args ~has_omitted_arg:true rest
+          | (_, Some arg) :: rest ->
+            let applied, delayed = split_args ~has_omitted_arg rest in
+            if has_omitted_arg
+            then applied, arg :: delayed
+            else arg :: applied, delayed
         in
-        join [expression e; list arg args] << app_mode
+        let applied, delayed = split_args ~has_omitted_arg:false args in
+        let function_mode =
+          match applied with
+          | [] -> Guard
+          | _ :: _ -> Dereference
+        in
+        join [expression e << function_mode;
+              list expression applied << Dereference;
+              list expression delayed << Guard]
     | Texp_tuple exprs ->
       list expression exprs << Guard
     | Texp_array exprs ->
