@@ -586,22 +586,24 @@ let rec expression : Typedtree.expression -> term_judg =
            is at least one argument before the first omitted one.
            On the other hand, if the first argument is omitted then the
            function is stored in the closure without being called. *)
-        let rec split_args before_omitted = function
-          | (_, None) :: rest -> before_omitted, rest
-          | ((_, Some _) as arg) :: rest ->
-            split_args (arg :: before_omitted) rest
-          | [] -> before_omitted, []
+        let rec split_args ~has_omitted_arg = function
+          | [] -> [], []
+          | (_, None) :: rest -> split_args ~has_omitted_arg:true rest
+          | (_, Some arg) :: rest ->
+            let applied, delayed = split_args ~has_omitted_arg rest in
+            if has_omitted_arg
+            then applied, arg :: delayed
+            else arg :: applied, delayed
         in
-        let dereferenced, guarded = split_args [] args in
-        let arg (_, eo) = option expression eo in
+        let applied, delayed = split_args ~has_omitted_arg:false args in
         let function_mode =
-          match dereferenced with
+          match applied with
           | [] -> Guard
           | _ :: _ -> Dereference
         in
         join [expression e << function_mode;
-              list arg dereferenced << Dereference;
-              list arg guarded << Guard]
+              list expression applied << Dereference;
+              list expression delayed << Guard]
     | Texp_tuple exprs ->
       list expression exprs << Guard
     | Texp_array exprs ->
