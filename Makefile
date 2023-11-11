@@ -1251,14 +1251,17 @@ runtime/ld.conf: $(ROOTDIR)/Makefile.config
 	$(V_GEN)echo "$(STUBLIBDIR)" > $@ && \
 	echo "$(LIBDIR)" >> $@
 
+PRIMITIVES_NEW := runtime/primitives$(shell echo "$$PPID").new
+
 # To speed up builds, we avoid changing "primitives" when files
 # containing primitives change but the primitives table does not
 runtime/primitives: runtime/gen_primitives.sh \
   $(shell runtime/gen_primitives.sh $(runtime_BYTECODE_C_SOURCES) \
-                    > runtime/primitives.new; \
-                    cmp -s runtime/primitives runtime/primitives.new || \
-                    echo runtime/primitives.new)
-	$(V_GEN)cp runtime/primitives.new $@
+                    > $(PRIMITIVES_NEW); \
+                    { cmp -s runtime/primitives $(PRIMITIVES_NEW) && \
+                        rm -f $(PRIMITIVES_NEW) ; } || \
+                    echo $(runtime_BYTECODE_C_SOURCES))
+	$(V_GEN)mv $(PRIMITIVES_NEW) $@
 
 runtime/prims.c: runtime/gen_primsc.sh runtime/primitives
 	$(V_GEN)runtime/gen_primsc.sh \
@@ -1488,7 +1491,7 @@ clean::
 	rm -f $(addprefix runtime/, ocamlrun ocamlrund ocamlruni ocamlruns sak)
 	rm -f $(addprefix runtime/, \
 	  ocamlrun.exe ocamlrund.exe ocamlruni.exe ocamlruns.exe sak.exe)
-	rm -f runtime/primitives runtime/primitives.new runtime/prims.c \
+	rm -f runtime/primitives runtime/primitives*.new runtime/prims.c \
 	  $(runtime_BUILT_HEADERS)
 	rm -f runtime/domain_state.inc
 	rm -rf $(DEPDIR)
