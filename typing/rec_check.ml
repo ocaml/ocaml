@@ -583,8 +583,9 @@ let rec expression : Typedtree.expression -> term_judg =
            function immediately, so they are dereferenced. The arguments after
            the first omitted one are stored in a closure, so guarded.
            The function itself is called immediately (dereferenced) if there
-           is at least one argument before the first omitted one, stored in
-           the closure (guarded) otherwise. *)
+           is at least one argument before the first omitted one.
+           On the other hand, if the first argument is omitted then the
+           function is stored in the closure without being called. *)
         let rec split_args before_omitted = function
           | (_, None) :: rest -> before_omitted, rest
           | ((_, Some _) as arg) :: rest ->
