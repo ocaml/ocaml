@@ -106,7 +106,11 @@ Caml_inline bool frame_has_debug(frame_descr *d) {
   (((uintnat)(addr) >> 3) & (mask))
 
 void caml_init_frame_descriptors(void);
+
 void caml_register_frametables(void **tables, int ntables);
+/* Note: it clobbers the content of the array of frametables */
+void caml_unregister_frametables(void **tables, int ntables);
+
 
 /* a linked list of frametables */
 typedef struct caml_frametable_list {
@@ -127,6 +131,7 @@ frame_descr* caml_find_frame_descr(caml_frame_descrs *fds, uintnat pc);
 frame_descr * caml_next_frame_descriptor
     (caml_frame_descrs * fds, uintnat * pc, char ** sp,
      struct stack_info* stack);
+
 
 #endif /* CAML_INTERNALS */
 

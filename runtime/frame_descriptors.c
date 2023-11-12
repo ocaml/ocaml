@@ -112,6 +112,10 @@ static int capacity(caml_frame_descrs table) {
   return capacity;
 }
 
+/* placeholder entry equivalent to a free place (NULL) */
+/* retaddr = disjoint from any valid return address; */
+static frame_descr dummy_descr = { (uintnat) &dummy_descr };
+
 static void fill_hashtable(
   caml_frame_descrs *table, caml_frametable_list *new_frametables)
 {
@@ -121,8 +125,10 @@ static void fill_hashtable(
     frame_descr * d = (frame_descr *)(tbl + 1);
     for (intnat j = 0; j < len; j++) {
       uintnat h = Hash_retaddr(d->retaddr, table->mask);
-      while (atomic_load_relaxed(table->descriptors + h) != NULL) {
+      frame_descr * e = atomic_load_relaxed(table->descriptors + h);
+      while (e != NULL && e != &dummy_descr) {
         h = (h+1) & table->mask;
+        e = atomic_load_relaxed(table->descriptors + h);
       }
       atomic_store_relaxed(table->descriptors + h, d);
       d = next_frame_descr(d);
@@ -158,13 +164,15 @@ static void realloc_frame_descriptors(
 }
 
 /* the global shared hashtable of frame_descr */
-/* each entry is an atomic pointers or a free place NULL */
+/* each entry is an atomic pointers */
+/* free places can be either NULL or the dummy entry */
 /* reallocation is protected by STW sections */
 /* a mutex makes concurrent modifications impossible */
 /* concurrent read/write are allowed since each intermediate
    modified state is a valid state from a reading point of view */
 static caml_frame_descrs current_frame_descrs = { 0, -1, NULL, NULL };
 static caml_plat_mutex frame_mutex = PTHREAD_MUTEX_INITIALIZER;
+static atomic_uintnat frame_readers = ATOMIC_UINTNAT_INIT(0);
 
 static caml_frametable_list *cons(
   intnat *frametable, caml_frametable_list *tl)
@@ -267,24 +275,108 @@ void caml_register_frametables(void ** frametables, int ntables)
   add_frame_descriptors(&current_frame_descrs, new_frametables);
 }
 
+static void invalid_entry(caml_frame_descrs * fds, frame_descr * e)
+{
+  frame_descr * d;
+  uintnat h;
+
+  h = Hash_retaddr(e->retaddr, fds->mask);
+  while (1) {
+    d = atomic_load_relaxed(fds->descriptors + h);
+    if (d == e) {
+      atomic_store_relaxed(fds->descriptors + h, &dummy_descr);
+      /* placeholder that should not disturb caml_find_frame_descr */
+      return;
+    }
+    h = (h+1) & fds->mask;
+  }
+}
+
+static void remove_frame_descriptors(
+  caml_frame_descrs * fds, void ** frametables, int ntables)
+{
+  intnat * frametable, len, decrease = 0;
+  frame_descr * descr;
+  caml_frametable_list ** previous;
+
+  caml_plat_lock(&frame_mutex);
+
+  for (int i = 0; i < ntables; i++) {
+    frametable = frametables[i];
+    len = *frametable;
+    descr = (frame_descr *)(frametable + 1);
+    for (intnat j = 0; j < len; j++) {
+      invalid_entry(fds, descr);
+      descr = next_frame_descr(descr);
+    }
+    decrease += len;
+  }
+
+  fds->num_descr -= decrease;
+
+  previous = &(fds->frametables);
+
+  iter_list(fds->frametables, current) {
+  resume:
+    for (int i = 0; i < ntables; i++) {
+      if (current->frametable == frametables[i]) {
+	*previous = current->next;
+	caml_stat_free(current);
+	ntables--;
+	if (ntables == 0) goto release;
+	current = *previous;
+	frametables[i] = frametables[ntables];
+	goto resume;
+      }
+    }
+    previous = &(current->next);
+  }
+
+ release:
+  caml_plat_unlock(&frame_mutex);
+
+  /* wait for all readers to finish their work */
+  /* this is to completely remove the worst ever "possible" scenario
+     where a reader got the old value of the frame_descr address,
+     is interrupted before checking the ret_addr field, to finally
+     access the field while the memory block has now been freed by
+     the caller of caml_unregister_frametables function... */
+  /* still, concurrent read / remove must be extremely rare in practice
+     so we should not be waiting too long */
+  SPIN_WAIT {
+    uintnat v = atomic_load_acquire(&frame_readers);
+    if (CAMLlikely(v == 0)) break;
+  }
+}
+
+void caml_unregister_frametables(void ** frametables, int ntables)
+{
+  remove_frame_descriptors(&current_frame_descrs, frametables, ntables);
+}
+
 caml_frame_descrs* caml_get_frame_descrs(void)
 {
   return &current_frame_descrs;
 }
 
-frame_descr* caml_find_frame_descr(caml_frame_descrs *fds, uintnat pc)
+frame_descr* caml_find_frame_descr(caml_frame_descrs * fds, uintnat pc)
 {
   frame_descr * d;
   uintnat h;
 
   atomic_thread_fence(memory_order_acquire);
 
+  atomic_fetch_add(&frame_readers, 1);
+
   h = Hash_retaddr(pc, fds->mask);
   while (1) {
     d = atomic_load_relaxed(fds->descriptors + h);
-    if (d == 0) return NULL; /* can happen if some code compiled without -g */
+    if (d == NULL) break; /* can happen if some code compiled without -g */
     if (d->retaddr == pc) break;
     h = (h+1) & fds->mask;
   }
+
+  atomic_fetch_sub(&frame_readers, 1);
+
   return d;
 }
