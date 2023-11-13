@@ -273,6 +273,19 @@ CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
   }
 }
 
+/* This function is analogous to [caml_adjust_gc_speed]. When the
+   accumulated sum of [res/max] values reaches 1, a minor GC is
+   triggered.
+*/
+CAMLexport void caml_adjust_minor_gc_speed (mlsize_t res, mlsize_t max)
+{
+  if (max == 0) max = 1;
+  Caml_state->extra_heap_resources_minor += (double) res / (double) max;
+  if (Caml_state->extra_heap_resources_minor > 1.0) {
+    caml_request_minor_gc ();
+  }
+}
+
 /* You must use [caml_intialize] to store the initial value in a field of a
    block, unless you are sure the value is not a young block, in which case a
    plain assignment would do.
