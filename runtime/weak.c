@@ -180,14 +180,6 @@ static void clean_field (value e, mlsize_t offset)
     do_check_key_clean(e, offset);
 }
 
-CAMLno_tsan /* This function performs volatile writes, which we consider to be
-               non-racy, but TSan reports data races, so we never instrument it
-               with TSan. Refer to section 3.2 of comment in tsan.c. */
-#if defined(WITH_THREAD_SANITIZER)
-Caml_noinline /* Unfortunately, Clang disregards the no_tsan attribute on
-                 inlined functions, so we prevent inlining of this one when
-                 tsan is enabled. */
-#endif
 static void do_set (value e, mlsize_t offset, value v)
 {
   if (Is_block(v) && Is_young(v)) {
