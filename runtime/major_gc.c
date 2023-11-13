@@ -980,9 +980,11 @@ static void mark_slice_darken(struct mark_stack* stk, value child,
   }
 }
 
-CAMLno_tsan /* Loads from locations in the OCaml heap can cause false alarms in
-               TSan when these locations are concurrently written to by
-               caml_modify (see comment inside the function). */
+static Caml_noinline CAMLno_tsan
+value volatile_load_uninstrumented(volatile value* p) {
+  return *p;
+}
+
 Caml_noinline static intnat do_some_marking(struct mark_stack* stk,
                                             intnat budget) {
   prefetch_buffer_t pb = { .enqueued = 0, .dequeued = 0,
@@ -1079,9 +1081,9 @@ again:
 
       /* This load may race with a concurrent caml_modify. It does not
          constitute a data race as this is a volatile load. However, TSan will
-         wrongly see a race here (see section 3.2 of comment in tsan.c). Hence
-         the TSan-silencing of the present function. */
-      value child = *me.start;
+         wrongly see a race here (see section 3.2 of comment in tsan.c). We
+         therefore make sure it is never TSan-instrumented. */
+      value child = volatile_load_uninstrumented(me.start);
 
       budget--;
       if (Is_markable(child)) {
