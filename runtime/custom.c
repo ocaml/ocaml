@@ -32,42 +32,55 @@ uintnat caml_custom_major_ratio = Custom_major_ratio_def;
 uintnat caml_custom_minor_ratio = Custom_minor_ratio_def;
 uintnat caml_custom_minor_max_bsz = Custom_minor_max_bsz_def;
 
+mlsize_t caml_custom_get_max_major (void)
+{
+  /* The major ratio is a percentage relative to the major heap size.
+     A complete GC cycle will be done every time 2/3 of that much
+     memory is allocated for blocks in the major heap.  Assuming
+     constant allocation and deallocation rates, this means there are
+     at most [M/100 * major-heap-size] bytes of floating garbage at
+     any time.  The reason for a factor of 2/3 (or 1.5) is, roughly
+     speaking, because the major GC takes 1.5 cycles (previous cycle +
+     marking phase) before it starts to deallocate dead blocks
+     allocated during the previous cycle.  [heap_size / 150] is really
+     [heap_size * (2/3) / 100] (but faster). */
+  return caml_heap_size(Caml_state->shared_heap) / 150
+         * caml_custom_major_ratio;
+}
+
+/* [mem] is an amount of out-of-heap resources, in the same units as
+   [max_major] and [max_minor]. When the cumulated amount of such
+   resources reaches [max_minor] (for resources held by the minor
+   heap) we do a minor collection; when it reaches [max_major] (for
+   resources held by the major heap), we guarantee that a major cycle
+   is done.
+
+   If [max_major] is 0, then [mem] is a number of bytes and the actual
+   limit is [caml_custom_get_max_major ()] computed at the
+   time when the custom block is promoted to the major heap.
+*/
 static value alloc_custom_gen (const struct custom_operations * ops,
                                uintnat bsz,
                                mlsize_t mem,
                                mlsize_t max_major,
-                               mlsize_t mem_minor,
                                mlsize_t max_minor)
 {
   mlsize_t wosize;
   CAMLparam0();
   CAMLlocal1(result);
 
-  /* [mem] is the total amount of out-of-heap memory, [mem_minor] is how much
-     of it should be counted against [max_minor]. */
-  CAMLassert (mem_minor <= mem);
-
   wosize = 1 + (bsz + sizeof(value) - 1) / sizeof(value);
-  if (wosize <= Max_young_wosize) {
+  if (wosize <= Max_young_wosize && mem <= caml_custom_minor_max_bsz) {
     result = caml_alloc_small(wosize, Custom_tag);
     Custom_ops_val(result) = ops;
     if (ops->finalize != NULL || mem != 0) {
-      if (mem > mem_minor) {
-        caml_adjust_gc_speed (mem - mem_minor, max_major);
-      }
-      /* The remaining [mem_minor] will be counted if the block survives a
-         minor GC */
+      /* Record the extra resources in case the block gets promoted. */
       add_to_custom_table (&Caml_state->minor_tables->custom, result,
                            mem, max_major);
       /* Keep track of extra resources held by custom block in
          minor heap. */
-      if (mem_minor != 0) {
-        if (max_minor == 0) max_minor = 1;
-        Caml_state->extra_heap_resources_minor +=
-          (double) mem_minor / (double) max_minor;
-        if (Caml_state->extra_heap_resources_minor > 1.0) {
-          caml_request_minor_gc ();
-        }
+      if (mem != 0) {
+        caml_adjust_minor_gc_speed (mem, max_minor);
       }
     }
   } else {
@@ -79,36 +92,27 @@ static value alloc_custom_gen (const struct custom_operations * ops,
   CAMLreturn(result);
 }
 
+Caml_inline mlsize_t get_max_minor (void)
+{
+  return
+    Bsize_wsize (Caml_state->minor_heap_wsz) / 100 * caml_custom_minor_ratio;
+}
+
 CAMLexport value caml_alloc_custom(const struct custom_operations * ops,
                                    uintnat bsz,
                                    mlsize_t mem,
                                    mlsize_t max)
 {
-  return alloc_custom_gen (ops, bsz, mem, max, mem, max);
+  mlsize_t max_major = max;
+  mlsize_t max_minor = max == 0 ? get_max_minor() : max;
+  return alloc_custom_gen (ops, bsz, mem, max_major, max_minor);
 }
 
 CAMLexport value caml_alloc_custom_mem(const struct custom_operations * ops,
                                        uintnat bsz,
                                        mlsize_t mem)
 {
-
-  mlsize_t mem_minor =
-    mem < caml_custom_minor_max_bsz ? mem : caml_custom_minor_max_bsz;
-  mlsize_t max_major =
-    /* The major ratio is a percentage relative to the major heap size.
-       A complete GC cycle will be done every time 2/3 of that much memory
-       is allocated for blocks in the major heap.  Assuming constant
-       allocation and deallocation rates, this means there are at most
-       [M/100 * major-heap-size] bytes of floating garbage at any time.
-       The reason for a factor of 2/3 (or 1.5) is, roughly speaking, because
-       the major GC takes 1.5 cycles (previous cycle + marking phase) before
-       it starts to deallocate dead blocks allocated during the previous cycle.
-       [heap_size / 150] is really [heap_size * (2/3) / 100] (but faster). */
-    caml_heap_size(Caml_state->shared_heap) / 150 * caml_custom_major_ratio;
-  mlsize_t max_minor =
-    Bsize_wsize (Caml_state->minor_heap_wsz) / 100 * caml_custom_minor_ratio;
-  value v = alloc_custom_gen (ops, bsz, mem, max_major, mem_minor, max_minor);
-  return v;
+  return alloc_custom_gen (ops, bsz, mem, 0, get_max_minor());
 }
 
 struct custom_operations_list {

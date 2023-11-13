@@ -59,6 +59,7 @@ let lost_events domain_id num =
 let epochs = 20
 
 let () =
+    Gc.full_major ();
     let list_ref = ref [] in
     start ();
     let cursor = create_cursor None in

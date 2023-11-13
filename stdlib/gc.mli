@@ -233,13 +233,11 @@ type control =
 
     custom_minor_max_size : int;
     (** Maximum amount of out-of-heap memory for each custom value
-        allocated in the minor heap. When a custom value is allocated
-        on the minor heap and holds more than this many bytes, only
-        this value is counted against [custom_minor_ratio] and the
-        rest is directly counted against [custom_major_ratio].
+        allocated in the minor heap. Custom values that hold more
+        than this many bytes are allocated on the major heap.
         Note: this only applies to values allocated with
         [caml_alloc_custom_mem] (e.g. bigarrays).
-        Default: 8192 bytes.
+        Default: 70000 bytes.
         @since 4.08 *)
   }
 (** The GC parameters are given as a [control] record.  Note that

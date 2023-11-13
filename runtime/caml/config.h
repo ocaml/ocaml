@@ -258,7 +258,7 @@ typedef uint64_t uintnat;
 /* Default setting for maximum size of custom objects counted as garbage
    in the minor heap.
    Documented in gc.mli */
-#define Custom_minor_max_bsz_def 8192
+#define Custom_minor_max_bsz_def 70000
 
 /* Minimum amount of work to do in a major GC slice. */
 #define Major_slice_work_min 512

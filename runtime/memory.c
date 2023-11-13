@@ -21,6 +21,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include "caml/config.h"
+#include "caml/custom.h"
 #include "caml/misc.h"
 #include "caml/fail.h"
 #include "caml/memory.h"
@@ -186,15 +187,34 @@ CAMLexport void caml_free_dependent_memory (mlsize_t nbytes)
    this time.
    Note that only [res/max] is relevant.  The units (and kind of
    resource) can change between calls to [caml_adjust_gc_speed].
+
+   If [max] = 0, then we use a number proportional to the major heap
+   size and [caml_custom_major_ratio]. In this case, [mem] should
+   be a number of bytes and the trade-off between GC work and space
+   overhead is under the control of the user through
+   [caml_custom_major_ratio].
 */
 CAMLexport void caml_adjust_gc_speed (mlsize_t res, mlsize_t max)
 {
-  if (max == 0) max = 1;
+  if (max == 0) max = caml_custom_get_max_major ();
   if (res > max) res = max;
   Caml_state->extra_heap_resources += (double) res / (double) max;
   if (Caml_state->extra_heap_resources > 0.2){
     CAML_EV_COUNTER (EV_C_REQUEST_MAJOR_ADJUST_GC_SPEED, 1);
     caml_request_major_slice (1);
+  }
+}
+
+/* This function is analogous to [caml_adjust_gc_speed]. When the
+   accumulated sum of [res/max] values reaches 1, a minor GC is
+   triggered.
+*/
+CAMLexport void caml_adjust_minor_gc_speed (mlsize_t res, mlsize_t max)
+{
+  if (max == 0) max = 1;
+  Caml_state->extra_heap_resources_minor += (double) res / (double) max;
+  if (Caml_state->extra_heap_resources_minor > 1.0) {
+    caml_request_minor_gc ();
   }
 }
 

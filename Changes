@@ -28,6 +28,11 @@ OCaml 5.1.1
   (Stephen Dolan, Nick Barnes and Mark Shinwell,
    review by Vincent Laviron and Sébastien Hinderer)
 
+- #12318: GC: simplify the meaning of custom_minor_max_size: blocks with
+  out-of-heap memory above this limit are now allocated directly in
+  the major heap.
+  (Damien Doligez, report by Stephen Dolan, review by Gabriel Scherer)
+
 OCaml 5.1.0 (14 September 2023)
 -------------------------------
 
