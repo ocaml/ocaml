@@ -38,6 +38,7 @@ CAMLextern value caml_alloc_shr_noexc(mlsize_t wosize, tag_t);
 CAMLextern value caml_alloc_shr_reserved (mlsize_t, tag_t, reserved_t);
 
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
+CAMLextern void caml_adjust_minor_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t bsz);
 CAMLextern void caml_free_dependent_memory (mlsize_t bsz);
 CAMLextern void caml_modify (volatile value *, value);
