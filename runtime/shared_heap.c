@@ -531,7 +531,6 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
   return work;
 }
 
-CAMLno_tsan /* Disable TSan reports from this function (see #11040) */
 static intnat large_alloc_sweep(struct caml_heap_state* local) {
   value* p;
   header_t hd;
