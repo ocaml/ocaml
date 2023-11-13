@@ -292,9 +292,9 @@ CAMLexport void caml_adjust_minor_gc_speed (mlsize_t res, mlsize_t max)
 
    [caml_initialize] never calls the GC, so you may call it while a block is
    unfinished (i.e. just after a call to [caml_alloc_shr].) */
-CAMLreally_no_tsan /* Avoid instrumenting initializing writes with TSan: they
-                      should never cause data races (albeit for reasons outside
-                      of the C11 memory model). */
+CAMLno_tsan /* Avoid instrumenting initializing writes with TSan: they should
+               never cause data races (albeit for reasons outside of the C11
+               memory model). */
 CAMLexport CAMLweakdef void caml_initialize (volatile value *fp, value val)
 {
 #ifdef DEBUG

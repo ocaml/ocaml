@@ -155,8 +155,7 @@ where 0 <= R <= 31 is HEADER_RESERVED_BITS, set with the
 #define Hd_with_color(hd, color) (((hd) &~ HEADER_COLOR_MASK) | (color))
 
 #define Hp_atomic_val(val) ((atomic_uintnat *)(val) - 1)
-CAMLno_tsan /* Disable TSan instrumentation for performance. */
-Caml_inline header_t Hd_val(value val)
+CAMLno_tsan_for_perf Caml_inline header_t Hd_val(value val)
 {
   return atomic_load_explicit(Hp_atomic_val(val), memory_order_relaxed);
 }
