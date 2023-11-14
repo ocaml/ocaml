@@ -1618,7 +1618,7 @@ void caml_interrupt_all_signal_safe(void)
    races. */
 void caml_reset_young_limit(caml_domain_state * dom_st)
 {
-  CAMLassert ((uintnat)dom_st->young_ptr > (uintnat)dom_st->young_trigger);
+  CAMLassert ((uintnat)dom_st->young_ptr >= (uintnat)dom_st->young_trigger);
   /* An interrupt might have been queued in the meanwhile; the
      atomic_exchange achieves the proper synchronisation with the
      reads that follow (an atomic_store is not enough). */
