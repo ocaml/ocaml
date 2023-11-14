@@ -5238,7 +5238,7 @@ OCaml 4.09.0 (19 September 2019)
 - #2112: Fix Thread.yield unfairness with busy threads yielding to each
   other.
   (Andrew Hunter, review by Jacques-Henri Jourdan, Spiros Eliopoulos, Stephen
-  Weeks, & Mark Shinwell)
+  Weeks, Mark Shinwell)
 
 - #7903, #2306: Make Thread.delay interruptible by signals again
   (Xavier Leroy, review by Jacques-Henri Jourdan and Edwin Török)
@@ -7994,7 +7994,7 @@ OCaml 4.05.0 (13 Jul 2017):
 
 - #7279, #710: `Weak.get_copy` `Ephemeron.*_copy` doesn't copy
   custom blocks anymore
-  (François Bobot, Alain Frisch, bug reported by Martin R. Neuhäußer,
+  (François Bobot, Alain Frisch, report by Martin R. Neuhäußer,
   review by Thomas Braibant and Damien Doligez)
 
 * #7500, #1081: Remove Uchar.dump
@@ -9100,9 +9100,9 @@ OCaml 4.03.0 (25 Apr 2016):
   (Alain Frisch)
 
 - #6943: native-code generator for POWER/PowerPC 64 bits, both in
-  big-endian (ppc64) and little-endian (ppc64le) configuration.
-  (Xavier Leroy, with inspiration from RedHat's unofficial ppc64 and ppc64le
-  ports)
+  big-endian (ppc64) and little-endian (ppc64le) configuration,
+  inspired from RedHat's unofficial ppc64 and ppc64le ports
+  (Xavier Leroy)
 
 - #6979: better code generation in x86-32 backend for copying floats to
   the stack
@@ -9817,7 +9817,7 @@ OCaml 4.03.0 (25 Apr 2016):
 - #220: minor -dsource error on recursive modules
   (Hongbo Zhang)
 
-- #228: fix a dangling internal pointer in (bytecode )debug_info
+- #228: fix a dangling internal pointer in (bytecode) debug_info
   (Gabriel Scherer and Mark Shinwell and Xavier Leroy)
 
 - #233: Make CamlinternalMod.init_mod robust to optimization
@@ -10169,7 +10169,7 @@ Bug fixes:
   (Jacques Garrigue, report by David Sheets)
 - #6768: Typechecker overflow the stack on cyclic type
   (Jacques Garrigue, report by user 'darktenaibre')
-- #6770: (duplicate of #6686)
+- #6770: duplicate of #6686
 - #6772: asmrun/signals_asm.c doesn't compile on NetBSD/i386
   (Kenji Tokudome)
 - #6775: Digest.file leaks file descriptor on error
@@ -11115,7 +11115,6 @@ Tools:
   (Stefan Monnier)
 - #6030: Improve performance of -annot
   (Guillaume Melquiond, Alain Frisch)
-
 
 OCaml 4.00.1 (5 Oct 2012):
 --------------------------
@@ -13628,7 +13627,7 @@ Objective Caml 2.00 (19 Aug 1998):
   - Check for overflow when generating the tables for the automaton.
   - Error messages in generated .ml file now point to .mll source.
   - Added "let <id> = <regexp>" to name regular expressions
-    (inspired by Christian Lindig's patch).
+    (inspired by Christian Lindig).
 
 * ocamlyacc:
   - Better error recovery in presence of EOF tokens.
