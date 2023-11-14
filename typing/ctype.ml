@@ -995,46 +995,42 @@ let correct_levels ty =
 
 (* Only generalize the type ty0 in ty *)
 let limited_generalize ty0 ty =
-  let graph = Hashtbl.create 17 in
-  let idx = ref lowest_level in
+  let graph = TypeHash.create 17 in
   let roots = ref [] in
 
   let rec inverse pty ty =
-    let level = get_level ty in
-    if (level > !current_level) || (level = generic_level) then begin
-      decr idx;
-      Hashtbl.add graph !idx (ty, ref pty);
-      if (level = generic_level) || eq_type ty ty0 then
-        roots := ty :: !roots;
-      set_level ty !idx;
-      iter_type_expr (inverse [ty]) ty
-    end else if level < lowest_level then begin
-      let (_, parents) = Hashtbl.find graph level in
-      parents := pty @ !parents
-    end
+    match TypeHash.find_opt graph ty with
+    | Some parents -> parents := pty @ !parents
+    | None ->
+        let level = get_level ty in
+        if (level > !current_level) || (level = generic_level) then begin
+          TypeHash.add graph ty (ref pty);
+          if (level = generic_level) || eq_type ty ty0 then
+            roots := ty :: !roots;
+          iter_type_expr (inverse [ty]) ty
+        end
 
-  and generalize_parents ty =
-    let idx = get_level ty in
-    if idx <> generic_level then begin
+  and generalize_parents ~is_root ty =
+    if is_root || get_level ty <> generic_level then begin
       set_level ty generic_level;
-      List.iter generalize_parents !(snd (Hashtbl.find graph idx));
+      List.iter (generalize_parents ~is_root:false) !(TypeHash.find graph ty);
       (* Special case for rows: must generalize the row variable *)
       match get_desc ty with
         Tvariant row ->
           let more = row_more row in
           let lv = get_level more in
-          if (lv < lowest_level || lv > !current_level)
-          && lv <> generic_level then set_level more generic_level
+          if (TypeHash.mem graph more || lv > !current_level)
+              && lv <> generic_level then set_level more generic_level
       | _ -> ()
     end
   in
 
   inverse [] ty;
-  if get_level ty0 < lowest_level then
+  if TypeHash.mem graph ty0 then
     iter_type_expr (inverse []) ty0;
-  List.iter generalize_parents !roots;
-  Hashtbl.iter
-    (fun _ (ty, _) ->
+  List.iter (generalize_parents ~is_root:true) !roots;
+  TypeHash.iter
+    (fun ty _ ->
        if get_level ty <> generic_level then set_level ty !current_level)
     graph
 
