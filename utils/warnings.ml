@@ -924,7 +924,10 @@ let message = function
   | Implicit_public_methods l ->
       "the following private methods were made public implicitly:\n "
       ^ String.concat " " l ^ "."
-  | Unerasable_optional_argument -> "this optional argument cannot be erased."
+  | Unerasable_optional_argument ->
+    "this optional argument\n\
+    is not followed by an unlabeled argument in the same n-ary abstraction.\n\
+    It might not be erasable, and it may cause side-effects to be delayed."
   | Undeclared_virtual_method m -> "the virtual method "^m^" is not declared."
   | Not_principal s -> s^" is not principal."
   | Non_principal_labels s -> s^" without principality."
