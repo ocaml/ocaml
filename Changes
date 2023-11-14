@@ -475,6 +475,9 @@ Working version
 
 ### Bug fixes:
 
+- #12712, #12742: fix an assertion boundary case in `caml_reset_young_limit`
+  (Jan Midtgaard, review by Guillaume Munch-Maccagnoni)
+
 - #10652, #12720: fix evaluation order in presence of optional arguments
   (Jacques Garrigue, report by Leo White, review by Vincent Laviron)
 
