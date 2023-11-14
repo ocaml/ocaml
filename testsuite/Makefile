@@ -270,13 +270,17 @@ exec-one:
 	  echo "Running tests from '$$DIR' ..."; \
 	  $(MAKE) exec-ocamltest DIR=$(DIR) \
 	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR)"; \
-	else \
-	  for dir in $(DIR)/*; do \
-	    if [ -d $$dir ]; then \
-	      $(MAKE) exec-one DIR=$$dir; \
-	    fi; \
-	  done; \
-	fi
+	fi; \
+	for dir in $(DIR)/*; do \
+	  case "$$dir" in \
+	    */_ocamltest) \
+	      continue \
+	      ;; \
+	  esac; \
+	  if [ -d $$dir ]; then \
+	    $(MAKE) exec-one DIR=$$dir; \
+	  fi; \
+	done
 
 .PHONY: exec-ocamltest
 exec-ocamltest:
