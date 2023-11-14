@@ -18,7 +18,10 @@
 #include <math.h>
 #include <stdbool.h>
 #include "caml/alloc.h"
+#include "caml/backtrace.h"
+#include "caml/backtrace_prim.h"
 #include "caml/fail.h"
+#include "caml/frame_descriptors.h"
 #include "caml/memory.h"
 #include "caml/memprof.h"
 #include "caml/mlvalues.h"
@@ -225,6 +228,20 @@
  *
  * For further efficiency we generate geometric PRNs in blocks, and
  * the generating code is designed to be vectorizable.
+ *
+ * 5. Backtraces
+ *
+ * We have to be able to sample the current backtrace at any
+ * allocation point, and pass it (as a Caml array) to the allocation
+ * callback. We assume that in most cases these backtraces have short
+ * lifetimes, so we don't want to allocate them on the shared
+ * heap. However, we can't always allocate them directly on the Caml
+ * minor heap, as some allocations (e.g. allocating in the shared heap
+ * from the runtime) may take place at points at which GC is not safe
+ * (and so minor-heap allocation is not permitted).  In those cases we
+ * "stash" the backtrace on the C heap, and copy it onto the Caml heap
+ * when we are about to call the allocation callback.
+ *
  */
 
 /* number of random variables in a batch */
@@ -459,6 +476,10 @@ struct memprof_domain_s {
      Nullability costs us some effort and may be meaningless. See call
      site of caml_memprof_leave_thread() in st_stubs.c. */
   memprof_thread_t current;
+
+  /* Buffer used to compute backtraces */
+  backtrace_slot *callstack_buffer;
+  size_t callstack_buffer_len;
 
   /* ---- random number generation state ---- */
 
@@ -1089,6 +1110,7 @@ static void domain_destroy(memprof_domain_t domain)
     thread = next;
   }
 
+  caml_stat_free(domain->callstack_buffer);
   caml_stat_free(domain);
 }
 
@@ -1104,6 +1126,8 @@ static memprof_domain_t domain_create(caml_domain_state *caml_state)
   domain->orphans = NULL;
   domain->threads = NULL;
   domain->current = NULL;
+  domain->callstack_buffer = NULL;
+  domain->callstack_buffer_len = 0;
 
   /* create initial thread for domain */
   memprof_thread_t thread = thread_create(domain);
@@ -1130,7 +1154,8 @@ static void set_action_pending_as_needed(memprof_domain_t domain)
     caml_set_action_pending(domain->caml_state);
 }
 
-/* Set the suspended flag on `domain` to `s`. */
+/* Set the suspended flag on `domain` to `s`. Has the side-effect of
+ * setting the trigger. */
 
 static void update_suspended(memprof_domain_t domain, bool s)
 {
@@ -1141,7 +1166,8 @@ static void update_suspended(memprof_domain_t domain, bool s)
   if (!s) set_action_pending_as_needed(domain);
 }
 
-/* Set the suspended flag on the current domain to `s`. */
+/* Set the suspended flag on the current domain to `s`.
+ * Has the side-effect of setting the trigger. */
 
 void caml_memprof_update_suspended(bool s) {
   update_suspended(Caml_state->memprof, s);
@@ -1392,6 +1418,114 @@ void caml_memprof_delete_domain(caml_domain_state *state)
   domain_destroy(state->memprof);
   state->memprof = NULL;
 }
+
+/**** Capturing the call stack *****/
+
+/* A "stashed" callstack, allocated on the C heap. */
+
+typedef struct {
+        size_t frames;
+        backtrace_slot stack[];
+} callstack_stash_s, *callstack_stash_t;
+
+/* How large a callstack buffer must be to be considered "large" */
+#define CALLSTACK_BUFFER_LARGE 256
+
+/* How much larger a callstack buffer must be, compared to the most
+ * recent callstack, to be considered large. */
+#define CALLSTACK_BUFFER_FACTOR 8
+
+/* If the per-domain callstack buffer is "large" and we've only used a
+ * small part of it, free it. This saves us from C heap bloat due to
+ * unbounded lifetime of the callstack buffers (as callstacks may
+ * sometimes be huge). */
+
+static void shrink_callstack_buffer(memprof_domain_t domain, size_t frames)
+{
+  if (domain->callstack_buffer_len > CALLSTACK_BUFFER_LARGE &&
+      domain->callstack_buffer_len > frames * CALLSTACK_BUFFER_FACTOR) {
+    caml_stat_free(domain->callstack_buffer);
+    domain->callstack_buffer = NULL;
+    domain->callstack_buffer_len = 0;
+  }
+}
+
+/* Capture the call stack when sampling an allocation from the
+ * runtime. We don't have to account for combined allocations
+ * (Comballocs) but we can't allocate the resulting stack on the Caml
+ * heap, because the heap may be in an invalid state so we can't cause
+ * a GC. Therefore, we capture the callstack onto the C heap, and will
+ * copy it onto the Caml heap later, when we're ready to call the
+ * allocation callback. The callstack is returned as a Val_ptr value
+ * (or an empty array, if allocation fails). */
+
+CAMLunused_start
+static value capture_callstack_no_GC(memprof_domain_t domain)
+{
+  value res = Atom(0); /* empty array. */
+  size_t frames =
+    caml_get_callstack(Callstack_size(domain->entries.config),
+                       &domain->callstack_buffer,
+                       &domain->callstack_buffer_len, -1);
+  if (frames) {
+    callstack_stash_t stash = caml_stat_alloc_noexc(sizeof(callstack_stash_s)
+                                                    + frames * sizeof(value));
+    if (stash) {
+      stash->frames = frames;
+      memcpy(stash->stack, domain->callstack_buffer, sizeof(value) * frames);
+      res = Val_ptr(stash);
+    }
+  }
+
+  shrink_callstack_buffer(domain, frames);
+  return res;
+}
+CAMLunused_end
+
+/* Capture the call stack when sampling an allocation from Caml. We
+ * have to deal with combined allocations (Comballocs), but can
+ * allocate the resulting call stack directly on the Caml heap. Should
+ * be called with [domain->current->suspended] set, as it allocates.
+ * May cause a GC. */
+
+CAMLunused_start
+static value capture_callstack_GC(memprof_domain_t domain, int alloc_idx)
+{
+  CAMLassert(domain->current->suspended);
+
+  size_t frames =
+    caml_get_callstack(Callstack_size(domain->entries.config),
+                       &domain->callstack_buffer,
+                       &domain->callstack_buffer_len,
+                       alloc_idx);
+  value res = caml_alloc(frames, 0);
+  for (size_t i = 0; i < frames; ++i) {
+    Field(res, i) = Val_backtrace_slot(domain->callstack_buffer[i]);
+  }
+
+  shrink_callstack_buffer(domain, frames);
+  return res;
+}
+CAMLunused_end
+
+/* Given a stashed callstack, copy it to the Caml heap and free the
+ * stash. Given a non-stashed callstack, simply return it. */
+
+CAMLunused_start /* TODO: remove once callbacks is merged */
+static value unstash_callstack(value callstack)
+{
+  CAMLparam1(callstack);
+  if (Is_long(callstack)) { /* stashed on C heap */
+    callstack_stash_t stash = Ptr_val(callstack);
+    callstack = caml_alloc(stash->frames, 0);
+    for (size_t i = 0; i < stash->frames; ++i) {
+      Field(callstack, i) = Val_backtrace_slot(stash->stack[i]);
+    }
+    caml_stat_free(stash);
+  }
+  CAMLreturn(callstack);
+}
+CAMLunused_end
 
 /**** Sampling procedures ****/
 
