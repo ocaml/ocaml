@@ -26,6 +26,7 @@
 #include "caml/memprof.h"
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
+#include "caml/runtime_events.h"
 #include "caml/shared_heap.h"
 
 /* Design
@@ -242,6 +243,87 @@
  * "stash" the backtrace on the C heap, and copy it onto the Caml heap
  * when we are about to call the allocation callback.
  *
+ * 6. Sampling
+ *
+ * We sample allocation for all threads in a domain which has a
+ * currently sampling profile, except when such a thread is running a
+ * memprof callback, which "suspends" sampling on that thread.
+ *
+ * Allocation sampling divides into two cases: one simple and one
+ * complex.
+ *
+ * 6.1. Simple Sampling
+ *
+ * When sampling an allocation by the runtime (as opposed to
+ * allocation by Caml), an entry is added to the thread's entry table,
+ * for subsequent processing. No allocation callback is called at
+ * allocation time, because the heap may not be consistent so
+ * allocation by the callback is not safe (see "Backtraces").
+ *
+ * 6.2. Minor Heap Caml Allocation Sampling
+ *
+ * Caml code allocates on the minor heap by pointer-bumping, and only
+ * drops into the runtime if the `young_ptr` allocation pointer hits
+ * the `young_trigger`, usually triggering a garbage collection. When
+ * profiling, we set the trigger at the next word which we want to
+ * sample (see "Random Number Generation"), thus allowing us to enter
+ * memprof code at the approporiate allocation point. However,
+ * sampling the allocation is more complex in this case for several
+ * reasons:
+ *
+ * - Deferred allocation. A sampled block is not actually allocated
+ *   until the runtime returns to the GC poll point in Caml code,
+ *   after the memprof sampling code has run. So we have to predict
+ *   the address of the sampled block for the entry record, to track
+ *   its future promotion or collection. Until the allocation callback
+ *   has run, instead of the allocated block address, the entry holds
+ *   the offset in words of the block within the combined allocation,
+ *   and the entry's `offset` field is set.
+ *
+ * - Combined allocations. A single GC poll point in Caml code may
+ *   combine the allocation of several distinct blocks, each of which
+ *   may be sampled independently. We create an entry for each sampled
+ *   block and then run all allocation callbacks.
+ *
+ * - Prompt allocation callbacks. We call allocation callbacks
+ *   directly from memprof as we sample the allocated blocks. These
+ *   callbacks could be deferred (as are the ones in the "Simple
+ *   Sampling" case), but that would require twice as many entries
+ *   into memprof code. So the allocation callback is called before
+ *   the sampled block is actually allocated (see above), and several
+ *   allocation callbacks may be called at any given GC poll point
+ *   (due to combined allocations). We take care to arrange heap
+ *   metadata such that it is safe to run allocation callbacks (which
+ *   may allocate and trigger minor and major GCs).
+ *
+ * - Other callbacks. In order to call the allocation callbacks from
+ *   the poll point, we process the thread's entries table. This may
+ *   call other callbacks for the same thread (specifically: deferred
+ *   "Simple Sampling" callbacks).
+ *
+ * - Callback effects. Any callback may raise an exception, stop
+ *   sampling, start a new profile, and/or discard a profile.
+ *
+ *   If a callback raises an exception, none of the allocations from
+ *   the current poll point will take place. However, some allocation
+ *   callbacks may already have been called. If so, we mark those
+ *   entries as "deallocated", so that matching deallocation callbacks
+ *   will run. We simply delete any tracking entry from the current
+ *   poll point which has not yet run an allocation callback. Then we
+ *   propagate the exception up to Caml.
+ *
+ *   If a callback stops sampling, subsequent allocations from the
+ *   current poll point will not be sampled.
+ *
+ *   If a callback stops sampling and starts a new profile, none of
+ *   the allocations from the current poll point are subsequently
+ *   tracked (through promotion and/or deallocation), as it's not
+ *   possible to reconstruct the allocation addresses of the tracking
+ *   entries, so they are simply deleted (or marked as deallocated, as
+ *   in the exceptional case). The new profile effectively begins with
+ *   the following poll point or other allocation.
+ *
+ * Most of this complexity is managed in caml_memprof_sample_young().
  */
 
 /* number of random variables in a batch */
@@ -568,6 +650,37 @@ static bool entries_ensure(entries_t es, size_t grow)
   es->t = new_t;
   es->capacity = new_capacity;
   return true;
+}
+
+#define Invalid_index (~(size_t)0)
+
+/* Create and initialize a new entry in an entries table, and return
+ * its index (or Invalid_index if allocation fails). */
+
+Caml_inline size_t new_entry(entries_t es,
+                             value block, value user_data,
+                             size_t wosize, size_t samples,
+                             int source, bool is_young,
+                             bool offset)
+{
+  if (!entries_ensure(es, 1))
+    return Invalid_index;
+  size_t i = es->size ++;
+  entry_t e = es->t + i;
+  e->block = block;
+  e->user_data = user_data;
+  e->samples = samples;
+  e->wosize = wosize;
+  e->runner = NULL;
+  e->source = source;
+  e->offset = offset;
+  e->alloc_young = is_young;
+  e->promoted = false;
+  e->deallocated = false;
+  e->deleted = false;
+  e->callback = CB_NONE;
+  e->callbacks = 0;
+  return i;
 }
 
 /* Mark a given entry in an entries table as "deleted". Do not call on
@@ -1023,7 +1136,7 @@ static void rand_init(memprof_domain_t domain)
  *  Hormann, Wolfgang. "The generation of binomial random variates."
  *  Journal of statistical computation and simulation 46.1-2 (1993), pp101-110.
  */
-CAMLunused_start /* TODO: remove once sampling is merged */
+
 static uintnat rand_binom(memprof_domain_t domain, uintnat len)
 {
   uintnat res;
@@ -1033,7 +1146,6 @@ static uintnat rand_binom(memprof_domain_t domain, uintnat len)
   domain->next_rand_geom -= len;
   return res;
 }
-CAMLunused_end
 
 /**** Create and destroy thread state structures ****/
 
@@ -1459,7 +1571,6 @@ static void shrink_callstack_buffer(memprof_domain_t domain, size_t frames)
  * allocation callback. The callstack is returned as a Val_ptr value
  * (or an empty array, if allocation fails). */
 
-CAMLunused_start
 static value capture_callstack_no_GC(memprof_domain_t domain)
 {
   value res = Atom(0); /* empty array. */
@@ -1480,7 +1591,6 @@ static value capture_callstack_no_GC(memprof_domain_t domain)
   shrink_callstack_buffer(domain, frames);
   return res;
 }
-CAMLunused_end
 
 /* Capture the call stack when sampling an allocation from Caml. We
  * have to deal with combined allocations (Comballocs), but can
@@ -1488,7 +1598,6 @@ CAMLunused_end
  * be called with [domain->current->suspended] set, as it allocates.
  * May cause a GC. */
 
-CAMLunused_start
 static value capture_callstack_GC(memprof_domain_t domain, int alloc_idx)
 {
   CAMLassert(domain->current->suspended);
@@ -1506,7 +1615,6 @@ static value capture_callstack_GC(memprof_domain_t domain, int alloc_idx)
   shrink_callstack_buffer(domain, frames);
   return res;
 }
-CAMLunused_end
 
 /* Given a stashed callstack, copy it to the Caml heap and free the
  * stash. Given a non-stashed callstack, simply return it. */
@@ -1527,16 +1635,33 @@ static value unstash_callstack(value callstack)
 }
 CAMLunused_end
 
-/**** Sampling procedures ****/
+/**** Sampling ****/
 
 Caml_inline bool sampling(memprof_domain_t domain)
 {
   memprof_thread_t thread = domain->current;
 
   if (thread && !thread->suspended) {
-    return Sampling(thread_config(thread));
+    value config = thread_config(thread);
+    return Sampling(config) && !Min_lambda(config);
   }
   return false;
+}
+
+/* Respond to the allocation of a block [block], size [wosize], with
+ * [samples] samples. [src] is one of the [CAML_MEMPROF_SRC_] enum values
+ * ([Gc.Memprof.allocation_source]). */
+
+static void maybe_track_block(memprof_domain_t domain,
+                              value block, size_t samples,
+                              size_t wosize, int src)
+{
+  if (samples == 0) return;
+
+  value callstack = capture_callstack_no_GC(domain);
+  (void)new_entry(&domain->current->entries, block, callstack,
+                  wosize, samples, src, Is_young(block), false);
+  set_action_pending_as_needed(domain);
 }
 
 /* Renew the next sample in a domain's minor heap. Could race with
@@ -1572,6 +1697,13 @@ void caml_memprof_sample_block(value block,
                                size_t sampled_words,
                                int source)
 {
+  memprof_domain_t domain = Caml_state->memprof;
+  CAMLassert(domain);
+  CAMLassert(sampled_words >= allocated_words);
+  if (sampling(domain)) {
+    maybe_track_block(domain, block, rand_binom(domain, sampled_words),
+                      allocated_words, source);
+  }
 }
 
 /* Respond to hitting the memprof trigger on the minor heap. May
@@ -1581,6 +1713,128 @@ void caml_memprof_sample_block(value block,
 void caml_memprof_sample_young(uintnat wosize, int from_caml,
                                int allocs, unsigned char* encoded_lens)
 {
+  CAMLparam0();
+  memprof_domain_t domain = Caml_state->memprof;
+  CAMLassert(domain);
+  memprof_thread_t thread = domain->current;
+  CAMLassert(thread);
+  entries_t entries = &thread->entries;
+  uintnat whsize = Whsize_wosize(wosize);
+  CAMLlocal1(config);
+  config = entries->config;
+
+  /* When a domain is not sampling, the memprof trigger is not
+   * set, so we should not come into this function. */
+  CAMLassert(sampling(domain));
+
+  if (!from_caml) {
+    /* Not coming from Caml, so this isn't a comballoc. We know we're
+     * sampling at least once, but maybe more than once. */
+    size_t samples = 1 +
+      rand_binom(domain,
+                 Caml_state->memprof_young_trigger - 1 - Caml_state->young_ptr);
+    CAMLassert(encoded_lens == NULL);
+    caml_memprof_renew_minor_sample(Caml_state);
+    maybe_track_block(domain, Val_hp(Caml_state->young_ptr),
+                      samples, wosize, CAML_MEMPROF_SRC_NORMAL);
+    caml_memprof_renew_minor_sample(Caml_state);
+    CAMLreturn0;
+  }
+
+  /* The memprof trigger lies in (young_ptr, young_ptr + whsize] */
+  CAMLassert(Caml_state->young_ptr < Caml_state->memprof_young_trigger &&
+             Caml_state->memprof_young_trigger <=
+               Caml_state->young_ptr + whsize);
+
+  /* Trigger offset from the base of the combined allocation. We
+   * reduce this for each sample in this comballoc. Signed so it can
+   * go negative. */
+  intnat trigger_ofs =
+    Caml_state->memprof_young_trigger - Caml_state->young_ptr;
+  /* Sub-allocation offset from the base of the combined
+   * allocation. Signed so we can compare correctly against
+   * trigger_ofs. */
+  intnat alloc_ofs = whsize;
+
+  /* Undo the combined allocation, so that we can allocate callstacks */
+  Caml_state->young_ptr += whsize;
+
+  /* Suspend profiling, so we don't profile allocations of callstacks.
+   * Resets trigger. */
+  update_suspended(domain, true);
+
+  /* Work through the sub-allocations, high address to low address,
+   * identifying which ones are sampled and how many times.  For each
+   * sampled sub-allocation, create an entry in the thread's table. */
+  size_t new_entries = 0; /* useful for debugging */
+  size_t sub_alloc = allocs;
+  do {
+    -- sub_alloc;
+    size_t alloc_wosz =
+      encoded_lens == NULL ? wosize :
+      Wosize_encoded_alloc_len(encoded_lens[sub_alloc]);
+    alloc_ofs -= Whsize_wosize(alloc_wosz); /* base of this sub-alloc */
+
+    /* count samples for this sub-alloc? */
+    size_t samples = 0;
+    while (alloc_ofs < trigger_ofs) {
+      ++ samples;
+      trigger_ofs -= rand_geom(domain);
+    }
+
+    if (samples) {
+      value callstack = capture_callstack_GC(domain, sub_alloc);
+      size_t entry =
+        new_entry(entries, (value)alloc_ofs, callstack,
+                  alloc_wosz, samples, CAML_MEMPROF_SRC_NORMAL,
+                  true, true);
+      if (entry != Invalid_index) {
+        ++ new_entries;
+      }
+    }
+  } while (sub_alloc);
+
+  (void)new_entries; /* this variable is useful to assert */
+  CAMLassert(alloc_ofs == 0);
+  CAMLassert(trigger_ofs <= 0);
+  CAMLassert(new_entries <= allocs);
+
+  /* At this point, we will run all outstanding callbacks in this thread's
+   * table. */
+
+  /* The allocations will proceed. Make room in the minor heap for the
+   * blocks to be * allocated. We must not trigger a GC after this point. */
+  if (Caml_state->young_ptr - whsize < Caml_state->young_trigger) {
+    CAML_EV_COUNTER(EV_C_FORCE_MINOR_MEMPROF, 1);
+    caml_poll_gc_work();
+  }
+  Caml_state->young_ptr -= whsize;
+
+  /* Offset entries for these sampled allocations will be in the
+   * thread's entry table. They must be updated to point to the blocks
+   * which will now be allocated. */
+  size_t i = 0;
+  if (entries->size >= new_entries) /* cope with deleted entries */
+    i = entries->size - new_entries;
+  while (i < entries->size) {
+    entry_t e = &entries->t[i];
+    if (e->offset) { /* an entry we just created */
+      e->block = Val_hp(Caml_state->young_ptr + e->block);
+      e->offset = false;
+      if (i < entries->young) entries->young = i;
+    }
+    ++i;
+  }
+
+  /* There are now no outstanding allocation callbacks in the
+   * thread's entries table. Transfer the whole thing to the
+   * domain. */
+  (void)entries_transfer(entries, &domain->entries);
+
+  /* Unsuspend profiling. Resets trigger. */
+  update_suspended(domain, false);
+
+  CAMLreturn0;
 }
 
 /**** Interface with systhread. ****/
