@@ -980,7 +980,10 @@ static void mark_slice_darken(struct mark_stack* stk, value child,
   }
 }
 
-static Caml_noinline CAMLno_tsan
+static CAMLno_tsan
+#if defined(WITH_THREAD_SANITIZER)
+Caml_noinline
+#endif
 value volatile_load_uninstrumented(volatile value* p) {
   return *p;
 }
