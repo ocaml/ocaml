@@ -294,6 +294,9 @@ Working version
   from the upstream website at https://no-color.org.
   (Favonia, review by Gabriel Scherer)
 
+- #12744: ocamltest: run tests in recursive subdirs more eagerly
+  (Nick Roberts, review by Nicolás Ojeda Bär)
+
 ### Manual and documentation:
 
 - #12338: clarification of the documentation of process related function in

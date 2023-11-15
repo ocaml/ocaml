@@ -266,17 +266,11 @@ one: lib tools
 
 .PHONY: exec-one
 exec-one:
-	@if $(ocamltest) -list-tests $(DIR) >/dev/null 2>&1; then \
-	  echo "Running tests from '$$DIR' ..."; \
-	  $(MAKE) exec-ocamltest DIR=$(DIR) \
+	@$(ocamltest) -find-test-dirs $(DIR) | while IFS='' read -r dir; do \
+	  echo "Running tests from '$$dir' ..."; \
+	  $(MAKE) exec-ocamltest DIR=$$dir \
 	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR)"; \
-	else \
-	  for dir in $(DIR)/*; do \
-	    if [ -d $$dir ]; then \
-	      $(MAKE) exec-one DIR=$$dir; \
-	    fi; \
-	  done; \
-	fi
+	done
 
 .PHONY: exec-ocamltest
 exec-ocamltest:
