@@ -644,12 +644,19 @@ and transl_apply ~scopes
      The following code guarantees that:
      * arguments are evaluated right-to-left according to their order in
        the type of the function, before the function is called;
-     * side-effects occurring after receiving a non-optional parameter
+     * side-effects occurring after receiving an unlabeled parameter
        will occur exactly when all the arguments up to this parameter
        have been received;
-     * side-effects occurring after receiving an optional parameter
+     * side-effects occurring after receveing a labeled non-optional
+       parameter, which either is not preceded by any optional parameter,
+       or is not followed by any optional parameter, or is followed by an
+       unlabeled parameter before the next optional parameter, will occur
+       exactly when all the arguments up to this parameter have been received;
+     * side-effects occurring after receiving a labeled or optional parameter
        will occur at the latest when all the arguments up to the first
-       non-optional parameter that follows it have been received.
+       unlabeled parameter that follows it have been received, or when
+       all the received arguments form a prefix of the parameters of the
+       function, without gap.
   *)
   let rec build_apply lam args = function
       (None, optional) :: l ->
