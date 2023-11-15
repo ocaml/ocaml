@@ -475,7 +475,10 @@ Working version
 
 ### Bug fixes:
 
-- #10652, #12720: fix evaluation order in presence of optional arguments
+* #10652, #12720, #12739: fix evaluation order in presence of optional arguments
+  Warning 16 is now stricter, meaning that one may need to modify code in
+  order to ensure that all optional arguments are syntactillay followed by
+  a non-labeled argument in the same n-ary abstraction.
   (Jacques Garrigue, report by Leo White, review by Vincent Laviron)
 
 - #11800, #12707: fix an assertion race condition in `install_backup_thread`

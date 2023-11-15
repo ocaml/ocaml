@@ -1561,7 +1561,7 @@ and type_pat_aux
   : type k . type_pat_state -> k pattern_category -> no_existentials:_ ->
          penv:Pattern_env.t -> _ -> _ -> k general_pattern
   = fun tps category ~no_existentials ~penv sp expected_ty ->
-  let type_pat tps category ?(penv=penv) =
+  let type_pat ?(penv=penv) tps category =
     type_pat tps category ~no_existentials ~penv
   in
   let loc = sp.ppat_loc in
@@ -2249,8 +2249,8 @@ let enter_nonsplit_or info =
 
 let rec check_counter_example_pat
     ~info ~(penv : Pattern_env.t) type_pat_state tp expected_ty k =
-  let check_rec ?(info=info) ?(penv=penv) =
-    check_counter_example_pat ~info ~penv type_pat_state in
+  let check_rec ?(info=info) ?(penv=penv) tp =
+    check_counter_example_pat ~info ~penv type_pat_state tp in
   let loc = tp.pat_loc in
   let refine = true in
   let solve_expected (x : pattern) : pattern =

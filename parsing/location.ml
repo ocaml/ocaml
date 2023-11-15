@@ -831,8 +831,8 @@ let report_error ppf err =
 let mkerror loc sub txt =
   { kind = Report_error; main = { loc; txt }; sub }
 
-let errorf ?(loc = none) ?(sub = []) =
-  Format.kdprintf (mkerror loc sub)
+let errorf ?(loc = none) ?(sub = []) fmt =
+  Format.kdprintf (mkerror loc sub) fmt
 
 let error ?(loc = none) ?(sub = []) msg_str =
   mkerror loc sub (fun ppf -> Format.pp_print_string ppf msg_str)
@@ -992,5 +992,5 @@ let () =
       | _ -> None
     )
 
-let raise_errorf ?(loc = none) ?(sub = []) =
-  Format.kdprintf (fun txt -> raise (Error (mkerror loc sub txt)))
+let raise_errorf ?(loc = none) ?(sub = []) fmt =
+  Format.kdprintf (fun txt -> raise (Error (mkerror loc sub txt))) fmt

@@ -1048,7 +1048,7 @@ class html =
     method list_class_types = list_class_types
 
     (** The header of pages. Must be prepared by the [prepare_header] method.*)
-    val mutable header = fun _ -> fun ?nav:_ -> fun ?comments:_ -> fun _ -> ()
+    val mutable header = fun _ ?nav:_ ?comments:_ _ -> ()
 
     (** Init the style. *)
     method init_style =
