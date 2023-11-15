@@ -18,6 +18,27 @@ let const c _ = c
 let flip f x y = f y x
 let negate p v = not (p v)
 
+let curry2 f x y = f (x, y)
+let curry3 f x y z = f (x, y, z)
+let curry4 f x y z w = f (x, y, z, w)
+let curry5 f x y z w a = f (x, y, z, w, a)
+let curry6 f x y z w a b = f (x, y, z, w, a, b)
+let curry7 f x y z w a b c = f (x, y, z, w, a, b, c)
+let curry8 f x y z w a b c d = f (x, y, z, w, a, b, c, d)
+let curry9 f x y z w a b c d e = f (x, y, z, w, a, b, c, d, e)
+
+let uncurry2 f (x, y) = f x y
+let uncurry3 f (x, y, z) = f x y z
+let uncurry4 f (x, y, z, w) = f x y z w
+let uncurry5 f (x, y, z, w, a) = f x y z w a
+let uncurry6 f (x, y, z, w, a, b) = f x y z w a b
+let uncurry7 f (x, y, z, w, a, b, c) = f x y z w a b c
+let uncurry8 f (x, y, z, w, a, b, c, d) = f x y z w a b c d
+let uncurry9 f (x, y, z, w, a, b, c, d, e) = f x y z w a b c d e
+
+let curry = curry2
+let uncurry = uncurry2
+
 exception Finally_raised of exn
 
 let () = Printexc.register_printer @@ function

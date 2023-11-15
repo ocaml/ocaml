@@ -34,6 +34,34 @@ val negate : ('a -> bool) -> ('a -> bool)
 (** [negate p] is the negation of the predicate function [p]. For any
     argument [x], [(negate p) x] is [not (p x)]. *)
 
+val curry2 : ('a * 'b -> 'c) -> 'a -> 'b -> 'c
+val curry3 : ('a * 'b * 'c -> 'd) -> 'a -> 'b -> 'c -> 'd
+val curry4 : ('a * 'b * 'c * 'd -> 'e) -> 'a -> 'b -> 'c -> 'd -> 'e
+val curry5 : ('a * 'b * 'c * 'd * 'e -> 'f) -> 'a -> 'b -> 'c -> 'd -> 'e -> 'f
+val curry6 : ('a * 'b * 'c * 'd * 'e * 'f -> 'g) -> 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g
+val curry7 : ('a * 'b * 'c * 'd * 'e * 'f * 'g -> 'h) -> 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h
+val curry8 : ('a * 'b * 'c * 'd * 'e * 'f * 'g * 'h -> 'i) -> 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'i
+val curry9 : ('a * 'b * 'c * 'd * 'e * 'f * 'g * 'h * 'i -> 'j) -> 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'i -> 'j
+(** [curryN f] is a function that takes N arguments one at a time
+    and calls [f] with them packaged as an N-tuple. *)
+
+val uncurry2 : ('a -> 'b -> 'c) -> 'a * 'b -> 'c
+val uncurry3 : ('a -> 'b -> 'c -> 'd) -> 'a * 'b * 'c -> 'd
+val uncurry4 : ('a -> 'b -> 'c -> 'd -> 'e) -> 'a * 'b * 'c * 'd -> 'e
+val uncurry5 : ('a -> 'b -> 'c -> 'd -> 'e -> 'f) -> 'a * 'b * 'c * 'd * 'e -> 'f
+val uncurry6 : ('a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g) -> 'a * 'b * 'c * 'd * 'e * 'f -> 'g
+val uncurry7 : ('a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h) -> 'a * 'b * 'c * 'd * 'e * 'f * 'g -> 'h
+val uncurry8 : ('a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'i) -> 'a * 'b * 'c * 'd * 'e * 'f * 'g * 'h -> 'i
+val uncurry9 : ('a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'i -> 'j) -> 'a * 'b * 'c * 'd * 'e * 'f * 'g * 'h * 'i -> 'j
+(** [uncurryN f] is a function that takes an N-tuple and calls [f]
+    with those arguments one at a time. *)
+
+val curry : ('a * 'b -> 'c) -> 'a -> 'b -> 'c
+(** Synonym for [curry2]. *)
+
+val uncurry : ('a -> 'b -> 'c) -> 'a * 'b -> 'c
+(** Synonym for [uncurry2]. *)
+
 (** {1:exception Exception handling} *)
 
 val protect : finally:(unit -> unit) -> (unit -> 'a) -> 'a
