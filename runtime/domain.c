@@ -1526,7 +1526,7 @@ void caml_interrupt_self(void) {
 
 void caml_reset_young_limit(caml_domain_state * dom_st)
 {
-  CAMLassert ((uintnat)dom_st->young_ptr > (uintnat)dom_st->young_trigger);
+  CAMLassert ((uintnat)dom_st->young_ptr >= (uintnat)dom_st->young_trigger);
   /* An interrupt might have been queued in the meanwhile; this
      achieves the proper synchronisation. */
   atomic_exchange(&dom_st->young_limit, (uintnat)dom_st->young_trigger);
