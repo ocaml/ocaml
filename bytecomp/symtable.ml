@@ -256,6 +256,8 @@ let init () =
              ~stdout:primfile
              ["-p"]
          in
+         if !Clflags.verbose then
+           Printf.eprintf "+ %s\n%!" cmd;
          if Sys.command cmd <> 0
          then raise(Error(Wrong_vm !Clflags.use_runtime));
          set_prim_table_from_file primfile
