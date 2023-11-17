@@ -63,7 +63,7 @@ CAMLprim value caml_unix_sigprocmask(value vaction, value vset)
   how = sigprocmask_cmd[Int_val(vaction)];
   decode_sigset(vset, &set);
   caml_enter_blocking_section();
-  retcode = sigprocmask(how, &set, &oldset);
+  retcode = pthread_sigmask(how, &set, &oldset);
   caml_leave_blocking_section();
   /* Run any handlers for just-unmasked pending signals */
   caml_process_pending_actions();
