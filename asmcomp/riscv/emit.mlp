@@ -195,21 +195,34 @@ let emit_call_gc gc =
   `	j	{emit_label gc.gc_return_lbl}\n`
 
 let bound_error_label env dbg =
-  if !Clflags.debug || env.bound_error_sites = [] then begin
+  if !Clflags.debug then begin
     let lbl_bound_error = new_label() in
     let lbl_frame = record_frame_label env Reg.Set.empty (Dbg_other dbg) in
     env.bound_error_sites <-
       { bd_lbl = lbl_bound_error;
         bd_frame = lbl_frame; } :: env.bound_error_sites;
     lbl_bound_error
-  end else
-    let bd = List.hd env.bound_error_sites in
-    bd.bd_lbl
+  end else begin
+    match env.bound_error_call with
+    | None ->
+      let lbl = new_label() in
+      env.bound_error_call <- Some lbl;
+      lbl
+    | Some lbl -> lbl
+  end
 
 let emit_call_bound_error bd =
   `{emit_label bd.bd_lbl}:\n`;
   `	{emit_call "caml_ml_array_bound_error"}\n`;
   `{emit_label bd.bd_frame}:\n`
+
+let emit_call_bound_errors env =
+  List.iter emit_call_bound_error env.bound_error_sites;
+  match env.bound_error_call with
+  | None -> ()
+  | Some lbl ->
+    `{emit_label lbl}:\n`;
+    `	{emit_call "caml_ml_array_bound_error"}\n`
 
 (* Names for various instructions *)
 
@@ -644,7 +657,8 @@ let fundecl fundecl =
 
   emit_all env fundecl.fun_body;
   List.iter emit_call_gc env.call_gc_sites;
-  List.iter emit_call_bound_error env.bound_error_sites;
+  (* Emit the glue code to handle bound errors *)
+  emit_call_bound_errors env;
 
   begin match handle_overflow with
   | None -> ()

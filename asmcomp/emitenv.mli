@@ -72,7 +72,7 @@ type per_function_env = {
   mutable call_gc_sites : gc_call list;  (* used in all targets except power *)
   mutable call_gc_label : label;                       (* used only in power *)
   mutable bound_error_sites : bound_error_call list;
-  mutable bound_error_call : label option;      (* used in amd64,power,s390x *)
+  mutable bound_error_call : label option;            (* in all except arm64 *)
 
   (* record jump tables (for PPC64).  In order to reduce the size of the TOC,
      we concatenate all jumptables and emit them at the end of the function. *)
@@ -80,6 +80,6 @@ type per_function_env = {
   mutable jumptables : label list; (* in reverse order *)
 
   (* pending literals *)
-  mutable float_literals : float_literal list;   (* in all except amd64 *)
+  mutable float_literals : float_literal list;        (* in all except amd64 *)
   mutable int_literals : int_literal list;             (* used only in s390x *)
 }
