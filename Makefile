@@ -1251,17 +1251,8 @@ runtime/ld.conf: $(ROOTDIR)/Makefile.config
 	$(V_GEN)echo "$(STUBLIBDIR)" > $@ && \
 	echo "$(LIBDIR)" >> $@
 
-PRIMITIVES_NEW := runtime/primitives$(shell echo "$$PPID").new
-
-# To speed up builds, we avoid changing "primitives" when files
-# containing primitives change but the primitives table does not
-runtime/primitives: runtime/gen_primitives.sh \
-  $(shell runtime/gen_primitives.sh $(runtime_BYTECODE_C_SOURCES) \
-                    > $(PRIMITIVES_NEW); \
-                    { cmp -s runtime/primitives $(PRIMITIVES_NEW) && \
-                        rm -f $(PRIMITIVES_NEW) ; } || \
-                    echo $(runtime_BYTECODE_C_SOURCES))
-	$(V_GEN)mv $(PRIMITIVES_NEW) $@
+runtime/primitives: runtime/gen_primitives.sh $(runtime_BYTECODE_C_SOURCES)
+	$(V_GEN)runtime/gen_primitives.sh $@ $(runtime_BYTECODE_C_SOURCES)
 
 runtime/prims.c: runtime/gen_primsc.sh runtime/primitives
 	$(V_GEN)runtime/gen_primsc.sh \
