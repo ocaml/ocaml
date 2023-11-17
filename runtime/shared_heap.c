@@ -72,8 +72,8 @@ static struct {
 
   /* these only contain swept memory of terminated domains*/
   struct heap_stats stats;
-  pool* global_avail_pools[NUM_SIZECLASSES];
-  pool* global_full_pools[NUM_SIZECLASSES];
+  _Atomic(pool*) global_avail_pools[NUM_SIZECLASSES];
+  _Atomic(pool*) global_full_pools[NUM_SIZECLASSES];
   large_alloc* global_large;
 } pool_freelist = {
   CAML_PLAT_MUTEX_INITIALIZER,
@@ -131,7 +131,8 @@ struct caml_heap_state* caml_init_shared_heap (void) {
   return heap;
 }
 
-static int move_all_pools(pool** src, pool** dst, caml_domain_state* new_owner){
+static int move_all_pools(pool** src, _Atomic(pool*)* dst,
+                          caml_domain_state* new_owner) {
   int count = 0;
   while (*src) {
     pool* p = *src;
@@ -293,24 +294,23 @@ static intnat pool_sweep(struct caml_heap_state* local,
 
 /* Adopt pool from the pool_freelist avail and full pools
    to satisfy an allocation */
-CAMLno_tsan /* Disable TSan reports from this function (see #11040) */
 static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
 {
   pool* r = NULL;
   int adopted_pool = 0;
 
   /* probably no available pools out there to be had */
-  if( !pool_freelist.global_avail_pools[sz] &&
-      !pool_freelist.global_full_pools[sz] )
+  if( !atomic_load_acquire(&pool_freelist.global_avail_pools[sz]) &&
+      !atomic_load_acquire(&pool_freelist.global_full_pools[sz]) )
     return NULL;
 
   /* Haven't managed to find a pool locally, try the global ones */
   caml_plat_lock(&pool_freelist.lock);
-  if( pool_freelist.global_avail_pools[sz] ) {
-    r = pool_freelist.global_avail_pools[sz];
+  if( atomic_load_relaxed(&pool_freelist.global_avail_pools[sz]) ) {
+    r = atomic_load_relaxed(&pool_freelist.global_avail_pools[sz]);
 
     if( r ) {
-      pool_freelist.global_avail_pools[sz] = r->next;
+      atomic_store_relaxed(&pool_freelist.global_avail_pools[sz], r->next);
       r->next = 0;
       local->avail_pools[sz] = r;
       adopt_pool_stats_with_lock(local, r, sz);
@@ -331,10 +331,10 @@ static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
   /* There were no global avail pools, so let's adopt one of the full ones and
      try our luck sweeping it later on */
   if( !r ) {
-    r = pool_freelist.global_full_pools[sz];
+    r = atomic_load_relaxed(&pool_freelist.global_full_pools[sz]);
 
     if( r ) {
-      pool_freelist.global_full_pools[sz] = r->next;
+      atomic_store_relaxed(&pool_freelist.global_full_pools[sz], r->next);
       r->next = local->full_pools[sz];
       local->full_pools[sz] = r;
       adopt_pool_stats_with_lock(local, r, sz);
@@ -987,8 +987,12 @@ void caml_compact_heap(caml_domain_state* domain_state,
     CAMLassert(heap->swept_large == NULL);
     /* No pools waiting for adoption */
     if (participants[0] == Caml_state) {
-      CAMLassert(pool_freelist.global_avail_pools[sz_class] == NULL);
-      CAMLassert(pool_freelist.global_full_pools[sz_class] == NULL);
+      CAMLassert(
+          atomic_load_relaxed(&pool_freelist.global_avail_pools[sz_class]) ==
+            NULL);
+      CAMLassert(
+          atomic_load_relaxed(&pool_freelist.global_full_pools[sz_class]) ==
+            NULL);
     }
     /* The minor heap is empty */
     CAMLassert(Caml_state->young_ptr == Caml_state->young_end);
@@ -1412,12 +1416,14 @@ void caml_cycle_heap(struct caml_heap_state* local) {
 
   caml_plat_lock(&pool_freelist.lock);
   for (i = 0; i < NUM_SIZECLASSES; i++) {
-    received_p += move_all_pools(&pool_freelist.global_avail_pools[i],
-                                 &local->unswept_avail_pools[i],
-                                 local->owner);
-    received_p += move_all_pools(&pool_freelist.global_full_pools[i],
-                                 &local->unswept_full_pools[i],
-                                 local->owner);
+    received_p += move_all_pools(
+        (pool**)&pool_freelist.global_avail_pools[i],
+        (_Atomic(pool*)*)&local->unswept_avail_pools[i],
+        local->owner);
+    received_p += move_all_pools(
+        (pool**)&pool_freelist.global_full_pools[i],
+        (_Atomic(pool*)*)&local->unswept_full_pools[i],
+        local->owner);
   }
   while (pool_freelist.global_large) {
     large_alloc* a = pool_freelist.global_large;
