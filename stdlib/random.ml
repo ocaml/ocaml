@@ -177,16 +177,18 @@ module State = struct
      we draw from [s].
      We must have [-2{^nbits - 1} <= min <= max < 2{^nbits - 1}].
      Moreover, for the iteration to converge quickly, the interval
-     [[min, max]] should have width at least [2{^nbits - 1}]. *)
-  let rec int_in_range_alt s ~min ~max ~nbits =
+     [[min, max]] should have width at least [2{^nbits - 1}].
+     As the width approaches this lower limit, the average number of
+     draws approaches 2, with a quite high standard deviation (2 + epsilon). *)
+  let rec int_in_large_range s ~min ~max ~nbits =
     let drop = Sys.int_size - nbits in
     (* The bitshifts replicate the [nbits]-th bit (sign bit) to higher bits: *)
     let r = ((Int64.to_int (next s)) lsl drop) asr drop in
-    if r < min || r > max then int_in_range_alt s ~min ~max ~nbits else r
+    if r < min || r > max then int_in_large_range s ~min ~max ~nbits else r
 
   (* Return an integer between [min] (included) and [max] (included).
      [mask] is as described for [int_aux].
-     [nbits] is as described for [int_in_range_alt]. *)
+     [nbits] is as described for [int_in_large_range]. *)
   let int_in_range_aux s ~min ~max ~mask ~nbits =
     let span = max - min + 1 in
     if span <= mask (* [span] is small enough *)
@@ -196,7 +198,7 @@ module State = struct
       min + int_aux s span mask
     else
       (* Span too large, use the alternative drawing method. *)
-      int_in_range_alt s ~min ~max ~nbits
+      int_in_large_range s ~min ~max ~nbits
 
   (* Return an integer between [min] (included) and [max] (included).
      We must have [min <= max]. *)
