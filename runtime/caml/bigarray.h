@@ -72,6 +72,10 @@ enum caml_ba_managed {
   CAML_BA_MANAGED_MASK = 0x600 /* Mask for "managed" bits in flags field */
 };
 
+enum caml_ba_subarray {
+  CAML_BA_SUBARRAY = 0x800     /* Data is shared with another bigarray */
+};
+
 struct caml_ba_proxy {
   atomic_uintnat refcount;      /* Reference count */
   void * data;                  /* Pointer to base of actual data */

@@ -90,7 +90,7 @@ CAMLexport value
 caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
 {
   uintnat num_elts, asize, size;
-  int i, is_managed;
+  int i, uses_resources;
   value res;
   struct caml_ba_array * b;
   intnat dimcopy[CAML_BA_MAX_NUM_DIMS];
@@ -113,8 +113,10 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
     flags |= CAML_BA_MANAGED;
   }
   asize = SIZEOF_BA_ARRAY + num_dims * sizeof(intnat);
-  is_managed = ((flags & CAML_BA_MANAGED_MASK) == CAML_BA_MANAGED);
-  res = caml_alloc_custom_mem(&caml_ba_ops, asize, is_managed ? size : 0);
+  uses_resources =
+    ((flags & CAML_BA_MANAGED_MASK) == CAML_BA_MANAGED)
+    && !(flags & CAML_BA_SUBARRAY);
+  res = caml_alloc_custom_mem(&caml_ba_ops, asize, uses_resources ? size : 0);
   b = Caml_ba_array_val(res);
   b->data = data;
   b->num_dims = num_dims;
@@ -979,7 +981,8 @@ CAMLprim value caml_ba_slice(value vb, value vind)
     (char *) b->data +
     offset * caml_ba_element_size[b->flags & CAML_BA_KIND_MASK];
   /* Allocate an OCaml bigarray to hold the result */
-  res = caml_ba_alloc(b->flags, b->num_dims - num_inds, sub_data, sub_dims);
+  res = caml_ba_alloc(b->flags | CAML_BA_SUBARRAY,
+                      b->num_dims - num_inds, sub_data, sub_dims);
   /* Copy the finalization function from the original array (PR#8568) */
   Custom_ops_val(res) = Custom_ops_val(vb);
   /* Create or update proxy in case of managed bigarray */
@@ -1006,7 +1009,8 @@ CAMLprim value caml_ba_change_layout(value vb, value vlayout)
     intnat new_dim[CAML_BA_MAX_NUM_DIMS];
     unsigned int i;
     for(i = 0; i < b->num_dims; i++) new_dim[i] = b->dim[b->num_dims - i - 1];
-    res = caml_ba_alloc(flags, b->num_dims, b->data, new_dim);
+    res = caml_ba_alloc(flags | CAML_BA_SUBARRAY,
+                        b->num_dims, b->data, new_dim);
     /* Copy the finalization function from the original array (PR#8568) */
     Custom_ops_val(res) = Custom_ops_val(vb);
     caml_ba_update_proxy(b, Caml_ba_array_val(res));
@@ -1051,7 +1055,8 @@ CAMLprim value caml_ba_sub(value vb, value vofs, value vlen)
     (char *) b->data +
     ofs * mul * caml_ba_element_size[b->flags & CAML_BA_KIND_MASK];
   /* Allocate an OCaml bigarray to hold the result */
-  res = caml_ba_alloc(b->flags, b->num_dims, sub_data, b->dim);
+  res = caml_ba_alloc(b->flags | CAML_BA_SUBARRAY,
+                      b->num_dims, sub_data, b->dim);
   /* Copy the finalization function from the original array (PR#8568) */
   Custom_ops_val(res) = Custom_ops_val(vb);
   /* Doctor the changed dimension */
@@ -1228,7 +1233,7 @@ CAMLprim value caml_ba_reshape(value vb, value vdim)
   if (num_elts != caml_ba_num_elts(b))
     caml_invalid_argument("Bigarray.reshape: size mismatch");
   /* Create bigarray with same data and new dimensions */
-  res = caml_ba_alloc(b->flags, num_dims, b->data, dim);
+  res = caml_ba_alloc(b->flags | CAML_BA_SUBARRAY, num_dims, b->data, dim);
   /* Copy the finalization function from the original array (PR#8568) */
   Custom_ops_val(res) = Custom_ops_val(vb);
   /* Create or update proxy in case of managed bigarray */
