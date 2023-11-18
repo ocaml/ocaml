@@ -240,9 +240,10 @@ Working version
   (Glen Mével, report by Jeremy Yallop, review by Nicolas Ojeda Bar)
 
 - #12459: Add `Random.int_in_range`, `Random.int32_in_range`,
-  `Random.int64_in_range`, `Random.nativeint_in_range`, and their counterpart in
-  `Random.State`.
-  (Glen Mével, review by Gabriel Scherer, Xavier Leroy, Florian Angeletti)
+  `Random.int64_in_range`, `Random.nativeint_in_range`,
+  and their counterpart in `Random.State`.
+  (Glen Mével and Xavier Leroy, review by Gabriel Scherer, Xavier Leroy,
+   Florian Angeletti)
 
 - #12459: `Random`: restore compatibility between 32-bit integers (JavaScript)
   and 63-bit integers (64-bit OCaml).
