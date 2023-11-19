@@ -8,7 +8,7 @@ very low overhead. The system and interfaces are low-level and tightly coupled
 to the runtime implementation, it is intended for end-users to rely on tooling
 to consume and visualise data of interest. Additional events can be declared and
 consumed, providing higher-level dynamic introspection capabilities to OCaml
-libraries, they are referred to as {\em custom events}.
+libraries. They are referred to as {\em custom events}.
 
 Data emitted includes:
 \begin{itemize}
