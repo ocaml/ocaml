@@ -238,7 +238,7 @@ Caml_inline void scan_stack_frames(
   int n, ofs;
   unsigned short * p;
   value *root;
-  caml_frame_descrs fds = caml_get_frame_descrs();
+  caml_frame_descrs * fds = caml_get_frame_descrs();
 
   sp = (char*)stack->sp;
   regs = gc_regs;
