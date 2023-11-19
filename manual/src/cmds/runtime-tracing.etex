@@ -97,7 +97,7 @@ In summary, there are three cases for the consumer when an event is received:
 \item event is not registered and has a custom event type: event is dropped.
 \end{itemize}
 The \texttt{Runtime_events.Type} module provides a way to use built-in event
-types and define new ones using an encoder-decoder pair.
+types and define custom ones using an encoder-decoder pair.
 
 Event consumers bind callbacks to event types, so they can work as generic
 listeners interpreting payloads coming from events that were not registered.
