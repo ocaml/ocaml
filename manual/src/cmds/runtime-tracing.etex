@@ -8,7 +8,7 @@ very low overhead. The system and interfaces are low-level and tightly coupled
 to the runtime implementation, it is intended for end-users to rely on tooling
 to consume and visualise data of interest. Additional events can be declared and
 consumed, providing higher-level dynamic introspection capabilities to OCaml
-libraries, they are referred to as {\em custom events}.
+libraries. They are referred to as {\em custom events}.
 
 Data emitted includes:
 \begin{itemize}
@@ -97,7 +97,7 @@ In summary, there are three cases for the consumer when an event is received:
 \item event is not registered and has a custom event type: event is dropped.
 \end{itemize}
 The \texttt{Runtime_events.Type} module provides a way to use built-in event
-types and define new ones using an encoder-decoder pair.
+types and define custom ones using an encoder-decoder pair.
 
 Event consumers bind callbacks to event types, so they can work as generic
 listeners interpreting payloads coming from events that were not registered.
