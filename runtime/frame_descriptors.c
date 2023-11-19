@@ -325,13 +325,13 @@ static void remove_frame_descriptors(
   resume:
     for (int i = 0; i < ntables; i++) {
       if (current->frametable == frametables[i]) {
-	*previous = current->next;
-	caml_stat_free(current);
-	ntables--;
-	if (ntables == 0) goto release;
-	current = *previous;
-	frametables[i] = frametables[ntables];
-	goto resume;
+        *previous = current->next;
+        caml_stat_free(current);
+        ntables--;
+        if (ntables == 0) goto release;
+        current = *previous;
+        frametables[i] = frametables[ntables];
+        goto resume;
       }
     }
     previous = &(current->next);
