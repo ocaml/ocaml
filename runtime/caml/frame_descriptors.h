@@ -108,11 +108,13 @@ Caml_inline bool frame_has_debug(frame_descr *d) {
 void caml_init_frame_descriptors(void);
 
 void caml_register_frametables(void **tables, int ntables);
+void caml_register_frametable(void *table);
 
 /* The unregistered frametables can still be in use after calling
    this function. Thus, you should not free their memory.
    Note: it may reorder the content of the array 'tables' */
 void caml_unregister_frametables(void **tables, int ntables);
+void caml_unregister_frametable(void *table);
 
 /* a linked list of frametables */
 typedef struct caml_frametable_list {
