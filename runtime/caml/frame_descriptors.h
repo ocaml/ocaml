@@ -107,6 +107,8 @@ Caml_inline bool frame_has_debug(frame_descr *d) {
 
 void caml_init_frame_descriptors(void);
 
+void caml_register_frametable(void *table);
+void caml_unregister_frametable(void *table);
 void caml_register_frametables(void **tables, int ntables);
 /* Note: it clobbers the content of the array of frametables */
 void caml_unregister_frametables(void **tables, int ntables);
