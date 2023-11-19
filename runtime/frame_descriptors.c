@@ -26,10 +26,12 @@
 #include "caml/shared_heap.h"
 #include <stddef.h>
 
+ATOMIC_PTR_TYPEDEF(frame_descr, atomic_frame_ptr)
+
 struct caml_frame_descrs {
   int num_descr;
   int mask;
-  frame_descr** descriptors;
+  atomic_frame_ptr* descriptors;
   caml_frametable_list *frametables;
 };
 /* Let us call 'capacity' the length of the descriptors array.
@@ -119,60 +121,50 @@ static void fill_hashtable(
     frame_descr * d = (frame_descr *)(tbl + 1);
     for (intnat j = 0; j < len; j++) {
       uintnat h = Hash_retaddr(d->retaddr, table->mask);
-      while (table->descriptors[h] != NULL) {
+      while (atomic_load_relaxed(table->descriptors + h) != NULL) {
         h = (h+1) & table->mask;
       }
-      table->descriptors[h] = d;
+      atomic_store_relaxed(table->descriptors + h, d);
       d = next_frame_descr(d);
     }
   }
+
+  atomic_thread_fence(memory_order_release);
 }
 
-static void add_frame_descriptors(
+static void realloc_frame_descriptors(
   caml_frame_descrs *table,
   caml_frametable_list *new_frametables)
 {
-  CAMLassert(new_frametables != NULL);
+  intnat num_descr = count_descriptors(new_frametables);
 
-  caml_frametable_list *tail = frametables_list_tail(new_frametables);
-  intnat increase = count_descriptors(new_frametables);
-  intnat tblsize = capacity(*table);
+  intnat tblsize = 4;
+  while (tblsize < 2 * num_descr) tblsize *= 2;
 
-  /* The size of the hashtable is a power of 2 that must remain
-     greater or equal to 2 times the number of descriptors. */
+  table->num_descr = num_descr;
+  table->mask = tblsize - 1;
 
-  /* Reallocate the caml_frame_descriptor table if it is too small */
-  if(tblsize < (table->num_descr + increase) * 2) {
+  if (table->descriptors != NULL) caml_stat_free(table->descriptors);
+  table->descriptors = (atomic_frame_ptr*)
+    caml_stat_alloc_noexc(tblsize * sizeof(atomic_frame_ptr));
+  if (table->descriptors == NULL) caml_raise_out_of_memory();
 
-    /* Merge both lists */
-    tail->next = table->frametables;
-    table->frametables = NULL;
+  for (intnat i = 0; i < tblsize; i++)
+    atomic_store_relaxed(table->descriptors + i, ATOMIC_PTR_INIT(NULL));
 
-    intnat num_descr = table->num_descr + increase;
-
-    tblsize = 4;
-    while (tblsize < 2 * num_descr) tblsize *= 2;
-
-    table->num_descr = num_descr;
-    table->mask = tblsize - 1;
-
-    if (table->descriptors != NULL) caml_stat_free(table->descriptors);
-    table->descriptors =
-      (frame_descr **) caml_stat_calloc_noexc(tblsize, sizeof(frame_descr *));
-    if (table->descriptors == NULL) caml_raise_out_of_memory();
-
-    fill_hashtable(table, new_frametables);
-  } else {
-    table->num_descr += increase;
-    fill_hashtable(table, new_frametables);
-    tail->next = table->frametables;
-  }
+  fill_hashtable(table, new_frametables);
 
   table->frametables = new_frametables;
 }
 
-/* protected by STW sections */
+/* the global shared hashtable of frame_descr */
+/* each entry is an atomic pointers or a free place NULL */
+/* reallocation is protected by STW sections */
+/* a mutex makes concurrent modifications impossible */
+/* concurrent read/write are allowed since each intermediate
+   modified state is a valid state from a reading point of view */
 static caml_frame_descrs current_frame_descrs = { 0, -1, NULL, NULL };
+static caml_plat_mutex frame_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static caml_frametable_list *cons(
   intnat *frametable, caml_frametable_list *tl)
@@ -189,46 +181,90 @@ void caml_init_frame_descriptors(void)
   for (int i = 0; caml_frametable[i] != 0; i++)
     frametables = cons(caml_frametable[i], frametables);
 
+  CAMLassert(frametables != NULL);
+
   /* `init_frame_descriptors` is called from `init_gc`, before
      any mutator can run. We can mutate [current_frame_descrs]
      at will. */
-  add_frame_descriptors(&current_frame_descrs, frametables);
+  realloc_frame_descriptors(&current_frame_descrs, frametables);
+  caml_plat_mutex_init(&frame_mutex);
 }
 
+typedef struct {
+  caml_frame_descrs *table;
+  caml_frametable_list *new_frametables;
+  caml_frametable_list *tail;
+  intnat increase;
+} realloc_request;
 
-typedef struct frametable_array {
-  void **table;
-  int ntables;
-} frametable_array;
-
-static void register_frametables_from_stw_single(frametable_array *array)
-{
-  caml_frametable_list *new_frametables = NULL;
-  for (int i = 0; i < array->ntables; i++)
-    new_frametables = cons((intnat*)array->table[i], new_frametables);
-
-  add_frame_descriptors(&current_frame_descrs, new_frametables);
-}
-
-static void stw_register_frametables(
+static void realloc_frame_descriptors_from_stw_single(
     caml_domain_state* domain,
-    void* frametables,
+    void* data,
     int participating_count,
     caml_domain_state** participating)
 {
   barrier_status b = caml_global_barrier_begin ();
 
   if (caml_global_barrier_is_final(b)) {
-    register_frametables_from_stw_single((frametable_array*) frametables);
+    realloc_request *request = data;
+    caml_frame_descrs *table = request->table;
+    caml_frametable_list *new_frametables = request->new_frametables;
+    caml_frametable_list *tail = request->tail;
+    intnat tblsize = capacity(*table), increase = request->increase;
+
+    if(tblsize < (table->num_descr + increase) * 2) {
+      /* Merge both lists */
+      tail->next = table->frametables;
+
+      realloc_frame_descriptors(table, new_frametables);
+    } else {
+      table->num_descr += increase;
+      fill_hashtable(table, new_frametables);
+      tail->next = table->frametables;
+      table->frametables = new_frametables;
+    }
   }
 
   caml_global_barrier_end(b);
 }
 
-void caml_register_frametables(void **table, int ntables) {
-  struct frametable_array frametables = { table, ntables };
-  do {} while (!caml_try_run_on_all_domains(
-                 &stw_register_frametables, &frametables, 0));
+static void add_frame_descriptors(
+  caml_frame_descrs *table,
+  caml_frametable_list *new_frametables)
+{
+  CAMLassert(new_frametables != NULL);
+
+  caml_frametable_list *tail = frametables_list_tail(new_frametables);
+  intnat increase = count_descriptors(new_frametables);
+  intnat tblsize = capacity(*table);
+
+  caml_plat_lock(&frame_mutex);
+
+  /* The size of the hashtable is a power of 2 that must remain
+     greater or equal to 2 times the number of descriptors. */
+
+  /* Reallocate the caml_frame_descriptor table if it is too small */
+  if(tblsize < (table->num_descr + increase) * 2) {
+    caml_plat_unlock(&frame_mutex);
+    realloc_request request = { table, new_frametables, tail, increase };
+    do {} while (!caml_try_run_on_all_domains(
+                 &realloc_frame_descriptors_from_stw_single, &request, 0));
+  } else {
+    table->num_descr += increase;
+    fill_hashtable(table, new_frametables);
+    tail->next = table->frametables;
+    table->frametables = new_frametables;
+    caml_plat_unlock(&frame_mutex);
+  }
+}
+
+void caml_register_frametables(void ** frametables, int ntables)
+{
+  caml_frametable_list *new_frametables = NULL;
+  for (int i = 0; i < ntables; i++)
+    new_frametables = cons((intnat*)frametables[i], new_frametables);
+
+  add_frame_descriptors(&current_frame_descrs, new_frametables);
 }
 
 caml_frame_descrs* caml_get_frame_descrs(void)
@@ -241,9 +277,11 @@ frame_descr* caml_find_frame_descr(caml_frame_descrs *fds, uintnat pc)
   frame_descr * d;
   uintnat h;
 
+  atomic_thread_fence(memory_order_acquire);
+
   h = Hash_retaddr(pc, fds->mask);
   while (1) {
-    d = fds->descriptors[h];
+    d = atomic_load_relaxed(fds->descriptors + h);
     if (d == 0) return NULL; /* can happen if some code compiled without -g */
     if (d->retaddr == pc) break;
     h = (h+1) & fds->mask;
