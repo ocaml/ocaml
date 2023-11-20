@@ -20,6 +20,7 @@
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
 #include "caml/backtrace_prim.h"
+#include "caml/callback.h"
 #include "caml/fail.h"
 #include "caml/frame_descriptors.h"
 #include "caml/memory.h"
@@ -324,6 +325,37 @@
  *   the following poll point or other allocation.
  *
  * Most of this complexity is managed in caml_memprof_sample_young().
+ *
+ * 7. Callbacks
+ *
+ * Some callbacks are run at allocation time, for allocations from
+ * Caml (see under "Sampling" above). Other allocation callbacks, and
+ * all post-allocation callbacks, are run during
+ * `caml_memprof_run_callbacks_exn()`, which is called by the
+ * runtime's general pending-action mechanism at poll points.
+ *
+ * We set the domain's action-pending flag when we notice we have
+ * pending callbacks. Caml drops into the runtime at a poll point, and
+ * calls `caml_memprof_run_callbacks_exn()`, whenever the
+ * action-pending flag is set, whether or not memprof set it. So
+ * memprof maintains its own per-domain `pending` flag, to avoid
+ * suspending/unsuspending sampling, and checking all the entries
+ * tables, when there are no pending callbacks.
+ *
+ * This is particularly important because when we unsuspend sampling,
+ * we reset the young-limit, which has the side-effect of setting the
+ * domain's action-pending flag. TODO: consider changing
+ * `caml_reset_young_limit` so it doesn't do this.
+ *
+ * Allocation callbacks are always run by the thread which made the
+ * allocation, unless that thread terminates before running the
+ * callback, in which case it is inherited by the domain.
+ *
+ * Callbacks are run by iterating through candidate entries in a entry
+ * table. See under "Entries" above. A single entry may have more than
+ * one callback to run (if, for example, it has been promoted *and*
+ * garbage collected since the last time callbacks for that entry were
+ * run) - they are run in the natural order.
  */
 
 /* number of random variables in a batch */
@@ -550,13 +582,17 @@ struct memprof_domain_s {
    * domain or adopted from terminated domains. */
   memprof_orphan_table_t orphans;
 
+  /* true if there may be callbacks to be processed on the orphans list. */
+  bool orphans_pending;
+
+  /* true if there may be any callbacks pending for this domain */
+  bool pending;
+
   /* Linked list of threads in this domain */
   memprof_thread_t threads;
 
   /* The current thread's memprof state. Note that there may not be a
-     "current thread". TODO: maybe this shouldn't be nullable.
-     Nullability costs us some effort and may be meaningless. See call
-     site of caml_memprof_leave_thread() in st_stubs.c. */
+     "current thread". */
   memprof_thread_t current;
 
   /* Buffer used to compute backtraces */
@@ -578,8 +614,6 @@ struct memprof_domain_s {
    * previous allocations. Still a legitimate sample of a geometric
    * random variable. */
   uintnat next_rand_geom;
-
-  /* TODO: More fields to add here */
 };
 
 struct memprof_orphan_table_s {
@@ -954,13 +988,38 @@ static void orphans_adopt(memprof_domain_t domain)
 
 /* Destroy an orphan table. */
 
-CAMLunused_start
 static void orphans_destroy(memprof_orphan_table_t ot)
 {
   entries_clear(&ot->entries);
   caml_stat_free(ot);
 }
-CAMLunused_end
+
+/* Traverse a domain's orphans list, clearing inactive entries from
+ * discarded tables and removing any table which is empty, and update
+ * the orphans_pending flag. */
+
+static void orphans_update_pending(memprof_domain_t domain)
+{
+  memprof_orphan_table_t *p = &domain->orphans;
+  bool pending = false;
+
+  while(*p) {
+    memprof_orphan_table_t ot = *p;
+    memprof_orphan_table_t next = ot->next;
+    value config = validated_config(&ot->entries);
+    if (config == CONFIG_NONE) { /* remove inactive entries */
+      entries_clear_inactive(&ot->entries);
+    }
+    if (ot->entries.size == 0) {
+      orphans_destroy(ot);
+      *p = next;
+    } else { /* any pending entries in this table? */
+      pending |= (ot->entries.active < ot->entries.size);
+      p = &ot->next;
+    }
+  }
+  domain->orphans_pending = pending;
+}
 
 /**** Statistical sampling ****/
 
@@ -1236,6 +1295,8 @@ static memprof_domain_t domain_create(caml_domain_state *caml_state)
   domain->caml_state = caml_state;
   entries_init(&domain->entries, MIN_ENTRIES_DOMAIN_CAPACITY, CONFIG_NONE);
   domain->orphans = NULL;
+  domain->orphans_pending = false;
+  domain->pending = false;
   domain->threads = NULL;
   domain->current = NULL;
   domain->callstack_buffer = NULL;
@@ -1254,16 +1315,19 @@ static memprof_domain_t domain_create(caml_domain_state *caml_state)
 
 /**** Interface with domain action-pending flag ****/
 
-/* If profiling is active in the current domain, and we may have some
- * callbacks pending, set the action pending flag. */
+/* If a domain has some callbacks pending, and isn't currently
+ * suspended, set the action pending flag. */
 
 static void set_action_pending_as_needed(memprof_domain_t domain)
 {
-  if (!domain->current ||
-      domain->current->suspended) return;
-  if (domain->entries.active < domain->entries.size ||
-      domain->current->entries.size > 0)
+  CAMLassert(domain->current);
+  if (domain->current->suspended) return;
+  domain->pending = (domain->entries.active < domain->entries.size ||
+                     domain->current->entries.size > 0 ||
+                     domain->orphans_pending);
+  if (domain->pending) {
     caml_set_action_pending(domain->caml_state);
+  }
 }
 
 /* Set the suspended flag on `domain` to `s`. Has the side-effect of
@@ -1271,17 +1335,20 @@ static void set_action_pending_as_needed(memprof_domain_t domain)
 
 static void update_suspended(memprof_domain_t domain, bool s)
 {
-  if (domain->current) {
-    domain->current->suspended = s;
-  }
-  caml_memprof_renew_minor_sample(domain->caml_state);
+  CAMLassert(domain->current);
+  domain->current->suspended = s;
+  /* If we are unsuspending, set the action-pending flag if
+   * we have callbacks to run. */
   if (!s) set_action_pending_as_needed(domain);
+
+  caml_memprof_renew_minor_sample(domain->caml_state);
 }
 
 /* Set the suspended flag on the current domain to `s`.
  * Has the side-effect of setting the trigger. */
 
 void caml_memprof_update_suspended(bool s) {
+  CAMLassert(Caml_state->memprof);
   update_suspended(Caml_state->memprof, s);
 }
 
@@ -1391,6 +1458,7 @@ void caml_memprof_scan_roots(scanning_action f,
                              bool global)
 {
   memprof_domain_t domain = state->memprof;
+  CAMLassert(domain);
   if (global) {
     /* Adopt all global orphans into this domain. */
     orphans_adopt(domain);
@@ -1444,6 +1512,7 @@ static void entries_update_after_minor_gc(entries_t entries,
 void caml_memprof_after_minor_gc(caml_domain_state *state, bool global)
 {
   memprof_domain_t domain = state->memprof;
+  CAMLassert(domain);
   if (global) {
     /* Adopt all global orphans into this domain. */
     orphans_adopt(domain);
@@ -1451,6 +1520,7 @@ void caml_memprof_after_minor_gc(caml_domain_state *state, bool global)
 
   domain_apply_actions(domain, true, entry_update_after_minor_gc,
                        NULL, entries_update_after_minor_gc);
+  orphans_update_pending(domain);
   set_action_pending_as_needed(domain);
 }
 
@@ -1485,20 +1555,15 @@ static bool entry_update_after_major_gc(entry_t e, void *data)
 void caml_memprof_after_major_gc(caml_domain_state *state, bool global)
 {
   memprof_domain_t domain = state->memprof;
+  CAMLassert(domain);
   if (global) {
     /* Adopt all global orphans into this domain. */
     orphans_adopt(domain);
   }
   domain_apply_actions(domain, false, entry_update_after_major_gc,
                        NULL, NULL);
+  orphans_update_pending(domain);
   set_action_pending_as_needed(domain);
-}
-
-/**** Running callbacks ****/
-
-value caml_memprof_run_callbacks_exn(void)
-{
-  return Val_unit;
 }
 
 /**** Interface to domain module ***/
@@ -1619,7 +1684,6 @@ static value capture_callstack_GC(memprof_domain_t domain, int alloc_idx)
 /* Given a stashed callstack, copy it to the Caml heap and free the
  * stash. Given a non-stashed callstack, simply return it. */
 
-CAMLunused_start /* TODO: remove once callbacks is merged */
 static value unstash_callstack(value callstack)
 {
   CAMLparam1(callstack);
@@ -1633,7 +1697,212 @@ static value unstash_callstack(value callstack)
   }
   CAMLreturn(callstack);
 }
-CAMLunused_end
+
+/**** Running callbacks ****/
+
+/* Runs a single callback, in thread `thread`, for entry number `i` in
+ * table `es`. The callback closure is `cb`, the parameter is `param`,
+ * and the "callback index" is `cb_index`.
+ * Returns Val_unit or an exception result. */
+
+static value run_callback_exn(memprof_thread_t thread,
+                              entries_t es, size_t i,
+                              value cb, value param,
+                              uintnat cb_index)
+{
+  entry_t e = &es->t[i];
+
+  if (e->runner) { /* some other thread has got to this callback first */
+    return Val_unit;
+  }
+
+  thread->running_table = es;
+  thread->running_index = i;
+  e->runner = thread;
+
+  e->callback = cb_index;
+  e->callbacks |= CB_MASK(cb_index);
+  e->user_data = Val_unit;      /* Release root. */
+
+  value res = caml_callback_exn(cb, param);
+
+  /* The entry may have been moved to another table under our feet,
+   * due to the callback or to other threads from this domain. For
+   * example, if a new profile is started. */
+  es = thread->running_table;
+  thread->running_table = NULL;
+  i = thread->running_index;
+
+  CAMLassert(es != NULL);
+  CAMLassert(i < es->size);
+  e = &es->t[i];
+  CAMLassert(e->runner == thread);
+  e->runner = NULL;
+  e->callback = CB_NONE;
+
+  if (validated_config(es) == CONFIG_NONE) {
+    /* The profile was discarded during the callback.
+     * no entries to update etc. */
+    if (!Is_exception_result(res))
+      return Val_unit;
+  }
+
+  if (Is_exception_result(res) || res == Val_unit) {
+    /* Callback raised an exception or returned None or (), discard
+       this entry. */
+    entry_delete(es, i);
+  } else {
+    /* Callback returned [Some _]. Store the value in [user_data]. */
+    CAMLassert(Is_block(res) && Tag_val(res) == 0 && Wosize_val(res) == 1);
+    e->user_data = Field(res, 0);
+    if (Is_block(e->user_data) && Is_young(e->user_data) &&
+        i < es->young)
+      es->young = i;
+
+    /* The callback we just ran was not a dealloc (they return unit)
+     * so there may be more callbacks to run on this entry.  If the
+     * block has been deallocated, or promoted and we were not running
+     * a promotion callback, mark this entry as ready to run. */
+    if (i < es->active &&
+        (e->deallocated ||
+         (e->promoted && (cb_index != CB_PROMOTE))))
+      es->active = i;
+
+    res = Val_unit;
+  }
+  return res;
+}
+
+/* Run the allocation callback for a given entry of an entries array.
+ * Returns Val_unit or an exception result. */
+
+static value run_alloc_callback_exn(memprof_thread_t thread,
+                                    entries_t es, size_t i)
+{
+  entry_t e = &es->t[i];
+  CAMLassert(e->deallocated || e->offset || Is_block(e->block));
+
+  e->user_data = unstash_callstack(e->user_data);
+  value sample_info = caml_alloc_small(4, 0);
+  Field(sample_info, 0) = Val_long(e->samples);
+  Field(sample_info, 1) = Val_long(e->wosize);
+  Field(sample_info, 2) = Val_long(e->source);
+  Field(sample_info, 3) = e->user_data;
+  value callback =
+    e->alloc_young ? Alloc_minor(es->config) : Alloc_major(es->config);
+  return run_callback_exn(thread, es, i, callback, sample_info, CB_ALLOC);
+}
+
+/* Run any pending callbacks from entries table `es` in thread
+ * `thread`. Returns either (a) when a callback raises an exception,
+ * or (b) when all pending callbacks have been run. */
+
+static value entries_run_callbacks_exn(memprof_thread_t thread,
+                                       entries_t es)
+{
+  value res = Val_unit;
+
+  /* Note: several callbacks may be called for a single entry. */
+  while (es->active < es->size) {
+    /* Examine and possibly run a callback on the entry at es->active.
+     * Running a callback may change many things, including es->active
+     * and es->config. */
+    value config = validated_config(es);
+    if (config == CONFIG_NONE) break;
+    size_t i = es->active;
+    entry_t e = &es->t[i];
+
+    if (e->deleted || e->runner) {
+      /* This entry is already deleted, or is running a callback. Ignore it. */
+      ++ es->active;
+    } else if (!(e->callbacks & CB_MASK(CB_ALLOC))) {
+      /* allocation callback hasn't been run */
+      if (Status(config) == CONFIG_STATUS_SAMPLING) {
+        res = run_alloc_callback_exn(thread, es, i);
+        if (Is_exception_result(res)) break;
+      } else {
+        /* sampling stopped, e.g. by a previous callback; drop this entry */
+        entry_delete(es, i);
+      }
+    } else if (e->promoted && !(e->callbacks & CB_MASK(CB_PROMOTE))) {
+      /* promoted entry; call promote callback */
+      res = run_callback_exn(thread, es, i,
+                             Promote(config), e->user_data,
+                             CB_PROMOTE);
+      if (Is_exception_result(res)) break;
+    } else if (e->deallocated && !(e->callbacks & CB_MASK(CB_DEALLOC))) {
+      /* deallocated entry; call dealloc callback */
+      value cb = (e->promoted || !e->alloc_young) ?
+        Dealloc_major(config) : Dealloc_minor(config);
+      res = run_callback_exn(thread, es, i,
+                             cb, e->user_data,
+                             CB_DEALLOC);
+      if (Is_exception_result(res)) break;
+    } else {
+      /* There is nothing to do with this entry. */
+      ++ es->active;
+    }
+  }
+  entries_evict(es);
+  return res;
+}
+
+/* Run any pending callbacks for the current thread and domain, and
+ * any orphaned callbacks.
+ *
+ * Does not use domain_apply_actions() because this can dynamically
+ * change the various indexes into an entries table while iterating
+ * over it, whereas domain_apply_actions assumes that can't happen. */
+
+value caml_memprof_run_callbacks_exn(void)
+{
+  memprof_domain_t domain = Caml_state->memprof;
+  CAMLassert(domain);
+  memprof_thread_t thread = domain->current;
+  CAMLassert(thread);
+  value res = Val_unit;
+  if (thread->suspended || !domain->pending) return res;
+
+  orphans_adopt(domain);
+  update_suspended(domain, true);
+
+  /* run per-domain callbacks first */
+  res = entries_run_callbacks_exn(thread, &domain->entries);
+  if (Is_exception_result(res)) goto end;
+
+  /* run per-thread callbacks for current thread */
+  res = entries_run_callbacks_exn(thread, &thread->entries);
+  if (Is_exception_result(res)) goto end;
+  /* Move any surviving entries from allocating thread to owning
+   * domain, so their subsequent callbacks may be run by any thread in
+   * the domain. entries_run_callbacks_exn didn't return an exception,
+   * so all these entries have had their allocation callbacks run. If
+   * this fails due to allocation failure, the entries remain with the
+   * thread, which is OK. */
+  (void)entries_transfer(&thread->entries, &domain->entries);
+
+  /* now run per-domain orphaned callbacks. */
+  memprof_orphan_table_t ot = domain->orphans;
+  while (ot) {
+    entries_t es = &ot->entries;
+    if ((validated_config(es) != CONFIG_NONE) && (es->active < es->size)) {
+      /* An orphan table with something to run. */
+      res = entries_run_callbacks_exn(thread, es);
+      if (Is_exception_result(res)) goto end;
+      /* Orphan tables may be deallocated during callbacks (if a
+       * callback discards the profile and then orphans_update_pending
+       * runs due to a GC) but a callback from an orphan table can
+       * never deallocate _that_ orphan table, so we can continue down
+       * the list. */
+    }
+    ot = ot->next;
+  }
+
+ end:
+  orphans_update_pending(domain);
+  update_suspended(domain, false);
+  return res;
+}
 
 /**** Sampling ****/
 
@@ -1720,6 +1989,7 @@ void caml_memprof_sample_young(uintnat wosize, int from_caml,
   CAMLassert(thread);
   entries_t entries = &thread->entries;
   uintnat whsize = Whsize_wosize(wosize);
+  value res = Val_unit;
   CAMLlocal1(config);
   config = entries->config;
 
@@ -1756,11 +2026,12 @@ void caml_memprof_sample_young(uintnat wosize, int from_caml,
    * trigger_ofs. */
   intnat alloc_ofs = whsize;
 
-  /* Undo the combined allocation, so that we can allocate callstacks */
+  /* Undo the combined allocation, so that we can allocate callstacks
+   * and in callbacks. */
   Caml_state->young_ptr += whsize;
 
-  /* Suspend profiling, so we don't profile allocations of callstacks.
-   * Resets trigger. */
+  /* Suspend profiling, so we don't profile allocations of callstacks
+   * or in callbacks. Resets trigger. */
   update_suspended(domain, true);
 
   /* Work through the sub-allocations, high address to low address,
@@ -1799,40 +2070,77 @@ void caml_memprof_sample_young(uintnat wosize, int from_caml,
   CAMLassert(trigger_ofs <= 0);
   CAMLassert(new_entries <= allocs);
 
-  /* At this point, we will run all outstanding callbacks in this thread's
-   * table. */
+  /* Run all outstanding callbacks in this thread's table, which
+   * includes these recent allocation callbacks. If one of the
+   * callbacks stops the profile, the other callbacks will still
+   * run. */
+  res = entries_run_callbacks_exn(thread, entries);
 
-  /* The allocations will proceed. Make room in the minor heap for the
-   * blocks to be * allocated. We must not trigger a GC after this point. */
-  if (Caml_state->young_ptr - whsize < Caml_state->young_trigger) {
-    CAML_EV_COUNTER(EV_C_FORCE_MINOR_MEMPROF, 1);
-    caml_poll_gc_work();
-  }
-  Caml_state->young_ptr -= whsize;
+  /* A callback, or another thread of this domain, may have stopped
+   * the profile and then started another one. This will result in the
+   * entries being transferred to the domain's table which is then
+   * orphaned, deleting all offset entries. In this case,
+   * thread->config will have changed. We will have run the allocation
+   * callbacks up to the one which stopped the old profile. */
+  bool restarted = (config != entries->config);
 
-  /* Offset entries for these sampled allocations will be in the
-   * thread's entry table. They must be updated to point to the blocks
-   * which will now be allocated. */
-  size_t i = 0;
-  if (entries->size >= new_entries) /* cope with deleted entries */
-    i = entries->size - new_entries;
-  while (i < entries->size) {
-    entry_t e = &entries->t[i];
-    if (e->offset) { /* an entry we just created */
-      e->block = Val_hp(Caml_state->young_ptr + e->block);
-      e->offset = false;
-      if (i < entries->young) entries->young = i;
+  /* A callback may have raised an exception. In this case, we are
+   * going to cancel this whole combined allocation and should delete
+   * the newly-created entries (if they are still in our table). */
+  bool cancelled = Is_exception_result(res);
+
+  if (!cancelled) {
+    /* No exceptions were raised, so the allocations will
+     * proceed. Make room in the minor heap for the blocks to be
+     * allocated. We must not trigger a GC after this point. */
+    while (Caml_state->young_ptr - whsize < Caml_state->young_trigger) {
+      CAML_EV_COUNTER(EV_C_FORCE_MINOR_MEMPROF, 1);
+      caml_poll_gc_work();
     }
-    ++i;
+    Caml_state->young_ptr -= whsize;
   }
 
-  /* There are now no outstanding allocation callbacks in the
-   * thread's entries table. Transfer the whole thing to the
-   * domain. */
-  (void)entries_transfer(entries, &domain->entries);
+  /* If profiling has been stopped and restarted by these callbacks,
+   * the thread's entries table has been transferred to the domain and
+   * orphaned, so must be empty. */
+
+  if (restarted) {
+    CAMLassert(entries->size == 0);
+  }
+
+  /* All deleted entries will have been evicted from the thread's
+   * table. This may (often) include the offset entries we've just
+   * created (if an allocation callback returns None, for
+   * example). Any surviving offset entries will still be at the end
+   * of this thread's table. If one of the callbacks has raised an
+   * exception, we will not be allocating the blocks, so these entries
+   * should be deleted (or marked as deallocated if the allocation
+   * callback ran). Otherwise, they must be updated to point to the
+   * blocks which will now be allocated. */
+
+  if (cancelled) {
+    entries_clear_offsets(entries);
+  } else {
+    for (size_t i = 0; i < entries->size; ++i) {
+      entry_t e = &entries->t[i];
+      if (e->offset) { /* an entry we just created */
+        e->block = Val_hp(Caml_state->young_ptr + e->block);
+        e->offset = false;
+        if (i < entries->young) entries->young = i;
+      }
+    }
+    /* There are now no outstanding allocation callbacks in the thread's
+     * entries table. Transfer the whole thing to the domain. If this
+     * fails due to allocation failure, the entries stay with the thread,
+     * which is OK. */
+    (void)entries_transfer(entries, &domain->entries);
+  }
 
   /* Unsuspend profiling. Resets trigger. */
   update_suspended(domain, false);
+
+  if (cancelled)
+    caml_raise(Extract_exception(res));
 
   CAMLreturn0;
 }
