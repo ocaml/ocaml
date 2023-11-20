@@ -79,8 +79,8 @@ static struct {
   CAML_PLAT_MUTEX_INITIALIZER,
   NULL,
   { 0, },
-  { 0, },
-  { 0, },
+  { NULL, },
+  { NULL, },
   NULL
 };
 
