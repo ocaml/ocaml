@@ -228,8 +228,10 @@ let link_compunit output_fun currpos_fun inchan file_name compunit =
   Symtable.patch_object code_block compunit.cu_reloc;
   if !Clflags.debug && compunit.cu_debug > 0 then begin
     seek_in inchan compunit.cu_debug;
-    let debug_event_list : Instruct.debug_event list = input_value inchan in
-    let debug_dirs : string list = input_value inchan in
+    let debug_event_list : Instruct.debug_event list =
+      Compression.input_value inchan in
+    let debug_dirs : string list =
+      Compression.input_value inchan in
     let file_path = Filename.dirname (Location.absolute_path file_name) in
     let debug_dirs =
       if List.mem file_path debug_dirs

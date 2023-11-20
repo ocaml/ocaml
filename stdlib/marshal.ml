@@ -17,7 +17,7 @@ type extern_flags =
     No_sharing
   | Closures
   | Compat_32
-  | Compression
+
 (* note: this type definition is used in 'runtime/debugger.c' *)
 
 external to_channel: out_channel -> 'a -> extern_flags list -> unit
@@ -66,10 +66,3 @@ let from_string buff ofs =
   (* Bytes.unsafe_of_string is safe here, as the produced byte
      sequence is never mutated *)
   from_bytes (Bytes.unsafe_of_string buff) ofs
-
-let compression_supported () =
-  let s = to_string () [Compression] in
-  match s.[3] with
-  | '\xBD' -> true
-  | '\xBE' -> false
-  | _ -> assert false
