@@ -1,6 +1,16 @@
 OCaml 5.1.1
 -----------
 
+### Standard library:
+
+* #12562, #12734: Remove the `Marshal.Compression` flag to the
+  `Marshal.to_*` functions introduced in 5.1 by #12006, as it cannot
+  be implemented without risking to link -lzstd with all
+  ocamlopt-generated executables.  The compilers are still able to use
+  ZSTD compression for compilation artefacts.
+  (Xavier Leroy and David Allsopp, report by Kate Deplaix, review by
+   Nicolás Ojeda Bär, Kate Deplaix, and Damien Doligez).
+
 ### Bug fixes:
 
 - #12623, fix the computation of variance composition
