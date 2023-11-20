@@ -300,8 +300,8 @@ static pool* pool_global_adopt(struct caml_heap_state* local, sizeclass sz)
   int adopted_pool = 0;
 
   /* probably no available pools out there to be had */
-  if( !atomic_load_acquire(&pool_freelist.global_avail_pools[sz]) &&
-      !atomic_load_acquire(&pool_freelist.global_full_pools[sz]) )
+  if( !atomic_load_relaxed(&pool_freelist.global_avail_pools[sz]) &&
+      !atomic_load_relaxed(&pool_freelist.global_full_pools[sz]) )
     return NULL;
 
   /* Haven't managed to find a pool locally, try the global ones */
