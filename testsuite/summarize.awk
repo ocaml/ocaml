@@ -134,6 +134,10 @@ function record_unexp() {
     record_unexp();
 }
 
+/make[^:]*: \*\*\* \[[^]]*\] Error/ {
+    errored = 1;
+}
+
 END {
     if (in_test) record_unexp();
 
