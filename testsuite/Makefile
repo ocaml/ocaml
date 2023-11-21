@@ -266,7 +266,8 @@ one: lib tools
 
 .PHONY: exec-one
 exec-one:
-	@$(ocamltest) -find-test-dirs $(DIR) | while IFS='' read -r dir; do \
+	@IFS=$$(printf "\r\n"); \
+	$(ocamltest) -find-test-dirs $(DIR) | while IFS='' read -r dir; do \
 	  echo "Running tests from '$$dir' ..."; \
 	  $(MAKE) exec-ocamltest DIR=$$dir \
 	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR)"; \
