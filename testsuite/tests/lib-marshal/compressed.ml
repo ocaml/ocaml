@@ -1,11 +1,12 @@
 (* TEST
-   include ocamlcommon;
+   include ocamlcommon
 *)
 
 (* Test for compressed marshaling / unmarshaling *)
 
 open Compression
 
+let to_channel = Marshal.to_channel
 let from_channel = Marshal.from_channel
 
 let max_data_depth = 500000
