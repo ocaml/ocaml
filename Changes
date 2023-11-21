@@ -20,6 +20,10 @@ OCaml 5.1.1
   the `-short-paths` flag.
   (Florian Angeletti, report by Vesa Karvonen, review by Gabriel Scherer)
 
+- #12581, #12609: Fix error on uses of packed modules outside their pack
+  to correctly handle nested packs
+  (Vincent Laviron, report by Javier Chávarri, review by Pierre Chambart)
+
 OCaml 5.1.0 (14 September 2023)
 -------------------------------
 
