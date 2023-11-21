@@ -59,12 +59,12 @@ ifeq "$(UNIX_OR_WIN32)" "unix"
   IFS_LINE = IFS=''
 else # Windows
   find := /usr/bin/find
-	# On Windows, ocamltest will produce Windows line-endings (\r\n) and the final
-	# \r is kept by the shell. This can either be stripped with tr -d '\r' but we
-	# can avoid the additional process by instead setting IFS in the while loop to
-	# be the CR character (i.e. treat \r as a field delimiter).
-	# The dance with $(CR_CHAR) is because POSIX doesn't provide a way to write \r
-	# in a string.
+  # On Windows, ocamltest will produce Windows line-endings (\r\n) and the final
+  # \r is kept by the shell. This can either be stripped with tr -d '\r' but we
+  # can avoid the additional process by instead setting IFS in the while loop to
+  # be the CR character (i.e. treat \r as a field delimiter).
+  # The dance with $(CR_CHAR) is because POSIX doesn't provide a way to write \r
+  # in a string.
   export CR_CHAR := $(shell printf "\r")
   IFS_LINE = IFS="$$CR_CHAR"
 endif
