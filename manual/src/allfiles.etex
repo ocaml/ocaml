@@ -75,6 +75,7 @@ and as a
 \input{afl-fuzz.tex}
 \input{runtime-tracing.tex}
 \input{tail-mod-cons.tex}
+\input{tsan.tex}
 
 \part{The OCaml library}
 \label{p:library}
