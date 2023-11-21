@@ -55,8 +55,18 @@ ifeq "$(UNIX_OR_WIN32)" "unix"
   else # Non-cygwin Unix
     find := find
   endif
+  # $(IFS_LINE) for Unix simply clears IFS, so entire lines are read
+  IFS_LINE = IFS=''
 else # Windows
   find := /usr/bin/find
+	# On Windows, ocamltest will produce Windows line-endings (\r\n) and the final
+	# \r is kept by the shell. This can either be stripped with tr -d '\r' but we
+	# can avoid the additional process by instead setting IFS in the while loop to
+	# be the CR character (i.e. treat \r as a field delimiter).
+	# The dance with $(CR_CHAR) is because POSIX doesn't provide a way to write \r
+	# in a string.
+  export CR_CHAR := $(shell printf "\r")
+  IFS_LINE = IFS="$$CR_CHAR"
 endif
 
 ifeq "$(ocamltest_program)" ""
@@ -151,10 +161,9 @@ all:
 .PHONY: new-without-report
 new-without-report: lib tools
 	@rm -f $(failstamp)
-	@(IFS=$$(printf "\r\n"); \
-	$(ocamltest) -find-test-dirs tests | while IFS='' read -r dir; do \
+	@($(ocamltest) -find-test-dirs tests | while $(IFS_LINE) read -r dir; do \
 	  echo Running tests from \'$$dir\' ... ; \
-	  $(MAKE) exec-ocamltest DIR=$$dir \
+	  $(MAKE) exec-ocamltest DIR="$$dir" \
 	    OCAMLTESTENV=""; \
 	done || echo outer loop >> $(failstamp)) 2>&1 | tee $(TESTLOG)
 	@$(MAKE) check-failstamp
@@ -266,10 +275,9 @@ one: lib tools
 
 .PHONY: exec-one
 exec-one:
-	@IFS=$$(printf "\r\n"); \
-	$(ocamltest) -find-test-dirs $(DIR) | while IFS='' read -r dir; do \
+	@$(ocamltest) -find-test-dirs $(DIR) | while $(IFS_LINE) read -r dir; do \
 	  echo "Running tests from '$$dir' ..."; \
-	  $(MAKE) exec-ocamltest DIR=$$dir \
+	  $(MAKE) exec-ocamltest DIR="$$dir" \
 	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR)"; \
 	done
 
@@ -277,10 +285,9 @@ exec-one:
 exec-ocamltest:
 	@if [ -z "$(DIR)" ]; then exit 1; fi
 	@if [ ! -d "$(DIR)" ]; then exit 1; fi
-	@(IFS=$$(printf "\r\n"); \
-	$(ocamltest) -list-tests $(DIR) | while IFS='' read -r testfile; do \
+	@($(ocamltest) -list-tests $(DIR) | while $(IFS_LINE) read -r testfile; do \
 	   TERM=dumb $(OCAMLTESTENV) \
-	     $(ocamltest) $(OCAMLTESTFLAGS) $(DIR)/$$testfile || \
+	     $(ocamltest) $(OCAMLTESTFLAGS) "$(DIR)/$$testfile" || \
 	   echo " ... testing '$$testfile' => unexpected error"; \
 	done) || echo directory "$(DIR)" >>$(failstamp)
 
