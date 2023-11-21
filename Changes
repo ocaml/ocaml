@@ -24,6 +24,10 @@ OCaml 5.1.1
   to correctly handle nested packs
   (Vincent Laviron, report by Javier Chávarri, review by Pierre Chambart)
 
+- #12757: Fix ocamlnat (native toplevel) by registering frametables correctly
+  (Stephen Dolan, Nick Barnes and Mark Shinwell,
+   review by Vincent Laviron and Sébastien Hinderer)
+
 OCaml 5.1.0 (14 September 2023)
 -------------------------------
 

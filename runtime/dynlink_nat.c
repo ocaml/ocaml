@@ -166,7 +166,7 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
 CAMLprim value caml_natdynlink_run_toplevel(value filename, value symbol)
 {
   CAMLparam2 (filename, symbol);
-  CAMLlocal3 (res, v, handle_v);
+  CAMLlocal4 (res, v, handle_v, symbols);
   void *handle;
   char_os *p;
 
@@ -184,10 +184,16 @@ CAMLprim value caml_natdynlink_run_toplevel(value filename, value symbol)
     Store_field(res, 0, v);
   } else {
     handle_v = Val_handle(handle);
+
+    symbols = caml_alloc_small(1, 0);
+    Field(symbols, 0) = symbol;
+    (void) caml_natdynlink_register(handle_v, symbols);
+
     res = caml_alloc(1,0);
     v = caml_natdynlink_run(handle_v, symbol);
     Store_field(res, 0, v);
   }
+
   CAMLreturn(res);
 }
 
