@@ -31,14 +31,10 @@ let need_symbol sym =
   Option.is_none (Dynlink.unsafe_get_global_value ~bytecode_or_asm_symbol:sym)
 
 let dll_run dll entry =
-  match (try Result (Obj.magic (ndl_run_toplevel dll entry))
-         with exn -> Exception exn)
-  with
-    | Exception _ as r -> r
-    | Result r ->
-        match Obj.magic r with
-          | Ok x -> Result x
-          | Err s -> fatal_error ("Toploop.dll_run " ^ s)
+  match ndl_run_toplevel dll entry with
+  | Ok x -> Result x
+  | Err s -> fatal_error ("Toploop.dll_run " ^ s)
+  | exception exn -> Exception exn
 
 (* CR-soon trefis for mshinwell: copy/pasted from Optmain. Should it be shared
    or?
