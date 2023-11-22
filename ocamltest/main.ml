@@ -143,7 +143,7 @@ let rec run_test_tree log common_prefix behavior env summ ast =
     let newast = Ast (stmts, subs) in
     run_test_tree log common_prefix children_behavior newenv newsumm newast
   | Ast ([], subs) ->
-    List.fold_left join_summaries All_skipped
+    List.fold_left join_summaries summ
       (List.map (run_test_tree log common_prefix behavior env All_skipped) subs)
 
 let get_test_source_directory test_dirname =
