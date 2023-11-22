@@ -395,7 +395,15 @@ val write : file_descr -> bytes -> int -> int -> int
     taking them from byte sequence [buf], starting at position [pos]
     in [buff]. Return the number of bytes actually written.  [write]
     repeats the writing operation until all bytes have been written or
-    an error occurs.  *)
+    an error occurs.
+
+    If the descriptor [fd] corresponds to a pipe whose other end is closed, or
+    to a socket whose other end was shut down, a [SIGPIPE] signal will be sent
+    to the running program. This will by default terminate the program. To
+    avoid this and instead have [write fd buf pos len] raise a [EPIPE] error,
+    consider marking this signal as ignored with:
+
+      [Sys.(set_signal sigpipe Signal_ignore)] *)
 
 val write_bigarray :
   file_descr ->
