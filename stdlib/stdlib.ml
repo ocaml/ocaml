@@ -48,6 +48,8 @@ exception Undefined_recursive_module = Undefined_recursive_module
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
 
+let ( @. ) f g = fun x -> f (g x)
+
 (* Debugging *)
 
 external __LOC__ : string = "%loc_LOC"
