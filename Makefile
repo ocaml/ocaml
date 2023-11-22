@@ -411,7 +411,7 @@ utils/config_%.mli: utils/config.mli
 beforedepend:: utils/config_main.mli utils/config_boot.mli
 
 $(addprefix compilerlibs/ocamlcommon., cma cmxa): \
-  OC_OCAML_COMMON_LDFLAGS = += -linkall
+  OC_COMMON_LINKFLAGS += -linkall
 
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cma
