@@ -233,7 +233,7 @@ Caml_inline header_t Hd_val(value val)
 
 /* NOTE: [Forward_tag] and [Infix_tag] must be just under
    [No_scan_tag], with [Infix_tag] the lower one.
-   See [caml_oldify_one] in minor_gc.c for more details.
+   See [oldify_one] in minor_gc.c for more details.
 
    NOTE: Update stdlib/obj.ml whenever you change the tags.
  */
