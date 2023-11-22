@@ -493,7 +493,7 @@ AC_ARG_ENABLE([reserved-header-bits],
     [reserve BITS (between 0 and 31) bits in block headers])],
   [AS_CASE([$enable_reserved_header_bits],
     [[[0-9]]|[[1-2]][[0-9]]|3[[0-1]]],
-      [ reserved_header_bits=$enable_reserved_header_bits],
+      [reserved_header_bits=$enable_reserved_header_bits],
   [AC_MSG_ERROR([invalid argument to --enable-reserved-header-bits])])])
 
 AC_ARG_ENABLE([stdlib-manpages],
@@ -940,10 +940,10 @@ AS_IF([test x"$supports_shared_libraries" != 'xfalse'], [
 
     AS_CASE([$host],
       [*-w64-mingw32*|*-pc-windows],
-      [flexlink_where="$(cmd /c "$flexlink" -where 2>/dev/null)"
-      AS_IF([test -z "$flexlink_where"],
-        [AC_MSG_ERROR([$flexlink is not executable from a native Win32 process])
-      ])])
+        [flexlink_where="$(cmd /c "$flexlink" -where 2>/dev/null)"
+        AS_IF([test -z "$flexlink_where"],
+          [AC_MSG_ERROR(m4_normalize([$flexlink is not executable from a native
+            Win32 process]))])])
   ])
 
   OCAML_TEST_FLEXDLL_H([$flexdll_source_dir])
@@ -1165,9 +1165,9 @@ AS_IF([test x"$enable_shared" != "xno"],
       mkmaindll="flexlink -maindll ${mkdll_flags}"],
     [powerpc-ibm-aix*],
       [AS_CASE([$ocaml_cv_cc_vendor],
-               [xlc*],
-               [mkdll_flags='-qmkshrobj -G'
-                supports_shared_libraries=true])],
+        [xlc*],
+          [mkdll_flags='-qmkshrobj -G'
+          supports_shared_libraries=true])],
     [*-*-solaris*],
       [sharedlib_cflags="-fPIC"
       mkdll_flags='-shared'
@@ -1178,15 +1178,15 @@ AS_IF([test x"$enable_shared" != "xno"],
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
        AS_CASE([$ocaml_cv_cc_vendor,$host],
-           [gcc-*,powerpc-*-linux*],
+         [gcc-*,powerpc-*-linux*],
            [mkdll_flags='-shared -mbss-plt'],
-           [[*,i[3456]86-*]],
+         [[*,i[3456]86-*]],
            # Disable DT_TEXTREL warnings on Linux and BSD i386
            # See https://github.com/ocaml/ocaml/issues/9800
            [mkdll_flags='-shared -Wl,-z,notext'],
-           [mkdll_flags='-shared'])
+         [mkdll_flags='-shared'])
        AS_CASE([$host],
-           [[*-*-openbsd7.[3-9]|*-*-openbsd[89].*]],
+         [[*-*-openbsd7.[3-9]|*-*-openbsd[89].*]],
            [mkdll_flags="${mkdll_flags} -Wl,--no-execute-only"])
       oc_ldflags="$oc_ldflags -Wl,-E"
       rpath="-Wl,-rpath,"
@@ -1254,7 +1254,7 @@ AS_CASE([$enable_native_toplevel,$natdynlink],
       The native toplevel requires native dynlink support]))],
   [yes,*],
     [install_ocamlnat=true],
-    [install_ocamlnat=false])
+  [install_ocamlnat=false])
 
 # Try to work around the Skylake/Kaby Lake processor bug.
 AS_CASE(["$ocaml_cv_cc_vendor,$host"],
@@ -1400,8 +1400,7 @@ AS_CASE([$enable_native_compiler,$has_native_backend],
   [*,no],
     [native_compiler=false
     AC_MSG_NOTICE([the native compiler is not supported on this platform])],
-  [*,*],
-    [native_compiler=true])
+  [native_compiler=true])
 
 AS_IF([$native_compiler],
   [default_build_target=world.opt],
@@ -1456,9 +1455,8 @@ AS_CASE([$arch],
   [AS_CASE([$host],
     # expected to match "*-linux-musl" as well as "*-linux-musleabi*"
     [*-linux-musl*],
-       # Alpine and other musl-based Linux distributions
-       [common_cflags="-no-pie $common_cflags"],
-    [])])
+      # Alpine and other musl-based Linux distributions
+      [common_cflags="-no-pie $common_cflags"])])
 
 # Assembler
 
@@ -1500,8 +1498,7 @@ AS_CASE([$as_target,$ocaml_cv_cc_vendor],
     default_aspp="$default_as"],
   [*-*-darwin*,clang-*],
     [default_as="$default_as -Wno-trigraphs"
-    default_aspp="$default_as"],
-  [])
+    default_aspp="$default_as"])
 
 AS_IF([test "$with_pic"],
   [fpic=true
@@ -1634,10 +1631,9 @@ AS_IF([test "x$enable_instrumented_runtime" != "xno" ],
       AS_CASE([$enable_instrumented_runtime,$has_monotonic_clock],
         [*,true],
           [instrumented_runtime=true],
-        [yes,false], [
-          AC_MSG_ERROR([Instrumented runtime support requested \
-but no proper monotonic clock source was found.])
-        ],
+        [yes,false],
+          [AC_MSG_ERROR(m4_normalize([Instrumented runtime support requested
+            but no proper monotonic clock source was found.]))],
         [auto,false],
           [instrumented_runtime=false]
     )],
@@ -1657,15 +1653,11 @@ but no proper monotonic clock source was found.])
             )
           ],
         [yes,false,*],
-          [
-           AC_MSG_ERROR([Instrumented runtime support requested \
-but clock_gettime is missing.])
-          ],
+          [AC_MSG_ERROR(m4_normalize([Instrumented runtime support requested
+            but clock_gettime is missing.]))],
         [yes,*,false],
-          [
-           AC_MSG_ERROR([Instrumented runtime support requested \
-but no proper monotonic clock source was found.])
-          ]
+          [AC_MSG_ERROR(m4_normalize([Instrumented runtime support requested
+            but no proper monotonic clock source was found.]))]
       )]
     )]
 )
@@ -1703,7 +1695,7 @@ AS_IF([$tsan],
 
   AS_CASE([$ocaml_cv_cc_vendor],
     [gcc-[[0123456789]]-*|gcc-10-*|clang-*],
-    [],
+      [],
     [oc_tsan_cflags="$oc_tsan_cflags -Wno-tsan"])
   AS_CASE([$ocaml_cv_cc_vendor],
     [gcc*],
@@ -2367,8 +2359,8 @@ AS_IF([test x"$enable_mmap_map_stack" = "xyes"],
     [AS_CASE([$target],
        [*-freebsd*],
          [AC_MSG_ERROR([mmap MAP_STACK not supported on FreeBSD])],
-       [*],[with_mmap_map_stack=true;
-            AC_DEFINE([USE_MMAP_MAP_STACK])])],
+       [with_mmap_map_stack=true;
+        AC_DEFINE([USE_MMAP_MAP_STACK])])],
     [AC_MSG_ERROR([mmap MAP_STACK requested but not found on $target])])
   ],
   [AS_CASE([$target],
@@ -2376,8 +2368,7 @@ AS_IF([test x"$enable_mmap_map_stack" = "xyes"],
      [with_mmap_map_stack=true;
       AC_DEFINE([USE_MMAP_MAP_STACK])
       AC_MSG_NOTICE([using MAP_STACK on OpenBSD due to stack checking])],
-    [*],
-     [with_mmap_map_stack=false])
+    [with_mmap_map_stack=false])
   ])
 
 oc_native_compflags=''
@@ -2390,25 +2381,23 @@ AS_IF([test x"$enable_function_sections" = "xno"],
         [*-cygwin*|*-mingw*|*-windows|*-apple-darwin*],
           [function_sections=false;
            AC_MSG_NOTICE([No support for function sections on $target.])],
-        [*],
-          [AS_CASE([$ocaml_cv_cc_vendor],
-            [gcc-[0123]-*|gcc-4-[01234567]],
-              [function_sections=false;
-              AC_MSG_NOTICE([Function sections are not
-              supported in GCC prior to version 4.8.])],
-            [clang-[012]-*|clang-3-[01234]],
-              [function_sections=false;
-              AC_MSG_NOTICE([Function sections are not supported
-              in Clang prior to version 3.5.])],
-            [gcc-*|clang-*],
-              [function_sections=true;
-              oc_native_compflags='-function-sections'
-              internal_cflags="$internal_cflags -ffunction-sections";
-              AC_DEFINE([FUNCTION_SECTIONS])],
-            [*],
-              [function_sections=false;
-              AC_MSG_NOTICE([Function sections are not supported by
-              $ocaml_cv_cc_vendor.])])])],
+        [AS_CASE([$ocaml_cv_cc_vendor],
+          [gcc-[0123]-*|gcc-4-[01234567]],
+            [function_sections=false;
+            AC_MSG_NOTICE([Function sections are not
+            supported in GCC prior to version 4.8.])],
+          [clang-[012]-*|clang-3-[01234]],
+            [function_sections=false;
+            AC_MSG_NOTICE([Function sections are not supported
+            in Clang prior to version 3.5.])],
+          [gcc-*|clang-*],
+            [function_sections=true;
+            oc_native_compflags='-function-sections'
+            internal_cflags="$internal_cflags -ffunction-sections";
+            AC_DEFINE([FUNCTION_SECTIONS])],
+          [function_sections=false;
+          AC_MSG_NOTICE([Function sections are not supported by
+          $ocaml_cv_cc_vendor.])])])],
     [function_sections=false]);
   AS_IF([test x"$function_sections" = "xfalse"],
     [AS_IF([test x"$enable_function_sections" = "xyes"],
