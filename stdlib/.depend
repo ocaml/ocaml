@@ -546,6 +546,18 @@ stdlib__Nativeint.cmx : nativeint.ml \
     stdlib.cmx \
     stdlib__Nativeint.cmi
 stdlib__Nativeint.cmi : nativeint.mli
+stdlib__NonEmpty.cmo : nonEmpty.ml \
+    stdlib__Seq.cmi \
+    stdlib__List.cmi \
+    stdlib__Int.cmi \
+    stdlib__NonEmpty.cmi
+stdlib__NonEmpty.cmx : nonEmpty.ml \
+    stdlib__Seq.cmx \
+    stdlib__List.cmx \
+    stdlib__Int.cmx \
+    stdlib__NonEmpty.cmi
+stdlib__NonEmpty.cmi : nonEmpty.mli \
+    stdlib__Seq.cmi
 stdlib__Obj.cmo : obj.ml \
     stdlib__Sys.cmi \
     stdlib__Int32.cmi \

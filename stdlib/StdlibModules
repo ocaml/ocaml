@@ -50,6 +50,7 @@ STDLIB_MODULE_BASENAMES = \
   char \
   uchar \
   list \
+  nonEmpty \
   int \
   bytes \
   string \

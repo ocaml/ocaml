@@ -620,6 +620,7 @@ module Marshal        = Marshal
 module MoreLabels     = MoreLabels
 module Mutex          = Mutex
 module Nativeint      = Nativeint
+module NonEmpty       = NonEmpty
 module Obj            = Obj
 module Oo             = Oo
 module Option         = Option
