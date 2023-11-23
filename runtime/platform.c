@@ -15,10 +15,12 @@
 /**************************************************************************/
 #define CAML_INTERNALS
 
+#include "caml/config.h"
 #include <string.h>
+#ifdef HAS_UNISTD
 #include <unistd.h>
+#endif
 #include <errno.h>
-#include <sys/time.h>
 #include "caml/osdeps.h"
 #include "caml/platform.h"
 #include "caml/fail.h"
@@ -231,6 +233,10 @@ unsigned caml_plat_spin_wait(unsigned spins,
   if (spins < Slow_sleep_ns && Slow_sleep_ns <= next_spins) {
     caml_gc_log("Slow spin-wait loop in %s at %s:%d", function, file, line);
   }
+#ifdef _WIN32
+  Sleep(spins/1000000);
+#else
   usleep(spins/1000);
+#endif
   return next_spins;
 }

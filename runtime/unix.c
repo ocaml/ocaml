@@ -27,7 +27,9 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
+#ifdef HAS_GETTIMEOFDAY
 #include <sys/time.h>
+#endif
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>

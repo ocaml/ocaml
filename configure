@@ -14568,13 +14568,12 @@ fi
 
 # Checks for header files
 
-ac_fn_c_check_header_compile "$LINENO" "math.h" "ac_cv_header_math_h" "$ac_includes_default"
-if test "x$ac_cv_header_math_h" = xyes
-then :
-
-fi
-
-       for ac_header in unistd.h
+# Don't check for unistd.h on Windows
+case $host in #(
+  *-*-mingw32*|*-pc-windows) :
+     ;; #(
+  *) :
+           for ac_header in unistd.h
 do :
   ac_fn_c_check_header_compile "$LINENO" "unistd.h" "ac_cv_header_unistd_h" "$ac_includes_default"
 if test "x$ac_cv_header_unistd_h" = xyes
@@ -14584,7 +14583,15 @@ then :
 
 fi
 
-done
+done ;;
+esac
+
+ac_fn_c_check_header_compile "$LINENO" "math.h" "ac_cv_header_math_h" "$ac_includes_default"
+if test "x$ac_cv_header_math_h" = xyes
+then :
+
+fi
+
 ac_fn_c_check_header_compile "$LINENO" "stdint.h" "ac_cv_header_stdint_h" "$ac_includes_default"
 if test "x$ac_cv_header_stdint_h" = xyes
 then :

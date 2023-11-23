@@ -178,6 +178,11 @@ Working version
   Updates usage of sigprocmask to pthread_sigmask in otherlibs/unix.
   (Max Slater, review by Miod Vallat and Xavier Leroy)
 
+- #12769: Unify MSVC and MinGW-w64 code paths, by always using WinAPI
+  directly.
+  (David Allsopp, Antonin Décimo, and Samuel Hym, review by Nicolas
+   Ojeda Bar)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.

@@ -21,6 +21,9 @@
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
+#ifdef _WIN32
+#include <io.h>
+#endif
 
 #include "caml/version.h"
 
