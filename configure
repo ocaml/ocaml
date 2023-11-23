@@ -13967,6 +13967,50 @@ else $as_nop
 fi
 
 
+# Use -Wimplicit-fallthrough if supported
+for flag in '-Wimplicit-fallthrough=5' '-Wimplicit-fallthrough'; do
+  as_CACHEVAR=`printf "%s\n" "ax_cv_check_cflags_$warn_error_flag_$flag" | $as_tr_sh`
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler accepts $flag" >&5
+printf %s "checking whether the C compiler accepts $flag... " >&6; }
+if eval test \${$as_CACHEVAR+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+
+  ax_check_save_flags=$CFLAGS
+  CFLAGS="$CFLAGS $warn_error_flag $flag"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  eval "$as_CACHEVAR=yes"
+else $as_nop
+  eval "$as_CACHEVAR=no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+  CFLAGS=$ax_check_save_flags
+fi
+eval ac_res=\$$as_CACHEVAR
+	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+printf "%s\n" "$ac_res" >&6; }
+if eval test \"x\$"$as_CACHEVAR"\" = x"yes"
+then :
+  cc_warnings="$cc_warnings $flag"; break
+else $as_nop
+  :
+fi
+
+done
+
 case $enable_warn_error,true in #(
   yes,*|,true) :
     cc_warnings="$cc_warnings $warn_error_flag" ;; #(

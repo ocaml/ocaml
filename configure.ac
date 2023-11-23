@@ -819,6 +819,12 @@ AX_CHECK_COMPILE_FLAG([-Wold-style-declaration],
   [cc_warnings="$cc_warnings -Wold-style-declaration"], [],
   [$warn_error_flag])
 
+# Use -Wimplicit-fallthrough if supported
+for flag in '-Wimplicit-fallthrough=5' '-Wimplicit-fallthrough'; do
+  AX_CHECK_COMPILE_FLAG([$flag],
+    [cc_warnings="$cc_warnings $flag"; break], [], [$warn_error_flag])
+done
+
 AS_CASE([$enable_warn_error,OCAML__DEVELOPMENT_VERSION],
   [yes,*|,true],
     [cc_warnings="$cc_warnings $warn_error_flag"])
