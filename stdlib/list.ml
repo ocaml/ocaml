@@ -289,6 +289,8 @@ and[@tail_mod_cons] prepend_concat_map ys f xs =
   | [] -> concat_map f xs
   | y :: ys -> y :: prepend_concat_map ys f xs
 
+let flat_map = concat_map
+
 let fold_left_map f accu l =
   let rec aux accu l_accu = function
     | [] -> accu, rev l_accu

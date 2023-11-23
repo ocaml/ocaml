@@ -205,6 +205,11 @@ val concat_map : ('a -> 'b list) -> 'a list -> 'b list
     @since 4.10
 *)
 
+val flat_map : ('a -> 'b list) -> 'a list -> 'b list
+(** [flat_map] is an alias for [concat_map].
+
+    @since 5.2 *)
+
 val fold_left_map :
   ('acc -> 'a -> 'acc * 'b) -> 'acc -> 'a list -> 'acc * 'b list
 (** [fold_left_map] is  a combination of [fold_left] and [map] that threads an
