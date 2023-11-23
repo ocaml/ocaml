@@ -266,6 +266,9 @@ Working version
 - #12625: Remove the Closure module from Obj
   (Vincent Laviron, review by Xavier Leroy)
 
+- #12774: Add flat_map in Option, Result and List
+  (Xavier Van de Woestyne, review by ???)
+
 ### Other libraries:
 
 - #12213: Dynlink library, improve legibility of error messages
