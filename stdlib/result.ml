@@ -21,6 +21,7 @@ let value r ~default = match r with Ok v -> v | Error _ -> default
 let get_ok = function Ok v -> v | Error _ -> invalid_arg "result is Error _"
 let get_error = function Error e -> e | Ok _ -> invalid_arg "result is Ok _"
 let bind r f = match r with Ok v -> f v | Error _ as e -> e
+let flat_map f r = bind r f
 let join = function Ok r -> r | Error _ as e -> e
 let map f = function Ok v -> Ok (f v) | Error _ as e -> e
 let map_error f = function Error e -> Error (f e) | Ok _ as v -> v

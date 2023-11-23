@@ -53,6 +53,11 @@ val join : (('a, 'e) result, 'e) result -> ('a, 'e) result
 val map : ('a -> 'b) -> ('a, 'e) result -> ('b, 'e) result
 (** [map f r] is [Ok (f v)] if [r] is [Ok v] and [r] if [r] is [Error _]. *)
 
+val flat_map : ('a -> ('b, 'e) result) -> ('a, 'e) result -> ('b, 'e) result
+(** [flat_map f o] is [bind o f].
+
+    @since 5.2 *)
+
 val map_error : ('e -> 'f) -> ('a, 'e) result -> ('a, 'f) result
 (** [map_error f r] is [Error (f e)] if [r] is [Error e] and [r] if
     [r] is [Ok _]. *)
