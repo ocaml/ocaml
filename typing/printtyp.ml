@@ -2458,10 +2458,15 @@ let explanation (type variety) intro prev env
       | _ -> ignore
     in
     explain_escape pre kind
-  | Errortrace.Incompatible_fields { name; _ } ->
-      Some(dprintf "@,Types for method %a are incompatible"
-             Style.inline_code name
-          )
+  | Errortrace.Incompatible_fields { name; diff} ->
+    reserve_names diff.got;
+    reserve_names diff.expected;
+    Some(dprintf "@,@[Types for method %a are incompatible, the method has \
+                    type@ %a,@ but the expected method type was@ %a@]"
+      Style.inline_code name
+      (Style.as_inline_code type_expr_with_reserved_names) diff.got
+      (Style.as_inline_code type_expr_with_reserved_names) diff.expected
+    )
   | Errortrace.Variant v ->
     explain_variant v
   | Errortrace.Obj o ->

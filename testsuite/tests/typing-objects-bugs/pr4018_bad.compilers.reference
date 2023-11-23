@@ -19,4 +19,7 @@ Error: This type "entity" = "< destroy_subject : id subject; entity_id : id >"
          "(< destroy_subject : < add_observer : 'd -> 'b; .. >; .. > as 'a)
          entity_container as 'd" =
            "< add_entity : 'a -> 'b; notify : 'a -> id -> unit >"
-       Types for method "add_observer" are incompatible
+       Types for method "add_observer" are incompatible, the method has type
+       "(id subject, id) observer -> unit", but the expected method type was
+       "< destroy_subject : < add_observer : 'e; .. >; .. > entity_container ->
+       'b as 'e"
