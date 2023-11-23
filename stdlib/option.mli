@@ -47,6 +47,11 @@ val join : 'a option option -> 'a option
 val map : ('a -> 'b) -> 'a option -> 'b option
 (** [map f o] is [None] if [o] is [None] and [Some (f v)] if [o] is [Some v]. *)
 
+val flat_map : ('a -> 'b option) -> 'a option -> 'b option
+(** [flat_map f o] is [bind o f].
+
+    @since 5.2 *)
+
 val fold : none:'a -> some:('b -> 'a) -> 'b option -> 'a
 (** [fold ~none ~some o] is [none] if [o] is [None] and [some v] if [o] is
     [Some v]. *)

@@ -20,6 +20,7 @@ let some v = Some v
 let value o ~default = match o with Some v -> v | None -> default
 let get = function Some v -> v | None -> invalid_arg "option is None"
 let bind o f = match o with None -> None | Some v -> f v
+let flat_map f o = bind o f
 let join = function Some o -> o | None -> None
 let map f o = match o with None -> None | Some v -> Some (f v)
 let fold ~none ~some = function Some v -> some v | None -> none
