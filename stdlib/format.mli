@@ -1492,7 +1492,7 @@ val kasprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
 
     - [Format.printf "l = [@[<hov>%a@]]@." ... l] is like [printf], but
       with additional formatting instructions (denoted with "@"). The pair
-      "@[<hov>" and "@]" is a "horizontal-or-vertical box".
+      "[@\[<hov>]" and "[@\]]" is a "horizontal-or-vertical box".
 
     - "@." ends formatting with a newline. It is similar to "\n" but is also
       aware of the [Format.formatter]'s state. Do not use "\n" with [Format].
