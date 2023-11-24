@@ -93,8 +93,8 @@ CAMLprim value caml_gc_quick_stat(value v)
 double caml_gc_minor_words_unboxed (void)
 {
   return (Caml_state->stat_minor_words
-          + ((double) ((uintnat)Caml_state->young_end -
-              (uintnat)Caml_state->young_ptr)) / sizeof(value));
+          + ((double) Wsize_bsize((uintnat)Caml_state->young_end -
+                                  (uintnat)Caml_state->young_ptr)));
 }
 
 CAMLprim value caml_gc_minor_words(value v)
@@ -109,9 +109,7 @@ CAMLprim value caml_gc_counters(value v)
   CAMLlocal1 (res);
 
   /* get a copy of these before allocating anything... */
-  double minwords = Caml_state->stat_minor_words
-    + ((double) Wsize_bsize ((uintnat)Caml_state->young_end -
-        (uintnat) Caml_state->young_ptr)) / sizeof(value);
+  double minwords = caml_gc_minor_words_unboxed();
   double prowords = Caml_state->stat_promoted_words;
   double majwords = Caml_state->stat_major_words +
                     (double) Caml_state->allocated_words;

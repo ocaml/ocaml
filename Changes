@@ -268,6 +268,9 @@ Working version
 - #12625: Remove the Closure module from Obj
   (Vincent Laviron, review by Xavier Leroy)
 
+- #12784: Fix computation of minor-heap allocation in Gc.counters()
+  and Gc.allocated_bytes(). (Nick Barnes, review by Gabriel Scherer)
+
 ### Other libraries:
 
 - #12213: Dynlink library, improve legibility of error messages
