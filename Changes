@@ -3,7 +3,7 @@ OCaml 5.1.1
 
 ### Standard library:
 
-* #12562, #12734: Remove the `Marshal.Compression` flag to the
+* #12562, #12734, #12783: Remove the `Marshal.Compression` flag to the
   `Marshal.to_*` functions introduced in 5.1 by #12006, as it cannot
   be implemented without risking to link -lzstd with all
   ocamlopt-generated executables.  The compilers are still able to use

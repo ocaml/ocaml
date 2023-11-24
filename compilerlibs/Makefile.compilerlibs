@@ -432,7 +432,7 @@ compilerlibs/ocamlcommon.cma: $(COMMON_CMI) $(ALL_CONFIG_CMO) $(COMMON)
 partialclean::
 	rm -f compilerlibs/ocamlcommon.cma
 
-ZSTD_OBJ=runtime/zstd.n.$(O)
+ZSTD_OBJ=runtime/zstd.npic.$(O)
 ZSTD_FLAGS=$(patsubst %, -ccopt %, $(filter-out -l%,$(ZSTD_LIBS))) \
            $(patsubst %, -cclib %, $(filter -l%,$(ZSTD_LIBS)))
 
