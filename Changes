@@ -394,6 +394,10 @@ Working version
   `ocamlc -verbose`.
   (David Allsopp, review by Nicolás Ojeda Bär)
 
+- #12777: Add details about the actual and expected method types to the method
+  mismatch error messages.
+  (Javier Chávarri, review by Gabriel Scherer and Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - #12639: parsing: Attach a location to the RHS of Ptyp_alias
