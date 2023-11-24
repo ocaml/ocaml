@@ -29,7 +29,7 @@ Error: This expression has type
          "< m : 'left 'right. < left : 'left; right : 'right > pair >"
        but an expression was expected of type
          "< m : 'left 'right. < left : 'left; right : 'right > pair >"
-       Types for method "m" are incompatible, the method has type
+       The method "m" has type
        "'left 'right. < left : 'left; right : 'right > pair",
        but the expected method type was
        "'left 'right. < left : 'left; right : 'right > pair"
