@@ -2437,6 +2437,8 @@ let explain_object (type variety) : variety Errortrace.obj -> _ = function
       Some (dprintf "@,Self type cannot be unified with a closed object type")
 
 let explain_incompatible_fields name (diff: Types.type_expr Errortrace.diff) =
+  reserve_names diff.got;
+  reserve_names diff.expected;
   dprintf "@,@[The method %a has type@ %a,@ \
   but the expected method type was@ %a@]"
     Style.inline_code name
@@ -2455,8 +2457,6 @@ let explanation (type variety) intro prev env
         dprintf "@[%t@;<1 2>%a@]" intro
           (Style.as_inline_code type_expr_with_reserved_names) ctx
       | None, Univ _, Some(Errortrace.Incompatible_fields {name; diff}) ->
-        reserve_names diff.got;
-        reserve_names diff.expected;
         explain_incompatible_fields name diff
       | _ -> ignore
     in
