@@ -1200,29 +1200,6 @@ typing/printtyped.cmx : \
     typing/printtyped.cmi
 typing/printtyped.cmi : \
     typing/typedtree.cmi
-typing/rec_check.cmo : \
-    typing/types.cmi \
-    typing/typeopt.cmi \
-    typing/typedtree.cmi \
-    typing/primitive.cmi \
-    typing/path.cmi \
-    lambda/lambda.cmi \
-    typing/ident.cmi \
-    parsing/asttypes.cmi \
-    typing/rec_check.cmi
-typing/rec_check.cmx : \
-    typing/types.cmx \
-    typing/typeopt.cmx \
-    typing/typedtree.cmx \
-    typing/primitive.cmx \
-    typing/path.cmx \
-    lambda/lambda.cmx \
-    typing/ident.cmx \
-    parsing/asttypes.cmi \
-    typing/rec_check.cmi
-typing/rec_check.cmi : \
-    typing/typedtree.cmi \
-    typing/ident.cmi
 typing/shape.cmo : \
     typing/path.cmi \
     utils/misc.cmi \
@@ -1424,6 +1401,7 @@ typing/typeclass.cmi : \
     parsing/asttypes.cmi
 typing/typecore.cmo : \
     utils/warnings.cmi \
+    typing/value_rec_check.cmi \
     typing/untypeast.cmi \
     typing/typetexp.cmi \
     typing/types.cmi \
@@ -1431,7 +1409,6 @@ typing/typecore.cmo : \
     typing/typedecl.cmi \
     typing/subst.cmi \
     typing/shape.cmi \
-    typing/rec_check.cmi \
     typing/printtyp.cmi \
     typing/printpat.cmi \
     typing/primitive.cmi \
@@ -1458,6 +1435,7 @@ typing/typecore.cmo : \
     typing/typecore.cmi
 typing/typecore.cmx : \
     utils/warnings.cmx \
+    typing/value_rec_check.cmx \
     typing/untypeast.cmx \
     typing/typetexp.cmx \
     typing/types.cmx \
@@ -1465,7 +1443,6 @@ typing/typecore.cmx : \
     typing/typedecl.cmx \
     typing/subst.cmx \
     typing/shape.cmx \
-    typing/rec_check.cmx \
     typing/printtyp.cmx \
     typing/printpat.cmx \
     typing/primitive.cmx \
@@ -1701,6 +1678,7 @@ typing/typedecl_variance.cmi : \
     typing/env.cmi \
     parsing/asttypes.cmi
 typing/typedtree.cmo : \
+    typing/value_rec_types.cmi \
     typing/types.cmi \
     typing/shape.cmi \
     typing/primitive.cmi \
@@ -1713,6 +1691,7 @@ typing/typedtree.cmo : \
     parsing/asttypes.cmi \
     typing/typedtree.cmi
 typing/typedtree.cmx : \
+    typing/value_rec_types.cmi \
     typing/types.cmx \
     typing/shape.cmx \
     typing/primitive.cmx \
@@ -1725,6 +1704,7 @@ typing/typedtree.cmx : \
     parsing/asttypes.cmi \
     typing/typedtree.cmi
 typing/typedtree.cmi : \
+    typing/value_rec_types.cmi \
     typing/types.cmi \
     typing/shape.cmi \
     typing/primitive.cmi \
@@ -1970,9 +1950,36 @@ typing/untypeast.cmi : \
     parsing/longident.cmi \
     parsing/location.cmi \
     parsing/asttypes.cmi
-bytecomp/bytegen.cmo : \
+typing/value_rec_check.cmo : \
+    typing/value_rec_types.cmi \
     typing/types.cmi \
+    typing/typeopt.cmi \
     typing/typedtree.cmi \
+    typing/primitive.cmi \
+    typing/path.cmi \
+    lambda/lambda.cmi \
+    typing/ident.cmi \
+    parsing/asttypes.cmi \
+    typing/value_rec_check.cmi
+typing/value_rec_check.cmx : \
+    typing/value_rec_types.cmi \
+    typing/types.cmx \
+    typing/typeopt.cmx \
+    typing/typedtree.cmx \
+    typing/primitive.cmx \
+    typing/path.cmx \
+    lambda/lambda.cmx \
+    typing/ident.cmx \
+    parsing/asttypes.cmi \
+    typing/value_rec_check.cmi
+typing/value_rec_check.cmi : \
+    typing/value_rec_types.cmi \
+    typing/typedtree.cmi \
+    typing/ident.cmi
+typing/value_rec_types.cmi :
+bytecomp/bytegen.cmo : \
+    typing/value_rec_types.cmi \
+    typing/types.cmi \
     lambda/switch.cmi \
     typing/subst.cmi \
     typing/primitive.cmi \
@@ -1988,8 +1995,8 @@ bytecomp/bytegen.cmo : \
     parsing/asttypes.cmi \
     bytecomp/bytegen.cmi
 bytecomp/bytegen.cmx : \
+    typing/value_rec_types.cmi \
     typing/types.cmx \
-    typing/typedtree.cmx \
     lambda/switch.cmx \
     typing/subst.cmx \
     typing/primitive.cmx \
@@ -2646,8 +2653,8 @@ asmcomp/cmm_invariants.cmx : \
 asmcomp/cmm_invariants.cmi : \
     asmcomp/cmm.cmi
 asmcomp/cmmgen.cmo : \
+    typing/value_rec_types.cmi \
     typing/types.cmi \
-    typing/typedtree.cmi \
     asmcomp/thread_sanitizer.cmi \
     middle_end/printclambda_primitives.cmi \
     typing/primitive.cmi \
@@ -2667,8 +2674,8 @@ asmcomp/cmmgen.cmo : \
     asmcomp/afl_instrument.cmi \
     asmcomp/cmmgen.cmi
 asmcomp/cmmgen.cmx : \
+    typing/value_rec_types.cmi \
     typing/types.cmx \
-    typing/typedtree.cmx \
     asmcomp/thread_sanitizer.cmx \
     middle_end/printclambda_primitives.cmx \
     typing/primitive.cmx \
@@ -3352,7 +3359,7 @@ middle_end/backend_var.cmi : \
     typing/ident.cmi \
     lambda/debuginfo.cmi
 middle_end/clambda.cmo : \
-    typing/typedtree.cmi \
+    typing/value_rec_types.cmi \
     typing/path.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
@@ -3362,7 +3369,7 @@ middle_end/clambda.cmo : \
     parsing/asttypes.cmi \
     middle_end/clambda.cmi
 middle_end/clambda.cmx : \
-    typing/typedtree.cmx \
+    typing/value_rec_types.cmi \
     typing/path.cmx \
     lambda/lambda.cmx \
     typing/ident.cmx \
@@ -3372,7 +3379,7 @@ middle_end/clambda.cmx : \
     parsing/asttypes.cmi \
     middle_end/clambda.cmi
 middle_end/clambda.cmi : \
-    typing/typedtree.cmi \
+    typing/value_rec_types.cmi \
     typing/path.cmi \
     lambda/lambda.cmi \
     typing/ident.cmi \
@@ -3506,7 +3513,7 @@ middle_end/linkage_name.cmx : \
 middle_end/linkage_name.cmi : \
     utils/identifiable.cmi
 middle_end/printclambda.cmo : \
-    typing/typedtree.cmi \
+    typing/value_rec_types.cmi \
     lambda/printlambda.cmi \
     middle_end/printclambda_primitives.cmi \
     lambda/lambda.cmi \
@@ -3516,7 +3523,7 @@ middle_end/printclambda.cmo : \
     parsing/asttypes.cmi \
     middle_end/printclambda.cmi
 middle_end/printclambda.cmx : \
-    typing/typedtree.cmx \
+    typing/value_rec_types.cmi \
     lambda/printlambda.cmx \
     middle_end/printclambda_primitives.cmx \
     lambda/lambda.cmx \
@@ -3610,8 +3617,8 @@ lambda/debuginfo.cmi : \
     typing/ident.cmi \
     parsing/asttypes.cmi
 lambda/lambda.cmo : \
+    typing/value_rec_types.cmi \
     typing/types.cmi \
-    typing/typedtree.cmi \
     typing/primitive.cmi \
     typing/path.cmi \
     utils/misc.cmi \
@@ -3623,8 +3630,8 @@ lambda/lambda.cmo : \
     parsing/asttypes.cmi \
     lambda/lambda.cmi
 lambda/lambda.cmx : \
+    typing/value_rec_types.cmi \
     typing/types.cmx \
-    typing/typedtree.cmx \
     typing/primitive.cmx \
     typing/path.cmx \
     utils/misc.cmx \
@@ -3636,8 +3643,8 @@ lambda/lambda.cmx : \
     parsing/asttypes.cmi \
     lambda/lambda.cmi
 lambda/lambda.cmi : \
+    typing/value_rec_types.cmi \
     typing/types.cmi \
-    typing/typedtree.cmi \
     typing/primitive.cmi \
     typing/path.cmi \
     typing/ident.cmi \
@@ -4546,7 +4553,7 @@ middle_end/flambda/find_recursive_functions.cmi : \
     middle_end/backend_intf.cmi
 middle_end/flambda/flambda.cmo : \
     middle_end/variable.cmi \
-    typing/typedtree.cmi \
+    typing/value_rec_types.cmi \
     middle_end/flambda/base_types/tag.cmi \
     middle_end/symbol.cmi \
     middle_end/flambda/base_types/static_exception.cmi \
@@ -4573,7 +4580,7 @@ middle_end/flambda/flambda.cmo : \
     middle_end/flambda/flambda.cmi
 middle_end/flambda/flambda.cmx : \
     middle_end/variable.cmx \
-    typing/typedtree.cmx \
+    typing/value_rec_types.cmi \
     middle_end/flambda/base_types/tag.cmx \
     middle_end/symbol.cmx \
     middle_end/flambda/base_types/static_exception.cmx \
@@ -4600,7 +4607,7 @@ middle_end/flambda/flambda.cmx : \
     middle_end/flambda/flambda.cmi
 middle_end/flambda/flambda.cmi : \
     middle_end/variable.cmi \
-    typing/typedtree.cmi \
+    typing/value_rec_types.cmi \
     middle_end/flambda/base_types/tag.cmi \
     middle_end/symbol.cmi \
     middle_end/flambda/base_types/static_exception.cmi \
@@ -4670,11 +4677,13 @@ middle_end/flambda/flambda_invariants.cmi : \
     middle_end/flambda/flambda.cmi
 middle_end/flambda/flambda_iterators.cmo : \
     middle_end/variable.cmi \
+    typing/value_rec_types.cmi \
     utils/int_replace_polymorphic_compare.cmi \
     middle_end/flambda/flambda.cmi \
     middle_end/flambda/flambda_iterators.cmi
 middle_end/flambda/flambda_iterators.cmx : \
     middle_end/variable.cmx \
+    typing/value_rec_types.cmi \
     utils/int_replace_polymorphic_compare.cmx \
     middle_end/flambda/flambda.cmx \
     middle_end/flambda/flambda_iterators.cmi
@@ -4824,7 +4833,7 @@ middle_end/flambda/flambda_to_clambda.cmi : \
 middle_end/flambda/flambda_utils.cmo : \
     middle_end/variable.cmi \
     middle_end/flambda/base_types/var_within_closure.cmi \
-    typing/typedtree.cmi \
+    typing/value_rec_types.cmi \
     middle_end/symbol.cmi \
     lambda/switch.cmi \
     middle_end/flambda/base_types/static_exception.cmi \
@@ -4850,7 +4859,7 @@ middle_end/flambda/flambda_utils.cmo : \
 middle_end/flambda/flambda_utils.cmx : \
     middle_end/variable.cmx \
     middle_end/flambda/base_types/var_within_closure.cmx \
-    typing/typedtree.cmx \
+    typing/value_rec_types.cmi \
     middle_end/symbol.cmx \
     lambda/switch.cmx \
     middle_end/flambda/base_types/static_exception.cmx \
@@ -5791,7 +5800,7 @@ middle_end/flambda/traverse_for_exported_symbols.cmi : \
     middle_end/flambda/base_types/export_id.cmi \
     middle_end/flambda/base_types/closure_id.cmi
 middle_end/flambda/un_anf.cmo : \
-    typing/typedtree.cmi \
+    typing/value_rec_types.cmi \
     middle_end/symbol.cmi \
     middle_end/semantics_of_primitives.cmi \
     middle_end/printclambda.cmi \
@@ -5805,7 +5814,7 @@ middle_end/flambda/un_anf.cmo : \
     parsing/asttypes.cmi \
     middle_end/flambda/un_anf.cmi
 middle_end/flambda/un_anf.cmx : \
-    typing/typedtree.cmx \
+    typing/value_rec_types.cmi \
     middle_end/symbol.cmx \
     middle_end/semantics_of_primitives.cmx \
     middle_end/printclambda.cmx \

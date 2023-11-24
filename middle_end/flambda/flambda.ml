@@ -60,7 +60,8 @@ type t =
   | Var of Variable.t
   | Let of let_expr
   | Let_mutable of let_mutable
-  | Let_rec of (Variable.t * Typedtree.recursive_binding_kind * named) list * t
+  | Let_rec of
+      (Variable.t * Value_rec_types.recursive_binding_kind * named) list * t
   | Apply of apply
   | Send of send
   | Assign of assign
@@ -255,15 +256,17 @@ let rec lam ppf (flam : t) =
       let bindings ppf id_arg_list =
         let spc = ref false in
         List.iter
-          (fun (id, clas, l) ->
+          (fun (id, rkind, l) ->
              if !spc then fprintf ppf "@ " else spc := true;
-             let clas_annot =
-               match (clas : Typedtree.recursive_binding_kind) with
+             let rec_annot =
+               match (rkind : Value_rec_types.recursive_binding_kind) with
                | Static -> ""
                | Not_recursive -> "[Nonrec]"
+               | Constant -> "[Cst]"
+               | Class -> "[Class]"
              in
              fprintf ppf "@[<2>%a%s@ %a@]"
-               Variable.print id clas_annot print_named l)
+               Variable.print id rec_annot print_named l)
           id_arg_list in
       fprintf ppf
         "@[<2>(letrec@ (@[<hv 1>%a@])@ %a)@]" bindings id_arg_list lam body
@@ -560,7 +563,7 @@ let rec variables_usage ?ignore_uses_as_callee ?ignore_uses_as_argument
         free_variable var;
         aux body
       | Let_rec (bindings, body) ->
-        List.iter (fun (var, _clas, defining_expr) ->
+        List.iter (fun (var, _rkind, defining_expr) ->
             bound_variable var;
             free_variables
               (variables_usage_named ?ignore_uses_in_project_var

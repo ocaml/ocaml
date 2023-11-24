@@ -312,9 +312,18 @@ let rec size_of_lambda env = function
   | Lifused _ -> RHS_nonrec
 
 let size_of_rec_binding clas expr =
-  match (clas : Typedtree.recursive_binding_kind) with
-  | Not_recursive -> RHS_nonrec
-  | Static -> size_of_lambda Ident.empty expr
+  match (clas : Value_rec_types.recursive_binding_kind) with
+  | Not_recursive | Constant -> RHS_nonrec
+  | Class ->
+       (* Actual size is always 4, but [transl_class] only generates
+          explicit allocations when the classes are actually recursive.
+          Computing the size means that we don't go through pre-allocation
+          when the classes are not recursive. *)
+      size_of_lambda Ident.empty expr
+  | Static ->
+      let result = size_of_lambda Ident.empty expr in
+      assert (result <> RHS_nonrec);
+      result
 
 (**** Merging consecutive events ****)
 

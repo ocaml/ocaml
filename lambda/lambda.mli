@@ -312,7 +312,7 @@ type lambda =
 
 and rec_binding = {
   id : Ident.t;
-  rkind : Typedtree.recursive_binding_kind;
+  rkind : Value_rec_types.recursive_binding_kind;
   def : lambda;
 }
 

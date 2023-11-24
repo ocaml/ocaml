@@ -236,7 +236,7 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
       mark_var var curr;
       mark_loop ~toplevel curr body
     | Let_rec(defs, body) ->
-      List.iter (fun (var, _clas, def) ->
+      List.iter (fun (var, _rkind, def) ->
           mark_named ~toplevel [Var var] def;
           (* adds 'var in NC => curr in NC' same remark as let case *)
           mark_var var curr)

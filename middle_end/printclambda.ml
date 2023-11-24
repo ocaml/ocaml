@@ -145,16 +145,18 @@ and lam ppf = function
       let bindings ppf id_arg_list =
         let spc = ref false in
         List.iter
-          (fun (id, clas, l) ->
+          (fun (id, rkind, l) ->
             if !spc then fprintf ppf "@ " else spc := true;
-            let clas_annot =
-              match (clas : Typedtree.recursive_binding_kind) with
+            let rec_annot =
+              match (rkind : Value_rec_types.recursive_binding_kind) with
               | Static -> ""
               | Not_recursive -> "[Nonrec]"
+              | Constant -> "[Cst]"
+              | Class -> "[Class]"
             in
             fprintf ppf "@[<2>%a%s@ %a@]"
               VP.print id
-              clas_annot
+              rec_annot
               lam l)
           id_arg_list in
       fprintf ppf

@@ -221,14 +221,22 @@ and same_move_within_set_of_closures (m1 : Flambda.move_within_set_of_closures)
     && Closure_id.equal m1.start_from m2.start_from
     && Closure_id.equal m1.move_to m2.move_to
 
-and samebinding (v1, clas1, n1) (v2, clas2, n2) =
-  let equal_clas c1 c2 =
-    match (c1 : Typedtree.recursive_binding_kind),
-          (c2 : Typedtree.recursive_binding_kind) with
-    | Not_recursive, Not_recursive | Static, Static -> true
-    | Not_recursive, Static | Static, Not_recursive -> false
+and samebinding (v1, rkind1, n1) (v2, rkind2, n2) =
+  let equal_rkind rkind1 rkind2 =
+    match (rkind1 : Value_rec_types.recursive_binding_kind),
+          (rkind2 : Value_rec_types.recursive_binding_kind) with
+    | Not_recursive, Not_recursive
+    | Static, Static
+    | Constant, Constant
+    | Class, Class ->
+        true
+    | Not_recursive, (Static | Constant | Class)
+    | Static, (Not_recursive | Constant | Class)
+    | Constant, (Not_recursive | Static | Class)
+    | Class, (Not_recursive | Static | Constant) ->
+        false
   in
-  Variable.equal v1 v2 && equal_clas clas1 clas2 && same_named n1 n2
+  Variable.equal v1 v2 && equal_rkind rkind1 rkind2 && same_named n1 n2
 
 and sameswitch (fs1 : Flambda.switch) (fs2 : Flambda.switch) =
   let samecase (n1, a1) (n2, a2) = n1 = n2 && same a1 a2 in
@@ -660,8 +668,8 @@ let substitute_read_symbol_field_for_variables
           Variable.Map.of_set (fun var -> Variable.rename var) to_substitute
         in
         let defs =
-          List.map (fun (var, clas, named) ->
-              var, clas, substitute_named bindings named)
+          List.map (fun (var, rkind, named) ->
+              var, rkind, substitute_named bindings named)
             defs
         in
         let expr =
