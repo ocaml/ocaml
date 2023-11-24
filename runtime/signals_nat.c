@@ -43,7 +43,7 @@ void caml_garbage_collection(void)
 {
   frame_descr* d;
   caml_domain_state * dom_st = Caml_state;
-  caml_frame_descrs fds = caml_get_frame_descrs();
+  caml_frame_descrs * fds = caml_get_frame_descrs();
   struct stack_info* stack = dom_st->current_stack;
 
   char * sp = (char*)stack->sp;

@@ -35,7 +35,8 @@
 /* Returns the next frame descriptor (or NULL if none is available),
    and updates *pc and *sp to point to the following one.  */
 frame_descr * caml_next_frame_descriptor
-    (caml_frame_descrs fds, uintnat * pc, char ** sp, struct stack_info* stack)
+    (caml_frame_descrs * fds, uintnat * pc, char ** sp,
+     struct stack_info* stack)
 {
   frame_descr * d;
 
@@ -90,7 +91,7 @@ void caml_free_backtrace_buffer(backtrace_slot *backtrace_buffer) {
 void caml_stash_backtrace(value exn, uintnat pc, char * sp, char* trapsp)
 {
   caml_domain_state* domain_state = Caml_state;
-  caml_frame_descrs fds;
+  caml_frame_descrs * fds;
 
   if (exn != domain_state->backtrace_last_exn) {
     domain_state->backtrace_pos = 0;
@@ -130,7 +131,7 @@ static void get_callstack(struct stack_info* orig_stack, intnat max_frames,
   intnat trace_pos;
   char *sp;
   uintnat pc;
-  caml_frame_descrs fds;
+  caml_frame_descrs * fds;
   CAMLnoalloc;
 
   fds = caml_get_frame_descrs();
