@@ -146,7 +146,13 @@ let classify_expression : Typedtree.expression -> sd =
     The first definition can be allowed (`y` has a statically-known
     size) but the second one is unsound (`y` has no statically-known size).
   *)
-  let rec classify_expression env e : sd = match e.exp_desc with
+  let rec classify_expression env e : sd =
+    let is_constant expr =
+      match classify_expression env expr with
+      | Constant -> true
+      | _ -> false
+    in
+    match e.exp_desc with
     (* binding and variable cases *)
     | Texp_let (rec_flag, vb, e) ->
         let env = classify_value_bindings rec_flag env vb in
@@ -164,29 +170,28 @@ let classify_expression : Typedtree.expression -> sd =
     | Texp_construct (_, {cstr_tag = Cstr_unboxed}, [e]) ->
         classify_expression env e
     | Texp_construct (_, _, exprs) ->
-        let is_constant =
-          List.fold_left (fun is_constant expr ->
-              is_constant &&
-              match classify_expression env expr with
-              | Constant -> true
-              | _ -> false)
-            true exprs
-        in
-        if is_constant then Constant else Static
+        if List.for_all is_constant exprs then Constant else Static
 
     | Texp_variant (_, Some expr) ->
-        begin match classify_expression env expr with
-        | Constant -> Constant
-        | _ -> Static
-        end
+        if is_constant expr then Constant else Static
     | Texp_variant (_, None) ->
         Constant
 
     | Texp_record { representation = Record_unboxed _;
                     fields = [| _, Overridden (_,e) |] } ->
         classify_expression env e
-    | Texp_record _ ->
-        Static
+    | Texp_record { fields; _ } ->
+        (* We ignore the [extended_expression] field.
+           As long as all fields are Overridden rather than Kept, the value
+           can be constant. *)
+        let is_constant_field (_label, def) =
+          match def with
+          | Kept _ -> false
+          | Overridden (_loc, expr) -> is_constant expr
+        in
+        if Array.for_all is_constant_field fields then Constant else Static
+    | Texp_tuple exprs ->
+        if List.for_all is_constant exprs then Constant else Static
 
     | Texp_apply ({exp_desc = Texp_ident (_, _, vd)}, _)
       when is_ref vd ->
@@ -199,7 +204,6 @@ let classify_expression : Typedtree.expression -> sd =
 
     | Texp_new _
     | Texp_instvar _
-    | Texp_tuple _
     | Texp_array _
     | Texp_pack _
     | Texp_object _
