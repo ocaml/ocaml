@@ -60,7 +60,8 @@ type t =
   | Var of Variable.t
   | Let of let_expr
   | Let_mutable of let_mutable
-  | Let_rec of (Variable.t * Typedtree.recursive_binding_kind * named) list * t
+  | Let_rec of
+      (Variable.t * Value_rec_types.recursive_binding_kind * named) list * t
   | Apply of apply
   | Send of send
   | Assign of assign
@@ -258,7 +259,7 @@ let rec lam ppf (flam : t) =
           (fun (id, rkind, l) ->
              if !spc then fprintf ppf "@ " else spc := true;
              let rec_annot =
-               match (rkind : Typedtree.recursive_binding_kind) with
+               match (rkind : Value_rec_types.recursive_binding_kind) with
                | Static -> ""
                | Not_recursive -> "[Nonrec]"
                | Constant -> "[Cst]"

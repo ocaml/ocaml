@@ -222,7 +222,7 @@ let rec expr_size env = function
   | Uassign _ | Usend _ -> RHS_nonrec
   | Uunreachable -> RHS_unreachable
 
-let expr_size_of_binding (clas : Typedtree.recursive_binding_kind) expr =
+let expr_size_of_binding (clas : Value_rec_types.recursive_binding_kind) expr =
   match clas with
   | Not_recursive | Constant -> RHS_nonrec
   | Class ->

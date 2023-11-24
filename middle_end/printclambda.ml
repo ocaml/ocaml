@@ -148,7 +148,7 @@ and lam ppf = function
           (fun (id, rkind, l) ->
             if !spc then fprintf ppf "@ " else spc := true;
             let rec_annot =
-              match (rkind : Typedtree.recursive_binding_kind) with
+              match (rkind : Value_rec_types.recursive_binding_kind) with
               | Static -> ""
               | Not_recursive -> "[Nonrec]"
               | Constant -> "[Cst]"

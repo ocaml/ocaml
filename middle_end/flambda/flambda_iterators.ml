@@ -86,7 +86,7 @@ let map_rec_binding_sharing f ((v, rkind, named) as binding) =
          than any other kind, so we do not need to re-check the
          modes. *)
       match (new_named : Flambda.named) with
-      | Symbol _ | Const _ | Allocated_const _-> Typedtree.Constant
+      | Symbol _ | Const _ | Allocated_const _-> Value_rec_types.Constant
       | Read_mutable _ | Read_symbol_field _ | Set_of_closures _
       | Project_closure _ | Move_within_set_of_closures _ | Project_var _
       | Prim _ | Expr _ -> rkind
@@ -327,15 +327,16 @@ let map_general ~toplevel f f_named tree =
                 let new_named =
                   aux_named_done_something id lam done_something
                 in
+                let open Value_rec_types in
                 (* See comment in [map_rec_binding_sharing] *)
                 let new_rkind =
                   match (new_named : Flambda.named) with
                   | Symbol _ | Const _ | Allocated_const _->
-                    begin match (rkind : Typedtree.recursive_binding_kind) with
+                    begin match rkind with
                     | Constant -> ()
                     | Static | Not_recursive | Class -> done_something := true
                     end;
-                    Typedtree.Constant
+                    Constant
                   | Read_mutable _ | Read_symbol_field _ | Set_of_closures _
                   | Project_closure _ | Move_within_set_of_closures _
                   | Project_var _ | Prim _ | Expr _ -> rkind

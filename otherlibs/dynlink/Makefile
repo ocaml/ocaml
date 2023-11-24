@@ -66,6 +66,7 @@ COMPILERLIBS_INTFS=\
   parsing/asttypes.mli \
   parsing/parsetree.mli \
   typing/outcometree.mli \
+  typing/value_rec_types.mli \
   file_formats/cmo_format.mli \
   file_formats/cmxs_format.mli
 

@@ -110,7 +110,7 @@ exception Illegal_expr
 
 (** {1 Static or dynamic size} *)
 
-type sd = Typedtree.recursive_binding_kind
+type sd = Value_rec_types.recursive_binding_kind
 
 let is_ref : Types.value_description -> bool = function
   | { Types.val_kind =
@@ -254,7 +254,7 @@ let classify_expression : Typedtree.expression -> sd =
           env
     in
     List.fold_left add_value_binding env bindings
-  and classify_path env = function
+  and classify_path env : _ -> Value_rec_types.recursive_binding_kind = function
     | Path.Pident x ->
         begin
           try Ident.find_same x env

@@ -41,12 +41,6 @@ type _ pattern_category =
 | Value : value pattern_category
 | Computation : computation pattern_category
 
-type recursive_binding_kind =
-| Not_recursive
-| Static
-| Constant
-| Class
-
 type pattern = value general_pattern
 and 'k general_pattern = 'k pattern_desc pattern_data
 
@@ -495,7 +489,7 @@ and value_binding =
   {
     vb_pat: pattern;
     vb_expr: expression;
-    vb_rec_kind: recursive_binding_kind;
+    vb_rec_kind: Value_rec_types.recursive_binding_kind;
     vb_attributes: attributes;
     vb_loc: Location.t;
   }

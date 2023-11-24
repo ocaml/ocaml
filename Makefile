@@ -109,6 +109,7 @@ parsing_SOURCES = $(addprefix parsing/, \
 
 typing_SOURCES = \
   typing/annot.mli \
+  typing/value_rec_types.mli \
   typing/ident.mli typing/ident.ml \
   typing/path.mli typing/path.ml \
   typing/primitive.mli typing/primitive.ml \
@@ -153,7 +154,7 @@ typing_SOURCES = \
   typing/typedecl_separability.mli typing/typedecl_separability.ml \
   typing/typeopt.mli typing/typeopt.ml \
   typing/typedecl.mli typing/typedecl.ml \
-  typing/rec_check.mli typing/rec_check.ml \
+  typing/value_rec_check.mli typing/value_rec_check.ml \
   typing/typecore.mli typing/typecore.ml \
   typing/typeclass.mli typing/typeclass.ml \
   typing/typemod.mli typing/typemod.ml

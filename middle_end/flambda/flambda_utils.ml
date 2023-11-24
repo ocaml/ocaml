@@ -223,8 +223,8 @@ and same_move_within_set_of_closures (m1 : Flambda.move_within_set_of_closures)
 
 and samebinding (v1, rkind1, n1) (v2, rkind2, n2) =
   let equal_rkind rkind1 rkind2 =
-    match (rkind1 : Typedtree.recursive_binding_kind),
-          (rkind2 : Typedtree.recursive_binding_kind) with
+    match (rkind1 : Value_rec_types.recursive_binding_kind),
+          (rkind2 : Value_rec_types.recursive_binding_kind) with
     | Not_recursive, Not_recursive
     | Static, Static
     | Constant, Constant
