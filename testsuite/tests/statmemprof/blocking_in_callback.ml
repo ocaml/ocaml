@@ -1,16 +1,11 @@
 (* TEST
- {
    include systhreads;
    hassysthreads;
- }{
-   reason = "port stat-mem-prof : https://github.com/ocaml/ocaml/pull/8634";
-   skip;
    {
      bytecode;
    }{
      native;
    }
- }
 *)
 
 let cnt = ref 0
@@ -72,10 +67,11 @@ let rec go alloc_num tid =
 
 let () =
   let t = Thread.create (fun () -> go 0 1) () in
-  Gc.Memprof.(start ~callstack_size:10 ~sampling_rate:1.
-    { null_tracker with
-      alloc_minor = alloc_callback;
-      alloc_major = alloc_callback });
+  let _:Gc.Memprof.t =
+    Gc.Memprof.(start ~callstack_size:10 ~sampling_rate:1.
+      { null_tracker with
+        alloc_minor = alloc_callback;
+        alloc_major = alloc_callback }) in
   Mutex.unlock mut;
   go 0 0;
   Thread.join t;
