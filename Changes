@@ -183,6 +183,13 @@ Working version
   (David Allsopp, Antonin Décimo, and Samuel Hym, review by Nicolas
    Ojeda Bar)
 
+- #11911, #12383: Restore statmemprof functionality in part
+   (backtrace buffers). (Nick Barnes, review by Gabriel Scherer)
+
+- #11911, #12383: Restore statmemprof functionality in part (backtrace
+   buffers). (Nick Barnes, review by Gabriel Scherer and Fabrice
+   Buoro).
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.
