@@ -278,6 +278,9 @@ Working version
 - #12784: Fix computation of minor-heap allocation in Gc.counters()
   and Gc.allocated_bytes(). (Nick Barnes, review by Gabriel Scherer)
 
+- #12770: Add `Fun.compose`.
+  (Justin Frank, review by ...)
+
 ### Other libraries:
 
 - #12213: Dynlink library, improve legibility of error messages

@@ -308,12 +308,6 @@ external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
  @since 4.01
 *)
 
-val ( @. ) : ('b -> 'c) -> ('a -> 'b) -> 'a -> 'c
-(** Function composition operator: [f @. g] produces a function applying
- [f] after [g]. Same function as {!Fun.compose}.
- Right-associative operator, see {!Ocaml_operators} for more information.
-*)
-
 (** {1 Integer arithmetic} *)
 
 (** Integers are [Sys.int_size] bits wide.
