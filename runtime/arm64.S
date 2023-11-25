@@ -418,8 +418,8 @@ FUNCTION(caml_allocN)
 /* Function to call is in ADDITIONAL_ARG */
 
 .macro RET_FROM_C_CALL
-        ldrb    w16, Caml_state(action_pending)
-        cbnz    w16, 1f
+        ldr     TMP, Caml_state(action_pending)
+        cbnz    TMP, 1f
         ret
 1:      mov     TMP, #-1
         str     TMP, Caml_state(young_limit)

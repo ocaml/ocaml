@@ -386,7 +386,8 @@ ENDFUNCTION(G(caml_allocN))
 /******************************************************************************/
 
 #define RET_FROM_C_CALL                           \
-        cli     Caml_state(action_pending), 0;    \
+        /* Test the least-significant byte of action_pending */ \
+        cli     7+Caml_state(action_pending), 0;  \
         ber     %r14;                             \
         lghi    TMP, -1;                          \
         stg     TMP, Caml_state(young_limit);     \

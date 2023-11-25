@@ -693,7 +693,7 @@ ENDFUNCTION(G(caml_allocN))
      #include <stdint.h>
 
      typedef struct { _Atomic(uint64_t) young_limit;
-                      _Bool action_pending; } caml_domain_state;
+                      int64_t action_pending; } caml_domain_state;
 
      void ret_from_c_call(caml_domain_state *dom_st)
      {
@@ -704,6 +704,7 @@ ENDFUNCTION(G(caml_allocN))
 
 */
 #define RET_FROM_C_CALL                         \
+        /* Test the least-significant byte of action_pending */ \
         cmpb    $0, Caml_state(action_pending); \
         jne     1f;                             \
         ret;                                    \

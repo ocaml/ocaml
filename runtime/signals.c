@@ -318,7 +318,7 @@ void caml_request_minor_gc (void)
 /* We assume that we have unique access to dom_st. */
 CAMLexport void caml_set_action_pending(caml_domain_state * dom_st)
 {
-  dom_st->action_pending = true;
+  dom_st->action_pending = 1;
 }
 
 static int check_pending_actions(caml_domain_state * dom_st)
@@ -344,7 +344,7 @@ value caml_do_pending_actions_exn(void)
 
      We can now clear the action_pending flag since we are going to
      execute all actions. */
-  Caml_state->action_pending = false;
+  Caml_state->action_pending = 0;
 
   /* Call signal handlers first */
   value exn = caml_process_pending_signals_exn();

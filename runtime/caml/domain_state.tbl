@@ -42,9 +42,9 @@ DOMAIN_STATE(struct stack_info*, current_stack)
 DOMAIN_STATE(void*, exn_handler)
 /* Pointer into the current stack */
 
-DOMAIN_STATE(_Bool, action_pending)
+DOMAIN_STATE(intnat, action_pending)
 /* Whether we are due to start the processing of delayable pending
-   actions. See runtime/signal.c. */
+   actions. See runtime/signal.c. Valid values: 0,1. */
 
 DOMAIN_STATE(struct c_stack_link*, c_stack)
 /* The C stack associated with this domain.
