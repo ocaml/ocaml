@@ -26,7 +26,7 @@
    dynlink.c backtrace_byt.c backtrace.c afl.c bigarray.c prng.c)
  (action
    (progn
-     (with-stdout-to primitives (run %{dep:gen_primitives.sh} %{deps}))
+     (run %{dep:gen_primitives.sh} primitives %{deps})
      (with-stdout-to prims.c (run %{dep:gen_primsc.sh} primitives %{deps})))))
 
 (rule

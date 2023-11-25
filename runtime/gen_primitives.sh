@@ -39,5 +39,21 @@
 
 export LC_ALL=C
 
+case $# in
+  0) echo "Usage: gen_primitives.sh <primitives file> <.c files>" 1>&2
+     exit 2;;
+  *) primitives="$1"; shift;;
+esac
+
+tmp_primitives="$primitives.tmp$$"
+
 sed -n -e 's/^CAMLprim value \([a-z][a-z0-9_]*\).*$/\1/p' "$@" | \
-sort | uniq
+sort | uniq > "$tmp_primitives"
+
+# To speed up builds, we avoid changing "primitives" when files
+# containing primitives change but the primitives table does not
+
+if test -f "$primitives" && cmp -s "$tmp_primitives" "$primitives"
+then rm "$tmp_primitives"
+else mv "$tmp_primitives" "$primitives"
+fi
