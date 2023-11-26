@@ -43,7 +43,10 @@ val curry7 : ('a * 'b * 'c * 'd * 'e * 'f * 'g -> 'h) -> 'a -> 'b -> 'c -> 'd ->
 val curry8 : ('a * 'b * 'c * 'd * 'e * 'f * 'g * 'h -> 'i) -> 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'i
 val curry9 : ('a * 'b * 'c * 'd * 'e * 'f * 'g * 'h * 'i -> 'j) -> 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'i -> 'j
 (** [curryN f] is a function that takes N arguments one at a time
-    and calls [f] with them packaged as an N-tuple. *)
+    and calls [f] with them packaged as an N-tuple.
+    For any arguments [f], [x], and [y], [curry2 f x y] is [f (x, y)].
+
+    @since 5.2 *)
 
 val uncurry2 : ('a -> 'b -> 'c) -> 'a * 'b -> 'c
 val uncurry3 : ('a -> 'b -> 'c -> 'd) -> 'a * 'b * 'c -> 'd
@@ -54,13 +57,20 @@ val uncurry7 : ('a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h) -> 'a * 'b * 'c * 
 val uncurry8 : ('a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'i) -> 'a * 'b * 'c * 'd * 'e * 'f * 'g * 'h -> 'i
 val uncurry9 : ('a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'i -> 'j) -> 'a * 'b * 'c * 'd * 'e * 'f * 'g * 'h * 'i -> 'j
 (** [uncurryN f] is a function that takes an N-tuple and calls [f]
-    with those arguments one at a time. *)
+    with those arguments one at a time.
+    For any arguments [f], [x], and [y], [uncurry2 f (x, y)] is [f x y].
+
+    @since 5.2 *)
 
 val curry : ('a * 'b -> 'c) -> 'a -> 'b -> 'c
-(** Synonym for [curry2]. *)
+(** Synonym for [curry2].
+
+    @since 5.2 *)
 
 val uncurry : ('a -> 'b -> 'c) -> 'a * 'b -> 'c
-(** Synonym for [uncurry2]. *)
+(** Synonym for [uncurry2].
+
+    @since 5.2 *)
 
 (** {1:exception Exception handling} *)
 
