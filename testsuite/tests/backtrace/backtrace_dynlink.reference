@@ -3,7 +3,7 @@ Called from Dynlink.Native.run.(fun) in file "native/dynlink.ml", line 83, chara
 Called from Stdlib__List.iter in file "list.ml", line 112, characters 12-15
 Called from Dynlink_common.Make.load.(fun) in file "dynlink_common.ml", line 358, characters 11-54
 Called from Stdlib__List.iter in file "list.ml", line 112, characters 12-15
-Called from Stdlib__Fun.protect in file "fun.ml", line 33, characters 8-15
+Called from Stdlib__Fun.protect in file "fun.ml", line 34, characters 8-15
 Called from Dynlink_common.Make.loadfile in file "dynlink_common.ml" (inlined), line 366, characters 26-45
 Called from Backtrace_dynlink in file "backtrace_dynlink.ml", line 39, characters 4-52
 execution of module initializers in the shared library failed: Failure("SUCCESS")
@@ -12,7 +12,7 @@ Re-raised at Dynlink.Native.run.(fun) in file "native/dynlink.ml", line 85, char
 Called from Stdlib__List.iter in file "list.ml", line 112, characters 12-15
 Called from Dynlink_common.Make.load.(fun) in file "dynlink_common.ml", line 358, characters 11-54
 Called from Stdlib__List.iter in file "list.ml", line 112, characters 12-15
-Called from Stdlib__Fun.protect in file "fun.ml", line 33, characters 8-15
-Re-raised at Stdlib__Fun.protect in file "fun.ml", line 38, characters 6-52
+Called from Stdlib__Fun.protect in file "fun.ml", line 34, characters 8-15
+Re-raised at Stdlib__Fun.protect in file "fun.ml", line 39, characters 6-52
 Called from Dynlink_common.Make.loadfile in file "dynlink_common.ml" (inlined), line 366, characters 26-45
 Called from Backtrace_dynlink in file "backtrace_dynlink.ml", line 39, characters 4-52
