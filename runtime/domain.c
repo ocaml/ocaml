@@ -679,7 +679,7 @@ static void domain_create(uintnat initial_minor_heap_wsize) {
   domain_state->c_stack = NULL;
   domain_state->exn_handler = NULL;
 
-  domain_state->action_pending = false;
+  domain_state->action_pending = 0;
 
   domain_state->gc_regs_buckets = NULL;
   domain_state->gc_regs = NULL;

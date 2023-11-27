@@ -81,6 +81,11 @@ Working version
 - #11332, #12702: make sure `Bool_val(v)` has type `bool` in C++
   (Xavier Leroy, report by ygrek, review by Gabriel Scherer)
 
+- #12772, #12787: Avoid using _Bool in public headers for the sake of C++
+  compatibility
+  (Guillaume Munch-Maccagnoni, report by KC Sivaramakrishnan, review
+  by Xavier Leroy and KC Sivaramakrishnan)
+
 - #12223: Constify constructors and flags tables in C code. Now these
   tables will go in the readonly segment, where they belong.
   (Antonin Décimo, review by Gabriel Scherer and Xavier Leroy)

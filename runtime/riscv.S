@@ -337,7 +337,7 @@ END_FUNCTION(caml_allocN)
 /* Function to call is in ADDITIONAL_ARG */
 
 .macro RET_FROM_C_CALL
-        lbu     TMP, Caml_state(action_pending)
+        ld      TMP, Caml_state(action_pending)
         bnez    TMP, 1f
         ret
 1:      li      TMP, -1
