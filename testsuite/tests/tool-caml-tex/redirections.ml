@@ -5,7 +5,6 @@
  script = "${ocamlrun} ${ocamlsrcdir}/tools/ocamltex -repo-root ${ocamlsrcdir} ${readonly_files} -o ${output}";
  hasstr;
  hasunix;
- native-compiler;
  {
    shared-libraries;
    script with unix, str;

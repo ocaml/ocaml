@@ -174,6 +174,8 @@ val print_filename: formatter -> string -> unit
 val print_loc: formatter -> t -> unit
 val print_locs: formatter -> t list -> unit
 
+val dump: formatter -> t -> unit
+    (** Used by -dparsetree and -dtypedtree to print locations. *)
 
 (** {1 Toplevel-specific location highlighting} *)
 

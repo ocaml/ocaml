@@ -273,6 +273,22 @@ let print_locs ppf locs =
   Format.pp_print_list ~pp_sep:(fun ppf () -> Format.fprintf ppf ",@ ")
     print_loc ppf locs
 
+let fmt_position with_name f l =
+  let fname = if with_name then l.pos_fname else "" in
+  if l.pos_lnum = -1
+  then Format.fprintf f "%s[%d]" fname l.pos_cnum
+  else Format.fprintf f "%s[%d+%d]" fname l.pos_lnum (l.pos_cnum - l.pos_bol)
+
+
+let dump f loc =
+  if not !Clflags.locations then ()
+  else begin
+    let p_2nd_name = loc.loc_start.pos_fname <> loc.loc_end.pos_fname in
+    Format.fprintf f "(%a..%a)" (fmt_position true) loc.loc_start
+                                (fmt_position p_2nd_name) loc.loc_end;
+    if loc.loc_ghost then Format.fprintf f " ghost";
+  end
+
 (******************************************************************************)
 (* An interval set structure; additionally, it stores user-provided information
    at interval boundaries.

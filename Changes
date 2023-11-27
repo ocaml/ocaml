@@ -380,6 +380,11 @@ Working version
   greatly simplifies both the build system and testsuite machinery.
   (David Allsopp, review by Sébastien Hinderer)
 
+- #12297: Don't include bol (beginning-of-line) offsets for -dparsetree and
+  -dtypedtree and use line-relative locations in -dlambda (allows tests to
+  run with CRLF-formatted source files).
+  (David Allsopp, review by ???)
+
 - #12347: error messages: always report missing polyvariant tags
   (Florian Angeletti, report by Tianbo Hao, review by Gabriel Scherer)
 

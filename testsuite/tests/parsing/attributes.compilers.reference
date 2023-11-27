@@ -1,11 +1,11 @@
 [
-  structure_item (attributes.ml[8,120+0]..[8,120+28])
+  structure_item (attributes.ml[8+0]..[8+28])
     Pstr_exception
     type_exception
       attribute "foo"
         []
       ptyext_constructor =
-        extension_constructor (attributes.ml[8,120+0]..[8,120+20])
+        extension_constructor (attributes.ml[8+0]..[8+20])
           attribute "foo"
             []
           pext_name = "Foo"
@@ -13,54 +13,54 @@
             Pext_decl
               []
               None
-  structure_item (attributes.ml[10,150+0]..[10,150+44])
+  structure_item (attributes.ml[10+0]..[10+44])
     Pstr_exception
     type_exception
       attribute "foo"
         []
       ptyext_constructor =
-        extension_constructor (attributes.ml[10,150+0]..[10,150+36])
+        extension_constructor (attributes.ml[10+0]..[10+36])
           attribute "foo"
             []
           pext_name = "Bar"
           pext_kind =
             Pext_decl
               [
-                core_type (attributes.ml[10,150+18]..[10,150+21])
+                core_type (attributes.ml[10+18]..[10+21])
                   attribute "foo"
                     []
-                  Ptyp_constr "int" (attributes.ml[10,150+18]..[10,150+21])
+                  Ptyp_constr "int" (attributes.ml[10+18]..[10+21])
                   []
               ]
               None
-  structure_item (attributes.ml[12,196+0]..[12,196+8])
+  structure_item (attributes.ml[12+0]..[12+8])
     Pstr_attribute "foo"
     []
-  structure_item (attributes.ml[14,206+0]..[15,245+9])
+  structure_item (attributes.ml[14+0]..[15+9])
     Pstr_value Nonrec
     [
       <def>
           attribute "foo"
             []
-        pattern (attributes.ml[14,206+4]..[14,206+13])
+        pattern (attributes.ml[14+4]..[14+13])
           attribute "foo"
             []
-          Ppat_var "x" (attributes.ml[14,206+5]..[14,206+6])
-        core_type (attributes.ml[14,206+16]..[14,206+20])
+          Ppat_var "x" (attributes.ml[14+5]..[14+6])
+        core_type (attributes.ml[14+16]..[14+20])
           attribute "foo"
             []
-          Ptyp_constr "unit" (attributes.ml[14,206+16]..[14,206+20])
+          Ptyp_constr "unit" (attributes.ml[14+16]..[14+20])
           []
-        expression (attributes.ml[14,206+30]..[14,206+32])
+        expression (attributes.ml[14+30]..[14+32])
           attribute "foo"
             []
-          Pexp_construct "()" (attributes.ml[14,206+30]..[14,206+32])
+          Pexp_construct "()" (attributes.ml[14+30]..[14+32])
           None
     ]
-  structure_item (attributes.ml[17,256+0]..[19,293+7])
+  structure_item (attributes.ml[17+0]..[19+7])
     Pstr_type Rec
     [
-      type_declaration "t" (attributes.ml[17,256+5]..[17,256+6]) (attributes.ml[17,256+0]..[19,293+7])
+      type_declaration "t" (attributes.ml[17+5]..[17+6]) (attributes.ml[17+0]..[19+7])
         attribute "foo"
           []
         ptype_params =
@@ -70,15 +70,15 @@
         ptype_kind =
           Ptype_variant
             [
-              (attributes.ml[18,265+2]..[18,265+27])
-                "Foo" (attributes.ml[18,265+4]..[18,265+7])
+              (attributes.ml[18+2]..[18+27])
+                "Foo" (attributes.ml[18+4]..[18+7])
                 attribute "foo"
                   []
                 [
-                  core_type (attributes.ml[18,265+12]..[18,265+13])
+                  core_type (attributes.ml[18+12]..[18+13])
                     attribute "foo"
                       []
-                    Ptyp_constr "t" (attributes.ml[18,265+12]..[18,265+13])
+                    Ptyp_constr "t" (attributes.ml[18+12]..[18+13])
                     []
                 ]
                 None
@@ -87,23 +87,23 @@
         ptype_manifest =
           None
     ]
-  structure_item (attributes.ml[21,302+0]..[21,302+8])
+  structure_item (attributes.ml[21+0]..[21+8])
     Pstr_attribute "foo"
     []
-  structure_item (attributes.ml[24,313+0]..[33,420+7])
+  structure_item (attributes.ml[24+0]..[33+7])
     Pstr_module
-    "M" (attributes.ml[24,313+7]..[24,313+8])
+    "M" (attributes.ml[24+7]..[24+8])
       attribute "foo"
         []
-      module_expr (attributes.ml[24,313+11]..[32,410+3])
+      module_expr (attributes.ml[24+11]..[32+3])
         attribute "foo"
           []
         Pmod_structure
         [
-          structure_item (attributes.ml[25,331+2]..[29,386+11])
+          structure_item (attributes.ml[25+2]..[29+11])
             Pstr_type Rec
             [
-              type_declaration "t" (attributes.ml[25,331+7]..[25,331+8]) (attributes.ml[25,331+2]..[29,386+11])
+              type_declaration "t" (attributes.ml[25+7]..[25+8]) (attributes.ml[25+2]..[29+11])
                 attribute "foo"
                   []
                 attribute "foo"
@@ -115,70 +115,70 @@
                 ptype_kind =
                   Ptype_record
                     [
-                      (attributes.ml[26,344+4]..[26,344+25])
+                      (attributes.ml[26+4]..[26+25])
                         attribute "foo"
                           []
                         Immutable
-                        "l" (attributes.ml[26,344+4]..[26,344+5])                        core_type (attributes.ml[26,344+9]..[26,344+10])
+                        "l" (attributes.ml[26+4]..[26+5])                        core_type (attributes.ml[26+9]..[26+10])
                           attribute "foo"
                             []
-                          Ptyp_constr "t" (attributes.ml[26,344+9]..[26,344+10])
+                          Ptyp_constr "t" (attributes.ml[26+9]..[26+10])
                           []
                     ]
                 ptype_private = Public
                 ptype_manifest =
                   None
             ]
-          structure_item (attributes.ml[31,399+2]..[31,399+10])
+          structure_item (attributes.ml[31+2]..[31+10])
             Pstr_attribute "foo"
             []
         ]
-  structure_item (attributes.ml[35,429+0]..[45,601+7])
-    Pstr_modtype "S" (attributes.ml[35,429+12]..[35,429+13])
+  structure_item (attributes.ml[35+0]..[45+7])
+    Pstr_modtype "S" (attributes.ml[35+12]..[35+13])
       attribute "foo"
         []
-      module_type (attributes.ml[35,429+16]..[44,591+3])
+      module_type (attributes.ml[35+16]..[44+3])
         attribute "foo"
           []
         Pmty_signature
         [
-          signature_item (attributes.ml[37,450+2]..[37,450+46])
+          signature_item (attributes.ml[37+2]..[37+46])
             Psig_exception
             type_exception
               attribute "foo"
                 []
               ptyext_constructor =
-                extension_constructor (attributes.ml[37,450+2]..[37,450+38])
+                extension_constructor (attributes.ml[37+2]..[37+38])
                   attribute "foo"
                     []
                   pext_name = "Bar"
                   pext_kind =
                     Pext_decl
                       [
-                        core_type (attributes.ml[37,450+20]..[37,450+23])
+                        core_type (attributes.ml[37+20]..[37+23])
                           attribute "foo"
                             []
-                          Ptyp_constr "int" (attributes.ml[37,450+20]..[37,450+23])
+                          Ptyp_constr "int" (attributes.ml[37+20]..[37+23])
                           []
                       ]
                       None
-          signature_item (attributes.ml[39,498+2]..[40,566+11])
+          signature_item (attributes.ml[39+2]..[40+11])
             Psig_include
-            module_type (attributes.ml[39,498+10]..[39,498+61])
+            module_type (attributes.ml[39+10]..[39+61])
               attribute "foo"
                 []
               Pmty_with
-              module_type (attributes.ml[39,498+11]..[39,498+35])
+              module_type (attributes.ml[39+11]..[39+35])
                 attribute "foo"
                   []
                 Pmty_typeof
-                module_expr (attributes.ml[39,498+27]..[39,498+28])
+                module_expr (attributes.ml[39+27]..[39+28])
                   attribute "foo"
                     []
-                  Pmod_ident "M" (attributes.ml[39,498+27]..[39,498+28])
+                  Pmod_ident "M" (attributes.ml[39+27]..[39+28])
               [
-                Pwith_typesubst "t" (attributes.ml[39,498+53]..[39,498+54])
-                  type_declaration "t" (attributes.ml[39,498+53]..[39,498+54]) (attributes.ml[39,498+48]..[39,498+61])
+                Pwith_typesubst "t" (attributes.ml[39+53]..[39+54])
+                  type_declaration "t" (attributes.ml[39+53]..[39+54]) (attributes.ml[39+48]..[39+61])
                     ptype_params =
                       []
                     ptype_cstrs =
@@ -188,28 +188,28 @@
                     ptype_private = Public
                     ptype_manifest =
                       Some
-                        core_type (attributes.ml[39,498+58]..[39,498+61])
-                          Ptyp_constr "M.t" (attributes.ml[39,498+58]..[39,498+61])
+                        core_type (attributes.ml[39+58]..[39+61])
+                          Ptyp_constr "M.t" (attributes.ml[39+58]..[39+61])
                           []
               ]
               attribute "foo"
                 []
-          signature_item (attributes.ml[42,579+2]..[42,579+10])
+          signature_item (attributes.ml[42+2]..[42+10])
             Psig_attribute "foo"
             []
         ]
-  structure_item (attributes.ml[47,610+0]..[47,610+8])
+  structure_item (attributes.ml[47+0]..[47+8])
     Pstr_attribute "foo"
     []
-  structure_item (attributes.ml[49,620+0]..[49,620+30])
-    Pstr_modtype "T" (attributes.ml[49,620+12]..[49,620+13])
-      module_type (attributes.ml[49,620+16]..[49,620+30])
+  structure_item (attributes.ml[49+0]..[49+30])
+    Pstr_modtype "T" (attributes.ml[49+12]..[49+13])
+      module_type (attributes.ml[49+16]..[49+30])
         Pmty_signature
         [
-          signature_item (attributes.ml[49,620+20]..[49,620+26])
+          signature_item (attributes.ml[49+20]..[49+26])
             Psig_type Rec
             [
-              type_declaration "t" (attributes.ml[49,620+25]..[49,620+26]) (attributes.ml[49,620+20]..[49,620+26])
+              type_declaration "t" (attributes.ml[49+25]..[49+26]) (attributes.ml[49+20]..[49+26])
                 ptype_params =
                   []
                 ptype_cstrs =
@@ -221,33 +221,33 @@
                   None
             ]
         ]
-  structure_item (attributes.ml[51,652+0]..[51,652+27])
+  structure_item (attributes.ml[51+0]..[51+27])
     Pstr_module
-    "_" (attributes.ml[51,652+7]..[51,652+8])
-      module_expr (attributes.ml[51,652+11]..[51,652+27])
+    "_" (attributes.ml[51+7]..[51+8])
+      module_expr (attributes.ml[51+11]..[51+27])
         Pmod_constraint
-        module_expr (attributes.ml[51,652+12]..[51,652+15])
-          Pmod_ident "Int" (attributes.ml[51,652+12]..[51,652+15])
-        module_type (attributes.ml[51,652+18]..[51,652+19])
+        module_expr (attributes.ml[51+12]..[51+15])
+          Pmod_ident "Int" (attributes.ml[51+12]..[51+15])
+        module_type (attributes.ml[51+18]..[51+19])
           attribute "foo"
             []
-          Pmty_ident "T" (attributes.ml[51,652+18]..[51,652+19])
-  structure_item (attributes.ml[53,681+0]..[53,681+45])
+          Pmty_ident "T" (attributes.ml[51+18]..[51+19])
+  structure_item (attributes.ml[53+0]..[53+45])
     Pstr_module
-    "_" (attributes.ml[53,681+7]..[53,681+8])
-      module_expr (attributes.ml[53,681+11]..[53,681+45])
+    "_" (attributes.ml[53+7]..[53+8])
+      module_expr (attributes.ml[53+11]..[53+45])
         Pmod_constraint
-        module_expr (attributes.ml[53,681+12]..[53,681+15])
-          Pmod_ident "Int" (attributes.ml[53,681+12]..[53,681+15])
-        module_type (attributes.ml[53,681+18]..[53,681+37])
+        module_expr (attributes.ml[53+12]..[53+15])
+          Pmod_ident "Int" (attributes.ml[53+12]..[53+15])
+        module_type (attributes.ml[53+18]..[53+37])
           attribute "foo"
             []
           Pmty_with
-          module_type (attributes.ml[53,681+18]..[53,681+19])
-            Pmty_ident "T" (attributes.ml[53,681+18]..[53,681+19])
+          module_type (attributes.ml[53+18]..[53+19])
+            Pmty_ident "T" (attributes.ml[53+18]..[53+19])
           [
-            Pwith_type "t" (attributes.ml[53,681+30]..[53,681+31])
-              type_declaration "t" (attributes.ml[53,681+30]..[53,681+31]) (attributes.ml[53,681+25]..[53,681+37])
+            Pwith_type "t" (attributes.ml[53+30]..[53+31])
+              type_declaration "t" (attributes.ml[53+30]..[53+31]) (attributes.ml[53+25]..[53+37])
                 ptype_params =
                   []
                 ptype_cstrs =
@@ -257,95 +257,95 @@
                 ptype_private = Public
                 ptype_manifest =
                   Some
-                    core_type (attributes.ml[53,681+34]..[53,681+37])
-                      Ptyp_constr "int" (attributes.ml[53,681+34]..[53,681+37])
+                    core_type (attributes.ml[53+34]..[53+37])
+                      Ptyp_constr "int" (attributes.ml[53+34]..[53+37])
                       []
           ]
-  structure_item (attributes.ml[55,728+0]..[55,728+31])
+  structure_item (attributes.ml[55+0]..[55+31])
     Pstr_value Nonrec
     [
       <def>
-        pattern (attributes.ml[55,728+4]..[55,728+5])
+        pattern (attributes.ml[55+4]..[55+5])
           Ppat_any
-        expression (attributes.ml[55,728+8]..[55,728+31])
+        expression (attributes.ml[55+8]..[55+31])
           Pexp_constraint
-          expression (attributes.ml[55,728+8]..[55,728+31]) ghost
+          expression (attributes.ml[55+8]..[55+31]) ghost
             Pexp_pack
-            module_expr (attributes.ml[55,728+16]..[55,728+19])
-              Pmod_ident "Int" (attributes.ml[55,728+16]..[55,728+19])
-          core_type (attributes.ml[55,728+22]..[55,728+30])
+            module_expr (attributes.ml[55+16]..[55+19])
+              Pmod_ident "Int" (attributes.ml[55+16]..[55+19])
+          core_type (attributes.ml[55+22]..[55+30])
             attribute "foo"
               []
-            Ptyp_package "T" (attributes.ml[55,728+22]..[55,728+23])
+            Ptyp_package "T" (attributes.ml[55+22]..[55+23])
             []
     ]
-  structure_item (attributes.ml[57,761+0]..[57,761+49])
+  structure_item (attributes.ml[57+0]..[57+49])
     Pstr_value Nonrec
     [
       <def>
-        pattern (attributes.ml[57,761+4]..[57,761+5])
+        pattern (attributes.ml[57+4]..[57+5])
           Ppat_any
-        expression (attributes.ml[57,761+8]..[57,761+49])
+        expression (attributes.ml[57+8]..[57+49])
           Pexp_constraint
-          expression (attributes.ml[57,761+8]..[57,761+49]) ghost
+          expression (attributes.ml[57+8]..[57+49]) ghost
             Pexp_pack
-            module_expr (attributes.ml[57,761+16]..[57,761+19])
-              Pmod_ident "Int" (attributes.ml[57,761+16]..[57,761+19])
-          core_type (attributes.ml[57,761+22]..[57,761+48])
+            module_expr (attributes.ml[57+16]..[57+19])
+              Pmod_ident "Int" (attributes.ml[57+16]..[57+19])
+          core_type (attributes.ml[57+22]..[57+48])
             attribute "foo"
               []
-            Ptyp_package "T" (attributes.ml[57,761+22]..[57,761+23])
+            Ptyp_package "T" (attributes.ml[57+22]..[57+23])
             [
-              with type "t" (attributes.ml[57,761+34]..[57,761+35])
-              core_type (attributes.ml[57,761+38]..[57,761+41])
-                Ptyp_constr "int" (attributes.ml[57,761+38]..[57,761+41])
+              with type "t" (attributes.ml[57+34]..[57+35])
+              core_type (attributes.ml[57+38]..[57+41])
+                Ptyp_constr "int" (attributes.ml[57+38]..[57+41])
                 []
             ]
     ]
-  structure_item (attributes.ml[59,812+0]..[60,869+26])
+  structure_item (attributes.ml[59+0]..[60+26])
     Pstr_value Nonrec
     [
       <def>
-        pattern (attributes.ml[59,812+4]..[59,812+5])
-          Ppat_var "f" (attributes.ml[59,812+4]..[59,812+5])
-        expression (attributes.ml[59,812+6]..[60,869+26]) ghost
+        pattern (attributes.ml[59+4]..[59+5])
+          Ppat_var "f" (attributes.ml[59+4]..[59+5])
+        expression (attributes.ml[59+6]..[60+26]) ghost
           Pexp_function
           [
-            Pparam_val (attributes.ml[59,812+6]..[59,812+16])
+            Pparam_val (attributes.ml[59+6]..[59+16])
               Nolabel
               None
-              pattern (attributes.ml[59,812+6]..[59,812+16])
+              pattern (attributes.ml[59+6]..[59+16])
                 attribute "foo"
                   []
-                Ppat_var "x" (attributes.ml[59,812+7]..[59,812+8])
+                Ppat_var "x" (attributes.ml[59+7]..[59+8])
           ]
           Some
             Pconstraint
-              core_type (attributes.ml[59,812+19]..[59,812+31])
+              core_type (attributes.ml[59+19]..[59+31])
                 attribute "foo"
                   []
                 Ptyp_arrow
                 Nolabel
-                core_type (attributes.ml[59,812+19]..[59,812+23])
-                  Ptyp_constr "unit" (attributes.ml[59,812+19]..[59,812+23])
+                core_type (attributes.ml[59+19]..[59+23])
+                  Ptyp_constr "unit" (attributes.ml[59+19]..[59+23])
                   []
-                core_type (attributes.ml[59,812+27]..[59,812+31])
-                  Ptyp_constr "unit" (attributes.ml[59,812+27]..[59,812+31])
+                core_type (attributes.ml[59+27]..[59+31])
+                  Ptyp_constr "unit" (attributes.ml[59+27]..[59+31])
                   []
-          Pfunction_cases (attributes.ml[59,812+41]..[60,869+26])
+          Pfunction_cases (attributes.ml[59+41]..[60+26])
               attribute "foo"
                 []
             [
               <case>
-                pattern (attributes.ml[60,869+4]..[60,869+14])
+                pattern (attributes.ml[60+4]..[60+14])
                   attribute "foo"
                     []
-                  Ppat_construct "()" (attributes.ml[60,869+5]..[60,869+7])
+                  Ppat_construct "()" (attributes.ml[60+5]..[60+7])
                   None
-                expression (attributes.ml[60,869+18]..[60,869+20])
+                expression (attributes.ml[60+18]..[60+20])
                   attribute "foo"
                     []
-                  Pexp_construct "()" (attributes.ml[60,869+18]..[60,869+20])
+                  Pexp_construct "()" (attributes.ml[60+18]..[60+20])
                   None
             ]
     ]

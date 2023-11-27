@@ -1,30 +1,30 @@
 [
-  structure_item (hash_ambiguity.ml[8,140+0]..[8,140+28])
+  structure_item (hash_ambiguity.ml[8+0]..[8+28])
     Pstr_class
     [
-      class_declaration (hash_ambiguity.ml[8,140+0]..[8,140+28])
+      class_declaration (hash_ambiguity.ml[8+0]..[8+28])
         pci_virt = Concrete
         pci_params =
           [
-            core_type (hash_ambiguity.ml[8,140+7]..[8,140+9])
+            core_type (hash_ambiguity.ml[8+7]..[8+9])
               Ptyp_var a
           ]
-        pci_name = "list" (hash_ambiguity.ml[8,140+11]..[8,140+15])
+        pci_name = "list" (hash_ambiguity.ml[8+11]..[8+15])
         pci_expr =
-          class_expr (hash_ambiguity.ml[8,140+18]..[8,140+28])
+          class_expr (hash_ambiguity.ml[8+18]..[8+28])
             Pcl_structure
             class_structure
-              pattern (hash_ambiguity.ml[8,140+24]..[8,140+24]) ghost
+              pattern (hash_ambiguity.ml[8+24]..[8+24]) ghost
                 Ppat_any
               []
     ]
-  structure_item (hash_ambiguity.ml[9,169+0]..[9,169+27])
+  structure_item (hash_ambiguity.ml[9+0]..[9+27])
     Pstr_type Rec
     [
-      type_declaration "t" (hash_ambiguity.ml[9,169+8]..[9,169+9]) (hash_ambiguity.ml[9,169+0]..[9,169+27])
+      type_declaration "t" (hash_ambiguity.ml[9+8]..[9+9]) (hash_ambiguity.ml[9+0]..[9+27])
         ptype_params =
           [
-            core_type (hash_ambiguity.ml[9,169+5]..[9,169+7])
+            core_type (hash_ambiguity.ml[9+5]..[9+7])
               Ptyp_var a
           ]
         ptype_cstrs =
@@ -34,23 +34,23 @@
         ptype_private = Public
         ptype_manifest =
           Some
-            core_type (hash_ambiguity.ml[9,169+12]..[9,169+27])
+            core_type (hash_ambiguity.ml[9+12]..[9+27])
               Ptyp_alias "a"
-              core_type (hash_ambiguity.ml[9,169+12]..[9,169+21])
-                Ptyp_class "list" (hash_ambiguity.ml[9,169+17]..[9,169+21])
+              core_type (hash_ambiguity.ml[9+12]..[9+21])
+                Ptyp_class "list" (hash_ambiguity.ml[9+17]..[9+21])
                 [
-                  core_type (hash_ambiguity.ml[9,169+12]..[9,169+15])
-                    Ptyp_constr "int" (hash_ambiguity.ml[9,169+12]..[9,169+15])
+                  core_type (hash_ambiguity.ml[9+12]..[9+15])
+                    Ptyp_constr "int" (hash_ambiguity.ml[9+12]..[9+15])
                     []
                 ]
     ]
-  structure_item (hash_ambiguity.ml[15,425+0]..[15,425+26])
+  structure_item (hash_ambiguity.ml[15+0]..[15+26])
     Pstr_type Rec
     [
-      type_declaration "u" (hash_ambiguity.ml[15,425+8]..[15,425+9]) (hash_ambiguity.ml[15,425+0]..[15,425+26])
+      type_declaration "u" (hash_ambiguity.ml[15+8]..[15+9]) (hash_ambiguity.ml[15+0]..[15+26])
         ptype_params =
           [
-            core_type (hash_ambiguity.ml[15,425+5]..[15,425+7])
+            core_type (hash_ambiguity.ml[15+5]..[15+7])
               Ptyp_var a
           ]
         ptype_cstrs =
@@ -58,14 +58,14 @@
         ptype_kind =
           Ptype_variant
             [
-              (hash_ambiguity.ml[15,425+12]..[15,425+26])
-                "A" (hash_ambiguity.ml[15,425+12]..[15,425+13])
+              (hash_ambiguity.ml[15+12]..[15+26])
+                "A" (hash_ambiguity.ml[15+12]..[15+13])
                 [
-                  core_type (hash_ambiguity.ml[15,425+17]..[15,425+26])
-                    Ptyp_class "list" (hash_ambiguity.ml[15,425+22]..[15,425+26])
+                  core_type (hash_ambiguity.ml[15+17]..[15+26])
+                    Ptyp_class "list" (hash_ambiguity.ml[15+22]..[15+26])
                     [
-                      core_type (hash_ambiguity.ml[15,425+17]..[15,425+20])
-                        Ptyp_constr "int" (hash_ambiguity.ml[15,425+17]..[15,425+20])
+                      core_type (hash_ambiguity.ml[15+17]..[15+20])
+                        Ptyp_constr "int" (hash_ambiguity.ml[15+17]..[15+20])
                         []
                     ]
                 ]
@@ -75,13 +75,13 @@
         ptype_manifest =
           None
     ]
-  structure_item (hash_ambiguity.ml[17,453+0]..[17,453+32])
+  structure_item (hash_ambiguity.ml[17+0]..[17+32])
     Pstr_type Rec
     [
-      type_declaration "v" (hash_ambiguity.ml[17,453+8]..[17,453+9]) (hash_ambiguity.ml[17,453+0]..[17,453+32])
+      type_declaration "v" (hash_ambiguity.ml[17+8]..[17+9]) (hash_ambiguity.ml[17+0]..[17+32])
         ptype_params =
           [
-            core_type (hash_ambiguity.ml[17,453+5]..[17,453+7])
+            core_type (hash_ambiguity.ml[17+5]..[17+7])
               Ptyp_var a
           ]
         ptype_cstrs =
@@ -89,17 +89,17 @@
         ptype_kind =
           Ptype_variant
             [
-              (hash_ambiguity.ml[17,453+12]..[17,453+32])
-                "A" (hash_ambiguity.ml[17,453+12]..[17,453+13])
+              (hash_ambiguity.ml[17+12]..[17+32])
+                "A" (hash_ambiguity.ml[17+12]..[17+13])
                 [
-                  core_type (hash_ambiguity.ml[17,453+17]..[17,453+20])
-                    Ptyp_constr "int" (hash_ambiguity.ml[17,453+17]..[17,453+20])
+                  core_type (hash_ambiguity.ml[17+17]..[17+20])
+                    Ptyp_constr "int" (hash_ambiguity.ml[17+17]..[17+20])
                     []
-                  core_type (hash_ambiguity.ml[17,453+23]..[17,453+32])
-                    Ptyp_class "list" (hash_ambiguity.ml[17,453+28]..[17,453+32])
+                  core_type (hash_ambiguity.ml[17+23]..[17+32])
+                    Ptyp_class "list" (hash_ambiguity.ml[17+28]..[17+32])
                     [
-                      core_type (hash_ambiguity.ml[17,453+23]..[17,453+26])
-                        Ptyp_constr "int" (hash_ambiguity.ml[17,453+23]..[17,453+26])
+                      core_type (hash_ambiguity.ml[17+23]..[17+26])
+                        Ptyp_constr "int" (hash_ambiguity.ml[17+23]..[17+26])
                         []
                     ]
                 ]

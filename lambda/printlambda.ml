@@ -690,13 +690,23 @@ let rec lam ppf = function
       | Loc_unknown ->
         fprintf ppf "@[<2>(%s <unknown location>@ %a)@]" kind lam expr
       | Loc_known {scopes; loc} ->
-        fprintf ppf "@[<2>(%s %s %s(%i)%s:%i-%i@ %a)@]" kind
+        let (pos_start, pos_end) =
+          let open Location in
+          let open Lexing in
+          let pos_start = loc.loc_start.pos_cnum - loc.loc_start.pos_bol in
+          let pos_end = loc.loc_end.pos_cnum - loc.loc_end.pos_bol in
+          if loc.loc_end.pos_lnum = loc.loc_start.pos_lnum then
+            (pos_start, string_of_int pos_end)
+          else
+            (pos_start, Printf.sprintf "(%d):%d" loc.loc_end.pos_lnum pos_end)
+        in
+        fprintf ppf "@[<2>(%s %s %s(%i)%s:%i-%s@ %a)@]" kind
                 (Debuginfo.Scoped_location.string_of_scopes scopes)
                 loc.Location.loc_start.Lexing.pos_fname
                 loc.Location.loc_start.Lexing.pos_lnum
                 (if loc.Location.loc_ghost then "<ghost>" else "")
-                loc.Location.loc_start.Lexing.pos_cnum
-                loc.Location.loc_end.Lexing.pos_cnum
+                pos_start
+                pos_end
                 lam expr
       end
   | Lifused(id, expr) ->
