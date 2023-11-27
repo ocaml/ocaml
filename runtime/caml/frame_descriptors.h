@@ -110,6 +110,13 @@ void caml_init_frame_descriptors(void);
 void caml_register_frametables(void **tables, int ntables);
 void caml_register_frametable(void *table);
 
+/* Create copies of the frametables and register them in the runtime.
+   It writes back the pointers of the new copies of the frametables.
+   Calling 'caml_unregister_frametable(s)' on these copies is safe
+   and will free the allocated memory. */
+void caml_copy_and_register_frametables(void **table, int *sizes, int ntables);
+void* caml_copy_and_register_frametable(void *table, int size);
+
 /* The unregistered frametables can still be in use after calling
    this function. Thus, you should not free their memory.
    Note: it may reorder the content of the array 'tables' */
