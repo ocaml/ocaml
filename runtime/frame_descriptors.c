@@ -248,6 +248,27 @@ static caml_frametable_list *cons(
   return li;
 }
 
+/* This function not only creates a new caml_frametable_list cell but
+   also makes a copy of the new frametable.
+   Here, we allocate, in a single malloc call, the space for the cons
+   cell and the (appended) frametable copy. This way, we do not have
+   to change the code that unregisters the frametable since calling free
+   on the cons cell will automatically free the frametable copy at the
+   same time.
+*/
+static caml_frametable_list *copy_cons(
+  intnat **frametable, intnat size, caml_frametable_list *tl)
+{
+  caml_frametable_list *li =
+    caml_stat_alloc(sizeof(caml_frametable_list) + size);
+  intnat *frametable_copy = (intnat*)(li + 1);
+  memcpy(frametable_copy, *frametable, size);
+  *frametable = frametable_copy;
+  li->frametable = frametable_copy;
+  li->next = tl;
+  return li;
+}
+
 void caml_init_frame_descriptors(void)
 {
   caml_frametable_list *frametables = NULL;
@@ -291,6 +312,18 @@ void caml_register_frametables(void **table, int ntables) {
                  &stw_register_frametables, new_frametables, 0));
 }
 
+void caml_copy_and_register_frametables(
+  void **table, int * sizes, int ntables)
+{
+  caml_frametable_list *new_frametables = NULL;
+  for (int i = 0; i < ntables; i++)
+    new_frametables = copy_cons((intnat **)(table + i),
+                                sizes[i], new_frametables);
+
+  do {} while (!caml_try_run_on_all_domains(
+                 &stw_register_frametables, new_frametables, 0));
+}
+
 static void remove_frame_descriptors(
   caml_frame_descrs * table, void ** frametables, int ntables)
 {
@@ -329,10 +362,15 @@ void caml_unregister_frametables(void ** frametables, int ntables)
   remove_frame_descriptors(&current_frame_descrs, frametables, ntables);
 }
 
-
 void caml_register_frametable(void * frametables)
 {
   caml_register_frametables(&frametables, 1);
+}
+
+void* caml_copy_and_register_frametable(void * frametable, int size)
+{
+  caml_copy_and_register_frametables(&frametable, &size, 1);
+  return frametable;
 }
 
 void caml_unregister_frametable(void * frametables)
