@@ -102,14 +102,14 @@ CAMLprim value caml_zstd_initialize(value vunit)
 {
   caml_extern_compress_output = caml_zstd_compress;
   caml_intern_decompress_input = caml_zstd_decompress;
-  return Val_unit;
+  return Val_true;
 }
 
 #else
 
 CAMLprim value caml_zstd_initialize(value vunit)
 {
-  return Val_unit;
+  return Val_false;
 }
 
 #endif

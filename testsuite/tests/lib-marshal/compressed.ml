@@ -150,8 +150,19 @@ let test_in filename =
   test 39 (i == j);
   close_in ic
 
+let test_supported filename =
+  Out_channel.(with_open_bin filename (fun oc -> output_value oc ()));
+  let s = In_channel.(with_open_bin filename input_all) in
+  let actually_supported =
+    match s.[3] with
+    | '\xBD' -> true
+    | '\xBE' -> false
+    | _ -> assert false in
+  test 100 (actually_supported = compression_supported)
+
 let main () =
   test_out "intext.data"; test_in "intext.data";
+  test_supported "intext.data";
   Sys.remove "intext.data"
 
 let _ = main ()
