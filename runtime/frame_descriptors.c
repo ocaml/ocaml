@@ -260,18 +260,9 @@ void caml_init_frame_descriptors(void)
   add_frame_descriptors(&current_frame_descrs, frametables);
 }
 
-
-typedef struct frametable_array {
-  void **table;
-  int ntables;
-} frametable_array;
-
-static void register_frametables_from_stw_single(frametable_array *array)
+static void register_frametables_from_stw_single(
+  caml_frametable_list *new_frametables)
 {
-  caml_frametable_list *new_frametables = NULL;
-  for (int i = 0; i < array->ntables; i++)
-    new_frametables = cons((intnat*)array->table[i], new_frametables);
-
   clean_frame_descriptors(&current_frame_descrs);
   add_frame_descriptors(&current_frame_descrs, new_frametables);
 }
@@ -285,16 +276,19 @@ static void stw_register_frametables(
   barrier_status b = caml_global_barrier_begin ();
 
   if (caml_global_barrier_is_final(b)) {
-    register_frametables_from_stw_single((frametable_array*) frametables);
+    register_frametables_from_stw_single((caml_frametable_list*) frametables);
   }
 
   caml_global_barrier_end(b);
 }
 
 void caml_register_frametables(void **table, int ntables) {
-  struct frametable_array frametables = { table, ntables };
+  caml_frametable_list *new_frametables = NULL;
+  for (int i = 0; i < ntables; i++)
+    new_frametables = cons(table[i], new_frametables);
+
   do {} while (!caml_try_run_on_all_domains(
-                 &stw_register_frametables, &frametables, 0));
+                 &stw_register_frametables, new_frametables, 0));
 }
 
 static void remove_frame_descriptors(
