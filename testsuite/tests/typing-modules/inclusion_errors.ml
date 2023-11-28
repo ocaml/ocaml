@@ -272,7 +272,8 @@ Error: Signature mismatch:
          type t = < m : float * int; n : int >
        The type "< m : int; n : int >" is not equal to the type
          "< m : float * int; n : int >"
-       Types for method "m" are incompatible
+       The method "m" has type "int", but the expected method type was
+       "float * int"
 |}];;
 
 module M4 : sig
@@ -896,7 +897,8 @@ Error: Signature mismatch:
          val f : < m : [< `Foo ] > -> unit
        The type "< m : 'a. [< `Foo ] as 'a > -> unit"
        is not compatible with the type "< m : [< `Foo ] > -> unit"
-       Types for method "m" are incompatible
+       The method "m" has type "'b. [< `Foo ] as 'b",
+       but the expected method type was "[< `Foo ]"
 |}];;
 
 module M : sig
@@ -920,7 +922,8 @@ Error: Signature mismatch:
          val f : < m : 'a. [< `Foo ] as 'a > -> unit
        The type "< m : [ `Foo ] > -> unit" is not compatible with the type
          "< m : 'a. [< `Foo ] as 'a > -> unit"
-       Types for method "m" are incompatible
+       The method "m" has type "[ `Foo ]", but the expected method type was
+       "'b. [< `Foo ] as 'b"
 |}];;
 
 module M : sig
@@ -1744,7 +1747,8 @@ Error: Signature mismatch:
          "A : (< x : 'b > as 'b) -> (< y : 'a > as 'a) t"
        The type "< x : 'a * 'a > as 'a" is not equal to the type
          "< x : 'b > as 'b"
-       Types for method "x" are incompatible
+       The method "x" has type "< x : 'c > * < x : 'c > as 'c",
+       but the expected method type was "< x : 'b > as 'b"
 |}]
 module R: sig
   type t = { a: (<x:'a> as 'a) }
@@ -1771,7 +1775,8 @@ Error: Signature mismatch:
          "a : < x : 'a > as 'a;"
        The type "< x : 'a * 'a > as 'a" is not equal to the type
          "< x : 'b > as 'b"
-       Types for method "x" are incompatible
+       The method "x" has type "< x : 'c > * < x : 'c > as 'c",
+       but the expected method type was "< x : 'b > as 'b"
 |}]
 type _ ext = ..
 module Ext: sig
@@ -1805,5 +1810,6 @@ Error: Signature mismatch:
          "A : (< x : 'b > as 'b) -> (< y : 'a > as 'a) ext"
        The type "< x : 'a * 'a > as 'a" is not equal to the type
          "< x : 'b > as 'b"
-       Types for method "x" are incompatible
+       The method "x" has type "< x : 'c > * < x : 'c > as 'c",
+       but the expected method type was "< x : 'b > as 'b"
 |}]

@@ -1161,7 +1161,9 @@ Error: This expression has type
          "< m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) >"
        but an expression was expected of type
          "< m : 'b. 'b * ('b * < m : 'c. 'c * ('c * 'd) >) > as 'd"
-       Types for method "m" are incompatible
+       The method "m" has type "'c. 'c * ('b * < m : 'c. 'e >) as 'e",
+       but the expected method type was
+       "'c. 'c * ('c * < m : 'b. 'b * ('b * < m : 'c. 'f >) >) as 'f"
 |}];;
 
 module M
