@@ -279,7 +279,7 @@ Working version
   and Gc.allocated_bytes(). (Nick Barnes, review by Gabriel Scherer)
 
 - #12770: Add `Fun.compose`.
-  (Justin Frank, review by ...)
+  (Justin Frank, review by Nicolás Ojeda Bär, Daniel Bünzli and Jeremy Yallop)
 
 ### Other libraries:
 
