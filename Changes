@@ -474,7 +474,8 @@ Working version
   (Gabriel Scherer and Thomas Refis, review by Florian Angeletti
    and Vincent Laviron)
 
-- #12446: remove the hooks machinery around channel locking in runtimee/io.c
+- #12446, #12792: remove the hooks machinery around channel locking
+  in runtime/io.c
   (Gabriel Scherer, review by Xavier Leroy)
 
 - #12389, #12544: centralize the handling of metadata for compilation units and
