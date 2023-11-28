@@ -283,6 +283,9 @@ Working version
 - #12784: Fix computation of minor-heap allocation in Gc.counters()
   and Gc.allocated_bytes(). (Nick Barnes, review by Gabriel Scherer)
 
+- #12749: Add `Fun.curry` and `Fun.uncurry` for 2-9 tuples.
+  (Justin Frank, review by ...)
+
 ### Other libraries:
 
 - #12213: Dynlink library, improve legibility of error messages
