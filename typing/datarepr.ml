@@ -141,6 +141,7 @@ let constructor_descrs ~current_unit ty_path decl cstrs rep =
             cstr_loc = cd_loc;
             cstr_attributes = cd_attributes;
             cstr_inlined;
+            cstr_origin = ty_path;
             cstr_uid = cd_uid;
           } in
         (cd_id, cstr) :: descr_rem in
@@ -153,8 +154,9 @@ let extension_descr ~current_unit path_ext ext =
       | None -> newgenconstr ext.ext_type_path ext.ext_type_params
   in
   let existentials, cstr_args, cstr_inlined =
-    constructor_args ~current_unit ext.ext_private ext.ext_args ext.ext_ret_type
-      Path.(Pextra_ty (path_ext, Pext_ty)) (Record_extension path_ext)
+    constructor_args ~current_unit ext.ext_private ext.ext_args
+      ext.ext_ret_type Path.(Pextra_ty (path_ext, Pext_ty))
+      (Record_extension path_ext)
   in
     { cstr_name = Path.last path_ext;
       cstr_res = ty_res;
@@ -169,8 +171,57 @@ let extension_descr ~current_unit path_ext ext =
       cstr_loc = ext.ext_loc;
       cstr_attributes = ext.ext_attributes;
       cstr_inlined;
+      cstr_origin = ext.ext_type_path;
       cstr_uid = ext.ext_uid;
     }
+
+let operation_descrs ~current_unit ty_path decl ops =
+  let ty_eff = newgenconstr ty_path decl.type_params in
+  let num_consts = ref 0 and num_nonconsts = ref 0 in
+  List.iter
+    (fun {od_args; _} ->
+      if od_args = Cstr_tuple [] then incr num_consts else incr num_nonconsts)
+    ops;
+  let rec describe_operations idx_const idx_nonconst = function
+      [] -> []
+    | {od_id; od_args; od_res; od_loc; od_attributes; od_uid} :: rem ->
+        let cstr_res = Predef.type_operation od_res ty_eff in
+        let (tag, descr_rem) =
+          match od_args with
+          | Cstr_tuple [] ->
+             (Cstr_constant idx_const,
+              describe_operations (idx_const+1) idx_nonconst rem)
+          | _  ->
+             (Cstr_block idx_nonconst,
+              describe_operations idx_const (idx_nonconst+1) rem)
+        in
+        let cstr_name = Ident.name od_id in
+        let cstr_existentials, cstr_args, cstr_inlined =
+          let representation = Record_inlined idx_nonconst in
+          constructor_args ~current_unit Public od_args (Some cstr_res)
+            Path.(Pextra_ty (ty_path, Pcstr_ty cstr_name)) representation
+        in
+        let cstr =
+          { cstr_name;
+            cstr_res;
+            cstr_existentials;
+            cstr_args;
+            cstr_arity = List.length cstr_args;
+            cstr_tag = tag;
+            cstr_consts = !num_consts;
+            cstr_nonconsts = !num_nonconsts;
+            cstr_private = Public;
+            cstr_generalized = true;
+            cstr_loc = od_loc;
+            cstr_attributes = od_attributes;
+            cstr_inlined;
+            cstr_origin = ty_path;
+            cstr_uid = od_uid;
+          }
+        in
+        (od_id, cstr) :: descr_rem
+  in
+  describe_operations 0 0 ops
 
 let none =
   create_expr (Ttuple []) ~level:(-1) ~scope:Btype.generic_level ~id:(-1)
@@ -224,10 +275,29 @@ let rec find_constr tag num_const num_nonconst = function
 let find_constr_by_tag tag cstrlist =
   find_constr tag 0 0 cstrlist
 
+exception Operation_not_found
+
+let rec find_operation tag num_const num_nonconst = function
+    [] ->
+      raise Operation_not_found
+  | {od_args = Cstr_tuple []; _} as op  :: rem ->
+      if tag = Cstr_constant num_const
+      then op
+      else find_operation tag (num_const + 1) num_nonconst rem
+  | op :: rem ->
+      if tag = Cstr_block num_nonconst
+      then op
+      else find_operation tag num_const (num_nonconst + 1) rem
+
+let find_operation_by_tag tag cstrlist =
+  find_operation tag 0 0 cstrlist
+
 let constructors_of_type ~current_unit ty_path decl =
   match decl.type_kind with
   | Type_variant (cstrs,rep) ->
      constructor_descrs ~current_unit ty_path decl cstrs rep
+  | Type_effect ops ->
+      operation_descrs ~current_unit ty_path decl ops
   | Type_record _ | Type_abstract _ | Type_open -> []
 
 let labels_of_type ty_path decl =
@@ -235,4 +305,4 @@ let labels_of_type ty_path decl =
   | Type_record(labels, rep) ->
       label_descrs (newgenconstr ty_path decl.type_params)
         labels rep decl.type_private
-  | Type_variant _ | Type_abstract _ | Type_open -> []
+  | Type_variant _ | Type_abstract _ | Type_open | Type_effect _ -> []

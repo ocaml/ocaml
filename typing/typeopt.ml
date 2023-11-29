@@ -83,13 +83,13 @@ type classification =
   | Addr  (* anything except a float or a lazy *)
   | Any
 
-let classify env ty =
+let rec classify env ty =
   let ty = scrape_ty env ty in
   if maybe_pointer_type env ty = Immediate then Int
   else match get_desc ty with
   | Tvar _ | Tunivar _ ->
       Any
-  | Tconstr (p, _args, _abbrev) ->
+  | Tconstr (p, args, _abbrev) ->
       if Path.same p Predef.path_float then Float
       else if Path.same p Predef.path_lazy_t then Lazy
       else if Path.same p Predef.path_string
@@ -98,12 +98,16 @@ let classify env ty =
            || Path.same p Predef.path_nativeint
            || Path.same p Predef.path_int32
            || Path.same p Predef.path_int64 then Addr
-      else begin
+      else if Path.same p Predef.path_operation then begin
+        match args with
+        | [_; ty] -> classify env ty
+        | _ -> Addr
+      end else begin
         try
           match (Env.find_type p env).type_kind with
           | Type_abstract _ ->
               Any
-          | Type_record _ | Type_variant _ | Type_open ->
+          | Type_record _ | Type_variant _ | Type_open | Type_effect _ ->
               Addr
         with Not_found ->
           (* This can happen due to e.g. missing -I options,

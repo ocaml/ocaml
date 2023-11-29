@@ -12,9 +12,10 @@
 external caml_to_c : (unit -> 'a) -> 'a = "caml_to_c"
 
 open Effect
-open Effect.Deep
 
-type _ t += E : unit t
+type eff = effect E : unit
+
+let eff = Effect.create ()
 
 type 'a tree = Empty | Node of 'a tree * 'a tree
 
@@ -34,23 +35,19 @@ let g () =
 let f () =
   let x = make 3 in
   let z = ref 1 in
-  match_with g ()
-  { retc = (fun () -> Printf.printf "g() returned: %d\n%!" !z);
-    exnc = (fun e -> raise e);
-    effc = fun (type a) (e : a t) ->
-          match e with
-          | E -> Some (fun (k : (a, _) continuation) -> assert false)
-          | _ -> None };
+  run_with eff g ()
+    { result = (fun () -> Printf.printf "g() returned: %d\n%!" !z);
+      exn = (fun e -> raise e);
+      operation =
+        (fun (type a) (E : (a, eff) operation) k -> assert false) };
   Printf.printf "f() check: %d\n%!" (check x)
 
 let () =
   let x = make 3 in
   let z = ref 2 in
-  match_with f ()
-  { retc = (fun () -> Printf.printf "f() returned: %d\n%!" !z);
-    exnc = (fun e -> raise e);
-    effc = fun (type a) (e : a t) ->
-      match e with
-      | E -> Some (fun k -> assert false)
-      | _ -> None };
+  run_with eff f ()
+    { result = (fun () -> Printf.printf "f() returned: %d\n%!" !z);
+      exn = (fun e -> raise e);
+      operation =
+        (fun (type a) (e : (a, eff) operation) k -> assert false) };
   Printf.printf "() check: %d\n%!" (check x)

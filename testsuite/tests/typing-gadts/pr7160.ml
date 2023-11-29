@@ -17,7 +17,7 @@ val f : int t -> int = <fun>
 Lines 4-5, characters 0-77:
 4 | type 'a tt = 'a t =
 5 |   Int : int -> int tt | String : string -> string tt | Same : 'l1 t -> 'l2 tt..
-Error: This variant or record definition does not match that of type "'a t"
+Error: This variant definition does not match that of type "'a t"
        Constructors do not match:
          "Same : 'l t -> 'l t"
        is not the same as:

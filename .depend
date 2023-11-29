@@ -604,6 +604,7 @@ typing/ctype.cmi : \
     parsing/asttypes.cmi
 typing/datarepr.cmo : \
     typing/types.cmi \
+    typing/predef.cmi \
     typing/path.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
@@ -612,6 +613,7 @@ typing/datarepr.cmo : \
     typing/datarepr.cmi
 typing/datarepr.cmx : \
     typing/types.cmx \
+    typing/predef.cmx \
     typing/path.cmx \
     parsing/location.cmx \
     typing/ident.cmx \

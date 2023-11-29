@@ -701,9 +701,10 @@ value caml_make_unhandled_effect_exn (value effect)
   value res;
   const value * exn =
     cache_named_exception(&caml_unhandled_effect_exn, "Effect.Unhandled");
-  res = caml_alloc_small(2,0);
+  res = caml_alloc_small(3,0);
   Field(res, 0) = *exn;
-  Field(res, 1) = effect;
+  Field(res, 1) = Field(effect, 0);
+  Field(res, 2) = Field(effect, 1);
   CAMLreturn(res);
 }
 

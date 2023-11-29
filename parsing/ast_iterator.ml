@@ -55,6 +55,7 @@ type iterator = {
   module_type_declaration: iterator -> module_type_declaration -> unit;
   open_declaration: iterator -> open_declaration -> unit;
   open_description: iterator -> open_description -> unit;
+  operation_declaration: iterator -> operation_declaration -> unit;
   pat: iterator -> pattern -> unit;
   payload: iterator -> payload -> unit;
   signature: iterator -> signature -> unit;
@@ -160,6 +161,8 @@ module T = struct
         List.iter (sub.constructor_declaration sub) l
     | Ptype_record l -> List.iter (sub.label_declaration sub) l
     | Ptype_open -> ()
+    | Ptype_effect l ->
+        List.iter (sub.operation_declaration sub) l
 
   let iter_constructor_arguments sub = function
     | Pcstr_tuple l -> List.iter (sub.typ sub) l
@@ -696,6 +699,17 @@ let default_iterator =
          this.typ this pld_type;
          this.location this pld_loc;
          this.attributes this pld_attributes
+      );
+
+    operation_declaration =
+      (fun this {pod_name; pod_vars; pod_args;
+                 pod_res; pod_loc; pod_attributes} ->
+         iter_loc this pod_name;
+         List.iter (iter_loc this) pod_vars;
+         T.iter_constructor_arguments this pod_args;
+         this.typ this pod_res;
+         this.location this pod_loc;
+         this.attributes this pod_attributes
       );
 
     cases = (fun this l -> List.iter (this.case this) l);

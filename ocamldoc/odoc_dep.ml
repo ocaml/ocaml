@@ -149,7 +149,7 @@ let type_deps t =
   in
   (match t.T.ty_kind with
     T.Type_abstract -> ()
-  | T.Type_variant cl ->
+  | T.Type_variant(_, cl) ->
       List.iter
         (fun c ->
            match c.T.vc_args with

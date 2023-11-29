@@ -218,6 +218,9 @@ module Type:
       constructor_declaration
     val field: ?loc:loc -> ?attrs:attrs -> ?info:info ->
       ?mut:mutable_flag -> str -> core_type -> label_declaration
+    val operation: ?loc:loc -> ?attrs:attrs -> ?info:info ->
+      ?vars:str list -> str -> constructor_arguments -> core_type ->
+      operation_declaration
   end
 
 (** Type extensions *)

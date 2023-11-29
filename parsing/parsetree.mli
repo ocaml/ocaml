@@ -555,6 +555,7 @@ and type_kind =
   | Ptype_variant of constructor_declaration list
   | Ptype_record of label_declaration list  (** Invariant: non-empty list *)
   | Ptype_open
+  | Ptype_effect of operation_declaration list
 
 and label_declaration =
     {
@@ -583,6 +584,16 @@ and constructor_declaration =
      pcd_res: core_type option;
      pcd_loc: Location.t;
      pcd_attributes: attributes;  (** [C of ... [\@id1] [\@id2]] *)
+    }
+
+and operation_declaration =
+    {
+     pod_name: string loc;
+     pod_vars: string loc list;
+     pod_args: constructor_arguments;
+     pod_res: core_type;
+     pod_loc: Location.t;
+     pod_attributes: attributes;
     }
 
 and constructor_arguments =

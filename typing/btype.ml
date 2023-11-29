@@ -130,7 +130,7 @@ let type_kind_is_abstract decl =
 let type_origin decl =
   match decl.type_kind with
   | Type_abstract origin -> origin
-  | Type_variant _ | Type_record _ | Type_open -> Definition
+  | Type_variant _ | Type_record _ | Type_open | Type_effect _ -> Definition
 
 let dummy_method = "*dummy method*"
 
@@ -341,6 +341,13 @@ let iter_type_expr_kind f = function
       List.iter (fun d -> f d.ld_type) lbls
   | Type_open ->
       ()
+  | Type_effect ops ->
+      List.iter
+        (fun od ->
+           iter_type_expr_cstr_args f od.od_args;
+           f od.od_res
+        )
+        ops
 
 
 let type_iterators =
@@ -769,10 +776,3 @@ let unmark_class_signature sign =
 
 let unmark_class_type cty =
   unmark_iterators.it_class_type unmark_iterators cty
-
-(**** Type information getter ****)
-
-let cstr_type_path cstr =
-  match get_desc cstr.cstr_res with
-  | Tconstr (p, _, _) -> p
-  | _ -> assert false

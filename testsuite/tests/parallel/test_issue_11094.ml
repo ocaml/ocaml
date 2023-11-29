@@ -7,13 +7,14 @@
 *)
 
 open Effect
-open Effect.Deep
 
 let num_domains = 2
 
-type _ Effect.t += Fork : (unit -> unit) -> unit Effect.t
+type eff = effect Fork : (unit -> unit) -> unit
 
-let fork f = perform (Fork f)
+let eff = Effect.create ()
+
+let fork f = perform eff (Fork f)
 
 let with_mutex m f =
   Mutex.lock m;
@@ -32,22 +33,18 @@ let run =
 
   let rec spawn f =
     (* Effect handler => instantiates fiber *)
-    match_with f ()
+    run_with eff f ()
       {
-        retc = (fun () -> dequeue ());
-        exnc =
+        result = (fun () -> dequeue ());
+        exn =
           (fun e ->
             print_string (Printexc.to_string e);
             dequeue ());
-        effc =
-          (fun (type a) (e : a Effect.t) ->
-            match e with
-            | Fork f ->
-                Some
-                  (fun (k : (a, unit) continuation) ->
-                    enqueue k;
-                    spawn f)
-            | _ -> None);
+        operation =
+          (fun (type a) (Fork f : (a, eff) operation)
+               (k : (a, _) continuation) ->
+            enqueue k;
+            spawn f)
       }
   in
   let domains =

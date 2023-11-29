@@ -1,54 +1,50 @@
 (* TEST_BELOW
 (* Blank lines added here to preserve locations. *)
-
-
-
-
-
-
-
-
 *)
 
 open Effect
-open Effect.Deep
 
-type _ t += E : unit t
-          | Inc : unit t
+type e = effect E : unit
+
+type inc = effect Inc : unit
+
+let e = Effect.create ()
+
+let inc = Effect.create ()
 
 let blorp () =
-  perform Inc;
-  perform E;
+  perform inc Inc;
+  perform e E;
   42
 
 let baz () =
-    try_with blorp ()
-    { effc = fun (type a) (e : a t) ->
-        match e with
-        | Inc -> Some (fun (k : (a, _) continuation) ->
-            1 + continue k ())
-        | _ -> None }
+  run_with inc blorp ()
+    { result = Fun.id;
+      exn = raise;
+      operation =
+        (fun (type a) (Inc : (a, inc) operation) (k : (a, _) continuation) ->
+          1 + continue k ()) }
 
 let f () =
-  match_with baz ()
-  { retc = (fun x -> Printf.printf "%d\n" x);
-    exnc = (fun e -> raise e);
-    effc = fun (type a) (e : a t) ->
-          match e with
-          | E -> Some (fun (k : (a, _) continuation) ->
-              Deep.get_callstack k 100 |>
-              Printexc.raw_backtrace_to_string |>
-              print_string;
-              continue k ())
-          | _ -> None }
+  run_with e baz ()
+    { result = (fun x -> Printf.printf "%d\n" x);
+      exn = raise;
+      operation =
+        (fun (type a) (E : (a, e) operation) (k : (a, _) continuation) ->
+          Effect.get_callstack k 100 |>
+          Printexc.raw_backtrace_to_string |>
+          print_string;
+          continue k ()) }
 
 let () = f ()
 
 (* TEST
  flags = "-g";
  {
+   reference = "${test_source_directory}/backtrace_effects_nested.reference";
    bytecode;
  }{
+   reference = "${test_source_directory}/backtrace_effects_nested.opt.reference";
    no-flambda;
    native;
  }{

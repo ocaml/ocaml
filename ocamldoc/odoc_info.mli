@@ -277,10 +277,14 @@ module Type :
           mutable vc_text : info option ; (** Optional description in the associated comment. *)
         }
 
+    type variant_sort = Odoc_type.variant_sort =
+      | Ordinary
+      | Effect
+
     (** The various kinds of a type. *)
     type type_kind = Odoc_type.type_kind =
         Type_abstract (** Type is abstract, for example [type t]. *)
-      | Type_variant of variant_constructor list
+      | Type_variant of variant_sort * variant_constructor list
                    (** constructors *)
       | Type_record of record_field list
                    (** fields *)

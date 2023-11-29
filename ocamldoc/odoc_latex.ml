@@ -612,7 +612,10 @@ class latex =
                   "= " ^ (if priv then "private" else "") ^ " <"
                 | _ -> ""
                 end
-             | Type_variant _ -> "="^(if priv then " private" else "")
+             | Type_variant(s, _) ->
+                 "="
+                 ^ (if priv then " private" else "")
+                 ^ (if s = Effect then " effect" else "")
              | Type_record _ -> "= "^(if priv then "private " else "")
              | Type_open -> "= .."
             ) ;
@@ -640,7 +643,7 @@ class latex =
 
              | None | Some (Other _) -> []
              end
-          | Type_variant l ->
+          | Type_variant(_, l) ->
              if l = [] then (p fmt2 "@[<h 6>  |"; [CodePre (flush2())]) else (
              let constructors =
                List.map (fun {vc_name; vc_args; vc_ret; vc_text} ->

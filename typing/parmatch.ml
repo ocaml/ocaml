@@ -859,22 +859,29 @@ let pats_of_type env ty =
           [make_pat (Tpat_record (fields, Closed)) ty env]
       | _ -> [omega]
       end
+  | Operation (Typedecl (_, path, {type_kind = Type_effect _})) ->
+      begin match Env.find_type_descrs path env with
+      | Type_effect cstrs ->
+          List.map (pat_of_constr (make_pat Tpat_any ty env)) cstrs
+      | _ -> [omega]
+      end
   | Has_no_typedecl ->
       begin match get_desc (Ctype.expand_head env ty) with
         Ttuple tl ->
           [make_pat (Tpat_tuple (omegas (List.length tl))) ty env]
       | _ -> [omega]
       end
-  | Typedecl (_, _, {type_kind = Type_abstract _ | Type_open})
+  | Typedecl (_, _, {type_kind = Type_abstract _ | Type_open | Type_effect _})
+  | Operation (Typedecl (_, _,
+      {type_kind = Type_variant _ | Type_record _
+                   | Type_abstract _ | Type_open}))
+  | Operation (Has_no_typedecl | May_have_typedecl | Operation _)
   | May_have_typedecl -> [omega]
 
-let get_variant_constructors env ty =
-  match Ctype.extract_concrete_typedecl env ty with
-  | Typedecl (_, path, {type_kind = Type_variant _}) ->
-      begin match Env.find_type_descrs path env with
-      | Type_variant (cstrs,_) -> cstrs
-      | _ -> fatal_error "Parmatch.get_variant_constructors"
-      end
+let get_variant_constructors env path =
+  match Env.find_type_descrs path env with
+  | Type_variant (cstrs,_) -> cstrs
+  | Type_effect cstrs -> cstrs
   | _ -> fatal_error "Parmatch.get_variant_constructors"
 
 module ConstructorSet = Set.Make(struct
@@ -885,7 +892,7 @@ end)
 (* Sends back a pattern that complements the given constructors used_constrs *)
 let complete_constrs constr used_constrs =
   let c = constr.pat_desc in
-  let constrs = get_variant_constructors constr.pat_env c.cstr_res in
+  let constrs = get_variant_constructors constr.pat_env c.cstr_origin in
   let used_constrs = ConstructorSet.of_list used_constrs in
   let others =
     List.filter

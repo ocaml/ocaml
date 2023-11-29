@@ -531,6 +531,7 @@ and type_kind =
   | Ttype_variant of constructor_declaration list
   | Ttype_record of label_declaration list
   | Ttype_open
+  | Ttype_effect of operation_declaration list
 
 and label_declaration =
     {
@@ -556,6 +557,17 @@ and constructor_declaration =
 and constructor_arguments =
   | Cstr_tuple of core_type list
   | Cstr_record of label_declaration list
+
+and operation_declaration =
+    {
+     od_id: Ident.t;
+     od_name: string loc;
+     od_vars: string loc list;
+     od_args: constructor_arguments;
+     od_res: core_type;
+     od_loc: Location.t;
+     od_attributes: attributes;
+    }
 
 and type_extension =
   {

@@ -470,6 +470,9 @@ and type_kind i ppf x =
       list (i+1) label_decl ppf l;
   | Ptype_open ->
       line i ppf "Ptype_open\n";
+  | Ptype_effect l ->
+      line i ppf "Ptype_variant\n";
+      list (i+1) operation_decl ppf l;
 
 and type_extension i ppf x =
   line i ppf "type_extension\n";
@@ -920,6 +923,15 @@ and label_decl i ppf {pld_name; pld_mutable; pld_type; pld_loc; pld_attributes}=
   line (i+1) ppf "%a\n" fmt_mutable_flag pld_mutable;
   line (i+1) ppf "%a" fmt_string_loc pld_name;
   core_type (i+1) ppf pld_type
+
+and operation_decl i ppf
+     {pod_name; pod_vars; pod_args; pod_res; pod_loc; pod_attributes} =
+  line i ppf "%a\n" fmt_location pod_loc;
+  line (i+1) ppf "%a\n" fmt_string_loc pod_name;
+  if pod_vars <> [] then line (i+1) ppf "pod_vars =%a\n" typevars pod_vars;
+  attributes i ppf pod_attributes;
+  constructor_arguments (i+1) ppf pod_args;
+  core_type (i+1) ppf pod_res
 
 and longident_x_pattern i ppf (li, p) =
   line i ppf "%a\n" fmt_longident_loc li;

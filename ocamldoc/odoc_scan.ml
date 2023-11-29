@@ -38,7 +38,7 @@ class scanner =
       if self#scan_type_pre t then
         match t.Odoc_type.ty_kind with
           Odoc_type.Type_abstract -> ()
-        | Odoc_type.Type_variant l -> List.iter (self#scan_type_const t) l
+        | Odoc_type.Type_variant(_, l) -> List.iter (self#scan_type_const t) l
         | Odoc_type.Type_record l -> List.iter (self#scan_type_recfield t) l
         | Odoc_type.Type_open -> ()
 

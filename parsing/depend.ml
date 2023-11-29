@@ -136,6 +136,10 @@ let add_constructor_decl bv pcd =
   add_constructor_arguments bv pcd.pcd_args;
   Option.iter (add_type bv) pcd.pcd_res
 
+let add_operation_decl bv pod =
+  add_constructor_arguments bv pod.pod_args;
+  add_type bv pod.pod_res
+
 let add_type_declaration bv td =
   List.iter
     (fun (ty1, ty2, _) -> add_type bv ty1; add_type bv ty2)
@@ -147,7 +151,10 @@ let add_type_declaration bv td =
       List.iter (add_constructor_decl bv) cstrs
   | Ptype_record lbls ->
       List.iter (fun pld -> add_type bv pld.pld_type) lbls
-  | Ptype_open -> () in
+  | Ptype_open -> ()
+  | Ptype_effect ops ->
+      List.iter (add_operation_decl bv) ops
+  in
   add_tkind td.ptype_kind
 
 let add_extension_constructor bv ext =

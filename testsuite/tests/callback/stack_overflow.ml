@@ -18,17 +18,16 @@ let rec deep = function
      caml_to_c (fun () -> deep (n-1))
 
 open Effect
-open Effect.Deep
 
-type _ t += E : unit t
+type eff = effect E : unit
+
+let eff = Effect.create ()
 
 let () =
   Printf.printf "%d\n%!" (!(deep 1000));
   Printf.printf "%d\n%!"
-    (match_with deep 1000
-     { retc = (fun x -> !x);
-       exnc = (fun e -> raise e);
-       effc = fun (type a) (e : a t) ->
-         match e with
-         | E -> Some (fun k -> assert false)
-         | _ -> None })
+    (run_with eff deep 1000
+     { result = (fun x -> !x);
+       exn = (fun e -> raise e);
+       operation =
+         (fun (type a) (E : (a, eff) operation) k -> assert false) })

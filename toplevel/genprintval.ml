@@ -203,9 +203,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           Oide_ident name
       | Pdot(p, _s) ->
           if
-            match get_desc (find (Lident (Out_name.print name)) env) with
-            | Tconstr(ty_path', _, _) -> Path.same ty_path ty_path'
-            | _ -> false
+            match find (Lident (Out_name.print name)) env with
+            | ty_path' -> Path.same ty_path ty_path'
             | exception Not_found -> false
           then Oide_ident name
           else Oide_dot (Printtyp.tree_of_path p, Out_name.print name)
@@ -219,12 +218,16 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
     let tree_of_constr =
       tree_of_qualified
         (fun lid env ->
-          (Env.find_constructor_by_name lid env).cstr_res)
+          let cstr = Env.find_constructor_by_name lid env in
+          cstr.cstr_origin)
 
     and tree_of_label =
       tree_of_qualified
         (fun lid env ->
-          (Env.find_label_by_name lid env).lbl_res)
+          let lbl = Env.find_label_by_name lid env in
+          match get_desc lbl.lbl_res with
+          | Tconstr(path, _, _) -> path
+          | _ -> assert false)
 
     (* An abstract type *)
 
@@ -380,6 +383,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                  in
                  Oval_lazy v
                end
+          | Tconstr (path, [_; ty_arg], _)
+            when Path.same path Predef.path_operation ->
+              tree_of_val depth obj ty_arg
           | Tconstr(path, ty_list, _) -> begin
               try
                 let decl = Env.find_type path env in
@@ -443,6 +449,37 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     end
                 | {type_kind = Type_open} ->
                     tree_of_extension path ty_list depth obj
+                | {type_kind = Type_effect op_list} ->
+                    let tag =
+                      if O.is_block obj
+                      then Cstr_block(O.tag obj)
+                      else Cstr_constant(O.obj obj)
+                    in
+                    let {od_id;od_args} =
+                      Datarepr.find_operation_by_tag tag op_list
+                    in
+                    begin
+                      match od_args with
+                      | Cstr_tuple l ->
+                          let ty_args =
+                            instantiate_types env decl.type_params ty_list l
+                          in
+                          tree_of_constr_with_args (tree_of_constr env path)
+                            (Ident.name od_id) false 0 depth obj
+                            ty_args false
+                      | Cstr_record lbls ->
+                          let r =
+                            tree_of_record_fields depth
+                              env path decl.type_params ty_list
+                              lbls 0 obj false
+                          in
+                          let cstr =
+                            tree_of_constr env path
+                              (Out_name.create (Ident.name od_id))
+                          in
+                          Oval_constr(cstr, [ r ])
+                    end
+
               with
                 Not_found ->                (* raised by Env.find_type *)
                   Oval_stuff "<abstr>"

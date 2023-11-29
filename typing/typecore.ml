@@ -341,22 +341,27 @@ let extract_concrete_record env ty =
   match extract_concrete_typedecl_protected env ty with
   | Typedecl(p0, p, {type_kind=Type_record (fields, _)}) ->
     Record_type (p0, p, fields)
-  | Has_no_typedecl | Typedecl(_, _, _) -> Not_a_record_type
+  | Operation _ | Has_no_typedecl | Typedecl(_, _, _) -> Not_a_record_type
   | May_have_typedecl -> Maybe_a_record_type
 
 type variant_extraction_result =
-  | Variant_type of Path.t * Path.t * Types.constructor_declaration list
+  | Variant_type of Path.t * Path.t
   | Not_a_variant_type
   | Maybe_a_variant_type
 
 let extract_concrete_variant env ty =
   match extract_concrete_typedecl_protected env ty with
-  | Typedecl(p0, p, {type_kind=Type_variant (cstrs, _)}) ->
-    Variant_type (p0, p, cstrs)
+  | Typedecl(p0, p, {type_kind=Type_variant _}) ->
+      Variant_type (p0, p)
   | Typedecl(p0, p, {type_kind=Type_open}) ->
-    Variant_type (p0, p, [])
-  | Has_no_typedecl | Typedecl(_, _, _) -> Not_a_variant_type
-  | May_have_typedecl -> Maybe_a_variant_type
+      Variant_type (p0, p)
+  | Operation(Typedecl(p0, p, {type_kind=Type_effect _})) ->
+      Variant_type(p0, p)
+  | Has_no_typedecl | Typedecl _
+  | Operation (Has_no_typedecl | Typedecl _ | Operation _) ->
+      Not_a_variant_type
+  | May_have_typedecl | Operation May_have_typedecl ->
+      Maybe_a_variant_type
 
 let extract_label_names env ty =
   match extract_concrete_record env ty with
@@ -413,12 +418,25 @@ let unify_pat ?sdesc_for_hint env pat expected_ty =
   with Error (loc, env, Pattern_type_clash(err, None)) ->
     raise(Error(loc, env, Pattern_type_clash(err, sdesc_for_hint)))
 
-(* unification of a type with a Tconstr with freshly created arguments *)
+(* unification of a type the head type of the constructor *)
 let unify_head_only ~refine loc penv ty constr =
-  let path = cstr_type_path constr in
+  let path = constr.cstr_origin in
   let decl = Env.find_type path !!penv in
-  let ty' = Ctype.newconstr path (Ctype.instance_list decl.type_params) in
-  unify_pat_types_refine ~refine loc penv ty' ty
+  let head =
+    match decl.type_kind with
+    | Type_record _ -> assert false
+    | Type_variant _ | Type_open | Type_abstract _ ->
+        (* Type_abstract case can happen for exstensible variants
+           with missing cmi files *)
+        Ctype.newconstr path (Ctype.instance_list decl.type_params)
+    | Type_effect _ ->
+        let eff_ty =
+          Ctype.newconstr path (Ctype.instance_list decl.type_params)
+        in
+        Ctype.newconstr Predef.path_operation
+          [Ctype.newvar (); eff_ty]
+  in
+  unify_pat_types_refine ~refine loc penv head ty
 
 (* Creating new conjunctive types is not allowed when typing patterns *)
 (* make all Reither present in open variants *)
@@ -1003,7 +1021,7 @@ module NameChoice(Name : sig
   type usage
   val kind: Datatype_kind.t
   val get_name: t -> string
-  val get_type: t -> type_expr
+  val get_type_path: t -> Path.t
   val lookup_all_from_type:
     Location.t -> usage -> Path.t -> Env.t -> (t * (unit -> unit)) list
 
@@ -1014,7 +1032,7 @@ module NameChoice(Name : sig
 end) = struct
   open Name
 
-  let get_type_path d = get_constr_type_path (get_type d)
+  let get_type_path = get_type_path
 
   let lookup_from_type env type_path usage lid =
     let descrs = lookup_all_from_type lid.loc usage type_path env in
@@ -1227,7 +1245,7 @@ module Label = NameChoice (struct
   type usage = Env.label_usage
   let kind = Datatype_kind.Record
   let get_name lbl = lbl.lbl_name
-  let get_type lbl = lbl.lbl_res
+  let get_type_path lbl = get_constr_type_path lbl.lbl_res
   let lookup_all_from_type loc usage path env =
     Env.lookup_all_labels_from_type ~loc usage path env
   let in_env lbl =
@@ -1402,7 +1420,7 @@ module Constructor = NameChoice (struct
   type usage = Env.constructor_usage
   let kind = Datatype_kind.Variant
   let get_name cstr = cstr.cstr_name
-  let get_type cstr = cstr.cstr_res
+  let get_type_path cstr = cstr.cstr_origin
   let lookup_all_from_type loc usage path env =
     match Env.lookup_all_constructors_from_type ~loc usage path env with
     | _ :: _ as x -> x
@@ -1413,9 +1431,9 @@ module Constructor = NameChoice (struct
                declaration.
                We scan the whole environment to get an accurate spellchecking
                hint in the subsequent error message *)
-            let filter lbl =
-              compare_type_path env
-                path (get_constr_type_path @@ get_type lbl) in
+            let filter cstr =
+              compare_type_path env path cstr.cstr_origin
+            in
             let add_valid x acc = if filter x then (x,ignore)::acc else acc in
             Env.fold_constructors add_valid None env []
         | _ -> []
@@ -1685,7 +1703,7 @@ and type_pat_aux
   | Ppat_construct(lid, sarg) ->
       let expected_type =
         match extract_concrete_variant !!penv expected_ty with
-        | Variant_type(p0, p, _) ->
+        | Variant_type(p0, p) ->
             Some (p0, p, is_principal expected_ty)
         | Maybe_a_variant_type -> None
         | Not_a_variant_type ->
@@ -5387,7 +5405,7 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
   let { ty = ty_expected; explanation } = ty_expected_explained in
   let expected_type =
     match extract_concrete_variant env ty_expected with
-    | Variant_type(p0, p,_) ->
+    | Variant_type(p0, p) ->
         Some(p0, p, is_principal ty_expected)
     | Maybe_a_variant_type -> None
     | Not_a_variant_type ->

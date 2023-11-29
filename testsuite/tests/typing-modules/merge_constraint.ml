@@ -313,7 +313,7 @@ type s = Foo of s
 Line 10, characters 23-35:
 10 | module type T = S with type M.t = s
                             ^^^^^^^^^^^^
-Error: This variant or record definition does not match that of type "s"
+Error: This variant definition does not match that of type "s"
        Constructors do not match:
          "Foo of s"
        is not the same as:

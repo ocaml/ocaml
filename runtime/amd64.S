@@ -1190,20 +1190,22 @@ ENDFUNCTION(G(caml_reperform))
 
 FUNCTION(G(caml_resume))
 CFI_STARTPROC
-    /* %rax -> fiber, %rbx -> fun, %rdi -> arg */
+    /* %rax -> fiber, %rbx -> fun, %rdi -> arg, %rsi -> last_fiber */
         leaq    -1(%rax), %r10  /* %r10 (new stack) = Ptr_val(%rax) */
-        movq    %rdi, %rax      /* %rax := argument to function in %rbx */
+        movq    %rdi, %rax      /* %rax := argument to function in %rdi */
     /*  check if stack null, then already used */
         testq   %r10, %r10
-        jz      2f
+        jz      1f
 #if defined(WITH_THREAD_SANITIZER)
-    /* Save non-callee-saved registers %rax and %r10 before C call */
+    /* Save non-callee-saved registers %rax, %rsi and %r10 before C call */
         ENTER_FUNCTION
         pushq   %rax; CFI_ADJUST(8);
+        pushq   %rsi; CFI_ADJUST(8);
         pushq   %r10; CFI_ADJUST(8);
     /* Necessary to include the caller of caml_resume in the TSan backtrace */
         TSAN_ENTER_FUNCTION(16)
         popq    %r10; CFI_ADJUST(-8);
+        popq    %rsi; CFI_ADJUST(-8);
         popq    %rax; CFI_ADJUST(-8);
         TSAN_SAVE_CALLER_REGS
     /* Signal to TSan all stack frames exited by the perform. */
@@ -1217,21 +1219,17 @@ CFI_STARTPROC
         TSAN_RESTORE_CALLER_REGS
         LEAVE_FUNCTION
 #endif
-    /* Find end of list of stacks and add current */
-        movq    %r10, %rsi
-1:      movq    Stack_handler(%rsi), %rcx
-        movq    Handler_parent(%rcx), %rsi
-        testq   %rsi, %rsi
-        jnz     1b
+    /* Add current stack to the last fiber */
+        movq    (Stack_handler-1)(%rsi), %rdi
         movq    Caml_state(current_stack), %rsi
-        movq    %rsi, Handler_parent(%rcx)
+        movq    %rsi, Handler_parent(%rdi)
      /* Need to update the oldest saved frame pointer here as the current fiber
         stack may have been reallocated or we may be resuming a computation
         that was not originally run here. */
-        UPDATE_BASE_POINTER(%rcx)
+        UPDATE_BASE_POINTER(%rdi)
         SWITCH_OCAML_STACKS
         jmp     *(%rbx)
-2:      ENTER_FUNCTION
+1:      ENTER_FUNCTION
         TSAN_ENTER_FUNCTION(0) /* Necessary to include the caller of caml_resume
                                   in the TSan backtrace */
         LEA_VAR(caml_raise_continuation_already_resumed, %rax)

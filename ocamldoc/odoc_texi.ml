@@ -687,8 +687,12 @@ class texi =
           (
            match ty.ty_kind with
            | Type_abstract -> [ Newline ]
-           | Type_variant l ->
-               (Raw (" ="^(if priv then " private" else "")^"\n")) ::
+           | Type_variant(s, l) ->
+               let intro =
+                 (if priv then " private" else "")
+                 ^ (if s = Effect then " effect" else "")
+               in
+               (Raw (" ="^intro^"\n")) ::
                (List.flatten
                   (List.map
                      (fun constr ->

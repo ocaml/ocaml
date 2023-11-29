@@ -40,9 +40,12 @@ type error =
   | Duplicate_constructor of string
   | Too_many_constructors
   | Duplicate_label of string
+  | Duplicate_operation of string
+  | Too_many_operations
   | Recursive_abbrev of string * Env.t * reaching_type_path
   | Cycle_in_def of string * Env.t * reaching_type_path
-  | Definition_mismatch of type_expr * Env.t * Includecore.type_mismatch option
+  | Definition_mismatch of
+      string * type_expr * Env.t * Includecore.type_mismatch option
   | Constraint_failed of Env.t * Errortrace.unification_error
   | Inconsistent_constraint of Env.t * Errortrace.unification_error
   | Type_clash of Env.t * Errortrace.unification_error
@@ -316,6 +319,34 @@ let make_constructor env loc type_path type_params svars sargs sret_type =
       targs, Some tret_type, args, Some ret_type
       end
 
+let make_operation env loc svars sargs sres =
+  let closed = svars <> [] in
+  let targs, tres, args, res, _univars =
+    Ctype.with_local_level_if closed begin fun () ->
+      TyVarEnv.with_local_scope begin fun () ->
+        let univar_list =
+          TyVarEnv.make_poly_univars (List.map (fun v -> v.txt) svars) in
+        let univars = if closed then Some univar_list else None in
+        let args, targs =
+          transl_constructor_arguments env univars closed sargs
+        in
+        let tres =
+          transl_simple_type env ?univars ~closed sres in
+        let res = tres.ctyp_type in
+        (targs, tres, args, res, univar_list)
+        end
+      end
+      ~post: begin fun (_, _, args, res, univars) ->
+      Btype.iter_type_expr_cstr_args Ctype.generalize args;
+      Ctype.generalize res;
+      let _vars = TyVarEnv.instance_poly_univars env loc univars in
+      let set_level t = Ctype.enforce_current_level env t in
+      Btype.iter_type_expr_cstr_args set_level args;
+      set_level res;
+      end
+  in
+  targs, tres, args, res
+
 let transl_declaration env sdecl (id, uid) =
   (* Bind type parameters *)
   Ctype.with_local_level begin fun () ->
@@ -336,6 +367,7 @@ let transl_declaration env sdecl (id, uid) =
     match sdecl.ptype_kind with
     | Ptype_abstract    -> bad "it is abstract"
     | Ptype_open        -> bad "extensible variant types cannot be unboxed"
+    | Ptype_effect _    -> bad "effect types cannot be unboxed"
     | Ptype_record fields -> begin match fields with
         | [] -> bad "it has no fields"
         | _::_::_ -> bad "it has more than one field"
@@ -434,6 +466,49 @@ let transl_declaration env sdecl (id, uid) =
             else Record_regular
           in
           Ttype_record lbls, Type_record(lbls', rep)
+      | Ptype_effect sops ->
+        let all_ops = ref String.Set.empty in
+        List.iter
+          (fun {pod_name = {txt = name}} ->
+            if String.Set.mem name !all_ops then
+              raise(Error(sdecl.ptype_loc, Duplicate_operation name));
+            all_ops := String.Set.add name !all_ops)
+          sops;
+        if List.length
+            (List.filter (fun od -> od.pod_args <> Pcstr_tuple []) sops)
+           > (Config.max_tag + 1) then
+          raise(Error(sdecl.ptype_loc, Too_many_operations));
+        let make_op sop =
+          let name = Ident.create_local sop.pod_name.txt in
+          let targs, tres, args, res =
+            make_operation env sop.pod_loc
+              sop.pod_vars sop.pod_args sop.pod_res
+          in
+          let top =
+            { od_id = name;
+              od_name = sop.pod_name;
+              od_vars = sop.pod_vars;
+              od_args = targs;
+              od_res = tres;
+              od_loc = sop.pod_loc;
+              od_attributes = sop.pod_attributes }
+          in
+          let op =
+            { Types.od_id = name;
+              od_args = args;
+              od_res = res;
+              od_loc = sop.pod_loc;
+              od_attributes = sop.pod_attributes;
+              od_uid = Uid.mk ~current_unit:(Env.get_unit_name ()) }
+          in
+            top, op
+        in
+        let make_op sop =
+          Builtin_attributes.warning_scope sop.pod_attributes
+            (fun () -> make_op sop)
+        in
+        let tops, ops = List.split (List.map make_op sops) in
+          Ttype_effect tops, Type_effect ops
       | Ptype_open -> Ttype_open, Type_open
       in
     let (tman, man) = match sdecl.ptype_manifest with
@@ -546,6 +621,17 @@ let check_constraints_labels env visited l pl =
        check_constraints_rec env (get_loc (Ident.name name) pl) visited ty)
     l
 
+let check_constraints_constructor_arguments env visited args pargs =
+  match args, pargs with
+  | Types.Cstr_tuple tyl, Pcstr_tuple styl ->
+      List.iter2
+        (fun sty ty ->
+          check_constraints_rec env sty.ptyp_loc visited ty)
+        styl tyl
+  | Types.Cstr_record tyl, Pcstr_record styl ->
+      check_constraints_labels env visited tyl styl
+  | _ -> assert false
+
 let check_constraints env sdecl (_, decl) =
   let visited = ref TypeSet.empty in
   List.iter2
@@ -555,8 +641,9 @@ let check_constraints env sdecl (_, decl) =
   | Type_abstract _ -> ()
   | Type_variant (l, _rep) ->
       let find_pl = function
-          Ptype_variant pl -> pl
-        | Ptype_record _ | Ptype_abstract | Ptype_open -> assert false
+        | Ptype_variant pl -> pl
+        | Ptype_record _ | Ptype_abstract | Ptype_open | Ptype_effect _ ->
+            assert false
       in
       let pl = find_pl sdecl.ptype_kind in
       let pl_index =
@@ -569,17 +656,10 @@ let check_constraints env sdecl (_, decl) =
         (fun {Types.cd_id=name; cd_args; cd_res} ->
           let {pcd_args; pcd_res; _} =
             try String.Map.find (Ident.name name) pl_index
-            with Not_found -> assert false in
-          begin match cd_args, pcd_args with
-          | Cstr_tuple tyl, Pcstr_tuple styl ->
-              List.iter2
-                (fun sty ty ->
-                   check_constraints_rec env sty.ptyp_loc visited ty)
-                styl tyl
-          | Cstr_record tyl, Pcstr_record styl ->
-              check_constraints_labels env visited tyl styl
-          | _ -> assert false
-          end;
+            with Not_found -> assert false
+          in
+          check_constraints_constructor_arguments
+            env visited cd_args pcd_args;
           match pcd_res, cd_res with
           | Some sr, Some r ->
               check_constraints_rec env sr.ptyp_loc visited r
@@ -588,11 +668,35 @@ let check_constraints env sdecl (_, decl) =
         l
   | Type_record (l, _) ->
       let find_pl = function
-          Ptype_record pl -> pl
-        | Ptype_variant _ | Ptype_abstract | Ptype_open -> assert false
+        | Ptype_record pl -> pl
+        | Ptype_variant _ | Ptype_abstract | Ptype_open | Ptype_effect _ ->
+            assert false
       in
       let pl = find_pl sdecl.ptype_kind in
       check_constraints_labels env visited l pl
+  | Type_effect l ->
+      let find_pl = function
+        | Ptype_effect pl -> pl
+        | Ptype_variant _ | Ptype_record _ | Ptype_abstract | Ptype_open ->
+            assert false
+      in
+      let pl = find_pl sdecl.ptype_kind in
+      let pl_index =
+        let foldf acc x =
+          String.Map.add x.pod_name.txt x acc
+        in
+        List.fold_left foldf String.Map.empty pl
+      in
+      List.iter
+        (fun {Types.od_id=name; od_args; od_res} ->
+          let {pod_args; pod_res; _} =
+            try String.Map.find (Ident.name name) pl_index
+            with Not_found -> assert false
+          in
+          check_constraints_constructor_arguments
+            env visited od_args pod_args;
+          check_constraints_rec env pod_res.ptyp_loc visited od_res)
+        l
   | Type_open -> ()
   end;
   begin match decl.type_manifest with
@@ -604,6 +708,14 @@ let check_constraints env sdecl (_, decl) =
       check_constraints_rec env sty.ptyp_loc visited ty
   end
 
+let type_kind_name decl =
+  match decl.type_kind with
+  | Type_abstract _ -> ""
+  | Type_variant _ -> "variant "
+  | Type_record _ -> "record "
+  | Type_open -> "extensible variant "
+  | Type_effect _ -> "effect "
+
 (*
    If both a variant/record definition and a type equation are given,
    need to check that the equation refers to a type of the same kind
@@ -611,7 +723,8 @@ let check_constraints env sdecl (_, decl) =
 *)
 let check_coherence env loc dpath decl =
   match decl with
-    { type_kind = (Type_variant _ | Type_record _| Type_open);
+    { type_kind =
+        (Type_variant _ | Type_record _| Type_open | Type_effect _);
       type_manifest = Some ty } ->
       begin match get_desc ty with
         Tconstr(path, args, _) ->
@@ -634,12 +747,16 @@ let check_coherence env loc dpath decl =
                          (Subst.add_type_path dpath path Subst.identity) decl)
               end
             in
-            if err <> None then
-              raise(Error(loc, Definition_mismatch (ty, env, err)))
+            if err <> None then begin
+              let kind = type_kind_name decl in
+              raise(Error(loc, Definition_mismatch(kind, ty, env, err)))
+            end
           with Not_found ->
             raise(Error(loc, Unavailable_type_constructor path))
           end
-      | _ -> raise(Error(loc, Definition_mismatch (ty, env, None)))
+      | _ ->
+          let kind = type_kind_name decl in
+          raise(Error(loc, Definition_mismatch (kind, ty, env, None)))
       end
   | _ -> ()
 
@@ -1000,7 +1117,19 @@ let check_duplicates sdecl_list =
             with Not_found -> Hashtbl.add labels cname.txt sdecl.ptype_name.txt)
           fl
     | Ptype_abstract -> ()
-    | Ptype_open -> ())
+    | Ptype_open -> ()
+    | Ptype_effect ol ->
+        List.iter
+          (fun pod ->
+            try
+              let name' = Hashtbl.find constrs pod.pod_name.txt in
+              Location.prerr_warning pod.pod_loc
+                (Warnings.Duplicate_definitions
+                   ("constructor", pod.pod_name.txt, name',
+                    sdecl.ptype_name.txt))
+            with Not_found ->
+              Hashtbl.add constrs pod.pod_name.txt sdecl.ptype_name.txt)
+          ol)
     sdecl_list
 
 (* Force recursion to go through id for private types*)
@@ -1235,7 +1364,7 @@ let transl_extension_constructor ~scope env type_path type_params
             typext_params
         end;
         (* Ensure that constructor's type matches the type being extended *)
-        let cstr_type_path = Btype.cstr_type_path cdescr in
+        let cstr_type_path = cdescr.cstr_origin in
         let cstr_type_params = (Env.find_type cstr_type_path env).type_params in
         let cstr_types =
           (Btype.newgenty
@@ -1934,6 +2063,12 @@ let report_error ppf = function
         (Config.max_tag + 1) "non-constant constructors"
   | Duplicate_label s ->
       fprintf ppf "Two labels are named %a" Style.inline_code s
+  | Duplicate_operation s ->
+      fprintf ppf "Two operations are named %s" s
+  | Too_many_operations ->
+      fprintf ppf
+        "@[Too many non-constant operations@ -- maximum is %i %s@]"
+        (Config.max_tag + 1) "non-constant operations"
   | Recursive_abbrev (s, env, reaching_path) ->
       let reaching_path = Reaching_path.simplify reaching_path in
       Printtyp.wrap_printing_env ~error:true env @@ fun () ->
@@ -1950,13 +2085,15 @@ let report_error ppf = function
       fprintf ppf "@[<v>The definition of %a contains a cycle%a@]"
         Style.inline_code s
         Reaching_path.pp_colon reaching_path
-  | Definition_mismatch (ty, _env, None) ->
+  | Definition_mismatch (kind, ty, _env, None) ->
+      let intro = "This " ^ kind ^ "definition" in
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]@]"
-        "This variant or record definition" "does not match that of type"
+        intro "does not match that of type"
         (Style.as_inline_code Printtyp.type_expr) ty
-  | Definition_mismatch (ty, env, Some err) ->
+  | Definition_mismatch (kind, ty, env, Some err) ->
+      let intro = "This " ^ kind ^ "definition" in
       fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]%a@]"
-        "This variant or record definition" "does not match that of type"
+        intro "does not match that of type"
         (Style.as_inline_code Printtyp.type_expr) ty
         (Includecore.report_type_mismatch
            "the original" "this" "definition" env)
@@ -2020,9 +2157,9 @@ let report_error ppf = function
       | Type_record (tl, _), _ ->
           explain_unbound ppf ty tl (fun l -> l.Types.ld_type)
             "field" (fun l -> Ident.name l.Types.ld_id ^ ": ")
-      | Type_abstract _, Some ty' ->
+      | (Type_abstract _ | Type_open | Type_effect _), Some ty' ->
           explain_unbound_single ppf ty ty'
-      | _ -> ()
+      | (Type_abstract _ | Type_open | Type_effect _), None -> ()
       end;
       fprintf ppf "@]"
   | Unbound_type_var_ext (ty, ext) ->

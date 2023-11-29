@@ -94,7 +94,7 @@ type u = X of bool
 Line 3, characters 23-33:
 3 | module type B = A with type t = u;; (* fail *)
                            ^^^^^^^^^^
-Error: This variant or record definition does not match that of type "u"
+Error: This variant definition does not match that of type "u"
        Constructors do not match:
          "X of bool"
        is not the same as:

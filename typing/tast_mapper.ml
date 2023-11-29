@@ -201,11 +201,21 @@ let constructor_decl sub cd =
   let cd_attributes = sub.attributes sub cd.cd_attributes in
   {cd with cd_loc; cd_name; cd_vars; cd_args; cd_res; cd_attributes}
 
+let operation_decl sub od =
+  let od_loc = sub.location sub od.od_loc in
+  let od_name = map_loc sub od.od_name in
+  let od_vars = List.map (map_loc sub) od.od_vars in
+  let od_args = constructor_args sub od.od_args in
+  let od_res = sub.typ sub od.od_res in
+  let od_attributes = sub.attributes sub od.od_attributes in
+  {od with od_loc; od_name; od_vars; od_args; od_res; od_attributes}
+
 let type_kind sub = function
   | Ttype_abstract -> Ttype_abstract
   | Ttype_variant list -> Ttype_variant (List.map (constructor_decl sub) list)
   | Ttype_record list -> Ttype_record (List.map (label_decl sub) list)
   | Ttype_open -> Ttype_open
+  | Ttype_effect list -> Ttype_effect (List.map (operation_decl sub) list)
 
 let type_declaration sub x =
   let typ_loc = sub.location sub x.typ_loc in

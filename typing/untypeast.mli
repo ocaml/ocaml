@@ -58,6 +58,8 @@ type mapper = {
   package_type: mapper -> Typedtree.package_type -> package_type;
   open_declaration: mapper -> Typedtree.open_declaration -> open_declaration;
   open_description: mapper -> Typedtree.open_description -> open_description;
+  operation_declaration: mapper -> Typedtree.operation_declaration
+                           -> operation_declaration;
   pat: 'k . mapper -> 'k Typedtree.general_pattern -> pattern;
   row_field: mapper -> Typedtree.row_field -> row_field;
   object_field: mapper -> Typedtree.object_field -> object_field;

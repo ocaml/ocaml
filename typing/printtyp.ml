@@ -1418,6 +1418,17 @@ let tree_of_constructor_in_decl cd =
   | None -> tree_of_single_constructor cd
   | Some _ -> Names.with_local_names (fun () -> tree_of_single_constructor cd)
 
+let tree_of_operation od =
+  Names.with_local_names (fun () ->
+    let name = Ident.name od.od_id in
+    let ret = tree_of_typexp Type od.od_res in
+    let args = tree_of_constructor_arguments od.od_args in
+    {
+      oop_name = name;
+      oop_args = args;
+      oop_return_type = ret;
+    })
+
 let prepare_decl id decl =
   let params = filter_params decl.type_params in
   begin match decl.type_manifest with
@@ -1462,6 +1473,12 @@ let prepare_decl id decl =
   | Type_record(l, _rep) ->
       List.iter (fun l -> prepare_type l.ld_type) l
   | Type_open -> ()
+  | Type_effect ops ->
+      List.iter
+        (fun o ->
+           prepare_type_constructor_arguments o.od_args;
+           prepare_type o.od_res)
+        ops
   end;
   ty_manifest, params
 
@@ -1484,6 +1501,7 @@ let tree_of_type_decl id decl =
           List.exists (fun cd -> cd.cd_res <> None) tll
       | Type_open ->
           decl.type_manifest = None
+      | Type_effect _ -> false
     in
     let vari =
       List.map2
@@ -1536,6 +1554,11 @@ let tree_of_type_decl id decl =
         tree_of_manifest Otyp_open,
         decl.type_private,
         false
+    | Type_effect ops ->
+        tree_of_manifest
+          (Otyp_effect (List.map tree_of_operation ops)),
+        Public,
+        false
   in
     { otype_name = name;
       otype_params = args;
@@ -1571,6 +1594,18 @@ let label ppf l =
   reset_except_context ();
   prepare_type l.ld_type;
   !Oprint.out_label ppf (tree_of_label l)
+
+let add_operation_to_preparation o =
+  prepare_type_constructor_arguments o.od_args;
+  prepare_type o.od_res
+
+let prepared_operation ppf o =
+  !Oprint.out_operation ppf (tree_of_operation o)
+
+let operation ppf c =
+  reset_except_context ();
+  add_operation_to_preparation c;
+  prepared_operation ppf c
 
 let tree_of_type_declaration id decl rs =
   Osig_type (tree_of_type_decl id decl, tree_of_rec rs)

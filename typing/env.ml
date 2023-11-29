@@ -507,7 +507,9 @@ module IdTbl =
   end
 
 type type_descr_kind =
-  (label_description, constructor_description) type_kind
+  (label_description,
+   constructor_description,
+   constructor_description) type_kind
 
 type type_descriptions = type_descr_kind
 
@@ -1166,6 +1168,8 @@ and find_cstr path name env =
   match tda.tda_descriptions with
   | Type_variant (cstrs, _) ->
       List.find (fun cstr -> cstr.cstr_name = name) cstrs
+  | Type_effect cstrs ->
+      List.find (fun cstr -> cstr.cstr_name = name) cstrs
   | Type_record _ | Type_abstract _ | Type_open -> raise Not_found
 
 
@@ -1769,6 +1773,24 @@ let rec components_of_module_maker
                   Type_record (lbls, repr)
               | Type_abstract r -> Type_abstract r
               | Type_open -> Type_open
+              | Type_effect _ ->
+                  let cstrs =
+                    List.map snd
+                      (Datarepr.constructors_of_type path final_decl
+                         ~current_unit:(get_unit_name ()))
+                  in
+                  List.iter
+                    (fun descr ->
+                      let cda_shape = Shape.leaf descr.cstr_uid in
+                      let cda = {
+                        cda_description = descr;
+                        cda_address = None;
+                        cda_shape }
+                      in
+                      c.comp_constrs <-
+                        add_to_tbl descr.cstr_name cda c.comp_constrs
+                    ) cstrs;
+                 Type_effect cstrs
             in
             let shape = Shape.proj cm_shape (Shape.Item.type_ id) in
             let tda =
@@ -2016,6 +2038,16 @@ and store_type ~check id info shape env =
           env labels
     | Type_abstract r -> Type_abstract r, env
     | Type_open -> Type_open, env
+    | Type_effect _ ->
+        let constructors =
+          Datarepr.constructors_of_type path info
+            ~current_unit:(get_unit_name ())
+        in
+        Type_effect (List.map snd constructors),
+        List.fold_left
+          (fun env (cstr_id, cstr) ->
+            store_constructor ~check info id cstr_id cstr env)
+          env constructors
   in
   let tda =
     { tda_declaration = info;
@@ -2609,6 +2641,11 @@ let mark_constructor_used usage cd =
   | mark -> mark usage
   | exception Not_found -> ()
 
+let mark_operation_used usage od =
+  match Types.Uid.Tbl.find !used_constructors od.od_uid with
+  | mark -> mark usage
+  | exception Not_found -> ()
+
 let mark_extension_used usage ext =
   match Types.Uid.Tbl.find !used_constructors ext.ext_uid with
   | mark -> mark usage
@@ -2620,8 +2657,7 @@ let mark_label_used usage ld =
   | exception Not_found -> ()
 
 let mark_constructor_description_used usage env cstr =
-  let ty_path = Btype.cstr_type_path cstr in
-  mark_type_path_used env ty_path;
+  mark_type_path_used env cstr.cstr_origin;
   match Types.Uid.Tbl.find !used_constructors cstr.cstr_uid with
   | mark -> mark usage
   | exception Not_found -> ()
@@ -3125,7 +3161,7 @@ let lookup_label ~errors ~use ~loc usage lid env =
 let lookup_all_labels_from_type ~use ~loc usage ty_path env =
   match find_type_descrs ty_path env with
   | exception Not_found -> []
-  | Type_variant _ | Type_abstract _ | Type_open -> []
+  | Type_variant _ | Type_abstract _ | Type_open | Type_effect _ -> []
   | Type_record (lbls, _) ->
       List.map
         (fun lbl ->
@@ -3148,7 +3184,7 @@ let lookup_all_constructors_from_type ~use ~loc usage ty_path env =
   match find_type_descrs ty_path env with
   | exception Not_found -> []
   | Type_record _ | Type_abstract _ | Type_open -> []
-  | Type_variant (cstrs, _) ->
+  | Type_variant (cstrs, _) | Type_effect cstrs ->
       List.map
         (fun cstr ->
            let use_fun () =

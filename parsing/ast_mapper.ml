@@ -65,6 +65,8 @@ type mapper = {
                            -> module_type_declaration;
   open_declaration: mapper -> open_declaration -> open_declaration;
   open_description: mapper -> open_description -> open_description;
+  operation_declaration: mapper -> operation_declaration
+                           -> operation_declaration;
   pat: mapper -> pattern -> pattern;
   payload: mapper -> payload -> payload;
   signature: mapper -> signature -> signature;
@@ -185,6 +187,8 @@ module T = struct
         Ptype_variant (List.map (sub.constructor_declaration sub) l)
     | Ptype_record l -> Ptype_record (List.map (sub.label_declaration sub) l)
     | Ptype_open -> Ptype_open
+    | Ptype_effect l ->
+        Ptype_effect (List.map (sub.operation_declaration sub) l)
 
   let map_constructor_arguments sub = function
     | Pcstr_tuple l -> Pcstr_tuple (List.map (sub.typ sub) l)
@@ -772,6 +776,18 @@ let default_mapper =
            ~mut:pld_mutable
            ~loc:(this.location this pld_loc)
            ~attrs:(this.attributes this pld_attributes)
+      );
+
+    operation_declaration =
+      (fun this {pod_name; pod_vars; pod_args;
+                 pod_res; pod_loc; pod_attributes} ->
+        Type.operation
+          (map_loc this pod_name)
+          (T.map_constructor_arguments this pod_args)
+          (this.typ this pod_res)
+          ~vars:(List.map (map_loc this) pod_vars)
+          ~loc:(this.location this pod_loc)
+          ~attrs:(this.attributes this pod_attributes)
       );
 
     cases = (fun this l -> List.map (this.case this) l);

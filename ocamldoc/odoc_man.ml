@@ -614,9 +614,10 @@ class man =
       (
        match t.ty_kind with
         Type_abstract -> ()
-      | Type_variant l ->
+      | Type_variant(s, l) ->
          bs b "=";
          if priv then bs b " private";
+         if s = Effect then bs b " effect";
          bs b "\n ";
          List.iter (fun constr ->
            bs b ("| "^constr.vc_name);
