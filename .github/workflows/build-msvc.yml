@@ -55,7 +55,7 @@ jobs:
       - name: Install Cygwin
         uses: cygwin/cygwin-install-action@v3
         with:
-          packages: make,bash
+          packages: make,bash,mingw64-x86_64-gcc-core
           install-dir: 'D:\cygwin'
 
       - name: Save Cygwin cache
@@ -76,6 +76,21 @@ jobs:
           ./configure --host=$HOST ;
           make ;
           runtime/ocamlrun ocamlc -config ;
+
+      - name: Assemble backend with MinGW GASM and compare
+        shell: bash -e {0}
+        run: >-
+          x86_64-w64-mingw32-gcc -c -I./runtime  -I ./flexdll -D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE -DWINDOWS_UNICODE=1 -DCAMLDLLIMPORT= -DIN_CAML_RUNTIME -DNATIVE_CODE -DTARGET_amd64 -DMODEL_default -DSYS_mingw64 -o runtime/amd64.o runtime/amd64.S ;
+          dumpbin /disasm:nobytes runtime/amd64nt.obj > runtime/amd64nt.dump ;
+          awk -f tools/ci/actions/canonicalize-dumpbin.awk runtime/amd64nt.dump runtime/amd64nt.dump > runtime/amd64nt.canonical ;
+          dumpbin /disasm:nobytes runtime/amd64.o > runtime/amd64.dump ;
+          awk -f tools/ci/actions/canonicalize-dumpbin.awk runtime/amd64.dump runtime/amd64.dump > runtime/amd64.canonical ;
+          git diff --no-index -- runtime/amd64*.canonical ;
+          wc -l runtime/amd64*.dump runtime/amd64*.canonical ;
+          # ^ The final wc is there to make sure that the canonical files are
+          # reasonable cleaned-up versions of the raw dumpbins and not simply
+          # empty
+        if: matrix.x86_64
 
       - name: Run the test suite
         shell: bash -e {0}
