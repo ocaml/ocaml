@@ -2006,6 +2006,19 @@ CAMLprim value caml_domain_dls_get(value unused)
   return Caml_state->dls_root;
 }
 
+CAMLprim value caml_tls_set(value t)
+{
+  CAMLnoalloc;
+  caml_modify_generational_global_root(&Caml_state->dls_root, t);
+  return Val_unit;
+}
+
+CAMLprim value caml_tls_get(value unused)
+{
+  CAMLnoalloc;
+  return Caml_state->dls_root;
+}
+
 CAMLprim value caml_recommended_domain_count(value unused)
 {
   intnat n = -1;
