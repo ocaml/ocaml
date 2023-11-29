@@ -1,6 +1,6 @@
 (* TEST
  readonly_files = "a.ml api.ml b.ml bug.ml c.ml factorial.c pack_client.ml \
-  packed1_client.ml packed1.ml plugin2.ml plugin4.ml plugin_ext.ml \
+  packed1.ml plugin2.ml plugin4.ml plugin_ext.ml \
   plugin_high_arity.ml plugin.ml plugin.mli plugin_ref.ml plugin_simple.ml \
   plugin_thread.ml";
  subdirectories = "sub";
