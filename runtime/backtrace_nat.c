@@ -88,7 +88,7 @@ void caml_free_backtrace_buffer(backtrace_slot *backtrace_buffer) {
 #define Frame_descr_slot(s) ((frame_descr*)(s))
 #define Slot_frame_descr(f) ((backtrace_slot)(f))
 
-static debuginfo debuginfo_extract(frame_descr *d, ssize_t alloc_idx);
+static debuginfo debuginfo_extract(frame_descr *d, ptrdiff_t alloc_idx);
 
 /* Stores the return addresses contained in the given stack fragment
    into the backtrace array ; this version is performance-sensitive as
@@ -140,7 +140,7 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char* trapsp)
    using a bounded buffer as [caml_stash_backtrace], we dynamically
    grow the allocated space as required. */
 static size_t get_callstack(struct stack_info* stack, intnat max_slots,
-                            ssize_t alloc_idx,
+                            ptrdiff_t alloc_idx,
                             backtrace_slot **backtrace_p,
                             size_t *alloc_size_p)
 {
@@ -205,7 +205,7 @@ static size_t get_callstack(struct stack_info* stack, intnat max_slots,
 size_t caml_get_callstack(size_t max_slots,
                           backtrace_slot **buffer_p,
                           size_t *alloc_size_p,
-                          ssize_t alloc_idx)
+                          ptrdiff_t alloc_idx)
 {
   return get_callstack(Caml_state->current_stack, max_slots,
                        alloc_idx,
@@ -262,7 +262,7 @@ CAMLprim value caml_get_continuation_callstack (value cont, value max_frames)
   return alloc_callstack(trace, slots);
 }
 
-static debuginfo debuginfo_extract(frame_descr *d, ssize_t alloc_idx)
+static debuginfo debuginfo_extract(frame_descr *d, ptrdiff_t alloc_idx)
 {
   unsigned char* infoptr;
   uint32_t debuginfo_offset;

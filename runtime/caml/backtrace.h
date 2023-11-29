@@ -127,7 +127,7 @@ CAMLextern void caml_load_main_debug_info(void);
 extern size_t caml_get_callstack(size_t max_slots,
                                  backtrace_slot **buffer_p,
                                  size_t *alloc_size_p,
-                                 ssize_t alloc_idx);
+                                 ptrdiff_t alloc_idx);
 
 
 /* Default (C-level) printer for backtraces.  It is called if an
