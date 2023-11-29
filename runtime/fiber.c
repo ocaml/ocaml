@@ -441,7 +441,7 @@ static void rewrite_frame_pointers(struct stack_info *old_stack,
     struct frame_walker *base_addr;
     uintnat return_addr;
   } *frame, *next;
-  ssize_t delta;
+  ptrdiff_t delta;
   void *top, **p;
 
   delta = (char*)Stack_high(new_stack) - (char*)Stack_high(old_stack);

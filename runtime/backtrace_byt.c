@@ -393,7 +393,7 @@ static value alloc_callstack(backtrace_slot *trace, size_t slots)
 size_t caml_get_callstack(size_t max_slots,
                           backtrace_slot **buffer_p,
                           size_t *alloc_size_p,
-                          ssize_t alloc_idx)
+                          ptrdiff_t alloc_idx)
 {
   CAMLassert(alloc_idx < 1); /* allocation indexes not used in bytecode */
   return get_callstack(Caml_state->current_stack->sp,
