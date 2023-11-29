@@ -7,6 +7,6 @@ Called from Dynlink.Bytecode.run in file "byte/dynlink.ml", line 152, characters
 Re-raised at Dynlink.Bytecode.run in file "byte/dynlink.ml", line 154, characters 6-137
 Called from Dynlink_common.Make.load.(fun) in file "dynlink_common.ml", line 358, characters 11-54
 Called from Stdlib__List.iter in file "list.ml", line 112, characters 12-15
-Called from Stdlib__Fun.protect in file "fun.ml", line 33, characters 8-15
-Re-raised at Stdlib__Fun.protect in file "fun.ml", line 38, characters 6-52
+Called from Stdlib__Fun.protect in file "fun.ml", line 34, characters 8-15
+Re-raised at Stdlib__Fun.protect in file "fun.ml", line 39, characters 6-52
 Called from Test10_main in file "test10_main.ml", line 51, characters 13-69

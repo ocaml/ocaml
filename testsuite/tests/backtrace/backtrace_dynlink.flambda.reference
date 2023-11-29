@@ -5,7 +5,7 @@ Called from Dynlink.Native.run in file "native/dynlink.ml", line 82, characters 
 Called from Dynlink_common.Make.load.(fun) in file "dynlink_common.ml", line 358, characters 11-54
 Called from Stdlib__List.iter in file "list.ml" (inlined), line 112, characters 12-15
 Called from Dynlink_common.Make.load.(fun) in file "dynlink_common.ml" (inlined), line 354, characters 6-372
-Called from Stdlib__Fun.protect in file "fun.ml" (inlined), line 33, characters 8-15
+Called from Stdlib__Fun.protect in file "fun.ml" (inlined), line 34, characters 8-15
 Called from Dynlink_common.Make.load in file "dynlink_common.ml", line 347, characters 4-662
 Called from Dynlink_common.Make.loadfile in file "dynlink_common.ml" (inlined), line 366, characters 26-45
 Called from Backtrace_dynlink in file "backtrace_dynlink.ml", line 39, characters 4-52
@@ -17,9 +17,9 @@ Called from Dynlink.Native.run in file "native/dynlink.ml", line 82, characters 
 Called from Dynlink_common.Make.load.(fun) in file "dynlink_common.ml", line 358, characters 11-54
 Called from Stdlib__List.iter in file "list.ml" (inlined), line 112, characters 12-15
 Called from Dynlink_common.Make.load.(fun) in file "dynlink_common.ml" (inlined), line 354, characters 6-372
-Called from Stdlib__Fun.protect in file "fun.ml" (inlined), line 33, characters 8-15
+Called from Stdlib__Fun.protect in file "fun.ml" (inlined), line 34, characters 8-15
 Called from Dynlink_common.Make.load in file "dynlink_common.ml", line 347, characters 4-662
-Re-raised at Stdlib__Fun.protect in file "fun.ml" (inlined), line 38, characters 6-52
+Re-raised at Stdlib__Fun.protect in file "fun.ml" (inlined), line 39, characters 6-52
 Called from Dynlink_common.Make.load in file "dynlink_common.ml", line 347, characters 4-662
 Called from Dynlink_common.Make.loadfile in file "dynlink_common.ml" (inlined), line 366, characters 26-45
 Called from Backtrace_dynlink in file "backtrace_dynlink.ml", line 39, characters 4-52
