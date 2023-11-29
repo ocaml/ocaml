@@ -1,6 +1,6 @@
 (* TEST *)
 
-let check_dls () =
+let check_tls () =
   let k1 = Thread_local_storage.Key.create (fun () -> 10) in
   let k2 = Thread_local_storage.Key.create (fun () -> 1.0) in
   Thread_local_storage.set k1 100;
@@ -11,7 +11,7 @@ let check_dls () =
   assert (v2 = 200.0);
   Gc.major ()
 
-let check_dls_domain_reuse () =
+let check_tls_domain_reuse () =
   let k1 = Thread_local_storage.Key.create (fun () -> 100) in
   let k2 = Thread_local_storage.Key.create (fun () -> 200) in
   let domains = Array.init 4 (fun _ -> Domain.spawn(fun _ ->
@@ -27,8 +27,8 @@ let check_dls_domain_reuse () =
   Array.iter Domain.join domains2
 
 let _ =
-  let domains = Array.init 3 (fun _ -> Domain.spawn(check_dls)) in
-  check_dls ();
+  let domains = Array.init 3 (fun _ -> Domain.spawn(check_tls)) in
+  check_tls ();
   Array.iter Domain.join domains;
-  check_dls_domain_reuse ();
+  check_tls_domain_reuse ();
   print_endline "ok"

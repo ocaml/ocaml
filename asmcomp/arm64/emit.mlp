@@ -959,7 +959,7 @@ let emit_instr env i =
     | Lop(Ispecific(Isignext size)) ->
         `	sbfm	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #0, #{emit_int (size - 1)}\n`
     | Lop(Itls_get) ->
-        let offset = Domainstate.(idx_of_field Domain_dls_root) * 8 in
+        let offset = Domainstate.(idx_of_field Domain_tls_root) * 8 in
         `	ldr	{emit_reg i.res.(0)}, [{emit_reg reg_domain_state_ptr}, {emit_int offset}]\n`
     | Lop(Ireturn_addr) ->
         invalid_arg (

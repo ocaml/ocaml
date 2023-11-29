@@ -836,7 +836,7 @@ let emit_instr env i =
         let instr = name_for_specific sop in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`
     | Lop (Itls_get) ->
-        let offset = Domainstate.(idx_of_field Domain_dls_root) * 8 in
+        let offset = Domainstate.(idx_of_field Domain_tls_root) * 8 in
         `	ld	{emit_reg i.res.(0)}, {emit_int offset}(30)\n`
     | Lop (Ireturn_addr) ->
         invalid_arg (

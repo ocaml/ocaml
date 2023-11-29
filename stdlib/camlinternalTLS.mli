@@ -16,13 +16,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type dls_state = Obj.t array
+type tls_state = Obj.t array
 
 val unique_value : Obj.t
 
-external get_dls_state : unit -> dls_state = "%tls_get"
+external get_tls_state : unit -> tls_state = "%tls_get"
 
-external set_dls_state : dls_state -> unit =
+external set_tls_state : tls_state -> unit =
   "caml_tls_set" [@@noalloc]
 
 type 'a key = int * (unit -> 'a)

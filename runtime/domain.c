@@ -676,8 +676,8 @@ static void domain_create(uintnat initial_minor_heap_wsize,
     goto reallocate_minor_heap_failure;
   }
 
-  domain_state->dls_root = Atom(0); /* Empty array */
-  caml_register_generational_global_root(&domain_state->dls_root);
+  domain_state->tls_root = Atom(0); /* Empty array */
+  caml_register_generational_global_root(&domain_state->tls_root);
 
   domain_state->stack_cache = caml_alloc_stack_cache();
   if(domain_state->stack_cache == NULL) {
@@ -739,7 +739,7 @@ static void domain_create(uintnat initial_minor_heap_wsize,
 
 alloc_main_stack_failure:
 create_stack_cache_failure:
-  caml_remove_generational_global_root(&domain_state->dls_root);
+  caml_remove_generational_global_root(&domain_state->tls_root);
 reallocate_minor_heap_failure:
   caml_teardown_major_gc();
 init_major_gc_failure:
@@ -1942,7 +1942,7 @@ static void domain_terminate (void)
 
   /* We can not touch domain_self->interruptor after here
      because it may be reused */
-  caml_remove_generational_global_root(&domain_state->dls_root);
+  caml_remove_generational_global_root(&domain_state->tls_root);
   caml_remove_generational_global_root(&domain_state->backtrace_last_exn);
   caml_stat_free(domain_state->final_info);
   caml_stat_free(domain_state->ephe_info);
@@ -1996,14 +1996,14 @@ CAMLprim value caml_ml_domain_cpu_relax(value t)
 CAMLprim value caml_tls_set(value t)
 {
   CAMLnoalloc;
-  caml_modify_generational_global_root(&Caml_state->dls_root, t);
+  caml_modify_generational_global_root(&Caml_state->tls_root, t);
   return Val_unit;
 }
 
 CAMLprim value caml_tls_get(value unused)
 {
   CAMLnoalloc;
-  return Caml_state->dls_root;
+  return Caml_state->tls_root;
 }
 
 CAMLprim value caml_recommended_domain_count(value unused)

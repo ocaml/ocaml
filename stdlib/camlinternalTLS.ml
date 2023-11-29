@@ -16,13 +16,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type dls_state = Obj.t array
+type tls_state = Obj.t array
 
 let unique_value = Obj.repr (ref 0)
 
-external get_dls_state : unit -> dls_state = "%tls_get"
+external get_tls_state : unit -> tls_state = "%tls_get"
 
-external set_dls_state : dls_state -> unit =
+external set_tls_state : tls_state -> unit =
   "caml_tls_set" [@@noalloc]
 
 type 'a key = int * (unit -> 'a)
@@ -51,7 +51,7 @@ let new_key ?split_from_parent init_orphan : _ key =
 (* If necessary, grow the current domain's local state array such that [idx]
  * is a valid index in the array. *)
 let maybe_grow idx =
-  let st = get_dls_state () in
+  let st = get_tls_state () in
   let sz = Array.length st in
   if idx < sz then st
   else begin
@@ -61,7 +61,7 @@ let maybe_grow idx =
     let new_sz = compute_new_size (max 8 sz) in
     let new_st = Array.make new_sz unique_value in
     Array.blit st 0 new_st 0 sz;
-    set_dls_state new_st;
+    set_tls_state new_st;
     new_st
   end
 
