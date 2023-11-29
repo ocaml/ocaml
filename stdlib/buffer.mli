@@ -167,18 +167,16 @@ val add_subbytes : t -> bytes -> int -> int -> unit
 val add_substitute : t -> (string -> string) -> string -> unit
 (** [add_substitute b f s] appends the string pattern [s] at the end
    of buffer [b] with substitution.
-   The substitution process looks for variables into
-   the pattern and substitutes each variable name by its value, as
+   The substitution process looks for variable references in
+   the pattern and substitutes each variable reference with its value, as
    obtained by applying the mapping [f] to the variable name. Inside the
-   string pattern, a variable name immediately follows a non-escaped
-   [$] character and is one of the following:
+   string pattern, a variable reference is a non-escaped [$] immediately
+   followed by a variable name, which is one of the following:
    - a non empty sequence of alphanumeric or [_] characters,
    - an arbitrary sequence of characters enclosed by a pair of
    matching parentheses or curly brackets.
    An escaped [$] character is a [$] that immediately follows a backslash
-   character; it then stands for a plain [$].
-   @raise Not_found if the closing character of a parenthesized variable
-   cannot be found. *)
+   character; the two characters together stand for a plain [$]. *)
 
 val add_buffer : t -> t -> unit
 (** [add_buffer b1 b2] appends the current contents of buffer [b2]

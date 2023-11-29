@@ -225,6 +225,10 @@ Working version
    Daniel Bünzli, Guillaume Munch-Maccagnoni, Clément Allain,
    Damien Doligez, Wiktor Kuchta and Pieter Goetschalckx)
 
+* #6732, #12423: Make Buffer.add_substitute surjective and fix its
+  documentation.
+  (Damien Doligez, review by Antonin Décimo)
+
 * #10775, #12499: Half-precision floating-point elements in Bigarray.
   (Anton Yabchinskiy, review by Xavier Leroy and Nicolás Ojeda Bär)
 
