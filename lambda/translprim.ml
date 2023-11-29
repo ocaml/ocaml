@@ -130,6 +130,7 @@ let primitives_table =
     "%field0", Primitive (Pfield(0, Pointer, Mutable), 1);
     "%field1", Primitive (Pfield(1, Pointer, Mutable), 1);
     "%setfield0", Primitive ((Psetfield(0, Pointer, Assignment)), 2);
+    "%setfield1", Primitive ((Psetfield(1, Pointer, Assignment)), 2);
     "%makeblock", Primitive ((Pmakeblock(0, Immutable, None)), 1);
     "%makemutable", Primitive ((Pmakeblock(0, Mutable, None)), 1);
     "%raise", Raise Raise_regular;
@@ -371,7 +372,7 @@ let primitives_table =
     "%runstack", Primitive (Prunstack, 3);
     "%reperform", Primitive (Preperform, 3);
     "%perform", Primitive (Pperform, 1);
-    "%resume", Primitive (Presume, 3);
+    "%resume", Primitive (Presume, 4);
     "%dls_get", Primitive (Pdls_get, 1);
   ]
 

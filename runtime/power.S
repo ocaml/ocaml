@@ -721,27 +721,24 @@ ENDFUNCTION caml_reperform
 FUNCTION caml_resume
   /* r3: new fiber
      r4: fun
-     r5: arg */
+     r5: arg
+     r6: last_fiber */
         addi    3, 3, -1 /* r3 = Ptr_val(r3) */
         ld      12, 0(4) /* r12 = code pointer */
         mtctr   12       /* CTR = code pointer */
     /* Check if stack is null, then already used */
         cmpdi   3, 0
-        beq     2f
-    /* Find end of list of stacks (put in r7) */
-        mr      TMP, 3
-1:      ld      7, Stack_handler(TMP)
-        ld      TMP, Handler_parent(7)
-        cmpdi   TMP, 0
-        bne     1b
+        beq     1f
     /* Add current stack to the end */
+        addi    6, 6, -1 /* r6 = Ptr_val(r6) */
+        ld      7, Stack_handler(6)
         ld      8, Caml_state(current_stack)
         std     8, Handler_parent(7)
     /* Switch stacks and run code */
         SWITCH_OCAML_STACKS 8, 3
         mr      3, 5
         bctr
-2:      Addrglobal(C_CALL_FUN, caml_raise_continuation_already_resumed)
+1:      Addrglobal(C_CALL_FUN, caml_raise_continuation_already_resumed)
         b       .Lcaml_c_call
 ENDFUNCTION caml_resume
 

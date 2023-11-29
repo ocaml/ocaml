@@ -608,6 +608,8 @@ let rec transl env e =
           transl_prim_2 env p arg1 arg2 dbg
       | (p, [arg1; arg2; arg3]) ->
           transl_prim_3 env p arg1 arg2 arg3 dbg
+      | (p, [arg1; arg2; arg3; arg4]) ->
+          transl_prim_4 env p arg1 arg2 arg3 arg4 dbg
       | (Pread_symbol _, _::_::_::_::_)
       | (Pbigarrayset (_, _, _, _), [])
       | (Pbigarrayref (_, _, _, _), [])
@@ -933,7 +935,9 @@ and transl_prim_1 env p arg dbg =
       tag_int (bswap16 (ignore_high_bit_int (untag_int
         (transl env arg) dbg)) dbg) dbg
   | Pperform ->
-      let cont = make_alloc dbg Obj.cont_tag [int_const dbg 0] in
+      let cont =
+        make_alloc dbg Obj.cont_tag [int_const dbg 0; int_const dbg 0]
+      in
       Cop(Capply typ_val,
        [Cconst_symbol ("caml_perform", dbg); transl env arg; cont],
        dbg)
@@ -1193,11 +1197,6 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
           [transl env arg1; transl env arg2; transl env arg3], dbg)
 
   (* Effects *)
-  | Presume ->
-      Cop (Capply typ_val,
-           [Cconst_symbol ("caml_resume", dbg);
-           transl env arg1; transl env arg2; transl env arg3],
-           dbg)
 
   | Prunstack ->
       Cop (Capply typ_val,
@@ -1211,7 +1210,40 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
            transl env arg1; transl env arg2; transl env arg3],
            dbg)
 
-  | Pperform | Pdls_get
+  | Pperform | Pdls_get | Presume
+  | Patomic_exchange | Patomic_fetch_add | Patomic_load _
+  | Pfield_computed | Psequand | Psequor | Pnot | Pnegint | Paddint
+  | Psubint | Pmulint | Pandint | Porint | Pxorint | Plslint | Plsrint | Pasrint
+  | Pintoffloat | Pfloatofint | Pnegfloat | Pabsfloat | Paddfloat | Psubfloat
+  | Pmulfloat | Pdivfloat | Pstringlength | Pstringrefu | Pstringrefs
+  | Pbyteslength | Pbytesrefu | Pbytesrefs | Pisint | Pisout
+  | Pbswap16 | Pint_as_pointer | Popaque | Pread_symbol _ | Pmakeblock (_, _, _)
+  | Pfield _ | Psetfield (_, _, _) | Pfloatfield _ | Psetfloatfield (_, _)
+  | Pduprecord (_, _) | Pccall _ | Praise _ | Pdivint _ | Pmodint _ | Pintcomp _
+  | Pcompare_ints | Pcompare_floats | Pcompare_bints _
+  | Poffsetint _ | Poffsetref _ | Pfloatcomp _ | Pmakearray (_, _)
+  | Pduparray (_, _) | Parraylength _ | Parrayrefu _ | Parrayrefs _
+  | Pbintofint _ | Pintofbint _ | Pcvtbint (_, _) | Pnegbint _ | Paddbint _
+  | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _ | Pandbint _ | Porbint _
+  | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp (_, _)
+  | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _) | Pbigarraydim _
+  | Pstring_load _ | Pbytes_load _ | Pbigstring_load _ | Pbbswap _
+    ->
+      fatal_errorf "Cmmgen.transl_prim_3: %a"
+        Printclambda_primitives.primitive p
+
+and transl_prim_4 env p arg1 arg2 arg3 arg4 dbg =
+  match p with
+  | Presume ->
+      Cop (Capply typ_val,
+           [Cconst_symbol ("caml_resume", dbg);
+           transl env arg1; transl env arg2;
+           transl env arg3; transl env arg4],
+           dbg)
+  | Psetfield_computed _
+  | Pbytessetu | Pbytessets | Parraysetu _
+  | Parraysets _ | Pbytes_set _ | Pbigstring_set _ | Patomic_cas
+  | Prunstack | Preperform | Pperform | Pdls_get
   | Patomic_exchange | Patomic_fetch_add | Patomic_load _
   | Pfield_computed | Psequand | Psequor | Pnot | Pnegint | Paddint
   | Psubint | Pmulint | Pandint | Porint | Pxorint | Plslint | Plsrint | Pasrint
