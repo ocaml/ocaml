@@ -814,7 +814,10 @@ asm_cfi_supported
 AS
 endianness
 ASPP
+ocamltest_opt_target
+ocamltest_target
 ocamltest
+build_ocamltest
 documentation_tool_cmd
 documentation_tool
 with_ocamldoc
@@ -830,6 +833,9 @@ unix_directory
 unix_library
 ocamltest_libunix
 ocamltest_CPP
+optional_native_tools
+optional_bytecode_tools
+optional_libraries
 lib_unix
 lib_systhreads
 lib_str
@@ -3280,6 +3286,9 @@ lib_dynlink=false
 lib_str=false
 lib_systhreads=false
 lib_unix=false
+optional_libraries=''
+optional_bytecode_tools=''
+optional_native_tools=''
 ocamltest_libunix=None
 ocamltest_unix_impl="dummy"
 unix_library=""
@@ -3421,7 +3430,13 @@ LINEAR_MAGIC_NUMBER=Caml1999L033
 
 
 
+
+
+
  # TODO: rename this variable
+
+
+
 
 
 
@@ -4081,6 +4096,7 @@ else $as_nop
   ocamldoc_opt_target=ocamldoc.opt
   with_ocamldoc=ocamldoc
   build_ocamldoc=true
+  optional_libraries="$optional_libraries ocamldoc/odoc_info"
   ac_config_files="$ac_config_files ocamldoc/META"
 
 fi
@@ -18633,6 +18649,7 @@ printf "%s\n" "$as_me: ocamldebug disabled" >&6;} ;; #(
 then :
   with_debugger="ocamldebug"
     build_ocamldebug=true
+    optional_bytecode_tools="$optional_bytecode_tools debugger/ocamldebug"
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: ocamldebug supported" >&5
 printf "%s\n" "$as_me: ocamldebug supported" >&6;}
 else $as_nop
@@ -19833,13 +19850,20 @@ fi
 
 case $enable_ocamltest,true in #(
   yes,*|,true) :
-    ocamltest='ocamltest' ;; #(
+    build_ocamltest=true
+    ocamltest_target=ocamltest
+    ocamltest_opt_target=ocamltest.opt
+    ocamltest='ocamltest'
+    testsuite_tools='testsuite/tools/codegen testsuite/tools/expect'
+    optional_bytecode_tools="$optional_bytecode_tools $testsuite_tools" ;; #(
   *) :
-    ocamltest='' ;;
+    build_ocamltest=false
+  ocamltest='' ;;
 esac
 
-if test -n "$ocamltest"
+if $build_ocamltest
 then :
+  optional_libraries="$optional_libraries testsuite/lib/testing"
   ocamltest_unix_mod="ocamltest/ocamltest_unix_${ocamltest_unix_impl}.ml"
   ac_config_links="$ac_config_links ocamltest/ocamltest_unix.ml:${ocamltest_unix_mod}"
 

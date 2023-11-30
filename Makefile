@@ -45,8 +45,6 @@ endif
 
 OC_OCAMLDEPDIRS = $(VPATH)
 
-OCAMLTEST_OPT=$(WITH_OCAMLTEST:=.opt)
-
 # This list is passed to expunge, which accepts both uncapitalized and
 # capitalized module names.
 PERVASIVES=$(STDLIB_MODULES) outcometree topprinters topdirs toploop
@@ -543,14 +541,15 @@ $(foreach PROGRAM, $(OCAML_PROGRAMS),\
 OCAML_BYTECODE_PROGRAMS = expunge \
   $(TOOLS_BYT_PROGRAMS) \
   $(addprefix tools/, cvt_emit make_opcodes ocamltex) \
-  debugger/ocamldebug
+  $(OPTIONAL_BYTECODE_TOOLS)
 
 $(foreach PROGRAM, $(OCAML_BYTECODE_PROGRAMS),\
   $(eval $(call OCAML_BYTECODE_PROGRAM,$(PROGRAM))))
 
 # OCaml programs that are compiled only in native code
 
-OCAML_NATIVE_PROGRAMS = ocamlnat tools/lintapidiff.opt
+OCAML_NATIVE_PROGRAMS = \
+  ocamlnat tools/lintapidiff.opt $(OPTIONAL_NATIVE_TOOLS)
 
 $(foreach PROGRAM, $(OCAML_NATIVE_PROGRAMS),\
   $(eval $(call OCAML_NATIVE_PROGRAM,$(PROGRAM))))
@@ -580,11 +579,7 @@ $(COMPILERLIBS:=.cma): \
 
 compilerlibs/ocamlcommon.cma: $(ALL_CONFIG_CMO)
 
-OCAML_LIBRARIES = $(COMPILERLIBS)
-
-ifeq "$(build_ocamldoc)" "true"
-OCAML_LIBRARIES += ocamldoc/odoc_info
-endif
+OCAML_LIBRARIES = $(COMPILERLIBS) $(OPTIONAL_LIBRARIES)
 
 $(foreach LIBRARY, $(OCAML_LIBRARIES),\
   $(eval $(call OCAML_LIBRARY,$(LIBRARY))))
@@ -751,12 +746,12 @@ endif
 # computed at configure time to keep track of which tools and libraries
 # need to be built
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(OCAMLDOC_TARGET) \
-	  $(WITH_OCAMLTEST)
+	  $(OCAMLTEST_TARGET)
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt \
 	  $(OCAMLDOC_OPT_TARGET) \
-	  $(OCAMLTEST_OPT) othertools ocamlnat
+	  $(OCAMLTEST_OPT_TARGET) othertools ocamlnat
 ifeq "$(build_libraries_manpages)" "true"
 	$(MAKE) manpages
 endif
@@ -795,7 +790,7 @@ endif
 all: coreall
 	$(MAKE) ocaml
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(OCAMLDOC_TARGET) \
-         $(WITH_OCAMLTEST)
+         $(OCAMLTEST_TARGET)
 	$(MAKE) othertools
 ifeq "$(build_libraries_manpages)" "true"
 	$(MAKE) manpages
@@ -1729,6 +1724,8 @@ ocamldoc/ocamldoc.opt$(EXE): ocamlc.opt ocamlyacc ocamllex
 
 # OCamltest
 
+ifeq "$(build_ocamltest)" "true"
+
 # Libraries ocamltest depends on
 
 ocamltest_LIBRARIES = \
@@ -1803,13 +1800,50 @@ $(ocamltest_DEP_FILES): $(DEPDIR)/ocamltest/%.$(D): ocamltest/%.c
 
 ocamltest/%: CAMLC = $(BEST_OCAMLC) $(STDLIBFLAGS)
 
-ocamltest: ocamltest/ocamltest$(EXE)
+ocamltest: ocamltest/ocamltest$(EXE) \
+  testsuite/lib/lib.cmo testsuite/lib/testing.cma testsuite/tools/expect$(EXE)
+
+testsuite/lib/%: VPATH += testsuite/lib
+
+testing_SOURCES = testsuite/lib/testing.mli testsuite/lib/testing.ml
+testing_LIBRARIES =
+
+$(addprefix testsuite/lib/testing., cma cmxa): \
+  OC_COMMON_LINKFLAGS += -linkall
+
+testsuite/tools/%: VPATH += testsuite/tools
+
+expect_SOURCES = $(addprefix testsuite/tools/,expect.mli expect.ml)
+expect_LIBRARIES = $(addprefix compilerlibs/,\
+  ocamlcommon ocamlbytecomp ocamltoplevel)
+
+testsuite/tools/expect$(EXE): OC_BYTECODE_LINKFLAGS += -linkall
+
+codegen_SOURCES = $(addprefix testsuite/tools/,\
+  parsecmmaux.mli parsecmmaux.ml \
+  parsecmm.mly \
+  lexcmm.mli lexcmm.mll \
+  codegen_main.mli codegen_main.ml)
+codegen_LIBRARIES = $(addprefix compilerlibs/,ocamlcommon ocamloptcomp)
+
+# The asmgen tests are not ported to MSVC64 yet, so make sure
+# to compile the arch specific module they require only if necessary
+ifeq "$(CCOMPTYPE)-$(ARCH)" "msvc-amd64"
+asmgen_OBJECT =
+else
+asmgen_MODULE = testsuite/tools/asmgen_$(ARCH)
+asmgen_SOURCE = $(asmgen_MODULE).S
+asmgen_OBJECT = $(asmgen_MODULE).$(O)
+$(asmgen_OBJECT): $(asmgen_SOURCE)
+	$(V_ASM)$(ASPP) $(OC_ASPPFLAGS) -o $@ $< || $(ASPP_ERROR)
+endif
 
 ocamltest/ocamltest$(EXE): OC_BYTECODE_LINKFLAGS += -custom
 
 ocamltest/ocamltest$(EXE): ocamlc ocamlyacc ocamllex
 
-ocamltest.opt: ocamltest/ocamltest.opt$(EXE)
+ocamltest.opt: ocamltest/ocamltest.opt$(EXE) \
+  testsuite/lib/testing.cmxa $(asmgen_OBJECT) testsuite/tools/codegen$(EXE)
 
 ocamltest/ocamltest.opt$(EXE): ocamlc.opt ocamlyacc ocamllex
 
@@ -1829,13 +1863,30 @@ ocamltest/ocamltest$(EXE) ocamltest/ocamltest.opt$(EXE): \
 # -opaque to prevent errors compiling the other modules of ocamltest.
 ocamltest/ocamltest_unix.%: \
   OC_COMMON_COMPFLAGS += -opaque
+else # ifeq "$(build_ocamltest)" "true"
+ocamltest_TARGETS = ocamltest ocamltest.opt
+.PHONY: $(ocamltest_TARGETS)
+$(ocamltest_TARGETS):
+	@echo ocamltest is disabled
+	@echo To build it, run configure again with --enable-ocamltest
+	@false
+endif # ifeq "$(build_ocamltest)" "true"
 
 partialclean::
-	rm -rf ocamltest/ocamltest ocamltest/ocamltest.exe
+	rm -f ocamltest/ocamltest ocamltest/ocamltest.exe
 	rm -f ocamltest/ocamltest.opt ocamltest/ocamltest.opt.exe
 	rm -f $(addprefix ocamltest/,*.o *.obj *.cm*)
-	rm -rf $(ocamltest_GENERATED_FILES)
-	rm -f ocamltest.html
+	rm -f $(patsubst %.mll,%.ml, $(wildcard ocamltest/*.mll))
+	rm -f $(patsubst %.mly,%.ml, $(wildcard ocamltest/*.mly))
+	rm -f $(patsubst %.mly,%.mli, $(wildcard ocamltest/*.mly))
+	rm -f $(patsubst %.mly,%.output, $(wildcard ocamltest/*.mly))
+	rm -f ocamltest/ocamltest.html
+	rm -f $(addprefix testsuite/lib/*.,cm* o obj a lib)
+	rm -f $(addprefix testsuite/tools/*.,cm* o obj a lib)
+	rm -f testsuite/tools/codegen testsuite/tools/codegen.exe
+	rm -f testsuite/tools/expect testsuite/tools/expect.exe
+	rm -f testsuite/tools/lexcmm.ml
+	rm -f $(addprefix testsuite/tools/parsecmm., ml mli output)
 
 # Documentation
 
@@ -2335,7 +2386,7 @@ depend: beforedepend
          lambda file_formats middle_end/closure middle_end/flambda \
          middle_end/flambda/base_types \
          driver toplevel toplevel/byte toplevel/native lex tools debugger \
-	 ocamldoc ocamltest; \
+	 ocamldoc ocamltest testsuite/lib testsuite/tools; \
 	 do \
 	   $(OCAMLDEP) $(OC_OCAMLDEPFLAGS) -I $$d $(INCLUDES) \
 	   $(OCAMLDEPFLAGS) $$d/*.mli $$d/*.ml \

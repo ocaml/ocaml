@@ -205,7 +205,6 @@ RUNTIMED=@debug_runtime@
 INSTRUMENTED_RUNTIME=@instrumented_runtime@
 INSTRUMENTED_RUNTIME_LIBS=@instrumented_runtime_libs@
 WITH_DEBUGGER=@with_debugger@
-WITH_OCAMLTEST=@ocamltest@
 ASM_CFI_SUPPORTED=@asm_cfi_supported@
 WITH_FRAME_POINTERS=@frame_pointers@
 HEADER_RESERVED_BITS=@reserved_header_bits@
@@ -230,6 +229,7 @@ NAKED_POINTERS=false
 
 STDLIB_MANPAGES=@build_libraries_manpages@
 WITH_OCAMLDOC=@with_ocamldoc@
+WITH_OCAMLTEST=@ocamltest@
 
 ## Variables deprecated since OCaml 5.0
 

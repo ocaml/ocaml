@@ -37,8 +37,12 @@ build_ocamldoc = @build_ocamldoc@
 build_libraries_manpages = @build_libraries_manpages@
 
 OCAMLDOC_TARGET = @ocamldoc_target@
+OCAMLTEST_TARGET = @ocamltest_target@
 
 OCAMLDOC_OPT_TARGET = @ocamldoc_opt_target@
+OCAMLTEST_OPT_TARGET = @ocamltest_opt_target@
+
+build_ocamltest = @build_ocamltest@
 
 build_ocamltex = @build_ocamltex@
 
@@ -47,6 +51,10 @@ lib_runtime_events = @lib_runtime_events@
 lib_str = @lib_str@
 lib_systhreads = @lib_systhreads@
 lib_unix = @lib_unix@
+
+OPTIONAL_LIBRARIES = @optional_libraries@
+OPTIONAL_BYTECODE_TOOLS = @optional_bytecode_tools@
+OPTIONAL_NATIVE_TOOLS = @optional_native_tools@
 
 # Whether to install the native toplevel (ocamlnat)
 INSTALL_OCAMLNAT = @install_ocamlnat@

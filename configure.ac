@@ -76,6 +76,9 @@ lib_dynlink=false
 lib_str=false
 lib_systhreads=false
 lib_unix=false
+optional_libraries=''
+optional_bytecode_tools=''
+optional_native_tools=''
 ocamltest_libunix=None
 ocamltest_unix_impl="dummy"
 unix_library=""
@@ -189,6 +192,9 @@ AC_SUBST([lib_runtime_events])
 AC_SUBST([lib_str])
 AC_SUBST([lib_systhreads])
 AC_SUBST([lib_unix])
+AC_SUBST([optional_libraries])
+AC_SUBST([optional_bytecode_tools])
+AC_SUBST([optional_native_tools])
 AC_SUBST([ocamltest_CPP])
 AC_SUBST([ocamltest_libunix])
 AC_SUBST([unix_library])
@@ -204,7 +210,10 @@ AC_SUBST([ocamldoc_opt_target])
 AC_SUBST([with_ocamldoc])
 AC_SUBST([documentation_tool])
 AC_SUBST([documentation_tool_cmd])
+AC_SUBST([build_ocamltest])
 AC_SUBST([ocamltest])
+AC_SUBST([ocamltest_target])
+AC_SUBST([ocamltest_opt_target])
 AC_SUBST([ASPP])
 AC_SUBST([endianness])
 AC_SUBST([AS])
@@ -560,6 +569,7 @@ AS_IF([test x"$enable_ocamldoc" = "xno"],
   ocamldoc_opt_target=ocamldoc.opt
   with_ocamldoc=ocamldoc
   build_ocamldoc=true
+  optional_libraries="$optional_libraries ocamldoc/odoc_info"
   AC_CONFIG_FILES([ocamldoc/META])])
 
 # Initialization of libtool
@@ -2179,6 +2189,7 @@ AS_CASE([$enable_ocamldebug],
   [AS_IF([$sockets],
     [with_debugger="ocamldebug"
     build_ocamldebug=true
+    optional_bytecode_tools="$optional_bytecode_tools debugger/ocamldebug"
     AC_MSG_NOTICE([ocamldebug supported])],
     [with_debugger=""
     build_ocamldebug=false
@@ -2307,11 +2318,19 @@ AS_IF([test "x$documentation_tool_cmd" = 'x']
 
 
 AS_CASE([$enable_ocamltest,OCAML__DEVELOPMENT_VERSION],
-  [yes,*|,true],[ocamltest='ocamltest'],
-  [ocamltest=''])
+  [yes,*|,true],
+    [build_ocamltest=true
+    ocamltest_target=ocamltest
+    ocamltest_opt_target=ocamltest.opt
+    ocamltest='ocamltest'
+    testsuite_tools='testsuite/tools/codegen testsuite/tools/expect'
+    optional_bytecode_tools="$optional_bytecode_tools $testsuite_tools"],
+  [build_ocamltest=false
+  ocamltest=''])
 
-AS_IF([test -n "$ocamltest"],
-  [ocamltest_unix_mod="ocamltest/ocamltest_unix_${ocamltest_unix_impl}.ml"
+AS_IF([$build_ocamltest],
+  [optional_libraries="$optional_libraries testsuite/lib/testing"
+  ocamltest_unix_mod="ocamltest/ocamltest_unix_${ocamltest_unix_impl}.ml"
   AC_CONFIG_LINKS([
     ocamltest/ocamltest_unix.ml:${ocamltest_unix_mod}
   ])

@@ -7,7 +7,7 @@
 *)
 
 (* Same example as in tests/typing-sigsubst/sigsubst.ml, but not as an
-   expect_test so we get the full error.  *)
+   expect test so we get the full error.  *)
 
 module type Printable = sig
   type t

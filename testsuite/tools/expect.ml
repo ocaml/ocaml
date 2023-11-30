@@ -361,7 +361,7 @@ let args =
       ] @ Options.list
     )
 
-let usage = "Usage: expect_test <options> [script-file [arguments]]\n\
+let usage = "Usage: expect <options> [script-file [arguments]]\n\
              options are:"
 
 let () =
@@ -372,7 +372,7 @@ let () =
   in
   try
     Arg.parse args main usage;
-    Printf.eprintf "expect_test: no input file\n";
+    Printf.eprintf "expect: no input file\n";
     exit 2
   with exn ->
     Location.report_exception Format.err_formatter exn;
