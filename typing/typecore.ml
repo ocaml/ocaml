@@ -1561,7 +1561,7 @@ and type_pat_aux
   : type k . type_pat_state -> k pattern_category -> no_existentials:_ ->
          penv:Pattern_env.t -> _ -> _ -> k general_pattern
   = fun tps category ~no_existentials ~penv sp expected_ty ->
-  let type_pat tps category ?(penv=penv) =
+  let type_pat ?(penv=penv) tps category =
     type_pat tps category ~no_existentials ~penv
   in
   let loc = sp.ppat_loc in
@@ -2249,8 +2249,8 @@ let enter_nonsplit_or info =
 
 let rec check_counter_example_pat
     ~info ~(penv : Pattern_env.t) type_pat_state tp expected_ty k =
-  let check_rec ?(info=info) ?(penv=penv) =
-    check_counter_example_pat ~info ~penv type_pat_state in
+  let check_rec ?(info=info) ?(penv=penv) tp =
+    check_counter_example_pat ~info ~penv type_pat_state tp in
   let loc = tp.pat_loc in
   let refine = true in
   let solve_expected (x : pattern) : pattern =
@@ -4577,7 +4577,7 @@ and type_function
             let default = type_expect env default (mk_expected ty_default) in
             ty_default, Some default
       in
-      let (pat, params, body, newtypes, contains_gadt), partial =
+      let (pat, params, tbody, newtypes, contains_gadt), partial =
         (* Check everything else in the scope of the parameter. *)
         map_half_typed_cases Value env ty_arg_internal ty_res pat.ppat_loc
           ~check_if_total:true
@@ -4617,12 +4617,17 @@ and type_function
          type for each parameter that's added. Now that functions are n-ary,
          there might be an opportunity to improve this.
       *)
-      let not_nolabel_function ty =
-        let ls, tvar = list_labels env ty in
-        List.for_all (( <> ) Nolabel) ls && not tvar
+      let warn_unerasable =
+        is_optional arg_label &&
+        match body with
+        | Pfunction_cases _ -> false (* the last argument is unlabeled *)
+        | Pfunction_body _ ->
+            List.for_all
+              (function {pparam_desc=Pparam_val(Nolabel,_,_)} -> false
+                | _ -> true)
+              rest
       in
-      if is_optional arg_label && not_nolabel_function ty_res
-      then
+      if warn_unerasable then
         Location.prerr_warning
           pat.pat_loc
           Warnings.Unerasable_optional_argument;
@@ -4644,7 +4649,7 @@ and type_function
           fp_loc = pparam_loc;
         }
       in
-      exp_type, param :: params, body, [], contains_gadt
+      exp_type, param :: params, tbody, [], contains_gadt
   | [] ->
     let exp_type, body =
       match body with

@@ -277,7 +277,7 @@ let alerts_of_str str = alerts_of_attrs (attrs_of_str str)
 let warn_payload loc txt msg =
   Location.prerr_warning loc (Warnings.Attribute_payload (txt, msg))
 
-let warning_attribute ?(ppwarning = true) =
+let warning_attribute =
   let process loc name errflag payload =
     mark_used name;
     match string_of_payload payload with
@@ -315,7 +315,7 @@ let warning_attribute ?(ppwarning = true) =
             warn_payload loc name.txt "Invalid payload"
           end
   in
-  fun ({attr_name; attr_loc; attr_payload} as attr) ->
+  fun ?(ppwarning = true) ({attr_name; attr_loc; attr_payload} as attr) ->
     if attr_equals_builtin attr "warning" then
       process attr_loc attr_name false attr_payload
     else if attr_equals_builtin attr "warnerror" then
