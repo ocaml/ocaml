@@ -1,22 +1,160 @@
 name: Build
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - '4.**'
+      - '5.**'
+      - 'trunk'
+  pull_request:
+
+# Restrict the GITHUB_TOKEN
+permissions: {}
+
+# https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#concurrency
+# Concurrent workflows are grouped by the PR or branch that triggered them
+# (github.ref) and the name of the workflow (github.workflow). The
+# 'cancel-in-progress' option then make sure that only one workflow is running
+# at a time. This doesn't prevent new jobs from running, rather it cancels
+# already running jobs before scheduling new jobs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'pull_request' || github.sha }}
+  cancel-in-progress: true
 
 jobs:
-  no-naked-pointers:
-    runs-on: ubuntu-latest
+# This job will do the initial build of the compiler (on linux), with flambda on.
+# We then upload the compiler tree as a build artifact to enable re-use in
+# subsequent jobs.
+  build:
+    runs-on: 'ubuntu-latest'
+    outputs:
+      manual_changed: ${{ steps.manual.outputs.manual_changed }}
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: configure tree
-      run: ./configure --disable-naked-pointers --disable-stdlib-manpages --disable-dependency-generation --enable-ocamltest
-    - name: Build
-      run: |
-        make -j world.opt
-    - name: Run the testsuite
-      run: |
-        make -C testsuite USE_RUNTIME=d all
-  i386-static:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - name: Check for manual changes
+        id: manual
+        run: >-
+         tools/ci/actions/check-manual-modified.sh
+         '${{ github.ref }}'
+         '${{ github.event_name }}'
+         '${{ github.event.pull_request.base.ref }}'
+         '${{ github.event.pull_request.base.sha }}'
+         '${{ github.event.pull_request.head.ref }}'
+         '${{ github.event.pull_request.head.sha }}'
+         '${{ github.event.ref }}'
+         '${{ github.event.before }}'
+         '${{ github.event.ref }}'
+         '${{ github.event.after }}'
+         '${{ github.event.repository.full_name }}'
+      - name: Configure tree
+        run: |
+          MAKE_ARG=-j CONFIG_ARG='--enable-flambda --enable-cmm-invariants --enable-dependency-generation --enable-native-toplevel' OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
+      - name: Build
+        run: |
+          MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
+      - name: Prepare Artifact
+        run: tar --zstd -cf /tmp/sources.tar.zstd .
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: compiler
+          path: /tmp/sources.tar.zstd
+          retention-days: 1
+
+# Full testsuite run, and other sanity checks
+# "extra" testsuite runs, reusing the previously built compiler tree.
+# debug: running the full testsuite with the
+#        debug runtime and minor heap verification.
+  normal:
+    name: ${{ matrix.name }}
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - id: normal
+            name: normal
+            dependencies: texlive-latex-extra texlive-fonts-recommended hevea sass
+          - id: debug
+            name: extra (debug)
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: compiler
+      - name: Unpack Artifact
+        run: |
+          tar --zstd -xf sources.tar.zstd
+          rm -f sources.tar.zstd
+      - name: Packages
+        if: matrix.dependencies != ''
+        run: |
+          sudo apt-get update -y && sudo apt-get install -y ${{ matrix.dependencies }}
+      - name: Run the testsuite
+        if: matrix.id == 'normal'
+        run: |
+          MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh test
+      - name: Run the testsuite (debug runtime)
+        if: matrix.id == 'debug'
+        env:
+          OCAMLRUNPARAM: v=0,V=1
+          USE_RUNTIME: d
+        run: |
+          bash -cxe "SHOW_TIMINGS=1 tools/ci/actions/runner.sh test"
+      - name: Build API Documentation
+        if: matrix.id == 'normal'
+        run: |
+          MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh api-docs
+      - name: Install
+        if: matrix.id == 'normal'
+        run: |
+         MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh install
+      - name: Build the manual
+        if: matrix.id == 'normal' && needs.build.outputs.manual_changed == 'true'
+        run: |
+          MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh manual
+      - name: Other checks
+        if: matrix.id == 'normal'
+        run: |
+          MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh other-checks
+
+# MacOS build+testsuite run, and no-naked-pointers run.
+  others:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - name: no-naked-pointers
+            os: ubuntu-latest
+            config_arg: >-
+              --disable-naked-pointers
+              --disable-stdlib-manpages
+          - name: macos
+            os: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - name: OS Dependencies
+        if: runner.os == 'MacOS'
+        run: brew install parallel
+      - name: configure tree
+        run: |
+          CONFIG_ARG='${{ matrix.config_arg }}' MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh configure
+      - name: Build
+        run: |
+          MAKE_ARG=-j bash -xe tools/ci/actions/runner.sh build
+      - name: Run the testsuite
+        if: ${{ matrix.name != 'linux-O0' }}
+        run: |
+          bash -c 'SHOW_TIMINGS=1 tools/ci/actions/runner.sh test'
+
+  i386:
     runs-on: ubuntu-latest
     container:
       image: debian:10
@@ -38,55 +176,3 @@ jobs:
       - name: Run the testsuite
         run: |
           bash -xe tools/ci/actions/runner.sh test
-  full-flambda:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 50
-    - name: Packages
-      run: |
-        sudo apt-get update -y && sudo apt-get install -y texlive-latex-extra texlive-fonts-recommended hevea sass
-  # Ensure that make distclean can be run from an empty tree
-    - name: distclean
-      run: |
-        MAKE_ARG=-j make distclean
-    - name: configure tree
-      run: |
-        MAKE_ARG=-j CONFIG_ARG='--enable-flambda --enable-cmm-invariants --enable-dependency-generation --enable-native-toplevel' OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh configure
-    - name: Build
-      run: |
-        MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh build
-    - name: Run the testsuite
-      run: |
-        MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh test
-    - name: Build API Documentation
-      run: |
-        MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh api-docs
-    - name: Install
-      run: |
-        MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh install
-    - name: Check for manual changes
-      id: manual
-      run: >-
-        tools/ci/actions/check-manual-modified.sh
-        '${{ github.ref }}'
-        '${{ github.event_name }}'
-        '${{ github.event.pull_request.base.ref }}'
-        '${{ github.event.pull_request.base.sha }}'
-        '${{ github.event.pull_request.head.ref }}'
-        '${{ github.event.pull_request.head.sha }}'
-        '${{ github.event.ref }}'
-        '${{ github.event.before }}'
-        '${{ github.event.ref }}'
-        '${{ github.event.after }}'
-        '${{ github.event.repository.full_name }}'
-    - name: Build the manual
-      run: |
-        MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh manual
-      # Temporarily disabled 23-Apr-2021 while Dune isn't building
-      if: steps.manual.outputs.changed == 'disabled'
-    - name: Other checks
-      run: |
-        MAKE_ARG=-j OCAMLRUNPARAM=b,v=0 bash -xe tools/ci/actions/runner.sh other-checks
