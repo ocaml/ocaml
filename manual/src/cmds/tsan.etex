@@ -128,7 +128,7 @@ produce false positives; that is, TSan will not emit spurious reports.
 
 When mixing OCaml and C code, through the use of C primitives, the very notion
 of false positive becomes less clear, as it involves two memory models.
-However, TSan should behave mostly as you expect: non-atomic reads and writes
+However, TSan should behave mostly as one would expect: non-atomic reads and writes
 in C will race with non-atomic reads and writes in OCaml, and C atomics will
 not race with OCaml atomics. There is one theoretical possibility of false
 positive: if a \texttt{value} is initialized from C without using
