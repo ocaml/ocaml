@@ -14,6 +14,18 @@ Prerequisites
 Note that you must make sure `hevea.sty` is installed into TeX properly. Your
 package manager may not do this for you. Run `kpsewhich hevea.sty` to check.
 
+On a pristine Ubuntu 22.04.1 LTS environment, ensure that you have the
+following additional packages installed:
+
+```
+apt install hevea sass
+```
+
+The `lambdasoup` package is also required on the local opam switch:
+
+```
+opam install lambdasoup
+```
 
 Building the manual
 --------
