@@ -658,8 +658,7 @@ AS_CASE([$ocaml_cv_cc_vendor],
     ocamltest_CPP="$CPP"],
   [msvc-*],
     [CPP="$CC -nologo -EP"
-    ocamltest_CPP="$CPP 2>null"],
-#  TODO: why can we not use $CPP in multicore, fix this?
+    ocamltest_CPP="$CPP 2> nul"],
   [CPP="$CC -E -P"
   ocamltest_CPP="$CPP"])
 

@@ -24,8 +24,14 @@ val afl_instrument : bool
 val asm : string
 (** Path to the assembler *)
 
+val cpp : string
+(** Command to use to invoke the C preprocessor *)
+
+val cppflags : string
+(** Flags to pass to the C preprocessor *)
+
 val cc : string
-(** Path to the C compiler *)
+(** Command to use to invoke the C compiler *)
 
 val cflags : string
 (** Flags to pass to the C compiler *)
@@ -63,9 +69,6 @@ val asmext : string
 
 val system : string
 (** The content of the SYSTEM Make variable *)
-
-val c_preprocessor : string
-(** Command to use to invoke the C preprocessor *)
 
 val ocamlc_default_flags : string
 (** Flags passed by default to ocamlc.byte and ocamlc.opt *)
