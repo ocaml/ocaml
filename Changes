@@ -669,8 +669,8 @@ Working version
 - #12755: Fix data race on global pools arrays of pool_freelist
   (Fabrice Buoro and Olivier Nicole, review by Gabriel Scherer)
 
-- #12796: Fix memory corruption in caml_unix_alloc_sockaddr
-  (Thomas Leonard)
+- #12796, #12801: Fix memory corruption in caml_unix_alloc_sockaddr
+  (Thomas Leonard, review by Nicolás Ojeda Bär)
 
 OCaml 5.1.1
 -----------
