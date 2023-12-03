@@ -161,7 +161,7 @@ val has_attribute : string -> Parsetree.attributes -> bool
 
     Each element [(nm, action)] of the [actions] list is an attribute along with
     an [attr_action] specifying what to do with that attribute.  The action is
-    used to accomodate different compiler configurations.  If an attribute is
+    used to accommodate different compiler configurations.  If an attribute is
     used only in some compiler configurations, it's important that we still look
     for it and mark it used when compiling with other configurations.
     Otherwise, we would issue spurious misplaced attribute warnings. *)
