@@ -42,6 +42,12 @@ OCaml 5.1.1
   Sivaramakrishnan)
 
 
+- # 12791: `extern` is applied to definitions of `caml_builtin_cprim`
+    and `caml_names_of_builtin_cprim` when linking bytecode '-custom'
+    executables with a C++ linker
+  (Shayne Fletcher, review by Antonin Décimo and Xavier Leroy)
+
+
 OCaml 5.1.0 (14 September 2023)
 -------------------------------
 
