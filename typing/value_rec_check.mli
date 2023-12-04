@@ -12,8 +12,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-exception Illegal_expr
-
 val is_valid_recursive_expression :
   Ident.t list ->
   Typedtree.expression ->
