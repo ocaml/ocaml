@@ -111,6 +111,15 @@ the combination of two factors:
 This example illustrates the fact that data races can sometimes be hidden by
 unrelated synchronizing operations.
 
+\section{s:tsan-performance}{Performance implications}
+
+TSan instrumentation imposes a non-negligible cost at runtime. Empirically,
+this cost has been observed to cause a slowdown which can range from 2x to 7x.
+One of the main factors of high slowdowns is frequent of access to mutable
+data (in contast, reads from immutable data are not instrumented). The memory
+consumption is also increased, by a factor between 4 and 7. TSan also allocates
+very large amounts of virtual memory (but uses only a fraction of it).
+
 \section{s:tsan-false-neg-false-pos}{False negatives and false positives}
 
 As illustrated by the previous example, TSan will only report the data races
@@ -145,8 +154,8 @@ some data races from TSan reports. See the
 \href{https://github.com/google/sanitizers/wiki/ThreadSanitizerFlags}{documentation
 of TSan flags} and the
 \href{https://github.com/google/sanitizers/wiki/SanitizerCommonFlags}{documentation
-of flags common to all sanitizers} for more information. Suppressing data races
-is useful for intentional races or libraries that cannot be fixed.
+of flags common to all sanitizers} for more information. Suppressing data race
+reports is useful for intentional races or libraries that cannot be fixed.
 
 For example, to suppress reports originating from functions in the OCaml module
 \texttt{My_module}, one could set
@@ -168,8 +177,11 @@ size'', e.g.:
 TSAN_OPTIONS="history_size=7" ./my_instrumented_program
 \end{verbatim}
 
-Increasing the history size can sometimes be necessary to obtain the second
-stack trace.
+TSan’s history records events such as function entry and exit, and is used to
+reconstruct stack traces. Increasing the history size can sometimes be
+necessary to obtain the second stack trace, but it also increases memory
+consumption. This setting does not change the number of memory accesses
+remembered per memory location.
 
 \section{s:tsan-c-code}{Guidelines for linking}
 
@@ -181,9 +193,9 @@ exceptions, call back into OCaml code, etc. Examples include the libc or system
 libraries. Data races in non instrumented libraries will not be reported.
 
 C code interacting with OCaml should always be built through the
-\texttt{ocamlc} or \texttt{ocamlopt} commands, which will pass the required
-instrumentation flags to the C compiler. The \texttt{CAMLno_tsan} qualifier can
-be used to prevent functions from being instrumented:
+\texttt{ocamlopt} command, which will pass the required instrumentation flags
+to the C compiler. The \texttt{CAMLno_tsan} qualifier can be used to prevent
+functions from being instrumented:
 
 \begin{verbatim}
 CAMLno_tsan void f(int arg)
@@ -193,7 +205,15 @@ CAMLno_tsan void f(int arg)
 }
 \end{verbatim}
 
-Un-instrumenting functions should be done by expert users only.
+Races from non instrumented functions will not be reported. Un-instrumenting
+functions should be done by expert users only. It can be used to reduce the
+performance overhead in certain corner cases, or to suppress some known alarms.
+For the latter, the mechanism of run-time suppressions should be preferred when
+possible, as it allows for finer-grained control, and un-instrumentation of a
+function \texttt{f} results in missing entries in TSan’s stack traces when a
+data race happens in a transitive callee of \texttt{f}.
+
+There is no way to disable instrumentation in OCaml code.
 
 \section{s:tsan-signal-changes}{Changes in the delivery of signals}
 
