@@ -110,6 +110,10 @@ DOCUMENTATION_TOOL_CMD=@documentation_tool_cmd@
 FLEXDLL_SOURCE_DIR=@flexdll_source_dir@
 BOOTSTRAPPING_FLEXDLL=@bootstrapping_flexdll@
 
+# The location of the Winpthreads sources to use (usually provided as the
+# winpthreads Git submodule)
+WINPTHREADS_SOURCE_DIR=@winpthreads_source_dir@
+
 ### Where to install documentation
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 datarootdir = @datarootdir@

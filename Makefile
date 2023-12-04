@@ -1091,6 +1091,24 @@ partialclean::
 
 ## Lists of source files
 
+ifneq "$(WINPTHREADS_SOURCE_DIR)" ""
+winpthreads_SOURCES = $(addprefix $(WINPTHREADS_SOURCE_DIR)/src/, \
+  cond.c \
+  misc.c \
+  mutex.c \
+  rwlock.c \
+  sched.c \
+  spinlock.c \
+  thread.c)
+
+winpthreads_OBJECTS = $(winpthreads_SOURCES:.c=.$(O))
+
+clean::
+	rm -f $(winpthreads_OBJECTS)
+else
+winpthreads_OBJECTS =
+endif
+
 runtime_COMMON_C_SOURCES = \
   addrmap \
   afl \
@@ -1209,30 +1227,37 @@ endif
 
 ## List of object files for each target
 
-libcamlrun_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.b.$(O))
+
+libcamlrun_OBJECTS = \
+  $(runtime_BYTECODE_C_SOURCES:.c=.b.$(O)) $(winpthreads_OBJECTS)
 
 libcamlrun_non_shared_OBJECTS = \
   $(subst $(UNIX_OR_WIN32).b.$(O),$(UNIX_OR_WIN32)_non_shared.b.$(O), \
           $(libcamlrun_OBJECTS))
 
 libcamlrund_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.bd.$(O)) \
-  runtime/instrtrace.bd.$(O)
+  $(winpthreads_OBJECTS) runtime/instrtrace.bd.$(O)
 
-libcamlruni_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.bi.$(O))
+libcamlruni_OBJECTS = \
+  $(runtime_BYTECODE_C_SOURCES:.c=.bi.$(O)) $(winpthreads_OBJECTS)
 
-libcamlrunpic_OBJECTS = $(runtime_BYTECODE_C_SOURCES:.c=.bpic.$(O))
+libcamlrunpic_OBJECTS = \
+  $(runtime_BYTECODE_C_SOURCES:.c=.bpic.$(O)) $(winpthreads_OBJECTS)
 
 libasmrun_OBJECTS = \
-  $(runtime_NATIVE_C_SOURCES:.c=.n.$(O)) $(runtime_ASM_OBJECTS)
+  $(runtime_NATIVE_C_SOURCES:.c=.n.$(O)) $(runtime_ASM_OBJECTS) \
+  $(winpthreads_OBJECTS)
 
 libasmrund_OBJECTS = \
-  $(runtime_NATIVE_C_SOURCES:.c=.nd.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.d.$(O))
+  $(runtime_NATIVE_C_SOURCES:.c=.nd.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.d.$(O)) \
+  $(winpthreads_OBJECTS)
 
 libasmruni_OBJECTS = \
-  $(runtime_NATIVE_C_SOURCES:.c=.ni.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.i.$(O))
+  $(runtime_NATIVE_C_SOURCES:.c=.ni.$(O)) $(runtime_ASM_OBJECTS:.$(O)=.i.$(O)) \
+  $(winpthreads_OBJECTS)
 
 libasmrunpic_OBJECTS = $(runtime_NATIVE_C_SOURCES:.c=.npic.$(O)) \
-  $(runtime_ASM_OBJECTS:.$(O)=_libasmrunpic.$(O))
+  $(runtime_ASM_OBJECTS:.$(O)=_libasmrunpic.$(O)) $(winpthreads_OBJECTS)
 
 libcomprmarsh_OBJECTS = runtime/zstd.npic.$(O)
 
