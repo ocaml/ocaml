@@ -514,9 +514,7 @@ let compile_letrec input_bindings body =
               end
             end
           | Dynamic ->
-            (* Ideally this case should be ruled out, but for now classes can end
-               up here. *)
-            { rev_bindings with dynamic = (id, def) :: rev_bindings.dynamic }
+            Misc.fatal_error "letrec: No size found for Static binding"
           end)
       empty_bindings input_bindings
   in
