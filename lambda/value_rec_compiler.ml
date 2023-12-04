@@ -12,7 +12,38 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Compilation of generic recursive definitions *)
+
+(** The surface language allows a wide range of recursive definitions, but
+    Lambda only allows syntactic functions in recursive bindings.
+    This file implements the translation from generic definitions to Lambda.
+
+    The first step occurs during typechecking, in [Value_rec_check]:
+    [Dynamic] bindings need to be compiled as normal let bindings. This file
+    mostly deals with the [Static] bindings.
+
+    The three phases in this module are the following:
+
+    - Sizing: we first classify the definitions by their size, which determines
+      the compilation strategy for each binding.
+
+    - Function lifting: we then apply a transformation from general function
+      definitions to syntactic functions accepted by [Lletrec].
+      Examples:
+      {[
+        let rec f x = f x (* Syntactic *)
+        let rec f = fun x -> f x (* Syntactic *)
+        let rec f = let g x = f x in g (* Not syntactic *)
+        let rec f = let a = ... in (fun x -> f x) (* Not syntactic *)
+      ]}
+
+    - Compilation: we finally combine all of this to produce a Lambda term
+      for the recursive bindings.
+*)
+
 open Lambda
+
+(** {1. Sizing} *)
 
 (* Simple blocks *)
 type block_size =
@@ -21,9 +52,36 @@ type block_size =
 
 type size =
   | Unreachable
+  (** Non-returning expressions, like [raise exn].
+      In [Value_rec_check], they would be classified as [Dynamic],
+      but some of those appear during translation to Lambda.
+      For example, in [let rec f = let [| x |] = ... in fun y -> x + y]
+      the inner let binding gets translated to code that raises
+      [Match_failure] for non-matching branches.
+      Tracking [Unreachable] explicitly allows us to recover the size
+      of the only non-raising branch. *)
   | Constant
+  (** Constant values.
+      Can be either an integer-like constant ([0], ['a'], [None],
+      the empty list or the unit constructor), or a structured constant
+      (["hello"], [Some 1], ...).
+
+      Integer constants cannot be pre-allocated, so need their own
+      classification and compilation scheme (See {!Compilation} below).
+      Structured constants could fit into the [Block] category, but we
+      choose to reuse the [constant] classification to avoid sorting
+      through the [Lconst] definitions.
+      It also generates slightly better code. *)
   | Function
+  (** Function definitions.
+      This includes more than just obvious, syntactic function definitions;
+      see {!Function Lifting} for details. *)
   | Block of block_size
+  (** Allocated values of a fixed size.
+      This corresponds to expressions ending in a single obvious allocation,
+      but also some more complex expressions where the block is bound to
+      an intermediate variable before being returned.
+  *)
 
 type binding_size = (lambda_with_env, size) Lazy_backtrack.t
 and lambda_with_env = {
@@ -254,6 +312,63 @@ let lifted_block_mut : Asttypes.mutable_flag = Immutable
 
 let no_loc = Debuginfo.Scoped_location.Loc_unknown
 
+
+(** {1. Function Lifting} *)
+
+(* The compiler allows recursive definitions of functions that are not
+   syntactic functions:
+   {[
+     let rec f_syntactic_function = fun x ->
+       f_syntactic_function x
+
+     let rec g_needs_lift =
+       let () = ... in
+       (fun x -> g_needs_lift (foo x))
+
+     let rec h_needs_lift_and_closure =
+       let v = ref 0 in
+       (fun x -> incr v; h_needs_lift_and_closure (bar x))
+
+     let rec i_needs_lift_and_eta =
+       let aux x = i_needs_lift_and_eta (baz x) in
+       aux
+   ]}
+
+   We need to translate those using only syntactic functions or blocks.
+   For some functions, we only need to lift a syntactic function in tail
+   position from its surrounding context:
+   {[
+     let rec g_context =
+       let () = ... in
+       ()
+     and g_lifted = fun x ->
+       g_lifted (foo x)
+   ]}
+
+   In general the function may refer to local variables, so we perform
+   a local closure conversion before lifting:
+   {[
+     let rec h_context =
+       let v = ref 0 in
+       { v }
+     and h_lifted = fun x ->
+       incr h_context.v;
+       h_lifted (bar x)
+   ]}
+   Note that the closure environment computed from the context is passed as a
+   mutually recursive definition, that is, a free variable, and not as an
+   additional function parameter (which is customary for closure conversion).
+
+   Finally, when the tail expression is a variable, we perform an eta-expansion
+   to get a syntactic function, that we can then close and lift:
+   {[
+     let rec i_context =
+       let aux x = i_lifted (baz x) in
+       { aux }
+     and i_lifted = fun x -> i_context.aux x
+   ]}
+*)
+
 type lifted_function =
   { lfun : Lambda.lfunction;
     free_vars_block_size : int;
@@ -263,7 +378,7 @@ type 'a split_result =
   | Unreachable
   | Reachable of lifted_function * 'a
 
-let ( let** ) res f =
+let ( let+ ) res f =
   match res with
   | Unreachable -> Unreachable
   | Reachable (func, lam) -> Reachable (func, f lam)
@@ -325,12 +440,12 @@ let rec split_static_function block_var local_idents lam :
     in
     Reachable (lifted, block)
   | Llet (lkind, vkind, var, def, body) ->
-    let** body =
+    let+ body =
       split_static_function block_var (Ident.Set.add var local_idents) body
     in
     Llet (lkind, vkind, var, def, body)
   | Lmutlet (vkind, var, def, body) ->
-    let** body =
+    let+ body =
       split_static_function block_var (Ident.Set.add var local_idents) body
     in
     Lmutlet (vkind, var, def, body)
@@ -339,7 +454,7 @@ let rec split_static_function block_var local_idents lam :
       List.fold_left (fun ids { id } -> Ident.Set.add id ids)
         local_idents bindings
     in
-    let** body =
+    let+ body =
       split_static_function block_var local_idents body
     in
     Lletrec (bindings, body)
@@ -426,10 +541,10 @@ let rec split_static_function block_var local_idents lam :
       Misc.fatal_error "letrec: multiple functions"
     end
   | Lsequence (e1, e2) ->
-    let** e2 = split_static_function block_var local_idents e2 in
+    let+ e2 = split_static_function block_var local_idents e2 in
     Lsequence (e1, e2)
   | Levent (lam, lev) ->
-    let** lam = split_static_function block_var local_idents lam in
+    let+ lam = split_static_function block_var local_idents lam in
     Levent (lam, lev)
   | Lmutvar _
   | Lconst _
@@ -457,6 +572,65 @@ and rebuild_arms :
       Reachable (lfun, (i, lam) :: arms)
     | Reachable _, Reachable _ ->
       Misc.fatal_error "letrec: multiple functions"
+
+(** {1. Compilation} *)
+
+(** The bindings are split into three categories.
+    Static bindings are the ones that we can pre-allocate and backpatch later.
+    Function bindings are syntactic functions.
+    Dynamic bindings are non-recursive expressions.
+
+    The evaluation order is as follows:
+    - Evaluate all dynamic bindings
+    - Pre-allocate all static bindings
+    - Define all functions
+    - Backpatch all static bindings
+
+    Constants (and unreachable expressions) end up in the dynamic category,
+    because we substitute all occurrences of recursive variables in their
+    definition by a dummy expression, making them non-recursive.
+
+    This is correct because:
+    - [Value_rec_check] ensured that they never dereference the value of
+      those recursive variables
+    - their final value cannot depend on them either.
+
+    Functions that are not already in syntactic form also generate an additional
+    binding for the context. This binding fits into the static category.
+
+    {[
+      (* Input *)
+      let rec a x = b x
+      and b =
+        let tbl = Hashtbl.make 17 in
+        fun x -> ... (tbl, c, a) ...
+      and c = Some (d, default)
+      and d = Array.make 5 0
+      and default =
+        let _ = a in
+        0
+
+      (* Output *)
+        (* Dynamic bindings *)
+      let d = Array.make 5 0
+      let default =
+        let _ = *dummy_rec_value* in
+        0
+        (* Pre-allocations *)
+      let c = caml_alloc_dummy 2
+      let b_context = caml_alloc_dummy 1
+        (* Functions *)
+      let rec a x = b x
+      and b =
+        fun x -> ... (b_context.tbl, c, a) ...
+        (* Backpatching *)
+      let () =
+        caml_update_dummy c (Some (d, default));
+        caml_update_dummy b_context
+          (let tbl = Hashtbl.make 17 in
+           { tbl })
+    ]}
+ *)
 
 type rec_bindings =
   { static : (Ident.t * block_size * Lambda.lambda) list;
