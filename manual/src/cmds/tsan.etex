@@ -116,7 +116,7 @@ unrelated synchronizing operations.
 TSan instrumentation imposes a non-negligible cost at runtime. Empirically,
 this cost has been observed to cause a slowdown which can range from 2x to 7x.
 One of the main factors of high slowdowns is frequent of access to mutable
-data (in contast, reads from immutable data are not instrumented). The memory
+data (in contrast, reads from immutable data are not instrumented). The memory
 consumption is also increased, by a factor between 4 and 7. TSan also allocates
 very large amounts of virtual memory (but uses only a fraction of it).
 
