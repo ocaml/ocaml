@@ -36,11 +36,15 @@
 #include "caml/prims.h"
 #include "caml/signals.h"
 #include "caml/intext.h"
-#include "caml/startup_aux.h"
+#include "caml/startup.h"
 
 #include "build_config.h"
 
 #ifndef NATIVE_CODE
+
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 
 /* The table of primitives */
 struct ext_table caml_prim_table;
@@ -53,12 +57,6 @@ static struct ext_table shared_libs;
 
 /* The search path for shared libraries */
 struct ext_table caml_shared_libs_path;
-
-/* The SYMB and CRCS sections of the bytecode executable */
-static char* symb_section;
-static intnat symb_section_len;
-static char* crcs_section;
-static intnat crcs_section_len;
 
 /* Look up the given primitive name in the built-in primitive table,
    then in the opened shared libraries (shared_libs) */
@@ -166,13 +164,9 @@ static void open_shared_lib(char_os * name)
 /* Build the table of primitives, given a search path and a list
    of shared libraries (both 0-separated in a char array).
    Abort the runtime system on error. */
-void caml_init_dynlink(char_os * lib_path,
-                       char_os * libs,
-                       char * req_prims,
-                       char * symb_section_,
-                       intnat symb_section_len_,
-                       char * crcs_section_,
-                       intnat crcs_section_len_)
+void caml_build_primitive_table(char_os * lib_path,
+                                char_os * libs,
+                                char * req_prims)
 {
   char_os * p;
   char * q;
@@ -203,10 +197,6 @@ void caml_init_dynlink(char_os * lib_path,
     caml_ext_table_add(&caml_prim_table, (void *) prim);
     caml_ext_table_add(&caml_prim_name_table, caml_stat_strdup(q));
   }
-  symb_section = symb_section_;
-  symb_section_len = symb_section_len_;
-  crcs_section = crcs_section_;
-  crcs_section_len = crcs_section_len_;
 }
 
 /* Build the table of primitives as a copy of the builtin primitive table.
@@ -264,12 +254,42 @@ CAMLprim value caml_dynlink_get_bytecode_sections(value unit)
       }
     }
   } else {
+    struct exec_trailer trail;
+    int fd, err;
+    char *sect;
+    int32_t len;
+
+    fd = open_os(caml_params->exe_name, O_RDONLY | O_BINARY);
+    if (fd < 0)
+      caml_failwith("Dynlink: Failed to re-open bytecode executable");
+
+    err = caml_read_trailer(fd, &trail);
+    if (err != 0)
+      caml_failwith("Dynlink: Failed to re-read bytecode trailer");
+
+    caml_read_section_descriptors(fd, &trail);
+
+    len = caml_seek_optional_section(fd, &trail, "SYMB");
+    sect = caml_stat_alloc(len);
+    if (read(fd, sect, len) != len)
+      caml_failwith("Dynlink: error reading SYMB");
     Store_field(ret, 0,
-      caml_input_value_from_block(symb_section, symb_section_len));
-    if (crcs_section != NULL) {
+      caml_input_value_from_block(sect, len));
+    caml_stat_free(sect);
+
+    len = caml_seek_optional_section(fd, &trail, "CRCS");
+    if (len > 0) {
+      sect = caml_stat_alloc(len);
+      if (read(fd, sect, len) != len)
+        caml_failwith("Dynlink: error reading CRCS");
       Store_field(ret, 1,
-        caml_input_value_from_block(crcs_section, crcs_section_len));
+        caml_input_value_from_block(sect, len));
+      caml_stat_free(sect);
     }
+
+    caml_stat_free(trail.section);
+    close(fd);
+
     Store_field(ret, 2,
       list_of_ext_table(&caml_prim_name_table));
     Store_field(ret, 3,

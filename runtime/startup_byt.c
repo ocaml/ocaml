@@ -93,7 +93,7 @@ static void fixup_endianness_trailer(uint32_t * p)
 #endif
 }
 
-static int read_trailer(int fd, struct exec_trailer *trail)
+int caml_read_trailer(int fd, struct exec_trailer *trail)
 {
   if (lseek(fd, (long) -TRAILER_SIZE, SEEK_END) == -1)
     return BAD_BYTECODE;
@@ -144,7 +144,7 @@ int caml_attempt_open(char_os **name, struct exec_trailer *trail,
       return BAD_BYTECODE;
     }
   }
-  err = read_trailer(fd, trail);
+  err = caml_read_trailer(fd, trail);
   if (err != 0) {
     close(fd);
     caml_stat_free(truename);
@@ -206,22 +206,17 @@ int32_t caml_seek_section(int fd, struct exec_trailer *trail, char *name)
 /* Read and return the contents of the section having the given name.
    Add a terminating 0.  Return NULL if no such section. */
 
-static char * read_section(int fd, struct exec_trailer *trail, char *name,
-                           int32_t *out_len)
+static char * read_section(int fd, struct exec_trailer *trail, char *name)
 {
   int32_t len;
   char * data;
 
   len = caml_seek_optional_section(fd, trail, name);
-  if (len == -1) {
-    if (out_len != NULL) *out_len = 0;
-    return NULL;
-  }
+  if (len == -1) return NULL;
   data = caml_stat_alloc(len + 1);
   if (read(fd, data, len) != len)
     caml_fatal_error("error reading section %s", name);
   data[len] = 0;
-  if (out_len != NULL) *out_len = len;
   return data;
 }
 
@@ -250,8 +245,7 @@ static char_os * read_section_to_os(int fd, struct exec_trailer *trail,
 
 #else
 
-#define read_section_to_os(fd,trail,name) \
-  read_section(fd,trail,name,NULL)
+#define read_section_to_os read_section
 
 #endif
 
@@ -469,8 +463,6 @@ CAMLexport void caml_main(char_os **argv)
   char * req_prims;
   char_os * shared_lib_path, * shared_libs;
   char_os * exe_name, * proc_self_exe;
-  char * symb_section, * crcs_section;
-  int32_t symb_section_len, crcs_section_len;
 
   /* Determine options */
   caml_parse_ocamlrunparam();
@@ -562,13 +554,9 @@ CAMLexport void caml_main(char_os **argv)
   /* Build the table of primitives */
   shared_lib_path = read_section_to_os(fd, &trail, "DLPT");
   shared_libs = read_section_to_os(fd, &trail, "DLLS");
-  req_prims = read_section(fd, &trail, "PRIM", NULL);
-  symb_section = read_section(fd, &trail, "SYMB", &symb_section_len);
-  crcs_section = read_section(fd, &trail, "CRCS", &crcs_section_len);
+  req_prims = read_section(fd, &trail, "PRIM");
   if (req_prims == NULL) caml_fatal_error("no PRIM section");
-  caml_init_dynlink(shared_lib_path, shared_libs, req_prims,
-                    symb_section, symb_section_len,
-                    crcs_section, crcs_section_len);
+  caml_build_primitive_table(shared_lib_path, shared_libs, req_prims);
   caml_stat_free(shared_lib_path);
   caml_stat_free(shared_libs);
   caml_stat_free(req_prims);
