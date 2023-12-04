@@ -313,6 +313,9 @@ type lambda =
 and rec_binding = {
   id : Ident.t;
   def : lfunction;
+  (* Generic recursive bindings have been removed from Lambda.
+     [Value_rec_compiler.compile_letrec] deals with transforming generic
+     definitions into basic Lambda code. *)
 }
 
 and lfunction = private
