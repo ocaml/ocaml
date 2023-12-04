@@ -14,40 +14,58 @@
 
 open Lambda
 
-type size =
-  | Unreachable
-  | Dynamic
-  | Constant
-  | Function
+(* Simple blocks *)
+type block_size =
   | Regular_block of int
   | Float_record of int
+
+type size =
+  | Unreachable
+  | Constant
+  | Function
+  | Block of block_size
+
+type binding_size = (lambda_with_env, size) Lazy_backtrack.t
+and lambda_with_env = {
+  lambda : lambda;
+  env : binding_size Ident.Map.t;
+}
+
+let dynamic_size () =
+  Misc.fatal_error "letrec: No size found for Static binding"
 
 let join_sizes size1 size2 =
   match size1, size2 with
   | Unreachable, size | size, Unreachable -> size
-  | _, _ -> Dynamic
+  | _, _ -> dynamic_size ()
 
 let compute_static_size lam =
   let rec compute_expression_size env lam =
     match lam with
     | Lvar v ->
       begin match Ident.Map.find_opt v env with
-      | None -> Dynamic
-      | Some size -> size
+      | None ->
+        dynamic_size ()
+      | Some binding_size ->
+        Lazy_backtrack.force
+          (fun { lambda; env } -> compute_expression_size env lambda)
+          binding_size
       end
-    | Lmutvar _ -> Dynamic
+    | Lmutvar _ -> dynamic_size ()
     | Lconst _ -> Constant
-    | Lapply _ -> Dynamic
+    | Lapply _ -> dynamic_size ()
     | Lfunction _ -> Function
     | Llet (_, _, id, def, body) ->
-      let size = compute_expression_size env def in
-      compute_expression_size (Ident.Map.add id size env) body
+      let env =
+        Ident.Map.add id (Lazy_backtrack.create { lambda = def; env }) env
+      in
+      compute_expression_size env body
     | Lmutlet(_, _, _, body) ->
       compute_expression_size env body
     | Lletrec (bindings, body) ->
       let env =
         List.fold_left (fun env_acc { id; def = _ } ->
-            Ident.Map.add id Function env_acc)
+            Ident.Map.add id (Lazy_backtrack.create_forced Function) env_acc)
           env bindings
       in
       compute_expression_size env body
@@ -78,7 +96,7 @@ let compute_static_size lam =
     | Lwhile _
     | Lfor _
     | Lassign _ -> Constant
-    | Lsend _ -> Dynamic
+    | Lsend _ -> dynamic_size ()
     | Levent (e, _) ->
       compute_expression_size env e
     | Lifused _ -> Constant
@@ -87,7 +105,7 @@ let compute_static_size lam =
         join_sizes size (compute_expression_size env branch))
       Unreachable branches
   and compute_and_join_sizes_switch :
-    type a. size Ident.Map.t -> (a * lambda) list list -> size =
+    type a. binding_size Ident.Map.t -> (a * lambda) list list -> size =
     fun env all_cases ->
       List.fold_left (fun size cases ->
           List.fold_left (fun size (_key, action) ->
@@ -121,23 +139,25 @@ let compute_static_size lam =
     | Pduprecord (repres, size) ->
         begin match repres with
         | Record_regular | Record_inlined _ | Record_extension _ ->
-            Regular_block size
+            Block (Regular_block size)
         | Record_float ->
-            Float_record size
+            Block (Float_record size)
         | Record_unboxed _ ->
             Misc.fatal_error "size_of_primitive"
         end
     | Pmakeblock _ ->
         (* The block shape is unfortunately an option, so we rely on the
-           number of arguments instead *)
-        Regular_block (List.length args)
+           number of arguments instead.
+           Note that flat float arrays/records use Pmakearray, so we don't need
+           to check the tag here. *)
+        Block (Regular_block (List.length args))
     | Pmakearray (kind, _) ->
         let size = List.length args in
         begin match kind with
         | Pgenarray | Paddrarray | Pintarray ->
-            Regular_block size
+            Block (Regular_block size)
         | Pfloatarray ->
-            Float_record size
+            Block (Float_record size)
         end
     | Pduparray _ ->
         (* The size has to be recovered from the size of the argument *)
@@ -153,7 +173,7 @@ let compute_static_size lam =
 
     | Pctconst _ ->
         (* These primitives are not special-cased by [Value_rec_check],
-           so we could return [Dynamic] too *)
+           so we should never end up here; but these are constants anyway *)
         Constant
 
     | Pbytes_to_string
@@ -222,7 +242,7 @@ let compute_static_size lam =
     | Patomic_fetch_add
     | Popaque
     | Pdls_get ->
-        Dynamic
+        dynamic_size ()
   in
   compute_expression_size Ident.Map.empty lam
 
@@ -438,12 +458,8 @@ and rebuild_arms :
     | Reachable _, Reachable _ ->
       Misc.fatal_error "letrec: multiple functions"
 
-type static_block_size =
-  | Regular_block of int
-  | Float_record of int
-
 type rec_bindings =
-  { static : (Ident.t * static_block_size * Lambda.lambda) list;
+  { static : (Ident.t * block_size * Lambda.lambda) list;
     functions : (Ident.t * Lambda.lfunction) list;
     dynamic : (Ident.t * Lambda.lambda) list;
   }
@@ -488,12 +504,9 @@ let compile_letrec input_bindings body =
               Lambda.subst (fun _ _ env -> env) subst_for_constants def
             in
             { rev_bindings with dynamic = (id, def) :: rev_bindings.dynamic }
-          | Regular_block size ->
+          | Block size ->
             { rev_bindings with
-              static = (id, Regular_block size, def) :: rev_bindings.static }
-          | Float_record size ->
-            { rev_bindings with
-              static = (id, Float_record size, def) :: rev_bindings.static }
+              static = (id, size, def) :: rev_bindings.static }
           | Function ->
             begin match def with
             | Lfunction lfun ->
@@ -513,8 +526,6 @@ let compile_letrec input_bindings body =
                 { rev_bindings with functions; static }
               end
             end
-          | Dynamic ->
-            Misc.fatal_error "letrec: No size found for Static binding"
           end)
       empty_bindings input_bindings
   in
