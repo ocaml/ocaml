@@ -389,6 +389,8 @@
         popq    %rbp; CFI_ADJUST(-8); CFI_SAME_VALUE(rbp);  \
         popq    %rbx; CFI_ADJUST(-8); CFI_SAME_VALUE(rbx)
 
+#define CALLEE_SAVE_REGS_SIZE (8 * 8 + 10 * 16)
+
 #else
 
 /* Unix API: callee-save regs are rbx, rbp, r12-r15 */
@@ -408,6 +410,8 @@
         popq    %r12; CFI_ADJUST(-8); CFI_SAME_VALUE(r12); \
         popq    %rbp; CFI_ADJUST(-8); CFI_SAME_VALUE(rbp); \
         popq    %rbx; CFI_ADJUST(-8); CFI_SAME_VALUE(rbx)
+
+#define CALLEE_SAVE_REGS_SIZE (6 * 8)
 
 #endif
 
@@ -811,7 +815,7 @@ CFI_STARTPROC
         /* Save C_ARG_1 before C call */
         pushq   C_ARG_1; CFI_ADJUST(8)
         /* Read return address */
-        movq    56(%rsp), C_ARG_1 /* Read return address */
+        movq    (8 + CALLEE_SAVE_REGS_SIZE)(%rsp), C_ARG_1
         C_call  (GCALL(__tsan_func_entry))
         popq    C_ARG_1; CFI_ADJUST(-8)
 #endif
