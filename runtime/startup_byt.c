@@ -624,6 +624,7 @@ CAMLexport value caml_startup_code_exn(
 #endif
   caml_init_custom_operations();
   caml_init_os_params();
+  caml_ext_table_init(&caml_shared_libs_path, 8);
 
   /* Initialize the abstract machine */
   caml_init_gc ();

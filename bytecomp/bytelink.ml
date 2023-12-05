@@ -524,8 +524,6 @@ static char caml_data[] = {
        let sections : (string * Obj.t) array =
          [| Bytesections.Name.to_string SYMB,
             Symtable.data_global_map();
-            Bytesections.Name.to_string PRIM,
-            Obj.repr(Symtable.data_primitive_names());
             Bytesections.Name.to_string CRCS,
             Obj.repr(extract_crc_interfaces()) |]
        in
