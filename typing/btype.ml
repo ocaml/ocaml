@@ -46,9 +46,11 @@ end
 module TransientTypeHash = Hashtbl.Make(TransientTypeOps)
 module TypeHash = struct
   include TransientTypeHash
+  let mem hash = wrap_repr (mem hash)
   let add hash = wrap_repr (add hash)
   let remove hash = wrap_repr (remove hash)
   let find hash = wrap_repr (find hash)
+  let find_opt hash = wrap_repr (find_opt hash)
   let iter f = TransientTypeHash.iter (wrap_type_expr f)
 end
 module TransientTypePairs =

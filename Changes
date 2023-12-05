@@ -517,6 +517,9 @@ Working version
   rename Env.add_local_type to add_local_constraint
   (Takafumi Saikawa and Jacques Garrigue, review by Florian Angeletti)
 
+- #12786 : Clean up the algorithm of Ctype.limited_generalize
+  (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer)
+
 ### Build system:
 
 - #12198, #12321, #12586, #12616, #12706: continue the merge of the
