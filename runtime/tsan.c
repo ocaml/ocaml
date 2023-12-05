@@ -166,8 +166,6 @@
      concurrently by OCaml code. Because `caml_modify` is instrumented as a
      plain write for proper detection of OCaml races, this case is seen as a
      data race.
-   - An OCaml heap value is accessed from C by two unordered, volatile
-     accesses, at least one of which is a write.
 
    3.3. volatile accesses
 
