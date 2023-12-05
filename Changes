@@ -293,6 +293,11 @@ Working version
 - #12770: Add `Fun.compose`.
   (Justin Frank, review by Nicolás Ojeda Bär, Daniel Bünzli and Jeremy Yallop)
 
+- #???: List.for_all_ok and List.exists_ok
+  List.for_all_ok: ('a -> ('b, 'e) result) -> 'a list -> ('b list, 'e) result
+  List.exists_ok: ('a -> ('b, 'e) result) -> 'a list -> ('b, 'e list) result
+  (Gabriel Scherer, review by ???)
+
 ### Other libraries:
 
 - #12213: Dynlink library, improve legibility of error messages
