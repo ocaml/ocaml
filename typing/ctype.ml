@@ -1003,14 +1003,16 @@ let limited_generalize ty0 ty =
     | Some parents -> parents := pty @ !parents
     | None ->
         let level = get_level ty in
-        if (level > !current_level) || (level = generic_level) then begin
+        if level > !current_level then begin
           TypeHash.add graph ty (ref pty);
+          (* XXX: why generic_level needs to be a root *)
           if (level = generic_level) || eq_type ty ty0 then
             roots := ty :: !roots;
           iter_type_expr (inverse [ty]) ty
         end
+  in
 
-  and generalize_parents ~is_root ty =
+  let rec generalize_parents ~is_root ty =
     if is_root || get_level ty <> generic_level then begin
       set_level ty generic_level;
       List.iter (generalize_parents ~is_root:false) !(TypeHash.find graph ty);
@@ -1026,8 +1028,6 @@ let limited_generalize ty0 ty =
   in
 
   inverse [] ty;
-  if TypeHash.mem graph ty0 then
-    iter_type_expr (inverse []) ty0;
   List.iter (generalize_parents ~is_root:true) !roots;
   TypeHash.iter
     (fun ty _ ->
