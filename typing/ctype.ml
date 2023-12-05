@@ -1435,7 +1435,7 @@ let copy_sep ~copy_scope ~fixed ~(visited : type_expr TypeHash.t) sch =
   let delayed_copies = ref [] in
   let add_delayed_copy t ty =
     delayed_copies :=
-      lazy (Transient_expr.set_stub_desc t (Tlink (copy copy_scope ty))) ::
+      (fun () -> Transient_expr.set_stub_desc t (Tlink (copy copy_scope ty))) ::
       !delayed_copies
   in
   let rec copy_rec ~may_share (ty : type_expr) =
@@ -1476,7 +1476,7 @@ let copy_sep ~copy_scope ~fixed ~(visited : type_expr TypeHash.t) sch =
     end
   in
   let ty = copy_rec ~may_share:true sch in
-  List.iter Lazy.force !delayed_copies;
+  List.iter (fun force -> force ()) !delayed_copies;
   ty
 
 let instance_poly' copy_scope ~keep_names ~fixed univars sch =
