@@ -217,7 +217,7 @@ There is no way to disable instrumentation in OCaml code.
 
 \section{s:tsan-signal-changes}{Changes in the delivery of signals}
 
-TSan intercepts all signals and pass them down to the instrumented program.
+TSan intercepts all signals and passes them down to the instrumented program.
 This overlay from TSan is not always transparent for the program. Synchronous
 signals such as \texttt{SIGSEV}, \texttt{SIGILL}, \texttt{SIGBUS}, etc.\ will be
 passed down immediately, whereas asynchronous signals such as \texttt{SIGINT}
