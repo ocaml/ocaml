@@ -59,6 +59,34 @@ let () =
     assert (List.find_map (f ~limit:30) l = None);
   end;
 
+  (* for_all_ok *)
+  begin
+    let f a =
+      if a = 5 then Error "five"
+      else if a > 5 then failwith "please stop at five"
+      else Ok [a]
+    in
+    assert (List.for_all_ok f [] = Ok []);
+    assert (List.for_all_ok f [1; 2; 4] = Ok [[1]; [2]; [4]]);
+    (* the [failwith] case checks that we evaluate
+       from left to right and stop on the first error. *)
+    assert (List.for_all_ok f [1; 2; 5; 6] = Error "five");
+  end;
+
+  (* exists_ok *)
+  begin
+    let f a =
+      if a = 5 then Ok "five"
+      else if a > 5 then failwith "please stop at five"
+      else Error [a]
+    in
+    assert (List.exists_ok f [] = Error []);
+    assert (List.exists_ok f [1; 2; 4] = Error [[1]; [2]; [4]]);
+    (* the [failwith] case checks that we evaluate
+       from left to right and stop on the first success. *)
+    assert (List.exists_ok f [1; 2; 5; 6] = Ok "five");
+  end;
+
   assert (List.filteri (fun i _ -> i < 2) (List.rev l) = [9; 8]);
 
   assert (List.partition is_even [1; 2; 3; 4; 5]

@@ -187,6 +187,41 @@ let rec exists2 p l1 l2 =
   | (a1::l1, a2::l2) -> p a1 a2 || exists2 p l1 l2
   | (_, _) -> invalid_arg "List.exists2"
 
+let for_all_ok p xs =
+  let rec loop p vs = function
+  | [] -> Ok (rev vs)
+  | x :: xs ->
+     match p x with
+     | Error err -> Error err
+     | Ok v -> loop p (v :: vs) xs
+  in loop p [] xs
+(* Note: one could write a tail-mod-cons version using either a reference or an
+   exception, but this generates larger code that is harder to optimize -- and
+   the exception version fares poorly with js_of_ocaml.
+
+     let for_all_ok (type err) (p : _ -> (_, err) result) xs =
+       let exception Found of err in
+       let[@tail_mod_cons] rec oks = function
+         | [] -> []
+         | x :: xs ->
+            match p x with
+            | Error err -> raise (Found err)
+            | Ok v -> v :: oks xs
+       in
+       match oks xs with
+       | vs -> Ok vs
+       | exception (Found err) -> Error err
+ *)
+
+let exists_ok p xs =
+  let rec loop p es = function
+  | [] -> Error (rev es)
+  | x :: xs ->
+     match p x with
+     | Ok v -> Ok v
+     | Error e -> loop p (e :: es) xs
+  in loop p [] xs
+
 let rec mem x = function
     [] -> false
   | a::l -> compare a x = 0 || mem x l

@@ -291,6 +291,24 @@ val exists2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
    to have different lengths.
  *)
 
+val for_all_ok : ('a -> ('b, 'e) result) -> 'a list -> ('b list, 'e) result
+(** [for_all_ok p [a1; ...; an]] evaluates the predicate [p] for each
+    element [a1; ..; an] of the input list, from left to right.
+
+    If the [p a1]..[p an] all return [Ok b1]..[Ok bn], the result is
+    [Ok [b1; ..; bn]]. Otherwise evaluation stops on the leftmost [a]
+    such that [p a] returns [Error e], and the result is [Error e]. *)
+
+val exists_ok : ('a -> ('b, 'e) result) -> 'a list -> ('b, 'e list) result
+(** [for_all_ok p [a1; ...; an]] evaluates the predicate [p] for each
+    element [a1; ..; an] of the input list, from left to right.
+
+    On the leftmost [a] such that [p a] is [Ok v], we return [Ok v].
+    Otherwise, we reach the end of the list and all [p a1]..[p an] have
+    returned an error [Error b1]..[Error bn], and we return the list
+    of errors [Error [b1; ..; bn]]. *)
+
+
 val mem : 'a -> 'a list -> bool
 (** [mem a set] is true if and only if [a] is equal
    to an element of [set].
