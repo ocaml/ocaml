@@ -542,6 +542,10 @@ Working version
   (Sébastien Hinderer, review by Antonin Décimo, David Allsopp and Florian
   Angeletti)
 
+- #12768: Detect mingw-w64 coupling with GCC or LLVM, detect clang-cl,
+  and fix C compiler feature detection on macOS.
+  (Antonin Décimo, review by Miod Vallat and Sébastien Hinderer)
+
 ### Bug fixes:
 
 - # 12791: `extern` is applied to definitions of `caml_builtin_cprim`
