@@ -16,33 +16,6 @@ OCaml 5.1.1
 - #11800, #12707: fix an assertion race condition in `install_backup_thread`
   (Jan Midtgaard, review by Gabriel Scherer)
 
-- #12623, fix the computation of variance composition
-  (Florian Angeletti, report by Vesa Karvonen, review by Gabriel Scherer)
-
-- #12590, #12595: Move `caml_collect_gc_stats_sample` in
-  `caml_empty_minor_heap_promote` before barrier arrival.
-  (B. Szilvasy, review by Gabriel Scherer)
-
-- #12645, #12649 fix error messages for cyclic type definitions in presence of
-  the `-short-paths` flag.
-  (Florian Angeletti, report by Vesa Karvonen, review by Gabriel Scherer)
-
-- #12581, #12609: Fix error on uses of packed modules outside their pack
-  to correctly handle nested packs
-  (Vincent Laviron, report by Javier Chávarri, review by Pierre Chambart)
-
-- #12712, #12742: fix an assertion boundary case in `caml_reset_young_limit`
-  (Jan Midtgaard, review by Guillaume Munch-Maccagnoni)
-
-- #12713, #12715: disable common subexpression elimination for atomic loads
-  (Gabriel Scherer and Vincent Laviron,
-   review by Vincent Laviron, KC Sivaramakrishnan and Xavier Leroy,
-   report by Vesa Karvonen and Carine Morel)
-
-- #12757: Fix ocamlnat (native toplevel) by registering frametables correctly
-  (Stephen Dolan, Nick Barnes and Mark Shinwell,
-   review by Vincent Laviron and Sébastien Hinderer)
-
 - #12318: GC: simplify the meaning of custom_minor_max_size: blocks with
   out-of-heap memory above this limit are now allocated directly in
   the major heap.
@@ -56,9 +29,36 @@ OCaml 5.1.1
   --enable-frame-pointers
   (Miod Vallat, report by Jan Midtgaard, review by Gabriel Scherer)
 
-- # 12791: `extern` is applied to definitions of `caml_builtin_cprim`
-    and `caml_names_of_builtin_cprim` when linking bytecode '-custom'
-    executables with a C++ linker
+- #12581, #12609: Fix error on uses of packed modules outside their pack
+  to correctly handle nested packs
+  (Vincent Laviron, report by Javier Chávarri, review by Pierre Chambart)
+
+- #12590, #12595: Move `caml_collect_gc_stats_sample` in
+  `caml_empty_minor_heap_promote` before barrier arrival.
+  (B. Szilvasy, review by Gabriel Scherer)
+
+- #12623, fix the computation of variance composition
+  (Florian Angeletti, report by Vesa Karvonen, review by Gabriel Scherer)
+
+- #12645, #12649 fix error messages for cyclic type definitions in presence of
+  the `-short-paths` flag.
+  (Florian Angeletti, report by Vesa Karvonen, review by Gabriel Scherer)
+
+- #12712, #12742: fix an assertion boundary case in `caml_reset_young_limit`
+  (Jan Midtgaard, review by Guillaume Munch-Maccagnoni)
+
+- #12713, #12715: disable common subexpression elimination for atomic loads
+  (Gabriel Scherer and Vincent Laviron,
+   review by Vincent Laviron, KC Sivaramakrishnan and Xavier Leroy,
+   report by Vesa Karvonen and Carine Morel)
+
+- #12757: Fix ocamlnat (native toplevel) by registering frametables correctly
+  (Stephen Dolan, Nick Barnes and Mark Shinwell,
+   review by Vincent Laviron and Sébastien Hinderer)
+
+- #12791: `extern` is applied to definitions of `caml_builtin_cprim`
+  and `caml_names_of_builtin_cprim` when linking bytecode '-custom'
+  executables with a C++ linker.
   (Shayne Fletcher, review by Antonin Décimo and Xavier Leroy)
 
 
