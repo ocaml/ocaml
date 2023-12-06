@@ -389,6 +389,8 @@
         popq    %rbp; CFI_ADJUST(-8); CFI_SAME_VALUE(rbp);  \
         popq    %rbx; CFI_ADJUST(-8); CFI_SAME_VALUE(rbx)
 
+#define CALLEE_SAVE_REGS_SIZE (8 * 8 + 10 * 16)
+
 #else
 
 /* Unix API: callee-save regs are rbx, rbp, r12-r15 */
@@ -408,6 +410,8 @@
         popq    %r12; CFI_ADJUST(-8); CFI_SAME_VALUE(r12); \
         popq    %rbp; CFI_ADJUST(-8); CFI_SAME_VALUE(rbp); \
         popq    %rbx; CFI_ADJUST(-8); CFI_SAME_VALUE(rbx)
+
+#define CALLEE_SAVE_REGS_SIZE (6 * 8)
 
 #endif
 
@@ -808,10 +812,12 @@ CFI_STARTPROC
 #if defined(WITH_THREAD_SANITIZER)
     /* We can't use the TSAN_ENTER_FUNCTION macro as it assumes an OCaml stack,
        and we are on a C stack. */
-        pushq   C_ARG_1 /* Save C_ARG_1 before C call */
-        movq    56(%rsp), C_ARG_1 /* Read return address */
+        /* Save C_ARG_1 before C call */
+        pushq   C_ARG_1; CFI_ADJUST(8)
+        /* Read return address */
+        movq    (8 + CALLEE_SAVE_REGS_SIZE)(%rsp), C_ARG_1
         C_call  (GCALL(__tsan_func_entry))
-        popq    C_ARG_1
+        popq    C_ARG_1; CFI_ADJUST(-8)
 #endif
     /* Load Caml_state into r14 (was passed as an argument from C) */
         movq    C_ARG_1, %r14
@@ -888,10 +894,11 @@ LBL(108):
 #if defined(WITH_THREAD_SANITIZER)
     /* We can't use the TSAN_EXIT_FUNCTION macro as it assumes an OCaml stack,
        and we are on a C stack. */
-        pushq   %rax /* Save %rax before C call */
+        /* Save %rax before C call */
+        pushq   %rax; CFI_ADJUST(8)
         movq    $0, C_ARG_1
         C_call  (GCALL(__tsan_func_exit))
-        popq    %rax
+        popq    %rax; CFI_ADJUST(-8)
 #endif
     /* Restore callee-save registers. */
         POP_CALLEE_SAVE_REGS
@@ -987,11 +994,11 @@ CFI_STARTPROC
         movq    STACK_RETADDR(%rsp), C_ARG_1   /* arg 1: pc of raise */
         leaq    STACK_ARG_1(%rsp), C_ARG_2  /* arg 2: sp at raise */
         movq    Caml_state(exn_handler), C_ARG_3 /* arg 3: sp of handler */
-        pushq   %rax
+        pushq   %rax; CFI_ADJUST(8)
         SWITCH_OCAML_TO_C
         C_call  (GCALL(caml_tsan_exit_on_raise))
         SWITCH_C_TO_OCAML
-        popq    %rax
+        popq    %rax; CFI_ADJUST(-8)
 #endif
         jmp LBL(caml_raise_exn)
 CFI_ENDPROC
@@ -1006,14 +1013,14 @@ CFI_STARTPROC
 #if defined(WITH_THREAD_SANITIZER)
     /* Save non-callee-saved registers C_ARG_1, C_ARG_2, C_ARG_3 before C call
      */
-        pushq   C_ARG_1
-        pushq   C_ARG_2
-        pushq   C_ARG_3
+        pushq   C_ARG_1; CFI_ADJUST(8)
+        pushq   C_ARG_2; CFI_ADJUST(8)
+        pushq   C_ARG_3; CFI_ADJUST(8)
         movq    24(%rsp), C_ARG_1 /* Read return address */
         C_call  (GCALL(__tsan_func_entry))
-        popq    C_ARG_3
-        popq    C_ARG_2
-        popq    C_ARG_1
+        popq    C_ARG_3; CFI_ADJUST(-8)
+        popq    C_ARG_2; CFI_ADJUST(-8)
+        popq    C_ARG_1; CFI_ADJUST(-8)
 #endif
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
@@ -1033,14 +1040,14 @@ CFI_STARTPROC
 #if defined(WITH_THREAD_SANITIZER)
     /* Save non-callee-saved registers C_ARG_1, C_ARG_2, C_ARG_3 before C call
      */
-        pushq   C_ARG_1
-        pushq   C_ARG_2
-        pushq   C_ARG_3
+        pushq   C_ARG_1; CFI_ADJUST(8)
+        pushq   C_ARG_2; CFI_ADJUST(8)
+        pushq   C_ARG_3; CFI_ADJUST(8)
         movq    24(%rsp), C_ARG_1 /* Read return address */
         C_call  (GCALL(__tsan_func_entry))
-        popq    C_ARG_3
-        popq    C_ARG_2
-        popq    C_ARG_1
+        popq    C_ARG_3; CFI_ADJUST(-8)
+        popq    C_ARG_2; CFI_ADJUST(-8)
+        popq    C_ARG_1; CFI_ADJUST(-8)
 #endif
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
@@ -1060,14 +1067,14 @@ CFI_STARTPROC
 #if defined(WITH_THREAD_SANITIZER)
     /* Save non-callee-saved registers C_ARG_1, C_ARG_2, C_ARG_3 before C call
      */
-        pushq   C_ARG_1
-        pushq   C_ARG_2
-        pushq   C_ARG_3
+        pushq   C_ARG_1; CFI_ADJUST(8)
+        pushq   C_ARG_2; CFI_ADJUST(8)
+        pushq   C_ARG_3; CFI_ADJUST(8)
         movq    24(%rsp), C_ARG_1 /* Read return address */
         C_call  (GCALL(__tsan_func_entry))
-        popq    C_ARG_3
-        popq    C_ARG_2
-        popq    C_ARG_1
+        popq    C_ARG_3; CFI_ADJUST(-8)
+        popq    C_ARG_2; CFI_ADJUST(-8)
+        popq    C_ARG_1; CFI_ADJUST(-8)
 #endif
     /* Save callee-save registers */
         PUSH_CALLEE_SAVE_REGS
