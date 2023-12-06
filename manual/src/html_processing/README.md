@@ -18,7 +18,8 @@ They both use a common module `common.ml`.
 ## Prerequisites
 
 In order to do postprocessing of the HTML manual, ensure that you have
-the `sass` package installed:
+the `sass` package installed. On Debian-based Linux distributions, you
+can install the package by:
 
 ```
 apt install sass
