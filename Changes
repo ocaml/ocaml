@@ -319,8 +319,8 @@ Working version
    Munch-Maccagnoni and Fabrice Buoro)
 
 - #12802: Add manual chapter about ThreadSanitizer support
-  (Olivier Nicole, review by Miod Vallat, Sebastien Hinderer, Fabrice Buoro and
-   Gabriel Scherer)
+  (Olivier Nicole, review by Miod Vallat, Sebastien Hinderer, Fabrice Buoro,
+   Gabriel Scherer and KC Sivaramakrishnan)
 
 ### Compiler user-interface and warnings:
 
