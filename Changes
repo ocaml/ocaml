@@ -361,6 +361,10 @@ Working version
   (Olivier Nicole, review by Miod Vallat, Gabriel Scherer, Guillaume
    Munch-Maccagnoni and Fabrice Buoro)
 
+- #12802: Add manual chapter about ThreadSanitizer support
+  (Olivier Nicole, review by Miod Vallat, Sebastien Hinderer, Fabrice Buoro,
+   Gabriel Scherer and KC Sivaramakrishnan)
+
 ### Compiler user-interface and warnings:
 
 * #10613, #12405: Simplify the values used for the system variable (`system:` in
