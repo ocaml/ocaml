@@ -24,6 +24,7 @@ open Cmo_format
 (* Command line options to prevent printing approximation,
    function code and CRC
  *)
+let quiet = ref false
 let no_approx = ref false
 let no_code = ref false
 let no_crc = ref false
@@ -84,28 +85,32 @@ let print_cma_infos (lib : Cmo_format.library) =
   List.iter print_cmo_infos lib.lib_units
 
 let print_cmi_infos name crcs =
-  printf "Unit name: %s\n" name;
-  printf "Interfaces imported:\n";
-  List.iter print_name_crc crcs
+  if not !quiet then begin
+    printf "Unit name: %s\n" name;
+    printf "Interfaces imported:\n";
+    List.iter print_name_crc crcs
+  end
 
 let print_cmt_infos cmt =
   let open Cmt_format in
-  printf "Cmt unit name: %s\n" cmt.cmt_modname;
-  print_string "Cmt interfaces imported:\n";
-  List.iter print_name_crc cmt.cmt_imports;
-  printf "Source file: %s\n"
-         (match cmt.cmt_sourcefile with None -> "(none)" | Some f -> f);
-  printf "Compilation flags:";
-  Array.iter print_spaced_string cmt.cmt_args;
-  printf "\nLoad path:\n  Visible:";
-  List.iter print_spaced_string cmt.cmt_loadpath.visible;
-  printf "\n  Hidden:";
-  List.iter print_spaced_string cmt.cmt_loadpath.hidden;
-  printf "\n";
-  printf "cmt interface digest: %s\n"
-    (match cmt.cmt_interface_digest with
-     | None -> ""
-     | Some crc -> string_of_crc crc);
+  if not !quiet then begin
+    printf "Cmt unit name: %s\n" cmt.cmt_modname;
+    print_string "Cmt interfaces imported:\n";
+    List.iter print_name_crc cmt.cmt_imports;
+    printf "Source file: %s\n"
+          (match cmt.cmt_sourcefile with None -> "(none)" | Some f -> f);
+    printf "Compilation flags:";
+    Array.iter print_spaced_string cmt.cmt_args;
+    printf "\nLoad path:\n  Visible:";
+    List.iter print_spaced_string cmt.cmt_loadpath.visible;
+    printf "\n  Hidden:";
+    List.iter print_spaced_string cmt.cmt_loadpath.hidden;
+    printf "\n";
+    printf "cmt interface digest: %s\n"
+      (match cmt.cmt_interface_digest with
+      | None -> ""
+      | Some crc -> string_of_crc crc);
+  end;
   if !shape then begin
     printf "Implementation shape: ";
     (match cmt.cmt_impl_shape with
@@ -417,7 +422,7 @@ let dump_obj filename =
          dump_obj_by_kind filename ic Cmxs;
          ()
   in
-  printf "File %s\n" filename;
+  if not !quiet then printf "File %s\n" filename;
   let ic = open_in_bin filename in
   match dump_standard ic with
     | Ok () -> ()
@@ -430,6 +435,8 @@ let dump_obj filename =
   else exit_magic_error ~expected_kind:None (Parse_error head_error)
 
 let arg_list = [
+  "-quiet", Arg.Set quiet,
+    " Only print explicitely required information";
   "-no-approx", Arg.Set no_approx,
     " Do not print module approximation information";
   "-no-code", Arg.Set no_code,

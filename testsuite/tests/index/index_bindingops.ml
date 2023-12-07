@@ -1,16 +1,16 @@
 (* TEST
+
 flags = "-bin-annot -store-usage-index";
 compile_only = "true";
 setup-ocamlc.byte-build-env;
 all_modules = "index_bindingops.ml";
 ocamlc.byte;
 check-ocamlc.byte-output;
-program = "-index -decls index_bindingops.cmt";
+
+program = "-quiet -index -decls index_bindingops.cmt";
 output = "out_objinfo";
 ocamlobjinfo;
-program = "awk '/Indexed/,0' out_objinfo";
-output = "out_awk";
-run;
+
 check-program-output;
 *)
 

@@ -1,4 +1,5 @@
 (* TEST
+
 flags = "-bin-annot -store-usage-index";
 compile_only = "true";
 readonly_files = "auxiliaire.ml";
@@ -6,12 +7,11 @@ setup-ocamlc.byte-build-env;
 all_modules = "auxiliaire.ml index.ml";
 ocamlc.byte;
 check-ocamlc.byte-output;
-program = "-index -decls index.cmt";
+
+program = "-quiet -index -decls index.cmt";
 output = "out_objinfo";
 ocamlobjinfo;
-program = "awk '/Indexed/,0' out_objinfo";
-output = "out_awk";
-run;
+
 check-program-output;
 *)
 
