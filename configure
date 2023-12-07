@@ -16613,9 +16613,9 @@ then :
   case "$arch" in #(
   amd64) :
     case "$system" in #(
-  linux|macosx) :
-    case "$cc_basename" in #(
-  gcc*|clang*) :
+  freebsd|linux|macosx) :
+    case "$ocaml_cv_cc_vendor" in #(
+  gcc-*|clang-*) :
     tsan=true ;; #(
   *) :
     as_fn_error $? "thread sanitizer not supported with compiler \
@@ -16753,6 +16753,8 @@ else $as_nop
 fi
 
   case "$system" in #(
+  "freebsd") :
+    libunwind_ldflags="-lgcc_eh" ;; #(
   "macosx") :
     libunwind_ldflags="-framework System" ;; #(
   *) :

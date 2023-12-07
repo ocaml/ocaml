@@ -198,6 +198,9 @@ Working version
 - #12735: Store both ends of the stack chain in continuations
   (Leo White, review by Miod Vallat and KC Sivaramakrishnan)
 
+- #12809: Add ThreadSanitizer support to FreeBSD/amd64
+  (Miod Vallat, review by Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.

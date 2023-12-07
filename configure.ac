@@ -1687,9 +1687,9 @@ AS_IF([test "x$enable_tsan" = "xyes" ],
   [AS_CASE(["$arch"],
     [amd64],
       [AS_CASE(["$system"],
-        [linux|macosx],
-        [AS_CASE(["$cc_basename"],
-          [gcc*|clang*],
+        [freebsd|linux|macosx],
+        [AS_CASE(["$ocaml_cv_cc_vendor"],
+          [gcc-*|clang-*],
           [tsan=true],
           [AC_MSG_ERROR([thread sanitizer not supported with compiler \
 $cc_basename"])]
@@ -1754,6 +1754,7 @@ AS_IF([$tsan],
     [libunwind_cppflags=""])
 
   AS_CASE(["$system"],
+    ["freebsd"], [libunwind_ldflags="-lgcc_eh"],
     ["macosx"], [libunwind_ldflags="-framework System"],
     [libunwind_ldflags="-lunwind -lunwind-x86_64"])
 
