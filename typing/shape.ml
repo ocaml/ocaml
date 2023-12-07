@@ -210,6 +210,10 @@ let print fmt t =
   else
     Format.fprintf fmt "@[%a@]@;" aux t
 
+let rec strip_head_aliases = function
+  | { desc = Alias t; _ } -> strip_head_aliases t
+  | t -> t
+
 let fresh_var ?(name="shape-var") uid =
   let var = Ident.create_local name in
   var, { uid = Some uid; desc = Var var; approximated = false }
@@ -256,21 +260,26 @@ let decompose_abs t =
 
 type reduction_result =
   | Resolved of Uid.t
+  | Resolved_alias of Uid.t list
   | Unresolved of t
   | Approximated of Uid.t option
-  | Missing_uid
+  | Internal_error_missing_uid
 
 let print_reduction_result fmt result =
   match result with
   | Resolved uid ->
       Format.fprintf fmt "@[Resolved: %a@]@;" Uid.print uid
+  | Resolved_alias uids ->
+      Format.fprintf fmt "@[Resolved_alias: %a@]@;"
+        Format.(pp_print_list ~pp_sep:(fun fmt () -> fprintf fmt "@ -> ")
+        Uid.print) uids
   | Unresolved shape ->
       Format.fprintf fmt "@[Unresolved: %a@]@;" print shape
   | Approximated (Some uid) ->
       Format.fprintf fmt "@[Approximated: %a@]@;" Uid.print uid
   | Approximated None ->
       Format.fprintf fmt "@[Approximated: No uid@]@;"
-  | Missing_uid ->
+  | Internal_error_missing_uid ->
       Format.fprintf fmt "@[Missing uid@]@;"
 
 module Make_reduce(Params : sig
@@ -288,7 +297,7 @@ end) = struct
     | NApp of nf * nf
     | NAbs of local_env * var * t * delayed_nf
     | NStruct of delayed_nf Item.Map.t
-    | NAlias of nf
+    | NAlias of delayed_nf
     | NProj of nf * Item.t
     | NLeaf
     | NComp_unit of string
@@ -333,13 +342,8 @@ end) = struct
         Hashtbl.replace memo_table memo_key res;
         res
 
-  let rec strip_head_aliases nf = match nf.desc with
-    | NAlias nf -> strip_head_aliases nf
-    | _ -> nf
-
   type env = {
     fuel: int ref;
-    keep_alias: t -> bool;
     global_env: Params.env;
     local_env: local_env;
     reduce_memo_table: (local_env * t, nf) Hashtbl.t;
@@ -401,6 +405,12 @@ end) = struct
     let return ?(approximated = t.approximated) desc : nf =
       { uid = t.uid; desc; approximated }
     in
+    let rec force_aliases nf = match nf.desc with
+      | NAlias delayed_nf ->
+          let nf = force delayed_nf in
+          force_aliases nf
+      | _ -> nf
+    in
     if !fuel < 0 then return ~approximated:true (NError "NoFuelLeft")
     else
       match t.desc with
@@ -410,18 +420,19 @@ end) = struct
           | None -> return (NComp_unit unit_name)
           end
       | App(f, arg) ->
-          let f = reduce env f |> strip_head_aliases in
+          let f = reduce env f |> force_aliases in
           begin match f.desc with
           | NAbs(clos_env, var, body, _body_nf) ->
               let arg = delay_reduce env arg in
               let env = bind { env with local_env = clos_env } var (Some arg) in
-              { (reduce env body) with uid = t.uid }
+               {(reduce env body) with uid = t.uid }
+              (* |> improve_uid t.uid *)
           | _ ->
               let arg = reduce env arg in
               return (NApp(f, arg))
           end
       | Proj(str, item) ->
-          let str = reduce env str |> strip_head_aliases in
+          let str = reduce env str |> force_aliases in
           let nored () = return (NProj(str, item)) in
           begin match str.desc with
           | NStruct (items) ->
@@ -462,11 +473,7 @@ end) = struct
       | Struct m ->
           let mnf = Item.Map.map (delay_reduce env) m in
           return (NStruct mnf)
-      | Alias aliased_t ->
-        let nf = reduce env aliased_t in
-        if env.keep_alias t
-        then return (NAlias nf)
-        else nf
+      | Alias t -> return (NAlias (delay_reduce env t))
       | Error s -> return ~approximated:true (NError s)
 
   and read_back env (nf : nf) : t =
@@ -494,7 +501,7 @@ end) = struct
         Abs(x, read_back_force nf)
     | NStruct nstr ->
         Struct (Item.Map.map read_back_force nstr)
-    | NAlias nf -> Alias (read_back nf)
+    | NAlias nf -> Alias (read_back_force nf)
     | NProj (nf, item) ->
         Proj (read_back nf, item)
     | NLeaf -> Leaf
@@ -506,12 +513,11 @@ end) = struct
   let reduce_memo_table = Local_store.s_table Hashtbl.create 42
   let read_back_memo_table = Local_store.s_table Hashtbl.create 42
 
-  let reduce ?(keep_alias = fun _ -> true) global_env t =
+  let reduce global_env t =
     let fuel = ref Params.fuel in
     let local_env = Ident.Map.empty in
     let env = {
       fuel;
-      keep_alias;
       global_env;
       reduce_memo_table = !reduce_memo_table;
       read_back_memo_table = !read_back_memo_table;
@@ -524,19 +530,27 @@ end) = struct
     | NVar _ ->
         (* This should not happen if we only reduce closed terms *)
         false
-    | NApp (nf, _) | NProj (nf, _) | NAlias nf -> is_stuck_on_comp_unit nf
+    | NApp (nf, _) | NProj (nf, _) -> is_stuck_on_comp_unit nf
     | NStruct _ | NAbs _ -> false
+    | NAlias _ -> false
     | NComp_unit _ -> true
     | NError _ -> false
     | NLeaf -> false
 
-  let reduce_for_uid ?(keep_alias = fun _ -> true) global_env t =
+  let get_aliases_uids (t : t) =
+    let rec aux acc (t : t) = match t with
+      | { uid = Some uid; desc = Alias t; _ } -> aux (uid::acc) t
+      | { uid = Some uid; _ } -> Resolved_alias (List.rev (uid::acc))
+      | _ -> Internal_error_missing_uid
+    in
+    aux [] t
+
+  let reduce_for_uid global_env t =
     let fuel = ref Params.fuel in
     let local_env = Ident.Map.empty in
     let env = {
       fuel;
       global_env;
-      keep_alias;
       reduce_memo_table = !reduce_memo_table;
       read_back_memo_table = !read_back_memo_table;
       local_env;
@@ -545,6 +559,8 @@ end) = struct
     if is_stuck_on_comp_unit nf then
       Unresolved (read_back env nf)
     else match nf with
+      | { desc = NAlias _; approximated = false; _ } ->
+          get_aliases_uids (read_back env nf)
       | { uid = Some uid; approximated = false; _ } ->
           Resolved uid
       | { uid; approximated = true; _ } ->
@@ -555,7 +571,7 @@ end) = struct
              [Missing_uid] reported will allow Merlin (or another tool working
              with the index) to ask users to report the issue if it does happen.
           *)
-          Missing_uid
+          Internal_error_missing_uid
 end
 
 module Toplevel_local_reduce =

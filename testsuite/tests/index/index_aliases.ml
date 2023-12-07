@@ -24,3 +24,6 @@ module C = F'(A)
 
 module C' = F(B)
 module D = C
+
+module G = B
+include G

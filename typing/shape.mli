@@ -122,15 +122,20 @@ and desc =
   | Comp_unit of string
   | Error of string
 
+(** The result of reducing a shape and looking for its uid.content *)
 type reduction_result =
-  | Resolved of Uid.t
-  | Unresolved of t
-  | Approximated of Uid.t option
-  | Missing_uid
+  | Resolved of Uid.t (** Shape reduction succeeded and a uid was found *)
+  | Resolved_alias of Uid.t list (** Reduction led to one or several aliases *)
+  | Unresolved of t (** Result still contains [Comp_unit] terms *)
+  | Approximated of Uid.t option (** Reduction failed *)
+  | Internal_error_missing_uid
+    (** Reduction succedded but no uid was found, this should never happen *)
 
 val print_reduction_result : Format.formatter -> reduction_result -> unit
 
 val print : Format.formatter -> t -> unit
+
+val strip_head_aliases : t -> t
 
 (* Smart constructors *)
 
@@ -217,12 +222,11 @@ module Make_reduce(Context : sig
 
     val find_shape : env -> Ident.t -> t
   end) : sig
-  val reduce :  ?keep_alias:(t -> bool) -> Context.env -> t -> t
+  val reduce : Context.env -> t -> t
 
   (** Perform weak reduction and return the head's uid if any. If reduction was
     incomplete the partially reduced shape is returned. *)
-  val reduce_for_uid :
-    ?keep_alias:(t -> bool) -> Context.env -> t -> reduction_result
+  val reduce_for_uid : Context.env -> t -> reduction_result
 end
 
 (** [toplevel_local_reduce] is only suitable to reduce toplevel shapes (shapes

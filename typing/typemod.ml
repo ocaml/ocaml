@@ -2149,6 +2149,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       let shape =
         Env.shape_of_path ~namespace:Shape.Sig_component_kind.Module env path
       in
+      let shape = if alias && aliasable then Shape.alias shape else shape in
       let md =
         if alias && aliasable then
           (Env.add_required_global (Path.head path); md)
@@ -2602,11 +2603,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
             md_uid;
           }
         in
-        let md_shape =
-          match modl.mod_type with
-          | Mty_alias _path -> Shape.alias ~uid:md_uid md_shape
-          | _ -> Shape.set_uid_if_none md_shape md_uid
-        in
+        let md_shape = Shape.set_uid_if_none md_shape md_uid in
         (*prerr_endline (Ident.unique_toplevel_name id);*)
         Mtype.lower_nongen outer_scope md.md_type;
         let id, newenv, sg =
