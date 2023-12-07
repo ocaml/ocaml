@@ -231,7 +231,7 @@ let compute_static_size lam =
 
     | Pctconst _ ->
         (* These primitives are not special-cased by [Value_rec_check],
-           so we should never end up here; but these are constants anyway *)
+           so we should never end up here; but these are constants anyway. *)
         Constant
 
     | Pbytes_to_string
@@ -380,7 +380,7 @@ let ( let+ ) res f =
 (* The closure blocks are immutable.
    (Note: It is usually safe to declare immutable blocks as mutable,
    but in this case the blocks might be empty and declaring them as Mutable
-   would cause errors later) *)
+   would cause errors later.) *)
 let lifted_block_mut : Asttypes.mutable_flag = Immutable
 
 let no_loc = Debuginfo.Scoped_location.Loc_unknown
