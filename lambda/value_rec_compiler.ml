@@ -707,13 +707,14 @@ let compile_letrec input_bindings body =
                 functions = (id, lfun) :: rev_bindings.functions
               }
             | _ ->
-              let block_var = Ident.create_local "letrec_lifted_block" in
-              begin match split_static_function block_var Ident.Set.empty def with
-              | Unreachable -> Misc.fatal_error "letrec: no function for binding"
+              let ctx_id = Ident.create_local "letrec_function_context" in
+              begin match split_static_function ctx_id Ident.Set.empty def with
+              | Unreachable ->
+                Misc.fatal_error "letrec: no function for binding"
               | Reachable ({ lfun; free_vars_block_size }, lam) ->
                 let functions = (id, lfun) :: rev_bindings.functions in
                 let static =
-                  (block_var, Regular_block free_vars_block_size, lam) ::
+                  (ctx_id, Regular_block free_vars_block_size, lam) ::
                   rev_bindings.static
                 in
                 { rev_bindings with functions; static }
