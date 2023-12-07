@@ -600,32 +600,46 @@ and rebuild_arms :
     Functions that are not already in syntactic form also generate an additional
     binding for the context. This binding fits into the static category.
 
+    Example input:
     {[
-      (* Input *)
-      let rec a x = b x
+      let rec a x =
+        (* syntactic function *)
+        b x
       and b =
+        (* non-syntactic function *)
         let tbl = Hashtbl.make 17 in
         fun x -> ... (tbl, c, a) ...
-      and c = Some (d, default)
-      and d = Array.make 5 0
+      and c =
+        (* block *)
+        Some (d, default)
+      and d =
+        (* 'dynamic' value (not recursive *)
+        Array.make 5 0
       and default =
+        (* constant, with (spurious) use
+           of a recursive neighbor *)
         let _ = a in
-        0
+        42
+    ]}
 
-      (* Output *)
-        (* Dynamic bindings *)
+    Example output:
+    {[
+      (* Dynamic bindings *)
       let d = Array.make 5 0
       let default =
         let _ = *dummy_rec_value* in
-        0
-        (* Pre-allocations *)
+        42
+
+      (* Pre-allocations *)
       let c = caml_alloc_dummy 2
       let b_context = caml_alloc_dummy 1
-        (* Functions *)
+
+      (* Functions *)
       let rec a x = b x
       and b =
         fun x -> ... (b_context.tbl, c, a) ...
-        (* Backpatching *)
+
+      (* Backpatching *)
       let () =
         caml_update_dummy c (Some (d, default));
         caml_update_dummy b_context
