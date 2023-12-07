@@ -658,16 +658,12 @@ let update_prim =
   (* Note: [alloc] could be false, but it probably doesn't matter *)
   Primitive.simple ~name:"caml_update_dummy" ~arity:2 ~alloc:true
 
-(** Dummy value for [Constant] case *)
-
-let dummy_lambda = Lambda.Lconst (Lambda.const_int (0xbadbad / 2))
-
 (** Compilation function *)
 
 let compile_letrec input_bindings body =
   let subst_for_constants =
     List.fold_left (fun subst (id, _, _) ->
-        Ident.Map.add id dummy_lambda subst)
+        Ident.Map.add id Lambda.dummy_constant subst)
       Ident.Map.empty input_bindings
   in
   let all_bindings_rev =

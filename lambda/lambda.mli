@@ -377,6 +377,10 @@ val make_key: lambda -> lambda option
 val const_unit: structured_constant
 val const_int : int -> structured_constant
 val lambda_unit: lambda
+
+(** [dummy_constant] produces a plecholder value with a recognizable
+    bit pattern (currently 0xBBBB in its tagged form) *)
+val dummy_constant: lambda
 val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 

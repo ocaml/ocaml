@@ -125,7 +125,7 @@ end = struct
   let tmc_placeholder =
     (* we choose a placeholder whose tagged representation will be
        reconizable. *)
-    Lconst (Const_base (Const_int (0xBBBB / 2)))
+    Lambda.dummy_constant
 
   let with_placeholder constr (body : offset destination -> lambda) =
     let k_with_placeholder =

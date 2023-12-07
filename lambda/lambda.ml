@@ -365,6 +365,8 @@ let const_int n = Const_base (Const_int n)
 
 let const_unit = const_int 0
 
+let dummy_constant = Lconst (const_int (0xBBBB / 2))
+
 let max_arity () =
   if !Clflags.native_code then 126 else max_int
   (* 126 = 127 (the maximal number of parameters supported in C--)
