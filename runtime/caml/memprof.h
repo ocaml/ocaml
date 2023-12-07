@@ -94,11 +94,10 @@ extern void caml_memprof_after_minor_gc(caml_domain_state *state, _Bool global);
 
 extern void caml_memprof_after_major_gc(caml_domain_state *state, _Bool global);
 
-/* Freshly set the trigger (sampling point) on the minor heap of the
- * domain `state`. */
+/* Freshly computes state->memprof_young_trigger. *Does not* set the
+ * young limit. */
 
-extern void caml_memprof_renew_minor_sample(caml_domain_state *state);
-
+extern void caml_memprof_set_trigger(caml_domain_state *state);
 
 /*** Callbacks ***/
 

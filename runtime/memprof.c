@@ -361,7 +361,7 @@
 /* number of random variables in a batch */
 #define RAND_BLOCK_SIZE 64
 
-/* type aliases for the hierarchy of structures for managing memprof status. */
+/* type aliases for the hierarchy of structures for managing memprof status */
 
 typedef struct entry_s entry_s, *entry_t;
 typedef struct entries_s entries_s, *entries_t;
@@ -591,8 +591,7 @@ struct memprof_domain_s {
   /* Linked list of threads in this domain */
   memprof_thread_t threads;
 
-  /* The current thread's memprof state. Note that there may not be a
-     "current thread". */
+  /* The current thread's memprof state. */
   memprof_thread_t current;
 
   /* Buffer used to compute backtraces */
@@ -1208,6 +1207,8 @@ static uintnat rand_binom(memprof_domain_t domain, uintnat len)
 
 /**** Create and destroy thread state structures ****/
 
+/* Create a thread state structure attached to `domain`. */
+
 static memprof_thread_t thread_create(memprof_domain_t domain)
 {
   memprof_thread_t thread = caml_stat_alloc(sizeof(memprof_thread_s));
@@ -1228,14 +1229,15 @@ static memprof_thread_t thread_create(memprof_domain_t domain)
   return thread;
 }
 
-/* Destroy a thread data structure.
- * The thread's entries table must be empty. */
+/* Destroy a thread state structure.  If the thread's entries table is
+ * not empty (because allocation failed when transferring it to the
+ * domain) then its entries will be lost. */
 
 static void thread_destroy(memprof_thread_t thread)
 {
   memprof_domain_t domain = thread->domain;
 
-  /* A thread cannot be destroyed from inside a callback, as
+  /* A thread cannot be destroyed while inside a callback, as
    * Thread.exit works by raising an exception, taking us out of the
    * callback, and a domain won't terminate while any thread is
    * alive. */
@@ -1254,16 +1256,20 @@ static void thread_destroy(memprof_thread_t thread)
    * at this point. */
   memprof_thread_t *p = &domain->threads;
   while (*p != thread) {
-    CAMLassert(*p);
+    CAMLassert(*p); /* checks that thread is on the list */
     p = &(*p)->next;
   }
-
   *p = thread->next;
 
   caml_stat_free(thread);
 }
 
 /**** Create and destroy domain state structures ****/
+
+/* Destroy a domain state structure. In the usual case, this will
+ * orphan any entries belonging to the domain or its threads onto the
+ * global orphans list. However, if there is an allocation failure,
+ * some or all of those entries may be lost. */
 
 static void domain_destroy(memprof_domain_t domain)
 {
@@ -1281,9 +1287,12 @@ static void domain_destroy(memprof_domain_t domain)
     thread = next;
   }
 
+  entries_clear(&domain->entries); /* In case allocation failed */
   caml_stat_free(domain->callstack_buffer);
   caml_stat_free(domain);
 }
+
+/* Create a domain state structure */
 
 static memprof_domain_t domain_create(caml_domain_state *caml_state)
 {
@@ -1341,7 +1350,8 @@ static void update_suspended(memprof_domain_t domain, bool s)
    * we have callbacks to run. */
   if (!s) set_action_pending_as_needed(domain);
 
-  caml_memprof_renew_minor_sample(domain->caml_state);
+  caml_memprof_set_trigger(domain->caml_state);
+  caml_reset_young_limit(domain->caml_state);
 }
 
 /* Set the suspended flag on the current domain to `s`.
@@ -1572,10 +1582,15 @@ void caml_memprof_new_domain(caml_domain_state *parent,
                              caml_domain_state *child)
 {
   memprof_domain_t domain = domain_create(child);
-
   child->memprof = domain;
+
+  if (domain == NULL) /* failure - domain creation will fail */
+    return;
+
   /* domain inherits configuration from parent */
-  if (domain && parent) {
+  if (parent) {
+    CAMLassert(parent->memprof);
+    CAMLassert(domain->current);
     domain->current->entries.config =
       domain->entries.config =
       parent->memprof->entries.config;
@@ -1589,9 +1604,8 @@ void caml_memprof_new_domain(caml_domain_state *parent,
 
 void caml_memprof_delete_domain(caml_domain_state *state)
 {
-  if (!state->memprof) {
-    return;
-  }
+  CAMLassert(state->memprof);
+
   domain_destroy(state->memprof);
   state->memprof = NULL;
 }
@@ -1906,6 +1920,8 @@ value caml_memprof_run_callbacks_exn(void)
 
 /**** Sampling ****/
 
+/* Is the current thread currently sampling? */
+
 Caml_inline bool sampling(memprof_domain_t domain)
 {
   memprof_thread_t thread = domain->current;
@@ -1933,18 +1949,20 @@ static void maybe_track_block(memprof_domain_t domain,
   set_action_pending_as_needed(domain);
 }
 
-/* Renew the next sample in a domain's minor heap. Could race with
- * sampling and profile-stopping code, so do not call from another
- * domain unless the world is stopped. Must be called after each minor
- * sample and after each minor collection. In practice, this is called
- * at each minor sample, at each minor collection, and when sampling
- * is suspended and unsuspended. Extra calls do not change the
- * statistical properties of the sampling because of the
- * memorylessness of the geometric distribution. */
+/* Sets the trigger for the next sample in a domain's minor
+ * heap. Could race with sampling and profile-stopping code, so do not
+ * call from another domain unless the world is stopped (at the time
+ * of writing, this is only actually called from this domain). Must be
+ * called after each minor sample and after each minor collection. In
+ * practice, this is called at each minor sample, at each minor
+ * collection, and when sampling is suspended and unsuspended. Extra
+ * calls do not change the statistical properties of the sampling
+ * because of the memorylessness of the geometric distribution. */
 
-void caml_memprof_renew_minor_sample(caml_domain_state *state)
+void caml_memprof_set_trigger(caml_domain_state *state)
 {
   memprof_domain_t domain = state->memprof;
+  CAMLassert(domain);
   value *trigger = state->young_start;
   if (sampling(domain)) {
     uintnat geom = rand_geom(domain);
@@ -1956,7 +1974,6 @@ void caml_memprof_renew_minor_sample(caml_domain_state *state)
   CAMLassert((trigger >= state->young_start) &&
              (trigger <= state->young_ptr));
   state->memprof_young_trigger = trigger;
-  caml_reset_young_limit(state);
 }
 
 /* Respond to the allocation of any block. Does not call callbacks. */
@@ -2004,10 +2021,10 @@ void caml_memprof_sample_young(uintnat wosize, int from_caml,
       rand_binom(domain,
                  Caml_state->memprof_young_trigger - 1 - Caml_state->young_ptr);
     CAMLassert(encoded_lens == NULL);
-    caml_memprof_renew_minor_sample(Caml_state);
     maybe_track_block(domain, Val_hp(Caml_state->young_ptr),
                       samples, wosize, CAML_MEMPROF_SRC_NORMAL);
-    caml_memprof_renew_minor_sample(Caml_state);
+    caml_memprof_set_trigger(Caml_state);
+    caml_reset_young_limit(Caml_state);
     CAMLreturn0;
   }
 
@@ -2246,7 +2263,10 @@ CAMLprim value caml_memprof_start(value lv, value szv, value tracker)
   /* reset PRNG, generate first batch of random numbers. */
   rand_init(domain);
 
-  caml_memprof_renew_minor_sample(Caml_state);
+  caml_memprof_set_trigger(Caml_state);
+  caml_reset_young_limit(Caml_state);
+  orphans_update_pending(domain);
+  set_action_pending_as_needed(domain);
 
   CAMLreturn(config);
 }
@@ -2263,7 +2283,8 @@ CAMLprim value caml_memprof_stop(value unit)
   }
   Set_status(config, CONFIG_STATUS_STOPPED);
 
-  caml_memprof_renew_minor_sample(Caml_state);
+  caml_memprof_set_trigger(Caml_state);
+  caml_reset_young_limit(Caml_state);
 
   return Val_unit;
 }

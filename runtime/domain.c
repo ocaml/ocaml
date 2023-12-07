@@ -469,6 +469,7 @@ static void free_minor_heap(void) {
   domain_state->young_end     = NULL;
   domain_state->young_ptr     = NULL;
   domain_state->young_trigger = NULL;
+  domain_state->memprof_young_trigger = NULL;
   atomic_store_release(&domain_state->young_limit,
                    (uintnat) domain_state->young_start);
 }
@@ -511,7 +512,7 @@ static int allocate_minor_heap(asize_t wsize) {
    * major slice is scheduled. */
   domain_state->young_trigger = domain_state->young_start
          + (domain_state->young_end - domain_state->young_start) / 2;
-  caml_memprof_renew_minor_sample(domain_state);
+  caml_memprof_set_trigger(domain_state);
   caml_reset_young_limit(domain_state);
 
   check_minor_heap();
@@ -624,6 +625,7 @@ static void domain_create(uintnat initial_minor_heap_wsize,
 
   /* Tell memprof system about the new domain before either (a) new
    * domain can allocate anything or (b) parent domain can go away. */
+  CAMLassert(domain_state->memprof == NULL);
   caml_memprof_new_domain(parent, domain_state);
   if (!domain_state->memprof) {
     goto init_memprof_failure;
@@ -729,7 +731,6 @@ static void domain_create(uintnat initial_minor_heap_wsize,
   domain_state->trap_barrier_block = -1;
 #endif
 
-  caml_reset_young_limit(domain_state);
   add_next_to_stw_domains();
   goto domain_init_complete;
 
