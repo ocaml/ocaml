@@ -307,12 +307,6 @@ let compute_static_size lam =
 let lfunction_with_body { kind; params; return; body = _; attr; loc } body =
   lfunction' ~kind ~params ~return ~body ~attr ~loc
 
-(* The backend doesn't handle mutable empty block correctly *)
-let lifted_block_mut : Asttypes.mutable_flag = Immutable
-
-let no_loc = Debuginfo.Scoped_location.Loc_unknown
-
-
 (** {1. Function Lifting} *)
 
 (* The compiler allows recursive definitions of functions that are not
@@ -382,6 +376,14 @@ let ( let+ ) res f =
   match res with
   | Unreachable -> Unreachable
   | Reachable (func, lam) -> Reachable (func, f lam)
+
+(* The closure blocks are immutable.
+   (Note: It is usually safe to declare immutable blocks as mutable,
+   but in this case the blocks might be empty and declaring them as Mutable
+   would cause errors later) *)
+let lifted_block_mut : Asttypes.mutable_flag = Immutable
+
+let no_loc = Debuginfo.Scoped_location.Loc_unknown
 
 let rec split_static_function block_var local_idents lam :
   Lambda.lambda split_result =
