@@ -646,6 +646,17 @@ and rebuild_arms :
           (let tbl = Hashtbl.make 17 in
            { tbl })
     ]}
+
+    Note on performance for non-syntactic functions: the previous approach
+    used to pre-allocate and backpatches the closure blocks directly.
+    Here we cannot use that directly, as it would require knowing the size of
+    the closure blocks. But our current approach is not even always worse.
+    In general, we end up with an extra block for part of the closure, which
+    turns into a small allocation overhead (one additional header) and an extra
+    indirection when accessing the variable inside the function.
+    But we generate regular function definitions, so the rest of the compiler
+    can either inline them or generate direct calls, and use the compact
+    representation for mutually recursive closures.
  *)
 
 type rec_bindings =
