@@ -885,6 +885,10 @@ let duplicate lam =
     Ident.Map.empty
     lam
 
+let map_lfunction f { kind; params; return; body; attr; loc } =
+  let body = f body in
+  { kind; params; return; body; attr; loc }
+
 let shallow_map f = function
   | Lvar _
   | Lmutvar _
@@ -899,8 +903,8 @@ let shallow_map f = function
         ap_inlined;
         ap_specialised;
       }
-  | Lfunction { kind; params; return; body; attr; loc; } ->
-      Lfunction { kind; params; return; body = f body; attr; loc; }
+  | Lfunction lfun ->
+      Lfunction (map_lfunction f lfun)
   | Llet (str, k, v, e1, e2) ->
       Llet (str, k, v, f e1, f e2)
   | Lmutlet (k, v, e1, e2) ->
@@ -908,7 +912,7 @@ let shallow_map f = function
   | Lletrec (idel, e2) ->
       Lletrec
         (List.map (fun rb ->
-             { rb with def = { rb.def with body = f rb.def.body } })
+             { rb with def = map_lfunction f rb.def })
             idel,
          f e2)
   | Lprim (p, el, loc) ->

@@ -461,6 +461,9 @@ val map : (lambda -> lambda) -> lambda -> lambda
   (** Bottom-up rewriting, applying the function on
       each node from the leaves to the root. *)
 
+val map_lfunction : (lambda -> lambda) -> lfunction -> lfunction
+  (** Apply the given transformation on the function's body *)
+
 val shallow_map  : (lambda -> lambda) -> lambda -> lambda
   (** Rewrite each immediate sub-term with the function. *)
 
