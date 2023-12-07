@@ -511,4 +511,3 @@ val merge_inline_attributes
   -> inline_attribute option
 
 val reset: unit -> unit
-
