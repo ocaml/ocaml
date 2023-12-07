@@ -40,4 +40,7 @@ script2='/^[[:space:]]+#[[:digit:]]+ (caml_start_program|caml_startup)/, /^$/ {
   /^$/ !d
 }'
 
-sed -E -e "${script1}" -e "${script2}"
+# Under FreeBSD, pthread_mutex_init has a leading underscore
+script3='s/_pthread_mutex_init/pthread_mutex_init/'
+
+sed -E -e "${script1}" -e "${script2}" -e "${script3}"
