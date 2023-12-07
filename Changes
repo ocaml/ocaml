@@ -211,9 +211,9 @@ Working version
   were not correctly rounded sometimes.
   (Xavier Leroy, review by Anil Madhavapeddy and Tim McGilchrist)
 
-- #12551, #12608, #12782: Overhaul of recursive value compilation.
-  Extend the Rec_check classification to handle constants, propagate the
-  classification through the compiler, compute sizes during classification.
+- #12551, #12608, #12782, #12596: Overhaul of recursive value compilation.
+  Non-function recursive bindings are now forbidden from Lambda onwards,
+  and compiled using a new Value_rec_compiler module.
   (Vincent Laviron and Lunia Ayanides, review by Gabriel Scherer)
 
 - #1809, #12181: rewrite `compare x y op 0` to `x op y` when values are integers
