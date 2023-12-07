@@ -24,6 +24,13 @@ open Debuginfo.Scoped_location
 
 exception Real_reference
 
+let check_function_escape id lfun =
+  (* Check that the identifier is not one of the parameters *)
+  let param_is_id (param, _) = Ident.same id param in
+  assert (not (List.exists param_is_id lfun.params));
+  if Ident.Set.mem id (Lambda.free_variables lfun.body) then
+    raise Real_reference
+
 let rec eliminate_ref id = function
     Lvar v as lam ->
       if Ident.same v id then raise Real_reference else lam
@@ -31,19 +38,16 @@ let rec eliminate_ref id = function
   | Lapply ap ->
       Lapply{ap with ap_func = eliminate_ref id ap.ap_func;
                      ap_args = List.map (eliminate_ref id) ap.ap_args}
-  | Lfunction _ as lam ->
-      if Ident.Set.mem id (free_variables lam)
-      then raise Real_reference
-      else lam
+  | Lfunction lfun as lam ->
+      check_function_escape id lfun;
+      lam
   | Llet(str, kind, v, e1, e2) ->
       Llet(str, kind, v, eliminate_ref id e1, eliminate_ref id e2)
   | Lmutlet(kind, v, e1, e2) ->
       Lmutlet(kind, v, eliminate_ref id e1, eliminate_ref id e2)
   | Lletrec(idel, e2) ->
-      if Ident.Set.mem id (free_variables (Lletrec (idel, lambda_unit)))
-      then raise Real_reference
-      else
-        Lletrec(idel, eliminate_ref id e2)
+      List.iter (fun rb -> check_function_escape id rb.def) idel;
+      Lletrec(idel, eliminate_ref id e2)
   | Lprim(Pfield (0, _, _), [Lvar v], _) when Ident.same v id ->
       Lmutvar id
   | Lprim(Psetfield(0, _, _), [Lvar v; e], _) when Ident.same v id ->
