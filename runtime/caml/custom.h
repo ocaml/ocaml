@@ -77,7 +77,8 @@ CAMLextern mlsize_t caml_custom_get_max_major (void);
 #define caml_compare_unordered (Caml_state_field(compare_unordered))
 
 #ifdef CAML_INTERNALS
-extern struct custom_operations * caml_find_custom_operations(char * ident);
+extern struct custom_operations *
+          caml_find_custom_operations(const char * ident);
 extern struct custom_operations *
           caml_final_custom_operations(void (*fn)(value));
 
