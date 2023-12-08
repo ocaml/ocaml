@@ -15,6 +15,49 @@
 
 #define CAML_INTERNALS
 
+#include "caml/mlvalues.h"
+#include "caml/memprof.h"
+
+/**** Sampling procedures ****/
+
+void caml_memprof_track_alloc_shr(value block)
+{
+}
+
+void caml_memprof_track_custom(value block, mlsize_t bytes)
+{
+}
+
+void caml_memprof_track_young(uintnat wosize, int from_caml,
+                              int nallocs, unsigned char* alloc_lens)
+{
+}
+
+/**** GC interface ****/
+
+void caml_memprof_renew_minor_sample(void)
+{
+}
+
+value *caml_memprof_young_trigger;
+
+void caml_memprof_scan_roots(scanning_action f,
+                             scanning_action_flags fflags,
+                             void* fdata,
+                             caml_domain_state *domain,
+                             _Bool young,
+                             _Bool global)
+{
+}
+
+void caml_memprof_after_minor_gc(caml_domain_state *state, _Bool global)
+{
+}
+
+void caml_memprof_after_major_gc(caml_domain_state *state, _Bool global)
+{
+}
+
 #include "caml/fail.h"
 
 CAMLprim value caml_memprof_start(value lv, value szv, value tracker_param)
@@ -640,131 +683,6 @@ value caml_memprof_handle_postponed_exn(void)
      [local->entries] to make sure the floag is not set back to 1. */
   caml_memprof_set_suspended(0);
   return res;
-}
-
-/**** Handling weak and strong roots when the GC runs. ****/
-
-typedef void (*ea_action)(struct entry_array*, void*);
-struct call_on_entry_array_data { ea_action f; void *data; };
-static void call_on_entry_array(struct caml_memprof_th_ctx* ctx, void *data)
-{
-  struct call_on_entry_array_data* closure = data;
-  closure->f(&ctx->entries, closure->data);
-}
-
-static void entry_arrays_iter(ea_action f, void *data)
-{
-  struct call_on_entry_array_data closure = { f, data };
-  f(&entries_global, data);
-  caml_memprof_th_ctx_iter_hook(call_on_entry_array, &closure);
-}
-
-static void entry_array_oldify_young_roots(struct entry_array *ea, void *data)
-{
-  uintnat i;
-  (void)data;
-  /* This loop should always have a small number of iterations (when
-     compared to the size of the minor heap), because the young_idx
-     pointer should always be close to the end of the array. Indeed,
-     it is only moved back when returning from a callback triggered by
-     allocation or promotion, which can only happen for blocks
-     allocated recently, which are close to the end of the
-     [entries_global] array. */
-  for (i = ea->young_idx; i < ea->len; i++)
-    caml_oldify_one(ea->t[i].user_data, &ea->t[i].user_data);
-}
-
-void caml_memprof_oldify_young_roots(void)
-{
-  entry_arrays_iter(entry_array_oldify_young_roots, NULL);
-}
-
-static void entry_array_minor_update(struct entry_array *ea, void *data)
-{
-  uintnat i;
-  (void)data;
-  /* See comment in [entry_array_oldify_young_roots] for the number
-     of iterations of this loop. */
-  for (i = ea->young_idx; i < ea->len; i++) {
-    struct tracked *t = &ea->t[i];
-    CAMLassert(Is_block(t->block) || t->deleted || t->deallocated ||
-               Is_placeholder(t->block));
-    if (Is_block(t->block) && Is_young(t->block)) {
-      if (Hd_val(t->block) == 0) {
-        /* Block has been promoted */
-        t->block = Field(t->block, 0);
-        t->promoted = 1;
-      } else {
-        /* Block is dead */
-        CAMLassert_young_header(Hd_val(t->block));
-        t->block = Val_unit;
-        t->deallocated = 1;
-      }
-    }
-  }
-  ea->young_idx = ea->len;
-}
-
-void caml_memprof_minor_update(void)
-{
-  if (callback_idx > entries_global.young_idx) {
-    /* The entries after [entries_global.young_idx] will possibly get
-       promoted. Hence, there might be pending promotion callbacks. */
-    callback_idx = entries_global.young_idx;
-    check_action_pending();
-  }
-
-  entry_arrays_iter(entry_array_minor_update, NULL);
-}
-
-static void entry_array_do_roots(struct entry_array *ea, void* data)
-{
-  scanning_action f = data;
-  uintnat i;
-  for (i = 0; i < ea->len; i++)
-    f(ea->t[i].user_data, &ea->t[i].user_data);
-}
-
-void caml_memprof_do_roots(scanning_action f)
-{
-  entry_arrays_iter(entry_array_do_roots, f);
-}
-
-static void entry_array_clean_phase(struct entry_array *ea, void* data)
-{
-  uintnat i;
-  (void)data;
-  for (i = 0; i < ea->len; i++) {
-    struct tracked *t = &ea->t[i];
-    if (Is_block(t->block) && !Is_young(t->block)) {
-      CAMLassert(Is_in_heap(t->block));
-      CAMLassert(!t->alloc_young || t->promoted);
-      if (Is_white_val(t->block)) {
-        t->block = Val_unit;
-        t->deallocated = 1;
-      }
-    }
-  }
-}
-
-void caml_memprof_update_clean_phase(void)
-{
-  entry_arrays_iter(entry_array_clean_phase, NULL);
-  callback_idx = 0;
-  check_action_pending();
-}
-
-static void entry_array_invert(struct entry_array *ea, void *data)
-{
-  uintnat i;
-  (void)data;
-  for (i = 0; i < ea->len; i++)
-    caml_invert_root(ea->t[i].block, &ea->t[i].block);
-}
-
-void caml_memprof_invert_tracked(void)
-{
-  entry_arrays_iter(entry_array_invert, NULL);
 }
 
 /**** Sampling procedures ****/

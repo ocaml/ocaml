@@ -41,9 +41,12 @@ type runtime_phase =
 | EV_MAJOR
 | EV_MAJOR_SWEEP
 | EV_MAJOR_MARK_ROOTS
+| EV_MAJOR_MEMPROF_ROOTS
 | EV_MAJOR_MARK
 | EV_MINOR
 | EV_MINOR_LOCAL_ROOTS
+| EV_MINOR_MEMPROF_ROOTS
+| EV_MINOR_MEMPROF_CLEAN
 | EV_MINOR_FINALIZED
 | EV_EXPLICIT_GC_MAJOR_SLICE
 | EV_FINALISE_UPDATE_FIRST
@@ -66,6 +69,7 @@ type runtime_phase =
 | EV_STW_HANDLER
 | EV_STW_LEADER
 | EV_MAJOR_FINISH_SWEEPING
+| EV_MAJOR_MEMPROF_CLEAN
 | EV_MINOR_FINALIZERS_ADMIN
 | EV_MINOR_REMEMBERED_SET
 | EV_MINOR_REMEMBERED_SET_PROMOTE
@@ -126,9 +130,12 @@ let runtime_phase_name phase =
   | EV_MAJOR -> "major"
     | EV_MAJOR_SWEEP -> "major_sweep"
   | EV_MAJOR_MARK_ROOTS -> "major_mark_roots"
+  | EV_MAJOR_MEMPROF_ROOTS -> "major_memprof_roots"
   | EV_MAJOR_MARK -> "major_mark"
   | EV_MINOR -> "minor"
   | EV_MINOR_LOCAL_ROOTS -> "minor_local_roots"
+  | EV_MINOR_MEMPROF_ROOTS -> "minor_memprof_roots"
+  | EV_MINOR_MEMPROF_CLEAN -> "minor_memprof_clean"
   | EV_MINOR_FINALIZED -> "minor_finalized"
   | EV_EXPLICIT_GC_MAJOR_SLICE -> "explicit_gc_major_slice"
   | EV_FINALISE_UPDATE_FIRST -> "finalise_update_first"
@@ -150,6 +157,7 @@ let runtime_phase_name phase =
   | EV_STW_HANDLER -> "stw_handler"
   | EV_STW_LEADER -> "stw_leader"
   | EV_MAJOR_FINISH_SWEEPING -> "major_finish_sweeping"
+  | EV_MAJOR_MEMPROF_CLEAN -> "major_memprof_clean"
   | EV_MINOR_FINALIZERS_ADMIN -> "minor_finalizers_admin"
   | EV_MINOR_REMEMBERED_SET -> "minor_remembered_set"
   | EV_MINOR_REMEMBERED_SET_PROMOTE -> "minor_remembered_set_promote"
