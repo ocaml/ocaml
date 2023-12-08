@@ -132,7 +132,7 @@ let print_cmt_infos cmt =
   if !decls then begin
     printf "\nUid of decls:\n";
     Shape.Uid.Tbl.iter (fun uid item ->
-      let loc = match item with
+      let loc = match (item : Typedtree.item_declaration) with
         | Value vd -> vd.val_name
         | Value_binding vb ->
           let (_, name, _, _) =

@@ -50,20 +50,6 @@ and binary_part =
   | Partial_signature_item of signature_item
   | Partial_module_type of module_type
 
-type item_declaration =
-  | Value of value_description
-  | Value_binding of value_binding
-  | Type of type_declaration
-  | Constructor of constructor_declaration
-  | Extension_constructor of extension_constructor
-  | Label of label_declaration
-  | Module of module_declaration
-  | Module_substitution of module_substitution
-  | Module_binding of module_binding
-  | Module_type of module_type_declaration
-  | Class of class_declaration
-  | Class_type of class_type_declaration
-
 type cmt_infos = {
   cmt_modname : modname;
   cmt_annots : binary_annots;

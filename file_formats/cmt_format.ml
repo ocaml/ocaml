@@ -45,20 +45,6 @@ and binary_part =
   | Partial_signature_item of signature_item
   | Partial_module_type of module_type
 
-type item_declaration =
-  | Value of value_description
-  | Value_binding of value_binding
-  | Type of type_declaration
-  | Constructor of constructor_declaration
-  | Extension_constructor of extension_constructor
-  | Label of label_declaration
-  | Module of module_declaration
-  | Module_substitution of module_substitution
-  | Module_binding of module_binding
-  | Module_type of module_type_declaration
-  | Class of class_declaration
-  | Class_type of class_type_declaration
-
 type cmt_infos = {
   cmt_modname : string;
   cmt_annots : binary_annots;
@@ -111,74 +97,28 @@ module Local_reduce = Shape.Make_reduce(struct
       Env.shape_of_path ~namespace env (Pident id)
   end)
 
-let iter_on_declarations ~(f: Shape.Uid.t -> item_declaration -> unit) =
-  let f_lbl_decls ldecls =
-    List.iter (fun ({ ld_uid; _ } as ld) ->
-      f ld_uid (Label ld)) ldecls
-  in
-  Tast_iterator.{ default_iterator with
+let iter_on_declaration f decl =
+  match decl with
+  | Value vd -> f vd.val_val.val_uid decl;
+  | Value_binding vb ->
+      let bound_idents = let_bound_idents_full [vb] in
+      List.iter (fun (_, _, _, uid) -> f uid decl) bound_idents
+  | Type td ->
+      if not (Btype.is_row_name (Ident.name td.typ_id)) then
+        f td.typ_type.type_uid (Type td)
+  | Constructor cd -> f cd.cd_uid decl
+  | Extension_constructor ec -> f ec.ext_type.ext_uid decl;
+  | Label ld -> f ld.ld_uid decl
+  | Module md -> f md.md_uid decl
+  | Module_type mtd -> f mtd.mtd_uid decl
+  | Module_substitution ms -> f ms.ms_uid decl
+  | Module_binding mb -> f mb.mb_uid decl
+  | Class cd -> f cd.ci_decl.cty_uid decl
+  | Class_type ct -> f ct.ci_decl.cty_uid decl
 
-  value_binding = (fun sub vb ->
-    let bound_idents = let_bound_idents_full [vb] in
-    List.iter (fun (_, _, _, uid) -> f uid (Value_binding vb)) bound_idents;
-    default_iterator.value_binding sub vb);
-
-  module_binding = (fun sub mb ->
-    f mb.mb_uid (Module_binding mb);
-    default_iterator.module_binding sub mb);
-
-  module_declaration = (fun sub md ->
-    f md.md_uid (Module md);
-    default_iterator.module_declaration sub md);
-
-  module_type_declaration = (fun sub mtd ->
-    f mtd.mtd_uid (Module_type mtd);
-    default_iterator.module_type_declaration sub mtd);
-
-  module_substitution = (fun sub ms ->
-    f ms.ms_uid (Module_substitution ms);
-    default_iterator.module_substitution sub ms);
-
-  value_description = (fun sub vd ->
-    f vd.val_val.val_uid (Value vd);
-    default_iterator.value_description sub vd);
-
-  type_declaration = (fun sub td ->
-    (* compiler-generated "row_names" share the uid of their corresponding
-       class declaration, so we ignore them to prevent duplication *)
-    if not (Btype.is_row_name (Ident.name td.typ_id)) then begin
-      f td.typ_type.type_uid (Type td);
-      (* We also register records labels and constructors *)
-      match td.typ_kind with
-      | Ttype_variant constrs ->
-          List.iter (fun ({ cd_uid; cd_args; _ } as cd) ->
-            f cd_uid (Constructor cd);
-            match cd_args with
-            | Cstr_record ldecls -> f_lbl_decls ldecls
-            | Cstr_tuple _ -> ()) constrs
-      | Ttype_record labels -> f_lbl_decls labels
-      | _ -> ()
-    end;
-    default_iterator.type_declaration sub td);
-
-  extension_constructor = (fun sub ec ->
-    f ec.ext_type.ext_uid (Extension_constructor ec);
-    begin match ec.ext_kind with
-    | Text_decl (_, Cstr_record lbls,_) -> f_lbl_decls lbls
-    | _ -> () end;
-    default_iterator.extension_constructor sub ec);
-
-  class_declaration = (fun sub cd ->
-    f cd.ci_decl.cty_uid (Class cd);
-    default_iterator.class_declaration sub cd);
-
-  class_type_declaration = (fun sub ctd ->
-    f ctd.ci_decl.cty_uid (Class_type ctd);
-    default_iterator.class_type_declaration sub ctd);
-
-  class_description =(fun sub cd ->
-    f cd.ci_decl.cty_uid (Class_type cd);
-    default_iterator.class_description sub cd);
+let iter_on_declarations ~(f: Shape.Uid.t -> item_declaration -> unit) = {
+  Tast_iterator.default_iterator with
+  item_declaration = (fun _sub decl -> iter_on_declaration f decl);
 }
 
 let need_to_clear_env =
