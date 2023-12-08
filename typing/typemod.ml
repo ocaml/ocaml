@@ -2737,11 +2737,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
             Signature_names.check_class_type names loc cls.cls_ty_id;
             Signature_names.check_type names loc cls.cls_obj_id;
             let uid = cls.cls_decl.cty_uid in
-            let map f id acc = f acc id uid in
-            let map_t f id acc = f acc id (Shape.str ~uid Shape.Map.empty) in
-            map Shape.Map.add_class cls.cls_id acc
-            |> map Shape.Map.add_class_type cls.cls_ty_id
-            |> map_t Shape.Map.add_type cls.cls_obj_id
+            let map f id v acc = f acc id v in
+            map Shape.Map.add_class cls.cls_id uid acc
+            |> map Shape.Map.add_class_type cls.cls_ty_id uid
+            |> map Shape.Map.add_type cls.cls_obj_id (Shape.leaf uid)
           ) shape_map classes
         in
         Tstr_class
@@ -2767,9 +2766,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr =
             Signature_names.check_class_type names loc decl.clsty_ty_id;
             Signature_names.check_type names loc decl.clsty_obj_id;
             let uid = decl.clsty_ty_decl.clty_uid in
-            let map_t f id acc = f acc id (Shape.str ~uid Shape.Map.empty) in
-            Shape.Map.add_class_type acc decl.clsty_ty_id uid
-            |> map_t Shape.Map.add_type decl.clsty_obj_id
+            let map f id v acc = f acc id v in
+            map Shape.Map.add_class_type decl.clsty_ty_id uid acc
+            |> map Shape.Map.add_type decl.clsty_obj_id (Shape.leaf uid)
           ) shape_map classes
         in
         Tstr_class_type

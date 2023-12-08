@@ -55,7 +55,7 @@ exception E
 type ext = ..
 [%%expect{|
 {
- "ext"[type] -> {<.9>};
+ "ext"[type] -> <.9>;
  }
 type ext = ..
 |}]
@@ -123,7 +123,7 @@ and M2 : sig type t val x : t end
 class c = object end
 [%%expect{|
 {
- "c"[type] -> {<.32>};
+ "c"[type] -> <.32>;
  "c"[class] -> <.32>;
  "c"[class type] -> <.32>;
  }
@@ -133,8 +133,16 @@ class c : object  end
 class type c = object end
 [%%expect{|
 {
- "c"[type] -> {<.35>};
+ "c"[type] -> <.35>;
  "c"[class type] -> <.35>;
  }
 class type c = object  end
+|}]
+
+type u = t
+[%%expect{|
+{
+ "u"[type] -> <.36>;
+ }
+type u = t
 |}]

@@ -517,12 +517,15 @@ let transl_declaration env sdecl (id, uid) =
       }
     in
     let typ_shape =
+      let uid = decl.typ_type.type_uid in
       let map = match decl.typ_kind with
-        | Ttype_variant cstrs -> shape_map_cstrs cstrs
-        | Ttype_record labels -> shape_map_labels labels
-        | _ -> Shape.Map.empty
+        | Ttype_variant cstrs -> Some (shape_map_cstrs cstrs)
+        | Ttype_record labels -> Some (shape_map_labels labels)
+        | Ttype_abstract | Ttype_open -> None
       in
-      Shape.str ~uid:decl.typ_type.type_uid map
+      Option.map (Shape.str ~uid) map
+      (* Abstract types are just leafs *)
+      |> Option.value ~default:(Shape.leaf uid)
     in
     decl, typ_shape
   end

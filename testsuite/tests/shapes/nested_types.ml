@@ -27,7 +27,7 @@ end
     "Ext"[extension constructor] -> {<.7>
                                      "lbl_ext"[label] -> <.6>;
                                      };
-    "ext"[type] -> {<.5>};
+    "ext"[type] -> <.5>;
     "l"[type] -> {<.3>
                   "lbl"[label] -> <.4>;
                   };

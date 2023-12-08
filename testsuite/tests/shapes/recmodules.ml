@@ -23,7 +23,7 @@ module rec A : sig
                                };
                  };
  "B"[module] -> {
-                 "t"[type] -> {<.10>};
+                 "t"[type] -> <.10>;
                  };
  }
 module rec A : sig type t = Leaf of B.t end

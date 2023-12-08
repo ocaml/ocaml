@@ -46,7 +46,7 @@ end
 {
  "Fredef"[module] ->
    Abs<.10>(X/293, {
-                    "t"[type] -> {<.8>};
+                    "t"[type] -> <.8>;
                     "x"[value] -> <.9>;
                     });
  }
@@ -116,7 +116,7 @@ val x : t = <abstr>
 include Fredef(Arg)
 [%%expect{|
 {
- "t"[type] -> {<.8>};
+ "t"[type] -> <.8>;
  "x"[value] -> <.9>;
  }
 type t = Arg.t
@@ -138,7 +138,7 @@ val x : t = Fresh
 include Falias(struct type t = int let x = 0 end)
 [%%expect{|
 {
- "t"[type] -> {<.19>};
+ "t"[type] -> <.19>;
  "x"[value] -> <.20>;
  }
 type t = int
@@ -148,7 +148,7 @@ val x : t = 0
 include Finclude(struct type t = int let x = 0 end)
 [%%expect{|
 {
- "t"[type] -> {<.21>};
+ "t"[type] -> <.21>;
  "x"[value] -> <.22>;
  }
 type t = int
@@ -158,7 +158,7 @@ val x : t = 0
 include Fredef(struct type t = int let x = 0 end)
 [%%expect{|
 {
- "t"[type] -> {<.8>};
+ "t"[type] -> <.8>;
  "x"[value] -> <.9>;
  }
 type t = int
