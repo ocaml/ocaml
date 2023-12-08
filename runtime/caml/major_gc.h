@@ -48,15 +48,6 @@ int caml_mark_stack_is_empty(void);
 void caml_orphan_ephemerons(caml_domain_state*);
 void caml_orphan_finalisers(caml_domain_state*);
 
-/* Forces finalisation of all heap-allocated values,
-   disregarding both local and global roots.
-
-   Warning: finalisation is performed by means of forced sweeping, which may
-   result in pointers referencing nonexistent values; therefore the function
-   should only be used on runtime shutdown.
-*/
-void caml_finalise_heap (void);
-
 /* This variable is only written with the world stopped,
    so it need not be atomic */
 extern uintnat caml_major_cycles_completed;

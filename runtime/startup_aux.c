@@ -22,11 +22,13 @@
 #include "caml/backtrace.h"
 #include "caml/memory.h"
 #include "caml/callback.h"
+#include "caml/domain.h"
 #include "caml/major_gc.h"
 #ifndef NATIVE_CODE
 #include "caml/dynlink.h"
 #endif
 #include "caml/osdeps.h"
+#include "caml/shared_heap.h"
 #include "caml/startup_aux.h"
 #include "caml/prims.h"
 #include "caml/signals.h"
@@ -155,6 +157,8 @@ static void call_registered_value(char* name)
 CAMLexport void caml_shutdown(void)
 {
   Caml_check_caml_state();
+  caml_domain_state* domain_state = Caml_state;
+
   if (startup_count <= 0)
     caml_fatal_error("a call to caml_shutdown has no "
                      "corresponding call to caml_startup");
@@ -166,7 +170,11 @@ CAMLexport void caml_shutdown(void)
 
   call_registered_value("Pervasives.do_at_exit");
   call_registered_value("Thread.at_shutdown");
-  caml_finalise_heap();
+
+  caml_teardown_domain(domain_state, true);
+
+  caml_finalise_freelist();
+
   caml_free_locale();
 #ifndef NATIVE_CODE
   caml_free_shared_libs();
