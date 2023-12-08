@@ -144,6 +144,8 @@ let clear_env binary_annots =
 
   else binary_annots
 
+(* Every typedtree node with a located longident corresponding to user-facing
+   syntax should be indexed. *)
 let iter_on_occurrences
   ~(f : namespace:Shape.Sig_component_kind.t ->
         Env.t -> Path.t -> Longident.t Location.loc ->
@@ -203,7 +205,13 @@ let iter_on_occurrences
             add_label exp_env lid label_descr
           | Overridden (lid, _) -> add_label exp_env lid label_descr
           | Kept _ -> ()) fields
-      | _ -> ());
+      | Texp_constant _ | Texp_let _ | Texp_function _ | Texp_apply _
+      | Texp_match _ | Texp_try _ | Texp_tuple _ | Texp_variant _ | Texp_array _
+      | Texp_ifthenelse _ | Texp_sequence _ | Texp_while _ | Texp_for _
+      | Texp_send _ | Texp_instvar _ | Texp_setinstvar _ | Texp_override _
+      | Texp_letmodule _ | Texp_letexception _ | Texp_assert _ | Texp_lazy _
+      | Texp_object _ | Texp_pack _ | Texp_letop _ | Texp_unreachable
+      | Texp_extension_constructor _ | Texp_open _ -> ());
       default_iterator.expr sub e);
 
   typ =
@@ -213,7 +221,11 @@ let iter_on_occurrences
           f ~namespace:Type ctyp_env path lid
       | Ttyp_package {pack_path; pack_txt} ->
           f ~namespace:Module_type ctyp_env pack_path pack_txt
-      | _ -> ());
+      | Ttyp_class (path, lid, _typs) ->
+          (* Deprecated syntax to extend a polymorphic variant *)
+          f ~namespace:Type ctyp_env path lid
+      | Ttyp_any | Ttyp_var _ | Ttyp_arrow _ | Ttyp_tuple _ | Ttyp_object _
+      | Ttyp_alias _ | Ttyp_variant _ | Ttyp_poly _ | Ttyp_open _ -> ());
       default_iterator.typ sub ct);
 
   pat =
@@ -236,14 +248,16 @@ let iter_on_occurrences
           in
           add_label pat_env lid label_descr)
         fields
-      | _ -> ());
+      | Tpat_any | Tpat_var _ | Tpat_alias _ | Tpat_constant _ | Tpat_tuple _
+      | Tpat_variant _ | Tpat_array _ | Tpat_lazy _ | Tpat_value _
+      | Tpat_exception _ | Tpat_or _ -> ());
       List.iter  (fun (pat_extra, _, _) ->
         match pat_extra with
         | Tpat_open (path, lid, _) ->
             f ~namespace:Module pat_env path lid
         | Tpat_type (path, lid) ->
             f ~namespace:Type pat_env path lid
-        | _ -> ())
+        | Tpat_constraint _ | Tpat_unpack -> ())
         pat_extra;
       default_iterator.pat sub pat);
 
@@ -256,7 +270,8 @@ let iter_on_occurrences
     (fun sub ({ mod_desc; mod_env; _ } as me) ->
       (match mod_desc with
       | Tmod_ident (path, lid) -> f ~namespace:Module mod_env path lid
-      | _ -> ());
+      | Tmod_structure _ | Tmod_functor _ | Tmod_apply _ | Tmod_apply_unit _
+      | Tmod_constraint _ | Tmod_unpack _ -> ());
       default_iterator.module_expr sub me);
 
   open_description =
@@ -273,21 +288,22 @@ let iter_on_occurrences
           List.iter (with_constraint ~env:mty_env) l
       | Tmty_alias (path, lid) ->
           f ~namespace:Module mty_env path lid
-      | _ -> ());
+      | Tmty_signature _ | Tmty_functor _ | Tmty_typeof _ -> ());
       default_iterator.module_type sub mty);
 
   class_expr =
     (fun sub ({ cl_desc; cl_env; _} as ce) ->
       (match cl_desc with
       | Tcl_ident (path, lid, _) -> f ~namespace:Class cl_env path lid
-      | _ -> ());
+      | Tcl_structure _ | Tcl_fun _ | Tcl_apply _ | Tcl_let _
+      | Tcl_constraint _ | Tcl_open _ -> ());
       default_iterator.class_expr sub ce);
 
   class_type =
     (fun sub ({ cltyp_desc; cltyp_env; _} as ct) ->
       (match cltyp_desc with
       | Tcty_constr (path, lid, _) -> f ~namespace:Class_type cltyp_env path lid
-      | _ -> ());
+      | Tcty_signature _ | Tcty_arrow _ | Tcty_open _ -> ());
       default_iterator.class_type sub ct);
 
   signature_item =
@@ -300,7 +316,10 @@ let iter_on_occurrences
           f ~namespace:Module sig_env ms_manifest ms_txt
       | Tsig_typext { tyext_path; tyext_txt } ->
           f ~namespace:Type sig_env tyext_path tyext_txt
-      | _ -> ());
+      | Tsig_value _ | Tsig_type _ | Tsig_typesubst _ | Tsig_exception _
+      | Tsig_module _ | Tsig_recmodule _ | Tsig_modtype _ | Tsig_modtypesubst _
+      | Tsig_open _ | Tsig_include _ | Tsig_class _ | Tsig_class_type _
+      | Tsig_attribute _ -> ());
       default_iterator.signature_item sub sig_item);
 
   structure_item =
@@ -311,7 +330,10 @@ let iter_on_occurrences
           f ~namespace:Extension_constructor str_env path lid
       | Tstr_typext { tyext_path; tyext_txt } ->
           f ~namespace:Type str_env tyext_path tyext_txt
-      | _ -> ());
+      | Tstr_eval _ | Tstr_value _ | Tstr_primitive _ | Tstr_type _
+      | Tstr_exception _ | Tstr_module _ | Tstr_recmodule _
+      | Tstr_modtype _ | Tstr_open _ | Tstr_class _ | Tstr_class_type _
+      | Tstr_include _ | Tstr_attribute _ -> ());
       default_iterator.structure_item sub str_item)
 }
 
