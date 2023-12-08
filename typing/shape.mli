@@ -26,7 +26,7 @@
     - Build the Shape corresponding to the value's path:
       [let shape = Env.shape_of_path ~namespace env path]
 
-    - Instantiate the [Make_reduce] functor with a way to load shapes from
+    - Instantiate the [Shape_reduce.Make] functor with a way to load shapes from
       external units and to looks for shapes in the environment (usually using
       [Env.shape_of_path]).
 
@@ -122,17 +122,6 @@ and desc =
   | Comp_unit of string
   | Error of string
 
-(** The result of reducing a shape and looking for its uid.content *)
-type reduction_result =
-  | Resolved of Uid.t (** Shape reduction succeeded and a uid was found *)
-  | Resolved_alias of Uid.t list (** Reduction led to one or several aliases *)
-  | Unresolved of t (** Result still contains [Comp_unit] terms *)
-  | Approximated of Uid.t option (** Reduction failed *)
-  | Internal_error_missing_uid
-    (** Reduction succedded but no uid was found, this should never happen *)
-
-val print_reduction_result : Format.formatter -> reduction_result -> unit
-
 val print : Format.formatter -> t -> unit
 
 val strip_head_aliases : t -> t
@@ -202,34 +191,3 @@ val of_path :
   namespace:Sig_component_kind.t -> Path.t -> t
 
 val set_uid_if_none : t -> Uid.t -> t
-
-(** The [Make_reduce] functor is used to generate a reduction function for
-    shapes.
-
-    It is parametrized by:
-    - an environment and a function to find shapes by path in that environment
-    - a function to load the shape of an external compilation unit
-    - some fuel, which is used to bound recursion when dealing with recursive
-      shapes introduced by recursive modules. (FTR: merlin currently uses a
-      fuel of 10, which seems to be enough for most practical examples)
-*)
-module Make_reduce(Context : sig
-    type env
-
-    val fuel : int
-
-    val read_unit_shape : unit_name:string -> t option
-
-    val find_shape : env -> Ident.t -> t
-  end) : sig
-  val reduce : Context.env -> t -> t
-
-  (** Perform weak reduction and return the head's uid if any. If reduction was
-    incomplete the partially reduced shape is returned. *)
-  val reduce_for_uid : Context.env -> t -> reduction_result
-end
-
-(** [toplevel_local_reduce] is only suitable to reduce toplevel shapes (shapes
-  of compilation units). Use the [Make_reduce] functor for other cases that
-  require access to the environment.*)
-val toplevel_local_reduce : t -> t

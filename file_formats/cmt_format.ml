@@ -63,7 +63,7 @@ type cmt_infos = {
   cmt_uid_to_decl : item_declaration Shape.Uid.Tbl.t;
   cmt_impl_shape : Shape.t option; (* None for mli *)
   cmt_ident_occurrences :
-    (Longident.t Location.loc * Shape.reduction_result) list
+    (Longident.t Location.loc * Shape_reduce.result) list
 }
 
 type error =
@@ -86,7 +86,7 @@ let iter_on_annots (it : Tast_iterator.iterator) = function
   | Partial_implementation array -> Array.iter (iter_on_parts it) array
   | Partial_interface array -> Array.iter (iter_on_parts it) array
 
-module Local_reduce = Shape.Make_reduce(struct
+module Local_reduce = Shape_reduce.Make(struct
     type env = Env.t
     let fuel = 10
 
@@ -333,7 +333,7 @@ let index_declarations binary_annots =
   index
 
 let index_usages binary_annots =
-  let index : (Longident.t Location.loc * Shape.reduction_result) list ref =
+  let index : (Longident.t Location.loc * Shape_reduce.result) list ref =
     ref []
   in
   let f ~namespace env path lid =

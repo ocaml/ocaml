@@ -114,6 +114,7 @@ typing_SOURCES = \
   typing/type_immediacy.mli typing/type_immediacy.ml \
   typing/outcometree.mli \
   typing/shape.mli typing/shape.ml \
+  typing/shape_reduce.mli typing/shape_reduce.ml \
   typing/types.mli typing/types.ml \
   typing/btype.mli typing/btype.ml \
   typing/oprint.mli typing/oprint.ml \

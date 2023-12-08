@@ -106,6 +106,7 @@ COMPILERLIBS_SOURCES=\
   typing/primitive.ml \
   typing/type_immediacy.ml \
   typing/shape.ml \
+  typing/shape_reduce.ml \
   typing/types.ml \
   typing/btype.ml \
   typing/subst.ml \

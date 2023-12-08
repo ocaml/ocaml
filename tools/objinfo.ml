@@ -125,7 +125,7 @@ let print_cmt_infos cmt =
           Pprintast.longident txt Location.print_loc loc
       in
       Format.printf "@[<hov 2>%a:@ %a@]@;"
-        Shape.print_reduction_result item pp_loc loc)
+        Shape_reduce.print_result item pp_loc loc)
       cmt.cmt_ident_occurrences;
     Format.print_flush ()
   end;
