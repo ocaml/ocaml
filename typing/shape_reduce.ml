@@ -345,6 +345,3 @@ module Toplevel_local_reduce =
 
 let toplevel_local_reduce shape =
   Toplevel_local_reduce.reduce () shape
-
-(* $let shape_of_path ~namespace env =
-  Shape_reduce.of_path ~namespace ~find_shape:(find_shape env) *)
