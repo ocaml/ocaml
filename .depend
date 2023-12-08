@@ -1203,20 +1203,31 @@ typing/printtyped.cmi : \
 typing/shape.cmo : \
     typing/path.cmi \
     utils/misc.cmi \
-    utils/local_store.cmi \
     utils/identifiable.cmi \
     typing/ident.cmi \
     typing/shape.cmi
 typing/shape.cmx : \
     typing/path.cmx \
     utils/misc.cmx \
-    utils/local_store.cmx \
     utils/identifiable.cmx \
     typing/ident.cmx \
     typing/shape.cmi
 typing/shape.cmi : \
     typing/path.cmi \
     utils/identifiable.cmi \
+    typing/ident.cmi
+typing/shape_reduce.cmo : \
+    typing/shape.cmi \
+    utils/local_store.cmi \
+    typing/ident.cmi \
+    typing/shape_reduce.cmi
+typing/shape_reduce.cmx : \
+    typing/shape.cmx \
+    utils/local_store.cmx \
+    typing/ident.cmx \
+    typing/shape_reduce.cmi
+typing/shape_reduce.cmi : \
+    typing/shape.cmi \
     typing/ident.cmi
 typing/signature_group.cmo : \
     typing/types.cmi \
@@ -1731,6 +1742,7 @@ typing/typemod.cmo : \
     typing/typeclass.cmi \
     typing/subst.cmi \
     typing/signature_group.cmi \
+    typing/shape_reduce.cmi \
     typing/shape.cmi \
     typing/printtyp.cmi \
     typing/path.cmi \
@@ -1766,6 +1778,7 @@ typing/typemod.cmx : \
     typing/typeclass.cmx \
     typing/subst.cmx \
     typing/signature_group.cmx \
+    typing/shape_reduce.cmx \
     typing/shape.cmx \
     typing/printtyp.cmx \
     typing/path.cmx \
@@ -3236,12 +3249,10 @@ asmcomp/split.cmi : \
 asmcomp/stackframe.cmo : \
     asmcomp/stackframegen.cmi \
     asmcomp/mach.cmi \
-    utils/config.cmi \
     asmcomp/stackframe.cmi
 asmcomp/stackframe.cmx : \
     asmcomp/stackframegen.cmx \
     asmcomp/mach.cmx \
-    utils/config.cmx \
     asmcomp/stackframe.cmi
 asmcomp/stackframe.cmi : \
     asmcomp/stackframegen.cmi \
@@ -4058,6 +4069,7 @@ file_formats/cmt_format.cmo : \
     typing/typedtree.cmi \
     typing/tast_mapper.cmi \
     typing/tast_iterator.cmi \
+    typing/shape_reduce.cmi \
     typing/shape.cmi \
     typing/path.cmi \
     utils/misc.cmi \
@@ -4078,6 +4090,7 @@ file_formats/cmt_format.cmx : \
     typing/typedtree.cmx \
     typing/tast_mapper.cmx \
     typing/tast_iterator.cmx \
+    typing/shape_reduce.cmx \
     typing/shape.cmx \
     typing/path.cmx \
     utils/misc.cmx \
@@ -4096,6 +4109,7 @@ file_formats/cmt_format.cmi : \
     parsing/unit_info.cmi \
     typing/types.cmi \
     typing/typedtree.cmi \
+    typing/shape_reduce.cmi \
     typing/shape.cmi \
     utils/misc.cmi \
     parsing/longident.cmi \
@@ -6687,6 +6701,7 @@ toplevel/byte/topeval.cmo : \
     toplevel/topcommon.cmi \
     bytecomp/symtable.cmi \
     lambda/simplif.cmi \
+    typing/shape_reduce.cmi \
     typing/shape.cmi \
     typing/printtyped.cmi \
     typing/printtyp.cmi \
@@ -6721,6 +6736,7 @@ toplevel/byte/topeval.cmx : \
     toplevel/topcommon.cmx \
     bytecomp/symtable.cmx \
     lambda/simplif.cmx \
+    typing/shape_reduce.cmx \
     typing/shape.cmx \
     typing/printtyped.cmx \
     typing/printtyp.cmx \
@@ -6824,6 +6840,7 @@ toplevel/native/topeval.cmo : \
     toplevel/native/tophooks.cmi \
     toplevel/topcommon.cmi \
     lambda/simplif.cmi \
+    typing/shape_reduce.cmi \
     typing/shape.cmi \
     typing/printtyped.cmi \
     typing/printtyp.cmi \
@@ -6855,6 +6872,7 @@ toplevel/native/topeval.cmx : \
     toplevel/native/tophooks.cmx \
     toplevel/topcommon.cmx \
     lambda/simplif.cmx \
+    typing/shape_reduce.cmx \
     typing/shape.cmx \
     typing/printtyped.cmx \
     typing/printtyp.cmx \
@@ -7150,6 +7168,7 @@ tools/objinfo.cmo : \
     typing/typedtree.cmi \
     bytecomp/symtable.cmi \
     middle_end/symbol.cmi \
+    typing/shape_reduce.cmi \
     typing/shape.cmi \
     middle_end/printclambda.cmi \
     parsing/pprintast.cmi \
@@ -7171,6 +7190,7 @@ tools/objinfo.cmx : \
     typing/typedtree.cmx \
     bytecomp/symtable.cmx \
     middle_end/symbol.cmx \
+    typing/shape_reduce.cmx \
     typing/shape.cmx \
     middle_end/printclambda.cmx \
     parsing/pprintast.cmx \
