@@ -13554,10 +13554,20 @@ printf %s "checking C compiler vendor... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && defined(__clang_major__) && defined(__clang_minor__)
+msvc _MSC_VER clang __clang_major__ __clang_minor__
+#elif defined(_MSC_VER)
 msvc _MSC_VER
 #elif defined(__INTEL_COMPILER)
 icc __INTEL_COMPILER
+#elif defined(__MINGW32__)
+#include <_mingw_mac.h>
+mingw32 __MINGW64_VERSION_MAJOR __MINGW64_VERSION_MINOR
+# if defined(__clang_major__) && defined(__clang_minor__)
+  clang __clang_major__ __clang_minor__
+# elif defined(__GNUC__) && defined(__GNUC_MINOR__)
+  gcc __GNUC__ __GNUC_MINOR__
+# endif
 #elif defined(__clang_major__) && defined(__clang_minor__)
 clang __clang_major__ __clang_minor__
 #elif defined(__GNUC__) && defined(__GNUC_MINOR__)
@@ -13577,8 +13587,8 @@ then :
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  ocaml_cv_cc_vendor=`grep '^[a-z]' conftest.i | tr -s ' ' '-' \
-                                                      | tr -d '\r'`
+  ocaml_cv_cc_vendor=`sed -e '/^#/d' conftest.i | tr -s '[:space:]' '-' \
+                             | sed -e 's/^-//' -e 's/-$//'`
 fi
 
 else $as_nop
@@ -13876,44 +13886,31 @@ esac
 # Concerning optimization level, -O3 is somewhat risky, so take -O2.
 # Concerning language version, recent enough versions of GCC and Clang
 # default to gnu11 (C11 + GNU extensions) or gnu17, which is fine.
-
-# Note: the vendor macro can not recognize MinGW because it calls the
-# C preprocessor directly so no compiler specific macro like __MING32__
-# is defined. We thus catch MinGW first by looking at host and examine
-# the vendor only as a fall-back. We could put tis part of the logic
-# in the macro itself, too
-case $host in #(
-  *-*-mingw32*) :
-    case $ocaml_cv_cc_vendor in #(
-  gcc-[01234]-*) :
-    as_fn_error $? "This version of MinGW-w64 GCC is too old. Please use GCC version 5 or above." "$LINENO" 5 ;; #(
-  gcc-*) :
-    internal_cflags="-Wno-unused $cc_warnings \
--fexcess-precision=standard"
-        # TODO: see whether the code can be fixed to avoid -Wno-unused
-        common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
-        internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
-        internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-        internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
-  *) :
-    as_fn_error $? "Unsupported C compiler for a MinGW-w64 build" "$LINENO" 5 ;;
-esac ;; #(
-  *) :
-    case $ocaml_cv_cc_vendor in #(
+case $ocaml_cv_cc_vendor in #(
   clang-*) :
     common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$cc_warnings -fno-common" ;; #(
-  gcc-[0123]-*|gcc-4-[0-8]) :
+    internal_cflags="$cc_warnings -fno-common" ;; #(
+  *gcc-[0123]-*|*gcc-4-[0-8]) :
     # No C11 support
-      as_fn_error 69 "This version of GCC is too old. Please use GCC version 4.9 or above." "$LINENO" 5 ;; #(
+    as_fn_error 69 "This version of GCC is too old. Please use GCC version 4.9 or above." "$LINENO" 5 ;; #(
   gcc-*) :
     common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$cc_warnings -fno-common -fexcess-precision=standard \
+    internal_cflags="$cc_warnings -fno-common -fexcess-precision=standard \
 -Wvla" ;; #(
+  mingw32-*-*-gcc-*) :
+    internal_cflags="-Wno-unused $cc_warnings \
+-fexcess-precision=standard"
+    # TODO: see whether the code can be fixed to avoid -Wno-unused
+    common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
+    internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
+    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
+    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
+  mingw32-*) :
+    as_fn_error $? "Unsupported C compiler for a MinGW-w64 build" "$LINENO" 5 ;; #(
   msvc-*) :
     common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
-      common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
-      internal_cppflags='-DUNICODE -D_UNICODE'
+    common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
+    internal_cppflags='-DUNICODE -D_UNICODE'
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports -d2VolatileMetadata-" >&5
 printf %s "checking whether the C compiler supports -d2VolatileMetadata-... " >&6; }
@@ -13936,23 +13933,22 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
   CFLAGS="$saved_CFLAGS"
 
-      if test "x$cl_has_volatile_metadata" = "xtrue"
+    if test "x$cl_has_volatile_metadata" = "xtrue"
 then :
   internal_cflags='-d2VolatileMetadata-'
 fi
-      internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-      internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
+    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
+    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
   xlc-*) :
     common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
-      internal_cflags="$cc_warnings" ;; #(
+    internal_cflags="$cc_warnings" ;; #(
   sunc-*) :
     # Optimization should be >= O4 to inline functions
-              # and prevent unresolved externals
-      common_cflags="-O4 -xc99=all -D_XPG6 $CFLAGS";
-      internal_cflags="$cc_warnings" ;; #(
+            # and prevent unresolved externals
+    common_cflags="-O4 -xc99=all -D_XPG6 $CFLAGS";
+    internal_cflags="$cc_warnings" ;; #(
   *) :
     common_cflags="-O" ;;
-esac ;;
 esac
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
@@ -14348,7 +14344,7 @@ esac
 
 mkexe_cmd_exp="$CC"
 
-case $cc_basename,$host in #(
+case $ocaml_cv_cc_vendor,$host in #(
   *,x86_64-*-darwin*) :
     oc_ldflags='-Wl,-no_compact_unwind';
     printf "%s\n" "#define HAS_ARCH_CODE32 1" >>confdefs.h
@@ -14400,11 +14396,11 @@ esac
   *,x86_64-*-linux*) :
     printf "%s\n" "#define HAS_ARCH_CODE32 1" >>confdefs.h
  ;; #(
-  xlc*,powerpc-ibm-aix*) :
+  xlc-*,powerpc-ibm-aix*) :
     oc_ldflags='-brtl -bexpfull'
     printf "%s\n" "#define HAS_ARCH_CODE32 1" >>confdefs.h
  ;; #(
-  gcc*,powerpc-*-linux*) :
+  gcc-*,powerpc-*-linux*) :
     oc_ldflags="-mbss-plt" ;; #(
   *) :
      ;;
@@ -15346,8 +15342,8 @@ esac ;; #(
   *-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*) :
     sharedlib_cflags="-fPIC"
-       case $cc_basename,$host in #(
-  *gcc*,powerpc-*-linux*) :
+       case $ocaml_cv_cc_vendor,$host in #(
+  gcc-*,powerpc-*-linux*) :
     mkdll_flags='-shared -mbss-plt' ;; #(
   *,i[3456]86-*) :
     # Disable DT_TEXTREL warnings on Linux and BSD i386
@@ -15478,7 +15474,7 @@ case $enable_native_toplevel,$natdynlink in #(
 esac
 
 # Try to work around the Skylake/Kaby Lake processor bug.
-case "$cc_basename,$host" in #(
+case "$ocaml_cv_cc_vendor,$host" in #(
   *gcc*,x86_64-*|*gcc*,i686-*) :
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the C compiler supports -fno-tree-vrp" >&5
@@ -15838,12 +15834,12 @@ fi
 
 if test -z "$PARTIALLD"
 then :
-  case "$host,$cc_basename" in #(
-  x86_64-*-darwin*,*gcc*) :
+  case "$host,$ocaml_cv_cc_vendor" in #(
+  x86_64-*-darwin*,gcc-*) :
     PACKLD_FLAGS=' -arch x86_64' ;; #(
-  powerpc64le*-*-linux*,*gcc*) :
+  powerpc64le*-*-linux*,gcc-*) :
     PACKLD_FLAGS=' -m elf64lppc' ;; #(
-  powerpc*-*-linux*,*gcc*) :
+  powerpc*-*-linux*,gcc-*) :
     if $arch64
 then :
   PACKLD_FLAGS=' -m elf64ppc'
@@ -15857,14 +15853,14 @@ esac
   # output filename. Don't assume that all C compilers understand GNU -ofoo
   # form, so ensure that the definition includes a space at the end (which is
   # achieved using the $(EMPTY) expansion trick in Makefile.config.in).
-  if test x"$cc_basename" = "xcl"
-then :
-  # For the Microsoft C compiler there must be no space at the end of the
-    # string.
-    PACKLD="link -lib -nologo $machine -out:"
-else $as_nop
-  PACKLD="$DIRECT_LD -r$PACKLD_FLAGS -o "
-fi
+  case "$ocaml_cv_cc_vendor" in #(
+  msvc-*) :
+    # For the Microsoft C compiler there must be no space at the end of the
+      # string.
+      PACKLD="link -lib -nologo $machine -out:" ;; #(
+  *) :
+    PACKLD="$DIRECT_LD -r$PACKLD_FLAGS -o " ;;
+esac
 else $as_nop
   PACKLD="$PARTIALLD -o "
 fi
@@ -16618,8 +16614,7 @@ then :
   gcc-*|clang-*) :
     tsan=true ;; #(
   *) :
-    as_fn_error $? "thread sanitizer not supported with compiler \
-$cc_basename\"" "$LINENO" 5
+    as_fn_error $? "thread sanitizer not supported with vendor=$ocaml_cv_cc_vendor\"" "$LINENO" 5
           ;;
 esac ;; #(
   *) :
@@ -19713,8 +19708,8 @@ fi
 
 if test x"$enable_frame_pointers" = "xyes"
 then :
-  case "$host,$cc_basename" in #(
-  x86_64-*-linux*,gcc*|x86_64-*-linux*,clang*) :
+  case "$host,$ocaml_cv_cc_vendor" in #(
+  x86_64-*-linux*,gcc-*|x86_64-*-linux*,clang-*) :
     common_cflags="$common_cflags -g  -fno-omit-frame-pointer"
       frame_pointers=true
       printf "%s\n" "#define WITH_FRAME_POINTERS 1" >>confdefs.h

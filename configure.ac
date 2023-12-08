@@ -797,56 +797,45 @@ AS_CASE([$enable_warn_error,OCAML__DEVELOPMENT_VERSION],
 # Concerning optimization level, -O3 is somewhat risky, so take -O2.
 # Concerning language version, recent enough versions of GCC and Clang
 # default to gnu11 (C11 + GNU extensions) or gnu17, which is fine.
-
-# Note: the vendor macro can not recognize MinGW because it calls the
-# C preprocessor directly so no compiler specific macro like __MING32__
-# is defined. We thus catch MinGW first by looking at host and examine
-# the vendor only as a fall-back. We could put tis part of the logic
-# in the macro itself, too
-AS_CASE([$host],
-  [*-*-mingw32*],
-    [AS_CASE([$ocaml_cv_cc_vendor],
-      [gcc-[[01234]]-*],
-        [AC_MSG_ERROR(m4_normalize([This version of MinGW-w64 GCC is too old.
-          Please use GCC version 5 or above.]))],
-      [gcc-*],
-        [internal_cflags="-Wno-unused $cc_warnings \
--fexcess-precision=standard"
-        # TODO: see whether the code can be fixed to avoid -Wno-unused
-        common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
-        internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
-        internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-        internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
-      [AC_MSG_ERROR([Unsupported C compiler for a MinGW-w64 build])])],
-  [AS_CASE([$ocaml_cv_cc_vendor],
-    [clang-*],
-      [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$cc_warnings -fno-common"],
-    [gcc-[[0123]]-*|gcc-4-[[0-8]]],
-      # No C11 support
-      [AC_MSG_ERROR(m4_normalize([This version of GCC is too old.
-        Please use GCC version 4.9 or above.]), 69)],
-    [gcc-*],
-      [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-      internal_cflags="$cc_warnings -fno-common -fexcess-precision=standard \
+AS_CASE([$ocaml_cv_cc_vendor],
+  [clang-*],
+    [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
+    internal_cflags="$cc_warnings -fno-common"],
+  [*gcc-[[0123]]-*|*gcc-4-[[0-8]]],
+    # No C11 support
+    [AC_MSG_ERROR(m4_normalize([This version of GCC is too old.
+      Please use GCC version 4.9 or above.]), 69)],
+  [gcc-*],
+    [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
+    internal_cflags="$cc_warnings -fno-common -fexcess-precision=standard \
 -Wvla"],
-    [msvc-*],
-      [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
-      common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
-      internal_cppflags='-DUNICODE -D_UNICODE'
-      OCAML_CL_HAS_VOLATILE_METADATA
-      AS_IF([test "x$cl_has_volatile_metadata" = "xtrue"],
-            [internal_cflags='-d2VolatileMetadata-'])
-      internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
-      internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
-    [xlc-*],
-      [common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
-      internal_cflags="$cc_warnings"],
-    [sunc-*], # Optimization should be >= O4 to inline functions
-              # and prevent unresolved externals
-      [common_cflags="-O4 -xc99=all -D_XPG6 $CFLAGS";
-      internal_cflags="$cc_warnings"],
-    [common_cflags="-O"])])
+  [mingw32-*-*-gcc-*],
+    [internal_cflags="-Wno-unused $cc_warnings \
+-fexcess-precision=standard"
+    # TODO: see whether the code can be fixed to avoid -Wno-unused
+    common_cflags="-O2 -fno-strict-aliasing -fwrapv -mms-bitfields"
+    internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
+    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
+    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
+  [mingw32-*],
+    [AC_MSG_ERROR([Unsupported C compiler for a MinGW-w64 build])],
+  [msvc-*],
+    [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
+    common_cppflags="-D_CRT_SECURE_NO_DEPRECATE"
+    internal_cppflags='-DUNICODE -D_UNICODE'
+    OCAML_CL_HAS_VOLATILE_METADATA
+    AS_IF([test "x$cl_has_volatile_metadata" = "xtrue"],
+          [internal_cflags='-d2VolatileMetadata-'])
+    internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
+    internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
+  [xlc-*],
+    [common_cflags="-O5 -qtune=balanced -qnoipa -qinline";
+    internal_cflags="$cc_warnings"],
+  [sunc-*], # Optimization should be >= O4 to inline functions
+            # and prevent unresolved externals
+    [common_cflags="-O4 -xc99=all -D_XPG6 $CFLAGS";
+    internal_cflags="$cc_warnings"],
+  [common_cflags="-O"])
 
 # Enable SSE2 on x86 mingw to avoid using 80-bit registers.
 AS_CASE([$host],
@@ -982,7 +971,7 @@ AS_CASE([$flexdll_source_dir,$supports_shared_libraries,$flexlink,$host],
 
 mkexe_cmd_exp="$CC"
 
-AS_CASE([$cc_basename,$host],
+AS_CASE([$ocaml_cv_cc_vendor,$host],
   [*,x86_64-*-darwin*],
     [oc_ldflags='-Wl,-no_compact_unwind';
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
@@ -1024,10 +1013,10 @@ AS_CASE([$cc_basename,$host],
     mkexedebugflag=''],
   [*,x86_64-*-linux*],
     AC_DEFINE([HAS_ARCH_CODE32], [1]),
-  [xlc*,powerpc-ibm-aix*],
+  [xlc-*,powerpc-ibm-aix*],
     [oc_ldflags='-brtl -bexpfull'
     AC_DEFINE([HAS_ARCH_CODE32], [1])],
-  [gcc*,powerpc-*-linux*],
+  [gcc-*,powerpc-*-linux*],
     [oc_ldflags="-mbss-plt"])
 
 ## Program to use to install files
@@ -1188,8 +1177,8 @@ AS_IF([test x"$enable_shared" != "xno"],
     [[*-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
     |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*]],
       [sharedlib_cflags="-fPIC"
-       AS_CASE([$cc_basename,$host],
-           [*gcc*,powerpc-*-linux*],
+       AS_CASE([$ocaml_cv_cc_vendor,$host],
+           [gcc-*,powerpc-*-linux*],
            [mkdll_flags='-shared -mbss-plt'],
            [[*,i[3456]86-*]],
            # Disable DT_TEXTREL warnings on Linux and BSD i386
@@ -1268,7 +1257,7 @@ AS_CASE([$enable_native_toplevel,$natdynlink],
     [install_ocamlnat=false])
 
 # Try to work around the Skylake/Kaby Lake processor bug.
-AS_CASE(["$cc_basename,$host"],
+AS_CASE(["$ocaml_cv_cc_vendor,$host"],
   [*gcc*,x86_64-*|*gcc*,i686-*],
     [OCAML_CC_HAS_FNO_TREE_VRP
     AS_IF([$cc_has_fno_tree_vrp],
@@ -1429,10 +1418,10 @@ AC_DEFINE_UNQUOTED([OCAML_OS_TYPE], ["$ostype"])
 
 AC_CHECK_TOOL([DIRECT_LD],[ld])
 AS_IF([test -z "$PARTIALLD"],
-  [AS_CASE(["$host,$cc_basename"],
-    [x86_64-*-darwin*,*gcc*], [PACKLD_FLAGS=' -arch x86_64'],
-    [powerpc64le*-*-linux*,*gcc*], [PACKLD_FLAGS=' -m elf64lppc'],
-    [powerpc*-*-linux*,*gcc*],
+  [AS_CASE(["$host,$ocaml_cv_cc_vendor"],
+    [x86_64-*-darwin*,gcc-*], [PACKLD_FLAGS=' -arch x86_64'],
+    [powerpc64le*-*-linux*,gcc-*], [PACKLD_FLAGS=' -m elf64lppc'],
+    [powerpc*-*-linux*,gcc-*],
        [AS_IF([$arch64],
               [PACKLD_FLAGS=' -m elf64ppc'],
               [PACKLD_FLAGS=' -m elf32ppclinux'])],
@@ -1441,10 +1430,11 @@ AS_IF([test -z "$PARTIALLD"],
   # output filename. Don't assume that all C compilers understand GNU -ofoo
   # form, so ensure that the definition includes a space at the end (which is
   # achieved using the $(EMPTY) expansion trick in Makefile.config.in).
-  AS_IF([test x"$cc_basename" = "xcl"],
-    # For the Microsoft C compiler there must be no space at the end of the
-    # string.
-    [PACKLD="link -lib -nologo $machine -out:"],
+  AS_CASE(["$ocaml_cv_cc_vendor"],
+    [msvc-*],
+      # For the Microsoft C compiler there must be no space at the end of the
+      # string.
+      [PACKLD="link -lib -nologo $machine -out:"],
     [PACKLD="$DIRECT_LD -r$PACKLD_FLAGS -o "])],
   [PACKLD="$PARTIALLD -o "])
 
@@ -1689,10 +1679,9 @@ AS_IF([test "x$enable_tsan" = "xyes" ],
       [AS_CASE(["$system"],
         [freebsd|linux|macosx],
         [AS_CASE(["$ocaml_cv_cc_vendor"],
-          [gcc-*|clang-*],
-          [tsan=true],
-          [AC_MSG_ERROR([thread sanitizer not supported with compiler \
-$cc_basename"])]
+          [gcc-*|clang-*], [tsan=true],
+          [AC_MSG_ERROR(m4_normalize([thread sanitizer not supported with
+            vendor=$ocaml_cv_cc_vendor"]))]
          )],
        )],
       [AC_MSG_ERROR([thread sanitizer not supported on arch $arch])]
@@ -2276,8 +2265,8 @@ AS_IF([$native_compiler],
 ## Frame pointers
 
 AS_IF([test x"$enable_frame_pointers" = "xyes"],
-  [AS_CASE(["$host,$cc_basename"],
-    [x86_64-*-linux*,gcc*|x86_64-*-linux*,clang*],
+  [AS_CASE(["$host,$ocaml_cv_cc_vendor"],
+    [x86_64-*-linux*,gcc-*|x86_64-*-linux*,clang-*],
       [common_cflags="$common_cflags -g  -fno-omit-frame-pointer"
       frame_pointers=true
       AC_DEFINE([WITH_FRAME_POINTERS])
