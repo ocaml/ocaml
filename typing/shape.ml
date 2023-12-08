@@ -329,6 +329,8 @@ end) = struct
      actual substitutions, for example in [App(Abs(x, body), t)], when
      [v] is a thunk that will evaluate to the normal form of [t]. *)
 
+  let approx_nf nf = { nf with approximated = true }
+
   let improve_uid uid (nf : nf) =
     match nf.uid with
     | Some _ -> nf
@@ -402,16 +404,14 @@ end) = struct
     let reduce env t = reduce_ env t in
     let delay_reduce env t = Thunk (env.local_env, t) in
     let force (Thunk (local_env, t)) = reduce { env with local_env } t in
-    let return ?(approximated = t.approximated) desc : nf =
-      { uid = t.uid; desc; approximated }
-    in
+    let return desc = { uid = t.uid; desc; approximated = t.approximated } in
     let rec force_aliases nf = match nf.desc with
       | NAlias delayed_nf ->
           let nf = force delayed_nf in
           force_aliases nf
       | _ -> nf
     in
-    if !fuel < 0 then return ~approximated:true (NError "NoFuelLeft")
+    if !fuel < 0 then approx_nf (return (NError "NoFuelLeft"))
     else
       match t.desc with
       | Comp_unit unit_name ->
@@ -473,7 +473,7 @@ end) = struct
           let mnf = Item.Map.map (delay_reduce env) m in
           return (NStruct mnf)
       | Alias t -> return (NAlias (delay_reduce env t))
-      | Error s -> return ~approximated:true (NError s)
+      | Error s -> approx_nf (return (NError s))
 
   and read_back env (nf : nf) : t =
     in_memo_table env.read_back_memo_table nf (read_back_ env) nf
