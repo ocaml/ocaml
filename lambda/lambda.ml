@@ -736,12 +736,17 @@ let rec make_sequence fn = function
    Assumes that the image of the substitution is out of reach
    of the bound variables of the lambda-term (no capture). *)
 
-let subst update_env ?(freshen_bound_variables = false) s input_lam =
+type substitution_functions = {
+  subst_lambda : lambda -> lambda;
+  subst_lfunction : lfunction -> lfunction;
+}
+
+let build_substs update_env ?(freshen_bound_variables = false) s =
   (* [s] contains a partial substitution for the free variables of the
-     input term [input_lam].
+     input term.
 
      During our traversal of the term we maintain a second environment
-     [l] with all the bound variables of [input_lam] in the current
+     [l] with all the bound variables of the input term in the current
      scope, mapped to either themselves or freshened versions of
      themselves when [freshen_bound_variables] is set. *)
   let bind id l =
@@ -868,7 +873,12 @@ let subst update_env ?(freshen_bound_variables = false) s input_lam =
     | None -> None
     | Some e -> Some (subst s l e)
   in
-  subst s Ident.Map.empty input_lam
+  { subst_lambda = (fun lam -> subst s Ident.Map.empty lam);
+    subst_lfunction = (fun lfun -> subst_lfun s Ident.Map.empty lfun);
+  }
+
+let subst update_env ?freshen_bound_variables s =
+  (build_substs update_env ?freshen_bound_variables s).subst_lambda
 
 let rename idmap lam =
   let update_env oldid vd env =
@@ -878,12 +888,11 @@ let rename idmap lam =
   let s = Ident.Map.map (fun new_id -> Lvar new_id) idmap in
   subst update_env s lam
 
-let duplicate lam =
-  subst
-    (fun _ _ env -> env)
-    ~freshen_bound_variables:true
-    Ident.Map.empty
-    lam
+let duplicate_function =
+  (build_substs
+     (fun _ _ env -> env)
+     ~freshen_bound_variables:true
+     Ident.Map.empty).subst_lfunction
 
 let map_lfunction f { kind; params; return; body; attr; loc } =
   let body = f body in

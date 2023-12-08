@@ -454,7 +454,7 @@ val rename : Ident.t Ident.Map.t -> lambda -> lambda
 (** A version of [subst] specialized for the case where we're just renaming
     idents. *)
 
-val duplicate : lambda -> lambda
+val duplicate_function : lfunction -> lfunction
 (** Duplicate a term, freshening all locally-bound identifiers. *)
 
 val map : (lambda -> lambda) -> lambda -> lambda
