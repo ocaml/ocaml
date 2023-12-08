@@ -39,11 +39,20 @@ let print_result fmt result =
   | Internal_error_missing_uid ->
       Format.fprintf fmt "@[Missing uid@]@;"
 
+
+let find_shape env id =
+  let namespace = Shape.Sig_component_kind.Module in
+  Env.shape_of_path ~namespace env (Pident id)
+  (* | exception Not_found ->
+    let msg =
+      Format.asprintf "Could not find shape for %a" Ident.print_with_scope id
+    in
+    raise (Misc.fatal_error msg)
+  | shape -> shape *)
+
 module Make(Params : sig
-  type env
   val fuel : int
   val read_unit_shape : unit_name:string -> t option
-  val find_shape : env -> Ident.t -> t
 end) = struct
   (* We implement a strong call-by-need reduction, following an
      evaluator from Nathanaelle Courant. *)
@@ -103,7 +112,7 @@ end) = struct
 
   type env = {
     fuel: int ref;
-    global_env: Params.env;
+    global_env: Env.t;
     local_env: local_env;
     reduce_memo_table: (local_env * t, nf) Hashtbl.t;
     read_back_memo_table: (nf, t) Hashtbl.t;
@@ -218,7 +227,7 @@ end) = struct
           | None -> return (NVar id)
           | Some def -> force def
           | exception Not_found ->
-          match Params.find_shape global_env id with
+          match find_shape global_env id with
           | exception Not_found -> return (NVar id)
           | res when res = t -> return (NVar id)
           | res ->
@@ -330,18 +339,16 @@ end) = struct
           Internal_error_missing_uid
 end
 
-module Toplevel_local_reduce =
+module Local_reduce =
   (* Note: this definition with [type env = unit] is only suitable for
      reduction of toplevel shapes -- shapes of compilation units,
      where free variables are only Comp_unit names. If we wanted to
      reduce shapes inside module signatures, we would need to take
      a typing environment as parameter. *)
   Make(struct
-    type env = unit
     let fuel = 10
     let read_unit_shape ~unit_name:_ = None
-    let find_shape _env _id = raise Not_found
   end)
 
-let toplevel_local_reduce shape =
-  Toplevel_local_reduce.reduce () shape
+let local_reduce = Local_reduce.reduce
+let local_reduce_for_uid = Local_reduce.reduce_for_uid

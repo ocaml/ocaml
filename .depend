@@ -1218,17 +1218,21 @@ typing/shape.cmi : \
     typing/ident.cmi
 typing/shape_reduce.cmo : \
     typing/shape.cmi \
+    utils/misc.cmi \
     utils/local_store.cmi \
     typing/ident.cmi \
+    typing/env.cmi \
     typing/shape_reduce.cmi
 typing/shape_reduce.cmx : \
     typing/shape.cmx \
+    utils/misc.cmx \
     utils/local_store.cmx \
     typing/ident.cmx \
+    typing/env.cmx \
     typing/shape_reduce.cmi
 typing/shape_reduce.cmi : \
     typing/shape.cmi \
-    typing/ident.cmi
+    typing/env.cmi
 typing/signature_group.cmo : \
     typing/types.cmi \
     typing/ident.cmi \

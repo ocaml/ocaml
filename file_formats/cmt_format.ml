@@ -86,17 +86,6 @@ let iter_on_annots (it : Tast_iterator.iterator) = function
   | Partial_implementation array -> Array.iter (iter_on_parts it) array
   | Partial_interface array -> Array.iter (iter_on_parts it) array
 
-module Local_reduce = Shape_reduce.Make(struct
-    type env = Env.t
-    let fuel = 10
-
-    let read_unit_shape ~unit_name:_ = None
-
-    let find_shape env id =
-      let namespace = Shape.Sig_component_kind.Module in
-      Env.shape_of_path ~namespace env (Pident id)
-  end)
-
 let iter_on_declaration f decl =
   match decl with
   | Value vd -> f vd.val_val.val_uid decl;
@@ -343,7 +332,7 @@ let index_usages binary_annots =
       | exception Not_found -> ()
       | { uid = Some (Predef _); _ } -> ()
       | path_shape ->
-        let result = Local_reduce.reduce_for_uid env path_shape in
+        let result = Shape_reduce.local_reduce_for_uid env path_shape in
         index := (lid, result) :: !index
   in
   iter_on_annots (iter_on_usages ~f) binary_annots;

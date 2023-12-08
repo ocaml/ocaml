@@ -30,37 +30,32 @@ val print_result : Format.formatter -> result -> unit
     callback to find shapes in the environment. It is generally more useful to
     rely directly on the [Env.shape_of_path] function to get the shape
     associated with a given path. *)
-(* val of_path :
-  find_shape:(Sig_component_kind.t -> Ident.t -> t) ->
-  namespace:Sig_component_kind.t -> Path.t -> t *)
 
 (** The [Make] functor is used to generate a reduction function for
     shapes.
 
     It is parametrized by:
-    - an environment and a function to find shapes by path in that environment
     - a function to load the shape of an external compilation unit
     - some fuel, which is used to bound recursion when dealing with recursive
       shapes introduced by recursive modules. (FTR: merlin currently uses a
       fuel of 10, which seems to be enough for most practical examples)
 *)
-module Make(Context : sig
-    type env
-
+module Make(_ : sig
     val fuel : int
 
     val read_unit_shape : unit_name:string -> t option
-
-    val find_shape : env -> Ident.t -> t
   end) : sig
-  val reduce : Context.env -> t -> t
+  val reduce : Env.t -> t -> t
 
   (** Perform weak reduction and return the head's uid if any. If reduction was
     incomplete the partially reduced shape is returned. *)
-  val reduce_for_uid : Context.env -> t -> result
+  val reduce_for_uid : Env.t -> t -> result
 end
 
-(** [toplevel_local_reduce] is only suitable to reduce toplevel shapes (shapes
-  of compilation units). Use the [Make] functor for other cases that
-  require access to the environment.*)
-val toplevel_local_reduce : t -> t
+(** [local_reduce] will not reduce shapes that require loading external
+  compilation units. *)
+val local_reduce : Env.t -> t -> t
+
+(** [local_reduce_for_uid] will not reduce shapes that require loading external
+  compilation units. *)
+val local_reduce_for_uid : Env.t -> t -> result
