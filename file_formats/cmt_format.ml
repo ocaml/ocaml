@@ -144,7 +144,7 @@ let clear_env binary_annots =
 
   else binary_annots
 
-let iter_on_usages
+let iter_on_occurrences
   ~(f : namespace:Shape.Sig_component_kind.t ->
         Env.t -> Path.t -> Longident.t Location.loc ->
         unit) =
@@ -321,7 +321,7 @@ let index_declarations binary_annots =
   iter_on_annots (iter_on_declarations ~f) binary_annots;
   index
 
-let index_usages binary_annots =
+let index_occurrences binary_annots =
   let index : (Longident.t Location.loc * Shape_reduce.result) list ref =
     ref []
   in
@@ -335,7 +335,7 @@ let index_usages binary_annots =
         let result = Shape_reduce.local_reduce_for_uid env path_shape in
         index := (lid, result) :: !index
   in
-  iter_on_annots (iter_on_usages ~f) binary_annots;
+  iter_on_annots (iter_on_occurrences ~f) binary_annots;
   !index
 
 exception Error of error
@@ -412,7 +412,7 @@ let save_cmt target binary_annots initial_env cmi shape =
          let sourcefile = Unit_info.Artifact.source_file target in
          let cmt_ident_occurrences =
           if !Clflags.store_occurrences then
-            index_usages binary_annots
+            index_occurrences binary_annots
           else
             []
          in
