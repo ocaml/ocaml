@@ -1,6 +1,6 @@
 (* TEST
 
-flags = "-bin-annot -store-usage-index";
+flags = "-bin-annot -bin-annot-occurrences";
 compile_only = "true";
 readonly_files = "index_constrs.ml";
 setup-ocamlc.byte-build-env;

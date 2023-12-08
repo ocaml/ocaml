@@ -411,7 +411,7 @@ let save_cmt target binary_annots initial_env cmi shape =
          in
          let sourcefile = Unit_info.Artifact.source_file target in
          let cmt_ident_occurrences =
-          if !Clflags.store_usage_index then
+          if !Clflags.store_occurrences then
             index_usages binary_annots
           else
             []
