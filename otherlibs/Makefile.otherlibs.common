@@ -22,10 +22,6 @@ include $(ROOTDIR)/Makefile.best_binaries
 CAMLC := $(BEST_OCAMLC) $(STDLIBFLAGS)
 CAMLOPT := $(BEST_OCAMLOPT) $(STDLIBFLAGS)
 
-ifneq "$(CCOMPTYPE)" "msvc"
-OC_CFLAGS += -g
-endif
-
 OC_CFLAGS += $(SHAREDLIB_CFLAGS)
 
 # Compilation options
