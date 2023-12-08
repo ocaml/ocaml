@@ -20,10 +20,10 @@ type dls_state = Obj.t array
 
 let unique_value = Obj.repr (ref 0)
 
-external get_dls_state : unit -> dls_state = "%dls_get"
+external get_dls_state : unit -> dls_state = "%tls_get"
 
 external set_dls_state : dls_state -> unit =
-  "caml_domain_dls_set" [@@noalloc]
+  "caml_tls_set" [@@noalloc]
 
 type 'a key = int * (unit -> 'a)
 
