@@ -118,10 +118,10 @@ let iter_on_declarations ~(f: Shape.Uid.t -> item_declaration -> unit) =
   in
   Tast_iterator.{ default_iterator with
 
-  value_bindings = (fun sub ((_, vbs) as bindings) ->
-    let bound_idents = let_filter_bound vbs in
-    List.iter (fun (vb, uid) -> f uid (Value_binding vb)) bound_idents;
-    default_iterator.value_bindings sub bindings);
+  value_binding = (fun sub vb ->
+    let bound_idents = let_bound_idents_full [vb] in
+    List.iter (fun (_, _, _, uid) -> f uid (Value_binding vb)) bound_idents;
+    default_iterator.value_binding sub vb);
 
   module_binding = (fun sub mb ->
     f mb.mb_uid (Module_binding mb);
