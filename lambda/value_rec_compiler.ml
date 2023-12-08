@@ -647,14 +647,16 @@ and rebuild_arms :
            { tbl })
     ]}
 
-    Note on performance for non-syntactic functions: the previous approach
-    used to pre-allocate and backpatches the closure blocks directly.
-    Here we cannot use that directly, as it would require knowing the size of
-    the closure blocks. But our current approach is not even always worse.
-    In general, we end up with an extra block for part of the closure, which
-    turns into a small allocation overhead (one additional header) and an extra
-    indirection when accessing the variable inside the function.
-    But we generate regular function definitions, so the rest of the compiler
+    Note on performance for non-syntactic functions:
+    The compiler would previously pre-allocate and backpatch function
+    closures. The new approach is designed to avoid back-patching
+    closures -- besides, we could not pre-allocate at this point in the
+    compiler pipeline, as the closure size will only be determined later.
+
+    For non-syntactic functions with local free variables, we now store the
+    local free variables in a block, which incurs an additional indirection
+    whenever a local variable is accessed by the function. On the other hand,
+    we generate regular function definitions, so the rest of the compiler
     can either inline them or generate direct calls, and use the compact
     representation for mutually recursive closures.
  *)
