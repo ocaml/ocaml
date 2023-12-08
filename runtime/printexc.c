@@ -17,6 +17,7 @@
 
 /* Print an uncaught exception and abort */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -142,6 +143,12 @@ void caml_fatal_uncaught_exception(value exn)
 
   handle_uncaught_exception =
     caml_named_value("Printexc.handle_uncaught_exception");
+
+  /* If the callback allocates, memprof could be called, in which case
+     a memprof callback could raise an exception while
+     [handle_uncaught_exception] is running, and the printing of
+     the exception could fail. */
+  caml_memprof_update_suspended(true);
 
   if (handle_uncaught_exception != NULL)
     /* [Printexc.handle_uncaught_exception] does not raise exception. */

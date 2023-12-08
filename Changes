@@ -188,12 +188,10 @@ Working version
   (David Allsopp, Antonin Décimo, and Samuel Hym, review by Nicolas
    Ojeda Bar)
 
-- #11911, #12383: Restore statmemprof functionality in part
-   (backtrace buffers). (Nick Barnes, review by Gabriel Scherer)
-
-- #11911, #12383: Restore statmemprof functionality in part (backtrace
-   buffers). (Nick Barnes, review by Gabriel Scherer and Fabrice
-   Buoro).
+- #11911, #12382, #12383: Restore statmemprof functionality in part
+  (backtrace buffers, per-thread and per-domain data
+  structures). (Nick Barnes, review by Gabriel Scherer, Fabrice Buoro,
+  Sadiq Jaffer, and Guillaume Munch-Maccagnoni).
 
 - #12735: Store both ends of the stack chain in continuations
   (Leo White, review by Miod Vallat and KC Sivaramakrishnan)

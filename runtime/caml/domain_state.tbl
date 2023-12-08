@@ -15,14 +15,15 @@
 /**************************************************************************/
 
 DOMAIN_STATE(atomic_uintnat, young_limit)
+
 /* Minor heap limit. Typically [young_start] <= [young_limit] <=
  * [young_end], but this field can be set atomically to UINTNAT_MAX by
- * another thread (typically from another domain) in order to
- * interrupt this domain (by causing an allocation failure). Setting
- * [young_limit] to UINTNAT_MAX can be done safely at any time
- * whatsoever by any thread. To avoid races, setting [young_limit] to
- * anything else than UINTNAT_MAX should only be done via
- * [caml_reset_young_limit] by the domain itself. */
+ * another thread (typically from another domain), or by the memory
+ * profiler, in order to interrupt this domain (by causing an
+ * allocation failure). Setting [young_limit] to UINTNAT_MAX can be
+ * done safely at any time whatsoever by any thread. To avoid races,
+ * setting [young_limit] to anything else than UINTNAT_MAX should only
+ * be done via [caml_reset_young_limit] by the domain itself. */
 
 DOMAIN_STATE(value*, young_ptr)
 /* Minor heap pointer */
@@ -156,6 +157,9 @@ DOMAIN_STATE(intnat, trap_barrier_off)
 DOMAIN_STATE(int64_t, trap_barrier_block)
 DOMAIN_STATE(struct caml_exception_context*, external_raise)
 /* Bytecode TLS vars, not used for native code */
+
+DOMAIN_STATE(struct memprof_domain_s *, memprof)
+DOMAIN_STATE(value *, memprof_young_trigger)
 
 DOMAIN_STATE(extra_params_area, extra_params)
 /* This member must occur last, because it is an array, not a scalar */

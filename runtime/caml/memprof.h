@@ -22,36 +22,26 @@
 #include "mlvalues.h"
 #include "roots.h"
 
-extern void caml_memprof_set_suspended(int);
+/* Suspend or unsuspend profiling */
+extern void caml_memprof_update_suspended(_Bool);
 
-extern value caml_memprof_handle_postponed_exn(void);
+/* Freshly set sampling point on minor heap */
+extern void caml_memprof_renew_minor_sample(caml_domain_state *state);
 
-extern void caml_memprof_track_alloc_shr(value block);
-extern void caml_memprof_track_custom(value block, mlsize_t bytes);
-extern void caml_memprof_track_young(uintnat wosize, int from_caml,
-                                     int nallocs, unsigned char* alloc_lens);
-extern void caml_memprof_track_interned(header_t* block, header_t* blockend);
+/* Multi-domain support. */
 
-extern void caml_memprof_renew_minor_sample(void);
-extern value* caml_memprof_young_trigger;
+extern void caml_memprof_new_domain(caml_domain_state *parent,
+                                    caml_domain_state *domain);
+extern void caml_memprof_delete_domain(caml_domain_state *domain);
 
-extern void caml_memprof_oldify_young_roots(void);
-extern void caml_memprof_minor_update(void);
-extern void caml_memprof_do_roots(scanning_action f);
-extern void caml_memprof_update_clean_phase(void);
-extern void caml_memprof_invert_tracked(void);
+/* Multi-thread support */
 
-CAMLextern struct caml_memprof_th_ctx caml_memprof_main_ctx;
+typedef struct memprof_thread_s *memprof_thread_t;
 
-CAMLextern struct caml_memprof_th_ctx* caml_memprof_new_th_ctx(void);
-CAMLextern void caml_memprof_leave_thread(void);
-CAMLextern void caml_memprof_enter_thread(struct caml_memprof_th_ctx*);
-CAMLextern void caml_memprof_delete_th_ctx(struct caml_memprof_th_ctx*);
-
-typedef void (*th_ctx_action)(struct caml_memprof_th_ctx*, void*);
-
-/* This hook is not modified after other domains are spawned. */
-extern void (*caml_memprof_th_ctx_iter_hook)(th_ctx_action, void*);
+CAMLextern memprof_thread_t caml_memprof_main_thread(caml_domain_state *domain);
+CAMLextern memprof_thread_t caml_memprof_new_thread(caml_domain_state *domain);
+CAMLextern void caml_memprof_enter_thread(memprof_thread_t);
+CAMLextern void caml_memprof_delete_thread(memprof_thread_t);
 
 #endif
 
