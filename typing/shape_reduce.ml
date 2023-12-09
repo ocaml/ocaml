@@ -43,12 +43,6 @@ let print_result fmt result =
 let find_shape env id =
   let namespace = Shape.Sig_component_kind.Module in
   Env.shape_of_path ~namespace env (Pident id)
-  (* | exception Not_found ->
-    let msg =
-      Format.asprintf "Could not find shape for %a" Ident.print_with_scope id
-    in
-    raise (Misc.fatal_error msg)
-  | shape -> shape *)
 
 module Make(Params : sig
   val fuel : int
@@ -124,9 +118,7 @@ end) = struct
   let rec reduce_ env t =
     let local_env = env.local_env in
     let memo_key = (local_env, t) in
-    in_memo_table
-      env.reduce_memo_table memo_key
-      (reduce__ env) t
+    in_memo_table env.reduce_memo_table memo_key (reduce__ env) t
   (* Memoization is absolutely essential for performance on this
      problem, because the normal forms we build can in some real-world
      cases contain an exponential amount of redundancy. Memoization

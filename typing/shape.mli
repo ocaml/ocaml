@@ -40,7 +40,7 @@
       for example when hitting first-class modules.
 
     - The location of the definition can be easily found with the
-      [cmt_format.cmt_uid_to_decl] talbe of the corresponding compilation unit.
+      [cmt_format.cmt_uid_to_decl] table of the corresponding compilation unit.
 
   See:
   - {{: https://icfp22.sigplan.org/details/mlfamilyworkshop-2022-papers/10/Module-Shapes-for-Modern-Tooling }
@@ -49,6 +49,12 @@
     a talk about the reduction strategy
 *)
 
+(** A [Uid.t] is associated with every declaration in signatures and
+    implementations, they uniquely identify bindings in the program.
+    When associated with these bindings' locations they are useful to
+    external tools when trying to jump to the declaration of
+    definitions of identifiers. They are stored to that effect in the
+    [uid_to_decl] table of cmt files. *)
 module Uid : sig
   type t = private
     | Compilation_unit of string
@@ -86,7 +92,8 @@ module Sig_component_kind : sig
   val can_appear_in_types : t -> bool
 end
 
-(** Shape's items are elements of a structure modeling module components. *)
+(** Shape's items are elements of a structure. These structures models module
+    components and nested types' constructors and labels *)
 module Item : sig
   type t = string * Sig_component_kind.t
   val name : t -> string

@@ -15,21 +15,17 @@
 
 open Shape
 
-(** The result of reducing a shape and looking for its uid.content *)
+(** The result of reducing a shape and looking for its uid *)
 type result =
   | Resolved of Uid.t (** Shape reduction succeeded and a uid was found *)
-  | Resolved_alias of Uid.t list (** Reduction led to one or several aliases *)
+  | Resolved_alias of Uid.t list (** Reduction led to an alias chain *)
   | Unresolved of t (** Result still contains [Comp_unit] terms *)
-  | Approximated of Uid.t option (** Reduction failed *)
+  | Approximated of Uid.t option
+    (** Reduction failed: it can arrive with first-clsss modules for example *)
   | Internal_error_missing_uid
-    (** Reduction succedded but no uid was found, this should never happen *)
+    (** Reduction succeeded but no uid was found, this should never happen *)
 
 val print_result : Format.formatter -> result -> unit
-
-(** This function returns the shape corresponding to a given path. It requires a
-    callback to find shapes in the environment. It is generally more useful to
-    rely directly on the [Env.shape_of_path] function to get the shape
-    associated with a given path. *)
 
 (** The [Make] functor is used to generate a reduction function for
     shapes.
