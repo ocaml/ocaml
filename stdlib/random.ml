@@ -340,7 +340,7 @@ let mk_default () =
 module TLS = Stdlib__Thread_local_storage
 
 let random_key =
-  TLS.Key.create ~split_from_parent:State.split mk_default
+  TLS.make ~split_from_parent:State.split mk_default
 
 let bits () = State.bits (TLS.get random_key)
 let int bound = State.int (TLS.get random_key) bound

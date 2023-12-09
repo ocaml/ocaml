@@ -1,8 +1,8 @@
 (* TEST *)
 
 let check_tls () =
-  let k1 = Thread_local_storage.Key.create (fun () -> 10) in
-  let k2 = Thread_local_storage.Key.create (fun () -> 1.0) in
+  let k1 = Thread_local_storage.make (fun () -> 10) in
+  let k2 = Thread_local_storage.make (fun () -> 1.0) in
   Thread_local_storage.set k1 100;
   Thread_local_storage.set k2 200.0;
   let v1 = Thread_local_storage.get k1 in
@@ -12,8 +12,8 @@ let check_tls () =
   Gc.major ()
 
 let check_tls_domain_reuse () =
-  let k1 = Thread_local_storage.Key.create (fun () -> 100) in
-  let k2 = Thread_local_storage.Key.create (fun () -> 200) in
+  let k1 = Thread_local_storage.make (fun () -> 100) in
+  let k2 = Thread_local_storage.make (fun () -> 200) in
   let domains = Array.init 4 (fun _ -> Domain.spawn(fun _ ->
     Thread_local_storage.set k1 31415;
     Thread_local_storage.set k2 27182;

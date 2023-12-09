@@ -53,7 +53,12 @@ type 'a t = {
   term_sync : 'a Raw.term_sync;
 }
 
-module DLS = Thread_local_storage
+module DLS = struct
+  type 'a key = 'a Thread_local_storage.t
+  let new_key = Thread_local_storage.make
+  let get = Thread_local_storage.get
+  let set = Thread_local_storage.set
+end
 
 (******** Identity **********)
 

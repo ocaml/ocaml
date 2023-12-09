@@ -21,14 +21,12 @@ type tls_state = Obj.t array
 let unique_value = Obj.repr (ref 0)
 
 external get_tls_state : unit -> tls_state = "%tls_get"
+external set_tls_state : tls_state -> unit = "caml_tls_set" [@@noalloc]
 
-external set_tls_state : tls_state -> unit =
-  "caml_tls_set" [@@noalloc]
-
-type 'a key = int * (unit -> 'a)
+type 'a t = int * (unit -> 'a)
 
 type key_initializer =
-  KI: 'a key * ('a -> 'a) -> key_initializer
+  KI: 'a t * ('a -> 'a) -> key_initializer
 
 let key_counter = Atomic.make 0
 
@@ -39,7 +37,7 @@ let rec add_parent_key ki =
   if not (Atomic.compare_and_set parent_keys l (ki :: l))
   then add_parent_key ki
 
-let new_key ?split_from_parent init_orphan : _ key =
+let make ?split_from_parent init_orphan : _ t =
   let idx = Atomic.fetch_and_add key_counter 1 in
   let k = (idx, init_orphan) in
   begin match split_from_parent with

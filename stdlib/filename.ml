@@ -327,7 +327,7 @@ external open_desc: string -> open_flag list -> int -> int = "caml_sys_open"
 external close_desc: int -> unit = "caml_sys_close"
 
 let prng_key =
-  Thread_local_storage.Key.create Random.State.make_self_init
+  Thread_local_storage.make Random.State.make_self_init
 
 let temp_file_name temp_dir prefix suffix =
   let random_state = Thread_local_storage.get prng_key in
@@ -335,7 +335,7 @@ let temp_file_name temp_dir prefix suffix =
   concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
 
 let current_temp_dir_name =
-  Thread_local_storage.Key.create ~split_from_parent:Fun.id
+  Thread_local_storage.make ~split_from_parent:Fun.id
     (fun () -> temp_dir_name)
 
 let set_temp_dir_name s = Thread_local_storage.set current_temp_dir_name s

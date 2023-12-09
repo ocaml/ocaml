@@ -975,7 +975,7 @@ val formatter_of_out_channel : out_channel -> formatter
 *)
 
 val synchronized_formatter_of_out_channel :
-  out_channel -> formatter Thread_local_storage.Key.t
+  out_channel -> formatter Thread_local_storage.t
 [@@alert unstable][@@alert "-unstable"]
 (** [synchronized_formatter_of_out_channel oc] returns the key to the
     domain-local state that holds the domain-local formatter for writing to the
@@ -1059,7 +1059,7 @@ val make_formatter :
 
 val make_synchronized_formatter :
   (string -> int -> int -> unit) -> (unit -> unit) ->
-  formatter Thread_local_storage.Key.t
+  formatter Thread_local_storage.t
 [@@alert unstable][@@alert "-unstable"]
 (** [make_synchronized_formatter out flush] returns the key to the domain-local
     state that holds the domain-local formatter that outputs with function

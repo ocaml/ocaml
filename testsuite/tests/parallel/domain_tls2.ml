@@ -2,7 +2,7 @@
 
 let _ =
   let key_array =
-    Array.init 128 (fun i -> Thread_local_storage.Key.create (fun _ -> i))
+    Array.init 128 (fun i -> Thread_local_storage.make (fun _ -> i))
   in
   assert (Thread_local_storage.get (key_array.(42)) = 42);
   let d = Domain.spawn (fun _ ->

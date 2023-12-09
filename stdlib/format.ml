@@ -1026,10 +1026,10 @@ and str_formatter = formatter_of_buffer stdbuf
 (* Initialise domain local state *)
 module TLS = Thread_local_storage
 
-let stdbuf_key = TLS.Key.create pp_make_buffer
+let stdbuf_key = TLS.make pp_make_buffer
 let _ = TLS.set stdbuf_key stdbuf
 
-let str_formatter_key = TLS.Key.create (fun () ->
+let str_formatter_key = TLS.make (fun () ->
   formatter_of_buffer (TLS.get stdbuf_key))
 let _ = TLS.set str_formatter_key str_formatter
 
@@ -1044,10 +1044,10 @@ let buffered_out_flush oc key () =
   Stdlib.flush oc;
   Buffer.clear buf
 
-let std_buf_key = TLS.Key.create (fun () -> Buffer.create pp_buffer_size)
-let err_buf_key = TLS.Key.create (fun () -> Buffer.create pp_buffer_size)
+let std_buf_key = TLS.make (fun () -> Buffer.create pp_buffer_size)
+let err_buf_key = TLS.make (fun () -> Buffer.create pp_buffer_size)
 
-let std_formatter_key = TLS.Key.create (fun () ->
+let std_formatter_key = TLS.make (fun () ->
   let ppf =
     pp_make_formatter (buffered_out_string std_buf_key)
       (buffered_out_flush Stdlib.stdout std_buf_key) ignore ignore ignore
@@ -1059,7 +1059,7 @@ let std_formatter_key = TLS.Key.create (fun () ->
   ppf)
 let _ = TLS.set std_formatter_key std_formatter
 
-let err_formatter_key = TLS.Key.create (fun () ->
+let err_formatter_key = TLS.make (fun () ->
   let ppf =
     pp_make_formatter (buffered_out_string err_buf_key)
       (buffered_out_flush Stdlib.stderr err_buf_key) ignore ignore ignore
@@ -1093,7 +1093,7 @@ let flush_str_formatter () =
   flush_buffer_formatter stdbuf str_formatter
 
 let make_synchronized_formatter output flush =
-  TLS.Key.create (fun () ->
+  TLS.make (fun () ->
     let buf = Buffer.create pp_buffer_size in
     let output' = Buffer.add_substring buf in
     let flush' () =

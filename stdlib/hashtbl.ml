@@ -59,7 +59,7 @@ let is_randomized () = Atomic.get randomized
 
 module TLS = Stdlib__Thread_local_storage
 
-let prng_key = TLS.Key.create Random.State.make_self_init
+let prng_key = TLS.make Random.State.make_self_init
 
 (* Functions which appear before the functorial interface must either be
    independent of the hash function or take it as a parameter (see #2202 and

@@ -17,22 +17,14 @@
 (**************************************************************************)
 
 type tls_state = Obj.t array
-
 val unique_value : Obj.t
 
 external get_tls_state : unit -> tls_state = "%tls_get"
+external set_tls_state : tls_state -> unit = "caml_tls_set" [@@noalloc]
 
-external set_tls_state : tls_state -> unit =
-  "caml_tls_set" [@@noalloc]
-
-type 'a key = int * (unit -> 'a)
-
-val new_key : ?split_from_parent:('a -> 'a) -> (unit -> 'a) -> 'a key
-
-val set : 'a key -> 'a -> unit
-
-val get : 'a key -> 'a
-
+type 'a t = int * (unit -> 'a)
+val make : ?split_from_parent:('a -> 'a) -> (unit -> 'a) -> 'a t
+val set : 'a t -> 'a -> unit
+val get : 'a t -> 'a
 val get_initial_keys : unit -> (int * Obj.t) list
-
 val set_initial_keys : (int * Obj.t) list -> unit

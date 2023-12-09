@@ -11,7 +11,7 @@
 
 module TLS = Thread_local_storage
 
-let k1 : int TLS.Key.t = TLS.Key.create (fun () -> 0)
+let k1 : int TLS.t = TLS.make (fun () -> 0)
 
 let () =
   let n = 1_000_000 in
@@ -38,8 +38,8 @@ let () =
   List.iter Thread.join threads;
   Array.iter (fun x -> assert (x = n)) values
 
-let k2 : int ref TLS.Key.t = TLS.Key.create (fun () -> ref 0)
-let k3 : int ref TLS.Key.t = TLS.Key.create (fun () -> ref 0)
+let k2 : int ref TLS.t = TLS.make (fun () -> ref 0)
+let k3 : int ref TLS.t = TLS.make (fun () -> ref 0)
 
 let () =
   print_endline "starting";

@@ -241,8 +241,7 @@ stdlib__Domain.cmx : domain.ml \
     camlinternalTLS.cmx \
     stdlib__Atomic.cmx \
     stdlib__Domain.cmi
-stdlib__Domain.cmi : domain.mli \
-    stdlib__Thread_local_storage.cmi
+stdlib__Domain.cmi : domain.mli
 stdlib__Dynarray.cmo : dynarray.ml \
     stdlib__Sys.cmi \
     stdlib__Seq.cmi \

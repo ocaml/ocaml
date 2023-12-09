@@ -16,14 +16,4 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open CamlinternalTLS
-
-module Key = struct
-  type 'a t = 'a key
-
-  let create = CamlinternalTLS.new_key
-end
-
-let set = set
-
-let get = get
+include CamlinternalTLS
