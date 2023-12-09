@@ -21,10 +21,10 @@
     @since 5.2 *)
 
 type 'a t
-(** Type of a TLS key *)
+(** Type of a thread-local storage key *)
 
 val make: ?split_from_parent:('a -> 'a) -> (unit -> 'a) -> 'a t
-(** [create f] returns a new key bound to initialiser [f] for accessing
+(** [make f] returns a new key bound to initialiser [f] for accessing
     thread-local variables.
 
     If [split_from_parent] is not provided, the value for a new
@@ -57,6 +57,10 @@ val make: ?split_from_parent:('a -> 'a) -> (unit -> 'a) -> 'a t
     thread or domain; in particular, it can access [parent_value]
     concurrently with the parent thread, which may require
     explicit synchronization to avoid data races.
+
+    Thread-local storage is designed for fast, constant-time access to a small
+    number of keys, typically declared at the top-level of the module. It is
+    not designed to be fast in cases where keys are created dynamically.
 *)
 
 val get : 'a t -> 'a
