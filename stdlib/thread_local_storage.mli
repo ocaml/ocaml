@@ -18,6 +18,11 @@
 
 (** Thread-local Storage.
 
+    {b Note:} Thread-local storage is designed for fast, constant-time
+    access to a small number of keys, typically declared at the
+    top-level of the module. It is not designed to be fast in cases
+    where keys are created dynamically.
+
     @since TODO *)
 
 type 'a t

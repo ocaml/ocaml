@@ -104,7 +104,13 @@ val self_index : unit -> int
 *)
 
 module DLS : sig
-(** Domain-local Storage *)
+    (** Domain-local Storage
+
+        {b Note:} Domain-local storage is designed for fast,
+        constant-time access to a small number of keys, typically
+        declared at the top-level of the module. It is not designed to
+        be fast in cases where keys are created dynamically.
+    *)
 
     type 'a t
     type 'a key = 'a t
