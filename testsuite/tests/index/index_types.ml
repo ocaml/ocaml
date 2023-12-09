@@ -35,3 +35,7 @@ end
 
 type t1 = ..
 type t1 += B
+
+(* 5.2 local open for types *)
+module N = struct type t end
+type u = N.(t)

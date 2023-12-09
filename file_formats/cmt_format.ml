@@ -224,8 +224,10 @@ let iter_on_occurrences
       | Ttyp_class (path, lid, _typs) ->
           (* Deprecated syntax to extend a polymorphic variant *)
           f ~namespace:Type ctyp_env path lid
+      |  Ttyp_open (path, lid, _ct) ->
+          f ~namespace:Module ctyp_env path lid
       | Ttyp_any | Ttyp_var _ | Ttyp_arrow _ | Ttyp_tuple _ | Ttyp_object _
-      | Ttyp_alias _ | Ttyp_variant _ | Ttyp_poly _ | Ttyp_open _ -> ());
+      | Ttyp_alias _ | Ttyp_variant _ | Ttyp_poly _ -> ());
       default_iterator.typ sub ct);
 
   pat =
