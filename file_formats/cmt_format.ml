@@ -205,10 +205,16 @@ let iter_on_occurrences
             add_label exp_env lid label_descr
           | Overridden (lid, _) -> add_label exp_env lid label_descr
           | Kept _ -> ()) fields
+      | Texp_instvar  (_self_path, path, name) ->
+          let lid = { name with txt = Longident.Lident name.txt } in
+          f ~namespace:Value exp_env path lid
+      | Texp_setinstvar  (_self_path, path, name, _) ->
+          let lid = { name with txt = Longident.Lident name.txt } in
+          f ~namespace:Value exp_env path lid
       | Texp_constant _ | Texp_let _ | Texp_function _ | Texp_apply _
       | Texp_match _ | Texp_try _ | Texp_tuple _ | Texp_variant _ | Texp_array _
       | Texp_ifthenelse _ | Texp_sequence _ | Texp_while _ | Texp_for _
-      | Texp_send _ | Texp_instvar _ | Texp_setinstvar _ | Texp_override _
+      | Texp_send _ | Texp_override _
       | Texp_letmodule _ | Texp_letexception _ | Texp_assert _ | Texp_lazy _
       | Texp_object _ | Texp_pack _ | Texp_letop _ | Texp_unreachable
       | Texp_extension_constructor _ | Texp_open _ -> ());

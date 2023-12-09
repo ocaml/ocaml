@@ -3,6 +3,10 @@ Resolved: Index_objects.28 :
   self (File "index_objects.ml", line 47, characters 20-24)
 Resolved: Index_objects.26 :
   i (File "index_objects.ml", line 46, characters 28-29)
+Resolved: Index_objects.21 :
+  ins (File "index_objects.ml", line 46, characters 21-24)
+Resolved: Index_objects.21 :
+  ins (File "index_objects.ml", line 45, characters 22-25)
 Resolved: Index_objects.13 :
   ct (File "index_objects.ml", line 40, characters 28-30)
 Resolved: Index_objects.5 :
