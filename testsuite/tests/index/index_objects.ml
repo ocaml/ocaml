@@ -39,3 +39,10 @@ module type M = sig
 
   class dt : object inherit ct end
 end
+
+class ins_var = object (self)
+  val mutable ins = 0
+  method get_ins () = ins
+  method set_ins i = ins <- i
+  method other () = self#get_ins ()
+end
