@@ -227,6 +227,7 @@ stdlib__Domain.cmo : domain.ml \
     stdlib__Thread_local_storage.cmi \
     stdlib.cmi \
     stdlib__Mutex.cmi \
+    stdlib__Map.cmi \
     stdlib__Condition.cmi \
     camlinternalTLS.cmi \
     stdlib__Atomic.cmi \
@@ -235,6 +236,7 @@ stdlib__Domain.cmx : domain.ml \
     stdlib__Thread_local_storage.cmx \
     stdlib.cmx \
     stdlib__Mutex.cmx \
+    stdlib__Map.cmx \
     stdlib__Condition.cmx \
     camlinternalTLS.cmx \
     stdlib__Atomic.cmx \

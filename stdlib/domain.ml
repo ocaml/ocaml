@@ -87,17 +87,33 @@ let do_before_first_spawn () =
     first_spawn_function := (fun () -> ())
   end
 
-let at_exit_key = CamlinternalTLS.new_key (fun () -> (fun () -> ()))
+module IMap = Map.Make (struct type t = int let compare = (-) end)
+let at_exit_callbacks = ref IMap.empty
+let at_exit_mutex = Mutex.create () (* protects [at_exit_callbacks] *)
 
 let at_exit f =
-  let old_exit : unit -> unit = CamlinternalTLS.get at_exit_key in
-  let new_exit () =
-    f (); old_exit ()
-  in
-  CamlinternalTLS.set at_exit_key new_exit
+  let domain_id = (self () :> int) in
+  Mutex.protect at_exit_mutex (fun () ->
+    let m = !at_exit_callbacks in
+    let old_exit_opt = IMap.find_opt domain_id m in
+    let new_exit = match old_exit_opt with
+    | None -> f
+    | Some old_exit -> (fun () -> (f (); old_exit ()))
+    in
+    at_exit_callbacks := IMap.add domain_id new_exit m)
 
 let do_at_exit () =
-  let f : unit -> unit = CamlinternalTLS.get at_exit_key in
+  let domain_id = (self () :> int) in
+  let f = Mutex.protect at_exit_mutex (fun () ->
+    let m = !at_exit_callbacks in
+    let f =
+      match IMap.find_opt domain_id m with
+      | Some f -> f
+      | None -> (fun () -> ())
+    in
+    at_exit_callbacks := IMap.remove domain_id m;
+    f)
+  in
   f ()
 
 let _ = Stdlib.do_domain_local_at_exit := do_at_exit
