@@ -115,7 +115,7 @@ DOMAIN_STATE(int, id)
 
 DOMAIN_STATE(int, unique_id)
 
-DOMAIN_STATE(value, tls_root)
+DOMAIN_STATE(value, tls_state)
 /* Thread-local state */
 
 DOMAIN_STATE(double, extra_heap_resources)

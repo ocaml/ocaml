@@ -92,7 +92,7 @@ let do_before_first_spawn () =
     first_spawn_function := (fun () -> ())
   end
 
-module IMap = Map.Make (struct type t = int let compare = (-) end)
+module IMap = Map.Make (struct type t = int let compare = Int.compare end)
 let at_exit_callbacks = ref IMap.empty
 let at_exit_mutex = Mutex.create () (* protects [at_exit_callbacks] *)
 

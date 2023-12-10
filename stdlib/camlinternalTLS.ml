@@ -75,7 +75,10 @@ let get (idx, init) =
   let v = st.(idx) in
   if v == unique_value then
     let v' = Obj.repr (init ()) in
-    st.(idx) <- (Sys.opaque_identity v');
+    (* The tls array may have been resized by [init ()], call [maybe_grow]
+       again to get the up-to-date array. *)
+    let st = maybe_grow idx in
+    st.(idx) <- Sys.opaque_identity v';
     Obj.magic v'
   else Obj.magic v
 

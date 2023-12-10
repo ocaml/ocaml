@@ -195,7 +195,7 @@ static void save_runtime_state(void)
   CAMLassert(This_thread != NULL);
   caml_thread_t this_thread = This_thread;
   this_thread->current_stack = Caml_state->current_stack;
-  this_thread->tls_state = Caml_state->tls_root;
+  this_thread->tls_state = Caml_state->tls_state;
   this_thread->c_stack = Caml_state->c_stack;
   this_thread->gc_regs = Caml_state->gc_regs;
   this_thread->gc_regs_buckets = Caml_state->gc_regs_buckets;
@@ -216,7 +216,7 @@ static void restore_runtime_state(caml_thread_t th)
   CAMLassert(th != NULL);
   Active_thread = th;
   Caml_state->current_stack = th->current_stack;
-  Caml_state->tls_root = th->tls_state;
+  Caml_state->tls_state = th->tls_state;
   Caml_state->c_stack = th->c_stack;
   Caml_state->gc_regs = th->gc_regs;
   Caml_state->gc_regs_buckets = th->gc_regs_buckets;
