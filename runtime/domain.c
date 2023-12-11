@@ -1305,11 +1305,6 @@ CAMLprim value caml_ml_domain_id(value unit)
   return Val_long(domain_self->interruptor.unique_id);
 }
 
-CAMLprim value caml_ml_domain_unique_token (value unit)
-{
-  return Val_unit;
-}
-
 /* sense-reversing barrier */
 #define BARRIER_SENSE_BIT 0x100000
 
