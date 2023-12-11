@@ -864,13 +864,13 @@ flexdll flexlink flexlink.opt:
 	@echo make invocation. Simply place the sources for FlexDLL in a
 	@echo sub-directory.
 	@echo This can either be done by downloading a source tarball from
-	@echo \  https://github.com/alainfrisch/flexdll/releases
+	@echo \  https://github.com/ocaml/flexdll/releases
 	@if [ -d .git ]; then \
 	  echo or by checking out the flexdll submodule with; \
 	  echo \  git submodule update --init; \
 	else \
 	  echo or by cloning the git repository; \
-	  echo \  git clone https://github.com/alainfrisch/flexdll.git; \
+	  echo \  git clone https://github.com/ocaml/flexdll.git; \
 	fi
 	@echo "Then pass --with-flexdll=<dir> to configure and build as normal."
 	@false
