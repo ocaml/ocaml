@@ -236,7 +236,7 @@ void caml_memprof_renew_minor_sample(caml_domain_state *state)
     /* set trigger based on geometric distribution */
   }
   CAMLassert((trigger >= state->young_start) &&
-             (trigger < state->young_ptr));
+             (trigger <= state->young_ptr));
   state->memprof_young_trigger = trigger;
   caml_reset_young_limit(state);
 }
