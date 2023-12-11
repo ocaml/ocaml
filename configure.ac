@@ -809,7 +809,7 @@ AS_CASE([$ocaml_cv_cc_vendor],
     [common_cflags="-O2 -fno-strict-aliasing -fwrapv";
     internal_cflags="$cc_warnings -fno-common -fexcess-precision=standard \
 -Wvla"],
-  [mingw32-*-*-gcc-*],
+  [mingw-*-*-gcc-*],
     [internal_cflags="-Wno-unused $cc_warnings \
 -fexcess-precision=standard"
     # TODO: see whether the code can be fixed to avoid -Wno-unused
@@ -817,7 +817,7 @@ AS_CASE([$ocaml_cv_cc_vendor],
     internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
     internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
     internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)"],
-  [mingw32-*],
+  [mingw-*],
     [AC_MSG_ERROR([Unsupported C compiler for a MinGW-w64 build])],
   [msvc-*],
     [common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"

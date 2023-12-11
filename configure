@@ -13554,15 +13554,16 @@ printf %s "checking C compiler vendor... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-#if defined(_MSC_VER) && defined(__clang_major__) && defined(__clang_minor__)
-msvc _MSC_VER clang __clang_major__ __clang_minor__
-#elif defined(_MSC_VER)
+#if defined(_MSC_VER)
 msvc _MSC_VER
+# if defined(__clang_major__) && defined(__clang_minor__)
+  clang __clang_major__ __clang_minor__
+# endif
 #elif defined(__INTEL_COMPILER)
 icc __INTEL_COMPILER
 #elif defined(__MINGW32__)
 #include <_mingw_mac.h>
-mingw32 __MINGW64_VERSION_MAJOR __MINGW64_VERSION_MINOR
+mingw __MINGW64_VERSION_MAJOR __MINGW64_VERSION_MINOR
 # if defined(__clang_major__) && defined(__clang_minor__)
   clang __clang_major__ __clang_minor__
 # elif defined(__GNUC__) && defined(__GNUC_MINOR__)
@@ -13897,7 +13898,7 @@ case $ocaml_cv_cc_vendor in #(
     common_cflags="-O2 -fno-strict-aliasing -fwrapv";
     internal_cflags="$cc_warnings -fno-common -fexcess-precision=standard \
 -Wvla" ;; #(
-  mingw32-*-*-gcc-*) :
+  mingw-*-*-gcc-*) :
     internal_cflags="-Wno-unused $cc_warnings \
 -fexcess-precision=standard"
     # TODO: see whether the code can be fixed to avoid -Wno-unused
@@ -13905,7 +13906,7 @@ case $ocaml_cv_cc_vendor in #(
     internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
     internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
     internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
-  mingw32-*) :
+  mingw-*) :
     as_fn_error $? "Unsupported C compiler for a MinGW-w64 build" "$LINENO" 5 ;; #(
   msvc-*) :
     common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
