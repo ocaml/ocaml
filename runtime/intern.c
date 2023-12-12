@@ -262,18 +262,20 @@ static void intern_cleanup(struct caml_intern_state* s)
   intern_free_stack(s);
 }
 
-CAMLnoret static void intern_failwith2(const char * fun_name, const char * msg)
-{
-  caml_failwith_value(caml_alloc_sprintf("%s: %s", fun_name, msg));
-}
+#ifdef __GNUC__
+CAMLnoret static void intern_cleanup_failwith(struct caml_intern_state * s,
+                                              const char * format, ...)
+    __attribute__ ((format (printf, 2, 3)));
+#endif
 
-CAMLnoret static void
-intern_cleanup_failwith3(struct caml_intern_state* s, const char * fun_name,
-                         const char * msg, const char * arg)
+CAMLnoret static void intern_cleanup_failwith(struct caml_intern_state * s,
+                                              const char * format, ...)
 {
-  /* Format the message before calling intern_cleanup, as arg may point
-     into intern buffers */
-  value v = caml_alloc_sprintf("%s: %s %s", fun_name, msg, arg);
+  va_list args;
+  va_start(args, format);
+  /* The arguments can point within the input buffer, so do the formatting
+     before freeing the input buffer in intern_cleanup */
+  value v = caml_alloc_vsprintf(format, args);
   intern_cleanup(s);
   caml_failwith_value(v);
 }
@@ -551,8 +553,7 @@ static void intern_rec(struct caml_intern_state* s,
         v = Val_long((intnat) (read64u(s)));
         break;
 #else
-        intern_cleanup(s);
-        intern_failwith2(fun_name, "integer too large");
+        intern_cleanup_failwith(s, "%s: integer too large", fun_name);
         break;
 #endif
       case CODE_SHARED8:
@@ -652,9 +653,10 @@ static void intern_rec(struct caml_intern_state* s,
         ReadItems(s, dest, 1);
         continue;  /* with next iteration of main loop, skipping *dest = v */
       case OLD_CODE_CUSTOM:
-        intern_cleanup(s);
-        intern_failwith2(fun_name, "custom blocks serialized with "
-                         "OCaml 4.08.0 (or prior) are no longer supported");
+        intern_cleanup_failwith
+          (s, "%s: custom blocks serialized with "
+              "OCaml 4.08.0 (or prior) are no longer supported",
+              fun_name);
         break;
       case CODE_CUSTOM_LEN:
       case CODE_CUSTOM_FIXED: {
@@ -662,12 +664,12 @@ static void intern_rec(struct caml_intern_state* s,
         const char * name = (const char *) s->intern_src;
         ops = caml_find_custom_operations(name);
         if (ops == NULL) {
-          intern_cleanup_failwith3
-            (s, fun_name, "unknown custom block identifier", name);
+          intern_cleanup_failwith
+            (s, "%s: unknown custom block identifier %s", fun_name, name);
         }
         if (code == CODE_CUSTOM_FIXED && ops->fixed_length == NULL) {
-          intern_cleanup_failwith3
-            (s, fun_name, "expected a fixed-size custom block", name);
+          intern_cleanup_failwith
+            (s, "%s: expected a fixed-size custom block %s", fun_name, name);
         }
         while (*s->intern_src++ != 0) /*nothing*/;  /*skip identifier*/
 #ifdef ARCH_SIXTYFOUR
@@ -690,8 +692,9 @@ static void intern_rec(struct caml_intern_state* s,
         Custom_ops_val(v) = ops;
         size = ops->deserialize(Data_custom_val(v));
         if (size != expected_size) {
-          intern_cleanup_failwith3
-            (s, fun_name, "error while deserializing custom block", name);
+          intern_cleanup_failwith
+            (s, "%s: error while deserializing custom block %s",
+             fun_name, name);
         }
         if (s->intern_obj_table != NULL)
           s->intern_obj_table[s->obj_counter++] = v;
@@ -702,8 +705,7 @@ static void intern_rec(struct caml_intern_state* s,
         break;
       }
       default:
-        intern_cleanup(s);
-        intern_failwith2(fun_name, "ill-formed message");
+        intern_cleanup_failwith(s, "%s: ill-formed message", fun_name);
       }
     }
   }
@@ -781,8 +783,8 @@ static void caml_parse_header(struct caml_intern_state* s,
     h->num_objects = read64u(s);
     h->whsize = read64u(s);
 #else
-    intern_failwith2
-      (fun_name, "object too large to be read back on a 32-bit platform");
+    caml_failwith_format
+      ("%s: object too large to be read back on a 32-bit platform", fun_name);
 #endif
     break;
   case Intext_magic_number_compressed:
@@ -800,12 +802,12 @@ static void caml_parse_header(struct caml_intern_state* s,
     (void) readvlq(s, NULL);
 #endif
     if (overflow) {
-      intern_failwith2
-        (fun_name, "object too large to be read back on this platform");
+      caml_failwith_format
+        ("%s: object too large to be read back on this platform", fun_name);
     }
     break;
   default:
-    intern_failwith2(fun_name, "bad object");
+    caml_failwith_format("%s: bad object", fun_name);
   }
 }
 
@@ -831,15 +833,14 @@ static void intern_decompress_input(struct caml_intern_state * s,
     ZSTD_decompress(blk, h->uncompressed_data_len, s->intern_src, h->data_len);
   if (res != h->uncompressed_data_len) {
     free(blk);
-    intern_cleanup(s);
-    intern_failwith2(fun_name, "decompression error");
+    intern_cleanup_failwith(s, "%s: decompression error", fun_name);
   }
   if (s->intern_input != NULL) free(s->intern_input);
   s->intern_input = blk;  /* to be freed at end of demarshaling */
   s->intern_src = blk;
 #else
-  intern_cleanup(s);
-  intern_failwith2(fun_name, "compressed object, cannot decompress");
+  intern_cleanup_failwith
+    (s, "%s: compressed object, cannot decompress", fun_name);
 #endif
 }
 
@@ -1048,18 +1049,16 @@ static char * intern_resolve_code_pointer(unsigned char digest[16],
     return NULL;
 }
 
-static void intern_bad_code_pointer(unsigned char digest[16])
+CAMLnoret static void intern_bad_code_pointer(unsigned char digest[16])
 {
-  char msg[256];
-  snprintf(msg, sizeof(msg),
-               "input_value: unknown code module "
-               "%02X%02X%02X%02X%02X%02X%02X%02X"
-               "%02X%02X%02X%02X%02X%02X%02X%02X",
-          digest[0], digest[1], digest[2], digest[3],
-          digest[4], digest[5], digest[6], digest[7],
-          digest[8], digest[9], digest[10], digest[11],
-          digest[12], digest[13], digest[14], digest[15]);
-  caml_failwith(msg);
+  caml_failwith_format
+    ("input_value: unknown code module "
+     "%02X%02X%02X%02X%02X%02X%02X%02X"
+     "%02X%02X%02X%02X%02X%02X%02X%02X",
+     digest[0], digest[1], digest[2], digest[3],
+     digest[4], digest[5], digest[6], digest[7],
+     digest[8], digest[9], digest[10], digest[11],
+     digest[12], digest[13], digest[14], digest[15]);
 }
 
 /* Functions for writing user-defined marshallers */
