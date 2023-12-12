@@ -67,7 +67,7 @@ type operation =
   | Iopaque
   | Ispecific of Arch.specific_operation
   | Ipoll of { return_label: Cmm.label option }
-  | Idls_get
+  | Itls_get
   | Ireturn_addr (** Retrieve the return address from the stack frame *)
 
 type instruction =

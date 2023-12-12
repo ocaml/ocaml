@@ -67,7 +67,7 @@ val at_exit : (unit -> unit) -> unit
     the function most recently added with [at_exit] is called first. An example:
 
     {[
-let temp_file_key = Domain.DLS.new_key (fun _ ->
+let temp_file_key = Thread_local_storage.new_key (fun _ ->
   let tmp = snd (Filename.open_temp_file "" "") in
   Domain.at_exit (fun () -> close_out_noerr tmp);
   tmp)
@@ -92,14 +92,14 @@ val recommended_domain_count : unit -> int
     The value returned is at least [1]. *)
 
 module DLS : sig
-(** Domain-local Storage *)
+  (** Domain-local Storage *)
 
-    type 'a key
+  type 'a key
     (** Type of a DLS key *)
 
-    val new_key : ?split_from_parent:('a -> 'a) -> (unit -> 'a) -> 'a key
+  val new_key : ?split_from_parent:('a -> 'a) -> (unit -> 'a) -> 'a key
     (** [new_key f] returns a new key bound to initialiser [f] for accessing
-,        domain-local variables.
+        domain-local variables.
 
         If [split_from_parent] is not provided, the value for a new
         domain will be computed on-demand by the new domain: the first
@@ -113,7 +113,7 @@ module DLS : sig
         If the splitting function is expensive or requires
         child-side computation, consider using ['a Lazy.t key]:
 
-        {[
+          {[
         let init () = ...
 
         let split_from_parent parent_value =
@@ -133,14 +133,14 @@ module DLS : sig
         explicit synchronization to avoid data races.
     *)
 
-    val get : 'a key -> 'a
+  val get : 'a key -> 'a
     (** [get k] returns [v] if a value [v] is associated to the key [k] on
         the calling domain's domain-local state. Sets [k]'s value with its
         initialiser and returns it otherwise. *)
 
-    val set : 'a key -> 'a -> unit
+  val set : 'a key -> 'a -> unit
     (** [set k v] updates the calling domain's domain-local state to associate
         the key [k] with value [v]. It overwrites any previous values associated
         to [k], which cannot be restored later. *)
-
 end
+[@@deprecated "use Thread_local_storage"]

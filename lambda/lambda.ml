@@ -150,7 +150,7 @@ type primitive =
   (* Inhibition of optimisation *)
   | Popaque
   (* Fetching domain-local state *)
-  | Pdls_get
+  | Ptls_get
 
 and integer_comparison =
     Ceq | Cne | Clt | Cgt | Cle | Cge

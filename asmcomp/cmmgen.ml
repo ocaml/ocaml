@@ -618,7 +618,7 @@ let rec transl env e =
           fatal_error "Cmmgen.transl:prim, wrong arity"
       | ((Pfield_computed|Psequand
          | Prunstack | Pperform | Presume | Preperform
-         | Pdls_get
+         | Ptls_get
          | Patomic_load _ | Patomic_exchange
          | Patomic_cas | Patomic_fetch_add
          | Psequor | Pnot | Pnegint | Paddint | Psubint
@@ -941,8 +941,8 @@ and transl_prim_1 env p arg dbg =
       Cop(Capply typ_val,
        [Cconst_symbol ("caml_perform", dbg); transl env arg; cont],
        dbg)
-  | Pdls_get ->
-      Cop(Cdls_get, [transl env arg], dbg)
+  | Ptls_get ->
+      Cop(Ctls_get, [transl env arg], dbg)
   | Patomic_load {immediate_or_pointer = Immediate} ->
       Cop(mk_load_atomic Word_int, [transl env arg], dbg)
   | Patomic_load {immediate_or_pointer = Pointer} ->
@@ -1139,7 +1139,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
   | Patomic_fetch_add ->
      Cop (Cextcall ("caml_atomic_fetch_add", typ_int, [], false),
           [transl env arg1; transl env arg2], dbg)
-  | Prunstack | Pperform | Presume | Preperform | Pdls_get
+  | Prunstack | Pperform | Presume | Preperform | Ptls_get
   | Patomic_cas | Patomic_load _
   | Pnot | Pnegint | Pintoffloat | Pfloatofint | Pnegfloat
   | Pabsfloat | Pstringlength | Pbyteslength | Pbytessetu | Pbytessets
@@ -1210,7 +1210,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
            transl env arg1; transl env arg2; transl env arg3],
            dbg)
 
-  | Pperform | Pdls_get | Presume
+  | Pperform | Ptls_get | Presume
   | Patomic_exchange | Patomic_fetch_add | Patomic_load _
   | Pfield_computed | Psequand | Psequor | Pnot | Pnegint | Paddint
   | Psubint | Pmulint | Pandint | Porint | Pxorint | Plslint | Plsrint | Pasrint
@@ -1243,7 +1243,7 @@ and transl_prim_4 env p arg1 arg2 arg3 arg4 dbg =
   | Psetfield_computed _
   | Pbytessetu | Pbytessets | Parraysetu _
   | Parraysets _ | Pbytes_set _ | Pbigstring_set _ | Patomic_cas
-  | Prunstack | Preperform | Pperform | Pdls_get
+  | Prunstack | Preperform | Pperform | Ptls_get
   | Patomic_exchange | Patomic_fetch_add | Patomic_load _
   | Pfield_computed | Psequand | Psequor | Pnot | Pnegint | Paddint
   | Psubint | Pmulint | Pandint | Porint | Pxorint | Plslint | Plsrint | Pasrint
@@ -1262,7 +1262,7 @@ and transl_prim_4 env p arg1 arg2 arg3 arg4 dbg =
   | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _) | Pbigarraydim _
   | Pstring_load _ | Pbytes_load _ | Pbigstring_load _ | Pbbswap _
     ->
-      fatal_errorf "Cmmgen.transl_prim_3: %a"
+      fatal_errorf "Cmmgen.transl_prim_4: %a"
         Printclambda_primitives.primitive p
 
 and transl_unbox_float dbg env exp =

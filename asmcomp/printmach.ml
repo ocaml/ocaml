@@ -155,7 +155,7 @@ let operation op arg ppf res =
   | Iopaque -> fprintf ppf "opaque %a" reg arg.(0)
   | Ispecific op ->
       Arch.print_specific_operation reg op ppf arg
-  | Idls_get -> fprintf ppf "dls_get"
+  | Itls_get -> fprintf ppf "tls_get"
   | Ireturn_addr -> fprintf ppf "return_addr"
   | Ipoll { return_label } ->
       fprintf ppf "poll call";

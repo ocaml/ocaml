@@ -54,90 +54,10 @@ type 'a t = {
 }
 
 module DLS = struct
-
-  type dls_state = Obj.t array
-
-  let unique_value = Obj.repr (ref 0)
-
-  external get_dls_state : unit -> dls_state = "%dls_get"
-
-  external set_dls_state : dls_state -> unit =
-    "caml_domain_dls_set" [@@noalloc]
-
-  let create_dls () =
-    let st = Array.make 8 unique_value in
-    set_dls_state st
-
-  let _ = create_dls ()
-
-  type 'a key = int * (unit -> 'a)
-
-  let key_counter = Atomic.make 0
-
-  type key_initializer =
-    KI: 'a key * ('a -> 'a) -> key_initializer
-
-  let parent_keys = Atomic.make ([] : key_initializer list)
-
-  let rec add_parent_key ki =
-    let l = Atomic.get parent_keys in
-    if not (Atomic.compare_and_set parent_keys l (ki :: l))
-    then add_parent_key ki
-
-  let new_key ?split_from_parent init_orphan =
-    let idx = Atomic.fetch_and_add key_counter 1 in
-    let k = (idx, init_orphan) in
-    begin match split_from_parent with
-    | None -> ()
-    | Some split -> add_parent_key (KI(k, split))
-    end;
-    k
-
-  (* If necessary, grow the current domain's local state array such that [idx]
-   * is a valid index in the array. *)
-  let maybe_grow idx =
-    let st = get_dls_state () in
-    let sz = Array.length st in
-    if idx < sz then st
-    else begin
-      let rec compute_new_size s =
-        if idx < s then s else compute_new_size (2 * s)
-      in
-      let new_sz = compute_new_size sz in
-      let new_st = Array.make new_sz unique_value in
-      Array.blit st 0 new_st 0 sz;
-      set_dls_state new_st;
-      new_st
-    end
-
-  let set (idx, _init) x =
-    let st = maybe_grow idx in
-    (* [Sys.opaque_identity] ensures that flambda does not look at the type of
-     * [x], which may be a [float] and conclude that the [st] is a float array.
-     * We do not want OCaml's float array optimisation kicking in here. *)
-    st.(idx) <- Obj.repr (Sys.opaque_identity x)
-
-  let get (idx, init) =
-    let st = maybe_grow idx in
-    let v = st.(idx) in
-    if v == unique_value then
-      let v' = Obj.repr (init ()) in
-      st.(idx) <- (Sys.opaque_identity v');
-      Obj.magic v'
-    else Obj.magic v
-
-  let get_initial_keys () : (int * Obj.t) list =
-    List.map
-      (fun (KI ((idx, _) as k, split)) ->
-           (idx, Obj.repr (split (get k))))
-      (Atomic.get parent_keys)
-
-  let set_initial_keys (l: (int * Obj.t) list) =
-    List.iter
-      (fun (idx, v) ->
-        let st = maybe_grow idx in st.(idx) <- v)
-      l
-
+  type 'a key = 'a Thread_local_storage.t
+  let new_key = Thread_local_storage.make
+  let get = Thread_local_storage.get
+  let set = Thread_local_storage.set
 end
 
 (******** Identity **********)
@@ -172,17 +92,33 @@ let do_before_first_spawn () =
     first_spawn_function := (fun () -> ())
   end
 
-let at_exit_key = DLS.new_key (fun () -> (fun () -> ()))
+module IMap = Map.Make (struct type t = int let compare = Int.compare end)
+let at_exit_callbacks = ref IMap.empty
+let at_exit_mutex = Mutex.create () (* protects [at_exit_callbacks] *)
 
 let at_exit f =
-  let old_exit : unit -> unit = DLS.get at_exit_key in
-  let new_exit () =
-    f (); old_exit ()
-  in
-  DLS.set at_exit_key new_exit
+  let domain_id = (self () :> int) in
+  Mutex.protect at_exit_mutex (fun () ->
+    let m = !at_exit_callbacks in
+    let old_exit_opt = IMap.find_opt domain_id m in
+    let new_exit = match old_exit_opt with
+    | None -> f
+    | Some old_exit -> (fun () -> (f (); old_exit ()))
+    in
+    at_exit_callbacks := IMap.add domain_id new_exit m)
 
 let do_at_exit () =
-  let f : unit -> unit = DLS.get at_exit_key in
+  let domain_id = (self () :> int) in
+  let f = Mutex.protect at_exit_mutex (fun () ->
+    let m = !at_exit_callbacks in
+    let f =
+      match IMap.find_opt domain_id m with
+      | Some f -> f
+      | None -> (fun () -> ())
+    in
+    at_exit_callbacks := IMap.remove domain_id m;
+    f)
+  in
   f ()
 
 let _ = Stdlib.do_domain_local_at_exit := do_at_exit
@@ -191,7 +127,7 @@ let _ = Stdlib.do_domain_local_at_exit := do_at_exit
 
 let spawn f =
   do_before_first_spawn ();
-  let pk = DLS.get_initial_keys () in
+  let pk = CamlinternalTLS.get_initial_keys () in
 
   (* [term_sync] is used to synchronize with the joining domains *)
   let term_sync =
@@ -202,8 +138,7 @@ let spawn f =
 
   let body () =
     match
-      DLS.create_dls ();
-      DLS.set_initial_keys pk;
+      CamlinternalTLS.set_initial_keys pk;
       let res = f () in
       res
     with
