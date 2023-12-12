@@ -391,13 +391,23 @@ CAMLprim value caml_fill_string(value s, value offset, value len, value init)
 CAMLexport value caml_alloc_sprintf(const char * format, ...)
 {
   va_list args;
+  va_start(args, format);
+  value res = caml_alloc_vsprintf(format, args);
+  va_end(args);
+  return res;
+}
+
+CAMLexport value caml_alloc_vsprintf(const char * format, va_list args0)
+
+{
+  va_list args;
   char buf[128];
   int n;
   value res;
 
 #if !defined(_WIN32) || defined(_UCRT)
   /* C99-compliant implementation */
-  va_start(args, format);
+  va_copy(args, args0);
   /* "vsnprintf(dest, sz, format, args)" writes at most "sz" characters
      into "dest", including the terminating '\0'.
      It returns the number of characters of the formatted string,
@@ -421,7 +431,7 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
     /* Re-do the formatting, outputting directly in the Caml string.
        Note that caml_alloc_string left room for a '\0' at position n,
        so the size passed to vsnprintf is n+1. */
-    va_start(args, format);
+    va_copy(args, args0);
     vsnprintf((char *)String_val(res), n + 1, saved_format, args);
     va_end(args);
     caml_stat_free(saved_format);
@@ -429,7 +439,7 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
   return res;
 #else
   /* Implementation specific to the Microsoft CRT library */
-  va_start(args, format);
+  va_copy(args, args0);
   /* "_vsnprintf(dest, sz, format, args)" writes at most "sz" characters
      into "dest".  Let "len" be the number of characters of the formatted
      string.
@@ -450,14 +460,14 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
        this, take a copy of the format outside the Caml heap. */
     char * saved_format = caml_stat_strdup(format);
     /* Determine actual length of output, excluding final '\0' */
-    va_start(args, format);
+    va_copy(args, args0);
     n = _vscprintf(format, args);
     va_end(args);
     res = caml_alloc_string(n);
     /* Re-do the formatting, outputting directly in the Caml string.
        Note that caml_alloc_string left room for a '\0' at position n,
        so the size passed to _vsnprintf is n+1. */
-    va_start(args, format);
+    va_copy(args, args0);
     _vsnprintf((char *)String_val(res), n + 1, saved_format, args);
     va_end(args);
     caml_stat_free(saved_format);
