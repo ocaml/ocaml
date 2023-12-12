@@ -13,7 +13,8 @@
 ;**************************************************************************
 
 (rule
- (targets arch.ml CSE.ml proc.ml reload.ml scheduling.ml selection.ml stackframe.ml)
+ (targets arch.ml CSE.ml proc.ml reload.ml scheduling.ml selection.ml
+          stackframe.ml)
  (mode    fallback)
  (deps    (:conf ../Makefile.config)
           (glob_files amd64/*.ml)
