@@ -127,8 +127,8 @@ unrelated synchronizing operations.
 
 TSan instrumentation imposes a non-negligible cost at runtime. Empirically,
 this cost has been observed to cause a slowdown which can range from 2x to 7x.
-One of the main factors of high slowdowns is frequent of access to mutable
-data. In contrast, the initialising writes to and reads from immutable memory
+One of the main factors of high slowdowns is frequent access to mutable data.
+In contrast, the initialising writes to and reads from immutable memory
 locations are not instrumented. TSan also allocates very large amounts of virtual
 memory, although it uses only a fraction of it. The memory consumption is
 increased by a factor between 4 and 7.
@@ -137,13 +137,13 @@ increased by a factor between 4 and 7.
 
 As illustrated by the previous example, TSan will only report the data races
 encountered during execution. Another important caveat is that TSan remembers
-only a finite number of memory accesses per memory location and per thread. At
+only a finite number of memory accesses per memory location. At
 the time of writing, this number is 4. Data races involving a forgotten access
 will not be detected. Lastly, the
 \href{https://github.com/google/sanitizers/wiki/ThreadSanitizerAlgorithm}{documentation
 of TSan} states that there is a tiny probability to miss a race if two threads
-access the same location at the same time. These are the only three cases that
-can cause TSan to miss data races.
+access the same location at the same time. TSan may overlook data races only 
+in these three specific cases.
 
 For data races between two memory accesses made from OCaml code, TSan does not
 produce false positives; that is, TSan will not emit spurious reports.
@@ -169,7 +169,7 @@ contain one or more options separated by spaces. See the
 of TSan flags} and the
 \href{https://github.com/google/sanitizers/wiki/SanitizerCommonFlags}{documentation
 of flags common to all sanitizers} for more information. Notably,
-\texttt{TSAN\_OPTIONS} allows to suppress some data races from TSan reports.
+\texttt{TSAN\_OPTIONS} allows suppressing some data races from TSan reports.
 Suppressing data race reports is useful for intentional races or libraries that
 cannot be fixed.
 
@@ -190,7 +190,7 @@ race_top:^camlMy_module
 builders, like Dune, might result in different formats. You should adapt this
 example to the symbols effectively present in your stack traces.)
 
-The \texttt{TSAN\_OPTIONS} variable also allows to increase the ``history
+The \texttt{TSAN\_OPTIONS} variable also allows for increasing the ``history
 size'', e.g.:
 
 \begin{verbatim}
