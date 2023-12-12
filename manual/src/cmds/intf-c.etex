@@ -1984,10 +1984,10 @@ block (as given by the "identifier" field) to the output stream,
 then call the user-provided "serialize" function.  That function is
 responsible for writing the data contained in the custom block, using
 the "serialize_..." functions defined in "<caml/intext.h>" and listed
-below.  The user-provided "serialize" function must then store in its
-"bsize_32" and "bsize_64" parameters the sizes in bytes of the data
-part of the custom block on a 32-bit architecture and on a 64-bit
-architecture, respectively.
+in section~\ref{ss:c-custom-serialization}.  The user-provided "serialize"
+function must then store in its "bsize_32" and "bsize_64" parameters the sizes
+in bytes of the data part of the custom block on a 32-bit architecture and on a
+64-bit architecture, respectively.
 
 The "serialize" field can be set to "custom_serialize_default",
 in which case the "Failure" exception is raised when attempting to
@@ -2000,12 +2000,12 @@ be deserialized (un-marshaled) using the OCaml functions "input_value"
 or "Marshal.from_...".  This user-provided function is responsible for
 reading back the data written by the "serialize" operation, using the
 "deserialize_..." functions defined in "<caml/intext.h>" and listed
-below. It must then rebuild the data part of the custom block
-and store it at the pointer given as the "dst" argument.  Finally, it
-returns the size in bytes of the data part of the custom block.
-This size must be identical to the "wsize_32" result of
-the "serialize" operation if the architecture is 32 bits, or
-"wsize_64" if the architecture is 64 bits.
+in section~\ref{ss:c-custom-serialization}. It must then rebuild the data part
+of the custom block and store it at the pointer given as the "dst" argument.
+Finally, it returns the size in bytes of the data part of the custom block.
+This size must be identical to the "wsize_32" result of the "serialize"
+operation if the architecture is 32 bits, or "wsize_64" if the architecture is
+64 bits.
 
 The "deserialize" field can be set to "custom_deserialize_default"
 to indicate that deserialization is not supported.  In this case,
@@ -2023,13 +2023,16 @@ specified in the "fixed_length" structure, and do not consume space in
 the serialized output.
 \end{itemize}
 
-Note: the "finalize", "compare", "hash", "serialize" and "deserialize"
-functions attached to custom block descriptors must never access the
-OCaml runtime. Within these functions, do not call any of the OCaml
-allocation functions, and do not perform a callback into OCaml code.
-Do not use "CAMLparam" to register the parameters to these functions,
-and do not use "CAMLreturn" to return the result. Do not raise
-exceptions, do not remove global roots, etc.
+Note: the "finalize", "compare", "hash", "serialize", and "deserialize"
+functions attached to custom blocks descriptors are only allowed limited
+interactions with the OCaml runtime. Within these functions, do not call any of
+the OCaml allocation functions, and do not perform any callback into OCaml
+code. Do not use "CAMLparam" to register the parameters to these functions, and
+do not use "CAMLreturn" to return the result. Do not raise exceptions (to
+signal an error during deserialization, use "caml_deserialize_error"). Do not
+remove global roots. When in doubt, err on the side of caution. Within
+"serialize" and "deserialize" functions, use of the corresponding functions
+from section~\ref{ss:c-custom-serialization} is allowed (and even recommended).
 
 \subsection{ss:c-custom-alloc}{Allocating custom blocks}
 
