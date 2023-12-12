@@ -96,10 +96,20 @@ CAMLnoret CAMLextern void caml_failwith (char const *msg);
 
 CAMLnoret CAMLextern void caml_failwith_value (value msg);
 
+CAMLnoret CAMLextern void caml_failwith_format (const char * fmt, ...)
+#ifdef __GNUC__
+  __attribute__ ((format (printf, 1, 2)))
+#endif
+;
 CAMLnoret CAMLextern void caml_invalid_argument (char const *msg);
 
 CAMLnoret CAMLextern void caml_invalid_argument_value (value msg);
 
+CAMLnoret CAMLextern void caml_invalid_argument_format (const char * fmt, ...)
+#ifdef __GNUC__
+  __attribute__ ((format (printf, 1, 2)))
+#endif
+;
 CAMLnoret CAMLextern void caml_raise_out_of_memory (void);
 
 CAMLnoret CAMLextern void caml_raise_stack_overflow (void);
