@@ -262,6 +262,22 @@ static void intern_cleanup(struct caml_intern_state* s)
   intern_free_stack(s);
 }
 
+CAMLnoret static void intern_failwith2(const char * fun_name, const char * msg)
+{
+  caml_failwith_value(caml_alloc_sprintf("%s: %s", fun_name, msg));
+}
+
+CAMLnoret static void
+intern_cleanup_failwith3(struct caml_intern_state* s, const char * fun_name,
+                         const char * msg, const char * arg)
+{
+  /* Format the message before calling intern_cleanup, as arg may point
+     into intern buffers */
+  value v = caml_alloc_sprintf("%s: %s %s", fun_name, msg, arg);
+  intern_cleanup(s);
+  caml_failwith_value(v);
+}
+
 static void readfloat(struct caml_intern_state* s,
                       double * dest, unsigned int code)
 {
@@ -428,6 +444,7 @@ static value intern_alloc_obj(struct caml_intern_state* s, caml_domain_state* d,
 }
 
 static void intern_rec(struct caml_intern_state* s,
+                       const char * fun_name,
                        volatile value *dest)
 {
   unsigned int code;
@@ -535,7 +552,7 @@ static void intern_rec(struct caml_intern_state* s,
         break;
 #else
         intern_cleanup(s);
-        caml_failwith("input_value: integer too large");
+        intern_failwith2(fun_name, "integer too large");
         break;
 #endif
       case CODE_SHARED8:
@@ -636,20 +653,21 @@ static void intern_rec(struct caml_intern_state* s,
         continue;  /* with next iteration of main loop, skipping *dest = v */
       case OLD_CODE_CUSTOM:
         intern_cleanup(s);
-        caml_failwith("input_value: custom blocks serialized with "
-                      "OCaml 4.08.0 (or prior) are no longer supported");
+        intern_failwith2(fun_name, "custom blocks serialized with "
+                         "OCaml 4.08.0 (or prior) are no longer supported");
         break;
       case CODE_CUSTOM_LEN:
       case CODE_CUSTOM_FIXED: {
         uintnat expected_size, temp_size;
-        ops = caml_find_custom_operations((char *) s->intern_src);
+        const char * name = (const char *) s->intern_src;
+        ops = caml_find_custom_operations(name);
         if (ops == NULL) {
-          intern_cleanup(s);
-          caml_failwith("input_value: unknown custom block identifier");
+          intern_cleanup_failwith3
+            (s, fun_name, "unknown custom block identifier", name);
         }
         if (code == CODE_CUSTOM_FIXED && ops->fixed_length == NULL) {
-          intern_cleanup(s);
-          caml_failwith("input_value: expected a fixed-size custom block");
+          intern_cleanup_failwith3
+            (s, fun_name, "expected a fixed-size custom block", name);
         }
         while (*s->intern_src++ != 0) /*nothing*/;  /*skip identifier*/
 #ifdef ARCH_SIXTYFOUR
@@ -672,9 +690,8 @@ static void intern_rec(struct caml_intern_state* s,
         Custom_ops_val(v) = ops;
         size = ops->deserialize(Data_custom_val(v));
         if (size != expected_size) {
-          intern_cleanup(s);
-          caml_failwith(
-            "input_value: incorrect length of serialized custom block");
+          intern_cleanup_failwith3
+            (s, fun_name, "error while deserializing custom block", name);
         }
         if (s->intern_obj_table != NULL)
           s->intern_obj_table[s->obj_counter++] = v;
@@ -686,7 +703,7 @@ static void intern_rec(struct caml_intern_state* s,
       }
       default:
         intern_cleanup(s);
-        caml_failwith("input_value: ill-formed message");
+        intern_failwith2(fun_name, "ill-formed message");
       }
     }
   }
@@ -735,14 +752,6 @@ struct marshal_header {
   uintnat whsize;
   int compressed;
 };
-
-static void intern_failwith2(const char * fun_name, const char * msg)
-{
-  char errmsg[100];
-  errmsg[sizeof(errmsg) - 1] = 0;
-  snprintf(errmsg, sizeof(errmsg) - 1, "%s: %s", fun_name, msg);
-  caml_failwith(errmsg);
-}
 
 static void caml_parse_header(struct caml_intern_state* s,
                               const char * fun_name,
@@ -888,7 +897,7 @@ value caml_input_val(struct channel *chan)
   intern_decompress_input(s, "input_value", &h);
   intern_alloc_storage(s, h.whsize, h.num_objects);
   /* Fill it in */
-  intern_rec(s, &res);
+  intern_rec(s, "input_value", &res);
   return intern_end(s, res);
 }
 
@@ -930,7 +939,7 @@ CAMLexport value caml_input_val_from_bytes(value str, intnat ofs)
   /* Decompress if needed */
   intern_decompress_input(s, "input_val_from_string", &h);
   /* Fill it in */
-  intern_rec(s, &obj);
+  intern_rec(s, "input_val_from_string", &obj);
   CAMLreturn (intern_end(s, obj));
 }
 
@@ -948,7 +957,7 @@ static value input_val_from_block(struct caml_intern_state* s,
   /* Allocate result */
   intern_alloc_storage(s, h->whsize, h->num_objects);
   /* Fill it in */
-  intern_rec(s, &obj);
+  intern_rec(s, "input_val_from_block", &obj);
   return (intern_end(s, obj));
 }
 

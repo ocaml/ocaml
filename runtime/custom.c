@@ -146,7 +146,7 @@ caml_register_custom_operations(const struct custom_operations * ops)
   push_custom_ops(&custom_ops_table, ops);
 }
 
-struct custom_operations * caml_find_custom_operations(char * ident)
+struct custom_operations * caml_find_custom_operations(const char * ident)
 {
   struct custom_operations_list * l;
   for (l = atomic_load(&custom_ops_table); l != NULL; l = l->next)
