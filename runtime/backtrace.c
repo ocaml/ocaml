@@ -88,10 +88,15 @@ static void print_location(struct caml_loc_info * li, int index)
   }
   if (! li->loc_valid) {
     fprintf(stderr, "%s unknown location%s\n", info, inlined);
+  } else if (li->loc_start_lnum == li->loc_end_lnum) {
+    fprintf(stderr, "%s %s in file \"%s\"%s, line %d, characters %d-%d\n",
+            info, li->loc_defname, li->loc_filename, inlined,
+            li->loc_start_lnum, li->loc_start_chr, li->loc_end_chr);
   } else {
-    fprintf (stderr, "%s %s in file \"%s\"%s, line %d, characters %d-%d\n",
-             info, li->loc_defname, li->loc_filename, inlined,
-             li->loc_start_lnum, li->loc_start_chr, li->loc_end_offset);
+    fprintf(stderr, "%s %s in file \"%s\"%s, lines %d-%d, characters %d-%d\n",
+            info, li->loc_defname, li->loc_filename, inlined,
+            li->loc_start_lnum, li->loc_end_lnum, li->loc_start_chr,
+            li->loc_end_chr);
   }
 }
 
