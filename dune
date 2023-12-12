@@ -39,7 +39,7 @@
  (flags (:standard -principal -nostdlib \ -short-paths))
  (libraries stdlib)
  (modules_without_implementation
-   annot asttypes cmo_format outcometree parsetree)
+   annot asttypes cmo_format outcometree parsetree value_rec_types)
  (modules
    ;; UTILS
    config build_path_prefix_map misc identifiable numbers arg_helper clflags
@@ -60,12 +60,12 @@
    typedtree printtyped ctype printtyp includeclass mtype envaux includecore
    tast_iterator tast_mapper signature_group cmt_format untypeast
    includemod includemod_errorprinter
-   typetexp patterns printpat parmatch stypes typeopt typedecl rec_check
+   typetexp patterns printpat parmatch stypes typeopt typedecl value_rec_check
    typecore
    typeclass typemod typedecl_variance typedecl_properties typedecl_immediacy
    typedecl_unboxed typedecl_separability cmt2annot
    ; manual update: mli only files
-   annot outcometree
+   annot outcometree value_rec_types
 
    ;; lambda/
    debuginfo lambda matching printlambda runtimedef tmc simplif switch
@@ -161,6 +161,7 @@
    reg reload reloadgen
    schedgen scheduling selectgen selection spill split
    strmatch thread_sanitizer x86_ast x86_dsl x86_gas x86_masm x86_proc
+   stackframegen stackframe
 
    ;; file_formats/
    linear_format

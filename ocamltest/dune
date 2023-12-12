@@ -26,11 +26,8 @@
  (modes byte)
  (wrapped false)
  (flags (:standard -nostdlib))
- (libraries ocamlcommon stdlib
-  (select ocamltest_unix.ml from
-   (unix -> ocamltest_unix_real.ml)
-   (-> ocamltest_unix_dummy.ml)))
- (modules (:standard \ options main))
+ (libraries ocamlcommon stdlib unix)
+ (modules (:standard \ options main ocamltest_unix_dummy ocamltest_unix_real))
  (c_flags (-DCAML_INTERNALS -I%{project_root}/runtime)) ; fixme
  (c_names run_unix run_stubs))
 
