@@ -373,6 +373,9 @@ Working version
   (Olivier Nicole, review by Miod Vallat, Sebastien Hinderer, Fabrice Buoro,
    Gabriel Scherer and KC Sivaramakrishnan)
 
+- #12819: Clarify which runtime interactions are allowed in custom ops
+  (Basile Clément, review by Guillaume Munch-Maccagnoni and Xavier Leroy)
+
 ### Compiler user-interface and warnings:
 
 * #10613, #12405: Simplify the values used for the system variable (`system:` in
