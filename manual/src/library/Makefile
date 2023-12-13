@@ -1,7 +1,10 @@
 ROOTDIR = ../../..
+include $(ROOTDIR)/Makefile.common
+LD_PATH = $(ROOTDIR)/otherlibs/str $(ROOTDIR)/otherlibs/unix
 
-TEXQUOTE = $(ROOTDIR)/runtime/ocamlrun ../../tools/texquote2
-CAMLLATEX = CAML_LD_LIBRARY_PATH="" $(OCAMLRUN) $(addprefix -I ,$(LD_PATH)) \
+TOOLS = ../../tools
+TEXQUOTE = $(OCAMLRUN) $(TOOLS)/texquote2
+CAMLLATEX = $(OCAMLRUN) $(addprefix -I ,$(LD_PATH)) \
   $(ROOTDIR)/tools/caml-tex -repo-root $(ROOTDIR) -n 80 -v false
 
 FILES = core.tex builtin.tex stdlib-blurb.tex compilerlibs.tex \
