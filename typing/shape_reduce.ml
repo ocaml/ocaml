@@ -91,11 +91,6 @@ end) = struct
 
   let approx_nf nf = { nf with approximated = true }
 
-  let improve_uid uid (nf : nf) =
-    match nf.uid with
-    | Some _ -> nf
-    | None -> { nf with uid }
-
   let in_memo_table memo_table memo_key f arg =
     match Hashtbl.find memo_table memo_key with
     | res -> res
@@ -169,6 +164,11 @@ end) = struct
           force_aliases nf
       | _ -> nf
     in
+    let reset_uid_if_new_binding t' =
+      match t.uid with
+      | None -> t'
+      | Some _ as uid -> { t' with uid }
+    in
     if !fuel < 0 then approx_nf (return (NError "NoFuelLeft"))
     else
       match t.desc with
@@ -183,7 +183,7 @@ end) = struct
           | NAbs(clos_env, var, body, _body_nf) ->
               let arg = delay_reduce env arg in
               let env = bind { env with local_env = clos_env } var (Some arg) in
-              {(reduce env body) with uid = t.uid }
+              reduce env body |> reset_uid_if_new_binding
           | _ ->
               let arg = reduce env arg in
               return (NApp(f, arg))
@@ -195,9 +195,7 @@ end) = struct
           | NStruct (items) ->
               begin match Item.Map.find item items with
               | exception Not_found -> nored ()
-              | nf ->
-                  force nf
-                  |> improve_uid t.uid
+              | nf -> force nf |> reset_uid_if_new_binding
               end
           | _ ->
               nored ()
@@ -217,7 +215,13 @@ end) = struct
              (not the binding site), whereas for bound values we use
              their binding-time [Uid.t]. *)
           | None -> return (NVar id)
-          | Some def -> force def
+          | Some def ->
+              begin match force def with
+              | { uid = Some _; _  } as nf -> nf
+                  (* This var already has a binding uid *)
+              | { uid = None; _ } as nf -> { nf with uid = t.uid }
+                  (* Set the var's binding uid *)
+              end
           | exception Not_found ->
           match find_shape global_env id with
           | exception Not_found -> return (NVar id)

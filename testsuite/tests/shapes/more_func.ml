@@ -109,13 +109,13 @@ module O = N.M
 module F : functor (X : sig end) -> sig module M : sig end end
 {
  "N"[module] -> {<.22>
-                 "M"[module] -> {};
+                 "M"[module] -> {<.19>};
                  };
  }
 module N : sig module M : sig end end
 {
  "O"[module] -> Alias(<.23>
-                      {});
+                      {<.19>});
  }
 module O = N.M
 |}]
