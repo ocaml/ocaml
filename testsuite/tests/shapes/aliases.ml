@@ -99,3 +99,29 @@ module E = G(B)
  }
 module E : sig type t = B.t end
 |}]
+
+module M = struct type t let x = 1 end
+module N : sig type t end = M
+module O = N
+[%%expect{|
+{
+ "M"[module] -> {<.17>
+                 "t"[type] -> <.15>;
+                 "x"[value] -> <.16>;
+                 };
+ }
+module M : sig type t val x : int end
+{
+ "N"[module] -> {<.19>
+                 "t"[type] -> <.15>;
+                 };
+ }
+module N : sig type t end
+{
+ "O"[module] -> Alias(<.20>
+                      {<.19>
+                       "t"[type] -> <.15>;
+                       });
+ }
+module O = N
+|}]

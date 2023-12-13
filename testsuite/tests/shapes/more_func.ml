@@ -96,3 +96,27 @@ module App : sig end
  }
 module Proj = Struct.L
 |}]
+
+module F (X :sig end ) = struct module M = X end
+module N = F(struct end)
+module O = N.M
+[%%expect{|
+{
+ "F"[module] -> Abs<.21>(X/381, {
+                                 "M"[module] -> X/381<.19>;
+                                 });
+ }
+module F : functor (X : sig end) -> sig module M : sig end end
+{
+ "N"[module] -> {<.22>
+                 "M"[module] -> {};
+                 };
+ }
+module N : sig module M : sig end end
+{
+ "O"[module] -> Alias(<.23>
+                      {});
+ }
+module O = N.M
+|}]
+
