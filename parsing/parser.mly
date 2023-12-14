@@ -1701,6 +1701,12 @@ module_type:
             mkmty ~loc:(startpos, $endpos) (Pmty_functor (arg, acc))
           ) mty args
         ) }
+  | args = functor_args
+    MINUSGREATER mty = module_type
+      %prec below_WITH
+      { List.fold_left (fun acc (startpos, arg) ->
+            mkmty ~loc:(startpos, $endpos) (Pmty_functor (arg, acc))
+          ) mty args }
   | MODULE TYPE OF attributes module_expr %prec below_LBRACKETAT
       { mkmty ~loc:$sloc ~attrs:$4 (Pmty_typeof $5) }
   | LPAREN module_type RPAREN
@@ -1712,8 +1718,6 @@ module_type:
   | mkmty(
       mkrhs(mty_longident)
         { Pmty_ident $1 }
-    | LPAREN RPAREN MINUSGREATER module_type
-        { Pmty_functor(Unit, $4) }
     | module_type MINUSGREATER module_type
         %prec below_WITH
         { Pmty_functor(Named (mknoloc None, $1), $3) }
