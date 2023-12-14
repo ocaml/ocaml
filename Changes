@@ -535,6 +535,13 @@ Working version
 - #12786 : Clean up the algorithm of Ctype.limited_generalize
   (Takafumi Saikawa and Jacques Garrigue, review by Gabriel Scherer)
 
+- #10696: Introduce __has_attribute and __has_c_attributes in
+  <caml/misc.h> to test the support of specific atributes in C
+  code. Introduce CAMLfallthrough as a wrapper around the fallthrough
+  attribute.
+  (Antonin Décimo, review by Nicolás Ojeda Bär, Xavier Leroy, and
+   Gabriel Scherer)
+
 ### Build system:
 
 - #12198, #12321, #12586, #12616, #12706: continue the merge of the

@@ -523,7 +523,7 @@ nextc(void)
                 s = cptr;
                 break;
             }
-            /* fall through */
+            CAMLfallthrough;
 
         default:
             cptr = s;
@@ -645,7 +645,7 @@ loop:
             FREE(t_line);
             return;
         }
-        /* fall through */
+        CAMLfallthrough;
 
     case '{':
         putc(c, f);
