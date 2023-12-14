@@ -15,6 +15,9 @@ _______________
 
 ### Language features:
 
+- #12828: Add short syntax for dependent functor types `(X:A) -> ...`
+  (Jeremy Yallop, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
 - Add syntax support for deep effect handlers
   (Leo White, Tom Kelly, Anil Madhavapeddy, KC Sivaramakrishnan, Xavier Leroy
    and Florian Angeletti, review by the same, Hugo Heuzard, and Ulysse Gérard)
