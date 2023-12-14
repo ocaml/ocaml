@@ -258,6 +258,9 @@ Working version
    Guillaume Munch-Maccagnoni, KC Sivaramakrishnan, Stefan Muenzel,
    Xavier Leroy)
 
+- #12307: Add BLAKE2b hashing and an MD5 submodule to the Digest module.
+  (Xavier Leroy, review by Olivier Nicole)
+
 - #12365: Add In_channel.input_bigarray, In_channel.really_input_bigarray,
   Out_channel.output_bigarray, Unix.read_bigarray, Unix.write_bigarray,
   Unix.single_write_bigarray.
