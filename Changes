@@ -12,6 +12,9 @@ Working version
 
 ### Language features:
 
+- #12828: Add short syntax for dependent functor types `(X:A) -> ...`
+  (Jeremy Yallop, review by ?)
+
 - #12295, #12568: Give `while true' a polymorphic type, similarly to
   `assert false'
   (Jeremy Yallop, review by Nicolás Ojeda Bär and Gabriel Scherer,
