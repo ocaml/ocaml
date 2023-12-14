@@ -12,8 +12,8 @@ module Id : Id2 = struct let id x = x end
 [%%expect{|
 module type Id1 = sig val id : 'a -> 'a end
 module type Id2 = sig val id : 'a -> 'a end
-module F : functor (X : Id1) -> Id2
-module G : functor (X : Id2) -> Id1
+module F : (X : Id1) -> Id2
+module G : (X : Id2) -> Id1
 module Id : Id2
 |}]
 

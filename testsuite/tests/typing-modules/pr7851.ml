@@ -15,7 +15,7 @@ module M = F(struct type t end);;
 module type S = module type of M;;
 [%%expect{|
 module F :
-  functor (X : sig type t end) ->
+  (X : sig type t end) ->
     sig type x = X.t type y = X.t type t = E of x type u = t = E of y end
 module M : sig type x type y type t = E of x type u = t = E of y end
 module type S = sig type x type y type t = E of x type u = t = E of y end
@@ -58,7 +58,7 @@ module type S = module type of M;;
 [%%expect{|
 type (_, _) eq = Eq : ('a, 'a) eq
 module F :
-  functor (X : Set.OrderedType) ->
+  (X : Set.OrderedType) ->
     sig
       type x = Set.Make(X).t
       and y = Set.Make(X).t

@@ -10,10 +10,10 @@ Error: Signature mismatch:
        Modules do not match:
          Dep -> S
        is not included in
-         functor (X : Dep) ->
+         (X : Dep) ->
            sig
              val x : X.t option
-             module M : functor (Y : Dep) -> sig val x : X.t option end
+             module M : (Y : Dep) -> sig val x : X.t option end
            end
        In module "M":
        Modules do not match:
@@ -21,22 +21,22 @@ Error: Signature mismatch:
        is not included in
          sig
            val x : X.t option
-           module M : functor (Y : Dep) -> sig val x : X.t option end
+           module M : (Y : Dep) -> sig val x : X.t option end
          end
        In module "M.M":
        Modules do not match:
-         functor (X : Dep) ->
+         (X : Dep) ->
            sig
              val x : X.t option
-             module M : functor (Y : Dep) -> sig val x : X.t option end
+             module M : (Y : Dep) -> sig val x : X.t option end
            end
        is not included in
-         functor (Y : Dep) -> sig val x : X.t option end
+         (Y : Dep) -> sig val x : X.t option end
        In module "M.M":
        Modules do not match:
          sig
            val x : X.t option
-           module M : functor (Y : Dep) -> sig val x : X.t option end
+           module M : (Y : Dep) -> sig val x : X.t option end
          end
        is not included in
          sig val x : X.t option end

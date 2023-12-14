@@ -555,7 +555,7 @@ and print_out_functor_parameters ppf l =
           print_args l
     | _ :: _ as non_anonymous_functor ->
         let args, anons = split_anon_functor_arguments non_anonymous_functor in
-        fprintf ppf "@[<2>functor@ %a@]@ ->@ %a"
+        fprintf ppf "@[%a@]@ ->@ %a"
           (pp_print_list ~pp_sep:pp_print_space print_nonanon_arg) args
           print_args anons
   in

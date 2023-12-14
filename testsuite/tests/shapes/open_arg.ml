@@ -12,7 +12,7 @@ end
 {
  "Make"[module type] -> <.1>;
  }
-module type Make = functor (I : sig end) -> sig end
+module type Make = (I : sig end) -> sig end
 |}]
 
 module Make (I : sig end) : sig
@@ -25,7 +25,7 @@ end = struct end
  "Make"[module] -> Abs<.3>(I/282, {
                                    });
  }
-module Make : functor (I : sig end) -> sig end
+module Make : (I : sig end) -> sig end
 |}]
 
 module type Make = functor (I : sig end) ->
@@ -37,5 +37,5 @@ end
 {
  "Make"[module type] -> <.5>;
  }
-module type Make = functor (I : sig end) -> sig end
+module type Make = (I : sig end) -> sig end
 |}]

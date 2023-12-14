@@ -27,7 +27,7 @@ module F (X : sig type t end) = X
 {
  "F"[module] -> Abs<.4>(X/280, X/280<.3>);
  }
-module F : functor (X : sig type t end) -> sig type t = X.t end
+module F : (X : sig type t end) -> sig type t = X.t end
 |}]
 
 module App_direct = F (Stdlib__Unit)

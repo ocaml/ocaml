@@ -10,7 +10,7 @@ Line 3, characters 15-18:
 3 |   module M1 := sig end
                    ^^^
 Error: Syntax error: "module path" expected.
-module F : functor (X : sig type t end) -> sig type t = X.t end
+module F : (X : sig type t end) -> sig type t = X.t end
 Line 3, characters 17-23:
 3 |   module M2 := F(struct type t = int end)
                      ^^^^^^
