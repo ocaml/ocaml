@@ -703,6 +703,10 @@ Working version
 - #12796, #12801: Fix memory corruption in caml_unix_alloc_sockaddr
   (Thomas Leonard, review by Nicolás Ojeda Bär)
 
+- #12737: Fix data races in minor_gc.c and caml_natdynlink_open
+  (Olivier Nicole, review by Stefan Muenzel, Miod Vallat, Guillaume
+   Munch-Maccagnoni, Gabriel Scherer and Xavier Leroy)
+
 OCaml 5.1.1
 -----------
 

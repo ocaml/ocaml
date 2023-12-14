@@ -186,7 +186,6 @@ header_t caml_get_header_val(value v) {
 }
 
 
-CAMLno_tsan /* Disable TSan reports from this function (see #11040) */
 static int try_update_object_header(value v, volatile value *p, value result,
                                     mlsize_t infix_offset) {
   int success = 0;
@@ -234,7 +233,6 @@ static int try_update_object_header(value v, volatile value *p, value result,
 static scanning_action_flags oldify_scanning_flags =
   SCANNING_ONLY_YOUNG_VALUES;
 
-CAMLno_tsan /* Disable TSan reports from this function (see #11040) */
 /* Note that the tests on the tag depend on the fact that Infix_tag,
    Forward_tag, and No_scan_tag are contiguous. */
 static void oldify_one (void* st_v, value v, volatile value *p)
@@ -548,7 +546,11 @@ void caml_empty_minor_heap_promote(caml_domain_state* domain,
 
       for( r = ref_start ; r < foreign_major_ref->ptr && r < ref_end ; r++ )
       {
-        oldify_one (&st, **r, *r);
+        /* Because the work on the remembered set is shared, other threads may
+           attempt to promote the same value; this is fine, but we need the
+           writes and reads (here, `*pr`) to be at least `volatile`. */
+        value_ptr pr = *r;
+        oldify_one (&st, *pr, pr);
         remembered_roots++;
       }
 
