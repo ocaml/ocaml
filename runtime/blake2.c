@@ -77,7 +77,7 @@ static const uint8_t BLAKE2_sigma[12][16] = {
 
 static void
 caml_BLAKE2Compress(struct BLAKE2_context * s,
-                    const unsigned char * data, unsigned int numbytes,
+                    const unsigned char * data, size_t numbytes,
                     int is_last_block)
 {
   uint64_t v0, v1, v2, v3, v4, v5, v6, v7,
@@ -122,11 +122,10 @@ caml_BLAKE2Compress(struct BLAKE2_context * s,
 
 CAMLexport void
 caml_BLAKE2Init(struct BLAKE2_context * s,
-                int hashlen,
-                int keylen, const unsigned char * key)
+                size_t hashlen,
+                size_t keylen, const unsigned char * key)
 {
-  CAMLassert (0 < hashlen && hashlen <= 64);
-  CAMLassert (0 <= keylen);
+  CAMLassert (hashlen <= 64);
   for (int i = 0; i < 8; i++) s->h[i] = caml_BLAKE2_iv[i];
   s->h[0] ^= 0x01010000 | (keylen << 8) | hashlen;
   s->len[0] = s->len[1] = 0;
@@ -142,11 +141,11 @@ caml_BLAKE2Init(struct BLAKE2_context * s,
 
 CAMLexport void
 caml_BLAKE2Update(struct BLAKE2_context * s,
-                  const unsigned char * data, uintnat len)
+                  const unsigned char * data, size_t len)
 {
   /* If data was left in buffer, pad it with fresh data and compress */
   if (s->numbytes > 0) {
-    int n = BLAKE2_BLOCKSIZE - s->numbytes;
+    size_t n = BLAKE2_BLOCKSIZE - s->numbytes;
     if (len <= n) {
       /* Not enough fresh data to compress.  Buffer the data. */
       memcpy(s->buffer + s->numbytes, data, len);
@@ -169,7 +168,8 @@ caml_BLAKE2Update(struct BLAKE2_context * s,
 }
 
 CAMLexport void
-caml_BLAKE2Final(struct BLAKE2_context * s, int hashlen, unsigned char * hash)
+caml_BLAKE2Final(struct BLAKE2_context * s,
+                 size_t hashlen, unsigned char * hash)
 {
   CAMLassert (0 < hashlen && hashlen <= 64);
   /* The final block is composed of the remaining data padded with zeros. */
@@ -210,7 +210,7 @@ CAMLprim value caml_blake2_create(value hashlen, value key)
     caml_alloc_custom_mem(&caml_blake2_operations,
                           sizeof(struct BLAKE2_context *),
                           sizeof(struct BLAKE2_context));
-  caml_BLAKE2Init(ctx, Int_val(hashlen),
+  caml_BLAKE2Init(ctx, Long_val(hashlen),
                   caml_string_length(key), &Byte_u(key, 0));
   BLAKE2_context_val(res) = ctx;
   CAMLreturn(res);
@@ -226,7 +226,7 @@ CAMLprim value caml_blake2_update(value ctx, value buf, value ofs, value len)
 CAMLprim value caml_blake2_final(value ctx, value hashlen)
 {
   CAMLparam1(ctx);
-  int len = Int_val(hashlen);
+  size_t len = Long_val(hashlen);
   value hash = caml_alloc_string(len);
   caml_BLAKE2Final(BLAKE2_context_val(ctx), len, &Byte_u(hash, 0));
   CAMLreturn(hash);
@@ -236,7 +236,7 @@ CAMLprim value caml_blake2_string(value hashlen, value key,
                                   value buf, value ofs, value len)
 {
   struct BLAKE2_context ctx;
-  int hlen = Int_val(hashlen);
+  size_t hlen = Long_val(hashlen);
   caml_BLAKE2Init(&ctx, hlen, caml_string_length(key), &Byte_u(key, 0));
   caml_BLAKE2Update(&ctx, &Byte_u(buf, Long_val(ofs)), Long_val(len));
   value hash = caml_alloc_string(hlen);
