@@ -151,7 +151,7 @@ end;;
 module type S = sig type t end
 type m = (module S with type t = int)
 module F :
-  functor (X : sig val x : m end) ->
+  (X : sig val x : m end) ->
     sig module M : sig type t = int end type t = M.t [@@immediate] end
 |}];;
 

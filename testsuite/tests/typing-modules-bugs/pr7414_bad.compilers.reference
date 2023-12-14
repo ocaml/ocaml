@@ -2,8 +2,8 @@ File "pr7414_bad.ml", line 52, characters 16-29:
 52 | module Ignore = Force(Choose)
                      ^^^^^^^^^^^^^
 Error: Modules do not match:
-       functor () -> sig module Choice : T val r : '_weak1 list ref ref end
-     is not included in functor () -> S
+       () -> sig module Choice : T val r : '_weak1 list ref ref end
+     is not included in () -> S
      Modules do not match:
        sig module Choice : T val r : '_weak1 list ref ref end
      is not included in

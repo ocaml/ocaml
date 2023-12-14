@@ -714,7 +714,7 @@ end
 let x = let open F(Empty) in (A:F(Empty).t) (* A is not printed *)
 [%%expect {|
 module Empty : sig end
-module F : functor (X : sig end) -> sig type t = .. type t += A end
+module F : (X : sig end) -> sig type t = .. type t += A end
 val x : F(Empty).t = <extension>
 |}]
 

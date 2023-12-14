@@ -36,7 +36,7 @@ module F' = F
 {
  "F"[module] -> Abs<.6>(X, X<.5>);
  }
-module F : functor (X : sig type t end) -> sig type t = X.t end
+module F : (X : sig type t end) -> sig type t = X.t end
 {
  "F'"[module] -> Alias(<.7>
                        Abs<.6>(X, X<.5>));
@@ -87,7 +87,7 @@ module G (X : sig type t end) = struct include X end
                              "t"[type] -> X<.12> . "t"[type];
                              });
  }
-module G : functor (X : sig type t end) -> sig type t = X.t end
+module G : (X : sig type t end) -> sig type t = X.t end
 |}]
 
 module E = G(B)

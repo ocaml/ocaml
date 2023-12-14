@@ -76,8 +76,7 @@ end
 Line 3, characters 7-20:
 3 |   open M(struct end)
            ^^^^^^^^^^^^^
-Error: This module is not a structure; it has type
-       "functor (X : sig end) -> sig end"
+Error: This module is not a structure; it has type "(X : sig end) -> sig end"
 |}]
 
 open struct
@@ -215,8 +214,8 @@ module F(X:S) : T = X
 module G(X:T) : S = X
 [%%expect{|
 module type T = sig type s = int end
-module F : functor (X : S) -> T
-module G : functor (X : T) -> S
+module F : (X : S) -> T
+module G : (X : T) -> S
 |}]
 
 module Counter : sig val inc : unit -> unit val current : unit -> int val z : int val zz : int end = struct
@@ -383,7 +382,7 @@ let print_list_of_int = let open Print_list(Print_int) in print
 module type Print = sig type t val print : t -> unit end
 module Print_int : sig type t = int val print : t -> unit end
 module Print_list :
-  functor (P : Print) -> sig type t = P.t list val print : t -> unit end
+  (P : Print) -> sig type t = P.t list val print : t -> unit end
 val print_list_of_int : Print_int.t list -> unit = <fun>
 |}]
 
@@ -393,6 +392,5 @@ let f () = let open functor(X: sig end) -> struct end in ();;
 Line 1, characters 27-53:
 1 | let f () = let open functor(X: sig end) -> struct end in ();;
                                ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This module is not a structure; it has type
-       "functor (X : sig end) -> sig end"
+Error: This module is not a structure; it has type "(X : sig end) -> sig end"
 |}]

@@ -77,7 +77,7 @@ class ['a] c = object
 end
 [%%expect {|
 module F :
-  functor (X : sig type t end) ->
+  (X : sig type t end) ->
     sig class type ['a] c = object method m : 'a -> X.t end end
 class ['a] c : object constraint 'a = < m : 'a -> Int.t; .. > end
 |}]
@@ -765,7 +765,7 @@ val x : '_weak2 list ref = {contents = []}
 module F(X : sig end) =
   struct type t = int let _ = (x : < m : t> list ref) end;;
 [%%expect{|
-module F : functor (X : sig end) -> sig type t = int end
+module F : (X : sig end) -> sig type t = int end
 |}];;
 x;;
 [%%expect{|

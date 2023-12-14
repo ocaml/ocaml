@@ -230,7 +230,7 @@ let cast_functor_argument_under_equality (type t)
   (module F (M))
 [%%expect {|
 module type S = sig type t end
-module type F = functor (M : S) -> sig type t = M.t end
+module type F = (M : S) -> sig type t = M.t end
 module type S' = sig type _ t_aux type t val eq : (t, unit t_aux) eq end
 val cast_functor_argument_under_equality :
   (module S' with type t = 't) -> (module F) -> (module S with type t = 't) =
@@ -261,8 +261,7 @@ let cast_functor_argument_signature_under_equality (type t)
   (module M : F(M).S)
 [%%expect {|
 module type S = sig type t end
-module type F =
-  functor (M : S) -> sig module type S = sig type t = M.t end end
+module type F = (M : S) -> sig module type S = sig type t = M.t end end
 module type S' = sig type _ t_aux type t val eq : (t, unit t_aux) eq end
 val cast_functor_argument_signature_under_equality :
   (module S' with type t = 't) -> (module F) -> (module S with type t = 't) =

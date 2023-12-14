@@ -1146,7 +1146,7 @@ and module_type ctxt f x =
             pp f "@[<hov2>%a@ ->@ %a@]"
               (module_type1 ctxt) mt1 (module_type ctxt) mt2
         | Some name ->
-            pp f "@[<hov2>functor@ (%s@ :@ %a)@ ->@ %a@]" name
+            pp f "@[<hov2>(%s@ :@ %a)@ ->@ %a@]" name
               (module_type ctxt) mt1 (module_type ctxt) mt2
         end
     | Pmty_with (mt, []) -> module_type ctxt f mt

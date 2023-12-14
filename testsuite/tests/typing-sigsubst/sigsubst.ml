@@ -182,7 +182,7 @@ module type S =
     module M1 : sig type t = int end
     module M2 = M1
     module M3 : sig module M = M2 end
-    module F : functor (X : sig module M = M1 end) -> sig type t end
+    module F : (X : sig module M = M1 end) -> sig type t end
     type t = F(M3).t
   end
 |}]
@@ -276,7 +276,7 @@ end
 module type S =
   sig
     module M : sig type t type u end
-    module F : functor (X : sig type t end) -> sig type t end
+    module F : (X : sig type t end) -> sig type t end
     type t = F(M).t
   end
 |}]
@@ -303,7 +303,7 @@ module type S2 = S with type M.u := float
 module type S2 =
   sig
     module M : sig type t end
-    module F : functor (X : sig type t end) -> sig type t end
+    module F : (X : sig type t end) -> sig type t end
     type t = F(M).t
   end
 |}]
@@ -317,7 +317,7 @@ module type S3 = sig
   and M2 : sig type t end
 end with type M2.t := int
 [%%expect {|
-module Id : functor (X : sig type t end) -> sig type t = X.t end
+module Id : (X : sig type t end) -> sig type t = X.t end
 Lines 2-5, characters 17-25:
 2 | .................sig
 3 |   module rec M : sig type t = A of Id(M2).t end

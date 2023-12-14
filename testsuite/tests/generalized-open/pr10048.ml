@@ -11,7 +11,6 @@ let foo (x : Ext(List).t) =
     let open Ext(Array) in
     T (Array.of_list l);;
 [%%expect {|
-module Ext :
-  functor (X : sig type 'a t end) -> sig type t = T : 'a X.t -> t end
+module Ext : (X : sig type 'a t end) -> sig type t = T : 'a X.t -> t end
 val foo : Ext(List).t -> Ext(Array).t = <fun>
 |}]
