@@ -762,8 +762,8 @@ CAMLprim value caml_thread_yield(value unit)
      does not contain anything interesting, do not bother saving
      errno.)
   */
-
-  save_runtime_state();
+  if(Active_thread == This_thread)
+    save_runtime_state();
   st_thread_yield(m);
   restore_runtime_state(This_thread);
   if (caml_check_pending_signals())
