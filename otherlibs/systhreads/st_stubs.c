@@ -723,18 +723,15 @@ out_err:
 /* the thread lock is not held when entering */
 CAMLexport int caml_c_thread_unregister(void)
 {
-  caml_thread_t th = This_thread;
-
-  /* If this thread is not set, then it was not registered */
-  if (th == NULL) return 0;
-  /* Wait until the runtime is available */
-  thread_lock_acquire(Dom_c_threads);
-  /*  Forget the thread descriptor */
+  /* If This_thread is not set, then the thread was not registered */
+  if (This_thread == NULL) return 0;
+  /* Acquire the domain lock the regular way */
+  caml_leave_blocking_section();
+  /* Terminate thread from the OCaml runtime perspective, also sets
+     Caml_state_opt to NULL */
+  caml_thread_stop();
+  /* Forget the thread info */
   st_tls_set(caml_thread_key, NULL);
-  /* Remove thread info block from list of threads, and free it */
-  caml_thread_remove_and_free(th);
-  /* Release the runtime, also sets Caml_state_opt to NULL */
-  thread_lock_release(Dom_c_threads);
   return 1;
 }
 
