@@ -153,7 +153,7 @@ end
 module BLAKE128 : S
   (** [BLAKE128] is the BLAKE2b hash function producing
       128-bit (16-byte) digests.  It is cryptographically secure.
-      However, the small size of the digests enable brute-force attacks
+      However, the small size of the digests enables brute-force attacks
       in [2{^64}] attempts.
       @since 5.2 *)
 
