@@ -1,9 +1,8 @@
 ROOTDIR = ../../..
 include $(ROOTDIR)/Makefile.common
-LD_PATH = $(ROOTDIR)/otherlibs/str $(ROOTDIR)/otherlibs/unix
 
-TOOLS = ../../tools
-TEXQUOTE = $(OCAMLRUN) $(TOOLS)/texquote2
+TEXQUOTE = $(ROOTDIR)/runtime/ocamlrun ../../tools/texquote2
+LD_PATH = $(ROOTDIR)/otherlibs/str $(ROOTDIR)/otherlibs/unix
 CAMLLATEX = $(OCAMLRUN) $(addprefix -I ,$(LD_PATH)) \
   $(ROOTDIR)/tools/caml-tex -repo-root $(ROOTDIR) -n 80 -v false
 
