@@ -546,7 +546,8 @@ Working version
 
 ### Bug fixes:
 
-- #12830: Use after free bug mentioned in issue #12773 fixed
+- #12773: Use after free bug due to wrong use of save_runtime_state() fixed
+  (Hari Hara Naveen S)
 
 - # 12791: `extern` is applied to definitions of `caml_builtin_cprim`
     and `caml_names_of_builtin_cprim` when linking bytecode '-custom'
