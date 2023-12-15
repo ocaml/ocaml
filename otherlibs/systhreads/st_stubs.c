@@ -618,9 +618,10 @@ static void * caml_thread_start(void * v)
   return 0;
 }
 
-static int create_tick_thread(void)
+static st_retcode create_tick_thread(void)
 {
-  int err;
+  if (Tick_thread_running) return 0;
+
 #ifdef POSIX_SIGNALS
   sigset_t mask, old_mask;
 
@@ -630,14 +631,17 @@ static int create_tick_thread(void)
   pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
 #endif
 
-  err = st_thread_create(&Tick_thread_id, caml_thread_tick,
+  st_retcode err = st_thread_create(&Tick_thread_id, caml_thread_tick,
                          (void *) &Caml_state->id);
 
 #ifdef POSIX_SIGNALS
   pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
 #endif
 
-  return err;
+  if (err != 0) return err;
+
+  Tick_thread_running = 1;
+  return 0;
 }
 
 CAMLprim value caml_thread_new(value clos)
@@ -652,11 +656,8 @@ CAMLprim value caml_thread_new(value clos)
   /* Create the tick thread if not already done.
      Because of PR#4666, we start the tick thread late, only when we create
      the first additional thread in the current process */
-  if (! Tick_thread_running) {
-    st_retcode err = create_tick_thread();
-    sync_check_error(err, "Thread.create");
-    Tick_thread_running = 1;
-  }
+  st_retcode err = create_tick_thread();
+  sync_check_error(err, "Thread.create");
 
   /* Create a thread info block */
   caml_thread_t th = thread_alloc_and_add();
@@ -693,6 +694,10 @@ CAMLexport int caml_c_thread_register(void)
   caml_init_domain_self(Dom_c_threads);
   thread_lock_acquire(Dom_c_threads);
 
+  /* Create tick thread if not already done */
+  st_retcode err = create_tick_thread();
+  if (err != 0) goto out_err;
+
   /* Set a thread info block */
   caml_thread_t th = thread_alloc_and_add();
   /* If it fails, we release the lock and return an error. */
@@ -700,12 +705,6 @@ CAMLexport int caml_c_thread_register(void)
   thread_init_current(th);
   /* We can now allocate the thread descriptor on the major heap */
   th->descr = caml_thread_new_descriptor(Val_unit);  /* no closure */
-
-  if (! Tick_thread_running) {
-    st_retcode err = create_tick_thread();
-    sync_check_error(err, "caml_register_c_thread");
-    Tick_thread_running = 1;
-  }
 
   /* Release the domain lock the regular way. Note: we cannot receive
      an exception here. */
