@@ -707,6 +707,9 @@ Working version
   (Olivier Nicole, review by Stefan Muenzel, Miod Vallat, Guillaume
    Munch-Maccagnoni, Gabriel Scherer and Xavier Leroy)
 
+- #12831: Fix call to caml_call_realloc_stack for s390x in PIC mode
+  (Vincent Laviron, report by Jerry James, review by Miod Vallat)
+
 OCaml 5.1.1
 -----------
 
