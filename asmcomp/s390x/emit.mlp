@@ -752,7 +752,7 @@ let fundecl fundecl =
       `	lay	%r15, -8(%r15)\n`;
       `	stg	%r14, 0(%r15)\n`;
       `	lgfi	%r12, {emit_int s}\n`;
-      `	brasl	%r14, {emit_symbol "caml_call_realloc_stack"}\n`;
+      emit_call "caml_call_realloc_stack";
       `	lg	%r14, 0(%r15)\n`;
       `	la	%r15, 8(%r15)\n`;
       `	brcl	15, {emit_label ret}\n`
