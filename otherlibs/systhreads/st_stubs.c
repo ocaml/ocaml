@@ -92,6 +92,7 @@ struct caml_thread_struct {
   value * gc_regs_buckets;   /* saved value of Caml_state->gc_regs_buckets */
   void * exn_handler;        /* saved value of Caml_state->exn_handler */
   memprof_thread_t memprof;  /* memprof's internal thread data structure */
+  void * signal_stack;       /* this thread's signal stack */
 
 #ifndef NATIVE_CODE
   intnat trap_sp_off;      /* saved value of Caml_state->trap_sp_off */
@@ -303,6 +304,7 @@ static caml_thread_t caml_thread_new_info(void)
 #endif
 
   th->memprof = caml_memprof_new_thread(domain_state);
+  th->signal_stack = NULL;
   return th;
 }
 
@@ -575,6 +577,11 @@ static void caml_thread_stop(void)
   /* Signal that the thread has terminated */
   caml_threadstatus_terminate(Terminated(Active_thread->descr));
 
+  /* Remove signal stack */
+  void * signal_stack = Active_thread->signal_stack;
+  CAMLassert(signal_stack != NULL);
+  caml_free_signal_stack(signal_stack);
+
   /* The following also sets Active_thread to a sane value in case the
      backup thread does a GC before the domain lock is acquired
      again. */
@@ -587,6 +594,7 @@ static void thread_init_current(caml_thread_t th)
 {
   st_tls_set(caml_thread_key, th);
   restore_runtime_state(th);
+  th->signal_stack = caml_init_signal_stack();
 }
 
 /* Create a thread */
@@ -597,7 +605,6 @@ static void * caml_thread_start(void * v)
   caml_thread_t th = (caml_thread_t) v;
   int dom_id = th->domain_id;
   value clos;
-  void * signal_stack;
 
   /* Acquire lock of domain */
   caml_init_domain_self(dom_id);
@@ -605,13 +612,10 @@ static void * caml_thread_start(void * v)
 
   thread_init_current(th);
 
-  signal_stack = caml_init_signal_stack(); //TODO
-
   clos = Start_closure(Active_thread->descr);
   caml_modify(&(Start_closure(Active_thread->descr)), Val_unit);
   caml_callback_exn(clos, Val_unit);
   caml_thread_stop();
-  caml_free_signal_stack(signal_stack);
   return 0;
 }
 
