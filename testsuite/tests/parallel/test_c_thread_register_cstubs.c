@@ -1,5 +1,11 @@
 #include <string.h>
+#ifdef _WIN32
+#include <windows.h>
+#define THREAD_FUNCTION DWORD WINAPI
+#else
 #include <pthread.h>
+#define THREAD_FUNCTION void *
+#endif
 #include "caml/mlvalues.h"
 #include "caml/gc.h"
 #include "caml/memory.h"
@@ -23,7 +29,7 @@ value consume_root(void *r)
   return v;
 }
 
-void *thread_func(void *root)
+THREAD_FUNCTION thread_func(void *root)
 {
   caml_c_thread_register();
   caml_acquire_runtime_system();
@@ -35,11 +41,15 @@ void *thread_func(void *root)
 
 value spawn_thread(value clos)
 {
+  void *root = create_root(clos);
+#if _WIN32
+  CloseHandle(CreateThread(NULL, 0, &thread_func, root, 0, NULL));
+#else
   pthread_t thr;
   pthread_attr_t attr;
-  void *root = create_root(clos);
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
   pthread_create(&thr, &attr, thread_func, root);
+#endif
   return Val_unit;
 }
