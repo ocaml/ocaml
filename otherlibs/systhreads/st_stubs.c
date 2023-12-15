@@ -673,6 +673,7 @@ CAMLexport int caml_c_thread_register(void)
   /* Already registered? */
   if (This_thread != NULL) return 0;
 
+  /* At this point we should not hold any domain lock */
   CAMLassert(Caml_state_opt == NULL);
   caml_init_domain_self(Dom_c_threads);
 
@@ -724,7 +725,7 @@ CAMLexport int caml_c_thread_unregister(void)
   st_tls_set(caml_thread_key, NULL);
   /* Remove thread info block from list of threads, and free it */
   caml_thread_remove_and_free(th);
-  /* Release the runtime */
+  /* Release the runtime, also sets Caml_state_opt to NULL */
   thread_lock_release(Dom_c_threads);
   return 1;
 }
