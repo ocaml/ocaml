@@ -19,7 +19,8 @@
 
 #if defined(_WIN32) && defined(CAML_INTERNALS)
 
-#include <windef.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 /*
  * This structure is defined inconsistently. mingw64 has it in ntdef.h (which
