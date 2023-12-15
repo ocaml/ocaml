@@ -26,6 +26,8 @@
 #define DLL_EXPORT
 #endif
 
+#include <stdbool.h>
+
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
 #include "caml/backtrace_prim.h"
@@ -490,6 +492,8 @@ void caml_thread_interrupt_hook(void)
   return;
 }
 
+static atomic_bool threads_initialized = false;
+
 /* [caml_thread_initialize] initialises the systhreads infrastructure. This
    function first sets up the chain for systhreads on this domain, then setup
    the global variables and hooks for systhreads to cooperate with the runtime
@@ -497,7 +501,7 @@ void caml_thread_interrupt_hook(void)
 CAMLprim value caml_thread_initialize(value unit)
 {
   /* Protect against repeated initialization (PR#3532) */
-  if (Active_thread != NULL) return Val_unit;
+  if (threads_initialized) return Val_unit;
 
   if (!caml_domain_alone())
     caml_failwith("caml_thread_initialize: cannot initialize Thread "
@@ -517,6 +521,8 @@ CAMLprim value caml_thread_initialize(value unit)
   caml_domain_initialize_hook = caml_thread_domain_initialize_hook;
   caml_domain_stop_hook = caml_thread_domain_stop_hook;
   caml_atfork_hook = caml_thread_reinitialize;
+
+  threads_initialized = true;
 
   return Val_unit;
 }
@@ -662,6 +668,8 @@ CAMLprim value caml_thread_new(value clos)
 /* the thread lock is not held when entering */
 CAMLexport int caml_c_thread_register(void)
 {
+  /* Systhreads initialized? */
+  if (!threads_initialized) return 0;
   /* Already registered? */
   if (This_thread != NULL) return 0;
 
