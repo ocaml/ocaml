@@ -323,6 +323,7 @@ void caml_thread_free_info(caml_thread_t th)
      external_raise: stack-allocated
      init_mask: stack-allocated
   */
+  caml_memprof_delete_thread(th->memprof);
   caml_free_stack(th->current_stack);
   caml_free_backtrace_buffer(th->backtrace_buffer);
 
@@ -407,7 +408,6 @@ static void caml_thread_reinitialize(void)
   th = Active_thread->next;
   while (th != Active_thread) {
     next = th->next;
-    caml_memprof_delete_thread(th->memprof);
     caml_thread_free_info(th);
     th = next;
   }
@@ -571,9 +571,6 @@ static void caml_thread_stop(void)
   /* The main domain thread does not go through [caml_thread_stop]. There is
      always one more thread in the chain at this point in time. */
   CAMLassert(Active_thread->next != Active_thread);
-
-  /* Tell memprof that this thread is terminating */
-  caml_memprof_delete_thread(Active_thread->memprof);
 
   /* Signal that the thread has terminated */
   caml_threadstatus_terminate(Terminated(Active_thread->descr));
