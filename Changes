@@ -546,6 +546,8 @@ Working version
 
 ### Bug fixes:
 
+- #12830: Use after free bug mentioned in issue #12773 fixed
+
 - # 12791: `extern` is applied to definitions of `caml_builtin_cprim`
     and `caml_names_of_builtin_cprim` when linking bytecode '-custom'
     executables with a C++ linker
