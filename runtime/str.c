@@ -431,9 +431,7 @@ CAMLexport value caml_alloc_vsprintf(const char * format, va_list args0)
     /* Re-do the formatting, outputting directly in the Caml string.
        Note that caml_alloc_string left room for a '\0' at position n,
        so the size passed to vsnprintf is n+1. */
-    va_copy(args, args0);
-    vsnprintf((char *)String_val(res), n + 1, saved_format, args);
-    va_end(args);
+    vsnprintf((char *)String_val(res), n + 1, saved_format, args0);
     caml_stat_free(saved_format);
   }
   return res;
@@ -467,9 +465,7 @@ CAMLexport value caml_alloc_vsprintf(const char * format, va_list args0)
     /* Re-do the formatting, outputting directly in the Caml string.
        Note that caml_alloc_string left room for a '\0' at position n,
        so the size passed to _vsnprintf is n+1. */
-    va_copy(args, args0);
-    _vsnprintf((char *)String_val(res), n + 1, saved_format, args);
-    va_end(args);
+    _vsnprintf((char *)String_val(res), n + 1, saved_format, args0);
     caml_stat_free(saved_format);
   }
   return res;
