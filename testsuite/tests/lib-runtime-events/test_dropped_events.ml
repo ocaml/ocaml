@@ -1,7 +1,7 @@
 (* TEST
  include runtime_events;
  include unix;
- set OCAMLRUNPARAM = "e=6";
+ ocamlrunparam += ",e=6";
  libunix;
  {
    native;
@@ -34,9 +34,14 @@ let _ =
     wait_ready ();
     producer ())
 
+let dropped = ref false
+
+let lost_events _ _ =
+  dropped := true
+
 let callbacks =
   let open Runtime_events in
-  let evs = Runtime_events.Callbacks.create ()
+  let evs = Runtime_events.Callbacks.create ~lost_events ()
   in
   let id_callback d ts c i =
     assert (i = 0)
@@ -51,4 +56,5 @@ let ()
   for _ = 0 to 10 do
     Runtime_events.read_poll cursor callbacks None
     |> ignore
-  done
+  done;
+  assert !dropped
