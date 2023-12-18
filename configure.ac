@@ -1969,27 +1969,40 @@ AC_CHECK_FUNC([putenv], [AC_DEFINE([HAS_PUTENV])])
 AC_CHECK_FUNC([setenv],
   [AC_CHECK_FUNC([unsetenv], [AC_DEFINE([HAS_SETENV_UNSETENV])])])
 
-## newlocale() and <locale.h>
-# Note: the detection fails on msvc so we hardcode the result
-# (should be debugged later)
-AS_CASE([$host],
-  [*-pc-windows], [AC_DEFINE([HAS_LOCALE_H])],
-  [AC_CHECK_HEADER([locale.h],
-    [AC_CHECK_FUNC([newlocale],
-      [AC_CHECK_FUNC([freelocale],
-        [AC_CHECK_FUNC([uselocale], [AC_DEFINE([HAS_LOCALE_H])])])])])])
+## <locale.h>
+AC_CHECK_HEADER([locale.h],
+  [AC_CHECK_FUNC([newlocale],
+    [AC_CHECK_FUNC([freelocale],
+      [AC_CHECK_FUNC([uselocale],
+        [AC_DEFINE([HAS_LOCALE_H])
+         AC_DEFINE([HAS_USELOCALE])])])],
+    [AC_CHECK_FUNC([_wsetlocale],
+      [AC_DEFINE([HAS_LOCALE_H])
+       AC_CHECK_FUNC([_configthreadlocale],
+         [AC_DEFINE([HAS_CONFIGTHREADLOCALE])])])])])
 
 AC_CHECK_HEADER([xlocale.h],
   [AC_CHECK_FUNC([newlocale],
     [AC_CHECK_FUNC([freelocale],
-      [AC_CHECK_FUNC([uselocale], [AC_DEFINE([HAS_XLOCALE_H])])])])])
+      [AC_CHECK_FUNC([uselocale],
+        [AC_DEFINE([HAS_XLOCALE_H])
+         AC_DEFINE([HAS_USELOCALE])])])])])
 
 ## strtod_l
-# Note: not detected on MSVC so hardcoding the result
-# (should be debugged later)
-AS_CASE([$host],
-  [*-pc-windows], [AC_DEFINE([HAS_STRTOD_L])],
-  [AC_CHECK_FUNC([strtod_l], [AC_DEFINE([HAS_STRTOD_L])])])
+AC_CHECK_FUNC([strtod_l],
+  [AC_DEFINE([HAS_STRTOD_L])
+   AC_DEFINE([STRTOD_L], [strtod_l])],
+  [AC_CHECK_FUNC([_create_locale],
+    [AC_CHECK_FUNC([_strtod_l],
+      [AC_DEFINE([HAS_STRTOD_L])
+       AC_DEFINE([STRTOD_L], [_strtod_l])])])])
+
+## vsnprintf_l
+AC_CHECK_FUNC([vsnprintf_l],
+  [AC_DEFINE([HAS_VSNPRINTF_L])],
+  [AC_CHECK_FUNC([_create_locale],
+    [AC_CHECK_FUNC([_vsnprintf_l],
+      [AC_DEFINE([HAS_VSNPRINTF_L])])])])
 
 ## shared library support
 AS_IF([$supports_shared_libraries],

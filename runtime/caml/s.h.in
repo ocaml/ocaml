@@ -240,9 +240,25 @@
 /* Define HAS_XLOCALE_H if you have the include file <xlocale.h> and the
    uselocale() function. */
 
+#undef HAS_USELOCALE
+
+/* Define HAS_USELOCALE if you have the uselocale function */
+
+#undef HAS_CONFIGTHREADLOCALE
+
+/* Define HAS_CONFIGTHREADLOCALE if you have the _configthreadlocale function */
+
 #undef HAS_STRTOD_L
 
-/* Define HAS_STRTOD_L if you have strtod_l */
+/* Define HAS_STRTOD_L if you have strtod_l/_strtod_l */
+
+#undef STRTOD_L
+
+/* Define STRTOD_L with the name of the strtod_l function */
+
+#undef HAS_VSNPRINTF_L
+
+/* Define HAS_VSNPRINTF_L if you have the vsnprintf_l/_vsnprintf_l function */
 
 #undef HAS_MMAP
 
