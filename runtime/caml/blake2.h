@@ -20,7 +20,7 @@
 
 #ifdef CAML_INTERNALS
 
-#include "mlvalues.h"
+#include "misc.h"
 
 #define BLAKE2_BLOCKSIZE 128
 
