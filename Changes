@@ -689,6 +689,9 @@ Working version
 - #12831: Fix call to caml_call_realloc_stack for s390x in PIC mode
   (Vincent Laviron, report by Jerry James, review by Miod Vallat)
 
+- #12837: Show non-generalizable type parameters in type definitions
+  (Jacques Garrigue, review by ??)
+
 OCaml 5.1.1 (8 December 2023)
 ----------------------------
 
