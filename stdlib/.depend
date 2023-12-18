@@ -198,11 +198,15 @@ stdlib__Condition.cmi : condition.mli \
     stdlib__Mutex.cmi
 stdlib__Digest.cmo : digest.ml \
     stdlib__String.cmi \
+    stdlib__Int.cmi \
+    stdlib__In_channel.cmi \
     stdlib__Char.cmi \
     stdlib__Bytes.cmi \
     stdlib__Digest.cmi
 stdlib__Digest.cmx : digest.ml \
     stdlib__String.cmx \
+    stdlib__Int.cmx \
+    stdlib__In_channel.cmx \
     stdlib__Char.cmx \
     stdlib__Bytes.cmx \
     stdlib__Digest.cmi
