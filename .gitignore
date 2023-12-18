@@ -38,6 +38,7 @@ _ocamltestd
 .merlin
 _build
 META
+*.mli_lint
 
 # local to root directory
 

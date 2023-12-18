@@ -15,7 +15,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Types shared amongst the various parts of the dynlink code. *)
+(** Types shared amongst the various parts of the dynlink code.
+
+    @since 4.8
+    *)
 
 type implem_state =
   | Loaded

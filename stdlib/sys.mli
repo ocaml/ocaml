@@ -420,14 +420,14 @@ external opaque_identity : 'a -> 'a = "%opaque"
     @since 4.03
 *)
 
-module Immediate64 : sig
-  (** This module allows to define a type [t] with the [immediate64]
-      attribute. This attribute means that the type is immediate on 64
-      bit architectures. On other architectures, it might or might not
-      be immediate.
+(** This module allows to define a type [t] with the [immediate64]
+  attribute. This attribute means that the type is immediate on 64
+  bit architectures. On other architectures, it might or might not
+  be immediate.
 
-      @since 4.10
-  *)
+  @since 4.10
+*)
+module Immediate64 : sig
 
   module type Non_immediate = sig
     type t

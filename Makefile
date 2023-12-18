@@ -2073,10 +2073,15 @@ tools/lintapidiff.opt$(EXE): VPATH += otherlibs/str
 
 VERSIONS=$(shell git tag|grep '^[0-9]*.[0-9]*.[0-9]*$$'|grep -v '^[12].')
 .PHONY: lintapidiff
-lintapidiff: tools/lintapidiff.opt$(EXE)
-	git ls-files -- 'otherlibs/*/*.mli' 'stdlib/*.mli' |\
-	    grep -Ev internal\|obj\|stdLabels\|moreLabels |\
-	    tools/lintapidiff.opt $(VERSIONS)
+
+%.mli_lint: %.mli tools/lintapidiff.opt$(EXE)
+	echo $< | tools/lintapidiff.opt$(EXE) $(VERSIONS)
+	touch $@
+
+MLI_NOTLINT=stdlib/stdLabels.mli stdlib/moreLabels.mli stdlib/obj.mli $(wildcard stdlib/*internal*.mli)
+MLI_TO_LINT=$(wildcard otherslibs/*/*.mli)
+MLI_TO_LINT+=$(filter-out $(MLI_NOTLINT), $(wildcard stdlib/*.mli))
+lintapidiff: $(MLI_TO_LINT:.mli=.mli_lint)
 
 # Tools
 

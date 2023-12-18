@@ -1316,6 +1316,7 @@ type ('a,'b) result = Ok of 'a | Error of 'b
 
 type ('a, 'b, 'c, 'd, 'e, 'f) format6 =
   ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.format6
+(** @since 4.02.0 *)
 
 type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
 

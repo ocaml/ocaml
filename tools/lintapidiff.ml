@@ -77,17 +77,25 @@ module Doc = struct
   let empty = {since = None; deprecated=false; loc=Location.none;
                has_doc_parent=false;has_doc=false}
 
-  let since = Str.regexp "\\(.\\|\n\\)*@since +\\([^ ]+\\).*"
+  (* only match @since that contains version number and nothing else,
+     @since can also be used for semantic changes with a comment
+   *)
+  let since = Str.regexp "\\(.\\|\n\\)*@since +\\([^ ]+\\) *$"
 
   let find_attr lst attrs =
     try Some (List.find (fun attr -> List.mem attr.attr_name.txt lst) attrs)
     with Not_found -> None
 
-  let get_doc lst attrs = match find_attr lst attrs with
+  let get_doc_raw lst attrs = match find_attr lst attrs with
     | Some { attr_payload = PStr [{pstr_desc=Pstr_eval(
         {pexp_desc=Pexp_constant(Pconst_string (doc, _,_));_}, _);_}]}
-      when doc <> "/*" && doc <> "" -> Some doc
+       -> Some doc
     | _ -> None
+
+  let get_doc lst attrs =
+    match get_doc_raw lst attrs with
+    | Some ("/*" | "") -> None
+    | d -> d
 
   let is_deprecated attrs =
     find_attr ["ocaml.deprecated"; "deprecated"] attrs <> None ||
@@ -138,7 +146,10 @@ module Ast = struct
       | Pmty_functor (Unit, _) -> map
     in
     let enter_path path name ty attrs map =
-      let path = Path.Pdot (path, name.txt) in
+      let path =
+          (* 4.07.0 had Stdlib.Pervasives *)
+          if name.txt = "Pervasives" then path
+          else Path.Pdot (path, name.txt) in
       let inherits = f inherits name.loc attrs in
       add_module_type path ty (inherits, map)
     in
@@ -173,14 +184,25 @@ module Ast = struct
     | Psig_modsubst _ | Psig_modtypesubst _ -> map
 
   let add_items ~f path (inherits,map) items =
+    let not_stop = function
+        | {psig_desc=Psig_attribute a;_} ->
+            (match Doc.get_doc_raw ["ocaml.doc"; "ocaml.text"] [a] with
+            | Some "/*" ->
+                (* (**/**) means everything that follows is undocumented *)
+                false
+            | _ -> true)
+        | _ -> true
+    in
     (* module doc *)
     let inherits = List.fold_left (fun inherits -> function
         | {psig_desc=Psig_attribute a;_}
-          when (Doc.get_doc ["ocaml.doc";"ocaml.text"][a] <> None) ->
+          when (Doc.get_doc ["ocaml.doc";"ocaml.text"] [a] <> None) ->
             f inherits (Location.none) [a]
         | _ -> inherits
       ) inherits items in
-    List.fold_left (add_item ~f path inherits) map items
+    items |> List.to_seq
+    |> Seq.take_while not_stop
+    |> Seq.fold_left (add_item ~f path inherits) map
 
   let parse_file ~orig ~f ~init input =
     try
@@ -245,9 +267,25 @@ module Diff = struct
           if s.Doc.deprecated then
             Format.fprintf ppf "@,%s is marked as deprecated" k
     in
-    Location.errorf ~loc "@[%s %s@,%a@,%a@]" msg k
+    Location.errorf ~loc "@[<v>%s %s@,%a@,%a@]" msg k
       info_seen seen info_latest latest |>
     Location.print_report Format.err_formatter
+
+  let predef =
+    [ "exception Match_failure"
+    ;"exception Out_of_memory"
+    ;"exception Invalid_argument"
+    ;"exception Failure"
+    ;"exception Not_found"
+    ;"exception Sys_error"
+    ;"exception End_of_file"
+    ;"exception Division_by_zero"
+    ;"exception Stack_overflow"
+    ;"exception Sys_blocked_io"
+    ;"exception Assert_failure"
+    ;"exception Undefined_recursive_module"
+    ]
+
 
   let parse_file_at_rev ~path (prev,accum) rev =
     let merge _ a b = match a, b with
@@ -259,10 +297,23 @@ module Diff = struct
     in
     let first_seen = Version.of_string_exn rev in
     let empty = {last_not_seen=None;first_seen;deprecated=false} in
+    let predef = predef |> List.map (fun e -> e, empty) |> IdMap.of_list in
+    let merge_predef = IdMap.union (fun _ _ r -> Some r) predef in
     let f = Ast.parse_file ~orig:path ~init:empty ~f:(fun _ _ attrs ->
         { last_not_seen=None;first_seen; deprecated=Doc.is_deprecated attrs })
     in
-    let map = match Git.with_show ~f rev path with
+    let git_show_result = match Git.with_show ~f rev path with
+        | Error File_not_found when path = "stdlib/stdlib.mli" ->
+            Git.with_show ~f rev "stdlib/pervasives.mli"
+        | Error File_not_found when path = "stdlib/bigarray.mli" ->
+            Git.with_show ~f rev "otherlibs/bigarray/bigarray.mli"
+        | Error File_not_found when Filename.dirname path = "stdlib" ->
+            Filename.concat "otherlibs/systhreads" (Filename.basename path)
+            |> Git.with_show ~f rev
+        | r -> r
+    in
+    let map = match git_show_result with
+      | Ok r when path = "stdlib/stdlib.mli" -> merge_predef r
       | Ok r -> r
       | Error File_not_found -> IdMap.empty
       | Result.Error Other_error -> raise Exit in

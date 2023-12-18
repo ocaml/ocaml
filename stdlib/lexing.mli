@@ -127,6 +127,8 @@ val with_positions : lexbuf -> bool
     When [with_positions] is [false], lexer actions should not
     modify position fields.  Doing it nevertheless could
     re-enable the [with_position] mode and degrade performances.
+
+    @since 4.08.0
 *)
 
 

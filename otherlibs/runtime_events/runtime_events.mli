@@ -44,7 +44,9 @@
   - OCAML_RUNTIME_EVENTS_PRESERVE if set will prevent the OCaml runtime from
     removing its ring buffers when it terminates. This can help if monitoring
     very short running programs.
-*)
+
+    @since 5.0
+    *)
 
 (** The type for counter events emitted by the runtime *)
 type runtime_counter =
@@ -167,18 +169,31 @@ end
 
 module Type : sig
   type 'a t
-  (** The type for a user event content type *)
+  (** The type for a user event content type
+
+      @since 5.1
+  *)
 
   val unit : unit t
-  (** An event that has no data associated with it *)
+  (** An event that has no data associated with it
 
+      @since 5.1
+  *)
+
+  (** @since 5.1 *)
   type span = Begin | End
 
   val span : span t
-  (** An event that has a beginning and an end *)
+  (** An event that has a beginning and an end
+
+      @since 5.1
+  *)
 
   val int : int t
-  (** An event containing an integer value *)
+  (** An event containing an integer value
+
+      @since 5.1
+  *)
 
   val register : encode:(bytes -> 'a -> int) -> decode:(bytes -> int -> 'a)
                                                                         -> 'a t
@@ -187,7 +202,10 @@ module Type : sig
       written. The decoder gets a slice of the buffer of specified length, and
       returns the decoded value.
 
-      The maximum value length is 1024 bytes. *)
+      The maximum value length is 1024 bytes.
+
+      @since 5.1
+  *)
 end
 
 module User : sig
@@ -197,26 +215,44 @@ module User : sig
 
   type tag = ..
   (** The type for a user event tag. Tags are used to discriminate between
-      user events of the same type *)
+      user events of the same type
+
+      @since 5.1
+  *)
 
   type 'value t
   (** The type for a user event. User events describe their tag, carried data
-      type and an unique string-based name *)
+      type and an unique string-based name
+
+      @since 5.1
+  *)
 
   val register : string -> tag -> 'value Type.t -> 'value t
   (** [register name tag ty] registers a new event with an unique [name],
-      carrying a [tag] and values of type [ty] *)
+      carrying a [tag] and values of type [ty]
+
+      @since 5.1
+  *)
 
   val write : 'value t -> 'value -> unit
-  (** [write t v] records a new event [t] with value [v] *)
+  (** [write t v] records a new event [t] with value [v]
+
+      @since 5.1
+  *)
 
   val name : _ t -> string
-  (** [name t] is the uniquely identifying name of event [t] *)
+  (** [name t] is the uniquely identifying name of event [t]
+
+      @since 5.1
+  *)
 
   val tag : 'a t -> tag
   (** [tag t] is the associated tag of event [t], when it is known.
       An event can be unknown if it was not registered in the consumer
-      program. *)
+      program.
+
+      @since 5.1
+  *)
 
 end
 
@@ -254,7 +290,10 @@ module Callbacks : sig
                         t -> t
   (** [add_user_event ty callback t] extends [t] to additionally subscribe to
       user events of type [ty]. When such an event happens, [callback] is called
-      with the corresponding event and payload. *)
+      with the corresponding event and payload.
+
+      @since 5.1
+  *)
 end
 
 val start : unit -> unit

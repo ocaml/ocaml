@@ -84,24 +84,56 @@ module type S = sig
       can run between the two.
   *)
 
-  type key
+  type key (** @since 4.14.0 *)
+
   type !'a t
   val create : int -> 'a t
+  (** @since 4.14.0 *)
+
   val clear : 'a t -> unit
+  (** @since 4.14.0 *)
+
   val reset : 'a t -> unit
+  (** @since 4.14.0 *)
+
   val copy : 'a t -> 'a t
+  (** @since 4.14.0 *)
+
   val add : 'a t -> key -> 'a -> unit
+  (** @since 4.14.0 *)
+
   val remove : 'a t -> key -> unit
+  (** @since 4.14.0 *)
+
   val find : 'a t -> key -> 'a
+  (** @since 4.14.0 *)
+
   val find_opt : 'a t -> key -> 'a option
+  (** @since 4.14.0 *)
+
   val find_all : 'a t -> key -> 'a list
+  (** @since 4.14.0 *)
+
   val replace : 'a t -> key -> 'a -> unit
+  (** @since 4.14.0 *)
+
   val mem : 'a t -> key -> bool
+  (** @since 4.14.0 *)
+
   val length : 'a t -> int
+  (** @since 4.14.0 *)
+
   val stats : 'a t -> Hashtbl.statistics
+  (** @since 4.14.0 *)
+
   val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+  (** @since 4.14.0 *)
+
   val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+  (** @since 4.14.0 *)
+
   val of_seq : (key * 'a) Seq.t -> 'a t
+  (** @since 4.14.0 *)
 
   val clean: 'a t -> unit
   (** remove all dead bindings. Done automatically during automatic resizing. *)
@@ -117,24 +149,56 @@ end
 
 module type SeededS = sig
 
-  type key
+  type key (** @since 4.14.0 *)
+
   type !'a t
   val create : ?random (*thwart tools/sync_stdlib_docs*) : bool -> int -> 'a t
+  (** @since 4.14.0 *)
+
   val clear : 'a t -> unit
+  (** @since 4.14.0 *)
+
   val reset : 'a t -> unit
+  (** @since 4.14.0 *)
+
   val copy : 'a t -> 'a t
+  (** @since 4.14.0 *)
+
   val add : 'a t -> key -> 'a -> unit
+  (** @since 4.14.0 *)
+
   val remove : 'a t -> key -> unit
+  (** @since 4.14.0 *)
+
   val find : 'a t -> key -> 'a
+  (** @since 4.14.0 *)
+
   val find_opt : 'a t -> key -> 'a option
+  (** @since 4.14.0 *)
+
   val find_all : 'a t -> key -> 'a list
+  (** @since 4.14.0 *)
+
   val replace : 'a t -> key -> 'a -> unit
+  (** @since 4.14.0 *)
+
   val mem : 'a t -> key -> bool
+  (** @since 4.14.0 *)
+
   val length : 'a t -> int
+  (** @since 4.14.0 *)
+
   val stats : 'a t -> Hashtbl.statistics
+  (** @since 4.14.0 *)
+
   val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+  (** @since 4.14.0 *)
+
   val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+  (** @since 4.14.0 *)
+
   val of_seq : (key * 'a) Seq.t -> 'a t
+  (** @since 4.14.0 *)
 
   val clean: 'a t -> unit
   (** remove all dead bindings. Done automatically during automatic resizing. *)
@@ -146,15 +210,18 @@ end
 *)
 
 module K1 : sig
+
   type ('k,'d) t (** an ephemeron with one key *)
 
   val make : 'k -> 'd -> ('k,'d) t
-  (** [Ephemeron.K1.make k d] creates an ephemeron with key [k] and data [d]. *)
+  (** [Ephemeron.K1.make k d] creates an ephemeron with key [k] and data [d].
+      @since 4.14.0 *)
 
   val query : ('k,'d) t -> 'k -> 'd option
   (** [Ephemeron.K1.query eph key] returns [Some x] (where [x] is the
       ephemeron's data) if [key] is physically equal to [eph]'s key, and
-      [None] if [eph] is empty or [key] is not equal to [eph]'s key. *)
+      [None] if [eph] is empty or [key] is not equal to [eph]'s key.
+      @since 4.14.0 *)
 
   module Make (H:Hashtbl.HashedType) : S with type key = H.t
   (** Functor building an implementation of a weak hash table *)
@@ -163,6 +230,7 @@ module K1 : sig
   (** Functor building an implementation of a weak hash table.
       The seed is similar to the one of {!Hashtbl.MakeSeeded}. *)
 
+  (** @since 4.14.0 *)
   module Bucket : sig
 
     type ('k, 'd) t
@@ -198,10 +266,10 @@ module K2 : sig
   type ('k1,'k2,'d) t (** an ephemeron with two keys *)
 
   val make : 'k1 -> 'k2 -> 'd -> ('k1,'k2,'d) t
-  (** Same as {!Ephemeron.K1.make} *)
+  (** Same as {!Ephemeron.K1.make}. @since 4.14.0 *)
 
   val query : ('k1,'k2,'d) t -> 'k1 -> 'k2 -> 'd option
-  (** Same as {!Ephemeron.K1.query} *)
+  (** Same as {!Ephemeron.K1.query}. @since 4.14.0 *)
 
   module Make
       (H1:Hashtbl.HashedType)
@@ -216,6 +284,7 @@ module K2 : sig
   (** Functor building an implementation of a weak hash table.
       The seed is similar to the one of {!Hashtbl.MakeSeeded}. *)
 
+  (** @since 4.14.0 *)
   module Bucket : sig
 
     type ('k1, 'k2, 'd) t
@@ -252,10 +321,10 @@ module Kn : sig
                       of the same type *)
 
   val make : 'k array -> 'd -> ('k,'d) t
-  (** Same as {!Ephemeron.K1.make} *)
+  (** Same as {!Ephemeron.K1.make}. @since 4.14.0 *)
 
   val query : ('k,'d) t -> 'k array -> 'd option
-  (** Same as {!Ephemeron.K1.query} *)
+  (** Same as {!Ephemeron.K1.query}. @since 4.14.0 *)
 
   module Make
       (H:Hashtbl.HashedType) :
@@ -268,6 +337,7 @@ module Kn : sig
   (** Functor building an implementation of a weak hash table.
       The seed is similar to the one of {!Hashtbl.MakeSeeded}. *)
 
+  (** @since 4.14.0 *)
   module Bucket : sig
 
     type ('k, 'd) t

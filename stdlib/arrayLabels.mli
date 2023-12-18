@@ -28,7 +28,7 @@
 *)
 
 type 'a t = 'a array
-(** An alias for the type of arrays. *)
+(** An alias for the type of arrays. @since 4.08 *)
 
 external length : 'a array -> int = "%array_length"
 (** Return the length (number of elements) of the given array. *)
