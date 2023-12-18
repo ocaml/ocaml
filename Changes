@@ -674,6 +674,9 @@ OCaml 5.2.0
   (Ulysse Gérard, Nathanaëlle Courant, suggestions by Gabriel Scherer and Thomas
   Refis, review by Florian Angeletti, Gabriel Scherer and Thomas Refis)
 
+- #12838 : Minimize assignments to Ctype.current_level
+  (Takafumi Saikawa and Jacques Garrigue, review by Florian Angeletti)
+
 ### Build system:
 
 - #12198, #12321, #12586, #12616, #12706: continue the merge of the
