@@ -45,7 +45,7 @@ OCaml 5.1.1 (8 December 2023)
   (Florian Angeletti, report by Vesa Karvonen, review by Gabriel Scherer)
 
 - #12712, #12742: fix an assertion boundary case in `caml_reset_young_limit`
-  (Jan Midtgaard, review by Guillaume Munch-Maccagnoni)
+  (Jan Midtgaard, review by Guillaume Munch-Maccagnoni and KC Sivaramakrishnan)
 
 - #12713, #12715: disable common subexpression elimination for atomic loads
   (Gabriel Scherer and Vincent Laviron,
@@ -61,6 +61,10 @@ OCaml 5.1.1 (8 December 2023)
   executables with a C++ linker.
   (Shayne Fletcher, review by Antonin Décimo and Xavier Leroy)
 
+- #12491, #12493, #12500, #12754: Do not change GC pace when creating
+  sub-arrays of bigarrays
+  (Xavier Leroy, report by Ido Yariv, analysis by Gabriel Scherer,
+   review by Gabriel Scherer and Fabrice Buoro)
 
 OCaml 5.1.0 (14 September 2023)
 -------------------------------
@@ -252,7 +256,7 @@ Some of those changes will benefit all OCaml packages.
   (Fabrice Buoro and Stephen Dolan, review by Gabriel Scherer and Sadiq Jaffer)
 
 - #11144: Restore frame-pointers support for amd64
-  (Fabrice Buoro, review by Frederic Bour and KC Sivaramakrishnan)
+  (Fabrice Buoro, review by Frédéric Bour and KC Sivaramakrishnan)
 
 - #11935: Load frametables of dynlink'd modules in batch
   (Stephen Dolan, review by David Allsopp and Guillaume Munch-Maccagnoni)
@@ -333,11 +337,6 @@ Some of those changes will benefit all OCaml packages.
 - #12231: Support MinGW-w64 11.0 winpthreads library, where the macro
   to set up to get flexdll working changed
   (David Allsopp and Samuel Hym, light review by Xavier Leroy)
-
-- #12491, #12493, #12500, #12754: Do not change GC pace when creating
-  sub-arrays of bigarrays
-  (Xavier Leroy, report by Ido Yariv, analysis by Gabriel Scherer,
-   review by Gabriel Scherer and Fabrice Buoro)
 
 ### Language features:
 
