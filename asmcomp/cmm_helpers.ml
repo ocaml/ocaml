@@ -129,9 +129,8 @@ let add_no_overflow n x c dbg =
   let d = n + x in
   if d = 0 then c else Cop(Caddi, [c; Cconst_int (d, dbg)], dbg)
 
-let rec add_const c n dbg =
-  if n = 0 then c
-  else match c with
+let rec add_const_aux c n dbg =
+  match c with
   | Cconst_int (x, _) when Misc.no_overflow_add x n -> Cconst_int (x + n, dbg)
   | Cop(Caddi, [Cconst_int (x, _); c], _)
     when Misc.no_overflow_add n x ->
@@ -144,11 +143,14 @@ let rec add_const c n dbg =
   | Cop(Csubi, [c; Cconst_int (x, _)], _) when Misc.no_overflow_sub n x ->
       add_const c (n - x) dbg
   | c -> Cop(Caddi, [c; Cconst_int (n, dbg)], dbg)
+and add_const c n dbg =
+  if n = 0 then c
+  else map_single_tail (fun c -> add_const_aux c n dbg) c
 
 let incr_int c dbg = add_const c 1 dbg
 let decr_int c dbg = add_const c (-1) dbg
 
-let rec add_int c1 c2 dbg =
+let rec add_int_aux c1 c2 dbg =
   match (c1, c2) with
   | (Cconst_int (n, _), c) | (c, Cconst_int (n, _)) ->
       add_const c n dbg
@@ -158,8 +160,10 @@ let rec add_int c1 c2 dbg =
       add_const (add_int c1 c2 dbg) n2 dbg
   | (_, _) ->
       Cop(Caddi, [c1; c2], dbg)
+and add_int c1 c2 dbg =
+  map_single_tail2 (fun c1 c2 -> add_int_aux c1 c2 dbg) c1 c2
 
-let rec sub_int c1 c2 dbg =
+let rec sub_int_aux c1 c2 dbg =
   match (c1, c2) with
   | (c1, Cconst_int (n2, _)) when n2 <> min_int ->
       add_const c1 (-n2) dbg
@@ -169,8 +173,10 @@ let rec sub_int c1 c2 dbg =
       add_const (sub_int c1 c2 dbg) n1 dbg
   | (c1, c2) ->
       Cop(Csubi, [c1; c2], dbg)
+and sub_int c1 c2 dbg =
+  map_single_tail2 (fun c1 c2 -> sub_int_aux c1 c2 dbg) c1 c2
 
-let rec lsl_int c1 c2 dbg =
+let rec lsl_int_aux c1 c2 dbg =
   match (c1, c2) with
   | (Cop(Clsl, [c; Cconst_int (n1, _)], _), Cconst_int (n2, _))
     when n1 > 0 && n2 > 0 && n1 + n2 < size_int * 8 ->
@@ -180,12 +186,14 @@ let rec lsl_int c1 c2 dbg =
       add_const (lsl_int c1 c2 dbg) (n1 lsl n2) dbg
   | (_, _) ->
       Cop(Clsl, [c1; c2], dbg)
+and lsl_int c1 c2 dbg =
+  map_single_tail2 (fun c1 c2 -> lsl_int_aux c1 c2 dbg) c1 c2
 
 let is_power2 n = n = 1 lsl Misc.log2 n
 
 and mult_power2 c n dbg = lsl_int c (Cconst_int (Misc.log2 n, dbg)) dbg
 
-let rec mul_int c1 c2 dbg =
+let rec mul_int_aux c1 c2 dbg =
   match (c1, c2) with
   | (c, Cconst_int (0, _)) | (Cconst_int (0, _), c) ->
       Csequence (c, Cconst_int (0, dbg))
@@ -201,95 +209,105 @@ let rec mul_int c1 c2 dbg =
       add_const (mul_int c (Cconst_int (k, dbg)) dbg) (n * k) dbg
   | (c1, c2) ->
       Cop(Cmuli, [c1; c2], dbg)
+and mul_int c1 c2 dbg =
+  map_single_tail2 (fun c1 c2 -> mul_int_aux c1 c2 dbg) c1 c2
 
-
-let ignore_low_bit_int = function
-    Cop(Caddi,
-        [(Cop(Clsl, [_; Cconst_int (n, _)], _) as c); Cconst_int (1, _)], _)
-      when n > 0
-      -> c
-  | Cop(Cor, [c; Cconst_int (1, _)], _) -> c
-  | c -> c
+let ignore_low_bit_int =
+  map_single_tail (function
+      | Cop(Caddi,
+            [(Cop(Clsl, [_; Cconst_int (n, _)], _) as c); Cconst_int (1, _)], _)
+          when n > 0
+          -> c
+      | Cop(Cor, [c; Cconst_int (1, _)], _) -> c
+      | c -> c
+    )
 
 (* removes the 1-bit sign-extension left by untag_int (tag_int c) *)
-let ignore_high_bit_int = function
-    Cop(Casr,
-        [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], _) -> c
-  | c -> c
+let ignore_high_bit_int =
+  map_single_tail (function
+      | Cop(Casr,
+            [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], _) -> c
+      | c -> c
+  )
 
 let lsr_int c1 c2 dbg =
-  match c2 with
-    Cconst_int (0, _) ->
-      c1
-  | Cconst_int (n, _) when n > 0 ->
-      Cop(Clsr, [ignore_low_bit_int c1; c2], dbg)
-  | _ ->
-      Cop(Clsr, [c1; c2], dbg)
+  map_single_tail (function
+      | Cconst_int (0, _) ->
+          c1
+      | Cconst_int (n, _) when n > 0 ->
+          Cop(Clsr, [ignore_low_bit_int c1; c2], dbg)
+      | c2 ->
+          Cop(Clsr, [c1; c2], dbg)
+    ) c2
 
 let asr_int c1 c2 dbg =
-  match c2 with
-    Cconst_int (0, _) ->
-      c1
-  | Cconst_int (n, _) when n > 0 ->
-      Cop(Casr, [ignore_low_bit_int c1; c2], dbg)
-  | _ ->
-      Cop(Casr, [c1; c2], dbg)
+  map_single_tail (function
+      | Cconst_int (0, _) ->
+          c1
+      | Cconst_int (n, _) when n > 0 ->
+          Cop(Casr, [ignore_low_bit_int c1; c2], dbg)
+      | c2 ->
+          Cop(Casr, [c1; c2], dbg)
+    ) c2
 
 let tag_int i dbg =
-  match i with
-    Cconst_int (n, _) ->
-      int_const dbg n
-  | Cop(Casr, [c; Cconst_int (n, _)], _) when n > 0 ->
-      Cop(Cor,
-        [asr_int c (Cconst_int (n - 1, dbg)) dbg; Cconst_int (1, dbg)],
-        dbg)
-  | c ->
-      incr_int (lsl_int c (Cconst_int (1, dbg)) dbg) dbg
+  map_single_tail (function
+      | Cconst_int (n, _) ->
+          int_const dbg n
+      | Cop(Casr, [c; Cconst_int (n, _)], _) when n > 0 ->
+          Cop(Cor,
+            [asr_int c (Cconst_int (n - 1, dbg)) dbg; Cconst_int (1, dbg)],
+            dbg)
+      | c ->
+          incr_int (lsl_int c (Cconst_int (1, dbg)) dbg) dbg
+    ) i
 
 let untag_int i dbg =
-  match i with
-    Cconst_int (n, _) -> Cconst_int(n asr 1, dbg)
-  | Cop(Cor, [Cop(Casr, [c; Cconst_int (n, _)], _); Cconst_int (1, _)], _)
-    when n > 0 && n < size_int * 8 ->
-      Cop(Casr, [c; Cconst_int (n+1, dbg)], dbg)
-  | Cop(Cor, [Cop(Clsr, [c; Cconst_int (n, _)], _); Cconst_int (1, _)], _)
-    when n > 0 && n < size_int * 8 ->
-      Cop(Clsr, [c; Cconst_int (n+1, dbg)], dbg)
-  | c -> asr_int c (Cconst_int (1, dbg)) dbg
+  map_single_tail (function
+      | Cconst_int (n, _) -> Cconst_int(n asr 1, dbg)
+      | Cop(Cor, [Cop(Casr, [c; Cconst_int (n, _)], _); Cconst_int (1, _)], _)
+        when n > 0 && n < size_int * 8 ->
+          Cop(Casr, [c; Cconst_int (n+1, dbg)], dbg)
+      | Cop(Cor, [Cop(Clsr, [c; Cconst_int (n, _)], _); Cconst_int (1, _)], _)
+        when n > 0 && n < size_int * 8 ->
+          Cop(Clsr, [c; Cconst_int (n+1, dbg)], dbg)
+      | c -> asr_int c (Cconst_int (1, dbg)) dbg
+    ) i
 
 let mk_if_then_else dbg cond ifso_dbg ifso ifnot_dbg ifnot =
-  match cond with
-  | Cconst_int (0, _) -> ifnot
-  | Cconst_int (1, _) -> ifso
-  | _ ->
-    Cifthenelse(cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg)
+  map_single_tail (function
+      | Cconst_int (0, _) -> ifnot
+      | Cconst_int (1, _) -> ifso
+      | cond ->
+          Cifthenelse(cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg)
+    ) cond
 
 let mk_not dbg cmm =
-  match cmm with
-  | Cop(Caddi,
-        [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], dbg') ->
-    begin
-      match c with
-      | Cop(Ccmpi cmp, [c1; c2], dbg'') ->
-          tag_int
-            (Cop(Ccmpi (negate_integer_comparison cmp), [c1; c2], dbg'')) dbg'
-      | Cop(Ccmpa cmp, [c1; c2], dbg'') ->
-          tag_int
-            (Cop(Ccmpa (negate_integer_comparison cmp), [c1; c2], dbg'')) dbg'
-      | Cop(Ccmpf cmp, [c1; c2], dbg'') ->
-          tag_int
-            (Cop(Ccmpf (negate_float_comparison cmp), [c1; c2], dbg'')) dbg'
-      | _ ->
-        (* 0 -> 3, 1 -> 1 *)
-        Cop(Csubi,
-            [Cconst_int (3, dbg); Cop(Clsl, [c; Cconst_int (1, dbg)], dbg)],
-            dbg)
-    end
-  | Cconst_int (3, _) -> Cconst_int (1, dbg)
-  | Cconst_int (1, _) -> Cconst_int (3, dbg)
-  | c ->
-      (* 1 -> 3, 3 -> 1 *)
-      Cop(Csubi, [Cconst_int (4, dbg); c], dbg)
+  map_single_tail (function
+      | Cop(Caddi,
+            [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], dbg') ->
+        begin
+          match c with
+          | Cop(Ccmpi cmp, [c1; c2], dbg'') ->
+              tag_int
+                (Cop(Ccmpi(negate_integer_comparison cmp), [c1;c2], dbg'')) dbg'
+          | Cop(Ccmpa cmp, [c1; c2], dbg'') ->
+              tag_int
+                (Cop(Ccmpa(negate_integer_comparison cmp), [c1;c2], dbg'')) dbg'
+          | Cop(Ccmpf cmp, [c1; c2], dbg'') ->
+              tag_int
+                (Cop(Ccmpf(negate_float_comparison cmp), [c1;c2], dbg'')) dbg'
+          | _ ->
+            (* 0 -> 3, 1 -> 1 *)
+            Cop(Csubi,
+              [Cconst_int(3,dbg); Cop(Clsl,[c; Cconst_int (1,dbg)], dbg)], dbg)
+        end
+      | Cconst_int (3, _) -> Cconst_int (1, dbg)
+      | Cconst_int (1, _) -> Cconst_int (3, dbg)
+      | c ->
+          (* 1 -> 3, 3 -> 1 *)
+          Cop(Csubi, [Cconst_int (4, dbg); c], dbg)
+    ) cmm
 
 let mk_compare_ints dbg a1 a2 =
   match (a1,a2) with
@@ -426,7 +444,7 @@ let validate d m p =
 let raise_symbol dbg symb =
   Cop(Craise Lambda.Raise_regular, [Cconst_symbol (symb, dbg)], dbg)
 
-let rec div_int c1 c2 is_safe dbg =
+let rec div_int_aux c1 c2 is_safe dbg =
   match (c1, c2) with
     (c1, Cconst_int (0, _)) ->
       Csequence(c1, raise_symbol dbg "caml_exn_Division_by_zero")
@@ -481,6 +499,8 @@ let rec div_int c1 c2 is_safe dbg =
                       dbg,
                       raise_symbol dbg "caml_exn_Division_by_zero",
                       dbg)))
+and div_int c1 c2 is_safe dbg =
+  map_single_tail2 (fun c1 c2 -> div_int_aux c1 c2 is_safe dbg) c1 c2
 
 let mod_int c1 c2 is_safe dbg =
   match (c1, c2) with
@@ -522,6 +542,9 @@ let mod_int c1 c2 is_safe dbg =
                       raise_symbol dbg "caml_exn_Division_by_zero",
                       dbg)))
 
+let mod_int c1 c2 is_safe dbg =
+  map_single_tail2 (fun c1 c2 -> mod_int c1 c2 is_safe dbg) c1 c2
+
 (* Division or modulo on boxed integers.  The overflow case min_int / -1
    can occur, in which case we force x / -1 = -x and x mod -1 = 0. (PR#5513). *)
 
@@ -555,15 +578,17 @@ let safe_mod_bi is_safe =
 (* Bool *)
 
 let test_bool dbg cmm =
-  match cmm with
-  | Cop(Caddi, [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], _) ->
-      c
-  | Cconst_int (n, dbg) ->
-      if n = 1 then
-        Cconst_int (0, dbg)
-      else
-        Cconst_int (1, dbg)
-  | c -> Cop(Ccmpi Cne, [c; Cconst_int (1, dbg)], dbg)
+  map_single_tail
+    (function
+      | Cop(Caddi,[Cop(Clsl,[c; Cconst_int (1,_)], _); Cconst_int (1,_)], _) ->
+          c
+      | Cconst_int (n, dbg) ->
+          if n = 1 then
+            Cconst_int (0, dbg)
+          else
+            Cconst_int (1, dbg)
+      | c -> Cop(Ccmpi Cne, [c; Cconst_int (1, dbg)], dbg)
+    ) cmm
 
 (* Float *)
 

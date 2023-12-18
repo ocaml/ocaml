@@ -308,6 +308,53 @@ let rec map_tail f = function
   | Cop _ as c ->
       f c
 
+let lift_phantom_lets f exp =
+  (* Unbounded exploration would be linear in the size of the expression,
+     which can lead to a translation pass that becomes quadratic in the size
+     of the original program. Limiting to a fixed depth prevents this problem,
+     and it happens that no existing optimisation looks deeper than 4 nested
+     operations, so no optimisation is lost because of this restriction. *)
+  let rec lift exp lifted_rev depth =
+    let next_depth = depth + 1 in
+    match exp with
+    | Cop (op, args, dbg) when depth < 4 ->
+      let lifted_rev, args =
+        List.fold_left (fun (lifted_rev, args) arg ->
+            let lifted_rev, arg = lift arg lifted_rev next_depth in
+            lifted_rev, arg :: args)
+          ([], [])
+          (List.rev args)
+      in
+      lifted_rev, Cop (op, args, dbg)
+    | Cphantom_let (var, defining_expr, body) ->
+      lift body ((var, defining_expr) :: lifted_rev) depth
+    | _ -> lifted_rev, exp
+  in
+  let lifted_rev, exp = lift exp [] 0 in
+  let exp = f exp in
+  List.fold_left (fun exp (var, defining_expr) ->
+      Cphantom_let (var, defining_expr, exp))
+    exp
+    lifted_rev
+
+let rec map_single_tail f = function
+  | Clet (id, exp, body) ->
+      let result = map_single_tail f body in
+      Clet (id, exp, result)
+  | Cphantom_let (var, defining_expr, body) ->
+      let result = map_single_tail f body in
+      Cphantom_let (var, defining_expr, result)
+  | Csequence (s1, s2) ->
+      let result = map_single_tail f s2 in
+      Csequence (s1, result)
+  | body ->
+      lift_phantom_lets f body
+
+let map_single_tail2 f exp1 exp2 =
+  map_single_tail (fun exp2 ->
+      map_single_tail (fun exp1 -> f exp1 exp2) exp1)
+    exp2
+
 let map_shallow f = function
   | Clet (id, e1, e2) ->
       Clet (id, f e1, f e2)
