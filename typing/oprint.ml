@@ -417,15 +417,15 @@ let out_type_args = ref print_typargs
 
 (* Class types *)
 
-let print_type_parameter ppf s =
-  if s = "_" then fprintf ppf "_" else pr_var ppf s
+let print_type_parameter ?(non_gen=false) ppf s =
+  if s = "_" then fprintf ppf "_" else ty_var ~non_gen ppf s
 
-let type_parameter ppf (ty, (var, inj)) =
+let type_parameter ppf {ot_non_gen=non_gen; ot_name=ty; ot_variance=var,inj} =
   let open Asttypes in
   fprintf ppf "%s%s%a"
     (match var with Covariant -> "+" | Contravariant -> "-" | NoVariance ->  "")
     (match inj with Injective -> "!" | NoInjectivity -> "")
-    print_type_parameter ty
+    (print_type_parameter ~non_gen) ty
 
 let print_out_class_params ppf =
   function
@@ -769,7 +769,7 @@ and print_out_extension_constructor ppf ext =
         [] -> fprintf ppf "%a" print_lident ext.oext_type_name
       | [ty_param] ->
         fprintf ppf "@[%a@ %a@]"
-          print_type_parameter
+          (print_type_parameter ~non_gen:false)
           ty_param
           print_lident ext.oext_type_name
       | _ ->
@@ -790,7 +790,7 @@ and print_out_type_extension ppf te =
       [] -> fprintf ppf "%a" print_lident te.otyext_name
     | [param] ->
       fprintf ppf "@[%a@ %a@]"
-        print_type_parameter param
+        (print_type_parameter ~non_gen:false) param
         print_lident te.otyext_name
     | _ ->
         fprintf ppf "@[(@[%a)@]@ %a@]"

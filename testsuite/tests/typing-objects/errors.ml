@@ -8,7 +8,7 @@ Line 1, characters 0-75:
 1 | class type virtual ['a] c = object constraint 'a = [<`A of int & float] end
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The type of this class,
-       "class virtual ['a] c :
+       "class virtual ['_a] c :
          object constraint '_a = [< `A of int & float ] as '_weak1 end",
        contains non-collapsible conjunctive types in constraints.
        Type "int" is not compatible with type "float"
@@ -60,4 +60,18 @@ Line 2, characters 26-40:
                               ^^^^^^^^^^^^^^
 Error: This inheritance does not override any methods or instance variables
        but is explicitly marked as overriding with "!".
+|}]
+
+
+class ['a] c = object val x : 'a list ref = ref [] end
+class ['a] x = let r = ref [] in object val x : 'a list ref = r end
+[%%expect{|
+class ['a] c : object val x : 'a list ref end
+Line 2, characters 0-67:
+2 | class ['a] x = let r = ref [] in object val x : 'a list ref = r end
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: The type of this class,
+       "class ['_a] x : object val x : '_a list ref end",
+       contains the non-generalizable type variable(s): "'_a".
+       (see manual section 6.1.2)
 |}]

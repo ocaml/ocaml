@@ -1467,10 +1467,10 @@ let prepare_decl id decl =
 
 let tree_of_type_decl id decl =
   let ty_manifest, params = prepare_decl id decl in
-  let type_param =
+  let type_param ot_variance =
     function
-    | Otyp_var (_, id) -> id
-    | _ -> "?"
+    | Otyp_var (ot_non_gen, ot_name) -> {ot_non_gen; ot_name; ot_variance}
+    | _ -> {ot_non_gen=false; ot_name="?"; ot_variance}
   in
   let type_defined decl =
     let abstr =
@@ -1505,7 +1505,7 @@ let tree_of_type_decl id decl =
         decl.type_params decl.type_variance
     in
     (Ident.name id,
-     List.map2 (fun ty cocn -> type_param (tree_of_typexp Type ty), cocn)
+     List.map2 (fun ty cocn -> type_param cocn (tree_of_typexp Type ty))
        params vari)
   in
   let tree_of_manifest ty1 =
@@ -1831,11 +1831,11 @@ let class_type ppf cty =
   !Oprint.out_class_type ppf (tree_of_class_type Type [] cty)
 
 let tree_of_class_param param variance =
-  (match tree_of_typexp Type_scheme param with
-    Otyp_var (_, s) -> s
-  | _ -> "?"),
-  if is_Tvar param then Asttypes.(NoVariance, NoInjectivity)
-  else variance
+  let ot_variance =
+    if is_Tvar param then Asttypes.(NoVariance, NoInjectivity) else variance in
+  match tree_of_typexp Type_scheme param with
+    Otyp_var (ot_non_gen, ot_name) -> {ot_non_gen; ot_name; ot_variance}
+  | _ -> {ot_non_gen=false; ot_name="?"; ot_variance}
 
 let class_variance =
   let open Variance in let open Asttypes in
