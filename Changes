@@ -190,15 +190,15 @@ Working version
 - #12809: Add ThreadSanitizer support to FreeBSD/amd64
   (Miod Vallat, review by Gabriel Scherer)
 
+- #12811: Define and use the CAMLthread_local macro for TLS variables.
+  (Antonin Décimo and Samuel Hym, review by Miod Vallat and Xavier Leroy)
+
 - #12814: More detailed failure messages from `input_value` and `Marshal.from_*`
   (Xavier Leroy, review by Stephen Dolan and Anil Madhavapeddy)
 
 - #12815: Correctly format multi-line locations in exception backtraces, in the
   style that the compiler driver uses.
   (David Allsopp, review by Gabriel Scherer)
-
-- #12811: Define and use the CAMLthread_local macro for TLS variables.
-  (Antonin Décimo and Samuel Hym, review by Miod Vallat and Xavier Leroy)
 
 ### Code generation and optimizations:
 
