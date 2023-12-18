@@ -61,76 +61,79 @@ end
 
 module BLAKE2 (X: sig val hash_length : int end) : S = struct
 
-type t = string
+  type t = string
 
-let hash_length =
-  if X.hash_length < 1 || X.hash_length > 64
-  then invalid_arg "Digest.BLAKE2: wrong hash size";
-  X.hash_length
+  let hash_length =
+    if X.hash_length < 1 || X.hash_length > 64
+    then invalid_arg "Digest.BLAKE2: wrong hash size";
+    X.hash_length
 
-let compare = String.compare
-let equal = String.equal
+  let compare = String.compare
+  let equal = String.equal
 
-type state
+  type state
 
-external create_gen: int -> string -> state = "caml_blake2_create"
-external update: state -> string -> int -> int -> unit = "caml_blake2_update"
-external final: state -> int -> t = "caml_blake2_final"
-external unsafe_string: int -> string -> string -> int -> int -> t
-                      = "caml_blake2_string"
+  external create_gen: int -> string -> state = "caml_blake2_create"
+  external update: state -> string -> int -> int -> unit = "caml_blake2_update"
+  external final: state -> int -> t = "caml_blake2_final"
+  external unsafe_string: int -> string -> string -> int -> int -> t
+                        = "caml_blake2_string"
 
-let create () = create_gen hash_length ""
+  let create () = create_gen hash_length ""
 
-let string str =
-  unsafe_string hash_length "" str 0 (String.length str)
+  let string str =
+    unsafe_string hash_length "" str 0 (String.length str)
 
-let bytes b =
-  string (Bytes.unsafe_to_string b)
+  let bytes b =
+    string (Bytes.unsafe_to_string b)
 
-let substring str ofs len =
-  if ofs < 0 || len < 0 || ofs > String.length str - len
-  then invalid_arg "Digest.substring";
-  unsafe_string hash_length "" str ofs len
+  let substring str ofs len =
+    if ofs < 0 || len < 0 || ofs > String.length str - len
+    then invalid_arg "Digest.substring";
+    unsafe_string hash_length "" str ofs len
 
-let subbytes b ofs len =
-  substring (Bytes.unsafe_to_string b) ofs len
+  let subbytes b ofs len =
+    substring (Bytes.unsafe_to_string b) ofs len
 
-let channel ic toread =
-  let buf_size = 4096 in
-  let buf = Bytes.create buf_size in
-  let ctx = create () in
-  if toread < 0 then begin
-    let rec do_read () =
-      let n = In_channel.input ic buf 0 buf_size in
-      if n = 0
-      then final ctx hash_length
-      else (update ctx (Bytes.unsafe_to_string buf) 0 n; do_read ())
-    in do_read ()
-  end else begin
-    let rec do_read toread =
-      if toread = 0 then final ctx hash_length else begin
-        let n = In_channel.input ic buf 0 (Int.min buf_size toread) in
+  let channel ic toread =
+    let buf_size = 4096 in
+    let buf = Bytes.create buf_size in
+    let ctx = create () in
+    if toread < 0 then begin
+      let rec do_read () =
+        let n = In_channel.input ic buf 0 buf_size in
         if n = 0
-        then raise End_of_file
-        else (update ctx (Bytes.unsafe_to_string buf) 0 n; do_read (toread - n))
-      end
-    in do_read toread
-  end
+        then final ctx hash_length
+        else (update ctx (Bytes.unsafe_to_string buf) 0 n; do_read ())
+      in do_read ()
+    end else begin
+      let rec do_read toread =
+        if toread = 0 then final ctx hash_length else begin
+          let n = In_channel.input ic buf 0 (Int.min buf_size toread) in
+          if n = 0
+          then raise End_of_file
+          else begin
+            update ctx (Bytes.unsafe_to_string buf) 0 n;
+            do_read (toread - n)
+          end
+        end
+      in do_read toread
+    end
 
-let file filename =
-  In_channel.with_open_bin filename (fun ic -> channel ic (-1))
+  let file filename =
+    In_channel.with_open_bin filename (fun ic -> channel ic (-1))
 
-let output chan digest = output_string chan digest
+  let output chan digest = output_string chan digest
 
-let input chan = really_input_string chan hash_length
+  let input chan = really_input_string chan hash_length
 
-let to_hex d =
-  if String.length d <> hash_length then invalid_arg "Digest.to_hex";
-  hex_of_string d
+  let to_hex d =
+    if String.length d <> hash_length then invalid_arg "Digest.to_hex";
+    hex_of_string d
 
-let of_hex s =
-  if String.length s <> hash_length * 2 then invalid_arg "Digest.of_hex";
-  string_of_hex s
+  let of_hex s =
+    if String.length s <> hash_length * 2 then invalid_arg "Digest.of_hex";
+    string_of_hex s
 
 end
 
@@ -142,42 +145,42 @@ module BLAKE512 = BLAKE2(struct let hash_length = 64 end)
 
 module MD5 = struct
 
-type t = string
+  type t = string
 
-let hash_length = 16
+  let hash_length = 16
 
-let compare = String.compare
-let equal = String.equal
+  let compare = String.compare
+  let equal = String.equal
 
-external unsafe_string: string -> int -> int -> t = "caml_md5_string"
-external channel: in_channel -> int -> t = "caml_md5_chan"
+  external unsafe_string: string -> int -> int -> t = "caml_md5_string"
+  external channel: in_channel -> int -> t = "caml_md5_chan"
 
-let string str =
-  unsafe_string str 0 (String.length str)
+  let string str =
+    unsafe_string str 0 (String.length str)
 
-let bytes b = string (Bytes.unsafe_to_string b)
+  let bytes b = string (Bytes.unsafe_to_string b)
 
-let substring str ofs len =
-  if ofs < 0 || len < 0 || ofs > String.length str - len
-  then invalid_arg "Digest.substring"
-  else unsafe_string str ofs len
+  let substring str ofs len =
+    if ofs < 0 || len < 0 || ofs > String.length str - len
+    then invalid_arg "Digest.substring"
+    else unsafe_string str ofs len
 
-let subbytes b ofs len = substring (Bytes.unsafe_to_string b) ofs len
+  let subbytes b ofs len = substring (Bytes.unsafe_to_string b) ofs len
 
-let file filename =
-  In_channel.with_open_bin filename (fun ic -> channel ic (-1))
+  let file filename =
+    In_channel.with_open_bin filename (fun ic -> channel ic (-1))
 
-let output chan digest = output_string chan digest
+  let output chan digest = output_string chan digest
 
-let input chan = really_input_string chan 16
+  let input chan = really_input_string chan 16
 
-let to_hex d =
-  if String.length d <> 16 then invalid_arg "Digest.to_hex";
-  hex_of_string d
+  let to_hex d =
+    if String.length d <> 16 then invalid_arg "Digest.to_hex";
+    hex_of_string d
 
-let of_hex s =
-  if String.length s <> 32 then invalid_arg "Digest.from_hex";
-  string_of_hex s
+  let of_hex s =
+    if String.length s <> 32 then invalid_arg "Digest.from_hex";
+    string_of_hex s
 
 end
 
