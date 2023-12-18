@@ -5579,7 +5579,7 @@ let immediacy env typ =
         Type_immediacy.Always
   | _ -> Type_immediacy.Unknown
 
-(* delete [level] optional argument *)
+(* hide [level, outer_level] arguments *)
 let instance ?partial sch =
   instance ?partial ~level:!current_level sch
 let instance_parameterized_type ?keep_names sch_args sch =
