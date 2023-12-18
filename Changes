@@ -115,11 +115,6 @@ Working version
   (Guillaume Munch-Maccagnoni, review by Anil Madhavapeddy and KC
    Sivaramakrishnan)
 
-- #12318: GC: simplify the meaning of custom_minor_max_size: blocks with
-  out-of-heap memory above this limit are now allocated directly in
-  the major heap.
-  (Damien Doligez, report by Stephen Dolan, review by Gabriel Scherer)
-
 - #12408: `Domain.spawn` no longer leaks its functional argument for
   the whole duration of the children domain lifetime.
   (Guillaume Munch-Maccagnoni, review by Gabriel Scherer)
@@ -139,10 +134,6 @@ Working version
 - #12430: Simplify dynamic bytecode loading in Meta.reify_bytecode
   (Stephen Dolan, review by Sébastien Hinderer, Vincent Laviron and Xavier
    Leroy)
-
-- #12439: Finalize and collect dead custom blocks during minor collection
-  (Damien Doligez, review by Xavier Leroy, Gabriel Scherer and KC
-  Sivaramakrishnan)
 
 - #12489: Fix an error-handling bug in caml_alloc_sprintf
   (Stephen Dolan, report by Chris Casinghino, review by Jeremy Yallop
@@ -560,22 +551,8 @@ Working version
 
 ### Bug fixes:
 
-- # 12791: `extern` is applied to definitions of `caml_builtin_cprim`
-    and `caml_names_of_builtin_cprim` when linking bytecode '-custom'
-    executables with a C++ linker
-  (Shayne Fletcher, review by Antonin Décimo and Xavier Leroy)
-
-- #12712, #12742: fix an assertion boundary case in `caml_reset_young_limit`
-  (Jan Midtgaard, review by Guillaume Munch-Maccagnoni and KC Sivaramakrishnan)
-
 - #10652, #12720: fix evaluation order in presence of optional arguments
   (Jacques Garrigue, report by Leo White, review by Vincent Laviron)
-
-- #11800, #12707: fix an assertion race condition in `install_backup_thread`
-  (Jan Midtgaard, review by Gabriel Scherer)
-
-- #12590, #12595: fix a race in `caml_collect_gc_stats_sample`
-  (B. Szilvasy, review by Gabriel Scherer)
 
 - #12595, #12597: fix a race in `caml_clear_gc_stats_sample`
   (Gabriel Scherer, review by B. Szilvasy, report by B. Szilvasy)
@@ -655,9 +632,6 @@ Working version
   optional arguments and default values in the Closure backend
   (Alain Frisch, review by Vincent Laviron)
 
-- #12486: Fix delivery of unhandled effect exceptions on amd64 with
-  --enable-frame-pointers
-  (Miod Vallat, report by Jan Midtgaard, review by Gabriel Scherer)
 
 - #12561: Fix crash when combining TSan and frame-pointers
   (Fabrice Buoro and Olivier Nicole, report by Jan Midtgaard, review by Miod
@@ -677,11 +651,6 @@ Working version
 
 - #12684: fix locations filename in AST produced by the `-pp` option
   (Gabriel Scherer, review by Florian Angeletti)
-
-- #12713, #12715: disable common subexpression elimination for atomic loads
-  (Gabriel Scherer and Vincent Laviron,
-   review by Vincent Laviron, KC Sivaramakrishnan and Xavier Leroy,
-   report by Vesa Karvonen and Carine Morel)
 
 - #12714: check whether macros are defined before using them to ensure
   that the headers can always be used in code which turns on -Wundef
@@ -710,25 +679,73 @@ Working version
 - #12831: Fix call to caml_call_realloc_stack for s390x in PIC mode
   (Vincent Laviron, report by Jerry James, review by Miod Vallat)
 
-OCaml 5.1.1
------------
+OCaml 5.1.1 (8 December 2023)
+----------------------------
+
+### Standard library:
+
+* #12562, #12734, #12783: Remove the `Marshal.Compression` flag to the
+  `Marshal.to_*` functions introduced in 5.1 by #12006, as it cannot
+  be implemented without risking to link -lzstd with all
+  ocamlopt-generated executables.  The compilers are still able to use
+  ZSTD compression for compilation artefacts.
+  (Xavier Leroy and David Allsopp, report by Kate Deplaix, review by
+   Nicolás Ojeda Bär, Kate Deplaix, and Damien Doligez).
 
 ### Bug fixes:
 
-- #12623, fix the computation of variance composition
-  (Florian Angeletti, report by Vesa Karvonen, review by Gabriel Scherer)
+- #11800, #12707: fix an assertion race condition in `install_backup_thread`
+  (Jan Midtgaard, review by Gabriel Scherer)
 
-- #12645, fix error messages for cyclic type definitions in presence of
-  the `-short-paths` flag.
-  (Florian Angeletti, report by Vesa Karvonen, review by Gabriel Scherer)
+- #12318: GC: simplify the meaning of custom_minor_max_size: blocks with
+  out-of-heap memory above this limit are now allocated directly in
+  the major heap.
+  (Damien Doligez, report by Stephen Dolan, review by Gabriel Scherer)
+
+- #12439: Finalize and collect dead custom blocks during minor collection
+  (Damien Doligez, review by Xavier Leroy, Gabriel Scherer and KC
+  Sivaramakrishnan)
+
+- #12486, #12535: Fix delivery of unhandled effect exceptions on amd64 with
+  --enable-frame-pointers
+  (Miod Vallat, report by Jan Midtgaard, review by Gabriel Scherer)
 
 - #12581, #12609: Fix error on uses of packed modules outside their pack
   to correctly handle nested packs
   (Vincent Laviron, report by Javier Chávarri, review by Pierre Chambart)
 
+- #12590, #12595: Move `caml_collect_gc_stats_sample` in
+  `caml_empty_minor_heap_promote` before barrier arrival.
+  (B. Szilvasy, review by Gabriel Scherer)
+
+- #12623, fix the computation of variance composition
+  (Florian Angeletti, report by Vesa Karvonen, review by Gabriel Scherer)
+
+- #12645, #12649 fix error messages for cyclic type definitions in presence of
+  the `-short-paths` flag.
+  (Florian Angeletti, report by Vesa Karvonen, review by Gabriel Scherer)
+
+- #12712, #12742: fix an assertion boundary case in `caml_reset_young_limit`
+  (Jan Midtgaard, review by Guillaume Munch-Maccagnoni and KC Sivaramakrishnan)
+
+- #12713, #12715: disable common subexpression elimination for atomic loads
+  (Gabriel Scherer and Vincent Laviron,
+   review by Vincent Laviron, KC Sivaramakrishnan and Xavier Leroy,
+   report by Vesa Karvonen and Carine Morel)
+
 - #12757: Fix ocamlnat (native toplevel) by registering frametables correctly
   (Stephen Dolan, Nick Barnes and Mark Shinwell,
    review by Vincent Laviron and Sébastien Hinderer)
+
+- #12791: `extern` is applied to definitions of `caml_builtin_cprim`
+  and `caml_names_of_builtin_cprim` when linking bytecode '-custom'
+  executables with a C++ linker.
+  (Shayne Fletcher, review by Antonin Décimo and Xavier Leroy)
+
+- #12491, #12493, #12500, #12754: Do not change GC pace when creating
+  sub-arrays of bigarrays
+  (Xavier Leroy, report by Ido Yariv, analysis by Gabriel Scherer,
+   review by Gabriel Scherer and Fabrice Buoro)
 
 OCaml 5.1.0 (14 September 2023)
 -------------------------------
@@ -1001,11 +1018,6 @@ Some of those changes will benefit all OCaml packages.
 - #12231: Support MinGW-w64 11.0 winpthreads library, where the macro
   to set up to get flexdll working changed
   (David Allsopp and Samuel Hym, light review by Xavier Leroy)
-
-- #12491, #12493, #12500, #12754: Do not change GC pace when creating
-  sub-arrays of bigarrays
-  (Xavier Leroy, report by Ido Yariv, analysis by Gabriel Scherer,
-   review by Gabriel Scherer and Fabrice Buoro)
 
 ### Language features:
 
