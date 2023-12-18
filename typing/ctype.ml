@@ -698,22 +698,23 @@ let duplicate_class_type ty =
    [expand_abbrev] (via [subst]) requires these expansions to be
    preserved. Does it worth duplicating this code ?
 *)
-let rec generalize ty =
-  let level = get_level ty in
-  if (level > !current_level) && (level <> generic_level) then begin
+let rec generalize ~level ty =
+  let ty_level = get_level ty in
+  if (ty_level > level) && (ty_level <> generic_level) then begin
     set_level ty generic_level;
     (* recur into abbrev for the speed *)
     begin match get_desc ty with
       Tconstr (_, _, abbrev) ->
-        iter_abbrev generalize !abbrev
+        iter_abbrev (generalize ~level) !abbrev
     | _ -> ()
     end;
-    iter_type_expr generalize ty
+    iter_type_expr (generalize ~level) ty
   end
 
-let generalize ty =
+(* Note: remove [level] argument at the end of this file *)
+let generalize ~level ty =
   simple_abbrevs := Mnil;
-  generalize ty
+  generalize ~level ty
 
 (* Generalize the structure and lower the variables *)
 
@@ -983,8 +984,9 @@ let rec generalize_class_type' gen =
       gen ty;
       generalize_class_type' gen cty
 
-let generalize_class_type cty =
-  generalize_class_type' generalize cty
+(* Note: remove [level] argument at the end of this file *)
+let generalize_class_type ~level cty =
+  generalize_class_type' (generalize ~level) cty
 
 let generalize_class_type_structure cty =
   generalize_class_type' generalize_structure cty
@@ -1233,7 +1235,7 @@ let rec copy ?partial ?keep_names ~level copy_scope ty =
 
 (**** Variants of instantiations ****)
 
-(* Note: instance is redefined at the end of this file *)
+(* Note: remove [level] argument at the end of this file *)
 let instance ?partial ?(level = !current_level) sch =
   let partial =
     match partial with
@@ -1332,7 +1334,7 @@ let instance_constructor existential_treatment cstr =
     (ty_args, ty_res, ty_ex)
   )
 
-(* Note: redefined at the end of this file *)
+(* Note: remove [level] argument at the end of this file *)
 let instance_parameterized_type
     ?keep_names ?(level = !current_level) sch_args sch =
   For_copy.with_scope (fun copy_scope ->
@@ -1362,7 +1364,7 @@ let map_kind f = function
           ) fl, rr)
 
 
-(* Note: redefined at the end of this file *)
+(* Note: remove [level] argument at the end of this file *)
 let instance_declaration ?(level = !current_level) decl =
   For_copy.with_scope (fun copy_scope ->
     {decl with type_params = List.map (copy ~level copy_scope) decl.type_params;
@@ -1374,7 +1376,7 @@ let instance_declaration ?(level = !current_level) decl =
 let generic_instance_declaration decl =
   instance_declaration ~level:generic_level decl
 
-(* Note: redefined at the end of this file *)
+(* Note: remove [level] argument at the end of this file *)
 let instance_class ?(level = !current_level) params cty =
   let rec copy_class_type copy_scope = function
     | Cty_constr (path, tyl, cty) ->
@@ -3951,37 +3953,30 @@ let moregen inst_nongen type_pairs env patt subj =
    is unimportant.  So, no need to propagate abbreviations.
 *)
 let moregeneral env inst_nongen pat_sch subj_sch =
-  let old_level = !current_level in
-  current_level := generic_level - 1;
   (*
      Generic variables are first duplicated with [instance].  So,
      their levels are lowered to [generic_level - 1].  The subject is
      then copied with [duplicate_type].  That way, its levels won't be
      changed.
   *)
-  let subj_inst = instance subj_sch in
+  let subj_inst = instance ~level:(generic_level - 1) subj_sch in
   let subj = duplicate_type subj_inst in
-  current_level := generic_level;
   (* Duplicate generic variables *)
-  let patt = instance pat_sch in
+  let patt = instance ~level:generic_level pat_sch in
 
-  Misc.try_finally
-    (fun () ->
-       try
-         moregen inst_nongen (TypePairs.create 13) env patt subj
-       with Moregen_trace trace ->
-         (* Moregen splits the generic level into two finer levels:
-            [generic_level] and [generic_level - 1].  In order to properly
-            detect and print weak variables when printing this error, we need to
-            merge them back together, by regeneralizing the levels of the types
-            after they were instantiated at [generic_level - 1] above.  Because
-            [moregen] does some unification that we need to preserve for more
-            legible error messages, we have to manually perform the
-            regeneralization rather than backtracking. *)
-         current_level := generic_level - 2;
-         generalize subj_inst;
-         raise (Moregen (expand_to_moregen_error env trace)))
-    ~always:(fun () -> current_level := old_level)
+  try
+    moregen inst_nongen (TypePairs.create 13) env patt subj
+  with Moregen_trace trace ->
+    (* Moregen splits the generic level into two finer levels:
+       [generic_level] and [generic_level - 1].  In order to properly
+       detect and print weak variables when printing this error, we need to
+       merge them back together, by regeneralizing the levels of the types
+       after they were instantiated at [generic_level - 1] above.  Because
+       [moregen] does some unification that we need to preserve for more
+       legible error messages, we have to manually perform the
+       regeneralization rather than backtracking. *)
+    generalize ~level:(generic_level - 2) subj_inst;
+    raise (Moregen (expand_to_moregen_error env trace))
 
 let is_moregeneral env inst_nongen pat_sch subj_sch =
   match moregeneral env inst_nongen pat_sch subj_sch with
@@ -4440,19 +4435,17 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
   let errors = match_class_sig_shape ~strict:false sign1 sign2 in
   match errors with
   | [] ->
-      let old_level = !current_level in
-      current_level := generic_level - 1;
       (*
          Generic variables are first duplicated with [instance].  So,
          their levels are lowered to [generic_level - 1].  The subject is
          then copied with [duplicate_type].  That way, its levels won't be
          changed.
       *)
-      let (_, subj_inst) = instance_class [] subj_sch in
+      let (_, subj_inst) =
+        instance_class ~level:(generic_level - 1) [] subj_sch in
       let subj = duplicate_class_type subj_inst in
-      current_level := generic_level;
       (* Duplicate generic variables *)
-      let (_, patt) = instance_class [] pat_sch in
+      let (_, patt) = instance_class ~level:generic_level [] pat_sch in
       let type_pairs = TypePairs.create 53 in
       let sign1 = signature_of_class_type patt in
       let sign2 = signature_of_class_type subj in
@@ -4463,10 +4456,9 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
       TypePairs.add type_pairs (self1, self2);
       (* Always succeeds *)
       moregen true type_pairs env row1 row2;
-      let res =
-        match moregen_clty trace type_pairs env patt subj with
-        | () -> []
-        | exception Failure res ->
+      begin match moregen_clty trace type_pairs env patt subj with
+      | () -> []
+      | exception Failure res ->
           (* We've found an error.  Moregen splits the generic level into two
              finer levels: [generic_level] and [generic_level - 1].  In order
              to properly detect and print weak variables when printing this
@@ -4476,12 +4468,9 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
              unification that we need to preserve for more legible error
              messages, we have to manually perform the regeneralization rather
              than backtracking. *)
-          current_level := generic_level - 2;
-          generalize_class_type subj_inst;
+          generalize_class_type ~level:(generic_level - 2) subj_inst;
           res
-      in
-      current_level := old_level;
-      res
+      end
   | errors ->
       CM_Class_type_mismatch (env, pat_sch, subj_sch) :: errors
 
@@ -5591,3 +5580,6 @@ let instance_parameterized_type ?keep_names sch_args sch =
   instance_parameterized_type ?keep_names sch_args sch
 let instance_class params cty = instance_class params cty
 let instance_declaration decl = instance_declaration decl
+let generalize ty = generalize ~level:!current_level ty
+let generalize_class_type cty =
+  generalize_class_type ~level:!current_level cty
