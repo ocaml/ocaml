@@ -1122,26 +1122,26 @@ let abbreviations = ref (ref Mnil)
 
 (* partial: we may not wish to copy the non generic types
    before we call type_pat *)
-let rec copy ?partial ?keep_names ~at_level copy_scope ty =
-  let copy = copy ?partial ?keep_names ~at_level copy_scope in
+let rec copy ?partial ?keep_names ~level copy_scope ty =
+  let copy = copy ?partial ?keep_names ~level copy_scope in
   match get_desc ty with
     Tsubst (ty, _) -> ty
   | desc ->
-    let level = get_level ty in
-    if level <> generic_level && partial = None then ty else
+    let ty_level = get_level ty in
+    if ty_level <> generic_level && partial = None then ty else
     (* We only forget types that are non generic and do not contain
        free univars *)
     let forget =
-      if level = generic_level then generic_level else
+      if ty_level = generic_level then generic_level else
       match partial with
         None -> assert false
       | Some (free_univars, keep) ->
           if TypeSet.is_empty (free_univars ty) then
-            if keep then level else at_level
+            if keep then ty_level else level
           else generic_level
     in
     if forget <> generic_level then newty2 ~level:forget (Tvar None) else
-    let t = newstub ~level:at_level ~scope:(get_scope ty) in
+    let t = newstub ~level ~scope:(get_scope ty) in
     For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
     let desc' =
       match desc with
@@ -1231,28 +1231,24 @@ let rec copy ?partial ?keep_names ~at_level copy_scope ty =
     Transient_expr.set_stub_desc t desc';
     t
 
-let copy ?partial ?keep_names ?(at_level = !current_level) copy_scope ty =
-  copy ?partial ?keep_names ~at_level copy_scope ty
-
 (**** Variants of instantiations ****)
 
-let instance ?partial ?at_level sch =
+(* Note: instance is redefined at the end of this file *)
+let instance ?partial ?(level = !current_level) sch =
   let partial =
     match partial with
       None -> None
     | Some keep -> Some (compute_univars sch, keep)
   in
   For_copy.with_scope (fun copy_scope ->
-    copy ?partial ?at_level copy_scope sch)
+    copy ?partial ~level copy_scope sch)
 
 let generic_instance sch =
-  instance ~at_level:generic_level sch
-
-let instance ?partial sch = instance ?partial sch
+  instance ~level:generic_level sch
 
 let instance_list schl =
   For_copy.with_scope (fun copy_scope ->
-    List.map (fun t -> copy copy_scope t) schl)
+    List.map (fun t -> copy ~level:!current_level copy_scope t) schl)
 
 (* Create unique names to new type constructors.
    Used for existential types and local constraints. *)
@@ -1308,11 +1304,12 @@ type existential_treatment =
   | Make_existentials_abstract of Pattern_env.t
 
 let instance_constructor existential_treatment cstr =
+  let level = !current_level in
   For_copy.with_scope (fun copy_scope ->
     let name_counter = ref 0 in
     let copy_existential =
       match existential_treatment with
-      | Keep_existentials_flexible -> copy copy_scope
+      | Keep_existentials_flexible -> copy ~level copy_scope
       | Make_existentials_abstract penv ->
           fun existential ->
             let env = penv.env in
@@ -1324,21 +1321,24 @@ let instance_constructor existential_treatment cstr =
                 ~scope:fresh_constr_scope in
             Pattern_env.set_env penv new_env;
             let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
-            let tv = copy copy_scope existential in
+            let tv = copy ~level copy_scope existential in
             assert (is_Tvar tv);
             link_type tv to_unify;
             tv
     in
     let ty_ex = List.map copy_existential cstr.cstr_existentials in
-    let ty_res = copy copy_scope cstr.cstr_res in
-    let ty_args = List.map (copy copy_scope) cstr.cstr_args in
+    let ty_res = copy ~level copy_scope cstr.cstr_res in
+    let ty_args = List.map (copy ~level copy_scope) cstr.cstr_args in
     (ty_args, ty_res, ty_ex)
   )
 
-let instance_parameterized_type ?keep_names sch_args sch =
+(* Note: redefined at the end of this file *)
+let instance_parameterized_type
+    ?keep_names ?(level = !current_level) sch_args sch =
   For_copy.with_scope (fun copy_scope ->
-    let ty_args = List.map (fun t -> copy ?keep_names copy_scope t) sch_args in
-    let ty = copy copy_scope sch in
+    let ty_args =
+      List.map (fun t -> copy ?keep_names ~level copy_scope t) sch_args in
+    let ty = copy ~level copy_scope sch in
     (ty_args, ty)
   )
 
@@ -1362,44 +1362,42 @@ let map_kind f = function
           ) fl, rr)
 
 
-let instance_declaration decl =
+(* Note: redefined at the end of this file *)
+let instance_declaration ?(level = !current_level) decl =
   For_copy.with_scope (fun copy_scope ->
-    {decl with type_params = List.map (copy copy_scope) decl.type_params;
-     type_manifest = Option.map (copy copy_scope) decl.type_manifest;
-     type_kind = map_kind (copy copy_scope) decl.type_kind;
+    {decl with type_params = List.map (copy ~level copy_scope) decl.type_params;
+     type_manifest = Option.map (copy ~level copy_scope) decl.type_manifest;
+     type_kind = map_kind (copy ~level copy_scope) decl.type_kind;
     }
   )
 
 let generic_instance_declaration decl =
-  let old = !current_level in
-  current_level := generic_level;
-  let decl = instance_declaration decl in
-  current_level := old;
-  decl
+  instance_declaration ~level:generic_level decl
 
-let instance_class params cty =
+(* Note: redefined at the end of this file *)
+let instance_class ?(level = !current_level) params cty =
   let rec copy_class_type copy_scope = function
     | Cty_constr (path, tyl, cty) ->
-        let tyl' = List.map (copy copy_scope) tyl in
+        let tyl' = List.map (copy ~level copy_scope) tyl in
         let cty' = copy_class_type copy_scope cty in
         Cty_constr (path, tyl', cty')
     | Cty_signature sign ->
         Cty_signature
-          {csig_self = copy copy_scope sign.csig_self;
-           csig_self_row = copy copy_scope sign.csig_self_row;
+          {csig_self = copy ~level copy_scope sign.csig_self;
+           csig_self_row = copy ~level copy_scope sign.csig_self_row;
            csig_vars =
              Vars.map
-               (function (m, v, ty) -> (m, v, copy copy_scope ty))
+               (function (m, v, ty) -> (m, v, copy ~level copy_scope ty))
                sign.csig_vars;
            csig_meths =
              Meths.map
-               (function (p, v, ty) -> (p, v, copy copy_scope ty))
+               (function (p, v, ty) -> (p, v, copy ~level copy_scope ty))
                sign.csig_meths}
     | Cty_arrow (l, ty, cty) ->
-        Cty_arrow (l, copy copy_scope ty, copy_class_type copy_scope cty)
+        Cty_arrow (l, copy ~level copy_scope ty, copy_class_type copy_scope cty)
   in
   For_copy.with_scope (fun copy_scope ->
-    let params' = List.map (copy copy_scope) params in
+    let params' = List.map (copy ~level copy_scope) params in
     let cty' = copy_class_type copy_scope cty in
     (params', cty')
   )
@@ -1432,7 +1430,8 @@ let copy_sep ~copy_scope ~fixed ~(visited : type_expr TypeHash.t) sch =
   let delayed_copies = ref [] in
   let add_delayed_copy t ty =
     delayed_copies :=
-      (fun () -> Transient_expr.set_stub_desc t (Tlink (copy copy_scope ty))) ::
+      (fun () -> Transient_expr.set_stub_desc
+          t (Tlink (copy ~level:!current_level copy_scope ty))) ::
       !delayed_copies
   in
   let rec copy_rec ~may_share (ty : type_expr) =
@@ -1495,16 +1494,17 @@ let instance_poly ?(keep_names=false) ~fixed univars sch =
   )
 
 let instance_label ~fixed lbl =
+  let level = !current_level in
   For_copy.with_scope (fun copy_scope ->
     let vars, ty_arg =
       match get_desc lbl.lbl_arg with
         Tpoly (ty, tl) ->
           instance_poly' copy_scope ~keep_names:false ~fixed tl ty
       | _ ->
-          [], copy copy_scope lbl.lbl_arg
+          [], copy ~level copy_scope lbl.lbl_arg
     in
     (* call [copy] after [instance_poly] to avoid introducing [Tsubst] *)
-    let ty_res = copy copy_scope lbl.lbl_res in
+    let ty_res = copy ~level copy_scope lbl.lbl_res in
     (vars, ty_arg, ty_res)
   )
 
@@ -1516,9 +1516,7 @@ let unify_var' = (* Forward declaration *)
 
 let subst env level priv abbrev oty params args body =
   if List.length params <> List.length args then raise Cannot_subst;
-  let old_level = !current_level in
-  current_level := level;
-  let body0 = newvar () in          (* Stub *)
+  let body0 = newvar2 level in          (* Stub *)
   let undo_abbrev =
     match oty with
     | None -> fun () -> () (* No abbreviation added *)
@@ -1531,16 +1529,14 @@ let subst env level priv abbrev oty params args body =
         | _ -> assert false
   in
   abbreviations := abbrev;
-  let (params', body') = instance_parameterized_type params body in
+  let (params', body') = instance_parameterized_type ~level params body in
   abbreviations := ref Mnil;
   let uenv = Expression {env; in_subst = true} in
   try
     !unify_var' uenv body0 body';
     List.iter2 (!unify_var' uenv) params' args;
-    current_level := old_level;
     body'
   with Unify _ ->
-    current_level := old_level;
     undo_abbrev ();
     raise Cannot_subst
 
@@ -2110,7 +2106,7 @@ let polyfy env ty vars =
   let vars = List.map (expand_head env) vars in
   For_copy.with_scope (fun copy_scope ->
     let vars' = List.filter_map (subst_univar copy_scope) vars in
-    let ty = copy copy_scope ty in
+    let ty = copy ~level:!current_level copy_scope ty in
     let ty = newty2 ~level:(get_level ty) (Tpoly(ty, vars')) in
     let complete = List.length vars = List.length vars' in
     ty, complete
@@ -2554,11 +2550,7 @@ let rec concat_longident lid1 =
 let nondep_instance env level id ty =
   let ty = !nondep_type' env [id] ty in
   if level = generic_level then duplicate_type ty else
-  let old = !current_level in
-  current_level := level;
-  let ty = instance ty in
-  current_level := old;
-  ty
+  instance ~level ty
 
 (* Find the type paths nl1 in the module type mty2, and add them to the
    list (nl2, tl2). raise Not_found if impossible *)
@@ -5592,3 +5584,10 @@ let immediacy env typ =
       else
         Type_immediacy.Always
   | _ -> Type_immediacy.Unknown
+
+(* delete [level] optional argument *)
+let instance ?partial sch = instance ?partial sch
+let instance_parameterized_type ?keep_names sch_args sch =
+  instance_parameterized_type ?keep_names sch_args sch
+let instance_class params cty = instance_class params cty
+let instance_declaration decl = instance_declaration decl
