@@ -26,7 +26,6 @@
 
 extern "C++" {
 #include <atomic>
-#define ATOMIC_UINTNAT_INIT(x) (x)
 typedef std::atomic<uintnat> atomic_uintnat;
 typedef std::atomic<intnat> atomic_intnat;
 using std::memory_order_relaxed;
@@ -39,7 +38,6 @@ using std::memory_order_seq_cst;
 #else
 
 #include <stdatomic.h>
-#define ATOMIC_UINTNAT_INIT(x) (x)
 typedef _Atomic uintnat atomic_uintnat;
 typedef _Atomic intnat atomic_intnat;
 

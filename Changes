@@ -200,6 +200,11 @@ Working version
   style that the compiler driver uses.
   (David Allsopp, review by Gabriel Scherer)
 
+- #12839: Remove ATOMIC_UINTNAT_INIT from camlatomic.h (as part of a larger
+  cleanup of camlatomic.h)
+  (David Allsopp, review by Antonin Décimo, Sébastien Hinderer, Samuel Hym,
+   Guillaume Munch-Maccagnoni and Miod Vallat)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.

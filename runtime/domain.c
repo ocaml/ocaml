@@ -206,17 +206,7 @@ static struct {
   atomic_uintnat barrier;
 
   caml_domain_state* participating[Max_domains];
-} stw_request = {
-  ATOMIC_UINTNAT_INIT(0),
-  ATOMIC_UINTNAT_INIT(0),
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-  0,
-  ATOMIC_UINTNAT_INIT(0),
-  { 0 },
-};
+} stw_request = { 0, 0, NULL, NULL, NULL, NULL, 0, 0, { 0 } };
 
 static caml_plat_mutex all_domains_lock = CAML_PLAT_MUTEX_INITIALIZER;
 static caml_plat_cond all_domains_cond =
