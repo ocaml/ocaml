@@ -14635,14 +14635,6 @@ then :
 fi
 
 
-ac_fn_c_check_header_compile "$LINENO" "stdatomic.h" "ac_cv_header_stdatomic_h" "$ac_includes_default"
-if test "x$ac_cv_header_stdatomic_h" = xyes
-then :
-  printf "%s\n" "#define HAS_STDATOMIC_H 1" >>confdefs.h
-
-fi
-
-
 ac_fn_c_check_header_compile "$LINENO" "sys/mman.h" "ac_cv_header_sys_mman_h" "$ac_includes_default"
 if test "x$ac_cv_header_sys_mman_h" = xyes
 then :

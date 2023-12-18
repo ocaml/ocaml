@@ -1047,8 +1047,6 @@ AC_CHECK_HEADER([dirent.h], [AC_DEFINE([HAS_DIRENT])], [],
 AC_CHECK_HEADER([sys/select.h], [AC_DEFINE([HAS_SYS_SELECT_H])], [],
   [#include <sys/types.h>])
 
-AC_CHECK_HEADER([stdatomic.h], [AC_DEFINE([HAS_STDATOMIC_H])])
-
 AC_CHECK_HEADER([sys/mman.h], [AC_DEFINE([HAS_SYS_MMAN_H])])
 
 # Checks for types
