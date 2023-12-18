@@ -698,23 +698,24 @@ let duplicate_class_type ty =
    [expand_abbrev] (via [subst]) requires these expansions to be
    preserved. Does it worth duplicating this code ?
 *)
-let rec generalize ~level ty =
+let rec generalize ~outer_level ty =
   let ty_level = get_level ty in
-  if (ty_level > level) && (ty_level <> generic_level) then begin
+  if (ty_level > outer_level) && (ty_level <> generic_level) then begin
     set_level ty generic_level;
     (* recur into abbrev for the speed *)
     begin match get_desc ty with
       Tconstr (_, _, abbrev) ->
-        iter_abbrev (generalize ~level) !abbrev
+        iter_abbrev (generalize ~outer_level) !abbrev
     | _ -> ()
     end;
-    iter_type_expr (generalize ~level) ty
+    iter_type_expr (generalize ~outer_level) ty
   end
 
-(* Note: remove [level] argument at the end of this file *)
-let generalize ~level ty =
+(* Note: the public version of this function is called with
+   [ty] = [!current_level] *)
+let generalize ~outer_level ty =
   simple_abbrevs := Mnil;
-  generalize ~level ty
+  generalize ~outer_level ty
 
 (* Generalize the structure and lower the variables *)
 
@@ -984,9 +985,10 @@ let rec generalize_class_type' gen =
       gen ty;
       generalize_class_type' gen cty
 
-(* Note: remove [level] argument at the end of this file *)
-let generalize_class_type ~level cty =
-  generalize_class_type' (generalize ~level) cty
+(* Note: the public version of this function is called with
+   [ty] = [!current_level] *)
+let generalize_class_type ~outer_level cty =
+  generalize_class_type' (generalize ~outer_level) cty
 
 let generalize_class_type_structure cty =
   generalize_class_type' generalize_structure cty
@@ -1235,8 +1237,9 @@ let rec copy ?partial ?keep_names ~level copy_scope ty =
 
 (**** Variants of instantiations ****)
 
-(* Note: remove [level] argument at the end of this file *)
-let instance ?partial ?(level = !current_level) sch =
+(* Note: the public version of this function is called with
+   [ty] = [!current_level] *)
+let instance ?partial ~level sch =
   let partial =
     match partial with
       None -> None
@@ -1334,9 +1337,9 @@ let instance_constructor existential_treatment cstr =
     (ty_args, ty_res, ty_ex)
   )
 
-(* Note: remove [level] argument at the end of this file *)
-let instance_parameterized_type
-    ?keep_names ?(level = !current_level) sch_args sch =
+(* Note: the public version of this function is called with
+   [ty] = [!current_level] *)
+let instance_parameterized_type ?keep_names ~level sch_args sch =
   For_copy.with_scope (fun copy_scope ->
     let ty_args =
       List.map (fun t -> copy ?keep_names ~level copy_scope t) sch_args in
@@ -1364,8 +1367,9 @@ let map_kind f = function
           ) fl, rr)
 
 
-(* Note: remove [level] argument at the end of this file *)
-let instance_declaration ?(level = !current_level) decl =
+(* Note: the public version of this function is called with
+   [ty] = [!current_level] *)
+let instance_declaration ~level decl =
   For_copy.with_scope (fun copy_scope ->
     {decl with type_params = List.map (copy ~level copy_scope) decl.type_params;
      type_manifest = Option.map (copy ~level copy_scope) decl.type_manifest;
@@ -1376,8 +1380,9 @@ let instance_declaration ?(level = !current_level) decl =
 let generic_instance_declaration decl =
   instance_declaration ~level:generic_level decl
 
-(* Note: remove [level] argument at the end of this file *)
-let instance_class ?(level = !current_level) params cty =
+(* Note: the public version of this function is called with
+   [ty] = [!current_level] *)
+let instance_class ~level params cty =
   let rec copy_class_type copy_scope = function
     | Cty_constr (path, tyl, cty) ->
         let tyl' = List.map (copy ~level copy_scope) tyl in
@@ -3975,7 +3980,7 @@ let moregeneral env inst_nongen pat_sch subj_sch =
        [moregen] does some unification that we need to preserve for more
        legible error messages, we have to manually perform the
        regeneralization rather than backtracking. *)
-    generalize ~level:(generic_level - 2) subj_inst;
+    generalize ~outer_level:(generic_level - 2) subj_inst;
     raise (Moregen (expand_to_moregen_error env trace))
 
 let is_moregeneral env inst_nongen pat_sch subj_sch =
@@ -4468,7 +4473,7 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
              unification that we need to preserve for more legible error
              messages, we have to manually perform the regeneralization rather
              than backtracking. *)
-          generalize_class_type ~level:(generic_level - 2) subj_inst;
+          generalize_class_type ~outer_level:(generic_level - 2) subj_inst;
           res
       end
   | errors ->
@@ -5575,11 +5580,14 @@ let immediacy env typ =
   | _ -> Type_immediacy.Unknown
 
 (* delete [level] optional argument *)
-let instance ?partial sch = instance ?partial sch
+let instance ?partial sch =
+  instance ?partial ~level:!current_level sch
 let instance_parameterized_type ?keep_names sch_args sch =
-  instance_parameterized_type ?keep_names sch_args sch
-let instance_class params cty = instance_class params cty
-let instance_declaration decl = instance_declaration decl
-let generalize ty = generalize ~level:!current_level ty
+  instance_parameterized_type ?keep_names ~level:!current_level sch_args sch
+let instance_class params cty =
+  instance_class ~level:!current_level params cty
+let instance_declaration decl =
+  instance_declaration ~level:!current_level decl
+let generalize ty = generalize ~outer_level:!current_level ty
 let generalize_class_type cty =
-  generalize_class_type ~level:!current_level cty
+  generalize_class_type ~outer_level:!current_level cty
