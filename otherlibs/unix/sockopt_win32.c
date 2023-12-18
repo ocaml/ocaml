@@ -18,8 +18,8 @@
 #include <caml/memory.h>
 #include <caml/alloc.h>
 #include <caml/fail.h>
-#include "unixsupport.h"
-#include "socketaddr.h"
+#include "caml/unixsupport.h"
+#include "caml/socketaddr.h"
 
 #ifndef SO_REUSEPORT
 #define SO_REUSEPORT (-1)

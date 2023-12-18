@@ -16,7 +16,7 @@
 #define _GNU_SOURCE
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <fcntl.h>
 
 CAMLprim value caml_unix_pipe(value cloexec, value vunit)

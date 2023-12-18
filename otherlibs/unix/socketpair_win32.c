@@ -17,12 +17,12 @@
 #include <caml/alloc.h>
 #include <caml/misc.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <errno.h>
 
 #ifdef HAS_SOCKETS
 
-#include "socketaddr.h"
+#include "caml/socketaddr.h"
 #include <ws2tcpip.h>
 
 extern int caml_unix_socket_domain_table[]; /* from socket.c */

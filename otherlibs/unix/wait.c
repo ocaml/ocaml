@@ -20,7 +20,7 @@
 #include <caml/fail.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>

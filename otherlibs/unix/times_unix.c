@@ -16,7 +16,7 @@
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <time.h>
 #include <sys/types.h>
 #include <sys/times.h>

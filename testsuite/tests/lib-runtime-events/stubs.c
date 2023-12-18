@@ -2,7 +2,7 @@
 
 #include "caml/alloc.h"
 #include "caml/runtime_events.h"
-#include "runtime_events_consumer.h"
+#include "caml/runtime_events_consumer.h"
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/mlvalues.h"

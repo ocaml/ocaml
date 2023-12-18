@@ -26,7 +26,7 @@
 #endif
 #include <limits.h>
 #include <grp.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 CAMLprim value caml_unix_setgroups(value groups)
 {

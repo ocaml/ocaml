@@ -23,7 +23,7 @@
 #include <caml/signals.h>
 #include <caml/io.h>
 #include <caml/osdeps.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <windows.h>
 
 static int truncate_handle(HANDLE fh, __int64 len)

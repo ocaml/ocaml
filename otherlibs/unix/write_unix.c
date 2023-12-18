@@ -19,7 +19,7 @@
 #include <caml/memory.h>
 #include <caml/signals.h>
 #include <caml/bigarray.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #ifndef EAGAIN
 #define EAGAIN (-1)

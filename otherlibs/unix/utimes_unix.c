@@ -20,7 +20,7 @@
 #include <caml/memory.h>
 #include <caml/signals.h>
 #include <caml/osdeps.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #if defined(HAS_UTIMES)
 

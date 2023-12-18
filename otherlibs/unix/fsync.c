@@ -15,7 +15,7 @@
 
 #include <caml/mlvalues.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #ifdef _WIN32
 #include <io.h>

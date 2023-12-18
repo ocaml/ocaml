@@ -15,8 +15,8 @@
 
 #include <caml/mlvalues.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
-#include "socketaddr.h"
+#include "caml/unixsupport.h"
+#include "caml/socketaddr.h"
 
 CAMLprim value caml_unix_connect(value socket, value address)
 {

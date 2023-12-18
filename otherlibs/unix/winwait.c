@@ -17,7 +17,7 @@
 #include <caml/alloc.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <windows.h>
 #include <sys/types.h>
 

@@ -15,7 +15,7 @@
 
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <errno.h>
 
 extern char * getlogin(void);

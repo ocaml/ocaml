@@ -15,7 +15,7 @@
 
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <windows.h>
 
 #define CAML_INTERNALS

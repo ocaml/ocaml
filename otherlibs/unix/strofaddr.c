@@ -16,11 +16,11 @@
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/fail.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #ifdef HAS_SOCKETS
 
-#include "socketaddr.h"
+#include "caml/socketaddr.h"
 
 CAMLprim value caml_unix_string_of_inet_addr(value a)
 {

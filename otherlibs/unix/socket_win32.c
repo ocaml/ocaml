@@ -15,7 +15,7 @@
 
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 int caml_unix_socket_domain_table[] = {
   PF_UNIX, PF_INET, PF_INET6

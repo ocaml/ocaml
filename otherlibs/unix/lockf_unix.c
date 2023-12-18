@@ -18,7 +18,7 @@
 #include <caml/fail.h>
 #include <caml/mlvalues.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #if defined(F_GETLK) && defined(F_SETLK) && defined(F_SETLKW)
 

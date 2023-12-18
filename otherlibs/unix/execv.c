@@ -18,7 +18,7 @@
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/osdeps.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 CAMLprim value caml_unix_execv(value path, value args)
 {

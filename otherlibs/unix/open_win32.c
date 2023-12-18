@@ -19,7 +19,7 @@
 #include <caml/alloc.h>
 #include <caml/osdeps.h>
 #include <caml/memory.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <fcntl.h>
 
 static const int open_access_flags[15] = {

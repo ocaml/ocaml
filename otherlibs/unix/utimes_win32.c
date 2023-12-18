@@ -21,7 +21,7 @@
 #include <caml/signals.h>
 #include <caml/osdeps.h>
 #include <caml/winsupport.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #include <windows.h>
 

@@ -21,7 +21,7 @@
 #include <caml/memory.h>
 #include <caml/fail.h>
 #include <caml/platform.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include "cst2constr.h"
 #include <errno.h>
 #ifdef HAS_UNISTD

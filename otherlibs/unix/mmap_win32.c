@@ -24,7 +24,7 @@
 #include "caml/signals.h"
 #include "caml/sys.h"
 #include "caml/osdeps.h"
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #define Leave_blocking_and_uerror_if(e) \
   do { if (e) { \

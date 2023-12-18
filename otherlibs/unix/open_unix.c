@@ -18,7 +18,7 @@
 #include <caml/memory.h>
 #include <caml/misc.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include <string.h>
 #ifdef HAS_UNISTD
 #include <unistd.h>

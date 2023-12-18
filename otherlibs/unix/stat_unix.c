@@ -24,7 +24,7 @@
 #include <caml/alloc.h>
 #include <caml/signals.h>
 #include <caml/io.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 #include "cst2constr.h"
 
 #ifndef S_IFLNK

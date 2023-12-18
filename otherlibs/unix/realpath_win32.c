@@ -26,7 +26,7 @@
 #include <caml/alloc.h>
 #include <caml/fail.h>
 #include <caml/osdeps.h>
-#include "unixsupport.h"
+#include "caml/unixsupport.h"
 
 #include <windows.h>
 #include <stdio.h>

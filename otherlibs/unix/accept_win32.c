@@ -17,8 +17,8 @@
 #include <caml/alloc.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
-#include "unixsupport.h"
-#include "socketaddr.h"
+#include "caml/unixsupport.h"
+#include "caml/socketaddr.h"
 
 CAMLprim value caml_unix_accept(value cloexec, value sock)
 {
