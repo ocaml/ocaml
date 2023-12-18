@@ -15287,8 +15287,8 @@ as_fn_error $? "C11 atomic support is required, use another C compiler
 See \`config.log' for more details" "$LINENO" 5; }
 fi
 
-# Full support for C11 __thread variables
-# macOS and MinGW-64 have problems with __thread variables accessed from DLLs
+# Full support for thread local storage
+# macOS and MinGW-w64 have problems with thread local storage accessed from DLLs
 
 case $host in #(
   *-apple-darwin*|*-mingw32*) :

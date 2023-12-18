@@ -20,7 +20,7 @@
 #define CAML_INTERNALS
 
 #define BLOCK_SIZE 512
-static __thread char marshal_block[BLOCK_SIZE];
+static CAMLthread_local char marshal_block[BLOCK_SIZE];
 
 value marshal_to_block(value vlen, value v, value vflags)
 {

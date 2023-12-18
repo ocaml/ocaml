@@ -59,7 +59,7 @@ void caml_failed_assert (char * expr, char_os * file_os, int line)
 #endif
 
 #if defined(DEBUG)
-static __thread int noalloc_level = 0;
+static CAMLthread_local int noalloc_level = 0;
 int caml_noalloc_begin(void)
 {
   return noalloc_level++;

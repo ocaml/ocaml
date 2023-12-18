@@ -68,7 +68,7 @@
    currently locked channel (if any), which is then called by
    [caml_raise].
  */
-static __thread struct channel* last_channel_locked = NULL;
+static CAMLthread_local struct channel* last_channel_locked = NULL;
 
 CAMLexport void caml_channel_lock(struct channel *chan)
 {

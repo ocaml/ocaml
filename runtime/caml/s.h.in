@@ -44,9 +44,9 @@
 
 #undef HAS_FULL_THREAD_VARIABLES
 
-/* Define HAS_FULL_THREAD_VARIABLES if C11 __thread variables are fully
-   supported, including across DLLs.  This is not the case with
-   macOS and with Windows + MinGW-64. */
+/* Define HAS_FULL_THREAD_VARIABLES if thread-local storage is fully supported,
+   including across DLLs. This is not the case with macOS and with Windows +
+   MinGW-w64. */
 
 #undef HAS_C99_FLOAT_OPS
 

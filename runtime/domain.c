@@ -247,7 +247,7 @@ uintnat caml_minor_heap_max_wsz;
 
 CAMLexport uintnat caml_minor_heaps_start;
 CAMLexport uintnat caml_minor_heaps_end;
-static __thread dom_internal* domain_self;
+static CAMLthread_local dom_internal* domain_self;
 
 /*
  * This structure is protected by all_domains_lock
@@ -302,7 +302,7 @@ static dom_internal* next_free_domain(void) {
   return stw_domains.domains[stw_domains.participating_domains];
 }
 
-CAMLexport __thread caml_domain_state* caml_state;
+CAMLexport CAMLthread_local caml_domain_state* caml_state;
 
 #ifndef HAS_FULL_THREAD_VARIABLES
 /* Export a getter for caml_state, to be used in DLLs */
