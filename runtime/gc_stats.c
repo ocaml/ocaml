@@ -17,6 +17,7 @@
 
 #include "caml/gc_stats.h"
 #include "caml/minor_gc.h"
+#include "caml/platform.h"
 #include "caml/shared_heap.h"
 
 Caml_inline intnat intnat_max(intnat a, intnat b) {

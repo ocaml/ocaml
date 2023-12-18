@@ -45,4 +45,19 @@ typedef _Atomic intnat atomic_intnat;
 
 #endif
 
+#ifdef CAML_INTERNALS
+
+/* Loads and stores with acquire, release and relaxed semantics */
+
+#define atomic_load_acquire(p)                    \
+  atomic_load_explicit((p), memory_order_acquire)
+#define atomic_load_relaxed(p)                    \
+  atomic_load_explicit((p), memory_order_relaxed)
+#define atomic_store_release(p, v)                      \
+  atomic_store_explicit((p), (v), memory_order_release)
+#define atomic_store_relaxed(p, v)                      \
+  atomic_store_explicit((p), (v), memory_order_relaxed)
+
+#endif /* CAML_INTERNALS */
+
 #endif /* CAML_ATOMIC_H */

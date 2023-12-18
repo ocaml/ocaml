@@ -21,6 +21,7 @@
 #ifdef CAML_INTERNALS
 
 #include "mlvalues.h"
+#include "platform.h"
 
 typedef pthread_mutex_t * sync_mutex;
 
