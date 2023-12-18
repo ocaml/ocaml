@@ -255,7 +255,7 @@ let new_scoped_ty scope desc = newty3 ~level:!current_level ~scope desc
 let newvar ?name ()         = newty2 ~level:!current_level (Tvar name)
 let newvar2 ?name level     = newty2 ~level:level (Tvar name)
 let new_global_var ?name () = newty2 ~level:!global_level (Tvar name)
-let newstub ~scope          = newty3 ~level:!current_level ~scope (Tvar None)
+let newstub ~level ~scope   = newty3 ~level ~scope (Tvar None)
 
 let newobj fields      = newty (Tobject (fields, ref None))
 
@@ -1122,8 +1122,8 @@ let abbreviations = ref (ref Mnil)
 
 (* partial: we may not wish to copy the non generic types
    before we call type_pat *)
-let rec copy ?partial ?keep_names copy_scope ty =
-  let copy = copy ?partial ?keep_names copy_scope in
+let rec copy ?partial ?keep_names ~at_level copy_scope ty =
+  let copy = copy ?partial ?keep_names ~at_level copy_scope in
   match get_desc ty with
     Tsubst (ty, _) -> ty
   | desc ->
@@ -1137,11 +1137,11 @@ let rec copy ?partial ?keep_names copy_scope ty =
         None -> assert false
       | Some (free_univars, keep) ->
           if TypeSet.is_empty (free_univars ty) then
-            if keep then level else !current_level
+            if keep then level else at_level
           else generic_level
     in
     if forget <> generic_level then newty2 ~level:forget (Tvar None) else
-    let t = newstub ~scope:(get_scope ty) in
+    let t = newstub ~level:at_level ~scope:(get_scope ty) in
     For_copy.redirect_desc copy_scope ty (Tsubst (t, None));
     let desc' =
       match desc with
@@ -1231,23 +1231,24 @@ let rec copy ?partial ?keep_names copy_scope ty =
     Transient_expr.set_stub_desc t desc';
     t
 
+let copy ?partial ?keep_names ?(at_level = !current_level) copy_scope ty =
+  copy ?partial ?keep_names ~at_level copy_scope ty
+
 (**** Variants of instantiations ****)
 
-let instance ?partial sch =
+let instance ?partial ?at_level sch =
   let partial =
     match partial with
       None -> None
     | Some keep -> Some (compute_univars sch, keep)
   in
   For_copy.with_scope (fun copy_scope ->
-    copy ?partial copy_scope sch)
+    copy ?partial ?at_level copy_scope sch)
 
 let generic_instance sch =
-  let old = !current_level in
-  current_level := generic_level;
-  let ty = instance sch in
-  current_level := old;
-  ty
+  instance ~at_level:generic_level sch
+
+let instance ?partial sch = instance ?partial sch
 
 let instance_list schl =
   For_copy.with_scope (fun copy_scope ->
@@ -1438,13 +1439,13 @@ let copy_sep ~copy_scope ~fixed ~(visited : type_expr TypeHash.t) sch =
     let univars = free ty in
     if is_Tvar ty || may_share && TypeSet.is_empty univars then
       if get_level ty <> generic_level then ty else
-      let t = newstub ~scope:(get_scope ty) in
+      let t = newstub ~level:!current_level ~scope:(get_scope ty) in
       add_delayed_copy t ty;
       t
     else try
       TypeHash.find visited ty
     with Not_found -> begin
-      let t = newstub ~scope:(get_scope ty) in
+      let t = newstub ~level:!current_level ~scope:(get_scope ty) in
       TypeHash.add visited ty t;
       let desc' =
         match get_desc ty with
