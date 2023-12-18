@@ -45,15 +45,16 @@ AC_DEFUN([OCAML_CC_VENDOR], [
   AC_MSG_CHECKING([C compiler vendor])
   AC_PREPROC_IFELSE(
     [AC_LANG_SOURCE([
-#if defined(_MSC_VER) && defined(__clang_major__) && defined(__clang_minor__)
-msvc _MSC_VER clang __clang_major__ __clang_minor__
-#elif defined(_MSC_VER)
+#if defined(_MSC_VER)
 msvc _MSC_VER
+# if defined(__clang_major__) && defined(__clang_minor__)
+  clang __clang_major__ __clang_minor__
+# endif
 #elif defined(__INTEL_COMPILER)
 icc __INTEL_COMPILER
 #elif defined(__MINGW32__)
 #include <_mingw_mac.h>
-mingw32 __MINGW64_VERSION_MAJOR __MINGW64_VERSION_MINOR
+mingw __MINGW64_VERSION_MAJOR __MINGW64_VERSION_MINOR
 # if defined(__clang_major__) && defined(__clang_minor__)
   clang __clang_major__ __clang_minor__
 # elif defined(__GNUC__) && defined(__GNUC_MINOR__)

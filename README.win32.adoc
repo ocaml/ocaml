@@ -84,7 +84,7 @@ Unless you are also compiling the Cygwin port of OCaml, you do not need the
 
 [[bmflex]]
 In addition to Cygwin, FlexDLL must also be installed, which is available from
-https://github.com/alainfrisch/flexdll. A binary distribution is available;
+https://github.com/ocaml/flexdll. A binary distribution is available;
 instructions on how to build FlexDLL from sources, including how to bootstrap
 FlexDLL and OCaml are given <<seflexdll,later in this document>>.  Unless you
 bootstrap FlexDLL, you will need to ensure that the directory to which you
@@ -308,10 +308,10 @@ You must extract the FlexDLL sources for Version 0.35 or later in the directory
 done in one of three ways:
 
  * Extracting the sources from a tarball from
-   https://github.com/alainfrisch/flexdll/releases
+   https://github.com/ocaml/flexdll/releases
  * Cloning the git repository by running:
 +
-  git clone https://github.com/alainfrisch/flexdll.git
+  git clone https://github.com/ocaml/flexdll.git
 
  * If you are compiling from a git clone of the OCaml repository, instead of
    using a sources tarball, you can run:

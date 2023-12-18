@@ -3966,7 +3966,7 @@ if test ${enable_reserved_header_bits+y}
 then :
   enableval=$enable_reserved_header_bits; case $enable_reserved_header_bits in #(
   [0-9]|[1-2][0-9]|3[0-1]) :
-     reserved_header_bits=$enable_reserved_header_bits ;; #(
+    reserved_header_bits=$enable_reserved_header_bits ;; #(
   *) :
     as_fn_error $? "invalid argument to --enable-reserved-header-bits" "$LINENO" 5 ;;
 esac
@@ -13554,15 +13554,16 @@ printf %s "checking C compiler vendor... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-#if defined(_MSC_VER) && defined(__clang_major__) && defined(__clang_minor__)
-msvc _MSC_VER clang __clang_major__ __clang_minor__
-#elif defined(_MSC_VER)
+#if defined(_MSC_VER)
 msvc _MSC_VER
+# if defined(__clang_major__) && defined(__clang_minor__)
+  clang __clang_major__ __clang_minor__
+# endif
 #elif defined(__INTEL_COMPILER)
 icc __INTEL_COMPILER
 #elif defined(__MINGW32__)
 #include <_mingw_mac.h>
-mingw32 __MINGW64_VERSION_MAJOR __MINGW64_VERSION_MINOR
+mingw __MINGW64_VERSION_MAJOR __MINGW64_VERSION_MINOR
 # if defined(__clang_major__) && defined(__clang_minor__)
   clang __clang_major__ __clang_minor__
 # elif defined(__GNUC__) && defined(__GNUC_MINOR__)
@@ -13897,7 +13898,7 @@ case $ocaml_cv_cc_vendor in #(
     common_cflags="-O2 -fno-strict-aliasing -fwrapv";
     internal_cflags="$cc_warnings -fno-common -fexcess-precision=standard \
 -Wvla" ;; #(
-  mingw32-*-*-gcc-*) :
+  mingw-*-*-gcc-*) :
     internal_cflags="-Wno-unused $cc_warnings \
 -fexcess-precision=standard"
     # TODO: see whether the code can be fixed to avoid -Wno-unused
@@ -13905,7 +13906,7 @@ case $ocaml_cv_cc_vendor in #(
     internal_cppflags='-D__USE_MINGW_ANSI_STDIO=0 -DUNICODE -D_UNICODE'
     internal_cppflags="$internal_cppflags -DWINDOWS_UNICODE="
     internal_cppflags="${internal_cppflags}\$(WINDOWS_UNICODE)" ;; #(
-  mingw32-*) :
+  mingw-*) :
     as_fn_error $? "Unsupported C compiler for a MinGW-w64 build" "$LINENO" 5 ;; #(
   msvc-*) :
     common_cflags="-nologo -O2 -Gy- -MD $cc_warnings"
@@ -14204,10 +14205,9 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
     case $host in #(
   *-w64-mingw32*|*-pc-windows) :
     flexlink_where="$(cmd /c "$flexlink" -where 2>/dev/null)"
-      if test -z "$flexlink_where"
+        if test -z "$flexlink_where"
 then :
   as_fn_error $? "$flexlink is not executable from a native Win32 process" "$LINENO" 5
-
 fi ;; #(
   *) :
      ;;
@@ -15329,7 +15329,7 @@ then :
     case $ocaml_cv_cc_vendor in #(
   xlc*) :
     mkdll_flags='-qmkshrobj -G'
-                supports_shared_libraries=true ;; #(
+          supports_shared_libraries=true ;; #(
   *) :
      ;;
 esac ;; #(
@@ -15696,10 +15696,8 @@ printf "%s\n" "$as_me: the native compiler is disabled" >&6;} ;; #(
     native_compiler=false
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: the native compiler is not supported on this platform" >&5
 printf "%s\n" "$as_me: the native compiler is not supported on this platform" >&6;} ;; #(
-  *,*) :
-    native_compiler=true ;; #(
   *) :
-     ;;
+    native_compiler=true ;;
 esac
 
 if $native_compiler
@@ -15885,7 +15883,7 @@ case $arch in #(
   # expected to match "*-linux-musl" as well as "*-linux-musleabi*"
     *-linux-musl*) :
     # Alpine and other musl-based Linux distributions
-       common_cflags="-no-pie $common_cflags" ;; #(
+      common_cflags="-no-pie $common_cflags" ;; #(
   *) :
      ;;
 esac ;;
@@ -16494,10 +16492,7 @@ then :
   *,true) :
     instrumented_runtime=true ;; #(
   yes,false) :
-
-          as_fn_error $? "Instrumented runtime support requested \
-but no proper monotonic clock source was found." "$LINENO" 5
-         ;; #(
+    as_fn_error $? "Instrumented runtime support requested but no proper monotonic clock source was found." "$LINENO" 5 ;; #(
   auto,false) :
     instrumented_runtime=false
      ;; #(
@@ -16583,15 +16578,9 @@ else $as_nop
 fi
            ;; #(
   yes,false,*) :
-
-           as_fn_error $? "Instrumented runtime support requested \
-but clock_gettime is missing." "$LINENO" 5
-           ;; #(
+    as_fn_error $? "Instrumented runtime support requested but clock_gettime is missing." "$LINENO" 5 ;; #(
   yes,*,false) :
-
-           as_fn_error $? "Instrumented runtime support requested \
-but no proper monotonic clock source was found." "$LINENO" 5
-
+    as_fn_error $? "Instrumented runtime support requested but no proper monotonic clock source was found." "$LINENO" 5
        ;; #(
   *) :
      ;;
@@ -20024,10 +20013,8 @@ then :
     as_fn_error $? "mmap MAP_STACK not supported on FreeBSD" "$LINENO" 5 ;; #(
   *) :
     with_mmap_map_stack=true;
-            printf "%s\n" "#define USE_MMAP_MAP_STACK 1" >>confdefs.h
- ;; #(
-  *) :
-     ;;
+        printf "%s\n" "#define USE_MMAP_MAP_STACK 1" >>confdefs.h
+ ;;
 esac
 else $as_nop
   as_fn_error $? "mmap MAP_STACK requested but not found on $target" "$LINENO" 5
@@ -20042,9 +20029,7 @@ else $as_nop
       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: using MAP_STACK on OpenBSD due to stack checking" >&5
 printf "%s\n" "$as_me: using MAP_STACK on OpenBSD due to stack checking" >&6;} ;; #(
   *) :
-    with_mmap_map_stack=false ;; #(
-  *) :
-     ;;
+    with_mmap_map_stack=false ;;
 esac
 
 fi
@@ -20067,33 +20052,29 @@ printf "%s\n" "$as_me: No support for function sections on $target." >&6;} ;; #(
     case $ocaml_cv_cc_vendor in #(
   gcc-0123-*|gcc-4-01234567) :
     function_sections=false;
-              { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Function sections are not
-              supported in GCC prior to version 4.8." >&5
+            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Function sections are not
+            supported in GCC prior to version 4.8." >&5
 printf "%s\n" "$as_me: Function sections are not
-              supported in GCC prior to version 4.8." >&6;} ;; #(
+            supported in GCC prior to version 4.8." >&6;} ;; #(
   clang-012-*|clang-3-01234) :
     function_sections=false;
-              { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Function sections are not supported
-              in Clang prior to version 3.5." >&5
+            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Function sections are not supported
+            in Clang prior to version 3.5." >&5
 printf "%s\n" "$as_me: Function sections are not supported
-              in Clang prior to version 3.5." >&6;} ;; #(
+            in Clang prior to version 3.5." >&6;} ;; #(
   gcc-*|clang-*) :
     function_sections=true;
-              oc_native_compflags='-function-sections'
-              internal_cflags="$internal_cflags -ffunction-sections";
-              printf "%s\n" "#define FUNCTION_SECTIONS 1" >>confdefs.h
+            oc_native_compflags='-function-sections'
+            internal_cflags="$internal_cflags -ffunction-sections";
+            printf "%s\n" "#define FUNCTION_SECTIONS 1" >>confdefs.h
  ;; #(
   *) :
     function_sections=false;
-              { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Function sections are not supported by
-              $ocaml_cv_cc_vendor." >&5
+          { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Function sections are not supported by
+          $ocaml_cv_cc_vendor." >&5
 printf "%s\n" "$as_me: Function sections are not supported by
-              $ocaml_cv_cc_vendor." >&6;} ;; #(
-  *) :
-     ;;
-esac ;; #(
-  *) :
-     ;;
+          $ocaml_cv_cc_vendor." >&6;} ;;
+esac ;;
 esac ;; #(
   *) :
     function_sections=false ;;
