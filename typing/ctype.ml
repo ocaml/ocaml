@@ -712,7 +712,7 @@ let rec generalize ~outer_level ty =
   end
 
 (* Note: the public version of this function is called with
-   [ty] = [!current_level] *)
+   [outer_level] = [!current_level] *)
 let generalize ~outer_level ty =
   simple_abbrevs := Mnil;
   generalize ~outer_level ty
@@ -986,7 +986,7 @@ let rec generalize_class_type' gen =
       generalize_class_type' gen cty
 
 (* Note: the public version of this function is called with
-   [ty] = [!current_level] *)
+   [outer_level] = [!current_level] *)
 let generalize_class_type ~outer_level cty =
   generalize_class_type' (generalize ~outer_level) cty
 
@@ -1238,7 +1238,7 @@ let rec copy ?partial ?keep_names ~level copy_scope ty =
 (**** Variants of instantiations ****)
 
 (* Note: the public version of this function is called with
-   [ty] = [!current_level] *)
+   [level] = [!current_level] *)
 let instance ?partial ~level sch =
   let partial =
     match partial with
@@ -1338,7 +1338,7 @@ let instance_constructor existential_treatment cstr =
   )
 
 (* Note: the public version of this function is called with
-   [ty] = [!current_level] *)
+   [level] = [!current_level] *)
 let instance_parameterized_type ?keep_names ~level sch_args sch =
   For_copy.with_scope (fun copy_scope ->
     let ty_args =
@@ -1368,7 +1368,7 @@ let map_kind f = function
 
 
 (* Note: the public version of this function is called with
-   [ty] = [!current_level] *)
+   [level] = [!current_level] *)
 let instance_declaration ~level decl =
   For_copy.with_scope (fun copy_scope ->
     {decl with type_params = List.map (copy ~level copy_scope) decl.type_params;
@@ -1381,7 +1381,7 @@ let generic_instance_declaration decl =
   instance_declaration ~level:generic_level decl
 
 (* Note: the public version of this function is called with
-   [ty] = [!current_level] *)
+   [level] = [!current_level] *)
 let instance_class ~level params cty =
   let rec copy_class_type copy_scope = function
     | Cty_constr (path, tyl, cty) ->
