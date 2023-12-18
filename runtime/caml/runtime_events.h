@@ -296,7 +296,9 @@ void caml_ev_alloc_flush(void);
 CAMLextern value caml_runtime_events_user_register(value event_name,
    value event_tag, value event_type);
 
-/* Write event data to ring buffer. */
+/* Write event data to ring buffer. Should not be called when the runtime lock
+   is not held, i.e., after [caml_enter_blocking_section()] and before
+   [caml_leave_blocking_section()]. */
 CAMLextern value caml_runtime_events_user_write(value event,
    value event_content);
 

@@ -127,6 +127,10 @@ Working version
 - #12352: Fix a typo in the documentation of Arg.write_arg
   (Christophe Raffalli, review by Florian Angeletti)
 
+- #12840: manual: update runtime tracing chapter for custom events (ex #12335)
+  (Lucas Pluvinage, Sadiq Jaffer and Olivier Nicole, review by Gabriel Scherer,
+   David Allsopp, Tim McGilchrist and Thomas Leonard)
+
 ### Compiler user-interface and warnings:
 
 - #12247: configure: --disable-ocamldebug can now be used instead

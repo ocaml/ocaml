@@ -207,7 +207,7 @@ module User : sig
   (** [write t v] emits value [v] for event [t]. *)
 
   val name : _ t -> string
-  (** [name t] is the uniquely identifying name of event [t]. *)
+  (** [name t] is the unique identifying name of event [t]. *)
 
   val tag : 'a t -> tag
   (** [tag t] is the associated tag of event [t], when it is known.
