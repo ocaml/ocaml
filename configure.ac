@@ -323,11 +323,14 @@ AS_CASE([$host],
   outputexe='-o '
   syslib='-l$(1)'])
 
-AS_CASE([$host],
-  [*-*-mingw32*|*-pc-windows],
-    [CSC=csc
-    CSCFLAGS="/nologo /nowarn:1668"
-    AS_CASE([$host_cpu], [i*86], [CSCFLAGS="$CSCFLAGS /platform:x86"])])
+AC_CHECK_PROG([csc],[csc],[csc])
+AS_IF([test -n "$csc"],
+  [AS_CASE([$host],
+    [*-*-mingw32*|*-pc-windows],
+      [CSC=csc
+      CSCFLAGS="/nologo /nowarn:1668"
+      AS_CASE([$host_cpu], [i*86], [CSCFLAGS="$CSCFLAGS /platform:x86"])],
+    [AC_MSG_WARN([Mono is not yet supported - C sharp tests disabled])])])
 
 # Environment variables that are taken into account
 
