@@ -57,7 +57,11 @@ type out_value =
   | Oval_variant of string * out_value option
   | Oval_lazy of out_value
 
-type out_type_param = string * (Asttypes.variance * Asttypes.injectivity)
+type out_type_param = {
+    ot_non_gen: bool;
+    ot_name: string;
+    ot_variance: Asttypes.variance * Asttypes.injectivity
+}
 
 type out_type =
   | Otyp_abstract
