@@ -197,6 +197,10 @@ END {
             printf("\nList of skipped tests:\n");
             for (i=0; i < skipidx; i++) printf("    %s\n", skips[i]);
         }
+        if (slowcount != 0){
+            printf("\n\nTests taking longer than 10s:\n");
+            for (i=0; i < slowcount; i++) printf("    %s\n", slow[i]);
+        }
         if (empty != 0){
             printf("\nList of directories returning no results:\n");
             for (i=0; i < empty; i++) printf("    %s\n", blanks[i]);
@@ -220,10 +224,6 @@ END {
         printf("  %4d tests considered", nresults);
         if (nresults != passed + skipped + ignored + failed + unexped){
             printf (" (totals don't add up??)");
-        }
-        if (slowcount != 0){
-            printf("\n\nTests taking longer than 10s:\n");
-            for (i=0; i < slowcount; i++) printf("    %s\n", slow[i]);
         }
         printf ("\n");
         if (failed || unexped){
