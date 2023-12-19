@@ -204,4 +204,6 @@ let rec fold_lines f accu ic =
 
 let set_binary_mode = Stdlib.set_binary_mode_in
 
+external is_binary_mode : in_channel -> bool = "caml_ml_is_binary_mode"
+
 external isatty : t -> bool = "caml_sys_isatty"

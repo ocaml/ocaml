@@ -208,6 +208,12 @@ val set_binary_mode : t -> bool -> unit
     This function has no effect under operating systems that do not distinguish
     between text mode and binary mode. *)
 
+val is_binary_mode : t -> bool
+(** [is_binary_mode ic] returns whether the channel [ic] is in binary mode
+    (see {!set_binary_mode}).
+
+    @since 5.2 *)
+
 val isatty : t -> bool
 (** [isatty ic] is [true] if [ic] refers to a terminal or console window,
     [false] otherwise.
