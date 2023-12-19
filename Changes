@@ -299,6 +299,11 @@ Working version
 - #12770: Add `Fun.compose`.
   (Justin Frank, review by Nicolás Ojeda Bär, Daniel Bünzli and Jeremy Yallop)
 
+- #12845: Add `{In,Out}_channel.is_binary_mode` as the dual of
+  `set_binary_mode`. This function was previously only available in the internal
+  C API.
+  (David Allsopp, review by Nicolás Ojeda Bär and Xavier Leroy)
+
 ### Other libraries:
 
 - #12213: Dynlink library, improve legibility of error messages

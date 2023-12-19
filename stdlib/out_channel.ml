@@ -67,7 +67,10 @@ let output_bigarray oc buf ofs len =
   if ofs < 0 || len < 0 || ofs > Bigarray.Array1.dim buf - len
   then invalid_arg "output_bigarray"
   else unsafe_output_bigarray oc buf ofs len
+
 let set_binary_mode = Stdlib.set_binary_mode_out
+
+external is_binary_mode : out_channel -> bool = "caml_ml_is_binary_mode"
 
 external set_buffered : t -> bool -> unit = "caml_ml_set_buffered"
 

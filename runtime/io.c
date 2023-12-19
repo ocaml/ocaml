@@ -784,6 +784,11 @@ CAMLprim value caml_ml_set_binary_mode(value vchannel, value mode)
   CAMLreturn (Val_unit);
 }
 
+CAMLprim value caml_ml_is_binary_mode(value vchannel)
+{
+  return Val_bool(caml_channel_binary_mode(Channel(vchannel)));
+}
+
 /*
    If the channel is closed, DO NOT raise a "bad file descriptor"
    exception, but do nothing (the buffer is already empty).
