@@ -2517,9 +2517,9 @@ AS_CASE([$host],
   [*-*-mingw32*],
     [cclibs="$cclibs -lole32 -luuid -lversion"],
   [*-pc-windows],
-    [# For whatever reason, flexlink includes -ladvapi32 for mingw-w64, but
-    # doesn't include advapi32.lib for MSVC
-    cclibs="$cclibs ole32.lib uuid.lib advapi32.lib version.lib"])
+    [# For whatever reason, flexlink includes -ladvapi32 and -lshell32 for
+    # mingw-w64, but doesn't include advapi32.lib and shell32.lib for MSVC
+    cclibs="$cclibs ole32.lib uuid.lib advapi32.lib shell32.lib version.lib"])
 
 AC_CONFIG_COMMANDS_PRE([cclibs="$cclibs $mathlib $DLLIBS $PTHREAD_LIBS"])
 
