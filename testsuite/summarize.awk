@@ -13,12 +13,17 @@
 #*                                                                        *
 #**************************************************************************
 
-BEGIN {
-  # awk trick to detect whether a function exists. x is undefined. If asort is
-  # present then asort (x) returns 0 (no elements sorted). If asort is not
-  # present then the _space_ before the bracket turns it into string
-  # concatenation of two undefined variables (which returns "").
-  has_asort = (asort (x) == "0")
+# Insertion sort in awk, because asort is a GNU extension. Lifted carefully
+# with tongs out of the mawk manpage.
+function isort(A, n) {
+  for (i = 1; i < n; i++) {
+    hold = A[j = i];
+    while (A[j-1] > hold) {
+      j--;
+      A[j+1] = A[j];
+    }
+    A[j] = hold;
+  }
 }
 
 function check() {
@@ -185,13 +190,11 @@ END {
                 ++ ignored;
             }
         }
-        if (has_asort) {
-          asort(skips);
-          asort(blanks);
-          asort(fail);
-          asort(unexp);
-          asort(slow);
-        }
+        isort(skips, skipidx);
+        isort(blanks, empty);
+        isort(fail, failed);
+        isort(unexp, unexped);
+        isort(slow, slowcount);
         printf("\n");
         if (skipped != 0){
             printf("\nList of skipped tests:\n");
