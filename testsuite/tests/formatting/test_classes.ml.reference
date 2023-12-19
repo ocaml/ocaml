@@ -1,7 +1,9 @@
 class virtual ['inh,'extra,'syn] logic_t =
   object
-    inherit  [(GT.string OCanren.logic, logic Std.List.logic) t,
-      (GT.string OCanren.logic, logic Std.List.logic) t,
-      (GT.string OCanren.logic, logic Std.List.logic) t, 'inh, 'extra, 
-      'syn] OCanren.logic_t
+    inherit 
+      [(GT.string OCanren.logic, logic Std.List.logic) t,
+       (GT.string OCanren.logic, logic Std.List.logic) t,
+       (GT.string OCanren.logic, logic Std.List.logic) t, 'inh, 'extra, 
+       'syn]
+      OCanren.logic_t
   end
