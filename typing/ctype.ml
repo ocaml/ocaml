@@ -1191,7 +1191,7 @@ let rec copy ?partial ?keep_names ~level copy_scope ty =
                 | Tconstr _ | Tnil ->
                     copy more
                 | Tvar _ | Tunivar _ ->
-                    if keep then more else newty mored
+                    if keep then more else newty2 ~level mored
                 |  _ -> assert false
               in
               let row =
@@ -1215,7 +1215,7 @@ let rec copy ?partial ?keep_names ~level copy_scope ty =
                     if row_closed row && not (is_fixed row)
                     && TypeSet.is_empty (free_univars ty)
                     && not (List.for_all not_reither fields) then
-                      let more' = newvar () in
+                      let more' = newvar2 level in
                       (more',
                        create_row ~fields:(List.filter not_reither fields)
                          ~more:more' ~closed:false ~fixed:None ~name:None)
@@ -1325,7 +1325,8 @@ let instance_constructor existential_treatment cstr =
               Env.enter_type (get_new_abstract_name env name) decl env
                 ~scope:fresh_constr_scope in
             Pattern_env.set_env penv new_env;
-            let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
+            let to_unify =
+              newty2 ~level (Tconstr (Path.Pident id,[],ref Mnil)) in
             let tv = copy ~level copy_scope existential in
             assert (is_Tvar tv);
             link_type tv to_unify;
