@@ -152,6 +152,7 @@ function record_unexp() {
 }
 
 END {
+    if (ENVIRON["GITHUB_ACTIONS"] == "true") start_group = "::group::";
     if (in_test) record_unexp();
 
     if (errored){
@@ -197,12 +198,14 @@ END {
         isort(slow, slowcount);
         printf("\n");
         if (skipped != 0){
-            printf("\nList of skipped tests:\n");
+            printf("\n%sList of skipped tests:\n", start_group);
             for (i=0; i < skipidx; i++) printf("    %s\n", skips[i]);
+            if (ENVIRON["GITHUB_ACTIONS"] == "true") print "::endgroup::";
         }
         if (slowcount != 0){
-            printf("\n\nTests taking longer than 10s:\n");
+            printf("\n\n%sTests taking longer than 10s:\n", start_group);
             for (i=0; i < slowcount; i++) printf("    %s\n", slow[i]);
+            if (ENVIRON["GITHUB_ACTIONS"] == "true") print "::endgroup::";
         }
         if (empty != 0){
             printf("\nList of directories returning no results:\n");
