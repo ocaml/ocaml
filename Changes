@@ -691,7 +691,7 @@ Working version
 
 * #12837: Show non-generalizable type parameters in type definitions
   Changes type of type parameters in outcometree.mli.
-  (Jacques Garrigue, review by ??)
+  (Jacques Garrigue, review by Richard Eisenberg)
 
 OCaml 5.1.1 (8 December 2023)
 ----------------------------
