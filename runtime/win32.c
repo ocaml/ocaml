@@ -27,6 +27,7 @@
 #include <winbase.h>
 #include <winsock2.h>
 #include <winioctl.h>
+#include <shlobj.h>
 #include <direct.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -1237,4 +1238,31 @@ int caml_posixerr_of_win32err(unsigned int errcode)
     }
   }
   return 0;
+}
+
+value caml_win32_xdg_defaults(void)
+{
+  CAMLparam0();
+  CAMLlocal2(opath, result);
+
+  PWSTR wpath;
+
+  result = Val_emptylist;
+  if (SHGetKnownFolderPath(&FOLDERID_ProgramData, 0, NULL, &wpath) == S_OK) {
+    opath = caml_copy_string_of_utf16(wpath);
+    result = caml_alloc_2(Tag_cons, opath, result);
+  }
+  CoTaskMemFree(wpath); /* wpath must be freed, even on error */
+  if (SHGetKnownFolderPath(&FOLDERID_RoamingAppData, 0, NULL, &wpath) == S_OK) {
+    opath = caml_copy_string_of_utf16(wpath);
+    result = caml_alloc_2(Tag_cons, opath, result);
+  }
+  CoTaskMemFree(wpath);
+  if (SHGetKnownFolderPath(&FOLDERID_LocalAppData, 0, NULL, &wpath) == S_OK) {
+    opath = caml_copy_string_of_utf16(wpath);
+    result = caml_alloc_2(Tag_cons, opath, result);
+  }
+  CoTaskMemFree(wpath);
+
+  CAMLreturn(result);
 }

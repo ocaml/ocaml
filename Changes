@@ -339,6 +339,12 @@ Working version
 - #12615: ocamldoc: get rid of the odoc_literate and odoc_todo generators.
   (Sébaistien Hinderer, review by Gabriel Scherer and Florian Angeletti)
 
+- #12624: Use $XDG_CONFIG_DIRS in addition to $XDG_CONFIG_HOME when searching
+  for init.ml and use this to extend init.ml support to the toplevel when
+  running on Windows.
+  (David Allsopp, report by Jonah Beckford, review by Nicolás Ojeda Bär and
+   Antonin Décimo)
+
 - #12688: Setting the env variable `NO_COLOR` with an empty value no longer
   has effects. Previously, setting `NO_COLOR` with any value, including
   the empty value, would disable colors (unless `OCAML_COLOR` is also set).

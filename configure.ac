@@ -2422,11 +2422,11 @@ ocamlc_cppflags="$common_cppflags $CPPFLAGS"
 
 AS_CASE([$host],
   [*-*-mingw32*],
-    [cclibs="$cclibs -lversion"],
+    [cclibs="$cclibs -lole32 -luuid -lversion"],
   [*-pc-windows],
     [# For whatever reason, flexlink includes -ladvapi32 for mingw-w64, but
     # doesn't include advapi32.lib for MSVC
-    cclibs="$cclibs advapi32.lib version.lib"])
+    cclibs="$cclibs ole32.lib uuid.lib advapi32.lib version.lib"])
 
 AC_CONFIG_COMMANDS_PRE([cclibs="$cclibs $mathlib $DLLIBS $PTHREAD_LIBS"])
 
