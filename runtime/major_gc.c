@@ -1468,6 +1468,10 @@ static void stw_cycle_all_domains(caml_domain_state* domain, void* args,
     caml_compact_heap(domain, participating_count, participating);
   }
 
+  /* Update GC stats (as these could have significantly changed if there was a
+      compaction )*/
+  caml_collect_gc_stats_sample_stw(domain);
+
   /* Collect domain-local stats to emit to runtime events */
   struct heap_stats local_stats;
   caml_collect_heap_stats_sample(Caml_state->shared_heap, &local_stats);
