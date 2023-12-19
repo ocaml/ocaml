@@ -14,5 +14,5 @@
    check-ocamlc.byte-output;
  }
 *)
-type ground = (GT.string, ground Std.List.ground) t [@@deriving gaaaaaaa ~options:{ gmap }]
-
+type foo = (GT.string, foo Std.List.ground) t [@@deriving bbbbbbbbbbbb ~options:{ qwer }]
+and bar = (GT.float, bar Std.List.ground) t [@@deriving ccccccccccccc ~options:{ asdf }]
