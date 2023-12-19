@@ -1,3 +1,2 @@
-type ground = (GT.string, ground Std.List.ground) t[@@deriving
-                                                     gaaaaaaa
-                                                       ~options:{ gmap }]
+type ground = (GT.string, ground Std.List.ground) t
+[@@deriving gaaaaaaa ~options:{ gmap }]
