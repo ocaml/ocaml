@@ -231,9 +231,9 @@ external quick_stat : unit -> stat = "caml_gc_quick_stat"
 (** Same as [stat] except that [live_words], [live_blocks], [free_words],
     [free_blocks], [largest_free], and [fragments] are set to 0. Due to
     per-domain buffers it may only represent the state of the program's
-    total memory usage since the last minor collection. This function is
-    much faster than [stat] because it does not need to trigger a full
-    major collection. *)
+    total memory usage since the last minor collection or major cycle.
+    This function is much faster than [stat] because it does not need to
+    trigger a full major collection. *)
 
 external counters : unit -> float * float * float = "caml_gc_counters"
 (** Return [(minor_words, promoted_words, major_words)] for the current
