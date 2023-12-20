@@ -285,8 +285,8 @@ Caml_inline void prefetch_block(value v)
      somewhere between 1/8-1/2 of a prefetch operation (in expectation,
      depending on alignment, word size, and cache line size), which is
      cheap enough to make this worthwhile. */
-  caml_prefetch(Hp_val(v));
-  caml_prefetch((void*)&Field(v, 3));
+  caml_prefetch((const void *)Hp_val(v));
+  caml_prefetch((const void *)&Field(v, 3));
 }
 
 static void ephe_next_cycle (void)
