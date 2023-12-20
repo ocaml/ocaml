@@ -104,7 +104,8 @@ void caml_orphan_alloc_stats(caml_domain_state *domain) {
 /* The "sampled stats" of a domain are a recent copy of its
    domain-local stats, accessed without synchronization and only
    updated ("sampled") during stop-the-world events -- each minor
-   collection, including those happening during domain termination. */
+   collection, major cycle (which potentially includes compaction),
+   all of these events could happen during domain termination. */
 static struct gc_stats sampled_gc_stats[Max_domains];
 
 /* Update the sampled stats for the given domain during a STW section. */
