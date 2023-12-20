@@ -131,6 +131,9 @@ Working version
 - #11911, #12381: Restore statmemprof functionality in part
    (API changes in Gc.Memprof). (Nick Barnes)
 
+- #12023: Deprecate Gc.stat
+  (Damien Doligez, review by Gabriel Scherer and Jeremy Yallop)
+
 - #12430: Simplify dynamic bytecode loading in Meta.reify_bytecode
   (Stephen Dolan, review by Sébastien Hinderer, Vincent Laviron and Xavier
    Leroy)
