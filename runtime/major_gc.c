@@ -1469,7 +1469,7 @@ static void stw_cycle_all_domains(caml_domain_state* domain, void* args,
   }
 
   /* Update GC stats (as these could have significantly changed if there was a
-      compaction )*/
+      compaction) */
   caml_collect_gc_stats_sample_stw(domain);
 
   /* Collect domain-local stats to emit to runtime events */
