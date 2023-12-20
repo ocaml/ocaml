@@ -704,6 +704,9 @@ Working version
   Changes type of type parameters in outcometree.mli.
   (Jacques Garrigue, review by Richard Eisenberg)
 
+- #12851: Fix race between runtime events teardown and event emission
+  (Olivier Nicole, review by Miod Vallat and Gabriel Scherer)
+
 OCaml 5.1.1 (8 December 2023)
 ----------------------------
 
