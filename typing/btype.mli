@@ -134,7 +134,7 @@ val map_type_expr_cstr_args: (type_expr -> type_expr) ->
 
 (**** Utilities for type marking ****)
 
-type type_marks = unit TypeHash.t
+type type_marks
 
 val create_type_marks: unit -> type_marks
 
