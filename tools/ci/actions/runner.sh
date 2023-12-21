@@ -39,7 +39,9 @@ EOF
 
   configure_flags="\
     --prefix=$PREFIX \
-    --enable-debug-runtime \
+    --enable-flambda-invariants \
+    --enable-ocamltest \
+    --disable-dependency-generation \
     $CONFIG_ARG"
 
   ./configure $configure_flags
