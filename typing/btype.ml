@@ -321,11 +321,21 @@ let iter_type_expr_kind f = function
 
 type type_marks = unit TypeHash.t
 
-let create_type_marks () = TypeHash.create 7
+let create_type_marks () = TypeHash.create 1
 
 let not_marked_node marks ty = not (TypeHash.mem marks ty)
 
 let mark_node marks ty = TypeHash.add marks ty ()
+
+(*
+type type_marks = TypeSet.t ref
+
+let create_type_marks () = ref TypeSet.empty
+
+let not_marked_node marks ty = not (TypeSet.mem ty !marks)
+
+let mark_node marks ty = marks := TypeSet.add ty !marks
+*)
 
 let try_mark_node marks ty =
   not_marked_node marks ty && (mark_node marks ty; true)
