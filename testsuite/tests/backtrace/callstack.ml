@@ -34,8 +34,8 @@ let () = Thread.join (Thread.create f3 ())
  flags = "-g";
  include systhreads;
  hassysthreads;
- no-flambda;
  {
+   no-flambda;
    native;
  }{
    bytecode;
