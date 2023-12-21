@@ -712,17 +712,17 @@ let instance_variable_type label sign =
   | exception Not_found -> assert false
 
                   (**********************************)
-                  (*  Utilities for level-marking   *)
+                  (*  Utilities for scope-marking   *)
                   (**********************************)
 
-let not_marked_node ty = get_level ty >= lowest_level
+let not_marked_node ty = get_scope ty >= lowest_level
     (* type nodes with negative levels are "marked" *)
 
 let flip_mark_node ty =
   let ty = Transient_expr.repr ty in
-  Transient_expr.set_level ty (pivot_level - ty.level)
+  Transient_expr.set_scope ty (pivot_level - ty.scope)
 let logged_mark_node ty =
-  set_level ty (pivot_level - get_level ty)
+  set_scope ty (pivot_level - get_scope ty)
 
 let try_mark_node ty = not_marked_node ty && (flip_mark_node ty; true)
 let try_logged_mark_node ty = not_marked_node ty && (logged_mark_node ty; true)
@@ -745,7 +745,7 @@ let type_iterators =
 
 (* Remove marks from a type. *)
 let rec unmark_type ty =
-  if get_level ty < lowest_level then begin
+  if get_scope ty < lowest_level then begin
     (* flip back the marked level *)
     flip_mark_node ty;
     iter_type_expr unmark_type ty

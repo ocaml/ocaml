@@ -788,9 +788,10 @@ let rec normalize_package_path env p =
 
 let rec check_scope_escape env level ty =
   let orig_level = get_level ty in
-  if try_logged_mark_node ty then begin
+  if not_marked_node ty then begin
     if level < get_scope ty then
       raise_scope_escape_exn ty;
+    logged_mark_node ty;
     begin match get_desc ty with
     | Tconstr (p, _, _) when level < Path.scope p ->
         begin match !forward_try_expand_safe env ty with
@@ -1079,9 +1080,8 @@ let compute_univars ty =
 
 let fully_generic ty =
   let rec aux ty =
-    if not_marked_node ty then
-      if get_level ty = generic_level then
-        (flip_mark_node ty; iter_type_expr aux ty)
+    if try_mark_node ty then
+      if get_level ty = generic_level then iter_type_expr aux ty
       else raise Exit
   in
   let res = try aux ty; true with Exit -> false in
@@ -2500,10 +2500,9 @@ let mcomp_for tr_exn env t1 t2 =
 let find_lowest_level ty =
   let lowest = ref generic_level in
   let rec find ty =
-    if not_marked_node ty then begin
+    if try_mark_node ty then begin
       let level = get_level ty in
       if level < !lowest then lowest := level;
-      flip_mark_node ty;
       iter_type_expr find ty
     end
   in find ty; unmark_type ty; !lowest

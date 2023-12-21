@@ -185,7 +185,7 @@ module For_copy : sig
 end
 
 val lowest_level: int
-        (* Marked type: ty.level < lowest_level *)
+        (* Marked type: get_scope ty < lowest_level *)
 
 val not_marked_node: type_expr -> bool
         (* Return true if a type node is not yet marked *)
