@@ -316,7 +316,7 @@ let iter_type_expr_kind f = function
       ()
 
                   (**********************************)
-                  (*  Utilities for level-marking   *)
+                  (*  Utilities for type-marking    *)
                   (**********************************)
 
 type type_marks = unit TypeHash.t

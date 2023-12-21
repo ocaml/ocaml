@@ -132,7 +132,7 @@ val iter_type_expr_cstr_args: (type_expr -> unit) ->
 val map_type_expr_cstr_args: (type_expr -> type_expr) ->
   (constructor_arguments -> constructor_arguments)
 
-(**** Utilities for level marking ****)
+(**** Utilities for type marking ****)
 
 type type_marks = unit TypeHash.t
 
