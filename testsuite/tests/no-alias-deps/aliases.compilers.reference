@@ -1,9 +1,9 @@
-File "aliases.ml", line 14, characters 12-13:
-14 | module A' = A (* missing a.cmi *)
+File "aliases.ml", line 17, characters 12-13:
+17 | module A' = A (* missing a.cmi *)
                  ^
 Warning 49 [no-cmi-file]: no cmi file was found in path for module A
-File "aliases.ml", line 15, characters 12-13:
-15 | module B' = B (* broken b.cmi *)
+File "aliases.ml", line 18, characters 12-13:
+18 | module B' = B (* broken b.cmi *)
                  ^
 Warning 49 [no-cmi-file]: no valid cmi file was found in path for module B. b.cmi
 is not a compiled interface

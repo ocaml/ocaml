@@ -3,9 +3,9 @@
 #*                                                                        *
 #*                                 OCaml                                  *
 #*                                                                        *
-#*                 David Allsopp, OCaml Labs, Cambridge.                  *
+#*                        David Allsopp, Tarides                          *
 #*                                                                        *
-#*   Copyright 2021 David Allsopp Ltd.                                    *
+#*   Copyright 2022 David Allsopp Ltd.                                    *
 #*                                                                        *
 #*   All rights reserved.  This file is distributed under the terms of    *
 #*   the GNU Lesser General Public License version 2.1, with the          *
@@ -13,23 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
-set -e
-
-# Test whether the manual/ has been touched by this PR.
-
-if [[ $2 = 'push' && ${11} = 'ocaml/ocaml' ]]; then
-  # Always build the manual for pushes to ocaml/ocaml
-  result=true
-else
-  # We need all the commits in the PR to be available
-  . tools/ci/actions/deepen-fetch.sh
-  if git diff "$MERGE_BASE..$PR_HEAD" --name-only --exit-code \
-       -- manual/* > /dev/null; then
-    result=false
-  else
-    result=true
-  fi
+if git ls-tree HEAD --name-only -r | git check-ignore --stdin --no-index; then
+  echo These files are matched by .gitignore and should not be committed
+  exit 1
 fi
-
-echo "Manual altered: $result"
-echo "manual_changed=$result" >>"$GITHUB_OUTPUT"
