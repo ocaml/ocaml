@@ -66,7 +66,7 @@ Working version
   This PR adds an additional caml_collect_gc_stats_sample_stw to the major heap
   cycling stw. This means that Gc.quick_stat now actually reflects the state of
   the heap after a major cycle or compaction.
-  (Sadiq Jaffer, review by Miod Vallat)
+  (Sadiq Jaffer, review by Miod Vallat and Gabriel Scherer)
 
 - #12193: Re-introduce GC compaction for shared pools
   Adds a parallel compactor for the shared pools (which contain major heap
