@@ -1958,21 +1958,17 @@ let unify_univar_for tr_exn t1 t2 univar_pairs =
 (* That's way too expensive. Must do some kind of caching *)
 (* If [inj_only=true], only check injective positions *)
 let occur_univar ?(inj_only=false) env ty =
-  let marks = create_type_marks () in
   let visited = ref TypeMap.empty in
   let rec occur_rec bound ty =
-    if not_marked_node marks ty then
-      if TypeSet.is_empty bound then
-        (mark_node marks ty; occur_desc bound ty)
-      else try
-        let bound' = TypeMap.find ty !visited in
-        if not (TypeSet.subset bound' bound) then begin
-          visited := TypeMap.add ty (TypeSet.inter bound bound') !visited;
-          occur_desc bound ty
-        end
-      with Not_found ->
-        visited := TypeMap.add ty bound !visited;
+    try
+      let bound' = TypeMap.find ty !visited in
+      if not (TypeSet.subset bound' bound) then begin
+        visited := TypeMap.add ty (TypeSet.inter bound bound') !visited;
         occur_desc bound ty
+      end
+    with Not_found ->
+      visited := TypeMap.add ty bound !visited;
+      occur_desc bound ty
   and occur_desc bound ty =
       match get_desc ty with
         Tunivar _ ->
