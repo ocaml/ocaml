@@ -1,5 +1,5 @@
 camlp-streams
-dune
+/dune
 markup.ml
 uchar
 uutf
