@@ -23,8 +23,9 @@ open Btype
 (* Simplified version of Ctype.free_vars *)
 let free_vars ?(param=false) ty =
   let ret = ref TypeSet.empty in
+  let marks = create_type_marks () in
   let rec loop ty =
-    if try_mark_node ty then
+    if try_mark_node marks ty then
       match get_desc ty with
       | Tvar _ ->
           ret := TypeSet.add ty !ret
@@ -40,7 +41,6 @@ let free_vars ?(param=false) ty =
           iter_type_expr loop ty
   in
   loop ty;
-  unmark_type ty;
   !ret
 
 let newgenconstr path tyl = newgenty (Tconstr (path, tyl, ref Mnil))

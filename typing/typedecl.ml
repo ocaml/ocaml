@@ -865,15 +865,11 @@ let check_well_founded_manifest ~abs_env env loc path decl =
    (we don't have an example at hand where it is necessary), but we
    are doing it anyway out of caution.
 *)
-let check_well_founded_decl  ~abs_env env loc path decl to_check =
+let check_well_founded_decl ~abs_env env loc path decl to_check =
   let open Btype in
   (* We iterate on all subexpressions of the declaration to check
      "in depth" that no ill-founded type exists. *)
   let it =
-    let checked =
-      (* [checked] remembers the types that the iterator already
-         checked, to avoid looping on cyclic types. *)
-      ref TypeSet.empty in
     let visited =
       (* [visited] remembers the inner visits performed by
          [check_well_founded] on each type expression reachable from
@@ -881,13 +877,12 @@ let check_well_founded_decl  ~abs_env env loc path decl to_check =
          [check_well_founded] work when invoked on two parts of the
          type declaration that have common subexpressions. *)
       ref TypeMap.empty in
-    {type_iterators with it_type_expr =
+    let super = type_iterators () in
+    {super with it_do_type_expr =
      (fun self ty ->
-       if TypeSet.mem ty !checked then () else begin
-         check_well_founded  ~abs_env env loc path to_check visited ty;
-         checked := TypeSet.add ty !checked;
-         self.it_do_type_expr self ty
-       end)} in
+       check_well_founded ~abs_env env loc path to_check visited ty;
+       super.it_do_type_expr self ty
+     )} in
   it.it_type_declaration it (Ctype.generic_instance_declaration decl)
 
 (* Check for non-regular abbreviations; an abbreviation

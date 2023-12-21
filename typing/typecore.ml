@@ -2896,13 +2896,14 @@ let pattern_needs_partial_application_check p =
 
 (* Check that a type is generalizable at some level *)
 let generalizable level ty =
+  let marks = create_type_marks () in
   let rec check ty =
-    if not_marked_node ty then
+    if try_mark_node marks ty then
       if get_level ty <= level then raise Exit else
-      (flip_mark_node ty; iter_type_expr check ty)
+      iter_type_expr check ty
   in
-  try check ty; unmark_type ty; true
-  with Exit -> unmark_type ty; false
+  try check ty; true
+  with Exit -> false
 
 (* Hack to allow coercion of self. Will clean-up later. *)
 let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
@@ -2910,8 +2911,9 @@ let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
 (* Helpers for type_cases *)
 
 let contains_variant_either ty =
+  let marks = create_type_marks () in
   let rec loop ty =
-    if try_mark_node ty then
+    if try_mark_node marks ty then
       begin match get_desc ty with
         Tvariant row ->
           if not (is_fixed row) then
@@ -2924,8 +2926,8 @@ let contains_variant_either ty =
           iter_type_expr loop ty
       end
   in
-  try loop ty; unmark_type ty; false
-  with Exit -> unmark_type ty; true
+  try loop ty; false
+  with Exit -> true
 
 let shallow_iter_ppat f p =
   match p.ppat_desc with

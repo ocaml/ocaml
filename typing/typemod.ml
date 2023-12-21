@@ -265,7 +265,7 @@ let path_is_strict_prefix =
 
 let iterator_with_env env =
   let env = ref (lazy env) in
-  let super = Btype.type_iterators in
+  let super = Btype.type_iterators () in
   env, { super with
     Btype.it_signature = (fun self sg ->
       (* add all items to the env before recursing down, to handle recursive
@@ -377,8 +377,7 @@ let do_check_after_substitution env ~loc ~lid paths unpackable_modtype sg =
        let error p = With_cannot_remove_packed_modtype(p,mty) in
        check_usage_of_module_types ~error ~paths ~loc env iterator
   in
-  iterator.Btype.it_signature iterator sg;
-  Btype.(unmark_iterators.it_signature unmark_iterators) sg
+  iterator.Btype.it_signature iterator sg
 
 let check_usage_after_substitution env ~loc ~lid paths unpackable_modtype sg =
   match paths, unpackable_modtype with
@@ -1143,10 +1142,9 @@ end = struct
             (Ident.Set.elements to_remove.unpackable_modtypes)
         in
         check_usage_of_module_types ~loc ~error ~paths
-          (ref (lazy env)) Btype.type_iterators
+          (ref (lazy env)) (Btype.type_iterators ())
       in
-      iterator.Btype.it_signature_item iterator component;
-      Btype.(unmark_iterators.it_signature_item unmark_iterators) component
+      iterator.Btype.it_signature_item iterator component
     end
 
   (* We usually require name uniqueness of signature components (e.g. types,

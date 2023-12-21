@@ -772,8 +772,8 @@ and transl_fields env ~policy ~row_context o fields =
 
 
 (* Make the rows "fixed" in this type, to make universal check easier *)
-let rec make_fixed_univars ty =
-  if Btype.try_mark_node ty then
+let rec make_fixed_univars marks ty =
+  if Btype.try_mark_node marks ty then
     begin match get_desc ty with
     | Tvariant row ->
         let Row {fields; more; name; closed} = row_repr row in
@@ -790,17 +790,17 @@ let rec make_fixed_univars ty =
             (Tvariant
                (create_row ~fields ~more ~name ~closed
                   ~fixed:(Some (Univar more))));
-        Btype.iter_row make_fixed_univars row
+        Btype.iter_row (make_fixed_univars marks) row
     | _ ->
-        Btype.iter_type_expr make_fixed_univars ty
+        Btype.iter_type_expr (make_fixed_univars marks) ty
     end
+
+let make_fixed_univars ty =
+  let marks = Btype.create_type_marks () in
+  make_fixed_univars marks ty
 
 let transl_type env policy styp =
   transl_type env ~policy ~row_context:[] styp
-
-let make_fixed_univars ty =
-  make_fixed_univars ty;
-  Btype.unmark_type ty
 
 let transl_simple_type env ?univars ~closed styp =
   TyVarEnv.reset_locals ?univars ();
