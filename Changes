@@ -551,6 +551,9 @@ Working version
 - #12764: Move all installable headers in `caml/` sub-directories.
   (Antonin Décimo, review by Gabriel Scherer and David Allsopp)
 
+- #12852: Use TypeHash instead of negative levels to mark types
+  (Takafumi Saikawa and Jacques Garrigue, review by ??)
+
 ### Build system:
 
 - #12198, #12321, #12586, #12616, #12706: continue the merge of the

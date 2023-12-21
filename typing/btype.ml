@@ -292,6 +292,29 @@ let rec iter_abbrev f = function
   | Mcons(_, _, ty, ty', rem) -> f ty; f ty'; iter_abbrev f rem
   | Mlink rem              -> iter_abbrev f !rem
 
+let iter_type_expr_cstr_args f = function
+  | Cstr_tuple tl -> List.iter f tl
+  | Cstr_record lbls -> List.iter (fun d -> f d.ld_type) lbls
+
+let map_type_expr_cstr_args f = function
+  | Cstr_tuple tl -> Cstr_tuple (List.map f tl)
+  | Cstr_record lbls ->
+      Cstr_record (List.map (fun d -> {d with ld_type=f d.ld_type}) lbls)
+
+let iter_type_expr_kind f = function
+  | Type_abstract _ -> ()
+  | Type_variant (cstrs, _) ->
+      List.iter
+        (fun cd ->
+           iter_type_expr_cstr_args f cd.cd_args;
+           Option.iter f cd.cd_res
+        )
+        cstrs
+  | Type_record(lbls, _) ->
+      List.iter (fun d -> f d.ld_type) lbls
+  | Type_open ->
+      ()
+
                   (**********************************)
                   (*  Utilities for level-marking   *)
                   (**********************************)
@@ -335,29 +358,6 @@ type type_iterators =
     it_do_type_expr: type_iterators -> type_expr -> unit;
     it_type_expr: type_iterators -> type_expr -> unit;
     it_path: Path.t -> unit; }
-
-let iter_type_expr_cstr_args f = function
-  | Cstr_tuple tl -> List.iter f tl
-  | Cstr_record lbls -> List.iter (fun d -> f d.ld_type) lbls
-
-let map_type_expr_cstr_args f = function
-  | Cstr_tuple tl -> Cstr_tuple (List.map f tl)
-  | Cstr_record lbls ->
-      Cstr_record (List.map (fun d -> {d with ld_type=f d.ld_type}) lbls)
-
-let iter_type_expr_kind f = function
-  | Type_abstract _ -> ()
-  | Type_variant (cstrs, _) ->
-      List.iter
-        (fun cd ->
-           iter_type_expr_cstr_args f cd.cd_args;
-           Option.iter f cd.cd_res
-        )
-        cstrs
-  | Type_record(lbls, _) ->
-      List.iter (fun d -> f d.ld_type) lbls
-  | Type_open ->
-      ()
 
 let type_iterators ?(marks=create_type_marks ()) () =
   let it_signature it =
