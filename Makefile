@@ -656,8 +656,7 @@ boot/ocamlrun$(EXE):
 # Start up the system from the distribution compiler
 .PHONY: coldstart
 coldstart: boot/ocamlrun$(EXE) runtime/libcamlrun.$(A)
-	$(MAKE) -C stdlib OCAMLRUN='$$(ROOTDIR)/$<' \
-	  USE_BOOT_OCAMLC=true BOOT_CAMLC_FLAGS='$(USE_RUNTIME_PRIMS)' all
+	$(MAKE) -C stdlib OCAMLRUN='$$(ROOTDIR)/$<' USE_BOOT_OCAMLC=true all
 	rm -f $(addprefix boot/, libcamlrun.$(A) $(LIBFILES))
 	cp $(addprefix stdlib/, $(LIBFILES)) boot
 	cd boot; $(LN) ../runtime/libcamlrun.$(A) .
