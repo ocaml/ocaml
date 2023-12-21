@@ -61,7 +61,6 @@ let () =
  readonly_files = "test10_plugin.ml";
  flags += "-g";
  libraries = "";
- no-flambda;
  shared-libraries;
  {
    setup-ocamlc.byte-build-env;
@@ -81,6 +80,7 @@ let () =
      check-program-output;
    }
  }{
+   no-flambda;
    native-dynlink;
    setup-ocamlopt.byte-build-env;
    {
