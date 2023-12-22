@@ -15,6 +15,10 @@ Data emitted includes:
 \item Allocation and promotion rates between heaps
 \end{itemize}
 
+Additional events can be declared and consumed, providing higher-level
+monitoring capabilities to OCaml libraries. They are referred to as {\em
+custom events}.
+
 \section{s:runtime-tracing-overview}{Overview}
 
 There are three main classes of events emitted by the runtime events system:
@@ -51,19 +55,20 @@ a particular query or operation takes longer than expected to complete.
 
 \section{s:runtime-tracing-architecture}{Architecture}
 
-The runtime tracing system conceptually consists of two parts: 1) the probes
-which emit events and 2) the events transport that ingests and transports
-these events.
+The runtime tracing system conceptually consists of two parts: 1) the event
+sources which emit events and 2) the events transport that ingests and
+transports these events.
 
-\subsection{s:runtime-tracing-probes}{Probes}
-Probes collect events from the runtime system. These are further
-split in to two sets: 1) probes that are always available and 2) probes
-that are only available in the instrumented runtime.
-Probes in the instrumented runtime are primarily of
-interest to developers of the OCaml runtime and garbage collector and, at
-present, only consist of major heap allocation size counter events.
+\subsection{s:runtime-tracing-event-sources}{Event sources}
+Event sources are event-emitting points. There are a number of such sources in
+the OCaml runtime system. These are further split into two sets: 1) event
+sources that are always available and 2) event sources that are only available
+in the instrumented runtime. Event sources in the instrumented runtime are
+primarily of interest to developers of the OCaml runtime and garbage collector
+and, at present, only consist of major heap allocation size counter events.
 
-The full set of events emitted by probes and their documentation can be found in
+The full set of events emitted by event sources and their documentation can be
+found in
 \ifouthtml
  \moduleref{libref}{Runtime_events}{Module \texttt{Runtime_events}}.
 \else
@@ -72,8 +77,8 @@ The full set of events emitted by probes and their documentation can be found in
 
 \subsection{s:runtime-tracing-ingestion}{Events transport}
 
-The events transport part of the system ingests events emitted by the probes
-and makes them available to consumers.
+The events transport part of the system ingests events emitted by the event
+sources and makes them available to consumers.
 
 \subsubsection{s:runtime-tracing-ringbuffers}{Ring buffers}
 
@@ -88,10 +93,12 @@ The ring buffer implementation used in runtime events can be written by at most
 one producer at a time but can be read simultaneously by multiple consumers
 without coordination from the producer. There is a unique ring buffer for every
 running domain and, on domain termination, ring buffers may be re-used for newly
-spawned domains. The ring buffers themselves are stored in a memory-mapped file
-with the processes identifier as the name and the extension ".events", this
-enables them to be read from outside the main OCaml process. See
-\moduleref{libref}{Runtime_events}{\texttt{Runtime_events}} for more information.
+spawned domains. Ring buffers are only allocated (including for the main
+domain) when runtime events are enabled. The ring buffers themselves are stored
+in a memory-mapped file with the processes identifier as the name and the
+extension ".events", this enables them to be read from outside the main OCaml
+process. See \moduleref{libref}{Runtime_events}{\texttt{Runtime_events}} for
+more information.
 
 \subsubsection{s:runtime-tracing-apis}{Consumption APIs}
 
@@ -105,12 +112,13 @@ is as follows:
   \item \texttt{Runtime_events.Callbacks.create} is called to register a callback function to receive the events.
   \item The cursor is polled via \texttt{Runtime_events.read_poll} using the callbacks
   created in the previous step. For each matching event in the ring buffers, the
-  provided callback functions are called.
+  provided callback functions are called. In addition to the emitted events,
+  callbacks are given the emitter domain's ID and the emission timestamp.
 \end{enumerate}
 
-\section{s-runtime-tracing-usage}{Usage}
+\section{s:runtime-tracing-usage}{Usage}
 
-\subsection{s-runtime-tracing-ocaml-apis}{With OCaml APIs}
+\subsection{s:runtime-tracing-ocaml-apis}{With OCaml APIs}
 
 We start with a simple example that prints the name, begin and end times
 of events emitted by the runtime event tracing system:
@@ -205,7 +213,7 @@ instead, call the program as below to produce the same result:
 OCAML_RUNTIME_EVENTS_START=1 ./example
 \end{verbatim}
 
-\subsubsection{s-runtime-tracing-environment-variables}{Environment variables}
+\subsubsection{s:runtime-tracing-environment-variables}{Environment variables}
 
 Environment variables can be used to control different aspects of the runtime
 event tracing system. The following environment variables are available:
@@ -226,9 +234,9 @@ event tracing system. The following environment variables are available:
 The size of the runtime events ring buffers can be configured via OCAMLRUNPARAM,
 see section \ref{s:ocamlrun-options} for more information.
 
-\subsubsection{s-runtime-tracing-instrumented-runtime}{Building with the instrumented runtime}
+\subsubsection{s:runtime-tracing-instrumented-runtime}{Building with the instrumented runtime}
 
-To receive events that are only available in the instrumented runtime, the
+Some events are only emitted by the instrumented runtime. To receive them, the
 OCaml program needs to be compiled and linked against the instrumented runtime.
 For our example program from earlier, this is achieved as follows:
 
@@ -246,11 +254,11 @@ And for dune:
  (libraries unix runtime_events))
 \end{verbatim}
 
-\subsection{s-runtime-tracing-tooling}{With tooling}
+\subsection{s:runtime-tracing-tooling}{With tooling}
 
 Programmatic access to events is intended primarily for writers of observability
-libraries and tooling that end-users use. The flexible API enables use of
-the performance data from runtime events for logging and monitoring purposes.
+libraries and tooling for end-users. The flexible API enables use of the
+performance data from runtime events for logging and monitoring purposes.
 
 In this section we cover several utilities in the \texttt{runtime_events_tools}
 package which provide simple ways of extracting and summarising data from runtime
@@ -278,7 +286,7 @@ Perfetto
 \fi
 to visualize the collected trace.
 
-\subsubsection{s-runtime-tracing-latency}{Measuring GC latency}
+\subsubsection{s:runtime-tracing-latency}{Measuring GC latency}
 
 The olly utility also includes a latency subcommand which consumes runtime
 events data and on program completion emits a parseable histogram summary of
@@ -314,4 +322,160 @@ Percentile 	 Latency (ms)
 99.9990 	 9.17
 99.9999 	 9.17
 100.0000 	 9.17
+\end{verbatim}
+
+\section{s:runtime-tracing-custom-events}{Custom events}
+
+\subsection{s:runtime-tracing-custom-events-overview}{Overview}
+
+The runtime events system supports defining custom events. Identified by a
+globally unique name, they are emitted with payloads of built-in (\texttt{unit},
+\texttt{int}, \texttt{span}) and user-defined types. To understand the
+manipulation of custom events, it is useful to know how they are transported and
+stored: their representation consists of a name string (in fact, an index into
+an array of all custom names) and an arbitrary byte sequence. Custom event
+types can be \emph{registered} by providing encoding and decoding functions to
+and from a byte sequence, via the function
+\texttt{Runtime_events.Type.register}.
+
+Defining a new custom event (whether its payload is of a built-in type or a
+custom type) is done via another registration function,
+\texttt{Runtime_events.User.register}. This function records the association
+between the custom event's name, its type, and a \emph{tag}. The tag is then
+used when emitting or consuming custom events; it acts as a shorthand for the
+event name.
+
+Once an event is registered, values for that event are emitted using
+\texttt{Runtime_events.User.write}.
+
+To summarize, for a user to emit and consume custom events using a custom type
+they need to:
+
+\begin{enumerate}
+\item register the custom type
+\item extend the \texttt{Runtime_events.User.tag} variant with a new constructor
+\item register the new custom event, binding together the custom event name, the
+  new tag, and the new custom type
+\item emit instances of the event using \texttt{Runtime_events.User.write}
+\item indicate a callback which should receive all events of the custom
+  type using \texttt{Runtime_events.Callbacks.add_user_event} to register it
+  inside a \texttt{Runtime_events.Callbacks.t} object to be used when polling
+  (see section~\ref{s:runtime-tracing-ocaml-apis} above).
+\item \emph{(Optional, if there are distinct events registered with the same
+  custom type:)} In that callback, pattern-match on the event tag in order to
+  discriminate between different event tags of the same custom type.
+\end{enumerate}
+
+Note that if the emitter and the consumer are different programs, both must
+perform steps 1 to 3 to register custom events and custom event types (if any).
+Note that the tag values need not be the same in both programs; the only values
+that should match are the names.
+
+Unregistered events for user-defined types are currently ignored. As a fallback,
+unregistered, custom events of a built-in type are available, but are all
+tagged \texttt{UNK} (unknown).
+
+There are thus three cases for the consumer when an event is received:
+\begin{itemize}
+\item event is registered: payload and tag are available.
+\item event is not registered and has a built-in event type (unit, int, span):
+    only the payload is available.
+\item event is not registered and has a custom event type: event is dropped.
+\end{itemize}
+
+Note that event consumers bind callbacks to event \emph{types}, so they can work
+as generic listeners interpreting payloads coming from events that were not
+registered. Because this only works for events of built-in types, it can be
+useful to emit events in pairs: an event of a custom type with an event of a
+built-in type, enabling the design of a specialized consumer while staying
+compatible with generic tracing tools.
+
+\subsection{s:runtime-tracing-custom-events-usage}{Tracing custom events: an
+example}
+
+The following program uses the \texttt{Runtime_events.User} and
+\texttt{Runtime_events.Type} modules to declare two custom events providing
+\texttt{span} and \texttt{int} values. The \texttt{tag} extensible variant is
+extended with \texttt{CustomSpan} and \texttt{CustomInt}.
+
+\begin{verbatim}
+type Runtime_events.User.tag += CustomSpan | CustomInt
+
+let count_span =
+    Runtime_events.User.register "count.span" CustomSpan
+        Runtime_events.Type.span
+
+let count_value =
+    Runtime_events.User.register "count.value" CustomInt
+        Runtime_events.Type.int
+
+let count () =
+    Runtime_events.User.write count_span Begin;
+    for i = 1 to 5 do
+        Runtime_events.User.write count_value i
+    done;
+    Runtime_events.User.write count_span End
+
+let () =
+    Runtime_events.start ();
+    for _ = 1 to 3 do
+        count ()
+    done
+\end{verbatim}
+
+On the consumer side, one can use the provided event tag and type to match on
+the relevant events. For the sake of completeness, we assume that the consumer
+is a different program, and repeat the definition of the new tag constructors,
+as well as the registering of the custom events.
+
+\begin{verbatim}
+type Runtime_events.User.tag += CustomSpan | CustomInt
+
+let count_span =
+    Runtime_events.User.register "count.span" CustomSpan
+        Runtime_events.Type.span
+
+let count_value =
+    Runtime_events.User.register "count.value" CustomInt
+        Runtime_events.Type.int
+
+let span_event_handler domain_id ts event value =
+    (* we're only interested in our CustomSpan event *)
+    match Runtime_events.User.tag event, value with
+    | CustomSpan, Runtime_events.Type.Begin -> Printf.printf "> count begin\n"
+    | CustomSpan, End -> Printf.printf "< count end\n"
+    | _ -> ()
+
+let int_event_handler domain_id ts event value =
+    (* we're only interested in our CustomInt event *)
+    match Runtime_events.User.tag event with
+    | CustomInt -> Printf.printf "| count %d\n" value
+    | _ -> ()
+
+let () =
+    let open Runtime_events in
+    let cursor = create_cursor None in
+    let callbacks =
+        Callbacks.create ()
+        |> Callbacks.add_user_event Type.span span_event_handler
+        |> Callbacks.add_user_event Type.int int_event_handler
+    in
+    for _ = 0 to 100 do
+        ignore(read_poll cursor callbacks None)
+    done
+\end{verbatim}
+
+Giving the following output:
+\begin{verbatim}
+> count begin
+| count 1
+| count 2
+| count 3
+| count 4
+| count 5
+< count end
+> count begin
+| count 1
+| count 2
+[...]
 \end{verbatim}
