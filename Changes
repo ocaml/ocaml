@@ -398,6 +398,10 @@ OCaml 5.2.0
 - #12819: Clarify which runtime interactions are allowed in custom ops
   (Basile Clément, review by Guillaume Munch-Maccagnoni and Xavier Leroy)
 
+- #12840: manual: update runtime tracing chapter for custom events (ex #12335)
+  (Lucas Pluvinage, Sadiq Jaffer and Olivier Nicole, review by Gabriel Scherer,
+   David Allsopp, Tim McGilchrist and Thomas Leonard)
+
 ### Compiler user-interface and warnings:
 
 * #10613, #12405: Simplify the values used for the system variable (`system:` in
