@@ -165,8 +165,9 @@ void caml_ephe_clean (value v) {
     else if (Is_block (child) && !Is_young (child)) {
       if (Tag_val (child) == Infix_tag) child -= Infix_offset_val (child);
       /* If we scanned all the keys and the data field remains filled,
-         then the mark phase must have marked it */
-      CAMLassert( is_marked (child) );
+         then the mark phase must have marked it (or alternatively the
+         value concerned is in static data etc). */
+      CAMLassert( is_marked (child) || is_not_markable (child) );
     }
 #endif
   }

@@ -88,6 +88,10 @@ Caml_inline int is_marked(value v) {
   return Has_status_val(v, caml_global_heap_state.MARKED);
 }
 
+Caml_inline int is_not_markable(value v) {
+  return Has_status_val(v, NOT_MARKABLE);
+}
+
 void caml_redarken_pool(struct pool*, scanning_action, void*);
 
 intnat caml_sweep(struct caml_heap_state*, intnat);
