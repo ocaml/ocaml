@@ -1,3 +1,12 @@
+OCaml 5.1.2
+-----------
+
+### Manual and documentation:
+
+- #12840: manual: update runtime tracing chapter for custom events (ex #12335)
+  (Lucas Pluvinage, Sadiq Jaffer and Olivier Nicole, review by Gabriel Scherer,
+   David Allsopp, Tim McGilchrist and Thomas Leonard)
+
 OCaml 5.1.1 (8 December 2023)
 ----------------------------
 
