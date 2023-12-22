@@ -1,5 +1,7 @@
-Working version
----------------
+OCaml 5.2.0
+------------
+
+(Changes that can break existing programs are marked with a "*")
 
 ### Restored and new backends:
 
