@@ -3239,7 +3239,7 @@ and type_expect_
         exp_type = instance desc.val_type;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_constant(Pconst_string (str, _, _) as cst) -> (
+  | Pexp_constant(Pconst_string (str, _, delim) as cst) -> (
     let cst = constant_or_raise env loc cst in
     (* Terrible hack for format strings *)
     let ty_exp = expand_head env (protect_expansion env ty_expected) in
@@ -3257,7 +3257,7 @@ and type_expect_
     in
     if is_format then
       let format_parsetree =
-        { (type_format loc str env) with pexp_loc = sexp.pexp_loc }  in
+        { (type_format loc str delim env) with pexp_loc = sexp.pexp_loc }  in
       type_expect env format_parsetree ty_expected_explained
     else
       rue {
@@ -4742,7 +4742,7 @@ and type_label_access env srecord usage lid =
    These formats are used by functions in modules Printf, Format, and Scanf.
    (Handling of * modifiers contributed by Thorsten Ohl.) *)
 
-and type_format loc str env =
+and type_format loc str delim env =
   let loc = {loc with Location.loc_ghost = true} in
   try
     CamlinternalFormatBasics.(CamlinternalFormat.(
@@ -4764,7 +4764,7 @@ and type_format loc str env =
         mk_exp_loc (Pexp_construct (mk_lid_loc lid, arg)) in
       let mk_cst cst = mk_exp_loc (Pexp_constant cst) in
       let mk_int n = mk_cst (Pconst_integer (Int.to_string n, None))
-      and mk_string str = mk_cst (Pconst_string (str, loc, None))
+      and mk_string str = mk_cst (Pconst_string (str, loc, delim))
       and mk_char chr = mk_cst (Pconst_char chr) in
       let rec mk_formatting_lit fmting = match fmting with
         | Close_box ->
