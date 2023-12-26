@@ -229,6 +229,9 @@ Working version
   (Gabriel Scherer, review by KC Sivaramakrishnan, Xavier Leroy
    and Vincent Laviron, report by Vesa Karvonen)
 
+- #12854: Add a test in the regression suite that flags the bug #12825.
+  (Luc Maranget)
+
 ### Standard library:
 
 - #12716: Add `Format.pp_print_nothing` function.
