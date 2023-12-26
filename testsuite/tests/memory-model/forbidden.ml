@@ -292,6 +292,55 @@ module MP = struct
 
   end
 
+
+  module PAPAP = struct
+    (* This (forbidden) test is analog to MP+PA above.
+     * In fact, it includes PA which tests the following,
+     * forbidden "Message passing" execution:
+     *
+     *       +-------Fr------------+
+     *       |                     |
+     *      \/                     |
+     *     W[x]1    +----> RA[y]1  |
+     *       |      |         |    |
+     *       |      Rf        |    |
+     *      \/      |        \/    |
+     *      WA[y]1--+       R[x]0--+
+     *
+     * However, when one adds a non atomic read `!x` _before_
+     * the atomic read `Atomic.get y`, and if the native compiler
+     * CSE changes the second  non atomic read `!x` into a
+     * temporary (register) read, then the function code1
+     * now behaves as:
+     *   let r2 = !x in
+     *   let r0 = Atomic_get y in
+     *   let r1 = r2 in ...
+     *
+     * In effect, code1 now behaves as if the second non-atomic
+     * read !x has moved _before_ the atomic read of `y`, which
+     * the model forbids.
+     *)
+    module Key = MakeKey(struct let name = "MP+PA+PAP" end)(NO)
+
+    module Env = EnvPA
+
+    type out0 = unit
+
+    let code0 (x,y) =
+      x := 1 ;
+      Atomic.set y 1
+
+    type out1 = { t0:int; t1:int; }
+
+    let code1 (x,y) =
+      let r2 = !x in
+      let r0 =  Atomic.get y in
+      let r1 = !x in
+      {t0=r0; t1=r1+r2;}
+
+    let out2key _ () { t0; t1; } = Key.make t0 t1
+
+  end
   module PFetch = struct
 
     module Key = MakeKey(struct let name = "MP+PFetch" end)(NO)
@@ -698,6 +747,8 @@ module Forbid(C:Opt.Config) = struct
   let () = TB.zyva()
   module TC = Run(S.AA)
   let () = TC.zyva()
+  module TD = Run(MP.PAPAP)
+  let () = TD.zyva()
 end
 
 module Allow(C:Opt.Config) = struct
