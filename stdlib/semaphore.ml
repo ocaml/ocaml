@@ -46,6 +46,21 @@ let acquire s =
   s.v <- s.v - 1;
   Mutex.unlock s.mut
 
+let timed_acquire s timeout =
+  Mutex.lock s.mut;
+  let rec aux () =
+    if s.v = 0 then begin
+      let signaled = Condition.timed_wait s.nonzero s.mut timeout in
+      if signaled && s.v = 0
+      then aux ()
+      else signaled
+    end else true
+  in
+  let signaled = aux () in
+  if signaled then s.v <- s.v - 1;
+  Mutex.unlock s.mut;
+  signaled
+
 let try_acquire s =
   Mutex.lock s.mut;
   let ret = if s.v = 0 then false else (s.v <- s.v - 1; true) in
@@ -76,6 +91,21 @@ let acquire s =
   while s.v = 0 do Condition.wait s.nonzero s.mut done;
   s.v <- 0;
   Mutex.unlock s.mut
+
+let timed_acquire s timeout =
+  Mutex.lock s.mut;
+  let rec aux () =
+    if s.v = 0 then begin
+      let signaled = Condition.timed_wait s.nonzero s.mut timeout in
+      if signaled && s.v = 0
+      then aux ()
+      else signaled
+    end else true
+  in
+  let signaled = aux () in
+  s.v <- 0;
+  Mutex.unlock s.mut;
+  signaled
 
 let try_acquire s =
   Mutex.lock s.mut;

@@ -29,6 +29,18 @@
 /* System-dependent part */
 #include "sync_posix.h"
 
+#include <math.h>
+#if defined(HAS_GETTIMEOFDAY)
+#include <sys/time.h>
+#endif
+#if defined(_WIN32)
+#include <caml/winsupport.h>
+/* There are 11644473600 seconds between 1 January 1601 (the NT Epoch) and 1
+ * January 1970 (the Unix Epoch). FILETIME is measured in 100ns ticks.
+ */
+#define CAML_NT_EPOCH_100ns_TICKS 116444736000000000ULL
+#endif
+
 /* Mutex operations */
 
 static void caml_mutex_finalize(value wrapper)
@@ -175,6 +187,71 @@ CAMLprim value caml_ml_condition_wait(value wcond, value wmut)
   CAML_EV_END(EV_DOMAIN_CONDITION_WAIT);
 
   CAMLreturn(Val_unit);
+}
+
+#if defined(_WIN32)
+Caml_inline void sync_populate_timespec(double timeout, struct timespec * ts)
+{
+  double integr, frac, until;
+  CAML_ULONGLONG_FILETIME utime;
+
+  GetSystemTimeAsFileTime(&utime.ft);
+  until = (utime.ul - CAML_NT_EPOCH_100ns_TICKS) * 1e-7 + timeout;
+  frac = modf(until, &integr);
+  ts->tv_sec = (time_t)integr;
+  ts->tv_nsec = ceil(1e9 * frac);
+}
+#else // Unix
+Caml_inline void sync_populate_timespec(double timeout, struct timespec * ts)
+{
+  double integr, frac;
+  frac = modf(timeout, &integr);
+
+#if defined(HAS_POSIX_MONOTONIC_CLOCK)
+  clock_gettime(CLOCK_MONOTONIC, ts);
+  ts->tv_sec += (time_t)integr;
+  ts->tv_nsec += ceil(1e9 * frac);
+#elif defined(HAS_GETTIMEOFDAY)
+  struct timeval tv;
+  gettimeofday(&tv, 0);
+  ts->tv_sec = tv.tv_sec + (time_t)integr;
+  ts->tv_nsec =
+    (uint64_t)tv.tv_usec * (uint64_t)1000 +
+    (uint64_t)ceil(1e9 * frac);
+#else
+# error "No timesource available"
+#endif
+
+  if (ts->tv_nsec >= 1e9) {
+    ts->tv_sec++;
+    ts->tv_nsec -= 1e9;
+  }
+}
+#endif // _WIN32
+
+CAMLprim value caml_ml_condition_timedwait(value wcond, value wmut,
+                                           value timeout_sec)
+{
+  CAMLparam3(wcond, wmut, timeout_sec);
+  sync_condvar cond = Condition_val(wcond);
+  sync_mutex mut = Mutex_val(wmut);
+  double timeout = Double_val(timeout_sec);
+  sync_retcode retcode;
+  struct timespec ts;
+
+  sync_populate_timespec(timeout, &ts);
+
+  CAML_EV_BEGIN(EV_DOMAIN_CONDITION_WAIT);
+  caml_enter_blocking_section();
+  retcode = sync_condvar_timedwait(cond, mut, &ts);
+  caml_leave_blocking_section();
+  if (retcode == ETIMEDOUT) {
+    CAMLreturn(Val_false);
+  }
+  sync_check_error(retcode, "Condition.timed_wait");
+  CAML_EV_END(EV_DOMAIN_CONDITION_WAIT);
+
+  CAMLreturn(Val_true);
 }
 
 CAMLprim value caml_ml_condition_signal(value wrapper)

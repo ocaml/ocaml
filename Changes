@@ -15,6 +15,9 @@ _______________
   (Kate Deplaix and Oscar Butler-Aldridge review by Nicolás Ojeda Bär,
    Craig Ferguson and Gabriel Scherer)
 
+- #12867: Add Condition.timed_wait, Semaphore.Counting.timed_acquire and Semaphore.Binary.timed_acquire
+  (Simon Grondin, review by ...)
+
 ### Other libraries:
 
 ### Tools:

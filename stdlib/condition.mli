@@ -160,6 +160,16 @@ val wait : t -> Mutex.t -> unit
    variable [c] holds when [wait] returns; one must explicitly test
    whether {i P} holds after calling [wait]. *)
 
+val timed_wait : t -> Mutex.t -> float -> bool
+(**[timed_wait c m t] is the same as {!wait}, but only waits up to
+    [t] seconds.
+    If a timeout occured, it returns [false].
+    If woken up for any other reason be it success or a "spurious wakeup",
+    it returns [true].
+
+    @since 5.3
+*)
+
 val signal : t -> unit
 (**[signal c] wakes up one of the threads waiting on the condition
    variable [c], if there is one. If there is none, this call has
