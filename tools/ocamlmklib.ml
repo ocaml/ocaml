@@ -164,6 +164,8 @@ let parse_arguments argv =
       c_opts := s :: !c_opts
     else if s = "-framework" then
       (let a = next_arg s in c_opts := a :: s :: !c_opts)
+    else if s = "-fsanitize=thread" then
+      c_opts := s :: !c_opts
     else if starts_with s "-" then
       prerr_endline ("Unknown option " ^ s)
     else
