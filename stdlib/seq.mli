@@ -504,8 +504,7 @@ val drop : int -> 'a t -> 'a t
 
     [drop] is lazy: the first [n+1] elements of the sequence [xs]
     are demanded only when the first element of [drop n xs] is
-    demanded. For this reason, [drop 1 xs] is {i not} equivalent
-    to [tail xs], which queries [xs] immediately.
+    demanded.
 
     @raise Invalid_argument if [n] is negative.
 
