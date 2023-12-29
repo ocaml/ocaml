@@ -110,7 +110,7 @@ html {
     max-width:30ex;
     min-width:26ex;
     width:20%;
-    background:linear-gradient(to left,#ccc,transparent);
+    background-color: #ede8e6;
     overflow:auto;
     color:#1F2D3D;
     padding-left:2ex;
@@ -143,7 +143,8 @@ html {
 		display:block;
 		&:hover {
 		    box-shadow:none;
-		    background-color: #edbf84;}
+		    background-color: white;
+		    text-decoration: underline;}
 	    }
 	    &.top a {
 		color: #848484;
