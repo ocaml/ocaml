@@ -12,8 +12,8 @@ _______________
 ### Standard library:
 
 - #12869: Add List.take, List.drop, List.take_while and List.drop_while
-  (Kate Deplaix, review by Nicolás Ojeda Bär, Craig Ferguson,
-   Gabriel Scherer and Oscar Butler-Aldridge)
+  (Kate Deplaix and Oscar Butler-Aldridge review by Nicolás Ojeda Bär,
+   Craig Ferguson and Gabriel Scherer)
 
 ### Other libraries:
 

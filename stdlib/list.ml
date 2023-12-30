@@ -290,12 +290,13 @@ and[@tail_mod_cons] prepend_concat_map ys f xs =
   | y :: ys -> y :: prepend_concat_map ys f xs
 
 let take n l =
-  let rec aux i acc = function
-    | x::l when i < n -> aux (i + 1) (x::acc) l
-    | _rest -> rev acc
+  let[@tail_mod_cons] rec aux n l =
+    match n, l with
+    | 0, _ | _, [] -> []
+    | n, x::l -> x::aux (n - 1) l
   in
   if n < 0 then invalid_arg "List.take";
-  aux 0 [] l
+  aux n l
 
 let drop n l =
   let rec aux i = function
