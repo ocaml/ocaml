@@ -307,11 +307,11 @@ let drop n l =
   aux 0 l
 
 let take_while p l =
-  let rec aux acc = function
-    | x::l when p x -> aux (x::acc) l
-    | _rest -> rev acc
+  let[@tail_mod_cons] rec aux = function
+    | x::l when p x -> x::aux l
+    | _rest -> []
   in
-  aux [] l
+  aux l
 
 let rec drop_while p = function
   | x::l when p x -> drop_while p l
