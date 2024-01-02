@@ -268,26 +268,31 @@ static void caml_thread_leave_blocking_section(void)
 /* Create and setup a new thread info block.
    This block has no associated thread descriptor and
    is not inserted in the list of threads. */
-
 static caml_thread_t caml_thread_new_info(void)
 {
-  caml_thread_t th;
-  caml_domain_state *domain_state;
+  caml_thread_t th = NULL;
+  caml_domain_state *domain_state = Caml_state;
   uintnat stack_wsize = caml_get_init_stack_wsize();
 
-  domain_state = Caml_state;
-  th = NULL;
   th = (caml_thread_t)caml_stat_alloc_noexc(sizeof(struct caml_thread_struct));
   if (th == NULL) return NULL;
+
   th->descr = Val_unit;
   th->next = NULL;
   th->prev = NULL;
+
   th->domain_id = domain_state->id;
+  th->signal_stack = NULL;
+
+  /* The remaining fields which store the values of the domain state
+     must be initialized to a valid value, as in [domain_create]. */
+
   th->current_stack = caml_alloc_main_stack(stack_wsize);
   if (th->current_stack == NULL) {
     caml_stat_free(th);
     return NULL;
   }
+
   th->c_stack = NULL;
   th->local_roots = NULL;
   th->backtrace_pos = 0;
@@ -299,12 +304,11 @@ static caml_thread_t caml_thread_new_info(void)
 
 #ifndef NATIVE_CODE
   th->trap_sp_off = 1;
-  th->trap_barrier_off = 2;
+  th->trap_barrier_off = 2; /* TODO: 0? trap_barrier_block? */
   th->external_raise = NULL;
 #endif
 
   th->memprof = caml_memprof_new_thread(domain_state);
-  th->signal_stack = NULL;
   return th;
 }
 
