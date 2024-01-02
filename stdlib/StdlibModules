@@ -74,10 +74,10 @@ STDLIB_MODULE_BASENAMES = \
   camlinternalFormat \
   printf \
   dynarray \
-  pqueue \
   arg \
   printexc \
   fun \
+  pqueue \
   gc \
   in_channel \
   out_channel \

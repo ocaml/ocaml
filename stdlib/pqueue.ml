@@ -12,46 +12,23 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Priority queues over ordered types *)
+(* Priority queues over ordered elements.
 
-module type OrderedType =
-  sig
-    type t
-    val compare: t -> t -> int
-  end
+   We choose to have polymorphic elements here, so that we can later
+   instantiate [MakePoly] on polymorphic pairs (see functor [Make] below).
+*)
 
-module type S =
-  sig
-    type elt
-    type t
-    val create: unit -> t
-    val length: t -> int
-    val is_empty: t -> bool
-    val add: t -> elt -> unit
-    val add_seq: t -> elt Seq.t -> unit
-    exception Empty
-    val min_elt: t -> elt
-    val min_elt_opt: t -> elt option
-    val pop_min: t -> elt
-    val pop_min_opt: t -> elt option
-    val remove_min: t -> unit
-    val clear: t -> unit
-    val copy: t -> t
-    val of_array: elt array -> t
-    val of_list: elt list -> t
-    val of_seq: elt Seq.t -> t
-    val iter: (elt -> unit) -> t -> unit
-    val fold: ('acc -> elt -> 'acc) -> 'acc -> t -> 'acc
-    val to_seq: t -> elt Seq.t
-  end
-
-module Make(Ord: OrderedType) =
+module MakePoly(E: sig
+    type 'a t
+    val compare: 'a t -> 'a t -> int
+end) =
   struct
-    type elt = Ord.t
+
+    type 'a elt = 'a E.t
 
     (* Our priority queues are implemented using the standard "min heap"
        data structure, a dynamic array representing a binary tree. *)
-    type t = elt Dynarray.t
+    type 'a t = 'a E.t Dynarray.t
 
     let create =
       Dynarray.create
@@ -89,7 +66,7 @@ module Make(Ord: OrderedType) =
       if i = 0 then Dynarray.set h 0 x else
       let p = parent_node i in
       let y = Dynarray.get h p in
-      if Ord.compare x y < 0 then (
+      if E.compare x y < 0 then (
         Dynarray.set h i y;
         sift_up h p x
       ) else
@@ -113,7 +90,7 @@ module Make(Ord: OrderedType) =
       if Dynarray.length h = 0 then None else Some (Dynarray.get h 0)
 
     let lt h i j =
-      Ord.compare (Dynarray.get h i) (Dynarray.get h j) < 0
+      E.compare (Dynarray.get h i) (Dynarray.get h j) < 0
 
     (* store [x] at index [i], moving it down if necessary *)
     let rec sift_down h ~len i x =
@@ -125,7 +102,7 @@ module Make(Ord: OrderedType) =
         if lt h left right then left else right
       in
       let y = Dynarray.get h smallest in
-      if Ord.compare y x < 0 then (
+      if E.compare y x < 0 then (
         Dynarray.set h i y;
         sift_down h ~len smallest x
       ) else
@@ -161,6 +138,7 @@ module Make(Ord: OrderedType) =
       Dynarray.copy
 
     (* array to heap in linear time (Floyd, 1964)
+
        many elements travel a short distance, few travel longer distances
        and we can show that it adds to O(N) *)
     let heapify h =
@@ -190,13 +168,56 @@ module Make(Ord: OrderedType) =
 
   end
 
-(* Notes:
+(* We provide a simpler API, where the functor only requires the priority
+   type. This is readily obtained by using the functor above on pairs
+   (priority, element). *)
 
-  - Too bad [Dynarray.unsafe_get/set] are not exported.
+module type OrderedType =
+  sig
+    type t
+    val compare: t -> t -> int
+  end
 
-  - The exception [Empty] is declared in signature [S].
-    But it could also be a single, global exception in module [Pqueue].
+module type S =
+  sig
+    type prio
+    type 'a t
+    val create: unit ->'a t
+    val length: 'a t -> int
+    val is_empty: 'a t -> bool
+    val add: 'a t -> prio -> 'a -> unit
+    val add_seq: 'a t -> (prio * 'a) Seq.t -> unit
+    exception Empty
+    val min_elt: 'a t -> prio * 'a
+    val min_elt_opt: 'a t -> (prio * 'a) option
+    val pop_min: 'a t -> prio * 'a
+    val pop_min_opt: 'a t -> (prio * 'a) option
+    val remove_min: 'a t -> unit
+    val clear: 'a t -> unit
+    val copy: 'a t -> 'a t
+    val of_array: (prio * 'a) array -> 'a t
+    val of_list: (prio * 'a) list -> 'a t
+    val of_seq: (prio * 'a) Seq.t -> 'a t
+    val iter: (prio -> 'a -> unit) -> 'a t -> unit
+    val fold: ('acc -> prio -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
+    val to_seq: 'a t -> (prio * 'a) Seq.t
+  end
 
-  - [fold] is [fold_left] to be consitent with module [Queue]
+module Make(Prio: OrderedType) =
+  struct
+    include MakePoly(struct
+      type 'a t = Prio.t * 'a
+      let compare (x,_) (y,_) = Prio.compare x y
+    end)
+    type prio = Prio.t
+    (* currying a few functions to get the expected API *)
+    let add h p x = add h (p, x)
+    let iter f h = iter (fun (p, x) -> f p x) h
+    let fold f acc h = fold (fun acc (p, x) -> f acc p x) acc h
+  end
 
-*)
+(* Finally, we provide two instances when the priority is an integer *)
+
+module MinQueue = Make(Int)
+module MaxQueue = Make(struct type t = int
+                              let compare = Fun.flip Int.compare end)
