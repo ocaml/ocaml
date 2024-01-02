@@ -195,12 +195,12 @@ module MakePoly (E : sig
 (** Functor building an implementation of priority queues
     given a totally ordered type of elements. This is convenient when
     the type of elements is already equipped with a comparison function.
-    For instance, we get priority queues with string elements as follows:
+    For instance, we get priority queues with integer elements as follows:
 
 {[
   module IntPQ = Pqueue.MakePoly(struct
-    type _ t = string
-    let compare = String.compare
+    type _ t = int
+    let compare = Int.compare
   end)
 ]}
 

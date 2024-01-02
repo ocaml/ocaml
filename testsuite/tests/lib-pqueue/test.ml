@@ -112,8 +112,8 @@ let () =
 
 (* check that the code snippet in the documentation type-checks *)
 module IntPQ = Pqueue.MakePoly(struct
-    type _ t = string
-    let compare = String.compare
+    type _ t = int
+    let compare = Int.compare
   end)
 
 let () = print_endline "OK"
