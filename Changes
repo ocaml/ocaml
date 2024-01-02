@@ -27,6 +27,9 @@ _______________
   (Kate Deplaix and Oscar Butler-Aldridge review by Nicolás Ojeda Bär,
    Craig Ferguson and Gabriel Scherer)
 
+- #12871: Add the Pqueue module to the stdlib. It implements priority queues.
+  (Jean-Christophe Filliâtre, review by Gabriel Scherer and Daniel Bünzli)
+
 ### Other libraries:
 
 ### Tools:
