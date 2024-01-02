@@ -288,10 +288,10 @@ static caml_thread_t caml_thread_new_info(void)
      must be initialized to a valid value, as in [domain_create]. */
 
   th->current_stack = caml_alloc_main_stack(stack_wsize);
-  if (th->current_stack == NULL) {
-    caml_stat_free(th);
-    return NULL;
-  }
+  if (th->current_stack == NULL) goto out_err1;
+
+  th->memprof = caml_memprof_new_thread(domain_state);
+  if (th->memprof == NULL) goto out_err2;
 
   th->c_stack = NULL;
   th->local_roots = NULL;
@@ -307,9 +307,13 @@ static caml_thread_t caml_thread_new_info(void)
   th->trap_barrier_off = 2; /* TODO: 0? trap_barrier_block? */
   th->external_raise = NULL;
 #endif
-
-  th->memprof = caml_memprof_new_thread(domain_state);
   return th;
+
+ out_err2:
+  caml_free_stack(th->current_stack);
+ out_err1:
+  caml_stat_free(th);
+  return NULL;
 }
 
 /* Free the resources held by a thread. */
