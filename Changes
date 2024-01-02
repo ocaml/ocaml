@@ -11,6 +11,9 @@ _______________
 
 ### Standard library:
 
+- #12871: Add the Pqueue module to the stdlib. It implements priority queues.
+  (Jean-Christophe Filliâtre, review by Gabriel Scherer)
+
 ### Other libraries:
 
 ### Tools:
