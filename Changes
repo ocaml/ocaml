@@ -53,6 +53,9 @@ _______________
 
 ### Bug fixes:
 
+- #12878: fix incorrect treatment of injectivity in module subtyping for
+  private recursive types.
+  (Jeremy Yallop, review by ???)
 
 OCaml 5.2.0
 ------------

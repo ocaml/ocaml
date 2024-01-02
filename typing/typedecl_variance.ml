@@ -228,7 +228,7 @@ let compute_variance_type env ~check (required, loc) decl tyl =
     List.iter (fun (_,ty) -> check ty) tyl;
   end;
   List.map2
-    (fun ty (p, n, i) ->
+    (fun ty (p, n, _i) ->
       let v = get_variance ty tvl in
       let tr = decl.type_private in
       (* Use required variance where relevant *)
@@ -236,7 +236,7 @@ let compute_variance_type env ~check (required, loc) decl tyl =
       let (p, n) =
         if tr = Private || not (Btype.is_Tvar ty) then (p, n) (* set *)
         else (false, false) (* only check *)
-      and i = concr  || i && tr = Private in
+      and i = concr in
       let v = union v (make p n i) in
       if not concr || Btype.is_Tvar ty then v else
       union v
