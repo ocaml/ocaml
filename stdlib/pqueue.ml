@@ -203,7 +203,7 @@ module type S =
     val to_seq: 'a t -> (prio * 'a) Seq.t
   end
 
-module Make(Prio: OrderedType) =
+module Make(Prio: OrderedType) : S with type prio = Prio.t =
   struct
     include MakePoly(struct
       type 'a t = Prio.t * 'a
