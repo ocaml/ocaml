@@ -1649,7 +1649,7 @@ void caml_reset_young_limit(caml_domain_state * dom_st)
           dom_st->young_trigger : dom_st->memprof_young_trigger;
   CAMLassert ((uintnat)dom_st->young_ptr >=
               (uintnat)dom_st->memprof_young_trigger);
-  CAMLassert ((uintnat)dom_st->young_ptr >=
+  CAMLassert ((uintnat)dom_st->young_ptr >
               (uintnat)dom_st->young_trigger);
   /* An interrupt might have been queued in the meanwhile; this
      achieves the proper synchronisation. */
@@ -1760,10 +1760,12 @@ void caml_poll_gc_work(void)
        caml_poll_gc_work is called. */
   }
 
+  caml_reset_young_limit(d);
+
   if (atomic_load_acquire(&d->requested_external_interrupt)) {
+    /* This function might allocate (e.g. upon a systhreads yield). */
     caml_domain_external_interrupt_hook();
   }
-  caml_reset_young_limit(d);
 }
 
 void caml_handle_gc_interrupt(void)
