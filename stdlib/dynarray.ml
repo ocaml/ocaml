@@ -13,15 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type 'a t = {
-  mutable length : int;
-  mutable arr : 'a array;
-  dummy : Obj.t;
-  (* Remark: [dummy] is intentionally kept at type [Obj.t]
-     rather than ['a] to avoid the pretense that it is a valid
-     value of type ['a]. *)
-}
-
 (* {2 The type ['a t]}
 
    A dynamic array is represented using a backing array [arr] and
@@ -106,6 +97,151 @@ type 'a t = {
    segfaulting later for obscure reasons.)
 *)
 
+(** The [Dummy] module encapsulates the low-level magic we use
+    for dummies, providing a strongly-typed API that:
+    - makes it explicit where dummies are used
+    - makes it hard to mistakenly mix data using distinct dummies,
+      which would be unsound *)
+module Dummy : sig
+
+  (** {4 Dummies} *)
+
+  type 'stamp dummy
+  (** The type of dummies is parametrized by a ['stamp] variable,
+      so that two dummies with different stamps cannot be confused
+      together. *)
+
+  type fresh_dummy = Fresh : 'stamp dummy -> fresh_dummy
+  val fresh : unit -> fresh_dummy
+  (** The type of [fresh] enforces a fresh/unknown/opaque stamp for
+      the returned dummy, distinct from all previous stamps. *)
+
+
+  (** {4 Values or dummies} *)
+
+  type ('a, 'stamp) with_dummy
+  (** a value of type [('a, 'stamp) with_dummy] is either a proper
+      value of type ['a] or a dummy with stamp ['stamp]. *)
+
+  val of_val : 'a -> ('a, 'stamp) with_dummy
+  val of_dummy : 'stamp dummy -> ('a, 'stamp) with_dummy
+
+  val is_dummy : ('a, 'stamp) with_dummy -> 'stamp dummy -> bool
+  val unsafe_get : ('a, 'stamp) with_dummy -> 'a
+  (** [unsafe_get v] can only be called safely if [is_dummy v dummy]
+      is [false].
+
+      We could instead provide
+      [val find : ('a, 'stamp) with_dummy -> ('a, 'stamp dummy) result]
+      but this would involve intermediary allocations.
+
+      {[match find x with
+        | None -> ...
+        | Some v -> ...]}
+      can instead be written
+      {[if Dummy.is_dummy x
+        then ...
+         else let v = Dummy.unsafe_get x in ...]}
+  *)
+
+  (** {4 Arrays of values or dummies} *)
+  module Array : sig
+    val make :
+      int -> 'a -> dummy:'stamp dummy ->
+      ('a, 'stamp) with_dummy array
+    val init :
+      int -> (int -> 'a) -> dummy:'stamp dummy ->
+      ('a, 'stamp) with_dummy array
+
+    val blit_array :
+      'a array -> int ->
+      ('a, 'stamp) with_dummy array -> int ->
+      len:int ->
+      unit
+    val prefix :
+      ('a, 'stamp) with_dummy array ->
+      int ->
+      ('a, 'stamp) with_dummy array
+    val extend :
+      ('a, 'stamp) with_dummy array ->
+      length:int ->
+      dummy:'stamp dummy ->
+      new_capacity:int ->
+      ('a, 'stamp) with_dummy array
+  end
+end = struct
+  type 'stamp dummy = { mutable dummy : 'stamp dummy }
+  [@@warning "-unused-field"] (* we never read the field *)
+  type fresh_dummy = Fresh : 'stamp dummy -> fresh_dummy
+
+  let fresh () =
+    (* dummies and marshalling: we intentionally
+       use a cyclic value here. *)
+    let rec dummy = { dummy } in
+    Fresh dummy
+
+  type ('a, 'stamp) with_dummy = 'a
+
+  let of_val v = v
+
+  let of_dummy (type a stamp) (dummy : stamp dummy) =
+    (Obj.magic dummy : (a, stamp) with_dummy)
+
+  let is_dummy v dummy =
+    v == of_dummy dummy
+
+  let unsafe_get v =
+    v
+
+  module Array = struct
+    let make n x ~dummy =
+      if Obj.(tag (repr x) <> double_tag) then
+        Array.make n (of_val x)
+      else begin
+        let arr = Array.make n (of_dummy dummy) in
+        Array.fill arr 0 n (of_val x);
+        arr
+      end
+
+    let init n f ~dummy =
+      let arr = Array.make n (of_dummy dummy) in
+      for i = 0 to n - 1 do
+        Array.unsafe_set arr i (of_val (f i))
+      done;
+      arr
+
+    let blit_array src src_pos dst dst_pos ~len =
+      Array.blit src src_pos dst dst_pos len
+
+    let prefix arr n =
+      (* Note: the safety of the [Array.sub] call below, with respect to
+         our 'no-flat-float' invariant, relies on the fact that
+         [Array.sub] checks the tag of the input array, not whether the
+         elements themselves are float.
+
+         To avoid relying on this undocumented property we could use
+         [Array.make length dummy] and then set values in a loop, but this
+         would result in [caml_modify] rather than [caml_initialize]. *)
+      Array.sub arr 0 n
+
+    let extend arr ~length ~dummy ~new_capacity =
+      (* 'no-flat-float' invariant: we initialise the array with our
+         non-float dummy to get a non-flat array. *)
+      let new_arr = Array.make new_capacity (of_dummy dummy) in
+      Array.blit arr 0 new_arr 0 length;
+      new_arr
+  end
+end
+
+
+type 'a t = Pack : ('a, 'stamp) t_ -> 'a t [@@unboxed]
+and ('a, 'stamp) t_ = {
+  mutable length : int;
+  mutable arr : ('a, 'stamp) Dummy.with_dummy array;
+  dummy : 'stamp Dummy.dummy;
+}
+
+
 module Error = struct
   let[@inline never] index_out_of_bounds f ~i ~length =
     if length = 0 then
@@ -176,7 +312,7 @@ end
 
    See {!iter} below for a detailed usage example.
 *)
-let check_same_length f a ~length =
+let check_same_length f (Pack a) ~length =
   let length_a = a.length in
   if length <> length_a then
     Error.length_change_during_iteration f
@@ -195,108 +331,70 @@ let[@inline always] check_valid_length length arr =
 
    This precondition is typically guaranteed by knowing
    [0 <= i < length] and calling [check_valid_length length arr].*)
-let[@inline always] unsafe_get (type a) (arr : a array) ~dummy ~i ~length =
+let[@inline always] unsafe_get arr ~dummy ~i ~length =
   let v = Array.unsafe_get arr i in
-  if v == (Obj.obj dummy : a)
+  if Dummy.is_dummy v dummy
   then Error.missing_element ~i ~length
-  else v
+  else Dummy.unsafe_get v
 
 (** {1:dynarrays Dynamic arrays} *)
 
-module Dummy = struct
-  open struct
-    type t = { mutable dummy : t }
-    [@@warning "-unused-field"]
-  end
-  let create () =
-    let rec dummy = { dummy } in
-    Obj.repr dummy
-end
-
-let create (type a) () : a t =
-  let dummy = Dummy.create () in
-  {
+let create () =
+  let Dummy.Fresh dummy = Dummy.fresh () in
+  Pack {
     length = 0;
     arr = [| |];
     dummy = dummy;
   }
 
-let make (type a) n (x : a) : a t =
+let make n x =
   if n < 0 then Error.negative_length_requested "make" n;
-  let dummy = Dummy.create () in
-  let arr =
-    if Obj.(tag (repr x) <> double_tag)
-    then Array.make n x
-    else begin
-      (* 'no-flat-float' invariant: initialise the array with our
-         non-float dummy to get a non-flat array. *)
-      let arr = Array.make n (Obj.obj dummy : a) in
-      Array.fill arr 0 n x;
-      arr
-    end
-  in
-  {
+  let Dummy.Fresh dummy = Dummy.fresh () in
+  let arr = Dummy.Array.make n x ~dummy in
+  Pack {
     length = n;
     arr;
     dummy;
   }
-
-let array_init (type a) ~dummy n (f : int -> a) : a array =
-  let arr = Array.make n (Obj.obj dummy : a) in
-  for i = 0 to n - 1 do
-    Array.unsafe_set arr i (f i)
-  done;
-  arr
 
 let init (type a) n (f : int -> a) : a t =
   if n < 0 then Error.negative_length_requested "init" n;
-  let dummy = Dummy.create () in
-  let arr = array_init ~dummy n f in
-  {
+  let Dummy.Fresh dummy = Dummy.fresh () in
+  let arr = Dummy.Array.init ~dummy n f in
+  Pack {
     length = n;
     arr;
     dummy;
   }
 
-let get (type a) (a : a t) i =
+let get (type a) (Pack a : a t) i =
   (* This implementation will propagate an [Invalid_argument] exception
      from array lookup if the index is out of the backing array,
      instead of using our own [Error.index_out_of_bounds]. This is
      allowed by our specification, and more efficient -- no need to
      check that [length a <= capacity a] in the fast path. *)
   let v = a.arr.(i) in
-  if v == (Obj.obj a.dummy : a)
+  if Dummy.is_dummy v a.dummy
   then Error.unexpected_empty_element "get" ~i ~length:a.length
-  else v
+  else Dummy.unsafe_get v
 
-let set a i x =
+let set (Pack a) i x =
   let {arr; length; _} = a in
   if i >= length then Error.index_out_of_bounds "set" ~i ~length
-  else arr.(i) <- x
+  else arr.(i) <- Dummy.of_val x
 
-let length a = a.length
+let length (Pack a) = a.length
 
-let is_empty a = (a.length = 0)
+let is_empty (Pack a) = (a.length = 0)
 
-let array_prefix arr n =
-  (* Note: the safety of the [Array.sub] call below, with respect to
-     our 'no-flat-float' invariant, relies on the fact that
-     [Array.sub] checks the tag of the input array, not whether the
-     elements themselves are float.
-
-     To avoid relying on this undocumented property we could use
-     [Array.make length dummy] and then set values in a loop, but this
-     would result in [caml_modify] rather than [caml_initialize]. *)
-  Array.sub arr 0 n
-
-let copy (type a) ({length; arr; dummy} : a t) : a t =
+let copy (type a) (Pack {length; arr; dummy} : a t) : a t =
   check_valid_length length arr;
   (* use [length] as the new capacity to make
      this an O(length) operation. *)
-  let arr = array_prefix arr length in
-  { length; arr; dummy }
+  let arr = Dummy.Array.prefix arr length in
+  Pack { length; arr; dummy }
 
-let get_last a =
+let get_last (Pack a) =
   let {arr; length; dummy} = a in
   check_valid_length length arr;
   (* We know [length <= capacity a]. *)
@@ -304,7 +402,7 @@ let get_last a =
   (* We know [length > 0]. *)
   unsafe_get arr ~dummy ~i:(length - 1) ~length
 
-let find_last a =
+let find_last (Pack a) =
   let {arr; length; dummy} = a in
   check_valid_length length arr;
   (* We know [length <= capacity a]. *)
@@ -315,7 +413,7 @@ let find_last a =
 
 (** {1:removing Removing elements} *)
 
-let pop_last (type a) (a : a t) =
+let pop_last (Pack a) =
   let {arr; length; dummy} = a in
   check_valid_length length arr;
   (* We know [length <= capacity a]. *)
@@ -323,7 +421,7 @@ let pop_last (type a) (a : a t) =
   let last = length - 1 in
   (* We know [length > 0] so [last >= 0]. *)
   let v = unsafe_get arr ~dummy ~i:last ~length in
-  Array.unsafe_set arr last (Obj.obj dummy : a);
+  Array.unsafe_set arr last (Dummy.of_dummy dummy);
   a.length <- last;
   v
 
@@ -332,20 +430,20 @@ let pop_last_opt a =
   | exception Not_found -> None
   | x -> Some x
 
-let remove_last (type a) (a : a t) =
-  let last = length a - 1 in
+let remove_last (Pack a) =
+  let last = a.length - 1 in
   if last >= 0 then begin
     a.length <- last;
-    a.arr.(last) <- (Obj.obj a.dummy : a);
+    a.arr.(last) <- Dummy.of_dummy a.dummy;
   end
 
-let truncate (type a) (a : a t) n =
+let truncate (Pack a) n =
   if n < 0 then Error.negative_length_requested "truncate" n;
-  let {arr; length} = a in
+  let {arr; length; dummy} = a in
   if length <= n then ()
   else begin
     a.length <- n;
-    Array.fill arr n (length - n) (Obj.obj a.dummy : a);
+    Array.fill arr n (length - n) (Dummy.of_dummy dummy)
   end
 
 let clear a = truncate a 0
@@ -353,7 +451,7 @@ let clear a = truncate a 0
 
 (** {1:capacity Backing array and capacity} *)
 
-let capacity a = Array.length a.arr
+let capacity (Pack a) = Array.length a.arr
 
 let next_capacity n =
   let n' =
@@ -373,17 +471,7 @@ let next_capacity n =
   (* jump directly from 0 to 8 *)
   min (max 8 n') Sys.max_array_length
 
-let array_extend
-    (type a) (arr : a array) ~length ~new_capacity ~dummy
-  : a array
-=
-  (* 'no-flat-float' invariant: initialise the array with our
-     non-float dummy to get a non-flat array. *)
-  let new_arr = Array.make new_capacity (Obj.obj dummy : a) in
-  Array.blit arr 0 new_arr 0 length;
-  new_arr
-
-let ensure_capacity a capacity_request =
+let ensure_capacity (Pack a) capacity_request =
   let arr = a.arr in
   let cur_capacity = Array.length arr in
   if capacity_request < 0 then
@@ -414,7 +502,7 @@ let ensure_capacity a capacity_request =
       max (next_capacity cur_capacity) capacity_request in
     assert (new_capacity > 0);
     let new_arr =
-      array_extend arr ~length:a.length ~new_capacity ~dummy:a.dummy in
+      Dummy.Array.extend arr ~length:a.length ~dummy:a.dummy ~new_capacity in
     a.arr <- new_arr;
     (* postcondition: *)
     assert (0 <= capacity_request);
@@ -424,26 +512,26 @@ let ensure_capacity a capacity_request =
 let ensure_extra_capacity a extra_capacity_request =
   ensure_capacity a (length a + extra_capacity_request)
 
-let fit_capacity a =
-  if capacity a = a.length
+let fit_capacity (Pack a) =
+  if Array.length a.arr = a.length
   then ()
-  else a.arr <- array_prefix a.arr a.length
+  else a.arr <- Dummy.Array.prefix a.arr a.length
 
-let set_capacity a n =
+let set_capacity (Pack a) n =
   if n < 0 then
     Error.negative_capacity_requested "set_capacity" n;
   let arr = a.arr in
   let cur_capacity = Array.length arr in
   if n < cur_capacity then begin
     a.length <- min a.length n;
-    a.arr <- array_prefix arr n;
+    a.arr <- Dummy.Array.prefix arr n;
   end
   else if n > cur_capacity then begin
     a.arr <-
-      array_extend arr ~length:a.length ~new_capacity:n ~dummy:a.dummy;
+      Dummy.Array.extend arr ~length:a.length ~dummy:a.dummy ~new_capacity:n;
   end
 
-let reset a =
+let reset (Pack a) =
   a.length <- 0;
   a.arr <- [||]
 
@@ -462,14 +550,14 @@ let reset a =
 
 (* [add_last_if_room a v] only writes the value if there is room, and
    returns [false] otherwise. *)
-let[@inline] add_last_if_room a v =
+let[@inline] add_last_if_room (Pack a) v =
   let {arr; length; _} = a in
   (* we know [0 <= length] *)
   if length >= Array.length arr then false
   else begin
     (* we know [0 <= length < Array.length arr] *)
     a.length <- length + 1;
-    Array.unsafe_set arr length v;
+    Array.unsafe_set arr length (Dummy.of_val v);
     true
   end
 
@@ -497,7 +585,7 @@ let append_seq a seq =
 
 (* append_array: same [..._if_room] and loop logic as [add_last]. *)
 
-let append_array_if_room a b =
+let append_array_if_room (Pack a) b =
   let {arr; length = length_a; _} = a in
   let length_b = Array.length b in
   if length_a + length_b > Array.length arr then false
@@ -529,7 +617,7 @@ let append_array_if_room a b =
        a clean error, while notify-after fails on add-add races with
        silently disappearing data. *)
     a.length <- length_a + length_b;
-    Array.blit b 0 arr length_a length_b;
+    Dummy.Array.blit_array b 0 arr length_a ~len:length_b;
     true
   end
 
@@ -551,13 +639,19 @@ let append_array a b =
    of [b] throughout the computation and check it that does not
    change.
 *)
-let append_if_room a b ~length_b =
+let append_if_room (Pack a) (Pack b) ~length_b =
   let {arr = arr_a; length = length_a; _} = a in
   if length_a + length_b > Array.length arr_a then false
   else begin
+    let arr_b = b.arr in
+    check_valid_length length_b arr_b;
     a.length <- length_a + length_b;
-    Array.blit b.arr 0 arr_a length_a length_b;
-    check_same_length "append" b ~length:length_b;
+    for i = 0 to length_b - 1 do
+      Array.unsafe_set arr_a (length_a + i)
+        (Dummy.of_val
+           (unsafe_get arr_b ~dummy:b.dummy ~i ~length:length_b))
+    done;
+    check_same_length "append" (Pack b) ~length:length_b;
     true
   end
 
@@ -598,7 +692,7 @@ let append a b =
 *)
 
 let iter_ f k a =
-  let {arr; length; dummy} = a in
+  let Pack {arr; length; dummy} = a in
   (* [check_valid_length length arr] is used for memory safety, it
      guarantees that the backing array has capacity at least [length],
      allowing unsafe array access.
@@ -632,22 +726,22 @@ let iter k a =
   iter_ "iter" k a
 
 let iteri k a =
-  let {arr; length; dummy} = a in
+  let Pack {arr; length; dummy} = a in
   check_valid_length length arr;
   for i = 0 to length - 1 do
     k i (unsafe_get arr ~i ~dummy ~length);
   done;
   check_same_length "iteri" a ~length
 
-let map (type a b) (f : a -> b) (a : a t) : b t =
-  let {arr = arr_in; length; dummy} = a in
+let map f a =
+  let Pack {arr = arr_in; length; dummy} = a in
   check_valid_length length arr_in;
-  let arr_out = Array.make length (Obj.obj dummy : b) in
+  let arr_out = Array.make length (Dummy.of_dummy dummy) in
   for i = 0 to length - 1 do
     Array.unsafe_set arr_out i
-      (f (unsafe_get arr_in ~dummy ~i ~length))
+      (Dummy.of_val (f (unsafe_get arr_in ~dummy ~i ~length)))
   done;
-  let res = {
+  let res = Pack {
     length;
     arr = arr_out;
     dummy;
@@ -655,15 +749,15 @@ let map (type a b) (f : a -> b) (a : a t) : b t =
   check_same_length "map" a ~length;
   res
 
-let mapi (type a b) (f : int -> a -> b) (a : a t) : b t =
-  let {arr = arr_in; length; dummy} = a in
+let mapi f a =
+  let Pack {arr = arr_in; length; dummy} = a in
   check_valid_length length arr_in;
-  let arr_out = Array.make length (Obj.obj dummy : b) in
+  let arr_out = Array.make length (Dummy.of_dummy dummy) in
   for i = 0 to length - 1 do
     Array.unsafe_set arr_out i
-      (f i (unsafe_get arr_in ~dummy ~i ~length))
+      (Dummy.of_val (f i (unsafe_get arr_in ~dummy ~i ~length)))
   done;
-  let res = {
+  let res = Pack {
     length;
     arr = arr_out;
     dummy;
@@ -672,7 +766,7 @@ let mapi (type a b) (f : int -> a -> b) (a : a t) : b t =
   res
 
 let fold_left f acc a =
-  let {arr; length; dummy} = a in
+  let Pack {arr; length; dummy} = a in
   check_valid_length length arr;
   let r = ref acc in
   for i = 0 to length - 1 do
@@ -683,7 +777,7 @@ let fold_left f acc a =
   !r
 
 let fold_right f a acc =
-  let {arr; length; dummy} = a in
+  let Pack {arr; length; dummy} = a in
   check_valid_length length arr;
   let r = ref acc in
   for i = length - 1 downto 0 do
@@ -694,7 +788,7 @@ let fold_right f a acc =
   !r
 
 let exists p a =
-  let {arr; length; dummy} = a in
+  let Pack {arr; length; dummy} = a in
   check_valid_length length arr;
   let rec loop p arr dummy i length =
     if i = length then false
@@ -707,7 +801,7 @@ let exists p a =
   res
 
 let for_all p a =
-  let {arr; length; dummy} = a in
+  let Pack {arr; length; dummy} = a in
   check_valid_length length arr;
   let rec loop p arr dummy i length =
     if i = length then true
@@ -743,15 +837,15 @@ let filter_map f a =
 
 let of_array a =
   let length = Array.length a in
-  let dummy = Dummy.create () in
-  {
+  let Dummy.Fresh dummy = Dummy.fresh () in
+  Pack {
     length;
-    arr = array_init ~dummy length (fun i -> Array.unsafe_get a i);
+    arr = Dummy.Array.init ~dummy length (fun i -> Array.unsafe_get a i);
     dummy;
   }
 
 let to_array a =
-  let {arr; length; dummy} = a in
+  let Pack {arr; length; dummy} = a in
   check_valid_length length arr;
   let res = Array.init length (fun i ->
     unsafe_get arr ~dummy ~i ~length
@@ -766,7 +860,7 @@ let of_list li =
   a
 
 let to_list a =
-  let {arr; length; dummy} = a in
+  let Pack {arr; length; dummy} = a in
   check_valid_length length arr;
   let l = ref [] in
   for i = length - 1 downto 0 do
@@ -781,7 +875,7 @@ let of_seq seq =
   init
 
 let to_seq a =
-  let {arr; length; dummy} = a in
+  let Pack {arr; length; dummy} = a in
   check_valid_length length arr;
   let rec aux i = fun () ->
     check_same_length "to_seq" a ~length;
@@ -804,7 +898,7 @@ let to_seq_reentrant a =
   aux 0
 
 let to_seq_rev a =
-  let {arr; length; dummy} = a in
+  let Pack {arr; length; dummy} = a in
   check_valid_length length arr;
   let rec aux i = fun () ->
     check_same_length "to_seq_rev" a ~length;
