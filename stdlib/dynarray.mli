@@ -62,7 +62,7 @@
 
 (** {1:dynarrays Dynamic arrays} *)
 
-type 'a t
+type !'a t
 (** A dynamic array containing values of type ['a].
 
     A dynamic array [a] provides constant-time [get] and [set]
