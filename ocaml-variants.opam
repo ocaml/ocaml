@@ -14,7 +14,7 @@ authors: [
 homepage: "https://github.com/ocaml/ocaml/"
 bug-reports: "https://github.com/ocaml/ocaml/issues"
 depends: [
-  "ocaml" {= "5.2.0" & post}
+  "ocaml" {= "5.3.0" & post}
   "base-unix" {post}
   "base-bigarray" {post}
   "base-threads" {post}
