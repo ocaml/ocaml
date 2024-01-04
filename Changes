@@ -11,6 +11,9 @@ _______________
 
 ### Standard library:
 
+- ???: Dynarray.rev_iter, Dynarray.rev_iteri
+  (Gabriel Scherer, review by ???)
+
 ### Other libraries:
 
 ### Tools:
