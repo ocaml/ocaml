@@ -254,10 +254,6 @@ val rev_iter : ('a -> unit) -> 'a t -> unit
 (** [rev_iter f a] calls [f] on each element of [a], from the element
     of index [length a - 1] to the element of index [0].
 
-    This iterates on elements from the most recently added to the
-    least recently added, in particular it corresponds to the
-    iteration order of {!Stack.iter}.
-
     @since 5.3
 *)
 
