@@ -11,6 +11,9 @@ Working version
 
 ### Standard library:
 
+- #12877: Dynarray.rev_iter, Dynarray.rev_iteri
+  (Gabriel Scherer, review by Léo Andrès, Jeremy Yallop and Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 ### Tools:
