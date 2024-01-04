@@ -611,6 +611,22 @@ let iteri k a =
   done;
   check_same_length "iteri" a ~length
 
+let rev_iter k a =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  for i = length - 1 downto 0 do
+    k (unsafe_get arr ~i ~length);
+  done;
+  check_same_length "rev_iter" a ~length
+
+let rev_iteri k a =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  for i = length - 1 downto 0 do
+    k i (unsafe_get arr ~i ~length);
+  done;
+  check_same_length "rev_iteri" a ~length
+
 let map f a =
   let {arr; length} = a in
   check_valid_length length arr;
