@@ -1644,6 +1644,8 @@ void caml_reset_young_limit(caml_domain_state * dom_st)
      achieves the proper synchronisation. */
   atomic_exchange(&dom_st->young_limit, (uintnat)trigger);
 
+  /* For non-delayable asynchronous actions, we immediately interrupt
+     the domain again. */
   dom_internal * d = &all_domains[dom_st->id];
   if (atomic_load_relaxed(&d->interruptor.interrupt_pending)
       || dom_st->requested_minor_gc
