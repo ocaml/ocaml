@@ -882,6 +882,22 @@ let iteri f a =
   done;
   check_same_length "iteri" a ~length
 
+let rev_iter f a =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  for i = length - 1 downto 0 do
+    f (unsafe_get arr ~i ~length);
+  done;
+  check_same_length "rev_iter" a ~length
+
+let rev_iteri f a =
+  let {arr; length} = a in
+  check_valid_length length arr;
+  for i = length - 1 downto 0 do
+    f i (unsafe_get arr ~i ~length);
+  done;
+  check_same_length "rev_iteri" a ~length
+
 let map f a =
   let Pack {arr = arr_in; length; dummy} = a in
   check_valid_length length arr_in;
