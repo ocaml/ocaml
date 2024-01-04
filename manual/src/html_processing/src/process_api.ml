@@ -30,7 +30,7 @@ let search_widget with_description =
          onkeypress = "this.oninput();"
          onclick    = "this.oninput();"
 	 onpaste    = "this.oninput();">
-<button title="Search" onclick="mySearch(%b)" style="cursor:pointer">🔎</button> %s</div>
+<button onclick="mySearch(%b)" style="cursor:pointer">Search <span aria-hidden="true">🔎</span></button> %s</div>
 <div id="search_results"></div>|} with_description with_description search_decription
   |> parse
 
