@@ -277,12 +277,13 @@ void caml_request_minor_gc (void)
    There are two kinds of asynchronous actions:
 
    - Those that we execute immediately in all circumstances (STW
-     interrupts, requested minor or major GC, forced systhread yield);
-     they must never call OCaml code.
+     interrupts, requested minor or major GC); they must never call
+     OCaml code.
 
    - Those that run OCaml code and may raise OCaml exceptions
-     (asynchronous callbacks, finalisers, memprof callbacks); those
-     can be delayed, and do not run during allocations from C.
+     (asynchronous callbacks, finalisers, memprof callbacks, forced
+     systhread yield); those can be delayed, and do not run during
+     allocations from C.
 
    Queued asynchronous actions are notified to the domain by setting
    [young_limit] to a high value, thereby making the next allocation
@@ -341,7 +342,8 @@ value caml_do_pending_actions_exn(void)
   caml_handle_gc_interrupt();
   /* [young_limit] has now been reset. */
 
-  /* 2. Delayable actions that may raise OCaml exceptions.
+  /* 2. Delayable actions that may run OCaml code and raise OCaml
+     exceptions.
 
      We can now clear the action_pending flag since we are going to
      execute all actions. */
@@ -360,6 +362,12 @@ value caml_do_pending_actions_exn(void)
   /* Call finalisers */
   exn = caml_final_do_calls_exn();
   if (Is_exception_result(exn)) goto exception;
+
+  /* Process external interrupts (e.g. preemptive systhread switching).
+     By doing this last, we do not need to set the action pending flag
+     in case a context switch happens: all actions have been processed
+     at this point. */
+  caml_process_external_interrupt();
 
   return Val_unit;
 
