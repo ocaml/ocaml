@@ -359,6 +359,44 @@ val filteri : f:(int -> 'a -> bool) -> 'a list -> 'a list
    @since 4.11
 *)
 
+
+(** {1 List manipulation} *)
+
+
+val take : int -> 'a list -> 'a list
+(** [take n l] returns the prefix of [l] of length [n],
+    or a copy of [l] if [n > length l].
+
+    [n] must be nonnegative.
+
+    @raise Invalid_argument if [n] is negative.
+    @since 5.3
+*)
+
+val drop : int -> 'a list -> 'a list
+(** [drop n l] returns the suffix of [l] after [n] elements,
+    or [[]] if [n > length l].
+
+    [n] must be nonnegative.
+
+    @raise Invalid_argument if [n] is negative.
+    @since 5.3
+*)
+
+val take_while : f:('a -> bool) -> 'a list -> 'a list
+(** [take_while p l] is the longest (possibly empty) prefix of [l]
+    containing only elements that satisfy [p].
+
+    @since 5.3
+*)
+
+val drop_while : f:('a -> bool) -> 'a list -> 'a list
+(** [drop_while p l] is the longest (possibly empty) suffix of [l]
+    starting at the first element that does not satisfy [p].
+
+    @since 5.3
+*)
+
 val partition : f:('a -> bool) -> 'a list -> 'a list * 'a list
 (** [partition ~f l] returns a pair of lists [(l1, l2)], where
    [l1] is the list of all the elements of [l] that
