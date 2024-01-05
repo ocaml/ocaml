@@ -8,7 +8,7 @@ end
 
 let does_raise f q =
   try
-    ignore (f q : int);
+    ignore (f q);
     false
   with Q.Empty ->
     true
@@ -135,6 +135,13 @@ let () =
   Q.transfer q1 q2;
   assert (Q.length q1 = 0); assert (Q.to_list q1 = [                      ]);
   assert (Q.length q2 = 8); assert (Q.to_list q2 = [5; 6; 7; 8; 1; 2; 3; 4]);
+;;
+
+let () =
+  let q = Q.create () in
+  Q.add 1 q; Q.drop q; assert (does_raise Q.drop q);
+  Q.add 2 q; Q.drop q; assert (does_raise Q.drop q);
+  assert (Q.length q = 0);
 ;;
 
 let () = print_endline "OK"
