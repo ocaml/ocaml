@@ -15,6 +15,10 @@ _______________
   (Kate Deplaix and Oscar Butler-Aldridge review by Nicolás Ojeda Bär,
    Craig Ferguson and Gabriel Scherer)
 
+- #12885: move Dynarray to an unboxed representation
+  (Gabriel Scherer, suggestions by Vincent Laviron,
+   review by Simon Cruanes, Yann Leray, Alain Frisch, ???)
+
 ### Other libraries:
 
 ### Tools:
