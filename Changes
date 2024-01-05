@@ -209,6 +209,9 @@ OCaml 5.2.0
   style that the compiler driver uses.
   (David Allsopp, review by Gabriel Scherer)
 
+- #12810: Port ThreadSanitizer support to Linux and macOS on arm64
+  (Miod Vallat, review by Tim McGilchrist)
+
 ### Code generation and optimizations:
 
 - #11239: on x86-64 and RISC-V, reduce alignment of OCaml stacks from 16 to 8.

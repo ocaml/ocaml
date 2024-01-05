@@ -26,7 +26,8 @@ opam switch create <YOUR-SWITCH-NAME-HERE> ocaml-option-tsan
 \end{verbatim}
 
 TSan support for OCaml is currently available for the x86_64 architecture, on
-GNU/Linux and macOS systems. Building OCaml with TSan support requires GCC or
+FreeBSD, Linux and macOS, and for the arm64 architecture on Linux and macOS.
+Building OCaml with TSan support requires GCC or
 Clang. Minimal supported versions are GCC 11 and Clang 14. Note that TSan data
 race reports with GCC 11 are known to result in poor stack trace reporting (no
 line numbers), which is fixed in GCC 12.
