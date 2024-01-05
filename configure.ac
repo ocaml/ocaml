@@ -1665,7 +1665,8 @@ AS_IF([test "x$enable_instrumented_runtime" != "xno" ],
     )]
 )
 
-# ThreadSanitizer support is only for Linux/FreeBSD/macOS on amd64.
+# ThreadSanitizer support is only for Linux/FreeBSD/macOS on amd64, as well as
+# Linux/macOS on arm64.
 # ThreadSanitizer supports more architectures but the OCaml client side is not
 # implemented (yet).
 AS_IF([test "x$enable_tsan" = "xyes" ],
@@ -1678,6 +1679,17 @@ AS_IF([test "x$enable_tsan" = "xyes" ],
           [AC_MSG_ERROR(m4_normalize([thread sanitizer not supported with
             vendor=$ocaml_cv_cc_vendor"]))]
          )],
+        [AC_MSG_ERROR([thread sanitizer not supported on system $system])]
+       )],
+    [arm64],
+      [AS_CASE(["$system"],
+        [linux|macosx],
+        [AS_CASE(["$ocaml_cv_cc_vendor"],
+          [gcc-*|clang-*], [tsan=true],
+          [AC_MSG_ERROR(m4_normalize([thread sanitizer not supported with
+            vendor=$ocaml_cv_cc_vendor"]))]
+         )],
+        [AC_MSG_ERROR([thread sanitizer not supported on system $system])]
        )],
       [AC_MSG_ERROR([thread sanitizer not supported on arch $arch])]
   )],
@@ -1740,7 +1752,9 @@ AS_IF([$tsan],
   AS_CASE(["$system"],
     ["freebsd"], [libunwind_ldflags="-lgcc_eh"],
     ["macosx"], [libunwind_ldflags="-framework System"],
-    [libunwind_ldflags="-lunwind -lunwind-x86_64"])
+    [AS_CASE(["$arch"],
+      ["amd64"], [libunwind_ldflags="-lunwind -lunwind-x86_64"],
+      ["arm64"], [libunwind_ldflags="-lunwind -lunwind-aarch64"])])
 
   AS_IF([test x"$LIBUNWIND_LDFLAGS" != x],
     [libunwind_ldflags="$LIBUNWIND_LDFLAGS $libunwind_ldflags"])
