@@ -13,6 +13,9 @@ _______________
 
 - #12871: Add the Pqueue module to the stdlib. It implements priority queues.
   (Jean-Christophe Filliâtre, review by Gabriel Scherer)
+- #12869: Add List.take, List.drop, List.take_while and List.drop_while
+  (Kate Deplaix and Oscar Butler-Aldridge review by Nicolás Ojeda Bär,
+   Craig Ferguson and Gabriel Scherer)
 
 ### Other libraries:
 
