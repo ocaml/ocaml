@@ -33,7 +33,7 @@
     in many algorithms, (e.g. when peeking at several priority queues
     and then selecting one to remove from).
 
-    @since 5.2
+    @since 5.3
 *)
 
 module type OrderedType =
