@@ -85,10 +85,10 @@
    a dynarray and unmarshalling it inside another program with
    a different global dummy.
 
-   Instead, we create a dummy for each dynarray, and we store it in
-   the dynarray metadata record. Marshalling the dynarray will then
-   preserve the physical equality between this dummy field and dummy
-   elements in the array, as expected.
+   The trick is to store the dummy that we use in the dynarray
+   metadata record. Marshalling the dynarray will then preserve the
+   physical equality between this dummy field and dummy elements in
+   the array, as expected.
 
    This reasoning assumes that marshalling does not use the
    [No_sharing] flag. To ensure that users do not marshal dummies
@@ -259,7 +259,6 @@ end = struct
   end
 end
 
-
 type 'a t = Pack : ('a, 'stamp) t_ -> 'a t [@@unboxed]
 and ('a, 'stamp) t_ = {
   mutable length : int;
@@ -267,6 +266,17 @@ and ('a, 'stamp) t_ = {
   dummy : 'stamp Dummy.dummy;
 }
 
+let global_dummy = Dummy.fresh ()
+(* We need to ensure that dummies are never exposed to the user as
+   values of type ['a]. Including the dummy in the dynarray metadata
+   is necessary for marshalling to behave correctly, but there is no
+   obligation to create a fresh dummy for each new dynarray, we can
+   use a global dummy.
+
+   On the other hand, unmarshalling may precisely return a dynarray
+   with another dummy: we cannot assume that all dynarrays use this
+   global dummy. The existential hiding of the dummy ['stamp]
+   parameter helps us to avoid this assumption. *)
 
 module Error = struct
   let[@inline never] index_out_of_bounds f ~i ~length =
@@ -366,7 +376,7 @@ let[@inline always] unsafe_get arr ~dummy ~i ~length =
 (** {1:dynarrays Dynamic arrays} *)
 
 let create () =
-  let Dummy.Fresh dummy = Dummy.fresh () in
+  let Dummy.Fresh dummy = global_dummy in
   Pack {
     length = 0;
     arr = [| |];
@@ -375,7 +385,7 @@ let create () =
 
 let make n x =
   if n < 0 then Error.negative_length_requested "make" n;
-  let Dummy.Fresh dummy = Dummy.fresh () in
+  let Dummy.Fresh dummy = global_dummy in
   let arr = Dummy.Array.make n x ~dummy in
   Pack {
     length = n;
@@ -385,7 +395,7 @@ let make n x =
 
 let init (type a) n (f : int -> a) : a t =
   if n < 0 then Error.negative_length_requested "init" n;
-  let Dummy.Fresh dummy = Dummy.fresh () in
+  let Dummy.Fresh dummy = global_dummy in
   let arr = Dummy.Array.init ~dummy n f in
   Pack {
     length = n;
@@ -863,7 +873,7 @@ let filter_map f a =
 
 let of_array a =
   let length = Array.length a in
-  let Dummy.Fresh dummy = Dummy.fresh () in
+  let Dummy.Fresh dummy = global_dummy in
   let arr = Dummy.Array.copy a ~dummy in
   Pack {
     length;
@@ -883,7 +893,7 @@ let to_array a =
 let of_list li =
   let a = Array.of_list li in
   let length = Array.length a in
-  let Dummy.Fresh dummy = Dummy.fresh () in
+  let Dummy.Fresh dummy = global_dummy in
   let arr = Dummy.Array.unsafe_nocopy a ~dummy in
   Pack {
     length;
