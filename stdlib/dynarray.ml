@@ -722,6 +722,7 @@ let to_array a =
 
 let of_list li =
   let a = create () in
+  ensure_capacity a (List.length li);
   List.iter (fun x -> add_last a x) li;
   a
 
