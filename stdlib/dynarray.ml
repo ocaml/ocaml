@@ -149,11 +149,20 @@ module Dummy : sig
     val make :
       int -> 'a -> dummy:'stamp dummy ->
       ('a, 'stamp) with_dummy array
+
     val init :
       int -> (int -> 'a) -> dummy:'stamp dummy ->
       ('a, 'stamp) with_dummy array
 
     val copy : 'a array -> dummy:'stamp dummy -> ('a, 'stamp) with_dummy array
+
+    val unsafe_nocopy :
+      'a array -> dummy:'stamp dummy ->
+      ('a, 'stamp) with_dummy array
+    (** [unsafe_nocopy] assumes that the input array was created
+        locally and will not be used anymore (in the spirit of
+        [Bytes.unsafe_to_string]), and avoids a copy of the input
+        array when possible. *)
 
     val blit_array :
       'a array -> int ->
@@ -205,7 +214,7 @@ end = struct
         arr
       end
 
-   let copy a ~dummy =
+    let copy a ~dummy =
       if Obj.(tag (repr a) <> double_array_tag) then
         Array.copy a
       else begin
@@ -214,6 +223,11 @@ end = struct
         Array.blit a 0 arr 0 n;
         arr
       end
+
+    let unsafe_nocopy a ~dummy =
+      if Obj.(tag (repr a) <> double_array_tag) then
+        a
+      else copy a ~dummy
 
     let init n f ~dummy =
       let arr = Array.make n (of_dummy dummy) in
@@ -850,9 +864,10 @@ let filter_map f a =
 let of_array a =
   let length = Array.length a in
   let Dummy.Fresh dummy = Dummy.fresh () in
+  let arr = Dummy.Array.copy a ~dummy in
   Pack {
     length;
-    arr = Dummy.Array.copy a ~dummy;
+    arr;
     dummy;
   }
 
@@ -866,10 +881,15 @@ let to_array a =
   res
 
 let of_list li =
-  let a = create () in
-  ensure_capacity a (List.length li);
-  List.iter (fun x -> add_last a x) li;
-  a
+  let a = Array.of_list li in
+  let length = Array.length a in
+  let Dummy.Fresh dummy = Dummy.fresh () in
+  let arr = Dummy.Array.unsafe_nocopy a ~dummy in
+  Pack {
+    length;
+    arr;
+    dummy;
+  }
 
 let to_list a =
   let Pack {arr; length; dummy} = a in
