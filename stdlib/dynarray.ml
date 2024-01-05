@@ -153,6 +153,8 @@ module Dummy : sig
       int -> (int -> 'a) -> dummy:'stamp dummy ->
       ('a, 'stamp) with_dummy array
 
+    val copy : 'a array -> dummy:'stamp dummy -> ('a, 'stamp) with_dummy array
+
     val blit_array :
       'a array -> int ->
       ('a, 'stamp) with_dummy array -> int ->
@@ -200,6 +202,16 @@ end = struct
       else begin
         let arr = Array.make n (of_dummy dummy) in
         Array.fill arr 0 n (of_val x);
+        arr
+      end
+
+   let copy a ~dummy =
+      if Obj.(tag (repr a) <> double_array_tag) then
+        Array.copy a
+      else begin
+        let n = Array.length a in
+        let arr = Array.make n (of_dummy dummy) in
+        Array.blit a 0 arr 0 n;
         arr
       end
 
@@ -840,7 +852,7 @@ let of_array a =
   let Dummy.Fresh dummy = Dummy.fresh () in
   Pack {
     length;
-    arr = Dummy.Array.init ~dummy length (fun i -> Array.unsafe_get a i);
+    arr = Dummy.Array.copy a ~dummy;
     dummy;
   }
 
