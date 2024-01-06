@@ -19,7 +19,7 @@ _______________
 
 - #12868: Manual: simplify style colours of the post-processed manual and API
   HTML pages, and fix the search button icon
-  (Yawar Amin, review by Simon Grondin and Gabriel Scherer)
+  (Yawar Amin, review by Simon Grondin, Gabriel Scherer, and Florian Angeletti)
 
 ### Compiler user-interface and warnings:
 
