@@ -415,9 +415,9 @@ let get (type a) (Pack a : a t) i =
   else Dummy.unsafe_get v
 
 let set (Pack a) i x =
-  (* See {!get} comment on the use of checked array
-     access without our own bound checking. *)
-  a.arr.(i) <- Dummy.of_val x
+  let {arr; length; _} = a in
+  if i >= length then Error.index_out_of_bounds "set" ~i ~length
+  else arr.(i) <- Dummy.of_val x
 
 let length (Pack a) = a.length
 
