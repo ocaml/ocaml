@@ -52,9 +52,6 @@ js: $(JS_FILES)
 
 CURL = curl -s
 # download images for local use
-SEARCH := search_icon.svg
-$(WEBDIRAPI)/search_icon.svg: | $(WEBDIRAPI)
-	$(CURL) "https://ocaml.org/img/search.svg" > $(WEBDIRAPI)/$(SEARCH)
 
 $(WEBDIRCOMP)/%: $(WEBDIRAPI)/% | $(WEBDIRCOMP)
 	cp $< $@
@@ -73,7 +70,7 @@ $(WEBDIRAPI)/favicon.ico: | $(WEBDIRAPI) $(WEBDIRMAN) $(WEBDIRCOMP)
 IMG_FILES0 := colour-logo.svg
 IMG_FILES := $(addprefix $(WEBDIRAPI)/, $(IMG_FILES0)) $(addprefix $(WEBDIRCOMP)/, $(IMG_FILES0)) $(addprefix $(WEBDIRMAN)/, $(IMG_FILES0)) 
 
-img: $(WEBDIRAPI)/search_icon.svg $(WEBDIRAPI)/favicon.ico $(WEBDIRCOMP)/search_icon.svg $(WEBDIRCOMP)/favicon.ico $(IMG_FILES)
+img: $(WEBDIRAPI)/favicon.ico $(WEBDIRCOMP)/favicon.ico $(IMG_FILES)
 
 clean:
 	rm -rf $(WEBDIR) src/.merlin _build
