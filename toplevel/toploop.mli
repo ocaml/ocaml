@@ -209,5 +209,5 @@ val preload_objects : string list ref
     loop. *)
 
 val prepare : Format.formatter -> bool
-(** Load compilation units in {!preload_objects}.  Returns [true] if successful,
-    [false] otherwise. *)
+(** Setup the load paths and initial toplevel environment and load compilation
+    units in {!preload_objects}. *)
