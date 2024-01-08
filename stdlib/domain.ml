@@ -145,15 +145,44 @@ module DLS = struct
      * We do not want OCaml's float array optimisation kicking in here. *)
     st.(idx) <- Obj_opt.some (Sys.opaque_identity x)
 
-  let get (type a) ((idx, init) : a key) =
+
+  let[@inline never] array_compare_and_set a i oldval newval =
+    (* Note: we cannot use [@poll error] due to the
+       allocations on a.(i) in the Double_array case. *)
+    let curval = a.(i) in
+    if curval == oldval then (
+      Array.unsafe_set a i newval;
+      true
+    ) else false
+
+  let get (type a) ((idx, init) : a key) : a =
     let st = maybe_grow idx in
     let obj = st.(idx) in
     if Obj_opt.is_some obj
     then (Obj_opt.unsafe_get obj : a)
     else begin
       let v : a = init () in
-      st.(idx) <- Obj_opt.some (Sys.opaque_identity v);
-      v
+      let new_obj = Obj_opt.some (Sys.opaque_identity v) in
+      (* At this point, [st] or [st.(idx)] may have been changed
+         by another thread on the same domain.
+
+         If [st] changed, it was resized into a larger value,
+         we can just reuse the new value.
+
+         If [st.(idx)] changed, we drop the current value to avoid
+         letting other threads observe a 'revert' that forgets
+         previous modifications. *)
+      let st = get_dls_state () in
+      if array_compare_and_set st idx obj new_obj
+      then v
+      else begin
+        (* if st.(idx) changed, someone must have initialized
+           the key in the meantime. *)
+        let updated_obj = st.(idx) in
+        if Obj_opt.is_some updated_obj
+        then (Obj_opt.unsafe_get updated_obj : a)
+        else assert false
+      end
     end
 
   type key_value = KV : 'a key * 'a -> key_value
