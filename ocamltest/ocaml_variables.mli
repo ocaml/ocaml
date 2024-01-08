@@ -85,6 +85,8 @@ val objext : Variables.t
 val libext : Variables.t
 val asmext : Variables.t
 
+val ocaml : Variables.t
+
 val ocamlc_byte : Variables.t
 val ocamlopt_byte : Variables.t
 val ocamlrun : Variables.t

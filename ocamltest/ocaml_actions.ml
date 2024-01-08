@@ -1108,6 +1108,7 @@ let config_variables _log env =
   [
     Ocaml_variables.arch, Ocamltest_config.arch;
     Ocaml_variables.ocamlrun, Ocaml_files.ocamlrun;
+    Ocaml_variables.ocaml, Ocaml_files.ocaml;
     Ocaml_variables.ocamlc_byte, Ocaml_files.ocamlc;
     Ocaml_variables.ocamlopt_byte, Ocaml_files.ocamlopt;
     Ocaml_variables.bytecc_libs, Ocamltest_config.bytecc_libs;
