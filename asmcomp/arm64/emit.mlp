@@ -373,11 +373,11 @@ let num_call_gc_and_check_bound_points env =
       loop instr.next (call_gc, check_bound)
     (* The following four should never be seen, since this function is run
        before branch relaxation. *)
-    | Lop (Ispecific (Ifar_alloc _))
-    | Lop (Ispecific (Ifar_poll _))
-    | Lop (Ispecific Ifar_intop_checkbound)
-    | Lop (Ispecific (Ifar_intop_imm_checkbound _))
-    | Lop (Ispecific (Ifar_shiftcheckbound _)) -> assert false
+    | Lop (Ispecific (Ialloc_far _))
+    | Lop (Ispecific (Ipoll_far _))
+    | Lop (Ispecific Icheckbound_far)
+    | Lop (Ispecific (Icheckbound_imm_far _))
+    | Lop (Ispecific (Ishiftcheckbound_far _)) -> assert false
     | _ -> loop instr.next totals
   in
   loop env.f.fun_body (0, 0)
@@ -480,11 +480,11 @@ module BR = Branch_relaxation.Make (struct
       and single = match memory_chunk with Single -> 2 | _ -> 1 in
       based + barrier + single
     | Lop (Ialloc _) when f.fun_fast -> 5
-    | Lop (Ispecific (Ifar_alloc _)) when f.fun_fast -> 6
+    | Lop (Ispecific (Ialloc_far _)) when f.fun_fast -> 6
     | Lop (Ipoll _) -> 3
-    | Lop (Ispecific (Ifar_poll _)) -> 4
+    | Lop (Ispecific (Ipoll_far _)) -> 4
     | Lop (Ialloc { bytes = num_bytes; _ })
-    | Lop (Ispecific (Ifar_alloc { bytes = num_bytes; _ })) ->
+    | Lop (Ispecific (Ialloc_far { bytes = num_bytes; _ })) ->
       begin match num_bytes with
       | 16 | 24 | 32 -> 1
       | _ -> 1 + num_instructions_for_intconst (Nativeint.of_int num_bytes)
@@ -493,11 +493,11 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Icompf _) -> 2
     | Lop (Iintop_imm (Icomp _, _)) -> 2
     | Lop (Iintop (Icheckbound)) -> 2
-    | Lop (Ispecific (Ifar_intop_checkbound)) -> 3
+    | Lop (Ispecific (Icheckbound_far)) -> 3
     | Lop (Iintop_imm (Icheckbound, _)) -> 2
-    | Lop (Ispecific (Ifar_intop_imm_checkbound _)) -> 3
+    | Lop (Ispecific (Icheckbound_imm_far _)) -> 3
     | Lop (Ispecific (Ishiftcheckbound _)) -> 2
-    | Lop (Ispecific (Ifar_shiftcheckbound _)) -> 3
+    | Lop (Ispecific (Ishiftcheckbound_far _)) -> 3
     | Lop (Iintop Imod) -> 2
     | Lop (Iintop Imulh) -> 1
     | Lop (Iintop _) -> 1
@@ -545,20 +545,20 @@ module BR = Branch_relaxation.Make (struct
       end
 
   let relax_poll ~return_label =
-    Lop (Ispecific (Ifar_poll { return_label }))
+    Lop (Ispecific (Ipoll_far { return_label }))
 
   let relax_allocation ~num_bytes ~dbginfo =
-    Lop (Ispecific (Ifar_alloc { bytes = num_bytes; dbginfo }))
+    Lop (Ispecific (Ialloc_far { bytes = num_bytes; dbginfo }))
 
   let relax_intop_checkbound () =
-    Lop (Ispecific (Ifar_intop_checkbound))
+    Lop (Ispecific (Icheckbound_far))
 
   let relax_intop_imm_checkbound ~bound =
-    Lop (Ispecific (Ifar_intop_imm_checkbound { bound; }))
+    Lop (Ispecific (Icheckbound_imm_far { bound; }))
 
   let relax_specific_op = function
     | Ishiftcheckbound { shift; } ->
-      Lop (Ispecific (Ifar_shiftcheckbound { shift; }))
+      Lop (Ispecific (Ishiftcheckbound_far { shift; }))
     | _ -> assert false
 end)
 
@@ -834,11 +834,11 @@ let emit_instr env i =
         end
     | Lop(Ialloc { bytes = n; dbginfo }) ->
         assembly_code_for_allocation env i ~n ~far:false ~dbginfo
-    | Lop(Ispecific (Ifar_alloc { bytes = n; dbginfo })) ->
+    | Lop(Ispecific (Ialloc_far { bytes = n; dbginfo })) ->
         assembly_code_for_allocation env i ~n ~far:true ~dbginfo
     | Lop(Ipoll { return_label }) ->
         assembly_code_for_poll env i ~far:false ~return_label
-    | Lop(Ispecific (Ifar_poll { return_label })) ->
+    | Lop(Ispecific (Ipoll_far { return_label })) ->
         assembly_code_for_poll env i ~far:true ~return_label
     | Lop(Iintop_imm(Iadd, n)) ->
         emit_addimm i.res.(0) i.arg.(0) n
@@ -858,7 +858,7 @@ let emit_instr env i =
         let lbl = bound_error_label env i.dbg in
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         `	b.ls	{emit_label lbl}\n`
-    | Lop(Ispecific Ifar_intop_checkbound) ->
+    | Lop(Ispecific Icheckbound_far) ->
         let lbl = bound_error_label env i.dbg in
         let lbl2 = new_label () in
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
@@ -869,8 +869,7 @@ let emit_instr env i =
         let lbl = bound_error_label env i.dbg in
         emit_cmpimm i.arg.(0) n;
         `	b.ls	{emit_label lbl}\n`
-    | Lop(Ispecific(
-          Ifar_intop_imm_checkbound { bound; })) ->
+    | Lop(Ispecific(Icheckbound_imm_far { bound; })) ->
         let lbl = bound_error_label env i.dbg in
         let lbl2 = new_label () in
         `	cmp	{emit_reg i.arg.(0)}, #{emit_int bound}\n`;
@@ -881,7 +880,7 @@ let emit_instr env i =
         let lbl = bound_error_label env i.dbg in
         `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, lsr #{emit_int shift}\n`;
         `	b.cs	{emit_label lbl}\n`
-    | Lop(Ispecific(Ifar_shiftcheckbound { shift; })) ->
+    | Lop(Ispecific(Ishiftcheckbound_far { shift; })) ->
         let lbl = bound_error_label env i.dbg in
         let lbl2 = new_label () in
         `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, lsr #{emit_int shift}\n`;
