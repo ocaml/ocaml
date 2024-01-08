@@ -64,6 +64,9 @@ module DLS = struct
   external set_dls_state : dls_state -> unit =
     "caml_domain_dls_set" [@@noalloc]
 
+  external compare_and_set_dls_state : dls_state -> dls_state -> bool =
+    "caml_domain_dls_compare_and_set" [@@noalloc]
+
   let create_dls () =
     let st = Array.make 8 unique_value in
     set_dls_state st
@@ -95,7 +98,7 @@ module DLS = struct
 
   (* If necessary, grow the current domain's local state array such that [idx]
    * is a valid index in the array. *)
-  let maybe_grow idx =
+  let rec maybe_grow idx =
     let st = get_dls_state () in
     let sz = Array.length st in
     if idx < sz then st
@@ -106,8 +109,15 @@ module DLS = struct
       let new_sz = compute_new_size sz in
       let new_st = Array.make new_sz unique_value in
       Array.blit st 0 new_st 0 sz;
-      set_dls_state new_st;
-      new_st
+      (* We want a implementation that is safe with respect to
+         single-domain multi-threading: retry if the DLS state has
+         changed under our feet.
+         Note that the number of retries will be very small in
+         contended scenarios, as the array only grows, with
+         exponential resizing. *)
+      if compare_and_set_dls_state st new_st
+      then new_st
+      else maybe_grow idx
     end
 
   let set (idx, _init) x =
