@@ -384,6 +384,11 @@ let process_phrases ppf snap phrs =
         (fun () -> List.iter process rest)
     end
 
+let initialize_toplevel_env' ppf =
+  try initialize_toplevel_env ()
+  with Env.Error _ | Typetexp.Error _ as exn ->
+    Location.report_exception ppf exn; raise (Compenv.Exit_with_status 2)
+
 let loop ppf =
   Misc.Style.setup !Clflags.color;
   Clflags.debug := true;
@@ -394,11 +399,7 @@ let loop ppf =
       (if Topeval.implementation_label = "" then "" else " - ")
       Topeval.implementation_label
       Misc.Style.inline_code "#help;;";
-  begin
-    try initialize_toplevel_env ()
-    with Env.Error _ | Typetexp.Error _ as exn ->
-      Location.report_exception ppf exn; raise (Compenv.Exit_with_status 2)
-  end;
+  initialize_toplevel_env' ppf;
   let lb = Lexing.from_function refill_lexbuf in
   Location.init lb "//toplevel//";
   Location.input_name := "//toplevel//";
@@ -428,6 +429,7 @@ let preload_objects = ref []
 
 let prepare ppf =
   Topcommon.set_paths ();
+  initialize_toplevel_env' ppf;
   try
     let res =
       let objects =
