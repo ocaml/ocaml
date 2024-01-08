@@ -55,9 +55,27 @@ type 'a t = {
 
 module DLS = struct
 
-  type dls_state = Obj.t array
+  module Obj_opt : sig
+    type t
+    val none : t
+    val some : 'a -> t
+    val is_some : t -> bool
 
-  let unique_value = Obj.repr (ref 0)
+    (** [unsafe_get obj] may only be called safely
+        if [is_some] is true.
+
+        [unsafe_get (some v)] is equivalent to
+        [Obj.obj (Obj.repr v)]. *)
+    val unsafe_get : t -> 'a
+  end = struct
+    type t = Obj.t
+    let none = Obj.repr (ref 0)
+    let some v = Obj.repr v
+    let is_some obj = (obj != none)
+    let unsafe_get obj = Obj.obj obj
+  end
+
+  type dls_state = Obj_opt.t array
 
   external get_dls_state : unit -> dls_state = "%dls_get"
 
@@ -68,7 +86,7 @@ module DLS = struct
     "caml_domain_dls_compare_and_set" [@@noalloc]
 
   let create_dls () =
-    let st = Array.make 8 unique_value in
+    let st = Array.make 8 Obj_opt.none in
     set_dls_state st
 
   let _ = create_dls ()
@@ -107,7 +125,7 @@ module DLS = struct
         if idx < s then s else compute_new_size (2 * s)
       in
       let new_sz = compute_new_size sz in
-      let new_st = Array.make new_sz unique_value in
+      let new_st = Array.make new_sz Obj_opt.none in
       Array.blit st 0 new_st 0 sz;
       (* We want a implementation that is safe with respect to
          single-domain multi-threading: retry if the DLS state has
@@ -120,21 +138,23 @@ module DLS = struct
       else maybe_grow idx
     end
 
-  let set (idx, _init) x =
+  let set (type a) (idx, _init) (x : a) =
     let st = maybe_grow idx in
     (* [Sys.opaque_identity] ensures that flambda does not look at the type of
      * [x], which may be a [float] and conclude that the [st] is a float array.
      * We do not want OCaml's float array optimisation kicking in here. *)
-    st.(idx) <- Obj.repr (Sys.opaque_identity x)
+    st.(idx) <- Obj_opt.some (Sys.opaque_identity x)
 
-  let get (idx, init) =
+  let get (type a) ((idx, init) : a key) =
     let st = maybe_grow idx in
-    let v = st.(idx) in
-    if v == unique_value then
-      let v' = Obj.repr (init ()) in
-      st.(idx) <- (Sys.opaque_identity v');
-      Obj.magic v'
-    else Obj.magic v
+    let obj = st.(idx) in
+    if Obj_opt.is_some obj
+    then (Obj_opt.unsafe_get obj : a)
+    else begin
+      let v : a = init () in
+      st.(idx) <- Obj_opt.some (Sys.opaque_identity v);
+      v
+    end
 
   type key_value = KV : 'a key * 'a -> key_value
 
