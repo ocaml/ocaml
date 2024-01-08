@@ -181,14 +181,33 @@ module Dummy : sig
       ('a, 'stamp) with_dummy array
   end
 end = struct
-  type 'stamp dummy = { mutable dummy : 'stamp dummy }
-  [@@warning "-unused-field"] (* we never read the field *)
+  (* We want to use a cyclic value so that No_sharing marshalling
+     fails loudly, but we want also comparison of dynarrays to work
+     as expected, and not loop forever.
+
+     Our approach is to use an object value that contains a cycle.
+     Objects are compared by their unique id, so comparison is not
+     structural and will not loop on the cycle, but marshalled
+     by content, so marshalling without sharing will fail on the cycle.
+
+     (It is a bit tricky to build an object that does not contain
+     functional values where marshalling fails, see [fresh ()] below
+     for how we do it.) *)
+  type 'stamp dummy = < >
   type fresh_dummy = Fresh : 'stamp dummy -> fresh_dummy
 
   let fresh () =
     (* dummies and marshalling: we intentionally
        use a cyclic value here. *)
-    let rec dummy = { dummy } in
+    let r = ref None in
+    ignore
+      (* hack: this primitive is required by the object expression below,
+         ensure that 'make depend' notices it. *)
+      CamlinternalOO.create_object_opt;
+    let dummy = object
+      val x = r
+    end in
+    r := Some dummy;
     Fresh dummy
 
   type ('a, 'stamp) with_dummy = 'a

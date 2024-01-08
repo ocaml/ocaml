@@ -237,6 +237,7 @@ stdlib__Dynarray.cmo : dynarray.ml \
     stdlib__Seq.cmi \
     stdlib__Printf.cmi \
     stdlib__Obj.cmi \
+    camlinternalOO.cmi \
     stdlib__Array.cmi \
     stdlib__Dynarray.cmi
 stdlib__Dynarray.cmx : dynarray.ml \
@@ -244,6 +245,7 @@ stdlib__Dynarray.cmx : dynarray.ml \
     stdlib__Seq.cmx \
     stdlib__Printf.cmx \
     stdlib__Obj.cmx \
+    camlinternalOO.cmx \
     stdlib__Array.cmx \
     stdlib__Dynarray.cmi
 stdlib__Dynarray.cmi : dynarray.mli \
