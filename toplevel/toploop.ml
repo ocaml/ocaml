@@ -423,3 +423,22 @@ let loop ppf =
     | PPerror -> ()
     | x -> Location.report_exception ppf x; Btype.backtrack !snap
   done
+
+let preload_objects = ref []
+
+let prepare ppf =
+  Topcommon.set_paths ();
+  try
+    let res =
+      let objects =
+        List.rev (!preload_objects @ !Compenv.first_objfiles)
+      in
+      List.for_all (Topeval.load_file false ppf) objects
+    in
+    Topcommon.run_hooks Topcommon.Startup;
+    res
+  with x ->
+    try Location.report_exception ppf x; false
+    with x ->
+      Format.fprintf ppf "Uncaught exception: %s\n" (Printexc.to_string x);
+      false

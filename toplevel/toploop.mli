@@ -203,3 +203,11 @@ val split_path : string -> string list
     double-quoted (which allows semicolons in filenames to be quoted). The
     double-quote characters are stripped (i.e. [f"o"o = foo]; also
     [split_path "foo\";\";bar" = ["foo;"; "bar"]) *)
+
+val preload_objects : string list ref
+(** List of compilation units to be loaded before entering the interactive
+    loop. *)
+
+val prepare : Format.formatter -> bool
+(** Load compilation units in {!preload_objects}.  Returns [true] if successful,
+    [false] otherwise. *)
