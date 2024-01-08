@@ -73,7 +73,6 @@ STDLIB_MODULE_BASENAMES = \
   domain \
   camlinternalFormat \
   printf \
-  dynarray \
   arg \
   printexc \
   fun \
@@ -90,6 +89,7 @@ STDLIB_MODULE_BASENAMES = \
   callback \
   camlinternalOO \
   oo \
+  dynarray \
   camlinternalMod \
   ephemeron \
   filename \
