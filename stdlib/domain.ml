@@ -136,18 +136,15 @@ module DLS = struct
       Obj.magic v'
     else Obj.magic v
 
-  let get_initial_keys () : (int * Obj.t) list =
+  type key_value = KV : 'a key * 'a -> key_value
+
+  let get_initial_keys () : key_value list =
     List.map
-      (fun (KI ((idx, _) as k, split)) ->
-           (idx, Obj.repr (split (get k))))
+      (fun (KI (k, split)) -> KV (k, (split (get k))))
       (Atomic.get parent_keys)
 
-  let set_initial_keys (l: (int * Obj.t) list) =
-    List.iter
-      (fun (idx, v) ->
-        let st = maybe_grow idx in st.(idx) <- v)
-      l
-
+  let set_initial_keys (l: key_value list) =
+    List.iter (fun (KV (k, v)) -> set k v) l
 end
 
 (******** Identity **********)
