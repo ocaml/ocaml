@@ -92,6 +92,15 @@ and lambda_with_env = {
 let dynamic_size () =
   Misc.fatal_error "letrec: No size found for Static binding"
 
+(* [join_sizes] is used to compute the size of an expression with multiple
+   branches. Such expressions are normally classified as [Dynamic] by
+   [Value_rec_check], so the default behaviour is a compile-time failure.
+   However, for partial pattern-matching (typically in let bindings)
+   the compiler will later add a branch for the failing cases, and this
+   is handled here with the [Unreachable] case.
+   Note that the current compilation scheme would work if we allowed the
+   [Constant] and [Block] cases to be joined, but [Function] needs to be
+   a single function. *)
 let join_sizes size1 size2 =
   match size1, size2 with
   | Unreachable, size | size, Unreachable -> size
