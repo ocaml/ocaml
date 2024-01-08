@@ -281,10 +281,6 @@ void caml_bad_caml_state(void)
    contains a frame matching one of the lines starting with "race:". */
 const char * __tsan_default_suppressions(void) {
   return "deadlock:caml_plat_lock\n" /* Avoids deadlock inversion messages */
-         "deadlock:pthread_mutex_lock\n" /* idem */
-         "race:create_domain\n"
-         "race:mark_slice_darken\n"
-         "race:caml_darken_cont\n"
-         "race:caml_shared_try_alloc\n";
+         "deadlock:pthread_mutex_lock\n"; /* idem */
 }
 #endif /* WITH_THREAD_SANITIZER */

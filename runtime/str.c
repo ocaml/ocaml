@@ -268,7 +268,9 @@ CAMLprim value caml_bytes_set64(value str, value index, value newval)
   return Val_unit;
 }
 
-CAMLno_tsan /* Disable TSan instrumentation for performance. */
+CAMLno_tsan_for_perf /* This attribute needs to stay on its own line for this
+                        function to be detected as a primitive by the build
+                        system. */
 CAMLprim value caml_string_equal(value s1, value s2)
 {
   mlsize_t sz1, sz2;

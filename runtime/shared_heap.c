@@ -253,6 +253,7 @@ static void calc_pool_stats(pool* a, sizeclass sz, struct heap_stats* s)
 }
 
 /* Initialize a pool and its object freelist */
+CAMLno_tsan  /* Disable TSan reports from this function (see #11040) */
 Caml_inline void pool_initialize(pool* r,
                                  sizeclass sz,
                                  caml_domain_state* owner)
@@ -286,7 +287,7 @@ Caml_inline void pool_initialize(pool* r,
 }
 
 /* Allocating an object from a pool */
-CAMLno_tsan /* Disable TSan instrumentation for performance. */
+CAMLno_tsan_for_perf
 static intnat pool_sweep(struct caml_heap_state* local,
                          pool**,
                          sizeclass sz ,
@@ -425,6 +426,7 @@ static void* large_allocate(struct caml_heap_state* local, mlsize_t sz) {
   return (char*)a + LARGE_ALLOC_HEADER_SZ;
 }
 
+CAMLno_tsan /* Disable TSan reports from this function (see #11040) */
 value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
                              tag_t tag, reserved_t reserved)
 {
@@ -531,7 +533,6 @@ static intnat pool_sweep(struct caml_heap_state* local, pool** plist,
   return work;
 }
 
-CAMLno_tsan /* Disable TSan reports from this function (see #11040) */
 static intnat large_alloc_sweep(struct caml_heap_state* local) {
   value* p;
   header_t hd;

@@ -121,6 +121,7 @@ git clean -q -f -d -x
 ./configure \
   CC=clang-14 \
   --enable-tsan \
+  CFLAGS="-DTSAN_INSTRUMENT_ALL" \
   --disable-stdlib-manpages --enable-dependency-generation
 
 # Build the system
