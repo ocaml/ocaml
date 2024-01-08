@@ -196,6 +196,9 @@ OCaml 5.2.0
 - #12735: Store both ends of the stack chain in continuations
   (Leo White, review by Miod Vallat and KC Sivaramakrishnan)
 
+- #12746: Simplify and clean up TSan annotations
+  (Olivier Nicole, review by Miod Vallat and Fabrice Buoro)
+
 - #12809: Add ThreadSanitizer support to FreeBSD/amd64
   (Miod Vallat, review by Gabriel Scherer)
 

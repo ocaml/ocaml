@@ -16,42 +16,36 @@
 #define CAML_TSAN_H
 
 /* Macro used to deactivate thread sanitizer on some functions. */
-#define CAMLreally_no_tsan
+#define CAMLno_tsan
 /* __has_feature is Clang-specific, but GCC defines __SANITIZE_ADDRESS__ and
  * __SANITIZE_THREAD__. */
 #if defined(__has_feature)
 #  if __has_feature(thread_sanitizer)
-#    undef CAMLreally_no_tsan
+#    undef CAMLno_tsan
 #    if defined(__has_attribute)
 #      if __has_attribute(disable_sanitizer_instrumentation)
-#        define CAMLreally_no_tsan \
+#        define CAMLno_tsan \
            __attribute__((disable_sanitizer_instrumentation))
 #      else
-#        define CAMLreally_no_tsan __attribute__((no_sanitize("thread")))
+#        define CAMLno_tsan __attribute__((no_sanitize("thread")))
 #      endif
 #    else
-#      define CAMLreally_no_tsan __attribute__((no_sanitize("thread")))
+#      define CAMLno_tsan __attribute__((no_sanitize("thread")))
 #    endif
 #  endif
 #else
 #  if defined(__SANITIZE_THREAD__)
-#    undef CAMLreally_no_tsan
-#    define CAMLreally_no_tsan __attribute__((no_sanitize_thread))
+#    undef CAMLno_tsan
+#    define CAMLno_tsan __attribute__((no_sanitize_thread))
 #  endif
 #endif
 
-/* Macro used to deactivate ThreadSanitizer on some functions, but only in
-   ThreadSanitizer-enabled installations of OCaml. This has two functions:
-   removing some ThreadSanitizer warnings from the runtime in user programs on
-   a switch configured with --enable-tsan, and manually instrumenting some
-   functions, which requires disabling built-in instrumentation (see
-   [caml_modify]). This macro has no effect when OCaml is configured without
-   --enable-tsan, so that compiler developers can still detect bugs in these
-   functions using ThreadSanitizer. */
-#define CAMLno_tsan
-#if defined(WITH_THREAD_SANITIZER)
-#  undef CAMLno_tsan
-#  define CAMLno_tsan CAMLreally_no_tsan
+/* Macro used to un-instrument some functions of the runtime for performance
+   reasons, except if TSAN_INSTRUMENT_ALL is set. */
+#if defined(TSAN_INSTRUMENT_ALL)
+#  define CAMLno_tsan_for_perf
+#else
+#  define CAMLno_tsan_for_perf CAMLno_tsan
 #endif
 
 
